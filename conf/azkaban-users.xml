@@ -1,0 +1,3 @@
+<azkaban-users>
+	<user username="azkaban" password="azkaban" roles="admin" groups="azkaban"/>
+</azkaban-users>

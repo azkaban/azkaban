@@ -1,0 +1,20 @@
+
+  <div id="header" class="header">
+    #parse( "azkaban/webapp/servlet/velocity/title.vm" )
+    <ul id="nav" class="nav">
+      <li id="all-jobs-tab" #if($current_page == 'all')class="selected"#end><a href="/#all">All Jobs</a></li>
+      <li id="scheduled-jobs-tab" #if($current_page == 'schedule')class="scheduled"#end><a href="$!context/schedule">Scheduled</a></li>
+      <li id="executing-jobs-tab" #if($current_page == 'executing')class="selected"#end><a href="$!context/executing">Executing</a></li>
+      <li id="history-jobs-tab" #if($current_page == 'history')class="selected"#end><a href="$!context/history">History</a></li>
+      <li><a href="$!context/fs">HDFS</a></li>
+    </ul>
+    
+    
+    <div id="user-id">
+    	<a>${user_id}<div id="user-down"></div></a>    
+        <div id="user-menu">
+    		<ul><li><a id="logout" href="$!context?logout">logout</a></li></ul>
+    	</div>
+    </div>
+
+  </div>

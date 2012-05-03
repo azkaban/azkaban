@@ -1,0 +1,12 @@
+<azkaban-users>
+	<user username="user0" password="password0" roles="role0" groups="group0"/>
+	<user username="user1" password="password1" roles="role0,role1" groups="group1,group2"/>
+	<user username="user2" password="password2" roles="role0,role1,role2" groups="group1,group2,group3"/>
+	<user username="user3" password="password3" roles="role1, role2" groups="group1, group2"/>
+	<user username="user4" password="password4" roles="role1 , role2" groups="group1 , group2"/>
+	<user username="user5" password="password5" roles="role1 , role2," groups="group1 , group2,"/>
+	<user username="user6" password="password6" roles="role3 , role2, " groups="group1 , group2, "/>
+	<user username="user7" password="password7" groups="group1"/>
+	<user username="user8" password="password8" roles="role3"/>
+	<user username="user9" password="password9"/>
+</azkaban-users>

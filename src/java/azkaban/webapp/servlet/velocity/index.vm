@@ -1,0 +1,72 @@
+<!DOCTYPE html> 
+<html>
+  <head>
+    #parse( "azkaban/webapp/servlet/velocity/style.vm" )
+    <script type="text/javascript" src="${context}/js/jquery/jquery.js"></script>    
+    <script type="text/javascript" src="${context}/js/namespace.js"></script>
+    <script type="text/javascript" src="${context}/js/underscore-1.2.1-min.js"></script>
+    <script type="text/javascript" src="${context}/js/backbone-0.5.3-min.js"></script>
+    <script type="text/javascript" src="${context}/js/jquery.simplemodal.js"></script>
+    <script type="text/javascript" src="${context}/js/azkaban.nav.js"></script>
+    <script type="text/javascript" src="${context}/js/azkaban.job.view.js"></script>
+    <script type="text/javascript">
+      var contextURL = "${context}";
+      var currentTime = ${currentTime};
+      var timezone = "${timezone}";
+      var errorMessage = ${error_message};
+      var successMessage = ${success_message};
+    </script>
+  </head>
+  <body>
+    #set($current_page="all")
+    #parse( "azkaban/webapp/servlet/velocity/nav.vm" )
+    <div class="messaging"><p id="messageClose">X</p><p id="message"></p></div>  
+    
+    <div class="content">
+      <div id="all-jobs-content">
+        <div class="section-hd">
+          <h2>All Jobs</h2>
+
+          <form method="get">
+            <input type="hidden" name="action" value="search">
+            <input type="submit" value="Search" class="search-btn">
+            <input id="searchtextbox" type="text" placeholder="by job name or wildcard" value="" class="search-input" name="job">
+          </form>
+
+          <a id="upload-btn" class="btn1 upload" href="#">Upload Job</a>
+        </div><!-- end .section-hd -->
+      </div>
+    <div class="content">
+  </body>
+
+<!-- modal content -->
+  <div id="upload-job" class="modal">
+    <h3>Upload Job</h3>
+      <div id="errorMsg" class="box-error-message">$errorMsg</div>
+      <div class="message">
+        <form id="deployform" enctype="multipart/form-data" method="post" action="$!context/manager">
+          <fieldset>
+            <dl>
+              <dt><label for="path">Project Name</label></dt>
+              <dd><input id="path" name="project" type="text" size="20" 
+                      title="The destination path that the zip file will be uncompressed to on Azkaban. If the path already exists in Azkaban, it will be overwritten."/>
+              </dd>
+              <dt>Job Package Zip</dt>
+              <dd><input id="file" name="file" class="file" type="file" /></dd>
+              <dt>Overwrite Project</dt>
+              <dd><input id="overwrite" name="overwrite" type="checkbox" /></dd>
+              <input name="action" type="hidden" value="deploy" />
+              <input name="redirect" type="hidden" value="$!context/" />
+            </dl>
+          </fieldset>
+        </form>
+
+      </div>
+      <div class="actions">
+        <a class="yes btn2" id="deploy-btn" href="#">Deploy</a>
+        <a class="no simplemodal-close btn3" href="#">Cancel</a>
+      </div>
+    </div>
+</html>
+
+
