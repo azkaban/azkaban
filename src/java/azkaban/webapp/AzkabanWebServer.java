@@ -29,19 +29,22 @@ import org.apache.velocity.runtime.log.Log4JLogChute;
 import org.apache.velocity.runtime.resource.loader.ClasspathResourceLoader;
 import org.joda.time.DateTimeZone;
 import org.mortbay.jetty.Server;
-import org.mortbay.jetty.bio.SocketConnector;
 import org.mortbay.jetty.security.SslSocketConnector;
 import org.mortbay.jetty.servlet.Context;
 import org.mortbay.jetty.servlet.DefaultServlet;
 import org.mortbay.jetty.servlet.ServletHolder;
 import org.mortbay.thread.QueuedThreadPool;
 
+import azkaban.project.FileProjectLoader;
+import azkaban.project.ProjectLoader;
+import azkaban.project.ProjectManager;
 import azkaban.user.UserManager;
 import azkaban.user.XmlUserManager;
 import azkaban.utils.Props;
 import azkaban.utils.Utils;
 import azkaban.webapp.servlet.AzkabanServletContextListener;
 import azkaban.webapp.servlet.IndexServlet;
+import azkaban.webapp.servlet.ProjectManagerServlet;
 import azkaban.webapp.session.SessionCache;
 
 import joptsimple.OptionParser;
@@ -83,10 +86,13 @@ public class AzkabanWebServer {
     private static final int DEFAULT_THREAD_NUMBER = 10;
     private static final String VELOCITY_DEV_MODE_PARAM = "velocity.dev.mode";
     private static final String USER_MANAGER_CLASS_PARAM = "user.manager.class";
+    private static final String PROJECT_LOADER_CLASS_PARAM = "project.loader.class";
     private static final String DEFAULT_STATIC_DIR = "";
 
     private final VelocityEngine velocityEngine;
     private UserManager userManager;
+    private ProjectManager projectManager;    
+    
     private Props props;
     private SessionCache sessionCache;
     private File tempDir;
@@ -107,7 +113,8 @@ public class AzkabanWebServer {
         velocityEngine = configureVelocityEngine(props.getBoolean(
                 VELOCITY_DEV_MODE_PARAM, false));
         sessionCache = new SessionCache(props);
-        userManager = loadUserManager(props);;
+        userManager = loadUserManager(props);
+        projectManager = loadProjectManager(props);
         
         tempDir = new File(props.getString("azkaban.temp.dir", "temp"));
 
@@ -146,6 +153,45 @@ public class AzkabanWebServer {
         return manager;
     }
 
+    private ProjectManager loadProjectManager(Props props) {
+        ProjectManager manager = null;
+        try {
+        	ProjectLoader projectLoader = loadProjectLoader(props);
+            manager = new ProjectManager(props, projectLoader);
+        }
+        catch(Exception e) {
+            logger.error(e);
+            throw new RuntimeException(e);
+        }
+        
+        return manager;
+    }
+    
+    private ProjectLoader loadProjectLoader(Props props) {
+        Class<?> projectLoaderClass = props.getClass(PROJECT_LOADER_CLASS_PARAM,null);
+        logger.info("Loading project loader class " + projectLoaderClass.getName());
+        ProjectLoader loader = null;
+
+        if (projectLoaderClass != null
+            && projectLoaderClass.getConstructors().length > 0) {
+
+        	try {
+        		Constructor<?> projectLoaderConstructor = projectLoaderClass.getConstructor(Props.class);
+        		loader = (ProjectLoader)projectLoaderConstructor.newInstance(props);
+        	}
+        	catch (Exception e) {
+        	      logger.error("Could not instantiate UserManager "
+                          + projectLoaderClass.getName());
+                  throw new RuntimeException(e);
+        	}
+
+        } else {
+        	loader = new FileProjectLoader(props);
+        }
+
+        return loader;
+    }
+    
     /**
      * Returns the web session cache.
      * 
@@ -170,6 +216,14 @@ public class AzkabanWebServer {
      */
     public UserManager getUserManager() {
         return userManager;
+    }
+    
+    /**
+     * 
+     * @return
+     */
+    public ProjectManager getProjectManager() {
+        return projectManager;
     }
     
     /**
@@ -273,10 +327,6 @@ public class AzkabanWebServer {
         secureConnector.setTrustPassword(azkabanSettings.getString("jetty.trustpassword"));
         server.addConnector(secureConnector);
         
-//        SocketConnector socketConnector = new SocketConnector();
-//        socketConnector.setPort(portNumber);
-//        server.addConnector(socketConnector);
-        
         QueuedThreadPool httpThreadPool = new QueuedThreadPool(maxThreads);
         server.setThreadPool(httpThreadPool);
 
@@ -287,6 +337,7 @@ public class AzkabanWebServer {
         root.setResourceBase(staticDir);
         root.addServlet(new ServletHolder(new DefaultServlet()), "/*");
         root.addServlet(new ServletHolder(new IndexServlet()), "/index");
+        root.addServlet(new ServletHolder(new ProjectManagerServlet()), "/manager");
         root.setAttribute(AzkabanServletContextListener.AZKABAN_SERVLET_CONTEXT_KEY, app);
 
         try {
@@ -349,6 +400,10 @@ public class AzkabanWebServer {
         return loadAzkabanConfiguration(confFile.getPath());
     }
 
+    /**
+     * Returns the set temp dir
+     * @return
+     */
     public File getTempDirectory() {
         return tempDir;
     }

@@ -3,7 +3,7 @@ $.namespace('azkaban');
 var jobView;
 azkaban.JobView= Backbone.View.extend({
   events : {
-    "click #upload-btn":"handleUploadJob"
+    "click #create-project-btn":"handleCreateProjectJob"
   },
   initialize : function(settings) {
     if (settings.errorMsg) {
@@ -34,9 +34,9 @@ azkaban.JobView= Backbone.View.extend({
       });
     });
   },
-  handleUploadJob : function(evt) {
-    console.log("click upload");
-      $('#upload-job').modal({
+  handleCreateProjectJob : function(evt) {
+    console.log("click create project");
+      $('#create-project').modal({
           closeHTML: "<a href='#' title='Close' class='modal-close'>x</a>",
           position: ["20%",],
           containerId: 'confirm-container',
@@ -54,50 +54,43 @@ azkaban.JobView= Backbone.View.extend({
   }
 });
 
-var uploadView;
-azkaban.UploadJobView= Backbone.View.extend({
+var createProjectView;
+azkaban.CreateProjectView= Backbone.View.extend({
   events : {
-    "change #file": "handleFileChange",
-    "click #deploy-btn": "handleUploadJob"
+    "click #create-btn": "handleCreateProject"
   },
-	initialize : function(settings) {
+  initialize : function(settings) {
     $("#errorMsg").hide();
-	},
-	handleUploadJob : function(evt) {
+  },
+  handleCreateProject : function(evt) {
 	  // First make sure we can upload
-
 	  var projectName = $('#path').val();
-	  var dir = document.getElementById('file').value;
+	  var description = $('#description').val();
 	  if (projectName == "") {
 	    $("#errorMsg").text("ERROR: Empty Project Name.");
 	    $("#errorMsg").slideDown("fast");
 	  }
-	  else if (dir == "") {
-	    $("#errorMsg").text("ERROR: No zip file selected.");
-      $("#errorMsg").slideDown("fast");
-	  }
 	  else {
-	     $("#deployform").submit();
-  	}
-	},
-	handleFileChange : function(evt) {
-		var path = $('#path');
-		if(path.val() == '') {
-			var dir = document.getElementById('file').value;
-			var lastIndexOf = dir.lastIndexOf('.');
-			var lastIndexOfForwardSlash = dir.lastIndexOf('\\');
-			var lastIndexOfBackwardSlash = dir.lastIndexOf('/');
-			
-			var startIndex = Math.max(lastIndexOfForwardSlash, lastIndexOfBackwardSlash);
-			startIndex += 1;
-			path.val(dir.substring(startIndex, lastIndexOf));
-		}
-	},
-	render: function() {
-	}
+	     console.log("Deploying");
+	     $.ajax({
+	     	async: "false",
+	     	url: "manager",
+	     	dataType: "json",
+	     	type: "POST",
+	     	data: {action:"create", name:projectName, description:description},
+	     	success: function(data) {console.log("success");}
+	     });
+	     	
+	     
+	    //window.location = "manager";
+	     //$("#deployform").submit();
+  	  }
+  },
+  render: function() {
+  }
 });
 
 $(function() {
 	jobView = new azkaban.JobView({el:$( '#all-jobs-content'), successMsg: successMessage, errorMsg: errorMessage });
-	uploadView = new azkaban.UploadJobView({el:$('#upload-job')});
+	uploadView = new azkaban.CreateProjectView({el:$('#create-project')});
 });

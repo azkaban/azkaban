@@ -452,7 +452,7 @@ tr:hover td {
   padding-bottom: 6px;
 }
 
-#upload-job #overwrite {
+#create-project #overwrite {
   width: 12px;
 }
 
@@ -468,11 +468,11 @@ tr:hover td {
   margin-bottom: 15px;
 }
 
-#upload-job dt {
+#create-project dt {
   width: 100px;
 }
 
-#upload-job input {
+#create-project input {
   width: 280px;
 }
 

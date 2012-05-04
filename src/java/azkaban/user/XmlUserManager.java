@@ -124,6 +124,7 @@ public class XmlUserManager implements UserManager {
 		// Add the user to the node
 		User user = new User(userNameAttr.getNodeValue());
 		users.put(username, user);
+		logger.info("Loading user " + user.getUserId());
 		
 		Node roles = userAttrMap.getNamedItem(ROLES_ATTR);
 		if (roles != null) {

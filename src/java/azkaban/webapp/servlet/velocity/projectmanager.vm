@@ -1,0 +1,34 @@
+<!DOCTYPE html> 
+<html>
+  <head>
+    #parse( "azkaban/webapp/servlet/velocity/style.vm" )
+    <script type="text/javascript" src="${context}/js/jquery/jquery.js"></script>    
+    <script type="text/javascript" src="${context}/js/namespace.js"></script>
+    <script type="text/javascript" src="${context}/js/underscore-1.2.1-min.js"></script>
+    <script type="text/javascript" src="${context}/js/backbone-0.5.3-min.js"></script>
+    <script type="text/javascript" src="${context}/js/jquery.simplemodal.js"></script>
+    <script type="text/javascript" src="${context}/js/azkaban.nav.js"></script>
+    <script type="text/javascript" src="${context}/js/azkaban.job.view.js"></script>
+    <script type="text/javascript">
+      var contextURL = "${context}";
+      var currentTime = ${currentTime};
+      var timezone = "${timezone}";
+      var errorMessage = ${error_message};
+      var successMessage = ${success_message};
+    </script>
+  </head>
+  <body>
+    #set($current_page="all")
+    #parse( "azkaban/webapp/servlet/velocity/nav.vm" )
+    <div class="messaging"><p id="messageClose">X</p><p id="message"></p></div>  
+    
+    <div class="content">
+      <div id="all-jobs-content">
+        <div class="section-hd">
+          <h2>Project</h2>
+        </div><!-- end .section-hd -->
+      </div>
+    <div class="content">
+  </body>
+</html>
+
