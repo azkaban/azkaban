@@ -186,6 +186,7 @@ public class AzkabanWebServer {
         	}
 
         } else {
+        	logger.info("By default, using FileProjectLoader");
         	loader = new FileProjectLoader(props);
         }
 

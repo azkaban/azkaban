@@ -44,20 +44,20 @@
     <h3>Create Project</h3>
       <div id="errorMsg" class="box-error-message">$errorMsg</div>
       <div class="message">
-
-          <fieldset>
-            <dl>
-              <dt><label for="path">Project Name</label></dt>
-              <dd><input id="path" name="project" type="text" size="20" title="The project name."/>
-              </dd>
-              <dt>Description</dt>
-              <dd><textarea id="description" name="description" rows="2" cols="40"></textarea></dd>
-
-              <input name="action" type="hidden" value="create" />
-              <input name="redirect" type="hidden" value="$!context/" />
-            </dl>
-          </fieldset>
-
+		  <form id="deployform" method="post" action="$!context">
+	          <fieldset>
+	            <dl>
+	              <dt><label for="path">Project Name</label></dt>
+	              <dd><input id="path" name="project" type="text" size="20" title="The project name."/>
+	              </dd>
+	              <dt>Description</dt>
+	              <dd><textarea id="description" name="description" rows="2" cols="40"></textarea></dd>
+	
+	              <input name="action" type="hidden" value="create" />
+	              <input name="redirect" type="hidden" value="$!context/" />
+	            </dl>
+	          </fieldset>
+		  </form>
       </div>
       <div class="actions">
         <a class="yes btn2" id="create-btn" href="#">Create Project</a>

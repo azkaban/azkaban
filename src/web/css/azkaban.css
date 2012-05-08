@@ -13,6 +13,10 @@ body {
   font-family: Helvetica, Arial, Sans-Serif;
 }
 
+textarea {
+	border: 2px inset;
+}
+
 .header {
   background-image: -o-linear-gradient(bottom, rgb(56,56,56) 33%, rgb(73,73,73) 66%);
   background-image: -moz-linear-gradient(bottom, rgb(56,56,56) 33%, rgb(73,73,73) 66%);

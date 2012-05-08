@@ -18,7 +18,9 @@ package azkaban.webapp.servlet;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
@@ -34,6 +36,7 @@ import org.joda.time.DateTime;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 
+import azkaban.utils.JSONUtils;
 import azkaban.utils.Props;
 import azkaban.webapp.AzkabanWebServer;
 import azkaban.webapp.session.Session;
@@ -41,7 +44,7 @@ import azkaban.webapp.session.Session;
 /**
  * Base Servlet for pages
  */
-public class AbstractAzkabanServlet extends HttpServlet {
+public abstract class AbstractAzkabanServlet extends HttpServlet {
     private static final DateTimeFormatter ZONE_FORMATTER = DateTimeFormat.forPattern("z");
     private static final String AZKABAN_SUCCESS_MESSAGE = "azkaban.success.message";
     private static final String AZKABAN_FAILURE_MESSAGE = "azkaban.failure.message";
@@ -103,7 +106,7 @@ public class AbstractAzkabanServlet extends HttpServlet {
      */
     public String getParam(HttpServletRequest request, String name) throws ServletException {
         String p = request.getParameter(name);
-        if (p == null || p.equals("")) throw new ServletException("Missing required parameter '" + name + "'.");
+        if (p == null) throw new ServletException("Missing required parameter '" + name + "'.");
         else return p;
     }
 
@@ -300,5 +303,21 @@ public class AbstractAzkabanServlet extends HttpServlet {
         else {
             return app;
         }
+    }
+    
+    public static String createJsonResponse(String status, String message, String action, Map<String, Object> params) {
+    	HashMap<String,Object> response = new HashMap<String,Object>();
+    	response.put("status", status);
+    	if (message != null) {
+    		response.put("message", message);
+    	}
+    	if (action != null) {
+    		response.put("action", action);
+    	}
+    	if (params != null) {
+    		response.putAll(params);
+    	}
+    	
+    	return JSONUtils.toJSON(response);
     }
 }

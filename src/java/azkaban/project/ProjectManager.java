@@ -26,7 +26,18 @@ public class ProjectManager {
     	return projects.get(name);
     }
     
-    public Project createProjects(String projectName, User creator) {
+    public Project createProjects(String projectName, String description, User creator) throws ProjectManagerException {
+    	if (projectName == null || projectName.trim().isEmpty()) {
+    		throw new ProjectManagerException("Project name cannot be empty.");
+    	}
+    	else if (description == null || description.trim().isEmpty()) {
+    		throw new ProjectManagerException("Description cannot be empty.");
+    	}
+    	else if (creator == null) {
+    		throw new ProjectManagerException("Valid creator user must be set.");
+    	}
+    	
+    	
     	return null;
     }
     

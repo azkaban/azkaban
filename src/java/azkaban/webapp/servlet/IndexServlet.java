@@ -24,6 +24,8 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.apache.log4j.Logger;
 
+import azkaban.project.ProjectManager;
+import azkaban.project.ProjectManagerException;
 import azkaban.webapp.session.Session;
 
 /**
@@ -45,7 +47,16 @@ public class IndexServlet extends LoginAbstractAzkabanServlet {
     protected void handlePost(HttpServletRequest req, HttpServletResponse resp, Session session)
             throws ServletException, IOException {
         if(hasParam(req, "action")) {
-
+        	String action = getParam(req, "action");
+        	if (action.equals("create")) {
+        		String project = getParam(req, "project");
+        		String description = getParam(req, "description");
+        		ProjectManager manager = this.getApplication().getProjectManager();
+        		try {
+					manager.createProjects(project, description, session.getUser());
+				} catch (ProjectManagerException e) {
+				}
+        	}
         }
         else {
             resp.sendRedirect(req.getContextPath());

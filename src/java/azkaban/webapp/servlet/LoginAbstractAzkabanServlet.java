@@ -113,14 +113,22 @@ public abstract class LoginAbstractAzkabanServlet extends
                 }
             } else {
                 Session session = getSessionFromRequest(req);
-                handlePost(req, resp, session);
+                if (session == null) {
+                	handleLogin(req, resp, "Invalid session");
+                } else {
+                	handlePost(req, resp, session);
+                }
             }
         } else {
             Session session = getSessionFromRequest(req);
-            handlePost(req, resp, session);
+            if (session == null) {
+                handleLogin(req, resp);
+            } else {
+            	handlePost(req, resp, session);
+            }
         }
     }
-
+    
     /** 
      * The get request is handed off to the implementor after the user is logged in.
      * 

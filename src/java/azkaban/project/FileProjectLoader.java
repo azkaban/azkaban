@@ -8,7 +8,9 @@ import azkaban.utils.Props;
 
 public class FileProjectLoader implements ProjectLoader {
 
-    public FileProjectLoader(Props props) {}
+    public FileProjectLoader(Props props) {
+    	
+    }
     
     @Override
     public Map<String, Project> loadAllProjects() {
