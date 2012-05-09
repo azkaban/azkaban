@@ -36,6 +36,7 @@ import org.mortbay.jetty.servlet.ServletHolder;
 import org.mortbay.thread.QueuedThreadPool;
 
 import azkaban.project.FileProjectLoader;
+import azkaban.project.FileProjectManager;
 import azkaban.project.ProjectLoader;
 import azkaban.project.ProjectManager;
 import azkaban.user.UserManager;
@@ -63,7 +64,7 @@ import joptsimple.OptionSpec;
  * default.timezone.id - The timezone code. I.E. America/Los Angeles
  * 
  * user.manager.class - The UserManager class used for the user manager. Default is XmlUserManager.
- * project.loader.class - The ProjectLoader class used by the ProjectManager to load classes.
+ * project.manager.class - The ProjectManager to load projects
  * project.global.properties - The base properties inherited by all projects and jobs
  * 
  * jetty.maxThreads - # of threads for jetty
@@ -86,7 +87,7 @@ public class AzkabanWebServer {
     private static final int DEFAULT_THREAD_NUMBER = 10;
     private static final String VELOCITY_DEV_MODE_PARAM = "velocity.dev.mode";
     private static final String USER_MANAGER_CLASS_PARAM = "user.manager.class";
-    private static final String PROJECT_LOADER_CLASS_PARAM = "project.loader.class";
+    private static final String PROJECT_MANAGER_CLASS_PARAM = "project.manager.class";
     private static final String DEFAULT_STATIC_DIR = "";
 
     private final VelocityEngine velocityEngine;
@@ -154,43 +155,28 @@ public class AzkabanWebServer {
     }
 
     private ProjectManager loadProjectManager(Props props) {
+        Class<?> projectManagerClass = props.getClass(PROJECT_MANAGER_CLASS_PARAM, null);
+        logger.info("Loading project manager class " + projectManagerClass.getName());
         ProjectManager manager = null;
-        try {
-        	ProjectLoader projectLoader = loadProjectLoader(props);
-            manager = new ProjectManager(props, projectLoader);
-        }
-        catch(Exception e) {
-            logger.error(e);
-            throw new RuntimeException(e);
-        }
-        
-        return manager;
-    }
-    
-    private ProjectLoader loadProjectLoader(Props props) {
-        Class<?> projectLoaderClass = props.getClass(PROJECT_LOADER_CLASS_PARAM,null);
-        logger.info("Loading project loader class " + projectLoaderClass.getName());
-        ProjectLoader loader = null;
 
-        if (projectLoaderClass != null
-            && projectLoaderClass.getConstructors().length > 0) {
+        if (projectManagerClass != null
+            && projectManagerClass.getConstructors().length > 0) {
 
         	try {
-        		Constructor<?> projectLoaderConstructor = projectLoaderClass.getConstructor(Props.class);
-        		loader = (ProjectLoader)projectLoaderConstructor.newInstance(props);
+        		Constructor<?> projectManagerConstructor = projectManagerClass.getConstructor(Props.class);
+        		manager = (ProjectManager)projectManagerConstructor.newInstance(props);
         	}
         	catch (Exception e) {
-        	      logger.error("Could not instantiate UserManager "
-                          + projectLoaderClass.getName());
+        	      logger.error("Could not instantiate ProjectManager "
+                          + projectManagerClass.getName());
                   throw new RuntimeException(e);
         	}
 
         } else {
-        	logger.info("By default, using FileProjectLoader");
-        	loader = new FileProjectLoader(props);
+            manager = new FileProjectManager(props);
         }
 
-        return loader;
+        return manager;
     }
     
     /**

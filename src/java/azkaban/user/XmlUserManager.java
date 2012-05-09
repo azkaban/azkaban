@@ -48,7 +48,7 @@ public class XmlUserManager implements UserManager {
 	private HashMap<String, String> userPassword;
 	
 	/**
-	 * The constructor. Takes
+	 * The constructor.
 	 * 
 	 * @param props
 	 */

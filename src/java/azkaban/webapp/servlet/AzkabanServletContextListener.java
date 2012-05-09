@@ -44,5 +44,4 @@ public class AzkabanServletContextListener implements ServletContextListener {
 
         event.getServletContext().setAttribute(AZKABAN_SERVLET_CONTEXT_KEY, this.app);
     }
-
 }

@@ -1,6 +1,7 @@
 package azkaban.webapp.servlet;
 
 import java.io.IOException;
+import java.io.Writer;
 import java.util.UUID;
 
 import javax.servlet.ServletException;
@@ -74,8 +75,7 @@ public abstract class LoginAbstractAzkabanServlet extends
     private void handleLogin(HttpServletRequest req, HttpServletResponse resp,
             String errorMsg) throws ServletException, IOException {
 
-        Page page = newPage(req, resp,
-                "azkaban/webapp/servlet/velocity/login.vm");
+        Page page = newPage(req, resp, "azkaban/webapp/servlet/velocity/login.vm");
         if (errorMsg != null) {
             page.add("errorMsg", errorMsg);
         }
@@ -109,12 +109,24 @@ public abstract class LoginAbstractAzkabanServlet extends
                     getApplication().getSessionCache().addSession(session);
                     handleGet(req, resp, session);
                 } else {
-                    handleLogin(req, resp, "Enter username and password");
+                	if (isAjaxCall(req)) {
+                		String response = createJsonResponse("error", "Incorrect Login.", "login", null);
+                		writeResponse(resp, response);
+                	}
+                	else {
+                		handleLogin(req, resp, "Enter username and password");
+                	}
                 }
             } else {
                 Session session = getSessionFromRequest(req);
                 if (session == null) {
-                	handleLogin(req, resp, "Invalid session");
+                	if (isAjaxCall(req)) {
+                		String response = createJsonResponse("error", "Invalid Session. Need to re-login", "login", null);
+                		writeResponse(resp, response);
+                	}
+                	else {
+                		handleLogin(req, resp, "Enter username and password");
+                	}
                 } else {
                 	handlePost(req, resp, session);
                 }
@@ -122,11 +134,33 @@ public abstract class LoginAbstractAzkabanServlet extends
         } else {
             Session session = getSessionFromRequest(req);
             if (session == null) {
-                handleLogin(req, resp);
+            	if (isAjaxCall(req)) {
+            		String response = createJsonResponse("error", "Invalid Session. Need to re-login", "login", null);
+            		writeResponse(resp, response);
+            	}
+            	else {
+            		handleLogin(req, resp, "Enter username and password");
+            	}
             } else {
             	handlePost(req, resp, session);
             }
         }
+    }
+    
+    protected void writeResponse(HttpServletResponse resp, String response) throws IOException {
+    	Writer writer = resp.getWriter();
+    	writer.append(response);
+    	writer.flush();
+    }
+    
+    protected boolean isAjaxCall(HttpServletRequest req) throws ServletException {
+    	String value = req.getHeader("X-Requested-With");
+    	if (value != null) {
+    		logger.info("has X-Requested-With " + value);
+     		return value.equals("XMLHttpRequest");
+    	}
+    	
+    	return false;
     }
     
     /** 

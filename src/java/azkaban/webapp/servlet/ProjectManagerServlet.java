@@ -54,34 +54,36 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
     private void handleCreate(HttpServletRequest req, HttpServletResponse resp,
             Session session) throws ServletException {
     	
-//    	String projectName = hasParam(req, "name") ? getParam(req, "name") : null;
-//    	String projectDescription = hasParam(req, "description") ? getParam(req, "description") : null;
-//    	logger.info("Create project " + projectName);
-//    	
-//    	User user = session.getUser();
-//    	HashMap<String, Object> responseObj = new HashMap<String, Object>();
-//    	String status = null;
-//    	String redirect = null;
-//    	String message = null;
-//
-//    	try {
-//			manager.createProjects(projectName, projectDescription, user);
-//			status = "success";
-//			redirect = "manager?project=" + projectName;
-//		} catch (ProjectManagerException e) {
-//			message = e.getMessage();
-//			status = "error";
-//		}
-//    	
-//    	String response = createJsonResponse(status, message, redirect, null);
-//    	try {
-//			Writer write = resp.getWriter();
-//			write.append(response);
-//			write.flush();
-//    	} catch (IOException e) {
-//			// TODO Auto-generated catch block
-//			e.printStackTrace();
-//		}
+    	String projectName = hasParam(req, "name") ? getParam(req, "name") : null;
+    	String projectDescription = hasParam(req, "description") ? getParam(req, "description") : null;
+    	logger.info("Create project " + projectName);
+    	
+    	User user = session.getUser();
+
+    	String status = null;
+    	String action = null;
+    	String message = null;
+    	HashMap<String, Object> params = null;
+    	try {
+			manager.createProjects(projectName, projectDescription, user);
+			status = "success";
+			action = "redirect";
+			String redirect = "manager?project=" + projectName;
+			params = new HashMap<String, Object>();
+			params.put("path", redirect);
+		} catch (ProjectManagerException e) {
+			message = e.getMessage();
+			status = "error";
+		}
+ 
+    	String response = createJsonResponse(status, message, action, params);
+    	try {
+			Writer write = resp.getWriter();
+			write.append(response);
+			write.flush();
+    	} catch (IOException e) {
+			e.printStackTrace();
+		}
     }
 
 }

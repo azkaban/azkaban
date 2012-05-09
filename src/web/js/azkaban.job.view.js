@@ -63,8 +63,35 @@ azkaban.CreateProjectView= Backbone.View.extend({
     $("#errorMsg").hide();
   },
   handleCreateProject : function(evt) {
-     console.log("Deploying");
-	 $("#deployform").submit();
+	 // First make sure we can upload
+	 var projectName = $('#path').val();
+	 var description = $('#description').val();
+
+     console.log("Creating");
+     $.ajax({
+     	async: "false",
+     	url: "manager",
+     	dataType: "json",
+     	type: "POST",
+     	data: {action:"create", name:projectName, description:description},
+     	success: function(data) {
+     		if (data.status == "success") {
+     			if (data.action == "redirect") {
+     				window.location = data.path;
+     			}
+     		}
+     		else {
+     			if (data.action == "login") {
+ 					window.location = "";
+     			}
+     			else {
+	     			$("#errorMsg").text("ERROR: " + data.message);
+	    			$("#errorMsg").slideDown("fast");
+    			}
+     		}
+     	}
+     });
+
   },
   render: function() {
   }
