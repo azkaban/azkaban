@@ -1,13 +1,18 @@
 package azkaban.project;
 
 import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.log4j.Logger;
 
+import azkaban.user.Permission;
+import azkaban.user.Permission.Type;
 import azkaban.user.User;
+import azkaban.utils.JSONUtils;
 import azkaban.utils.Props;
 
 /**
@@ -17,12 +22,15 @@ import azkaban.utils.Props;
  */
 public class FileProjectManager implements ProjectManager {
 	public static final String DIRECTORY_PARAM = "file.project.loader.path";
+	private static final String PROPERTIES_FILENAME = "project.json";
     private static final Logger logger = Logger.getLogger(FileProjectManager.class);
     private ConcurrentHashMap<String, Project> projects = new ConcurrentHashMap<String, Project>();
+
 	private File projectDirectory;
 	
     public FileProjectManager(Props props) {
     	setupDirectories(props);
+    	loadAllProjects();
     }
 
     private void setupDirectories(Props props) {
@@ -40,6 +48,35 @@ public class FileProjectManager implements ProjectManager {
     	}
     	else if (projectDirectory.isFile()) {
 			throw new RuntimeException("FileProjectManager directory " + projectDirectory + " is really a file.");
+    	}
+    }
+    
+    private void loadAllProjects() {
+    	File[] directories = projectDirectory.listFiles();
+    	
+    	for (File dir: directories) {
+    		if (!dir.isDirectory()) {
+    			logger.error("ERROR loading project from " + dir.getPath() + ". Not a directory." );
+    		}
+    		else {
+    			File propertiesFile = new File(dir, PROPERTIES_FILENAME);
+    			if (!propertiesFile.exists()) {
+        			logger.error("ERROR loading project from " + dir.getPath() + ". Project file " + PROPERTIES_FILENAME + " not found." );
+    			}
+    			else {
+    				Object obj = null;
+    				try {
+    					obj = JSONUtils.parseJSONFromFile(propertiesFile);
+					} catch (IOException e) {
+						logger.error("ERROR loading project from " + dir.getPath() + ". Project file " + PROPERTIES_FILENAME + " couldn't be read.", e );
+						continue;
+					}
+    				
+    				Project project = Project.projectFromObject(obj);
+    				logger.info("Loading project " + project.getName());
+    				projects.put(project.getName(), project);
+    			}
+    		}
     	}
     }
     
@@ -67,17 +104,59 @@ public class FileProjectManager implements ProjectManager {
     		throw new ProjectManagerException("Project already exists.");
     	}
     	
+    	File projectPath = new File(projectDirectory, projectName);
+    	if (projectPath.exists()) {
+    		throw new ProjectManagerException("Project already exists.");
+    	}
+    	
+    	if(!projectPath.mkdirs()) {
+    		throw new ProjectManagerException(
+    				"Project directory " + projectName + 
+    				" cannot be created in " + projectDirectory);
+    	}
+    	
+    	Permission perm = new Permission(Type.ADMIN);
+    	long time = System.currentTimeMillis();
+    	
     	Project project = new Project(projectName);
+    	project.setUserPermission(creator.getUserId(), perm);
+    	project.setDescription(description);
+    	project.setCreateTimestamp(time);
+    	project.setLastModifiedTimestamp(time);
+    	
+    	logger.info("Trying to create " + project.getName() + " by user " + creator.getUserId());
+    	try {
+			writeProjectFile(projectPath, project);
+		} catch (IOException e) {
+    		throw new ProjectManagerException(
+    				"Project directory " + projectName + 
+    				" cannot be created in " + projectDirectory, e);
+		}
+    	
     	return project;
     }
     
-    public Project loadProjects() {
-    	return null;
+    private void writeProjectFile(File directory, Project project) throws IOException {
+    	Object object = project.toObject();
+    	File outputFile = new File(directory, PROPERTIES_FILENAME);
+    	logger.info("Writing project file " + outputFile);
+    	String output = JSONUtils.toJSON(object, true);
+    	
+    	FileWriter writer = new FileWriter(outputFile);
+    	try {
+    		writer.write(output);
+    	} catch (IOException e) {
+    		if (writer != null) {
+    			writer.close();
+    		}
+    		
+    		throw e;
+    	}
+    	writer.close();
     }
 
 	@Override
 	public synchronized Project removeProjects(String projectName) {
-		// TODO Auto-generated method stub
 		return null;
 	}
 }

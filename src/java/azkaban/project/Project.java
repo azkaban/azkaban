@@ -19,7 +19,7 @@ public class Project {
         this.name = name;
     }
 
-    public String getName() {
+	public String getName() {
         return name;
     }
     
@@ -31,8 +31,8 @@ public class Project {
     	return description;
     }
     
-    public void setUserPermission(String userid, Permission flags) {
-    	userToPermission.put(userid, flags);
+    public void setUserPermission(String userid, Permission perm) {
+    	userToPermission.put(userid, perm);
     }
     
     public Permission getUserPermission(User user) {
@@ -79,8 +79,9 @@ public class Project {
     	Map<String,Object> projectObject = (Map<String,Object>)object;
     	String name = (String)projectObject.get("name");
     	String description = (String)projectObject.get("description");
-    	long createTimestamp = (Long)projectObject.get("createTimestamp");
-    	long lastModifiedTimestamp =  (Long)projectObject.get("lastModifiedTimestamp");
+    	
+    	long createTimestamp = coerceToLong(projectObject.get("createTimestamp"));
+    	long lastModifiedTimestamp = coerceToLong(projectObject.get("lastModifiedTimestamp"));
     	
     	Project project = new Project(name);
     	project.setDescription(description);
@@ -94,11 +95,71 @@ public class Project {
     		String userid = (String)user.get("userid");
     		Permission perm = new Permission();
     		List<String> list = (List<String>)user.get("permissions");
-    		perm.setPermissions(list);
+    		perm.setPermissionsByName(list);
     		
     		project.setUserPermission(userid, perm);
     	}
     	
-    	return null;
+    	return project;
     }
+    
+    private static long coerceToLong(Object obj) {
+    	if (obj == null) {
+    		return 0;
+    	}
+    	else if (obj instanceof Integer) {
+    		return (Integer)obj;
+    	}
+    	
+    	return (Long)obj;
+    }
+    
+    @Override
+	public int hashCode() {
+		final int prime = 31;
+		int result = 1;
+		result = prime * result
+				+ (int) (createTimestamp ^ (createTimestamp >>> 32));
+		result = prime * result
+				+ ((description == null) ? 0 : description.hashCode());
+		result = prime
+				* result
+				+ (int) (lastModifiedTimestamp ^ (lastModifiedTimestamp >>> 32));
+		result = prime * result + ((name == null) ? 0 : name.hashCode());
+		result = prime
+				* result
+				+ ((userToPermission == null) ? 0 : userToPermission.hashCode());
+		return result;
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		Project other = (Project) obj;
+		if (createTimestamp != other.createTimestamp)
+			return false;
+		if (description == null) {
+			if (other.description != null)
+				return false;
+		} else if (!description.equals(other.description))
+			return false;
+		if (lastModifiedTimestamp != other.lastModifiedTimestamp)
+			return false;
+		if (name == null) {
+			if (other.name != null)
+				return false;
+		} else if (!name.equals(other.name))
+			return false;
+		if (userToPermission == null) {
+			if (other.userToPermission != null)
+				return false;
+		} else if (!userToPermission.equals(other.userToPermission))
+			return false;
+		return true;
+	}
 }

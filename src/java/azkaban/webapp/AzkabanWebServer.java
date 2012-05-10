@@ -35,9 +35,7 @@ import org.mortbay.jetty.servlet.DefaultServlet;
 import org.mortbay.jetty.servlet.ServletHolder;
 import org.mortbay.thread.QueuedThreadPool;
 
-import azkaban.project.FileProjectLoader;
 import azkaban.project.FileProjectManager;
-import azkaban.project.ProjectLoader;
 import azkaban.project.ProjectManager;
 import azkaban.user.UserManager;
 import azkaban.user.XmlUserManager;
@@ -297,7 +295,7 @@ public class AzkabanWebServer {
         }
         AzkabanWebServer app = new AzkabanWebServer(azkabanSettings);
 
-        int portNumber = azkabanSettings.getInt("jetty.port",DEFAULT_PORT_NUMBER);
+        //int portNumber = azkabanSettings.getInt("jetty.port",DEFAULT_PORT_NUMBER);
         int sslPortNumber = azkabanSettings.getInt("jetty.ssl.port",DEFAULT_SSL_PORT_NUMBER);
         int maxThreads = azkabanSettings.getInt("jetty.maxThreads",DEFAULT_THREAD_NUMBER);
 

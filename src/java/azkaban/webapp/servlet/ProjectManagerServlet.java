@@ -59,7 +59,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
     	logger.info("Create project " + projectName);
     	
     	User user = session.getUser();
-
+    	
     	String status = null;
     	String action = null;
     	String message = null;
