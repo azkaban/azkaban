@@ -16,7 +16,7 @@ public class ProjectTest {
     	project.setCreateTimestamp(1l);
     	project.setLastModifiedTimestamp(2l);
     	project.setDescription("I am a test");
-    	project.setUserPermission("user1", new Permission(new Type[]{Type.ADMIN, Type.DELETE}));
+    	project.setUserPermission("user1", new Permission(new Type[]{Type.ADMIN, Type.EXECUTE}));
     	
     	Object obj = project.toObject();
     	String json = JSONUtils.toJSON(obj);

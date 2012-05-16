@@ -1,6 +1,5 @@
 package azkaban.webapp.servlet;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.Writer;
 import java.util.HashMap;
@@ -16,7 +15,6 @@ import org.apache.log4j.Logger;
 import azkaban.project.ProjectManager;
 import azkaban.project.ProjectManagerException;
 import azkaban.user.User;
-import azkaban.utils.JSONUtils;
 import azkaban.webapp.session.Session;
 
 public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {

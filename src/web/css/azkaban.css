@@ -154,6 +154,7 @@ th {
   color: #fff;
   font-weight: bold;
   line-height: 1em;
+  font-size: 10.5pt;
 }
      
 th,
@@ -564,7 +565,6 @@ tr:hover td {
 .login-form p {
 	margin-top: 10px;
 }
-
 
 .login-textbox {
 	width: 300px;

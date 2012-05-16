@@ -29,7 +29,8 @@ import azkaban.utils.Utils;
  */
 public class Page {
     private static final String DEFAULT_MIME_TYPE = "text/html";
-    private final HttpServletRequest request;
+    @SuppressWarnings("unused")
+	private final HttpServletRequest request;
     private final HttpServletResponse response;
     private final VelocityEngine engine;
     private final VelocityContext context;

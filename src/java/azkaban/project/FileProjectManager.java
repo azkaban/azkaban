@@ -84,7 +84,17 @@ public class FileProjectManager implements ProjectManager {
         return new ArrayList<String>(projects.keySet());
     }
     
-    public Project getProject(String name) {
+    public List<Project> getProjects(User user) {
+    	ArrayList<Project> array = new ArrayList<Project>();
+    	for(Project project : projects.values()) {
+    		if (project.hasPermission(user, Type.READ)) {
+    			array.add(project);
+    		}
+    	}
+    	return array;
+    }
+    
+    public Project getProject(String name, User user) {
     	return projects.get(name);
     }
     
@@ -156,7 +166,7 @@ public class FileProjectManager implements ProjectManager {
     }
 
 	@Override
-	public synchronized Project removeProjects(String projectName) {
+	public synchronized Project removeProjects(String projectName, User user) {
 		return null;
 	}
 }

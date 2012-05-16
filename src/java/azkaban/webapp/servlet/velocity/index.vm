@@ -25,7 +25,7 @@
     <div class="content">
       <div id="all-jobs-content">
         <div class="section-hd">
-          <h2>Projects</h2>
+          <h2>My Projects</h2>
 
           <form method="get">
             <input type="hidden" name="action" value="search">
@@ -36,7 +36,19 @@
           <a id="create-project-btn" class="btn1 createproject" href="#">Create Project</a>
         </div><!-- end .section-hd -->
       </div>
-    <div class="content">
+      <table id="all-jobs" class="all-jobs job-table">
+      	<thead>
+      		<tr>
+      			<th class="tb-name">Name</th>
+      			<th class="tb-up-date">Modified Date</th>
+      			<th class="tb-owner">Modified By</th>
+      			<th class="tb-action last">Actions</th>
+      		</tr>
+      	 </thead>
+      	 <tbody>
+         </tbody>
+       </table>
+    </div>
   </body>
 
 <!-- modal content -->

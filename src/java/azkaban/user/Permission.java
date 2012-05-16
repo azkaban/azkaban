@@ -11,7 +11,6 @@ public class Permission {
 		WRITE,
 		EXECUTE,
 		SCHEDULE,
-		DELETE,
 		ADMIN
 	}
 

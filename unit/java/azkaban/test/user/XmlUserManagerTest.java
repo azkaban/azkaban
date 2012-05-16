@@ -36,7 +36,8 @@ public class XmlUserManagerTest {
     	
     	// Should throw 
     	try {
-    		XmlUserManager manager = new XmlUserManager(props);
+    		@SuppressWarnings("unused")
+			XmlUserManager manager = new XmlUserManager(props);
     	} catch (UndefinedPropertyException e) {
     		return;
     	}
@@ -54,7 +55,8 @@ public class XmlUserManagerTest {
     	props.put(XmlUserManager.XML_FILE_PARAM, "unit/test-conf/doNotExist.xml");
     	
     	try {
-    		UserManager manager = new XmlUserManager(props);
+    		@SuppressWarnings("unused")
+			UserManager manager = new XmlUserManager(props);
     	} catch (RuntimeException e) {
     		return;
     	}

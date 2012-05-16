@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 
 import azkaban.user.Permission;
+import azkaban.user.Permission.Type;
 import azkaban.user.User;
 
 public class Project {
@@ -13,6 +14,7 @@ public class Project {
     private String description;
     private long createTimestamp;
     private long lastModifiedTimestamp;
+    private String lastModifiedUser;
     private HashMap<String, Permission> userToPermission = new HashMap<String, Permission>();
     
     public Project(String name) {
@@ -23,6 +25,19 @@ public class Project {
         return name;
     }
     
+	public boolean hasPermission(User user, Type type) {
+		Permission perm = userToPermission.get(user.getUserId());
+		if (perm == null) {
+			return false;
+		}
+		
+		if (perm.isPermissionSet(Type.ADMIN) || perm.isPermissionSet(type)) {
+			return true;
+		}
+
+		return false;
+	}
+	
     public void setDescription(String description) {
     	this.description = description;
     }
@@ -61,6 +76,7 @@ public class Project {
     	projectObject.put("description", description);
     	projectObject.put("createTimestamp", createTimestamp);
     	projectObject.put("lastModifiedTimestamp",lastModifiedTimestamp);
+    	projectObject.put("lastModifiedUser", lastModifiedUser);
     	
     	ArrayList<Map<String,Object>> users = new ArrayList<Map<String,Object>>();
     	for (Map.Entry<String, Permission> entry: userToPermission.entrySet()) {
@@ -79,7 +95,7 @@ public class Project {
     	Map<String,Object> projectObject = (Map<String,Object>)object;
     	String name = (String)projectObject.get("name");
     	String description = (String)projectObject.get("description");
-    	
+    	String lastModifiedUser = (String)projectObject.get("lastModifiedUser");
     	long createTimestamp = coerceToLong(projectObject.get("createTimestamp"));
     	long lastModifiedTimestamp = coerceToLong(projectObject.get("lastModifiedTimestamp"));
     	
@@ -87,7 +103,7 @@ public class Project {
     	project.setDescription(description);
     	project.setCreateTimestamp(createTimestamp);
     	project.setLastModifiedTimestamp(lastModifiedTimestamp);
-    	
+    	project.setLastModifiedUser(lastModifiedUser);
     	
 		List<Map<String,Object>> users = (List<Map<String,Object>>)projectObject.get("users");
     	
@@ -114,6 +130,14 @@ public class Project {
     	return (Long)obj;
     }
     
+	public String getLastModifiedUser() {
+		return lastModifiedUser;
+	}
+
+	public void setLastModifiedUser(String lastModifiedUser) {
+		this.lastModifiedUser = lastModifiedUser;
+	}
+    
     @Override
 	public int hashCode() {
 		final int prime = 31;
@@ -125,6 +149,9 @@ public class Project {
 		result = prime
 				* result
 				+ (int) (lastModifiedTimestamp ^ (lastModifiedTimestamp >>> 32));
+		result = prime
+				* result
+				+ ((lastModifiedUser == null) ? 0 : lastModifiedUser.hashCode());
 		result = prime * result + ((name == null) ? 0 : name.hashCode());
 		result = prime
 				* result
@@ -149,6 +176,11 @@ public class Project {
 		} else if (!description.equals(other.description))
 			return false;
 		if (lastModifiedTimestamp != other.lastModifiedTimestamp)
+			return false;
+		if (lastModifiedUser == null) {
+			if (other.lastModifiedUser != null)
+				return false;
+		} else if (!lastModifiedUser.equals(other.lastModifiedUser))
 			return false;
 		if (name == null) {
 			if (other.name != null)
