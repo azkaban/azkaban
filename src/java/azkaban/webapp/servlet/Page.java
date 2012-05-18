@@ -36,6 +36,7 @@ public class Page {
     private final VelocityContext context;
     private final String template;
     private String mimeType = DEFAULT_MIME_TYPE;
+    private VelocityUtils utils = new VelocityUtils();
     
     /**
      * Creates a page and sets up the velocity engine to render
@@ -54,7 +55,7 @@ public class Page {
         this.engine = Utils.nonNull(engine);
         this.template = Utils.nonNull(template);
         this.context = new VelocityContext();
-        //this.context.put("utils", guiUtils);
+        this.context.put("utils", utils);
         this.context.put("session", request.getSession(true));
         this.context.put("context", request.getContextPath());
     }

@@ -226,8 +226,6 @@ public class AzkabanWebServer {
         engine.setProperty("resource.manager.logwhenfound", false);
         engine.setProperty("input.encoding", "UTF-8");
         engine.setProperty("output.encoding", "UTF-8");
-        engine.setProperty("directive.foreach.counter.name", "idx");
-        engine.setProperty("directive.foreach.counter.initial.value", 0);
         engine.setProperty("directive.set.null.allowed", true);
         engine.setProperty("resource.manager.logwhenfound", false);
         engine.setProperty("velocimacro.permissions.allow.inline", true);

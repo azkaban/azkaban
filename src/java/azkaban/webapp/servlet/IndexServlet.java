@@ -17,29 +17,36 @@
 package azkaban.webapp.servlet;
 
 import java.io.IOException;
+import java.util.List;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.apache.log4j.Logger;
+//import org.apache.log4j.Logger;
 
+import azkaban.project.Project;
 import azkaban.project.ProjectManager;
-import azkaban.project.ProjectManagerException;
+import azkaban.user.User;
 import azkaban.webapp.session.Session;
 
 /**
  * The main page
  */
 public class IndexServlet extends LoginAbstractAzkabanServlet {
-    private static final Logger logger = Logger.getLogger(IndexServlet.class.getName());
+    //private static final Logger logger = Logger.getLogger(IndexServlet.class.getName());
 
     private static final long serialVersionUID = -1;
 
     @Override
     protected void handleGet(HttpServletRequest req, HttpServletResponse resp, Session session) throws ServletException,
             IOException {
+    	User user = session.getUser();
+    	
+    	ProjectManager manager = this.getApplication().getProjectManager();
+    	List<Project> projects = manager.getProjects(user);
         Page page = newPage(req, resp, session, "azkaban/webapp/servlet/velocity/index.vm");
+        page.add("projects", projects);
         page.render();
     }
 
@@ -49,13 +56,7 @@ public class IndexServlet extends LoginAbstractAzkabanServlet {
         if(hasParam(req, "action")) {
         	String action = getParam(req, "action");
         	if (action.equals("create")) {
-        		String project = getParam(req, "project");
-        		String description = getParam(req, "description");
-        		ProjectManager manager = this.getApplication().getProjectManager();
-        		try {
-					manager.createProjects(project, description, session.getUser());
-				} catch (ProjectManagerException e) {
-				}
+
         	}
         }
         else {

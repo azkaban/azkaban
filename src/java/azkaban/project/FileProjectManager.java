@@ -133,6 +133,7 @@ public class FileProjectManager implements ProjectManager {
     	project.setDescription(description);
     	project.setCreateTimestamp(time);
     	project.setLastModifiedTimestamp(time);
+    	project.setLastModifiedUser(creator.getUserId());
     	
     	logger.info("Trying to create " + project.getName() + " by user " + creator.getUserId());
     	try {
@@ -142,7 +143,7 @@ public class FileProjectManager implements ProjectManager {
     				"Project directory " + projectName + 
     				" cannot be created in " + projectDirectory, e);
 		}
-    	
+    	projects.put(projectName, project);
     	return project;
     }
     
