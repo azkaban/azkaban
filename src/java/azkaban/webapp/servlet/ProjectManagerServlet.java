@@ -116,7 +116,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
     	String message = null;
     	HashMap<String, Object> params = null;
     	try {
-			manager.createProjects(projectName, projectDescription, user);
+			manager.createProject(projectName, projectDescription, user);
 			status = "success";
 			action = "redirect";
 			String redirect = "manager?project=" + projectName;

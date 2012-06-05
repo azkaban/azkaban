@@ -1,5 +1,6 @@
 package azkaban.project;
 
+import java.io.File;
 import java.security.AccessControlException;
 import java.util.List;
 
@@ -13,7 +14,9 @@ public interface ProjectManager {
     
     public Project getProject(String name, User user) throws AccessControlException;
     
-    public Project createProjects(String projectName, String description, User creator) throws ProjectManagerException;
+    public void uploadProject(String projectName, File projectDir, User uploader) throws ProjectManagerException;
     
-    public Project removeProjects(String projectName, User user) throws ProjectManagerException;
+    public Project createProject(String projectName, String description, User creator) throws ProjectManagerException;
+    
+    public Project removeProject(String projectName, User user) throws ProjectManagerException;
 }

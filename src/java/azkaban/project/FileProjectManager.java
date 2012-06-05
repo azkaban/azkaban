@@ -110,8 +110,27 @@ public class FileProjectManager implements ProjectManager {
     	return null;
     }
     
+    public void uploadProject(String projectName, File dir, User uploader) throws ProjectManagerException {
+    	Project project = projects.get(projectName);
+    	
+    	if (project == null) {
+    		throw new ProjectManagerException("Project not found.");
+    	}
+		if (!project.hasPermission(uploader, Type.WRITE)) {
+			throw new AccessControlException("Permission denied. Do not have write access.");
+		}
+    	
+    	// We synchronize on project so that we don't collide when uploading.
+    	synchronized (project) {
+    		logger.info("Uploading files to " + projectName);
+    		
+    		project.setLastModifiedTimestamp(System.currentTimeMillis());
+    		project.setLastModifiedUser(uploader.getUserId());
+    	}
+    }
+    
     @Override
-    public synchronized Project createProjects(String projectName, String description, User creator) throws ProjectManagerException {
+    public synchronized Project createProject(String projectName, String description, User creator) throws ProjectManagerException {
     	if (projectName == null || projectName.trim().isEmpty()) {
     		throw new ProjectManagerException("Project name cannot be empty.");
     	}
@@ -179,7 +198,7 @@ public class FileProjectManager implements ProjectManager {
     }
 
 	@Override
-	public synchronized Project removeProjects(String projectName, User user) {
+	public synchronized Project removeProject(String projectName, User user) {
 		return null;
 	}
 }
