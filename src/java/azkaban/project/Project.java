@@ -10,49 +10,60 @@ import azkaban.user.Permission.Type;
 import azkaban.user.User;
 
 public class Project {
-    private final String name;
-    private String description;
-    private long createTimestamp;
-    private long lastModifiedTimestamp;
-    private String lastModifiedUser;
-    private HashMap<String, Permission> userToPermission = new HashMap<String, Permission>();
-    
-    public Project(String name) {
-        this.name = name;
-    }
+	private final String name;
+	private String description;
+	private long createTimestamp;
+	private long lastModifiedTimestamp;
+	private String lastModifiedUser;
+	private HashMap<String, Permission> userToPermission = new HashMap<String, Permission>();
+
+	public Project(String name) {
+		this.name = name;
+	}
 
 	public String getName() {
-        return name;
-    }
-    
+		return name;
+	}
+
 	public boolean hasPermission(User user, Type type) {
 		Permission perm = userToPermission.get(user.getUserId());
 		if (perm == null) {
 			return false;
 		}
-		
+
 		if (perm.isPermissionSet(Type.ADMIN) || perm.isPermissionSet(type)) {
 			return true;
 		}
 
 		return false;
 	}
-	
-    public void setDescription(String description) {
-    	this.description = description;
-    }
-    
-    public String getDescription() {
-    	return description;
-    }
-    
-    public void setUserPermission(String userid, Permission perm) {
-    	userToPermission.put(userid, perm);
-    }
-    
-    public Permission getUserPermission(User user) {
-    	return userToPermission.get(user.getUserId());
-    }
+
+	public List<String> getUsersWithPermission(Type type) {
+		ArrayList<String> users = new ArrayList<String>();
+		for (Map.Entry<String, Permission> entry : userToPermission.entrySet()) {
+			Permission perm = entry.getValue();
+			if (perm.isPermissionSet(type)) {
+				users.add(entry.getKey());
+			}
+		}
+		return users;
+	}
+
+	public void setDescription(String description) {
+		this.description = description;
+	}
+
+	public String getDescription() {
+		return description;
+	}
+
+	public void setUserPermission(String userid, Permission perm) {
+		userToPermission.put(userid, perm);
+	}
+
+	public Permission getUserPermission(User user) {
+		return userToPermission.get(user.getUserId());
+	}
 
 	public long getCreateTimestamp() {
 		return createTimestamp;
@@ -69,67 +80,70 @@ public class Project {
 	public void setLastModifiedTimestamp(long lastModifiedTimestamp) {
 		this.lastModifiedTimestamp = lastModifiedTimestamp;
 	}
-	
-    public Object toObject() {
-    	HashMap<String,Object> projectObject = new HashMap<String, Object>();
-    	projectObject.put("name", name);
-    	projectObject.put("description", description);
-    	projectObject.put("createTimestamp", createTimestamp);
-    	projectObject.put("lastModifiedTimestamp",lastModifiedTimestamp);
-    	projectObject.put("lastModifiedUser", lastModifiedUser);
-    	
-    	ArrayList<Map<String,Object>> users = new ArrayList<Map<String,Object>>();
-    	for (Map.Entry<String, Permission> entry: userToPermission.entrySet()) {
-    		HashMap<String,Object> userMap = new HashMap<String,Object>();
-    		userMap.put("userid", entry.getKey());
-    		userMap.put("permissions", entry.getValue().toStringArray());
-    		users.add(userMap);
-    	}
- 
-    	projectObject.put("users", users);
-    	return projectObject;
-    }
-    
-    @SuppressWarnings("unchecked")
+
+	public Object toObject() {
+		HashMap<String, Object> projectObject = new HashMap<String, Object>();
+		projectObject.put("name", name);
+		projectObject.put("description", description);
+		projectObject.put("createTimestamp", createTimestamp);
+		projectObject.put("lastModifiedTimestamp", lastModifiedTimestamp);
+		projectObject.put("lastModifiedUser", lastModifiedUser);
+
+		ArrayList<Map<String, Object>> users = new ArrayList<Map<String, Object>>();
+		for (Map.Entry<String, Permission> entry : userToPermission.entrySet()) {
+			HashMap<String, Object> userMap = new HashMap<String, Object>();
+			userMap.put("userid", entry.getKey());
+			userMap.put("permissions", entry.getValue().toStringArray());
+			users.add(userMap);
+		}
+
+		projectObject.put("users", users);
+		return projectObject;
+	}
+
+	@SuppressWarnings("unchecked")
 	public static Project projectFromObject(Object object) {
-    	Map<String,Object> projectObject = (Map<String,Object>)object;
-    	String name = (String)projectObject.get("name");
-    	String description = (String)projectObject.get("description");
-    	String lastModifiedUser = (String)projectObject.get("lastModifiedUser");
-    	long createTimestamp = coerceToLong(projectObject.get("createTimestamp"));
-    	long lastModifiedTimestamp = coerceToLong(projectObject.get("lastModifiedTimestamp"));
-    	
-    	Project project = new Project(name);
-    	project.setDescription(description);
-    	project.setCreateTimestamp(createTimestamp);
-    	project.setLastModifiedTimestamp(lastModifiedTimestamp);
-    	project.setLastModifiedUser(lastModifiedUser);
-    	
-		List<Map<String,Object>> users = (List<Map<String,Object>>)projectObject.get("users");
-    	
-    	for (Map<String, Object> user: users) {
-    		String userid = (String)user.get("userid");
-    		Permission perm = new Permission();
-    		List<String> list = (List<String>)user.get("permissions");
-    		perm.setPermissionsByName(list);
-    		
-    		project.setUserPermission(userid, perm);
-    	}
-    	
-    	return project;
-    }
-    
-    private static long coerceToLong(Object obj) {
-    	if (obj == null) {
-    		return 0;
-    	}
-    	else if (obj instanceof Integer) {
-    		return (Integer)obj;
-    	}
-    	
-    	return (Long)obj;
-    }
-    
+		Map<String, Object> projectObject = (Map<String, Object>) object;
+		String name = (String) projectObject.get("name");
+		String description = (String) projectObject.get("description");
+		String lastModifiedUser = (String) projectObject
+				.get("lastModifiedUser");
+		long createTimestamp = coerceToLong(projectObject
+				.get("createTimestamp"));
+		long lastModifiedTimestamp = coerceToLong(projectObject
+				.get("lastModifiedTimestamp"));
+
+		Project project = new Project(name);
+		project.setDescription(description);
+		project.setCreateTimestamp(createTimestamp);
+		project.setLastModifiedTimestamp(lastModifiedTimestamp);
+		project.setLastModifiedUser(lastModifiedUser);
+
+		List<Map<String, Object>> users = (List<Map<String, Object>>) projectObject
+				.get("users");
+
+		for (Map<String, Object> user : users) {
+			String userid = (String) user.get("userid");
+			Permission perm = new Permission();
+			List<String> list = (List<String>) user.get("permissions");
+			perm.setPermissionsByName(list);
+
+			project.setUserPermission(userid, perm);
+		}
+
+		return project;
+	}
+
+	private static long coerceToLong(Object obj) {
+		if (obj == null) {
+			return 0;
+		} else if (obj instanceof Integer) {
+			return (Integer) obj;
+		}
+
+		return (Long) obj;
+	}
+
 	public String getLastModifiedUser() {
 		return lastModifiedUser;
 	}
@@ -137,8 +151,8 @@ public class Project {
 	public void setLastModifiedUser(String lastModifiedUser) {
 		this.lastModifiedUser = lastModifiedUser;
 	}
-    
-    @Override
+
+	@Override
 	public int hashCode() {
 		final int prime = 31;
 		int result = 1;

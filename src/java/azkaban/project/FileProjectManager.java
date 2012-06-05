@@ -3,6 +3,7 @@ package azkaban.project;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.security.AccessControlException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
@@ -87,15 +88,26 @@ public class FileProjectManager implements ProjectManager {
     public List<Project> getProjects(User user) {
     	ArrayList<Project> array = new ArrayList<Project>();
     	for(Project project : projects.values()) {
-    		if (project.hasPermission(user, Type.READ)) {
+    		Permission perm = project.getUserPermission(user);
+    		if (perm.isPermissionSet(Type.ADMIN) || perm.isPermissionSet(Type.READ)) {
     			array.add(project);
     		}
     	}
     	return array;
     }
     
-    public Project getProject(String name, User user) {
-    	return projects.get(name);
+    public Project getProject(String name, User user) throws AccessControlException {
+    	Project project = projects.get(name);
+    	if (project != null) {
+    		Permission perm = project.getUserPermission(user);
+    		if (perm.isPermissionSet(Type.ADMIN) || perm.isPermissionSet(Type.READ)) {
+    			return project;
+    		}
+    		else {
+    			throw new AccessControlException("Permission denied. Do not have read access.");
+    		}
+    	}
+    	return null;
     }
     
     @Override

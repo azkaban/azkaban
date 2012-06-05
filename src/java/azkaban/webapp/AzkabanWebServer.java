@@ -318,8 +318,16 @@ public class AzkabanWebServer {
         Context root = new Context(server, "/", Context.SESSIONS);
 
         root.setResourceBase(staticDir);
-        root.addServlet(new ServletHolder(new DefaultServlet()), "/*");
-        root.addServlet(new ServletHolder(new IndexServlet()), "/index");
+        ServletHolder index = new ServletHolder(new IndexServlet());
+        root.addServlet(index, "/index");
+        root.addServlet(index, "/");
+        
+        ServletHolder staticServlet = new ServletHolder(new DefaultServlet());
+        root.addServlet(staticServlet, "/css/*");
+        root.addServlet(staticServlet, "/js/*");
+        root.addServlet(staticServlet, "/images/*");
+        root.addServlet(staticServlet, "/favicon.ico");
+        
         root.addServlet(new ServletHolder(new ProjectManagerServlet()), "/manager");
         root.setAttribute(AzkabanServletContextListener.AZKABAN_SERVLET_CONTEXT_KEY, app);
 

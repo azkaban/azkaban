@@ -2,8 +2,11 @@ package azkaban.user;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
+
+import azkaban.utils.Utils;
 
 public class Permission {
 	public enum Type {
@@ -83,17 +86,12 @@ public class Permission {
 			list.add(type.toString());
 			count++;
 		}
+
 		return list.toArray(new String[count]);
 	}
 	
 	public String toString() {
-		StringBuffer buffer = new StringBuffer();
-		for (Type perm: permissions) {
-			buffer.append(perm.toString());
-			buffer.append(",");
-		}
-		
-		return buffer.toString();
+		return Utils.flattenToString(permissions, ",");
 	}
 	
 	@Override

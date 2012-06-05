@@ -132,6 +132,12 @@ textarea {
   font-weight: bold;
 }
 
+.section-hd h2 span{
+  padding-left: 5px;
+  font-weight: normal;
+  font-size: 90%;
+}
+
 table {
   background-color: #fff;
   font-family: Arial;
@@ -229,7 +235,8 @@ tr:hover td {
 .btn1,
 .btn2,
 .btn3,
-.btn4 {
+.btn4,
+.btn5 {
   -moz-border-radius: 3px;
   -webkit-border-radius: 3px;
   border-radius: 3px;
@@ -256,10 +263,16 @@ tr:hover td {
   background: -webkit-gradient(linear, center top, center bottom, color-stop(0,#AFE47B), color-stop(5%,#8BD03F),color-stop(100%,#69B219));
 }
 
-.section-hd .btn1,
 .section-hd .btn4,
-.section-ft .btn1,
-.section-ft .btn4 {
+.section-hd .btn5,
+.section-ft .btn4, 
+.section-ft .btn5{
+  float: right;
+  margin-right: 10px;
+}
+
+.section-hd .btn1,
+.section-ft .btn1 {
   float: right;
   margin-right: 25px;
 }
@@ -296,6 +309,23 @@ tr:hover td {
   display: inline-block;
   font-weight: normal;
 }
+
+/* grey right */
+.btn5 {
+  background: #CECECE;
+  background: -moz-linear-gradient(top, #F2F2F2 0, #F2F2F2 1px, #E4E4E4 1px, #CECECE 100%);
+  background: -o-linear-gradient(top, #F2F2F2 0, #F2F2F2 1px, #E4E4E4 1px, #CECECE 100%);
+  background: -webkit-gradient(linear, left top, left bottom, color-stop(0,#F2F2F2), color-stop(5%,#F2F2F2), color-stop(5%,#E4E4E4), color-stop(100%,#CECECE));
+  background: linear-gradient(top, #F2F2F2 0, #F2F2F2 1px, #E4E4E4 1px, #CECECE 100%);
+  filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#E4E4E4', endColorstr='#CECECE',GradientType=0 );
+  border-color: #999;
+  color: #666;
+}
+.btn5:hover {
+  background: -moz-linear-gradient(center top , white 0pt, #ECECEC 100%) repeat scroll 0 0 transparent;
+  background: -webkit-gradient(linear, center top, center bottom, from(#FFF), to(#ECECEC));
+}
+
 /* confirm modal */
 .modal {
   display: none;
@@ -402,6 +432,8 @@ tr:hover td {
   background-color: #fff;
   border: 1px solid #9c9c9c;
   border-radius: 10px;
+  -moz-border-radius: 10px;
+
   overflow: hidden;
 }
 
@@ -444,15 +476,10 @@ tr:hover td {
   float: left;
   padding: 0 10px 6px 0;
   text-align: right;
-  width: 80px;
+  width: 100px;
 }
 
 .modal dd {
-  float: left;
-  padding-bottom: 6px;
-}
-
-.modal dd input {
   float: left;
   padding-bottom: 6px;
 }
@@ -698,6 +725,50 @@ tr:hover td {
 	-moz-border-radius: 4px;
 	border-radius: 4px;
 	top: 20px;
+}
+
+/*project manager page*/
+#project-summary {
+	margin-left: 30px;
+	margin-bottom: 10px;
+	width: 60%;
+}
+
+#project-users {
+	float: right;
+	margin-right: 30px;
+	margin-bottom: 10px;
+	width: 30%;
+}
+
+.summary-table {
+	font-size: 12px;
+	background: none;
+	border-style: none;
+	border-width: 0px;
+}
+.summary-table .first {
+	width: 100px;
+	font-weight: bold;
+}
+
+.summary-table td {
+	border-style: none;
+}
+
+.user-table {
+	font-size: 12px;
+	background: none;
+	border-style: none;
+	border-width: 0px;
+}
+.user-table .first {
+	width: 150px;
+	font-weight: bold;
+}
+
+.user-table td {
+	border-style: none;
 }
 
 /* old styles */

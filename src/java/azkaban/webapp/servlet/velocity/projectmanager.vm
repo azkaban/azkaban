@@ -8,7 +8,7 @@
     <script type="text/javascript" src="${context}/js/backbone-0.5.3-min.js"></script>
     <script type="text/javascript" src="${context}/js/jquery.simplemodal.js"></script>
     <script type="text/javascript" src="${context}/js/azkaban.nav.js"></script>
-    <script type="text/javascript" src="${context}/js/azkaban.job.view.js"></script>
+    <script type="text/javascript" src="${context}/js/azkaban.project.view.js"></script>
     <script type="text/javascript">
       var contextURL = "${context}";
       var currentTime = ${currentTime};
@@ -23,12 +23,64 @@
     <div class="messaging"><p id="messageClose">X</p><p id="message"></p></div>  
     
     <div class="content">
-      <div id="all-jobs-content">
-        <div class="section-hd">
-          <h2>Project</h2>
-        </div><!-- end .section-hd -->
+	  #if($errorMsg)
+    	  <div class="box-error-message">$errorMsg</div>
+      #else
+	      <div id="all-jobs-content">
+	        <div class="section-hd">
+	          <h2>Project <span>$project.name</span></h2>
+	          
+	          <a id="project-upload-btn" class="btn1 projectupload" href="#">Upload</a>
+	          <a id="project-permission-btn" class="btn5 projectpermission" href="#">Permissions</a>
+	        </div><!-- end .section-hd -->
+	      </div>
+
+         <div id="project-users">
+         	<table class="user-table">
+         		<tr><td class="first">Project Admins:</td><td>$admins</td></tr>
+         		<tr><td class="first">User ${user_id} Permissions:</td><td>$permissions.toString()</td></tr>
+         	</table>
+         </div>
+         <div id="project-summary">
+         	<table class="summary-table">
+         		<tr><td class="first">Name:</td><td>$project.name</td></tr>
+         		<tr><td class="first">Created Date:</td><td>$utils.formatDate($project.lastModifiedTimestamp)</td></tr>
+         		<tr><td class="first">Modified Date:</td><td>$utils.formatDate($project.createTimestamp)</td></tr>
+         		<tr><td class="first">Last Modified by:</td><td>$project.lastModifiedUser</td></tr>
+         		<tr><td class="first">Description:</td><td>$project.description</td></tr>
+         	</table>
+         </div>
+      #end
       </div>
-    <div class="content">
+    
+    <div id="upload-project" class="modal">
+    <h3>Upload Project Files</h3>
+      <div id="errorMsg" class="box-error-message">$errorMsg</div>
+      <div class="message">
+        <form id="upload-form" enctype="multipart/form-data" method="post" action="$!context/manager">
+          <fieldset>
+            <dl>
+	          <dt>Job Archive</dt>
+	          <dd><input id="file" name="file" class="file" type="file" onChange="changeFile()" /></dd>
+	          <input type="hidden" name="project" value="$project.name" />
+	          <input type="hidden" name="action" value="upload" />
+	        </dl>
+	      </fieldset>
+	    </form>
+	    
+      </div>
+      <div class="actions">
+        <a class="yes btn2" id="upload-btn" href="#">Upload</a>
+        <a class="no simplemodal-close btn3" href="#">Cancel</a>
+      </div>
+    </div>
+    <div id="invalid-session" class="modal">
+      <h3>Invalid Session</h3>
+      <p>Session has expired. Please re-login.</p>
+      <div class="actions">
+          <a class="yes btn2" id="login-btn" href="#">Re-login</a>
+      </div>
+    </div>
   </body>
 </html>
 

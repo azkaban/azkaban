@@ -24,6 +24,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.Collection;
 import java.util.Enumeration;
 import java.util.Random;
 import java.util.zip.ZipEntry;
@@ -147,4 +148,16 @@ public class Utils {
         }
     }
 
+    public static String flattenToString(Collection<?> collection, String delimiter) {
+    	StringBuffer buffer = new StringBuffer();
+    	for (Object obj: collection) {
+    		buffer.append(obj.toString());
+    		buffer.append(',');
+    	}
+    	
+    	if (buffer.length() > 0) {
+    		buffer.setLength(buffer.length() - 1);
+    	}
+    	return buffer.toString();
+    }
 }
