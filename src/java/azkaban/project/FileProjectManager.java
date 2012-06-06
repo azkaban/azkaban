@@ -124,6 +124,8 @@ public class FileProjectManager implements ProjectManager {
     	synchronized (project) {
     		logger.info("Uploading files to " + projectName);
     		
+    		
+    		// Do this if it succeeds
     		project.setLastModifiedTimestamp(System.currentTimeMillis());
     		project.setLastModifiedUser(uploader.getUserId());
     	}

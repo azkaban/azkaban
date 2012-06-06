@@ -46,4 +46,6 @@ azkaban.UploadProjectView= Backbone.View.extend({
 $(function() {
 	projectView = new azkaban.ProjectView({el:$( '#all-jobs-content'), successMsg: successMessage, errorMsg: errorMessage });
 	uploadView = new azkaban.UploadProjectView({el:$('#upload-project')});
+	// Setting up the project tabs
+
 });

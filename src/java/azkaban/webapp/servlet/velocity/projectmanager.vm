@@ -3,12 +3,12 @@
   <head>
     #parse( "azkaban/webapp/servlet/velocity/style.vm" )
     <script type="text/javascript" src="${context}/js/jquery/jquery.js"></script>    
+    <script type="text/javascript" src="${context}/js/jqueryui/jquery-ui.custom.min.js"></script>   
     <script type="text/javascript" src="${context}/js/namespace.js"></script>
     <script type="text/javascript" src="${context}/js/underscore-1.2.1-min.js"></script>
     <script type="text/javascript" src="${context}/js/backbone-0.5.3-min.js"></script>
     <script type="text/javascript" src="${context}/js/jquery.simplemodal.js"></script>
     <script type="text/javascript" src="${context}/js/azkaban.nav.js"></script>
-    <script type="text/javascript" src="${context}/js/azkaban.project.view.js"></script>
     <script type="text/javascript">
       var contextURL = "${context}";
       var currentTime = ${currentTime};
@@ -49,6 +49,9 @@
          		<tr><td class="first">Last Modified by:</td><td>$project.lastModifiedUser</td></tr>
          		<tr><td class="first">Description:</td><td>$project.description</td></tr>
          	</table>
+         </div>
+         <div id="project-tabs">
+
          </div>
       #end
       </div>

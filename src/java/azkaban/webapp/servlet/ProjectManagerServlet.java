@@ -152,6 +152,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
         else {
 	    	try {
 	            File jobDir = extractFile(item);
+	            
 	        } catch (Exception e) {
 	            logger.info("Installation Failed.", e);
 	            setErrorMessageInCookie(resp, "Installation Failed.");
