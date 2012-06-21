@@ -5,18 +5,24 @@ public class Edge {
         FAILED, SUCCEEDED, WAITING, CYCLE
     }
 
-    private final Node from;
-    private final Node to;
+    private final Node source;
+    private final Node target;
 
     private State state = State.WAITING;
     
     public Edge(Node from, Node to) {
-        this.from = from;
-        this.to = to;
+        this.source = from;
+        this.target = to;
     }
 
+    public Edge(Edge clone) {
+    	this.source = clone.source;
+    	this.target = clone.target;
+    	this.state = clone.state;
+    }
+    
     public String getId() {
-        return from.getId() + ">>" + to.getId();
+        return getSourceId() + ">>" + getTargetId();
     }
 
     public State getState() {
@@ -27,11 +33,19 @@ public class Edge {
         this.state = state;
     }
 
-    public Node getFrom() {
-        return from;
+    public Node getSource() {
+        return source;
     }
 
-    public Node getTo() {
-        return to;
+    public Node getTarget() {
+        return target;
     }
+    
+	public String getSourceId() {
+		return source == null? null : source.getId();
+	}
+
+	public String getTargetId() {
+		return target == null? null : target.getId();
+	}
 }

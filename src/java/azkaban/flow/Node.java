@@ -1,8 +1,5 @@
 package azkaban.flow;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import azkaban.utils.Props;
 
 public class Node {
@@ -11,9 +8,7 @@ public class Node {
     }
 
     private final String id;
-    private List<Edge> outEdges = new ArrayList<Edge>();
-    private List<Edge> inEdges = new ArrayList<Edge>();
-    private List<String> missingDependency;
+
     private State state = State.WAITING;
     private Props props;
     
@@ -21,12 +16,14 @@ public class Node {
         this.id = id;
     }
 
-    public void addOutEdges(Edge edge) {
-        outEdges.add(edge);
-    }
-
-    public void addInEdges(Edge edge) {
-        inEdges.add(edge);
+    /**
+     * Clones nodes
+     * @param node
+     */
+    public Node(Node clone) {
+    	this.id = clone.id;
+    	this.props = clone.props;
+    	this.state = clone.state;
     }
 
     public String getId() {
@@ -47,25 +44,5 @@ public class Node {
 
     public void setProps(Props props) {
         this.props = props;
-    }
-
-    public List<Edge> getOutEdges() {
-        return outEdges;
-    }
-
-    public List<Edge> getInEdges() {
-        return inEdges;
-    }
-
-    public void addMissingDependency(String dependency) {
-        if (missingDependency==null) {
-            missingDependency = new ArrayList<String>();
-        }
-
-        missingDependency.add(dependency);
-    }
-
-    public boolean hasMissingDependency() {
-        return missingDependency != null && missingDependency.size() > 0;
     }
 }
