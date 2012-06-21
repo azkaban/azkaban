@@ -143,6 +143,9 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
     	User user = session.getUser();
     	String projectName = (String) multipart.get("project");
         FileItem item = (FileItem) multipart.get("file");
+        String forceStr = (String) multipart.get("force");
+        boolean force = forceStr == null ? false : Boolean.parseBoolean(forceStr);
+        
         if (projectName == null || projectName.isEmpty()) {
         	setErrorMessageInCookie(resp, "No project name found.");
         }
@@ -151,11 +154,13 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
         }
         else {
 	    	try {
-	            File jobDir = extractFile(item);
-	            
-	        } catch (Exception e) {
+	            File projectDir = extractFile(item);
+	            manager.uploadProject(projectName, projectDir, user, force);
+	            setSuccessMessageInCookie(resp, "Project Uploaded");
+	    	} 
+	    	catch (Exception e) {
 	            logger.info("Installation Failed.", e);
-	            setErrorMessageInCookie(resp, "Installation Failed.");
+	    		setErrorMessageInCookie(resp, "Installation Failed.\n" + e.getMessage());
 	        }
 
 	    	resp.sendRedirect(req.getRequestURI() + "?project=" + projectName);

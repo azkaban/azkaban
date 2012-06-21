@@ -5,14 +5,19 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.security.AccessControlException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.log4j.Logger;
 
+import azkaban.flow.ErrorEdge;
+import azkaban.flow.Flow;
 import azkaban.user.Permission;
 import azkaban.user.Permission.Type;
 import azkaban.user.User;
+import azkaban.utils.FlowUtils;
 import azkaban.utils.JSONUtils;
 import azkaban.utils.Props;
 
@@ -110,7 +115,8 @@ public class FileProjectManager implements ProjectManager {
     	return null;
     }
     
-    public void uploadProject(String projectName, File dir, User uploader) throws ProjectManagerException {
+    public void uploadProject(String projectName, File dir, User uploader, boolean force) throws ProjectManagerException {
+		logger.info("Uploading files to " + projectName);
     	Project project = projects.get(projectName);
     	
     	if (project == null) {
@@ -120,15 +126,29 @@ public class FileProjectManager implements ProjectManager {
 			throw new AccessControlException("Permission denied. Do not have write access.");
 		}
     	
-    	// We synchronize on project so that we don't collide when uploading.
-    	synchronized (project) {
-    		logger.info("Uploading files to " + projectName);
-    		
-    		
-    		// Do this if it succeeds
-    		project.setLastModifiedTimestamp(System.currentTimeMillis());
-    		project.setLastModifiedUser(uploader.getUserId());
-    	}
+		Map<String, Flow> flows = new HashMap<String,Flow>();
+		List<String> errors = new ArrayList<String>();
+		FlowUtils.loadProject(dir, flows, errors);
+		
+		// We install only if the project is not forced install or has no errors
+		if (force || errors.isEmpty()) {
+	    	// We synchronize on project so that we don't collide when uploading.
+	    	synchronized (project) {
+	    		logger.info("Uploading files to " + projectName);
+	    		project.setLastModifiedTimestamp(System.currentTimeMillis());
+	    		project.setLastModifiedUser(uploader.getUserId());
+	    	}
+		}
+		else {
+			logger.info("Errors found loading project " + projectName);
+			StringBuffer bufferErrors = new StringBuffer();
+			for(String error : errors) {
+				bufferErrors.append(error);
+				bufferErrors.append("\n");
+			}
+			throw new ProjectManagerException(bufferErrors.toString());
+		}
+		
     }
     
     @Override

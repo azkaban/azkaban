@@ -14,6 +14,7 @@ public class Node {
     
     public Node(String id, Props props) {
         this.id = id;
+        this.props = props;
     }
 
     /**

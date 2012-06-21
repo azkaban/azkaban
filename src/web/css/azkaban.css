@@ -634,6 +634,13 @@ tr:hover td {
   font-weight: bold;
 }
 
+.box-success-message {
+  background-color: #4e911e;
+  margin: 0px 2px;
+  padding: 2px 12px;
+  color: white;
+}
+
 .box-error-message {
   background-color: #C00000;
   margin: 0px 2px;

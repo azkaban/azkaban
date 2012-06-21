@@ -61,7 +61,7 @@ public class Flow {
     	String target = edge.getTargetId();
 
     	if (edge instanceof ErrorEdge) {
-    		errors.add(edge);
+    		addError(edge);
     	}
 
     	Set<Edge> sourceSet = getEdgeSet(sourceEdges, source);

@@ -241,11 +241,11 @@ public abstract class AbstractAzkabanServlet extends HttpServlet {
         page.add("context", req.getContextPath());
         
         String errorMsg = getErrorMessageFromCookie(req);
-        page.add("error_message", errorMsg == null || errorMsg.isEmpty()? "null": "\"" + errorMsg + "\"");
+        page.add("error_message", errorMsg == null || errorMsg.isEmpty()? "null": errorMsg);
         setErrorMessageInCookie(resp, null);
         
         String successMsg = getSuccessMessageFromCookie(req);
-        page.add("success_message", successMsg == null || successMsg.isEmpty()? "null": "\"" + successMsg + "\"");
+        page.add("success_message", successMsg == null || successMsg.isEmpty()? "null":  successMsg);
         setSuccessMessageInCookie(resp, null);
 
         

@@ -21,27 +21,31 @@ public class FlowUtils {
 	private static final String DEPENDENCIES = "dependencies";
 	private static final String JOB_SUFFIX = ".job";
 	
-	public static Map<String, Flow> loadProject(File dir) {
+	public static void loadProject(File dir, Map<String, Flow> output, List<String> projectErrors) {
 		String base = dir.getAbsolutePath();
 		
 		// Load all the project and job files.
 		Map<String,Node> jobMap = new HashMap<String,Node>();
 		Set<String> duplicateJobs = new HashSet<String>();
-		List<String> errors = new ArrayList<String>();
+		Set<String> errors = new HashSet<String>();
 		loadProjectFromDir(base, dir, jobMap, duplicateJobs, errors);
 		
 		// Create edge dependency sets.
 		Map<String, Set<Edge>> dependencies = new HashMap<String, Set<Edge>>();
-		resolveDependencies(jobMap, duplicateJobs, dependencies);
+		resolveDependencies(jobMap, duplicateJobs, dependencies, errors);
 
-		HashMap<String, Flow> flows = buildFlowsFromDependencies(jobMap, dependencies);
-		return flows;
+		HashMap<String, Flow> flows = buildFlowsFromDependencies(jobMap, dependencies, errors);
+		projectErrors.addAll(errors);
+	}
+	
+	public static void toJSONStream(Flow flow) {
+		
 	}
 	
 	/**
 	 * Loads all the files, prop and job files. Props are assigned to the job nodes.
 	 */
-	private static void loadProjectFromDir(String baseDir, File dir, Map<String, Node> jobMap, Set<String> duplicateJobs, List<String> errors) {
+	private static void loadProjectFromDir(String baseDir, File dir, Map<String, Node> jobMap, Set<String> duplicateJobs, Set<String> errors) {
 		// Load all property files
 		File[] propertyFiles = dir.listFiles(new SuffixFilter(PROPERTY_SUFFIX));
 		Props parent = null;
@@ -61,6 +65,7 @@ public class FlowUtils {
 
 				if (!duplicateJobs.contains(jobName)) {
 					if (jobMap.containsKey(jobName)) {
+						errors.add("Duplicate job names found '" + jobName + "'.");
 						duplicateJobs.add(jobName);
 						jobMap.remove(jobName);
 					}
@@ -84,12 +89,12 @@ public class FlowUtils {
 		
 	}
 	
-	private static void resolveDependencies(Map<String, Node> jobMap, Set<String> duplicateJobs, Map<String, Set<Edge>> nodeDependencies) {
+	private static void resolveDependencies(Map<String, Node> jobMap, Set<String> duplicateJobs, Map<String, Set<Edge>> nodeDependencies, Set<String> errors) {
 		// Add all the in edges and out edges. Catch bad dependencies and self referrals. Also collect list of nodes who are parents.
 		for (Node node: jobMap.values()) {
 			List<String> dependencyList = node.getProps().getStringList(DEPENDENCIES, (List<String>)null);
 			
-			if (duplicateJobs != null) {
+			if (dependencyList != null) {
 				Set<Edge> dependencies = nodeDependencies.get(node.getId());
 				if (dependencies == null) {
 					dependencies = new HashSet<Edge>();
@@ -99,18 +104,22 @@ public class FlowUtils {
 							continue;
 						}
 						
+						dependencyName = dependencyName.trim();
 						Node dependencyNode = jobMap.get(dependencyName);
 						if (dependencyNode == null) {
 							if (duplicateJobs.contains(dependencyName)) {
 								dependencies.add(new ErrorEdge(dependencyName, node, "Ambiguous Dependency. Duplicates found."));
+								errors.add(node.getId() + " has ambiguous dependency " + dependencyName);
 							}
 							else {
 								dependencies.add(new ErrorEdge(dependencyName, node, "Dependency not found."));
+								errors.add(node.getId() + " cannot find dependency " + dependencyName);
 							}
 						}
 						else if (dependencyNode == node) {
 							// We have a self cycle
 							dependencies.add(new ErrorEdge(dependencyName, node, "Self cycle found."));
+							errors.add(node.getId() + " has a self cycle");
 						}
 						else {
 							dependencies.add(new Edge(dependencyNode, node));
@@ -126,7 +135,7 @@ public class FlowUtils {
 		
 	}
 	
-	private static HashMap<String, Flow> buildFlowsFromDependencies(Map<String, Node> nodes, Map<String, Set<Edge>> nodeDependencies) {
+	private static HashMap<String, Flow> buildFlowsFromDependencies(Map<String, Node> nodes, Map<String, Set<Edge>> nodeDependencies, Set<String> errors) {
 		// Find all root nodes by finding ones without dependents.
 		HashSet<String> nonRootNodes = new HashSet<String>();
 		for (Set<Edge> edges: nodeDependencies.values()) {
@@ -144,7 +153,7 @@ public class FlowUtils {
 			if (!nonRootNodes.contains(base)) {
 				Flow flow = new Flow(base.getId());
 				flow.addBaseNode(base);
-				constructFlow(flow, base, nodes, nodeDependencies, visitedNodes);
+				constructFlow(flow, base, nodes, nodeDependencies, visitedNodes, errors);
 				flows.put(base.getId(), flow);
 			}
 		}
@@ -152,7 +161,7 @@ public class FlowUtils {
 		return flows;
 	}
 	
-	private static void constructFlow(Flow flow, Node node, Map<String, Node> nodes, Map<String, Set<Edge>> nodeDependencies, Set<String> visited) {
+	private static void constructFlow(Flow flow, Node node, Map<String, Node> nodes, Map<String, Set<Edge>> nodeDependencies, Set<String> visited, Set<String> errors) {
 		visited.add(node.getId());
 		flow.addNode(node);
 		Set<Edge> dependencies = nodeDependencies.get(node.getId());
@@ -165,13 +174,14 @@ public class FlowUtils {
 				else if (visited.contains(edge.getSourceId())){
 					// We have a cycle. We set it as an error edge
 					edge = new ErrorEdge(edge.getSourceId(), node, "Cyclical dependencies found.");
+					errors.add("Cyclical dependency found at " + edge.getId());
 					flow.addEdge(edge);
 				}
 				else {
 					// This should not be null
 					flow.addEdge(edge);
 					Node fromNode = edge.getSource();
-					constructFlow(flow, fromNode, nodes, nodeDependencies, visited);					
+					constructFlow(flow, fromNode, nodes, nodeDependencies, visited, errors);					
 				}
 			}
 		}

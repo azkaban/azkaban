@@ -9,12 +9,13 @@
     <script type="text/javascript" src="${context}/js/backbone-0.5.3-min.js"></script>
     <script type="text/javascript" src="${context}/js/jquery.simplemodal.js"></script>
     <script type="text/javascript" src="${context}/js/azkaban.nav.js"></script>
+    <script type="text/javascript" src="${context}/js/azkaban.project.view.js"></script>
     <script type="text/javascript">
       var contextURL = "${context}";
       var currentTime = ${currentTime};
       var timezone = "${timezone}";
-      var errorMessage = ${error_message};
-      var successMessage = ${success_message};
+      var errorMessage = "${error_message}";
+      var successMessage = "${success_message}";
     </script>
   </head>
   <body>
@@ -26,6 +27,11 @@
 	  #if($errorMsg)
     	  <div class="box-error-message">$errorMsg</div>
       #else
+      	  #if($error_message != "null")
+    	  	<div class="box-error-message">$error_message</div>
+    	  #elseif($success_message != "null")
+    	  	<div class="box-success-message">$success_message</div>
+    	  #end
 	      <div id="all-jobs-content">
 	        <div class="section-hd">
 	          <h2>Project <span>$project.name</span></h2>

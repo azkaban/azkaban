@@ -14,7 +14,7 @@ public interface ProjectManager {
     
     public Project getProject(String name, User user) throws AccessControlException;
     
-    public void uploadProject(String projectName, File projectDir, User uploader) throws ProjectManagerException;
+    public void uploadProject(String projectName, File projectDir, User uploader, boolean force) throws ProjectManagerException;
     
     public Project createProject(String projectName, String description, User creator) throws ProjectManagerException;
     
