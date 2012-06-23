@@ -10,6 +10,7 @@ public class Node {
     private final String id;
 
     private State state = State.WAITING;
+
     private Props props;
     
     public Node(String id, Props props) {

@@ -19,6 +19,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.apache.commons.fileupload.FileItem;
 import org.apache.commons.fileupload.servlet.ServletFileUpload;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.log4j.Logger;
 
@@ -145,7 +146,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
         FileItem item = (FileItem) multipart.get("file");
         String forceStr = (String) multipart.get("force");
         boolean force = forceStr == null ? false : Boolean.parseBoolean(forceStr);
-        
+        File projectDir = null;
         if (projectName == null || projectName.isEmpty()) {
         	setErrorMessageInCookie(resp, "No project name found.");
         }
@@ -154,7 +155,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
         }
         else {
 	    	try {
-	            File projectDir = extractFile(item);
+	            projectDir = extractFile(item);
 	            manager.uploadProject(projectName, projectDir, user, force);
 	            setSuccessMessageInCookie(resp, "Project Uploaded");
 	    	} 
@@ -163,6 +164,9 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 	    		setErrorMessageInCookie(resp, "Installation Failed.\n" + e.getMessage());
 	        }
 
+	    	if (projectDir != null && projectDir.exists() ) {
+	    		FileUtils.deleteDirectory(projectDir);
+	    	}
 	    	resp.sendRedirect(req.getRequestURI() + "?project=" + projectName);
         }
     }

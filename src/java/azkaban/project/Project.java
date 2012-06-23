@@ -15,8 +15,9 @@ public class Project {
 	private long createTimestamp;
 	private long lastModifiedTimestamp;
 	private String lastModifiedUser;
+	private String source;
 	private HashMap<String, Permission> userToPermission = new HashMap<String, Permission>();
-
+	
 	public Project(String name) {
 		this.name = name;
 	}
@@ -88,6 +89,10 @@ public class Project {
 		projectObject.put("createTimestamp", createTimestamp);
 		projectObject.put("lastModifiedTimestamp", lastModifiedTimestamp);
 		projectObject.put("lastModifiedUser", lastModifiedUser);
+		
+		if (source != null) {
+			projectObject.put("source", source);
+		}
 
 		ArrayList<Map<String, Object>> users = new ArrayList<Map<String, Object>>();
 		for (Map.Entry<String, Permission> entry : userToPermission.entrySet()) {
@@ -112,13 +117,19 @@ public class Project {
 				.get("createTimestamp"));
 		long lastModifiedTimestamp = coerceToLong(projectObject
 				.get("lastModifiedTimestamp"));
-
+		String source = (String)projectObject.get("source");
+		
 		Project project = new Project(name);
 		project.setDescription(description);
 		project.setCreateTimestamp(createTimestamp);
 		project.setLastModifiedTimestamp(lastModifiedTimestamp);
 		project.setLastModifiedUser(lastModifiedUser);
 
+		if (source != null) {
+			project.setSource(source);
+		}
+
+		
 		List<Map<String, Object>> users = (List<Map<String, Object>>) projectObject
 				.get("users");
 
@@ -207,5 +218,13 @@ public class Project {
 		} else if (!userToPermission.equals(other.userToPermission))
 			return false;
 		return true;
+	}
+
+	public String getSource() {
+		return source;
+	}
+
+	public void setSource(String source) {
+		this.source = source;
 	}
 }

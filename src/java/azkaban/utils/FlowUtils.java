@@ -21,37 +21,38 @@ public class FlowUtils {
 	private static final String DEPENDENCIES = "dependencies";
 	private static final String JOB_SUFFIX = ".job";
 	
-	public static void loadProject(File dir, Map<String, Flow> output, List<String> projectErrors) {
-		String base = dir.getAbsolutePath();
-		
+	public static void loadProject(File dir, Map<String, Flow> output, List<Props> propsList, List<String> projectErrors) {
 		// Load all the project and job files.
 		Map<String,Node> jobMap = new HashMap<String,Node>();
 		Set<String> duplicateJobs = new HashSet<String>();
 		Set<String> errors = new HashSet<String>();
-		loadProjectFromDir(base, dir, jobMap, duplicateJobs, errors);
+		loadProjectFromDir(dir.getPath(), dir, jobMap, propsList, duplicateJobs, errors);
 		
 		// Create edge dependency sets.
 		Map<String, Set<Edge>> dependencies = new HashMap<String, Set<Edge>>();
 		resolveDependencies(jobMap, duplicateJobs, dependencies, errors);
 
 		HashMap<String, Flow> flows = buildFlowsFromDependencies(jobMap, dependencies, errors);
+		output.putAll(flows);
 		projectErrors.addAll(errors);
-	}
-	
-	public static void toJSONStream(Flow flow) {
-		
 	}
 	
 	/**
 	 * Loads all the files, prop and job files. Props are assigned to the job nodes.
 	 */
-	private static void loadProjectFromDir(String baseDir, File dir, Map<String, Node> jobMap, Set<String> duplicateJobs, Set<String> errors) {
+	private static void loadProjectFromDir(String base, File dir, Map<String, Node> jobMap, List<Props> propsList, Set<String> duplicateJobs, Set<String> errors) {
+
 		// Load all property files
 		File[] propertyFiles = dir.listFiles(new SuffixFilter(PROPERTY_SUFFIX));
 		Props parent = null;
 		for (File file: propertyFiles) {
 			try {
 				parent = new Props(parent, file);
+				String relative = getRelativeFilePath(base, file.getPath());
+				parent.setSource(relative);
+				
+				System.out.println("Adding " + relative);
+				propsList.add(parent);
 			} catch (IOException e) {
 				errors.add("Error loading properties " + file.getName() + ":" + e.getMessage());
 			}
@@ -61,8 +62,7 @@ public class FlowUtils {
 		File[] jobFiles = dir.listFiles(new SuffixFilter(JOB_SUFFIX));
 		for (File file: jobFiles) {
 			try {
-				String jobName = getJobName(file, JOB_SUFFIX);
-
+				String jobName = getNameWithoutExtension(file);
 				if (!duplicateJobs.contains(jobName)) {
 					if (jobMap.containsKey(jobName)) {
 						errors.add("Duplicate job names found '" + jobName + "'.");
@@ -71,8 +71,11 @@ public class FlowUtils {
 					}
 					else {
 						Props prop = new Props(parent, file);
+						String relative = getRelativeFilePath(base, file.getPath());
+						prop.setSource(relative);
+						
 						Node node = new Node(jobName, prop);
-					
+
 						jobMap.put(jobName, node);
 					}
 				}
@@ -84,7 +87,7 @@ public class FlowUtils {
 		
 		File[] subDirs = dir.listFiles(DIR_FILTER);
 		for (File file: subDirs) {
-			loadProjectFromDir(baseDir, file, jobMap, duplicateJobs, errors);
+			loadProjectFromDir(base, file, jobMap, propsList, duplicateJobs, errors);
 		}
 		
 	}
@@ -189,9 +192,15 @@ public class FlowUtils {
 		visited.remove(node.getId());
 	}
 	
-	private static String getJobName(File file, String suffix) {
+	private static String getNameWithoutExtension(File file) {
 		String filename = file.getName();
-		return filename.substring(0, filename.length() - JOB_SUFFIX.length());
+		int index = filename.lastIndexOf('.');
+		
+		return index < 0 ? filename : filename.substring(0, index);
+	}
+	
+	private static String getRelativeFilePath(String basePath, String filePath) {
+		return filePath.substring(basePath.length() + 1);
 	}
 
 	private static class DirFilter implements FileFilter {

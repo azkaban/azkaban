@@ -11,6 +11,8 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.log4j.Logger;
+import org.joda.time.format.DateTimeFormat;
+import org.joda.time.format.DateTimeFormatter;
 
 import azkaban.flow.ErrorEdge;
 import azkaban.flow.Flow;
@@ -28,7 +30,10 @@ import azkaban.utils.Props;
  */
 public class FileProjectManager implements ProjectManager {
 	public static final String DIRECTORY_PARAM = "file.project.loader.path";
+	private static final DateTimeFormatter FILE_DATE_FORMAT = DateTimeFormat.forPattern("yyyy-MM-dd-HH:mm.ss.SSS");
 	private static final String PROPERTIES_FILENAME = "project.json";
+	private static final String PROJECT_DIRECTORY = "src";
+	private static final String FLOW_EXTENSION = ".flow";
     private static final Logger logger = Logger.getLogger(FileProjectManager.class);
     private ConcurrentHashMap<String, Project> projects = new ConcurrentHashMap<String, Project>();
 
@@ -128,13 +133,34 @@ public class FileProjectManager implements ProjectManager {
     	
 		Map<String, Flow> flows = new HashMap<String,Flow>();
 		List<String> errors = new ArrayList<String>();
-		FlowUtils.loadProject(dir, flows, errors);
+		List<Props> propsList = new ArrayList<Props>();
+		FlowUtils.loadProject(dir, flows, propsList, errors);
+		
+    	File projectPath = new File(projectDirectory, projectName);
+		File installDir = new File(projectPath, FILE_DATE_FORMAT.print(System.currentTimeMillis()));
+		if (!installDir.mkdir()) {
+			throw new ProjectManagerException("Cannot create directory in " + projectDirectory);
+		}
+		
+		for (Flow flow: flows.values()) {
+	    	try {
+				writeFlowFile(installDir, flow);
+			} catch (IOException e) {
+	    		throw new ProjectManagerException(
+	    				"Project directory " + projectName + 
+	    				" cannot be created in " + projectDirectory, e);
+			}
+		}
+		
+    	File destDirectory = new File(installDir, PROJECT_DIRECTORY);
+		dir.renameTo(destDirectory);
 		
 		// We install only if the project is not forced install or has no errors
 		if (force || errors.isEmpty()) {
 	    	// We synchronize on project so that we don't collide when uploading.
 	    	synchronized (project) {
 	    		logger.info("Uploading files to " + projectName);
+	    		project.setSource(projectDirectory.getName());
 	    		project.setLastModifiedTimestamp(System.currentTimeMillis());
 	    		project.setLastModifiedUser(uploader.getUserId());
 	    	}
@@ -146,6 +172,7 @@ public class FileProjectManager implements ProjectManager {
 				bufferErrors.append(error);
 				bufferErrors.append("\n");
 			}
+			
 			throw new ProjectManagerException(bufferErrors.toString());
 		}
 		
@@ -200,10 +227,43 @@ public class FileProjectManager implements ProjectManager {
     	return project;
     }
     
-    private void writeProjectFile(File directory, Project project) throws IOException {
+    private synchronized void writeProjectFile(File directory, Project project) throws IOException {
     	Object object = project.toObject();
-    	File outputFile = new File(directory, PROPERTIES_FILENAME);
-    	logger.info("Writing project file " + outputFile);
+    	File tmpFile = File.createTempFile("project-",".json", directory);
+
+    	if (tmpFile.exists()) {
+    		tmpFile.delete();
+    	}
+
+    	logger.info("Writing project file " + tmpFile);
+    	String output = JSONUtils.toJSON(object, true);
+    	
+    	FileWriter writer = new FileWriter(tmpFile);
+    	try {
+    		writer.write(output);
+    	} catch (IOException e) {
+    		if (writer != null) {
+    			writer.close();
+    		}
+    		
+    		throw e;
+    	}
+    	writer.close();
+
+    	File projectFile = new File(directory, PROPERTIES_FILENAME);
+    	File swapFile = new File(directory, PROPERTIES_FILENAME + "_old");
+    	
+    	projectFile.renameTo(swapFile);
+    	tmpFile.renameTo(projectFile);
+    	swapFile.delete();
+
+    }
+    
+    private void writeFlowFile(File directory, Flow flow) throws IOException {
+		Object object = flow.toObject();
+    	String filename = flow.getId() + FLOW_EXTENSION;
+    	File outputFile = new File(directory, filename);
+    	logger.info("Writing flow file " + outputFile);
     	String output = JSONUtils.toJSON(object, true);
     	
     	FileWriter writer = new FileWriter(outputFile);
