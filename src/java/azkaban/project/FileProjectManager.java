@@ -1,11 +1,13 @@
 package azkaban.project;
 
 import java.io.File;
+import java.io.FileFilter;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.security.AccessControlException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -14,7 +16,6 @@ import org.apache.log4j.Logger;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 
-import azkaban.flow.ErrorEdge;
 import azkaban.flow.Flow;
 import azkaban.user.Permission;
 import azkaban.user.Permission.Type;
@@ -36,6 +37,10 @@ public class FileProjectManager implements ProjectManager {
 	private static final String FLOW_EXTENSION = ".flow";
     private static final Logger logger = Logger.getLogger(FileProjectManager.class);
     private ConcurrentHashMap<String, Project> projects = new ConcurrentHashMap<String, Project>();
+    
+    // We store the flows for projects in the ProjectManager instead of the Project so we can employ different 
+    // loading/caching techniques.
+    private HashMap<String, Map<String, Flow>> projectFlows = new HashMap<String, Map<String, Flow>>();
 
 	private File projectDirectory;
 	
@@ -86,6 +91,41 @@ public class FileProjectManager implements ProjectManager {
     				Project project = Project.projectFromObject(obj);
     				logger.info("Loading project " + project.getName());
     				projects.put(project.getName(), project);
+    			
+    				String source = project.getSource();
+    				if (source == null) {
+    					logger.info(project.getName() + ": No flows uploaded");
+    					return;
+    				}
+    				
+    				File projectDir = new File(dir, source);
+    				if (!projectDir.exists()) {
+    					logger.error("ERROR project source dir " + projectDir + " doesn't exist.");
+    				}
+    				else if (!projectDir.isDirectory()) {
+    					logger.error("ERROR project source dir " + projectDir + " is not a directory.");
+    				}
+    				else {
+    					File projectSourceDir = new File(projectDir, PROJECT_DIRECTORY);
+    					FileResourceLoader loader = new FileResourceLoader(projectSourceDir);
+    					File[] flowFiles = projectDir.listFiles(new SuffixFilter(FLOW_EXTENSION));
+    					Map<String, Flow> flowMap = new LinkedHashMap<String, Flow>();
+    					for (File flowFile: flowFiles) {
+							Object objectizedFlow = null;
+    						try {
+    							objectizedFlow = JSONUtils.parseJSONFromFile(flowFile);
+							} catch (IOException e) {
+								logger.error("Error parsing flow file " + flowFile.toString());
+							}
+    						
+    						//Recreate Flow
+    						Flow flow = Flow.flowFromObject(objectizedFlow, loader);
+    						logger.debug("Loaded flow " + project.getName() + ": " + flow.getId());
+    						flowMap.put(flow.getId(), flow);
+    					}
+    					
+    					projectFlows.put(project.getName(), flowMap);
+    				}
     			}
     		}
     	}
@@ -106,7 +146,7 @@ public class FileProjectManager implements ProjectManager {
     	return array;
     }
     
-    public Project getProject(String name, User user) throws AccessControlException {
+    public Project getProject(String name, User user) {
     	Project project = projects.get(name);
     	if (project != null) {
     		Permission perm = project.getUserPermission(user);
@@ -133,14 +173,13 @@ public class FileProjectManager implements ProjectManager {
     	
 		Map<String, Flow> flows = new HashMap<String,Flow>();
 		List<String> errors = new ArrayList<String>();
-		List<Props> propsList = new ArrayList<Props>();
-		FlowUtils.loadProject(dir, flows, propsList, errors);
+		FlowUtils.loadProjectFlows(dir, flows, errors);
 		
     	File projectPath = new File(projectDirectory, projectName);
 		File installDir = new File(projectPath, FILE_DATE_FORMAT.print(System.currentTimeMillis()));
 		if (!installDir.mkdir()) {
 			throw new ProjectManagerException("Cannot create directory in " + projectDirectory);
-		}
+		}	
 		
 		for (Flow flow: flows.values()) {
 	    	try {
@@ -160,10 +199,19 @@ public class FileProjectManager implements ProjectManager {
 	    	// We synchronize on project so that we don't collide when uploading.
 	    	synchronized (project) {
 	    		logger.info("Uploading files to " + projectName);
-	    		project.setSource(projectDirectory.getName());
+	    		project.setSource(installDir.getName());
 	    		project.setLastModifiedTimestamp(System.currentTimeMillis());
 	    		project.setLastModifiedUser(uploader.getUserId());
+	    		projectFlows.put(projectName, flows);
 	    	}
+	    	
+	    	try {
+				writeProjectFile(projectPath, project);
+			} catch (IOException e) {
+	    		throw new ProjectManagerException(
+	    				"Project directory " + projectName + 
+	    				" cannot be created in " + projectDirectory, e);
+			}
 		}
 		else {
 			logger.info("Errors found loading project " + projectName);
@@ -282,5 +330,27 @@ public class FileProjectManager implements ProjectManager {
 	@Override
 	public synchronized Project removeProject(String projectName, User user) {
 		return null;
+	}
+
+	@Override
+	public List<Flow> getProjectFlows(String projectName, User user) throws ProjectManagerException {
+		
+		
+		return null;
+	}
+
+	private static class SuffixFilter implements FileFilter {
+		private String suffix;
+		
+		public SuffixFilter(String suffix) {
+			this.suffix = suffix;
+		}
+
+		@Override
+		public boolean accept(File pathname) {
+			String name = pathname.getName();
+			
+			return pathname.isFile() && !pathname.isHidden() && name.length() > suffix.length() && name.endsWith(suffix);
+		}
 	}
 }

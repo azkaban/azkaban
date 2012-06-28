@@ -12,7 +12,7 @@ public class Node {
     private State state = State.WAITING;
 
     private Props props;
-    
+
     public Node(String id, Props props) {
         this.id = id;
         this.props = props;
@@ -39,7 +39,7 @@ public class Node {
     public void setState(State state) {
         this.state = state;
     }
-
+    
     public Props getProps() {
         return props;
     }

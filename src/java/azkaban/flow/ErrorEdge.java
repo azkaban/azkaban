@@ -27,6 +27,13 @@ public class ErrorEdge extends Edge {
 		this.error = error;
 	}
 	
+	public ErrorEdge(String source, String target, String error) {
+		super(null, null);
+		this.targetId = target;
+		this.sourceId = source;
+		this.error = error;
+	}
+	
 	@Override
 	public String getSourceId() {
 		return sourceId;

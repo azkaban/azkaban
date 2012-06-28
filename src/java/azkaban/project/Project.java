@@ -2,6 +2,7 @@ package azkaban.project;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 
@@ -128,7 +129,6 @@ public class Project {
 		if (source != null) {
 			project.setSource(source);
 		}
-
 		
 		List<Map<String, Object>> users = (List<Map<String, Object>>) projectObject
 				.get("users");

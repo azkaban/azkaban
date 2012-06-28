@@ -21,9 +21,10 @@ public class FlowUtils {
 	private static final String DEPENDENCIES = "dependencies";
 	private static final String JOB_SUFFIX = ".job";
 	
-	public static void loadProject(File dir, Map<String, Flow> output, List<Props> propsList, List<String> projectErrors) {
+	public static void loadProjectFlows(File dir, Map<String, Flow> output, List<String> projectErrors) {
 		// Load all the project and job files.
 		Map<String,Node> jobMap = new HashMap<String,Node>();
+		List<Props> propsList = new ArrayList<Props>();
 		Set<String> duplicateJobs = new HashSet<String>();
 		Set<String> errors = new HashSet<String>();
 		loadProjectFromDir(dir.getPath(), dir, jobMap, propsList, duplicateJobs, errors);
@@ -32,7 +33,12 @@ public class FlowUtils {
 		Map<String, Set<Edge>> dependencies = new HashMap<String, Set<Edge>>();
 		resolveDependencies(jobMap, duplicateJobs, dependencies, errors);
 
+		// We add all the props for the flow. Each flow will be able to keep an independent list of dependencies.
 		HashMap<String, Flow> flows = buildFlowsFromDependencies(jobMap, dependencies, errors);
+		for (Flow flow: flows.values()) {
+			flow.addAllProperties(propsList);
+		}
+		
 		output.putAll(flows);
 		projectErrors.addAll(errors);
 	}
@@ -46,23 +52,24 @@ public class FlowUtils {
 		File[] propertyFiles = dir.listFiles(new SuffixFilter(PROPERTY_SUFFIX));
 		Props parent = null;
 		for (File file: propertyFiles) {
+			String relative = getRelativeFilePath(base, file.getPath());
 			try {
 				parent = new Props(parent, file);
-				String relative = getRelativeFilePath(base, file.getPath());
 				parent.setSource(relative);
 				
-				System.out.println("Adding " + relative);
-				propsList.add(parent);
 			} catch (IOException e) {
 				errors.add("Error loading properties " + file.getName() + ":" + e.getMessage());
 			}
+			
+			System.out.println("Adding " + relative);
+			propsList.add(parent);
 		}
 		
 		// Load all Job files. If there's a duplicate name, then we don't load
 		File[] jobFiles = dir.listFiles(new SuffixFilter(JOB_SUFFIX));
 		for (File file: jobFiles) {
+			String jobName = getNameWithoutExtension(file);
 			try {
-				String jobName = getNameWithoutExtension(file);
 				if (!duplicateJobs.contains(jobName)) {
 					if (jobMap.containsKey(jobName)) {
 						errors.add("Duplicate job names found '" + jobName + "'.");

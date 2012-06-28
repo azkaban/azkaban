@@ -8,6 +8,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import azkaban.project.ProjectManager;
+import azkaban.project.ResourceLoader;
 import azkaban.utils.Props;
 
 public class Flow {
@@ -20,7 +22,8 @@ public class Flow {
     private HashMap<String, Edge> edges = new HashMap<String, Edge>();
     private HashMap<String, Set<Edge>> sourceEdges = new HashMap<String, Set<Edge>>();
     private HashMap<String, Set<Edge>> targetEdges = new HashMap<String, Set<Edge>>();
-    private ArrayList<Object> errors;
+    private HashMap<String, Props> flowProps = new HashMap<String, Props>(); 
+    private ArrayList<String> errors;
 
     public Flow(String id) {
         this.id = id;
@@ -32,7 +35,7 @@ public class Flow {
     
     public void addAllNodes(Collection<Node> nodes) {
         for (Node node: nodes) {
-            this.nodes.put(node.getId(), node);
+        	addNode(node);
         }
     }
     
@@ -40,19 +43,29 @@ public class Flow {
         nodes.put(node.getId(), node);
     }
 
+    public void addProperties(Props props) {
+    	flowProps.put(props.getSource(), props);
+    }
+    
+    public void addAllProperties(Collection<Props> props) {
+    	for (Props prop: props) {
+    		flowProps.put(prop.getSource(), prop);
+    	}
+    }
+    
     public String getId() {
         return id;
     }
     
-    public void addError(Object error) {
+    public void addError(String error) {
         if (errors == null) {
-            errors = new ArrayList<Object>();
+            errors = new ArrayList<String>();
         }
   
         errors.add(error);
     }
     
-    public List<Object> getErrors() {
+    public List<String> getErrors() {
     	return errors;
     }
     
@@ -68,12 +81,18 @@ public class Flow {
     	return edges.values();
     }
     
+    public void addAllEdges(Collection<Edge> edges) {
+    	for (Edge edge: edges) {
+    		addEdge(edge);
+    	}
+    }
+    
     public void addEdge(Edge edge) {
     	String source = edge.getSourceId();
     	String target = edge.getTargetId();
 
     	if (edge instanceof ErrorEdge) {
-    		addError(edge);
+    		addError("Error on " + edge.getId() + ". " + ((ErrorEdge)edge).getError());
     	}
 
     	Set<Edge> sourceSet = getEdgeSet(sourceEdges, source);
@@ -99,11 +118,133 @@ public class Flow {
 		HashMap<String, Object> flowObj = new HashMap<String, Object>();
 		flowObj.put("type", "flow");
 		flowObj.put("id", getId());
-		flowObj.put("properties", objectizeProperties());
+		flowObj.put("props", objectizeProperties());
 		flowObj.put("nodes", objectizeNodes());
 		flowObj.put("edges", objectizeEdges());
+		if (errors != null) {
+			flowObj.put("errors", errors);
+		}
 		
 		return flowObj;
+    }
+    
+    @SuppressWarnings("unchecked")
+	public static Flow flowFromObject(Object object, ResourceLoader loader) {
+    	Map<String, Object> flowObject = (Map<String,Object>)object;
+    	
+    	String id = (String)flowObject.get("id");
+    	Flow flow = new Flow(id);
+    	
+    	// Loading projects
+    	List<Object> propertiesList = (List<Object>)flowObject.get("props");
+    	Map<String, Props> properties = loadPropertiesFromObject(propertiesList, loader);
+    	flow.addAllProperties(properties.values());
+    	
+    	// Loading nodes
+    	List<Object> nodeList = (List<Object>)flowObject.get("nodes");
+    	Map<String, Node> nodes = loadNodesFromObjects(nodeList, properties, loader);
+    	flow.addAllNodes(nodes.values());
+    	
+    	// Loading edges
+    	List<Object> edgeList = (List<Object>)flowObject.get("edges");
+    	List<Edge> edges = loadEdgeFromObjects(edgeList, nodes, loader);
+    	flow.addAllEdges(edges);
+    	
+    	return flow;
+    }
+    
+    private static Map<String, Node> loadNodesFromObjects(List<Object> nodeList, Map<String, Props> properties, ResourceLoader loader) {
+    	Map<String, Node> nodeMap = new HashMap<String, Node>();
+    	
+    	for (Object obj: nodeList) {
+    		@SuppressWarnings("unchecked")
+			Map<String,Object> nodeObj = (Map<String,Object>)obj;
+    		String id = (String)nodeObj.get("id");
+    		String propsSource = (String)nodeObj.get("props.source");
+    		String inheritedSource = (String)nodeObj.get("inherited.source");
+
+    		Props inheritedProps = properties.get(inheritedSource);
+    		Props props = loader.loadPropsFromSource(inheritedProps, propsSource);
+    		
+    		Node node = new Node(id, props);
+    		nodeMap.put(id, node);
+    	}
+    	
+    	return nodeMap;
+    }
+    
+    private static List<Edge> loadEdgeFromObjects(List<Object> edgeList, Map<String, Node> nodes, ResourceLoader loader) {
+    	List<Edge> edgeResult = new ArrayList<Edge>();
+    	
+    	for (Object obj: edgeList) {
+    		@SuppressWarnings("unchecked")
+			Map<String,Object> edgeObj = (Map<String,Object>)obj;
+    		String id = (String)edgeObj.get("id");
+    		String source = (String)edgeObj.get("source");
+    		String target = (String)edgeObj.get("target");
+    		
+    		Node sourceNode = nodes.get(source);
+    		Node targetNode = nodes.get(target);
+    		String error = (String)edgeObj.get("error");
+    		
+    		Edge edge = null;
+    		if (sourceNode == null && targetNode != null) {
+    			edge = new ErrorEdge(source, target, "Edge Error: Neither source " + source + " nor " + target + " could be found.");
+    		}
+    		else if (sourceNode == null && targetNode != null) {
+    			edge = new ErrorEdge(source, target, "Edge Error: Source " + source + " could not be found. Target: " + target);
+    		}
+    		else if (sourceNode != null && targetNode == null) {
+    			edge = new ErrorEdge(source, target, "Edge Error: Source found " + source + ", but " + target + " could be found.");
+    		}
+    		else if (error != null) {
+    			edge = new ErrorEdge(source, target, error);
+    		}
+    		else {
+    			edge = new Edge(sourceNode, targetNode);
+    		}
+    		
+    		edgeResult.add(edge);
+    	}
+    	
+    	return edgeResult;    
+    }
+    
+    @SuppressWarnings("unchecked")
+	private static Map<String, Props> loadPropertiesFromObject(List<Object> propertyObjectList, ResourceLoader loader) {
+    	Map<String, Props> properties = new HashMap<String, Props>();
+    	
+    	Map<String, String> sourceToInherit = new HashMap<String,String>();
+    	for (Object propObj: propertyObjectList) {
+    		Map<String, Object> mapObj = (Map<String,Object>)propObj;
+    		String source = (String)mapObj.get("source");
+    		String inherits = (String)mapObj.get("inherits");
+    		
+    		sourceToInherit.put(source, inherits);
+    	}
+    	
+    	for (String source: sourceToInherit.keySet()) {
+    		recursiveResolveProps(source, sourceToInherit, loader, properties);
+    	}
+    	
+    	return properties;
+    }
+    
+    private static void recursiveResolveProps(String source, Map<String, String> sourceToInherit, ResourceLoader loader, Map<String, Props> properties) {
+    	Props prop = properties.get(source);
+    	if (prop != null) {
+    		return;
+    	}
+    	
+    	String inherits = sourceToInherit.get(source);
+    	Props parent = null;
+    	if (inherits != null) {
+    		recursiveResolveProps(inherits, sourceToInherit, loader, properties);
+        	parent = properties.get(inherits);
+    	}
+
+    	prop = loader.loadPropsFromSource(parent, source);
+    	properties.put(source, prop);
     }
     
 	private List<Map<String,Object>> objectizeNodes() {
@@ -140,39 +281,19 @@ public class Flow {
 		return result;
 	}
 	
-	@SuppressWarnings("unchecked")
 	private List<Map<String,Object>> objectizeProperties() {
+		
 		ArrayList<Map<String,Object>> result = new ArrayList<Map<String,Object>>();
-		
-		HashMap<String, Object> properties = new HashMap<String, Object>();
-		for (Node node: getNodes()) {
-			Props props = node.getProps().getParent();
-			if (props != null) {
-				traverseAndObjectizeProperties(properties, props);
+		for (Props props: flowProps.values()) {
+			HashMap<String, Object> propObj = new HashMap<String, Object>();
+			propObj.put("source", props.getSource());
+			Props parent = props.getParent();
+			if (parent != null) {
+				propObj.put("inherits", parent.getSource());
 			}
-		}
-		
-		for (Object propMap : properties.values()) {
-			result.add((Map<String,Object>)propMap);
+			result.add(propObj);
 		}
 		
 		return result;
-	}
-	
-	private void traverseAndObjectizeProperties(HashMap<String, Object> properties, Props props) {
-		if (props.getSource() == null || properties.containsKey(props.getSource())) {
-			return;
-		}
-		
-		HashMap<String, Object> propObj = new HashMap<String,Object>();
-		propObj.put("source", props.getSource());
-		properties.put(props.getSource(), propObj);
-		
-		Props parent = props.getParent();
-		if (parent != null) {
-			propObj.put("inherits", parent.getSource());
-			
-			traverseAndObjectizeProperties(properties, parent);
-		}
 	}
 }

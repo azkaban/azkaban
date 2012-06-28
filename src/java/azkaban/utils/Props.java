@@ -43,7 +43,7 @@ import org.apache.log4j.Logger;
  */
 public class Props {
     private final Map<String, String> _current;
-    private final Props _parent;
+    private Props _parent;
     private String source = null;
 
     /**
@@ -964,5 +964,9 @@ public class Props {
 
     public void setSource(String source) {
         this.source = source;
+    }
+
+    public void setParent(Props prop) {
+    	this._parent = prop;
     }
 }

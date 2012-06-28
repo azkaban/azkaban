@@ -1,10 +1,13 @@
 package azkaban.project;
 
 import java.io.File;
+import java.io.IOException;
 import java.security.AccessControlException;
 import java.util.List;
 
+import azkaban.flow.Flow;
 import azkaban.user.User;
+import azkaban.utils.Props;
 
 public interface ProjectManager {
     
@@ -12,7 +15,9 @@ public interface ProjectManager {
     
     public List<Project> getProjects(User user);
     
-    public Project getProject(String name, User user) throws AccessControlException;
+    public List<Flow> getProjectFlows(String projectName, User user) throws ProjectManagerException;
+    
+    public Project getProject(String name, User user);
     
     public void uploadProject(String projectName, File projectDir, User uploader, boolean force) throws ProjectManagerException;
     
