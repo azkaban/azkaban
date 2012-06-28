@@ -91,7 +91,7 @@ public class FileProjectManager implements ProjectManager {
     				String source = project.getSource();
     				if (source == null) {
     					logger.info(project.getName() + ": No flows uploaded");
-    					return;
+    					continue;
     				}
     				
     				File projectDir = new File(dir, source);

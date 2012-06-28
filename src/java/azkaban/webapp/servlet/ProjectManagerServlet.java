@@ -7,7 +7,10 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.Writer;
 import java.security.AccessControlException;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.zip.ZipFile;
 
@@ -23,6 +26,7 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.log4j.Logger;
 
+import azkaban.flow.Flow;
 import azkaban.project.Project;
 import azkaban.project.ProjectManager;
 import azkaban.project.ProjectManagerException;
@@ -40,6 +44,12 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
     private ProjectManager manager;
     private MultipartParser multipartParser;
     private File tempDir;
+    private static Comparator<Flow> FLOW_ID_COMPARATOR = new Comparator<Flow>() {
+		@Override
+		public int compare(Flow f1, Flow f2) {
+			return f1.getId().compareTo(f2.getId());
+		}
+    };
 
     @Override
     public void init(ServletConfig config) throws ServletException {
@@ -67,15 +77,17 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
         			page.add("project", project);
         			page.add("admins", Utils.flattenToString(project.getUsersWithPermission(Type.ADMIN), ","));
         			page.add("permissions", project.getUserPermission(user));
-        			
-        			
+
+        			List<Flow> flows = project.getFlows();
+        			if (!flows.isEmpty()) {
+	        			Collections.sort(flows, FLOW_ID_COMPARATOR);
+	        			page.add("flows", flows);
+        			}
         		}
-        		
         	}
         	catch (AccessControlException e) {
         		page.add("errorMsg", e.getMessage());
         	}
-
         }
         else {
     		page.add("errorMsg", "No project set.");

@@ -59,36 +59,25 @@
 					</table>
 				</div>
 
-			<div id="project-tabs">
+			<div id="flow-tabs">
 				<table id="all-jobs" class="all-jobs job-table">
 					<thead>
 						<tr>
-							<th class="tb-name">Name</th>
-							<th class="tb-up-date">Modified Date</th>
-							<th class="tb-owner">Modified By</th>
-							<th class="tb-action last">Actions</th>
+							<th class="tb-name">Flow Name</th>
 						</tr>
 					</thead>
 					<tbody>
-#if($projects)
-#foreach($project in $projects)
+#if($flows)
+#foreach($flow in $flows)
 						<tr class="row">
-							<td class="tb-name">
-								<div class="jobfolder expand" onclick="expandFlow(this)" id="$folderName">
-									<span class="state-icon"></span>
-									<a href="${context}/manager?project=${project.name}">$project.name</a>
-								</div>
-							</td>
-							<td class="tb-up-date">$utils.formatDate($project.lastModifiedTimestamp)</td>
-							<td class="tb-owner">$project.lastModifiedUser</td>
-							<td class="tb-action last"></td>
+							<td class="tb-name">${flow.id}</td>
 						</tr>
 #end
 #else
-						<tr><td class="last">No viewable projects found.</td></tr>
+						<tr><td class="last">No flows uploaded to this project.</td></tr>
 #end
 					</tbody>
-				</table>
+				</table
 			</div>
 #end
 		</div>

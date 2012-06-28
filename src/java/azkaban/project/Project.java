@@ -1,6 +1,8 @@
 package azkaban.project;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -32,7 +34,19 @@ public class Project {
 	public void setFlows(Map<String, Flow> flows) {
 		this.flows = flows;
 	}
-	
+
+	@SuppressWarnings("unused")
+	public List<Flow> getFlows() {
+		List<Flow> retFlow = null;
+		if (flows != null) {
+			retFlow = new ArrayList<Flow>(flows.values());
+		}
+		else {
+			retFlow = new ArrayList<Flow>();
+		}
+		return retFlow;
+	}
+
 	public boolean hasPermission(User user, Type type) {
 		Permission perm = userToPermission.get(user.getUserId());
 		if (perm == null) {
