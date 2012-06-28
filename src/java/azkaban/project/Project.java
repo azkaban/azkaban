@@ -6,6 +6,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 
+import azkaban.flow.Flow;
 import azkaban.user.Permission;
 import azkaban.user.Permission.Type;
 import azkaban.user.User;
@@ -18,6 +19,7 @@ public class Project {
 	private String lastModifiedUser;
 	private String source;
 	private HashMap<String, Permission> userToPermission = new HashMap<String, Permission>();
+	private Map<String, Flow> flows = null;
 	
 	public Project(String name) {
 		this.name = name;
@@ -26,7 +28,11 @@ public class Project {
 	public String getName() {
 		return name;
 	}
-
+	
+	public void setFlows(Map<String, Flow> flows) {
+		this.flows = flows;
+	}
+	
 	public boolean hasPermission(User user, Type type) {
 		Permission perm = userToPermission.get(user.getUserId());
 		if (perm == null) {

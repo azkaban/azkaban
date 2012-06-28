@@ -1,16 +1,16 @@
-  <title>#appname()</title>
-  <link rel="stylesheet" type="text/css" href="${context}/css/azkaban.css"> 
-  <link rel="shortcut icon" href="${context}/favicon.ico" />
-  <style type="text/css">
-	.enviro-name {
-		color: ${azkaban_color};
-	}
-	.header {
-		border-top-color: ${azkaban_color};
-	}
-	.nav .selected a {
-	    border-bottom-color: ${azkaban_color};
-	}
-  </style>
-  <meta http-equiv="content-type" content="text/html;charset=UTF-8" />
- 
+		<title>#appname()
+		</title>
+		<link rel="stylesheet" type="text/css" href="${context}/css/azkaban.css"> 
+		<link rel="shortcut icon" href="${context}/favicon.ico" />
+		<style type="text/css">
+			.enviro-name {
+				color: ${azkaban_color};
+			}
+			.header {
+				border-top-color: ${azkaban_color};
+			}
+			.nav .selected a {
+				border-bottom-color: ${azkaban_color};
+			}
+		</style>
+		<meta http-equiv="content-type" content="text/html;charset=UTF-8" />

@@ -38,10 +38,6 @@ public class FileProjectManager implements ProjectManager {
     private static final Logger logger = Logger.getLogger(FileProjectManager.class);
     private ConcurrentHashMap<String, Project> projects = new ConcurrentHashMap<String, Project>();
     
-    // We store the flows for projects in the ProjectManager instead of the Project so we can employ different 
-    // loading/caching techniques.
-    private HashMap<String, Map<String, Flow>> projectFlows = new HashMap<String, Map<String, Flow>>();
-
 	private File projectDirectory;
 	
     public FileProjectManager(Props props) {
@@ -124,7 +120,9 @@ public class FileProjectManager implements ProjectManager {
     						flowMap.put(flow.getId(), flow);
     					}
     					
-    					projectFlows.put(project.getName(), flowMap);
+    			    	synchronized (project) {
+    			    		project.setFlows(flowMap);
+    			    	}
     				}
     			}
     		}
@@ -202,7 +200,7 @@ public class FileProjectManager implements ProjectManager {
 	    		project.setSource(installDir.getName());
 	    		project.setLastModifiedTimestamp(System.currentTimeMillis());
 	    		project.setLastModifiedUser(uploader.getUserId());
-	    		projectFlows.put(projectName, flows);
+	    		project.setFlows(flows);
 	    	}
 	    	
 	    	try {
@@ -329,13 +327,6 @@ public class FileProjectManager implements ProjectManager {
 
 	@Override
 	public synchronized Project removeProject(String projectName, User user) {
-		return null;
-	}
-
-	@Override
-	public List<Flow> getProjectFlows(String projectName, User user) throws ProjectManagerException {
-		
-		
 		return null;
 	}
 

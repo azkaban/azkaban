@@ -67,6 +67,8 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
         			page.add("project", project);
         			page.add("admins", Utils.flattenToString(project.getUsersWithPermission(Type.ADMIN), ","));
         			page.add("permissions", project.getUserPermission(user));
+        			
+        			
         		}
         		
         	}
