@@ -73,6 +73,7 @@ public class Edge {
 	}
 	
 	public static Edge fromObject(Object obj) {
+		@SuppressWarnings("unchecked")
 		HashMap<String, Object> edgeObj = (HashMap<String,Object>)obj;
 		
 		String source = (String)edgeObj.get("source");

@@ -37,7 +37,33 @@ azkaban.UploadProjectView= Backbone.View.extend({
     $("#errorMsg").hide();
   },
   handleCreateProject : function(evt) {
-	$("#upload-form").submit();
+    $("#upload-form").submit();
+  },
+  render: function() {
+  }
+});
+
+var flowTableView;
+azkaban.FlowTableView= Backbone.View.extend({
+  events : {
+    "click .jobfolder": "expandFlowProject"
+  },
+  initialize : function(settings) {
+
+  },
+  expandFlowProject : function(evt) {
+    var targetId = evt.currentTarget.id;
+    var requestURL = contextURL + "/manager";
+
+    // projectId is available
+    $.get(
+      requestURL,
+      {"project": projectId, "json":"expandflow", "flow":targetId},
+      function(data) {
+        console.log("Success");
+      },
+      "json"
+    );
   },
   render: function() {
   }
@@ -46,6 +72,7 @@ azkaban.UploadProjectView= Backbone.View.extend({
 $(function() {
 	projectView = new azkaban.ProjectView({el:$( '#all-jobs-content'), successMsg: successMessage, errorMsg: errorMessage });
 	uploadView = new azkaban.UploadProjectView({el:$('#upload-project')});
+	flowTableView = new azkaban.FlowTableView({el:$('#flow-tabs')});
 	// Setting up the project tabs
 
 });

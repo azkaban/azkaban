@@ -4,10 +4,6 @@ import java.awt.geom.Point2D;
 import java.util.HashMap;
 import java.util.Map;
 
-import javax.net.ssl.SSLEngineResult.Status;
-
-import azkaban.utils.Props;
-
 public class Node {
 	public enum State {
 		FAILED, SUCCEEDED, RUNNING, WAITING, IGNORED

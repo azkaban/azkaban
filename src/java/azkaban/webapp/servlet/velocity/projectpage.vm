@@ -16,6 +16,8 @@
 			var timezone = "${timezone}";
 			var errorMessage = "${error_message}";
 			var successMessage = "${success_message}";
+			
+			var projectId = "$project.name";
 		</script>
 	</head>
 	<body>
@@ -71,7 +73,7 @@
 #foreach($flow in $flows)
 						<tr class="row">
 							<td class="tb-name">
-								<div class="jobfolder expand" onclick="expandFlow(this)" id="${flow.id}">
+								<div class="jobfolder expand" id="${flow.id}">
 									<span class="state-icon"></span>
 									<a href="${context}/manager?flow=${flow.id}">${flow.id}</a>
 								</div>

@@ -7,6 +7,8 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.Writer;
 import java.security.AccessControlException;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -26,7 +28,9 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.log4j.Logger;
 
+import azkaban.flow.Edge;
 import azkaban.flow.Flow;
+import azkaban.flow.Node;
 import azkaban.project.Project;
 import azkaban.project.ProjectManager;
 import azkaban.project.ProjectManagerException;
@@ -40,6 +44,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 	private static final long serialVersionUID = 1;
 	private static final Logger logger = Logger.getLogger(ProjectManagerServlet.class);
 	private static final int DEFAULT_UPLOAD_DISK_SPOOL_SIZE = 20 * 1024 * 1024;
+	private static final NodeLevelComparator NODE_LEVEL_COMPARATOR = new NodeLevelComparator();
 	
 	private ProjectManager manager;
 	private MultipartParser multipartParser;
@@ -62,7 +67,10 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 	@Override
 	protected void handleGet(HttpServletRequest req, HttpServletResponse resp, Session session) throws ServletException, IOException {
 		if ( hasParam(req, "project") ) {
-			if (hasParam(req, "flow")) {
+			if (hasParam(req, "json")) {
+				handleJSONAction(req, resp, session);
+			}
+			else if (hasParam(req, "flow")) {
 				handleFlowPage(req, resp, session);
 			}
 			else {
@@ -96,6 +104,63 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 		}
 	}
 
+	private void handleJSONAction(HttpServletRequest req, HttpServletResponse resp, Session session) throws ServletException, IOException {
+		String projectName = getParam(req, "project");
+		User user = session.getUser();
+		
+		HashMap<String, Object> ret = new HashMap<String, Object>();
+		ret.put("project", projectName);
+		
+		Project project = null;
+		try {
+			project = manager.getProject(projectName, user);
+		} catch (Exception e) {
+			ret.put("error", e.getMessage());
+			this.writeJSON(resp, ret);
+			return;
+		}
+
+		String jsonName = getParam(req, "json");
+		if (jsonName.equals("expandflow")) {
+			String flowId = getParam(req, "flow");
+			Flow flow = project.getFlow(flowId);
+
+			ArrayList<Node> flowNodes = new ArrayList<Node>(flow.getNodes());
+			Collections.sort(flowNodes, NODE_LEVEL_COMPARATOR);
+
+			ArrayList<Object> nodeList = new ArrayList<Object>();
+			for (Node node: flowNodes) {
+				HashMap<String, Object> nodeObj = new HashMap<String, Object>();
+				nodeObj.put("id", node.getId());
+				
+				ArrayList<String> dependencies = new ArrayList<String>();
+				Collection<Edge> collection = flow.getInEdges(node.getId());
+				if (collection != null) {
+					for (Edge edge: collection) {
+						dependencies.add(edge.getSourceId());
+					}
+				}
+				
+				ArrayList<String> dependents = new ArrayList<String>();
+				collection = flow.getOutEdges(node.getId());
+				if (collection != null) {
+					for (Edge edge: collection) {
+						dependents.add(edge.getTargetId());
+					}
+				}
+				
+				nodeObj.put("dependencies", dependencies);
+				nodeObj.put("dependents", dependents);
+				nodeObj.put("level", node.getLevel());
+				nodeList.add(nodeObj);
+			}
+			
+			ret.put("nodes", nodeList);
+		}
+		
+		this.writeJSON(resp, ret);
+	}
+	
 	private void handleFlowPage(HttpServletRequest req, HttpServletResponse resp, Session session) throws ServletException {
 		Page page = newPage(req, resp, session, "azkaban/webapp/servlet/velocity/flowpage.vm");
 		String projectName = getParam(req, "project");
@@ -238,4 +303,10 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 		return unzipped;
 	}
 
+	private static class NodeLevelComparator implements Comparator<Node> {
+		@Override
+		public int compare(Node node1, Node node2) {
+			return node1.getLevel() - node2.getLevel();
+		}
+	}
 }

@@ -8,10 +8,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import azkaban.project.ProjectManager;
-import azkaban.project.ResourceLoader;
-import azkaban.utils.Props;
-
 public class Flow {
 	public enum State {
 		READY, RUNNING, RUNNING_WITH_FAILURE, FAILED, SUCCEEDED
@@ -80,6 +76,14 @@ public class Flow {
 	
 	public List<Node> getEndNodes() {
 		return endNodes;
+	}
+	
+	public Set<Edge> getInEdges(String id) {
+		return inEdges.get(id);
+	}
+	
+	public Set<Edge> getOutEdges(String id) {
+		return outEdges.get(id);
 	}
 	
 	public void addAllNodes(Collection<Node> nodes) {
