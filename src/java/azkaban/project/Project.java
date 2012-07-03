@@ -35,7 +35,14 @@ public class Project {
 		this.flows = flows;
 	}
 
-	@SuppressWarnings("unused")
+	public Flow getFlow(String flowId) {
+		if (flows == null) {
+			return null;
+		}
+		
+		return flows.get(flowId);
+	}
+	
 	public List<Flow> getFlows() {
 		List<Flow> retFlow = null;
 		if (flows != null) {

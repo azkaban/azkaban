@@ -70,7 +70,12 @@
 #if($flows)
 #foreach($flow in $flows)
 						<tr class="row">
-							<td class="tb-name">${flow.id}</td>
+							<td class="tb-name">
+								<div class="jobfolder expand" onclick="expandFlow(this)" id="${flow.id}">
+									<span class="state-icon"></span>
+									<a href="${context}/manager?flow=${flow.id}">${flow.id}</a>
+								</div>
+							</td>
 						</tr>
 #end
 #else

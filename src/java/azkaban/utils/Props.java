@@ -95,7 +95,7 @@ public class Props {
         }
         input.close();
     }
-
+    
     /**
      * Create props from property input streams
      * 

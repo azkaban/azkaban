@@ -10,80 +10,102 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.log4j.Logger;
+
 import azkaban.flow.Edge;
-import azkaban.flow.ErrorEdge;
 import azkaban.flow.Flow;
+import azkaban.flow.FlowProps;
 import azkaban.flow.Node;
 
-public class FlowUtils {
+public class DirectoryFlowLoader {
 	private static final DirFilter DIR_FILTER = new DirFilter();
 	private static final String PROPERTY_SUFFIX = ".properties";
 	private static final String DEPENDENCIES = "dependencies";
 	private static final String JOB_SUFFIX = ".job";
 	
-	public static void loadProjectFlows(File dir, Map<String, Flow> output, List<String> projectErrors) {
-		// Load all the project and job files.
-		Map<String,Node> jobMap = new HashMap<String,Node>();
-		List<Props> propsList = new ArrayList<Props>();
-		Set<String> duplicateJobs = new HashSet<String>();
-		Set<String> errors = new HashSet<String>();
-		loadProjectFromDir(dir.getPath(), dir, jobMap, propsList, duplicateJobs, errors);
-		
-		// Create edge dependency sets.
-		Map<String, Set<Edge>> dependencies = new HashMap<String, Set<Edge>>();
-		resolveDependencies(jobMap, duplicateJobs, dependencies, errors);
-
-		// We add all the props for the flow. Each flow will be able to keep an independent list of dependencies.
-		HashMap<String, Flow> flows = buildFlowsFromDependencies(jobMap, dependencies, errors);
-		for (Flow flow: flows.values()) {
-			flow.addAllProperties(propsList);
-		}
-		
-		output.putAll(flows);
-		projectErrors.addAll(errors);
+	private final Logger logger;
+	private HashMap<String, Flow> flowMap;
+	private HashMap<String, Node> nodeMap;
+	private HashMap<String, Map<String, Edge>> nodeDependencies;
+	private HashMap<String, Props> jobPropsMap;
+	private ArrayList<FlowProps> flowPropsList;
+	private ArrayList<Props> propsList;
+	private Set<String> errors;
+	private Set<String> duplicateJobs;
+	
+	public DirectoryFlowLoader(Logger logger) {
+		this.logger = logger;
 	}
 	
-	/**
-	 * Loads all the files, prop and job files. Props are assigned to the job nodes.
-	 */
-	private static void loadProjectFromDir(String base, File dir, Map<String, Node> jobMap, List<Props> propsList, Set<String> duplicateJobs, Set<String> errors) {
+	public Map<String, Flow> getFlowMap() {
+		return flowMap;
+	}
+	
+	public void loadProjectFlow(File baseDirectory) {
+		propsList = new ArrayList<Props>();
+		flowPropsList = new ArrayList<FlowProps>();
+		jobPropsMap = new HashMap<String, Props>();
+		nodeMap = new HashMap<String, Node>();
+		flowMap = new HashMap<String, Flow>();
+		errors = new HashSet<String>();
+		duplicateJobs = new HashSet<String>();
+		nodeDependencies = new HashMap<String, Map<String, Edge>>();
 
-		// Load all property files
+		// Load all the props files and create the Node objects
+		loadProjectFromDir(baseDirectory.getPath(), baseDirectory);
+		
+		// Create edges and find missing dependencies
+		resolveDependencies();
+
+		// Create the flows.
+		buildFlowsFromDependencies();
+	}
+	
+	private void loadProjectFromDir(String base, File dir) {
 		File[] propertyFiles = dir.listFiles(new SuffixFilter(PROPERTY_SUFFIX));
 		Props parent = null;
+		
 		for (File file: propertyFiles) {
 			String relative = getRelativeFilePath(base, file.getPath());
 			try {
 				parent = new Props(parent, file);
 				parent.setSource(relative);
-				
+
+				FlowProps flowProps = new FlowProps(parent);
+				flowPropsList.add(flowProps);
 			} catch (IOException e) {
 				errors.add("Error loading properties " + file.getName() + ":" + e.getMessage());
 			}
 			
-			System.out.println("Adding " + relative);
+			logger.info("Adding " + relative);
 			propsList.add(parent);
 		}
-		
+
 		// Load all Job files. If there's a duplicate name, then we don't load
 		File[] jobFiles = dir.listFiles(new SuffixFilter(JOB_SUFFIX));
 		for (File file: jobFiles) {
 			String jobName = getNameWithoutExtension(file);
 			try {
 				if (!duplicateJobs.contains(jobName)) {
-					if (jobMap.containsKey(jobName)) {
+					if (jobPropsMap.containsKey(jobName)) {
 						errors.add("Duplicate job names found '" + jobName + "'.");
 						duplicateJobs.add(jobName);
-						jobMap.remove(jobName);
+						jobPropsMap.remove(jobName);
+						nodeMap.remove(jobName);
 					}
 					else {
 						Props prop = new Props(parent, file);
 						String relative = getRelativeFilePath(base, file.getPath());
 						prop.setSource(relative);
 						
-						Node node = new Node(jobName, prop);
+						Node node = new Node(jobName);
+						node.setJobSource(relative);
+						if (parent != null) {
+							node.setPropsSource(parent.getSource());
+						}
 
-						jobMap.put(jobName, node);
+						jobPropsMap.put(jobName, prop);
+						nodeMap.put(jobName, node);
 					}
 				}
 				
@@ -94,119 +116,127 @@ public class FlowUtils {
 		
 		File[] subDirs = dir.listFiles(DIR_FILTER);
 		for (File file: subDirs) {
-			loadProjectFromDir(base, file, jobMap, propsList, duplicateJobs, errors);
+			loadProjectFromDir(base, file);
 		}
-		
 	}
 	
-	private static void resolveDependencies(Map<String, Node> jobMap, Set<String> duplicateJobs, Map<String, Set<Edge>> nodeDependencies, Set<String> errors) {
+	private void resolveDependencies() {
 		// Add all the in edges and out edges. Catch bad dependencies and self referrals. Also collect list of nodes who are parents.
-		for (Node node: jobMap.values()) {
-			List<String> dependencyList = node.getProps().getStringList(DEPENDENCIES, (List<String>)null);
+		for (Node node: nodeMap.values()) {
+			Props props = jobPropsMap.get(node.getId());
+			
+			if (props == null) {
+				logger.error("Job props not found!! For some reason.");
+				continue;
+			}
+
+			List<String> dependencyList = props.getStringList(DEPENDENCIES, (List<String>)null);
 			
 			if (dependencyList != null) {
-				Set<Edge> dependencies = nodeDependencies.get(node.getId());
+				Map<String, Edge> dependencies = nodeDependencies.get(node.getId());
 				if (dependencies == null) {
-					dependencies = new HashSet<Edge>();
+					dependencies = new HashMap<String, Edge>();
 					
 					for (String dependencyName : dependencyList) {
-						if (dependencyName == null || dependencyName.trim().isEmpty()) {
+						dependencyName = dependencyName == null ? null : dependencyName.trim();
+						if (dependencyName == null || dependencyName.isEmpty()) {
 							continue;
 						}
-						
-						dependencyName = dependencyName.trim();
-						Node dependencyNode = jobMap.get(dependencyName);
+
+						Edge edge = new Edge(dependencyName, node.getId());
+						Node dependencyNode = nodeMap.get(dependencyName);
 						if (dependencyNode == null) {
 							if (duplicateJobs.contains(dependencyName)) {
-								dependencies.add(new ErrorEdge(dependencyName, node, "Ambiguous Dependency. Duplicates found."));
+								edge.setError("Ambiguous Dependency. Duplicates found.");
+								dependencies.put(dependencyName, edge);
 								errors.add(node.getId() + " has ambiguous dependency " + dependencyName);
 							}
 							else {
-								dependencies.add(new ErrorEdge(dependencyName, node, "Dependency not found."));
+								edge.setError("Dependency not found.");
+								dependencies.put(dependencyName, edge);
 								errors.add(node.getId() + " cannot find dependency " + dependencyName);
 							}
 						}
 						else if (dependencyNode == node) {
 							// We have a self cycle
-							dependencies.add(new ErrorEdge(dependencyName, node, "Self cycle found."));
+							edge.setError("Self cycle found.");
+							dependencies.put(dependencyName, edge);
 							errors.add(node.getId() + " has a self cycle");
 						}
 						else {
-							dependencies.add(new Edge(dependencyNode, node));
+							dependencies.put(dependencyName, edge);
 						}
 					}
-					
+
 					if (!dependencies.isEmpty()) {
 						nodeDependencies.put(node.getId(), dependencies);
 					}
 				}
 			}
 		}
-		
 	}
 	
-	private static HashMap<String, Flow> buildFlowsFromDependencies(Map<String, Node> nodes, Map<String, Set<Edge>> nodeDependencies, Set<String> errors) {
+	private void buildFlowsFromDependencies() {
 		// Find all root nodes by finding ones without dependents.
 		HashSet<String> nonRootNodes = new HashSet<String>();
-		for (Set<Edge> edges: nodeDependencies.values()) {
-			for (Edge edge: edges) {
-				nonRootNodes.add(edge.getSourceId());
-			}
-		}
-		
-		
-		HashMap<String, Flow> flows = new HashMap<String, Flow>();
-		
-		// Now create flows. Bad flows are marked invalid
-		Set<String> visitedNodes = new HashSet<String>();
-		for (Node base: nodes.values()) {
-			if (!nonRootNodes.contains(base)) {
-				Flow flow = new Flow(base.getId());
-				flow.addBaseNode(base);
-				constructFlow(flow, base, nodes, nodeDependencies, visitedNodes, errors);
-				flows.put(base.getId(), flow);
+		for (Map<String, Edge> edges: nodeDependencies.values()) {
+			for (String sourceId: edges.keySet()) {
+				nonRootNodes.add(sourceId);
 			}
 		}
 
-		return flows;
+		// Now create flows. Bad flows are marked invalid
+		Set<String> visitedNodes = new HashSet<String>();
+		for (Node base: nodeMap.values()) {
+			if (!nonRootNodes.contains(base.getId())) {
+				Flow flow = new Flow(base.getId());
+				flow.addAllFlowProperties(flowPropsList);
+				constructFlow(flow, base, visitedNodes);
+				flow.initialize();
+				flowMap.put(base.getId(), flow);
+			}
+		}
 	}
 	
-	private static void constructFlow(Flow flow, Node node, Map<String, Node> nodes, Map<String, Set<Edge>> nodeDependencies, Set<String> visited, Set<String> errors) {
+	private void constructFlow(Flow flow, Node node, Set<String> visited) {
 		visited.add(node.getId());
+
+		// Clone the node so each flow can operate on its own node
 		flow.addNode(node);
-		Set<Edge> dependencies = nodeDependencies.get(node.getId());
-		
+		Map<String, Edge> dependencies = nodeDependencies.get(node.getId());
+
 		if (dependencies != null) {
-			for (Edge edge: dependencies) {
-				if (edge instanceof ErrorEdge) {
+			for (Edge edge: dependencies.values()) {
+				if (edge.hasError()) {
 					flow.addEdge(edge);
 				}
 				else if (visited.contains(edge.getSourceId())){
 					// We have a cycle. We set it as an error edge
-					edge = new ErrorEdge(edge.getSourceId(), node, "Cyclical dependencies found.");
+					edge = new Edge(edge.getSourceId(), node.getId());
+					edge.setError("Cyclical dependencies found.");
 					errors.add("Cyclical dependency found at " + edge.getId());
 					flow.addEdge(edge);
 				}
 				else {
 					// This should not be null
 					flow.addEdge(edge);
-					Node fromNode = edge.getSource();
-					constructFlow(flow, fromNode, nodes, nodeDependencies, visited, errors);					
+					Node sourceNode = nodeMap.get(edge.getSourceId());
+					constructFlow(flow, sourceNode, visited);
 				}
 			}
 		}
-		
+
 		visited.remove(node.getId());
 	}
-	
-	private static String getNameWithoutExtension(File file) {
+
+	private String getNameWithoutExtension(File file) {
 		String filename = file.getName();
 		int index = filename.lastIndexOf('.');
 		
 		return index < 0 ? filename : filename.substring(0, index);
 	}
-	
-	private static String getRelativeFilePath(String basePath, String filePath) {
+
+	private String getRelativeFilePath(String basePath, String filePath) {
 		return filePath.substring(basePath.length() + 1);
 	}
 
@@ -216,7 +246,7 @@ public class FlowUtils {
 			return pathname.isDirectory();
 		}
 	}
-	
+
 	private static class SuffixFilter implements FileFilter {
 		private String suffix;
 		
