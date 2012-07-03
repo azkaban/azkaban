@@ -71,13 +71,15 @@
 					<tbody>
 #if($flows)
 #foreach($flow in $flows)
-						<tr class="row">
+						<tr class="row" >
 							<td class="tb-name">
 								<div class="jobfolder expand" id="${flow.id}">
 									<span class="state-icon"></span>
 									<a href="${context}/manager?flow=${flow.id}">${flow.id}</a>
 								</div>
 							</td>
+						</tr>
+						<tr class="childrow" id="${flow.id}-child" style="display: none;">
 						</tr>
 #end
 #else

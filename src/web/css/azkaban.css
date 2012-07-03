@@ -544,6 +544,12 @@ tr:hover td {
 	background-position: -64px -80px
 }
 
+.tb-name a {
+	font-size: 10pt;
+	text-decoration: none;
+	color: #000;
+}
+
 .azkaban-charts,
 .azkaban-charts td {
 	width: 100%;

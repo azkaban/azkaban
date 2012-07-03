@@ -49,21 +49,44 @@ azkaban.FlowTableView= Backbone.View.extend({
     "click .jobfolder": "expandFlowProject"
   },
   initialize : function(settings) {
-
   },
   expandFlowProject : function(evt) {
-    var targetId = evt.currentTarget.id;
+    var target = evt.currentTarget;
+    var targetId = target.id;
     var requestURL = contextURL + "/manager";
 
-    // projectId is available
-    $.get(
-      requestURL,
-      {"project": projectId, "json":"expandflow", "flow":targetId},
-      function(data) {
-        console.log("Success");
-      },
-      "json"
-    );
+    var targetExpanded = $('#' + targetId + '-child');
+    
+    if (target.loading) {
+    	console.log("Still loading.");
+    }
+    else if (target.loaded) {
+    	if($(targetExpanded).is(':visible')) {
+    		$(target).addClass('expand').removeClass('collapse');
+    		$(targetExpanded).slideUp("fast");
+    	}
+    	else {
+    	    $(target).addClass('collapse').removeClass('expand');
+    		$(targetExpanded).slideDown("fast");
+    	}
+    }
+    else {
+	    // projectId is available
+	    $(target).addClass('wait').removeClass('collapse').removeClass('expand');
+	    target.loading = true;
+	    $.get(
+	      requestURL,
+	      {"project": projectId, "json":"expandflow", "flow":targetId},
+	      function(data) {
+	        console.log("Success");
+	        target.loaded = true;
+	        target.loading = false;
+			$(target).addClass('collapse').removeClass('wait');
+	    	$(targetExpanded).slideDown("fast");
+	      },
+	      "json"
+	    );
+    }
   },
   render: function() {
   }
