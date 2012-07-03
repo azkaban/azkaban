@@ -138,13 +138,13 @@ public class Node {
 		objMap.put("expectedRuntime", expectedRunTimeSec);
 		objMap.put("state", state.toString());
 
+		HashMap<String, Object> layoutInfo = new HashMap<String, Object>();
 		if (position != null) {
-			HashMap<String, Object> layoutInfo = new HashMap<String, Object>();
 			layoutInfo.put("x", position.x);
 			layoutInfo.put("y", position.y);
-			layoutInfo.put("level", level);
-			objMap.put("layout", layoutInfo);
 		}
+		layoutInfo.put("level", level);
+		objMap.put("layout", layoutInfo);
 		
 		return objMap;
 	}
