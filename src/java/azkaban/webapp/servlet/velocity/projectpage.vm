@@ -37,7 +37,7 @@
 
 				<div id="all-jobs-content">
 					<div class="section-hd">
-						<h2>Project <span>$project.name</span></h2>
+						<h2><a href="${context}/manager?project=${project.name}">Project <span>$project.name</span></a></h2>
 						
 						<a id="project-upload-btn" class="btn1 projectupload" href="#">Upload</a>
 						<a id="project-permission-btn" class="btn5 projectpermission" href="#">Permissions</a>
@@ -75,7 +75,7 @@
 							<td class="tb-name">
 								<div class="jobfolder expand" id="${flow.id}">
 									<span class="state-icon"></span>
-									<a href="${context}/manager?flow=${flow.id}">${flow.id}</a>
+									<a href="${context}/manager?project=${project.name}&flow=${flow.id}">${flow.id}</a>
 								</div>
 							</td>
 						</tr>

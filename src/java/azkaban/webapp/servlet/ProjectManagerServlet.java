@@ -169,6 +169,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 
 		User user = session.getUser();
 		Project project = null;
+		Flow flow = null;
 		try {
 			project = manager.getProject(projectName, user);
 			if (project == null) {
@@ -177,11 +178,20 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 			else {
 				page.add("project", project);
 				
+				flow = project.getFlow(flowName);
+				if (flow == null) {
+					page.add("errorMsg", "Flow " + flowName + " not found.");
+				}
+				
+				page.add("flowid", flow.getId());
 			}
+			
+			
 		}
 		catch (AccessControlException e) {
 			page.add("errorMsg", e.getMessage());
 		}
+		
 		page.render();
 	}
 
