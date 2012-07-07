@@ -155,6 +155,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 				nodeList.add(nodeObj);
 			}
 			
+			ret.put("flowId", flowId);
 			ret.put("nodes", nodeList);
 		}
 		

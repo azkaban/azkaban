@@ -46,9 +46,11 @@ azkaban.UploadProjectView= Backbone.View.extend({
 var flowTableView;
 azkaban.FlowTableView= Backbone.View.extend({
   events : {
-    "click .jobfolder": "expandFlowProject"
+    "click .jobfolder": "expandFlowProject",
+    "hover .expandedFlow a": "highlight"
   },
   initialize : function(settings) {
+  	_.bindAll(this, 'createJobListTable');
   },
   expandFlowProject : function(evt) {
     var target = evt.currentTarget;
@@ -56,6 +58,9 @@ azkaban.FlowTableView= Backbone.View.extend({
     var requestURL = contextURL + "/manager";
 
     var targetExpanded = $('#' + targetId + '-child');
+    var targetTBody = $('#' + targetId + '-tbody');
+    
+    var createJobListFunction = this.createJobListTable;
     
     if (target.loading) {
     	console.log("Still loading.");
@@ -63,17 +68,18 @@ azkaban.FlowTableView= Backbone.View.extend({
     else if (target.loaded) {
     	if($(targetExpanded).is(':visible')) {
     		$(target).addClass('expand').removeClass('collapse');
-    		$(targetExpanded).slideUp("fast");
+    		$(targetExpanded).fadeOut("fast");
     	}
     	else {
     	    $(target).addClass('collapse').removeClass('expand');
-    		$(targetExpanded).slideDown("fast");
+    		$(targetExpanded).fadeIn();
     	}
     }
     else {
 	    // projectId is available
 	    $(target).addClass('wait').removeClass('collapse').removeClass('expand');
 	    target.loading = true;
+	    
 	    $.get(
 	      requestURL,
 	      {"project": projectId, "json":"expandflow", "flow":targetId},
@@ -81,12 +87,63 @@ azkaban.FlowTableView= Backbone.View.extend({
 	        console.log("Success");
 	        target.loaded = true;
 	        target.loading = false;
+	        
+	        createJobListFunction(data, targetTBody);
+	        
 			$(target).addClass('collapse').removeClass('wait');
-	    	$(targetExpanded).slideDown("fast");
+	    	$(targetExpanded).fadeIn("fast");
 	      },
 	      "json"
 	    );
     }
+  },
+  createJobListTable : function(data, innerTable) {
+  	var nodes = data.nodes;
+  	var flowId = data.flowId;
+  	
+  	for (var i = 0; i < nodes.length; i++) {
+		var job = nodes[i];
+		var name = job.id;
+		var level = job.level;
+		var nodeId = flowId + "-" + name;
+		
+		var tr = document.createElement("tr");
+		var idtd = document.createElement("td");
+		$(idtd).addClass("tb-name");
+		
+		var ida = document.createElement("a");
+		ida.dependents = job.dependents;
+		ida.dependencies = job.dependencies;
+		ida.flowid = flowId;
+		$(ida).text(name);
+		$(ida).attr("id", nodeId);
+		$(ida).css("margin-left", level * 20);
+		
+		$(idtd).append(ida);
+		$(tr).append(idtd);
+		$(innerTable).append(tr);
+  	}
+  },
+  highlight: function(evt) {
+ 	var currentTarget = evt.currentTarget;
+ 	var dependents = currentTarget.dependents;
+ 	var dependencies = currentTarget.dependencies;
+ 	var flowid = currentTarget.flowid;
+ 	
+ 	if (dependents) {
+	 	for (var i = 0; i < dependents.length; ++i) {
+	 		var depId = flowid + "-" + dependents[i];
+	 		$("#"+depId).toggleClass("dependent");
+	 	}
+ 	}
+ 	
+ 	if (dependencies) {
+	 	for (var i = 0; i < dependencies.length; ++i) {
+	 		var depId = flowid + "-" + dependencies[i];
+	 		$("#"+depId).toggleClass("dependency");
+	 	}
+
+ 	}
   },
   render: function() {
   }

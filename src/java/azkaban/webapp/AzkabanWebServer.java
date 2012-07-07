@@ -82,7 +82,7 @@ public class AzkabanWebServer {
     private static final String DEFAULT_TIMEZONE_ID = "default.timezone.id";
     //private static final int DEFAULT_PORT_NUMBER = 8081;
     private static final int DEFAULT_SSL_PORT_NUMBER = 8443;
-    private static final int DEFAULT_THREAD_NUMBER = 10;
+    private static final int DEFAULT_THREAD_NUMBER = 20;
     private static final String VELOCITY_DEV_MODE_PARAM = "velocity.dev.mode";
     private static final String USER_MANAGER_CLASS_PARAM = "user.manager.class";
     private static final String PROJECT_MANAGER_CLASS_PARAM = "project.manager.class";

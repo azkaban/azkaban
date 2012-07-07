@@ -80,6 +80,15 @@
 							</td>
 						</tr>
 						<tr class="childrow" id="${flow.id}-child" style="display: none;">
+							<td class="expandedFlow">
+								<table class="innerTable">
+									<thead>
+										<tr><th class="tb-name">Jobs</th></tr>
+									</thead>
+									<tbody id="${flow.id}-tbody">
+									</tbody>
+								</table>
+							</td>
 						</tr>
 #end
 #else

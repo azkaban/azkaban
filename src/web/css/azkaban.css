@@ -179,13 +179,16 @@ tr:hover td {
   background-color: #E1E3E2;
 }
 
+
 .all-jobs .tb-name {
   padding-left: 2.7272727%;
   width: 64.818182%;
+  border-bottom-width: 0;
+  border-bottom-style: none;
 }
 
 .all-jobs .tb-up-date {
-  width: 14.090909%;
+  width: 160px;
 }
 
 .all-jobs .tb-owner {
@@ -536,6 +539,10 @@ tr:hover td {
 	background-position: 0 -16px;
 }
 
+.collapse tr {
+	border-bottom: none;
+}
+
 .expand .state-icon {
 	background-position: -32px -16px;
 }
@@ -548,6 +555,10 @@ tr:hover td {
 	font-size: 10pt;
 	text-decoration: none;
 	color: #000;
+}
+
+.tb-name a:hover {
+	color: #009FC9;
 }
 
 .azkaban-charts,
@@ -782,6 +793,80 @@ tr:hover td {
 
 .user-table td {
 	border-style: none;
+}
+
+/* Style for job display table */
+.childrow td.innerTd {
+	padding: 0px;
+	height: 100px;
+	width: 100%;
+}
+
+/* Style for job display table */
+.childrow {
+	padding: 0px;
+	width: 100%;
+}
+
+.childrow .innerTable {
+	margin-left:auto;
+	margin-right: auto;
+	text-align: center;
+	width: 80%;
+}
+
+.childrow .expandedFlow {
+	border-style: none;
+	background-color: #FFF;
+}
+
+.childrow:hover td {
+	background-color: #FFF;
+}
+
+.childrow .expandedFlow:hover {
+	border-style: none;
+	background-color: #FFF;
+}
+
+.childrow .expandedFlow td{
+	border-style: solid solid none none;
+}
+
+.childrow .innerTable {
+	border-style: none none solid solid;
+	border-width: 1px;
+	border-color: #CDCDCD;
+}
+
+.childrow .innerTable tr {
+}
+
+.childrow .innerTable td {
+	border-style: solid solid none none;
+	border-width: 1px 1px medium medium;
+	border-color: CDCDCD;
+}
+
+.childrow .innerTable a {
+	cursor: pointer;
+}
+
+.childrow .innerTable a:hover {
+	color: #009FC9;
+}
+
+.childrow .innerTable a.dependent {
+	color: #3B8194;
+}
+
+.childrow .innerTable a.dependency {
+	color: #005066;
+}
+
+.childrow .innerJobRow {
+	border-top: none;
+	height: 100px;
 }
 
 /* old styles */
