@@ -16,6 +16,9 @@
 			var timezone = "${timezone}";
 			var errorMessage = "${error_message}";
 			var successMessage = "${success_message}";
+			
+			var projectName = "${project.name}";
+			var flowName = "${flowid}";
 		</script>
 		
 	</head>
@@ -41,17 +44,17 @@
 					
 					<div class="headertabs">
 						<ul>
-							<li><a href="#tabs-2">Graph</a></li>
-							<li><a href="#tabs-1">Job List</a></li>
+							<li><a id="graphViewLink" href="#graph">Graph</a></li>
+							<li class="lidivider">|</li>
+							<li><a id="jobslistViewLink" href="#jobslist">Job List</a></li>
 						</ul>
-						<div id="tabs-1">
-						</div>
-						<div id="tabs-2">
-						</div>
 					</div>
-				</div>
-				<div class="actualcontent">
-					<p>What the hell</p>
+					<div id="graphView">
+					<p>This is my graph view</p>
+					</div>
+					<div id="jobListView">
+					<p>This is my joblist view</p>
+					</div>
 				</div>
 #end
 		</div>
