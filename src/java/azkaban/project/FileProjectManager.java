@@ -16,6 +16,7 @@ import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 
 import azkaban.flow.Flow;
+import azkaban.flow.LayeredFlowLayout;
 import azkaban.user.Permission;
 import azkaban.user.Permission.Type;
 import azkaban.user.User;
@@ -108,13 +109,33 @@ public class FileProjectManager implements ProjectManager {
 							try {
 								objectizedFlow = JSONUtils.parseJSONFromFile(flowFile);
 							} catch (IOException e) {
-								logger.error("Error parsing flow file " + flowFile.toString());
+								logger.error("Error parsing flow file " + flowFile.toString(), e);
+								continue;
 							}
 
 							//Recreate Flow
-							Flow flow = Flow.flowFromObject(objectizedFlow);
+							Flow flow = null;
+							
+							try {
+								flow = Flow.flowFromObject(objectizedFlow);
+							}
+							catch (Exception e) {
+								logger.error("Error loading flow " + flowFile.getName() + " in project " + project.getName(), e);
+								continue;
+							}
 							logger.debug("Loaded flow " + project.getName() + ": " + flow.getId());
 							flow.initialize();
+							//if (!flow.isLayedOut()) {
+								LayeredFlowLayout layout = new LayeredFlowLayout();
+								layout.layoutFlow(flow);
+								
+								try {
+									writeFlowFile(flowFile.getParentFile(), flow);
+								} catch (IOException e) {
+									e.printStackTrace();
+								}
+							//}
+							
 							flowMap.put(flow.getId(), flow);
 						}
 
@@ -183,11 +204,13 @@ public class FileProjectManager implements ProjectManager {
 				if (flow.getErrors() != null) {
 					errors.addAll(flow.getErrors());
 				}
+				flow.initialize();
+				LayeredFlowLayout layout = new LayeredFlowLayout();
+				layout.layoutFlow(flow);
 				writeFlowFile(installDir, flow);
 			} catch (IOException e) {
 				throw new ProjectManagerException(
-						"Project directory " + projectName + 
-						" cannot be created in " + projectDirectory, e);
+						"Project directory " + projectName + " cannot be created in " + projectDirectory, e);
 			}
 		}
 		
@@ -310,6 +333,12 @@ public class FileProjectManager implements ProjectManager {
 		Object object = flow.toObject();
 		String filename = flow.getId() + FLOW_EXTENSION;
 		File outputFile = new File(directory, filename);
+		File oldOutputFile = new File(directory, filename + ".old");
+		
+		if (outputFile.exists()) {
+			outputFile.renameTo(oldOutputFile);
+		}
+		
 		logger.info("Writing flow file " + outputFile);
 		String output = JSONUtils.toJSON(object, true);
 		
@@ -324,6 +353,10 @@ public class FileProjectManager implements ProjectManager {
 			throw e;
 		}
 		writer.close();
+		
+		if (oldOutputFile.exists()) {
+			oldOutputFile.delete();
+		}
 	}
 
 	@Override

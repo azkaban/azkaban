@@ -4,6 +4,8 @@ import java.awt.geom.Point2D;
 import java.util.HashMap;
 import java.util.Map;
 
+import azkaban.utils.Utils;
+
 public class Node {
 	public enum State {
 		FAILED, SUCCEEDED, RUNNING, WAITING, IGNORED
@@ -14,7 +16,7 @@ public class Node {
 	private String propsSource;
 	private State state = State.WAITING;
 
-	private Point2D.Double position = null;
+	private Point2D position = null;
 	private int level;
 	private int expectedRunTimeSec = 1;
 
@@ -45,14 +47,18 @@ public class Node {
 		this.state = state;
 	}
 
-	public Point2D.Double getPosition() {
+	public Point2D getPosition() {
 		return position;
 	}
 
-	public void setPosition(Point2D.Double position) {
+	public void setPosition(Point2D position) {
 		this.position = position;
 	}
 
+	public void setPosition(double x, double y) {
+		this.position = new Point2D.Double(x,y);
+	}
+	
 	public int getLevel() {
 		return level;
 	}
@@ -111,9 +117,18 @@ public class Node {
 		
 		Map<String,Object> layoutInfo = (Map<String,Object>)mapObj.get("layout");
 		if (layoutInfo != null) {
-			Double x = (Double)layoutInfo.get("x");
-			Double y = (Double)layoutInfo.get("y");
-			Integer level = (Integer)layoutInfo.get("level");
+			Double x = null;
+			Double y = null;
+			Integer level = null;
+
+			try {
+				x = Utils.convertToDouble(layoutInfo.get("x"));
+				y = Utils.convertToDouble(layoutInfo.get("y"));
+				level = (Integer)layoutInfo.get("level");
+			}
+			catch (ClassCastException e) {
+				throw new RuntimeException("Error creating node " + id, e);
+			}
 			
 			if (x != null && y != null) {
 				node.setPosition(new Point2D.Double(x, y));
@@ -136,8 +151,8 @@ public class Node {
 
 		HashMap<String, Object> layoutInfo = new HashMap<String, Object>();
 		if (position != null) {
-			layoutInfo.put("x", position.x);
-			layoutInfo.put("y", position.y);
+			layoutInfo.put("x", position.getX());
+			layoutInfo.put("y", position.getY());
 		}
 		layoutInfo.put("level", level);
 		objMap.put("layout", layoutInfo);

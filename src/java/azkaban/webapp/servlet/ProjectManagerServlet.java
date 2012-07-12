@@ -121,46 +121,89 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 		}
 
 		String jsonName = getParam(req, "json");
-		if (jsonName.equals("expandflow")) {
-			String flowId = getParam(req, "flow");
-			Flow flow = project.getFlow(flowId);
-
-			ArrayList<Node> flowNodes = new ArrayList<Node>(flow.getNodes());
-			Collections.sort(flowNodes, NODE_LEVEL_COMPARATOR);
-
-			ArrayList<Object> nodeList = new ArrayList<Object>();
-			for (Node node: flowNodes) {
-				HashMap<String, Object> nodeObj = new HashMap<String, Object>();
-				nodeObj.put("id", node.getId());
-				
-				ArrayList<String> dependencies = new ArrayList<String>();
-				Collection<Edge> collection = flow.getInEdges(node.getId());
-				if (collection != null) {
-					for (Edge edge: collection) {
-						dependencies.add(edge.getSourceId());
-					}
-				}
-				
-				ArrayList<String> dependents = new ArrayList<String>();
-				collection = flow.getOutEdges(node.getId());
-				if (collection != null) {
-					for (Edge edge: collection) {
-						dependents.add(edge.getTargetId());
-					}
-				}
-				
-				nodeObj.put("dependencies", dependencies);
-				nodeObj.put("dependents", dependents);
-				nodeObj.put("level", node.getLevel());
-				nodeList.add(nodeObj);
-			}
-			
-			ret.put("flowId", flowId);
-			ret.put("nodes", nodeList);
+		if (jsonName.equals("fetchflowlist")) {
+			jsonFetchFlow(project, ret, req, resp);
+		}
+		else if (jsonName.equals("fetchflowgraph")) {
+			jsonFetchFlowGraph(project, ret, req, resp);
 		}
 		
 		this.writeJSON(resp, ret);
 	}
+	
+	private void jsonFetchFlowGraph(Project project, HashMap<String, Object> ret, HttpServletRequest req, HttpServletResponse resp) throws ServletException {
+		String flowId = getParam(req, "flow");
+		Flow flow = project.getFlow(flowId);
+		
+		//Collections.sort(flowNodes, NODE_LEVEL_COMPARATOR);
+		ArrayList<Map<String, Object>> nodeList = new ArrayList<Map<String, Object>>();
+		for (Node node: flow.getNodes()) {
+			HashMap<String, Object> nodeObj = new HashMap<String,Object>();
+			nodeObj.put("id", node.getId());
+			nodeObj.put("x", node.getPosition().getX());
+			nodeObj.put("y", node.getPosition().getY());
+			if (node.getState() != Node.State.WAITING) {
+				nodeObj.put("state", node.getState());
+			}
+			nodeList.add(nodeObj);
+		}
+		
+		ArrayList<Map<String, Object>> edgeList = new ArrayList<Map<String, Object>>();
+		for (Edge edge: flow.getEdges()) {
+			HashMap<String, Object> edgeObj = new HashMap<String,Object>();
+			edgeObj.put("from", edge.getSourceId());
+			edgeObj.put("target", edge.getTargetId());
+			
+			if (edge.hasError()) {
+				edgeObj.put("error", edge.getError());
+			}
+			
+			edgeList.add(edgeObj);
+		}
+		
+		ret.put("flowId", flowId);
+		ret.put("nodes", nodeList);
+		ret.put("edges", edgeList);
+	}
+	
+	private void jsonFetchFlow(Project project, HashMap<String, Object> ret, HttpServletRequest req, HttpServletResponse resp) throws ServletException {
+		String flowId = getParam(req, "flow");
+		Flow flow = project.getFlow(flowId);
+
+		ArrayList<Node> flowNodes = new ArrayList<Node>(flow.getNodes());
+		Collections.sort(flowNodes, NODE_LEVEL_COMPARATOR);
+
+		ArrayList<Object> nodeList = new ArrayList<Object>();
+		for (Node node: flowNodes) {
+			HashMap<String, Object> nodeObj = new HashMap<String, Object>();
+			nodeObj.put("id", node.getId());
+			
+			ArrayList<String> dependencies = new ArrayList<String>();
+			Collection<Edge> collection = flow.getInEdges(node.getId());
+			if (collection != null) {
+				for (Edge edge: collection) {
+					dependencies.add(edge.getSourceId());
+				}
+			}
+			
+			ArrayList<String> dependents = new ArrayList<String>();
+			collection = flow.getOutEdges(node.getId());
+			if (collection != null) {
+				for (Edge edge: collection) {
+					dependents.add(edge.getTargetId());
+				}
+			}
+			
+			nodeObj.put("dependencies", dependencies);
+			nodeObj.put("dependents", dependents);
+			nodeObj.put("level", node.getLevel());
+			nodeList.add(nodeObj);
+		}
+		
+		ret.put("flowId", flowId);
+		ret.put("nodes", nodeList);
+	}
+	
 	
 	private void handleFlowPage(HttpServletRequest req, HttpServletResponse resp, Session session) throws ServletException {
 		Page page = newPage(req, resp, session, "azkaban/webapp/servlet/velocity/flowpage.vm");

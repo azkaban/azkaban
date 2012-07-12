@@ -113,7 +113,8 @@ textarea {
 .content {
   background-color: #E0E0E0;
   border: 1px solid #cdcdcd;
-  margin: 0 4.75% 10px;
+  margin: 0 50px 10px;
+  min-height: 240px;
 }
 
 .section-ft {
@@ -899,7 +900,7 @@ tr:hover td {
 }
 
 .headertabs {
-	height: 24px;
+	height: 26px;
 	width:100%;
 	background-image: -o-linear-gradient(bottom, rgb(56,56,56) 33%, rgb(73,73,73) 66%);
 	background-image: -moz-linear-gradient(bottom, rgb(56,56,56) 33%, rgb(73,73,73) 66%);
@@ -949,6 +950,46 @@ tr:hover td {
 
 .actualcontent {
 	clear: both;
+}
+
+/* Graph SVG */
+#graphView {
+	position: absolute;
+	top: 210px;
+	bottom: 5px;
+	left: 50px;
+	right: 50px;
+	padding: 10px;
+	background: #E0E0E0;
+}
+
+.relative {
+	position: relative;
+	width: 100%;
+	height: 100%;
+}
+
+#svgGraph {
+	width: 100%;
+	height: 100%;
+	background: #fff;
+}
+
+#svgDiv {
+	position: absolute;
+	top: 0px;
+	right: 0px;
+	left: 260px;
+	bottom: 0px;
+	height: 100%;
+}
+
+#jobList {
+	position: absolute;
+	top: 0px;
+	left: 0px;
+	height: 100%;
+	width: 260px;
 }
 
 /* old styles */

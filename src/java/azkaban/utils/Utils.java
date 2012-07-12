@@ -160,4 +160,12 @@ public class Utils {
     	}
     	return buffer.toString();
     }
+    
+    public static Double convertToDouble(Object obj) {
+    	if (obj instanceof String) {
+    		return Double.parseDouble((String)obj);
+    	}
+    	
+    	return (Double)obj;
+    }
 }

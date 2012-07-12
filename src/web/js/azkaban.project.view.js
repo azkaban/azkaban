@@ -82,7 +82,7 @@ azkaban.FlowTableView= Backbone.View.extend({
 	    
 	    $.get(
 	      requestURL,
-	      {"project": projectId, "json":"expandflow", "flow":targetId},
+	      {"project": projectId, "json":"fetchflowlist", "flow":targetId},
 	      function(data) {
 	        console.log("Success");
 	        target.loaded = true;

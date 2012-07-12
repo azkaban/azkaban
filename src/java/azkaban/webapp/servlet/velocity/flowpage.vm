@@ -10,6 +10,7 @@
 		<script type="text/javascript" src="${context}/js/jquery.simplemodal.js"></script>
 		<script type="text/javascript" src="${context}/js/azkaban.nav.js"></script>
 		<script type="text/javascript" src="${context}/js/azkaban.flow.view.js"></script>
+		<script type="text/javascript" src="${context}/js/svgNavigate.js"></script>
 		<script type="text/javascript">
 			var contextURL = "${context}";
 			var currentTime = ${currentTime};
@@ -42,7 +43,7 @@
 						<h3><a href="${context}/manager?project=${project.name}&flow=${flowid}">Flow <span>$flowid</span></a></h3>
 					</div>
 					
-					<div class="headertabs">
+					<div id="headertabs" class="headertabs">
 						<ul>
 							<li><a id="graphViewLink" href="#graph">Graph</a></li>
 							<li class="lidivider">|</li>
@@ -50,7 +51,15 @@
 						</ul>
 					</div>
 					<div id="graphView">
-					<p>This is my graph view</p>
+						<div class="relative">
+							<div id="jobList">
+								Loading Flow ${flowid} 
+							</div>
+							<div id="svgDiv" >
+								<svg id="svgGraph" xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 100% 100%" > 
+								</svg>
+							</div>
+						</div>
 					</div>
 					<div id="jobListView">
 					<p>This is my joblist view</p>

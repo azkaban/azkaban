@@ -13,8 +13,9 @@ public class Flow {
 		READY, RUNNING, RUNNING_WITH_FAILURE, FAILED, SUCCEEDED
 	}
 	private final String id;
-	private ArrayList<Node> startNodes;
-	private ArrayList<Node> endNodes;
+	private ArrayList<Node> startNodes = null;
+	private ArrayList<Node> endNodes = null;
+	private int numLevels = -1;
 	
 	private HashMap<String, Node> nodes = new HashMap<String, Node>();
 
@@ -49,6 +50,7 @@ public class Flow {
 			
 			for (Node node: startNodes) {
 				node.setLevel(0);
+				numLevels = 0;
 				recursiveSetLevels(node);
 			}
 		}
@@ -65,11 +67,16 @@ public class Flow {
 				// We pick whichever is higher to get the max distance from root.
 				int level = Math.max(node.getLevel() + 1, nextNode.getLevel());
 				nextNode.setLevel(level);
+				numLevels = Math.max(level, numLevels);
 				recursiveSetLevels(nextNode);
 			}
 		}
 	}
 
+	public int getNumLevels() {
+		return numLevels;
+	}
+	
 	public List<Node> getStartNodes() {
 		return startNodes;
 	}
@@ -170,6 +177,7 @@ public class Flow {
 		flowObj.put("props", objectizeProperties());
 		flowObj.put("nodes", objectizeNodes());
 		flowObj.put("edges", objectizeEdges());
+		flowObj.put("layedout", isLayedOut);
 		if (errors != null) {
 			flowObj.put("errors", errors);
 		}
@@ -212,7 +220,11 @@ public class Flow {
 		Map<String, Object> flowObject = (Map<String,Object>)object;
 		
 		String id = (String)flowObject.get("id");
+		Boolean layedout = (Boolean)flowObject.get("layedout");
 		Flow flow = new Flow(id);
+		if (layedout != null) {
+			flow.setLayedOut(layedout);
+		}
 		
 		// Loading projects
 		List<Object> propertiesList = (List<Object>)flowObject.get("props");
