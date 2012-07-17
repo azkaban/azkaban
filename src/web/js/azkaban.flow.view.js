@@ -38,10 +38,12 @@ azkaban.FlowTabView= Backbone.View.extend({
 var jobListView;
 azkaban.JobListView = Backbone.View.extend({
 	events: {
-		"keyup input": "filterJobs"
+		"keyup input": "filterJobs",
+		"click li": "handleJobClick",
+		"click #resetPanZoomBtn" : "handleResetPanZoom"
 	},
 	initialize: function(settings) {
-		this.model.bind('change:selected', this.changeSelected, this);
+		this.model.bind('change:selected', this.handleSelectionChange, this);
 		this.model.bind('change:graph', this.render, this);
 	},
 	filterJobs: function(self) {
@@ -102,6 +104,8 @@ azkaban.JobListView = Backbone.View.extend({
 		var data = this.model.get("data");
 		var nodes = data.nodes;
 		var edges = data.edges;
+		
+		this.listNodes = {}; 
 		if (nodes.length == 0) {
 			console.log("No results");
 			return;
@@ -127,9 +131,49 @@ azkaban.JobListView = Backbone.View.extend({
 			li.appendChild(a);
 			ul.appendChild(li);
 			li.jobid=nodeArray[i].id;
+			
+			this.listNodes[nodeArray[i].id] = li;
 		}
 		
 		$("#list").append(ul);
+	},
+	handleJobClick : function(evt) {
+		var jobid = evt.currentTarget.jobid;
+		if(!evt.currentTarget.jobid) {
+			return;
+		}
+		
+		if (this.model.has("selected")) {
+			var selected = this.model.get("selected");
+			if (selected == jobid) {
+				this.model.unset("selected");
+			}
+			else {
+				this.model.set({"selected": jobid});
+			}
+		}
+		else {
+			this.model.set({"selected": jobid});
+		}
+	},
+	handleSelectionChange: function(evt) {
+		if (!this.model.hasChanged("selected")) {
+			return;
+		}
+		
+		var previous = this.model.previous("selected");
+		var current = this.model.get("selected");
+		
+		if (previous) {
+			$(this.listNodes[previous]).removeClass("selected");
+		}
+		
+		if (current) {
+			$(this.listNodes[current]).addClass("selected");
+		}
+	},
+	handleResetPanZoom: function(evt) {
+		this.model.trigger("resetPanZoom");
 	}
 });
 
@@ -140,6 +184,7 @@ azkaban.SvgGraphView = Backbone.View.extend({
 	initialize: function(settings) {
 		this.model.bind('change:selected', this.changeSelected, this);
 		this.model.bind('change:graph', this.render, this);
+		this.model.bind('resetPanZoom', this.resetPanZoom, this);
 		
 		this.svgns = "http://www.w3.org/2000/svg";
 		this.xlinksn = "http://www.w3.org/1999/xlink";
@@ -199,11 +244,28 @@ azkaban.SvgGraphView = Backbone.View.extend({
 		}
 		
 		this.graphBounds = bounds;
-			
-		$("#svgGraph").svgNavigate("transformToBox", {x: bounds.minX, y: bounds.minY, width: (bounds.maxX - bounds.minX), height: (bounds.maxY - bounds.minY) });
+		this.resetPanZoom();
 	},
 	changeSelected: function(self) {
 		console.log("change selected");
+		var selected = this.model.get("selected");
+		var previous = this.model.previous("selected");
+		
+		if (previous) {
+			// Unset previous
+		}
+		
+		if (selected) {
+			//var g = document.getElementById();
+			var node = this.nodes[selected];
+			
+			var offset = 200;
+			var widthHeight = offset*2;
+			var x = node.sx - offset;
+			var y = node.sy - offset;
+			
+			$("#svgGraph").svgNavigate("transformToBox", {x: x, y: y, width: widthHeight, height: widthHeight});
+		}
 	},
 	drawEdge: function(self, edge) {
 		var svg = self.svgGraph;
@@ -289,6 +351,10 @@ azkaban.SvgGraphView = Backbone.View.extend({
 	calcScalePoint : function(pointObj) {
 		pointObj.sx = 50*pointObj.x;
 		pointObj.sy = 50*pointObj.y;
+	},
+	resetPanZoom : function(self) {
+		var bounds = this.graphBounds;
+		$("#svgGraph").svgNavigate("transformToBox", {x: bounds.minX, y: bounds.minY, width: (bounds.maxX - bounds.minX), height: (bounds.maxY - bounds.minY) });
 	}
 	
 });

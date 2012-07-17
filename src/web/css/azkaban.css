@@ -1005,6 +1005,11 @@ tr:hover td {
 	bottom: 120px;
 }
 
+#resetPanZoomBtn {
+	position: absolute;
+	bottom: 90px;
+}
+
 #filter {
 	width: 100%;
 }
@@ -1016,21 +1021,29 @@ tr:hover td {
 #list ul li {
 	margin: 4px 5px;
 	border-bottom: 1px solid #EEE;
+	cursor: pointer;
+}
+
+#list ul li:hover{
+	background-color: #E1E3E2;
+	color: #009FC9;
+}
+
+#list ul li.selected {
+	background-color: #009FC9;
+	color: #EEE;
 }
 
 #list ul li a {
 	font-size: 10pt;
 	margin-left: 5px;
-	cursor: pointer;
 }
 
 #list ul li a span {
 	background-color: #FF0;
+	color: black;
 }
 
-#list ul li a:hover {
-	color: #009FC9;
-}
 
 /* old styles */
 
