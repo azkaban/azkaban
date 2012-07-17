@@ -243,6 +243,11 @@ azkaban.SvgGraphView = Backbone.View.extend({
 			this.drawEdge(this, edges[i]);
 		}
 		
+		bounds.minX = bounds.minX ? bounds.minX - 200 : -200;
+		bounds.minY = bounds.minY ? bounds.minY - 200 : -200;
+		bounds.maxX = bounds.maxX ? bounds.maxX + 200 : 200;
+		bounds.maxY = bounds.maxY ? bounds.maxY + 200 : 200;
+		
 		this.graphBounds = bounds;
 		this.resetPanZoom();
 	},
