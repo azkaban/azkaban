@@ -285,15 +285,15 @@ public class Flow {
 		this.isLayedOut = layedOut;
 	}
 
-	/*package*/ Map<String, Node> getNodeMap() {
+	public Map<String, Node> getNodeMap() {
 		return nodes;
 	}
 	
-	/*package*/ Map<String, Set<Edge>> getOutEdgeMap() {
+	public Map<String, Set<Edge>> getOutEdgeMap() {
 		return outEdges;
 	}
 	
-	/*package*/ Map<String, Set<Edge>> getInEdgeMap() {
+	public Map<String, Set<Edge>> getInEdgeMap() {
 		return inEdges;
 	}
 }

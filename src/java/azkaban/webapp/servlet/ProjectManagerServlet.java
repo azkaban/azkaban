@@ -1,5 +1,6 @@
 package azkaban.webapp.servlet;
 
+import java.awt.geom.Point2D;
 import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -156,6 +157,20 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 			
 			if (edge.hasError()) {
 				edgeObj.put("error", edge.getError());
+			}
+			if (edge.getGuideValues() != null) {
+				List<Point2D> guides = edge.getGuideValues();
+				ArrayList<Object> guideOutput = new ArrayList<Object>();
+				for (Point2D guide: guides) {
+					double x = guide.getX();
+					double y = guide.getY();
+					HashMap<String, Double> point = new HashMap<String, Double>();
+					point.put("x", x);
+					point.put("y", y);
+					guideOutput.add(point);
+				}
+				
+				edgeObj.put("guides", guideOutput);
 			}
 			
 			edgeList.add(edgeObj);

@@ -53,10 +53,14 @@
 					<div id="graphView">
 						<div class="relative">
 							<div id="jobList">
-								Loading Flow ${flowid} 
+								<div id="filterList">
+									<input id="filter" placeholder="  Job Filter" />
+								</div>
+								<div id="list">
+								</div>
 							</div>
 							<div id="svgDiv" >
-								<svg id="svgGraph" xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 100% 100%" > 
+								<svg id="svgGraph" xmlns="http://www.w3.org/2000/svg" version="1.1" shape-rendering="optimize-speed" text-rendering="optimize-speed" >
 								</svg>
 							</div>
 						</div>

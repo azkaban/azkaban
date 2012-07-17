@@ -48,6 +48,8 @@
 			evt = window.event;
 		}
 		var target = evt.target;
+		
+		
 		var leftOffset = 0;
 		var topOffset = 0;
 		if (!target.marker) {
@@ -56,13 +58,6 @@
 			}
 
 			target = target.farthestViewportElement;
-		}
-		
-		if (target.parentNode.offsetLeft) {
-			leftOffset = target.parentNode.offsetLeft;
-		}
-		if (target.parentNode.offsetTop) {
-			topOffset = target.parentNode.offsetTop;
 		}
 		
 		// Trackball/trackpad vs wheel. Need to accommodate
@@ -78,9 +73,9 @@
 		target.zoomIndex = zoomLevel;
 		var scale = target.zoomLevels[zoomLevel];
 		
-		var x = evt.clientX - leftOffset;
-		var y = evt.clientY - topOffset;
-		
+		var y = evt.layerY;
+		var x = evt.layerX;
+
 		scaleGraph(target, scale, x, y);
 	}
 	

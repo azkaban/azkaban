@@ -16,7 +16,8 @@ import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 
 import azkaban.flow.Flow;
-import azkaban.flow.LayeredFlowLayout;
+import azkaban.flow.layout.BlockFlowLayout;
+import azkaban.flow.layout.LayeredFlowLayout;
 import azkaban.user.Permission;
 import azkaban.user.Permission.Type;
 import azkaban.user.User;
@@ -128,6 +129,9 @@ public class FileProjectManager implements ProjectManager {
 							//if (!flow.isLayedOut()) {
 								LayeredFlowLayout layout = new LayeredFlowLayout();
 								layout.layoutFlow(flow);
+								
+								BlockFlowLayout bfl = new BlockFlowLayout();
+								bfl.layoutFlow(flow);
 								
 								try {
 									writeFlowFile(flowFile.getParentFile(), flow);

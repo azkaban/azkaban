@@ -1,4 +1,6 @@
-package azkaban.flow;
+package azkaban.flow.layout;
+
+import java.awt.geom.Point2D;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -8,8 +10,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
+import azkaban.flow.Edge;
+import azkaban.flow.Flow;
+import azkaban.flow.Node;
+
 public class LayeredFlowLayout implements FlowLayout{
-	private static final double EPSILON = 0.000001;
+	private static final double EPSILON = 0.00000001;
 	private static final double MIN_X_SPACING = 1.0;
 	private static final double MIN_Y_SPACING = 1.0;
 	
@@ -30,20 +36,74 @@ public class LayeredFlowLayout implements FlowLayout{
 			index++;
 		}
 		
-		midUpDownScheme(nodeLayers, levelWithMax);
+		trueMidUpDown(nodeLayers, levelWithMax);
 
 		printLayer(flow.getId(), nodeLayers, maxNodesInLevel, levelWithMax);
 		flow.setLayedOut(true);
 	}
 
 	private void assignPointsToFlowNodes(ArrayList<ArrayList<LayeredNode>> nodeLayers, double xScale, double minXSpacing) {
+		// This is going top down.
+		HashMap<String, ArrayList<Point2D>> edgeGuidePoints = new HashMap<String, ArrayList<Point2D>>();
+		HashMap<String, Edge> edgeMap = new HashMap<String, Edge>();
 		for (ArrayList<LayeredNode> layer: nodeLayers) {
 			for (LayeredNode lnode : layer) {
 				if (lnode instanceof WrappedNode) {
 					WrappedNode wnode = (WrappedNode)lnode;
 					Node node = wnode.getNode();
-					node.setPosition(wnode.getX()*xScale, lnode.level * minXSpacing);
+					node.setPosition(wnode.getX()*xScale, lnode.getLevel() * minXSpacing);
 				}
+				else if (lnode instanceof DummyNode){
+					DummyNode dnode = (DummyNode)lnode;
+					Edge edge = dnode.getEdge();
+					String id = edge.getId();
+					
+					ArrayList<Point2D> guides = edgeGuidePoints.get(id);
+					if (guides == null) {
+						guides = new ArrayList<Point2D>();
+						edgeGuidePoints.put(id, guides);
+						edgeMap.put(id, edge);
+					}
+					
+					Point2D point = new Point2D.Double(dnode.getX()*xScale, dnode.getLevel() * minXSpacing);
+					guides.add(point);
+				}
+			}
+		}
+		
+		for (Edge edge: edgeMap.values()) {
+			String id = edge.getId();
+			ArrayList<Point2D> guides = edgeGuidePoints.get(id);
+			
+			if (guides != null) {
+				ArrayList<Point2D> filteredList = null;
+				if (guides.size() == 1) {
+					filteredList = guides;
+				}
+				else {
+					filteredList = new ArrayList<Point2D>();
+					
+					// Add first
+					Point2D first = guides.get(0);
+					filteredList.add(first);
+					double lastX = first.getX();
+					
+					for(int i=1; i < filteredList.size() - 1; ++i) {
+						Point2D dummyPoint = filteredList.get(i);
+						double currentX = dummyPoint.getX();
+						if (Math.abs(lastX - currentX) < EPSILON) {
+							continue;
+						}
+						
+						lastX = currentX;
+						filteredList.add(dummyPoint);
+					}
+					
+					// Add last
+					filteredList.add(guides.get(guides.size() - 1));
+				}
+				
+				edge.setGuides("dummyNodes", filteredList);
 			}
 		}
 	}
@@ -64,6 +124,9 @@ public class LayeredFlowLayout implements FlowLayout{
 			// Going from the last item unwrapping upwards
 			min = Math.min(min, uncrossLayers(nodeLayers, nodeLayers.size() - 2, 0, comparator));
 			
+			// Reset top position
+			//intializeLevel(nodeLayers.get(0), null);
+			
 			// Going from the first item unwrapping downward
 			min = Math.min(min, uncrossLayers(nodeLayers, 1, nodeLayers.size() - 1, comparator));
 		}
@@ -73,8 +136,45 @@ public class LayeredFlowLayout implements FlowLayout{
 		
 		System.out.println("min:" + min);
 		double scale = min > 0 ? MIN_X_SPACING / min : MIN_X_SPACING;
-		scale = Math.max(scale, 1);
+		scale = Math.min(scale, 50);
+	
+		assignPointsToFlowNodes(nodeLayers, scale, MIN_Y_SPACING);
+	}
+	
+	// Lays out by the longest row item, up... then do all the whole thing.
+	private void trueMidUpDown(ArrayList<ArrayList<LayeredNode>> nodeLayers, int levelWithMax) {
+		LevelComparator comparator = new LevelComparator();
 		
+		if (levelWithMax == 0) {
+			midUpDownScheme(nodeLayers, levelWithMax);
+			return;
+		}
+		
+		ArrayList<LayeredNode> level = nodeLayers.get(levelWithMax);
+		Collections.sort(level, comparator);
+		
+		Random random = new Random(1);
+		intializeLevel(level, random);
+		double min = Double.MAX_VALUE;
+		
+		if (nodeLayers.size() > 2) {
+			// Going from the last item unwrapping upwards
+			min = Math.min(min, uncrossLayers(nodeLayers, levelWithMax - 1, 0, comparator));
+			
+			// Reset top position
+			//intializeLevel(nodeLayers.get(0), null);
+			
+			// Going from the first item unwrapping downward
+			min = Math.min(min, uncrossLayers(nodeLayers, 1, nodeLayers.size() - 1, comparator));
+		}
+		else if (nodeLayers.size() > 1) {
+			min = uncrossLayers(nodeLayers, 1, 1, comparator);
+		}
+		
+		System.out.println("min:" + min);
+		double scale = min > 0 ? MIN_X_SPACING / min : MIN_X_SPACING;
+		scale = Math.min(scale, 50);
+	
 		assignPointsToFlowNodes(nodeLayers, scale, MIN_Y_SPACING);
 	}
 	
@@ -85,9 +185,14 @@ public class LayeredFlowLayout implements FlowLayout{
 			node.setMaxX(starting + 0.5);
 			node.setMinX(starting - 0.5);
 
-			// Why random hopping? between 0.5 to 1.0
-			double randomHop = random.nextDouble();
-			starting += (1 + randomHop*0.5);
+			if (random  != null) {
+				// Why random hopping? between 0.5 to 1.0
+				double randomHop = random.nextDouble();
+				starting += (1 + randomHop*0.5);
+			}
+			else {
+				starting += 1;
+			}
 		}
 	}
 
@@ -176,18 +281,26 @@ public class LayeredFlowLayout implements FlowLayout{
 	private double separateRange(ArrayList<LayeredNode> layer, int startIndex, int endIndex) {
 		double startSplit = 0;
 		double endSplit = 0;
+
 		if (startIndex == 0) {
 			startSplit = layer.get(0).getMinX();
 		}
 		else {
-			startSplit = (layer.get(startIndex).getX() + layer.get(startIndex - 1).getX())/2.0;
+			// What we're attempting here is to gain more room.
+			// If the previous placed node is a dummy node, then we try to get closer to it without
+			// overlapping it. Otherwise, we split the difference.
+			LayeredNode previousNode = layer.get(startIndex -1);
+			double factor = previousNode instanceof DummyNode ? 0.3 : 0.5;
+			startSplit = layer.get(startIndex).getX()*factor + previousNode.getX()*(1.0 - factor);
 		}
 
 		if (endIndex == layer.size() - 1) {
 			endSplit = layer.get(endIndex).getMaxX();
 		}
 		else {
-			endSplit = (layer.get(endIndex + 1).getX() + layer.get(endIndex).getX())/2.0;
+			LayeredNode nextNode = layer.get(endIndex + 1);
+			double factor = nextNode instanceof DummyNode ? 0.3 : 0.5;
+			endSplit = layer.get(endIndex).getX()*factor + nextNode.getX()*(1.0-factor);
 		}
 		
 		double deltaDiff = endSplit - startSplit;
@@ -195,16 +308,68 @@ public class LayeredFlowLayout implements FlowLayout{
 			System.err.println("WTH It's 0!!");
 		}
 		else {
-			// startIndex - endIndex should be at least 2.
-			double step = deltaDiff / (double)(endIndex - startIndex);
-			double start = startSplit;
+			int length = endIndex - startIndex + 1;
+			// Assign weights of 0.25 to dummies, and 1 to regular. Then apply left and right.
+			ArrayList<LayeredNode> regulars = new ArrayList<LayeredNode>(length);
+			ArrayList<LayeredNode> dummies = new ArrayList<LayeredNode>(length);
+
 			for (int i = startIndex; i <= endIndex; ++i) {
 				LayeredNode node = layer.get(i);
-				node.setX(start);
-				start += step;
+				if (node instanceof DummyNode) {
+					dummies.add(node);
+				}
+				else if (node instanceof WrappedNode) {
+					regulars.add(node);
+				}
 			}
 			
-			return step;
+			double start = startSplit;
+			double end = endSplit;
+			double weightedCount = (0.4*dummies.size() + (double)regulars.size()) - 1.0;
+			double regularStep = deltaDiff / weightedCount;
+			double dummyStep = regularStep * 0.3;
+			
+			int dummyFront = dummies.size() / 2;
+			for (LayeredNode node : dummies) {
+				node.setX(start);
+				start += dummyStep;
+			}
+			
+			for (LayeredNode node : regulars) {
+				node.setX(start);
+				start += regularStep;
+			}
+//			
+//			// We do this to place the regular nodes in the middle and the dummy nodes off to the side.
+//			int dummyFront = dummies.size() / 2;
+//			for (int i = 0; i < dummyFront; ++i) {
+//				LayeredNode node = dummies.get(i);
+//				node.setX(start);
+//				start += dummyStep;
+//			}
+//			for (int i = dummyFront; i < dummies.size(); ++i) {
+//				LayeredNode node = dummies.get(i);
+//				node.setX(end);
+//				end -= dummyStep;
+//			}
+//			
+//			for (LayeredNode node: regulars) {
+//				node.setX(start);
+//				start += regularStep;
+//			}
+//			
+			return regularStep;
+			
+//			// startIndex - endIndex should be at least 2.
+//			double step = deltaDiff / (double)(endIndex - startIndex);
+//			double start = startSplit;
+//			for (int i = startIndex; i <= endIndex; ++i) {
+//				LayeredNode node = layer.get(i);
+//				node.setX(start);
+//				start += step;
+//			}
+			
+//			return step;
 		}
 
 		return Double.NaN;
@@ -294,10 +459,10 @@ public class LayeredFlowLayout implements FlowLayout{
 			LayeredNode source = layeredNodeMap.get(edge.getSourceId());
 			LayeredNode dest = layeredNodeMap.get(edge.getTargetId());
 			int sourceLevel = source.getLevel();
-			int destLevel = source.getLevel();
+			int destLevel = dest.getLevel();
 			
 			for (int index = sourceLevel + 1; index < destLevel; index++) {
-				LayeredNode dummyNode = new LayeredNode();
+				DummyNode dummyNode = new DummyNode(edge);
 				dummyNode.setLevel(index);
 				ArrayList<LayeredNode> nodeList = nodeLevels.get(index);
 				nodeList.add(dummyNode);
@@ -311,87 +476,6 @@ public class LayeredFlowLayout implements FlowLayout{
 		}
 		
 		return nodeLevels;
-	}
-	
-	private class WrappedNode extends LayeredNode {
-		private Node node;
-		public WrappedNode(Node node) {
-			this.node = node;
-			super.level = node.getLevel();
-		}
-		public Node getNode() {
-			return node;
-		}
-		@Override
-		public String getId() {
-			return node.getId();
-		}
-	}
-
-	private class LayeredNode {
-		private int level;
-		private ArrayList<LayeredNode> inNodes;
-		private ArrayList<LayeredNode> outNodes;
-		private double minX;
-		private double maxX;
-		private double x;
-		private double y;
-		
-		public LayeredNode() {
-			inNodes = new ArrayList<LayeredNode>();
-			outNodes = new ArrayList<LayeredNode>();
-		}
-		
-		public String getId() {
-			return "dummy";
-		}
-		
-		public int getLevel() {
-			return level;
-		}
-		public void setLevel(int level) {
-			this.level = level;
-		}
-		public double getX() {
-			return x;
-		}
-		public void setX(double x) {
-			this.x = x;
-		}
-		public double getMinX() {
-			return minX;
-		}
-		public void setMinX(double min) {
-			minX = min;
-		}
-		public double getMaxX() {
-			return maxX;
-		}
-		public void setMaxX(double max) {
-			this.maxX = max;
-		}
-		public void setY(double y) {
-			this.y = y;
-		}
-		public double getY() {
-			return y;
-		}
-		
-		public void addInNode(LayeredNode node) {
-			inNodes.add(node);
-		}
-		
-		public void addOutNode(LayeredNode node) {
-			outNodes.add(node);
-		}
-		
-		public List<LayeredNode> getInNode() {
-			return inNodes;
-		}
-		
-		public List<LayeredNode> getOutNode() {
-			return outNodes;
-		}
 	}
 	
 	private void printLayer(String flowName, ArrayList<ArrayList<LayeredNode>> nodeLayers, int maxNodesInLevel, int levelWithMax) {

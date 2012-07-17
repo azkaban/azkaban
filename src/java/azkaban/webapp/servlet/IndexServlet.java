@@ -56,7 +56,7 @@ public class IndexServlet extends LoginAbstractAzkabanServlet {
         if(hasParam(req, "action")) {
         	String action = getParam(req, "action");
         	if (action.equals("create")) {
-
+        		
         	}
         }
         else {

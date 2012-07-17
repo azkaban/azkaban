@@ -989,7 +989,47 @@ tr:hover td {
 	top: 0px;
 	left: 0px;
 	height: 100%;
-	width: 260px;
+	width: 250px;
+}
+
+#list {
+	position: absolute;
+	background-color: #fff;
+	margin-right: 10px;
+	border: solid;
+	border-color: #CCC;
+	border-width: 1px;
+	overflow: auto;
+	top: 26px;
+	width: 100%;
+	bottom: 120px;
+}
+
+#filter {
+	width: 100%;
+}
+
+#list ul {
+	white-space: nowrap
+}
+
+#list ul li {
+	margin: 4px 5px;
+	border-bottom: 1px solid #EEE;
+}
+
+#list ul li a {
+	font-size: 10pt;
+	margin-left: 5px;
+	cursor: pointer;
+}
+
+#list ul li a span {
+	background-color: #FF0;
+}
+
+#list ul li a:hover {
+	color: #009FC9;
 }
 
 /* old styles */
