@@ -43,7 +43,14 @@ public abstract class LoginAbstractAzkabanServlet extends
 			}
 			return;
 		}
-
+		else if (hasParam(req, "action")) {
+			String action = getParam(req, "action");
+			if (action.equals("login")) {
+				handleLoginAction(req, resp);
+			}
+			return;
+		}
+		
 		if (session != null) {
 			logger.info("Found session " + session.getUser());
 			handleGet(req, resp, session);
@@ -90,34 +97,7 @@ public abstract class LoginAbstractAzkabanServlet extends
 		if (hasParam(req, "action")) {
 			String action = getParam(req, "action");
 			if (action.equals("login")) {
-				if (hasParam(req, "username") && hasParam(req, "password")) {
-					String username = getParam(req, "username");
-					String password = getParam(req, "password");
-
-					UserManager manager = getApplication().getUserManager();
-
-					User user = null;
-					try {
-						user = manager.getUser(username, password);
-					} catch (UserManagerException e) {
-						handleLogin(req, resp, e.getMessage());
-						return;
-					}
-
-					String randomUID = UUID.randomUUID().toString();
-					Session session = new Session(randomUID, user);
-					resp.addCookie(new Cookie(SESSION_ID_NAME, randomUID));
-					getApplication().getSessionCache().addSession(session);
-					handleGet(req, resp, session);
-				} else {
-					if (isAjaxCall(req)) {
-						String response = createJsonResponse("error",
-								"Incorrect Login.", "login", null);
-						writeResponse(resp, response);
-					} else {
-						handleLogin(req, resp, "Enter username and password");
-					}
-				}
+				handleLoginAction(req, resp);
 			} else {
 				Session session = getSessionFromRequest(req);
 				if (session == null) {
@@ -149,6 +129,37 @@ public abstract class LoginAbstractAzkabanServlet extends
 		}
 	}
 
+	protected void handleLoginAction(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+		if (hasParam(req, "username") && hasParam(req, "password")) {
+			String username = getParam(req, "username");
+			String password = getParam(req, "password");
+
+			UserManager manager = getApplication().getUserManager();
+
+			User user = null;
+			try {
+				user = manager.getUser(username, password);
+			} catch (UserManagerException e) {
+				handleLogin(req, resp, e.getMessage());
+				return;
+			}
+
+			String randomUID = UUID.randomUUID().toString();
+			Session session = new Session(randomUID, user);
+			resp.addCookie(new Cookie(SESSION_ID_NAME, randomUID));
+			getApplication().getSessionCache().addSession(session);
+			handleGet(req, resp, session);
+		} else {
+			if (isAjaxCall(req)) {
+				String response = createJsonResponse("error",
+						"Incorrect Login.", "login", null);
+				writeResponse(resp, response);
+			} else {
+				handleLogin(req, resp, "Enter username and password");
+			}
+		}
+	}
+	
 	protected void writeResponse(HttpServletResponse resp, String response)
 			throws IOException {
 		Writer writer = resp.getWriter();

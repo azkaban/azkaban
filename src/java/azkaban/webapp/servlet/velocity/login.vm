@@ -20,7 +20,7 @@
     	#if($errorMsg)
     		<div class="box-error-message">$errorMsg</div>
     	#end
-    	<form class="login-form" method="post">
+    	<form class="login-form" method="get">
     		<div id="login-password">
 		    	<p class="login-label">Username</p>
 		    	<input type="text" name="username" class="login-textbox" ></input>
