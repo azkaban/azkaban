@@ -48,8 +48,15 @@ public abstract class LoginAbstractAzkabanServlet extends
 			if (action.equals("login")) {
 				handleLoginAction(req, resp);
 			}
+			String requestURI = req.getRequestURI();
+			String query = req.getQueryString();
+			String context = req.getContextPath();
+			
+			String referer = req.getHeader("Referer");
+			resp.sendRedirect(referer);			
 			return;
 		}
+
 		
 		if (session != null) {
 			logger.info("Found session " + session.getUser());
