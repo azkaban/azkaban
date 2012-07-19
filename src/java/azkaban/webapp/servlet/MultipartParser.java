@@ -31,32 +31,32 @@ import org.apache.commons.fileupload.servlet.ServletFileUpload;
 
 public class MultipartParser {
 
-    private DiskFileItemFactory _uploadItemFactory;
+	private DiskFileItemFactory _uploadItemFactory;
 
-    public MultipartParser(int spillToDiskSize) {
-        _uploadItemFactory = new DiskFileItemFactory();
-        _uploadItemFactory.setSizeThreshold(spillToDiskSize);
-    }
+	public MultipartParser(int spillToDiskSize) {
+		_uploadItemFactory = new DiskFileItemFactory();
+		_uploadItemFactory.setSizeThreshold(spillToDiskSize);
+	}
 
-    @SuppressWarnings("unchecked")
-	public Map<String, Object> parseMultipart(HttpServletRequest request) throws IOException,
-            ServletException {
-        ServletFileUpload upload = new ServletFileUpload(_uploadItemFactory);
-        List<FileItem> items = null;
-        try {
-            items = upload.parseRequest(request);
-        } catch(FileUploadException e) {
-            throw new ServletException(e);
-        }
+	@SuppressWarnings("unchecked")
+	public Map<String, Object> parseMultipart(HttpServletRequest request)
+			throws IOException, ServletException {
+		ServletFileUpload upload = new ServletFileUpload(_uploadItemFactory);
+		List<FileItem> items = null;
+		try {
+			items = upload.parseRequest(request);
+		} catch (FileUploadException e) {
+			throw new ServletException(e);
+		}
 
-        Map<String, Object> params = new HashMap<String, Object>();
-        for(FileItem item: items) {
-            if(item.isFormField())
-                params.put(item.getFieldName(), item.getString());
-            else
-                params.put(item.getFieldName(), item);
-        }
-        return params;
-    }
+		Map<String, Object> params = new HashMap<String, Object>();
+		for (FileItem item : items) {
+			if (item.isFormField())
+				params.put(item.getFieldName(), item.getString());
+			else
+				params.put(item.getFieldName(), item);
+		}
+		return params;
+	}
 
 }

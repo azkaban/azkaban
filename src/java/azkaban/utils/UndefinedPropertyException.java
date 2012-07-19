@@ -17,14 +17,14 @@
 package azkaban.utils;
 
 /**
- * Indicates that a required property is missing from the Props 
+ * Indicates that a required property is missing from the Props
  */
 public class UndefinedPropertyException extends RuntimeException {
 
-    private static final long serialVersionUID = 1;
+	private static final long serialVersionUID = 1;
 
-    public UndefinedPropertyException(String message) {
-        super(message);
-    }
+	public UndefinedPropertyException(String message) {
+		super(message);
+	}
 
 }

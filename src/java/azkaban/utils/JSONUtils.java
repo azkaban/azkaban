@@ -1,6 +1,5 @@
 package azkaban.utils;
 
-
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -19,11 +18,11 @@ public class JSONUtils {
 	 */
 	private JSONUtils() {
 	}
-	
+
 	public static String toJSON(Object obj) {
 		return toJSON(obj, false);
 	}
-	
+
 	public static String toJSON(Object obj, boolean prettyPrint) {
 		ObjectMapper mapper = new ObjectMapper();
 
@@ -37,28 +36,28 @@ public class JSONUtils {
 			throw new RuntimeException(e);
 		}
 	}
-	
+
 	public static Object parseJSONFromString(String json) throws IOException {
 		ObjectMapper mapper = new ObjectMapper();
-    	JsonFactory factory = new JsonFactory();
-    	JsonParser parser = factory.createJsonParser(json);
+		JsonFactory factory = new JsonFactory();
+		JsonParser parser = factory.createJsonParser(json);
 		JsonNode node = mapper.readTree(parser);
-		
+
 		return toObjectFromJSONNode(node);
 	}
-	
+
 	public static Object parseJSONFromFile(File file) throws IOException {
 		ObjectMapper mapper = new ObjectMapper();
-    	JsonFactory factory = new JsonFactory();
-    	JsonParser parser = factory.createJsonParser(file);
+		JsonFactory factory = new JsonFactory();
+		JsonParser parser = factory.createJsonParser(file);
 		JsonNode node = mapper.readTree(parser);
-		
+
 		return toObjectFromJSONNode(node);
 	}
-	
+
 	private static Object toObjectFromJSONNode(JsonNode node) {
 		if (node.isObject()) {
-			HashMap<String, Object> obj = new HashMap<String,Object>();
+			HashMap<String, Object> obj = new HashMap<String, Object>();
 			Iterator<String> iter = node.getFieldNames();
 			while (iter.hasNext()) {
 				String fieldName = iter.next();
@@ -66,10 +65,9 @@ public class JSONUtils {
 				Object subObj = toObjectFromJSONNode(subNode);
 				obj.put(fieldName, subObj);
 			}
-			
+
 			return obj;
-		}
-		else if (node.isArray()) {
+		} else if (node.isArray()) {
 			ArrayList<Object> array = new ArrayList<Object>();
 			Iterator<JsonNode> iter = node.getElements();
 			while (iter.hasNext()) {
@@ -78,29 +76,23 @@ public class JSONUtils {
 				array.add(subObject);
 			}
 			return array;
-		}
-		else if (node.isTextual()) {
+		} else if (node.isTextual()) {
 			return node.asText();
-		}
-		else if (node.isNumber()) {
+		} else if (node.isNumber()) {
 			if (node.isInt()) {
 				return node.asInt();
-			}
-			else if (node.isLong()) {
+			} else if (node.isLong()) {
 				return node.asLong();
-			}
-			else if (node.isDouble()) {
+			} else if (node.isDouble()) {
 				return node.asDouble();
-			}
-			else {
-				System.err.println("ERROR What is this!? " + node.getNumberType());
+			} else {
+				System.err.println("ERROR What is this!? "
+						+ node.getNumberType());
 				return null;
 			}
-		}
-		else if (node.isBoolean()) {
+		} else if (node.isBoolean()) {
 			return node.asBoolean();
-		}
-		else {
+		} else {
 			return null;
 		}
 	}

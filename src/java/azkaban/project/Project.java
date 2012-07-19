@@ -136,12 +136,9 @@ public class Project {
 		Map<String, Object> projectObject = (Map<String, Object>) object;
 		String name = (String) projectObject.get("name");
 		String description = (String) projectObject.get("description");
-		String lastModifiedUser = (String) projectObject
-				.get("lastModifiedUser");
-		long createTimestamp = coerceToLong(projectObject
-				.get("createTimestamp"));
-		long lastModifiedTimestamp = coerceToLong(projectObject
-				.get("lastModifiedTimestamp"));
+		String lastModifiedUser = (String) projectObject.get("lastModifiedUser");
+		long createTimestamp = coerceToLong(projectObject.get("createTimestamp"));
+		long lastModifiedTimestamp = coerceToLong(projectObject.get("lastModifiedTimestamp"));
 		String source = (String)projectObject.get("source");
 		
 		Project project = new Project(name);
@@ -191,20 +188,12 @@ public class Project {
 	public int hashCode() {
 		final int prime = 31;
 		int result = 1;
-		result = prime * result
-				+ (int) (createTimestamp ^ (createTimestamp >>> 32));
-		result = prime * result
-				+ ((description == null) ? 0 : description.hashCode());
-		result = prime
-				* result
-				+ (int) (lastModifiedTimestamp ^ (lastModifiedTimestamp >>> 32));
-		result = prime
-				* result
-				+ ((lastModifiedUser == null) ? 0 : lastModifiedUser.hashCode());
+		result = prime * result + (int) (createTimestamp ^ (createTimestamp >>> 32));
+		result = prime * result + ((description == null) ? 0 : description.hashCode());
+		result = prime  * result + (int) (lastModifiedTimestamp ^ (lastModifiedTimestamp >>> 32));
+		result = prime * result + ((lastModifiedUser == null) ? 0 : lastModifiedUser.hashCode());
 		result = prime * result + ((name == null) ? 0 : name.hashCode());
-		result = prime
-				* result
-				+ ((userToPermission == null) ? 0 : userToPermission.hashCode());
+		result = prime * result + ((userToPermission == null) ? 0 : userToPermission.hashCode());
 		return result;
 	}
 
@@ -216,14 +205,17 @@ public class Project {
 			return false;
 		if (getClass() != obj.getClass())
 			return false;
+
 		Project other = (Project) obj;
 		if (createTimestamp != other.createTimestamp)
 			return false;
+
 		if (description == null) {
 			if (other.description != null)
 				return false;
 		} else if (!description.equals(other.description))
 			return false;
+
 		if (lastModifiedTimestamp != other.lastModifiedTimestamp)
 			return false;
 		if (lastModifiedUser == null) {

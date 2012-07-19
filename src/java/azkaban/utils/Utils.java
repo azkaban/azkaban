@@ -37,135 +37,141 @@ import org.apache.commons.io.IOUtils;
  * A util helper class full of static methods that are commonly used.
  */
 public class Utils {
-    public static final Random RANDOM = new Random();
-	
-    /**
-     * Private constructor.
-     */
-    private Utils() {
-    }
+	public static final Random RANDOM = new Random();
 
-    /**
-     * Equivalent to Object.equals except that it handles nulls. If a and b are
-     * both null, true is returned.
-     * 
-     * @param a
-     * @param b
-     * @return
-     */
-    public static boolean equals(Object a, Object b) {
-        if (a == null || b == null) {
-            return a == b;
-        }
+	/**
+	 * Private constructor.
+	 */
+	private Utils() {
+	}
 
-        return a.equals(b);
-    }
+	/**
+	 * Equivalent to Object.equals except that it handles nulls. If a and b are
+	 * both null, true is returned.
+	 * 
+	 * @param a
+	 * @param b
+	 * @return
+	 */
+	public static boolean equals(Object a, Object b) {
+		if (a == null || b == null) {
+			return a == b;
+		}
 
-    /**
-     * Return the object if it is non-null, otherwise throw an exception
-     * 
-     * @param <T>
-     *            The type of the object
-     * @param t
-     *            The object
-     * @return The object if it is not null
-     * @throws IllegalArgumentException
-     *             if the object is null
-     */
-    public static <T> T nonNull(T t) {
-        if (t == null) {
-            throw new IllegalArgumentException("Null value not allowed.");
-        }
-        else {
-            return t;
-        }
-    }
-    
-    /**
-     * Print the message and then exit with the given exit code
-     * 
-     * @param message The message to print
-     * @param exitCode The exit code
-     */
-    public static void croak(String message, int exitCode) {
-        System.err.println(message);
-        System.exit(exitCode);
-    }
-    
-    public static File createTempDir() {
-        return createTempDir(new File(System.getProperty("java.io.tmpdir")));
-    }
+		return a.equals(b);
+	}
 
-    public static File createTempDir(File parent) {
-        File temp = new File(parent, Integer.toString(Math.abs(RANDOM.nextInt()) % 100000000));
-        temp.delete();
-        temp.mkdir();
-        temp.deleteOnExit();
-        return temp;
-    }
-    
-    public static void zip(File input, File output) throws IOException {
-        FileOutputStream out = new FileOutputStream(output);
-        ZipOutputStream zOut = new ZipOutputStream(out);
-        zipFile("", input, zOut);
-        zOut.close();
-    }
+	/**
+	 * Return the object if it is non-null, otherwise throw an exception
+	 * 
+	 * @param <T>
+	 *            The type of the object
+	 * @param t
+	 *            The object
+	 * @return The object if it is not null
+	 * @throws IllegalArgumentException
+	 *             if the object is null
+	 */
+	public static <T> T nonNull(T t) {
+		if (t == null) {
+			throw new IllegalArgumentException("Null value not allowed.");
+		} else {
+			return t;
+		}
+	}
 
-    private static void zipFile(String path, File input, ZipOutputStream zOut) throws IOException {
-        if(input.isDirectory()) {
-            File[] files = input.listFiles();
-            if(files != null) {
-                for(File f: files) {
-                    String childPath = path + input.getName() + (f.isDirectory() ? "/" : "");
-                    zipFile(childPath, f, zOut);
-                }
-            }
-        } else {
-            String childPath = path + (path.length() > 0 ? "/" : "") + input.getName();
-            ZipEntry entry = new ZipEntry(childPath);
-            zOut.putNextEntry(entry);
-            InputStream fileInputStream = new BufferedInputStream(new FileInputStream(input));
-            IOUtils.copy(fileInputStream, zOut);
-            fileInputStream.close();
-        }
-    }
+	/**
+	 * Print the message and then exit with the given exit code
+	 * 
+	 * @param message
+	 *            The message to print
+	 * @param exitCode
+	 *            The exit code
+	 */
+	public static void croak(String message, int exitCode) {
+		System.err.println(message);
+		System.exit(exitCode);
+	}
 
-    public static void unzip(ZipFile source, File dest) throws IOException {
-        Enumeration<?> entries = source.entries();
-        while(entries.hasMoreElements()) {
-            ZipEntry entry = (ZipEntry) entries.nextElement();
-            File newFile = new File(dest, entry.getName());
-            if(entry.isDirectory()) {
-                newFile.mkdirs();
-            } else {
-                newFile.getParentFile().mkdirs();
-                InputStream src = source.getInputStream(entry);
-                OutputStream output = new BufferedOutputStream(new FileOutputStream(newFile));
-                IOUtils.copy(src, output);
-                src.close();
-                output.close();
-            }
-        }
-    }
+	public static File createTempDir() {
+		return createTempDir(new File(System.getProperty("java.io.tmpdir")));
+	}
 
-    public static String flattenToString(Collection<?> collection, String delimiter) {
-    	StringBuffer buffer = new StringBuffer();
-    	for (Object obj: collection) {
-    		buffer.append(obj.toString());
-    		buffer.append(',');
-    	}
-    	
-    	if (buffer.length() > 0) {
-    		buffer.setLength(buffer.length() - 1);
-    	}
-    	return buffer.toString();
-    }
-    
-    public static Double convertToDouble(Object obj) {
-    	if (obj instanceof String) {
-    		return Double.parseDouble((String)obj);
-    	}
-    	
-    	return (Double)obj;
-    }
+	public static File createTempDir(File parent) {
+		File temp = new File(parent,
+				Integer.toString(Math.abs(RANDOM.nextInt()) % 100000000));
+		temp.delete();
+		temp.mkdir();
+		temp.deleteOnExit();
+		return temp;
+	}
+
+	public static void zip(File input, File output) throws IOException {
+		FileOutputStream out = new FileOutputStream(output);
+		ZipOutputStream zOut = new ZipOutputStream(out);
+		zipFile("", input, zOut);
+		zOut.close();
+	}
+
+	private static void zipFile(String path, File input, ZipOutputStream zOut) throws IOException {
+		if (input.isDirectory()) {
+			File[] files = input.listFiles();
+			if (files != null) {
+				for (File f : files) {
+					String childPath = path + input.getName()
+							+ (f.isDirectory() ? "/" : "");
+					zipFile(childPath, f, zOut);
+				}
+			}
+		} else {
+			String childPath = path + (path.length() > 0 ? "/" : "")
+					+ input.getName();
+			ZipEntry entry = new ZipEntry(childPath);
+			zOut.putNextEntry(entry);
+			InputStream fileInputStream = new BufferedInputStream(
+					new FileInputStream(input));
+			IOUtils.copy(fileInputStream, zOut);
+			fileInputStream.close();
+		}
+	}
+
+	public static void unzip(ZipFile source, File dest) throws IOException {
+		Enumeration<?> entries = source.entries();
+		while (entries.hasMoreElements()) {
+			ZipEntry entry = (ZipEntry) entries.nextElement();
+			File newFile = new File(dest, entry.getName());
+			if (entry.isDirectory()) {
+				newFile.mkdirs();
+			} else {
+				newFile.getParentFile().mkdirs();
+				InputStream src = source.getInputStream(entry);
+				OutputStream output = new BufferedOutputStream(
+						new FileOutputStream(newFile));
+				IOUtils.copy(src, output);
+				src.close();
+				output.close();
+			}
+		}
+	}
+
+	public static String flattenToString(Collection<?> collection, String delimiter) {
+		StringBuffer buffer = new StringBuffer();
+		for (Object obj : collection) {
+			buffer.append(obj.toString());
+			buffer.append(',');
+		}
+
+		if (buffer.length() > 0) {
+			buffer.setLength(buffer.length() - 1);
+		}
+		return buffer.toString();
+	}
+
+	public static Double convertToDouble(Object obj) {
+		if (obj instanceof String) {
+			return Double.parseDouble((String) obj);
+		}
+
+		return (Double) obj;
+	}
 }

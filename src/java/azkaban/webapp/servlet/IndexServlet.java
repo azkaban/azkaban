@@ -34,33 +34,34 @@ import azkaban.webapp.session.Session;
  * The main page
  */
 public class IndexServlet extends LoginAbstractAzkabanServlet {
-    //private static final Logger logger = Logger.getLogger(IndexServlet.class.getName());
+	// private static final Logger logger =
+	// Logger.getLogger(IndexServlet.class.getName());
 
-    private static final long serialVersionUID = -1;
+	private static final long serialVersionUID = -1;
 
-    @Override
-    protected void handleGet(HttpServletRequest req, HttpServletResponse resp, Session session) throws ServletException,
-            IOException {
-    	User user = session.getUser();
-    	
-    	ProjectManager manager = this.getApplication().getProjectManager();
-    	List<Project> projects = manager.getProjects(user);
-        Page page = newPage(req, resp, session, "azkaban/webapp/servlet/velocity/index.vm");
-        page.add("projects", projects);
-        page.render();
-    }
+	@Override
+	protected void handleGet(HttpServletRequest req, HttpServletResponse resp,
+			Session session) throws ServletException, IOException {
+		User user = session.getUser();
 
-    @Override
-    protected void handlePost(HttpServletRequest req, HttpServletResponse resp, Session session)
-            throws ServletException, IOException {
-        if(hasParam(req, "action")) {
-        	String action = getParam(req, "action");
-        	if (action.equals("create")) {
-        		
-        	}
-        }
-        else {
-            resp.sendRedirect(req.getContextPath());
-        }
-    }
+		ProjectManager manager = this.getApplication().getProjectManager();
+		List<Project> projects = manager.getProjects(user);
+		Page page = newPage(req, resp, session,
+				"azkaban/webapp/servlet/velocity/index.vm");
+		page.add("projects", projects);
+		page.render();
+	}
+
+	@Override
+	protected void handlePost(HttpServletRequest req, HttpServletResponse resp,
+			Session session) throws ServletException, IOException {
+		if (hasParam(req, "action")) {
+			String action = getParam(req, "action");
+			if (action.equals("create")) {
+
+			}
+		} else {
+			resp.sendRedirect(req.getContextPath());
+		}
+	}
 }
