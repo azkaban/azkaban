@@ -1115,6 +1115,19 @@ table.parameters tr td {
 	padding-left: 10px;
 }
 
+#pdescription {
+	width: 70%;
+}
+
+.editTextArea {
+	width: 100%;
+}
+
+#edit {
+	width: 60px;
+	text-align: center;
+}
+
 /* old styles */
 
 .azkaban-charts .hitarea {

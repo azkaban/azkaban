@@ -57,7 +57,11 @@
 						<tr><td class="first">Created Date:</td><td>$utils.formatDate($project.lastModifiedTimestamp)</td></tr>
 						<tr><td class="first">Modified Date:</td><td>$utils.formatDate($project.createTimestamp)</td></tr>
 						<tr><td class="first">Last Modified by:</td><td>$project.lastModifiedUser</td></tr>
-						<tr><td class="first">Description:</td><td>$project.description</td></tr>
+						<tr><td class="first">Description:</td><td id="pdescription">$project.description</td>
+							#if($admin)
+								<td><div id="edit" class="btn5">Edit</div></td>
+							#end
+						</tr>
 					</table>
 				</div>
 
@@ -95,7 +99,7 @@
 						<tr><td class="last">No flows uploaded to this project.</td></tr>
 #end
 					</tbody>
-				</table
+				</table>
 			</div>
 #end
 		</div>

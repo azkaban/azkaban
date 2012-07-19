@@ -61,6 +61,8 @@ azkaban.ProjectTableView= Backbone.View.extend({
   },
   createFlowListTable : function(data, innerTable) {
   	var flows = data.flows;
+  	flows.sort(function(a,b){return a.flowId.localeCompare(b.flowId);});
+  	
   	var requestURL = contextURL + "/manager?project=" + data.project + "&flow=";
   	for (var i = 0; i < flows.length; ++i) {
   		var id = flows[i].flowId;

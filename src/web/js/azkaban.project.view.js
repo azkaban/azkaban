@@ -154,10 +154,62 @@ azkaban.FlowTableView= Backbone.View.extend({
   }
 });
 
+var projectSummary;
+azkaban.ProjectSummaryView= Backbone.View.extend({
+  events : {
+      "click #edit": "handleDescriptionEdit"
+  },
+  initialize : function(settings) {
+  },
+  handleDescriptionEdit : function(evt) {
+      console.log("Edit description");
+      var editText = $("#edit").text();
+      var descriptionTD = $('#pdescription');
+      
+      if (editText != "Edit") {
+          var requestURL = contextURL + "/manager";
+          var newText = $("#descEdit").val();
+
+          $.get(
+		      requestURL,
+		      {"project": projectId, "json":"changeDescription", "description":newText},
+		      function(data) {
+				if (data.error) {
+					alert(data.error);
+				}
+		      },
+		      "json"
+	    );
+          
+          $(descriptionTD).remove("#descEdit");
+          $(descriptionTD).text(newText);
+          
+          $("#edit").text("Edit");
+      }
+      else {
+      
+	      var text = $(descriptionTD).text();
+	      var edit = document.createElement("textarea");
+	      
+	      $(edit).addClass("editTextArea");
+	      $(edit).attr("id", "descEdit");
+	      $(edit).val(text);
+	      $(descriptionTD).text("");
+	      $(descriptionTD).append(edit);
+	      
+	      $("#edit").text("Commit");
+      }
+  },
+  render: function() {
+  }
+});
+
+
 $(function() {
 	projectView = new azkaban.ProjectView({el:$('#all-jobs-content')});
 	uploadView = new azkaban.UploadProjectView({el:$('#upload-project')});
 	flowTableView = new azkaban.FlowTableView({el:$('#flow-tabs')});
+	projectSummary = new azkaban.ProjectSummaryView({el:$('#project-summary')});
 	// Setting up the project tabs
 
 });

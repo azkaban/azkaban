@@ -440,5 +440,21 @@ public class FileProjectManager implements ProjectManager {
 		}
 	}
 
+	@Override
+	public void commitProject(String projectName) throws ProjectManagerException {
+		Project project = projects.get(projectName);
+		if (project == null) {
+			throw new ProjectManagerException("Project " + projectName + " doesn't exist.");
+		}
+		
+		File projectPath = new File(projectDirectory, projectName);
+		try {
+			writeProjectFile(projectPath, project);
+		}
+		catch (IOException e) {
+			throw new ProjectManagerException("Error committing project " + projectName, e);
+		}
+	}
+
 
 }

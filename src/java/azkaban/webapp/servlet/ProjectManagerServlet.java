@@ -32,7 +32,6 @@ import org.apache.log4j.Logger;
 
 import azkaban.flow.Edge;
 import azkaban.flow.Flow;
-import azkaban.flow.FlowProps;
 import azkaban.flow.Node;
 import azkaban.project.Project;
 import azkaban.project.ProjectManager;
@@ -130,16 +129,47 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 
 		String jsonName = getParam(req, "json");
 		if (jsonName.equals("fetchflowjobs")) {
-			jsonFetchFlow(project, ret, req, resp);
+			if (handleJsonPermission(project, user, Type.READ, ret)) {
+				jsonFetchFlow(project, ret, req, resp);
+			}
 		}
 		else if (jsonName.equals("fetchflowgraph")) {
-			jsonFetchFlowGraph(project, ret, req, resp);
+			if (handleJsonPermission(project, user, Type.READ, ret)) {
+				jsonFetchFlowGraph(project, ret, req, resp);
+			}
 		}
 		else if (jsonName.equals("fetchprojectflows")) {
-			jsonFetchProjectFlows(project, ret, req, resp);
+			if (handleJsonPermission(project, user, Type.READ, ret)) {
+				jsonFetchProjectFlows(project, ret, req, resp);
+			}
+		}
+		else if (jsonName.equals("changeDescription")) {
+			if (handleJsonPermission(project, user, Type.WRITE, ret)) {
+				jsonChangeDescription(project, ret, req, resp);
+			}
 		}
 		
 		this.writeJSON(resp, ret);
+	}
+	
+	private boolean handleJsonPermission(Project project, User user, Type type, Map<String, Object> ret) {
+		if (project.hasPermission(user, type)) {
+			return true;
+		}
+		
+		ret.put("error", "Permission denied. Need " + type.toString() + " access.");
+		return false;
+	}
+	
+	private void jsonChangeDescription(Project project, HashMap<String, Object> ret, HttpServletRequest req, HttpServletResponse resp) throws ServletException {
+		String description = getParam(req, "description");
+		project.setDescription(description);
+		
+		try {
+			manager.commitProject(project.getName());
+		} catch (ProjectManagerException e) {
+			ret.put("error", e.getMessage());
+		}
 	}
 	
 	private void jsonFetchProjectFlows(Project project, HashMap<String, Object> ret, HttpServletRequest req, HttpServletResponse resp) throws ServletException {
@@ -364,6 +394,9 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 				page.add("errorMsg", "Project " + projectName + " not found.");
 			}
 			else {
+				if (project.hasPermission(user, Type.ADMIN)) {
+					page.add("admin", true);
+				}
 				page.add("project", project);
 				page.add("admins", Utils.flattenToString(project.getUsersWithPermission(Type.ADMIN), ","));
 				page.add("permissions", project.getUserPermission(user));

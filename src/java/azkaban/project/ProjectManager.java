@@ -12,6 +12,8 @@ public interface ProjectManager {
     
     public List<Project> getProjects(User user);
     
+    public void commitProject(String name) throws ProjectManagerException;
+    
     public Project getProject(String name, User user);
     
     public void uploadProject(String projectName, File projectDir, User uploader, boolean force) throws ProjectManagerException;
