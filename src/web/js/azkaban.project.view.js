@@ -53,6 +53,10 @@ azkaban.FlowTableView= Backbone.View.extend({
   	_.bindAll(this, 'createJobListTable');
   },
   expandFlowProject : function(evt) {
+    if (evt.target.tagName!="SPAN") {
+    	return;
+    }
+    
     var target = evt.currentTarget;
     var targetId = target.id;
     var requestURL = contextURL + "/manager";
@@ -82,7 +86,7 @@ azkaban.FlowTableView= Backbone.View.extend({
 	    
 	    $.get(
 	      requestURL,
-	      {"project": projectId, "json":"fetchflowlist", "flow":targetId},
+	      {"project": projectId, "json":"fetchflowjobs", "flow":targetId},
 	      function(data) {
 	        console.log("Success");
 	        target.loaded = true;
@@ -100,7 +104,7 @@ azkaban.FlowTableView= Backbone.View.extend({
   createJobListTable : function(data, innerTable) {
   	var nodes = data.nodes;
   	var flowId = data.flowId;
-  	
+  	var requestURL = contextURL + "/manager?project=" + data.project + "&flow=" + data.flowId + "&job=";
   	for (var i = 0; i < nodes.length; i++) {
 		var job = nodes[i];
 		var name = job.id;
@@ -118,6 +122,7 @@ azkaban.FlowTableView= Backbone.View.extend({
 		$(ida).text(name);
 		$(ida).attr("id", nodeId);
 		$(ida).css("margin-left", level * 20);
+		$(ida).attr("href", requestURL + name);
 		
 		$(idtd).append(ida);
 		$(tr).append(idtd);
@@ -150,7 +155,7 @@ azkaban.FlowTableView= Backbone.View.extend({
 });
 
 $(function() {
-	projectView = new azkaban.ProjectView({el:$( '#all-jobs-content'), successMsg: successMessage, errorMsg: errorMessage });
+	projectView = new azkaban.ProjectView({el:$('#all-jobs-content')});
 	uploadView = new azkaban.UploadProjectView({el:$('#upload-project')});
 	flowTableView = new azkaban.FlowTableView({el:$('#flow-tabs')});
 	// Setting up the project tabs

@@ -8,7 +8,7 @@
 		<script type="text/javascript" src="${context}/js/backbone-0.5.3-min.js"></script>
 		<script type="text/javascript" src="${context}/js/jquery.simplemodal.js"></script>
 		<script type="text/javascript" src="${context}/js/azkaban.nav.js"></script>
-		<script type="text/javascript" src="${context}/js/azkaban.job.view.js"></script>
+		<script type="text/javascript" src="${context}/js/azkaban.main.view.js"></script>
 		<script type="text/javascript">
 			var contextURL = "${context}";
 			var currentTime = ${currentTime};
@@ -50,7 +50,7 @@
 #foreach($project in $projects)
 					<tr class="row">
 						<td class="tb-name">
-							<div class="jobfolder expand" onclick="expandFlow(this)" id="$folderName">
+							<div class="jobfolder expand" id="${project.name}">
 								<span class="state-icon"></span>
 								<a href="${context}/manager?project=${project.name}">$project.name</a>
 							</div>
@@ -58,6 +58,17 @@
 						<td class="tb-up-date">$utils.formatDate($project.lastModifiedTimestamp)</td>
 						<td class="tb-owner">$project.lastModifiedUser</td>
 						<td class="tb-action last"></td>
+					</tr>
+					<tr class="childrow" id="${project.name}-child" style="display: none;">
+						<td class="expandedFlow">
+							<table class="innerTable">
+								<thead>
+									<tr><th class="tb-name">Flows</th></tr>
+								</thead>
+								<tbody id="${project.name}-tbody">
+								</tbody>
+							</table>
+						</td>
 					</tr>
 #end
 #else

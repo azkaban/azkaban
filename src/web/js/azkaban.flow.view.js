@@ -1,5 +1,17 @@
 $.namespace('azkaban');
 
+var handleJobMenuClick = function(action, el, pos) {
+	var jobid = el[0].jobid;
+	var requestURL = contextURL + "/manager?project=" + projectName + "&flow=" + flowName + "&job=" + jobid;
+	if (action == "open") {
+		window.location.href = requestURL;
+	}
+	else if(action == "openwindow") {
+		window.open(requestURL);
+	}
+
+}
+
 var flowTabView;
 azkaban.FlowTabView= Backbone.View.extend({
   events : {
@@ -58,6 +70,7 @@ azkaban.JobListView = Backbone.View.extend({
 						function(){
 							var a = $(this).find("a");
         					$(a).html(this.jobid);
+        					$(this).show();
 						}
 					);
 				}
@@ -72,6 +85,7 @@ azkaban.JobListView = Backbone.View.extend({
 					function(){
 						var a = $(this).find("a");
     					$(a).html(this.jobid);
+    					$(this).show();
 					}
 				);
 			}
@@ -131,6 +145,12 @@ azkaban.JobListView = Backbone.View.extend({
 			li.appendChild(a);
 			ul.appendChild(li);
 			li.jobid=nodeArray[i].id;
+			
+			$(li).contextMenu({
+					menu: 'jobMenu'
+				},
+				handleJobMenuClick
+			);
 			
 			this.listNodes[nodeArray[i].id] = li;
 		}
@@ -302,7 +322,7 @@ azkaban.SvgGraphView = Backbone.View.extend({
 			line.setAttributeNS(null, "x2", endNode.sx);
 			line.setAttributeNS(null, "y2", endNode.sy);
 			line.setAttributeNS(null, "style", "stroke:rgb(255,0,0);stroke-width:2");
-					
+			
 			self.mainG.appendChild(line);
 		}
 	},
@@ -315,6 +335,7 @@ azkaban.SvgGraphView = Backbone.View.extend({
 		var yOffset = 10;
 
 		var nodeG = document.createElementNS(svgns, "g");
+		nodeG.setAttributeNS(null, "class", "jobnode");
 		nodeG.setAttributeNS(null, "id", node.id);
 		nodeG.setAttributeNS(null, "font-family", "helvetica");
 		nodeG.setAttributeNS(null, "transform", "translate(" + node.sx + "," + node.sy + ")");
@@ -344,6 +365,13 @@ azkaban.SvgGraphView = Backbone.View.extend({
 		innerG.appendChild(text);
 		nodeG.appendChild(innerG);
 		self.mainG.appendChild(nodeG);
+
+		nodeG.jobid=node.id;
+		$(nodeG).contextMenu({
+				menu: 'jobMenu'
+			},
+			handleJobMenuClick
+		);
 		
 		this.nodes[node.id] = node;
 	},

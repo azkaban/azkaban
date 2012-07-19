@@ -1,11 +1,8 @@
 package azkaban.project;
 
 import java.io.File;
-import java.io.IOException;
-import java.security.AccessControlException;
 import java.util.List;
 
-import azkaban.flow.Flow;
 import azkaban.user.User;
 import azkaban.utils.Props;
 
@@ -22,4 +19,6 @@ public interface ProjectManager {
     public Project createProject(String projectName, String description, User creator) throws ProjectManagerException;
     
     public Project removeProject(String projectName, User user) throws ProjectManagerException;
+    
+    public Props getProperties(String projectName, String source, User user) throws ProjectManagerException;
 }

@@ -8,6 +8,7 @@
 		<script type="text/javascript" src="${context}/js/underscore-1.2.1-min.js"></script>
 		<script type="text/javascript" src="${context}/js/backbone-0.5.3-min.js"></script>
 		<script type="text/javascript" src="${context}/js/jquery.simplemodal.js"></script>
+		<script type="text/javascript" src="${context}/js/jquery.contextMenu.js"></script>
 		<script type="text/javascript" src="${context}/js/azkaban.nav.js"></script>
 		<script type="text/javascript" src="${context}/js/azkaban.flow.view.js"></script>
 		<script type="text/javascript" src="${context}/js/svgNavigate.js"></script>
@@ -21,7 +22,7 @@
 			var projectName = "${project.name}";
 			var flowName = "${flowid}";
 		</script>
-		
+		<link rel="stylesheet" type="text/css" href="${context}/css/jquery.contextMenu.custom.css" /> 
 	</head>
 	<body>
 #set($current_page="all")
@@ -39,8 +40,10 @@
 
 				<div id="all-jobs-content">
 					<div class="section-hd">
-						<h2><a href="${context}/manager?project=${project.name}">Project <span>$project.name</span></a></h2>
-						<h3><a href="${context}/manager?project=${project.name}&flow=${flowid}">Flow <span>$flowid</span></a></h3>
+						<h2><a href="${context}/manager?project=${project.name}&flow=${flowid}">Flow <span>$flowid</span></a></h2>
+						<div class="section-sub-hd">
+							<h4><a href="${context}/manager?project=${project.name}">Project <span>$project.name</span></a></h4>
+						</div>
 					</div>
 					
 					<div id="headertabs" class="headertabs">
@@ -71,6 +74,11 @@
 					</div>
 				</div>
 #end
+		<ul id="jobMenu" class="contextMenu">  
+			<li class="open"><a href="#open">Open...</a></li>
+			<li class="openwindow"><a href="#openwindow">Open in New Window...</a></li>
+		</ul>
+
 		</div>
 	</body>
 </html>

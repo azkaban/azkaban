@@ -11,11 +11,18 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import net.sf.ehcache.Cache;
+import net.sf.ehcache.CacheManager;
+import net.sf.ehcache.Element;
+import net.sf.ehcache.config.CacheConfiguration;
+import net.sf.ehcache.store.MemoryStoreEvictionPolicy;
+
 import org.apache.log4j.Logger;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 
 import azkaban.flow.Flow;
+import azkaban.flow.Node;
 import azkaban.flow.layout.BlockFlowLayout;
 import azkaban.flow.layout.LayeredFlowLayout;
 import azkaban.user.Permission;
@@ -37,15 +44,33 @@ public class FileProjectManager implements ProjectManager {
 	private static final String PROJECT_DIRECTORY = "src";
 	private static final String FLOW_EXTENSION = ".flow";
 	private static final Logger logger = Logger.getLogger(FileProjectManager.class);
+	private static final int IDLE_SECONDS = 120;
 	private ConcurrentHashMap<String, Project> projects = new ConcurrentHashMap<String, Project>();
-
+	private CacheManager manager = CacheManager.create();
+	private Cache sourceCache;
+	
 	private File projectDirectory;
 
 	public FileProjectManager(Props props) {
 		setupDirectories(props);
 		loadAllProjects();
+		setupCache();
 	}
 
+	private void setupCache() {
+		CacheConfiguration cacheConfig = 
+				new CacheConfiguration("propsCache", 2000)
+					.memoryStoreEvictionPolicy(MemoryStoreEvictionPolicy.LRU)
+					.overflowToDisk(false)
+					.eternal(false)
+					.timeToIdleSeconds(IDLE_SECONDS)
+					.diskPersistent(false)
+					.diskExpiryThreadIntervalSeconds(0);
+
+		sourceCache = new Cache(cacheConfig);
+		manager.addCache(sourceCache);
+	}
+	
 	private void setupDirectories(Props props) {
 		String projectDir = props.getString(DIRECTORY_PARAM);
 		logger.info("Using directory " + projectDir + " as the project directory.");
@@ -263,6 +288,9 @@ public class FileProjectManager implements ProjectManager {
 		else if (creator == null) {
 			throw new ProjectManagerException("Valid creator user must be set.");
 		}
+		else if (!projectName.matches("[a-zA-Z][a-zA-Z_0-9|-]*")){
+			throw new ProjectManagerException("Project names must start with a letter, followed by any number of letters, digits, '-' or '_'.");
+		}
 	
 		if (projects.contains(projectName)) {
 			throw new ProjectManagerException("Project already exists.");
@@ -304,11 +332,11 @@ public class FileProjectManager implements ProjectManager {
 	private synchronized void writeProjectFile(File directory, Project project) throws IOException {
 		Object object = project.toObject();
 		File tmpFile = File.createTempFile("project-",".json", directory);
-	
+		
 		if (tmpFile.exists()) {
 			tmpFile.delete();
 		}
-	
+		
 		logger.info("Writing project file " + tmpFile);
 		String output = JSONUtils.toJSON(object, true);
 		
@@ -323,7 +351,7 @@ public class FileProjectManager implements ProjectManager {
 			throw e;
 		}
 		writer.close();
-	
+		
 		File projectFile = new File(directory, PROPERTIES_FILENAME);
 		File swapFile = new File(directory, PROPERTIES_FILENAME + "_old");
 		
@@ -362,7 +390,36 @@ public class FileProjectManager implements ProjectManager {
 			oldOutputFile.delete();
 		}
 	}
+	
+	public Props getProperties(String projectName, String source, User user) throws ProjectManagerException {
+		Project project = projects.get(projectName);
+		if (project == null) {
+			throw new ProjectManagerException("Project " + project + " cannot be found.");
+		}
+		if (!project.hasPermission(user, Type.READ)) {
+			throw new AccessControlException("Permission denied. Do not have read access.");
+		}
 
+		String mySource = projectName + File.separatorChar + project.getSource() + File.separatorChar + "src" + File.separatorChar + source;
+		Element sourceElement = sourceCache.get(mySource);
+
+		if (sourceElement != null) {
+			return Props.clone((Props)sourceElement.getObjectValue());
+		}
+		
+		File file = new File(projectDirectory, mySource);
+		if (!file.exists()) {
+			throw new ProjectManagerException("Source file " + file.getAbsolutePath() + " doesn't exist.");
+		}
+
+		try {
+			Props props = new Props((Props)null, file);
+			return props;
+		} catch (IOException e) {
+			throw new ProjectManagerException("Error loading file " + file.getPath(), e);
+		}
+	}
+	
 	@Override
 	public synchronized Project removeProject(String projectName, User user) {
 		return null;
@@ -382,4 +439,6 @@ public class FileProjectManager implements ProjectManager {
 			return pathname.isFile() && !pathname.isHidden() && name.length() > suffix.length() && name.endsWith(suffix);
 		}
 	}
+
+
 }

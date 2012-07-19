@@ -15,6 +15,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.zip.ZipFile;
 
 
@@ -31,12 +32,15 @@ import org.apache.log4j.Logger;
 
 import azkaban.flow.Edge;
 import azkaban.flow.Flow;
+import azkaban.flow.FlowProps;
 import azkaban.flow.Node;
 import azkaban.project.Project;
 import azkaban.project.ProjectManager;
 import azkaban.project.ProjectManagerException;
 import azkaban.user.Permission.Type;
 import azkaban.user.User;
+import azkaban.utils.Pair;
+import azkaban.utils.Props;
 import azkaban.utils.Utils;
 import azkaban.webapp.session.Session;
 import azkaban.webapp.servlet.MultipartParser;
@@ -70,6 +74,9 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 		if ( hasParam(req, "project") ) {
 			if (hasParam(req, "json")) {
 				handleJSONAction(req, resp, session);
+			}
+			else if (hasParam(req, "job")) {
+				handleJobPage(req, resp, session);
 			}
 			else if (hasParam(req, "flow")) {
 				handleFlowPage(req, resp, session);
@@ -122,14 +129,28 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 		}
 
 		String jsonName = getParam(req, "json");
-		if (jsonName.equals("fetchflowlist")) {
+		if (jsonName.equals("fetchflowjobs")) {
 			jsonFetchFlow(project, ret, req, resp);
 		}
 		else if (jsonName.equals("fetchflowgraph")) {
 			jsonFetchFlowGraph(project, ret, req, resp);
 		}
+		else if (jsonName.equals("fetchprojectflows")) {
+			jsonFetchProjectFlows(project, ret, req, resp);
+		}
 		
 		this.writeJSON(resp, ret);
+	}
+	
+	private void jsonFetchProjectFlows(Project project, HashMap<String, Object> ret, HttpServletRequest req, HttpServletResponse resp) throws ServletException {
+		ArrayList<Map<String,Object>> flowList = new ArrayList<Map<String,Object>>();
+		for (Flow flow: project.getFlows()) {
+			HashMap<String, Object> flowObj = new HashMap<String, Object>();
+			flowObj.put("flowId", flow.getId());
+			flowList.add(flowObj);
+		}
+		
+		ret.put("flows", flowList); 
 	}
 	
 	private void jsonFetchFlowGraph(Project project, HashMap<String, Object> ret, HttpServletRequest req, HttpServletResponse resp) throws ServletException {
@@ -219,6 +240,86 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 		ret.put("nodes", nodeList);
 	}
 	
+	private void handleJobPage(HttpServletRequest req, HttpServletResponse resp, Session session) throws ServletException {
+		Page page = newPage(req, resp, session, "azkaban/webapp/servlet/velocity/jobpage.vm");
+		String projectName = getParam(req, "project");
+		String flowName = getParam(req, "flow");
+		String jobName = getParam(req, "job");
+		
+		User user = session.getUser();
+		Project project = null;
+		Flow flow = null;
+		try {
+			project = manager.getProject(projectName, user);
+			if (project == null) {
+				page.add("errorMsg", "Project " + projectName + " not found.");
+			}
+			else {
+				page.add("project", project);
+				
+				flow = project.getFlow(flowName);
+				if (flow == null) {
+					page.add("errorMsg", "Flow " + flowName + " not found.");
+				}
+				else {
+					page.add("flowid", flow.getId());
+					
+					Node node = flow.getNode(jobName);
+					
+					if (node == null) {
+						page.add("errorMsg", "Job " + jobName + " not found.");
+					}
+					else {
+						Props prop = manager.getProperties(projectName, node.getJobSource(), user);
+						page.add("jobid", node.getId());
+						page.add("jobtype", node.getType());
+						
+						ArrayList<String> dependencies = new ArrayList<String>();
+						Set<Edge> inEdges = flow.getInEdges(node.getId());
+						if (inEdges != null) {
+							for ( Edge dependency: inEdges ) {
+								dependencies.add(dependency.getSourceId());
+							}
+						}
+						if (!dependencies.isEmpty()) {
+							page.add("dependencies", dependencies);
+						}
+						
+						ArrayList<String> dependents = new ArrayList<String>();
+						Set<Edge> outEdges = flow.getOutEdges(node.getId());
+						if (outEdges != null) {
+							for ( Edge dependent: outEdges ) {
+								dependents.add(dependent.getTargetId());
+							}
+						}
+						if (!dependents.isEmpty()) {
+							page.add("dependents", dependents);
+						}
+						
+						// Resolve property dependencies
+						String source = node.getPropsSource();
+						page.add("properties", source);
+
+						ArrayList<Pair<String,String>> parameters = new ArrayList<Pair<String, String>>();
+						// Parameter
+						for (String key : prop.getKeySet()) {
+							String value = prop.get(key);
+							parameters.add(new Pair<String,String>(key, value));
+						}
+						
+						page.add("parameters", parameters);
+					}
+				}
+			}
+		}
+		catch (AccessControlException e) {
+			page.add("errorMsg", e.getMessage());
+		} catch (ProjectManagerException e) {
+			page.add("errorMsg", e.getMessage());
+		}
+		
+		page.render();
+	}
 	
 	private void handleFlowPage(HttpServletRequest req, HttpServletResponse resp, Session session) throws ServletException {
 		Page page = newPage(req, resp, session, "azkaban/webapp/servlet/velocity/flowpage.vm");
@@ -243,8 +344,6 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 				
 				page.add("flowid", flow.getId());
 			}
-			
-			
 		}
 		catch (AccessControlException e) {
 			page.add("errorMsg", e.getMessage());

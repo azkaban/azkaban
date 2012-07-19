@@ -1,7 +1,89 @@
 $.namespace('azkaban');
 
-var jobView;
-azkaban.JobView= Backbone.View.extend({
+var projectTableView;
+azkaban.ProjectTableView= Backbone.View.extend({
+  events : {
+    "click .jobfolder": "expandProject"
+  },
+  initialize : function(settings) {
+
+  },
+  expandProject : function(evt) {
+    if (evt.target.tagName!="SPAN") {
+    	return;
+    }
+    
+    var target = evt.currentTarget;
+    var targetId = target.id;
+    var requestURL = contextURL + "/manager";
+    
+    var targetExpanded = $('#' + targetId + '-child');
+    var targetTBody = $('#' + targetId + '-tbody');
+    
+    var createFlowListFunction = this.createFlowListTable;
+    
+    if (target.loading) {
+    	console.log("Still loading.");
+    }
+    else if (target.loaded) {
+    	if($(targetExpanded).is(':visible')) {
+    		$(target).addClass('expand').removeClass('collapse');
+    		$(targetExpanded).fadeOut("fast");
+    	}
+    	else {
+    	    $(target).addClass('collapse').removeClass('expand');
+    		$(targetExpanded).fadeIn();
+    	}
+    }
+    else {
+	    // projectId is available
+	    $(target).addClass('wait').removeClass('collapse').removeClass('expand');
+	    target.loading = true;
+	    
+	    $.get(
+	      requestURL,
+	      {"project": targetId, "json":"fetchprojectflows"},
+	      function(data) {
+	        console.log("Success");
+	        target.loaded = true;
+	        target.loading = false;
+	        
+	        createFlowListFunction(data, targetTBody);
+	        
+			$(target).addClass('collapse').removeClass('wait');
+	    	$(targetExpanded).fadeIn("fast");
+	      },
+	      "json"
+	    );
+    }
+  },
+  render: function() {
+  },
+  createFlowListTable : function(data, innerTable) {
+  	var flows = data.flows;
+  	var requestURL = contextURL + "/manager?project=" + data.project + "&flow=";
+  	for (var i = 0; i < flows.length; ++i) {
+  		var id = flows[i].flowId;
+  		
+  		var tr = document.createElement("tr");
+		var idtd = document.createElement("td");
+		$(idtd).addClass("tb-name");
+  		
+  		var ida = document.createElement("a");
+		ida.project = data.project;
+		$(ida).text(id);
+		$(ida).attr("href", requestURL + id);
+		
+		$(idtd).append(ida);
+		$(tr).append(idtd);
+		$(innerTable).append(tr);
+  	}
+  }
+});
+
+
+var projectHeaderView;
+azkaban.ProjectHeaderView= Backbone.View.extend({
   events : {
     "click #create-project-btn":"handleCreateProjectJob"
   },
@@ -98,6 +180,7 @@ azkaban.CreateProjectView= Backbone.View.extend({
 });
 
 $(function() {
-	jobView = new azkaban.JobView({el:$( '#all-jobs-content'), successMsg: successMessage, errorMsg: errorMessage });
+	projectHeaderView = new azkaban.ProjectHeaderView({el:$( '#all-jobs-content'), successMsg: successMessage, errorMsg: errorMessage });
+	projectTableView = new azkaban.ProjectTableView({el:$('#all-jobs')});
 	uploadView = new azkaban.CreateProjectView({el:$('#create-project')});
 });

@@ -73,6 +73,10 @@ public class Flow {
 		}
 	}
 
+	public Node getNode(String nodeId) {
+		return nodes.get(nodeId);
+	}
+	
 	public int getNumLevels() {
 		return numLevels;
 	}
@@ -295,5 +299,9 @@ public class Flow {
 	
 	public Map<String, Set<Edge>> getInEdgeMap() {
 		return inEdges;
+	}
+	
+	public FlowProps getFlowProps(String propSource) {
+		return flowProps.get(propSource);
 	}
 }

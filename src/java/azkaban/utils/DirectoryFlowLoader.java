@@ -99,6 +99,10 @@ public class DirectoryFlowLoader {
 						prop.setSource(relative);
 						
 						Node node = new Node(jobName);
+						String type = prop.getString("type", "none");
+						errors.add("Job doesn't have type set '" + jobName + "'.");
+						node.setType(type);
+						
 						node.setJobSource(relative);
 						if (parent != null) {
 							node.setPropsSource(parent.getSource());

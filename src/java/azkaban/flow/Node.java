@@ -19,7 +19,8 @@ public class Node {
 	private Point2D position = null;
 	private int level;
 	private int expectedRunTimeSec = 1;
-
+	private String type;
+	
 	public Node(String id) {
 		this.id = id;
 	}
@@ -43,6 +44,14 @@ public class Node {
 		return state;
 	}
 
+	public String getType() {
+		return type;
+	}
+	
+	public void setType(String type) {
+		this.type = type;
+	}
+	
 	public void setState(State state) {
 		this.state = state;
 	}
@@ -99,8 +108,11 @@ public class Node {
 		Node node = new Node(id);
 		String jobSource = (String)mapObj.get("job.source");
 		String propSource = (String)mapObj.get("prop.source");
+		String typeSource = (String)mapObj.get("job.type");
+		
 		node.setJobSource(jobSource);
 		node.setPropsSource(propSource);
+		node.setType(typeSource);
 		
 		Integer expectedRuntime = (Integer)mapObj.get("expectedRuntime");
 		if (expectedRuntime != null) {
@@ -146,6 +158,7 @@ public class Node {
 		objMap.put("id", id);
 		objMap.put("job.source", jobSource);
 		objMap.put("prop.source", propsSource);
+		objMap.put("job.type", type);
 		objMap.put("expectedRuntime", expectedRunTimeSec);
 		objMap.put("state", state.toString());
 
