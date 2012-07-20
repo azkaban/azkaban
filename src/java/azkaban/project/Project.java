@@ -9,6 +9,7 @@ import azkaban.flow.Flow;
 import azkaban.user.Permission;
 import azkaban.user.Permission.Type;
 import azkaban.user.User;
+import azkaban.utils.Pair;
 
 public class Project {
 	private final String name;
@@ -75,6 +76,16 @@ public class Project {
 		return users;
 	}
 
+	public List<Pair<String, Permission>> getUserPermissions() {
+		ArrayList<Pair<String, Permission>> permissions = new ArrayList<Pair<String, Permission>>();
+		
+		for (Map.Entry<String, Permission> entry : userToPermission.entrySet()) {
+			permissions.add(new Pair<String, Permission>(entry.getKey(), entry.getValue()));
+		}
+		
+		return permissions;
+	}
+	
 	public void setDescription(String description) {
 		this.description = description;
 	}

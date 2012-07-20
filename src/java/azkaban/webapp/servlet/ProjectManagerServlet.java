@@ -74,6 +74,9 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 			if (hasParam(req, "json")) {
 				handleJSONAction(req, resp, session);
 			}
+			else if (hasParam(req, "permissions")) {
+				handlePermissionPage(req, resp, session);
+			}
 			else if (hasParam(req, "job")) {
 				handleJobPage(req, resp, session);
 			}
@@ -110,7 +113,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 			}
 		}
 	}
-
+	
 	private void handleJSONAction(HttpServletRequest req, HttpServletResponse resp, Session session) throws ServletException, IOException {
 		String projectName = getParam(req, "project");
 		User user = session.getUser();
@@ -270,6 +273,32 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 		ret.put("nodes", nodeList);
 	}
 	
+	private void handlePermissionPage(HttpServletRequest req, HttpServletResponse resp, Session session) throws ServletException {
+		Page page = newPage(req, resp, session, "azkaban/webapp/servlet/velocity/permissionspage.vm");
+		String projectName = getParam(req, "project");
+		User user = session.getUser();
+		
+		Project project = null;
+		try {
+			project = manager.getProject(projectName, user);
+			if (project == null) {
+				page.add("errorMsg", "Project " + projectName + " not found.");
+			}
+			else {
+				page.add("project", project);
+				
+				page.add("admins", Utils.flattenToString(project.getUsersWithPermission(Type.ADMIN), ","));
+				page.add("userpermission", project.getUserPermission(user));
+				page.add("permissions", project.getUserPermissions());
+			}
+		}
+		catch(AccessControlException e) {
+			page.add("errorMsg", e.getMessage());
+		}
+		
+		page.render();
+	}
+	
 	private void handleJobPage(HttpServletRequest req, HttpServletResponse resp, Session session) throws ServletException {
 		Page page = newPage(req, resp, session, "azkaban/webapp/servlet/velocity/jobpage.vm");
 		String projectName = getParam(req, "project");
@@ -399,7 +428,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 				}
 				page.add("project", project);
 				page.add("admins", Utils.flattenToString(project.getUsersWithPermission(Type.ADMIN), ","));
-				page.add("permissions", project.getUserPermission(user));
+				page.add("userpermission", project.getUserPermission(user));
 	
 				List<Flow> flows = project.getFlows();
 				if (!flows.isEmpty()) {

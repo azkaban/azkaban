@@ -1128,6 +1128,23 @@ table.parameters tr td {
 	text-align: center;
 }
 
+.permission-table thead tr th.tb-username {
+	padding-left: 15px;
+	text-align:left;
+}
+
+.permission-table thead tr th {
+	text-align:center;
+}
+
+.permission-table tbody tr td.tb-name {
+	text-align:left;
+}
+
+.permission-table tbody tr td {
+	text-align:center;
+}
+
 /* old styles */
 
 .azkaban-charts .hitarea {

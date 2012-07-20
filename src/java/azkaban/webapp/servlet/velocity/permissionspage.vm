@@ -9,7 +9,6 @@
 		<script type="text/javascript" src="${context}/js/backbone-0.5.3-min.js"></script>
 		<script type="text/javascript" src="${context}/js/jquery.simplemodal.js"></script>
 		<script type="text/javascript" src="${context}/js/azkaban.nav.js"></script>
-		<script type="text/javascript" src="${context}/js/azkaban.project.view.js"></script>
 		<script type="text/javascript">
 			var contextURL = "${context}";
 			var currentTime = ${currentTime};
@@ -37,11 +36,11 @@
 
 				<div id="all-jobs-content">
 					<div class="section-hd">
-						<h2><a href="${context}/manager?project=${project.name}">Project <span>$project.name</span></a></h2>
-						
-						<a id="project-upload-btn" class="btn1 projectupload" href="#">Upload</a>
-						<a id="project-permission-btn" class="btn5 projectpermission" href="${context}/manager?project=${project.name}&permissions">Permissions</a>
-					</div><!-- end .section-hd -->
+						<h2><a href="${context}/manager?project=${project.name}&permissions">Permissions</a></h2>
+						<div class="section-sub-hd">
+							<h4><a href="${context}/manager?project=${project.name}">Project <span>$project.name</span></a></h4>
+						</div>
+					</div>
 				</div>
 
 				<div id="project-users">
@@ -65,72 +64,44 @@
 					</table>
 				</div>
 
-			<div id="flow-tabs">
-				<table id="all-jobs" class="all-jobs job-table">
-					<thead>
-						<tr>
-							<th class="tb-name">Flow Name</th>
-						</tr>
-					</thead>
-					<tbody>
-#if($flows)
-#foreach($flow in $flows)
-						<tr class="row" >
-							<td class="tb-name">
-								<div class="jobfolder expand" id="${flow.id}">
-									<span class="state-icon"></span>
-									<a href="${context}/manager?project=${project.name}&flow=${flow.id}">${flow.id}</a>
-								</div>
-							</td>
-						</tr>
-						<tr class="childrow" id="${flow.id}-child" style="display: none;">
-							<td class="expandedFlow">
-								<table class="innerTable">
-									<thead>
-										<tr><th class="tb-name">Jobs</th></tr>
-									</thead>
-									<tbody id="${flow.id}-tbody">
-									</tbody>
-								</table>
-							</td>
-						</tr>
+		<table id="all-jobs" class="all-jobs permission-table">
+			<thead>
+				<tr>
+					<th class="tb-username">User</th>
+					<th class="tb-perm">Admin</th>
+					<th class="tb-read">Read</th>
+					<th class="tb-write">Write</th>
+					<th class="tb-execute">Execute</th>
+					<th class="tb-schedule">Schedule</th>
+				</tr>
+			</thead>
+			<tbody>
+#if($permissions)
+#foreach($perm in $permissions)
+	<tr>
+		<td class="tb-name">$perm.first</td>
+		#if ($perm.second.isPermissionNameSet('ADMIN'))
+			<td><input type="checkbox" name="admin" disabled="disabled" checked></input></td>
+			<td><input type="checkbox" name="read" disabled="disabled" checked></input></td>
+			<td><input type="checkbox" name="write" disabled="disabled" checked></input></td>
+			<td><input type="checkbox" name="execute" disabled="disabled" checked></input></td>
+			<td><input type="checkbox" name="scheduled" disabled="disabled" checked></input></td>
+		#else
+			<td><input type="checkbox" name="admin" disabled="disabled"> </input></td>
+			<td><input type="checkbox" name="read" disabled="disabled" #if ($perm.second.isPermissionNameSet('READ')) checked#end > </input></td>
+			<td><input type="checkbox" name="write" disabled="disabled" #if ($perm.second.isPermissionNameSet('WRITE')) checked#end > </input></td>
+			<td><input type="checkbox" name="execute" disabled="disabled" #if ($perm.second.isPermissionNameSet('EXECUTE')) checked#end > </input></td>
+			<td><input type="checkbox" name="scheduled" disabled="disabled" #if ($perm.second.isPermissionNameSet('SCHEDULE')) checked#end > </input></td>
+		#end
+	</tr>
 #end
 #else
-						<tr><td class="last">No flows uploaded to this project.</td></tr>
+						<tr><td class="last">No Users Found.</td></tr>
 #end
-					</tbody>
-				</table>
-			</div>
+			</tbody>
+		</table>
 #end
 		</div>
 	
-		<div id="upload-project" class="modal">
-			<h3>Upload Project Files</h3>
-			<div id="errorMsg" class="box-error-message">$errorMsg</div>
-			<div class="message">
-				<form id="upload-form" enctype="multipart/form-data" method="post" action="$!context/manager">
-					<fieldset>
-						<dl>
-							<dt>Job Archive</dt>
-							<dd><input id="file" name="file" class="file" type="file" onChange="changeFile()" /></dd>
-							<input type="hidden" name="project" value="$project.name" />
-							<input type="hidden" name="action" value="upload" />
-						</dl>
-					</fieldset>
-				</form>
-			</div>
-			<div class="actions">
-				<a class="yes btn2" id="upload-btn" href="#">Upload</a>
-				<a class="no simplemodal-close btn3" href="#">Cancel</a>
-			</div>
-			<div id="invalid-session" class="modal">
-				<h3>Invalid Session</h3>
-				<p>Session has expired. Please re-login.</p>
-				<div class="actions">
-					<a class="yes btn2" id="login-btn" href="#">Re-login</a>
-				</div>
-			</div>
-		</div>
 	</body>
 </html>
-
