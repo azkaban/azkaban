@@ -1145,6 +1145,44 @@ table.parameters tr td {
 	text-align:center;
 }
 
+svg .edge {
+	stroke: #777;
+	stroke-width: 2;
+}
+
+svg .edge:hover {
+	stroke: #009FC9;
+	stroke-width: 4;
+}
+
+svg .node .backboard {
+	fill: #FFF;
+	opacity: 0.05;
+}
+
+svg .node:hover .backboard {
+	opacity: 0.6;
+}
+
+svg .node circle {
+	fill: #FFF;
+	stroke: #777;
+	stroke-width: 2;
+}
+
+svg .node:hover circle {
+	stroke: #009FC9;
+}
+
+svg .node:hover text {
+	fill: #009FC9;
+}
+
+svg .selected circle {
+	stroke: #777;
+	fill: #444;
+}
+
 /* old styles */
 
 .azkaban-charts .hitarea {

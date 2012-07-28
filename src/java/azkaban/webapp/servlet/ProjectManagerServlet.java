@@ -197,6 +197,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 			nodeObj.put("id", node.getId());
 			nodeObj.put("x", node.getPosition().getX());
 			nodeObj.put("y", node.getPosition().getY());
+			nodeObj.put("level", node.getLevel());
 			if (node.getState() != Node.State.WAITING) {
 				nodeObj.put("state", node.getState());
 			}

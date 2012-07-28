@@ -12,6 +12,29 @@ var handleJobMenuClick = function(action, el, pos) {
 
 }
 
+function hasClass(el, name) 
+{
+	var classes = el.getAttribute("class");
+   return new RegExp('(\\s|^)'+name+'(\\s|$)').test(classes);
+}
+
+function addClass(el, name)
+{
+   if (!hasClass(el, name)) { 
+   		var classes = el.getAttribute("class");
+   		classes += classes ? ' ' + name : '' +name;
+   		el.setAttribute("class", classes);
+   }
+}
+
+function removeClass(el, name)
+{
+   if (hasClass(el, name)) {
+      var classes = el.getAttribute("class");
+      el.setAttribute("class", classes.replace(new RegExp('(\\s|^)'+name+'(\\s|$)'),' ').replace(/^\s+|\s+$/g, ''));
+   }
+}
+
 var flowTabView;
 azkaban.FlowTabView= Backbone.View.extend({
   events : {
@@ -253,14 +276,21 @@ azkaban.SvgGraphView = Backbone.View.extend({
 			return;
 		};
 	
+		// layout
+		layoutGraph(nodes, edges);
+		
 		var bounds = {};
 		this.nodes = {};
 		for (var i = 0; i < nodes.length; ++i) {
-			this.drawNode(this, nodes[i], bounds);
+			this.nodes[nodes[i].id] = nodes[i];
 		}
 		
 		for (var i = 0; i < edges.length; ++i) {
 			this.drawEdge(this, edges[i]);
+		}
+		
+		for (var i = 0; i < nodes.length; ++i) {
+			this.drawNode(this, nodes[i], bounds);
 		}
 		
 		bounds.minX = bounds.minX ? bounds.minX - 200 : -200;
@@ -278,16 +308,21 @@ azkaban.SvgGraphView = Backbone.View.extend({
 		
 		if (previous) {
 			// Unset previous
+			var g = document.getElementById(previous);
+			removeClass(g, "selected");
 		}
 		
 		if (selected) {
-			//var g = document.getElementById();
+			var g = document.getElementById(selected);
 			var node = this.nodes[selected];
+			
+			addClass(g, "selected");
 			
 			var offset = 200;
 			var widthHeight = offset*2;
-			var x = node.sx - offset;
-			var y = node.sy - offset;
+			var x = node.x - offset;
+			var y = node.y - offset;
+			
 			
 			$("#svgGraph").svgNavigate("transformToBox", {x: x, y: y, width: widthHeight, height: widthHeight});
 		}
@@ -300,28 +335,27 @@ azkaban.SvgGraphView = Backbone.View.extend({
 		var endNode = this.nodes[edge.target];
 		
 		if (edge.guides) {
-			var pointString = "" + startNode.sx + "," + startNode.sy + " ";
+			var pointString = "" + startNode.x + "," + startNode.y + " ";
 
 			for (var i = 0; i < edge.guides.length; ++i ) {
 				edgeGuidePoint = edge.guides[i];
-				this.calcScalePoint(edgeGuidePoint);
-				pointString += edgeGuidePoint.sx + "," + edgeGuidePoint.sy + " ";
+				pointString += edgeGuidePoint.x + "," + edgeGuidePoint.y + " ";
 			}
 			
-			pointString += endNode.sx + "," + endNode.sy;
+			pointString += endNode.x + "," + endNode.y;
 			var polyLine = document.createElementNS(svgns, "polyline");
+			polyLine.setAttributeNS(null, "class", "edge");
 			polyLine.setAttributeNS(null, "points", pointString);
-			polyLine.setAttributeNS(null, "style", "fill:none;stroke:black;stroke-width:3");
+			polyLine.setAttributeNS(null, "style", "fill:none;");
 			self.mainG.appendChild(polyLine);
 		}
-		else {
+		else { 
 			var line = document.createElementNS(svgns, 'line');
-			line.setAttributeNS(null, "x1", startNode.sx);
-			line.setAttributeNS(null, "y1", startNode.sy);
-			
-			line.setAttributeNS(null, "x2", endNode.sx);
-			line.setAttributeNS(null, "y2", endNode.sy);
-			line.setAttributeNS(null, "style", "stroke:rgb(255,0,0);stroke-width:2");
+			line.setAttributeNS(null, "class", "edge");
+			line.setAttributeNS(null, "x1", startNode.x);
+			line.setAttributeNS(null, "y1", startNode.y);
+			line.setAttributeNS(null, "x2", endNode.x);
+			line.setAttributeNS(null, "y2", endNode.y);
 			
 			self.mainG.appendChild(line);
 		}
@@ -330,7 +364,6 @@ azkaban.SvgGraphView = Backbone.View.extend({
 		var svg = self.svgGraph;
 		var svgns = self.svgns;
 
-		this.calcScalePoint(node);
 		var xOffset = 10;
 		var yOffset = 10;
 
@@ -338,52 +371,61 @@ azkaban.SvgGraphView = Backbone.View.extend({
 		nodeG.setAttributeNS(null, "class", "jobnode");
 		nodeG.setAttributeNS(null, "id", node.id);
 		nodeG.setAttributeNS(null, "font-family", "helvetica");
-		nodeG.setAttributeNS(null, "transform", "translate(" + node.sx + "," + node.sy + ")");
+		nodeG.setAttributeNS(null, "transform", "translate(" + node.x + "," + node.y + ")");
 		
 		var innerG = document.createElementNS(svgns, "g");
 		innerG.setAttributeNS(null, "transform", "translate(-10,-10)");
 		
-		var rect1 = document.createElementNS(svgns, 'rect');
-		rect1.setAttributeNS(null, "y", 0);
-		rect1.setAttributeNS(null, "x", 0);
-		rect1.setAttributeNS(null, "ry", 12);
-		rect1.setAttributeNS(null, "width", 20);
-		rect1.setAttributeNS(null, "height", 20);
-		rect1.setAttributeNS(null, "style", "width:inherit;stroke-opacity:1");
+		var circle = document.createElementNS(svgns, 'circle');
+		circle.setAttributeNS(null, "cy", 10);
+		circle.setAttributeNS(null, "cx", 10);
+		circle.setAttributeNS(null, "r", 12);
+		circle.setAttributeNS(null, "style", "width:inherit;stroke-opacity:1");
 		
 		
 		var text = document.createElementNS(svgns, 'text');
-		var textLabel = document.createTextNode(node.id);
+		var textLabel = document.createTextNode(node.label);
 		text.appendChild(textLabel);
 		text.setAttributeNS(null, "x", 4);
-		text.setAttributeNS(null, "y", 0);
+		text.setAttributeNS(null, "y", 15);
 		text.setAttributeNS(null, "height", 10); 
+				
+		this.addBounds(bounds, {minX:node.x - xOffset, minY: node.y - yOffset, maxX: node.x + xOffset, maxY: node.y + yOffset});
 		
-		this.addBounds(bounds, {minX:node.sx - xOffset, minY: node.sy - yOffset, maxX: node.sx + xOffset, maxY: node.sy + yOffset});
+		var backRect = document.createElementNS(svgns, 'rect');
+		backRect.setAttributeNS(null, "x", 0);
+		backRect.setAttributeNS(null, "y", 2);
+		backRect.setAttributeNS(null, "class", "backboard");
+		backRect.setAttributeNS(null, "width", 10);
+		backRect.setAttributeNS(null, "height", 15);
 		
-		innerG.appendChild(rect1);
+		innerG.appendChild(circle);
+		innerG.appendChild(backRect);
 		innerG.appendChild(text);
+
 		nodeG.appendChild(innerG);
 		self.mainG.appendChild(nodeG);
 
+		// Need to get text width after attaching to SVG.
+		var computeText = text.getComputedTextLength();
+		var halfWidth = computeText/2;
+		text.setAttributeNS(null, "x", -halfWidth + 10);
+		backRect.setAttributeNS(null, "x", -halfWidth);
+		backRect.setAttributeNS(null, "width", computeText + 20);
+
+		nodeG.setAttributeNS(null, "class", "node");
 		nodeG.jobid=node.id;
 		$(nodeG).contextMenu({
 				menu: 'jobMenu'
 			},
 			handleJobMenuClick
 		);
-		
-		this.nodes[node.id] = node;
 	},
 	addBounds: function(toBounds, addBounds) {
 		toBounds.minX = toBounds.minX ? Math.min(toBounds.minX, addBounds.minX) : addBounds.minX;
 		toBounds.minY = toBounds.minY ? Math.min(toBounds.minY, addBounds.minY) : addBounds.minY;
 		toBounds.maxX = toBounds.maxX ? Math.max(toBounds.maxX, addBounds.maxX) : addBounds.maxX;
 		toBounds.maxY = toBounds.maxY ? Math.max(toBounds.maxY, addBounds.maxY) : addBounds.maxY;
-	},
-	calcScalePoint : function(pointObj) {
-		pointObj.sx = 50*pointObj.x;
-		pointObj.sy = 50*pointObj.y;
 	},
 	resetPanZoom : function(self) {
 		var bounds = this.graphBounds;
