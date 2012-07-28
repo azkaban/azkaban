@@ -22,9 +22,6 @@ import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 
 import azkaban.flow.Flow;
-import azkaban.flow.Node;
-import azkaban.flow.layout.BlockFlowLayout;
-import azkaban.flow.layout.LayeredFlowLayout;
 import azkaban.user.Permission;
 import azkaban.user.Permission.Type;
 import azkaban.user.User;
@@ -221,8 +218,7 @@ public class FileProjectManager implements ProjectManager {
 					errors.addAll(flow.getErrors());
 				}
 				flow.initialize();
-				LayeredFlowLayout layout = new LayeredFlowLayout();
-				layout.layoutFlow(flow);
+
 				writeFlowFile(installDir, flow);
 			} catch (IOException e) {
 				throw new ProjectManagerException(
