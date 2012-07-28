@@ -223,6 +223,7 @@ azkaban.JobListView = Backbone.View.extend({
 var svgGraphView;
 azkaban.SvgGraphView = Backbone.View.extend({
 	events: {
+		"click g" : "clickGraph"
 	},
 	initialize: function(settings) {
 		this.model.bind('change:selected', this.changeSelected, this);
@@ -327,6 +328,12 @@ azkaban.SvgGraphView = Backbone.View.extend({
 			$("#svgGraph").svgNavigate("transformToBox", {x: x, y: y, width: widthHeight, height: widthHeight});
 		}
 	},
+	clickGraph: function(self) {
+		console.log("click");
+		if (self.currentTarget.jobid) {
+			this.model.set({"selected": self.currentTarget.jobid});
+		}
+	},
 	drawEdge: function(self, edge) {
 		var svg = self.svgGraph;
 		var svgns = self.svgns;
@@ -402,6 +409,7 @@ azkaban.SvgGraphView = Backbone.View.extend({
 		innerG.appendChild(circle);
 		innerG.appendChild(backRect);
 		innerG.appendChild(text);
+		innerG.jobid = node.id;
 
 		nodeG.appendChild(innerG);
 		self.mainG.appendChild(nodeG);

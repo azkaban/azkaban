@@ -1160,6 +1160,10 @@ svg .node .backboard {
 	opacity: 0.05;
 }
 
+svg .node:hover {
+	cursor: pointer;
+}
+
 svg .node:hover .backboard {
 	opacity: 0.6;
 }

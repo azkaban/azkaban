@@ -151,19 +151,6 @@ public class FileProjectManager implements ProjectManager {
 							}
 							logger.debug("Loaded flow " + project.getName() + ": " + flow.getId());
 							flow.initialize();
-							//if (!flow.isLayedOut()) {
-								LayeredFlowLayout layout = new LayeredFlowLayout();
-								layout.layoutFlow(flow);
-								
-								BlockFlowLayout bfl = new BlockFlowLayout();
-								bfl.layoutFlow(flow);
-								
-								try {
-									writeFlowFile(flowFile.getParentFile(), flow);
-								} catch (IOException e) {
-									e.printStackTrace();
-								}
-							//}
 							
 							flowMap.put(flow.getId(), flow);
 						}
