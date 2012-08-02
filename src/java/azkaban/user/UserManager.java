@@ -18,4 +18,6 @@ public interface UserManager {
 	 * @throws UserManagerException If the username/password combination doesn't exist.
 	 */
 	public User getUser(String username, String password) throws UserManagerException;
+	
+	public boolean validateUser(String username);
 }

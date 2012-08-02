@@ -83,7 +83,6 @@ azkaban.ProjectTableView= Backbone.View.extend({
   }
 });
 
-
 var projectHeaderView;
 azkaban.ProjectHeaderView= Backbone.View.extend({
   events : {

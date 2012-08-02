@@ -23,46 +23,63 @@ public class Permission {
 	}
 	
 	public Permission(Type ... list) {
-		setPermission(list);
+		addPermission(list);
 	}
 	
-	public void setPermission(Type ... list) {
-		for (Type perm: list) {
-			permissions.add(perm);
+	public void setPermission(Type type, boolean set) {
+		if (set) {
+			addPermission(type);
+		}
+		else {
+			removePermissions(type);
 		}
 	}
 	
-	public void setPermissionsByName(String ... list) {
+	public void addPermission(Type ... list) {
+		// Admin is all encompassing permission. No need to add other types
+		if (!permissions.contains(Type.ADMIN)) {
+			for (Type perm: list) {
+				permissions.add(perm);
+			}
+			// We add everything, and if there's Admin left, we make sure that only Admin is remaining.
+			if (permissions.contains(Type.ADMIN)) {
+				permissions.clear();
+				permissions.add(Type.ADMIN);
+			}
+		}
+	}
+	
+	public void addPermissionsByName(String ... list) {
 		for (String perm: list) {
 			Type type = Type.valueOf(perm);
 			if (type != null) {
-				permissions.add(type);
+				addPermission(type);
 			};
 		}
 	}
 	
-	public void setPermissions(Collection<Type> list) {
+	public void addPermissions(Collection<Type> list) {
 		for (Type perm: list) {
-			permissions.add(perm);
+			addPermission(perm);
 		}
 	}
 	
-	public void setPermissionsByName(Collection<String> list) {
+	public void addPermissionsByName(Collection<String> list) {
 		for (String perm: list) {
 			Type type = Type.valueOf(perm);
 			if (type != null) {
-				permissions.add(type);
+				addPermission(type);
 			};
 		}
 	}
 	
-	public void unsetPermissions(Type ... list) {
+	public void removePermissions(Type ... list) {
 		for (Type perm: list) {
 			permissions.remove(perm);
 		}
 	}
 	
-	public void unsetPermissionsByName(String ... list) {
+	public void removePermissionsByName(String ... list) {
 		for (String perm: list) {
 			Type type = Type.valueOf(perm);
 			if (type != null) {

@@ -169,7 +169,8 @@ public class FileProjectManager implements ProjectManager {
 		ArrayList<Project> array = new ArrayList<Project>();
 		for(Project project : projects.values()) {
 			Permission perm = project.getUserPermission(user);
-			if (perm.isPermissionSet(Type.ADMIN) || perm.isPermissionSet(Type.READ)) {
+
+			if (perm != null && (perm.isPermissionSet(Type.ADMIN) || perm.isPermissionSet(Type.READ))) {
 				array.add(project);
 			}
 		}

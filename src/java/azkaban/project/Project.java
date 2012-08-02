@@ -2,6 +2,7 @@ package azkaban.project;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -18,7 +19,7 @@ public class Project {
 	private long lastModifiedTimestamp;
 	private String lastModifiedUser;
 	private String source;
-	private HashMap<String, Permission> userToPermission = new HashMap<String, Permission>();
+	private LinkedHashMap<String, Permission> userToPermission = new LinkedHashMap<String, Permission>();
 	private Map<String, Flow> flows = null;
 	
 	public Project(String name) {
@@ -102,6 +103,10 @@ public class Project {
 		return userToPermission.get(user.getUserId());
 	}
 
+	public Permission getUserPermission(String userID) {
+		return userToPermission.get(userID);
+	}
+	
 	public long getCreateTimestamp() {
 		return createTimestamp;
 	}
@@ -169,7 +174,7 @@ public class Project {
 			String userid = (String) user.get("userid");
 			Permission perm = new Permission();
 			List<String> list = (List<String>) user.get("permissions");
-			perm.setPermissionsByName(list);
+			perm.addPermissionsByName(list);
 
 			project.setUserPermission(userid, perm);
 		}

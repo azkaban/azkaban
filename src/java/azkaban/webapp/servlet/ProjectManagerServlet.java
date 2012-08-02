@@ -36,6 +36,8 @@ import azkaban.flow.Node;
 import azkaban.project.Project;
 import azkaban.project.ProjectManager;
 import azkaban.project.ProjectManagerException;
+import azkaban.user.Permission;
+import azkaban.user.UserManager;
 import azkaban.user.Permission.Type;
 import azkaban.user.User;
 import azkaban.utils.Pair;
@@ -149,6 +151,21 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 		else if (jsonName.equals("changeDescription")) {
 			if (handleJsonPermission(project, user, Type.WRITE, ret)) {
 				jsonChangeDescription(project, ret, req, resp);
+			}
+		}
+		else if (jsonName.equals("getPermissions")) {
+			if (handleJsonPermission(project, user, Type.READ, ret)) {
+				jsonGetPermissions(project, ret);
+			}
+		}
+		else if (jsonName.equals("changeUserPermission")) {
+			if (handleJsonPermission(project, user, Type.ADMIN, ret)) {
+				jsonChangePermissions(project, ret, req);
+			}
+		}
+		else if (jsonName.equals("addUserPermission")) {
+			if (handleJsonPermission(project, user, Type.ADMIN, ret)) {
+				jsonAddUserPermission(project, ret, req);
 			}
 		}
 		
@@ -274,6 +291,88 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 		ret.put("nodes", nodeList);
 	}
 	
+	private void jsonAddUserPermission(Project project, HashMap<String, Object> ret, HttpServletRequest req) throws ServletException {
+		String username = getParam(req, "username");
+		UserManager userManager = getApplication().getUserManager();
+		if (!userManager.validateUser(username)) {
+			ret.put("error", "User is invalid.");
+			return;
+		}
+		if (project.getUserPermission(username) != null) {
+			ret.put("error", "User permission already exists.");
+			return;
+		}
+		
+		boolean admin = Boolean.parseBoolean(getParam(req, "permissions[admin]"));
+		boolean read = Boolean.parseBoolean(getParam(req, "permissions[read]"));
+		boolean write = Boolean.parseBoolean(getParam(req, "permissions[write]"));
+		boolean execute = Boolean.parseBoolean(getParam(req, "permissions[execute]"));
+		boolean schedule = Boolean.parseBoolean(getParam(req, "permissions[schedule]"));
+		
+		Permission perm = new Permission();
+		if (admin) {
+			perm.setPermission(Type.ADMIN, true);
+		}
+		else {
+			perm.setPermission(Type.READ, read);
+			perm.setPermission(Type.WRITE, write);
+			perm.setPermission(Type.EXECUTE, execute);
+			perm.setPermission(Type.SCHEDULE, schedule);
+		}
+		
+		project.setUserPermission(username, perm);
+		try {
+			manager.commitProject(project.getName());
+		} catch (ProjectManagerException e) {
+			ret.put("error", e.getMessage());
+		}
+	}
+
+	
+	private void jsonChangePermissions(Project project, HashMap<String, Object> ret, HttpServletRequest req) throws ServletException {
+		boolean admin = Boolean.parseBoolean(getParam(req, "permissions[admin]"));
+		boolean read = Boolean.parseBoolean(getParam(req, "permissions[read]"));
+		boolean write = Boolean.parseBoolean(getParam(req, "permissions[write]"));
+		boolean execute = Boolean.parseBoolean(getParam(req, "permissions[execute]"));
+		boolean schedule = Boolean.parseBoolean(getParam(req, "permissions[schedule]"));
+		
+		String username = getParam(req, "username");
+		Permission perm = project.getUserPermission(username);
+		if (perm == null) {
+			ret.put("error", "Permissions for " + username + " cannot be found.");
+			return;
+		}
+		
+		if (admin) {
+			perm.setPermission(Type.ADMIN, true);
+		}
+		else {
+			perm.setPermission(Type.READ, read);
+			perm.setPermission(Type.WRITE, write);
+			perm.setPermission(Type.EXECUTE, execute);
+			perm.setPermission(Type.SCHEDULE, schedule);
+		}
+		try {
+			manager.commitProject(project.getName());
+		} catch (ProjectManagerException e) {
+			ret.put("error", e.getMessage());
+		}
+	}
+	
+	private void jsonGetPermissions(Project project, HashMap<String, Object> ret) {
+		ArrayList<HashMap<String, Object>> permissions = new ArrayList<HashMap<String, Object>>();
+		for(Pair<String, Permission> perm: project.getUserPermissions()) {
+			HashMap<String, Object> permObj = new HashMap<String, Object>();
+			String userId = perm.getFirst();
+			permObj.put("username", userId);
+			permObj.put("permission", perm.getSecond().toStringArray());
+			
+			permissions.add(permObj);
+		}
+		
+		ret.put("permissions", permissions);
+	}
+	
 	private void handlePermissionPage(HttpServletRequest req, HttpServletResponse resp, Session session) throws ServletException {
 		Page page = newPage(req, resp, session, "azkaban/webapp/servlet/velocity/permissionspage.vm");
 		String projectName = getParam(req, "project");
@@ -287,10 +386,14 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 			}
 			else {
 				page.add("project", project);
-				
+				page.add("username", user.getUserId());
 				page.add("admins", Utils.flattenToString(project.getUsersWithPermission(Type.ADMIN), ","));
 				page.add("userpermission", project.getUserPermission(user));
 				page.add("permissions", project.getUserPermissions());
+				
+				if(project.hasPermission(user, Type.ADMIN)) {
+					page.add("isAdmin", true);
+				}
 			}
 		}
 		catch(AccessControlException e) {

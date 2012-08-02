@@ -311,7 +311,8 @@ tr:hover td {
 .btn2,
 .btn3,
 .btn4,
-.btn5 {
+.btn5,
+.btn-disabled {
   -moz-border-radius: 3px;
   -webkit-border-radius: 3px;
   border-radius: 3px;
@@ -396,9 +397,18 @@ tr:hover td {
   border-color: #999;
   color: #666;
 }
-.btn5:hover {
+.btn3:hover {
   background: -moz-linear-gradient(center top , white 0pt, #ECECEC 100%) repeat scroll 0 0 transparent;
   background: -webkit-gradient(linear, center top, center bottom, from(#FFF), to(#ECECEC));
+}
+
+.btn-disabled {
+  background: #CECECE;
+  background: -moz-linear-gradient(top, #F2F2F2 0, #F2F2F2 1px, #E4E4E4 1px, #CECECE 100%);
+  background: -o-linear-gradient(top, #F2F2F2 0, #F2F2F2 1px, #E4E4E4 1px, #CECECE 100%);
+  background: -webkit-gradient(linear, left top, left bottom, color-stop(0,#F2F2F2), color-stop(5%,#F2F2F2), color-stop(5%,#E4E4E4), color-stop(100%,#CECECE));
+  background: linear-gradient(top, #F2F2F2 0, #F2F2F2 1px, #E4E4E4 1px, #CECECE 100%);
+  color: #EEE;
 }
 
 /* confirm modal */
@@ -519,6 +529,12 @@ tr:hover td {
   padding-bottom: 8px; 
 }
 
+.modal h4 {
+  font-weight: bold;
+  margin: 20px 20px 10px 40px;
+  padding-bottom: 8px;
+}
+
 .modal .message {
   font-size: 81.25%;
   padding: 20px;
@@ -557,6 +573,24 @@ tr:hover td {
 .modal dd {
   float: left;
   padding-bottom: 6px;
+}
+
+#change-permission dt {
+  clear: none;
+  width: 75px;
+  padding: 0 0 0 0;
+}
+
+#change-permission dt.nextline {
+	clear: both;
+}
+
+#user-box {
+	background-color: #FFF;
+	border-width: 1px;
+	border-color: #CCC;
+	width: 300px;
+	margin-left: 10px;
 }
 
 #create-project #overwrite {
@@ -1185,6 +1219,17 @@ svg .node:hover text {
 svg .selected circle {
 	stroke: #777;
 	fill: #444;
+}
+
+span.sublabel {
+	font-size: 8pt;
+	margin-left: 12px;
+	color: #333;
+}
+
+#td-adduser {
+	text-align: left;
+	padding-left: 12px;
 }
 
 /* old styles */

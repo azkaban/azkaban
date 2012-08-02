@@ -9,13 +9,14 @@
 		<script type="text/javascript" src="${context}/js/backbone-0.5.3-min.js"></script>
 		<script type="text/javascript" src="${context}/js/jquery.simplemodal.js"></script>
 		<script type="text/javascript" src="${context}/js/azkaban.nav.js"></script>
+		<script type="text/javascript" src="${context}/js/azkaban.permission.view.js"></script>
 		<script type="text/javascript">
 			var contextURL = "${context}";
 			var currentTime = ${currentTime};
 			var timezone = "${timezone}";
 			var errorMessage = "${error_message}";
 			var successMessage = "${success_message}";
-			
+			var userId = "$username";
 			var projectId = "$project.name";
 		</script>
 	</head>
@@ -47,7 +48,13 @@
 					<table class="user-table">
 						<tr><td class="first">Project Admins:</td><td>$admins</td></tr>
 						<tr><td class="first">Your Permissions:</td><td>$userpermission.toString()</td></tr>
+						
+						<tr><td class="first"></td></tr>
 					</table>
+					
+					#if($isAdmin)
+						<button id="addUser" class="btn1">Add User</button>
+					#end
 				</div>
 
 				<div id="project-summary">
@@ -57,14 +64,11 @@
 						<tr><td class="first">Modified Date:</td><td>$utils.formatDate($project.createTimestamp)</td></tr>
 						<tr><td class="first">Last Modified by:</td><td>$project.lastModifiedUser</td></tr>
 						<tr><td class="first">Description:</td><td id="pdescription">$project.description</td>
-							#if($admin)
-								<td><div id="edit" class="btn5">Edit</div></td>
-							#end
 						</tr>
 					</table>
 				</div>
 
-		<table id="all-jobs" class="all-jobs permission-table">
+		<table id="permissions-table" class="all-jobs permission-table">
 			<thead>
 				<tr>
 					<th class="tb-username">User</th>
@@ -73,35 +77,75 @@
 					<th class="tb-write">Write</th>
 					<th class="tb-execute">Execute</th>
 					<th class="tb-schedule">Schedule</th>
+					#if($isAdmin)
+						<th class="tb-action"></th>
+					#end
 				</tr>
 			</thead>
 			<tbody>
 #if($permissions)
 #foreach($perm in $permissions)
-	<tr>
-		<td class="tb-name">$perm.first</td>
-		#if ($perm.second.isPermissionNameSet('ADMIN'))
-			<td><input type="checkbox" name="admin" disabled="disabled" checked></input></td>
-			<td><input type="checkbox" name="read" disabled="disabled" checked></input></td>
-			<td><input type="checkbox" name="write" disabled="disabled" checked></input></td>
-			<td><input type="checkbox" name="execute" disabled="disabled" checked></input></td>
-			<td><input type="checkbox" name="scheduled" disabled="disabled" checked></input></td>
+	<tr id="${perm.first}-row" >
+		<td class="tb-name">#if($perm.first == $username) ${perm.first} <span class="sublabel">(you)</span> #else $perm.first #end</td>
+		#if ($perm.second.isPermissionNameSet("ADMIN")) 
+			<td><input id="${perm.first}-admin-checkbox" type="checkbox" name="admin" disabled="disabled" checked="true"></input></td>
+			<td><input id="${perm.first}-read-checkbox" type="checkbox" name="read" disabled="disabled" checked="true"></input></td>
+			<td><input id="${perm.first}-write-checkbox" type="checkbox" name="write" disabled="disabled" checked="true"></input></td>
+			<td><input id="${perm.first}-execute-checkbox" type="checkbox" name="execute" disabled="disabled" checked="true"></input></td>
+			<td><input id="${perm.first}-schedule-checkbox" type="checkbox" name="schedule" disabled="disabled" checked="true"></input></td>
 		#else
-			<td><input type="checkbox" name="admin" disabled="disabled"> </input></td>
-			<td><input type="checkbox" name="read" disabled="disabled" #if ($perm.second.isPermissionNameSet('READ')) checked#end > </input></td>
-			<td><input type="checkbox" name="write" disabled="disabled" #if ($perm.second.isPermissionNameSet('WRITE')) checked#end > </input></td>
-			<td><input type="checkbox" name="execute" disabled="disabled" #if ($perm.second.isPermissionNameSet('EXECUTE')) checked#end > </input></td>
-			<td><input type="checkbox" name="scheduled" disabled="disabled" #if ($perm.second.isPermissionNameSet('SCHEDULE')) checked#end > </input></td>
+			<td><input id="${perm.first}-admin-checkbox" type="checkbox" name="admin" disabled="disabled"></input></td>
+			<td><input id="${perm.first}-read-checkbox" type="checkbox" name="read" disabled="disabled"  #if ($perm.second.isPermissionNameSet("READ")) checked="true" #end></input></td>
+			<td><input id="${perm.first}-write-checkbox" type="checkbox" name="write" disabled="disabled" #if ($perm.second.isPermissionNameSet("WRITE")) checked="true" #end></input></td>
+			<td><input id="${perm.first}-execute-checkbox" type="checkbox" name="execute" disabled="disabled" #if ($perm.second.isPermissionNameSet("EXECUTE")) checked="true" #end></input></td>
+			<td><input id="${perm.first}-schedule-checkbox" type="checkbox" name="schedule" disabled="disabled" #if ($perm.second.isPermissionNameSet("SCHEDULE")) checked="true" #end></input></td>
+		#end
+
+		#if($isAdmin)
+			<td><button id="$perm.first" #if($perm.first == $username) disabled="disabled" class="change-btn btn-disabled" #else class="change-btn btn2" #end >Change</button></td>
 		#end
 	</tr>
 #end
 #else
-						<tr><td class="last">No Users Found.</td></tr>
+	<tr><td class="last">No Users Found.</td></tr>
 #end
 			</tbody>
 		</table>
 #end
 		</div>
 	
+		<div id="change-permission" class="modal">
+			<h3 id="change-title">Change User Permissions</h3>
+			<div id="errorMsg" class="box-error-message"></div>
+			<div class="message">
+				<fieldset>
+					<dl>
+						<dt>User</dt>
+						<dd><input id="user-box" name="userid" type="text" /></dd>
+						<dt class="nextline">Admin</dt>
+						<dd><input id="admin-change" name="admin" type="checkbox" /></dd>
+						<dt>Read</dt>
+					    <dd><input id="read-change" name="read" type="checkbox" /></dd>
+					    <dt>Write</dt>
+					    <dd><input id="write-change" name="write" type="checkbox" /></dd>
+					    <dt>Execute</dt>
+					    <dd><input id="execute-change" name="execute" type="checkbox" /></dd>
+					    <dt>Schedule</dt>
+					    <dd><input id="schedule-change" name="schedule" type="checkbox" /></dd>
+					</dl>
+				</fieldset>
+			</div>
+			<div class="actions">
+				<a class="yes btn2" id="change-btn" href="#">Commit</a>
+				<a class="no simplemodal-close btn3" href="#">Cancel</a>
+			</div>
+			<div id="invalid-session" class="modal">
+				<h3>Invalid Session</h3>
+				<p>Session has expired. Please re-login.</p>
+				<div class="actions">
+					<a class="yes btn2" id="login-btn" href="#">Re-login</a>
+				</div>
+			</div>
+		</div>
 	</body>
 </html>

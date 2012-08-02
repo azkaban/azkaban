@@ -21,16 +21,16 @@ public class PermissionTest {
     @Test
     public void testEmptyPermissionCreation() throws Exception {
     	Permission permission = new Permission();
-    	permission.setPermissionsByName(new String[]{});
+    	permission.addPermissionsByName(new String[]{});
     }
     
     @Test
     public void testSinglePermissionCreation() throws Exception {
     	Permission perm1 = new Permission();
-    	perm1.setPermissionsByName("READ");
+    	perm1.addPermissionsByName("READ");
     	
     	Permission perm2 = new Permission();
-    	perm2.setPermission(Type.READ);
+    	perm2.addPermission(Type.READ);
     	info("Compare " + perm1.toString() + " and " + perm2.toString());
     	assertTrue(perm1.equals(perm2));
     }
@@ -38,10 +38,10 @@ public class PermissionTest {
     @Test
     public void testListPermissionCreation() throws Exception {
     	Permission perm1 = new Permission();
-    	perm1.setPermissionsByName(new String[]{"READ", "EXECUTE"});
+    	perm1.addPermissionsByName(new String[]{"READ", "EXECUTE"});
     	
     	Permission perm2 = new Permission();
-    	perm2.setPermission(new Type[]{Type.EXECUTE, Type.READ});
+    	perm2.addPermission(new Type[]{Type.EXECUTE, Type.READ});
     	info("Compare " + perm1.toString() + " and " + perm2.toString());
     	assertTrue(perm1.equals(perm2));
     }
@@ -49,11 +49,11 @@ public class PermissionTest {
     @Test
     public void testRemovePermission() throws Exception {
     	Permission perm1 = new Permission();
-    	perm1.setPermissionsByName(new String[]{"READ", "EXECUTE", "WRITE"});
-    	perm1.unsetPermissions(Type.EXECUTE);
+    	perm1.addPermissionsByName(new String[]{"READ", "EXECUTE", "WRITE"});
+    	perm1.removePermissions(Type.EXECUTE);
     	
     	Permission perm2 = new Permission();
-    	perm2.setPermission(new Type[]{Type.READ, Type.WRITE});
+    	perm2.addPermission(new Type[]{Type.READ, Type.WRITE});
     	info("Compare " + perm1.toString() + " and " + perm2.toString());
     	assertTrue(perm1.equals(perm2));
     }
@@ -61,11 +61,11 @@ public class PermissionTest {
     @Test
     public void testRemovePermissionByName() throws Exception {
     	Permission perm1 = new Permission();
-    	perm1.setPermissionsByName(new String[]{"READ", "EXECUTE", "WRITE"});
-    	perm1.unsetPermissionsByName("EXECUTE");
+    	perm1.addPermissionsByName(new String[]{"READ", "EXECUTE", "WRITE"});
+    	perm1.removePermissionsByName("EXECUTE");
     	
     	Permission perm2 = new Permission();
-    	perm2.setPermission(new Type[]{Type.READ, Type.WRITE});
+    	perm2.addPermission(new Type[]{Type.READ, Type.WRITE});
     	info("Compare " + perm1.toString() + " and " + perm2.toString());
     	assertTrue(perm1.equals(perm2));
     }
@@ -73,11 +73,11 @@ public class PermissionTest {
     @Test
     public void testToAndFromObject() throws Exception {
     	Permission permission = new Permission();
-    	permission.setPermissionsByName(new String[]{"READ", "EXECUTE", "WRITE"});
+    	permission.addPermissionsByName(new String[]{"READ", "EXECUTE", "WRITE"});
     	
     	String[] array = permission.toStringArray();
     	Permission permission2 = new Permission();
-    	permission2.setPermissionsByName(array);
+    	permission2.addPermissionsByName(array);
     	assertTrue(permission.equals(permission2));
     }
     

@@ -186,4 +186,9 @@ public class XmlUserManager implements UserManager {
 		}
 		return user;
 	}
+
+	@Override
+	public boolean validateUser(String username) {
+		return users.containsKey(username);
+	}
 }
