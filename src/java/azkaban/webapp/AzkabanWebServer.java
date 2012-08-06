@@ -79,6 +79,8 @@ public class AzkabanWebServer {
     public static final String DEFAULT_CONF_PATH = "conf";
     public static final String AZKABAN_PROPERTIES_FILE = "azkaban.properties";
 
+    private static AzkabanWebServer app;
+    
     private static final String DEFAULT_TIMEZONE_ID = "default.timezone.id";
     //private static final int DEFAULT_PORT_NUMBER = 8081;
     private static final int DEFAULT_SSL_PORT_NUMBER = 8443;
@@ -122,6 +124,8 @@ public class AzkabanWebServer {
             String timezone = props.getString(DEFAULT_TIMEZONE_ID);
             TimeZone.setDefault(TimeZone.getTimeZone(timezone));
             DateTimeZone.setDefault(DateTimeZone.forID(timezone));
+            
+			logger.info("Setting timezone to " + timezone);
         }
 
     }
@@ -291,7 +295,7 @@ public class AzkabanWebServer {
             logger.error("Exiting Azkaban...");
             return;
         }
-        AzkabanWebServer app = new AzkabanWebServer(azkabanSettings);
+        app = new AzkabanWebServer(azkabanSettings);
 
         //int portNumber = azkabanSettings.getInt("jetty.port",DEFAULT_PORT_NUMBER);
         int sslPortNumber = azkabanSettings.getInt("jetty.ssl.port",DEFAULT_SSL_PORT_NUMBER);

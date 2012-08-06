@@ -20,5 +20,6 @@
 	<classpathentry kind="lib" path="lib/velocity-1.7.jar"/>
 	<classpathentry kind="lib" path="lib/ehcache-core-2.5.1.jar"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.junit.JUNIT_CONTAINER/4"/>
+	<classpathentry kind="lib" path="lib/httpclient-4.2.1.jar"/>
 	<classpathentry kind="output" path="dist"/>
 </classpath>

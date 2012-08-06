@@ -54,7 +54,6 @@ public abstract class LoginAbstractAzkabanServlet extends
 			return;
 		}
 
-		
 		if (session != null) {
 			logger.info("Found session " + session.getUser());
 			handleGet(req, resp, session);

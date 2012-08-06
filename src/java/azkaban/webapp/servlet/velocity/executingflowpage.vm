@@ -45,9 +45,6 @@
 						<div class="section-sub-hd">
 							<h4><a href="${context}/manager?project=${project.name}">Project <span>$project.name</span></a></h4>
 						</div>
-						
-						<a id="execute-btn" class="btn1" href="#">Execute Now</a>
-						<a id="execute-btn" class="btn2" href="#">Execute Custom</a>
 					</div>
 					
 					<div id="headertabs" class="headertabs">

@@ -352,6 +352,12 @@ tr:hover td {
   float: right;
   margin-right: 25px;
 }
+.section-hd .btn2,
+.section-ft .btn2 {
+  float: right;
+  margin-right: 25px;
+}
+
 
 /* blue */
 .btn2 {

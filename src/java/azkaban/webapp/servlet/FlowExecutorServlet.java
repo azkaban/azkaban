@@ -11,16 +11,13 @@ import azkaban.webapp.session.Session;
 public class FlowExecutorServlet extends LoginAbstractAzkabanServlet {
 
 	@Override
-	protected void handleGet(HttpServletRequest req, HttpServletResponse resp,
-			Session session) throws ServletException, IOException {
-		// TODO Auto-generated method stub
+	protected void handleGet(HttpServletRequest req, HttpServletResponse resp, Session session) throws ServletException, IOException {
 		
 	}
 
 	@Override
-	protected void handlePost(HttpServletRequest req, HttpServletResponse resp,
-			Session session) throws ServletException, IOException {
-		// TODO Auto-generated method stub
+	protected void handlePost(HttpServletRequest req, HttpServletResponse resp, Session session) throws ServletException, IOException {
+
 		
 	}
 
