@@ -40,21 +40,18 @@ public class IndexServlet extends LoginAbstractAzkabanServlet {
 	private static final long serialVersionUID = -1;
 
 	@Override
-	protected void handleGet(HttpServletRequest req, HttpServletResponse resp,
-			Session session) throws ServletException, IOException {
+	protected void handleGet(HttpServletRequest req, HttpServletResponse resp, Session session) throws ServletException, IOException {
 		User user = session.getUser();
 
 		ProjectManager manager = this.getApplication().getProjectManager();
 		List<Project> projects = manager.getProjects(user);
-		Page page = newPage(req, resp, session,
-				"azkaban/webapp/servlet/velocity/index.vm");
+		Page page = newPage(req, resp, session, "azkaban/webapp/servlet/velocity/index.vm");
 		page.add("projects", projects);
 		page.render();
 	}
 
 	@Override
-	protected void handlePost(HttpServletRequest req, HttpServletResponse resp,
-			Session session) throws ServletException, IOException {
+	protected void handlePost(HttpServletRequest req, HttpServletResponse resp, Session session) throws ServletException, IOException {
 		if (hasParam(req, "action")) {
 			String action = getParam(req, "action");
 			if (action.equals("create")) {

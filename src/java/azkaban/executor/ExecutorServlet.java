@@ -9,6 +9,10 @@ import javax.servlet.http.HttpServletResponse;
 import org.apache.log4j.Logger;
 
 public class ExecutorServlet extends HttpServlet {
+	public enum State {
+		FAILED, SUCCEEDED, RUNNING, WAITING, IGNORED, READY
+	}
+	
 	private static final Logger logger = Logger.getLogger(ExecutorServlet.class.getName());
 	private String sharedToken;
 	

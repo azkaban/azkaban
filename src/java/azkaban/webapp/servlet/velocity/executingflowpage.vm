@@ -78,6 +78,11 @@
 		<ul id="jobMenu" class="contextMenu">  
 			<li class="open"><a href="#open">Open...</a></li>
 			<li class="openwindow"><a href="#openwindow">Open in New Window...</a></li>
+			<li class="disable"><a href="#disable">Disable</a></li>
+			<li class="disableancestors"><a href="#disableancestors">Disable All Ancestors</a></li>
+			<li class="disabledecendents"><a href="#disabledecendents">Disable Decendents</a></li>
+			<li class="enableancestors"><a href="#enableancestors">Enable All Ancestors</a></li>
+			<li class="disabledecendents"><a href="#disabledecendents">Disable Decendents</a></li>
 		</ul>
 
 		</div>

@@ -7,14 +7,10 @@ import java.util.Map;
 import azkaban.utils.Utils;
 
 public class Node {
-	public enum State {
-		FAILED, SUCCEEDED, RUNNING, WAITING, IGNORED
-	}
 
 	private final String id;
 	private String jobSource;
 	private String propsSource;
-	private State state = State.WAITING;
 
 	private Point2D position = null;
 	private int level;
@@ -33,15 +29,10 @@ public class Node {
 		this.id = clone.id;
 		this.propsSource = clone.propsSource;
 		this.jobSource = clone.jobSource;
-		this.state = clone.state;
 	}
 
 	public String getId() {
 		return id;
-	}
-	
-	public State getState() {
-		return state;
 	}
 
 	public String getType() {
@@ -50,10 +41,6 @@ public class Node {
 	
 	public void setType(String type) {
 		this.type = type;
-	}
-	
-	public void setState(State state) {
-		this.state = state;
 	}
 
 	public Point2D getPosition() {
@@ -118,14 +105,6 @@ public class Node {
 		if (expectedRuntime != null) {
 			node.setExpectedRuntimeSec(expectedRuntime);
 		}
-
-		String stateStr = (String)mapObj.get("status");
-		if (stateStr != null) {
-			State state = State.valueOf(stateStr);
-			if (state != null) {
-				node.setState(state);
-			}
-		}
 		
 		Map<String,Object> layoutInfo = (Map<String,Object>)mapObj.get("layout");
 		if (layoutInfo != null) {
@@ -160,7 +139,6 @@ public class Node {
 		objMap.put("prop.source", propsSource);
 		objMap.put("job.type", type);
 		objMap.put("expectedRuntime", expectedRunTimeSec);
-		objMap.put("state", state.toString());
 
 		HashMap<String, Object> layoutInfo = new HashMap<String, Object>();
 		if (position != null) {

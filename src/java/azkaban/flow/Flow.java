@@ -304,4 +304,8 @@ public class Flow {
 	public FlowProps getFlowProps(String propSource) {
 		return flowProps.get(propSource);
 	}
+	
+	public Map<String, FlowProps> getAllFlowProps() {
+	    return flowProps;
+	}
 }

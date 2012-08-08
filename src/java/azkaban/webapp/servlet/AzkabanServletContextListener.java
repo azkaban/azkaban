@@ -42,7 +42,6 @@ public class AzkabanServletContextListener implements ServletContextListener {
 	public void contextInitialized(ServletContextEvent event) {
 		this.app = new AzkabanWebServer();
 
-		event.getServletContext().setAttribute(AZKABAN_SERVLET_CONTEXT_KEY,
-				this.app);
+		event.getServletContext().setAttribute(AZKABAN_SERVLET_CONTEXT_KEY, this.app);
 	}
 }

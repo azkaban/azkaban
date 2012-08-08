@@ -138,7 +138,7 @@ azkaban.ChangePermissionView= Backbone.View.extend({
 
   	$.get(
 	      requestURL,
-	      {"project": projectId, "username": userID, "json":command, "permissions": this.permission},
+	      {"project": projectId, "username": userID, "ajax":command, "permissions": this.permission},
 	      function(data) {
 	      	  console.log("Output");
 	      	  if (data.error) {

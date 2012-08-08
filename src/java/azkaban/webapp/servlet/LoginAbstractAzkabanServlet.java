@@ -38,8 +38,7 @@ public abstract class LoginAbstractAzkabanServlet extends
 		if (hasParam(req, "logout")) {
 			resp.sendRedirect(req.getContextPath());
 			if (session != null) {
-				getApplication().getSessionCache().removeSession(
-						session.getSessionId());
+				getApplication().getSessionCache().removeSession(session.getSessionId());
 			}
 			return;
 		}
@@ -77,13 +76,11 @@ public abstract class LoginAbstractAzkabanServlet extends
 		}
 	}
 
-	private void handleLogin(HttpServletRequest req, HttpServletResponse resp)
-			throws ServletException, IOException {
+	private void handleLogin(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
 		handleLogin(req, resp, null);
 	}
 
-	private void handleLogin(HttpServletRequest req, HttpServletResponse resp,
-			String errorMsg) throws ServletException, IOException {
+	private void handleLogin(HttpServletRequest req, HttpServletResponse resp, String errorMsg) throws ServletException, IOException {
 
 		Page page = newPage(req, resp,
 				"azkaban/webapp/servlet/velocity/login.vm");
@@ -95,38 +92,40 @@ public abstract class LoginAbstractAzkabanServlet extends
 	}
 
 	@Override
-	protected void doPost(HttpServletRequest req, HttpServletResponse resp)
-			throws ServletException, IOException {
+	protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
 		if (hasParam(req, "action")) {
 			String action = getParam(req, "action");
 			if (action.equals("login")) {
 				handleLoginAction(req, resp);
-			} else {
+			} 
+			else {
 				Session session = getSessionFromRequest(req);
 				if (session == null) {
 					if (isAjaxCall(req)) {
-						String response = createJsonResponse("error",
-								"Invalid Session. Need to re-login", "login",
-								null);
+						String response = createJsonResponse("error", "Invalid Session. Need to re-login", "login", null);
 						writeResponse(resp, response);
-					} else {
+					} 
+					else {
 						handleLogin(req, resp, "Enter username and password");
 					}
-				} else {
+				} 
+				else {
 					handlePost(req, resp, session);
 				}
 			}
-		} else {
+		} 
+		else {
 			Session session = getSessionFromRequest(req);
 			if (session == null) {
 				if (isAjaxCall(req)) {
-					String response = createJsonResponse("error",
-							"Invalid Session. Need to re-login", "login", null);
+					String response = createJsonResponse("error", "Invalid Session. Need to re-login", "login", null);
 					writeResponse(resp, response);
-				} else {
+				} 
+				else {
 					handleLogin(req, resp, "Enter username and password");
 				}
-			} else {
+			} 
+			else {
 				handlePost(req, resp, session);
 			}
 		}
@@ -142,7 +141,8 @@ public abstract class LoginAbstractAzkabanServlet extends
 			User user = null;
 			try {
 				user = manager.getUser(username, password);
-			} catch (UserManagerException e) {
+			} 
+			catch (UserManagerException e) {
 				handleLogin(req, resp, e.getMessage());
 				return;
 			}
@@ -152,26 +152,25 @@ public abstract class LoginAbstractAzkabanServlet extends
 			resp.addCookie(new Cookie(SESSION_ID_NAME, randomUID));
 			getApplication().getSessionCache().addSession(session);
 			handleGet(req, resp, session);
-		} else {
+		} 
+		else {
 			if (isAjaxCall(req)) {
-				String response = createJsonResponse("error",
-						"Incorrect Login.", "login", null);
+				String response = createJsonResponse("error", "Incorrect Login.", "login", null);
 				writeResponse(resp, response);
-			} else {
+			} 
+			else {
 				handleLogin(req, resp, "Enter username and password");
 			}
 		}
 	}
 	
-	protected void writeResponse(HttpServletResponse resp, String response)
-			throws IOException {
+	protected void writeResponse(HttpServletResponse resp, String response) throws IOException {
 		Writer writer = resp.getWriter();
 		writer.append(response);
 		writer.flush();
 	}
 
-	protected boolean isAjaxCall(HttpServletRequest req)
-			throws ServletException {
+	protected boolean isAjaxCall(HttpServletRequest req) throws ServletException {
 		String value = req.getHeader("X-Requested-With");
 		if (value != null) {
 			logger.info("has X-Requested-With " + value);
@@ -191,9 +190,7 @@ public abstract class LoginAbstractAzkabanServlet extends
 	 * @throws ServletException
 	 * @throws IOException
 	 */
-	protected abstract void handleGet(HttpServletRequest req,
-			HttpServletResponse resp, Session session) throws ServletException,
-			IOException;
+	protected abstract void handleGet(HttpServletRequest req, HttpServletResponse resp, Session session) throws ServletException, IOException;
 
 	/**
 	 * The post request is handed off to the implementor after the user is
@@ -205,7 +202,5 @@ public abstract class LoginAbstractAzkabanServlet extends
 	 * @throws ServletException
 	 * @throws IOException
 	 */
-	protected abstract void handlePost(HttpServletRequest req,
-			HttpServletResponse resp, Session session) throws ServletException,
-			IOException;
+	protected abstract void handlePost(HttpServletRequest req, HttpServletResponse resp, Session session) throws ServletException, IOException;
 }

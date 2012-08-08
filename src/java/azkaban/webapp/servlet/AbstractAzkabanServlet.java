@@ -18,6 +18,7 @@ package azkaban.webapp.servlet;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -43,8 +44,7 @@ import azkaban.webapp.session.Session;
  * Base Servlet for pages
  */
 public abstract class AbstractAzkabanServlet extends HttpServlet {
-	private static final DateTimeFormatter ZONE_FORMATTER = DateTimeFormat
-			.forPattern("z");
+	private static final DateTimeFormatter ZONE_FORMATTER = DateTimeFormat.forPattern("z");
 	private static final String AZKABAN_SUCCESS_MESSAGE = "azkaban.success.message";
 	private static final String AZKABAN_FAILURE_MESSAGE = "azkaban.failure.message";
 
@@ -71,10 +71,7 @@ public abstract class AbstractAzkabanServlet extends HttpServlet {
 
 	@Override
 	public void init(ServletConfig config) throws ServletException {
-		application = (AzkabanWebServer) config
-				.getServletContext()
-				.getAttribute(
-						AzkabanServletContextListener.AZKABAN_SERVLET_CONTEXT_KEY);
+		application = (AzkabanWebServer) config.getServletContext().getAttribute(AzkabanServletContextListener.AZKABAN_SERVLET_CONTEXT_KEY);
 
 		if (application == null) {
 			throw new IllegalStateException(
@@ -107,14 +104,14 @@ public abstract class AbstractAzkabanServlet extends HttpServlet {
 	 * @return
 	 * @throws ServletException
 	 */
-	public String getParam(HttpServletRequest request, String name)
-			throws ServletException {
+	public String getParam(HttpServletRequest request, String name) throws ServletException {
 		String p = request.getParameter(name);
-		if (p == null)
-			throw new ServletException("Missing required parameter '" + name
-					+ "'.");
-		else
+		if (p == null) {
+			throw new ServletException("Missing required parameter '" + name + "'.");
+		}
+		else {
 			return p;
+		}
 	}
 
 	/**
@@ -126,12 +123,26 @@ public abstract class AbstractAzkabanServlet extends HttpServlet {
 	 * @return
 	 * @throws ServletException
 	 */
-	public int getIntParam(HttpServletRequest request, String name)
-			throws ServletException {
+	public int getIntParam(HttpServletRequest request, String name) throws ServletException {
 		String p = getParam(request, name);
 		return Integer.parseInt(p);
 	}
 
+	public Map<String, String> getParamGroup(HttpServletRequest request, String groupName)  throws ServletException {
+		Enumeration<Object> enumerate = (Enumeration<Object>)request.getParameterNames();
+		String matchString = groupName + "[";
+
+		HashMap<String, String> groupParam = new HashMap<String, String>();
+		while( enumerate.hasMoreElements() ) {
+			String str = (String)enumerate.nextElement();
+			if (str.startsWith(matchString)) {
+				groupParam.put(str.substring(matchString.length(), str.length() - 1), request.getParameter(str));
+			}
+			
+		}
+		return groupParam;
+	}
+	
 	/**
 	 * Returns the session value of the request.
 	 * 
@@ -139,8 +150,7 @@ public abstract class AbstractAzkabanServlet extends HttpServlet {
 	 * @param key
 	 * @param value
 	 */
-	protected void setSessionValue(HttpServletRequest request, String key,
-			Object value) {
+	protected void setSessionValue(HttpServletRequest request, String key, Object value) {
 		request.getSession(true).setAttribute(key, value);
 	}
 
@@ -152,8 +162,7 @@ public abstract class AbstractAzkabanServlet extends HttpServlet {
 	 * @param value
 	 */
 	@SuppressWarnings({ "unchecked", "rawtypes" })
-	protected void addSessionValue(HttpServletRequest request, String key,
-			Object value) {
+	protected void addSessionValue(HttpServletRequest request, String key, Object value) {
 		List l = (List) request.getSession(true).getAttribute(key);
 		if (l == null)
 			l = new ArrayList();
@@ -168,8 +177,7 @@ public abstract class AbstractAzkabanServlet extends HttpServlet {
 	 * @param response
 	 * @param errorMsg
 	 */
-	protected void setErrorMessageInCookie(HttpServletResponse response,
-			String errorMsg) {
+	protected void setErrorMessageInCookie(HttpServletResponse response, String errorMsg) {
 		Cookie cookie = new Cookie(AZKABAN_FAILURE_MESSAGE, errorMsg);
 		response.addCookie(cookie);
 	}
@@ -181,8 +189,7 @@ public abstract class AbstractAzkabanServlet extends HttpServlet {
 	 * @param response
 	 * @param errorMsg
 	 */
-	protected void setSuccessMessageInCookie(HttpServletResponse response,
-			String message) {
+	protected void setSuccessMessageInCookie(HttpServletResponse response, String message) {
 		Cookie cookie = new Cookie(AZKABAN_SUCCESS_MESSAGE, message);
 		response.addCookie(cookie);
 	}
@@ -245,10 +252,8 @@ public abstract class AbstractAzkabanServlet extends HttpServlet {
 	 * @param template
 	 * @return
 	 */
-	protected Page newPage(HttpServletRequest req, HttpServletResponse resp,
-			Session session, String template) {
-		Page page = new Page(req, resp, application.getVelocityEngine(),
-				template);
+	protected Page newPage(HttpServletRequest req, HttpServletResponse resp, Session session, String template) {
+		Page page = new Page(req, resp, application.getVelocityEngine(), template);
 		page.add("azkaban_name", name);
 		page.add("azkaban_label", label);
 		page.add("azkaban_color", color);
@@ -260,14 +265,11 @@ public abstract class AbstractAzkabanServlet extends HttpServlet {
 		page.add("context", req.getContextPath());
 
 		String errorMsg = getErrorMessageFromCookie(req);
-		page.add("error_message",
-				errorMsg == null || errorMsg.isEmpty() ? "null" : errorMsg);
+		page.add("error_message", errorMsg == null || errorMsg.isEmpty() ? "null" : errorMsg);
 		setErrorMessageInCookie(resp, null);
 
 		String successMsg = getSuccessMessageFromCookie(req);
-		page.add("success_message",
-				successMsg == null || successMsg.isEmpty() ? "null"
-						: successMsg);
+		page.add("success_message", successMsg == null || successMsg.isEmpty() ? "null" : successMsg);
 		setSuccessMessageInCookie(resp, null);
 
 		return page;
@@ -281,10 +283,8 @@ public abstract class AbstractAzkabanServlet extends HttpServlet {
 	 * @param template
 	 * @return
 	 */
-	protected Page newPage(HttpServletRequest req, HttpServletResponse resp,
-			String template) {
-		Page page = new Page(req, resp, application.getVelocityEngine(),
-				template);
+	protected Page newPage(HttpServletRequest req, HttpServletResponse resp, String template) {
+		Page page = new Page(req, resp, application.getVelocityEngine(), template);
 		page.add("azkaban_name", name);
 		page.add("azkaban_label", label);
 		page.add("azkaban_color", color);
@@ -301,8 +301,7 @@ public abstract class AbstractAzkabanServlet extends HttpServlet {
 	 * @param obj
 	 * @throws IOException
 	 */
-	protected void writeJSON(HttpServletResponse resp, Object obj)
-			throws IOException {
+	protected void writeJSON(HttpServletResponse resp, Object obj) throws IOException {
 		resp.setContentType(JSON_MIME_TYPE);
 		ObjectMapper mapper = new ObjectMapper();
 		mapper.writeValue(resp.getOutputStream(), obj);
@@ -315,21 +314,17 @@ public abstract class AbstractAzkabanServlet extends HttpServlet {
 	 * @return
 	 */
 	public static AzkabanWebServer getApp(ServletConfig config) {
-		AzkabanWebServer app = (AzkabanWebServer) config
-				.getServletContext()
-				.getAttribute(
-						AzkabanServletContextListener.AZKABAN_SERVLET_CONTEXT_KEY);
+		AzkabanWebServer app = (AzkabanWebServer) config.getServletContext().getAttribute(AzkabanServletContextListener.AZKABAN_SERVLET_CONTEXT_KEY);
 
 		if (app == null) {
-			throw new IllegalStateException(
-					"No batch application is defined in the servlet context!");
-		} else {
+			throw new IllegalStateException("No batch application is defined in the servlet context!");
+		} 
+		else {
 			return app;
 		}
 	}
 
-	public static String createJsonResponse(String status, String message,
-			String action, Map<String, Object> params) {
+	public static String createJsonResponse(String status, String message, String action, Map<String, Object> params) {
 		HashMap<String, Object> response = new HashMap<String, Object>();
 		response.put("status", status);
 		if (message != null) {

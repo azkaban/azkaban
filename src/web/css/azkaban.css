@@ -1112,6 +1112,19 @@ tr:hover td {
 	bottom: 90px;
 }
 
+#nodeOptions {
+	position: absolute;
+	bottom: 10px;
+}
+
+#flowProperties {
+	position: absolute:
+	height: 100px;
+	width: 100%;
+	background-color: #000;
+	top: 100px;
+}
+
 #filter {
 	width: 100%;
 }
@@ -1134,6 +1147,10 @@ tr:hover td {
 #list ul li.selected {
 	background-color: #009FC9;
 	color: #EEE;
+}
+
+#list ul li.nodedisabled {
+	opacity: 0.3;
 }
 
 #list ul li a {
@@ -1195,6 +1212,10 @@ svg .edge:hover {
 	stroke-width: 4;
 }
 
+svg .node.disabled {
+	opacity: 0.3;
+}
+
 svg .node .backboard {
 	fill: #FFF;
 	opacity: 0.05;
@@ -1209,7 +1230,7 @@ svg .node:hover .backboard {
 }
 
 svg .node circle {
-	fill: #FFF;
+	fill: #888;
 	stroke: #777;
 	stroke-width: 2;
 }

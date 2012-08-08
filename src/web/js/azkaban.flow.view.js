@@ -9,12 +9,54 @@ var handleJobMenuClick = function(action, el, pos) {
 	else if(action == "openwindow") {
 		window.open(requestURL);
 	}
+	else if(action == "disable") {
+		var oldDisabled = graphModel.get("disabled");
+		
+		var newDisabled = {};
+		// Copy disabled list
+		if (oldDisabled) {
+			for(var id in oldDisabled) {
+			    if(oldDisabled.hasOwnProperty(id)) {
+			    	var disabled = (oldDisabled[id]);
+			    	if (disabled) {
+			    		newDisabled[id]=true;
+			    	}
+			    }
+			}
+		}
+		
+		newDisabled[jobid] = true;
+		graphModel.set({disabled: newDisabled});
+	}
+	else if(action == "enable") {
+		var oldDisabled = graphModel.get("disabled");
+		// Copy disabled list
+		if (oldDisabled) {
+			var newDisabled = {};
+			for(var id in oldDisabled) {
+			    if(oldDisabled.hasOwnProperty(id)) {
+			    	var disabled = (oldDisabled[id]);
+			    	if (disabled) {
+			    		newDisabled[id]=true;
+			    	}
+			    }
+			}
+			
+			if( oldDisabled[jobid]) {
+				newDisabled[jobid] = false;
+				graphModel.set({disabled: newDisabled});
+			}
+		}
 
+	}
 }
 
 function hasClass(el, name) 
 {
 	var classes = el.getAttribute("class");
+	if (classes == null) {
+		return false;
+	}
    return new RegExp('(\\s|^)'+name+'(\\s|$)').test(classes);
 }
 
@@ -79,6 +121,7 @@ azkaban.JobListView = Backbone.View.extend({
 	},
 	initialize: function(settings) {
 		this.model.bind('change:selected', this.handleSelectionChange, this);
+		this.model.bind('change:disabled', this.handleDisabledChange, this);
 		this.model.bind('change:graph', this.render, this);
 	},
 	filterJobs: function(self) {
@@ -199,6 +242,20 @@ azkaban.JobListView = Backbone.View.extend({
 			this.model.set({"selected": jobid});
 		}
 	},
+	handleDisabledChange: function(evt) {
+		var disabledMap = this.model.get("disabled");
+		for(var id in disabledMap) {
+		    if(disabledMap.hasOwnProperty(id)) {
+		    	var disabled = (disabledMap[id]);
+		    	if (disabled) {
+		    		$(this.listNodes[id]).addClass("nodedisabled");
+		    	}
+		    	else {
+		    		$(this.listNodes[id]).removeClass("nodedisabled");
+		    	}
+		    }
+		}
+	},
 	handleSelectionChange: function(evt) {
 		if (!this.model.hasChanged("selected")) {
 			return;
@@ -227,6 +284,7 @@ azkaban.SvgGraphView = Backbone.View.extend({
 	},
 	initialize: function(settings) {
 		this.model.bind('change:selected', this.changeSelected, this);
+		this.model.bind('change:disabled', this.handleDisabledChange, this);
 		this.model.bind('change:graph', this.render, this);
 		this.model.bind('resetPanZoom', this.resetPanZoom, this);
 		
@@ -367,6 +425,24 @@ azkaban.SvgGraphView = Backbone.View.extend({
 			self.mainG.appendChild(line);
 		}
 	},
+	handleDisabledChange: function(evt) {
+		var disabledMap = this.model.get("disabled");
+		for(var id in disabledMap) {
+		    if(disabledMap.hasOwnProperty(id)) {
+		    	var disabled = disabledMap[id];
+		    	this.nodes[id].disabled = disabled;
+		    	var g = document.getElementById(id);
+		    	
+		    	if (disabled) {
+		    		this.nodes[id].disabled = disabled;
+					addClass(g, "disabled");
+		    	}
+		    	else {
+		    		removeClass(g, "disabled");
+		    	}
+		    }
+		}
+	},
 	drawNode: function(self, node, bounds) {
 		var svg = self.svgGraph;
 		var svgns = self.svgns;
@@ -439,7 +515,6 @@ azkaban.SvgGraphView = Backbone.View.extend({
 		var bounds = this.graphBounds;
 		$("#svgGraph").svgNavigate("transformToBox", {x: bounds.minX, y: bounds.minY, width: (bounds.maxX - bounds.minX), height: (bounds.maxY - bounds.minY) });
 	}
-	
 });
 
 var graphModel;
@@ -447,6 +522,7 @@ azkaban.GraphModel = Backbone.Model.extend({});
 
 $(function() {
 	var selected;
+	
 	if (window.location.hash) {
 		var hash = window.location.hash;
 		if (hash == "#jobslist") {
@@ -470,7 +546,7 @@ $(function() {
 
 	$.get(
 	      requestURL,
-	      {"project": projectName, "json":"fetchflowgraph", "flow":flowName},
+	      {"project": projectName, "ajax":"fetchflowgraph", "flow":flowName},
 	      function(data) {
 	          console.log("data fetched");
 	          graphModel.set({data: data});
@@ -478,4 +554,17 @@ $(function() {
 	      },
 	      "json"
 	    );
+	    
+	$("#executebtn").click( function() {
+		var executeURL = contextURL + "/executor";
+		$.get(
+			executeURL,
+			{"project": projectName, "ajax":"executeFlow", "flow":flowName, "disabled":graphModel.get("disabled")},
+			function(data) {
+				alert("call success");
+			},
+			"json"
+		);
+		
+	});
 });

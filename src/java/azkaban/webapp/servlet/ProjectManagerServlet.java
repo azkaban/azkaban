@@ -73,8 +73,8 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 	@Override
 	protected void handleGet(HttpServletRequest req, HttpServletResponse resp, Session session) throws ServletException, IOException {
 		if ( hasParam(req, "project") ) {
-			if (hasParam(req, "json")) {
-				handleJSONAction(req, resp, session);
+			if (hasParam(req, "ajax")) {
+				handleAJAXAction(req, resp, session);
 			}
 			else if (hasParam(req, "permissions")) {
 				handlePermissionPage(req, resp, session);
@@ -116,7 +116,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 		}
 	}
 	
-	private void handleJSONAction(HttpServletRequest req, HttpServletResponse resp, Session session) throws ServletException, IOException {
+	private void handleAJAXAction(HttpServletRequest req, HttpServletResponse resp, Session session) throws ServletException, IOException {
 		String projectName = getParam(req, "project");
 		User user = session.getUser();
 		
@@ -132,47 +132,47 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 			return;
 		}
 
-		String jsonName = getParam(req, "json");
-		if (jsonName.equals("fetchflowjobs")) {
-			if (handleJsonPermission(project, user, Type.READ, ret)) {
-				jsonFetchFlow(project, ret, req, resp);
+		String ajaxName = getParam(req, "ajax");
+		if (ajaxName.equals("fetchflowjobs")) {
+			if (handleAjaxPermission(project, user, Type.READ, ret)) {
+				ajaxFetchFlow(project, ret, req, resp);
 			}
 		}
-		else if (jsonName.equals("fetchflowgraph")) {
-			if (handleJsonPermission(project, user, Type.READ, ret)) {
-				jsonFetchFlowGraph(project, ret, req, resp);
+		else if (ajaxName.equals("fetchflowgraph")) {
+			if (handleAjaxPermission(project, user, Type.READ, ret)) {
+				ajaxFetchFlowGraph(project, ret, req, resp);
 			}
 		}
-		else if (jsonName.equals("fetchprojectflows")) {
-			if (handleJsonPermission(project, user, Type.READ, ret)) {
-				jsonFetchProjectFlows(project, ret, req, resp);
+		else if (ajaxName.equals("fetchprojectflows")) {
+			if (handleAjaxPermission(project, user, Type.READ, ret)) {
+				ajaxFetchProjectFlows(project, ret, req, resp);
 			}
 		}
-		else if (jsonName.equals("changeDescription")) {
-			if (handleJsonPermission(project, user, Type.WRITE, ret)) {
-				jsonChangeDescription(project, ret, req, resp);
+		else if (ajaxName.equals("changeDescription")) {
+			if (handleAjaxPermission(project, user, Type.WRITE, ret)) {
+				ajaxChangeDescription(project, ret, req, resp);
 			}
 		}
-		else if (jsonName.equals("getPermissions")) {
-			if (handleJsonPermission(project, user, Type.READ, ret)) {
-				jsonGetPermissions(project, ret);
+		else if (ajaxName.equals("getPermissions")) {
+			if (handleAjaxPermission(project, user, Type.READ, ret)) {
+				ajaxGetPermissions(project, ret);
 			}
 		}
-		else if (jsonName.equals("changeUserPermission")) {
-			if (handleJsonPermission(project, user, Type.ADMIN, ret)) {
-				jsonChangePermissions(project, ret, req);
+		else if (ajaxName.equals("changeUserPermission")) {
+			if (handleAjaxPermission(project, user, Type.ADMIN, ret)) {
+				ajaxChangePermissions(project, ret, req);
 			}
 		}
-		else if (jsonName.equals("addUserPermission")) {
-			if (handleJsonPermission(project, user, Type.ADMIN, ret)) {
-				jsonAddUserPermission(project, ret, req);
+		else if (ajaxName.equals("addUserPermission")) {
+			if (handleAjaxPermission(project, user, Type.ADMIN, ret)) {
+				ajaxAddUserPermission(project, ret, req);
 			}
 		}
 		
 		this.writeJSON(resp, ret);
 	}
 	
-	private boolean handleJsonPermission(Project project, User user, Type type, Map<String, Object> ret) {
+	private boolean handleAjaxPermission(Project project, User user, Type type, Map<String, Object> ret) {
 		if (project.hasPermission(user, type)) {
 			return true;
 		}
@@ -181,7 +181,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 		return false;
 	}
 	
-	private void jsonChangeDescription(Project project, HashMap<String, Object> ret, HttpServletRequest req, HttpServletResponse resp) throws ServletException {
+	private void ajaxChangeDescription(Project project, HashMap<String, Object> ret, HttpServletRequest req, HttpServletResponse resp) throws ServletException {
 		String description = getParam(req, "description");
 		project.setDescription(description);
 		
@@ -192,7 +192,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 		}
 	}
 	
-	private void jsonFetchProjectFlows(Project project, HashMap<String, Object> ret, HttpServletRequest req, HttpServletResponse resp) throws ServletException {
+	private void ajaxFetchProjectFlows(Project project, HashMap<String, Object> ret, HttpServletRequest req, HttpServletResponse resp) throws ServletException {
 		ArrayList<Map<String,Object>> flowList = new ArrayList<Map<String,Object>>();
 		for (Flow flow: project.getFlows()) {
 			HashMap<String, Object> flowObj = new HashMap<String, Object>();
@@ -203,7 +203,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 		ret.put("flows", flowList); 
 	}
 	
-	private void jsonFetchFlowGraph(Project project, HashMap<String, Object> ret, HttpServletRequest req, HttpServletResponse resp) throws ServletException {
+	private void ajaxFetchFlowGraph(Project project, HashMap<String, Object> ret, HttpServletRequest req, HttpServletResponse resp) throws ServletException {
 		String flowId = getParam(req, "flow");
 		Flow flow = project.getFlow(flowId);
 		
@@ -215,9 +215,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 			nodeObj.put("x", node.getPosition().getX());
 			nodeObj.put("y", node.getPosition().getY());
 			nodeObj.put("level", node.getLevel());
-			if (node.getState() != Node.State.WAITING) {
-				nodeObj.put("state", node.getState());
-			}
+
 			nodeList.add(nodeObj);
 		}
 		
@@ -253,7 +251,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 		ret.put("edges", edgeList);
 	}
 	
-	private void jsonFetchFlow(Project project, HashMap<String, Object> ret, HttpServletRequest req, HttpServletResponse resp) throws ServletException {
+	private void ajaxFetchFlow(Project project, HashMap<String, Object> ret, HttpServletRequest req, HttpServletResponse resp) throws ServletException {
 		String flowId = getParam(req, "flow");
 		Flow flow = project.getFlow(flowId);
 
@@ -291,7 +289,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 		ret.put("nodes", nodeList);
 	}
 	
-	private void jsonAddUserPermission(Project project, HashMap<String, Object> ret, HttpServletRequest req) throws ServletException {
+	private void ajaxAddUserPermission(Project project, HashMap<String, Object> ret, HttpServletRequest req) throws ServletException {
 		String username = getParam(req, "username");
 		UserManager userManager = getApplication().getUserManager();
 		if (!userManager.validateUser(username)) {
@@ -329,7 +327,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 	}
 
 	
-	private void jsonChangePermissions(Project project, HashMap<String, Object> ret, HttpServletRequest req) throws ServletException {
+	private void ajaxChangePermissions(Project project, HashMap<String, Object> ret, HttpServletRequest req) throws ServletException {
 		boolean admin = Boolean.parseBoolean(getParam(req, "permissions[admin]"));
 		boolean read = Boolean.parseBoolean(getParam(req, "permissions[read]"));
 		boolean write = Boolean.parseBoolean(getParam(req, "permissions[write]"));
@@ -359,7 +357,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 		}
 	}
 	
-	private void jsonGetPermissions(Project project, HashMap<String, Object> ret) {
+	private void ajaxGetPermissions(Project project, HashMap<String, Object> ret) {
 		ArrayList<HashMap<String, Object>> permissions = new ArrayList<HashMap<String, Object>>();
 		for(Pair<String, Permission> perm: project.getUserPermissions()) {
 			HashMap<String, Object> permObj = new HashMap<String, Object>();
@@ -547,8 +545,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 		page.render();
 	}
 
-	private void handleCreate(HttpServletRequest req, HttpServletResponse resp,
-			Session session) throws ServletException {
+	private void handleCreate(HttpServletRequest req, HttpServletResponse resp, Session session) throws ServletException {
 
 		String projectName = hasParam(req, "name") ? getParam(req, "name") : null;
 		String projectDescription = hasParam(req, "description") ? getParam(req, "description") : null;
@@ -582,9 +579,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 		}
 	}
 
-	private void handleUpload(HttpServletRequest req, HttpServletResponse resp, Map<String, Object> multipart,
-			Session session) throws ServletException, IOException {
-		
+	private void handleUpload(HttpServletRequest req, HttpServletResponse resp, Map<String, Object> multipart, Session session) throws ServletException, IOException {
 		User user = session.getUser();
 		String projectName = (String) multipart.get("project");
 		FileItem item = (FileItem) multipart.get("file");

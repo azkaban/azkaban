@@ -1,6 +1,7 @@
 package azkaban.project;
 
 import java.io.File;
+import java.util.HashMap;
 import java.util.List;
 
 import azkaban.user.User;
@@ -23,4 +24,8 @@ public interface ProjectManager {
 	public Project removeProject(String projectName, User user) throws ProjectManagerException;
 
 	public Props getProperties(String projectName, String source, User user) throws ProjectManagerException;
+
+	public Props getProperties(Project project, String source, User user) throws ProjectManagerException;
+
+	public HashMap<String, Props> getAllFlowProperties(Project project, String flowId, User user) throws ProjectManagerException;
 }

@@ -46,8 +46,8 @@
 							<h4><a href="${context}/manager?project=${project.name}">Project <span>$project.name</span></a></h4>
 						</div>
 						
-						<a id="execute-btn" class="btn1" href="#">Execute Now</a>
-						<a id="execute-btn" class="btn2" href="#">Execute Custom</a>
+						<div id="executebtn" class="btn1">Execute</div>
+						<div id="schedulebtn" class="btn2">Schedule Flow</div>
 					</div>
 					
 					<div id="headertabs" class="headertabs">
@@ -81,6 +81,8 @@
 		<ul id="jobMenu" class="contextMenu">  
 			<li class="open"><a href="#open">Open...</a></li>
 			<li class="openwindow"><a href="#openwindow">Open in New Window...</a></li>
+			<li class="enable separator"><a href="#enable">Enable</a></li>
+			<li class="disable"><a href="#disable">Disable</a></li>
 		</ul>
 
 		</div>

@@ -42,7 +42,7 @@ azkaban.ProjectTableView= Backbone.View.extend({
 	    
 	    $.get(
 	      requestURL,
-	      {"project": targetId, "json":"fetchprojectflows"},
+	      {"project": targetId, "ajax":"fetchprojectflows"},
 	      function(data) {
 	        console.log("Success");
 	        target.loaded = true;
