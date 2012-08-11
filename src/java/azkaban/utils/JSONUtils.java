@@ -2,6 +2,7 @@ package azkaban.utils;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -37,6 +38,24 @@ public class JSONUtils {
 		}
 	}
 
+	public static void toJSON(Object obj, OutputStream stream) {
+		toJSON(obj, stream, false);
+	}
+	
+	public static void toJSON(Object obj, OutputStream stream, boolean prettyPrint) {
+		ObjectMapper mapper = new ObjectMapper();
+		try {
+			if (prettyPrint) {
+				ObjectWriter writer = mapper.writerWithDefaultPrettyPrinter();
+				writer.writeValue(stream, obj);
+				return;
+			}
+			mapper.writeValue(stream, obj);
+		} catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+	
 	public static Object parseJSONFromString(String json) throws IOException {
 		ObjectMapper mapper = new ObjectMapper();
 		JsonFactory factory = new JsonFactory();

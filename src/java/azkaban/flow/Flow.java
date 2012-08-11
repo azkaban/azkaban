@@ -13,6 +13,7 @@ public class Flow {
 		READY, RUNNING, RUNNING_WITH_FAILURE, FAILED, SUCCEEDED
 	}
 	private final String id;
+	private String projectId;
 	private ArrayList<Node> startNodes = null;
 	private ArrayList<Node> endNodes = null;
 	private int numLevels = -1;
@@ -307,5 +308,13 @@ public class Flow {
 	
 	public Map<String, FlowProps> getAllFlowProps() {
 	    return flowProps;
+	}
+
+	public String getProjectId() {
+		return projectId;
+	}
+	
+	public void setProjectId(String projectId) {
+		this.projectId = projectId;
 	}
 }

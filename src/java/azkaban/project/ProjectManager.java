@@ -28,4 +28,6 @@ public interface ProjectManager {
 	public Props getProperties(Project project, String source, User user) throws ProjectManagerException;
 
 	public HashMap<String, Props> getAllFlowProperties(Project project, String flowId, User user) throws ProjectManagerException;
+	
+	public void copyProjectSourceFilesToDirectory(Project project, File directory) throws ProjectManagerException;
 }

@@ -50,7 +50,7 @@ function layoutGraph(nodes, edges) {
 		var destNode = nodeMap[dest];
 		
 		var lastNode = srcNode;
-		// TODO GUIDE EDGES
+
 		var guides = [];
 		
 		for (var j = srcNode.level + 1; j < destNode.level; ++j) {
@@ -79,7 +79,19 @@ function layoutGraph(nodes, edges) {
 		
 		spreadLayerSmart(layers[i]);
 	}
-	
+
+	// The top level can get out of alignment, so we do this kick back
+	// manouver before we seriously get started sorting.
+	if (maxLayer > 1) {
+		uncrossWithIn(layers[1]);
+		sort(layers[1]);
+		spreadLayerSmart(layers[1]);
+
+		uncrossWithOut(layers[0]);
+		sort(layers[0]);
+		spreadLayerSmart(layers[0]);
+	}
+
 	// Uncross down
 	for (var i=1; i <= maxLayer; ++i) {
 		uncrossWithIn(layers[i]);
@@ -87,6 +99,7 @@ function layoutGraph(nodes, edges) {
 		spreadLayerSmart(layers[i]);
 	}
 	
+
 	// Space it vertically
 	spaceVertically(layers, maxLayer);
 	

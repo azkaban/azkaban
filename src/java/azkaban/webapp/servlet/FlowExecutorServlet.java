@@ -13,6 +13,7 @@ import javax.servlet.http.HttpServletResponse;
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutorManager;
 import azkaban.executor.ExecutableFlow.Status;
+import azkaban.executor.ExecutorManagerException;
 import azkaban.flow.Flow;
 import azkaban.project.Project;
 import azkaban.project.ProjectManager;
@@ -96,17 +97,62 @@ public class FlowExecutorServlet extends LoginAbstractAzkabanServlet {
 			return;
 		}
 		
-		ExecutableFlow exflow = ExecutableFlow.createExecutableFlow(flow, sources);
-		
+		// Create ExecutableFlow
+		ExecutableFlow exflow = executorManager.createExecutableFlow(flow);
 		Map<String, String> paramGroup = this.getParamGroup(req, "disabled");
 		for (Map.Entry<String, String> entry: paramGroup.entrySet()) {
 			boolean nodeDisabled = Boolean.parseBoolean(entry.getValue());
 			exflow.setStatus(entry.getKey(), nodeDisabled ? Status.IGNORED : Status.READY);
 		}
 		
-		executorManager.executeFlow(exflow);
+		// Create directory
+		try {
+			executorManager.setupExecutableFlow(exflow);
+		} catch (ExecutorManagerException e) {
+			try {
+				executorManager.cleanupAll(exflow);
+			} catch (ExecutorManagerException e1) {
+				e1.printStackTrace();
+			}
+			ret.put("error", e.getMessage());
+			return;
+		}
+
+		// Copy files to the source.
+		File executionDir = new File(exflow.getExecutionPath());
+		try {
+			projectManager.copyProjectSourceFilesToDirectory(project, executionDir);
+		} catch (ProjectManagerException e) {
+			try {
+				executorManager.cleanupAll(exflow);
+			} catch (ExecutorManagerException e1) {
+				e1.printStackTrace();
+			}
+			ret.put("error", e.getMessage());
+			return;
+		}
+		
+		try {
+			executorManager.executeFlow(exflow);
+		} catch (ExecutorManagerException e) {
+			try {
+				executorManager.cleanupAll(exflow);
+			} catch (ExecutorManagerException e1) {
+				e1.printStackTrace();
+			}
+			
+			ret.put("error", e.getMessage());
+			return;
+		}
 		String execId = exflow.getExecutionId();
 		
-		ret.put("execid", "test");
+		// The following is just a test for cleanup
+//		try {
+//			executorManager.cleanupUnusedFiles(exflow);
+//		} catch (ExecutorManagerException e) {
+//			e.printStackTrace();
+//		}
+//		
+		ret.put("execid", execId);
 	}
 }

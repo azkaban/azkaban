@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.FileFilter;
 import java.io.FileWriter;
 import java.io.IOException;
+
 import java.security.AccessControlException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -18,6 +19,7 @@ import net.sf.ehcache.Element;
 import net.sf.ehcache.config.CacheConfiguration;
 import net.sf.ehcache.store.MemoryStoreEvictionPolicy;
 
+import org.apache.commons.io.FileUtils;
 import org.apache.log4j.Logger;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
@@ -82,8 +84,7 @@ public class FileProjectManager implements ProjectManager {
 				logger.info("Directory creation was successful.");
 			} 
 			else {
-				throw new RuntimeException(
-						"FileProjectLoader cannot create directory " + projectDirectory);
+				throw new RuntimeException("FileProjectLoader cannot create directory " + projectDirectory);
 			}
 		} 
 		else if (projectDirectory.isFile()) {
@@ -152,6 +153,7 @@ public class FileProjectManager implements ProjectManager {
 
 							try {
 								flow = Flow.flowFromObject(objectizedFlow);
+								flow.setProjectId(project.getName());
 							} 
 							catch (Exception e) {
 								logger.error(
@@ -229,6 +231,7 @@ public class FileProjectManager implements ProjectManager {
 		}
 
 		for (Flow flow : flows.values()) {
+			flow.setProjectId(projectName);
 			try {
 				if (flow.getErrors() != null) {
 					errors.addAll(flow.getErrors());
@@ -497,5 +500,28 @@ public class FileProjectManager implements ProjectManager {
 		
 		return sourceMap;
 	}
+
+	@Override
+	public void copyProjectSourceFilesToDirectory(Project project, File directory) throws ProjectManagerException {
+		
+		if (!directory.exists()) {
+			throw new ProjectManagerException("Destination directory " + directory + " doesn't exist.");
+		}
+		
+		String mySource = project.getName() + File.separatorChar + project.getSource() + File.separatorChar + "src";
+		
+		File projectDir = new File(projectDirectory, mySource);
+		if (!projectDir.exists()) {
+			throw new ProjectManagerException("Project source directory " + mySource + " doesn't exist.");
+		}
+
+		logger.info("Copying from project dir " + projectDir + " to " + directory);
+		try {
+			FileUtils.copyDirectory(projectDir, directory);
+		} catch (IOException e) {
+			throw new ProjectManagerException(e.getMessage());
+		}
+	}
+
 
 }
