@@ -138,7 +138,7 @@ public class Project {
 		ArrayList<Map<String, Object>> users = new ArrayList<Map<String, Object>>();
 		for (Map.Entry<String, Permission> entry : userToPermission.entrySet()) {
 			HashMap<String, Object> userMap = new HashMap<String, Object>();
-			userMap.put("userid", entry.getKey());
+			userMap.put("userId", entry.getKey());
 			userMap.put("permissions", entry.getValue().toStringArray());
 			users.add(userMap);
 		}
@@ -171,7 +171,7 @@ public class Project {
 				.get("users");
 
 		for (Map<String, Object> user : users) {
-			String userid = (String) user.get("userid");
+			String userid = (String) user.get("userId");
 			Permission perm = new Permission();
 			List<String> list = (List<String>) user.get("permissions");
 			perm.addPermissionsByName(list);

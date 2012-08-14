@@ -2,14 +2,17 @@ package azkaban.executor;
 
 import java.io.BufferedOutputStream;
 import java.io.File;
+import java.io.FileFilter;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.log4j.Logger;
@@ -23,8 +26,8 @@ public class ExecutorManager {
 	private static String FLOW_PATH = "flows";
 	private static Logger logger = Logger.getLogger(ExecutorManager.class);
 	private File basePath;
-	
-	private AtomicLong counter = new AtomicLong();
+
+	private AtomicInteger counter = new AtomicInteger();
 	private String token;
 	
 	private HashMap<String, ExecutableFlow> runningFlows = new HashMap<String, ExecutableFlow>();
@@ -43,6 +46,116 @@ public class ExecutorManager {
 		
 		token = props.getString("executor.shared.token", "");
 		counter.set(0);
+		loadActiveExecutions();
+	}
+	
+	public List<ExecutableFlow> getExecutableFlowByProject(String projectId, int from, int maxResults) {
+		File activeFlows = new File(basePath, projectId + File.separatorChar + "active");
+		
+		if (!activeFlows.exists()) {
+			return Collections.emptyList();
+		}
+		
+		File[] executionFiles = activeFlows.listFiles();
+		if (executionFiles.length == 0 || from >= executionFiles.length) {
+			return Collections.emptyList();
+		}
+
+		Arrays.sort(executionFiles);
+
+		ArrayList<ExecutableFlow> executionFlows = new ArrayList<ExecutableFlow>();
+		
+		int index = (executionFiles.length - from - 1);
+		for (int count = 0; count < maxResults && index >= 0; ++count, --index) {
+			File exDir = executionFiles[index];
+			ExecutableFlow flow = loadExecutableFlowFromDir(exDir);
+			
+			if (flow != null) {
+				executionFlows.add(flow);
+			}
+			else {
+				logger.info("Skipping loading " + exDir + ". Couldn't load execution.");
+			}
+		}
+		
+		return executionFlows;
+	}
+	
+	public int getExecutableFlowByProjectFlow(String projectId, String flowName, int from, int maxResults, List<ExecutableFlow> results) {
+		File activeFlows = new File(basePath, projectId + File.separatorChar + "active");
+		
+		if (!activeFlows.exists()) {
+			return 0;
+		}
+		
+		File[] executionFiles = activeFlows.listFiles(new SuffixFilter(flowName, false));
+		//File[] executionFiles = activeFlows.listFiles();
+		if (executionFiles.length == 0 || from >= executionFiles.length) {
+			return 0;
+		}
+		Arrays.sort(executionFiles);
+
+		int count = 0;
+		for (int index = executionFiles.length - from - 1; count < maxResults && index>=0; --index ) {
+			File exDir = executionFiles[index];
+			ExecutableFlow flow = loadExecutableFlowFromDir(exDir);
+			
+			if (flow != null) {
+				results.add(flow);
+				count++;
+			}
+			else {
+				logger.info("Skipping loading " + exDir + ". Couldn't load execution.");
+			}
+		}
+		
+		return executionFiles.length;
+	}
+	
+	private ExecutableFlow loadExecutableFlowFromDir(File exDir) {
+		logger.info("Loading execution " + exDir.getName());
+		String exFlowName = exDir.getName();
+		
+		String flowFileName = "_" + exFlowName + ".flow";
+		File[] exFlowFiles = exDir.listFiles(new PrefixFilter(flowFileName));
+		Arrays.sort(exFlowFiles);
+		
+		if (exFlowFiles.length <= 0) {
+			logger.error("Execution flow " + exFlowName + " missing flow file.");
+			return null;
+		}
+		File lastExFlow = exFlowFiles[exFlowFiles.length-1];
+		
+		Object exFlowObj = null;
+		try {
+			exFlowObj = JSONUtils.parseJSONFromFile(lastExFlow);
+		} catch (IOException e) {
+			logger.error("Error loading execution flow " + exFlowName + ". Problems parsing json file.");
+			return null;
+		}
+		
+		ExecutableFlow flow = ExecutableFlow.createExecutableFlowFromObject(exFlowObj);
+		return flow;
+	}
+	
+	private void loadActiveExecutions() {
+		File[] executingProjects = basePath.listFiles();
+		for (File project: executingProjects) {
+			File activeFlows = new File(project, "active");
+			if (!activeFlows.exists()) {
+				continue;
+			}
+			
+			for (File exflow: activeFlows.listFiles()) {
+				logger.info("Loading execution " + exflow.getName());
+				ExecutableFlow flow = loadExecutableFlowFromDir(exflow);
+				
+				if (flow != null) {
+					logger.info("Adding active execution flow " + flow.getExecutionId());
+					runningFlows.put(flow.getExecutionId(), flow);
+				}
+			}
+		}
 	}
 	
 	public synchronized ExecutableFlow createExecutableFlow(Flow flow) {
@@ -54,8 +167,10 @@ public class ExecutorManager {
 		// Find execution
 		File executionDir;
 		String executionId;
+		int count = counter.getAndIncrement();
+		String countString = String.format("%05d", count);
 		do {
-			executionId = String.valueOf(System.currentTimeMillis()) + "." + id;
+			executionId = String.valueOf(System.currentTimeMillis()) + "." + countString + "." + id;
 			executionDir = new File(projectExecutionDir, executionId);
 		}
 		while(executionDir.exists());
@@ -65,8 +180,8 @@ public class ExecutorManager {
 	}
 	
 	public synchronized void setupExecutableFlow(ExecutableFlow exflow) throws ExecutorManagerException {
-		String path = exflow.getExecutionId();
-		String projectFlowDir = exflow.getProjectId() + File.separator + path;
+		String executionId = exflow.getExecutionId();
+		String projectFlowDir = exflow.getProjectId() + File.separator + "active" + File.separator + executionId;
 		File executionPath = new File(basePath, projectFlowDir);
 		if (executionPath.exists()) {
 			throw new ExecutorManagerException("Execution path " + executionPath + " exists. Probably a simultaneous execution.");
@@ -74,6 +189,13 @@ public class ExecutorManager {
 		
 		executionPath.mkdirs();
 		exflow.setExecutionPath(executionPath.getPath());
+		runningFlows.put(executionId, exflow);
+	}
+	
+	public synchronized ExecutableFlow getExecutableFlow(String flowId) throws ExecutorManagerException {
+		ExecutableFlow flow = runningFlows.get(flowId);
+		
+		return flow;
 	}
 	
 	public void executeFlow(ExecutableFlow flow) throws ExecutorManagerException {
@@ -274,5 +396,35 @@ public class ExecutorManager {
 	
 	private String createUniqueId(String projectId, String flowId) {
 		return null;
+	}
+	
+	private static class PrefixFilter implements FileFilter {
+		private String prefix;
+
+		public PrefixFilter(String prefix) {
+			this.prefix = prefix;
+		}
+
+		@Override
+		public boolean accept(File pathname) {
+			String name = pathname.getName();
+
+			return pathname.isFile() && !pathname.isHidden() && name.length() >= prefix.length() && name.startsWith(prefix);
+		}
+	}
+	
+	private static class SuffixFilter implements FileFilter {
+		private String suffix;
+		private boolean filesOnly = false;
+
+		public SuffixFilter(String suffix, boolean filesOnly) {
+			this.suffix = suffix;
+		}
+
+		@Override
+		public boolean accept(File pathname) {
+			String name = pathname.getName();
+			return (pathname.isFile() || !filesOnly) && !pathname.isHidden() && name.length() >= suffix.length() && name.endsWith(suffix);
+		}
 	}
 }

@@ -30,6 +30,8 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.log4j.Logger;
 
+import azkaban.executor.ExecutableFlow;
+import azkaban.executor.ExecutorManager;
 import azkaban.flow.Edge;
 import azkaban.flow.Flow;
 import azkaban.flow.Node;
@@ -52,7 +54,8 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 	private static final int DEFAULT_UPLOAD_DISK_SPOOL_SIZE = 20 * 1024 * 1024;
 	private static final NodeLevelComparator NODE_LEVEL_COMPARATOR = new NodeLevelComparator();
 	
-	private ProjectManager manager;
+	private ProjectManager projectManager;
+	private ExecutorManager executorManager;
 	private MultipartParser multipartParser;
 	private File tempDir;
 	private static Comparator<Flow> FLOW_ID_COMPARATOR = new Comparator<Flow>() {
@@ -65,7 +68,9 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 	@Override
 	public void init(ServletConfig config) throws ServletException {
 		super.init(config);
-		manager = this.getApplication().getProjectManager();
+		projectManager = this.getApplication().getProjectManager();
+		executorManager = this.getApplication().getExecutorManager();
+		
 		tempDir = this.getApplication().getTempDirectory();
 		multipartParser = new MultipartParser(DEFAULT_UPLOAD_DISK_SPOOL_SIZE);
 	}
@@ -125,7 +130,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 		
 		Project project = null;
 		try {
-			project = manager.getProject(projectName, user);
+			project = projectManager.getProject(projectName, user);
 		} catch (Exception e) {
 			ret.put("error", e.getMessage());
 			this.writeJSON(resp, ret);
@@ -140,17 +145,17 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 		}
 		else if (ajaxName.equals("fetchflowgraph")) {
 			if (handleAjaxPermission(project, user, Type.READ, ret)) {
-				ajaxFetchFlowGraph(project, ret, req, resp);
+				ajaxFetchFlowGraph(project, ret, req);
 			}
 		}
 		else if (ajaxName.equals("fetchprojectflows")) {
 			if (handleAjaxPermission(project, user, Type.READ, ret)) {
-				ajaxFetchProjectFlows(project, ret, req, resp);
+				ajaxFetchProjectFlows(project, ret, req);
 			}
 		}
 		else if (ajaxName.equals("changeDescription")) {
 			if (handleAjaxPermission(project, user, Type.WRITE, ret)) {
-				ajaxChangeDescription(project, ret, req, resp);
+				ajaxChangeDescription(project, ret, req);
 			}
 		}
 		else if (ajaxName.equals("getPermissions")) {
@@ -168,6 +173,11 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 				ajaxAddUserPermission(project, ret, req);
 			}
 		}
+		else if (ajaxName.equals("fetchFlowExecutions")) {
+			if (handleAjaxPermission(project, user, Type.READ, ret)) {
+				ajaxFetchFlowExecutions(project, ret, req);
+			}
+		}
 		
 		this.writeJSON(resp, ret);
 	}
@@ -181,18 +191,49 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 		return false;
 	}
 	
-	private void ajaxChangeDescription(Project project, HashMap<String, Object> ret, HttpServletRequest req, HttpServletResponse resp) throws ServletException {
+	private void ajaxFetchFlowExecutions(Project project, HashMap<String, Object> ret, HttpServletRequest req) throws ServletException {
+		String flowId = getParam(req, "flow");
+		int from = Integer.valueOf(getParam(req, "start"));
+		int length = Integer.valueOf(getParam(req, "length"));
+		
+		ArrayList<ExecutableFlow> exFlows = new ArrayList<ExecutableFlow>();
+		int total = executorManager.getExecutableFlowByProjectFlow(project.getName(), flowId, from, length, exFlows);
+		
+		ret.put("flow", flowId);
+		ret.put("total", total);
+		ret.put("from", from);
+		ret.put("length", length);
+		
+		ArrayList<Object> history = new ArrayList<Object>();
+		for (ExecutableFlow flow: exFlows) {
+			HashMap<String, Object> flowInfo = new HashMap<String, Object>();
+			flowInfo.put("execId", flow.getExecutionId());
+			flowInfo.put("flowId", flow.getFlowId());
+			flowInfo.put("projectId", flow.getProjectId());
+			flowInfo.put("status", flow.getStatus().toString());
+			flowInfo.put("submitTime", flow.getSubmitTime());
+			flowInfo.put("startTime", flow.getStartTime());
+			flowInfo.put("endTime", flow.getEndTime());
+			flowInfo.put("submitUser", flow.getSubmitUser());
+			
+			history.add(flowInfo);
+		}
+		
+		ret.put("executions", history);
+	}
+	
+	private void ajaxChangeDescription(Project project, HashMap<String, Object> ret, HttpServletRequest req) throws ServletException {
 		String description = getParam(req, "description");
 		project.setDescription(description);
 		
 		try {
-			manager.commitProject(project.getName());
+			projectManager.commitProject(project.getName());
 		} catch (ProjectManagerException e) {
 			ret.put("error", e.getMessage());
 		}
 	}
 	
-	private void ajaxFetchProjectFlows(Project project, HashMap<String, Object> ret, HttpServletRequest req, HttpServletResponse resp) throws ServletException {
+	private void ajaxFetchProjectFlows(Project project, HashMap<String, Object> ret, HttpServletRequest req) throws ServletException {
 		ArrayList<Map<String,Object>> flowList = new ArrayList<Map<String,Object>>();
 		for (Flow flow: project.getFlows()) {
 			HashMap<String, Object> flowObj = new HashMap<String, Object>();
@@ -203,7 +244,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 		ret.put("flows", flowList); 
 	}
 	
-	private void ajaxFetchFlowGraph(Project project, HashMap<String, Object> ret, HttpServletRequest req, HttpServletResponse resp) throws ServletException {
+	private void ajaxFetchFlowGraph(Project project, HashMap<String, Object> ret, HttpServletRequest req) throws ServletException {
 		String flowId = getParam(req, "flow");
 		Flow flow = project.getFlow(flowId);
 		
@@ -212,8 +253,6 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 		for (Node node: flow.getNodes()) {
 			HashMap<String, Object> nodeObj = new HashMap<String,Object>();
 			nodeObj.put("id", node.getId());
-			nodeObj.put("x", node.getPosition().getX());
-			nodeObj.put("y", node.getPosition().getY());
 			nodeObj.put("level", node.getLevel());
 
 			nodeList.add(nodeObj);
@@ -228,20 +267,20 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 			if (edge.hasError()) {
 				edgeObj.put("error", edge.getError());
 			}
-			if (edge.getGuideValues() != null) {
-				List<Point2D> guides = edge.getGuideValues();
-				ArrayList<Object> guideOutput = new ArrayList<Object>();
-				for (Point2D guide: guides) {
-					double x = guide.getX();
-					double y = guide.getY();
-					HashMap<String, Double> point = new HashMap<String, Double>();
-					point.put("x", x);
-					point.put("y", y);
-					guideOutput.add(point);
-				}
-				
-				edgeObj.put("guides", guideOutput);
-			}
+//			if (edge.getGuideValues() != null) {
+//				List<Point2D> guides = edge.getGuideValues();
+//				ArrayList<Object> guideOutput = new ArrayList<Object>();
+//				for (Point2D guide: guides) {
+//					double x = guide.getX();
+//					double y = guide.getY();
+//					HashMap<String, Double> point = new HashMap<String, Double>();
+//					point.put("x", x);
+//					point.put("y", y);
+//					guideOutput.add(point);
+//				}
+//				
+//				edgeObj.put("guides", guideOutput);
+//			}
 			
 			edgeList.add(edgeObj);
 		}
@@ -320,7 +359,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 		
 		project.setUserPermission(username, perm);
 		try {
-			manager.commitProject(project.getName());
+			projectManager.commitProject(project.getName());
 		} catch (ProjectManagerException e) {
 			ret.put("error", e.getMessage());
 		}
@@ -351,7 +390,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 			perm.setPermission(Type.SCHEDULE, schedule);
 		}
 		try {
-			manager.commitProject(project.getName());
+			projectManager.commitProject(project.getName());
 		} catch (ProjectManagerException e) {
 			ret.put("error", e.getMessage());
 		}
@@ -378,7 +417,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 		
 		Project project = null;
 		try {
-			project = manager.getProject(projectName, user);
+			project = projectManager.getProject(projectName, user);
 			if (project == null) {
 				page.add("errorMsg", "Project " + projectName + " not found.");
 			}
@@ -411,7 +450,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 		Project project = null;
 		Flow flow = null;
 		try {
-			project = manager.getProject(projectName, user);
+			project = projectManager.getProject(projectName, user);
 			if (project == null) {
 				page.add("errorMsg", "Project " + projectName + " not found.");
 			}
@@ -431,7 +470,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 						page.add("errorMsg", "Job " + jobName + " not found.");
 					}
 					else {
-						Props prop = manager.getProperties(projectName, node.getJobSource(), user);
+						Props prop = projectManager.getProperties(projectName, node.getJobSource(), user);
 						page.add("jobid", node.getId());
 						page.add("jobtype", node.getType());
 						
@@ -491,7 +530,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 		Project project = null;
 		Flow flow = null;
 		try {
-			project = manager.getProject(projectName, user);
+			project = projectManager.getProject(projectName, user);
 			if (project == null) {
 				page.add("errorMsg", "Project " + projectName + " not found.");
 			}
@@ -520,7 +559,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 		User user = session.getUser();
 		Project project = null;
 		try {
-			project = manager.getProject(projectName, user);
+			project = projectManager.getProject(projectName, user);
 			if (project == null) {
 				page.add("errorMsg", "Project " + projectName + " not found.");
 			}
@@ -558,7 +597,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 		String message = null;
 		HashMap<String, Object> params = null;
 		try {
-			manager.createProject(projectName, projectDescription, user);
+			projectManager.createProject(projectName, projectDescription, user);
 			status = "success";
 			action = "redirect";
 			String redirect = "manager?project=" + projectName;
@@ -595,7 +634,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 		else {
 			try {
 				projectDir = extractFile(item);
-				manager.uploadProject(projectName, projectDir, user, force);
+				projectManager.uploadProject(projectName, projectDir, user, force);
 				setSuccessMessageInCookie(resp, "Project Uploaded");
 			} 
 			catch (Exception e) {

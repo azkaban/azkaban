@@ -93,13 +93,13 @@ public class Node {
 		String id = (String)mapObj.get("id");
 		
 		Node node = new Node(id);
-		String jobSource = (String)mapObj.get("job.source");
-		String propSource = (String)mapObj.get("prop.source");
-		String typeSource = (String)mapObj.get("job.type");
+		String jobSource = (String)mapObj.get("jobSource");
+		String propSource = (String)mapObj.get("propSource");
+		String jobType = (String)mapObj.get("jobType");
 		
 		node.setJobSource(jobSource);
 		node.setPropsSource(propSource);
-		node.setType(typeSource);
+		node.setType(jobType);
 		
 		Integer expectedRuntime = (Integer)mapObj.get("expectedRuntime");
 		if (expectedRuntime != null) {
@@ -135,9 +135,9 @@ public class Node {
 	public Object toObject() {
 		HashMap<String, Object> objMap = new HashMap<String, Object>();
 		objMap.put("id", id);
-		objMap.put("job.source", jobSource);
-		objMap.put("prop.source", propsSource);
-		objMap.put("job.type", type);
+		objMap.put("jobSource", jobSource);
+		objMap.put("propSource", propsSource);
+		objMap.put("jobType", type);
 		objMap.put("expectedRuntime", expectedRunTimeSec);
 
 		HashMap<String, Object> layoutInfo = new HashMap<String, Object>();

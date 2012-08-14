@@ -1259,6 +1259,54 @@ span.sublabel {
 	padding-left: 12px;
 }
 
+#pageSelection {
+}
+
+#pageSelection ul {
+}
+
+#pageSelection ul li.first {
+	border-left: 1px solid #CCC; 
+}
+
+
+#pageSelection ul li {
+	float: left;
+	background-color: #FFF;
+	border-top: 1px solid #CCC;
+	border-bottom: 1px solid #CCC;
+	border-right: 1px solid #CCC;
+	cursor: pointer;
+	padding-top: 8px;
+	padding-bottom: 8px;
+	font-size: 11pt;
+	text-decoration: none;
+	color: #3398cc;
+}
+
+#pageSelection ul li.disabled {
+	cursor: default;
+	color: #CCC;
+}
+
+#pageSelection ul li a{
+	font-size: 11pt;
+	text-decoration: none;
+	color: inherit;
+	cursor: inherit;
+	padding: 8px 12px;
+}
+
+#pageSelection ul li .arrow{
+	top: 0px;
+	margin: 0px 6px;
+}
+
+#pageSelection ul li.selected{
+	background-color: #c7eeff;
+}
+
+
 /* old styles */
 
 .azkaban-charts .hitarea {

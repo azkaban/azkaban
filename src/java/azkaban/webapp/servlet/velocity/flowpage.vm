@@ -54,7 +54,7 @@
 						<ul>
 							<li><a id="graphViewLink" href="#graph">Graph</a></li>
 							<li class="lidivider">|</li>
-							<li><a id="jobslistViewLink" href="#jobslist">Job List</a></li>
+							<li><a id="executionsViewLink" href="#executions">Executions</a></li>
 						</ul>
 					</div>
 					<div id="graphView">
@@ -73,8 +73,36 @@
 							</div>
 						</div>
 					</div>
-					<div id="jobListView">
-					<p>This is my joblist view</p>
+					<div id="executionsView">
+						<div id="executionDiv">
+							<table id="execTable">
+								<thead>
+									<tr>
+										<th>Execution Id</th>
+										<th>User</th>
+										<th>Start Time</th>
+										<th>End Time</th>
+										<th>Elapsed</th>
+										<th>Status</th>
+										<th>Action</th>
+									</tr>
+								</thead>
+								<tbody id="execTableBody">
+								</tbody>
+							</table>
+						</div>
+					
+						<div id="pageSelection">
+							<ul>
+								<li id="previous" class="first"><a><span class="arrow">&larr;</span>Previous</a></li>
+								<li id="page1"><a href="#page1">1</a></li>
+								<li id="page2"><a href="#page2">2</a></li>
+								<li id="page3"><a href="#page3">3</a></li>
+								<li id="page4"><a href="#page4">4</a></li>
+								<li id="page5"><a href="#page5">5</a></li>
+								<li id="next"><a>Next<span class="arrow">&rarr;</span></a></li>
+							</ul>
+						</div>
 					</div>
 				</div>
 #end

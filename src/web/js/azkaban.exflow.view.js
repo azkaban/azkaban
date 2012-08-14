@@ -9,46 +9,6 @@ var handleJobMenuClick = function(action, el, pos) {
 	else if(action == "openwindow") {
 		window.open(requestURL);
 	}
-	else if(action == "disable") {
-		var oldDisabled = graphModel.get("disabled");
-		
-		var newDisabled = {};
-		// Copy disabled list
-		if (oldDisabled) {
-			for(var id in oldDisabled) {
-			    if(oldDisabled.hasOwnProperty(id)) {
-			    	var disabled = (oldDisabled[id]);
-			    	if (disabled) {
-			    		newDisabled[id]=true;
-			    	}
-			    }
-			}
-		}
-		
-		newDisabled[jobid] = true;
-		graphModel.set({disabled: newDisabled});
-	}
-	else if(action == "enable") {
-		var oldDisabled = graphModel.get("disabled");
-		// Copy disabled list
-		if (oldDisabled) {
-			var newDisabled = {};
-			for(var id in oldDisabled) {
-			    if(oldDisabled.hasOwnProperty(id)) {
-			    	var disabled = (oldDisabled[id]);
-			    	if (disabled) {
-			    		newDisabled[id]=true;
-			    	}
-			    }
-			}
-			
-			if( oldDisabled[jobid]) {
-				newDisabled[jobid] = false;
-				graphModel.set({disabled: newDisabled});
-			}
-		}
-
-	}
 }
 
 function hasClass(el, name) 
@@ -81,12 +41,12 @@ var flowTabView;
 azkaban.FlowTabView= Backbone.View.extend({
   events : {
   	"click #graphViewLink" : "handleGraphLinkClick",
-  	"click #executionsViewLink" : "handleExecutionLinkClick"
+  	"click #jobslistViewLink" : "handleJobslistLinkClick"
   },
   initialize : function(settings) {
   	var selectedView = settings.selectedView;
-  	if (selectedView == "executions") {
-  		this.handleExecutionLinkClick();
+  	if (selectedView == "jobslist") {
+  		this.handleJobslistLinkClick();
   	}
   	else {
   		this.handleGraphLinkClick();
@@ -97,19 +57,18 @@ azkaban.FlowTabView= Backbone.View.extend({
   	console.log("render graph");
   },
   handleGraphLinkClick: function(){
-  	$("#executionsViewLink").removeClass("selected");
+  	$("#jobslistViewLink").removeClass("selected");
   	$("#graphViewLink").addClass("selected");
   	
-  	$("#executionsView").hide();
+  	$("#jobListView").hide();
   	$("#graphView").show();
   },
-  handleExecutionLinkClick: function() {
+  handleJobslistLinkClick: function() {
   	$("#graphViewLink").removeClass("selected");
-  	$("#executionsViewLink").addClass("selected");
+  	$("#jobslistViewLink").addClass("selected");
   	
   	 $("#graphView").hide();
-  	 $("#executionsView").show();
-  	 executionModel.trigger("change:view");
+  	 $("#jobListView").show();
   }
 });
 
@@ -122,7 +81,6 @@ azkaban.JobListView = Backbone.View.extend({
 	},
 	initialize: function(settings) {
 		this.model.bind('change:selected', this.handleSelectionChange, this);
-		this.model.bind('change:disabled', this.handleDisabledChange, this);
 		this.model.bind('change:graph', this.render, this);
 	},
 	filterJobs: function(self) {
@@ -243,20 +201,6 @@ azkaban.JobListView = Backbone.View.extend({
 			this.model.set({"selected": jobid});
 		}
 	},
-	handleDisabledChange: function(evt) {
-		var disabledMap = this.model.get("disabled");
-		for(var id in disabledMap) {
-		    if(disabledMap.hasOwnProperty(id)) {
-		    	var disabled = (disabledMap[id]);
-		    	if (disabled) {
-		    		$(this.listNodes[id]).addClass("nodedisabled");
-		    	}
-		    	else {
-		    		$(this.listNodes[id]).removeClass("nodedisabled");
-		    	}
-		    }
-		}
-	},
 	handleSelectionChange: function(evt) {
 		if (!this.model.hasChanged("selected")) {
 			return;
@@ -285,7 +229,6 @@ azkaban.SvgGraphView = Backbone.View.extend({
 	},
 	initialize: function(settings) {
 		this.model.bind('change:selected', this.changeSelected, this);
-		this.model.bind('change:disabled', this.handleDisabledChange, this);
 		this.model.bind('change:graph', this.render, this);
 		this.model.bind('resetPanZoom', this.resetPanZoom, this);
 		
@@ -426,24 +369,6 @@ azkaban.SvgGraphView = Backbone.View.extend({
 			self.mainG.appendChild(line);
 		}
 	},
-	handleDisabledChange: function(evt) {
-		var disabledMap = this.model.get("disabled");
-		for(var id in disabledMap) {
-		    if(disabledMap.hasOwnProperty(id)) {
-		    	var disabled = disabledMap[id];
-		    	this.nodes[id].disabled = disabled;
-		    	var g = document.getElementById(id);
-		    	
-		    	if (disabled) {
-		    		this.nodes[id].disabled = disabled;
-					addClass(g, "disabled");
-		    	}
-		    	else {
-		    		removeClass(g, "disabled");
-		    	}
-		    }
-		}
-	},
 	drawNode: function(self, node, bounds) {
 		var svg = self.svgGraph;
 		var svgns = self.svgns;
@@ -518,237 +443,42 @@ azkaban.SvgGraphView = Backbone.View.extend({
 	}
 });
 
-var executionsView;
-azkaban.ExecutionsView = Backbone.View.extend({
-	events: {
-		"click #pageSelection li": "handleChangePageSelection"
-	},
-	initialize: function(settings) {
-		this.model.bind('change:view', this.handleChangeView, this);
-		this.model.bind('render', this.render, this);
-		this.model.set({page: 1, pageSize: 20});
-		this.model.bind('change:page', this.handlePageChange, this);
-	},
-	render: function(evt) {
-		console.log("render");
-		// Render page selections
-		var tbody = $("#execTableBody");
-		tbody.empty();
-		
-		var executions = this.model.get("executions");
-		for (var i = 0; i < executions.length; ++i) {
-			var row = document.createElement("tr");
-			
-			var tdId = document.createElement("td");
-			$(tdId).text(executions[i].execId);
-			row.appendChild(tdId);
-			
-			var tdUser = document.createElement("td");
-			$(tdUser).text(executions[i].submitUser);
-			row.appendChild(tdUser);
-			
-			var tdStartTime = document.createElement("td");
-			$(tdStartTime).text(executions[i].startTime);
-			row.appendChild(tdStartTime);
-			
-			var tdEndTime = document.createElement("td");
-			$(tdEndTime).text(executions[i].endTime);
-			row.appendChild(tdEndTime);
-			
-			var tdElapsed = document.createElement("td");
-			$(tdElapsed).text(executions[i].endTime - executions[i].startTime);
-			row.appendChild(tdElapsed);
-			
-			var tdStatus = document.createElement("td");
-			$(tdStatus).text(executions[i].status);
-			row.appendChild(tdStatus);
-
-			tbody.append(row);
-		}
-		
-		this.renderPagination(evt);
-	},
-	renderPagination: function(evt) {
-		var total = this.model.get("total");
-		total = total? total : 1;
-		var pageSize = this.model.get("pageSize");
-		var numPages = Math.ceil(total/pageSize);
-		
-		this.model.set({"numPages": numPages});
-		var page = this.model.get("page");
-		
-		//Start it off
-		$("#pageSelection .selected").removeClass("selected");
-		
-		// Disable if less than 5
-		console.log("Num pages " + numPages)
-		var i = 1;
-		for (; i <= numPages && i <= 5; ++i) {
-			$("#page" + i).removeClass("disabled");
-		}
-		for (; i <= 5; ++i) {
-			$("#page" + i).addClass("disabled");
-		}
-		
-		// Disable prev/next if necessary.
-		if (page > 1) {
-			$("#previous").removeClass("disabled");
-			$("#previous")[0].page = page - 1;
-			$("#previous a").attr("href", "#page" + (page - 1));
-		}
-		else {
-			$("#previous").addClass("disabled");
-		}
-		
-		if (page < numPages) {
-			$("#next")[0].page = page + 1;
-			$("#next").removeClass("disabled");
-			$("#next a").attr("href", "#page" + (page + 1));
-		}
-		else {
-			$("#next")[0].page = page + 1;
-			$("#next").addClass("disabled");
-		}
-		
-		// Selection is always in middle unless at barrier.
-		if (page < 3) {
-			selectionPosition = page;
-		}
-		else if (page > numPages - 2) {
-			selectionPosition = 5 - (numPages - page) - 1;
-		}
-		else {
-			selectionPosition = 3;
-		}
-
-		$("#page"+selectionPosition).addClass("selected");
-		$("#page"+selectionPosition)[0].page = page;
-		var selecta = $("#page" + selectionPosition + " a");
-		selecta.text(page);
-		selecta.attr("href", "#page" + page);
-
-		for (var j = 1, tpage = page - selectionPosition + 1; j < selectionPosition; ++j, ++tpage) {
-			$("#page" + j)[0].page = tpage;
-			var a = $("#page" + i + " a");
-			a.text(tpage);
-			a.attr("href", "#page" + tpage);
-		}
-
-		for (var i = selectionPosition + 1, tpage = page + 1; i <= numPages; ++i, ++tpage) {
-			$("#page" + i)[0].page = tpage;
-			var a = $("#page" + i + " a");
-			a.text(tpage);
-			a.attr("href", "#page" + tpage);
-		}
-	},
-	handleChangePageSelection: function(evt) {
-		if ($(evt.currentTarget).hasClass("disabled")) {
-			return;
-		}
-		var page = evt.currentTarget.page;
-		
-		this.model.set({"page": page});
-	},
-	handleChangeView: function(evt) {
-		if (this.init) {
-			return;
-		}
-		
-		console.log("init");
-		this.handlePageChange(evt);
-		this.init = true;
-	},
-	handlePageChange: function(evt) {
-		var page = this.model.get("page") - 1;
-		var pageSize = this.model.get("pageSize");
-		var requestURL = contextURL + "/manager";
-		
-		var model = this.model;
-		$.get(
-			requestURL,
-			{"project": projectName, "flow":flowName, "ajax": "fetchFlowExecutions", "start":page * pageSize, "length": pageSize},
-			function(data) {
-				model.set({"executions": data.executions, "total": data.total});
-				model.trigger("render");
-			},
-			"json"
-		);
-		
-	}
-});
-
 var graphModel;
 azkaban.GraphModel = Backbone.Model.extend({});
 
-var executionModel;
-azkaban.ExecutionModel = Backbone.Model.extend({});
-
 $(function() {
 	var selected;
-	// Execution model has to be created before the window switches the tabs.
-	executionModel = new azkaban.ExecutionModel();
-	executionsView = new azkaban.ExecutionsView({el: $('#executionsView'), model: executionModel});
-		
+	
+	if (window.location.hash) {
+		var hash = window.location.hash;
+		if (hash == "#jobslist") {
+			selected = "jobslist";
+		}
+		else if (hash == "#graph") {
+			// Redundant, but we may want to change the default. 
+			selected = "graph";
+		}
+		else {
+			selected = "graph";
+		}
+	}
 	flowTabView = new azkaban.FlowTabView({el:$( '#headertabs'), selectedView: selected });
 
 	graphModel = new azkaban.GraphModel();
 	svgGraphView = new azkaban.SvgGraphView({el:$('#svgDiv'), model: graphModel});
 	jobsListView = new azkaban.JobListView({el:$('#jobList'), model: graphModel});
 	
-	var requestURL = contextURL + "/manager";
+	var requestURL = contextURL + "/executor";
 
 	$.get(
 	      requestURL,
-	      {"project": projectName, "ajax":"fetchflowgraph", "flow":flowName},
+	      {"execid": execId, "ajax":"fetchexecflow"},
 	      function(data) {
 	          console.log("data fetched");
 	          graphModel.set({data: data});
 	          graphModel.trigger("change:graph");
-	          
-	          // Handle the hash changes here so the graph finishes rendering first.
-	          if (window.location.hash) {
-				var hash = window.location.hash;
-				
-				if (hash == "#executions") {
-					flowTabView.handleExecutionLinkClick();
-				}
-				else if (hash == "#graph") {
-					// Redundant, but we may want to change the default. 
-					selected = "graph";
-				}
-				else {
-					if ("#page" == hash.substring(0, "#page".length)) {
-						var page = hash.substring("#page".length, hash.length);
-						console.log("page " + page);
-						flowTabView.handleExecutionLinkClick();
-						executionModel.set({"page": parseInt(page)});
-					}
-					else {
-						selected = "graph";
-					}
-				}
-			}
 	      },
 	      "json"
 	    );
-	    
-	$("#executebtn").click( function() {
-		var executeURL = contextURL + "/executor";
-		$.get(
-			executeURL,
-			{"project": projectName, "ajax":"executeFlow", "flow":flowName, "disabled":graphModel.get("disabled")},
-			function(data) {
-				if (data.error) {
-					alert(data.error);
-				}
-				else {
-					var redirectURL = contextURL + "/executor?execid=" + data.execid;
-					window.location.href = redirectURL;
-				}
-			},
-			"json"
-		);
-		
-	});
 
 });
