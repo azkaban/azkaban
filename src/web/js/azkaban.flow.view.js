@@ -540,7 +540,10 @@ azkaban.ExecutionsView = Backbone.View.extend({
 			var row = document.createElement("tr");
 			
 			var tdId = document.createElement("td");
-			$(tdId).text(executions[i].execId);
+			var execA = document.createElement("a");
+			$(execA).attr("href", contextURL + "/executor?execid=" + executions[i].execId);
+			$(execA).text(executions[i].execId);
+			tdId.appendChild(execA);
 			row.appendChild(tdId);
 			
 			var tdUser = document.createElement("td");
@@ -562,6 +565,9 @@ azkaban.ExecutionsView = Backbone.View.extend({
 			var tdStatus = document.createElement("td");
 			$(tdStatus).text(executions[i].status);
 			row.appendChild(tdStatus);
+
+			var tdAction = document.createElement("td");
+			row.appendChild(tdAction);
 
 			tbody.append(row);
 		}

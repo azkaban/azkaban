@@ -233,6 +233,17 @@ td {
   border-left: none;
   border-bottom: none;
   padding: 5px;
+  font-size: 10pt;
+}
+
+td a {
+	color: #000;
+	text-decoration: none;
+	margin-left: 10px;
+}
+
+td a:hover {
+	color: #009FC9;
 }
 
 table .last {
@@ -1263,12 +1274,12 @@ span.sublabel {
 }
 
 #pageSelection ul {
+	margin-top: 5px;
 }
 
 #pageSelection ul li.first {
 	border-left: 1px solid #CCC; 
 }
-
 
 #pageSelection ul li {
 	float: left;
@@ -1305,7 +1316,6 @@ span.sublabel {
 #pageSelection ul li.selected{
 	background-color: #c7eeff;
 }
-
 
 /* old styles */
 
