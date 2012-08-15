@@ -14,7 +14,7 @@
  * the License.
  */
 
-package azkaban.executor;
+package azkaban.webapp;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -29,26 +29,30 @@ import org.mortbay.jetty.servlet.Context;
 import org.mortbay.jetty.servlet.ServletHolder;
 import org.mortbay.thread.QueuedThreadPool;
 
+import azkaban.executor.FlowRunnerManager;
 import azkaban.utils.Props;
+import azkaban.utils.Utils;
+import azkaban.webapp.servlet.AzkabanServletContextListener;
+import azkaban.webapp.servlet.ExecutorServlet;
 
 import joptsimple.OptionParser;
 import joptsimple.OptionSet;
 import joptsimple.OptionSpec;
 
 public class AzkabanExecutorServer {
-	private static final Logger logger = Logger
-			.getLogger(AzkabanExecutorServer.class);
+	private static final Logger logger = Logger.getLogger(AzkabanExecutorServer.class);
 
 	public static final String AZKABAN_HOME = "AZKABAN_HOME";
 	public static final String DEFAULT_CONF_PATH = "conf";
 	public static final String AZKABAN_PROPERTIES_FILE = "azkaban.properties";
-
+	public static final int DEFAULT_PORT_NUMBER = 12321;
+	
 	private static final String DEFAULT_TIMEZONE_ID = "default.timezone.id";
-	private static final int DEFAULT_PORT_NUMBER = 8081;
 	private static final int DEFAULT_THREAD_NUMBER = 50;
 
 	private static AzkabanExecutorServer app;
-
+	
+	private FlowRunnerManager runnerManager;
 	private Props props;
 	private File tempDir;
 	private Server server;
@@ -71,10 +75,20 @@ public class AzkabanExecutorServer {
 
         Context root = new Context(server, "/", Context.SESSIONS);
 		String sharedToken = props.getString("executor.shared.token", "");
-		ServletHolder executorHolder = new ServletHolder(new ExecutorServlet(sharedToken));
-		root.addServlet(executorHolder, "/");
 
-		server.start();
+		ServletHolder executorHolder = new ServletHolder(new ExecutorServlet(sharedToken));
+		root.addServlet(executorHolder, "/submit");
+		root.setAttribute(AzkabanServletContextListener.AZKABAN_SERVLET_CONTEXT_KEY, this);
+		runnerManager = new FlowRunnerManager(props);
+		
+		try {
+			server.start();
+		} 
+		catch (Exception e) {
+			logger.warn(e);
+			Utils.croak(e.getMessage(), 1);
+		}
+		
 		logger.info("Azkaban Executor Server started on port " + portNumber);
 
 		tempDir = new File(props.getString("azkaban.temp.dir", "temp"));
@@ -194,6 +208,10 @@ public class AzkabanExecutorServer {
 		return loadAzkabanConfiguration(confFile.getPath());
 	}
 
+	public FlowRunnerManager getFlowRunnerManager() {
+		return runnerManager;
+	}
+	
 	/**
 	 * Returns the set temp dir
 	 * 

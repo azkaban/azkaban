@@ -5,6 +5,8 @@ import java.io.File;
 import java.io.FileFilter;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -15,20 +17,31 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.http.HttpResponse;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.utils.URIBuilder;
+import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.log4j.Logger;
 
 import azkaban.flow.Flow;
-import azkaban.project.Project;
+import azkaban.utils.ExecutableFlowLoader;
 import azkaban.utils.JSONUtils;
 import azkaban.utils.Props;
+import azkaban.webapp.AzkabanExecutorServer;
 
+/**
+ * Executor manager used to manage the client side job.
+ *
+ */
 public class ExecutorManager {
-	private static String FLOW_PATH = "flows";
 	private static Logger logger = Logger.getLogger(ExecutorManager.class);
 	private File basePath;
 
 	private AtomicInteger counter = new AtomicInteger();
 	private String token;
+	private int portNumber;
+	private String url = "localhost";
 	
 	private HashMap<String, ExecutableFlow> runningFlows = new HashMap<String, ExecutableFlow>();
 	
@@ -44,6 +57,7 @@ public class ExecutorManager {
 			}
 		}
 		
+		portNumber = props.getInt("executor.port", AzkabanExecutorServer.DEFAULT_PORT_NUMBER);
 		token = props.getString("executor.shared.token", "");
 		counter.set(0);
 		loadActiveExecutions();
@@ -68,7 +82,7 @@ public class ExecutorManager {
 		int index = (executionFiles.length - from - 1);
 		for (int count = 0; count < maxResults && index >= 0; ++count, --index) {
 			File exDir = executionFiles[index];
-			ExecutableFlow flow = loadExecutableFlowFromDir(exDir);
+			ExecutableFlow flow = ExecutableFlowLoader.loadExecutableFlowFromDir(exDir);
 			
 			if (flow != null) {
 				executionFlows.add(flow);
@@ -98,7 +112,7 @@ public class ExecutorManager {
 		int count = 0;
 		for (int index = executionFiles.length - from - 1; count < maxResults && index>=0; --index ) {
 			File exDir = executionFiles[index];
-			ExecutableFlow flow = loadExecutableFlowFromDir(exDir);
+			ExecutableFlow flow = ExecutableFlowLoader.loadExecutableFlowFromDir(exDir);
 			
 			if (flow != null) {
 				results.add(flow);
@@ -111,33 +125,33 @@ public class ExecutorManager {
 		
 		return executionFiles.length;
 	}
-	
-	private ExecutableFlow loadExecutableFlowFromDir(File exDir) {
-		logger.info("Loading execution " + exDir.getName());
-		String exFlowName = exDir.getName();
-		
-		String flowFileName = "_" + exFlowName + ".flow";
-		File[] exFlowFiles = exDir.listFiles(new PrefixFilter(flowFileName));
-		Arrays.sort(exFlowFiles);
-		
-		if (exFlowFiles.length <= 0) {
-			logger.error("Execution flow " + exFlowName + " missing flow file.");
-			return null;
-		}
-		File lastExFlow = exFlowFiles[exFlowFiles.length-1];
-		
-		Object exFlowObj = null;
-		try {
-			exFlowObj = JSONUtils.parseJSONFromFile(lastExFlow);
-		} catch (IOException e) {
-			logger.error("Error loading execution flow " + exFlowName + ". Problems parsing json file.");
-			return null;
-		}
-		
-		ExecutableFlow flow = ExecutableFlow.createExecutableFlowFromObject(exFlowObj);
-		return flow;
-	}
-	
+//	
+//	private ExecutableFlow loadExecutableFlowFromDir(File exDir) {
+//		logger.info("Loading execution " + exDir.getName());
+//		String exFlowName = exDir.getName();
+//		
+//		String flowFileName = "_" + exFlowName + ".flow";
+//		File[] exFlowFiles = exDir.listFiles(new PrefixFilter(flowFileName));
+//		Arrays.sort(exFlowFiles);
+//		
+//		if (exFlowFiles.length <= 0) {
+//			logger.error("Execution flow " + exFlowName + " missing flow file.");
+//			return null;
+//		}
+//		File lastExFlow = exFlowFiles[exFlowFiles.length-1];
+//		
+//		Object exFlowObj = null;
+//		try {
+//			exFlowObj = JSONUtils.parseJSONFromFile(lastExFlow);
+//		} catch (IOException e) {
+//			logger.error("Error loading execution flow " + exFlowName + ". Problems parsing json file.");
+//			return null;
+//		}
+//		
+//		ExecutableFlow flow = ExecutableFlow.createExecutableFlowFromObject(exFlowObj);
+//		return flow;
+//	}
+//	
 	private void loadActiveExecutions() {
 		File[] executingProjects = basePath.listFiles();
 		for (File project: executingProjects) {
@@ -148,7 +162,7 @@ public class ExecutorManager {
 			
 			for (File exflow: activeFlows.listFiles()) {
 				logger.info("Loading execution " + exflow.getName());
-				ExecutableFlow flow = loadExecutableFlowFromDir(exflow);
+				ExecutableFlow flow = ExecutableFlowLoader.loadExecutableFlowFromDir(exflow);
 				
 				if (flow != null) {
 					logger.info("Adding active execution flow " + flow.getExecutionId());
@@ -201,9 +215,41 @@ public class ExecutorManager {
 	public void executeFlow(ExecutableFlow flow) throws ExecutorManagerException {
 		String executionPath = flow.getExecutionPath();
 		File executionDir = new File(executionPath);
-
+		flow.setSubmitTime(System.currentTimeMillis());
+		
 		File resourceFile = writeResourceFile(executionDir, flow);
 		File executableFlowFile = writeExecutableFlowFile(executionDir, flow);
+		logger.info("Setting up " + flow.getExecutionId() + " for execution.");
+		
+		URIBuilder builder = new URIBuilder();
+		builder.setScheme("http")
+			.setHost(url)
+			.setPort(portNumber)
+			.setPath("/submit")
+			.setParameter("sharedToken", token)
+			.setParameter("execid", flow.getExecutionId())
+			.setParameter("execpath", flow.getExecutionPath());
+		
+		URI uri = null;
+		try {
+			uri = builder.build();
+		} catch (URISyntaxException e) {
+			e.printStackTrace();
+			flow.setStatus(ExecutableFlow.Status.FAILED);
+			return;
+		}
+
+		logger.info("Submitting flow " + flow.getExecutionId() + " for execution.");
+		HttpClient httpclient = new DefaultHttpClient();
+		HttpGet httpget = new HttpGet(uri);
+		HttpResponse response = null;
+		try {
+			response = httpclient.execute(httpget);
+		} catch (IOException e) {
+			flow.setStatus(ExecutableFlow.Status.FAILED);
+			e.printStackTrace();
+			return;
+		}
 	}
 	
 	public void cleanupAll(ExecutableFlow exflow) throws ExecutorManagerException{
