@@ -1,4 +1,4 @@
-package event;
+package azkaban.executor.event;
 
 import java.util.HashSet;
 

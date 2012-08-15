@@ -9,6 +9,8 @@ import java.util.concurrent.LinkedBlockingQueue;
 
 import org.apache.log4j.Logger;
 
+import azkaban.executor.event.Event;
+import azkaban.executor.event.EventListener;
 import azkaban.utils.ExecutableFlowLoader;
 import azkaban.utils.Props;
 
@@ -27,11 +29,13 @@ public class FlowRunnerManager {
 
 	private ExecutorService executorService;
 	private SubmitterThread submitterThread;
+	private FlowRunnerEventListener eventListener;
 	
 	public FlowRunnerManager(Props props) {
 		basePath = new File(props.getString("execution.directory"));
 		numThreads = props.getInt("executor.flow.threads", DEFAULT_NUM_EXECUTING_FLOWS);
 		executorService = Executors.newFixedThreadPool(numThreads);
+		eventListener = new FlowRunnerEventListener(this);
 		
 		submitterThread = new SubmitterThread(queue);
 		submitterThread.start();
@@ -41,7 +45,10 @@ public class FlowRunnerManager {
 		// Load file and submit
 		File dir = new File(path);
 		ExecutableFlow flow = ExecutableFlowLoader.loadExecutableFlowFromDir(dir);
+		
 		FlowRunner runner = new FlowRunner(flow);
+		runner.addListener(eventListener);
+		executorService.submit(runner);
 	}
 	
 	//
@@ -68,6 +75,19 @@ public class FlowRunnerManager {
 					logger.info("Interrupted. Probably to shut down.");
 				}
 			}
+		}
+	}
+	
+	private class FlowRunnerEventListener implements EventListener {
+		private FlowRunnerManager manager;
+		
+		public FlowRunnerEventListener(FlowRunnerManager manager) {
+			this.manager = manager;
+		}
+
+		@Override
+		public synchronized void handleEvent(Event event) {
+			
 		}
 	}
 }
