@@ -43,15 +43,28 @@ public class FlowRunnerManager {
 	
 	public void submitFlow(String id, String path) throws ExecutorManagerException {
 		// Load file and submit
+		logger.info("Flow " + id + " submitted with path " + path);
+		
 		File dir = new File(path);
 		ExecutableFlow flow = ExecutableFlowLoader.loadExecutableFlowFromDir(dir);
-		
+		flow.setExecutionPath(path);
+
 		FlowRunner runner = new FlowRunner(flow);
 		runner.addListener(eventListener);
 		executorService.submit(runner);
 	}
 	
-	//
+	public void cancelFlow(String id) throws ExecutorManagerException {
+		FlowRunner runner = runningFlows.get(id);
+		if (runner != null) {
+			runner.cancel();
+		}
+	}
+	
+	public FlowRunner getFlowRunner(String id) {
+		return runningFlows.get(id);
+	}
+	
 	private class SubmitterThread extends Thread {
 		private BlockingQueue<FlowRunner> queue;
 		private boolean shutdown = false;
@@ -87,7 +100,9 @@ public class FlowRunnerManager {
 
 		@Override
 		public synchronized void handleEvent(Event event) {
-			
+			FlowRunner runner = (FlowRunner)event.getRunner();
+			ExecutableFlow flow = runner.getFlow();
+			System.out.println("Event " + flow.getExecutionId() + " " + flow.getFlowId() + " " + event.getType());
 		}
 	}
 }

@@ -34,6 +34,7 @@ public class ExecutableFlowLoader {
 		}
 		
 		ExecutableFlow flow = ExecutableFlow.createExecutableFlowFromObject(exFlowObj);
+		flow.setExecutionPath(exDir.getPath());
 		return flow;
 	}
 	

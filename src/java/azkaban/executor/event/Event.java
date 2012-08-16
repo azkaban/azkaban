@@ -1,29 +1,29 @@
 package azkaban.executor.event;
 
-import azkaban.executor.FlowRunner;
-
 public class Event {
 	public enum Type {
 		FLOW_STARTED,
 		FLOW_FINISHED,
+		FLOW_FAILED_FINISHING,
 		JOB_STARTED,
-		JOB_COMPLETE,
-		JOB_FAILED
+		JOB_SUCCEEDED,
+		JOB_FAILED,
+		JOB_KILLED
 	}
 	
-	private final FlowRunner runner;
+	private final Object runner;
 	private final Type type;
 	private final Object eventData;
 	private final long time;
 	
-	public Event(FlowRunner runner, Type type, Object eventData) {
+	private Event(Object runner, Type type, Object eventData) {
 		this.runner = runner;
 		this.type = type;
 		this.eventData = eventData;
 		this.time = System.currentTimeMillis();
 	}
 	
-	public FlowRunner getFlowRunner() {
+	public Object getRunner() {
 		return runner;
 	}
 	
@@ -37,5 +37,13 @@ public class Event {
 	
 	public Object getData() {
 		return eventData;
+	}
+	
+	public static Event create(Object runner, Type type) {
+		return new Event(runner, type, null);
+	}
+	
+	public static Event create(Object runner, Type type, Object eventData) {
+		return new Event(runner, type, eventData);
 	}
 }

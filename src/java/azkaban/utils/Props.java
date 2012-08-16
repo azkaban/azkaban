@@ -157,6 +157,14 @@ public class Props {
 		}
 	}
 
+	public Props getEarliestAncestor() {
+		if (_parent == null) {
+			return this;
+		}
+		
+		return _parent.getEarliestAncestor();
+	}
+	
 	/**
 	 * Create a Props with a null parent from a list of key value pairing. i.e.
 	 * [key1, value1, key2, value2 ...]

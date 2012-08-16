@@ -1,6 +1,7 @@
 package azkaban.executor;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -11,13 +12,13 @@ import azkaban.flow.Edge;
 import azkaban.flow.Flow;
 import azkaban.flow.FlowProps;
 import azkaban.flow.Node;
-import azkaban.utils.Props;
 
 public class ExecutableFlow {
 	private String executionId;
 	private String flowId;
 	private String projectId;
 	private String executionPath;
+
 	private HashMap<String, FlowProps> flowProps = new HashMap<String, FlowProps>();
 	private HashMap<String, ExecutableNode> executableNodes = new HashMap<String, ExecutableNode>();;
 	private ArrayList<String> startNodes = new ArrayList<String>();
@@ -31,7 +32,7 @@ public class ExecutableFlow {
 	private String submitUser;
 	
 	public enum Status {
-		FAILED, SUCCEEDED, RUNNING, WAITING, IGNORED, READY, UNKNOWN
+		FAILED, SUCCEEDED, RUNNING, WAITING, KILLED, IGNORED, READY, UNKNOWN
 	}
 	
 	public ExecutableFlow(String id, Flow flow) {
@@ -47,6 +48,14 @@ public class ExecutableFlow {
 	
 	public List<ExecutableNode> getExecutableNodes() {
 		return new ArrayList<ExecutableNode>(executableNodes.values());
+	}
+	
+	public ExecutableNode getExecutableNode(String id) {
+		return executableNodes.get(id);
+	}
+	
+	public Collection<FlowProps> getFlowProps() {
+		return flowProps.values();
 	}
 	
 	private void setFlow(Flow flow) {
@@ -71,10 +80,6 @@ public class ExecutableFlow {
 		}
 		
 		flowProps.putAll(flow.getAllFlowProps());
-	}
-	
-	public void run() {
-		
 	}
 
 	public void setStatus(String nodeId, Status status) {
@@ -146,6 +151,10 @@ public class ExecutableFlow {
 		this.flowStatus = flowStatus;
 	}
 	
+	public List<String> getStartNodes() {
+		return new ArrayList<String>(startNodes);
+	}
+	
 	public Map<String,Object> toObject() {
 		HashMap<String, Object> flowObj = new HashMap<String, Object>();
 		flowObj.put("type", "executableflow");
@@ -158,6 +167,21 @@ public class ExecutableFlow {
 		flowObj.put("endTime", endTime);
 		flowObj.put("status", flowStatus.toString());
 		flowObj.put("submitUser", submitUser);
+		flowObj.put("startNodes", startNodes);
+		
+		ArrayList<Object> props = new ArrayList<Object>();
+		for (FlowProps fprop: flowProps.values()) {
+			HashMap<String, Object> propObj = new HashMap<String, Object>();
+			String source = fprop.getSource();
+			String inheritedSource = fprop.getInheritedSource();
+			
+			propObj.put("source", source);
+			if (inheritedSource != null) {
+				propObj.put("inherited", inheritedSource);
+			}
+			props.add(propObj);
+		}
+		flowObj.put("properties", props);
 		
 		ArrayList<Object> nodes = new ArrayList<Object>();
 		for (ExecutableNode node: executableNodes.values()) {
@@ -188,6 +212,18 @@ public class ExecutableFlow {
 			ExecutableNode node = ExecutableNode.createNodeFromObject(nodeObj);
 			exFlow.executableNodes.put(node.getId(), node);
 		}
+
+		List<Object> properties = (List<Object>)flowObj.get("properties");
+		for (Object propNode : properties) {
+			HashMap<String, Object> fprop = (HashMap<String, Object>)propNode;
+			String source = (String)fprop.get("source");
+			String inheritedSource = (String)fprop.get("inherited");
+			
+			FlowProps flowProps = new FlowProps(inheritedSource, source);
+			exFlow.flowProps.put(source, flowProps);
+		}
+
+		exFlow.startNodes.addAll((List<String>)flowObj.get("startNodes"));
 		
 		return exFlow;
 	}
@@ -248,6 +284,7 @@ public class ExecutableFlow {
 		private String type;
 		private String jobPropsSource;
 		private String inheritPropsSource;
+		private String outputPropsSource;
 		private Status status = Status.READY;
 		private long startTime = -1;
 		private long endTime = -1;
@@ -313,6 +350,11 @@ public class ExecutableFlow {
 			objMap.put("startTime", startTime);
 			objMap.put("endTime", endTime);
 			objMap.put("level", level);
+			
+			if (outputPropsSource != null) {
+				objMap.put("outputSource", outputPropsSource);
+			}
+			
 			return objMap;
 		}
 
@@ -324,6 +366,7 @@ public class ExecutableFlow {
 			exNode.id = (String)objMap.get("id");
 			exNode.jobPropsSource = (String)objMap.get("jobSource");
 			exNode.inheritPropsSource = (String)objMap.get("propSource");
+			exNode.outputPropsSource = (String)objMap.get("outputSource");
 			exNode.type = (String)objMap.get("jobType");
 			exNode.status = Status.valueOf((String)objMap.get("status"));
 			
@@ -337,7 +380,7 @@ public class ExecutableFlow {
 			return exNode;
 		}
 		
-		@SuppressWarnings("unused")
+		@SuppressWarnings("unchecked")
 		public void updateNodeFromObject(Object obj) {
 			HashMap<String, Object> objMap = (HashMap<String,Object>)obj;
 			status = Status.valueOf((String)objMap.get("status"));
