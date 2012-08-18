@@ -3,11 +3,15 @@ package azkaban.executor;
 import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import azkaban.executor.ExecutableFlow.ExecutableNode;
 import azkaban.executor.ExecutableFlow.Status;
@@ -16,6 +20,7 @@ import azkaban.executor.event.Event.Type;
 import azkaban.executor.event.EventHandler;
 import azkaban.executor.event.EventListener;
 import azkaban.flow.FlowProps;
+import azkaban.utils.ExecutableFlowLoader;
 import azkaban.utils.Props;
 
 public class FlowRunner extends EventHandler implements Runnable {
@@ -26,18 +31,18 @@ public class FlowRunner extends EventHandler implements Runnable {
 	private BlockingQueue<JobRunner> jobsToRun = new LinkedBlockingQueue<JobRunner>();
 	private int numThreads = NUM_CONCURRENT_THREADS;
 	private boolean cancelled = true;
-	private boolean done = false;
 	
 	private Map<String, JobRunner> jobRunnersMap;
 	private JobRunnerEventListener listener;
 	private Map<String, Props> sharedProps = new HashMap<String, Props>();
 	private Map<String, Props> outputProps = new HashMap<String, Props>();
 	private File basePath;
-	
+	private AtomicInteger commitCount = new AtomicInteger(0);
+	private HashSet<String> finalNodes = new HashSet<String>();
+
 	public enum FailedFlowOptions {
 		FINISH_RUNNING_JOBS,
-		COMPLETE_ALL_DEPENDENCIES,
-		CANCEL_ALL
+		KILL_ALL
 	}
 	
 	private FailedFlowOptions failedOptions = FailedFlowOptions.FINISH_RUNNING_JOBS;
@@ -55,7 +60,7 @@ public class FlowRunner extends EventHandler implements Runnable {
 	}
 	
 	public void cancel() {
-		done = true;
+		finalNodes.clear();
 		cancelled = true;
 		
 		executorService.shutdownNow();
@@ -74,8 +79,21 @@ public class FlowRunner extends EventHandler implements Runnable {
 		return cancelled;
 	}
 	
+	private synchronized void commitFlow() {
+		int count = commitCount.getAndIncrement();
+
+		try {
+			ExecutableFlowLoader.writeExecutableFlowFile(this.basePath, flow, count);
+		} catch (ExecutorManagerException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+	
 	@Override
 	public void run() {
+		flow.setStatus(Status.RUNNING);
+		flow.setStartTime(System.currentTimeMillis());
 		this.fireEventListeners(Event.create(this, Type.FLOW_STARTED));
 		
 		// Load all shared props
@@ -104,18 +122,48 @@ public class FlowRunner extends EventHandler implements Runnable {
 			return;
 		}
 		
-		while(!done) {
+		// When this is empty, we will stop.
+		finalNodes.addAll(flow.getEndNodes());
+		
+		// Main loop
+		while(!finalNodes.isEmpty()) {
 			JobRunner runner = null;
 			try {
 				runner = jobsToRun.take();
 			} catch (InterruptedException e) {
 			}
 			
-			if (!done && runner != null) {
-				executorService.submit(runner);
+			if (!finalNodes.isEmpty() && runner != null) {
+				try {
+					ExecutableNode node = runner.getNode();
+					node.setStatus(Status.WAITING);
+					executorService.submit(runner);
+					finalNodes.remove(node.getId());
+				} catch (RejectedExecutionException e) {
+					// Should reject if I shutdown executor.
+					break;
+				}
 			}
 		}
 		
+		executorService.shutdown();
+		while (executorService.isTerminated()) {
+			try {
+				executorService.awaitTermination(1, TimeUnit.SECONDS);
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+
+		if (flow.getStatus() == Status.RUNNING) {
+			flow.setStatus(Status.SUCCEEDED);
+		}
+		else {
+			flow.setStatus(Status.FAILED);
+		}
+		flow.setEndTime(System.currentTimeMillis());
+		commitFlow();
 		this.fireEventListeners(Event.create(this, Type.FLOW_FINISHED));
 	}
 	
@@ -136,7 +184,7 @@ public class FlowRunner extends EventHandler implements Runnable {
 		File propsFile = new File(basePath, source);
 		Props jobProps = new Props(parentProps, propsFile);
 		
-		JobRunner jobRunner = new JobRunner(node, jobProps);
+		JobRunner jobRunner = new JobRunner(node, jobProps, new File(flow.getExecutionPath()));
 		jobRunner.addListener(listener);
 		jobRunnersMap.put(node.getId(), jobRunner);
 		
@@ -176,7 +224,7 @@ public class FlowRunner extends EventHandler implements Runnable {
 			for (String dependency: dependentNode.getInNodes()) {
 				ExecutableNode dependencyNode = flow.getExecutableNode(dependency); 
 				if (dependencyNode.getStatus() != Status.SUCCEEDED &&
-					dependencyNode.getStatus() != Status.IGNORED) {
+					dependencyNode.getStatus() != Status.DISABLED) {
 					ready = false;
 					break;
 				}
@@ -213,14 +261,20 @@ public class FlowRunner extends EventHandler implements Runnable {
 	private void handleFailedJob(ExecutableNode node) {
 		System.err.println("Job " + node.getId() + " failed.");
 		this.fireEventListeners(Event.create(this, Type.FLOW_FAILED_FINISHING));
-		if (failedOptions == FailedFlowOptions.FINISH_RUNNING_JOBS) {
-			done = true;
+		
+		switch (failedOptions) {
+			// We finish running current jobs and then fail. Do not accept new jobs.
+			case FINISH_RUNNING_JOBS:
+				finalNodes.clear();
+				executorService.shutdown();
+				this.notify();
+			break;
+			// We kill all running jobs and fail immediately
+			case KILL_ALL:
+				this.cancel();
+			break;
 		}
-		else if (failedOptions == FailedFlowOptions.CANCEL_ALL) {
-			this.cancel();
-		}
-		else if (failedOptions == FailedFlowOptions.COMPLETE_ALL_DEPENDENCIES) {
-		}
+
 	}
 	
 	private class JobRunnerEventListener implements EventListener {
@@ -236,16 +290,17 @@ public class FlowRunner extends EventHandler implements Runnable {
 			String jobID = runner.getNode().getId();
 			System.out.println("Event " + jobID + " " + event.getType().toString());
 
+			// On Job success, we add the output props and then set up the next run.
 			if (event.getType() == Type.JOB_SUCCEEDED) {
-				// Continue adding items.
 				Props props = runner.getOutputProps();
 				outputProps.put(jobID, props);
-				
 				flowRunner.handleSucceededJob(runner.getNode());
 			}
 			else if (event.getType() == Type.JOB_FAILED) {
 				flowRunner.handleFailedJob(runner.getNode());
 			}
+			
+			flowRunner.commitFlow();
 		}
 	}
 }

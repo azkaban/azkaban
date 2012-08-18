@@ -207,7 +207,7 @@ public class FlowExecutorServlet extends LoginAbstractAzkabanServlet {
 		Map<String, String> paramGroup = this.getParamGroup(req, "disabled");
 		for (Map.Entry<String, String> entry: paramGroup.entrySet()) {
 			boolean nodeDisabled = Boolean.parseBoolean(entry.getValue());
-			exflow.setStatus(entry.getKey(), nodeDisabled ? Status.IGNORED : Status.READY);
+			exflow.setStatus(entry.getKey(), nodeDisabled ? Status.DISABLED : Status.READY);
 		}
 		
 		// Create directory
@@ -237,6 +237,7 @@ public class FlowExecutorServlet extends LoginAbstractAzkabanServlet {
 			return;
 		}
 		
+
 		try {
 			executorManager.executeFlow(exflow);
 		} catch (ExecutorManagerException e) {
@@ -249,6 +250,7 @@ public class FlowExecutorServlet extends LoginAbstractAzkabanServlet {
 			ret.put("error", e.getMessage());
 			return;
 		}
+
 		String execId = exflow.getExecutionId();
 		
 		// The following is just a test for cleanup

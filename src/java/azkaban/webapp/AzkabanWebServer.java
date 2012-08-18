@@ -103,14 +103,14 @@ public class AzkabanWebServer {
 	 * Constructor usually called by tomcat AzkabanServletContext to create the
 	 * initial server
 	 */
-	public AzkabanWebServer() {
+	public AzkabanWebServer() throws Exception {
 		this(loadConfigurationFromAzkabanHome());
 	}
 
 	/**
 	 * Constructor
 	 */
-	public AzkabanWebServer(Props props) {
+	public AzkabanWebServer(Props props) throws Exception {
 		this.props = props;
 		velocityEngine = configureVelocityEngine(props.getBoolean( VELOCITY_DEV_MODE_PARAM, false));
 		sessionCache = new SessionCache(props);
@@ -179,7 +179,7 @@ public class AzkabanWebServer {
 		return manager;
 	}
 
-	private ExecutorManager loadExecutorManager(Props props) {
+	private ExecutorManager loadExecutorManager(Props props) throws Exception {
 		ExecutorManager execManager = new ExecutorManager(props);
 		return execManager;
 	}
@@ -268,7 +268,7 @@ public class AzkabanWebServer {
 	 * 
 	 * @param args
 	 */
-	public static void main(String[] args) {
+	public static void main(String[] args) throws Exception {
 		OptionParser parser = new OptionParser();
 
 		OptionSpec<String> configDirectory = parser

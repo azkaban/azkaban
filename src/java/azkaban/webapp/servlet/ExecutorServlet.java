@@ -1,6 +1,7 @@
 package azkaban.webapp.servlet;
 
 import java.io.IOException;
+import java.io.OutputStream;
 import java.util.HashMap;
 
 import javax.servlet.ServletConfig;
@@ -12,6 +13,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.apache.log4j.Logger;
 import org.codehaus.jackson.map.ObjectMapper;
 
+import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutorManagerException;
 import azkaban.executor.FlowRunnerManager;
 import azkaban.utils.Props;
@@ -50,7 +52,8 @@ public class ExecutorServlet extends HttpServlet {
 	protected void writeJSON(HttpServletResponse resp, Object obj) throws IOException {
 		resp.setContentType(JSON_MIME_TYPE);
 		ObjectMapper mapper = new ObjectMapper();
-		mapper.writeValue(resp.getOutputStream(), obj);
+		OutputStream stream = resp.getOutputStream();
+		mapper.writeValue(stream, obj);
 	}
 
 	@Override
@@ -61,26 +64,43 @@ public class ExecutorServlet extends HttpServlet {
 		if (!token.equals(sharedToken)) {
 			respMap.put("error", "Mismatched token. Will not run.");
 		}
+		else if (!hasParam(req, "action")) {
+			respMap.put("error", "Parameter action not set");
+		}
 		else if (!hasParam(req, "execid")) {
 			respMap.put("error", "Parameter execid not set.");
 		}
-		else if (!hasParam(req, "execpath")) {
-			respMap.put("error", "Parameter execpath not set.");
-		}
 		else {
+			String action = getParam(req, "action");
 			String execid = getParam(req, "execid");
-			String execpath = getParam(req, "execpath");
 			
-			logger.info("Submitted " + execid + " with " + execpath);
-			try {
-				flowRunnerManager.submitFlow(execid, execpath);
-			} catch (ExecutorManagerException e) {
-				e.printStackTrace();
-				respMap.put("error", e.getMessage());
+			// Handle execute
+			if (action.equals("execute")) {
+				String execpath = getParam(req, "execpath");
+				
+				logger.info("Submitted " + execid + " with " + execpath);
+				try {
+					flowRunnerManager.submitFlow(execid, execpath);
+					respMap.put("status", "success");
+				} catch (ExecutorManagerException e) {
+					e.printStackTrace();
+					respMap.put("error", e.getMessage());
+				}
+			}
+			// Handle Status
+			else if (action.equals("status")) {
+				ExecutableFlow flow = flowRunnerManager.getExecutableFlow(execid);
+				if (flow == null) {
+					respMap.put("status", "notfound");
+				}
+				else {
+					respMap.put("status", flow.getStatus().toString());
+				}
 			}
 		}
 
 		writeJSON(resp, respMap);
+		resp.flushBuffer();
 	}
 	
 	@Override

@@ -1,5 +1,7 @@
 package azkaban.executor;
 
+import java.io.File;
+
 import azkaban.executor.ExecutableFlow.ExecutableNode;
 import azkaban.executor.ExecutableFlow.Status;
 import azkaban.executor.event.Event;
@@ -11,11 +13,13 @@ public class JobRunner  extends EventHandler implements Runnable {
 	private Props props;
 	private Props outputProps;
 	private ExecutableNode node;
+	private File workingDir;
 	
-	public JobRunner(ExecutableNode node, Props props) {
+	public JobRunner(ExecutableNode node, Props props, File workingDir) {
 		this.props = props;
 		this.node = node;
 		this.node.setStatus(Status.WAITING);
+		this.workingDir = workingDir;
 	}
 	
 	public ExecutableNode getNode() {
@@ -24,17 +28,23 @@ public class JobRunner  extends EventHandler implements Runnable {
 	
 	@Override
 	public void run() {
-		if (node.getStatus() == Status.KILLED) {
+		if (node.getStatus() == Status.DISABLED) {
+			this.fireEventListeners(Event.create(this, Type.JOB_SUCCEEDED));
+			return;
+		}
+		else if (node.getStatus() == Status.KILLED) {
 			this.fireEventListeners(Event.create(this, Type.JOB_KILLED));
 			return;
 		}
-		
-		this.fireEventListeners(Event.create(this, Type.JOB_STARTED));
+		node.setStartTime(System.currentTimeMillis());
 		node.setStatus(Status.RUNNING);
+		this.fireEventListeners(Event.create(this, Type.JOB_STARTED));
+		
 		
 		// Run Job
 		boolean succeeded = true;
 		
+		node.setEndTime(System.currentTimeMillis());
 		if (succeeded) {
 			node.setStatus(Status.SUCCEEDED);
 			this.fireEventListeners(Event.create(this, Type.JOB_SUCCEEDED));
@@ -44,7 +54,7 @@ public class JobRunner  extends EventHandler implements Runnable {
 			this.fireEventListeners(Event.create(this, Type.JOB_FAILED));
 		}
 	}
-
+	
 	public void cancel() {
 		// Cancel code here
 		

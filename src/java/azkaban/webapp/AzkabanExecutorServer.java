@@ -77,7 +77,7 @@ public class AzkabanExecutorServer {
 		String sharedToken = props.getString("executor.shared.token", "");
 
 		ServletHolder executorHolder = new ServletHolder(new ExecutorServlet(sharedToken));
-		root.addServlet(executorHolder, "/submit");
+		root.addServlet(executorHolder, "/executor");
 		root.setAttribute(AzkabanServletContextListener.AZKABAN_SERVLET_CONTEXT_KEY, this);
 		runnerManager = new FlowRunnerManager(props);
 		

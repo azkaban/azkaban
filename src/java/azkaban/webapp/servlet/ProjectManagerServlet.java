@@ -1,6 +1,5 @@
 package azkaban.webapp.servlet;
 
-import java.awt.geom.Point2D;
 import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -197,7 +196,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 		int length = Integer.valueOf(getParam(req, "length"));
 		
 		ArrayList<ExecutableFlow> exFlows = new ArrayList<ExecutableFlow>();
-		int total = executorManager.getExecutableFlowByProjectFlow(project.getName(), flowId, from, length, exFlows);
+		int total = executorManager.getExecutableFlows(project.getName(),  flowId, from, length, exFlows);
 		
 		ret.put("flow", flowId);
 		ret.put("total", total);

@@ -10,6 +10,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import org.apache.log4j.Logger;
 
 import azkaban.executor.event.Event;
+import azkaban.executor.event.Event.Type;
 import azkaban.executor.event.EventListener;
 import azkaban.utils.ExecutableFlowLoader;
 import azkaban.utils.Props;
@@ -65,6 +66,15 @@ public class FlowRunnerManager {
 		return runningFlows.get(id);
 	}
 	
+	public ExecutableFlow getExecutableFlow(String id) {
+		FlowRunner runner = runningFlows.get(id);
+		if (runner == null) {
+			return null;
+		}
+		
+		return runner.getFlow();
+	}
+	
 	private class SubmitterThread extends Thread {
 		private BlockingQueue<FlowRunner> queue;
 		private boolean shutdown = false;
@@ -102,7 +112,13 @@ public class FlowRunnerManager {
 		public synchronized void handleEvent(Event event) {
 			FlowRunner runner = (FlowRunner)event.getRunner();
 			ExecutableFlow flow = runner.getFlow();
+			
 			System.out.println("Event " + flow.getExecutionId() + " " + flow.getFlowId() + " " + event.getType());
+			if (event.getType() == Type.FLOW_FINISHED) {
+				logger.info("Flow " + flow.getExecutionId() + " has finished.");
+				runningFlows.remove(flow.getExecutionId());
+			}
+
 		}
 	}
 }

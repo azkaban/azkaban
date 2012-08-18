@@ -37,10 +37,15 @@ public class AzkabanServletContextListener implements ServletContextListener {
 	}
 
 	/**
-	 * Load the app
+	 * Load the app for use in non jetty containers.
 	 */
 	public void contextInitialized(ServletContextEvent event) {
-		this.app = new AzkabanWebServer();
+		try {
+			this.app = new AzkabanWebServer();
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 
 		event.getServletContext().setAttribute(AZKABAN_SERVLET_CONTEXT_KEY, this.app);
 	}

@@ -18,21 +18,22 @@ public class ExecutableFlow {
 	private String flowId;
 	private String projectId;
 	private String executionPath;
-
+	
 	private HashMap<String, FlowProps> flowProps = new HashMap<String, FlowProps>();
 	private HashMap<String, ExecutableNode> executableNodes = new HashMap<String, ExecutableNode>();;
-	private ArrayList<String> startNodes = new ArrayList<String>();
+	private ArrayList<String> startNodes;
+	private ArrayList<String> endNodes;
 	
 	private long submitTime = -1;
 	private long startTime = -1;
 	private long endTime = -1;
 	
+	private int updateNumber = 0;
 	private Status flowStatus = Status.UNKNOWN;
-
 	private String submitUser;
 	
 	public enum Status {
-		FAILED, SUCCEEDED, RUNNING, WAITING, KILLED, IGNORED, READY, UNKNOWN
+		FAILED, FAILED_FINISHING, SUCCEEDED, RUNNING, WAITING, KILLED, DISABLED, READY, UNKNOWN
 	}
 	
 	public ExecutableFlow(String id, Flow flow) {
@@ -58,6 +59,14 @@ public class ExecutableFlow {
 		return flowProps.values();
 	}
 	
+	public int getUpdateNumber() {
+		return updateNumber;
+	}
+	
+	public void setUpdateNumber(int number) {
+		updateNumber = number;
+	}
+	
 	private void setFlow(Flow flow) {
 		for (Node node: flow.getNodes()) {
 			String id = node.getId();
@@ -73,15 +82,35 @@ public class ExecutableFlow {
 			targetNode.addInNode(edge.getSourceId());
 		}
 		
-		for (ExecutableNode node : executableNodes.values()) {
-			if (node.getInNodes().size()==0) {
-				startNodes.add(node.id);
-			}
-		}
-		
 		flowProps.putAll(flow.getAllFlowProps());
 	}
 
+	public List<String> getStartNodes() {
+		if (startNodes == null) {
+			startNodes = new ArrayList<String>();
+			for (ExecutableNode node: executableNodes.values()) {
+				if (node.getInNodes().isEmpty()) {
+					startNodes.add(node.id);
+				}
+			}
+		}
+		
+		return startNodes;
+	}
+	
+	public List<String> getEndNodes() {
+		if (endNodes == null) {
+			endNodes = new ArrayList<String>();
+			for (ExecutableNode node: executableNodes.values()) {
+				if (node.getOutNodes().isEmpty()) {
+					endNodes.add(node.id);
+				}
+			}
+		}
+		
+		return endNodes;
+	}
+	
 	public void setStatus(String nodeId, Status status) {
 		ExecutableNode exNode = executableNodes.get(nodeId);
 		exNode.setStatus(status);
@@ -151,10 +180,6 @@ public class ExecutableFlow {
 		this.flowStatus = flowStatus;
 	}
 	
-	public List<String> getStartNodes() {
-		return new ArrayList<String>(startNodes);
-	}
-	
 	public Map<String,Object> toObject() {
 		HashMap<String, Object> flowObj = new HashMap<String, Object>();
 		flowObj.put("type", "executableflow");
@@ -167,7 +192,6 @@ public class ExecutableFlow {
 		flowObj.put("endTime", endTime);
 		flowObj.put("status", flowStatus.toString());
 		flowObj.put("submitUser", submitUser);
-		flowObj.put("startNodes", startNodes);
 		
 		ArrayList<Object> props = new ArrayList<Object>();
 		for (FlowProps fprop: flowProps.values()) {
@@ -222,8 +246,6 @@ public class ExecutableFlow {
 			FlowProps flowProps = new FlowProps(inheritedSource, source);
 			exFlow.flowProps.put(source, flowProps);
 		}
-
-		exFlow.startNodes.addAll((List<String>)flowObj.get("startNodes"));
 		
 		return exFlow;
 	}
@@ -240,9 +262,9 @@ public class ExecutableFlow {
 	public void updateExecutableFlowFromObject(Object obj) {
 		HashMap<String, Object> flowObj = (HashMap<String,Object>)obj;
 
-		submitTime = (Long)flowObj.get("submitTime");
-		startTime = (Long)flowObj.get("startTime");
-		endTime = (Long)flowObj.get("endTime");
+		submitTime = getLongFromObject(flowObj.get("submitTime"));
+		startTime = getLongFromObject(flowObj.get("startTime"));
+		endTime = getLongFromObject(flowObj.get("endTime"));
 		flowStatus = Status.valueOf((String)flowObj.get("status"));
 		
 		List<Object> nodes = (List<Object>)flowObj.get("nodes");
@@ -385,8 +407,8 @@ public class ExecutableFlow {
 			HashMap<String, Object> objMap = (HashMap<String,Object>)obj;
 			status = Status.valueOf((String)objMap.get("status"));
 
-			startTime = (Long)objMap.get("startTime");
-			endTime = (Long)objMap.get("endTime");
+			startTime = getLongFromObject(objMap.get("startTime"));
+			endTime = getLongFromObject(objMap.get("endTime"));
 		}
 		
 		public long getStartTime() {
