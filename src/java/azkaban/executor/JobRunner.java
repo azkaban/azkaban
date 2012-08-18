@@ -30,6 +30,8 @@ public class JobRunner extends EventHandler implements Runnable {
 	private Layout loggerLayout = DEFAULT_LAYOUT;
 	private Appender jobAppender;
 	
+	private static final Object logCreatorLock = new Object();
+	
 	public JobRunner(ExecutableNode node, Props props, File workingDir) {
 		this.props = props;
 		this.node = node;
@@ -45,20 +47,22 @@ public class JobRunner extends EventHandler implements Runnable {
 
 	private void createLogger() {
 		// Create logger
-		String loggerName = System.currentTimeMillis() + "." + node.getFlow().getExecutionId() + "." + node.getId();
-		logger = Logger.getLogger(loggerName);
-
-		// Create file appender
-		String logName = "_job." + node.getFlow().getExecutionId() + "." + node.getId() + ".log";
-		File logFile = new File(workingDir, logName);
-		String absolutePath = logFile.getAbsolutePath();
-
-		jobAppender = null;
-		try {
-			jobAppender = new FileAppender(loggerLayout, absolutePath, false);
-			logger.addAppender(jobAppender);
-		} catch (IOException e) {
-			logger.error("Could not open log file in " + workingDir, e);
+		synchronized(logCreatorLock) {
+			String loggerName = System.currentTimeMillis() + "." + node.getFlow().getExecutionId() + "." + node.getId();
+			logger = Logger.getLogger(loggerName);
+	
+			// Create file appender
+			String logName = "_job." + node.getFlow().getExecutionId() + "." + node.getId() + ".log";
+			File logFile = new File(workingDir, logName);
+			String absolutePath = logFile.getAbsolutePath();
+	
+			jobAppender = null;
+			try {
+				jobAppender = new FileAppender(loggerLayout, absolutePath, false);
+				logger.addAppender(jobAppender);
+			} catch (IOException e) {
+				logger.error("Could not open log file in " + workingDir, e);
+			}
 		}
 	}
 

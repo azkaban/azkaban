@@ -193,7 +193,7 @@ public class FlowRunner extends EventHandler implements Runnable {
 			// Just to make sure we back off on the flooding.
 			synchronized (this) {
 				try {
-					wait(10);
+					wait(5);
 				} catch (InterruptedException e) {
 					
 				}
