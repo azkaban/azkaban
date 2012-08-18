@@ -147,7 +147,7 @@ public class ExecutorManager {
 		// Find execution
 		File executionDir;
 		String executionId;
-		int count = counter.getAndIncrement();
+		int count = counter.getAndIncrement() % 100000;
 		String countString = String.format("%05d", count);
 		do {
 			executionId = String.valueOf(System.currentTimeMillis()) + "." + countString + "." + flowId;

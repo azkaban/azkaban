@@ -70,7 +70,7 @@ public class ExecutableFlow {
 	private void setFlow(Flow flow) {
 		for (Node node: flow.getNodes()) {
 			String id = node.getId();
-			ExecutableNode exNode = new ExecutableNode(node);
+			ExecutableNode exNode = new ExecutableNode(node, this);
 			executableNodes.put(id, exNode);
 		}
 		
@@ -233,7 +233,7 @@ public class ExecutableFlow {
 				
 		List<Object> nodes = (List<Object>)flowObj.get("nodes");
 		for (Object nodeObj: nodes) {
-			ExecutableNode node = ExecutableNode.createNodeFromObject(nodeObj);
+			ExecutableNode node = ExecutableNode.createNodeFromObject(nodeObj, exFlow);
 			exFlow.executableNodes.put(node.getId(), node);
 		}
 
@@ -311,17 +311,19 @@ public class ExecutableFlow {
 		private long startTime = -1;
 		private long endTime = -1;
 		private int level = 0;
-
+		private ExecutableFlow flow;
+		
 		private Set<String> inNodes = new HashSet<String>();
 		private Set<String> outNodes = new HashSet<String>();
 		
-		private ExecutableNode(Node node) {
+		private ExecutableNode(Node node, ExecutableFlow flow) {
 			id = node.getId();
 			type = node.getType();
 			jobPropsSource = node.getJobSource();
 			inheritPropsSource = node.getPropsSource();
 			status = Status.READY;
 			level = node.getLevel();
+			this.flow = flow;
 		}
 		
 		private ExecutableNode() {
@@ -381,7 +383,7 @@ public class ExecutableFlow {
 		}
 
 		@SuppressWarnings("unchecked")
-		public static ExecutableNode createNodeFromObject(Object obj) {
+		public static ExecutableNode createNodeFromObject(Object obj, ExecutableFlow flow) {
 			ExecutableNode exNode = new ExecutableNode();
 			
 			HashMap<String, Object> objMap = (HashMap<String,Object>)obj;
@@ -398,6 +400,8 @@ public class ExecutableFlow {
 			exNode.startTime = getLongFromObject(objMap.get("startTime"));
 			exNode.endTime = getLongFromObject(objMap.get("endTime"));
 			exNode.level = (Integer)objMap.get("level");
+			
+			exNode.flow = flow;
 			
 			return exNode;
 		}
@@ -437,6 +441,10 @@ public class ExecutableFlow {
 		
 		public int getLevel() {
 			return level;
+		}
+		
+		public ExecutableFlow getFlow() {
+			return flow;
 		}
 	}
 }
