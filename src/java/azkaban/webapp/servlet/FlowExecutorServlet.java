@@ -105,6 +105,9 @@ public class FlowExecutorServlet extends LoginAbstractAzkabanServlet {
 			if (ajaxName.equals("fetchexecflow")) {
 				ajaxFetchExecutableFlow(req, resp, ret, session.getUser());
 			}
+			else if (ajaxName.equals("fetchexecflowupdate")) {
+				ajaxFetchExecutableFlowUpdate(req, resp, ret, session.getUser());
+			}
 		}
 		else {
 			String projectName = getParam(req, "project");
@@ -115,6 +118,56 @@ public class FlowExecutorServlet extends LoginAbstractAzkabanServlet {
 			}
 		}
 		this.writeJSON(resp, ret);
+	}
+	
+	private void ajaxFetchExecutableFlowUpdate(HttpServletRequest req, HttpServletResponse resp, HashMap<String, Object> ret, User user) throws ServletException{
+		String execid = getParam(req, "execid");
+		Long lastUpdateTime = Long.parseLong(getParam(req, "lastUpdateTime"));
+		
+		System.out.println("Fetching " + execid);
+		
+		ExecutableFlow exFlow = null;
+		try {
+			exFlow = executorManager.getExecutableFlow(execid);
+		} catch (ExecutorManagerException e) {
+			ret.put("error", "Error fetching execution '" + execid + "': " + e.getMessage());
+		}
+		if (exFlow == null) {
+			ret.put("error", "Cannot find execution '" + execid + "'");
+			return;
+		}
+		
+		Project project = null;
+		try {
+			project = projectManager.getProject(exFlow.getProjectId(), user);
+		}
+		catch (AccessControlException e) {
+			ret.put("error", "Permission denied. User " + user.getUserId() + " doesn't have permissions to view project " + project.getName());
+			return;
+		}
+		
+		
+		// Just update the nodes and flow states
+		ArrayList<Map<String, Object>> nodeList = new ArrayList<Map<String, Object>>();
+		for (ExecutableNode node : exFlow.getExecutableNodes()) {
+			if (node.getStartTime() < lastUpdateTime && node.getEndTime() < lastUpdateTime) {
+				continue;
+			}
+			
+			HashMap<String, Object> nodeObj = new HashMap<String,Object>();
+			nodeObj.put("id", node.getId());
+			nodeObj.put("status", node.getStatus());
+			nodeObj.put("startTime", node.getStartTime());
+			nodeObj.put("endTime", node.getEndTime());
+			
+			nodeList.add(nodeObj);
+		}
+
+		ret.put("nodes", nodeList);
+		ret.put("status", exFlow.getStatus().toString());
+		ret.put("startTime", exFlow.getStartTime());
+		ret.put("endTime", exFlow.getEndTime());
+		ret.put("submitTime", exFlow.getSubmitTime());
 	}
 	
 	private void ajaxFetchExecutableFlow(HttpServletRequest req, HttpServletResponse resp, HashMap<String, Object> ret, User user) throws ServletException {
@@ -163,6 +216,7 @@ public class FlowExecutorServlet extends LoginAbstractAzkabanServlet {
 
 		ret.put("nodes", nodeList);
 		ret.put("edges", edgeList);
+		ret.put("status", exFlow.getStatus().toString());
 		ret.put("startTime", exFlow.getStartTime());
 		ret.put("endTime", exFlow.getEndTime());
 		ret.put("submitTime", exFlow.getSubmitTime());

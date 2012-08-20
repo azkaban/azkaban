@@ -1255,8 +1255,20 @@ svg .node:hover text {
 }
 
 svg .selected circle {
-	stroke: #777;
-	fill: #444;
+	stroke: #009FC9;
+	stroke-width: 4;
+}
+
+svg .READY circle {
+	fill: #CCC;
+}
+
+svg .FAILED circle {
+	fill: #CC0000;
+}
+
+svg .SUCCEEDED circle {
+	fill: #00CC33;
 }
 
 span.sublabel {

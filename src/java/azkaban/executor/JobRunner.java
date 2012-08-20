@@ -85,6 +85,15 @@ public class JobRunner extends EventHandler implements Runnable {
 		node.setStatus(Status.RUNNING);
 		this.fireEventListeners(Event.create(this, Type.JOB_STARTED));
 
+		//Just for testing 5 sec each round.
+		synchronized(this) {
+			try {
+				wait(5000);
+			}
+			catch (InterruptedException e) {
+				
+			}
+		}
 		// Run Job
 		boolean succeeded = true;
 

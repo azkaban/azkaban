@@ -51,6 +51,7 @@ public class FlowRunnerManager {
 		flow.setExecutionPath(path);
 
 		FlowRunner runner = new FlowRunner(flow);
+		runningFlows.put(id, runner);
 		runner.addListener(eventListener);
 		executorService.submit(runner);
 	}

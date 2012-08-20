@@ -1,5 +1,7 @@
 $.namespace('azkaban');
 
+var statusList = ["FAILED", "FAILED_FINISHING", "SUCCEEDED", "RUNNING", "WAITING", "KILLED", "DISABLED", "READY", "UNKNOWN"];
+
 var handleJobMenuClick = function(action, el, pos) {
 	var jobid = el[0].jobid;
 	var requestURL = contextURL + "/manager?project=" + projectName + "&flow=" + flowName + "&job=" + jobid;
@@ -67,8 +69,8 @@ azkaban.FlowTabView= Backbone.View.extend({
   	$("#graphViewLink").removeClass("selected");
   	$("#jobslistViewLink").addClass("selected");
   	
-  	 $("#graphView").hide();
-  	 $("#jobListView").show();
+  	$("#graphView").hide();
+  	$("#jobListView").show();
   }
 });
 
@@ -82,6 +84,7 @@ azkaban.JobListView = Backbone.View.extend({
 	initialize: function(settings) {
 		this.model.bind('change:selected', this.handleSelectionChange, this);
 		this.model.bind('change:graph', this.render, this);
+		this.model.bind('change:update', this.handleStatusUpdate, this);
 	},
 	filterJobs: function(self) {
 		var filter = $("#filter").val();
@@ -181,6 +184,7 @@ azkaban.JobListView = Backbone.View.extend({
 		}
 		
 		$("#list").append(ul);
+		this.assignInitialStatus(self);
 	},
 	handleJobClick : function(evt) {
 		var jobid = evt.currentTarget.jobid;
@@ -199,6 +203,21 @@ azkaban.JobListView = Backbone.View.extend({
 		}
 		else {
 			this.model.set({"selected": jobid});
+		}
+	},
+	handleStatusUpdate: function(evt) {
+		var updateData = this.model.get("update");
+		for (var i = 0; i < updateData.nodes.length; ++i) {
+			var updateNode = updateData.nodes[i];
+			$(this.listNodes[updateNode.id]).addClass(updateNode.status);
+		}
+	},
+	assignInitialStatus: function(evt) {
+		var data = this.model.get("data");
+		for (var i = 0; i < data.nodes.length; ++i) {
+			var updateNode = data.nodes[i];
+			
+			$(this.listNodes[updateNode.id]).addClass(updateNode.status);
 		}
 	},
 	handleSelectionChange: function(evt) {
@@ -231,6 +250,7 @@ azkaban.SvgGraphView = Backbone.View.extend({
 		this.model.bind('change:selected', this.changeSelected, this);
 		this.model.bind('change:graph', this.render, this);
 		this.model.bind('resetPanZoom', this.resetPanZoom, this);
+		this.model.bind('change:update', this.handleStatusUpdate, this);
 		
 		this.svgns = "http://www.w3.org/2000/svg";
 		this.xlinksn = "http://www.w3.org/1999/xlink";
@@ -301,8 +321,17 @@ azkaban.SvgGraphView = Backbone.View.extend({
 		bounds.maxX = bounds.maxX ? bounds.maxX + 200 : 200;
 		bounds.maxY = bounds.maxY ? bounds.maxY + 200 : 200;
 		
+		this.assignInitialStatus(self);
 		this.graphBounds = bounds;
 		this.resetPanZoom();
+	},
+	assignInitialStatus: function(evt) {
+		var data = this.model.get("data");
+		for (var i = 0; i < data.nodes.length; ++i) {
+			var updateNode = data.nodes[i];
+			var g = document.getElementById(updateNode.id);
+			addClass(g, updateNode.status);
+		}
 	},
 	changeSelected: function(self) {
 		console.log("change selected");
@@ -326,8 +355,21 @@ azkaban.SvgGraphView = Backbone.View.extend({
 			var x = node.x - offset;
 			var y = node.y - offset;
 			
-			
 			$("#svgGraph").svgNavigate("transformToBox", {x: x, y: y, width: widthHeight, height: widthHeight});
+		}
+	},
+	handleStatusUpdate: function(evt) {
+		var updateData = this.model.get("update");
+		for (var i = 0; i < updateData.nodes.length; ++i) {
+			var updateNode = updateData.nodes[i];
+			var g = document.getElementById(updateNode.id);
+			
+			for (var i = 0; i < statusList.length; ++i) {
+				var status = statusList[i];
+				removeClass(g, status);
+			}
+			
+			addClass(g, updateNode.status);
 		}
 	},
 	clickGraph: function(self) {
@@ -446,6 +488,54 @@ azkaban.SvgGraphView = Backbone.View.extend({
 var graphModel;
 azkaban.GraphModel = Backbone.Model.extend({});
 
+var updateTime = -1;
+var updaterFunction = function() {
+	var requestURL = contextURL + "/executor";
+	var oldData = graphModel.get("data");
+	var nodeMap = graphModel.get("nodeMap");
+	var keepRunning = oldData.status != "SUCCEEDED" && oldData.status != "FAILED";
+	
+	if (keepRunning) {
+		$.get(
+	      requestURL,
+	      {"execid": execId, "ajax":"fetchexecflowupdate", "lastUpdateTime": updateTime},
+	      function(data) {
+	          console.log("data updated");
+	          updateTime = Math.max(updateTime, data.submitTime);
+	          updateTime = Math.max(updateTime, data.startTime);
+	          updateTime = Math.max(updateTime, data.endTime);
+	          oldData.submitTime = data.submitTime;
+	          oldData.startTime = data.startTime;
+	          oldData.endtime = data.endTime;
+	          
+	          for (var i = 0; i < data.nodes.length; ++i) {
+	          	var node = data.nodes[i];
+	          	updateTime = Math.max(updateTime, node.startTime);
+	          	updateTime = Math.max(updateTime, node.endTime);
+	          	var oldNode = nodeMap[node.id];
+	          	oldNode.startTime = node.startTime;
+	          	oldNode.endTime = node.endTime;
+	          	oldNode.status = node.status;
+	          }
+
+	          graphModel.set({"update": data});
+	      },
+	      "json"
+	    );
+		
+		var data = graphModel.get("data");
+		if (data.status != "SUCCEEDED" && data.status != "FAILED" ) {
+			setTimeout(function() {updaterFunction();}, 30000);
+		}
+		else {
+			console.log("Flow finished, so no more updates");
+		}
+	}
+	else {
+		console.log("Flow finished, so no more updates");
+	}
+}
+
 $(function() {
 	var selected;
 	
@@ -477,8 +567,23 @@ $(function() {
 	          console.log("data fetched");
 	          graphModel.set({data: data});
 	          graphModel.trigger("change:graph");
+	          
+	          updateTime = Math.max(updateTime, data.submitTime);
+	          updateTime = Math.max(updateTime, data.startTime);
+	          updateTime = Math.max(updateTime, data.endTime);
+	          
+	          var nodeMap = {};
+	          for (var i = 0; i < data.nodes.length; ++i) {
+	             var node = data.nodes[i];
+	             nodeMap[node.id] = node;
+	             updateTime = Math.max(updateTime, node.startTime);
+	             updateTime = Math.max(updateTime, node.endTime);
+	          }
+	          
+	          graphModel.set({nodeMap: nodeMap});
 	      },
 	      "json"
 	    );
 
+	setTimeout(function() {updaterFunction()}, 1000);
 });
