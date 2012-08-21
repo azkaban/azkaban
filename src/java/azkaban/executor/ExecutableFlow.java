@@ -18,6 +18,7 @@ public class ExecutableFlow {
 	private String flowId;
 	private String projectId;
 	private String executionPath;
+	private long lastCheckedTime;
 	
 	private HashMap<String, FlowProps> flowProps = new HashMap<String, FlowProps>();
 	private HashMap<String, ExecutableNode> executableNodes = new HashMap<String, ExecutableNode>();;
@@ -31,6 +32,7 @@ public class ExecutableFlow {
 	private int updateNumber = 0;
 	private Status flowStatus = Status.UNKNOWN;
 	private String submitUser;
+	private boolean submitted = false;
 	
 	public enum Status {
 		FAILED, FAILED_FINISHING, SUCCEEDED, RUNNING, WAITING, KILLED, DISABLED, READY, UNKNOWN
@@ -45,6 +47,14 @@ public class ExecutableFlow {
 	}
 	
 	public ExecutableFlow() {
+	}
+	
+	public long getLastCheckedTime() {
+		return lastCheckedTime;
+	}
+	
+	public void setLastCheckedTime(long lastCheckedTime) {
+		this.lastCheckedTime = lastCheckedTime;
 	}
 	
 	public List<ExecutableNode> getExecutableNodes() {
@@ -298,6 +308,14 @@ public class ExecutableFlow {
 
 	public void setSubmitUser(String submitUser) {
 		this.submitUser = submitUser;
+	}
+
+	public boolean isSubmitted() {
+		return submitted;
+	}
+
+	public void setSubmitted(boolean submitted) {
+		this.submitted = submitted;
 	}
 
 	public static class ExecutableNode {

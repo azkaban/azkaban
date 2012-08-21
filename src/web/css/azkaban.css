@@ -1148,6 +1148,7 @@ tr:hover td {
 	margin: 4px 5px;
 	border-bottom: 1px solid #EEE;
 	cursor: pointer;
+	background-position: 16px 0px;
 }
 
 #list ul li:hover{
@@ -1164,6 +1165,30 @@ tr:hover td {
 	opacity: 0.3;
 }
 
+#list ul li.DISABLED {
+	opacity: 0.3;
+}
+
+#list ul li.DISABLED .icon {
+	background-position: 16px 0px;
+}
+
+#list ul li.READY .icon {
+	background-position: 16px 0px;
+}
+
+#list ul li.RUNNING .icon {
+	background-position: 32px 0px;
+}
+
+#list ul li.SUCCEEDED .icon {
+	background-position: 48px 0px;
+}
+
+#list ul li.FAILED .icon {
+	background-position: 0px 0px;
+}
+
 #list ul li a {
 	font-size: 10pt;
 	margin-left: 5px;
@@ -1172,6 +1197,14 @@ tr:hover td {
 #list ul li a span {
 	background-color: #FF0;
 	color: black;
+}
+
+#list ul li .icon {
+	float: left;
+	width: 16px;
+	height: 16px;
+	background-image: url("./images/dot-icon.png");
+	background-position: 16px 0px;
 }
 
 table.parameters tr td.first {
@@ -1237,7 +1270,11 @@ svg .node:hover {
 }
 
 svg .node:hover .backboard {
-	opacity: 0.6;
+	opacity: 0.7;
+}
+
+svg .selected .backboard {
+	opacity: 0.4;
 }
 
 svg .node circle {
@@ -1254,6 +1291,10 @@ svg .node:hover text {
 	fill: #009FC9;
 }
 
+svg .selected text {
+	fill: #338AB0;
+}
+
 svg .selected circle {
 	stroke: #009FC9;
 	stroke-width: 4;
@@ -1263,12 +1304,20 @@ svg .READY circle {
 	fill: #CCC;
 }
 
+svg .RUNNING circle {
+	fill: #009FC9;
+}
+
 svg .FAILED circle {
 	fill: #CC0000;
 }
 
 svg .SUCCEEDED circle {
 	fill: #00CC33;
+}
+
+svg .DISABLED {
+	opacity: 0.3;
 }
 
 span.sublabel {

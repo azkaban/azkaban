@@ -41,6 +41,7 @@ import azkaban.webapp.AzkabanExecutorServer;
  */
 public class ExecutorManager {
 	private static Logger logger = Logger.getLogger(ExecutorManager.class);
+	private static final long ACCESS_ERROR_THRESHOLD = 60000;
 	private File basePath;
 
 	private AtomicInteger counter = new AtomicInteger();
@@ -124,6 +125,8 @@ public class ExecutorManager {
 				ExecutionReference reference = ExecutionReference.readFromDirectory(activeFlowDir);
 				
 				ExecutableFlow flow = this.getFlowFromReference(reference);
+				flow.setLastCheckedTime(System.currentTimeMillis());
+				flow.setSubmitted(true);
 				if (flow != null) {
 					runningFlows.put(flow.getExecutionId(), flow);
 				}
@@ -237,6 +240,7 @@ public class ExecutorManager {
 		writeResourceFile(executionDir, flow);
 		ExecutableFlowLoader.writeExecutableFlowFile(executionDir, flow, null);
 		addActiveExecutionReference(flow);
+		flow.setLastCheckedTime(System.currentTimeMillis());
 		runningFlows.put(flow.getExecutionId(), flow);
 		
 		logger.info("Setting up " + flow.getExecutionId() + " for execution.");
@@ -277,6 +281,8 @@ public class ExecutorManager {
 			httpclient.getConnectionManager().shutdown();
 		}
 		
+		flow.setLastCheckedTime(System.currentTimeMillis());
+		flow.setSubmitted(true);
 		logger.debug("Submitted Response: " + response);
 	}
 	
@@ -404,11 +410,11 @@ public class ExecutorManager {
 			throw new ExecutorManagerException("Cleaning failed. Resource file " + flowFilename + " parse error.", e);
 		}
 		
+		logger.info("Deleting resources for " + exflow.getFlowId());
 		for (String deletable: deletableResources) {
 			File deleteFile = new File(executionPath, deletable);
 			if (deleteFile.exists()) {
 				if (deleteFile.isDirectory()) {
-					logger.info("Deleting directory " + deleteFile);
 					try {
 						FileUtils.deleteDirectory(deleteFile);
 					} catch (IOException e) {
@@ -416,7 +422,6 @@ public class ExecutorManager {
 					}
 				}
 				else {
-					logger.info("Deleting file " + deleteFile);
 					if(!deleteFile.delete()) {
 						logger.error("Deleting of resource file '" + deleteFile + "' failed.");
 					}
@@ -495,11 +500,15 @@ public class ExecutorManager {
 	
 	private class ExecutingManagerUpdaterThread extends Thread {
 		private boolean shutdown = false;
-		private int updateTimeMs = 100;
+		private int updateTimeMs = 1000;
 		public void run() {
 			while (!shutdown) {
 				ArrayList<ExecutableFlow> flows = new ArrayList<ExecutableFlow>(runningFlows.values());
 				for(ExecutableFlow exFlow : flows) {
+					if (!exFlow.isSubmitted()) {
+						continue;
+					}
+					
 					File executionDir = new File(exFlow.getExecutionPath());
 					
 					if (!executionDir.exists()) {
@@ -550,22 +559,33 @@ public class ExecutorManager {
 							// Cleanup
 							logger.info("Flow " + exFlow.getExecutionId() + " has succeeded. Cleaning Up.");
 							try {
-								cleanFinishedJob(exFlow);
+								ExecutableFlowLoader.updateFlowStatusFromFile(executionDir, exFlow);
+								cleanFinishedJob(exFlow);						
 							} catch (ExecutorManagerException e) {
 								e.printStackTrace();
 								continue;
 							}
+							exFlow.setLastCheckedTime(System.currentTimeMillis());
 						}
 						else {
-							logger.error("Flow " + exFlow.getExecutionId() + " has succeeded, but the Executor says its still running");
+							logger.error("Flow " + exFlow.getExecutionId() + " has succeeded, but the Executor says its still running with msg: " + status);
+							if (System.currentTimeMillis() - exFlow.getLastCheckedTime() > ACCESS_ERROR_THRESHOLD) {
+								exFlow.setStatus(Status.FAILED);
+								logger.error("It's been " + ACCESS_ERROR_THRESHOLD + " ms since last update. Auto-failing the job.");
+							}
 						}
 					}
 					else {
 						// If it's not finished, and not running, we will fail it and clean up.
 						if (status.equals("notfound")) {
 							logger.error("Flow " + exFlow.getExecutionId() + " is running, but the Executor can't find it.");
-							exFlow.setEndTime(System.currentTimeMillis());
-							exFlow.setStatus(Status.FAILED);
+							if (System.currentTimeMillis() - exFlow.getLastCheckedTime() > ACCESS_ERROR_THRESHOLD) {
+								exFlow.setStatus(Status.FAILED);
+								logger.error("It's been " + ACCESS_ERROR_THRESHOLD + " ms since last update. Auto-failing the job.");
+							}
+						}
+						else {
+							exFlow.setLastCheckedTime(System.currentTimeMillis());
 						}
 					}
 					

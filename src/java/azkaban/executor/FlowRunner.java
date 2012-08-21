@@ -3,9 +3,9 @@ package azkaban.executor;
 import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -39,18 +39,19 @@ public class FlowRunner extends EventHandler implements Runnable {
 	private BlockingQueue<JobRunner> jobsToRun = new LinkedBlockingQueue<JobRunner>();
 	private int numThreads = NUM_CONCURRENT_THREADS;
 	private boolean cancelled = true;
-	
-	private Map<String, JobRunner> jobRunnersMap;
+
+	private Map<String, JobRunner> runningJobs;
 	private JobRunnerEventListener listener;
 	private Map<String, Props> sharedProps = new HashMap<String, Props>();
 	private Map<String, Props> outputProps = new HashMap<String, Props>();
 	private File basePath;
 	private AtomicInteger commitCount = new AtomicInteger(0);
-	private HashSet<String> finalNodes = new HashSet<String>();
 
 	private Logger logger;
 	private Layout loggerLayout = DEFAULT_LAYOUT;
 	private Appender flowAppender;
+	
+	private Thread currentThread;
 	
 	public enum FailedFlowOptions {
 		FINISH_RUNNING_JOBS,
@@ -63,7 +64,7 @@ public class FlowRunner extends EventHandler implements Runnable {
 		this.flow = flow;
 		this.basePath = new File(flow.getExecutionPath());
 		this.executorService = Executors.newFixedThreadPool(numThreads);
-		this.jobRunnersMap = new HashMap<String, JobRunner>();
+		this.runningJobs = new ConcurrentHashMap<String, JobRunner>();
 		this.listener = new JobRunnerEventListener(this);
 		
 		createLogger();
@@ -99,19 +100,18 @@ public class FlowRunner extends EventHandler implements Runnable {
 	
 	public void cancel() {
 		logger.info("Cancel Invoked");
-		finalNodes.clear();
 		cancelled = true;
 		
 		executorService.shutdownNow();
 		
 		// Loop through job runners
-		for (JobRunner runner: jobRunnersMap.values()) {
+		for (JobRunner runner: runningJobs.values()) {
 			if (runner.getStatus() == Status.WAITING || runner.getStatus() == Status.RUNNING) {
 				runner.cancel();
 			}
 		}
-		
-		this.notify();
+
+		flow.setStatus(Status.KILLED);
 	}
 	
 	public boolean isCancelled() {
@@ -131,6 +131,8 @@ public class FlowRunner extends EventHandler implements Runnable {
 	
 	@Override
 	public void run() {
+		currentThread = Thread.currentThread();
+		
 		flow.setStatus(Status.RUNNING);
 		flow.setStartTime(System.currentTimeMillis());
 		logger.info("Starting Flow");
@@ -156,52 +158,58 @@ public class FlowRunner extends EventHandler implements Runnable {
 				ExecutableNode node = flow.getExecutableNode(startNode);
 				JobRunner jobRunner = createJobRunner(node, null);
 				jobsToRun.add(jobRunner);
+				runningJobs.put(startNode, jobRunner);
 			}
 		} catch (IOException e) {
 			logger.error("Starting job queueing failed due to " + e.getMessage());
 			flow.setStatus(Status.FAILED);
 			jobsToRun.clear();
+			runningJobs.clear();
 			logger.error("Exiting Prematurely.");
 			this.fireEventListeners(Event.create(this, Type.FLOW_FINISHED));
 			return;
 		}
 		
-		// When this is empty, we will stop.
-		finalNodes.addAll(flow.getEndNodes());
-		
 		// Main loop
-		while(!finalNodes.isEmpty()) {
+		while(!runningJobs.isEmpty()) {
 			JobRunner runner = null;
 			try {
-				runner = jobsToRun.take();
+				runner = jobsToRun.poll(5, TimeUnit.MINUTES);
 			} catch (InterruptedException e) {
+				logger.info("FlowRunner thread has been interrupted.");
+				if (runningJobs.isEmpty()) {
+					break;
+				}
+				else {
+					continue;
+				}
 			}
 			
-			if (!finalNodes.isEmpty() && runner != null) {
+			if (runner != null) {
 				try {
 					ExecutableNode node = runner.getNode();
 					node.setStatus(Status.WAITING);
 					executorService.submit(runner);
 					logger.info("Job Started " + node.getId());
-					finalNodes.remove(node.getId());
 				} catch (RejectedExecutionException e) {
 					// Should reject if I shutdown executor.
 					break;
 				}
-			}
-			
-			// Just to make sure we back off on the flooding.
-			synchronized (this) {
-				try {
-					wait(5);
-				} catch (InterruptedException e) {
-					
+				
+				// Just to make sure we back off so we don't flood.
+				synchronized (this) {
+					try {
+						wait(5);
+					} catch (InterruptedException e) {
+						
+					}
 				}
 			}
 		}
 		
 		logger.info("Finishing up flow. Awaiting Termination");
 		executorService.shutdown();
+		
 		while (executorService.isTerminated()) {
 			try {
 				executorService.awaitTermination(1, TimeUnit.SECONDS);
@@ -215,6 +223,10 @@ public class FlowRunner extends EventHandler implements Runnable {
 		if (flow.getStatus() == Status.RUNNING) {
 			logger.info("Flow finished successfully in " + (flow.getEndTime() - flow.getStartTime()) + " ms.");
 			flow.setStatus(Status.SUCCEEDED);
+		}
+		else if (flow.getStatus() == Status.KILLED) {
+			logger.info("Flow was killed in " + (flow.getEndTime() - flow.getStartTime()) + " ms.");
+			flow.setStatus(Status.KILLED);
 		}
 		else {
 			logger.info("Flow finished with failures in " + (flow.getEndTime() - flow.getStartTime()) + " ms.");
@@ -245,7 +257,6 @@ public class FlowRunner extends EventHandler implements Runnable {
 		
 		JobRunner jobRunner = new JobRunner(node, jobProps, basePath);
 		jobRunner.addListener(listener);
-		jobRunnersMap.put(node.getId(), jobRunner);
 		
 		return jobRunner;
 	}
@@ -272,6 +283,10 @@ public class FlowRunner extends EventHandler implements Runnable {
 				props.setParent(inherits);
 			}
 		}
+	}
+	
+	private void interrupt() {
+		currentThread.interrupt();
 	}
 	
 	private void handleSucceededJob(ExecutableNode node) {
@@ -306,15 +321,18 @@ public class FlowRunner extends EventHandler implements Runnable {
 				try {
 					runner = this.createJobRunner(dependentNode, previousOutput);
 				} catch (IOException e) {
-					System.err.println("Failed due to " + e.getMessage());
+					logger.error("JobRunner creation failed due to " + e.getMessage());
 					dependentNode.setStatus(Status.FAILED);
 					handleFailedJob(dependentNode);
 					return;
 				}
-				
+			
+				runningJobs.put(dependentNode.getId(), runner);
 				jobsToRun.add(runner);
 			}
 		}
+
+		runningJobs.remove(node.getId());
 	}
 	
 	private void handleFailedJob(ExecutableNode node) {
@@ -324,16 +342,16 @@ public class FlowRunner extends EventHandler implements Runnable {
 		switch (failedOptions) {
 			// We finish running current jobs and then fail. Do not accept new jobs.
 			case FINISH_RUNNING_JOBS:
-				finalNodes.clear();
+				runningJobs.clear();
 				executorService.shutdown();
-				this.notify();
 			break;
 			// We kill all running jobs and fail immediately
 			case KILL_ALL:
 				this.cancel();
 			break;
 		}
-
+		
+		runningJobs.remove(node.getId());
 	}
 	
 	private class JobRunnerEventListener implements EventListener {
@@ -364,6 +382,10 @@ public class FlowRunner extends EventHandler implements Runnable {
 			}
 			
 			flowRunner.commitFlow();
+			if (runningJobs.isEmpty()) {
+				System.out.println("There are no more running jobs.");
+				flowRunner.interrupt();
+			}
 		}
 	}
 }

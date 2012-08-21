@@ -168,6 +168,11 @@ azkaban.JobListView = Backbone.View.extend({
 		$(ul).attr("id", "jobs");
 		for (var i = 0; i < nodeArray.length; ++i) {
 			var li = document.createElement("li");
+			
+			var iconDiv = document.createElement("div");
+			$(iconDiv).addClass("icon");
+			li.appendChild(iconDiv);
+			
 			var a = document.createElement("a");
 			$(a).text(nodeArray[i].id);
 			li.appendChild(a);
@@ -364,8 +369,8 @@ azkaban.SvgGraphView = Backbone.View.extend({
 			var updateNode = updateData.nodes[i];
 			var g = document.getElementById(updateNode.id);
 			
-			for (var i = 0; i < statusList.length; ++i) {
-				var status = statusList[i];
+			for (var j = 0; j < statusList.length; ++j) {
+				var status = statusList[j];
 				removeClass(g, status);
 			}
 			
@@ -525,7 +530,8 @@ var updaterFunction = function() {
 		
 		var data = graphModel.get("data");
 		if (data.status != "SUCCEEDED" && data.status != "FAILED" ) {
-			setTimeout(function() {updaterFunction();}, 30000);
+			// 10 sec updates
+			setTimeout(function() {updaterFunction();}, 10000);
 		}
 		else {
 			console.log("Flow finished, so no more updates");
@@ -581,9 +587,8 @@ $(function() {
 	          }
 	          
 	          graphModel.set({nodeMap: nodeMap});
+	      	  setTimeout(function() {updaterFunction()}, 2000);
 	      },
 	      "json"
 	    );
-
-	setTimeout(function() {updaterFunction()}, 1000);
 });

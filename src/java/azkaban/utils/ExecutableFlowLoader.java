@@ -102,6 +102,7 @@ public class ExecutableFlowLoader {
 	 */
 	public static boolean updateFlowStatusFromFile(File exDir, ExecutableFlow flow) throws ExecutorManagerException {
 		File file = getLatestExecutableFlowDir(exDir);
+		System.out.println("Loading from: " + file);
 		int number =  getFlowUpdateNumber(file);
 		if (flow.getUpdateNumber() >= number) {
 			return false;
