@@ -545,6 +545,145 @@ azkaban.SvgGraphView = Backbone.View.extend({
 	}
 });
 
+var executionListView;
+azkaban.ExecutionListView = Backbone.View.extend({
+	events: {
+	},
+	initialize: function(settings) {
+		this.model.bind('change:graph', this.renderJobs, this);
+		this.model.bind('change:update', this.updateJobs, this);
+	},
+	renderJobs: function(evt) {
+		var data = this.model.get("data");
+		var lastTime = data.endTime == -1 ? (new Date()).getTime() : data.endTime;
+		this.updateJobRow(data.nodes);
+		this.updateProgressBar(data);
+	},
+	updateJobs: function(evt) {
+		var data = this.model.get("update");
+		var lastTime = data.endTime == -1 ? (new Date()).getTime() : data.endTime;
+		
+		this.updateJobRow(data.nodes);
+		this.updateProgressBar(this.model.get("data"));
+	},
+	updateJobRow: function(nodes) {
+		var executingBody = $("#executableBody");
+		nodes.sort(function(a,b) { return a.startTime - b.startTime; });
+		
+		for (var i = 0; i < nodes.length; ++i) {
+			var node = nodes[i];
+			if (node.startTime > -1) {
+				var row = document.getElementById(node.id + "-row");
+				if (!row) {
+					this.addNodeRow(node);
+				}
+				
+				$("#" + node.id + "-status").text(node.status);
+				
+				var startdate = new Date(node.startTime);
+				$("#" + node.id + "-start").text(getDateFormat(startdate));
+				
+				var endTime = node.endTime;
+				if (node.endTime == -1) {
+					$("#" + node.id + "-end").text("-");
+					endTime = node.startTime + 1;
+				}
+				else {
+					var enddate = new Date(node.endTime);
+					$("#" + node.id + "-end").text(getDateFormat(enddate));
+				}
+				
+				var progressBar = $("#" + node.id + "-progressbar");
+				for (var j = 0; j < statusList.length; ++j) {
+					var status = statusList[j];
+					progressBar.removeClass(status);
+				}
+				progressBar.addClass(node.status);
+
+				if (node.endTime == -1) {
+					$("#" + node.id + "-elapse").text("0 sec");
+				}
+				else {
+					$("#" + node.id + "-elapse").text(getDuration(node.startTime, node.endTime));
+				}
+			}
+		}
+	},
+	updateProgressBar: function(data) {
+		if(data.startTime == -1) {
+			return;
+		}
+		
+		var flowLastTime = data.endTime == -1 ? (new Date()).getTime() : data.endTime;
+		var flowStartTime = data.startTime;
+		
+		var outerWidth = $(".outerProgress").css("width");
+		if (outerWidth.substring(outerWidth.length - 2, outerWidth.length) == "px") {
+			outerWidth = outerWidth.substring(0, outerWidth.length - 2);
+		}
+		outerWidth = parseInt(outerWidth);
+		
+		var nodes = data.nodes;
+		for (var i = 0; i < nodes.length; ++i) {
+			var node = nodes[i];
+		
+			// calculate the progress
+			var diff = flowLastTime - flowStartTime;
+			
+			var factor = outerWidth/diff;
+			var left = Math.max((node.startTime-flowStartTime)*factor, 0);
+			var width = Math.max((node.endTime - node.startTime)*factor, 1);
+			width = Math.min(width, outerWidth);
+			
+			$("#" + node.id + "-progressbar").css("margin-left", left)
+			$("#" + node.id + "-progressbar").css("width", width);
+		}
+	},
+	addNodeRow: function(node) {
+		var executingBody = $("#executableBody");
+		var tr = document.createElement("tr");
+		var tdName = document.createElement("td");
+		var tdTimeline = document.createElement("td");
+		var tdStart = document.createElement("td");
+		var tdEnd = document.createElement("td");
+		var tdElapse = document.createElement("td");
+		var tdStatus = document.createElement("td");
+		var tdLog = document.createElement("td");
+		
+		$(tr).append(tdName);
+		$(tr).append(tdTimeline);
+		$(tr).append(tdStart);
+		$(tr).append(tdEnd);
+		$(tr).append(tdElapse);
+		$(tr).append(tdStatus);
+		$(tr).append(tdLog);
+		$(tr).attr("id", node.id + "-row");
+		$(tdTimeline).attr("id", node.id + "-timeline");
+		$(tdStart).attr("id", node.id + "-start");
+		$(tdEnd).attr("id", node.id + "-end");
+		$(tdElapse).attr("id", node.id + "-elapse");
+		$(tdStatus).attr("id", node.id + "-status");
+
+		var outerProgressBar = document.createElement("div");
+		$(outerProgressBar).addClass("outerProgress");
+
+		var progressBox = document.createElement("div");
+		$(progressBox).attr("id", node.id + "-progressbar");
+		$(progressBox).addClass("progressBox");
+		$(outerProgressBar).append(progressBox);
+		$(tdTimeline).append(outerProgressBar);
+		$(tdTimeline).addClass("timeline");
+
+		var requestURL = contextURL + "/manager?project=" + projectName + "&flow=" + flowName + "&job=" + node.id;
+		var a = document.createElement("a");
+		$(a).attr("href", requestURL);
+		$(a).text(node.id);
+		$(tdName).append(a);
+
+		executingBody.append(tr);
+	}
+});
+
 var graphModel;
 azkaban.GraphModel = Backbone.Model.extend({});
 
@@ -600,26 +739,14 @@ var updaterFunction = function() {
 
 $(function() {
 	var selected;
-	
-	if (window.location.hash) {
-		var hash = window.location.hash;
-		if (hash == "#jobslist") {
-			selected = "jobslist";
-		}
-		else if (hash == "#graph") {
-			// Redundant, but we may want to change the default. 
-			selected = "graph";
-		}
-		else {
-			selected = "graph";
-		}
-	}
-	flowTabView = new azkaban.FlowTabView({el:$( '#headertabs'), selectedView: selected });
+
+	flowTabView = new azkaban.FlowTabView({el:$( '#headertabs') });
 
 	graphModel = new azkaban.GraphModel();
 	svgGraphView = new azkaban.SvgGraphView({el:$('#svgDiv'), model: graphModel});
 	jobsListView = new azkaban.JobListView({el:$('#jobList'), model: graphModel});
 	statusView = new azkaban.StatusView({el:$('#flow-status'), model: graphModel});
+	executionListView = new azkaban.ExecutionListView({el: $('#jobListView'), model:graphModel});
 	var requestURL = contextURL + "/executor";
 
 	$.get(
@@ -643,6 +770,14 @@ $(function() {
 	          }
 	          
 	          graphModel.set({nodeMap: nodeMap});
+	          
+	          if (window.location.hash) {
+					var hash = window.location.hash;
+					if (hash == "#jobslist") {
+						flowTabView.handleJobslistLinkClick();
+					}
+			 }
+	          
 	      	  setTimeout(function() {updaterFunction()}, 5000);
 	      },
 	      "json"

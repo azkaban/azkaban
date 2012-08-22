@@ -25,13 +25,13 @@ var getDuration = function(startMs, endMs) {
 		var hours = Math.floor(mins / 60);
 		mins = mins % 60;
 		if (hours < 24) {
-			return hours + "h " + mins + " m" + seconds + "s";
+			return hours + "h " + mins + "m " + seconds + "s";
 		}
 		
 		var days = Math.floor(hours / 24);
 		hours = hours % 24;
 		
-		return days + "d " + hours + "h " + mins + "m " + seconds + "s";
+		return days + "d " + hours + "h " + mins + "m";
 	}
 
 	return "-";

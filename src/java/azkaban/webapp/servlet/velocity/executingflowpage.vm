@@ -42,8 +42,8 @@
 #end
 
 				<div id="all-jobs-content">
-					<div class="section-hd">
-						<h2><a href="${context}/executor?execid=${execid}">Execution <span>$execid</span></a></h2>
+					<div class="section-hd flow-header">
+						<h2><a href="${context}/executor?execid=${execid}">Flow Execution <span>$execid</span></a></h2>
 						<div class="section-sub-hd">
 							<h4><a href="${context}/manager?project=${projectName}">Project <span>$projectName</span></a></h4>
 							<h4 class="separator">&gt;</h4>
@@ -75,7 +75,21 @@
 						</div>
 					</div>
 					<div id="jobListView">
-					<p>This is my joblist view</p>
+						<table>
+							<thead>
+								<tr>
+									<th>Name</th>
+									<th class="timeline">Timeline</th>
+									<th class="date">Start Time</th>
+									<th class="date">End Time</th>
+									<th class="elapse">Elapsed</th>
+									<th class="status">Status</th>
+									<th class="logs">Logs</th>
+								</tr>
+							</thead>
+							<tbody id="executableBody">
+							</tbody>
+						</table>
 					</div>
 				</div>
 #end

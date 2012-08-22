@@ -40,7 +40,7 @@
 #end
 
 				<div id="all-jobs-content">
-					<div class="section-hd">
+					<div class="section-hd flow-header">
 						<h2><a href="${context}/manager?project=${project.name}&flow=${flowid}">Flow <span>$flowid</span></a></h2>
 						<div class="section-sub-hd">
 							<h4><a href="${context}/manager?project=${project.name}">Project <span>$project.name</span></a></h4>
