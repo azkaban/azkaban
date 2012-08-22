@@ -39,6 +39,61 @@ function removeClass(el, name)
    }
 }
 
+var statusView;
+azkaban.StatusView= Backbone.View.extend({
+	initialize : function(settings) {
+		this.model.bind('change:graph', this.render, this);
+		this.model.bind('change:update', this.statusUpdate, this);
+	},
+	render : function(evt) {
+		var data = this.model.get("data");
+		
+		var user = data.submitUser;
+		$("#submitUser").text(user);
+		
+		this.statusUpdate(evt);
+	},
+	statusUpdate : function(evt) {
+		var data = this.model.get("data");
+		
+		statusItem = $("#flowStatus");
+		for (var j = 0; j < statusList.length; ++j) {
+			var status = statusList[j];
+			statusItem.removeClass(status);
+		}
+		$("#flowStatus").addClass(data.status);
+		$("#flowStatus").text(data.status);
+		
+		var startTime = data.startTime;
+		var endTime = data.endTime;
+		
+		if (startTime == -1) {
+			$("#startTime").text("-");
+		}
+		else {
+			var date = new Date(startTime);
+			$("#startTime").text(getDateFormat(date));
+			
+			var lastTime = endTime;
+			if (endTime == -1) {
+				var currentDate = new Date();
+				lastTime = currentDate.getTime();
+			}
+			
+			var durationString = getDuration(startTime, lastTime);
+			$("#duration").text(durationString);
+		}
+		
+		if (endTime == -1) {
+			$("#endTime").text("-");
+		}
+		else {
+			var date = new Date(endTime);
+			$("#endTime").text(getDateFormat(date));
+		}
+	}
+});
+
 var flowTabView;
 azkaban.FlowTabView= Backbone.View.extend({
   events : {
@@ -511,7 +566,8 @@ var updaterFunction = function() {
 	          updateTime = Math.max(updateTime, data.endTime);
 	          oldData.submitTime = data.submitTime;
 	          oldData.startTime = data.startTime;
-	          oldData.endtime = data.endTime;
+	          oldData.endTime = data.endTime;
+	          oldData.status = data.status;
 	          
 	          for (var i = 0; i < data.nodes.length; ++i) {
 	          	var node = data.nodes[i];
@@ -563,7 +619,7 @@ $(function() {
 	graphModel = new azkaban.GraphModel();
 	svgGraphView = new azkaban.SvgGraphView({el:$('#svgDiv'), model: graphModel});
 	jobsListView = new azkaban.JobListView({el:$('#jobList'), model: graphModel});
-	
+	statusView = new azkaban.StatusView({el:$('#flow-status'), model: graphModel});
 	var requestURL = contextURL + "/executor";
 
 	$.get(
@@ -587,7 +643,7 @@ $(function() {
 	          }
 	          
 	          graphModel.set({nodeMap: nodeMap});
-	      	  setTimeout(function() {updaterFunction()}, 2000);
+	      	  setTimeout(function() {updaterFunction()}, 5000);
 	      },
 	      "json"
 	    );

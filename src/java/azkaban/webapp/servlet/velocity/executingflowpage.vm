@@ -6,6 +6,7 @@
 		<script type="text/javascript" src="${context}/js/jqueryui/jquery-ui.custom.min.js"></script>   
 		<script type="text/javascript" src="${context}/js/namespace.js"></script>
 		<script type="text/javascript" src="${context}/js/underscore-1.2.1-min.js"></script>
+		<script type="text/javascript" src="${context}/js/azkaban.date.utils.js"></script>
 		<script type="text/javascript" src="${context}/js/backbone-0.5.3-min.js"></script>
 		<script type="text/javascript" src="${context}/js/jquery.simplemodal.js"></script>
 		<script type="text/javascript" src="${context}/js/jquery.contextMenu.js"></script>
@@ -83,6 +84,17 @@
 			<li class="openwindow"><a href="#openwindow">Open in New Window...</a></li>
 		</ul>
 
+		</div>
+		<div id="flow-status">
+			<table class="status">
+				<tr><td class="first">Status</td><td id="flowStatus">-</td></tr>
+				<tr><td class="first">Submit User</td><td id="submitUser">-</td></tr>
+			</table>
+			<table class="time">
+				<tr><td class="first">Start Time</td><td id="startTime">-</td></tr>
+				<tr><td class="first">End Time</td><td id="endTime">-</td></tr>
+				<tr><td class="first">Duration</td><td id="duration">-</td></tr>
+			</table>
 		</div>
 	</body>
 </html>

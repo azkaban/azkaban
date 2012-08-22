@@ -65,12 +65,12 @@ public class ExecutorManager {
 			}
 		}
 		
-		File activePath = new File(basePath, "active");
+		File activePath = new File(basePath, ".active");
 		if(!activePath.exists() && !activePath.mkdirs()) {
 			throw new RuntimeException("Execution directory " + activePath + " does not exist and cannot be created.");
 		}
 		
-		File archivePath = new File(basePath, "archive");
+		File archivePath = new File(basePath, ".archive");
 		if(!archivePath.exists() && !archivePath.mkdirs()) {
 			throw new RuntimeException("Execution directory " + archivePath + " does not exist and cannot be created.");
 		}

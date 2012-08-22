@@ -1378,6 +1378,66 @@ span.sublabel {
 	background-color: #c7eeff;
 }
 
+#flow-status {
+	position: absolute;
+	top: 115px;
+	right: 55px;
+	width: 420px;
+}
+
+#flow-status table {
+	float: left;
+	border: none;
+	background: none;
+	width: 190px;
+	margin-left: 10px;
+}
+
+#flow-status table.status {
+	width: 200px;
+}
+
+#flow-status table.status td {
+	font-size: 11.5pt;
+}
+
+#flow-status td.first {
+	font-weight: bold;
+}
+
+#flow-status table tr {
+}
+
+#flow-status table td {
+	border: none;
+	padding: 1px;
+	font-size: 12px;
+}
+
+#flow-status table td.SUCCEEDED {
+	color:  #00CC33;
+}
+
+#flow-status table td.RUNNING {
+	color:  #009FC9;
+}
+
+#flow-status table td.FAILED {
+	color:  #CC0000;
+}
+
+#flow-status table td.FAILED_FINISHING {
+	color:  #CC0000;
+}
+
+#flow-status table td.KILLED {
+	color:  #CC0000;
+}
+
+#flowStatus {
+	font-weight: bold;
+}
+
 /* old styles */
 
 .azkaban-charts .hitarea {
