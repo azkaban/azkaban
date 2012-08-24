@@ -63,13 +63,23 @@
 		// Trackball/trackpad vs wheel. Need to accommodate
 		var delta = 0;
 		if (evt.wheelDelta) {
-			delta = event.wheelDelta / 120;
+			if (evt.wheelDelta > 0) {
+				delta = Math.ceil(evt.wheelDelta / 120);
+			}
+			else {
+				delta = Math.floor(evt.wheelDelta / 120);
+			}
 		}
 		else if (evt.detail) {
-			delta = -evt.detail / 3;
+			if (evt.detail > 0) {
+				delta = -Math.ceil(evt.detail / 3);
+			}
+			else {
+				delta = Math.floor(evt.wheelDelta / 3);
+			}
 		}
 		
-		var zoomLevel = boundZoomLevel(target, Math.floor(target.zoomIndex + delta));
+		var zoomLevel = boundZoomLevel(target, target.zoomIndex + delta);
 		target.zoomIndex = zoomLevel;
 		var scale = target.zoomLevels[zoomLevel];
 		

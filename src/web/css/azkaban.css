@@ -13,6 +13,10 @@ body {
   font-family: Helvetica, Arial, Sans-Serif;
 }
 
+body.nonelastic {
+  overflow: hidden;
+}
+
 textarea {
 	border: 2px inset;
 }

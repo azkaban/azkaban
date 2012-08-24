@@ -40,6 +40,8 @@ import azkaban.webapp.AzkabanExecutorServer;
  *
  */
 public class ExecutorManager {
+	private static final String ACTIVE_DIR = ".active";
+	private static final String ARCHIVE_DIR = ".archive";
 	private static Logger logger = Logger.getLogger(ExecutorManager.class);
 	private static final long ACCESS_ERROR_THRESHOLD = 60000;
 	private File basePath;
@@ -65,12 +67,12 @@ public class ExecutorManager {
 			}
 		}
 		
-		File activePath = new File(basePath, ".active");
+		File activePath = new File(basePath, ACTIVE_DIR);
 		if(!activePath.exists() && !activePath.mkdirs()) {
 			throw new RuntimeException("Execution directory " + activePath + " does not exist and cannot be created.");
 		}
 		
-		File archivePath = new File(basePath, ".archive");
+		File archivePath = new File(basePath, ARCHIVE_DIR);
 		if(!archivePath.exists() && !archivePath.mkdirs()) {
 			throw new RuntimeException("Execution directory " + archivePath + " does not exist and cannot be created.");
 		}
@@ -117,8 +119,11 @@ public class ExecutorManager {
 
 	
 	private void loadActiveExecutions() throws IOException, ExecutorManagerException {
-		File activeFlows = new File(basePath, "active");
+		File activeFlows = new File(basePath, ACTIVE_DIR);
 		File[] activeFlowDirs = activeFlows.listFiles();
+		if (activeFlowDirs == null) {
+			return;
+		}
 		
 		for (File activeFlowDir: activeFlowDirs) {
 			if (activeFlowDir.isDirectory()) {
@@ -182,11 +187,11 @@ public class ExecutorManager {
 		}
 		
 		// Check active
-		File baseActiveDir = new File(basePath, "active");
+		File baseActiveDir = new File(basePath, ACTIVE_DIR);
 		File referenceDir = new File(baseActiveDir, executionId);
 		
 		if (!referenceDir.exists()) {
-			File baseArchiveDir = new File(basePath, "archive");
+			File baseArchiveDir = new File(basePath, ARCHIVE_DIR);
 			referenceDir = new File(baseArchiveDir, executionId);
 			if (!referenceDir.exists()) {
 				throw new ExecutorManagerException("Execution id '" + executionId + "' not found. Searching " + referenceDir);
@@ -213,7 +218,7 @@ public class ExecutorManager {
 	}
 	
 	private synchronized void addActiveExecutionReference(ExecutableFlow flow) throws ExecutorManagerException {
-		File activeDirectory = new File(basePath, "active");
+		File activeDirectory = new File(basePath, ACTIVE_DIR);
 		if (!activeDirectory.exists()) {
 			activeDirectory.mkdirs();
 		}
@@ -475,14 +480,14 @@ public class ExecutorManager {
 		updateNum++;
 		ExecutableFlowLoader.writeExecutableFlowFile(new File(exFlow.getExecutionPath()), exFlow, updateNum);
 		
-		String activeReferencePath = "active" + File.separator + exFlow.getExecutionId(); 
+		String activeReferencePath = ACTIVE_DIR + File.separator + exFlow.getExecutionId(); 
 		File activeDirectory = new File(basePath, activeReferencePath);
 		if (!activeDirectory.exists()) {
 			logger.error("WTF!! Active reference " + activeDirectory + " directory doesn't exist.");
 			throw new ExecutorManagerException("Active reference " + activeDirectory + " doesn't exists.");
 		}
 		
-		String archiveReferencePath = "archive" + File.separator + exFlow.getExecutionId(); 
+		String archiveReferencePath = ARCHIVE_DIR + File.separator + exFlow.getExecutionId(); 
 		File archiveDirectory = new File(basePath, archiveReferencePath);
 		if (archiveDirectory.exists()) {
 			logger.error("WTF!! Archive reference already exists!");
