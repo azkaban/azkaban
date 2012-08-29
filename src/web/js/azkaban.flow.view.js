@@ -10,44 +10,132 @@ var handleJobMenuClick = function(action, el, pos) {
 		window.open(requestURL);
 	}
 	else if(action == "disable") {
-		var oldDisabled = graphModel.get("disabled");
-		
-		var newDisabled = {};
-		// Copy disabled list
-		if (oldDisabled) {
-			for(var id in oldDisabled) {
-			    if(oldDisabled.hasOwnProperty(id)) {
-			    	var disabled = (oldDisabled[id]);
-			    	if (disabled) {
-			    		newDisabled[id]=true;
-			    	}
-			    }
+		var disabled = graphModel.get("disabled");
+
+		disabled[jobid] = true;
+		graphModel.set({disabled: disabled});
+		graphModel.trigger("change:disabled");
+	}
+	else if (action == "disableParents") {
+		var disabled = graphModel.get("disabled");
+		var nodes = graphModel.get("nodes");
+		var inNodes = nodes[jobid].inNodes;
+
+		if (inNodes) {
+			for (var key in inNodes) {
+			  disabled[key] = true;
 			}
 		}
 		
-		newDisabled[jobid] = true;
-		graphModel.set({disabled: newDisabled});
+		graphModel.set({disabled: disabled});
+		graphModel.trigger("change:disabled");
+	}
+	else if (action == "disableChildren") {
+		var disabled = graphModel.get("disabled");
+		var nodes = graphModel.get("nodes");
+		var outNodes = nodes[jobid].outNodes;
+
+		if (outNodes) {
+			for (var key in outNodes) {
+			  disabled[key] = true;
+			}
+		}
+		
+		graphModel.set({disabled: disabled});
+		graphModel.trigger("change:disabled");
+	}
+	else if (action == "disableAncestors") {
+		var disabled = graphModel.get("disabled");
+		var nodes = graphModel.get("nodes");
+		
+		recurseAllAncestors(nodes, disabled, jobid, true);
+		
+		graphModel.set({disabled: disabled});
+		graphModel.trigger("change:disabled");
+	}
+	else if (action == "disableDescendents") {
+		var disabled = graphModel.get("disabled");
+		var nodes = graphModel.get("nodes");
+		
+		recurseAllDescendents(nodes, disabled, jobid, true);
+		
+		graphModel.set({disabled: disabled});
+		graphModel.trigger("change:disabled");
 	}
 	else if(action == "enable") {
-		var oldDisabled = graphModel.get("disabled");
-		// Copy disabled list
-		if (oldDisabled) {
-			var newDisabled = {};
-			for(var id in oldDisabled) {
-			    if(oldDisabled.hasOwnProperty(id)) {
-			    	var disabled = (oldDisabled[id]);
-			    	if (disabled) {
-			    		newDisabled[id]=true;
-			    	}
-			    }
-			}
-			
-			if( oldDisabled[jobid]) {
-				newDisabled[jobid] = false;
-				graphModel.set({disabled: newDisabled});
+		var disabled = graphModel.get("disabled");
+
+		disabled[jobid] = false;
+		graphModel.set({disabled: disabled});
+		graphModel.trigger("change:disabled");
+	}
+	else if (action == "enableParents") {
+		var disabled = graphModel.get("disabled");
+		var nodes = graphModel.get("nodes");
+		var inNodes = nodes[jobid].inNodes;
+
+		if (inNodes) {
+			for (var key in inNodes) {
+			  disabled[key] = false;
 			}
 		}
+		
+		graphModel.set({disabled: disabled});
+		graphModel.trigger("change:disabled");
+	}
+	else if (action == "enableChildren") {
+		var disabled = graphModel.get("disabled");
+		var nodes = graphModel.get("nodes");
+		var outNodes = nodes[jobid].outNodes;
 
+		if (outNodes) {
+			for (var key in outNodes) {
+			  disabled[key] = false;
+			}
+		}
+		
+		graphModel.set({disabled: disabled});
+		graphModel.trigger("change:disabled");
+	}
+	else if (action == "enableAncestors") {
+		var disabled = graphModel.get("disabled");
+		var nodes = graphModel.get("nodes");
+		
+		recurseAllAncestors(nodes, disabled, jobid, false);
+		
+		graphModel.set({disabled: disabled});
+		graphModel.trigger("change:disabled");
+	}
+	else if (action == "enableDescendents") {
+		var disabled = graphModel.get("disabled");
+		var nodes = graphModel.get("nodes");
+		
+		recurseAllDescendents(nodes, disabled, jobid, false);
+		
+		graphModel.set({disabled: disabled});
+		graphModel.trigger("change:disabled");
+	}
+}
+
+function recurseAllAncestors(nodes, disabledMap, id, disable) {
+	var node = nodes[id];
+	
+	if (node.inNodes) {
+		for (var key in node.inNodes) {
+			disabledMap[key] = disable;
+			recurseAllAncestors(nodes, disabledMap, key, disable);
+		}
+	}
+}
+
+function recurseAllDescendents(nodes, disabledMap, id, disable) {
+	var node = nodes[id];
+	
+	if (node.outNodes) {
+		for (var key in node.outNodes) {
+			disabledMap[key] = disable;
+			recurseAllDescendents(nodes, disabledMap, key, disable);
+		}
 	}
 }
 
@@ -699,6 +787,52 @@ azkaban.ExecutionsView = Backbone.View.extend({
 	}
 });
 
+var contextMenu;
+azkaban.ContextMenu = Backbone.View.extend({
+	events : {
+		"click #disableArrow" : "handleDisabledClick",
+		"click #enableArrow" : "handleEnabledClick"
+	},
+	initialize: function(settings) {
+		$('#disableSub').hide();
+		$('#enableSub').hide();
+	},
+	handleEnabledClick: function(evt) {
+		if(evt.stopPropagation) {
+			evt.stopPropagation();
+		}
+		evt.cancelBubble=true;
+		
+		if (evt.currentTarget.expanded) {
+			evt.currentTarget.expanded=false;
+			$('#enableArrow').removeClass('collapse');
+			$('#enableSub').hide();
+		}
+		else {
+			evt.currentTarget.expanded=true;
+			$('#enableArrow').addClass('collapse');
+			$('#enableSub').show();
+		}
+	},
+	handleDisabledClick: function(evt) {
+		if(evt.stopPropagation) {
+			evt.stopPropagation();
+		}
+		evt.cancelBubble=true;
+		
+		if (evt.currentTarget.expanded) {
+			evt.currentTarget.expanded=false;
+			$('#disableArrow').removeClass('collapse');
+			$('#disableSub').hide();
+		}
+		else {
+			evt.currentTarget.expanded=true;
+			$('#disableArrow').addClass('collapse');
+			$('#disableSub').show();
+		}
+	}
+});
+
 var graphModel;
 azkaban.GraphModel = Backbone.Model.extend({});
 
@@ -716,6 +850,7 @@ $(function() {
 	graphModel = new azkaban.GraphModel();
 	svgGraphView = new azkaban.SvgGraphView({el:$('#svgDiv'), model: graphModel});
 	jobsListView = new azkaban.JobListView({el:$('#jobList'), model: graphModel});
+	contextMenu = new azkaban.ContextMenu({el:$('#jobMenu')});
 	
 	var requestURL = contextURL + "/manager";
 
@@ -723,8 +858,32 @@ $(function() {
 	      requestURL,
 	      {"project": projectName, "ajax":"fetchflowgraph", "flow":flowName},
 	      function(data) {
+	      	  // Create the nodes
+	      	  var nodes = {};
+	      	  for (var i=0; i < data.nodes.length; ++i) {
+	      	  	var node = data.nodes[i];
+	      	  	nodes[node.id] = node;
+	      	  }
+	      	  for (var i=0; i < data.edges.length; ++i) {
+	      	  	var edge = data.edges[i];
+	      	  	var fromNode = nodes[edge.from];
+	      	  	var toNode = nodes[edge.target];
+	      	  	
+	      	  	if (!fromNode.outNodes) {
+	      	  		fromNode.outNodes = {};
+	      	  	}
+	      	  	fromNode.outNodes[toNode.id] = toNode;
+	      	  	
+	      	  	if (!toNode.inNodes) {
+	      	  		toNode.inNodes = {};
+	      	  	}
+	      	  	toNode.inNodes[fromNode.id] = fromNode;
+	      	  }
+	      
 	          console.log("data fetched");
 	          graphModel.set({data: data});
+	          graphModel.set({nodes: nodes});
+	          graphModel.set({disabled: {}});
 	          graphModel.trigger("change:graph");
 	          
 	          // Handle the hash changes here so the graph finishes rendering first.
@@ -772,5 +931,4 @@ $(function() {
 		);
 		
 	});
-
 });

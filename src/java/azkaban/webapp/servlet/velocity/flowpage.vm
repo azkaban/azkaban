@@ -107,11 +107,23 @@
 					</div>
 				</div>
 #end
-		<ul id="jobMenu" class="contextMenu">  
+		<ul id="jobMenu" class="contextMenu flowSubmenu">  
 			<li class="open"><a href="#open">Open...</a></li>
 			<li class="openwindow"><a href="#openwindow">Open in New Window...</a></li>
-			<li class="enable separator"><a href="#enable">Enable</a></li>
-			<li class="disable"><a href="#disable">Disable</a></li>
+			<li id="disable" class="disable separator"><a href="#disable">Disable</a><div id="disableArrow" class="context-sub-icon"></div></li>
+			<ul id="disableSub" class="subMenu">
+				<li class="parents"><a href="#disableParents">Parents</a></li>
+				<li class="ancestors"><a href="#disableAncestors">All Ancestors</a></li>
+				<li class="children"><a href="#disableChildren">Children</a></li>
+				<li class="decendents"><a href="#disableDescendents">All Descendents</a></li>
+			</ul>
+			<li id="enable" class="enable"><a href="#enable">Enable</a> <div id="enableArrow" class="context-sub-icon"></div></li>
+			<ul id="enableSub" class="subMenu">
+				<li class="parents"><a href="#enableParents">Parents</a></li>
+				<li class="ancestors"><a href="#enableAncestors">All Ancestors</a></li>
+				<li class="children"><a href="#enableChildren">Children</a></li>
+				<li class="decendents"><a href="#enableDescendents">All Descendents</a></li>
+			</ul>
 		</ul>
 
 		</div>

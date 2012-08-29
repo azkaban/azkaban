@@ -662,7 +662,31 @@ tr:hover td {
   width: 16px;
 }
 
-.collapse .state-icon {
+.flowSubmenu li {
+	clear: both;
+}
+
+.flowSubmenu a {
+	float: left;
+	width: 70%;
+}
+
+.context-sub-icon {
+  float: right;
+  background-image: url("../../js/jqueryui/themes/custom-theme/images/ui-icons_cccccc_256x240.png");
+  cursor: pointer;
+  display: block;
+  height: 16px;
+  margin-right: 5px;
+  width: 16px;
+  background-position: -32px -16px;
+}
+
+.collapse.context-sub-icon {
+  	background-position: 0 -16px;
+}
+
+.collapse.state-icon {
 	background-position: 0 -16px;
 }
 
@@ -1521,6 +1545,14 @@ h3.subhead {
 	margin: 15px 20px 8px 20px;
 	font-size: 14pt;
 	font-weight: bold;
+}
+
+ul.subMenu {
+	margin-left: 15px;
+}
+
+ul.disableMenu {
+	margin-left: 15px;
 }
 
 /* old styles */
