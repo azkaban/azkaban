@@ -541,7 +541,7 @@ azkaban.ExecutionsView = Backbone.View.extend({
 			
 			var tdId = document.createElement("td");
 			var execA = document.createElement("a");
-			$(execA).attr("href", contextURL + "/executor?execid=" + executions[i].execId);
+			$(execA).attr("href", contextURL + "/executions?execid=" + executions[i].execId);
 			$(execA).text(executions[i].execId);
 			tdId.appendChild(execA);
 			row.appendChild(tdId);
@@ -550,16 +550,32 @@ azkaban.ExecutionsView = Backbone.View.extend({
 			$(tdUser).text(executions[i].submitUser);
 			row.appendChild(tdUser);
 			
+			var startTime = "-";
+			if (executions[i].startTime != -1) {
+				var startDateTime = new Date(executions[i].startTime);
+				startTime = getDateFormat(startDateTime);
+			}
+
 			var tdStartTime = document.createElement("td");
-			$(tdStartTime).text(executions[i].startTime);
+			$(tdStartTime).text(startTime);
 			row.appendChild(tdStartTime);
 			
+			var endTime = "-";
+			var lastTime = executions[i].endTime;
+			if (executions[i].endTime != -1) {
+				var endDateTime = new Date(executions[i].endTime);
+				endTime = getDateFormat(endDateTime);
+			}
+			else {
+				lastTime = (new Date()).getTime();
+			}
+
 			var tdEndTime = document.createElement("td");
-			$(tdEndTime).text(executions[i].endTime);
+			$(tdEndTime).text(endTime);
 			row.appendChild(tdEndTime);
 			
 			var tdElapsed = document.createElement("td");
-			$(tdElapsed).text(executions[i].endTime - executions[i].startTime);
+			$(tdElapsed).text( getDuration(executions[i].startTime, lastTime));
 			row.appendChild(tdElapsed);
 			
 			var tdStatus = document.createElement("td");

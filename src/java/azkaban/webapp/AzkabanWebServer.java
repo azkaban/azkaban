@@ -43,6 +43,7 @@ import azkaban.user.XmlUserManager;
 import azkaban.utils.Props;
 import azkaban.utils.Utils;
 import azkaban.webapp.servlet.AzkabanServletContextListener;
+import azkaban.webapp.servlet.ExecutionServlet;
 import azkaban.webapp.servlet.FlowExecutorServlet;
 import azkaban.webapp.servlet.IndexServlet;
 import azkaban.webapp.servlet.ProjectManagerServlet;
@@ -112,7 +113,7 @@ public class AzkabanWebServer {
 	 */
 	public AzkabanWebServer(Props props) throws Exception {
 		this.props = props;
-		velocityEngine = configureVelocityEngine(props.getBoolean( VELOCITY_DEV_MODE_PARAM, false));
+		velocityEngine = configureVelocityEngine(props.getBoolean(VELOCITY_DEV_MODE_PARAM, false));
 		sessionCache = new SessionCache(props);
 		userManager = loadUserManager(props);
 		projectManager = loadProjectManager(props);
@@ -346,7 +347,8 @@ public class AzkabanWebServer {
 
 		root.addServlet(new ServletHolder(new ProjectManagerServlet()),"/manager");
 		root.addServlet(new ServletHolder(new FlowExecutorServlet()),"/executor");
-
+		root.addServlet(new ServletHolder(new ExecutionServlet()),"/executions");
+		
 		root.setAttribute(AzkabanServletContextListener.AZKABAN_SERVLET_CONTEXT_KEY, app);
 
 		try {

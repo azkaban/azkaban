@@ -1442,34 +1442,38 @@ span.sublabel {
 	font-weight: bold;
 }
 
-#jobListView table th.date {
+.executionInfo table th.date {
 	width: 140px;
 }
 
-#jobListView table th.elapse {
+.executionInfo table th.elapse {
 	width: 90px;
 }
 
-#jobListView table th.status {
+.executionInfo table th.status {
 	width: 100px;
 }
 
-#jobListView table th.logs {
+.executionInfo table th.logs {
 	width: 10px;
 }
 
-#jobListView table th.timeline {
+.executionInfo table th.timeline {
 	width: 280px;
 }
 
-#jobListView table td.timeline {
+.executionInfo table th.action {
+	width: 20px;
+}
+
+.executionInfo table td.timeline {
 	padding: 0px;
 	height: 100%;
 	vertical-align: bottom;
 	margin: 0px;
 }
 
-#jobListView table td {
+.executionInfo table td {
 	padding-left: 6px;
 	height: 20px;
 }
@@ -1511,6 +1515,12 @@ span.sublabel {
     background: -o-linear-gradient(top, #009FC9 0, #007b9b 100%);
     background: -webkit-gradient(linear, left top, left bottom, color-stop(0,#009FC9), color-stop(100%,#007b9b));
     background: linear-gradient(top, #009FC9 0, #007b9b 100%);
+}
+
+h3.subhead {
+	margin: 15px 20px 8px 20px;
+	font-size: 14pt;
+	font-weight: bold;
 }
 
 /* old styles */

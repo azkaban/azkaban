@@ -2,22 +2,24 @@ package azkaban.executor;
 
 import java.io.BufferedOutputStream;
 import java.io.File;
-import java.io.FileFilter;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import net.sf.ehcache.Cache;
+import net.sf.ehcache.CacheManager;
+import net.sf.ehcache.Element;
+import net.sf.ehcache.config.CacheConfiguration;
+import net.sf.ehcache.store.MemoryStoreEvictionPolicy;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.http.client.HttpClient;
@@ -44,6 +46,7 @@ public class ExecutorManager {
 	private static final String ARCHIVE_DIR = ".archive";
 	private static Logger logger = Logger.getLogger(ExecutorManager.class);
 	private static final long ACCESS_ERROR_THRESHOLD = 60000;
+	private static final int UPDATE_THREAD_MS = 1000;
 	private File basePath;
 
 	private AtomicInteger counter = new AtomicInteger();
@@ -52,8 +55,10 @@ public class ExecutorManager {
 	private String url = "localhost";
 	
 	private ConcurrentHashMap<String, ExecutableFlow> runningFlows = new ConcurrentHashMap<String, ExecutableFlow>();
-	private LinkedList<ExecutableFlow> recentlyFinished = new LinkedList<ExecutableFlow>();
-	private int recentlyFinishedSize = 10;
+	
+	private CacheManager manager = CacheManager.create();
+	private Cache recentFlowsCache;
+	private static final int LIVE_SECONDS = 600;
 	
 	public ExecutorManager(Props props) throws IOException, ExecutorManagerException {
 		basePath = new File(props.getString("execution.directory"));
@@ -66,6 +71,7 @@ public class ExecutorManager {
 				throw new RuntimeException("Execution directory " + basePath + " does not exist and cannot be created.");
 			}
 		}
+		setupCache();
 		
 		File activePath = new File(basePath, ACTIVE_DIR);
 		if(!activePath.exists() && !activePath.mkdirs()) {
@@ -84,6 +90,19 @@ public class ExecutorManager {
 		
 		ExecutingManagerUpdaterThread executingManager = new ExecutingManagerUpdaterThread();
 		executingManager.start();
+	}
+	
+	private void setupCache() {
+		CacheConfiguration cacheConfig = new CacheConfiguration("recentFlowsCache",2000)
+				.memoryStoreEvictionPolicy(MemoryStoreEvictionPolicy.FIFO)
+				.overflowToDisk(false)
+				.eternal(false)
+				.timeToLiveSeconds(LIVE_SECONDS)
+				.diskPersistent(false)
+				.diskExpiryThreadIntervalSeconds(0);
+
+		recentFlowsCache = new Cache(cacheConfig);
+		manager.addCache(recentFlowsCache);
 	}
 	
 	public int getExecutableFlows(String projectId, String flowId, int from, int maxResults, List<ExecutableFlow> output) {
@@ -116,8 +135,24 @@ public class ExecutorManager {
 		
 		return executionFiles.length;
 	}
-
 	
+	public List<ExecutableFlow> getRecentlyFinishedFlows() {
+		ArrayList<ExecutableFlow> flows = new ArrayList<ExecutableFlow>();
+		for(Element elem : recentFlowsCache.getAll(recentFlowsCache.getKeys()).values()) {
+			if (elem != null) {
+				Object obj = elem.getObjectValue();
+				flows.add((ExecutableFlow)obj);
+			}
+		}
+		
+		return flows;
+	}
+	
+	public List<ExecutableFlow> getRunningFlows() {
+		ArrayList<ExecutableFlow> execFlows = new ArrayList<ExecutableFlow>(runningFlows.values());
+		return execFlows;
+	}
+
 	private void loadActiveExecutions() throws IOException, ExecutorManagerException {
 		File activeFlows = new File(basePath, ACTIVE_DIR);
 		File[] activeFlowDirs = activeFlows.listFiles();
@@ -130,13 +165,13 @@ public class ExecutorManager {
 				ExecutionReference reference = ExecutionReference.readFromDirectory(activeFlowDir);
 				
 				ExecutableFlow flow = this.getFlowFromReference(reference);
+				if (flow == null) {
+					logger.error("Flow " + reference.getExecId() + " not found.");
+				}
 				flow.setLastCheckedTime(System.currentTimeMillis());
 				flow.setSubmitted(true);
 				if (flow != null) {
 					runningFlows.put(flow.getExecutionId(), flow);
-				}
-				else {
-					logger.error("Flow " + reference.getExecId() + " not found.");
 				}
 			}
 			else {
@@ -500,12 +535,13 @@ public class ExecutorManager {
 		}
 		
 		runningFlows.remove(exFlow.getExecutionId());
+		recentFlowsCache.put(new Element(exFlow.getExecutionId(), exFlow));
 		cleanupUnusedFiles(exFlow);
 	}
 	
 	private class ExecutingManagerUpdaterThread extends Thread {
 		private boolean shutdown = false;
-		private int updateTimeMs = 1000;
+		private int updateTimeMs = UPDATE_THREAD_MS;
 		public void run() {
 			while (!shutdown) {
 				ArrayList<ExecutableFlow> flows = new ArrayList<ExecutableFlow>(runningFlows.values());
@@ -527,6 +563,7 @@ public class ExecutorManager {
 					try {
 						responseString = getFlowStatusInExecutor(exFlow);
 					} catch (IOException e) {
+						e.printStackTrace();
 						// Connection issue. Backoff 1 sec.
 						synchronized(this) {
 							try {

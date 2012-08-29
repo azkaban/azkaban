@@ -3,7 +3,8 @@
 	<head>
 #parse( "azkaban/webapp/servlet/velocity/style.vm" )
 		<script type="text/javascript" src="${context}/js/jquery/jquery.js"></script>    
-		<script type="text/javascript" src="${context}/js/jqueryui/jquery-ui.custom.min.js"></script>   
+		<script type="text/javascript" src="${context}/js/jqueryui/jquery-ui.custom.min.js"></script>
+		<script type="text/javascript" src="${context}/js/azkaban.date.utils.js"></script>  
 		<script type="text/javascript" src="${context}/js/namespace.js"></script>
 		<script type="text/javascript" src="${context}/js/underscore-1.2.1-min.js"></script>
 		<script type="text/javascript" src="${context}/js/backbone-0.5.3-min.js"></script>
@@ -74,17 +75,17 @@
 						</div>
 					</div>
 					<div id="executionsView">
-						<div id="executionDiv" class="all-jobs">
+						<div id="executionDiv" class="all-jobs executionInfo">
 							<table id="execTable">
 								<thead>
 									<tr>
 										<th>Execution Id</th>
 										<th>User</th>
-										<th>Start Time</th>
-										<th>End Time</th>
-										<th>Elapsed</th>
-										<th>Status</th>
-										<th>Action</th>
+										<th class="date">Start Time</th>
+										<th class="date">End Time</th>
+										<th class="elapse">Elapsed</th>
+										<th class="status">Status</th>
+										<th class="action">Action</th>
 									</tr>
 								</thead>
 								<tbody id="execTableBody">

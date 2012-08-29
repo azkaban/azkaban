@@ -1,0 +1,104 @@
+<!DOCTYPE html> 
+<html>
+	<head>
+#parse( "azkaban/webapp/servlet/velocity/style.vm" )
+		<script type="text/javascript" src="${context}/js/jquery/jquery.js"></script>    
+		<script type="text/javascript" src="${context}/js/namespace.js"></script>
+		<script type="text/javascript" src="${context}/js/underscore-1.2.1-min.js"></script>
+		<script type="text/javascript" src="${context}/js/backbone-0.5.3-min.js"></script>
+		<script type="text/javascript" src="${context}/js/jquery.simplemodal.js"></script>
+		<script type="text/javascript" src="${context}/js/azkaban.nav.js"></script>
+		<script type="text/javascript" src="${context}/js/azkaban.main.view.js"></script>
+		<script type="text/javascript">
+			var contextURL = "${context}";
+			var currentTime = ${currentTime};
+			var timezone = "${timezone}";
+			var errorMessage = ${error_message};
+			var successMessage = ${success_message};
+		</script>
+	</head>
+	<body>
+		#set($current_page="executing")
+#parse( "azkaban/webapp/servlet/velocity/nav.vm" )
+		<div class="messaging"><p id="messageClose">X</p><p id="message"></p></div>  
+
+		<div class="content">
+			<div id="all-jobs-content">
+				<div class="section-hd">
+					<h2>Executing Flows</h2>
+				</div>
+			</div>
+			
+			<h3 class="subhead">Currently Running Jobs</h3>
+			<div class="executionInfo">
+				<table id="executingJobs">
+					<thead>
+						<tr>
+							<th>Flow</th>
+							<th>User</th>
+							<th class="date">Start Time</th>
+							<th class="date">End Time</th>
+							<th class="elapse">Elapsed</th>
+							<th class="status">Status</th>
+							<th class="action">Action</th>
+						</tr>
+					</thead>
+					<tbody>
+						#if($runningFlows)
+#foreach($flow in $runningFlows)
+						<tr class="row" >
+							<td class="tb-name">
+								<a href="${context}/execution?execid=${flow.executionId}">${flow.flowId}</a>
+							</td>
+							<td>${flow.submitUser}</td>
+							<td>$utils.formatDate(${flow.startTime})</td>
+							<td>$utils.formatDate(${flow.endTime})</td>
+							<td>$utils.formatDuration(${flow.startTime}, ${flow.endTime})</td>
+							<td>${flow.status}</td>
+							<td></td>
+						</tr>
+#end
+#else
+						<tr><td class="last">No Executing Flows</td></tr>
+#end
+					</tbody>
+				</table>
+			</div>
+			<h3 class="subhead">Recently Finished Jobs</h3>
+			<div class="executionInfo">
+				<table id="recentlyFinished">
+					<thead>
+						<tr>
+							<th>Flow</th>
+							<th>User</th>
+							<th class="date">Start Time</th>
+							<th class="date">End Time</th>
+							<th class="elapse">Elapsed</th>
+							<th class="status">Status</th>
+							<th class="action">Action</th>
+						</tr>
+					</thead>
+					<tbody>
+						#if($recentlyFinished)
+#foreach($flow in $recentlyFinished)
+						<tr class="row" >
+							<td class="tb-name">
+								<a href="${context}/executions?execid=${flow.executionId}">${flow.flowId}</a>
+							</td>
+							<td>${flow.submitUser}</td>
+							<td>$utils.formatDate(${flow.startTime})</td>
+							<td>$utils.formatDate(${flow.endTime})</td>
+							<td>$utils.formatDuration(${flow.startTime}, ${flow.endTime})</td>
+							<td>${flow.status}</td>
+							<td></td>
+						</tr>
+#end
+#else
+						<tr><td class="last">No Recently Finished</td></tr>
+#end	
+					</tbody>
+				</table>
+			</div>
+		</div>
+	</body>
+</html>

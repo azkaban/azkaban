@@ -35,6 +35,7 @@ import org.joda.time.DateTime;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 
+import azkaban.utils.GUIUtils;
 import azkaban.utils.JSONUtils;
 import azkaban.utils.Props;
 import azkaban.webapp.AzkabanWebServer;
@@ -55,6 +56,8 @@ public abstract class AbstractAzkabanServlet extends HttpServlet {
 	public static final String XML_MIME_TYPE = "application/xhtml+xml";
 	public static final String JSON_MIME_TYPE = "application/json";
 
+	private static final GUIUtils utils = new GUIUtils();
+	
 	private AzkabanWebServer application;
 	private String name;
 	private String label;
@@ -257,6 +260,7 @@ public abstract class AbstractAzkabanServlet extends HttpServlet {
 		page.add("azkaban_name", name);
 		page.add("azkaban_label", label);
 		page.add("azkaban_color", color);
+		page.add("utils", utils);
 		page.add("timezone", ZONE_FORMATTER.print(System.currentTimeMillis()));
 		page.add("currentTime", (new DateTime()).getMillis());
 		if (session != null && session.getUser() != null) {

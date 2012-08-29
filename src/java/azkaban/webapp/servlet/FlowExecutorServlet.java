@@ -50,7 +50,7 @@ public class FlowExecutorServlet extends LoginAbstractAzkabanServlet {
 			handleExecutionFlowPage(req, resp, session);
 		}
 	}
-
+	
 	private void handleExecutionFlowPage(HttpServletRequest req, HttpServletResponse resp, Session session) throws ServletException, IOException {
 		Page page = newPage(req, resp, session, "azkaban/webapp/servlet/velocity/executingflowpage.vm");
 		User user = session.getUser();
@@ -111,7 +111,7 @@ public class FlowExecutorServlet extends LoginAbstractAzkabanServlet {
 		}
 		else {
 			String projectName = getParam(req, "project");
-	
+			
 			ret.put("project", projectName);
 			if (ajaxName.equals("executeFlow")) {
 				ajaxExecuteFlow(req, resp, ret, session.getUser());
