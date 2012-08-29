@@ -45,6 +45,7 @@ import azkaban.utils.Utils;
 import azkaban.webapp.servlet.AzkabanServletContextListener;
 import azkaban.webapp.servlet.ExecutionServlet;
 import azkaban.webapp.servlet.FlowExecutorServlet;
+import azkaban.webapp.servlet.HistoryServlet;
 import azkaban.webapp.servlet.IndexServlet;
 import azkaban.webapp.servlet.ProjectManagerServlet;
 import azkaban.webapp.session.SessionCache;
@@ -348,6 +349,7 @@ public class AzkabanWebServer {
 		root.addServlet(new ServletHolder(new ProjectManagerServlet()),"/manager");
 		root.addServlet(new ServletHolder(new FlowExecutorServlet()),"/executor");
 		root.addServlet(new ServletHolder(new ExecutionServlet()),"/executions");
+		root.addServlet(new ServletHolder(new HistoryServlet()), "/history");
 		
 		root.setAttribute(AzkabanServletContextListener.AZKABAN_SERVLET_CONTEXT_KEY, app);
 
