@@ -1,10 +1,16 @@
 		<div id="header" class="header">
 #parse( "azkaban/webapp/servlet/velocity/title.vm" )
+			<script type="text/javascript">
+				function navMenuClick(url) {
+					window.location.href=url;
+				}
+			</script>
+
 			<ul id="nav" class="nav">
-				<li id="all-jobs-tab" #if($current_page == 'all')class="selected"#end><a href="/#all">Projects</a></li>
-				<li id="scheduled-jobs-tab" #if($current_page == 'schedule')class="scheduled"#end><a href="$!context/schedule">Scheduled</a></li>
-				<li id="executing-jobs-tab" #if($current_page == 'executing')class="selected"#end><a href="$!context/executions">Executing</a></li>
-				<li id="history-jobs-tab" #if($current_page == 'history')class="selected"#end><a href="$!context/history">History</a></li>
+				<li id="all-jobs-tab" #if($current_page == 'all')class="selected"#end onClick="navMenuClick('$!context/#all')"><a href="$!context/#all">Projects</a></li>
+				<li id="scheduled-jobs-tab" #if($current_page == 'schedule')class="scheduled"#end onClick="navMenuClick('$!context/schedule')"><a href="$!context/schedule">Scheduled</a></li>
+				<li id="executing-jobs-tab" #if($current_page == 'executing')class="selected"#end onClick="navMenuClick('$!context/executions')"><a href="$!context/executions">Executing</a></li>
+				<li id="history-jobs-tab" #if($current_page == 'history')class="selected"#end onClick="navMenuClick('$!context/history')"><a href="$!context/history">History</a></li>
 				<li><a href="$!context/fs">HDFS</a></li>
 			</ul>
 			

@@ -9,6 +9,7 @@ import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -180,6 +181,13 @@ public class ExecutorManager {
 		}
 		
 		File[] archivePartitionsDir = archivePath.listFiles();
+		Arrays.sort(archivePartitionsDir, new Comparator<File>() {
+			@Override
+			public int compare(File arg0, File arg1) {
+				// TODO Auto-generated method stub
+				return arg1.getName().compareTo(arg0.getName());
+			}});
+
 		for (File archivePartition: archivePartitionsDir) {
 			File[] listArchivePartitions = archivePartition.listFiles();
 			if (skip > listArchivePartitions.length) {
