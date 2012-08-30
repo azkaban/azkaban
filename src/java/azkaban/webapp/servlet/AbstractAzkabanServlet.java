@@ -35,7 +35,7 @@ import org.joda.time.DateTime;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 
-import azkaban.utils.GUIUtils;
+import azkaban.utils.WebUtils;
 import azkaban.utils.JSONUtils;
 import azkaban.utils.Props;
 import azkaban.webapp.AzkabanWebServer;
@@ -56,7 +56,7 @@ public abstract class AbstractAzkabanServlet extends HttpServlet {
 	public static final String XML_MIME_TYPE = "application/xhtml+xml";
 	public static final String JSON_MIME_TYPE = "application/json";
 
-	private static final GUIUtils utils = new GUIUtils();
+	private static final WebUtils utils = new WebUtils();
 	
 	private AzkabanWebServer application;
 	private String name;
@@ -129,6 +129,18 @@ public abstract class AbstractAzkabanServlet extends HttpServlet {
 	public int getIntParam(HttpServletRequest request, String name) throws ServletException {
 		String p = getParam(request, name);
 		return Integer.parseInt(p);
+	}
+	
+	public int getIntParam(HttpServletRequest request, String name, int defaultVal) {
+		if (hasParam(request, name)) {
+			try {
+				return getIntParam(request, name);
+			} catch (Exception e) {
+				return defaultVal;
+			}
+		}
+		
+		return defaultVal;
 	}
 
 	public Map<String, String> getParamGroup(HttpServletRequest request, String groupName)  throws ServletException {

@@ -1,5 +1,17 @@
 $.namespace('azkaban');
 
+var statusStringMap = {
+	"FAILED": "Failed",
+	"SUCCEEDED": "Success",
+	"FAILED_FINISHING": "Running w/Failure",
+	"RUNNING": "Running",
+	"WAITING": "Waiting",
+	"KILLED": "Killed",
+	"DISABLED": "Disabled",
+	"READY": "Ready",
+	"UNKNOWN": "Unknown"
+};
+
 var handleJobMenuClick = function(action, el, pos) {
 	var jobid = el[0].jobid;
 	var requestURL = contextURL + "/manager?project=" + projectName + "&flow=" + flowName + "&job=" + jobid;
@@ -614,7 +626,7 @@ azkaban.ExecutionsView = Backbone.View.extend({
 	initialize: function(settings) {
 		this.model.bind('change:view', this.handleChangeView, this);
 		this.model.bind('render', this.render, this);
-		this.model.set({page: 1, pageSize: 20});
+		this.model.set({page: 1, pageSize: 16});
 		this.model.bind('change:page', this.handlePageChange, this);
 	},
 	render: function(evt) {
@@ -667,7 +679,11 @@ azkaban.ExecutionsView = Backbone.View.extend({
 			row.appendChild(tdElapsed);
 			
 			var tdStatus = document.createElement("td");
-			$(tdStatus).text(executions[i].status);
+			var status = document.createElement("div");
+			$(status).addClass("status");
+			$(status).addClass(executions[i].status);
+			$(status).text(statusStringMap[executions[i].status]);
+			tdStatus.appendChild(status);
 			row.appendChild(tdStatus);
 
 			var tdAction = document.createElement("td");

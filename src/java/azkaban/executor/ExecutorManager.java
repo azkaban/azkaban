@@ -8,6 +8,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -29,6 +30,7 @@ import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.impl.client.BasicResponseHandler;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.log4j.Logger;
+import org.joda.time.DateTime;
 
 import azkaban.executor.ExecutableFlow.Status;
 import azkaban.flow.Flow;
@@ -45,8 +47,10 @@ public class ExecutorManager {
 	private static final String ACTIVE_DIR = ".active";
 	private static final String ARCHIVE_DIR = ".archive";
 	private static Logger logger = Logger.getLogger(ExecutorManager.class);
-	private static final long ACCESS_ERROR_THRESHOLD = 60000;
+	// 30 seconds of retry before failure.
+	private static final long ACCESS_ERROR_THRESHOLD = 30000;
 	private static final int UPDATE_THREAD_MS = 1000;
+
 	private File basePath;
 
 	private AtomicInteger counter = new AtomicInteger();
@@ -153,6 +157,71 @@ public class ExecutorManager {
 		return execFlows;
 	}
 
+	public List<ExecutionReference> getFlowHistory(int numResults, int skip) {
+		ArrayList<ExecutionReference> searchFlows = new ArrayList<ExecutionReference>();
+
+		for (ExecutableFlow flow: runningFlows.values()) {
+			if (skip > 0) {
+				skip--;
+			}
+			else {
+				ExecutionReference ref = new ExecutionReference(flow);
+				searchFlows.add(ref);
+				if (searchFlows.size() == numResults) {
+					Collections.sort(searchFlows);
+					return searchFlows;
+				}
+			}
+		}
+		
+		File archivePath = new File(basePath, ARCHIVE_DIR);
+		if (!archivePath.exists()) {
+			return searchFlows;
+		}
+		
+		File[] archivePartitionsDir = archivePath.listFiles();
+		for (File archivePartition: archivePartitionsDir) {
+			File[] listArchivePartitions = archivePartition.listFiles();
+			if (skip > listArchivePartitions.length) {
+				skip -= listArchivePartitions.length;
+				continue;
+			}
+			
+			Arrays.sort(listArchivePartitions);
+			for (int i = listArchivePartitions.length - 1; i >= 0; --i) {
+				if (skip > 0) {
+					skip--;
+				}
+				else {
+					try {
+						ExecutionReference ref = ExecutionReference.readFromDirectory(listArchivePartitions[i]);
+						searchFlows.add(ref);
+					} catch (IOException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+					
+					if (searchFlows.size() == numResults) {
+						Collections.sort(searchFlows);
+						return searchFlows;
+					}
+				}
+			}
+		}
+		
+		Collections.sort(searchFlows);
+		return searchFlows;
+	}
+	
+	private boolean isBetween(long val, long from, long to) {
+		// Means that range isn't set, so we'll just say that it's okay.
+		if (to < -1) {
+			return true;
+		}
+		
+		return val >= from && val <= to;
+	}
+	
 	private void loadActiveExecutions() throws IOException, ExecutorManagerException {
 		File activeFlows = new File(basePath, ACTIVE_DIR);
 		File[] activeFlowDirs = activeFlows.listFiles();
@@ -226,7 +295,10 @@ public class ExecutorManager {
 		File referenceDir = new File(baseActiveDir, executionId);
 		
 		if (!referenceDir.exists()) {
-			File baseArchiveDir = new File(basePath, ARCHIVE_DIR);
+			// Find the partition it would be in and search.
+			String partition = getExecutableReferencePartition(executionId);
+			
+			File baseArchiveDir = new File(basePath, ARCHIVE_DIR + File.separator + partition);
 			referenceDir = new File(baseArchiveDir, executionId);
 			if (!referenceDir.exists()) {
 				throw new ExecutorManagerException("Execution id '" + executionId + "' not found. Searching " + referenceDir);
@@ -508,6 +580,14 @@ public class ExecutorManager {
 		return response;
 	}
 	
+	private String getExecutableReferencePartition(String execID) {
+		// We're partitioning the archive by the first part of the id, which should be a timestamp.
+		// Then we're taking a substring of length - 6 to lop off the bottom 5 digits effectively partitioning
+		// by 100000 millisec. We do this to have quicker searchs by pulling partitions, not full directories.
+		int index = execID.indexOf('.');
+		return execID.substring(0, index - 5);
+	}
+	
 	private void cleanFinishedJob(ExecutableFlow exFlow) throws ExecutorManagerException {
 		
 		// Write final file
@@ -522,16 +602,44 @@ public class ExecutorManager {
 			throw new ExecutorManagerException("Active reference " + activeDirectory + " doesn't exists.");
 		}
 		
-		String archiveReferencePath = ARCHIVE_DIR + File.separator + exFlow.getExecutionId(); 
-		File archiveDirectory = new File(basePath, archiveReferencePath);
+		String exId = exFlow.getExecutionId();
+		String partitionVal = getExecutableReferencePartition(exId);
+		
+		String archiveDatePartition = ARCHIVE_DIR + File.separator + partitionVal;
+		File archivePartitionDir = new File(basePath, archiveDatePartition);
+		if (!archivePartitionDir.exists()) {
+			archivePartitionDir.mkdirs();
+		}
+
+		File archiveDirectory = new File(archivePartitionDir, exFlow.getExecutionId());
 		if (archiveDirectory.exists()) {
-			logger.error("WTF!! Archive reference already exists!");
-			throw new ExecutorManagerException("Active reference " + archiveDirectory + " already exists.");
+			logger.error("Archive reference already exists. Cleaning up.");
+			try {
+				FileUtils.deleteDirectory(activeDirectory);
+			} catch (IOException e) {
+				logger.error(e);
+			}
+			
+			return;
+		}
+		
+		// Make new archive dir
+		if (!archiveDirectory.mkdirs()) {
+			throw new ExecutorManagerException("Cannot create " + archiveDirectory);
+		}
+		
+		ExecutionReference reference = new ExecutionReference(exFlow);
+		try {
+			reference.writeToDirectory(archiveDirectory);
+		} catch (IOException e) {
+			throw new ExecutorManagerException("Couldn't write execution to directory.", e);
 		}
 		
 		// Move file.
-		if (!activeDirectory.renameTo(archiveDirectory)) {
-			throw new ExecutorManagerException("Cannot move " + activeDirectory + " to " + archiveDirectory);
+		try {
+			FileUtils.deleteDirectory(activeDirectory);
+		} catch (IOException e) {
+			throw new ExecutorManagerException("Cannot cleanup active directory " + activeDirectory);
 		}
 		
 		runningFlows.remove(exFlow.getExecutionId());
@@ -613,6 +721,7 @@ public class ExecutorManager {
 							logger.error("Flow " + exFlow.getExecutionId() + " has succeeded, but the Executor says its still running with msg: " + status);
 							if (System.currentTimeMillis() - exFlow.getLastCheckedTime() > ACCESS_ERROR_THRESHOLD) {
 								exFlow.setStatus(Status.FAILED);
+								exFlow.setEndTime(System.currentTimeMillis());
 								logger.error("It's been " + ACCESS_ERROR_THRESHOLD + " ms since last update. Auto-failing the job.");
 							}
 						}
@@ -623,6 +732,7 @@ public class ExecutorManager {
 							logger.error("Flow " + exFlow.getExecutionId() + " is running, but the Executor can't find it.");
 							if (System.currentTimeMillis() - exFlow.getLastCheckedTime() > ACCESS_ERROR_THRESHOLD) {
 								exFlow.setStatus(Status.FAILED);
+								exFlow.setEndTime(System.currentTimeMillis());
 								logger.error("It's been " + ACCESS_ERROR_THRESHOLD + " ms since last update. Auto-failing the job.");
 							}
 						}
@@ -644,13 +754,16 @@ public class ExecutorManager {
 		}
 	}
 	
-	private static class ExecutionReference {
+	public static class ExecutionReference implements Comparable<ExecutionReference> {
 		private String execId;
 		private String projectId;
 		private String flowId;
 		private String userId;
 		private String execPath;
-		
+		private long startTime;
+		private long endTime;
+		private Status status;
+
 		public ExecutionReference() {
 		}
 		
@@ -660,6 +773,10 @@ public class ExecutorManager {
 			this.flowId = flow.getFlowId();
 			this.userId = flow.getSubmitUser();
 			this.execPath = flow.getExecutionPath();
+			
+			this.startTime = flow.getStartTime();
+			this.endTime = flow.getEndTime();
+			this.status = flow.getStatus();
 		}
 		
 		private Object toObject() {
@@ -669,6 +786,9 @@ public class ExecutorManager {
 			obj.put("flowId", flowId);
 			obj.put("userId", userId);
 			obj.put("execPath", execPath);
+			obj.put("startTime", startTime);
+			obj.put("endTime", endTime);
+			obj.put("status", status);
 			return obj;
 		}
 		
@@ -692,7 +812,9 @@ public class ExecutorManager {
 			reference.flowId = (String)obj.get("flowId");
 			reference.userId = (String)obj.get("userId");
 			reference.execPath = (String)obj.get("execPath");
-
+			reference.startTime = (Long)obj.get("startTime");
+			reference.endTime = (Long)obj.get("endTime");
+			reference.status = Status.valueOf((String)obj.get("status"));
 			return reference;
 		}
 		
@@ -714,6 +836,35 @@ public class ExecutorManager {
 		
 		public String getExecPath() {
 			return execPath;
+		}
+
+		public Long getStartTime() {
+			return startTime;
+		}
+
+		public void setStartTime(Long startTime) {
+			this.startTime = startTime;
+		}
+
+		public Long getEndTime() {
+			return endTime;
+		}
+
+		public void setEndTime(Long endTime) {
+			this.endTime = endTime;
+		}
+
+		@Override
+		public int compareTo(ExecutionReference arg0) {
+			return arg0.getExecId().compareTo(execId);
+		}
+		
+		public Status getStatus() {
+			return status;
+		}
+
+		public void setStatus(Status status) {
+			this.status = status;
 		}
 	}
 }

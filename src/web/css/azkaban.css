@@ -1366,6 +1366,10 @@ span.sublabel {
 	margin-top: 5px;
 }
 
+#pageSelection ul li:hover {
+	background-color: #D5F2FF;
+}
+
 #pageSelection ul li.first {
 	border-left: 1px solid #CCC; 
 }
@@ -1470,6 +1474,18 @@ span.sublabel {
 	width: 140px;
 }
 
+.executionInfo table th.execid {
+	width: 150px;
+}
+
+.executionInfo table th.project {
+	width: 200px;
+}
+
+.executionInfo table th.user {
+	width: 60px;
+}
+
 .executionInfo table th.elapse {
 	width: 90px;
 }
@@ -1502,6 +1518,49 @@ span.sublabel {
 	height: 20px;
 }
 
+td .status {
+	-moz-border-radius: 2px;
+	border-radius: 2px;
+
+	padding: 2px 2px;
+	color: #FFF;
+	text-align: center;
+	margin-top: 2px;
+}
+
+td .status.SUCCEEDED {
+	background-color: #82B859;
+}
+
+td .status.FAILED {
+	background-color: #C82123;
+}
+
+td .status.READY {
+	background-color: #C82123;
+}
+
+td .status.RUNNING {
+	background-color: #3398CC;	
+}
+
+td .status.FAILED_FINISHING {
+	background-color: #F19153;	
+}
+
+td .status.DISABLED {
+	background-color: #AAA;	
+}
+
+td .status.KILLED {
+	background-color: #000;
+}
+
+td .status.UNKNOWN {
+	background-color: #CCC;
+}
+
+
 .flow-header {
 	height: 48px;
 }
@@ -1510,6 +1569,11 @@ span.sublabel {
 	width: 280px;
 	margin: 4px;
 	background-color: #e2e4e3;
+	border: 1px solid #FFF;
+}
+
+tr:hover .outerProgress {
+	background-color: #F8F8F8;
 }
 
 .progressBox {

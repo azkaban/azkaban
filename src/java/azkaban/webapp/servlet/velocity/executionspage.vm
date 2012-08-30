@@ -34,8 +34,10 @@
 				<table id="executingJobs">
 					<thead>
 						<tr>
+							<th class="execid">Execution Id</th>
 							<th>Flow</th>
-							<th>User</th>
+							<th>Project</th>
+							<th class="user">User</th>
 							<th class="date">Start Time</th>
 							<th class="date">End Time</th>
 							<th class="elapse">Elapsed</th>
@@ -48,13 +50,17 @@
 #foreach($flow in $runningFlows)
 						<tr class="row" >
 							<td class="tb-name">
-								<a href="${context}/execution?execid=${flow.executionId}">${flow.flowId}</a>
+								<a href="${context}/executions?execid=${flow.executionId}">$utils.extractNumericalId(${flow.executionId})</a>
+							</td>
+							<td><a href="${context}/manager?project=${flow.projectId}&flow=${flow.flowId}">${flow.flowId}</a></td>
+							<td>
+								<a href="${context}/manager?project=${flow.projectId}">${flow.projectId}</a>
 							</td>
 							<td>${flow.submitUser}</td>
 							<td>$utils.formatDate(${flow.startTime})</td>
 							<td>$utils.formatDate(${flow.endTime})</td>
 							<td>$utils.formatDuration(${flow.startTime}, ${flow.endTime})</td>
-							<td>${flow.status}</td>
+							<td><div class="status ${flow.status}">$utils.formatStatus(${flow.status})</div></td>
 							<td></td>
 						</tr>
 #end
@@ -69,8 +75,10 @@
 				<table id="recentlyFinished">
 					<thead>
 						<tr>
+							<th class="execid">Execution Id</th>
 							<th>Flow</th>
-							<th>User</th>
+							<th>Project</th>
+							<th class="user">User</th>
 							<th class="date">Start Time</th>
 							<th class="date">End Time</th>
 							<th class="elapse">Elapsed</th>
@@ -83,13 +91,17 @@
 #foreach($flow in $recentlyFinished)
 						<tr class="row" >
 							<td class="tb-name">
-								<a href="${context}/executions?execid=${flow.executionId}">${flow.flowId}</a>
+								<a href="${context}/executions?execid=${flow.executionId}">$utils.extractNumericalId(${flow.executionId})</a>
+							</td>
+							<td><a href="${context}/manager?project=${flow.projectId}&flow=${flow.flowId}">${flow.flowId}</a></td>
+							<td>
+								<a href="${context}/manager?project=${flow.projectId}">${flow.projectId}</a>
 							</td>
 							<td>${flow.submitUser}</td>
 							<td>$utils.formatDate(${flow.startTime})</td>
 							<td>$utils.formatDate(${flow.endTime})</td>
 							<td>$utils.formatDuration(${flow.startTime}, ${flow.endTime})</td>
-							<td>${flow.status}</td>
+							<td><div class="status ${flow.status}">$utils.formatStatus(${flow.status})</div></td>
 							<td></td>
 						</tr>
 #end

@@ -1,6 +1,17 @@
 $.namespace('azkaban');
 
 var statusList = ["FAILED", "FAILED_FINISHING", "SUCCEEDED", "RUNNING", "WAITING", "KILLED", "DISABLED", "READY", "UNKNOWN"];
+var statusStringMap = {
+	"FAILED": "Failed",
+	"SUCCEEDED": "Success",
+	"FAILED_FINISHING": "Running w/Failure",
+	"RUNNING": "Running",
+	"WAITING": "Waiting",
+	"KILLED": "Killed",
+	"DISABLED": "Disabled",
+	"READY": "Ready",
+	"UNKNOWN": "Unknown"
+};
 
 var handleJobMenuClick = function(action, el, pos) {
 	var jobid = el[0].jobid;
@@ -578,7 +589,9 @@ azkaban.ExecutionListView = Backbone.View.extend({
 					this.addNodeRow(node);
 				}
 				
-				$("#" + node.id + "-status").text(node.status);
+				var div = $("#" + node.id + "-status-div");
+				div.text(statusStringMap[node.status]);
+				$(div).attr("class", "status " + node.status);
 				
 				var startdate = new Date(node.startTime);
 				$("#" + node.id + "-start").text(getDateFormat(startdate));
@@ -679,6 +692,11 @@ azkaban.ExecutionListView = Backbone.View.extend({
 		$(a).attr("href", requestURL);
 		$(a).text(node.id);
 		$(tdName).append(a);
+
+		var status = document.createElement("div");
+		$(status).addClass("status");
+		$(status).attr("id", node.id + "-status-div");
+		tdStatus.appendChild(status);
 
 		executingBody.append(tr);
 	}

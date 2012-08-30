@@ -38,7 +38,9 @@
 				<table id="executingJobs">
 					<thead>
 						<tr>
+							<th class="execid">Execution Id</th>
 							<th>Flow</th>
+							<th>Project</th>
 							<th>User</th>
 							<th class="date">Start Time</th>
 							<th class="date">End Time</th>
@@ -48,25 +50,46 @@
 						</tr>
 					</thead>
 					<tbody>
-						#if($runningFlows)
-#foreach($flow in $runningFlows)
+						#if($flowHistory)
+#foreach($flow in $flowHistory)
 						<tr class="row" >
 							<td class="tb-name">
-								<a href="${context}/execution?execid=${flow.executionId}">${flow.flowId}</a>
+								<a href="${context}/executions?execid=${flow.execId}">$utils.extractNumericalId(${flow.execId})</a>
 							</td>
-							<td>${flow.submitUser}</td>
+							<td class="tb-name">
+								<a href="${context}/manager?project=${flow.projectId}&flow=${flow.flowId}">${flow.flowId}</a>
+							</td>
+							<td>
+								<a href="${context}/manager?project=${flow.projectId}">${flow.projectId}</a>
+							</td>
+							<td>${flow.userId}</td>
 							<td>$utils.formatDate(${flow.startTime})</td>
 							<td>$utils.formatDate(${flow.endTime})</td>
 							<td>$utils.formatDuration(${flow.startTime}, ${flow.endTime})</td>
-							<td>${flow.status}</td>
+							<td><div class="status ${flow.status}">$utils.formatStatus(${flow.status})</div></td>
 							<td></td>
 						</tr>
 #end
 #else
-						<tr><td class="last">No History Found</td></tr>
+						<tr><td class="last">No History Results Found</td></tr>
 #end
 					</tbody>
 				</table>
+				
+				<div id="pageSelection" class="nonjavascript">
+					<ul>
+		
+						<li id="previous" class="first"><a href="${context}/history?page=${previous.page}&size=${previous.size}"><span class="arrow">&larr;</span>Previous</a></li>
+				
+						<li id="page1" #if($page1.selected) class="selected" #end><a href="${context}/history?page=${page1.page}&size=${page1.size}">${page1.page}</a></li>
+						<li id="page2" #if($page2.selected) class="selected" #end><a href="${context}/history?page=${page2.page}&size=${page2.size}">${page2.page}</a></li>
+						<li id="page3" #if($page3.selected) class="selected" #end><a href="${context}/history?page=${page3.page}&size=${page3.size}">${page3.page}</a></li>
+						<li id="page4" #if($page4.selected) class="selected" #end><a href="${context}/history?page=${page4.page}&size=${page4.size}">${page4.page}</a></li>
+						<li id="page5" #if($page5.selected) class="selected" #end><a href="${context}/history?page=${page5.page}&size=${page5.size}">${page5.page}</a></li>
+
+						<li id="next"><a href="${context}/history?page=${next.page}&size=${next.size}">Next<span class="arrow">&rarr;</span></a></li>
+					</ul>
+				</div>
 			</div>
 		</div>
 	</body>

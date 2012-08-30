@@ -2,7 +2,9 @@ package azkaban.utils;
 
 import org.joda.time.format.DateTimeFormat;
 
-public class GUIUtils {
+import azkaban.executor.ExecutableFlow.Status;
+
+public class WebUtils {
 	public static final String DATE_TIME_STRING = "YYYY-MM-dd HH:MM:ss";
 	
 	public String formatDate(long timeMS) {
@@ -46,5 +48,36 @@ public class GUIUtils {
 		long days = hours / 24;
 		hours %= 24;
 		return days + "d " + hours + "h " + minutes + "m";
+	}
+	
+	public String formatStatus(Status status) {
+		switch(status) {
+		case SUCCEEDED:
+			return "Success";
+		case FAILED:
+			return "Failed";
+		case RUNNING:
+			return "Running";
+		case DISABLED:
+			return "Disabled";
+		case KILLED:
+			return "Killed";
+		case FAILED_FINISHING:
+			return "Running w/Failure";
+		case WAITING:
+			return "Waiting";
+		case READY:
+			return "Ready";
+		default:
+		}
+		
+		return "Unknown";
+	}
+	
+	public String extractNumericalId(String execId) {
+		int index = execId.indexOf('.');
+		int index2 = execId.indexOf('.', index+1);
+		
+		return execId.substring(0, index2);
 	}
 }
