@@ -16,7 +16,7 @@ import azkaban.utils.ExecutableFlowLoader;
 import azkaban.utils.Props;
 
 /**
- * Execution manager for the server side execution client.
+ * Execution manager for the server side execution.
  *
  */
 public class FlowRunnerManager {

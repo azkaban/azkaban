@@ -75,7 +75,7 @@
 				delta = -Math.ceil(evt.detail / 3);
 			}
 			else {
-				delta = Math.floor(evt.wheelDelta / 3);
+				delta = -Math.floor(evt.detail / 3);
 			}
 		}
 		
