@@ -57,6 +57,12 @@
 							<li class="lidivider">|</li>
 							<li><a id="jobslistViewLink" href="#jobslist">Job List</a></li>
 						</ul>
+						<ul id="actionsBtns" class="buttons">
+							<li><div id="pausebtn" class="btn2">Pause</div></li>
+							<li><div id="resumebtn" class="btn2">Resume</div></li>
+							<li><div id="cancelbtn" class="btn6">Cancel</div></li>
+							<li><div id="restartbtn" class="btn1">Restart</div></li>
+						</ul>
 					</div>
 					<div id="graphView">
 						<div class="relative">

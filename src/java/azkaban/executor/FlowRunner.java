@@ -2,7 +2,10 @@ package azkaban.executor;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
@@ -37,8 +40,10 @@ public class FlowRunner extends EventHandler implements Runnable {
 	private ExecutableFlow flow;
 	private ExecutorService executorService;
 	private BlockingQueue<JobRunner> jobsToRun = new LinkedBlockingQueue<JobRunner>();
+	private List<JobRunner> pausedJobsToRun = Collections.synchronizedList(new ArrayList<JobRunner>());
 	private int numThreads = NUM_CONCURRENT_THREADS;
 	private boolean cancelled = true;
+	private boolean paused = true;
 
 	private Map<String, JobRunner> runningJobs;
 	private JobRunnerEventListener listener;
@@ -112,6 +117,22 @@ public class FlowRunner extends EventHandler implements Runnable {
 		}
 
 		flow.setStatus(Status.KILLED);
+	}
+	
+	public synchronized void pause() {
+		logger.info("Pause flow");
+		if (flow.getStatus() == Status.RUNNING || flow.getStatus() == Status.WAITING) {
+			paused = true;
+			flow.setStatus(Status.PAUSED);
+		}
+	}
+	
+	public synchronized void resume() {
+		logger.info("Resume flow");
+		if (flow.getStatus() == Status.PAUSED) {
+			flow.setStatus(Status.RUNNING);
+			jobsToRun.addAll(pausedJobsToRun);
+		}
 	}
 	
 	public boolean isCancelled() {
@@ -328,7 +349,13 @@ public class FlowRunner extends EventHandler implements Runnable {
 				}
 			
 				runningJobs.put(dependentNode.getId(), runner);
-				jobsToRun.add(runner);
+				if (paused) {
+					dependentNode.setStatus(Status.PAUSED);
+					pausedJobsToRun.add(runner);
+				}
+				else {
+					jobsToRun.add(runner);
+				}
 			}
 		}
 

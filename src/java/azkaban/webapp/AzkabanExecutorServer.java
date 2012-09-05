@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.TimeZone;
 
 import javax.servlet.ServletConfig;
@@ -306,31 +307,57 @@ public class AzkabanExecutorServer {
 				
 				// Handle execute
 				if (action.equals("execute")) {
-					String execpath = getParam(req, "execpath");
-					
-					logger.info("Submitted " + execid + " with " + execpath);
-					try {
-						flowRunnerManager.submitFlow(execid, execpath);
-						respMap.put("status", "success");
-					} catch (ExecutorManagerException e) {
-						e.printStackTrace();
-						respMap.put("error", e.getMessage());
-					}
+					handleAjaxExecute(req, respMap, execid);
 				}
 				// Handle Status
 				else if (action.equals("status")) {
-					ExecutableFlow flow = flowRunnerManager.getExecutableFlow(execid);
-					if (flow == null) {
-						respMap.put("status", "notfound");
-					}
-					else {
-						respMap.put("status", flow.getStatus().toString());
-					}
+					handleAjaxFlowStatus(respMap, execid);
+				}
+				else if (action.equals("cancel")) {
+					
+				}
+				else if (action.equals("pause")) {
+					
+				}
+				else if (action.equals("resume")) {
+					
 				}
 			}
 
 			writeJSON(resp, respMap);
 			resp.flushBuffer();
+		}
+		
+		private void handleAjaxExecute(HttpServletRequest req, Map<String, Object> respMap, String execid) throws ServletException {
+			String execpath = getParam(req, "execpath");
+			logger.info("Submitted " + execid + " with " + execpath);
+			try {
+				flowRunnerManager.submitFlow(execid, execpath);
+				respMap.put("status", "success");
+			} catch (ExecutorManagerException e) {
+				e.printStackTrace();
+				respMap.put("error", e.getMessage());
+			}
+		}
+		
+		private void handleAjaxFlowStatus(Map<String, Object> respMap, String execid) {
+			ExecutableFlow flow = flowRunnerManager.getExecutableFlow(execid);
+			if (flow == null) {
+				respMap.put("status", "notfound");
+			}
+			else {
+				respMap.put("status", flow.getStatus().toString());
+			}
+		}
+		
+		private void handleAjaxPause(Map<String, Object> respMap, String execid) throws ServletException {
+			try {
+				flowRunnerManager.submitFlow(execid, execpath);
+				respMap.put("status", "success");
+			} catch (ExecutorManagerException e) {
+				e.printStackTrace();
+				respMap.put("error", e.getMessage());
+			}
 		}
 		
 		@Override

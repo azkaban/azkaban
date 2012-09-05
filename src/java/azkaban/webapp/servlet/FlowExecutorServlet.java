@@ -124,11 +124,37 @@ public class FlowExecutorServlet extends LoginAbstractAzkabanServlet {
 		String ajaxName = getParam(req, "ajax");
 		
 		if (hasParam(req, "execid")) {
-			if (ajaxName.equals("fetchexecflow")) {
-				ajaxFetchExecutableFlow(req, resp, ret, session.getUser());
+			String execid = getParam(req, "execid");
+			ExecutableFlow exFlow = null;
+
+			try {
+				exFlow = executorManager.getExecutableFlow(execid);
+			} catch (ExecutorManagerException e) {
+				ret.put("error", "Error fetching execution '" + execid + "': " + e.getMessage());
 			}
-			else if (ajaxName.equals("fetchexecflowupdate")) {
-				ajaxFetchExecutableFlowUpdate(req, resp, ret, session.getUser());
+
+			if (exFlow == null) {
+				ret.put("error", "Cannot find execution '" + execid + "'");
+			}
+			else {
+				if (ajaxName.equals("fetchexecflow")) {
+					ajaxFetchExecutableFlow(req, resp, ret, session.getUser(), exFlow);
+				}
+				else if (ajaxName.equals("fetchexecflowupdate")) {
+					ajaxFetchExecutableFlowUpdate(req, resp, ret, session.getUser(), exFlow);
+				}
+				else if (ajaxName.equals("cancelFlow")) {
+					ajaxCancelFlow(req, resp, ret, session.getUser(), exFlow);
+				}
+				else if (ajaxName.equals("restartFlow")) {
+					ajaxRestartFlow(req, resp, ret, session.getUser(), exFlow);
+				}
+				else if (ajaxName.equals("pauseFlow")) {
+					ajaxPauseFlow(req, resp, ret, session.getUser(), exFlow);
+				}
+				else if (ajaxName.equals("resumeFlow")) {
+					ajaxResumeFlow(req, resp, ret, session.getUser(), exFlow);
+				}
 			}
 		}
 		else {
@@ -142,22 +168,42 @@ public class FlowExecutorServlet extends LoginAbstractAzkabanServlet {
 		this.writeJSON(resp, ret);
 	}
 
-	private void ajaxFetchExecutableFlowUpdate(HttpServletRequest req, HttpServletResponse resp, HashMap<String, Object> ret, User user) throws ServletException{
-		String execid = getParam(req, "execid");
-		Long lastUpdateTime = Long.parseLong(getParam(req, "lastUpdateTime"));
-		
-		System.out.println("Fetching " + execid);
-		
-		ExecutableFlow exFlow = null;
-		try {
-			exFlow = executorManager.getExecutableFlow(execid);
-		} catch (ExecutorManagerException e) {
-			ret.put("error", "Error fetching execution '" + execid + "': " + e.getMessage());
-		}
-		if (exFlow == null) {
-			ret.put("error", "Cannot find execution '" + execid + "'");
+	private void ajaxCancelFlow(HttpServletRequest req, HttpServletResponse resp, HashMap<String, Object> ret, User user, ExecutableFlow exFlow) throws ServletException{
+		Project project = getProjectAjaxByPermission(ret, exFlow.getProjectId(), user, Type.EXECUTE);
+		if (project == null) {
 			return;
 		}
+
+	}
+
+	private void ajaxRestartFlow(HttpServletRequest req, HttpServletResponse resp, HashMap<String, Object> ret, User user, ExecutableFlow exFlow) throws ServletException{
+		Project project = getProjectAjaxByPermission(ret, exFlow.getProjectId(), user, Type.EXECUTE);
+		if (project == null) {
+			return;
+		}
+
+	}
+
+	private void ajaxPauseFlow(HttpServletRequest req, HttpServletResponse resp, HashMap<String, Object> ret, User user, ExecutableFlow exFlow) throws ServletException{
+		Project project = getProjectAjaxByPermission(ret, exFlow.getProjectId(), user, Type.EXECUTE);
+		if (project == null) {
+			return;
+		}
+
+	}
+
+	private void ajaxResumeFlow(HttpServletRequest req, HttpServletResponse resp, HashMap<String, Object> ret, User user, ExecutableFlow exFlow) throws ServletException{
+		Project project = getProjectAjaxByPermission(ret, exFlow.getProjectId(), user, Type.EXECUTE);
+		if (project == null) {
+			return;
+		}
+
+	}
+	
+	private void ajaxFetchExecutableFlowUpdate(HttpServletRequest req, HttpServletResponse resp, HashMap<String, Object> ret, User user, ExecutableFlow exFlow) throws ServletException{
+		Long lastUpdateTime = Long.parseLong(getParam(req, "lastUpdateTime"));
+		
+		System.out.println("Fetching " + exFlow.getExecutionId());
 		
 		Project project = getProjectAjaxByPermission(ret, exFlow.getProjectId(), user, Type.READ);
 		if (project == null) {
@@ -187,20 +233,9 @@ public class FlowExecutorServlet extends LoginAbstractAzkabanServlet {
 		ret.put("submitTime", exFlow.getSubmitTime());
 	}
 	
-	private void ajaxFetchExecutableFlow(HttpServletRequest req, HttpServletResponse resp, HashMap<String, Object> ret, User user) throws ServletException {
-		String execid = getParam(req, "execid");
-		System.out.println("Fetching " + execid);
-		ExecutableFlow exFlow = null;
-		try {
-			exFlow = executorManager.getExecutableFlow(execid);
-		} catch (ExecutorManagerException e) {
-			ret.put("error", "Error fetching execution '" + execid + "': " + e.getMessage());
-		}
-		if (exFlow == null) {
-			ret.put("error", "Cannot find execution '" + execid + "'");
-			return;
-		}
-		
+	private void ajaxFetchExecutableFlow(HttpServletRequest req, HttpServletResponse resp, HashMap<String, Object> ret, User user, ExecutableFlow exFlow) throws ServletException {
+		System.out.println("Fetching " + exFlow.getExecutionId());
+
 		Project project = getProjectAjaxByPermission(ret, exFlow.getProjectId(), user, Type.READ);
 		if (project == null) {
 			return;

@@ -34,7 +34,6 @@ import org.apache.log4j.Logger;
 
 import azkaban.executor.ExecutableFlow.Status;
 import azkaban.flow.Flow;
-import azkaban.project.Project;
 import azkaban.utils.ExecutableFlowLoader;
 import azkaban.utils.JSONUtils;
 import azkaban.utils.Props;
@@ -343,6 +342,75 @@ public class ExecutorManager {
 		runningFlows.put(flow.getExecutionId(), flow);
 	}
 	
+	public void cancelFlow(ExecutableFlow flow) throws ExecutorManagerException {
+		String response = null;
+		try {
+			response = callExecutionServer("cancel", flow);
+		} catch (IOException e) {
+			e.printStackTrace();
+			throw new ExecutorManagerException("Error cancelling flow.", e);
+		}
+	}
+	
+	public void pauseFlow(ExecutableFlow flow) throws ExecutorManagerException {
+		String response = null;
+		try {
+			response = callExecutionServer("pause", flow);
+		} catch (IOException e) {
+			e.printStackTrace();
+			throw new ExecutorManagerException("Error cancelling flow.", e);
+		}
+	}
+	
+	public void resumeFlow(ExecutableFlow flow) throws ExecutorManagerException {
+		String response = null;
+		try {
+			response = callExecutionServer("resume", flow);
+		} catch (IOException e) {
+			e.printStackTrace();
+			throw new ExecutorManagerException("Error cancelling flow.", e);
+		}
+
+	}
+	
+	private String callExecutionServer(String action, ExecutableFlow flow) throws IOException{
+		URIBuilder builder = new URIBuilder();
+		builder.setScheme("http")
+			.setHost(url)
+			.setPort(portNumber)
+			.setPath("/executor")
+			.setParameter("sharedToken", token)
+			.setParameter("action", "resume")
+			.setParameter("execid", flow.getExecutionId())
+			.setParameter("execpath", flow.getExecutionPath());
+		
+		URI uri = null;
+		try {
+			uri = builder.build();
+		} catch (URISyntaxException e) {
+			throw new IOException(e);
+		}
+		
+		ResponseHandler<String> responseHandler = new BasicResponseHandler();
+		
+		logger.info("Submitting flow " + flow.getExecutionId() + " for execution.");
+		HttpClient httpclient = new DefaultHttpClient();
+		HttpGet httpget = new HttpGet(uri);
+		String response = null;
+		try {
+			response = httpclient.execute(httpget, responseHandler);
+		} catch (IOException e) {
+			flow.setStatus(ExecutableFlow.Status.FAILED);
+			e.printStackTrace();
+			return response;
+		}
+		finally {
+			httpclient.getConnectionManager().shutdown();
+		}
+		
+		return response;
+	}
+	
 	public void executeFlow(ExecutableFlow flow) throws ExecutorManagerException {
 		String executionPath = flow.getExecutionPath();
 		File executionDir = new File(executionPath);
@@ -356,45 +424,18 @@ public class ExecutorManager {
 		
 		logger.info("Setting up " + flow.getExecutionId() + " for execution.");
 		
-		URIBuilder builder = new URIBuilder();
-		builder.setScheme("http")
-			.setHost(url)
-			.setPort(portNumber)
-			.setPath("/executor")
-			.setParameter("sharedToken", token)
-			.setParameter("action", "execute")
-			.setParameter("execid", flow.getExecutionId())
-			.setParameter("execpath", flow.getExecutionPath());
-		
-		URI uri = null;
+		String response;
 		try {
-			uri = builder.build();
-		} catch (URISyntaxException e) {
-			e.printStackTrace();
-			flow.setStatus(ExecutableFlow.Status.FAILED);
-			return;
-		}
-
-		ResponseHandler<String> responseHandler = new BasicResponseHandler();
-		
-		logger.info("Submitting flow " + flow.getExecutionId() + " for execution.");
-		HttpClient httpclient = new DefaultHttpClient();
-		HttpGet httpget = new HttpGet(uri);
-		String response = null;
-		try {
-			response = httpclient.execute(httpget, responseHandler);
+			response = callExecutionServer("execute", flow);
 		} catch (IOException e) {
-			flow.setStatus(ExecutableFlow.Status.FAILED);
 			e.printStackTrace();
+			flow.setStatus(ExecutableFlow.Status.FAILED);
 			return;
 		}
-		finally {
-			httpclient.getConnectionManager().shutdown();
-		}
 		
+		logger.debug("Submitted Response: " + response);
 		flow.setLastCheckedTime(System.currentTimeMillis());
 		flow.setSubmitted(true);
-		logger.debug("Submitted Response: " + response);
 	}
 	
 	public void cleanupAll(ExecutableFlow exflow) throws ExecutorManagerException{
@@ -543,41 +584,6 @@ public class ExecutorManager {
 			}
 		}
 	}
-
-	private String getFlowStatusInExecutor(ExecutableFlow flow) throws IOException {
-		URIBuilder builder = new URIBuilder();
-		builder.setScheme("http")
-			.setHost(url)
-			.setPort(portNumber)
-			.setPath("/executor")
-			.setParameter("sharedToken", token)
-			.setParameter("action", "status")
-			.setParameter("execid", flow.getExecutionId());
-		
-		URI uri = null;
-		try {
-			uri = builder.build();
-		} catch (URISyntaxException e) {
-			e.printStackTrace();
-			throw new IOException("Bad URI", e);
-		}
-		
-		HttpClient httpclient = new DefaultHttpClient();
-		HttpGet httpget = new HttpGet(uri);
-		String response = null;
-		ResponseHandler<String> responseHandler = new BasicResponseHandler();
-		
-		try {
-			response = httpclient.execute(httpget, responseHandler);
-		} catch (IOException e) {
-			e.printStackTrace();
-			throw new IOException("Connection problem", e);
-		}
-		finally {
-			httpclient.getConnectionManager().shutdown();
-		}
-		return response;
-	}
 	
 	private String getExecutableReferencePartition(String execID) {
 		// We're partitioning the archive by the first part of the id, which should be a timestamp.
@@ -672,7 +678,7 @@ public class ExecutorManager {
 					// Query the executor service to see if the item is running.
 					String responseString = null;
 					try {
-						responseString = getFlowStatusInExecutor(exFlow);
+						responseString = callExecutionServer("status", exFlow);
 					} catch (IOException e) {
 						e.printStackTrace();
 						// Connection issue. Backoff 1 sec.

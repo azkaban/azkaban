@@ -327,6 +327,7 @@ tr:hover td {
 .btn3,
 .btn4,
 .btn5,
+.btn6,
 .btn-disabled {
   -moz-border-radius: 3px;
   -webkit-border-radius: 3px;
@@ -372,7 +373,6 @@ tr:hover td {
   float: right;
   margin-right: 25px;
 }
-
 
 /* blue */
 .btn2 {
@@ -430,6 +430,29 @@ tr:hover td {
   background: -webkit-gradient(linear, left top, left bottom, color-stop(0,#F2F2F2), color-stop(5%,#F2F2F2), color-stop(5%,#E4E4E4), color-stop(100%,#CECECE));
   background: linear-gradient(top, #F2F2F2 0, #F2F2F2 1px, #E4E4E4 1px, #CECECE 100%);
   color: #EEE;
+}
+
+/* red */
+.btn6 {
+  background: #cc9999;
+  background: -moz-linear-gradient(top, #cc6161 0, #cc6161 1px, #cc0000 1px, #931100 100%);
+  background: -o-linear-gradient(top, #cc6161 0, #cc6161 1px, #cc0000 1px, #931100 100%);
+  background: -webkit-gradient(linear, left top, left bottom, color-stop(0,#cc6161), color-stop(5%,#cc6161), color-stop(5%,#cc0000), color-stop(100%,#931100));
+  background: linear-gradient(top, #cc6161 0, #cc6161 1px, #cc0000 1px, #931100 100%);
+  filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#cc0000', endColorstr='#931100',GradientType=0 );
+  border-color: #931100;
+  color: #fff;
+}
+
+.btn6:hover {
+  background: #cc9999;
+  background: -moz-linear-gradient(top, #cc6161 0, #cc6161 1px, #CC4343 1px, #912C21 100%);
+  background: -o-linear-gradient(top, #cc6161 0, #cc6161 1px, #CC4343 1px, #912C21 100%);
+  background: -webkit-gradient(linear, left top, left bottom, color-stop(0,#cc6161), color-stop(5%,#cc6161), color-stop(5%,#CC4343), color-stop(100%,#912C21));
+  background: linear-gradient(top, #cc6161 0, #cc6161 1px, #CC4343 1px, #931100 100%);
+  filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#CC4343', endColorstr='#912C21',GradientType=0 );
+  border-color: #912C21;
+  color: #fff;
 }
 
 /* confirm modal */
@@ -1063,8 +1086,18 @@ tr:hover td {
 
 .headertabs ul li {
 	float: left;
-	margin-left: 12px;
 	margin-top: 5px;
+	margin-left: 12px;
+}
+
+.headertabs ul.buttons {
+	float: right;
+	margin-right: 10px;
+}
+
+.headertabs ul.buttons li {
+	margin-top: 1px;
+	margin-left: 2px;
 }
 
 .headertabs ul li.lidivider {

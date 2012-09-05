@@ -63,6 +63,20 @@ public class FlowRunnerManager {
 		}
 	}
 	
+	public void pauseFlow(String id) throws ExecutorManagerException {
+		FlowRunner runner = runningFlows.get(id);
+		if (runner != null) {
+			runner.pause();
+		}
+	}
+	
+	public void resumeFlow(String id) throws ExecutorManagerException {
+		FlowRunner runner = runningFlows.get(id);
+		if (runner != null) {
+			runner.resume();
+		}
+	}
+	
 	public FlowRunner getFlowRunner(String id) {
 		return runningFlows.get(id);
 	}

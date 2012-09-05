@@ -1,6 +1,6 @@
 $.namespace('azkaban');
 
-var statusList = ["FAILED", "FAILED_FINISHING", "SUCCEEDED", "RUNNING", "WAITING", "KILLED", "DISABLED", "READY", "UNKNOWN"];
+var statusList = ["FAILED", "FAILED_FINISHING", "SUCCEEDED", "RUNNING", "WAITING", "KILLED", "DISABLED", "READY", "UNKNOWN", "PAUSED"];
 var statusStringMap = {
 	"FAILED": "Failed",
 	"SUCCEEDED": "Success",
@@ -10,7 +10,8 @@ var statusStringMap = {
 	"KILLED": "Killed",
 	"DISABLED": "Disabled",
 	"READY": "Ready",
-	"UNKNOWN": "Unknown"
+	"UNKNOWN": "Unknown",
+	"PAUSED": "Paused"
 };
 
 var handleJobMenuClick = function(action, el, pos) {
@@ -109,9 +110,21 @@ var flowTabView;
 azkaban.FlowTabView= Backbone.View.extend({
   events : {
   	"click #graphViewLink" : "handleGraphLinkClick",
-  	"click #jobslistViewLink" : "handleJobslistLinkClick"
+  	"click #jobslistViewLink" : "handleJobslistLinkClick",
+  	"click #cancelbtn" : "handleCancelClick",
+  	"click #restartbtn" : "handleRestartClick",
+  	"click #pausebtn" : "handlePauseClick",
+  	"click #resumebtn" : "handleResumeClick",
   },
   initialize : function(settings) {
+  	$("#cancelbtn").hide();
+  	$("#restartbtn").hide();
+  	$("#pausebtn").hide();
+  	$("#resumebtn").hide();
+  
+ 	this.model.bind('change:graph', this.handleFlowStatusChange, this);
+	this.model.bind('change:update', this.handleFlowStatusChange, this);
+	
   	var selectedView = settings.selectedView;
   	if (selectedView == "jobslist") {
   		this.handleJobslistLinkClick();
@@ -119,7 +132,6 @@ azkaban.FlowTabView= Backbone.View.extend({
   	else {
   		this.handleGraphLinkClick();
   	}
-
   },
   render: function() {
   	console.log("render graph");
@@ -137,6 +149,49 @@ azkaban.FlowTabView= Backbone.View.extend({
   	
   	$("#graphView").hide();
   	$("#jobListView").show();
+  },
+  handleFlowStatusChange: function() {
+  	var data = this.model.get("data");
+  	$("#cancelbtn").hide();
+  	$("#restartbtn").hide();
+  	$("#pausebtn").hide();
+  	$("#resumebtn").hide();
+
+  	if(data.status=="SUCCEEDED") {
+  	  	$("#restartbtn").show();
+  	}
+  	else if (data.status=="FAILED") {
+  		$("#restartbtn").show();
+  	}
+  	else if (data.status=="FAILED_FINISHING") {
+  		$("#cancelbtn").show();
+  	}
+  	else if (data.status=="RUNNING") {
+  		$("#cancelbtn").show();
+  		$("#pausebtn").show();
+  	}
+  	else if (data.status=="PAUSED") {
+  		$("#cancelbtn").show();
+  		$("#resumebtn").show();
+  	}
+  	else if (data.status=="WAITING") {
+  		$("#cancelbtn").show();
+  	}
+  	else if (data.status=="KILLED") {
+  		$("#restartbtn").show();
+  	}
+  },
+  handleCancelClick : function(evt) {
+  	
+  },
+  handleRestartClick : function(evt) {
+  	
+  },
+  handlePauseClick : function(evt) {
+  	
+  },
+  handleResumeClick : function(evt) {
+  	
   }
 });
 
@@ -758,9 +813,8 @@ var updaterFunction = function() {
 $(function() {
 	var selected;
 
-	flowTabView = new azkaban.FlowTabView({el:$( '#headertabs') });
-
 	graphModel = new azkaban.GraphModel();
+	flowTabView = new azkaban.FlowTabView({el:$( '#headertabs'), model: graphModel});
 	svgGraphView = new azkaban.SvgGraphView({el:$('#svgDiv'), model: graphModel});
 	jobsListView = new azkaban.JobListView({el:$('#jobList'), model: graphModel});
 	statusView = new azkaban.StatusView({el:$('#flow-status'), model: graphModel});
