@@ -2,7 +2,6 @@ package azkaban.webapp.servlet;
 
 import java.io.File;
 import java.io.IOException;
-import java.security.AccessControlException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
@@ -18,27 +17,24 @@ import azkaban.executor.ExecutorManager;
 import azkaban.executor.ExecutableFlow.Status;
 import azkaban.executor.ExecutorManagerException;
 import azkaban.flow.Flow;
-import azkaban.flow.Node;
 import azkaban.project.Project;
 import azkaban.project.ProjectManager;
 import azkaban.project.ProjectManagerException;
+import azkaban.user.Permission;
 import azkaban.user.User;
 import azkaban.user.Permission.Type;
-import azkaban.utils.Props;
 import azkaban.webapp.session.Session;
 
 public class FlowExecutorServlet extends LoginAbstractAzkabanServlet {
 	private static final long serialVersionUID = 1L;
 	private ProjectManager projectManager;
 	private ExecutorManager executorManager;
-	private File tempDir;
 
 	@Override
 	public void init(ServletConfig config) throws ServletException {
 		super.init(config);
 		projectManager = this.getApplication().getProjectManager();
 		executorManager = this.getApplication().getExecutorManager();
-		tempDir = this.getApplication().getTempDirectory();
 	}
 
 	@Override
@@ -72,16 +68,10 @@ public class FlowExecutorServlet extends LoginAbstractAzkabanServlet {
 		}
 		
 		String projectId = flow.getProjectId();
-		Project project = null;
-		try {
-			project = projectManager.getProject(flow.getProjectId(), user);
-		} catch (AccessControlException e) {
-			page.add("errorMsg", "Do not have permission to view '" + flow.getExecutionId() + "'.");
-			page.render();
-		}
-		
+		Project project = getProjectPageByPermission(page, flow.getProjectId(), user, Type.READ);
 		if (project == null) {
-			page.add("errorMsg", "Project " + projectId + " not found.");
+			page.render();
+			return;
 		}
 		
 		page.add("projectName", projectId);
@@ -90,6 +80,38 @@ public class FlowExecutorServlet extends LoginAbstractAzkabanServlet {
 		page.render();
 	}
 	
+	protected Project getProjectPageByPermission(Page page, String projectId, User user, Permission.Type type) {
+		Project project = projectManager.getProject(projectId);
+		
+		if (project == null) {
+			page.add("errorMsg", "Project " + project + " not found.");
+		}
+		else if (!project.hasPermission(user, type)) {
+			page.add("errorMsg", "User " + user.getUserId() + " doesn't have " + type.name() + " permissions on " + projectId);
+		}
+		else {
+			return project;
+		}
+		
+		return null;
+	}
+
+	protected Project getProjectAjaxByPermission(Map<String, Object> ret, String projectId, User user, Permission.Type type) {
+		Project project = projectManager.getProject(projectId);
+		
+		if (project == null) {
+			ret.put("error", "Project " + project + " not found.");
+		}
+		else if (!project.hasPermission(user, type)) {
+			ret.put("error", "User " + user.getUserId() + " doesn't have " + type.name() + " permissions on " + projectId);
+		}
+		else {
+			return project;
+		}
+		
+		return null;
+	}
+
 	@Override
 	protected void handlePost(HttpServletRequest req, HttpServletResponse resp, Session session) throws ServletException, IOException {
 		if (hasParam(req, "ajax")) {
@@ -119,7 +141,7 @@ public class FlowExecutorServlet extends LoginAbstractAzkabanServlet {
 		}
 		this.writeJSON(resp, ret);
 	}
-	
+
 	private void ajaxFetchExecutableFlowUpdate(HttpServletRequest req, HttpServletResponse resp, HashMap<String, Object> ret, User user) throws ServletException{
 		String execid = getParam(req, "execid");
 		Long lastUpdateTime = Long.parseLong(getParam(req, "lastUpdateTime"));
@@ -137,16 +159,11 @@ public class FlowExecutorServlet extends LoginAbstractAzkabanServlet {
 			return;
 		}
 		
-		Project project = null;
-		try {
-			project = projectManager.getProject(exFlow.getProjectId(), user);
-		}
-		catch (AccessControlException e) {
-			ret.put("error", "Permission denied. User " + user.getUserId() + " doesn't have permissions to view project " + project.getName());
+		Project project = getProjectAjaxByPermission(ret, exFlow.getProjectId(), user, Type.READ);
+		if (project == null) {
 			return;
 		}
-		
-		
+
 		// Just update the nodes and flow states
 		ArrayList<Map<String, Object>> nodeList = new ArrayList<Map<String, Object>>();
 		for (ExecutableNode node : exFlow.getExecutableNodes()) {
@@ -184,15 +201,11 @@ public class FlowExecutorServlet extends LoginAbstractAzkabanServlet {
 			return;
 		}
 		
-		Project project = null;
-		try {
-			project = projectManager.getProject(exFlow.getProjectId(), user);
-		}
-		catch (AccessControlException e) {
-			ret.put("error", "Permission denied. User " + user.getUserId() + " doesn't have permissions to view project " + project.getName());
+		Project project = getProjectAjaxByPermission(ret, exFlow.getProjectId(), user, Type.READ);
+		if (project == null) {
 			return;
 		}
-	
+		
 		ArrayList<Map<String, Object>> nodeList = new ArrayList<Map<String, Object>>();
 		ArrayList<Map<String, Object>> edgeList = new ArrayList<Map<String,Object>>();
 		for (ExecutableNode node : exFlow.getExecutableNodes()) {
@@ -229,29 +242,14 @@ public class FlowExecutorServlet extends LoginAbstractAzkabanServlet {
 		
 		ret.put("flow", flowId);
 		
-		Project project = projectManager.getProject(projectId, user);
+		Project project = getProjectAjaxByPermission(ret, projectId, user, Type.EXECUTE);
 		if (project == null) {
-			ret.put("error", "Project " + projectId + " does not exist");
-			return;
-		}
-		
-		if (!project.hasPermission(user, Type.EXECUTE)) {
-			ret.put("error", "Permission denied. Cannot execute " + flowId);
 			return;
 		}
 
 		Flow flow = project.getFlow(flowId);
 		if (flow == null) {
 			ret.put("error", "Flow " + flowId + " cannot be found in project " + project);
-			return;
-		}
-		
-		HashMap<String, Props> sources;
-		try {
-			sources = projectManager.getAllFlowProperties(project, flowId, user);
-		}
-		catch (ProjectManagerException e) {
-			ret.put("error", e.getMessage());
 			return;
 		}
 		
@@ -306,14 +304,7 @@ public class FlowExecutorServlet extends LoginAbstractAzkabanServlet {
 		}
 
 		String execId = exflow.getExecutionId();
-		
-		// The following is just a test for cleanup
-//		try {
-//			executorManager.cleanupUnusedFiles(exflow);
-//		} catch (ExecutorManagerException e) {
-//			e.printStackTrace();
-//		}
-//		
+
 		ret.put("execid", execId);
 	}
 }

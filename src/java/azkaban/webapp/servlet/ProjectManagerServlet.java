@@ -127,15 +127,12 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 		HashMap<String, Object> ret = new HashMap<String, Object>();
 		ret.put("project", projectName);
 		
-		Project project = null;
-		try {
-			project = projectManager.getProject(projectName, user);
-		} catch (Exception e) {
-			ret.put("error", e.getMessage());
-			this.writeJSON(resp, ret);
-			return;
+		Project project = projectManager.getProject(projectName);
+		if (project == null) {
+			ret.put("error", "Project " + projectName + " doesn't exist.");
+			return; 
 		}
-
+		
 		String ajaxName = getParam(req, "ajax");
 		if (ajaxName.equals("fetchflowjobs")) {
 			if (handleAjaxPermission(project, user, Type.READ, ret)) {
@@ -177,7 +174,9 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 				ajaxFetchFlowExecutions(project, ret, req);
 			}
 		}
-		
+		else {
+			ret.put("error", "Cannot execute command " + ajaxName);
+		}
 		this.writeJSON(resp, ret);
 	}
 	
@@ -416,7 +415,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 		
 		Project project = null;
 		try {
-			project = projectManager.getProject(projectName, user);
+			project = projectManager.getProject(projectName);
 			if (project == null) {
 				page.add("errorMsg", "Project " + projectName + " not found.");
 			}
@@ -449,11 +448,16 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 		Project project = null;
 		Flow flow = null;
 		try {
-			project = projectManager.getProject(projectName, user);
+			project = projectManager.getProject(projectName);
+			
 			if (project == null) {
 				page.add("errorMsg", "Project " + projectName + " not found.");
 			}
 			else {
+				if (!project.hasPermission(user, Type.READ)) {
+					throw new AccessControlException( "No permission to view project " + projectName + ".");
+				}
+				
 				page.add("project", project);
 				
 				flow = project.getFlow(flowName);
@@ -469,7 +473,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 						page.add("errorMsg", "Job " + jobName + " not found.");
 					}
 					else {
-						Props prop = projectManager.getProperties(projectName, node.getJobSource(), user);
+						Props prop = projectManager.getProperties(projectName, node.getJobSource());
 						page.add("jobid", node.getId());
 						page.add("jobtype", node.getType());
 						
@@ -529,11 +533,16 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 		Project project = null;
 		Flow flow = null;
 		try {
-			project = projectManager.getProject(projectName, user);
+			project = projectManager.getProject(projectName);
+			
 			if (project == null) {
 				page.add("errorMsg", "Project " + projectName + " not found.");
 			}
 			else {
+				if (!project.hasPermission(user, Type.READ)) {
+					throw new AccessControlException( "No permission Project " + projectName + ".");
+				}
+				
 				page.add("project", project);
 				
 				flow = project.getFlow(flowName);
@@ -558,7 +567,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 		User user = session.getUser();
 		Project project = null;
 		try {
-			project = projectManager.getProject(projectName, user);
+			project = projectManager.getProject(projectName);
 			if (project == null) {
 				page.add("errorMsg", "Project " + projectName + " not found.");
 			}
@@ -566,6 +575,11 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 				if (project.hasPermission(user, Type.ADMIN)) {
 					page.add("admin", true);
 				}
+
+				if (!project.hasPermission(user, Type.READ)) {
+					throw new AccessControlException( "No permission to view project " + projectName + ".");
+				}
+				
 				page.add("project", project);
 				page.add("admins", Utils.flattenToString(project.getUsersWithPermission(Type.ADMIN), ","));
 				page.add("userpermission", project.getUserPermission(user));
@@ -584,7 +598,6 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 	}
 
 	private void handleCreate(HttpServletRequest req, HttpServletResponse resp, Session session) throws ServletException {
-
 		String projectName = hasParam(req, "name") ? getParam(req, "name") : null;
 		String projectDescription = hasParam(req, "description") ? getParam(req, "description") : null;
 		logger.info("Create project " + projectName);

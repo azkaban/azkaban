@@ -31,10 +31,10 @@ import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.impl.client.BasicResponseHandler;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.log4j.Logger;
-import org.joda.time.DateTime;
 
 import azkaban.executor.ExecutableFlow.Status;
 import azkaban.flow.Flow;
+import azkaban.project.Project;
 import azkaban.utils.ExecutableFlowLoader;
 import azkaban.utils.JSONUtils;
 import azkaban.utils.Props;
@@ -219,15 +219,6 @@ public class ExecutorManager {
 		
 		Collections.sort(searchFlows);
 		return searchFlows;
-	}
-	
-	private boolean isBetween(long val, long from, long to) {
-		// Means that range isn't set, so we'll just say that it's okay.
-		if (to < -1) {
-			return true;
-		}
-		
-		return val >= from && val <= to;
 	}
 	
 	private void loadActiveExecutions() throws IOException, ExecutorManagerException {
@@ -655,6 +646,10 @@ public class ExecutorManager {
 		cleanupUnusedFiles(exFlow);
 	}
 	
+	/**
+	 * Thread that polls the executor for executing jobs.
+	 * It is also cleans up the flow execution files after it's done.
+	 */
 	private class ExecutingManagerUpdaterThread extends Thread {
 		private boolean shutdown = false;
 		private int updateTimeMs = UPDATE_THREAD_MS;
@@ -762,6 +757,11 @@ public class ExecutorManager {
 		}
 	}
 	
+	/**
+	 * Reference to a Flow Execution.
+	 * It allows us to search for Flow and Project with only the Execution Id, it references
+	 * a file in the execution directories.
+	 */
 	public static class ExecutionReference implements Comparable<ExecutionReference> {
 		private String execId;
 		private String projectId;

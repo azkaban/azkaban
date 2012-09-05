@@ -182,7 +182,7 @@ public class FileProjectManager implements ProjectManager {
 		return new ArrayList<String>(projects.keySet());
 	}
 
-	public List<Project> getProjects(User user) {
+	public List<Project> getUserProjects(User user) {
 		ArrayList<Project> array = new ArrayList<Project>();
 		for (Project project : projects.values()) {
 			Permission perm = project.getUserPermission(user);
@@ -194,17 +194,9 @@ public class FileProjectManager implements ProjectManager {
 		return array;
 	}
 
-	public Project getProject(String name, User user) {
-		Project project = projects.get(name);
-		if (project != null) {
-			Permission perm = project.getUserPermission(user);
-			if (perm.isPermissionSet(Type.ADMIN) || perm.isPermissionSet(Type.READ)) {
-				return project;
-			} else {
-				throw new AccessControlException( "Permission denied. Do not have read access.");
-			}
-		}
-		return project;
+	@Override
+	public Project getProject(String name) {
+		return projects.get(name);
 	}
 
 	public void uploadProject(String projectName, File dir, User uploader, boolean force) throws ProjectManagerException {
@@ -399,23 +391,19 @@ public class FileProjectManager implements ProjectManager {
 	}
 
 	@Override
-	public Props getProperties(String projectName, String source, User user)
+	public Props getProperties(String projectName, String source)
 			throws ProjectManagerException {
 		Project project = projects.get(projectName);
 		if (project == null) {
 			throw new ProjectManagerException("Project " + project + " cannot be found.");
 		}
 
-		return getProperties(project, source, user);
+		return getProperties(project, source);
 	}
 
 	@Override
-	public Props getProperties(Project project, String source, User user)
+	public Props getProperties(Project project, String source)
 			throws ProjectManagerException {
-		if (!project.hasPermission(user, Type.READ)) {
-			throw new AccessControlException(
-					"Permission denied. Do not have read access.");
-		}
 
 		String mySource = project.getName() + File.separatorChar
 				+ project.getSource() + File.separatorChar + "src"
@@ -441,7 +429,7 @@ public class FileProjectManager implements ProjectManager {
 	}
 
 	@Override
-	public synchronized Project removeProject(String projectName, User user) {
+	public synchronized Project removeProject(String projectName) {
 		return null;
 	}
 
@@ -477,7 +465,7 @@ public class FileProjectManager implements ProjectManager {
 	}
 
 	@Override
-	public HashMap<String, Props> getAllFlowProperties(Project project, String flowId, User user) throws ProjectManagerException {
+	public HashMap<String, Props> getAllFlowProperties(Project project, String flowId) throws ProjectManagerException {
 		Flow flow = project.getFlow(flowId);
 		if (flow == null) {
 			throw new ProjectManagerException("Flow " + flowId + " doesn't exist in " + project.getName());
@@ -487,14 +475,14 @@ public class FileProjectManager implements ProjectManager {
 		HashMap<String, Props> sourceMap = new HashMap<String, Props>();
 		for (Node node : flow.getNodes()) {
 			String source = node.getJobSource();
-			Props props = getProperties(project, node.getJobSource(), user);
+			Props props = getProperties(project, node.getJobSource());
 			sourceMap.put(source, props);
 		}
 
 		// Resolve all the shared props.
 		for(FlowProps flowProps: flow.getAllFlowProps().values()) {
 			String source = flowProps.getSource();
-			Props props = getProperties(project, source, user);
+			Props props = getProperties(project, source);
 			sourceMap.put(source, props);
 		}
 		

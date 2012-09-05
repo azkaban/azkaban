@@ -1,7 +1,6 @@
 package azkaban.webapp.servlet;
 
 import java.io.IOException;
-import java.security.AccessControlException;
 import java.util.List;
 
 import javax.servlet.ServletConfig;
@@ -14,7 +13,9 @@ import azkaban.executor.ExecutorManager;
 import azkaban.executor.ExecutorManagerException;
 import azkaban.project.Project;
 import azkaban.project.ProjectManager;
+import azkaban.user.Permission;
 import azkaban.user.User;
+import azkaban.user.Permission.Type;
 import azkaban.webapp.session.Session;
 
 public class ExecutionServlet extends LoginAbstractAzkabanServlet {
@@ -46,9 +47,7 @@ public class ExecutionServlet extends LoginAbstractAzkabanServlet {
 	
 	private void handleExecutionsPage(HttpServletRequest req, HttpServletResponse resp, Session session) throws ServletException, IOException {
 		Page page = newPage(req, resp, session, "azkaban/webapp/servlet/velocity/executionspage.vm");
-		User user = session.getUser();
-		
-		//executorManager.
+
 		List<ExecutableFlow> runningFlows = executorManager.getRunningFlows();
 		page.add("runningFlows", runningFlows.isEmpty() ? null : runningFlows);
 		
@@ -78,21 +77,31 @@ public class ExecutionServlet extends LoginAbstractAzkabanServlet {
 		}
 		
 		String projectId = flow.getProjectId();
-		Project project = null;
-		try {
-			project = projectManager.getProject(flow.getProjectId(), user);
-		} catch (AccessControlException e) {
-			page.add("errorMsg", "Do not have permission to view '" + flow.getExecutionId() + "'.");
+		Project project = getProjectPageByPermission(page, flow.getProjectId(), user, Type.READ);
+		if(project == null) {
 			page.render();
-		}
-		
-		if (project == null) {
-			page.add("errorMsg", "Project " + projectId + " not found.");
+			return;
 		}
 		
 		page.add("projectName", projectId);
 		page.add("flowid", flow.getFlowId());
 		
 		page.render();
+	}
+	
+	protected Project getProjectPageByPermission(Page page, String projectId, User user, Permission.Type type) {
+		Project project = projectManager.getProject(projectId);
+		
+		if (project == null) {
+			page.add("errorMsg", "Project " + project + " not found.");
+		}
+		else if (!project.hasPermission(user, type)) {
+			page.add("errorMsg", "User " + user.getUserId() + " doesn't have " + type.name() + " permissions on " + projectId);
+		}
+		else {
+			return project;
+		}
+		
+		return null;
 	}
 }

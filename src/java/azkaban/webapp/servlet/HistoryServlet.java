@@ -1,7 +1,6 @@
 package azkaban.webapp.servlet;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
 
 import javax.servlet.ServletConfig;
@@ -11,19 +10,16 @@ import javax.servlet.http.HttpServletResponse;
 
 import azkaban.executor.ExecutorManager;
 import azkaban.executor.ExecutorManager.ExecutionReference;
-import azkaban.project.ProjectManager;
 import azkaban.webapp.session.Session;
 
 public class HistoryServlet extends LoginAbstractAzkabanServlet {
 
 	private static final long serialVersionUID = 1L;
-	private ProjectManager projectManager;
 	private ExecutorManager executorManager;
 	
 	@Override
 	public void init(ServletConfig config) throws ServletException {
 		super.init(config);
-		projectManager = this.getApplication().getProjectManager();
 		executorManager = this.getApplication().getExecutorManager();
 	}
 

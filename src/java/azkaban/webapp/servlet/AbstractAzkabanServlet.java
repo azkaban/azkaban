@@ -144,6 +144,7 @@ public abstract class AbstractAzkabanServlet extends HttpServlet {
 	}
 
 	public Map<String, String> getParamGroup(HttpServletRequest request, String groupName)  throws ServletException {
+		@SuppressWarnings("unchecked")
 		Enumeration<Object> enumerate = (Enumeration<Object>)request.getParameterNames();
 		String matchString = groupName + "[";
 
