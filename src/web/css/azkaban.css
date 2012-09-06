@@ -1166,13 +1166,23 @@ tr:hover td {
 	background: #E0E0E0;
 }
 
-#flowLogView {
+.logView {
 	position: absolute;
 	top: 210px;
 	bottom: 5px;
 	left: 50px;
 	right: 50px;
 	background: #E0E0E0;
+}
+
+#flowLogView {
+	top: 210px;
+	bottom: 5px;
+}
+
+#jobLogView {
+	top: 210px;
+	bottom: 5px;
 }
 
 .logHeader {
@@ -1195,6 +1205,15 @@ tr:hover td {
 	right: 5px;
 	background-color: #FFF;
 	overflow:scroll;
+}
+
+.logLink {
+	text-align: center;
+}
+
+.logLink a {
+	text-decoration: underline;
+	margin: 0px;
 }
 
 .log {

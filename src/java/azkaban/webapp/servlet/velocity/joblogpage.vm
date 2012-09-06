@@ -1,0 +1,69 @@
+<!DOCTYPE html> 
+<html>
+	<head>
+#parse( "azkaban/webapp/servlet/velocity/style.vm" )
+		<script type="text/javascript" src="${context}/js/jquery/jquery.js"></script>    
+		<script type="text/javascript" src="${context}/js/namespace.js"></script>
+		<script type="text/javascript" src="${context}/js/underscore-1.2.1-min.js"></script>
+		<script type="text/javascript" src="${context}/js/backbone-0.5.3-min.js"></script>
+		<script type="text/javascript" src="${context}/js/jquery.simplemodal.js"></script>
+		<script type="text/javascript" src="${context}/js/azkaban.ajax.utils.js"></script>
+		<script type="text/javascript" src="${context}/js/azkaban.nav.js"></script>
+		<script type="text/javascript" src="${context}/js/azkaban.joblog.view.js"></script>
+		<script type="text/javascript">
+			var contextURL = "${context}";
+			var currentTime = ${currentTime};
+			var timezone = "${timezone}";
+			var errorMessage = ${error_message};
+			var successMessage = ${success_message};
+			
+			var projectName = "${projectName}";
+			var flowName = "${flowid}";
+			var execId = "${execid}";
+			var jobId = "${jobid}";
+		</script>
+	</head>
+	<body>
+		#set($current_page="executing")
+#parse( "azkaban/webapp/servlet/velocity/nav.vm" )
+		<div class="content">
+#if($errorMsg)
+				<div class="box-error-message">$errorMsg</div>
+#else
+#if($error_message != "null")
+				<div class="box-error-message">$error_message</div>
+#elseif($success_message != "null")
+				<div class="box-success-message">$success_message</div>
+#end
+		
+			<div id="all-jobs-content">
+				<div class="section-hd flow-header">
+					<h2><a href="${context}/executor?execid=${execid}&job=${jobid}">Job Execution<span>$jobid</span></a></h2>
+					<div class="section-sub-hd">
+						<h4><a href="${context}/manager?project=${projectName}">Project <span>$projectName</span></a></h4>
+						<h4 class="separator">&gt;</h4>
+						<h4><a href="${context}/executor?execid=${execid}#jobslist">Execution <span>$execid</span></a></h4>
+						<h4 class="separator">&gt;</h4>
+						<h4><a href="${context}/manager?project=${projectName}&flow=${flowid}">Flow <span>$flowid</span></a></h4>
+						<h4 class="separator">&gt;</h4>
+						<h4><a href="${context}/manager?project=${projectName}&flow=${flowid}&job=$jobid">Job <span>$jobid</span></a></h4>
+					</div>
+				</div>
+			</div>
+			
+			<div id="headertabs" class="headertabs">
+				<ul>
+					<li><a id="logViewLink" href="#log">Log</a></li>
+				</ul>
+			</div>
+
+			<div id="jobLogView" class="logView">
+				<div class="logHeader"><div class="logButtonRow"><div id="updateLogBtn" class="btn7">Load More</div></div></div>
+				<div class="logViewer">
+					<pre id="logSection" class="log"></pre>
+				</div>
+			</div>
+#end
+		</div>
+	</body>
+</html>

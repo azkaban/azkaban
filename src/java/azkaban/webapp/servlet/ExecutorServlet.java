@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import javax.servlet.ServletConfig;
@@ -25,7 +26,7 @@ import azkaban.user.User;
 import azkaban.user.Permission.Type;
 import azkaban.webapp.session.Session;
 
-public class FlowExecutorServlet extends LoginAbstractAzkabanServlet {
+public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 	private static final long serialVersionUID = 1L;
 	private ProjectManager projectManager;
 	private ExecutorManager executorManager;
@@ -44,8 +45,62 @@ public class FlowExecutorServlet extends LoginAbstractAzkabanServlet {
 			handleAJAXAction(req, resp, session);
 		}
 		else if (hasParam(req, "execid")) {
-			handleExecutionFlowPage(req, resp, session);
+			if (hasParam(req, "job")) {
+				handleExecutionJobPage(req, resp, session);
+			}
+			else {
+				handleExecutionFlowPage(req, resp, session);
+			}
 		}
+		else {
+			handleExecutionsPage(req, resp, session);
+		}
+	}
+	
+	private void handleExecutionJobPage(HttpServletRequest req, HttpServletResponse resp, Session session) throws ServletException, IOException {
+		Page page = newPage(req, resp, session, "azkaban/webapp/servlet/velocity/joblogpage.vm");
+		User user = session.getUser();
+		String execId = getParam(req, "execid");
+		String jobId = getParam(req, "job");
+		page.add("execid", execId);
+		page.add("jobid", jobId);
+		
+		ExecutableFlow flow = null;
+		try {
+			flow = executorManager.getExecutableFlow(execId);
+			if (flow == null) {
+				page.add("errorMsg", "Error loading executing flow " + execId + " not found.");
+				page.render();
+				return;
+			}
+		} catch (ExecutorManagerException e) {
+			page.add("errorMsg", "Error loading executing flow: " + e.getMessage());
+			page.render();
+			return;
+		}
+		
+		String projectId = flow.getProjectId();
+		Project project = getProjectPageByPermission(page, flow.getProjectId(), user, Type.READ);
+		if (project == null) {
+			page.render();
+			return;
+		}
+		
+		page.add("projectName", projectId);
+		page.add("flowid", flow.getFlowId());
+		
+		page.render();
+	}
+	
+	private void handleExecutionsPage(HttpServletRequest req, HttpServletResponse resp, Session session) throws ServletException, IOException {
+		Page page = newPage(req, resp, session, "azkaban/webapp/servlet/velocity/executionspage.vm");
+
+		List<ExecutableFlow> runningFlows = executorManager.getRunningFlows();
+		page.add("runningFlows", runningFlows.isEmpty() ? null : runningFlows);
+		
+		List<ExecutableFlow> finishedFlows = executorManager.getRecentlyFinishedFlows();
+		page.add("recentlyFinished", finishedFlows.isEmpty() ? null : finishedFlows);
+		page.render();
 	}
 	
 	private void handleExecutionFlowPage(HttpServletRequest req, HttpServletResponse resp, Session session) throws ServletException, IOException {
@@ -70,7 +125,7 @@ public class FlowExecutorServlet extends LoginAbstractAzkabanServlet {
 		
 		String projectId = flow.getProjectId();
 		Project project = getProjectPageByPermission(page, flow.getProjectId(), user, Type.READ);
-		if (project == null) {
+		if(project == null) {
 			page.render();
 			return;
 		}
@@ -159,6 +214,9 @@ public class FlowExecutorServlet extends LoginAbstractAzkabanServlet {
 				else if (ajaxName.equals("fetchExecFlowLogs")) {
 					ajaxFetchExecFlowLogs(req, resp, ret, session.getUser(), exFlow);
 				}
+				else if (ajaxName.equals("fetchExecJobLogs")) {
+					ajaxFetchJobLogs(req, resp, ret, session.getUser(), exFlow);
+				}
 			}
 		}
 		else {
@@ -191,6 +249,28 @@ public class FlowExecutorServlet extends LoginAbstractAzkabanServlet {
 			ret.put("error", e.getMessage());
 		}
 	}
+	
+	private void ajaxFetchJobLogs(HttpServletRequest req, HttpServletResponse resp, HashMap<String, Object> ret, User user, ExecutableFlow exFlow) throws ServletException {
+		Project project = getProjectAjaxByPermission(ret, exFlow.getProjectId(), user, Type.READ);
+		if (project == null) {
+			return;
+		}
+		
+		int startChar = this.getIntParam(req, "current");
+		int maxSize = this.getIntParam(req, "max");
+		String jobId = this.getParam(req, "job");
+		
+		StringBuffer buffer = new StringBuffer(STRING_BUFFER_SIZE);
+		try {
+			long character = executorManager.getExecutionJobLog(exFlow, jobId, buffer, startChar, maxSize);
+			ret.put("current", character);
+			ret.put("log", buffer.toString());
+		} catch (ExecutorManagerException e) {
+			e.printStackTrace();
+			ret.put("error", e.getMessage());
+		}
+	}
+
 
 	private void ajaxCancelFlow(HttpServletRequest req, HttpServletResponse resp, HashMap<String, Object> ret, User user, ExecutableFlow exFlow) throws ServletException{
 		Project project = getProjectAjaxByPermission(ret, exFlow.getProjectId(), user, Type.EXECUTE);

@@ -455,19 +455,9 @@ public class ExecutorManager {
 		flow.setSubmitted(true);
 	}
 	
-	public long getExecutableFlowLog(ExecutableFlow flow, StringBuffer buffer, long startChar, long maxSize) throws ExecutorManagerException {
-		String path = flow.getExecutionPath();
-		File execPath = new File(path);
-		if (!execPath.exists()) {
-			logger.error("Execution dir for " + flow + " doesn't exist.");
-			return -1;
-		}
-		
-		String logFileName = "_flow." + flow.getExecutionId() + ".log";
-		File flowLogFile = new File(execPath, logFileName);
-		
-		if (!flowLogFile.exists()) {
-			logger.error("Execution log for " + flowLogFile + " doesn't exist.");
+	private long readLog(File logFile, StringBuffer buffer, long startChar, long maxSize) {
+		if (!logFile.exists()) {
+			logger.error("Execution log for " + logFile + " doesn't exist.");
 			return -1;
 		}
 		
@@ -476,7 +466,7 @@ public class ExecutorManager {
 		char[] charBuffer = new char[LOG_BUFFER_READ_SIZE];
 		
 		try {
-			fileReader = new FileReader(flowLogFile);
+			fileReader = new FileReader(logFile);
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
 		}
@@ -511,6 +501,46 @@ public class ExecutorManager {
 			}
 		}
 		
+		return charPosition;
+	}
+	
+	public long getExecutionJobLog(ExecutableFlow flow, String jobid, StringBuffer buffer, long startChar, long maxSize) throws ExecutorManagerException {
+		String path = flow.getExecutionPath();
+		File execPath = new File(path);
+		if (!execPath.exists()) {
+			logger.error("Execution dir for " + flow + " doesn't exist.");
+			return -1;
+		}
+		
+		String logFileName = "_job." + flow.getExecutionId() + "." + jobid + ".log";
+		File logFile = new File(execPath, logFileName);
+		
+		if (!logFile.exists()) {
+			logger.error("Execution log for " + logFile + " doesn't exist.");
+			return -1;
+		}
+
+		long charPosition = readLog(logFile, buffer, startChar, maxSize);
+		return charPosition;
+	}
+	
+	public long getExecutableFlowLog(ExecutableFlow flow, StringBuffer buffer, long startChar, long maxSize) throws ExecutorManagerException {
+		String path = flow.getExecutionPath();
+		File execPath = new File(path);
+		if (!execPath.exists()) {
+			logger.error("Execution dir for " + flow + " doesn't exist.");
+			return -1;
+		}
+		
+		String logFileName = "_flow." + flow.getExecutionId() + ".log";
+		File flowLogFile = new File(execPath, logFileName);
+		
+		if (!flowLogFile.exists()) {
+			logger.error("Execution log for " + flowLogFile + " doesn't exist.");
+			return -1;
+		}
+
+		long charPosition = readLog(flowLogFile, buffer, startChar, maxSize);
 		return charPosition;
 	}
 	

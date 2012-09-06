@@ -823,6 +823,13 @@ azkaban.ExecutionListView = Backbone.View.extend({
 		$(status).attr("id", node.id + "-status-div");
 		tdStatus.appendChild(status);
 
+		var logURL = contextURL + "/executor?execid=" + execId + "&flow=" + flowName + "&job=" + node.id;
+		var a = document.createElement("a");
+		$(a).attr("href", logURL);
+		$(a).text("Log");
+		$(tdLog).addClass("logLink");
+		$(tdLog).append(a);
+
 		executingBody.append(tr);
 	}
 });

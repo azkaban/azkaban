@@ -54,7 +54,7 @@
 #foreach($flow in $flowHistory)
 						<tr class="row" >
 							<td class="tb-name">
-								<a href="${context}/executions?execid=${flow.execId}">$utils.extractNumericalId(${flow.execId})</a>
+								<a href="${context}/executor?execid=${flow.execId}">$utils.extractNumericalId(${flow.execId})</a>
 							</td>
 							<td class="tb-name">
 								<a href="${context}/manager?project=${flow.projectId}&flow=${flow.flowId}">${flow.flowId}</a>

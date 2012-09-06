@@ -50,7 +50,7 @@
 #foreach($flow in $runningFlows)
 						<tr class="row" >
 							<td class="tb-name">
-								<a href="${context}/executions?execid=${flow.executionId}">$utils.extractNumericalId(${flow.executionId})</a>
+								<a href="${context}/executor?execid=${flow.executionId}">$utils.extractNumericalId(${flow.executionId})</a>
 							</td>
 							<td><a href="${context}/manager?project=${flow.projectId}&flow=${flow.flowId}">${flow.flowId}</a></td>
 							<td>
@@ -91,7 +91,7 @@
 #foreach($flow in $recentlyFinished)
 						<tr class="row" >
 							<td class="tb-name">
-								<a href="${context}/executions?execid=${flow.executionId}">$utils.extractNumericalId(${flow.executionId})</a>
+								<a href="${context}/executor?execid=${flow.executionId}">$utils.extractNumericalId(${flow.executionId})</a>
 							</td>
 							<td><a href="${context}/manager?project=${flow.projectId}&flow=${flow.flowId}">${flow.flowId}</a></td>
 							<td>

@@ -641,7 +641,7 @@ azkaban.ExecutionsView = Backbone.View.extend({
 			
 			var tdId = document.createElement("td");
 			var execA = document.createElement("a");
-			$(execA).attr("href", contextURL + "/executions?execid=" + executions[i].execId);
+			$(execA).attr("href", contextURL + "/executor?execid=" + executions[i].execId);
 			$(execA).text(executions[i].execId);
 			tdId.appendChild(execA);
 			row.appendChild(tdId);

@@ -44,7 +44,7 @@
 
 				<div id="all-jobs-content">
 					<div class="section-hd flow-header">
-						<h2><a href="${context}/executions?execid=${execid}">Flow Execution <span>$execid</span></a></h2>
+						<h2><a href="${context}/executor?execid=${execid}">Flow Execution <span>$execid</span></a></h2>
 						<div class="section-sub-hd">
 							<h4><a href="${context}/manager?project=${projectName}">Project <span>$projectName</span></a></h4>
 							<h4 class="separator">&gt;</h4>
@@ -58,7 +58,7 @@
 							<li class="lidivider">|</li>
 							<li><a id="jobslistViewLink" href="#jobslist">Job List</a></li>
 							<li class="lidivider">|</li>
-							<li><a id="flowLogViewLink" href="#log">Log</a></li>
+							<li><a id="flowLogViewLink" href="#log">Flow Log</a></li>
 						</ul>
 						<ul id="actionsBtns" class="buttons">
 							<li><div id="pausebtn" class="btn2">Pause</div></li>
@@ -100,7 +100,7 @@
 							</tbody>
 						</table>
 					</div>
-					<div id="flowLogView">
+					<div id="flowLogView" class="logView">
 						<div class="logHeader"><div class="logButtonRow"><div id="updateLogBtn" class="btn7">Load More</div></div></div>
 						<div class="logViewer">
 							<pre id="logSection" class="log"></pre>
