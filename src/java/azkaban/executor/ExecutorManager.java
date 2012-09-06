@@ -601,7 +601,7 @@ public class ExecutorManager {
 		// Then we're taking a substring of length - 6 to lop off the bottom 5 digits effectively partitioning
 		// by 100000 millisec. We do this to have quicker searchs by pulling partitions, not full directories.
 		int index = execID.indexOf('.');
-		return execID.substring(0, index - 6);
+		return execID.substring(0, index - 8);
 	}
 	
 	private void cleanFinishedJob(ExecutableFlow exFlow) throws ExecutorManagerException {
