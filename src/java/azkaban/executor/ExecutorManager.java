@@ -342,30 +342,33 @@ public class ExecutorManager {
 		runningFlows.put(flow.getExecutionId(), flow);
 	}
 	
-	public void cancelFlow(ExecutableFlow flow) throws ExecutorManagerException {
+	public void cancelFlow(ExecutableFlow flow, String user) throws ExecutorManagerException {
+		logger.info("Calling cancel");
 		String response = null;
 		try {
-			response = callExecutionServer("cancel", flow);
+			response = callExecutionServer("cancel", flow, user);
 		} catch (IOException e) {
 			e.printStackTrace();
 			throw new ExecutorManagerException("Error cancelling flow.", e);
 		}
 	}
 	
-	public void pauseFlow(ExecutableFlow flow) throws ExecutorManagerException {
+	public void pauseFlow(ExecutableFlow flow, String user) throws ExecutorManagerException {
+		logger.info("Calling pause");
 		String response = null;
 		try {
-			response = callExecutionServer("pause", flow);
+			response = callExecutionServer("pause", flow, user);
 		} catch (IOException e) {
 			e.printStackTrace();
 			throw new ExecutorManagerException("Error cancelling flow.", e);
 		}
 	}
 	
-	public void resumeFlow(ExecutableFlow flow) throws ExecutorManagerException {
+	public void resumeFlow(ExecutableFlow flow, String user) throws ExecutorManagerException {
+		logger.info("Calling resume");
 		String response = null;
 		try {
-			response = callExecutionServer("resume", flow);
+			response = callExecutionServer("resume", flow, user);
 		} catch (IOException e) {
 			e.printStackTrace();
 			throw new ExecutorManagerException("Error cancelling flow.", e);
@@ -374,15 +377,23 @@ public class ExecutorManager {
 	}
 	
 	private String callExecutionServer(String action, ExecutableFlow flow) throws IOException{
+		return callExecutionServer(action, flow, null);
+	}
+	
+	private String callExecutionServer(String action, ExecutableFlow flow, String user) throws IOException{
 		URIBuilder builder = new URIBuilder();
 		builder.setScheme("http")
 			.setHost(url)
 			.setPort(portNumber)
 			.setPath("/executor")
 			.setParameter("sharedToken", token)
-			.setParameter("action", "resume")
+			.setParameter("action", action)
 			.setParameter("execid", flow.getExecutionId())
 			.setParameter("execpath", flow.getExecutionPath());
+		
+		if (user != null) {
+			builder.setParameter("user", user);
+		}
 		
 		URI uri = null;
 		try {
@@ -393,7 +404,7 @@ public class ExecutorManager {
 		
 		ResponseHandler<String> responseHandler = new BasicResponseHandler();
 		
-		logger.info("Submitting flow " + flow.getExecutionId() + " for execution.");
+		logger.info("Remotely querying " + flow.getExecutionId() + " for status.");
 		HttpClient httpclient = new DefaultHttpClient();
 		HttpGet httpget = new HttpGet(uri);
 		String response = null;
@@ -590,7 +601,7 @@ public class ExecutorManager {
 		// Then we're taking a substring of length - 6 to lop off the bottom 5 digits effectively partitioning
 		// by 100000 millisec. We do this to have quicker searchs by pulling partitions, not full directories.
 		int index = execID.indexOf('.');
-		return execID.substring(0, index - 5);
+		return execID.substring(0, index - 6);
 	}
 	
 	private void cleanFinishedJob(ExecutableFlow exFlow) throws ExecutorManagerException {
@@ -690,11 +701,14 @@ public class ExecutorManager {
 						}
 						continue;
 					}
+					catch (Exception e) {
+						e.printStackTrace();
+					}
 					
 					Object executorResponseObj;
 					try {
 						executorResponseObj = JSONUtils.parseJSONFromString(responseString);
-					} catch (IOException e) {
+					} catch (Exception e) {
 						// TODO Auto-generated catch block
 						e.printStackTrace();
 						continue;
@@ -705,7 +719,7 @@ public class ExecutorManager {
 					String status = (String)response.get("status");
 					
 					try {
-						ExecutableFlowLoader.updateFlowStatusFromFile(executionDir, exFlow);
+						ExecutableFlowLoader.updateFlowStatusFromFile(executionDir, exFlow, true);
 					} catch (ExecutorManagerException e) {
 						// TODO Auto-generated catch block
 						e.printStackTrace();
@@ -718,7 +732,7 @@ public class ExecutorManager {
 							// Cleanup
 							logger.info("Flow " + exFlow.getExecutionId() + " has succeeded. Cleaning Up.");
 							try {
-								ExecutableFlowLoader.updateFlowStatusFromFile(executionDir, exFlow);
+								ExecutableFlowLoader.updateFlowStatusFromFile(executionDir, exFlow, true);
 								cleanFinishedJob(exFlow);						
 							} catch (ExecutorManagerException e) {
 								e.printStackTrace();
@@ -826,8 +840,8 @@ public class ExecutorManager {
 			reference.flowId = (String)obj.get("flowId");
 			reference.userId = (String)obj.get("userId");
 			reference.execPath = (String)obj.get("execPath");
-			reference.startTime = (Long)obj.get("startTime");
-			reference.endTime = (Long)obj.get("endTime");
+			reference.startTime = getLongFromObject(obj.get("startTime"));
+			reference.endTime = getLongFromObject(obj.get("endTime"));
 			reference.status = Status.valueOf((String)obj.get("status"));
 			return reference;
 		}
@@ -880,5 +894,13 @@ public class ExecutorManager {
 		public void setStatus(Status status) {
 			this.status = status;
 		}
+	}
+	
+	private static long getLongFromObject(Object obj) {
+		if (obj instanceof Integer) {
+			return Long.valueOf((Integer)obj);
+		}
+		
+		return (Long)obj;
 	}
 }

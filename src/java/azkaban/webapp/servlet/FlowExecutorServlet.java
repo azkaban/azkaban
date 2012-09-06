@@ -173,7 +173,12 @@ public class FlowExecutorServlet extends LoginAbstractAzkabanServlet {
 		if (project == null) {
 			return;
 		}
-
+		
+		try {
+			executorManager.cancelFlow(exFlow, user.getUserId());
+		} catch (ExecutorManagerException e) {
+			ret.put("error", e.getMessage());
+		}
 	}
 
 	private void ajaxRestartFlow(HttpServletRequest req, HttpServletResponse resp, HashMap<String, Object> ret, User user, ExecutableFlow exFlow) throws ServletException{
@@ -182,6 +187,7 @@ public class FlowExecutorServlet extends LoginAbstractAzkabanServlet {
 			return;
 		}
 
+		
 	}
 
 	private void ajaxPauseFlow(HttpServletRequest req, HttpServletResponse resp, HashMap<String, Object> ret, User user, ExecutableFlow exFlow) throws ServletException{
@@ -190,6 +196,11 @@ public class FlowExecutorServlet extends LoginAbstractAzkabanServlet {
 			return;
 		}
 
+		try {
+			executorManager.pauseFlow(exFlow, user.getUserId());
+		} catch (ExecutorManagerException e) {
+			ret.put("error", e.getMessage());
+		}
 	}
 
 	private void ajaxResumeFlow(HttpServletRequest req, HttpServletResponse resp, HashMap<String, Object> ret, User user, ExecutableFlow exFlow) throws ServletException{
@@ -198,6 +209,11 @@ public class FlowExecutorServlet extends LoginAbstractAzkabanServlet {
 			return;
 		}
 
+		try {
+			executorManager.resumeFlow(exFlow, user.getUserId());
+		} catch (ExecutorManagerException e) {
+			ret.put("resume", e.getMessage());
+		}
 	}
 	
 	private void ajaxFetchExecutableFlowUpdate(HttpServletRequest req, HttpServletResponse resp, HashMap<String, Object> ret, User user, ExecutableFlow exFlow) throws ServletException{

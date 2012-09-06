@@ -23,7 +23,7 @@ public class ExecutableFlowLoader {
 	 * @throws ExecutorManagerException
 	 */
 	public static ExecutableFlow loadExecutableFlowFromDir(File exDir) throws ExecutorManagerException {
-		File flowFile = getLatestExecutableFlowDir(exDir);
+		File flowFile = getLatestExecutableFlowDir(exDir, false);
 		Object exFlowObj = getFlowObjectFromFile(flowFile);
 
 		int updateNumber = getFlowUpdateNumber(flowFile);
@@ -77,7 +77,7 @@ public class ExecutableFlowLoader {
 	 * @return
 	 * @throws ExecutorManagerException
 	 */
-	private static File getLatestExecutableFlowDir(File exDir) throws ExecutorManagerException {
+	private static File getLatestExecutableFlowDir(File exDir, boolean cleanOldUpdates) throws ExecutorManagerException {
 		String exFlowName = exDir.getName();
 		
 		String flowFileName = "_" + exFlowName + ".flow";
@@ -88,6 +88,17 @@ public class ExecutableFlowLoader {
 			logger.error("Execution flow " + exFlowName + " missing flow file.");
 			throw new ExecutorManagerException("Execution flow " + exFlowName + " missing flow file.");
 		}
+		
+		// Remove updates between first and last index.
+		if (cleanOldUpdates) {
+			if (exFlowFiles.length > 3) {
+				for (int i=1; i < exFlowFiles.length - 1; ++i) {
+					File file = exFlowFiles[i];
+					file.delete();
+				}
+			}
+		}
+		
 		File lastExFlow = exFlowFiles[exFlowFiles.length-1];
 		return lastExFlow;
 	}
@@ -100,14 +111,14 @@ public class ExecutableFlowLoader {
 	 * @return
 	 * @throws ExecutorManagerException
 	 */
-	public static boolean updateFlowStatusFromFile(File exDir, ExecutableFlow flow) throws ExecutorManagerException {
-		File file = getLatestExecutableFlowDir(exDir);
-		System.out.println("Loading from: " + file);
+	public static boolean updateFlowStatusFromFile(File exDir, ExecutableFlow flow, boolean cleanOldUpdates) throws ExecutorManagerException {
+		File file = getLatestExecutableFlowDir(exDir, cleanOldUpdates);
 		int number =  getFlowUpdateNumber(file);
 		if (flow.getUpdateNumber() >= number) {
 			return false;
 		}
 		
+		System.out.println("Loading from: " + file);
 		Object exFlowObj = getFlowObjectFromFile(file);
 		flow.updateExecutableFlowFromObject(exFlowObj);
 		flow.setUpdateNumber(number);

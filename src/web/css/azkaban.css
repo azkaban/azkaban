@@ -1250,6 +1250,10 @@ tr:hover td {
 	background-position: 0px 0px;
 }
 
+#list ul li.KILLED .icon {
+	background-position: 0px 0px;
+}
+
 #list ul li a {
 	font-size: 10pt;
 	margin-left: 5px;
@@ -1266,6 +1270,10 @@ tr:hover td {
 	height: 16px;
 	background-image: url("./images/dot-icon.png");
 	background-position: 16px 0px;
+}
+
+#messageDialog .messageDiv {
+	margin: 20px;
 }
 
 table.parameters tr td.first {
@@ -1370,6 +1378,10 @@ svg .RUNNING circle {
 }
 
 svg .FAILED circle {
+	fill: #CC0000;
+}
+
+svg .KILLED circle {
 	fill: #CC0000;
 }
 
@@ -1488,7 +1500,11 @@ span.sublabel {
 }
 
 #flow-status table td.FAILED {
-	color:  #CC0000;
+	color: #CC0000;
+}
+
+#flow-status table td.PAUSED {
+	color: #FF6600;
 }
 
 #flow-status table td.FAILED_FINISHING {
@@ -1586,7 +1602,7 @@ td .status.DISABLED {
 }
 
 td .status.KILLED {
-	background-color: #000;
+	background-color: #CC0000;
 }
 
 td .status.UNKNOWN {

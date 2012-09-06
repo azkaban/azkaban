@@ -314,13 +314,19 @@ public class AzkabanExecutorServer {
 					handleAjaxFlowStatus(respMap, execid);
 				}
 				else if (action.equals("cancel")) {
-					
+					String user = getParam(req, "user");
+					logger.info("Cancel called.");
+					handleAjaxCancel(respMap, execid, user);
 				}
 				else if (action.equals("pause")) {
-					
+					String user = getParam(req, "user");
+					logger.info("Paused called.");
+					handleAjaxPause(respMap, execid, user);
 				}
 				else if (action.equals("resume")) {
-					
+					String user = getParam(req, "user");
+					logger.info("Resume called.");
+					handleAjaxResume(respMap, execid, user);
 				}
 			}
 
@@ -350,9 +356,30 @@ public class AzkabanExecutorServer {
 			}
 		}
 		
-		private void handleAjaxPause(Map<String, Object> respMap, String execid) throws ServletException {
+		private void handleAjaxPause(Map<String, Object> respMap, String execid, String user) throws ServletException {
+
 			try {
-				flowRunnerManager.submitFlow(execid, execpath);
+				flowRunnerManager.pauseFlow(execid, user);
+				respMap.put("status", "success");
+			} catch (ExecutorManagerException e) {
+				e.printStackTrace();
+				respMap.put("error", e.getMessage());
+			}
+		}
+		
+		private void handleAjaxResume(Map<String, Object> respMap, String execid, String user) throws ServletException {
+			try {
+				flowRunnerManager.resumeFlow(execid, user);
+				respMap.put("status", "success");
+			} catch (ExecutorManagerException e) {
+				e.printStackTrace();
+				respMap.put("error", e.getMessage());
+			}
+		}
+		
+		private void handleAjaxCancel(Map<String, Object> respMap, String execid, String user) throws ServletException {
+			try {
+				flowRunnerManager.cancelFlow(execid, user);
 				respMap.put("status", "success");
 			} catch (ExecutorManagerException e) {
 				e.printStackTrace();

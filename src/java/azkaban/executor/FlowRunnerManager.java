@@ -56,24 +56,24 @@ public class FlowRunnerManager {
 		executorService.submit(runner);
 	}
 	
-	public void cancelFlow(String id) throws ExecutorManagerException {
+	public void cancelFlow(String id, String user) throws ExecutorManagerException {
 		FlowRunner runner = runningFlows.get(id);
 		if (runner != null) {
-			runner.cancel();
+			runner.cancel(user);
 		}
 	}
 	
-	public void pauseFlow(String id) throws ExecutorManagerException {
+	public void pauseFlow(String id, String user) throws ExecutorManagerException {
 		FlowRunner runner = runningFlows.get(id);
 		if (runner != null) {
-			runner.pause();
+			runner.pause(user);
 		}
 	}
 	
-	public void resumeFlow(String id) throws ExecutorManagerException {
+	public void resumeFlow(String id, String user) throws ExecutorManagerException {
 		FlowRunner runner = runningFlows.get(id);
 		if (runner != null) {
-			runner.resume();
+			runner.resume(user);
 		}
 	}
 	

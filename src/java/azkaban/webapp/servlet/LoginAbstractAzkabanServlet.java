@@ -2,6 +2,7 @@ package azkaban.webapp.servlet;
 
 import java.io.IOException;
 import java.io.Writer;
+import java.util.HashMap;
 import java.util.UUID;
 
 import javax.servlet.ServletException;
@@ -57,7 +58,14 @@ public abstract class LoginAbstractAzkabanServlet extends
 			logger.info("Found session " + session.getUser());
 			handleGet(req, resp, session);
 		} else {
-			handleLogin(req, resp);
+			if (hasParam(req, "ajax")) {
+				HashMap<String, String> retVal = new HashMap<String, String>();
+				retVal.put("error", "session");
+				this.writeJSON(resp, retVal);
+			}
+			else {
+				handleLogin(req, resp);
+			}
 		}
 	}
 

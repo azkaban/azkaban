@@ -91,7 +91,7 @@ public class JobRunner extends EventHandler implements Runnable {
 				wait(5000);
 			}
 			catch (InterruptedException e) {
-				
+				logger.info("Job cancelled.");
 			}
 		}
 		// Run Job
@@ -109,9 +109,11 @@ public class JobRunner extends EventHandler implements Runnable {
 		closeLogger();
 	}
 
-	public void cancel() {
+	public synchronized void cancel() {
 		// Cancel code here
-
+		// will just interrupt, I guess, until the code is finished.
+		this.notifyAll();
+		
 		node.setStatus(Status.KILLED);
 	}
 

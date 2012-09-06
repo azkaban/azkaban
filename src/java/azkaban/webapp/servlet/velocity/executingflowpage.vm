@@ -10,6 +10,7 @@
 		<script type="text/javascript" src="${context}/js/backbone-0.5.3-min.js"></script>
 		<script type="text/javascript" src="${context}/js/jquery.simplemodal.js"></script>
 		<script type="text/javascript" src="${context}/js/jquery.contextMenu.js"></script>
+		<script type="text/javascript" src="${context}/js/azkaban.ajax.utils.js"></script>
 		<script type="text/javascript" src="${context}/js/azkaban.nav.js"></script>
 		<script type="text/javascript" src="${context}/js/azkaban.layout.js"></script>
 		<script type="text/javascript" src="${context}/js/azkaban.exflow.view.js"></script>
@@ -115,6 +116,21 @@
 				<tr><td class="first">End Time</td><td id="endTime">-</td></tr>
 				<tr><td class="first">Duration</td><td id="duration">-</td></tr>
 			</table>
+		</div>
+		
+		<div id="messageDialog" class="modal">
+			<h3 id="messageTitle">Error</h3>
+			<div class="messageDiv">
+				<p id="messageBox"></p>
+			</div>
+		</div>
+		
+		<div id="invalid-session" class="modal">
+			<h3>Invalid Session</h3>
+			<p>Session has expired. Please re-login.</p>
+			<div class="actions">
+				<a class="yes btn2" id="login-btn" href="#">Re-login</a>
+			</div>
 		</div>
 	</body>
 </html>

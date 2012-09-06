@@ -182,18 +182,74 @@ azkaban.FlowTabView= Backbone.View.extend({
   	}
   },
   handleCancelClick : function(evt) {
-  	
+    var requestURL = contextURL + "/executor";
+	ajaxCall(
+		requestURL,
+		{"execid": execId, "ajax":"cancelFlow"},
+		function(data) {
+          console.log("cancel clicked");
+          if (data.error) {
+          	showDialog("Error", data.error);
+          }
+          else {
+            showDialog("Cancelled", "Flow has been cancelled.");
+          }
+      	}
+      );
   },
   handleRestartClick : function(evt) {
-  	
   },
   handlePauseClick : function(evt) {
-  	
+  	  var requestURL = contextURL + "/executor";
+		ajaxCall(
+	      requestURL,
+	      {"execid": execId, "ajax":"pauseFlow"},
+	      function(data) {
+	          console.log("pause clicked");
+	          if (data.error) {
+	          	showDialog("Error", data.error);
+	          }
+	          else {
+	            showDialog("Paused", "Flow has been paused.");
+	          }
+	      }
+      );
   },
   handleResumeClick : function(evt) {
-  	
+     var requestURL = contextURL + "/executor";
+     ajaxCall(
+          requestURL,
+	      {"execid": execId, "ajax":"resumeFlow"},
+	      function(data) {
+	          console.log("pause clicked");
+	          if (data.error) {
+	          	showDialog("Error", data.error);
+	          }
+	          else {
+	          	showDialog("Resumed", "Flow has been resumed.");
+	          }
+	      }
+	  );
   }
 });
+
+var showDialog = function(title, message) {
+  $('#messageTitle').text(title);
+
+  $('#messageBox').text(message);
+
+  $('#messageDialog').modal({
+      closeHTML: "<a href='#' title='Close' class='modal-close'>x</a>",
+      position: ["20%",],
+      containerId: 'confirm-container',
+      containerCss: {
+        'height': '220px',
+        'width': '565px'
+      },
+      onShow: function (dialog) {
+      }
+    });
+}
 
 var jobListView;
 azkaban.JobListView = Backbone.View.extend({
@@ -765,10 +821,10 @@ var updaterFunction = function() {
 	var requestURL = contextURL + "/executor";
 	var oldData = graphModel.get("data");
 	var nodeMap = graphModel.get("nodeMap");
-	var keepRunning = oldData.status != "SUCCEEDED" && oldData.status != "FAILED";
-	
+	var keepRunning = oldData.status != "SUCCEEDED" && oldData.status != "FAILED" && oldData.status != "KILLED";
+
 	if (keepRunning) {
-		$.get(
+	     ajaxCall(
 	      requestURL,
 	      {"execid": execId, "ajax":"fetchexecflowupdate", "lastUpdateTime": updateTime},
 	      function(data) {
@@ -792,14 +848,13 @@ var updaterFunction = function() {
 	          }
 
 	          graphModel.set({"update": data});
-	      },
-	      "json"
-	    );
+	      }
+		);
 		
 		var data = graphModel.get("data");
 		if (data.status != "SUCCEEDED" && data.status != "FAILED" ) {
 			// 10 sec updates
-			setTimeout(function() {updaterFunction();}, 10000);
+			setTimeout(function() {updaterFunction();}, 5000);
 		}
 		else {
 			console.log("Flow finished, so no more updates");
@@ -821,7 +876,7 @@ $(function() {
 	executionListView = new azkaban.ExecutionListView({el: $('#jobListView'), model:graphModel});
 	var requestURL = contextURL + "/executor";
 
-	$.get(
+	ajaxCall(
 	      requestURL,
 	      {"execid": execId, "ajax":"fetchexecflow"},
 	      function(data) {
@@ -850,8 +905,7 @@ $(function() {
 					}
 			 }
 	          
-	      	  setTimeout(function() {updaterFunction()}, 5000);
-	      },
-	      "json"
+	      	  setTimeout(function() {updaterFunction()}, 2500);
+	      }
 	    );
 });
