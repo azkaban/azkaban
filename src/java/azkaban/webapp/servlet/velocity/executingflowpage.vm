@@ -57,6 +57,8 @@
 							<li><a id="graphViewLink" href="#graph">Graph</a></li>
 							<li class="lidivider">|</li>
 							<li><a id="jobslistViewLink" href="#jobslist">Job List</a></li>
+							<li class="lidivider">|</li>
+							<li><a id="flowLogViewLink" href="#log">Log</a></li>
 						</ul>
 						<ul id="actionsBtns" class="buttons">
 							<li><div id="pausebtn" class="btn2">Pause</div></li>
@@ -97,6 +99,12 @@
 							<tbody id="executableBody">
 							</tbody>
 						</table>
+					</div>
+					<div id="flowLogView">
+						<div class="logHeader"><div class="logButtonRow"><div id="updateLogBtn" class="btn7">Load More</div></div></div>
+						<div class="logViewer">
+							<pre id="logSection" class="log"></pre>
+						</div>
 					</div>
 				</div>
 #end

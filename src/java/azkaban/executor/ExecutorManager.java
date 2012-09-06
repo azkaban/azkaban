@@ -1,8 +1,11 @@
 package azkaban.executor;
 
 import java.io.BufferedOutputStream;
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.FileReader;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -51,6 +54,9 @@ public class ExecutorManager {
 	private static final long ACCESS_ERROR_THRESHOLD = 30000;
 	private static final int UPDATE_THREAD_MS = 1000;
 
+	// log read buffer.
+	private static final int LOG_BUFFER_READ_SIZE = 10*1024;
+	
 	private File basePath;
 
 	private AtomicInteger counter = new AtomicInteger();
@@ -447,6 +453,65 @@ public class ExecutorManager {
 		logger.debug("Submitted Response: " + response);
 		flow.setLastCheckedTime(System.currentTimeMillis());
 		flow.setSubmitted(true);
+	}
+	
+	public long getExecutableFlowLog(ExecutableFlow flow, StringBuffer buffer, long startChar, long maxSize) throws ExecutorManagerException {
+		String path = flow.getExecutionPath();
+		File execPath = new File(path);
+		if (!execPath.exists()) {
+			logger.error("Execution dir for " + flow + " doesn't exist.");
+			return -1;
+		}
+		
+		String logFileName = "_flow." + flow.getExecutionId() + ".log";
+		File flowLogFile = new File(execPath, logFileName);
+		
+		if (!flowLogFile.exists()) {
+			logger.error("Execution log for " + flowLogFile + " doesn't exist.");
+			return -1;
+		}
+		
+		BufferedReader reader = null;
+		FileReader fileReader = null;
+		char[] charBuffer = new char[LOG_BUFFER_READ_SIZE];
+		
+		try {
+			fileReader = new FileReader(flowLogFile);
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		}
+
+		long charPosition = startChar;
+		int charRead = 0;
+		long totalCharRead = 0;
+		try {
+			reader = new BufferedReader(fileReader);
+			reader.skip(startChar);
+
+			do {
+				charRead = reader.read(charBuffer);
+				if (charRead == -1) {
+					break;
+				}
+				totalCharRead += charRead;
+				charPosition += charRead;
+				buffer.append(charBuffer, 0, charRead);
+			} while (charRead == charBuffer.length && totalCharRead < maxSize);
+			
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		finally {
+			if (reader != null) {
+				try {
+					reader.close();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
+		}
+		
+		return charPosition;
 	}
 	
 	public void cleanupAll(ExecutableFlow exflow) throws ExecutorManagerException{

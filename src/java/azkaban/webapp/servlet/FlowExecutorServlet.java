@@ -29,6 +29,7 @@ public class FlowExecutorServlet extends LoginAbstractAzkabanServlet {
 	private static final long serialVersionUID = 1L;
 	private ProjectManager projectManager;
 	private ExecutorManager executorManager;
+	private static final int STRING_BUFFER_SIZE = 1024*5;
 
 	@Override
 	public void init(ServletConfig config) throws ServletException {
@@ -155,6 +156,9 @@ public class FlowExecutorServlet extends LoginAbstractAzkabanServlet {
 				else if (ajaxName.equals("resumeFlow")) {
 					ajaxResumeFlow(req, resp, ret, session.getUser(), exFlow);
 				}
+				else if (ajaxName.equals("fetchExecFlowLogs")) {
+					ajaxFetchExecFlowLogs(req, resp, ret, session.getUser(), exFlow);
+				}
 			}
 		}
 		else {
@@ -166,6 +170,26 @@ public class FlowExecutorServlet extends LoginAbstractAzkabanServlet {
 			}
 		}
 		this.writeJSON(resp, ret);
+	}
+
+	private void ajaxFetchExecFlowLogs(HttpServletRequest req, HttpServletResponse resp, HashMap<String, Object> ret, User user, ExecutableFlow exFlow) throws ServletException {
+		Project project = getProjectAjaxByPermission(ret, exFlow.getProjectId(), user, Type.READ);
+		if (project == null) {
+			return;
+		}
+		
+		int startChar = this.getIntParam(req, "current");
+		int maxSize = this.getIntParam(req, "max");
+		
+		StringBuffer buffer = new StringBuffer(STRING_BUFFER_SIZE);
+		try {
+			long character = executorManager.getExecutableFlowLog(exFlow, buffer, startChar, maxSize);
+			ret.put("current", character);
+			ret.put("log", buffer.toString());
+		} catch (ExecutorManagerException e) {
+			e.printStackTrace();
+			ret.put("error", e.getMessage());
+		}
 	}
 
 	private void ajaxCancelFlow(HttpServletRequest req, HttpServletResponse resp, HashMap<String, Object> ret, User user, ExecutableFlow exFlow) throws ServletException{
@@ -187,7 +211,6 @@ public class FlowExecutorServlet extends LoginAbstractAzkabanServlet {
 			return;
 		}
 
-		
 	}
 
 	private void ajaxPauseFlow(HttpServletRequest req, HttpServletResponse resp, HashMap<String, Object> ret, User user, ExecutableFlow exFlow) throws ServletException{

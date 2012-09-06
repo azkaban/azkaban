@@ -328,6 +328,7 @@ tr:hover td {
 .btn4,
 .btn5,
 .btn6,
+.btn7,
 .btn-disabled {
   -moz-border-radius: 3px;
   -webkit-border-radius: 3px;
@@ -400,11 +401,39 @@ tr:hover td {
 .btn4 {
   background: -moz-linear-gradient(center top , white 0pt, #ECECEC 100%) repeat scroll 0 0 transparent;
   background: -webkit-gradient(linear, center top, center bottom, from(#FFF), to(#ECECEC));
+  background: linear-gradient(top, #FFF 0, #FFF 1px, #E4E4E4 1px, #CECECE 100%);
   
   border-color: #ccc;
   color: #585858;
   display: inline-block;
   font-weight: normal;
+}
+
+/* grey */
+.btn7 {
+	background: #f2f5f6; /* Old browsers */
+	background: -moz-linear-gradient(top, #f2f5f6 0%, #e3eaed 37%, #c8d7dc 100%); /* FF3.6+ */
+	background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,#f2f5f6), color-stop(37%,#e3eaed), color-stop(100%,#c8d7dc)); /* Chrome,Safari4+ */
+	background: -webkit-linear-gradient(top, #f2f5f6 0%,#e3eaed 37%,#c8d7dc 100%); /* Chrome10+,Safari5.1+ */
+	background: -o-linear-gradient(top, #f2f5f6 0%,#e3eaed 37%,#c8d7dc 100%); /* Opera 11.10+ */
+	background: -ms-linear-gradient(top, #f2f5f6 0%,#e3eaed 37%,#c8d7dc 100%); /* IE10+ */
+	background: linear-gradient(to bottom, #f2f5f6 0%,#e3eaed 37%,#c8d7dc 100%); /* W3C */
+	filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#f2f5f6', endColorstr='#c8d7dc',GradientType=0 ); /* IE6-9 */
+	  
+	  border-color: #9BA7AA;
+	  color: #61696B;
+	  display: inline-block;
+	  font-weight: bold;
+}
+.btn7:hover {
+	background: #fcfeff; /* Old browsers */
+	background: -moz-linear-gradient(top, #fcfeff 0%, #f2f9fc 37%, #deeff4 100%); /* FF3.6+ */
+	background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,#fcfeff), color-stop(37%,#f2f9fc), color-stop(100%,#deeff4)); /* Chrome,Safari4+ */
+	background: -webkit-linear-gradient(top, #fcfeff 0%,#f2f9fc 37%,#deeff4 100%); /* Chrome10+,Safari5.1+ */
+	background: -o-linear-gradient(top, #fcfeff 0%,#f2f9fc 37%,#deeff4 100%); /* Opera 11.10+ */
+	background: -ms-linear-gradient(top, #fcfeff 0%,#f2f9fc 37%,#deeff4 100%); /* IE10+ */
+	background: linear-gradient(to bottom, #fcfeff 0%,#f2f9fc 37%,#deeff4 100%); /* W3C */
+	filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#fcfeff', endColorstr='#deeff4',GradientType=0 ); /* IE6-9 */
 }
 
 /* grey right */
@@ -1135,6 +1164,43 @@ tr:hover td {
 	right: 50px;
 	padding: 10px;
 	background: #E0E0E0;
+}
+
+#flowLogView {
+	position: absolute;
+	top: 210px;
+	bottom: 5px;
+	left: 50px;
+	right: 50px;
+	background: #E0E0E0;
+}
+
+.logHeader {
+	height: 30px;
+	margin: 0px;
+	width: 100%;
+	background-color: #CCC;
+}
+
+.logButtonRow {
+	padding-top: 4px;
+	padding-left: 4px;
+}
+
+.logViewer {
+	position: absolute;
+	top: 35px;
+	bottom: 5px;
+	left: 5px;
+	right: 5px;
+	background-color: #FFF;
+	overflow:scroll;
+}
+
+.log {
+	padding-left: 15px;
+	font-family: "courier";
+	font-size: 10pt;
 }
 
 .relative {

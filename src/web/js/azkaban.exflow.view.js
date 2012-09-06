@@ -111,6 +111,7 @@ azkaban.FlowTabView= Backbone.View.extend({
   events : {
   	"click #graphViewLink" : "handleGraphLinkClick",
   	"click #jobslistViewLink" : "handleJobslistLinkClick",
+  	"click #flowLogViewLink" : "handleLogLinkClick",
   	"click #cancelbtn" : "handleCancelClick",
   	"click #restartbtn" : "handleRestartClick",
   	"click #pausebtn" : "handlePauseClick",
@@ -139,16 +140,29 @@ azkaban.FlowTabView= Backbone.View.extend({
   handleGraphLinkClick: function(){
   	$("#jobslistViewLink").removeClass("selected");
   	$("#graphViewLink").addClass("selected");
+  	$("#flowLogViewLink").removeClass("selected");
   	
   	$("#jobListView").hide();
   	$("#graphView").show();
+  	$("#flowLogView").hide();
   },
   handleJobslistLinkClick: function() {
   	$("#graphViewLink").removeClass("selected");
   	$("#jobslistViewLink").addClass("selected");
+  	$("#flowLogViewLink").removeClass("selected");
   	
   	$("#graphView").hide();
   	$("#jobListView").show();
+  	$("#flowLogView").hide();
+  },
+  handleLogLinkClick: function() {
+  	$("#graphViewLink").removeClass("selected");
+  	$("#jobslistViewLink").removeClass("selected");
+  	$("#flowLogViewLink").addClass("selected");
+  	
+  	$("#graphView").hide();
+  	$("#jobListView").hide();
+  	$("#flowLogView").show();
   },
   handleFlowStatusChange: function() {
   	var data = this.model.get("data");
@@ -813,8 +827,50 @@ azkaban.ExecutionListView = Backbone.View.extend({
 	}
 });
 
+var flowLogView;
+azkaban.FlowLogView = Backbone.View.extend({
+	events: {
+		"click #updateLogBtn" : "handleUpdate"
+	},
+	initialize: function(settings) {
+		this.model.set({"current": 0});
+		this.handleUpdate();
+	},
+	handleUpdate: function(evt) {
+		var current = this.model.get("current");
+		var requestURL = contextURL + "/executor"; 
+		var model = this.model;
+		ajaxCall(
+			requestURL,
+			{"execid": execId, "ajax":"fetchExecFlowLogs", "current": current, "max": 100000},
+			function(data) {
+	          console.log("fetchLogs");
+	          if (data.error) {
+	          	showDialog("Error", data.error);
+	          }
+	          else {
+	          	var log = $("#logSection").text();
+	          	if (!log) {
+	          		log = data.log;
+	          	}
+	          	else {
+	          		log += data.log;
+	          	}
+	          	
+	          	current = data.current;
+	          	$("#logSection").text(log);
+	          	model.set({"current": current, "log": log});
+	          }
+	      }
+	    );
+	}
+});
+
 var graphModel;
 azkaban.GraphModel = Backbone.Model.extend({});
+
+var logModel;
+azkaban.LogModel = Backbone.Model.extend({});
 
 var updateTime = -1;
 var updaterFunction = function() {
@@ -869,10 +925,12 @@ $(function() {
 	var selected;
 
 	graphModel = new azkaban.GraphModel();
+	logModel = new azkaban.LogModel();
 	flowTabView = new azkaban.FlowTabView({el:$( '#headertabs'), model: graphModel});
 	svgGraphView = new azkaban.SvgGraphView({el:$('#svgDiv'), model: graphModel});
 	jobsListView = new azkaban.JobListView({el:$('#jobList'), model: graphModel});
 	statusView = new azkaban.StatusView({el:$('#flow-status'), model: graphModel});
+	flowLogView = new azkaban.FlowLogView({el:$('#flowLogView'), model: logModel});
 	executionListView = new azkaban.ExecutionListView({el: $('#jobListView'), model:graphModel});
 	var requestURL = contextURL + "/executor";
 
@@ -903,9 +961,12 @@ $(function() {
 					if (hash == "#jobslist") {
 						flowTabView.handleJobslistLinkClick();
 					}
+					else if (hash == "#log") {
+						flowTabView.handleLogLinkClick();
+					}
 			 }
 	          
-	      	  setTimeout(function() {updaterFunction()}, 2500);
+	      	 setTimeout(function() {updaterFunction()}, 2500);
 	      }
 	    );
 });
