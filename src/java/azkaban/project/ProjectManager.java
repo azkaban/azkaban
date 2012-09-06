@@ -12,6 +12,8 @@ public interface ProjectManager {
 	public List<String> getProjectNames();
 
 	public List<Project> getUserProjects(User user);
+	
+	public List<Project> getProjects();
 
 	public void commitProject(String name) throws ProjectManagerException;
 

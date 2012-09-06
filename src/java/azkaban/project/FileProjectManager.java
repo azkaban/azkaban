@@ -195,6 +195,12 @@ public class FileProjectManager implements ProjectManager {
 	}
 
 	@Override
+	public List<Project> getProjects() {
+		return new ArrayList<Project>(projects.values());
+	}
+
+	
+	@Override
 	public Project getProject(String name) {
 		return projects.get(name);
 	}
@@ -510,6 +516,5 @@ public class FileProjectManager implements ProjectManager {
 			throw new ProjectManagerException(e.getMessage());
 		}
 	}
-
 
 }

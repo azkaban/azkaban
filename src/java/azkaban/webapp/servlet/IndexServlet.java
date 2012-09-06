@@ -44,9 +44,17 @@ public class IndexServlet extends LoginAbstractAzkabanServlet {
 		User user = session.getUser();
 
 		ProjectManager manager = this.getApplication().getProjectManager();
-		List<Project> projects = manager.getUserProjects(user);
 		Page page = newPage(req, resp, session, "azkaban/webapp/servlet/velocity/index.vm");
-		page.add("projects", projects);
+		if (hasParam(req, "all")) {
+			List<Project> projects = manager.getProjects();
+			page.add("allProjects", "");
+			page.add("projects", projects);
+		}
+		else {
+			List<Project> projects = manager.getUserProjects(user);
+			page.add("projects", projects);
+		}
+		
 		page.render();
 	}
 
