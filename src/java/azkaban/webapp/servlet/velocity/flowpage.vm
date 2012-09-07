@@ -49,7 +49,7 @@
 						</div>
 						
 						<div id="executebtn" class="btn1">Execute</div>
-						<div id="schedulebtn" class="btn2">Schedule Flow</div>
+						<div id="scheduleflowbtn" class="btn2 scheduleflow">Schedule Flow</div>
 					</div>
 					
 					<div id="headertabs" class="headertabs">
@@ -71,7 +71,7 @@
 							</div>
 							<div id="svgDiv" >
 								<svg id="svgGraph" xmlns="http://www.w3.org/2000/svg" version="1.1" shape-rendering="optimize-speed" text-rendering="optimize-speed" >
-								</svg>
+								</svg>pload-project
 							</div>
 						</div>
 					</div>
@@ -107,6 +107,38 @@
 						</div>
 					</div>
 				</div>
+		<!-- modal content -->
+                <div id="schedule-flow" class="modal">
+                        <h3>Schedule A Flow</h3>
+                        <div id="errorMsg" class="box-error-message">$errorMsg</div>
+
+                        <div class="message">
+                                <fieldset>
+                                        <dl>
+                                                <dt><label for="path">Project Name</label></dt>
+                                                <dd><input id="path" name="project" type="text" size="20" title="The project name."/></dd>
+                                                <dt>Description</dt>
+                                                <dd><textarea id="description" name="description" rows="2" cols="40"></textarea></dd>
+
+                                                <input name="action" type="hidden" value="create" />
+                                                <input name="redirect" type="hidden" value="$!context/" />
+                                        </dl>
+                                </fieldset>
+                        </div>
+
+                        <div class="actions">
+                                <a class="yes btn3" id="schedule-btn" href="#">Schedule The Flow</a>
+                                <a class="no simplemodal-close btn4" href="#">Cancel</a>
+                        </div>
+                        <div id="invalid-session" class="modal">
+                                <h3>Invalid Session</h3>
+                                <p>Session has expired. Please re-login.</p>
+                                <div class="actions">
+                                        <a class="yes btn3" id="login-btn" href="#">Re-login</a>
+                                </div>
+                        </div>
+                </div>
+
 #end
 		<ul id="jobMenu" class="contextMenu flowSubmenu">  
 			<li class="open"><a href="#open">Open...</a></li>

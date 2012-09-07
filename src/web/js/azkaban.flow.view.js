@@ -855,6 +855,60 @@ azkaban.GraphModel = Backbone.Model.extend({});
 var executionModel;
 azkaban.ExecutionModel = Backbone.Model.extend({});
 
+var scheduleFlowView;
+azkaban.ScheduleFlowView = Backbone.View.extend({
+  events : {
+    "click #schedule-btn": "handleScheduleFlow"
+  },
+  initialize : function(settings) {
+    $("#errorMsg").hide();
+  },
+  handleScheduleFlow : function(evt) {
+         // First make sure we can upload
+         //var projectName = $('#path').val();
+         //var description = $('#description').val();
+
+     console.log("Creating schedule");
+     $.ajax({
+        async: "false",
+        url: "schedule",
+        dataType: "json",
+        type: "POST",
+        data: {
+		action:"scheduleFlow", 
+		projectId:projectName, 
+		flowId:flowName,
+		userExec:"dummy",
+		is_recurring:true
+		},
+        success: function(data) {
+                if (data.status == "success") {
+                        if (data.action == "redirect") {
+                                window.location = data.path;
+                        }
+			else{
+				$("#errorMsg").text("Flow " + projectName + "." + flowName + " scheduled!" );			
+			}
+                }
+                else {
+                        if (data.action == "login") {
+                                        window.location = "";
+                        }
+                        else {
+                                $("#errorMsg").text("ERROR: " + data.message);
+                                $("#errorMsg").slideDown("fast");
+                        }
+                }
+        }
+     });
+
+  },
+  render: function() {
+  }
+});
+
+
+
 $(function() {
 	var selected;
 	// Execution model has to be created before the window switches the tabs.
@@ -867,6 +921,7 @@ $(function() {
 	svgGraphView = new azkaban.SvgGraphView({el:$('#svgDiv'), model: graphModel});
 	jobsListView = new azkaban.JobListView({el:$('#jobList'), model: graphModel});
 	contextMenu = new azkaban.ContextMenu({el:$('#jobMenu')});
+	scheduleFlowView = new azkaban.ScheduleFlowView({el:$('#schedule-flow')});
 	
 	var requestURL = contextURL + "/manager";
 
@@ -946,5 +1001,22 @@ $(function() {
 			"json"
 		);
 		
+	});
+
+	$('#scheduleflowbtn').click( function() {
+	  console.log("schedule button clicked");
+	  $('#schedule-flow').modal({
+          closeHTML: "<a href='#' title='Close' class='modal-close'>x</a>",
+          position: ["20%",],
+          containerId: 'confirm-container',
+          containerCss: {
+            'height': '220px',
+            'width': '565px'
+          },
+          onShow: function (dialog) {
+            var modal = this;
+            $("#errorMsg").hide();
+          }
+        });
 	});
 });

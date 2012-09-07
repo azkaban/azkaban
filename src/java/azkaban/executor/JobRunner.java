@@ -15,6 +15,9 @@ import azkaban.executor.ExecutableFlow.Status;
 import azkaban.executor.event.Event;
 import azkaban.executor.event.Event.Type;
 import azkaban.executor.event.EventHandler;
+import azkaban.jobExecutor.AbstractProcessJob;
+import azkaban.jobExecutor.Job;
+import azkaban.jobExecutor.utils.JobWrappingFactory;
 import azkaban.utils.Props;
 
 public class JobRunner extends EventHandler implements Runnable {
@@ -29,6 +32,8 @@ public class JobRunner extends EventHandler implements Runnable {
 	private Logger logger;
 	private Layout loggerLayout = DEFAULT_LAYOUT;
 	private Appender jobAppender;
+	
+	private Job job;
 	
 	private static final Object logCreatorLock = new Object();
 	
@@ -85,7 +90,6 @@ public class JobRunner extends EventHandler implements Runnable {
 		node.setStatus(Status.RUNNING);
 		this.fireEventListeners(Event.create(this, Type.JOB_STARTED));
 
-		//Just for testing 5 sec each round.
 		synchronized(this) {
 			try {
 				wait(5000);
@@ -94,12 +98,26 @@ public class JobRunner extends EventHandler implements Runnable {
 				logger.info("Job cancelled.");
 			}
 		}
+
 		// Run Job
 		boolean succeeded = true;
 
+		props.put(AbstractProcessJob.WORKING_DIR, workingDir.getAbsolutePath());
+		JobWrappingFactory factory  = JobWrappingFactory.getJobWrappingFactory();
+        job = factory.buildJobExecutor(props, logger);
+
+        try {
+                job.run();
+        } catch (Exception e) {
+                succeeded = false;
+                //logger.error("job run failed!");
+                e.printStackTrace();
+        }
+		
 		node.setEndTime(System.currentTimeMillis());
 		if (succeeded) {
 			node.setStatus(Status.SUCCEEDED);
+			outputProps = job.getJobGeneratedProperties();
 			this.fireEventListeners(Event.create(this, Type.JOB_SUCCEEDED));
 		} else {
 			node.setStatus(Status.FAILED);
@@ -111,6 +129,18 @@ public class JobRunner extends EventHandler implements Runnable {
 
 	public synchronized void cancel() {
 		// Cancel code here
+		if(job == null) {
+            logger.error("Job doesn't exisit!");
+            return;
+		}
+
+		try {
+            job.cancel();
+		} catch (Exception e) {
+            logger.error("Failed trying to cancel job!");
+            e.printStackTrace();
+		}
+
 		// will just interrupt, I guess, until the code is finished.
 		this.notifyAll();
 		

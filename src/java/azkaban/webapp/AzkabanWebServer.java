@@ -38,12 +38,16 @@ import org.mortbay.thread.QueuedThreadPool;
 import azkaban.executor.ExecutorManager;
 import azkaban.project.FileProjectManager;
 import azkaban.project.ProjectManager;
+import azkaban.scheduler.LocalFileScheduleLoader;
+import azkaban.scheduler.ScheduleManager;
 import azkaban.user.UserManager;
 import azkaban.user.XmlUserManager;
 import azkaban.utils.Props;
 import azkaban.utils.Utils;
 import azkaban.webapp.servlet.AzkabanServletContextListener;
+
 import azkaban.webapp.servlet.ExecutorServlet;
+import azkaban.webapp.servlet.ScheduleServlet;
 import azkaban.webapp.servlet.HistoryServlet;
 import azkaban.webapp.servlet.IndexServlet;
 import azkaban.webapp.servlet.ProjectManagerServlet;
@@ -95,7 +99,9 @@ public class AzkabanWebServer {
 	private UserManager userManager;
 	private ProjectManager projectManager;
 	private ExecutorManager executorManager;
-
+	
+	private ScheduleManager scheduleManager;
+	
 	private Props props;
 	private SessionCache sessionCache;
 	private File tempDir;
@@ -118,6 +124,7 @@ public class AzkabanWebServer {
 		userManager = loadUserManager(props);
 		projectManager = loadProjectManager(props);
 		executorManager = loadExecutorManager(props);
+		scheduleManager = loadScheduleManager(executorManager, props);
 
 		tempDir = new File(props.getString("azkaban.temp.dir", "temp"));
 
@@ -185,6 +192,13 @@ public class AzkabanWebServer {
 		return execManager;
 	}
 
+	private ScheduleManager loadScheduleManager(ExecutorManager execManager, Props props ) throws Exception {
+
+		ScheduleManager schedManager = new ScheduleManager(execManager, projectManager, new LocalFileScheduleLoader(props));
+		return schedManager;
+	}
+
+	
 	/**
 	 * Returns the web session cache.
 	 * 
@@ -224,6 +238,10 @@ public class AzkabanWebServer {
      */
 	public ExecutorManager getExecutorManager() {
 		return executorManager;
+	}
+	
+	public ScheduleManager getScheduleManager() {
+		return scheduleManager;
 	}
 
 	/**
@@ -348,6 +366,7 @@ public class AzkabanWebServer {
 		root.addServlet(new ServletHolder(new ProjectManagerServlet()),"/manager");
 		root.addServlet(new ServletHolder(new ExecutorServlet()),"/executor");
 		root.addServlet(new ServletHolder(new HistoryServlet()), "/history");
+		root.addServlet(new ServletHolder(new ScheduleServlet()),"/schedule");
 		
 		root.setAttribute(AzkabanServletContextListener.AZKABAN_SERVLET_CONTEXT_KEY, app);
 
@@ -438,4 +457,6 @@ public class AzkabanWebServer {
 
 		return null;
 	}
+
+
 }
