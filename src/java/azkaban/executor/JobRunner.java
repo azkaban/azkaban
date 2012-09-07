@@ -90,15 +90,6 @@ public class JobRunner extends EventHandler implements Runnable {
 		node.setStatus(Status.RUNNING);
 		this.fireEventListeners(Event.create(this, Type.JOB_STARTED));
 
-		synchronized(this) {
-			try {
-				wait(5000);
-			}
-			catch (InterruptedException e) {
-				logger.info("Job cancelled.");
-			}
-		}
-
 		// Run Job
 		boolean succeeded = true;
 
@@ -130,7 +121,7 @@ public class JobRunner extends EventHandler implements Runnable {
 	public synchronized void cancel() {
 		// Cancel code here
 		if(job == null) {
-            logger.error("Job doesn't exisit!");
+            logger.error("Job doesn't exist!");
             return;
 		}
 

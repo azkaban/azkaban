@@ -390,8 +390,7 @@ public class FlowRunner extends EventHandler implements Runnable {
 					logger.info("Flow is paused so adding "
 							+ dependentNode.getId() + " to paused list.");
 				} else {
-					logger.info("Flow is not paused so adding "
-							+ dependentNode.getId() + " to paused list.");
+					logger.info("Adding " + dependentNode.getId() + " to run queue.");
 					jobsToRun.add(runner);
 				}
 			}
