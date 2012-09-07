@@ -24,6 +24,8 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.util.Collection;
 import java.util.Enumeration;
 import java.util.Random;
@@ -174,4 +176,59 @@ public class Utils {
 
 		return (Double) obj;
 	}
+	
+    /**
+     * Get the root cause of the Exception
+     * 
+     * @param e The Exception
+     * @return The root cause of the Exception
+     */
+    private static RuntimeException getCause(InvocationTargetException e) {
+        Throwable cause = e.getCause();
+        if(cause instanceof RuntimeException)
+            throw (RuntimeException) cause;
+        else
+            throw new IllegalStateException(e.getCause());
+    }
+	
+    /**
+     * Get the Class of all the objects
+     * 
+     * @param args The objects to get the Classes from
+     * @return The classes as an array
+     */
+    public static Class<?>[] getTypes(Object... args) {
+        Class<?>[] argTypes = new Class<?>[args.length];
+        for(int i = 0; i < argTypes.length; i++)
+            argTypes[i] = args[i].getClass();
+        return argTypes;
+    }
+	
+    public static Object callConstructor(Class<?> c, Object... args) {
+        return callConstructor(c, getTypes(args), args);
+    }
+
+    /**
+     * Call the class constructor with the given arguments
+     * 
+     * @param c The class
+     * @param args The arguments
+     * @return The constructed object
+     */
+    public static Object callConstructor(Class<?> c, Class<?>[] argTypes, Object[] args) {
+        try {
+            Constructor<?> cons = c.getConstructor(argTypes);
+            return cons.newInstance(args);
+        } catch(InvocationTargetException e) {
+            throw getCause(e);
+        } catch(IllegalAccessException e) {
+            throw new IllegalStateException(e);
+        } catch(NoSuchMethodException e) {
+            throw new IllegalStateException(e);
+        } catch(InstantiationException e) {
+            throw new IllegalStateException(e);
+        }
+    }
+
+	
 }
