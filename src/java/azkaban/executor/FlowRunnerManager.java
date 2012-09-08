@@ -133,7 +133,6 @@ public class FlowRunnerManager {
 				logger.info("Flow " + flow.getExecutionId() + " has finished.");
 				runningFlows.remove(flow.getExecutionId());
 			}
-
 		}
 	}
 }

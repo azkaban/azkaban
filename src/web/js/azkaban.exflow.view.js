@@ -207,6 +207,8 @@ azkaban.FlowTabView= Backbone.View.extend({
           }
           else {
             showDialog("Cancelled", "Flow has been cancelled.");
+
+            setTimeout(function() {updateStatus();}, 1100);
           }
       	}
       );
@@ -225,6 +227,8 @@ azkaban.FlowTabView= Backbone.View.extend({
 	          }
 	          else {
 	            showDialog("Paused", "Flow has been paused.");
+	            
+            	setTimeout(function() {updateStatus();}, 1100);
 	          }
 	      }
       );
@@ -241,6 +245,7 @@ azkaban.FlowTabView= Backbone.View.extend({
 	          }
 	          else {
 	          	showDialog("Resumed", "Flow has been resumed.");
+            	setTimeout(function() {updateStatus();}, 1100);
 	          }
 	      }
 	  );
@@ -879,15 +884,12 @@ azkaban.GraphModel = Backbone.Model.extend({});
 var logModel;
 azkaban.LogModel = Backbone.Model.extend({});
 
-var updateTime = -1;
-var updaterFunction = function() {
+var updateStatus = function() {
 	var requestURL = contextURL + "/executor";
 	var oldData = graphModel.get("data");
 	var nodeMap = graphModel.get("nodeMap");
-	var keepRunning = oldData.status != "SUCCEEDED" && oldData.status != "FAILED" && oldData.status != "KILLED";
-
-	if (keepRunning) {
-	     ajaxCall(
+	
+	ajaxCall(
 	      requestURL,
 	      {"execid": execId, "ajax":"fetchexecflowupdate", "lastUpdateTime": updateTime},
 	      function(data) {
@@ -911,12 +913,23 @@ var updaterFunction = function() {
 	          }
 
 	          graphModel.set({"update": data});
-	      }
-		);
-		
+	      });
+}
+
+var updateTime = -1;
+var updaterFunction = function() {
+	var oldData = graphModel.get("data");
+	var keepRunning = oldData.status != "SUCCEEDED" && oldData.status != "FAILED" && oldData.status != "KILLED";
+
+	if (keepRunning) {
+		updateStatus();
+
 		var data = graphModel.get("data");
-		if (data.status != "SUCCEEDED" && data.status != "FAILED" ) {
-			// 10 sec updates
+		if (data.status == "UNKNOWN" || data.status == "WAITING") {
+			setTimeout(function() {updaterFunction();}, 1000);
+		}
+		else if (data.status != "SUCCEEDED" && data.status != "FAILED" ) {
+			// 5 sec updates
 			setTimeout(function() {updaterFunction();}, 5000);
 		}
 		else {
@@ -973,7 +986,7 @@ $(function() {
 					}
 			 }
 	          
-	      	 setTimeout(function() {updaterFunction()}, 2500);
+	      	 updaterFunction();
 	      }
 	    );
 });
