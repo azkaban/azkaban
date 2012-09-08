@@ -26,10 +26,9 @@ import java.util.Map;
 import org.apache.commons.fileupload.util.Streams;
 import org.apache.commons.io.IOUtils;
 import org.apache.log4j.Logger;
-import org.json.JSONObject;
 
+import azkaban.utils.JSONUtils;
 import azkaban.utils.Props;
-import azkaban.jobExecutor.utils.JSONToJava;
 import azkaban.jobExecutor.utils.PropsUtils;
 
 /*
@@ -50,8 +49,6 @@ public abstract class AbstractProcessJob extends AbstractJob {
     public static final String JOB_PROP_ENV = "JOB_PROP_FILE";
     public static final String JOB_NAME_ENV = "JOB_NAME";
     public static final String JOB_OUTPUT_PROP_FILE = "JOB_OUTPUT_PROP_FILE";
-
-    private static final JSONToJava jsonToJava = new JSONToJava();
 
     protected final String _jobPath;
 
@@ -138,8 +135,7 @@ public abstract class AbstractProcessJob extends AbstractJob {
             final String content = Streams.asString(reader).trim();
 
             if (!content.isEmpty()) {
-                Map<String, Object> propMap = jsonToJava.apply(new JSONObject(
-                        content));
+                Map<String, Object> propMap = (Map<String, Object>)JSONUtils.parseJSONFromString(content);
 
                 for (Map.Entry<String, Object> entry : propMap.entrySet()) {
                     outputProps

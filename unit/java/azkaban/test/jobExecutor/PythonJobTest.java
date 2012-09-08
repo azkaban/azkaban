@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.util.Date;
 
 import org.apache.log4j.Logger;
-import org.easymock.classextension.EasyMock;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;

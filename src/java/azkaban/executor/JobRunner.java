@@ -89,7 +89,19 @@ public class JobRunner extends EventHandler implements Runnable {
 		logger.info("Starting job " + node.getId() + " at " + node.getStartTime());
 		node.setStatus(Status.RUNNING);
 		this.fireEventListeners(Event.create(this, Type.JOB_STARTED));
+		
+		boolean succeeded = true;
+		synchronized(this) {
+			try {
+				wait(5000);
+			}
+			catch (InterruptedException e) {
+				logger.info("Job cancelled.");
+				succeeded = false;
+			}
+		}
 
+/*
 		// Run Job
 		boolean succeeded = true;
 
@@ -104,11 +116,13 @@ public class JobRunner extends EventHandler implements Runnable {
                 //logger.error("job run failed!");
                 e.printStackTrace();
         }
-		
+		*/
 		node.setEndTime(System.currentTimeMillis());
 		if (succeeded) {
 			node.setStatus(Status.SUCCEEDED);
-			outputProps = job.getJobGeneratedProperties();
+			if (job != null) {
+				outputProps = job.getJobGeneratedProperties();
+			}
 			this.fireEventListeners(Event.create(this, Type.JOB_SUCCEEDED));
 		} else {
 			node.setStatus(Status.FAILED);
@@ -121,7 +135,7 @@ public class JobRunner extends EventHandler implements Runnable {
 	public synchronized void cancel() {
 		// Cancel code here
 		if(job == null) {
-            logger.error("Job doesn't exist!");
+            logger.error("Job doesn't exisit!");
             return;
 		}
 

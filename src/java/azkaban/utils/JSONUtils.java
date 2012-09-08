@@ -1,9 +1,7 @@
 package azkaban.utils;
 
-import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -11,184 +9,19 @@ import java.io.Reader;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
 
 import org.codehaus.jackson.JsonFactory;
 import org.codehaus.jackson.JsonNode;
 import org.codehaus.jackson.JsonParser;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.map.ObjectWriter;
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
-import org.json.JSONTokener;
 
 public class JSONUtils {
 
-	
 	/**
 	 * The constructor. Cannot construct this class.
 	 */
 	private JSONUtils() {
-	}
-	
-	/**
-	 * Takes a reader to stream the JSON string. The reader is not wrapped in a BufferReader
-	 * so it is up to the user to employ such optimizations if so desired.
-	 * 
-	 * The results will be Maps, Lists and other Java mapping of Json types (i.e. String, Number, Boolean).
-	 * 
-	 * @param reader
-	 * @return
-	 * @throws Exception
-	 */
-	public static Map<String, Object> fromJSONStream(Reader reader) throws Exception {
-		JSONObject jsonObj = new JSONObject(new JSONTokener(reader));
-		Map<String, Object> results = createObject(jsonObj);
-		
-		return results;
-	}
-	
-	/**
-	 * Converts a json string to Objects.
-	 * 
-	 * The results will be Maps, Lists and other Java mapping of Json types (i.e. String, Number, Boolean).
-	 * 
-	 * @param str
-	 * @return
-	 * @throws Exception
-	 */
-	public static Map<String, Object> fromJSONString(String str) throws Exception {
-		JSONObject jsonObj = new JSONObject(str);
-		Map<String, Object> results = createObject(jsonObj);
-		return results;
-	}
-
-	/**
-	 * Recurses through the json object to create a Map/List/Object equivalent.
-	 * 
-	 * @param obj
-	 * @return
-	 */
-	@SuppressWarnings("unchecked")
-	private static Map<String, Object> createObject(JSONObject obj) {
-		LinkedHashMap<String, Object> map = new LinkedHashMap<String, Object>();
-		
-		Iterator<String> iterator = obj.keys();
-		while(iterator.hasNext()) {
-			String key = iterator.next();
-			Object value = null;
-			try {
-				value = obj.get(key);
-			} catch (JSONException e) {
-				// Since we get the value from the key given by the JSONObject, 
-				// this exception shouldn't be thrown.
-			}
-			
-			if (value instanceof JSONArray) {
-				value = createArray((JSONArray)value);
-			}
-			else if (value instanceof JSONObject) {
-				value = createObject((JSONObject)value);
-			}
-			
-			map.put(key, value);
-		}
-
-		return map;
-	}
-	
-	/**
-	 * Recurses through the json object to create a Map/List/Object equivalent.
-	 * 
-	 * @param obj
-	 * @return
-	 */
-	private static List<Object> createArray(JSONArray array) {
-		ArrayList<Object> list = new ArrayList<Object>();
-		for (int i = 0; i < array.length(); ++i) {
-			Object value = null;
-			try {
-				value = array.get(i);
-			} catch (JSONException e) {
-				// Ugh... JSON's over done exception throwing.
-			}
-			
-			if (value instanceof JSONArray) {
-				value = createArray((JSONArray)value);
-			}
-			else if (value instanceof JSONObject) {
-				value = createObject((JSONObject)value);
-			}
-			
-			list.add(value);
-		}
-		
-		return list;
-	}
-	
-	/**
-	 * Creates a json string from Map/List/Primitive object.
-	 * 
-	 * @param obj
-	 * @return
-	 */
-	public static String toJSONString(List<?> list) {
-		JSONArray jsonList = new JSONArray(list);
-		try {
-			return jsonList.toString();
-		} catch (Exception e) {
-			return "";
-		}
-	}
-	
-	/**
-	 * Creates a json string from Map/List/Primitive object.
-	 * 
-	 * @param obj
-	 * @parm indent
-	 * @return
-	 */
-	public static String toJSONString(List<?> list, int indent) {
-		JSONArray jsonList = new JSONArray(list);
-		try {
-			return jsonList.toString(indent);
-		} catch (Exception e) {
-			return "";
-		}
-	}
-	
-	/**
-	 * Creates a json string from Map/List/Primitive object.
-	 * 
-	 * @param obj
-	 * @return
-	 */
-	public static String toJSONString(Map<String, Object> obj) {
-		JSONObject jsonObj = new JSONObject(obj);
-		try {
-			return jsonObj.toString();
-		} catch (Exception e) {
-			return "";
-		}
-	}
-	
-	/**
-	 * Creates a json pretty string from Map/List/Primitive object
-	 * 
-	 * @param obj
-	 * @param indent
-	 * @return
-	 */
-	public static String toJSONString(Map<String, Object> obj, int indent) {
-		JSONObject jsonObj = new JSONObject(obj);
-		try {
-			return jsonObj.toString(indent);
-		} catch (Exception e) {
-			return "";
-		}
 	}
 	
 	public static String toJSON(Object obj) {
@@ -250,6 +83,15 @@ public class JSONUtils {
 		ObjectMapper mapper = new ObjectMapper();
 		JsonFactory factory = new JsonFactory();
 		JsonParser parser = factory.createJsonParser(file);
+		JsonNode node = mapper.readTree(parser);
+
+		return toObjectFromJSONNode(node);
+	}
+	
+	public static Object parseJSONFromReader(Reader reader) throws IOException {
+		ObjectMapper mapper = new ObjectMapper();
+		JsonFactory factory = new JsonFactory();
+		JsonParser parser = factory.createJsonParser(reader);
 		JsonNode node = mapper.readTree(parser);
 
 		return toObjectFromJSONNode(node);

@@ -23,7 +23,6 @@ import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.security.token.delegation.DelegationTokenIdentifier;
 import org.apache.hadoop.security.token.Token;
 import org.apache.log4j.Logger;
-import org.apache.pig.Main;
 
 import java.io.DataOutputStream;
 import java.io.File;
@@ -48,7 +47,7 @@ public class SecurePigWrapper {
       @Override
       public Void run() throws Exception {
         prefetchToken();
-        Main.main(args);
+        org.apache.pig.Main.main(args);
         return null;
       }
 

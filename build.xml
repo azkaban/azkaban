@@ -1,0 +1,52 @@
+<?xml version="1.0"?>
+
+<project name="azkaban" basedir="." default="all">
+	<property name="base.dir" value="${basedir}" />
+	<property name="dist.jar.dir" value="${basedir}/dist/jars" />
+	<property name="dist.classes.dir" value="${basedir}/dist/classes" />
+	<property name="lib.dir" value="${basedir}/lib" />
+	<property name="java.src.dir" value="${basedir}/src/java" />
+	<property file="build.properties" />
+
+	<property environment="env" />
+
+	<path id="main.classpath">
+		<fileset dir="${lib.dir}">
+			<include name="*.jar" />
+		</fileset>
+
+		<pathelement path="${dist.classes.dir}" />
+	</path>
+
+	<!-- set the build number based on environment variable, otherwise blank -->
+	<property environment="env" description="System environment variables (including those set by Hudson)" />
+
+	<target name="all" depends="clean, jars" description="Builds all jars" />
+
+	<target name="clean" description="Delete generated files.">
+		<echo message="Deleting generated files in dist" />
+		<delete dir="${dist.jar.dir}" />
+		<delete dir="${dist.classes.dir}" />
+	</target>
+
+	<target name="build" description="Compile main source tree java files">
+		<delete dir="${dist.classes.dir}" />
+		<mkdir dir="${dist.classes.dir}" />
+		
+		<javac fork="true" destdir="${dist.classes.dir}"
+			target="1.6" debug="true" deprecation="false" failonerror="true">
+			<src path="${java.src.dir}" />
+			<classpath refid="main.classpath" />
+		</javac>
+	</target>
+	
+	<target name="jars" depends="build" description="Create azkaban jar">
+		<mkdir dir="${dist.jar.dir}" />
+		<jar destfile="${dist.jar.dir}/${name}-${version}.jar">
+			<fileset dir="${dist.classes.dir}">
+				<include name="**/*.*" />
+			</fileset>
+		</jar>
+	</target>
+	
+</project>

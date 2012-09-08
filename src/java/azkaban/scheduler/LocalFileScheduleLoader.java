@@ -150,7 +150,7 @@ public class LocalFileScheduleLoader implements ScheduleLoader {
  
     		try {
     			FileWriter writer = new FileWriter(scheduleFile);
-    			writer.write(JSONUtils.toJSONString(obj, 4));
+    			writer.write(JSONUtils.toJSON(obj, true));
     			writer.flush();
     		} catch (Exception e) {
     			throw new RuntimeException("Error saving flow file", e);
@@ -174,7 +174,7 @@ public class LocalFileScheduleLoader implements ScheduleLoader {
 		HashMap<String, Object> schedule;
 		try {
 			//TODO handle first time empty schedule file
-			schedule = (HashMap<String,Object>)JSONUtils.fromJSONStream(reader);
+			schedule = (HashMap<String,Object>)JSONUtils.parseJSONFromReader(reader);
 		} catch (Exception e) {
 			//schedule = loadLegacyFile(schedulefile);
 			logger.error("Error parsing the schedule file", e);

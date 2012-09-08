@@ -23,13 +23,8 @@
 	<classpathentry kind="lib" path="lib/commons-io-2.4.jar"/>
 	<classpathentry kind="lib" path="lib/httpcore-4.2.1.jar"/>
 	<classpathentry kind="lib" path="lib/commons-logging-1.1.1.jar"/>
-	<classpathentry kind="lib" path="/azkaban/lib/cglib-nodep-2.2.jar"/>
-	<classpathentry kind="lib" path="/azkaban/lib/easymock-2.5.2.jar"/>
-	<classpathentry kind="lib" path="/azkaban/lib/easymockclassextension-2.5.2.jar"/>
-	<classpathentry kind="lib" path="/azkaban/lib/google-collect-1.0-rc2.jar"/>
-	<classpathentry kind="lib" path="/azkaban/lib/hadoop-core-1.0.2-p1.jar"/>
-	<classpathentry kind="lib" path="/azkaban/lib/objenesis-1.2.jar"/>
-	<classpathentry kind="lib" path="/azkaban/lib/org-json-2010-02-26.jar"/>
-	<classpathentry kind="lib" path="/azkaban/lib/pig-0.9.1-withouthadoop.jar"/>
-	<classpathentry kind="output" path="dist"/>
+	<classpathentry kind="lib" path="lib/hadoop-core-1.0.2-p1.jar"/>
+	<classpathentry kind="lib" path="lib/guava-13.0.1.jar"/>
+	<classpathentry kind="lib" path="lib/pig-0.9.1-withouthadoop.jar"/>
+	<classpathentry kind="output" path="dist/classes"/>
 </classpath>
