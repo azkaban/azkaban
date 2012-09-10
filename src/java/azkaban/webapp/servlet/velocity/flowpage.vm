@@ -4,6 +4,7 @@
 #parse( "azkaban/webapp/servlet/velocity/style.vm" )
 		<script type="text/javascript" src="${context}/js/jquery/jquery.js"></script>    
 		<script type="text/javascript" src="${context}/js/jqueryui/jquery-ui.custom.min.js"></script>
+		<script type="text/javascript" src="${context}/js/jqueryui/jquery.ui.datepicker.min.js"></script>
 		<script type="text/javascript" src="${context}/js/azkaban.date.utils.js"></script>  
 		<script type="text/javascript" src="${context}/js/namespace.js"></script>
 		<script type="text/javascript" src="${context}/js/underscore-1.2.1-min.js"></script>
@@ -24,6 +25,11 @@
 			
 			var projectName = "${project.name}";
 			var flowName = "${flowid}";
+		</script>
+		<script>
+			$(function() {
+				$( "#datepicker" ).datepicker();
+			});
 		</script>
 		<link rel="stylesheet" type="text/css" href="${context}/css/jquery.contextMenu.custom.css" /> 
 	</head>
@@ -109,7 +115,7 @@
 				</div>
 		<!-- modal content -->
                 <div id="schedule-flow" class="modal">
-                        <h3>Schedule A Flow</h3>
+                        <h3>Schedulemm A Flow</h3>
                         <div id="errorMsg" class="box-error-message">$errorMsg</div>
 
                         <div class="message">
@@ -126,10 +132,47 @@
                                 </fieldset>
                         </div>
 
+						<div class="box">
+                                        <form id="sched-form" method="post" action="${context}/">
+                                                <div class="sched-form">
+                                                  <div>
+                                                    <!input type="hidden" name="action" value="schedule"/-->
+                                                    Schedule to run at
+                                                    <input id="hour" type="text" size="2" value="12"/> :
+                                                    <input id="minutes" type="text" size="2" value="00"/>
+                                                    <select id="am_pm">
+                                                      <option>pm</option>
+                                                      <option>am</option>
+                                                    </select>
+                                                    $timezone
+                                                    on
+                                                    <br>
+                                                    <p>Date: <input type="text" id="datepicker"></p>
+                                                    <!--input class="scheduled_date" type="text" name="date" size="10" value="$currentDate.format("dd/M/yy h:mm tt")"/-->
+                                                    and
+                                                    <br>
+                                                    <input id="is_recurring" type="checkbox" checked  />
+                                                    repeat every
+                                                    <input id="period" type="text" size="2" value="1"/>
+                                                    <select id="period_units">
+                                                      <option value="d">Days</option>
+                                                      <option value="h">Hours</option>
+                                                      <option value="m">Minutes</option>
+                                                      <option value="s">Seconds</option>
+                                                    </select>
+                                                    <!--input type="submit" name="schedule" value="Schedule"/-->
+                                                  </div>
+                                                </div>
+
+                                        </form>
+                        </div>
+                                
+
                         <div class="actions">
                                 <a class="yes btn3" id="schedule-btn" href="#">Schedule The Flow</a>
                                 <a class="no simplemodal-close btn4" href="#">Cancel</a>
                         </div>
+                        
                         <div id="invalid-session" class="modal">
                                 <h3>Invalid Session</h3>
                                 <p>Session has expired. Please re-login.</p>

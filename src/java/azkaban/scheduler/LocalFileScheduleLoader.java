@@ -47,7 +47,7 @@ import azkaban.utils.JSONUtils;
  *
  */
 public class LocalFileScheduleLoader implements ScheduleLoader {
-	private static final String SCHEDULEID = "schedule";
+	private static final String SCHEDULEID = "scheduleId";
 	private static final String USER = "user";
 	private static final String USERSUBMIT = "userSubmit";
     private static final String SUBMITTIME = "submitTime";

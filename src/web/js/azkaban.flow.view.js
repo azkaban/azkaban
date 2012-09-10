@@ -865,8 +865,16 @@ azkaban.ScheduleFlowView = Backbone.View.extend({
   },
   handleScheduleFlow : function(evt) {
          // First make sure we can upload
-         //var projectName = $('#path').val();
-         //var description = $('#description').val();
+//     var projectName = $('#path').val();
+     var description = $('#description').val();
+
+     var hourVal = $('#hour').val();
+     var minutesVal = $('#minutes').val();
+     var ampmVal = $('#am_pm').val();
+     var dateVal = $('#datepicker').val();
+     var is_recurringVal = $('#is_recurring').val();
+     var periodVal = $('#period').val();
+     var periodUnits = $('#period_units').val();
 
      console.log("Creating schedule");
      $.ajax({
@@ -876,18 +884,27 @@ azkaban.ScheduleFlowView = Backbone.View.extend({
         type: "POST",
         data: {
 		action:"scheduleFlow", 
+
 		projectId:projectName, 
 		flowId:flowName,
+		hour:hourVal,
+		minutes:minutesVal,
+		am_pm:ampmVal,
+		date:dateVal,
 		userExec:"dummy",
-		is_recurring:true
+		is_recurring:is_recurringVal,
+		period:periodVal,
+		period_units:periodUnits
 		},
         success: function(data) {
                 if (data.status == "success") {
                         if (data.action == "redirect") {
-                                window.location = data.path;
+                                //window.location = data.path;
+                                window.loaction = contextURL + "/manager?project=" + projectName + "&flow=" + flowName ;
                         }
 			else{
 				$("#errorMsg").text("Flow " + projectName + "." + flowName + " scheduled!" );			
+ 				window.location = contextURL + "/manager?project=" + projectName + "&flow=" + flowName ; 
 			}
                 }
                 else {

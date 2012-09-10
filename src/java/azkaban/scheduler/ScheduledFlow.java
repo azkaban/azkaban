@@ -111,7 +111,7 @@ public class ScheduledFlow {
         this.submitTime = submitTime;
         this.firstSchedTime = firstSchedTime;
         this.period = period;
-        this.nextExecTime = new DateTime();
+        this.nextExecTime = new DateTime(firstSchedTime);
 //        this.schedStatus = SchedStatus.LASTSUCCESS;
 	}
 

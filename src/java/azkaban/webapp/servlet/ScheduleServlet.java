@@ -88,7 +88,7 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
 		String flowId = getParam(req, "flowId");
 		
 		Project project = projectManager.getProject(projectId);
-				
+			
 		if (project == null) {
 			ret.put("message", "Project " + projectId + " does not exist");
 			ret.put("status", "error");
@@ -108,19 +108,19 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
 			return;
 		}
 		
-//		int hour = getIntParam(req, "hour");
-//		int minutes = getIntParam(req, "minutes");
-//		boolean isPm = getParam(req, "am_pm").equalsIgnoreCase("pm");
-		int hour = 0;
-		int minutes = 0;
-		boolean isPm = false;
+		int hour = getIntParam(req, "hour");
+		int minutes = getIntParam(req, "minutes");
+		boolean isPm = getParam(req, "am_pm").equalsIgnoreCase("pm");
+//		int hour = 0;
+//		int minutes = 0;
+//		boolean isPm = false;
 		String scheduledDate = req.getParameter("date");
 		DateTime day = null;
 		if(scheduledDate == null || scheduledDate.trim().length() == 0) {
 			day = new LocalDateTime().toDateTime();
 		} else {
 		    try {
-		    	day = DateTimeFormat.forPattern("MM-dd-yyyy").parseDateTime(scheduledDate);
+		    	day = DateTimeFormat.forPattern("MM/dd/yyyy").parseDateTime(scheduledDate);
 		    } catch(IllegalArgumentException e) {
 		      	ret.put("error", "Invalid date: '" + scheduledDate + "'");
 		      	return;
@@ -153,10 +153,8 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
 	
 	
 	private ReadablePeriod parsePeriod(HttpServletRequest req) throws ServletException {
-//			int period = getIntParam(req, "period");
-//			String periodUnits = getParam(req, "period_units");
-			int period = 10;
-			String periodUnits = "m";
+			int period = getIntParam(req, "period");
+			String periodUnits = getParam(req, "period_units");
 			if("d".equals(periodUnits))
 				return Days.days(period);
 			else if("h".equals(periodUnits))
