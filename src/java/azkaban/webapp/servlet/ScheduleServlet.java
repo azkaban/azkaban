@@ -11,6 +11,8 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.joda.time.DateTime;
+import org.joda.time.Months;
+import org.joda.time.Weeks;
 import org.joda.time.Days;
 import org.joda.time.Hours;
 import org.joda.time.LocalDateTime;
@@ -111,9 +113,8 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
 		int hour = getIntParam(req, "hour");
 		int minutes = getIntParam(req, "minutes");
 		boolean isPm = getParam(req, "am_pm").equalsIgnoreCase("pm");
-//		int hour = 0;
-//		int minutes = 0;
-//		boolean isPm = false;
+
+
 		String scheduledDate = req.getParameter("date");
 		DateTime day = null;
 		if(scheduledDate == null || scheduledDate.trim().length() == 0) {
@@ -128,15 +129,20 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
 		}
 
 		ReadablePeriod thePeriod = null;
-		if(hasParam(req, "is_recurring"))
-		    thePeriod = parsePeriod(req);
+		try {
+			if(hasParam(req, "is_recurring"))
+			    thePeriod = parsePeriod(req);	
+		}
+		catch(Exception e){
+			ret.put("error", e.getMessage());
+		}
 
 		if(isPm && hour < 12)
 		    hour += 12;
 		hour %= 24;
 
 		String userSubmit = user.getUserId();
-		String userExec = getParam(req, "userExec");
+		String userExec = userSubmit;//getParam(req, "userExec");
 		String scheduleId = projectId + "." + flowId;
 		DateTime submitTime = new DateTime();
 		DateTime firstSchedTime = day.withHourOfDay(hour).withMinuteOfHour(minutes).withSecondOfMinute(0);
@@ -155,7 +161,11 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
 	private ReadablePeriod parsePeriod(HttpServletRequest req) throws ServletException {
 			int period = getIntParam(req, "period");
 			String periodUnits = getParam(req, "period_units");
-			if("d".equals(periodUnits))
+			if("M".equals(periodUnits))
+				return Months.months(period);
+			else if("w".equals(periodUnits))
+				return Weeks.weeks(period);
+			else if("d".equals(periodUnits))
 				return Days.days(period);
 			else if("h".equals(periodUnits))
 				return Hours.hours(period);

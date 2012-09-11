@@ -236,7 +236,7 @@ public class ScheduledFlow {
         return "ScheduledFlow{" +
 //        	   "scheduleStatus=" + schedStatus +
                "nextExecTime=" + nextExecTime +
-               ", period=" + period +
+               ", period=" + period.toString() +
                ", firstSchedTime=" + firstSchedTime +
                ", submitTime=" + submitTime +
                ", userSubmit=" + userSubmit +

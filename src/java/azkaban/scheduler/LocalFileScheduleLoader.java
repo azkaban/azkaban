@@ -13,8 +13,11 @@ import java.util.List;
 import org.apache.log4j.Logger;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
-import org.joda.time.Days;
+
 import org.joda.time.DurationFieldType;
+import org.joda.time.Months;
+import org.joda.time.Weeks;
+import org.joda.time.Days;
 import org.joda.time.Hours;
 import org.joda.time.Minutes;
 import org.joda.time.ReadablePeriod;
@@ -272,6 +275,12 @@ public class LocalFileScheduleLoader implements ScheduleLoader {
 
         int periodInt = Integer.parseInt(periodStr.substring(0, periodStr.length() - 1));
         switch (periodUnit) {
+        	case 'M':
+        		period = Months.months(periodInt);
+        		break;
+        	case 'w':
+        		period = Weeks.weeks(periodInt);
+        		break;
             case 'd':
                 period = Days.days(periodInt);
                 break;
@@ -299,7 +308,15 @@ public class LocalFileScheduleLoader implements ScheduleLoader {
             return "n";
         }
 
-        if (period.get(DurationFieldType.days()) > 0) {
+        if (period.get(DurationFieldType.months()) > 0) {
+            int months = period.get(DurationFieldType.months());
+            periodStr = months + "M";
+        }
+        else if (period.get(DurationFieldType.weeks()) > 0) {
+            int weeks = period.get(DurationFieldType.weeks());
+            periodStr = weeks + "w";
+        }
+        else if (period.get(DurationFieldType.days()) > 0) {
             int days = period.get(DurationFieldType.days());
             periodStr = days + "d";
         }

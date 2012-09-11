@@ -904,6 +904,7 @@ azkaban.ScheduleFlowView = Backbone.View.extend({
                         }
 			else{
 				$("#errorMsg").text("Flow " + projectName + "." + flowName + " scheduled!" );			
+				alert("Flow " + projectName + "." + flowName + " scheduled!");
  				window.location = contextURL + "/manager?project=" + projectName + "&flow=" + flowName ; 
 			}
                 }

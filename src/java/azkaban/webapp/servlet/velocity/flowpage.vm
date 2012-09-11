@@ -118,7 +118,7 @@
                         <h3>Schedulemm A Flow</h3>
                         <div id="errorMsg" class="box-error-message">$errorMsg</div>
 
-                        <div class="message">
+                        <!--div class="message">
                                 <fieldset>
                                         <dl>
                                                 <dt><label for="path">Project Name</label></dt>
@@ -130,13 +130,13 @@
                                                 <input name="redirect" type="hidden" value="$!context/" />
                                         </dl>
                                 </fieldset>
-                        </div>
+                        </div-->
 
 						<div class="box">
                                         <form id="sched-form" method="post" action="${context}/">
                                                 <div class="sched-form">
                                                   <div>
-                                                    <!input type="hidden" name="action" value="schedule"/-->
+                                                    <!--input type="hidden" name="action" value="schedule"/-->
                                                     Schedule to run at
                                                     <input id="hour" type="text" size="2" value="12"/> :
                                                     <input id="minutes" type="text" size="2" value="00"/>
@@ -155,6 +155,8 @@
                                                     repeat every
                                                     <input id="period" type="text" size="2" value="1"/>
                                                     <select id="period_units">
+                                                      <option value="M">Months</option>
+                                                      <option value="w">Weeks</option>
                                                       <option value="d">Days</option>
                                                       <option value="h">Hours</option>
                                                       <option value="m">Minutes</option>
