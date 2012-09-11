@@ -876,7 +876,7 @@ azkaban.ScheduleFlowView = Backbone.View.extend({
      var periodVal = $('#period').val();
      var periodUnits = $('#period_units').val();
 
-     console.log("Creating schedule");
+     console.log("Creating schedule for "+projectName+"."+flowName);
      $.ajax({
         async: "false",
         url: "schedule",
@@ -898,6 +898,7 @@ azkaban.ScheduleFlowView = Backbone.View.extend({
 		},
         success: function(data) {
                 if (data.status == "success") {
+			console.log("Successfully scheduled for "+projectName+"."+flowName);
                         if (data.action == "redirect") {
                                 //window.location = data.path;
                                 window.loaction = contextURL + "/manager?project=" + projectName + "&flow=" + flowName ;

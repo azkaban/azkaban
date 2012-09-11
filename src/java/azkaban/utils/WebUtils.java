@@ -1,11 +1,20 @@
 package azkaban.utils;
 
+import org.joda.time.DateTime;
+import org.joda.time.Days;
+import org.joda.time.DurationFieldType;
+import org.joda.time.Hours;
+import org.joda.time.Minutes;
+import org.joda.time.Months;
+import org.joda.time.ReadablePeriod;
+import org.joda.time.Seconds;
+import org.joda.time.Weeks;
 import org.joda.time.format.DateTimeFormat;
 
 import azkaban.executor.ExecutableFlow.Status;
 
 public class WebUtils {
-	public static final String DATE_TIME_STRING = "YYYY-MM-dd HH:MM:ss";
+	public static final String DATE_TIME_STRING = "YYYY-MM-dd HH:mm:ss";
 	
 	public String formatDate(long timeMS) {
 		if (timeMS == -1) {
@@ -72,6 +81,47 @@ public class WebUtils {
 		}
 		
 		return "Unknown";
+	}
+	
+	public String formatDateTime(DateTime dt)
+	{
+		return DateTimeFormat.forPattern(DATE_TIME_STRING).print(dt);
+	}
+	
+	public String formatPeriod(ReadablePeriod period)
+	{
+        String periodStr = "n";
+
+        if (period == null) {
+            return periodStr;
+        }
+
+        if (period.get(DurationFieldType.months()) > 0) {
+            int months = period.get(DurationFieldType.months());
+            periodStr = months + " month(s)";
+        }
+        else if (period.get(DurationFieldType.weeks()) > 0) {
+            int weeks = period.get(DurationFieldType.weeks());
+            periodStr = weeks + " week(s)";
+        }
+        else if (period.get(DurationFieldType.days()) > 0) {
+            int days = period.get(DurationFieldType.days());
+            periodStr = days + " day(s)";
+        }
+        else if (period.get(DurationFieldType.hours()) > 0) {
+            int hours = period.get(DurationFieldType.hours());
+            periodStr = hours + " hour(s)";
+        }
+        else if (period.get(DurationFieldType.minutes()) > 0) {
+            int minutes = period.get(DurationFieldType.minutes());
+            periodStr = minutes + " minute(s)";
+        }
+        else if (period.get(DurationFieldType.seconds()) > 0) {
+            int seconds = period.get(DurationFieldType.seconds());
+            periodStr = seconds + " second(s)";
+        }
+        
+        return periodStr;
 	}
 	
 	public String extractNumericalId(String execId) {

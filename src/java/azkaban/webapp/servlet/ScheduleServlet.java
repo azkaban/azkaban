@@ -3,6 +3,7 @@ package azkaban.webapp.servlet;
 import java.io.IOException;
 import java.io.Writer;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import javax.servlet.ServletConfig;
@@ -21,14 +22,17 @@ import org.joda.time.ReadablePeriod;
 import org.joda.time.Seconds;
 import org.joda.time.format.DateTimeFormat;
 
+import azkaban.executor.ExecutorManager.ExecutionReference;
 import azkaban.flow.Flow;
 import azkaban.project.Project;
 import azkaban.project.ProjectManager;
 import azkaban.project.ProjectManagerException;
 import azkaban.user.User;
 import azkaban.user.Permission.Type;
+import azkaban.webapp.servlet.HistoryServlet.PageSelection;
 import azkaban.webapp.session.Session;
 import azkaban.scheduler.ScheduleManager;
+import azkaban.scheduler.ScheduledFlow;
 
 public class ScheduleServlet extends LoginAbstractAzkabanServlet {
 	private static final long serialVersionUID = 1L;
@@ -42,15 +46,89 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
 		scheduleManager = this.getApplication().getScheduleManager();
 	}
 
-	@Override
-	protected void handleGet(HttpServletRequest req, HttpServletResponse resp, Session session) throws ServletException, IOException {
-		if (hasParam(req, "ajax")) {
-			handleAJAXAction(req, resp, session);
-		}
-//		else if (hasParam(req, "execid")) {
-//			handleExecutionFlowPage(req, resp, session);
+//	public class PageSelection {
+//		private int page;
+//		private int size;
+//		private boolean disabled;
+//		private boolean selected;
+//		
+//		public PageSelection(int page, int size, boolean disabled, boolean selected) {
+//			this.page = page;
+//			this.size = size;
+//			this.disabled = disabled;
+//			this.setSelected(selected);
 //		}
+//		
+//		public int getPage() {
+//			return page;
+//		}
+//		
+//		public int getSize() {
+//			return size;
+//		}
+//		
+//		public boolean getDisabled() {
+//			return disabled;
+//		}
+//
+//		public boolean isSelected() {
+//			return selected;
+//		}
+//
+//		public void setSelected(boolean selected) {
+//			this.selected = selected;
+//		}
+//	}
+	
+	@Override
+	protected void handleGet(HttpServletRequest req, HttpServletResponse resp,
+			Session session) throws ServletException, IOException {
+		Page page = newPage(req, resp, session, "azkaban/webapp/servlet/velocity/scheduledflowpage.vm");
+//		int pageNum = getIntParam(req, "page", 1);
+//		int pageSize = getIntParam(req, "size", 16);
+		
+//		if (pageNum < 0) {
+//			pageNum = 1;
+//		}
+		
+		List<ScheduledFlow> schedules = scheduleManager.getSchedule();
+		page.add("schedules", schedules);
+//		page.add("size", pageSize);
+//		page.add("page", pageNum);
+		
+//		if (pageNum == 1) {
+//			page.add("previous", new PageSelection(1, pageSize, true, false));
+//		}
+//		page.add("next", new PageSelection(pageNum + 1, pageSize, false, false));
+		// Now for the 5 other values.
+//		int pageStartValue = 1;
+//		if (pageNum > 3) {
+//			pageStartValue = pageNum - 2;
+//		}
+//		
+//		page.add("page1", new PageSelection(pageStartValue, pageSize, false, pageStartValue == pageNum));
+//		pageStartValue++;
+//		page.add("page2", new PageSelection(pageStartValue, pageSize, false, pageStartValue == pageNum));
+//		pageStartValue++;
+//		page.add("page3", new PageSelection(pageStartValue, pageSize, false, pageStartValue == pageNum));
+//		pageStartValue++;
+//		page.add("page4", new PageSelection(pageStartValue, pageSize, false, pageStartValue == pageNum));
+//		pageStartValue++;
+//		page.add("page5", new PageSelection(pageStartValue, pageSize, false, pageStartValue == pageNum));
+//		pageStartValue++;
+//		
+		page.render();
 	}
+	
+//	@Override
+//	protected void handleGet(HttpServletRequest req, HttpServletResponse resp, Session session) throws ServletException, IOException {
+//		if (hasParam(req, "ajax")) {
+//			handleAJAXAction(req, resp, session);
+//		}
+////		else if (hasParam(req, "execid")) {
+////			handleExecutionFlowPage(req, resp, session);
+////		}
+//	}
 
 	@Override
 	protected void handlePost(HttpServletRequest req, HttpServletResponse resp, Session session) throws ServletException, IOException {
@@ -64,26 +142,17 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
 		this.writeJSON(resp, ret);
 	}
 
-	private void handleAJAXAction(HttpServletRequest req, HttpServletResponse resp, Session session) throws ServletException, IOException {
-		HashMap<String, Object> ret = new HashMap<String, Object>();
-		String ajaxName = getParam(req, "ajax");
-		
-////		if (hasParam(req, "execid")) {
-////			if (ajaxName.equals("fetchexecflow")) {
-////				ajaxFetchExecutableFlow(req, resp, ret, session.getUser());
-////			}
-//////			else if (ajaxName.equals("fetchexecflowupdate")) {
-//////				ajaxFetchExecutableFlowUpdate(req, resp, ret, session.getUser());
-//////			}
+//	private void handleAJAXAction(HttpServletRequest req, HttpServletResponse resp, Session session) throws ServletException, IOException {
+//		HashMap<String, Object> ret = new HashMap<String, Object>();
+//		String ajaxName = getParam(req, "ajax");
+//		
+//		if (ajaxName.equals("scheduleFlow")) {
+//				ajaxScheduleFlow(req, ret, session.getUser());
 //		}
-//		if(hasParam(req, "schedule")) {
-		
-		if (ajaxName.equals("scheduleFlow")) {
-				ajaxScheduleFlow(req, ret, session.getUser());
-		}
-//		}
-		this.writeJSON(resp, ret);
-	}
+////		}
+//		this.writeJSON(resp, ret);
+//	}
+//	
 	
 	private void ajaxScheduleFlow(HttpServletRequest req, Map<String, Object> ret, User user) throws ServletException {
 		String projectId = getParam(req, "projectId");
@@ -155,9 +224,7 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
 		ret.put("message", scheduleId + " scheduled.");
 	
 	}
-			
-	
-	
+				
 	private ReadablePeriod parsePeriod(HttpServletRequest req) throws ServletException {
 			int period = getIntParam(req, "period");
 			String periodUnits = getParam(req, "period_units");
