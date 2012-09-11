@@ -45,91 +45,18 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
 		projectManager = this.getApplication().getProjectManager();
 		scheduleManager = this.getApplication().getScheduleManager();
 	}
-
-//	public class PageSelection {
-//		private int page;
-//		private int size;
-//		private boolean disabled;
-//		private boolean selected;
-//		
-//		public PageSelection(int page, int size, boolean disabled, boolean selected) {
-//			this.page = page;
-//			this.size = size;
-//			this.disabled = disabled;
-//			this.setSelected(selected);
-//		}
-//		
-//		public int getPage() {
-//			return page;
-//		}
-//		
-//		public int getSize() {
-//			return size;
-//		}
-//		
-//		public boolean getDisabled() {
-//			return disabled;
-//		}
-//
-//		public boolean isSelected() {
-//			return selected;
-//		}
-//
-//		public void setSelected(boolean selected) {
-//			this.selected = selected;
-//		}
-//	}
 	
 	@Override
 	protected void handleGet(HttpServletRequest req, HttpServletResponse resp,
 			Session session) throws ServletException, IOException {
 		Page page = newPage(req, resp, session, "azkaban/webapp/servlet/velocity/scheduledflowpage.vm");
-//		int pageNum = getIntParam(req, "page", 1);
-//		int pageSize = getIntParam(req, "size", 16);
-		
-//		if (pageNum < 0) {
-//			pageNum = 1;
-//		}
 		
 		List<ScheduledFlow> schedules = scheduleManager.getSchedule();
 		page.add("schedules", schedules);
-//		page.add("size", pageSize);
-//		page.add("page", pageNum);
-		
-//		if (pageNum == 1) {
-//			page.add("previous", new PageSelection(1, pageSize, true, false));
-//		}
-//		page.add("next", new PageSelection(pageNum + 1, pageSize, false, false));
-		// Now for the 5 other values.
-//		int pageStartValue = 1;
-//		if (pageNum > 3) {
-//			pageStartValue = pageNum - 2;
-//		}
-//		
-//		page.add("page1", new PageSelection(pageStartValue, pageSize, false, pageStartValue == pageNum));
-//		pageStartValue++;
-//		page.add("page2", new PageSelection(pageStartValue, pageSize, false, pageStartValue == pageNum));
-//		pageStartValue++;
-//		page.add("page3", new PageSelection(pageStartValue, pageSize, false, pageStartValue == pageNum));
-//		pageStartValue++;
-//		page.add("page4", new PageSelection(pageStartValue, pageSize, false, pageStartValue == pageNum));
-//		pageStartValue++;
-//		page.add("page5", new PageSelection(pageStartValue, pageSize, false, pageStartValue == pageNum));
-//		pageStartValue++;
-//		
+
 		page.render();
 	}
 	
-//	@Override
-//	protected void handleGet(HttpServletRequest req, HttpServletResponse resp, Session session) throws ServletException, IOException {
-//		if (hasParam(req, "ajax")) {
-//			handleAJAXAction(req, resp, session);
-//		}
-////		else if (hasParam(req, "execid")) {
-////			handleExecutionFlowPage(req, resp, session);
-////		}
-//	}
-
 	@Override
 	protected void handlePost(HttpServletRequest req, HttpServletResponse resp, Session session) throws ServletException, IOException {
 		HashMap<String, Object> ret = new HashMap<String, Object>();
@@ -137,6 +64,9 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
 			String action = getParam(req, "action");
 			if (action.equals("scheduleFlow")) {
 				ajaxScheduleFlow(req, ret, session.getUser());
+			}
+			else if(action.equals("removeSched")){
+				ajaxRemoveSched(req, ret, session.getUser());
 			}
 		}
 		this.writeJSON(resp, ret);
@@ -153,6 +83,32 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
 //		this.writeJSON(resp, ret);
 //	}
 //	
+	
+	private void ajaxRemoveSched(HttpServletRequest req, Map<String, Object> ret, User user) throws ServletException{
+		String scheduleId = getParam(req, "scheduleId");
+		ScheduledFlow schedFlow = scheduleManager.getSchedule(scheduleId);
+		String projectId = schedFlow.getProjectId();
+		Project project = projectManager.getProject(projectId);
+		
+		if (project == null) {
+			ret.put("message", "Project " + projectId + " does not exist");
+			ret.put("status", "error");
+			return;
+		}
+		
+		if (!project.hasPermission(user, Type.SCHEDULE)) {
+			ret.put("status", "error");
+			ret.put("message", "Permission denied. Cannot remove schedule " + scheduleId);
+			return;
+		}
+		
+		scheduleManager.removeScheduledFlow(scheduleId);
+		
+		ret.put("status", "success");
+		ret.put("message", scheduleId + " removed.");
+		return;
+		
+	}
 	
 	private void ajaxScheduleFlow(HttpServletRequest req, Map<String, Object> ret, User user) throws ServletException {
 		String projectId = getParam(req, "projectId");

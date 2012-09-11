@@ -1,0 +1,97 @@
+<!DOCTYPE html> 
+<html>
+	<head>
+#parse( "azkaban/webapp/servlet/velocity/style.vm" )
+		<script type="text/javascript" src="${context}/js/jquery/jquery.js"></script>    
+		<script type="text/javascript" src="${context}/js/namespace.js"></script>
+		<script type="text/javascript" src="${context}/js/underscore-1.2.1-min.js"></script>
+		<script type="text/javascript" src="${context}/js/backbone-0.5.3-min.js"></script>
+		<script type="text/javascript" src="${context}/js/jquery.simplemodal.js"></script>
+		<script type="text/javascript" src="${context}/js/azkaban.nav.js"></script>
+		<script type="text/javascript" src="${context}/js/azkaban.main.view.js"></script>
+		<script type="text/javascript" src="${context}/js/azkaban.scheduled.view.js"></script>
+		<script type="text/javascript">
+			var contextURL = "${context}";
+			var currentTime = ${currentTime};
+			var timezone = "${timezone}";
+			var errorMessage = ${error_message};
+			var successMessage = ${success_message};
+	
+		</script>
+	</head>
+	<body>
+		#set($current_page="scheduledFlows")
+#parse( "azkaban/webapp/servlet/velocity/nav.vm" )
+		<div class="messaging"><p id="messageClose">X</p><p id="message"></p></div>  
+
+		<div class="content">
+			<div id="all-scheduledFlows-content">
+				<div class="section-hd">
+					<h2>Scheduled Flows</h2>
+					<form method="get">
+						<input type="hidden" name="action" value="search">
+						<input type="submit" value="Search" class="search-btn">
+						<input id="searchtextbox" type="text" placeholder="by job name or wildcard" value="" class="search-input" name="job">
+					</form>
+				</div>
+			</div>
+			
+			<div class="scheduledFlows">
+				<table id="scheduledFlowsTbl">
+					<thead>
+						<tr>
+							<!--th class="execid">Execution Id</th-->
+							<th>Flow</th>
+							<th>Project</th>
+							<th>User</th>
+							<th class="date">First Scheduled to Run</th>
+							<th class="date">Next Execution Time</th>
+							<th class="date">Repeats Every</th>
+							<!--th class="elapse">Elapsed</th-->
+							<th class="status">Status</th>
+							<th class="action">Action</th>
+						</tr>
+					</thead>
+					<tbody>
+						#if($schedules)
+#foreach($sched in $schedules)
+						<tr class="row" >
+
+							<td class="tb-name">
+								<a href="${context}/manager?project=${sched.projectId}&flow=${sched.flowId}">${sched.flowId}</a>
+							</td>
+							<td>
+								<a href="${context}/manager?project=${sched.projectId}">${sched.projectId}</a>
+							</td>
+							<td>${sched.user}</td>
+							<td>$utils.formatDateTime(${sched.firstSchedTime})</td>
+							<td>$utils.formatDateTime(${sched.nextExecTime})</td>
+							<td>$utils.formatPeriod(${sched.period})</td>
+							<td><div class="status 'READY'">READY</div></td>
+							<td><button id="removeSchedBtn" onclick="removeSched('${sched.scheduleId}')" >Remove Schedule</button></td>
+						</tr>
+#end
+#else
+						<tr><td class="last">No Scheduled Flow Found</td></tr>
+#end
+					</tbody>
+				</table>
+				
+				<!--div id="pageSelection" class="nonjavascript">
+					<ul>
+		
+						<li id="previous" class="first"><a href="${context}/history?page=${previous.page}&size=${previous.size}"><span class="arrow">&larr;</span>Previous</a></li>
+				
+						<li id="page1" #if($page1.selected) class="selected" #end><a href="${context}/history?page=${page1.page}&size=${page1.size}">${page1.page}</a></li>
+						<li id="page2" #if($page2.selected) class="selected" #end><a href="${context}/history?page=${page2.page}&size=${page2.size}">${page2.page}</a></li>
+						<li id="page3" #if($page3.selected) class="selected" #end><a href="${context}/history?page=${page3.page}&size=${page3.size}">${page3.page}</a></li>
+						<li id="page4" #if($page4.selected) class="selected" #end><a href="${context}/history?page=${page4.page}&size=${page4.size}">${page4.page}</a></li>
+						<li id="page5" #if($page5.selected) class="selected" #end><a href="${context}/history?page=${page5.page}&size=${page5.size}">${page5.page}</a></li>
+
+						<li id="next"><a href="${context}/history?page=${next.page}&size=${next.size}">Next<span class="arrow">&rarr;</span></a></li>
+					</ul>
+				</div-->
+			</div>
+		</div>
+	</body>
+</html>
