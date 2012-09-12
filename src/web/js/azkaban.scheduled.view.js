@@ -8,11 +8,12 @@ function removeSched(schedId) {
          {"action":"removeSched", "scheduleId":schedId},
          function(data) {
              if (data.error) {
-                 alert(data.error)
+//                 alert(data.error)
+                 $('#errorMsg').text(data.error)
              }
 	     else {
- 		 alert("Schedule "+schedId+" removed!")
-		 window.location=redirectURL
+// 		 alert("Schedule "+schedId+" removed!")
+		 window.location = redirectURL
              }
          },
          "json"

@@ -155,12 +155,12 @@
                                                     repeat every
                                                     <input id="period" type="text" size="2" value="1"/>
                                                     <select id="period_units">
-                                                      <option value="M">Months</option>
-                                                      <option value="w">Weeks</option>
                                                       <option value="d">Days</option>
                                                       <option value="h">Hours</option>
                                                       <option value="m">Minutes</option>
                                                       <option value="s">Seconds</option>
+                                                      <option value="M">Months</option>
+                                                      <option value="w">Weeks</option>
                                                     </select>
                                                     <!--input type="submit" name="schedule" value="Schedule"/-->
                                                   </div>

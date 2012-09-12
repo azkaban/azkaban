@@ -69,6 +69,12 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
 				ajaxRemoveSched(req, ret, session.getUser());
 			}
 		}
+		
+		if(ret.get("status") == ("success"))
+			setSuccessMessageInCookie(resp, (String) ret.get("message"));
+		else
+			setErrorMessageInCookie(resp, (String) ret.get("message"));
+		
 		this.writeJSON(resp, ret);
 	}
 

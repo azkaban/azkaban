@@ -900,12 +900,10 @@ azkaban.ScheduleFlowView = Backbone.View.extend({
                 if (data.status == "success") {
 			console.log("Successfully scheduled for "+projectName+"."+flowName);
                         if (data.action == "redirect") {
-                                //window.location = data.path;
                                 window.loaction = contextURL + "/manager?project=" + projectName + "&flow=" + flowName ;
                         }
 			else{
-				$("#errorMsg").text("Flow " + projectName + "." + flowName + " scheduled!" );			
-				alert("Flow " + projectName + "." + flowName + " scheduled!");
+				$("#success_message").text("Flow " + projectName + "." + flowName + " scheduled!" );			
  				window.location = contextURL + "/manager?project=" + projectName + "&flow=" + flowName ; 
 			}
                 }

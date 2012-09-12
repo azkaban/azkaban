@@ -3,6 +3,7 @@
 	<head>
 #parse( "azkaban/webapp/servlet/velocity/style.vm" )
 		<script type="text/javascript" src="${context}/js/jquery/jquery.js"></script>    
+		<script type="text/javascript" src="${context}/js/jqueryui/jquery-ui.custom.min.js"></script>
 		<script type="text/javascript" src="${context}/js/namespace.js"></script>
 		<script type="text/javascript" src="${context}/js/underscore-1.2.1-min.js"></script>
 		<script type="text/javascript" src="${context}/js/backbone-0.5.3-min.js"></script>
@@ -20,11 +21,22 @@
 		</script>
 	</head>
 	<body>
-		#set($current_page="scheduledFlows")
+#set($current_page="scheduledFlows")
 #parse( "azkaban/webapp/servlet/velocity/nav.vm" )
 		<div class="messaging"><p id="messageClose">X</p><p id="message"></p></div>  
 
 		<div class="content">
+		
+#if($errorMsg)
+                                <div class="box-error-message">$errorMsg</div>
+#else
+#if($error_message != "null")
+                                <div class="box-error-message">$error_message</div>
+#elseif($success_message != "null")
+                                <div class="box-success-message">$success_message</div>
+#end
+#end		
+		
 			<div id="all-scheduledFlows-content">
 				<div class="section-hd">
 					<h2>Scheduled Flows</h2>
@@ -77,20 +89,7 @@
 					</tbody>
 				</table>
 				
-				<!--div id="pageSelection" class="nonjavascript">
-					<ul>
-		
-						<li id="previous" class="first"><a href="${context}/history?page=${previous.page}&size=${previous.size}"><span class="arrow">&larr;</span>Previous</a></li>
 				
-						<li id="page1" #if($page1.selected) class="selected" #end><a href="${context}/history?page=${page1.page}&size=${page1.size}">${page1.page}</a></li>
-						<li id="page2" #if($page2.selected) class="selected" #end><a href="${context}/history?page=${page2.page}&size=${page2.size}">${page2.page}</a></li>
-						<li id="page3" #if($page3.selected) class="selected" #end><a href="${context}/history?page=${page3.page}&size=${page3.size}">${page3.page}</a></li>
-						<li id="page4" #if($page4.selected) class="selected" #end><a href="${context}/history?page=${page4.page}&size=${page4.size}">${page4.page}</a></li>
-						<li id="page5" #if($page5.selected) class="selected" #end><a href="${context}/history?page=${page5.page}&size=${page5.size}">${page5.page}</a></li>
-
-						<li id="next"><a href="${context}/history?page=${next.page}&size=${next.size}">Next<span class="arrow">&rarr;</span></a></li>
-					</ul>
-				</div-->
 			</div>
 		</div>
 	</body>
