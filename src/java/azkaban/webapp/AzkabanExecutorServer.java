@@ -39,6 +39,7 @@ import org.mortbay.jetty.servlet.Context;
 import org.mortbay.jetty.servlet.ServletHolder;
 import org.mortbay.thread.QueuedThreadPool;
 
+import azkaban.utils.Mailman;
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutorManagerException;
 import azkaban.executor.FlowRunnerManager;
@@ -67,6 +68,8 @@ public class AzkabanExecutorServer {
 	private Props props;
 	private File tempDir;
 	private Server server;
+	
+	private final Mailman mailer;
 
 	/**
 	 * Constructor
@@ -89,8 +92,14 @@ public class AzkabanExecutorServer {
 		ServletHolder executorHolder = new ServletHolder(new ExecutorServlet(sharedToken));
 		root.addServlet(executorHolder, "/executor");
 		root.setAttribute(AzkabanServletContextListener.AZKABAN_SERVLET_CONTEXT_KEY, this);
-		runnerManager = new FlowRunnerManager(props);
+        mailer = new Mailman(props.getString("mail.host", "localhost"),
+                props.getString("mail.user", ""),
+                props.getString("mail.password", ""),
+                props.getString("mail.sender", ""));
+        
+		runnerManager = new FlowRunnerManager(props, mailer);
 		
+
 		try {
 			server.start();
 		} 

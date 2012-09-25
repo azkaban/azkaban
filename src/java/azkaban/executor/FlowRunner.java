@@ -5,8 +5,10 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
@@ -59,6 +61,8 @@ public class FlowRunner extends EventHandler implements Runnable {
 	private Appender flowAppender;
 
 	private Thread currentThread;
+	
+	private Set<String> emailAddress;
 
 	public enum FailedFlowOptions {
 		FINISH_RUNNING_JOBS, KILL_ALL
@@ -72,6 +76,7 @@ public class FlowRunner extends EventHandler implements Runnable {
 		this.executorService = Executors.newFixedThreadPool(numThreads);
 		this.runningJobs = new ConcurrentHashMap<String, JobRunner>();
 		this.listener = new JobRunnerEventListener(this);
+		this.emailAddress = new HashSet<String>();
 
 		createLogger();
 	}
@@ -80,6 +85,10 @@ public class FlowRunner extends EventHandler implements Runnable {
 		return flow;
 	}
 
+	public Set<String> getEmails() {
+		return emailAddress;
+	}
+	
 	private void createLogger() {
 		// Create logger
 		String loggerName = System.currentTimeMillis() + "."
@@ -433,6 +442,8 @@ public class FlowRunner extends EventHandler implements Runnable {
 			System.out.println("Event " + jobID + " "
 					+ event.getType().toString());
 
+			emailAddress.addAll(runner.getNotifyEmails());
+			
 			// On Job success, we add the output props and then set up the next
 			// run.
 			if (event.getType() == Type.JOB_SUCCEEDED) {

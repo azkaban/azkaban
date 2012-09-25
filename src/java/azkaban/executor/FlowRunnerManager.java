@@ -1,6 +1,14 @@
 package azkaban.executor;
 
 import java.io.File;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Vector;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
@@ -8,11 +16,16 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
 
 import org.apache.log4j.Logger;
+import org.joda.time.Duration;
+import org.joda.time.format.PeriodFormat;
 
+import azkaban.utils.Utils;
+import azkaban.executor.ExecutableFlow.Status;
 import azkaban.executor.event.Event;
 import azkaban.executor.event.Event.Type;
 import azkaban.executor.event.EventListener;
 import azkaban.utils.ExecutableFlowLoader;
+import azkaban.utils.Mailman;
 import azkaban.utils.Props;
 
 /**
@@ -31,8 +44,17 @@ public class FlowRunnerManager {
 	private ExecutorService executorService;
 	private SubmitterThread submitterThread;
 	private FlowRunnerEventListener eventListener;
+
+	private Mailman mailer;
+	private String defaultFailureEmail;
+	private String defaultSuccessEmail;
+	private String senderAddress;
 	
-	public FlowRunnerManager(Props props) {
+	public FlowRunnerManager(Props props, Mailman mailer) {
+		this.mailer = mailer;
+//		this.defaultFailureEmail = props.getString("job.failure.email");
+//		this.defaultSuccessEmail = props.getString("job.success.email");
+		this.senderAddress = props.getString("mail.sender");
 		basePath = new File(props.getString("execution.directory"));
 		numThreads = props.getInt("executor.flow.threads", DEFAULT_NUM_EXECUTING_FLOWS);
 		executorService = Executors.newFixedThreadPool(numThreads);
@@ -128,11 +150,64 @@ public class FlowRunnerManager {
 			FlowRunner runner = (FlowRunner)event.getRunner();
 			ExecutableFlow flow = runner.getFlow();
 			
+			List<String> emailList = new ArrayList<String>(runner.getEmails());
+			
 			System.out.println("Event " + flow.getExecutionId() + " " + flow.getFlowId() + " " + event.getType());
 			if (event.getType() == Type.FLOW_FINISHED) {
+				if(flow.getStatus() == Status.SUCCEEDED)
+					sendSuccessEmail(flow, emailList);
+				else sendErrorEmail(flow, emailList);
+				
 				logger.info("Flow " + flow.getExecutionId() + " has finished.");
 				runningFlows.remove(flow.getExecutionId());
+				
 			}
 		}
 	}
+	
+    /*
+     * Wrap a single exception with the name of the scheduled job
+     */
+    private void sendErrorEmail(ExecutableFlow flow, List<String> emailList) {
+        
+        if(emailList != null && !emailList.isEmpty() && mailer != null) {
+            try {
+                mailer.sendEmailIfPossible(senderAddress,
+                                             emailList,
+                                             "Flow '" + flow.getFlowId() + "' has completed on "
+                                                     + InetAddress.getLocalHost().getHostName()
+                                                     + "!",
+                                             "The Flow '"
+                                                     + flow.getFlowId()
+                                                     + "' failed.");
+            } catch(UnknownHostException uhe) {
+                logger.error(uhe);
+            }
+            catch (Exception e) {
+                logger.error(e);
+            }
+        }
+    }
+    
+
+    private void sendSuccessEmail(ExecutableFlow flow, List<String> emailList) {
+        
+        if(emailList != null && !emailList.isEmpty() && mailer != null) {
+            try {
+                mailer.sendEmailIfPossible(senderAddress,
+                                             emailList,
+                                             "Flow '" + flow.getFlowId() + "' has completed on "
+                                                     + InetAddress.getLocalHost().getHostName()
+                                                     + "!",
+                                             "The Flow '"
+                                                     + flow.getFlowId()
+                                                     + "' was successful.");
+            } catch(UnknownHostException uhe) {
+                logger.error(uhe);
+            }
+            catch (Exception e) {
+                logger.error(e);
+            }
+        }
+    }
 }
