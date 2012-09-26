@@ -39,10 +39,10 @@ import org.mortbay.jetty.servlet.Context;
 import org.mortbay.jetty.servlet.ServletHolder;
 import org.mortbay.thread.QueuedThreadPool;
 
-import azkaban.utils.Mailman;
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutorManagerException;
 import azkaban.executor.FlowRunnerManager;
+import azkaban.utils.Mailman;
 import azkaban.utils.Props;
 import azkaban.utils.Utils;
 import azkaban.webapp.servlet.AzkabanServletContextListener;
@@ -64,12 +64,13 @@ public class AzkabanExecutorServer {
 
 	private static AzkabanExecutorServer app;
 	
+	private final Mailman mailer;
+	
 	private FlowRunnerManager runnerManager;
 	private Props props;
 	private File tempDir;
 	private Server server;
 	
-	private final Mailman mailer;
 
 	/**
 	 * Constructor
@@ -86,19 +87,19 @@ public class AzkabanExecutorServer {
 		QueuedThreadPool httpThreadPool = new QueuedThreadPool(maxThreads);
 		server.setThreadPool(httpThreadPool);
 
-        Context root = new Context(server, "/", Context.SESSIONS);
+		Context root = new Context(server, "/", Context.SESSIONS);
 		String sharedToken = props.getString("executor.shared.token", "");
 
 		ServletHolder executorHolder = new ServletHolder(new ExecutorServlet(sharedToken));
 		root.addServlet(executorHolder, "/executor");
 		root.setAttribute(AzkabanServletContextListener.AZKABAN_SERVLET_CONTEXT_KEY, this);
-        mailer = new Mailman(props.getString("mail.host", "localhost"),
-                props.getString("mail.user", ""),
-                props.getString("mail.password", ""),
-                props.getString("mail.sender", ""));
-        
+		mailer = new Mailman(
+				props.getString("mail.host", "localhost"),
+				props.getString("mail.user", ""), 
+				props.getString("mail.password", ""),
+				props.getString("mail.sender", ""));
+
 		runnerManager = new FlowRunnerManager(props, mailer);
-		
 
 		try {
 			server.start();
