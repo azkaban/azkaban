@@ -3,7 +3,8 @@ $.namespace('azkaban');
 var projectView;
 azkaban.ProjectView= Backbone.View.extend({
   events : {
-      "click #project-upload-btn":"handleUploadProjectJob"
+      "click #project-upload-btn":"handleUploadProjectJob",
+      "click #project-delete-btn": "handleDeleteProject"
   },
   initialize : function(settings) {
   },
@@ -22,6 +23,21 @@ azkaban.ProjectView= Backbone.View.extend({
             $("#errorMsg").hide();
           }
         });
+  },
+  handleDeleteProject : function(evt) {
+	$('#delete-project').modal({
+        closeHTML: "<a href='#' title='Close' class='modal-close'>x</a>",
+        position: ["20%",],
+        containerId: 'confirm-container',
+        containerCss: {
+          'height': '220px',
+          'width': '565px'
+        },
+        onShow: function (dialog) {
+          var modal = this;
+          $("#errorMsg").hide();
+        }
+    });
   },
   render: function() {
   }
@@ -223,22 +239,5 @@ $(function() {
 	projectSummary = new azkaban.ProjectSummaryView({el:$('#project-summary')});
 	deleteProjectView = new azkaban.DeleteProjectView({el: $('#delete-project')});
 	// Setting up the project tabs
-
-	$('#deleteProject').click(function() {
-		$('#delete-project').modal({
-	        closeHTML: "<a href='#' title='Close' class='modal-close'>x</a>",
-	        position: ["20%",],
-	        containerId: 'confirm-container',
-	        containerCss: {
-	          'height': '220px',
-	          'width': '565px'
-	        },
-	        onShow: function (dialog) {
-	          var modal = this;
-	          $("#errorMsg").hide();
-	        }
-	    });
-	}
-	);
 
 });

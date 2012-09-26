@@ -1,6 +1,8 @@
 package azkaban.project;
 
 import java.io.File;
+import java.io.IOException;
+import java.io.Writer;
 import java.util.HashMap;
 import java.util.List;
 
@@ -30,6 +32,8 @@ public interface ProjectManager {
 	public Props getProperties(Project project, String source) throws ProjectManagerException;
 
 	public HashMap<String, Props> getAllFlowProperties(Project project, String flowId) throws ProjectManagerException;
-	
+
 	public void copyProjectSourceFilesToDirectory(Project project, File directory) throws ProjectManagerException;
+
+	public void getProjectLogs(String projectId, long tailBytes, long skipBytes, Writer writer) throws IOException;
 }

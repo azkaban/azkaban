@@ -3,8 +3,8 @@ $.namespace('azkaban');
 var logModel;
 azkaban.LogModel = Backbone.Model.extend({});
 
-var jobLogView;
-azkaban.JobLogView = Backbone.View.extend({
+var projectLogView;
+azkaban.ProjectLogView = Backbone.View.extend({
 	events: {
 		"click #updateLogBtn" : "handleUpdate"
 	},
@@ -14,33 +14,24 @@ azkaban.JobLogView = Backbone.View.extend({
 	},
 	handleUpdate: function(evt) {
 		var current = this.model.get("current");
-		var requestURL = contextURL + "/executor"; 
+		var requestURL = contextURL + "/manager"; 
 		var model = this.model;
 
-		ajaxLogsCall(
+		$.get(
 			requestURL,
-			{"execid": execId, "job": jobId, "ajax":"fetchExecJobLogs", "current": current, "max": 100000},
+			{"project": projectName, "ajax":"fetchProjectLogs", "tail": 100000},
 			function(data) {
-	          console.log("fetchLogs");
-	          if (data.error) {
-	          	showDialog("Error", data.error);
-	          }
-	          else {
-	          	var log = $("#logSection").text();
-	          	if (!log) {
-	          		log = data.log;
+			console.log("fetchLogs");
+	          	if (data.error) {
+	          		showDialog("Error", data.error);
 	          	}
 	          	else {
-	          		log += data.log;
+	          		$("#logSection").text(data);
+	          		model.set({"log": data});
+	          		$(".logViewer").scrollTop(9999);
 	          	}
-	          	
-	          	current = data.current;
-	          	$("#logSection").text(log);
-	          	model.set({"current": current, "log": log});
-	          	$(".logViewer").scrollTop(9999);
-	          }
-	      }
-	    );
+	         }
+		);
 	}
 });
 
@@ -67,5 +58,5 @@ $(function() {
 	var selected;
 
 	logModel = new azkaban.LogModel();
-	jobLogView = new azkaban.JobLogView({el:$('#jobLogView'), model: logModel});
+	projectLogView = new azkaban.ProjectLogView({el:$('#projectLogView'), model: logModel});
 });

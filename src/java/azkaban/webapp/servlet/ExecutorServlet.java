@@ -2,6 +2,7 @@ package azkaban.webapp.servlet;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -156,10 +157,10 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 		Project project = projectManager.getProject(projectId);
 		
 		if (project == null) {
-			ret.put("error", "Project " + project + " not found.");
+			ret.put("error", "Project '" + project + "' not found.");
 		}
 		else if (!project.hasPermission(user, type)) {
-			ret.put("error", "User " + user.getUserId() + " doesn't have " + type.name() + " permissions on " + projectId);
+			ret.put("error", "User '" + user.getUserId() + "' doesn't have " + type.name() + " permissions on " + projectId);
 		}
 		else {
 			return project;
@@ -213,9 +214,11 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 				}
 				else if (ajaxName.equals("fetchExecFlowLogs")) {
 					ajaxFetchExecFlowLogs(req, resp, ret, session.getUser(), exFlow);
+					ret = null;
 				}
 				else if (ajaxName.equals("fetchExecJobLogs")) {
 					ajaxFetchJobLogs(req, resp, ret, session.getUser(), exFlow);
+					ret = null;
 				}
 			}
 		}
@@ -227,10 +230,21 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 				ajaxExecuteFlow(req, resp, ret, session.getUser());
 			}
 		}
-		this.writeJSON(resp, ret);
+		if (ret != null) {
+			this.writeJSON(resp, ret);
+		}
 	}
 
-	private void ajaxFetchExecFlowLogs(HttpServletRequest req, HttpServletResponse resp, HashMap<String, Object> ret, User user, ExecutableFlow exFlow) throws ServletException {
+	/**
+	 * Gets the logs through plain text stream to reduce memory overhead.
+	 * 
+	 * @param req
+	 * @param resp
+	 * @param user
+	 * @param exFlow
+	 * @throws ServletException
+	 */
+	private void ajaxFetchExecFlowLogs(HttpServletRequest req, HttpServletResponse resp, HashMap<String, Object> ret,  User user, ExecutableFlow exFlow) throws ServletException {
 		Project project = getProjectAjaxByPermission(ret, exFlow.getProjectId(), user, Type.READ);
 		if (project == null) {
 			return;
@@ -239,17 +253,36 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 		int startChar = this.getIntParam(req, "current");
 		int maxSize = this.getIntParam(req, "max");
 		
-		StringBuffer buffer = new StringBuffer(STRING_BUFFER_SIZE);
+		resp.setContentType("text/plain");
+		resp.setCharacterEncoding("utf-8");
+		PrintWriter writer;
 		try {
-			long character = executorManager.getExecutableFlowLog(exFlow, buffer, startChar, maxSize);
-			ret.put("current", character);
-			ret.put("log", buffer.toString());
+			writer = resp.getWriter();
+		} catch (IOException e) {
+			throw new ServletException(e);
+		}
+
+		try {
+			long character = executorManager.getExecutableFlowLog(exFlow, writer, startChar, maxSize);
+			writer.write("\n");
+			writer.write(Long.toString(character));
 		} catch (ExecutorManagerException e) {
-			e.printStackTrace();
-			ret.put("error", e.getMessage());
+			throw new ServletException(e);
+		}
+		finally {
+			writer.close();
 		}
 	}
 	
+	/**
+	 * Gets the logs through ajax plain text stream to reduce memory overhead.
+	 * 
+	 * @param req
+	 * @param resp
+	 * @param user
+	 * @param exFlow
+	 * @throws ServletException
+	 */
 	private void ajaxFetchJobLogs(HttpServletRequest req, HttpServletResponse resp, HashMap<String, Object> ret, User user, ExecutableFlow exFlow) throws ServletException {
 		Project project = getProjectAjaxByPermission(ret, exFlow.getProjectId(), user, Type.READ);
 		if (project == null) {
@@ -260,11 +293,17 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 		int maxSize = this.getIntParam(req, "max");
 		String jobId = this.getParam(req, "job");
 		
-		StringBuffer buffer = new StringBuffer(STRING_BUFFER_SIZE);
+		PrintWriter writer;
 		try {
-			long character = executorManager.getExecutionJobLog(exFlow, jobId, buffer, startChar, maxSize);
-			ret.put("current", character);
-			ret.put("log", buffer.toString());
+			writer = resp.getWriter();
+		} catch (IOException e) {
+			throw new ServletException(e);
+		}
+		
+		try {
+			long character = executorManager.getExecutionJobLog(exFlow, jobId, writer, startChar, maxSize);
+			writer.write("\n");
+			writer.write(Long.toString(character));
 		} catch (ExecutorManagerException e) {
 			e.printStackTrace();
 			ret.put("error", e.getMessage());
@@ -403,7 +442,7 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 
 		Flow flow = project.getFlow(flowId);
 		if (flow == null) {
-			ret.put("error", "Flow " + flowId + " cannot be found in project " + project);
+			ret.put("error", "Flow '" + flowId + "' cannot be found in project " + project);
 			return;
 		}
 		
@@ -445,6 +484,7 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 
 		try {
 			executorManager.executeFlow(exflow);
+			project.info("User '" + user.getUserId() + "' executed flow '" + exflow.getExecutionId() + "'");
 		} catch (ExecutorManagerException e) {
 			try {
 				executorManager.cleanupAll(exflow);

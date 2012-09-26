@@ -109,11 +109,11 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
 		}
 		
 		scheduleManager.removeScheduledFlow(scheduleId);
-		
+		project.info("User '" + user.getUserId() + " has removed schedule " + schedFlow.toNiceString());
+
 		ret.put("status", "success");
 		ret.put("message", scheduleId + " removed.");
 		return;
-		
 	}
 	
 	private void ajaxScheduleFlow(HttpServletRequest req, Map<String, Object> ret, User user) throws ServletException {
@@ -178,11 +178,11 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
 		DateTime submitTime = new DateTime();
 		DateTime firstSchedTime = day.withHourOfDay(hour).withMinuteOfHour(minutes).withSecondOfMinute(0);
 		
-		scheduleManager.schedule(scheduleId, projectId, flowId, userExec, userSubmit, submitTime, firstSchedTime, thePeriod);
+		ScheduledFlow schedFlow = scheduleManager.schedule(scheduleId, projectId, flowId, userExec, userSubmit, submitTime, firstSchedTime, thePeriod);
+		project.info("User '" + user.getUserId() + "' has scheduled " + flow.getId() + "[" + schedFlow.toNiceString() + "].");
 		
 		ret.put("status", "success");
 		ret.put("message", scheduleId + " scheduled.");
-	
 	}
 				
 	private ReadablePeriod parsePeriod(HttpServletRequest req) throws ServletException {

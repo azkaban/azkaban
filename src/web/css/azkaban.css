@@ -356,8 +356,10 @@ tr:hover td {
   background: -webkit-gradient(linear, center top, center bottom, color-stop(0,#AFE47B), color-stop(5%,#8BD03F),color-stop(100%,#69B219));
 }
 
+.section-hd .btn2,
 .section-hd .btn4,
 .section-hd .btn5,
+.section-hd .btn6,
 .section-ft .btn4, 
 .section-ft .btn5{
   float: right;
@@ -969,10 +971,8 @@ tr:hover td {
 	width: 30%;
 }
 
-#deleteProject {
-	width: 100px;
-	text-align: center;
-	margin-top: 10px;
+#adminActions {
+	
 }
 
 #job-summary {
@@ -1211,7 +1211,7 @@ tr:hover td {
 	left: 5px;
 	right: 5px;
 	background-color: #FFF;
-	overflow:scroll;
+	overflow:auto;
 }
 
 .logLink {
@@ -1386,7 +1386,7 @@ table.parameters tr td {
 }
 
 #edit {
-	width: 90px;
+	width: 100px;
 	text-align: center;
 }
 

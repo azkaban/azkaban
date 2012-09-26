@@ -21,7 +21,7 @@
 		</script>
 	</head>
 	<body>
-#set($current_page="scheduledFlows")
+#set($current_page="schedule")
 #parse( "azkaban/webapp/servlet/velocity/nav.vm" )
 		<div class="messaging"><p id="messageClose">X</p><p id="message"></p></div>  
 

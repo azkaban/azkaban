@@ -101,7 +101,7 @@
 						</table>
 					</div>
 					<div id="flowLogView" class="logView">
-						<div class="logHeader"><div class="logButtonRow"><div id="updateLogBtn" class="btn7">Load More</div></div></div>
+						<div class="logHeader"><div class="logButtonRow"><div id="updateLogBtn" class="btn7">Refresh</div></div></div>
 						<div class="logViewer">
 							<pre id="logSection" class="log"></pre>
 						</div>

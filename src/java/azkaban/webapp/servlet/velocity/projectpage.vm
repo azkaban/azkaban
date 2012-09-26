@@ -38,9 +38,12 @@
 				<div id="all-jobs-content">
 					<div class="section-hd">
 						<h2><a href="${context}/manager?project=${project.name}">Project <span>$project.name</span></a></h2>
-						
-						<a id="project-upload-btn" class="btn1 projectupload" href="#">Upload</a>
+						<a id="project-upload-btn" class="btn1 projectupload">Upload</a>
 						<a id="project-permission-btn" class="btn5 projectpermission" href="${context}/manager?project=${project.name}&permissions">Permissions</a>
+						#if($admin)
+						<a id="project-logs-btn" class="btn2" href="${context}/manager?project=${project.name}&logs">Project Logs</a>
+						<a id="project-delete-btn" class="btn6">Delete Project</a>
+						#end
 					</div><!-- end .section-hd -->
 				</div>
 
@@ -49,10 +52,6 @@
 						<tr><td class="first">Project Admins:</td><td>$admins</td></tr>
 						<tr><td class="first">Your Permissions:</td><td>$userpermission.toString()</td></tr>
 					</table>
-					#if($admin)
-						<div id="deleteProject" class="btn6">Delete Project</div>
-					#end
-
 				</div>
 
 				<div id="project-summary">

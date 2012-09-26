@@ -1,10 +1,13 @@
 package azkaban.project;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+
+import org.apache.log4j.Logger;
 
 import azkaban.flow.Flow;
 import azkaban.user.Permission;
@@ -21,6 +24,7 @@ public class Project {
 	private String source;
 	private LinkedHashMap<String, Permission> userToPermission = new LinkedHashMap<String, Permission>();
 	private Map<String, Flow> flows = null;
+	private Logger logger = null;
 	
 	public Project(String name) {
 		this.name = name;
@@ -258,5 +262,25 @@ public class Project {
 
 	public void setSource(String source) {
 		this.source = source;
+	}
+	
+	public void attachLogger(Logger logger) {
+		this.logger = logger;
+	}
+	
+	public void info(String message) {
+		if (logger != null) {
+			logger.info(message);
+		}
+	}
+
+	public void error(String message) {
+		if (logger != null) {
+			logger.error(message);
+		}
+	}
+	
+	public Logger getLogger() {
+		return logger;
 	}
 }

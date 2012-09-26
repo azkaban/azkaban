@@ -1,12 +1,18 @@
 package azkaban.project;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileFilter;
+import java.io.FileInputStream;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.Writer;
 
 import java.security.AccessControlException;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -20,9 +26,16 @@ import net.sf.ehcache.config.CacheConfiguration;
 import net.sf.ehcache.store.MemoryStoreEvictionPolicy;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.log4j.Appender;
+import org.apache.log4j.FileAppender;
+import org.apache.log4j.Layout;
 import org.apache.log4j.Logger;
+import org.apache.log4j.PatternLayout;
+import org.apache.log4j.RollingFileAppender;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
+
+import com.sun.xml.internal.bind.v2.runtime.unmarshaller.XsiNilLoader.Array;
 
 import azkaban.flow.Flow;
 import azkaban.flow.FlowProps;
@@ -40,6 +53,9 @@ import azkaban.utils.Props;
  * install path where projects will be loaded installed to.
  */
 public class FileProjectManager implements ProjectManager {
+	// Layout for project logging
+	private static final Layout DEFAULT_LAYOUT = new PatternLayout("%d{dd-MM-yyyy HH:mm:ss z} %c{1} %p - %m\n");
+	
 	public static final String DIRECTORY_PARAM = "file.project.loader.path";
 	private static final String DELETED_PROJECT_PREFIX = ".DELETED.";
 	private static final DateTimeFormatter FILE_DATE_FORMAT = DateTimeFormat.forPattern("yyyy-MM-dd-HH:mm.ss.SSS");
@@ -48,6 +64,8 @@ public class FileProjectManager implements ProjectManager {
 	private static final String FLOW_EXTENSION = ".flow";
 	private static final Logger logger = Logger.getLogger(FileProjectManager.class);
 	private static final int IDLE_SECONDS = 120;
+	private static final long PROJECT_LOG_SIZE = 1024*512; // 512kb Log size rollover
+	private static final int LOG_BACKUP = 1000;   // I think 512mb is good enough per Project.
 	
 	private ConcurrentHashMap<String, Project> projects = new ConcurrentHashMap<String, Project>();
 	private CacheManager manager = CacheManager.create();
@@ -124,7 +142,8 @@ public class FileProjectManager implements ProjectManager {
 					Project project = Project.projectFromObject(obj);
 					logger.info("Loading project " + project.getName());
 					projects.put(project.getName(), project);
-
+					attachLoggerToProject(project);
+					
 					String source = project.getSource();
 					if (source == null) {
 						logger.info(project.getName() + ": No flows uploaded");
@@ -215,9 +234,6 @@ public class FileProjectManager implements ProjectManager {
 
 		if (project == null) {
 			throw new ProjectManagerException("Project not found.");
-		}
-		if (!project.hasPermission(uploader, Type.WRITE)) {
-			throw new AccessControlException("Permission denied. Do not have write access.");
 		}
 
 		List<String> errors = new ArrayList<String>();
@@ -335,6 +351,9 @@ public class FileProjectManager implements ProjectManager {
 			throw new ProjectManagerException("Project directory " + projectName + " cannot be created in " + projectDirectory, e);
 		}
 		projects.put(projectName, project);
+		attachLoggerToProject(project);
+		
+		project.info("Project has been created by '" + creator.getUserId() + "'");
 		
 		return project;
 	}
@@ -456,7 +475,7 @@ public class FileProjectManager implements ProjectManager {
 				throw new ProjectManagerException("Deleting of project failed.");
 			}
 		}
-		
+
 		projects.remove(projectName);
 		return project;
 	}
@@ -473,6 +492,21 @@ public class FileProjectManager implements ProjectManager {
 			String name = pathname.getName();
 
 			return pathname.isFile() && !pathname.isHidden() && name.length() > suffix.length() && name.endsWith(suffix);
+		}
+	}
+	
+	private static class PrefixFilter implements FileFilter {
+		private String prefix;
+
+		public PrefixFilter(String prefix) {
+			this.prefix = prefix;
+		}
+
+		@Override
+		public boolean accept(File pathname) {
+			String name = pathname.getName();
+
+			return pathname.isFile() && !pathname.isHidden() && name.length() > prefix.length() && name.startsWith(prefix);
 		}
 	}
 
@@ -539,4 +573,68 @@ public class FileProjectManager implements ProjectManager {
 		}
 	}
 
+	@Override
+	public void getProjectLogs(String projectId, long tailBytes, long skipBytes, Writer writer) throws IOException {
+		File projectDir = new File(projectDirectory, projectId);
+		
+		if (!projectDir.exists()) {
+			throw new IOException("Project directory " + projectDir + " doesn't exist.");
+		}
+		
+		File logFile = new File(projectDir, projectLogFileName(projectId));
+		if (!logFile.exists()) {
+			throw new IOException("Project audit log for " + projectDir + " doesn't exist.");
+		}
+		
+		long lookbackBytes = skipBytes + tailBytes;
+		long fileLength = logFile.length();
+
+		long skip = Math.max(0, fileLength - lookbackBytes);
+		FileInputStream f = new FileInputStream(logFile);
+		if (skip > 0) {
+			f.skip(skip);
+		}
+		
+		long bytesRead = 0;
+		BufferedReader reader = new BufferedReader(new InputStreamReader(f));
+		try {
+			String line = reader.readLine();
+			for (; line != null; line = reader.readLine()) {
+				writer.write(line);
+				writer.write("\n");
+				bytesRead += line.length();
+				
+				// A very loose tail bytes count since it's by lines and encoding, but this is okay.
+				if (bytesRead > tailBytes) {
+					break;
+				}
+			}
+		} finally {
+			reader.close();
+		}
+	}
+	
+	private void attachLoggerToProject(Project project) {
+		Logger logger = Logger.getLogger(".projectlogger." + project.getName());
+		
+		File projectPath = new File(projectDirectory, project.getName());
+		
+		String logName = projectLogFileName(project.getName());
+		File logFile = new File(projectPath, logName);
+
+		FileAppender appender = null;
+		try {
+			appender = new FileAppender(DEFAULT_LAYOUT, logFile.getPath());
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+
+		logger.addAppender(appender);
+		
+		project.attachLogger(logger);
+	}
+	
+	private String projectLogFileName(String projectName) {
+		return "_project." + projectName + ".log";
+	}
 }

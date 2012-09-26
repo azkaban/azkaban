@@ -852,7 +852,7 @@ azkaban.FlowLogView = Backbone.View.extend({
 		var current = this.model.get("current");
 		var requestURL = contextURL + "/executor"; 
 		var model = this.model;
-		ajaxCall(
+		ajaxLogsCall(
 			requestURL,
 			{"execid": execId, "ajax":"fetchExecFlowLogs", "current": current, "max": 100000},
 			function(data) {
@@ -872,6 +872,7 @@ azkaban.FlowLogView = Backbone.View.extend({
 	          	current = data.current;
 	          	$("#logSection").text(log);
 	          	model.set({"current": current, "log": log});
+	          	$(".logViewer").scrollTop(9999);
 	          }
 	      }
 	    );
@@ -941,6 +942,19 @@ var updaterFunction = function() {
 	}
 }
 
+var logUpdaterFunction = function() {
+	var oldData = graphModel.get("data");
+	var keepRunning = oldData.status != "SUCCEEDED" && oldData.status != "FAILED" && oldData.status != "KILLED";
+	if (keepRunning) {
+		// update every 30 seconds for the logs until finished
+		flowLogView.handleUpdate();
+		setTimeout(function() {logUpdaterFunction();}, 30000);
+	}
+	else {
+		flowLogView.handleUpdate();
+	}
+}
+
 $(function() {
 	var selected;
 
@@ -987,6 +1001,7 @@ $(function() {
 			 }
 	          
 	      	 updaterFunction();
+	      	 logUpdaterFunction();
 	      }
 	    );
 });

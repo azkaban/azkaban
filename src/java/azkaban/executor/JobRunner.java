@@ -113,14 +113,14 @@ public class JobRunner extends EventHandler implements Runnable {
 		props.put(AbstractProcessJob.WORKING_DIR, workingDir.getAbsolutePath());
 		JobWrappingFactory factory  = JobWrappingFactory.getJobWrappingFactory();
         job = factory.buildJobExecutor(props, logger);
-
-        try {
-                job.run();
-        } catch (Exception e) {
-                succeeded = false;
-                //logger.error("job run failed!");
-                e.printStackTrace();
-        }
+//
+//        try {
+//                job.run();
+//        } catch (Exception e) {
+//                succeeded = false;
+//                //logger.error("job run failed!");
+//                e.printStackTrace();
+//        }
 		
 		node.setEndTime(System.currentTimeMillis());
 		if (succeeded) {

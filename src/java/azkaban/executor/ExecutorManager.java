@@ -7,6 +7,7 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.Writer;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
@@ -455,7 +456,7 @@ public class ExecutorManager {
 		flow.setSubmitted(true);
 	}
 	
-	private long readLog(File logFile, StringBuffer buffer, long startChar, long maxSize) {
+	private long readLog(File logFile, Writer writer, long startChar, long maxSize) {
 		if (!logFile.exists()) {
 			logger.error("Execution log for " + logFile + " doesn't exist.");
 			return -1;
@@ -485,7 +486,7 @@ public class ExecutorManager {
 				}
 				totalCharRead += charRead;
 				charPosition += charRead;
-				buffer.append(charBuffer, 0, charRead);
+				writer.write(charBuffer, 0, charRead);
 			} while (charRead == charBuffer.length && totalCharRead < maxSize);
 			
 		} catch (IOException e) {
@@ -504,7 +505,7 @@ public class ExecutorManager {
 		return charPosition;
 	}
 	
-	public long getExecutionJobLog(ExecutableFlow flow, String jobid, StringBuffer buffer, long startChar, long maxSize) throws ExecutorManagerException {
+	public long getExecutionJobLog(ExecutableFlow flow, String jobid, Writer writer, long startChar, long maxSize) throws ExecutorManagerException {
 		String path = flow.getExecutionPath();
 		File execPath = new File(path);
 		if (!execPath.exists()) {
@@ -520,11 +521,11 @@ public class ExecutorManager {
 			return -1;
 		}
 
-		long charPosition = readLog(logFile, buffer, startChar, maxSize);
+		long charPosition = readLog(logFile, writer, startChar, maxSize);
 		return charPosition;
 	}
 	
-	public long getExecutableFlowLog(ExecutableFlow flow, StringBuffer buffer, long startChar, long maxSize) throws ExecutorManagerException {
+	public long getExecutableFlowLog(ExecutableFlow flow, Writer writer, long startChar, long maxSize) throws ExecutorManagerException {
 		String path = flow.getExecutionPath();
 		File execPath = new File(path);
 		if (!execPath.exists()) {
@@ -540,7 +541,7 @@ public class ExecutorManager {
 			return -1;
 		}
 
-		long charPosition = readLog(flowLogFile, buffer, startChar, maxSize);
+		long charPosition = readLog(flowLogFile, writer, startChar, maxSize);
 		return charPosition;
 	}
 	

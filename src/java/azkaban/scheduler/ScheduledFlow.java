@@ -41,11 +41,14 @@ public class ScheduledFlow {
 	private final DateTime submitTime;
 	private final DateTime firstSchedTime;
 
+	public static final String DATE_TIME_STRING = "YYYY-MM-dd HH:mm:ss";
+	
+	
 	// private SchedStatus schedStatus;
+	
 
 	public enum SchedStatus {
-		LASTSUCCESS("lastsuccess"), LASTFAILED("lastfailed"), LASTPAUSED(
-				"lastpaused");
+		LASTSUCCESS("lastsuccess"), LASTFAILED("lastfailed"), LASTPAUSED("lastpaused");
 
 		private final String status;
 
@@ -110,7 +113,8 @@ public class ScheduledFlow {
 			String user, 
 			String userSubmit,
 			DateTime submitTime, 
-			DateTime firstSchedTime) {
+			DateTime firstSchedTime) 
+	{
 		this(scheduleId, projectId, flowId, user, userSubmit, submitTime, firstSchedTime, new DateTime(), null);
 	}
 
@@ -171,8 +175,7 @@ public class ScheduledFlow {
 	 * @param period
 	 * @return
 	 */
-	private DateTime getNextRuntime(DateTime scheduledDate,
-			ReadablePeriod period) {
+	private DateTime getNextRuntime(DateTime scheduledDate, ReadablePeriod period) {
 		DateTime now = new DateTime();
 		DateTime date = new DateTime(scheduledDate);
 		int count = 0;
@@ -250,6 +253,10 @@ public class ScheduledFlow {
 				+ ", scheduleId='" + scheduleId + '\'' + '}';
 	}
 
+	public String toNiceString() {
+		return scheduleId + "," + submitTime + "," + period;
+	}
+	
 	public String getUser() {
 		return user;
 	}

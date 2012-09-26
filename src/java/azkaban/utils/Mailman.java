@@ -51,6 +51,7 @@ public class Mailman {
 	public void sendEmail(String fromAddress, List<String> toAddress,
 			String subject, String body) throws MessagingException {
 		SimpleEmail email = new SimpleEmail();
+
 		try {
 			email.setHostName(_mailHost);
 
@@ -60,6 +61,7 @@ public class Mailman {
 
 			email.setFrom(fromAddress);
 			email.setSubject(subject);
+
 			email.setMsg(body);
 			email.setDebug(true);
 			email.send();
