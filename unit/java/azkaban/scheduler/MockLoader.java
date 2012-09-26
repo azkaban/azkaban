@@ -9,8 +9,8 @@ import org.joda.time.Period;
 public class MockLoader implements ScheduleLoader {
 	private ArrayList<ScheduledFlow> scheduledFlow = new ArrayList<ScheduledFlow>();
 	
-	public void addScheduledFlow(String scheduleId, String user, String userSubmit, DateTime submitTime, DateTime firstSchedTime, DateTime nextExec, Period recurrence) {
-		ScheduledFlow flow = new ScheduledFlow(scheduleId, user, userSubmit, submitTime, firstSchedTime, nextExec, recurrence);
+	public void addScheduledFlow(String scheduleId, String projectId, String flowId, String user, String userSubmit, DateTime submitTime, DateTime firstSchedTime, DateTime nextExec, Period recurrence) {
+		ScheduledFlow flow = new ScheduledFlow(scheduleId, projectId, flowId, user, userSubmit, submitTime, firstSchedTime, nextExec, recurrence);
 		addScheduleFlow(flow);
 	}
 	

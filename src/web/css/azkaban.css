@@ -420,10 +420,10 @@ tr:hover td {
 	background: linear-gradient(to bottom, #f2f5f6 0%,#e3eaed 37%,#c8d7dc 100%); /* W3C */
 	filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#f2f5f6', endColorstr='#c8d7dc',GradientType=0 ); /* IE6-9 */
 	  
-	  border-color: #9BA7AA;
-	  color: #61696B;
-	  display: inline-block;
-	  font-weight: bold;
+	border-color: #9BA7AA;
+	color: #61696B;
+	display: inline-block;
+	font-weight: bold;
 }
 .btn7:hover {
 	background: #fcfeff; /* Old browsers */
@@ -621,7 +621,8 @@ tr:hover td {
 }
 
 .modal .btn2,
-.modal .btn3 {
+.modal .btn3,
+.modal .btn6 {
   float: right;
   margin-left: 10px;
 }
@@ -968,6 +969,12 @@ tr:hover td {
 	width: 30%;
 }
 
+#deleteProject {
+	width: 100px;
+	text-align: center;
+	margin-top: 10px;
+}
+
 #job-summary {
 	margin-left: 30px;
 	margin-bottom: 10px;
@@ -995,7 +1002,7 @@ tr:hover td {
 	border-width: 0px;
 }
 .summary-table .first {
-	width: 100px;
+	min-width: 100px;
 	font-weight: bold;
 }
 
@@ -1379,7 +1386,7 @@ table.parameters tr td {
 }
 
 #edit {
-	width: 60px;
+	width: 90px;
 	text-align: center;
 }
 
@@ -1753,8 +1760,25 @@ ul.disableMenu {
 	margin-left: 15px;
 }
 
-/* old styles */
+.warn {
+	margin-left: 30px;
+	height: 40px;
+}
 
+.warning-icon {
+	float: left;
+	background-image: url("./images/redwarning.png");
+	width: 48px;
+	height: 43px;
+}
+
+.warning-message {
+	float: left;
+	margin-left: 10px;
+	margin-top: 10px;
+}
+
+/* old styles */
 .azkaban-charts .hitarea {
 	background-image: url("../../js/jqueryui/themes/custom-theme/images/ui-icons_cccccc_256x240.png");
 	background-position: 0 -16px;

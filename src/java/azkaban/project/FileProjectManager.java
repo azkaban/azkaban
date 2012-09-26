@@ -41,6 +41,7 @@ import azkaban.utils.Props;
  */
 public class FileProjectManager implements ProjectManager {
 	public static final String DIRECTORY_PARAM = "file.project.loader.path";
+	private static final String DELETED_PROJECT_PREFIX = ".DELETED.";
 	private static final DateTimeFormatter FILE_DATE_FORMAT = DateTimeFormat.forPattern("yyyy-MM-dd-HH:mm.ss.SSS");
 	private static final String PROPERTIES_FILENAME = "project.json";
 	private static final String PROJECT_DIRECTORY = "src";
@@ -99,6 +100,9 @@ public class FileProjectManager implements ProjectManager {
 			if (!dir.isDirectory()) {
 				logger.error("ERROR loading project from " + dir.getPath() + ". Not a directory.");
 			} 
+			else if (dir.getName().startsWith(DELETED_PROJECT_PREFIX)) {
+				continue;
+			}
 			else {
 				File propertiesFile = new File(dir, PROPERTIES_FILENAME);
 				if (!propertiesFile.exists()) {
@@ -435,10 +439,25 @@ public class FileProjectManager implements ProjectManager {
 	}
 
 	@Override
-	public synchronized Project removeProject(String projectName) {
-		return null;
+	public synchronized Project removeProject(String projectName) throws ProjectManagerException {
+		Project project = this.getProject(projectName);
+		
+		if (project == null) {
+			throw new ProjectManagerException("Project " + projectName + " doesn't exist.");
+		}
+		
+		File projectPath = new File(projectDirectory, projectName);
+		File deletedProjectPath = new File(projectDirectory, DELETED_PROJECT_PREFIX + System.currentTimeMillis() + "." + projectName);
+		if (projectPath.exists()) {
+			if (!projectPath.renameTo(deletedProjectPath)) {
+				throw new ProjectManagerException("Deleting of project failed.");
+			}
+		}
+		
+		projects.remove(projectName);
+		return project;
 	}
-
+	
 	private static class SuffixFilter implements FileFilter {
 		private String suffix;
 

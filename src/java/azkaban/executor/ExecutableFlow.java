@@ -35,7 +35,7 @@ public class ExecutableFlow {
 	private boolean submitted = false;
 	
 	public enum Status {
-		FAILED, FAILED_FINISHING, SUCCEEDED, RUNNING, WAITING, KILLED, DISABLED, READY, PAUSED, UNKNOWN
+		FAILED, FAILED_FINISHING, SUCCEEDED, RUNNING, WAITING, KILLED, DISABLED, READY, UNKNOWN, PAUSED
 	}
 	
 	public ExecutableFlow(String id, Flow flow) {

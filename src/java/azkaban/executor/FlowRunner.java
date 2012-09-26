@@ -82,8 +82,7 @@ public class FlowRunner extends EventHandler implements Runnable {
 
 	private void createLogger() {
 		// Create logger
-		String loggerName = System.currentTimeMillis() + "."
-				+ flow.getExecutionId();
+		String loggerName = System.currentTimeMillis() + "." + flow.getExecutionId();
 		logger = Logger.getLogger(loggerName);
 
 		// Create file appender

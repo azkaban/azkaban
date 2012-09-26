@@ -178,10 +178,8 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
 		DateTime submitTime = new DateTime();
 		DateTime firstSchedTime = day.withHourOfDay(hour).withMinuteOfHour(minutes).withSecondOfMinute(0);
 		
-		scheduleManager.schedule(scheduleId,userExec, userSubmit, submitTime, firstSchedTime, thePeriod);
+		scheduleManager.schedule(scheduleId, projectId, flowId, userExec, userSubmit, submitTime, firstSchedTime, thePeriod);
 		
-		
-
 		ret.put("status", "success");
 		ret.put("message", scheduleId + " scheduled.");
 	

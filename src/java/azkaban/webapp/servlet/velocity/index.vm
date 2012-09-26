@@ -23,6 +23,11 @@
 		<div class="messaging"><p id="messageClose">X</p><p id="message"></p></div>  
 
 		<div class="content">
+			#if($error_message != "null")
+				<div class="box-error-message">$error_message</div>
+			#elseif($success_message != "null")
+							<div class="box-success-message">$success_message</div>
+			#end
 			<div id="all-jobs-content">
 				<div class="section-hd">
 #if ($allProjects)

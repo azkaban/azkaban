@@ -6,7 +6,6 @@ azkaban.ProjectView= Backbone.View.extend({
       "click #project-upload-btn":"handleUploadProjectJob"
   },
   initialize : function(settings) {
-
   },
   handleUploadProjectJob : function(evt) {
       console.log("click upload project");
@@ -38,6 +37,20 @@ azkaban.UploadProjectView= Backbone.View.extend({
   },
   handleCreateProject : function(evt) {
     $("#upload-form").submit();
+  },
+  render: function() {
+  }
+});
+
+var deleteProjectView;
+azkaban.DeleteProjectView= Backbone.View.extend({
+  events : {
+    "click #delete-btn": "handleDeleteProject"
+  },
+  initialize : function(settings) {
+  },
+  handleDeleteProject : function(evt) {
+  	$("#delete-form").submit();
   },
   render: function() {
   }
@@ -166,7 +179,7 @@ azkaban.ProjectSummaryView= Backbone.View.extend({
       var editText = $("#edit").text();
       var descriptionTD = $('#pdescription');
       
-      if (editText != "Edit") {
+      if (editText != "Edit Description") {
           var requestURL = contextURL + "/manager";
           var newText = $("#descEdit").val();
 
@@ -184,10 +197,9 @@ azkaban.ProjectSummaryView= Backbone.View.extend({
           $(descriptionTD).remove("#descEdit");
           $(descriptionTD).text(newText);
           
-          $("#edit").text("Edit");
+          $("#edit").text("Edit Description");
       }
       else {
-      
 	      var text = $(descriptionTD).text();
 	      var edit = document.createElement("textarea");
 	      
@@ -204,12 +216,29 @@ azkaban.ProjectSummaryView= Backbone.View.extend({
   }
 });
 
-
 $(function() {
 	projectView = new azkaban.ProjectView({el:$('#all-jobs-content')});
 	uploadView = new azkaban.UploadProjectView({el:$('#upload-project')});
 	flowTableView = new azkaban.FlowTableView({el:$('#flow-tabs')});
 	projectSummary = new azkaban.ProjectSummaryView({el:$('#project-summary')});
+	deleteProjectView = new azkaban.DeleteProjectView({el: $('#delete-project')});
 	// Setting up the project tabs
+
+	$('#deleteProject').click(function() {
+		$('#delete-project').modal({
+	        closeHTML: "<a href='#' title='Close' class='modal-close'>x</a>",
+	        position: ["20%",],
+	        containerId: 'confirm-container',
+	        containerCss: {
+	          'height': '220px',
+	          'width': '565px'
+	        },
+	        onShow: function (dialog) {
+	          var modal = this;
+	          $("#errorMsg").hide();
+	        }
+	    });
+	}
+	);
 
 });

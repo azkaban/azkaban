@@ -442,7 +442,6 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 			ret.put("error", e.getMessage());
 			return;
 		}
-		
 
 		try {
 			executorManager.executeFlow(exflow);

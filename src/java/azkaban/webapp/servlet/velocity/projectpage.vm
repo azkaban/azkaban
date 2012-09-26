@@ -49,6 +49,10 @@
 						<tr><td class="first">Project Admins:</td><td>$admins</td></tr>
 						<tr><td class="first">Your Permissions:</td><td>$userpermission.toString()</td></tr>
 					</table>
+					#if($admin)
+						<div id="deleteProject" class="btn6">Delete Project</div>
+					#end
+
 				</div>
 
 				<div id="project-summary">
@@ -59,7 +63,7 @@
 						<tr><td class="first">Modified by:</td><td>$project.lastModifiedUser</td></tr>
 						<tr><td class="first">Description:</td><td id="pdescription">$project.description</td>
 							#if($admin)
-								<td><div id="edit" class="btn5">Edit</div></td>
+								<td><div id="edit" class="btn5">Edit Description</div></td>
 							#end
 						</tr>
 					</table>
@@ -129,6 +133,22 @@
 				<div class="actions">
 					<a class="yes btn2" id="login-btn" href="#">Re-login</a>
 				</div>
+			</div>
+		</div>
+		<div id="delete-project" class="modal">
+			<h3>Delete Project</h3>
+			<div class="warn">
+				<div class="warning-icon"></div>
+				<div class="warning-message"><p>Warning: This project will be deleted and may not be recoverable.</p></div>
+			</div>
+			<form id="delete-form">
+				<input type="hidden" name="project" value="$project.name" />
+				<input type="hidden" name="delete" value="true" />
+			</form>
+			
+			<div class="actions">
+				<a class="no simplemodal-close btn3" href="#">Cancel</a>
+				<a class="yes btn6" id="delete-btn" href="#">Yes</a>
 			</div>
 		</div>
 	</body>

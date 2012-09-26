@@ -37,6 +37,8 @@ import azkaban.flow.Node;
 import azkaban.project.Project;
 import azkaban.project.ProjectManager;
 import azkaban.project.ProjectManagerException;
+import azkaban.scheduler.ScheduleManager;
+import azkaban.scheduler.ScheduledFlow;
 import azkaban.user.Permission;
 import azkaban.user.UserManager;
 import azkaban.user.Permission.Type;
@@ -55,6 +57,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 	
 	private ProjectManager projectManager;
 	private ExecutorManager executorManager;
+	private ScheduleManager scheduleManager;
 	private MultipartParser multipartParser;
 	private File tempDir;
 	private static Comparator<Flow> FLOW_ID_COMPARATOR = new Comparator<Flow>() {
@@ -69,6 +72,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 		super.init(config);
 		projectManager = this.getApplication().getProjectManager();
 		executorManager = this.getApplication().getExecutorManager();
+		scheduleManager = this.getApplication().getScheduleManager();
 		
 		tempDir = this.getApplication().getTempDirectory();
 		multipartParser = new MultipartParser(DEFAULT_UPLOAD_DISK_SPOOL_SIZE);
@@ -88,6 +92,9 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 			}
 			else if (hasParam(req, "flow")) {
 				handleFlowPage(req, resp, session);
+			}
+			else if (hasParam(req, "delete")) {
+				handleRemoveProject(req, resp, session);
 			}
 			else {
 				handleProjectPage(req, resp, session);
@@ -218,6 +225,63 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 		}
 		
 		ret.put("executions", history);
+	}
+	
+	private void handleRemoveProject(HttpServletRequest req, HttpServletResponse resp, Session session) throws ServletException, IOException {
+		User user = session.getUser();
+		String projectName = getParam(req, "project");
+		
+		Project project = projectManager.getProject(projectName);
+		if (project == null) {
+			this.setErrorMessageInCookie(resp, "Project " + projectName + " doesn't exist.");
+			resp.sendRedirect(req.getContextPath());
+			return;
+		}
+		
+		if (!project.hasPermission(user, Type.ADMIN)) {
+			this.setErrorMessageInCookie(resp, "Cannot delete. User '" + user.getUserId() + "' is not an ADMIN.");
+			resp.sendRedirect(req.getRequestURI() + "?project=" + projectName);
+			return;
+		}
+		
+		// Check if scheduled
+		ScheduledFlow sflow = null;
+		for (ScheduledFlow flow: scheduleManager.getSchedule()) {
+			if (flow.getProjectId().equals(projectName)) {
+				sflow = flow;
+				break;
+			}
+		}
+		if (sflow != null) {
+			this.setErrorMessageInCookie(resp, "Cannot delete. Please unschedule " + sflow.getScheduleId() + ".");
+			resp.sendRedirect(req.getRequestURI() + "?project=" + projectName);
+			return;
+		}
+
+		// Check if executing
+		ExecutableFlow exflow = null;
+		for (ExecutableFlow flow: executorManager.getRunningFlows()) {
+			if (flow.getProjectId() == projectName) {
+				exflow = flow;
+				break;
+			}
+		}
+		if (exflow != null) {
+			this.setErrorMessageInCookie(resp, "Cannot delete. Executable flow " + exflow.getExecutionId() + " is still running.");
+			resp.sendRedirect(req.getRequestURI() + "?project=" + projectName);
+			return;
+		}
+
+		try {
+			projectManager.removeProject(projectName);
+		} catch (ProjectManagerException e) {
+			this.setErrorMessageInCookie(resp, e.getMessage());
+			resp.sendRedirect(req.getRequestURI() + "?project=" + projectName);
+			return;
+		}
+		
+		this.setSuccessMessageInCookie(resp, "Project '" + projectName + "' was successfully deleted.");
+		resp.sendRedirect(req.getContextPath());
 	}
 	
 	private void ajaxChangeDescription(Project project, HashMap<String, Object> ret, HttpServletRequest req) throws ServletException {
