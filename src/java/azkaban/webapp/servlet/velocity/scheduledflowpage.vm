@@ -56,6 +56,7 @@
 							<th>Flow</th>
 							<th>Project</th>
 							<th>User</th>
+							<th>Submitted By</th>
 							<th class="date">First Scheduled to Run</th>
 							<th class="date">Next Execution Time</th>
 							<th class="date">Repeats Every</th>
@@ -76,6 +77,7 @@
 								<a href="${context}/manager?project=${sched.projectId}">${sched.projectId}</a>
 							</td>
 							<td>${sched.user}</td>
+							<td>${sched.userSubmit}</td>
 							<td>$utils.formatDateTime(${sched.firstSchedTime})</td>
 							<td>$utils.formatDateTime(${sched.nextExecTime})</td>
 							<td>$utils.formatPeriod(${sched.period})</td>

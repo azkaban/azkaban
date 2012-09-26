@@ -223,6 +223,7 @@ public class FileProjectManager implements ProjectManager {
 		List<String> errors = new ArrayList<String>();
 		DirectoryFlowLoader loader = new DirectoryFlowLoader(logger);
 		loader.loadProjectFlow(dir);
+		errors.addAll(loader.getErrors());
 		Map<String, Flow> flows = loader.getFlowMap();
 
 		File projectPath = new File(projectDirectory, projectName);
@@ -253,7 +254,9 @@ public class FileProjectManager implements ProjectManager {
 		dir.renameTo(destDirectory);
 
 		// We install only if the project is not forced install or has no errors
-		if (force || errors.isEmpty()) {
+		//if (force || errors.isEmpty()) {
+		// We don't do force install any more
+		if (errors.isEmpty()) {
 			// We synchronize on project so that we don't collide when
 			// uploading.
 			synchronized (project) {

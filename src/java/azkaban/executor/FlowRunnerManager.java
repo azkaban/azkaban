@@ -1,18 +1,33 @@
 package azkaban.executor;
 
 import java.io.File;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Vector;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
 
-import org.apache.log4j.Logger;
+import javax.servlet.ServletRequest;
 
+import org.apache.log4j.Logger;
+import org.joda.time.Duration;
+import org.joda.time.format.PeriodFormat;
+
+import azkaban.utils.Utils;
+import azkaban.executor.ExecutableFlow.Status;
 import azkaban.executor.event.Event;
 import azkaban.executor.event.Event.Type;
 import azkaban.executor.event.EventListener;
 import azkaban.utils.ExecutableFlowLoader;
+import azkaban.utils.Mailman;
 import azkaban.utils.Props;
 
 /**
@@ -31,8 +46,22 @@ public class FlowRunnerManager {
 	private ExecutorService executorService;
 	private SubmitterThread submitterThread;
 	private FlowRunnerEventListener eventListener;
+
+	private Mailman mailer;
+	//private String defaultFailureEmail;
+	//private String defaultSuccessEmail;
+	private String senderAddress;
+	private String clientHostname;
+	private String clientPortNumber;
 	
-	public FlowRunnerManager(Props props) {
+	public FlowRunnerManager(Props props, Mailman mailer) {
+		this.mailer = mailer;
+//		this.defaultFailureEmail = props.getString("job.failure.email");
+//		this.defaultSuccessEmail = props.getString("job.success.email");
+		this.senderAddress = props.getString("mail.sender");
+		this.clientHostname = props.getString("jetty.hostname", "localhost");
+		this.clientPortNumber = Utils.nonNull(props.getString("jetty.ssl.port"));
+		
 		basePath = new File(props.getString("execution.directory"));
 		numThreads = props.getInt("executor.flow.threads", DEFAULT_NUM_EXECUTING_FLOWS);
 		executorService = Executors.newFixedThreadPool(numThreads);
@@ -128,11 +157,99 @@ public class FlowRunnerManager {
 			FlowRunner runner = (FlowRunner)event.getRunner();
 			ExecutableFlow flow = runner.getFlow();
 			
+			
+			
 			System.out.println("Event " + flow.getExecutionId() + " " + flow.getFlowId() + " " + event.getType());
 			if (event.getType() == Type.FLOW_FINISHED) {
+				if(flow.getStatus() == Status.SUCCEEDED)
+					sendSuccessEmail(runner);
+				else sendErrorEmail(runner);
+				
 				logger.info("Flow " + flow.getExecutionId() + " has finished.");
 				runningFlows.remove(flow.getExecutionId());
+				
 			}
 		}
 	}
+	
+	private List<String> getLogURLs(FlowRunner runner)
+	{
+		List<String> logURLs = new ArrayList<String>();
+		
+		String flowID = runner.getFlow().getFlowId();
+		String execID = runner.getFlow().getExecutionId();
+		List<String> jobIDs = runner.getJobsFinished();
+		
+		//first construct log URL;
+		String logURL = "https://" + clientHostname + ":" + clientPortNumber + "/" + "executor?" + "execid=" + execID + "#log";
+		logURLs.add(logURL);
+		//then the individual jobs log URL that actually ran
+		for(String jobID : jobIDs) {
+			String jobLog = "https://" + clientHostname + ":" + clientPortNumber + "/" + "executor?" + "execid=" + execID + "&flow=" + flowID + "&job=" + jobID;
+			logURLs.add(jobLog);
+		}
+		
+		return logURLs;
+	}
+	
+    /*
+     * Wrap a single exception with the name of the scheduled job
+     */
+    private void sendErrorEmail(FlowRunner runner) {
+    	ExecutableFlow flow = runner.getFlow();
+    	List<String> emailList = new ArrayList<String>(runner.getEmails());
+        if(emailList != null && !emailList.isEmpty() && mailer != null) {
+        	
+        	
+        	
+        	
+            try {
+            	
+            	String subject = "Flow '" + flow.getFlowId() + "' has completed on " + InetAddress.getLocalHost().getHostName() + "!";
+            	String body = "The Flow '" + flow.getFlowId() + "' failed. \n See logs below: \n" ;
+            	for(String URL : getLogURLs(runner)) {
+            		body += (URL + "\n");
+            	}
+            	
+                mailer.sendEmailIfPossible(senderAddress,
+                                             emailList,
+                                             subject,
+                                             body);
+            } catch(UnknownHostException uhe) {
+                logger.error(uhe);
+            }
+            catch (Exception e) {
+                logger.error(e);
+            }
+        }
+    }
+    
+
+    private void sendSuccessEmail(FlowRunner runner) {
+    	
+    	ExecutableFlow flow = runner.getFlow();
+    	List<String> emailList = new ArrayList<String>(runner.getEmails());
+        
+        if(emailList != null && !emailList.isEmpty() && mailer != null) {
+            try {
+            	
+            	String subject = "Flow '" + flow.getFlowId() + "' has completed on " + InetAddress.getLocalHost().getHostName() + "!";
+            	String body = "The Flow '" + flow.getFlowId() + "' succeeded. \n See logs below: \n" ;
+            	for(String URL : getLogURLs(runner)) {
+            		body += (URL + "\n");
+            	}
+            	
+                mailer.sendEmailIfPossible(senderAddress,
+                                             emailList,
+                                             subject,
+                                             body);
+            } catch(UnknownHostException uhe) {
+                logger.error(uhe);
+            }
+            catch (Exception e) {
+                logger.error(e);
+            }
+        }
+    }
+    
 }

@@ -41,6 +41,10 @@ public class DirectoryFlowLoader {
 		return flowMap;
 	}
 	
+	public Set<String> getErrors() {
+		return errors;
+	}
+	
 	public void loadProjectFlow(File baseDirectory) {
 		propsList = new ArrayList<Props>();
 		flowPropsList = new ArrayList<FlowProps>();
@@ -59,6 +63,7 @@ public class DirectoryFlowLoader {
 
 		// Create the flows.
 		buildFlowsFromDependencies();
+
 	}
 	
 	private void loadProjectFromDir(String base, File dir) {
@@ -99,8 +104,11 @@ public class DirectoryFlowLoader {
 						prop.setSource(relative);
 						
 						Node node = new Node(jobName);
-						String type = prop.getString("type", "none");
-						errors.add("Job doesn't have type set '" + jobName + "'.");
+						String type = prop.getString("type", null);
+						if(type == null) {
+							errors.add("Job doesn't have type set '" + jobName + "'.");
+						}
+						
 						node.setType(type);
 						
 						node.setJobSource(relative);

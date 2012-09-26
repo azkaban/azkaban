@@ -5,8 +5,10 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
@@ -59,6 +61,9 @@ public class FlowRunner extends EventHandler implements Runnable {
 	private Appender flowAppender;
 
 	private Thread currentThread;
+	
+	private Set<String> emailAddress;
+	private List<String> jobsFinished;
 
 	public enum FailedFlowOptions {
 		FINISH_RUNNING_JOBS, KILL_ALL
@@ -72,6 +77,8 @@ public class FlowRunner extends EventHandler implements Runnable {
 		this.executorService = Executors.newFixedThreadPool(numThreads);
 		this.runningJobs = new ConcurrentHashMap<String, JobRunner>();
 		this.listener = new JobRunnerEventListener(this);
+		this.emailAddress = new HashSet<String>();
+		this.jobsFinished = new ArrayList<String>();
 
 		createLogger();
 	}
@@ -80,6 +87,14 @@ public class FlowRunner extends EventHandler implements Runnable {
 		return flow;
 	}
 
+	public Set<String> getEmails() {
+		return emailAddress;
+	}
+	
+	public List<String> getJobsFinished() {
+		return jobsFinished;
+	}
+	
 	private void createLogger() {
 		// Create logger
 		String loggerName = System.currentTimeMillis() + "." + flow.getExecutionId();
@@ -432,17 +447,23 @@ public class FlowRunner extends EventHandler implements Runnable {
 			System.out.println("Event " + jobID + " "
 					+ event.getType().toString());
 
+			
+			
 			// On Job success, we add the output props and then set up the next
 			// run.
 			if (event.getType() == Type.JOB_SUCCEEDED) {
 				logger.info("Job Succeeded " + jobID + " in "
 						+ (node.getEndTime() - node.getStartTime()) + " ms");
+				emailAddress.addAll(runner.getNotifyEmails());
+				jobsFinished.add(jobID);
 				Props props = runner.getOutputProps();
 				outputProps.put(jobID, props);
 				flowRunner.handleSucceededJob(runner.getNode());
 			} else if (event.getType() == Type.JOB_FAILED) {
 				logger.info("Job Failed " + jobID + " in "
 						+ (node.getEndTime() - node.getStartTime()) + " ms");
+				emailAddress.addAll(runner.getNotifyEmails());
+				jobsFinished.add(jobID);
 				logger.info(jobID + " FAILED");
 				flowRunner.handleFailedJob(runner.getNode());
 			}

@@ -2,6 +2,9 @@ package azkaban.executor;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 
 import org.apache.log4j.Appender;
 import org.apache.log4j.FileAppender;
@@ -23,7 +26,9 @@ import azkaban.utils.Props;
 public class JobRunner extends EventHandler implements Runnable {
 	private static final Layout DEFAULT_LAYOUT = new PatternLayout(
 			"%d{dd-MM-yyyy HH:mm:ss z} %c{1} %p - %m\n");
-
+	
+	private static final String EMAILLIST = "notify.emails";
+	
 	private Props props;
 	private Props outputProps;
 	private ExecutableNode node;
@@ -101,9 +106,9 @@ public class JobRunner extends EventHandler implements Runnable {
 			}
 		}
 
-/*
+
 		// Run Job
-		boolean succeeded = true;
+		//boolean succeeded = true;
 
 		props.put(AbstractProcessJob.WORKING_DIR, workingDir.getAbsolutePath());
 		JobWrappingFactory factory  = JobWrappingFactory.getJobWrappingFactory();
@@ -116,7 +121,7 @@ public class JobRunner extends EventHandler implements Runnable {
                 //logger.error("job run failed!");
                 e.printStackTrace();
         }
-		*/
+		
 		node.setEndTime(System.currentTimeMillis());
 		if (succeeded) {
 			node.setStatus(Status.SUCCEEDED);
@@ -158,5 +163,11 @@ public class JobRunner extends EventHandler implements Runnable {
 
 	public Props getOutputProps() {
 		return outputProps;
+	}
+
+	public List<String> getNotifyEmails() {
+		List<String> emails = new ArrayList<String>();
+		emails = this.props.getStringList(EMAILLIST);
+		return emails;
 	}
 }
