@@ -871,6 +871,7 @@ azkaban.ScheduleFlowView = Backbone.View.extend({
      var hourVal = $('#hour').val();
      var minutesVal = $('#minutes').val();
      var ampmVal = $('#am_pm').val();
+     var timezoneVal = $('#timezone').val();
      var dateVal = $('#datepicker').val();
      var is_recurringVal = $('#is_recurring').val();
      var periodVal = $('#period').val();
@@ -890,6 +891,7 @@ azkaban.ScheduleFlowView = Backbone.View.extend({
 		hour:hourVal,
 		minutes:minutesVal,
 		am_pm:ampmVal,
+		timezone:timezoneVal,
 		date:dateVal,
 		userExec:"dummy",
 		is_recurring:is_recurringVal,

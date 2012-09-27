@@ -12,6 +12,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
 import org.joda.time.Months;
 import org.joda.time.Weeks;
 import org.joda.time.Days;
@@ -144,6 +145,8 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
 		int hour = getIntParam(req, "hour");
 		int minutes = getIntParam(req, "minutes");
 		boolean isPm = getParam(req, "am_pm").equalsIgnoreCase("pm");
+		
+		DateTimeZone timezone = getParam(req,  "timezone").equals("UTC") ? DateTimeZone.UTC : DateTimeZone.forID("America/Los_Angeles");
 
 
 		String scheduledDate = req.getParameter("date");
@@ -152,7 +155,7 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
 			day = new LocalDateTime().toDateTime();
 		} else {
 		    try {
-		    	day = DateTimeFormat.forPattern("MM/dd/yyyy").parseDateTime(scheduledDate);
+		    	day = DateTimeFormat.forPattern("MM/dd/yyyy").withZone(timezone).parseDateTime(scheduledDate);
 		    } catch(IllegalArgumentException e) {
 		      	ret.put("error", "Invalid date: '" + scheduledDate + "'");
 		      	return;
@@ -175,7 +178,7 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
 		String userSubmit = user.getUserId();
 		String userExec = userSubmit;//getParam(req, "userExec");
 		String scheduleId = projectId + "." + flowId;
-		DateTime submitTime = new DateTime();
+		DateTime submitTime = new DateTime().withZone(timezone);
 		DateTime firstSchedTime = day.withHourOfDay(hour).withMinuteOfHour(minutes).withSecondOfMinute(0);
 		
 		ScheduledFlow schedFlow = scheduleManager.schedule(scheduleId, projectId, flowId, userExec, userSubmit, submitTime, firstSchedTime, thePeriod);
