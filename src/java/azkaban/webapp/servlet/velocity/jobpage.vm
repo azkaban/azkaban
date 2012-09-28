@@ -59,7 +59,7 @@
 					<tr><td class="first">Dependents:</td><td>
 #if ($dependents) 
 #foreach($dependent in $dependents)
-						<a href="${context}/manager?project=${project.name}&flow=${flowid}&job=$dependent">$dependent</a><span>,</span>
+						<span class="nowrap"><a href="${context}/manager?project=${project.name}&flow=${flowid}&job=$dependent">$dependent</a></span>
 #end
 #else
 						<span>No Dependencies</span>

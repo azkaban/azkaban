@@ -54,7 +54,7 @@
 							<h4><a href="${context}/manager?project=${project.name}">Project <span>$project.name</span></a></h4>
 						</div>
 						
-						<div id="executebtn" class="btn1">Execute</div>
+						<div id="executebtn" class="btn1">Execute...</div>
 						<div id="scheduleflowbtn" class="btn2 scheduleflow">Schedule Flow</div>
 					</div>
 					
@@ -77,7 +77,7 @@
 							</div>
 							<div id="svgDiv" >
 								<svg id="svgGraph" xmlns="http://www.w3.org/2000/svg" version="1.1" shape-rendering="optimize-speed" text-rendering="optimize-speed" >
-								</svg>pload-project
+								</svg>
 							</div>
 						</div>
 					</div>
@@ -115,7 +115,7 @@
 				</div>
 		<!-- modal content -->
                 <div id="schedule-flow" class="modal">
-                        <h3>Schedulemm A Flow</h3>
+                        <h3>Schedule Flow</h3>
                         <div id="errorMsg" class="box-error-message">$errorMsg</div>
 
                         <!--div class="message">
@@ -174,16 +174,48 @@
                                 <a class="yes btn3" id="schedule-btn" href="#">Schedule The Flow</a>
                                 <a class="no simplemodal-close btn4" href="#">Cancel</a>
                         </div>
-                        
-                        <div id="invalid-session" class="modal">
-                                <h3>Invalid Session</h3>
-                                <p>Session has expired. Please re-login.</p>
-                                <div class="actions">
-                                        <a class="yes btn3" id="login-btn" href="#">Re-login</a>
-                                </div>
+                </div>
+                <div id="invalid-session" class="modal">
+                        <h3>Invalid Session</h3>
+                        <p>Session has expired. Please re-login.</p>
+                        <div class="actions">
+                                <a class="yes btn3" id="login-btn" href="#">Re-login</a>
                         </div>
                 </div>
-
+                
+                <div id="modalBackground" class="modalBackground2">
+	                <div id="executing-options" class="modal modalContainer2">
+	                	<a href='#' title='Close' class='modal-close'>x</a>
+	                		<h3>Executing Flow</h3>
+	                		<div>
+	                			<ul class="optionsPicker">
+	                				<li>General Options</li>
+	                				<li>Flow Options</li>
+	                			</ul>
+	                		</div>
+	                		<div class="optionsPane">
+	                			<div class="generalPanel panel">
+	                			</div>
+								<div class="graphPanel panel">
+									<div class="jobList">
+										<div id="filterList2">
+											<input id="filter2" placeholder="  Job Filter" />
+										</div>
+										<div id="list2">
+										</div>
+										<div id="resetPanZoomBtn2" class="btn5" >Reset Pan Zoom</div>
+									</div>
+								    <div class="svgDiv" >
+									</div>
+		                        </div>
+	                        </div>
+                    		<div class="actions">
+	                                <a class="yes btn1" id="execute-btn" href="#">Execute Now</a>
+	                                <a class="no simplemodal-close btn3" id="cancel-btn" href="#">Cancel</a>
+	                        </div>
+	                </div>
+                </div>
+                
 #end
 		<ul id="jobMenu" class="contextMenu flowSubmenu">  
 			<li class="open"><a href="#open">Open...</a></li>

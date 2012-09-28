@@ -50,26 +50,26 @@ public class Mailman {
 
 	public void sendEmail(String fromAddress, List<String> toAddress,
 			String subject, String body) throws MessagingException {
-		SimpleEmail email = new SimpleEmail();
-
-		try {
-			email.setHostName(_mailHost);
-
-			for (String addr : toAddress) {
-				email.addTo(addr);
-			}
-
-			email.setFrom(fromAddress);
-			email.setSubject(subject);
-
-			email.setMsg(body);
-			email.setDebug(true);
-			email.send();
-		} catch (EmailException e) {
-			logger.error(e);
-		} catch (Exception e) {
-			logger.error(e);
-		}
+//		SimpleEmail email = new SimpleEmail();
+//
+//		try {
+//			email.setHostName(_mailHost);
+//
+//			for (String addr : toAddress) {
+//				email.addTo(addr);
+//			}
+//
+//			email.setFrom(fromAddress);
+//			email.setSubject(subject);
+//
+//			email.setMsg(body);
+//			email.setDebug(true);
+//			email.send();
+//		} catch (EmailException e) {
+//			logger.error(e);
+//		} catch (Exception e) {
+//			logger.error(e);
+//		}
 
 	}
 

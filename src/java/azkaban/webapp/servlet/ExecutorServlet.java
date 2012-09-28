@@ -152,7 +152,7 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 		
 		return null;
 	}
-
+	
 	protected Project getProjectAjaxByPermission(Map<String, Object> ret, String projectId, User user, Permission.Type type) {
 		Project project = projectManager.getProject(projectId);
 		
@@ -221,6 +221,11 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 					ret = null;
 				}
 			}
+		}
+		else if (ajaxName.equals("isRunning")) {
+			String projectName = getParam(req, "project");
+			String flowName = getParam(req, "flow");
+			ajaxIsFlowRunning(req, resp, ret, session.getUser(), projectName, flowName);
 		}
 		else {
 			String projectName = getParam(req, "project");
@@ -324,12 +329,20 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 		}
 	}
 
+	private void ajaxIsFlowRunning(HttpServletRequest req, HttpServletResponse resp, HashMap<String, Object> ret, User user, String projectId, String flowId) throws ServletException{
+		Project project = getProjectAjaxByPermission(ret, projectId, user, Type.EXECUTE);
+		if (project == null) {
+			return;
+		}
+		
+		ret.put("running", executorManager.isFlowRunning(projectId, flowId));
+	}
+	
 	private void ajaxRestartFlow(HttpServletRequest req, HttpServletResponse resp, HashMap<String, Object> ret, User user, ExecutableFlow exFlow) throws ServletException{
 		Project project = getProjectAjaxByPermission(ret, exFlow.getProjectId(), user, Type.EXECUTE);
 		if (project == null) {
 			return;
 		}
-
 	}
 
 	private void ajaxPauseFlow(HttpServletRequest req, HttpServletResponse resp, HashMap<String, Object> ret, User user, ExecutableFlow exFlow) throws ServletException{

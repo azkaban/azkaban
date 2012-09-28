@@ -1,0 +1,107 @@
+<!DOCTYPE html> 
+<html>
+	<head>
+#parse( "azkaban/webapp/servlet/velocity/style.vm" )
+		<script type="text/javascript" src="${context}/js/jquery/jquery.js"></script>    
+		<script type="text/javascript" src="${context}/js/jqueryui/jquery-ui.custom.min.js"></script>
+		<script type="text/javascript" src="${context}/js/jqueryui/jquery.ui.datepicker.min.js"></script>
+		<script type="text/javascript" src="${context}/js/azkaban.date.utils.js"></script>  
+		<script type="text/javascript" src="${context}/js/namespace.js"></script>
+		<script type="text/javascript" src="${context}/js/underscore-1.2.1-min.js"></script>
+		<script type="text/javascript" src="${context}/js/backbone-0.5.3-min.js"></script>
+		<script type="text/javascript" src="${context}/js/jquery.simplemodal.js"></script>
+		<script type="text/javascript" src="${context}/js/jquery.contextMenu.js"></script>
+		<script type="text/javascript" src="${context}/js/azkaban.ajax.utils.js"></script>
+		<script type="text/javascript" src="${context}/js/azkaban.nav.js"></script>
+		<script type="text/javascript" src="${context}/js/azkaban.layout.js"></script>
+		<script type="text/javascript" src="${context}/js/azkaban.staging.flow.view.js"></script>
+		<script type="text/javascript" src="${context}/js/svgNavigate.js"></script>
+		<script type="text/javascript">
+			var contextURL = "${context}";
+			var currentTime = ${currentTime};
+			var timezone = "${timezone}";
+			var errorMessage = "${error_message}";
+			var successMessage = "${success_message}";
+			
+			var projectName = "${project.name}";
+			var flowName = "${flowid}";
+			var retryExecution = "${retry}";
+		</script>
+		<script>
+			$(function() {
+				$( "#datepicker" ).datepicker();
+			});
+		</script>
+		<link rel="stylesheet" type="text/css" href="${context}/css/jquery.contextMenu.custom.css" /> 
+	</head>
+	<body>
+#set($current_page="all")
+#parse( "azkaban/webapp/servlet/velocity/nav.vm" )
+		<div class="messaging"><p id="messageClose">X</p><p id="message"></p></div>  
+		<div class="content">
+#if($errorMsg)
+				<div class="box-error-message">$errorMsg</div>
+#else
+#if($error_message != "null")
+				<div class="box-error-message">$error_message</div>
+#elseif($success_message != "null")
+				<div class="box-success-message">$success_message</div>
+#end
+
+				<div id="all-jobs-content">
+					<div class="section-hd flow-header">
+						<h2><a href="${context}/manager?project=${project.name}&flow=${flowid}">Preparing Execution Flow <span>$flowid</span></a></h2>
+						<div class="section-sub-hd">
+							<h4><a href="${context}/manager?project=${project.name}">Project <span>$project.name</span></a></h4>
+						</div>
+						
+						<div id="executebtn" class="btn1">Execute Now</div>
+					</div>
+					
+					<div id="headertabs" class="headertabs">
+						<ul>
+							<li><a id="graphViewLink" href="#graph">Graph</a></li>
+						</ul>
+					</div>
+					<div id="graphView">
+						<div class="relative">
+							<div id="jobList">
+								<div id="filterList">
+									<input id="filter" placeholder="  Job Filter" />
+								</div>
+								<div id="list">
+								</div>
+								<div id="resetPanZoomBtn" class="btn5" >Reset Pan Zoom</div>
+							</div>
+							<div id="svgDiv" class="svgDivStaging" >
+								<svg id="svgGraph" xmlns="http://www.w3.org/2000/svg" version="1.1" shape-rendering="optimize-speed" text-rendering="optimize-speed" >
+								</svg>
+							</div>
+						</div>
+					</div>
+				</div>
+#end
+		<ul id="jobMenu" class="contextMenu flowSubmenu">  
+			<li class="open"><a href="#open">Open...</a></li>
+			<li class="openwindow"><a href="#openwindow">Open in New Window...</a></li>
+			<li id="disable" class="disable separator"><a href="#disable">Disable</a><div id="disableArrow" class="context-sub-icon"></div></li>
+			<ul id="disableSub" class="subMenu">
+				<li class="all"><a href="#disableAll">All</a></li>
+				<li class="parents"><a href="#disableParents">Parents</a></li>
+				<li class="ancestors"><a href="#disableAncestors">All Ancestors</a></li>
+				<li class="children"><a href="#disableChildren">Children</a></li>
+				<li class="decendents"><a href="#disableDescendents">All Descendents</a></li>
+			</ul>
+			<li id="enable" class="enable"><a href="#enable">Enable</a> <div id="enableArrow" class="context-sub-icon"></div></li>
+			<ul id="enableSub" class="subMenu">
+				<li class="all"><a href="#enableAll">All</a></li>
+				<li class="parents"><a href="#enableParents">Parents</a></li>
+				<li class="ancestors"><a href="#enableAncestors">All Ancestors</a></li>
+				<li class="children"><a href="#enableChildren">Children</a></li>
+				<li class="decendents"><a href="#enableDescendents">All Descendents</a></li>
+			</ul>
+		</ul>
+
+		</div>
+	</body>
+</html>

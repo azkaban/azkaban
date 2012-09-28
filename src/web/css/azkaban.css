@@ -487,10 +487,20 @@ tr:hover td {
 }
 
 /* confirm modal */
-.modal {
+
+.modalContainer2 {
   display: none;
-  -moz-box-shadow: 5px 5px 5px #888;
-  -webkit-box-shadow: 5px 5px 5px #888;
+  position: absolute;
+}
+
+.modalBackground2 {
+	position: absolute;
+	display: none;
+	left: 0px;
+	right: 0px;
+	top: 0px;
+	bottom: 0px;
+	background-color: rgba(0, 0, 0, 0.4);
 }
 
 .search-input {
@@ -589,12 +599,16 @@ tr:hover td {
 }
 
 .modal {
+  display: none;
   background-color: #fff;
-  border: 1px solid #9c9c9c;
-  border-radius: 10px;
-  -moz-border-radius: 10px;
-
+  border: 1px solid #DDD;
+  -moz-box-shadow: 5px 5px 5px rgba(0, 0, 0, 0.5);
+  -webkit-box-shadow: 5px 5px 5px rgba(0, 0, 0, 0.5);
   overflow: hidden;
+}
+
+.modal p {
+	margin-left: 30px;
 }
 
 .modal h3 {
@@ -622,6 +636,18 @@ tr:hover td {
   padding: 16px 16px 20px 0;
 }
 
+.modalContainer2.modal .actions {
+  position: absolute;
+  background-color: #f0f0f0;
+  margin-top: 10px;
+  overflow: hidden;
+  padding: 16px 16px 20px 0;
+  bottom: 0px;
+  right: 0px;
+  left: 0px;
+}
+
+.modal .btn1,
 .modal .btn2,
 .modal .btn3,
 .modal .btn6 {
@@ -978,12 +1004,14 @@ tr:hover td {
 #job-summary {
 	margin-left: 30px;
 	margin-bottom: 10px;
-	width: 60%;
+	width:90%;
 }
 
 #job-summary table tr td a {
 	text-decoration: none;
 	color: #555;
+	margin-left: 0px;
+	margin-right: 10px;
 }
 
 #job-summary table tr td span {
@@ -993,6 +1021,10 @@ tr:hover td {
 #job-summary table tr td a:hover {
 	text-decoration: none;
 	color: #009FC9;
+}
+
+#job-summary .first {
+	width: 100px;
 }
 
 .summary-table {
@@ -1008,6 +1040,10 @@ tr:hover td {
 
 .summary-table td {
 	border-style: none;
+}
+
+.summary-table td.left{
+	text-align: left;
 }
 
 .user-table {
@@ -1235,11 +1271,21 @@ tr:hover td {
 	height: 100%;
 }
 
+#editIcon {
+	text-align: center;
+}
+
+#toolsBar .btn3{
+	float: left;
+	margin-left: 3px;
+}
+
 #svgGraph {
 	width: 100%;
 	height: 100%;
 	background: #fff;
 }
+
 
 #svgDiv {
 	position: absolute;
@@ -1247,7 +1293,79 @@ tr:hover td {
 	right: 0px;
 	left: 260px;
 	bottom: 0px;
+}
+
+#svgDiv.svgDivStaging {
+	top: 30px;
+}
+
+#svgDivModal {
+	position: absolute;
+	top: 0px;
+	right: 0px;
+	left: 260px;
 	height: 100%;
+}
+
+#executing-options {
+	left: 100px;
+	right: 100px;
+	top: 50px;
+	bottom: 40px;
+}
+
+#executing-options .svgDiv {
+	position: absolute;
+	background-color: #CCC;
+	left: 260px;
+	right: 0px;
+	top: 0px;
+	bottom: 0px;
+}
+
+#executing-options .jobList {
+	position: absolute;
+	width: 260px;
+	top: 0px;
+	bottom: 0px;
+	background-color: #F00;
+}
+
+#executing-options ul.optionsPicker {
+	margin-left: 30px;
+}
+
+#executing-options ul.optionsPicker li {
+	float: left;
+	font-size: 12pt;
+	font-weight: bold;
+	margin-right: 15px;
+	cursor: pointer;
+	color: #CCC;
+}
+
+#executing-options ul.optionsPicker li:hover {
+	color: #888;
+}
+
+#executing-options .optionsPane {
+	position: absolute;
+	top: 85px;
+	background-color: #000;
+	left: 0px;
+	right: 0px;
+	bottom: 0px;
+}
+
+#executing-options .panel {
+	position: absolute;
+	width: 100%;
+	top: 0px;
+	bottom: 60px;
+}
+
+#executing-options .generalPanel.panel {
+	background-color: #ACC;
 }
 
 #jobList {
@@ -1776,6 +1894,10 @@ ul.disableMenu {
 	float: left;
 	margin-left: 10px;
 	margin-top: 10px;
+}
+
+span .nowrap {
+	white-space: nowrap;
 }
 
 /* old styles */

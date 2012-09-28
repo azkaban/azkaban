@@ -64,7 +64,7 @@
 							<li><div id="pausebtn" class="btn2">Pause</div></li>
 							<li><div id="resumebtn" class="btn2">Resume</div></li>
 							<li><div id="cancelbtn" class="btn6">Cancel</div></li>
-							<li><div id="restartbtn" class="btn1">Restart</div></li>
+							<li><div id="restartbtn" class="btn1">Retry...</div></li>
 						</ul>
 					</div>
 					<div id="graphView">
