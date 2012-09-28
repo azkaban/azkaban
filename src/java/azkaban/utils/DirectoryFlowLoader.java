@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.FileFilter;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -56,7 +57,7 @@ public class DirectoryFlowLoader {
 		nodeDependencies = new HashMap<String, Map<String, Edge>>();
 
 		// Load all the props files and create the Node objects
-		loadProjectFromDir(baseDirectory.getPath(), baseDirectory);
+		loadProjectFromDir(baseDirectory.getPath(), baseDirectory, null);
 		
 		// Create edges and find missing dependencies
 		resolveDependencies();
@@ -66,9 +67,9 @@ public class DirectoryFlowLoader {
 
 	}
 	
-	private void loadProjectFromDir(String base, File dir) {
+	private void loadProjectFromDir(String base, File dir, Props parent) {
 		File[] propertyFiles = dir.listFiles(new SuffixFilter(PROPERTY_SUFFIX));
-		Props parent = null;
+		Arrays.sort(propertyFiles);
 		
 		for (File file: propertyFiles) {
 			String relative = getRelativeFilePath(base, file.getPath());
@@ -85,7 +86,8 @@ public class DirectoryFlowLoader {
 			logger.info("Adding " + relative);
 			propsList.add(parent);
 		}
-
+		
+		
 		// Load all Job files. If there's a duplicate name, then we don't load
 		File[] jobFiles = dir.listFiles(new SuffixFilter(JOB_SUFFIX));
 		for (File file: jobFiles) {
@@ -128,7 +130,7 @@ public class DirectoryFlowLoader {
 		
 		File[] subDirs = dir.listFiles(DIR_FILTER);
 		for (File file: subDirs) {
-			loadProjectFromDir(base, file);
+			loadProjectFromDir(base, file, parent);
 		}
 	}
 	
