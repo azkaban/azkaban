@@ -26,6 +26,10 @@ import javax.mail.internet.AddressException;
 import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeMessage;
 
+
+import org.apache.commons.mail.EmailException;
+import org.apache.commons.mail.SimpleEmail;
+
 import org.apache.log4j.Logger;
 
 import com.sun.mail.smtp.SMTPTransport;
@@ -55,6 +59,9 @@ public class Mailman {
 
 	public void sendEmail(String fromAddress, List<String> toAddress,
 			String subject, String body) throws MessagingException {
+<<<<<<< HEAD
+=======
+
 		//session
 		Properties props = new Properties();
 		props.put("mail." + protocol + ".host", _mailHost);
@@ -86,6 +93,31 @@ public class Mailman {
 		finally {
 			t.close();
 		}
+		
+		
+		
+>>>>>>> 7f1fd5f465d15e01aae522eceac6fc7863031bcb
+//		SimpleEmail email = new SimpleEmail();
+//
+//		try {
+//			email.setHostName(_mailHost);
+//
+//			for (String addr : toAddress) {
+//				email.addTo(addr);
+//			}
+//
+//			email.setFrom(fromAddress);
+//			email.setSubject(subject);
+//
+//			email.setMsg(body);
+//			email.setDebug(true);
+//			email.send();
+//		} catch (EmailException e) {
+//			logger.error(e);
+//		} catch (Exception e) {
+//			logger.error(e);
+//		}
+
 	}
 
 	public void sendEmailIfPossible(String fromAddress, List<String> toAddress,
