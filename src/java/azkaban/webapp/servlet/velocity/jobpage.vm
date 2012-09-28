@@ -67,7 +67,9 @@
 					</td></tr>
 					<tr><td class="first">Properties:</td><td>
 #if ($properties) 
-						<a>$properties</a>
+#foreach($property in $properties)
+						<a>$property</a><span>,</span>
+#end
 #else
 						<span>No Inherited Properties</span>
 #end

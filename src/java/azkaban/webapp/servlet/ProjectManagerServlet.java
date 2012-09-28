@@ -638,15 +638,20 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 						}
 						
 						// Resolve property dependencies
-						String source = node.getPropsSource();
-						if(source != null) {
-							Props parent = flow.getFlowProps(source).getProps();
+						ArrayList<String> source = new ArrayList<String>(); 
+						String nodeSource = node.getPropsSource();
+						if(nodeSource != null) {
+							source.add(nodeSource);
+							Props parent = flow.getFlowProps(nodeSource).getProps();
 							while(parent.getParent() != null) {
-								source += ( "," + parent.getParent().getSource());
+								source.add(parent.getParent().getSource());
 								parent = parent.getParent(); 
 							}
 						}
-						page.add("properties", source);
+						if(!source.isEmpty()) {
+							page.add("properties", source);
+						}
+						
 
 						ArrayList<Pair<String,String>> parameters = new ArrayList<Pair<String, String>>();
 						// Parameter
