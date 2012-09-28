@@ -17,15 +17,22 @@
 package azkaban.utils;
 
 import java.util.List;
+import java.util.Properties;
 
+import javax.mail.Message;
 import javax.mail.MessagingException;
+import javax.mail.Session;
 import javax.mail.internet.AddressException;
+import javax.mail.internet.InternetAddress;
+import javax.mail.internet.MimeMessage;
 
 
 import org.apache.commons.mail.EmailException;
 import org.apache.commons.mail.SimpleEmail;
 
 import org.apache.log4j.Logger;
+
+import com.sun.mail.smtp.SMTPTransport;
 
 /**
  * The mailman send you mail, if you ask him
@@ -39,6 +46,8 @@ public class Mailman {
 	private final String _mailUser;
 	private final String _mailPassword;
 	private final String _mailSender;
+	
+	private final String protocol = "smtp";
 
 	public Mailman(String mailHost, String mailUser, String mailPassword,
 			String mailSender) {
@@ -50,6 +59,44 @@ public class Mailman {
 
 	public void sendEmail(String fromAddress, List<String> toAddress,
 			String subject, String body) throws MessagingException {
+<<<<<<< HEAD
+=======
+
+		//session
+		Properties props = new Properties();
+		props.put("mail." + protocol + ".host", _mailHost);
+		props.put("mail." + protocol + ".auth", "true");
+		
+		Session session = Session.getInstance(props, null);
+		session.setDebug(true);
+		
+		//email message
+		Message msg = new MimeMessage(session);
+		msg.setFrom(new InternetAddress(fromAddress));
+		for(String str : toAddress) {
+			msg.addRecipients(Message.RecipientType.TO, InternetAddress.parse(str));
+		}
+		
+		msg.setSubject(subject);
+		msg.setText(body);
+		
+		//transport
+		SMTPTransport t = (SMTPTransport)session.getTransport(protocol);
+		
+		try {
+			t.connect(_mailHost, _mailUser, _mailPassword);
+			t.sendMessage(msg, msg.getAllRecipients());
+		}
+		catch (Exception e) {
+			logger.error(e);
+		}
+		finally {
+			t.close();
+		}
+		
+		
+		
+>>>>>>> 7f1fd5f465d15e01aae522eceac6fc7863031bcb
 //		SimpleEmail email = new SimpleEmail();
 //
 //		try {

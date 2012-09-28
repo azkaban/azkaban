@@ -103,7 +103,7 @@ public class ScheduledFlow {
 			DateTime firstSchedTime,
 			ReadablePeriod period)
 	{
-		this(scheduleId, projectId, flowId, user, userSubmit, submitTime, firstSchedTime, new DateTime(), period);
+		this(scheduleId, projectId, flowId, user, userSubmit, submitTime, firstSchedTime, new DateTime().withZone(firstSchedTime.getZone()), period);
 	}
 
 	public ScheduledFlow(
@@ -115,7 +115,7 @@ public class ScheduledFlow {
 			DateTime submitTime, 
 			DateTime firstSchedTime) 
 	{
-		this(scheduleId, projectId, flowId, user, userSubmit, submitTime, firstSchedTime, new DateTime(), null);
+		this(scheduleId, projectId, flowId, user, userSubmit, submitTime, firstSchedTime, new DateTime().withZone(firstSchedTime.getZone()), null);
 	}
 
 	/**

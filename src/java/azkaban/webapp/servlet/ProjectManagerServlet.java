@@ -641,8 +641,20 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 						}
 						
 						// Resolve property dependencies
-						String source = node.getPropsSource();
-						page.add("properties", source);
+						ArrayList<String> source = new ArrayList<String>(); 
+						String nodeSource = node.getPropsSource();
+						if(nodeSource != null) {
+							source.add(nodeSource);
+							Props parent = flow.getFlowProps(nodeSource).getProps();
+							while(parent.getParent() != null) {
+								source.add(parent.getParent().getSource());
+								parent = parent.getParent(); 
+							}
+						}
+						if(!source.isEmpty()) {
+							page.add("properties", source);
+						}
+						
 
 						ArrayList<Pair<String,String>> parameters = new ArrayList<Pair<String, String>>();
 						// Parameter

@@ -144,7 +144,10 @@
                                                       <option>pm</option>
                                                       <option>am</option>
                                                     </select>
-                                                    $timezone
+                                                    <select id="timezone">
+                                                      <option>PDT</option>
+                                                      <option>UTC</option>
+                                                    </select>
                                                     on
                                                     <br>
                                                     <p>Date: <input type="text" id="datepicker"></p>
