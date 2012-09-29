@@ -298,6 +298,7 @@
 			var x = arguments.x;
 			var y = arguments.y;
 			var factor = 0.9;
+			var duration = arguments.duration;
 			
 			var width = arguments.width ? arguments.width : 1;
 			var height = arguments.height ? arguments.height : 1;
@@ -319,7 +320,12 @@
 			var sx = (divWidth - scaledWidth)/2 -scale*x;
 			var sy = (divHeight - scaledHeight)/2 -scale*y;
 			console.log("sx,sy:" + sx + "," + sy);
-			animateTransform(target, scale, sx, sy, 500);
+			
+			if (duration != 0 && !duration) {
+				duration = 500;
+			}
+			
+			animateTransform(target, scale, sx, sy, duration);
 		},
 		attachNavigateModel : function(arguments) {
 			var $this = $(this);

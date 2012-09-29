@@ -1344,6 +1344,15 @@ tr:hover td {
 	color: #CCC;
 }
 
+#executing-options ul.optionsPicker li.selected {
+	text-decoration: underline;
+	color: #000;
+}
+
+#executing-options ul.optionsPicker li.selected:hover {
+	color: #000;
+}
+
 #executing-options ul.optionsPicker li:hover {
 	color: #888;
 }
@@ -1351,7 +1360,7 @@ tr:hover td {
 #executing-options .optionsPane {
 	position: absolute;
 	top: 85px;
-	background-color: #000;
+	background-color: #FFF;
 	left: 0px;
 	right: 0px;
 	bottom: 0px;
@@ -1361,11 +1370,103 @@ tr:hover td {
 	position: absolute;
 	width: 100%;
 	top: 0px;
-	bottom: 60px;
+	bottom: 65px;
 }
 
 #executing-options .generalPanel.panel {
-	background-color: #ACC;
+	background-color: #F4F4F4;
+	padding-top: 15px;
+}
+
+#executing-options h3 {
+	margin-left: 20px;
+	font-size: 14pt;
+	border-bottom: 1px solid #CCC;
+}
+
+#executing-options h4 {
+	margin-left: 20px;
+	font-size: 12pt;
+	border-bottom: 1px solid #CCC;
+}
+
+#generalPanel {
+	overflow: auto;
+}
+
+#generalPanel dt {
+	width: 150px;
+	font-size: 10pt;
+	font-weight: bold;
+	margin-top: 5px;
+}
+
+#generalPanel textarea {
+	width: 500px;
+}
+
+#generalPanel table #addRow {
+	cursor: pointer;
+}
+
+#generalPanel table tr {
+	height: 24px;
+}
+
+#generalPanel table .editable {
+
+}
+
+#generalPanel table .editable input {
+	border: 1px solid #009FC9;
+	height: 16px;
+}
+
+#generalPanel table .name {
+	width: 40%;
+}
+
+#generalPanel span.addIcon {
+	display: block;
+	width: 16px;
+	height: 16px;
+	background-image: url("./images/addIcon.png");
+}
+
+#generalPanel span.removeIcon {
+	display: block;
+	visibility:hidden;
+	disabled: true;
+	width: 16px;
+	height: 16px;
+	background-image: url("./images/removeIcon.png");
+	cursor: pointer;
+}
+
+#generalPanel .editable:hover span.removeIcon {
+	visibility:visible;
+}
+
+#generalPanel {
+}
+
+#generalPanel span {
+	float: left;
+	margin-left: 5px;
+}
+
+#generalPanel dd {
+	font-size: 10pt;
+}
+
+#flowPropertyOverride {
+	clear: both;
+	padding-top: 30px;
+}
+
+#flowPropertyOverride .tableDiv {
+	padding-right: 20px;
+	padding-left: 20px;
 }
 
 #jobList {
@@ -1389,7 +1490,7 @@ tr:hover td {
 	bottom: 120px;
 }
 
-#resetPanZoomBtn {
+.resetPanZoomBtn {
 	position: absolute;
 	bottom: 90px;
 }
@@ -1407,74 +1508,74 @@ tr:hover td {
 	top: 100px;
 }
 
-#filter {
+.filter {
 	width: 100%;
 }
 
-#list ul {
+.list ul {
 	white-space: nowrap
 }
 
-#list ul li {
+.list ul li {
 	margin: 4px 5px;
 	border-bottom: 1px solid #EEE;
 	cursor: pointer;
 	background-position: 16px 0px;
 }
 
-#list ul li:hover{
+.list ul li:hover{
 	background-color: #E1E3E2;
 	color: #009FC9;
 }
 
-#list ul li.selected {
+.list ul li.selected {
 	background-color: #009FC9;
 	color: #EEE;
 }
 
-#list ul li.nodedisabled {
+.list ul li.nodedisabled {
 	opacity: 0.3;
 }
 
-#list ul li.DISABLED {
+.list ul li.DISABLED {
 	opacity: 0.3;
 }
 
-#list ul li.DISABLED .icon {
+.list ul li.DISABLED .icon {
 	background-position: 16px 0px;
 }
 
-#list ul li.READY .icon {
+.list ul li.READY .icon {
 	background-position: 16px 0px;
 }
 
-#list ul li.RUNNING .icon {
+.list ul li.RUNNING .icon {
 	background-position: 32px 0px;
 }
 
-#list ul li.SUCCEEDED .icon {
+.list ul li.SUCCEEDED .icon {
 	background-position: 48px 0px;
 }
 
-#list ul li.FAILED .icon {
+.list ul li.FAILED .icon {
 	background-position: 0px 0px;
 }
 
-#list ul li.KILLED .icon {
+.list ul li.KILLED .icon {
 	background-position: 0px 0px;
 }
 
-#list ul li a {
+.list ul li a {
 	font-size: 10pt;
 	margin-left: 5px;
 }
 
-#list ul li a span {
+.list ul li a span {
 	background-color: #FF0;
 	color: black;
 }
 
-#list ul li .icon {
+.list ul li .icon {
 	float: left;
 	width: 16px;
 	height: 16px;

@@ -11,8 +11,11 @@
 		<script type="text/javascript" src="${context}/js/jquery.simplemodal.js"></script>
 		<script type="text/javascript" src="${context}/js/jquery.contextMenu.js"></script>
 		<script type="text/javascript" src="${context}/js/azkaban.ajax.utils.js"></script>
+		<script type="text/javascript" src="${context}/js/azkaban.job.status.utils.js"></script>
 		<script type="text/javascript" src="${context}/js/azkaban.nav.js"></script>
 		<script type="text/javascript" src="${context}/js/azkaban.layout.js"></script>
+		<script type="text/javascript" src="${context}/js/azkaban.flow.job.view.js"></script>
+		<script type="text/javascript" src="${context}/js/azkaban.flow.graph.view.js"></script>
 		<script type="text/javascript" src="${context}/js/azkaban.exflow.view.js"></script>
 		<script type="text/javascript" src="${context}/js/svgNavigate.js"></script>
 		<script type="text/javascript">
@@ -69,13 +72,13 @@
 					</div>
 					<div id="graphView">
 						<div class="relative">
-							<div id="jobList">
-								<div id="filterList">
-									<input id="filter" placeholder="  Job Filter" />
+							<div id="jobList" class="jobList">
+								<div id="filterList" class="filterList">
+									<input id="filter" class="filter" placeholder="  Job Filter" />
 								</div>
-								<div id="list">
+								<div id="list" class="list">
 								</div>
-								<div id="resetPanZoomBtn" class="btn5" >Reset Pan Zoom</div>
+								<div id="resetPanZoomBtn" class="btn5 resetPanZoomBtn" >Reset Pan Zoom</div>
 							</div>
 							<div id="svgDiv" >
 								<svg id="svgGraph" xmlns="http://www.w3.org/2000/svg" version="1.1" shape-rendering="optimize-speed" text-rendering="optimize-speed" >

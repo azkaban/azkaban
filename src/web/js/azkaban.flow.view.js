@@ -214,171 +214,9 @@ azkaban.FlowTabView= Backbone.View.extend({
 });
 
 var jobListView;
-azkaban.JobListView = Backbone.View.extend({
-	events: {
-		"keyup input": "filterJobs",
-		"click li": "handleJobClick",
-		"click #resetPanZoomBtn" : "handleResetPanZoom"
-	},
-	initialize: function(settings) {
-		this.model.bind('change:selected', this.handleSelectionChange, this);
-		this.model.bind('change:disabled', this.handleDisabledChange, this);
-		this.model.bind('change:graph', this.render, this);
-	},
-	filterJobs: function(self) {
-		var filter = $("#filter").val();
-		
-		if (filter && filter.trim() != "") {
-			filter = filter.trim();
-			
-			if (filter == "") {
-				if (this.filter) {
-					$("#jobs").children().each(
-						function(){
-							var a = $(this).find("a");
-        					$(a).html(this.jobid);
-        					$(this).show();
-						}
-					);
-				}
-				
-				this.filter = null;
-				return;
-			}
-		}
-		else {
-			if (this.filter) {
-				$("#jobs").children().each(
-					function(){
-						var a = $(this).find("a");
-    					$(a).html(this.jobid);
-    					$(this).show();
-					}
-				);
-			}
-				
-			this.filter = null;
-			return;
-		}
-		
-		$("#jobs").children().each(
-			function(){
-        		var jobid = this.jobid;
-        		var index = jobid.indexOf(filter);
-        		if (index != -1) {
-        			var a = $(this).find("a");
-        			
-        			var endIndex = index + filter.length;
-        			var newHTML = jobid.substring(0, index) + "<span>" + jobid.substring(index, endIndex) + "</span>" + jobid.substring(endIndex, jobid.length);
-        			
-        			$(a).html(newHTML);
-        			$(this).show();
-        		}
-        		else {
-        			$(this).hide();
-        		}
-    	});
-    	
-    	this.filter = filter;
-	},
-	render: function(self) {
-		var data = this.model.get("data");
-		var nodes = data.nodes;
-		var edges = data.edges;
-		
-		this.listNodes = {}; 
-		if (nodes.length == 0) {
-			console.log("No results");
-			return;
-		};
-	
-		var nodeArray = nodes.slice(0);
-		nodeArray.sort(function(a,b){ 
-			var diff = a.y - b.y;
-			if (diff == 0) {
-				return a.x - b.x;
-			}
-			else {
-				return diff;
-			}
-		});
-		
-		var ul = document.createElement("ul");
-		$(ul).attr("id", "jobs");
-		for (var i = 0; i < nodeArray.length; ++i) {
-			var li = document.createElement("li");
-			var a = document.createElement("a");
-			$(a).text(nodeArray[i].id);
-			li.appendChild(a);
-			ul.appendChild(li);
-			li.jobid=nodeArray[i].id;
-			
-			$(li).contextMenu({
-					menu: 'jobMenu'
-				},
-				handleJobMenuClick
-			);
-			
-			this.listNodes[nodeArray[i].id] = li;
-		}
-		
-		$("#list").append(ul);
-	},
-	handleJobClick : function(evt) {
-		var jobid = evt.currentTarget.jobid;
-		if(!evt.currentTarget.jobid) {
-			return;
-		}
-		
-		if (this.model.has("selected")) {
-			var selected = this.model.get("selected");
-			if (selected == jobid) {
-				this.model.unset("selected");
-			}
-			else {
-				this.model.set({"selected": jobid});
-			}
-		}
-		else {
-			this.model.set({"selected": jobid});
-		}
-	},
-	handleDisabledChange: function(evt) {
-		var disabledMap = this.model.get("disabled");
-		for(var id in disabledMap) {
-		    if(disabledMap.hasOwnProperty(id)) {
-		    	var disabled = (disabledMap[id]);
-		    	if (disabled) {
-		    		$(this.listNodes[id]).addClass("nodedisabled");
-		    	}
-		    	else {
-		    		$(this.listNodes[id]).removeClass("nodedisabled");
-		    	}
-		    }
-		}
-	},
-	handleSelectionChange: function(evt) {
-		if (!this.model.hasChanged("selected")) {
-			return;
-		}
-		
-		var previous = this.model.previous("selected");
-		var current = this.model.get("selected");
-		
-		if (previous) {
-			$(this.listNodes[previous]).removeClass("selected");
-		}
-		
-		if (current) {
-			$(this.listNodes[current]).addClass("selected");
-		}
-	},
-	handleResetPanZoom: function(evt) {
-		this.model.trigger("resetPanZoom");
-	}
-});
 
 var svgGraphView;
+/*
 azkaban.SvgGraphView = Backbone.View.extend({
 	events: {
 		"click g" : "clickGraph"
@@ -617,7 +455,7 @@ azkaban.SvgGraphView = Backbone.View.extend({
 		$("#svgGraph").svgNavigate("transformToBox", {x: bounds.minX, y: bounds.minY, width: (bounds.maxX - bounds.minX), height: (bounds.maxY - bounds.minY) });
 	}
 });
-
+*/
 var executionsView;
 azkaban.ExecutionsView = Backbone.View.extend({
 	events: {
@@ -927,72 +765,12 @@ azkaban.ScheduleFlowView = Backbone.View.extend({
   }
 });
 
-var executeFlowView;
-azkaban.ExecuteFlowView = Backbone.View.extend({
-  	  events : {
-	    "click #execute-btn": "handleExecuteFlow",
-	    "click #execute-custom-btn": "handleCustomFlow",
-	    "click #cancel-btn": "handleCancelExecution",
-	    "click .modal-close": "handleCancelExecution"
-	  },
-	  initialize: function(evt) {
-	  	 $('#executebtn').click( function() {
-	  	 	$('#modalBackground').show();
-	  	 	$('#executing-options').show();
-	  	 });
-	  
-	  /*
-	     $('#executebtn').click( function() {
-		  console.log("Executing button clicked");
-		  $('#executing-options').modal({
-	          closeHTML: "<a href='#' title='Close' class='modal-close'>x</a>",
-	          position: ["10%",],
-	          containerId: 'confirm-container',
-	          containerCss: {
-	          	
-	          },
-	          opacity:40,
-	          overlayCss: {backgroundColor:"#000", width: '100%'},
-	          onShow: function (dialog) {
-	            var modal = this;
-	            $("#errorMsg").hide();
-	          }
-	        });
-		});*/
-	  },
-	  handleCancelExecution: function(evt) {
-	  	var executeURL = contextURL + "/executor";
-		$('#modalBackground').hide();
-	  	$('#executing-options').hide();
-	  },
-	  handleExecuteFlow: function(evt) {
-	  	var executeURL = contextURL + "/executor";
-		$.get(
-			executeURL,
-			{"project": projectName, "ajax":"executeFlow", "flow":flowName, "disabled":graphModel.get("disabled")},
-			function(data) {
-				if (data.error) {
-					alert(data.error);
-				}
-				else {
-					var redirectURL = contextURL + "/executor?execid=" + data.execid;
-					window.location.href = redirectURL;
-				}
-			},
-			"json"
-		);
-	  },
-	  handleCustomFlow: function(evt) {
-	  	
-	  }
-});
 
 $(function() {
 	var selected;
 	// Execution model has to be created before the window switches the tabs.
 	executionModel = new azkaban.ExecutionModel();
-	executionsView = new azkaban.ExecutionsView({el: $('#executionsView'), model: executionModel});
-		
+	
 	flowTabView = new azkaban.FlowTabView({el:$( '#headertabs'), selectedView: selected });
 
 	graphModel = new azkaban.GraphModel();
