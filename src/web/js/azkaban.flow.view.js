@@ -21,112 +21,6 @@ var handleJobMenuClick = function(action, el, pos) {
 	else if(action == "openwindow") {
 		window.open(requestURL);
 	}
-	else if(action == "disable") {
-		var disabled = graphModel.get("disabled");
-
-		disabled[jobid] = true;
-		graphModel.set({disabled: disabled});
-		graphModel.trigger("change:disabled");
-	}
-	else if (action == "disableParents") {
-		var disabled = graphModel.get("disabled");
-		var nodes = graphModel.get("nodes");
-		var inNodes = nodes[jobid].inNodes;
-
-		if (inNodes) {
-			for (var key in inNodes) {
-			  disabled[key] = true;
-			}
-		}
-		
-		graphModel.set({disabled: disabled});
-		graphModel.trigger("change:disabled");
-	}
-	else if (action == "disableChildren") {
-		var disabled = graphModel.get("disabled");
-		var nodes = graphModel.get("nodes");
-		var outNodes = nodes[jobid].outNodes;
-
-		if (outNodes) {
-			for (var key in outNodes) {
-			  disabled[key] = true;
-			}
-		}
-		
-		graphModel.set({disabled: disabled});
-		graphModel.trigger("change:disabled");
-	}
-	else if (action == "disableAncestors") {
-		var disabled = graphModel.get("disabled");
-		var nodes = graphModel.get("nodes");
-		
-		recurseAllAncestors(nodes, disabled, jobid, true);
-		
-		graphModel.set({disabled: disabled});
-		graphModel.trigger("change:disabled");
-	}
-	else if (action == "disableDescendents") {
-		var disabled = graphModel.get("disabled");
-		var nodes = graphModel.get("nodes");
-		
-		recurseAllDescendents(nodes, disabled, jobid, true);
-		
-		graphModel.set({disabled: disabled});
-		graphModel.trigger("change:disabled");
-	}
-	else if(action == "enable") {
-		var disabled = graphModel.get("disabled");
-
-		disabled[jobid] = false;
-		graphModel.set({disabled: disabled});
-		graphModel.trigger("change:disabled");
-	}
-	else if (action == "enableParents") {
-		var disabled = graphModel.get("disabled");
-		var nodes = graphModel.get("nodes");
-		var inNodes = nodes[jobid].inNodes;
-
-		if (inNodes) {
-			for (var key in inNodes) {
-			  disabled[key] = false;
-			}
-		}
-		
-		graphModel.set({disabled: disabled});
-		graphModel.trigger("change:disabled");
-	}
-	else if (action == "enableChildren") {
-		var disabled = graphModel.get("disabled");
-		var nodes = graphModel.get("nodes");
-		var outNodes = nodes[jobid].outNodes;
-
-		if (outNodes) {
-			for (var key in outNodes) {
-			  disabled[key] = false;
-			}
-		}
-		
-		graphModel.set({disabled: disabled});
-		graphModel.trigger("change:disabled");
-	}
-	else if (action == "enableAncestors") {
-		var disabled = graphModel.get("disabled");
-		var nodes = graphModel.get("nodes");
-		
-		recurseAllAncestors(nodes, disabled, jobid, false);
-		
-		graphModel.set({disabled: disabled});
-		graphModel.trigger("change:disabled");
-	}
-	else if (action == "enableDescendents") {
-		var disabled = graphModel.get("disabled");
-		var nodes = graphModel.get("nodes");
-		
-		recurseAllDescendents(nodes, disabled, jobid, false);
-		
-		graphModel.set({disabled: disabled});
-		graphModel.trigger("change:disabled");
-	}
 }
 
 function recurseAllAncestors(nodes, disabledMap, id, disable) {
@@ -216,246 +110,7 @@ azkaban.FlowTabView= Backbone.View.extend({
 var jobListView;
 
 var svgGraphView;
-/*
-azkaban.SvgGraphView = Backbone.View.extend({
-	events: {
-		"click g" : "clickGraph"
-	},
-	initialize: function(settings) {
-		this.model.bind('change:selected', this.changeSelected, this);
-		this.model.bind('change:disabled', this.handleDisabledChange, this);
-		this.model.bind('change:graph', this.render, this);
-		this.model.bind('resetPanZoom', this.resetPanZoom, this);
-		
-		this.svgns = "http://www.w3.org/2000/svg";
-		this.xlinksn = "http://www.w3.org/1999/xlink";
-		
-		var graphDiv = this.el[0];
-		var svg = $('#svgGraph')[0];
-		this.svgGraph = svg;
-		
-		var gNode = document.createElementNS(this.svgns, 'g');
-		gNode.setAttribute("id", "group");
-		svg.appendChild(gNode);
-		this.mainG = gNode;
 
-		$(svg).svgNavigate();
-	},
-	initializeDefs: function(self) {
-		var def = document.createElementNS(svgns, 'defs');
-		def.setAttributeNS(null, "id", "buttonDefs");
-
-		// ArrowHead
-		var arrowHeadMarker = document.createElementNS(svgns, 'marker');
-		arrowHeadMarker.setAttribute("id", "triangle");
-		arrowHeadMarker.setAttribute("viewBox", "0 0 10 10");
-		arrowHeadMarker.setAttribute("refX", "5");
-		arrowHeadMarker.setAttribute("refY", "5");
-		arrowHeadMarker.setAttribute("markerUnits", "strokeWidth");
-		arrowHeadMarker.setAttribute("markerWidth", "4");
-		arrowHeadMarker.setAttribute("markerHeight", "3");
-		arrowHeadMarker.setAttribute("orient", "auto");
-		var path = document.createElementNS(svgns, 'polyline');
-		arrowHeadMarker.appendChild(path);
-		path.setAttribute("points", "0,0 10,5 0,10 1,5");
-
-		def.appendChild(arrowHeadMarker);
-		
-		this.svgGraph.appendChild(def);
-	},
-	render: function(self) {
-		console.log("graph render");
-
-		var data = this.model.get("data");
-		var nodes = data.nodes;
-		var edges = data.edges;
-		if (nodes.length == 0) {
-			console.log("No results");
-			return;
-		};
-	
-		// layout
-		layoutGraph(nodes, edges);
-		
-		var bounds = {};
-		this.nodes = {};
-		for (var i = 0; i < nodes.length; ++i) {
-			this.nodes[nodes[i].id] = nodes[i];
-		}
-		
-		for (var i = 0; i < edges.length; ++i) {
-			this.drawEdge(this, edges[i]);
-		}
-		
-		for (var i = 0; i < nodes.length; ++i) {
-			this.drawNode(this, nodes[i], bounds);
-		}
-		
-		bounds.minX = bounds.minX ? bounds.minX - 200 : -200;
-		bounds.minY = bounds.minY ? bounds.minY - 200 : -200;
-		bounds.maxX = bounds.maxX ? bounds.maxX + 200 : 200;
-		bounds.maxY = bounds.maxY ? bounds.maxY + 200 : 200;
-		
-		this.graphBounds = bounds;
-		this.resetPanZoom();
-	},
-	changeSelected: function(self) {
-		console.log("change selected");
-		var selected = this.model.get("selected");
-		var previous = this.model.previous("selected");
-		
-		if (previous) {
-			// Unset previous
-			var g = document.getElementById(previous);
-			removeClass(g, "selected");
-		}
-		
-		if (selected) {
-			var g = document.getElementById(selected);
-			var node = this.nodes[selected];
-			
-			addClass(g, "selected");
-			
-			var offset = 200;
-			var widthHeight = offset*2;
-			var x = node.x - offset;
-			var y = node.y - offset;
-			
-			
-			$("#svgGraph").svgNavigate("transformToBox", {x: x, y: y, width: widthHeight, height: widthHeight});
-		}
-	},
-	clickGraph: function(self) {
-		console.log("click");
-		if (self.currentTarget.jobid) {
-			this.model.set({"selected": self.currentTarget.jobid});
-		}
-	},
-	drawEdge: function(self, edge) {
-		var svg = self.svgGraph;
-		var svgns = self.svgns;
-		
-		var startNode = this.nodes[edge.from];
-		var endNode = this.nodes[edge.target];
-		
-		if (edge.guides) {
-			var pointString = "" + startNode.x + "," + startNode.y + " ";
-
-			for (var i = 0; i < edge.guides.length; ++i ) {
-				edgeGuidePoint = edge.guides[i];
-				pointString += edgeGuidePoint.x + "," + edgeGuidePoint.y + " ";
-			}
-			
-			pointString += endNode.x + "," + endNode.y;
-			var polyLine = document.createElementNS(svgns, "polyline");
-			polyLine.setAttributeNS(null, "class", "edge");
-			polyLine.setAttributeNS(null, "points", pointString);
-			polyLine.setAttributeNS(null, "style", "fill:none;");
-			self.mainG.appendChild(polyLine);
-		}
-		else { 
-			var line = document.createElementNS(svgns, 'line');
-			line.setAttributeNS(null, "class", "edge");
-			line.setAttributeNS(null, "x1", startNode.x);
-			line.setAttributeNS(null, "y1", startNode.y);
-			line.setAttributeNS(null, "x2", endNode.x);
-			line.setAttributeNS(null, "y2", endNode.y);
-			
-			self.mainG.appendChild(line);
-		}
-	},
-	handleDisabledChange: function(evt) {
-		var disabledMap = this.model.get("disabled");
-		for(var id in disabledMap) {
-		    if(disabledMap.hasOwnProperty(id)) {
-		    	var disabled = disabledMap[id];
-		    	this.nodes[id].disabled = disabled;
-		    	var g = document.getElementById(id);
-		    	
-		    	if (disabled) {
-		    		this.nodes[id].disabled = disabled;
-					addClass(g, "disabled");
-		    	}
-		    	else {
-		    		removeClass(g, "disabled");
-		    	}
-		    }
-		}
-	},
-	drawNode: function(self, node, bounds) {
-		var svg = self.svgGraph;
-		var svgns = self.svgns;
-
-		var xOffset = 10;
-		var yOffset = 10;
-
-		var nodeG = document.createElementNS(svgns, "g");
-		nodeG.setAttributeNS(null, "class", "jobnode");
-		nodeG.setAttributeNS(null, "id", node.id);
-		nodeG.setAttributeNS(null, "font-family", "helvetica");
-		nodeG.setAttributeNS(null, "transform", "translate(" + node.x + "," + node.y + ")");
-		
-		var innerG = document.createElementNS(svgns, "g");
-		innerG.setAttributeNS(null, "transform", "translate(-10,-10)");
-		
-		var circle = document.createElementNS(svgns, 'circle');
-		circle.setAttributeNS(null, "cy", 10);
-		circle.setAttributeNS(null, "cx", 10);
-		circle.setAttributeNS(null, "r", 12);
-		circle.setAttributeNS(null, "style", "width:inherit;stroke-opacity:1");
-		
-		
-		var text = document.createElementNS(svgns, 'text');
-		var textLabel = document.createTextNode(node.label);
-		text.appendChild(textLabel);
-		text.setAttributeNS(null, "x", 4);
-		text.setAttributeNS(null, "y", 15);
-		text.setAttributeNS(null, "height", 10); 
-				
-		this.addBounds(bounds, {minX:node.x - xOffset, minY: node.y - yOffset, maxX: node.x + xOffset, maxY: node.y + yOffset});
-		
-		var backRect = document.createElementNS(svgns, 'rect');
-		backRect.setAttributeNS(null, "x", 0);
-		backRect.setAttributeNS(null, "y", 2);
-		backRect.setAttributeNS(null, "class", "backboard");
-		backRect.setAttributeNS(null, "width", 10);
-		backRect.setAttributeNS(null, "height", 15);
-		
-		innerG.appendChild(circle);
-		innerG.appendChild(backRect);
-		innerG.appendChild(text);
-		innerG.jobid = node.id;
-
-		nodeG.appendChild(innerG);
-		self.mainG.appendChild(nodeG);
-
-		// Need to get text width after attaching to SVG.
-		var computeText = text.getComputedTextLength();
-		var halfWidth = computeText/2;
-		text.setAttributeNS(null, "x", -halfWidth + 10);
-		backRect.setAttributeNS(null, "x", -halfWidth);
-		backRect.setAttributeNS(null, "width", computeText + 20);
-
-		nodeG.setAttributeNS(null, "class", "node");
-		nodeG.jobid=node.id;
-		$(nodeG).contextMenu({
-				menu: 'jobMenu'
-			},
-			handleJobMenuClick
-		);
-	},
-	addBounds: function(toBounds, addBounds) {
-		toBounds.minX = toBounds.minX ? Math.min(toBounds.minX, addBounds.minX) : addBounds.minX;
-		toBounds.minY = toBounds.minY ? Math.min(toBounds.minY, addBounds.minY) : addBounds.minY;
-		toBounds.maxX = toBounds.maxX ? Math.max(toBounds.maxX, addBounds.maxX) : addBounds.maxX;
-		toBounds.maxY = toBounds.maxY ? Math.max(toBounds.maxY, addBounds.maxY) : addBounds.maxY;
-	},
-	resetPanZoom : function(self) {
-		var bounds = this.graphBounds;
-		$("#svgGraph").svgNavigate("transformToBox", {x: bounds.minX, y: bounds.minY, width: (bounds.maxX - bounds.minX), height: (bounds.maxY - bounds.minY) });
-	}
-});
-*/
 var executionsView;
 azkaban.ExecutionsView = Backbone.View.extend({
 	events: {
@@ -641,52 +296,6 @@ azkaban.ExecutionsView = Backbone.View.extend({
 	}
 });
 
-var contextMenu;
-azkaban.ContextMenu = Backbone.View.extend({
-	events : {
-		"click #disableArrow" : "handleDisabledClick",
-		"click #enableArrow" : "handleEnabledClick"
-	},
-	initialize: function(settings) {
-		$('#disableSub').hide();
-		$('#enableSub').hide();
-	},
-	handleEnabledClick: function(evt) {
-		if(evt.stopPropagation) {
-			evt.stopPropagation();
-		}
-		evt.cancelBubble=true;
-		
-		if (evt.currentTarget.expanded) {
-			evt.currentTarget.expanded=false;
-			$('#enableArrow').removeClass('collapse');
-			$('#enableSub').hide();
-		}
-		else {
-			evt.currentTarget.expanded=true;
-			$('#enableArrow').addClass('collapse');
-			$('#enableSub').show();
-		}
-	},
-	handleDisabledClick: function(evt) {
-		if(evt.stopPropagation) {
-			evt.stopPropagation();
-		}
-		evt.cancelBubble=true;
-		
-		if (evt.currentTarget.expanded) {
-			evt.currentTarget.expanded=false;
-			$('#disableArrow').removeClass('collapse');
-			$('#disableSub').hide();
-		}
-		else {
-			evt.currentTarget.expanded=true;
-			$('#disableArrow').addClass('collapse');
-			$('#disableSub').show();
-		}
-	}
-});
-
 var graphModel;
 azkaban.GraphModel = Backbone.Model.extend({});
 
@@ -770,16 +379,21 @@ $(function() {
 	var selected;
 	// Execution model has to be created before the window switches the tabs.
 	executionModel = new azkaban.ExecutionModel();
+	executionsView = new azkaban.ExecutionsView({el:$('#executionsView'), model: executionModel});
 	
 	flowTabView = new azkaban.FlowTabView({el:$( '#headertabs'), selectedView: selected });
 
 	graphModel = new azkaban.GraphModel();
-	svgGraphView = new azkaban.SvgGraphView({el:$('#svgDiv'), model: graphModel});
-	jobsListView = new azkaban.JobListView({el:$('#jobList'), model: graphModel});
-	contextMenu = new azkaban.ContextMenu({el:$('#jobMenu')});
+	svgGraphView = new azkaban.SvgGraphView({el:$('#svgDiv'), model: graphModel, rightClick: {id: 'jobMenu', callback: handleJobMenuClick}});
+	jobsListView = new azkaban.JobListView({el:$('#jobList'), model: graphModel, rightClick: {id: 'jobMenu', callback: handleJobMenuClick}});
 	scheduleFlowView = new azkaban.ScheduleFlowView({el:$('#schedule-flow')});
-	executeFlowView = new azkaban.ExecuteFlowView({el:$('#executing-options')});
+	executeFlowView = new azkaban.ExecuteFlowView({el:$('#executing-options'), model: graphModel});
 	var requestURL = contextURL + "/manager";
+
+	// Set up the Flow options view. Create a new one every time :p
+	 $('#executebtn').click( function() {
+	  	executeFlowView.show();
+	 });
 
 	$.get(
 	      requestURL,

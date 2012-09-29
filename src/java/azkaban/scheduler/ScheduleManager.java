@@ -204,7 +204,7 @@ public class ScheduleManager {
 	private void saveSchedule() {
 		loader.saveSchedule(getSchedule());
 	}
-
+	
 	/**
 	 * Thread that simply invokes the running of flows when the schedule is
 	 * ready.

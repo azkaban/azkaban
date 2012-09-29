@@ -159,14 +159,15 @@ public class ExecutorManager {
 		return flows;
 	}
 	
-	public boolean isFlowRunning(String projectId, String flowId) {
+	public List<ExecutableFlow> getFlowRunningFlows(String projectId, String flowId) {
+		ArrayList<ExecutableFlow> list = new ArrayList<ExecutableFlow>();
 		for (ExecutableFlow flow: getRunningFlows()) {
 			if (flow.getProjectId().equals(projectId) && flow.getFlowId().equals(flowId)) {
-				return true;
+				list.add(flow);
 			}
 		}
 		
-		return false;
+		return list;
 	}
 	
 	public List<ExecutableFlow> getRunningFlows() {

@@ -22,15 +22,19 @@ import azkaban.flow.Flow;
 import azkaban.project.Project;
 import azkaban.project.ProjectManager;
 import azkaban.project.ProjectManagerException;
+import azkaban.scheduler.ScheduleManager;
+import azkaban.scheduler.ScheduledFlow;
 import azkaban.user.Permission;
 import azkaban.user.User;
 import azkaban.user.Permission.Type;
+import azkaban.utils.Utils;
 import azkaban.webapp.session.Session;
 
 public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 	private static final long serialVersionUID = 1L;
 	private ProjectManager projectManager;
 	private ExecutorManager executorManager;
+	private ScheduleManager scheduleManager;
 	private static final int STRING_BUFFER_SIZE = 1024*5;
 
 	@Override
@@ -38,6 +42,7 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 		super.init(config);
 		projectManager = this.getApplication().getProjectManager();
 		executorManager = this.getApplication().getExecutorManager();
+		scheduleManager = this.getApplication().getScheduleManager();
 	}
 
 	@Override
@@ -227,6 +232,11 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 			String flowName = getParam(req, "flow");
 			ajaxIsFlowRunning(req, resp, ret, session.getUser(), projectName, flowName);
 		}
+		else if (ajaxName.equals("flowInfo")) {
+			String projectName = getParam(req, "project");
+			String flowName = getParam(req, "flow");
+			ajaxFetchFlowInfo(req, resp, ret, session.getUser(), projectName, flowName);
+		}
 		else {
 			String projectName = getParam(req, "project");
 			
@@ -315,7 +325,35 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 		}
 	}
 
-
+	private void ajaxFetchFlowInfo(HttpServletRequest req, HttpServletResponse resp, HashMap<String, Object> ret, User user, String projectId, String flowId) throws ServletException {
+		Project project = getProjectAjaxByPermission(ret, projectId, user, Type.READ);
+		if (project == null) {
+			return;
+		}
+		
+		Flow flow = project.getFlow(flowId);
+		if (flow == null) {
+			ret.put("error", "Error loading flow. Flow " + flowId + " doesn't exist in " + projectId);
+			return;
+		}
+		
+		ret.put("successEmails", flow.getSuccessEmails());
+		ret.put("failureEmails", flow.getFailureEmails());
+		ret.put("running", executorManager.getFlowRunningFlows(projectId, flowId));
+		
+		ScheduledFlow sflow = null;
+		for (ScheduledFlow schedFlow: scheduleManager.getSchedule()) {
+			if (schedFlow.getProjectId().equals(projectId) && schedFlow.getFlowId().equals(flowId)) {
+				sflow = schedFlow;
+				break;
+			}
+		}
+		
+		if (sflow != null) {
+			ret.put("scheduled", sflow.getNextExecTime().getMillis());
+		}
+	}
+	
 	private void ajaxCancelFlow(HttpServletRequest req, HttpServletResponse resp, HashMap<String, Object> ret, User user, ExecutableFlow exFlow) throws ServletException{
 		Project project = getProjectAjaxByPermission(ret, exFlow.getProjectId(), user, Type.EXECUTE);
 		if (project == null) {
@@ -335,7 +373,7 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 			return;
 		}
 		
-		ret.put("running", executorManager.isFlowRunning(projectId, flowId));
+		ret.put("running", executorManager.getFlowRunningFlows(projectId, flowId));
 	}
 	
 	private void ajaxRestartFlow(HttpServletRequest req, HttpServletResponse resp, HashMap<String, Object> ret, User user, ExecutableFlow exFlow) throws ServletException{

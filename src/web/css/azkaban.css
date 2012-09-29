@@ -1280,14 +1280,14 @@ tr:hover td {
 	margin-left: 3px;
 }
 
-#svgGraph {
+.svgGraph {
 	width: 100%;
 	height: 100%;
 	background: #fff;
 }
 
 
-#svgDiv {
+.svgDiv {
 	position: absolute;
 	top: 0px;
 	right: 0px;
@@ -1295,16 +1295,8 @@ tr:hover td {
 	bottom: 0px;
 }
 
-#svgDiv.svgDivStaging {
-	top: 30px;
-}
-
-#svgDivModal {
-	position: absolute;
-	top: 0px;
-	right: 0px;
-	left: 260px;
-	height: 100%;
+#graphPanel {
+	background-color: #F0F0F0;
 }
 
 #executing-options {
@@ -1314,10 +1306,19 @@ tr:hover td {
 	bottom: 40px;
 }
 
+#scheduled {
+	
+}
+
+.radioLabel.disabled {
+	opacity: 0.3;
+}
+
 #executing-options .svgDiv {
 	position: absolute;
 	background-color: #CCC;
-	left: 260px;
+	padding: 1px;
+	left: 270px;
 	right: 0px;
 	top: 0px;
 	bottom: 0px;
@@ -1325,10 +1326,15 @@ tr:hover td {
 
 #executing-options .jobList {
 	position: absolute;
-	width: 260px;
+	width: 255px;
 	top: 0px;
 	bottom: 0px;
-	background-color: #F00;
+	padding: 5px;
+	background-color: #F0F0F0;
+}
+
+#executing-options .list {
+	width: 255px;
 }
 
 #executing-options ul.optionsPicker {
@@ -1477,19 +1483,6 @@ tr:hover td {
 	width: 250px;
 }
 
-#list {
-	position: absolute;
-	background-color: #fff;
-	margin-right: 10px;
-	border: solid;
-	border-color: #CCC;
-	border-width: 1px;
-	overflow: auto;
-	top: 26px;
-	width: 100%;
-	bottom: 120px;
-}
-
 .resetPanZoomBtn {
 	position: absolute;
 	bottom: 90px;
@@ -1510,6 +1503,20 @@ tr:hover td {
 
 .filter {
 	width: 100%;
+}
+
+
+.list {
+	position: absolute;
+	background-color: #fff;
+	margin-right: 10px;
+	border: solid;
+	border-color: #CCC;
+	border-width: 1px;
+	overflow: auto;
+	top: 26px;
+	width: 100%;
+	bottom: 120px;
 }
 
 .list ul {

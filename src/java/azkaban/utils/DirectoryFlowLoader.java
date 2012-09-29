@@ -5,6 +5,7 @@ import java.io.FileFilter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -204,6 +205,16 @@ public class DirectoryFlowLoader {
 		for (Node base: nodeMap.values()) {
 			if (!nonRootNodes.contains(base.getId())) {
 				Flow flow = new Flow(base.getId());
+				Props jobProp = jobPropsMap.get(base.getId());
+				
+				// Dedup with sets
+				@SuppressWarnings("unchecked")
+				Set<String> successEmail = new HashSet<String>(jobProp.getStringList("success.emails", Collections.EMPTY_LIST));
+				@SuppressWarnings("unchecked")
+				Set<String> failureEmail = new HashSet<String>(jobProp.getStringList("failure.emails", Collections.EMPTY_LIST));
+				flow.addFailureEmails(failureEmail);
+				flow.addSuccessEmails(successEmail);
+				
 				flow.addAllFlowProperties(flowPropsList);
 				constructFlow(flow, base, visitedNodes);
 				flow.initialize();

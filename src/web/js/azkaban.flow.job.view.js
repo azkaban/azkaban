@@ -12,6 +12,7 @@ azkaban.JobListView = Backbone.View.extend({
 		
 		this.filterInput = $(this.el).find(".filter");
 		this.list = $(this.el).find(".list");
+		this.contextMenu = settings.rightClick;
 	},
 	filterJobs: function(self) {
 		var filter = this.filterInput.val();
@@ -123,9 +124,9 @@ azkaban.JobListView = Backbone.View.extend({
 			li.jobid=nodeArray[i].id;
 			
 			$(li).contextMenu({
-					menu: 'jobMenu'
+					menu: this.contextMenu.id
 				},
-				handleJobMenuClick
+				this.contextMenu.callback
 			);
 			
 			this.listNodes[nodeArray[i].id] = li;

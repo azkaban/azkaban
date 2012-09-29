@@ -9,13 +9,16 @@ azkaban.SvgGraphView = Backbone.View.extend({
 		this.model.bind('resetPanZoom', this.resetPanZoom, this);
 		this.model.bind('change:update', this.handleStatusUpdate, this);
 		this.model.bind('change:disabled', this.handleDisabledChange, this);
-				
+		this.model.bind('change:updateAll', this.handleUpdateAllStatus, this);
+		
 		this.svgns = "http://www.w3.org/2000/svg";
 		this.xlinksn = "http://www.w3.org/1999/xlink";
 		
 		var graphDiv = this.el[0];
 		var svg = $(this.el).find('svg')[0];
 		this.svgGraph = svg;
+		
+		this.contextMenu = settings.rightClick;
 		
 		var gNode = document.createElementNS(this.svgns, 'g');
 		svg.appendChild(gNode);
@@ -140,13 +143,15 @@ azkaban.SvgGraphView = Backbone.View.extend({
 			var updateNode = updateData.nodes[i];
 			
 			var g = this.gNodes[updateNode.id];
-			
-			for (var j = 0; j < statusList.length; ++j) {
-				var status = statusList[j];
-				removeClass(g, status);
-			}
+			this.handleRemoveAllStatus(g);
 			
 			addClass(g, updateNode.status);
+		}
+	},
+	handleRemoveAllStatus: function(gNode) {
+		for (var j = 0; j < statusList.length; ++j) {
+			var status = statusList[j];
+			removeClass(g, status);
 		}
 	},
 	clickGraph: function(self) {
@@ -246,9 +251,9 @@ azkaban.SvgGraphView = Backbone.View.extend({
 		nodeG.setAttributeNS(null, "class", "node");
 		nodeG.jobid=node.id;
 		$(nodeG).contextMenu({
-				menu: 'jobMenu'
+				menu: this.contextMenu.id
 			},
-			handleJobMenuClick
+			this.contextMenu.callback
 		);
 	},
 	addBounds: function(toBounds, addBounds) {

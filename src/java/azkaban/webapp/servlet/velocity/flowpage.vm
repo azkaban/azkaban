@@ -201,20 +201,20 @@
 	                		</div>
 	                		<div class="optionsPane">
 	                			<div id="generalPanel" class="generalPanel panel">
-	                				<div>
+	                				<div id="completeActions">
 	                					<h4>Completion Actions</h4>
 		                				<dl>
 		                					<dt>Failure Action</dt>
 		                					<dd>
 		                						<select name="failureAction">
-		                							<option value="finishCurrent">Finish Current</option>
+		                							<option value="finishCurrent">Finish Current Running</option>
 		                							<option value="cancelImmediately">Cancel All</option>
 		                							<option value="finishPossible">Finish All Possible</option>
 		                						</select>
 											</dd>
 		                					<dt>Failure Email</dt>
 		                					<dd>
-		                						<textarea></textarea>
+		                						<textarea id="failureEmails"></textarea>
 		                					</dd>
 		                					<dt>Notify on Failure</dt>
 		                					<dd>
@@ -223,7 +223,13 @@
 		                					</dd>
 		                					<dt>Success Email</dt>
 		                					<dd>
-		                						<textarea></textarea>
+		                						<textarea id="successEmails"></textarea>
+		                					</dd>
+		                					<dt>Executing Job</dt>
+		                					<dd id="executingJob">
+		                						<input id="ignore" class="radio" type="radio" name="concurrent" value="ignore" checked /><label class="radioLabel" for="ignore">Run Concurrently</label>
+		                						<input id="pipeline" class="radio" type="radio" name="concurrent" value="pipeline" /><label class="radioLabel" for="pipeline">Pipeline</label>
+		                						<input id="queue" class="radio" type="radio" name="concurrent" value="queue" /><label class="radioLabel" for="queue">Queue Job</label>
 		                					</dd>
 		                				</dl>
 	                				</div>
@@ -245,15 +251,17 @@
 	                				</div>
 	                			</div>
 								<div id="graphPanel" class="graphPanel panel">
-									<div class="jobList">
-										<div id="filterList2">
-											<input id="filter2" placeholder="  Job Filter" />
+									<div id="jobListCustom" class="jobList">
+										<div class="filterList">
+											<input class="filter" placeholder="  Job Filter" />
 										</div>
-										<div id="list2">
+										<div class="list">
 										</div>
-										<div id="resetPanZoomBtn2" class="btn5" >Reset Pan Zoom</div>
+										<div class="btn5 resetPanZoomBtn" >Reset Pan Zoom</div>
 									</div>
-								    <div class="svgDiv" >
+								    <div id="svgDivCustom" class="svgDiv" >
+								    	<svg class="svgGraph" xmlns="http://www.w3.org/2000/svg" version="1.1" shape-rendering="optimize-speed" text-rendering="optimize-speed" >
+										</svg>
 									</div>
 		                        </div>
 	                        </div>
@@ -265,7 +273,12 @@
                 </div>
                 
 #end
-		<ul id="jobMenu" class="contextMenu flowSubmenu">  
+		<ul id="jobMenu" class="contextMenu">  
+			<li class="open"><a href="#open">Open...</a></li>
+			<li class="openwindow"><a href="#openwindow">Open in New Window...</a></li>
+		</ul>
+
+		<ul id="disableJobMenu" class="contextMenu flowSubmenu">  
 			<li class="open"><a href="#open">Open...</a></li>
 			<li class="openwindow"><a href="#openwindow">Open in New Window...</a></li>
 			<li id="disable" class="disable separator"><a href="#disable">Disable</a><div id="disableArrow" class="context-sub-icon"></div></li>

@@ -508,12 +508,15 @@ $(function() {
 	graphModel = new azkaban.GraphModel();
 	logModel = new azkaban.LogModel();
 	flowTabView = new azkaban.FlowTabView({el:$( '#headertabs'), model: graphModel});
-	svgGraphView = new azkaban.SvgGraphView({el:$('#svgDiv'), model: graphModel});
-	jobsListView = new azkaban.JobListView({el:$('#jobList'), model: graphModel});
+	svgGraphView = new azkaban.SvgGraphView({el:$('#svgDiv'), model: graphModel, rightClick: {id: 'jobMenu', callback: handleJobMenuClick}});
+	jobsListView = new azkaban.JobListView({el:$('#jobList'), model: graphModel, rightClick: {id: 'jobMenu', callback: handleJobMenuClick}});
 	statusView = new azkaban.StatusView({el:$('#flow-status'), model: graphModel});
 	flowLogView = new azkaban.FlowLogView({el:$('#flowLogView'), model: logModel});
 	executionListView = new azkaban.ExecutionListView({el: $('#jobListView'), model:graphModel});
 	var requestURL = contextURL + "/executor";
+
+	// This is to set up the execution flow
+	
 
 	ajaxCall(
 	      requestURL,

@@ -25,6 +25,8 @@ public class Flow {
 	private HashMap<String, Set<Edge>> inEdges = new HashMap<String, Set<Edge>>();
 	private HashMap<String, FlowProps> flowProps = new HashMap<String, FlowProps>(); 
 
+	private List<String> failureEmail = new ArrayList<String>();
+	private List<String> successEmail = new ArrayList<String>();
 	private ArrayList<String> errors;
 
 	private boolean isLayedOut = false;
@@ -76,6 +78,22 @@ public class Flow {
 
 	public Node getNode(String nodeId) {
 		return nodes.get(nodeId);
+	}
+	
+	public List<String> getSuccessEmails() {
+		return successEmail;
+	}
+	
+	public List<String> getFailureEmails() {
+		return failureEmail;
+	}
+	
+	public void addSuccessEmails(Collection<String> emails) {
+		successEmail.addAll(emails);
+	}
+	
+	public void addFailureEmails(Collection<String> emails) {
+		failureEmail.addAll(emails);
 	}
 	
 	public int getNumLevels() {
@@ -182,6 +200,8 @@ public class Flow {
 		flowObj.put("props", objectizeProperties());
 		flowObj.put("nodes", objectizeNodes());
 		flowObj.put("edges", objectizeEdges());
+		flowObj.put("failure.email", failureEmail);
+		flowObj.put("success.email", successEmail);
 		flowObj.put("layedout", isLayedOut);
 		if (errors != null) {
 			flowObj.put("errors", errors);
@@ -246,6 +266,8 @@ public class Flow {
 		List<Edge> edges = loadEdgeFromObjects(edgeList, nodes);
 		flow.addAllEdges(edges);
 		
+		flow.failureEmail = (List<String>)flowObject.get("failure.email");
+		flow.successEmail = (List<String>)flowObject.get("success.email");
 		return flow;
 	}
 
