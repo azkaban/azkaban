@@ -34,6 +34,7 @@ import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutorManager;
 import azkaban.flow.Edge;
 import azkaban.flow.Flow;
+import azkaban.flow.FlowProps;
 import azkaban.flow.Node;
 import azkaban.project.Project;
 import azkaban.project.ProjectManager;
@@ -93,6 +94,9 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 			}
 			else if (hasParam(req, "staging")) {
 				handleFlowStagingPage(req, resp, session);
+			}
+			else if (hasParam(req, "prop")) {
+				handlePropertyPage(req, resp, session);
 			}
 			else if (hasParam(req, "job")) {
 				handleJobPage(req, resp, session);
@@ -645,14 +649,99 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 						String nodeSource = node.getPropsSource();
 						if(nodeSource != null) {
 							source.add(nodeSource);
-							Props parent = flow.getFlowProps(nodeSource).getProps();
-							while(parent.getParent() != null) {
-								source.add(parent.getParent().getSource());
-								parent = parent.getParent(); 
+							FlowProps parent = flow.getFlowProps(nodeSource);
+							while(parent.getInheritedSource() != null) {
+								source.add(parent.getInheritedSource());
+								parent = flow.getFlowProps(parent.getInheritedSource()); 
 							}
 						}
 						if(!source.isEmpty()) {
 							page.add("properties", source);
+						}
+						
+
+						ArrayList<Pair<String,String>> parameters = new ArrayList<Pair<String, String>>();
+						// Parameter
+						for (String key : prop.getKeySet()) {
+							String value = prop.get(key);
+							parameters.add(new Pair<String,String>(key, value));
+						}
+						
+						page.add("parameters", parameters);
+					}
+				}
+			}
+		}
+		catch (AccessControlException e) {
+			page.add("errorMsg", e.getMessage());
+		} catch (ProjectManagerException e) {
+			page.add("errorMsg", e.getMessage());
+		}
+		
+		page.render();
+	}
+	
+	private void handlePropertyPage(HttpServletRequest req, HttpServletResponse resp, Session session) throws ServletException {
+		Page page = newPage(req, resp, session, "azkaban/webapp/servlet/velocity/propertypage.vm");
+		String projectName = getParam(req, "project");
+		String flowName = getParam(req, "flow");
+		String jobName = getParam(req, "job");
+		String propSource = getParam(req, "prop");
+		
+		User user = session.getUser();
+		Project project = null;
+		Flow flow = null;
+		try {
+			project = projectManager.getProject(projectName);
+			
+			if (project == null) {
+				page.add("errorMsg", "Project " + projectName + " not found.");
+			}
+			else {
+				if (!project.hasPermission(user, Type.READ)) {
+					throw new AccessControlException( "No permission to view project " + projectName + ".");
+				}
+				
+				page.add("project", project);
+				
+				flow = project.getFlow(flowName);
+				if (flow == null) {
+					page.add("errorMsg", "Flow " + flowName + " not found.");
+				}
+				else {
+					page.add("flowid", flow.getId());
+					
+					Node node = flow.getNode(jobName);
+					
+					if (node == null) {
+						page.add("errorMsg", "Job " + jobName + " not found.");
+					}
+					else {
+						Props prop = projectManager.getProperties(project, propSource);
+						
+						page.add("property", propSource);
+						
+						page.add("jobid", node.getId());
+						
+						// Resolve property dependencies
+						ArrayList<String> inheritProps = new ArrayList<String>(); 
+						FlowProps parent = flow.getFlowProps(propSource);
+						while(parent.getInheritedSource() != null) {
+							inheritProps.add(parent.getInheritedSource());
+							parent = flow.getFlowProps(parent.getInheritedSource()); 
+						}
+						if(!inheritProps.isEmpty()) {
+							page.add("inheritedproperties", inheritProps);
+						}
+						
+						ArrayList<String> dependingProps = new ArrayList<String>(); 
+						FlowProps child = flow.getFlowProps(flow.getNode(jobName).getPropsSource());
+						while(!child.getSource().equals(propSource)) {
+							dependingProps.add(child.getSource());
+							child = flow.getFlowProps(child.getInheritedSource()); 
+						}
+						if(!dependingProps.isEmpty()) {
+							page.add("dependingproperties", dependingProps);
 						}
 						
 

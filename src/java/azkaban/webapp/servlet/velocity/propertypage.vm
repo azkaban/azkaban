@@ -1,0 +1,92 @@
+<!DOCTYPE html> 
+<html>
+	<head>
+#parse( "azkaban/webapp/servlet/velocity/style.vm" )
+		<script type="text/javascript" src="${context}/js/jquery/jquery.js"></script>    
+		<script type="text/javascript" src="${context}/js/jqueryui/jquery-ui.custom.min.js"></script>   
+		<script type="text/javascript" src="${context}/js/namespace.js"></script>
+		<script type="text/javascript" src="${context}/js/underscore-1.2.1-min.js"></script>
+		<script type="text/javascript" src="${context}/js/backbone-0.5.3-min.js"></script>
+		<script type="text/javascript" src="${context}/js/jquery.simplemodal.js"></script>
+		<script type="text/javascript" src="${context}/js/azkaban.nav.js"></script>
+		<script type="text/javascript">
+			var contextURL = "${context}";
+			var currentTime = ${currentTime};
+			var timezone = "${timezone}";
+			var errorMessage = "${error_message}";
+			var successMessage = "${success_message}";
+			
+			var projectId = "$project.name";
+		</script>
+	</head>
+	<body>
+#set($current_page="all")
+#parse( "azkaban/webapp/servlet/velocity/nav.vm" )
+		<div class="messaging"><p id="messageClose">X</p><p id="message"></p></div>  
+
+#if($errorMsg)
+			<div class="box-error-message">$errorMsg</div>
+#else
+	<div class="content">
+	#if($error_message != "null")
+			<div class="box-error-message">$error_message</div>
+	#elseif($success_message != "null")
+			<div class="box-success-message">$success_message</div>
+	#end
+			<div id="all-jobs-content">
+				<div class="section-hd">
+					<h2><a href="${context}/manager?project=${project.name}&flow=${flowid}&job=${jobid}&prop=${property}">Property <span>$property</span></a></h2>
+					<div class="section-sub-hd">
+						<h4><a href="${context}/manager?project=${project.name}">Project <span>$project.name</span></a></h4>
+						<h4 class="separator">&gt;</h4>
+						<h4><a href="${context}/manager?project=${project.name}&flow=${flowid}">Flow <span>$flowid</span></a></h4>
+						<h4 class="separator">&gt;</h4>
+						<h4><a href="${context}/manager?project=${project.name}&flow=${flowid}&job=${jobid}">Job <span>$jobid</span></a></h4>
+					</div>
+				</div>
+			</div>
+			
+			<div id="property-summary">
+				<table class="summary-table">
+					<tr><td class="first">Inherited From:</td><td>
+#if ($inheritedproperties) 
+#foreach($inheritedproperty in $inheritedproperties)
+					<a href="${context}/manager?project=${project.name}&flow=${flowid}&job=${jobid}&prop=$inheritedproperty">$inheritedproperty</a>
+#end
+#else
+	<span>No Inherited Properties</span>
+#end
+					</td></tr>
+					<tr><td class="first">Source Of:</td><td>
+#if ($dependingproperties) 
+#foreach($dependingproperty in $dependingproperties)
+						<span class="nowrap"><a href="${context}/manager?project=${project.name}&flow=${flowid}&job=${jobid}&prop=$dependingproperty">$dependingproperty</a></span>
+#end
+#else
+						<span>No Dependencies</span>
+#end
+					</td></tr>
+
+				</table>
+			</div>
+			
+			<table id="all-jobs" class="all-jobs job-table parameters">
+				<thead>
+					<tr>
+						<th class="tb-pname">Parameter Name</th>
+						<th class="tb-pvalue">Value</th>
+					</tr>
+				</thead>
+				<tbody>
+#foreach($parameter in $parameters)
+					<tr>
+						<td class="first">$parameter.first</td><td>$parameter.second</td>
+					</tr>
+#end
+				</tbody>
+			</table>
+	</div>
+
+#end
+	</body>
+</html>
