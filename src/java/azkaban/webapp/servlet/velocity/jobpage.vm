@@ -68,10 +68,11 @@
 					<tr><td class="first">Properties:</td><td>
 #if ($properties) 
 #foreach($property in $properties)
-						<a>$property</a><span>,</span>
+						<!--a>$property</a><span>,</span-->
+						<span class="nowrap"><a href="${context}/manager?project=${project.name}&flow=${flowid}&job=${jobid}&prop=$property">$property</a></span>
 #end
 #else
-						<span>No Inherited Properties</span>
+						<span>No Property Files For This Job</span>
 #end
 					</td></tr>
 				</table>

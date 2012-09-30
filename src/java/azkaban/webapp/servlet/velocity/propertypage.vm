@@ -54,16 +54,16 @@
 					<a href="${context}/manager?project=${project.name}&flow=${flowid}&job=${jobid}&prop=$inheritedproperty">$inheritedproperty</a>
 #end
 #else
-	<span>No Inherited Properties</span>
+					<span>No Inherited Properties</span>
 #end
 					</td></tr>
 					<tr><td class="first">Source Of:</td><td>
 #if ($dependingproperties) 
 #foreach($dependingproperty in $dependingproperties)
-						<span class="nowrap"><a href="${context}/manager?project=${project.name}&flow=${flowid}&job=${jobid}&prop=$dependingproperty">$dependingproperty</a></span>
+					<span class="nowrap"><a href="${context}/manager?project=${project.name}&flow=${flowid}&job=${jobid}&prop=$dependingproperty">$dependingproperty</a></span>
 #end
 #else
-						<span>No Dependencies</span>
+					<span>No Dependents</span>
 #end
 					</td></tr>
 
