@@ -25,8 +25,8 @@ public class ExecutableFlow {
 	private ArrayList<String> startNodes;
 	private ArrayList<String> endNodes;
 	
-	private ArrayList<String> failureEmails;
-	private ArrayList<String> successEmails;
+	private ArrayList<String> failureEmails = new ArrayList<String>();
+	private ArrayList<String> successEmails = new ArrayList<String>();
 	
 	private long submitTime = -1;
 	private long startTime = -1;
@@ -220,8 +220,16 @@ public class ExecutableFlow {
 		this.failureEmails = emails == null ? new ArrayList<String>() : new ArrayList<String>(emails);
 	}
 	
+	public List<String> getFailureEmails() {
+		return this.failureEmails;
+	}
+	
 	public void setSuccessEmails(List<String> emails) {
 		this.successEmails = emails == null ? new ArrayList<String>() : new ArrayList<String>(emails);
+	}
+	
+	public List<String> getSuccessEmails() {
+		return this.successEmails;
 	}
 	
 	public Map<String,Object> toObject() {
@@ -269,6 +277,10 @@ public class ExecutableFlow {
 
 	public void setFailureAction(FailureAction action) {
 		failureAction = action;
+	}
+	
+	public FailureAction getFailureAction() {
+		return failureAction;
 	}
 	
 	@SuppressWarnings("unchecked")
@@ -394,6 +406,14 @@ public class ExecutableFlow {
 	
 	public void setNotifyOnLastFailure(boolean notify) {
 		this.notifyOnLastFailure = notify;
+	}
+	
+	public boolean getNotifyOnFirstFailure() {
+		return this.notifyOnFirstFailure;
+	}
+	
+	public boolean getNotifyOnLastFailure() {
+		return this.notifyOnLastFailure;
 	}
 	
 	public static class ExecutableNode {

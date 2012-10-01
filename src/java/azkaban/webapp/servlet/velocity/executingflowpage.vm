@@ -17,6 +17,7 @@
 		<script type="text/javascript" src="${context}/js/azkaban.flow.job.view.js"></script>
 		<script type="text/javascript" src="${context}/js/azkaban.flow.graph.view.js"></script>
 		<script type="text/javascript" src="${context}/js/azkaban.exflow.view.js"></script>
+		<script type="text/javascript" src="${context}/js/azkaban.exflow.options.view.js"></script>
 		<script type="text/javascript" src="${context}/js/svgNavigate.js"></script>
 		<script type="text/javascript">
 			var contextURL = "${context}";
@@ -67,7 +68,7 @@
 							<li><div id="pausebtn" class="btn2">Pause</div></li>
 							<li><div id="resumebtn" class="btn2">Resume</div></li>
 							<li><div id="cancelbtn" class="btn6">Cancel</div></li>
-							<li><div id="restartbtn" class="btn1">Retry...</div></li>
+							<li><div id="executebtn" class="btn1">Execute</div></li>
 						</ul>
 					</div>
 					<div id="graphView">
@@ -80,8 +81,8 @@
 								</div>
 								<div id="resetPanZoomBtn" class="btn5 resetPanZoomBtn" >Reset Pan Zoom</div>
 							</div>
-							<div id="svgDiv" >
-								<svg id="svgGraph" xmlns="http://www.w3.org/2000/svg" version="1.1" shape-rendering="optimize-speed" text-rendering="optimize-speed" >
+							<div id="svgDiv" class="svgDiv">
+								<svg id="svgGraph" class="svgGraph" xmlns="http://www.w3.org/2000/svg" version="1.1" shape-rendering="optimize-speed" text-rendering="optimize-speed" >
 								</svg>
 							</div>
 						</div>
@@ -110,23 +111,126 @@
 						</div>
 					</div>
 				</div>
+				
+				<div id="flow-status">
+					<table class="status">
+						<tr><td class="first">Status</td><td id="flowStatus">-</td></tr>
+						<tr><td class="first">Submit User</td><td id="submitUser">-</td></tr>
+					</table>
+					<table class="time">
+						<tr><td class="first">Start Time</td><td id="startTime">-</td></tr>
+						<tr><td class="first">End Time</td><td id="endTime">-</td></tr>
+						<tr><td class="first">Duration</td><td id="duration">-</td></tr>
+					</table>
+				</div>
+						
+	            <div id="modalBackground" class="modalBackground2">
+	                <div id="executing-options" class="modal modalContainer2">
+	                	<a href='#' title='Close' class='modal-close'>x</a>
+	                		<h3>Executing Flow Options</h3>
+	                		<div>
+	                			<ul class="optionsPicker">
+	                				<li id="generalOptions">General Options</li>
+	                				<li id="flowOptions">Flow Options</li>
+	                			</ul>
+	                		</div>
+	                		<div class="optionsPane">
+	                			<div id="generalPanel" class="generalPanel panel">
+	                				<div id="completeActions">
+	                					<h4>Completion Actions</h4>
+		                				<dl>
+		                					<dt class="disabled">Failure Action</dt>
+		                					<dd>
+		                						<select id="failureAction" name="failureAction" disabled="disabled">
+		                							<option value="finishCurrent">Finish Current Running</option>
+		                							<option value="cancelImmediately">Cancel All</option>
+		                							<option value="finishPossible">Finish All Possible</option>
+		                						</select>
+											</dd>
+		                					<dt>Failure Email</dt>
+		                					<dd>
+		                						<textarea id="failureEmails"></textarea>
+		                					</dd>
+		                					<dt class="disabled">Notify on Failure</dt>
+		                					<dd>
+		                						<input id="notifyFailureFirst" class="checkbox" type="checkbox" name="notify" value="first" disabled="disabled" checked >First Failure</input>
+		                						<input id="notifyFailureLast" class="checkbox" type="checkbox" name="notify" disabled="disabled" value="last">Flow Stop</input>
+		                					</dd>
+		                					<dt>Success Email</dt>
+		                					<dd>
+		                						<textarea id="successEmails"></textarea>
+		                					</dd>
+		                					<dt>Concurrent Execution</dt>
+		                					<dd id="executingJob" class="disabled">
+		                						<input id="ignore" class="radio" type="radio" name="concurrent" value="ignore" checked /><label class="radioLabel" for="ignore">Run Concurrently</label>
+		                						<input id="pipeline" class="radio" type="radio" name="concurrent" value="pipeline" /><label class="radioLabel" for="pipeline">Pipeline</label>
+		                						<input id="queue" class="radio" type="radio" name="concurrent" value="queue" /><label class="radioLabel" for="queue">Queue Job</label>
+		                					</dd>
+		                				</dl>
+	                				</div>
+	                				<div id="flowPropertyOverride">
+	                					<h4>Flow Property Override</h4>
+	                					<div class="tableDiv">
+		                					<table>
+		                						<thead>
+		                							<tr>
+			                							<th>Name</th>
+			                							<th>Value</th>
+			                						</tr>
+		                						</thead>
+		                						<tbody>
+		                							<tr id="addRow"><td id="addRow-col" colspan="2"><span class="addIcon"></span><a href="#">Add Row</a></td></tr>
+		                						</tbody>
+		                					</table>
+	                					</div>
+	                				</div>
+	                			</div>
+								<div id="graphPanel" class="graphPanel panel">
+									<div id="jobListCustom" class="jobList">
+										<div class="filterList">
+											<input class="filter" placeholder="  Job Filter" />
+										</div>
+										<div class="list">
+										</div>
+										<div class="btn5 resetPanZoomBtn" >Reset Pan Zoom</div>
+									</div>
+								    <div id="svgDivCustom" class="svgDiv" >
+								    	<svg class="svgGraph" xmlns="http://www.w3.org/2000/svg" version="1.1" shape-rendering="optimize-speed" text-rendering="optimize-speed" >
+										</svg>
+									</div>
+		                        </div>
+	                        </div>
+                    		<div class="actions">
+	                                <a class="yes btn1" id="execute-btn" href="#">Execute Now</a>
+	                                <a class="no simplemodal-close btn3" id="cancel-btn" href="#">Cancel</a>
+	                        </div>
+	                </div>
+                </div>
 #end
 		<ul id="jobMenu" class="contextMenu">  
 			<li class="open"><a href="#open">Open...</a></li>
 			<li class="openwindow"><a href="#openwindow">Open in New Window...</a></li>
 		</ul>
 
-		</div>
-		<div id="flow-status">
-			<table class="status">
-				<tr><td class="first">Status</td><td id="flowStatus">-</td></tr>
-				<tr><td class="first">Submit User</td><td id="submitUser">-</td></tr>
-			</table>
-			<table class="time">
-				<tr><td class="first">Start Time</td><td id="startTime">-</td></tr>
-				<tr><td class="first">End Time</td><td id="endTime">-</td></tr>
-				<tr><td class="first">Duration</td><td id="duration">-</td></tr>
-			</table>
+		<ul id="disableJobMenu" class="contextMenu flowSubmenu">  
+			<li class="openwindow"><a href="#openwindow">Open in New Window...</a></li>
+			<li id="disable" class="disable separator"><a href="#disable">Disable</a><div id="disableArrow" class="context-sub-icon"></div></li>
+			<ul id="disableSub" class="subMenu">
+				<li class="disableAll"><a href="#disableAll">All</a></li>
+				<li class="parents"><a href="#disableParents">Parents</a></li>
+				<li class="ancestors"><a href="#disableAncestors">All Ancestors</a></li>
+				<li class="children"><a href="#disableChildren">Children</a></li>
+				<li class="decendents"><a href="#disableDescendents">All Descendents</a></li>
+			</ul>
+			<li id="enable" class="enable"><a href="#enable">Enable</a> <div id="enableArrow" class="context-sub-icon"></div></li>
+			<ul id="enableSub" class="subMenu">
+				<li class="enableAll"><a href="#enableAll">All</a></li>
+				<li class="parents"><a href="#enableParents">Parents</a></li>
+				<li class="ancestors"><a href="#enableAncestors">All Ancestors</a></li>
+				<li class="children"><a href="#enableChildren">Children</a></li>
+				<li class="decendents"><a href="#enableDescendents">All Descendents</a></li>
+			</ul>
+		</ul>
 		</div>
 		
 		<div id="messageDialog" class="modal">

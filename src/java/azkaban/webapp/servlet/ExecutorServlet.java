@@ -226,6 +226,11 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 					ajaxFetchJobLogs(req, resp, ret, session.getUser(), exFlow);
 					ret = null;
 				}
+				else if (ajaxName.equals("flowInfo")) {
+					String projectName = getParam(req, "project");
+					String flowName = getParam(req, "flow");
+					ajaxFetchExecutableFlowInfo(req, resp, ret, session.getUser(), projectName, flowName, exFlow);
+				}
 			}
 		}
 		else if (ajaxName.equals("isRunning")) {
@@ -236,6 +241,7 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 		else if (ajaxName.equals("flowInfo")) {
 			String projectName = getParam(req, "project");
 			String flowName = getParam(req, "flow");
+			
 			ajaxFetchFlowInfo(req, resp, ret, session.getUser(), projectName, flowName);
 		}
 		else {
@@ -340,6 +346,53 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 		
 		ret.put("successEmails", flow.getSuccessEmails());
 		ret.put("failureEmails", flow.getFailureEmails());
+		ret.put("running", executorManager.getFlowRunningFlows(projectId, flowId));
+		
+		ScheduledFlow sflow = null;
+		for (ScheduledFlow schedFlow: scheduleManager.getSchedule()) {
+			if (schedFlow.getProjectId().equals(projectId) && schedFlow.getFlowId().equals(flowId)) {
+				sflow = schedFlow;
+				break;
+			}
+		}
+		
+		if (sflow != null) {
+			ret.put("scheduled", sflow.getNextExecTime().getMillis());
+		}
+	}
+
+	private void ajaxFetchExecutableFlowInfo(HttpServletRequest req, HttpServletResponse resp, HashMap<String, Object> ret, User user, String projectId, String flowId, ExecutableFlow exflow) throws ServletException {
+		Project project = getProjectAjaxByPermission(ret, projectId, user, Type.READ);
+		if (project == null) {
+			return;
+		}
+		
+		Flow flow = project.getFlow(flowId);
+		if (flow == null) {
+			ret.put("error", "Error loading flow. Flow " + flowId + " doesn't exist in " + projectId);
+			return;
+		}
+		
+		ret.put("successEmails", exflow.getSuccessEmails());
+		ret.put("failureEmails", flow.getFailureEmails());
+		ret.put("flowParam", exflow.getFlowParameters());
+		
+		FailureAction action = exflow.getFailureAction();
+		String failureAction = null;
+		switch (action) {
+			case FINISH_CURRENTLY_RUNNING:
+				failureAction = "finishCurrent";
+				break;
+			case CANCEL_ALL:
+				failureAction = "cancelImmediately";
+				break;
+			case FINISH_ALL_POSSIBLE:
+				failureAction = "finishPossible";
+				break;
+		}
+		ret.put("failureAction", failureAction);
+		ret.put("notifyFailureFirst", exflow.getNotifyOnFirstFailure());
+		ret.put("notifyFailureLast", exflow.getNotifyOnLastFailure());
 		ret.put("running", executorManager.getFlowRunningFlows(projectId, flowId));
 		
 		ScheduledFlow sflow = null;
@@ -533,10 +586,9 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 			String option = getParam(req, "jobOption");
 			// Not set yet
 		}
-		if (hasParam(req, "flowOverride")) {
-			Map<String, String> paramGroup = this.getParamGroup(req, "flowOverride");
-			exflow.addFlowParameters(paramGroup);
-		}
+		
+		Map<String, String> flowParamGroup = this.getParamGroup(req, "flowOverride");
+		exflow.addFlowParameters(flowParamGroup);
 		
 		// Setup disabled
 		Map<String, String> paramGroup = this.getParamGroup(req, "disable");

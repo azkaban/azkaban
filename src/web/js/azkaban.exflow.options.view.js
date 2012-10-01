@@ -3,6 +3,28 @@ var customSvgGraphView;
 var customJobListView;
 var cloneModel;
 
+function recurseAllAncestors(nodes, disabledMap, id, disable) {
+	var node = nodes[id];
+	
+	if (node.inNodes) {
+		for (var key in node.inNodes) {
+			disabledMap[key] = disable;
+			recurseAllAncestors(nodes, disabledMap, key, disable);
+		}
+	}
+}
+
+function recurseAllDescendents(nodes, disabledMap, id, disable) {
+	var node = nodes[id];
+	
+	if (node.outNodes) {
+		for (var key in node.outNodes) {
+			disabledMap[key] = disable;
+			recurseAllDescendents(nodes, disabledMap, key, disable);
+		}
+	}
+}
+
 azkaban.ContextMenu = Backbone.View.extend({
 	events : {
 		"click #disableArrow" : "handleDisabledClick",
@@ -68,20 +90,70 @@ azkaban.ExecuteFlowView = Backbone.View.extend({
 	  	this.handleGeneralOptionsSelect();
 	  	$('#modalBackground').show();
 	  	$('#executing-options').show();
+	  	this.cloneModel = this.model.clone();
 	  	
+	  	var fetchData = {"project": projectName, "ajax":"flowInfo", "flow":flowName};
+	  	if (execId) {
+	  		fetchData.execid = execId;
+	  	}
 	  	var executeURL = contextURL + "/executor";
+	  	var handleAddRow = this.handleAddRow;
+	  	
+	  	var data = this.cloneModel.get("data");
+	  	var nodes = {};
+	  	for (var i=0; i < data.nodes.length; ++i) {
+	      	var node = data.nodes[i];
+	      	nodes[node.id] = node;
+	    }
+      	
+      	for (var i=0; i < data.edges.length; ++i) {
+      	  	var edge = data.edges[i];
+      	  	var fromNode = nodes[edge.from];
+      	  	var toNode = nodes[edge.target];
+      	  	
+      	  	if (!fromNode.outNodes) {
+      	  		fromNode.outNodes = {};
+      	  	}
+      	  	fromNode.outNodes[toNode.id] = toNode;
+      	  	
+      	  	if (!toNode.inNodes) {
+      	  		toNode.inNodes = {};
+      	  	}
+      	  	toNode.inNodes[fromNode.id] = fromNode;
+      	}
+	    this.cloneModel.set({nodes: nodes});
+	  	
 	  	$.get(
 			executeURL,
-			{"project": projectName, "ajax":"flowInfo", "flow":flowName},
+			fetchData,
 			function(data) {
 				if (data.error) {
 					alert(data.error);
 				}
 				else {
-					$('#successEmails').val(data.successEmails);
-					$('#failureEmails').val(data.failureEmails);
+					$('#successEmails').val(data.successEmails.join());
+					$('#failureEmails').val(data.failureEmails.join());
 					
-					if (data.running.length == 0) {
+					if (data.failureAction) {
+						$('#failureAction').val(data.failureAction);
+					}
+					if (data.notifyFailureFirst) {
+						$('#notifyFailureFirst').attr('checked', true);
+					}
+					if (data.notifyFailureLast) {
+						$('#notifyFailureLast').attr('checked', true);	
+					}
+					if (data.flowParam) {
+						var flowParam = data.flowParam;
+						for (var key in flowParam) {
+							var row = handleAddRow();
+							var td = $(row).find('td');
+							$(td[0]).text(key);
+							$(td[1]).text(flowParam[key]);
+						}
+					}
+
+					if (!data.running || data.running.length == 0) {
 						$(".radio").attr("disabled", "disabled");
 						$(".radioLabel").addClass("disabled", "disabled");
 					}
@@ -113,12 +185,22 @@ azkaban.ExecuteFlowView = Backbone.View.extend({
 	  		return;
 	  	}
 	  	
- 	  	this.cloneModel = this.model.clone();
  	  	cloneModel = this.cloneModel;
+
+		var disabled = {};
+		var data = this.cloneModel.get("data");
+		for (var i = 0; i < data.nodes.length; ++i) {
+			var updateNode = data.nodes[i];
+			if (updateNode.status == "DISABLED" || updateNode.status == "SUCCEEDED" || updateNode.status == "SKIPPED") {
+				disabled[updateNode.id] = true;
+			}
+		}
+ 	  	cloneModel.set({disabled: disabled});
+ 	  	
 	  	customSvgGraphView = new azkaban.SvgGraphView({el:$('#svgDivCustom'), model: this.cloneModel, rightClick: {id: 'disableJobMenu', callback: this.handleDisableMenuClick}});
 		customJobsListView = new azkaban.JobListView({el:$('#jobListCustom'), model: this.cloneModel, rightClick: {id: 'disableJobMenu', callback: this.handleDisableMenuClick}});
 		this.cloneModel.trigger("change:graph");
-
+		
 		this.flowSetup = true;
 	  },
 	  handleExecuteFlow: function(evt) {
@@ -198,6 +280,7 @@ azkaban.ExecuteFlowView = Backbone.View.extend({
 	  	$(tr).append(tdValue);
 	   
 	  	$(tr).insertBefore("#addRow");
+	  	return tr;
 	  },
 	  handleEditColumn : function(evt) {
 	  	var curTarget = evt.currentTarget;
@@ -287,17 +370,17 @@ azkaban.ExecuteFlowView = Backbone.View.extend({
 				cloneModel.trigger("change:disabled");
 			}
 			else if (action == "disableChildren") {
-				var disabled = cloneModel.get("disabled");
+				var disabledMap = cloneModel.get("disabled");
 				var nodes = cloneModel.get("nodes");
 				var outNodes = nodes[jobid].outNodes;
 		
 				if (outNodes) {
 					for (var key in outNodes) {
-					  disabled[key] = true;
+					  disabledMap[key] = true;
 					}
 				}
 				
-				cloneModel.set({disabled: disabled});
+				cloneModel.set({disabled: disabledMap});
 				cloneModel.trigger("change:disabled");
 			}
 			else if (action == "disableAncestors") {

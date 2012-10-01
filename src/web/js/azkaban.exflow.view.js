@@ -73,13 +73,13 @@ azkaban.FlowTabView= Backbone.View.extend({
   	"click #jobslistViewLink" : "handleJobslistLinkClick",
   	"click #flowLogViewLink" : "handleLogLinkClick",
   	"click #cancelbtn" : "handleCancelClick",
-  	"click #restartbtn" : "handleRestartClick",
+  	"click #executebtn" : "handleRestartClick",
   	"click #pausebtn" : "handlePauseClick",
   	"click #resumebtn" : "handleResumeClick",
   },
   initialize : function(settings) {
   	$("#cancelbtn").hide();
-  	$("#restartbtn").hide();
+  	$("#executebtn").hide();
   	$("#pausebtn").hide();
   	$("#resumebtn").hide();
   
@@ -127,15 +127,15 @@ azkaban.FlowTabView= Backbone.View.extend({
   handleFlowStatusChange: function() {
   	var data = this.model.get("data");
   	$("#cancelbtn").hide();
-  	$("#restartbtn").hide();
+  	$("#executebtn").hide();
   	$("#pausebtn").hide();
   	$("#resumebtn").hide();
 
   	if(data.status=="SUCCEEDED") {
-  	  	$("#restartbtn").show();
+  	  	$("#executebtn").show();
   	}
   	else if (data.status=="FAILED") {
-  		$("#restartbtn").show();
+  		$("#executebtn").show();
   	}
   	else if (data.status=="FAILED_FINISHING") {
   		$("#cancelbtn").show();
@@ -152,7 +152,7 @@ azkaban.FlowTabView= Backbone.View.extend({
   		$("#cancelbtn").show();
   	}
   	else if (data.status=="KILLED") {
-  		$("#restartbtn").show();
+  		$("#executebtn").show();
   	}
   },
   handleCancelClick : function(evt) {
@@ -174,6 +174,7 @@ azkaban.FlowTabView= Backbone.View.extend({
       );
   },
   handleRestartClick : function(evt) {
+  	  	executeFlowView.show();
   },
   handlePauseClick : function(evt) {
   	  var requestURL = contextURL + "/executor";
@@ -512,11 +513,9 @@ $(function() {
 	jobsListView = new azkaban.JobListView({el:$('#jobList'), model: graphModel, rightClick: {id: 'jobMenu', callback: handleJobMenuClick}});
 	statusView = new azkaban.StatusView({el:$('#flow-status'), model: graphModel});
 	flowLogView = new azkaban.FlowLogView({el:$('#flowLogView'), model: logModel});
+	executeFlowView = new azkaban.ExecuteFlowView({el:$('#executing-options'), model: graphModel});
 	executionListView = new azkaban.ExecutionListView({el: $('#jobListView'), model:graphModel});
 	var requestURL = contextURL + "/executor";
-
-	// This is to set up the execution flow
-	
 
 	ajaxCall(
 	      requestURL,
@@ -524,6 +523,7 @@ $(function() {
 	      function(data) {
 	          console.log("data fetched");
 	          graphModel.set({data: data});
+	          graphModel.set({disabled: {}});
 	          graphModel.trigger("change:graph");
 	          
 	          updateTime = Math.max(updateTime, data.submitTime);

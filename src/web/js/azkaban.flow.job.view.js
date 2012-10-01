@@ -13,6 +13,7 @@ azkaban.JobListView = Backbone.View.extend({
 		this.filterInput = $(this.el).find(".filter");
 		this.list = $(this.el).find(".list");
 		this.contextMenu = settings.rightClick;
+		this.listNodes = {};
 	},
 	filterJobs: function(self) {
 		var filter = this.filterInput.val();
@@ -134,6 +135,7 @@ azkaban.JobListView = Backbone.View.extend({
 		
 		this.list.append(ul);
 		this.assignInitialStatus(self);
+		this.handleDisabledChange(self);
 	},
 	handleJobClick : function(evt) {
 		var jobid = evt.currentTarget.jobid;
@@ -156,16 +158,15 @@ azkaban.JobListView = Backbone.View.extend({
 	},
 	handleDisabledChange: function(evt) {
 		var disabledMap = this.model.get("disabled");
-		for(var id in disabledMap) {
-		    if(disabledMap.hasOwnProperty(id)) {
-		    	var disabled = (disabledMap[id]);
-		    	if (disabled) {
-		    		$(this.listNodes[id]).addClass("nodedisabled");
-		    	}
-		    	else {
-		    		$(this.listNodes[id]).removeClass("nodedisabled");
-		    	}
-		    }
+		var nodes = this.model.get("nodes");
+		
+		for(var id in nodes) {
+			if (disabledMap[id]) {
+				$(this.listNodes[id]).addClass("nodedisabled");
+			}
+			else {
+				$(this.listNodes[id]).removeClass("nodedisabled");
+			}
 		}
 	},
 	handleSelectionChange: function(evt) {

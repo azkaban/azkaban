@@ -1,4 +1,4 @@
-var statusList = ["FAILED", "FAILED_FINISHING", "SUCCEEDED", "RUNNING", "WAITING", "KILLED", "DISABLED", "READY", "UNKNOWN", "PAUSED"];
+var statusList = ["FAILED", "FAILED_FINISHING", "SUCCEEDED", "RUNNING", "WAITING", "KILLED", "DISABLED", "READY", "UNKNOWN", "PAUSED", "SKIPPED"];
 var statusStringMap = {
 	"FAILED": "Failed",
 	"SUCCEEDED": "Success",

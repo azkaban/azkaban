@@ -28,6 +28,7 @@
 			
 			var projectName = "${project.name}";
 			var flowName = "${flowid}";
+			var execId = null;
 		</script>
 		<script>
 			$(function() {
@@ -204,9 +205,9 @@
 	                				<div id="completeActions">
 	                					<h4>Completion Actions</h4>
 		                				<dl>
-		                					<dt>Failure Action</dt>
+		                					<dt class="disabled">Failure Action</dt>
 		                					<dd>
-		                						<select id="failureAction" name="failureAction">
+		                						<select id="failureAction" name="failureAction" disabled="disabled">
 		                							<option value="finishCurrent">Finish Current Running</option>
 		                							<option value="cancelImmediately">Cancel All</option>
 		                							<option value="finishPossible">Finish All Possible</option>
@@ -216,17 +217,17 @@
 		                					<dd>
 		                						<textarea id="failureEmails"></textarea>
 		                					</dd>
-		                					<dt>Notify on Failure</dt>
+		                					<dt class="disabled">Notify on Failure</dt>
 		                					<dd>
-		                						<input id="notifyFailureFirst" class="checkbox" type="checkbox" name="notify" value="first" checked >First Failure</input>
-		                						<input id="notifyFailureLast" class="checkbox" type="checkbox" name="notify" value="last">Flow Stop</input>
+		                						<input id="notifyFailureFirst" class="checkbox" type="checkbox" name="notify" value="first" disabled="disabled" checked >First Failure</input>
+		                						<input id="notifyFailureLast" class="checkbox" type="checkbox" name="notify" disabled="disabled" value="last">Flow Stop</input>
 		                					</dd>
 		                					<dt>Success Email</dt>
 		                					<dd>
 		                						<textarea id="successEmails"></textarea>
 		                					</dd>
-		                					<dt>Concurrent Execution</dt>
-		                					<dd id="executingJob">
+		                					<dt class="disabled" >Concurrent Execution</dt>
+		                					<dd id="executingJob" class="disabled">
 		                						<input id="ignore" class="radio" type="radio" name="concurrent" value="ignore" checked /><label class="radioLabel" for="ignore">Run Concurrently</label>
 		                						<input id="pipeline" class="radio" type="radio" name="concurrent" value="pipeline" /><label class="radioLabel" for="pipeline">Pipeline</label>
 		                						<input id="queue" class="radio" type="radio" name="concurrent" value="queue" /><label class="radioLabel" for="queue">Queue Job</label>

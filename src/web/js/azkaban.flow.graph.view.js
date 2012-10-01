@@ -83,25 +83,23 @@ azkaban.SvgGraphView = Backbone.View.extend({
 		bounds.maxY = bounds.maxY ? bounds.maxY + 200 : 200;
 		
 		this.assignInitialStatus(self);
+		this.handleDisabledChange(self);
 		this.graphBounds = bounds;
 		this.resetPanZoom(0);
 	},
 	handleDisabledChange: function(evt) {
 		var disabledMap = this.model.get("disabled");
-		for(var id in disabledMap) {
-		    if(disabledMap.hasOwnProperty(id)) {
-		    	var disabled = disabledMap[id];
-		    	this.nodes[id].disabled = disabled;
-		    	var g = this.gNodes[id];
-		    	
-		    	if (disabled) {
-		    		this.nodes[id].disabled = disabled;
-					addClass(g, "disabled");
-		    	}
-		    	else {
-		    		removeClass(g, "disabled");
-		    	}
-		    }
+
+		for(var id in this.nodes) {
+			 var g = this.gNodes[id];
+			if (disabledMap[id]) {
+				this.nodes[id].disabled = true;
+				addClass(g, "disabled");
+			}
+		    else {
+		    	this.nodes[id].disabled = false;
+		    	removeClass(g, "disabled");
+			}
 		}
 	},
 	assignInitialStatus: function(evt) {
@@ -151,7 +149,7 @@ azkaban.SvgGraphView = Backbone.View.extend({
 	handleRemoveAllStatus: function(gNode) {
 		for (var j = 0; j < statusList.length; ++j) {
 			var status = statusList[j];
-			removeClass(g, status);
+			removeClass(gNode, status);
 		}
 	},
 	clickGraph: function(self) {

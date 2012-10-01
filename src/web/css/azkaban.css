@@ -21,6 +21,13 @@ textarea {
 	border: 2px inset;
 }
 
+dt.disabled {
+	color: #CCC;
+}
+label.disabled {
+	color: #CCC;
+}
+
 .header {
   background-image: -o-linear-gradient(bottom, rgb(56,56,56) 33%, rgb(73,73,73) 66%);
   background-image: -moz-linear-gradient(bottom, rgb(56,56,56) 33%, rgb(73,73,73) 66%);
@@ -1207,6 +1214,17 @@ tr:hover td {
 	right: 50px;
 	padding: 10px;
 	background: #E0E0E0;
+}
+
+#jobListView {
+	position: absolute;
+	top: 210px;
+	bottom: 5px;
+	left: 50px;
+	right: 50px;
+	padding: 0px;
+	background: #E0E0E0;
+	overflow-y: auto;
 }
 
 .logView {

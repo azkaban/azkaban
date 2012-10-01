@@ -23,28 +23,6 @@ var handleJobMenuClick = function(action, el, pos) {
 	}
 }
 
-function recurseAllAncestors(nodes, disabledMap, id, disable) {
-	var node = nodes[id];
-	
-	if (node.inNodes) {
-		for (var key in node.inNodes) {
-			disabledMap[key] = disable;
-			recurseAllAncestors(nodes, disabledMap, key, disable);
-		}
-	}
-}
-
-function recurseAllDescendents(nodes, disabledMap, id, disable) {
-	var node = nodes[id];
-	
-	if (node.outNodes) {
-		for (var key in node.outNodes) {
-			disabledMap[key] = disable;
-			recurseAllDescendents(nodes, disabledMap, key, disable);
-		}
-	}
-}
-
 function hasClass(el, name) 
 {
 	var classes = el.getAttribute("class");

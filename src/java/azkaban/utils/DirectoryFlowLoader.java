@@ -209,9 +209,27 @@ public class DirectoryFlowLoader {
 				
 				// Dedup with sets
 				@SuppressWarnings("unchecked")
-				Set<String> successEmail = new HashSet<String>(jobProp.getStringList("success.emails", Collections.EMPTY_LIST));
+				List<String> successEmailList = jobProp.getStringList("success.emails", Collections.EMPTY_LIST);
+				Set<String> successEmail = new HashSet<String>();
+				for (String email: successEmailList) {
+					successEmail.add(email.toLowerCase());
+				}
+	
 				@SuppressWarnings("unchecked")
-				Set<String> failureEmail = new HashSet<String>(jobProp.getStringList("failure.emails", Collections.EMPTY_LIST));
+				List<String> failureEmailList = jobProp.getStringList("failure.emails", Collections.EMPTY_LIST);
+				Set<String> failureEmail = new HashSet<String>();
+				for (String email: failureEmailList) {
+					failureEmail.add(email.toLowerCase());
+				}
+				
+				@SuppressWarnings("unchecked")
+				List<String> notifyEmailList = jobProp.getStringList("notify.emails", Collections.EMPTY_LIST);
+				for (String email: notifyEmailList) {
+					email = email.toLowerCase();
+					successEmail.add(email);
+					failureEmail.add(email);
+				}
+				
 				flow.addFailureEmails(failureEmail);
 				flow.addSuccessEmails(successEmail);
 				
