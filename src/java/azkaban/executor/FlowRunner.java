@@ -43,8 +43,7 @@ public class FlowRunner extends EventHandler implements Runnable {
 	private ExecutableFlow flow;
 	private ExecutorService executorService;
 	private BlockingQueue<JobRunner> jobsToRun = new LinkedBlockingQueue<JobRunner>();
-	private List<JobRunner> pausedJobsToRun = Collections
-			.synchronizedList(new ArrayList<JobRunner>());
+	private List<JobRunner> pausedJobsToRun = Collections.synchronizedList(new ArrayList<JobRunner>());
 	private int numThreads = NUM_CONCURRENT_THREADS;
 	private boolean cancelled = false;
 	private boolean paused = false;

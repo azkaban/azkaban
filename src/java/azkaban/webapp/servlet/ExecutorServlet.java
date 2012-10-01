@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -15,6 +16,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutableFlow.ExecutableNode;
+import azkaban.executor.ExecutableFlow.FailureAction;
 import azkaban.executor.ExecutorManager;
 import azkaban.executor.ExecutableFlow.Status;
 import azkaban.executor.ExecutorManagerException;
@@ -35,7 +37,6 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 	private ProjectManager projectManager;
 	private ExecutorManager executorManager;
 	private ScheduleManager scheduleManager;
-	private static final int STRING_BUFFER_SIZE = 1024*5;
 
 	@Override
 	public void init(ServletConfig config) throws ServletException {
@@ -500,7 +501,45 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 		// Create ExecutableFlow
 		ExecutableFlow exflow = executorManager.createExecutableFlow(flow);
 		exflow.setSubmitUser(user.getUserId());
-		Map<String, String> paramGroup = this.getParamGroup(req, "disabled");
+		if (hasParam(req, "failureAction")) {
+			String option = getParam(req, "failureAction");
+			if (option.equals("finishCurrent") ) {
+				exflow.setFailureAction(FailureAction.FINISH_CURRENTLY_RUNNING);
+			}
+			else if (option.equals("cancelImmediately")) {
+				exflow.setFailureAction(FailureAction.CANCEL_ALL);
+			}
+			else if (option.equals("finishPossible")) {
+				exflow.setFailureAction(FailureAction.FINISH_ALL_POSSIBLE);
+			}
+		}
+		if (hasParam(req, "failureEmails")) {
+			String emails = getParam(req, "failureEmails");
+			String[] emailSplit = emails.split("\\s*,\\s*|\\s*;\\s*|\\s+");
+			exflow.setFailureEmails(Arrays.asList(emailSplit));
+		}
+		if (hasParam(req, "successEmails")) {
+			String emails = getParam(req, "successEmails");
+			String[] emailSplit = emails.split("\\s*,\\s*|\\s*;\\s*|\\s+");
+			exflow.setSuccessEmails(Arrays.asList(emailSplit));
+		}
+		if (hasParam(req, "notifyFailureFirst")) {
+			exflow.setNotifyOnFirstFailure(Boolean.parseBoolean(getParam(req, "notifyFailureFirst")));
+		}
+		if (hasParam(req, "notifyFailureLast")) {
+			exflow.setNotifyOnLastFailure(Boolean.parseBoolean(getParam(req, "notifyFailureLast")));
+		}
+		if (hasParam(req, "executingJobOption")) {
+			String option = getParam(req, "jobOption");
+			// Not set yet
+		}
+		if (hasParam(req, "flowOverride")) {
+			Map<String, String> paramGroup = this.getParamGroup(req, "flowOverride");
+			exflow.addFlowParameters(paramGroup);
+		}
+		
+		// Setup disabled
+		Map<String, String> paramGroup = this.getParamGroup(req, "disable");
 		for (Map.Entry<String, String> entry: paramGroup.entrySet()) {
 			boolean nodeDisabled = Boolean.parseBoolean(entry.getValue());
 			exflow.setStatus(entry.getKey(), nodeDisabled ? Status.DISABLED : Status.READY);

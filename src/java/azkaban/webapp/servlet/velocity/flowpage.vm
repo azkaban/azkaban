@@ -206,7 +206,7 @@
 		                				<dl>
 		                					<dt>Failure Action</dt>
 		                					<dd>
-		                						<select name="failureAction">
+		                						<select id="failureAction" name="failureAction">
 		                							<option value="finishCurrent">Finish Current Running</option>
 		                							<option value="cancelImmediately">Cancel All</option>
 		                							<option value="finishPossible">Finish All Possible</option>
@@ -218,14 +218,14 @@
 		                					</dd>
 		                					<dt>Notify on Failure</dt>
 		                					<dd>
-		                						<input class="checkbox" type="checkbox" name="notify" value="first" checked >First Failure</input>
-		                						<input class="checkbox" type="checkbox" name="notify" value="last">Flow Stop</input>
+		                						<input id="notifyFailureFirst" class="checkbox" type="checkbox" name="notify" value="first" checked >First Failure</input>
+		                						<input id="notifyFailureLast" class="checkbox" type="checkbox" name="notify" value="last">Flow Stop</input>
 		                					</dd>
 		                					<dt>Success Email</dt>
 		                					<dd>
 		                						<textarea id="successEmails"></textarea>
 		                					</dd>
-		                					<dt>Executing Job</dt>
+		                					<dt>Concurrent Execution</dt>
 		                					<dd id="executingJob">
 		                						<input id="ignore" class="radio" type="radio" name="concurrent" value="ignore" checked /><label class="radioLabel" for="ignore">Run Concurrently</label>
 		                						<input id="pipeline" class="radio" type="radio" name="concurrent" value="pipeline" /><label class="radioLabel" for="pipeline">Pipeline</label>
@@ -279,10 +279,10 @@
 		</ul>
 
 		<ul id="disableJobMenu" class="contextMenu flowSubmenu">  
-			<li class="open"><a href="#open">Open...</a></li>
 			<li class="openwindow"><a href="#openwindow">Open in New Window...</a></li>
 			<li id="disable" class="disable separator"><a href="#disable">Disable</a><div id="disableArrow" class="context-sub-icon"></div></li>
 			<ul id="disableSub" class="subMenu">
+				<li class="disableAll"><a href="#disableAll">All</a></li>
 				<li class="parents"><a href="#disableParents">Parents</a></li>
 				<li class="ancestors"><a href="#disableAncestors">All Ancestors</a></li>
 				<li class="children"><a href="#disableChildren">Children</a></li>
@@ -290,6 +290,7 @@
 			</ul>
 			<li id="enable" class="enable"><a href="#enable">Enable</a> <div id="enableArrow" class="context-sub-icon"></div></li>
 			<ul id="enableSub" class="subMenu">
+				<li class="enableAll"><a href="#enableAll">All</a></li>
 				<li class="parents"><a href="#enableParents">Parents</a></li>
 				<li class="ancestors"><a href="#enableAncestors">All Ancestors</a></li>
 				<li class="children"><a href="#enableChildren">Children</a></li>

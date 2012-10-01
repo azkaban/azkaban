@@ -52,7 +52,6 @@ azkaban.ExecuteFlowView = Backbone.View.extend({
   	  events : {
   	  	"click" : "closeEditingTarget",
 	    "click #execute-btn": "handleExecuteFlow",
-	    "click #execute-custom-btn": "handleCustomFlow",
 	    "click #cancel-btn": "handleCancelExecution",
 	    "click .modal-close": "handleCancelExecution",
 	    "click #generalOptions": "handleGeneralOptionsSelect",
@@ -124,9 +123,44 @@ azkaban.ExecuteFlowView = Backbone.View.extend({
 	  },
 	  handleExecuteFlow: function(evt) {
 	  	var executeURL = contextURL + "/executor";
+	  	var disabled = this.cloneModel.get("disabled");
+	  	var failureAction = $('#failureAction').val();
+	  	var failureEmails = $('#failureEmails').val();
+	  	var successEmails = $('#successEmails').val();
+	  	var notifyFailureFirst = $('#notifyFailureFirst').is(':checked');
+	  	var notifyFailureLast = $('#notifyFailureLast').is(':checked');
+	  	var executingJobOption = $('input:radio[name=gender]:checked').val();
+	  	
+	  	var flowOverride = {};
+	  	var editRows = $(".editRow");
+		for (var i = 0; i < editRows.length; ++i) {
+			var row = editRows[i];
+			var td = $(row).find('td');
+			var key = $(td[0]).text();
+			var val = $(td[1]).text();
+			
+			if (key && key.length > 0) {
+				flowOverride[key] = val;
+			}
+		}
+	  	
+	  	var executingData = {
+	  		project: projectName,
+	  		ajax: "executeFlow",
+	  		flow: flowName,
+	  		disable: this.cloneModel.get('disabled'),
+	  		failureAction: failureAction,
+	  		failureEmails: failureEmails,
+	  		successEmails: successEmails,
+	  		notifyFailureFirst: notifyFailureFirst,
+	  		notifyFailureLast: notifyFailureLast,
+	  		executingJobOption: executingJobOption,
+	  		flowOverride: flowOverride
+	  	};
+	  	
 		$.get(
 			executeURL,
-			{"project": projectName, "ajax":"executeFlow", "flow":flowName, "disabled":this.cloneModel.get("disabled")},
+			executingData,
 			function(data) {
 				if (data.error) {
 					alert(data.error);
@@ -138,9 +172,6 @@ azkaban.ExecuteFlowView = Backbone.View.extend({
 			},
 			"json"
 		);
-	  },
-	  handleCustomFlow: function(evt) {
-	  	
 	  },
 	  handleAddRow: function(evt) {
 	  	var tr = document.createElement("tr");
@@ -162,6 +193,7 @@ azkaban.ExecuteFlowView = Backbone.View.extend({
 		$(tdValue).append(valueData);
 	    $(tdValue).addClass("editable");
 		
+		$(tr).addClass("editRow");
 	  	$(tr).append(tdName);
 	  	$(tr).append(tdValue);
 	   
@@ -192,8 +224,6 @@ azkaban.ExecuteFlowView = Backbone.View.extend({
 	  	var row = curTarget.parentElement.parentElement;
 		$(row).remove();
 	  },
-	  handleResetData : function(evt) {
-	  },
 	  closeEditingTarget: function(evt) {
 	  	if (this.editingTarget != null && this.editingTarget != evt.target && this.editingTarget != evt.target.parentElement ) {
 	  		var input = $(this.editingTarget).children("input")[0];
@@ -215,9 +245,6 @@ azkaban.ExecuteFlowView = Backbone.View.extend({
 		    this.editingTarget = null;
 	  	}
 	  },
-	  addRowData : function(evt) {
-
-	  },
 	  handleDisableMenuClick : function(action, el, pos) {
 			var jobid = el[0].jobid;
 			var requestURL = contextURL + "/manager?project=" + projectName + "&flow=" + flowName + "&job=" + jobid;
@@ -231,6 +258,17 @@ azkaban.ExecuteFlowView = Backbone.View.extend({
 				var disabled = cloneModel.get("disabled");
 		
 				disabled[jobid] = true;
+				cloneModel.set({disabled: disabled});
+				cloneModel.trigger("change:disabled");
+			}
+			else if(action == "disableAll") {
+				var disabled = cloneModel.get("disabled");
+		
+				var nodes = cloneModel.get("nodes");
+				for (var key in nodes) {
+					disabled[key] = true;
+				}
+
 				cloneModel.set({disabled: disabled});
 				cloneModel.trigger("change:disabled");
 			}
@@ -284,6 +322,11 @@ azkaban.ExecuteFlowView = Backbone.View.extend({
 				var disabled = cloneModel.get("disabled");
 		
 				disabled[jobid] = false;
+				cloneModel.set({disabled: disabled});
+				cloneModel.trigger("change:disabled");
+			}
+			else if(action == "enableAll") {
+				disabled = {};
 				cloneModel.set({disabled: disabled});
 				cloneModel.trigger("change:disabled");
 			}

@@ -25,6 +25,9 @@ public class ExecutableFlow {
 	private ArrayList<String> startNodes;
 	private ArrayList<String> endNodes;
 	
+	private ArrayList<String> failureEmails;
+	private ArrayList<String> successEmails;
+	
 	private long submitTime = -1;
 	private long startTime = -1;
 	private long endTime = -1;
@@ -33,9 +36,22 @@ public class ExecutableFlow {
 	private Status flowStatus = Status.UNKNOWN;
 	private String submitUser;
 	private boolean submitted = false;
+	private boolean notifyOnFirstFailure = true;
+	private boolean notifyOnLastFailure = false;
+	
+	private Integer pipelineLevel = null;
+	private Map<String, String> flowParameters = new HashMap<String, String>();
+	
+	public enum FailureAction {
+		FINISH_CURRENTLY_RUNNING,
+		CANCEL_ALL,
+		FINISH_ALL_POSSIBLE
+	}
+	
+	private FailureAction failureAction = FailureAction.FINISH_CURRENTLY_RUNNING;
 	
 	public enum Status {
-		FAILED, FAILED_FINISHING, SUCCEEDED, RUNNING, WAITING, KILLED, DISABLED, READY, UNKNOWN, PAUSED
+		FAILED, FAILED_FINISHING, SUCCEEDED, RUNNING, WAITING, KILLED, DISABLED, READY, UNKNOWN, PAUSED, SKIPPED
 	}
 	
 	public ExecutableFlow(String id, Flow flow) {
@@ -77,6 +93,14 @@ public class ExecutableFlow {
 		updateNumber = number;
 	}
 	
+	public void addFlowParameters(Map<String, String> param) {
+		flowParameters.putAll(param);
+	}
+	
+	public Map<String, String> getFlowParameters() {
+		return flowParameters;
+	}
+	
 	private void setFlow(Flow flow) {
 		for (Node node: flow.getNodes()) {
 			String id = node.getId();
@@ -92,6 +116,8 @@ public class ExecutableFlow {
 			targetNode.addInNode(edge.getSourceId());
 		}
 		
+		successEmails = new ArrayList<String>(flow.getSuccessEmails());
+		failureEmails = new ArrayList<String>(flow.getFailureEmails());
 		flowProps.putAll(flow.getAllFlowProps());
 	}
 
@@ -190,6 +216,14 @@ public class ExecutableFlow {
 		this.flowStatus = flowStatus;
 	}
 	
+	public void setFailureEmails(List<String> emails) {
+		this.failureEmails = emails == null ? new ArrayList<String>() : new ArrayList<String>(emails);
+	}
+	
+	public void setSuccessEmails(List<String> emails) {
+		this.successEmails = emails == null ? new ArrayList<String>() : new ArrayList<String>(emails);
+	}
+	
 	public Map<String,Object> toObject() {
 		HashMap<String, Object> flowObj = new HashMap<String, Object>();
 		flowObj.put("type", "executableflow");
@@ -202,6 +236,13 @@ public class ExecutableFlow {
 		flowObj.put("endTime", endTime);
 		flowObj.put("status", flowStatus.toString());
 		flowObj.put("submitUser", submitUser);
+		flowObj.put("flowParameters", this.flowParameters);
+		flowObj.put("notifyOnFirstFailure", this.notifyOnFirstFailure);
+		flowObj.put("notifyOnLastFailure", this.notifyOnLastFailure);
+		flowObj.put("successEmails", successEmails);
+		flowObj.put("failureEmails", failureEmails);
+		flowObj.put("failureAction", failureAction.toString());
+		flowObj.put("pipelineLevel", pipelineLevel);
 		
 		ArrayList<Object> props = new ArrayList<Object>();
 		for (FlowProps fprop: flowProps.values()) {
@@ -226,6 +267,10 @@ public class ExecutableFlow {
 		return flowObj;
 	}
 
+	public void setFailureAction(FailureAction action) {
+		failureAction = action;
+	}
+	
 	@SuppressWarnings("unchecked")
 	public static ExecutableFlow createExecutableFlowFromObject(Object obj) {
 		ExecutableFlow exFlow = new ExecutableFlow();
@@ -240,7 +285,23 @@ public class ExecutableFlow {
 		exFlow.endTime = getLongFromObject(flowObj.get("endTime"));
 		exFlow.flowStatus = Status.valueOf((String)flowObj.get("status"));
 		exFlow.submitUser = (String)flowObj.get("submitUser");
-				
+		exFlow.flowParameters = new HashMap<String, String>((Map<String,String>)flowObj.get("flowParameters"));
+		
+		// Failure notification
+		if (flowObj.containsKey("notifyOnFirstFailure")) {
+			exFlow.notifyOnFirstFailure = (Boolean)flowObj.get("notifyOnFirstFailure");
+		}
+		if (flowObj.containsKey("notifyOnLastFailure")) {
+			exFlow.notifyOnLastFailure = (Boolean)flowObj.get("notifyOnLastFailure");
+		}
+		
+		// Failure action
+		if (flowObj.containsKey("failureAction")) {
+			exFlow.failureAction = FailureAction.valueOf((String)flowObj.get("failureAction"));
+		}
+		exFlow.pipelineLevel = (Integer)flowObj.get("pipelineLevel");
+		
+		// Copy nodes
 		List<Object> nodes = (List<Object>)flowObj.get("nodes");
 		for (Object nodeObj: nodes) {
 			ExecutableNode node = ExecutableNode.createNodeFromObject(nodeObj, exFlow);
@@ -256,6 +317,11 @@ public class ExecutableFlow {
 			FlowProps flowProps = new FlowProps(inheritedSource, source);
 			exFlow.flowProps.put(source, flowProps);
 		}
+		
+		// Success emails
+		exFlow.setSuccessEmails((List<String>)flowObj.get("successEmails"));
+		// Failure emails
+		exFlow.setFailureEmails((List<String>)flowObj.get("failureEmails"));
 		
 		return exFlow;
 	}
@@ -318,6 +384,18 @@ public class ExecutableFlow {
 		this.submitted = submitted;
 	}
 
+	public void setPipelineLevel(int level) {
+		pipelineLevel = level;
+	}
+	
+	public void setNotifyOnFirstFailure(boolean notify) {
+		this.notifyOnFirstFailure = notify;
+	}
+	
+	public void setNotifyOnLastFailure(boolean notify) {
+		this.notifyOnLastFailure = notify;
+	}
+	
 	public static class ExecutableNode {
 		private String id;
 

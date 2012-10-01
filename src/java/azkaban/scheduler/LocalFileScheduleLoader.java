@@ -72,8 +72,6 @@ public class LocalFileScheduleLoader implements ScheduleLoader {
 	private File backupScheduleFile;
 	
 	public LocalFileScheduleLoader(Props props) throws IOException {
-			
-			
 		basePath = new File(props.getString("schedule.directory"));
 		if (!basePath.exists()) {
 			logger.info("Schedule directory " + basePath + " not found.");
