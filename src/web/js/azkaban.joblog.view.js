@@ -26,16 +26,17 @@ azkaban.JobLogView = Backbone.View.extend({
 	          	showDialog("Error", data.error);
 	          }
 	          else {
+			var re = /(https?:\/\/(([-\w\.]+)+(:\d+)?(\/([\w/_\.]*(\?\S+)?)?)?))/g;
 	          	var log = $("#logSection").text();
 	          	if (!log) {
-	          		log = data.log;
+	          		log = data.log.replace(re, "<a href=\"$1\" title=\"\">$1</a>");
 	          	}
 	          	else {
-	          		log += data.log;
+	          		log += data.log.replace(re, "<a href=\"$1\" title=\"\">$1</a>");
 	          	}
 	          	
 	          	current = data.current;
-	          	$("#logSection").text(log);
+	          	$("#logSection").html(log);
 	          	model.set({"current": current, "log": log});
 	          	$(".logViewer").scrollTop(9999);
 	          }
