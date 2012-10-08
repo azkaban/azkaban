@@ -269,7 +269,7 @@ public class FlowRunner extends EventHandler implements Runnable {
 		logger.info("Finishing up flow. Awaiting Termination");
 		executorService.shutdown();
 
-		while (executorService.isTerminated()) {
+		while (!executorService.isTerminated()) {
 			try {
 				executorService.awaitTermination(1, TimeUnit.SECONDS);
 			} catch (InterruptedException e) {
