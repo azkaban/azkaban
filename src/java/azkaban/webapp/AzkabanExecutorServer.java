@@ -99,8 +99,10 @@ public class AzkabanExecutorServer {
 				props.getString("mail.password", ""),
 				props.getString("mail.sender", ""));
 
-		runnerManager = new FlowRunnerManager(props, mailer);
-
+		String globalPropsPath = props.getString("project.global.properties");
+		Props globalProps = new Props(null, globalPropsPath);
+		runnerManager = new FlowRunnerManager(props, globalProps, mailer);
+		
 		try {
 			server.start();
 		} 

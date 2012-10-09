@@ -63,29 +63,29 @@ public class Mailman {
 		Session session = Session.getInstance(props, null);
 		session.setDebug(true);
 		
-//		//email message
-//		Message msg = new MimeMessage(session);
-//		msg.setFrom(new InternetAddress(fromAddress));
-//		for(String str : toAddress) {
-//			msg.addRecipients(Message.RecipientType.TO, InternetAddress.parse(str));
-//		}
-//		
-//		msg.setSubject(subject);
-//		msg.setText(body);
-//		
-//		//transport
-//		SMTPTransport t = (SMTPTransport)session.getTransport(protocol);
-//		
-//		try {
-//			t.connect(_mailHost, _mailUser, _mailPassword);
-//			t.sendMessage(msg, msg.getAllRecipients());
-//		}
-//		catch (Exception e) {
-//			logger.error(e);
-//		}
-//		finally {
-//			t.close();
-//		}
+		//email message
+		Message msg = new MimeMessage(session);
+		msg.setFrom(new InternetAddress(fromAddress));
+		for(String str : toAddress) {
+			msg.addRecipients(Message.RecipientType.TO, InternetAddress.parse(str));
+		}
+		
+		msg.setSubject(subject);
+		msg.setText(body);
+		
+		//transport
+		SMTPTransport t = (SMTPTransport)session.getTransport(protocol);
+		
+		try {
+			t.connect(_mailHost, _mailUser, _mailPassword);
+			t.sendMessage(msg, msg.getAllRecipients());
+		}
+		catch (Exception e) {
+			logger.error(e);
+		}
+		finally {
+			t.close();
+		}
 	}
 
 	public void sendEmailIfPossible(String fromAddress, List<String> toAddress,

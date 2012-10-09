@@ -33,6 +33,13 @@
 		<delete dir="${dist.classes.dir}" />
 		<mkdir dir="${dist.classes.dir}" />
 		
+		<!-- copy non-java files to classes dir to load from classpath -->
+		<copy todir="${dist.classes.dir}">
+			<fileset dir="${java.src.dir}">
+				<exclude name="**/*.java" />
+			</fileset>
+		</copy>
+		
 		<javac fork="true" destdir="${dist.classes.dir}"
 			target="1.6" debug="true" deprecation="false" failonerror="true">
 			<src path="${java.src.dir}" />

@@ -303,7 +303,7 @@ public class FlowRunner extends EventHandler implements Runnable {
 		String source = node.getJobPropsSource();
 		String propsSource = node.getPropsSource();
 
-		Props parentProps = propsSource == null ? null : sharedProps
+		Props parentProps = propsSource == null ? flow.getGlobalProps() : sharedProps
 				.get(propsSource);
 
 		// We add the previous job output and put into this props.
@@ -343,6 +343,11 @@ public class FlowRunner extends EventHandler implements Runnable {
 				Props inherits = sharedProps.get(inherit);
 
 				props.setParent(inherits);
+			}
+			else {
+				String source = fprops.getSource();
+				Props props = sharedProps.get(source);
+				props.setParent(flow.getGlobalProps());
 			}
 		}
 	}

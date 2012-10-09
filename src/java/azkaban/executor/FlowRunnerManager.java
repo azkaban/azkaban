@@ -54,7 +54,9 @@ public class FlowRunnerManager {
 	private String clientHostname;
 	private String clientPortNumber;
 	
-	public FlowRunnerManager(Props props, Mailman mailer) {
+	private Props globalProps;
+	
+	public FlowRunnerManager(Props props, Props globalProps, Mailman mailer) {
 		this.mailer = mailer;
 //		this.defaultFailureEmail = props.getString("job.failure.email");
 //		this.defaultSuccessEmail = props.getString("job.success.email");
@@ -78,7 +80,8 @@ public class FlowRunnerManager {
 		File dir = new File(path);
 		ExecutableFlow flow = ExecutableFlowLoader.loadExecutableFlowFromDir(dir);
 		flow.setExecutionPath(path);
-
+		flow.setGlobalProps(globalProps);
+		
 		FlowRunner runner = new FlowRunner(flow);
 		runningFlows.put(id, runner);
 		runner.addListener(eventListener);

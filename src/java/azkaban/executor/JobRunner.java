@@ -34,7 +34,7 @@ public class JobRunner extends EventHandler implements Runnable {
 	private ExecutableNode node;
 	private File workingDir;
 	
-	private Logger logger;
+	private Logger logger = null;
 	private Layout loggerLayout = DEFAULT_LAYOUT;
 	private Appender jobAppender;
 	
@@ -45,10 +45,7 @@ public class JobRunner extends EventHandler implements Runnable {
 	public JobRunner(ExecutableNode node, Props props, File workingDir) {
 		this.props = props;
 		this.node = node;
-		this.node.setStatus(Status.WAITING);
 		this.workingDir = workingDir;
-
-		createLogger();
 	}
 
 	public ExecutableNode getNode() {
@@ -77,34 +74,40 @@ public class JobRunner extends EventHandler implements Runnable {
 	}
 
 	private void closeLogger() {
-		logger.removeAppender(jobAppender);
-		jobAppender.close();
+		if (jobAppender != null) {
+			logger.removeAppender(jobAppender);
+			jobAppender.close();
+		}
 	}
 	
 	@Override
 	public void run() {
 		if (node.getStatus() == Status.DISABLED) {
+			node.setStatus(Status.SKIPPED);
 			this.fireEventListeners(Event.create(this, Type.JOB_SUCCEEDED));
 			return;
 		} else if (node.getStatus() == Status.KILLED) {
 			this.fireEventListeners(Event.create(this, Type.JOB_KILLED));
 			return;
 		}
+		
+		createLogger();
+		this.node.setStatus(Status.WAITING);
 		node.setStartTime(System.currentTimeMillis());
-		logger.info("Starting job " + node.getId() + " at " + node.getStartTime());
+		logInfo("Starting job " + node.getId() + " at " + node.getStartTime());
 		node.setStatus(Status.RUNNING);
 		this.fireEventListeners(Event.create(this, Type.JOB_STARTED));
 		
 		boolean succeeded = true;
-		synchronized(this) {
-			try {
-				wait(5000);
-			}
-			catch (InterruptedException e) {
-				logger.info("Job cancelled.");
-				succeeded = false;
-			}
-		}
+//		synchronized(this) {
+//			try {
+//				wait(5000);
+//			}
+//			catch (InterruptedException e) {
+//				logger.info("Job cancelled.");
+//				succeeded = false;
+//			}
+//		}
 
 
 		// Run Job
@@ -113,14 +116,14 @@ public class JobRunner extends EventHandler implements Runnable {
 		props.put(AbstractProcessJob.WORKING_DIR, workingDir.getAbsolutePath());
 		JobWrappingFactory factory  = JobWrappingFactory.getJobWrappingFactory();
         job = factory.buildJobExecutor(props, logger);
-//
-//        try {
-//                job.run();
-//        } catch (Exception e) {
-//                succeeded = false;
-//                //logger.error("job run failed!");
-//                e.printStackTrace();
-//        }
+
+        try {
+                job.run();
+        } catch (Exception e) {
+                succeeded = false;
+                logError("Job run failed!");
+                e.printStackTrace();
+        }
 		
 		node.setEndTime(System.currentTimeMillis());
 		if (succeeded) {
@@ -133,21 +136,21 @@ public class JobRunner extends EventHandler implements Runnable {
 			node.setStatus(Status.FAILED);
 			this.fireEventListeners(Event.create(this, Type.JOB_FAILED));
 		}
-		logger.info("Finishing job " + node.getId() + " at " + node.getEndTime());
+		logInfo("Finishing job " + node.getId() + " at " + node.getEndTime());
 		closeLogger();
 	}
 
 	public synchronized void cancel() {
 		// Cancel code here
 		if(job == null) {
-            logger.error("Job doesn't exisit!");
+			logError("Job doesn't exisit!");
             return;
 		}
 
 		try {
             job.cancel();
 		} catch (Exception e) {
-            logger.error("Failed trying to cancel job!");
+			logError("Failed trying to cancel job!");
             e.printStackTrace();
 		}
 
@@ -170,4 +173,17 @@ public class JobRunner extends EventHandler implements Runnable {
 		emails = this.props.getStringList(EMAILLIST);
 		return emails;
 	}
+	
+	private void logError(String message) {
+		if (logger != null) {
+			logger.error(message);
+		}
+	}
+	
+	private void logInfo(String message) {
+		if (logger != null) {
+			logger.info(message);
+		}
+	}
+	
 }
