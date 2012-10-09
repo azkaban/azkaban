@@ -419,6 +419,7 @@ public class FlowRunner extends EventHandler implements Runnable {
 		switch (failedOptions) {
 		// We finish running current jobs and then fail. Do not accept new jobs.
 		case FINISH_RUNNING_JOBS:
+			flow.setStatus(Status.FAILED_FINISHING);
 			runningJobs.clear();
 			executorService.shutdown();
 			break;
@@ -459,6 +460,7 @@ public class FlowRunner extends EventHandler implements Runnable {
 				outputProps.put(jobID, props);
 				flowRunner.handleSucceededJob(runner.getNode());
 			} else if (event.getType() == Type.JOB_FAILED) {
+
 				logger.info("Job Failed " + jobID + " in "
 						+ (node.getEndTime() - node.getStartTime()) + " ms");
 				emailAddress.addAll(runner.getNotifyEmails());
