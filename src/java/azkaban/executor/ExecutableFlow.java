@@ -22,7 +22,7 @@ public class ExecutableFlow {
 	private long lastCheckedTime;
 	
 	private HashMap<String, FlowProps> flowProps = new HashMap<String, FlowProps>();
-	private HashMap<String, ExecutableNode> executableNodes = new HashMap<String, ExecutableNode>();;
+	private HashMap<String, ExecutableNode> executableNodes = new HashMap<String, ExecutableNode>();
 	private ArrayList<String> startNodes;
 	private ArrayList<String> endNodes;
 	
@@ -452,8 +452,7 @@ public class ExecutableFlow {
 			this.flow = flow;
 		}
 		
-		private ExecutableNode() {
-			
+		public ExecutableNode() {
 		}
 		
 		public String getId() {

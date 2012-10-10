@@ -95,7 +95,7 @@ public class JavaJobTest
 //    
 //    EasyMock.replay(descriptor);
     
-    job = new JavaJob(props, log);
+    job = new JavaJob("jestJava", props, log);
     
 //    EasyMock.verify(descriptor);
   }
@@ -104,6 +104,18 @@ public class JavaJobTest
   public void testJavaJob() {
     /* initialize the Props */
     props.put(JavaJob.JOB_CLASS, "azkaban.test.jobExecutor.WordCountLocal");
+    props.put(ProcessJob.WORKING_DIR, ".");
+    props.put("input", inputFile);
+    props.put("output", outputFile);
+    props.put("classpath",  classPaths);
+    job.run();
+  }
+  
+  @Test
+  public void testJavaJobHashmap() {
+    /* initialize the Props */
+    props.put(JavaJob.JOB_CLASS, "azkaban.test.executor.SleepJavaJob");
+    props.put("seconds", 1);
     props.put(ProcessJob.WORKING_DIR, ".");
     props.put("input", inputFile);
     props.put("output", outputFile);

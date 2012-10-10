@@ -21,23 +21,17 @@ import com.google.common.collect.ImmutableSet;
 
 import azkaban.utils.Props;
 
-
-
 public class PythonJob extends LongArgJob {
-    
-    private static final String PYTHON_BINARY_KEY = "python";
-    private static final String SCRIPT_KEY = "script";
 
+	private static final String PYTHON_BINARY_KEY = "python";
+	private static final String SCRIPT_KEY = "script";
 
-    public PythonJob(Props props, Logger log) {
-        super(new String[]{props.getString(PYTHON_BINARY_KEY, "python"), 
-                           props.getString(SCRIPT_KEY)}, 
-              props,
-              log, 
-              ImmutableSet.of(PYTHON_BINARY_KEY, SCRIPT_KEY, JOB_TYPE));
-    }
+	public PythonJob(String jobid, Props props, Logger log) {
+		super(jobid, 
+				new String[] { props.getString(PYTHON_BINARY_KEY, "python"),props.getString(SCRIPT_KEY) }, 
+				props, 
+				log, 
+				ImmutableSet.of(PYTHON_BINARY_KEY, SCRIPT_KEY, JOB_TYPE));
+	}
 
-
-
-    
 }

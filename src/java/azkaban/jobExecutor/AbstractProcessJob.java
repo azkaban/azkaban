@@ -59,8 +59,8 @@ public abstract class AbstractProcessJob extends AbstractJob {
 
     private volatile Props generatedPropeties;
 
-    protected AbstractProcessJob(final Props props, final Logger log) {
-        super(props.getString(JOB_ID, "unkownjob"), log);
+    protected AbstractProcessJob(String jobid, final Props props, final Logger log) {
+        super(jobid, log);
 
         _props = props;
         _jobPath = props.getString(JOB_FULLPATH, new File(".").getAbsolutePath());

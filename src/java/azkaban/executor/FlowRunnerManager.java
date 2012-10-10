@@ -4,22 +4,14 @@ import java.io.File;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.Vector;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
 
-import javax.servlet.ServletRequest;
-
 import org.apache.log4j.Logger;
-import org.joda.time.Duration;
-import org.joda.time.format.PeriodFormat;
 
 import azkaban.utils.Utils;
 import azkaban.executor.ExecutableFlow.Status;
@@ -48,8 +40,6 @@ public class FlowRunnerManager {
 	private FlowRunnerEventListener eventListener;
 
 	private Mailman mailer;
-	//private String defaultFailureEmail;
-	//private String defaultSuccessEmail;
 	private String senderAddress;
 	private String clientHostname;
 	private String clientPortNumber;
@@ -58,8 +48,7 @@ public class FlowRunnerManager {
 	
 	public FlowRunnerManager(Props props, Props globalProps, Mailman mailer) {
 		this.mailer = mailer;
-//		this.defaultFailureEmail = props.getString("job.failure.email");
-//		this.defaultSuccessEmail = props.getString("job.success.email");
+		
 		this.senderAddress = props.getString("mail.sender");
 		this.clientHostname = props.getString("jetty.hostname", "localhost");
 		this.clientPortNumber = Utils.nonNull(props.getString("jetty.ssl.port"));
@@ -200,7 +189,7 @@ public class FlowRunnerManager {
      */
     private void sendErrorEmail(FlowRunner runner) {
     	ExecutableFlow flow = runner.getFlow();
-    	List<String> emailList = new ArrayList<String>(runner.getEmails());
+    	List<String> emailList = flow.getFailureEmails();
         if(emailList != null && !emailList.isEmpty() && mailer != null) {
         	
         	
@@ -231,7 +220,8 @@ public class FlowRunnerManager {
     private void sendSuccessEmail(FlowRunner runner) {
     	
     	ExecutableFlow flow = runner.getFlow();
-    	List<String> emailList = new ArrayList<String>(runner.getEmails());
+
+    	List<String> emailList = flow.getSuccessEmails();
         
         if(emailList != null && !emailList.isEmpty() && mailer != null) {
             try {

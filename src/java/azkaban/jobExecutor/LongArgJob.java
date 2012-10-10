@@ -40,13 +40,13 @@ public abstract class LongArgJob extends AbstractProcessJob {
     private final AzkabanProcessBuilder builder;
     private volatile AzkabanProcess process;
 
-    public LongArgJob(String[] command, Props prop, Logger log) {
-        this(command, prop, log, new HashSet<String>(0));
+    public LongArgJob(String jobid, String[] command, Props prop, Logger log) {
+        this(jobid, command, prop, log, new HashSet<String>(0));
     }
     
-    public LongArgJob(String[] command, Props prop, Logger log, Set<String> suppressedKeys) {
+    public LongArgJob(String jobid, String[] command, Props prop, Logger log, Set<String> suppressedKeys) {
         //super(command, desc);
-         super(prop, log);
+         super(jobid, prop, log);
         //String cwd = descriptor.getProps().getString(WORKING_DIR, new File(descriptor.getFullPath()).getParent());
        
         this.builder = new AzkabanProcessBuilder(command).

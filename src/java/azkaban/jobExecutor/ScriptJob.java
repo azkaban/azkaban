@@ -22,25 +22,24 @@ import com.google.common.collect.ImmutableSet;
 import azkaban.utils.Props;
 
 /**
- * A script job issues a command of the form
- *    [EXECUTABLE] [SCRIPT] --key1 val1 ... --key2 val2
- *   executable -- the interpretor command to execute
- *   script -- the script to pass in (requried)
+ * A script job issues a command of the form [EXECUTABLE] [SCRIPT] --key1 val1
+ * ... --key2 val2 executable -- the interpretor command to execute script --
+ * the script to pass in (requried)
  * 
  * @author jkreps
- *
+ * 
  */
 public class ScriptJob extends LongArgJob {
 
-    private static final String DEFAULT_EXECUTABLE_KEY = "executable";
-    private static final String SCRIPT_KEY = "script";
-    
-    public ScriptJob(Props props, Logger log) {
-        super(new String[] {props.getString(DEFAULT_EXECUTABLE_KEY), props.getString(SCRIPT_KEY)}, 
-              props, 
-              log, 
-              ImmutableSet.of(DEFAULT_EXECUTABLE_KEY, SCRIPT_KEY, JOB_TYPE));
-    }
- 
+	private static final String DEFAULT_EXECUTABLE_KEY = "executable";
+	private static final String SCRIPT_KEY = "script";
+
+	public ScriptJob(String jobid, Props props, Logger log) {
+		super(jobid, 
+				new String[] { props.getString(DEFAULT_EXECUTABLE_KEY),props.getString(SCRIPT_KEY) }, 
+				props, 
+				log, 
+				ImmutableSet.of(DEFAULT_EXECUTABLE_KEY, SCRIPT_KEY, JOB_TYPE));
+	}
 
 }

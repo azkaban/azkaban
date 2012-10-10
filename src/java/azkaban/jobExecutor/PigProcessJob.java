@@ -46,8 +46,8 @@ public class PigProcessJob extends JavaProcessJob {
   public static final String PIG_JAVA_CLASS = "org.apache.pig.Main";
   public static final String SECURE_PIG_WRAPPER = "azkaban.jobExecutor.SecurePigWrapper";
 
-	public PigProcessJob(Props props, Logger log) {
-		super(props, log);
+	public PigProcessJob(String jobid, Props props, Logger log) {
+		super(jobid, props, log);
 	}
 
 	@Override
@@ -160,20 +160,20 @@ public class PigProcessJob extends JavaProcessJob {
 	
 	
 	private static String getSourcePathFromClass(Class containedClass) {
-	    File file = new File(containedClass.getProtectionDomain().getCodeSource().getLocation().getPath());
+		File file = new File(containedClass.getProtectionDomain().getCodeSource().getLocation().getPath());
 
-	    if (!file.isDirectory() && file.getName().endsWith(".class")) {
-	        String name = containedClass.getName();
-	        StringTokenizer tokenizer = new StringTokenizer(name, ".");
-	        while(tokenizer.hasMoreTokens()) {
-	            tokenizer.nextElement();
-	            file = file.getParentFile();
-	        }
-	            
-	        return file.getPath();  
-	    }
-	    else {
-	        return containedClass.getProtectionDomain().getCodeSource().getLocation().getPath();
-	    }
+		if (!file.isDirectory() && file.getName().endsWith(".class")) {
+			String name = containedClass.getName();
+			StringTokenizer tokenizer = new StringTokenizer(name, ".");
+			while (tokenizer.hasMoreTokens()) {
+				tokenizer.nextElement();
+				file = file.getParentFile();
+			}
+
+			return file.getPath();
+		} else {
+			return containedClass.getProtectionDomain().getCodeSource()
+					.getLocation().getPath();
+		}
 	}
 }

@@ -21,20 +21,17 @@ import azkaban.utils.Props;
 
 import com.google.common.collect.ImmutableSet;
 
-
 public class RubyJob extends LongArgJob {
 
-    private static final String RUBY_BINARY_KEY = "ruby";
-    private static final String SCRIPT_KEY = "script";
+	private static final String RUBY_BINARY_KEY = "ruby";
+	private static final String SCRIPT_KEY = "script";
 
-    public RubyJob(Props props, Logger log) {
-        super(new String[]{props.getString(RUBY_BINARY_KEY, "ruby"), 
-                           props.getString(SCRIPT_KEY)}, 
-              props, 
-              log, 
-              ImmutableSet.of(RUBY_BINARY_KEY, SCRIPT_KEY, JOB_TYPE));
-    }
+	public RubyJob(String jobid, Props props, Logger log) {
+		super(jobid, 
+				new String[] { props.getString(RUBY_BINARY_KEY, "ruby"), props.getString(SCRIPT_KEY) }, 
+				props, 
+				log, 
+				ImmutableSet.of(RUBY_BINARY_KEY, SCRIPT_KEY, JOB_TYPE));
+	}
 
-   
-    
 }

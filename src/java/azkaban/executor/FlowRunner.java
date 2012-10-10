@@ -31,6 +31,7 @@ import azkaban.executor.event.Event.Type;
 import azkaban.executor.event.EventHandler;
 import azkaban.executor.event.EventListener;
 import azkaban.flow.FlowProps;
+import azkaban.jobExecutor.utils.JobWrappingFactory;
 import azkaban.utils.ExecutableFlowLoader;
 import azkaban.utils.Props;
 
@@ -61,7 +62,6 @@ public class FlowRunner extends EventHandler implements Runnable {
 
 	private Thread currentThread;
 	
-	private Set<String> emailAddress;
 	private List<String> jobsFinished;
 
 	public enum FailedFlowOptions {
@@ -69,14 +69,13 @@ public class FlowRunner extends EventHandler implements Runnable {
 	}
 
 	private FailedFlowOptions failedOptions = FailedFlowOptions.FINISH_RUNNING_JOBS;
-
+	
 	public FlowRunner(ExecutableFlow flow) {
 		this.flow = flow;
 		this.basePath = new File(flow.getExecutionPath());
 		this.executorService = Executors.newFixedThreadPool(numThreads);
 		this.runningJobs = new ConcurrentHashMap<String, JobRunner>();
 		this.listener = new JobRunnerEventListener(this);
-		this.emailAddress = new HashSet<String>();
 		this.jobsFinished = new ArrayList<String>();
 
 		createLogger();
@@ -84,10 +83,6 @@ public class FlowRunner extends EventHandler implements Runnable {
 
 	public ExecutableFlow getFlow() {
 		return flow;
-	}
-
-	public Set<String> getEmails() {
-		return emailAddress;
 	}
 	
 	public List<String> getJobsFinished() {
@@ -459,7 +454,7 @@ public class FlowRunner extends EventHandler implements Runnable {
 			if (event.getType() == Type.JOB_SUCCEEDED) {
 				logger.info("Job Succeeded " + jobID + " in "
 						+ (node.getEndTime() - node.getStartTime()) + " ms");
-				emailAddress.addAll(runner.getNotifyEmails());
+
 				jobsFinished.add(jobID);
 				Props props = runner.getOutputProps();
 				outputProps.put(jobID, props);
@@ -468,7 +463,7 @@ public class FlowRunner extends EventHandler implements Runnable {
 
 				logger.info("Job Failed " + jobID + " in "
 						+ (node.getEndTime() - node.getStartTime()) + " ms");
-				emailAddress.addAll(runner.getNotifyEmails());
+
 				jobsFinished.add(jobID);
 				logger.info(jobID + " FAILED");
 				flowRunner.handleFailedJob(runner.getNode());

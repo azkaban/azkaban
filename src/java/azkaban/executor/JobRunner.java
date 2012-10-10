@@ -3,7 +3,6 @@ package azkaban.executor;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 
 import org.apache.log4j.Appender;
@@ -11,7 +10,6 @@ import org.apache.log4j.FileAppender;
 import org.apache.log4j.Layout;
 import org.apache.log4j.Logger;
 import org.apache.log4j.PatternLayout;
-
 
 import azkaban.executor.ExecutableFlow.ExecutableNode;
 import azkaban.executor.ExecutableFlow.Status;
@@ -26,19 +24,19 @@ import azkaban.utils.Props;
 public class JobRunner extends EventHandler implements Runnable {
 	private static final Layout DEFAULT_LAYOUT = new PatternLayout(
 			"%d{dd-MM-yyyy HH:mm:ss z} %c{1} %p - %m\n");
-	
-	private static final String EMAILLIST = "notify.emails";
-	
+
 	private Props props;
 	private Props outputProps;
 	private ExecutableNode node;
 	private File workingDir;
-	
+
 	private Logger logger = null;
 	private Layout loggerLayout = DEFAULT_LAYOUT;
 	private Appender jobAppender;
+	private File logFile;
 	
 	private Job job;
+	private String executionId = null;
 	
 	private static final Object logCreatorLock = new Object();
 	
@@ -46,23 +44,35 @@ public class JobRunner extends EventHandler implements Runnable {
 		this.props = props;
 		this.node = node;
 		this.workingDir = workingDir;
+		this.executionId = node.getFlow().getExecutionId();
 	}
 
+	public JobRunner(String executionId, ExecutableNode node, Props props, File workingDir) {
+		this.props = props;
+		this.node = node;
+		this.workingDir = workingDir;
+		this.executionId = executionId;
+	}
+	
 	public ExecutableNode getNode() {
 		return node;
 	}
-
+	
+	public String getLogFilePath() {
+		return logFile == null ? null : logFile.getPath();
+	}
+	
 	private void createLogger() {
 		// Create logger
-		synchronized(logCreatorLock) {
-			String loggerName = System.currentTimeMillis() + "." + node.getFlow().getExecutionId() + "." + node.getId();
+		synchronized (logCreatorLock) {
+			String loggerName = System.currentTimeMillis() + "." + executionId + "." + node.getId();
 			logger = Logger.getLogger(loggerName);
-	
+
 			// Create file appender
-			String logName = "_job." + node.getFlow().getExecutionId() + "." + node.getId() + ".log";
-			File logFile = new File(workingDir, logName);
+			String logName = "_job." + executionId + "." + node.getId() + ".log";
+			logFile = new File(workingDir, logName);
 			String absolutePath = logFile.getAbsolutePath();
-	
+
 			jobAppender = null;
 			try {
 				jobAppender = new FileAppender(loggerLayout, absolutePath, false);
@@ -79,52 +89,41 @@ public class JobRunner extends EventHandler implements Runnable {
 			jobAppender.close();
 		}
 	}
-	
+
 	@Override
 	public void run() {
+		node.setStartTime(System.currentTimeMillis());
 		if (node.getStatus() == Status.DISABLED) {
 			node.setStatus(Status.SKIPPED);
+			node.setEndTime(System.currentTimeMillis());
 			this.fireEventListeners(Event.create(this, Type.JOB_SUCCEEDED));
 			return;
 		} else if (node.getStatus() == Status.KILLED) {
+			node.setEndTime(System.currentTimeMillis());
 			this.fireEventListeners(Event.create(this, Type.JOB_KILLED));
 			return;
 		}
-		
+
 		createLogger();
 		this.node.setStatus(Status.WAITING);
-		node.setStartTime(System.currentTimeMillis());
+
 		logInfo("Starting job " + node.getId() + " at " + node.getStartTime());
 		node.setStatus(Status.RUNNING);
 		this.fireEventListeners(Event.create(this, Type.JOB_STARTED));
-		
+
 		boolean succeeded = true;
-//		synchronized(this) {
-//			try {
-//				wait(5000);
-//			}
-//			catch (InterruptedException e) {
-//				logger.info("Job cancelled.");
-//				succeeded = false;
-//			}
-//		}
-
-
-		// Run Job
-		//boolean succeeded = true;
 
 		props.put(AbstractProcessJob.WORKING_DIR, workingDir.getAbsolutePath());
-		JobWrappingFactory factory  = JobWrappingFactory.getJobWrappingFactory();
-        job = factory.buildJobExecutor(props, logger);
+		job = JobWrappingFactory.getJobWrappingFactory().buildJobExecutor(node.getId(), props, logger);
 
-        try {
-                job.run();
-        } catch (Exception e) {
-                succeeded = false;
-                logError("Job run failed!");
-                e.printStackTrace();
-        }
-		
+		try {
+			job.run();
+		} catch (Throwable e) {
+			succeeded = false;
+			logError("Job run failed!");
+			e.printStackTrace();
+		}
+
 		node.setEndTime(System.currentTimeMillis());
 		if (succeeded) {
 			node.setStatus(Status.SUCCEEDED);
@@ -142,21 +141,21 @@ public class JobRunner extends EventHandler implements Runnable {
 
 	public synchronized void cancel() {
 		// Cancel code here
-		if(job == null) {
-			logError("Job doesn't exisit!");
-            return;
+		if (job == null) {
+			logError("Job doesn't exist!");
+			return;
 		}
 
 		try {
-            job.cancel();
+			job.cancel();
 		} catch (Exception e) {
 			logError("Failed trying to cancel job!");
-            e.printStackTrace();
+			e.printStackTrace();
 		}
 
 		// will just interrupt, I guess, until the code is finished.
 		this.notifyAll();
-		
+
 		node.setStatus(Status.KILLED);
 	}
 
@@ -168,22 +167,16 @@ public class JobRunner extends EventHandler implements Runnable {
 		return outputProps;
 	}
 
-	public List<String> getNotifyEmails() {
-		List<String> emails = new ArrayList<String>();
-		emails = this.props.getStringList(EMAILLIST);
-		return emails;
-	}
-	
 	private void logError(String message) {
 		if (logger != null) {
 			logger.error(message);
 		}
 	}
-	
+
 	private void logInfo(String message) {
 		if (logger != null) {
 			logger.info(message);
 		}
 	}
-	
+
 }

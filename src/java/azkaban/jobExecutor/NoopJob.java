@@ -22,43 +22,38 @@ import azkaban.utils.Props;
 /**
  *
  */
-public class NoopJob implements Job
-{
-    public NoopJob(Props props, Logger log)
-    {
-        
-    }
+public class NoopJob implements Job {
+	private String jobId;
 
-    @Override
-    public String getId()
-    {
-        return "Azkaban!! -- " + getClass().getName();
-    }
+	public NoopJob(String jobid, Props props, Logger log) {
+		this.jobId = jobid;
+	}
 
-    @Override
-    public void run() throws Exception
-    {
-    }
+	@Override
+	public String getId() {
+		return this.jobId;
+	}
 
-    @Override
-    public void cancel() throws Exception
-    {
-    }
+	@Override
+	public void run() throws Exception {
+	}
 
-    @Override
-    public double getProgress() throws Exception
-    {
-        return 0;
-    }
+	@Override
+	public void cancel() throws Exception {
+	}
 
-    @Override
-    public Props getJobGeneratedProperties()
-    {
-        return new Props();
-    }
+	@Override
+	public double getProgress() throws Exception {
+		return 0;
+	}
 
-    @Override
-    public boolean isCanceled() {
-        return false;
-    }
+	@Override
+	public Props getJobGeneratedProperties() {
+		return new Props();
+	}
+
+	@Override
+	public boolean isCanceled() {
+		return false;
+	}
 }

@@ -28,7 +28,6 @@ import azkaban.jobExecutor.ScriptJob;
 import azkaban.utils.Props;
 import azkaban.utils.Utils;
 import azkaban.jobExecutor.utils.JobExecutionException;
-import com.google.common.base.Function;
 import com.google.common.collect.ImmutableMap;
 
 import java.util.Map;
@@ -42,8 +41,7 @@ public class JobWrappingFactory
     //private String _defaultType;
     private Map<String, Class<? extends Job>> _jobToClass;
 
-    private JobWrappingFactory(final Map<String, Class<? extends Job>> jobTypeToClassMap
-    )
+    protected JobWrappingFactory(final Map<String, Class<? extends Job>> jobTypeToClassMap)
     {
         //this._defaultType = defaultType;
         this._jobToClass = jobTypeToClassMap;
@@ -71,7 +69,7 @@ public class JobWrappingFactory
     	_jobToClass = newJobExecutors;
     }
     
-    public Job buildJobExecutor(Props props, Logger logger)
+    public Job buildJobExecutor(String jobId, Props props, Logger logger)
     {
       
       Job job;
@@ -93,7 +91,7 @@ public class JobWrappingFactory
                     ));
         }
         
-        job = (Job)Utils.callConstructor(executorClass, props, logger);
+        job = (Job)Utils.callConstructor(executorClass, jobId, props, logger);
 
       }
       catch (Exception e) {

@@ -36,15 +36,15 @@ public class JavaProcessJob extends ProcessJob {
 	public static final String MAX_MEMORY_SIZE = "Xmx";
 	public static final String MAIN_ARGS = "main.args";
 	public static final String JVM_PARAMS = "jvm.args";
-    public static final String GLOBAL_JVM_PARAMS = "global.jvm.args";
-    
+	public static final String GLOBAL_JVM_PARAMS = "global.jvm.args";
+
 	public static final String DEFAULT_INITIAL_MEMORY_SIZE = "64M";
 	public static final String DEFAULT_MAX_MEMORY_SIZE = "256M";
 
 	public static String JAVA_COMMAND = "java";
 
-	public JavaProcessJob(Props prop, Logger logger) {
-		super(prop, logger);
+	public JavaProcessJob(String jobid, Props prop, Logger logger) {
+		super(jobid, prop, logger);
 	}
 
 	@Override
@@ -98,8 +98,8 @@ public class JavaProcessJob extends ProcessJob {
 			
 			for (File file : parent.listFiles()) {
 				if (file.getName().endsWith(".jar")) {
-	                //log.info("Adding to classpath:" + file.getName());
-	                classpathList.add(file.getName());
+					// log.info("Adding to classpath:" + file.getName());
+					classpathList.add(file.getName());
 				}
 			}
 		}
@@ -123,15 +123,15 @@ public class JavaProcessJob extends ProcessJob {
 		return getProps().getString(MAIN_ARGS, "");
 	}
 
-    protected String getJVMArguments() {
-        String globalJVMArgs = getProps().getString(GLOBAL_JVM_PARAMS, null);
-        
-        if (globalJVMArgs == null) {
-            return getProps().getString(JVM_PARAMS, "");
-        }
+	protected String getJVMArguments() {
+		String globalJVMArgs = getProps().getString(GLOBAL_JVM_PARAMS, null);
 
-        return globalJVMArgs + " " + getProps().getString(JVM_PARAMS, "");
-    }
+		if (globalJVMArgs == null) {
+			return getProps().getString(JVM_PARAMS, "");
+		}
+
+		return globalJVMArgs + " " + getProps().getString(JVM_PARAMS, "");
+	}
 
 	protected String createArguments(List<String> arguments, String separator) {
 		if (arguments != null && arguments.size() > 0) {

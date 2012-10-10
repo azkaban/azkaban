@@ -42,8 +42,8 @@ public class JavaJob extends JavaProcessJob {
 	private Object _javaObject = null;
 	private String props;
 
-	public JavaJob(Props props, Logger log) {
-		super(props, log);
+	public JavaJob(String jobid, Props props, Logger log) {
+		super(jobid, props, log);
 	}
 
 	@Override

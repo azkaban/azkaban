@@ -35,62 +35,66 @@ import static azkaban.jobExecutor.utils.SecurityUtils.getProxiedUser;
 
 public class SecurePigWrapper {
 
-  public static final String OBTAIN_BINARY_TOKEN = "obtain.binary.token";
-  public static final String MAPREDUCE_JOB_CREDENTIALS_BINARY = "mapreduce.job.credentials.binary";
+	public static final String OBTAIN_BINARY_TOKEN = "obtain.binary.token";
+	public static final String MAPREDUCE_JOB_CREDENTIALS_BINARY = "mapreduce.job.credentials.binary";
 
-  public static void main(final String[] args) throws IOException, InterruptedException {
-    final Logger logger = Logger.getRootLogger();
-    final Properties p = System.getProperties();
-    final Configuration conf = new Configuration();
+	public static void main(final String[] args) throws IOException, InterruptedException {
+		final Logger logger = Logger.getRootLogger();
+		final Properties p = System.getProperties();
+		final Configuration conf = new Configuration();
 
-    getProxiedUser(p, logger, conf).doAs(new PrivilegedExceptionAction<Void>() {
-      @Override
-      public Void run() throws Exception {
-        prefetchToken();
-        org.apache.pig.Main.main(args);
-        return null;
-      }
+		getProxiedUser(p, logger, conf).doAs(
+				new PrivilegedExceptionAction<Void>() {
+					@Override
+					public Void run() throws Exception {
+						prefetchToken();
+						org.apache.pig.Main.main(args);
+						return null;
+					}
 
-      // For Pig jobs that need to do extra communication with the JobTracker,
-      // it's necessary to pre-fetch a token and include it in the credentials
-      // cache
-      private void prefetchToken() throws InterruptedException, IOException {
-        String shouldPrefetch = p.getProperty(OBTAIN_BINARY_TOKEN);
-        if(shouldPrefetch != null && shouldPrefetch.equals("true") ) {
-          logger.info("Pre-fetching token");
-          Job job = new Job(conf, "totally phony, extremely fake, not real job");
+					// For Pig jobs that need to do extra communication with the
+					// JobTracker,
+					// it's necessary to pre-fetch a token and include it in the
+					// credentials
+					// cache
+					private void prefetchToken() throws InterruptedException,
+							IOException {
+						String shouldPrefetch = p.getProperty(OBTAIN_BINARY_TOKEN);
+						if (shouldPrefetch != null && shouldPrefetch.equals("true")) {
+							logger.info("Pre-fetching token");
+							Job job = new Job(conf,"totally phony, extremely fake, not real job");
 
-          JobConf jc = new JobConf(conf);
-          JobClient jobClient = new JobClient(jc);
-          logger.info("Pre-fetching: Got new JobClient: " + jc);
-          Token<DelegationTokenIdentifier> mrdt = jobClient.getDelegationToken(new Text("hi"));
-          job.getCredentials().addToken(new Text("howdy"), mrdt);
+							JobConf jc = new JobConf(conf);
+							JobClient jobClient = new JobClient(jc);
+							logger.info("Pre-fetching: Got new JobClient: " + jc);
+							Token<DelegationTokenIdentifier> mrdt = jobClient.getDelegationToken(new Text("hi"));
+							job.getCredentials().addToken(new Text("howdy"), mrdt);
 
-          File temp = File.createTempFile("mr-azkaban", ".token");
-          temp.deleteOnExit();
+							File temp = File.createTempFile("mr-azkaban", ".token");
+							temp.deleteOnExit();
 
-          FileOutputStream fos = null;
-          DataOutputStream dos = null;
-          try {
-            fos = new FileOutputStream(temp);
-            dos = new DataOutputStream(fos);
-            job.getCredentials().writeTokenStorageToStream(dos);
-          } finally {
-            if(dos != null) {
-              dos.close();
-            }
-            if(fos != null) {
-              fos.close();
-            }
-          }
-          logger.info("Setting " + MAPREDUCE_JOB_CREDENTIALS_BINARY + " to " + temp.getAbsolutePath());
-          System.setProperty(MAPREDUCE_JOB_CREDENTIALS_BINARY, temp.getAbsolutePath());
-        } else {
-          logger.info("Not pre-fetching token");
-        }
-      }
-    });
+							FileOutputStream fos = null;
+							DataOutputStream dos = null;
+							try {
+								fos = new FileOutputStream(temp);
+								dos = new DataOutputStream(fos);
+								job.getCredentials().writeTokenStorageToStream(
+										dos);
+							} finally {
+								if (dos != null) {
+									dos.close();
+								}
+								if (fos != null) {
+									fos.close();
+								}
+							}
+							logger.info("Setting " + MAPREDUCE_JOB_CREDENTIALS_BINARY + " to " + temp.getAbsolutePath());
+							System.setProperty(MAPREDUCE_JOB_CREDENTIALS_BINARY, temp.getAbsolutePath());
+						} else {
+							logger.info("Not pre-fetching token");
+						}
+					}
+				});
 
-  }
+	}
 }
-
