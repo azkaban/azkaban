@@ -20,6 +20,8 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.regex.Pattern;
+import java.util.regex.PatternSyntaxException;
 
 import net.sf.ehcache.Cache;
 import net.sf.ehcache.CacheManager;
@@ -37,6 +39,7 @@ import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.log4j.Logger;
 
 import azkaban.executor.ExecutableFlow.Status;
+import azkaban.executor.ExecutorManager.ExecutionReference;
 import azkaban.flow.Flow;
 import azkaban.utils.ExecutableFlowLoader;
 import azkaban.utils.JSONUtils;
@@ -175,16 +178,26 @@ public class ExecutorManager {
 		return execFlows;
 	}
 
-	public List<ExecutionReference> getFlowHistory(int numResults, int skip) {
+	public List<ExecutionReference> getFlowHistory(String rePattern, int numResults, int skip) {
 		ArrayList<ExecutionReference> searchFlows = new ArrayList<ExecutionReference>();
 
+		Pattern pattern;
+		try {
+			pattern = Pattern.compile(rePattern, Pattern.CASE_INSENSITIVE);
+		} catch (PatternSyntaxException e) {
+			logger.error("Bad regex pattern " + rePattern);
+			return searchFlows;
+		}
+		
 		for (ExecutableFlow flow: runningFlows.values()) {
 			if (skip > 0) {
 				skip--;
 			}
 			else {
 				ExecutionReference ref = new ExecutionReference(flow);
-				searchFlows.add(ref);
+				if(pattern.matcher(ref.getFlowId()).find() ) {
+					searchFlows.add(ref);
+				}
 				if (searchFlows.size() == numResults) {
 					Collections.sort(searchFlows);
 					return searchFlows;
@@ -220,7 +233,9 @@ public class ExecutorManager {
 				else {
 					try {
 						ExecutionReference ref = ExecutionReference.readFromDirectory(listArchivePartitions[i]);
-						searchFlows.add(ref);
+						if(pattern.matcher(ref.getFlowId()).find() ) {
+							searchFlows.add(ref);
+						}
 					} catch (IOException e) {
 						// TODO Auto-generated catch block
 						e.printStackTrace();
@@ -1010,4 +1025,6 @@ public class ExecutorManager {
 		
 		return (Long)obj;
 	}
+
+
 }
