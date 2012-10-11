@@ -101,7 +101,7 @@ public class JavaJobTest
   }
   
   @Test
-  public void testJavaJob() {
+  public void testJavaJob() throws Exception {
     /* initialize the Props */
     props.put(JavaJob.JOB_CLASS, "azkaban.test.jobExecutor.WordCountLocal");
     props.put(ProcessJob.WORKING_DIR, ".");
@@ -112,7 +112,7 @@ public class JavaJobTest
   }
   
   @Test
-  public void testJavaJobHashmap() {
+  public void testJavaJobHashmap() throws Exception {
     /* initialize the Props */
     props.put(JavaJob.JOB_CLASS, "azkaban.test.executor.SleepJavaJob");
     props.put("seconds", 1);
@@ -124,7 +124,7 @@ public class JavaJobTest
   }
   
   @Test
-  public void testFailedJavaJob() {
+  public void testFailedJavaJob() throws Exception {
     props.put(JavaJob.JOB_CLASS, "azkaban.test.jobExecutor.WordCountLocal");
     props.put(ProcessJob.WORKING_DIR, ".");
     props.put("input", errorInputFile);

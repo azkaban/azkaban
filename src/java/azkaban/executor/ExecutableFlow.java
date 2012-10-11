@@ -42,7 +42,6 @@ public class ExecutableFlow {
 	
 	private Integer pipelineLevel = null;
 	private Map<String, String> flowParameters = new HashMap<String, String>();
-	private Props globalProps;
 	
 	public enum FailureAction {
 		FINISH_CURRENTLY_RUNNING,
@@ -62,14 +61,6 @@ public class ExecutableFlow {
 		this.flowId = flow.getId();
 		
 		this.setFlow(flow);
-	}
-	
-	public void setGlobalProps(Props props) {
-		globalProps = props;
-	}
-	
-	public Props getGlobalProps() {
-		return globalProps;
 	}
 	
 	public ExecutableFlow() {

@@ -18,6 +18,13 @@ public class EventCollectorListener implements EventListener {
 		return eventList;
 	}
 	
+	public void writeAllEvents() {
+		for (Event event: eventList) {
+			System.out.print(event.getType());
+			System.out.print(",");
+		}
+	}
+	
 	public boolean checkOrdering() {
 		long time = 0;
 		for (Event event: eventList) {

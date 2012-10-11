@@ -40,7 +40,7 @@ public class ProcessJobTest
   }
   
   @Test
-  public void testOneUnixCommand() {
+  public void testOneUnixCommand() throws Exception {
     /* initialize the Props */
     props.put(ProcessJob.COMMAND, "ls -al");
     props.put(ProcessJob.WORKING_DIR, ".");
@@ -50,7 +50,7 @@ public class ProcessJobTest
   }
 
   @Test
-  public void testFailedUnixCommand() {
+  public void testFailedUnixCommand() throws Exception  {
     /* initialize the Props */
     props.put(ProcessJob.COMMAND, "xls -al");
     props.put(ProcessJob.WORKING_DIR, ".");
@@ -64,7 +64,7 @@ public class ProcessJobTest
   }
     
     @Test
-    public void testMultipleUnixCommands( ) {
+    public void testMultipleUnixCommands( ) throws Exception  {
       /* initialize the Props */
       props.put(ProcessJob.WORKING_DIR, ".");
       props.put(ProcessJob.COMMAND, "pwd");

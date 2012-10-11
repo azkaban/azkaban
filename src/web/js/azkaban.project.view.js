@@ -30,8 +30,8 @@ azkaban.ProjectView= Backbone.View.extend({
         position: ["20%",],
         containerId: 'confirm-container',
         containerCss: {
-          'height': '220px',
-          'width': '565px'
+          'height': '240px',
+          'width': '640px'
         },
         onShow: function (dialog) {
           var modal = this;

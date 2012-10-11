@@ -22,11 +22,17 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 
+import azkaban.jobExecutor.utils.process.AzkabanProcess;
+import azkaban.jobExecutor.utils.process.AzkabanProcessBuilder;
 import azkaban.utils.Props;
 
 /*
@@ -35,104 +41,65 @@ import azkaban.utils.Props;
  * @author jkreps
  * 
  */
-public class ProcessJob extends AbstractProcessJob implements Job {
+public class ProcessJob extends AbstractProcessJob {
 
 	public static final String COMMAND = "command";
-	public static final int CLEAN_UP_TIME_MS = 1000;
-
-	private volatile Process _process;
-	private volatile boolean _isComplete;
-	private volatile boolean _isCancelled;
+    private static final long KILL_TIME_MS = 5000;
+    private volatile AzkabanProcess process;
 
 	public ProcessJob(final String jobId, final Props props, final Logger log) {
 		super(jobId, props, log);
 	}
 
 	@Override
-	public void run() {
-		synchronized (this) {
-			_isCancelled = false;
-		}
+	public void run() throws Exception {
 		resolveProps();
-
-		// Sets a list of all the commands that need to be run.
 		List<String> commands = getCommandList();
+
+		long startMs = System.currentTimeMillis();
+
 		info(commands.size() + " commands to execute.");
-
 		File[] propFiles = initPropsFiles();
+		Map<String, String> envVars = getEnvironmentVariables();
 
-		// System.err.println("in process job outputFile=" +propFiles[1]);
-
-		// For each of the jobs, set up a process and run them.
 		for (String command : commands) {
-			info("Executing command: " + command);
-			String[] cmdPieces = partitionCommandLine(command);
+			AzkabanProcessBuilder builder = new AzkabanProcessBuilder(partitionCommandLine(command))
+					.setEnv(envVars)
+					.setWorkingDir(getCwd())
+					.setLogger(getLog());
 
-			ProcessBuilder builder = new ProcessBuilder(cmdPieces);
+			info("Command: " + builder.getCommandString());
+			if (builder.getEnv().size() > 0) {
+				info("Environment variables: " + builder.getEnv());
+			}
+			info("Working directory: " + builder.getWorkingDir());
 
-			builder.directory(new File(getCwd()));
-			builder.environment().putAll(getEnvironmentVariables());
+			boolean success = false;
+			this.process = builder.build();
 
 			try {
-				_process = builder.start();
-			} catch (IOException e) {
-				for (File file : propFiles) {
-					if (file != null && file.exists()) {
+				this.process.run();
+				success = true;
+			} catch (Exception e) {
+				for (File file : propFiles)
+					if (file != null && file.exists())
 						file.delete();
-					}
-				}
 				throw new RuntimeException(e);
-			}
-			LoggingGobbler outputGobbler = new LoggingGobbler(
-					new InputStreamReader(_process.getInputStream()),
-					Level.INFO);
-			LoggingGobbler errorGobbler = new LoggingGobbler(
-					new InputStreamReader(_process.getErrorStream()),
-					Level.ERROR);
-
-			int processId = getProcessId();
-			if (processId == 0) {
-				info("Spawned thread. Unknowned processId");
-			} else {
-				info("Spawned thread with processId " + processId);
-			}
-			outputGobbler.start();
-			errorGobbler.start();
-			int exitCode = -999;
-			try {
-				exitCode = _process.waitFor();
-
-				_isComplete = true;
-				if (exitCode != 0) {
-					for (File file : propFiles) {
-						if (file != null && file.exists()) {
-							file.delete();
-						}
-					}
-					throw new RuntimeException(
-							"Processes ended with exit code " + exitCode + ".");
-				}
-
-				// try to wait for everything to get logged out before exiting
-				outputGobbler.join(1000);
-				errorGobbler.join(1000);
-			} catch (InterruptedException e) {
 			} finally {
-				outputGobbler.close();
-				errorGobbler.close();
+				this.process = null;
+				info("Process completed " + (success ? "successfully" : "unsuccessfully") + " in "
+						+ ((System.currentTimeMillis() - startMs) / 1000) + " seconds.");
 			}
 		}
 
 		// Get the output properties from this job.
 		generateProperties(propFiles[1]);
 
-		for (File file : propFiles) {
-			if (file != null && file.exists()) {
+		for (File file : propFiles)
+			if (file != null && file.exists())
 				file.delete();
-			}
-		}
-
 	}
+
 
 	protected List<String> getCommandList() {
 		List<String> commands = new ArrayList<String>();
@@ -144,119 +111,24 @@ public class ProcessJob extends AbstractProcessJob implements Job {
 		return commands;
 	}
 
-	@Override
-	public void cancel() throws Exception {
-		if (_process != null) {
-			int processId = getProcessId();
-			if (processId != 0) {
-				warn("Attempting to kill the process " + processId);
-				try {
-					Runtime.getRuntime().exec("kill " + processId);
-					synchronized (this) {
-						wait(CLEAN_UP_TIME_MS);
-					}
-				} catch (InterruptedException e) {
-					// Do nothing. We don't really care.
-				}
-				if (!_isComplete) {
-					error("After "
-							+ CLEAN_UP_TIME_MS
-							+ " ms, the job hasn't terminated. Will force terminate the job.");
-				}
-			} else {
-				info("Could not get process id");
-			}
+    @Override
+    public void cancel() throws InterruptedException {
+        if(process == null)
+            throw new IllegalStateException("Not started.");
+        boolean killed = process.softKill(KILL_TIME_MS, TimeUnit.MILLISECONDS);
+        if(!killed) {
+            warn("Kill with signal TERM failed. Killing with KILL signal.");
+            process.hardKill();
+        }
+    }
 
-			if (!_isComplete) {
-				warn("Force kill the process");
-				_process.destroy();
-			}
-			synchronized (this) {
-				_isCancelled = true;
-			}
-		}
-	}
-
+    @Override
+    public double getProgress() {
+        return process != null && process.isComplete()? 1.0 : 0.0;
+    }
+    
 	public int getProcessId() {
-		int processId = 0;
-
-		try {
-			Field f = _process.getClass().getDeclaredField("pid");
-			f.setAccessible(true);
-
-			processId = f.getInt(_process);
-		} catch (Throwable e) {
-		}
-
-		return processId;
-	}
-
-	@Override
-	public double getProgress() {
-		return _isComplete ? 1.0 : 0.0;
-	}
-
-	private class LoggingGobbler extends Thread {
-
-		private final BufferedReader _inputReader;
-		private final Level _loggingLevel;
-
-		public LoggingGobbler(final InputStreamReader inputReader,
-				final Level level) {
-			_inputReader = new BufferedReader(inputReader);
-			_loggingLevel = level;
-		}
-
-		public void close() {
-			if (_inputReader != null) {
-				try {
-					_inputReader.close();
-				} catch (IOException e) {
-					error("Error cleaning up logging stream reader:", e);
-				}
-			}
-		}
-
-		@Override
-		public void run() {
-			try {
-				while (!Thread.currentThread().isInterrupted()) {
-					String line = _inputReader.readLine();
-					if (line == null) {
-						return;
-					}
-
-					logMessage(line);
-				}
-			} catch (IOException e) {
-				error("Error reading from logging stream:", e);
-			}
-		}
-
-		private void logMessage(final String message) {
-			if (message.startsWith(Level.DEBUG.toString())) {
-				String newMsg = message.substring(Level.DEBUG.toString().length());
-				getLog().debug(newMsg);
-			} else if (message.startsWith(Level.ERROR.toString())) {
-				String newMsg = message.substring(Level.ERROR.toString().length());
-				getLog().error(newMsg);
-			} else if (message.startsWith(Level.INFO.toString())) {
-				String newMsg = message.substring(Level.INFO.toString().length());
-				getLog().info(newMsg);
-			} else if (message.startsWith(Level.WARN.toString())) {
-				String newMsg = message.substring(Level.WARN.toString().length());
-				getLog().warn(newMsg);
-			} else if (message.startsWith(Level.FATAL.toString())) {
-				String newMsg = message.substring(Level.FATAL.toString().length());
-				getLog().fatal(newMsg);
-			} else if (message.startsWith(Level.TRACE.toString())) {
-				String newMsg = message.substring(Level.TRACE.toString().length());
-				getLog().trace(newMsg);
-			} else {
-				getLog().log(_loggingLevel, message);
-			}
-
-		}
+		return process.getProcessId();
 	}
 
 	@Override
@@ -331,10 +203,4 @@ public class ProcessJob extends AbstractProcessJob implements Job {
 
 		return commands.toArray(new String[commands.size()]);
 	}
-
-	@Override
-	public synchronized boolean isCanceled() {
-		return _isCancelled;
-	}
-
 }

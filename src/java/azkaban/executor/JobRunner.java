@@ -140,6 +140,7 @@ public class JobRunner extends EventHandler implements Runnable {
 	}
 
 	public synchronized void cancel() {
+		logError("Cancel has been called.");
 		// Cancel code here
 		if (job == null) {
 			logError("Job doesn't exist!");

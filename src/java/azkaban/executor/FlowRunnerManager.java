@@ -69,10 +69,10 @@ public class FlowRunnerManager {
 		File dir = new File(path);
 		ExecutableFlow flow = ExecutableFlowLoader.loadExecutableFlowFromDir(dir);
 		flow.setExecutionPath(path);
-		flow.setGlobalProps(globalProps);
 		
 		FlowRunner runner = new FlowRunner(flow);
 		runningFlows.put(id, runner);
+		runner.setGlobalProps(globalProps);
 		runner.addListener(eventListener);
 		executorService.submit(runner);
 	}

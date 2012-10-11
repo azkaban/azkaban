@@ -66,7 +66,7 @@ public abstract class LongArgJob extends AbstractProcessJob {
             info("Environment variables: " + builder.getEnv());
         info("Working directory: " + builder.getWorkingDir());
         
-       File [] propFiles = initPropsFiles( );
+       File [] propFiles = initPropsFiles();
        //System.err.println("outputfile=" + propFiles[1]);
         
         boolean success = false;
@@ -124,6 +124,4 @@ public abstract class LongArgJob extends AbstractProcessJob {
             if(!suppressed.contains(key))
                 builder.addArg("--" + key, props.get(key));
     }
-   
-
 }
