@@ -156,8 +156,9 @@ public class JobRunner extends EventHandler implements Runnable {
 
 		// will just interrupt, I guess, until the code is finished.
 		this.notifyAll();
-
-		node.setStatus(Status.KILLED);
+		if (node.getStatus() != Status.FAILED) {
+			node.setStatus(Status.KILLED);
+		}
 	}
 
 	public Status getStatus() {

@@ -28,7 +28,7 @@ public abstract class LoginAbstractAzkabanServlet extends
 
 	private static final Logger logger = Logger
 			.getLogger(LoginAbstractAzkabanServlet.class.getName());
-	private static final String SESSION_ID_NAME = "azkaban.session.id";
+	private static final String SESSION_ID_NAME = "azkaban.browser.session.id";
 
 	@Override
 	protected void doGet(HttpServletRequest req, HttpServletResponse resp)

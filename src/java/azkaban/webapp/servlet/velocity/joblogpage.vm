@@ -14,8 +14,8 @@
 			var contextURL = "${context}";
 			var currentTime = ${currentTime};
 			var timezone = "${timezone}";
-			var errorMessage = ${error_message};
-			var successMessage = ${success_message};
+			var errorMessage = "${error_message}";
+			var successMessage = "${success_message}";
 			
 			var projectName = "${projectName}";
 			var flowName = "${flowid}";

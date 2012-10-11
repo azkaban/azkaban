@@ -375,23 +375,21 @@ public class FlowRunner extends EventHandler implements Runnable {
 		currentThread.interrupt();
 	}
 
-	private void handleSucceededJob(ExecutableNode node) {
+	private void queueNextJobs(ExecutableNode node) {
 		if (this.isCancelled()) {
 			return;
 		}
 
-		// Check killed case.
 		for (String dependent : node.getOutNodes()) {
 			ExecutableNode dependentNode = flow.getExecutableNode(dependent);
-			
-			// Check all dependencies
+
 			boolean ready = true;
 			for (String dependency : dependentNode.getInNodes()) {
 				ExecutableNode dependencyNode = flow.getExecutableNode(dependency);
 				Status depStatus = dependencyNode.getStatus();
 				if (depStatus == Status.FAILED || depStatus == Status.KILLED) {
 					// We trickle failures down the graph.
-					dependencyNode.setStatus(Status.KILLED);
+					dependentNode.setStatus(Status.KILLED);
 				}
 				else if (depStatus == Status.SUCCEEDED || depStatus == Status.SKIPPED) {
 					// We do nothing here. We proceed happily.
@@ -422,8 +420,7 @@ public class FlowRunner extends EventHandler implements Runnable {
 				try {
 					runner = this.createJobRunner(dependentNode, previousOutput);
 				} catch (IOException e) {
-					logger.error("JobRunner creation failed due to "
-							+ e.getMessage());
+					logger.error("JobRunner creation failed due to " + e.getMessage());
 					dependentNode.setStatus(Status.FAILED);
 					handleFailedJob(dependentNode);
 					return;
@@ -433,8 +430,7 @@ public class FlowRunner extends EventHandler implements Runnable {
 				if (paused) {
 					dependentNode.setStatus(Status.PAUSED);
 					pausedJobsToRun.add(runner);
-					logger.info("Flow is paused so adding "
-							+ dependentNode.getId() + " to paused list.");
+					logger.info("Flow is paused so adding " + dependentNode.getId() + " to paused list.");
 				} else {
 					logger.info("Adding " + dependentNode.getId() + " to run queue.");
 					jobsToRun.add(runner);
@@ -456,6 +452,7 @@ public class FlowRunner extends EventHandler implements Runnable {
 		case FINISH_CURRENTLY_RUNNING:
 			logger.info("Failure Action: Finish up remaining running jobs.");
 			flow.setStatus(Status.FAILED_FINISHING);
+
 			runningJobs.clear();
 			executorService.shutdown();
 			
@@ -482,6 +479,7 @@ public class FlowRunner extends EventHandler implements Runnable {
 		default:
 			logger.info("Failure Action: Finishing accessible jobs.");
 			flow.setStatus(Status.FAILED_FINISHING);
+			queueNextJobs(node);
 		}
 
 		runningJobs.remove(node.getId());
@@ -499,8 +497,6 @@ public class FlowRunner extends EventHandler implements Runnable {
 			JobRunner runner = (JobRunner) event.getRunner();
 			ExecutableNode node = runner.getNode();
 			String jobID = node.getId();
-			System.out.println("Event " + jobID + " "
-					+ event.getType().toString());
 
 			// On Job success, we add the output props and then set up the next
 			// run.
@@ -532,12 +528,12 @@ public class FlowRunner extends EventHandler implements Runnable {
 				jobsFinished.add(jobID);
 				Props props = runner.getOutputProps();
 				outputProps.put(jobID, props);
-				flowRunner.handleSucceededJob(runner.getNode());
+				flowRunner.queueNextJobs(runner.getNode());
 			}
 
 			flowRunner.commitFlow();
 			if (runningJobs.isEmpty()) {
-				System.out.println("There are no more running jobs.");
+				logger.info("There are no more running jobs.");
 				flowRunner.interrupt();
 			}
 		}

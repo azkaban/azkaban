@@ -3,7 +3,6 @@ package azkaban.test.executor;
 import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
-import java.util.HashSet;
 
 import junit.framework.Assert;
 
@@ -59,7 +58,7 @@ public class FlowRunnerTest {
 		runner.addListener(eventCollector);
 		
 		Assert.assertTrue(!runner.isCancelled());
-		Assert.assertTrue(exFlow.getStatus() == Status.UNKNOWN);
+		Assert.assertTrue(exFlow.getStatus() == Status.READY);
 		runner.run();
 		Assert.assertTrue(exFlow.getStatus() == Status.SUCCEEDED);
 		Assert.assertTrue(runner.getJobsFinished().size() == exFlow.getExecutableNodes().size());
@@ -96,7 +95,7 @@ public class FlowRunnerTest {
 		runner.addListener(eventCollector);
 		
 		Assert.assertTrue(!runner.isCancelled());
-		Assert.assertTrue(exFlow.getStatus() == Status.UNKNOWN);
+		Assert.assertTrue(exFlow.getStatus() == Status.READY);
 		runner.run();
 		
 		Assert.assertTrue(exFlow.getStatus() == Status.FAILED);
@@ -133,7 +132,7 @@ public class FlowRunnerTest {
 		runner.addListener(eventCollector);
 		
 		Assert.assertTrue(!runner.isCancelled());
-		Assert.assertTrue(exFlow.getStatus() == Status.UNKNOWN);
+		Assert.assertTrue(exFlow.getStatus() == Status.READY);
 		runner.run();
 		
 		Assert.assertTrue("Expected flow " + Status.FAILED + " instead " + exFlow.getStatus(), exFlow.getStatus() == Status.FAILED);
@@ -159,6 +158,43 @@ public class FlowRunnerTest {
 		}
 	}
 	
+	@Test
+	public void exec1FailedFinishRest() throws Exception {
+		File testDir = new File("unit/executions/exectest1");
+		ExecutableFlow exFlow = prepareExecDir(testDir, "exec3");
+		exFlow.setFailureAction(FailureAction.FINISH_ALL_POSSIBLE);
+
+		EventCollectorListener eventCollector = new EventCollectorListener();
+		FlowRunner runner = new FlowRunner(exFlow);
+		runner.addListener(eventCollector);
+		
+		Assert.assertTrue(!runner.isCancelled());
+		Assert.assertTrue(exFlow.getStatus() == Status.READY);
+		runner.run();
+		
+		Assert.assertTrue("Expected flow " + Status.FAILED + " instead " + exFlow.getStatus(), exFlow.getStatus() == Status.FAILED);
+		
+		testStatus(exFlow, "job1", Status.SUCCEEDED);
+		testStatus(exFlow, "job2d", Status.FAILED);
+		testStatus(exFlow, "job3", Status.SUCCEEDED);
+		testStatus(exFlow, "job4", Status.KILLED);
+		testStatus(exFlow, "job5", Status.KILLED);
+		testStatus(exFlow, "job6", Status.KILLED);
+		testStatus(exFlow, "job7", Status.SUCCEEDED);
+		testStatus(exFlow, "job8", Status.SUCCEEDED);
+		testStatus(exFlow, "job9", Status.SUCCEEDED);
+		testStatus(exFlow, "job10", Status.KILLED);
+		
+		try {
+			eventCollector.checkEventExists(new Type[] {Type.FLOW_STARTED, Type.FLOW_FAILED_FINISHING, Type.FLOW_FINISHED});
+		}
+		catch (Exception e) {
+			System.out.println(e.getMessage());
+			eventCollector.writeAllEvents();
+			Assert.fail(e.getMessage());
+		}
+	}
+	
 	private void testStatus(ExecutableFlow flow, String name, Status status) {
 		ExecutableNode node = flow.getExecutableNode(name);
 		
@@ -171,6 +207,7 @@ public class FlowRunnerTest {
 		FileUtils.copyDirectory(execDir, workingDir);
 		
 		File jsonFlowFile = new File(workingDir, execName + ".flow");
+		@SuppressWarnings("unchecked")
 		HashMap<String, Object> flowObj = (HashMap<String, Object>) JSONUtils.parseJSONFromFile(jsonFlowFile);
 		
 		Flow flow = Flow.flowFromObject(flowObj);

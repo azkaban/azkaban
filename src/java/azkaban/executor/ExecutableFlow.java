@@ -34,7 +34,7 @@ public class ExecutableFlow {
 	private long endTime = -1;
 	
 	private int updateNumber = 0;
-	private Status flowStatus = Status.UNKNOWN;
+	private Status flowStatus = Status.READY;
 	private String submitUser;
 	private boolean submitted = false;
 	private boolean notifyOnFirstFailure = true;
