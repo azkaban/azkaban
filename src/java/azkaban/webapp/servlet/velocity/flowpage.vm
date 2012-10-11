@@ -23,19 +23,15 @@
 			var contextURL = "${context}";
 			var currentTime = ${currentTime};
 			var timezone = "${timezone}";
-			var errorMessage = "${error_message}";
-			var successMessage = "${success_message}";
+			var errorMessage = null;
+			var successMessage = null;
 			
 			var projectName = "${project.name}";
 			var flowName = "${flowid}";
 			var execId = null;
 		</script>
-		<script>
-			$(function() {
-				$( "#datepicker" ).datepicker();
-			});
-		</script>
-		<link rel="stylesheet" type="text/css" href="${context}/css/jquery.contextMenu.custom.css" /> 
+		<link rel="stylesheet" type="text/css" href="${context}/js/jqueryui/themes/custom-theme/jquery-ui.custom.css" />
+		<link rel="stylesheet" type="text/css" href="${context}/css/jquery.contextMenu.custom.css" />
 	</head>
 	<body>
 #set($current_page="all")
@@ -122,55 +118,40 @@
                         <h3>Schedule Flow</h3>
                         <div id="errorMsg" class="box-error-message">$errorMsg</div>
 
-                        <!--div class="message">
-                                <fieldset>
-                                        <dl>
-                                                <dt><label for="path">Project Name</label></dt>
-                                                <dd><input id="path" name="project" type="text" size="20" title="The project name."/></dd>
-                                                <dt>Description</dt>
-                                                <dd><textarea id="description" name="description" rows="2" cols="40"></textarea></dd>
-
-                                                <input name="action" type="hidden" value="create" />
-                                                <input name="redirect" type="hidden" value="$!context/" />
-                                        </dl>
-                                </fieldset>
-                        </div-->
-
 						<div class="box">
                                         <form id="sched-form" method="post" action="${context}/">
                                                 <div class="sched-form">
-                                                  <div>
-                                                    <!--input type="hidden" name="action" value="schedule"/-->
-                                                    Schedule to run at
-                                                    <input id="hour" type="text" size="2" value="12"/> :
-                                                    <input id="minutes" type="text" size="2" value="00"/>
-                                                    <select id="am_pm">
-                                                      <option>pm</option>
-                                                      <option>am</option>
-                                                    </select>
-                                                    <select id="timezone">
-                                                      <option>PDT</option>
-                                                      <option>UTC</option>
-                                                    </select>
-                                                    on
-                                                    <br>
-                                                    <p>Date: <input type="text" id="datepicker"></p>
-                                                    <!--input class="scheduled_date" type="text" name="date" size="10" value="$currentDate.format("dd/M/yy h:mm tt")"/-->
-                                                    and
-                                                    <br>
-                                                    <input id="is_recurring" type="checkbox" checked  />
-                                                    repeat every
-                                                    <input id="period" type="text" size="2" value="1"/>
-                                                    <select id="period_units">
-                                                      <option value="d">Days</option>
-                                                      <option value="h">Hours</option>
-                                                      <option value="m">Minutes</option>
-                                                      <option value="s">Seconds</option>
-                                                      <option value="M">Months</option>
-                                                      <option value="w">Weeks</option>
-                                                    </select>
-                                                    <!--input type="submit" name="schedule" value="Schedule"/-->
-                                                  </div>
+                                                	<dl>
+                                                		<dt>Schedule Time</dt>
+                                            			<dd>
+                                            				<input id="hour" type="text" size="2" value="12"/>
+                                            				<input id="minutes" type="text" size="2" value="00"/>
+															<select id="am_pm">
+		                                                      <option>pm</option>
+		                                                      <option>am</option>
+		                                                    </select>
+		                                                    <select id="timezone">
+		                                                      <option>PDT</option>
+		                                                      <option>UTC</option>
+		                                                    </select>
+                                            			</dd>
+                                                		<dt>Schedule Date</dt><dd><input type="text" id="datepicker" /></dd>
+                                                		<dt>Recurrence</dt>
+                                                		<dd>
+                                                			<input id="is_recurring" type="checkbox" checked  />
+                                                			<span>repeat every</span>
+                                            			 	<input id="period" type="text" size="2" value="1"/>
+		                                                    <select id="period_units">
+		                                                      <option value="d">Days</option>
+		                                                      <option value="h">Hours</option>
+		                                                      <option value="m">Minutes</option>
+		                                                      <option value="s">Seconds</option>
+		                                                      <option value="M">Months</option>
+		                                                      <option value="w">Weeks</option>
+		                                                    </select>
+                                                		</dd>
+                                                	</dl>
+
                                                 </div>
 
                                         </form>
@@ -178,8 +159,8 @@
                                 
 
                         <div class="actions">
-                                <a class="yes btn3" id="schedule-btn" href="#">Schedule The Flow</a>
-                                <a class="no simplemodal-close btn4" href="#">Cancel</a>
+                                <a class="yes btn2" id="schedule-btn" href="#">Schedule The Flow</a>
+                                <a class="no simplemodal-close btn3" href="#">Cancel</a>
                         </div>
                 </div>
                 <div id="invalid-session" class="modal">

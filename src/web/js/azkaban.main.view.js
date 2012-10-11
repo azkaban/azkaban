@@ -89,14 +89,14 @@ azkaban.ProjectHeaderView= Backbone.View.extend({
     "click #create-project-btn":"handleCreateProjectJob"
   },
   initialize : function(settings) {
-    if (settings.errorMsg) {
+    if (settings.errorMsg && settings.errorMsg != "null") {
       // Chrome bug in displaying placeholder text. Need to hide the box.
       $('#searchtextbox').hide();
       $('.messaging').addClass("error");
       $('.messaging').removeClass("success");
       $('.messaging').html(settings.errorMsg);
     }
-    else if (settings.successMsg) {
+    else if (settings.successMsg && settings.successMsg != "null") {
       $('#searchtextbox').hide();
       $('.messaging').addClass("success");
       $('.messaging').removeClass("error");

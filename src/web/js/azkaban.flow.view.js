@@ -286,6 +286,8 @@ azkaban.ScheduleFlowView = Backbone.View.extend({
     "click #schedule-btn": "handleScheduleFlow"
   },
   initialize : function(settings) {
+  	$( "#datepicker" ).datepicker();
+  	$( "#datepicker" ).datepicker('setDate', new Date());
     $("#errorMsg").hide();
   },
   handleScheduleFlow : function(evt) {
@@ -327,7 +329,7 @@ azkaban.ScheduleFlowView = Backbone.View.extend({
                 if (data.status == "success") {
 			console.log("Successfully scheduled for "+projectName+"."+flowName);
                         if (data.action == "redirect") {
-                                window.loaction = contextURL + "/manager?project=" + projectName + "&flow=" + flowName ;
+                                window.location = contextURL + "/manager?project=" + projectName + "&flow=" + flowName ;
                         }
 			else{
 				$("#success_message").text("Flow " + projectName + "." + flowName + " scheduled!" );			
@@ -440,7 +442,7 @@ $(function() {
           containerId: 'confirm-container',
           containerCss: {
             'height': '220px',
-            'width': '565px'
+            'width': '500px'
           },
           onShow: function (dialog) {
             var modal = this;
