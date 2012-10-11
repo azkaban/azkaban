@@ -195,6 +195,62 @@ public class FlowRunnerTest {
 		}
 	}
 	
+	@Test
+	public void execAndCancel() throws Exception {
+		File testDir = new File("unit/executions/exectest1");
+		ExecutableFlow exFlow = prepareExecDir(testDir, "exec1");
+		
+		EventCollectorListener eventCollector = new EventCollectorListener();
+		FlowRunner runner = new FlowRunner(exFlow);
+		runner.addListener(eventCollector);
+		
+		Assert.assertTrue(!runner.isCancelled());
+		Assert.assertTrue(exFlow.getStatus() == Status.READY);
+		Thread thread = new Thread(runner);
+		thread.start();
+		
+		synchronized(this) {
+			try {
+				wait(4500);
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			runner.cancel("me");
+		}
+		synchronized(this) {
+			// Wait for cleanup.
+			try {
+				wait(1000);
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+
+		testStatus(exFlow, "job5", Status.KILLED);
+		testStatus(exFlow, "job7", Status.KILLED);
+		testStatus(exFlow, "job8", Status.KILLED);
+		testStatus(exFlow, "job9", Status.KILLED);
+		testStatus(exFlow, "job10", Status.KILLED);
+		testStatus(exFlow, "job1", Status.SUCCEEDED);
+		testStatus(exFlow, "job2", Status.SUCCEEDED);
+		testStatus(exFlow, "job3", Status.FAILED);
+		testStatus(exFlow, "job4", Status.FAILED);
+		testStatus(exFlow, "job6", Status.FAILED);
+		
+		Assert.assertTrue("Expected KILLED status instead got " + exFlow.getStatus(),exFlow.getStatus() == Status.KILLED);
+		
+		try {
+			eventCollector.checkEventExists(new Type[] {Type.FLOW_STARTED, Type.FLOW_FINISHED});
+		}
+		catch (Exception e) {
+			System.out.println(e.getMessage());
+			eventCollector.writeAllEvents();
+			Assert.fail(e.getMessage());
+		}
+	}
+	
 	private void testStatus(ExecutableFlow flow, String name, Status status) {
 		ExecutableNode node = flow.getExecutableNode(name);
 		

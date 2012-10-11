@@ -22,8 +22,7 @@ import azkaban.jobExecutor.utils.JobWrappingFactory;
 import azkaban.utils.Props;
 
 public class JobRunner extends EventHandler implements Runnable {
-	private static final Layout DEFAULT_LAYOUT = new PatternLayout(
-			"%d{dd-MM-yyyy HH:mm:ss z} %c{1} %p - %m\n");
+	private static final Layout DEFAULT_LAYOUT = new PatternLayout("%d{dd-MM-yyyy HH:mm:ss z} %c{1} %p - %m\n");
 
 	private Props props;
 	private Props outputProps;
@@ -120,6 +119,7 @@ public class JobRunner extends EventHandler implements Runnable {
 			job.run();
 		} catch (Throwable e) {
 			succeeded = false;
+			node.setStatus(Status.FAILED);
 			logError("Job run failed!");
 			e.printStackTrace();
 		}
@@ -132,7 +132,7 @@ public class JobRunner extends EventHandler implements Runnable {
 			}
 			this.fireEventListeners(Event.create(this, Type.JOB_SUCCEEDED));
 		} else {
-			node.setStatus(Status.FAILED);
+			System.out.println("Setting FAILED to " + node.getId());
 			this.fireEventListeners(Event.create(this, Type.JOB_FAILED));
 		}
 		logInfo("Finishing job " + node.getId() + " at " + node.getEndTime());
@@ -150,14 +150,8 @@ public class JobRunner extends EventHandler implements Runnable {
 		try {
 			job.cancel();
 		} catch (Exception e) {
-			logError("Failed trying to cancel job!");
-			e.printStackTrace();
-		}
-
-		// will just interrupt, I guess, until the code is finished.
-		this.notifyAll();
-		if (node.getStatus() != Status.FAILED) {
-			node.setStatus(Status.KILLED);
+			logError(e.getMessage());
+			logError("Failed trying to cancel job. Maybe it hasn't started running yet or just finished.");
 		}
 	}
 

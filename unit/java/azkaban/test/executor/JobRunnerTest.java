@@ -200,12 +200,12 @@ public class JobRunnerTest {
 		
 		eventCollector.handleEvent(Event.create(null, Type.JOB_STARTED));
 		Thread thread = new Thread(runner);
-		thread.run();
+		thread.start();
 		
 		eventCollector.handleEvent(Event.create(null, Type.JOB_KILLED));
 		synchronized(this) {
 			try {
-				wait(1000);
+				wait(2000);
 			} catch (InterruptedException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
@@ -214,7 +214,7 @@ public class JobRunnerTest {
 		}
 		
 		Assert.assertTrue(runner.getStatus() == node.getStatus());
-		Assert.assertTrue(node.getStatus() == Status.KILLED);
+		Assert.assertTrue(node.getStatus() == Status.FAILED);
 		Assert.assertTrue(node.getStartTime() > 0 && node.getEndTime() > 0);
 		// Give it 10 ms to fail.
 		Assert.assertTrue(node.getEndTime() - node.getStartTime() < 3000);

@@ -114,12 +114,12 @@ public class FlowRunner extends EventHandler implements Runnable {
 		flowAppender.close();
 	}
 
-	public synchronized void cancel(String user) {
-		logger.info("Cancel called by " + user);
+	private synchronized void cancel() {
 		cancelled = true;
 
-		executorService.shutdownNow();
-
+		executorService.shutdown();
+		jobsToRun.clear();
+		
 		if (pausedJobsToRun.size() > 0) {
 			logger.info("Cancelling... Clearing paused jobs queue of size " + pausedJobsToRun.size());
 			pausedJobsToRun.clear();
@@ -149,17 +149,17 @@ public class FlowRunner extends EventHandler implements Runnable {
 			default:
 			}
 		}
-		
-		logger.info("Flow cancelled.");
-		if (flow.getStatus() == Status.FAILED_FINISHING) {
-			flow.setStatus(Status.FAILED);
-		}
-		else if (flow.getStatus() != Status.FAILED) {
-			flow.setStatus(Status.KILLED);
-		}
+
 		long time = System.currentTimeMillis();
-		flow.setStartTime(time);
 		flow.setEndTime(time);
+		setStatus(flow, Status.FAILED);
+
+	}
+	
+	public synchronized void cancel(String user) {
+		logger.info("Cancel called by " + user);
+		setStatus(flow, Status.KILLED);
+		cancel();
 	}
 
 	public synchronized void pause(String user) {
@@ -192,8 +192,7 @@ public class FlowRunner extends EventHandler implements Runnable {
 		int count = commitCount.getAndIncrement();
 
 		try {
-			ExecutableFlowLoader.writeExecutableFlowFile(this.basePath, flow,
-					count);
+			ExecutableFlowLoader.writeExecutableFlowFile(this.basePath, flow, count);
 		} catch (ExecutorManagerException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -298,6 +297,7 @@ public class FlowRunner extends EventHandler implements Runnable {
 		}
 
 		commitFlow();
+		System.out.println("Reached flow finished");
 		this.fireEventListeners(Event.create(this, Type.FLOW_FINISHED));
 		closeLogger();
 	}
@@ -443,7 +443,7 @@ public class FlowRunner extends EventHandler implements Runnable {
 
 	private void handleFailedJob(ExecutableNode node) {
 		System.err.println("Job " + node.getId() + " failed.");
-		if (flow.getStatus() != Status.FAILED_FINISHING && flow.getStatus() != Status.FAILED) {
+		if (flow.getStatus() != Status.FAILED_FINISHING && flow.getStatus() != Status.FAILED && flow.getStatus() != Status.KILLED) {
 			this.fireEventListeners(Event.create(this, Type.FLOW_FAILED_FINISHING));
 		}
 		
@@ -451,10 +451,9 @@ public class FlowRunner extends EventHandler implements Runnable {
 		// We finish running current jobs and then fail. Do not accept new jobs.
 		case FINISH_CURRENTLY_RUNNING:
 			logger.info("Failure Action: Finish up remaining running jobs.");
-			flow.setStatus(Status.FAILED_FINISHING);
+			setStatus(flow, Status.FAILED_FINISHING);
 
 			runningJobs.clear();
-			executorService.shutdown();
 			
 			// Go through and mark everything else killed.
 			long endTime = System.currentTimeMillis();
@@ -473,16 +472,38 @@ public class FlowRunner extends EventHandler implements Runnable {
 		// We kill all running jobs and fail immediately
 		case CANCEL_ALL:
 			logger.info("Failure Action: Kill flow immediately.");
-			flow.setStatus(Status.FAILED);
-			this.cancel("azkaban");
+			setStatus(flow, Status.FAILED);
+			this.cancel();
 			break;
 		default:
 			logger.info("Failure Action: Finishing accessible jobs.");
-			flow.setStatus(Status.FAILED_FINISHING);
+			setStatus(flow, Status.FAILED_FINISHING);
 			queueNextJobs(node);
 		}
 
 		runningJobs.remove(node.getId());
+	}
+	
+	// We use this so we can have status priority.
+	private void setStatus(ExecutableFlow flow, Status status) {
+		// Here's the order we can go with the flow: 
+		if (flow.getStatus() == Status.KILLED) {
+			// Killed overrides everything.
+			return;
+		}
+		else if (flow.getStatus() == Status.FAILED_FINISHING ) {
+			if (status == Status.KILLED || status == status.FAILED) {
+				// Only override if it's KILLED or FAILED.
+				flow.setStatus(status);
+			}
+		}
+		else if (flow.getStatus() == Status.FAILED || flow.getStatus() == Status.SUCCEEDED) {
+			// Will not override a finished flow
+			return;
+		}
+		else {
+			flow.setStatus(status);
+		}
 	}
 	
 	private class JobRunnerEventListener implements EventListener {
