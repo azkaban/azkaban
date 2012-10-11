@@ -41,10 +41,10 @@
 						<h4><a href="${context}/?all">All Projects</a></h4>
 					</div>
 #end
-					<form method="get">
+					<form id="search-form" method="post">
 						<input type="hidden" name="action" value="search">
-						<input type="submit" value="Search" class="search-btn">
-						<input id="searchtextbox" type="text" placeholder="by job name or wildcard" value="" class="search-input" name="job">
+						<input type="submit" value="Quick Search" class="search-btn">
+						<input id="searchtextbox" type="text" placeholder="by project name containing ..." value=#if($search_term) ${search_term} #else "" #end class="search-input" name="searchterm">
 					</form>
 			
 					<a id="create-project-btn" class="btn1 createproject" href="#">Create Project</a>

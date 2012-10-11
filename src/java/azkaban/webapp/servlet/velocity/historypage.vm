@@ -26,10 +26,10 @@
 			<div id="all-jobs-content">
 				<div class="section-hd">
 					<h2>History</h2>
-					<form method="get">
+					<form id="search-form" method="post">
 						<input type="hidden" name="action" value="search">
-						<input type="submit" value="Search" class="search-btn">
-						<input id="searchtextbox" type="text" placeholder="by job name or wildcard" value="" class="search-input" name="job">
+						<input type="submit" value="Quick Search" class="search-btn">
+						<input id="searchtextbox" type="text" placeholder="by flow name containing ..." value=#if($search_term) ${search_term} #else "" #end class="search-input" name="searchterm">
 					</form>
 				</div>
 			</div>

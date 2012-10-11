@@ -18,6 +18,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.regex.Pattern;
+import java.util.regex.PatternSyntaxException;
 
 import net.sf.ehcache.Cache;
 import net.sf.ehcache.CacheManager;
@@ -210,6 +212,30 @@ public class FileProjectManager implements ProjectManager {
 
 			if (perm != null && (perm.isPermissionSet(Type.ADMIN) || perm.isPermissionSet(Type.READ))) {
 				array.add(project);
+			}
+		}
+		return array;
+	}
+	
+	@Override
+	public List<Project> getUserProjectsByRe(User user, final String rePattern) {
+		ArrayList<Project> array = new ArrayList<Project>();
+		Pattern pattern;
+		try {
+			pattern = Pattern.compile(rePattern, Pattern.CASE_INSENSITIVE);
+		} catch (PatternSyntaxException e) {
+			logger.error("Bad regex pattern " + rePattern);
+			return array;
+		}
+		
+		
+		for (Project project : projects.values()) {
+			Permission perm = project.getUserPermission(user);
+
+			if (perm != null && (perm.isPermissionSet(Type.ADMIN) || perm.isPermissionSet(Type.READ))) {
+				if(pattern.matcher(project.getName()).find() ) {
+					array.add(project);
+				}
 			}
 		}
 		return array;
@@ -635,4 +661,5 @@ public class FileProjectManager implements ProjectManager {
 	private String projectLogFileName(String projectName) {
 		return "_project." + projectName + ".log";
 	}
+
 }
