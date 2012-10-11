@@ -86,6 +86,49 @@ public class FlowRunnerTest {
 	}
 	
 	@Test
+	public void exec1Disabled() throws Exception {
+		File testDir = new File("unit/executions/exectest1");
+		ExecutableFlow exFlow = prepareExecDir(testDir, "exec1");
+		
+		// Disable couple in the middle and at the end.
+		exFlow.getExecutableNode("job1").setStatus(Status.DISABLED);
+		exFlow.getExecutableNode("job6").setStatus(Status.DISABLED);
+		exFlow.getExecutableNode("job5").setStatus(Status.DISABLED);
+		exFlow.getExecutableNode("job10").setStatus(Status.DISABLED);
+		
+		EventCollectorListener eventCollector = new EventCollectorListener();
+		FlowRunner runner = new FlowRunner(exFlow);
+		runner.addListener(eventCollector);
+		
+		Assert.assertTrue(!runner.isCancelled());
+		Assert.assertTrue(exFlow.getStatus() == Status.READY);
+		runner.run();
+		Assert.assertTrue(exFlow.getStatus() == Status.SUCCEEDED);
+		Assert.assertTrue(runner.getJobsFinished().size() == exFlow.getExecutableNodes().size());
+		compareFinishedRuntime(runner);
+		
+		testStatus(exFlow, "job1", Status.SKIPPED);
+		testStatus(exFlow, "job2", Status.SUCCEEDED);
+		testStatus(exFlow, "job3", Status.SUCCEEDED);
+		testStatus(exFlow, "job4", Status.SUCCEEDED);
+		testStatus(exFlow, "job5", Status.SKIPPED);
+		testStatus(exFlow, "job6", Status.SKIPPED);
+		testStatus(exFlow, "job7", Status.SUCCEEDED);
+		testStatus(exFlow, "job8", Status.SUCCEEDED);
+		testStatus(exFlow, "job9", Status.SUCCEEDED);
+		testStatus(exFlow, "job10", Status.SKIPPED);
+		
+		try {
+			eventCollector.checkEventExists(new Type[] {Type.FLOW_STARTED, Type.FLOW_FINISHED});
+		}
+		catch (Exception e) {
+			System.out.println(e.getMessage());
+			
+			Assert.fail(e.getMessage());
+		}
+	}
+	
+	@Test
 	public void exec1Failed() throws Exception {
 		File testDir = new File("unit/executions/exectest1");
 		ExecutableFlow exFlow = prepareExecDir(testDir, "exec2");
