@@ -298,8 +298,9 @@ public class ExecutableFlow {
 		exFlow.endTime = getLongFromObject(flowObj.get("endTime"));
 		exFlow.flowStatus = Status.valueOf((String)flowObj.get("status"));
 		exFlow.submitUser = (String)flowObj.get("submitUser");
-		exFlow.flowParameters = new HashMap<String, String>((Map<String,String>)flowObj.get("flowParameters"));
-		
+		if (flowObj.containsKey("flowParameters")) {
+			exFlow.flowParameters = new HashMap<String, String>((Map<String,String>)flowObj.get("flowParameters"));
+		}
 		// Failure notification
 		if (flowObj.containsKey("notifyOnFirstFailure")) {
 			exFlow.notifyOnFirstFailure = (Boolean)flowObj.get("notifyOnFirstFailure");
