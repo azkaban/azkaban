@@ -1732,6 +1732,10 @@ svg .DISABLED {
 	opacity: 0.3;
 }
 
+svg .SKIPPED {
+	opacity: 0.3;
+}
+
 span.sublabel {
 	font-size: 8pt;
 	margin-left: 12px;
@@ -1937,6 +1941,10 @@ td .status.FAILED_FINISHING {
 }
 
 td .status.DISABLED {
+	background-color: #AAA;	
+}
+
+td .status.SKIPPED {
 	background-color: #AAA;	
 }
 
