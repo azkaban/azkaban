@@ -28,11 +28,11 @@ import java.util.StringTokenizer;
 
 import org.apache.log4j.Logger;
 
-import static azkaban.jobExecutor.utils.SecurityUtils.PROXY_KEYTAB_LOCATION;
-import static azkaban.jobExecutor.utils.SecurityUtils.PROXY_USER;
-import static azkaban.jobExecutor.utils.SecurityUtils.TO_PROXY;
-import static azkaban.jobExecutor.utils.SecurityUtils.shouldProxy;
 import static azkaban.jobExecutor.SecurePigWrapper.OBTAIN_BINARY_TOKEN;
+import static azkaban.utils.SecurityUtils.PROXY_KEYTAB_LOCATION;
+import static azkaban.utils.SecurityUtils.PROXY_USER;
+import static azkaban.utils.SecurityUtils.TO_PROXY;
+import static azkaban.utils.SecurityUtils.shouldProxy;
 
 public class PigProcessJob extends JavaProcessJob {
     

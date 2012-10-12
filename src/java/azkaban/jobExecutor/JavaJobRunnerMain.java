@@ -16,7 +16,7 @@
 package azkaban.jobExecutor;
 
 import azkaban.utils.Props;
-import azkaban.jobExecutor.utils.SecurityUtils;
+import azkaban.utils.SecurityUtils;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.log4j.ConsoleAppender;

@@ -1,5 +1,7 @@
 package azkaban.utils;
 
+import java.text.NumberFormat;
+
 import org.joda.time.DateTime;
 import org.joda.time.DurationFieldType;
 import org.joda.time.ReadablePeriod;
@@ -9,6 +11,11 @@ import azkaban.executor.ExecutableFlow.Status;
 
 public class WebUtils {
 	public static final String DATE_TIME_STRING = "YYYY-MM-dd HH:mm:ss";
+
+    private static final long ONE_KB = 1024;
+    private static final long ONE_MB = 1024 * ONE_KB;
+    private static final long ONE_GB = 1024 * ONE_MB;
+    private static final long ONE_TB = 1024 * ONE_GB;
 	
 	public String formatDate(long timeMS) {
 		if (timeMS == -1) {
@@ -82,6 +89,10 @@ public class WebUtils {
 		return DateTimeFormat.forPattern(DATE_TIME_STRING).print(dt);
 	}
 	
+    public String formatDateTime(long timestamp) {
+        return formatDateTime(new DateTime(timestamp));
+    }
+	
 	public String formatPeriod(ReadablePeriod period)
 	{
         String periodStr = "n";
@@ -124,4 +135,21 @@ public class WebUtils {
 		
 		return execId.substring(0, index2);
 	}
+	
+    public String displayBytes(long sizeBytes) {
+        NumberFormat nf = NumberFormat.getInstance();
+        nf.setMaximumFractionDigits(2);
+        if(sizeBytes >= ONE_TB)
+            return nf.format(sizeBytes / (double) ONE_TB) + " tb";
+        else if(sizeBytes >= ONE_GB)
+            return nf.format(sizeBytes / (double) ONE_GB) + " gb";
+        else if(sizeBytes >= ONE_MB)
+            return nf.format(sizeBytes / (double) ONE_MB) + " mb";
+        else if(sizeBytes >= ONE_KB)
+            return nf.format(sizeBytes / (double) ONE_KB) + " kb";
+        else
+            return sizeBytes + " B";
+    }
+    
+    
 }
