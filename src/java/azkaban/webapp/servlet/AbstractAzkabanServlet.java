@@ -213,6 +213,7 @@ public abstract class AbstractAzkabanServlet extends HttpServlet {
 	 */
 	protected void setErrorMessageInCookie(HttpServletResponse response, String errorMsg) {
 		Cookie cookie = new Cookie(AZKABAN_FAILURE_MESSAGE, errorMsg);
+		cookie.setPath("/");
 		response.addCookie(cookie);
 	}
 
@@ -225,6 +226,7 @@ public abstract class AbstractAzkabanServlet extends HttpServlet {
 	 */
 	protected void setSuccessMessageInCookie(HttpServletResponse response, String message) {
 		Cookie cookie = new Cookie(AZKABAN_SUCCESS_MESSAGE, message);
+		cookie.setPath("/");
 		response.addCookie(cookie);
 	}
 
@@ -269,12 +271,13 @@ public abstract class AbstractAzkabanServlet extends HttpServlet {
 		Cookie[] cookies = request.getCookies();
 		if (cookies != null) {
 			for (Cookie cookie : cookies) {
+				//if (name.equals(cookie.getName()) && cookie.getPath()!=null && cookie.getPath().equals("/")) {
 				if (name.equals(cookie.getName())) {
 					return cookie;
 				}
 			}
 		}
-
+		
 		return null;
 	}
 

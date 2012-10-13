@@ -152,7 +152,9 @@ public abstract class LoginAbstractAzkabanServlet extends AbstractAzkabanServlet
 
 			String randomUID = UUID.randomUUID().toString();
 			Session session = new Session(randomUID, user);
-			resp.addCookie(new Cookie(SESSION_ID_NAME, randomUID));
+			Cookie cookie = new Cookie(SESSION_ID_NAME, randomUID);
+			cookie.setPath("/");
+			resp.addCookie(cookie);
 			getApplication().getSessionCache().addSession(session);
 			handleGet(req, resp, session);
 		} 

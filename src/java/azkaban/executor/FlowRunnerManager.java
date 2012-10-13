@@ -73,6 +73,8 @@ public class FlowRunnerManager {
 		if (testMode) {
 			logger.info("Running in testMode.");
 		}
+
+		this.globalProps = globalProps;
 		
 		basePath = new File(props.getString("execution.directory"));
 		numThreads = props.getInt("executor.flow.threads", DEFAULT_NUM_EXECUTING_FLOWS);

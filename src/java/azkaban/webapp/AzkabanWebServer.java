@@ -20,6 +20,9 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.URLClassLoader;
 import java.util.Arrays;
 import java.util.TimeZone;
 
@@ -47,6 +50,7 @@ import azkaban.utils.Utils;
 import azkaban.webapp.servlet.AzkabanServletContextListener;
 
 import azkaban.webapp.servlet.ExecutorServlet;
+import azkaban.webapp.servlet.HdfsBrowserServlet;
 import azkaban.webapp.servlet.ScheduleServlet;
 import azkaban.webapp.servlet.HistoryServlet;
 import azkaban.webapp.servlet.IndexServlet;
@@ -99,8 +103,9 @@ public class AzkabanWebServer {
 	private UserManager userManager;
 	private ProjectManager projectManager;
 	private ExecutorManager executorManager;
-	
 	private ScheduleManager scheduleManager;
+
+	private final ClassLoader _baseClassLoader;
 	
 	private Props props;
 	private SessionCache sessionCache;
@@ -125,7 +130,7 @@ public class AzkabanWebServer {
 		projectManager = loadProjectManager(props);
 		executorManager = loadExecutorManager(props);
 		scheduleManager = loadScheduleManager(executorManager, props);
-
+		_baseClassLoader = getBaseClassloader();
 		tempDir = new File(props.getString("azkaban.temp.dir", "temp"));
 
 		// Setup time zone
@@ -272,7 +277,34 @@ public class AzkabanWebServer {
 		engine.setProperty("parser.pool.size", 3);
 		return engine;
 	}
+	
+    private ClassLoader getBaseClassloader() throws MalformedURLException
+    {
+        final ClassLoader retVal;
 
+        String hadoopHome = System.getenv("HADOOP_HOME");
+	String hadoopConfDir = System.getenv("HADOOP_CONF_DIR");
+
+        if(hadoopConfDir != null) {
+	  logger.info("Using hadoop config found in " + hadoopConfDir);
+	  retVal = new URLClassLoader(new URL[] { new File(hadoopConfDir).toURI().toURL() },
+				      getClass().getClassLoader());
+	} else if(hadoopHome != null) {
+            logger.info("Using hadoop config found in " + hadoopHome);
+            retVal = new URLClassLoader(new URL[] { new File(hadoopHome, "conf").toURI().toURL() },
+                                        getClass().getClassLoader());
+        } else {
+            logger.info("HADOOP_HOME not set, using default hadoop config.");
+            retVal = getClass().getClassLoader();
+        }
+
+        return retVal;
+    }
+
+    public ClassLoader getClassLoader() {
+        return _baseClassLoader;
+    }
+    
 	/**
 	 * Returns the global azkaban properties
 	 * 
@@ -367,6 +399,7 @@ public class AzkabanWebServer {
 		root.addServlet(new ServletHolder(new ExecutorServlet()),"/executor");
 		root.addServlet(new ServletHolder(new HistoryServlet()), "/history");
 		root.addServlet(new ServletHolder(new ScheduleServlet()),"/schedule");
+		root.addServlet(new ServletHolder(new HdfsBrowserServlet()), "/hdfs/*");
 		
 		root.setAttribute(AzkabanServletContextListener.AZKABAN_SERVLET_CONTEXT_KEY, app);
 

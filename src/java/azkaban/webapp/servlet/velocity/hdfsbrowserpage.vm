@@ -1,0 +1,93 @@
+<!DOCTYPE html> 
+<html>
+	<head>
+#parse( "azkaban/webapp/servlet/velocity/style.vm" )
+		<script type="text/javascript" src="${context}/js/jquery/jquery.js"></script>    
+		<script type="text/javascript" src="${context}/js/namespace.js"></script>
+		<script type="text/javascript" src="${context}/js/underscore-1.2.1-min.js"></script>
+		<script type="text/javascript" src="${context}/js/backbone-0.5.3-min.js"></script>
+		<script type="text/javascript" src="${context}/js/jquery.simplemodal.js"></script>
+		<script type="text/javascript" src="${context}/js/azkaban.nav.js"></script>
+		<script type="text/javascript">
+			var contextURL = "${context}";
+			var currentTime = ${currentTime};
+			var timezone = "${timezone}";
+			var errorMessage = null;
+			var successMessage = null;
+		</script>
+	</head>
+	<body>
+#set($current_page="hdfsbrowser")
+#parse( "azkaban/webapp/servlet/velocity/nav.vm" )
+		<div class="messaging"><p id="messageClose">X</p><p id="message"></p></div>  
+
+		<div class="content">
+		
+		#if($errorMsg)
+                	<div class="box-error-message">$errorMsg</div>
+		#else
+			#if($error_message != "null")
+	                <div class="box-error-message">$error_message</div>
+			#elseif($success_message != "null")
+        	        <div class="box-success-message">$success_message</div>
+			#end
+		#end		
+		
+			<div id="all-hdfsbrowser-content">
+				<div class="section-hd">
+					<h2>HDFS Browser</h2>
+				</div>
+			</div>
+		#if(!$no_fs)
+			<div class="box">
+				<div class="breadcrumbs">
+					<a href="${context}/hdfs/">/</a>
+					#set($size = $paths.size() - 1)
+					#if($size >= 0)
+#foreach($i in [0 ..$size])
+<a href="$context/hdfs${paths.get($i)}">${segments.get($i)}</a><span>/</span>
+#end
+					#end
+				</div>
+			
+				<div class="subdirs">
+					<table id="hdfs-dir" class="fileTable">
+					<thead>
+						<tr>
+							<th>File</th>
+							<th>Permission</th>
+							<th>Owner/Group</th>
+							<th>Size</th>
+							<th>Modified Date</th>
+						</tr>
+					</thead>
+					<tbody>
+						#if($subdirs)
+							#foreach($status in $subdirs)
+						<tr>
+							<td>
+								<a href="${context}/hdfs${status.getPath().toUri().getPath()}">${status.path.name}#if($status.isDir())/#end</a>
+							</td>
+							<td>${status.permission}</td>
+							<td>${status.owner}/${status.group}</td>
+							<td>
+								#if($status.isDir())
+                                	&ndash;
+                                #else
+                                	$utils.displayBytes(${status.len})
+                                #end
+                            </td>
+							<td>$utils.formatDateTime(${status.modificationTime})</td>
+						</tr>
+							#end
+						#else
+						<tr><td>No Files In This Directory</td></tr>
+						#end
+					</tbody>
+				</table>
+				
+			</div>	
+		</div>
+		#end
+	</body>
+</html>

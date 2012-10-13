@@ -63,7 +63,7 @@ public abstract class AbstractProcessJob extends AbstractJob {
         super(jobid, log);
 
         _props = props;
-        _jobPath = props.getString(JOB_FULLPATH, new File(".").getAbsolutePath());
+        _jobPath = props.getString(JOB_FULLPATH, props.getSource());
 
         _cwd = getWorkingDirectory();
         this.log = log;
@@ -120,7 +120,7 @@ public abstract class AbstractProcessJob extends AbstractJob {
 
     public String getWorkingDirectory() {
         return getProps()//.getString(WORKING_DIR, ".");
-                .getString(WORKING_DIR, new File(_jobPath).getParent());
+                .getString(WORKING_DIR, new File(_jobPath).getAbsolutePath());
     }
 
     public Props loadOutputFileProps(final File outputPropertiesFile) {

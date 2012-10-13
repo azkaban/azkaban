@@ -11,7 +11,7 @@
 				<li id="scheduled-jobs-tab" #if($current_page == 'schedule')class="selected"#end onClick="navMenuClick('$!context/schedule')"><a href="$!context/schedule">Scheduled</a></li>
 				<li id="executing-jobs-tab" #if($current_page == 'executing')class="selected"#end onClick="navMenuClick('$!context/executor')"><a href="$!context/executor">Executing</a></li>
 				<li id="history-jobs-tab" #if($current_page == 'history')class="selected"#end onClick="navMenuClick('$!context/history')"><a href="$!context/history">History</a></li>
-				<li><a href="$!context/fs">HDFS</a></li>
+				<li id="hdfs-browser-tab" #if($current_page == 'hdfsbrowser')class="selected"#end onClick="navMenuClick('$!context/hdfs')"><a href="$!context/hdfs">HDFS</a></li>
 			</ul>
 			
 			

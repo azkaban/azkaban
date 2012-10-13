@@ -16,7 +16,7 @@
 package azkaban.jobExecutor;
 
 import azkaban.utils.Props;
-import azkaban.jobExecutor.utils.SecurityUtils;
+import azkaban.utils.SecurityUtils;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.log4j.ConsoleAppender;
@@ -124,8 +124,12 @@ public class JavaJobRunnerMain {
 			try {
 				final Method generatedPropertiesMethod = _javaObject.getClass().getMethod(
 						GET_GENERATED_PROPERTIES_METHOD, new Class<?>[] {});
-				Props outputGendProps = (Props) generatedPropertiesMethod.invoke(_javaObject, new Object[] {});
-				outputGeneratedProperties(outputGendProps);
+				Object outputGendProps = generatedPropertiesMethod.invoke(_javaObject, new Object[] {});
+				final Method toPropertiesMethod = outputGendProps.getClass().getMethod("toProperties", new Class<?>[] {});
+				Properties properties = (Properties)toPropertiesMethod.invoke(outputGendProps, new Object[] {});
+
+				Props outputProps = new Props(null, properties);
+				outputGeneratedProperties(outputProps);
 			} catch (NoSuchMethodException e) {
 				_logger.info(String.format(
 						"Apparently there isn't a method[%s] on object[%s], using empty Props object instead.",
@@ -250,9 +254,11 @@ public class JavaJobRunnerMain {
 		Class<?> propsClass = null;
 		for (String propClassName : PROPS_CLASSES) {
 			propsClass = JavaJobRunnerMain.class.getClassLoader().loadClass(propClassName);
-			if (propsClass != null) {
+			if (propsClass != null && getConstructor(runningClass, String.class, propsClass) != null) {
+				//is this the props class 
 				break;
 			}
+			propsClass = null;
 		}
 
 		Object obj = null;
