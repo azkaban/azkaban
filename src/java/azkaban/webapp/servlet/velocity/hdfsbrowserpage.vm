@@ -43,11 +43,11 @@
 				<div class="breadcrumbs">
 					<a href="${context}/hdfs/">/</a>
 					#set($size = $paths.size() - 1)
-					#if($size >= 0)
+#if($size >= 0)
 #foreach($i in [0 ..$size])
 <a href="$context/hdfs${paths.get($i)}">${segments.get($i)}</a><span>/</span>
 #end
-					#end
+#end
 				</div>
 			
 				<div class="subdirs">
@@ -58,6 +58,7 @@
 							<th>Permission</th>
 							<th>Owner/Group</th>
 							<th>Size</th>
+							<th>Reps</th>
 							<th>Modified Date</th>
 						</tr>
 					</thead>
@@ -75,6 +76,13 @@
                                 	&ndash;
                                 #else
                                 	$utils.displayBytes(${status.len})
+                                #end
+                            </td>
+                            <td>
+								#if($status.isDir())
+                                	&ndash;
+                                #else
+                                	${status.getReplication()}
                                 #end
                             </td>
 							<td>$utils.formatDateTime(${status.modificationTime})</td>
