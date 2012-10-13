@@ -11,6 +11,12 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
 
+import net.sf.ehcache.Cache;
+import net.sf.ehcache.CacheManager;
+import net.sf.ehcache.Element;
+import net.sf.ehcache.config.CacheConfiguration;
+import net.sf.ehcache.store.MemoryStoreEvictionPolicy;
+
 import org.apache.log4j.Logger;
 
 import azkaban.utils.Utils;
@@ -46,12 +52,28 @@ public class FlowRunnerManager {
 
 	private Props globalProps;
 
+	// Keep recent flows only one minute after it finished.
+	private CacheManager manager = CacheManager.create();
+	private Cache recentFlowsCache;
+	private static final int LIVE_SECONDS = 60;
+	private static final int RECENT_FLOWS_CACHE_SIZE = 100;
+	
+	private boolean testMode = false;
+	
 	public FlowRunnerManager(Props props, Props globalProps, Mailman mailer) {
 		this.mailer = mailer;
 
 		this.senderAddress = props.getString("mail.sender");
 		this.clientHostname = props.getString("jetty.hostname", "localhost");
 		this.clientPortNumber = Utils.nonNull(props.getString("jetty.ssl.port"));
+
+		setupCache();
+		
+		testMode = props.getBoolean("test.mode", false);
+		if (testMode) {
+			logger.info("Running in testMode.");
+		}
+
 		this.globalProps = globalProps;
 		
 		basePath = new File(props.getString("execution.directory"));
@@ -63,6 +85,19 @@ public class FlowRunnerManager {
 		submitterThread.start();
 	}
 
+	private void setupCache() {
+		CacheConfiguration cacheConfig = new CacheConfiguration("recentFlowsCache",RECENT_FLOWS_CACHE_SIZE)
+				.memoryStoreEvictionPolicy(MemoryStoreEvictionPolicy.FIFO)
+				.overflowToDisk(false)
+				.eternal(false)
+				.timeToLiveSeconds(LIVE_SECONDS)
+				.diskPersistent(false)
+				.diskExpiryThreadIntervalSeconds(0);
+
+		recentFlowsCache = new Cache(cacheConfig);
+		manager.addCache(recentFlowsCache);
+	}
+	
 	public void submitFlow(String id, String path) throws ExecutorManagerException {
 		// Load file and submit
 		logger.info("Flow " + id + " submitted with path " + path);
@@ -72,6 +107,8 @@ public class FlowRunnerManager {
 		flow.setExecutionPath(path);
 
 		FlowRunner runner = new FlowRunner(flow);
+		runner.setTestMode(testMode);
+
 		runningFlows.put(id, runner);
 		runner.setGlobalProps(globalProps);
 		runner.addListener(eventListener);
@@ -106,7 +143,11 @@ public class FlowRunnerManager {
 	public ExecutableFlow getExecutableFlow(String id) {
 		FlowRunner runner = runningFlows.get(id);
 		if (runner == null) {
-			return null;
+			Element elem = recentFlowsCache.get(id);
+			if (elem == null) {
+				return null;
+			}
+			return (ExecutableFlow)elem.getObjectValue();
 		}
 
 		return runner.getFlow();
@@ -158,6 +199,7 @@ public class FlowRunnerManager {
 
 				logger.info("Flow " + flow.getExecutionId() + " has finished.");
 				runningFlows.remove(flow.getExecutionId());
+				recentFlowsCache.put(new Element(flow.getExecutionId(), flow));
 			}
 		}
 	}
@@ -200,7 +242,9 @@ public class FlowRunnerManager {
 					body += (URL + "\n");
 				}
 
-				mailer.sendEmailIfPossible(senderAddress, emailList, subject, body);
+				if (!testMode) {
+					mailer.sendEmailIfPossible(senderAddress, emailList, subject, body);
+				}
 			} catch (UnknownHostException uhe) {
 				logger.error(uhe);
 			} catch (Exception e) {
@@ -225,7 +269,9 @@ public class FlowRunnerManager {
 					body += (URL + "\n");
 				}
 
-				mailer.sendEmailIfPossible(senderAddress, emailList, subject, body);
+				if (!testMode) {
+					mailer.sendEmailIfPossible(senderAddress, emailList, subject, body);
+				}
 			} catch (UnknownHostException uhe) {
 				logger.error(uhe);
 			} catch (Exception e) {

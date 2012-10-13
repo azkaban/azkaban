@@ -39,6 +39,7 @@ import org.mortbay.jetty.servlet.Context;
 import org.mortbay.jetty.servlet.ServletHolder;
 import org.mortbay.thread.QueuedThreadPool;
 
+import azkaban.executor.ConnectorParams;
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutorManagerException;
 import azkaban.executor.FlowRunnerManager;
@@ -71,7 +72,6 @@ public class AzkabanExecutorServer {
 	private File tempDir;
 	private Server server;
 	
-
 	/**
 	 * Constructor
 	 * 
@@ -263,13 +263,11 @@ public class AzkabanExecutorServer {
 		return null;
 	}
 	
-	public static class ExecutorServlet extends HttpServlet {
+	public static class ExecutorServlet extends HttpServlet implements ConnectorParams {
+		private static final long serialVersionUID = 1L;
 		private static final Logger logger = Logger.getLogger(ExecutorServlet.class.getName());
 		public static final String JSON_MIME_TYPE = "application/json";
-		
-		public enum State {
-			FAILED, SUCCEEDED, RUNNING, WAITING, IGNORED, READY
-		}
+
 		private String sharedToken;
 		private AzkabanExecutorServer application;
 		private FlowRunnerManager flowRunnerManager;
@@ -303,42 +301,41 @@ public class AzkabanExecutorServer {
 		public void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
 			HashMap<String,Object> respMap= new HashMap<String,Object>();
 			
-			String token = getParam(req, "sharedToken");
+			String token = getParam(req, SHAREDTOKEN_PARAM);
 			if (!token.equals(sharedToken)) {
 				respMap.put("error", "Mismatched token. Will not run.");
 			}
-			else if (!hasParam(req, "action")) {
+			else if (!hasParam(req, ACTION_PARAM)) {
 				respMap.put("error", "Parameter action not set");
 			}
-			else if (!hasParam(req, "execid")) {
-				respMap.put("error", "Parameter execid not set.");
-			}
 			else {
-				String action = getParam(req, "action");
-				String execid = getParam(req, "execid");
+				String action = getParam(req, ACTION_PARAM);
+				String execid = getParam(req, EXECID_PARAM, null);
+				String user = getParam(req, USER_PARAM, null);
 				
-				// Handle execute
-				if (action.equals("execute")) {
+				if (action.equals(PING_ACTION)) {
+					respMap.put("status", "alive");
+				}
+				else if (action.equals(EXECUTE_ACTION)) {
 					handleAjaxExecute(req, respMap, execid);
 				}
-				// Handle Status
-				else if (action.equals("status")) {
+				else if (action.equals(STATUS_ACTION)) {
 					handleAjaxFlowStatus(respMap, execid);
 				}
-				else if (action.equals("cancel")) {
-					String user = getParam(req, "user");
+				else if (action.equals(CANCEL_ACTION)) {
 					logger.info("Cancel called.");
 					handleAjaxCancel(respMap, execid, user);
 				}
-				else if (action.equals("pause")) {
-					String user = getParam(req, "user");
+				else if (action.equals(PAUSE_ACTION)) {
 					logger.info("Paused called.");
 					handleAjaxPause(respMap, execid, user);
 				}
-				else if (action.equals("resume")) {
-					String user = getParam(req, "user");
+				else if (action.equals(RESUME_ACTION)) {
 					logger.info("Resume called.");
 					handleAjaxResume(respMap, execid, user);
+				}
+				else {
+					respMap.put("error", "action: '" + action + "' not supported.");
 				}
 			}
 
@@ -347,55 +344,80 @@ public class AzkabanExecutorServer {
 		}
 		
 		private void handleAjaxExecute(HttpServletRequest req, Map<String, Object> respMap, String execid) throws ServletException {
-			String execpath = getParam(req, "execpath");
+			if (execid == null) {
+				respMap.put(RESPONSE_ERROR, EXECID_PARAM + " has not been set");
+				return;
+			}
+			
+			String execpath = getParam(req, EXECPATH_PARAM);
 			logger.info("Submitted " + execid + " with " + execpath);
 			try {
 				flowRunnerManager.submitFlow(execid, execpath);
-				respMap.put("status", "success");
+				respMap.put(STATUS_PARAM, RESPONSE_SUCCESS);
 			} catch (ExecutorManagerException e) {
 				e.printStackTrace();
-				respMap.put("error", e.getMessage());
+				respMap.put(RESPONSE_ERROR, e.getMessage());
 			}
 		}
 		
 		private void handleAjaxFlowStatus(Map<String, Object> respMap, String execid) {
+			if (execid == null) {
+				respMap.put(RESPONSE_ERROR, EXECID_PARAM + " has not been set");
+				return;
+			}
+			
 			ExecutableFlow flow = flowRunnerManager.getExecutableFlow(execid);
 			if (flow == null) {
-				respMap.put("status", "notfound");
+				respMap.put(STATUS_PARAM, RESPONSE_NOTFOUND);
 			}
 			else {
-				respMap.put("status", flow.getStatus().toString());
+				respMap.put(STATUS_PARAM, flow.getStatus().toString());
+				respMap.put(RESPONSE_UPDATETIME, flow.getUpdateTime());
 			}
 		}
 		
 		private void handleAjaxPause(Map<String, Object> respMap, String execid, String user) throws ServletException {
-
+			if (execid == null || user == null) {
+				respMap.put(RESPONSE_ERROR, "execid or user has not been set");
+				return;
+			}
+			
 			try {
 				flowRunnerManager.pauseFlow(execid, user);
-				respMap.put("status", "success");
+				respMap.put(STATUS_PARAM, RESPONSE_SUCCESS);
 			} catch (ExecutorManagerException e) {
 				e.printStackTrace();
-				respMap.put("error", e.getMessage());
+				respMap.put(RESPONSE_ERROR, e.getMessage());
 			}
 		}
 		
 		private void handleAjaxResume(Map<String, Object> respMap, String execid, String user) throws ServletException {
+			if (execid == null || user == null) {
+				respMap.put(RESPONSE_ERROR, "execid or user has not been set");
+				return;
+			}
+			
 			try {
 				flowRunnerManager.resumeFlow(execid, user);
-				respMap.put("status", "success");
+				respMap.put(STATUS_PARAM, RESPONSE_SUCCESS);
 			} catch (ExecutorManagerException e) {
 				e.printStackTrace();
-				respMap.put("error", e.getMessage());
+				respMap.put(RESPONSE_ERROR, e.getMessage());
 			}
 		}
 		
 		private void handleAjaxCancel(Map<String, Object> respMap, String execid, String user) throws ServletException {
+			if (execid == null || user == null) {
+				respMap.put(RESPONSE_ERROR, "execid or user has not been set");
+				return;
+			}
+			
 			try {
 				flowRunnerManager.cancelFlow(execid, user);
-				respMap.put("status", "success");
+				respMap.put(STATUS_PARAM, RESPONSE_SUCCESS);
 			} catch (ExecutorManagerException e) {
 				e.printStackTrace();
-				respMap.put("error", e.getMessage());
+				respMap.put(RESPONSE_ERROR, e.getMessage());
 			}
 		}
 		
@@ -418,6 +440,15 @@ public class AzkabanExecutorServer {
 				throw new ServletException("Missing required parameter '" + name + "'.");
 			else
 				return p;
+		}
+		
+		public String getParam(HttpServletRequest request, String name, String defaultVal ) {
+			String p = request.getParameter(name);
+			if (p == null) {
+				return defaultVal;
+			}
+
+			return p;
 		}
 	}
 

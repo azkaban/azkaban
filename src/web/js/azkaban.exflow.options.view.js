@@ -131,8 +131,12 @@ azkaban.ExecuteFlowView = Backbone.View.extend({
 					alert(data.error);
 				}
 				else {
-					$('#successEmails').val(data.successEmails.join());
-					$('#failureEmails').val(data.failureEmails.join());
+					if (data.successEmails) {
+						$('#successEmails').val(data.successEmails.join());
+					}
+					if (data.failureEmails) {
+						$('#failureEmails').val(data.failureEmails.join());
+					}
 					
 					if (data.failureAction) {
 						$('#failureAction').val(data.failureAction);

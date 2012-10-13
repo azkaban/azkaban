@@ -23,14 +23,11 @@ import org.joda.time.ReadablePeriod;
 import org.joda.time.Seconds;
 import org.joda.time.format.DateTimeFormat;
 
-import azkaban.executor.ExecutorManager.ExecutionReference;
 import azkaban.flow.Flow;
 import azkaban.project.Project;
 import azkaban.project.ProjectManager;
-import azkaban.project.ProjectManagerException;
 import azkaban.user.User;
 import azkaban.user.Permission.Type;
-import azkaban.webapp.servlet.HistoryServlet.PageSelection;
 import azkaban.webapp.session.Session;
 import azkaban.scheduler.ScheduleManager;
 import azkaban.scheduler.ScheduledFlow;
