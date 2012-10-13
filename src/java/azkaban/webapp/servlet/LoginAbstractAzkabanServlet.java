@@ -21,19 +21,15 @@ import azkaban.webapp.session.Session;
  * Abstract Servlet that handles auto login when the session hasn't been
  * verified.
  */
-public abstract class LoginAbstractAzkabanServlet extends
-		AbstractAzkabanServlet {
+public abstract class LoginAbstractAzkabanServlet extends AbstractAzkabanServlet {
 
 	private static final long serialVersionUID = 1L;
 
-	private static final Logger logger = Logger
-			.getLogger(LoginAbstractAzkabanServlet.class.getName());
+	private static final Logger logger = Logger.getLogger(LoginAbstractAzkabanServlet.class.getName());
 	private static final String SESSION_ID_NAME = "azkaban.browser.session.id";
 
 	@Override
-	protected void doGet(HttpServletRequest req, HttpServletResponse resp)
-			throws ServletException, IOException {
-
+	protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
 		// Set session id
 		Session session = getSessionFromRequest(req);
 		if (hasParam(req, "logout")) {
@@ -89,7 +85,6 @@ public abstract class LoginAbstractAzkabanServlet extends
 	}
 
 	private void handleLogin(HttpServletRequest req, HttpServletResponse resp, String errorMsg) throws ServletException, IOException {
-
 		Page page = newPage(req, resp,
 				"azkaban/webapp/servlet/velocity/login.vm");
 		if (errorMsg != null) {

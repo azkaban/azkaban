@@ -9,7 +9,8 @@ public class Event {
 		JOB_SUCCEEDED,
 		JOB_FAILED,
 		JOB_KILLED,
-		JOB_SKIPPED
+		JOB_SKIPPED,
+		ERROR
 	}
 	
 	private final Object runner;

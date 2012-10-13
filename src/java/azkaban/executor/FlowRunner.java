@@ -66,6 +66,8 @@ public class FlowRunner extends EventHandler implements Runnable {
 	private Props flowOverrideProps = null;
 	
 	private FailureAction failedAction;
+	private boolean testMode = false;
+	private File failedMarker;
 	
 	public FlowRunner(ExecutableFlow flow) {
 		this.flow = flow;
@@ -79,6 +81,8 @@ public class FlowRunner extends EventHandler implements Runnable {
 			flowOverrideProps = new Props(null, flow.getFlowParameters()); 
 		}
 		failedAction = flow.getFailureAction();
+		failedMarker = new File(basePath, ConnectorParams.FORCED_FAILED_MARKER);
+
 		createLogger();
 	}
 
@@ -201,13 +205,17 @@ public class FlowRunner extends EventHandler implements Runnable {
 
 	@Override
 	public void run() {
+		if (testMode) {
+			logger.info("Running in testmode");
+		}
 		currentThread = Thread.currentThread();
 
 		flow.setStatus(Status.RUNNING);
 		flow.setStartTime(System.currentTimeMillis());
 		logger.info("Starting Flow");
 		this.fireEventListeners(Event.create(this, Type.FLOW_STARTED));
-
+		boolean forceFailed = false;
+		
 		// Load all shared props
 		try {
 			logger.info("Loading all shared properties");
@@ -252,7 +260,16 @@ public class FlowRunner extends EventHandler implements Runnable {
 					continue;
 				}
 			}
-
+			
+			if (failedMarker.exists()) {
+				logger.error("Looks like this job will be forced failed due to error.");
+				flow.setStatus(Status.FAILED);
+				forceFailed = true;
+				executorService.shutdownNow();
+				this.fireEventListeners(Event.create(this, Type.FLOW_FINISHED));
+				return;
+			}
+			
 			if (runner != null) {
 				try {
 					ExecutableNode node = runner.getNode();
@@ -273,7 +290,7 @@ public class FlowRunner extends EventHandler implements Runnable {
 				}
 			}
 		}
-
+		
 		logger.info("Finishing up flow. Awaiting Termination");
 		executorService.shutdown();
 
@@ -329,6 +346,8 @@ public class FlowRunner extends EventHandler implements Runnable {
 		Props jobProps = new Props(parentProps, propsFile);
 
 		JobRunner jobRunner = new JobRunner(node, jobProps, basePath);
+		jobRunner.setTestMode(testMode);
+		
 		jobRunner.addListener(listener);
 
 		return jobRunner;
@@ -506,6 +525,14 @@ public class FlowRunner extends EventHandler implements Runnable {
 		}
 	}
 	
+	public boolean isTestMode() {
+		return testMode;
+	}
+
+	public void setTestMode(boolean testMode) {
+		this.testMode = testMode;
+	}
+
 	private class JobRunnerEventListener implements EventListener {
 		private FlowRunner flowRunner;
 

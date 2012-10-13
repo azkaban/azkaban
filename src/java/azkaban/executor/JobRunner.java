@@ -36,6 +36,7 @@ public class JobRunner extends EventHandler implements Runnable {
 	
 	private Job job;
 	private String executionId = null;
+	private boolean testMode = false;
 	
 	private static final Object logCreatorLock = new Object();
 	
@@ -115,13 +116,24 @@ public class JobRunner extends EventHandler implements Runnable {
 		props.put(AbstractProcessJob.WORKING_DIR, workingDir.getAbsolutePath());
 		job = JobWrappingFactory.getJobWrappingFactory().buildJobExecutor(node.getId(), props, logger);
 
-		try {
-			job.run();
-		} catch (Throwable e) {
-			succeeded = false;
-			node.setStatus(Status.FAILED);
-			logError("Job run failed!");
-			e.printStackTrace();
+		if (testMode) {
+			logInfo("Test Mode. Skipping.");
+			synchronized(this) {
+				try {
+					wait(5000);
+				} catch (InterruptedException e) {
+				}
+			}
+		}
+		else {
+			try {
+				job.run();
+			} catch (Throwable e) {
+				succeeded = false;
+				node.setStatus(Status.FAILED);
+				logError("Job run failed!");
+				e.printStackTrace();
+			}
 		}
 
 		node.setEndTime(System.currentTimeMillis());
@@ -173,6 +185,14 @@ public class JobRunner extends EventHandler implements Runnable {
 		if (logger != null) {
 			logger.info(message);
 		}
+	}
+
+	public boolean isTestMode() {
+		return testMode;
+	}
+
+	public void setTestMode(boolean testMode) {
+		this.testMode = testMode;
 	}
 
 }

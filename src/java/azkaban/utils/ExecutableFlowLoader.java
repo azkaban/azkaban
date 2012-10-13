@@ -169,6 +169,7 @@ public class ExecutableFlowLoader {
 		}
 		
 		tempFlowFile.renameTo(flowFile);
+		flow.setUpdateTime(System.currentTimeMillis());
 		return flowFile;
 	}
 	

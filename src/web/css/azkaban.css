@@ -1929,7 +1929,7 @@ td .status.FAILED {
 }
 
 td .status.READY {
-	background-color: #C82123;
+	background-color: #CCC;
 }
 
 td .status.RUNNING {

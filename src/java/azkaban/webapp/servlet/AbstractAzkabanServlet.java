@@ -118,6 +118,24 @@ public abstract class AbstractAzkabanServlet extends HttpServlet {
 	}
 
 	/**
+	 * Retrieves the param from the http servlet request.
+	 * 
+	 * @param request
+	 * @param name
+	 * @param default
+	 * 
+	 * @return
+	 */
+	public String getParam(HttpServletRequest request, String name, String defaultVal){
+		String p = request.getParameter(name);
+		if (p == null) {
+			return defaultVal;
+		}
+		return p;
+	}
+
+	
+	/**
 	 * Returns the param and parses it into an int. Will throw an exception if
 	 * not found, or a parse error if the type is incorrect.
 	 * 

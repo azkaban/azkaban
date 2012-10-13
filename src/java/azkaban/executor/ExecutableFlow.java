@@ -12,6 +12,7 @@ import azkaban.flow.Edge;
 import azkaban.flow.Flow;
 import azkaban.flow.FlowProps;
 import azkaban.flow.Node;
+import azkaban.utils.JSONUtils;
 import azkaban.utils.Props;
 
 public class ExecutableFlow {
@@ -19,7 +20,6 @@ public class ExecutableFlow {
 	private String flowId;
 	private String projectId;
 	private String executionPath;
-	private long lastCheckedTime;
 	
 	private HashMap<String, FlowProps> flowProps = new HashMap<String, FlowProps>();
 	private HashMap<String, ExecutableNode> executableNodes = new HashMap<String, ExecutableNode>();
@@ -32,11 +32,11 @@ public class ExecutableFlow {
 	private long submitTime = -1;
 	private long startTime = -1;
 	private long endTime = -1;
+	private long updateTime = -1;
 	
 	private int updateNumber = 0;
 	private Status flowStatus = Status.READY;
 	private String submitUser;
-	private boolean submitted = false;
 	private boolean notifyOnFirstFailure = true;
 	private boolean notifyOnLastFailure = false;
 	
@@ -66,12 +66,12 @@ public class ExecutableFlow {
 	public ExecutableFlow() {
 	}
 	
-	public long getLastCheckedTime() {
-		return lastCheckedTime;
+	public long getUpdateTime() {
+		return updateTime;
 	}
 	
-	public void setLastCheckedTime(long lastCheckedTime) {
-		this.lastCheckedTime = lastCheckedTime;
+	public void setUpdateTime(long updateTime) {
+		this.updateTime = updateTime;
 	}
 	
 	public List<ExecutableNode> getExecutableNodes() {
@@ -117,8 +117,12 @@ public class ExecutableFlow {
 			targetNode.addInNode(edge.getSourceId());
 		}
 		
-		successEmails = new ArrayList<String>(flow.getSuccessEmails());
-		failureEmails = new ArrayList<String>(flow.getFailureEmails());
+		if (flow.getSuccessEmails() != null) {
+			successEmails = new ArrayList<String>(flow.getSuccessEmails());
+		}
+		if (flow.getFailureEmails() != null) {
+			failureEmails = new ArrayList<String>(flow.getFailureEmails());
+		}
 		flowProps.putAll(flow.getAllFlowProps());
 	}
 
@@ -293,9 +297,9 @@ public class ExecutableFlow {
 		exFlow.executionPath = (String)flowObj.get("executionPath");
 		exFlow.flowId = (String)flowObj.get("flowId");
 		exFlow.projectId = (String)flowObj.get("projectId");
-		exFlow.submitTime = getLongFromObject(flowObj.get("submitTime"));
-		exFlow.startTime = getLongFromObject(flowObj.get("startTime"));
-		exFlow.endTime = getLongFromObject(flowObj.get("endTime"));
+		exFlow.submitTime = JSONUtils.getLongFromObject(flowObj.get("submitTime"));
+		exFlow.startTime = JSONUtils.getLongFromObject(flowObj.get("startTime"));
+		exFlow.endTime = JSONUtils.getLongFromObject(flowObj.get("endTime"));
 		exFlow.flowStatus = Status.valueOf((String)flowObj.get("status"));
 		exFlow.submitUser = (String)flowObj.get("submitUser");
 		if (flowObj.containsKey("flowParameters")) {
@@ -340,21 +344,13 @@ public class ExecutableFlow {
 		return exFlow;
 	}
 	
-	private static long getLongFromObject(Object obj) {
-		if (obj instanceof Integer) {
-			return Long.valueOf((Integer)obj);
-		}
-		
-		return (Long)obj;
-	}
-	
 	@SuppressWarnings("unchecked")
 	public void updateExecutableFlowFromObject(Object obj) {
 		HashMap<String, Object> flowObj = (HashMap<String,Object>)obj;
 
-		submitTime = getLongFromObject(flowObj.get("submitTime"));
-		startTime = getLongFromObject(flowObj.get("startTime"));
-		endTime = getLongFromObject(flowObj.get("endTime"));
+		submitTime = JSONUtils.getLongFromObject(flowObj.get("submitTime"));
+		startTime = JSONUtils.getLongFromObject(flowObj.get("startTime"));
+		endTime = JSONUtils.getLongFromObject(flowObj.get("endTime"));
 		flowStatus = Status.valueOf((String)flowObj.get("status"));
 		
 		List<Object> nodes = (List<Object>)flowObj.get("nodes");
@@ -388,14 +384,6 @@ public class ExecutableFlow {
 
 	public void setSubmitUser(String submitUser) {
 		this.submitUser = submitUser;
-	}
-
-	public boolean isSubmitted() {
-		return submitted;
-	}
-
-	public void setSubmitted(boolean submitted) {
-		this.submitted = submitted;
 	}
 
 	public void setPipelineLevel(int level) {
@@ -514,8 +502,8 @@ public class ExecutableFlow {
 			exNode.inNodes.addAll( (List<String>)objMap.get("inNodes") );
 			exNode.outNodes.addAll( (List<String>)objMap.get("outNodes") );
 			
-			exNode.startTime = getLongFromObject(objMap.get("startTime"));
-			exNode.endTime = getLongFromObject(objMap.get("endTime"));
+			exNode.startTime = JSONUtils.getLongFromObject(objMap.get("startTime"));
+			exNode.endTime = JSONUtils.getLongFromObject(objMap.get("endTime"));
 			exNode.level = (Integer)objMap.get("level");
 			
 			exNode.flow = flow;
@@ -528,8 +516,8 @@ public class ExecutableFlow {
 			HashMap<String, Object> objMap = (HashMap<String,Object>)obj;
 			status = Status.valueOf((String)objMap.get("status"));
 
-			startTime = getLongFromObject(objMap.get("startTime"));
-			endTime = getLongFromObject(objMap.get("endTime"));
+			startTime = JSONUtils.getLongFromObject(objMap.get("startTime"));
+			endTime = JSONUtils.getLongFromObject(objMap.get("endTime"));
 		}
 		
 		public long getStartTime() {

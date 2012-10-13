@@ -415,7 +415,7 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 		}
 		
 		try {
-			executorManager.cancelFlow(exFlow, user.getUserId());
+			executorManager.cancelFlow(exFlow.getExecutionId(), user.getUserId());
 		} catch (ExecutorManagerException e) {
 			ret.put("error", e.getMessage());
 		}
@@ -444,7 +444,7 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 		}
 
 		try {
-			executorManager.pauseFlow(exFlow, user.getUserId());
+			executorManager.pauseFlow(exFlow.getExecutionId(), user.getUserId());
 		} catch (ExecutorManagerException e) {
 			ret.put("error", e.getMessage());
 		}
@@ -457,7 +457,7 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 		}
 
 		try {
-			executorManager.resumeFlow(exFlow, user.getUserId());
+			executorManager.resumeFlow(exFlow.getExecutionId(), user.getUserId());
 		} catch (ExecutorManagerException e) {
 			ret.put("resume", e.getMessage());
 		}

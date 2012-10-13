@@ -6,6 +6,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.Writer;
 import java.net.URI;
@@ -17,6 +18,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -38,8 +40,8 @@ import org.apache.http.impl.client.BasicResponseHandler;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.log4j.Logger;
 
+import azkaban.executor.ExecutableFlow.ExecutableNode;
 import azkaban.executor.ExecutableFlow.Status;
-import azkaban.executor.ExecutorManager.ExecutionReference;
 import azkaban.flow.Flow;
 import azkaban.utils.ExecutableFlowLoader;
 import azkaban.utils.JSONUtils;
@@ -55,9 +57,8 @@ public class ExecutorManager {
 	private static final String ARCHIVE_DIR = ".archive";
 	private static Logger logger = Logger.getLogger(ExecutorManager.class);
 	// 30 seconds of retry before failure.
-	private static final long ACCESS_ERROR_THRESHOLD = 30000;
-	private static final int UPDATE_THREAD_MS = 1000;
-
+	private static final long ACCESS_ERROR_THRESHOLD_MS = 30000;
+	
 	// log read buffer.
 	private static final int LOG_BUFFER_READ_SIZE = 10*1024;
 	
@@ -69,10 +70,14 @@ public class ExecutorManager {
 	private String url = "localhost";
 	
 	private ConcurrentHashMap<String, ExecutableFlow> runningFlows = new ConcurrentHashMap<String, ExecutableFlow>();
+	private ConcurrentHashMap<String, ExecutionReference> runningReference = new ConcurrentHashMap<String, ExecutionReference>();
 	
 	private CacheManager manager = CacheManager.create();
 	private Cache recentFlowsCache;
 	private static final int LIVE_SECONDS = 600;
+	private Object BlockObj = new Object();
+	
+	ExecutingManagerUpdaterThread executingManager;
 	
 	public ExecutorManager(Props props) throws IOException, ExecutorManagerException {
 		basePath = new File(props.getString("execution.directory"));
@@ -102,7 +107,7 @@ public class ExecutorManager {
 		counter.set(0);
 		loadActiveExecutions();
 		
-		ExecutingManagerUpdaterThread executingManager = new ExecutingManagerUpdaterThread();
+		executingManager = new ExecutingManagerUpdaterThread();
 		executingManager.start();
 	}
 	
@@ -214,7 +219,6 @@ public class ExecutorManager {
 		Arrays.sort(archivePartitionsDir, new Comparator<File>() {
 			@Override
 			public int compare(File arg0, File arg1) {
-				// TODO Auto-generated method stub
 				return arg1.getName().compareTo(arg0.getName());
 			}});
 
@@ -237,7 +241,6 @@ public class ExecutorManager {
 							searchFlows.add(ref);
 						}
 					} catch (IOException e) {
-						// TODO Auto-generated catch block
 						e.printStackTrace();
 					}
 					
@@ -263,14 +266,19 @@ public class ExecutorManager {
 		for (File activeFlowDir: activeFlowDirs) {
 			if (activeFlowDir.isDirectory()) {
 				ExecutionReference reference = ExecutionReference.readFromDirectory(activeFlowDir);
+				if (reference.getExecutorUrl() == null) {
+					reference.setExecutorPort(portNumber);
+					reference.setExecutorUrl(url);
+				}
 				
 				ExecutableFlow flow = this.getFlowFromReference(reference);
 				if (flow == null) {
 					logger.error("Flow " + reference.getExecId() + " not found.");
 				}
-				flow.setLastCheckedTime(System.currentTimeMillis());
-				flow.setSubmitted(true);
+				reference.setLastCheckedTime(System.currentTimeMillis());
+
 				if (flow != null) {
+					runningReference.put(reference.getExecId(), reference);
 					runningFlows.put(flow.getExecutionId(), flow);
 				}
 			}
@@ -290,11 +298,14 @@ public class ExecutorManager {
 		// Find execution
 		File executionDir;
 		String executionId;
-		int count = counter.getAndIncrement() % 100000;
-		String countString = String.format("%05d", count);
+
+		int count = 0;
+
 		do {
-			executionId = String.valueOf(System.currentTimeMillis()) + "." + countString + "." + flowId;
+			String countString = String.format("%05d", count);
+			executionId = String.valueOf(System.currentTimeMillis()) + "." + countString + "." + projectId + "." + flowId;
 			executionDir = new File(projectExecutionDir, executionId);
+			count++;
 		}
 		while(executionDir.exists());
 		
@@ -319,6 +330,22 @@ public class ExecutorManager {
 		ExecutableFlow flow = runningFlows.get(executionId);
 		if (flow != null) {
 			return flow;
+		}
+		
+		String[] split = executionId.split("\\.");
+		// get project file from split.
+		String projectId = split[2];
+		File projectPath = new File(basePath, projectId);
+		if (projectPath.exists()) {
+			// Execution path sometimes looks like timestamp.count.projectId.flowId. Except flowId could have ..
+			String flowId = executionId.substring(split[0].length() + split[1].length() + projectId.length() + 3);
+			File flowPath = new File(projectPath, flowId);
+			if (flowPath.exists()) {
+				File executionPath = new File(flowPath, executionId);
+				if (executionPath.exists()) {
+					return ExecutableFlowLoader.loadExecutableFlowFromDir(executionPath);
+				}
+			}
 		}
 		
 		// Check active
@@ -355,7 +382,7 @@ public class ExecutorManager {
 		return null;
 	}
 	
-	private synchronized void addActiveExecutionReference(ExecutableFlow flow) throws ExecutorManagerException {
+	private synchronized ExecutionReference addActiveExecutionReference(ExecutableFlow flow) throws ExecutorManagerException {
 		File activeDirectory = new File(basePath, ACTIVE_DIR);
 		if (!activeDirectory.exists()) {
 			activeDirectory.mkdirs();
@@ -367,67 +394,191 @@ public class ExecutorManager {
 
 		// We don't really need to save the reference, 
 		ExecutionReference reference = new ExecutionReference(flow);
+		reference.setExecutorUrl(url);
+		reference.setExecutorPort(portNumber);
 		try {
 			reference.writeToDirectory(referenceDir);
 		} catch (IOException e) {
 			throw new ExecutorManagerException("Couldn't write execution to directory.", e);
 		}
-		runningFlows.put(flow.getExecutionId(), flow);
+
+		return reference;
 	}
 	
-	public void cancelFlow(ExecutableFlow flow, String user) throws ExecutorManagerException {
-		logger.info("Calling cancel");
-		String response = null;
-		try {
-			response = callExecutionServer("cancel", flow, user);
-		} catch (IOException e) {
-			e.printStackTrace();
-			throw new ExecutorManagerException("Error cancelling flow.", e);
+	private void forceFlowFailure(ExecutableFlow exFlow) throws ExecutorManagerException {
+		String logFileName = "_flow." + exFlow.getExecutionId() + ".log";
+		File executionDir = new File(exFlow.getExecutionPath());
+		
+		// Add a marker to the directory as an indicator to zombie processes that this is off limits.
+		File forcedFailed = new File(executionDir, ConnectorParams.FORCED_FAILED_MARKER);
+		if (!forcedFailed.exists()) {
+			try {
+				forcedFailed.createNewFile();
+			} catch (IOException e) {
+				logger.error("Error creating failed marker in execution directory",e);
+			}
 		}
-	}
-	
-	public void pauseFlow(ExecutableFlow flow, String user) throws ExecutorManagerException {
-		logger.info("Calling pause");
-		String response = null;
-		try {
-			response = callExecutionServer("pause", flow, user);
-		} catch (IOException e) {
-			e.printStackTrace();
-			throw new ExecutorManagerException("Error cancelling flow.", e);
-		}
-	}
-	
-	public void resumeFlow(ExecutableFlow flow, String user) throws ExecutorManagerException {
-		logger.info("Calling resume");
-		String response = null;
-		try {
-			response = callExecutionServer("resume", flow, user);
-		} catch (IOException e) {
-			e.printStackTrace();
-			throw new ExecutorManagerException("Error cancelling flow.", e);
+		
+		// Load last update
+		ExecutableFlowLoader.updateFlowStatusFromFile(executionDir, exFlow, true);
+
+		// Return if already finished.
+		if (exFlow.getStatus() == Status.FAILED || 
+			exFlow.getStatus() == Status.SUCCEEDED || 
+			exFlow.getStatus() == Status.KILLED) {
+			return;
 		}
 
+		// Finish log file
+		File logFile = new File(executionDir, logFileName);
+		if (logFile.exists()) {
+			// Finally add to log
+			FileWriter writer = null;
+			try {
+				writer = new FileWriter(logFile, true);
+				writer.append("\n" + System.currentTimeMillis() + " ERROR: Can't reach executor. Killing Flow!!!!");
+			} catch (IOException e) {
+				if (writer != null) {
+					try {
+						writer.close();
+					} catch (IOException e1) {
+						e1.printStackTrace();
+					}
+				}
+			}
+		}
+
+		// We mark every untouched job with KILLED, and running jobs with FAILED.
+		long time = System.currentTimeMillis();
+		for (ExecutableNode node: exFlow.getExecutableNodes()) {
+			switch(node.getStatus()) {
+				case SUCCEEDED:
+				case FAILED:
+				case KILLED:
+				case SKIPPED:
+				case DISABLED:
+					continue;
+				case UNKNOWN:
+				case READY:
+					node.setStatus(Status.KILLED);
+					break;
+				default:
+					node.setStatus(Status.FAILED);
+					break;
+			}
+
+			if (node.getStartTime() == -1) {
+				node.setStartTime(time);
+			}
+			if (node.getEndTime() == -1) {
+				node.setEndTime(time);
+			}
+		}
+
+		if (exFlow.getEndTime() == -1) {
+			exFlow.setEndTime(time);
+		}
+		
+		exFlow.setStatus(Status.FAILED);
+	}
+
+	@SuppressWarnings("unchecked")
+	public void cancelFlow(String execId, String user) throws ExecutorManagerException {
+		logger.info("Calling cancel");
+		ExecutionReference reference = runningReference.get(execId);
+		if (reference == null) {
+			throw new ExecutorManagerException("Execution " + execId + " not running.");
+		}
+		
+		Map<String, Object> respObj = null;
+		try {
+			String response = callExecutorServer(reference, ConnectorParams.CANCEL_ACTION);
+			respObj = (Map<String, Object>)JSONUtils.parseJSONFromString(response);
+		} catch (IOException e) {
+			e.printStackTrace();
+			throw new ExecutorManagerException("Error cancelling flow.", e);
+		}
+		
+		if (respObj.containsKey(ConnectorParams.RESPONSE_ERROR)) {
+			throw new ExecutorManagerException((String)respObj.get(ConnectorParams.RESPONSE_ERROR));
+		}
+	}
+
+	@SuppressWarnings("unchecked")
+	public void pauseFlow(String execId, String user) throws ExecutorManagerException {
+		logger.info("Calling pause");
+		ExecutionReference reference = runningReference.get(execId);
+		if (reference == null) {
+			throw new ExecutorManagerException("Execution " + execId + " not running.");
+		}
+		
+		Map<String, Object> respObj = null;
+		try {
+			String response = callExecutorServer(reference, ConnectorParams.PAUSE_ACTION);
+			respObj = (Map<String, Object>)JSONUtils.parseJSONFromString(response);
+		} catch (IOException e) {
+			e.printStackTrace();
+			throw new ExecutorManagerException("Error pausing flow.", e);
+		}
+
+		if (respObj.containsKey(ConnectorParams.RESPONSE_ERROR)) {
+			throw new ExecutorManagerException((String)respObj.get(ConnectorParams.RESPONSE_ERROR));
+		}
+	}
+
+	@SuppressWarnings("unchecked")
+	public void resumeFlow(String execId, String user) throws ExecutorManagerException {
+		logger.info("Calling resume");
+		ExecutionReference reference = runningReference.get(execId);
+		if (reference == null) {
+			throw new ExecutorManagerException("Execution " + execId + " not running.");
+		}
+		
+		Map<String, Object> respObj = null;
+		try {
+			String response = callExecutorServer(reference, ConnectorParams.RESUME_ACTION);
+			respObj = (Map<String, Object>)JSONUtils.parseJSONFromString(response);
+		} catch (IOException e) {
+			e.printStackTrace();
+			throw new ExecutorManagerException("Error resuming flow.", e);
+		}
+
+		if (respObj.containsKey(ConnectorParams.RESPONSE_ERROR)) {
+			throw new ExecutorManagerException((String)respObj.get(ConnectorParams.RESPONSE_ERROR));
+		}
 	}
 	
-	private String callExecutionServer(String action, ExecutableFlow flow) throws IOException{
-		return callExecutionServer(action, flow, null);
+	private synchronized String callExecutorServer(ExecutionReference reference, String action) throws IOException {
+		return callExecutorServer(
+				reference.getExecutorUrl(),
+				reference.getExecutorPort(),
+				action,
+				reference.getExecId(),
+				reference.getExecPath(),
+				reference.userId);
 	}
 	
-	private String callExecutionServer(String action, ExecutableFlow flow, String user) throws IOException{
+	private synchronized String callExecutorServer(String url, int port, String action, String execid, String execPath, String user) throws IOException {
 		URIBuilder builder = new URIBuilder();
 		builder.setScheme("http")
 			.setHost(url)
-			.setPort(portNumber)
+			.setPort(port)
 			.setPath("/executor")
-			.setParameter("sharedToken", token)
-			.setParameter("action", action)
-			.setParameter("execid", flow.getExecutionId())
-			.setParameter("execpath", flow.getExecutionPath());
-		
-		if (user != null) {
-			builder.setParameter("user", user);
+			.setParameter(ConnectorParams.SHAREDTOKEN_PARAM, token)
+			.setParameter(ConnectorParams.ACTION_PARAM, action);
+
+		if (execid != null) {
+			builder.setParameter(ConnectorParams.EXECID_PARAM, execid);
 		}
 		
+		if (user != null) {
+			builder.setParameter(ConnectorParams.USER_PARAM, user);
+		}
+		
+		if (execPath != null) {
+			builder.setParameter(ConnectorParams.EXECPATH_PARAM, execPath);
+		}
+
 		URI uri = null;
 		try {
 			uri = builder.build();
@@ -437,14 +588,12 @@ public class ExecutorManager {
 		
 		ResponseHandler<String> responseHandler = new BasicResponseHandler();
 		
-		logger.info("Remotely querying " + flow.getExecutionId() + " for status.");
 		HttpClient httpclient = new DefaultHttpClient();
 		HttpGet httpget = new HttpGet(uri);
 		String response = null;
 		try {
 			response = httpclient.execute(httpget, responseHandler);
 		} catch (IOException e) {
-			flow.setStatus(ExecutableFlow.Status.FAILED);
 			e.printStackTrace();
 			return response;
 		}
@@ -462,24 +611,30 @@ public class ExecutorManager {
 		
 		writeResourceFile(executionDir, flow);
 		ExecutableFlowLoader.writeExecutableFlowFile(executionDir, flow, null);
-		addActiveExecutionReference(flow);
-		flow.setLastCheckedTime(System.currentTimeMillis());
-		runningFlows.put(flow.getExecutionId(), flow);
+		ExecutionReference reference = addActiveExecutionReference(flow);
 		
 		logger.info("Setting up " + flow.getExecutionId() + " for execution.");
 		
 		String response;
 		try {
-			response = callExecutionServer("execute", flow);
+			response = callExecutorServer(reference, ConnectorParams.EXECUTE_ACTION);
+			reference.setSubmitted(true);
+			runningReference.put(flow.getExecutionId(), reference);
+			runningFlows.put(flow.getExecutionId(), flow);
 		} catch (IOException e) {
 			e.printStackTrace();
-			flow.setStatus(ExecutableFlow.Status.FAILED);
+			// Clean up.
+			forceFlowFailure(flow);
+			cleanFinishedJob(flow);
 			return;
 		}
 		
 		logger.debug("Submitted Response: " + response);
-		flow.setLastCheckedTime(System.currentTimeMillis());
-		flow.setSubmitted(true);
+
+		reference.setStartTime(System.currentTimeMillis());
+		synchronized(BlockObj) {
+			BlockObj.notify();
+		}
 	}
 	
 	private long readLog(File logFile, Writer writer, long startChar, long maxSize) {
@@ -608,7 +763,6 @@ public class ExecutorManager {
 				try {
 					out.close();
 				} catch (IOException e) {
-					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
 			}
@@ -725,22 +879,17 @@ public class ExecutorManager {
 		int index = execID.indexOf('.');
 		return execID.substring(0, index - 8);
 	}
-	
-	private void cleanFinishedJob(ExecutableFlow exFlow) throws ExecutorManagerException {
-		
+
+	private void cleanExecutionReferenceJob(ExecutionReference reference) throws ExecutorManagerException {
 		// Write final file
-		int updateNum = exFlow.getUpdateNumber();
-		updateNum++;
-		ExecutableFlowLoader.writeExecutableFlowFile(new File(exFlow.getExecutionPath()), exFlow, updateNum);
-		
-		String activeReferencePath = ACTIVE_DIR + File.separator + exFlow.getExecutionId(); 
+		String exId = reference.getExecId();
+		String activeReferencePath = ACTIVE_DIR + File.separator + exId; 
 		File activeDirectory = new File(basePath, activeReferencePath);
 		if (!activeDirectory.exists()) {
 			logger.error("WTF!! Active reference " + activeDirectory + " directory doesn't exist.");
 			throw new ExecutorManagerException("Active reference " + activeDirectory + " doesn't exists.");
 		}
 		
-		String exId = exFlow.getExecutionId();
 		String partitionVal = getExecutableReferencePartition(exId);
 		
 		String archiveDatePartition = ARCHIVE_DIR + File.separator + partitionVal;
@@ -749,7 +898,7 @@ public class ExecutorManager {
 			archivePartitionDir.mkdirs();
 		}
 
-		File archiveDirectory = new File(archivePartitionDir, exFlow.getExecutionId());
+		File archiveDirectory = new File(archivePartitionDir, exId);
 		if (archiveDirectory.exists()) {
 			logger.error("Archive reference already exists. Cleaning up.");
 			try {
@@ -766,7 +915,6 @@ public class ExecutorManager {
 			throw new ExecutorManagerException("Cannot create " + archiveDirectory);
 		}
 		
-		ExecutionReference reference = new ExecutionReference(exFlow);
 		try {
 			reference.writeToDirectory(archiveDirectory);
 		} catch (IOException e) {
@@ -779,125 +927,166 @@ public class ExecutorManager {
 		} catch (IOException e) {
 			throw new ExecutorManagerException("Cannot cleanup active directory " + activeDirectory);
 		}
+	
+		runningReference.remove(exId);
+	}
+	
+	private void cleanFinishedJob(ExecutableFlow exFlow) throws ExecutorManagerException {
+		// Write final file
+		int updateNum = exFlow.getUpdateNumber();
+		updateNum++;
+		String exId = exFlow.getExecutionId();
+		ExecutableFlowLoader.writeExecutableFlowFile(new File(exFlow.getExecutionPath()), exFlow, updateNum);
+
+		// Clean up reference
+		ExecutionReference reference = runningReference.get(exId);
+		if (reference != null) {
+			reference.setStartTime(exFlow.getStartTime());
+			reference.setEndTime(exFlow.getEndTime());
+			reference.setStatus(exFlow.getStatus());
+			cleanExecutionReferenceJob(reference);
+		}
 		
 		runningFlows.remove(exFlow.getExecutionId());
 		recentFlowsCache.put(new Element(exFlow.getExecutionId(), exFlow));
 		cleanupUnusedFiles(exFlow);
 	}
 	
-	/**
-	 * Thread that polls the executor for executing jobs.
-	 * It is also cleans up the flow execution files after it's done.
-	 */
 	private class ExecutingManagerUpdaterThread extends Thread {
 		private boolean shutdown = false;
-		private int updateTimeMs = UPDATE_THREAD_MS;
+		private int waitTimeIdleMs = 1000;
+		private int waitTimeMs = 100;
+		
+		@SuppressWarnings("unchecked")
 		public void run() {
-			while (!shutdown) {
-				ArrayList<ExecutableFlow> flows = new ArrayList<ExecutableFlow>(runningFlows.values());
-				for(ExecutableFlow exFlow : flows) {
-					if (!exFlow.isSubmitted()) {
+			while(!shutdown) {
+				for (ExecutionReference reference: runningReference.values()) {
+					// Don't do anything if not submitted
+					if (!reference.isSubmitted()) {
 						continue;
 					}
 					
-					File executionDir = new File(exFlow.getExecutionPath());
+					String execId = reference.getExecId();
+					ExecutableFlow flow = runningFlows.get(execId);
+					if (flow != null) {
+						// Why doesn't flow exist?
+					}
 					
+					File executionDir = new File(flow.getExecutionPath());
+					// The execution dir doesn't exist. So we clean up.
 					if (!executionDir.exists()) {
 						logger.error("WTF!! Execution dir " + executionDir + " doesn't exist!");
-						// @TODO probably should handle this error case somehow. Cleanup?
+						// Removing reference.
+						reference.setStatus(Status.FAILED);
+						try {
+							cleanExecutionReferenceJob(reference);
+						} catch (ExecutorManagerException e) {
+							logger.error("The execution dir " + executionDir.getPath() + " doesn't exist for " + reference.toRefString(), e);
+						}
 						continue;
 					}
-
-					// Query the executor service to see if the item is running.
-					String responseString = null;
+					
+					// Get status from the server. If the server response are errors, than we clean up after 30 seconds of errors.
+					HashMap<String,Object> map = null;
 					try {
-						responseString = callExecutionServer("status", exFlow);
+						String string = callExecutorServer(reference, ConnectorParams.STATUS_ACTION);
+						map = (HashMap<String,Object>)JSONUtils.parseJSONFromString(string);
+						reference.setLastCheckedTime(System.currentTimeMillis());
 					} catch (IOException e) {
-						e.printStackTrace();
-						// Connection issue. Backoff 1 sec.
-						synchronized(this) {
+						if (System.currentTimeMillis() - reference.getLastCheckedTime() > ACCESS_ERROR_THRESHOLD_MS) {
+							logger.error("Error: Can't connect to server." + reference.toRefString() + ". Might be dead. Cleaning up project.", e);
+							// Cleanup. Since we haven't seen anyone.
 							try {
-								wait(1000);
-							} catch (InterruptedException ie) {
+								forceFlowFailure(flow);
+								cleanFinishedJob(flow);
+							} catch (ExecutorManagerException e1) {
+								logger.error("Foreced Fail: Error while cleaning up flow and job. " + reference.toRefString(), e1);
 							}
+							
+							continue;
 						}
-						continue;
-					}
-					catch (Exception e) {
-						e.printStackTrace();
 					}
 					
-					Object executorResponseObj;
-					try {
-						executorResponseObj = JSONUtils.parseJSONFromString(responseString);
-					} catch (Exception e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
+					// If the response from the server is an error, we print out the response and continue.
+					String error = (String)map.get(ConnectorParams.RESPONSE_ERROR);
+					if (error != null) {
+						logger.error("Server status response for " + reference.toRefString() + " was an error: " + error);
 						continue;
 					}
 					
-					@SuppressWarnings("unchecked")
-					HashMap<String, Object> response = (HashMap<String, Object>)executorResponseObj;
-					String status = (String)response.get("status");
-					
-					try {
-						ExecutableFlowLoader.updateFlowStatusFromFile(executionDir, exFlow, true);
-					} catch (ExecutorManagerException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-						continue;
-					}
-
-					// If it's completed, and not running, we clean up.
-					if (exFlow.getStatus() == Status.SUCCEEDED || exFlow.getStatus() == Status.FAILED || exFlow.getStatus() == Status.KILLED) {
-						if (status.equals("notfound")) {
-							// Cleanup
-							logger.info("Flow " + exFlow.getExecutionId() + " has succeeded. Cleaning Up.");
-							try {
-								ExecutableFlowLoader.updateFlowStatusFromFile(executionDir, exFlow, true);
-								cleanFinishedJob(exFlow);						
-							} catch (ExecutorManagerException e) {
-								e.printStackTrace();
-								continue;
-							}
-							exFlow.setLastCheckedTime(System.currentTimeMillis());
-						}
-						else {
-							logger.error("Flow " + exFlow.getExecutionId() + " has succeeded, but the Executor says its still running with msg: " + status);
-							if (System.currentTimeMillis() - exFlow.getLastCheckedTime() > ACCESS_ERROR_THRESHOLD) {
-								exFlow.setStatus(Status.FAILED);
-								exFlow.setEndTime(System.currentTimeMillis());
-								logger.error("It's been " + ACCESS_ERROR_THRESHOLD + " ms since last update. Auto-failing the job.");
-							}
+					// If not found, then we clean up.
+					String statusStr = (String)map.get(ConnectorParams.STATUS_PARAM);
+					boolean forceFail = false;
+					if (statusStr.equals(ConnectorParams.RESPONSE_NOTFOUND)) {
+						logger.info("Server status response for " + reference.toRefString() + " was 'notfound'. Cleaning up");
+						try {
+							ExecutableFlowLoader.updateFlowStatusFromFile(executionDir, flow, true);
+							forceFail = true;
+						} catch (ExecutorManagerException e) {
+							logger.error("Error updating flow status " + flow.getExecutionId() + " from file.", e);
+							continue;
 						}
 					}
 					else {
-						// If it's not finished, and not running, we will fail it and clean up.
-						if (status.equals("notfound")) {
-							logger.error("Flow " + exFlow.getExecutionId() + " is running, but the Executor can't find it.");
-							if (System.currentTimeMillis() - exFlow.getLastCheckedTime() > ACCESS_ERROR_THRESHOLD) {
-								exFlow.setStatus(Status.FAILED);
-								exFlow.setEndTime(System.currentTimeMillis());
-								logger.error("It's been " + ACCESS_ERROR_THRESHOLD + " ms since last update. Auto-failing the job.");
+						// It's found, so we check the status.
+						long time = JSONUtils.getLongFromObject(map.get(ConnectorParams.RESPONSE_UPDATETIME));
+						
+						if (time > flow.getUpdateTime()) {
+							try {
+								ExecutableFlowLoader.updateFlowStatusFromFile(executionDir, flow, true);
+								// Update reference
+								reference.setStartTime(flow.getStartTime());
+								reference.setEndTime(flow.getEndTime());
+								reference.setStatus(flow.getStatus());
+							} catch (ExecutorManagerException e) {
+								logger.error("Error updating flow status " + flow.getExecutionId() + " from file.", e);
 							}
-						}
-						else {
-							exFlow.setLastCheckedTime(System.currentTimeMillis());
+							
+							flow.setUpdateTime(time);
 						}
 					}
-					
-					synchronized(this) {
-						try {
-							wait(updateTimeMs);
-						} catch (InterruptedException e) {
-							// TODO Auto-generated catch block
-							e.printStackTrace();
+
+					switch(flow.getStatus()) {
+						case SUCCEEDED:
+						case FAILED:
+						case KILLED:
+							try {
+								cleanFinishedJob(flow);
+							} catch (ExecutorManagerException e) {
+								logger.error("Error while cleaning up flow and job. " + reference.toRefString(), e);
+							}
+							
+							break;
+						default:{
+							// We force the failure.
+							if (forceFail) {
+								try {
+									forceFlowFailure(flow);
+									cleanFinishedJob(flow);
+								} catch (ExecutorManagerException e) {
+									logger.error("Foreced Fail: Error while cleaning up flow and job. " + reference.toRefString(), e);
+								}
+							}
 						}
+					}
+				}
+
+				// Change to rotating queue?
+				synchronized(BlockObj) {
+					try {
+						if (runningReference.isEmpty()) {
+							BlockObj.wait(waitTimeIdleMs);
+						}
+						else {
+							BlockObj.wait(waitTimeMs);
+						}
+					} catch (InterruptedException e) {
 					}
 				}
 			}
 		}
 	}
+	
 	
 	/**
 	 * Reference to a Flow Execution.
@@ -913,11 +1102,18 @@ public class ExecutorManager {
 		private long startTime;
 		private long endTime;
 		private Status status;
-
+		private String executorUrl;
+		
+		private int executorPort;
+		private boolean isSubmitted = true;
+		private long lastCheckedTime = -1;
+		
 		public ExecutionReference() {
+			this.lastCheckedTime = System.currentTimeMillis();
 		}
 		
 		public ExecutionReference(ExecutableFlow flow) {
+			this();
 			this.execId = flow.getExecutionId();
 			this.projectId = flow.getProjectId();
 			this.flowId = flow.getFlowId();
@@ -927,6 +1123,7 @@ public class ExecutorManager {
 			this.startTime = flow.getStartTime();
 			this.endTime = flow.getEndTime();
 			this.status = flow.getStatus();
+			this.isSubmitted = false;
 		}
 		
 		private Object toObject() {
@@ -939,6 +1136,8 @@ public class ExecutorManager {
 			obj.put("startTime", startTime);
 			obj.put("endTime", endTime);
 			obj.put("status", status);
+			obj.put("executorUrl", executorUrl);
+			obj.put("executorPort", executorPort);
 			return obj;
 		}
 		
@@ -955,6 +1154,7 @@ public class ExecutorManager {
 				throw new IOException("Execution file execution.json does not exist.");
 			}
 			
+			@SuppressWarnings("unchecked")
 			HashMap<String, Object> obj = (HashMap<String, Object>)JSONUtils.parseJSONFromFile(file);
 			ExecutionReference reference = new ExecutionReference();
 			reference.execId = (String)obj.get("execId");
@@ -962,10 +1162,20 @@ public class ExecutorManager {
 			reference.flowId = (String)obj.get("flowId");
 			reference.userId = (String)obj.get("userId");
 			reference.execPath = (String)obj.get("execPath");
-			reference.startTime = getLongFromObject(obj.get("startTime"));
-			reference.endTime = getLongFromObject(obj.get("endTime"));
+			reference.startTime = JSONUtils.getLongFromObject(obj.get("startTime"));
+			reference.endTime = JSONUtils.getLongFromObject(obj.get("endTime"));
 			reference.status = Status.valueOf((String)obj.get("status"));
+			
+			if (obj.containsKey("executorUrl")) {
+				reference.executorUrl = (String)obj.get("executorUrl");
+				reference.executorPort = (Integer)obj.get("executorPort");
+			}
+
 			return reference;
+		}
+		
+		public String toRefString() {
+			return execId + ":" + executorUrl + ":" + executorPort;
 		}
 		
 		public String getExecId() {
@@ -1016,15 +1226,38 @@ public class ExecutorManager {
 		public void setStatus(Status status) {
 			this.status = status;
 		}
-	}
-	
-	private static long getLongFromObject(Object obj) {
-		if (obj instanceof Integer) {
-			return Long.valueOf((Integer)obj);
-		}
-		
-		return (Long)obj;
-	}
 
+		public String getExecutorUrl() {
+			return executorUrl;
+		}
+
+		public void setExecutorUrl(String executorUrl) {
+			this.executorUrl = executorUrl;
+		}
+
+		public int getExecutorPort() {
+			return executorPort;
+		}
+
+		public void setExecutorPort(int port) {
+			this.executorPort = port;
+		}
+
+		public boolean isSubmitted() {
+			return isSubmitted;
+		}
+
+		public void setSubmitted(boolean isSubmitted) {
+			this.isSubmitted = isSubmitted;
+		}
+
+		public long getLastCheckedTime() {
+			return lastCheckedTime;
+		}
+
+		public void setLastCheckedTime(long lastCheckedTime) {
+			this.lastCheckedTime = lastCheckedTime;
+		}
+	}
 
 }

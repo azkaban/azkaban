@@ -138,4 +138,12 @@ public class JSONUtils {
 			return null;
 		}
 	}
+	
+	public static long getLongFromObject(Object obj) {
+		if (obj instanceof Integer) {
+			return Long.valueOf((Integer)obj);
+		}
+		
+		return (Long)obj;
+	}
 }
