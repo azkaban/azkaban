@@ -16,8 +16,12 @@
 
 package azkaban.webapp.servlet;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.URLClassLoader;
 import java.security.PrivilegedAction;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -30,6 +34,7 @@ import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
+import javax.swing.filechooser.FileNameExtensionFilter;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileStatus;
@@ -91,8 +96,35 @@ public class HdfsBrowserServlet extends LoginAbstractAzkabanServlet {
 		_viewers.add(new JsonSequenceFileViewer());
 		
 		property = this.getApplication().getAzkabanProps().toProperties();
-		
 		conf = new Configuration();
+		
+//		String hadoopHome = System.getenv("HADOOP_HOME");
+//		String hadoopConfDir = System.getenv("HADOOP_CONF_DIR");
+//		if(hadoopHome == null && hadoopConfDir == null) {
+//			logger.error("HADOOP_HOME not set!");
+//            throw new ServletException("HADOOP_HOME or HADOOP_CONF_DIR not set for hdfs browser!");
+//		}
+//		
+//		try { 
+//			if(hadoopConfDir != null) {
+//				logger.info("Using hadoop config found in " + hadoopConfDir);
+//				for(File file : new File(hadoopConfDir).listFiles()) {
+//					if(file.isFile() && file.getName().endsWith(".xml"))
+//						conf.addResource(file.toURI().toURL());
+//				}
+//			} else if(hadoopHome != null) {
+//				logger.info("Using hadoop config found in " + hadoopHome);
+//				for(File file : new File(hadoopHome, "conf").listFiles()) {
+//					if(file.isFile() && file.getName().endsWith(".xml"))
+//						conf.addResource(file.toURI().toURL());
+//				}
+//			}
+//		}
+//		catch (MalformedURLException e) {
+//			throw new ServletException("HADOOP_HOME or HADOOP_CONF_DIR is not valid!");
+//		}
+		
+		
 		conf.setClassLoader(this.getApplication().getClassLoader());
 		
         logger.info("HDFS Browser init");
@@ -110,17 +142,24 @@ public class HdfsBrowserServlet extends LoginAbstractAzkabanServlet {
     	UserGroupInformation ugi = null;
     	try {
     		ugi = SecurityUtils.getProxiedUser(user, this.property, logger, conf);
-    	   	FileSystem fs = ugi.doAs(new PrivilegedAction<FileSystem>(){
-
-    	   		@Override	
-    	   		public FileSystem run() {
-    	   			try {
-    	   				return FileSystem.get(conf);
-    	   			} catch (IOException e) {
-    	   				throw new RuntimeException(e);
-    	   			}
-    	   		}});
-
+    		
+    		FileSystem fs;
+    		if (ugi != null) {
+    			fs = ugi.doAs(new PrivilegedAction<FileSystem>(){
+    		
+    				@Override	
+    				public FileSystem run() {
+    					try {
+    						return FileSystem.get(conf);
+    					} catch (IOException e) {
+    						throw new RuntimeException(e);
+    					}
+    				}});
+    		}
+    		else {
+    			fs = FileSystem.get(conf);
+    		}
+    		
     	   	try {
     	   		handleFSDisplay(fs, user, req, resp, session);
     	   	} catch (IOException e) {
