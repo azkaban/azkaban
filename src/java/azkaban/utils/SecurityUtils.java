@@ -37,18 +37,25 @@ public class SecurityUtils {
    * necessary from properties file.
    */
   public static synchronized UserGroupInformation getProxiedUser(String toProxy, Properties prop, Logger log, Configuration conf) throws IOException {
-    if(toProxy == null) {
-      throw new IllegalArgumentException("toProxy can't be null");
-    }
+
     if(conf == null) {
       throw new IllegalArgumentException("conf can't be null");
     }
-
+    UserGroupInformation.setConfiguration(conf);
+    // don't do privileged actions in case the hadoop is not secured.
+    if(!UserGroupInformation.isSecurityEnabled()) {
+    	//we don't get into whether to allow impersonation as anybody in unsecured grid
+    	return null;
+    }
+    
+    if(toProxy == null) {
+    	throw new IllegalArgumentException("toProxy can't be null");
+    }
+    
     if (loginUser == null) {
       log.info("No login user. Creating login user");
       String keytab = verifySecureProperty(prop, PROXY_KEYTAB_LOCATION, log);
       String proxyUser = verifySecureProperty(prop, PROXY_USER, log);
-      UserGroupInformation.setConfiguration(conf);
       UserGroupInformation.loginUserFromKeytab(proxyUser, keytab);
       loginUser = UserGroupInformation.getLoginUser();
       log.info("Logged in with user " + loginUser);
@@ -66,7 +73,9 @@ public class SecurityUtils {
    */
   public static UserGroupInformation getProxiedUser(Properties prop, Logger log, Configuration conf) throws IOException {
     String toProxy = verifySecureProperty(prop, TO_PROXY, log);
-    return getProxiedUser(toProxy, prop, log, conf);
+    UserGroupInformation user = getProxiedUser(toProxy, prop, log, conf);
+    if(user == null) throw new IOException("Proxy as any user in unsecured grid is not supported!");
+    return user;
   }
 
   public static String verifySecureProperty(Properties properties, String s, Logger l) throws IOException {
