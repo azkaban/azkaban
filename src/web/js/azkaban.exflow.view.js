@@ -365,7 +365,7 @@ azkaban.ExecutionListView = Backbone.View.extend({
 		$(tdTimeline).append(outerProgressBar);
 		$(tdTimeline).addClass("timeline");
 
-		var requestURL = contextURL + "/manager?project=" + projectName + "&flow=" + flowName + "&job=" + node.id;
+		var requestURL = contextURL + "/manager?project=" + projectName + "&job=" + node.id + "&history";
 		var a = document.createElement("a");
 		$(a).attr("href", requestURL);
 		$(a).text(node.id);
@@ -376,7 +376,7 @@ azkaban.ExecutionListView = Backbone.View.extend({
 		$(status).attr("id", node.id + "-status-div");
 		tdStatus.appendChild(status);
 
-		var logURL = contextURL + "/executor?execid=" + execId + "&flow=" + flowName + "&job=" + node.id;
+		var logURL = contextURL + "/executor?execid=" + execId + "&job=" + node.id;
 		var a = document.createElement("a");
 		$(a).attr("href", logURL);
 		$(a).text("Log");

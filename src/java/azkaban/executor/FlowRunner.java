@@ -22,7 +22,6 @@ import org.apache.log4j.FileAppender;
 import org.apache.log4j.Logger;
 import org.apache.log4j.PatternLayout;
 
-import azkaban.executor.ExecutableFlow.ExecutableNode;
 import azkaban.executor.ExecutableFlow.FailureAction;
 import azkaban.executor.ExecutableFlow.Status;
 import azkaban.executor.event.Event;

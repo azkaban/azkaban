@@ -54,7 +54,7 @@
 							<h4><a href="${context}/manager?project=${project.name}">Project <span>$project.name</span></a></h4>
 						</div>
 						
-						<div id="executebtn" class="btn1">Execute</div>
+						<div id="executebtn" class="btn1">Prepare Execution</div>
 						<div id="scheduleflowbtn" class="btn2 scheduleflow">Schedule Flow</div>
 					</div>
 					

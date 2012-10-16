@@ -1,0 +1,103 @@
+<!DOCTYPE html> 
+<html>
+	<head>
+#parse( "azkaban/webapp/servlet/velocity/style.vm" )
+		<script type="text/javascript" src="${context}/js/jquery/jquery.js"></script>    
+		<script type="text/javascript" src="${context}/js/jqueryui/jquery-ui.custom.min.js"></script>   
+		<script type="text/javascript" src="${context}/js/namespace.js"></script>
+		<script type="text/javascript" src="${context}/js/underscore-1.2.1-min.js"></script>
+		<script type="text/javascript" src="${context}/js/backbone-0.5.3-min.js"></script>
+		<script type="text/javascript" src="${context}/js/jquery.simplemodal.js"></script>
+		<script type="text/javascript" src="${context}/js/azkaban.nav.js"></script>
+		<script type="text/javascript">
+			var contextURL = "${context}";
+			var currentTime = ${currentTime};
+			var timezone = "${timezone}";
+			var errorMessage = null;
+			var successMessage = null;
+			
+			var projectId = "$projectId";
+			var jobName = "$jobid";
+		</script>
+	</head>
+	<body>
+#set($current_page="all")
+#parse( "azkaban/webapp/servlet/velocity/nav.vm" )
+		<div class="messaging"><p id="messageClose">X</p><p id="message"></p></div>  
+
+#if($errorMsg)
+			<div class="box-error-message">$errorMsg</div>
+#else
+	<div class="content">
+	#if($error_message != "null")
+			<div class="box-error-message">$error_message</div>
+	#elseif($success_message != "null")
+			<div class="box-success-message">$success_message</div>
+	#end
+			<div id="all-jobs-content">
+				<div class="section-hd">
+					<h2><a href="${context}/manager?project=${projectId}&job=${jobid}&history">Job <span>$jobid</span> History</a></h2>
+					<div class="section-sub-hd">
+						<h4><a href="${context}/manager?project=${projectId}">Project <span>$projectId</span></a></h4>
+					</div>
+					
+				</div>
+			</div>
+			
+			<div class="executionInfo">
+				<table id="all-jobs" class="all-jobs job-table">
+					<thead>
+						<tr>
+							<th class="execid">Execution Id</th>
+							<th class="jobid">Job</th>
+							<th class="flowid">Flow</th>
+							<th class="date">Start Time</th>
+							<th class="date">End Time</th>
+							<th class="elapse">Elapse</th>		
+							<th class="status">Status</th>
+							<th class="logs">Logs</th>
+						</tr>
+					</thead>
+					<tbody>
+	#foreach($job in $history)
+						<tr>
+							<td class="first">
+								<a href="${context}/executor?execid=${job.execId}">$utils.extractNumericalId(${job.execId})</a>
+							</td>
+							<td>
+								<a href="${context}/manager?project=${projectId}&flow=${job.flowId}&job=${jobid}">$jobid</a>
+							</td>
+							<td>
+								<a href="${context}/manager?project=${projectId}&flow=${job.flowId}">${job.flowId}</a>
+							</td>
+							<td>$utils.formatDate(${job.startTime})</td>
+							<td>$utils.formatDate(${job.endTime})</td>
+							<td>$utils.formatDuration(${job.startTime}, ${job.endTime})</td>
+							<td><div class="status ${job.status}">$utils.formatStatus(${job.status})</div></td>
+							<td class="logLink">
+								<a href="${context}/executor?execid=${job.execId}&job=${jobid}">Logs</a>
+							</td>
+						</tr>
+	#end
+					</tbody>
+				</table>
+				
+				<div id="pageSelection" class="nonjavascript">
+					<ul>
+						<li id="previous" class="first"><a href="${context}/manager?project=${projectId}&job=${jobid}&history&page=${previous.page}&size=${previous.size}"><span class="arrow">&larr;</span>Previous</a></li>
+				
+						<li id="page1" #if($page1.selected) class="selected" #elseif ($page1.disabled) class="disabled" #end><a href="${context}/manager?project=${projectId}&job=${jobid}&history&page=${page1.page}&size=${page1.size}">${page1.page}</a></li>
+						<li id="page2" #if($page2.selected) class="selected" #elseif ($page2.disabled) class="disabled" #end><a href="${context}/manager?project=${projectId}&job=${jobid}&history&page=${page2.page}&size=${page2.size}">${page2.page}</a></li>
+						<li id="page3" #if($page3.selected) class="selected" #elseif ($page3.disabled) class="disabled" #end><a href="${context}/manager?project=${projectId}&job=${jobid}&history&page=${page3.page}&size=${page3.size}">${page3.page}</a></li>
+						<li id="page4" #if($page4.selected) class="selected" #elseif ($page4.disabled) class="disabled" #end><a href="${context}/manager?project=${projectId}&job=${jobid}&history&page=${page4.page}&size=${page4.size}">${page4.page}</a></li>
+						<li id="page5" #if($page5.selected) class="selected" #elseif ($page5.disabled) class="disabled" #end><a href="${context}/manager?project=${projectId}&job=${jobid}&history&page=${page5.page}&size=${page5.size}">${page5.page}</a></li>
+	
+						<li id="next"><a href="${context}/manager?project=${projectId}&job=${jobid}&history&page=${next.page}&size=${next.size}">Next<span class="arrow">&rarr;</span></a></li>
+					</ul>
+				</div>
+			</div>
+	</div>
+
+#end
+	</body>
+</html>

@@ -11,7 +11,6 @@ import org.apache.log4j.Layout;
 import org.apache.log4j.Logger;
 import org.apache.log4j.PatternLayout;
 
-import azkaban.executor.ExecutableFlow.ExecutableNode;
 import azkaban.executor.ExecutableFlow.Status;
 import azkaban.executor.event.Event;
 import azkaban.executor.event.Event.Type;
@@ -19,6 +18,7 @@ import azkaban.executor.event.EventHandler;
 import azkaban.jobExecutor.AbstractProcessJob;
 import azkaban.jobExecutor.Job;
 import azkaban.jobExecutor.utils.JobWrappingFactory;
+import azkaban.utils.JSONUtils;
 import azkaban.utils.Props;
 
 public class JobRunner extends EventHandler implements Runnable {
@@ -90,6 +90,17 @@ public class JobRunner extends EventHandler implements Runnable {
 		}
 	}
 
+	private void writeStatus() {
+		NodeStatus status = new NodeStatus(this.node);
+		String statusName = "_job." + executionId + "." + node.getId() + ".status";
+		File statusFile = new File(workingDir, statusName);
+		try {
+			JSONUtils.toJSON(status.toObject(), statusFile);
+		} catch (IOException e) {
+			logger.error("Couldn't write status file.");
+		}
+	}
+	
 	@Override
 	public void run() {
 		node.setStartTime(System.currentTimeMillis());
@@ -106,11 +117,12 @@ public class JobRunner extends EventHandler implements Runnable {
 
 		createLogger();
 		this.node.setStatus(Status.WAITING);
-
+		
 		logInfo("Starting job " + node.getId() + " at " + node.getStartTime());
 		node.setStatus(Status.RUNNING);
 		this.fireEventListeners(Event.create(this, Type.JOB_STARTED));
-
+		writeStatus();
+		
 		boolean succeeded = true;
 
 		props.put(AbstractProcessJob.WORKING_DIR, workingDir.getAbsolutePath());
@@ -149,6 +161,7 @@ public class JobRunner extends EventHandler implements Runnable {
 		}
 		logInfo("Finishing job " + node.getId() + " at " + node.getEndTime());
 		closeLogger();
+		writeStatus();
 	}
 
 	public synchronized void cancel() {

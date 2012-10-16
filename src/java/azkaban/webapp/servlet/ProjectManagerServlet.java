@@ -31,7 +31,10 @@ import org.apache.commons.io.IOUtils;
 import org.apache.log4j.Logger;
 
 import azkaban.executor.ExecutableFlow;
+import azkaban.executor.ExecutableNode;
 import azkaban.executor.ExecutorManager;
+import azkaban.executor.ExecutorManagerException;
+import azkaban.executor.NodeStatus;
 import azkaban.flow.Edge;
 import azkaban.flow.Flow;
 import azkaban.flow.FlowProps;
@@ -50,6 +53,7 @@ import azkaban.utils.Props;
 import azkaban.utils.Utils;
 import azkaban.webapp.session.Session;
 import azkaban.webapp.servlet.MultipartParser;
+import azkaban.webapp.servlet.HistoryServlet.PageSelection;
 
 public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 	private static final long serialVersionUID = 1;
@@ -97,6 +101,9 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 			}
 			else if (hasParam(req, "prop")) {
 				handlePropertyPage(req, resp, session);
+			}
+			else if (hasParam(req, "history")) {
+				handleJobHistoryPage(req, resp, session);
 			}
 			else if (hasParam(req, "job")) {
 				handleJobPage(req, resp, session);
@@ -553,6 +560,58 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 		page.render();
 	}
 	
+	private void handleJobHistoryPage(HttpServletRequest req, HttpServletResponse resp, Session session) throws ServletException, IOException {
+		Page page = newPage(req, resp, session, "azkaban/webapp/servlet/velocity/jobhistorypage.vm");
+		String projectId = getParam(req, "project");
+		String jobId = getParam(req, "job");
+		int pageNum = getIntParam(req, "page", 1);
+		int pageSize = getIntParam(req, "size", 25);
+		
+		page.add("projectId", projectId);
+		page.add("jobid", jobId);
+		page.add("page", pageNum);
+		
+		int skipPage = (pageNum - 1)*pageSize;
+
+		ArrayList<NodeStatus> statuses = new ArrayList<NodeStatus>();
+		int numResults = 0;
+		try {
+			numResults  = executorManager.getJobHistory(projectId, jobId, pageSize, skipPage, statuses);
+			if (statuses.isEmpty()) {
+				statuses = null;
+			}
+			page.add("history", statuses);
+			
+			if (pageNum == 1) {
+				page.add("previous", new PageSelection(1, pageSize, true, false));
+			}
+			page.add("next", new PageSelection(pageNum + 1, pageSize, false, false));
+
+		} catch (ExecutorManagerException e) {
+			page.add("errorMsg", e.getMessage());
+		}
+
+		// Now for the 5 other values.
+		int pageStartValue = 1;
+		if (pageNum > 3) {
+			pageStartValue = pageNum - 2;
+		}
+		int maxPage = (numResults / pageSize) + 1;
+		
+		page.add("page1", new PageSelection(pageStartValue, pageSize, pageStartValue > maxPage, pageStartValue == pageNum));
+		pageStartValue++;
+		page.add("page2", new PageSelection(pageStartValue, pageSize, pageStartValue > maxPage, pageStartValue == pageNum));
+		pageStartValue++;
+		page.add("page3", new PageSelection(pageStartValue, pageSize, pageStartValue > maxPage, pageStartValue == pageNum));
+		pageStartValue++;
+		page.add("page4", new PageSelection(pageStartValue, pageSize, pageStartValue > maxPage, pageStartValue == pageNum));
+		pageStartValue++;
+		page.add("page5", new PageSelection(pageStartValue, pageSize, pageStartValue > maxPage, pageStartValue == pageNum));
+		pageStartValue++;
+		
+		page.render();
+	}
+	
 	private void handlePermissionPage(HttpServletRequest req, HttpServletResponse resp, Session session) throws ServletException {
 		Page page = newPage(req, resp, session, "azkaban/webapp/servlet/velocity/permissionspage.vm");
 		String projectName = getParam(req, "project");
@@ -986,6 +1045,40 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 		@Override
 		public int compare(Node node1, Node node2) {
 			return node1.getLevel() - node2.getLevel();
+		}
+	}
+	
+	public class PageSelection {
+		private int page;
+		private int size;
+		private boolean disabled;
+		private boolean selected;
+		
+		public PageSelection(int page, int size, boolean disabled, boolean selected) {
+			this.page = page;
+			this.size = size;
+			this.disabled = disabled;
+			this.setSelected(selected);
+		}
+		
+		public int getPage() {
+			return page;
+		}
+		
+		public int getSize() {
+			return size;
+		}
+		
+		public boolean getDisabled() {
+			return disabled;
+		}
+
+		public boolean isSelected() {
+			return selected;
+		}
+
+		public void setSelected(boolean selected) {
+			this.selected = selected;
 		}
 	}
 }

@@ -40,7 +40,6 @@ import org.apache.http.impl.client.BasicResponseHandler;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.log4j.Logger;
 
-import azkaban.executor.ExecutableFlow.ExecutableNode;
 import azkaban.executor.ExecutableFlow.Status;
 import azkaban.flow.Flow;
 import azkaban.utils.ExecutableFlowLoader;
@@ -55,6 +54,8 @@ import azkaban.webapp.AzkabanExecutorServer;
 public class ExecutorManager {
 	private static final String ACTIVE_DIR = ".active";
 	private static final String ARCHIVE_DIR = ".archive";
+	private static final String JOB_EXECUTION_DIR = ".jobexecutions";
+	
 	private static Logger logger = Logger.getLogger(ExecutorManager.class);
 	// 30 seconds of retry before failure.
 	private static final long ACCESS_ERROR_THRESHOLD_MS = 30000;
@@ -124,6 +125,40 @@ public class ExecutorManager {
 		manager.addCache(recentFlowsCache);
 	}
 	
+	public int getJobHistory(String projectId, String jobId, int numResults, int skip, List<NodeStatus> nodes) throws ExecutorManagerException{
+		File flowProjectPath = new File(basePath, projectId);
+		if (!flowProjectPath.exists()) {
+			throw new ExecutorManagerException("Project " + projectId + " directory doesn't exist.");
+		}
+
+		File jobStatusDir = new File(flowProjectPath, JOB_EXECUTION_DIR + File.separator + jobId);
+		
+		File[] jobsStatusFiles = jobStatusDir.listFiles();
+		
+		if (jobsStatusFiles.length == 0 || skip >= jobsStatusFiles.length) {
+			return 0;
+		}
+		
+		Arrays.sort(jobsStatusFiles);
+		int index = (jobsStatusFiles.length - skip - 1);
+		
+		for (int count = 0; count < numResults && index >= 0; ++count, --index) {
+			File exDir = jobsStatusFiles[index];
+
+			NodeStatus status;
+			try {
+				status = NodeStatus.createNodeFromObject(JSONUtils.parseJSONFromFile(exDir));
+				if (status != null) {
+					nodes.add(status);
+				}
+			} catch (IOException e) {
+				throw new ExecutorManagerException(e.getMessage());
+			}
+		}
+
+		return jobsStatusFiles.length;
+	}
+	
 	public int getExecutableFlows(String projectId, String flowId, int from, int maxResults, List<ExecutableFlow> output) {
 		String projectPath = projectId + File.separator + flowId;
 		File flowProjectPath = new File(basePath, projectPath);
@@ -183,14 +218,14 @@ public class ExecutorManager {
 		return execFlows;
 	}
 
-	public List<ExecutionReference> getFlowHistory(String rePattern, int numResults, int skip) {
+	public List<ExecutionReference> getFlowHistory(String regexPattern, int numResults, int skip) {
 		ArrayList<ExecutionReference> searchFlows = new ArrayList<ExecutionReference>();
 
 		Pattern pattern;
 		try {
-			pattern = Pattern.compile(rePattern, Pattern.CASE_INSENSITIVE);
+			pattern = Pattern.compile(regexPattern, Pattern.CASE_INSENSITIVE);
 		} catch (PatternSyntaxException e) {
-			logger.error("Bad regex pattern " + rePattern);
+			logger.error("Bad regex pattern " + regexPattern);
 			return searchFlows;
 		}
 		
@@ -316,13 +351,19 @@ public class ExecutorManager {
 	public synchronized void setupExecutableFlow(ExecutableFlow exflow) throws ExecutorManagerException {
 		String executionId = exflow.getExecutionId();
 
-		String projectFlowDir = exflow.getProjectId() + File.separator + exflow.getFlowId() + File.separator + executionId;
-		File executionPath = new File(basePath, projectFlowDir);
+		File projectDir = new File(basePath, exflow.getProjectId());
+		String executionDir = exflow.getFlowId() + File.separator + executionId;
+		File executionPath = new File(projectDir, executionDir);
 		if (executionPath.exists()) {
 			throw new ExecutorManagerException("Execution path " + executionPath + " exists. Probably a simultaneous execution.");
 		}
 		
 		executionPath.mkdirs();
+		
+		// create job reference dir
+		File jobExecutionDir = new File(projectDir, JOB_EXECUTION_DIR);
+		jobExecutionDir.mkdirs();
+		
 		exflow.setExecutionPath(executionPath.getPath());
 	}
 
@@ -420,7 +461,7 @@ public class ExecutorManager {
 		}
 		
 		// Load last update
-		ExecutableFlowLoader.updateFlowStatusFromFile(executionDir, exFlow, true);
+		updateFlowFromFile(exFlow);
 
 		// Return if already finished.
 		if (exFlow.getStatus() == Status.FAILED || 
@@ -1020,7 +1061,7 @@ public class ExecutorManager {
 					if (statusStr.equals(ConnectorParams.RESPONSE_NOTFOUND)) {
 						logger.info("Server status response for " + reference.toRefString() + " was 'notfound'. Cleaning up");
 						try {
-							ExecutableFlowLoader.updateFlowStatusFromFile(executionDir, flow, true);
+							updateFlowFromFile(flow);
 							forceFail = true;
 						} catch (ExecutorManagerException e) {
 							logger.error("Error updating flow status " + flow.getExecutionId() + " from file.", e);
@@ -1033,7 +1074,7 @@ public class ExecutorManager {
 						
 						if (time > flow.getUpdateTime()) {
 							try {
-								ExecutableFlowLoader.updateFlowStatusFromFile(executionDir, flow, true);
+								updateFlowFromFile(flow);
 								// Update reference
 								reference.setStartTime(flow.getStartTime());
 								reference.setEndTime(flow.getEndTime());
@@ -1087,6 +1128,14 @@ public class ExecutorManager {
 		}
 	}
 	
+	private void updateFlowFromFile(ExecutableFlow exFlow) throws ExecutorManagerException {
+		File executionDir = new File(exFlow.getExecutionPath());
+		if (ExecutableFlowLoader.updateFlowStatusFromFile(executionDir, exFlow, true)) {
+			// Move all the static directories if the update has changed.
+			File statusDir = new File(basePath, exFlow.getProjectId() + File.separator + JOB_EXECUTION_DIR);
+			ExecutableFlowLoader.moveJobStatusFiles(executionDir, statusDir);
+		}
+	}
 	
 	/**
 	 * Reference to a Flow Execution.

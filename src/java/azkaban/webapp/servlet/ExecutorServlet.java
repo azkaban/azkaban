@@ -15,7 +15,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import azkaban.executor.ExecutableFlow;
-import azkaban.executor.ExecutableFlow.ExecutableNode;
+import azkaban.executor.ExecutableNode;
 import azkaban.executor.ExecutableFlow.FailureAction;
 import azkaban.executor.ExecutorManager;
 import azkaban.executor.ExecutableFlow.Status;

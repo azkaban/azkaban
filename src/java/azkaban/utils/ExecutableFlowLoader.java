@@ -11,6 +11,7 @@ import org.apache.log4j.Logger;
 
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutorManagerException;
+import azkaban.executor.NodeStatus;
 
 public class ExecutableFlowLoader {
 	private static final Logger logger = Logger.getLogger(ExecutableFlowLoader.class.getName());
@@ -126,6 +127,30 @@ public class ExecutableFlowLoader {
 		return true;
 	}
 	
+	public static void moveJobStatusFiles(File exDir, File statusFileDir) {
+		File[] statusFiles = exDir.listFiles(new PrefixSuffixFilter("_job.", ".status"));
+		for (File file: statusFiles) {
+			try {
+				NodeStatus status = NodeStatus.createNodeFromObject(JSONUtils.parseJSONFromFile(file));
+				String jobId = status.getJobId();
+				
+				File jobStatusDir = new File(statusFileDir, jobId);
+				if (!jobStatusDir.exists()) {
+					jobStatusDir.mkdirs();
+				}
+				
+				File destFile = new File(jobStatusDir, file.getName());
+				if (destFile.exists()) {
+					destFile.delete();
+				}
+				
+				file.renameTo(destFile);
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+	}
+	
 	/**
 	 * Write executable flow file
 	 * 
@@ -177,7 +202,7 @@ public class ExecutableFlowLoader {
 	 *
 	 */
 	private static class PrefixFilter implements FileFilter {
-		private String prefix;
+		private final String prefix;
 
 		public PrefixFilter(String prefix) {
 			this.prefix = prefix;
@@ -188,6 +213,25 @@ public class ExecutableFlowLoader {
 			String name = pathname.getName();
 
 			return pathname.isFile() && !pathname.isHidden() && name.length() >= prefix.length() && name.startsWith(prefix);
+		}
+	}
+	
+	private static class PrefixSuffixFilter implements FileFilter {
+		private final String suffix;
+		private final String prefix;
+		private final int presuflength;
+		
+		public PrefixSuffixFilter(String prefix, String suffix) {
+			this.suffix = suffix;
+			this.prefix = prefix;
+			presuflength = suffix.length() + prefix.length();
+		}
+
+		@Override
+		public boolean accept(File pathname) {
+			String name = pathname.getName();
+
+			return pathname.isFile() && !pathname.isHidden() && name.length() >= presuflength && name.startsWith(prefix) && name.endsWith(suffix);
 		}
 	}
 
