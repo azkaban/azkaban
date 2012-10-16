@@ -3,6 +3,7 @@ package azkaban.executor;
 import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileFilter;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FileReader;
@@ -218,6 +219,62 @@ public class ExecutorManager {
 		return execFlows;
 	}
 
+	public List<ExecutionReference> getFlowHistory(long startTime, long endTime) {
+		ArrayList<ExecutionReference> references = new ArrayList<ExecutionReference>();
+		
+		for (ExecutionReference ref: runningReference.values()) {
+			if (between(ref, startTime, endTime)) {
+				references.add(ref);
+			}
+		}
+		
+		File archivePath = new File(basePath, ARCHIVE_DIR);
+		if (!archivePath.exists()) {
+			return references;
+		}
+
+		
+		// This makes an assumption that there's no job that will run a day past the endTime
+		// nor a day before the endTime. We use 100000, because that's what the archive
+		// partitions by.
+		final long startThreshold = startTime - 100000;
+		final long endThreshold = endTime + 100000;
+		
+		File[] archivePartitionsDir = archivePath.listFiles( new FileFilter() {
+			@Override
+			public boolean accept(File pathname) {
+				String name = pathname.getName();
+				long val = Long.valueOf(name);
+				return val >= startThreshold && val <= endThreshold;
+			}
+		}
+		);
+
+		for (File partition: archivePartitionsDir) {
+			File[] refFiles = partition.listFiles();
+			for (File refFile: refFiles) {
+				try {
+					ExecutionReference reference = ExecutionReference.readFromFile(refFile);
+					if (between(reference, startTime, endTime)) {
+						references.add(reference);
+					}
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
+		}
+		
+		return references;
+	}
+	
+	private boolean between(ExecutionReference ref, long startTime, long endTime) {
+		long time = System.currentTimeMillis();
+		long refStart = ref.getStartTime() == -1 ? time : ref.getStartTime();
+		long refEnd = ref.getEndTime() == -1 ? time : ref.getEndTime();
+		
+		return endTime > refStart && startTime <= refEnd;
+	}
+	
 	public List<ExecutionReference> getFlowHistory(String regexPattern, int numResults, int skip) {
 		ArrayList<ExecutionReference> searchFlows = new ArrayList<ExecutionReference>();
 
@@ -229,12 +286,11 @@ public class ExecutorManager {
 			return searchFlows;
 		}
 		
-		for (ExecutableFlow flow: runningFlows.values()) {
+		for (ExecutionReference ref: runningReference.values()) {
 			if (skip > 0) {
 				skip--;
 			}
 			else {
-				ExecutionReference ref = new ExecutionReference(flow);
 				if(pattern.matcher(ref.getFlowId()).find() ) {
 					searchFlows.add(ref);
 				}
@@ -244,7 +300,7 @@ public class ExecutorManager {
 				}
 			}
 		}
-		
+
 		File archivePath = new File(basePath, ARCHIVE_DIR);
 		if (!archivePath.exists()) {
 			return searchFlows;
@@ -271,7 +327,11 @@ public class ExecutorManager {
 				}
 				else {
 					try {
-						ExecutionReference ref = ExecutionReference.readFromDirectory(listArchivePartitions[i]);
+						ExecutionReference ref = ExecutionReference.readFromFile(listArchivePartitions[i]);
+						if (ref == null) {
+							continue;
+						}
+
 						if(pattern.matcher(ref.getFlowId()).find() ) {
 							searchFlows.add(ref);
 						}
@@ -298,9 +358,9 @@ public class ExecutorManager {
 			return;
 		}
 		
-		for (File activeFlowDir: activeFlowDirs) {
-			if (activeFlowDir.isDirectory()) {
-				ExecutionReference reference = ExecutionReference.readFromDirectory(activeFlowDir);
+		for (File activeFlowFile: activeFlowDirs) {
+			if (activeFlowFile.isFile()) {
+				ExecutionReference reference = ExecutionReference.readFromFile(activeFlowFile);
 				if (reference.getExecutorUrl() == null) {
 					reference.setExecutorPort(portNumber);
 					reference.setExecutorUrl(url);
@@ -318,7 +378,7 @@ public class ExecutorManager {
 				}
 			}
 			else {
-				logger.info("Path " + activeFlowDir + " not a directory.");
+				logger.info("Path " + activeFlowFile + " not a directory.");
 			}
 		}
 	}
@@ -391,22 +451,22 @@ public class ExecutorManager {
 		
 		// Check active
 		File baseActiveDir = new File(basePath, ACTIVE_DIR);
-		File referenceDir = new File(baseActiveDir, executionId);
+		File referenceFile = new File(baseActiveDir, executionId + ".json");
 		
-		if (!referenceDir.exists()) {
+		if (!referenceFile.exists()) {
 			// Find the partition it would be in and search.
 			String partition = getExecutableReferencePartition(executionId);
 			
 			File baseArchiveDir = new File(basePath, ARCHIVE_DIR + File.separator + partition);
-			referenceDir = new File(baseArchiveDir, executionId);
-			if (!referenceDir.exists()) {
-				throw new ExecutorManagerException("Execution id '" + executionId + "' not found. Searching " + referenceDir);
+			referenceFile = new File(baseArchiveDir, executionId + ".json");
+			if (!referenceFile.exists()) {
+				throw new ExecutorManagerException("Execution id '" + executionId + "' not found. Searching " + referenceFile);
 			}
 		}
 
 		ExecutionReference reference = null;
 		try {
-			reference = ExecutionReference.readFromDirectory(referenceDir);
+			reference = ExecutionReference.readFromFile(referenceFile);
 		} catch (IOException e) {
 			throw new ExecutorManagerException(e.getMessage(), e);
 		}
@@ -430,15 +490,14 @@ public class ExecutorManager {
 		}
 
 		// Create execution reference directory
-		File referenceDir = new File(activeDirectory, flow.getExecutionId());
-		referenceDir.mkdirs();
+		File referenceFile = new File(activeDirectory, flow.getExecutionId() + ".json");
 
 		// We don't really need to save the reference, 
 		ExecutionReference reference = new ExecutionReference(flow);
 		reference.setExecutorUrl(url);
 		reference.setExecutorPort(portNumber);
 		try {
-			reference.writeToDirectory(referenceDir);
+			reference.writeToFile(referenceFile);
 		} catch (IOException e) {
 			throw new ExecutorManagerException("Couldn't write execution to directory.", e);
 		}
@@ -913,22 +972,23 @@ public class ExecutorManager {
 		}
 	}
 	
+	// This along with getExecutableArchivePartitionNumber must be kept consistant.
 	private String getExecutableReferencePartition(String execID) {
 		// We're partitioning the archive by the first part of the id, which should be a timestamp.
-		// Then we're taking a substring of length - 6 to lop off the bottom 5 digits effectively partitioning
-		// by 100000 millisec. We do this to have quicker searchs by pulling partitions, not full directories.
+		// Then we're taking a substring of length - 6 to lop off the bottom 5 digits effectively truncating
+		// by 1000000
 		int index = execID.indexOf('.');
-		return execID.substring(0, index - 8);
+		return execID.substring(0, index - 8) + "00000000";
 	}
-
+	
 	private void cleanExecutionReferenceJob(ExecutionReference reference) throws ExecutorManagerException {
 		// Write final file
 		String exId = reference.getExecId();
-		String activeReferencePath = ACTIVE_DIR + File.separator + exId; 
-		File activeDirectory = new File(basePath, activeReferencePath);
-		if (!activeDirectory.exists()) {
-			logger.error("WTF!! Active reference " + activeDirectory + " directory doesn't exist.");
-			throw new ExecutorManagerException("Active reference " + activeDirectory + " doesn't exists.");
+		String activeReferenceFile = ACTIVE_DIR + File.separator + exId + ".json"; 
+		File activeFile = new File(basePath, activeReferenceFile);
+		if (!activeFile.exists()) {
+			logger.error("WTF!! Active reference " + activeFile + " file doesn't exist.");
+			throw new ExecutorManagerException("Active reference " + activeFile + " doesn't exists.");
 		}
 		
 		String partitionVal = getExecutableReferencePartition(exId);
@@ -939,36 +999,24 @@ public class ExecutorManager {
 			archivePartitionDir.mkdirs();
 		}
 
-		File archiveDirectory = new File(archivePartitionDir, exId);
-		if (archiveDirectory.exists()) {
-			logger.error("Archive reference already exists. Cleaning up.");
+		String archiveJSONFile = exId + ".json";
+		File archiveFile = new File(archivePartitionDir, archiveJSONFile);
+		if (!archiveFile.exists()) {
+			logger.error("Archive reference doesn't exist. We're writing it.");
 			try {
-				FileUtils.deleteDirectory(activeDirectory);
+				reference.writeToFile(archiveFile);
 			} catch (IOException e) {
-				logger.error(e);
+				throw new ExecutorManagerException("Couldn't write execution to directory.", e);
 			}
-			
-			return;
 		}
-		
-		// Make new archive dir
-		if (!archiveDirectory.mkdirs()) {
-			throw new ExecutorManagerException("Cannot create " + archiveDirectory);
-		}
-		
+
 		try {
-			reference.writeToDirectory(archiveDirectory);
+			reference.writeToFile(archiveFile);
 		} catch (IOException e) {
-			throw new ExecutorManagerException("Couldn't write execution to directory.", e);
+			throw new ExecutorManagerException("Couldn't write execution to file " + archiveFile, e);
 		}
 		
-		// Move file.
-		try {
-			FileUtils.deleteDirectory(activeDirectory);
-		} catch (IOException e) {
-			throw new ExecutorManagerException("Cannot cleanup active directory " + activeDirectory);
-		}
-	
+		activeFile.delete();
 		runningReference.remove(exId);
 	}
 	
@@ -1190,19 +1238,20 @@ public class ExecutorManager {
 			return obj;
 		}
 		
-		public void writeToDirectory(File directory) throws IOException {
-			File file = new File(directory, "execution.json");
-			if (!file.exists()) {
-				JSONUtils.toJSON(this.toObject(), file);
+		public void writeToFile(File jsonFile) throws IOException {
+			if (!jsonFile.exists()) {
+				JSONUtils.toJSON(this.toObject(), jsonFile);
 			}
 		}
 		
-		public static ExecutionReference readFromDirectory(File directory) throws IOException {
-			File file = new File(directory, "execution.json");
+		public static ExecutionReference readFromFile(File file) throws IOException {
 			if (!file.exists()) {
 				throw new IOException("Execution file execution.json does not exist.");
 			}
 			
+			if (file.isDirectory()) {
+				return null;
+			}
 			@SuppressWarnings("unchecked")
 			HashMap<String, Object> obj = (HashMap<String, Object>)JSONUtils.parseJSONFromFile(file);
 			ExecutionReference reference = new ExecutionReference();

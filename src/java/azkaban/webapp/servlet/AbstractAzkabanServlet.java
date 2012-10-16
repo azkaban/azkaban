@@ -161,6 +161,24 @@ public abstract class AbstractAzkabanServlet extends HttpServlet {
 		return defaultVal;
 	}
 
+	public long getLongParam(HttpServletRequest request, String name) throws ServletException {
+		String p = getParam(request, name);
+		return Long.valueOf(p);
+	}
+	
+	public long getLongParam(HttpServletRequest request, String name, long defaultVal) {
+		if (hasParam(request, name)) {
+			try {
+				return getLongParam(request, name);
+			} catch (Exception e) {
+				return defaultVal;
+			}
+		}
+		
+		return defaultVal;
+	}
+
+	
 	public Map<String, String> getParamGroup(HttpServletRequest request, String groupName)  throws ServletException {
 		@SuppressWarnings("unchecked")
 		Enumeration<Object> enumerate = (Enumeration<Object>)request.getParameterNames();
