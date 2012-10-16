@@ -9,6 +9,9 @@
 		<script type="text/javascript" src="${context}/js/backbone-0.5.3-min.js"></script>
 		<script type="text/javascript" src="${context}/js/jquery.simplemodal.js"></script>
 		<script type="text/javascript" src="${context}/js/azkaban.nav.js"></script>
+		<script type="text/javascript" src="${context}/js/d3.v2.min.js"></script>
+		<script type="text/javascript" src="${context}/js/azkaban.date.utils.js"></script>
+		<script type="text/javascript" src="${context}/js/azkaban.jobhistory.view.js"></script>
 		<script type="text/javascript">
 			var contextURL = "${context}";
 			var currentTime = ${currentTime};
@@ -18,7 +21,26 @@
 			
 			var projectId = "$projectId";
 			var jobName = "$jobid";
+			var dataSeries = $dataSeries;
 		</script>
+		<style>
+			.axis path,
+			.axis line {
+			  fill: none;
+			  stroke: #000;
+			  shape-rendering: crispEdges;
+			}
+			
+			.x.axis path {
+			  display: none;
+			}
+			
+			.line {
+			  fill: none;
+			  stroke: steelblue;
+			  stroke-width: 1.5px;
+			}
+		</style>
 	</head>
 	<body>
 #set($current_page="all")
@@ -42,6 +64,9 @@
 					</div>
 					
 				</div>
+			</div>
+			
+			<div id="timeGraph">
 			</div>
 			
 			<div class="executionInfo">

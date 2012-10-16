@@ -13,7 +13,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import azkaban.executor.ExecutableFlow;
-import azkaban.executor.ExecutableFlow.ExecutableNode;
+import azkaban.executor.ExecutableNode;
 import azkaban.executor.ExecutableFlow.FailureAction;
 import azkaban.executor.FlowRunner;
 import azkaban.executor.ExecutableFlow.Status;

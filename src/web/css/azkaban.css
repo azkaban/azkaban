@@ -1728,12 +1728,57 @@ svg .SUCCEEDED circle {
 	fill: #00CC33;
 }
 
-svg .DISABLED {
+svg .DISABLED circle {
 	opacity: 0.3;
 }
 
-svg .SKIPPED {
+svg .SKIPPED circle {
 	opacity: 0.3;
+}
+
+#Used for charts
+svg circle.READY {
+	stroke: #CCC;
+	stroke-width: 2px;
+	fill: #FFF;
+}
+
+svg circle.RUNNING {
+	stroke: #009FC9;
+	stroke-width: 2px;
+	fill: #FFF;
+}
+
+svg circle.FAILED {
+	stroke: #CC0000;
+	stroke-width: 2px;
+	fill: #FFF;
+}
+
+svg circle.KILLED {
+	stroke: #CC0000;
+	stroke-width: 2px;
+	fill: #FFF;
+}
+
+svg circle.SUCCEEDED {
+	stroke: #00CC33;
+	stroke-width: 2px;
+	fill: #FFF;
+}
+
+svg circle.DISABLED {
+	stroke: #CCC;
+	opacity: 0.3;
+	stroke-width: 2px;
+	fill: #FFF;
+}
+
+svg circle.SKIPPED {
+	stroke: #CCC;
+	opacity: 0.3;
+	stroke-width: 2px;
+	fill: #FFF;
 }
 
 span.sublabel {
@@ -2040,6 +2085,14 @@ span .nowrap {
 .sched-form {
 	margin: 20px 20px;
 }
+
+#timeGraph {
+	width: 100%;
+	height: 300px;
+	background-color: #fff;
+	margin-bottom: 5px;
+}
+
 
 /* old styles */
 .azkaban-charts .hitarea {

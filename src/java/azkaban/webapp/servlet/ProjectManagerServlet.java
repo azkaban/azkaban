@@ -31,6 +31,7 @@ import org.apache.commons.io.IOUtils;
 import org.apache.log4j.Logger;
 
 import azkaban.executor.ExecutableFlow;
+import azkaban.executor.ExecutableFlow.Status;
 import azkaban.executor.ExecutableNode;
 import azkaban.executor.ExecutorManager;
 import azkaban.executor.ExecutorManagerException;
@@ -48,6 +49,7 @@ import azkaban.user.Permission;
 import azkaban.user.UserManager;
 import azkaban.user.Permission.Type;
 import azkaban.user.User;
+import azkaban.utils.JSONUtils;
 import azkaban.utils.Pair;
 import azkaban.utils.Props;
 import azkaban.utils.Utils;
@@ -573,9 +575,11 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 		
 		int skipPage = (pageNum - 1)*pageSize;
 
-		ArrayList<NodeStatus> statuses = new ArrayList<NodeStatus>();
+
+		
 		int numResults = 0;
 		try {
+			ArrayList<NodeStatus> statuses = new ArrayList<NodeStatus>();
 			numResults  = executorManager.getJobHistory(projectId, jobId, pageSize, skipPage, statuses);
 			if (statuses.isEmpty()) {
 				statuses = null;
@@ -587,6 +591,18 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 			}
 			page.add("next", new PageSelection(pageNum + 1, pageSize, false, false));
 
+			if (statuses != null) {
+				ArrayList<Object> dataSeries = new ArrayList<Object>();
+				for (NodeStatus status: statuses) {
+					Map<String,Object> map = (Map<String,Object>)status.toObject();
+					map.remove("jobId");
+					String execId = (String)map.get("execId");
+					String newExecId = execId.substring(0, 19);
+					map.put("execId", newExecId);
+					dataSeries.add(map);
+				}
+				page.add("dataSeries", JSONUtils.toJSON(dataSeries));
+			}
 		} catch (ExecutorManagerException e) {
 			page.add("errorMsg", e.getMessage());
 		}
