@@ -128,6 +128,10 @@ label.disabled {
   min-height: 150px;
 }
 
+.content.history {
+  min-height: 75px;
+}
+
 .section-ft {
   border-top: 1px solid #cdcdcd;
 }
@@ -2091,6 +2095,24 @@ span .nowrap {
 	height: 300px;
 	background-color: #fff;
 	margin-bottom: 5px;
+}
+
+#dayByDayPanel {
+	
+}
+
+#dayGraph {
+	background-color: #fff;
+}
+
+#historyTimeLine {
+	position: absolute;
+	top: 160px;
+	bottom: 5px;
+	left: 50px;
+	right: 50px;
+	padding: 10px;
+	background: #E0E0E0;
 }
 
 
