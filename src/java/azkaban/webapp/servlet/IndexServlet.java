@@ -47,7 +47,7 @@ public class IndexServlet extends LoginAbstractAzkabanServlet {
 		Page page = newPage(req, resp, session, "azkaban/webapp/servlet/velocity/index.vm");
 		if (hasParam(req, "all")) {
 			List<Project> projects = manager.getProjects();
-			page.add("allProjects", "");
+			page.add("allProjects", "true");
 			page.add("projects", projects);
 		}
 		else {
@@ -72,9 +72,10 @@ public class IndexServlet extends LoginAbstractAzkabanServlet {
 					Page page = newPage(req, resp, session, "azkaban/webapp/servlet/velocity/index.vm");
 					if (hasParam(req, "all")) {
 						//do nothing special if one asks for 'ALL' projects
-						List<Project> projects = manager.getProjects();
+						List<Project> projects = manager.getProjectsByRe(searchTerm);
 						page.add("allProjects", "");
 						page.add("projects", projects);
+						page.add("search_term", searchTerm);
 					}
 					else {
 						List<Project> projects = manager.getUserProjectsByRe(user, searchTerm);

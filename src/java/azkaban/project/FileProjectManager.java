@@ -219,7 +219,7 @@ public class FileProjectManager implements ProjectManager {
 	
 	@Override
 	public List<Project> getUserProjectsByRe(User user, final String rePattern) {
-		ArrayList<Project> array = new ArrayList<Project>();
+		List<Project> array = new ArrayList<Project>();
 		Pattern pattern;
 		try {
 			pattern = Pattern.compile(rePattern, Pattern.CASE_INSENSITIVE);
@@ -246,6 +246,23 @@ public class FileProjectManager implements ProjectManager {
 		return new ArrayList<Project>(projects.values());
 	}
 
+	@Override
+	public List<Project> getProjectsByRe(String rePattern) {
+		List<Project> allProjects = new ArrayList<Project>();
+		Pattern pattern;
+		try {
+			pattern = Pattern.compile(rePattern, Pattern.CASE_INSENSITIVE);
+		} catch (PatternSyntaxException e) {
+			logger.error("Bad regex pattern " + rePattern);
+			return allProjects;
+		}
+		for(Project project : getProjects()) {
+			if(pattern.matcher(project.getName()).find()) {
+				allProjects.add(project);
+			}
+		}
+		return allProjects;
+	}
 	
 	@Override
 	public Project getProject(String name) {
@@ -661,5 +678,7 @@ public class FileProjectManager implements ProjectManager {
 	private String projectLogFileName(String projectName) {
 		return "_project." + projectName + ".log";
 	}
+
+
 
 }

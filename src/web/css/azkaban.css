@@ -540,6 +540,27 @@ tr:hover td {
   cursor: pointer;
 }
 
+.advfilter-btn {
+  background: -moz-linear-gradient(center top , #E8E8E8 0pt, #CCC 100%) repeat scroll 0 0 transparent;
+  background: -webkit-gradient(linear, center top, center bottom, from(#E8E8E8), to(#CCC));
+  border: 1px solid #999;
+  border-top-right-radius: 3px;
+  border-bottom-right-radius: 3px;
+  border-left: none;
+  color: #666;
+  float: right;
+  font-weight: bold;
+  height: 24px;
+  font-size: 10pt;
+}
+
+.advfilter-btn:hover {
+  background: -moz-linear-gradient(center top , #F0F0F0 0pt, #DDD 100%) repeat scroll 0 0 transparent;
+  background: -webkit-gradient(linear, center top, center bottom, from(#F0F0F0), to(#DDD));
+  cursor: pointer;
+}
+
+
 #scheduled-jobs-content,
 #executing-jobs-content {
   display: none;

@@ -2,13 +2,15 @@
 <html>
 	<head>
 #parse( "azkaban/webapp/servlet/velocity/style.vm" )
-		<script type="text/javascript" src="${context}/js/jquery/jquery.js"></script>    
+		<script type="text/javascript" src="${context}/js/jquery/jquery.js"></script>  
+		<script type="text/javascript" src="${context}/js/jqueryui/jquery-ui.custom.min.js"></script>  
+		<script type="text/javascript" src="${context}/js/jqueryui/jquery.ui.datepicker.min.js"></script>
 		<script type="text/javascript" src="${context}/js/namespace.js"></script>
 		<script type="text/javascript" src="${context}/js/underscore-1.2.1-min.js"></script>
 		<script type="text/javascript" src="${context}/js/backbone-0.5.3-min.js"></script>
 		<script type="text/javascript" src="${context}/js/jquery.simplemodal.js"></script>
-		<script type="text/javascript" src="${context}/js/azkaban.nav.js"></script>
-		<script type="text/javascript" src="${context}/js/azkaban.main.view.js"></script>
+		<script type="text/javascript" src="${context}/js/azkaban.nav.js"></script>		
+		<script type="text/javascript" src="${context}/js/azkaban.history.view.js"></script>
 		<script type="text/javascript">
 			var contextURL = "${context}";
 			var currentTime = ${currentTime};
@@ -26,13 +28,17 @@
 			<div id="all-jobs-content">
 				<div class="section-hd">
 					<h2>History</h2>
+					<a id="adv-filter-btn" class="btn1 "  href="#">Advanced Filter</a>
 					<form id="search-form" method="post">
 						<input type="hidden" name="action" value="search">
 						<input type="submit" value="Quick Search" class="search-btn">
-						<input id="searchtextbox" type="text" placeholder="by flow name containing ..." value=#if($search_term) ${search_term} #else "" #end class="search-input" name="searchterm">
+						<input id="searchtextbox" type="text" placeholder="flow name containing ..." value=#if($search_term) ${search_term} #else "" #end class="search-input" name="searchterm">
 					</form>
+					
 				</div>
 			</div>
+			
+			
 			
 			<div class="executionInfo">
 				<table id="executingJobs">
@@ -92,5 +98,41 @@
 				</div>
 			</div>
 		</div>
+		
+		<!-- modal content -->
+		<div id="adv-filter" class="modal">
+			<h3>Advanced Filter</h3>
+			<div id="errorMsg" class="box-error-message">$errorMsg</div>
+			
+			<div class="message">
+				<fieldset>
+					<dl>
+
+						<dt><label for="path">Project Name</label></dt>
+						<dd><input id="projRe" type="text" placeholder="project name containing ..." value = ""  class="filter-input" name="projre"/></dd>
+						<dt><label for="path">Flow Name Name</label></dt>
+						<dd><input id="flowRe" type="text" placeholder="flow name containing ..." value = ""  class="filter-input" name="flowre"/></dd>
+						<dt><label for="path">User Name</label></dt>
+						<dd><input id="userRe" type="text" placeholder="user name containing ..." value = ""  class="filter-input" name="userre"/></dd>
+						<dt>Date between</dt>
+						<dd><input type="text" id="daterangebegin" value=""/></dd>
+						<dt>and</dt>
+						<dd><input type="text" id="daterangeend" value=""/></dd>
+					</dl>
+				</fieldset>
+			</div>
+			<div class="actions">
+				<a class="yes btn2" id="filter-btn" href="#">Filter</a>
+				<a class="no simplemodal-close btn3" href="#">Cancel</a>
+			</div>
+			<div id="invalid-session" class="modal">
+				<h3>Invalid Session</h3>
+				<p>Session has expired. Please re-login.</p>
+				<div class="actions">
+					<a class="yes btn2" id="login-btn" href="#">Re-login</a>
+				</div>
+			</div>
+		</div>
+		
 	</body>
 </html>
