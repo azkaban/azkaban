@@ -912,8 +912,6 @@ tr:hover td {
 }
 
 .shadow-box {
-  -moz-border-radius: 15px;
-  border-radius: 15px;
   -moz-box-shadow: 5px 5px 5px #CCC;
   -webkit-box-shadow: 5px 5px 5px #CCC;
   box-shadow: 5px 5px 5px #CCC;
@@ -939,10 +937,6 @@ tr:hover td {
 .shadow-box-footer {
   clear: both;
   background-color: #EEE;
-  border-bottom-right-radius: 15px;
-  border-bottom-left-radius: 15px;
-  -moz-border-radius-bottomright: 15px;
-  -moz-border-radius-bottomleft: 15px;
   height: 50px;
 }
 
