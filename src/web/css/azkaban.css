@@ -128,6 +128,10 @@ label.disabled {
   min-height: 150px;
 }
 
+.content.history {
+  min-height: 75px;
+}
+
 .section-ft {
   border-top: 1px solid #cdcdcd;
 }
@@ -929,8 +933,6 @@ tr:hover td {
 }
 
 .shadow-box {
-  -moz-border-radius: 15px;
-  border-radius: 15px;
   -moz-box-shadow: 5px 5px 5px #CCC;
   -webkit-box-shadow: 5px 5px 5px #CCC;
   box-shadow: 5px 5px 5px #CCC;
@@ -956,10 +958,6 @@ tr:hover td {
 .shadow-box-footer {
   clear: both;
   background-color: #EEE;
-  border-bottom-right-radius: 15px;
-  border-bottom-left-radius: 15px;
-  -moz-border-radius-bottomright: 15px;
-  -moz-border-radius-bottomleft: 15px;
   height: 50px;
 }
 
@@ -2112,6 +2110,24 @@ span .nowrap {
 	height: 300px;
 	background-color: #fff;
 	margin-bottom: 5px;
+}
+
+#dayByDayPanel {
+	
+}
+
+#dayGraph {
+	background-color: #fff;
+}
+
+#historyTimeLine {
+	position: absolute;
+	top: 160px;
+	bottom: 5px;
+	left: 50px;
+	right: 50px;
+	padding: 10px;
+	background: #E0E0E0;
 }
 
 

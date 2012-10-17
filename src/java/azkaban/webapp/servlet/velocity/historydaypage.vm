@@ -8,7 +8,7 @@
 		<script type="text/javascript" src="${context}/js/backbone-0.5.3-min.js"></script>
 		<script type="text/javascript" src="${context}/js/jquery.simplemodal.js"></script>
 		<script type="text/javascript" src="${context}/js/azkaban.nav.js"></script>
-		<script type="text/javascript" src="${context}/js/azkaban.historytimeline.view.js"></script>
+		<script type="text/javascript" src="${context}/js/azkaban.historyday.view.js"></script>
 		<script type="text/javascript">
 			var contextURL = "${context}";
 			var currentTime = ${currentTime};
@@ -29,7 +29,7 @@
 		<div class="content history">
 			<div id="all-jobs-content">
 				<div class="section-hd">
-					<h2>History Timeline</h2>
+					<h2>History Week</h2>
 				</div>
 			</div>
 			<div id="historyTimeLine">

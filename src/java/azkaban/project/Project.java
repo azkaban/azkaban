@@ -111,6 +111,10 @@ public class Project {
 		return userToPermission.get(userID);
 	}
 	
+	public void removeUserPermission(String userId) {
+		userToPermission.remove(userId);
+	}
+	
 	public long getCreateTimestamp() {
 		return createTimestamp;
 	}

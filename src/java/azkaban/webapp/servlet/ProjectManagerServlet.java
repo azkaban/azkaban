@@ -507,17 +507,28 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 			return;
 		}
 		
-		if (admin) {
-			perm.setPermission(Type.ADMIN, true);
+		if (admin || read || write || execute || schedule) {
+			if (admin) {
+				perm.setPermission(Type.ADMIN, true);
+				perm.setPermission(Type.READ, false);
+				perm.setPermission(Type.WRITE, false);
+				perm.setPermission(Type.EXECUTE, false);
+				perm.setPermission(Type.SCHEDULE, false);
+			}
+			else {
+				perm.setPermission(Type.ADMIN, false);
+				perm.setPermission(Type.READ, read);
+				perm.setPermission(Type.WRITE, write);
+				perm.setPermission(Type.EXECUTE, execute);
+				perm.setPermission(Type.SCHEDULE, schedule);
+			}
+			project.info("User '" + user.getUserId() + "' has changed permissions for '" + username + "' to " + perm.toString());
 		}
 		else {
-			perm.setPermission(Type.READ, read);
-			perm.setPermission(Type.WRITE, write);
-			perm.setPermission(Type.EXECUTE, execute);
-			perm.setPermission(Type.SCHEDULE, schedule);
+			project.removeUserPermission(username);
+			project.info("User '" + user.getUserId() + "' has removed '" + username + "'");
 		}
-		project.info("User '" + user.getUserId() + "' has changed permissions for '" + username + "' to " + perm.toString());
-
+		
 		try {
 			projectManager.commitProject(project.getName());
 		} catch (ProjectManagerException e) {

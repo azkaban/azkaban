@@ -12,12 +12,17 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+<<<<<<< HEAD
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.joda.time.LocalDateTime;
 import org.joda.time.format.DateTimeFormat;
 
+=======
+import azkaban.executor.ExecutableFlow;
+>>>>>>> b1975c8a1e8853b72b66c3be8b47a72f1232453f
 import azkaban.executor.ExecutorManager;
+import azkaban.executor.ExecutorManagerException;
 import azkaban.executor.ExecutorManager.ExecutionReference;
 import azkaban.utils.JSONUtils;
 import azkaban.webapp.session.Session;
@@ -37,7 +42,13 @@ public class HistoryServlet extends LoginAbstractAzkabanServlet {
 	protected void handleGet(HttpServletRequest req, HttpServletResponse resp,
 			Session session) throws ServletException, IOException {
 		
-		if (hasParam(req, "timeline")) {
+		if (hasParam(req, "ajax")) {
+			handleAJAXAction(req, resp, session);
+		}
+		else if (hasParam(req, "days")) {
+			handleHistoryDayPage(req, resp, session);
+		}
+		else if (hasParam(req, "timeline")) {
 			handleHistoryTimelinePage(req, resp, session);
 		}
 		else {
@@ -96,10 +107,50 @@ public class HistoryServlet extends LoginAbstractAzkabanServlet {
 		else {
 			resp.sendRedirect(req.getRequestURL().toString());
 		}
-		
 	}
+	
+	private void handleAJAXAction(HttpServletRequest req, HttpServletResponse resp, Session session) throws ServletException, IOException {
+		HashMap<String, Object> ret = new HashMap<String, Object>();
+		String ajaxName = getParam(req, "ajax");
+	
+		if (ajaxName.equals("fetch")) {
+			fetchHistoryData(req, resp, ret);
+		}
+		
+		if (ret != null) {
+			this.writeJSON(resp, ret);
+		}
+	}
+<<<<<<< HEAD
 
 	private void handleHistoryPage(HttpServletRequest req, HttpServletResponse resp, Session session) throws ServletException {
+=======
+	
+	private void fetchHistoryData(HttpServletRequest req, HttpServletResponse resp, HashMap<String, Object> ret) throws ServletException {
+		long start = getLongParam(req, "start");
+		long end = getLongParam(req, "end");
+		
+		ret.put("start", start);
+		ret.put("end", end);
+		
+		List<ExecutionReference> refs = executorManager.getFlowHistory(start, end);
+		ArrayList<Object> refList = new ArrayList<Object>();
+		for (ExecutionReference ref: refs) {
+			
+			HashMap<String,Object> refObj = new HashMap<String,Object>();
+			refObj.put("execId", ref.getExecId());
+			refObj.put("start", ref.getStartTime());
+			refObj.put("end", ref.getEndTime());
+			refObj.put("status", ref.getStatus().toString());
+			
+			refList.add(refObj);
+		}
+		
+		ret.put("data", refList);
+	}
+	
+	private void handleHistoryPage(HttpServletRequest req, HttpServletResponse resp, Session session) {
+>>>>>>> b1975c8a1e8853b72b66c3be8b47a72f1232453f
 		Page page = newPage(req, resp, session, "azkaban/webapp/servlet/velocity/historypage.vm");
 		int pageNum = getIntParam(req, "page", 1);
 		int pageSize = getIntParam(req, "size", 16);
@@ -149,6 +200,32 @@ public class HistoryServlet extends LoginAbstractAzkabanServlet {
 	
 	private void handleHistoryTimelinePage(HttpServletRequest req, HttpServletResponse resp, Session session) {
 		Page page = newPage(req, resp, session, "azkaban/webapp/servlet/velocity/historytimelinepage.vm");
+		long currentTime = System.currentTimeMillis();
+		long begin = getLongParam(req, "begin", currentTime - 86400000);
+		long end = getLongParam(req, "end", currentTime);
+		
+		page.add("begin", begin);
+		page.add("end", end);
+		
+		List<ExecutionReference> refs = executorManager.getFlowHistory(begin, end);
+		ArrayList<Object> refList = new ArrayList<Object>();
+		for (ExecutionReference ref: refs) {
+			
+			HashMap<String,Object> refObj = new HashMap<String,Object>();
+			refObj.put("execId", ref.getExecId());
+			refObj.put("start", ref.getStartTime());
+			refObj.put("end", ref.getEndTime());
+			refObj.put("status", ref.getStatus().toString());
+			
+			refList.add(refObj);
+		}
+		
+		page.add("data", JSONUtils.toJSON(refList));
+		page.render();
+	}
+	
+	private void handleHistoryDayPage(HttpServletRequest req, HttpServletResponse resp, Session session) {
+		Page page = newPage(req, resp, session, "azkaban/webapp/servlet/velocity/historydaypage.vm");
 		long currentTime = System.currentTimeMillis();
 		long begin = getLongParam(req, "begin", currentTime - 86400000);
 		long end = getLongParam(req, "end", currentTime);
