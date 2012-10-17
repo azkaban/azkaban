@@ -5,7 +5,7 @@ var getDuration = function(startMs, endMs) {
 		}
 		
 		var diff = endMs - startMs;
-		formatDuration(diff, false);
+		return formatDuration(diff, false);
 	}
 
 	return "-";
