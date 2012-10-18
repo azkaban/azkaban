@@ -2,8 +2,7 @@ package azkaban.webapp.servlet;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
+
 import java.util.HashMap;
 import java.util.List;
 
@@ -12,9 +11,12 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import azkaban.executor.ExecutableFlow;
+import org.joda.time.DateTime;
+
+import org.joda.time.format.DateTimeFormat;
+
+
 import azkaban.executor.ExecutorManager;
-import azkaban.executor.ExecutorManagerException;
 import azkaban.executor.ExecutorManager.ExecutionReference;
 import azkaban.utils.JSONUtils;
 import azkaban.webapp.session.Session;
@@ -63,7 +65,7 @@ public class HistoryServlet extends LoginAbstractAzkabanServlet {
 						pageNum = 1;
 					}
 		
-					List<ExecutionReference> history = executorManager.getFlowHistory(searchTerm, pageSize, (pageNum - 1)*pageSize);
+					List<ExecutionReference> history = executorManager.getFlowHistory(".*", searchTerm, ".*", 0, DateTime.now().getMillis(), pageSize, (pageNum - 1)*pageSize, true);
 					page.add("flowHistory", history);
 					page.add("size", pageSize);
 					page.add("page", pageNum);
@@ -113,7 +115,7 @@ public class HistoryServlet extends LoginAbstractAzkabanServlet {
 			this.writeJSON(resp, ret);
 		}
 	}
-	
+
 	private void fetchHistoryData(HttpServletRequest req, HttpServletResponse resp, HashMap<String, Object> ret) throws ServletException {
 		long start = getLongParam(req, "start");
 		long end = getLongParam(req, "end");
@@ -137,7 +139,7 @@ public class HistoryServlet extends LoginAbstractAzkabanServlet {
 		ret.put("data", refList);
 	}
 	
-	private void handleHistoryPage(HttpServletRequest req, HttpServletResponse resp, Session session) {
+	private void handleHistoryPage(HttpServletRequest req, HttpServletResponse resp, Session session) throws ServletException {
 		Page page = newPage(req, resp, session, "azkaban/webapp/servlet/velocity/historypage.vm");
 		int pageNum = getIntParam(req, "page", 1);
 		int pageSize = getIntParam(req, "size", 16);
@@ -145,8 +147,18 @@ public class HistoryServlet extends LoginAbstractAzkabanServlet {
 		if (pageNum < 0) {
 			pageNum = 1;
 		}
-		
-		List<ExecutionReference> history = executorManager.getFlowHistory(".*", pageSize, (pageNum - 1)*pageSize);
+		List<ExecutionReference> history = null;
+		if(hasParam(req, "advfilter")) {
+			String projRe = getParam(req, "projre").equals("") ? ".*" : getParam(req, "projre");
+			String flowRe = getParam(req, "flowre").equals("") ? ".*" : getParam(req, "flowre");
+			String userRe = getParam(req, "userre").equals("") ? ".*" : getParam(req, "userre");
+			long beginTime = getParam(req, "begin").equals("") ? 0 : DateTimeFormat.forPattern("MM/dd/yyyy").parseDateTime(getParam(req, "begin")).getMillis();
+			long endTime = getParam(req, "end").equals("") ? DateTime.now().getMillis() : DateTimeFormat.forPattern("MM/dd/yyyy").parseDateTime(getParam(req, "end")).getMillis();
+			history = executorManager.getFlowHistory(projRe, flowRe, userRe, beginTime, endTime, pageSize, (pageNum - 1)*pageSize, true);
+		}
+		else {
+			history = executorManager.getFlowHistory("", "", "", 0, 0, pageSize, (pageNum - 1)*pageSize, false);
+		}
 		page.add("flowHistory", history);
 		page.add("size", pageSize);
 		page.add("page", pageNum);

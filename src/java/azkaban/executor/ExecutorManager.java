@@ -56,8 +56,12 @@ import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.impl.client.BasicResponseHandler;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.log4j.Logger;
+import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
+import org.joda.time.format.DateTimeFormat;
 
 import azkaban.executor.ExecutableFlow.Status;
+import azkaban.executor.ExecutorManager.ExecutionReference;
 import azkaban.flow.Flow;
 import azkaban.utils.ExecutableFlowLoader;
 import azkaban.utils.JSONUtils;
@@ -291,15 +295,22 @@ public class ExecutorManager {
 		return endTime > refStart && startTime <= refEnd;
 	}
 	
-	public List<ExecutionReference> getFlowHistory(String regexPattern, int numResults, int skip) {
+	public List<ExecutionReference> getFlowHistory(String projRe, String flowRe, String userRe, long startTime, long endTime, int numResults, int skip, Boolean dofilter) {
 		ArrayList<ExecutionReference> searchFlows = new ArrayList<ExecutionReference>();
 
-		Pattern pattern;
-		try {
-			pattern = Pattern.compile(regexPattern, Pattern.CASE_INSENSITIVE);
-		} catch (PatternSyntaxException e) {
-			logger.error("Bad regex pattern " + regexPattern);
-			return searchFlows;
+		Pattern projPattern = null;
+		Pattern flowPattern = null;
+		Pattern userPattern = null;
+		
+		if(dofilter == true) {
+			try {
+				projPattern = Pattern.compile(projRe, Pattern.CASE_INSENSITIVE);
+				flowPattern = Pattern.compile(flowRe, Pattern.CASE_INSENSITIVE);
+				userPattern = Pattern.compile(userRe, Pattern.CASE_INSENSITIVE);
+			} catch (PatternSyntaxException e) {
+				logger.error("Bad regex pattern " + projRe + " " + flowRe + " " + userRe);
+				return searchFlows;
+			}
 		}
 		
 		for (ExecutionReference ref: runningReference.values()) {
@@ -307,9 +318,14 @@ public class ExecutorManager {
 				skip--;
 			}
 			else {
-				if(pattern.matcher(ref.getFlowId()).find() ) {
-					searchFlows.add(ref);
+				if(dofilter == true) {
+					if(flowPattern.matcher(ref.getFlowId()).find() && projPattern.matcher(ref.getProjectId()).find() && userPattern.matcher(ref.getUserId()).find()
+									&& between(ref, startTime, endTime) ) {
+						searchFlows.add(ref);
+					}
 				}
+				else
+					searchFlows.add(ref);
 				if (searchFlows.size() == numResults) {
 					Collections.sort(searchFlows);
 					return searchFlows;
@@ -322,7 +338,25 @@ public class ExecutorManager {
 			return searchFlows;
 		}
 		
-		File[] archivePartitionsDir = archivePath.listFiles();
+		File[] archivePartitionsDir;		
+		if(dofilter == true) {
+			final long startThreshold = startTime - 100000;
+			final long endThreshold = endTime + 100000;
+
+			archivePartitionsDir = archivePath.listFiles( new FileFilter() {
+				@Override
+				public boolean accept(File pathname) {
+					String name = pathname.getName();
+					long val = Long.valueOf(name);
+					return val >= startThreshold && val <= endThreshold;
+				}
+			}
+			);
+		}
+		else {
+			archivePartitionsDir = archivePath.listFiles();
+		}
+		
 		Arrays.sort(archivePartitionsDir, new Comparator<File>() {
 			@Override
 			public int compare(File arg0, File arg1) {
@@ -347,8 +381,14 @@ public class ExecutorManager {
 						if (ref == null) {
 							continue;
 						}
-
-						if(pattern.matcher(ref.getFlowId()).find() ) {
+						
+						if(dofilter == true) {
+							if(flowPattern.matcher(ref.getFlowId()).find() && projPattern.matcher(ref.getProjectId()).find() && userPattern.matcher(ref.getUserId()).find()
+									&& between(ref, startTime, endTime)) {
+								searchFlows.add(ref);
+							}												
+						}
+						else {
 							searchFlows.add(ref);
 						}
 					} catch (IOException e) {
@@ -1373,5 +1413,6 @@ public class ExecutorManager {
 			this.lastCheckedTime = lastCheckedTime;
 		}
 	}
+
 
 }

@@ -18,6 +18,8 @@ public interface ProjectManager {
 	public List<Project> getUserProjectsByRe(User user, String searchTerm);
 	
 	public List<Project> getProjects();
+	
+	public List<Project> getProjectsByRe(String searchTerm);
 
 	public void commitProject(String name) throws ProjectManagerException;
 
@@ -38,6 +40,8 @@ public interface ProjectManager {
 	public void copyProjectSourceFilesToDirectory(Project project, File directory) throws ProjectManagerException;
 
 	public void getProjectLogs(String projectId, long tailBytes, long skipBytes, Writer writer) throws IOException;
+
+	
 
 
 }

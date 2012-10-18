@@ -9,7 +9,6 @@
 		<script type="text/javascript" src="${context}/js/backbone-0.5.3-min.js"></script>
 		<script type="text/javascript" src="${context}/js/jquery.simplemodal.js"></script>
 		<script type="text/javascript" src="${context}/js/azkaban.nav.js"></script>
-		<script type="text/javascript" src="${context}/js/azkaban.main.view.js"></script>
 		<script type="text/javascript" src="${context}/js/azkaban.scheduled.view.js"></script>
 		<script type="text/javascript">
 			var contextURL = "${context}";

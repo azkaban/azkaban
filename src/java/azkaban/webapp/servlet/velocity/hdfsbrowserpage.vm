@@ -58,6 +58,7 @@
 							<th>Permission</th>
 							<th>Owner/Group</th>
 							<th>Size</th>
+							<th>Block Size</th>
 							<th>Reps</th>
 							<th>Modified Date</th>
 						</tr>
@@ -76,6 +77,13 @@
                                 	&ndash;
                                 #else
                                 	$utils.displayBytes(${status.len})
+                                #end
+                            </td>
+                            <td>
+								#if($status.isDir())
+                                	&ndash;
+                                #else
+                                	$utils.displayBytes(${status.getBlockSize()})
                                 #end
                             </td>
                             <td>
