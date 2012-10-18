@@ -1,0 +1,118 @@
+#*
+ * Copyright 2012 LinkedIn, Inc
+ * 
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not
+ * use this file except in compliance with the License. You may obtain a copy of
+ * the License at
+ * 
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations under
+ * the License.
+*#
+
+<!DOCTYPE html> 
+<html>
+	<head>
+#parse( "azkaban/webapp/servlet/velocity/style.vm" )
+		<script type="text/javascript" src="${context}/js/jquery/jquery.js"></script>    
+		<script type="text/javascript" src="${context}/js/jqueryui/jquery-ui.custom.min.js"></script>   
+		<script type="text/javascript" src="${context}/js/namespace.js"></script>
+		<script type="text/javascript" src="${context}/js/underscore-1.2.1-min.js"></script>
+		<script type="text/javascript" src="${context}/js/backbone-0.5.3-min.js"></script>
+		<script type="text/javascript" src="${context}/js/jquery.simplemodal.js"></script>
+		<script type="text/javascript" src="${context}/js/azkaban.nav.js"></script>
+		<script type="text/javascript">
+			var contextURL = "${context}";
+			var currentTime = ${currentTime};
+			var timezone = "${timezone}";
+			var errorMessage = null;
+			var successMessage = null;
+			
+			var projectId = "$project.name";
+		</script>
+	</head>
+	<body>
+#set($current_page="all")
+#parse( "azkaban/webapp/servlet/velocity/nav.vm" )
+		<div class="messaging"><p id="messageClose">X</p><p id="message"></p></div>  
+
+#if($errorMsg)
+			<div class="box-error-message">$errorMsg</div>
+#else
+	<div class="content">
+	#if($error_message != "null")
+			<div class="box-error-message">$error_message</div>
+	#elseif($success_message != "null")
+			<div class="box-success-message">$success_message</div>
+	#end
+			<div id="all-jobs-content">
+				<div class="section-hd">
+					<h2><a href="${context}/manager?project=${project.name}&flow=${flowid}&job=${jobid}">Job <span>$jobid</span></a></h2>
+					<div class="section-sub-hd">
+						<h4><a href="${context}/manager?project=${project.name}">Project <span>$project.name</span></a></h4>
+						<h4 class="separator">&gt;</h4>
+						<h4><a href="${context}/manager?project=${project.name}&flow=${flowid}">Flow <span>$flowid</span></a></h4>
+					</div>
+					
+					<a id="jobs-logs-btn" class="btn2" href="${context}/manager?project=${project.name}&job=$jobid&history">Job History</a>
+				</div>
+			</div>
+			
+			<div id="job-summary">
+				<table class="summary-table">
+					<tr><td class="first">Type:</td><td>$jobtype</td></tr>
+					<tr><td class="first">Dependencies:</td><td>
+#if ($dependencies) 
+#foreach($dependency in $dependencies)
+	<a href="${context}/manager?project=${project.name}&flow=${flowid}&job=$dependency">$dependency</a>
+#end
+#else
+	<span>No Dependencies</span>
+#end
+					</td></tr>
+					<tr><td class="first">Dependents:</td><td>
+#if ($dependents) 
+#foreach($dependent in $dependents)
+						<span class="nowrap"><a href="${context}/manager?project=${project.name}&flow=${flowid}&job=$dependent">$dependent</a></span>
+#end
+#else
+						<span>No Dependencies</span>
+#end
+					</td></tr>
+					<tr><td class="first">Properties:</td><td>
+#if ($properties) 
+#foreach($property in $properties)
+						<!--a>$property</a><span>,</span-->
+						<span class="nowrap"><a href="${context}/manager?project=${project.name}&flow=${flowid}&job=${jobid}&prop=$property">$property</a></span>
+#end
+#else
+						<span>No Property Files For This Job</span>
+#end
+					</td></tr>
+				</table>
+			</div>
+			
+			<table id="all-jobs" class="all-jobs job-table parameters">
+				<thead>
+					<tr>
+						<th class="tb-pname">Parameter Name</th>
+						<th class="tb-pvalue">Value</th>
+					</tr>
+				</thead>
+				<tbody>
+#foreach($parameter in $parameters)
+					<tr>
+						<td class="first">$parameter.first</td><td>$parameter.second</td>
+					</tr>
+#end
+				</tbody>
+			</table>
+	</div>
+
+#end
+	</body>
+</html>

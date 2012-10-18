@@ -1,0 +1,132 @@
+#*
+ * Copyright 2012 LinkedIn, Inc
+ * 
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not
+ * use this file except in compliance with the License. You may obtain a copy of
+ * the License at
+ * 
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations under
+ * the License.
+*#
+
+<!DOCTYPE html> 
+<html>
+	<head>
+#parse( "azkaban/webapp/servlet/velocity/style.vm" )
+		<script type="text/javascript" src="${context}/js/jquery/jquery.js"></script>    
+		<script type="text/javascript" src="${context}/js/namespace.js"></script>
+		<script type="text/javascript" src="${context}/js/underscore-1.2.1-min.js"></script>
+		<script type="text/javascript" src="${context}/js/backbone-0.5.3-min.js"></script>
+		<script type="text/javascript" src="${context}/js/jquery.simplemodal.js"></script>
+		<script type="text/javascript" src="${context}/js/azkaban.nav.js"></script>
+		<script type="text/javascript" src="${context}/js/azkaban.main.view.js"></script>
+		<script type="text/javascript">
+			var contextURL = "${context}";
+			var currentTime = ${currentTime};
+			var timezone = "${timezone}";
+			var errorMessage = null;
+			var successMessage = null;
+		</script>
+	</head>
+	<body>
+		#set($current_page="executing")
+#parse( "azkaban/webapp/servlet/velocity/nav.vm" )
+		<div class="messaging"><p id="messageClose">X</p><p id="message"></p></div>  
+
+		<div class="content">
+			<div id="all-jobs-content">
+				<div class="section-hd">
+					<h2>Executing Flows</h2>
+				</div>
+			</div>
+			
+			<h3 class="subhead">Currently Running Jobs</h3>
+			<div class="executionInfo">
+				<table id="executingJobs">
+					<thead>
+						<tr>
+							<th class="execid">Execution Id</th>
+							<th>Flow</th>
+							<th>Project</th>
+							<th class="user">User</th>
+							<th class="date">Start Time</th>
+							<th class="date">End Time</th>
+							<th class="elapse">Elapsed</th>
+							<th class="status">Status</th>
+							<th class="action">Action</th>
+						</tr>
+					</thead>
+					<tbody>
+						#if($runningFlows)
+#foreach($flow in $runningFlows)
+						<tr class="row" >
+							<td class="tb-name">
+								<a href="${context}/executor?execid=${flow.executionId}">$utils.extractNumericalId(${flow.executionId})</a>
+							</td>
+							<td><a href="${context}/manager?project=${flow.projectId}&flow=${flow.flowId}">${flow.flowId}</a></td>
+							<td>
+								<a href="${context}/manager?project=${flow.projectId}">${flow.projectId}</a>
+							</td>
+							<td>${flow.submitUser}</td>
+							<td>$utils.formatDate(${flow.startTime})</td>
+							<td>$utils.formatDate(${flow.endTime})</td>
+							<td>$utils.formatDuration(${flow.startTime}, ${flow.endTime})</td>
+							<td><div class="status ${flow.status}">$utils.formatStatus(${flow.status})</div></td>
+							<td></td>
+						</tr>
+#end
+#else
+						<tr><td class="last">No Executing Flows</td></tr>
+#end
+					</tbody>
+				</table>
+			</div>
+			<h3 class="subhead">Recently Finished Jobs</h3>
+			<div class="executionInfo">
+				<table id="recentlyFinished">
+					<thead>
+						<tr>
+							<th class="execid">Execution Id</th>
+							<th>Flow</th>
+							<th>Project</th>
+							<th class="user">User</th>
+							<th class="date">Start Time</th>
+							<th class="date">End Time</th>
+							<th class="elapse">Elapsed</th>
+							<th class="status">Status</th>
+							<th class="action">Action</th>
+						</tr>
+					</thead>
+					<tbody>
+						#if($recentlyFinished)
+#foreach($flow in $recentlyFinished)
+						<tr class="row" >
+							<td class="tb-name">
+								<a href="${context}/executor?execid=${flow.executionId}">$utils.extractNumericalId(${flow.executionId})</a>
+							</td>
+							<td><a href="${context}/manager?project=${flow.projectId}&flow=${flow.flowId}">${flow.flowId}</a></td>
+							<td>
+								<a href="${context}/manager?project=${flow.projectId}">${flow.projectId}</a>
+							</td>
+							<td>${flow.submitUser}</td>
+							<td>$utils.formatDate(${flow.startTime})</td>
+							<td>$utils.formatDate(${flow.endTime})</td>
+							<td>$utils.formatDuration(${flow.startTime}, ${flow.endTime})</td>
+							<td><div class="status ${flow.status}">$utils.formatStatus(${flow.status})</div></td>
+							<td></td>
+						</tr>
+#end
+#else
+						<tr><td class="last">No Recently Finished</td></tr>
+#end	
+					</tbody>
+				</table>
+			</div>
+		</div>
+	</body>
+</html>

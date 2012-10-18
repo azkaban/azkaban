@@ -1,0 +1,5 @@
+type=java
+job.class=azkaban.test.executor.SleepJavaJob
+dependencies=job7
+seconds=4
+fail=false

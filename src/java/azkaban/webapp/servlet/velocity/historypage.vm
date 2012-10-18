@@ -1,0 +1,154 @@
+#*
+ * Copyright 2012 LinkedIn, Inc
+ * 
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not
+ * use this file except in compliance with the License. You may obtain a copy of
+ * the License at
+ * 
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations under
+ * the License.
+*#
+
+<!DOCTYPE html> 
+<html>
+	<head>
+#parse( "azkaban/webapp/servlet/velocity/style.vm" )
+		<script type="text/javascript" src="${context}/js/jquery/jquery.js"></script>  
+		<script type="text/javascript" src="${context}/js/jqueryui/jquery-ui.custom.min.js"></script>  
+		<script type="text/javascript" src="${context}/js/jqueryui/jquery.ui.datepicker.min.js"></script>
+		<script type="text/javascript" src="${context}/js/namespace.js"></script>
+		<script type="text/javascript" src="${context}/js/underscore-1.2.1-min.js"></script>
+		<script type="text/javascript" src="${context}/js/backbone-0.5.3-min.js"></script>
+		<script type="text/javascript" src="${context}/js/jquery.simplemodal.js"></script>
+		<script type="text/javascript" src="${context}/js/azkaban.nav.js"></script>		
+		<script type="text/javascript" src="${context}/js/azkaban.history.view.js"></script>
+		<script type="text/javascript">
+			var contextURL = "${context}";
+			var currentTime = ${currentTime};
+			var timezone = "${timezone}";
+			var errorMessage = "${error_message}";
+			var successMessage = "${success_message}";
+		</script>
+	</head>
+	<body>
+		#set($current_page="history")
+#parse( "azkaban/webapp/servlet/velocity/nav.vm" )
+		<div class="messaging"><p id="messageClose">X</p><p id="message"></p></div>  
+
+		<div class="content">
+			<div id="all-jobs-content">
+				<div class="section-hd">
+					<h2>History</h2>
+					<a id="adv-filter-btn" class="btn1 "  href="#">Advanced Filter</a>
+					<form id="search-form" method="post">
+						<input type="hidden" name="action" value="search">
+						<input type="submit" value="Quick Search" class="search-btn">
+						<input id="searchtextbox" type="text" placeholder="flow name containing ..." value=#if($search_term) ${search_term} #else "" #end class="search-input" name="searchterm">
+					</form>
+					
+				</div>
+			</div>
+			
+			
+			
+			<div class="executionInfo">
+				<table id="executingJobs">
+					<thead>
+						<tr>
+							<th class="execid">Execution Id</th>
+							<th>Flow</th>
+							<th>Project</th>
+							<th>User</th>
+							<th class="date">Start Time</th>
+							<th class="date">End Time</th>
+							<th class="elapse">Elapsed</th>
+							<th class="status">Status</th>
+							<th class="action">Action</th>
+						</tr>
+					</thead>
+					<tbody>
+						#if($flowHistory)
+#foreach($flow in $flowHistory)
+						<tr class="row" >
+							<td class="tb-name">
+								<a href="${context}/executor?execid=${flow.execId}">$utils.extractNumericalId(${flow.execId})</a>
+							</td>
+							<td class="tb-name">
+								<a href="${context}/manager?project=${flow.projectId}&flow=${flow.flowId}">${flow.flowId}</a>
+							</td>
+							<td>
+								<a href="${context}/manager?project=${flow.projectId}">${flow.projectId}</a>
+							</td>
+							<td>${flow.userId}</td>
+							<td>$utils.formatDate(${flow.startTime})</td>
+							<td>$utils.formatDate(${flow.endTime})</td>
+							<td>$utils.formatDuration(${flow.startTime}, ${flow.endTime})</td>
+							<td><div class="status ${flow.status}">$utils.formatStatus(${flow.status})</div></td>
+							<td></td>
+						</tr>
+#end
+#else
+						<tr><td class="last">No History Results Found</td></tr>
+#end
+					</tbody>
+				</table>
+				
+				<div id="pageSelection" class="nonjavascript">
+					<ul>
+		
+						<li id="previous" class="first"><a href="${context}/history?page=${previous.page}&size=${previous.size}"><span class="arrow">&larr;</span>Previous</a></li>
+				
+						<li id="page1" #if($page1.selected) class="selected" #end><a href="${context}/history?page=${page1.page}&size=${page1.size}">${page1.page}</a></li>
+						<li id="page2" #if($page2.selected) class="selected" #end><a href="${context}/history?page=${page2.page}&size=${page2.size}">${page2.page}</a></li>
+						<li id="page3" #if($page3.selected) class="selected" #end><a href="${context}/history?page=${page3.page}&size=${page3.size}">${page3.page}</a></li>
+						<li id="page4" #if($page4.selected) class="selected" #end><a href="${context}/history?page=${page4.page}&size=${page4.size}">${page4.page}</a></li>
+						<li id="page5" #if($page5.selected) class="selected" #end><a href="${context}/history?page=${page5.page}&size=${page5.size}">${page5.page}</a></li>
+
+						<li id="next"><a href="${context}/history?page=${next.page}&size=${next.size}">Next<span class="arrow">&rarr;</span></a></li>
+					</ul>
+				</div>
+			</div>
+		</div>
+		
+		<!-- modal content -->
+		<div id="adv-filter" class="modal">
+			<h3>Advanced Filter</h3>
+			<div id="errorMsg" class="box-error-message">$errorMsg</div>
+			
+			<div class="message">
+				<fieldset>
+					<dl>
+
+						<dt><label for="path">Project Name</label></dt>
+						<dd><input id="projRe" type="text" placeholder="project name containing ..." value = ""  class="filter-input" name="projre"/></dd>
+						<dt><label for="path">Flow Name Name</label></dt>
+						<dd><input id="flowRe" type="text" placeholder="flow name containing ..." value = ""  class="filter-input" name="flowre"/></dd>
+						<dt><label for="path">User Name</label></dt>
+						<dd><input id="userRe" type="text" placeholder="user name containing ..." value = ""  class="filter-input" name="userre"/></dd>
+						<dt>Date between</dt>
+						<dd><input type="text" id="daterangebegin" value=""/></dd>
+						<dt>and</dt>
+						<dd><input type="text" id="daterangeend" value=""/></dd>
+					</dl>
+				</fieldset>
+			</div>
+			<div class="actions">
+				<a class="yes btn2" id="filter-btn" href="#">Filter</a>
+				<a class="no simplemodal-close btn3" href="#">Cancel</a>
+			</div>
+			<div id="invalid-session" class="modal">
+				<h3>Invalid Session</h3>
+				<p>Session has expired. Please re-login.</p>
+				<div class="actions">
+					<a class="yes btn2" id="login-btn" href="#">Re-login</a>
+				</div>
+			</div>
+		</div>
+		
+	</body>
+</html>

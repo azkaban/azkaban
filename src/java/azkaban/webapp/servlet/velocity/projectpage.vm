@@ -1,0 +1,171 @@
+#*
+ * Copyright 2012 LinkedIn, Inc
+ * 
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not
+ * use this file except in compliance with the License. You may obtain a copy of
+ * the License at
+ * 
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations under
+ * the License.
+*#
+
+<!DOCTYPE html> 
+<html>
+	<head>
+#parse( "azkaban/webapp/servlet/velocity/style.vm" )
+		<script type="text/javascript" src="${context}/js/jquery/jquery.js"></script>    
+		<script type="text/javascript" src="${context}/js/jqueryui/jquery-ui.custom.min.js"></script>   
+		<script type="text/javascript" src="${context}/js/namespace.js"></script>
+		<script type="text/javascript" src="${context}/js/underscore-1.2.1-min.js"></script>
+		<script type="text/javascript" src="${context}/js/backbone-0.5.3-min.js"></script>
+		<script type="text/javascript" src="${context}/js/jquery.simplemodal.js"></script>
+		<script type="text/javascript" src="${context}/js/azkaban.nav.js"></script>
+		<script type="text/javascript" src="${context}/js/azkaban.project.view.js"></script>
+		<script type="text/javascript">
+			var contextURL = "${context}";
+			var currentTime = ${currentTime};
+			var timezone = "${timezone}";
+			var errorMessage = null;
+			var successMessage = null;
+			
+			var projectId = "$project.name";
+		</script>
+	</head>
+	<body>
+#set($current_page="all")
+#parse( "azkaban/webapp/servlet/velocity/nav.vm" )
+		<div class="messaging"><p id="messageClose">X</p><p id="message"></p></div>  
+
+			<div class="content">
+#if($errorMsg)
+				<div class="box-error-message">$errorMsg</div>
+#else
+#if($error_message != "null")
+				<div class="box-error-message">$error_message</div>
+#elseif($success_message != "null")
+				<div class="box-success-message">$success_message</div>
+#end
+
+				<div id="all-jobs-content">
+					<div class="section-hd">
+						<h2><a href="${context}/manager?project=${project.name}">Project <span>$project.name</span></a></h2>
+						<a id="project-upload-btn" class="btn1 projectupload">Upload</a>
+						<a id="project-permission-btn" class="btn5 projectpermission" href="${context}/manager?project=${project.name}&permissions">Permissions</a>
+						#if($admin)
+						<a id="project-logs-btn" class="btn2" href="${context}/manager?project=${project.name}&logs">Project Logs</a>
+						<a id="project-delete-btn" class="btn6">Delete Project</a>
+						#end
+					</div><!-- end .section-hd -->
+				</div>
+
+				<div id="project-users">
+					<table class="user-table">
+						<tr><td class="first">Project Admins:</td><td>$admins</td></tr>
+						<tr><td class="first">Your Permissions:</td><td>$userpermission.toString()</td></tr>
+					</table>
+				</div>
+
+				<div id="project-summary">
+					<table class="summary-table">
+						<tr><td class="first">Name:</td><td>$project.name</td></tr>
+						<tr><td class="first">Created Date:</td><td>$utils.formatDate($project.lastModifiedTimestamp)</td></tr>
+						<tr><td class="first">Modified Date:</td><td>$utils.formatDate($project.createTimestamp)</td></tr>
+						<tr><td class="first">Modified by:</td><td>$project.lastModifiedUser</td></tr>
+						<tr><td class="first">Description:</td><td id="pdescription">$project.description</td>
+							#if($admin)
+								<td><div id="edit" class="btn5">Edit Description</div></td>
+							#end
+						</tr>
+					</table>
+				</div>
+
+			<div id="flow-tabs">
+				<table id="all-jobs" class="all-jobs job-table">
+					<thead>
+						<tr>
+							<th class="tb-name">Flow Name</th>
+						</tr>
+					</thead>
+					<tbody>
+#if($flows)
+#foreach($flow in $flows)
+						<tr class="row" >
+							<td class="tb-name">
+								<div class="jobfolder expand" id="${flow.id}">
+									<span class="state-icon"></span>
+									<a href="${context}/manager?project=${project.name}&flow=${flow.id}">${flow.id}</a>
+								</div>
+							</td>
+						</tr>
+						<tr class="childrow" id="${flow.id}-child" style="display: none;">
+							<td class="expandedFlow">
+								<table class="innerTable">
+									<thead>
+										<tr><th class="tb-name">Jobs</th></tr>
+									</thead>
+									<tbody id="${flow.id}-tbody">
+									</tbody>
+								</table>
+							</td>
+						</tr>
+#end
+#else
+						<tr><td class="last">No flows uploaded to this project.</td></tr>
+#end
+					</tbody>
+				</table>
+			</div>
+#end
+		</div>
+	
+		<div id="upload-project" class="modal">
+			<h3>Upload Project Files</h3>
+			<div id="errorMsg" class="box-error-message">$errorMsg</div>
+			<div class="message">
+				<form id="upload-form" enctype="multipart/form-data" method="post" action="$!context/manager">
+					<fieldset>
+						<dl>
+							<dt>Job Archive</dt>
+							<dd><input id="file" name="file" class="file" type="file" onChange="changeFile()" /></dd>
+							<input type="hidden" name="project" value="$project.name" />
+							<input type="hidden" name="action" value="upload" />
+						</dl>
+					</fieldset>
+				</form>
+			</div>
+			<div class="actions">
+				<a class="yes btn2" id="upload-btn" href="#">Upload</a>
+				<a class="no simplemodal-close btn3" href="#">Cancel</a>
+			</div>
+			<div id="invalid-session" class="modal">
+				<h3>Invalid Session</h3>
+				<p>Session has expired. Please re-login.</p>
+				<div class="actions">
+					<a class="yes btn2" id="login-btn" href="#">Re-login</a>
+				</div>
+			</div>
+		</div>
+		<div id="delete-project" class="modal">
+			<h3>Delete Project</h3>
+			<div class="warn">
+				<div class="warning-icon"></div>
+				<div class="warning-message"><p>Warning: This project will be deleted and may not be recoverable.</p></div>
+			</div>
+			<form id="delete-form">
+				<input type="hidden" name="project" value="$project.name" />
+				<input type="hidden" name="delete" value="true" />
+			</form>
+			
+			<div class="actions">
+				<a class="no simplemodal-close btn3" href="#">Cancel</a>
+				<a class="yes btn6" id="delete-btn" href="#">Yes</a>
+			</div>
+		</div>
+	</body>
+</html>
+
