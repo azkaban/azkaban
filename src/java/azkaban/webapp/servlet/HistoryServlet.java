@@ -161,6 +161,7 @@ public class HistoryServlet extends LoginAbstractAzkabanServlet {
 		int pageNum = getIntParam(req, "page", 1);
 		int pageSize = getIntParam(req, "size", 16);
 		
+		
 		if (pageNum < 0) {
 			pageNum = 1;
 		}
