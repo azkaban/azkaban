@@ -57,8 +57,8 @@
 						<h4><a href="${context}/?all">All Projects</a></h4>
 					</div>
 #end
-					<form id="search-form" method="post">
-						<input type="hidden" name="action" value="search">
+					<form id="search-form" method="get">
+						<input type="hidden" name="doaction" value="search">
 						<input type="submit" value="Quick Search" class="search-btn">
 						<input id="searchtextbox" type="text" placeholder="project name containing ..." value=#if($search_term) ${search_term} #else "" #end class="search-input" name="searchterm">
 					</form>

@@ -41,13 +41,25 @@ public class IndexServlet extends LoginAbstractAzkabanServlet {
 
 	@Override
 	protected void handleGet(HttpServletRequest req, HttpServletResponse resp, Session session) throws ServletException, IOException {
+		
+		if(hasParam(req, "doaction")) {
+			if(getParam(req, "doaction").equals("search")) {
+				String searchTerm = getParam(req, "searchterm");
+				
+				if(!searchTerm.equals("") && !searchTerm.equals(".*")) {
+					handleFilter(req, resp, session, searchTerm);
+					return;
+				}
+			}
+		}
+		
 		User user = session.getUser();
 
 		ProjectManager manager = this.getApplication().getProjectManager();
 		Page page = newPage(req, resp, session, "azkaban/webapp/servlet/velocity/index.vm");
 		if (hasParam(req, "all")) {
 			List<Project> projects = manager.getProjects();
-			page.add("allProjects", "true");
+			page.add("allProjects", "");
 			page.add("projects", projects);
 		}
 		else {
@@ -57,40 +69,33 @@ public class IndexServlet extends LoginAbstractAzkabanServlet {
 		
 		page.render();
 	}
-
-	@Override
-	protected void handlePost(HttpServletRequest req, HttpServletResponse resp, Session session) throws ServletException, IOException {
-		if (hasParam(req, "action")) {
-			String action = getParam(req, "action");
-			if (action.equals("search")) {
-				
-				String searchTerm = getParam(req, "searchterm");
-				
-				if(!searchTerm.equals("") && !searchTerm.equals(".*")) {
-					User user = session.getUser();
-					ProjectManager manager = this.getApplication().getProjectManager();
-					Page page = newPage(req, resp, session, "azkaban/webapp/servlet/velocity/index.vm");
-					if (hasParam(req, "all")) {
-						//do nothing special if one asks for 'ALL' projects
-						List<Project> projects = manager.getProjectsByRe(searchTerm);
-						page.add("allProjects", "");
-						page.add("projects", projects);
-						page.add("search_term", searchTerm);
-					}
-					else {
-						List<Project> projects = manager.getUserProjectsByRe(user, searchTerm);
-						page.add("projects", projects);
-						page.add("search_term", searchTerm);
-					}
-				
-					page.render();
-				}
-				else resp.sendRedirect(req.getRequestURL().toString());
-			}
-			else resp.sendRedirect(req.getRequestURL().toString());
+	
+	private void handleFilter(HttpServletRequest req, HttpServletResponse resp, Session session, String searchTerm) {
+		User user = session.getUser();
+		ProjectManager manager = this.getApplication().getProjectManager();
+		Page page = newPage(req, resp, session, "azkaban/webapp/servlet/velocity/index.vm");
+		if (hasParam(req, "all")) {
+			//do nothing special if one asks for 'ALL' projects
+			List<Project> projects = manager.getProjectsByRe(searchTerm);
+			page.add("allProjects", "");
+			page.add("projects", projects);
+			page.add("search_term", searchTerm);
 		}
 		else {
-			resp.sendRedirect(req.getRequestURL().toString());
+			List<Project> projects = manager.getUserProjectsByRe(user, searchTerm);
+			page.add("projects", projects);
+			page.add("search_term", searchTerm);
 		}
+	
+		page.render();
 	}
+
+	@Override
+	protected void handlePost(HttpServletRequest req, HttpServletResponse resp,
+			Session session) throws ServletException, IOException {
+		// TODO Auto-generated method stub
+		
+	}
+
+
 }

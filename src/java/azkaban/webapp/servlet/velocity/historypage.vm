@@ -45,8 +45,8 @@
 				<div class="section-hd">
 					<h2>History</h2>
 					<a id="adv-filter-btn" class="btn1 "  href="#">Advanced Filter</a>
-					<form id="search-form" method="post">
-						<input type="hidden" name="action" value="search">
+					<form id="search-form" method="get">
+						<input type="hidden" name="search" value="true">
 						<input type="submit" value="Quick Search" class="search-btn">
 						<input id="searchtextbox" type="text" placeholder="flow name containing ..." value=#if($search_term) ${search_term} #else "" #end class="search-input" name="searchterm">
 					</form>

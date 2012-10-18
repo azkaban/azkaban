@@ -67,59 +67,6 @@ public class HistoryServlet extends LoginAbstractAzkabanServlet {
 		}
 	}
 
-	@Override
-	protected void handlePost(HttpServletRequest req, HttpServletResponse resp, Session session) throws ServletException, IOException {
-		if (hasParam(req, "action")) {
-			String action = getParam(req, "action");
-			if (action.equals("search")) {
-				String searchTerm = getParam(req, "searchterm");
-				if(!searchTerm.equals("") && !searchTerm.equals(".*")) {
-					Page page = newPage(req, resp, session, "azkaban/webapp/servlet/velocity/historypage.vm");
-					int pageNum = getIntParam(req, "page", 1);
-					int pageSize = getIntParam(req, "size", 16);
-				
-					if (pageNum < 0) {
-						pageNum = 1;
-					}
-		
-					List<ExecutionReference> history = executorManager.getFlowHistory(".*", searchTerm, ".*", 0, DateTime.now().getMillis(), pageSize, (pageNum - 1)*pageSize, true);
-					page.add("flowHistory", history);
-					page.add("size", pageSize);
-					page.add("page", pageNum);
-					page.add("search_term", searchTerm);
-		
-					if (pageNum == 1) {
-						page.add("previous", new PageSelection(1, pageSize, true, false));
-					}
-					page.add("next", new PageSelection(pageNum + 1, pageSize, false, false));
-						// Now for the 5 other values.
-					int pageStartValue = 1;
-					if (pageNum > 3) {
-						pageStartValue = pageNum - 2;
-					}
-		
-					page.add("page1", new PageSelection(pageStartValue, pageSize, false, pageStartValue == pageNum));
-					pageStartValue++;
-					page.add("page2", new PageSelection(pageStartValue, pageSize, false, pageStartValue == pageNum));
-					pageStartValue++;
-					page.add("page3", new PageSelection(pageStartValue, pageSize, false, pageStartValue == pageNum));
-					pageStartValue++;
-					page.add("page4", new PageSelection(pageStartValue, pageSize, false, pageStartValue == pageNum));
-					pageStartValue++;
-					page.add("page5", new PageSelection(pageStartValue, pageSize, false, pageStartValue == pageNum));
-					pageStartValue++;
-		
-					page.render();
-				}
-				else resp.sendRedirect(req.getRequestURL().toString());
-			}
-			else resp.sendRedirect(req.getRequestURL().toString());
-		}
-		else {
-			resp.sendRedirect(req.getRequestURL().toString());
-		}
-	}
-	
 	private void handleAJAXAction(HttpServletRequest req, HttpServletResponse resp, Session session) throws ServletException, IOException {
 		HashMap<String, Object> ret = new HashMap<String, Object>();
 		String ajaxName = getParam(req, "ajax");
@@ -173,6 +120,14 @@ public class HistoryServlet extends LoginAbstractAzkabanServlet {
 			long beginTime = getParam(req, "begin").equals("") ? 0 : DateTimeFormat.forPattern("MM/dd/yyyy").parseDateTime(getParam(req, "begin")).getMillis();
 			long endTime = getParam(req, "end").equals("") ? DateTime.now().getMillis() : DateTimeFormat.forPattern("MM/dd/yyyy").parseDateTime(getParam(req, "end")).getMillis();
 			history = executorManager.getFlowHistory(projRe, flowRe, userRe, beginTime, endTime, pageSize, (pageNum - 1)*pageSize, true);
+		}
+		else if(hasParam(req, "search")) {
+			String searchTerm = getParam(req, "searchterm");
+			if(!searchTerm.equals("") && !searchTerm.equals(".*")) {
+				history = executorManager.getFlowHistory(".*", searchTerm, ".*", 0, DateTime.now().getMillis(), pageSize, (pageNum - 1)*pageSize, true);
+				page.add("search_term", searchTerm);
+			}
+			
 		}
 		else {
 			history = executorManager.getFlowHistory("", "", "", 0, 0, pageSize, (pageNum - 1)*pageSize, false);
@@ -289,5 +244,12 @@ public class HistoryServlet extends LoginAbstractAzkabanServlet {
 		public void setSelected(boolean selected) {
 			this.selected = selected;
 		}
+	}
+
+	@Override
+	protected void handlePost(HttpServletRequest req, HttpServletResponse resp,
+			Session session) throws ServletException, IOException {
+		// TODO Auto-generated method stub
+		
 	}
 }
