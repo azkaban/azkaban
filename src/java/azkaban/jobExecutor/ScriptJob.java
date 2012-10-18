@@ -26,8 +26,6 @@ import azkaban.utils.Props;
  * ... --key2 val2 executable -- the interpretor command to execute script --
  * the script to pass in (requried)
  * 
- * @author jkreps
- * 
  */
 public class ScriptJob extends LongArgJob {
 

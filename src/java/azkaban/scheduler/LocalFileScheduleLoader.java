@@ -60,9 +60,6 @@ import azkaban.utils.JSONUtils;
  * 		]
  * }	
  * 
- * 
- * @author rpark
- *
  */
 public class LocalFileScheduleLoader implements ScheduleLoader {
 	private static final String SCHEDULEID = "scheduleId";

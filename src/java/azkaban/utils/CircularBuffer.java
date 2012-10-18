@@ -26,8 +26,6 @@ import com.google.common.collect.Iterators;
 /**
  * A circular buffer of items of a given length. It will grow up to the give size as items are appended, then
  * it will begin to overwrite older items.
- * 
- * @author jkreps
  *
  * @param <T> The type of the item contained.
  */

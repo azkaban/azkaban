@@ -38,8 +38,6 @@ import azkaban.utils.Props;
 /*
  * A job that runs a simple unix command
  * 
- * @author jkreps
- * 
  */
 public class ProcessJob extends AbstractProcessJob {
 

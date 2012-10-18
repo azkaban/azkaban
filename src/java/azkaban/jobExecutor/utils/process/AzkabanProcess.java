@@ -39,8 +39,6 @@ import com.google.common.base.Joiner;
  * Output is read by seperate threads to avoid deadlock and logged to log4j
  * loggers.
  * 
- * @author jkreps
- * 
  */
 public class AzkabanProcess {
 

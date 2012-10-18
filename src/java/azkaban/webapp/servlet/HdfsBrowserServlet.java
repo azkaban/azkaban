@@ -16,12 +16,8 @@
 
 package azkaban.webapp.servlet;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.net.URLClassLoader;
 import java.security.PrivilegedAction;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -30,39 +26,25 @@ import java.util.Properties;
 
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
-import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpSession;
-import javax.swing.filechooser.FileNameExtensionFilter;
 
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.fs.permission.FsPermission;
 import org.apache.hadoop.security.AccessControlException;
-import org.apache.hadoop.security.SecurityUtil;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.log4j.Logger;
 
-import azkaban.executor.ExecutorManager;
 import azkaban.fsviewers.HdfsAvroFileViewer;
 import azkaban.fsviewers.HdfsFileViewer;
 import azkaban.fsviewers.JsonSequenceFileViewer;
 import azkaban.fsviewers.TextFileViewer;
-import azkaban.project.ProjectManager;
-import azkaban.scheduler.ScheduleManager;
-import azkaban.user.User;
-import azkaban.utils.Props;
 import azkaban.utils.SecurityUtils;
-import azkaban.utils.WebUtils;
 import azkaban.webapp.session.Session;
 
 /**
  * A servlet that shows the filesystem contents
- * 
- * @author jkreps
  * 
  */
 

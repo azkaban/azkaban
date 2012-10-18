@@ -31,8 +31,6 @@ import azkaban.jobExecutor.utils.process.AzkabanProcessBuilder;
  * A job that passes all the job properties as command line arguments in "long" format, 
  * e.g. --key1 value1 --key2 value2 ...
  * 
- * @author jkreps
- *
  */
 public abstract class LongArgJob extends AbstractProcessJob {
     

@@ -27,8 +27,6 @@ import com.google.common.base.Joiner;
 
 /**
  * Helper code for building a process
- * 
- * @author jkreps
  */
 public class AzkabanProcessBuilder {
 

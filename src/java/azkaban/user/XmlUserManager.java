@@ -40,9 +40,6 @@ import azkaban.utils.Props;
  * The xml to be in the following form: <azkaban-users> <user
  * username="username" password="azkaban" roles="admin" groups="azkaban"/>
  * </azkaban-users>
- * 
- * @author rpark
- * 
  */
 public class XmlUserManager implements UserManager {
 	private static final Logger logger = Logger.getLogger(XmlUserManager.class.getName());

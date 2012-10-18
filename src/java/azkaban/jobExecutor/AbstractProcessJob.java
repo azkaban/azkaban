@@ -35,8 +35,6 @@ import azkaban.jobExecutor.utils.PropsUtils;
 /*
  * A revised process-based job
  * 
- * @author jkreps
- * 
  */
 public abstract class AbstractProcessJob extends AbstractJob {
 
