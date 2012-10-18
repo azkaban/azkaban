@@ -2,8 +2,7 @@ package azkaban.webapp.servlet;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
+
 import java.util.HashMap;
 import java.util.List;
 
@@ -12,17 +11,12 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-<<<<<<< HEAD
 import org.joda.time.DateTime;
-import org.joda.time.DateTimeZone;
-import org.joda.time.LocalDateTime;
+
 import org.joda.time.format.DateTimeFormat;
 
-=======
-import azkaban.executor.ExecutableFlow;
->>>>>>> b1975c8a1e8853b72b66c3be8b47a72f1232453f
+
 import azkaban.executor.ExecutorManager;
-import azkaban.executor.ExecutorManagerException;
 import azkaban.executor.ExecutorManager.ExecutionReference;
 import azkaban.utils.JSONUtils;
 import azkaban.webapp.session.Session;
@@ -121,11 +115,7 @@ public class HistoryServlet extends LoginAbstractAzkabanServlet {
 			this.writeJSON(resp, ret);
 		}
 	}
-<<<<<<< HEAD
 
-	private void handleHistoryPage(HttpServletRequest req, HttpServletResponse resp, Session session) throws ServletException {
-=======
-	
 	private void fetchHistoryData(HttpServletRequest req, HttpServletResponse resp, HashMap<String, Object> ret) throws ServletException {
 		long start = getLongParam(req, "start");
 		long end = getLongParam(req, "end");
@@ -149,8 +139,7 @@ public class HistoryServlet extends LoginAbstractAzkabanServlet {
 		ret.put("data", refList);
 	}
 	
-	private void handleHistoryPage(HttpServletRequest req, HttpServletResponse resp, Session session) {
->>>>>>> b1975c8a1e8853b72b66c3be8b47a72f1232453f
+	private void handleHistoryPage(HttpServletRequest req, HttpServletResponse resp, Session session) throws ServletException {
 		Page page = newPage(req, resp, session, "azkaban/webapp/servlet/velocity/historypage.vm");
 		int pageNum = getIntParam(req, "page", 1);
 		int pageSize = getIntParam(req, "size", 16);
