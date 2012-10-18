@@ -1,0 +1,50 @@
+   =========================================================================
+   ==  NOTICE file corresponding to the section 4d of                     ==
+   ==  the Apache License, Version 2.0                                    ==
+   =========================================================================
+
+This product includes the libraries
+	avro
+	commons-collections
+	commons-configuration
+	commons-email
+	commons-fileupload
+	commons-io
+	commons-lang
+	commons-logging
+	hadoop-core
+	httpclient
+	httpcore
+	log4j
+	pig
+	servlet-api
+	velocity
+  all of which are software developed by The Apache Software Foundation (http://www.apache.org/)
+
+This product includes Jackson, a JSON processor (http://jackson.codehaus.org/) under Apache License 2.0.
+
+This product includes EhCache, a Caching system by (http://http://ehcache.org/) under Apache License 2.0.
+
+This product includes guava, a core-library package by Google (http://code.google.com/p/guava-libraries/) under Apache License 2.0
+
+This product includes jetty, an embeddable http server developed by (http://jetty.codehaus.org/jetty/) under Apache License 2.0
+
+This product includes joda-time, a datetime package developed by (joda-time.sourceforge.net) under Apache License 2.0
+
+This product includes jopt-simple, a library for parsing command line options (http://pholser.github.com/jopt-simple/) under The MIT License.
+
+This product includes javax mail opensource, a email package (http://kenai.com/projects/javamail) under BSD 2-Clause License.
+
+This product includes slf4j, a logging package by (http://www.slf4j.org/) under MIT license
+
+This product includes voldemort, developed by project-voldemort.org under the Apache 2.0 License
+
+This project includes jquery, a javascript library (jquery.org) under the MIT license
+
+This project includes d3, a javascript visualization library (http://d3js.org/)) under the BSD license
+
+This product includes jquery simplemodal, a javascript library for modal dialogs by Eric Martin (http://www.ericmmartin.com/projects/simplemodal) under the MIT License
+
+This product includes underscore, a javascript library by Jeremy Ashkenas (http://underscorejs.org) under the MIT License
+
+This product includes underscore, a javascript mvc library by Jeremy Ashkenas (http://backbonejs.org) under the MIT License
