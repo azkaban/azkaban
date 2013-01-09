@@ -1,0 +1,5 @@
+type=propertyPusher
+
+prop-dependency=test-job-2
+
+dependencies=fail-job,test-job

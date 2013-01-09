@@ -1305,6 +1305,18 @@ tr:hover td {
 	font-size: 10pt;
 }
 
+#logTable td.time {
+	width: 160px;
+}
+
+#logTable td.user {
+	width: 80px;
+}
+
+#logTable td.type {
+	width: 160px;
+}
+
 .relative {
 	position: relative;
 	width: 100%;
@@ -1656,6 +1668,49 @@ table.parameters tr td {
 	text-align: center;
 }
 
+#group-permissions-table {
+	margin-top: 20px;
+}
+
+.permission-table .tb-username {
+	margin: 0px;
+}
+
+.permission-table .tb-perm {
+	width: 60px;
+	margin: 0px;
+}
+
+.permission-table .tb-admin {
+	width: 60px;
+	margin: 0px;
+}
+
+.permission-table .tb-read {
+	width: 60px;
+	margin: 0px;
+}
+
+.permission-table .tb-write {
+	width: 60px;
+	margin: 0px;
+}
+
+.permission-table .tb-execute {
+	width: 60px;
+	margin: 0px;
+}
+
+.permission-table .tb-schedule {
+	margin: 0px;
+	width: 60px;
+}
+
+.permission-table .tb-action {
+	margin: 0px;
+	width: 100px;
+}
+
 .permission-table thead tr th.tb-username {
 	padding-left: 15px;
 	text-align:left;
@@ -1898,6 +1953,11 @@ span.sublabel {
 	font-size: 12px;
 }
 
+
+#flow-status table td.SKIPPED {
+	color:  #AAA;
+}
+
 #flow-status table td.SUCCEEDED {
 	color:  #4e911e;
 }
@@ -1931,7 +1991,7 @@ span.sublabel {
 }
 
 .executionInfo table th.execid {
-	width: 150px;
+	width: 80px;
 }
 
 .executionInfo table th.project {
@@ -1969,8 +2029,12 @@ span.sublabel {
 	margin: 0px;
 }
 
+.executionInfo table td.execId {
+	font-weight: bold;
+}
+
 .executionInfo table td {
-	padding-left: 6px;
+	padding-left: 3px;
 	height: 20px;
 }
 
@@ -2130,6 +2194,131 @@ span .nowrap {
 	background: #E0E0E0;
 }
 
+.comment {
+	font-size: 11pt;
+	margin: 0px 20px;
+}
+
+.comment-small {
+	font-size: 11pt;
+	margin: 0px 20px;
+}
+
+.admin {
+	margin: 20px;
+}
+
+.admin-panel {
+	border-top: 2px groove #FFF;
+	margin: 40px 5px;
+	padding-top: 10px;
+	padding-bottom: 10px;
+}
+
+.admin-panel label {
+	font-size: 10pt;
+}
+
+.admin-panel input[type="radio"] {
+	margin-left: 50px;
+}
+
+
+.admin-panel h3 {
+	font-size: 12pt;
+	font-weight: bold;
+	margin: 3px 30px;
+}
+
+.admin-setup-points {
+	font-size: 10pt;
+	margin: 8px 25px;
+	list-style-type: disc;
+}
+
+.upload {
+	margin: 10px 20px;
+}
+
+.upload fieldset {
+	float: left;
+}
+
+.upload a {
+	float: left;
+}
+
+.upload .installed {
+	float: left;
+	font-size: 9pt;
+	margin-left: 20px;
+}
+
+#upload-jar-btn {
+	float: left;
+}
+
+#dbconnection {
+	margin-left: 40px;
+}
+
+#dbconnection label {
+	font-size: 10pt;
+	width: 100px;
+}
+
+#dbconnection table {
+	margin-top: 5px;
+}
+
+#dbconnection table tr td{
+	padding: 0;
+	border-top: none;
+	border-right: none;
+}
+
+#dbconnection table tr td.left{
+	width: 100px;
+}
+
+#dbconnection table tr td.param{
+	width: 310px;
+}
+
+#dbconnection table tr td.desc{
+	text-align:left;
+	font-style: italic;
+}
+
+#dbconnection table tr td input{
+	width: 300px;
+}
+
+#save-connection-button {
+	float: left;
+	margin-top: 5px;
+}
+
+#save-results {
+	float: left;
+	font-size: 10pt;
+	padding-top: 10px;
+	padding-left: 20px;
+	padding-bottom: 10px;
+}
+
+#save-results .fail{
+	background-color: #FF0000;
+	color: #FFFFFF;
+}
+
+.block {
+	display: block;
+}
+
+.bold {
+	font-weight: bold;
+}
 
 /* old styles */
 .azkaban-charts .hitarea {

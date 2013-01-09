@@ -1,4 +1,6 @@
 {
+  "project.id":1,
+  "version":2,
   "id" : "derived-member-data",
   "success.email" : [],
   "edges" : [ {

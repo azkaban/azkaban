@@ -30,53 +30,53 @@ import org.apache.log4j.Logger;
 
 public class TextFileViewer implements HdfsFileViewer {
 
-    private static Logger logger = Logger.getLogger(TextFileViewer.class);
-    private HashSet<String> acceptedSuffix = new HashSet<String>();
+	private static Logger logger = Logger.getLogger(TextFileViewer.class);
+	private HashSet<String> acceptedSuffix = new HashSet<String>();
 
-    public TextFileViewer() {
-        acceptedSuffix.add(".txt");
-        acceptedSuffix.add(".csv");
-        acceptedSuffix.add(".props");
-        acceptedSuffix.add(".xml");
-        acceptedSuffix.add(".html");
-        acceptedSuffix.add(".json");
-        acceptedSuffix.add(".log");
-    }
+	public TextFileViewer() {
+		acceptedSuffix.add(".txt");
+		acceptedSuffix.add(".csv");
+		acceptedSuffix.add(".props");
+		acceptedSuffix.add(".xml");
+		acceptedSuffix.add(".html");
+		acceptedSuffix.add(".json");
+		acceptedSuffix.add(".log");
+	}
 
-    public boolean canReadFile(FileSystem fs, Path path) {
-        return true;
-    }
+	public boolean canReadFile(FileSystem fs, Path path) {
+		return true;
+	}
 
-    public void displayFile(FileSystem fs,
-                            Path path,
-                            OutputStream outputStream,
-                            int startLine,
-                            int endLine) throws IOException {
+	public void displayFile(FileSystem fs,
+			Path path,
+			OutputStream outputStream,
+			int startLine,
+			int endLine) throws IOException {
 
-        if(logger.isDebugEnabled())
-            logger.debug("read in uncompressed text file");
-        InputStream inputStream = fs.open(path);
-        BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
-        PrintWriter output = new PrintWriter(outputStream);
-        for(int i = 1; i < startLine; i++)
-            reader.readLine();
-        
-        final int bufferLimit = 1000000; //only display the first 1M chars. it is used to prevent showing/downloading gb of data
-        int bufferSize = 0;
-        for(int i = startLine; i < endLine; i++) {
-            String line = reader.readLine();
-            if(line == null)
-                break;
-            
-            // bread if reach the buffer limit
-            bufferSize += line.length();
-            if (bufferSize >= bufferLimit)
-                break;
-            
-            output.write(line);
-            output.write("\n");
-        }
-        output.flush();
-        reader.close();
-    }
+		if(logger.isDebugEnabled())
+			logger.debug("read in uncompressed text file");
+		InputStream inputStream = fs.open(path);
+		BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
+		PrintWriter output = new PrintWriter(outputStream);
+		for(int i = 1; i < startLine; i++)
+			reader.readLine();
+
+		final int bufferLimit = 1000000; //only display the first 1M chars. it is used to prevent showing/downloading gb of data
+		int bufferSize = 0;
+		for(int i = startLine; i < endLine; i++) {
+			String line = reader.readLine();
+			if(line == null)
+				break;
+
+			// bread if reach the buffer limit
+			bufferSize += line.length();
+			if (bufferSize >= bufferLimit)
+				break;
+
+			output.write(line);
+			output.write("\n");
+		}
+		output.flush();
+		reader.close();
+	}
 }

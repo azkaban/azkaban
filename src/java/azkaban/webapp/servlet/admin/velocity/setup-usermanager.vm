@@ -1,0 +1,70 @@
+#*
+ * Copyright 2012 LinkedIn, Inc
+ * 
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not
+ * use this file except in compliance with the License. You may obtain a copy of
+ * the License at
+ * 
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations under
+ * the License.
+*#
+<!DOCTYPE html> 
+<html>
+  <head>
+    <title>#appname()</title>
+    <link rel="stylesheet" type="text/css" href="${context}/css/azkaban.css">    
+    <link rel="shortcut icon" href="${context}/favicon.ico" />
+	<script type="text/javascript" src="${context}/js/jquery/jquery.js"></script>    
+	<script type="text/javascript" src="${context}/js/namespace.js"></script>
+	<script type="text/javascript" src="${context}/js/underscore-1.2.1-min.js"></script>
+	<script type="text/javascript" src="${context}/js/backbone-0.5.3-min.js"></script>
+    #parse( "azkaban/webapp/servlet/velocity/style.vm" )
+	<script type="text/javascript">
+		var contextURL = "${context}";
+	</script>
+  </head>
+  <body>
+    <div class="header">
+    #parse("azkaban/webapp/servlet/admin/velocity/title.vm" )
+    </div>
+    <div class="shadow-box admin">
+    	<div id="all-jobs-content">
+			<div class="section-hd">
+				<h2>Setup UserManager</h2>
+			</div>
+		</div>
+		<div class="comment">
+			Azkaban uses a UserManager to authenticate. The default is the XmlUserManager. For LDAP authentication you can upload your own.
+		</div>
+		<div id="usermanagerpanel" class="admin-panel">
+			<h3>UserManager Upload</h3>
+				<input type="radio" name="group1" value="xml"/><label for="xml">XmlUserManager</label>
+				<input type="radio" name="group1" value="custom"/><label for="custom">Custom Manager</label>
+			<div class="xml-panel">
+				<div class="comment">
+					The default manager. Please upload your user xml file.
+				</div>
+			</div>
+			<div class="custom-panel">
+				<div class="comment">
+					Upload your jar. Input your custom jar settings for the UserManager
+				</div>
+			</div>
+		</div>
+		
+		<div class="shadow-box-footer">
+    	</div>
+
+		<div class="shadow-box-footer">
+		  <div id="saveAndContinue" class="btn2 button1">Continue</div>
+		  <a href="${context}/?dbsetup" class="btn3 button1">Go Back</a>
+    	</div>
+
+    </div>
+  </body>
+</html>

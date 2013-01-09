@@ -16,24 +16,18 @@
 
 package azkaban.jobExecutor;
 
-import java.io.BufferedReader;
 import java.io.File;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.lang.reflect.Field;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 
 import azkaban.jobExecutor.utils.process.AzkabanProcess;
 import azkaban.jobExecutor.utils.process.AzkabanProcessBuilder;
 import azkaban.utils.Props;
+import azkaban.utils.UndefinedPropertyException;
 
 /*
  * A job that runs a simple unix command
@@ -42,8 +36,8 @@ import azkaban.utils.Props;
 public class ProcessJob extends AbstractProcessJob {
 
 	public static final String COMMAND = "command";
-    private static final long KILL_TIME_MS = 5000;
-    private volatile AzkabanProcess process;
+	private static final long KILL_TIME_MS = 5000;
+	private volatile AzkabanProcess process;
 
 	public ProcessJob(final String jobId, final Props props, final Logger log) {
 		super(jobId, props, log);
@@ -51,7 +45,13 @@ public class ProcessJob extends AbstractProcessJob {
 
 	@Override
 	public void run() throws Exception {
-		resolveProps();
+		try {
+			resolveProps();
+		}
+		catch (Exception e) {
+			error("Bad property definition! " + e.getMessage());
+			
+		}
 		List<String> commands = getCommandList();
 
 		long startMs = System.currentTimeMillis();
@@ -78,7 +78,7 @@ public class ProcessJob extends AbstractProcessJob {
 			try {
 				this.process.run();
 				success = true;
-			} catch (Exception e) {
+			} catch (Throwable e) {
 				for (File file : propFiles)
 					if (file != null && file.exists())
 						file.delete();
@@ -92,10 +92,6 @@ public class ProcessJob extends AbstractProcessJob {
 
 		// Get the output properties from this job.
 		generateProperties(propFiles[1]);
-
-		for (File file : propFiles)
-			if (file != null && file.exists())
-				file.delete();
 	}
 
 
@@ -109,22 +105,22 @@ public class ProcessJob extends AbstractProcessJob {
 		return commands;
 	}
 
-    @Override
-    public void cancel() throws InterruptedException {
-        if(process == null)
-            throw new IllegalStateException("Not started.");
-        boolean killed = process.softKill(KILL_TIME_MS, TimeUnit.MILLISECONDS);
-        if(!killed) {
-            warn("Kill with signal TERM failed. Killing with KILL signal.");
-            process.hardKill();
-        }
-    }
+	@Override
+	public void cancel() throws InterruptedException {
+		if(process == null)
+			throw new IllegalStateException("Not started.");
+		boolean killed = process.softKill(KILL_TIME_MS, TimeUnit.MILLISECONDS);
+		if(!killed) {
+			warn("Kill with signal TERM failed. Killing with KILL signal.");
+			process.hardKill();
+		}
+	}
 
-    @Override
-    public double getProgress() {
-        return process != null && process.isComplete()? 1.0 : 0.0;
-    }
-    
+	@Override
+	public double getProgress() {
+		return process != null && process.isComplete()? 1.0 : 0.0;
+	}
+
 	public int getProcessId() {
 		return process.getProcessId();
 	}
@@ -135,7 +131,7 @@ public class ProcessJob extends AbstractProcessJob {
 	}
 
 	public String getPath() {
-		return _jobPath;
+		return _jobPath == null ? "" : _jobPath;
 	}
 
 	public String getJobName() {

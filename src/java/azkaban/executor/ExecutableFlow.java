@@ -29,12 +29,13 @@ import azkaban.flow.Flow;
 import azkaban.flow.FlowProps;
 import azkaban.flow.Node;
 import azkaban.utils.JSONUtils;
-import azkaban.utils.Props;
 
 public class ExecutableFlow {
-	private String executionId;
+	private int executionId = -1;
 	private String flowId;
-	private String projectId;
+	private int projectId;
+	private int version;
+
 	private String executionPath;
 	
 	private HashMap<String, FlowProps> flowProps = new HashMap<String, FlowProps>();
@@ -44,13 +45,12 @@ public class ExecutableFlow {
 	
 	private ArrayList<String> failureEmails = new ArrayList<String>();
 	private ArrayList<String> successEmails = new ArrayList<String>();
-	
+
 	private long submitTime = -1;
 	private long startTime = -1;
 	private long endTime = -1;
 	private long updateTime = -1;
-	
-	private int updateNumber = 0;
+
 	private Status flowStatus = Status.READY;
 	private String submitUser;
 	private boolean notifyOnFirstFailure = true;
@@ -58,7 +58,7 @@ public class ExecutableFlow {
 	
 	private Integer pipelineLevel = null;
 	private Map<String, String> flowParameters = new HashMap<String, String>();
-	
+
 	public enum FailureAction {
 		FINISH_CURRENTLY_RUNNING,
 		CANCEL_ALL,
@@ -66,16 +66,55 @@ public class ExecutableFlow {
 	}
 	
 	private FailureAction failureAction = FailureAction.FINISH_CURRENTLY_RUNNING;
-	
-	public enum Status {
-		FAILED, FAILED_FINISHING, SUCCEEDED, RUNNING, WAITING, KILLED, DISABLED, READY, UNKNOWN, PAUSED, SKIPPED
+
+	public static enum Status {
+		READY(10), PREPARING(20), RUNNING(30), PAUSED(40), SUCCEEDED(50), KILLED(60), FAILED(70), FAILED_FINISHING(80), SKIPPED(90), DISABLED(100), QUEUED(110);
+		
+		private int numVal;
+
+		Status(int numVal) {
+			this.numVal = numVal;
+		}
+
+		public int getNumVal() {
+			return numVal;
+		}
+		
+		public static Status fromInteger(int x) {
+			switch (x) {
+			case 10:
+				return READY;
+			case 20:
+				return PREPARING;
+			case 30:
+				return RUNNING;
+			case 40:
+				return PAUSED;
+			case 50:
+				return SUCCEEDED;
+			case 60:
+				return KILLED;
+			case 70:
+				return FAILED;
+			case 80:
+				return FAILED_FINISHING;
+			case 90:
+				return SKIPPED;
+			case 100:
+				return DISABLED;
+			case 110:
+				return QUEUED;
+			default:
+				return READY;
+			}
+		}
 	}
 	
-	public ExecutableFlow(String id, Flow flow) {
-		this.executionId = id;
+	public ExecutableFlow(Flow flow) {
 		this.projectId = flow.getProjectId();
 		this.flowId = flow.getId();
-		
+		this.version = flow.getVersion();
+
 		this.setFlow(flow);
 	}
 	
@@ -100,14 +139,6 @@ public class ExecutableFlow {
 	
 	public Collection<FlowProps> getFlowProps() {
 		return flowProps.values();
-	}
-	
-	public int getUpdateNumber() {
-		return updateNumber;
-	}
-	
-	public void setUpdateNumber(int number) {
-		updateNumber = number;
 	}
 	
 	public void addFlowParameters(Map<String, String> param) {
@@ -147,7 +178,7 @@ public class ExecutableFlow {
 			startNodes = new ArrayList<String>();
 			for (ExecutableNode node: executableNodes.values()) {
 				if (node.getInNodes().isEmpty()) {
-					startNodes.add(node.getId());
+					startNodes.add(node.getJobId());
 				}
 			}
 		}
@@ -160,7 +191,7 @@ public class ExecutableFlow {
 			endNodes = new ArrayList<String>();
 			for (ExecutableNode node: executableNodes.values()) {
 				if (node.getOutNodes().isEmpty()) {
-					endNodes.add(node.getId());
+					endNodes.add(node.getJobId());
 				}
 			}
 		}
@@ -173,11 +204,11 @@ public class ExecutableFlow {
 		exNode.setStatus(status);
 	}
 	
-	public String getExecutionId() {
+	public int getExecutionId() {
 		return executionId;
 	}
 
-	public void setExecutionId(String executionId) {
+	public void setExecutionId(int executionId) {
 		this.executionId = executionId;
 	}
 
@@ -189,11 +220,11 @@ public class ExecutableFlow {
 		this.flowId = flowId;
 	}
 
-	public String getProjectId() {
+	public int getProjectId() {
 		return projectId;
 	}
 
-	public void setProjectId(String projectId) {
+	public void setProjectId(int projectId) {
 		this.projectId = projectId;
 	}
 
@@ -272,6 +303,7 @@ public class ExecutableFlow {
 		flowObj.put("failureEmails", failureEmails);
 		flowObj.put("failureAction", failureAction.toString());
 		flowObj.put("pipelineLevel", pipelineLevel);
+		flowObj.put("version", version);
 		
 		ArrayList<Object> props = new ArrayList<Object>();
 		for (FlowProps fprop: flowProps.values()) {
@@ -304,20 +336,71 @@ public class ExecutableFlow {
 		return failureAction;
 	}
 	
+	public Object toUpdateObject(long lastUpdateTime) {
+		Map<String, Object> updateData = new HashMap<String,Object>();
+		updateData.put("execId", this.executionId);
+		updateData.put("status", this.flowStatus.getNumVal());
+		updateData.put("startTime", this.startTime);
+		updateData.put("endTime", this.endTime);
+		updateData.put("updateTime", this.updateTime);
+		
+		List<Map<String,Object>> updatedNodes = new ArrayList<Map<String,Object>>();
+		for (ExecutableNode node: executableNodes.values()) {
+			
+			if (node.getUpdateTime() > lastUpdateTime) {
+				Map<String, Object> updatedNodeMap = new HashMap<String,Object>();
+				updatedNodeMap.put("jobId", node.getJobId());
+				updatedNodeMap.put("status", node.getStatus().getNumVal());
+				updatedNodeMap.put("startTime", node.getStartTime());
+				updatedNodeMap.put("endTime", node.getEndTime());
+				updatedNodeMap.put("updateTime", node.getUpdateTime());
+				
+				updatedNodes.add(updatedNodeMap);
+			}
+		}
+		
+		updateData.put("nodes", updatedNodes);
+		return updateData;
+	}
+	
+	public void applyUpdateObject(Map<String, Object> updateData) {
+		List<Map<String,Object>> updatedNodes = (List<Map<String,Object>>)updateData.get("nodes");
+		for (Map<String,Object> node: updatedNodes) {
+			String jobId = (String)node.get("jobId");
+			Status status = Status.fromInteger((Integer)node.get("status"));
+			long startTime = JSONUtils.getLongFromObject(node.get("startTime"));
+			long endTime = JSONUtils.getLongFromObject(node.get("endTime"));
+			long updateTime = JSONUtils.getLongFromObject(node.get("updateTime"));
+
+			ExecutableNode exNode = executableNodes.get(jobId);
+			exNode.setEndTime(endTime);
+			exNode.setStartTime(startTime);
+			exNode.setUpdateTime(updateTime);
+			exNode.setStatus(status);
+		}
+		
+		this.flowStatus = Status.fromInteger((Integer)updateData.get("status"));
+		this.startTime = JSONUtils.getLongFromObject(updateData.get("startTime"));
+		this.endTime = JSONUtils.getLongFromObject(updateData.get("endTime"));
+		this.updateTime = JSONUtils.getLongFromObject(updateData.get("updateTime"));
+	}
+	
 	@SuppressWarnings("unchecked")
 	public static ExecutableFlow createExecutableFlowFromObject(Object obj) {
 		ExecutableFlow exFlow = new ExecutableFlow();
 		
 		HashMap<String, Object> flowObj = (HashMap<String,Object>)obj;
-		exFlow.executionId = (String)flowObj.get("executionId");
+		exFlow.executionId = (Integer)flowObj.get("executionId");
 		exFlow.executionPath = (String)flowObj.get("executionPath");
 		exFlow.flowId = (String)flowObj.get("flowId");
-		exFlow.projectId = (String)flowObj.get("projectId");
+		exFlow.projectId = (Integer)flowObj.get("projectId");
 		exFlow.submitTime = JSONUtils.getLongFromObject(flowObj.get("submitTime"));
 		exFlow.startTime = JSONUtils.getLongFromObject(flowObj.get("startTime"));
 		exFlow.endTime = JSONUtils.getLongFromObject(flowObj.get("endTime"));
 		exFlow.flowStatus = Status.valueOf((String)flowObj.get("status"));
 		exFlow.submitUser = (String)flowObj.get("submitUser");
+		exFlow.version = (Integer)flowObj.get("version");
+
 		if (flowObj.containsKey("flowParameters")) {
 			exFlow.flowParameters = new HashMap<String, String>((Map<String,String>)flowObj.get("flowParameters"));
 		}
@@ -339,7 +422,7 @@ public class ExecutableFlow {
 		List<Object> nodes = (List<Object>)flowObj.get("nodes");
 		for (Object nodeObj: nodes) {
 			ExecutableNode node = ExecutableNode.createNodeFromObject(nodeObj, exFlow);
-			exFlow.executableNodes.put(node.getId(), node);
+			exFlow.executableNodes.put(node.getJobId(), node);
 		}
 
 		List<Object> properties = (List<Object>)flowObj.get("properties");
@@ -420,5 +503,13 @@ public class ExecutableFlow {
 	
 	public boolean getNotifyOnLastFailure() {
 		return this.notifyOnLastFailure;
+	}
+	
+	public int getVersion() {
+		return version;
+	}
+
+	public void setVersion(int version) {
+		this.version = version;
 	}
 }

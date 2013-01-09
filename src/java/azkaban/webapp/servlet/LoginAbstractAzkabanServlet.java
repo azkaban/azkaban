@@ -19,6 +19,7 @@ package azkaban.webapp.servlet;
 import java.io.IOException;
 import java.io.Writer;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 
 import javax.servlet.ServletException;
@@ -55,16 +56,6 @@ public abstract class LoginAbstractAzkabanServlet extends AbstractAzkabanServlet
 			}
 			return;
 		}
-		else if (hasParam(req, "action")) {
-			String action = getParam(req, "action");
-			if (action.equals("login")) {
-				handleLoginAction(req, resp);
-			}
-			
-			String referer = req.getHeader("Referer");
-			resp.sendRedirect(referer);			
-			return;
-		}
 
 		if (session != null) {
 			logger.info("Found session " + session.getUser());
@@ -80,8 +71,9 @@ public abstract class LoginAbstractAzkabanServlet extends AbstractAzkabanServlet
 			}
 		}
 	}
-
+	
 	private Session getSessionFromRequest(HttpServletRequest req) {
+		String remoteIp = req.getRemoteAddr();
 		Cookie cookie = getCookieByName(req, SESSION_ID_NAME);
 		String sessionId = null;
 
@@ -92,7 +84,13 @@ public abstract class LoginAbstractAzkabanServlet extends AbstractAzkabanServlet
 		if (sessionId == null) {
 			return null;
 		} else {
-			return getApplication().getSessionCache().getSession(sessionId);
+			Session session = getApplication().getSessionCache().getSession(sessionId);
+			// Check if the IP's are equal. If not, we invalidate the sesson.
+			if (session == null || !remoteIp.equals(session.getIp())) {
+				return null;
+			}
+			
+			return session;
 		}
 	}
 
@@ -101,8 +99,7 @@ public abstract class LoginAbstractAzkabanServlet extends AbstractAzkabanServlet
 	}
 
 	private void handleLogin(HttpServletRequest req, HttpServletResponse resp, String errorMsg) throws ServletException, IOException {
-		Page page = newPage(req, resp,
-				"azkaban/webapp/servlet/velocity/login.vm");
+		Page page = newPage(req, resp,"azkaban/webapp/servlet/velocity/login.vm");
 		if (errorMsg != null) {
 			page.add("errorMsg", errorMsg);
 		}
@@ -115,7 +112,9 @@ public abstract class LoginAbstractAzkabanServlet extends AbstractAzkabanServlet
 		if (hasParam(req, "action")) {
 			String action = getParam(req, "action");
 			if (action.equals("login")) {
-				handleLoginAction(req, resp);
+				HashMap<String,Object> obj = new HashMap<String,Object>();
+				handleAjaxLoginAction(req, resp, obj);
+				this.writeJSON(resp, obj);
 			} 
 			else {
 				Session session = getSessionFromRequest(req);
@@ -150,7 +149,7 @@ public abstract class LoginAbstractAzkabanServlet extends AbstractAzkabanServlet
 		}
 	}
 
-	protected void handleLoginAction(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+	protected void handleAjaxLoginAction(HttpServletRequest req, HttpServletResponse resp, Map<String, Object> ret) throws ServletException {
 		if (hasParam(req, "username") && hasParam(req, "password")) {
 			String username = getParam(req, "username");
 			String password = getParam(req, "password");
@@ -162,26 +161,21 @@ public abstract class LoginAbstractAzkabanServlet extends AbstractAzkabanServlet
 				user = manager.getUser(username, password);
 			} 
 			catch (UserManagerException e) {
-				handleLogin(req, resp, e.getMessage());
+				ret.put("error", "Incorrect Login. " + e.getCause());
 				return;
 			}
 
+			String ip = req.getRemoteAddr();
 			String randomUID = UUID.randomUUID().toString();
-			Session session = new Session(randomUID, user);
+			Session session = new Session(randomUID, user, ip);
 			Cookie cookie = new Cookie(SESSION_ID_NAME, randomUID);
 			cookie.setPath("/");
 			resp.addCookie(cookie);
 			getApplication().getSessionCache().addSession(session);
-			handleGet(req, resp, session);
+			ret.put("status", "success");
 		} 
 		else {
-			if (isAjaxCall(req)) {
-				String response = createJsonResponse("error", "Incorrect Login.", "login", null);
-				writeResponse(resp, response);
-			} 
-			else {
-				handleLogin(req, resp, "Enter username and password");
-			}
+			ret.put("error", "Incorrect Login.");
 		}
 	}
 	

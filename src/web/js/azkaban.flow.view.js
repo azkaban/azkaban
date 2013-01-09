@@ -313,8 +313,9 @@ azkaban.ScheduleFlowView = Backbone.View.extend({
         data: {
 		action:"scheduleFlow", 
 
-		projectId:projectName, 
-		flowId:flowName,
+		projectId:projectId,
+		projectName:projectName, 
+		flowName:flowName,
 		hour:hourVal,
 		minutes:minutesVal,
 		am_pm:ampmVal,

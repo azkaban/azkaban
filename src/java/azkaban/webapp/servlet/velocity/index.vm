@@ -60,6 +60,9 @@
 					<form id="search-form" method="get">
 						<input type="hidden" name="doaction" value="search">
 						<input type="submit" value="Quick Search" class="search-btn">
+#if ($allProjects)
+						<input type="hidden" name="all" value="true">			
+#end			
 						<input id="searchtextbox" type="text" placeholder="project name containing ..." value=#if($search_term) ${search_term} #else "" #end class="search-input" name="searchterm">
 					</form>
 			

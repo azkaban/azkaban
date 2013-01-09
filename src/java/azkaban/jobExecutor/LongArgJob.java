@@ -23,6 +23,7 @@ import java.util.concurrent.TimeUnit;
 import org.apache.log4j.Logger;
 
 import azkaban.utils.Props;
+import azkaban.utils.UndefinedPropertyException;
 import azkaban.jobExecutor.utils.process.AzkabanProcess;
 import azkaban.jobExecutor.utils.process.AzkabanProcessBuilder;
 
@@ -56,8 +57,14 @@ public abstract class LongArgJob extends AbstractProcessJob {
 
     public void run() throws Exception {
         
-        resolveProps();
-        
+		try {
+			resolveProps();
+		}
+		catch (Exception e) {
+			error("Bad property definition! " + e.getMessage());
+			
+		}
+		
         long startMs = System.currentTimeMillis();
         info("Command: " + builder.getCommandString());
         if(builder.getEnv().size() > 0)

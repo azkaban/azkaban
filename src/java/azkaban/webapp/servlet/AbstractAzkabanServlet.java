@@ -38,6 +38,7 @@ import org.joda.time.format.DateTimeFormatter;
 import azkaban.utils.WebUtils;
 import azkaban.utils.JSONUtils;
 import azkaban.utils.Props;
+import azkaban.webapp.AzkabanServer;
 import azkaban.webapp.AzkabanWebServer;
 import azkaban.webapp.session.Session;
 
@@ -58,7 +59,7 @@ public abstract class AbstractAzkabanServlet extends HttpServlet {
 
 	private static final WebUtils utils = new WebUtils();
 	
-	private AzkabanWebServer application;
+	private AzkabanServer application;
 	private String name;
 	private String label;
 	private String color;
@@ -68,20 +69,20 @@ public abstract class AbstractAzkabanServlet extends HttpServlet {
 	 * 
 	 * @return
 	 */
-	public AzkabanWebServer getApplication() {
+	public AzkabanServer getApplication() {
 		return application;
 	}
 
 	@Override
 	public void init(ServletConfig config) throws ServletException {
-		application = (AzkabanWebServer) config.getServletContext().getAttribute(AzkabanServletContextListener.AZKABAN_SERVLET_CONTEXT_KEY);
+		application = (AzkabanServer) config.getServletContext().getAttribute(AzkabanServletContextListener.AZKABAN_SERVLET_CONTEXT_KEY);
 
 		if (application == null) {
 			throw new IllegalStateException(
 					"No batch application is defined in the servlet context!");
 		}
 
-		Props props = application.getAzkabanProps();
+		Props props = application.getServerProps();
 		name = props.getString("azkaban.name", "");
 		label = props.getString("azkaban.label", "");
 		color = props.getString("azkaban.color", "#FF0000");

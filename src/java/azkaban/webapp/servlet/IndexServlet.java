@@ -28,6 +28,7 @@ import javax.servlet.http.HttpServletResponse;
 import azkaban.project.Project;
 import azkaban.project.ProjectManager;
 import azkaban.user.User;
+import azkaban.webapp.AzkabanWebServer;
 import azkaban.webapp.session.Session;
 
 /**
@@ -55,11 +56,11 @@ public class IndexServlet extends LoginAbstractAzkabanServlet {
 		
 		User user = session.getUser();
 
-		ProjectManager manager = this.getApplication().getProjectManager();
+		ProjectManager manager = ((AzkabanWebServer)getApplication()).getProjectManager();
 		Page page = newPage(req, resp, session, "azkaban/webapp/servlet/velocity/index.vm");
 		if (hasParam(req, "all")) {
 			List<Project> projects = manager.getProjects();
-			page.add("allProjects", "");
+			page.add("allProjects", "true");
 			page.add("projects", projects);
 		}
 		else {
@@ -72,17 +73,17 @@ public class IndexServlet extends LoginAbstractAzkabanServlet {
 	
 	private void handleFilter(HttpServletRequest req, HttpServletResponse resp, Session session, String searchTerm) {
 		User user = session.getUser();
-		ProjectManager manager = this.getApplication().getProjectManager();
+		ProjectManager manager = ((AzkabanWebServer)getApplication()).getProjectManager();
 		Page page = newPage(req, resp, session, "azkaban/webapp/servlet/velocity/index.vm");
 		if (hasParam(req, "all")) {
 			//do nothing special if one asks for 'ALL' projects
-			List<Project> projects = manager.getProjectsByRe(searchTerm);
+			List<Project> projects = manager.getProjectsByRegex(searchTerm);
 			page.add("allProjects", "");
 			page.add("projects", projects);
 			page.add("search_term", searchTerm);
 		}
 		else {
-			List<Project> projects = manager.getUserProjectsByRe(user, searchTerm);
+			List<Project> projects = manager.getUserProjectsByRegex(user, searchTerm);
 			page.add("projects", projects);
 			page.add("search_term", searchTerm);
 		}

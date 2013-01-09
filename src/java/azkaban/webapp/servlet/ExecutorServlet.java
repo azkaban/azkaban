@@ -16,9 +16,7 @@
 
 package azkaban.webapp.servlet;
 
-import java.io.File;
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -39,13 +37,15 @@ import azkaban.executor.ExecutorManagerException;
 import azkaban.flow.Flow;
 import azkaban.project.Project;
 import azkaban.project.ProjectManager;
-import azkaban.project.ProjectManagerException;
+import azkaban.scheduler.Schedule;
 import azkaban.scheduler.ScheduleManager;
-import azkaban.scheduler.ScheduledFlow;
 import azkaban.user.Permission;
+import azkaban.user.Role;
 import azkaban.user.User;
 import azkaban.user.Permission.Type;
-import azkaban.utils.Utils;
+import azkaban.user.UserManager;
+import azkaban.utils.FileIOUtils.LogData;
+import azkaban.webapp.AzkabanWebServer;
 import azkaban.webapp.session.Session;
 
 public class ExecutorServlet extends LoginAbstractAzkabanServlet {
@@ -53,13 +53,18 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 	private ProjectManager projectManager;
 	private ExecutorManager executorManager;
 	private ScheduleManager scheduleManager;
+	private UserManager userManager;
+	private ExecutorVMHelper vmHelper;
 
 	@Override
 	public void init(ServletConfig config) throws ServletException {
 		super.init(config);
-		projectManager = this.getApplication().getProjectManager();
-		executorManager = this.getApplication().getExecutorManager();
-		scheduleManager = this.getApplication().getScheduleManager();
+		AzkabanWebServer server = (AzkabanWebServer)getApplication();
+		projectManager = server.getProjectManager();
+		executorManager = server.getExecutorManager();
+		scheduleManager = server.getScheduleManager();
+		userManager = server.getUserManager();
+		vmHelper = new ExecutorVMHelper();
 	}
 
 	@Override
@@ -83,7 +88,7 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 	private void handleExecutionJobPage(HttpServletRequest req, HttpServletResponse resp, Session session) throws ServletException, IOException {
 		Page page = newPage(req, resp, session, "azkaban/webapp/servlet/velocity/joblogpage.vm");
 		User user = session.getUser();
-		String execId = getParam(req, "execid");
+		int execId = getIntParam(req, "execid");
 		String jobId = getParam(req, "job");
 		page.add("execid", execId);
 		page.add("jobid", jobId);
@@ -102,14 +107,14 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 			return;
 		}
 		
-		String projectId = flow.getProjectId();
-		Project project = getProjectPageByPermission(page, flow.getProjectId(), user, Type.READ);
+		int projectId = flow.getProjectId();
+		Project project = getProjectPageByPermission(page, projectId, user, Type.READ);
 		if (project == null) {
 			page.render();
 			return;
 		}
 		
-		page.add("projectName", projectId);
+		page.add("projectName", project.getName());
 		page.add("flowid", flow.getFlowId());
 		
 		page.render();
@@ -123,13 +128,14 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 		
 		List<ExecutableFlow> finishedFlows = executorManager.getRecentlyFinishedFlows();
 		page.add("recentlyFinished", finishedFlows.isEmpty() ? null : finishedFlows);
+		page.add("vmutils", vmHelper);
 		page.render();
 	}
 	
 	private void handleExecutionFlowPage(HttpServletRequest req, HttpServletResponse resp, Session session) throws ServletException, IOException {
 		Page page = newPage(req, resp, session, "azkaban/webapp/servlet/velocity/executingflowpage.vm");
 		User user = session.getUser();
-		String execId = getParam(req, "execid");
+		int execId = getIntParam(req, "execid");
 		page.add("execid", execId);
 
 		ExecutableFlow flow = null;
@@ -146,43 +152,27 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 			return;
 		}
 		
-		String projectId = flow.getProjectId();
-		Project project = getProjectPageByPermission(page, flow.getProjectId(), user, Type.READ);
+		int projectId = flow.getProjectId();
+		Project project = getProjectPageByPermission(page, projectId, user, Type.READ);
 		if(project == null) {
 			page.render();
 			return;
 		}
 		
-		page.add("projectName", projectId);
+		page.add("projectName", project.getName());
 		page.add("flowid", flow.getFlowId());
 		
 		page.render();
 	}
 	
-	protected Project getProjectPageByPermission(Page page, String projectId, User user, Permission.Type type) {
+	protected Project getProjectPageByPermission(Page page, int projectId, User user, Permission.Type type) {
 		Project project = projectManager.getProject(projectId);
 		
 		if (project == null) {
 			page.add("errorMsg", "Project " + project + " not found.");
 		}
-		else if (!project.hasPermission(user, type)) {
-			page.add("errorMsg", "User " + user.getUserId() + " doesn't have " + type.name() + " permissions on " + projectId);
-		}
-		else {
-			return project;
-		}
-		
-		return null;
-	}
-	
-	protected Project getProjectAjaxByPermission(Map<String, Object> ret, String projectId, User user, Permission.Type type) {
-		Project project = projectManager.getProject(projectId);
-		
-		if (project == null) {
-			ret.put("error", "Project '" + project + "' not found.");
-		}
-		else if (!project.hasPermission(user, type)) {
-			ret.put("error", "User '" + user.getUserId() + "' doesn't have " + type.name() + " permissions on " + projectId);
+		else if (!hasPermission(project, user, type)) {
+			page.add("errorMsg", "User " + user.getUserId() + " doesn't have " + type.name() + " permissions on " + project.getName());
 		}
 		else {
 			return project;
@@ -191,6 +181,38 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 		return null;
 	}
 
+	protected Project getProjectAjaxByPermission(Map<String, Object> ret, String projectName, User user, Permission.Type type) {
+		Project project = projectManager.getProject(projectName);
+		
+		if (project == null) {
+			ret.put("error", "Project '" + project + "' not found.");
+		}
+		else if (!hasPermission(project, user, type)) {
+			ret.put("error", "User '" + user.getUserId() + "' doesn't have " + type.name() + " permissions on " + project.getName());
+		}
+		else {
+			return project;
+		}
+		
+		return null;
+	}
+	
+	protected Project getProjectAjaxByPermission(Map<String, Object> ret, int projectId, User user, Permission.Type type) {
+		Project project = projectManager.getProject(projectId);
+		
+		if (project == null) {
+			ret.put("error", "Project '" + project + "' not found.");
+		}
+		else if (!hasPermission(project, user, type)) {
+			ret.put("error", "User '" + user.getUserId() + "' doesn't have " + type.name() + " permissions on " + project.getName());
+		}
+		else {
+			return project;
+		}
+		
+		return null;
+	}
+	
 	@Override
 	protected void handlePost(HttpServletRequest req, HttpServletResponse resp, Session session) throws ServletException, IOException {
 		if (hasParam(req, "ajax")) {
@@ -203,7 +225,7 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 		String ajaxName = getParam(req, "ajax");
 		
 		if (hasParam(req, "execid")) {
-			String execid = getParam(req, "execid");
+			int execid = getIntParam(req, "execid");
 			ExecutableFlow exFlow = null;
 
 			try {
@@ -236,16 +258,15 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 				}
 				else if (ajaxName.equals("fetchExecFlowLogs")) {
 					ajaxFetchExecFlowLogs(req, resp, ret, session.getUser(), exFlow);
-					ret = null;
 				}
 				else if (ajaxName.equals("fetchExecJobLogs")) {
 					ajaxFetchJobLogs(req, resp, ret, session.getUser(), exFlow);
-					ret = null;
 				}
 				else if (ajaxName.equals("flowInfo")) {
 					String projectName = getParam(req, "project");
+					Project project = projectManager.getProject(projectName);
 					String flowName = getParam(req, "flow");
-					ajaxFetchExecutableFlowInfo(req, resp, ret, session.getUser(), projectName, flowName, exFlow);
+					ajaxFetchExecutableFlowInfo(req, resp, ret, session.getUser(), exFlow);
 				}
 			}
 		}
@@ -257,7 +278,6 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 		else if (ajaxName.equals("flowInfo")) {
 			String projectName = getParam(req, "project");
 			String flowName = getParam(req, "flow");
-			
 			ajaxFetchFlowInfo(req, resp, ret, session.getUser(), projectName, flowName);
 		}
 		else {
@@ -282,33 +302,31 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 	 * @param exFlow
 	 * @throws ServletException
 	 */
-	private void ajaxFetchExecFlowLogs(HttpServletRequest req, HttpServletResponse resp, HashMap<String, Object> ret,  User user, ExecutableFlow exFlow) throws ServletException {
+	private void ajaxFetchExecFlowLogs(HttpServletRequest req, HttpServletResponse resp, HashMap<String, Object> ret, User user, ExecutableFlow exFlow) throws ServletException {
 		Project project = getProjectAjaxByPermission(ret, exFlow.getProjectId(), user, Type.READ);
 		if (project == null) {
 			return;
 		}
 		
-		int startChar = this.getIntParam(req, "current");
-		int maxSize = this.getIntParam(req, "max");
+		int offset = this.getIntParam(req, "offset");
+		int length = this.getIntParam(req, "length");
 		
-		resp.setContentType("text/plain");
 		resp.setCharacterEncoding("utf-8");
-		PrintWriter writer;
-		try {
-			writer = resp.getWriter();
-		} catch (IOException e) {
-			throw new ServletException(e);
-		}
 
 		try {
-			long character = executorManager.getExecutableFlowLog(exFlow, writer, startChar, maxSize);
-			writer.write("\n");
-			writer.write(Long.toString(character));
+			LogData data = executorManager.getExecutableFlowLog(exFlow, offset, length);
+			if (data == null) {
+				ret.put("length", 0);
+				ret.put("offset", offset);
+				ret.put("data", "");
+			}
+			else {
+				ret.put("length", data.getLength());
+				ret.put("offset", data.getOffset());
+				ret.put("data", data.getData());
+			}
 		} catch (ExecutorManagerException e) {
 			throw new ServletException(e);
-		}
-		finally {
-			writer.close();
 		}
 	}
 	
@@ -327,70 +345,70 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 			return;
 		}
 		
-		int startChar = this.getIntParam(req, "current");
-		int maxSize = this.getIntParam(req, "max");
-		String jobId = this.getParam(req, "job");
-		
-		PrintWriter writer;
+		int offset = this.getIntParam(req, "offset");
+		int length = this.getIntParam(req, "length");
+		String jobId = this.getParam(req, "jobId");
+		resp.setCharacterEncoding("utf-8");
+
 		try {
-			writer = resp.getWriter();
-		} catch (IOException e) {
-			throw new ServletException(e);
-		}
-		
-		try {
-			long character = executorManager.getExecutionJobLog(exFlow, jobId, writer, startChar, maxSize);
-			writer.write("\n");
-			writer.write(Long.toString(character));
+			LogData data = executorManager.getExecutionJobLog(exFlow, jobId, offset, length);
+			if (data == null) {
+				ret.put("length", 0);
+				ret.put("offset", offset);
+				ret.put("data", "");
+			}
+			else {
+				ret.put("length", data.getLength());
+				ret.put("offset", data.getOffset());
+				ret.put("data", data.getData());
+			}
 		} catch (ExecutorManagerException e) {
-			e.printStackTrace();
-			ret.put("error", e.getMessage());
+			throw new ServletException(e);
 		}
 	}
 
-	private void ajaxFetchFlowInfo(HttpServletRequest req, HttpServletResponse resp, HashMap<String, Object> ret, User user, String projectId, String flowId) throws ServletException {
-		Project project = getProjectAjaxByPermission(ret, projectId, user, Type.READ);
+	private void ajaxFetchFlowInfo(HttpServletRequest req, HttpServletResponse resp, HashMap<String, Object> ret, User user, String projectName, String flowId) throws ServletException {
+		Project project = getProjectAjaxByPermission(ret, projectName, user, Type.READ);
 		if (project == null) {
 			return;
 		}
 		
 		Flow flow = project.getFlow(flowId);
 		if (flow == null) {
-			ret.put("error", "Error loading flow. Flow " + flowId + " doesn't exist in " + projectId);
+			ret.put("error", "Error loading flow. Flow " + flowId + " doesn't exist in " + projectName);
 			return;
 		}
 		
 		ret.put("successEmails", flow.getSuccessEmails());
 		ret.put("failureEmails", flow.getFailureEmails());
-		ret.put("running", executorManager.getFlowRunningFlows(projectId, flowId));
 		
-		ScheduledFlow sflow = null;
-		for (ScheduledFlow schedFlow: scheduleManager.getSchedule()) {
-			if (schedFlow.getProjectId().equals(projectId) && schedFlow.getFlowId().equals(flowId)) {
-				sflow = schedFlow;
+		Schedule sflow = null;
+		for (Schedule sched: scheduleManager.getSchedules()) {
+			if (sched.getProjectId() == project.getId() && sched.getFlowName().equals(flowId)) {
+				sflow = sched;
 				break;
 			}
 		}
 		
 		if (sflow != null) {
-			ret.put("scheduled", sflow.getNextExecTime().getMillis());
+			ret.put("scheduled", sflow.getNextExecTime());
 		}
 	}
 
-	private void ajaxFetchExecutableFlowInfo(HttpServletRequest req, HttpServletResponse resp, HashMap<String, Object> ret, User user, String projectId, String flowId, ExecutableFlow exflow) throws ServletException {
-		Project project = getProjectAjaxByPermission(ret, projectId, user, Type.READ);
+	private void ajaxFetchExecutableFlowInfo(HttpServletRequest req, HttpServletResponse resp, HashMap<String, Object> ret, User user, ExecutableFlow exflow) throws ServletException {
+		Project project = getProjectAjaxByPermission(ret, exflow.getProjectId(), user, Type.READ);
 		if (project == null) {
 			return;
 		}
 		
-		Flow flow = project.getFlow(flowId);
+		Flow flow = project.getFlow(exflow.getFlowId());
 		if (flow == null) {
-			ret.put("error", "Error loading flow. Flow " + flowId + " doesn't exist in " + projectId);
+			ret.put("error", "Error loading flow. Flow " + exflow.getFlowId() + " doesn't exist in " + exflow.getProjectId());
 			return;
 		}
 		
 		ret.put("successEmails", exflow.getSuccessEmails());
-		ret.put("failureEmails", flow.getFailureEmails());
+		ret.put("failureEmails", exflow.getFailureEmails());
 		ret.put("flowParam", exflow.getFlowParameters());
 		
 		FailureAction action = exflow.getFailureAction();
@@ -409,18 +427,17 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 		ret.put("failureAction", failureAction);
 		ret.put("notifyFailureFirst", exflow.getNotifyOnFirstFailure());
 		ret.put("notifyFailureLast", exflow.getNotifyOnLastFailure());
-		ret.put("running", executorManager.getFlowRunningFlows(projectId, flowId));
-		
-		ScheduledFlow sflow = null;
-		for (ScheduledFlow schedFlow: scheduleManager.getSchedule()) {
-			if (schedFlow.getProjectId().equals(projectId) && schedFlow.getFlowId().equals(flowId)) {
-				sflow = schedFlow;
+
+		Schedule sflow = null;
+		for (Schedule sched: scheduleManager.getSchedules()) {
+			if (sched.getProjectId() == project.getId() && sched.getFlowName().equals(exflow.getFlowId())) {
+				sflow = sched;
 				break;
 			}
 		}
 		
 		if (sflow != null) {
-			ret.put("scheduled", sflow.getNextExecTime().getMillis());
+			ret.put("scheduled", sflow.getNextExecTime());
 		}
 	}
 	
@@ -431,7 +448,7 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 		}
 		
 		try {
-			executorManager.cancelFlow(exFlow.getExecutionId(), user.getUserId());
+			executorManager.cancelFlow(exFlow, user.getUserId());
 		} catch (ExecutorManagerException e) {
 			ret.put("error", e.getMessage());
 		}
@@ -443,7 +460,7 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 			return;
 		}
 		
-		ret.put("running", executorManager.getFlowRunningFlows(projectId, flowId));
+		ret.put("running", executorManager.isFlowRunning(project.getId(), flowId));
 	}
 	
 	private void ajaxRestartFlow(HttpServletRequest req, HttpServletResponse resp, HashMap<String, Object> ret, User user, ExecutableFlow exFlow) throws ServletException{
@@ -460,7 +477,7 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 		}
 
 		try {
-			executorManager.pauseFlow(exFlow.getExecutionId(), user.getUserId());
+			executorManager.pauseFlow(exFlow, user.getUserId());
 		} catch (ExecutorManagerException e) {
 			ret.put("error", e.getMessage());
 		}
@@ -473,7 +490,7 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 		}
 
 		try {
-			executorManager.resumeFlow(exFlow.getExecutionId(), user.getUserId());
+			executorManager.resumeFlow(exFlow, user.getUserId());
 		} catch (ExecutorManagerException e) {
 			ret.put("resume", e.getMessage());
 		}
@@ -481,7 +498,6 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 	
 	private void ajaxFetchExecutableFlowUpdate(HttpServletRequest req, HttpServletResponse resp, HashMap<String, Object> ret, User user, ExecutableFlow exFlow) throws ServletException{
 		Long lastUpdateTime = Long.parseLong(getParam(req, "lastUpdateTime"));
-		
 		System.out.println("Fetching " + exFlow.getExecutionId());
 		
 		Project project = getProjectAjaxByPermission(ret, exFlow.getProjectId(), user, Type.READ);
@@ -492,12 +508,12 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 		// Just update the nodes and flow states
 		ArrayList<Map<String, Object>> nodeList = new ArrayList<Map<String, Object>>();
 		for (ExecutableNode node : exFlow.getExecutableNodes()) {
-			if (node.getStartTime() < lastUpdateTime && node.getEndTime() < lastUpdateTime) {
+			if (node.getUpdateTime() <= lastUpdateTime) {
 				continue;
 			}
 			
 			HashMap<String, Object> nodeObj = new HashMap<String,Object>();
-			nodeObj.put("id", node.getId());
+			nodeObj.put("id", node.getJobId());
 			nodeObj.put("status", node.getStatus());
 			nodeObj.put("startTime", node.getStartTime());
 			nodeObj.put("endTime", node.getEndTime());
@@ -510,6 +526,7 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 		ret.put("startTime", exFlow.getStartTime());
 		ret.put("endTime", exFlow.getEndTime());
 		ret.put("submitTime", exFlow.getSubmitTime());
+		ret.put("updateTime", exFlow.getUpdateTime());
 	}
 	
 	private void ajaxFetchExecutableFlow(HttpServletRequest req, HttpServletResponse resp, HashMap<String, Object> ret, User user, ExecutableFlow exFlow) throws ServletException {
@@ -524,7 +541,7 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 		ArrayList<Map<String, Object>> edgeList = new ArrayList<Map<String,Object>>();
 		for (ExecutableNode node : exFlow.getExecutableNodes()) {
 			HashMap<String, Object> nodeObj = new HashMap<String,Object>();
-			nodeObj.put("id", node.getId());
+			nodeObj.put("id", node.getJobId());
 			nodeObj.put("level", node.getLevel());
 			nodeObj.put("status", node.getStatus());
 			nodeObj.put("startTime", node.getStartTime());
@@ -535,7 +552,7 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 			// Add edges
 			for (String out: node.getOutNodes()) {
 				HashMap<String, Object> edgeObj = new HashMap<String,Object>();
-				edgeObj.put("from", node.getId());
+				edgeObj.put("from", node.getJobId());
 				edgeObj.put("target", out);
 				edgeList.add(edgeObj);
 			}
@@ -551,25 +568,25 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 	}
 	
 	private void ajaxExecuteFlow(HttpServletRequest req, HttpServletResponse resp, HashMap<String, Object> ret, User user) throws ServletException {
-		String projectId = getParam(req, "project");
+		String projectName = getParam(req, "project");
 		String flowId = getParam(req, "flow");
 		
-		ret.put("flow", flowId);
-		
-		Project project = getProjectAjaxByPermission(ret, projectId, user, Type.EXECUTE);
+		Project project = getProjectAjaxByPermission(ret, projectName, user, Type.EXECUTE);
 		if (project == null) {
+			ret.put("error", "Project '" + projectName + "' doesn't exist.");
 			return;
 		}
-
+		
+		ret.put("flow",  flowId);
 		Flow flow = project.getFlow(flowId);
 		if (flow == null) {
 			ret.put("error", "Flow '" + flowId + "' cannot be found in project " + project);
 			return;
 		}
 		
-		// Create ExecutableFlow
-		ExecutableFlow exflow = executorManager.createExecutableFlow(flow);
+		ExecutableFlow exflow = new ExecutableFlow(flow);
 		exflow.setSubmitUser(user.getUserId());
+
 		if (hasParam(req, "failureAction")) {
 			String option = getParam(req, "failureAction");
 			if (option.equals("finishCurrent") ) {
@@ -582,6 +599,7 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 				exflow.setFailureAction(FailureAction.FINISH_ALL_POSSIBLE);
 			}
 		}
+
 		if (hasParam(req, "failureEmails")) {
 			String emails = getParam(req, "failureEmails");
 			String[] emailSplit = emails.split("\\s*,\\s*|\\s*;\\s*|\\s+");
@@ -613,49 +631,41 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 			exflow.setStatus(entry.getKey(), nodeDisabled ? Status.DISABLED : Status.READY);
 		}
 		
-		// Create directory
 		try {
-			executorManager.setupExecutableFlow(exflow);
-		} catch (ExecutorManagerException e) {
-			try {
-				executorManager.cleanupAll(exflow);
-			} catch (ExecutorManagerException e1) {
-				e1.printStackTrace();
-			}
-			ret.put("error", e.getMessage());
-			return;
+			executorManager.submitExecutableFlow(exflow);
+		}
+		catch (ExecutorManagerException e) {
+			e.printStackTrace();
+			ret.put("error", "Error submitting flow " + exflow.getFlowId() + ". " + e.getMessage());
 		}
 
-		// Copy files to the source.
-		File executionDir = new File(exflow.getExecutionPath());
-		try {
-			projectManager.copyProjectSourceFilesToDirectory(project, executionDir);
-		} catch (ProjectManagerException e) {
-			try {
-				executorManager.cleanupAll(exflow);
-			} catch (ExecutorManagerException e1) {
-				e1.printStackTrace();
-			}
-			ret.put("error", e.getMessage());
-			return;
-		}
-
-		try {
-			executorManager.executeFlow(exflow);
-			project.info("User '" + user.getUserId() + "' executed flow '" + exflow.getExecutionId() + "'");
-		} catch (ExecutorManagerException e) {
-			try {
-				executorManager.cleanupAll(exflow);
-			} catch (ExecutorManagerException e1) {
-				e1.printStackTrace();
+		ret.put("execid", exflow.getExecutionId());
+	}
+	
+	public class ExecutorVMHelper {
+		@SuppressWarnings("unused")
+		public String getProjectName(int id) {
+			Project project = projectManager.getProject(id);
+			if (project == null) {
+				return String.valueOf(id);
 			}
 			
-			ret.put("error", e.getMessage());
-			return;
+			return project.getName();
 		}
-
-		String execId = exflow.getExecutionId();
-
-		ret.put("execid", execId);
+	}
+	
+	private boolean hasPermission(Project project, User user, Permission.Type type) {
+		if (project.hasPermission(user, type)) {
+			return true;
+		}
+		
+		for(String roleName: user.getRoles()) {
+			Role role = userManager.getRole(roleName);
+			if (role.getPermission().isPermissionSet(type)) {
+				return true;
+			}
+		}
+		
+		return true;
 	}
 }

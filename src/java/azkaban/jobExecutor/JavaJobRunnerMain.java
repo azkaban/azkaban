@@ -16,10 +16,12 @@
 
 package azkaban.jobExecutor;
 
+import azkaban.utils.JSONUtils;
 import azkaban.utils.Props;
 import azkaban.utils.SecurityUtils;
 
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.log4j.ConsoleAppender;
 import org.apache.log4j.Layout;
 import org.apache.log4j.Logger;
@@ -34,7 +36,6 @@ import java.io.OutputStream;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.lang.reflect.UndeclaredThrowableException;
 import java.security.PrivilegedExceptionAction;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -127,11 +128,17 @@ public class JavaJobRunnerMain {
 				final Method generatedPropertiesMethod = _javaObject.getClass().getMethod(
 						GET_GENERATED_PROPERTIES_METHOD, new Class<?>[] {});
 				Object outputGendProps = generatedPropertiesMethod.invoke(_javaObject, new Object[] {});
-				final Method toPropertiesMethod = outputGendProps.getClass().getMethod("toProperties", new Class<?>[] {});
-				Properties properties = (Properties)toPropertiesMethod.invoke(outputGendProps, new Object[] {});
-
-				Props outputProps = new Props(null, properties);
-				outputGeneratedProperties(outputProps);
+				if(outputGendProps != null) {
+					final Method toPropertiesMethod = outputGendProps.getClass().getMethod("toProperties", new Class<?>[] {});
+					Properties properties = (Properties)toPropertiesMethod.invoke(outputGendProps, new Object[] {});
+	
+					Props outputProps = new Props(null, properties);
+					outputGeneratedProperties(outputProps);
+				}
+				else {
+					outputGeneratedProperties(new Props());
+				}
+				
 			} catch (NoSuchMethodException e) {
 				_logger.info(String.format(
 						"Apparently there isn't a method[%s] on object[%s], using empty Props object instead.",
@@ -146,6 +153,9 @@ public class JavaJobRunnerMain {
 
 	private void runMethodAsProxyUser(Properties prop, final Object obj, final String runMethod) throws IOException,
 			InterruptedException {
+		UserGroupInformation ugi = SecurityUtils.getProxiedUser(prop, _logger, new Configuration());
+		_logger.info("user " + ugi + " authenticationMethod " + ugi.getAuthenticationMethod());
+		_logger.info("user " + ugi + " hasKerberosCredentials " + ugi.hasKerberosCredentials());
 		SecurityUtils.getProxiedUser(prop, _logger, new Configuration()).doAs(new PrivilegedExceptionAction<Void>() {
 			@Override
 			public Void run() throws Exception {
@@ -161,8 +171,7 @@ public class JavaJobRunnerMain {
 	}
 
 	private void outputGeneratedProperties(Props outputProperties) {
-		_logger.info("Outputting generated properties to " + ProcessJob.JOB_OUTPUT_PROP_FILE);
-
+		
 		if (outputProperties == null) {
 			_logger.info("  no gend props");
 			return;
@@ -175,6 +184,8 @@ public class JavaJobRunnerMain {
 		if (outputFileStr == null) {
 			return;
 		}
+		
+		_logger.info("Outputting generated properties to " + outputFileStr);
 
 		Map<String, String> properties = new LinkedHashMap<String, String>();
 		for (String key : outputProperties.getKeySet()) {
@@ -184,12 +195,14 @@ public class JavaJobRunnerMain {
 		OutputStream writer = null;
 		try {
 			writer = new BufferedOutputStream(new FileOutputStream(outputFileStr));
+			
 			// Manually serialize into JSON instead of adding org.json to
-			// external classpath
+			// external classpath. Reduces one dependency for something that's essentially easy.
 			writer.write("{\n".getBytes());
 			for (Map.Entry<String, String> entry : properties.entrySet()) {
-				writer.write(String.format("  '%s':'%s',\n", entry.getKey().replace("'", "\\'"),
-						entry.getValue().replace("'", "\\'")).getBytes());
+				writer.write(String.format("  \"%s\":\"%s\",\n", 
+						entry.getKey().replace("\"", "\\\\\""),
+						entry.getValue().replace("\"", "\\\\\"")).getBytes());
 			}
 			writer.write("}".getBytes());
 		} catch (Exception e) {
@@ -255,7 +268,12 @@ public class JavaJobRunnerMain {
 
 		Class<?> propsClass = null;
 		for (String propClassName : PROPS_CLASSES) {
-			propsClass = JavaJobRunnerMain.class.getClassLoader().loadClass(propClassName);
+			try {
+				propsClass = JavaJobRunnerMain.class.getClassLoader().loadClass(propClassName);
+			}
+			catch (ClassNotFoundException e) {
+			}
+			
 			if (propsClass != null && getConstructor(runningClass, String.class, propsClass) != null) {
 				//is this the props class 
 				break;

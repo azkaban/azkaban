@@ -20,7 +20,15 @@
     <title>#appname()</title>
     <link rel="stylesheet" type="text/css" href="${context}/css/azkaban.css">    
     <link rel="shortcut icon" href="${context}/favicon.ico" />
+	<script type="text/javascript" src="${context}/js/jquery/jquery.js"></script>    
+	<script type="text/javascript" src="${context}/js/namespace.js"></script>
+	<script type="text/javascript" src="${context}/js/underscore-1.2.1-min.js"></script>
+	<script type="text/javascript" src="${context}/js/backbone-0.5.3-min.js"></script>
+    <script type="text/javascript" src="${context}/js/azkaban.login.js"></script>
     #parse( "azkaban/webapp/servlet/velocity/style.vm" )
+	<script type="text/javascript">
+		var contextURL = "${context}";
+	</script>
   </head>
   <body>
     <div class="header">
@@ -32,24 +40,21 @@
     		<div class="box-title">Login</div>
  		</div>
     	<br>
-    	#if($errorMsg)
-    		<div class="box-error-message">$errorMsg</div>
-    	#end
-    	<form class="login-form" method="get">
-    		<div id="login-password">
+    	<div id="errorMsg" class="box-error-message">$errorMsg</div>
+    	<div id="loginForm" class="login-form">
+    	    <div id="login-password">
 		    	<p class="login-label">Username</p>
-		    	<input type="text" name="username" class="login-textbox" ></input>
+		    	<input id="username" type="text" name="username" class="login-textbox" ></input>
 	
 				<br/>
 		    	<p class="login-label">Password</p>
-		    	<input type="password" name="password" class="login-textbox"></input>
+		    	<input id="password" type="password" name="password" class="login-textbox"></input>
 			</div>
 
 	    	<div class="shadow-box-footer">
-	    	  <input type="hidden" name="action" value="login"></input>
-	    	  <input class="btn2 button1" type="submit" value="Login" class="login-submit"/>
+	    	  <div id="loginSubmit" class="btn2 button1" class="login-submit">Login</div>
 	    	</div>
-    	</form>
+    	</div>
     </div>
   </body>
 </html>

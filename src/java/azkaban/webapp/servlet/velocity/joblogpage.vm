@@ -69,11 +69,11 @@
 			
 			<div id="headertabs" class="headertabs">
 				<ul>
-					<li><a id="logViewLink" href="#log">Log</a></li>
+					<li><a id="logViewLink" >Log</a></li>
 				</ul>
 			</div>
 
-			<div id="projectLogView" class="logView">
+			<div id="jobLogView" class="logView">
 				<div class="logHeader"><div class="logButtonRow"><div id="updateLogBtn" class="btn7">Refresh</div></div></div>
 				<div class="logViewer">
 					<pre id="logSection" class="log"></pre>

@@ -73,6 +73,19 @@ public class ProcessJobTest
       
       job.run();
     }
+    
+    @Test
+    public void testPartitionCommand() throws Exception {
+    	String test1 = "a b c";
+
+    	Assert.assertArrayEquals(new String[] {"a", "b", "c"}, ProcessJob.partitionCommandLine(test1));
+    	
+    	String test2 = "a 'b c'";
+    	Assert.assertArrayEquals(new String[] {"a", "b c"}, ProcessJob.partitionCommandLine(test2));
+    	
+    	String test3 = "a e='b c'";
+    	Assert.assertArrayEquals(new String[] {"a", "e=b c"}, ProcessJob.partitionCommandLine(test3));
+    }
 }
 
 

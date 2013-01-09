@@ -32,7 +32,8 @@
 			var errorMessage = null;
 			var successMessage = null;
 			
-			var projectId = "$project.name";
+			var projectId = "$project.id";
+			var projectName = "$project.name";
 		</script>
 	</head>
 	<body>
@@ -41,7 +42,7 @@
 		<div class="messaging"><p id="messageClose">X</p><p id="message"></p></div>  
 
 #if($errorMsg)
-			<div class="box-error-message">$errorMsg</div>
+		<div class="box-error-message">$errorMsg</div>
 #else
 	<div class="content">
 	#if($error_message != "null")

@@ -21,7 +21,6 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.io.PrintWriter;
 import java.io.Writer;
 import java.security.AccessControlException;
 import java.util.ArrayList;
@@ -32,8 +31,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.zip.ZipFile;
-
 
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
@@ -47,21 +44,21 @@ import org.apache.commons.io.IOUtils;
 import org.apache.log4j.Logger;
 
 import azkaban.executor.ExecutableFlow;
-import azkaban.executor.ExecutableFlow.Status;
-import azkaban.executor.ExecutableNode;
+import azkaban.executor.ExecutableJobInfo;
 import azkaban.executor.ExecutorManager;
 import azkaban.executor.ExecutorManagerException;
-import azkaban.executor.NodeStatus;
 import azkaban.flow.Edge;
 import azkaban.flow.Flow;
 import azkaban.flow.FlowProps;
 import azkaban.flow.Node;
 import azkaban.project.Project;
+import azkaban.project.ProjectLogEvent;
 import azkaban.project.ProjectManager;
 import azkaban.project.ProjectManagerException;
+import azkaban.scheduler.Schedule;
 import azkaban.scheduler.ScheduleManager;
-import azkaban.scheduler.ScheduledFlow;
 import azkaban.user.Permission;
+import azkaban.user.Role;
 import azkaban.user.UserManager;
 import azkaban.user.Permission.Type;
 import azkaban.user.User;
@@ -69,9 +66,9 @@ import azkaban.utils.JSONUtils;
 import azkaban.utils.Pair;
 import azkaban.utils.Props;
 import azkaban.utils.Utils;
+import azkaban.webapp.AzkabanWebServer;
 import azkaban.webapp.session.Session;
 import azkaban.webapp.servlet.MultipartParser;
-import azkaban.webapp.servlet.HistoryServlet.PageSelection;
 
 public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 	private static final long serialVersionUID = 1;
@@ -82,8 +79,10 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 	private ProjectManager projectManager;
 	private ExecutorManager executorManager;
 	private ScheduleManager scheduleManager;
+	private UserManager userManager;
+	
 	private MultipartParser multipartParser;
-	private File tempDir;
+
 	private static Comparator<Flow> FLOW_ID_COMPARATOR = new Comparator<Flow>() {
 		@Override
 		public int compare(Flow f1, Flow f2) {
@@ -94,11 +93,13 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 	@Override
 	public void init(ServletConfig config) throws ServletException {
 		super.init(config);
-		projectManager = this.getApplication().getProjectManager();
-		executorManager = this.getApplication().getExecutorManager();
-		scheduleManager = this.getApplication().getScheduleManager();
 		
-		tempDir = this.getApplication().getTempDirectory();
+		AzkabanWebServer server = (AzkabanWebServer)getApplication();
+		projectManager = server.getProjectManager();
+		executorManager = server.getExecutorManager();
+		scheduleManager = server.getScheduleManager();
+		userManager = server.getUserManager();
+
 		multipartParser = new MultipartParser(DEFAULT_UPLOAD_DISK_SPOOL_SIZE);
 	}
 
@@ -176,10 +177,12 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 			return; 
 		}
 		
+		ret.put("projectId", project.getId());
 		String ajaxName = getParam(req, "ajax");
 		if (ajaxName.equals("fetchProjectLogs")) {
-			ajaxFetchProjectLogs(project, req, resp, ret, user);
-			ret = null;
+			if (handleAjaxPermission(project, user, Type.READ, ret)) {
+				ajaxFetchProjectLogEvents(project, req, resp, ret, user);
+			}
 		}
 		else if (ajaxName.equals("fetchflowjobs")) {
 			if (handleAjaxPermission(project, user, Type.READ, ret)) {
@@ -206,14 +209,14 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 				ajaxGetPermissions(project, ret);
 			}
 		}
-		else if (ajaxName.equals("changeUserPermission")) {
+		else if (ajaxName.equals("changePermission")) {
 			if (handleAjaxPermission(project, user, Type.ADMIN, ret)) {
 				ajaxChangePermissions(project, ret, req, user);
 			}
 		}
-		else if (ajaxName.equals("addUserPermission")) {
+		else if (ajaxName.equals("addPermission")) {
 			if (handleAjaxPermission(project, user, Type.ADMIN, ret)) {
-				ajaxAddUserPermission(project, ret, req, user);
+				ajaxAddPermission(project, ret, req, user);
 			}
 		}
 		else if (ajaxName.equals("fetchFlowExecutions")) {
@@ -231,7 +234,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 	}
 	
 	private boolean handleAjaxPermission(Project project, User user, Type type, Map<String, Object> ret) {
-		if (project.hasPermission(user, type)) {
+		if (hasPermission(project,user,type)) {
 			return true;
 		}
 		
@@ -239,39 +242,37 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 		return false;
 	}
 	
-	/**
-	 * Gets the logs through plain text stream to reduce memory overhead.
-	 * 
-	 * @param req
-	 * @param resp
-	 * @param user
-	 * @param exFlow
-	 * @throws ServletException
-	 */
-	private void ajaxFetchProjectLogs(Project project, HttpServletRequest req, HttpServletResponse resp, HashMap<String, Object> ret,  User user) throws ServletException {
-		if (!project.hasPermission(user, Type.READ)) {
+	private void ajaxFetchProjectLogEvents(Project project, HttpServletRequest req, HttpServletResponse resp, HashMap<String, Object> ret,  User user) throws ServletException {
+		if (!hasPermission(project,user,Type.READ)) {
+			ret.put("error", "Permission denied. Need READ access.");
 			return;
 		}
 		
-		int tailBytes = this.getIntParam(req, "tail");
+		int num = this.getIntParam(req, "size", 1000);
+		int skip = this.getIntParam(req, "skip", 0);
 		
-		resp.setContentType("text/plain");
-		resp.setCharacterEncoding("utf-8");
-		PrintWriter writer;
+		List<ProjectLogEvent> logEvents = null;
 		try {
-			writer = resp.getWriter();
-		} catch (IOException e) {
+			logEvents = projectManager.getProjectEventLogs(project, num, skip);
+		} catch (ProjectManagerException e) {
 			throw new ServletException(e);
 		}
-
-		try {
-			projectManager.getProjectLogs(project.getName(), tailBytes, 0, writer);
-		} catch (IOException e) {
-			throw new ServletException(e);
+		
+		String[] columns = new String[] {"user", "time", "type", "message"};
+		ret.put("columns", columns);
+		
+		List<Object[]> eventData = new ArrayList<Object[]>();
+		for (ProjectLogEvent events: logEvents) {
+			Object[] entry = new Object[4];
+			entry[0] = events.getUser();
+			entry[1] = events.getTime();
+			entry[2] = events.getType();
+			entry[3] = events.getMessage();
+			
+			eventData.add(entry);
 		}
-		finally {
-			writer.close();
-		}
+		
+		ret.put("logData", eventData);
 	}
 	
 	private void ajaxFetchFlowExecutions(Project project, HashMap<String, Object> ret, HttpServletRequest req) throws ServletException {
@@ -280,7 +281,12 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 		int length = Integer.valueOf(getParam(req, "length"));
 		
 		ArrayList<ExecutableFlow> exFlows = new ArrayList<ExecutableFlow>();
-		int total = executorManager.getExecutableFlows(project.getName(),  flowId, from, length, exFlows);
+		int total = 0;
+		try {
+			total = executorManager.getExecutableFlows(project.getId(), flowId, from, length, exFlows);
+		} catch (ExecutorManagerException e) {
+			ret.put("error", "Error retrieving executable flows");
+		}
 		
 		ret.put("flow", flowId);
 		ret.put("total", total);
@@ -316,22 +322,24 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 			return;
 		}
 		
-		if (!project.hasPermission(user, Type.ADMIN)) {
+		if (!hasPermission(project,user,Type.ADMIN)) {
 			this.setErrorMessageInCookie(resp, "Cannot delete. User '" + user.getUserId() + "' is not an ADMIN.");
 			resp.sendRedirect(req.getRequestURI() + "?project=" + projectName);
 			return;
 		}
 		
 		// Check if scheduled
-		ScheduledFlow sflow = null;
-		for (ScheduledFlow flow: scheduleManager.getSchedule()) {
-			if (flow.getProjectId().equals(projectName)) {
+		Schedule sflow = null;
+		for (Schedule flow: scheduleManager.getSchedules()) {
+
+			if (flow.getProjectId() == project.getId()) {
 				sflow = flow;
 				break;
 			}
 		}
 		if (sflow != null) {
-			this.setErrorMessageInCookie(resp, "Cannot delete. Please unschedule " + sflow.getScheduleId() + ".");
+			this.setErrorMessageInCookie(resp, "Cannot delete. Please unschedule " + sflow.getScheduleName() + ".");
+
 			resp.sendRedirect(req.getRequestURI() + "?project=" + projectName);
 			return;
 		}
@@ -339,7 +347,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 		// Check if executing
 		ExecutableFlow exflow = null;
 		for (ExecutableFlow flow: executorManager.getRunningFlows()) {
-			if (flow.getProjectId() == projectName) {
+			if (flow.getProjectId() == project.getId()) {
 				exflow = flow;
 				break;
 			}
@@ -350,9 +358,9 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 			return;
 		}
 
-		project.info("Project removing by '" + user.getUserId() + "'");
+		//project.info("Project removing by '" + user.getUserId() + "'");
 		try {
-			projectManager.removeProject(projectName);
+			projectManager.removeProject(project, user);
 		} catch (ProjectManagerException e) {
 			this.setErrorMessageInCookie(resp, e.getMessage());
 			resp.sendRedirect(req.getRequestURI() + "?project=" + projectName);
@@ -368,8 +376,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 		project.setDescription(description);
 		
 		try {
-			projectManager.commitProject(project.getName());
-			project.info("Project description changed to '" + description + "' by " + user.getUserId());
+			projectManager.updateProjectDescription(project, description, user);
 		} catch (ProjectManagerException e) {
 			ret.put("error", e.getMessage());
 		}
@@ -409,20 +416,6 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 			if (edge.hasError()) {
 				edgeObj.put("error", edge.getError());
 			}
-//			if (edge.getGuideValues() != null) {
-//				List<Point2D> guides = edge.getGuideValues();
-//				ArrayList<Object> guideOutput = new ArrayList<Object>();
-//				for (Point2D guide: guides) {
-//					double x = guide.getX();
-//					double y = guide.getY();
-//					HashMap<String, Double> point = new HashMap<String, Double>();
-//					point.put("x", x);
-//					point.put("y", y);
-//					guideOutput.add(point);
-//				}
-//				
-//				edgeObj.put("guides", guideOutput);
-//			}
 			
 			edgeList.add(edgeObj);
 		}
@@ -470,16 +463,26 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 		ret.put("nodes", nodeList);
 	}
 	
-	private void ajaxAddUserPermission(Project project, HashMap<String, Object> ret, HttpServletRequest req, User user) throws ServletException {
-		String username = getParam(req, "username");
-		UserManager userManager = getApplication().getUserManager();
-		if (!userManager.validateUser(username)) {
-			ret.put("error", "User is invalid.");
-			return;
+	private void ajaxAddPermission(Project project, HashMap<String, Object> ret, HttpServletRequest req, User user) throws ServletException {
+		String name = getParam(req, "name");
+		boolean group = Boolean.parseBoolean(getParam(req, "group"));
+		
+		if (group) {
+			if (project.getGroupPermission(name) != null) {
+				ret.put("error", "Group permission already exists.");
+				return;
+			}
 		}
-		if (project.getUserPermission(username) != null) {
-			ret.put("error", "User permission already exists.");
-			return;
+		else {
+			if (!userManager.validateUser(name)) {
+				ret.put("error", "User is invalid.");
+				return;
+			}
+			
+			if (project.getUserPermission(name) != null) {
+				ret.put("error", "User permission already exists.");
+				return;
+			}
 		}
 		
 		boolean admin = Boolean.parseBoolean(getParam(req, "permissions[admin]"));
@@ -498,11 +501,9 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 			perm.setPermission(Type.EXECUTE, execute);
 			perm.setPermission(Type.SCHEDULE, schedule);
 		}
-		
-		project.setUserPermission(username, perm);
-		project.info("User '" + user.getUserId() + "' has added user '" + username + "' to the project with permission " + perm.toString());
+
 		try {
-			projectManager.commitProject(project.getName());
+			projectManager.updateProjectPermission(project, name, perm, group, user);
 		} catch (ProjectManagerException e) {
 			ret.put("error", e.getMessage());
 		}
@@ -516,10 +517,19 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 		boolean execute = Boolean.parseBoolean(getParam(req, "permissions[execute]"));
 		boolean schedule = Boolean.parseBoolean(getParam(req, "permissions[schedule]"));
 		
-		String username = getParam(req, "username");
-		Permission perm = project.getUserPermission(username);
+		boolean group = Boolean.parseBoolean(getParam(req, "group"));
+		
+		String name = getParam(req, "name");
+		Permission perm;
+		if (group) {
+			perm = project.getGroupPermission(name);
+		}
+		else {
+			perm = project.getUserPermission(name);
+		}
+		
 		if (perm == null) {
-			ret.put("error", "Permissions for " + username + " cannot be found.");
+			ret.put("error", "Permissions for " + name + " cannot be found.");
 			return;
 		}
 		
@@ -538,17 +548,19 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 				perm.setPermission(Type.EXECUTE, execute);
 				perm.setPermission(Type.SCHEDULE, schedule);
 			}
-			project.info("User '" + user.getUserId() + "' has changed permissions for '" + username + "' to " + perm.toString());
+			
+			try {
+				projectManager.updateProjectPermission(project, name, perm, group, user);
+			} catch (ProjectManagerException e) {
+				ret.put("error", e.getMessage());
+			}
 		}
 		else {
-			project.removeUserPermission(username);
-			project.info("User '" + user.getUserId() + "' has removed '" + username + "'");
-		}
-		
-		try {
-			projectManager.commitProject(project.getName());
-		} catch (ProjectManagerException e) {
-			ret.put("error", e.getMessage());
+			try {
+				projectManager.removeProjectPermission(project, name, group, user);
+			} catch (ProjectManagerException e) {
+				ret.put("error", e.getMessage());
+			}
 		}
 	}
 	
@@ -591,44 +603,58 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 	
 	private void handleJobHistoryPage(HttpServletRequest req, HttpServletResponse resp, Session session) throws ServletException, IOException {
 		Page page = newPage(req, resp, session, "azkaban/webapp/servlet/velocity/jobhistorypage.vm");
-		String projectId = getParam(req, "project");
+		String projectName = getParam(req, "project");
+		User user = session.getUser();
+		
+		Project project = projectManager.getProject(projectName);
+		if (project == null) {
+			page.add("errorMsg", "Project " + projectName + " doesn't exist.");
+			page.render();
+			return;
+		}
+		if (!hasPermission(project, user, Type.READ)) {
+			page.add("errorMsg", "No permission to view project " + projectName + ".");
+			page.render();
+			return;
+		}
+		
 		String jobId = getParam(req, "job");
 		int pageNum = getIntParam(req, "page", 1);
 		int pageSize = getIntParam(req, "size", 25);
 		
-		page.add("projectId", projectId);
+		page.add("projectId", project.getId());
+		page.add("projectName", project.getName());
 		page.add("jobid", jobId);
 		page.add("page", pageNum);
 		
 		int skipPage = (pageNum - 1)*pageSize;
 
-
-		
 		int numResults = 0;
 		try {
-			ArrayList<NodeStatus> statuses = new ArrayList<NodeStatus>();
-			numResults  = executorManager.getJobHistory(projectId, jobId, pageSize, skipPage, statuses);
-			if (statuses.isEmpty()) {
-				statuses = null;
+			numResults = executorManager.getNumberOfJobExecutions(project, jobId);
+			int maxPage = (numResults / pageSize) + 1;
+			List<ExecutableJobInfo> jobInfo = executorManager.getExecutableJobs(project, jobId, skipPage, pageSize);
+			
+			if (jobInfo == null || jobInfo.isEmpty()) {
+				jobInfo = null;
 			}
-			page.add("history", statuses);
+			page.add("history", jobInfo);
 			
 			if (pageNum == 1) {
-				page.add("previous", new PageSelection(1, pageSize, true, false));
+				page.add("previous", new PageSelection("Previous", pageSize, true, false, pageNum - 1));
 			}
-			page.add("next", new PageSelection(pageNum + 1, pageSize, false, false));
+			page.add("next", new PageSelection("Next", pageSize, false, false, Math.min(pageNum + 1, maxPage)));
 
-			if (statuses != null) {
+			if (jobInfo != null) {
 				ArrayList<Object> dataSeries = new ArrayList<Object>();
-				for (NodeStatus status: statuses) {
-					Map<String,Object> map = (Map<String,Object>)status.toObject();
-					map.remove("jobId");
-					String execId = (String)map.get("execId");
-					String newExecId = execId.substring(0, 19);
-					map.put("execId", newExecId);
+				for (ExecutableJobInfo info: jobInfo) {
+					Map<String,Object> map = info.toObject();
 					dataSeries.add(map);
 				}
 				page.add("dataSeries", JSONUtils.toJSON(dataSeries));
+			}
+			else {
+				page.add("dataSeries", "[]");
 			}
 		} catch (ExecutorManagerException e) {
 			page.add("errorMsg", e.getMessage());
@@ -641,16 +667,16 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 		}
 		int maxPage = (numResults / pageSize) + 1;
 		
-		page.add("page1", new PageSelection(pageStartValue, pageSize, pageStartValue > maxPage, pageStartValue == pageNum));
+		page.add("page1", new PageSelection(String.valueOf(pageStartValue), pageSize, pageStartValue > maxPage, pageStartValue == pageNum, Math.min(pageStartValue, maxPage)));
 		pageStartValue++;
-		page.add("page2", new PageSelection(pageStartValue, pageSize, pageStartValue > maxPage, pageStartValue == pageNum));
+		page.add("page2", new PageSelection(String.valueOf(pageStartValue), pageSize, pageStartValue > maxPage, pageStartValue == pageNum, Math.min(pageStartValue, maxPage)));
 		pageStartValue++;
-		page.add("page3", new PageSelection(pageStartValue, pageSize, pageStartValue > maxPage, pageStartValue == pageNum));
+		page.add("page3", new PageSelection(String.valueOf(pageStartValue), pageSize, pageStartValue > maxPage, pageStartValue == pageNum, Math.min(pageStartValue, maxPage)));
 		pageStartValue++;
-		page.add("page4", new PageSelection(pageStartValue, pageSize, pageStartValue > maxPage, pageStartValue == pageNum));
+		page.add("page4", new PageSelection(String.valueOf(pageStartValue), pageSize, pageStartValue > maxPage, pageStartValue == pageNum, Math.min(pageStartValue, maxPage)));
 		pageStartValue++;
-		page.add("page5", new PageSelection(pageStartValue, pageSize, pageStartValue > maxPage, pageStartValue == pageNum));
-		pageStartValue++;
+		page.add("page5", new PageSelection(String.valueOf(pageStartValue), pageSize, pageStartValue > maxPage, pageStartValue == pageNum, Math.min(pageStartValue, maxPage)));
+
 		
 		page.render();
 	}
@@ -667,13 +693,24 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 				page.add("errorMsg", "Project " + projectName + " not found.");
 			}
 			else {
+				if (!hasPermission(project, user, Type.READ)) {
+					throw new AccessControlException( "No permission to view project " + projectName + ".");
+				}
+				
 				page.add("project", project);
 				page.add("username", user.getUserId());
 				page.add("admins", Utils.flattenToString(project.getUsersWithPermission(Type.ADMIN), ","));
-				page.add("userpermission", project.getUserPermission(user));
+				Permission perm = this.getPermissionObject(project, user, Type.ADMIN);
+				page.add("userpermission", perm);
+	
+				if (perm.isPermissionSet(Type.ADMIN)) {
+					page.add("admin", true);
+				}
+
 				page.add("permissions", project.getUserPermissions());
+				page.add("groupPermissions", project.getGroupPermissions());
 				
-				if(project.hasPermission(user, Type.ADMIN)) {
+				if(hasPermission(project, user, Type.ADMIN)) {
 					page.add("isAdmin", true);
 				}
 			}
@@ -701,7 +738,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 				page.add("errorMsg", "Project " + projectName + " not found.");
 			}
 			else {
-				if (!project.hasPermission(user, Type.READ)) {
+				if (!hasPermission(project, user, Type.READ)) {
 					throw new AccessControlException( "No permission to view project " + projectName + ".");
 				}
 				
@@ -720,7 +757,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 						page.add("errorMsg", "Job " + jobName + " not found.");
 					}
 					else {
-						Props prop = projectManager.getProperties(projectName, node.getJobSource());
+						Props prop = projectManager.getProperties(project, node.getJobSource());
 						page.add("jobid", node.getId());
 						page.add("jobtype", node.getType());
 						
@@ -800,7 +837,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 				page.add("errorMsg", "Project " + projectName + " not found.");
 			}
 			else {
-				if (!project.hasPermission(user, Type.READ)) {
+				if (!hasPermission(project,user,Type.READ)) {
 					throw new AccessControlException( "No permission to view project " + projectName + ".");
 				}
 				
@@ -846,7 +883,6 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 							page.add("dependingproperties", dependingProps);
 						}
 						
-
 						ArrayList<Pair<String,String>> parameters = new ArrayList<Pair<String, String>>();
 						// Parameter
 						for (String key : prop.getKeySet()) {
@@ -883,7 +919,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 				page.add("errorMsg", "Project " + projectName + " not found.");
 			}
 			else {
-				if (!project.hasPermission(user, Type.READ)) {
+				if (!hasPermission(project, user, Type.READ)) {
 					throw new AccessControlException( "No permission Project " + projectName + ".");
 				}
 				
@@ -924,7 +960,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 				page.add("errorMsg", "Project " + projectName + " not found.");
 			}
 			else {
-				if (!project.hasPermission(user, Type.EXECUTE)) {
+				if (!hasPermission(project, user, Type.EXECUTE)) {
 					throw new AccessControlException( "No permission Project " + projectName + " to Execute.");
 				}
 				
@@ -958,18 +994,19 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 				page.add("errorMsg", "Project " + projectName + " not found.");
 			}
 			else {
-				if (project.hasPermission(user, Type.ADMIN)) {
-					page.add("admin", true);
-				}
-
-				if (!project.hasPermission(user, Type.READ)) {
+				if (!hasPermission(project,user,Type.READ)) {
 					throw new AccessControlException( "No permission to view project " + projectName + ".");
 				}
 				
 				page.add("project", project);
 				page.add("admins", Utils.flattenToString(project.getUsersWithPermission(Type.ADMIN), ","));
-				page.add("userpermission", project.getUserPermission(user));
+				Permission perm = this.getPermissionObject(project, user, Type.ADMIN);
+				page.add("userpermission", perm);
 	
+				if (perm.isPermissionSet(Type.ADMIN)) {
+					page.add("admin", true);
+				}
+				
 				List<Flow> flows = project.getFlows();
 				if (!flows.isEmpty()) {
 					Collections.sort(flows, FLOW_ID_COMPARATOR);
@@ -1027,61 +1064,47 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 		else if (project == null) {
 			setErrorMessageInCookie(resp, "Installation Failed. Project '" + projectName + "' doesn't exist.");
 		}
-		else if (!project.hasPermission(user, Type.WRITE)) {
+		else if (!hasPermission(project,user,Type.WRITE)) {
 			setErrorMessageInCookie(resp, "Installation Failed. User '" + user.getUserId() + "' does not have write access.");
 		}
 		else {
 			FileItem item = (FileItem) multipart.get("file");
-			String forceStr = (String) multipart.get("force");
-			boolean force = forceStr == null ? false : Boolean.parseBoolean(forceStr);
-			File projectDir = null;
-			if (projectName == null || projectName.isEmpty()) {
-				setErrorMessageInCookie(resp, "No project name found.");
-			}
-			else if (item == null) {
-				setErrorMessageInCookie(resp, "No file found.");
+			String name = item.getName();
+			String type = null;
+			
+			final String contentType = item.getContentType();
+			if(contentType.startsWith("application/zip")) {
+				type = "zip";
 			}
 			else {
-				try {
-					projectDir = extractFile(item);
-					projectManager.uploadProject(projectName, projectDir, user, force);
-					setSuccessMessageInCookie(resp, "Project Uploaded");
-				} 
-				catch (Exception e) {
-					logger.info("Installation Failed.", e);
-					project.error("Upload by '" + user.getUserId() + "' failed: " + e.getMessage());
-					setErrorMessageInCookie(resp, "Installation Failed.\n" + e.getMessage());
-				}
+				item.delete();
+				setErrorMessageInCookie(resp, "File type " + contentType + " unrecognized.");
+			}
+			
+			File tempDir = Utils.createTempDir();
+			OutputStream out = null;
+			try {
+				logger.info("Uploading file " + name);
+				File archiveFile = new File(tempDir, name);
+				out = new BufferedOutputStream(new FileOutputStream(archiveFile));
+				IOUtils.copy(item.getInputStream(), out);
+				out.close();
 				
-				if (projectDir != null && projectDir.exists() ) {
-					FileUtils.deleteDirectory(projectDir);
+				projectManager.uploadProject(project, archiveFile, type, user);
+			} catch (Exception e) {
+				logger.info("Installation Failed.", e);
+				setErrorMessageInCookie(resp, "Installation Failed.\n" + e.getMessage());
+			}
+			finally {
+				if (tempDir.exists()) {
+					FileUtils.deleteDirectory(tempDir);
 				}
-				project.error("New project files uploaded by '" + user.getUserId() + "'");
+				if (out != null) {
+					out.close();
+				}
 			}
 		}
 		resp.sendRedirect(req.getRequestURI() + "?project=" + projectName);
-	}
-
-	private File extractFile(FileItem item) throws IOException, ServletException {
-		final String contentType = item.getContentType();
-		if (contentType.startsWith("application/zip")) {
-			return unzipFile(item);
-		}
-		
-		throw new ServletException(String.format("Unsupported file type[%s].", contentType));
-	}
-
-	private File unzipFile(FileItem item) throws ServletException, IOException {
-		File temp = File.createTempFile("job-temp", ".zip");
-		temp.deleteOnExit();
-		OutputStream out = new BufferedOutputStream(new FileOutputStream(temp));
-		IOUtils.copy(item.getInputStream(), out);
-		out.close();
-		ZipFile zipfile = new ZipFile(temp);
-		File unzipped = Utils.createTempDir(tempDir);
-		Utils.unzip(zipfile, unzipped);
-		temp.delete();
-		return unzipped;
 	}
 
 	private static class NodeLevelComparator implements Comparator<Node> {
@@ -1092,19 +1115,21 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 	}
 	
 	public class PageSelection {
-		private int page;
+		private String page;
 		private int size;
 		private boolean disabled;
 		private boolean selected;
+		private int nextPage;
 		
-		public PageSelection(int page, int size, boolean disabled, boolean selected) {
-			this.page = page;
+		public PageSelection(String pageName, int size, boolean disabled, boolean selected, int nextPage) {
+			this.page = pageName;
 			this.size = size;
 			this.disabled = disabled;
 			this.setSelected(selected);
+			this.nextPage = nextPage;
 		}
 		
-		public int getPage() {
+		public String getPage() {
 			return page;
 		}
 		
@@ -1119,9 +1144,39 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 		public boolean isSelected() {
 			return selected;
 		}
-
+		
+		public int getNextPage() {
+			return nextPage;
+		}
+		
 		public void setSelected(boolean selected) {
 			this.selected = selected;
 		}
+	}
+	
+	private boolean hasPermission(Project project, User user, Permission.Type type) {
+		if (project.hasPermission(user, type)) {
+			return true;
+		}
+		
+		for(String roleName: user.getRoles()) {
+			Role role = userManager.getRole(roleName);
+			if (role.getPermission().isPermissionSet(type)) {
+				return true;
+			}
+		}
+		
+		return true;
+	}
+	
+	private Permission getPermissionObject(Project project, User user, Permission.Type type) {
+		Permission perm = project.getCollectivePermission(user);
+		
+		for(String roleName: user.getRoles()) {
+			Role role = userManager.getRole(roleName);
+			perm.addPermissions(role.getPermission());
+		}
+		
+		return perm;
 	}
 }

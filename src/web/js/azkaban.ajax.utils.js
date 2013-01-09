@@ -28,19 +28,3 @@ function ajaxCall(requestURL, data, callback) {
 		"json"
 	);
 }
-
-function ajaxLogsCall(requestURL, data, callback) {
-	$.get(
-		requestURL,
-		data,
-		function(data) {
-			var pos = data.lastIndexOf("\n");
-			var log = data.substring(0, pos);
-			var currentPos = data.substr(pos + 1);
-			
-			var newData = {current: currentPos, log: log};
-			
-			callback.call(this,newData);
-		}
-	);
-}

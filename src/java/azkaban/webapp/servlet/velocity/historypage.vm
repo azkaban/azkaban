@@ -18,9 +18,12 @@
 <html>
 	<head>
 #parse( "azkaban/webapp/servlet/velocity/style.vm" )
-		<script type="text/javascript" src="${context}/js/jquery/jquery.js"></script>  
-		<script type="text/javascript" src="${context}/js/jqueryui/jquery-ui.custom.min.js"></script>  
-		<script type="text/javascript" src="${context}/js/jqueryui/jquery.ui.datepicker.min.js"></script>
+		<link rel="stylesheet" type="text/css" href="${context}/css/jquery-ui-timepicker-addon.css" />
+		<link rel="stylesheet" type="text/css" href="${context}/css/jquery-ui.css" />
+		<script type="text/javascript" src="${context}/js/jquery/jquery-1.8.3.min.js"></script>  
+		<script type="text/javascript" src="${context}/js/jqueryui/jquery-ui-1.9.2.custom.min.js"></script>  
+		<script type="text/javascript" src="${context}/js/jqueryui/jquery-ui-timepicker-addon.js"></script> 
+		<script type="text/javascript" src="${context}/js/jqueryui/jquery-ui-sliderAccess.js"></script>
 		<script type="text/javascript" src="${context}/js/namespace.js"></script>
 		<script type="text/javascript" src="${context}/js/underscore-1.2.1-min.js"></script>
 		<script type="text/javascript" src="${context}/js/backbone-0.5.3-min.js"></script>
@@ -31,14 +34,23 @@
 			var contextURL = "${context}";
 			var currentTime = ${currentTime};
 			var timezone = "${timezone}";
-			var errorMessage = "${error_message}";
-			var successMessage = "${success_message}";
 		</script>
 	</head>
 	<body>
 		#set($current_page="history")
 #parse( "azkaban/webapp/servlet/velocity/nav.vm" )
 		<div class="messaging"><p id="messageClose">X</p><p id="message"></p></div>  
+
+		#if($errorMsg)
+					<div class="box-error-message">$errorMsg</div>
+		#else
+			#if($error_message != "null")
+	                <div class="box-error-message">$error_message</div>
+			#elseif($success_message != "null")
+        	        <div class="box-success-message">$success_message</div>
+			#end
+		#end	
+		
 
 		<div class="content">
 			<div id="all-jobs-content">
@@ -50,11 +62,8 @@
 						<input type="submit" value="Quick Search" class="search-btn">
 						<input id="searchtextbox" type="text" placeholder="flow name containing ..." value=#if($search_term) ${search_term} #else "" #end class="search-input" name="searchterm">
 					</form>
-					
 				</div>
 			</div>
-			
-			
 			
 			<div class="executionInfo">
 				<table id="executingJobs">
@@ -75,16 +84,16 @@
 						#if($flowHistory)
 #foreach($flow in $flowHistory)
 						<tr class="row" >
-							<td class="tb-name">
-								<a href="${context}/executor?execid=${flow.execId}">$utils.extractNumericalId(${flow.execId})</a>
+							<td class="tb-name execId">
+								<a href="${context}/executor?execid=${flow.executionId}">${flow.executionId}</a>
 							</td>
 							<td class="tb-name">
-								<a href="${context}/manager?project=${flow.projectId}&flow=${flow.flowId}">${flow.flowId}</a>
+								<a href="${context}/executor?execid=${flow.executionId}">${flow.flowId}</a>
 							</td>
 							<td>
-								<a href="${context}/manager?project=${flow.projectId}">${flow.projectId}</a>
+								<a href="${context}/manager?project=$vmutils.getProjectName(${flow.projectId})">$vmutils.getProjectName(${flow.projectId})</a>
 							</td>
-							<td>${flow.userId}</td>
+							<td>${flow.submitUser}</td>
 							<td>$utils.formatDate(${flow.startTime})</td>
 							<td>$utils.formatDate(${flow.endTime})</td>
 							<td>$utils.formatDuration(${flow.startTime}, ${flow.endTime})</td>
@@ -101,15 +110,32 @@
 				<div id="pageSelection" class="nonjavascript">
 					<ul>
 		
+						#if($search)
+						<li id="previous" class="first"><a href="${context}/history?page=${previous.page}&size=${previous.size}&search=true&searchterm=${search_term}"><span class="arrow">&larr;</span>Previous</a></li>
+						<li id="page1" #if($page1.selected) class="selected" #end><a href="${context}/history?page=${page1.page}&size=${page1.size}&search=true&searchterm=${search_term}">${page1.page}</a></li>
+						<li id="page2" #if($page2.selected) class="selected" #end><a href="${context}/history?page=${page2.page}&size=${page2.size}&search=true&searchterm=${search_term}">${page2.page}</a></li>
+						<li id="page3" #if($page3.selected) class="selected" #end><a href="${context}/history?page=${page3.page}&size=${page3.size}&search=true&searchterm=${search_term}">${page3.page}</a></li>
+						<li id="page4" #if($page4.selected) class="selected" #end><a href="${context}/history?page=${page4.page}&size=${page4.size}&search=true&searchterm=${search_term}">${page4.page}</a></li>
+						<li id="page5" #if($page5.selected) class="selected" #end><a href="${context}/history?page=${page5.page}&size=${page5.size}&search=true&searchterm=${search_term}">${page5.page}</a></li>
+						<li id="next"><a href="${context}/history?page=${next.page}&size=${next.size}&search=true&searchterm=${search_term}">Next<span class="arrow">&rarr;</span></a></li>
+						#elseif($advfilter)
+						<li id="previous" class="first"><a href="${context}/history?page=${previous.page}&size=${previous.size}&advfilter=true&projcontain=${projcontain}&flowcontain=${flowcontain}&usercontain=${usercontain}&status=${status}&begin=${begin}&end=${end}"><span class="arrow">&larr;</span>Previous</a></li>
+						<li id="page1" #if($page1.selected) class="selected" #end><a href="${context}/history?page=${page1.page}&size=${page1.size}&advfilter=true&projcontain=${projcontain}&flowcontain=${flowcontain}&usercontain=${usercontain}&status=${status}&begin=${begin}&end=${end}">${page1.page}</a></li>
+						<li id="page2" #if($page2.selected) class="selected" #end><a href="${context}/history?page=${page2.page}&size=${page2.size}&advfilter=true&projcontain=${projcontain}&flowcontain=${flowcontain}&usercontain=${usercontain}&status=${status}&begin=${begin}&end=${end}">${page2.page}</a></li>
+						<li id="page3" #if($page3.selected) class="selected" #end><a href="${context}/history?page=${page3.page}&size=${page3.size}&advfilter=true&projcontain=${projcontain}&flowcontain=${flowcontain}&usercontain=${usercontain}&status=${status}&begin=${begin}&end=${end}">${page3.page}</a></li>
+						<li id="page4" #if($page4.selected) class="selected" #end><a href="${context}/history?page=${page4.page}&size=${page4.size}&advfilter=true&projcontain=${projcontain}&flowcontain=${flowcontain}&usercontain=${usercontain}&status=${status}&begin=${begin}&end=${end}">${page4.page}</a></li>
+						<li id="page5" #if($page5.selected) class="selected" #end><a href="${context}/history?page=${page5.page}&size=${page5.size}&advfilter=true&projcontain=${projcontain}&flowcontain=${flowcontain}&usercontain=${usercontain}&status=${status}&begin=${begin}&end=${end}">${page5.page}</a></li>
+						<li id="next"><a href="${context}/history?page=${next.page}&size=${next.size}&advfilter=true&projcontain=${projcontain}&flowcontain=${flowcontain}&usercontain=${usercontain}&status=${status}&begin=${begin}&end=${end}">Next<span class="arrow">&rarr;</span></a></li>
+						#else
 						<li id="previous" class="first"><a href="${context}/history?page=${previous.page}&size=${previous.size}"><span class="arrow">&larr;</span>Previous</a></li>
-				
 						<li id="page1" #if($page1.selected) class="selected" #end><a href="${context}/history?page=${page1.page}&size=${page1.size}">${page1.page}</a></li>
 						<li id="page2" #if($page2.selected) class="selected" #end><a href="${context}/history?page=${page2.page}&size=${page2.size}">${page2.page}</a></li>
 						<li id="page3" #if($page3.selected) class="selected" #end><a href="${context}/history?page=${page3.page}&size=${page3.size}">${page3.page}</a></li>
 						<li id="page4" #if($page4.selected) class="selected" #end><a href="${context}/history?page=${page4.page}&size=${page4.size}">${page4.page}</a></li>
 						<li id="page5" #if($page5.selected) class="selected" #end><a href="${context}/history?page=${page5.page}&size=${page5.size}">${page5.page}</a></li>
-
 						<li id="next"><a href="${context}/history?page=${next.page}&size=${next.size}">Next<span class="arrow">&rarr;</span></a></li>
+						#end
+						
 					</ul>
 				</div>
 			</div>
@@ -123,17 +149,37 @@
 			<div class="message">
 				<fieldset>
 					<dl>
-
-						<dt><label for="path">Project Name</label></dt>
-						<dd><input id="projRe" type="text" placeholder="project name containing ..." value = ""  class="filter-input" name="projre"/></dd>
-						<dt><label for="path">Flow Name Name</label></dt>
-						<dd><input id="flowRe" type="text" placeholder="flow name containing ..." value = ""  class="filter-input" name="flowre"/></dd>
+						<dt><label for="path" >Project Name</label></dt>
+						<dd><input id="projcontain" type="text" placeholder="project name containing ..." value = ""  class="filter-input" name="projcontain"/></dd>
+						<dt><label for="path">Flow Name</label></dt>
+						<dd><input id="flowcontain" type="text" placeholder="flow name containing ..." value = ""  class="filter-input" name="flowcontain"/></dd>
 						<dt><label for="path">User Name</label></dt>
-						<dd><input id="userRe" type="text" placeholder="user name containing ..." value = ""  class="filter-input" name="userre"/></dd>
+						<dd><input id="usercontain" type="text" placeholder="user name containing ..." value = ""  class="filter-input" name="usercontain"/></dd>
+						<dt><label for="path">Status</label></dt>
+						<!--dd><input id="status" type="text" placeholder="Flow status is ..." value = ""  class="filter-input" name="status"/></dd-->
+						<dd>
+							<select id="status">
+								<option value=0>All Status</option>
+								<option value=10>Ready</option>
+								<option value=20>Preapring</option>
+								<option value=30>Running</option>
+								<option value=40>Paused</option>
+								<option value=50>Succeed</option>
+								<option value=60>Killed</option>
+								<option value=70>Failed</option>
+								<option value=80>Failed Finishing</option>
+								<option value=90>Skipped</option>
+								<option value=100>Disabled</option>
+								<option value=110>Queued</option>
+							</select>
+						</dd>
 						<dt>Date between</dt>
-						<dd><input type="text" id="daterangebegin" value=""/></dd>
+						<dd><div class="ui-datetime-container"> 
+					 		<input type="text" name="basic_example_1" id="datetimebegin" value="" /> 
+						</div></dd>	
+						<!--dd><input type="text" class="ui-datetime-container" id="datetimebegin" value=""/></dd-->
 						<dt>and</dt>
-						<dd><input type="text" id="daterangeend" value=""/></dd>
+						<dd><input type="text" class="ui-datetime-container" id="datetimeend" value=""/></dd>
 					</dl>
 				</fieldset>
 			</div>

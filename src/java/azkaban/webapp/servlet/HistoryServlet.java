@@ -33,20 +33,29 @@ import org.joda.time.DateTime;
 import org.joda.time.format.DateTimeFormat;
 
 
+import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutorManager;
-import azkaban.executor.ExecutorManager.ExecutionReference;
+import azkaban.executor.ExecutorManagerException;
+import azkaban.project.Project;
+import azkaban.project.ProjectManager;
 import azkaban.utils.JSONUtils;
+import azkaban.webapp.AzkabanWebServer;
 import azkaban.webapp.session.Session;
 
 public class HistoryServlet extends LoginAbstractAzkabanServlet {
 
 	private static final long serialVersionUID = 1L;
 	private ExecutorManager executorManager;
+	private ProjectManager projectManager;
+	private ExecutorVMHelper vmHelper;
 	
 	@Override
 	public void init(ServletConfig config) throws ServletException {
 		super.init(config);
-		executorManager = this.getApplication().getExecutorManager();
+		AzkabanWebServer server = (AzkabanWebServer)getApplication();
+		executorManager = server.getExecutorManager();
+		projectManager = server.getProjectManager();
+		vmHelper = new ExecutorVMHelper();
 	}
 
 	@Override
@@ -81,63 +90,97 @@ public class HistoryServlet extends LoginAbstractAzkabanServlet {
 	}
 
 	private void fetchHistoryData(HttpServletRequest req, HttpServletResponse resp, HashMap<String, Object> ret) throws ServletException {
-		long start = getLongParam(req, "start");
-		long end = getLongParam(req, "end");
-		
-		ret.put("start", start);
-		ret.put("end", end);
-		
-		List<ExecutionReference> refs = executorManager.getFlowHistory(start, end);
-		ArrayList<Object> refList = new ArrayList<Object>();
-		for (ExecutionReference ref: refs) {
-			
-			HashMap<String,Object> refObj = new HashMap<String,Object>();
-			refObj.put("execId", ref.getExecId());
-			refObj.put("start", ref.getStartTime());
-			refObj.put("end", ref.getEndTime());
-			refObj.put("status", ref.getStatus().toString());
-			
-			refList.add(refObj);
-		}
-		
-		ret.put("data", refList);
+//		long start = getLongParam(req, "start");
+//		long end = getLongParam(req, "end");
+//		
+//		ret.put("start", start);
+//		ret.put("end", end);
+//		
+//		List<ExecutionReference> refs = executorManager.getFlowHistory(start, end);
+//		ArrayList<Object> refList = new ArrayList<Object>();
+//		for (ExecutionReference ref: refs) {
+//			
+//			HashMap<String,Object> refObj = new HashMap<String,Object>();
+//			refObj.put("execId", ref.getExecId());
+//			refObj.put("start", ref.getStartTime());
+//			refObj.put("end", ref.getEndTime());
+//			refObj.put("status", ref.getStatus().toString());
+//			
+//			refList.add(refObj);
+//		}
+//		
+//		ret.put("data", refList);
 	}
 	
 	private void handleHistoryPage(HttpServletRequest req, HttpServletResponse resp, Session session) throws ServletException {
 		Page page = newPage(req, resp, session, "azkaban/webapp/servlet/velocity/historypage.vm");
 		int pageNum = getIntParam(req, "page", 1);
 		int pageSize = getIntParam(req, "size", 16);
-		
+		page.add("vmutils", vmHelper);
 		
 		if (pageNum < 0) {
 			pageNum = 1;
 		}
-		List<ExecutionReference> history = null;
+		List<ExecutableFlow> history = null;
 		if(hasParam(req, "advfilter")) {
-			String projRe = getParam(req, "projre").equals("") ? ".*" : getParam(req, "projre");
-			String flowRe = getParam(req, "flowre").equals("") ? ".*" : getParam(req, "flowre");
-			String userRe = getParam(req, "userre").equals("") ? ".*" : getParam(req, "userre");
-			long beginTime = getParam(req, "begin").equals("") ? 0 : DateTimeFormat.forPattern("MM/dd/yyyy").parseDateTime(getParam(req, "begin")).getMillis();
-			long endTime = getParam(req, "end").equals("") ? DateTime.now().getMillis() : DateTimeFormat.forPattern("MM/dd/yyyy").parseDateTime(getParam(req, "end")).getMillis();
-			history = executorManager.getFlowHistory(projRe, flowRe, userRe, beginTime, endTime, pageSize, (pageNum - 1)*pageSize, true);
+			String projContain = getParam(req, "projcontain") == "" ? null : getParam(req, "projcontain");
+			String flowContain = getParam(req, "flowcontain") == "" ? null : getParam(req, "flowcontain");
+			String userContain = getParam(req, "usercontain") == "" ? null : getParam(req, "usercontain");
+			int status = getIntParam(req, "status") == 0 ? 0 : getIntParam(req, "status");
+			String begin = getParam(req, "begin");
+			long beginTime = begin == "" ? -1 : DateTimeFormat.forPattern("MM/dd/yyyy-HH:mm").parseDateTime(begin).getMillis();
+			String end = getParam(req, "end");
+			long endTime = end == "" ? -1 : DateTimeFormat.forPattern("MM/dd/yyyy-HH:mm").parseDateTime(end).getMillis();
+			try {
+				history = executorManager.getExecutableFlows(projContain, flowContain, userContain, status, beginTime, endTime, (pageNum - 1)*pageSize, pageSize);
+			} catch (ExecutorManagerException e) {
+				// TODO Auto-generated catch block
+				page.add("error", e.getMessage());
+			}
 		}
 		else if(hasParam(req, "search")) {
 			String searchTerm = getParam(req, "searchterm");
-			if(!searchTerm.equals("") && !searchTerm.equals(".*")) {
-				history = executorManager.getFlowHistory(".*", searchTerm, ".*", 0, DateTime.now().getMillis(), pageSize, (pageNum - 1)*pageSize, true);
-				page.add("search_term", searchTerm);
-			}
-			
+			try {
+				history = executorManager.getExecutableFlows(searchTerm, (pageNum - 1)*pageSize, pageSize);
+			} catch (ExecutorManagerException e) {
+				// TODO Auto-generated catch block
+				page.add("error", e.getMessage());
+			}			
 		}
 		else {
-			history = executorManager.getFlowHistory("", "", "", 0, 0, pageSize, (pageNum - 1)*pageSize, false);
+				try {
+					history = executorManager.getExecutableFlows((pageNum - 1)*pageSize, pageSize);
+				} catch (ExecutorManagerException e) {
+					e.printStackTrace();
+				}
 		}
 		page.add("flowHistory", history);
 		page.add("size", pageSize);
 		page.add("page", pageNum);
+		//keep the search terms so that we can navigate to later pages
+		if(hasParam(req, "searchterm") && !getParam(req, "searchterm").equals("")) {
+			page.add("search", "true");
+			page.add("search_term", getParam(req, "searchterm"));
+		}
+		
+		if(hasParam(req, "advfilter")) {
+			page.add("advfilter", "true");
+			page.add("projcontain", getParam(req, "projcontain"));
+			page.add("flowcontain", getParam(req, "flowcontain"));
+			page.add("usercontain", getParam(req, "usercontain"));
+			page.add("status", getIntParam(req, "status"));
+			page.add("begin", getParam(req, "begin"));
+			page.add("end", getParam(req, "end"));
+		}
+//		else {
+//			page.add("search_term", "");
+//		}
 		
 		if (pageNum == 1) {
 			page.add("previous", new PageSelection(1, pageSize, true, false));
+		}
+		else {
+			page.add("previous", new PageSelection(pageNum-1, pageSize, false, false));
 		}
 		page.add("next", new PageSelection(pageNum + 1, pageSize, false, false));
 		// Now for the 5 other values.
@@ -161,55 +204,55 @@ public class HistoryServlet extends LoginAbstractAzkabanServlet {
 	}
 	
 	private void handleHistoryTimelinePage(HttpServletRequest req, HttpServletResponse resp, Session session) {
-		Page page = newPage(req, resp, session, "azkaban/webapp/servlet/velocity/historytimelinepage.vm");
-		long currentTime = System.currentTimeMillis();
-		long begin = getLongParam(req, "begin", currentTime - 86400000);
-		long end = getLongParam(req, "end", currentTime);
-		
-		page.add("begin", begin);
-		page.add("end", end);
-		
-		List<ExecutionReference> refs = executorManager.getFlowHistory(begin, end);
-		ArrayList<Object> refList = new ArrayList<Object>();
-		for (ExecutionReference ref: refs) {
-			
-			HashMap<String,Object> refObj = new HashMap<String,Object>();
-			refObj.put("execId", ref.getExecId());
-			refObj.put("start", ref.getStartTime());
-			refObj.put("end", ref.getEndTime());
-			refObj.put("status", ref.getStatus().toString());
-			
-			refList.add(refObj);
-		}
-		
-		page.add("data", JSONUtils.toJSON(refList));
-		page.render();
+//		Page page = newPage(req, resp, session, "azkaban/webapp/servlet/velocity/historytimelinepage.vm");
+//		long currentTime = System.currentTimeMillis();
+//		long begin = getLongParam(req, "begin", currentTime - 86400000);
+//		long end = getLongParam(req, "end", currentTime);
+//		
+//		page.add("begin", begin);
+//		page.add("end", end);
+//		
+//		List<ExecutionReference> refs = executorManager.getFlowHistory(begin, end);
+//		ArrayList<Object> refList = new ArrayList<Object>();
+//		for (ExecutionReference ref: refs) {
+//			
+//			HashMap<String,Object> refObj = new HashMap<String,Object>();
+//			refObj.put("execId", ref.getExecId());
+//			refObj.put("start", ref.getStartTime());
+//			refObj.put("end", ref.getEndTime());
+//			refObj.put("status", ref.getStatus().toString());
+//			
+//			refList.add(refObj);
+//		}
+//		
+//		page.add("data", JSONUtils.toJSON(refList));
+//		page.render();
 	}
 	
 	private void handleHistoryDayPage(HttpServletRequest req, HttpServletResponse resp, Session session) {
-		Page page = newPage(req, resp, session, "azkaban/webapp/servlet/velocity/historydaypage.vm");
-		long currentTime = System.currentTimeMillis();
-		long begin = getLongParam(req, "begin", currentTime - 86400000);
-		long end = getLongParam(req, "end", currentTime);
-		
-		page.add("begin", begin);
-		page.add("end", end);
-		
-		List<ExecutionReference> refs = executorManager.getFlowHistory(begin, end);
-		ArrayList<Object> refList = new ArrayList<Object>();
-		for (ExecutionReference ref: refs) {
-			
-			HashMap<String,Object> refObj = new HashMap<String,Object>();
-			refObj.put("execId", ref.getExecId());
-			refObj.put("start", ref.getStartTime());
-			refObj.put("end", ref.getEndTime());
-			refObj.put("status", ref.getStatus().toString());
-			
-			refList.add(refObj);
-		}
-		
-		page.add("data", JSONUtils.toJSON(refList));
-		page.render();
+//		Page page = newPage(req, resp, session, "azkaban/webapp/servlet/velocity/historydaypage.vm");
+//		long currentTime = System.currentTimeMillis();
+//		long begin = getLongParam(req, "begin", currentTime - 86400000);
+//		long end = getLongParam(req, "end", currentTime);
+//		
+//		page.add("begin", begin);
+//		page.add("end", end);
+//		
+//		List<ExecutionReference> refs = executorManager.getFlowHistory(begin, end);
+//		ArrayList<Object> refList = new ArrayList<Object>();
+//		for (ExecutionReference ref: refs) {
+//			
+//			HashMap<String,Object> refObj = new HashMap<String,Object>();
+//			refObj.put("execId", ref.getExecId());
+//			refObj.put("start", ref.getStartTime());
+//			refObj.put("end", ref.getEndTime());
+//			refObj.put("status", ref.getStatus().toString());
+//			
+//			refList.add(refObj);
+//		}
+//		
+//		page.add("data", JSONUtils.toJSON(refList));
+//		page.render();
 	}
 	
 	public class PageSelection {
@@ -251,5 +294,17 @@ public class HistoryServlet extends LoginAbstractAzkabanServlet {
 			Session session) throws ServletException, IOException {
 		// TODO Auto-generated method stub
 		
+	}
+
+	public class ExecutorVMHelper {
+		@SuppressWarnings("unused")
+		public String getProjectName(int id) {
+			Project project = projectManager.getProject(id);
+			if (project == null) {
+				return String.valueOf(id);
+			}
+			
+			return project.getName();
+		}
 	}
 }

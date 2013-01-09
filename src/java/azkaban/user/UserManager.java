@@ -36,4 +36,6 @@ public interface UserManager {
 	public User getUser(String username, String password) throws UserManagerException;
 	
 	public boolean validateUser(String username);
+
+	public Role getRole(String roleName);
 }

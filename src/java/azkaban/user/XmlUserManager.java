@@ -48,7 +48,8 @@ public class XmlUserManager implements UserManager {
 	public static final String AZKABAN_USERS_TAG = "azkaban-users";
 	public static final String USER_TAG = "user";
 	public static final String ROLE_TAG = "role";
-	public static final String ROLENAME_ATTR = "rolename";
+	public static final String ROLENAME_ATTR = "name";
+	public static final String ROLEPERMISSIONS_ATTR = "permissions";
 	public static final String USERNAME_ATTR = "username";
 	public static final String PASSWORD_ATTR = "password";
 	public static final String ROLES_ATTR = "roles";
@@ -58,6 +59,7 @@ public class XmlUserManager implements UserManager {
 
 	private HashMap<String, User> users;
 	private HashMap<String, String> userPassword;
+	private HashMap<String, Role> roles;
 
 	/**
 	 * The constructor.
@@ -73,12 +75,12 @@ public class XmlUserManager implements UserManager {
 	private void parseXMLFile() {
 		File file = new File(xmlPath);
 		if (!file.exists()) {
-			throw new IllegalArgumentException("User xml file " + xmlPath
-					+ " doesn't exist.");
+			throw new IllegalArgumentException("User xml file " + xmlPath + " doesn't exist.");
 		}
 
 		HashMap<String, User> users = new HashMap<String, User>();
 		HashMap<String, String> userPassword = new HashMap<String, String>();
+		HashMap<String, Role> roles = new HashMap<String, Role>();
 
 		// Creating the document builder to parse xml.
 		DocumentBuilderFactory docBuilderFactory = DocumentBuilderFactory
@@ -87,9 +89,7 @@ public class XmlUserManager implements UserManager {
 		try {
 			builder = docBuilderFactory.newDocumentBuilder();
 		} catch (ParserConfigurationException e) {
-			throw new IllegalArgumentException(
-					"Exception while parsing user xml. Document builder not created.",
-					e);
+			throw new IllegalArgumentException("Exception while parsing user xml. Document builder not created.",e);
 		}
 
 		Document doc = null;
@@ -115,6 +115,9 @@ public class XmlUserManager implements UserManager {
 				if (node.getNodeName().equals(USER_TAG)) {
 					parseUserTag(node, users, userPassword);
 				}
+				else if (node.getNodeName().equals(ROLE_TAG)) {
+					parseRoleTag(node, roles);
+				}
 			}
 		}
 
@@ -122,6 +125,7 @@ public class XmlUserManager implements UserManager {
 		synchronized (this) {
 			this.users = users;
 			this.userPassword = userPassword;
+			this.roles = roles;
 		}
 	}
 
@@ -129,14 +133,11 @@ public class XmlUserManager implements UserManager {
 		NamedNodeMap userAttrMap = node.getAttributes();
 		Node userNameAttr = userAttrMap.getNamedItem(USERNAME_ATTR);
 		if (userNameAttr == null) {
-			throw new RuntimeException(
-					"Error loading user. The username doesn't exist");
+			throw new RuntimeException("Error loading user. The '" + USERNAME_ATTR + "' attribute doesn't exist");
 		}
 		Node passwordAttr = userAttrMap.getNamedItem(PASSWORD_ATTR);
 		if (passwordAttr == null) {
-			throw new RuntimeException(
-					"Error loading user. The password doesn't exist for "
-							+ passwordAttr);
+			throw new RuntimeException("Error loading user. The '" + PASSWORD_ATTR + "' attribute doesn't exist");
 		}
 
 		// Add user to the user/password map
@@ -167,6 +168,38 @@ public class XmlUserManager implements UserManager {
 		}
 	}
 
+	private void parseRoleTag(Node node, HashMap<String, Role> roles) {
+		NamedNodeMap roleAttrMap = node.getAttributes();
+		Node roleNameAttr = roleAttrMap.getNamedItem(ROLENAME_ATTR);
+		if (roleNameAttr == null) {
+			throw new RuntimeException(
+					"Error loading role. The role 'name' attribute doesn't exist");
+		}
+		Node permissionAttr = roleAttrMap.getNamedItem(ROLEPERMISSIONS_ATTR);
+		if (permissionAttr == null) {
+			throw new RuntimeException(
+					"Error loading user. The password doesn't exist for "+ permissionAttr);
+		}
+
+		String roleName = roleNameAttr.getNodeValue();
+		String permissions = permissionAttr.getNodeValue();
+		
+		String[] permissionSplit = permissions.split("\\s*,\\s*");
+		
+		Permission perm = new Permission();
+		for (String permString: permissionSplit) {
+			try { 
+				Permission.Type type = Permission.Type.valueOf(permString);
+				perm.addPermission(type);
+			} catch (IllegalArgumentException e) {
+				logger.error("Error adding type " + permString + ". Permission doesn't exist.", e);
+			}
+		}
+		
+		Role role = new Role(roleName, perm);
+		roles.put(roleName, role);
+	}
+	
 	@Override
 	public User getUser(String username, String password) throws UserManagerException {
 		if (username == null || username.trim().isEmpty()) {
@@ -203,5 +236,10 @@ public class XmlUserManager implements UserManager {
 	@Override
 	public boolean validateUser(String username) {
 		return users.containsKey(username);
+	}
+
+	@Override
+	public Role getRole(String roleName) {
+		return roles.get(roleName);
 	}
 }

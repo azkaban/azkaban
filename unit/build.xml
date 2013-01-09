@@ -1,0 +1,57 @@
+<?xml version="1.0"?>
+
+<project name="azkaban-testjob" basedir="." default="all">
+	<property name="base.dir" value="${basedir}/.." />
+	<property name="dist.jar.dir" value="${base.dir}/dist/unit/jars" />
+	<property name="dist.classes.dir" value="${base.dir}/dist/unit/classes" />
+	<property name="dist.packages.dir" value="${base.dir}/dist/unit/packages" />
+	
+	<property name="java.src.dir" value="${base.dir}/unit/java" />
+	<property name="job.conf.dir" value="${base.dir}/unit/executions/exectest1" />
+
+	<property environment="env" />
+
+	<!-- set the build number based on environment variable, otherwise blank -->
+	<property environment="env" description="System environment variables (including those set by Hudson)" />
+
+	<target name="all" depends="clean, jars" description="Builds all jars" />
+
+	<target name="clean" description="Delete generated files.">
+		<echo message="Deleting generated files in dist" />
+		<delete dir="${dist.jar.dir}" />
+		<delete dir="${dist.classes.dir}" />
+		<delete dir="${dist.packages.dir}" />
+	</target>
+
+	<target name="build" description="Compile main source tree java files">
+		<delete dir="${dist.classes.dir}" />
+		<mkdir dir="${dist.classes.dir}" />
+		<mkdir dir="${dist.packages.dir}" />
+		
+		<javac fork="true" destdir="${dist.classes.dir}"
+			target="1.6" debug="true" deprecation="false" failonerror="true" srcdir="${java.src.dir}/azkaban/test/executor" includes="*Job.java">
+		</javac>
+	</target>
+	
+	<target name="jars" depends="build" description="Create azkaban jar">
+		<delete dir="${dist.jar.dir}" />
+		<mkdir dir="${dist.jar.dir}" />
+		<jar destfile="${dist.jar.dir}/test.jar">
+			<fileset dir="${dist.classes.dir}">
+				<include name="**/*.*" />
+			</fileset>
+		</jar>
+	</target>
+	
+	<target name="package-testjob" depends="jars" description="Creates a test zip">
+		<delete dir="${dist.packages.dir}" />
+		<mkdir dir="${dist.packages.dir}" />
+		
+		<!-- Tarball it -->
+		<zip destfile="${dist.packages.dir}/testjob.zip">
+			<zipfileset dir="${dist.jar.dir}" />
+			<zipfileset dir="${job.conf.dir}" />
+		</zip>
+	</target>
+
+</project>

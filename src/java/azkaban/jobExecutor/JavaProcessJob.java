@@ -25,10 +25,7 @@ import org.apache.log4j.Logger;
 import azkaban.utils.Props;
 
 public class JavaProcessJob extends ProcessJob {
-//    private static final Logger log = Logger
-//            .getLogger(JavaProcessJob.class);
-//    private Logger log;
-    
+
 	public static final String CLASSPATH = "classpath";
 	public static final String GLOBAL_CLASSPATH = "global.classpaths";
 	public static final String JAVA_CLASS = "java.class";
@@ -82,24 +79,26 @@ public class JavaProcessJob extends ProcessJob {
 	protected List<String> getClassPaths() {
 		List<String> classPaths = getProps().getStringList(CLASSPATH, null, ",");
 
-	    ArrayList<String> classpathList = new ArrayList<String>();
-	    // Adding global properties used system wide.
-        if (getProps().containsKey(GLOBAL_CLASSPATH)) {
-            List<String> globalClasspath = getProps().getStringList(GLOBAL_CLASSPATH);
-            for (String global: globalClasspath) {
-                getLog().info("Adding to global classpath:" + global);
-                classpathList.add(global);
-            }
-        }
+		ArrayList<String> classpathList = new ArrayList<String>();
+		// Adding global properties used system wide.
+		if (getProps().containsKey(GLOBAL_CLASSPATH)) {
+			List<String> globalClasspath = getProps().getStringList(GLOBAL_CLASSPATH);
+			for (String global: globalClasspath) {
+				getLog().info("Adding to global classpath:" + global);
+				classpathList.add(global);
+			}
+		}
 		
 		if (classPaths == null) {
 			File path = new File(getPath());
 			File parent = path.getParentFile();
 			
-			for (File file : parent.listFiles()) {
-				if (file.getName().endsWith(".jar")) {
-					// log.info("Adding to classpath:" + file.getName());
-					classpathList.add(file.getName());
+			if (parent != null) {
+				for (File file : parent.listFiles()) {
+					if (file.getName().endsWith(".jar")) {
+						// log.info("Adding to classpath:" + file.getName());
+						classpathList.add(file.getName());
+					}
 				}
 			}
 		}

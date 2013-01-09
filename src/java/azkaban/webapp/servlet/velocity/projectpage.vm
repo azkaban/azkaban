@@ -73,8 +73,8 @@
 				<div id="project-summary">
 					<table class="summary-table">
 						<tr><td class="first">Name:</td><td>$project.name</td></tr>
-						<tr><td class="first">Created Date:</td><td>$utils.formatDate($project.lastModifiedTimestamp)</td></tr>
-						<tr><td class="first">Modified Date:</td><td>$utils.formatDate($project.createTimestamp)</td></tr>
+						<tr><td class="first">Created Date:</td><td>$utils.formatDate($project.createTimestamp)</td></tr>
+						<tr><td class="first">Modified Date:</td><td>$utils.formatDate($project.lastModifiedTimestamp)</td></tr>
 						<tr><td class="first">Modified by:</td><td>$project.lastModifiedUser</td></tr>
 						<tr><td class="first">Description:</td><td id="pdescription">$project.description</td>
 							#if($admin)

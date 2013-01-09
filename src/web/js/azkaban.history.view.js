@@ -6,26 +6,34 @@ azkaban.AdvFilterView = Backbone.View.extend({
 		"click #filter-btn": "handleAdvFilter"
 	},
 	initialize: function(settings) {
-		$( "#daterangebegin" ).datepicker();
-		$( "#daterangeend" ).datepicker();
-//		$( "#daterangeend" ).datepicker('setDate', new Date());
+		$( "#datetimebegin" ).datetimepicker({
+			dateFormat: "mm/dd/yy",
+			separator: '-',
+			timeFormat: "HH:mm"
+		});
+		$( "#datetimeend" ).datetimepicker({
+			dateFormat: "mm/dd/yy",
+			separator: '-',
+			timeFormat: "HH:mm"
+		});
 		$("#errorMsg").hide();
 	},
 	handleAdvFilter: function(evt) {
 		console.log("handleAdv");
-		var projre = $('#projRe').val();
-		var flowre = $('#flowRe').val();
-		var userre = $('#userRe').val();
-		var begin  = $('#daterangebegin').val();
-		var end    = $('#daterangeend').val();
-	
+		var projcontain = $('#projcontain').val();
+		var flowcontain = $('#flowcontain').val();
+		var usercontain = $('#usercontain').val();
+		var status = $('#status').val();
+		var begin  = $('#datetimebegin').val();
+		var end    = $('#datetimeend').val();
+		
 		console.log("filtering history");
 
 		var historyURL = contextURL + "/history"
 		var redirectURL = contextURL + "/schedule"	
 		
 
-		var requestURL = historyURL + "?advfilter=true&projre=" + projre + "&flowre=" + flowre + "&userre=" + userre + "&begin=" + begin + "&end=" + end ; 
+		var requestURL = historyURL + "?advfilter=true" + "&projcontain=" + projcontain + "&flowcontain=" + flowcontain + "&usercontain=" + usercontain + "&status=" + status + "&begin=" + begin + "&end=" + end ; 
 		window.location = requestURL;
 		
 //		$.get(

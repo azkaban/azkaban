@@ -292,7 +292,8 @@ azkaban.ExecutionListView = Backbone.View.extend({
 				progressBar.addClass(node.status);
 
 				if (node.endTime == -1) {
-					$("#" + node.id + "-elapse").text("0 sec");
+//					$("#" + node.id + "-elapse").text("0 sec");
+					$("#" + node.id + "-elapse").text(getDuration(node.startTime, (new Date()).getTime()));					
 				}
 				else {
 					$("#" + node.id + "-elapse").text(getDuration(node.startTime, node.endTime));
@@ -323,7 +324,8 @@ azkaban.ExecutionListView = Backbone.View.extend({
 			
 			var factor = outerWidth/diff;
 			var left = Math.max((node.startTime-flowStartTime)*factor, 0);
-			var width = Math.max((node.endTime - node.startTime)*factor, 1);
+			var nodeLastTime = node.endTime == -1 ? (new Date()).getTime() : node.endTime;
+			var width = Math.max((nodeLastTime - node.startTime)*factor, 3);
 			width = Math.min(width, outerWidth);
 			
 			$("#" + node.id + "-progressbar").css("margin-left", left)
@@ -393,33 +395,34 @@ azkaban.FlowLogView = Backbone.View.extend({
 		"click #updateLogBtn" : "handleUpdate"
 	},
 	initialize: function(settings) {
-		this.model.set({"current": 0});
+		this.model.set({"offset": 0});
 		this.handleUpdate();
 	},
 	handleUpdate: function(evt) {
-		var current = this.model.get("current");
+		var offset = this.model.get("offset");
 		var requestURL = contextURL + "/executor"; 
 		var model = this.model;
-		ajaxLogsCall(
+		$.get(
 			requestURL,
-			{"execid": execId, "ajax":"fetchExecFlowLogs", "current": current, "max": 100000},
+			{"execid": execId, "ajax":"fetchExecFlowLogs", "offset": offset, "length": 50000},
 			function(data) {
 	          console.log("fetchLogs");
 	          if (data.error) {
-	          	showDialog("Error", data.error);
+	          	console.log(data.error);
 	          }
 	          else {
 	          	var log = $("#logSection").text();
 	          	if (!log) {
-	          		log = data.log;
+	          		log = data.data;
 	          	}
 	          	else {
-	          		log += data.log;
+	          		log += data.data;
 	          	}
 	          	
-	          	current = data.current;
+	          	var newOffset = data.offset + data.length;
+	          	
 	          	$("#logSection").text(log);
-	          	model.set({"current": current, "log": log});
+	          	model.set({"offset": newOffset, "log": log});
 	          	$(".logViewer").scrollTop(9999);
 	          }
 	      }
@@ -443,9 +446,7 @@ var updateStatus = function() {
 	      {"execid": execId, "ajax":"fetchexecflowupdate", "lastUpdateTime": updateTime},
 	      function(data) {
 	          console.log("data updated");
-	          updateTime = Math.max(updateTime, data.submitTime);
-	          updateTime = Math.max(updateTime, data.startTime);
-	          updateTime = Math.max(updateTime, data.endTime);
+	          updateTime = data.updateTime;
 	          oldData.submitTime = data.submitTime;
 	          oldData.startTime = data.startTime;
 	          oldData.endTime = data.endTime;
@@ -453,15 +454,15 @@ var updateStatus = function() {
 	          
 	          for (var i = 0; i < data.nodes.length; ++i) {
 	          	var node = data.nodes[i];
-	          	updateTime = Math.max(updateTime, node.startTime);
-	          	updateTime = Math.max(updateTime, node.endTime);
 	          	var oldNode = nodeMap[node.id];
 	          	oldNode.startTime = node.startTime;
+	          	oldNode.updateTime = node.updateTime;
 	          	oldNode.endTime = node.endTime;
 	          	oldNode.status = node.status;
 	          }
 
 	          graphModel.set({"update": data});
+	          graphModel.trigger("change:update");
 	      });
 }
 
@@ -474,7 +475,7 @@ var updaterFunction = function() {
 		updateStatus();
 
 		var data = graphModel.get("data");
-		if (data.status == "UNKNOWN" || data.status == "WAITING") {
+		if (data.status == "UNKNOWN" || data.status == "WAITING" || data.status == "PREPARING") {
 			setTimeout(function() {updaterFunction();}, 1000);
 		}
 		else if (data.status != "SUCCEEDED" && data.status != "FAILED" ) {

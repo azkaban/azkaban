@@ -1,5 +1,11 @@
 package azkaban.utils;
 
+/**
+ * Pair of values.
+ * 
+ * @param <F>
+ * @param <S>
+ */
 public class Pair<F, S> {
 	private final F first;
 	private final S second;
@@ -47,5 +53,10 @@ public class Pair<F, S> {
 		} else if (!second.equals(other.second))
 			return false;
 		return true;
+	}
+	
+	@Override
+	public String toString() {
+		return "{" + first.toString() + "," + second.toString() + "}";
 	}
 }

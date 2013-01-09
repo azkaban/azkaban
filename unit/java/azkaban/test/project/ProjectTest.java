@@ -12,7 +12,7 @@ import azkaban.utils.JSONUtils;
 public class ProjectTest {
     @Test
     public void testToAndFromObject() throws Exception {
-    	Project project = new Project("tesTing");
+    	Project project = new Project(1, "tesTing");
     	project.setCreateTimestamp(1l);
     	project.setLastModifiedTimestamp(2l);
     	project.setDescription("I am a test");

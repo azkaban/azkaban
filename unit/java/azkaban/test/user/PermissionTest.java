@@ -81,6 +81,20 @@ public class PermissionTest {
     	assertTrue(permission.equals(permission2));
     }
     
+    @Test
+    public void testFlags() throws Exception {
+    	Permission permission = new Permission();
+    	permission.addPermission(new Type[]{Type.READ, Type.WRITE});
+    	
+    	int flags = permission.toFlags();
+    	Permission permission2 = new Permission(flags);
+    	
+    	assertTrue(permission2.isPermissionSet(Type.READ));
+    	assertTrue(permission2.isPermissionSet(Type.WRITE));
+    	
+    	assertTrue(permission.equals(permission2));
+    }
+    
     /**
      * Why? because it's quicker.
      * @param message

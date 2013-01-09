@@ -15,11 +15,9 @@
  */
 package azkaban.jobExecutor.utils.process;
 
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.io.Reader;
 import java.lang.reflect.Field;
 import java.util.List;
 import java.util.Map;
@@ -29,7 +27,7 @@ import java.util.concurrent.TimeUnit;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 
-import azkaban.utils.CircularBuffer;
+import azkaban.utils.LogGobbler;
 
 import com.google.common.base.Joiner;
 
@@ -41,18 +39,17 @@ import com.google.common.base.Joiner;
  * 
  */
 public class AzkabanProcess {
-
 	private final String workingDir;
 	private final List<String> cmd;
 	private final Map<String, String> env;
 	private final Logger logger;
 	private final CountDownLatch startupLatch;
 	private final CountDownLatch completeLatch;
+	
 	private volatile int processId;
 	private volatile Process process;
-
-	public AzkabanProcess(final List<String> cmd, final Map<String, String> env, final String workingDir,
-			final Logger logger) {
+	
+	public AzkabanProcess(final List<String> cmd, final Map<String, String> env, final String workingDir, final Logger logger) {
 		this.cmd = cmd;
 		this.env = env;
 		this.workingDir = workingDir;
@@ -83,11 +80,9 @@ public class AzkabanProcess {
 
 		this.startupLatch.countDown();
 
-		LogGobbler outputGobbler = new LogGobbler(new InputStreamReader(process.getInputStream()), logger, Level.INFO,
-				30);
-		LogGobbler errorGobbler = new LogGobbler(new InputStreamReader(process.getErrorStream()), logger, Level.ERROR,
-				30);
-
+		LogGobbler outputGobbler = new LogGobbler(new InputStreamReader(process.getInputStream()), logger, Level.INFO, 30);
+		LogGobbler errorGobbler = new LogGobbler(new InputStreamReader(process.getErrorStream()), logger, Level.ERROR, 30);
+		
 		outputGobbler.start();
 		errorGobbler.start();
 		int exitCode = -1;
@@ -222,50 +217,4 @@ public class AzkabanProcess {
 	public String toString() {
 		return "Process(cmd = " + Joiner.on(" ").join(cmd) + ", env = " + env + ", cwd = " + workingDir + ")";
 	}
-
-	private static class LogGobbler extends Thread {
-
-		private final BufferedReader inputReader;
-		private final Logger logger;
-		private final Level loggingLevel;
-		private final CircularBuffer<String> buffer;
-
-		public LogGobbler(final Reader inputReader, final Logger logger, final Level level, final int bufferLines) {
-			this.inputReader = new BufferedReader(inputReader);
-			this.logger = logger;
-			this.loggingLevel = level;
-			buffer = new CircularBuffer<String>(bufferLines);
-		}
-
-		@Override
-		public void run() {
-			try {
-				while (!Thread.currentThread().isInterrupted()) {
-					String line = inputReader.readLine();
-					if (line == null) {
-						return;
-					}
-
-					buffer.append(line);
-					logger.log(loggingLevel, line);
-				}
-			} catch (IOException e) {
-				logger.error("Error reading from logging stream:", e);
-			}
-		}
-
-		public void awaitCompletion(final long waitMs) {
-			try {
-				join(waitMs);
-			} catch (InterruptedException e) {
-				logger.info("I/O thread interrupted.", e);
-			}
-		}
-
-		public String getRecentLog() {
-			return Joiner.on(System.getProperty("line.separator")).join(buffer);
-		}
-
-	}
-
 }

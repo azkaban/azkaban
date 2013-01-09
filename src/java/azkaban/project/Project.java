@@ -16,14 +16,11 @@
 
 package azkaban.project;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-
-import org.apache.log4j.Logger;
 
 import azkaban.flow.Flow;
 import azkaban.user.Permission;
@@ -32,17 +29,21 @@ import azkaban.user.User;
 import azkaban.utils.Pair;
 
 public class Project {
+	private final int id;
 	private final String name;
+	private boolean active = true;
 	private String description;
+	private int version = -1;
 	private long createTimestamp;
 	private long lastModifiedTimestamp;
 	private String lastModifiedUser;
 	private String source;
-	private LinkedHashMap<String, Permission> userToPermission = new LinkedHashMap<String, Permission>();
+	private LinkedHashMap<String, Permission> userPermissionMap = new LinkedHashMap<String, Permission>();
+	private LinkedHashMap<String, Permission> groupPermissionMap = new LinkedHashMap<String, Permission>();
 	private Map<String, Flow> flows = null;
-	private Logger logger = null;
 	
-	public Project(String name) {
+	public Project(int id, String name) {
+		this.id = id;
 		this.name = name;
 	}
 
@@ -73,9 +74,36 @@ public class Project {
 		return retFlow;
 	}
 
+	public Permission getCollectivePermission(User user) {
+		Permission permissions = new Permission();
+		Permission perm = userPermissionMap.get(user.getUserId());
+		if (perm != null) {
+			permissions.addPermissions(perm);
+		}
+		
+		for(String group: user.getGroups()) {
+			perm = groupPermissionMap.get(group);
+			if (perm != null) {
+				permissions.addPermissions(perm);
+			}
+		}
+		
+		return permissions;
+	}
+	
 	public boolean hasPermission(User user, Type type) {
-		Permission perm = userToPermission.get(user.getUserId());
+		Permission perm = userPermissionMap.get(user.getUserId());
+		if (perm != null && (perm.isPermissionSet(Type.ADMIN) || perm.isPermissionSet(type))) {
+			return true;
+		}
+
+		return hasGroupPermission(user, type);
+	}
+	
+	public boolean hasUserPermission(User user, Type type) {
+		Permission perm = userPermissionMap.get(user.getUserId());
 		if (perm == null) {
+			// Check group
 			return false;
 		}
 
@@ -86,9 +114,22 @@ public class Project {
 		return false;
 	}
 
+	public boolean hasGroupPermission(User user, Type type) {
+		for(String group: user.getGroups()) {
+			Permission perm = groupPermissionMap.get(group);
+			if (perm != null) {
+				if (perm.isPermissionSet(Type.ADMIN) || perm.isPermissionSet(type)) {
+					return true;
+				}
+			}
+		}
+		
+		return false;
+	}
+	
 	public List<String> getUsersWithPermission(Type type) {
 		ArrayList<String> users = new ArrayList<String>();
-		for (Map.Entry<String, Permission> entry : userToPermission.entrySet()) {
+		for (Map.Entry<String, Permission> entry : userPermissionMap.entrySet()) {
 			Permission perm = entry.getValue();
 			if (perm.isPermissionSet(type)) {
 				users.add(entry.getKey());
@@ -100,7 +141,17 @@ public class Project {
 	public List<Pair<String, Permission>> getUserPermissions() {
 		ArrayList<Pair<String, Permission>> permissions = new ArrayList<Pair<String, Permission>>();
 		
-		for (Map.Entry<String, Permission> entry : userToPermission.entrySet()) {
+		for (Map.Entry<String, Permission> entry : userPermissionMap.entrySet()) {
+			permissions.add(new Pair<String, Permission>(entry.getKey(), entry.getValue()));
+		}
+		
+		return permissions;
+	}
+	
+	public List<Pair<String, Permission>> getGroupPermissions() {
+		ArrayList<Pair<String, Permission>> permissions = new ArrayList<Pair<String, Permission>>();
+		
+		for (Map.Entry<String, Permission> entry : groupPermissionMap.entrySet()) {
 			permissions.add(new Pair<String, Permission>(entry.getKey(), entry.getValue()));
 		}
 		
@@ -116,19 +167,31 @@ public class Project {
 	}
 
 	public void setUserPermission(String userid, Permission perm) {
-		userToPermission.put(userid, perm);
+		userPermissionMap.put(userid, perm);
 	}
 
+	public void setGroupPermission(String group, Permission perm) {
+		groupPermissionMap.put(group, perm);
+	}
+	
 	public Permission getUserPermission(User user) {
-		return userToPermission.get(user.getUserId());
+		return userPermissionMap.get(user.getUserId());
 	}
 
+	public Permission getGroupPermission(String group) {
+		return groupPermissionMap.get(group);
+	}
+	
 	public Permission getUserPermission(String userID) {
-		return userToPermission.get(userID);
+		return userPermissionMap.get(userID);
+	}
+	
+	public void removeGroupPermission(String group) {
+		groupPermissionMap.remove(group);
 	}
 	
 	public void removeUserPermission(String userId) {
-		userToPermission.remove(userId);
+		userPermissionMap.remove(userId);
 	}
 	
 	public long getCreateTimestamp() {
@@ -149,18 +212,24 @@ public class Project {
 
 	public Object toObject() {
 		HashMap<String, Object> projectObject = new HashMap<String, Object>();
+		projectObject.put("id", id);
 		projectObject.put("name", name);
 		projectObject.put("description", description);
 		projectObject.put("createTimestamp", createTimestamp);
 		projectObject.put("lastModifiedTimestamp", lastModifiedTimestamp);
 		projectObject.put("lastModifiedUser", lastModifiedUser);
+		projectObject.put("version", version);
+		
+		if (!active) {
+			projectObject.put("active", false);
+		}
 		
 		if (source != null) {
 			projectObject.put("source", source);
 		}
 
 		ArrayList<Map<String, Object>> users = new ArrayList<Map<String, Object>>();
-		for (Map.Entry<String, Permission> entry : userToPermission.entrySet()) {
+		for (Map.Entry<String, Permission> entry : userPermissionMap.entrySet()) {
 			HashMap<String, Object> userMap = new HashMap<String, Object>();
 			userMap.put("userId", entry.getKey());
 			userMap.put("permissions", entry.getValue().toStringArray());
@@ -174,19 +243,25 @@ public class Project {
 	@SuppressWarnings("unchecked")
 	public static Project projectFromObject(Object object) {
 		Map<String, Object> projectObject = (Map<String, Object>) object;
+		int id = (Integer) projectObject.get("id");
 		String name = (String) projectObject.get("name");
 		String description = (String) projectObject.get("description");
 		String lastModifiedUser = (String) projectObject.get("lastModifiedUser");
 		long createTimestamp = coerceToLong(projectObject.get("createTimestamp"));
 		long lastModifiedTimestamp = coerceToLong(projectObject.get("lastModifiedTimestamp"));
 		String source = (String)projectObject.get("source");
+		Boolean active = (Boolean)projectObject.get("active");
+		active = active == null ? true : active;
+		int version = (Integer)projectObject.get("version");
 		
-		Project project = new Project(name);
+		Project project = new Project(id, name);
+		project.setVersion(version);
 		project.setDescription(description);
 		project.setCreateTimestamp(createTimestamp);
 		project.setLastModifiedTimestamp(lastModifiedTimestamp);
 		project.setLastModifiedUser(lastModifiedUser);
-
+		project.setActive(active);
+		
 		if (source != null) {
 			project.setSource(source);
 		}
@@ -228,12 +303,21 @@ public class Project {
 	public int hashCode() {
 		final int prime = 31;
 		int result = 1;
-		result = prime * result + (int) (createTimestamp ^ (createTimestamp >>> 32));
-		result = prime * result + ((description == null) ? 0 : description.hashCode());
-		result = prime  * result + (int) (lastModifiedTimestamp ^ (lastModifiedTimestamp >>> 32));
-		result = prime * result + ((lastModifiedUser == null) ? 0 : lastModifiedUser.hashCode());
+		result = prime * result + (active ? 1231 : 1237);
+		result = prime * result
+				+ (int) (createTimestamp ^ (createTimestamp >>> 32));
+		result = prime * result
+				+ ((description == null) ? 0 : description.hashCode());
+		result = prime * result + id;
+		result = prime
+				* result
+				+ (int) (lastModifiedTimestamp ^ (lastModifiedTimestamp >>> 32));
+		result = prime
+				* result
+				+ ((lastModifiedUser == null) ? 0 : lastModifiedUser.hashCode());
 		result = prime * result + ((name == null) ? 0 : name.hashCode());
-		result = prime * result + ((userToPermission == null) ? 0 : userToPermission.hashCode());
+		result = prime * result + ((source == null) ? 0 : source.hashCode());
+		result = prime * result + version;
 		return result;
 	}
 
@@ -245,17 +329,18 @@ public class Project {
 			return false;
 		if (getClass() != obj.getClass())
 			return false;
-
 		Project other = (Project) obj;
+		if (active != other.active)
+			return false;
 		if (createTimestamp != other.createTimestamp)
 			return false;
-
 		if (description == null) {
 			if (other.description != null)
 				return false;
 		} else if (!description.equals(other.description))
 			return false;
-
+		if (id != other.id)
+			return false;
 		if (lastModifiedTimestamp != other.lastModifiedTimestamp)
 			return false;
 		if (lastModifiedUser == null) {
@@ -268,10 +353,12 @@ public class Project {
 				return false;
 		} else if (!name.equals(other.name))
 			return false;
-		if (userToPermission == null) {
-			if (other.userToPermission != null)
+		if (source == null) {
+			if (other.source != null)
 				return false;
-		} else if (!userToPermission.equals(other.userToPermission))
+		} else if (!source.equals(other.source))
+			return false;
+		if (version != other.version)
 			return false;
 		return true;
 	}
@@ -283,24 +370,24 @@ public class Project {
 	public void setSource(String source) {
 		this.source = source;
 	}
-	
-	public void attachLogger(Logger logger) {
-		this.logger = logger;
-	}
-	
-	public void info(String message) {
-		if (logger != null) {
-			logger.info(message);
-		}
+
+	public int getId() {
+		return id;
 	}
 
-	public void error(String message) {
-		if (logger != null) {
-			logger.error(message);
-		}
+	public boolean isActive() {
+		return active;
 	}
-	
-	public Logger getLogger() {
-		return logger;
+
+	public void setActive(boolean active) {
+		this.active = active;
+	}
+
+	public int getVersion() {
+		return version;
+	}
+
+	public void setVersion(int version) {
+		this.version = version;
 	}
 }

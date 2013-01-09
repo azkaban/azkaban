@@ -18,10 +18,14 @@ package azkaban.scheduler;
 
 import java.util.List;
 
-
 public interface ScheduleLoader {
-	public void saveSchedule(List<ScheduledFlow> schedule);
 	
-	public List<ScheduledFlow> loadSchedule();
+	public void insertSchedule(Schedule s) throws ScheduleManagerException;
+	
+	public void updateSchedule(Schedule s) throws ScheduleManagerException;
+	
+	public List<Schedule> loadSchedules() throws ScheduleManagerException;
+	
+	public void removeSchedule(Schedule s) throws ScheduleManagerException;
 
 }

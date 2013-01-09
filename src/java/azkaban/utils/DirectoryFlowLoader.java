@@ -47,6 +47,14 @@ public class DirectoryFlowLoader {
 		return errors;
 	}
 	
+	public Map<String, Props> getJobProps() {
+		return jobPropsMap;
+	}
+	
+	public List<Props> getProps() {
+		return propsList;
+	}
+	
 	public void loadProjectFlow(File baseDirectory) {
 		propsList = new ArrayList<Props>();
 		flowPropsList = new ArrayList<FlowProps>();
@@ -111,9 +119,9 @@ public class DirectoryFlowLoader {
 						if(type == null) {
 							errors.add("Job doesn't have type set '" + jobName + "'.");
 						}
-						
+
 						node.setType(type);
-						
+
 						node.setJobSource(relative);
 						if (parent != null) {
 							node.setPropsSource(parent.getSource());

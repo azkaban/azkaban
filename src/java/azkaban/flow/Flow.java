@@ -25,11 +25,8 @@ import java.util.Map;
 import java.util.Set;
 
 public class Flow {
-	public enum State {
-		READY, RUNNING, RUNNING_WITH_FAILURE, FAILED, SUCCEEDED
-	}
 	private final String id;
-	private String projectId;
+	private int projectId;
 	private ArrayList<Node> startNodes = null;
 	private ArrayList<Node> endNodes = null;
 	private int numLevels = -1;
@@ -44,11 +41,20 @@ public class Flow {
 	private List<String> failureEmail = new ArrayList<String>();
 	private List<String> successEmail = new ArrayList<String>();
 	private ArrayList<String> errors;
-
+	private int version = -1;
+	
 	private boolean isLayedOut = false;
 	
 	public Flow(String id) {
 		this.id = id;
+	}
+	
+	public void setVersion(int version) {
+		this.version = version;
+	}
+	
+	public int getVersion() {
+		return version;
 	}
 	
 	public void initialize() {
@@ -213,6 +219,8 @@ public class Flow {
 		HashMap<String, Object> flowObj = new HashMap<String, Object>();
 		flowObj.put("type", "flow");
 		flowObj.put("id", getId());
+		flowObj.put("project.id", projectId);
+		flowObj.put("version", version);
 		flowObj.put("props", objectizeProperties());
 		flowObj.put("nodes", objectizeNodes());
 		flowObj.put("edges", objectizeEdges());
@@ -266,6 +274,11 @@ public class Flow {
 		if (layedout != null) {
 			flow.setLayedOut(layedout);
 		}
+		int projId = (Integer)flowObject.get("project.id");
+		flow.setProjectId(projId);
+		
+		int version = (Integer)flowObject.get("version");
+		flow.setVersion(version);
 		
 		// Loading projects
 		List<Object> propertiesList = (List<Object>)flowObject.get("props");
@@ -348,11 +361,11 @@ public class Flow {
 	    return flowProps;
 	}
 
-	public String getProjectId() {
+	public int getProjectId() {
 		return projectId;
 	}
 	
-	public void setProjectId(String projectId) {
+	public void setProjectId(int projectId) {
 		this.projectId = projectId;
 	}
 }

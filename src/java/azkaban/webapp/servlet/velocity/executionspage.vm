@@ -66,11 +66,11 @@
 #foreach($flow in $runningFlows)
 						<tr class="row" >
 							<td class="tb-name">
-								<a href="${context}/executor?execid=${flow.executionId}">$utils.extractNumericalId(${flow.executionId})</a>
+								<a href="${context}/executor?execid=${flow.executionId}">${flow.executionId}</a>
 							</td>
-							<td><a href="${context}/manager?project=${flow.projectId}&flow=${flow.flowId}">${flow.flowId}</a></td>
+							<td><a href="${context}/manager?project=$vmutils.getProjectName(${flow.projectId})&flow=${flow.flowId}">${flow.flowId}</a></td>
 							<td>
-								<a href="${context}/manager?project=${flow.projectId}">${flow.projectId}</a>
+								<a href="${context}/manager?project=$vmutils.getProjectName(${flow.projectId})">$vmutils.getProjectName(${flow.projectId})</a>
 							</td>
 							<td>${flow.submitUser}</td>
 							<td>$utils.formatDate(${flow.startTime})</td>
@@ -81,7 +81,7 @@
 						</tr>
 #end
 #else
-						<tr><td class="last">No Executing Flows</td></tr>
+						<tr><td></td><td class="last">No Executing Flows</td></tr>
 #end
 					</tbody>
 				</table>
@@ -106,12 +106,12 @@
 						#if($recentlyFinished)
 #foreach($flow in $recentlyFinished)
 						<tr class="row" >
-							<td class="tb-name">
-								<a href="${context}/executor?execid=${flow.executionId}">$utils.extractNumericalId(${flow.executionId})</a>
+							<td class="tb-name execId">
+								<a href="${context}/executor?execid=${flow.executionId}">${flow.executionId}</a>
 							</td>
-							<td><a href="${context}/manager?project=${flow.projectId}&flow=${flow.flowId}">${flow.flowId}</a></td>
+							<td><a href="${context}/manager?project=$vmutils.getProjectName(${flow.projectId})&flow=${flow.flowId}">${flow.flowId}</a></td>
 							<td>
-								<a href="${context}/manager?project=${flow.projectId}">${flow.projectId}</a>
+								<a href="${context}/manager?project=$vmutils.getProjectName(${flow.projectId})">$vmutils.getProjectName(${flow.projectId})</a>
 							</td>
 							<td>${flow.submitUser}</td>
 							<td>$utils.formatDate(${flow.startTime})</td>
@@ -122,7 +122,7 @@
 						</tr>
 #end
 #else
-						<tr><td class="last">No Recently Finished</td></tr>
+						<tr><td></td><td class="last">No Recently Finished</td></tr>
 #end	
 					</tbody>
 				</table>

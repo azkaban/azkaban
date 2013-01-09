@@ -28,14 +28,26 @@
 			var contextURL = "${context}";
 			var currentTime = ${currentTime};
 			var timezone = "${timezone}";
-			var errorMessage = null;
-			var successMessage = null;
 		</script>
+		<style>
+			.logout-label {
+				float: right;
+				margin: 3px;
+			}
+			.logout-submit {
+				float: right;
+			}
+		</style>
 	</head>
 	<body>
 #set($current_page="hdfsbrowser")
 #parse( "azkaban/webapp/servlet/velocity/nav.vm" )
-		<div class="messaging"><p id="messageClose">X</p><p id="message"></p></div>  
+
+        <form class="logout-form" method="post">
+              <input type="hidden" name="logout" ></input>
+              <input type="submit" value="Logout" class="logout-submit"/>
+              <p class="logout-label">Browsing as ${user}</p>
+         </form>
 
 		<div class="content">
 		

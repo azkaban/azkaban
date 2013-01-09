@@ -18,12 +18,26 @@ package azkaban.executor;
 
 public class ExecutorManagerException extends Exception {
 	private static final long serialVersionUID = 1L;
-
+	private ExecutableFlow flow = null;
+	
+	public ExecutorManagerException(Exception e) {
+		super(e);
+	}
+	
 	public ExecutorManagerException(String message) {
 		super(message);
 	}
 	
+	public ExecutorManagerException(String message, ExecutableFlow flow) {
+		super(message);
+		this.flow = flow;
+	}
+	
 	public ExecutorManagerException(String message, Throwable cause) {
 		super(message, cause);
+	}
+
+	public ExecutableFlow getExecutableFlow() {
+		return flow;
 	}
 }

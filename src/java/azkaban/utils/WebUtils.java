@@ -74,13 +74,17 @@ public class WebUtils {
 			return "Killed";
 		case FAILED_FINISHING:
 			return "Running w/Failure";
-		case WAITING:
-			return "Waiting";
+		case PREPARING:
+			return "Preparing";
 		case READY:
 			return "Ready";
+		case PAUSED:
+			return "Paused";
+		case SKIPPED:
+			return "Skipped";
 		default:
 		}
-		
+
 		return "Unknown";
 	}
 	

@@ -14,22 +14,22 @@
  * the License.
  */
 
-package azkaban.fsviewers;
+package	azkaban.fsviewers;
 
-import java.io.IOException;
-import java.io.OutputStream;
+import	java.io.IOException;
+import	java.io.OutputStream;
 
-import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.Path;
+import	org.apache.hadoop.fs.FileSystem;
+import	org.apache.hadoop.fs.Path;
 
-public interface HdfsFileViewer {
+public	interface HdfsFileViewer	{
 
-    public boolean canReadFile(FileSystem fs, Path path);
+	public boolean	canReadFile(FileSystem fs, Path path);
 
-    public void displayFile(FileSystem fs,
-                            Path path,
-                            OutputStream outStream,
-                            int startLine,
-                            int endLine) throws IOException;
+	public void displayFile(FileSystem fs,
+			Path path,
+			OutputStream outStream,
+			int startLine,
+			int endLine) throws IOException;
 
 }

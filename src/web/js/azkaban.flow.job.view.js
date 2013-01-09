@@ -73,9 +73,11 @@ azkaban.JobListView = Backbone.View.extend({
 	},
 	handleStatusUpdate: function(evt) {
 		var updateData = this.model.get("update");
-		for (var i = 0; i < updateData.nodes.length; ++i) {
-			var updateNode = updateData.nodes[i];
-			$(this.listNodes[updateNode.id]).addClass(updateNode.status);
+		if (updateData.nodes) {
+			for (var i = 0; i < updateData.nodes.length; ++i) {
+				var updateNode = updateData.nodes[i];
+				$(this.listNodes[updateNode.id]).addClass(updateNode.status);
+			}
 		}
 	},
 	assignInitialStatus: function(evt) {

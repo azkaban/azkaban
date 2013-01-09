@@ -44,7 +44,7 @@ var formatDuration = function(duration, millisecSig) {
 
 var getDateFormat = function(date) {
 	var year = date.getFullYear();
-	var month = getTwoDigitStr(date.getMonth());
+	var month = getTwoDigitStr(date.getMonth() + 1);
 	var day = getTwoDigitStr(date.getDate());
 	
 	var hours = getTwoDigitStr(date.getHours());

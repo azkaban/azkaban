@@ -22,12 +22,14 @@ public interface ConnectorParams {
 	public static final String SHAREDTOKEN_PARAM = "token";
 	public static final String USER_PARAM = "user";
 	
+	public static final String UPDATE_ACTION = "update";
 	public static final String STATUS_ACTION = "status";
 	public static final String EXECUTE_ACTION = "execute";
 	public static final String CANCEL_ACTION = "cancel";
 	public static final String PAUSE_ACTION = "pause";
 	public static final String RESUME_ACTION = "resume";
 	public static final String PING_ACTION = "ping";
+	public static final String LOG_ACTION = "log";
 	
 	public static final String START_PARAM = "start";
 	public static final String END_PARAM = "end";
@@ -40,11 +42,23 @@ public interface ConnectorParams {
 	public static final String RESPONSE_SUCCESS = "success";
 	public static final String RESPONSE_ALIVE = "alive";
 	public static final String RESPONSE_UPDATETIME = "lasttime";
+	public static final String RESPONSE_UPDATED_FLOWS = "updated";
 	
 	public static final int NODE_NAME_INDEX = 0;
 	public static final int NODE_STATUS_INDEX = 1;
 	public static final int NODE_START_INDEX = 2;
 	public static final int NODE_END_INDEX = 3;
 
+	public static final String UPDATE_TIME_LIST_PARAM = "updatetime";
+	public static final String EXEC_ID_LIST_PARAM = "execid";
+	
 	public static final String FORCED_FAILED_MARKER = ".failed";
+	
+	public static final String UPDATE_MAP_EXEC_ID = "execId";
+	public static final String UPDATE_MAP_JOBID = "jobId";
+	public static final String UPDATE_MAP_UPDATE_TIME = "updateTime";
+	public static final String UPDATE_MAP_STATUS = "status";
+	public static final String UPDATE_MAP_START_TIME = "startTime";
+	public static final String UPDATE_MAP_END_TIME = "endTime";
+	public static final String UPDATE_MAP_NODES = "nodes";
 }

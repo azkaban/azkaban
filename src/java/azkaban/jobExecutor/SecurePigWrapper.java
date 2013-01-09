@@ -67,6 +67,7 @@ public class SecurePigWrapper {
 							JobConf jc = new JobConf(conf);
 							JobClient jobClient = new JobClient(jc);
 							logger.info("Pre-fetching: Got new JobClient: " + jc);
+							//logger.info(conf.get("fs.default.name"));
 							Token<DelegationTokenIdentifier> mrdt = jobClient.getDelegationToken(new Text("hi"));
 							job.getCredentials().addToken(new Text("howdy"), mrdt);
 

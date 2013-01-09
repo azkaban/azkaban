@@ -33,7 +33,7 @@
 			var errorMessage = null;
 			var successMessage = null;
 			var userId = "$username";
-			var projectId = "$project.name";
+			var projectName = "$project.name";
 		</script>
 	</head>
 	<body>
@@ -70,6 +70,7 @@
 					
 					#if($isAdmin)
 						<button id="addUser" class="btn1">Add User</button>
+						<button id="addGroup" class="btn1">Add Group</button>
 					#end
 				</div>
 
@@ -127,11 +128,56 @@
 #end
 			</tbody>
 		</table>
+
+		<table id="group-permissions-table" class="all-jobs permission-table">
+			<thead>
+				<tr>
+					<th class="tb-username">Group</th>
+					<th class="tb-perm">Admin</th>
+					<th class="tb-read">Read</th>
+					<th class="tb-write">Write</th>
+					<th class="tb-execute">Execute</th>
+					<th class="tb-schedule">Schedule</th>
+					#if($isAdmin)
+						<th class="tb-action"></th>
+					#end
+				</tr>
+			</thead>
+			<tbody>
+#if($groupPermissions)
+#foreach($perm in $groupPermissions)
+	<tr id="${perm.first}-row" >
+		<td class="tb-name">#if($perm.first == $username) ${perm.first} <span class="sublabel">(you)</span> #else $perm.first #end</td>
+		#if ($perm.second.isPermissionNameSet("ADMIN")) 
+			<td><input id="group-${perm.first}-admin-checkbox" type="checkbox" name="admin" disabled="disabled" checked="true"></input></td>
+			<td><input id="group-${perm.first}-read-checkbox" type="checkbox" name="read" disabled="disabled" checked="true"></input></td>
+			<td><input id="group-${perm.first}-write-checkbox" type="checkbox" name="write" disabled="disabled" checked="true"></input></td>
+			<td><input id="group-${perm.first}-execute-checkbox" type="checkbox" name="execute" disabled="disabled" checked="true"></input></td>
+			<td><input id="group-${perm.first}-schedule-checkbox" type="checkbox" name="schedule" disabled="disabled" checked="true"></input></td>
+		#else
+			<td><input id="group-${perm.first}-admin-checkbox" type="checkbox" name="admin" disabled="disabled"></input></td>
+			<td><input id="group-${perm.first}-read-checkbox" type="checkbox" name="read" disabled="disabled"  #if ($perm.second.isPermissionNameSet("READ")) checked="true" #end></input></td>
+			<td><input id="group-${perm.first}-write-checkbox" type="checkbox" name="write" disabled="disabled" #if ($perm.second.isPermissionNameSet("WRITE")) checked="true" #end></input></td>
+			<td><input id="group-${perm.first}-execute-checkbox" type="checkbox" name="execute" disabled="disabled" #if ($perm.second.isPermissionNameSet("EXECUTE")) checked="true" #end></input></td>
+			<td><input id="group-${perm.first}-schedule-checkbox" type="checkbox" name="schedule" disabled="disabled" #if ($perm.second.isPermissionNameSet("SCHEDULE")) checked="true" #end></input></td>
+		#end
+
+		#if($isAdmin)
+			<td><button id="group-$perm.first" class="change-btn btn2">Change</button></td>
+		#end
+	</tr>
 #end
+#else
+	<tr><td class="last">No Groups Found.</td></tr>
+#end
+			</tbody>
+		</table>
+#end
+
 		</div>
 	
 		<div id="change-permission" class="modal">
-			<h3 id="change-title">Change User Permissions</h3>
+			<h3 id="change-title">Change Permissions</h3>
 			<div id="errorMsg" class="box-error-message"></div>
 			<div class="message">
 				<fieldset>

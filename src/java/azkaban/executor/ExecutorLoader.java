@@ -16,10 +16,50 @@
 
 package azkaban.executor;
 
+import java.io.File;
+import java.util.List;
+import java.util.Map;
+
+import azkaban.utils.FileIOUtils.LogData;
+import azkaban.utils.Pair;
+import azkaban.utils.Props;
+
 public interface ExecutorLoader {
-	public String getUniqueExecutionId();
+	public void uploadExecutableFlow(ExecutableFlow flow) throws ExecutorManagerException;
 	
-	public void commitExecutableFlow(ExecutableFlow exflow);
+	public ExecutableFlow fetchExecutableFlow(int execId) throws ExecutorManagerException;
 	
-	public ExecutableFlow loadExecutableFlow(String executionId);
+	public Map<Integer,Pair<ExecutionReference, ExecutableFlow>> fetchActiveFlows() throws ExecutorManagerException;
+
+	public List<ExecutableFlow> fetchFlowHistory(int skip, int num) throws ExecutorManagerException;
+
+	public List<ExecutableFlow> fetchFlowHistory(int projectId, String flowId, int skip, int num) throws ExecutorManagerException;
+
+	public List<ExecutableFlow> fetchFlowHistory(String projContain, String flowContains, String userNameContains, int status, long startData, long endData, int skip, int num) throws ExecutorManagerException;
+
+	public void addActiveExecutableReference(ExecutionReference ref) throws ExecutorManagerException;
+
+	public void removeActiveExecutableReference(int execId) throws ExecutorManagerException;
+
+	public boolean updateExecutableReference(int execId, long updateTime) throws ExecutorManagerException;
+
+	public LogData fetchLogs(int execId, String name, int startByte, int endByte) throws ExecutorManagerException;
+
+	public void uploadLogFile(int execId, String name, File ... files) throws ExecutorManagerException;
+
+	public void updateExecutableFlow(ExecutableFlow flow) throws ExecutorManagerException;
+
+	public void uploadExecutableNode(ExecutableNode node, Props inputParams) throws ExecutorManagerException; 
+
+	public ExecutableJobInfo fetchJobInfo(int execId, String jobId) throws ExecutorManagerException;
+
+	public List<ExecutableJobInfo> fetchJobHistory(int projectId, String jobId, int skip, int size) throws ExecutorManagerException;
+	
+	public void updateExecutableNode(ExecutableNode node, Props outputParams) throws ExecutorManagerException;
+
+	public int fetchNumExecutableFlows(int projectId, String flowId) throws ExecutorManagerException;
+
+	public int fetchNumExecutableFlows() throws ExecutorManagerException;
+	
+	public int fetchNumExecutableNodes(int projectId, String jobId) throws ExecutorManagerException;
 }

@@ -9,44 +9,68 @@ azkaban.JobLogView = Backbone.View.extend({
 		"click #updateLogBtn" : "handleUpdate"
 	},
 	initialize: function(settings) {
-		this.model.set({"current": 0});
+		this.model.set({"offset": 0});
 		this.handleUpdate();
 	},
 	handleUpdate: function(evt) {
-		var current = this.model.get("current");
 		var requestURL = contextURL + "/executor"; 
 		var model = this.model;
+		var finished = false;
 
-		ajaxLogsCall(
-			requestURL,
-			{"execid": execId, "job": jobId, "ajax":"fetchExecJobLogs", "current": current, "max": 100000},
-			function(data) {
-	          console.log("fetchLogs");
-	          if (data.error) {
-	          	showDialog("Error", data.error);
-	          }
-	          else {
-			var re = /(https?:\/\/(([-\w\.]+)+(:\d+)?(\/([\w/_\.]*(\?\S+)?)?)?))/g;
-	          	var log = $("#logSection").text();
-	          	if (!log) {
-	          		log = data.log;
-	          	}
-	          	else {
-	          		log += data.log;
-	          	}
-    	
-	          	current = data.current;
-
-	          	$("#logSection").text(log);
-			log = $("#logSection").html();
-			log = log.replace(re, "<a href=\"$1\" title=\"\">$1</a>");
-			$("#logSection").html(log);
-
-	          	model.set({"current": current, "log": log});
-	          	$(".logViewer").scrollTop(9999);
-	          }
-	      }
-	    );
+		var date = new Date();
+		var startTime = date.getTime();
+		
+		while(!finished) {
+			var offset = this.model.get("offset");
+			$.ajax({
+				url: requestURL,
+				type: "get",
+				async: false,
+				dataType: "json",
+				data: {"execid": execId, "jobId": jobId, "ajax":"fetchExecJobLogs", "offset": offset, "length": 50000},
+				error: function(data) {
+					console.log(data);
+					finished = true;
+				},
+				success: function(data) {
+					console.log("fetchLogs");
+					if (data.error) {
+						console.log(data.error);
+						finished = true;
+					}
+					else if (data.length == 0) {
+						finished = true;
+					}
+					else {
+						var date = new Date();
+						var endTime = date.getTime();
+						if ((endTime - startTime) > 10000) {
+							finished = true;
+							showDialog("Alert","The log are taking a long time to finish loading. Azkaban has stopped loading them. Please click Refresh to restart the load.");
+						} 
+	
+						var re = /(https?:\/\/(([-\w\.]+)+(:\d+)?(\/([\w/_\.]*(\?\S+)?)?)?))/g;
+						var log = $("#logSection").text();
+						if (!log) {
+							log = data.data;
+						}
+						else {
+							log += data.data;
+						}
+	
+						var newOffset = data.offset + data.length;
+	
+						$("#logSection").text(log);
+						log = $("#logSection").html();
+						log = log.replace(re, "<a href=\"$1\" title=\"\">$1</a>");
+						$("#logSection").html(log);
+	
+						model.set({"offset": newOffset, "log": log});
+						$(".logViewer").scrollTop(9999);
+					}
+				}
+			});
+		}
 	}
 });
 
@@ -67,7 +91,6 @@ var showDialog = function(title, message) {
       }
     });
 }
-
 
 $(function() {
 	var selected;

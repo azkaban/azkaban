@@ -1,11 +1,11 @@
 $.namespace('azkaban');
 
-function removeSched(schedId) {
+function removeSched(projectId, flowName) {
     var scheduleURL = contextURL + "/schedule"
     var redirectURL = contextURL + "/schedule"
     $.post(
          scheduleURL,
-         {"action":"removeSched", "scheduleId":schedId},
+         {"action":"removeSched", "projectId":projectId, "flowName":flowName},
          function(data) {
              if (data.error) {
 //                 alert(data.error)

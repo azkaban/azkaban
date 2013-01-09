@@ -16,10 +16,8 @@
 
 package azkaban.scheduler;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -28,10 +26,10 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.log4j.Logger;
 import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
 import org.joda.time.ReadablePeriod;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
-import org.joda.time.format.PeriodFormat;
 
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutorManager;
@@ -41,9 +39,10 @@ import azkaban.flow.Flow;
 import azkaban.jobExecutor.utils.JobExecutionException;
 import azkaban.project.Project;
 import azkaban.project.ProjectManager;
-import azkaban.project.ProjectManagerException;
 
-import azkaban.utils.Props;
+
+import azkaban.utils.Pair;
+
 
 /**
  * The ScheduleManager stores and executes the schedule. It uses a single thread
@@ -56,7 +55,8 @@ public class ScheduleManager {
 
 	private final DateTimeFormatter _dateFormat = DateTimeFormat.forPattern("MM-dd-yyyy HH:mm:ss:SSS");
 	private ScheduleLoader loader;
-	private Map<String, ScheduledFlow> scheduleIDMap = new LinkedHashMap<String, ScheduledFlow>();
+
+	private Map<Pair<Integer, String>, Schedule> scheduleIDMap = new LinkedHashMap<Pair<Integer, String>, Schedule>();
 	private final ScheduleRunner runner;
 	private final ExecutorManager executorManager;
 	private final ProjectManager projectManager;
@@ -76,9 +76,16 @@ public class ScheduleManager {
 		this.loader = loader;
 		this.runner = new ScheduleRunner();
 
-		List<ScheduledFlow> scheduleList = loader.loadSchedule();
-		for (ScheduledFlow flow : scheduleList) {
-			internalSchedule(flow);
+		List<Schedule> scheduleList = null;
+		try {
+			scheduleList = loader.loadSchedules();
+		} catch (ScheduleManagerException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
+		for (Schedule sched : scheduleList) {
+			internalSchedule(sched);
 		}
 
 		this.runner.start();
@@ -97,8 +104,8 @@ public class ScheduleManager {
 	 * 
 	 * @return
 	 */
-	public synchronized List<ScheduledFlow> getSchedule() {
-		return runner.getSchedule();
+	public synchronized List<Schedule> getSchedules() {
+		return runner.getRunnerSchedules();
 	}
 
 	/**
@@ -106,8 +113,8 @@ public class ScheduleManager {
 	 * 
 	 * @param id
 	 * @return
-	 */
-	public ScheduledFlow getSchedule(String scheduleId) {
+	*/
+	public Schedule getSchedule(Pair<Integer, String> scheduleId) {
 		return scheduleIDMap.get(scheduleId);
 	}
 
@@ -116,14 +123,17 @@ public class ScheduleManager {
 	 * 
 	 * @param id
 	 */
-	public synchronized ScheduledFlow removeScheduledFlow(String scheduleId) {
-		ScheduledFlow flow = scheduleIDMap.get(scheduleId);
+	public synchronized void removeSchedule(Pair<Integer, String> scheduleId) {
+		Schedule sched = scheduleIDMap.get(scheduleId);
 		scheduleIDMap.remove(scheduleId);
-		runner.removeScheduledFlow(flow);
-
-		loader.saveSchedule(getSchedule());
 		
-		return flow;
+		runner.removeRunnerSchedule(sched);
+		try {
+			loader.removeSchedule(sched);
+		} catch (ScheduleManagerException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 
 	// public synchronized void pauseScheduledFlow(String scheduleId){
@@ -148,60 +158,63 @@ public class ScheduleManager {
 	// }
 	// }
 
-	public ScheduledFlow schedule(
-			final String scheduleId, 
-			final String projectId,
-			final String flowId, 
-			final String user, 
-			final String userSubmit,
-			final DateTime submitTime, 
-			final DateTime firstSchedTime,
-			final ReadablePeriod period) {
-		logger.info("Scheduling flow '" + scheduleId + "' for "
+	public Schedule scheduleFlow(
+			final int projectId,
+			final String projectName,
+			final String flowName,
+			final String status,
+			final long firstSchedTime,
+			final DateTimeZone timezone,
+			final ReadablePeriod period,
+			final long lastModifyTime,
+			final long nextExecTime,
+			final long submitTime,
+			final String submitUser
+			) {
+		Schedule sched = new Schedule(projectId, projectName, flowName, status, firstSchedTime, timezone, period, lastModifyTime, nextExecTime, submitTime, submitUser);
+		logger.info("Scheduling flow '" + sched.getScheduleName() + "' for "
 				+ _dateFormat.print(firstSchedTime) + " with a period of "
-				+ PeriodFormat.getDefault().print(period));
-		
-		ScheduledFlow scheduleFlow = new ScheduledFlow(scheduleId, projectId, flowId, user, userSubmit, submitTime, firstSchedTime, period);
-		schedule(scheduleFlow);
-		return scheduleFlow;
+				+ period == null ? "(non-recurring)" : period);
+
+		insertSchedule(sched);
+		return sched;
 	}
 
-	/**
-	 * Schedule the flow
-	 * 
-	 * @param flowId
-	 * @param date
-	 * @param ignoreDep
-	 */
-	public ScheduledFlow schedule(
-			String scheduleId,
-			String projectId,
-			String flowId,
-			String user, 
-			String userSubmit,
-			DateTime submitTime,
-			DateTime firstSchedTime) 
-	{
-		logger.info("Scheduling flow '" + scheduleId + "' for " + _dateFormat.print(firstSchedTime));
-		ScheduledFlow scheduleFlow = new ScheduledFlow(scheduleId, projectId, flowId, user, userSubmit, submitTime, firstSchedTime);
-		schedule(scheduleFlow);
-		return scheduleFlow;
-	}
+//	/**
+//	 * Schedule the flow
+//	 * 
+//	 * @param flowId
+//	 * @param date
+//	 * @param ignoreDep
+//	 */
+//	public Schedule schedule(
+//			String scheduleId,
+//			String projectId,
+//			String flowId,
+//			String user, 
+//			String userSubmit,
+//			DateTime submitTime,
+//			DateTime firstSchedTime) 
+//	{
+//		logger.info("Scheduling flow '" + scheduleId + "' for " + _dateFormat.print(firstSchedTime));
+//		ScheduledFlow scheduleFlow = new ScheduledFlow(scheduleId, projectId, flowId, user, userSubmit, submitTime, firstSchedTime);
+//		schedule(scheduleFlow);
+//		return scheduleFlow;
+//	}
 
 	/**
 	 * Schedules the flow, but doesn't save the schedule afterwards.
 	 * 
 	 * @param flow
 	 */
-	private synchronized void internalSchedule(ScheduledFlow flow) {
-		ScheduledFlow existing = scheduleIDMap.get(flow.getScheduleId());
-		flow.updateTime();
+	private synchronized void internalSchedule(Schedule s) {
+		Schedule existing = scheduleIDMap.get(s.getScheduleId());
 		if (existing != null) {
-			this.runner.removeScheduledFlow(existing);
+			this.runner.removeRunnerSchedule(existing);
 		}
-
-		this.runner.addScheduledFlow(flow);
-		scheduleIDMap.put(flow.getScheduleId(), flow);
+		s.updateTime();
+		this.runner.addRunnerSchedule(s);
+		scheduleIDMap.put(s.getScheduleId(), s);
 	}
 
 	/**
@@ -209,17 +222,27 @@ public class ScheduleManager {
 	 * 
 	 * @param flow
 	 */
-	public synchronized void schedule(ScheduledFlow flow) {
-		internalSchedule(flow);
-		saveSchedule();
+	public synchronized void insertSchedule(Schedule s) {
+		if(s.updateTime()) {
+			internalSchedule(s);
+			try {
+				loader.insertSchedule(s);
+			} catch (ScheduleManagerException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+		else {
+			logger.error("The provided schedule is non-recurring and the scheduled time already passed. " + s.getScheduleName());
+		}
 	}
 
-	/**
-	 * Save the schedule
-	 */
-	private void saveSchedule() {
-		loader.saveSchedule(getSchedule());
-	}
+//	/**
+//	 * Save the schedule
+//	 */
+//	private void saveSchedule() {
+//		loader.saveSchedule(getSchedule());
+//	}
 	
 	/**
 	 * Thread that simply invokes the running of flows when the schedule is
@@ -229,14 +252,14 @@ public class ScheduleManager {
 	 * 
 	 */
 	public class ScheduleRunner extends Thread {
-		private final PriorityBlockingQueue<ScheduledFlow> schedule;
+		private final PriorityBlockingQueue<Schedule> schedules;
 		private AtomicBoolean stillAlive = new AtomicBoolean(true);
 
 		// Five minute minimum intervals
 		private static final int TIMEOUT_MS = 300000;
 
 		public ScheduleRunner() {
-			schedule = new PriorityBlockingQueue<ScheduledFlow>(1,new ScheduleComparator());
+			schedules = new PriorityBlockingQueue<Schedule>(1,new ScheduleComparator());
 		}
 
 		public void shutdown() {
@@ -250,8 +273,8 @@ public class ScheduleManager {
 		 * 
 		 * @return
 		 */
-		public synchronized List<ScheduledFlow> getSchedule() {
-			return new ArrayList<ScheduledFlow>(schedule);
+		public synchronized List<Schedule> getRunnerSchedules() {
+			return new ArrayList<Schedule>(schedules);
 		}
 
 		/**
@@ -260,9 +283,9 @@ public class ScheduleManager {
 		 * 
 		 * @param flow
 		 */
-		public synchronized void addScheduledFlow(ScheduledFlow flow) {
-			logger.info("Adding " + flow + " to schedule.");
-			schedule.add(flow);
+		public synchronized void addRunnerSchedule(Schedule s) {
+			logger.info("Adding " + s + " to schedule runner.");
+			schedules.add(s);
 			// MonitorImpl.getInternalMonitorInterface().workflowEvent(null,
 			// System.currentTimeMillis(),
 			// WorkflowAction.SCHEDULE_WORKFLOW,
@@ -277,9 +300,9 @@ public class ScheduleManager {
 		 * 
 		 * @param flow
 		 */
-		public synchronized void removeScheduledFlow(ScheduledFlow flow) {
-			logger.info("Removing " + flow + " from the schedule.");
-			schedule.remove(flow);
+		public synchronized void removeRunnerSchedule(Schedule s) {
+			logger.info("Removing " + s + " from the schedule runner.");
+			schedules.remove(s);
 			// MonitorImpl.getInternalMonitorInterface().workflowEvent(null,
 			// System.currentTimeMillis(),
 			// WorkflowAction.UNSCHEDULE_WORKFLOW,
@@ -295,9 +318,9 @@ public class ScheduleManager {
 				synchronized (this) {
 					try {
 						// TODO clear up the exception handling
-						ScheduledFlow schedFlow = schedule.peek();
+						Schedule s = schedules.peek();
 
-						if (schedFlow == null) {
+						if (s == null) {
 							// If null, wake up every minute or so to see if
 							// there's something to do. Most likely there will not be.
 							try {
@@ -307,104 +330,75 @@ public class ScheduleManager {
 							}
 						} else {
 							// We've passed the flow execution time, so we will run.
-							if (!schedFlow.getNextExecTime().isAfterNow()) {
+							if (!(new DateTime(s.getNextExecTime())).isAfterNow()) {
 								// Run flow. The invocation of flows should be quick.
-								ScheduledFlow runningFlow = schedule.poll();
-								logger.info("Scheduler attempting to run " + runningFlow.getScheduleId());
-
-								// Execute the flow here
-								try {
-									Project project = projectManager.getProject(runningFlow.getProjectId());
-									if (project == null) {
-										logger.error("Scheduled Project " + runningFlow.getProjectId() + " does not exist!");
-										throw new RuntimeException("Error finding the scheduled project. "+ runningFlow.getScheduleId());
-									}
-
-									Flow flow = project.getFlow(runningFlow.getFlowId());
-									if (flow == null) {
-										logger.error("Flow " + runningFlow.getFlowId() + " cannot be found in project " + project.getName());
-										throw new RuntimeException("Error finding the scheduled flow. " + runningFlow.getScheduleId());
-									}
-
-									HashMap<String, Props> sources;
+								Schedule runningSched = schedules.poll();
+								
+								logger.info("Scheduler attempting to run " + runningSched.getScheduleName() );
+								
+								// check if it is already running
+								if(!executorManager.isFlowRunning(runningSched.getProjectId(), runningSched.getFlowName()))
+								{
+									// Execute the flow here
 									try {
-										sources = projectManager.getAllFlowProperties(project,runningFlow.getFlowId());
-									} catch (ProjectManagerException e) {
-										logger.error(e.getMessage());
-										throw new RuntimeException("Error getting the flow resources. " + runningFlow.getScheduleId());
-									}
-
-									// Create ExecutableFlow
-									ExecutableFlow exflow = executorManager.createExecutableFlow(flow);
-									exflow.setSubmitUser(runningFlow.getUser());
-									// TODO make disabled in scheduled flow
-									// Map<String, String> paramGroup =
-									// this.getParamGroup(req, "disabled");
-									// for (Map.Entry<String, String> entry:
-									// paramGroup.entrySet()) {
-									// boolean nodeDisabled =
-									// Boolean.parseBoolean(entry.getValue());
-									// exflow.setStatus(entry.getKey(),
-									// nodeDisabled ? Status.DISABLED :
-									// Status.READY);
-									// }
-
-									// Create directory
-									try {
-										executorManager.setupExecutableFlow(exflow);
-									} catch (ExecutorManagerException e) {
-										try {
-											executorManager.cleanupAll(exflow);
-										} catch (ExecutorManagerException e1) {
-											e1.printStackTrace();
+										Project project = projectManager.getProject(runningSched.getProjectId());
+										if (project == null) {
+											logger.error("Scheduled Project " + runningSched.getProjectId() + " does not exist!");
+											throw new RuntimeException("Error finding the scheduled project. "+ runningSched.getProjectId());
+										}	
+										//TODO It is possible that the project is there, but the flow doesn't exist because upload a version that changes flow structure
+	
+										Flow flow = project.getFlow(runningSched.getFlowName());
+										if (flow == null) {
+											logger.error("Flow " + runningSched.getScheduleName() + " cannot be found in project " + project.getName());
+											throw new RuntimeException("Error finding the scheduled flow. " + runningSched.getScheduleName());
 										}
-										logger.error(e.getMessage());
-										return;
-									}
-
-									// Copy files to the source.
-									File executionDir = new File(exflow.getExecutionPath());
-									try {
-										projectManager.copyProjectSourceFilesToDirectory(project, executionDir);
-									} catch (ProjectManagerException e) {
+	
+										// Create ExecutableFlow
+										ExecutableFlow exflow = new ExecutableFlow(flow);
+										exflow.setSubmitUser(runningSched.getSubmitUser());
+	
+										// TODO make disabled in scheduled flow
+										// Map<String, String> paramGroup =
+										// this.getParamGroup(req, "disabled");
+										// for (Map.Entry<String, String> entry:
+										// paramGroup.entrySet()) {
+										// boolean nodeDisabled =
+										// Boolean.parseBoolean(entry.getValue());
+										// exflow.setStatus(entry.getKey(),
+										// nodeDisabled ? Status.DISABLED :
+										// Status.READY);
+										// }
+	
 										try {
-											executorManager.cleanupAll(exflow);
-										} catch (ExecutorManagerException e1) {
-											e1.printStackTrace();
+											executorManager.submitExecutableFlow(exflow);
+											logger.info("Scheduler has invoked " + exflow.getExecutionId());
+										} catch (ExecutorManagerException e) {	
+											logger.error("Scheduler invoked flow " + exflow.getExecutionId() + " has failed.");
+											logger.error(e.getMessage());
+											return;
 										}
-										logger.error(e.getMessage());
-										return;
+									} catch (JobExecutionException e) {
+										logger.info("Could not run flow. " + e.getMessage());
 									}
-
-									try {
-										executorManager.executeFlow(exflow);
-										project.info("Scheduler has invoked " + exflow.getExecutionId());
-									} catch (ExecutorManagerException e) {
-										try {
-											executorManager.cleanupAll(exflow);
-										} catch (ExecutorManagerException e1) {
-											e1.printStackTrace();
-										}
-										
-										project.info("Scheduler invoked flow " + exflow.getExecutionId() + " has failed.");
-										logger.error(e.getMessage());
-										return;
-									}
-								} catch (JobExecutionException e) {
-									logger.info("Could not run flow. " + e.getMessage());
 								}
-								schedule.remove(runningFlow);
+								
+								removeRunnerSchedule(runningSched);
+
 
 								// Immediately reschedule if it's possible. Let
 								// the execution manager
 								// handle any duplicate runs.
-								if (runningFlow.updateTime()) {
-									schedule.add(runningFlow);
+								if (runningSched.updateTime()) {
+									addRunnerSchedule(runningSched);
+									loader.updateSchedule(runningSched);
 								}
-								saveSchedule();
+								else {
+									removeSchedule(runningSched.getScheduleId());
+								}								
 							} else {
 								// wait until flow run
-								long millisWait = Math.max(0, schedFlow.getNextExecTime().getMillis() - (new DateTime()).getMillis());
+								long millisWait = Math.max(0, s.getNextExecTime() - (new DateTime()).getMillis());
 								try {
 									this.wait(Math.min(millisWait, TIMEOUT_MS));
 								} catch (InterruptedException e) {
@@ -427,15 +421,15 @@ public class ScheduleManager {
 		 * 
 		 * @author Richard Park
 		 */
-		private class ScheduleComparator implements Comparator<ScheduledFlow> {
+		private class ScheduleComparator implements Comparator<Schedule> {
 			@Override
-			public int compare(ScheduledFlow arg0, ScheduledFlow arg1) {
-				DateTime first = arg1.getNextExecTime();
-				DateTime second = arg0.getNextExecTime();
+			public int compare(Schedule arg0, Schedule arg1) {
+				long first = arg1.getNextExecTime();
+				long second = arg0.getNextExecTime();
 
-				if (first.isEqual(second)) {
+				if (first == second) {
 					return 0;
-				} else if (first.isBefore(second)) {
+				} else if (first < second) {
 					return 1;
 				}
 

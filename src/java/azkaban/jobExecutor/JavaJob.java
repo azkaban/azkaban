@@ -48,51 +48,48 @@ public class JavaJob extends JavaProcessJob {
 	}
 
 	@Override
-    protected List<String> getClassPaths() {
-        List<String> classPath = super.getClassPaths();
-        
-        classPath.add(getSourcePathFromClass(JavaJobRunnerMain.class));
-        String loggerPath = getSourcePathFromClass(org.apache.log4j.Logger.class);
-        if (!classPath.contains(loggerPath)) {
-            classPath.add(loggerPath);
-        }
-        
-        // Add hadoop home to classpath
-        String hadoopHome = System.getenv("HADOOP_HOME");
-        if (hadoopHome == null) {
-            info("HADOOP_HOME not set, using default hadoop config.");
-        } else {
-            info("Using hadoop config found in " + hadoopHome);
-            classPath.add(new File(hadoopHome, "conf").getPath());
-        }
-        
-        return classPath;
+	protected List<String> getClassPaths() {
+		List<String> classPath = super.getClassPaths();
+
+		classPath.add(getSourcePathFromClass(JavaJobRunnerMain.class));
+		String loggerPath = getSourcePathFromClass(org.apache.log4j.Logger.class);
+		if (!classPath.contains(loggerPath)) {
+			classPath.add(loggerPath);
+		}
+
+		// Add hadoop home to classpath
+		String hadoopHome = System.getenv("HADOOP_HOME");
+		if (hadoopHome == null) {
+			info("HADOOP_HOME not set, using default hadoop config.");
+		} else {
+			info("Using hadoop config found in " + hadoopHome);
+			classPath.add(new File(hadoopHome, "conf").getPath());
+		}
+		return classPath;
 	}
 
 	private static String getSourcePathFromClass(Class containedClass) {
-	    File file = new File(containedClass.getProtectionDomain().getCodeSource().getLocation().getPath());
-	    
-        if (!file.isDirectory() && file.getName().endsWith(".class")) {
-            String name = containedClass.getName();
-            StringTokenizer tokenizer = new StringTokenizer(name, ".");
-            while(tokenizer.hasMoreTokens()) {
-                tokenizer.nextElement();
-                
-                file = file.getParentFile();
-            }
-            
-            return file.getPath();  
-        }
-        else {
-            return containedClass.getProtectionDomain().getCodeSource().getLocation().getPath();
-        }
+		File file = new File(containedClass.getProtectionDomain().getCodeSource().getLocation().getPath());
+
+		if (!file.isDirectory() && file.getName().endsWith(".class")) {
+			String name = containedClass.getName();
+			StringTokenizer tokenizer = new StringTokenizer(name, ".");
+			while(tokenizer.hasMoreTokens()) {
+				tokenizer.nextElement();
+				file = file.getParentFile();
+			}
+			return file.getPath();  
+		}
+		else {
+			return containedClass.getProtectionDomain().getCodeSource().getLocation().getPath();
+		}
 	}
 	
-    @Override
-    protected String getJavaClass() {
-        return JavaJobRunnerMain.class.getName();
-    }
-    
+	@Override
+	protected String getJavaClass() {
+		return JavaJobRunnerMain.class.getName();
+	}
+
 	@Override
 	public String toString() {
 		return "JavaJob{" + "_runMethod='" + _runMethod + '\''

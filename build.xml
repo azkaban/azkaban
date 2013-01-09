@@ -1,12 +1,23 @@
 <?xml version="1.0"?>
 
 <project name="azkaban" basedir="." default="all">
+	<property file="build.properties" />
 	<property name="base.dir" value="${basedir}" />
 	<property name="dist.jar.dir" value="${basedir}/dist/jars" />
 	<property name="dist.classes.dir" value="${basedir}/dist/classes" />
+	<property name="dist.packages.dir" value="${basedir}/dist/packages" />
+	<property name="dist.web.package.dir" value="${dist.packages.dir}/azkaban-web-server" />
+	<property name="dist.exec.package.dir" value="${dist.packages.dir}/azkaban-exec-server" />
+	<property name="dist.sql.package.dir" value="${dist.packages.dir}/sql" />	
+
+	<property name="conf.dir" value="${basedir}/conf" />
 	<property name="lib.dir" value="${basedir}/lib" />
+	<property name="bin.dir" value="${basedir}/bin" />
 	<property name="java.src.dir" value="${basedir}/src/java" />
-	<property file="build.properties" />
+	<property name="web.src.dir" value="${basedir}/src/web" />
+	<property name="sql.src.dir" value="${basedir}/src/sql" />
+	
+	<property name="azkaban.jar" value="${dist.jar.dir}/${name}-${version}.jar" />
 
 	<property environment="env" />
 
@@ -49,11 +60,99 @@
 	
 	<target name="jars" depends="build" description="Create azkaban jar">
 		<mkdir dir="${dist.jar.dir}" />
-		<jar destfile="${dist.jar.dir}/${name}-${version}.jar">
+		<jar destfile="${azkaban.jar}">
 			<fileset dir="${dist.classes.dir}">
 				<include name="**/*.*" />
 			</fileset>
 		</jar>
 	</target>
 	
+	<target name="package-sql-scripts" description="Creates a package of sql">
+		<delete dir="${dist.sql.package.dir}" />
+		<mkdir dir="${dist.sql.package.dir}" />
+
+		<copy todir="${dist.sql.package.dir}" >
+			<fileset dir="${sql.src.dir}" />
+		</copy>
+
+                <tar destfile="${dist.sql.package.dir}/${name}-sql-script-${version}.tar.gz" compression="gzip" longfile="gnu">
+                	<tarfileset dir="${dist.sql.package.dir}" prefix="azkaban-${version}" filemode="755" />
+		</tar>
+
+	</target>
+
+	<target name="package-web-server" depends="jars" description="Creates a package for the webserver">
+		<delete dir="${dist.web.package.dir}" />
+		<mkdir dir="${dist.web.package.dir}" />
+		<mkdir dir="${dist.web.package.dir}/conf" />
+		<mkdir dir="${dist.web.package.dir}/bin" />
+		<mkdir dir="${dist.web.package.dir}/lib" />
+		<mkdir dir="${dist.web.package.dir}/web" />
+		<mkdir dir="${dist.web.package.dir}/plugins" />
+		<mkdir dir="${dist.web.package.dir}/extlib" />	
+			
+		<!-- Copy Azkaban jars and libs-->
+		<copy file="${azkaban.jar}" todir="${dist.web.package.dir}/lib" />
+		<copy todir="${dist.web.package.dir}/lib" >
+			<fileset dir="${lib.dir}" >
+				<exclude name="hadoop-core*.jar"/>
+			</fileset>		
+		</copy>
+		
+		<!-- Copy bin files for web server only-->
+		<copy todir="${dist.web.package.dir}/bin" >
+			<fileset dir="${bin.dir}" includes="**/azkaban-web*"/>
+		</copy>
+		
+		<!-- Copy web files -->
+		<copy todir="${dist.web.package.dir}/web" >
+			<fileset dir="${web.src.dir}" />
+		</copy>
+		
+		<!-- Copy conf create table scripts -->
+		<copy todir="${dist.web.package.dir}/conf" >
+			<fileset dir="${conf.dir}" />
+		</copy>
+		
+		<!-- Tarball it -->
+		<tar destfile="${dist.web.package.dir}/${name}-web-server-${version}.tar.gz" compression="gzip" longfile="gnu">
+			<tarfileset dir="${dist.web.package.dir}" prefix="azkaban-${version}" filemode="755" />
+		</tar>
+	</target>
+	
+	<target name="package-exec-server" depends="jars" description="Creates a package for the execserver">
+		<delete dir="${dist.exec.package.dir}" />
+		<mkdir dir="${dist.exec.package.dir}" />
+		<mkdir dir="${dist.exec.package.dir}/conf" />
+		<mkdir dir="${dist.exec.package.dir}/bin" />
+		<mkdir dir="${dist.exec.package.dir}/lib" />
+		<mkdir dir="${dist.exec.package.dir}/plugins" />
+		<mkdir dir="${dist.exec.package.dir}/extlib" />
+				
+		<!-- Copy Azkaban jars and libs-->
+		<copy file="${azkaban.jar}" todir="${dist.exec.package.dir}/lib" />
+		<copy todir="${dist.exec.package.dir}/lib" >
+			<fileset dir="${lib.dir}" >
+				<exclude name="hadoop-core*.jar"/>
+			</fileset>
+		</copy>
+		
+		<!-- Copy bin files for exec server only-->
+		<copy todir="${dist.exec.package.dir}/bin" >
+			<fileset dir="${bin.dir}" includes="**/azkaban-executor*"/>
+		</copy>
+
+		<!-- Copy conf files -->
+		<copy todir="${dist.exec.package.dir}/conf" >
+			<fileset dir="${conf.dir}" />
+		</copy>
+		
+		<!-- Tarball it -->
+		<tar destfile="${dist.exec.package.dir}/${name}-executor-server-${version}.tar.gz" compression="gzip" longfile="gnu">
+			<tarfileset dir="${dist.exec.package.dir}" prefix="azkaban-${version}" filemode="755" />
+		</tar>
+	</target>
+	
+	<target name="package-all" depends="package-exec-server, package-web-server, package-sql-scripts" description="Create all packages">
+	</target>
 </project>

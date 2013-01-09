@@ -26,6 +26,8 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.net.URLClassLoader;
 import java.util.Collection;
 import java.util.Enumeration;
 import java.util.Random;
@@ -34,6 +36,10 @@ import java.util.zip.ZipFile;
 import java.util.zip.ZipOutputStream;
 
 import org.apache.commons.io.IOUtils;
+
+import azkaban.execapp.FlowRunner;
+import azkaban.executor.ExecutorManagerException;
+import azkaban.webapp.servlet.admin.InitialSetupServlet;
 
 /**
  * A util helper class full of static methods that are commonly used.
@@ -263,5 +269,17 @@ public class Utils {
 		long days = hours / 24;
 		hours %= 24;
 		return days + "d " + hours + "h " + minutes + "m";
+	}
+	
+	public static Object invokeStaticMethod(ClassLoader loader, String className, String methodName, Object ... args) throws ClassNotFoundException, SecurityException, NoSuchMethodException, IllegalArgumentException, IllegalAccessException, InvocationTargetException {
+		Class clazz = loader.loadClass(className);
+		
+		Class[] argTypes = new Class[args.length];
+		for (int i=0; i < args.length; ++i) {
+			argTypes[i] = args[i].getClass();
+		}
+		
+		Method method = clazz.getDeclaredMethod(methodName, argTypes);
+		return method.invoke(null, args);
 	}
 }

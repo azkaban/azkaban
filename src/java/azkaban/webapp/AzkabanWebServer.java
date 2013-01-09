@@ -24,6 +24,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.Arrays;
+import java.util.Properties;
 import java.util.TimeZone;
 
 import org.apache.log4j.Logger;
@@ -39,10 +40,14 @@ import org.mortbay.jetty.servlet.ServletHolder;
 import org.mortbay.thread.QueuedThreadPool;
 
 import azkaban.executor.ExecutorManager;
-import azkaban.project.FileProjectManager;
+import azkaban.executor.JdbcExecutorLoader;
+import azkaban.project.JdbcProjectLoader;
 import azkaban.project.ProjectManager;
-import azkaban.scheduler.LocalFileScheduleLoader;
+
+import azkaban.scheduler.JdbcScheduleLoader;
 import azkaban.scheduler.ScheduleManager;
+import azkaban.security.DefaultHadoopSecurityManager;
+import azkaban.security.HadoopSecurityManager;
 import azkaban.user.UserManager;
 import azkaban.user.XmlUserManager;
 import azkaban.utils.Props;
@@ -81,13 +86,16 @@ import joptsimple.OptionSpec;
  * keystore password jetty.truststore - Jetty truststore jetty.trustpassword -
  * Jetty truststore password
  */
-public class AzkabanWebServer {
+public class AzkabanWebServer implements AzkabanServer {
 	private static final Logger logger = Logger.getLogger(AzkabanWebServer.class);
 
 	public static final String AZKABAN_HOME = "AZKABAN_HOME";
 	public static final String DEFAULT_CONF_PATH = "conf";
 	public static final String AZKABAN_PROPERTIES_FILE = "azkaban.properties";
+	public static final String AZKABAN_PRIVATE_PROPERTIES_FILE = "azkaban.private.properties";
+	public static final String JDO_PROPERTIES_FILE = "jdo.properties";
 
+	private static final int MAX_FORM_CONTENT_SIZE = 10*1024*1024;
 	private static AzkabanWebServer app;
 
 	private static final String DEFAULT_TIMEZONE_ID = "default.timezone.id";
@@ -96,16 +104,18 @@ public class AzkabanWebServer {
 	private static final int DEFAULT_THREAD_NUMBER = 20;
 	private static final String VELOCITY_DEV_MODE_PARAM = "velocity.dev.mode";
 	private static final String USER_MANAGER_CLASS_PARAM = "user.manager.class";
-	private static final String PROJECT_MANAGER_CLASS_PARAM = "project.manager.class";
+	private static final String HADOOP_SECURITY_MANAGER_CLASS_PARAM = "hadoop.security.manager.class";
 	private static final String DEFAULT_STATIC_DIR = "";
 
 	private final VelocityEngine velocityEngine;
+
 	private UserManager userManager;
 	private ProjectManager projectManager;
 	private ExecutorManager executorManager;
 	private ScheduleManager scheduleManager;
 
-	private final ClassLoader _baseClassLoader;
+	private final ClassLoader baseClassLoader;
+	private HadoopSecurityManager hadoopSecurityManager;
 	
 	private Props props;
 	private SessionCache sessionCache;
@@ -130,7 +140,9 @@ public class AzkabanWebServer {
 		projectManager = loadProjectManager(props);
 		executorManager = loadExecutorManager(props);
 		scheduleManager = loadScheduleManager(executorManager, props);
-		_baseClassLoader = getBaseClassloader();
+		baseClassLoader = getBaseClassloader();
+		hadoopSecurityManager = loadHadoopSecurityManager(props);
+		
 		tempDir = new File(props.getString("azkaban.temp.dir", "temp"));
 
 		// Setup time zone
@@ -141,9 +153,8 @@ public class AzkabanWebServer {
 
 			logger.info("Setting timezone to " + timezone);
 		}
-
 	}
-
+	
 	private UserManager loadUserManager(Props props) {
 		Class<?> userManagerClass = props.getClass(USER_MANAGER_CLASS_PARAM, null);
 		logger.info("Loading user manager class " + userManagerClass.getName());
@@ -169,41 +180,26 @@ public class AzkabanWebServer {
 	}
 
 	private ProjectManager loadProjectManager(Props props) {
-		Class<?> projectManagerClass = props.getClass(PROJECT_MANAGER_CLASS_PARAM, null);
-		logger.info("Loading project manager class " + projectManagerClass.getName());
-		ProjectManager manager = null;
+		logger.info("Loading JDBC for project management");
 
-		if (projectManagerClass != null && projectManagerClass.getConstructors().length > 0) {
-
-			try {
-				Constructor<?> projectManagerConstructor = projectManagerClass.getConstructor(Props.class);
-				manager = (ProjectManager) projectManagerConstructor.newInstance(props);
-			} 
-			catch (Exception e) {
-				logger.error("Could not instantiate ProjectManager " + projectManagerClass.getName());
-				throw new RuntimeException(e);
-			}
-
-		}
-		else {
-			manager = new FileProjectManager(props);
-		}
-
+		JdbcProjectLoader loader = new JdbcProjectLoader(props);
+		ProjectManager manager = new ProjectManager(loader, props);
+		
 		return manager;
 	}
 
 	private ExecutorManager loadExecutorManager(Props props) throws Exception {
-		ExecutorManager execManager = new ExecutorManager(props);
+		JdbcExecutorLoader loader = new JdbcExecutorLoader(props);
+		ExecutorManager execManager = new ExecutorManager(props, loader);
 		return execManager;
 	}
 
 	private ScheduleManager loadScheduleManager(ExecutorManager execManager, Props props ) throws Exception {
+		ScheduleManager schedManager = new ScheduleManager(execManager, projectManager, new JdbcScheduleLoader(props));
 
-		ScheduleManager schedManager = new ScheduleManager(execManager, projectManager, new LocalFileScheduleLoader(props));
 		return schedManager;
 	}
 
-	
 	/**
 	 * Returns the web session cache.
 	 * 
@@ -248,7 +244,7 @@ public class AzkabanWebServer {
 	public ScheduleManager getScheduleManager() {
 		return scheduleManager;
 	}
-
+	
 	/**
 	 * Creates and configures the velocity engine.
 	 * 
@@ -277,40 +273,69 @@ public class AzkabanWebServer {
 		engine.setProperty("parser.pool.size", 3);
 		return engine;
 	}
+
+	private ClassLoader getBaseClassloader() throws MalformedURLException {
+		final ClassLoader retVal;
+
+		String hadoopHome = System.getenv("HADOOP_HOME");
+		String hadoopConfDir = System.getenv("HADOOP_CONF_DIR");
+
+		if (hadoopConfDir != null) {
+			logger.info("Using hadoop config found in " + hadoopConfDir);
+			retVal = new URLClassLoader(new URL[] { new File(hadoopConfDir)
+					.toURI().toURL() }, getClass().getClassLoader());
+		} else if (hadoopHome != null) {
+			logger.info("Using hadoop config found in " + hadoopHome);
+			retVal = new URLClassLoader(
+					new URL[] { new File(hadoopHome, "conf").toURI().toURL() },
+					getClass().getClassLoader());
+		} else {
+			logger.info("HADOOP_HOME not set, using default hadoop config.");
+			retVal = getClass().getClassLoader();
+		}
+
+		return retVal;
+	}
+
+	public HadoopSecurityManager getHadoopSecurityManager() {
+		return hadoopSecurityManager;
+	}
 	
-    private ClassLoader getBaseClassloader() throws MalformedURLException
-    {
-        final ClassLoader retVal;
+	private HadoopSecurityManager loadHadoopSecurityManager(Props props) {
+		
+		Class<?> hadoopSecurityManagerClass = props.getClass(HADOOP_SECURITY_MANAGER_CLASS_PARAM, null);
+		logger.info("Loading hadoop security manager class " + hadoopSecurityManagerClass.getName());
+		HadoopSecurityManager hadoopSecurityManager = null;
 
-        String hadoopHome = System.getenv("HADOOP_HOME");
-	String hadoopConfDir = System.getenv("HADOOP_CONF_DIR");
+		if (hadoopSecurityManagerClass != null && hadoopSecurityManagerClass.getConstructors().length > 0) {
 
-        if(hadoopConfDir != null) {
-	  logger.info("Using hadoop config found in " + hadoopConfDir);
-	  retVal = new URLClassLoader(new URL[] { new File(hadoopConfDir).toURI().toURL() },
-				      getClass().getClassLoader());
-	} else if(hadoopHome != null) {
-            logger.info("Using hadoop config found in " + hadoopHome);
-            retVal = new URLClassLoader(new URL[] { new File(hadoopHome, "conf").toURI().toURL() },
-                                        getClass().getClassLoader());
-        } else {
-            logger.info("HADOOP_HOME not set, using default hadoop config.");
-            retVal = getClass().getClassLoader();
-        }
+			try {
+				Constructor<?> hsmConstructor = hadoopSecurityManagerClass.getConstructor(Props.class);
+				hadoopSecurityManager = (HadoopSecurityManager) hsmConstructor.newInstance(props);
+			} 
+			catch (Exception e) {
+				logger.error("Could not instantiate Hadoop Security Manager "+ hadoopSecurityManagerClass.getName());
+				throw new RuntimeException(e);
+			}
+		} 
+		else {
+			hadoopSecurityManager = new DefaultHadoopSecurityManager();
+		}
 
-        return retVal;
-    }
+		return hadoopSecurityManager;
 
-    public ClassLoader getClassLoader() {
-        return _baseClassLoader;
-    }
-    
+	}
+	
+	public ClassLoader getClassLoader() {
+		return baseClassLoader;
+	}
+
 	/**
 	 * Returns the global azkaban properties
 	 * 
 	 * @return
 	 */
-	public Props getAzkabanProps() {
+	public Props getServerProps() {
 		return props;
 	}
 
@@ -335,20 +360,20 @@ public class AzkabanWebServer {
 		if (options.has(configDirectory)) {
 			String path = options.valueOf(configDirectory);
 			logger.info("Loading azkaban settings file from " + path);
-			File file = new File(path, AZKABAN_PROPERTIES_FILE);
-			if (!file.exists() || file.isDirectory() || !file.canRead()) {
-				logger.error("Cannot read file " + file);
+			File dir = new File(path);
+			if (!dir.exists()) {
+				logger.error("Conf directory " + path + " doesn't exist.");
 			}
-
-			azkabanSettings = loadAzkabanConfiguration(file.getPath());
+			else if (!dir.isDirectory()) {
+				logger.error("Conf directory " + path + " isn't a directory.");
+			}
+			else {
+				azkabanSettings = loadAzkabanConfigurationFromDirectory(dir);
+			}
 		} 
 		else {
 			logger.info("Conf parameter not set, attempting to get value from AZKABAN_HOME env.");
 			azkabanSettings = loadConfigurationFromAzkabanHome();
-		}
-
-		if (azkabanSettings == null) {
-			// one last chance to
 		}
 
 		if (azkabanSettings == null) {
@@ -375,6 +400,7 @@ public class AzkabanWebServer {
 		secureConnector.setKeyPassword(azkabanSettings.getString("jetty.keypassword"));
 		secureConnector.setTruststore(azkabanSettings.getString("jetty.truststore"));
 		secureConnector.setTrustPassword(azkabanSettings.getString("jetty.trustpassword"));
+		
 		server.addConnector(secureConnector);
 
 		QueuedThreadPool httpThreadPool = new QueuedThreadPool(maxThreads);
@@ -383,7 +409,8 @@ public class AzkabanWebServer {
 		String staticDir = azkabanSettings.getString("web.resource.dir", DEFAULT_STATIC_DIR);
 		logger.info("Setting up web resource dir " + staticDir);
 		Context root = new Context(server, "/", Context.SESSIONS);
-
+		root.setMaxFormContentSize(MAX_FORM_CONTENT_SIZE);
+		
 		root.setResourceBase(staticDir);
 		ServletHolder index = new ServletHolder(new IndexServlet());
 		root.addServlet(index, "/index");
@@ -394,7 +421,7 @@ public class AzkabanWebServer {
 		root.addServlet(staticServlet, "/js/*");
 		root.addServlet(staticServlet, "/images/*");
 		root.addServlet(staticServlet, "/favicon.ico");
-
+		
 		root.addServlet(new ServletHolder(new ProjectManagerServlet()),"/manager");
 		root.addServlet(new ServletHolder(new ExecutorServlet()),"/executor");
 		root.addServlet(new ServletHolder(new HistoryServlet()), "/history");
@@ -453,13 +480,7 @@ public class AzkabanWebServer {
 			return null;
 		}
 
-		File confFile = new File(confPath, AZKABAN_PROPERTIES_FILE);
-		if (!confFile.exists() || confFile.isDirectory() || !confPath.canRead()) {
-			logger.error(confFile + " does not contain a readable azkaban.properties file.");
-			return null;
-		}
-
-		return loadAzkabanConfiguration(confFile.getPath());
+		return loadAzkabanConfigurationFromDirectory(confPath);
 	}
 
 	/**
@@ -470,26 +491,29 @@ public class AzkabanWebServer {
 	public File getTempDirectory() {
 		return tempDir;
 	}
-
-	/**
-	 * Loads the Azkaban conf file int a Props object
-	 * 
-	 * @param path
-	 * @return
-	 */
-	private static Props loadAzkabanConfiguration(String path) {
+	
+	private static Props loadAzkabanConfigurationFromDirectory(File dir) {
+		File azkabanPrivatePropsFile = new File(dir, AZKABAN_PRIVATE_PROPERTIES_FILE);
+		File azkabanPropsFile = new File(dir, AZKABAN_PROPERTIES_FILE);
+		
+		Props props = null;
 		try {
-			return new Props(null, path);
-		} 
-		catch (FileNotFoundException e) {
-			logger.error("File not found. Could not load azkaban config file " + path);
-		} 
-		catch (IOException e) {
-			logger.error("File found, but error reading. Could not load azkaban config file " + path);
+			// This is purely optional
+			if (azkabanPrivatePropsFile.exists() && azkabanPrivatePropsFile.isFile()) {
+				logger.info("Loading azkaban private properties file" );
+				props = new Props(null, azkabanPrivatePropsFile);
+			}
+
+			if (azkabanPropsFile.exists() && azkabanPropsFile.isFile()) {
+				logger.info("Loading azkaban properties file" );
+				props = new Props(props, azkabanPropsFile);
+			}
+		} catch (FileNotFoundException e) {
+			logger.error("File not found. Could not load azkaban config file", e);
+		} catch (IOException e) {
+			logger.error("File found, but error reading. Could not load azkaban config file", e);
 		}
-
-		return null;
+		
+		return props;
 	}
-
-
 }

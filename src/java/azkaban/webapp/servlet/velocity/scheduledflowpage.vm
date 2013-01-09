@@ -79,17 +79,17 @@
 						<tr class="row" >
 
 							<td class="tb-name">
-								<a href="${context}/manager?project=${sched.projectId}&flow=${sched.flowId}">${sched.flowId}</a>
+								<a href="${context}/manager?project=${sched.projectName}&flow=${sched.flowName}">${sched.flowName}</a>
 							</td>
 							<td>
-								<a href="${context}/manager?project=${sched.projectId}">${sched.projectId}</a>
+								<a href="${context}/manager?project=${sched.projectName}">${sched.projectName}</a>
 							</td>
-							<td>${sched.user}</td>
-							<td>${sched.userSubmit}</td>
+							<td>${sched.submitUser}</td>
+							<td>${sched.submitUser}</td>
 							<td>$utils.formatDateTime(${sched.firstSchedTime})</td>
 							<td>$utils.formatDateTime(${sched.nextExecTime})</td>
 							<td>$utils.formatPeriod(${sched.period})</td>
-							<td><button id="removeSchedBtn" onclick="removeSched('${sched.scheduleId}')" >Remove Schedule</button></td>
+							<td><button id="removeSchedBtn" onclick="removeSched(${sched.projectId}, '${sched.flowName}')" >Remove Schedule</button></td>
 						</tr>
 #end
 #else

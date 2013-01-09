@@ -107,6 +107,7 @@ azkaban.ExecuteFlowView = Backbone.View.extend({
 	  	$('#modalBackground').show();
 	  	$('#executing-options').show();
 	  	this.cloneModel = this.model.clone();
+	  	cloneModel = this.cloneModel;
 	  	
 	  	var fetchData = {"project": projectName, "ajax":"flowInfo", "flow":flowName};
 	  	if (execId) {
@@ -138,6 +139,19 @@ azkaban.ExecuteFlowView = Backbone.View.extend({
       	  	toNode.inNodes[fromNode.id] = fromNode;
       	}
 	    this.cloneModel.set({nodes: nodes});
+	  	
+	  	var disabled = {};
+		for (var i = 0; i < data.nodes.length; ++i) {
+			var updateNode = data.nodes[i];
+			if (updateNode.status == "DISABLED" || updateNode.status == "SKIPPED") {
+				updateNode.status = "READY";
+				disabled[updateNode.id] = true;
+			}
+			if (updateNode.status == "SUCCEEDED") {
+				disabled[updateNode.id] = true;
+			}
+		}
+	  	this.cloneModel.set({disabled: disabled});
 	  	
 	  	$.get(
 			executeURL,
@@ -205,18 +219,6 @@ azkaban.ExecuteFlowView = Backbone.View.extend({
 	  		return;
 	  	}
 	  	
- 	  	cloneModel = this.cloneModel;
-
-		var disabled = {};
-		var data = this.cloneModel.get("data");
-		for (var i = 0; i < data.nodes.length; ++i) {
-			var updateNode = data.nodes[i];
-			if (updateNode.status == "DISABLED" || updateNode.status == "SUCCEEDED" || updateNode.status == "SKIPPED") {
-				disabled[updateNode.id] = true;
-			}
-		}
- 	  	cloneModel.set({disabled: disabled});
- 	  	
 	  	customSvgGraphView = new azkaban.SvgGraphView({el:$('#svgDivCustom'), model: this.cloneModel, rightClick: {id: 'disableJobMenu', callback: this.handleDisableMenuClick}});
 		customJobsListView = new azkaban.JobListView({el:$('#jobListCustom'), model: this.cloneModel, rightClick: {id: 'disableJobMenu', callback: this.handleDisableMenuClick}});
 		this.cloneModel.trigger("change:graph");

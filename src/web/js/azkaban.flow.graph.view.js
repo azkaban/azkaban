@@ -137,13 +137,15 @@ azkaban.SvgGraphView = Backbone.View.extend({
 	},
 	handleStatusUpdate: function(evt) {
 		var updateData = this.model.get("update");
-		for (var i = 0; i < updateData.nodes.length; ++i) {
-			var updateNode = updateData.nodes[i];
-			
-			var g = this.gNodes[updateNode.id];
-			this.handleRemoveAllStatus(g);
-			
-			addClass(g, updateNode.status);
+		if (updateData.nodes) {
+			for (var i = 0; i < updateData.nodes.length; ++i) {
+				var updateNode = updateData.nodes[i];
+				
+				var g = this.gNodes[updateNode.id];
+				this.handleRemoveAllStatus(g);
+				
+				addClass(g, updateNode.status);
+			}
 		}
 	},
 	handleRemoveAllStatus: function(gNode) {

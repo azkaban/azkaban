@@ -23,6 +23,7 @@
 		<script type="text/javascript" src="${context}/js/underscore-1.2.1-min.js"></script>
 		<script type="text/javascript" src="${context}/js/backbone-0.5.3-min.js"></script>
 		<script type="text/javascript" src="${context}/js/jquery.simplemodal.js"></script>
+		<script type="text/javascript" src="${context}/js/azkaban.date.utils.js"></script>
 		<script type="text/javascript" src="${context}/js/azkaban.ajax.utils.js"></script>
 		<script type="text/javascript" src="${context}/js/azkaban.nav.js"></script>
 		<script type="text/javascript" src="${context}/js/azkaban.projectlog.view.js"></script>
@@ -65,8 +66,10 @@
 
 			<div id="projectLogView" class="logView">
 				<div class="logHeader"><div class="logButtonRow"><div id="updateLogBtn" class="btn7">Refresh</div></div></div>
-				<div class="logViewer">
-					<pre id="logSection" class="log"></pre>
+				<div id="logViewer" class="logViewer">
+					<table id="logTable">
+						
+					</table>
 				</div>
 			</div>
 #end

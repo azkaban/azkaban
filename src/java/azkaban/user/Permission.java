@@ -26,11 +26,21 @@ import azkaban.utils.Utils;
 
 public class Permission {
 	public enum Type {
-		READ,
-		WRITE,
-		EXECUTE,
-		SCHEDULE,
-		ADMIN
+		READ(0x0000001),
+		WRITE(0x0000002),
+		EXECUTE(0x0000004),
+		SCHEDULE(0x0000008),
+		ADMIN(0x8000000);
+		
+		private int numVal;
+
+		Type(int numVal) {
+			this.numVal = numVal;
+		}
+
+		public int getFlag() {
+			return numVal;
+		}
 	}
 
 	private Set<Type> permissions = new HashSet<Type>();
@@ -38,8 +48,16 @@ public class Permission {
 	public Permission() {
 	}
 	
+	public Permission(int flags) {
+		setPermissions(flags);
+	}
+	
 	public Permission(Type ... list) {
 		addPermission(list);
+	}
+	
+	public void addPermissions(Permission perm) {
+		this.permissions.addAll(perm.getTypes());
 	}
 	
 	public void setPermission(Type type, boolean set) {
@@ -48,6 +66,20 @@ public class Permission {
 		}
 		else {
 			removePermissions(type);
+		}
+	}
+	
+	public void setPermissions(int flags) {
+		permissions.clear();
+		if((flags & Type.ADMIN.getFlag()) != 0) {
+			addPermission(Type.ADMIN);
+		}
+		else {
+			for (Type type: Type.values()) {
+				if ((flags & type.getFlag()) != 0) {
+					addPermission(type);
+				}
+			}
 		}
 	}
 	
@@ -87,6 +119,10 @@ public class Permission {
 				addPermission(type);
 			};
 		}
+	}
+	
+	public Set<Type> getTypes() {
+		return permissions;
 	}
 	
 	public void removePermissions(Type ... list) {
@@ -151,5 +187,14 @@ public class Permission {
 		} else if (!permissions.equals(other.permissions))
 			return false;
 		return true;
+	}
+	
+	public int toFlags() {
+		int flag = 0;
+		for (Type type: permissions) {
+			flag |= type.getFlag();
+		}
+		
+		return flag;
 	}
 }

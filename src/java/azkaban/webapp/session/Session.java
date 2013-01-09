@@ -23,16 +23,18 @@ import azkaban.user.User;
 public class Session {
 	private final User user;
 	private final String sessionId;
-
+	private final String ip;
+	
 	/**
 	 * Constructor for the session
 	 * 
 	 * @param sessionId
 	 * @param user
 	 */
-	public Session(String sessionId, User user) {
+	public Session(String sessionId, User user, String ip) {
 		this.user = user;
 		this.sessionId = sessionId;
+		this.ip = ip;
 	}
 
 	/**
@@ -51,5 +53,9 @@ public class Session {
 	 */
 	public String getSessionId() {
 		return sessionId;
+	}
+
+	public String getIp() {
+		return ip;
 	}
 }

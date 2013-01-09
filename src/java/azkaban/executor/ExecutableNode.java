@@ -16,6 +16,7 @@
 
 package azkaban.executor;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -26,8 +27,8 @@ import azkaban.flow.Node;
 import azkaban.utils.JSONUtils;
 
 public class ExecutableNode {
-	private String id;
-
+	private String jobId;
+	private int executionId;
 	private String type;
 	private String jobPropsSource;
 	private String inheritPropsSource;
@@ -35,6 +36,7 @@ public class ExecutableNode {
 	private Status status = Status.READY;
 	private long startTime = -1;
 	private long endTime = -1;
+	private long updateTime = -1;
 	private int level = 0;
 	private ExecutableFlow flow;
 	
@@ -42,7 +44,8 @@ public class ExecutableNode {
 	private Set<String> outNodes = new HashSet<String>();
 	
 	public ExecutableNode(Node node, ExecutableFlow flow) {
-		id = node.getId();
+		jobId = node.getId();
+		executionId = flow.getExecutionId();
 		type = node.getType();
 		jobPropsSource = node.getJobSource();
 		inheritPropsSource = node.getPropsSource();
@@ -54,12 +57,24 @@ public class ExecutableNode {
 	public ExecutableNode() {
 	}
 	
-	public String getId() {
-		return id;
+	public void setExecutableFlow(ExecutableFlow flow) {
+		this.flow = flow;
+	}
+	
+	public void setExecutionId(int id) {
+		executionId = id;
+	}
+	
+	public int getExecutionId() {
+		return executionId;
+	}
+	
+	public String getJobId() {
+		return jobId;
 	}
 
-	public void setId(String id) {
-		this.id = id;
+	public void setJobId(String id) {
+		this.jobId = id;
 	}
 	
 	public void addInNode(String exNode) {
@@ -88,15 +103,16 @@ public class ExecutableNode {
 	
 	public Object toObject() {
 		HashMap<String, Object> objMap = new HashMap<String, Object>();
-		objMap.put("id", id);
+		objMap.put("id", jobId);
 		objMap.put("jobSource", jobPropsSource);
 		objMap.put("propSource", inheritPropsSource);
 		objMap.put("jobType", type);
 		objMap.put("status", status.toString());
-		objMap.put("inNodes", inNodes);
-		objMap.put("outNodes", outNodes);
+		objMap.put("inNodes", new ArrayList<String>(inNodes));
+		objMap.put("outNodes", new ArrayList<String>(outNodes));
 		objMap.put("startTime", startTime);
 		objMap.put("endTime", endTime);
+		objMap.put("updateTime", updateTime);
 		objMap.put("level", level);
 		
 		if (outputPropsSource != null) {
@@ -111,7 +127,8 @@ public class ExecutableNode {
 		ExecutableNode exNode = new ExecutableNode();
 		
 		HashMap<String, Object> objMap = (HashMap<String,Object>)obj;
-		exNode.id = (String)objMap.get("id");
+		exNode.executionId = flow == null ? 0 : flow.getExecutionId();
+		exNode.jobId = (String)objMap.get("id");
 		exNode.jobPropsSource = (String)objMap.get("jobSource");
 		exNode.inheritPropsSource = (String)objMap.get("propSource");
 		exNode.outputPropsSource = (String)objMap.get("outputSource");
@@ -123,6 +140,7 @@ public class ExecutableNode {
 		
 		exNode.startTime = JSONUtils.getLongFromObject(objMap.get("startTime"));
 		exNode.endTime = JSONUtils.getLongFromObject(objMap.get("endTime"));
+		exNode.updateTime = JSONUtils.getLongFromObject(objMap.get("updateTime"));
 		exNode.level = (Integer)objMap.get("level");
 		
 		exNode.flow = flow;
@@ -169,5 +187,13 @@ public class ExecutableNode {
 	
 	public ExecutableFlow getFlow() {
 		return flow;
+	}
+
+	public long getUpdateTime() {
+		return updateTime;
+	}
+
+	public void setUpdateTime(long updateTime) {
+		this.updateTime = updateTime;
 	}
 }
