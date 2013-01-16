@@ -19,8 +19,7 @@
 				function navMenuClick(url) {
 					window.location.href=url;
 				}
-				
-				function 
+
 			</script>
 
 			<ul id="nav" class="nav">
