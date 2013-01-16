@@ -12,6 +12,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.StringTokenizer;
 
 import org.apache.commons.io.IOUtils;
 
@@ -19,6 +20,23 @@ import org.apache.commons.io.IOUtils;
  * Runs a few unix commands. Created this so that I can move to JNI in the future.
  */
 public class FileIOUtils {
+	public static String getSourcePathFromClass(Class<?> containedClass) {
+		File file = new File(containedClass.getProtectionDomain().getCodeSource().getLocation().getPath());
+
+		if (!file.isDirectory() && file.getName().endsWith(".class")) {
+			String name = containedClass.getName();
+			StringTokenizer tokenizer = new StringTokenizer(name, ".");
+			while(tokenizer.hasMoreTokens()) {
+				tokenizer.nextElement();
+				file = file.getParentFile();
+			}
+			return file.getPath();  
+		}
+		else {
+			return containedClass.getProtectionDomain().getCodeSource().getLocation().getPath();
+		}
+	}
+	
 	/**
 	 * Run a unix command that will symlink files, and recurse into directories.
 	 */

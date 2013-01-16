@@ -20,17 +20,22 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Properties;
 import java.util.TimeZone;
 
+import org.apache.commons.lang.StringUtils;
 import org.apache.log4j.Logger;
 import org.apache.velocity.app.VelocityEngine;
 import org.apache.velocity.runtime.log.Log4JLogChute;
 import org.apache.velocity.runtime.resource.loader.ClasspathResourceLoader;
+import org.apache.velocity.runtime.resource.loader.JarResourceLoader;
 import org.joda.time.DateTimeZone;
 import org.mortbay.jetty.Server;
 import org.mortbay.jetty.security.SslSocketConnector;
@@ -46,20 +51,22 @@ import azkaban.project.ProjectManager;
 
 import azkaban.scheduler.JdbcScheduleLoader;
 import azkaban.scheduler.ScheduleManager;
-import azkaban.security.DefaultHadoopSecurityManager;
-import azkaban.security.HadoopSecurityManager;
 import azkaban.user.UserManager;
 import azkaban.user.XmlUserManager;
+import azkaban.utils.FileIOUtils;
 import azkaban.utils.Props;
+import azkaban.utils.PropsUtils;
 import azkaban.utils.Utils;
 import azkaban.webapp.servlet.AzkabanServletContextListener;
 
+import azkaban.webapp.servlet.AbstractAzkabanServlet;
 import azkaban.webapp.servlet.ExecutorServlet;
-import azkaban.webapp.servlet.HdfsBrowserServlet;
+import azkaban.webapp.servlet.LoginAbstractAzkabanServlet;
 import azkaban.webapp.servlet.ScheduleServlet;
 import azkaban.webapp.servlet.HistoryServlet;
 import azkaban.webapp.servlet.IndexServlet;
 import azkaban.webapp.servlet.ProjectManagerServlet;
+import azkaban.webapp.servlet.ViewerPlugin;
 import azkaban.webapp.session.SessionCache;
 
 import joptsimple.OptionParser;
@@ -104,7 +111,6 @@ public class AzkabanWebServer implements AzkabanServer {
 	private static final int DEFAULT_THREAD_NUMBER = 20;
 	private static final String VELOCITY_DEV_MODE_PARAM = "velocity.dev.mode";
 	private static final String USER_MANAGER_CLASS_PARAM = "user.manager.class";
-	private static final String HADOOP_SECURITY_MANAGER_CLASS_PARAM = "hadoop.security.manager.class";
 	private static final String DEFAULT_STATIC_DIR = "";
 
 	private final VelocityEngine velocityEngine;
@@ -115,11 +121,11 @@ public class AzkabanWebServer implements AzkabanServer {
 	private ScheduleManager scheduleManager;
 
 	private final ClassLoader baseClassLoader;
-	private HadoopSecurityManager hadoopSecurityManager;
 	
 	private Props props;
 	private SessionCache sessionCache;
 	private File tempDir;
+	private List<ViewerPlugin> viewerPlugins;
 
 	/**
 	 * Constructor usually called by tomcat AzkabanServletContext to create the
@@ -141,7 +147,6 @@ public class AzkabanWebServer implements AzkabanServer {
 		executorManager = loadExecutorManager(props);
 		scheduleManager = loadScheduleManager(executorManager, props);
 		baseClassLoader = getBaseClassloader();
-		hadoopSecurityManager = loadHadoopSecurityManager(props);
 		
 		tempDir = new File(props.getString("azkaban.temp.dir", "temp"));
 
@@ -153,6 +158,10 @@ public class AzkabanWebServer implements AzkabanServer {
 
 			logger.info("Setting timezone to " + timezone);
 		}
+	}
+	
+	private void setViewerPlugins(List<ViewerPlugin> viewerPlugins) {
+		this.viewerPlugins = viewerPlugins;
 	}
 	
 	private UserManager loadUserManager(Props props) {
@@ -253,10 +262,12 @@ public class AzkabanWebServer implements AzkabanServer {
 	 */
 	private VelocityEngine configureVelocityEngine(final boolean devMode) {
 		VelocityEngine engine = new VelocityEngine();
-		engine.setProperty("resource.loader", "classpath");
+		engine.setProperty("resource.loader", "classpath, jar");
 		engine.setProperty("classpath.resource.loader.class", ClasspathResourceLoader.class.getName());
 		engine.setProperty("classpath.resource.loader.cache", !devMode);
 		engine.setProperty("classpath.resource.loader.modificationCheckInterval", 5L);
+		engine.setProperty("jar.resource.loader.class", JarResourceLoader.class.getName());
+		engine.setProperty("jar.resource.loader.cache", !devMode);
 		engine.setProperty("resource.manager.logwhenfound", false);
 		engine.setProperty("input.encoding", "UTF-8");
 		engine.setProperty("output.encoding", "UTF-8");
@@ -297,35 +308,6 @@ public class AzkabanWebServer implements AzkabanServer {
 		return retVal;
 	}
 
-	public HadoopSecurityManager getHadoopSecurityManager() {
-		return hadoopSecurityManager;
-	}
-	
-	private HadoopSecurityManager loadHadoopSecurityManager(Props props) {
-		
-		Class<?> hadoopSecurityManagerClass = props.getClass(HADOOP_SECURITY_MANAGER_CLASS_PARAM, null);
-		logger.info("Loading hadoop security manager class " + hadoopSecurityManagerClass.getName());
-		HadoopSecurityManager hadoopSecurityManager = null;
-
-		if (hadoopSecurityManagerClass != null && hadoopSecurityManagerClass.getConstructors().length > 0) {
-
-			try {
-				Constructor<?> hsmConstructor = hadoopSecurityManagerClass.getConstructor(Props.class);
-				hadoopSecurityManager = (HadoopSecurityManager) hsmConstructor.newInstance(props);
-			} 
-			catch (Exception e) {
-				logger.error("Could not instantiate Hadoop Security Manager "+ hadoopSecurityManagerClass.getName());
-				throw new RuntimeException(e);
-			}
-		} 
-		else {
-			hadoopSecurityManager = new DefaultHadoopSecurityManager();
-		}
-
-		return hadoopSecurityManager;
-
-	}
-	
 	public ClassLoader getClassLoader() {
 		return baseClassLoader;
 	}
@@ -426,10 +408,16 @@ public class AzkabanWebServer implements AzkabanServer {
 		root.addServlet(new ServletHolder(new ExecutorServlet()),"/executor");
 		root.addServlet(new ServletHolder(new HistoryServlet()), "/history");
 		root.addServlet(new ServletHolder(new ScheduleServlet()),"/schedule");
-		root.addServlet(new ServletHolder(new HdfsBrowserServlet()), "/hdfs/*");
+		
+		String viewerPluginDir = azkabanSettings.getString("viewer.plugin.dir", "plugins/viewer");
+		List<String> viewerPlugins = azkabanSettings.getStringList("viewer.plugins", (List<String>) null);
+		if (viewerPlugins != null) {
+			app.setViewerPlugins(loadViewerPlugins(root, viewerPluginDir, viewerPlugins, app.getVelocityEngine()));
+		}
+		//root.addServlet(new ServletHolder(new HdfsBrowserServlet()), "/hdfs/*");
 		
 		root.setAttribute(AzkabanServletContextListener.AZKABAN_SERVLET_CONTEXT_KEY, app);
-
+		
 		try {
 			server.start();
 		} 
@@ -455,6 +443,115 @@ public class AzkabanWebServer implements AzkabanServer {
 		logger.info("Server running on port " + sslPortNumber + ".");
 	}
 
+	private static List<ViewerPlugin> loadViewerPlugins(Context root, String pluginPath, List<String> plugins, VelocityEngine ve) {
+		ArrayList<ViewerPlugin> installedViewerPlugins = new ArrayList<ViewerPlugin>();
+		
+		File viewerPluginPath = new File(pluginPath);
+		ClassLoader parentLoader = AzkabanWebServer.class.getClassLoader();
+		ArrayList<String> jarPaths = new ArrayList<String>();
+		for (String plug: plugins) {
+			File pluginDir = new File(viewerPluginPath, plug);
+			if (!pluginDir.exists()) {
+				logger.error("Error viewer plugin path " + pluginDir.getPath() + " doesn't exist.");
+				continue;
+			}
+			
+			if (!pluginDir.isDirectory()) {
+				logger.error("The plugin path " + pluginDir + " is not a directory.");
+				continue;
+			}
+			
+			// Load the conf directory
+			File propertiesDir = new File(pluginDir, "conf");
+			Props pluginProps = null;
+			if (propertiesDir.exists() && propertiesDir.isDirectory()) {
+				pluginProps = PropsUtils.loadPropsInDir(propertiesDir, "properties");
+			}
+			else {
+				logger.error("Plugin conf path " + propertiesDir + " not found.");
+				continue;
+			}
+			
+			String pluginName = pluginProps.getString("viewer.name");
+			String pluginWebPath = pluginProps.getString("viewer.path");
+			String pluginClass = pluginProps.getString("viewer.servlet.class");
+			if (pluginClass == null) {
+				logger.error("Viewer class is not set.");
+			}
+			else {
+				logger.error("Plugin class " + pluginClass);
+			}
+			
+			URLClassLoader urlClassLoader = null;
+			File libDir = new File(pluginDir, "lib");
+			if (libDir.exists() && libDir.isDirectory()) {
+				File[] files = libDir.listFiles();
+				
+				URL[] url = new URL[files.length];
+				for (int i=0; i < files.length; ++i) {
+					try {
+						url[i] = files[i].toURI().toURL();
+					} catch (MalformedURLException e) {
+						logger.error(e);
+					}
+				}
+				
+				urlClassLoader = new URLClassLoader(url, parentLoader);
+			}
+			else {
+				logger.error("Library path " + propertiesDir + " not found.");
+				continue;
+			}
+			
+			Class<?> viewerClass = null;
+			try {
+				viewerClass = urlClassLoader.loadClass(pluginClass);
+			}
+			catch (ClassNotFoundException e) {
+				logger.error("Class " + pluginClass + " not found.");
+				continue;
+			}
+
+			String source = FileIOUtils.getSourcePathFromClass(viewerClass);
+			logger.info("Source jar " + source);
+			jarPaths.add("jar:file:" + source);
+			
+			Constructor<?> constructor = null;
+			try {
+				constructor = viewerClass.getConstructor(Props.class);
+			} catch (NoSuchMethodException e) {
+				logger.error("Constructor not found in " + pluginClass);
+				continue;
+			}
+			
+			Object obj = null;
+			try {
+				obj = constructor.newInstance(pluginProps);
+			} catch (Exception e) {
+				logger.error(e);
+			} 
+			
+			if (!(obj instanceof AbstractAzkabanServlet)) {
+				logger.error("The object is not an AbstractViewerServlet");
+				continue;
+			}
+			
+			AbstractAzkabanServlet avServlet = (AbstractAzkabanServlet)obj;
+			root.addServlet(new ServletHolder(avServlet), "/" + pluginWebPath + "/*");
+			installedViewerPlugins.add(new ViewerPlugin(pluginName, pluginWebPath));
+		}
+		
+		String jarResourcePath = StringUtils.join(jarPaths, ", ");
+		logger.info("Setting jar resource path " + jarResourcePath);
+		ve.addProperty("jar.resource.loader.path", jarResourcePath);
+		
+		return installedViewerPlugins;
+	}
+	
+	public List<ViewerPlugin> getViewerPlugins() {
+		return viewerPlugins;
+	}
+	
 	/**
 	 * Loads the Azkaban property file from the AZKABAN_HOME conf directory
 	 * 

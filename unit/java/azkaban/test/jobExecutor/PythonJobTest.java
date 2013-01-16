@@ -90,7 +90,7 @@ public class PythonJobTest
 //    EasyMock.expect(descriptor.getProps()).andReturn(props).times(3);
 //    EasyMock.expect(descriptor.getFullPath()).andReturn(".").times(1);
 //    EasyMock.replay(descriptor);
-    job = new PythonJob("TestProcess", props, log);
+    job = new PythonJob("TestProcess", props, props, log);
 //    EasyMock.verify(descriptor);
     try
     {

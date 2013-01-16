@@ -32,8 +32,7 @@ import azkaban.executor.ExecutableNode;
 import azkaban.executor.ExecutorLoader;
 import azkaban.executor.ExecutorManagerException;
 import azkaban.flow.FlowProps;
-import azkaban.jobtype.JobtypeManager;
-import azkaban.security.HadoopSecurityManager;
+import azkaban.jobtype.JobTypeManager;
 import azkaban.utils.Props;
 
 public class FlowRunner extends EventHandler implements Runnable {
@@ -59,8 +58,7 @@ public class FlowRunner extends EventHandler implements Runnable {
 	private Map<String, Props> jobOutputProps = new HashMap<String, Props>();
 	
 	private Props globalProps;
-	private final JobtypeManager jobtypeManager;
-	private final HadoopSecurityManager hadoopSecurityManager;
+	private final JobTypeManager jobtypeManager;
 	
 	private JobRunnerEventListener listener = new JobRunnerEventListener();
 	private BlockingQueue<JobRunner> jobsToRun = new LinkedBlockingQueue<JobRunner>();
@@ -74,14 +72,13 @@ public class FlowRunner extends EventHandler implements Runnable {
 	private boolean flowFinished = false;
 	private boolean flowCancelled = false;
 	
-	public FlowRunner(ExecutableFlow flow, ExecutorLoader executorLoader, JobtypeManager jobtypeManager, HadoopSecurityManager hadoopSecurityManager) throws ExecutorManagerException {
+	public FlowRunner(ExecutableFlow flow, ExecutorLoader executorLoader, JobTypeManager jobtypeManager) throws ExecutorManagerException {
 		this.execId = flow.getExecutionId();
 		this.flow = flow;
 		this.executorLoader = executorLoader;
 		this.executorService = Executors.newFixedThreadPool(numThreads);
 		this.execDir = new File(flow.getExecutionPath());
 		this.jobtypeManager = jobtypeManager;
-		this.hadoopSecurityManager = hadoopSecurityManager;
 	}
 
 	public FlowRunner setGlobalProps(Props globalProps) {
@@ -316,7 +313,8 @@ public class FlowRunner extends EventHandler implements Runnable {
 			logger.error("Error loading job file " + source + " for job " + node.getJobId());
 		}
 		
-		JobRunner jobRunner = new JobRunner(node, prop, path.getParentFile(), executorLoader, jobtypeManager, hadoopSecurityManager);
+		// should have one prop with system secrets, the other user level props
+		JobRunner jobRunner = new JobRunner(node, new Props(), prop, path.getParentFile(), executorLoader, jobtypeManager);
 		jobRunner.addListener(listener);
 
 		return jobRunner;
@@ -510,8 +508,6 @@ public class FlowRunner extends EventHandler implements Runnable {
 					queueNextJobs(node);
 				}
 				
-				runner.cleanup();
-
 				if (isFlowFinished()) {
 					logger.info("Flow appears finished. Cleaning up.");
 					flowFinished = true;

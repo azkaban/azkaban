@@ -22,16 +22,20 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
+import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.apache.commons.fileupload.servlet.ServletFileUpload;
 import org.apache.log4j.Logger;
 
 import azkaban.user.User;
 import azkaban.user.UserManager;
 import azkaban.user.UserManagerException;
+import azkaban.utils.Props;
+import azkaban.webapp.AzkabanServer;
 import azkaban.webapp.session.Session;
 
 /**
@@ -44,7 +48,17 @@ public abstract class LoginAbstractAzkabanServlet extends AbstractAzkabanServlet
 
 	private static final Logger logger = Logger.getLogger(LoginAbstractAzkabanServlet.class.getName());
 	private static final String SESSION_ID_NAME = "azkaban.browser.session.id";
-
+	private static final int DEFAULT_UPLOAD_DISK_SPOOL_SIZE = 20 * 1024 * 1024;
+	
+	private MultipartParser multipartParser;
+	
+	@Override
+	public void init(ServletConfig config) throws ServletException {
+		super.init(config);
+		
+		multipartParser = new MultipartParser(DEFAULT_UPLOAD_DISK_SPOOL_SIZE);
+	}
+	
 	@Override
 	protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
 		// Set session id
@@ -72,7 +86,7 @@ public abstract class LoginAbstractAzkabanServlet extends AbstractAzkabanServlet
 		}
 	}
 	
-	private Session getSessionFromRequest(HttpServletRequest req) {
+	private Session getSessionFromRequest(HttpServletRequest req) throws ServletException {
 		String remoteIp = req.getRemoteAddr();
 		Cookie cookie = getCookieByName(req, SESSION_ID_NAME);
 		String sessionId = null;
@@ -81,17 +95,25 @@ public abstract class LoginAbstractAzkabanServlet extends AbstractAzkabanServlet
 			sessionId = cookie.getValue();
 			logger.info("Session id " + sessionId);
 		}
+		
+		if (sessionId == null && hasParam(req, "session.id")) {
+			sessionId = getParam(req, "session.id");
+		}
+		return getSessionFromSessionId(sessionId, remoteIp);
+	}
+	
+	private Session getSessionFromSessionId(String sessionId, String remoteIp) {
 		if (sessionId == null) {
 			return null;
-		} else {
-			Session session = getApplication().getSessionCache().getSession(sessionId);
-			// Check if the IP's are equal. If not, we invalidate the sesson.
-			if (session == null || !remoteIp.equals(session.getIp())) {
-				return null;
-			}
-			
-			return session;
 		}
+		
+		Session session = getApplication().getSessionCache().getSession(sessionId);
+		// Check if the IP's are equal. If not, we invalidate the sesson.
+		if (session == null || !remoteIp.equals(session.getIp())) {
+			return null;
+		}
+		
+		return session;
 	}
 
 	private void handleLogin(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
@@ -109,32 +131,62 @@ public abstract class LoginAbstractAzkabanServlet extends AbstractAzkabanServlet
 
 	@Override
 	protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-		if (hasParam(req, "action")) {
-			String action = getParam(req, "action");
-			if (action.equals("login")) {
-				HashMap<String,Object> obj = new HashMap<String,Object>();
-				handleAjaxLoginAction(req, resp, obj);
-				this.writeJSON(resp, obj);
-			} 
-			else {
-				Session session = getSessionFromRequest(req);
-				if (session == null) {
-					if (isAjaxCall(req)) {
-						String response = createJsonResponse("error", "Invalid Session. Need to re-login", "login", null);
-						writeResponse(resp, response);
-					} 
-					else {
-						handleLogin(req, resp, "Enter username and password");
+		Session session = getSessionFromRequest(req);
+		
+		// Handle Multipart differently from other post messages
+		if(ServletFileUpload.isMultipartContent(req)) {
+			Map<String, Object> params = multipartParser.parseMultipart(req);
+			if (session == null) {
+				// See if the session id is properly set.
+				if (params.containsKey("session.id")) {
+					String sessionId = (String)params.get("session.id");
+					String ip = req.getRemoteAddr();
+					
+					session = getSessionFromSessionId(sessionId, ip);
+					if (session != null) {
+						handleMultiformPost(req, resp, params, session);
+						return;
 					}
-				} 
-				else {
-					handlePost(req, resp, session);
+				}
+
+				// if there's no valid session, see if it's a one time session.
+				if (!params.containsKey("username") || !params.containsKey("password")) {
+					writeResponse(resp, "Login error. Need username and password");
+					return;
+				}
+				
+				String username = (String)params.get("username");
+				String password = (String)params.get("password");
+				String ip = req.getRemoteAddr();
+				
+				try {
+					session = createSession(username, password, ip);
+				} catch (UserManagerException e) {
+					writeResponse(resp, "Login error: " + e.getMessage());
+					return;
 				}
 			}
-		} 
-		else {
-			Session session = getSessionFromRequest(req);
-			if (session == null) {
+
+			handleMultiformPost(req, resp, params, session);
+		}
+		else if (hasParam(req, "action") && getParam(req, "action").equals("login")) {
+			HashMap<String,Object> obj = new HashMap<String,Object>();
+			handleAjaxLoginAction(req, resp, obj);
+			this.writeJSON(resp, obj);
+		}
+		else if (session == null) {
+			if (hasParam(req, "username") && hasParam(req, "password")) {
+				// If it's a post command with curl, we create a temporary session
+				try {
+					session = createSession(req);
+				} catch (UserManagerException e) {
+					writeResponse(resp, "Login error: " + e.getMessage());
+				}
+				
+				handlePost(req, resp, session);
+			}
+			else {
+				// There are no valid sessions and temporary logins, no we either pass back a message or redirect.
 				if (isAjaxCall(req)) {
 					String response = createJsonResponse("error", "Invalid Session. Need to re-login", "login", null);
 					writeResponse(resp, response);
@@ -142,37 +194,47 @@ public abstract class LoginAbstractAzkabanServlet extends AbstractAzkabanServlet
 				else {
 					handleLogin(req, resp, "Enter username and password");
 				}
-			} 
-			else {
-				handlePost(req, resp, session);
 			}
+		}
+		else {
+			handlePost(req, resp, session);
 		}
 	}
 
+	private Session createSession(HttpServletRequest req) throws UserManagerException, ServletException {
+		String username = getParam(req, "username");
+		String password = getParam(req, "password");
+		String ip = req.getRemoteAddr();
+		
+		return createSession(username, password, ip);
+	}
+	
+	private Session createSession(String username, String password, String ip) throws UserManagerException, ServletException {
+		UserManager manager = getApplication().getUserManager();
+		User user = manager.getUser(username, password);
+
+		String randomUID = UUID.randomUUID().toString();
+		Session session = new Session(randomUID, user, ip);
+		
+		return session;
+	}
+	
 	protected void handleAjaxLoginAction(HttpServletRequest req, HttpServletResponse resp, Map<String, Object> ret) throws ServletException {
 		if (hasParam(req, "username") && hasParam(req, "password")) {
-			String username = getParam(req, "username");
-			String password = getParam(req, "password");
-
-			UserManager manager = getApplication().getUserManager();
-
-			User user = null;
+			Session session = null;
 			try {
-				user = manager.getUser(username, password);
-			} 
-			catch (UserManagerException e) {
-				ret.put("error", "Incorrect Login. " + e.getCause());
+				session = createSession(req);
+			} catch (UserManagerException e) {
+				ret.put("error", "Incorrect Login. " + e.getMessage());
 				return;
 			}
-
-			String ip = req.getRemoteAddr();
-			String randomUID = UUID.randomUUID().toString();
-			Session session = new Session(randomUID, user, ip);
-			Cookie cookie = new Cookie(SESSION_ID_NAME, randomUID);
+			
+			Cookie cookie = new Cookie(SESSION_ID_NAME, session.getSessionId());
 			cookie.setPath("/");
 			resp.addCookie(cookie);
 			getApplication().getSessionCache().addSession(session);
 			ret.put("status", "success");
+			ret.put("session.id", session.getSessionId());
 		} 
 		else {
 			ret.put("error", "Incorrect Login.");
@@ -218,4 +280,17 @@ public abstract class LoginAbstractAzkabanServlet extends AbstractAzkabanServlet
 	 * @throws IOException
 	 */
 	protected abstract void handlePost(HttpServletRequest req, HttpServletResponse resp, Session session) throws ServletException, IOException;
+	
+	/**
+	 * The post request is handed off to the implementor after the user is
+	 * logged in.
+	 * 
+	 * @param req
+	 * @param resp
+	 * @param session
+	 * @throws ServletException
+	 * @throws IOException
+	 */
+	protected void handleMultiformPost(HttpServletRequest req, HttpServletResponse resp, Map<String,Object> multipart, Session session) throws ServletException, IOException {
+	}
 }

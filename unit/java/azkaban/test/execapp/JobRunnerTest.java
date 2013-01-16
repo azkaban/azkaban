@@ -2,6 +2,7 @@ package azkaban.test.execapp;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.StringTokenizer;
 
 import junit.framework.Assert;
 
@@ -17,17 +18,15 @@ import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutableNode;
 import azkaban.executor.ExecutableFlow.Status;
 import azkaban.executor.ExecutorLoader;
-import azkaban.jobExecutor.JavaJob;
 import azkaban.jobExecutor.ProcessJob;
-import azkaban.jobtype.JobtypeManager;
-import azkaban.security.HadoopSecurityManager;
-import azkaban.security.HadoopSecurityManager_H_1_0_2;
+import azkaban.jobtype.JobTypeManager;
+import azkaban.test.executor.JavaJob;
+import azkaban.test.executor.SleepJavaJob;
 import azkaban.utils.Props;
 
 public class JobRunnerTest {
 	private File workingDir;
-	private JobtypeManager jobtypeManager;
-	private HadoopSecurityManager hadoopSecurityManager;
+	private JobTypeManager jobtypeManager;
 	
 	public JobRunnerTest() {
 
@@ -41,8 +40,8 @@ public class JobRunnerTest {
 			FileUtils.deleteDirectory(workingDir);
 		}
 		workingDir.mkdirs();
-		jobtypeManager = new JobtypeManager(null, this.getClass().getClassLoader());
-		hadoopSecurityManager = new HadoopSecurityManager_H_1_0_2(new Props());
+		jobtypeManager = new JobTypeManager(null, this.getClass().getClassLoader());
+		jobtypeManager.registerJobType("java", JavaJob.class);
 	}
 
 	@After
@@ -244,7 +243,8 @@ public class JobRunnerTest {
 	private Props createProps( int sleepSec, boolean fail) {
 		Props props = new Props();
 		props.put("type", "java");
-		props.put(JavaJob.JOB_CLASS, "azkaban.test.executor.SleepJavaJob");
+
+		props.put(JavaJob.JOB_CLASS, SleepJavaJob.class.getName());
 		props.put("seconds", sleepSec);
 		props.put(ProcessJob.WORKING_DIR, workingDir.getPath());
 		props.put("fail", String.valueOf(fail));
@@ -260,8 +260,26 @@ public class JobRunnerTest {
 		node.setExecutableFlow(flow);
 		
 		Props props = createProps(time, fail);
-		JobRunner runner = new JobRunner(node, props, workingDir, loader, jobtypeManager, hadoopSecurityManager);
+		
+		JobRunner runner = new JobRunner(node, props, props, workingDir, loader, jobtypeManager);
 		runner.addListener(listener);
 		return runner;
+	}
+	
+	private static String getSourcePathFromClass(Class containedClass) {
+		File file = new File(containedClass.getProtectionDomain().getCodeSource().getLocation().getPath());
+
+		if (!file.isDirectory() && file.getName().endsWith(".class")) {
+			String name = containedClass.getName();
+			StringTokenizer tokenizer = new StringTokenizer(name, ".");
+			while(tokenizer.hasMoreTokens()) {
+				tokenizer.nextElement();
+				file = file.getParentFile();
+			}
+			return file.getPath();  
+		}
+		else {
+			return containedClass.getProtectionDomain().getCodeSource().getLocation().getPath();
+		}
 	}
 }

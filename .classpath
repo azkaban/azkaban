@@ -23,14 +23,11 @@
 	<classpathentry kind="lib" path="lib/commons-io-2.4.jar"/>
 	<classpathentry kind="lib" path="lib/httpcore-4.2.1.jar"/>
 	<classpathentry kind="lib" path="lib/commons-logging-1.1.1.jar"/>
-	<classpathentry kind="lib" path="lib/hadoop-core-1.0.2-p1.jar"/>
 	<classpathentry kind="lib" path="lib/guava-13.0.1.jar"/>
-	<classpathentry kind="lib" path="lib/pig-0.9.1-withouthadoop.jar"/>
-	<classpathentry kind="lib" path="plugins/ldap/li-azkaban-ldap.jar"/>
 	<classpathentry kind="lib" path="lib/commons-email-1.2.jar"/>
 	<classpathentry kind="lib" path="lib/mail-1.4.5.jar"/>
-	<classpathentry kind="lib" path="lib/avro-1.4.1.jar"/>
 	<classpathentry kind="lib" path="lib/commons-configuration-1.8.jar"/>
-	<classpathentry kind="lib" path="lib/voldemort-0.96.jar"/>
+	<classpathentry kind="lib" path="lib/commons-dbutils-1.5.jar"/>
+	<classpathentry kind="lib" path="lib/commons-dbcp-1.4.jar"/>
 	<classpathentry kind="output" path="dist/classes"/>
 </classpath>

@@ -40,10 +40,8 @@ import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutableFlow.Status;
 import azkaban.executor.ExecutorLoader;
 import azkaban.executor.ExecutorManagerException;
-import azkaban.jobtype.JobtypeManager;
+import azkaban.jobtype.JobTypeManager;
 
-import azkaban.security.DefaultHadoopSecurityManager;
-import azkaban.security.HadoopSecurityManager;
 import azkaban.utils.FileIOUtils;
 import azkaban.utils.FileIOUtils.LogData;
 import azkaban.utils.Pair;
@@ -76,8 +74,7 @@ public class FlowRunnerManager implements EventListener {
 	private ExecutorLoader executorLoader;
 	private ProjectLoader projectLoader;
 	
-	private JobtypeManager jobtypeManager;
-	private HadoopSecurityManager hadoopSecurityManager;
+	private JobTypeManager jobtypeManager;
 	
 	private Props globalProps;
 	
@@ -107,35 +104,8 @@ public class FlowRunnerManager implements EventListener {
 		cleanerThread = new CleanerThread();
 		cleanerThread.start();
 		
-		jobtypeManager = new JobtypeManager(props.getString(AzkabanExecutorServer.JOBTYPE_PLUGIN_DIR, null), parentClassLoader);
+		jobtypeManager = new JobTypeManager(props.getString(AzkabanExecutorServer.JOBTYPE_PLUGIN_DIR, null), parentClassLoader);
 		
-		hadoopSecurityManager = loadHadoopSecurityManager(props);
-		
-	}
-
-	private HadoopSecurityManager loadHadoopSecurityManager(Props props) {
-		
-		Class<?> hadoopSecurityManagerClass = props.getClass(HADOOP_SECURITY_MANAGER_CLASS_PARAM, null);
-		logger.info("Loading hadoop security manager class " + hadoopSecurityManagerClass.getName());
-		HadoopSecurityManager hadoopSecurityManager = null;
-
-		if (hadoopSecurityManagerClass != null && hadoopSecurityManagerClass.getConstructors().length > 0) {
-
-			try {
-				Constructor<?> hsmConstructor = hadoopSecurityManagerClass.getConstructor(Props.class);
-				hadoopSecurityManager = (HadoopSecurityManager) hsmConstructor.newInstance(props);
-			} 
-			catch (Exception e) {
-				logger.error("Could not instantiate Hadoop Security Manager "+ hadoopSecurityManagerClass.getName());
-				throw new RuntimeException(e);
-			}
-		} 
-		else {
-			hadoopSecurityManager = new DefaultHadoopSecurityManager();
-		}
-
-		return hadoopSecurityManager;
-
 	}
 
 	public Props getGlobalProps() {
@@ -274,7 +244,7 @@ public class FlowRunnerManager implements EventListener {
 		setupFlow(flow);
 		
 		// Setup flow runner
-		FlowRunner runner = new FlowRunner(flow, executorLoader, jobtypeManager, hadoopSecurityManager);
+		FlowRunner runner = new FlowRunner(flow, executorLoader, jobtypeManager);
 		runner.setGlobalProps(globalProps);
 		runner.addListener(this);
 		

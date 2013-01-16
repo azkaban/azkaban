@@ -18,7 +18,6 @@ package azkaban.execapp;
 import java.io.File;
 import java.io.IOException;
 
-import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.log4j.Appender;
 import org.apache.log4j.FileAppender;
 import org.apache.log4j.Layout;
@@ -35,17 +34,16 @@ import azkaban.executor.ExecutorLoader;
 import azkaban.executor.ExecutorManagerException;
 import azkaban.jobExecutor.AbstractProcessJob;
 import azkaban.jobExecutor.Job;
-import azkaban.jobtype.JobtypeManager;
+import azkaban.jobtype.JobTypeManager;
+import azkaban.jobtype.JobTypeManagerException;
 
-import azkaban.security.HadoopSecurityManager;
-import azkaban.security.SecurityManagerException;
 import azkaban.utils.Props;
-import azkaban.utils.SecurityUtils;
 
 public class JobRunner extends EventHandler implements Runnable {
 	private static final Layout DEFAULT_LAYOUT = new PatternLayout("%d{dd-MM-yyyy HH:mm:ss z} %c{1} %p - %m\n");
 
 	private ExecutorLoader loader;
+	private Props sysProps;
 	private Props props;
 	private Props outputProps;
 	private ExecutableNode node;
@@ -62,17 +60,16 @@ public class JobRunner extends EventHandler implements Runnable {
 	private static final Object logCreatorLock = new Object();
 	private Object syncObject = new Object();
 	
-	private final JobtypeManager jobtypeManager;
-	private final HadoopSecurityManager hadoopSecurityManager;
+	private final JobTypeManager jobtypeManager;
 
-	public JobRunner(ExecutableNode node, Props props, File workingDir, ExecutorLoader loader, JobtypeManager jobtypeManager, HadoopSecurityManager hadoopSecurityManager) {
+	public JobRunner(ExecutableNode node, Props sysProps, Props props, File workingDir, ExecutorLoader loader, JobTypeManager jobtypeManager) {
+		this.sysProps = sysProps;
 		this.props = props;
 		this.node = node;
 		this.workingDir = workingDir;
 		this.executionId = node.getExecutionId();
 		this.loader = loader;
 		this.jobtypeManager = jobtypeManager;
-		this.hadoopSecurityManager = hadoopSecurityManager;
 	}
 	
 	public ExecutableNode getNode() {
@@ -186,7 +183,7 @@ public class JobRunner extends EventHandler implements Runnable {
 		this.fireEventListeners(event);
 	}
 	
-	private boolean prepareJob() {
+	private boolean prepareJob() throws RuntimeException{
 		// Check pre conditions
 		if (props == null) {
 			node.setStatus(Status.FAILED);
@@ -201,43 +198,15 @@ public class JobRunner extends EventHandler implements Runnable {
 
 			logInfo("Starting job " + node.getJobId() + " at " + node.getStartTime());
 			node.setStatus(Status.RUNNING);
-	
+			props.put(AbstractProcessJob.JOB_FULLPATH, props.getSource());
 			props.put(AbstractProcessJob.WORKING_DIR, workingDir.getAbsolutePath());
 			//job = JobWrappingFactory.getJobWrappingFactory().buildJobExecutor(node.getJobId(), props, logger);
-			job = jobtypeManager.buildJobExecutor(node.getJobId(), props, logger);
-			if(props.containsKey(HadoopSecurityManager.TO_PROXY)) {
-				try{
-					getHadoopTokens(props);
-				}
-				catch (Exception e) {
-					logger.error("Failed to get Hadoop tokens. " + e);
-				}
-			}
+			job = jobtypeManager.buildJobExecutor(node.getJobId(), sysProps, props, logger);
 		}
 		
 		return true;
 	}
 
-	protected void getHadoopTokens(Props props) {
-
-		File tokenFile = null;
-		try {
-			tokenFile = File.createTempFile("mr-azkaban", ".token");
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		
-		try {
-			hadoopSecurityManager.prefetchToken(tokenFile, props.getString(HadoopSecurityManager.TO_PROXY));
-		} catch (SecurityManagerException e) {
-			e.printStackTrace();
-		}
-		
-		props.put("env."+UserGroupInformation.HADOOP_TOKEN_FILE_LOCATION, tokenFile.getAbsolutePath());
-		
-	}
-	
 	private void runJob() {
 		try {
 			job.run();
@@ -298,20 +267,4 @@ public class JobRunner extends EventHandler implements Runnable {
 		return logFile;
 	}
 
-	public void cleanup() {
-		// clean up the tokens.
-		try{
-			if(props.containsKey("env."+UserGroupInformation.HADOOP_TOKEN_FILE_LOCATION)) {
-				String tokenFile = props.getString("env."+UserGroupInformation.HADOOP_TOKEN_FILE_LOCATION);
-				if(tokenFile != null) {
-					File f = new File(tokenFile);
-					f.delete();
-				}
-			}
-		}
-		catch(Exception e) {
-			logger.error("Failed to clean up hadoop token file.");
-		}
-		
-	}
 }

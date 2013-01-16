@@ -40,8 +40,8 @@ public class JavaProcessJob extends ProcessJob {
 
 	public static String JAVA_COMMAND = "java";
 
-	public JavaProcessJob(String jobid, Props prop, Logger logger) {
-		super(jobid, prop, logger);
+	public JavaProcessJob(String jobid, Props sysProps, Props jobProps, Logger logger) {
+		super(jobid, sysProps, jobProps, logger);
 	}
 
 	@Override

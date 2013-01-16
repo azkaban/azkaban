@@ -21,18 +21,15 @@ import azkaban.executor.ExecutableFlow.Status;
 import azkaban.executor.ExecutorLoader;
 
 import azkaban.flow.Flow;
-import azkaban.jobtype.JobtypeManager;
-import azkaban.security.HadoopSecurityManager;
-import azkaban.security.HadoopSecurityManager_H_1_0_2;
+import azkaban.jobtype.JobTypeManager;
+import azkaban.test.executor.JavaJob;
 import azkaban.utils.JSONUtils;
 import azkaban.utils.Props;
 
 public class FlowRunnerTest {
 	private File workingDir;
 	private Logger logger = Logger.getLogger(FlowRunnerTest.class);
-	private JobtypeManager jobtypeManager;
-	private HadoopSecurityManager hadoopSecurityManager;
-	
+	private JobTypeManager jobtypeManager;
 	public FlowRunnerTest() {
 		
 	}
@@ -45,8 +42,8 @@ public class FlowRunnerTest {
 			FileUtils.deleteDirectory(workingDir);
 		}
 		workingDir.mkdirs();
-		jobtypeManager = new JobtypeManager(null, this.getClass().getClassLoader());
-		hadoopSecurityManager = new HadoopSecurityManager_H_1_0_2(new Props());
+		jobtypeManager = new JobTypeManager(null, this.getClass().getClassLoader());
+		jobtypeManager.registerJobType("java", JavaJob.class);
 	}
 	
 	@After
@@ -355,7 +352,7 @@ public class FlowRunnerTest {
 		MockProjectLoader projectLoader = new MockProjectLoader(new File(flow.getExecutionPath()));
 		
 		loader.uploadExecutableFlow(flow);
-		FlowRunner runner = new FlowRunner(flow, loader, jobtypeManager, hadoopSecurityManager);
+		FlowRunner runner = new FlowRunner(flow, loader, jobtypeManager);
 		runner.addListener(eventCollector);
 		
 		return runner;
@@ -367,7 +364,7 @@ public class FlowRunnerTest {
 		MockProjectLoader projectLoader = new MockProjectLoader(new File(exFlow.getExecutionPath()));
 		
 		loader.uploadExecutableFlow(exFlow);
-		FlowRunner runner = new FlowRunner(exFlow, loader, jobtypeManager, hadoopSecurityManager);
+		FlowRunner runner = new FlowRunner(exFlow, loader, jobtypeManager);
 		runner.addListener(eventCollector);
 		
 		return runner;

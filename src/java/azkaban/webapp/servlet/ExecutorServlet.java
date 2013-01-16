@@ -661,11 +661,11 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 		
 		for(String roleName: user.getRoles()) {
 			Role role = userManager.getRole(roleName);
-			if (role.getPermission().isPermissionSet(type)) {
+			if (role.getPermission().isPermissionSet(type) || role.getPermission().isPermissionSet(Permission.Type.ADMIN)) {
 				return true;
 			}
 		}
 		
-		return true;
+		return false;
 	}
 }

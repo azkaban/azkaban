@@ -17,6 +17,7 @@
 package azkaban.webapp.servlet;
 
 import java.io.IOException;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.HashMap;
@@ -30,6 +31,8 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.apache.velocity.Template;
+import org.apache.velocity.app.VelocityEngine;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.joda.time.DateTime;
 import org.joda.time.format.DateTimeFormat;
@@ -64,6 +67,8 @@ public abstract class AbstractAzkabanServlet extends HttpServlet {
 	private String label;
 	private String color;
 
+	private List<ViewerPlugin> viewerPlugins;
+	
 	/**
 	 * To retrieve the application for the servlet
 	 * 
@@ -86,6 +91,11 @@ public abstract class AbstractAzkabanServlet extends HttpServlet {
 		name = props.getString("azkaban.name", "");
 		label = props.getString("azkaban.label", "");
 		color = props.getString("azkaban.color", "#FF0000");
+		
+		if (application instanceof AzkabanWebServer) {
+			AzkabanWebServer server = (AzkabanWebServer)application;
+			viewerPlugins = server.getViewerPlugins();
+		}
 	}
 
 	/**
@@ -329,6 +339,14 @@ public abstract class AbstractAzkabanServlet extends HttpServlet {
 		page.add("success_message", successMsg == null || successMsg.isEmpty() ? "null" : successMsg);
 		setSuccessMessageInCookie(resp, null);
 
+		//@TODO, allow more than one type of viewer. For time sake, I only install the first one
+		if (viewerPlugins != null && !viewerPlugins.isEmpty()) {
+			page.add("viewers", viewerPlugins);
+			ViewerPlugin plugin = viewerPlugins.get(0);
+			page.add("viewerName", plugin.getPluginName());
+			page.add("viewerPath", plugin.getPluginPath());
+		}
+		
 		return page;
 	}
 
@@ -348,9 +366,18 @@ public abstract class AbstractAzkabanServlet extends HttpServlet {
 		page.add("timezone", ZONE_FORMATTER.print(System.currentTimeMillis()));
 		page.add("currentTime", (new DateTime()).getMillis());
 		page.add("context", req.getContextPath());
+		
+		//@TODO, allow more than one type of viewer. For time sake, I only install the first one
+		if (viewerPlugins != null && !viewerPlugins.isEmpty()) {
+			page.add("viewers", viewerPlugins);
+			ViewerPlugin plugin = viewerPlugins.get(0);
+			page.add("viewerName", plugin.getPluginName());
+			page.add("viewerPath", plugin.getPluginPath());
+		}
+		
 		return page;
 	}
-
+	
 	/**
 	 * Writes json out to the stream.
 	 * 

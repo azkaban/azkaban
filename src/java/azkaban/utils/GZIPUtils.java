@@ -6,7 +6,7 @@ import java.io.IOException;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
-import org.apache.hadoop.io.IOUtils;
+import org.apache.commons.io.IOUtils;
 
 public class GZIPUtils {
 	
@@ -36,7 +36,7 @@ public class GZIPUtils {
 		GZIPInputStream gzipInputStream = new GZIPInputStream(byteInputStream);
 		
 		ByteArrayOutputStream byteOutputStream = new ByteArrayOutputStream();
-		IOUtils.copyBytes(gzipInputStream, byteOutputStream, 1024);
+		IOUtils.copy(gzipInputStream, byteOutputStream);
 
 		return byteOutputStream.toByteArray();
 	}

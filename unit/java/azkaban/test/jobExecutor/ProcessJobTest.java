@@ -34,7 +34,7 @@ public class ProcessJobTest
 //    
 //    EasyMock.replay(props);
     
-    job = new ProcessJob("TestProcess", props, log);
+    job = new ProcessJob("TestProcess", props, props, log);
     
 
   }

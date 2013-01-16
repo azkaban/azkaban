@@ -73,15 +73,12 @@ import azkaban.webapp.servlet.MultipartParser;
 public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 	private static final long serialVersionUID = 1;
 	private static final Logger logger = Logger.getLogger(ProjectManagerServlet.class);
-	private static final int DEFAULT_UPLOAD_DISK_SPOOL_SIZE = 20 * 1024 * 1024;
 	private static final NodeLevelComparator NODE_LEVEL_COMPARATOR = new NodeLevelComparator();
 	
 	private ProjectManager projectManager;
 	private ExecutorManager executorManager;
 	private ScheduleManager scheduleManager;
 	private UserManager userManager;
-	
-	private MultipartParser multipartParser;
 
 	private static Comparator<Flow> FLOW_ID_COMPARATOR = new Comparator<Flow>() {
 		@Override
@@ -99,8 +96,6 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 		executorManager = server.getExecutorManager();
 		scheduleManager = server.getScheduleManager();
 		userManager = server.getUserManager();
-
-		multipartParser = new MultipartParser(DEFAULT_UPLOAD_DISK_SPOOL_SIZE);
 	}
 
 	@Override
@@ -145,18 +140,18 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 	}
 
 	@Override
-	protected void handlePost(HttpServletRequest req, HttpServletResponse resp, Session session) throws ServletException, IOException {
-		if (ServletFileUpload.isMultipartContent(req)) {
-			logger.info("Post is multipart");
-			Map<String, Object> params = multipartParser.parseMultipart(req);
-			if (params.containsKey("action")) {
-				String action = (String)params.get("action");
-				if (action.equals("upload")) {
-					handleUpload(req, resp, params, session);
-				}
+	protected void handleMultiformPost(HttpServletRequest req, HttpServletResponse resp, Map<String, Object> params, Session session) throws ServletException, IOException {
+		if (params.containsKey("action")) {
+			String action = (String)params.get("action");
+			if (action.equals("upload")) {
+				handleUpload(req, resp, params, session);
 			}
 		}
-		else if (hasParam(req, "action")) {
+	}
+	
+	@Override
+	protected void handlePost(HttpServletRequest req, HttpServletResponse resp, Session session) throws ServletException, IOException {
+		if (hasParam(req, "action")) {
 			String action = getParam(req, "action");
 			if (action.equals("create")) {
 				handleCreate(req, resp, session);
@@ -1161,12 +1156,12 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 		
 		for(String roleName: user.getRoles()) {
 			Role role = userManager.getRole(roleName);
-			if (role.getPermission().isPermissionSet(type)) {
+			if (role.getPermission().isPermissionSet(type) || role.getPermission().isPermissionSet(Permission.Type.ADMIN)) {
 				return true;
 			}
 		}
 		
-		return true;
+		return false;
 	}
 	
 	private Permission getPermissionObject(Project project, User user, Permission.Type type) {

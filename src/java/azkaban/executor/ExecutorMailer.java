@@ -120,7 +120,7 @@ public class ExecutorMailer {
 				message.println("<li><a href=\"" + executionUrl + "&job=" + jobId + "\">Failed job '" + jobId + "' Link</a></li>" );
 			}
 			for (String reasons: extraReasons) {
-				message.println("<li>" + extraReasons + "</li>");
+				message.println("<li>" + reasons + "</li>");
 			}
 			
 			message.println("</ul>");

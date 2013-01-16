@@ -223,10 +223,15 @@ public class ScheduleManager {
 	 * @param flow
 	 */
 	public synchronized void insertSchedule(Schedule s) {
+		boolean exist = scheduleIDMap.containsKey(s.getScheduleId());
 		if(s.updateTime()) {
 			internalSchedule(s);
 			try {
-				loader.insertSchedule(s);
+				if(!exist) {
+					loader.insertSchedule(s);
+				}
+				else
+					loader.updateSchedule(s);
 			} catch (ScheduleManagerException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();

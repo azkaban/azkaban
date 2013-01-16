@@ -26,10 +26,11 @@ public class PythonJob extends LongArgJob {
 	private static final String PYTHON_BINARY_KEY = "python";
 	private static final String SCRIPT_KEY = "script";
 
-	public PythonJob(String jobid, Props props, Logger log) {
+	public PythonJob(String jobid, Props sysProps, Props jobProps, Logger log) {
 		super(jobid, 
-				new String[] { props.getString(PYTHON_BINARY_KEY, "python"),props.getString(SCRIPT_KEY) }, 
-				props, 
+				new String[] { jobProps.getString(PYTHON_BINARY_KEY, "python"),jobProps.getString(SCRIPT_KEY) }, 
+				sysProps, 
+				jobProps, 
 				log, 
 				ImmutableSet.of(PYTHON_BINARY_KEY, SCRIPT_KEY, JOB_TYPE));
 	}

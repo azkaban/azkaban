@@ -48,24 +48,35 @@ public abstract class AbstractProcessJob extends AbstractJob {
 
 	protected final String _jobPath;
 
-	protected volatile Props _props;
+	protected volatile Props jobProps;
+	protected volatile Props sysProps;
 
 	protected String _cwd;
 
 	private volatile Props generatedPropeties;
 
-	protected AbstractProcessJob(String jobid, final Props props, final Logger log) {
+	protected AbstractProcessJob(String jobid, final Props sysProps, final Props jobProps, final Logger log) {
 		super(jobid, log);
 
-		_props = props;
-		_jobPath = props.getString(JOB_FULLPATH, props.getSource());
+		this.jobProps = jobProps;
+		this.sysProps = sysProps;
+		_jobPath = jobProps.getString(JOB_FULLPATH, jobProps.getSource());
 
 		_cwd = getWorkingDirectory();
 		this.log = log;
 	}
 
+	@Deprecated
 	public Props getProps() {
-		return _props;
+		return jobProps;
+	}
+	
+	public Props getJobProps()	{
+		return jobProps;
+	}
+	
+	public Props getSysProps()	{
+		return sysProps;
 	}
 
 	public String getJobPath() {
@@ -73,7 +84,7 @@ public abstract class AbstractProcessJob extends AbstractJob {
 	}
 
 	protected void resolveProps() {
-		_props = PropsUtils.resolveProps(_props);
+		jobProps = PropsUtils.resolveProps(jobProps);
 	}
 
 	@Override
@@ -91,11 +102,11 @@ public abstract class AbstractProcessJob extends AbstractJob {
 		File[] files = new File[2];
 		files[0] = createFlattenedPropsFile(_cwd);
 
-		_props.put(ENV_PREFIX + JOB_PROP_ENV, files[0].getAbsolutePath());
-		_props.put(ENV_PREFIX + JOB_NAME_ENV, getId());
+		jobProps.put(ENV_PREFIX + JOB_PROP_ENV, files[0].getAbsolutePath());
+		jobProps.put(ENV_PREFIX + JOB_NAME_ENV, getId());
 
 		files[1] = createOutputPropsFile(getId(), _cwd);
-		_props.put(ENV_PREFIX + JOB_OUTPUT_PROP_FILE,
+		jobProps.put(ENV_PREFIX + JOB_OUTPUT_PROP_FILE,
 				files[1].getAbsolutePath());
 
 		return files;
@@ -158,7 +169,7 @@ public abstract class AbstractProcessJob extends AbstractJob {
 		File tempFile = null;
 		try {
 			tempFile = File.createTempFile(getId() + "_", "_tmp", directory);
-			_props.storeFlattened(tempFile);
+			jobProps.storeFlattened(tempFile);
 		} catch (IOException e) {
 			throw new RuntimeException("Failed to create temp property file ", e);
 		}

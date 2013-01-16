@@ -39,8 +39,8 @@ public class ProcessJob extends AbstractProcessJob {
 	private static final long KILL_TIME_MS = 5000;
 	private volatile AzkabanProcess process;
 
-	public ProcessJob(final String jobId, final Props props, final Logger log) {
-		super(jobId, props, log);
+	public ProcessJob(final String jobId, final Props sysProps, final Props jobProps, final Logger log) {
+		super(jobId, sysProps, jobProps, log);
 	}
 
 	@Override
@@ -61,12 +61,12 @@ public class ProcessJob extends AbstractProcessJob {
 		Map<String, String> envVars = getEnvironmentVariables();
 
 		for (String command : commands) {
+			info("Command: " + command);
 			AzkabanProcessBuilder builder = new AzkabanProcessBuilder(partitionCommandLine(command))
 					.setEnv(envVars)
 					.setWorkingDir(getCwd())
 					.setLogger(getLog());
-
-			info("Command: " + builder.getCommandString());
+			
 			if (builder.getEnv().size() > 0) {
 				info("Environment variables: " + builder.getEnv());
 			}
@@ -97,9 +97,9 @@ public class ProcessJob extends AbstractProcessJob {
 
 	protected List<String> getCommandList() {
 		List<String> commands = new ArrayList<String>();
-		commands.add(_props.getString(COMMAND));
-		for (int i = 1; _props.containsKey(COMMAND + "." + i); i++) {
-			commands.add(_props.getString(COMMAND + "." + i));
+		commands.add(jobProps.getString(COMMAND));
+		for (int i = 1; jobProps.containsKey(COMMAND + "." + i); i++) {
+			commands.add(jobProps.getString(COMMAND + "." + i));
 		}
 
 		return commands;
@@ -127,7 +127,7 @@ public class ProcessJob extends AbstractProcessJob {
 
 	@Override
 	public Props getProps() {
-		return _props;
+		return jobProps;
 	}
 
 	public String getPath() {

@@ -32,10 +32,11 @@ public class ScriptJob extends LongArgJob {
 	private static final String DEFAULT_EXECUTABLE_KEY = "executable";
 	private static final String SCRIPT_KEY = "script";
 
-	public ScriptJob(String jobid, Props props, Logger log) {
+	public ScriptJob(String jobid, Props sysProps, Props jobProps, Logger log) {
 		super(jobid, 
-				new String[] { props.getString(DEFAULT_EXECUTABLE_KEY),props.getString(SCRIPT_KEY) }, 
-				props, 
+				new String[] { jobProps.getString(DEFAULT_EXECUTABLE_KEY), jobProps.getString(SCRIPT_KEY) }, 
+				sysProps,
+				jobProps,
 				log, 
 				ImmutableSet.of(DEFAULT_EXECUTABLE_KEY, SCRIPT_KEY, JOB_TYPE));
 	}

@@ -15,6 +15,9 @@
  */
 package azkaban.webapp.session;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import azkaban.user.User;
 
 /**
@@ -24,6 +27,7 @@ public class Session {
 	private final User user;
 	private final String sessionId;
 	private final String ip;
+	private Map<String, Object> sessionData = new HashMap<String, Object>();
 	
 	/**
 	 * Constructor for the session
@@ -57,5 +61,13 @@ public class Session {
 
 	public String getIp() {
 		return ip;
+	}
+	
+	public void setSessionData(String key, Object value) {
+		sessionData.put(key, value);
+	}
+	
+	public Object getSessionData(String key) {
+		return sessionData.get(key);
 	}
 }
