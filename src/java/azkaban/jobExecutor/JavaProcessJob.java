@@ -25,7 +25,6 @@ import org.apache.log4j.Logger;
 import azkaban.utils.Props;
 
 public class JavaProcessJob extends ProcessJob {
-
 	public static final String CLASSPATH = "classpath";
 	public static final String GLOBAL_CLASSPATH = "global.classpaths";
 	public static final String JAVA_CLASS = "java.class";
@@ -64,7 +63,7 @@ public class JavaProcessJob extends ProcessJob {
 	}
 
 	protected String getJavaClass() {
-		return getProps().getString(JAVA_CLASS);
+		return getJobProps().getString(JAVA_CLASS);
 	}
 
 	protected String getClassPathParam() {
@@ -77,12 +76,12 @@ public class JavaProcessJob extends ProcessJob {
 	}
 
 	protected List<String> getClassPaths() {
-		List<String> classPaths = getProps().getStringList(CLASSPATH, null, ",");
+		List<String> classPaths = getJobProps().getStringList(CLASSPATH, null, ",");
 
 		ArrayList<String> classpathList = new ArrayList<String>();
 		// Adding global properties used system wide.
-		if (getProps().containsKey(GLOBAL_CLASSPATH)) {
-			List<String> globalClasspath = getProps().getStringList(GLOBAL_CLASSPATH);
+		if (getJobProps().containsKey(GLOBAL_CLASSPATH)) {
+			List<String> globalClasspath = getJobProps().getStringList(GLOBAL_CLASSPATH);
 			for (String global: globalClasspath) {
 				getLog().info("Adding to global classpath:" + global);
 				classpathList.add(global);
@@ -110,26 +109,25 @@ public class JavaProcessJob extends ProcessJob {
 	}
 
 	protected String getInitialMemorySize() {
-		return getProps().getString(INITIAL_MEMORY_SIZE,
-				DEFAULT_INITIAL_MEMORY_SIZE);
+		return getJobProps().getString(INITIAL_MEMORY_SIZE, DEFAULT_INITIAL_MEMORY_SIZE);
 	}
 
 	protected String getMaxMemorySize() {
-		return getProps().getString(MAX_MEMORY_SIZE, DEFAULT_MAX_MEMORY_SIZE);
+		return getJobProps().getString(MAX_MEMORY_SIZE, DEFAULT_MAX_MEMORY_SIZE);
 	}
 
 	protected String getMainArguments() {
-		return getProps().getString(MAIN_ARGS, "");
+		return getJobProps().getString(MAIN_ARGS, "");
 	}
 
 	protected String getJVMArguments() {
-		String globalJVMArgs = getProps().getString(GLOBAL_JVM_PARAMS, null);
+		String globalJVMArgs = getJobProps().getString(GLOBAL_JVM_PARAMS, null);
 
 		if (globalJVMArgs == null) {
-			return getProps().getString(JVM_PARAMS, "");
+			return getJobProps().getString(JVM_PARAMS, "");
 		}
 
-		return globalJVMArgs + " " + getProps().getString(JVM_PARAMS, "");
+		return globalJVMArgs + " " + getJobProps().getString(JVM_PARAMS, "");
 	}
 
 	protected String createArguments(List<String> arguments, String separator) {

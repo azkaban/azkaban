@@ -125,17 +125,8 @@ public class ProcessJob extends AbstractProcessJob {
 		return process.getProcessId();
 	}
 
-	@Override
-	public Props getProps() {
-		return jobProps;
-	}
-
 	public String getPath() {
 		return _jobPath == null ? "" : _jobPath;
-	}
-
-	public String getJobName() {
-		return getId();
 	}
 
 	/**

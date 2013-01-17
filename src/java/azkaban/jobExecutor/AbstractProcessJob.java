@@ -37,7 +37,6 @@ import azkaban.utils.PropsUtils;
  * 
  */
 public abstract class AbstractProcessJob extends AbstractJob {
-
 	private final Logger log;
 	public static final String ENV_PREFIX = "env.";
 	public static final String ENV_PREFIX_UCASE = "ENV.";
@@ -66,11 +65,6 @@ public abstract class AbstractProcessJob extends AbstractJob {
 		this.log = log;
 	}
 
-	@Deprecated
-	public Props getProps() {
-		return jobProps;
-	}
-	
 	public Props getJobProps()	{
 		return jobProps;
 	}
@@ -117,14 +111,14 @@ public abstract class AbstractProcessJob extends AbstractJob {
 	}
 
 	public Map<String, String> getEnvironmentVariables() {
-		Props props = getProps();
+		Props props = getJobProps();
 		Map<String, String> envMap = props.getMapByPrefix(ENV_PREFIX);
 		envMap.putAll(props.getMapByPrefix(ENV_PREFIX_UCASE));
 		return envMap;
 	}
 
 	public String getWorkingDirectory() {
-		String workingDir =  getProps().getString(WORKING_DIR, _jobPath);
+		String workingDir =  getJobProps().getString(WORKING_DIR, _jobPath);
 		if (workingDir == null) {
 			return "";
 		}
