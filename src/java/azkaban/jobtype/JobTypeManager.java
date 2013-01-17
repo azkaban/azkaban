@@ -268,12 +268,14 @@ public class JobTypeManager
 			
 			// THIS IS WRONG!!! We're just overriding values!
 			Props jobConf = jobtypeJobProps.containsKey(jobType) ? new Props(jobProps, jobtypeJobProps.get(jobType)) : jobProps;
+
 			if (sysConf != null) {
 				sysConf = PropsUtils.resolveProps(sysConf);
 			}
 			else {
 				sysConf = new Props();
 			}
+
 			jobConf = PropsUtils.resolveProps(jobConf);
 			
 //			logger.info("sysConf is " + sysConf);

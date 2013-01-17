@@ -262,6 +262,7 @@ public class JobRunnerTest {
 		Props props = createProps(time, fail);
 		
 		JobRunner runner = new JobRunner(node, props, workingDir, loader, jobtypeManager);
+
 		runner.addListener(listener);
 		return runner;
 	}

@@ -44,7 +44,7 @@ public class JavaJob extends JavaProcessJob {
 	private String props;
 
 	public JavaJob(String jobid, Props sysProps, Props jobProps, Logger log) {
-		super(jobid, sysProps, jobProps, log);
+		super(jobid, sysProps, new Props(sysProps, jobProps), log);
 	}
 
 	@Override

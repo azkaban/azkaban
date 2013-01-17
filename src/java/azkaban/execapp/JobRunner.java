@@ -196,11 +196,13 @@ public class JobRunner extends EventHandler implements Runnable {
 
 			logInfo("Starting job " + node.getJobId() + " at " + node.getStartTime());
 			node.setStatus(Status.RUNNING);
+
 			props.put(AbstractProcessJob.JOB_FULLPATH, props.getSource());
 			// Ability to specify working directory
 			if (!props.containsKey(AbstractProcessJob.WORKING_DIR)) {
 				props.put(AbstractProcessJob.WORKING_DIR, workingDir.getAbsolutePath());
 			}
+
 			//job = JobWrappingFactory.getJobWrappingFactory().buildJobExecutor(node.getJobId(), props, logger);
 			job = jobtypeManager.buildJobExecutor(node.getJobId(), props, logger);
 		}
