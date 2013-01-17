@@ -266,7 +266,7 @@ public class JobTypeManager
 			
 			Props sysConf = jobtypeSysProps.containsKey(jobType) ? new Props(sysProps, jobtypeSysProps.get(jobType)) : sysProps;
 			Props jobConf = jobtypeJobProps.containsKey(jobType) ? new Props(jobProps, jobtypeJobProps.get(jobType)) : jobProps;
-			sysConf = PropsUtils.resolveProps(sysConf);
+			sysConf = sysConf == null ? new Props() : PropsUtils.resolveProps(sysConf);
 			jobConf = PropsUtils.resolveProps(jobConf);
 			
 //			logger.info("sysConf is " + sysConf);

@@ -129,6 +129,8 @@ public class PropsUtils {
 			.compile("\\$\\{([a-zA-Z_.0-9]+)\\}");
 
 	public static Props resolveProps(Props props) {
+		if(props == null) return null;
+		
 		Props resolvedProps = new Props();
 
 		for (String key : props.getKeySet()) {

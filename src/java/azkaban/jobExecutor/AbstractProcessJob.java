@@ -59,9 +59,9 @@ public abstract class AbstractProcessJob extends AbstractJob {
 
 		this.jobProps = jobProps;
 		this.sysProps = sysProps;
-		_jobPath = jobProps.getString(JOB_FULLPATH, jobProps.getSource());
-
 		_cwd = getWorkingDirectory();
+		_jobPath = _cwd;
+		
 		this.log = log;
 	}
 

@@ -22,15 +22,23 @@ do
   CLASSPATH=$CLASSPATH:$file
 done
 
+for file in $HADOOP_HOME/hadoop-core*.jar
+do
+  CLASSPATH=$CLASSPATH:$file
+done
+
+CLASSPATH=$CLASSPATH:$HADOOP_HOME/conf
+
 echo $azkaban_dir;
 echo $base_dir;
 echo $CLASSPATH;
 
 executorport=`cat conf/azkaban.properties | grep executor.port | cut -d = -f 2`
 echo "Starting AzkabanExecutorServer on port $executorport ..."
+serverpath=`pwd`
 
 if [ -z $AZKABAN_OPTS ]; then
-  AZKABAN_OPTS="-Xmx3G -server -Dcom.sun.management.jmxremote -Djava.io.tmpdir=$tmpdir -Dexecutorport=$executorport"
+  AZKABAN_OPTS="-Xmx3G -server -Dcom.sun.management.jmxremote -Djava.io.tmpdir=$tmpdir -Dexecutorport=$executorport -Dserverpath=$serverpath"
 fi
 
 NATIVE_LIB_OPTS="-Djava.library.path=$HADOOP_HOME/lib/native/Linux-amd64-64"
