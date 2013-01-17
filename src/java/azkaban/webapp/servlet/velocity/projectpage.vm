@@ -43,12 +43,12 @@
 
 			<div class="content">
 #if($errorMsg)
-				<div class="box-error-message">$errorMsg</div>
+				<div class="box-error-message"><pre>$errorMsg</pre></div>
 #else
 #if($error_message != "null")
-				<div class="box-error-message">$error_message</div>
+				<div class="box-error-message"><pre>$error_message</pre></div>
 #elseif($success_message != "null")
-				<div class="box-success-message">$success_message</div>
+				<div class="box-success-message"><pre>$success_message</pre></div>
 #end
 
 				<div id="all-jobs-content">

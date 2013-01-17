@@ -1088,7 +1088,11 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 				projectManager.uploadProject(project, archiveFile, type, user);
 			} catch (Exception e) {
 				logger.info("Installation Failed.", e);
-				setErrorMessageInCookie(resp, "Installation Failed.\n" + e.getMessage());
+				String error = e.getMessage();
+				if (error.length() > 512) {
+					error = error.substring(0, 512) + "\nToo many errors to display.\n";
+				}
+				setErrorMessageInCookie(resp, "Installation Failed.\n" + error);
 			}
 			finally {
 				if (tempDir.exists()) {
