@@ -179,7 +179,7 @@ public class JobTypeManager
 	}
 	
 	@SuppressWarnings("unchecked")
-	public void loadJob(File dir, File jobConfFile, Props commonConf, Props commonSysConf) throws JobTypeManagerException{
+	private void loadJob(File dir, File jobConfFile, Props commonConf, Props commonSysConf) throws JobTypeManagerException{
 		Props conf = null;
 		Props sysConf = null;
 		File confFile = findFilefromDir(dir, jobtypeConfFile);
@@ -244,7 +244,7 @@ public class JobTypeManager
 		
 	}
 	
-	public Job buildJobExecutor(String jobId, Props sysProps, Props jobProps, Logger logger) throws JobTypeManagerException
+	public Job buildJobExecutor(String jobId, Props jobProps, Logger logger) throws JobTypeManagerException
 	{
 
 		Job job;
@@ -264,9 +264,16 @@ public class JobTypeManager
 						String.format("Could not construct job[%s] of type[%s].", jobProps, jobType));
 			}
 			
-			Props sysConf = jobtypeSysProps.containsKey(jobType) ? new Props(sysProps, jobtypeSysProps.get(jobType)) : sysProps;
+			Props sysConf = jobtypeSysProps.get(jobType);
+			
+			// THIS IS WRONG!!! We're just overriding values!
 			Props jobConf = jobtypeJobProps.containsKey(jobType) ? new Props(jobProps, jobtypeJobProps.get(jobType)) : jobProps;
-			sysConf = PropsUtils.resolveProps(sysConf);
+			if (sysConf != null) {
+				sysConf = PropsUtils.resolveProps(sysConf);
+			}
+			else {
+				sysConf = new Props();
+			}
 			jobConf = PropsUtils.resolveProps(jobConf);
 			
 //			logger.info("sysConf is " + sysConf);

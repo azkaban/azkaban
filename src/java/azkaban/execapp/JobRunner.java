@@ -43,7 +43,6 @@ public class JobRunner extends EventHandler implements Runnable {
 	private static final Layout DEFAULT_LAYOUT = new PatternLayout("%d{dd-MM-yyyy HH:mm:ss z} %c{1} %p - %m\n");
 
 	private ExecutorLoader loader;
-	private Props sysProps;
 	private Props props;
 	private Props outputProps;
 	private ExecutableNode node;
@@ -62,8 +61,7 @@ public class JobRunner extends EventHandler implements Runnable {
 	
 	private final JobTypeManager jobtypeManager;
 
-	public JobRunner(ExecutableNode node, Props sysProps, Props props, File workingDir, ExecutorLoader loader, JobTypeManager jobtypeManager) {
-		this.sysProps = sysProps;
+	public JobRunner(ExecutableNode node, Props props, File workingDir, ExecutorLoader loader, JobTypeManager jobtypeManager) {
 		this.props = props;
 		this.node = node;
 		this.workingDir = workingDir;
@@ -199,9 +197,12 @@ public class JobRunner extends EventHandler implements Runnable {
 			logInfo("Starting job " + node.getJobId() + " at " + node.getStartTime());
 			node.setStatus(Status.RUNNING);
 			props.put(AbstractProcessJob.JOB_FULLPATH, props.getSource());
-			props.put(AbstractProcessJob.WORKING_DIR, workingDir.getAbsolutePath());
+			// Ability to specify working directory
+			if (!props.containsKey(AbstractProcessJob.WORKING_DIR)) {
+				props.put(AbstractProcessJob.WORKING_DIR, workingDir.getAbsolutePath());
+			}
 			//job = JobWrappingFactory.getJobWrappingFactory().buildJobExecutor(node.getJobId(), props, logger);
-			job = jobtypeManager.buildJobExecutor(node.getJobId(), sysProps, props, logger);
+			job = jobtypeManager.buildJobExecutor(node.getJobId(), props, logger);
 		}
 		
 		return true;

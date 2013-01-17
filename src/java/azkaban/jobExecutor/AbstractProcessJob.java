@@ -100,8 +100,7 @@ public abstract class AbstractProcessJob extends AbstractJob {
 		jobProps.put(ENV_PREFIX + JOB_NAME_ENV, getId());
 
 		files[1] = createOutputPropsFile(getId(), _cwd);
-		jobProps.put(ENV_PREFIX + JOB_OUTPUT_PROP_FILE,
-				files[1].getAbsolutePath());
+		jobProps.put(ENV_PREFIX + JOB_OUTPUT_PROP_FILE, files[1].getAbsolutePath());
 
 		return files;
 	}

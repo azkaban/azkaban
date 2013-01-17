@@ -314,7 +314,7 @@ public class FlowRunner extends EventHandler implements Runnable {
 		}
 		
 		// should have one prop with system secrets, the other user level props
-		JobRunner jobRunner = new JobRunner(node, new Props(), prop, path.getParentFile(), executorLoader, jobtypeManager);
+		JobRunner jobRunner = new JobRunner(node, prop, path.getParentFile(), executorLoader, jobtypeManager);
 		jobRunner.addListener(listener);
 
 		return jobRunner;
