@@ -44,10 +44,10 @@ public class JobTypeManager
 	private final String jobtypePluginDir;	// the dir for jobtype plugins
 	private final ClassLoader parentLoader; 
 	
-	private static final String jobtypeConfFile = "plugin.properties"; // need jars.to.include property, will be loaded with user property
-	private static final String jobtypeSysConfFile = "private.properties"; // not exposed to users
-	private static final String commonConfFile = "types.properties";	// common properties for multiple plugins
-	private static final String commonSysConfFile = "typesprivate.properties"; // common private properties for multiple plugins
+	private static final String JOBTYPECONFFILE = "plugin.properties"; // need jars.to.include property, will be loaded with user property
+	private static final String JOBTYPESYSCONFFILE = "private.properties"; // not exposed to users
+	private static final String COMMONCONFFILE = "common.properties";	// common properties for multiple plugins
+	private static final String COMMONSYSCONFFILE = "commonprivate.properties"; // common private properties for multiple plugins
 	private static final Logger logger = Logger.getLogger(JobTypeManager.class);
 	
 	private Map<String, Class<? extends Job>> jobToClass;
@@ -73,16 +73,12 @@ public class JobTypeManager
 	}
 
 	private void loadDefaultTypes() throws JobTypeManagerException{
-//		jobToClass.put("java", JavaJob.class);
 		jobToClass.put("command", ProcessJob.class);
 		jobToClass.put("javaprocess", JavaProcessJob.class);
-//		jobToClass.put("pig", PigProcessJob.class);
 		jobToClass.put("propertyPusher", NoopJob.class);
 		jobToClass.put("python", PythonJob.class);
 		jobToClass.put("ruby", RubyJob.class);
 		jobToClass.put("script", ScriptJob.class);	
-//		jobToClass.put("myjobtype", MyTestJobType.class);
-		
 	}
 
 	// load Job Typs from dir
@@ -97,8 +93,8 @@ public class JobTypeManager
 		// look for global conf
 		Props globalConf = null;
 		Props globalSysConf = null;
-		File confFile = findFilefromDir(jobPluginsDir, commonConfFile);
-		File sysConfFile = findFilefromDir(jobPluginsDir, commonSysConfFile);
+		File confFile = findFilefromDir(jobPluginsDir, COMMONCONFFILE);
+		File sysConfFile = findFilefromDir(jobPluginsDir, COMMONSYSCONFFILE);
 		try {
 			if(confFile != null) {
 				globalConf = new Props(null, confFile);
@@ -136,13 +132,13 @@ public class JobTypeManager
 		return null;
 	}
 	
-	public void loadJobType(File dir, Props globalConf, Props globalSysConf) throws JobTypeManagerException{
+	private void loadJobType(File dir, Props globalConf, Props globalSysConf) throws JobTypeManagerException{
 		
 		// look for common conf
 		Props conf = null;
 		Props sysConf = null;
-		File confFile = findFilefromDir(dir, commonConfFile);
-		File sysConfFile = findFilefromDir(dir, commonSysConfFile);
+		File confFile = findFilefromDir(dir, COMMONCONFFILE);
+		File sysConfFile = findFilefromDir(dir, COMMONSYSCONFFILE);
 		
 		try {
 			if(confFile != null) {
@@ -164,7 +160,7 @@ public class JobTypeManager
 		
 		// look for jobtypeConf.properties and load it 		
 		for(File f: dir.listFiles()) {
-			if(f.isFile() && f.getName().equals(jobtypeSysConfFile)) {
+			if(f.isFile() && f.getName().equals(JOBTYPESYSCONFFILE)) {
 				loadJob(dir, f, conf, sysConf);
 				return;
 			}
@@ -182,8 +178,8 @@ public class JobTypeManager
 	private void loadJob(File dir, File jobConfFile, Props commonConf, Props commonSysConf) throws JobTypeManagerException{
 		Props conf = null;
 		Props sysConf = null;
-		File confFile = findFilefromDir(dir, jobtypeConfFile);
-		File sysConfFile = findFilefromDir(dir, jobtypeSysConfFile);
+		File confFile = findFilefromDir(dir, JOBTYPECONFFILE);
+		File sysConfFile = findFilefromDir(dir, JOBTYPESYSCONFFILE);
 		
 		try {
 			if(confFile != null) {
@@ -266,8 +262,19 @@ public class JobTypeManager
 			
 			Props sysConf = jobtypeSysProps.get(jobType);
 			
-			// THIS IS WRONG!!! We're just overriding values!
-			Props jobConf = jobtypeJobProps.containsKey(jobType) ? new Props(jobProps, jobtypeJobProps.get(jobType)) : jobProps;
+			Props jobConf = jobProps;
+			if(jobtypeJobProps.containsKey(jobType)) {
+				Props p = jobtypeJobProps.get(jobType);
+				for(String k : p.getKeySet())
+				{
+					if(!jobProps.containsKey(k)) {
+						jobProps.put(k, p.get(k));
+					}
+				}
+			}
+			else {
+				jobConf = jobProps;
+			}
 
 			if (sysConf != null) {
 				sysConf = PropsUtils.resolveProps(sysConf);
