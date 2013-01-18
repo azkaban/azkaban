@@ -262,29 +262,30 @@ azkaban.ExecutionListView = Backbone.View.extend({
 		for (var i = 0; i < nodes.length; ++i) {
 			var node = nodes[i];
 			if (node.startTime > -1) {
-				var row = document.getElementById(node.id + "-row");
+				var nodeId = node.id.replace(".", "\\\\.");
+				var row = document.getElementById(nodeId + "-row");
 				if (!row) {
 					this.addNodeRow(node);
 				}
 				
-				var div = $("#" + node.id + "-status-div");
+				var div = $("#" + nodeId + "-status-div");
 				div.text(statusStringMap[node.status]);
 				$(div).attr("class", "status " + node.status);
 				
 				var startdate = new Date(node.startTime);
-				$("#" + node.id + "-start").text(getDateFormat(startdate));
+				$("#" + nodeId + "-start").text(getDateFormat(startdate));
 				
 				var endTime = node.endTime;
 				if (node.endTime == -1) {
-					$("#" + node.id + "-end").text("-");
+					$("#" + nodeId + "-end").text("-");
 					endTime = node.startTime + 1;
 				}
 				else {
 					var enddate = new Date(node.endTime);
-					$("#" + node.id + "-end").text(getDateFormat(enddate));
+					$("#" + nodeId + "-end").text(getDateFormat(enddate));
 				}
 				
-				var progressBar = $("#" + node.id + "-progressbar");
+				var progressBar = $("#" + nodeId + "-progressbar");
 				for (var j = 0; j < statusList.length; ++j) {
 					var status = statusList[j];
 					progressBar.removeClass(status);
@@ -293,10 +294,10 @@ azkaban.ExecutionListView = Backbone.View.extend({
 
 				if (node.endTime == -1) {
 //					$("#" + node.id + "-elapse").text("0 sec");
-					$("#" + node.id + "-elapse").text(getDuration(node.startTime, (new Date()).getTime()));					
+					$("#" + nodeId + "-elapse").text(getDuration(node.startTime, (new Date()).getTime()));					
 				}
 				else {
-					$("#" + node.id + "-elapse").text(getDuration(node.startTime, node.endTime));
+					$("#" + nodeId + "-elapse").text(getDuration(node.startTime, node.endTime));
 				}
 			}
 		}
