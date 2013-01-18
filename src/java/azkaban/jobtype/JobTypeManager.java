@@ -111,7 +111,7 @@ public class JobTypeManager
 			if(dir.isDirectory() && dir.canRead()) {
 				// get its conf file
 				try {
-					loadJobType(dir, globalConf, globalSysConf);
+					loadJob(dir, globalConf, globalSysConf);
 				}
 				catch (Exception e) {
 					throw new JobTypeManagerException(e);
@@ -132,54 +132,60 @@ public class JobTypeManager
 		return null;
 	}
 	
-	private void loadJobType(File dir, Props globalConf, Props globalSysConf) throws JobTypeManagerException{
-		
-		// look for common conf
-		Props conf = null;
-		Props sysConf = null;
-		File confFile = findFilefromDir(dir, COMMONCONFFILE);
-		File sysConfFile = findFilefromDir(dir, COMMONSYSCONFFILE);
-		
-		try {
-			if(confFile != null) {
-				conf = new Props(globalConf, confFile);
-			}
-			else {
-				conf = globalConf;
-			}
-			if(sysConfFile != null) {
-				sysConf = new Props(globalSysConf, sysConfFile);
-			}
-			else {
-				sysConf = globalSysConf;
-			}
-		}
-		catch (Exception e) {
-			throw new JobTypeManagerException("Failed to get common jobtype properties" + e.getCause());
-		}
-		
-		// look for jobtypeConf.properties and load it 		
-		for(File f: dir.listFiles()) {
-			if(f.isFile() && f.getName().equals(JOBTYPESYSCONFFILE)) {
-				loadJob(dir, f, conf, sysConf);
-				return;
-			}
-		}
-
-		// no hit, keep looking
-		for(File f : dir.listFiles()) {
-			if(f.isDirectory() && f.canRead())
-				loadJobType(f, conf, sysConf);
-		}
-		
-	}
+//	private void loadJobType(File dir, Props globalConf, Props globalSysConf) throws JobTypeManagerException{
+//		
+//		// look for common conf
+//		Props conf = null;
+//		Props sysConf = null;
+//		File confFile = findFilefromDir(dir, COMMONCONFFILE);
+//		File sysConfFile = findFilefromDir(dir, COMMONSYSCONFFILE);
+//		
+//		try {
+//			if(confFile != null) {
+//				conf = new Props(globalConf, confFile);
+//			}
+//			else {
+//				conf = globalConf;
+//			}
+//			if(sysConfFile != null) {
+//				sysConf = new Props(globalSysConf, sysConfFile);
+//			}
+//			else {
+//				sysConf = globalSysConf;
+//			}
+//		}
+//		catch (Exception e) {
+//			throw new JobTypeManagerException("Failed to get common jobtype properties" + e.getCause());
+//		}
+//		
+//		// look for jobtypeConf.properties and load it 		
+//		for(File f: dir.listFiles()) {
+//			if(f.isFile() && f.getName().equals(JOBTYPESYSCONFFILE)) {
+//				loadJob(dir, f, conf, sysConf);
+//				return;
+//			}
+//		}
+//
+//		// no hit, keep looking
+//		for(File f : dir.listFiles()) {
+//			if(f.isDirectory() && f.canRead())
+//				loadJobType(f, conf, sysConf);
+//		}
+//		
+//	}
 	
 	@SuppressWarnings("unchecked")
-	private void loadJob(File dir, File jobConfFile, Props commonConf, Props commonSysConf) throws JobTypeManagerException{
+	private void loadJob(File dir, Props commonConf, Props commonSysConf) throws JobTypeManagerException{
+		
+		
 		Props conf = null;
 		Props sysConf = null;
-		File confFile = findFilefromDir(dir, JOBTYPECONFFILE);
+		File confFile = findFilefromDir(dir, JOBTYPECONFFILE);		
 		File sysConfFile = findFilefromDir(dir, JOBTYPESYSCONFFILE);
+		if(sysConfFile == null) {
+			logger.info("No job type found in " + dir.getAbsolutePath());
+			return;
+		}
 		
 		try {
 			if(confFile != null) {
@@ -253,6 +259,7 @@ public class JobTypeManager
 			}
 			
 			logger.info("Building " + jobType + " job executor. ");		
+			
 			Class<? extends Object> executorClass = jobToClass.get(jobType);
 
 			if (executorClass == null) {
@@ -289,7 +296,7 @@ public class JobTypeManager
 //			logger.info("jobConf is " + jobConf);
 			
 			job = (Job)Utils.callConstructor(executorClass, jobId, sysConf, jobConf, logger);
-
+			logger.info("job built.");
 		}
 		catch (Exception e) {
 			job = new InitErrorJob(jobId, e);

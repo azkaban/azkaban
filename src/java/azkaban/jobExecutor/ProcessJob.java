@@ -52,7 +52,14 @@ public class ProcessJob extends AbstractProcessJob {
 			error("Bad property definition! " + e.getMessage());
 			
 		}
-		List<String> commands = getCommandList();
+		
+		List<String> commands = null;
+		try {
+		commands = getCommandList();
+		}
+		catch (Exception e) {
+			error("Job set up failed " + e.getCause());
+		}
 
 		long startMs = System.currentTimeMillis();
 
