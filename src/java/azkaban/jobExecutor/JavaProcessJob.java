@@ -76,6 +76,7 @@ public class JavaProcessJob extends ProcessJob {
 	}
 
 	protected List<String> getClassPaths() {
+		
 		List<String> classPaths = getJobProps().getStringList(CLASSPATH, null, ",");
 
 		ArrayList<String> classpathList = new ArrayList<String>();
@@ -89,11 +90,12 @@ public class JavaProcessJob extends ProcessJob {
 		}
 		
 		if (classPaths == null) {
-			File path = new File(getPath());
-			File parent = path.getParentFile();
+			File path = new File(getPath());			
+			//File parent = path.getParentFile();
+			getLog().info("No classpath specified. Trying to load classes from " + path);
 			
-			if (parent != null) {
-				for (File file : parent.listFiles()) {
+			if (path != null) {
+				for (File file : path.listFiles()) {
 					if (file.getName().endsWith(".jar")) {
 						// log.info("Adding to classpath:" + file.getName());
 						classpathList.add(file.getName());
