@@ -1068,12 +1068,14 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 			String type = null;
 			
 			final String contentType = item.getContentType();
-			if(contentType.startsWith("application/zip")) {
+			if(contentType != null && (contentType.startsWith("application/zip") || contentType.startsWith("application/x-zip-compressed"))) {
 				type = "zip";
 			}
 			else {
 				item.delete();
 				setErrorMessageInCookie(resp, "File type " + contentType + " unrecognized.");
+				
+				return;
 			}
 			
 			File tempDir = Utils.createTempDir();
