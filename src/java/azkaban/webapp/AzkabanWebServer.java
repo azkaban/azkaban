@@ -467,7 +467,21 @@ public class AzkabanWebServer implements AzkabanServer {
 			File propertiesDir = new File(pluginDir, "conf");
 			Props pluginProps = null;
 			if (propertiesDir.exists() && propertiesDir.isDirectory()) {
-				pluginProps = PropsUtils.loadPropsInDir(propertiesDir, "properties");
+				File propertiesFile = new File(propertiesDir, "plugin.properties");
+				File propertiesOverrideFile = new File(propertiesDir, "override.properties");
+				
+				if (propertiesFile.exists()) {
+					if (propertiesOverrideFile.exists()) {
+						pluginProps = PropsUtils.loadProps(null, propertiesFile, propertiesOverrideFile);
+					}
+					else {
+						pluginProps = PropsUtils.loadProps(null, propertiesFile);
+					}
+				}
+				else {
+					logger.error("Plugin conf file " + propertiesFile + " not found.");
+					continue;
+				}
 			}
 			else {
 				logger.error("Plugin conf path " + propertiesDir + " not found.");
@@ -478,6 +492,8 @@ public class AzkabanWebServer implements AzkabanServer {
 			String pluginWebPath = pluginProps.getString("viewer.path");
 			int pluginOrder = pluginProps.getInt("viewer.order", 0);
 			boolean pluginHidden = pluginProps.getBoolean("viewer.hidden", false);
+			List<String> extLibClasspath = pluginProps.getStringList("viewer.external.classpaths", (List<String>)null);
+			
 			String pluginClass = pluginProps.getString("viewer.servlet.class");
 			if (pluginClass == null) {
 				logger.error("Viewer class is not set.");
@@ -491,16 +507,28 @@ public class AzkabanWebServer implements AzkabanServer {
 			if (libDir.exists() && libDir.isDirectory()) {
 				File[] files = libDir.listFiles();
 				
-				URL[] url = new URL[files.length];
+				ArrayList<URL> urls = new ArrayList<URL>();
 				for (int i=0; i < files.length; ++i) {
 					try {
-						url[i] = files[i].toURI().toURL();
+						URL url = files[i].toURI().toURL();
+						urls.add(url);
 					} catch (MalformedURLException e) {
 						logger.error(e);
 					}
 				}
+				if (extLibClasspath != null) {
+					for (String extLib : extLibClasspath) {
+						try {
+							File file = new File(pluginDir, extLib);
+							URL url = file.toURI().toURL();
+							urls.add(url);
+						} catch (MalformedURLException e) {
+							logger.error(e);
+						}
+					}
+				}
 				
-				urlClassLoader = new URLClassLoader(url, parentLoader);
+				urlClassLoader = new URLClassLoader(urls.toArray(new URL[urls.size()]), parentLoader);
 			}
 			else {
 				logger.error("Library path " + propertiesDir + " not found.");

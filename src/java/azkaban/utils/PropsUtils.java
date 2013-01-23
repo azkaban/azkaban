@@ -18,6 +18,7 @@ package azkaban.utils;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -56,11 +57,11 @@ public class PropsUtils {
 	 *            File suffixes to load
 	 * @return The loaded set of schedules
 	 */
-	public static Props loadPropsInDir(Props parent, File dir,
-			String... suffixes) {
+	public static Props loadPropsInDir(Props parent, File dir, String... suffixes) {
 		try {
 			Props props = new Props(parent);
 			File[] files = dir.listFiles();
+			Arrays.sort(files);
 			if (files != null) {
 				for (File f : files) {
 					if (f.isFile() && endsWith(f, suffixes)) {
@@ -74,6 +75,22 @@ public class PropsUtils {
 		}
 	}
 
+	public static Props loadProps(Props parent, File ... propFiles) {
+		try {
+			Props props = new Props(parent);
+			for (File f: propFiles) {
+				if (f.isFile()) {
+					props = new Props(props, f);
+				}
+			}
+			
+			return props;
+		}
+		catch (IOException e) {
+			throw new RuntimeException("Error loading properties.", e);
+		}
+	}
+	
 	/**
 	 * Load job schedules from the given directories
 	 * 
@@ -185,10 +202,8 @@ public class PropsUtils {
 		parentProps.put("azkaban.flow.start.hour", loadTime.toString("HH"));
 		parentProps.put("azkaban.flow.start.minute", loadTime.toString("mm"));
 		parentProps.put("azkaban.flow.start.seconds", loadTime.toString("ss"));
-		parentProps.put("azkaban.flow.start.milliseconds",
-				loadTime.toString("SSS"));
-		parentProps.put("azkaban.flow.start.timezone",
-				loadTime.toString("ZZZZ"));
+		parentProps.put("azkaban.flow.start.milliseconds", loadTime.toString("SSS"));
+		parentProps.put("azkaban.flow.start.timezone", loadTime.toString("ZZZZ"));
 		return parentProps;
 	}
 
