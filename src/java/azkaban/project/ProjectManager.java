@@ -229,7 +229,7 @@ public class ProjectManager {
 		// Unzip.
 		File file = null;
 		try {
-			if (fileType.equals("zip")) {
+			if ("zip".equals(fileType)) {
 				file = unzipFile(archive);
 			}
 			else {
