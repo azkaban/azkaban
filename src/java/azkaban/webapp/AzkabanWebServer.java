@@ -26,6 +26,8 @@ import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Properties;
 import java.util.TimeZone;
@@ -448,9 +450,9 @@ public class AzkabanWebServer implements AzkabanServer {
 		
 		File viewerPluginPath = new File(pluginPath);
 		ClassLoader parentLoader = AzkabanWebServer.class.getClassLoader();
+		File[] pluginDirs = viewerPluginPath.listFiles();
 		ArrayList<String> jarPaths = new ArrayList<String>();
-		for (String plug: plugins) {
-			File pluginDir = new File(viewerPluginPath, plug);
+		for (File pluginDir: pluginDirs) {
 			if (!pluginDir.exists()) {
 				logger.error("Error viewer plugin path " + pluginDir.getPath() + " doesn't exist.");
 				continue;
@@ -474,6 +476,8 @@ public class AzkabanWebServer implements AzkabanServer {
 			
 			String pluginName = pluginProps.getString("viewer.name");
 			String pluginWebPath = pluginProps.getString("viewer.path");
+			int pluginOrder = pluginProps.getInt("viewer.order", 0);
+			boolean pluginHidden = pluginProps.getBoolean("viewer.hidden", false);
 			String pluginClass = pluginProps.getString("viewer.servlet.class");
 			if (pluginClass == null) {
 				logger.error("Viewer class is not set.");
@@ -538,12 +542,21 @@ public class AzkabanWebServer implements AzkabanServer {
 			
 			AbstractAzkabanServlet avServlet = (AbstractAzkabanServlet)obj;
 			root.addServlet(new ServletHolder(avServlet), "/" + pluginWebPath + "/*");
-			installedViewerPlugins.add(new ViewerPlugin(pluginName, pluginWebPath));
+			installedViewerPlugins.add(new ViewerPlugin(pluginName, pluginWebPath, pluginOrder, pluginHidden));
 		}
 		
+		// Velocity needs the jar resource paths to be set.
 		String jarResourcePath = StringUtils.join(jarPaths, ", ");
 		logger.info("Setting jar resource path " + jarResourcePath);
 		ve.addProperty("jar.resource.loader.path", jarResourcePath);
+		
+		// Sort plugins based on order
+		Collections.sort(installedViewerPlugins, new Comparator<ViewerPlugin>() {
+			@Override
+			public int compare(ViewerPlugin o1, ViewerPlugin o2) {
+				return o1.getOrder() - o2.getOrder();
+			}
+		});
 		
 		return installedViewerPlugins;
 	}

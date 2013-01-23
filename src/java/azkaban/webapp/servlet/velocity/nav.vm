@@ -28,10 +28,12 @@
 				<li id="executing-jobs-tab" #if($current_page == 'executing')class="selected"#end onClick="navMenuClick('$!context/executor')"><a href="$!context/executor">Executing</a></li>
 				<li id="history-jobs-tab" #if($current_page == 'history')class="selected"#end onClick="navMenuClick('$!context/history')"><a href="$!context/history">History</a></li>
 				
-				#if ($viewers) 
-					<li id="viewer-tab" #if($current_page == 'viewer') class="selected"#end onClick="navMenuClick('$!context/$viewerPath')">
-						<a href="$!context/$viewerPath">$viewerName</a>
+				#foreach($viewer in $viewers)
+					#if(!$viewer.hidden)
+					<li #if($current_page == $viewer.pluginName) class="selected"#end onClick="navMenuClick('$!context/$viewer.pluginPath')">
+						<a href="$!context/$viewer.pluginPath">$viewer.pluginName</a>
 					</li>
+					#end
 				#end
 			</ul>
 			
