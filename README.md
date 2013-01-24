@@ -1,7 +1,14 @@
-Azkaban2 is a scheduler for running work flows.
-Nearly completely rewritten, Azkaban2 stores, manages and tracks jobs that comprise various workflows.
+Azkaban2 is a batch workflow job scheduler. It is the successor of the original Azkaban. Often times there is a need to run a set of jobs and processes in a particular order within a workflow. Azkaban will resolve the ordering through job dependencies and provide an easy to use web user interface to maintain and track your workflows.
+Here are a few features:
+	-Web UI
+	-Easy workflow uploads
+	-Easy to set up job dependencies
+	-Schedule workflows
+	-Authentication/Authorization (permissions on jobs)
+	-Ability to kill and restart workflows
+	-Modular and pluginable
+	-Project workspaces
+	-Logging and auditing of workflow and jobs
 
-LinkedIn has been running this new version of Azkaban since November 2012. This replaces the the original version of Azkaban ran since 2009.
-
-We apologize for the lack of documentation at the moment. We are still in the process of writing documents and hope to have them out shortly.
-So please direct questions to Richard Park at rpark@linkedin.com if you want to get started early on using Azkaban2.
+There is a google groups named 'azkaban' for this project.
+https://groups.google.com/forum/?fromgroups#!forum/azkaban-dev
