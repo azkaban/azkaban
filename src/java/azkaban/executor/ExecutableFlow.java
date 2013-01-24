@@ -199,9 +199,13 @@ public class ExecutableFlow {
 		return endNodes;
 	}
 	
-	public void setStatus(String nodeId, Status status) {
+	public boolean setNodeStatus(String nodeId, Status status) {
 		ExecutableNode exNode = executableNodes.get(nodeId);
+		if (exNode == null) {
+			return false;
+		}
 		exNode.setStatus(status);
+		return true;
 	}
 	
 	public int getExecutionId() {

@@ -412,10 +412,8 @@ public class AzkabanWebServer implements AzkabanServer {
 		root.addServlet(new ServletHolder(new ScheduleServlet()),"/schedule");
 		
 		String viewerPluginDir = azkabanSettings.getString("viewer.plugin.dir", "plugins/viewer");
-		List<String> viewerPlugins = azkabanSettings.getStringList("viewer.plugins", (List<String>) null);
-		if (viewerPlugins != null) {
-			app.setViewerPlugins(loadViewerPlugins(root, viewerPluginDir, viewerPlugins, app.getVelocityEngine()));
-		}
+		app.setViewerPlugins(loadViewerPlugins(root, viewerPluginDir, app.getVelocityEngine()));
+
 		//root.addServlet(new ServletHolder(new HdfsBrowserServlet()), "/hdfs/*");
 		
 		root.setAttribute(AzkabanServletContextListener.AZKABAN_SERVLET_CONTEXT_KEY, app);
@@ -445,10 +443,13 @@ public class AzkabanWebServer implements AzkabanServer {
 		logger.info("Server running on port " + sslPortNumber + ".");
 	}
 
-	private static List<ViewerPlugin> loadViewerPlugins(Context root, String pluginPath, List<String> plugins, VelocityEngine ve) {
-		ArrayList<ViewerPlugin> installedViewerPlugins = new ArrayList<ViewerPlugin>();
-		
+	private static List<ViewerPlugin> loadViewerPlugins(Context root, String pluginPath, VelocityEngine ve) {
 		File viewerPluginPath = new File(pluginPath);
+		if (!viewerPluginPath.exists()) {
+			return Collections.<ViewerPlugin>emptyList();
+		}
+			
+		ArrayList<ViewerPlugin> installedViewerPlugins = new ArrayList<ViewerPlugin>();
 		ClassLoader parentLoader = AzkabanWebServer.class.getClassLoader();
 		File[] pluginDirs = viewerPluginPath.listFiles();
 		ArrayList<String> jarPaths = new ArrayList<String>();

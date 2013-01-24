@@ -628,7 +628,8 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 		Map<String, String> paramGroup = this.getParamGroup(req, "disable");
 		for (Map.Entry<String, String> entry: paramGroup.entrySet()) {
 			boolean nodeDisabled = Boolean.parseBoolean(entry.getValue());
-			exflow.setStatus(entry.getKey(), nodeDisabled ? Status.DISABLED : Status.READY);
+
+			exflow.setNodeStatus(entry.getKey(), nodeDisabled ? Status.DISABLED : Status.READY);
 		}
 		
 		try {
