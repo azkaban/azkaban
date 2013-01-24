@@ -342,9 +342,9 @@ public abstract class AbstractAzkabanServlet extends HttpServlet {
 		//@TODO, allow more than one type of viewer. For time sake, I only install the first one
 		if (viewerPlugins != null && !viewerPlugins.isEmpty()) {
 			page.add("viewers", viewerPlugins);
-			ViewerPlugin plugin = viewerPlugins.get(0);
-			page.add("viewerName", plugin.getPluginName());
-			page.add("viewerPath", plugin.getPluginPath());
+//			ViewerPlugin plugin = viewerPlugins.get(0);
+//			page.add("viewerName", plugin.getPluginName());
+//			page.add("viewerPath", plugin.getPluginPath());
 		}
 		
 		return page;

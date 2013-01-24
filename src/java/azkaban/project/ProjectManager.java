@@ -229,7 +229,10 @@ public class ProjectManager {
 		// Unzip.
 		File file = null;
 		try {
-			if (fileType.equals("zip")) {
+			if (fileType == null) {
+				throw new ProjectManagerException("Unknown file type for " + archive.getName());
+			}
+			else if ("zip".equals(fileType)) {
 				file = unzipFile(archive);
 			}
 			else {
