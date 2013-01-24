@@ -10,5 +10,11 @@ Here are a few features:
 	-Project workspaces
 	-Logging and auditing of workflow and jobs
 
+To go to the package download links:
+https://github.com/azkaban/azkaban2/wiki/Download-Packages
+
+To go to the azkaban-plugins github repo:
+https://github.com/azkaban/azkaban-plugins
+
 There is a google groups named 'azkaban' for this project.
 https://groups.google.com/forum/?fromgroups#!forum/azkaban-dev
