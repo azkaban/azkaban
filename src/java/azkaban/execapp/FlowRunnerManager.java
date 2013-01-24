@@ -104,7 +104,7 @@ public class FlowRunnerManager implements EventListener {
 		cleanerThread = new CleanerThread();
 		cleanerThread.start();
 		
-		jobtypeManager = new JobTypeManager(props.getString(AzkabanExecutorServer.JOBTYPE_PLUGIN_DIR, null), parentClassLoader);
+		jobtypeManager = new JobTypeManager(props.getString(AzkabanExecutorServer.JOBTYPE_PLUGIN_DIR, JobTypeManager.DEFAULT_JOBTYPEPLUGINDIR), parentClassLoader);
 		
 	}
 

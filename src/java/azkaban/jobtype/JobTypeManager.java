@@ -44,6 +44,7 @@ public class JobTypeManager
 	private final String jobtypePluginDir;	// the dir for jobtype plugins
 	private final ClassLoader parentLoader; 
 	
+	public static final String DEFAULT_JOBTYPEPLUGINDIR = "plugins/jobtypes";
 	private static final String JOBTYPECONFFILE = "plugin.properties"; // need jars.to.include property, will be loaded with user property
 	private static final String JOBTYPESYSCONFFILE = "private.properties"; // not exposed to users
 	private static final String COMMONCONFFILE = "common.properties";	// common properties for multiple plugins
@@ -67,7 +68,12 @@ public class JobTypeManager
 		
 		if(jobtypePluginDir != null) {
 			logger.info("job type plugin directory set. Loading extra job types.");
-			loadPluginJobTypes();
+			try {
+				loadPluginJobTypes();
+			}
+			catch (Exception e) {
+				logger.info("Plugin jobtypes failed to load. " + e.getCause());
+			}
 		}
 		
 	}
@@ -200,6 +206,7 @@ public class JobTypeManager
 		catch (Exception e) {
 			throw new JobTypeManagerException("Failed to get jobtype properties", e);
 		}
+		sysConf.put("plugin.dir", dir.getAbsolutePath());
 		
 		// use directory name as job type name
 		String jobtypeName = dir.getName();
@@ -209,19 +216,14 @@ public class JobTypeManager
 		logger.info("Loading jobtype " + jobtypeName );
 
 		// sysconf says what jars/confs to load
-		List<String> jobtypeClasspath = sysConf.getStringList("jobtype.classpath", null, ",");
+		//List<String> jobtypeClasspath = sysConf.getStringList("jobtype.classpath", null, ",");
 		List<URL> resources = new ArrayList<URL>();		
-		for(String s : jobtypeClasspath) {
+		for(File f : dir.listFiles()) {
 			try {
-				File path = new File(s);
-				if(path.isDirectory()) {
-					for(File f : path.listFiles()) {
-						resources.add(f.toURI().toURL());
-						logger.info("adding to classpath " + f);
-					}
+				if(f.getName().endsWith(".jar")) {
+					resources.add(f.toURI().toURL());
+					logger.info("adding to classpath " + f);
 				}
-				resources.add(path.toURI().toURL());
-				logger.info("adding to classpath " + path);
 			} catch (MalformedURLException e) {
 				// TODO Auto-generated catch block
 				throw new JobTypeManagerException(e);
