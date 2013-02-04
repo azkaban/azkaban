@@ -368,6 +368,7 @@ public class ExecutableFlow {
 	}
 	
 	public void applyUpdateObject(Map<String, Object> updateData) {
+		@SuppressWarnings("unchecked")
 		List<Map<String,Object>> updatedNodes = (List<Map<String,Object>>)updateData.get("nodes");
 		for (Map<String,Object> node: updatedNodes) {
 			String jobId = (String)node.get("jobId");

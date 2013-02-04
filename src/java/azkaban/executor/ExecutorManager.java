@@ -351,7 +351,7 @@ public class ExecutorManager {
 									if (pair != null) {
 										ExecutionReference ref = pair.getFirst();
 										int numErrors = ref.getNumErrors();
-										if (ref.getNumErrors() < numErrors) {
+										if (ref.getNumErrors() < this.numErrors) {
 											ref.setNextCheckTime(System.currentTimeMillis() + errorThreshold);
 											ref.setNumErrors(++numErrors);
 										}
@@ -615,6 +615,7 @@ public class ExecutorManager {
 			this.port = port;
 		}
 
+		@SuppressWarnings("unused")
 		private ConnectionInfo getOuterType() {
 			return ConnectionInfo.this;
 		}

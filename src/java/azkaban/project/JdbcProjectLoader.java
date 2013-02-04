@@ -74,7 +74,6 @@ public class JdbcProjectLoader implements ProjectLoader {
 	
 	private DataSource dataSource;
 	private EncodingType defaultEncodingType = EncodingType.GZIP;
-	private long startTime;
 	
 	public JdbcProjectLoader(Props props) {
 		tempDir = new File(props.getString("project.temp.dir", "temp"));
@@ -295,8 +294,7 @@ public class JdbcProjectLoader implements ProjectLoader {
 			DbUtils.closeQuietly(connection);
 		}
 	}
-	
-	@SuppressWarnings("resource")
+
 	private void uploadProjectFile(Connection connection, Project project, int version, String filetype, String filename, File localFile, String uploader) throws ProjectManagerException {
 		QueryRunner runner = new QueryRunner();
 		long updateTime = System.currentTimeMillis();
@@ -386,7 +384,6 @@ public class JdbcProjectLoader implements ProjectLoader {
 		return handler;
 	}
 	
-	@SuppressWarnings("resource")
 	private ProjectFileHandler getUploadedFile(Connection connection, int projectId, int version) throws ProjectManagerException {
 		QueryRunner runner = new QueryRunner();
 		ProjectVersionResultHandler pfHandler = new ProjectVersionResultHandler();
@@ -957,7 +954,7 @@ public class JdbcProjectLoader implements ProjectLoader {
 			ArrayList<Flow> flows = new ArrayList<Flow>();
 			do {
 				//int projectId = rs.getInt(1);
-				int version = rs.getInt(2);
+				//int version = rs.getInt(2);
 				String flowId = rs.getString(3);
 				//long modifiedTime = rs.getLong(4);
 				int encodingType = rs.getInt(5);
@@ -1093,7 +1090,7 @@ public class JdbcProjectLoader implements ProjectLoader {
 	
 	private static class ProjectVersionResultHandler implements ResultSetHandler<List<ProjectFileHandler>> {
 		private static String SELECT_PROJECT_VERSION = "SELECT project_id, version, upload_time, uploader, file_type, file_name, md5, num_chunks FROM project_versions WHERE project_id=? AND version=?";
-		private static String SELECT_ALL_PER_PROJECT = "SELECT project_id, version, upload_time, uploader, file_type, file_name, md5, num_chunks FROM project_versions WHERE project_id=?";
+		//private static String SELECT_ALL_PER_PROJECT = "SELECT project_id, version, upload_time, uploader, file_type, file_name, md5, num_chunks FROM project_versions WHERE project_id=?";
 		
 		@Override
 		public List<ProjectFileHandler> handle(ResultSet rs) throws SQLException {

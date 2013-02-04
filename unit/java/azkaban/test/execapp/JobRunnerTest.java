@@ -2,7 +2,6 @@ package azkaban.test.execapp;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.StringTokenizer;
 
 import junit.framework.Assert;
 
@@ -266,21 +265,5 @@ public class JobRunnerTest {
 		runner.addListener(listener);
 		return runner;
 	}
-	
-	private static String getSourcePathFromClass(Class containedClass) {
-		File file = new File(containedClass.getProtectionDomain().getCodeSource().getLocation().getPath());
 
-		if (!file.isDirectory() && file.getName().endsWith(".class")) {
-			String name = containedClass.getName();
-			StringTokenizer tokenizer = new StringTokenizer(name, ".");
-			while(tokenizer.hasMoreTokens()) {
-				tokenizer.nextElement();
-				file = file.getParentFile();
-			}
-			return file.getPath();  
-		}
-		else {
-			return containedClass.getProtectionDomain().getCodeSource().getLocation().getPath();
-		}
-	}
 }

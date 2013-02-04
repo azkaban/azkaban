@@ -38,7 +38,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.apache.commons.fileupload.FileItem;
-import org.apache.commons.fileupload.servlet.ServletFileUpload;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.log4j.Logger;
@@ -68,7 +67,6 @@ import azkaban.utils.Props;
 import azkaban.utils.Utils;
 import azkaban.webapp.AzkabanWebServer;
 import azkaban.webapp.session.Session;
-import azkaban.webapp.servlet.MultipartParser;
 
 public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 	private static final long serialVersionUID = 1;
@@ -575,7 +573,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 	
 	private void handleProjectLogsPage(HttpServletRequest req, HttpServletResponse resp, Session session) throws ServletException, IOException {
 		Page page = newPage(req, resp, session, "azkaban/webapp/servlet/velocity/projectlogpage.vm");
-		User user = session.getUser();
+
 		String projectName = getParam(req, "project");
 		
 		Project project = projectManager.getProject(projectName);
@@ -584,7 +582,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 		}
 		page.add("projectName", projectName);
 		//page.add("projectManager", projectManager);
-		int bytesSkip = 0;
+		//int bytesSkip = 0;
 		int numBytes = 1024;
 
 		// Really sucks if we do a lot of these because it'll eat up memory fast. But it's expected

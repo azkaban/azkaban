@@ -4,8 +4,6 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 
 import javax.sql.DataSource;
@@ -50,7 +48,7 @@ public class JdbcScheduleLoaderTest {
 		CountHandler countHandler = new CountHandler();
 		QueryRunner runner = new QueryRunner();
 		try {
-			int count = runner.query(connection, "SELECT COUNT(1) FROM schedules", countHandler);
+			runner.query(connection, "SELECT COUNT(1) FROM schedules", countHandler);
 		} catch (SQLException e) {
 			e.printStackTrace();
 			testDBExists = false;
@@ -82,8 +80,7 @@ public class JdbcScheduleLoaderTest {
 //		CountHandler countHandler = new CountHandler();
 		QueryRunner runner = new QueryRunner();
 		try {
-			int count = runner.update(connection, "DELETE FROM schedules");
-			
+			runner.update(connection, "DELETE FROM schedules");
 		} catch (SQLException e) {
 			e.printStackTrace();
 			testDBExists = false;

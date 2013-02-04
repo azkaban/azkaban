@@ -55,7 +55,6 @@ public class InitialSetupServlet extends AbstractAzkabanServlet {
 	private static final long serialVersionUID = -1;
 	private static final int DEFAULT_UPLOAD_DISK_SPOOL_SIZE = 20 * 1024 * 1024;
 	private static final String DB_DIRECTORY = "db";
-	private static final String LDAP_DIRECTORY = "auth";
 
     private static Logger logger = Logger.getLogger(InitialSetupServlet.class);
 
@@ -207,7 +206,7 @@ public class InitialSetupServlet extends AbstractAzkabanServlet {
 		FileItem item = (FileItem) multipart.get("file");
 		String name = item.getName();
 		
-		final String contentType = item.getContentType();
+		//final String contentType = item.getContentType();
 
 		File tempDir = Utils.createTempDir();
 		OutputStream out = null;

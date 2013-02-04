@@ -242,4 +242,10 @@ public class XmlUserManager implements UserManager {
 	public Role getRole(String roleName) {
 		return roles.get(roleName);
 	}
+
+	@Override
+	public boolean validateGroup(String group) {
+		// Return true. Validation should be added when groups are added to the xml.
+		return true;
+	}
 }

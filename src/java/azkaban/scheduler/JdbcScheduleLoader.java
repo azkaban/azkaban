@@ -204,7 +204,7 @@ public class JdbcScheduleLoader implements ScheduleLoader {
 	{
 		QueryRunner runner = new QueryRunner();
 		try {
-			int updates = runner.update(connection, UPDATE_NEXT_EXEC_TIME, s.getNextExecTime(), s.getProjectId(), s.getFlowName()); 
+			runner.update(connection, UPDATE_NEXT_EXEC_TIME, s.getNextExecTime(), s.getProjectId(), s.getFlowName()); 
 		} catch (SQLException e) {
 			logger.error(UPDATE_NEXT_EXEC_TIME + " failed.");
 			throw new ScheduleManagerException("Update schedule " + s.getScheduleName() + " into db failed. ", e);

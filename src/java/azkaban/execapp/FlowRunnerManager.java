@@ -18,7 +18,6 @@ package azkaban.execapp;
 
 import java.io.File;
 import java.io.IOException;
-import java.lang.reflect.Constructor;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -57,8 +56,6 @@ public class FlowRunnerManager implements EventListener {
 	private File projectDirectory;
 
 	private static final long RECENTLY_FINISHED_TIME_TO_LIVE = 120000; // recently finished secs to clean up. 1 minute
-	
-	private static final String HADOOP_SECURITY_MANAGER_CLASS_PARAM = "hadoop.security.manager.class";
 	
 	private static final int DEFAULT_NUM_EXECUTING_FLOWS = 30;
 	private Map<Pair<Integer,Integer>, ProjectVersion> installedProjects = new ConcurrentHashMap<Pair<Integer,Integer>, ProjectVersion>();
@@ -125,6 +122,7 @@ public class FlowRunnerManager implements EventListener {
 			this.queue = queue;
 		}
 
+		@SuppressWarnings("unused")
 		public void shutdown() {
 			shutdown = true;
 			this.interrupt();
@@ -149,6 +147,7 @@ public class FlowRunnerManager implements EventListener {
 			this.setName("FlowRunnerManager-Cleaner-Thread");
 		}
 		
+		@SuppressWarnings("unused")
 		public void shutdown() {
 			shutdown = true;
 			this.interrupt();
@@ -201,7 +200,7 @@ public class FlowRunnerManager implements EventListener {
 			}
 			
 			for (Map.Entry<Integer, ArrayList<ProjectVersion>> entry: projectVersions.entrySet()) {
-				Integer projectId = entry.getKey();
+				//Integer projectId = entry.getKey();
 				ArrayList<ProjectVersion> installedVersions = entry.getValue();
 				
 				// Keep one version of the project around.

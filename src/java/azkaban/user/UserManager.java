@@ -35,7 +35,27 @@ public interface UserManager {
 	 */
 	public User getUser(String username, String password) throws UserManagerException;
 	
+	/**
+	 * Returns true if the user is valid. This is used when adding permissions for users
+	 * 
+	 * @param username
+	 * @return
+	 */
 	public boolean validateUser(String username);
 
+	/**
+	 * Returns true if the group is valid. This is used when adding permissions for groups.
+	 * 
+	 * @param group
+	 * @return
+	 */
+	public boolean validateGroup(String group);
+	
+	/**
+	 * Returns the user role. This may return null.
+	 * 
+	 * @param roleName
+	 * @return
+	 */
 	public Role getRole(String roleName);
 }

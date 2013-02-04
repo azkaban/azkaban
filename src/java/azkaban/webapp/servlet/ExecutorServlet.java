@@ -263,9 +263,9 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 					ajaxFetchJobLogs(req, resp, ret, session.getUser(), exFlow);
 				}
 				else if (ajaxName.equals("flowInfo")) {
-					String projectName = getParam(req, "project");
-					Project project = projectManager.getProject(projectName);
-					String flowName = getParam(req, "flow");
+					//String projectName = getParam(req, "project");
+					//Project project = projectManager.getProject(projectName);
+					//String flowName = getParam(req, "flow");
 					ajaxFetchExecutableFlowInfo(req, resp, ret, session.getUser(), exFlow);
 				}
 			}
@@ -617,7 +617,7 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 			exflow.setNotifyOnLastFailure(Boolean.parseBoolean(getParam(req, "notifyFailureLast")));
 		}
 		if (hasParam(req, "executingJobOption")) {
-			String option = getParam(req, "jobOption");
+			//String option = getParam(req, "jobOption");
 			// Not set yet
 		}
 		
@@ -644,7 +644,6 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 	}
 	
 	public class ExecutorVMHelper {
-		@SuppressWarnings("unused")
 		public String getProjectName(int id) {
 			Project project = projectManager.getProject(id);
 			if (project == null) {

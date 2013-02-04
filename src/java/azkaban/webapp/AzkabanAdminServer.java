@@ -30,7 +30,7 @@ import azkaban.webapp.session.SessionCache;
 public class AzkabanAdminServer implements AzkabanServer {
 	private static final Logger logger = Logger.getLogger(AzkabanAdminServer.class);
 	private static AzkabanAdminServer app;
-	private static final int NUM_CONNECTIONS = 10;
+	
 	private static final String AZKABAN_DEFAULT_ADMIN_DIR = "admin";
 	private static final String AZKABAN_DEFAULT_ADMIN_PROPERTIES = "admin.properties";
 	private static final String AZKABAN_DEFAULT_WEB_DIR = "web";
@@ -39,6 +39,7 @@ public class AzkabanAdminServer implements AzkabanServer {
 	
 	private static final String USER_MANAGER_CLASS_PARAM = "user.manager.class";
 	private final VelocityEngine velocityEngine;
+	@SuppressWarnings("unused")
 	private final SessionCache sessionCache;
 	private static Server server;
 	private String pluginLibDirectory;
@@ -224,6 +225,7 @@ public class AzkabanAdminServer implements AzkabanServer {
 		return pluginLibDirectory;
 	}
 
+	@SuppressWarnings("unused")
 	private UserManager loadUserManager(Props props) {
 		Class<?> userManagerClass = props.getClass(USER_MANAGER_CLASS_PARAM, null);
 		logger.info("Loading user manager class " + userManagerClass.getName());

@@ -17,7 +17,6 @@ package azkaban.test.executor;
  */
 
 import azkaban.jobExecutor.ProcessJob;
-import azkaban.utils.JSONUtils;
 import azkaban.utils.Props;
 
 import org.apache.log4j.ConsoleAppender;
@@ -34,12 +33,10 @@ import java.io.OutputStream;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.security.PrivilegedExceptionAction;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Properties;
-import azkaban.test.executor.SleepJavaJob;
 
 public class JavaJobRunnerMain {
 
@@ -264,8 +261,7 @@ public class JavaJobRunnerMain {
 			Constructor<?> con = getConstructor(runningClass, String.class, Map.class);
 			logger.info("Constructor found " + con.toGenericString());
 
-			@SuppressWarnings("rawtypes")
-			HashMap map = new HashMap();
+			HashMap<Object, Object> map = new HashMap<Object, Object>();
 			for (Map.Entry<Object, Object> entry : properties.entrySet()) {
 				map.put(entry.getKey(), entry.getValue());
 			}

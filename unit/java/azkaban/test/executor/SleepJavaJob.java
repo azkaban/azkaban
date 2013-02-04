@@ -5,7 +5,7 @@ import java.util.Map;
 public class SleepJavaJob {
 	private boolean fail;
 	private String seconds;
-	@SuppressWarnings("unchecked")
+
 	public SleepJavaJob(String id, Map<String, String> parameters) {
 		String failStr = parameters.get("fail");
 		if (failStr == null || failStr.equals("false")) {

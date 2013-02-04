@@ -34,8 +34,6 @@ import org.apache.log4j.Logger;
 import azkaban.user.User;
 import azkaban.user.UserManager;
 import azkaban.user.UserManagerException;
-import azkaban.utils.Props;
-import azkaban.webapp.AzkabanServer;
 import azkaban.webapp.session.Session;
 
 /**

@@ -27,7 +27,6 @@ import org.apache.log4j.Logger;
 import azkaban.jobExecutor.utils.process.AzkabanProcess;
 import azkaban.jobExecutor.utils.process.AzkabanProcessBuilder;
 import azkaban.utils.Props;
-import azkaban.utils.UndefinedPropertyException;
 
 /*
  * A job that runs a simple unix command
