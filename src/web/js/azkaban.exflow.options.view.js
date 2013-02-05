@@ -147,7 +147,7 @@ azkaban.ExecuteFlowView = Backbone.View.extend({
 				updateNode.status = "READY";
 				disabled[updateNode.id] = true;
 			}
-			if (updateNode.status == "SUCCEEDED") {
+			if (updateNode.status == "SUCCEEDED" || updateNode.status=="RUNNING") {
 				disabled[updateNode.id] = true;
 			}
 		}
