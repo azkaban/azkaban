@@ -846,7 +846,6 @@ public class JdbcProjectLoader implements ProjectLoader {
 		}
 	}
 	
-	
 	@Override
 	public Map<String,Props> fetchProjectProperties(int projectId, int version) throws ProjectManagerException {
 		QueryRunner runner = new QueryRunner(dataSource);

@@ -76,7 +76,12 @@ var flowTableView;
 azkaban.FlowTableView= Backbone.View.extend({
   events : {
     "click .jobfolder": "expandFlowProject",
-    "hover .expandedFlow a": "highlight"
+    "hover .expandedFlow a": "highlight",
+    "hover .row .tb-name": "flowRunOptions",
+    "hover .innerTable .tb-job-name": "jobRunOptions",
+    "click .runJob": "runJob",
+    "click .runWithDep": "runWithDep",
+    "click .executeFlow": "executeFlow"
   },
   initialize : function(settings) {
   	_.bindAll(this, 'createJobListTable');
@@ -133,7 +138,8 @@ azkaban.FlowTableView= Backbone.View.extend({
   createJobListTable : function(data, innerTable) {
   	var nodes = data.nodes;
   	var flowId = data.flowId;
-  	var requestURL = contextURL + "/manager?project=" + data.project + "&flow=" + data.flowId + "&job=";
+  	var project = data.project;
+  	var requestURL = contextURL + "/manager?project=" + flowId + "&flow=" + project + "&job=";
   	for (var i = 0; i < nodes.length; i++) {
 		var job = nodes[i];
 		var name = job.id;
@@ -143,6 +149,10 @@ azkaban.FlowTableView= Backbone.View.extend({
 		var tr = document.createElement("tr");
 		var idtd = document.createElement("td");
 		$(idtd).addClass("tb-name");
+		$(idtd).addClass("tb-job-name");
+		idtd.flowId=flowId;
+		idtd.projectName=project;
+		idtd.jobName=name;
 		
 		var ida = document.createElement("a");
 		ida.dependents = job.dependents;
@@ -158,9 +168,75 @@ azkaban.FlowTableView= Backbone.View.extend({
 		$(innerTable).append(tr);
   	}
   },
+  flowRunOptions: function(evt) {
+  	var hover = evt.type == "mouseover";
+  	var projectName = $(evt.currentTarget).attr("project");
+  	var flowId = $(evt.currentTarget).attr("flow");
+  	
+  	var menuName = flowId + "-hover-menu";
+  	if (hover) {
+  		var divMenu = document.createElement("div");
+  		$(divMenu).attr("id", menuName);
+  		$(divMenu).addClass("job-hover-menu");
+  		
+  		var divRunJob = document.createElement("div");
+  		$(divRunJob).addClass("btn1");
+  		$(divRunJob).addClass("executeFlow");
+  		$(divRunJob).text("Execute Flow");
+  		divRunJob.flowId = flowId;
+  		$(divMenu).append(divRunJob);
+
+  		$(evt.currentTarget).append(divMenu);
+  	}
+  	else {
+  		var menu = $("#" + menuName);
+  		$(menu).remove();
+  	}
+  },
+  jobRunOptions: function(evt) {
+    var projectName = evt.currentTarget.projectName;
+  	var flowId = evt.currentTarget.flowId;
+  	var jobName = evt.currentTarget.jobName;
+  	console.log("job run options " + projectName + ":" + flowId + ":" + jobName);
+  	
+  	var hover = evt.type == "mouseover";
+  	
+  	var menuName = flowId + "-" + jobName + "-hover-menu";
+  	if (hover) {
+  		var divMenu = document.createElement("div");
+  		$(divMenu).attr("id", menuName);
+  		$(divMenu).addClass("job-hover-menu");
+
+  		var divRunJob = document.createElement("div");
+  		$(divRunJob).addClass("btn1");
+  		$(divRunJob).addClass("runJob");
+  		$(divRunJob).text("Run Job");
+  		divRunJob.jobName = jobName;
+  		divRunJob.flowId = flowId;
+  		$(divMenu).append(divRunJob);
+  		
+  		var divRunWithDep = document.createElement("div");
+  		$(divRunWithDep).addClass("btn1");
+  		$(divRunWithDep).addClass("runWithDep");
+  		$(divRunWithDep).text("Run With Dependencies");
+  		divRunWithDep.jobName = jobName;
+  		divRunWithDep.flowId = flowId;
+  		$(divMenu).append(divRunWithDep);
+  		
+  		$(evt.currentTarget).append(divMenu);
+  	}
+  	else {
+  		var menu = $("#" + menuName);
+  		$(menu).remove();
+  	}
+  	
+  },
   highlight: function(evt) {
  	var currentTarget = evt.currentTarget;
- 	var dependents = currentTarget.dependents;
+	this.highlightJob(currentTarget);
+  },
+  highlightJob: function(currentTarget) {
+   	var dependents = currentTarget.dependents;
  	var dependencies = currentTarget.dependencies;
  	var flowid = currentTarget.flowid;
  	
@@ -176,8 +252,44 @@ azkaban.FlowTableView= Backbone.View.extend({
 	 		var depId = flowid + "-" + dependencies[i];
 	 		$("#"+depId).toggleClass("dependency");
 	 	}
-
- 	}
+  	}
+  },
+  runJob: function(evt) {
+  	console.log("Run Job");
+  	var jobId = evt.currentTarget.jobName;
+  	var flowId = evt.currentTarget.flowId;
+  	
+  	$("#execute-message").text("Run only job '" + jobId + "' in flow '" + flowId + "'.");
+  	this.executeFlowDialog();
+  },
+  runWithDep: function(evt) {
+   var jobId = evt.currentTarget.jobName;
+  	var flowId = evt.currentTarget.flowId;
+    console.log("Run With Dep");
+    var jobId = evt.currentTarget.jobId;
+    $("#execute-message").text("Run job '" + jobId + "' and all of its ancestors in '" + flowId + "'.");
+    this.executeFlowDialog();
+  },
+  executeFlow: function(evt) {
+    console.log("Execute Flow");
+    var flowId = evt.currentTarget.flowId;
+    $("#execute-message").text("Executing the complete flow '" + flowId + "'.");
+    this.executeFlowDialog();
+  },
+  executeFlowDialog: function(message) {
+ 	$('#flow-execute').modal({
+      closeHTML: "<a href='#' title='Close' class='modal-close'>x</a>",
+      position: ["20%",],
+      containerId: 'confirm-container',
+      containerCss: {
+        'height': '220px',
+        'width': '565px'
+      },
+      onShow: function (dialog) {
+        var modal = this;
+        $("#errorMsg").hide();
+      }
+    });
   },
   render: function() {
   }
@@ -239,5 +351,4 @@ $(function() {
 	projectSummary = new azkaban.ProjectSummaryView({el:$('#project-summary')});
 	deleteProjectView = new azkaban.DeleteProjectView({el: $('#delete-project')});
 	// Setting up the project tabs
-
 });

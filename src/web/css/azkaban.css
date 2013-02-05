@@ -657,7 +657,6 @@ tr:hover td {
 }
 
 .modal .message {
-  font-size: 81.25%;
   padding: 20px;
 }
 
@@ -1107,7 +1106,7 @@ tr:hover td {
 	margin-left:auto;
 	margin-right: auto;
 	text-align: center;
-	width: 80%;
+	width: 90%;
 }
 
 .childrow .expandedFlow {
@@ -1156,7 +1155,7 @@ tr:hover td {
 }
 
 .childrow .innerTable a.dependency {
-	color: #005066;
+	color: #0099CC;
 }
 
 .childrow .innerJobRow {
@@ -2320,6 +2319,48 @@ span .nowrap {
 	font-weight: bold;
 }
 
+/*Azkaban Hover Menu */
+#flow-tabs .row .tb-name {
+	
+}
+
+.job-hover-menu {
+	float: right;
+}
+
+.job-hover-menu div {
+	margin-left: 2px;
+	float: left;
+}
+
+/*Azkaban Hover Menu */
+.jobfolder {
+	padding-top: 3px;
+	height: 22px;
+	float: left;
+}
+
+tr.row td.tb-name {
+	padding-top: 0px;
+	padding-bottom: 0px;
+}
+
+.expandedFlow td.tb-job-name {
+	padding-top: 0px;
+	padding-bottom: 0px;
+	height: 25px;
+}
+
+.expandedFlow td.tb-job-name:hover {
+	background-color: #E1E3E2;
+}
+
+.expandedFlow td.tb-job-name a{
+	padding-top: 3px;
+	padding-bottom: 0px;
+	float: left;
+}
+
 /* old styles */
 .azkaban-charts .hitarea {
 	background-image: url("../../js/jqueryui/themes/custom-theme/images/ui-icons_cccccc_256x240.png");
@@ -2328,6 +2369,10 @@ span .nowrap {
 	margin-left: 15px;
 	width: 16px;
 	cursor: pointer;
+}
+
+.job-hover-menu {
+	padding-top: 1px; 
 }
 
 .azkaban-charts .expandable-hitarea { background-position: -32px -16px; }

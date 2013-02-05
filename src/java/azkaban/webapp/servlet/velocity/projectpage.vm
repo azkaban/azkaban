@@ -94,12 +94,12 @@
 					<tbody>
 #if($flows)
 #foreach($flow in $flows)
-						<tr class="row" >
-							<td class="tb-name">
-								<div class="jobfolder expand" id="${flow.id}">
-									<span class="state-icon"></span>
-									<a href="${context}/manager?project=${project.name}&flow=${flow.id}">${flow.id}</a>
-								</div>
+						<tr class="row">
+							<td class="tb-name" flow="${flow.id}" project="${project.name}">
+									<div class="jobfolder expand" id="${flow.id}">
+										<span class="state-icon"></span>
+										<a href="${context}/manager?project=${project.name}&flow=${flow.id}">${flow.id}</a>
+									</div>
 							</td>
 						</tr>
 						<tr class="childrow" id="${flow.id}-child" style="display: none;">
@@ -164,6 +164,16 @@
 			<div class="actions">
 				<a class="no simplemodal-close btn3" href="#">Cancel</a>
 				<a class="yes btn6" id="delete-btn" href="#">Yes</a>
+			</div>
+		</div>
+		<div id="flow-execute" class="modal">
+			<h3>Execute Flow</h3>
+			<div id="execute-message" class="message">
+			</div>
+			<div class="actions">
+				<a class="yes btn1" id="execute-btn">Execute</a>
+				<a class="yes btn2" id="customize-btn">Customize Execution</a>
+				<a class="no simplemodal-close btn3">Cancel</a>
 			</div>
 		</div>
 	</body>
