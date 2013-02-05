@@ -262,20 +262,7 @@ azkaban.ExecuteFlowView = Backbone.View.extend({
 	  		flowOverride: flowOverride
 	  	};
 	  	
-		$.get(
-			executeURL,
-			executingData,
-			function(data) {
-				if (data.error) {
-					alert(data.error);
-				}
-				else {
-					var redirectURL = contextURL + "/executor?execid=" + data.execid;
-					window.location.href = redirectURL;
-				}
-			},
-			"json"
-		);
+		executeFlow(executingData);
 	  },
 	  handleAddRow: function(evt) {
 	  	var tr = document.createElement("tr");

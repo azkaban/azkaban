@@ -71,6 +71,17 @@ public class ExecutorManager {
 		runningFlows.putAll(executorLoader.fetchActiveFlows());
 	}
 	
+	public List<Integer> getRunningFlows(int projectId, String flowId) {
+		ArrayList<Integer> executionIds = new ArrayList<Integer>();
+		for (Pair<ExecutionReference, ExecutableFlow> ref : runningFlows.values()) {
+			if (ref.getSecond().getFlowId().equals(flowId)) {
+				executionIds.add(ref.getFirst().getExecId());
+			}
+		}
+		
+		return executionIds;
+	}
+	
 	public boolean isFlowRunning(int projectId, String flowId) {
 		for (Pair<ExecutionReference, ExecutableFlow> ref : runningFlows.values()) {
 			if (ref.getSecond().getFlowId().equals(flowId)) {

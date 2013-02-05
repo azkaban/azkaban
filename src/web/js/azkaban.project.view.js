@@ -259,24 +259,57 @@ azkaban.FlowTableView= Backbone.View.extend({
   	var jobId = evt.currentTarget.jobName;
   	var flowId = evt.currentTarget.flowId;
   	
-  	$("#execute-message").text("Run only job '" + jobId + "' in flow '" + flowId + "'.");
-  	this.executeFlowDialog();
+  	$("#execute-message").text("Execute only job '" + jobId + "' in flow '" + flowId + "'.");
+  	
+  	var executingData = {
+  		project: projectId,
+  		ajax: "executeFlow",
+  		flow: flowId,
+  		job: jobId
+	};
+  	
+  	this.executeFlowDialog(executingData);
   },
   runWithDep: function(evt) {
-   var jobId = evt.currentTarget.jobName;
+    var jobId = evt.currentTarget.jobName;
   	var flowId = evt.currentTarget.flowId;
     console.log("Run With Dep");
-    var jobId = evt.currentTarget.jobId;
-    $("#execute-message").text("Run job '" + jobId + "' and all of its ancestors in '" + flowId + "'.");
-    this.executeFlowDialog();
+    $("#execute-message").text("Execute job '" + jobId + "' and all of its ancestors in '" + flowId + "'.");
+    
+    var executingData = {
+  		project: projectId,
+  		ajax: "executeFlow",
+  		flow: flowId,
+  		job: jobId,
+  		withDep: true
+	};
+    
+    this.executeFlowDialog(executingData);
   },
   executeFlow: function(evt) {
     console.log("Execute Flow");
     var flowId = evt.currentTarget.flowId;
-    $("#execute-message").text("Executing the complete flow '" + flowId + "'.");
-    this.executeFlowDialog();
+    $("#execute-message").text("Execute the complete flow '" + flowId + "'.");
+    
+    var executingData = {
+  		project: projectId,
+  		ajax: "executeFlow",
+  		flow: flowId
+	};
+    
+    this.executeFlowDialog(executingData);
   },
-  executeFlowDialog: function(message) {
+  executeFlowDialog: function(executingData) {
+  	var flowId = executingData.flow;
+  	var executionIds = flowExecutingStatus(projectId, flowId);
+  	
+    if (executionIds && executionIds.length > 0) {
+    	$("#executeErrorMsg").text("Flow '" + flowId + "' is already running. Click on Execute to proceed anyways.");
+    }
+    else {
+    	$("#executeErrorMsg").hide();
+    }
+
  	$('#flow-execute').modal({
       closeHTML: "<a href='#' title='Close' class='modal-close'>x</a>",
       position: ["20%",],
@@ -287,7 +320,9 @@ azkaban.FlowTableView= Backbone.View.extend({
       },
       onShow: function (dialog) {
         var modal = this;
-        $("#errorMsg").hide();
+        $('#execute-btn').click(function() {
+        	executeFlow(executingData);
+        });
       }
     });
   },
