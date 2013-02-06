@@ -44,6 +44,7 @@ public class Triple<F, S, T> {
 			return false;
 		if (getClass() != obj.getClass())
 			return false;
+		@SuppressWarnings("rawtypes")
 		Triple other = (Triple) obj;
 		if (first == null) {
 			if (other.first != null)

@@ -7,7 +7,6 @@ import java.util.HashMap;
 import junit.framework.Assert;
 
 import org.apache.commons.io.FileUtils;
-import org.apache.log4j.Logger;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -24,11 +23,9 @@ import azkaban.flow.Flow;
 import azkaban.jobtype.JobTypeManager;
 import azkaban.test.executor.JavaJob;
 import azkaban.utils.JSONUtils;
-import azkaban.utils.Props;
 
 public class FlowRunnerTest {
 	private File workingDir;
-	private Logger logger = Logger.getLogger(FlowRunnerTest.class);
 	private JobTypeManager jobtypeManager;
 	public FlowRunnerTest() {
 		
@@ -348,8 +345,8 @@ public class FlowRunnerTest {
 	}
 	
 	private FlowRunner createFlowRunner(ExecutableFlow flow, ExecutorLoader loader, EventCollectorListener eventCollector) throws Exception {
-		File testDir = new File("unit/executions/exectest1");
-		MockProjectLoader projectLoader = new MockProjectLoader(new File(flow.getExecutionPath()));
+		//File testDir = new File("unit/executions/exectest1");
+		//MockProjectLoader projectLoader = new MockProjectLoader(new File(flow.getExecutionPath()));
 		
 		loader.uploadExecutableFlow(flow);
 		FlowRunner runner = new FlowRunner(flow, loader, jobtypeManager);
@@ -361,7 +358,7 @@ public class FlowRunnerTest {
 	private FlowRunner createFlowRunner(ExecutorLoader loader, EventCollectorListener eventCollector, String flowName) throws Exception {
 		File testDir = new File("unit/executions/exectest1");
 		ExecutableFlow exFlow = prepareExecDir(testDir, flowName, 1);
-		MockProjectLoader projectLoader = new MockProjectLoader(new File(exFlow.getExecutionPath()));
+		//MockProjectLoader projectLoader = new MockProjectLoader(new File(exFlow.getExecutionPath()));
 		
 		loader.uploadExecutableFlow(exFlow);
 		FlowRunner runner = new FlowRunner(exFlow, loader, jobtypeManager);

@@ -135,6 +135,7 @@ public abstract class AbstractProcessJob extends AbstractJob {
 			final String content = Streams.asString(reader).trim();
 
 			if (!content.isEmpty()) {
+				@SuppressWarnings("unchecked")
 				Map<String, Object> propMap = (Map<String, Object>)JSONUtils.parseJSONFromString(content);
 
 				for (Map.Entry<String, Object> entry : propMap.entrySet()) {

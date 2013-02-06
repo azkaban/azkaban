@@ -6,9 +6,11 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.Reader;
+import java.io.Writer;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Map;
 
 import org.codehaus.jackson.JsonFactory;
 import org.codehaus.jackson.JsonNode;
@@ -145,5 +147,101 @@ public class JSONUtils {
 		}
 		
 		return (Long)obj;
+	}
+	
+	/*
+	 * Writes json to a stream without using any external dependencies.
+	 * 
+	 * This is useful for plugins or extensions that want to write properties to a writer
+	 * without having to import the jackson, or json libraries. The properties are expected
+	 * to be a map of String keys and String values.
+	 * 
+	 * The other json writing methods are more robust and will handle more cases.
+	 */
+	public static void writePropsNoJarDependency(Map<String, String> properties, Writer writer) throws IOException {
+		writer.write("{\n");
+		int size = properties.size();
+		
+		for (Map.Entry<String, String> entry: properties.entrySet()) {
+			// tab the space
+			writer.write('\t');
+			// Write key
+			writer.write(quoteAndClean(entry.getKey()));
+			writer.write(':');
+			writer.write(quoteAndClean(entry.getValue()));
+			
+			size -= 1;
+			// Add comma only if it's not the last one
+			if (size > 0) {
+				writer.write(',');
+			}
+			writer.write('\n');
+		}
+		writer.write("}");
+	}
+	
+	private static String quoteAndClean(String str) {
+		if (str == null || str.isEmpty()) {
+			return "\"\"";
+		}
+		
+		StringBuffer buffer = new StringBuffer(str.length());
+		buffer.append('"');
+		for (int i = 0; i < str.length(); ++i) {
+			char ch = str.charAt(i);
+			
+			switch(ch) {
+				case '\b':
+					buffer.append("\\b");
+					break;
+				case '\t':
+					buffer.append("\\t");
+					break;
+				case '\n':
+					buffer.append("\\n");
+					break;
+				case '\f':
+					buffer.append("\\f");
+					break;
+				case '\r':
+					buffer.append("\\r");
+					break;
+				case '"':
+				case '\\':
+				case '/':
+					buffer.append('\\');
+					buffer.append(ch);
+					break;
+				default:
+					if (isCharSpecialUnicode(ch)) {
+						buffer.append("\\u");
+						String hexCode = Integer.toHexString(ch);
+						int lengthHexCode = hexCode.length();
+						if (lengthHexCode < 4){
+							buffer.append("0000".substring(0, 4 - lengthHexCode));
+						}
+						buffer.append(hexCode);
+					}
+					else {
+						buffer.append(ch);
+					}
+			}
+		}
+		buffer.append('"');
+		return buffer.toString();
+	}
+	
+	private static boolean isCharSpecialUnicode(char ch) {
+		if (ch < ' ') {
+			return true;
+		}
+		else if ( ch >= '\u0080' && ch < '\u00a0') {
+			return true;
+		}
+		else if ( ch >= '\u2000' && ch < '\u2100') {
+			return true;
+		}
+		
+		return false;
 	}
 }

@@ -657,7 +657,6 @@ tr:hover td {
 }
 
 .modal .message {
-  font-size: 81.25%;
   padding: 20px;
 }
 
@@ -1107,7 +1106,7 @@ tr:hover td {
 	margin-left:auto;
 	margin-right: auto;
 	text-align: center;
-	width: 80%;
+	width: 90%;
 }
 
 .childrow .expandedFlow {
@@ -1156,7 +1155,7 @@ tr:hover td {
 }
 
 .childrow .innerTable a.dependency {
-	color: #005066;
+	color: #0099CC;
 }
 
 .childrow .innerJobRow {
@@ -2316,6 +2315,48 @@ span .nowrap {
 	font-weight: bold;
 }
 
+/*Azkaban Hover Menu */
+#flow-tabs .row .tb-name {
+	
+}
+
+.job-hover-menu {
+	float: right;
+}
+
+.job-hover-menu div {
+	margin-left: 2px;
+	float: left;
+}
+
+/*Azkaban Hover Menu */
+.jobfolder {
+	padding-top: 3px;
+	height: 22px;
+	float: left;
+}
+
+tr.row td.tb-name {
+	padding-top: 0px;
+	padding-bottom: 0px;
+}
+
+.expandedFlow td.tb-job-name {
+	padding-top: 0px;
+	padding-bottom: 0px;
+	height: 25px;
+}
+
+.expandedFlow td.tb-job-name:hover {
+	background-color: #E1E3E2;
+}
+
+.expandedFlow td.tb-job-name a{
+	padding-top: 3px;
+	padding-bottom: 0px;
+	float: left;
+}
+
 /* old styles */
 .azkaban-charts .hitarea {
 	background-image: url("../../js/jqueryui/themes/custom-theme/images/ui-icons_cccccc_256x240.png");
@@ -2325,326 +2366,6 @@ span .nowrap {
 	width: 16px;
 	cursor: pointer;
 }
-
-#schedule-options {
-	left: 100px;
-	right: 100px;
-	top: 50px;
-	bottom: 40px;
-}
-
-#schedule-options .svgDiv {
-	position: absolute;
-	background-color: #CCC;
-	padding: 1px;
-	left: 270px;
-	right: 0px;
-	top: 0px;
-	bottom: 0px;
-}
-
-#schedule-options .jobList {
-	position: absolute;
-	width: 255px;
-	top: 0px;
-	bottom: 0px;
-	padding: 5px;
-	background-color: #F0F0F0;
-}
-
-#schedule-options .list {
-	width: 255px;
-}
-
-#schedule-options ul.optionsPicker {
-	margin-left: 30px;
-}
-
-#schedule-options ul.optionsPicker li {
-	float: left;
-	font-size: 12pt;
-	font-weight: bold;
-	margin-right: 15px;
-	cursor: pointer;
-	color: #CCC;
-}
-
-#schedule-options ul.optionsPicker li.selected {
-	text-decoration: underline;
-	color: #000;
-}
-
-#schedule-options ul.optionsPicker li.selected:hover {
-	color: #000;
-}
-
-#schedule-options ul.optionsPicker li:hover {
-	color: #888;
-}
-
-#schedule-options .optionsPane {
-	position: absolute;
-	top: 85px;
-	background-color: #FFF;
-	left: 0px;
-	right: 0px;
-	bottom: 0px;
-}
-
-#schedule-options .panel {
-	position: absolute;
-	width: 100%;
-	top: 0px;
-	bottom: 65px;
-}
-
-#schedule-options .generalPanel.panel {
-	background-color: #F4F4F4;
-	padding-top: 15px;
-}
-
-#schedule-options h3 {
-	margin-left: 20px;
-	font-size: 14pt;
-	border-bottom: 1px solid #CCC;
-}
-
-#schedule-options h4 {
-	margin-left: 20px;
-	font-size: 12pt;
-	border-bottom: 1px solid #CCC;
-}
-
-#scheduleGeneralPanel {
-	overflow: auto;
-}
-
-#scheduleGeneralPanel dt {
-	width: 150px;
-	font-size: 10pt;
-	font-weight: bold;
-	margin-top: 5px;
-}
-
-#scheduleGeneralPanel textarea {
-	width: 500px;
-}
-
-#scheduleGeneralPanel table #addRow {
-	cursor: pointer;
-}
-
-#scheduleGeneralPanel table tr {
-	height: 24px;
-}
-
-#scheduleGeneralPanel table .editable {
-
-}
-
-#scheduleGeneralPanel table .editable input {
-	border: 1px solid #009FC9;
-	height: 16px;
-}
-
-#scheduleGeneralPanel table .name {
-	width: 40%;
-}
-
-#scheduleGeneralPanel span.addIcon {
-	display: block;
-	width: 16px;
-	height: 16px;
-	background-image: url("./images/addIcon.png");
-}
-
-#scheduleGeneralPanel span.removeIcon {
-	display: block;
-	visibility:hidden;
-	disabled: true;
-	width: 16px;
-	height: 16px;
-	background-image: url("./images/removeIcon.png");
-	cursor: pointer;
-}
-
-#scheduleGeneralPanel .editable:hover span.removeIcon {
-	visibility:visible;
-}
-
-#scheduleGeneralPanel {
-}
-
-#scheduleGeneralPanel span {
-	float: left;
-	margin-left: 5px;
-}
-
-#scheduleGeneralPanel dd {
-	font-size: 10pt;
-}
-
-
-
-
-#sla-options {
-	left: 100px;
-	right: 100px;
-	top: 50px;
-	bottom: 40px;
-}
-
-#sla-options .svgDiv {
-	position: absolute;
-	background-color: #CCC;
-	padding: 1px;
-	left: 270px;
-	right: 0px;
-	top: 0px;
-	bottom: 0px;
-}
-
-#sla-options .jobList {
-	position: absolute;
-	width: 255px;
-	top: 0px;
-	bottom: 0px;
-	padding: 5px;
-	background-color: #F0F0F0;
-}
-
-#sla-options .list {
-	width: 255px;
-}
-
-#sla-options ul.optionsPicker {
-	margin-left: 30px;
-}
-
-#sla-options ul.optionsPicker li {
-	float: left;
-	font-size: 12pt;
-	font-weight: bold;
-	margin-right: 15px;
-	cursor: pointer;
-	color: #CCC;
-}
-
-#sla-options ul.optionsPicker li.selected {
-	text-decoration: underline;
-	color: #000;
-}
-
-#sla-options ul.optionsPicker li.selected:hover {
-	color: #000;
-}
-
-#sla-options ul.optionsPicker li:hover {
-	color: #888;
-}
-
-#sla-options .optionsPane {
-	position: absolute;
-	top: 85px;
-	background-color: #FFF;
-	left: 0px;
-	right: 0px;
-	bottom: 0px;
-}
-
-#sla-options .panel {
-	position: absolute;
-	width: 100%;
-	top: 0px;
-	bottom: 65px;
-}
-
-#sla-options .generalPanel.panel {
-	background-color: #F4F4F4;
-	padding-top: 15px;
-}
-
-#sla-options h3 {
-	margin-left: 20px;
-	font-size: 14pt;
-	border-bottom: 1px solid #CCC;
-}
-
-#sla-options h4 {
-	margin-left: 20px;
-	font-size: 12pt;
-	border-bottom: 1px solid #CCC;
-}
-
-#slaPanel {
-	overflow: auto;
-}
-
-#slaPanel dt {
-	width: 150px;
-	font-size: 10pt;
-	font-weight: bold;
-	margin-top: 5px;
-}
-
-#slaPanel textarea {
-	width: 500px;
-}
-
-#slaPanel table #addRow {
-	cursor: pointer;
-}
-
-#slaPanel table tr {
-	height: 24px;
-}
-
-#slaPanel table .editable {
-
-}
-
-#slaPanel table .editable input {
-	border: 1px solid #009FC9;
-	height: 16px;
-}
-
-#slaPanel table .name {
-	width: 40%;
-}
-
-#slaPanel span.addIcon {
-	display: block;
-	width: 16px;
-	height: 16px;
-	background-image: url("./images/addIcon.png");
-}
-
-#slaPanel span.removeIcon {
-	display: block;
-	visibility:hidden;
-	disabled: true;
-	width: 16px;
-	height: 16px;
-	background-image: url("./images/removeIcon.png");
-	cursor: pointer;
-}
-
-#slaPanel .editable:hover span.removeIcon {
-	visibility:visible;
-}
-
-#slaPanel {
-}
-
-#slaPanel span {
-	float: left;
-	margin-left: 5px;
-}
-
-#slaPanel dd {
-	font-size: 10pt;
-}
-
 
 .azkaban-charts .expandable-hitarea { background-position: -32px -16px; }
 .azkaban-charts .expandable-hitarea.collapse { background-position: 0 -16px; }

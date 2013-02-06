@@ -22,6 +22,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
@@ -31,6 +32,7 @@ import javax.servlet.http.HttpServletResponse;
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutableNode;
 import azkaban.executor.ExecutableFlow.FailureAction;
+import azkaban.executor.ExecutionReference;
 import azkaban.executor.ExecutorManager;
 import azkaban.executor.ExecutableFlow.Status;
 import azkaban.executor.ExecutorManagerException;
@@ -263,17 +265,17 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 					ajaxFetchJobLogs(req, resp, ret, session.getUser(), exFlow);
 				}
 				else if (ajaxName.equals("flowInfo")) {
-					String projectName = getParam(req, "project");
-					Project project = projectManager.getProject(projectName);
-					String flowName = getParam(req, "flow");
+					//String projectName = getParam(req, "project");
+					//Project project = projectManager.getProject(projectName);
+					//String flowName = getParam(req, "flow");
 					ajaxFetchExecutableFlowInfo(req, resp, ret, session.getUser(), exFlow);
 				}
 			}
 		}
-		else if (ajaxName.equals("isRunning")) {
+		else if (ajaxName.equals("getRunning")) {
 			String projectName = getParam(req, "project");
 			String flowName = getParam(req, "flow");
-			ajaxIsFlowRunning(req, resp, ret, session.getUser(), projectName, flowName);
+			ajaxGetFlowRunning(req, resp, ret, session.getUser(), projectName, flowName);
 		}
 		else if (ajaxName.equals("flowInfo")) {
 			String projectName = getParam(req, "project");
@@ -454,13 +456,16 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 		}
 	}
 
-	private void ajaxIsFlowRunning(HttpServletRequest req, HttpServletResponse resp, HashMap<String, Object> ret, User user, String projectId, String flowId) throws ServletException{
+	private void ajaxGetFlowRunning(HttpServletRequest req, HttpServletResponse resp, HashMap<String, Object> ret, User user, String projectId, String flowId) throws ServletException{
 		Project project = getProjectAjaxByPermission(ret, projectId, user, Type.EXECUTE);
 		if (project == null) {
 			return;
 		}
 		
-		ret.put("running", executorManager.isFlowRunning(project.getId(), flowId));
+		List<Integer> refs = executorManager.getRunningFlows(project.getId(), flowId);
+		if (!refs.isEmpty()) {
+			ret.put("execIds", refs);
+		}
 	}
 	
 	private void ajaxRestartFlow(HttpServletRequest req, HttpServletResponse resp, HashMap<String, Object> ret, User user, ExecutableFlow exFlow) throws ServletException{
@@ -617,18 +622,43 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 			exflow.setNotifyOnLastFailure(Boolean.parseBoolean(getParam(req, "notifyFailureLast")));
 		}
 		if (hasParam(req, "executingJobOption")) {
-			String option = getParam(req, "jobOption");
+			//String option = getParam(req, "jobOption");
 			// Not set yet
 		}
 		
 		Map<String, String> flowParamGroup = this.getParamGroup(req, "flowOverride");
 		exflow.addFlowParameters(flowParamGroup);
 		
-		// Setup disabled
-		Map<String, String> paramGroup = this.getParamGroup(req, "disable");
-		for (Map.Entry<String, String> entry: paramGroup.entrySet()) {
-			boolean nodeDisabled = Boolean.parseBoolean(entry.getValue());
-			exflow.setStatus(entry.getKey(), nodeDisabled ? Status.DISABLED : Status.READY);
+		if (hasParam(req, "job")) {
+			// Disable everything.
+			for(ExecutableNode node : exflow.getExecutableNodes()) {
+				node.setStatus(Status.DISABLED);
+			}
+			
+			String jobId = getParam(req, "job");
+			ExecutableNode job = exflow.getExecutableNode(jobId);
+			if (job == null) {
+				ret.put("error", "Job " + jobId + " doesn't exist in flow.");
+				return;
+			}
+			
+			job.setStatus(Status.READY);
+			
+			if (hasParam(req, "withDep")) {
+				boolean withDep = "true".equals(getParam(req, "withDep"));
+				if (withDep) {
+					enableAllAncestors(job, exflow);
+				}
+			}
+		}
+		else {
+			// Setup disabled
+			Map<String, String> paramGroup = this.getParamGroup(req, "disable");
+			for (Map.Entry<String, String> entry: paramGroup.entrySet()) {
+				boolean nodeDisabled = Boolean.parseBoolean(entry.getValue());
+	
+				exflow.setNodeStatus(entry.getKey(), nodeDisabled ? Status.DISABLED : Status.READY);
+			}
 		}
 		
 		try {
@@ -642,8 +672,20 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 		ret.put("execid", exflow.getExecutionId());
 	}
 	
+	private void enableAllAncestors(ExecutableNode node, ExecutableFlow flow) {
+		Set<String> inNodes = node.getInNodes();
+		if (inNodes != null) {
+			for (String inNode: inNodes) {
+				ExecutableNode job = flow.getExecutableNode(inNode);
+				if (job != null) {
+					job.setStatus(Status.READY);
+					enableAllAncestors(job, flow);
+				}
+			}
+		}
+	}
+	
 	public class ExecutorVMHelper {
-		@SuppressWarnings("unused")
 		public String getProjectName(int id) {
 			Project project = projectManager.getProject(id);
 			if (project == null) {

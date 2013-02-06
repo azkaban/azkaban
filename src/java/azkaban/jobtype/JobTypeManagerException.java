@@ -1,8 +1,7 @@
 package azkaban.jobtype;
 
 public class JobTypeManagerException extends RuntimeException {
-
-//	private final static long serialVersionUID = 1;
+	private static final long serialVersionUID = 1L;
 
 	public JobTypeManagerException(String message) {
 		super(message);

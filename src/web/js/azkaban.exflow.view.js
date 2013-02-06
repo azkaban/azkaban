@@ -139,6 +139,7 @@ azkaban.FlowTabView= Backbone.View.extend({
   	}
   	else if (data.status=="FAILED_FINISHING") {
   		$("#cancelbtn").show();
+  		$("#executebtn").show();
   	}
   	else if (data.status=="RUNNING") {
   		$("#cancelbtn").show();

@@ -20,7 +20,6 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
@@ -29,7 +28,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Properties;
 import java.util.TimeZone;
 
 import org.apache.commons.lang.StringUtils;
@@ -65,7 +63,6 @@ import azkaban.webapp.servlet.AzkabanServletContextListener;
 
 import azkaban.webapp.servlet.AbstractAzkabanServlet;
 import azkaban.webapp.servlet.ExecutorServlet;
-import azkaban.webapp.servlet.LoginAbstractAzkabanServlet;
 import azkaban.webapp.servlet.ScheduleServlet;
 import azkaban.webapp.servlet.HistoryServlet;
 import azkaban.webapp.servlet.IndexServlet;
@@ -427,10 +424,8 @@ public class AzkabanWebServer implements AzkabanServer {
 		root.addServlet(new ServletHolder(new ScheduleServlet()),"/schedule");
 		
 		String viewerPluginDir = azkabanSettings.getString("viewer.plugin.dir", "plugins/viewer");
-		List<String> viewerPlugins = azkabanSettings.getStringList("viewer.plugins", (List<String>) null);
-		if (viewerPlugins != null) {
-			app.setViewerPlugins(loadViewerPlugins(root, viewerPluginDir, viewerPlugins, app.getVelocityEngine()));
-		}
+		app.setViewerPlugins(loadViewerPlugins(root, viewerPluginDir, app.getVelocityEngine()));
+
 		//root.addServlet(new ServletHolder(new HdfsBrowserServlet()), "/hdfs/*");
 		
 		root.setAttribute(AzkabanServletContextListener.AZKABAN_SERVLET_CONTEXT_KEY, app);
@@ -460,10 +455,13 @@ public class AzkabanWebServer implements AzkabanServer {
 		logger.info("Server running on port " + sslPortNumber + ".");
 	}
 
-	private static List<ViewerPlugin> loadViewerPlugins(Context root, String pluginPath, List<String> plugins, VelocityEngine ve) {
-		ArrayList<ViewerPlugin> installedViewerPlugins = new ArrayList<ViewerPlugin>();
-		
+	private static List<ViewerPlugin> loadViewerPlugins(Context root, String pluginPath, VelocityEngine ve) {
 		File viewerPluginPath = new File(pluginPath);
+		if (!viewerPluginPath.exists()) {
+			return Collections.<ViewerPlugin>emptyList();
+		}
+			
+		ArrayList<ViewerPlugin> installedViewerPlugins = new ArrayList<ViewerPlugin>();
 		ClassLoader parentLoader = AzkabanWebServer.class.getClassLoader();
 		File[] pluginDirs = viewerPluginPath.listFiles();
 		ArrayList<String> jarPaths = new ArrayList<String>();

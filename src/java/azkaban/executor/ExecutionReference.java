@@ -1,5 +1,7 @@
 package azkaban.executor;
 
+import java.util.HashMap;
+
 public class ExecutionReference {
 	private final int execId;
 	private final String host;
@@ -49,4 +51,4 @@ public class ExecutionReference {
 	public void setNumErrors(int numErrors) {
 		this.numErrors = numErrors;
 	}
-}
+ }

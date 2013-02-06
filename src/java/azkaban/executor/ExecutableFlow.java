@@ -199,9 +199,13 @@ public class ExecutableFlow {
 		return endNodes;
 	}
 	
-	public void setStatus(String nodeId, Status status) {
+	public boolean setNodeStatus(String nodeId, Status status) {
 		ExecutableNode exNode = executableNodes.get(nodeId);
+		if (exNode == null) {
+			return false;
+		}
 		exNode.setStatus(status);
+		return true;
 	}
 	
 	public int getExecutionId() {
@@ -364,6 +368,7 @@ public class ExecutableFlow {
 	}
 	
 	public void applyUpdateObject(Map<String, Object> updateData) {
+		@SuppressWarnings("unchecked")
 		List<Map<String,Object>> updatedNodes = (List<Map<String,Object>>)updateData.get("nodes");
 		for (Map<String,Object> node: updatedNodes) {
 			String jobId = (String)node.get("jobId");

@@ -18,7 +18,6 @@
 package azkaban.webapp.servlet;
 
 import java.io.IOException;
-import java.util.ArrayList;
 
 import java.util.HashMap;
 import java.util.List;
@@ -28,7 +27,6 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.joda.time.DateTime;
 
 import org.joda.time.format.DateTimeFormat;
 
@@ -38,7 +36,6 @@ import azkaban.executor.ExecutorManager;
 import azkaban.executor.ExecutorManagerException;
 import azkaban.project.Project;
 import azkaban.project.ProjectManager;
-import azkaban.utils.JSONUtils;
 import azkaban.webapp.AzkabanWebServer;
 import azkaban.webapp.session.Session;
 
@@ -297,7 +294,6 @@ public class HistoryServlet extends LoginAbstractAzkabanServlet {
 	}
 
 	public class ExecutorVMHelper {
-		@SuppressWarnings("unused")
 		public String getProjectName(int id) {
 			Project project = projectManager.getProject(id);
 			if (project == null) {

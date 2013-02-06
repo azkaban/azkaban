@@ -27,10 +27,8 @@ import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-//import azkaban.jobExecutor.jobs.dependency.ExecutableFlow;
 import azkaban.executor.ExecutableFlow;
 import org.joda.time.DateTime;
-import org.mortbay.util.ajax.JSON;
 
 public class PropsUtils {
 

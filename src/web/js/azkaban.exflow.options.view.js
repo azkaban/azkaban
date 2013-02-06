@@ -568,7 +568,7 @@ azkaban.ExecuteFlowView = Backbone.View.extend({
 				updateNode.status = "READY";
 				disabled[updateNode.id] = true;
 			}
-			if (updateNode.status == "SUCCEEDED") {
+			if (updateNode.status == "SUCCEEDED" || updateNode.status=="RUNNING") {
 				disabled[updateNode.id] = true;
 			}
 		}
@@ -683,20 +683,7 @@ azkaban.ExecuteFlowView = Backbone.View.extend({
 	  		flowOverride: flowOverride
 	  	};
 	  	
-		$.get(
-			executeURL,
-			executingData,
-			function(data) {
-				if (data.error) {
-					alert(data.error);
-				}
-				else {
-					var redirectURL = contextURL + "/executor?execid=" + data.execid;
-					window.location.href = redirectURL;
-				}
-			},
-			"json"
-		);
+		executeFlow(executingData);
 	  },
 	  handleAddRow: function(evt) {
 	  	var tr = document.createElement("tr");

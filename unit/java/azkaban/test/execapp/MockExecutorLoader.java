@@ -2,7 +2,6 @@ package azkaban.test.execapp;
 
 import java.io.File;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 
@@ -65,6 +64,7 @@ public class MockExecutorLoader implements ExecutorLoader {
 
 	}
 
+	@SuppressWarnings("unchecked")
 	@Override
 	public void updateExecutableFlow(ExecutableFlow flow) throws ExecutorManagerException {
 		ExecutableFlow toUpdate = flows.get(flow.getExecutionId());

@@ -23,7 +23,6 @@ import org.apache.log4j.FileAppender;
 import org.apache.log4j.Layout;
 import org.apache.log4j.Logger;
 import org.apache.log4j.PatternLayout;
-import org.apache.log4j.RollingFileAppender;
 
 import azkaban.execapp.event.Event;
 import azkaban.execapp.event.Event.Type;
@@ -35,7 +34,6 @@ import azkaban.executor.ExecutorManagerException;
 import azkaban.jobExecutor.AbstractProcessJob;
 import azkaban.jobExecutor.Job;
 import azkaban.jobtype.JobTypeManager;
-import azkaban.jobtype.JobTypeManagerException;
 
 import azkaban.utils.Props;
 

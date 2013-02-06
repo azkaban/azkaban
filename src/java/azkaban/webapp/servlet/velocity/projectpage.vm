@@ -24,6 +24,7 @@
 		<script type="text/javascript" src="${context}/js/underscore-1.2.1-min.js"></script>
 		<script type="text/javascript" src="${context}/js/backbone-0.5.3-min.js"></script>
 		<script type="text/javascript" src="${context}/js/jquery.simplemodal.js"></script>
+		<script type="text/javascript" src="${context}/js/azkaban.ajax.utils.js"></script>
 		<script type="text/javascript" src="${context}/js/azkaban.nav.js"></script>
 		<script type="text/javascript" src="${context}/js/azkaban.project.view.js"></script>
 		<script type="text/javascript">
@@ -94,12 +95,12 @@
 					<tbody>
 #if($flows)
 #foreach($flow in $flows)
-						<tr class="row" >
-							<td class="tb-name">
-								<div class="jobfolder expand" id="${flow.id}">
-									<span class="state-icon"></span>
-									<a href="${context}/manager?project=${project.name}&flow=${flow.id}">${flow.id}</a>
-								</div>
+						<tr class="row">
+							<td class="tb-name" flow="${flow.id}" project="${project.name}">
+									<div class="jobfolder expand" id="${flow.id}">
+										<span class="state-icon"></span>
+										<a href="${context}/manager?project=${project.name}&flow=${flow.id}">${flow.id}</a>
+									</div>
 							</td>
 						</tr>
 						<tr class="childrow" id="${flow.id}-child" style="display: none;">
@@ -131,7 +132,7 @@
 					<fieldset>
 						<dl>
 							<dt>Job Archive</dt>
-							<dd><input id="file" name="file" class="file" type="file" onChange="changeFile()" /></dd>
+							<dd><input id="file" name="file" class="file" type="file" /></dd>
 							<input type="hidden" name="project" value="$project.name" />
 							<input type="hidden" name="action" value="upload" />
 						</dl>
@@ -164,6 +165,16 @@
 			<div class="actions">
 				<a class="no simplemodal-close btn3" href="#">Cancel</a>
 				<a class="yes btn6" id="delete-btn" href="#">Yes</a>
+			</div>
+		</div>
+		<div id="flow-execute" class="modal">
+			<h3>Execute Flow</h3>
+			<div id="executeErrorMsg" class="box-error-message"></div>
+			<div id="execute-message" class="message">
+			</div>
+			<div class="actions">
+				<a class="yes btn1" id="execute-btn">Execute</a>
+				<a class="no simplemodal-close btn3">Cancel</a>
 			</div>
 		</div>
 	</body>

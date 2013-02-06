@@ -320,7 +320,7 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
 	private void ajaxRemoveSched(HttpServletRequest req, Map<String, Object> ret, User user) throws ServletException{
 		int projectId = getIntParam(req, "projectId");
 		String flowName = getParam(req, "flowName");
-		Pair scheduleId = new Pair(projectId, flowName);
+		Pair<Integer, String> scheduleId = new Pair<Integer, String>(projectId, flowName);
 		Schedule sched = scheduleManager.getSchedule(scheduleId);
 
 //		int projectId = sched.getProjectId();
@@ -406,7 +406,7 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
 		    hour += 12;
 		hour %= 24;
 
-		String submitUser = user.getUserId();
+//		String submitUser = user.getUserId();
 //		String userExec = userSubmit;//getParam(req, "userExec");
 //		String scheduleId = projectId + "." + flowName;
 		DateTime submitTime = new DateTime();
