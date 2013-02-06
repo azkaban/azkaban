@@ -282,77 +282,83 @@ azkaban.ExecutionModel = Backbone.Model.extend({});
 
 var scheduleFlowView;
 azkaban.ScheduleFlowView = Backbone.View.extend({
-  events : {
-    "click #schedule-btn": "handleScheduleFlow"
-  },
-  initialize : function(settings) {
-  	$( "#datepicker" ).datepicker();
-  	$( "#datepicker" ).datepicker('setDate', new Date());
-    $("#errorMsg").hide();
-  },
-  handleScheduleFlow : function(evt) {
-         // First make sure we can upload
-//     var projectName = $('#path').val();
-     var description = $('#description').val();
+	events : {
+	"click #schedule-btn": "handleScheduleFlow",
+	"click #adv-schedule-opt-btn": "handleAdvancedSchedule"
+	},
+	initialize : function(settings) {
+		$( "#datepicker" ).datepicker();
+		$( "#datepicker" ).datepicker('setDate', new Date());
+		$("#errorMsg").hide();
+	},
+	handleAdvancedSchedule : function(evt) {
+		console.log("Clicked advanced schedule options button");
+		//$('#confirm-container').hide();
+		$.modal.close();
+		advancedScheduleView.show();
+	},
+	show: function() {
+//		this.cloneModel = this.model.clone();
+//		cloneModel = this.cloneModel;
+	},
+	handleScheduleFlow : function(evt) {
 
-     var hourVal = $('#hour').val();
-     var minutesVal = $('#minutes').val();
-     var ampmVal = $('#am_pm').val();
-     var timezoneVal = $('#timezone').val();
-     var dateVal = $('#datepicker').val();
-     var is_recurringVal = $('#is_recurring').val();
-     var periodVal = $('#period').val();
-     var periodUnits = $('#period_units').val();
+	var hourVal = $('#hour').val();
+	var minutesVal = $('#minutes').val();
+	var ampmVal = $('#am_pm').val();
+	var timezoneVal = $('#timezone').val();
+	var dateVal = $('#datepicker').val();
+	var is_recurringVal = $('#is_recurring').val();
+	var periodVal = $('#period').val();
+	var periodUnits = $('#period_units').val();
 
-     console.log("Creating schedule for "+projectName+"."+flowName);
-     $.ajax({
-        async: "false",
-        url: "schedule",
-        dataType: "json",
-        type: "POST",
-        data: {
-		action:"scheduleFlow", 
-
-		projectId:projectId,
-		projectName:projectName, 
-		flowName:flowName,
-		hour:hourVal,
-		minutes:minutesVal,
-		am_pm:ampmVal,
-		timezone:timezoneVal,
-		date:dateVal,
-		userExec:"dummy",
-		is_recurring:is_recurringVal,
-		period:periodVal,
-		period_units:periodUnits
-		},
-        success: function(data) {
-                if (data.status == "success") {
-			console.log("Successfully scheduled for "+projectName+"."+flowName);
-                        if (data.action == "redirect") {
-                                window.location = contextURL + "/manager?project=" + projectName + "&flow=" + flowName ;
-                        }
-			else{
-				$("#success_message").text("Flow " + projectName + "." + flowName + " scheduled!" );			
- 				window.location = contextURL + "/manager?project=" + projectName + "&flow=" + flowName ; 
+	console.log("Creating schedule for "+projectName+"."+flowName);
+	$.ajax({
+		async: "false",
+		url: "schedule",
+		dataType: "json",
+		type: "POST",
+		data: {
+			action:"scheduleFlow", 
+			projectId:projectId,
+			projectName:projectName, 
+			flowName:flowName,
+			hour:hourVal,
+			minutes:minutesVal,
+			am_pm:ampmVal,
+			timezone:timezoneVal,
+			date:dateVal,
+			userExec:"dummy",
+			is_recurring:is_recurringVal,
+			period:periodVal,
+			period_units:periodUnits
+			},
+		success: function(data) {
+			if (data.status == "success") {
+				console.log("Successfully scheduled for "+projectName+"."+flowName);
+				if (data.action == "redirect") {
+					window.location = contextURL + "/manager?project=" + projectName + "&flow=" + flowName ;
+				}
+				else{
+					$("#success_message").text("Flow " + projectName + "." + flowName + " scheduled!" );			
+	 				window.location = contextURL + "/manager?project=" + projectName + "&flow=" + flowName ; 
+				}
 			}
-                }
-                else {
-                        if (data.action == "login") {
-                                        window.location = "";
-                        }
-                        else {
-                                $("#errorMsg").text("ERROR: " + data.message);
-                                $("#errorMsg").slideDown("fast");
-                        }
-                }
-        }
-     });
+			else {
+				if (data.action == "login") {
+					window.location = "";
+				}
+				else {
+					$("#errorMsg").text("ERROR: " + data.message);
+					$("#errorMsg").slideDown("fast");
+				}
+			}
+		}
+	});
 
-  },
-  render: function() {
-	  
-  }
+	},
+	render: function() {
+	}
 });
 
 
@@ -367,8 +373,9 @@ $(function() {
 	graphModel = new azkaban.GraphModel();
 	svgGraphView = new azkaban.SvgGraphView({el:$('#svgDiv'), model: graphModel, rightClick: {id: 'jobMenu', callback: handleJobMenuClick}});
 	jobsListView = new azkaban.JobListView({el:$('#jobList'), model: graphModel, rightClick: {id: 'jobMenu', callback: handleJobMenuClick}});
-	scheduleFlowView = new azkaban.ScheduleFlowView({el:$('#schedule-flow')});
+	scheduleFlowView = new azkaban.ScheduleFlowView({el:$('#schedule-flow'),   model: graphModel});
 	executeFlowView = new azkaban.ExecuteFlowView({el:$('#executing-options'), model: graphModel});
+	advancedScheduleView = new azkaban.AdvancedScheduleView({el:$('#schedule-options'), model: graphModel});
 	var requestURL = contextURL + "/manager";
 
 	// Set up the Flow options view. Create a new one every time :p
@@ -435,20 +442,22 @@ $(function() {
 	      "json"
 	    );
 	    
+	    
 	$('#scheduleflowbtn').click( function() {
-	  console.log("schedule button clicked");
-	  $('#schedule-flow').modal({
-          closeHTML: "<a href='#' title='Close' class='modal-close'>x</a>",
-          position: ["20%",],
-          containerId: 'confirm-container',
-          containerCss: {
-            'height': '220px',
-            'width': '500px'
-          },
-          onShow: function (dialog) {
-            var modal = this;
-            $("#errorMsg").hide();
-          }
-        });
+		console.log("schedule button clicked");
+		$('#schedule-flow').modal({
+			closeHTML: "<a href='#' title='Close' class='modal-close'>x</a>",
+			position: ["20%",],
+			containerId: 'confirm-container',
+			containerCss: {
+			'height': '220px',
+			'width': '500px'
+			},
+			onShow: function (dialog) {
+				var modal = this;
+				$("#errorMsg").hide();
+			}
+		});
 	});
+	
 });

@@ -21,7 +21,10 @@ import javax.mail.internet.MimeBodyPart;
 import javax.mail.internet.MimeMessage;
 import javax.mail.internet.MimeMultipart;
 
+import com.sun.mail.smtp.SMTPTransport;
+
 public class EmailMessage {
+	private static String protocol = "smtp";
 	private List<String> _toAddress = new ArrayList<String>();
 	private String _mailHost;
 	private String _mailUser;
@@ -129,12 +132,13 @@ public class EmailMessage {
 	public void sendEmail() throws MessagingException {
 		checkSettings();
 		Properties props = new Properties();
-		props.setProperty("mail.transport.protocol", "smtp");
-		props.put("mail.host", _mailHost);
+//		props.setProperty("mail.transport.protocol", "smtp");
+		props.put("mail."+protocol+".host", _mailHost);
+		props.put("mail."+protocol+".auth", "true");
 		props.put("mail.user", _mailUser);
 		props.put("mail.password", _mailPassword);
 
-		Session session = Session.getDefaultInstance(props);
+		Session session = Session.getInstance(props, null);
 		Message message = new MimeMessage(session);
 		InternetAddress from = new InternetAddress(_fromAddress, false);
 		message.setFrom(from);
@@ -160,11 +164,13 @@ public class EmailMessage {
 			message.setContent(_body.toString(), _mimeType);
 		}
 
-		Transport transport = session.getTransport();
-		transport.connect();
-		transport.sendMessage(message,
+//		Transport transport = session.getTransport();
+		
+		SMTPTransport t = (SMTPTransport) session.getTransport(protocol);
+		t.connect(_mailHost, _mailUser, _mailPassword);
+		t.sendMessage(message,
 				message.getRecipients(Message.RecipientType.TO));
-		transport.close();
+		t.close();
 	}
 
 	public void setBody(String body) {

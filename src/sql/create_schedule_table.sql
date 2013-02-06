@@ -12,6 +12,8 @@ CREATE TABLE schedules (
 	next_exec_time BIGINT,
 	submit_time BIGINT,
 	submit_user VARCHAR(128),
+	enc_type TINYINT,
+    options LONGBLOB,
 	primary key(project_id, flow_name)
 ) ENGINE=InnoDB;
 

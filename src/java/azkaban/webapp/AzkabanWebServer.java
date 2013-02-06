@@ -53,6 +53,8 @@ import azkaban.project.ProjectManager;
 
 import azkaban.scheduler.JdbcScheduleLoader;
 import azkaban.scheduler.ScheduleManager;
+import azkaban.sla.JdbcSLALoader;
+import azkaban.sla.SLAManager;
 import azkaban.user.UserManager;
 import azkaban.user.XmlUserManager;
 import azkaban.utils.FileIOUtils;
@@ -121,6 +123,7 @@ public class AzkabanWebServer implements AzkabanServer {
 	private ProjectManager projectManager;
 	private ExecutorManager executorManager;
 	private ScheduleManager scheduleManager;
+	private SLAManager slaManager;
 
 	private final ClassLoader baseClassLoader;
 	
@@ -148,6 +151,7 @@ public class AzkabanWebServer implements AzkabanServer {
 		projectManager = loadProjectManager(props);
 		executorManager = loadExecutorManager(props);
 		scheduleManager = loadScheduleManager(executorManager, props);
+		slaManager = loadSLAManager();
 		baseClassLoader = getBaseClassloader();
 		
 		tempDir = new File(props.getString("azkaban.temp.dir", "temp"));
@@ -162,6 +166,8 @@ public class AzkabanWebServer implements AzkabanServer {
 		}
 	}
 	
+	
+
 	private void setViewerPlugins(List<ViewerPlugin> viewerPlugins) {
 		this.viewerPlugins = viewerPlugins;
 	}
@@ -211,6 +217,11 @@ public class AzkabanWebServer implements AzkabanServer {
 		return schedManager;
 	}
 
+	private SLAManager loadSLAManager() {
+		SLAManager slaManager = new SLAManager(executorManager, projectManager, new JdbcSLALoader(props));
+		return slaManager;
+	}
+	
 	/**
 	 * Returns the web session cache.
 	 * 
@@ -250,6 +261,10 @@ public class AzkabanWebServer implements AzkabanServer {
      */
 	public ExecutorManager getExecutorManager() {
 		return executorManager;
+	}
+	
+	public SLAManager getSLAManager() {
+		return slaManager;
 	}
 	
 	public ScheduleManager getScheduleManager() {
@@ -654,4 +669,6 @@ public class AzkabanWebServer implements AzkabanServer {
 		
 		return props;
 	}
+
+	
 }

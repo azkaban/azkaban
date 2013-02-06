@@ -17,6 +17,7 @@
 package azkaban.scheduler;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -34,6 +35,8 @@ import org.joda.time.format.DateTimeFormatter;
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutorManager;
 import azkaban.executor.ExecutorManagerException;
+import azkaban.executor.ExecutableFlow.FailureAction;
+import azkaban.executor.ExecutableFlow.Status;
 
 import azkaban.flow.Flow;
 import azkaban.jobExecutor.utils.JobExecutionException;
@@ -169,9 +172,10 @@ public class ScheduleManager {
 			final long lastModifyTime,
 			final long nextExecTime,
 			final long submitTime,
-			final String submitUser
+			final String submitUser,
+			final Map<String, Object> options
 			) {
-		Schedule sched = new Schedule(projectId, projectName, flowName, status, firstSchedTime, timezone, period, lastModifyTime, nextExecTime, submitTime, submitUser);
+		Schedule sched = new Schedule(projectId, projectName, flowName, status, firstSchedTime, timezone, period, lastModifyTime, nextExecTime, submitTime, submitUser, options);
 		logger.info("Scheduling flow '" + sched.getScheduleName() + "' for "
 				+ _dateFormat.print(firstSchedTime) + " with a period of "
 				+ period == null ? "(non-recurring)" : period);
@@ -362,18 +366,57 @@ public class ScheduleManager {
 										// Create ExecutableFlow
 										ExecutableFlow exflow = new ExecutableFlow(flow);
 										exflow.setSubmitUser(runningSched.getSubmitUser());
+										
+										Map<String, Object> scheduleOptions = runningSched.getSchedOptions();
+										
+										if(scheduleOptions != null && scheduleOptions.containsKey("flowOptions")) {
+											Map<String, Object> flowOptions = (Map<String, Object>) scheduleOptions.get("flowOptions");
+										
+											if (flowOptions.containsKey("failureAction")) {
+												String option = (String) flowOptions.get("failureAction");
+												if (option.equals("finishCurrent") ) {
+													exflow.setFailureAction(FailureAction.FINISH_CURRENTLY_RUNNING);
+												}
+												else if (option.equals("cancelImmediately")) {
+													exflow.setFailureAction(FailureAction.CANCEL_ALL);
+												}
+												else if (option.equals("finishPossible")) {
+													exflow.setFailureAction(FailureAction.FINISH_ALL_POSSIBLE);
+												}
+											}
 	
-										// TODO make disabled in scheduled flow
-										// Map<String, String> paramGroup =
-										// this.getParamGroup(req, "disabled");
-										// for (Map.Entry<String, String> entry:
-										// paramGroup.entrySet()) {
-										// boolean nodeDisabled =
-										// Boolean.parseBoolean(entry.getValue());
-										// exflow.setStatus(entry.getKey(),
-										// nodeDisabled ? Status.DISABLED :
-										// Status.READY);
-										// }
+											if (flowOptions.containsKey("failureEmails")) {
+												String emails = (String) flowOptions.get("failureEmails");
+												String[] emailSplit = emails.split("\\s*,\\s*|\\s*;\\s*|\\s+");
+												exflow.setFailureEmails(Arrays.asList(emailSplit));
+											}
+											if (flowOptions.containsKey("successEmails")) {
+												String emails = (String) flowOptions.get("successEmails");
+												String[] emailSplit = emails.split("\\s*,\\s*|\\s*;\\s*|\\s+");
+												exflow.setSuccessEmails(Arrays.asList(emailSplit));
+											}
+											if (flowOptions.containsKey("notifyFailureFirst")) {
+												exflow.setNotifyOnFirstFailure(Boolean.parseBoolean((String)flowOptions.get("notifyFailureFirst")));
+											}
+											if (flowOptions.containsKey("notifyFailureLast")) {
+												exflow.setNotifyOnLastFailure(Boolean.parseBoolean((String)flowOptions.get("notifyFailureLast")));
+											}
+											if (flowOptions.containsKey("executingJobOption")) {
+												String option = (String)flowOptions.get("jobOption");
+												// Not set yet
+											}
+											
+											Map<String, String> flowParamGroup = this.getParamGroup(req, "flowOverride");
+											exflow.addFlowParameters(flowParamGroup);
+											
+											// Setup disabled
+											Map<String, String> paramGroup = this.getParamGroup(req, "disable");
+											for (Map.Entry<String, String> entry: paramGroup.entrySet()) {
+												boolean nodeDisabled = Boolean.parseBoolean(entry.getValue());
+												exflow.setStatus(entry.getKey(), nodeDisabled ? Status.DISABLED : Status.READY);
+											}
+											
+										}
 	
 										try {
 											executorManager.submitExecutableFlow(exflow);

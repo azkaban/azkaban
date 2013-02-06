@@ -18,6 +18,11 @@ package azkaban.scheduler;
 
 
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.joda.time.Days;
@@ -50,6 +55,7 @@ public class Schedule{
 	private String submitUser;
 	private String status;
 	private long submitTime;
+	private Map<String, Object> schedOptions;
 	
 	public Schedule(
 						int projectId,
@@ -62,7 +68,8 @@ public class Schedule{
 						long lastModifyTime,						
 						long nextExecTime,						
 						long submitTime,
-						String submitUser
+						String submitUser,
+						Map<String, Object> schedOptions
 						) {
 		this.projectId = projectId;
 		this.projectName = projectName;
@@ -75,31 +82,43 @@ public class Schedule{
 		this.submitUser = submitUser;
 		this.status = status;
 		this.submitTime = submitTime;
+		this.schedOptions = schedOptions;
 	}
-	
+
 	public Schedule(
-			int projectId,
-			String projectName,
-			String flowName,
-			String status,
-			long firstSchedTime,
-			String timezone,
-			String period,
-			long lastModifyTime,						
-			long nextExecTime,						
-			long submitTime,
-			String submitUser) {
+						int projectId,
+						String projectName,
+						String flowName,
+						String status,
+						long firstSchedTime,
+						String timezoneId,
+						String period,
+						long lastModifyTime,						
+						long nextExecTime,						
+						long submitTime,
+						String submitUser,
+						Map<String, Object> schedOptions
+			) {
 		this.projectId = projectId;
 		this.projectName = projectName;
 		this.flowName = flowName;
 		this.firstSchedTime = firstSchedTime;
-		this.timezone = DateTimeZone.forID(timezone);
+		this.timezone = DateTimeZone.forID(timezoneId);
 		this.lastModifyTime = lastModifyTime;
 		this.period = parsePeriodString(period);
 		this.nextExecTime = nextExecTime;
 		this.submitUser = submitUser;
 		this.status = status;
 		this.submitTime = submitTime;
+		this.schedOptions = schedOptions;
+	}
+
+	public Map<String, Object> getSchedOptions() {
+		return schedOptions;
+	}
+
+	public void setSchedOptions(Map<String, Object> schedOptions) {
+		this.schedOptions = schedOptions;
 	}
 
 	public String getScheduleName() {
@@ -155,85 +174,77 @@ public class Schedule{
 	}
 
 	public boolean updateTime() {
-        if (new DateTime(nextExecTime).isAfterNow()) {
-            return true;
-        }
+		if (new DateTime(nextExecTime).isAfterNow()) {
+			return true;
+		}
 
-        if (period != null) {
-            DateTime nextTime = getNextRuntime(nextExecTime, timezone, period);
+		if (period != null) {
+			DateTime nextTime = getNextRuntime(nextExecTime, timezone, period);
 
-            this.nextExecTime = nextTime.getMillis();
-            return true;
-        }
+			this.nextExecTime = nextTime.getMillis();
+			return true;
+		}
 
-        return false;
-    }
-//	public String getFlowId(){
-//		return this.scheduleId.split("\\.")[1];
-//	}
-//
-//	public String getProjectId(){
-//		return this.scheduleId.split("\\.")[0];
-//	}
+		return false;
+	}
 	
-	
-    private DateTime getNextRuntime(long scheduleTime, DateTimeZone timezone, ReadablePeriod period) {
-        DateTime now = new DateTime();
-        DateTime date = new DateTime(scheduleTime).withZone(timezone);
-        int count = 0;
-        while (!now.isBefore(date)) {
-            if (count > 100000) {
-                throw new IllegalStateException(
-                        "100000 increments of period did not get to present time.");
-            }
+	private DateTime getNextRuntime(long scheduleTime, DateTimeZone timezone, ReadablePeriod period) {
+		DateTime now = new DateTime();
+		DateTime date = new DateTime(scheduleTime).withZone(timezone);
+		int count = 0;
+		while (!now.isBefore(date)) {
+			if (count > 100000) {
+				throw new IllegalStateException(
+						"100000 increments of period did not get to present time.");
+			}
 
-            if (period == null) {
-                break;
-            } else {
-                date = date.plus(period);
-            }
+			if (period == null) {
+				break;
+			} else {
+				date = date.plus(period);
+			}
 
-            count += 1;
-        }
+			count += 1;
+		}
 
-        return date;
-    }
+		return date;
+	}
 
-    public static ReadablePeriod parsePeriodString(String periodStr) {
-        ReadablePeriod period;
-        char periodUnit = periodStr.charAt(periodStr.length() - 1);
-        if (periodUnit == 'n') {
-            return null;
-        }
+	public static ReadablePeriod parsePeriodString(String periodStr) {
+		ReadablePeriod period;
+		char periodUnit = periodStr.charAt(periodStr.length() - 1);
+		if (periodUnit == 'n') {
+			return null;
+		}
 
-        int periodInt = Integer.parseInt(periodStr.substring(0,
-                periodStr.length() - 1));
-        switch (periodUnit) {
-        case 'M':
-            period = Months.months(periodInt);
-            break;
-        case 'w':
-            period = Weeks.weeks(periodInt);
-            break;
-        case 'd':
-            period = Days.days(periodInt);
-            break;
-        case 'h':
-            period = Hours.hours(periodInt);
-            break;
-        case 'm':
-            period = Minutes.minutes(periodInt);
-            break;
-        case 's':
-            period = Seconds.seconds(periodInt);
-            break;
-        default:
-            throw new IllegalArgumentException("Invalid schedule period unit '"
-                    + periodUnit);
-        }
+		int periodInt = Integer.parseInt(periodStr.substring(0,
+				periodStr.length() - 1));
+		switch (periodUnit) {
+		case 'M':
+			period = Months.months(periodInt);
+			break;
+		case 'w':
+			period = Weeks.weeks(periodInt);
+			break;
+		case 'd':
+			period = Days.days(periodInt);
+			break;
+		case 'h':
+			period = Hours.hours(periodInt);
+			break;
+		case 'm':
+			period = Minutes.minutes(periodInt);
+			break;
+		case 's':
+			period = Seconds.seconds(periodInt);
+			break;
+		default:
+			throw new IllegalArgumentException("Invalid schedule period unit '"
+					+ periodUnit);
+		}
 
-        return period;
-    }
+		return period;
+	}
 
 	public static String createPeriodString(ReadablePeriod period) {
 		String periodStr = "n";
@@ -264,7 +275,36 @@ public class Schedule{
 
 		return periodStr;
 	}
-    
+	
 
+	public Map<String,Object> optionToObject() {
+		//HashMap<String, Object> optionObject = new HashMap<String, Object>();
+		
+
+		return schedOptions;
+	}
+	
+	@SuppressWarnings("unchecked")
+	public static Map<String, Object> createScheduleOptionFromObject(Object obj) {
+		Map<String, Object> options = new HashMap<String, Object>();
+		if(obj != null) {
+			HashMap<String, Object> optionObject = (HashMap<String,Object>)obj;
+			options.putAll(optionObject);
+			return options;
+		}
+		else {
+			return new HashMap<String, Object>();
+		}
+	}
+
+	@SuppressWarnings("unchecked")
+	public List<String> getDisabledJobs() {
+		if (schedOptions.containsKey("disabled")) {
+			return (List<String>) schedOptions.get("disabled");
+		}
+		else {
+			return new ArrayList<String>();
+		}
+	}
 	
 }
