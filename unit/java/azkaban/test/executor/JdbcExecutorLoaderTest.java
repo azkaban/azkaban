@@ -221,6 +221,7 @@ public class JdbcExecutorLoaderTest {
 		Assert.assertEquals(new HashSet<String>(flow.getEndNodes()), new HashSet<String>(fetchFlow.getEndNodes()));
 	}
 	
+	
 	@Test
 	public void testUploadExecutableNode() throws Exception {
 		if (!isTestSetup()) {
@@ -228,16 +229,17 @@ public class JdbcExecutorLoaderTest {
 		}
 		
 		ExecutorLoader loader = createLoader();
-		ExecutableFlow flow = createExecutableFlow("exec1");
+		ExecutableFlow flow = createExecutableFlow(10, "exec1");
 		flow.setExecutionId(10);
 		
 		File jobFile = new File(flowDir, "job10.job");
 		Props props = new Props(null, jobFile);
 		props.put("test","test2");
 		ExecutableNode oldNode = flow.getExecutableNode("job10");
+		oldNode.setStartTime(System.currentTimeMillis());
 		loader.uploadExecutableNode(oldNode, props);
 		
-		ExecutableJobInfo info = loader.fetchJobInfo(10, "job10");
+		ExecutableJobInfo info = loader.fetchJobInfo(10, "job10", 0);
 		Assert.assertEquals(flow.getExecutionId(), info.getExecId());
 		Assert.assertEquals(flow.getProjectId(), info.getProjectId());
 		Assert.assertEquals(flow.getVersion(), info.getVersion());
@@ -246,6 +248,23 @@ public class JdbcExecutorLoaderTest {
 		Assert.assertEquals(oldNode.getStatus(), info.getStatus());
 		Assert.assertEquals(oldNode.getStartTime(), info.getStartTime());
 		Assert.assertEquals("endTime = " + oldNode.getEndTime() + " info endTime = " + info.getEndTime(), oldNode.getEndTime(), info.getEndTime());
+	
+		// Fetch props
+		Props outputProps = new Props();
+		outputProps.put("hello", "output");
+		oldNode.setOutputProps(outputProps);
+		oldNode.setEndTime(System.currentTimeMillis());
+		loader.updateExecutableNode(oldNode);
+
+		Props fInputProps = loader.fetchExecutionJobInputProps(10, "job10");
+		Props fOutputProps = loader.fetchExecutionJobOutputProps(10, "job10");
+		Pair<Props,Props> inOutProps = loader.fetchExecutionJobProps(10, "job10");
+		
+		Assert.assertEquals(fInputProps.get("test"), "test2");
+		Assert.assertEquals(fOutputProps.get("hello"), "output");
+		Assert.assertEquals(inOutProps.getFirst().get("test"), "test2");
+		Assert.assertEquals(inOutProps.getSecond().get("hello"), "output");
+		
 	}
 	
 	@Test
@@ -307,19 +326,19 @@ public class JdbcExecutorLoaderTest {
 		File[] smalllog = {new File(logDir, "log1.log"), new File(logDir, "log2.log"), new File(logDir, "log3.log")};
 
 		ExecutorLoader loader = createLoader();
-		loader.uploadLogFile(1, "smallFiles", smalllog);
+		loader.uploadLogFile(1, "smallFiles", 0, smalllog);
 		
-		LogData data = loader.fetchLogs(1, "smallFiles", 0, 50000);
+		LogData data = loader.fetchLogs(1, "smallFiles", 0, 0, 50000);
 		Assert.assertNotNull(data);
 		Assert.assertEquals("Logs length is " + data.getLength(), data.getLength(), 53);
 		
 		System.out.println(data.toString());
 	
-		LogData data2 = loader.fetchLogs(1, "smallFiles", 10, 20);
-		Assert.assertNotNull(data2);
-		Assert.assertEquals("Logs length is " + data2.getLength(), data2.getLength(), 10);
-		
+		LogData data2 = loader.fetchLogs(1, "smallFiles", 0, 10, 20);
 		System.out.println(data2.toString());
+		Assert.assertNotNull(data2);
+		Assert.assertEquals("Logs length is " + data2.getLength(), data2.getLength(), 20);
+
 	}
 	
 	@Test
@@ -330,30 +349,41 @@ public class JdbcExecutorLoaderTest {
 		File[] largelog = {new File(logDir, "largeLog1.log"), new File(logDir, "largeLog2.log"), new File(logDir, "largeLog3.log")};
 
 		ExecutorLoader loader = createLoader();
-		loader.uploadLogFile(1, "largeFiles", largelog);
+		loader.uploadLogFile(1, "largeFiles",0, largelog);
 		
-		LogData logsResult = loader.fetchLogs(1, "largeFiles", 0, 64000);
+		LogData logsResult = loader.fetchLogs(1, "largeFiles",0, 0, 64000);
 		Assert.assertNotNull(logsResult);
 		Assert.assertEquals("Logs length is " + logsResult.getLength(), logsResult.getLength(), 64000);
 		
-		LogData logsResult2 = loader.fetchLogs(1, "largeFiles", 1000, 64000);
+		LogData logsResult2 = loader.fetchLogs(1, "largeFiles",0, 1000, 64000);
 		Assert.assertNotNull(logsResult2);
-		Assert.assertEquals("Logs length is " + logsResult2.getLength(), logsResult2.getLength(), 63000);
+		Assert.assertEquals("Logs length is " + logsResult2.getLength(), logsResult2.getLength(), 64000);
 		
-		LogData logsResult3 = loader.fetchLogs(1, "largeFiles", 330000, 400000);
+		LogData logsResult3 = loader.fetchLogs(1, "largeFiles",0, 330000, 400000);
 		Assert.assertNotNull(logsResult3);
 		Assert.assertEquals("Logs length is " + logsResult3.getLength(), logsResult3.getLength(), 5493);
 		
-		LogData logsResult4 = loader.fetchLogs(1, "largeFiles", 340000, 400000);
+		LogData logsResult4 = loader.fetchLogs(1, "largeFiles",0, 340000, 400000);
 		Assert.assertNull(logsResult4);
 		
-		LogData logsResult5 = loader.fetchLogs(1, "largeFiles", 153600, 204800);
+		LogData logsResult5 = loader.fetchLogs(1, "largeFiles",0, 153600, 204800);
 		Assert.assertNotNull(logsResult5);
-		Assert.assertEquals("Logs length is " + logsResult5.getLength(), logsResult5.getLength(), 51200);
+		Assert.assertEquals("Logs length is " + logsResult5.getLength(), logsResult5.getLength(), 181893);
 		
-		LogData logsResult6 = loader.fetchLogs(1, "largeFiles", 150000, 250000);
+		LogData logsResult6 = loader.fetchLogs(1, "largeFiles",0, 150000, 250000);
 		Assert.assertNotNull(logsResult6);
-		Assert.assertEquals("Logs length is " + logsResult6.getLength(), logsResult6.getLength(), 100000);
+		Assert.assertEquals("Logs length is " + logsResult6.getLength(), logsResult6.getLength(), 185493);
+	}
+	
+	private ExecutableFlow createExecutableFlow(int executionId, String flowName) throws IOException {
+		File jsonFlowFile = new File(flowDir, flowName + ".flow");
+		@SuppressWarnings("unchecked")
+		HashMap<String, Object> flowObj = (HashMap<String, Object>) JSONUtils.parseJSONFromFile(jsonFlowFile);
+		
+		Flow flow = Flow.flowFromObject(flowObj);
+		ExecutableFlow execFlow = new ExecutableFlow(executionId, flow);
+
+		return execFlow;
 	}
 	
 	private ExecutableFlow createExecutableFlow(String flowName) throws IOException {

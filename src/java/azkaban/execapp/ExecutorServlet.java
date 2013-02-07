@@ -95,6 +95,10 @@ public class ExecutorServlet extends HttpServlet implements ConnectorParams {
 						logger.info("Resume called.");
 						handleAjaxResume(respMap, execid, user);
 					}
+					else if (action.equals(MODIFY_EXECUTION_ACTION)) {
+						logger.info("Modify Execution Action");
+						handleModifyExecutionRequest(respMap, execid, user, req);
+					}
 					else {
 						respMap.put("error", "action: '" + action + "' not supported.");
 					}
@@ -105,6 +109,38 @@ public class ExecutorServlet extends HttpServlet implements ConnectorParams {
 		}
 		writeJSON(resp, respMap);
 		resp.flushBuffer();
+	}
+	
+	private void handleModifyExecutionRequest(Map<String, Object> respMap, int execId, String user, HttpServletRequest req) throws ServletException {
+		if (!hasParam(req, MODIFY_EXECUTION_ACTION_TYPE)) {
+			respMap.put(RESPONSE_ERROR, "Modification type not set.");
+		}
+		String modificationType = getParam(req, MODIFY_EXECUTION_ACTION_TYPE);
+		String modifiedJobList = getParam(req, MODIFY_JOBS_LIST);
+		String[] jobIds = modifiedJobList.split("\\s*,\\s*");
+		
+		try {
+			if (MODIFY_RETRY_JOBS.equals(modificationType)) {
+				flowRunnerManager.retryJobs(execId, user, jobIds);
+			}
+			else if (MODIFY_CANCEL_JOBS.equals(modificationType)) {
+				
+			}
+			else if (MODIFY_DISABLE_JOBS.equals(modificationType)) {
+				
+			}
+			else if (MODIFY_ENABLE_JOBS.equals(modificationType)) {
+				
+			}
+			else if (MODIFY_PAUSE_JOBS.equals(modificationType)) {
+				
+			}
+			else if (MODIFY_RESUME_JOBS.equals(modificationType)) {
+				
+			}
+		} catch (ExecutorManagerException e) {
+			respMap.put("error", e.getMessage());
+		}
 	}
 	
 	private void handleFetchLogEvent(int execId, HttpServletRequest req, HttpServletResponse resp, Map<String, Object> respMap) throws ServletException {
@@ -121,13 +157,14 @@ public class ExecutorServlet extends HttpServlet implements ConnectorParams {
 				result = flowRunnerManager.readFlowLogs(execId, startByte, length);
 				respMap.putAll(result.toObject());
 			} catch (Exception e) {
-				respMap.put("error", e.getMessage());
+				respMap.put(RESPONSE_ERROR, e.getMessage());
 			}
 		}
 		else {
+			int attempt = getIntParam(req, "attempt", 0);
 			String jobId = getParam(req, "jobId");
 			try {
-				LogData result = flowRunnerManager.readJobLogs(execId, jobId, startByte, length);
+				LogData result = flowRunnerManager.readJobLogs(execId, jobId, attempt, startByte, length);
 				respMap.putAll(result.toObject());
 			} catch (Exception e) {
 				respMap.put("error", e.getMessage());

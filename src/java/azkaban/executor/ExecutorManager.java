@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.apache.commons.lang.StringUtils;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.ResponseHandler;
 import org.apache.http.client.methods.HttpGet;
@@ -159,12 +160,12 @@ public class ExecutorManager {
 			return LogData.createLogDataFromObject(result);
 		}
 		else {
-			LogData value = executorLoader.fetchLogs(exFlow.getExecutionId(), "", offset, length);
+			LogData value = executorLoader.fetchLogs(exFlow.getExecutionId(), "", 0, offset, length);
 			return value;
 		}
 	}
 	
-	public LogData getExecutionJobLog(ExecutableFlow exFlow, String jobId, int offset, int length) throws ExecutorManagerException {
+	public LogData getExecutionJobLog(ExecutableFlow exFlow, String jobId, int offset, int length, int attempt) throws ExecutorManagerException {
 		Pair<ExecutionReference, ExecutableFlow> pair = runningFlows.get(exFlow.getExecutionId());
 		if (pair != null) {
 
@@ -172,13 +173,14 @@ public class ExecutorManager {
 			Pair<String,String> jobIdParam = new Pair<String,String>("jobId", jobId);
 			Pair<String,String> offsetParam = new Pair<String,String>("offset", String.valueOf(offset));
 			Pair<String,String> lengthParam = new Pair<String,String>("length", String.valueOf(length));
-
+			Pair<String,String> attemptParam = new Pair<String,String>("attempt", String.valueOf(attempt));
+			
 			@SuppressWarnings("unchecked")
-			Map<String, Object> result = callExecutorServer(pair.getFirst(), ConnectorParams.LOG_ACTION, typeParam, jobIdParam, offsetParam, lengthParam);
+			Map<String, Object> result = callExecutorServer(pair.getFirst(), ConnectorParams.LOG_ACTION, typeParam, jobIdParam, offsetParam, lengthParam, attemptParam);
 			return LogData.createLogDataFromObject(result);
 		}
 		else {
-			LogData value = executorLoader.fetchLogs(exFlow.getExecutionId(), jobId, offset, length);
+			LogData value = executorLoader.fetchLogs(exFlow.getExecutionId(), jobId, attempt, offset, length);
 			return value;
 		}
 	}
@@ -210,6 +212,58 @@ public class ExecutorManager {
 				throw new ExecutorManagerException("Execution " + exFlow.getExecutionId() + " of flow " + exFlow.getFlowId() + " isn't running.");
 			}
 			callExecutorServer(pair.getFirst(), ConnectorParams.PAUSE_ACTION, userId);
+		}
+	}
+	
+	public void pauseExecutingJobs(ExecutableFlow exFlow, String userId, String ... jobIds) throws ExecutorManagerException {
+		modifyExecutingJobs(exFlow, ConnectorParams.MODIFY_PAUSE_JOBS, userId, jobIds);
+	}
+	
+	public void resumeExecutingJobs(ExecutableFlow exFlow, String userId, String ... jobIds) throws ExecutorManagerException {
+		modifyExecutingJobs(exFlow, ConnectorParams.MODIFY_RESUME_JOBS, userId, jobIds);
+	}
+	
+	public void retryExecutingJobs(ExecutableFlow exFlow, String userId, String ... jobIds) throws ExecutorManagerException {
+		modifyExecutingJobs(exFlow, ConnectorParams.MODIFY_RETRY_JOBS, userId, jobIds);
+	}
+	
+	public void disableExecutingJobs(ExecutableFlow exFlow, String userId, String ... jobIds) throws ExecutorManagerException {
+		modifyExecutingJobs(exFlow, ConnectorParams.MODIFY_DISABLE_JOBS, userId, jobIds);
+	}
+	
+	public void enableExecutingJobs(ExecutableFlow exFlow, String userId, String ... jobIds) throws ExecutorManagerException {
+		modifyExecutingJobs(exFlow, ConnectorParams.MODIFY_ENABLE_JOBS, userId, jobIds);
+	}
+	
+	public void cancelExecutingJobs(ExecutableFlow exFlow, String userId, String ... jobIds) throws ExecutorManagerException {
+		modifyExecutingJobs(exFlow, ConnectorParams.MODIFY_CANCEL_JOBS, userId, jobIds);
+	}
+	
+	@SuppressWarnings("unchecked")
+	private Map<String, Object> modifyExecutingJobs(ExecutableFlow exFlow, String command, String userId, String ... jobIds) throws ExecutorManagerException {
+		synchronized(exFlow) {
+			Pair<ExecutionReference, ExecutableFlow> pair = runningFlows.get(exFlow.getExecutionId());
+			if (pair == null) {
+				throw new ExecutorManagerException("Execution " + exFlow.getExecutionId() + " of flow " + exFlow.getFlowId() + " isn't running.");
+			}
+			
+			for (String jobId: jobIds) {
+				if (!jobId.isEmpty()) {
+					ExecutableNode node = exFlow.getExecutableNode(jobId);
+					if (node == null) {
+						throw new ExecutorManagerException("Job " + jobId + " doesn't exist in execution " + exFlow.getExecutionId() + ".");
+					}
+				}
+			}
+			String ids = StringUtils.join(jobIds, ',');
+			Map<String, Object> response = callExecutorServer(
+					pair.getFirst(), 
+					ConnectorParams.MODIFY_EXECUTION_ACTION, 
+					userId, 
+					new Pair<String,String>(ConnectorParams.MODIFY_EXECUTION_ACTION_TYPE, command), 
+					new Pair<String,String>(ConnectorParams.MODIFY_JOBS_LIST, ids));
+			
+			return response;
 		}
 	}
 	
@@ -253,6 +307,14 @@ public class ExecutorManager {
 	private Map<String, Object> callExecutorServer(ExecutionReference ref, String action, Pair<String,String> ... params) throws ExecutorManagerException {
 		try {
 			return callExecutorServer(ref.getHost(), ref.getPort(), action, ref.getExecId(), null, params);
+		} catch (IOException e) {
+			throw new ExecutorManagerException(e);
+		}
+	}
+	
+	private Map<String, Object> callExecutorServer(ExecutionReference ref, String action, String user, Pair<String,String> ... params) throws ExecutorManagerException {
+		try {
+			return callExecutorServer(ref.getHost(), ref.getPort(), action, ref.getExecId(), user, params);
 		} catch (IOException e) {
 			throw new ExecutorManagerException(e);
 		}

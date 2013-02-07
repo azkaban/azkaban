@@ -248,11 +248,19 @@ azkaban.ExecuteFlowView = Backbone.View.extend({
 			}
 		}
 	  	
+	  	var disabled = "";
+	  	var disabledMap = this.cloneModel.get('disabled');
+	  	for (var dis in disabledMap) {
+	  		if (disabledMap[dis]) {
+	  			disabled += dis + ",";
+	  		}
+	  	}
+	  	
 	  	var executingData = {
 	  		project: projectName,
 	  		ajax: "executeFlow",
 	  		flow: flowName,
-	  		disable: this.cloneModel.get('disabled'),
+	  		disabled: disabled,
 	  		failureAction: failureAction,
 	  		failureEmails: failureEmails,
 	  		successEmails: successEmails,

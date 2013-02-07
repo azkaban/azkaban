@@ -43,23 +43,32 @@ public interface ExecutorLoader {
 
 	public boolean updateExecutableReference(int execId, long updateTime) throws ExecutorManagerException;
 
-	public LogData fetchLogs(int execId, String name, int startByte, int endByte) throws ExecutorManagerException;
+	public LogData fetchLogs(int execId, String name, int attempt, int startByte, int endByte) throws ExecutorManagerException;
 
-	public void uploadLogFile(int execId, String name, File ... files) throws ExecutorManagerException;
+	public void uploadLogFile(int execId, String name, int attempt, File ... files) throws ExecutorManagerException;
 
 	public void updateExecutableFlow(ExecutableFlow flow) throws ExecutorManagerException;
 
 	public void uploadExecutableNode(ExecutableNode node, Props inputParams) throws ExecutorManagerException; 
 
-	public ExecutableJobInfo fetchJobInfo(int execId, String jobId) throws ExecutorManagerException;
+	public List<ExecutableJobInfo> fetchJobInfoAttempts(int execId, String jobId) throws ExecutorManagerException;
 
+	public ExecutableJobInfo fetchJobInfo(int execId, String jobId, int attempt) throws ExecutorManagerException;
+	
 	public List<ExecutableJobInfo> fetchJobHistory(int projectId, String jobId, int skip, int size) throws ExecutorManagerException;
 	
-	public void updateExecutableNode(ExecutableNode node, Props outputParams) throws ExecutorManagerException;
+	public void updateExecutableNode(ExecutableNode node) throws ExecutorManagerException;
 
 	public int fetchNumExecutableFlows(int projectId, String flowId) throws ExecutorManagerException;
 
 	public int fetchNumExecutableFlows() throws ExecutorManagerException;
 	
 	public int fetchNumExecutableNodes(int projectId, String jobId) throws ExecutorManagerException;
+	
+	public Props fetchExecutionJobInputProps(int execId, String jobId) throws ExecutorManagerException;
+	
+	public Props fetchExecutionJobOutputProps(int execId, String jobId) throws ExecutorManagerException;
+	
+	public Pair<Props, Props> fetchExecutionJobProps(int execId, String jobId) throws ExecutorManagerException;
+	
 }

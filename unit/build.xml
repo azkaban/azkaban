@@ -8,9 +8,18 @@
 	
 	<property name="java.src.dir" value="${base.dir}/unit/java" />
 	<property name="job.conf.dir" value="${base.dir}/unit/executions/exectest1" />
-
+	<property name="job.conf.dir2" value="${base.dir}/unit/executions/exectest2" />
+	
 	<property environment="env" />
 
+	<path id="main.classpath">
+		<fileset dir="../lib">
+			<include name="*.jar" />
+		</fileset>
+
+		<pathelement path="${dist.classes.dir}" />
+	</path>
+	
 	<!-- set the build number based on environment variable, otherwise blank -->
 	<property environment="env" description="System environment variables (including those set by Hudson)" />
 
@@ -29,7 +38,8 @@
 		<mkdir dir="${dist.packages.dir}" />
 		
 		<javac fork="true" destdir="${dist.classes.dir}"
-			target="1.6" debug="true" deprecation="false" failonerror="true" srcdir="${java.src.dir}/azkaban/test/executor" includes="*Job.java">
+			target="1.6" debug="true" deprecation="false" failonerror="true" srcdir="${java.src.dir}/azkaban/test/executor" includes="SleepJavaJob.java">
+			<classpath refid="main.classpath" />
 		</javac>
 	</target>
 	
@@ -54,4 +64,16 @@
 		</zip>
 	</target>
 
+	<target name="package-exectest2" depends="jars" description="Creates a test zip">
+		<delete dir="${dist.packages.dir}" />
+		<mkdir dir="${dist.packages.dir}" />
+		
+		<!-- Tarball it -->
+		<zip destfile="${dist.packages.dir}/exectest2.zip">
+			<zipfileset dir="${dist.jar.dir}" />
+			<zipfileset dir="${job.conf.dir2}" />
+		</zip>
+	</target>
+
+	
 </project>

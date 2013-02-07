@@ -428,6 +428,7 @@ public class AzkabanWebServer implements AzkabanServer {
 			public void run() {
 				logger.info("Shutting down http server...");
 				try {
+					app.getScheduleManager().shutdown();
 					server.stop();
 					server.destroy();
 				} 
@@ -435,6 +436,7 @@ public class AzkabanWebServer implements AzkabanServer {
 					logger.error("Error while shutting down http server.", e);
 				}
 				logger.info("kk thx bye.");
+				System.exit(0);
 			}
 		});
 		logger.info("Server running on port " + sslPortNumber + ".");

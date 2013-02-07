@@ -152,7 +152,6 @@ public class JdbcExecutorLoader implements ExecutorLoader {
 			if (encType == EncodingType.GZIP) {
 				data = GZIPUtils.gzipBytes(stringData);
 			}
-			logger.debug("NumChars: " + json.length() + " UTF-8:" + stringData.length + " Gzip:"+ data.length);
 		}
 		catch (IOException e) {
 			throw new ExecutorManagerException("Error encoding the execution flow.");
@@ -248,6 +247,7 @@ public class JdbcExecutorLoader implements ExecutorLoader {
 	@Override
 	public List<ExecutableFlow> fetchFlowHistory(int skip, int num) throws ExecutorManagerException {
 		QueryRunner runner = new QueryRunner(dataSource);
+
 		FetchExecutableFlows flowHandler = new FetchExecutableFlows();
 		
 		try {
@@ -391,7 +391,7 @@ public class JdbcExecutorLoader implements ExecutorLoader {
 
 	@Override
 	public void uploadExecutableNode(ExecutableNode node, Props inputProps) throws ExecutorManagerException {
-		final String INSERT_EXECUTION_NODE = "INSERT INTO execution_jobs (exec_id, project_id, version, flow_id, job_id, start_time, end_time, status, input_params) VALUES (?,?,?,?,?,?,?,?,?)";
+		final String INSERT_EXECUTION_NODE = "INSERT INTO execution_jobs (exec_id, project_id, version, flow_id, job_id, start_time, end_time, status, input_params, attempts) VALUES (?,?,?,?,?,?,?,?,?,?)";
 		
 		byte[] inputParam = null;
 		if (inputProps != null) {
@@ -416,17 +416,20 @@ public class JdbcExecutorLoader implements ExecutorLoader {
 					node.getStartTime(),
 					node.getEndTime(), 
 					node.getStatus().getNumVal(),
-					inputParam);
+					inputParam,
+					node.getAttempt()
+					);
 		} catch (SQLException e) {
 			throw new ExecutorManagerException("Error writing job " + node.getJobId(), e);
 		}
 	}
 	
 	@Override
-	public void updateExecutableNode(ExecutableNode node, Props outputProps) throws ExecutorManagerException {
+	public void updateExecutableNode(ExecutableNode node) throws ExecutorManagerException {
 		final String UPSERT_EXECUTION_NODE = "UPDATE execution_jobs SET start_time=?, end_time=?, status=?, output_params=? WHERE exec_id=? AND job_id=?";
 		
 		byte[] outputParam = null;
+		Props outputProps = node.getOutputProps();
 		if (outputProps != null) {
 			try {
 				String jsonString = JSONUtils.toJSON(PropsUtils.toHierarchicalMap(outputProps));
@@ -444,7 +447,7 @@ public class JdbcExecutorLoader implements ExecutorLoader {
 					node.getEndTime(), 
 					node.getStatus().getNumVal(), 
 					outputParam,
-					node.getExecutionId(),
+					node.getFlow().getExecutionId(),
 					node.getJobId());
 		} catch (SQLException e) {
 			throw new ExecutorManagerException("Error updating job " + node.getJobId(), e);
@@ -452,7 +455,23 @@ public class JdbcExecutorLoader implements ExecutorLoader {
 	}
 	
 	@Override
-	public ExecutableJobInfo fetchJobInfo(int execId, String jobId) throws ExecutorManagerException {
+	public List<ExecutableJobInfo> fetchJobInfoAttempts(int execId, String jobId) throws ExecutorManagerException {
+		QueryRunner runner = new QueryRunner(dataSource);
+		
+		try {
+			List<ExecutableJobInfo> info = runner.query(FetchExecutableJobHandler.FETCH_EXECUTABLE_NODE_ATTEMPTS, new FetchExecutableJobHandler(), execId, jobId);
+			if (info == null || info.isEmpty()) {
+				return null;
+			}
+			
+			return info;
+		} catch (SQLException e) {
+			throw new ExecutorManagerException("Error querying job info " + jobId, e);
+		}
+	}
+	
+	@Override
+	public ExecutableJobInfo fetchJobInfo(int execId, String jobId, int attempts) throws ExecutorManagerException {
 		QueryRunner runner = new QueryRunner(dataSource);
 		
 		try {
@@ -464,6 +483,42 @@ public class JdbcExecutorLoader implements ExecutorLoader {
 			return info.get(0);
 		} catch (SQLException e) {
 			throw new ExecutorManagerException("Error querying job info " + jobId, e);
+		}
+	}
+	
+	@Override
+	public Props fetchExecutionJobInputProps(int execId, String jobId) throws ExecutorManagerException {
+		QueryRunner runner = new QueryRunner(dataSource);
+		try {
+			Pair<Props, Props> props = runner.query(FetchExecutableJobPropsHandler.FETCH_INPUT_PARAM_EXECUTABLE_NODE, new FetchExecutableJobPropsHandler(), execId, jobId);
+			return props.getFirst();
+		}
+		catch (SQLException e) {
+			throw new ExecutorManagerException("Error querying job params " + execId + " " + jobId, e);
+		}
+	}
+	
+	@Override
+	public Props fetchExecutionJobOutputProps(int execId, String jobId) throws ExecutorManagerException {
+		QueryRunner runner = new QueryRunner(dataSource);
+		try {
+			Pair<Props, Props> props = runner.query(FetchExecutableJobPropsHandler.FETCH_OUTPUT_PARAM_EXECUTABLE_NODE, new FetchExecutableJobPropsHandler(), execId, jobId);
+			return props.getFirst();
+		}
+		catch (SQLException e) {
+			throw new ExecutorManagerException("Error querying job params " + execId + " " + jobId, e);
+		}
+	}
+	
+	@Override
+	public Pair<Props, Props> fetchExecutionJobProps(int execId, String jobId) throws ExecutorManagerException {
+		QueryRunner runner = new QueryRunner(dataSource);
+		try {
+			Pair<Props, Props> props = runner.query(FetchExecutableJobPropsHandler.FETCH_INPUT_OUTPUT_PARAM_EXECUTABLE_NODE, new FetchExecutableJobPropsHandler(), execId, jobId);
+			return props;
+		}
+		catch (SQLException e) {
+			throw new ExecutorManagerException("Error querying job params " + execId + " " + jobId, e);
 		}
 	}
 	
@@ -484,13 +539,13 @@ public class JdbcExecutorLoader implements ExecutorLoader {
 	}
 	
 	@Override
-	public LogData fetchLogs(int execId, String name, int startByte, int length) throws ExecutorManagerException {
+	public LogData fetchLogs(int execId, String name, int attempt, int startByte, int length) throws ExecutorManagerException {
 		QueryRunner runner = new QueryRunner(dataSource);
 
 		FetchLogsHandler handler = new FetchLogsHandler(startByte, length + startByte);
 		
 		try {
-			LogData result = runner.query(FetchLogsHandler.FETCH_LOGS, handler, execId, name, startByte, startByte + length);
+			LogData result = runner.query(FetchLogsHandler.FETCH_LOGS, handler, execId, name, attempt, startByte, startByte + length);
 			return result;
 		} catch (SQLException e) {
 			throw new ExecutorManagerException("Error fetching logs " + execId + " : " + name, e);
@@ -498,10 +553,10 @@ public class JdbcExecutorLoader implements ExecutorLoader {
 	}
 	
 	@Override
-	public void uploadLogFile(int execId, String name, File ... files) throws ExecutorManagerException {
+	public void uploadLogFile(int execId, String name, int attempt, File ... files) throws ExecutorManagerException {
 		Connection connection = getConnection();
 		try {
-			uploadLogFile(connection, execId, name, files, defaultEncodingType);
+			uploadLogFile(connection, execId, name, attempt, files, defaultEncodingType);
 			connection.commit();
 		}
 		catch (SQLException e) {
@@ -515,7 +570,7 @@ public class JdbcExecutorLoader implements ExecutorLoader {
 		}
 	}
 	
-	private void uploadLogFile(Connection connection, int execId, String name, File[] files, EncodingType encType) throws ExecutorManagerException, IOException {
+	private void uploadLogFile(Connection connection, int execId, String name, int attempt, File[] files, EncodingType encType) throws ExecutorManagerException, IOException {
 		// 50K buffer... if logs are greater than this, we chunk.
 		// However, we better prevent large log files from being uploaded somehow
 		byte[] buffer = new byte[50*1024];
@@ -532,7 +587,7 @@ public class JdbcExecutorLoader implements ExecutorLoader {
 				while (size >= 0) {
 					if (pos + size == buffer.length) {
 						// Flush here.
-						uploadLogPart(connection, execId, name, startByte, startByte + buffer.length, encType, buffer, buffer.length);
+						uploadLogPart(connection, execId, name, attempt, startByte, startByte + buffer.length, encType, buffer, buffer.length);
 						
 						pos = 0;
 						length = buffer.length;
@@ -549,7 +604,7 @@ public class JdbcExecutorLoader implements ExecutorLoader {
 			
 			// Final commit of buffer.
 			if (pos > 0) {
-				uploadLogPart(connection, execId, name, startByte, startByte + pos, encType, buffer, pos);
+				uploadLogPart(connection, execId, name, attempt, startByte, startByte + pos, encType, buffer, pos);
 			}
 		}
 		catch (SQLException e) {
@@ -564,8 +619,8 @@ public class JdbcExecutorLoader implements ExecutorLoader {
 
 	}
 	
-	private void uploadLogPart(Connection connection, int execId, String name, int startByte, int endByte, EncodingType encType, byte[] buffer, int length) throws SQLException, IOException {
-		final String INSERT_EXECUTION_LOGS = "INSERT INTO execution_logs (exec_id, name, enc_type, start_byte, end_byte, log) VALUES (?,?,?,?,?,?)";
+	private void uploadLogPart(Connection connection, int execId, String name, int attempt, int startByte, int endByte, EncodingType encType, byte[] buffer, int length) throws SQLException, IOException {
+		final String INSERT_EXECUTION_LOGS = "INSERT INTO execution_logs (exec_id, name, attempt, enc_type, start_byte, end_byte, log) VALUES (?,?,?,?,?,?,?)";
 		QueryRunner runner = new QueryRunner();
 		
 		byte[] buf = buffer;
@@ -576,7 +631,7 @@ public class JdbcExecutorLoader implements ExecutorLoader {
 			buf = Arrays.copyOf(buffer, length);
 		}
 		
-		runner.update(connection, INSERT_EXECUTION_LOGS, execId, name, encType.getNumVal(), startByte, startByte + length, buf);
+		runner.update(connection, INSERT_EXECUTION_LOGS, execId, name, attempt, encType.getNumVal(), startByte, startByte + length, buf);
 	}
 	
 	private Connection getConnection() throws ExecutorManagerException {
@@ -608,7 +663,7 @@ public class JdbcExecutorLoader implements ExecutorLoader {
 	}
 	
 	private static class FetchLogsHandler implements ResultSetHandler<LogData> {
-		private static String FETCH_LOGS = "SELECT exec_id, name, enc_type, start_byte, end_byte, log FROM execution_logs WHERE exec_id=? AND name=? AND end_byte > ? AND start_byte <= ? ORDER BY start_byte";
+		private static String FETCH_LOGS = "SELECT exec_id, name, attempt, enc_type, start_byte, end_byte, log FROM execution_logs WHERE exec_id=? AND name=? AND attempt=? AND end_byte > ? AND start_byte <= ? ORDER BY start_byte";
 
 		private int startByte;
 		private int endByte;
@@ -657,8 +712,9 @@ public class JdbcExecutorLoader implements ExecutorLoader {
 	}
 	
 	private static class FetchExecutableJobHandler implements ResultSetHandler<List<ExecutableJobInfo>> {
-		private static String FETCH_EXECUTABLE_NODE = "SELECT exec_id, project_id, version, flow_id, job_id, start_time, end_time, status FROM execution_jobs WHERE exec_id=? AND job_id=?";
-		private static String FETCH_PROJECT_EXECUTABLE_NODE = "SELECT exec_id, project_id, version, flow_id, job_id, start_time, end_time, status FROM execution_jobs WHERE project_id=? AND job_id=? ORDER BY exec_id DESC LIMIT ?, ? ";
+		private static String FETCH_EXECUTABLE_NODE = "SELECT exec_id, project_id, version, flow_id, job_id, start_time, end_time, status, attempt FROM execution_jobs WHERE exec_id=? AND job_id=? AND attempt_id=?";
+		private static String FETCH_EXECUTABLE_NODE_ATTEMPTS = "SELECT exec_id, project_id, version, flow_id, job_id, start_time, end_time, status, attempt FROM execution_jobs WHERE exec_id=? AND job_id=?";
+		private static String FETCH_PROJECT_EXECUTABLE_NODE = "SELECT exec_id, project_id, version, flow_id, job_id, start_time, end_time, status, attempt FROM execution_jobs WHERE project_id=? AND job_id=? ORDER BY exec_id DESC LIMIT ?, ? ";
 
 		@Override
 		public List<ExecutableJobInfo> handle(ResultSet rs) throws SQLException {
@@ -676,8 +732,9 @@ public class JdbcExecutorLoader implements ExecutorLoader {
 				long startTime = rs.getLong(6);
 				long endTime = rs.getLong(7);
 				Status status = Status.fromInteger(rs.getInt(8));
+				int attempt = rs.getInt(9);
 				
-				ExecutableJobInfo info = new ExecutableJobInfo(execId, projectId, version, flowId, jobId, startTime, endTime, status);
+				ExecutableJobInfo info = new ExecutableJobInfo(execId, projectId, version, flowId, jobId, startTime, endTime, status, attempt);
 				execNodes.add(info);
 			} while (rs.next());
 
@@ -685,6 +742,61 @@ public class JdbcExecutorLoader implements ExecutorLoader {
 		}
 	}
 	
+	private static class FetchExecutableJobPropsHandler implements ResultSetHandler<Pair<Props, Props>> {
+		private static String FETCH_OUTPUT_PARAM_EXECUTABLE_NODE = "SELECT output_params FROM execution_jobs WHERE exec_id=? AND job_id=?";
+		private static String FETCH_INPUT_PARAM_EXECUTABLE_NODE = "SELECT input_params FROM execution_jobs WHERE exec_id=? AND job_id=?";
+		private static String FETCH_INPUT_OUTPUT_PARAM_EXECUTABLE_NODE = "SELECT input_params, output_params FROM execution_jobs WHERE exec_id=? AND job_id=?";
+		
+		@SuppressWarnings("unchecked")
+		@Override
+		public Pair<Props, Props> handle(ResultSet rs) throws SQLException {
+			if (!rs.next()) {
+				return new Pair<Props, Props>(null, null);
+			}
+			
+			if (rs.getMetaData().getColumnCount() > 1) {
+				byte[] input = rs.getBytes(1);
+				byte[] output = rs.getBytes(2);
+				
+				Props inputProps = null;
+				Props outputProps = null;
+				try {
+					if (input != null) {
+						String jsonInputString = GZIPUtils.unGzipString(input, "UTF-8");
+						inputProps = PropsUtils.fromHierarchicalMap(
+								(Map<String, Object>)JSONUtils.parseJSONFromString(jsonInputString));
+						
+					}
+					if (output != null) {
+						String jsonOutputString = GZIPUtils.unGzipString(output, "UTF-8");
+						outputProps = PropsUtils.fromHierarchicalMap(
+								(Map<String, Object>)JSONUtils.parseJSONFromString(jsonOutputString));
+					}
+				} catch (IOException e) {
+					throw new SQLException("Error decoding param data", e);
+				}
+				
+				return new Pair<Props, Props>(inputProps, outputProps);
+			}
+			else {
+				byte[] params = rs.getBytes(1);
+				Props props = null;
+				try {
+					if (params != null) {
+						String jsonProps = GZIPUtils.unGzipString(params, "UTF-8");
+
+						props = PropsUtils.fromHierarchicalMap(
+								(Map<String, Object>)JSONUtils.parseJSONFromString(jsonProps));
+					}
+				} catch (IOException e) {
+					throw new SQLException("Error decoding param data", e);
+				}
+				
+				return new Pair<Props,Props>(props, null);
+			}
+		}
+		
+	}
 
 	private static class FetchActiveExecutableFlows implements ResultSetHandler<Map<Integer, Pair<ExecutionReference,ExecutableFlow>>> {
 		private static String FETCH_ACTIVE_EXECUTABLE_FLOW = "SELECT ex.exec_id exec_id, ex.enc_type enc_type, ex.flow_data flow_data, ax.host host, ax.port port, ax.update_time axUpdateTime FROM execution_flows ex INNER JOIN active_executing_flows ax ON ex.exec_id = ax.exec_id";

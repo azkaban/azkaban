@@ -118,6 +118,15 @@ public class ExecutableFlow {
 		this.setFlow(flow);
 	}
 	
+	public ExecutableFlow(int executionId, Flow flow) {
+		this.projectId = flow.getProjectId();
+		this.flowId = flow.getId();
+		this.version = flow.getVersion();
+		this.executionId = executionId;
+		
+		this.setFlow(flow);
+	}
+	
 	public ExecutableFlow() {
 	}
 	
@@ -207,6 +216,15 @@ public class ExecutableFlow {
 		exNode.setStatus(status);
 		return true;
 	}
+
+	public void setProxyNodes(int externalExecutionId, String nodeId) {
+		ExecutableNode exNode = executableNodes.get(nodeId);
+		if (exNode == null) {
+			return;
+		}
+		
+		exNode.setExternalExecutionId(externalExecutionId);
+	}
 	
 	public int getExecutionId() {
 		return executionId;
@@ -214,6 +232,10 @@ public class ExecutableFlow {
 
 	public void setExecutionId(int executionId) {
 		this.executionId = executionId;
+		
+		for(ExecutableNode node: executableNodes.values()) {
+			node.setExecutionId(executionId);
+		}
 	}
 
 	public String getFlowId() {

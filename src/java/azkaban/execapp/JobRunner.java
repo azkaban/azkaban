@@ -83,14 +83,13 @@ public class JobRunner extends EventHandler implements Runnable {
 			logger = Logger.getLogger(loggerName);
 
 			// Create file appender
-
-			String logName = "_job." + executionId + "." + node.getJobId() + ".log";
+			String logName = node.getAttempt() > 0 ? "_job." + executionId + "." + node.getAttempt() + "." + node.getJobId() + ".log" : "_job." + executionId + "." + node.getJobId() + ".log";
 			logFile = new File(workingDir, logName);
 			String absolutePath = logFile.getAbsolutePath();
 
 			jobAppender = null;
 			try {
-				FileAppender fileAppender = new FileAppender(loggerLayout, absolutePath, false);
+				FileAppender fileAppender = new FileAppender(loggerLayout, absolutePath, true);
 				
 				jobAppender = fileAppender;
 				logger.addAppender(jobAppender);
@@ -110,7 +109,7 @@ public class JobRunner extends EventHandler implements Runnable {
 	private void writeStatus() {
 		try {
 			node.setUpdateTime(System.currentTimeMillis());
-			loader.updateExecutableNode(node, outputProps);
+			loader.updateExecutableNode(node);
 		} catch (ExecutorManagerException e) {
 			logger.error("Error writing node properties", e);
 		}
@@ -159,7 +158,7 @@ public class JobRunner extends EventHandler implements Runnable {
 			
 			if (logFile != null) {
 				try {
-					loader.uploadLogFile(executionId, node.getJobId(), logFile);
+					loader.uploadLogFile(executionId, node.getJobId(), node.getAttempt(), logFile);
 				} catch (ExecutorManagerException e) {
 					System.err.println("Error writing out logs for job " + node.getJobId());
 				}
@@ -192,7 +191,12 @@ public class JobRunner extends EventHandler implements Runnable {
 				return false;
 			}
 
-			logInfo("Starting job " + node.getJobId() + " at " + node.getStartTime());
+			if (node.getAttempt() > 0) {
+				logInfo("Starting job " + node.getJobId() + " attempt " + node.getAttempt() + " at " + node.getStartTime());
+			}
+			else {
+				logInfo("Starting job " + node.getJobId() + " at " + node.getStartTime());
+			}
 			node.setStatus(Status.RUNNING);
 
 			// Ability to specify working directory
@@ -220,6 +224,7 @@ public class JobRunner extends EventHandler implements Runnable {
 		node.setStatus(Status.SUCCEEDED);
 		if (job != null) {
 			outputProps = job.getJobGeneratedProperties();
+			node.setOutputProps(outputProps);
 		}
 	}
 
@@ -266,5 +271,4 @@ public class JobRunner extends EventHandler implements Runnable {
 	public File getLogFile() {
 		return logFile;
 	}
-
 }

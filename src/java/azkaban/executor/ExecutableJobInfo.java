@@ -14,8 +14,9 @@ public class ExecutableJobInfo {
 	private final long startTime;
 	private final long endTime;
 	private final Status status;
+	private final int attempt;
 	
-	public ExecutableJobInfo(int execId, int projectId, int version, String flowId, String jobId, long startTime, long endTime, Status status) {
+	public ExecutableJobInfo(int execId, int projectId, int version, String flowId, String jobId, long startTime, long endTime, Status status, int attempt) {
 		this.execId = execId;
 		this.projectId = projectId;
 		this.startTime = startTime;
@@ -24,6 +25,7 @@ public class ExecutableJobInfo {
 		this.version = version;
 		this.flowId = flowId;
 		this.jobId = jobId;
+		this.attempt = attempt;
 	}
 
 	public int getProjectId() {
@@ -58,6 +60,10 @@ public class ExecutableJobInfo {
 		return status;
 	}
 	
+	public int getAttempt() {
+		return attempt;
+	}
+	
 	public Map<String, Object> toObject() {
 		HashMap<String, Object> map = new HashMap<String, Object>();
 		map.put("execId", execId);
@@ -67,6 +73,7 @@ public class ExecutableJobInfo {
 		map.put("startTime", startTime);
 		map.put("endTime", endTime);
 		map.put("status", status.toString());
+		map.put("attempt", attempt);
 		
 		return map;
 	}

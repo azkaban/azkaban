@@ -32,7 +32,6 @@ import javax.servlet.http.HttpServletResponse;
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutableNode;
 import azkaban.executor.ExecutableFlow.FailureAction;
-import azkaban.executor.ExecutionReference;
 import azkaban.executor.ExecutorManager;
 import azkaban.executor.ExecutableFlow.Status;
 import azkaban.executor.ExecutorManagerException;
@@ -264,6 +263,9 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 				else if (ajaxName.equals("fetchExecJobLogs")) {
 					ajaxFetchJobLogs(req, resp, ret, session.getUser(), exFlow);
 				}
+				else if (ajaxName.equals("retryFailedJobs")) {
+					ajaxRestartFailed(req, resp, ret, session.getUser(), exFlow);
+				}
 				else if (ajaxName.equals("flowInfo")) {
 					//String projectName = getParam(req, "project");
 					//Project project = projectManager.getProject(projectName);
@@ -295,6 +297,27 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 		}
 	}
 
+	private void ajaxRestartFailed(HttpServletRequest req, HttpServletResponse resp, HashMap<String, Object> ret, User user, ExecutableFlow exFlow) throws ServletException {
+		Project project = getProjectAjaxByPermission(ret, exFlow.getProjectId(), user, Type.EXECUTE);
+		if (project == null) {
+			return;
+		}
+		
+		if (exFlow.getStatus() == Status.FAILED || exFlow.getStatus() == Status.SUCCEEDED) {
+			ret.put("error", "Flow has already finished. Please re-execute.");
+			return;
+		}
+		
+		String jobs = getParam(req, "jobIds");
+		String[] jobIds = jobs.split("\\s*,\\s*");
+		
+		try {
+			executorManager.retryExecutingJobs(exFlow, user.getUserId(), jobIds);
+		} catch (ExecutorManagerException e) {
+			ret.put("error", e.getMessage());
+		}
+	}
+	
 	/**
 	 * Gets the logs through plain text stream to reduce memory overhead.
 	 * 
@@ -349,11 +372,19 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 		
 		int offset = this.getIntParam(req, "offset");
 		int length = this.getIntParam(req, "length");
+		
 		String jobId = this.getParam(req, "jobId");
 		resp.setCharacterEncoding("utf-8");
 
 		try {
-			LogData data = executorManager.getExecutionJobLog(exFlow, jobId, offset, length);
+			ExecutableNode node = exFlow.getExecutableNode(jobId);
+			if (node == null) {
+				ret.put("error", "Job " + jobId + " doesn't exist in " + exFlow.getExecutionId());
+				return;
+			}
+			
+			int attempt = this.getIntParam(req, "attempt", node.getAttempt());
+			LogData data = executorManager.getExecutionJobLog(exFlow, jobId, offset, length, attempt);
 			if (data == null) {
 				ret.put("length", 0);
 				ret.put("offset", offset);
@@ -552,6 +583,15 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 			nodeObj.put("startTime", node.getStartTime());
 			nodeObj.put("endTime", node.getEndTime());
 			
+			// Add past attempts
+			if (node.getPastAttemptList() != null) {
+				ArrayList<Object> pastAttempts = new ArrayList<Object>();
+				for (ExecutableNode.Attempt attempt: node.getPastAttemptList()) {
+					pastAttempts.add(attempt.toObject());
+				}
+				nodeObj.put("pastAttempts", pastAttempts);
+			}
+			
 			nodeList.add(nodeObj);
 			
 			// Add edges
@@ -651,13 +691,23 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 				}
 			}
 		}
-		else {
-			// Setup disabled
-			Map<String, String> paramGroup = this.getParamGroup(req, "disable");
-			for (Map.Entry<String, String> entry: paramGroup.entrySet()) {
-				boolean nodeDisabled = Boolean.parseBoolean(entry.getValue());
-	
-				exflow.setNodeStatus(entry.getKey(), nodeDisabled ? Status.DISABLED : Status.READY);
+		else if (hasParam(req, "disabled")) {
+			String disabled = getParam(req, "disabled");
+			String[] disabledNodes = disabled.split("\\s*,\\s*");
+			
+			for (String node: disabledNodes) {
+				if (!node.isEmpty()) {
+					exflow.setNodeStatus(node, Status.DISABLED);
+				}
+			}
+		}
+		
+		if (hasParam(req, "restartExecutionId")) {
+			int externalExecutionId = getIntParam(req, "restartExecutionId");
+			String proxyJobs = getParam(req, "proxyJobs");
+			String[] proxyJobsArray = proxyJobs.split("\\s*,\\s*");
+			for (String nodeId: proxyJobsArray) {
+				exflow.setProxyNodes(externalExecutionId, nodeId);
 			}
 		}
 		

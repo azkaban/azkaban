@@ -60,7 +60,7 @@ public class MockExecutorLoader implements ExecutorLoader {
 	}
 
 	@Override
-	public void uploadLogFile(int execId, String name, File... files) throws ExecutorManagerException {
+	public void uploadLogFile(int execId, String name, int attempt, File... files) throws ExecutorManagerException {
 
 	}
 
@@ -80,7 +80,7 @@ public class MockExecutorLoader implements ExecutorLoader {
 	}
 
 	@Override
-	public void updateExecutableNode(ExecutableNode node, Props outputParams) throws ExecutorManagerException {
+	public void updateExecutableNode(ExecutableNode node) throws ExecutorManagerException {
 		ExecutableNode foundNode = nodes.get(node.getJobId());
 		foundNode.setEndTime(node.getEndTime());
 		foundNode.setStartTime(node.getStartTime());
@@ -118,7 +118,7 @@ public class MockExecutorLoader implements ExecutorLoader {
 	}
 
 	@Override
-	public ExecutableJobInfo fetchJobInfo(int execId, String jobId)
+	public ExecutableJobInfo fetchJobInfo(int execId, String jobId, int attempt)
 			throws ExecutorManagerException {
 		// TODO Auto-generated method stub
 		return null;
@@ -131,7 +131,7 @@ public class MockExecutorLoader implements ExecutorLoader {
 	}
 
 	@Override
-	public LogData fetchLogs(int execId, String name, int startByte, int endByte) throws ExecutorManagerException {
+	public LogData fetchLogs(int execId, String name, int attempt, int startByte, int endByte) throws ExecutorManagerException {
 		// TODO Auto-generated method stub
 		return null;
 	}
@@ -160,6 +160,30 @@ public class MockExecutorLoader implements ExecutorLoader {
 	public int fetchNumExecutableNodes(int projectId, String jobId) throws ExecutorManagerException {
 		// TODO Auto-generated method stub
 		return 0;
+	}
+
+	@Override
+	public Props fetchExecutionJobInputProps(int execId, String jobId) throws ExecutorManagerException {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public Props fetchExecutionJobOutputProps(int execId, String jobId) throws ExecutorManagerException {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public Pair<Props, Props> fetchExecutionJobProps(int execId, String jobId) throws ExecutorManagerException {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public List<ExecutableJobInfo> fetchJobInfoAttempts(int execId, String jobId) throws ExecutorManagerException {
+		// TODO Auto-generated method stub
+		return null;
 	}
 
 

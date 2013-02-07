@@ -233,6 +233,23 @@ public class PropsUtils {
 		}
 	}
 	
+	@SuppressWarnings("unchecked")
+	public static Props fromHierarchicalMap(Map<String, Object> propsMap) {
+		if (propsMap == null) {
+			return null;
+		}
+		
+		String source = (String)propsMap.get("source");
+		Map<String, String> propsParams = (Map<String,String>)propsMap.get("props");
+		
+		Map<String,Object> parent = (Map<String,Object>)propsMap.get("parent");
+		Props parentProps = fromHierarchicalMap(parent);
+		
+		Props props = new Props(parentProps, propsParams);
+		props.setSource(source);
+		return props;
+	}
+	
 	public static Map<String,Object> toHierarchicalMap(Props props) {
 		Map<String,Object> propsMap = new HashMap<String,Object>();
 		propsMap.put("source", props.getSource());

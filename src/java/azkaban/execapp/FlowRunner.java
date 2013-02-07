@@ -33,6 +33,7 @@ import azkaban.executor.ExecutorLoader;
 import azkaban.executor.ExecutorManagerException;
 import azkaban.flow.FlowProps;
 import azkaban.jobtype.JobTypeManager;
+import azkaban.utils.Pair;
 import azkaban.utils.Props;
 
 public class FlowRunner extends EventHandler implements Runnable {
@@ -63,8 +64,11 @@ public class FlowRunner extends EventHandler implements Runnable {
 	private JobRunnerEventListener listener = new JobRunnerEventListener();
 	private BlockingQueue<JobRunner> jobsToRun = new LinkedBlockingQueue<JobRunner>();
 	private Map<String, JobRunner> runningJob = new ConcurrentHashMap<String, JobRunner>();
-	private Map<String, JobRunner> allJobs = new ConcurrentHashMap<String, JobRunner>();
+	private Map<Pair<String, Integer>, JobRunner> allJobs = new ConcurrentHashMap<Pair<String, Integer>, JobRunner>();
 	private List<JobRunner> pausedJobsToRun = Collections.synchronizedList(new ArrayList<JobRunner>());
+	
+	// Used for individual job pausing
+	private Map<String, ExecutableNode> pausedNode = new ConcurrentHashMap<String, ExecutableNode>();
 	
 	private Object actionSyncObj = new Object();
 	private boolean flowPaused = false;
@@ -173,7 +177,7 @@ public class FlowRunner extends EventHandler implements Runnable {
 			flowAppender.close();
 			
 			try {
-				executorLoader.uploadLogFile(execId, "", logFile);
+				executorLoader.uploadLogFile(execId, "", 0, logFile);
 			} catch (ExecutorManagerException e) {
 				e.printStackTrace();
 			}
@@ -238,7 +242,7 @@ public class FlowRunner extends EventHandler implements Runnable {
 					}
 					else {
 						runningJob.put(node.getJobId(), runner);
-						allJobs.put(node.getJobId(), runner);
+						allJobs.put(new Pair<String, Integer>(node.getJobId(), node.getAttempt()), runner);
 						executorService.submit(runner);
 						logger.info("Job Started " + node.getJobId());
 					}
@@ -363,12 +367,13 @@ public class FlowRunner extends EventHandler implements Runnable {
 	
 	public void cancel(String user) {
 		synchronized(actionSyncObj) {
+			logger.info("Flow cancelled by " + user);
 			flowPaused = false;
 			flowCancelled = true;
 			
 			for (JobRunner runner: pausedJobsToRun) {
 				ExecutableNode node = runner.getNode();
-				logger.info("Resumed flow is cancelled. Job killed " + node.getJobId());
+				logger.info("Resumed flow is cancelled. Job killed " + node.getJobId() + " by " + user);
 				node.setStatus(Status.KILLED);
 
 				jobsToRun.add(runner);
@@ -382,8 +387,189 @@ public class FlowRunner extends EventHandler implements Runnable {
 				flow.setStatus(Status.KILLED);
 			}
 
+			for (ExecutableNode node: pausedNode.values()) {
+				node.setStatus(Status.KILLED);
+				node.setPaused(false);
+				queueNextJob(node);
+			}
+			
 			updateFlow();
 			interrupt();
+		}
+	}
+	
+	public void cancelJob(String jobId, String user)  throws ExecutorManagerException {
+		synchronized(actionSyncObj) {
+			logger.info("Cancel of job " + jobId + " called by user " + user);
+			JobRunner runner = runningJob.get(jobId);
+			ExecutableNode node = flow.getExecutableNode(jobId);
+			if (runner != null) {
+				runner.cancel();
+			}
+			else {
+				Status status = node.getStatus();
+				if(status == Status.FAILED || status == Status.SUCCEEDED || status == Status.SKIPPED) {
+					throw new ExecutorManagerException("Can't cancel finished job " + jobId + " with status " + status);
+				}
+				
+				node.setStatus(Status.KILLED);
+				if (node.isPaused()) {
+					node.setPaused(false);
+					queueNextJob(node);
+				}
+			}
+		}
+	}
+	
+	public void resumeJob(String jobId, String user) throws ExecutorManagerException {
+		synchronized(actionSyncObj) {
+			if (runningJob.containsKey(jobId)) {
+				throw new ExecutorManagerException("Resume of job " + jobId + " failed since it's already running. User " + user);
+			}
+			else {
+				logger.info("Resume of job " + jobId + " requested by " + user);
+				ExecutableNode node = flow.getExecutableNode(jobId);
+				if (node == null) {
+					throw new ExecutorManagerException("Job " + jobId + " doesn't exist in execution " + flow.getExecutionId() + ". Cannot pause.");
+				}
+			
+				if (node.isPaused()) {
+					node.setPaused(false);
+					if (pausedNode.containsKey(jobId)) {
+						queueNextJob(node);
+					}
+					
+					updateFlow();
+				}
+			}
+		}
+	}
+	
+	public void pauseJob(String jobId, String user) throws ExecutorManagerException {
+		synchronized(actionSyncObj) {
+			if (runningJob.containsKey(jobId)) {
+				throw new ExecutorManagerException("Pause of job " + jobId + " failed since it's already running. User " + user);
+			}
+			else {
+				logger.info("Pause of job " + jobId + " requested by " + user);
+				ExecutableNode node = flow.getExecutableNode(jobId);
+				if (node == null) {
+					throw new ExecutorManagerException("Job " + jobId + " doesn't exist in execution " + flow.getExecutionId() + ". Cannot pause.");
+				}
+			
+				long startTime = node.getStartTime();
+				if (startTime < 0) {
+					node.setPaused(true);
+					updateFlow();
+				}
+				else {
+					throw new ExecutorManagerException("Cannot pause job " + jobId + " that's started.");	
+				}
+			}
+		}
+	}
+	
+	public void disableJob(String jobId, String user) throws ExecutorManagerException {
+		// Disable and then check to see if it's set.
+		synchronized(actionSyncObj) {
+			if (runningJob.containsKey(jobId)) {
+				throw new ExecutorManagerException("Disable of job " + jobId + " failed since it's already running. User " + user);
+			}
+			else {
+				logger.info("Disable of job " + jobId + " requested by " + user);
+				ExecutableNode node = flow.getExecutableNode(jobId);
+				if (node == null) {
+					throw new ExecutorManagerException("Job " + jobId + " doesn't exist in execution " + flow.getExecutionId() + ". Cannot disable.");
+				}
+			
+				Status status = node.getStatus();
+				if (status == Status.DISABLED || status == Status.READY) {
+					node.setStatus(Status.DISABLED);
+					updateFlow();
+				}
+				else {
+					throw new ExecutorManagerException("Cannot disable job " + jobId + " with status " + status.toString());	
+				}
+			}
+		}
+	}
+	
+	public void enableJob(String jobId, String user) throws ExecutorManagerException {
+		// Disable and then check to see if it's set.
+		synchronized(actionSyncObj) {
+			if (runningJob.containsKey(jobId)) {
+				throw new ExecutorManagerException("Enable of job " + jobId + " failed since it's already running. User " + user);
+			}
+			else {
+				logger.info("Enable of job " + jobId + " requested by " + user);
+				ExecutableNode node = flow.getExecutableNode(jobId);
+				if (node == null) {
+					throw new ExecutorManagerException("Job " + jobId + " doesn't exist in execution " + flow.getExecutionId() + ". Cannot enable.");
+				}
+			
+				Status status = node.getStatus();
+				if (status == Status.DISABLED || status == Status.READY) {
+					node.setStatus(Status.READY);
+					updateFlow();
+				}
+				else {
+					throw new ExecutorManagerException("Cannot enable job " + jobId + " with status " + status.toString());	
+				}
+			}
+		}
+	}
+	
+	public void retryJobs(String[] jobIds, String user) {
+		synchronized(actionSyncObj) {
+			for (String jobId: jobIds) {
+				if (runningJob.containsKey(jobId)) {
+					logger.error("Cannot retry job " + jobId + " since it's already running. User " + user);
+					continue;
+				}
+				else {
+					logger.info("Retry of job " + jobId + " requested by " + user);
+					ExecutableNode node = flow.getExecutableNode(jobId);
+					if (node == null) {
+						logger.error("Job " + jobId + " doesn't exist in execution " + flow.getExecutionId() + ". Cannot disable.");
+					}
+				
+					Status status = node.getStatus();
+					if (status == Status.FAILED || status == Status.READY || status == Status.KILLED) {
+						node.resetForRetry();
+						reEnableDependents(node);
+					}
+					else {
+						logger.error("Cannot retry a job that hasn't finished. " + jobId);
+					}
+				}
+			}
+			
+			boolean isFailureFound = false;
+			for (ExecutableNode node: flow.getExecutableNodes()) {
+				Status nodeStatus = node.getStatus();
+				if (nodeStatus == Status.FAILED || nodeStatus == Status.KILLED) {
+					isFailureFound = true;
+					break;
+				}
+			}
+			
+			if (!isFailureFound) {
+				flow.setStatus(Status.RUNNING);
+			}
+			
+			updateFlow();
+		}
+	}
+	
+	private void reEnableDependents(ExecutableNode node) {
+		for(String dependent: node.getOutNodes()) {
+			ExecutableNode dependentNode = flow.getExecutableNode(dependent);
+			
+			if (dependentNode.getStatus() == Status.KILLED) {
+				dependentNode.setStatus(Status.READY);
+				dependentNode.setUpdateTime(System.currentTimeMillis());
+				reEnableDependents(dependentNode);
+			}
 		}
 	}
 	
@@ -435,50 +621,70 @@ public class FlowRunner extends EventHandler implements Runnable {
 		return Status.READY;
 	}
 	
-	private synchronized void queueNextJobs(ExecutableNode node) {
-		for (String dependent : node.getOutNodes()) {
+	/**
+	 * Iterates through the finished jobs dependents.
+	 * 
+	 * @param node
+	 */
+	private synchronized void queueNextJobs(ExecutableNode finishedNode) {
+		for (String dependent : finishedNode.getOutNodes()) {
 			ExecutableNode dependentNode = flow.getExecutableNode(dependent);
-			
-			Status nextStatus = getImpliedStatus(dependentNode);
-			if (nextStatus == null) {
-				// Not yet ready or not applicable
-				continue;
-			}
-
-			dependentNode.setStatus(nextStatus);
-
-			Props previousOutput = null;
-			// Iterate the in nodes again and create the dependencies
-			for (String dependency : dependentNode.getInNodes()) {
-				Props output = jobOutputProps.get(dependency);
-				if (output != null) {
-					output = Props.clone(output);
-					output.setParent(previousOutput);
-					previousOutput = output;
-				}
-			}
-
-			JobRunner runner = this.createJobRunner(dependentNode, previousOutput);
-			synchronized(actionSyncObj) {
-				if (flowPaused) {
-					if (dependentNode.getStatus() != Status.DISABLED && dependentNode.getStatus() != Status.KILLED) {
-						dependentNode.setStatus(Status.PAUSED);
-					}
-					pausedJobsToRun.add(runner);
-					logger.info("Job Paused " + dependentNode.getJobId());
-				}
-				else {
-					logger.info("Adding " + dependentNode.getJobId() + " to run queue.");
-					if (dependentNode.getStatus() != Status.DISABLED && dependentNode.getStatus() != Status.KILLED) {
-						dependentNode.setStatus(Status.QUEUED);
-					}
-
-					jobsToRun.add(runner);
-				}
-			}
+			queueNextJob(dependentNode);
 		}
 	}
 
+	/**
+	 * Queues node for running if it's ready to be run.
+	 * 
+	 * @param node
+	 */
+	private void queueNextJob(ExecutableNode node) {
+		Status nextStatus = getImpliedStatus(node);
+		if (nextStatus == null) {
+			// Not yet ready or not applicable
+			return;
+		}
+
+		node.setStatus(nextStatus);
+		
+		Props previousOutput = null;
+		// Iterate the in nodes again and create the dependencies
+		for (String dependency : node.getInNodes()) {
+			Props output = jobOutputProps.get(dependency);
+			if (output != null) {
+				output = Props.clone(output);
+				output.setParent(previousOutput);
+				previousOutput = output;
+			}
+		}
+
+		synchronized(actionSyncObj) {
+			//pausedNode
+			if (node.isPaused()) {
+				pausedNode.put(node.getJobId(), node);
+				logger.info("Job Paused " + node.getJobId());
+				return;
+			}
+			
+			JobRunner runner = this.createJobRunner(node, previousOutput);
+			if (flowPaused) {
+				if (node.getStatus() != Status.DISABLED && node.getStatus() != Status.KILLED) {
+					node.setStatus(Status.PAUSED);
+				}
+				pausedJobsToRun.add(runner);
+				logger.info("Flow Paused. Pausing " + node.getJobId());
+			}
+			else {
+				logger.info("Adding " + node.getJobId() + " to run queue.");
+				if (node.getStatus() != Status.DISABLED && node.getStatus() != Status.KILLED) {
+					node.setStatus(Status.QUEUED);
+				}
+
+				jobsToRun.add(runner);
+			}
+		}
+	}
+	
 	private class JobRunnerEventListener implements EventListener {
 		public JobRunnerEventListener() {
 		}
@@ -562,8 +768,8 @@ public class FlowRunner extends EventHandler implements Runnable {
 		return logFile;
 	}
 	
-	public File getJobLogFile(String jobId) {
-		JobRunner runner = allJobs.get(jobId);
+	public File getJobLogFile(String jobId, int attempt) {
+		JobRunner runner = allJobs.get(new Pair<String, Integer>(jobId, attempt));
 		if (runner == null) {
 			return null;
 		}

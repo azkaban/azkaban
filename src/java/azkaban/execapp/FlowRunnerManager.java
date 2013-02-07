@@ -324,6 +324,66 @@ public class FlowRunnerManager implements EventListener {
 		runner.resume(user);
 	}
 	
+	public void pauseJob(int execId, String jobId, String user) throws ExecutorManagerException {
+		FlowRunner runner = runningFlows.get(execId);
+		
+		if (runner == null) {
+			throw new ExecutorManagerException("Execution " + execId + " is not running.");
+		}
+		
+		runner.pauseJob(jobId, user);
+	}
+	
+	public void resumeJob(int execId, String jobId, String user) throws ExecutorManagerException {
+		FlowRunner runner = runningFlows.get(execId);
+		
+		if (runner == null) {
+			throw new ExecutorManagerException("Execution " + execId + " is not running.");
+		}
+		
+		runner.resumeJob(jobId, user);
+	}
+	
+	public void retryJobs(int execId, String user, String ... jobId) throws ExecutorManagerException {
+		FlowRunner runner = runningFlows.get(execId);
+		
+		if (runner == null) {
+			throw new ExecutorManagerException("Execution " + execId + " is not running.");
+		}
+		
+		runner.retryJobs(jobId, user);
+	}
+	
+	public void disableJob(int execId, String user, String jobId) throws ExecutorManagerException {
+		FlowRunner runner = runningFlows.get(execId);
+		
+		if (runner == null) {
+			throw new ExecutorManagerException("Execution " + execId + " is not running.");
+		}
+		
+		runner.disableJob(jobId, user);
+	}
+	
+	public void enableJob(int execId, String user, String jobId) throws ExecutorManagerException {
+		FlowRunner runner = runningFlows.get(execId);
+		
+		if (runner == null) {
+			throw new ExecutorManagerException("Execution " + execId + " is not running.");
+		}
+		
+		runner.enableJob(jobId, user);
+	}
+	
+	public void cancelJob(int execId, String user, String jobId) throws ExecutorManagerException {
+		FlowRunner runner = runningFlows.get(execId);
+		
+		if (runner == null) {
+			throw new ExecutorManagerException("Execution " + execId + " is not running.");
+		}
+		
+		runner.cancelJob(jobId, user);
+	}
+	
 	public ExecutableFlow getExecutableFlow(int execId) {
 		FlowRunner runner = runningFlows.get(execId);
 		if (runner == null) {
@@ -384,7 +444,7 @@ public class FlowRunnerManager implements EventListener {
 		throw new ExecutorManagerException("Error reading file. Log directory doesn't exist.");
 	}
 	
-	public LogData readJobLogs(int execId, String jobId, int startByte, int length) throws ExecutorManagerException {
+	public LogData readJobLogs(int execId, String jobId, int attempt, int startByte, int length) throws ExecutorManagerException {
 		FlowRunner runner = runningFlows.get(execId);
 		if (runner == null) {
 			throw new ExecutorManagerException("Running flow " + execId + " not found.");
@@ -397,7 +457,7 @@ public class FlowRunnerManager implements EventListener {
 					if (!dir.exists()) {
 						throw new ExecutorManagerException("Execution dir file doesn't exist. Probably has beend deleted");
 					}
-					File logFile = runner.getJobLogFile(jobId);
+					File logFile = runner.getJobLogFile(jobId, attempt);
 					if (logFile != null && logFile.exists()) {
 						return FileIOUtils.readUtf8File(logFile, startByte, length);
 					}

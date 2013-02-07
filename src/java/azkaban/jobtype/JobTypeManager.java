@@ -183,7 +183,6 @@ public class JobTypeManager
 	@SuppressWarnings("unchecked")
 	private void loadJob(File dir, Props commonConf, Props commonSysConf) throws JobTypeManagerException{
 		
-		
 		Props conf = null;
 		Props sysConf = null;
 		File confFile = findFilefromDir(dir, JOBTYPECONFFILE);		
@@ -250,7 +249,6 @@ public class JobTypeManager
 	
 	public Job buildJobExecutor(String jobId, Props jobProps, Logger logger) throws JobTypeManagerException
 	{
-
 		Job job;
 		try {
 			String jobType = jobProps.getString("type");
@@ -260,13 +258,13 @@ public class JobTypeManager
 						String.format("The 'type' parameter for job[%s] is null or empty", jobProps, logger));
 			}
 			
-			logger.info("Building " + jobType + " job executor. ");		
+			logger.info("Building " + jobType + " job executor. ");
 			
 			Class<? extends Object> executorClass = jobToClass.get(jobType);
 
 			if (executorClass == null) {
 				throw new JobExecutionException(
-						String.format("Could not construct job[%s] of type[%s].", jobProps, jobType));
+						String.format("Job type '" + jobType + "' is unrecognized. Could not construct job[%s] of type[%s].", jobProps, jobType));
 			}
 			
 			Props sysConf = jobtypeSysProps.get(jobType);

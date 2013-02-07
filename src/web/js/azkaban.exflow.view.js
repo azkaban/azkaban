@@ -76,6 +76,7 @@ azkaban.FlowTabView= Backbone.View.extend({
   	"click #executebtn" : "handleRestartClick",
   	"click #pausebtn" : "handlePauseClick",
   	"click #resumebtn" : "handleResumeClick",
+  	"click #retrybtn" : "handleRetryClick"
   },
   initialize : function(settings) {
   	$("#cancelbtn").hide();
@@ -130,6 +131,7 @@ azkaban.FlowTabView= Backbone.View.extend({
   	$("#executebtn").hide();
   	$("#pausebtn").hide();
   	$("#resumebtn").hide();
+  	$("#retrybtn").hide();
 
   	if(data.status=="SUCCEEDED") {
   	  	$("#executebtn").show();
@@ -139,7 +141,8 @@ azkaban.FlowTabView= Backbone.View.extend({
   	}
   	else if (data.status=="FAILED_FINISHING") {
   		$("#cancelbtn").show();
-  		$("#executebtn").show();
+  		$("#executebtn").hide();
+  		$("#retrybtn").show();
   	}
   	else if (data.status=="RUNNING") {
   		$("#cancelbtn").show();
@@ -169,6 +172,36 @@ azkaban.FlowTabView= Backbone.View.extend({
           else {
             showDialog("Cancelled", "Flow has been cancelled.");
 
+            setTimeout(function() {updateStatus();}, 1100);
+          }
+      	}
+      );
+  },
+  handleRetryClick : function(evt) {
+      var graphData = graphModel.get("data");
+  
+  	  var failedJobs = new Array();
+  	  var failedJobStr = "";
+  	  var nodes = graphData.nodes;
+  	  for (var i = 0; i < nodes.length; ++i) {
+		var node = nodes[i];
+		if(node.status=='FAILED') {
+			failedJobs.push(node.id);
+		} 
+  	  }
+  	  failedJobStr = failedJobs.join();
+  
+      var requestURL = contextURL + "/executor";
+	  ajaxCall(
+		requestURL,
+		{"execid": execId, "ajax":"retryFailedJobs", "jobIds":failedJobStr},
+		function(data) {
+          console.log("cancel clicked");
+          if (data.error) {
+          	showDialog("Error", data.error);
+          }
+          else {
+            showDialog("Retry", "Flow has been retried.");
             setTimeout(function() {updateStatus();}, 1100);
           }
       	}

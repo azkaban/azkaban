@@ -84,6 +84,7 @@
 							<li><div id="pausebtn" class="btn2">Pause</div></li>
 							<li><div id="resumebtn" class="btn2">Resume</div></li>
 							<li><div id="cancelbtn" class="btn6">Cancel</div></li>
+							<li><div id="retrybtn" class="btn1">Retry Failed</div></li>
 							<li><div id="executebtn" class="btn1">Prepare Execution</div></li>
 						</ul>
 					</div>
@@ -142,6 +143,7 @@
 
 #parse( "azkaban/webapp/servlet/velocity/executionoptionspanel.vm" )
 #end
+
 		<ul id="jobMenu" class="contextMenu">  
 			<li class="open"><a href="#open">Open...</a></li>
 			<li class="openwindow"><a href="#openwindow">Open in New Window...</a></li>
