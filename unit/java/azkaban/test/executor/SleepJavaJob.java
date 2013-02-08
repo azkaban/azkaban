@@ -56,7 +56,8 @@ public class SleepJavaJob {
 		if (fail) {
 			if (attempts <= 0 || attemptFiles == null || attemptFiles.length > attempts) {
 				File attemptFile = new File(file, id + "." + (attemptFiles == null ? 0 : attemptFiles.length));
-				attemptFile.mkdir();
+
+				attemptFile.mkdirs();
 				throw new Exception("I failed because I had to.");
 			}
 		}

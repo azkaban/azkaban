@@ -345,10 +345,12 @@ azkaban.ExecutionListView = Backbone.View.extend({
 		var flowStartTime = data.startTime;
 		
 		var outerWidth = $(".outerProgress").css("width");
-		if (outerWidth.substring(outerWidth.length - 2, outerWidth.length) == "px") {
-			outerWidth = outerWidth.substring(0, outerWidth.length - 2);
+		if (outerWidth) {
+			if (outerWidth.substring(outerWidth.length - 2, outerWidth.length) == "px") {
+				outerWidth = outerWidth.substring(0, outerWidth.length - 2);
+			}
+			outerWidth = parseInt(outerWidth);
 		}
-		outerWidth = parseInt(outerWidth);
 		
 		var nodes = data.nodes;
 		for (var i = 0; i < nodes.length; ++i) {

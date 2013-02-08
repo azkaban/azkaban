@@ -541,6 +541,8 @@ public class FlowRunner extends EventHandler implements Runnable {
 					else {
 						logger.error("Cannot retry a job that hasn't finished. " + jobId);
 					}
+					
+					queueNextJob(node);
 				}
 			}
 			
@@ -555,6 +557,7 @@ public class FlowRunner extends EventHandler implements Runnable {
 			
 			if (!isFailureFound) {
 				flow.setStatus(Status.RUNNING);
+				flow.setUpdateTime(System.currentTimeMillis());
 			}
 			
 			updateFlow();
