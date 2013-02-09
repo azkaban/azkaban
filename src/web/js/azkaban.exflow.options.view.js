@@ -233,7 +233,7 @@ azkaban.ExecuteFlowView = Backbone.View.extend({
 	  	var successEmails = $('#successEmails').val();
 	  	var notifyFailureFirst = $('#notifyFailureFirst').is(':checked');
 	  	var notifyFailureLast = $('#notifyFailureLast').is(':checked');
-	  	var executingJobOption = $('input:radio[name=gender]:checked').val();
+	  	//var executingJobOption = $("input[@name=concurrent]:checked").val();
 	  	
 	  	var flowOverride = {};
 	  	var editRows = $(".editRow");
@@ -266,7 +266,7 @@ azkaban.ExecuteFlowView = Backbone.View.extend({
 	  		successEmails: successEmails,
 	  		notifyFailureFirst: notifyFailureFirst,
 	  		notifyFailureLast: notifyFailureLast,
-	  		executingJobOption: executingJobOption,
+//	  		executingJobOption: executingJobOption,
 	  		flowOverride: flowOverride
 	  	};
 	  	

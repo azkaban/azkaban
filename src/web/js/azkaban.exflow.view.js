@@ -183,11 +183,28 @@ azkaban.FlowTabView= Backbone.View.extend({
   	  var failedJobs = new Array();
   	  var failedJobStr = "";
   	  var nodes = graphData.nodes;
+	  
   	  for (var i = 0; i < nodes.length; ++i) {
 		var node = nodes[i];
 		if(node.status=='FAILED') {
 			failedJobs.push(node.id);
-		} 
+		}
+		else if (node.status=='KILLED') {
+			// Nodes can be in a killed state, even if the parents have succeeded due to failure option Finish running
+			// We want to re-enable those.
+			var shouldAdd = true;
+			for(var key in node.in) {
+				var dependency = node.in[key];
+				if (dependency.status != 'SUCCEEDED' && dependency.status!='SKIPPED') {
+					shouldAdd = false;
+					break;
+				}
+			}
+			
+			if (shouldAdd) {
+				failedJobs.push(node.id);
+			}
+		}
   	  }
   	  failedJobStr = failedJobs.join();
   
@@ -343,7 +360,7 @@ azkaban.ExecutionListView = Backbone.View.extend({
 		
 		var flowLastTime = data.endTime == -1 ? (new Date()).getTime() : data.endTime;
 		var flowStartTime = data.startTime;
-		
+
 		var outerWidth = $(".outerProgress").css("width");
 		if (outerWidth) {
 			if (outerWidth.substring(outerWidth.length - 2, outerWidth.length) == "px") {
@@ -353,20 +370,60 @@ azkaban.ExecutionListView = Backbone.View.extend({
 		}
 		
 		var nodes = data.nodes;
+		
 		for (var i = 0; i < nodes.length; ++i) {
 			var node = nodes[i];
-		
 			// calculate the progress
 			var diff = flowLastTime - flowStartTime;
 			
 			var factor = outerWidth/diff;
-			var left = Math.max((node.startTime-flowStartTime)*factor, 0);
+
+			var offsetLeft = 0;
+			var minOffset = 0;
+			// Add all the attempts
+			if (node.attempt > 0) {
+				var logURL = contextURL + "/executor?execid=" + execId + "&job=" + node.id + "&attempt=" + node.attempt;
+				var aId = node.id + "-log-link";
+				$("#" + aId).attr("href", logURL);
+				
+				/*
+				minOffset = 1;
+				var pastAttempts = node.pastAttempts;
+				for (var j = 0; j < pastAttempts.length; ++j) {
+					var past = pastAttempts[j];
+					var id = node.id + "-past-progress-" + j;
+
+					if ($("#" + id).length == 0) {
+						var attemptBox = document.createElement("div");
+						$(attemptBox).attr("id", id);
+						$(attemptBox).addClass("progressBox");
+						$("#" + node.id + "-outerprogressbar").append(attemptBox);
+						$(attemptBox).css("float","left");
+					}
+
+					var attemptBox = $("#" + id);
+					
+					var absoluteLeft = Math.max((past.startTime-flowStartTime)*factor, 3);
+					var left = absoluteLeft - offsetLeft;
+					var width = Math.max((past.endTime - past.startTime)*factor, 1);
+					
+					$(attemptBox).css("margin-left", left)
+					$(attemptBox).css("width", width);
+					$(attemptBox).addClass(past.status);
+					offsetLeft += left + width;
+				}
+				*/
+			}
+
+			var absoluteLeft = Math.max((node.startTime-flowStartTime)*factor, minOffset);
+			var left = absoluteLeft - offsetLeft;
 			var nodeLastTime = node.endTime == -1 ? (new Date()).getTime() : node.endTime;
 			var width = Math.max((nodeLastTime - node.startTime)*factor, 3);
 			width = Math.min(width, outerWidth);
 			
-			$("#" + node.id + "-progressbar").css("margin-left", left)
-			$("#" + node.id + "-progressbar").css("width", width);
+			var elem = $("#" + node.id + "-progressbar");
+			elem.css("margin-left", left)
+			elem.css("width", width);
 		}
 	},
 	addNodeRow: function(node) {
@@ -395,6 +452,7 @@ azkaban.ExecutionListView = Backbone.View.extend({
 		$(tdStatus).attr("id", node.id + "-status");
 
 		var outerProgressBar = document.createElement("div");
+		$(outerProgressBar).attr("id", node.id + "-outerprogressbar");
 		$(outerProgressBar).addClass("outerProgress");
 
 		var progressBox = document.createElement("div");
@@ -416,8 +474,13 @@ azkaban.ExecutionListView = Backbone.View.extend({
 		tdStatus.appendChild(status);
 
 		var logURL = contextURL + "/executor?execid=" + execId + "&job=" + node.id;
+		if (node.attempt) {
+			logURL += "&attempt=" + node.attempt;
+		}
+
 		var a = document.createElement("a");
 		$(a).attr("href", logURL);
+		$(a).attr("id", node.id + "-log-link");
 		$(a).text("Log");
 		$(tdLog).addClass("logLink");
 		$(tdLog).append(a);
@@ -496,6 +559,10 @@ var updateStatus = function() {
 	          	oldNode.updateTime = node.updateTime;
 	          	oldNode.endTime = node.endTime;
 	          	oldNode.status = node.status;
+	          	oldNode.attempt = node.attempt;
+	          	if (oldNode.attempt > 0) {
+	          		oldNode.pastAttempts = node.pastAttempts;
+	          	}
 	          }
 
 	          graphModel.set({"update": data});
@@ -574,6 +641,21 @@ $(function() {
 	             nodeMap[node.id] = node;
 	             updateTime = Math.max(updateTime, node.startTime);
 	             updateTime = Math.max(updateTime, node.endTime);
+	          }
+	          for (var i = 0; i < data.edges.length; ++i) {
+	          	 var edge = data.edges[i];
+	          	 
+	          	 if (!nodeMap[edge.target].in) {
+	          	 	nodeMap[edge.target].in = {};
+	          	 }
+	          	 var targetInMap = nodeMap[edge.target].in;
+	          	 targetInMap[edge.from] = nodeMap[edge.from];
+	          	 
+	          	 if (!nodeMap[edge.from].out) {
+	          	 	nodeMap[edge.from].out = {};
+	          	 }
+	          	 var sourceOutMap = nodeMap[edge.from].out;
+	          	 sourceOutMap[edge.target] = nodeMap[edge.target];
 	          }
 	          
 	          graphModel.set({nodeMap: nodeMap});

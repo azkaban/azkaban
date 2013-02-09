@@ -104,10 +104,14 @@
 	#foreach($job in $history)
 						<tr>
 							<td class="first">
+								#if ($job.attempt > 0)
+								<a href="${context}/executor?execid=${job.execId}">${job.execId}.${job.attempt}</a>
+								#else
 								<a href="${context}/executor?execid=${job.execId}">${job.execId}</a>
+								#end
 							</td>
 							<td>
-								<a href="${context}/manager?project=${projectName}&flow=${job.flowId}&job=${jobid}">$jobid</a>
+								<a href="${context}/manager?project=${projectName}&flow=${job.flowId}&job=${jobid}">${jobid}</a>
 							</td>
 							<td>
 								<a href="${context}/manager?project=${projectName}&flow=${job.flowId}">${job.flowId}</a>
@@ -117,7 +121,7 @@
 							<td>$utils.formatDuration(${job.startTime}, ${job.endTime})</td>
 							<td><div class="status ${job.status}">$utils.formatStatus(${job.status})</div></td>
 							<td class="logLink">
-								<a href="${context}/executor?execid=${job.execId}&job=${jobid}">Logs</a>
+								<a href="${context}/executor?execid=${job.execId}&job=${jobid}&attempt=${job.attempt}">Logs</a>
 							</td>
 						</tr>
 	#end

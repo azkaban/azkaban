@@ -521,6 +521,7 @@ public class FlowRunner extends EventHandler implements Runnable {
 	
 	public void retryJobs(String[] jobIds, String user) {
 		synchronized(actionSyncObj) {
+			ArrayList<ExecutableNode> jobsToBeQueued = new ArrayList<ExecutableNode>();
 			for (String jobId: jobIds) {
 				if (runningJob.containsKey(jobId)) {
 					logger.error("Cannot retry job " + jobId + " since it's already running. User " + user);
@@ -542,7 +543,7 @@ public class FlowRunner extends EventHandler implements Runnable {
 						logger.error("Cannot retry a job that hasn't finished. " + jobId);
 					}
 					
-					queueNextJob(node);
+					jobsToBeQueued.add(node);
 				}
 			}
 			
@@ -558,6 +559,11 @@ public class FlowRunner extends EventHandler implements Runnable {
 			if (!isFailureFound) {
 				flow.setStatus(Status.RUNNING);
 				flow.setUpdateTime(System.currentTimeMillis());
+				flowFailed = false;
+			}
+			
+			for (ExecutableNode node: jobsToBeQueued) {
+				queueNextJob(node);
 			}
 			
 			updateFlow();

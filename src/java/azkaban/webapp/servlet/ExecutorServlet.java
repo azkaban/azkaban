@@ -553,6 +553,11 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 			nodeObj.put("status", node.getStatus());
 			nodeObj.put("startTime", node.getStartTime());
 			nodeObj.put("endTime", node.getEndTime());
+			nodeObj.put("attempt", node.getAttempt());
+			
+			if (node.getAttempt() > 0) {
+				nodeObj.put("pastAttempts", node.getAttemptObjects());
+			}
 			
 			nodeList.add(nodeObj);
 		}

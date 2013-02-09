@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import azkaban.executor.ExecutableNode.Attempt;
 import azkaban.flow.Edge;
 import azkaban.flow.Flow;
 import azkaban.flow.FlowProps;
@@ -380,6 +381,15 @@ public class ExecutableFlow {
 				updatedNodeMap.put("startTime", node.getStartTime());
 				updatedNodeMap.put("endTime", node.getEndTime());
 				updatedNodeMap.put("updateTime", node.getUpdateTime());
+				updatedNodeMap.put("attempt", node.getAttempt());
+				
+				if (node.getAttempt() > 0) {
+					ArrayList<Map<String,Object>> pastAttempts = new ArrayList<Map<String,Object>>();
+					for (Attempt attempt: node.getPastAttemptList()) {
+						pastAttempts.add(attempt.toObject());
+					}
+					updatedNodeMap.put("pastAttempts", pastAttempts);
+				}
 				
 				updatedNodes.add(updatedNodeMap);
 			}
@@ -389,8 +399,8 @@ public class ExecutableFlow {
 		return updateData;
 	}
 	
+	@SuppressWarnings("unchecked")
 	public void applyUpdateObject(Map<String, Object> updateData) {
-		@SuppressWarnings("unchecked")
 		List<Map<String,Object>> updatedNodes = (List<Map<String,Object>>)updateData.get("nodes");
 		for (Map<String,Object> node: updatedNodes) {
 			String jobId = (String)node.get("jobId");
@@ -398,12 +408,22 @@ public class ExecutableFlow {
 			long startTime = JSONUtils.getLongFromObject(node.get("startTime"));
 			long endTime = JSONUtils.getLongFromObject(node.get("endTime"));
 			long updateTime = JSONUtils.getLongFromObject(node.get("updateTime"));
-
+			
 			ExecutableNode exNode = executableNodes.get(jobId);
 			exNode.setEndTime(endTime);
 			exNode.setStartTime(startTime);
 			exNode.setUpdateTime(updateTime);
 			exNode.setStatus(status);
+			
+			int attempt = 0;
+			if (node.containsKey("attempt")) {
+				attempt = (Integer)node.get("attempt");
+				if (attempt > 0) {
+					exNode.updatePastAttempts((List<Object>)node.get("pastAttempts"));
+				}
+			}
+			
+			exNode.setAttempt(attempt);
 		}
 		
 		this.flowStatus = Status.fromInteger((Integer)updateData.get("status"));

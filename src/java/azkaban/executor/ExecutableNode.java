@@ -49,7 +49,7 @@ public class ExecutableNode {
 	
 	// Used if proxy node
 	private Integer externalExecutionId;
-	private List<Attempt> pastAttempts = null;
+	private ArrayList<Attempt> pastAttempts = null;
 	
 	public ExecutableNode(Node node, ExecutableFlow flow) {
 		jobId = node.getId();
@@ -68,9 +68,12 @@ public class ExecutableNode {
 	public void resetForRetry() {
 		Attempt pastAttempt = new Attempt(attempt, startTime, endTime, status);
 		attempt++;
-		if (pastAttempts == null) {
-			pastAttempts = new ArrayList<Attempt>();
-			pastAttempts.add(pastAttempt);
+		
+		synchronized (this) {
+			if (pastAttempts == null) {
+				pastAttempts = new ArrayList<Attempt>();
+				pastAttempts.add(pastAttempt);
+			}
 		}
 		
 		startTime = -1;
@@ -277,6 +280,41 @@ public class ExecutableNode {
 		this.paused = paused;
 	}
 	
+	public List<Object> getAttemptObjects() {
+		ArrayList<Object> array = new ArrayList<Object>();
+		
+		for (Attempt attempt: pastAttempts) {
+			array.add(attempt.toObject());
+		}
+		
+		return array;
+	}
+	
+	
+	public void updatePastAttempts(List<Object> pastAttemptsList) {
+		if (pastAttemptsList == null) {
+			return;
+		}
+		
+		synchronized (this) {
+			if (this.pastAttempts == null) {
+				this.pastAttempts = new ArrayList<Attempt>();
+			}
+
+			// We just check size because past attempts don't change
+			if (pastAttemptsList.size() <= this.pastAttempts.size()) {
+				return;
+			}
+
+			Object[] pastAttemptArray = pastAttemptsList.toArray();
+			for (int i = this.pastAttempts.size(); i < pastAttemptArray.length; ++i) {
+				Attempt attempt = Attempt.fromObject(pastAttemptArray[i]);
+				this.pastAttempts.add(attempt);
+			}
+		}
+
+	}
+
 	public static class Attempt {
 		private int attempt = 0;
 		private long startTime = -1;

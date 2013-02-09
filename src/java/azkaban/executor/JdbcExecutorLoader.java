@@ -391,7 +391,7 @@ public class JdbcExecutorLoader implements ExecutorLoader {
 
 	@Override
 	public void uploadExecutableNode(ExecutableNode node, Props inputProps) throws ExecutorManagerException {
-		final String INSERT_EXECUTION_NODE = "INSERT INTO execution_jobs (exec_id, project_id, version, flow_id, job_id, start_time, end_time, status, input_params, attempts) VALUES (?,?,?,?,?,?,?,?,?,?)";
+		final String INSERT_EXECUTION_NODE = "INSERT INTO execution_jobs (exec_id, project_id, version, flow_id, job_id, start_time, end_time, status, input_params, attempt) VALUES (?,?,?,?,?,?,?,?,?,?)";
 		
 		byte[] inputParam = null;
 		if (inputProps != null) {
@@ -426,7 +426,7 @@ public class JdbcExecutorLoader implements ExecutorLoader {
 	
 	@Override
 	public void updateExecutableNode(ExecutableNode node) throws ExecutorManagerException {
-		final String UPSERT_EXECUTION_NODE = "UPDATE execution_jobs SET start_time=?, end_time=?, status=?, output_params=? WHERE exec_id=? AND job_id=?";
+		final String UPSERT_EXECUTION_NODE = "UPDATE execution_jobs SET start_time=?, end_time=?, status=?, output_params=? WHERE exec_id=? AND job_id=? AND attempt=?";
 		
 		byte[] outputParam = null;
 		Props outputProps = node.getOutputProps();
@@ -448,7 +448,8 @@ public class JdbcExecutorLoader implements ExecutorLoader {
 					node.getStatus().getNumVal(), 
 					outputParam,
 					node.getFlow().getExecutionId(),
-					node.getJobId());
+					node.getJobId(),
+					node.getAttempt());
 		} catch (SQLException e) {
 			throw new ExecutorManagerException("Error updating job " + node.getJobId(), e);
 		}
