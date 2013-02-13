@@ -569,7 +569,7 @@ public class ExecutorManager {
 		return flow;
 	}
 	
-	private boolean isFinished(ExecutableFlow flow) {
+	public boolean isFinished(ExecutableFlow flow) {
 		switch(flow.getStatus()) {
 		case SUCCEEDED:
 		case FAILED:

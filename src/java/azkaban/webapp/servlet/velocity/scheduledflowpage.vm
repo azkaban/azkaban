@@ -68,11 +68,11 @@
 							<!--th class="execid">Execution Id</th-->
 							<th>Flow</th>
 							<th>Project</th>
-							<th>User</th>
 							<th>Submitted By</th>
 							<th class="date">First Scheduled to Run</th>
 							<th class="date">Next Execution Time</th>
 							<th class="date">Repeats Every</th>
+							<th>Has SLA</th>
 							<th colspan="2" class="action">Action</th>
 						</tr>
 					</thead>
@@ -88,10 +88,10 @@
 								<a href="${context}/manager?project=${sched.projectName}">${sched.projectName}</a>
 							</td>
 							<td>${sched.submitUser}</td>
-							<td>${sched.submitUser}</td>
 							<td>$utils.formatDateTime(${sched.firstSchedTime})</td>
 							<td>$utils.formatDateTime(${sched.nextExecTime})</td>
 							<td>$utils.formatPeriod(${sched.period})</td>
+							<td>#if(${sched.slaOptions}) true #else false #end</td>
 							<td><button id="removeSchedBtn" onclick="removeSched(${sched.projectId}, '${sched.flowName}')" >Remove Schedule</button></td>
 							<td><button id="addSlaBtn" onclick="slaView.initFromSched(${sched.projectId}, '${sched.flowName}')" >Set SLA</button></td>
 						</tr>
@@ -103,54 +103,6 @@
 				</table>
 			</div>
 
-		
-			<div id="all-sla-content">
-				<div class="section-hd">
-					<h2>Flow SLAs</h2>
-				</div>
-			</div>
-			
-			<div class="scheduledFlows">
-				<table id="slaTbl">
-					<thead>
-						<tr>
-							<th>Flow</th>
-							<th>Project</th>
-							<th>User</th>
-							<th>Submitted By</th>
-							<th class="date">First SLA check Time</th>
-							<th class="date">Next SLA check Time</th>
-							<th class="date">Repeats Every</th>
-							<th colspan="2" class="action">Action</th>
-						</tr>
-					</thead>
-					<tbody>
-						#if($slas)
-#foreach($sla in $slas)
-						<tr class="row" >
-
-							<td class="tb-name">
-								<a href="${context}/manager?project=${sla.projectName}&flow=${sla.flowName}">${sla.flowName}</a>
-							</td>
-							<td>
-								<a href="${context}/manager?project=${sla.projectName}">${sla.projectName}</a>
-							</td>
-							<td>${sla.submitUser}</td>
-							<td>${sla.submitUser}</td>
-							<td>$utils.formatDateTime(${sla.firstCheckTime})</td>
-							<td>$utils.formatDateTime(${sla.nextCheckTime})</td>
-							<td>$utils.formatPeriod(${sla.period})</td>
-							<td><button id="removeSchedBtn" onclick="removeSla(${sla.projectId}, '${sla.flowName}')" >Remove SLA</button></td>
-						</tr>
-#end
-#else
-						<tr><td class="last">No Flow SLA Set</td></tr>
-#end
-					</tbody>
-				</table>
-			</div>
-		</div>
-				
 		<!-- modal content -->
 
 		<div id="slaModalBackground" class="modalBackground2">
@@ -163,7 +115,7 @@
 						</ul>
 					</div>
 					<div class="optionsPane">
-						<div id="slaPanel" class="generalPanel panel">
+						<div id="generalPanel" class="generalPanel panel">
 							<div id="slaActions">
 								<h4>SLA Alert Emails</h4>
 								<dl>
@@ -173,6 +125,7 @@
 									</dd>
 								</dl>
 							</div>
+							<br></br>
 							<div id="slaRules">
 								<h4>Flow SLA Rules</h4>
 								<div class="tableDiv">
@@ -180,36 +133,40 @@
 										<thead>
 											<tr>
 												<th>Flow/Job</th>
-												<th>Finish In</th>
+												<th>Sla Rule</th>
+												<th>Duration</th>
 												<th>Email Action</th>
 												<th>Kill Action</th>
 											</tr>
 										</thead>
 										<tbody>
+											<tr id="addRow"><td id="addRow-col" colspan="5"><span class="addIcon"></span><a href="#">Add Row</a></td></tr>
 										</tbody>
 									</table>
 								</div>
-								<h4>Job SLA Rules</h4>
-								<div class="tableDiv">
+								<!--h4 style="visibility: hidden">Job SLA Rules</h4>
+								<div class="tableDiv" style="visibility: hidden">
 									<table id="jobRulesTbl">
 										<thead>
 											<tr>
-												<th>Flow/Job</th>
+												<th>Flow/Job Id</th>
 												<th>Finish In</th>
+												<th>Duration</th>
 												<th>Email Action</th>
 												<th>Kill Action</th>
 											</tr>
 										</thead>
 										<tbody>
+											<tr id="addRow"><td id="addRow-col" colspan="4"><span class="addIcon"></span><a href="#">Add Row</a></td></tr>
 										</tbody>
 									</table>
-								</div>
+								</div-->
 							</div>
 						</div>
 					</div>
 					<div class="actions">
-						<a class="yes btn1" id="remove-sla-btn" href="#">Remove SLA</a>
-						<a class="yes btn1" id="set-sla-btn" href="#">Set SLA</a>
+						<!--a class="yes btn1" id="remove-sla-btn" href="#">Remove SLA</a-->
+						<a class="yes btn1" id="set-sla-btn" href="#">Set/Change SLA</a>
 						<a class="no simplemodal-close btn3" id="sla-cancel-btn" href="#">Cancel</a>
 					</div>
 			</div>

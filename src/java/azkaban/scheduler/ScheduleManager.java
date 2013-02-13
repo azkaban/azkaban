@@ -44,6 +44,12 @@ import azkaban.project.Project;
 import azkaban.project.ProjectManager;
 
 
+import azkaban.scheduler.Schedule.FlowOptions;
+import azkaban.scheduler.Schedule.SlaOptions;
+import azkaban.sla.SLA.SlaAction;
+import azkaban.sla.SLA.SlaRule;
+import azkaban.sla.SLAManager;
+import azkaban.sla.SLA.SlaSetting;
 import azkaban.utils.Pair;
 
 
@@ -63,6 +69,7 @@ public class ScheduleManager {
 	private final ScheduleRunner runner;
 	private final ExecutorManager executorManager;
 	private final ProjectManager projectManager;
+	private final SLAManager slaManager;
 
 	/**
 	 * Give the schedule manager a loader class that will properly load the
@@ -72,10 +79,12 @@ public class ScheduleManager {
 	 */
 	public ScheduleManager(ExecutorManager executorManager,
 							ProjectManager projectManager, 
+							SLAManager slaManager,
 							ScheduleLoader loader) 
 	{
 		this.executorManager = executorManager;
 		this.projectManager = projectManager;
+		this.slaManager = slaManager;
 		this.loader = loader;
 		this.runner = new ScheduleRunner();
 
@@ -173,9 +182,10 @@ public class ScheduleManager {
 			final long nextExecTime,
 			final long submitTime,
 			final String submitUser,
-			final Map<String, Object> options
+			final FlowOptions flowOptions,
+			final SlaOptions slaOptions
 			) {
-		Schedule sched = new Schedule(projectId, projectName, flowName, status, firstSchedTime, timezone, period, lastModifyTime, nextExecTime, submitTime, submitUser, options);
+		Schedule sched = new Schedule(projectId, projectName, flowName, status, firstSchedTime, timezone, period, lastModifyTime, nextExecTime, submitTime, submitUser, flowOptions, slaOptions);
 		logger.info("Scheduling flow '" + sched.getScheduleName() + "' for "
 				+ _dateFormat.print(firstSchedTime) + " with a period of "
 				+ period == null ? "(non-recurring)" : period);
@@ -367,57 +377,32 @@ public class ScheduleManager {
 										ExecutableFlow exflow = new ExecutableFlow(flow);
 										exflow.setSubmitUser(runningSched.getSubmitUser());
 										
-										Map<String, Object> scheduleOptions = runningSched.getSchedOptions();
+										FlowOptions flowOptions = runningSched.getFlowOptions();
 										
-										if(scheduleOptions != null && scheduleOptions.containsKey("flowOptions")) {
-											Map<String, Object> flowOptions = (Map<String, Object>) scheduleOptions.get("flowOptions");
-										
-											if (flowOptions.containsKey("failureAction")) {
-												String option = (String) flowOptions.get("failureAction");
-												if (option.equals("finishCurrent") ) {
-													exflow.setFailureAction(FailureAction.FINISH_CURRENTLY_RUNNING);
-												}
-												else if (option.equals("cancelImmediately")) {
-													exflow.setFailureAction(FailureAction.CANCEL_ALL);
-												}
-												else if (option.equals("finishPossible")) {
-													exflow.setFailureAction(FailureAction.FINISH_ALL_POSSIBLE);
-												}
+										if(flowOptions != null) {
+											if (flowOptions.getFailureAction() != null) {
+												exflow.setFailureAction(flowOptions.getFailureAction());
 											}
-	
-											if (flowOptions.containsKey("failureEmails")) {
-												String emails = (String) flowOptions.get("failureEmails");
-												String[] emailSplit = emails.split("\\s*,\\s*|\\s*;\\s*|\\s+");
-												exflow.setFailureEmails(Arrays.asList(emailSplit));
+											if (flowOptions.getFailureEmails() != null) {
+												exflow.setFailureEmails(flowOptions.getFailureEmails());
 											}
-											if (flowOptions.containsKey("successEmails")) {
-												String emails = (String) flowOptions.get("successEmails");
-												String[] emailSplit = emails.split("\\s*,\\s*|\\s*;\\s*|\\s+");
-												exflow.setSuccessEmails(Arrays.asList(emailSplit));
+											if (flowOptions.getSuccessEmails() != null) {
+												exflow.setSuccessEmails(flowOptions.getSuccessEmails());
 											}
-											if (flowOptions.containsKey("notifyFailureFirst")) {
-												exflow.setNotifyOnFirstFailure(Boolean.parseBoolean((String)flowOptions.get("notifyFailureFirst")));
-											}
-											if (flowOptions.containsKey("notifyFailureLast")) {
-												exflow.setNotifyOnLastFailure(Boolean.parseBoolean((String)flowOptions.get("notifyFailureLast")));
-											}
-											if (flowOptions.containsKey("executingJobOption")) {
-												String option = (String)flowOptions.get("jobOption");
-												// Not set yet
-											}
+											exflow.setNotifyOnFirstFailure(flowOptions.isnotifyOnFirstFailure());
+											exflow.setNotifyOnLastFailure(flowOptions.isnotifyOnLastFailure());
 											
-											Map<String, String> flowParamGroup = this.getParamGroup(req, "flowOverride");
-											exflow.addFlowParameters(flowParamGroup);
+											exflow.addFlowParameters(flowOptions.getFlowOverride());
 											
+											List<String> disabled = flowOptions.getDisabledJobs();
 											// Setup disabled
-											Map<String, String> paramGroup = this.getParamGroup(req, "disable");
-											for (Map.Entry<String, String> entry: paramGroup.entrySet()) {
-												boolean nodeDisabled = Boolean.parseBoolean(entry.getValue());
-												exflow.setStatus(entry.getKey(), nodeDisabled ? Status.DISABLED : Status.READY);
+											if(disabled != null) {
+												for (String job : disabled) {
+													exflow.setNodeStatus(job, Status.DISABLED);
+												}
 											}
-											
 										}
-	
+										
 										try {
 											executorManager.submitExecutableFlow(exflow);
 											logger.info("Scheduler has invoked " + exflow.getExecutionId());
@@ -426,9 +411,30 @@ public class ScheduleManager {
 											logger.error(e.getMessage());
 											return;
 										}
-									} catch (JobExecutionException e) {
-										logger.info("Could not run flow. " + e.getMessage());
+										
+										SlaOptions slaOptions = runningSched.getSlaOptions();
+										
+										if(slaOptions != null) {
+											// submit flow slas
+											List<SlaSetting> jobsettings = new ArrayList<SlaSetting>();
+											for(SlaSetting set : slaOptions.getSettings()) {
+												if(set.getId().equals("")) {
+													DateTime checkTime = new DateTime(runningSched.getNextExecTime()).plus(set.getDuration());
+													slaManager.submitSla(exflow.getExecutionId(), "", checkTime, slaOptions.getSlaEmails(), set.getActions(), null, set.getRule());
+												}
+												else {
+													jobsettings.add(set);
+												}
+											}
+											if(jobsettings.size() > 0) {
+												slaManager.submitSla(exflow.getExecutionId(), "", DateTime.now(), slaOptions.getSlaEmails(), new ArrayList<SlaAction>(), jobsettings, SlaRule.WAITANDCHECKJOB);
+											}
+										}
+										
+									} catch (Exception e) {
+										logger.info("Scheduler failed to run job. " + e.getMessage() + e.getCause());
 									}
+									
 								}
 								
 								removeRunnerSchedule(runningSched);

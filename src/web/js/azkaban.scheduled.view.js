@@ -10,11 +10,11 @@ function removeSched(projectId, flowName) {
 			function(data) {
 				if (data.error) {
 //                 alert(data.error)
-					$('#errorMsg').text(data.error)
+					$('#errorMsg').text(data.error);
 				}
 				else {
 // 		 alert("Schedule "+schedId+" removed!")
-					window.location = redirectURL
+					window.location = redirectURL;
 				}
 			},
 			"json"
@@ -48,6 +48,7 @@ azkaban.ChangeSlaView = Backbone.View.extend({
 		"click #remove-sla-btn": "handleRemoveSla",
 		"click #sla-cancel-btn": "handleSlaCancel",
 		"click .modal-close": "handleSlaCancel",
+		"click #addRow": "handleAddRow"
 	},
 	initialize: function(setting) {
 
@@ -58,12 +59,31 @@ azkaban.ChangeSlaView = Backbone.View.extend({
 
 		$('#slaModalBackground').hide();
 		$('#sla-options').hide();
+		
+		var tFlowRules = document.getElementById("flowRulesTbl").tBodies[0];
+		var rows = tFlowRules.rows;
+		var rowLength = rows.length
+		for(var i = 0; i < rowLength-1; i++) {
+			tFlowRules.deleteRow(0);
+		}
+		
 	},
 	initFromSched: function(projId, flowName) {
 		this.projectId = projId;
 		this.flowName = flowName;
-		this.scheduleURL = contextURL + "/schedule"
-		var fetchScheduleData = {"projId": this.projectId, "ajax":"schedInfo", "flowName":this.flowName};
+		
+		var scheduleURL = contextURL + "/schedule"
+		this.scheduleURL = scheduleURL;
+		var indexToName = {};
+		var nameToIndex = {};
+		var indexToText = {};
+		this.indexToName = indexToName;
+		this.nameToIndex = nameToIndex;
+		this.indexToText = indexToText;
+		var ruleBoxOptions = ["SUCCESS", "FINISH"];
+		this.ruleBoxOptions = ruleBoxOptions;
+		
+		var fetchScheduleData = {"projId": this.projectId, "ajax":"slaInfo", "flowName":this.flowName};
 		
 		$.get(
 				this.scheduleURL,
@@ -76,53 +96,84 @@ azkaban.ChangeSlaView = Backbone.View.extend({
 						if (data.slaEmails) {
 							$('#slaEmails').val(data.slaEmails.join());
 						}
-						var flowRulesTbl = document.getElementById("flowRulesTbl").tBodies[0];
-						var flowRuleRow = flowRulesTbl.insertRow(-1);
-						var cflowName = flowRuleRow.insertCell(0);
-						cflowName.innerHTML = flowName;
-						var cflowduration = flowRuleRow.insertCell(1);
-						var flowDuration = document.createElement("input");
-						flowDuration.setAttribute("type", "text");
-						flowDuration.setAttribute("id", "flowDuration");
-						flowDuration.setAttribute("class", "durationpick");
-						if(data.flowRules) {
-							flowDuration.setAttribute("value", data.flowRules.duration);
-						}
-						cflowduration.appendChild(flowDuration);
-						var emailAct = flowRuleRow.insertCell(2);
-						var checkEmailAct = document.createElement("input");
-						checkEmailAct.setAttribute("type", "checkbox");
-						emailAct.appendChild(checkEmailAct);
-						var killAct = flowRuleRow.insertCell(3);
-						var checkKillAct = document.createElement("input");
-						checkKillAct.setAttribute("type", "checkbox");
-						killAct.appendChild(checkKillAct);
 						
-						var jobRulesTbl = document.getElementById("jobRulesTbl").tBodies[0];
-						var allJobs = data.allJobs;
-						for (var job in allJobs) {
+						var allJobNames = data.allJobNames;
+						
+						indexToName[0] = "";
+						nameToIndex[flowName] = 0;
+						indexToText[0] = "flow " + flowName;
+						for(var i = 1; i <= allJobNames.length; i++) {
+							indexToName[i] = allJobNames[i-1];
+							nameToIndex[allJobNames[i-1]] = i;
+							indexToText[i] = "job " + allJobNames[i-1];
+						}
+						
+						
+						
+						
+						
+						// populate with existing settings
+						if(data.settings) {
 							
-							var jobRuleRow = jobRulesTbl.insertRow(-1);
-							var cjobName = jobRuleRow.insertCell(0);
-							cjobName.innerHTML = allJobs[job];
-							var cjobduration = jobRuleRow.insertCell(1);
-							var jobDuration = document.createElement("input");
-							jobDuration.setAttribute("type", "text");
-							jobDuration.setAttribute("id", "jobDuration");
-							jobDuration.setAttribute("class", "durationpick");
-							if(data.jobRules) {
-								jobDuration.setAttribute("value", data.jobRules[job].duration);
+							var tFlowRules = document.getElementById("flowRulesTbl").tBodies[0];
+							
+							for(var setting in data.settings) {
+								var rFlowRule = tFlowRules.insertRow(0);
+								
+								var cId = rFlowRule.insertCell(-1);
+								var idSelect = document.createElement("select");
+								for(var i in indexToName) {
+									idSelect.options[i] = new Option(indexToText[i], indexToName[i]);
+									if(data.settings[setting].id == indexToName[i]) {
+										idSelect.options[i].selected = true;
+									}
+								}								
+								cId.appendChild(idSelect);
+								
+								var cRule = rFlowRule.insertCell(-1);
+								var ruleSelect = document.createElement("select");
+								for(var i in ruleBoxOptions) {
+									ruleSelect.options[i] = new Option(ruleBoxOptions[i], ruleBoxOptions[i]);
+									if(data.settings[setting].rule == ruleBoxOptions[i]) {
+										ruleSelect.options[i].selected = true;
+									}
+								}
+								cRule.appendChild(ruleSelect);
+								
+								var cDuration = rFlowRule.insertCell(-1);
+								var duration = document.createElement("input");
+								duration.type = "text";
+								duration.setAttribute("class", "durationpick");
+								var rawMinutes = data.settings[setting].duration;
+								var intMinutes = rawMinutes.substring(0, rawMinutes.length-1);
+								var minutes = parseInt(intMinutes);
+								var hours = Math.floor(minutes / 60);
+								minutes = minutes % 60;
+								duration.value = hours + ":" + minutes;
+								cDuration.appendChild(duration);
+
+								var cEmail = rFlowRule.insertCell(-1);
+								var emailCheck = document.createElement("input");
+								emailCheck.type = "checkbox";
+								for(var act in data.settings[setting].actions) {
+									if(data.settings[setting].actions[act] == "EMAIL") {
+										emailCheck.checked = true;
+									}
+								}
+								cEmail.appendChild(emailCheck);
+								
+								var cKill = rFlowRule.insertCell(-1);
+								var killCheck = document.createElement("input");
+								killCheck.type = "checkbox";
+								for(var act in data.settings[setting].actions) {
+									if(data.settings[setting].actions[act] == "KILL") {
+										killCheck.checked = true;
+									}
+								}
+								cKill.appendChild(killCheck);
+								
+								$('.durationpick').timepicker({hourMax: 99});
 							}
-							cjobduration.appendChild(jobDuration);
-							
-							var emailAct = jobRuleRow.insertCell(2);
-							var checkEmailAct = document.createElement("input");
-							checkEmailAct.setAttribute("type", "checkbox");
-							emailAct.appendChild(checkEmailAct);
-							var killAct = jobRuleRow.insertCell(3);
-							var checkKillAct = document.createElement("input");
-							checkKillAct.setAttribute("type", "checkbox");
-							killAct.appendChild(checkKillAct);
 						}
 						$('.durationpick').timepicker({hourMax: 99});
 					}
@@ -139,8 +190,8 @@ azkaban.ChangeSlaView = Backbone.View.extend({
 	},
 	handleRemoveSla: function(evt) {
 		console.log("Clicked remove sla button");
-		var scheduleURL = contextURL + "/schedule"
-		var redirectURL = contextURL + "/schedule"
+		var scheduleURL = this.scheduleURL;
+		var redirectURL = this.scheduleURL;
 		$.post(
 				scheduleURL,
 				{"action":"removeSla", "projectId":this.projectId, "flowName":this.flowName},
@@ -159,54 +210,89 @@ azkaban.ChangeSlaView = Backbone.View.extend({
 	handleSetSla: function(evt) {
 
 		var slaEmails = $('#slaEmails').val();
-
-//		var flowRules = {};
-		var flowRulesTbl = document.getElementById("flowRulesTbl").tBodies[0];
-		var flowRuleRow = flowRulesTbl.rows[0];
-//		flowRules["flowDuration"] = flowRuleRow.cells[1].firstChild.value;
-//		flowRules["flowEmailAction"] = flowRuleRow.cells[2].firstChild.value;
-//		flowRules["flowKillAction"] = flowRuleRow.cells[3].firstChild.value;
-		var flowRules = flowRuleRow.cells[1].firstChild.value + ',' + flowRuleRow.cells[2].firstChild.value + ',' + flowRuleRow.cells[3].firstChild.value;
+		var settings = {};
 		
-		var jobRules = {};
-		var jobRulesTbl = document.getElementById("jobRulesTbl").tBodies[0];
-		console.log(jobRulesTbl.rows.length);
-		for(var row = 0; row < jobRulesTbl.rows.length; row++) {
-			
-			var jobRow = jobRulesTbl.rows[row];
-			var jobRule = {};
-			
-			console.log(row);
-			console.log(jobRow.cells[0].firstChild.value);
-//			jobRule["jobDuration"] = jobRow.cells[1].firstChild.value;
-//			jobRule["jobEmailAction"] = jobRow.cells[2].firstChild.value;
-//			jobRule["jobKillAction"] = jobRow.cells[3].firstChild.value;
-//			jobRules[jobRow.cells[0].innerHTML] = jobRule;
-			jobRules[jobRow.cells[0].innerHTML] = jobRow.cells[1].firstChild.value + ',' + jobRow.cells[2].firstChild.value + ',' +  jobRow.cells[3].firstChild.value;
+		
+		var tFlowRules = document.getElementById("flowRulesTbl").tBodies[0];
+		for(var row = 0; row < tFlowRules.rows.length-1; row++) {
+			var rFlowRule = tFlowRules.rows[row];
+			var id = rFlowRule.cells[0].firstChild.value;
+			var rule = rFlowRule.cells[1].firstChild.value;
+			var duration = rFlowRule.cells[2].firstChild.value;
+			var email = rFlowRule.cells[3].firstChild.value;
+			var kill = rFlowRule.cells[4].firstChild.value;
+			settings[row] = id + "," + rule + "," + duration + "," + email + "," + kill; 
 		}
-		
+
 		var slaData = {
 			projectId: this.projectId,
 			flowName: this.flowName,
 			ajax: "setSla",			
 			slaEmails: slaEmails,
-			flowRules: flowRules,
-			jobRules: jobRules
+			settings: settings
 		};
 
-		$.get(
-			this.scheduleURL,
+		var scheduleURL = this.scheduleURL;
+		
+		$.post(
+			scheduleURL,
 			slaData,
 			function(data) {
 				if (data.error) {
 					alert(data.error);
 				}
 				else {
-					window.location.href = this.scheduleURL;
+					tFlowRules.length = 0;
+					window.location = scheduleURL;
 				}
 			},
 			"json"
 		);
+	},
+	handleAddRow: function(evt) {
+		
+		var indexToName = this.indexToName;
+		var nameToIndex = this.nameToIndex;
+		var indexToText = this.indexToText;
+		var ruleBoxOptions = this.ruleBoxOptions;
+
+		var tFlowRules = document.getElementById("flowRulesTbl").tBodies[0];
+		var rFlowRule = tFlowRules.insertRow(0);
+		
+		var cId = rFlowRule.insertCell(-1);
+		var idSelect = document.createElement("select");
+		for(var i in indexToName) {
+			idSelect.options[i] = new Option(indexToText[i], indexToName[i]);
+		}
+		
+		cId.appendChild(idSelect);
+		
+		var cRule = rFlowRule.insertCell(-1);
+		var ruleSelect = document.createElement("select");
+		for(var i in ruleBoxOptions) {
+			ruleSelect.options[i] = new Option(ruleBoxOptions[i], ruleBoxOptions[i]);
+		}
+		cRule.appendChild(ruleSelect);
+		
+		var cDuration = rFlowRule.insertCell(-1);
+		var duration = document.createElement("input");
+		duration.type = "text";
+		duration.setAttribute("class", "durationpick");
+		cDuration.appendChild(duration);
+
+		var cEmail = rFlowRule.insertCell(-1);
+		var emailCheck = document.createElement("input");
+		emailCheck.type = "checkbox";
+		cEmail.appendChild(emailCheck);
+		
+		var cKill = rFlowRule.insertCell(-1);
+		var killCheck = document.createElement("input");
+		killCheck.type = "checkbox";
+		cKill.appendChild(killCheck);
+		
+		$('.durationpick').timepicker({hourMax: 99});
+
+		return rFlowRule;
 	},
 	handleEditColumn : function(evt) {
 		var curTarget = evt.currentTarget;
@@ -234,25 +320,7 @@ azkaban.ChangeSlaView = Backbone.View.extend({
 		$(row).remove();
 	},
 	closeEditingTarget: function(evt) {
-		if (this.editingTarget != null && this.editingTarget != evt.target && this.editingTarget != evt.target.parentElement ) {
-			var input = $(this.editingTarget).children("input")[0];
-			var text = $(input).val();
-			$(input).remove();
-			
-			var valueData = document.createElement("span");
-			$(valueData).addClass("spanValue");
-			$(valueData).text(text);
 
-			if ($(this.editingTarget).hasClass("name")) {
-				var icon = document.createElement("span");
-				$(icon).addClass("removeIcon");
-				$(this.editingTarget).append(icon);
-			}
-			
-			$(this.editingTarget).removeClass("editing");
-			$(this.editingTarget).append(valueData);
-			this.editingTarget = null;
-		}
 	}
 });
 

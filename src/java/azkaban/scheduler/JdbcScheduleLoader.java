@@ -38,6 +38,8 @@ import org.joda.time.ReadablePeriod;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 
+import azkaban.scheduler.Schedule.FlowOptions;
+import azkaban.scheduler.Schedule.SlaOptions;
 import azkaban.sla.SLA;
 import azkaban.sla.SLAManagerException;
 import azkaban.sla.JdbcSLALoader.EncodingType;
@@ -200,7 +202,7 @@ public class JdbcScheduleLoader implements ScheduleLoader {
 
 	public void insertSchedule(Schedule s, EncodingType encType) throws ScheduleManagerException {
 		
-		String json = JSONUtils.toJSON(s.optionToObject());
+		String json = JSONUtils.toJSON(s.optionsToObject());
 		byte[] data = null;
 		try {
 			byte[] stringData = json.getBytes("UTF-8");
@@ -212,7 +214,7 @@ public class JdbcScheduleLoader implements ScheduleLoader {
 			logger.debug("NumChars: " + json.length() + " UTF-8:" + stringData.length + " Gzip:"+ data.length);
 		}
 		catch (IOException e) {
-			throw new ScheduleManagerException("Error encoding the schedule options" + s.getSchedOptions());
+			throw new ScheduleManagerException("Error encoding the schedule options. " + s.getScheduleName());
 		}
 		
 		QueryRunner runner = new QueryRunner(dataSource);
@@ -262,7 +264,7 @@ public class JdbcScheduleLoader implements ScheduleLoader {
 		
 	public void updateSchedule(Schedule s, EncodingType encType) throws ScheduleManagerException {
 
-		String json = JSONUtils.toJSON(s.optionToObject());
+		String json = JSONUtils.toJSON(s.optionsToObject());
 		byte[] data = null;
 		try {
 			byte[] stringData = json.getBytes("UTF-8");
@@ -274,7 +276,7 @@ public class JdbcScheduleLoader implements ScheduleLoader {
 			logger.debug("NumChars: " + json.length() + " UTF-8:" + stringData.length + " Gzip:"+ data.length);
 		}
 		catch (IOException e) {
-			throw new ScheduleManagerException("Error encoding the schedule options" + s.getSchedOptions());
+			throw new ScheduleManagerException("Error encoding the schedule options " + s.getScheduleName());
 		}
 
 		QueryRunner runner = new QueryRunner(dataSource);
@@ -326,7 +328,8 @@ public class JdbcScheduleLoader implements ScheduleLoader {
 				int encodingType = rs.getInt(12);
 				byte[] data = rs.getBytes(13);
 				
-				Map<String, Object> options = null;
+				FlowOptions flowOptions = null;
+				SlaOptions slaOptions = null;
 				if (data != null) {
 					EncodingType encType = EncodingType.fromInteger(encodingType);
 					Object optsObj;
@@ -341,13 +344,14 @@ public class JdbcScheduleLoader implements ScheduleLoader {
 							String jsonString = new String(data, "UTF-8");
 							optsObj = JSONUtils.parseJSONFromString(jsonString);
 						}						
-						options = Schedule.createScheduleOptionFromObject(optsObj);
+						flowOptions = Schedule.createFlowOptionFromObject(optsObj);
+						slaOptions = Schedule.createSlaOptionFromObject(optsObj);
 					} catch (IOException e) {
 						throw new SQLException("Error reconstructing schedule options " + projectName + "." + flowName);
 					}
 				}
 				
-				Schedule s = new Schedule(projectId, projectName, flowName, status, firstSchedTime, timezone, period, lastModifyTime, nextExecTime, submitTime, submitUser, options);
+				Schedule s = new Schedule(projectId, projectName, flowName, status, firstSchedTime, timezone, period, lastModifyTime, nextExecTime, submitTime, submitUser, flowOptions, slaOptions);
 				
 				schedules.add(s);
 			} while (rs.next());
