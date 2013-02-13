@@ -316,7 +316,7 @@ azkaban.ExecuteFlowView = Backbone.View.extend({
 			$(curTarget).append(input);
 			$(input).focus();
 			this.editingTarget = curTarget;
-	  	}
+			}
 	  },
 	  handleRemoveColumn : function(evt) {
 	  	var curTarget = evt.currentTarget;

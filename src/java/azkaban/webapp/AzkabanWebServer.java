@@ -51,6 +51,9 @@ import azkaban.project.ProjectManager;
 
 import azkaban.scheduler.JdbcScheduleLoader;
 import azkaban.scheduler.ScheduleManager;
+import azkaban.sla.JdbcSLALoader;
+import azkaban.sla.SLAManager;
+import azkaban.sla.SLAManagerException;
 import azkaban.user.UserManager;
 import azkaban.user.XmlUserManager;
 import azkaban.utils.FileIOUtils;
@@ -118,6 +121,7 @@ public class AzkabanWebServer implements AzkabanServer {
 	private ProjectManager projectManager;
 	private ExecutorManager executorManager;
 	private ScheduleManager scheduleManager;
+	private SLAManager slaManager;
 
 	private final ClassLoader baseClassLoader;
 	
@@ -144,7 +148,8 @@ public class AzkabanWebServer implements AzkabanServer {
 		userManager = loadUserManager(props);
 		projectManager = loadProjectManager(props);
 		executorManager = loadExecutorManager(props);
-		scheduleManager = loadScheduleManager(executorManager, props);
+		slaManager = loadSLAManager(props);
+		scheduleManager = loadScheduleManager(executorManager, slaManager, props);
 		baseClassLoader = getBaseClassloader();
 		
 		tempDir = new File(props.getString("azkaban.temp.dir", "temp"));
@@ -159,6 +164,8 @@ public class AzkabanWebServer implements AzkabanServer {
 		}
 	}
 	
+	
+
 	private void setViewerPlugins(List<ViewerPlugin> viewerPlugins) {
 		this.viewerPlugins = viewerPlugins;
 	}
@@ -202,12 +209,17 @@ public class AzkabanWebServer implements AzkabanServer {
 		return execManager;
 	}
 
-	private ScheduleManager loadScheduleManager(ExecutorManager execManager, Props props ) throws Exception {
-		ScheduleManager schedManager = new ScheduleManager(execManager, projectManager, new JdbcScheduleLoader(props));
+	private ScheduleManager loadScheduleManager(ExecutorManager execManager, SLAManager slaManager, Props props ) throws Exception {
+		ScheduleManager schedManager = new ScheduleManager(execManager, projectManager, slaManager, new JdbcScheduleLoader(props));
 
 		return schedManager;
 	}
 
+	private SLAManager loadSLAManager(Props props) throws SLAManagerException {
+		SLAManager slaManager = new SLAManager(executorManager, new JdbcSLALoader(props), props);
+		return slaManager;
+	}
+	
 	/**
 	 * Returns the web session cache.
 	 * 
@@ -247,6 +259,10 @@ public class AzkabanWebServer implements AzkabanServer {
      */
 	public ExecutorManager getExecutorManager() {
 		return executorManager;
+	}
+	
+	public SLAManager getSLAManager() {
+		return slaManager;
 	}
 	
 	public ScheduleManager getScheduleManager() {
@@ -654,4 +670,6 @@ public class AzkabanWebServer implements AzkabanServer {
 		
 		return props;
 	}
+
+	
 }

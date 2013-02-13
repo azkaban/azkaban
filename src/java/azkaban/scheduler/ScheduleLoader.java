@@ -16,6 +16,7 @@
 
 package azkaban.scheduler;
 
+import java.sql.Connection;
 import java.util.List;
 
 public interface ScheduleLoader {
@@ -27,5 +28,7 @@ public interface ScheduleLoader {
 	public List<Schedule> loadSchedules() throws ScheduleManagerException;
 	
 	public void removeSchedule(Schedule s) throws ScheduleManagerException;
+
+	public void updateNextExecTime(Schedule s) throws ScheduleManagerException;
 
 }

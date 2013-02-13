@@ -34,6 +34,7 @@
 		<script type="text/javascript" src="${context}/js/azkaban.flow.graph.view.js"></script>
 		<script type="text/javascript" src="${context}/js/azkaban.flow.view.js"></script>
 		<script type="text/javascript" src="${context}/js/azkaban.exflow.options.view.js"></script>
+		<script type="text/javascript" src="${context}/js/azkaban.schedule.options.view.js"></script>
 		<script type="text/javascript" src="${context}/js/svgNavigate.js"></script>
 		<script type="text/javascript">
 			var contextURL = "${context}";
@@ -131,6 +132,7 @@
 					</div>
 				</div>
 		<!-- modal content -->
+	
 				<div id="schedule-flow" class="modal">
 						<h3>Schedule Flow</h3>
 						<div id="errorMsg" class="box-error-message">$errorMsg</div>
@@ -173,21 +175,23 @@
 										</form>
 						</div>
 								
-
 						<div class="actions">
-								<a class="yes btn2" id="schedule-btn" href="#">Schedule The Flow</a>
-								<a class="no simplemodal-close btn3" href="#">Cancel</a>
+							<a class="yes btn2" id="schedule-btn" href="#">Schedule The Flow</a>
+							<a class="no simplemodal-close btn3" href="#">Cancel</a>
+							<a class="btn2" id="adv-schedule-opt-btn" href="#">Advanced Schedule Options</a>
 						</div>
 				</div>
 				<div id="invalid-session" class="modal">
-						<h3>Invalid Session</h3>
+					<h3>Invalid Session</h3>
 						<p>Session has expired. Please re-login.</p>
 						<div class="actions">
-								<a class="yes btn3" id="login-btn" href="#">Re-login</a>
+							<a class="yes btn3" id="login-btn" href="#">Re-login</a>
 						</div>
 				</div>
-				
+#parse( "azkaban/webapp/servlet/velocity/scheduleoptionspanel.vm" )
+
 #parse( "azkaban/webapp/servlet/velocity/executionoptionspanel.vm" )
+
 #end
 		<ul id="jobMenu" class="contextMenu">  
 			<li class="open"><a href="#open">Open...</a></li>
@@ -206,6 +210,26 @@
 			</ul>
 			<li id="enable" class="enable"><a href="#enable">Enable</a> <div id="enableArrow" class="context-sub-icon"></div></li>
 			<ul id="enableSub" class="subMenu">
+				<li class="enableAll"><a href="#enableAll">All</a></li>
+				<li class="parents"><a href="#enableParents">Parents</a></li>
+				<li class="ancestors"><a href="#enableAncestors">All Ancestors</a></li>
+				<li class="children"><a href="#enableChildren">Children</a></li>
+				<li class="decendents"><a href="#enableDescendents">All Descendents</a></li>
+			</ul>
+		</ul>
+
+		<ul id="scheduleDisableJobMenu" class="contextMenu flowSubmenu">  
+			<li class="openwindow"><a href="#scheduleOpenwindow">Open in New Window...</a></li>
+			<li id="scheduleDisable" class="disable separator"><a href="#disable">Disable</a><div id="scheduleDisableArrow" class="context-sub-icon"></div></li>
+			<ul id="scheduleDisableSub" class="subMenu">
+				<li class="disableAll"><a href="#disableAll">All</a></li>
+				<li class="parents"><a href="#disableParents">Parents</a></li>
+				<li class="ancestors"><a href="#disableAncestors">All Ancestors</a></li>
+				<li class="children"><a href="#disableChildren">Children</a></li>
+				<li class="decendents"><a href="#disableDescendents">All Descendents</a></li>
+			</ul>
+			<li id="scheduleEnable" class="enable"><a href="#enable">Enable</a> <div id="scheduleEnableArrow" class="context-sub-icon"></div></li>
+			<ul id="scheduleEnableSub" class="subMenu">
 				<li class="enableAll"><a href="#enableAll">All</a></li>
 				<li class="parents"><a href="#enableParents">Parents</a></li>
 				<li class="ancestors"><a href="#enableAncestors">All Ancestors</a></li>

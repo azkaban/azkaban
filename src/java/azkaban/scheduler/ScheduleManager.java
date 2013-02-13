@@ -17,6 +17,7 @@
 package azkaban.scheduler;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -34,6 +35,8 @@ import org.joda.time.format.DateTimeFormatter;
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutorManager;
 import azkaban.executor.ExecutorManagerException;
+import azkaban.executor.ExecutableFlow.FailureAction;
+import azkaban.executor.ExecutableFlow.Status;
 
 import azkaban.flow.Flow;
 import azkaban.jobExecutor.utils.JobExecutionException;
@@ -41,6 +44,12 @@ import azkaban.project.Project;
 import azkaban.project.ProjectManager;
 
 
+import azkaban.scheduler.Schedule.FlowOptions;
+import azkaban.scheduler.Schedule.SlaOptions;
+import azkaban.sla.SLA.SlaAction;
+import azkaban.sla.SLA.SlaRule;
+import azkaban.sla.SLAManager;
+import azkaban.sla.SLA.SlaSetting;
 import azkaban.utils.Pair;
 
 
@@ -60,6 +69,7 @@ public class ScheduleManager {
 	private final ScheduleRunner runner;
 	private final ExecutorManager executorManager;
 	private final ProjectManager projectManager;
+	private final SLAManager slaManager;
 
 	/**
 	 * Give the schedule manager a loader class that will properly load the
@@ -69,10 +79,12 @@ public class ScheduleManager {
 	 */
 	public ScheduleManager(ExecutorManager executorManager,
 							ProjectManager projectManager, 
+							SLAManager slaManager,
 							ScheduleLoader loader) 
 	{
 		this.executorManager = executorManager;
 		this.projectManager = projectManager;
+		this.slaManager = slaManager;
 		this.loader = loader;
 		this.runner = new ScheduleRunner();
 
@@ -169,9 +181,11 @@ public class ScheduleManager {
 			final long lastModifyTime,
 			final long nextExecTime,
 			final long submitTime,
-			final String submitUser
+			final String submitUser,
+			final FlowOptions flowOptions,
+			final SlaOptions slaOptions
 			) {
-		Schedule sched = new Schedule(projectId, projectName, flowName, status, firstSchedTime, timezone, period, lastModifyTime, nextExecTime, submitTime, submitUser);
+		Schedule sched = new Schedule(projectId, projectName, flowName, status, firstSchedTime, timezone, period, lastModifyTime, nextExecTime, submitTime, submitUser, flowOptions, slaOptions);
 		logger.info("Scheduling flow '" + sched.getScheduleName() + "' for "
 				+ _dateFormat.print(firstSchedTime) + " with a period of "
 				+ period == null ? "(non-recurring)" : period);
@@ -362,19 +376,33 @@ public class ScheduleManager {
 										// Create ExecutableFlow
 										ExecutableFlow exflow = new ExecutableFlow(flow);
 										exflow.setSubmitUser(runningSched.getSubmitUser());
-	
-										// TODO make disabled in scheduled flow
-										// Map<String, String> paramGroup =
-										// this.getParamGroup(req, "disabled");
-										// for (Map.Entry<String, String> entry:
-										// paramGroup.entrySet()) {
-										// boolean nodeDisabled =
-										// Boolean.parseBoolean(entry.getValue());
-										// exflow.setStatus(entry.getKey(),
-										// nodeDisabled ? Status.DISABLED :
-										// Status.READY);
-										// }
-	
+										
+										FlowOptions flowOptions = runningSched.getFlowOptions();
+										
+										if(flowOptions != null) {
+											if (flowOptions.getFailureAction() != null) {
+												exflow.setFailureAction(flowOptions.getFailureAction());
+											}
+											if (flowOptions.getFailureEmails() != null) {
+												exflow.setFailureEmails(flowOptions.getFailureEmails());
+											}
+											if (flowOptions.getSuccessEmails() != null) {
+												exflow.setSuccessEmails(flowOptions.getSuccessEmails());
+											}
+											exflow.setNotifyOnFirstFailure(flowOptions.isnotifyOnFirstFailure());
+											exflow.setNotifyOnLastFailure(flowOptions.isnotifyOnLastFailure());
+											
+											exflow.addFlowParameters(flowOptions.getFlowOverride());
+											
+											List<String> disabled = flowOptions.getDisabledJobs();
+											// Setup disabled
+											if(disabled != null) {
+												for (String job : disabled) {
+													exflow.setNodeStatus(job, Status.DISABLED);
+												}
+											}
+										}
+										
 										try {
 											executorManager.submitExecutableFlow(exflow);
 											logger.info("Scheduler has invoked " + exflow.getExecutionId());
@@ -383,9 +411,30 @@ public class ScheduleManager {
 											logger.error(e.getMessage());
 											return;
 										}
-									} catch (JobExecutionException e) {
-										logger.info("Could not run flow. " + e.getMessage());
+										
+										SlaOptions slaOptions = runningSched.getSlaOptions();
+										
+										if(slaOptions != null) {
+											// submit flow slas
+											List<SlaSetting> jobsettings = new ArrayList<SlaSetting>();
+											for(SlaSetting set : slaOptions.getSettings()) {
+												if(set.getId().equals("")) {
+													DateTime checkTime = new DateTime(runningSched.getNextExecTime()).plus(set.getDuration());
+													slaManager.submitSla(exflow.getExecutionId(), "", checkTime, slaOptions.getSlaEmails(), set.getActions(), null, set.getRule());
+												}
+												else {
+													jobsettings.add(set);
+												}
+											}
+											if(jobsettings.size() > 0) {
+												slaManager.submitSla(exflow.getExecutionId(), "", DateTime.now(), slaOptions.getSlaEmails(), new ArrayList<SlaAction>(), jobsettings, SlaRule.WAITANDCHECKJOB);
+											}
+										}
+										
+									} catch (Exception e) {
+										logger.info("Scheduler failed to run job. " + e.getMessage() + e.getCause());
 									}
+									
 								}
 								
 								removeRunnerSchedule(runningSched);

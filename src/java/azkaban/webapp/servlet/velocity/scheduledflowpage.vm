@@ -18,8 +18,12 @@
 <html>
 	<head>
 #parse( "azkaban/webapp/servlet/velocity/style.vm" )
-		<script type="text/javascript" src="${context}/js/jquery/jquery.js"></script>    
-		<script type="text/javascript" src="${context}/js/jqueryui/jquery-ui.custom.min.js"></script>
+		<link rel="stylesheet" type="text/css" href="${context}/css/jquery-ui-timepicker-addon.css" />
+		<link rel="stylesheet" type="text/css" href="${context}/css/jquery-ui.css" />
+		<script type="text/javascript" src="${context}/js/jquery/jquery-1.8.3.min.js"></script>  
+		<script type="text/javascript" src="${context}/js/jqueryui/jquery-ui-1.9.2.custom.min.js"></script>  
+		<script type="text/javascript" src="${context}/js/jqueryui/jquery-ui-timepicker-addon.js"></script> 
+		<script type="text/javascript" src="${context}/js/jqueryui/jquery-ui-sliderAccess.js"></script>
 		<script type="text/javascript" src="${context}/js/namespace.js"></script>
 		<script type="text/javascript" src="${context}/js/underscore-1.2.1-min.js"></script>
 		<script type="text/javascript" src="${context}/js/backbone-0.5.3-min.js"></script>
@@ -32,7 +36,6 @@
 			var timezone = "${timezone}";
 			var errorMessage = null;
 			var successMessage = null;
-	
 		</script>
 	</head>
 	<body>
@@ -43,12 +46,12 @@
 		<div class="content">
 		
 #if($errorMsg)
-                                <div class="box-error-message">$errorMsg</div>
+		<div class="box-error-message">$errorMsg</div>
 #else
 #if($error_message != "null")
-                                <div class="box-error-message">$error_message</div>
+		<div class="box-error-message">$error_message</div>
 #elseif($success_message != "null")
-                                <div class="box-success-message">$success_message</div>
+		<div class="box-success-message">$success_message</div>
 #end
 #end		
 		
@@ -65,12 +68,12 @@
 							<!--th class="execid">Execution Id</th-->
 							<th>Flow</th>
 							<th>Project</th>
-							<th>User</th>
 							<th>Submitted By</th>
 							<th class="date">First Scheduled to Run</th>
 							<th class="date">Next Execution Time</th>
 							<th class="date">Repeats Every</th>
-							<th class="action">Action</th>
+							<th>Has SLA</th>
+							<th colspan="2" class="action">Action</th>
 						</tr>
 					</thead>
 					<tbody>
@@ -85,11 +88,12 @@
 								<a href="${context}/manager?project=${sched.projectName}">${sched.projectName}</a>
 							</td>
 							<td>${sched.submitUser}</td>
-							<td>${sched.submitUser}</td>
 							<td>$utils.formatDateTime(${sched.firstSchedTime})</td>
 							<td>$utils.formatDateTime(${sched.nextExecTime})</td>
 							<td>$utils.formatPeriod(${sched.period})</td>
+							<td>#if(${sched.slaOptions}) true #else false #end</td>
 							<td><button id="removeSchedBtn" onclick="removeSched(${sched.projectId}, '${sched.flowName}')" >Remove Schedule</button></td>
+							<td><button id="addSlaBtn" onclick="slaView.initFromSched(${sched.projectId}, '${sched.flowName}')" >Set SLA</button></td>
 						</tr>
 #end
 #else
@@ -97,8 +101,74 @@
 #end
 					</tbody>
 				</table>
-				
-				
+			</div>
+
+		<!-- modal content -->
+
+		<div id="slaModalBackground" class="modalBackground2">
+			<div id="sla-options" class="modal modalContainer2">
+				<a href='#' title='Close' class='modal-close'>x</a>
+					<h3>SLA Options</h3>
+					<div>
+						<ul class="optionsPicker">
+							<li id="slaOptions">General SLA Options</li>
+						</ul>
+					</div>
+					<div class="optionsPane">
+						<div id="generalPanel" class="generalPanel panel">
+							<div id="slaActions">
+								<h4>SLA Alert Emails</h4>
+								<dl>
+									<dt >SLA Alert Emails</dt>
+									<dd>
+										<textarea id="slaEmails"></textarea>
+									</dd>
+								</dl>
+							</div>
+							<br></br>
+							<div id="slaRules">
+								<h4>Flow SLA Rules</h4>
+								<div class="tableDiv">
+									<table id="flowRulesTbl">
+										<thead>
+											<tr>
+												<th>Flow/Job</th>
+												<th>Sla Rule</th>
+												<th>Duration</th>
+												<th>Email Action</th>
+												<th>Kill Action</th>
+											</tr>
+										</thead>
+										<tbody>
+											<tr id="addRow"><td id="addRow-col" colspan="5"><span class="addIcon"></span><a href="#">Add Row</a></td></tr>
+										</tbody>
+									</table>
+								</div>
+								<!--h4 style="visibility: hidden">Job SLA Rules</h4>
+								<div class="tableDiv" style="visibility: hidden">
+									<table id="jobRulesTbl">
+										<thead>
+											<tr>
+												<th>Flow/Job Id</th>
+												<th>Finish In</th>
+												<th>Duration</th>
+												<th>Email Action</th>
+												<th>Kill Action</th>
+											</tr>
+										</thead>
+										<tbody>
+											<tr id="addRow"><td id="addRow-col" colspan="4"><span class="addIcon"></span><a href="#">Add Row</a></td></tr>
+										</tbody>
+									</table>
+								</div-->
+							</div>
+						</div>
+					</div>
+					<div class="actions">
+						<!--a class="yes btn1" id="remove-sla-btn" href="#">Remove SLA</a-->
+						<a class="yes btn1" id="set-sla-btn" href="#">Set/Change SLA</a>
+						<a class="no simplemodal-close btn3" id="sla-cancel-btn" href="#">Cancel</a>
+					</div>
 			</div>
 		</div>
 	</body>
