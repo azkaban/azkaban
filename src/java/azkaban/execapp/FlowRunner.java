@@ -35,6 +35,7 @@ import azkaban.flow.FlowProps;
 import azkaban.jobtype.JobTypeManager;
 import azkaban.utils.Pair;
 import azkaban.utils.Props;
+import azkaban.utils.PropsUtils;
 
 public class FlowRunner extends EventHandler implements Runnable {
 	private static final Layout DEFAULT_LAYOUT = new PatternLayout("%d{dd-MM-yyyy HH:mm:ss z} %c{1} %p - %m\n");
@@ -100,6 +101,9 @@ public class FlowRunner extends EventHandler implements Runnable {
 			int projectId = flow.getProjectId();
 			int version = flow.getVersion();
 			String flowId = flow.getFlowId();
+			
+			// Add a bunch of common azkaban properties
+			PropsUtils.produceParentProperties(flow);
 			
 			// Create execution dir
 			createLogger(flowId);

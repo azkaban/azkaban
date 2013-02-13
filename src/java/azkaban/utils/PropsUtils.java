@@ -28,6 +28,8 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import azkaban.executor.ExecutableFlow;
+import azkaban.flow.CommonJobProperties;
+
 import org.joda.time.DateTime;
 
 public class PropsUtils {
@@ -188,20 +190,23 @@ public class PropsUtils {
 	public static Props produceParentProperties(final ExecutableFlow flow) {
 		Props parentProps = new Props();
 
-		parentProps.put("azkaban.flow.id", flow.getFlowId());
-		parentProps.put("azkaban.flow.uuid", UUID.randomUUID().toString());
+		parentProps.put(CommonJobProperties.FLOW_ID, flow.getFlowId());
+		parentProps.put(CommonJobProperties.EXEC_ID, flow.getExecutionId());
+		parentProps.put(CommonJobProperties.PROJECT_ID, flow.getProjectId());
+		parentProps.put(CommonJobProperties.PROJECT_VERSION, flow.getVersion());
+		parentProps.put(CommonJobProperties.FLOW_UUID, UUID.randomUUID().toString());
 
 		DateTime loadTime = new DateTime();
 
-		parentProps.put("azkaban.flow.start.timestamp", loadTime.toString());
-		parentProps.put("azkaban.flow.start.year", loadTime.toString("yyyy"));
-		parentProps.put("azkaban.flow.start.month", loadTime.toString("MM"));
-		parentProps.put("azkaban.flow.start.day", loadTime.toString("dd"));
-		parentProps.put("azkaban.flow.start.hour", loadTime.toString("HH"));
-		parentProps.put("azkaban.flow.start.minute", loadTime.toString("mm"));
-		parentProps.put("azkaban.flow.start.seconds", loadTime.toString("ss"));
-		parentProps.put("azkaban.flow.start.milliseconds", loadTime.toString("SSS"));
-		parentProps.put("azkaban.flow.start.timezone", loadTime.toString("ZZZZ"));
+		parentProps.put(CommonJobProperties.FLOW_START_TIMESTAMP, loadTime.toString());
+		parentProps.put(CommonJobProperties.FLOW_START_YEAR, loadTime.toString("yyyy"));
+		parentProps.put(CommonJobProperties.FLOW_START_MONTH, loadTime.toString("MM"));
+		parentProps.put(CommonJobProperties.FLOW_START_DAY, loadTime.toString("dd"));
+		parentProps.put(CommonJobProperties.FLOW_START_HOUR, loadTime.toString("HH"));
+		parentProps.put(CommonJobProperties.FLOW_START_MINUTE, loadTime.toString("mm"));
+		parentProps.put(CommonJobProperties.FLOW_START_SECOND, loadTime.toString("ss"));
+		parentProps.put(CommonJobProperties.FLOW_START_MILLISSECOND, loadTime.toString("SSS"));
+		parentProps.put(CommonJobProperties.FLOW_START_TIMEZONE, loadTime.toString("ZZZZ"));
 		return parentProps;
 	}
 

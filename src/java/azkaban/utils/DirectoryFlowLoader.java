@@ -14,6 +14,7 @@ import java.util.Set;
 
 import org.apache.log4j.Logger;
 
+import azkaban.flow.CommonJobProperties;
 import azkaban.flow.Edge;
 import azkaban.flow.Flow;
 import azkaban.flow.FlowProps;
@@ -22,7 +23,6 @@ import azkaban.flow.Node;
 public class DirectoryFlowLoader {
 	private static final DirFilter DIR_FILTER = new DirFilter();
 	private static final String PROPERTY_SUFFIX = ".properties";
-	private static final String DEPENDENCIES = "dependencies";
 	private static final String JOB_SUFFIX = ".job";
 	
 	private final Logger logger;
@@ -153,7 +153,7 @@ public class DirectoryFlowLoader {
 				continue;
 			}
 
-			List<String> dependencyList = props.getStringList(DEPENDENCIES, (List<String>)null);
+			List<String> dependencyList = props.getStringList(CommonJobProperties.DEPENDENCIES, (List<String>)null);
 			
 			if (dependencyList != null) {
 				Map<String, Edge> dependencies = nodeDependencies.get(node.getId());
@@ -217,21 +217,21 @@ public class DirectoryFlowLoader {
 				
 				// Dedup with sets
 				@SuppressWarnings("unchecked")
-				List<String> successEmailList = jobProp.getStringList("success.emails", Collections.EMPTY_LIST);
+				List<String> successEmailList = jobProp.getStringList(CommonJobProperties.SUCCESS_EMAILS, Collections.EMPTY_LIST);
 				Set<String> successEmail = new HashSet<String>();
 				for (String email: successEmailList) {
 					successEmail.add(email.toLowerCase());
 				}
 	
 				@SuppressWarnings("unchecked")
-				List<String> failureEmailList = jobProp.getStringList("failure.emails", Collections.EMPTY_LIST);
+				List<String> failureEmailList = jobProp.getStringList(CommonJobProperties.FAILURE_EMAILS, Collections.EMPTY_LIST);
 				Set<String> failureEmail = new HashSet<String>();
 				for (String email: failureEmailList) {
 					failureEmail.add(email.toLowerCase());
 				}
 				
 				@SuppressWarnings("unchecked")
-				List<String> notifyEmailList = jobProp.getStringList("notify.emails", Collections.EMPTY_LIST);
+				List<String> notifyEmailList = jobProp.getStringList(CommonJobProperties.NOTIFY_EMAILS, Collections.EMPTY_LIST);
 				for (String email: notifyEmailList) {
 					email = email.toLowerCase();
 					successEmail.add(email);

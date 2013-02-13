@@ -31,6 +31,7 @@ import azkaban.executor.ExecutableFlow.Status;
 import azkaban.executor.ExecutableNode;
 import azkaban.executor.ExecutorLoader;
 import azkaban.executor.ExecutorManagerException;
+import azkaban.flow.CommonJobProperties;
 import azkaban.jobExecutor.AbstractProcessJob;
 import azkaban.jobExecutor.Job;
 import azkaban.jobtype.JobTypeManager;
@@ -197,6 +198,7 @@ public class JobRunner extends EventHandler implements Runnable {
 			else {
 				logInfo("Starting job " + node.getJobId() + " at " + node.getStartTime());
 			}
+			props.put(CommonJobProperties.JOB_ATTEMPT, node.getAttempt());
 			node.setStatus(Status.RUNNING);
 
 			// Ability to specify working directory
@@ -247,7 +249,7 @@ public class JobRunner extends EventHandler implements Runnable {
 			}
 		}
 	}
-
+	
 	public Status getStatus() {
 		return node.getStatus();
 	}
