@@ -1,4 +1,3 @@
-DROP TABLE if exists active_sla;
 CREATE TABLE active_sla (
 	exec_id INT NOT NULL,
 	job_name VARCHAR(128) NOT NULL,
@@ -6,5 +5,5 @@ CREATE TABLE active_sla (
 	rule TINYINT NOT NULL,
 	enc_type TINYINT,
 	options LONGBLOB NOT NULL,
-	primary key(exec_id, job_name, check_time, rule)
+	primary key(exec_id, job_name)
 ) ENGINE=InnoDB;

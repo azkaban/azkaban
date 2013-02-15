@@ -10,4 +10,9 @@ ALTER TABLE execution_logs ADD COLUMN attempt INT DEFAULT 0;
 ALTER TABLE execution_logs DROP PRIMARY KEY;
 ALTER TABLE execution_logs ADD PRIMARY KEY(exec_id, name, attempt);
 
+ALTER TABLE schedules ADD COLUMN enc_type TINYINT;
+ALTER TABLE schedules ADD COLUMN schedule_options LONGBLOB;
+
+
+
 

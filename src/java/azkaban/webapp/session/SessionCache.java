@@ -43,6 +43,8 @@ public class SessionCache {
 	 * @param props
 	 */
 	public SessionCache(Props props) {
+		// disable ehcache auto update
+		System.setProperty("net.sf.ehcache.skipUpdateCheck", "true");
 		CacheConfiguration config = new CacheConfiguration();
 		config.setName("sessionCache");
 		config.setMaxEntriesLocalHeap(props.getInt("max.num.sessions", MAX_NUM_SESSIONS));

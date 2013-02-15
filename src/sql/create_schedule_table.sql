@@ -13,7 +13,7 @@ CREATE TABLE schedules (
 	submit_time BIGINT,
 	submit_user VARCHAR(128),
 	enc_type TINYINT,
-    options LONGBLOB,
+    	schedule_options LONGBLOB,
 	primary key(project_id, flow_name)
 ) ENGINE=InnoDB;
 
