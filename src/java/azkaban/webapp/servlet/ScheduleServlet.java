@@ -160,6 +160,10 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
 			sched.setSlaOptions(slaOptions);
 			scheduleManager.insertSchedule(sched);
 
+			if(slaOptions != null) {
+				projectManager.postProjectEvent(project, EventType.SLA, user.getUserId(), "SLA for flow " + flowName + " has been added/changed.");
+			}
+			
 		} catch (ServletException e) {
 			ret.put("error", e);
 		}
@@ -433,7 +437,7 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
 		}
 		Schedule schedule = scheduleManager.scheduleFlow(projectId, projectName, flowName, "ready", firstSchedTime.getMillis(), timezone, thePeriod, submitTime.getMillis(), firstSchedTime.getMillis(), firstSchedTime.getMillis(), user.getUserId(), flowOptions, slaOptions);
 		logger.info("User '" + user.getUserId() + "' has scheduled " + "[" + projectName + flowName +  " (" + projectId +")" + "].");
-		projectManager.postProjectEvent(project, EventType.SCHEDULE, user.getUserId(), "Schedule " + schedule.getScheduleName() + " has been added.");
+		projectManager.postProjectEvent(project, EventType.SCHEDULE, user.getUserId(), "Schedule " + schedule.toString() + " has been added.");
 		
 		ret.put("status", "success");
 		ret.put("message", projectName + "." + flowName + " scheduled.");
@@ -502,8 +506,8 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
 		}
 		Schedule schedule = scheduleManager.scheduleFlow(projectId, projectName, flowName, "ready", firstSchedTime.getMillis(), firstSchedTime.getZone(), thePeriod, DateTime.now().getMillis(), firstSchedTime.getMillis(), firstSchedTime.getMillis(), user.getUserId(), flowOptions, slaOptions);
 		logger.info("User '" + user.getUserId() + "' has scheduled " + "[" + projectName + flowName +  " (" + projectId +")" + "].");
-		projectManager.postProjectEvent(project, EventType.SCHEDULE, user.getUserId(), "Schedule " + schedule.getScheduleName() + " has been added.");
-		
+		projectManager.postProjectEvent(project, EventType.SCHEDULE, user.getUserId(), "Schedule " + schedule.toString() + " has been added.");
+
 		ret.put("status", "success");
 		ret.put("message", projectName + "." + flowName + " scheduled.");
 	}

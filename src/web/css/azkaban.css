@@ -1529,6 +1529,50 @@ tr:hover td {
 }
 
 
+#job-edit-pane {
+	left: 100px;
+	right: 100px;
+	top: 50px;
+	bottom: 40px;
+}
+
+#job-edit-pane .list {
+	width: 255px;
+}
+
+#job-edit-pane .optionsPane {
+	position: absolute;
+	top: 85px;
+	background-color: #FFF;
+	left: 0px;
+	right: 0px;
+	bottom: 0px;
+}
+
+#job-edit-pane .panel {
+	position: absolute;
+	width: 100%;
+	top: 0px;
+	bottom: 65px;
+}
+
+#job-edit-pane .generalPanel.panel {
+	background-color: #F4F4F4;
+	padding-top: 15px;
+}
+
+#job-edit-pane h3 {
+	margin-left: 20px;
+	font-size: 14pt;
+	border-bottom: 1px solid #CCC;
+}
+
+#job-edit-pane h4 {
+	margin-left: 20px;
+	font-size: 12pt;
+	border-bottom: 1px solid #CCC;
+}
+
 #schedule-options {
 	left: 100px;
 	right: 100px;

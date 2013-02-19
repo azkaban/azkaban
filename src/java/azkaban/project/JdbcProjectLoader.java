@@ -749,6 +749,43 @@ public class JdbcProjectLoader implements ProjectLoader {
 		}
 	}
 	
+	@Override
+	public void updateProjectProperty(Project project, Props props) throws ProjectManagerException {
+		Connection connection = getConnection();
+		try {
+			updateProjectProperty(connection, project, props.getSource(), props);
+			connection.commit();
+		}
+		catch (SQLException e) {
+			throw new ProjectManagerException("Error uploading project property files", e);
+		} 
+		catch (IOException e) {
+			throw new ProjectManagerException("Error uploading project property file", e);
+		}
+		finally {
+			DbUtils.closeQuietly(connection);
+		}
+	}
+	
+	private void updateProjectProperty(Connection connection, Project project, String name, Props props) throws ProjectManagerException, IOException {
+		QueryRunner runner = new QueryRunner();
+		final String UPDATE_PROPERTIES = "UPDATE project_properties SET property=? WHERE project_id=? AND version=? AND name=?";
+		
+		String propertyJSON = PropsUtils.toJSONString(props, true);
+		byte[] data = propertyJSON.getBytes("UTF-8");
+		logger.info("UTF-8 size:" + data.length);
+		if (defaultEncodingType == EncodingType.GZIP) {
+			data = GZIPUtils.gzipBytes(data);
+		}
+
+		try {
+			runner.update(connection, UPDATE_PROPERTIES, data, project.getId(), project.getVersion(), name);
+			connection.commit();
+		} catch (SQLException e) {
+			throw new ProjectManagerException("Error updating property " + project.getName() + " version " + project.getVersion(), e);
+		}
+	}
+	
 	private void uploadProjectProperty(Connection connection, Project project, String name, Props props) throws ProjectManagerException, IOException {
 		QueryRunner runner = new QueryRunner();
 		final String INSERT_PROPERTIES = "INSERT INTO project_properties (project_id, version, name, modified_time, encoding_type, property) values (?,?,?,?,?,?)";
@@ -768,6 +805,25 @@ public class JdbcProjectLoader implements ProjectLoader {
 		}
 	}
 
+	@Override
+	public Props fetchProjectProperty(int projectId, int projectVer, String propsName) throws ProjectManagerException {
+		QueryRunner runner = new QueryRunner(dataSource);
+		
+		ProjectPropertiesResultsHandler handler = new ProjectPropertiesResultsHandler();
+		try {
+			List<Pair<String, Props>> properties = 
+					runner.query(ProjectPropertiesResultsHandler.SELECT_PROJECT_PROPERTY, handler,  projectId, projectVer, propsName);
+
+			if (properties == null || properties.isEmpty()) {
+				return null;
+			}
+			
+			return properties.get(0).getSecond();
+		} catch (SQLException e) {
+			throw new ProjectManagerException("Error fetching property " + propsName, e);
+		}
+	}
+	
 	@Override
 	public Props fetchProjectProperty(Project project, String propsName) throws ProjectManagerException {
 		QueryRunner runner = new QueryRunner(dataSource);

@@ -307,6 +307,11 @@ public class Schedule{
 		return projectName + "." + flowName + " (" + projectId + ")";
 	}
 	
+	public String toString() {
+		return projectName + "." + flowName + " (" + projectId + ")" + " to be run at (starting) " + 
+				new DateTime(firstSchedTime).toDateTimeISO() + " with recurring period of " + (period == null ? "non-recurring" : createPeriodString(period));
+	}
+	
 	public Pair<Integer, String> getScheduleId() {
 		return new Pair<Integer, String>(getProjectId(), getFlowName());
 	}

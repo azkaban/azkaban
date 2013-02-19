@@ -25,6 +25,7 @@
 		<script type="text/javascript" src="${context}/js/backbone-0.5.3-min.js"></script>
 		<script type="text/javascript" src="${context}/js/jquery.simplemodal.js"></script>
 		<script type="text/javascript" src="${context}/js/azkaban.nav.js"></script>
+		<script type="text/javascript" src="${context}/js/azkaban.jobedit.view.js"></script>
 		<script type="text/javascript">
 			var contextURL = "${context}";
 			var currentTime = ${currentTime};
@@ -60,6 +61,7 @@
 					</div>
 					
 					<a id="jobs-logs-btn" class="btn2" href="${context}/manager?project=${project.name}&job=$jobid&history">Job History</a>
+					<a id="edit-job-btn" class="btn1" onclick='jobEditView.show("${project.name}", "${flowid}", "${jobid}")'>Job Edit</a>
 				</div>
 			</div>
 			
@@ -115,5 +117,55 @@
 	</div>
 
 #end
+
+		<!-- modal content -->
+
+		<div id="jobEditModalBackground" class="modalBackground2">
+			<div id="job-edit-pane" class="modal modalContainer2">
+				<a href='#' title='Close' class='modal-close'>x</a>
+					<h3>Job Description Edit</h3>					
+					<div class="optionsPane">
+						<div id="generalPanel" class="generalPanel panel">
+							<div id="mustHave">
+								<h4>Job Essentials</h4>
+								<dl>
+									<dt>Job Name</dt>
+									<dd>
+										<label id="jobName"></label>
+									</dd>
+									<dt>Job Type</dt>
+									<dd>
+										<label id="jobType"></label>
+									</dd>
+								</dl>
+							</div>
+							<br></br>
+							<!--div id="jobTypeSpecific">
+								<h4>Job Type Specific parameters</h4>
+							</div-->
+							<div id="generalJobSetting">
+								<h4>General Job Settings (Be Aware: A Job May Be Shared By Multiple Flows. The Change Will Be Global!)</h4>
+								<div class="tableDiv">
+									<table id="generalProps">
+										<thead>
+											<tr>
+												<th>Name</th>
+												<th>Value</th>
+											</tr>
+										</thead>
+										<tbody>
+											<tr id="addRow"><td id="addRow-col" colspan="2"><span class="addIcon"></span><a href="#">Add Row</a></td></tr>
+										</tbody>
+									</table>
+								</div>
+							</div>
+						</div>
+					</div>
+					<div class="actions">
+						<a class="yes btn1" id="set-btn" >Set/Change Job Description</a>
+						<a class="no simplemodal-close btn3" id="cancel-btn" >Cancel</a>
+					</div>
+			</div>
+		</div>
 	</body>
 </html>

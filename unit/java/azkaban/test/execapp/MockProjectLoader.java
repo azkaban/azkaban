@@ -195,4 +195,18 @@ public class MockProjectLoader implements ProjectLoader {
 		// TODO Auto-generated method stub
 		
 	}
+
+	@Override
+	public void updateProjectProperty(Project project, Props props)
+			throws ProjectManagerException {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public Props fetchProjectProperty(int projectId, int projectVer,
+			String propsName) throws ProjectManagerException {
+		// TODO Auto-generated method stub
+		return null;
+	}
 }

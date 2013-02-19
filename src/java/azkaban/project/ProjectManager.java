@@ -200,6 +200,22 @@ public class ProjectManager {
 	public Props getProperties(Project project, String source) throws ProjectManagerException {
 		return projectLoader.fetchProjectProperty(project, source);
 	}
+	
+	public Props getJobOverrideProperty(Project project, String jobName) throws ProjectManagerException {
+		return projectLoader.fetchProjectProperty(project, jobName+".jor");
+	}
+	
+	public void setJobOverrideProperty(Project project, Props prop, String jobName) throws ProjectManagerException {
+		prop.setSource(jobName+".jor");
+		Props oldProps = projectLoader.fetchProjectProperty(project, prop.getSource());
+		if(oldProps == null) {
+			projectLoader.uploadProjectProperty(project, prop);
+		}
+		else {
+			projectLoader.updateProjectProperty(project, prop);
+		}
+		return;
+	}
 
 	public void updateProjectPermission(Project project, String name, Permission perm, boolean group, User modifier) throws ProjectManagerException {
 		logger.info("User " + modifier.getUserId() + " updating permissions for project " + project.getName() + " for " + name + " " + perm.toString());

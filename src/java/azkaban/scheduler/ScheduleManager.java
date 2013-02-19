@@ -406,7 +406,7 @@ public class ScheduleManager {
 										try {
 											executorManager.submitExecutableFlow(exflow);
 											logger.info("Scheduler has invoked " + exflow.getExecutionId());
-										} catch (ExecutorManagerException e) {	
+										} catch (Exception e) {	
 											logger.error("Scheduler invoked flow " + exflow.getExecutionId() + " has failed.");
 											logger.error(e.getMessage());
 											return;
