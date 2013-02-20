@@ -249,7 +249,7 @@ public class FlowRunnerManager implements EventListener {
 		setupFlow(flow);
 		
 		// Setup flow runner
-		FlowRunner runner = new FlowRunner(flow, executorLoader, jobtypeManager);
+		FlowRunner runner = new FlowRunner(flow, executorLoader, projectLoader, jobtypeManager);
 		runner.setGlobalProps(globalProps);
 		runner.addListener(this);
 		

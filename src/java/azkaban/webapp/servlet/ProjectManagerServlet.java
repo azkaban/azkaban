@@ -217,6 +217,16 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 				ajaxFetchFlowExecutions(project, ret, req);
 			}
 		}
+		else if (ajaxName.equals("fetchJobInfo")) {
+			if (handleAjaxPermission(project, user, Type.READ, ret)) {
+				ajaxFetchJobInfo(project, ret, req);
+			}
+		}
+		else if (ajaxName.equals("setJobOverrideProperty")) {
+			if (handleAjaxPermission(project, user, Type.WRITE, ret)) {
+				ajaxSetJobOverrideProperty(project, ret, req);
+			}
+		}
 		else {
 			ret.put("error", "Cannot execute command " + ajaxName);
 		}
@@ -375,6 +385,86 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 		}
 	}
 	
+	private void ajaxFetchJobInfo(Project project, HashMap<String, Object> ret, HttpServletRequest req) throws ServletException {
+
+		String flowName = getParam(req, "flowName");
+		String jobName = getParam(req, "jobName");
+		
+		Flow flow = project.getFlow(flowName);
+		if(flow == null) {
+			ret.put("error", "Flow " + flowName + " not found in project " + project.getName());
+			return;
+		}
+		
+		Node node = flow.getNode(jobName);
+		if(node == null) {
+			ret.put("error", "Job " + jobName + " not found in flow " + flowName);
+			return;
+		}
+		
+		Props prop;
+		try {
+			prop = projectManager.getProperties(project, node.getJobSource());
+		} catch (ProjectManagerException e) {
+			ret.put("error", "Failed to retrieve job properties!");
+			return;
+		}
+		
+		Props overrideProp;
+		try {
+			overrideProp = projectManager.getJobOverrideProperty(project, jobName);
+		} catch (ProjectManagerException e) {
+			ret.put("error", "Failed to retrieve job override properties!");
+			return;
+		}
+		
+		ret.put("jobName", node.getId());
+		ret.put("jobType", prop.get("type"));
+		
+		if(overrideProp == null) {
+			overrideProp = new Props(prop);
+		}
+		
+		Map<String, String> generalParams = new HashMap<String, String>();
+		Map<String, String> overrideParams = new HashMap<String, String>();
+		for(String ps : prop.getKeySet()) {
+			generalParams.put(ps, prop.getString(ps));
+		}
+		for(String ops : overrideProp.getKeySet()) {
+//			generalParams.put(ops, overrideProp.getString(ops));
+			overrideParams.put(ops, overrideProp.getString(ops));
+		}
+		ret.put("generalParams", generalParams);
+		ret.put("overrideParams", overrideParams);
+	}
+	
+	private void ajaxSetJobOverrideProperty(Project project, HashMap<String, Object> ret, HttpServletRequest req) throws ServletException {
+		String flowName = getParam(req, "flowName");
+		String jobName = getParam(req, "jobName");
+		
+		Flow flow = project.getFlow(flowName);
+		if(flow == null) {
+			ret.put("error", "Flow " + flowName + " not found in project " + project.getName());
+			return;
+		}
+		
+		Node node = flow.getNode(jobName);
+		if(node == null) {
+			ret.put("error", "Job " + jobName + " not found in flow " + flowName);
+			return;
+		}
+		
+		Map<String, String> jobParamGroup = this.getParamGroup(req, "jobOverride");
+		@SuppressWarnings("unchecked")
+		Props overrideParams = new Props(null, jobParamGroup);
+		try {
+			projectManager.setJobOverrideProperty(project, overrideParams, jobName);
+		} catch (ProjectManagerException e) {
+			ret.put("error", "Failed to upload job override property");
+		}
+
+	}
+		
 	private void ajaxFetchProjectFlows(Project project, HashMap<String, Object> ret, HttpServletRequest req) throws ServletException {
 		ArrayList<Map<String,Object>> flowList = new ArrayList<Map<String,Object>>();
 		for (Flow flow: project.getFlows()) {
@@ -751,6 +841,14 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 					}
 					else {
 						Props prop = projectManager.getProperties(project, node.getJobSource());
+						Props overrideProp = projectManager.getJobOverrideProperty(project, jobName);
+						if(overrideProp == null) {
+							overrideProp = new Props();
+						}
+						Props comboProp = new Props(prop);
+						for(String key : overrideProp.getKeySet()) {
+							comboProp.put(key, overrideProp.get(key));
+						}
 						page.add("jobid", node.getId());
 						page.add("jobtype", node.getType());
 						
@@ -791,11 +889,10 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 							page.add("properties", source);
 						}
 						
-
 						ArrayList<Pair<String,String>> parameters = new ArrayList<Pair<String, String>>();
 						// Parameter
-						for (String key : prop.getKeySet()) {
-							String value = prop.get(key);
+						for (String key : comboProp.getKeySet()) {
+							String value = comboProp.get(key);
 							parameters.add(new Pair<String,String>(key, value));
 						}
 						

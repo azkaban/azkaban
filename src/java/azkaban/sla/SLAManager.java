@@ -228,10 +228,17 @@ public class SLAManager {
 									List<SlaSetting> removeSettings = new ArrayList<SLA.SlaSetting>();
 									for(SlaSetting set : jobSettings) {
 										ExecutableNode node = exflow.getExecutableNode(set.getId());
-										if(node.getStartTime() != -1 || executorManager.isFinished(exflow)) {
-											submitSla(execId, set.getId(), new DateTime(node.getStartTime()).plus(set.getDuration()), runningSLA.getEmails(), set.getActions(), null, set.getRule());
+										if(node != null) {
+											if(node.getStartTime() != -1 || executorManager.isFinished(exflow)) {
+												submitSla(execId, set.getId(), new DateTime(node.getStartTime()).plus(set.getDuration()), runningSLA.getEmails(), set.getActions(), null, set.getRule());
+												removeSettings.add(set);
+												logger.info("Job " + set.getId() + " already started, monitoring SLA.");
+											}
+										}
+										else {
+											mailer.sendSlaEmail(s, "The SLA setting for flow/job is no longer valid as flow structure has changed. Execution " + s.getExecId());
 											removeSettings.add(set);
-											logger.info("Job " + set.getId() + " already started, monitoring SLA.");
+											
 										}
 									}
 									for(SlaSetting remove : removeSettings) {
@@ -251,7 +258,10 @@ public class SLAManager {
 								}
 								else {
 									if(!metSla(runningSLA, exflow)) {
-										takeSLAActions(runningSLA, exflow);
+										takeSLAFailActions(runningSLA, exflow);
+									}
+									else {
+										takeSLASuccessActions(runningSLA, exflow);
 									}
 
 
@@ -324,7 +334,7 @@ public class SLAManager {
 		}
 	}
 
-	private void takeSLAActions(SLA s, ExecutableFlow exflow) {
+	private void takeSLAFailActions(SLA s, ExecutableFlow exflow) {
 		logger.info("SLA " + s.toString() + " missed! Taking predefined actions");
 		List<SlaAction> actions = s.getActions();
 		for(SlaAction act : actions) {
@@ -338,13 +348,18 @@ public class SLAManager {
 			} else if(act.equals(SlaAction.KILL)) {
 				try {
 					executorManager.cancelFlow(exflow, "azkaban");
-					//sendSlaKillEmail(s, exflow);
+					sendSlaKillEmail(s, exflow);
 				} catch (ExecutorManagerException e) {
 					// TODO Auto-generated catch block
 					logger.error("Cancel flow failed." + e.getCause());
 				}
 			}
 		}
+	}
+	
+	private void takeSLASuccessActions(SLA s, ExecutableFlow exflow) {
+		sendSlaSuccessEmail(s, exflow);
+		
 	}
 	
 	private void sendSlaAlertEmail(SLA s, ExecutableFlow exflow) {
@@ -384,6 +399,83 @@ public class SLAManager {
 		}
 		mailer.sendSlaEmail(s, message);
 	}
+	
+	private void sendSlaSuccessEmail(SLA s, ExecutableFlow exflow) {
+		String message = null;
+		ExecutableNode exnode;
+		switch(s.getRule()) {
+			case FINISH:
+				if(s.getJobName().equals("")) {
+					message = "Flow " + exflow.getFlowId() + " finished within the set SLA." + String.format("%n");
+					message += "Flow started at " + new DateTime(exflow.getStartTime()).toDateTimeISO() + String.format("%n");
+					message += "Flow status at " + s.getCheckTime().toDateTimeISO() + " is " + exflow.getStatus();
+				}
+				else {
+					exnode = exflow.getExecutableNode(s.getJobName());
+					message = "Job " + s.getJobName() + " of flow " + exflow.getFlowId() + " finished within the set SLA." + String.format("%n");
+					message += "Job started at " + new DateTime(exnode.getStartTime()).toDateTimeISO() + String.format("%n");
+					message += "Job status at " + s.getCheckTime().toDateTimeISO() + " is " + exnode.getStatus();
+				}
+				break;
+			case SUCCESS:
+				if(s.getJobName().equals("")) {
+					message = "Flow " + exflow.getFlowId() + " successfully finished within the set SLA." + String.format("%n");
+					message += "Flow started at " + new DateTime(exflow.getStartTime()).toDateTimeISO() + String.format("  %n");
+					message += "Flow status at " + s.getCheckTime().toDateTimeISO() + " is " + exflow.getStatus();
+				}
+				else {
+					exnode = exflow.getExecutableNode(s.getJobName());
+					message = "Job " + s.getJobName() + " of flow " + exflow.getFlowId() + " successfully finished within the set SLA." + String.format("%n"); 
+					message += "Job started at " + new DateTime(exnode.getStartTime()).toDateTimeISO() + String.format("%n");
+					message += "Job status at " + s.getCheckTime().toDateTimeISO() + " is " + exnode.getStatus();
+				}
+				break;
+			default:
+				logger.error("Unknown SLA rules!");
+				message = "Unknown SLA was not met!";
+				break;
+		}
+		mailer.sendSlaEmail(s, message);
+	}
+	
+	private void sendSlaKillEmail(SLA s, ExecutableFlow exflow) {
+		String message = null;
+		ExecutableNode exnode;
+		switch(s.getRule()) {
+			case FINISH:
+				if(s.getJobName().equals("")) {
+					message = "Flow " + exflow.getFlowId() + " failed to finish with set SLA and is killed. " + String.format("%n");
+					message += "Flow started at " + new DateTime(exflow.getStartTime()).toDateTimeISO() + String.format("%n");
+					message += "Flow status at " + s.getCheckTime().toDateTimeISO() + " is " + exflow.getStatus();
+				}
+				else {
+					exnode = exflow.getExecutableNode(s.getJobName());
+						message = "Job " + s.getJobName() + " of flow " + exflow.getFlowId() + " failed to finish with set SLA and is killed. " + String.format("%n");
+						message += "Job started at " + new DateTime(exnode.getStartTime()).toDateTimeISO() + String.format("%n");
+						message += "Job status at " + s.getCheckTime().toDateTimeISO() + " is " + exnode.getStatus();
+				}
+				break;
+			case SUCCESS:
+				if(s.getJobName().equals("")) {
+					message = "Flow " + exflow.getFlowId() + " didn't finish successfully with set SLA and is killed. " + String.format("%n");
+					message += "Flow started at " + new DateTime(exflow.getStartTime()).toDateTimeISO() + String.format("  %n");
+					message += "Flow status at " + s.getCheckTime().toDateTimeISO() + " is " + exflow.getStatus();
+				}
+				else {
+					exnode = exflow.getExecutableNode(s.getJobName());
+					message = "Job " + s.getJobName() + " of flow " + exflow.getFlowId() + " didn't finish successfully with set SLA and is killed. " + String.format("%n"); 
+					message += "Job started at " + new DateTime(exnode.getStartTime()).toDateTimeISO() + String.format("%n");
+					message += "Job status at " + s.getCheckTime().toDateTimeISO() + " is " + exnode.getStatus();
+				}
+				break;
+			default:
+				logger.error("Unknown SLA rules!");
+				message = "Unknown SLA was not met!";
+				break;
+		}
+		mailer.sendSlaEmail(s, message);
+	}
+	
 	
 	public class SLAPreRunner extends Thread {
 		private final List<SLA> preSlas;

@@ -7,7 +7,7 @@ public class ProjectLogEvent {
 	 * Only represent from 0 to 255 different codes.
 	 */
 	public static enum EventType {
-		ERROR(128), CREATED(1), DELETED(2), USER_PERMISSION(3), GROUP_PERMISSION(4), DESCRIPTION(5), UPLOADED(6), SCHEDULE(7);
+		ERROR(128), CREATED(1), DELETED(2), USER_PERMISSION(3), GROUP_PERMISSION(4), DESCRIPTION(5), UPLOADED(6), SCHEDULE(7), SLA(8);
 
 		private int numVal;
 
@@ -35,6 +35,8 @@ public class ProjectLogEvent {
 				return UPLOADED;
 			case 7:
 				return SCHEDULE;
+			case 8:
+				return SLA;
 			case 128:
 				return ERROR;
 			default:

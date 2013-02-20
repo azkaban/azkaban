@@ -21,12 +21,14 @@ import azkaban.executor.ExecutorLoader;
 
 import azkaban.flow.Flow;
 import azkaban.jobtype.JobTypeManager;
+import azkaban.project.ProjectLoader;
 import azkaban.test.executor.JavaJob;
 import azkaban.utils.JSONUtils;
 
 public class FlowRunnerTest {
 	private File workingDir;
 	private JobTypeManager jobtypeManager;
+	private ProjectLoader fakeProjectLoader;
 	public FlowRunnerTest() {
 		
 	}
@@ -41,6 +43,7 @@ public class FlowRunnerTest {
 		workingDir.mkdirs();
 		jobtypeManager = new JobTypeManager(null, this.getClass().getClassLoader());
 		jobtypeManager.registerJobType("java", JavaJob.class);
+		fakeProjectLoader = new MockProjectLoader(workingDir);
 	}
 	
 	@After
@@ -55,6 +58,8 @@ public class FlowRunnerTest {
 	@Test
 	public void exec1Normal() throws Exception {
 		MockExecutorLoader loader = new MockExecutorLoader();
+		//just making compile. may not work at all.
+		
 		EventCollectorListener eventCollector = new EventCollectorListener();
 		FlowRunner runner = createFlowRunner(loader, eventCollector, "exec1");
 		
@@ -349,7 +354,7 @@ public class FlowRunnerTest {
 		//MockProjectLoader projectLoader = new MockProjectLoader(new File(flow.getExecutionPath()));
 		
 		loader.uploadExecutableFlow(flow);
-		FlowRunner runner = new FlowRunner(flow, loader, jobtypeManager);
+		FlowRunner runner = new FlowRunner(flow, loader, fakeProjectLoader, jobtypeManager);
 		runner.addListener(eventCollector);
 		
 		return runner;
@@ -361,7 +366,7 @@ public class FlowRunnerTest {
 		//MockProjectLoader projectLoader = new MockProjectLoader(new File(exFlow.getExecutionPath()));
 		
 		loader.uploadExecutableFlow(exFlow);
-		FlowRunner runner = new FlowRunner(exFlow, loader, jobtypeManager);
+		FlowRunner runner = new FlowRunner(exFlow, loader, fakeProjectLoader, jobtypeManager);
 		runner.addListener(eventCollector);
 		
 		return runner;

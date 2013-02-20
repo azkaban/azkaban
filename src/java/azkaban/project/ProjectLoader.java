@@ -214,5 +214,9 @@ public interface ProjectLoader {
 	 * @throws ProjectManagerException
 	 */
 	public void cleanOlderProjectVersion(int projectId, int version) throws ProjectManagerException;
+
+	public void updateProjectProperty(Project project, Props props) throws ProjectManagerException;
+
+	Props fetchProjectProperty(int projectId, int projectVer, String propsName) throws ProjectManagerException;
 	
 }

@@ -33,6 +33,8 @@ import azkaban.executor.ExecutorLoader;
 import azkaban.executor.ExecutorManagerException;
 import azkaban.flow.FlowProps;
 import azkaban.jobtype.JobTypeManager;
+import azkaban.project.ProjectLoader;
+import azkaban.project.ProjectManagerException;
 import azkaban.utils.Pair;
 import azkaban.utils.Props;
 import azkaban.utils.PropsUtils;
@@ -45,6 +47,7 @@ public class FlowRunner extends EventHandler implements Runnable {
 
 	private ExecutorService executorService;
 	private ExecutorLoader executorLoader;
+	private ProjectLoader projectLoader;
 
 	private ExecutableFlow flow;
 	private Thread currentThread;
@@ -77,10 +80,11 @@ public class FlowRunner extends EventHandler implements Runnable {
 	private boolean flowFinished = false;
 	private boolean flowCancelled = false;
 	
-	public FlowRunner(ExecutableFlow flow, ExecutorLoader executorLoader, JobTypeManager jobtypeManager) throws ExecutorManagerException {
+	public FlowRunner(ExecutableFlow flow, ExecutorLoader executorLoader, ProjectLoader projectLoader, JobTypeManager jobtypeManager) throws ExecutorManagerException {
 		this.execId = flow.getExecutionId();
 		this.flow = flow;
 		this.executorLoader = executorLoader;
+		this.projectLoader = projectLoader;
 		this.executorService = Executors.newFixedThreadPool(numThreads);
 		this.execDir = new File(flow.getExecutionPath());
 		this.jobtypeManager = jobtypeManager;
@@ -313,13 +317,27 @@ public class FlowRunner extends EventHandler implements Runnable {
 		// Load job file.
 		File path = new File(execDir, source);
 		Props prop = null;
+		
+		// load the override props if any
 		try {
-			prop = new Props(null, path);
-			prop.setParent(parentProps);
-		} catch (IOException e) {
-			e.printStackTrace();
-			logger.error("Error loading job file " + source + " for job " + node.getJobId());
+			prop = projectLoader.fetchProjectProperty(flow.getProjectId(), flow.getVersion(), node.getJobId()+".jor");
 		}
+		catch(ProjectManagerException e) {
+			e.printStackTrace();
+			logger.error("Error loading job override property for job " + node.getJobId());
+		}
+		if(prop == null) {
+			// if no override prop, load the original one on disk
+			try {
+				prop = new Props(null, path);				
+			} catch (IOException e) {
+				e.printStackTrace();
+				logger.error("Error loading job file " + source + " for job " + node.getJobId());
+			}
+		}
+		// setting this fake source as this will be used to determine the location of log files.
+		prop.setSource(path.getPath());
+		prop.setParent(parentProps);
 		
 		// should have one prop with system secrets, the other user level props
 		JobRunner jobRunner = new JobRunner(node, prop, path.getParentFile(), executorLoader, jobtypeManager);
