@@ -807,4 +807,19 @@ public class FlowRunner extends EventHandler implements Runnable {
 		
 		return runner.getLogFile();
 	}
+	
+	public boolean isRunnerThreadAlive() {
+		if (currentThread != null) {
+			return currentThread.isAlive();
+		}
+		return false;
+	}
+	
+	public boolean isThreadPoolShutdown() {
+		return executorService.isShutdown();
+	}
+	
+	public int getNumRunningJobs() {
+		return runningJob.size();
+	}
 }

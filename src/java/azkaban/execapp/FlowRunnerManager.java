@@ -478,13 +478,7 @@ public class FlowRunnerManager implements EventListener {
 		
 		throw new ExecutorManagerException("Error reading file. Log directory doesn't exist.");
 	}
-	
-	/**
-	 * 	private ExecutorService executorService;
-	private SubmitterThread submitterThread;
-	private CleanerThread cleanerThread;
-	 * @return
-	 */
+
 	public long getLastCleanerThreadCheckTime() {
 		return lastCleanerThreadCheckTime;
 	}
@@ -517,4 +511,13 @@ public class FlowRunnerManager implements EventListener {
 		return runningFlows.size();
 	}
 
+	public int getNumExecutingJobs() {
+		int jobCount = 0;
+		for (FlowRunner runner: runningFlows.values()) {
+			jobCount += runner.getNumRunningJobs();
+		}
+		
+		return jobCount;
+	}
+	
 }
