@@ -19,8 +19,13 @@ package azkaban.execapp;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.lang.management.ManagementFactory;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.TimeZone;
+
+import javax.management.MBeanServer;
+import javax.management.ObjectName;
 
 import org.apache.log4j.Logger;
 import org.joda.time.DateTimeZone;
@@ -31,6 +36,10 @@ import org.mortbay.thread.QueuedThreadPool;
 
 import azkaban.executor.ExecutorLoader;
 import azkaban.executor.JdbcExecutorLoader;
+import azkaban.jmx.JmxExecutorManager;
+import azkaban.jmx.JmxJettyServer;
+import azkaban.jmx.JmxSLAManager;
+import azkaban.jmx.JmxScheduler;
 import azkaban.project.JdbcProjectLoader;
 import azkaban.project.ProjectLoader;
 import azkaban.utils.Props;
@@ -64,6 +73,9 @@ public class AzkabanExecutorServer {
 	private Props executorGlobalProps;
 	private Server server;
 	
+	private ArrayList<ObjectName> registeredMBeans = new ArrayList<ObjectName>();
+	private MBeanServer mbeanServer;
+
 	/**
 	 * Constructor
 	 * 
@@ -75,7 +87,7 @@ public class AzkabanExecutorServer {
 		int portNumber = props.getInt("executor.port", DEFAULT_PORT_NUMBER);
 		int maxThreads = props.getInt("executor.maxThreads", DEFAULT_THREAD_NUMBER);
 
-		Server server = new Server(portNumber);
+		server = new Server(portNumber);
 		QueuedThreadPool httpThreadPool = new QueuedThreadPool(maxThreads);
 		server.setThreadPool(httpThreadPool);
 
@@ -99,6 +111,8 @@ public class AzkabanExecutorServer {
 			executorGlobalProps = new Props(null, globalPropsPath);
 		}
 		runnerManager.setGlobalProps(executorGlobalProps);
+		
+		configureMBeanServer();
 		
 		try {
 			server.start();
@@ -131,7 +145,7 @@ public class AzkabanExecutorServer {
 	public ExecutorLoader getExecutorLoader() {
 		return executionLoader;
 	}
-
+	
 	/**
 	 * Returns the global azkaban properties
 	 * 
@@ -276,5 +290,37 @@ public class AzkabanExecutorServer {
 		}
 		
 		return props;
+	}
+
+	private void configureMBeanServer() {
+		logger.info("Registering MBeans...");
+		mbeanServer = ManagementFactory.getPlatformMBeanServer();
+
+		registerMbean("jetty", new JmxJettyServer(server));
+	}
+	
+	public void close() {
+		try {
+			for (ObjectName name : registeredMBeans) {
+				mbeanServer.unregisterMBean(name);
+				logger.info("Jmx MBean " + name.getCanonicalName() + " unregistered.");
+			}
+		} catch (Exception e) {
+			logger.error("Failed to cleanup MBeanServer", e);
+		}
+	}
+	
+	private void registerMbean(String name, Object mbean) {
+		Class<?> mbeanClass = mbean.getClass();
+		ObjectName mbeanName;
+		try {
+			mbeanName = new ObjectName(mbeanClass.getName() + ":name=" + name);
+			mbeanServer.registerMBean(mbean, mbeanName);
+			logger.info("Bean " + mbeanClass.getCanonicalName() + " registered.");
+			registeredMBeans.add(mbeanName);
+		} catch (Exception e) {
+			logger.error("Error registering mbean " + mbeanClass.getCanonicalName(), e);
+		}
+
 	}
 }

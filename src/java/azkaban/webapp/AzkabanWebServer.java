@@ -19,6 +19,7 @@ package azkaban.webapp;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.lang.management.ManagementFactory;
 import java.lang.reflect.Constructor;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -29,6 +30,9 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.TimeZone;
+
+import javax.management.MBeanServer;
+import javax.management.ObjectName;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.log4j.Logger;
@@ -46,6 +50,10 @@ import org.mortbay.thread.QueuedThreadPool;
 
 import azkaban.executor.ExecutorManager;
 import azkaban.executor.JdbcExecutorLoader;
+import azkaban.jmx.JmxExecutorManager;
+import azkaban.jmx.JmxJettyServer;
+import azkaban.jmx.JmxSLAManager;
+import azkaban.jmx.JmxScheduler;
 import azkaban.project.JdbcProjectLoader;
 import azkaban.project.ProjectManager;
 
@@ -97,7 +105,7 @@ import joptsimple.OptionSpec;
  */
 public class AzkabanWebServer implements AzkabanServer {
 	private static final Logger logger = Logger.getLogger(AzkabanWebServer.class);
-
+	
 	public static final String AZKABAN_HOME = "AZKABAN_HOME";
 	public static final String DEFAULT_CONF_PATH = "conf";
 	public static final String AZKABAN_PROPERTIES_FILE = "azkaban.properties";
@@ -117,6 +125,7 @@ public class AzkabanWebServer implements AzkabanServer {
 
 	private final VelocityEngine velocityEngine;
 
+	private final Server server;
 	private UserManager userManager;
 	private ProjectManager projectManager;
 	private ExecutorManager executorManager;
@@ -129,20 +138,24 @@ public class AzkabanWebServer implements AzkabanServer {
 	private SessionCache sessionCache;
 	private File tempDir;
 	private List<ViewerPlugin> viewerPlugins;
+	
+	private MBeanServer mbeanServer;
+	private ArrayList<ObjectName> registeredMBeans = new ArrayList<ObjectName>();
 
 	/**
 	 * Constructor usually called by tomcat AzkabanServletContext to create the
 	 * initial server
 	 */
 	public AzkabanWebServer() throws Exception {
-		this(loadConfigurationFromAzkabanHome());
+		this(null, loadConfigurationFromAzkabanHome());
 	}
 
 	/**
 	 * Constructor
 	 */
-	public AzkabanWebServer(Props props) throws Exception {
+	public AzkabanWebServer(Server server, Props props) throws Exception {
 		this.props = props;
+		this.server = server;
 		velocityEngine = configureVelocityEngine(props.getBoolean(VELOCITY_DEV_MODE_PARAM, false));
 		sessionCache = new SessionCache(props);
 		userManager = loadUserManager(props);
@@ -162,6 +175,8 @@ public class AzkabanWebServer implements AzkabanServer {
 
 			logger.info("Setting timezone to " + timezone);
 		}
+		
+		configureMBeanServer();
 	}
 	
 	
@@ -378,7 +393,6 @@ public class AzkabanWebServer implements AzkabanServer {
 			logger.error("Exiting Azkaban...");
 			return;
 		}
-		app = new AzkabanWebServer(azkabanSettings);
 
 		// int portNumber =
 		// azkabanSettings.getInt("jetty.port",DEFAULT_PORT_NUMBER);
@@ -388,7 +402,6 @@ public class AzkabanWebServer implements AzkabanServer {
 				DEFAULT_THREAD_NUMBER);
 
 		logger.info("Setting up Jetty Server with port:" + sslPortNumber + " and numThreads:" + maxThreads);
-
 		final Server server = new Server();
 		SslSocketConnector secureConnector = new SslSocketConnector();
 		secureConnector.setPort(sslPortNumber);
@@ -399,7 +412,8 @@ public class AzkabanWebServer implements AzkabanServer {
 		secureConnector.setTrustPassword(azkabanSettings.getString("jetty.trustpassword"));
 		
 		server.addConnector(secureConnector);
-
+		app = new AzkabanWebServer(server, azkabanSettings);
+		
 		QueuedThreadPool httpThreadPool = new QueuedThreadPool(maxThreads);
 		server.setThreadPool(httpThreadPool);
 
@@ -445,6 +459,7 @@ public class AzkabanWebServer implements AzkabanServer {
 				logger.info("Shutting down http server...");
 				try {
 					app.getScheduleManager().shutdown();
+					app.close();
 					server.stop();
 					server.destroy();
 				} 
@@ -671,5 +686,38 @@ public class AzkabanWebServer implements AzkabanServer {
 		return props;
 	}
 
+	private void configureMBeanServer() {
+		logger.info("Registering MBeans...");
+		mbeanServer = ManagementFactory.getPlatformMBeanServer();
+
+		registerMbean("jetty", new JmxJettyServer(server));
+		registerMbean("scheduler", new JmxScheduler(scheduleManager));
+		registerMbean("slaManager", new JmxSLAManager(slaManager));
+		registerMbean("executorManager", new JmxExecutorManager(executorManager));
+	}
 	
+	public void close() {
+		try {
+			for (ObjectName name : registeredMBeans) {
+				mbeanServer.unregisterMBean(name);
+				logger.info("Jmx MBean " + name.getCanonicalName() + " unregistered.");
+			}
+		} catch (Exception e) {
+			logger.error("Failed to cleanup MBeanServer", e);
+		}
+	}
+	
+	private void registerMbean(String name, Object mbean) {
+		Class<?> mbeanClass = mbean.getClass();
+		ObjectName mbeanName;
+		try {
+			mbeanName = new ObjectName(mbeanClass.getName() + ":name=" + name);
+			mbeanServer.registerMBean(mbean, mbeanName);
+			logger.info("Bean " + mbeanClass.getCanonicalName() + " registered.");
+			registeredMBeans.add(mbeanName);
+		} catch (Exception e) {
+			logger.error("Error registering mbean " + mbeanClass.getCanonicalName(), e);
+		}
+
+	}
 }

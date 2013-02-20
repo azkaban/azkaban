@@ -1,5 +1,3 @@
-DROP TABLE if exists schedules;
-
 CREATE TABLE schedules (
 	project_id INT NOT NULL,
 	project_name VARCHAR(128) NOT NULL,
@@ -13,7 +11,7 @@ CREATE TABLE schedules (
 	submit_time BIGINT,
 	submit_user VARCHAR(128),
 	enc_type TINYINT,
-    	schedule_options LONGBLOB,
+	schedule_options LONGBLOB,
 	primary key(project_id, flow_name)
 ) ENGINE=InnoDB;
 

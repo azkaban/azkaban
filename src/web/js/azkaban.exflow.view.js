@@ -193,12 +193,23 @@ azkaban.FlowTabView= Backbone.View.extend({
 			// Nodes can be in a killed state, even if the parents have succeeded due to failure option Finish running
 			// We want to re-enable those.
 			var shouldAdd = true;
-			for(var key in node.in) {
-				var dependency = node.in[key];
-				if (dependency.status != 'SUCCEEDED' && dependency.status!='SKIPPED') {
-					shouldAdd = false;
-					break;
+			if (node.in) {
+				var size = 0;
+				for(var key in node.in) {
+					size++;
+					var dependency = node.in[key];
+					if (dependency.status != 'SUCCEEDED' && dependency.status!='SKIPPED') {
+						shouldAdd = false;
+						break;
+					}
 				}
+				
+				if (size == 0) {
+					shouldAdd = false;
+				}
+			}
+			else {
+				shouldAdd = false;
 			}
 			
 			if (shouldAdd) {

@@ -16,7 +16,6 @@
 
 package azkaban.scheduler;
 
-import java.sql.Connection;
 import java.util.List;
 
 public interface ScheduleLoader {

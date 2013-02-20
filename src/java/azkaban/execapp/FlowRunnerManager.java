@@ -18,6 +18,7 @@ package azkaban.execapp;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.Thread.State;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -75,6 +76,9 @@ public class FlowRunnerManager implements EventListener {
 	
 	private Props globalProps;
 	
+	private long lastSubmitterThreadCheckTime = -1;
+	private long lastCleanerThreadCheckTime = -1;
+	
 	public FlowRunnerManager(Props props, ExecutorLoader executorLoader, ProjectLoader projectLoader, ClassLoader parentClassLoader) throws IOException {
 		executionDirectory = new File(props.getString("azkaban.execution.dir", "executions"));
 		projectDirectory = new File(props.getString("azkaban.project.dir", "projects"));
@@ -131,6 +135,7 @@ public class FlowRunnerManager implements EventListener {
 		public void run() {
 			while (!shutdown) {
 				try {
+					lastSubmitterThreadCheckTime = System.currentTimeMillis();
 					FlowRunner flowRunner = queue.take();
 					executorService.submit(flowRunner);
 				} catch (InterruptedException e) {
@@ -157,6 +162,7 @@ public class FlowRunnerManager implements EventListener {
 			while (!shutdown) {
 				synchronized (this) {
 					try {
+						lastCleanerThreadCheckTime = System.currentTimeMillis();
 						wait(RECENTLY_FINISHED_TIME_TO_LIVE);
 						// Cleanup old stuff.
 						cleanRecentlyFinished();
@@ -472,4 +478,43 @@ public class FlowRunnerManager implements EventListener {
 		
 		throw new ExecutorManagerException("Error reading file. Log directory doesn't exist.");
 	}
+	
+	/**
+	 * 	private ExecutorService executorService;
+	private SubmitterThread submitterThread;
+	private CleanerThread cleanerThread;
+	 * @return
+	 */
+	public long getLastCleanerThreadCheckTime() {
+		return lastCleanerThreadCheckTime;
+	}
+
+	public long getLastSubmitterThreadCheckTime() {
+		return lastSubmitterThreadCheckTime;
+	}
+
+	public boolean isSubmitterThreadActive() {
+		return this.submitterThread.isAlive();
+	}
+
+	public boolean isCleanerThreadActive() {
+		return this.cleanerThread.isAlive();
+	}
+	
+	public State getSubmitterThreadState() {
+		return this.submitterThread.getState();
+	}
+
+	public State getCleanerThreadState() {
+		return this.cleanerThread.getState();
+	}
+	
+	public boolean isExecutorThreadPoolShutdown() {
+		return executorService.isShutdown();
+	}
+	
+	public int getNumExecutingFlows() {
+		return runningFlows.size();
+	}
+
 }

@@ -216,7 +216,6 @@ public class SLA {
 			}
 			slaObj.put("jobSettings", settingsObj);
 		}
-		
 
 		return slaObj;
 	}

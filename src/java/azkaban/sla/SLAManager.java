@@ -1,5 +1,6 @@
 package azkaban.sla;
 
+import java.lang.Thread.State;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
@@ -64,6 +65,8 @@ public class SLAManager {
 	private final ExecutorManager executorManager;
 	private SlaMailer mailer;
 
+	private long lastCheckTime = -1;
+	
 	/**
 	 * Give the sla manager a loader class that will properly load the
 	 * sla.
@@ -195,6 +198,8 @@ public class SLAManager {
 			while (stillAlive.get()) {
 				synchronized (this) {
 					try {
+						lastCheckTime = System.currentTimeMillis();
+						
 						// TODO clear up the exception handling
 						SLA s = SLAs.peek();
 
@@ -463,5 +468,23 @@ public class SLAManager {
 		}
 	}
 
+	public int getNumActiveSLA() {
+		return runner.getRunnerSLAs().size();
+	}
 	
+	public State getSLAThreadState() {
+		return runner.getState();
+	}
+	
+	public boolean isThreadActive() {
+		return runner.isAlive();
+	}
+	
+	public List<SLA> getSLAList() {
+		return runner.getRunnerSLAs();
+	}
+	
+	public long getLastCheckTime() {
+		return lastCheckTime;
+	}
 }

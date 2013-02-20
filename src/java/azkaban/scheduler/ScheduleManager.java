@@ -16,8 +16,8 @@
 
 package azkaban.scheduler;
 
+import java.lang.Thread.State;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -35,14 +35,11 @@ import org.joda.time.format.DateTimeFormatter;
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutorManager;
 import azkaban.executor.ExecutorManagerException;
-import azkaban.executor.ExecutableFlow.FailureAction;
 import azkaban.executor.ExecutableFlow.Status;
 
 import azkaban.flow.Flow;
-import azkaban.jobExecutor.utils.JobExecutionException;
 import azkaban.project.Project;
 import azkaban.project.ProjectManager;
-
 
 import azkaban.scheduler.Schedule.FlowOptions;
 import azkaban.scheduler.Schedule.SlaOptions;
@@ -70,6 +67,10 @@ public class ScheduleManager {
 	private final ExecutorManager executorManager;
 	private final ProjectManager projectManager;
 	private final SLAManager slaManager;
+	
+	// Used for mbeans to query Scheduler status
+	private long lastCheckTime = -1;
+	private long nextWakupTime = -1;
 
 	/**
 	 * Give the schedule manager a loader class that will properly load the
@@ -336,6 +337,7 @@ public class ScheduleManager {
 			while (stillAlive.get()) {
 				synchronized (this) {
 					try {
+						lastCheckTime = System.currentTimeMillis();
 						// TODO clear up the exception handling
 						Schedule s = schedules.peek();
 
@@ -343,6 +345,7 @@ public class ScheduleManager {
 							// If null, wake up every minute or so to see if
 							// there's something to do. Most likely there will not be.
 							try {
+								nextWakupTime = System.currentTimeMillis() + TIMEOUT_MS;
 								this.wait(TIMEOUT_MS);
 							} catch (InterruptedException e) {
 								// interruption should occur when items are added or removed from the queue.
@@ -454,6 +457,7 @@ public class ScheduleManager {
 								// wait until flow run
 								long millisWait = Math.max(0, s.getNextExecTime() - (new DateTime()).getMillis());
 								try {
+									nextWakupTime = System.currentTimeMillis() + millisWait;
 									this.wait(Math.min(millisWait, TIMEOUT_MS));
 								} catch (InterruptedException e) {
 									// interruption should occur when items are
@@ -490,5 +494,21 @@ public class ScheduleManager {
 				return -1;
 			}
 		}
+	}
+	
+	public long getLastCheckTime() {
+		return lastCheckTime;
+	}
+	
+	public long getNextUpdateTime() {
+		return nextWakupTime;
+	}
+	
+	public State getThreadState() {
+		return runner.getState();
+	}
+	
+	public boolean isThreadActive() {
+		return runner.isAlive();
 	}
 }

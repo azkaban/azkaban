@@ -17,6 +17,7 @@
 package azkaban.executor;
 
 import java.io.IOException;
+import java.lang.Thread.State;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
@@ -57,6 +58,8 @@ public class ExecutorManager {
 	private ExecutorMailer mailer;
 	private ExecutingManagerUpdaterThread executingManager;
 	
+	private long lastThreadCheckTime = -1;
+	
 	public ExecutorManager(Props props, ExecutorLoader loader) throws ExecutorManagerException {
 		this.executorLoader = loader;
 		this.loadRunningFlows();
@@ -66,6 +69,26 @@ public class ExecutorManager {
 		mailer = new ExecutorMailer(props);
 		executingManager = new ExecutingManagerUpdaterThread();
 		executingManager.start();
+	}
+	
+	public String getExecutorHost() {
+		return executorHost;
+	}
+	
+	public int getExecutorPort() {
+		return executorPort;
+	}
+	
+	public State getExecutorThreadState() {
+		return executingManager.getState();
+	}
+	
+	public boolean isThreadActive() {
+		return executingManager.isAlive();
+	}
+	
+	public long getLastThreadCheckTime() {
+		return lastThreadCheckTime;
 	}
 	
 	private void loadRunningFlows() throws ExecutorManagerException {
@@ -394,6 +417,8 @@ public class ExecutorManager {
 		public void run() {
 			while(!shutdown) {
 				try {
+					lastThreadCheckTime = System.currentTimeMillis();
+					
 					Map<ConnectionInfo, List<ExecutableFlow>> exFlowMap = getFlowToExecutorMap();
 					ArrayList<ExecutableFlow> finishedFlows = new ArrayList<ExecutableFlow>();
 					ArrayList<ExecutableFlow> finalizeFlows = new ArrayList<ExecutableFlow>();
