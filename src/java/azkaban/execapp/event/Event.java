@@ -22,7 +22,9 @@ public class Event {
 		FLOW_FINISHED,
 		JOB_STARTED,
 		JOB_FINISHED,
-		JOB_STATUS_CHANGED
+		JOB_STATUS_CHANGED,
+		EXTERNAL_FLOW_UPDATED,
+		EXTERNAL_JOB_UPDATED
 	}
 	
 	private final Object runner;

@@ -99,6 +99,10 @@ public class FlowRunner extends EventHandler implements Runnable {
 		return execDir;
 	}
 	
+	public void watchedExecutionUpdate(ExecutableFlow flow) {
+		
+	}
+	
 	@Override
 	public void run() {
 		try {
@@ -412,7 +416,7 @@ public class FlowRunner extends EventHandler implements Runnable {
 			for (ExecutableNode node: pausedNode.values()) {
 				node.setStatus(Status.KILLED);
 				node.setPaused(false);
-				queueNextJob(node);
+				queueNextJob(node, "cancel-all-action");
 			}
 			
 			updateFlow();
@@ -437,7 +441,7 @@ public class FlowRunner extends EventHandler implements Runnable {
 				node.setStatus(Status.KILLED);
 				if (node.isPaused()) {
 					node.setPaused(false);
-					queueNextJob(node);
+					queueNextJob(node, "cancel-action");
 				}
 			}
 		}
@@ -458,7 +462,7 @@ public class FlowRunner extends EventHandler implements Runnable {
 				if (node.isPaused()) {
 					node.setPaused(false);
 					if (pausedNode.containsKey(jobId)) {
-						queueNextJob(node);
+						queueNextJob(node, "resume-action");
 					}
 					
 					updateFlow();
@@ -585,7 +589,7 @@ public class FlowRunner extends EventHandler implements Runnable {
 			}
 			
 			for (ExecutableNode node: jobsToBeQueued) {
-				queueNextJob(node);
+				queueNextJob(node, "retry-action");
 			}
 			
 			updateFlow();
@@ -633,6 +637,9 @@ public class FlowRunner extends EventHandler implements Runnable {
 			case SKIPPED:
 			case SUCCEEDED:
 				continue;
+			case RUNNING:
+			case QUEUED:
+				return null;
 			default:
 				// Return null means it's not ready to run.
 				return null;
@@ -660,7 +667,7 @@ public class FlowRunner extends EventHandler implements Runnable {
 	private synchronized void queueNextJobs(ExecutableNode finishedNode) {
 		for (String dependent : finishedNode.getOutNodes()) {
 			ExecutableNode dependentNode = flow.getExecutableNode(dependent);
-			queueNextJob(dependentNode);
+			queueNextJob(dependentNode, finishedNode.getJobId());
 		}
 	}
 
@@ -669,7 +676,7 @@ public class FlowRunner extends EventHandler implements Runnable {
 	 * 
 	 * @param node
 	 */
-	private void queueNextJob(ExecutableNode node) {
+	private void queueNextJob(ExecutableNode node, String trigger) {
 		Status nextStatus = getImpliedStatus(node);
 		if (nextStatus == null) {
 			// Not yet ready or not applicable
@@ -706,11 +713,10 @@ public class FlowRunner extends EventHandler implements Runnable {
 				logger.info("Flow Paused. Pausing " + node.getJobId());
 			}
 			else {
-				logger.info("Adding " + node.getJobId() + " to run queue.");
 				if (node.getStatus() != Status.DISABLED && node.getStatus() != Status.KILLED) {
 					node.setStatus(Status.QUEUED);
 				}
-
+				logger.info("Adding " + node.getJobId() + " to run queue with status " + node.getStatus().toString() + " triggered by '" + trigger + "'.");
 				jobsToRun.add(runner);
 			}
 		}
@@ -726,7 +732,7 @@ public class FlowRunner extends EventHandler implements Runnable {
 			if (event.getType() == Type.JOB_FINISHED) {
 				ExecutableNode node = runner.getNode();
 
-				logger.info("Job Finished " + node.getJobId());
+				logger.info("Job Finished " + node.getJobId() + " with status " + node.getStatus());
 				synchronized (actionSyncObj) {
 					if (node.getStatus() == Status.FAILED) {
 						// Setting failure

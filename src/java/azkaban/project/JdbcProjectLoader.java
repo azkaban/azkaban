@@ -801,7 +801,7 @@ public class JdbcProjectLoader implements ProjectLoader {
 			runner.update(connection, INSERT_PROPERTIES, project.getId(), project.getVersion(), name, System.currentTimeMillis(), defaultEncodingType.getNumVal(), data);
 			connection.commit();
 		} catch (SQLException e) {
-			throw new ProjectManagerException("Error fetching flows from project " + project.getName() + " version " + project.getVersion(), e);
+			throw new ProjectManagerException("Error uploading project properties " + name + " into " + project.getName() + " version " + project.getVersion(), e);
 		}
 	}
 

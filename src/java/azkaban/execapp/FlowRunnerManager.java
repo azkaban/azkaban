@@ -38,7 +38,6 @@ import azkaban.project.ProjectLoader;
 import azkaban.execapp.event.Event;
 import azkaban.execapp.event.EventListener;
 import azkaban.executor.ExecutableFlow;
-import azkaban.executor.ExecutableFlow.Status;
 import azkaban.executor.ExecutorLoader;
 import azkaban.executor.ExecutorManagerException;
 import azkaban.jobtype.JobTypeManager;
