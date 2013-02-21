@@ -49,6 +49,8 @@ public class JobRunner extends EventHandler implements Runnable {
 
 	private Logger logger = null;
 	private Layout loggerLayout = DEFAULT_LAYOUT;
+	private Logger flowLogger = null;
+	
 	private Appender jobAppender;
 	private File logFile;
 	
@@ -60,13 +62,14 @@ public class JobRunner extends EventHandler implements Runnable {
 	
 	private final JobTypeManager jobtypeManager;
 
-	public JobRunner(ExecutableNode node, Props props, File workingDir, ExecutorLoader loader, JobTypeManager jobtypeManager) {
+	public JobRunner(ExecutableNode node, Props props, File workingDir, ExecutorLoader loader, JobTypeManager jobtypeManager, Logger flowLogger) {
 		this.props = props;
 		this.node = node;
 		this.workingDir = workingDir;
 		this.executionId = node.getExecutionId();
 		this.loader = loader;
 		this.jobtypeManager = jobtypeManager;
+		this.flowLogger = flowLogger;
 	}
 	
 	public ExecutableNode getNode() {
@@ -95,7 +98,7 @@ public class JobRunner extends EventHandler implements Runnable {
 				jobAppender = fileAppender;
 				logger.addAppender(jobAppender);
 			} catch (IOException e) {
-				logger.error("Could not open log file in " + workingDir, e);
+				flowLogger.error("Could not open log file in " + workingDir + " for job " + node.getJobId(), e);
 			}
 		}
 	}
@@ -112,7 +115,7 @@ public class JobRunner extends EventHandler implements Runnable {
 			node.setUpdateTime(System.currentTimeMillis());
 			loader.updateExecutableNode(node);
 		} catch (ExecutorManagerException e) {
-			logger.error("Error writing node properties", e);
+			flowLogger.error("Could not update job properties in db for " + node.getJobId(), e);
 		}
 	}
 	
@@ -161,8 +164,11 @@ public class JobRunner extends EventHandler implements Runnable {
 				try {
 					loader.uploadLogFile(executionId, node.getJobId(), node.getAttempt(), logFile);
 				} catch (ExecutorManagerException e) {
-					System.err.println("Error writing out logs for job " + node.getJobId());
+					flowLogger.error("Error writing out logs for job " + node.getJobId(), e);
 				}
+			}
+			else {
+				flowLogger.info("Log file for job " + node.getJobId() + " is null");
 			}
 		}
 		fireEvent(Event.create(this, Type.JOB_FINISHED));

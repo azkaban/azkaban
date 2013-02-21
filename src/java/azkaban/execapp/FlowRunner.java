@@ -290,6 +290,7 @@ public class FlowRunner extends EventHandler implements Runnable {
 		for (String startNode : flow.getStartNodes()) {
 			ExecutableNode node = flow.getExecutableNode(startNode);
 			JobRunner jobRunner = createJobRunner(node, null);
+			logger.info("Adding initial job " + startNode + " to run queue.");
 			jobsToRun.add(jobRunner);
 		}
 	}
@@ -344,7 +345,7 @@ public class FlowRunner extends EventHandler implements Runnable {
 		prop.setParent(parentProps);
 		
 		// should have one prop with system secrets, the other user level props
-		JobRunner jobRunner = new JobRunner(node, prop, path.getParentFile(), executorLoader, jobtypeManager);
+		JobRunner jobRunner = new JobRunner(node, prop, path.getParentFile(), executorLoader, jobtypeManager, logger);
 		jobRunner.addListener(listener);
 
 		return jobRunner;
@@ -665,6 +666,7 @@ public class FlowRunner extends EventHandler implements Runnable {
 	 * @param node
 	 */
 	private synchronized void queueNextJobs(ExecutableNode finishedNode) {
+		String trigger = finishedNode.getAttempt() > 0 ? finishedNode.getJobId() + "." + finishedNode.getAttempt() : finishedNode.getJobId();
 		for (String dependent : finishedNode.getOutNodes()) {
 			ExecutableNode dependentNode = flow.getExecutableNode(dependent);
 			queueNextJob(dependentNode, finishedNode.getJobId());

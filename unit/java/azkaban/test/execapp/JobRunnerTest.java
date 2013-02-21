@@ -6,6 +6,7 @@ import java.io.IOException;
 import junit.framework.Assert;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.log4j.Logger;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -26,6 +27,7 @@ import azkaban.utils.Props;
 public class JobRunnerTest {
 	private File workingDir;
 	private JobTypeManager jobtypeManager;
+	private Logger logger = Logger.getLogger("JobRunnerTest");
 	
 	public JobRunnerTest() {
 
@@ -260,7 +262,7 @@ public class JobRunnerTest {
 		
 		Props props = createProps(time, fail);
 		
-		JobRunner runner = new JobRunner(node, props, workingDir, loader, jobtypeManager);
+		JobRunner runner = new JobRunner(node, props, workingDir, loader, jobtypeManager, logger);
 
 		runner.addListener(listener);
 		return runner;
