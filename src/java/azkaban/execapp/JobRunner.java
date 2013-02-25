@@ -17,6 +17,7 @@ package azkaban.execapp;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.List;
 
 import org.apache.log4j.Appender;
 import org.apache.log4j.FileAppender;
@@ -35,6 +36,7 @@ import azkaban.flow.CommonJobProperties;
 import azkaban.jobExecutor.AbstractProcessJob;
 import azkaban.jobExecutor.Job;
 import azkaban.jobtype.JobTypeManager;
+import azkaban.jobtype.JobTypeManagerException;
 
 import azkaban.utils.Props;
 
@@ -61,8 +63,9 @@ public class JobRunner extends EventHandler implements Runnable {
 	private Object syncObject = new Object();
 	
 	private final JobTypeManager jobtypeManager;
+	private List<String> proxyUsers = null;
 
-	public JobRunner(ExecutableNode node, Props props, File workingDir, ExecutorLoader loader, JobTypeManager jobtypeManager, Logger flowLogger) {
+	public JobRunner(ExecutableNode node, Props props, File workingDir, List<String> proxyUsers, ExecutorLoader loader, JobTypeManager jobtypeManager, Logger flowLogger) {
 		this.props = props;
 		this.node = node;
 		this.workingDir = workingDir;
@@ -70,6 +73,7 @@ public class JobRunner extends EventHandler implements Runnable {
 		this.loader = loader;
 		this.jobtypeManager = jobtypeManager;
 		this.flowLogger = flowLogger;
+		this.proxyUsers = proxyUsers;
 	}
 	
 	public ExecutableNode getNode() {
@@ -152,6 +156,10 @@ public class JobRunner extends EventHandler implements Runnable {
 				fireEvent(Event.create(this, Type.JOB_STATUS_CHANGED), false);
 				runJob();
 			}
+			else {
+				node.setStatus(Status.FAILED);
+				logError("Job run failed!");
+			}
 			
 			node.setEndTime(System.currentTimeMillis());
 
@@ -211,9 +219,27 @@ public class JobRunner extends EventHandler implements Runnable {
 			if (!props.containsKey(AbstractProcessJob.WORKING_DIR)) {
 				props.put(AbstractProcessJob.WORKING_DIR, workingDir.getAbsolutePath());
 			}
-
+			
+			String jobProxyUser = props.getString("user.to.proxy", null);
+			if(jobProxyUser == null) {
+				jobProxyUser = proxyUsers.get(0);
+			}
+			else {
+				if(! proxyUsers.contains(jobProxyUser)) {
+					logger.error("User " + jobProxyUser + " has no permission to execute this job " + node.getJobId() + "!");
+					return false;
+				}
+			}
+			props.put("user.to.proxy", jobProxyUser);
+			
 			//job = JobWrappingFactory.getJobWrappingFactory().buildJobExecutor(node.getJobId(), props, logger);
-			job = jobtypeManager.buildJobExecutor(node.getJobId(), props, logger);
+			try {
+				job = jobtypeManager.buildJobExecutor(node.getJobId(), props, logger);
+			}
+			catch (JobTypeManagerException e) {
+				logger.error("Failed to build job type, skipping this job");
+				return false;
+			}
 		}
 		
 		return true;

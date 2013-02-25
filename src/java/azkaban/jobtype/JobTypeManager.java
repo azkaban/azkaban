@@ -73,6 +73,7 @@ public class JobTypeManager
 			}
 			catch (Exception e) {
 				logger.info("Plugin jobtypes failed to load. " + e.getCause());
+				throw new JobTypeManagerException(e);
 			}
 		}
 		
@@ -120,6 +121,7 @@ public class JobTypeManager
 					loadJob(dir, globalConf, globalSysConf);
 				}
 				catch (Exception e) {
+					logger.error("Failed to load jobtype " + dir.getName() + e.getMessage());
 					throw new JobTypeManagerException(e);
 				}
 			}
@@ -195,7 +197,7 @@ public class JobTypeManager
 		try {
 			if(confFile != null) {
 				conf = new Props(commonConf, confFile);
-				conf = PropsUtils.resolveProps(conf);
+//				conf = PropsUtils.resolveProps(conf);
 			}
 			if(sysConfFile != null) {
 				sysConf = new Props(commonSysConf, sysConfFile);
@@ -203,7 +205,7 @@ public class JobTypeManager
 			}
 		}
 		catch (Exception e) {
-			throw new JobTypeManagerException("Failed to get jobtype properties", e);
+			throw new JobTypeManagerException("Failed to get jobtype properties" + e.getMessage());
 		}
 		sysConf.put("plugin.dir", dir.getAbsolutePath());
 		
@@ -221,7 +223,7 @@ public class JobTypeManager
 			try {
 				if(f.getName().endsWith(".jar")) {
 					resources.add(f.toURI().toURL());
-					logger.info("adding to classpath " + f);
+					logger.info("adding to classpath " + f.toURI().toURL());
 				}
 			} catch (MalformedURLException e) {
 				// TODO Auto-generated catch block
@@ -240,6 +242,23 @@ public class JobTypeManager
 		catch (ClassNotFoundException e) {
 			throw new JobTypeManagerException(e);
 		}
+		
+		logger.info("Doing simple testing...");
+		try {
+			Props fakeSysProps = new Props(sysConf);
+			fakeSysProps.put("type", jobtypeName);
+			Props fakeJobProps = new Props(conf);
+			Job job = (Job)Utils.callConstructor(clazz, "dummy", fakeSysProps, fakeJobProps, logger);
+		}
+		catch (Exception e) {
+			logger.info("Jobtype " + jobtypeName + " failed test!", e);
+			throw new JobExecutionException(e);
+		}
+		catch (Throwable t) {
+			logger.info("Jobtype " + jobtypeName + " failed test!", t);
+			throw new JobExecutionException(t);
+		}
+		
 		logger.info("Loaded jobtype " + jobtypeName + " " + jobtypeClass);
 		
 		if(conf != null) jobtypeJobProps.put(jobtypeName, conf);
@@ -249,7 +268,7 @@ public class JobTypeManager
 	
 	public Job buildJobExecutor(String jobId, Props jobProps, Logger logger) throws JobTypeManagerException
 	{
-		Job job;
+		Job job = null;
 		try {
 			String jobType = jobProps.getString("type");
 			if (jobType == null || jobType.length() == 0) {
@@ -274,14 +293,12 @@ public class JobTypeManager
 				Props p = jobtypeJobProps.get(jobType);
 				for(String k : p.getKeySet())
 				{
-					if(!jobProps.containsKey(k)) {
-						jobProps.put(k, p.get(k));
+					if(!jobConf.containsKey(k)) {
+						jobConf.put(k, p.get(k));
 					}
 				}
 			}
-			else {
-				jobConf = jobProps;
-			}
+			jobConf = PropsUtils.resolveProps(jobConf);
 
 			if (sysConf != null) {
 				sysConf = PropsUtils.resolveProps(sysConf);
@@ -289,18 +306,23 @@ public class JobTypeManager
 			else {
 				sysConf = new Props();
 			}
-
-			jobConf = PropsUtils.resolveProps(jobConf);
+			
 			
 //			logger.info("sysConf is " + sysConf);
 //			logger.info("jobConf is " + jobConf);
-			
+//			
 			job = (Job)Utils.callConstructor(executorClass, jobId, sysConf, jobConf, logger);
 			logger.info("job built.");
 		}
 		catch (Exception e) {
-			job = new InitErrorJob(jobId, e);
+			//job = new InitErrorJob(jobId, e);
+			logger.error("Failed to build job executor for job " + jobId + e.getMessage());
+			throw new JobTypeManagerException("Failed to build job executor for job " + jobId, e);
 			//throw new JobTypeManagerException(e);
+		}
+		catch (Throwable t) {
+			logger.error("Failed to build job executor for job " + jobId + t.getMessage(), t);
+			throw new JobTypeManagerException("Failed to build job executor for job " + jobId, t);
 		}
 
 		return job;

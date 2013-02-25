@@ -35,9 +35,11 @@ import azkaban.flow.FlowProps;
 import azkaban.jobtype.JobTypeManager;
 import azkaban.project.ProjectLoader;
 import azkaban.project.ProjectManagerException;
+import azkaban.user.Permission;
 import azkaban.utils.Pair;
 import azkaban.utils.Props;
 import azkaban.utils.PropsUtils;
+import azkaban.utils.Triple;
 
 public class FlowRunner extends EventHandler implements Runnable {
 	private static final Layout DEFAULT_LAYOUT = new PatternLayout("%d{dd-MM-yyyy HH:mm:ss z} %c{1} %p - %m\n");
@@ -80,6 +82,8 @@ public class FlowRunner extends EventHandler implements Runnable {
 	private boolean flowFinished = false;
 	private boolean flowCancelled = false;
 	
+	private List<String> proxyUsers = null;
+	
 	public FlowRunner(ExecutableFlow flow, ExecutorLoader executorLoader, ProjectLoader projectLoader, JobTypeManager jobtypeManager) throws ExecutorManagerException {
 		this.execId = flow.getExecutionId();
 		this.flow = flow;
@@ -88,6 +92,27 @@ public class FlowRunner extends EventHandler implements Runnable {
 		this.executorService = Executors.newFixedThreadPool(numThreads);
 		this.execDir = new File(flow.getExecutionPath());
 		this.jobtypeManager = jobtypeManager;
+		
+		this.proxyUsers = getProxyUsers();
+	}
+
+	private List<String> getProxyUsers() {
+		List<String> allUsers = new ArrayList<String>();
+		allUsers.add(flow.getSubmitUser());
+		List<Triple<String, Boolean, Permission>> permissions;
+		try {
+			permissions = projectLoader.getProjectPermissions(flow.getProjectId());
+			for(Triple<String, Boolean, Permission> triple : permissions) {
+				if(triple.getSecond() == false && triple.getThird().isPermissionSet(Permission.Type.EXECUTE)) {
+					allUsers.add(triple.getFirst());
+				}
+			}
+		} catch (ProjectManagerException e) {
+			// This gets funny when no user specified and submitted by the scheduler
+			logger.error("Failed to get project permission from project. Using default permission.", e);
+		}
+		
+		return allUsers;
 	}
 
 	public FlowRunner setGlobalProps(Props globalProps) {
@@ -345,7 +370,7 @@ public class FlowRunner extends EventHandler implements Runnable {
 		prop.setParent(parentProps);
 		
 		// should have one prop with system secrets, the other user level props
-		JobRunner jobRunner = new JobRunner(node, prop, path.getParentFile(), executorLoader, jobtypeManager, logger);
+		JobRunner jobRunner = new JobRunner(node, prop, path.getParentFile(), proxyUsers, executorLoader, jobtypeManager, logger);
 		jobRunner.addListener(listener);
 
 		return jobRunner;

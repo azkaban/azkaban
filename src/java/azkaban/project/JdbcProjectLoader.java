@@ -525,6 +525,21 @@ public class JdbcProjectLoader implements ProjectLoader {
 	}
 	
 	@Override
+	public List<Triple<String, Boolean, Permission>> getProjectPermissions(int projectId) throws ProjectManagerException {
+		ProjectPermissionsResultHandler permHander = new ProjectPermissionsResultHandler();
+		QueryRunner runner = new QueryRunner(dataSource);
+		List<Triple<String, Boolean,Permission>> permissions = null;
+		try {
+			permissions = runner.query(ProjectPermissionsResultHandler.SELECT_PROJECT_PERMISSION, permHander, projectId);
+		} catch (SQLException e) {
+			throw new ProjectManagerException("Query for permissions for " + projectId + " failed.", e);
+		}
+		
+		return permissions;
+	}
+	
+	
+	@Override
 	public void removeProject(Project project, String user) throws ProjectManagerException {
 		QueryRunner runner = new QueryRunner(dataSource);
 		

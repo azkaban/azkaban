@@ -3,34 +3,21 @@ package azkaban.sla;
 import java.lang.Thread.State;
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.log4j.Logger;
-import org.apache.velocity.runtime.parser.node.GetExecutor;
 import org.joda.time.DateTime;
-import org.joda.time.DateTimeZone;
-import org.joda.time.ReadablePeriod;
-import org.joda.time.format.DateTimeFormat;
-import org.joda.time.format.DateTimeFormatter;
 
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutableFlow.Status;
 import azkaban.executor.ExecutableNode;
-import azkaban.executor.ExecutorMailer;
 import azkaban.executor.ExecutorManager;
 import azkaban.executor.ExecutorManagerException;
-import azkaban.flow.Flow;
-import azkaban.project.Project;
-import azkaban.project.ProjectManager;
 import azkaban.sla.SLA.SlaAction;
 import azkaban.sla.SLA.SlaRule;
 import azkaban.sla.SLA.SlaSetting;
-import azkaban.user.User;
-import azkaban.utils.Pair;
 import azkaban.utils.Props;
 
 /*
@@ -61,7 +48,6 @@ public class SLAManager {
 	private SLALoader loader;
 
 	private final SLARunner runner;
-	private final SLAPreRunner prerunner;
 	private final ExecutorManager executorManager;
 	private SlaMailer mailer;
 
@@ -82,7 +68,6 @@ public class SLAManager {
 		this.loader = loader;
 		this.mailer = new SlaMailer(props);
 		this.runner = new SLARunner();
-		this.prerunner = new SLAPreRunner();
 
 		List<SLA> SLAList = null;
 		try {
@@ -105,7 +90,6 @@ public class SLAManager {
 	 */
 	public void shutdown() {
 		this.runner.shutdown();
-		this.prerunner.shutdown();
 	}
 
 	/**
@@ -474,90 +458,6 @@ public class SLAManager {
 				break;
 		}
 		mailer.sendSlaEmail(s, message);
-	}
-	
-	
-	public class SLAPreRunner extends Thread {
-		private final List<SLA> preSlas;
-		private AtomicBoolean stillAlive = new AtomicBoolean(true);
-
-		// Five minute minimum intervals
-		private static final int TIMEOUT_MS = 300000;
-
-		public SLAPreRunner() {
-			preSlas = new ArrayList<SLA>();
-		}
-
-		public void shutdown() {
-			logger.error("Shutting down pre-sla checker thread");
-			stillAlive.set(false);
-			this.interrupt();
-		}
-
-		/**
-		 * Return a list of flow with SLAs
-		 * 
-		 * @return
-		 */
-		protected synchronized List<SLA> getPreSlas() {
-			return new ArrayList<SLA>(preSlas);
-		}
-
-		/**
-		 * Adds SLA into runner and then interrupts so it will update
-		 * its wait time.
-		 * 
-		 * @param flow
-		 */
-		public synchronized void addCheckerPreSla(SLA s) {
-			logger.info("Adding " + s + " to pre-sla checker.");
-			preSlas.add(s);
-			this.interrupt();
-		}
-		
-		/**
-		 * Remove runner SLA. Does not interrupt.
-		 * 
-		 * @param flow
-		 * @throws SLAManagerException 
-		 */
-		public synchronized void removeCheckerPreSla(SLA s) {
-			logger.info("Removing " + s + " from the pre-sla checker.");
-			preSlas.remove(s);
-		}
-
-		public void run() {
-			while (stillAlive.get()) {
-				synchronized (this) {
-					try {
-						// TODO clear up the exception handling
-
-						if (preSlas.size() == 0) {
-							try {
-								this.wait(TIMEOUT_MS);
-							} catch (InterruptedException e) {
-								// interruption should occur when items are added or removed from the queue.
-							}
-						} else {
-							for(SLA s : preSlas) {
-								ExecutableFlow exflow = executorManager.getExecutableFlow(s.getExecId());
-								String id = s.getJobName();
-								if(!s.equals("")) {
-									ExecutableNode exnode = exflow.getExecutableNode(id);
-									if(exnode.getStartTime() != -1) {
-										
-									}
-								}
-							}
-						}
-					} catch (Exception e) {
-						logger.error("Unexpected exception has been thrown in scheduler", e);
-					} catch (Throwable e) {
-						logger.error("Unexpected throwable has been thrown in scheduler", e);
-					}
-				}
-			}
-		}
 	}
 
 	public int getNumActiveSLA() {

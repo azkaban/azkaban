@@ -2,6 +2,8 @@ package azkaban.test.execapp;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 import junit.framework.Assert;
 
@@ -261,8 +263,9 @@ public class JobRunnerTest {
 		node.setExecutableFlow(flow);
 		
 		Props props = createProps(time, fail);
-		
-		JobRunner runner = new JobRunner(node, props, workingDir, loader, jobtypeManager, logger);
+		List<String> proxyUsers = new ArrayList<String>();
+		proxyUsers.add(flow.getSubmitUser());
+		JobRunner runner = new JobRunner(node, props, workingDir, proxyUsers, loader, jobtypeManager, logger);
 
 		runner.addListener(listener);
 		return runner;
