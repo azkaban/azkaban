@@ -8,11 +8,13 @@ ALTER TABLE execution_jobs ADD INDEX exec_job (exec_id, job_id);
 
 ALTER TABLE execution_logs ADD COLUMN attempt INT DEFAULT 0;
 ALTER TABLE execution_logs DROP PRIMARY KEY;
-ALTER TABLE execution_logs ADD PRIMARY KEY(exec_id, name, attempt);
+ALTER TABLE execution_logs ADD PRIMARY KEY(exec_id, name, attempt, start_byte);
+
+ALTER TABLE execution_logs ADD INDEX exec_log (exec_id, name, attempt);
 
 ALTER TABLE schedules ADD COLUMN enc_type TINYINT;
 ALTER TABLE schedules ADD COLUMN schedule_options LONGBLOB;
 
-
+ALTER TABLE project_events MODIFY COLUMN message VARCHAR(512);
 
 
