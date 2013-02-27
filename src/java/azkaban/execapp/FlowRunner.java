@@ -84,6 +84,8 @@ public class FlowRunner extends EventHandler implements Runnable {
 	
 	private List<String> proxyUsers = null;
 	
+	private boolean proxyUserLockDown = false;
+	
 	public FlowRunner(ExecutableFlow flow, ExecutorLoader executorLoader, ProjectLoader projectLoader, JobTypeManager jobtypeManager) throws ExecutorManagerException {
 		this.execId = flow.getExecutionId();
 		this.flow = flow;
@@ -96,6 +98,10 @@ public class FlowRunner extends EventHandler implements Runnable {
 		this.proxyUsers = getProxyUsers();
 	}
 
+	public void setProxyUserLockDown(boolean doLockDown) {
+		this.proxyUserLockDown = doLockDown;
+	}
+	
 	private List<String> getProxyUsers() {
 		List<String> allUsers = new ArrayList<String>();
 		allUsers.add(flow.getSubmitUser());
@@ -103,7 +109,7 @@ public class FlowRunner extends EventHandler implements Runnable {
 		try {
 			permissions = projectLoader.getProjectPermissions(flow.getProjectId());
 			for(Triple<String, Boolean, Permission> triple : permissions) {
-				if(triple.getSecond() == false && triple.getThird().isPermissionSet(Permission.Type.EXECUTE)) {
+				if(triple.getSecond() == false && (triple.getThird().isPermissionSet(Permission.Type.EXECUTE) || triple.getThird().isPermissionSet(Permission.Type.ADMIN) )) {
 					allUsers.add(triple.getFirst());
 				}
 			}
@@ -371,6 +377,7 @@ public class FlowRunner extends EventHandler implements Runnable {
 		
 		// should have one prop with system secrets, the other user level props
 		JobRunner jobRunner = new JobRunner(node, prop, path.getParentFile(), proxyUsers, executorLoader, jobtypeManager, logger);
+		jobRunner.setUserLockDown(proxyUserLockDown);
 		jobRunner.addListener(listener);
 
 		return jobRunner;

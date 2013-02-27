@@ -64,6 +64,8 @@ public class JobRunner extends EventHandler implements Runnable {
 	
 	private final JobTypeManager jobtypeManager;
 	private List<String> proxyUsers = null;
+	
+	private boolean userLockDown;
 
 	public JobRunner(ExecutableNode node, Props props, File workingDir, List<String> proxyUsers, ExecutorLoader loader, JobTypeManager jobtypeManager, Logger flowLogger) {
 		this.props = props;
@@ -74,6 +76,10 @@ public class JobRunner extends EventHandler implements Runnable {
 		this.jobtypeManager = jobtypeManager;
 		this.flowLogger = flowLogger;
 		this.proxyUsers = proxyUsers;
+	}
+	
+	public void setUserLockDown (boolean doLockDown) {
+		this.userLockDown = doLockDown;
 	}
 	
 	public ExecutableNode getNode() {
@@ -227,7 +233,9 @@ public class JobRunner extends EventHandler implements Runnable {
 			else {
 				if(! proxyUsers.contains(jobProxyUser)) {
 					logger.error("User " + jobProxyUser + " has no permission to execute this job " + node.getJobId() + "!");
-					return false;
+					if(userLockDown) {
+						return false;
+					}
 				}
 			}
 			props.put("user.to.proxy", jobProxyUser);
