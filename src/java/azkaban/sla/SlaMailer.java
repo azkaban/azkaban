@@ -9,8 +9,8 @@ import org.apache.log4j.Logger;
 
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutableFlow.FailureAction;
-import azkaban.executor.ExecutableFlow.Status;
 import azkaban.executor.ExecutableNode;
+import azkaban.executor.Status;
 import azkaban.sla.SLA;
 import azkaban.utils.EmailMessage;
 import azkaban.utils.Props;

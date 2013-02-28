@@ -37,6 +37,9 @@ import org.apache.log4j.Logger;
 import azkaban.project.ProjectLoader;
 import azkaban.execapp.event.Event;
 import azkaban.execapp.event.EventListener;
+import azkaban.execapp.event.FlowWatcher;
+import azkaban.execapp.event.LocalFlowWatcher;
+import azkaban.execapp.event.RemoteFlowWatcher;
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutorLoader;
 import azkaban.executor.ExecutorManagerException;
@@ -319,7 +322,20 @@ public class FlowRunnerManager implements EventListener {
 		setupFlow(flow);
 		
 		// Setup flow runner
-		FlowRunner runner = new FlowRunner(flow, executorLoader, projectLoader, jobtypeManager);
+		FlowWatcher watcher = null;
+		if (flow.getPipelineExecutionId() != null) {
+			int pipelineExecId = flow.getPipelineExecutionId();
+			FlowRunner runner = runningFlows.get(pipelineExecId);
+			
+			if (runner != null) {
+				watcher = new LocalFlowWatcher(runner);
+			}
+			else {
+				watcher = new RemoteFlowWatcher(pipelineExecId, executorLoader);
+			}
+		}
+		
+		FlowRunner runner = new FlowRunner(flow, watcher, executorLoader, projectLoader, jobtypeManager);
 		runner.setGlobalProps(globalProps);
 		runner.addListener(this);
 		

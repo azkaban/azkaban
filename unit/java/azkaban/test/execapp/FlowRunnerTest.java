@@ -12,12 +12,13 @@ import org.junit.Before;
 import org.junit.Test;
 
 import azkaban.execapp.FlowRunner;
+import azkaban.execapp.event.Event;
 import azkaban.execapp.event.Event.Type;
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutableNode;
 import azkaban.executor.ExecutableFlow.FailureAction;
-import azkaban.executor.ExecutableFlow.Status;
 import azkaban.executor.ExecutorLoader;
+import azkaban.executor.Status;
 
 import azkaban.flow.Flow;
 import azkaban.jobtype.JobTypeManager;
@@ -61,6 +62,7 @@ public class FlowRunnerTest {
 		//just making compile. may not work at all.
 		
 		EventCollectorListener eventCollector = new EventCollectorListener();
+		eventCollector.setEventFilterOut(Event.Type.JOB_FINISHED, Event.Type.JOB_STARTED, Event.Type.JOB_STATUS_CHANGED);
 		FlowRunner runner = createFlowRunner(loader, eventCollector, "exec1");
 		
 		Assert.assertTrue(!runner.isCancelled());
@@ -94,6 +96,7 @@ public class FlowRunnerTest {
 	public void exec1Disabled() throws Exception {
 		MockExecutorLoader loader = new MockExecutorLoader();
 		EventCollectorListener eventCollector = new EventCollectorListener();
+		eventCollector.setEventFilterOut(Event.Type.JOB_FINISHED, Event.Type.JOB_STARTED, Event.Type.JOB_STATUS_CHANGED);
 		File testDir = new File("unit/executions/exectest1");
 		ExecutableFlow exFlow = prepareExecDir(testDir, "exec1", 1);
 		
@@ -139,6 +142,7 @@ public class FlowRunnerTest {
 	public void exec1Failed() throws Exception {
 		MockExecutorLoader loader = new MockExecutorLoader();
 		EventCollectorListener eventCollector = new EventCollectorListener();
+		eventCollector.setEventFilterOut(Event.Type.JOB_FINISHED, Event.Type.JOB_STARTED, Event.Type.JOB_STATUS_CHANGED);
 		File testDir = new File("unit/executions/exectest1");
 		ExecutableFlow flow = prepareExecDir(testDir, "exec2", 1);
 		
@@ -174,6 +178,7 @@ public class FlowRunnerTest {
 	public void exec1FailedKillAll() throws Exception {
 		MockExecutorLoader loader = new MockExecutorLoader();
 		EventCollectorListener eventCollector = new EventCollectorListener();
+		eventCollector.setEventFilterOut(Event.Type.JOB_FINISHED, Event.Type.JOB_STARTED, Event.Type.JOB_STATUS_CHANGED);
 		File testDir = new File("unit/executions/exectest1");
 		ExecutableFlow flow = prepareExecDir(testDir, "exec2", 1);
 		flow.setFailureAction(FailureAction.CANCEL_ALL);
@@ -212,6 +217,7 @@ public class FlowRunnerTest {
 	public void exec1FailedFinishRest() throws Exception {
 		MockExecutorLoader loader = new MockExecutorLoader();
 		EventCollectorListener eventCollector = new EventCollectorListener();
+		eventCollector.setEventFilterOut(Event.Type.JOB_FINISHED, Event.Type.JOB_STARTED, Event.Type.JOB_STATUS_CHANGED);
 		File testDir = new File("unit/executions/exectest1");
 		ExecutableFlow flow = prepareExecDir(testDir, "exec3", 1);
 		flow.setFailureAction(FailureAction.FINISH_ALL_POSSIBLE);
@@ -247,6 +253,7 @@ public class FlowRunnerTest {
 	public void execAndCancel() throws Exception {
 		MockExecutorLoader loader = new MockExecutorLoader();
 		EventCollectorListener eventCollector = new EventCollectorListener();
+		eventCollector.setEventFilterOut(Event.Type.JOB_FINISHED, Event.Type.JOB_STARTED, Event.Type.JOB_STATUS_CHANGED);
 		FlowRunner runner = createFlowRunner(loader, eventCollector, "exec1");
 		
 		Assert.assertTrue(!runner.isCancelled());
@@ -354,7 +361,7 @@ public class FlowRunnerTest {
 		//MockProjectLoader projectLoader = new MockProjectLoader(new File(flow.getExecutionPath()));
 		
 		loader.uploadExecutableFlow(flow);
-		FlowRunner runner = new FlowRunner(flow, loader, fakeProjectLoader, jobtypeManager);
+		FlowRunner runner = new FlowRunner(flow, null, loader, fakeProjectLoader, jobtypeManager);
 		runner.addListener(eventCollector);
 		
 		return runner;
@@ -366,7 +373,7 @@ public class FlowRunnerTest {
 		//MockProjectLoader projectLoader = new MockProjectLoader(new File(exFlow.getExecutionPath()));
 		
 		loader.uploadExecutableFlow(exFlow);
-		FlowRunner runner = new FlowRunner(exFlow, loader, fakeProjectLoader, jobtypeManager);
+		FlowRunner runner = new FlowRunner(exFlow, null,  loader, fakeProjectLoader, jobtypeManager);
 		runner.addListener(eventCollector);
 		
 		return runner;

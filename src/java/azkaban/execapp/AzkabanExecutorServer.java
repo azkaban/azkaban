@@ -36,11 +36,8 @@ import org.mortbay.thread.QueuedThreadPool;
 
 import azkaban.executor.ExecutorLoader;
 import azkaban.executor.JdbcExecutorLoader;
-import azkaban.jmx.JmxExecutorManager;
 import azkaban.jmx.JmxFlowRunnerManager;
 import azkaban.jmx.JmxJettyServer;
-import azkaban.jmx.JmxSLAManager;
-import azkaban.jmx.JmxScheduler;
 import azkaban.project.JdbcProjectLoader;
 import azkaban.project.ProjectLoader;
 import azkaban.utils.Props;

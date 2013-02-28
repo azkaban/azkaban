@@ -1,8 +1,5 @@
 package azkaban.flow;
 
-import java.util.UUID;
-
-import org.joda.time.DateTime;
 
 public class CommonJobProperties {
 	/*

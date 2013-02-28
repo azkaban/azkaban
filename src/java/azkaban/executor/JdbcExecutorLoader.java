@@ -23,7 +23,6 @@ import org.apache.commons.dbutils.ResultSetHandler;
 import org.apache.commons.io.IOUtils;
 import org.apache.log4j.Logger;
 
-import azkaban.executor.ExecutableFlow.Status;
 import azkaban.utils.DataSourceUtils;
 import azkaban.utils.FileIOUtils;
 import azkaban.utils.FileIOUtils.LogData;
@@ -110,8 +109,8 @@ public class JdbcExecutorLoader implements ExecutorLoader {
 
 		long id;
 		try {
-			flow.setStatus(ExecutableFlow.Status.PREPARING);
-			runner.update(connection, INSERT_EXECUTABLE_FLOW, flow.getProjectId(), flow.getFlowId(), flow.getVersion(), ExecutableFlow.Status.PREPARING.getNumVal(), submitTime, flow.getSubmitUser(), submitTime);
+			flow.setStatus(Status.PREPARING);
+			runner.update(connection, INSERT_EXECUTABLE_FLOW, flow.getProjectId(), flow.getFlowId(), flow.getVersion(), Status.PREPARING.getNumVal(), submitTime, flow.getSubmitUser(), submitTime);
 			connection.commit();
 			id = runner.query(connection, LastInsertID.LAST_INSERT_ID, new LastInsertID());
 

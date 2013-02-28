@@ -27,7 +27,7 @@ import azkaban.executor.ExecutionReference;
 import azkaban.executor.ExecutorLoader;
 import azkaban.executor.ExecutorManagerException;
 import azkaban.executor.JdbcExecutorLoader;
-import azkaban.executor.ExecutableFlow.Status;
+import azkaban.executor.Status;
 import azkaban.flow.Flow;
 
 import azkaban.utils.DataSourceUtils;

@@ -3,6 +3,6 @@ CREATE TABLE project_events (
 	event_type TINYINT NOT NULL,
 	event_time BIGINT NOT NULL,
 	username VARCHAR(64),
-	message VARCHAR(128),
+	message VARCHAR(512),
 	INDEX log (project_id, event_time)
 ) ENGINE=InnoDB;

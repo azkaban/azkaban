@@ -27,7 +27,6 @@ import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.swing.text.StyledEditorKit.BoldAction;
 
 import org.apache.log4j.Logger;
 import org.joda.time.DateTime;
@@ -42,7 +41,6 @@ import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutableNode;
 import azkaban.executor.ExecutorManagerException;
 import azkaban.executor.ExecutableFlow.FailureAction;
-import azkaban.executor.ExecutableFlow.Status;
 import azkaban.flow.Flow;
 import azkaban.flow.Node;
 import azkaban.project.Project;
@@ -584,20 +582,5 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
 		DateTime firstSchedTime = day.withHourOfDay(hour).withMinuteOfHour(minutes).withSecondOfMinute(0);
 
 		return firstSchedTime;
-	}
-
-	private boolean hasPermission(Project project, User user, Permission.Type type) {
-		if (project.hasPermission(user, type)) {
-			return true;
-		}
-		
-		for(String roleName: user.getRoles()) {
-			Role role = userManager.getRole(roleName);
-			if (role.getPermission().isPermissionSet(type) || role.getPermission().isPermissionSet(Permission.Type.ADMIN)) {
-				return true;
-			}
-		}
-		
-		return false;
 	}
 }

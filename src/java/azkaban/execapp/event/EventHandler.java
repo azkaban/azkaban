@@ -33,4 +33,8 @@ public class EventHandler {
 			listener.handleEvent(event);
 		}
 	}
+	
+	public void removeListener(EventListener listener) {
+		listeners.remove(listener);
+	}
 }

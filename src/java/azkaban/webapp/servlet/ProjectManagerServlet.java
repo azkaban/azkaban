@@ -1250,21 +1250,6 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 		}
 	}
 	
-	private boolean hasPermission(Project project, User user, Permission.Type type) {
-		if (project.hasPermission(user, type)) {
-			return true;
-		}
-		
-		for(String roleName: user.getRoles()) {
-			Role role = userManager.getRole(roleName);
-			if (role.getPermission().isPermissionSet(type) || role.getPermission().isPermissionSet(Permission.Type.ADMIN)) {
-				return true;
-			}
-		}
-		
-		return false;
-	}
-	
 	private Permission getPermissionObject(Project project, User user, Permission.Type type) {
 		Permission perm = project.getCollectivePermission(user);
 		

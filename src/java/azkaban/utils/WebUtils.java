@@ -7,7 +7,7 @@ import org.joda.time.DurationFieldType;
 import org.joda.time.ReadablePeriod;
 import org.joda.time.format.DateTimeFormat;
 
-import azkaban.executor.ExecutableFlow.Status;
+import azkaban.executor.Status;
 
 public class WebUtils {
 	public static final String DATE_TIME_STRING = "YYYY-MM-dd HH:mm:ss";

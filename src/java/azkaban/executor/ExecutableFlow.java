@@ -58,6 +58,7 @@ public class ExecutableFlow {
 	private boolean notifyOnLastFailure = false;
 	
 	private Integer pipelineLevel = null;
+	private Integer pipelineExecId = null;
 	private Map<String, String> flowParameters = new HashMap<String, String>();
 
 	public enum FailureAction {
@@ -67,49 +68,6 @@ public class ExecutableFlow {
 	}
 	
 	private FailureAction failureAction = FailureAction.FINISH_CURRENTLY_RUNNING;
-
-	public static enum Status {
-		READY(10), PREPARING(20), RUNNING(30), PAUSED(40), SUCCEEDED(50), KILLED(60), FAILED(70), FAILED_FINISHING(80), SKIPPED(90), DISABLED(100), QUEUED(110);
-		
-		private int numVal;
-
-		Status(int numVal) {
-			this.numVal = numVal;
-		}
-
-		public int getNumVal() {
-			return numVal;
-		}
-		
-		public static Status fromInteger(int x) {
-			switch (x) {
-			case 10:
-				return READY;
-			case 20:
-				return PREPARING;
-			case 30:
-				return RUNNING;
-			case 40:
-				return PAUSED;
-			case 50:
-				return SUCCEEDED;
-			case 60:
-				return KILLED;
-			case 70:
-				return FAILED;
-			case 80:
-				return FAILED_FINISHING;
-			case 90:
-				return SKIPPED;
-			case 100:
-				return DISABLED;
-			case 110:
-				return QUEUED;
-			default:
-				return READY;
-			}
-		}
-	}
 	
 	public ExecutableFlow(Flow flow) {
 		this.projectId = flow.getProjectId();
@@ -330,6 +288,7 @@ public class ExecutableFlow {
 		flowObj.put("failureEmails", failureEmails);
 		flowObj.put("failureAction", failureAction.toString());
 		flowObj.put("pipelineLevel", pipelineLevel);
+		flowObj.put("pipelineExecId", pipelineExecId);
 		flowObj.put("version", version);
 		
 		ArrayList<Object> props = new ArrayList<Object>();
@@ -464,6 +423,7 @@ public class ExecutableFlow {
 			exFlow.failureAction = FailureAction.valueOf((String)flowObj.get("failureAction"));
 		}
 		exFlow.pipelineLevel = (Integer)flowObj.get("pipelineLevel");
+		exFlow.pipelineExecId = (Integer)flowObj.get("pipelineExecId");
 		
 		// Copy nodes
 		List<Object> nodes = (List<Object>)flowObj.get("nodes");
@@ -532,8 +492,12 @@ public class ExecutableFlow {
 		this.submitUser = submitUser;
 	}
 
-	public void setPipelineLevel(int level) {
+	public void setPipelineLevel(Integer level) {
 		pipelineLevel = level;
+	}
+	
+	public void setPipelineExecutionId(Integer execId) {
+		pipelineExecId = execId;
 	}
 	
 	public void setNotifyOnFirstFailure(boolean notify) {
@@ -558,5 +522,13 @@ public class ExecutableFlow {
 
 	public void setVersion(int version) {
 		this.version = version;
+	}
+	
+	public Integer getPipelineLevel() {
+		return pipelineLevel;
+	}
+	
+	public Integer getPipelineExecutionId() {
+		return pipelineExecId;
 	}
 }

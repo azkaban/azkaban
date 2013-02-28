@@ -35,7 +35,6 @@ import javax.management.MBeanServer;
 import javax.management.ObjectName;
 
 import org.apache.commons.lang.StringUtils;
-import org.apache.log4j.FileAppender;
 import org.apache.log4j.Logger;
 import org.apache.velocity.app.VelocityEngine;
 import org.apache.velocity.runtime.log.Log4JLogChute;
@@ -178,11 +177,6 @@ public class AzkabanWebServer implements AzkabanServer {
 		}
 		
 		configureMBeanServer();
-	}
-	
-	private void setupLoggers() {
-		//FileAppender fileAppender = new FileAppender(loggerLayout, absolutePath, true);
-		
 	}
 
 	private void setViewerPlugins(List<ViewerPlugin> viewerPlugins) {

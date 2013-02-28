@@ -1,6 +1,8 @@
 package azkaban.test.execapp;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
 
 import azkaban.execapp.event.Event;
 import azkaban.execapp.event.Event.Type;
@@ -8,10 +10,17 @@ import azkaban.execapp.event.EventListener;
 
 public class EventCollectorListener implements EventListener {
 	private ArrayList<Event> eventList = new ArrayList<Event>();
+	private HashSet<Event.Type> filterOutTypes = new HashSet<Event.Type>();
+	
+	public void setEventFilterOut(Event.Type ... types) {
+		filterOutTypes.addAll(Arrays.asList(types)); 
+	}
 	
 	@Override
 	public void handleEvent(Event event) {
-		eventList.add(event);
+		if (!filterOutTypes.contains(event.getType())) {
+			eventList.add(event);
+		}
 	}
 
 	public ArrayList<Event> getEventList() {

@@ -23,7 +23,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import azkaban.executor.ExecutableFlow.Status;
 import azkaban.flow.Node;
 import azkaban.utils.JSONUtils;
 import azkaban.utils.Props;

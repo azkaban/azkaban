@@ -31,6 +31,9 @@ import javax.servlet.http.HttpServletResponse;
 import org.apache.commons.fileupload.servlet.ServletFileUpload;
 import org.apache.log4j.Logger;
 
+import azkaban.project.Project;
+import azkaban.user.Permission;
+import azkaban.user.Role;
 import azkaban.user.User;
 import azkaban.user.UserManager;
 import azkaban.user.UserManagerException;
@@ -215,6 +218,22 @@ public abstract class LoginAbstractAzkabanServlet extends AbstractAzkabanServlet
 		Session session = new Session(randomUID, user, ip);
 		
 		return session;
+	}
+	
+	protected boolean hasPermission(Project project, User user, Permission.Type type) {
+		UserManager userManager = getApplication().getUserManager();
+		if (project.hasPermission(user, type)) {
+			return true;
+		}
+		
+		for(String roleName: user.getRoles()) {
+			Role role = userManager.getRole(roleName);
+			if (role.getPermission().isPermissionSet(type) || role.getPermission().isPermissionSet(Permission.Type.ADMIN)) {
+				return true;
+			}
+		}
+		
+		return false;
 	}
 	
 	protected void handleAjaxLoginAction(HttpServletRequest req, HttpServletResponse resp, Map<String, Object> ret) throws ServletException {

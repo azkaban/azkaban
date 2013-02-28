@@ -25,12 +25,13 @@ import azkaban.execapp.event.Event;
 import azkaban.execapp.event.Event.Type;
 import azkaban.execapp.event.EventHandler;
 import azkaban.execapp.event.EventListener;
+import azkaban.execapp.event.FlowWatcher;
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutableFlow.FailureAction;
-import azkaban.executor.ExecutableFlow.Status;
 import azkaban.executor.ExecutableNode;
 import azkaban.executor.ExecutorLoader;
 import azkaban.executor.ExecutorManagerException;
+import azkaban.executor.Status;
 import azkaban.flow.FlowProps;
 import azkaban.jobtype.JobTypeManager;
 import azkaban.project.ProjectLoader;
@@ -68,6 +69,7 @@ public class FlowRunner extends EventHandler implements Runnable {
 	private JobRunnerEventListener listener = new JobRunnerEventListener();
 	private BlockingQueue<JobRunner> jobsToRun = new LinkedBlockingQueue<JobRunner>();
 	private Map<String, JobRunner> runningJob = new ConcurrentHashMap<String, JobRunner>();
+	
 	private Map<Pair<String, Integer>, JobRunner> allJobs = new ConcurrentHashMap<Pair<String, Integer>, JobRunner>();
 	private List<JobRunner> pausedJobsToRun = Collections.synchronizedList(new ArrayList<JobRunner>());
 	
@@ -80,7 +82,14 @@ public class FlowRunner extends EventHandler implements Runnable {
 	private boolean flowFinished = false;
 	private boolean flowCancelled = false;
 	
-	public FlowRunner(ExecutableFlow flow, ExecutorLoader executorLoader, ProjectLoader projectLoader, JobTypeManager jobtypeManager) throws ExecutorManagerException {
+	// Used for pipelining
+	private Integer pipelineLevel = null;
+	private Integer pipelineExecId = null;
+	
+	// Watches external flows for execution.
+	private FlowWatcher watcher = null;
+	
+	public FlowRunner(ExecutableFlow flow, FlowWatcher watcher, ExecutorLoader executorLoader, ProjectLoader projectLoader, JobTypeManager jobtypeManager) throws ExecutorManagerException {
 		this.execId = flow.getExecutionId();
 		this.flow = flow;
 		this.executorLoader = executorLoader;
@@ -88,6 +97,10 @@ public class FlowRunner extends EventHandler implements Runnable {
 		this.executorService = Executors.newFixedThreadPool(numThreads);
 		this.execDir = new File(flow.getExecutionPath());
 		this.jobtypeManager = jobtypeManager;
+		
+		this.pipelineLevel = flow.getPipelineLevel();
+		this.pipelineExecId = flow.getPipelineExecutionId();
+		this.watcher = watcher;
 	}
 
 	public FlowRunner setGlobalProps(Props globalProps) {
@@ -97,10 +110,6 @@ public class FlowRunner extends EventHandler implements Runnable {
 
 	public File getExecutionDir() {
 		return execDir;
-	}
-	
-	public void watchedExecutionUpdate(ExecutableFlow flow) {
-		
 	}
 	
 	@Override
@@ -116,6 +125,9 @@ public class FlowRunner extends EventHandler implements Runnable {
 			// Create execution dir
 			createLogger(flowId);
 			logger.info("Running execid:" + execId + " flow:" + flowId + " project:" + projectId + " version:" + version);
+			if (pipelineExecId != null) {
+				logger.info("Running simulateously with " + pipelineExecId + ". Pipelining level " + pipelineLevel);
+			}
 			
 			// The current thread is used for interrupting blocks
 			currentThread = Thread.currentThread();
@@ -144,6 +156,10 @@ public class FlowRunner extends EventHandler implements Runnable {
 			flow.setStatus(Status.FAILED);
 		}
 		finally {
+			if (watcher != null) {
+				watcher.stopWatcher();
+			}
+			
 			closeLogger();
 			flow.setEndTime(System.currentTimeMillis());
 			updateFlow();
@@ -346,6 +362,10 @@ public class FlowRunner extends EventHandler implements Runnable {
 		
 		// should have one prop with system secrets, the other user level props
 		JobRunner jobRunner = new JobRunner(node, prop, path.getParentFile(), executorLoader, jobtypeManager, logger);
+		if (watcher != null) {
+			jobRunner.setPipeline(watcher, pipelineLevel);
+		}
+		
 		jobRunner.addListener(listener);
 
 		return jobRunner;
@@ -397,6 +417,10 @@ public class FlowRunner extends EventHandler implements Runnable {
 			logger.info("Flow cancelled by " + user);
 			flowPaused = false;
 			flowCancelled = true;
+			
+			if (watcher != null) {
+				watcher.stopWatcher();
+			}
 			
 			for (JobRunner runner: pausedJobsToRun) {
 				ExecutableNode node = runner.getNode();
@@ -669,7 +693,7 @@ public class FlowRunner extends EventHandler implements Runnable {
 		String trigger = finishedNode.getAttempt() > 0 ? finishedNode.getJobId() + "." + finishedNode.getAttempt() : finishedNode.getJobId();
 		for (String dependent : finishedNode.getOutNodes()) {
 			ExecutableNode dependentNode = flow.getExecutableNode(dependent);
-			queueNextJob(dependentNode, finishedNode.getJobId());
+			queueNextJob(dependentNode, trigger);
 		}
 	}
 
@@ -750,6 +774,8 @@ public class FlowRunner extends EventHandler implements Runnable {
 					jobOutputProps.put(node.getJobId(), runner.getOutputProps());
 					
 					runningJob.remove(node.getJobId());
+					
+					fireEventListeners(event);
 					queueNextJobs(node);
 				}
 				
@@ -781,13 +807,7 @@ public class FlowRunner extends EventHandler implements Runnable {
 	private boolean isFlowFinished() {
 		for (String end: flow.getEndNodes()) {
 			ExecutableNode node = flow.getExecutableNode(end);
-			switch(node.getStatus()) {
-			case KILLED:
-			case SKIPPED:
-			case FAILED:
-			case SUCCEEDED:
-				continue;
-			default:
+			if (!Status.isStatusFinished(node.getStatus())) {
 				return false;
 			}
 		}

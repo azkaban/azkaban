@@ -33,18 +33,16 @@ import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutableNode;
 import azkaban.executor.ExecutableFlow.FailureAction;
 import azkaban.executor.ExecutorManager;
-import azkaban.executor.ExecutableFlow.Status;
 import azkaban.executor.ExecutorManagerException;
+import azkaban.executor.Status;
 import azkaban.flow.Flow;
 import azkaban.project.Project;
 import azkaban.project.ProjectManager;
 import azkaban.scheduler.Schedule;
 import azkaban.scheduler.ScheduleManager;
 import azkaban.user.Permission;
-import azkaban.user.Role;
 import azkaban.user.User;
 import azkaban.user.Permission.Type;
-import azkaban.user.UserManager;
 import azkaban.utils.FileIOUtils.LogData;
 import azkaban.webapp.AzkabanWebServer;
 import azkaban.webapp.session.Session;
@@ -54,7 +52,6 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 	private ProjectManager projectManager;
 	private ExecutorManager executorManager;
 	private ScheduleManager scheduleManager;
-	private UserManager userManager;
 	private ExecutorVMHelper vmHelper;
 
 	@Override
@@ -64,7 +61,6 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 		projectManager = server.getProjectManager();
 		executorManager = server.getExecutorManager();
 		scheduleManager = server.getScheduleManager();
-		userManager = server.getUserManager();
 		vmHelper = new ExecutorVMHelper();
 	}
 
@@ -749,20 +745,5 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 			
 			return project.getName();
 		}
-	}
-	
-	private boolean hasPermission(Project project, User user, Permission.Type type) {
-		if (project.hasPermission(user, type)) {
-			return true;
-		}
-		
-		for(String roleName: user.getRoles()) {
-			Role role = userManager.getRole(roleName);
-			if (role.getPermission().isPermissionSet(type) || role.getPermission().isPermissionSet(Permission.Type.ADMIN)) {
-				return true;
-			}
-		}
-		
-		return false;
 	}
 }

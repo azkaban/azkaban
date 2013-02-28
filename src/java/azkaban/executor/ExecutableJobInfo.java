@@ -3,8 +3,6 @@ package azkaban.executor;
 import java.util.HashMap;
 import java.util.Map;
 
-import azkaban.executor.ExecutableFlow.Status;
-
 public class ExecutableJobInfo {
 	private final int execId;
 	private final int projectId;

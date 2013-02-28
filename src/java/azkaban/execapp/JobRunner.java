@@ -17,6 +17,10 @@ package azkaban.execapp;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 import org.apache.log4j.Appender;
 import org.apache.log4j.FileAppender;
@@ -24,13 +28,15 @@ import org.apache.log4j.Layout;
 import org.apache.log4j.Logger;
 import org.apache.log4j.PatternLayout;
 
+import azkaban.execapp.event.BlockingStatus;
 import azkaban.execapp.event.Event;
 import azkaban.execapp.event.Event.Type;
 import azkaban.execapp.event.EventHandler;
-import azkaban.executor.ExecutableFlow.Status;
+import azkaban.execapp.event.FlowWatcher;
 import azkaban.executor.ExecutableNode;
 import azkaban.executor.ExecutorLoader;
 import azkaban.executor.ExecutorManagerException;
+import azkaban.executor.Status;
 import azkaban.flow.CommonJobProperties;
 import azkaban.jobExecutor.AbstractProcessJob;
 import azkaban.jobExecutor.Job;
@@ -61,7 +67,10 @@ public class JobRunner extends EventHandler implements Runnable {
 	private Object syncObject = new Object();
 	
 	private final JobTypeManager jobtypeManager;
-
+	private Integer pipelineLevel = null;
+	private FlowWatcher watcher = null;
+	private Set<String> pipelineJobs = new HashSet<String>();
+	
 	public JobRunner(ExecutableNode node, Props props, File workingDir, ExecutorLoader loader, JobTypeManager jobtypeManager, Logger flowLogger) {
 		this.props = props;
 		this.node = node;
@@ -70,6 +79,19 @@ public class JobRunner extends EventHandler implements Runnable {
 		this.loader = loader;
 		this.jobtypeManager = jobtypeManager;
 		this.flowLogger = flowLogger;
+	}
+	
+	public void setPipeline(FlowWatcher watcher, int pipelineLevel) {
+		this.watcher = watcher;
+		this.pipelineLevel = pipelineLevel;
+
+		if (pipelineLevel == 1) {
+			pipelineJobs.add(node.getJobId());
+		}
+		else if (pipelineLevel == 2) {
+			pipelineJobs.add(node.getJobId());
+			pipelineJobs.addAll(node.getOutNodes());
+		}
 	}
 	
 	public ExecutableNode getNode() {
@@ -122,16 +144,16 @@ public class JobRunner extends EventHandler implements Runnable {
 	@Override
 	public void run() {
 		Thread.currentThread().setName("JobRunner-" + node.getJobId() + "-" + executionId);
-
-		node.setStartTime(System.currentTimeMillis());
 		
 		if (node.getStatus() == Status.DISABLED) {
+			node.setStartTime(System.currentTimeMillis());
 			fireEvent(Event.create(this, Type.JOB_STARTED, null, false));
 			node.setStatus(Status.SKIPPED);
 			node.setEndTime(System.currentTimeMillis());
 			fireEvent(Event.create(this, Type.JOB_FINISHED));
 			return;
 		} else if (node.getStatus() == Status.KILLED) {
+			node.setStartTime(System.currentTimeMillis());
 			fireEvent(Event.create(this, Type.JOB_STARTED, null, false));
 			node.setEndTime(System.currentTimeMillis());
 			fireEvent(Event.create(this, Type.JOB_FINISHED));
@@ -139,7 +161,32 @@ public class JobRunner extends EventHandler implements Runnable {
 		}
 		else {
 			createLogger();
-			
+			node.setUpdateTime(System.currentTimeMillis());
+
+			// For pipelining of jobs. Will watch other jobs.
+			if (!pipelineJobs.isEmpty()) {
+				String blockedList = "";
+				ArrayList<BlockingStatus> blockingStatus = new ArrayList<BlockingStatus>();
+				for (String waitingJobId : pipelineJobs) {
+					Status status = watcher.peekStatus(waitingJobId);
+					if (status != null && !Status.isStatusFinished(status)) {
+						BlockingStatus block = watcher.getBlockingStatus(waitingJobId);
+						blockingStatus.add(block);
+						blockedList += waitingJobId + ",";
+					}
+				}
+				if (!blockingStatus.isEmpty()) {
+					logger.info("Pipeline job " + node.getJobId() + " waiting on " + blockedList + " in execution " + watcher.getExecId());
+					
+					for(BlockingStatus bStatus: blockingStatus) {
+						logger.info("Waiting on pipelined job " + bStatus.getJobId());
+						bStatus.blockOnFinishedStatus();
+						logger.info("Pipelined job " + bStatus.getJobId() + " finished.");
+					}
+				}
+			}
+
+			node.setStartTime(System.currentTimeMillis());
 			fireEvent(Event.create(this, Type.JOB_STARTED, null, false));
 			try {
 				loader.uploadExecutableNode(node, props);
@@ -185,7 +232,7 @@ public class JobRunner extends EventHandler implements Runnable {
 		this.fireEventListeners(event);
 	}
 	
-	private boolean prepareJob() throws RuntimeException{
+	private boolean prepareJob() throws RuntimeException {
 		// Check pre conditions
 		if (props == null) {
 			node.setStatus(Status.FAILED);

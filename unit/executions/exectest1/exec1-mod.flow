@@ -30,9 +30,16 @@
   },{
     "source" : "job7",
     "target" : "job8"
+  },{
+    "source" : "job7",
+    "target" : "job9"
   },
   {
     "source" : "job8",
+    "target" : "job10"
+  },
+  {
+    "source" : "job9",
     "target" : "job10"
   }
    ],
@@ -115,6 +122,16 @@
       "level" : 0
     },
     "jobSource" : "job8.job",
+    "expectedRuntime" : 1
+  },
+  {
+    "propSource" : "prop2.properties",
+    "id" : "job9",
+    "jobType" : "java",
+    "layout" : {
+      "level" : 0
+    },
+    "jobSource" : "job9.job",
     "expectedRuntime" : 1
   },
   {
