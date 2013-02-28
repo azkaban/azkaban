@@ -81,7 +81,9 @@ azkaban.FlowTableView= Backbone.View.extend({
     "hover .innerTable .tb-job-name": "jobRunOptions",
     "click .runJob": "runJob",
     "click .runWithDep": "runWithDep",
-    "click .executeFlow": "executeFlow"
+    "click .executeFlow": "executeFlow",
+    "click .viewFlow": "viewFlow",
+    "click .viewJob": "viewJob"
   },
   initialize : function(settings) {
   	_.bindAll(this, 'createJobListTable');
@@ -179,6 +181,13 @@ azkaban.FlowTableView= Backbone.View.extend({
   		$(divMenu).attr("id", menuName);
   		$(divMenu).addClass("job-hover-menu");
   		
+  		var divViewFlow = document.createElement("div");
+  		$(divViewFlow).addClass("btn2");
+  		$(divViewFlow).addClass("viewFlow");
+  		$(divViewFlow).text("View Flow");
+  		divViewFlow.flowId = flowId;
+  		$(divMenu).append(divViewFlow);
+  		
   		var divRunJob = document.createElement("div");
   		$(divRunJob).addClass("btn1");
   		$(divRunJob).addClass("executeFlow");
@@ -206,7 +215,15 @@ azkaban.FlowTableView= Backbone.View.extend({
   		var divMenu = document.createElement("div");
   		$(divMenu).attr("id", menuName);
   		$(divMenu).addClass("job-hover-menu");
-
+  		
+  		var divViewFlow = document.createElement("div");
+  		$(divViewFlow).addClass("btn2");
+  		$(divViewFlow).addClass("viewJob");
+  		$(divViewFlow).text("View Job");
+  		divViewFlow.flowId = flowId;
+  		divViewFlow.jobId = jobName;
+  		$(divMenu).append(divViewFlow);
+  		
   		var divRunJob = document.createElement("div");
   		$(divRunJob).addClass("btn1");
   		$(divRunJob).addClass("runJob");
@@ -253,6 +270,19 @@ azkaban.FlowTableView= Backbone.View.extend({
 	 		$("#"+depId).toggleClass("dependency");
 	 	}
   	}
+  },
+  viewFlow: function(evt) {
+  	console.log("View Flow");
+  	var flowId = evt.currentTarget.flowId;
+
+  	location.href = contextURL + "/manager?project=" + projectId + "&flow=" + flowId;
+  },
+  viewJob: function(evt) {
+  	console.log("View Job");
+  	var flowId = evt.currentTarget.flowId;
+  	var jobId = evt.currentTarget.jobId;
+  	
+  	location.href = contextURL + "/manager?project=" + projectId + "&flow=" + flowId + "&job=" + jobId;
   },
   runJob: function(evt) {
   	console.log("Run Job");

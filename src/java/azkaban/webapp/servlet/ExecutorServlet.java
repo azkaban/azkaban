@@ -29,6 +29,8 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.apache.commons.lang.StringUtils;
+
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutableNode;
 import azkaban.executor.ExecutableFlow.FailureAction;
@@ -285,7 +287,7 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 			
 			ret.put("project", projectName);
 			if (ajaxName.equals("executeFlow")) {
-				ajaxExecuteFlow(req, resp, ret, session.getUser());
+				ajaxAttemptExecuteFlow(req, resp, ret, session.getUser());
 			}
 		}
 		if (ret != null) {
@@ -611,6 +613,32 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 		ret.put("endTime", exFlow.getEndTime());
 		ret.put("submitTime", exFlow.getSubmitTime());
 		ret.put("submitUser", exFlow.getSubmitUser());
+	}
+	
+	private void ajaxAttemptExecuteFlow(HttpServletRequest req, HttpServletResponse resp, HashMap<String, Object> ret, User user) throws ServletException {
+		String projectName = getParam(req, "project");
+		String flowId = getParam(req, "flow");
+		
+		Project project = getProjectAjaxByPermission(ret, projectName, user, Type.EXECUTE);
+		if (project == null) {
+			ret.put("error", "Project '" + projectName + "' doesn't exist.");
+			return;
+		}
+		
+		ret.put("flow",  flowId);
+		Flow flow = project.getFlow(flowId);
+		if (flow == null) {
+			ret.put("error", "Flow '" + flowId + "' cannot be found in project " + project);
+			return;
+		}
+		
+		List<Integer> executingFlows = executorManager.getRunningFlows(project.getId(), flowId);
+		if (executingFlows.isEmpty() || hasParam(req, "executingJobOption")) {
+			ajaxExecuteFlow(req, resp, ret, user);
+		}
+		else {
+			ret.put("error", "Flow is already running with execid=" + StringUtils.join(executingFlows, ","));
+		}
 	}
 	
 	private void ajaxExecuteFlow(HttpServletRequest req, HttpServletResponse resp, HashMap<String, Object> ret, User user) throws ServletException {

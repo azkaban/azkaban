@@ -324,7 +324,7 @@ public class FlowRunnerManager implements EventListener {
 		// Setup flow runner
 		FlowWatcher watcher = null;
 		if (flow.getPipelineExecutionId() != null) {
-			int pipelineExecId = flow.getPipelineExecutionId();
+			Integer pipelineExecId = flow.getPipelineExecutionId();
 			FlowRunner runner = runningFlows.get(pipelineExecId);
 			
 			if (runner != null) {
