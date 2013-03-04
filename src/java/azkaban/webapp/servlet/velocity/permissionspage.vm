@@ -71,6 +71,7 @@
 					#if($isAdmin)
 						<button id="addUser" class="btn1">Add User</button>
 						<button id="addGroup" class="btn1">Add Group</button>
+						<button id="addProxyUser" class="btn2">Add Proxy User</button>
 					#end
 				</div>
 
@@ -93,7 +94,7 @@
 					<th class="tb-read">Read</th>
 					<th class="tb-write">Write</th>
 					<th class="tb-execute">Execute</th>
-					<th class="tb-schedule">Schedule</th>
+					<th class="tb-schedule">Schedule</th>					
 					#if($isAdmin)
 						<th class="tb-action"></th>
 					#end
@@ -172,6 +173,45 @@
 #end
 			</tbody>
 		</table>
+		
+		<br></br>
+		<table id="proxy-user-table" class="all-jobs permission-table">
+			<thead>
+				<tr>
+					<th class="tb-username">Proxy User</th>
+					<th class="tb-perm">Admin</th>
+					<th class="tb-read">Read</th>
+					<th class="tb-write">Write</th>
+					<th class="tb-execute">Execute</th>
+					<th class="tb-schedule">Schedule</th>
+					<th class="tb-proxy">Proxy</th>
+					#if($isAdmin)
+						<th class="tb-action"></th>
+					#end
+				</tr>
+			</thead>
+			<tbody>
+#if($proxyUsers)
+#foreach($proxyUser in $proxyUsers)
+	<tr id="${proxyUser}-row" >
+		<td class="tb-name">#if($proxyUser == $username) ${proxyUser} <span class="sublabel">(you)</span> #else $proxyUser #end</td>
+			<td><input id="proxy-${proxyUser}-admin-checkbox" type="checkbox" name="admin" disabled="disabled" ></input></td>
+			<td><input id="proxy-${proxyUser}-read-checkbox" type="checkbox" name="read" disabled="disabled" ></input></td>
+			<td><input id="proxy-${proxyUser}-write-checkbox" type="checkbox" name="write" disabled="disabled" ></input></td>
+			<td><input id="proxy-${proxyUser}-execute-checkbox" type="checkbox" name="execute" disabled="disabled" ></input></td>
+			<td><input id="proxy-${proxyUser}-schedule-checkbox" type="checkbox" name="schedule" disabled="disabled" ></input></td>
+			<td><input id="proxy-${proxyUser}-proxy-checkbox" type="checkbox" name="proxy" disabled="disabled" checked="true"></input></td>
+
+		#if($isAdmin)
+			<td><button id="proxy-${proxyUser}" class="change-btn btn2">Change</button></td>
+		#end
+	</tr>
+#end
+#else
+	<tr><td class="last">No Proxy User Found.</td></tr>
+#end
+			</tbody>
+		</table>
 #end
 
 		</div>
@@ -184,6 +224,7 @@
 					<dl>
 						<dt>User</dt>
 						<dd><input id="user-box" name="userid" type="text" /></dd>
+					<div id="otherCheckBoxes">
 						<dt class="nextline">Admin</dt>
 						<dd><input id="admin-change" name="admin" type="checkbox" /></dd>
 						<dt>Read</dt>
@@ -194,6 +235,11 @@
 					    <dd><input id="execute-change" name="execute" type="checkbox" /></dd>
 					    <dt>Schedule</dt>
 					    <dd><input id="schedule-change" name="schedule" type="checkbox" /></dd>
+					</div>
+					<div id="proxyCheckBox" hidden=true>
+				    	<dt>Proxy</dt>
+				    	<dd><input id="proxy-change" name="proxy" type="checkbox" /></dd>
+				    </div>
 					</dl>
 				</fieldset>
 			</div>

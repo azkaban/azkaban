@@ -2,6 +2,7 @@ package azkaban.project;
 
 import java.io.File;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 
@@ -221,5 +222,7 @@ public interface ProjectLoader {
 	Props fetchProjectProperty(int projectId, int projectVer, String propsName) throws ProjectManagerException;
 
 	List<Triple<String, Boolean, Permission>> getProjectPermissions(int projectId) throws ProjectManagerException;
+
+	void updateProjectSettings(Project project) throws ProjectManagerException;
 	
 }

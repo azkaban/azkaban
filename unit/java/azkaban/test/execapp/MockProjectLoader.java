@@ -217,4 +217,11 @@ public class MockProjectLoader implements ProjectLoader {
 		// TODO Auto-generated method stub
 		return null;
 	}
+
+	@Override
+	public void updateProjectSettings(Project project)
+			throws ProjectManagerException {
+		// TODO Auto-generated method stub
+		
+	}
 }

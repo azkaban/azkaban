@@ -17,6 +17,7 @@ package azkaban.execapp;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.HashSet;
 import java.util.List;
 
 import org.apache.log4j.Appender;
@@ -63,11 +64,11 @@ public class JobRunner extends EventHandler implements Runnable {
 	private Object syncObject = new Object();
 	
 	private final JobTypeManager jobtypeManager;
-	private List<String> proxyUsers = null;
+	private HashSet<String> proxyUsers = null;
 	
 	private boolean userLockDown;
 
-	public JobRunner(ExecutableNode node, Props props, File workingDir, List<String> proxyUsers, ExecutorLoader loader, JobTypeManager jobtypeManager, Logger flowLogger) {
+	public JobRunner(ExecutableNode node, Props props, File workingDir, HashSet<String> proxyUsers, ExecutorLoader loader, JobTypeManager jobtypeManager, Logger flowLogger) {
 		this.props = props;
 		this.node = node;
 		this.workingDir = workingDir;
@@ -226,11 +227,8 @@ public class JobRunner extends EventHandler implements Runnable {
 				props.put(AbstractProcessJob.WORKING_DIR, workingDir.getAbsolutePath());
 			}
 			
-			String jobProxyUser = props.getString("user.to.proxy", null);
-			if(jobProxyUser == null) {
-				jobProxyUser = proxyUsers.get(0);
-			}
-			else {
+			if(props.containsKey("user.to.proxy")) {
+				String jobProxyUser = props.getString("user.to.proxy");
 				if(! proxyUsers.contains(jobProxyUser)) {
 					logger.error("User " + jobProxyUser + " has no permission to execute this job " + node.getJobId() + "!");
 					if(userLockDown) {
@@ -238,7 +236,6 @@ public class JobRunner extends EventHandler implements Runnable {
 					}
 				}
 			}
-			props.put("user.to.proxy", jobProxyUser);
 			
 			//job = JobWrappingFactory.getJobWrappingFactory().buildJobExecutor(node.getJobId(), props, logger);
 			try {

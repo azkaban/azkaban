@@ -217,6 +217,10 @@ public class ProjectManager {
 		return;
 	}
 
+	public void updateProjectSetting(Project project) throws ProjectManagerException {
+		projectLoader.updateProjectSettings(project);		
+	}
+	
 	public void updateProjectPermission(Project project, String name, Permission perm, boolean group, User modifier) throws ProjectManagerException {
 		logger.info("User " + modifier.getUserId() + " updating permissions for project " + project.getName() + " for " + name + " " + perm.toString());
 		projectLoader.updatePermission(project, name, perm, group);
@@ -329,4 +333,6 @@ public class ProjectManager {
 	public void postProjectEvent(Project project, EventType type, String user,String message) {
 		projectLoader.postEvent(project, type, user, message);
 	}
+
+
 }

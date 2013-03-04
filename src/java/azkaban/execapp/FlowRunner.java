@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.BlockingQueue;
@@ -33,6 +34,7 @@ import azkaban.executor.ExecutorLoader;
 import azkaban.executor.ExecutorManagerException;
 import azkaban.flow.FlowProps;
 import azkaban.jobtype.JobTypeManager;
+import azkaban.project.Project;
 import azkaban.project.ProjectLoader;
 import azkaban.project.ProjectManagerException;
 import azkaban.user.Permission;
@@ -82,7 +84,7 @@ public class FlowRunner extends EventHandler implements Runnable {
 	private boolean flowFinished = false;
 	private boolean flowCancelled = false;
 	
-	private List<String> proxyUsers = null;
+	private HashSet<String> proxyUsers = null;
 	
 	private boolean proxyUserLockDown = false;
 	
@@ -102,23 +104,18 @@ public class FlowRunner extends EventHandler implements Runnable {
 		this.proxyUserLockDown = doLockDown;
 	}
 	
-	private List<String> getProxyUsers() {
-		List<String> allUsers = new ArrayList<String>();
-		allUsers.add(flow.getSubmitUser());
-		List<Triple<String, Boolean, Permission>> permissions;
+	private HashSet<String> getProxyUsers() {
+		HashSet<String> proxyUsers = null;
+
 		try {
-			permissions = projectLoader.getProjectPermissions(flow.getProjectId());
-			for(Triple<String, Boolean, Permission> triple : permissions) {
-				if(triple.getSecond() == false && (triple.getThird().isPermissionSet(Permission.Type.EXECUTE) || triple.getThird().isPermissionSet(Permission.Type.ADMIN) )) {
-					allUsers.add(triple.getFirst());
-				}
-			}
+			Project project = projectLoader.fetchProjectById(flow.getProjectId());
+			proxyUsers = project.getProxyUsers();
 		} catch (ProjectManagerException e) {
 			// This gets funny when no user specified and submitted by the scheduler
 			logger.error("Failed to get project permission from project. Using default permission.", e);
 		}
 		
-		return allUsers;
+		return proxyUsers;
 	}
 
 	public FlowRunner setGlobalProps(Props globalProps) {

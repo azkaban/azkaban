@@ -28,6 +28,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -36,6 +37,7 @@ import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.swing.text.StyledEditorKit.BoldAction;
 
 import org.apache.commons.fileupload.FileItem;
 import org.apache.commons.io.FileUtils;
@@ -210,6 +212,11 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 		else if (ajaxName.equals("addPermission")) {
 			if (handleAjaxPermission(project, user, Type.ADMIN, ret)) {
 				ajaxAddPermission(project, ret, req, user);
+			}
+		}
+		else if (ajaxName.equals("addProxyUser")) {
+			if (handleAjaxPermission(project, user, Type.ADMIN, ret)) {
+				ajaxAddProxyUser(project, ret, req, user);
 			}
 		}
 		else if (ajaxName.equals("fetchFlowExecutions")) {
@@ -546,6 +553,55 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 		ret.put("nodes", nodeList);
 	}
 	
+	private void ajaxAddProxyUser(Project project, HashMap<String, Object> ret, HttpServletRequest req, User user) throws ServletException {
+		String name = getParam(req, "name");
+		
+		logger.info("Adding proxy user " + name + " by " + user.getUserId());
+		
+
+		
+		boolean doProxy = Boolean.parseBoolean(getParam(req, "doProxy"));
+		
+		
+		HashSet<String> proxyUsers = project.getProxyUsers();
+		//add
+		if(doProxy) {			
+			if(proxyUsers.contains(name)) {
+				return;
+			}
+			else {
+				if(userManager.validateProxyUser(name, user.getUserId())) {
+					proxyUsers.add(name);
+				}
+				else {
+					ret.put("error", "User " + user.getUserId() + " has no permission to add " + name + " as proxy user for project " + project.getName());
+					return;
+				}
+			}
+		}
+		else {
+			if(!proxyUsers.contains(name)) {
+				return;
+			}
+			else {
+				if(userManager.validateProxyUser(name, user.getUserId())) {
+					proxyUsers.remove(name);
+				}
+				else {
+					ret.put("error", "User " + user.getUserId() + " has no permission to remove " + name + " as proxy user for project " + project.getName());
+					return;
+				}
+			}
+		}
+		try {
+			projectManager.updateProjectSetting(project);
+		} catch (ProjectManagerException e) {
+			// TODO Auto-generated catch block
+			ret.put("error", e.getMessage());
+		}
+		
+	}
+	
 	private void ajaxAddPermission(Project project, HashMap<String, Object> ret, HttpServletRequest req, User user) throws ServletException {
 		String name = getParam(req, "name");
 		boolean group = Boolean.parseBoolean(getParam(req, "group"));
@@ -792,6 +848,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 
 				page.add("permissions", project.getUserPermissions());
 				page.add("groupPermissions", project.getGroupPermissions());
+				page.add("proxyUsers", project.getProxyUserList());
 				
 				if(hasPermission(project, user, Type.ADMIN)) {
 					page.add("isAdmin", true);
