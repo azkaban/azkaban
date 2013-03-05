@@ -97,25 +97,11 @@ public class FlowRunner extends EventHandler implements Runnable {
 		this.execDir = new File(flow.getExecutionPath());
 		this.jobtypeManager = jobtypeManager;
 		
-		this.proxyUsers = getProxyUsers();
+		this.proxyUsers = flow.getProxyUsers();
 	}
 
 	public void setProxyUserLockDown(boolean doLockDown) {
 		this.proxyUserLockDown = doLockDown;
-	}
-	
-	private HashSet<String> getProxyUsers() {
-		HashSet<String> proxyUsers = null;
-
-		try {
-			Project project = projectLoader.fetchProjectById(flow.getProjectId());
-			proxyUsers = project.getProxyUsers();
-		} catch (ProjectManagerException e) {
-			// This gets funny when no user specified and submitted by the scheduler
-			logger.error("Failed to get project permission from project. Using default permission.", e);
-		}
-		
-		return proxyUsers;
 	}
 
 	public FlowRunner setGlobalProps(Props globalProps) {

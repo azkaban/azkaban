@@ -683,6 +683,7 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 		
 		ExecutableFlow exflow = new ExecutableFlow(flow);
 		exflow.setSubmitUser(user.getUserId());
+		exflow.setProxyUsers(project.getProxyUsers());
 
 		if (hasParam(req, "failureAction")) {
 			String option = getParam(req, "failureAction");
