@@ -266,7 +266,7 @@ public class JobRunnerTest {
 		Props props = createProps(time, fail);
 		HashSet<String> proxyUsers = new HashSet<String>();
 		proxyUsers.add(flow.getSubmitUser());
-		JobRunner runner = new JobRunner(node, props, workingDir, proxyUsers, loader, jobtypeManager, logger);
+		JobRunner runner = new JobRunner(new Props(), node, props, workingDir, proxyUsers, loader, jobtypeManager, logger);
 
 		runner.addListener(listener);
 		return runner;

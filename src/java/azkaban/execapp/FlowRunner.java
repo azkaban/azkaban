@@ -66,6 +66,7 @@ public class FlowRunner extends EventHandler implements Runnable {
 	private Map<String, Props> sharedProps = new HashMap<String, Props>();
 	private Map<String, Props> jobOutputProps = new HashMap<String, Props>();
 	
+	private final Props azkabanProps;
 	private Props globalProps;
 	private final JobTypeManager jobtypeManager;
 	
@@ -86,9 +87,8 @@ public class FlowRunner extends EventHandler implements Runnable {
 	
 	private HashSet<String> proxyUsers = null;
 	
-	private boolean proxyUserLockDown = false;
 	
-	public FlowRunner(ExecutableFlow flow, ExecutorLoader executorLoader, ProjectLoader projectLoader, JobTypeManager jobtypeManager) throws ExecutorManagerException {
+	public FlowRunner(Props props, ExecutableFlow flow, ExecutorLoader executorLoader, ProjectLoader projectLoader, JobTypeManager jobtypeManager) throws ExecutorManagerException {
 		this.execId = flow.getExecutionId();
 		this.flow = flow;
 		this.executorLoader = executorLoader;
@@ -96,12 +96,8 @@ public class FlowRunner extends EventHandler implements Runnable {
 		this.executorService = Executors.newFixedThreadPool(numThreads);
 		this.execDir = new File(flow.getExecutionPath());
 		this.jobtypeManager = jobtypeManager;
-		
+		this.azkabanProps = props;
 		this.proxyUsers = flow.getProxyUsers();
-	}
-
-	public void setProxyUserLockDown(boolean doLockDown) {
-		this.proxyUserLockDown = doLockDown;
 	}
 
 	public FlowRunner setGlobalProps(Props globalProps) {
@@ -359,8 +355,7 @@ public class FlowRunner extends EventHandler implements Runnable {
 		prop.setParent(parentProps);
 		
 		// should have one prop with system secrets, the other user level props
-		JobRunner jobRunner = new JobRunner(node, prop, path.getParentFile(), proxyUsers, executorLoader, jobtypeManager, logger);
-		jobRunner.setUserLockDown(proxyUserLockDown);
+		JobRunner jobRunner = new JobRunner(azkabanProps, node, prop, path.getParentFile(), proxyUsers, executorLoader, jobtypeManager, logger);
 		jobRunner.addListener(listener);
 
 		return jobRunner;

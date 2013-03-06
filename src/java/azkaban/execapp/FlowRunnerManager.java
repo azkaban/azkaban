@@ -76,17 +76,19 @@ public class FlowRunnerManager implements EventListener {
 	
 	private Props globalProps;
 	
+	private final Props azkabanProps;
+	
 	private long lastSubmitterThreadCheckTime = -1;
 	private long lastCleanerThreadCheckTime = -1;
 	private long executionDirRetention = 7*24*60*60*1000;
 	
 	private Object executionDirDeletionSync = new Object();
-	
-	private final boolean proxyUserLockDown;
-	
+		
 	public FlowRunnerManager(Props props, ExecutorLoader executorLoader, ProjectLoader projectLoader, ClassLoader parentClassLoader) throws IOException {
 		executionDirectory = new File(props.getString("azkaban.execution.dir", "executions"));
 		projectDirectory = new File(props.getString("azkaban.project.dir", "projects"));
+		
+		azkabanProps = props;
 		
 		//JobWrappingFactory.init(props, getClass().getClassLoader());
 		executionDirRetention = props.getLong("execution.dir.retention", executionDirRetention);
@@ -113,8 +115,6 @@ public class FlowRunnerManager implements EventListener {
 		cleanerThread.start();
 		
 		jobtypeManager = new JobTypeManager(props.getString(AzkabanExecutorServer.JOBTYPE_PLUGIN_DIR, JobTypeManager.DEFAULT_JOBTYPEPLUGINDIR), parentClassLoader);
-		
-		proxyUserLockDown = props.getBoolean("proxy.user.lock.down", false);
 		
 	}
 
@@ -323,8 +323,7 @@ public class FlowRunnerManager implements EventListener {
 		setupFlow(flow);
 		
 		// Setup flow runner
-		FlowRunner runner = new FlowRunner(flow, executorLoader, projectLoader, jobtypeManager);
-		runner.setProxyUserLockDown(proxyUserLockDown);
+		FlowRunner runner = new FlowRunner(azkabanProps, flow, executorLoader, projectLoader, jobtypeManager);
 		runner.setGlobalProps(globalProps);
 		runner.addListener(this);
 		

@@ -16,15 +16,23 @@ package azkaban.execapp;
  */
 
 import java.io.File;
+import java.io.FilenameFilter;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 
+import org.apache.commons.collections.comparators.ComparatorChain;
 import org.apache.log4j.Appender;
 import org.apache.log4j.FileAppender;
 import org.apache.log4j.Layout;
 import org.apache.log4j.Logger;
 import org.apache.log4j.PatternLayout;
+import org.apache.log4j.RollingFileAppender;
 
 import azkaban.execapp.event.Event;
 import azkaban.execapp.event.Event.Type;
@@ -43,7 +51,7 @@ import azkaban.utils.Props;
 
 public class JobRunner extends EventHandler implements Runnable {
 	private static final Layout DEFAULT_LAYOUT = new PatternLayout("%d{dd-MM-yyyy HH:mm:ss z} %c{1} %p - %m\n");
-
+	
 	private ExecutorLoader loader;
 	private Props props;
 	private Props outputProps;
@@ -67,8 +75,10 @@ public class JobRunner extends EventHandler implements Runnable {
 	private HashSet<String> proxyUsers = null;
 	
 	private boolean userLockDown;
+	private String jobLogChunkSize;
+	private int jobLogBackupIndex;
 
-	public JobRunner(ExecutableNode node, Props props, File workingDir, HashSet<String> proxyUsers, ExecutorLoader loader, JobTypeManager jobtypeManager, Logger flowLogger) {
+	public JobRunner(Props azkabanProps, ExecutableNode node, Props props, File workingDir, HashSet<String> proxyUsers, ExecutorLoader loader, JobTypeManager jobtypeManager, Logger flowLogger) {
 		this.props = props;
 		this.node = node;
 		this.workingDir = workingDir;
@@ -77,10 +87,13 @@ public class JobRunner extends EventHandler implements Runnable {
 		this.jobtypeManager = jobtypeManager;
 		this.flowLogger = flowLogger;
 		this.proxyUsers = proxyUsers;
-	}
-	
-	public void setUserLockDown (boolean doLockDown) {
-		this.userLockDown = doLockDown;
+		
+		// default no lock down but warn
+		this.userLockDown = azkabanProps.getBoolean("proxy.user.lock.down", false);
+		// default 20MB log size rolling over.
+		this.jobLogChunkSize = azkabanProps.getString("job.log.chunk.size", "5MB");
+		this.jobLogBackupIndex = azkabanProps.getInt("job.log.backup.index", 4);
+		
 	}
 	
 	public ExecutableNode getNode() {
@@ -104,8 +117,9 @@ public class JobRunner extends EventHandler implements Runnable {
 
 			jobAppender = null;
 			try {
-				FileAppender fileAppender = new FileAppender(loggerLayout, absolutePath, true);
-				
+				RollingFileAppender fileAppender = new RollingFileAppender(loggerLayout, absolutePath, true);
+				fileAppender.setMaxBackupIndex(jobLogBackupIndex);
+				fileAppender.setMaxFileSize(jobLogChunkSize);
 				jobAppender = fileAppender;
 				logger.addAppender(jobAppender);
 			} catch (IOException e) {
@@ -177,7 +191,18 @@ public class JobRunner extends EventHandler implements Runnable {
 			
 			if (logFile != null) {
 				try {
-					loader.uploadLogFile(executionId, node.getJobId(), node.getAttempt(), logFile);
+					File[] files = logFile.getParentFile().listFiles(new FilenameFilter() {
+						
+						@Override
+						public boolean accept(File dir, String name) {
+							return name.startsWith(logFile.getName());
+						}
+					} 
+					);
+					Arrays.sort(files, Collections.reverseOrder());
+					
+					
+					loader.uploadLogFile(executionId, node.getJobId(), node.getAttempt(), files);
 				} catch (ExecutorManagerException e) {
 					flowLogger.error("Error writing out logs for job " + node.getJobId(), e);
 				}
