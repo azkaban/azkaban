@@ -271,8 +271,8 @@ public class XmlUserManager implements UserManager {
 	}
 
 	@Override
-	public boolean validateProxyUser(String proxyUser, String realUser) {
-		if(proxyUserMap.containsKey(realUser) && proxyUserMap.get(realUser).contains(proxyUser)) {
+	public boolean validateProxyUser(String proxyUser, User realUser) {
+		if(proxyUserMap.containsKey(realUser.getUserId()) && proxyUserMap.get(realUser.getUserId()).contains(proxyUser)) {
 			return true;
 		}
 		else {

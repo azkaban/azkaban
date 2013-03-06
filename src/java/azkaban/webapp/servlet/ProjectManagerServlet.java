@@ -570,7 +570,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 				return;
 			}
 			else {
-				if(userManager.validateProxyUser(name, user.getUserId())) {
+				if(userManager.validateProxyUser(name, user)) {
 					proxyUsers.add(name);
 				}
 				else {
@@ -584,7 +584,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 				return;
 			}
 			else {
-				if(userManager.validateProxyUser(name, user.getUserId())) {
+				if(userManager.validateProxyUser(name, user)) {
 					proxyUsers.remove(name);
 				}
 				else {

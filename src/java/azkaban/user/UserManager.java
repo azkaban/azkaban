@@ -59,5 +59,5 @@ public interface UserManager {
 	 */
 	public Role getRole(String roleName);
 
-	public boolean validateProxyUser(String proxyUser, String realUser);
+	public boolean validateProxyUser(String proxyUser, User realUser);
 }
