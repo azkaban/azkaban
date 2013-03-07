@@ -108,7 +108,7 @@ public class ExecutorManager {
 	
 	public boolean isFlowRunning(int projectId, String flowId) {
 		for (Pair<ExecutionReference, ExecutableFlow> ref : runningFlows.values()) {
-			if (ref.getSecond().getFlowId().equals(flowId)) {
+			if ((ref.getSecond().getProjectId() == projectId) && ref.getSecond().getFlowId().equals(flowId)) {
 				return true;
 			}
 		}
