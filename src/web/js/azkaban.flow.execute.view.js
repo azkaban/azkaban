@@ -95,117 +95,59 @@ azkaban.FlowExecuteDialogView= Backbone.View.extend({
 var sideMenuDialogView;
 azkaban.SideMenuDialogView= Backbone.View.extend({
 	events : {
-		"click .menuHeader" : "expandItem"
+		"click .menuHeader" : "menuClick"
   	},
   	initialize : function(settings) {
   		var children = $(this.el).children();
+  		var currentParent;
+  		var parents = [];
+  		var realChildren = [];
   		for (var i = 0; i < children.length; ++i ) {
   			var child = children[i];
   			if ((i % 2) == 0) {
+  				currentParent = child;
   				$(child).addClass("menuHeader");
+  				parents.push(child);
   			}
   			else {
   				$(child).addClass("menuContent");
   				$(child).hide();
-  				
-  			
+  				currentParent.child = child;
+  				realChildren.push(child);
   			}
   		}
-  	},
-  	expandItem : function(self) {
   		
+  		this.menuSelect($("#flowOption"));
+  		
+  		this.parents = parents;
+  		this.children = realChildren;
+  	},
+  	menuClick : function(evt) {
+  		this.menuSelect(evt.currentTarget);
+  	},
+  	menuSelect : function(target) {
+  		if ($(target).hasClass("selected")) {
+  			return;
+  		}
+  		
+  		$(".sidePanel").each(function() {
+  			$(this).hide();
+  		});
+  		
+  		$(".menuHeader").each(function() {
+  			$(this.child).slideUp("fast");
+  			$(this).removeClass("selected");
+  		});
+  		
+  		$(".sidePanel").each(function() {
+  			$(this).hide();
+  		});
+  		
+  		$(target).addClass("selected");
+  		$(target.child).slideDown("fast");
+  		var panelName = $(target).attr("viewpanel");
+  		$("#" + panelName).show();
   	}
-});
-
-var contextMenuView;
-azkaban.ContextMenuView = Backbone.View.extend({
-	events :  {
-	},
-	initialize : function(settings) {
-		var div = this.el;
-		$('body').click(function(e) {
-			$(".contextMenu").remove();
-		});
-		$('body').bind("contextmenu", function(e) {$(".contextMenu").remove()});
-		this.svgGraph = settings.graph;
-	},
-	show : function(evt, menu) {
-		console.log("Show context menu");
-		$(".contextMenu").remove();
-		var x = evt.pageX;
-		var y = evt.pageY;
-
-		var contextMenu = this.setupMenu(menu);
-		$(contextMenu).css({top: y, left: x});
-		$(this.el).after(contextMenu);
-	},
-	hide : function(evt) {
-		console.log("Hide context menu");
-		$(".contextMenu").remove();
-	},
-	handleClick: function(evt) {
-		console.log("handling click");
-	},
-	setupMenu: function(menu) {
-		var contextMenu = document.createElement("div");
-		$(contextMenu).addClass("contextMenu");
-		var ul = document.createElement("ul");
-		$(contextMenu).append(ul);
-
-		for (var i = 0; i < menu.length; ++i) {
-			var menuItem = document.createElement("li");
-			if (menu[i].break) {
-				$(menuItem).addClass("break");
-			}
-			else {
-				var title = menu[i].title;
-				var callback = menu[i].callback;
-				$(menuItem).addClass("menuitem");
-				$(menuItem).text(title);
-				menuItem.callback = callback;
-				$(menuItem).click(function() { 
-					$(contextMenu).hide(); 
-					this.callback.call();});
-					
-				if (menu[i].submenu) {
-					var expandSymbol = document.createElement("div");
-					$(expandSymbol).addClass("expandSymbol");
-					$(menuItem).append(expandSymbol);
-					
-					var subMenu = this.setupMenu(menu[i].submenu);
-					$(subMenu).addClass("subMenu");
-					subMenu.parent = contextMenu;
-					menuItem.subMenu = subMenu;
-					$(subMenu).hide();
-					$(this.el).after(subMenu);
-					
-					$(menuItem).mouseenter(function() {
-						$(".subMenu").hide();
-						var menuItem = this;
-						menuItem.selected = true;
-						setTimeout(function() {
-							if (menuItem.selected) {
-								var offset = $(menuItem).offset();
-								var left = offset.left;
-								var top = offset.top;
-								var width = $(menuItem).width();
-								var subMenu = menuItem.subMenu;
-								
-								var newLeft = left + width - 5;
-								$(subMenu).css({left: newLeft, top: top});
-								$(subMenu).show();
-							}
-						}, 500);
-					});
-					$(menuItem).mouseleave(function() {this.selected = false;});
-				}
-			}
-
-			$(ul).append(menuItem);
-		}
-
-		return contextMenu;
-	}
 });
 
 var handleJobMenuClick = function(action, el, pos) {
@@ -305,7 +247,7 @@ var nodeClickCallback = function(event) {
 	var flowId = executableGraphModel.get("flowId");
 	var requestURL = contextURL + "/manager?project=" + projectId + "&flow=" + flowId + "&job=" + jobId;
 
-	var menu = [	{title: "Open in New Window...", callback: function() {window.location.href=requestURL;}},
+	var menu = [	{title: "Open Job in New Window...", callback: function() {window.location.href=requestURL;}},
 			{break: 1},
 			{title: "Enable", callback: function() {touchNode(jobId, false);}, submenu: [
 									{title: "Parents", callback: function(){touchParents(jobId, false);}},
@@ -334,14 +276,28 @@ var edgeClickCallback = function(event) {
 
 var graphClickCallback = function(event) {
 	console.log("Graph clicked callback");
+	var flowId = executableGraphModel.get("flowId");
+	var requestURL = contextURL + "/manager?project=" + projectId + "&flow=" + flowId;
+	
+	var menu = [	{title: "Open Flow in New Window...", callback: function() {window.location.href=requestURL;}},
+		{break: 1},
+		{title: "Enable All", callback: function() {enableAll();}},
+		{title: "Disable All", callback: function() {disableAll();}},
+		{break: 1},
+		{title: "Center Graph", callback: function() {executableGraphModel.trigger("resetPanZoom");}}
+	];
+	
+	contextMenuView.show(event, menu);
 }
 
+var contextMenuView;
 $(function() {
 	flowExecuteDialogView = new azkaban.FlowExecuteDialogView({el:$('#execute-flow-panel')});
 	executableGraphModel = new azkaban.GraphModel();
 	svgGraphView = new azkaban.SvgGraphView({el:$('#svgDivCustom'), model: executableGraphModel, topGId:"topG", graphMargin: 10, rightClick: { "node": nodeClickCallback, "edge": edgeClickCallback, "graph": graphClickCallback }});
 	
 	sideMenuDialogView = new azkaban.SideMenuDialogView({el:$('#graphOptions')});
+	
 	var svgGraph = document.getElementById('svgGraph');
 	contextMenuView = new azkaban.ContextMenuView({el:$('#contextMenu'), graph: svgGraph});
 });

@@ -1336,19 +1336,80 @@ tr:hover td {
 	width: 100%;
 	height: 100%;
 	background: #fff;
+	left: 0px
 }
 
-
-.svgDiv {
+.rightPanel {
 	position: absolute;
 	top: 0px;
 	right: 0px;
-	left: 260px;
+	left: 270px;
 	bottom: 0px;
+}
+.rightPanel .sidePanel {
+	width: 100%;
+	height: 100%;
+	background: #fff;
+	left: 0px;
+	overflow:auto;
+}
+.rightPanel h4 {
+	font-size: 11pt;
+	padding: 0px;
+	margin: 15px 10px 5px 2px;
+}
+
+.rightPanel p {
+	font-size: 10pt;
+	margin-left: 25px;
+	color: #555;
+}
+
+.rightPanel .sidePanel.svgDiv {
+	overflow:hidden;
+}
+
+.rightPanel .checkbox {
+	height: 10px;
+	margin-left: 20px;
+}
+
+.rightPanel label {
+	font-size: 11pt;
+}
+
+.rightPanel textarea {
+	font-size: 10pt;
+	width: 500px;
+}
+
+.rightPanel .radio {
+	margin-left: 15px;
+	margin-bottom: 5px;
+	margin-top: 15px;
 }
 
 .radioLabel.disabled {
 	opacity: 0.3;
+}
+
+.sideMenu p {
+	color: #555;
+}
+
+.rightPanel ul {
+	margin-left: 20px;
+}
+
+.rightPanel li {
+	list-style-type: circle;
+	margin-left: 20px;
+	font-size: 9pt;
+	color: #555;
+}
+
+.rightPanel select {
+	margin: 15px 20px 5px 20px;
 }
 
 /* executing options panel*/
@@ -2671,7 +2732,7 @@ tr.row td.tb-name {
 	float: left;
 }
 
-#advanced-btn {
+#schedule-btn {
 	float: left;
 	margin-left: 20px;
 }
@@ -2688,7 +2749,7 @@ tr.row td.tb-name {
 #execute-flow-panel .svgDiv {
 	position: absolute;
 	padding: 1px;
-	left: 270px;
+	left: 0px;
 	right: 0px;
 	top: 0px;
 	bottom: 0px;
@@ -2701,6 +2762,29 @@ tr.row td.tb-name {
 	top: 50px;
 	bottom: 65px;
 	border: none;
+}
+
+h3.menuHeader {
+	font-size: 12pt;
+	margin: 0px 20px;
+	padding: 5px 3px 5px 15px;
+	color: #888;
+	border: none;
+}
+
+h3.menuHeader:hover {
+	color: #000;
+	background-color: #CCC;
+}
+
+h3.menuHeader.selected {
+	color: #000;
+}
+
+div.menuContent {
+	font-size: 10pt;
+	padding-left: 20px;
+	padding-bottom: 10px;
 }
 
 .contextMenu {

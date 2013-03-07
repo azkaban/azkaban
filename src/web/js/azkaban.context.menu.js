@@ -1,19 +1,90 @@
 $.namespace('azkaban');
 
-var flowExecuteDialogView;
-azkaban.FlowExecuteDialogView= Backbone.View.extend({
-  events : {
-  },
-  initialize : function(settings) {
-  },
-  render: function() {
-  },
-  showContextMenu: function(menuData) {
-  	//$('#execute-flow-panel').show();
-  	$(this.el).show();
-  },
-  hideContextMenu: function(menuData) {
-  	//$('#execute-flow-panel').hide();
-  	$(this.el).hide();
-  }
+azkaban.ContextMenuView = Backbone.View.extend({
+	events :  {
+	},
+	initialize : function(settings) {
+		var div = this.el;
+		$('body').click(function(e) {
+			$(".contextMenu").remove();
+		});
+		$('body').bind("contextmenu", function(e) {$(".contextMenu").remove()});
+	},
+	show : function(evt, menu) {
+		console.log("Show context menu");
+		$(".contextMenu").remove();
+		var x = evt.pageX;
+		var y = evt.pageY;
+
+		var contextMenu = this.setupMenu(menu);
+		$(contextMenu).css({top: y, left: x});
+		$(this.el).after(contextMenu);
+	},
+	hide : function(evt) {
+		console.log("Hide context menu");
+		$(".contextMenu").remove();
+	},
+	handleClick: function(evt) {
+		console.log("handling click");
+	},
+	setupMenu: function(menu) {
+		var contextMenu = document.createElement("div");
+		$(contextMenu).addClass("contextMenu");
+		var ul = document.createElement("ul");
+		$(contextMenu).append(ul);
+
+		for (var i = 0; i < menu.length; ++i) {
+			var menuItem = document.createElement("li");
+			if (menu[i].break) {
+				$(menuItem).addClass("break");
+			}
+			else {
+				var title = menu[i].title;
+				var callback = menu[i].callback;
+				$(menuItem).addClass("menuitem");
+				$(menuItem).text(title);
+				menuItem.callback = callback;
+				$(menuItem).click(function() { 
+					$(contextMenu).hide(); 
+					this.callback.call();});
+					
+				if (menu[i].submenu) {
+					var expandSymbol = document.createElement("div");
+					$(expandSymbol).addClass("expandSymbol");
+					$(menuItem).append(expandSymbol);
+					
+					var subMenu = this.setupMenu(menu[i].submenu);
+					$(subMenu).addClass("subMenu");
+					subMenu.parent = contextMenu;
+					menuItem.subMenu = subMenu;
+					$(subMenu).hide();
+					$(this.el).after(subMenu);
+					
+					$(menuItem).mouseenter(function() {
+						$(".subMenu").hide();
+						var menuItem = this;
+						menuItem.selected = true;
+						setTimeout(function() {
+							if (menuItem.selected) {
+								var offset = $(menuItem).offset();
+								var left = offset.left;
+								var top = offset.top;
+								var width = $(menuItem).width();
+								var subMenu = menuItem.subMenu;
+								
+								var newLeft = left + width - 5;
+								$(subMenu).css({left: newLeft, top: top});
+								$(subMenu).show();
+							}
+						}, 500);
+					});
+					$(menuItem).mouseleave(function() {this.selected = false;});
+				}
+			}
+
+			$(ul).append(menuItem);
+		}
+
+		return contextMenu;
+	}
 });
