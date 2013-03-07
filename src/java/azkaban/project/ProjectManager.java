@@ -32,6 +32,7 @@ public class ProjectManager {
 	private final Props props;
 	private final File tempDir;
 	private final int projectVersionRetention;
+	private final boolean creatorDefaultPermissions;
 	
 	public ProjectManager(ProjectLoader loader, Props props) {
 		this.projectLoader = loader;
@@ -39,6 +40,8 @@ public class ProjectManager {
 		this.tempDir = new File(this.props.getString("project.temp.dir", "temp"));
 		this.projectVersionRetention = (props.getInt("project.version.retention", 3));
 		logger.info("Project version retention is set to " + projectVersionRetention);
+		
+		this.creatorDefaultPermissions = props.getBoolean("azkaban.creator.default.permissions", true);
 		
 		if (!tempDir.exists()) {
 			tempDir.mkdirs();
@@ -170,8 +173,19 @@ public class ProjectManager {
 		projectsByName.put(newProject.getName(), newProject);
 		projectsById.put(newProject.getId(), newProject);
 		
+		if(creatorDefaultPermissions) {
 		// Add permission to project
-		projectLoader.updatePermission(newProject, creator.getUserId(), new Permission(Permission.Type.ADMIN), false);
+			projectLoader.updatePermission(newProject, creator.getUserId(), new Permission(Permission.Type.ADMIN), false);
+			
+			// Add proxy user 
+			newProject.getProxyUsers().add(creator.getUserId());
+			try {
+				updateProjectSetting(newProject);
+			} catch (ProjectManagerException e) {
+				e.printStackTrace();
+				throw e;
+			}
+		}
 		
 		projectLoader.postEvent(newProject, EventType.CREATED, creator.getUserId(), null);
 		

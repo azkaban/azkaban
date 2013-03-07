@@ -18,6 +18,7 @@ package azkaban.execapp;
 
 import java.io.File;
 import java.io.FileFilter;
+import java.io.FilenameFilter;
 import java.io.IOException;
 import java.lang.Thread.State;
 import java.util.ArrayList;
@@ -101,6 +102,8 @@ public class FlowRunnerManager implements EventListener {
 			projectDirectory.mkdirs();
 		}
 
+		installedProjects = loadExistingProjects();
+		
 		//azkaban.temp.dir
 		numThreads = props.getInt("executor.flow.threads", DEFAULT_NUM_EXECUTING_FLOWS);
 		executorService = Executors.newFixedThreadPool(numThreads);
@@ -116,6 +119,32 @@ public class FlowRunnerManager implements EventListener {
 		
 		jobtypeManager = new JobTypeManager(props.getString(AzkabanExecutorServer.JOBTYPE_PLUGIN_DIR, JobTypeManager.DEFAULT_JOBTYPEPLUGINDIR), parentClassLoader);
 		
+	}
+
+	private Map<Pair<Integer, Integer>, ProjectVersion> loadExistingProjects() {
+		Map<Pair<Integer, Integer>, ProjectVersion> allProjects = new HashMap<Pair<Integer,Integer>, ProjectVersion>();
+		for(File project : projectDirectory.listFiles(new FilenameFilter() {
+			
+			String pattern = "[0-9]+\\.[0-9]+";
+			@Override
+			public boolean accept(File dir, String name) {
+				return name.matches(pattern);
+			}
+		})) {
+			if(project.isDirectory()) {
+				try {
+					String fileName = new File(project.getAbsolutePath()).getName();
+					int projectId = Integer.parseInt(fileName.split("\\.")[0]);
+					int versionNum = Integer.parseInt(fileName.split("\\.")[1]);
+					ProjectVersion version = new ProjectVersion(projectId, versionNum);
+					allProjects.put(new Pair<Integer, Integer>(projectId, versionNum), version);
+				}
+				catch (Exception e) {
+					e.printStackTrace();
+				}
+			}
+		}
+		return allProjects;
 	}
 
 	public Props getGlobalProps() {
