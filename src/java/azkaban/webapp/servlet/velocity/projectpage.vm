@@ -19,7 +19,7 @@
 	<head>
 #parse( "azkaban/webapp/servlet/velocity/style.vm" )
 		<script type="text/javascript" src="${context}/js/jquery/jquery.js"></script>    
-		<script type="text/javascript" src="${context}/js/jqueryui/jquery-ui.custom.min.js"></script>   
+		<script type="text/javascript" src="${context}/js/jqueryui/jquery-ui.custom.min.js"></script>
 		<script type="text/javascript" src="${context}/js/namespace.js"></script>
 		<script type="text/javascript" src="${context}/js/underscore-1.2.1-min.js"></script>
 		<script type="text/javascript" src="${context}/js/backbone-0.5.3-min.js"></script>
@@ -27,6 +27,8 @@
 		<script type="text/javascript" src="${context}/js/azkaban.ajax.utils.js"></script>
 		<script type="text/javascript" src="${context}/js/azkaban.nav.js"></script>
 		<script type="text/javascript" src="${context}/js/azkaban.project.view.js"></script>
+		
+		<link rel="stylesheet" type="text/css" href="${context}/css/jquery-ui-1.9.2.custom.css" /> 
 		<script type="text/javascript">
 			var contextURL = "${context}";
 			var currentTime = ${currentTime};
@@ -167,16 +169,9 @@
 				<a class="yes btn6" id="delete-btn" href="#">Yes</a>
 			</div>
 		</div>
-		<div id="flow-execute" class="modal">
-			<h3>Execute Flow</h3>
-			<div id="executeErrorMsg" class="box-error-message"></div>
-			<div id="execute-message" class="message">
-			</div>
-			<div class="actions">
-				<a class="yes btn1" id="execute-btn">Execute</a>
-				<a class="no simplemodal-close btn3">Cancel</a>
-			</div>
-		</div>
+		
+		#parse( "azkaban/webapp/servlet/velocity/flowexecutionpanel.vm" )
 	</body>
+	
 </html>
 

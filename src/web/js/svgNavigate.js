@@ -1,6 +1,9 @@
 (function($) {	
 
 	var mouseUp = function(evt) {
+		if (evt.button > 1) {
+			return;
+		}
 		var target = evt.target;
 		target.mx = evt.clientX;
 		target.my = evt.clientY;
@@ -8,6 +11,9 @@
 	}
 	
 	var mouseDown = function(evt) {
+		if (evt.button > 1) {
+                        return;
+                }
 		//alert("mouseDown");
 		var target = evt.target;
 		target.mx = evt.clientX;

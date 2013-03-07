@@ -396,6 +396,10 @@ public class ExecutorManager {
 		return jsonResponse;
 	}
 	
+	public void shutdown() {
+		executingManager.shutdown();
+	}
+	
 	private class ExecutingManagerUpdaterThread extends Thread {
 		private boolean shutdown = false;
 
@@ -411,6 +415,10 @@ public class ExecutorManager {
 		// When we have an http error, for that flow, we'll check every 10 secs, 6 times (1 mins) before we evict.
 		private int numErrors = 6;
 		private long errorThreshold = 10000;
+		
+		private void shutdown() {
+			shutdown = true;
+		}
 		
 		@SuppressWarnings("unchecked")
 		public void run() {

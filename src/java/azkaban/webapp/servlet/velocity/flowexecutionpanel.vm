@@ -1,0 +1,53 @@
+<script type="text/javascript" src="${context}/js/azkaban.layout.js"></script>
+<script type="text/javascript" src="${context}/js/svgNavigate.js"></script>
+<script type="text/javascript" src="${context}/js/azkaban.svg.graph.view.js"></script>
+<script type="text/javascript" src="${context}/js/azkaban.flow.execute.view.js"></script>
+
+<div id="modalBackground" class="modalBackground2">
+<div id="execute-flow-panel" class="modal modalContainer2">
+	<h3 id="execute-flow-panel-title"></h3>
+	<a title="Close" class="modal-close">x</a>
+	<div id="execute-message" class="message">
+	</div>
+	
+	<div class="panel">
+		<div id="executionGraphOptions">
+			<div id="graphOptions" class="sideMenu">
+				<h3>Jobs</h3>
+				<div>
+					<p>Jobs Panel</p>
+				</div>
+				<h3>Notification</h3>
+				<div>
+					<p>Jobs Panel</p>
+				</div>
+				<h3>Concurrent Runs</h3>
+				<div>
+					<p>Jobs Panel</p>
+				</div>
+				<h3>SLA</h3>
+				<div>
+					<p>Jobs Panel</p>
+				</div>
+				<h3>Flow Parameters</h3>
+				<div>
+					<p>Jobs Panel</p>
+				</div>
+			</div>
+		</div>
+		<div id="svgDivCustom" class="svgDiv" >
+			<svg class="svgGraph" xmlns="http://www.w3.org/2000/svg" version="1.1" shape-rendering="optimize-speed" text-rendering="optimize-speed" >
+			</svg>
+		</div>
+	</div>
+	
+	<div class="actions">
+		<a class="btn2" id="advanced-btn">Advanced Settings</a>
+		<a class="yes btn1" id="execute-btn">Execute</a>
+		<a class="no simplemodal-close btn3">Cancel</a>
+	</div>
+</div>
+</div>
+<div id="contextMenu">
+	
+</div>

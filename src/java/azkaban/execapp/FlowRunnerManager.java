@@ -81,7 +81,7 @@ public class FlowRunnerManager implements EventListener {
 	
 	private long lastSubmitterThreadCheckTime = -1;
 	private long lastCleanerThreadCheckTime = -1;
-	private long executionDirRetention = 7*24*60*60*1000;
+	private long executionDirRetention = 1*24*60*60*1000;
 	
 	private Object executionDirDeletionSync = new Object();
 	

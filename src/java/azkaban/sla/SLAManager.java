@@ -153,6 +153,7 @@ public class SLAManager {
 		private static final int TIMEOUT_MS = 60000;
 
 		public SLARunner() {
+			this.setName("SLAManagerThread");
 			SLAs = new PriorityBlockingQueue<SLA>(1,new SLAComparator());
 		}
 

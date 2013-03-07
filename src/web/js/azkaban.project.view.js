@@ -206,7 +206,6 @@ azkaban.FlowTableView= Backbone.View.extend({
     var projectName = evt.currentTarget.projectName;
   	var flowId = evt.currentTarget.flowId;
   	var jobName = evt.currentTarget.jobName;
-  	console.log("job run options " + projectName + ":" + flowId + ":" + jobName);
   	
   	var hover = evt.type == "mouseover";
   	
@@ -319,7 +318,6 @@ azkaban.FlowTableView= Backbone.View.extend({
   executeFlow: function(evt) {
     console.log("Execute Flow");
     var flowId = evt.currentTarget.flowId;
-    $("#execute-message").text("Execute the complete flow '" + flowId + "'.");
     
     var executingData = {
   		project: projectId,
@@ -330,31 +328,7 @@ azkaban.FlowTableView= Backbone.View.extend({
     this.executeFlowDialog(executingData);
   },
   executeFlowDialog: function(executingData) {
-  	var flowId = executingData.flow;
-  	var executionIds = flowExecutingStatus(projectId, flowId);
-  	
-    if (executionIds && executionIds.length > 0) {
-    	$("#executeErrorMsg").text("Flow '" + flowId + "' is already running. Click on Execute to proceed anyways.");
-    }
-    else {
-    	$("#executeErrorMsg").hide();
-    }
-
- 	$('#flow-execute').modal({
-      closeHTML: "<a href='#' title='Close' class='modal-close'>x</a>",
-      position: ["20%",],
-      containerId: 'confirm-container',
-      containerCss: {
-        'height': '220px',
-        'width': '565px'
-      },
-      onShow: function (dialog) {
-        var modal = this;
-        $('#execute-btn').click(function() {
-        	executeFlow(executingData);
-        });
-      }
-    });
+  	flowExecuteDialogView.show(executingData);
   },
   render: function() {
   }

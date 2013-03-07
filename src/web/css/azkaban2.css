@@ -691,7 +691,6 @@ tr:hover td {
   color: #666;
   font-weight: bold;
   text-decoration: none;
-  cursor: pointer;
   position: absolute;
   top: 10px;
   right: 17px;
@@ -1351,7 +1350,6 @@ tr:hover td {
 	opacity: 0.3;
 }
 
-/* executing options panel*/
 #executing-options {
 	left: 100px;
 	right: 100px;
@@ -1361,6 +1359,7 @@ tr:hover td {
 
 #executing-options .svgDiv {
 	position: absolute;
+	background-color: #CCC;
 	padding: 1px;
 	left: 270px;
 	right: 0px;
@@ -1374,6 +1373,7 @@ tr:hover td {
 	top: 0px;
 	bottom: 0px;
 	padding: 5px;
+	background-color: #F0F0F0;
 }
 
 #executing-options .list {
@@ -2671,70 +2671,8 @@ tr.row td.tb-name {
 	float: left;
 }
 
-#advanced-btn {
-	float: left;
-	margin-left: 20px;
-}
-
-#execute-flow-panel {
-	left: 150px;
-	right: 150px;
-	top: 200px;
-	bottom: 200px;
-	min-width: 600px;
-	min-height: 400px;
-}
-
-#execute-flow-panel .svgDiv {
-	position: absolute;
-	padding: 1px;
-	left: 270px;
-	right: 0px;
-	top: 0px;
-	bottom: 0px;
-	border: none;
-}
-
-#execute-flow-panel .panel {
-	position: absolute;
-	width: 100%;
-	top: 50px;
-	bottom: 65px;
-	border: none;
-}
-
 .contextMenu {
-	position: absolute;
-	background-color: #FFF;
-	border: 1px solid #DDD;
-	-moz-box-shadow: 2px 2px 5px #888;
-	-webkit-box-shadow: 2px 2px 5px #888;
-	box-shadow: 2px 2px 5px #888;
-}
-.contextMenu li.menuitem {
-	background-color: #FFF;
-	padding: 3px 20px;
-	min-width: 50px;
-	font-size: 10pt;
-	cursor: pointer;
-}
-
-.contextMenu li.menuitem .expandSymbol {
-	background-image: url("../../js/jqueryui/themes/custom-theme/images/ui-icons_cccccc_256x240.png");
-	background-position: -32px -16px;
-	height: 16px;
-	width: 16px;
-	float:right;
-}
-
-.contextMenu li.break {
-	border-bottom: 1px solid #BBB;
-	margin: 2px 5px;
-}
-
-.contextMenu li.menuitem:hover {
-	background-color: #555;
-	color: #FFF;
+	
 }
 
 /* old styles */
@@ -2745,11 +2683,6 @@ tr.row td.tb-name {
 	margin-left: 15px;
 	width: 16px;
 	cursor: pointer;
-}
-
-#executionGraphOptions {
-	width: 270px;
-	height: 100%;
 }
 
 .azkaban-charts .expandable-hitarea { background-position: -32px -16px; }

@@ -28,12 +28,12 @@ import net.sf.ehcache.store.MemoryStoreEvictionPolicy;
  * 
  * The following global azkaban properties can be used: max.num.sessions - used
  * to determine the number of live sessions that azkaban will handle. Default is
- * 10000 session.time.to.live -Number of seconds before sessione expires.
- * Default set to 3 days.
+ * 10000 session.time.to.live -Number of seconds before session expires.
+ * Default set to 1 days.
  */
 public class SessionCache {
 	private static final int MAX_NUM_SESSIONS = 10000;
-	private static final int SESSION_TIME_TO_LIVE = 86400 * 3;
+	private static final int SESSION_TIME_TO_LIVE = 86400;
 	private CacheManager manager = CacheManager.create();
 	private Cache cache;
 

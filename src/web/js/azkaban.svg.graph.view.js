@@ -1,7 +1,37 @@
+function hasClass(el, name) 
+{
+	var classes = el.getAttribute("class");
+	if (classes == null) {
+		return false;
+	}
+   return new RegExp('(\\s|^)'+name+'(\\s|$)').test(classes);
+}
+
+function addClass(el, name)
+{
+   if (!hasClass(el, name)) { 
+   		var classes = el.getAttribute("class");
+   		classes += classes ? ' ' + name : '' +name;
+   		el.setAttribute("class", classes);
+   }
+}
+
+function removeClass(el, name)
+{
+   if (hasClass(el, name)) {
+      var classes = el.getAttribute("class");
+      el.setAttribute("class", classes.replace(new RegExp('(\\s|^)'+name+'(\\s|$)'),' ').replace(/^\s+|\s+$/g, ''));
+   }
+}
+
+
 var svgGraphView;
 azkaban.SvgGraphView = Backbone.View.extend({
 	events: {
-		"click g" : "clickGraph"
+		"click g" : "clickGraph",
+		"contextmenu svg" : "rightClick",
+		"contextmenu g" : "rightClick",
+		"contextmenu polyline": "rightClick"
 	},
 	initialize: function(settings) {
 		this.model.bind('change:selected', this.changeSelected, this);
@@ -11,6 +41,7 @@ azkaban.SvgGraphView = Backbone.View.extend({
 		this.model.bind('change:disabled', this.handleDisabledChange, this);
 		this.model.bind('change:updateAll', this.handleUpdateAllStatus, this);
 		
+		this.graphMargin = settings.graphMargin ? settings.graphMargin : 200;
 		this.svgns = "http://www.w3.org/2000/svg";
 		this.xlinksn = "http://www.w3.org/1999/xlink";
 		
@@ -18,20 +49,12 @@ azkaban.SvgGraphView = Backbone.View.extend({
 		var svg = $(this.el).find('svg')[0];
 		this.svgGraph = svg;
 		
-		this.contextMenu = settings.rightClick;
-		
 		var gNode = document.createElementNS(this.svgns, 'g');
-		if (settings.topGId) {
-			gNode.setAttribute("id", settings.topGId);
-		}
-		if (settings.clickCallback) {
-			this.clickCallback = settings.clickCallback;
-			$(this.el).click(this.clickCallback);
-		}
-
 		svg.appendChild(gNode);
 		this.mainG = gNode;
-
+		if (settings.rightClick) {
+			this.rightClick = settings.rightClick;
+		}
 		$(svg).svgNavigate();
 	},
 	initializeDefs: function(self) {
@@ -59,6 +82,11 @@ azkaban.SvgGraphView = Backbone.View.extend({
 	render: function(self) {
 		console.log("graph render");
 
+		// Clean everything
+		while (this.mainG.lastChild) {
+			this.mainG.removeChild(this.mainG.lastChild);
+		}
+
 		var data = this.model.get("data");
 		var nodes = data.nodes;
 		var edges = data.edges;
@@ -67,6 +95,8 @@ azkaban.SvgGraphView = Backbone.View.extend({
 			return;
 		};
 	
+		nodes.sort();
+		edges.sort();
 		// layout
 		layoutGraph(nodes, edges);
 		
@@ -77,6 +107,20 @@ azkaban.SvgGraphView = Backbone.View.extend({
 		}
 		
 		for (var i = 0; i < edges.length; ++i) {
+			var inNodes = this.nodes[edges[i].target].inNodes;
+			if (!inNodes) {
+				inNodes = {};
+				this.nodes[edges[i].target].inNodes = inNodes;
+			}
+			inNodes[edges[i].from] = this.nodes[edges[i].from];
+			
+			var outNodes = this.nodes[edges[i].from].outNodes;
+			if (!outNodes) {
+				outNodes = {};
+				this.nodes[edges[i].from].outNodes = outNodes;
+			}
+			outNodes[edges[i].target] = this.nodes[edges[i].target];
+
 			this.drawEdge(this, edges[i]);
 		}
 		
@@ -85,10 +129,13 @@ azkaban.SvgGraphView = Backbone.View.extend({
 			this.drawNode(this, nodes[i], bounds);
 		}
 		
-		bounds.minX = bounds.minX ? bounds.minX - 200 : -200;
-		bounds.minY = bounds.minY ? bounds.minY - 200 : -200;
-		bounds.maxX = bounds.maxX ? bounds.maxX + 200 : 200;
-		bounds.maxY = bounds.maxY ? bounds.maxY + 200 : 200;
+		this.model.set({"nodes": this.nodes, "edges": edges});
+		
+		var margin = this.graphMargin;
+		bounds.minX = bounds.minX ? bounds.minX - margin : -margin;
+		bounds.minY = bounds.minY ? bounds.minY - margin : -margin;
+		bounds.maxX = bounds.maxX ? bounds.maxX + margin : margin;
+		bounds.maxY = bounds.maxY ? bounds.maxY + margin : margin;
 		
 		this.assignInitialStatus(self);
 		this.handleDisabledChange(self);
@@ -167,10 +214,25 @@ azkaban.SvgGraphView = Backbone.View.extend({
 		if (self.currentTarget.jobid) {
 			this.model.set({"selected": self.currentTarget.jobid});
 		}
-		if (this.clickCallback) {
-			this.clickCallback(self);
-		}
 	},
+	rightClick: function(self) {
+		if (this.rightClick) {
+			var callbacks = this.rightClick;
+			var currentTarget = self.currentTarget;
+			if (callbacks.node && currentTarget.jobid) {
+				callbacks.node(self);
+			}
+			else if (callbacks.edge && (currentTarget.nodeName == "polyline" || currentTarget.nodeName == "line")) {
+				callbacks.edge(self);
+			}
+			else if (callbacks.graph) {
+				callbacks.graph(self);
+			}
+			return false;
+		}
+	
+		return true;
+	},	
 	drawEdge: function(self, edge) {
 		var svg = self.svgGraph;
 		var svgns = self.svgns;
@@ -210,7 +272,6 @@ azkaban.SvgGraphView = Backbone.View.extend({
 
 		var xOffset = 10;
 		var yOffset = 10;
-
 		
 		var nodeG = document.createElementNS(svgns, "g");
 		nodeG.setAttributeNS(null, "class", "jobnode");
@@ -261,11 +322,6 @@ azkaban.SvgGraphView = Backbone.View.extend({
 
 		nodeG.setAttributeNS(null, "class", "node");
 		nodeG.jobid=node.id;
-		$(nodeG).contextMenu({
-				menu: this.contextMenu.id
-			},
-			this.contextMenu.callback
-		);
 	},
 	addBounds: function(toBounds, addBounds) {
 		toBounds.minX = toBounds.minX ? Math.min(toBounds.minX, addBounds.minX) : addBounds.minX;

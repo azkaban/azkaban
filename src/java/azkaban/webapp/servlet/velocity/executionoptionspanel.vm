@@ -1,82 +1,82 @@
 	<div id="modalBackground" class="modalBackground2">
-	<div id="executing-options" class="modal modalContainer2">
-		<a href='#' title='Close' class='modal-close'>x</a>
-			<h3>Executing Flow Options</h3>
-			<div>
-				<ul class="optionsPicker">
-					<li id="generalOptions">General Options</li>
-					<li id="flowOptions">Flow Options</li>
-				</ul>
-			</div>
-			<div class="optionsPane">
-				<div id="generalPanel" class="generalPanel panel">
-					<div id="completeActions">
-						<h4>Completion Actions</h4>
-						<dl>
-							<dt>Failure Action</dt>
-							<dd>
-								<select id="failureAction" name="failureAction">
-									<option value="finishCurrent">Finish Current Running</option>
-									<option value="cancelImmediately">Cancel All</option>
-									<option value="finishPossible">Finish All Possible</option>
-								</select>
-											</dd>
-							<dt>Failure Email</dt>
-							<dd>
-								<textarea id="failureEmails"></textarea>
-							</dd>
-							<dt>Notify on Failure</dt>
-							<dd>
-								<input id="notifyFailureFirst" class="checkbox" type="checkbox" name="notify" value="first" checked >First Failure</input>
-								<input id="notifyFailureLast" class="checkbox" type="checkbox" name="notify" value="last">Flow Stop</input>
-							</dd>
-							<dt>Success Email</dt>
-							<dd>
-								<textarea id="successEmails"></textarea>
-							</dd>
-							<dt>Concurrent Execution</dt>
-							<dd id="executingJob" class="disabled">
-								<input id="ignore" class="radio" type="radio" name="concurrent" value="ignore" checked /><label class="radioLabel" for="ignore">Run Concurrently</label>
-								<input id="pipeline" class="radio" type="radio" name="concurrent" value="pipeline" /><label class="radioLabel" for="pipeline">Pipeline</label>
-								<input id="queue" class="radio" type="radio" name="concurrent" value="queue" /><label class="radioLabel" for="queue">Queue Job</label>
-							</dd>
-						</dl>
-					</div>
-					<div id="flowPropertyOverride">
-						<h4>Flow Property Override</h4>
-						<div class="tableDiv">
-							<table>
-								<thead>
-									<tr>
-										<th>Name</th>
-										<th>Value</th>
-									</tr>
-								</thead>
-								<tbody>
-									<tr id="addRow"><td id="addRow-col" colspan="2"><span class="addIcon"></span><a href="#">Add Row</a></td></tr>
-								</tbody>
-							</table>
+		<div id="executing-options" class="modal modalContainer2">
+			<a href='#' title='Close' class='modal-close'>x</a>
+				<h3>Executing Flow Options</h3>
+				<div>
+					<ul class="optionsPicker">
+						<li id="generalOptions">General Options</li>
+						<li id="flowOptions">Flow Options</li>
+					</ul>
+				</div>
+				<div class="optionsPane">
+					<div id="generalPanel" class="generalPanel panel">
+						<div id="completeActions">
+							<h4>Completion Actions</h4>
+							<dl>
+								<dt>Failure Action</dt>
+								<dd>
+									<select id="failureAction" name="failureAction">
+										<option value="finishCurrent">Finish Current Running</option>
+										<option value="cancelImmediately">Cancel All</option>
+										<option value="finishPossible">Finish All Possible</option>
+									</select>
+												</dd>
+								<dt>Failure Email</dt>
+								<dd>
+									<textarea id="failureEmails"></textarea>
+								</dd>
+								<dt>Notify on Failure</dt>
+								<dd>
+									<input id="notifyFailureFirst" class="checkbox" type="checkbox" name="notify" value="first" checked >First Failure</input>
+									<input id="notifyFailureLast" class="checkbox" type="checkbox" name="notify" value="last">Flow Stop</input>
+								</dd>
+								<dt>Success Email</dt>
+								<dd>
+									<textarea id="successEmails"></textarea>
+								</dd>
+								<dt>Concurrent Execution</dt>
+								<dd id="executingJob" class="disabled">
+									<input id="ignore" class="radio" type="radio" name="concurrent" value="ignore" checked /><label class="radioLabel" for="ignore">Run Concurrently</label>
+									<input id="pipeline" class="radio" type="radio" name="concurrent" value="pipeline" /><label class="radioLabel" for="pipeline">Pipeline</label>
+									<input id="queue" class="radio" type="radio" name="concurrent" value="queue" /><label class="radioLabel" for="queue">Queue Job</label>
+								</dd>
+							</dl>
+						</div>
+						<div id="flowPropertyOverride">
+							<h4>Flow Property Override</h4>
+							<div class="tableDiv">
+								<table>
+									<thead>
+										<tr>
+											<th>Name</th>
+											<th>Value</th>
+										</tr>
+									</thead>
+									<tbody>
+										<tr id="addRow"><td id="addRow-col" colspan="2"><span class="addIcon"></span><a href="#">Add Row</a></td></tr>
+									</tbody>
+								</table>
+							</div>
 						</div>
 					</div>
-				</div>
-								<div id="graphPanel" class="graphPanel panel">
-									<div id="jobListCustom" class="jobList">
-										<div class="filterList">
-											<input class="filter" placeholder="  Job Filter" />
+									<div id="graphPanel" class="graphPanel panel">
+										<div id="jobListCustom" class="jobList">
+											<div class="filterList">
+												<input class="filter" placeholder="  Job Filter" />
+											</div>
+											<div class="list">
+											</div>
+											<div class="btn5 resetPanZoomBtn" >Reset Pan Zoom</div>
 										</div>
-										<div class="list">
+									<div id="svgDivCustom" class="svgDiv" >
+										<svg class="svgGraph" xmlns="http://www.w3.org/2000/svg" version="1.1" shape-rendering="optimize-speed" text-rendering="optimize-speed" >
+											</svg>
 										</div>
-										<div class="btn5 resetPanZoomBtn" >Reset Pan Zoom</div>
-									</div>
-								<div id="svgDivCustom" class="svgDiv" >
-									<svg class="svgGraph" xmlns="http://www.w3.org/2000/svg" version="1.1" shape-rendering="optimize-speed" text-rendering="optimize-speed" >
-										</svg>
-									</div>
+			</div>
 		</div>
-	</div>
-		<div class="actions">
-	<a class="yes btn1" id="execute-btn" href="#">Execute Now</a>
-	<a class="no simplemodal-close btn3" id="cancel-btn" href="#">Cancel</a>
-	</div>
+			<div class="actions">
+		<a class="yes btn1" id="execute-btn" href="#">Execute Now</a>
+		<a class="no simplemodal-close btn3" id="cancel-btn" href="#">Cancel</a>
+		</div>
 	</div>
 </div>

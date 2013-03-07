@@ -54,7 +54,7 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 	private ProjectManager projectManager;
 	private ExecutorManager executorManager;
 	private ScheduleManager scheduleManager;
-	private ExecutorVMHelper vmHelper;
+	private ExecutorVelocityHelper velocityHelper;
 
 	@Override
 	public void init(ServletConfig config) throws ServletException {
@@ -63,7 +63,7 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 		projectManager = server.getProjectManager();
 		executorManager = server.getExecutorManager();
 		scheduleManager = server.getScheduleManager();
-		vmHelper = new ExecutorVMHelper();
+		velocityHelper = new ExecutorVelocityHelper();
 	}
 
 	@Override
@@ -127,7 +127,7 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 		
 		List<ExecutableFlow> finishedFlows = executorManager.getRecentlyFinishedFlows();
 		page.add("recentlyFinished", finishedFlows.isEmpty() ? null : finishedFlows);
-		page.add("vmutils", vmHelper);
+		page.add("vmutils", velocityHelper);
 		page.render();
 	}
 	
@@ -764,7 +764,7 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 		}
 	}
 	
-	public class ExecutorVMHelper {
+	public class ExecutorVelocityHelper {
 		public String getProjectName(int id) {
 			Project project = projectManager.getProject(id);
 			if (project == null) {
