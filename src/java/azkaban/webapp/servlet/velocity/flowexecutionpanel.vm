@@ -107,6 +107,40 @@
 				<p>Queue up to 2. Wait until the previous execution has completed before running.</p>
 			</div>
 			<div id="slaPanel" class="sidePanel">
+				<h4>SLA Alert Emails</h4>
+				<p>Enter the email addresses to alert for SLA alerting</p>
+				<textarea id="slaEmails"></textarea>
+			
+				<h4>Flow SLA Rules</h4>
+				<p>Add SLA rules that will apply to this flow.</p>
+				<table id="flowRulesTbl">
+					<thead>
+						<tr>
+							<th>Flow/Job</th>
+							<th>Finish In</th>
+							<th>Email Action</th>
+							<th>Kill Action</th>
+						</tr>
+					</thead>
+					<tbody>
+					</tbody>
+				</table>
+
+				
+				<h4>Job SLA Rules</h4>
+				<p>Add SLA rules that will apply to individual jobs in this flow.</p>
+				<table id="jobRulesTbl">
+					<thead>
+						<tr>
+							<th>Flow/Job</th>
+							<th>Finish In</th>
+							<th>Email Action</th>
+							<th>Kill Action</th>
+						</tr>
+					</thead>
+					<tbody>
+					</tbody>
+				</table>
 			</div>
 			<div id="flowParametersPanel" class="sidePanel">
 			</div>
