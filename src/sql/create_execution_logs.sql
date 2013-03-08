@@ -8,6 +8,5 @@ CREATE TABLE execution_logs (
 	log LONGBLOB,
 	PRIMARY KEY (exec_id, name, attempt, start_byte),
 	INDEX log_attempt (exec_id, name, attempt),
-	INDEX log_index (exec_id, name),
-	INDEX byte_log_index(exec_id, name, start_byte, end_byte)
+	INDEX log_index (exec_id, name)
 ) ENGINE=InnoDB;

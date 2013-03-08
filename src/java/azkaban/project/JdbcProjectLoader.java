@@ -236,11 +236,11 @@ public class JdbcProjectLoader implements ProjectLoader {
 			throw new ProjectManagerException("Checking for existing project failed. " + name, e);
 		}
 		
-		final String INSERT_PROJECT = "INSERT INTO projects ( name, active, modified_time, create_time, version, last_modified_by, description) values (?,?,?,?,?,?,?)";
+		final String INSERT_PROJECT = "INSERT INTO projects ( name, active, modified_time, create_time, version, last_modified_by, description, enc_type, settings_blob) values (?,?,?,?,?,?,?,?,?)";
 		// Insert project
 		try {
 			long time = System.currentTimeMillis();
-			int i = runner.update(connection, INSERT_PROJECT, name, true, time, time, null, creator.getUserId(), description);
+			int i = runner.update(connection, INSERT_PROJECT, name, true, time, time, null, creator.getUserId(), description, defaultEncodingType.numVal, null);
 			if (i == 0) {
 				throw new ProjectManagerException("No projects have been inserted.");
 			}
@@ -504,6 +504,49 @@ public class JdbcProjectLoader implements ProjectLoader {
 		}
 	}
 	
+	
+	
+	@Override
+	public void updateProjectSettings(Project project) throws ProjectManagerException {
+		Connection connection = getConnection();
+		try {
+			updateProjectSettings(connection, project, defaultEncodingType);
+			connection.commit();
+		}
+		catch (SQLException e) {
+			throw new ProjectManagerException("Error updating project settings", e);
+		}
+		finally {
+			DbUtils.closeQuietly(connection);
+		}
+	}
+	
+	private void updateProjectSettings(Connection connection, Project project, EncodingType encType) throws ProjectManagerException {
+		QueryRunner runner = new QueryRunner();
+		final String UPDATE_PROJECT_SETTINGS = "UPDATE projects SET enc_type=?, settings_blob=? WHERE id=?";
+		
+		String json = JSONUtils.toJSON(project.toObject());
+		byte[] data = null;
+		try {
+			byte[] stringData = json.getBytes("UTF-8");
+			data = stringData;
+	
+			if (encType == EncodingType.GZIP) {
+				data = GZIPUtils.gzipBytes(stringData);
+			}
+			logger.debug("NumChars: " + json.length() + " UTF-8:" + stringData.length + " Gzip:"+ data.length);
+		} catch(IOException e) {
+			throw new ProjectManagerException("Failed to encode. ", e);
+		}
+
+		try {
+			runner.update(connection, UPDATE_PROJECT_SETTINGS, encType.numVal, data, project.getId());
+			connection.commit();
+		} catch (SQLException e) {
+			throw new ProjectManagerException("Error updating project " + project.getName() + " version " + project.getVersion(), e);
+		}
+	}
+	
 	@Override
 	public void removePermission(Project project, String name, boolean isGroup) throws ProjectManagerException {
 		QueryRunner runner = new QueryRunner(dataSource);
@@ -523,6 +566,21 @@ public class JdbcProjectLoader implements ProjectLoader {
 			project.removeUserPermission(name);
 		}
 	}
+	
+	@Override
+	public List<Triple<String, Boolean, Permission>> getProjectPermissions(int projectId) throws ProjectManagerException {
+		ProjectPermissionsResultHandler permHander = new ProjectPermissionsResultHandler();
+		QueryRunner runner = new QueryRunner(dataSource);
+		List<Triple<String, Boolean,Permission>> permissions = null;
+		try {
+			permissions = runner.query(ProjectPermissionsResultHandler.SELECT_PROJECT_PERMISSION, permHander, projectId);
+		} catch (SQLException e) {
+			throw new ProjectManagerException("Query for permissions for " + projectId + " failed.", e);
+		}
+		
+		return permissions;
+	}
+	
 	
 	@Override
 	public void removeProject(Project project, String user) throws ProjectManagerException {
@@ -927,13 +985,13 @@ public class JdbcProjectLoader implements ProjectLoader {
 	
 	private static class ProjectResultHandler implements ResultSetHandler<List<Project>> {
 		private static String SELECT_PROJECT_BY_ID = 
-				"SELECT id, name, active, modified_time, create_time, version, last_modified_by, description FROM projects WHERE id=?";
+				"SELECT id, name, active, modified_time, create_time, version, last_modified_by, description, enc_type, settings_blob FROM projects WHERE id=?";
 		
 		private static String SELECT_ALL_ACTIVE_PROJECTS = 
-				"SELECT id, name, active, modified_time, create_time, version, last_modified_by, description FROM projects WHERE active=true";
+				"SELECT id, name, active, modified_time, create_time, version, last_modified_by, description, enc_type, settings_blob FROM projects WHERE active=true";
 		
 		private static String SELECT_ACTIVE_PROJECT_BY_NAME = 
-				"SELECT id, name, active, modified_time, create_time, version, last_modified_by, description FROM projects WHERE name=? AND active=true";
+				"SELECT id, name, active, modified_time, create_time, version, last_modified_by, description, enc_type, settings_blob FROM projects WHERE name=? AND active=true";
 		
 		@Override
 		public List<Project> handle(ResultSet rs) throws SQLException {
@@ -951,8 +1009,35 @@ public class JdbcProjectLoader implements ProjectLoader {
 				int version = rs.getInt(6);
 				String lastModifiedBy = rs.getString(7);
 				String description = rs.getString(8);
+				int encodingType = rs.getInt(9);
+				byte[] data = rs.getBytes(10);
 				
-				Project project = new Project(id, name);
+				Project project;
+				if (data != null) {
+					EncodingType encType = EncodingType.fromInteger(encodingType);
+					Object blobObj;
+					try {
+						// Convoluted way to inflate strings. Should find common package or helper function.
+						if (encType == EncodingType.GZIP) {
+							// Decompress the sucker.
+							String jsonString = GZIPUtils.unGzipString(data, "UTF-8");
+							blobObj = JSONUtils.parseJSONFromString(jsonString);
+						}
+						else {
+							String jsonString = new String(data, "UTF-8");
+							blobObj = JSONUtils.parseJSONFromString(jsonString);
+						}	
+						project = Project.projectFromObject(blobObj);
+					} catch (IOException e) {
+						throw new SQLException("Failed to get project.", e);
+					}
+				}
+				else {
+					project = new Project(id, name);
+				}
+				
+				// update the fields as they may have changed
+				
 				project.setActive(active);
 				project.setLastModifiedTimestamp(modifiedTime);
 				project.setCreateTimestamp(createTime);

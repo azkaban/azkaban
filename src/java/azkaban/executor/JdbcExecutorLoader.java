@@ -684,6 +684,7 @@ public class JdbcExecutorLoader implements ExecutorLoader {
 			do {
 				//int execId = rs.getInt(1);
 				//String name = rs.getString(2);
+				@SuppressWarnings("unused")
 				int attempt = rs.getInt(3);
 				EncodingType encType = EncodingType.fromInteger(rs.getInt(4));
 				int startByte = rs.getInt(5);

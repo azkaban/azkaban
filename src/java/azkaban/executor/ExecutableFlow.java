@@ -60,6 +60,8 @@ public class ExecutableFlow {
 	private Integer pipelineLevel = null;
 	private Integer pipelineExecId = null;
 	private Map<String, String> flowParameters = new HashMap<String, String>();
+	
+	private HashSet<String> proxyUsers = new HashSet<String>();
 
 	public enum FailureAction {
 		FINISH_CURRENTLY_RUNNING,
@@ -115,6 +117,14 @@ public class ExecutableFlow {
 	
 	public Map<String, String> getFlowParameters() {
 		return flowParameters;
+	}
+	
+	public void setProxyUsers(HashSet<String> proxyUsers) {
+		this.proxyUsers = proxyUsers;
+	}
+	
+	public HashSet<String> getProxyUsers() {
+		return this.proxyUsers;
 	}
 	
 	private void setFlow(Flow flow) {
@@ -310,6 +320,10 @@ public class ExecutableFlow {
 			nodes.add(node.toObject());
 		}
 		flowObj.put("nodes", nodes);
+		
+		ArrayList<String> proxyUserList = new ArrayList<String>(proxyUsers);
+		
+		flowObj.put("proxyUsers", proxyUserList);
 
 		return flowObj;
 	}
@@ -446,6 +460,11 @@ public class ExecutableFlow {
 		exFlow.setSuccessEmails((List<String>)flowObj.get("successEmails"));
 		// Failure emails
 		exFlow.setFailureEmails((List<String>)flowObj.get("failureEmails"));
+		
+		if(flowObj.containsKey("proxyUsers")) {
+			ArrayList<String> proxyUserList = (ArrayList<String>) flowObj.get("proxyUsers");
+			exFlow.setProxyUsers(new HashSet<String>(proxyUserList));
+		}
 		
 		return exFlow;
 	}

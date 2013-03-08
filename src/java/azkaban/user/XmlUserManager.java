@@ -19,6 +19,7 @@ package azkaban.user;
 import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.HashSet;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -53,6 +54,7 @@ public class XmlUserManager implements UserManager {
 	public static final String USERNAME_ATTR = "username";
 	public static final String PASSWORD_ATTR = "password";
 	public static final String ROLES_ATTR = "roles";
+	public static final String PROXY_ATTR = "proxy";
 	public static final String GROUPS_ATTR = "groups";
 
 	private String xmlPath;
@@ -60,6 +62,7 @@ public class XmlUserManager implements UserManager {
 	private HashMap<String, User> users;
 	private HashMap<String, String> userPassword;
 	private HashMap<String, Role> roles;
+	private HashMap<String, HashSet<String>> proxyUserMap;
 
 	/**
 	 * The constructor.
@@ -81,6 +84,7 @@ public class XmlUserManager implements UserManager {
 		HashMap<String, User> users = new HashMap<String, User>();
 		HashMap<String, String> userPassword = new HashMap<String, String>();
 		HashMap<String, Role> roles = new HashMap<String, Role>();
+		HashMap<String, HashSet<String>> proxyUserMap = new HashMap<String, HashSet<String>>();
 
 		// Creating the document builder to parse xml.
 		DocumentBuilderFactory docBuilderFactory = DocumentBuilderFactory
@@ -113,7 +117,7 @@ public class XmlUserManager implements UserManager {
 			Node node = azkabanUsersList.item(i);
 			if (node.getNodeType() == Node.ELEMENT_NODE) {
 				if (node.getNodeName().equals(USER_TAG)) {
-					parseUserTag(node, users, userPassword);
+					parseUserTag(node, users, userPassword, proxyUserMap);
 				}
 				else if (node.getNodeName().equals(ROLE_TAG)) {
 					parseRoleTag(node, roles);
@@ -126,10 +130,11 @@ public class XmlUserManager implements UserManager {
 			this.users = users;
 			this.userPassword = userPassword;
 			this.roles = roles;
+			this.proxyUserMap = proxyUserMap;
 		}
 	}
 
-	private void parseUserTag(Node node, HashMap<String, User> users, HashMap<String, String> userPassword) {
+	private void parseUserTag(Node node, HashMap<String, User> users, HashMap<String, String> userPassword, HashMap<String, HashSet<String>> proxyUserMap) {
 		NamedNodeMap userAttrMap = node.getAttributes();
 		Node userNameAttr = userAttrMap.getNamedItem(USERNAME_ATTR);
 		if (userNameAttr == null) {
@@ -155,6 +160,22 @@ public class XmlUserManager implements UserManager {
 			String[] roleSplit = value.split("\\s*,\\s*");
 			for (String role : roleSplit) {
 				user.addRole(role);
+			}
+		}
+		
+		Node proxy = userAttrMap.getNamedItem(PROXY_ATTR);
+		if (proxy != null) {
+			String value = proxy.getNodeValue();
+			String[] groupSplit = value.split("\\s*,\\s*");
+			for (String group : groupSplit) {
+				if(proxyUserMap.containsKey(username)) {
+					proxyUserMap.get(username).add(group);
+				}
+				else {
+					HashSet<String> proxySet = new HashSet<String>();
+					proxySet.add(group);
+					proxyUserMap.put(username, proxySet);
+				}
 			}
 		}
 
@@ -247,5 +268,15 @@ public class XmlUserManager implements UserManager {
 	public boolean validateGroup(String group) {
 		// Return true. Validation should be added when groups are added to the xml.
 		return true;
+	}
+
+	@Override
+	public boolean validateProxyUser(String proxyUser, User realUser) {
+		if(proxyUserMap.containsKey(realUser.getUserId()) && proxyUserMap.get(realUser.getUserId()).contains(proxyUser)) {
+			return true;
+		}
+		else {
+			return false;
+		}
 	}
 }

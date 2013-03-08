@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.BlockingQueue;
@@ -88,8 +89,14 @@ public class FlowRunner extends EventHandler implements Runnable {
 	
 	// Watches external flows for execution.
 	private FlowWatcher watcher = null;
+
+	private HashSet<String> proxyUsers = null;
+	private boolean validateUserProxy;
 	
-	public FlowRunner(ExecutableFlow flow, FlowWatcher watcher, ExecutorLoader executorLoader, ProjectLoader projectLoader, JobTypeManager jobtypeManager) throws ExecutorManagerException {
+	private String jobLogFileSize = "5MB";
+	private int jobLogNumFiles = 4;
+	
+	public FlowRunner(ExecutableFlow flow, ExecutorLoader executorLoader, ProjectLoader projectLoader, JobTypeManager jobtypeManager) throws ExecutorManagerException {
 		this.execId = flow.getExecutionId();
 		this.flow = flow;
 		this.executorLoader = executorLoader;
@@ -97,17 +104,35 @@ public class FlowRunner extends EventHandler implements Runnable {
 		this.executorService = Executors.newFixedThreadPool(numThreads);
 		this.execDir = new File(flow.getExecutionPath());
 		this.jobtypeManager = jobtypeManager;
-		
+
 		this.pipelineLevel = flow.getPipelineLevel();
 		this.pipelineExecId = flow.getPipelineExecutionId();
-		this.watcher = watcher;
+
+		this.proxyUsers = flow.getProxyUsers();
 	}
 
+	public FlowRunner setFlowWatcher(FlowWatcher watcher) {
+		this.watcher = watcher;
+		return this;
+	}
+	
 	public FlowRunner setGlobalProps(Props globalProps) {
 		this.globalProps = globalProps;
 		return this;
 	}
-
+	
+	public FlowRunner setJobLogSettings(String jobLogFileSize, int jobLogNumFiles) {
+		this.jobLogFileSize = jobLogFileSize;
+		this.jobLogNumFiles = jobLogNumFiles;
+		
+		return this;
+	}
+	
+	public FlowRunner setValidateProxyUser(boolean validateUserProxy) {
+		this.validateUserProxy = validateUserProxy;
+		return this;
+	}
+	
 	public File getExecutionDir() {
 		return execDir;
 	}
@@ -360,12 +385,15 @@ public class FlowRunner extends EventHandler implements Runnable {
 		prop.setSource(path.getPath());
 		prop.setParent(parentProps);
 		
-		// should have one prop with system secrets, the other user level props
-		JobRunner jobRunner = new JobRunner(node, prop, path.getParentFile(), executorLoader, jobtypeManager, logger);
+		JobRunner jobRunner = new JobRunner(node, prop, path.getParentFile(), executorLoader, jobtypeManager);
 		if (watcher != null) {
 			jobRunner.setPipeline(watcher, pipelineLevel);
 		}
+		if (validateUserProxy) {
+			jobRunner.setValidatedProxyUsers(proxyUsers);
+		}
 		
+		jobRunner.setLogSettings(logger, jobLogFileSize, jobLogNumFiles);
 		jobRunner.addListener(listener);
 
 		return jobRunner;

@@ -361,7 +361,8 @@ public class FlowRunnerTest {
 		//MockProjectLoader projectLoader = new MockProjectLoader(new File(flow.getExecutionPath()));
 		
 		loader.uploadExecutableFlow(flow);
-		FlowRunner runner = new FlowRunner(flow, null, loader, fakeProjectLoader, jobtypeManager);
+		FlowRunner runner = new FlowRunner(flow, loader, fakeProjectLoader, jobtypeManager);
+
 		runner.addListener(eventCollector);
 		
 		return runner;
@@ -373,7 +374,9 @@ public class FlowRunnerTest {
 		//MockProjectLoader projectLoader = new MockProjectLoader(new File(exFlow.getExecutionPath()));
 		
 		loader.uploadExecutableFlow(exFlow);
-		FlowRunner runner = new FlowRunner(exFlow, null,  loader, fakeProjectLoader, jobtypeManager);
+	
+		FlowRunner runner = new FlowRunner(exFlow, loader, fakeProjectLoader, jobtypeManager);
+
 		runner.addListener(eventCollector);
 		
 		return runner;

@@ -212,7 +212,8 @@ public class RemoteFlowWatcherTest {
 		//MockProjectLoader projectLoader = new MockProjectLoader(new File(exFlow.getExecutionPath()));
 		
 		loader.uploadExecutableFlow(exFlow);
-		FlowRunner runner = new FlowRunner(exFlow, watcher,  loader, fakeProjectLoader, jobtypeManager);
+		FlowRunner runner = new FlowRunner(exFlow,  loader, fakeProjectLoader, jobtypeManager);
+		runner.setFlowWatcher(watcher);
 		runner.addListener(eventCollector);
 		
 		return runner;

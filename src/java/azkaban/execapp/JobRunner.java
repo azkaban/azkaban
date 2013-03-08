@@ -16,17 +16,21 @@ package azkaban.execapp;
  */
 
 import java.io.File;
+import java.io.FilenameFilter;
 import java.io.IOException;
 import java.util.ArrayList;
+
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
+import java.util.Arrays;
+import java.util.Collections;
+
 import org.apache.log4j.Appender;
-import org.apache.log4j.FileAppender;
 import org.apache.log4j.Layout;
 import org.apache.log4j.Logger;
 import org.apache.log4j.PatternLayout;
+import org.apache.log4j.RollingFileAppender;
 
 import azkaban.execapp.event.BlockingStatus;
 import azkaban.execapp.event.Event;
@@ -41,12 +45,13 @@ import azkaban.flow.CommonJobProperties;
 import azkaban.jobExecutor.AbstractProcessJob;
 import azkaban.jobExecutor.Job;
 import azkaban.jobtype.JobTypeManager;
+import azkaban.jobtype.JobTypeManagerException;
 
 import azkaban.utils.Props;
 
 public class JobRunner extends EventHandler implements Runnable {
 	private static final Layout DEFAULT_LAYOUT = new PatternLayout("%d{dd-MM-yyyy HH:mm:ss z} %c{1} %p - %m\n");
-
+	
 	private ExecutorLoader loader;
 	private Props props;
 	private Props outputProps;
@@ -67,28 +72,44 @@ public class JobRunner extends EventHandler implements Runnable {
 	private Object syncObject = new Object();
 	
 	private final JobTypeManager jobtypeManager;
+
+	// Used by the job to watch and block against another flow
 	private Integer pipelineLevel = null;
 	private FlowWatcher watcher = null;
 	private Set<String> pipelineJobs = new HashSet<String>();
+
+	private Set<String> proxyUsers = null;
+
+	private String jobLogChunkSize;
+	private int jobLogBackupIndex;
 	
-	public JobRunner(ExecutableNode node, Props props, File workingDir, ExecutorLoader loader, JobTypeManager jobtypeManager, Logger flowLogger) {
+	public JobRunner(ExecutableNode node, Props props, File workingDir, ExecutorLoader loader, JobTypeManager jobtypeManager) {
 		this.props = props;
 		this.node = node;
 		this.workingDir = workingDir;
 		this.executionId = node.getExecutionId();
 		this.loader = loader;
 		this.jobtypeManager = jobtypeManager;
+	}
+	
+	public void setValidatedProxyUsers(Set<String> proxyUsers) {
+		this.proxyUsers = proxyUsers;
+	}
+	
+	public void setLogSettings(Logger flowLogger, String logFileChuckSize, int numLogBackup ) {
 		this.flowLogger = flowLogger;
+		this.jobLogChunkSize = logFileChuckSize;
+		this.jobLogBackupIndex = numLogBackup;
 	}
 	
 	public void setPipeline(FlowWatcher watcher, int pipelineLevel) {
 		this.watcher = watcher;
 		this.pipelineLevel = pipelineLevel;
 
-		if (pipelineLevel == 1) {
+		if (this.pipelineLevel == 1) {
 			pipelineJobs.add(node.getJobId());
 		}
-		else if (pipelineLevel == 2) {
+		else if (this.pipelineLevel == 2) {
 			pipelineJobs.add(node.getJobId());
 			pipelineJobs.addAll(node.getOutNodes());
 		}
@@ -115,8 +136,9 @@ public class JobRunner extends EventHandler implements Runnable {
 
 			jobAppender = null;
 			try {
-				FileAppender fileAppender = new FileAppender(loggerLayout, absolutePath, true);
-				
+				RollingFileAppender fileAppender = new RollingFileAppender(loggerLayout, absolutePath, true);
+				fileAppender.setMaxBackupIndex(jobLogBackupIndex);
+				fileAppender.setMaxFileSize(jobLogChunkSize);
 				jobAppender = fileAppender;
 				logger.addAppender(jobAppender);
 			} catch (IOException e) {
@@ -199,6 +221,10 @@ public class JobRunner extends EventHandler implements Runnable {
 				fireEvent(Event.create(this, Type.JOB_STATUS_CHANGED), false);
 				runJob();
 			}
+			else {
+				node.setStatus(Status.FAILED);
+				logError("Job run failed!");
+			}
 			
 			node.setEndTime(System.currentTimeMillis());
 
@@ -209,7 +235,18 @@ public class JobRunner extends EventHandler implements Runnable {
 			
 			if (logFile != null) {
 				try {
-					loader.uploadLogFile(executionId, node.getJobId(), node.getAttempt(), logFile);
+					File[] files = logFile.getParentFile().listFiles(new FilenameFilter() {
+						
+						@Override
+						public boolean accept(File dir, String name) {
+							return name.startsWith(logFile.getName());
+						}
+					} 
+					);
+					Arrays.sort(files, Collections.reverseOrder());
+					
+					
+					loader.uploadLogFile(executionId, node.getJobId(), node.getAttempt(), files);
 				} catch (ExecutorManagerException e) {
 					flowLogger.error("Error writing out logs for job " + node.getJobId(), e);
 				}
@@ -258,9 +295,23 @@ public class JobRunner extends EventHandler implements Runnable {
 			if (!props.containsKey(AbstractProcessJob.WORKING_DIR)) {
 				props.put(AbstractProcessJob.WORKING_DIR, workingDir.getAbsolutePath());
 			}
-
+			
+			if(props.containsKey("user.to.proxy")) {
+				String jobProxyUser = props.getString("user.to.proxy");
+				if(proxyUsers != null && !proxyUsers.contains(jobProxyUser)) {
+					logger.error("User " + jobProxyUser + " has no permission to execute this job " + node.getJobId() + "!");
+					return false;
+				}
+			}
+			
 			//job = JobWrappingFactory.getJobWrappingFactory().buildJobExecutor(node.getJobId(), props, logger);
-			job = jobtypeManager.buildJobExecutor(node.getJobId(), props, logger);
+			try {
+				job = jobtypeManager.buildJobExecutor(node.getJobId(), props, logger);
+			}
+			catch (JobTypeManagerException e) {
+				logger.error("Failed to build job type, skipping this job");
+				return false;
+			}
 		}
 		
 		return true;

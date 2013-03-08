@@ -17,6 +17,7 @@ import azkaban.project.ProjectManagerException;
 import azkaban.user.Permission;
 import azkaban.user.User;
 import azkaban.utils.Props;
+import azkaban.utils.Triple;
 
 public class MockProjectLoader implements ProjectLoader {
 	public File dir;
@@ -208,5 +209,19 @@ public class MockProjectLoader implements ProjectLoader {
 			String propsName) throws ProjectManagerException {
 		// TODO Auto-generated method stub
 		return null;
+	}
+
+	@Override
+	public List<Triple<String, Boolean, Permission>> getProjectPermissions(
+			int projectId) throws ProjectManagerException {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public void updateProjectSettings(Project project)
+			throws ProjectManagerException {
+		// TODO Auto-generated method stub
+		
 	}
 }

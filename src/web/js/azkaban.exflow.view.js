@@ -83,6 +83,7 @@ azkaban.FlowTabView= Backbone.View.extend({
   	$("#executebtn").hide();
   	$("#pausebtn").hide();
   	$("#resumebtn").hide();
+  	$("#retrybtn").hide();
   
  	this.model.bind('change:graph', this.handleFlowStatusChange, this);
 	this.model.bind('change:update', this.handleFlowStatusChange, this);

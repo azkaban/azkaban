@@ -2,6 +2,7 @@ package azkaban.test.execapp;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.HashSet;
 
 import junit.framework.Assert;
 
@@ -261,8 +262,10 @@ public class JobRunnerTest {
 		node.setExecutableFlow(flow);
 		
 		Props props = createProps(time, fail);
-		
-		JobRunner runner = new JobRunner(node, props, workingDir, loader, jobtypeManager, logger);
+		HashSet<String> proxyUsers = new HashSet<String>();
+		proxyUsers.add(flow.getSubmitUser());
+		JobRunner runner = new JobRunner(node, props, workingDir, loader, jobtypeManager);
+		runner.setLogSettings(logger, "5MB", 4);
 
 		runner.addListener(listener);
 		return runner;

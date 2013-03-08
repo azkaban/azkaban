@@ -10,6 +10,7 @@ import azkaban.project.ProjectLogEvent.EventType;
 import azkaban.user.Permission;
 import azkaban.user.User;
 import azkaban.utils.Props;
+import azkaban.utils.Triple;
 
 public interface ProjectLoader {
 
@@ -218,5 +219,9 @@ public interface ProjectLoader {
 	public void updateProjectProperty(Project project, Props props) throws ProjectManagerException;
 
 	Props fetchProjectProperty(int projectId, int projectVer, String propsName) throws ProjectManagerException;
+
+	List<Triple<String, Boolean, Permission>> getProjectPermissions(int projectId) throws ProjectManagerException;
+
+	void updateProjectSettings(Project project) throws ProjectManagerException;
 	
 }

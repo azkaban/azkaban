@@ -18,6 +18,7 @@ package azkaban.execapp;
 
 import java.io.File;
 import java.io.FileFilter;
+import java.io.FilenameFilter;
 import java.io.IOException;
 import java.lang.Thread.State;
 import java.util.ArrayList;
@@ -79,15 +80,26 @@ public class FlowRunnerManager implements EventListener {
 	
 	private Props globalProps;
 	
+	private final Props azkabanProps;
+	
 	private long lastSubmitterThreadCheckTime = -1;
 	private long lastCleanerThreadCheckTime = -1;
 	private long executionDirRetention = 1*24*60*60*1000;
 	
-	private Object executionDirDeletionSync = new Object();
+	// We want to limit the log sizes to about 20 megs
+	private String jobLogChunkSize = "5MB";
+	private int jobLogNumFiles = 4;
 	
+	// If true, jobs will validate proxy user against a list of valid proxy users.
+	private boolean validateProxyUser = false;
+	
+	private Object executionDirDeletionSync = new Object();
+		
 	public FlowRunnerManager(Props props, ExecutorLoader executorLoader, ProjectLoader projectLoader, ClassLoader parentClassLoader) throws IOException {
 		executionDirectory = new File(props.getString("azkaban.execution.dir", "executions"));
 		projectDirectory = new File(props.getString("azkaban.project.dir", "projects"));
+		
+		azkabanProps = props;
 		
 		//JobWrappingFactory.init(props, getClass().getClassLoader());
 		executionDirRetention = props.getLong("execution.dir.retention", executionDirRetention);
@@ -100,12 +112,19 @@ public class FlowRunnerManager implements EventListener {
 			projectDirectory.mkdirs();
 		}
 
+		installedProjects = loadExistingProjects();
+		
 		//azkaban.temp.dir
 		numThreads = props.getInt("executor.flow.threads", DEFAULT_NUM_EXECUTING_FLOWS);
 		executorService = Executors.newFixedThreadPool(numThreads);
 		
 		this.executorLoader = executorLoader;
 		this.projectLoader = projectLoader;
+		
+		this.jobLogChunkSize = azkabanProps.getString("job.log.chunk.size", "5MB");
+		this.jobLogNumFiles = azkabanProps.getInt("job.log.backup.index", 4);
+		
+		this.validateProxyUser = azkabanProps.getBoolean("proxy.user.lock.down", false);
 		
 		submitterThread = new SubmitterThread(flowQueue);
 		submitterThread.start();
@@ -115,6 +134,32 @@ public class FlowRunnerManager implements EventListener {
 		
 		jobtypeManager = new JobTypeManager(props.getString(AzkabanExecutorServer.JOBTYPE_PLUGIN_DIR, JobTypeManager.DEFAULT_JOBTYPEPLUGINDIR), parentClassLoader);
 		
+	}
+
+	private Map<Pair<Integer, Integer>, ProjectVersion> loadExistingProjects() {
+		Map<Pair<Integer, Integer>, ProjectVersion> allProjects = new HashMap<Pair<Integer,Integer>, ProjectVersion>();
+		for(File project : projectDirectory.listFiles(new FilenameFilter() {
+			
+			String pattern = "[0-9]+\\.[0-9]+";
+			@Override
+			public boolean accept(File dir, String name) {
+				return name.matches(pattern);
+			}
+		})) {
+			if(project.isDirectory()) {
+				try {
+					String fileName = new File(project.getAbsolutePath()).getName();
+					int projectId = Integer.parseInt(fileName.split("\\.")[0]);
+					int versionNum = Integer.parseInt(fileName.split("\\.")[1]);
+					ProjectVersion version = new ProjectVersion(projectId, versionNum);
+					allProjects.put(new Pair<Integer, Integer>(projectId, versionNum), version);
+				}
+				catch (Exception e) {
+					e.printStackTrace();
+				}
+			}
+		}
+		return allProjects;
 	}
 
 	public Props getGlobalProps() {
@@ -334,8 +379,11 @@ public class FlowRunnerManager implements EventListener {
 				watcher = new RemoteFlowWatcher(pipelineExecId, executorLoader);
 			}
 		}
-		
-		FlowRunner runner = new FlowRunner(flow, watcher, executorLoader, projectLoader, jobtypeManager);
+
+		FlowRunner runner = new FlowRunner(flow, executorLoader, projectLoader, jobtypeManager);
+		runner.setFlowWatcher(watcher);
+		runner.setJobLogSettings(jobLogChunkSize, jobLogNumFiles);
+		runner.setValidateProxyUser(validateProxyUser);
 		runner.setGlobalProps(globalProps);
 		runner.addListener(this);
 		

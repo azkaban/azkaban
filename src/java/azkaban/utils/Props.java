@@ -418,6 +418,19 @@ public class Props {
 		}
 	}
 
+	public Class<?> getClass(String key, boolean initialize, ClassLoader cl) {
+		try {
+			if (containsKey(key)) {
+				return Class.forName(get(key), initialize, cl);
+			} else {
+				throw new UndefinedPropertyException(
+						"Missing required property '" + key + "'");
+			}
+		} catch (ClassNotFoundException e) {
+			throw new IllegalArgumentException(e);
+		}
+	}
+	
 	/**
 	 * Gets the class from the Props. If it doesn't exist, it will return the
 	 * defaultClass

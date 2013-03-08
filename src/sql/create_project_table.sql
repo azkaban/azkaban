@@ -7,6 +7,8 @@ CREATE TABLE projects (
 	version INT,
 	last_modified_by VARCHAR(64) NOT NULL,
 	description VARCHAR(255),
+	enc_type TINYINT,
+	settings_blob LONGBLOB,
 	UNIQUE INDEX project_id (id),
 	INDEX project_name (name)
 ) ENGINE=InnoDB;
