@@ -20,10 +20,12 @@
     <title>#appname()</title>
     <link rel="stylesheet" type="text/css" href="${context}/css/azkaban.css">    
     <link rel="shortcut icon" href="${context}/favicon.ico" />
-	<script type="text/javascript" src="${context}/js/jquery/jquery.js"></script>    
+	<script type="text/javascript" src="${context}/js/jquery/jquery-1.9.1.js"></script>    
+	<script type="text/javascript" src="${context}/js/underscore-1.4.4-min.js"></script>
 	<script type="text/javascript" src="${context}/js/namespace.js"></script>
-	<script type="text/javascript" src="${context}/js/underscore-1.2.1-min.js"></script>
-	<script type="text/javascript" src="${context}/js/backbone-0.5.3-min.js"></script>
+	<script type="text/javascript" src="${context}/js/backbone-0.9.10-min.js"></script>
+	<script type="text/javascript" src="${context}/js/jquery.simplemodal-1.4.4.js"></script>
+
     <script type="text/javascript" src="${context}/js/azkaban.login.js"></script>
     #parse( "azkaban/webapp/servlet/velocity/style.vm" )
 	<script type="text/javascript">

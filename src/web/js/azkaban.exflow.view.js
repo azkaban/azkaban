@@ -685,7 +685,6 @@ $(function() {
 	jobsListView = new azkaban.JobListView({el:$('#jobList'), model: graphModel, contextMenuCallback: exJobClickCallback});
 	statusView = new azkaban.StatusView({el:$('#flow-status'), model: graphModel});
 	flowLogView = new azkaban.FlowLogView({el:$('#flowLogView'), model: logModel});
-	executeFlowView = new azkaban.ExecuteFlowView({el:$('#executing-options'), model: graphModel});
 	executionListView = new azkaban.ExecutionListView({el: $('#jobListView'), model:graphModel});
 	contextMenuView = new azkaban.ContextMenuView({el:$('#contextMenu'), graph: svgGraph});
 	

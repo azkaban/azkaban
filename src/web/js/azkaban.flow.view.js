@@ -14,7 +14,7 @@ var statusStringMap = {
 
 var handleJobMenuClick = function(action, el, pos) {
 	var jobid = el[0].jobid;
-	var requestURL = contextURL + "/manager?project=" + projectName + "&flow=" + flowName + "&job=" + jobid;
+	var requestURL = contextURL + "/manager?project=" + projectName + "&flow=" + flowId + "&job=" + jobid;
 	if (action == "open") {
 		window.location.href = requestURL;
 	}
@@ -263,7 +263,7 @@ azkaban.ExecutionsView = Backbone.View.extend({
 		var model = this.model;
 		$.get(
 			requestURL,
-			{"project": projectName, "flow":flowName, "ajax": "fetchFlowExecutions", "start":page * pageSize, "length": pageSize},
+			{"project": projectName, "flow":flowId, "ajax": "fetchFlowExecutions", "start":page * pageSize, "length": pageSize},
 			function(data) {
 				model.set({"executions": data.executions, "total": data.total});
 				model.trigger("render");
@@ -274,11 +274,56 @@ azkaban.ExecutionsView = Backbone.View.extend({
 	}
 });
 
+var exNodeClickCallback = function(event) {
+	console.log("Node clicked callback");
+	var jobId = event.currentTarget.jobid;
+	var requestURL = contextURL + "/manager?project=" + projectName + "&flow=" + flowId + "&job=" + jobId;
+
+	var menu = [	
+			{title: "Open Job...", callback: function() {window.location.href=requestURL;}},
+			{title: "Open Job in New Window...", callback: function() {window.open(requestURL);}}
+	];
+
+	contextMenuView.show(event, menu);
+}
+
+var exJobClickCallback = function(event) {
+	console.log("Node clicked callback");
+	var jobId = event.currentTarget.jobid;
+	var requestURL = contextURL + "/manager?project=" + projectName + "&flow=" + flowId + "&job=" + jobId;
+
+	var menu = [	
+			{title: "Open Job...", callback: function() {window.location.href=requestURL;}},
+			{title: "Open Job in New Window...", callback: function() {window.open(requestURL);}}
+	];
+
+	contextMenuView.show(event, menu);
+}
+
+var exEdgeClickCallback = function(event) {
+	console.log("Edge clicked callback");
+}
+
+var exGraphClickCallback = function(event) {
+	console.log("Graph clicked callback");
+	var requestURL = contextURL + "/manager?project=" + projectName + "&flow=" + flowId;
+
+	var menu = [	
+		{title: "Open Flow...", callback: function() {window.location.href=requestURL;}},
+		{title: "Open Flow in New Window...", callback: function() {window.open(requestURL);}},
+		{break: 1},
+		{title: "Center Graph", callback: function() {graphModel.trigger("resetPanZoom");}}
+	];
+	
+	contextMenuView.show(event, menu);
+}
+
 var graphModel;
 azkaban.GraphModel = Backbone.Model.extend({});
 
 var executionModel;
 azkaban.ExecutionModel = Backbone.Model.extend({});
+var mainSvgGraphView;
 
 $(function() {
 	var selected;
@@ -289,8 +334,9 @@ $(function() {
 	flowTabView = new azkaban.FlowTabView({el:$( '#headertabs'), selectedView: selected });
 
 	graphModel = new azkaban.GraphModel();
-	svgGraphView = new azkaban.SvgGraphView({el:$('#svgDiv'), model: graphModel, rightClick: {id: 'jobMenu', callback: handleJobMenuClick}});
-	jobsListView = new azkaban.JobListView({el:$('#jobList'), model: graphModel, rightClick: {id: 'jobMenu', callback: handleJobMenuClick}});
+	mainSvgGraphView = new azkaban.SvgGraphView({el:$('#svgDiv'), model: graphModel, rightClick:  { "node": exNodeClickCallback, "edge": exEdgeClickCallback, "graph": exGraphClickCallback }});
+	jobsListView = new azkaban.JobListView({el:$('#jobList'), model: graphModel, contextMenuCallback: exJobClickCallback});
+	
 	scheduleFlowView = new azkaban.ScheduleFlowView({el:$('#schedule-flow'),   model: graphModel});
 	advancedScheduleView = new azkaban.AdvancedScheduleView({el:$('#schedule-options'), model: graphModel});
 	executeFlowView = new azkaban.ExecuteFlowView({el:$('#executing-options'), model: graphModel});
@@ -299,12 +345,21 @@ $(function() {
 
 	// Set up the Flow options view. Create a new one every time :p
 	 $('#executebtn').click( function() {
-	  	executeFlowView.show();
+	  	var data = graphModel.get("data");
+	  	var nodes = data.nodes;
+	  
+	    var executingData = {
+	  		project: projectName,
+	  		ajax: "executeFlow",
+	  		flow: flowId
+		};
+	
+	  	flowExecuteDialogView.show(executingData);
 	 });
 
 	$.get(
 	      requestURL,
-	      {"project": projectName, "ajax":"fetchflowgraph", "flow":flowName},
+	      {"project": projectName, "ajax":"fetchflowgraph", "flow":flowId},
 	      function(data) {
 	      	  // Create the nodes
 	      	  var nodes = {};
@@ -360,23 +415,5 @@ $(function() {
 	      },
 	      "json"
 	    );
-	    
-	    
-	$('#scheduleflowbtn').click( function() {
-		console.log("schedule button clicked");
-		$('#schedule-flow').modal({
-			closeHTML: "<a href='#' title='Close' class='modal-close'>x</a>",
-			position: ["20%",],
-			containerId: 'confirm-container',
-			containerCss: {
-			'height': '220px',
-			'width': '500px'
-			},
-			onShow: function (dialog) {
-				var modal = this;
-				$("#errorMsg").hide();
-			}
-		});
-	});
-	
+
 });

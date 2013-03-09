@@ -20,7 +20,6 @@
 #parse( "azkaban/webapp/servlet/velocity/style.vm" )
 		<script type="text/javascript" src="${context}/js/jquery/jquery-1.9.1.js"></script>    
 		<script type="text/javascript" src="${context}/js/jqueryui/jquery-ui-1.10.1.custom.js"></script>
-		
 		<script type="text/javascript" src="${context}/js/underscore-1.4.4-min.js"></script>
 		<script type="text/javascript" src="${context}/js/namespace.js"></script>
 		<script type="text/javascript" src="${context}/js/backbone-0.9.10-min.js"></script>
@@ -35,7 +34,6 @@
 		<script type="text/javascript" src="${context}/js/azkaban.flow.job.view.js"></script>
 		<script type="text/javascript" src="${context}/js/azkaban.svg.graph.view.js"></script>
 		<script type="text/javascript" src="${context}/js/azkaban.exflow.view.js"></script>
-		<script type="text/javascript" src="${context}/js/azkaban.exflow.options.view.js"></script>
 		<script type="text/javascript" src="${context}/js/svgNavigate.js"></script>
 		<script type="text/javascript">
 			var contextURL = "${context}";
@@ -145,31 +143,6 @@
 
 #parse( "azkaban/webapp/servlet/velocity/flowexecutionpanel.vm" )
 #end
-
-		<ul id="jobMenu" class="contextMenu">  
-			<li class="open"><a href="#open">Open...</a></li>
-			<li class="openwindow"><a href="#openwindow">Open in New Window...</a></li>
-		</ul>
-
-		<ul id="disableJobMenu" class="contextMenu flowSubmenu">  
-			<li class="openwindow"><a href="#openwindow">Open in New Window...</a></li>
-			<li id="disable" class="disable separator"><a href="#disable">Disable</a><div id="disableArrow" class="context-sub-icon"></div></li>
-			<ul id="disableSub" class="subMenu">
-				<li class="disableAll"><a href="#disableAll">All</a></li>
-				<li class="parents"><a href="#disableParents">Parents</a></li>
-				<li class="ancestors"><a href="#disableAncestors">All Ancestors</a></li>
-				<li class="children"><a href="#disableChildren">Children</a></li>
-				<li class="decendents"><a href="#disableDescendents">All Descendents</a></li>
-			</ul>
-			<li id="enable" class="enable"><a href="#enable">Enable</a> <div id="enableArrow" class="context-sub-icon"></div></li>
-			<ul id="enableSub" class="subMenu">
-				<li class="enableAll"><a href="#enableAll">All</a></li>
-				<li class="parents"><a href="#enableParents">Parents</a></li>
-				<li class="ancestors"><a href="#enableAncestors">All Ancestors</a></li>
-				<li class="children"><a href="#enableChildren">Children</a></li>
-				<li class="decendents"><a href="#enableDescendents">All Descendents</a></li>
-			</ul>
-		</ul>
 		</div>
 
 		
