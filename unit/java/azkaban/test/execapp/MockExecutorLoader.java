@@ -186,5 +186,12 @@ public class MockExecutorLoader implements ExecutorLoader {
 		return null;
 	}
 
+	@Override
+	public int removeExecutionLogsByTime(long millis)
+			throws ExecutorManagerException {
+		// TODO Auto-generated method stub
+		return 0;
+	}
+
 
 }

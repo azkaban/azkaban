@@ -35,7 +35,6 @@ import javax.management.MBeanServer;
 import javax.management.ObjectName;
 
 import org.apache.commons.lang.StringUtils;
-import org.apache.log4j.FileAppender;
 import org.apache.log4j.Logger;
 import org.apache.velocity.app.VelocityEngine;
 import org.apache.velocity.runtime.log.Log4JLogChute;
@@ -48,6 +47,7 @@ import org.mortbay.jetty.servlet.Context;
 import org.mortbay.jetty.servlet.DefaultServlet;
 import org.mortbay.jetty.servlet.ServletHolder;
 import org.mortbay.thread.QueuedThreadPool;
+
 
 import azkaban.executor.ExecutorManager;
 import azkaban.executor.JdbcExecutorLoader;
@@ -143,6 +143,9 @@ public class AzkabanWebServer implements AzkabanServer {
 	private MBeanServer mbeanServer;
 	private ArrayList<ObjectName> registeredMBeans = new ArrayList<ObjectName>();
 
+	
+	
+	
 	/**
 	 * Constructor usually called by tomcat AzkabanServletContext to create the
 	 * initial server
@@ -178,6 +181,9 @@ public class AzkabanWebServer implements AzkabanServer {
 		}
 		
 		configureMBeanServer();
+		
+		
+		
 	}
 	
 	private void setupLoggers() {
@@ -723,4 +729,5 @@ public class AzkabanWebServer implements AzkabanServer {
 		}
 
 	}
+	
 }

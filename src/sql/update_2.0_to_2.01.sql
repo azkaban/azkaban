@@ -7,6 +7,7 @@ ALTER TABLE execution_jobs ADD PRIMARY KEY(exec_id, job_id, attempt);
 ALTER TABLE execution_jobs ADD INDEX exec_job (exec_id, job_id);
 
 ALTER TABLE execution_logs ADD COLUMN attempt INT DEFAULT 0;
+ALTER TABLE execution_logs ADD COLUMN upload_time BIGINT DEFAULT 1364801450000;
 ALTER TABLE execution_logs DROP PRIMARY KEY;
 ALTER TABLE execution_logs ADD PRIMARY KEY(exec_id, name, attempt, start_byte);
 

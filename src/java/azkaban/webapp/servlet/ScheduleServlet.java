@@ -27,22 +27,16 @@ import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.swing.text.StyledEditorKit.BoldAction;
 
 import org.apache.log4j.Logger;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
-import org.joda.time.Hours;
 import org.joda.time.LocalDateTime;
 import org.joda.time.Minutes;
 import org.joda.time.ReadablePeriod;
 import org.joda.time.format.DateTimeFormat;
 
-import azkaban.executor.ExecutableFlow;
-import azkaban.executor.ExecutableNode;
-import azkaban.executor.ExecutorManagerException;
 import azkaban.executor.ExecutableFlow.FailureAction;
-import azkaban.executor.ExecutableFlow.Status;
 import azkaban.flow.Flow;
 import azkaban.flow.Node;
 import azkaban.project.Project;
@@ -62,7 +56,6 @@ import azkaban.scheduler.Schedule.SlaOptions;
 import azkaban.scheduler.ScheduleManager;
 import azkaban.sla.SLA;
 import azkaban.sla.SLA.SlaRule;
-import azkaban.sla.SLAManager;
 import azkaban.sla.SLA.SlaAction;
 import azkaban.sla.SLA.SlaSetting;
 
@@ -71,7 +64,6 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
 	private static final Logger logger = Logger.getLogger(ScheduleServlet.class);
 	private ProjectManager projectManager;
 	private ScheduleManager scheduleManager;
-	private SLAManager slaManager;
 	private UserManager userManager;
 
 	@Override
@@ -81,7 +73,6 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
 		projectManager = server.getProjectManager();
 		scheduleManager = server.getScheduleManager();
 		userManager = server.getUserManager();
-		slaManager = server.getSLAManager();
 	}
 	
 	@Override
