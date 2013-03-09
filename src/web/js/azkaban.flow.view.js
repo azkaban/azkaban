@@ -337,10 +337,6 @@ $(function() {
 	mainSvgGraphView = new azkaban.SvgGraphView({el:$('#svgDiv'), model: graphModel, rightClick:  { "node": exNodeClickCallback, "edge": exEdgeClickCallback, "graph": exGraphClickCallback }});
 	jobsListView = new azkaban.JobListView({el:$('#jobList'), model: graphModel, contextMenuCallback: exJobClickCallback});
 	
-	scheduleFlowView = new azkaban.ScheduleFlowView({el:$('#schedule-flow'),   model: graphModel});
-	advancedScheduleView = new azkaban.AdvancedScheduleView({el:$('#schedule-options'), model: graphModel});
-	executeFlowView = new azkaban.ExecuteFlowView({el:$('#executing-options'), model: graphModel});
-	
 	var requestURL = contextURL + "/manager";
 
 	// Set up the Flow options view. Create a new one every time :p
