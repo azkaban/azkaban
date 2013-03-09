@@ -7,7 +7,7 @@
 <div id="modalBackground" class="modalBackground2">
 <div id="execute-flow-panel" class="modal modalContainer2">
 	<h3 id="execute-flow-panel-title"></h3>
-	<a title="Close" class="modal-close">x</a>
+	<a title="Close" class="modal-close closeExecPanel">x</a>
 	<div id="execute-message" class="message">
 	</div>
 	
@@ -30,10 +30,6 @@
 				<div>
 					<p>Change the behavior of the flow if it is already running.</p>
 				</div>
-				<h3 viewpanel="slaPanel">SLA</h3>
-				<div>
-					<p>Add service level agreements to notify or kill the flow if it exceeds certain runtime duration.</p>
-				</div>
 				<h3 viewpanel="flowParametersPanel">Flow Parameters</h3>
 				<div>
 					<p>Add temporary flow parameters that are used to override global properties for each job.</p>
@@ -51,7 +47,6 @@
 					<p>On a job failure, notify on either the first failure, and/or when the failed flow finishes.</p>
 					<input id="notifyFailureFirst" class="checkbox" type="checkbox" name="notify" value="first" checked /> <label for="notify">First Failure</label>
 					<input id="notifyFailureLast" class="checkbox" type="checkbox" name="notify" value="last"></input> <label for="notify">Flow Finished</label>
-					
 					
 					<h4>Failure Emails</h4>
 					<p>Notify these addresses on failure. Comma, space or semi-colon delimited list.</p>
@@ -83,7 +78,7 @@
 				<h4>Concurrent Execution Options</h4>
 				<p>If the flow is currently running, these are the options that can be set.</p>
 
-				<input id="ignore" class="radio" type="radio" name="concurrent" value="skip" checked /><label for="skip">Skip Execution</label>
+				<input id="skip" class="radio" type="radio" name="concurrent" value="skip" checked /><label for="skip">Skip Execution</label>
 				<p>Do not run flow if it is already running.</p>
 				
 				<input id="ignore" class="radio" type="radio" name="concurrent" value="ignore" checked /><label for="ignore">Run Concurrently</label>
@@ -99,50 +94,30 @@
 					<li>Level 1: block job A until the previous flow job A has completed.</li>
 					<li>Level 2: block job A until the previous flow job A's children have completed.</li>
 				</ul>
+				<!--
 				<input id="queue" class="radio" type="radio" name="concurrent" value="queue" /><label for="queue">Queue Job</label>
 				<select id="queueLevel" name="queueLevel">
 					<option value="1">1</option>
 					<option value="2">2</option>
 				</select>
 				<p>Queue up to 2. Wait until the previous execution has completed before running.</p>
-			</div>
-			<div id="slaPanel" class="sidePanel">
-				<h4>SLA Alert Emails</h4>
-				<p>Enter the email addresses to alert for SLA alerting</p>
-				<textarea id="slaEmails"></textarea>
-			
-				<h4>Flow SLA Rules</h4>
-				<p>Add SLA rules that will apply to this flow.</p>
-				<table id="flowRulesTbl">
-					<thead>
-						<tr>
-							<th>Flow/Job</th>
-							<th>Finish In</th>
-							<th>Email Action</th>
-							<th>Kill Action</th>
-						</tr>
-					</thead>
-					<tbody>
-					</tbody>
-				</table>
-
-				
-				<h4>Job SLA Rules</h4>
-				<p>Add SLA rules that will apply to individual jobs in this flow.</p>
-				<table id="jobRulesTbl">
-					<thead>
-						<tr>
-							<th>Flow/Job</th>
-							<th>Finish In</th>
-							<th>Email Action</th>
-							<th>Kill Action</th>
-						</tr>
-					</thead>
-					<tbody>
-					</tbody>
-				</table>
+				-->
 			</div>
 			<div id="flowParametersPanel" class="sidePanel">
+				<h4>Flow Property Override</h4>
+				<div id="editTable" class="tableDiv">
+					<table>
+						<thead>
+							<tr>
+								<th>Name</th>
+								<th>Value</th>
+							</tr>
+						</thead>
+						<tbody>
+							<tr id="addRow" class="addRow"><td id="addRow-col" colspan="2"><span class="addIcon"></span><a>Add Row</a></td></tr>
+						</tbody>
+					</table>
+				</div>
 			</div>
 		</div>
 	</div>
@@ -150,10 +125,13 @@
 	<div class="actions">
 		<a class="btn2" id="schedule-btn">Schedule</a>
 		<a class="yes btn1" id="execute-btn">Execute</a>
-		<a class="no simplemodal-close btn3">Cancel</a>
+		<a class="no simplemodal-close btn3 closeExecPanel">Cancel</a>
 	</div>
 </div>
 </div>
+
+#parse( "azkaban/webapp/servlet/velocity/schedulepanel.vm" )
+
 <div id="contextMenu">
 	
 </div>

@@ -25,13 +25,12 @@ function removeClass(el, name)
 }
 
 
-var svgGraphView;
 azkaban.SvgGraphView = Backbone.View.extend({
 	events: {
 		"click g" : "clickGraph",
-		"contextmenu svg" : "rightClick",
-		"contextmenu g" : "rightClick",
-		"contextmenu polyline": "rightClick"
+		"contextmenu" : "handleRightClick",
+		"contextmenu g" : "handleRightClick",
+		"contextmenu polyline": "handleRightClick"
 	},
 	initialize: function(settings) {
 		this.model.bind('change:selected', this.changeSelected, this);
@@ -55,6 +54,7 @@ azkaban.SvgGraphView = Backbone.View.extend({
 		if (settings.rightClick) {
 			this.rightClick = settings.rightClick;
 		}
+
 		$(svg).svgNavigate();
 	},
 	initializeDefs: function(self) {
@@ -215,7 +215,7 @@ azkaban.SvgGraphView = Backbone.View.extend({
 			this.model.set({"selected": self.currentTarget.jobid});
 		}
 	},
-	rightClick: function(self) {
+	handleRightClick: function(self) {
 		if (this.rightClick) {
 			var callbacks = this.rightClick;
 			var currentTarget = self.currentTarget;

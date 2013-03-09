@@ -21,6 +21,7 @@ import java.lang.Thread.State;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -53,7 +54,7 @@ public class ExecutorManager {
 	
 	private ConcurrentHashMap<Integer, Pair<ExecutionReference, ExecutableFlow>> runningFlows = new ConcurrentHashMap<Integer, Pair<ExecutionReference, ExecutableFlow>>();
 	private ConcurrentHashMap<Integer, ExecutableFlow> recentlyFinished = new ConcurrentHashMap<Integer, ExecutableFlow>();
-	
+
 	private ExecutorMailer mailer;
 	private ExecutingManagerUpdaterThread executingManager;
 	
@@ -289,10 +290,33 @@ public class ExecutorManager {
 		}
 	}
 	
-	public void submitExecutableFlow(ExecutableFlow exflow) throws ExecutorManagerException {
+	public String submitExecutableFlow(ExecutableFlow exflow) throws ExecutorManagerException {
 		synchronized(exflow) {
 			logger.info("Submitting execution flow " + exflow.getFlowId());
 
+			int projectId = exflow.getProjectId();
+			String flowId = exflow.getFlowId();
+			
+			List<Integer> running = getRunningFlows(projectId, flowId);
+
+			String message = "";
+			if (!running.isEmpty()) {
+				if (exflow.getConcurrentOption().equals("pipeline")) {
+					Collections.sort(running);
+					Integer runningExecId = running.get(running.size() - 1);
+					
+					exflow.setPipelineExecutionId(runningExecId);
+					message = "Flow " + flowId + " is already running with exec id " + runningExecId +". Pipelining level " + exflow.getPipelineLevel() + ". ";
+				}
+				else if (exflow.getConcurrentOption().equals("skip")) {
+					throw new ExecutorManagerException("Flow " + flowId + " is already running. Skipping execution.");
+				}
+				else {
+					// The settings is to run anyways.
+					message = "Flow " + flowId + " is already running with exec id " + StringUtils.join(running, ",") +". Will execute concurrently. ";
+				}
+			}
+			
 			// The exflow id is set by the loader. So it's unavailable until after this call.
 			executorLoader.uploadExecutableFlow(exflow);
 			
@@ -302,11 +326,15 @@ public class ExecutorManager {
 			try {
 				callExecutorServer(reference,  ConnectorParams.EXECUTE_ACTION);
 				runningFlows.put(exflow.getExecutionId(), new Pair<ExecutionReference, ExecutableFlow>(reference, exflow));
+				
+				message += "Execution submitted successfully with exec id " + exflow.getExecutionId();
 			}
 			catch (ExecutorManagerException e) {
 				executorLoader.removeActiveExecutableReference(reference.getExecId());
 				throw e;
 			}
+			
+			return message;
 		}
 	}
 

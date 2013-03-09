@@ -1149,8 +1149,13 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 				Permission perm = this.getPermissionObject(project, user, Type.ADMIN);
 				page.add("userpermission", perm);
 	
-				if (perm.isPermissionSet(Type.ADMIN)) {
+				boolean adminPerm = perm.isPermissionSet(Type.ADMIN);
+				if (adminPerm) {
 					page.add("admin", true);
+				}
+				// Set this so we can display execute buttons only to those who have access.
+				if (perm.isPermissionSet(Type.EXECUTE) || adminPerm) {
+					page.add("exec", true);
 				}
 				
 				List<Flow> flows = project.getFlows();

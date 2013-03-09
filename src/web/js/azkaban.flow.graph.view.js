@@ -227,7 +227,6 @@ azkaban.SvgGraphView = Backbone.View.extend({
 		circle.setAttributeNS(null, "r", 12);
 		circle.setAttributeNS(null, "style", "width:inherit;stroke-opacity:1");
 		
-		
 		var text = document.createElementNS(svgns, 'text');
 		var textLabel = document.createTextNode(node.label);
 		text.appendChild(textLabel);

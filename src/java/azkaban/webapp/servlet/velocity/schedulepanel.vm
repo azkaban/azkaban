@@ -1,0 +1,50 @@
+
+<script type="text/javascript" src="${context}/js/azkaban.date.utils.js"></script>  
+<script type="text/javascript" src="${context}/js/azkaban.schedule.panel.view.js"></script>
+
+<div id="scheduleModalBackground" class="modalBackground3">
+	<div id="schedule-panel-top">
+		<div id="schedule-panel" class="modal">
+			<a href='#' title='Close' class='modal-close closeSchedule'>x</a>
+			<h3>Schedule Flow Options</h3>
+
+			<div id="scheduleInfo">
+				<dl>
+					<dt>Schedule Time</dt>
+					<dd>
+						<input id="advhour" type="text" size="2" value="12"/>
+						<input id="advminutes" type="text" size="2" value="00"/>
+						<select id="advam_pm">
+						  <option>pm</option>
+						  <option>am</option>
+						</select>
+						<select id="advtimezone">
+						  <option>PDT</option>
+						  <option>UTC</option>
+						</select>
+					</dd>
+					<dt>Schedule Date</dt><dd><input type="text" id="advdatepicker" /></dd>
+					<dt>Recurrence</dt>
+					<dd>
+						<input id="advis_recurring" type="checkbox" checked  />
+						<span>repeat every</span>
+					 	<input id="advperiod" type="text" size="2" value="1"/>
+						<select id="advperiod_units">
+						  <option value="d">Days</option>
+						  <option value="h">Hours</option>
+						  <option value="m">Minutes</option>
+						  <option value="M">Months</option>
+						  <option value="w">Weeks</option>
+						</select>
+					</dd>
+				</dl>
+			</div>
+	
+
+			<div class="actions">
+				<a class="yes btn1" id="schedule-button" href="#">Schedule</a>
+				<a class="no simplemodal-close btn3 closeSchedule" id="cancel-schedule-btn" href="#">Cancel</a>
+			</div>
+		</div>
+	</div>
+</div>

@@ -2,7 +2,8 @@ azkaban.JobListView = Backbone.View.extend({
 	events: {
 		"keyup input": "filterJobs",
 		"click li": "handleJobClick",
-		"click .resetPanZoomBtn" : "handleResetPanZoom"
+		"click .resetPanZoomBtn" : "handleResetPanZoom",
+		"contextmenu li" : "handleContextMenuClick"
 	},
 	initialize: function(settings) {
 		this.model.bind('change:selected', this.handleSelectionChange, this);
@@ -12,7 +13,7 @@ azkaban.JobListView = Backbone.View.extend({
 		
 		this.filterInput = $(this.el).find(".filter");
 		this.list = $(this.el).find(".list");
-		this.contextMenu = settings.rightClick;
+		this.contextMenu = settings.contextMenuCallback;
 		this.listNodes = {};
 	},
 	filterJobs: function(self) {
@@ -116,6 +117,8 @@ azkaban.JobListView = Backbone.View.extend({
 		
 		for (var i = 0; i < nodeArray.length; ++i) {
 			var li = document.createElement("li");
+			li.jobid=nodeArray[i].id;
+			
 			var iconDiv = document.createElement("div");
 			$(iconDiv).addClass("icon");
 			li.appendChild(iconDiv);
@@ -126,18 +129,18 @@ azkaban.JobListView = Backbone.View.extend({
 			ul.appendChild(li);
 			li.jobid=nodeArray[i].id;
 			
-			$(li).contextMenu({
-					menu: this.contextMenu.id
-				},
-				this.contextMenu.callback
-			);
-			
 			this.listNodes[nodeArray[i].id] = li;
 		}
 		
 		this.list.append(ul);
 		this.assignInitialStatus(self);
 		this.handleDisabledChange(self);
+	},
+	handleContextMenuClick: function(evt) {
+		if (this.contextMenu) {
+			this.contextMenu(evt);
+			return false;
+		}
 	},
 	handleJobClick : function(evt) {
 		var jobid = evt.currentTarget.jobid;

@@ -36,29 +36,122 @@ function executeFlow(executingData) {
 		executingData,
 		function(data) {
 			if (data.error) {
-				alert(data.error);
+				messageDialogView.show("Error Executing Flow", data.error);
 			}
 			else {
-				var redirectURL = contextURL + "/executor?execid=" + data.execid;
-				window.location.href = redirectURL;
+				messageDialogView.show("Flow submitted", data.message,
+					function() {
+						var redirectURL = contextURL + "/executor?execid=" + data.execid;
+						window.location.href = redirectURL;
+					}
+				);
 			}
 		},
 		"json"
 	);
 }
 
+function fetchFlowInfo(model, projectName, flowId, execId) {
+  	var fetchData = {"project": projectName, "ajax":"flowInfo", "flow":flowId};
+  	if (execId) {
+  		fetchData.execid = execId;
+  	}
+  	
+  	var executeURL = contextURL + "/executor";
+  	$.ajax({
+  		url: executeURL,
+  		data: fetchData,
+  		success: function(data) {
+			if (data.error) {
+				alert(data.error);
+			}
+			else {
+				model.set({
+					"successEmails": data.successEmails, 
+					"failureEmails": data.failureEmails,
+					"failureAction": data.failureAction,
+					"notifyFailure": {"first": data.notifyFailureFirst, "last":data.notifyFailureLast},
+					"flowParams": data.flowParam,
+					"isRunning": data.running,
+					"nodeStatus": data.nodeStatus,
+					"concurrentOption": data.concurrentOptions,
+					"pipelineLevel": data.pipelineLevel,
+					"pipelineExecution": data.pipelineExecution,
+					"queueLevel":data.queueLevel
+				});
+			}
+			
+			model.trigger("change:flowinfo");
+		},
+		dataType: "json",
+		async: false
+  	});
+}
+
+function fetchFlow(model, projectName, flowId, sync) {
+	// Just in case people don't set sync
+	sync = sync ? true : false;
+
+  	var managerUrl = contextURL + "/manager";
+  	var fetchData = {
+  		"ajax" : "fetchflowgraph",
+  		"project" : projectName,
+  		"flow" : flowId
+  	};
+
+	$.ajax({
+		url: managerUrl,
+		data: fetchData,
+		success: function(data) {
+			if (data.error) {
+				alert(data.error);
+			}
+			else {
+				var disabled = data.disabled ? data.disabled : {};
+				model.set({flowId: data.flowId, data:data, disabled: disabled});
+				
+				var nodeMap = {};
+				for (var i = 0; i < data.nodes.length; ++i) {
+					var node = data.nodes[i];
+					nodeMap[node.id] = node;
+				}
+				
+				for (var i = 0; i < data.edges.length; ++i) {
+					 var edge = data.edges[i];
+					 
+					 if (!nodeMap[edge.target].in) {
+					 	nodeMap[edge.target].in = {};
+					 }
+					 var targetInMap = nodeMap[edge.target].in;
+					 targetInMap[edge.from] = nodeMap[edge.from];
+					 
+					 if (!nodeMap[edge.from].out) {
+					 	nodeMap[edge.from].out = {};
+					 }
+					 var sourceOutMap = nodeMap[edge.from].out;
+					 sourceOutMap[edge.target] = nodeMap[edge.target];
+				}
+				
+				model.set({nodeMap: nodeMap});
+			}
+		},
+		dataType: "json",
+		async: !sync
+	});
+}
+
 /**
 * Checks to see if a flow is running.
 *
 */
-function flowExecutingStatus(projectId, flowId) {
+function flowExecutingStatus(projectName, flowId) {
 	var requestURL = contextURL + "/executor";
 	
 	var executionIds;
 	$.ajax( {
 		url: requestURL,
 		async: false,
-		data: {"ajax":"getRunning", "project":projectId, "flow":flowId},
+		data: {"ajax":"getRunning", "project":projectName, "flow":flowId},
 		error: function(data) {},
 		success: function(data) {
 			if (data.error == "session") {

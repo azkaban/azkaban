@@ -88,3 +88,9 @@ azkaban.ContextMenuView = Backbone.View.extend({
 		return contextMenu;
 	}
 });
+
+var contextMenuView;
+$(function() {
+	contextMenuView = new azkaban.ContextMenuView({el:$('#contextMenu')});
+	contextMenuView.hide();
+});

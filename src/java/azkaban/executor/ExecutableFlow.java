@@ -59,6 +59,8 @@ public class ExecutableFlow {
 	
 	private Integer pipelineLevel = null;
 	private Integer pipelineExecId = null;
+	private Integer queueLevel = null;
+	private String concurrentOption = null;
 	private Map<String, String> flowParameters = new HashMap<String, String>();
 	
 	private HashSet<String> proxyUsers = new HashSet<String>();
@@ -299,7 +301,9 @@ public class ExecutableFlow {
 		flowObj.put("failureAction", failureAction.toString());
 		flowObj.put("pipelineLevel", pipelineLevel);
 		flowObj.put("pipelineExecId", pipelineExecId);
+		flowObj.put("queueLevel", queueLevel);
 		flowObj.put("version", version);
+		flowObj.put("concurrentOption", concurrentOption);
 		
 		ArrayList<Object> props = new ArrayList<Object>();
 		for (FlowProps fprop: flowProps.values()) {
@@ -431,6 +435,9 @@ public class ExecutableFlow {
 		if (flowObj.containsKey("notifyOnLastFailure")) {
 			exFlow.notifyOnLastFailure = (Boolean)flowObj.get("notifyOnLastFailure");
 		}
+		if (flowObj.containsKey("concurrentOption")) {
+			exFlow.concurrentOption = (String)flowObj.get("concurrentOption");
+		}
 		
 		// Failure action
 		if (flowObj.containsKey("failureAction")) {
@@ -438,6 +445,7 @@ public class ExecutableFlow {
 		}
 		exFlow.pipelineLevel = (Integer)flowObj.get("pipelineLevel");
 		exFlow.pipelineExecId = (Integer)flowObj.get("pipelineExecId");
+		exFlow.queueLevel = (Integer)flowObj.get("queueLevel");
 		
 		// Copy nodes
 		List<Object> nodes = (List<Object>)flowObj.get("nodes");
@@ -549,5 +557,21 @@ public class ExecutableFlow {
 	
 	public Integer getPipelineExecutionId() {
 		return pipelineExecId;
+	}
+	
+	public Integer getQueueLevel() {
+		return queueLevel;
+	}
+	
+	public void setQueueLevel(int queue) {
+		queueLevel = queue;
+	}
+	
+	public String getConcurrentOption() {
+		return this.concurrentOption;
+	}
+	
+	public void setConcurrentOption(String concurrentOption) {
+		this.concurrentOption = concurrentOption;
 	}
 }

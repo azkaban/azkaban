@@ -237,7 +237,17 @@ azkaban.FlowTabView= Backbone.View.extend({
       );
   },
   handleRestartClick : function(evt) {
-  	  	executeFlowView.show();
+  	var data = graphModel.get("data");
+  	var nodes = data.nodes;
+  
+    var executingData = {
+  		project: projectName,
+  		ajax: "executeFlow",
+  		flow: flowId,
+  		execid: execId
+	};
+
+  	flowExecuteDialogView.show(executingData);
   },
   handlePauseClick : function(evt) {
   	  var requestURL = contextURL + "/executor";
@@ -295,7 +305,7 @@ var showDialog = function(title, message) {
 }
 
 var jobListView;
-var svgGraphView;
+var mainSvgGraphView;
 
 var executionListView;
 azkaban.ExecutionListView = Backbone.View.extend({
@@ -620,18 +630,65 @@ var logUpdaterFunction = function() {
 	}
 }
 
+var exNodeClickCallback = function(event) {
+	console.log("Node clicked callback");
+	var jobId = event.currentTarget.jobid;
+	var requestURL = contextURL + "/manager?project=" + projectName + "&flow=" + flowId + "&job=" + jobId;
+
+	var menu = [	
+			{title: "Open Job...", callback: function() {window.location.href=requestURL;}},
+			{title: "Open Job in New Window...", callback: function() {window.open(requestURL);}}
+	];
+
+	contextMenuView.show(event, menu);
+}
+
+var exJobClickCallback = function(event) {
+	console.log("Node clicked callback");
+	var jobId = event.currentTarget.jobid;
+	var requestURL = contextURL + "/manager?project=" + projectName + "&flow=" + flowId + "&job=" + jobId;
+
+	var menu = [	
+			{title: "Open Job...", callback: function() {window.location.href=requestURL;}},
+			{title: "Open Job in New Window...", callback: function() {window.open(requestURL);}}
+	];
+
+	contextMenuView.show(event, menu);
+}
+
+var exEdgeClickCallback = function(event) {
+	console.log("Edge clicked callback");
+}
+
+var exGraphClickCallback = function(event) {
+	console.log("Graph clicked callback");
+	var requestURL = contextURL + "/manager?project=" + projectName + "&flow=" + flowId;
+
+	var menu = [	
+		{title: "Open Flow...", callback: function() {window.location.href=requestURL;}},
+		{title: "Open Flow in New Window...", callback: function() {window.open(requestURL);}},
+		{break: 1},
+		{title: "Center Graph", callback: function() {graphModel.trigger("resetPanZoom");}}
+	];
+	
+	contextMenuView.show(event, menu);
+}
+
+var contextMenuView;
 $(function() {
 	var selected;
 
 	graphModel = new azkaban.GraphModel();
 	logModel = new azkaban.LogModel();
 	flowTabView = new azkaban.FlowTabView({el:$( '#headertabs'), model: graphModel});
-	svgGraphView = new azkaban.SvgGraphView({el:$('#svgDiv'), model: graphModel, rightClick: {id: 'jobMenu', callback: handleJobMenuClick}});
-	jobsListView = new azkaban.JobListView({el:$('#jobList'), model: graphModel, rightClick: {id: 'jobMenu', callback: handleJobMenuClick}});
+	mainSvgGraphView = new azkaban.SvgGraphView({el:$('#svgDiv'), model: graphModel, rightClick:  { "node": exNodeClickCallback, "edge": exEdgeClickCallback, "graph": exGraphClickCallback }});
+	jobsListView = new azkaban.JobListView({el:$('#jobList'), model: graphModel, contextMenuCallback: exJobClickCallback});
 	statusView = new azkaban.StatusView({el:$('#flow-status'), model: graphModel});
 	flowLogView = new azkaban.FlowLogView({el:$('#flowLogView'), model: logModel});
 	executeFlowView = new azkaban.ExecuteFlowView({el:$('#executing-options'), model: graphModel});
 	executionListView = new azkaban.ExecutionListView({el: $('#jobListView'), model:graphModel});
+	contextMenuView = new azkaban.ContextMenuView({el:$('#contextMenu'), graph: svgGraph});
+	
 	var requestURL = contextURL + "/executor";
 
 	ajaxCall(

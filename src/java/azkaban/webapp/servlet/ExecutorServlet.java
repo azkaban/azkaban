@@ -503,9 +503,21 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 				break;
 		}
 		ret.put("failureAction", failureAction);
+		
 		ret.put("notifyFailureFirst", exflow.getNotifyOnFirstFailure());
 		ret.put("notifyFailureLast", exflow.getNotifyOnLastFailure());
-
+		
+		ret.put("concurrentOptions", exflow.getConcurrentOption());
+		ret.put("pipelineLevel", exflow.getPipelineLevel());
+		ret.put("pipelineExecution", exflow.getPipelineExecutionId());
+		ret.put("queueLevel", exflow.getQueueLevel());
+		
+		HashMap<String, String> nodeStatus = new HashMap<String,String>();
+		for(ExecutableNode node : exflow.getExecutableNodes()) {
+			nodeStatus.put(node.getJobId(), node.getStatus().toString());
+		}
+		ret.put("nodeStatus", nodeStatus);
+		
 		Schedule sflow = null;
 		for (Schedule sched: scheduleManager.getSchedules()) {
 			if (sched.getProjectId() == project.getId() && sched.getFlowName().equals(exflow.getFlowId())) {
@@ -679,13 +691,7 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 			return;
 		}
 		
-		List<Integer> executingFlows = executorManager.getRunningFlows(project.getId(), flowId);
-		if (executingFlows.isEmpty() || hasParam(req, "executingJobOption")) {
-			ajaxExecuteFlow(req, resp, ret, user);
-		}
-		else {
-			ret.put("error", "Flow is already running with execid=" + StringUtils.join(executingFlows, ","));
-		}
+		ajaxExecuteFlow(req, resp, ret, user);
 	}
 	
 	private void ajaxExecuteFlow(HttpServletRequest req, HttpServletResponse resp, HashMap<String, Object> ret, User user) throws ServletException {
@@ -722,6 +728,7 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 			}
 		}
 
+		String concurrentOption = "skip";
 		if (hasParam(req, "failureEmails")) {
 			String emails = getParam(req, "failureEmails");
 			String[] emailSplit = emails.split("\\s*,\\s*|\\s*;\\s*|\\s+");
@@ -738,9 +745,18 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 		if (hasParam(req, "notifyFailureLast")) {
 			exflow.setNotifyOnLastFailure(Boolean.parseBoolean(getParam(req, "notifyFailureLast")));
 		}
-		if (hasParam(req, "executingJobOption")) {
-			//String option = getParam(req, "jobOption");
-			// Not set yet
+		if (hasParam(req, "concurrentOption")) {
+			concurrentOption = getParam(req, "concurrentOption");
+			exflow.setConcurrentOption(concurrentOption);
+			if (concurrentOption.equals("pipeline")) {
+				int pipelineLevel = getIntParam(req, "pipelineLevel");
+				exflow.setPipelineLevel(pipelineLevel);
+			}
+			else if (concurrentOption.equals("queue")) {
+				// Not yet implemented
+				int queueLevel = getIntParam(req, "queueLevel", 1);
+				exflow.setPipelineLevel(queueLevel);
+			}
 		}
 		
 		Map<String, String> flowParamGroup = this.getParamGroup(req, "flowOverride");
@@ -779,17 +795,9 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 			}
 		}
 		
-		if (hasParam(req, "restartExecutionId")) {
-			int externalExecutionId = getIntParam(req, "restartExecutionId");
-			String proxyJobs = getParam(req, "proxyJobs");
-			String[] proxyJobsArray = proxyJobs.split("\\s*,\\s*");
-			for (String nodeId: proxyJobsArray) {
-				exflow.setProxyNodes(externalExecutionId, nodeId);
-			}
-		}
-		
 		try {
-			executorManager.submitExecutableFlow(exflow);
+			String message = executorManager.submitExecutableFlow(exflow);
+			ret.put("message", message);
 		}
 		catch (ExecutorManagerException e) {
 			e.printStackTrace();

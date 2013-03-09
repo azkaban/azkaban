@@ -1,0 +1,9 @@
+<script type="text/javascript" src="${context}/js/azkaban.message.dialog.view.js"></script>
+
+<div id="azkabanMessageDialog" class="modal">
+	<h3 id="azkabanMessageDialogTitle"></h3>
+	<div id="azkabanMessageDialogText"></div>
+	<div class="actions">
+		<a class="yes btn2 continueclass" id="continue-btn" href="#">Continue</a>
+	</div>
+</div>

@@ -18,25 +18,28 @@
 <html>
 	<head>
 #parse( "azkaban/webapp/servlet/velocity/style.vm" )
-		<script type="text/javascript" src="${context}/js/jquery/jquery.js"></script>    
-		<script type="text/javascript" src="${context}/js/jqueryui/jquery-ui.custom.min.js"></script>
+		<script type="text/javascript" src="${context}/js/jquery/jquery-1.9.1.js"></script>    
+		<script type="text/javascript" src="${context}/js/jqueryui/jquery-ui-1.10.1.custom.js"></script>
+		
+		<script type="text/javascript" src="${context}/js/underscore-1.4.4-min.js"></script>
 		<script type="text/javascript" src="${context}/js/namespace.js"></script>
-		<script type="text/javascript" src="${context}/js/underscore-1.2.1-min.js"></script>
-		<script type="text/javascript" src="${context}/js/backbone-0.5.3-min.js"></script>
-		<script type="text/javascript" src="${context}/js/jquery.simplemodal.js"></script>
+		<script type="text/javascript" src="${context}/js/backbone-0.9.10-min.js"></script>
+		<script type="text/javascript" src="${context}/js/jquery.simplemodal-1.4.4.js"></script>
 		<script type="text/javascript" src="${context}/js/azkaban.ajax.utils.js"></script>
 		<script type="text/javascript" src="${context}/js/azkaban.nav.js"></script>
 		<script type="text/javascript" src="${context}/js/azkaban.project.view.js"></script>
-		
-		<link rel="stylesheet" type="text/css" href="${context}/css/jquery-ui-1.9.2.custom.css" /> 
+
+		<link rel="stylesheet" type="text/css" href="${context}/css/jquery-ui-1.10.1.custom.css" />
+
 		<script type="text/javascript">
 			var contextURL = "${context}";
 			var currentTime = ${currentTime};
 			var timezone = "${timezone}";
 			var errorMessage = null;
 			var successMessage = null;
-			
-			var projectId = "$project.name";
+
+			var execAccess = ${exec};
+			var projectName = "$project.name";
 		</script>
 	</head>
 	<body>
@@ -97,12 +100,17 @@
 					<tbody>
 #if($flows)
 #foreach($flow in $flows)
-						<tr class="row">
+						<tr class="row flowrow">
 							<td class="tb-name" flow="${flow.id}" project="${project.name}">
 									<div class="jobfolder expand" id="${flow.id}">
 										<span class="state-icon"></span>
 										<a href="${context}/manager?project=${project.name}&flow=${flow.id}">${flow.id}</a>
 									</div>
+									#if (${exec})
+									<div class="job-hover-menu">
+										<div class="btn1 executeFlow" flowId="${flow.id}">Execute Flow</div>
+									</div>
+									#end
 							</td>
 						</tr>
 						<tr class="childrow" id="${flow.id}-child" style="display: none;">
@@ -169,8 +177,8 @@
 				<a class="yes btn6" id="delete-btn" href="#">Yes</a>
 			</div>
 		</div>
-		
 		#parse( "azkaban/webapp/servlet/velocity/flowexecutionpanel.vm" )
+		#parse( "azkaban/webapp/servlet/velocity/messagedialog.vm" )
 	</body>
 	
 </html>

@@ -251,7 +251,7 @@ td {
   font-size: 10pt;
 }
 
-td a {
+.all-jobs td a {
 	color: #000;
 	text-decoration: none;
 	margin-left: 10px;
@@ -268,7 +268,6 @@ table .last {
 tr:hover td {
   background-color: #E1E3E2;
 }
-
 
 .all-jobs .tb-name {
   padding-left: 2.7272727%;
@@ -514,6 +513,16 @@ tr:hover td {
 	background-color: rgba(0, 0, 0, 0.4);
 }
 
+.modalBackground3 {
+	position: absolute;
+	display: none;
+	left: 0px;
+	right: 0px;
+	top: 0px;
+	bottom: 0px;
+	background-color: rgba(0, 0, 0, 0);
+}
+
 .search-input {
   border: 1px solid;
   border-color: #7C7C7C #C3C3C3 #DDDDDD;
@@ -752,10 +761,6 @@ tr:hover td {
 
 #create-project input {
   width: 280px;
-}
-
-#ui-datepicker-div {
-  display: none;
 }
 
 .filter_statuses {
@@ -2408,6 +2413,17 @@ span.sublabel {
 	height: 20px;
 }
 
+.executionInfo table td a {
+	color: #000;
+	text-decoration: none;
+	margin-left: 10px;
+	margin-right: 10px;
+}
+
+.executionInfo table td a:hover {
+	color: #009FC9;
+}
+
 td .status {
 	-moz-border-radius: 2px;
 	border-radius: 2px;
@@ -2695,6 +2711,18 @@ span .nowrap {
 	
 }
 
+tr .job-hover-menu {
+	visibility:hidden;
+}
+
+.flowrow:hover .job-hover-menu {
+	visibility:visible;
+}
+
+.jobrow:hover .job-hover-menu {
+	visibility:visible;
+}
+
 .job-hover-menu {
 	float: right;
 }
@@ -2740,7 +2768,7 @@ tr.row td.tb-name {
 #execute-flow-panel {
 	left: 150px;
 	right: 150px;
-	top: 200px;
+	top: 150px;
 	bottom: 200px;
 	min-width: 600px;
 	min-height: 400px;
@@ -2770,6 +2798,7 @@ h3.menuHeader {
 	padding: 5px 3px 5px 15px;
 	color: #888;
 	border: none;
+	cursor: pointer;
 }
 
 h3.menuHeader:hover {
@@ -2819,6 +2848,80 @@ div.menuContent {
 .contextMenu li.menuitem:hover {
 	background-color: #555;
 	color: #FFF;
+}
+
+.tableDiv .addRow a {
+	cursor: pointer;
+}
+
+.tableDiv span {
+	float: left;
+	margin-left: 5px;
+}
+
+
+.tableDiv span.addIcon {
+	display: block;
+	width: 16px;
+	height: 16px;
+	background-image: url("./images/addIcon.png");
+	cursor: pointer;
+}
+
+.tableDiv table .editable {
+
+}
+
+.tableDiv table .editable input {
+	border: 1px solid #009FC9;
+	height: 16px;
+}
+
+.tableDiv table .name {
+	width: 40%;
+}
+
+.tableDiv span.removeIcon {
+	display: block;
+	visibility:hidden;
+	disabled: true;
+	width: 16px;
+	height: 16px;
+	background-image: url("./images/removeIcon.png");
+	cursor: pointer;
+}
+
+.tableDiv .editable:hover span.removeIcon {
+	visibility:visible;
+}
+
+#schedule-panel {
+	position: relative;
+	left: -50%;
+}
+
+#schedule-panel-top {
+	width: 450px;
+	margin-top: 300px;
+	position: absolute;
+	left: 50%;
+}
+
+#ui-div-datepicker td a.ui-state-default {
+	margin-left: 1px;
+}
+
+#svgDiv {
+	position: absolute;
+	padding: 1px;
+	left: 260px;
+	right: 0px;
+	top: 0px;
+	bottom: 0px;
+}
+
+#azkabanMessageDialogText {
+	margin: 10px 20px;
 }
 
 /* old styles */
