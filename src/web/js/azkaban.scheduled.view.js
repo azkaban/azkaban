@@ -219,8 +219,8 @@ azkaban.ChangeSlaView = Backbone.View.extend({
 			var id = rFlowRule.cells[0].firstChild.value;
 			var rule = rFlowRule.cells[1].firstChild.value;
 			var duration = rFlowRule.cells[2].firstChild.value;
-			var email = rFlowRule.cells[3].firstChild.value;
-			var kill = rFlowRule.cells[4].firstChild.value;
+			var email = rFlowRule.cells[3].firstChild.checked;
+			var kill = rFlowRule.cells[4].firstChild.checked;
 			settings[row] = id + "," + rule + "," + duration + "," + email + "," + kill; 
 		}
 
@@ -257,7 +257,7 @@ azkaban.ChangeSlaView = Backbone.View.extend({
 		var ruleBoxOptions = this.ruleBoxOptions;
 
 		var tFlowRules = document.getElementById("flowRulesTbl").tBodies[0];
-		var rFlowRule = tFlowRules.insertRow(0);
+		var rFlowRule = tFlowRules.insertRow(tFlowRules.rows.length-1);
 		
 		var cId = rFlowRule.insertCell(-1);
 		var idSelect = document.createElement("select");
