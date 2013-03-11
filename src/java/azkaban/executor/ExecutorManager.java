@@ -61,6 +61,7 @@ public class ExecutorManager {
 	private ExecutorMailer mailer;
 	private ExecutingManagerUpdaterThread executingManager;
 	
+	private static final long DEFAULT_EXECUTION_LOGS_RETENTION_MS = 3*4*7*24*60*60*1000l;
 	private long lastCleanerThreadCheckTime = -1;
 	
 	private long lastThreadCheckTime = -1;
@@ -74,8 +75,9 @@ public class ExecutorManager {
 		mailer = new ExecutorMailer(props);
 		executingManager = new ExecutingManagerUpdaterThread();
 		executingManager.start();
-		
-		cleanerThread = new CleanerThread();
+
+		long executionLogsRetentionMs = props.getLong("azkaban.execution.logs.retention.ms", DEFAULT_EXECUTION_LOGS_RETENTION_MS);
+		cleanerThread = new CleanerThread(executionLogsRetentionMs);
 		cleanerThread.start();
 	}
 	
@@ -790,14 +792,17 @@ public class ExecutorManager {
 	 */
 	private class CleanerThread extends Thread {
 		// log file retention is 1 month.
-		private static final long EXECUTION_LOGS_RETENTION_MS = 3*4*7*24*60*60*1000;
+		
 		// check every day
 		private static final long CLEANER_THREAD_WAIT_INTERVAL_MS = 24*60*60*1000;
+		
+		private final long executionLogsRetentionMs;
 		
 		private boolean shutdown = false;
 		private long lastLogCleanTime = -1;
 		
-		public CleanerThread() {
+		public CleanerThread(long executionLogsRetentionMs) {
+			this.executionLogsRetentionMs = executionLogsRetentionMs;
 			this.setName("AzkabanWebServer-Cleaner-Thread");
 		}
 		
@@ -831,8 +836,9 @@ public class ExecutorManager {
 
 		private void cleanExecutionLogs() {
 			logger.info("Cleaning old logs from execution_logs");
-			logger.info("Cleaning old log files before " + DateTime.now() + " or in milliseconds: " + DateTime.now().getMillis());
-			cleanOldExecutionLogs(DateTime.now().getMillis() - EXECUTION_LOGS_RETENTION_MS);
+			long cutoff = DateTime.now().getMillis() - executionLogsRetentionMs;
+			logger.info("Cleaning old log files before " + new DateTime(cutoff).toString());
+			cleanOldExecutionLogs(DateTime.now().getMillis() - executionLogsRetentionMs);
 		}
 	}
 }
