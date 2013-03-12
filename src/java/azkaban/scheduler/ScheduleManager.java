@@ -93,6 +93,7 @@ public class ScheduleManager {
 			scheduleList = loader.loadSchedules();
 		} catch (ScheduleManagerException e) {
 			// TODO Auto-generated catch block
+			logger.error("Failed to load schedules" + e.getCause() + e.getMessage());
 			e.printStackTrace();
 		}
 

@@ -150,7 +150,11 @@ public class JdbcScheduleLoader implements ScheduleLoader {
 
 			DbUtils.closeQuietly(connection);
 			throw new ScheduleManagerException("Loading schedules from db failed. ", e);
+		} finally {
+			DbUtils.closeQuietly(connection);
 		}
+		
+		logger.info("Now trying to update the schedules");
 		
 		// filter the schedules
 		for(Schedule sched : schedules) {
@@ -160,17 +164,18 @@ public class JdbcScheduleLoader implements ScheduleLoader {
 				removeSchedule(sched);
 			}
 			else {
+				logger.info("Recurring schedule, need to update next exec time");
 				try {
 					updateNextExecTime(sched);
 				} catch (Exception e) {
-					DbUtils.closeQuietly(connection);
+					e.printStackTrace();
 					throw new ScheduleManagerException("Update next execution time failed.", e);
-				}
+				} 
 				logger.info("Schedule " + sched.getScheduleName() + " loaded and updated.");
 			}
 		}
 		
-		DbUtils.closeQuietly(connection);
+		
 				
 		logger.info("Loaded " + schedules.size() + " schedules.");
 		
@@ -246,13 +251,18 @@ public class JdbcScheduleLoader implements ScheduleLoader {
 	@Override
 	public void updateNextExecTime(Schedule s) throws ScheduleManagerException 
 	{
+		logger.info("Update schedule " + s.getScheduleName() + " into db. ");
 		Connection connection = getConnection();
 		QueryRunner runner = new QueryRunner();
 		try {
+			
 			runner.update(connection, UPDATE_NEXT_EXEC_TIME, s.getNextExecTime(), s.getProjectId(), s.getFlowName()); 
 		} catch (SQLException e) {
-			logger.error(UPDATE_NEXT_EXEC_TIME + " failed.");
+			e.printStackTrace();
+			logger.error(UPDATE_NEXT_EXEC_TIME + " failed.", e);
 			throw new ScheduleManagerException("Update schedule " + s.getScheduleName() + " into db failed. ", e);
+		} finally {
+			DbUtils.closeQuietly(connection);
 		}
 	}
 	
