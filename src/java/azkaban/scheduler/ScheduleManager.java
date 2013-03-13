@@ -91,6 +91,7 @@ public class ScheduleManager {
 			scheduleList = loader.loadSchedules();
 		} catch (ScheduleManagerException e) {
 			// TODO Auto-generated catch block
+			logger.error("Failed to load schedules" + e.getCause() + e.getMessage());
 			e.printStackTrace();
 		}
 
@@ -338,6 +339,7 @@ public class ScheduleManager {
 							// If null, wake up every minute or so to see if
 							// there's something to do. Most likely there will not be.
 							try {
+								logger.info("Nothing scheduled to run. Checking again soon.");
 								nextWakupTime = System.currentTimeMillis() + TIMEOUT_MS;
 								this.wait(TIMEOUT_MS);
 							} catch (InterruptedException e) {
@@ -349,11 +351,12 @@ public class ScheduleManager {
 								// Run flow. The invocation of flows should be quick.
 								Schedule runningSched = schedules.poll();
 								
-								logger.info("Scheduler attempting to run " + runningSched.getScheduleName() );
+								logger.info("Scheduler attempting to run " + runningSched.toString() );
 								
 								// check if it is already running
 								if(!executorManager.isFlowRunning(runningSched.getProjectId(), runningSched.getFlowName()))
 								{
+									logger.info("Scheduler ready to run " + runningSched.toString());
 									// Execute the flow here
 									try {
 										Project project = projectManager.getProject(runningSched.getProjectId());
@@ -381,13 +384,13 @@ public class ScheduleManager {
 											executorManager.submitExecutableFlow(exflow);
 											logger.info("Scheduler has invoked " + exflow.getExecutionId());
 										} catch (Exception e) {	
-											logger.error("Scheduler invoked flow " + exflow.getExecutionId() + " has failed.");
-											logger.error(e.getMessage());
-											return;
+											e.printStackTrace();
+											throw new ScheduleManagerException("Scheduler invoked flow " + exflow.getExecutionId() + " has failed.", e);
 										}
 										
 										SlaOptions slaOptions = runningSched.getSlaOptions();
 										if(slaOptions != null) {
+											logger.info("Submitting SLA checkings for " + runningSched.getFlowName());
 											// submit flow slas
 											List<SlaSetting> jobsettings = new ArrayList<SlaSetting>();
 											for(SlaSetting set : slaOptions.getSettings()) {
@@ -411,7 +414,6 @@ public class ScheduleManager {
 								}
 								
 								removeRunnerSchedule(runningSched);
-
 
 								// Immediately reschedule if it's possible. Let
 								// the execution manager

@@ -16,6 +16,7 @@ import junit.framework.Assert;
 import org.apache.commons.dbutils.DbUtils;
 import org.apache.commons.dbutils.QueryRunner;
 import org.apache.commons.dbutils.ResultSetHandler;
+import org.joda.time.DateTime;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -39,9 +40,9 @@ import azkaban.utils.Props;
 public class JdbcExecutorLoaderTest {
 	private static boolean testDBExists;
 	//@TODO remove this and turn into local host.
-	private static final String host = "rpark-ld.linkedin.biz";
+	private static final String host = "cyu-ld.linkedin.biz";
 	private static final int port = 3306;
-	private static final String database = "test";
+	private static final String database = "azkaban2";
 	private static final String user = "azkaban";
 	private static final String password = "azkaban";
 	private static final int numConnections = 10;
@@ -375,6 +376,32 @@ public class JdbcExecutorLoaderTest {
 		Assert.assertEquals("Logs length is " + logsResult6.getLength(), logsResult6.getLength(), 185493);
 	}
 	
+	@Test
+	public void testRemoveExecutionLogsByTime() throws ExecutorManagerException, IOException, InterruptedException {
+		
+		ExecutorLoader loader = createLoader();
+		
+		File logDir = new File("unit/executions/logtest");		
+		
+		// Multiple of 255 for Henry the Eigth
+		File[] largelog = {new File(logDir, "largeLog1.log"), new File(logDir, "largeLog2.log"), new File(logDir, "largeLog3.log")};
+		
+		DateTime time1 = DateTime.now();
+		loader.uploadLogFile(1, "oldlog", 0, largelog);
+		// sleep for 5 seconds
+		Thread.currentThread().sleep(5000);
+		loader.uploadLogFile(2, "newlog", 0, largelog);
+		
+		DateTime time2 = time1.plusMillis(2500);
+				
+		int count = loader.removeExecutionLogsByTime(time2.getMillis());
+		System.out.print("Removed " + count + " records");
+		LogData logs = loader.fetchLogs(1, "oldlog", 0, 0, 22222);
+		Assert.assertTrue(logs == null);
+		logs = loader.fetchLogs(2, "newlog", 0, 0, 22222);
+		Assert.assertFalse(logs == null);
+	}
+	
 	private ExecutableFlow createExecutableFlow(int executionId, String flowName) throws IOException {
 		File jsonFlowFile = new File(flowDir, flowName + ".flow");
 		@SuppressWarnings("unchecked")
@@ -432,4 +459,5 @@ public class JdbcExecutorLoaderTest {
 			return val;
 		}
 	}
+	
 }

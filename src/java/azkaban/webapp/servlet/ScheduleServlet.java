@@ -49,6 +49,7 @@ import azkaban.webapp.AzkabanWebServer;
 import azkaban.webapp.session.Session;
 import azkaban.scheduler.Schedule;
 import azkaban.scheduler.ScheduleManager;
+import azkaban.scheduler.ScheduleManagerException;
 import azkaban.sla.SLA;
 import azkaban.sla.SLA.SlaRule;
 import azkaban.sla.SLA.SlaAction;
@@ -116,11 +117,9 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
 			SlaOptions slaOptions= new SlaOptions();
 			
 			String slaEmails = getParam(req, "slaEmails");
-			System.out.println(slaEmails); 
 			String[] emailSplit = slaEmails.split("\\s*,\\s*|\\s*;\\s*|\\s+");
 			
 			Map<String, String> settings = getParamGroup(req, "settings");
-			System.out.println(settings);
 			List<SlaSetting> slaSettings = new ArrayList<SlaSetting>();
 			for(String set : settings.keySet()) {
 				SlaSetting s;
@@ -136,6 +135,10 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
 			}
 			
 			if(slaSettings.size() > 0) {
+				if(slaEmails.equals("")) {
+					ret.put("error", "Please put correct email settings for your SLA actions");
+					return;
+				}
 				slaOptions.setSlaEmails(Arrays.asList(emailSplit));
 				slaOptions.setSettings(slaSettings);
 			}
@@ -150,12 +153,12 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
 			}
 			
 		} catch (ServletException e) {
-			ret.put("error", e);
+			ret.put("error", e.getMessage());
 		}
 		
 	}
 	
-	private SlaSetting parseSlaSetting(String set) {
+	private SlaSetting parseSlaSetting(String set) throws ScheduleManagerException {
 		// "" + Duration + EmailAction + KillAction
 		String[] parts = set.split(",", -1);
 		String id = parts[0];
@@ -163,17 +166,23 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
 		String duration = parts[2];
 		String emailAction = parts[3];
 		String killAction = parts[4];
-		if(emailAction.equals("on") || killAction.equals("on")) {
+		if(emailAction.equals("true") || killAction.equals("true")) {
 			SlaSetting r = new SlaSetting();			
 			r.setId(id);
 			r.setRule(SlaRule.valueOf(rule));
-			ReadablePeriod dur = parseDuration(duration);
+			ReadablePeriod dur;
+			try {
+				dur = parseDuration(duration);
+			}
+			catch (Exception e) {
+				throw new ScheduleManagerException("Unable to parse duration for a SLA that needs to take actions!", e);
+			}
 			r.setDuration(dur);
 			List<SlaAction> actions = new ArrayList<SLA.SlaAction>();
-			if(emailAction.equals("on")) {
+			if(emailAction.equals("true")) {
 				actions.add(SlaAction.EMAIL);
 			}
-			if(killAction.equals("on")) {
+			if(killAction.equals("true")) {
 				actions.add(SlaAction.KILL);
 			}
 			r.setActions(actions);

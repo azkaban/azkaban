@@ -70,5 +70,7 @@ public interface ExecutorLoader {
 	public Props fetchExecutionJobOutputProps(int execId, String jobId) throws ExecutorManagerException;
 	
 	public Pair<Props, Props> fetchExecutionJobProps(int execId, String jobId) throws ExecutorManagerException;
+
+	public int removeExecutionLogsByTime(long millis) throws ExecutorManagerException;
 	
 }

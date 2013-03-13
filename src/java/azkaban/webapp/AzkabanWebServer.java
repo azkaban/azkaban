@@ -48,6 +48,7 @@ import org.mortbay.jetty.servlet.DefaultServlet;
 import org.mortbay.jetty.servlet.ServletHolder;
 import org.mortbay.thread.QueuedThreadPool;
 
+
 import azkaban.executor.ExecutorManager;
 import azkaban.executor.JdbcExecutorLoader;
 import azkaban.jmx.JmxExecutorManager;
@@ -142,6 +143,9 @@ public class AzkabanWebServer implements AzkabanServer {
 	private MBeanServer mbeanServer;
 	private ArrayList<ObjectName> registeredMBeans = new ArrayList<ObjectName>();
 
+	
+	
+	
 	/**
 	 * Constructor usually called by tomcat AzkabanServletContext to create the
 	 * initial server
@@ -177,6 +181,9 @@ public class AzkabanWebServer implements AzkabanServer {
 		}
 		
 		configureMBeanServer();
+		
+		
+		
 	}
 
 	private void setViewerPlugins(List<ViewerPlugin> viewerPlugins) {
@@ -719,4 +726,5 @@ public class AzkabanWebServer implements AzkabanServer {
 		}
 
 	}
+	
 }

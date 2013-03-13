@@ -35,6 +35,7 @@ import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.impl.client.BasicResponseHandler;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.log4j.Logger;
+import org.joda.time.DateTime;
 
 import azkaban.project.Project;
 import azkaban.utils.FileIOUtils.LogData;
@@ -52,11 +53,16 @@ public class ExecutorManager {
 	private String executorHost;
 	private int executorPort;
 	
+	private CleanerThread cleanerThread;
+	
 	private ConcurrentHashMap<Integer, Pair<ExecutionReference, ExecutableFlow>> runningFlows = new ConcurrentHashMap<Integer, Pair<ExecutionReference, ExecutableFlow>>();
 	private ConcurrentHashMap<Integer, ExecutableFlow> recentlyFinished = new ConcurrentHashMap<Integer, ExecutableFlow>();
 
 	private ExecutorMailer mailer;
 	private ExecutingManagerUpdaterThread executingManager;
+	
+	private static final long DEFAULT_EXECUTION_LOGS_RETENTION_MS = 3*4*7*24*60*60*1000l;
+	private long lastCleanerThreadCheckTime = -1;
 	
 	private long lastThreadCheckTime = -1;
 	
@@ -69,6 +75,10 @@ public class ExecutorManager {
 		mailer = new ExecutorMailer(props);
 		executingManager = new ExecutingManagerUpdaterThread();
 		executingManager.start();
+
+		long executionLogsRetentionMs = props.getLong("azkaban.execution.logs.retention.ms", DEFAULT_EXECUTION_LOGS_RETENTION_MS);
+		cleanerThread = new CleanerThread(executionLogsRetentionMs);
+		cleanerThread.start();
 	}
 	
 	public String getExecutorHost() {
@@ -108,6 +118,7 @@ public class ExecutorManager {
 	
 	public boolean isFlowRunning(int projectId, String flowId) {
 		for (Pair<ExecutionReference, ExecutableFlow> ref : runningFlows.values()) {
+
 			if (ref.getSecond().getProjectId() == projectId && ref.getSecond().getFlowId().equals(flowId)) {
 				return true;
 			}
@@ -343,6 +354,17 @@ public class ExecutorManager {
 			}
 			
 			return message;
+		}
+	}
+	
+	
+	public void cleanOldExecutionLogs(long millis) {
+		try {
+			int count = executorLoader.removeExecutionLogsByTime(millis);
+			logger.info("Cleaned up " + count + " log entries.");
+		}
+		catch (ExecutorManagerException e) {
+			e.printStackTrace();
 		}
 	}
 
@@ -808,5 +830,61 @@ public class ExecutorManager {
 		List<ExecutableFlow> flows = executorLoader.fetchFlowHistory(projectId, flowId, from, length);
 		outputList.addAll(flows);
 		return executorLoader.fetchNumExecutableFlows(projectId, flowId);
+	}
+	
+	/* 
+	 * cleaner thread to clean up execution_logs, etc in DB. Runs every day.
+	 * 
+	 */
+	private class CleanerThread extends Thread {
+		// log file retention is 1 month.
+		
+		// check every day
+		private static final long CLEANER_THREAD_WAIT_INTERVAL_MS = 24*60*60*1000;
+		
+		private final long executionLogsRetentionMs;
+		
+		private boolean shutdown = false;
+		private long lastLogCleanTime = -1;
+		
+		public CleanerThread(long executionLogsRetentionMs) {
+			this.executionLogsRetentionMs = executionLogsRetentionMs;
+			this.setName("AzkabanWebServer-Cleaner-Thread");
+		}
+		
+		@SuppressWarnings("unused")
+		public void shutdown() {
+			shutdown = true;
+			this.interrupt();
+		}
+		
+		public void run() {
+			while (!shutdown) {
+				synchronized (this) {
+					try {
+						lastCleanerThreadCheckTime = System.currentTimeMillis();
+						
+						// Cleanup old stuff.
+						long currentTime = System.currentTimeMillis();
+						if (currentTime - CLEANER_THREAD_WAIT_INTERVAL_MS > lastLogCleanTime) {
+							cleanExecutionLogs();
+							lastLogCleanTime = currentTime;
+						}
+		
+						
+						wait(CLEANER_THREAD_WAIT_INTERVAL_MS);
+					} catch (InterruptedException e) {
+						logger.info("Interrupted. Probably to shut down.");
+					}
+				}
+			}
+		}
+
+		private void cleanExecutionLogs() {
+			logger.info("Cleaning old logs from execution_logs");
+			long cutoff = DateTime.now().getMillis() - executionLogsRetentionMs;
+			logger.info("Cleaning old log files before " + new DateTime(cutoff).toString());
+			cleanOldExecutionLogs(DateTime.now().getMillis() - executionLogsRetentionMs);
+		}
 	}
 }

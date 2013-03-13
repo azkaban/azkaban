@@ -345,7 +345,7 @@ public class SLAManager {
 	}
 	
 	private void takeSLASuccessActions(SLA s, ExecutableFlow exflow) {
-		sendSlaSuccessEmail(s, exflow);
+		//sendSlaSuccessEmail(s, exflow);
 		
 	}
 	

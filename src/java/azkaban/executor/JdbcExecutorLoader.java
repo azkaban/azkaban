@@ -22,6 +22,7 @@ import org.apache.commons.dbutils.QueryRunner;
 import org.apache.commons.dbutils.ResultSetHandler;
 import org.apache.commons.io.IOUtils;
 import org.apache.log4j.Logger;
+import org.joda.time.DateTime;
 
 import azkaban.utils.DataSourceUtils;
 import azkaban.utils.FileIOUtils;
@@ -620,7 +621,7 @@ public class JdbcExecutorLoader implements ExecutorLoader {
 	}
 	
 	private void uploadLogPart(Connection connection, int execId, String name, int attempt, int startByte, int endByte, EncodingType encType, byte[] buffer, int length) throws SQLException, IOException {
-		final String INSERT_EXECUTION_LOGS = "INSERT INTO execution_logs (exec_id, name, attempt, enc_type, start_byte, end_byte, log) VALUES (?,?,?,?,?,?,?)";
+		final String INSERT_EXECUTION_LOGS = "INSERT INTO execution_logs (exec_id, name, attempt, enc_type, start_byte, end_byte, log, upload_time) VALUES (?,?,?,?,?,?,?,?)";
 		QueryRunner runner = new QueryRunner();
 		
 		byte[] buf = buffer;
@@ -631,7 +632,7 @@ public class JdbcExecutorLoader implements ExecutorLoader {
 			buf = Arrays.copyOf(buffer, length);
 		}
 		
-		runner.update(connection, INSERT_EXECUTION_LOGS, execId, name, attempt, encType.getNumVal(), startByte, startByte + length, buf);
+		runner.update(connection, INSERT_EXECUTION_LOGS, execId, name, attempt, encType.getNumVal(), startByte, startByte + length, buf, DateTime.now().getMillis());
 	}
 	
 	private Connection getConnection() throws ExecutorManagerException {
@@ -912,5 +913,20 @@ public class JdbcExecutorLoader implements ExecutorLoader {
 			
 			return rs.getInt(1);
 		}
+	}
+
+	@Override
+	public int removeExecutionLogsByTime(long millis) throws ExecutorManagerException {
+		final String DELETE_BY_TIME = "DELETE FROM execution_logs WHERE upload_time < ?";
+		
+		QueryRunner runner = new QueryRunner(dataSource);
+		int updateNum = 0;
+		try {
+			updateNum = runner.update(DELETE_BY_TIME, millis);
+		} catch (SQLException e) {
+			throw new ExecutorManagerException("Error deleting old execution_logs before " + millis);
+		}
+		
+		return updateNum;
 	}
 }

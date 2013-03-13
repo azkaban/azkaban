@@ -146,23 +146,7 @@
 										</tbody>
 									</table>
 								</div>
-								<!--h4 style="visibility: hidden">Job SLA Rules</h4>
-								<div class="tableDiv" style="visibility: hidden">
-									<table id="jobRulesTbl">
-										<thead>
-											<tr>
-												<th>Flow/Job Id</th>
-												<th>Finish In</th>
-												<th>Duration</th>
-												<th>Email Action</th>
-												<th>Kill Action</th>
-											</tr>
-										</thead>
-										<tbody>
-											<tr id="addRow"><td id="addRow-col" colspan="4"><span class="addIcon"></span><a href="#">Add Row</a></td></tr>
-										</tbody>
-									</table>
-								</div-->
+							
 							</div>
 						</div>
 					</div>
