@@ -15,6 +15,7 @@ import azkaban.execapp.event.FlowWatcher;
 import azkaban.execapp.event.LocalFlowWatcher;
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutableNode;
+import azkaban.executor.ExecutionOptions;
 import azkaban.executor.ExecutorLoader;
 import azkaban.executor.Status;
 import azkaban.flow.Flow;
@@ -205,9 +206,10 @@ public class LocalFlowWatcherTest {
 	private FlowRunner createFlowRunner(File workingDir, ExecutorLoader loader, EventCollectorListener eventCollector, String flowName, int execId, FlowWatcher watcher, Integer pipeline) throws Exception {
 		File testDir = new File("unit/executions/exectest1");
 		ExecutableFlow exFlow = prepareExecDir(workingDir, testDir, flowName, execId);
+		ExecutionOptions option = exFlow.getExecutionOptions();
 		if (watcher != null) {
-			exFlow.setPipelineLevel(pipeline);
-			exFlow.setPipelineExecutionId(watcher.getExecId());
+			option.setPipelineLevel(pipeline);
+			option.setPipelineExecutionId(watcher.getExecId());
 		}
 		//MockProjectLoader projectLoader = new MockProjectLoader(new File(exFlow.getExecutionPath()));
 		

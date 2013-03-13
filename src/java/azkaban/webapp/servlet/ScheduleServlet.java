@@ -31,46 +31,35 @@ import javax.servlet.http.HttpServletResponse;
 import org.apache.log4j.Logger;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
-import org.joda.time.Hours;
 import org.joda.time.LocalDateTime;
 import org.joda.time.Minutes;
 import org.joda.time.ReadablePeriod;
 import org.joda.time.format.DateTimeFormat;
 
-import azkaban.executor.ExecutableFlow;
-import azkaban.executor.ExecutableNode;
-import azkaban.executor.ExecutorManagerException;
-import azkaban.executor.ExecutableFlow.FailureAction;
+import azkaban.executor.ExecutionOptions;
 import azkaban.flow.Flow;
 import azkaban.flow.Node;
 import azkaban.project.Project;
 import azkaban.project.ProjectManager;
 import azkaban.project.ProjectLogEvent.EventType;
 import azkaban.user.Permission;
-import azkaban.user.Role;
 import azkaban.user.User;
 import azkaban.user.Permission.Type;
-import azkaban.user.UserManager;
-import azkaban.utils.Pair;
 import azkaban.webapp.AzkabanWebServer;
 import azkaban.webapp.session.Session;
 import azkaban.scheduler.Schedule;
-import azkaban.scheduler.Schedule.FlowOptions;
-import azkaban.scheduler.Schedule.SlaOptions;
 import azkaban.scheduler.ScheduleManager;
 import azkaban.sla.SLA;
 import azkaban.sla.SLA.SlaRule;
-import azkaban.sla.SLAManager;
 import azkaban.sla.SLA.SlaAction;
 import azkaban.sla.SLA.SlaSetting;
+import azkaban.sla.SlaOptions;
 
 public class ScheduleServlet extends LoginAbstractAzkabanServlet {
 	private static final long serialVersionUID = 1L;
 	private static final Logger logger = Logger.getLogger(ScheduleServlet.class);
 	private ProjectManager projectManager;
 	private ScheduleManager scheduleManager;
-	private SLAManager slaManager;
-	private UserManager userManager;
 
 	@Override
 	public void init(ServletConfig config) throws ServletException {
@@ -78,8 +67,6 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
 		AzkabanWebServer server = (AzkabanWebServer)getApplication();
 		projectManager = server.getProjectManager();
 		scheduleManager = server.getScheduleManager();
-		userManager = server.getUserManager();
-		slaManager = server.getSLAManager();
 	}
 	
 	@Override
@@ -103,8 +90,8 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
 		else if(ajaxName.equals("setSla")) {
 			ajaxSetSla(req, ret, session.getUser());
 		}
-		else if(ajaxName.equals("advSchedule")) {
-			ajaxAdvSchedule(req, ret, session.getUser());
+		else if(ajaxName.equals("scheduleFlow")) {
+			ajaxScheduleFlow(req, ret, session.getUser());
 		}
 
 		if (ret != null) {
@@ -124,7 +111,7 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
 				return;
 			}
 			
-			Schedule sched = scheduleManager.getSchedule(new Pair<Integer, String>(projectId, flowName));
+			Schedule sched = scheduleManager.getSchedule(projectId, flowName);
 			
 			SlaOptions slaOptions= new SlaOptions();
 			
@@ -167,7 +154,6 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
 		}
 		
 	}
-
 	
 	private SlaSetting parseSlaSetting(String set) {
 		// "" + Duration + EmailAction + KillAction
@@ -202,7 +188,6 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
 		return Minutes.minutes(min+hour*60).toPeriod();
 	}
 
-	@SuppressWarnings("unchecked")
 	private void ajaxSlaInfo(HttpServletRequest req, HashMap<String, Object> ret, User user) {
 		int projId;
 		String flowName;
@@ -222,10 +207,10 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
 				return;
 			}
 			
-			Schedule sched = scheduleManager.getSchedule(new Pair<Integer, String>(projId, flowName));
+			Schedule sched = scheduleManager.getSchedule(projId, flowName);
 			
 			SlaOptions slaOptions = sched.getSlaOptions();
-			FlowOptions flowOptions = sched.getFlowOptions();
+			ExecutionOptions flowOptions = sched.getExecutionOptions();
 			
 			if(slaOptions != null) {
 				ret.put("slaEmails", slaOptions.getSlaEmails());
@@ -333,8 +318,7 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
 	private void ajaxRemoveSched(HttpServletRequest req, Map<String, Object> ret, User user) throws ServletException{
 		int projectId = getIntParam(req, "projectId");
 		String flowName = getParam(req, "flowName");
-		Pair<Integer, String> scheduleId = new Pair<Integer, String>(projectId, flowName);
-		Schedule sched = scheduleManager.getSchedule(scheduleId);
+		Schedule sched = scheduleManager.getSchedule(projectId, flowName);
 
 //		int projectId = sched.getProjectId();
 
@@ -352,98 +336,18 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
 			return;
 		}
 
-		scheduleManager.removeSchedule(scheduleId);
+		scheduleManager.removeSchedule(projectId, flowName);
 		logger.info("User '" + user.getUserId() + " has removed schedule " + sched.getScheduleName());
 		projectManager.postProjectEvent(project, EventType.SCHEDULE, user.getUserId(), "Schedule " + sched.toString() + " has been removed.");
 		
 		ret.put("status", "success");
-		ret.put("message", "flow " + scheduleId.getSecond() + " removed from Schedules.");
+		ret.put("message", "flow " + flowName + " removed from Schedules.");
 		return;
 	}
-	
-	private void ajaxScheduleFlow(HttpServletRequest req, Map<String, Object> ret, User user) throws ServletException {
+
+	private void ajaxScheduleFlow(HttpServletRequest req, HashMap<String, Object> ret, User user) throws ServletException {
 		String projectName = getParam(req, "projectName");
-		String flowName = getParam(req, "flowName");
-		int projectId = getIntParam(req, "projectId");
-		
-		Project project = projectManager.getProject(projectId);
-			
-		if (project == null) {
-			ret.put("message", "Project " + projectName + " does not exist");
-			ret.put("status", "error");
-			return;
-		}
-		
-		if (!hasPermission(project, user, Type.SCHEDULE)) {
-			ret.put("status", "error");
-			ret.put("message", "Permission denied. Cannot execute " + flowName);
-			return;
-		}
-
-		Flow flow = project.getFlow(flowName);
-		if (flow == null) {
-			ret.put("status", "error");
-			ret.put("message", "Flow " + flowName + " cannot be found in project " + project);
-			return;
-		}
-		
-		int hour = getIntParam(req, "hour");
-		int minutes = getIntParam(req, "minutes");
-		boolean isPm = getParam(req, "am_pm").equalsIgnoreCase("pm");
-		
-		DateTimeZone timezone = getParam(req,  "timezone").equals("UTC") ? DateTimeZone.UTC : DateTimeZone.forID("America/Los_Angeles");
-
-		String scheduledDate = req.getParameter("date");
-		DateTime day = null;
-		if(scheduledDate == null || scheduledDate.trim().length() == 0) {
-			day = new LocalDateTime().toDateTime();
-		} else {
-		    try {
-		    	day = DateTimeFormat.forPattern("MM/dd/yyyy").withZone(timezone).parseDateTime(scheduledDate);
-		    } catch(IllegalArgumentException e) {
-		      	ret.put("error", "Invalid date: '" + scheduledDate + "'");
-		      	return;
-		      }
-		}
-
-		ReadablePeriod thePeriod = null;
-		try {
-			if(hasParam(req, "is_recurring"))
-			    thePeriod = Schedule.parsePeriodString(getParam(req, "period")+getParam(req,"period_units"));	
-		}
-		catch(Exception e){
-			ret.put("error", e.getMessage());
-		}
-
-		if(isPm && hour < 12)
-		    hour += 12;
-		hour %= 24;
-
-		DateTime submitTime = new DateTime();
-		DateTime firstSchedTime = day.withHourOfDay(hour).withMinuteOfHour(minutes).withSecondOfMinute(0);
-		
-		Schedule sched = scheduleManager.getSchedule(new Pair<Integer, String>(projectId, flowName));
-		FlowOptions flowOptions = null;
-		SlaOptions slaOptions = null;
-		if(sched != null) {
-			if(sched.getFlowOptions() != null) {
-				flowOptions = sched.getFlowOptions();
-			}
-			if(sched.getSlaOptions() != null) {
-				slaOptions = sched.getSlaOptions();
-			}
-		}
-		Schedule schedule = scheduleManager.scheduleFlow(projectId, projectName, flowName, "ready", firstSchedTime.getMillis(), timezone, thePeriod, submitTime.getMillis(), firstSchedTime.getMillis(), firstSchedTime.getMillis(), user.getUserId(), flowOptions, slaOptions);
-		logger.info("User '" + user.getUserId() + "' has scheduled " + "[" + projectName + flowName +  " (" + projectId +")" + "].");
-		projectManager.postProjectEvent(project, EventType.SCHEDULE, user.getUserId(), "Schedule " + schedule.toString() + " has been added.");
-		
-		ret.put("status", "success");
-		ret.put("message", projectName + "." + flowName + " scheduled.");
-	}
-
-	private void ajaxAdvSchedule(HttpServletRequest req, HashMap<String, Object> ret, User user) throws ServletException {
-		String projectName = getParam(req, "projectName");
-		String flowName = getParam(req, "flowName");
+		String flowName = getParam(req, "flow");
 		int projectId = getIntParam(req, "projectId");
 		
 		Project project = projectManager.getProject(projectId);
@@ -488,10 +392,10 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
 			ret.put("error", e.getMessage());
 		}
 		
-		Schedule sched = scheduleManager.getSchedule(new Pair<Integer, String>(projectId, flowName));
-		FlowOptions flowOptions = null;
+		Schedule sched = scheduleManager.getSchedule(projectId, flowName);
+		ExecutionOptions flowOptions = null;
 		try {
-			flowOptions = parseFlowOptions(req);
+			flowOptions = HttpRequestUtils.parseFlowOptions(req);
 		}
 		catch (Exception e) {
 			ret.put("error", e.getMessage());
@@ -510,54 +414,6 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
 		ret.put("message", projectName + "." + flowName + " scheduled.");
 	}
 	
-	private FlowOptions parseFlowOptions(HttpServletRequest req) throws ServletException {
-		FlowOptions flowOptions = new FlowOptions();
-		if (hasParam(req, "failureAction")) {
-			String option = getParam(req, "failureAction");
-			if (option.equals("finishCurrent") ) {
-				flowOptions.setFailureAction(FailureAction.FINISH_CURRENTLY_RUNNING);
-			}
-			else if (option.equals("cancelImmediately")) {
-				flowOptions.setFailureAction(FailureAction.CANCEL_ALL);
-			}
-			else if (option.equals("finishPossible")) {
-				flowOptions.setFailureAction(FailureAction.FINISH_ALL_POSSIBLE);
-			}
-		}
-
-		if (hasParam(req, "failureEmails")) {
-			String emails = getParam(req, "failureEmails");
-			String[] emailSplit = emails.split("\\s*,\\s*|\\s*;\\s*|\\s+");
-			flowOptions.setFailureEmails(Arrays.asList(emailSplit));
-		}
-		if (hasParam(req, "successEmails")) {
-			String emails = getParam(req, "successEmails");
-			String[] emailSplit = emails.split("\\s*,\\s*|\\s*;\\s*|\\s+");
-			flowOptions.setSuccessEmails(Arrays.asList(emailSplit));
-		}
-		if (hasParam(req, "notifyFailureFirst")) {
-			flowOptions.setNotifyOnFirstFailure(Boolean.parseBoolean(getParam(req, "notifyFailureFirst")));
-		}
-		if (hasParam(req, "notifyFailureLast")) {
-			flowOptions.setNotifyOnLastFailure(Boolean.parseBoolean(getParam(req, "notifyFailureLast")));
-		}
-		if (hasParam(req, "executingJobOption")) {
-			//String option = getParam(req, "jobOption");
-			// Not set yet
-		}
-		
-		Map<String, String> flowParamGroup = this.getParamGroup(req, "flowOverride");
-		flowOptions.setFlowOverride(flowParamGroup);
-		
-		if (hasParam(req, "disabledJobs")) {
-			String disable = getParam(req, "disabledJobs");
-			String[] disableSplit = disable.split("\\s*,\\s*|\\s*;\\s*|\\s+");
-			List<String> jobs = (List<String>) Arrays.asList(disableSplit);
-			flowOptions.setDisabledJobs(jobs.subList(1, jobs.size()));
-		}
-		return flowOptions;
-	}
-
 	private DateTime parseDateTime(String scheduleDate, String scheduleTime) {
 		// scheduleTime: 12,00,pm,PDT
 		String[] parts = scheduleTime.split(",", -1);

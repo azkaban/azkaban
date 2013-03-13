@@ -43,9 +43,6 @@ public class ExecutableFlow {
 	private HashMap<String, ExecutableNode> executableNodes = new HashMap<String, ExecutableNode>();
 	private ArrayList<String> startNodes;
 	private ArrayList<String> endNodes;
-	
-	private ArrayList<String> failureEmails = new ArrayList<String>();
-	private ArrayList<String> successEmails = new ArrayList<String>();
 
 	private long submitTime = -1;
 	private long startTime = -1;
@@ -54,30 +51,14 @@ public class ExecutableFlow {
 
 	private Status flowStatus = Status.READY;
 	private String submitUser;
-	private boolean notifyOnFirstFailure = true;
-	private boolean notifyOnLastFailure = false;
-	
-	private Integer pipelineLevel = null;
-	private Integer pipelineExecId = null;
-	private Integer queueLevel = null;
-	private String concurrentOption = null;
-	private Map<String, String> flowParameters = new HashMap<String, String>();
 	
 	private HashSet<String> proxyUsers = new HashSet<String>();
-
-	public enum FailureAction {
-		FINISH_CURRENTLY_RUNNING,
-		CANCEL_ALL,
-		FINISH_ALL_POSSIBLE
-	}
-	
-	private FailureAction failureAction = FailureAction.FINISH_CURRENTLY_RUNNING;
+	private ExecutionOptions executionOptions;
 	
 	public ExecutableFlow(Flow flow) {
 		this.projectId = flow.getProjectId();
 		this.flowId = flow.getId();
 		this.version = flow.getVersion();
-
 		this.setFlow(flow);
 	}
 	
@@ -113,14 +94,6 @@ public class ExecutableFlow {
 		return flowProps.values();
 	}
 	
-	public void addFlowParameters(Map<String, String> param) {
-		flowParameters.putAll(param);
-	}
-	
-	public Map<String, String> getFlowParameters() {
-		return flowParameters;
-	}
-	
 	public void setProxyUsers(HashSet<String> proxyUsers) {
 		this.proxyUsers = proxyUsers;
 	}
@@ -129,7 +102,17 @@ public class ExecutableFlow {
 		return this.proxyUsers;
 	}
 	
+	public void setExecutionOptions(ExecutionOptions options) {
+		executionOptions = options;
+	}
+	
+	public ExecutionOptions getExecutionOptions() {
+		return executionOptions;
+	}
+	
 	private void setFlow(Flow flow) {
+		executionOptions = new ExecutionOptions();
+		
 		for (Node node: flow.getNodes()) {
 			String id = node.getId();
 			ExecutableNode exNode = new ExecutableNode(node, this);
@@ -145,10 +128,10 @@ public class ExecutableFlow {
 		}
 		
 		if (flow.getSuccessEmails() != null) {
-			successEmails = new ArrayList<String>(flow.getSuccessEmails());
+			executionOptions.setSuccessEmails(flow.getSuccessEmails());
 		}
 		if (flow.getFailureEmails() != null) {
-			failureEmails = new ArrayList<String>(flow.getFailureEmails());
+			executionOptions.setFailureEmails(flow.getFailureEmails());
 		}
 		flowProps.putAll(flow.getAllFlowProps());
 	}
@@ -265,22 +248,6 @@ public class ExecutableFlow {
 		this.flowStatus = flowStatus;
 	}
 	
-	public void setFailureEmails(List<String> emails) {
-		this.failureEmails = emails == null ? new ArrayList<String>() : new ArrayList<String>(emails);
-	}
-	
-	public List<String> getFailureEmails() {
-		return this.failureEmails;
-	}
-	
-	public void setSuccessEmails(List<String> emails) {
-		this.successEmails = emails == null ? new ArrayList<String>() : new ArrayList<String>(emails);
-	}
-	
-	public List<String> getSuccessEmails() {
-		return this.successEmails;
-	}
-	
 	public Map<String,Object> toObject() {
 		HashMap<String, Object> flowObj = new HashMap<String, Object>();
 		flowObj.put("type", "executableflow");
@@ -293,17 +260,10 @@ public class ExecutableFlow {
 		flowObj.put("endTime", endTime);
 		flowObj.put("status", flowStatus.toString());
 		flowObj.put("submitUser", submitUser);
-		flowObj.put("flowParameters", this.flowParameters);
-		flowObj.put("notifyOnFirstFailure", this.notifyOnFirstFailure);
-		flowObj.put("notifyOnLastFailure", this.notifyOnLastFailure);
-		flowObj.put("successEmails", successEmails);
-		flowObj.put("failureEmails", failureEmails);
-		flowObj.put("failureAction", failureAction.toString());
-		flowObj.put("pipelineLevel", pipelineLevel);
-		flowObj.put("pipelineExecId", pipelineExecId);
-		flowObj.put("queueLevel", queueLevel);
 		flowObj.put("version", version);
-		flowObj.put("concurrentOption", concurrentOption);
+		
+		flowObj.put("executionOptions", this.executionOptions.toObject());
+		flowObj.put("version", version);
 		
 		ArrayList<Object> props = new ArrayList<Object>();
 		for (FlowProps fprop: flowProps.values()) {
@@ -332,14 +292,6 @@ public class ExecutableFlow {
 		return flowObj;
 	}
 
-	public void setFailureAction(FailureAction action) {
-		failureAction = action;
-	}
-	
-	public FailureAction getFailureAction() {
-		return failureAction;
-	}
-	
 	public Object toUpdateObject(long lastUpdateTime) {
 		Map<String, Object> updateData = new HashMap<String,Object>();
 		updateData.put("execId", this.executionId);
@@ -424,28 +376,14 @@ public class ExecutableFlow {
 		exFlow.flowStatus = Status.valueOf((String)flowObj.get("status"));
 		exFlow.submitUser = (String)flowObj.get("submitUser");
 		exFlow.version = (Integer)flowObj.get("version");
-
-		if (flowObj.containsKey("flowParameters")) {
-			exFlow.flowParameters = new HashMap<String, String>((Map<String,String>)flowObj.get("flowParameters"));
-		}
-		// Failure notification
-		if (flowObj.containsKey("notifyOnFirstFailure")) {
-			exFlow.notifyOnFirstFailure = (Boolean)flowObj.get("notifyOnFirstFailure");
-		}
-		if (flowObj.containsKey("notifyOnLastFailure")) {
-			exFlow.notifyOnLastFailure = (Boolean)flowObj.get("notifyOnLastFailure");
-		}
-		if (flowObj.containsKey("concurrentOption")) {
-			exFlow.concurrentOption = (String)flowObj.get("concurrentOption");
-		}
 		
-		// Failure action
-		if (flowObj.containsKey("failureAction")) {
-			exFlow.failureAction = FailureAction.valueOf((String)flowObj.get("failureAction"));
+		if (flowObj.containsKey("executionOptions")) {
+			exFlow.executionOptions = ExecutionOptions.createFromObject(flowObj.get("executionOptions"));
 		}
-		exFlow.pipelineLevel = (Integer)flowObj.get("pipelineLevel");
-		exFlow.pipelineExecId = (Integer)flowObj.get("pipelineExecId");
-		exFlow.queueLevel = (Integer)flowObj.get("queueLevel");
+		else {
+			// for backawards compatibility should remove in a few versions.
+			exFlow.executionOptions = ExecutionOptions.createFromObject(flowObj);
+		}
 		
 		// Copy nodes
 		List<Object> nodes = (List<Object>)flowObj.get("nodes");
@@ -463,11 +401,6 @@ public class ExecutableFlow {
 			FlowProps flowProps = new FlowProps(inheritedSource, source);
 			exFlow.flowProps.put(source, flowProps);
 		}
-		
-		// Success emails
-		exFlow.setSuccessEmails((List<String>)flowObj.get("successEmails"));
-		// Failure emails
-		exFlow.setFailureEmails((List<String>)flowObj.get("failureEmails"));
 		
 		if(flowObj.containsKey("proxyUsers")) {
 			ArrayList<String> proxyUserList = (ArrayList<String>) flowObj.get("proxyUsers");
@@ -518,30 +451,6 @@ public class ExecutableFlow {
 	public void setSubmitUser(String submitUser) {
 		this.submitUser = submitUser;
 	}
-
-	public void setPipelineLevel(Integer level) {
-		pipelineLevel = level;
-	}
-	
-	public void setPipelineExecutionId(Integer execId) {
-		pipelineExecId = execId;
-	}
-	
-	public void setNotifyOnFirstFailure(boolean notify) {
-		this.notifyOnFirstFailure = notify;
-	}
-	
-	public void setNotifyOnLastFailure(boolean notify) {
-		this.notifyOnLastFailure = notify;
-	}
-	
-	public boolean getNotifyOnFirstFailure() {
-		return this.notifyOnFirstFailure;
-	}
-	
-	public boolean getNotifyOnLastFailure() {
-		return this.notifyOnLastFailure;
-	}
 	
 	public int getVersion() {
 		return version;
@@ -549,29 +458,5 @@ public class ExecutableFlow {
 
 	public void setVersion(int version) {
 		this.version = version;
-	}
-	
-	public Integer getPipelineLevel() {
-		return pipelineLevel;
-	}
-	
-	public Integer getPipelineExecutionId() {
-		return pipelineExecId;
-	}
-	
-	public Integer getQueueLevel() {
-		return queueLevel;
-	}
-	
-	public void setQueueLevel(int queue) {
-		queueLevel = queue;
-	}
-	
-	public String getConcurrentOption() {
-		return this.concurrentOption;
-	}
-	
-	public void setConcurrentOption(String concurrentOption) {
-		this.concurrentOption = concurrentOption;
 	}
 }

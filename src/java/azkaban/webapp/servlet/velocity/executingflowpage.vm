@@ -41,7 +41,7 @@
 			var timezone = "${timezone}";
 			var errorMessage = null;
 			var successMessage = null;;
-			
+			var projectId = "${projectId}";
 			var projectName = "${projectName}";
 			var flowId = "${flowid}";
 			var execId = "${execid}";
@@ -50,6 +50,8 @@
 	</head>
 	<body>
 #set($current_page="all")
+#set($show_schedule="false")
+
 #parse( "azkaban/webapp/servlet/velocity/nav.vm" )
 		<div class="messaging"><p id="messageClose">X</p><p id="message"></p></div>  
 		<div class="content">

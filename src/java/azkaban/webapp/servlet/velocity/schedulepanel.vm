@@ -1,4 +1,3 @@
-
 <script type="text/javascript" src="${context}/js/azkaban.date.utils.js"></script>  
 <script type="text/javascript" src="${context}/js/azkaban.schedule.panel.view.js"></script>
 
@@ -12,24 +11,24 @@
 				<dl>
 					<dt>Schedule Time</dt>
 					<dd>
-						<input id="advhour" type="text" size="2" value="12"/>
-						<input id="advminutes" type="text" size="2" value="00"/>
-						<select id="advam_pm">
+						<input id="hour" type="text" size="2" value="12"/>
+						<input id="minutes" type="text" size="2" value="00"/>
+						<select id="am_pm">
 						  <option>pm</option>
 						  <option>am</option>
 						</select>
-						<select id="advtimezone">
+						<select id="timezone">
 						  <option>PDT</option>
 						  <option>UTC</option>
 						</select>
 					</dd>
-					<dt>Schedule Date</dt><dd><input type="text" id="advdatepicker" /></dd>
+					<dt>Schedule Date</dt><dd><input type="text" id="datepicker" /></dd>
 					<dt>Recurrence</dt>
 					<dd>
-						<input id="advis_recurring" type="checkbox" checked  />
+						<input id="is_recurring" type="checkbox" checked  />
 						<span>repeat every</span>
-					 	<input id="advperiod" type="text" size="2" value="1"/>
-						<select id="advperiod_units">
+					 	<input id="period" type="text" size="2" value="1"/>
+						<select id="period_units">
 						  <option value="d">Days</option>
 						  <option value="h">Hours</option>
 						  <option value="m">Minutes</option>

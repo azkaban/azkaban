@@ -18,7 +18,6 @@ package azkaban.webapp.servlet;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -102,7 +101,7 @@ public abstract class AbstractAzkabanServlet extends HttpServlet {
 	 * @return
 	 */
 	public boolean hasParam(HttpServletRequest request, String param) {
-		return request.getParameter(param) != null;
+		return HttpRequestUtils.hasParam(request, param);
 	}
 
 	/**
@@ -115,13 +114,7 @@ public abstract class AbstractAzkabanServlet extends HttpServlet {
 	 * @throws ServletException
 	 */
 	public String getParam(HttpServletRequest request, String name) throws ServletException {
-		String p = request.getParameter(name);
-		if (p == null) {
-			throw new ServletException("Missing required parameter '" + name + "'.");
-		}
-		else {
-			return p;
-		}
+		return HttpRequestUtils.getParam(request, name);
 	}
 
 	/**
@@ -134,11 +127,7 @@ public abstract class AbstractAzkabanServlet extends HttpServlet {
 	 * @return
 	 */
 	public String getParam(HttpServletRequest request, String name, String defaultVal){
-		String p = request.getParameter(name);
-		if (p == null) {
-			return defaultVal;
-		}
-		return p;
+		return HttpRequestUtils.getParam(request, name, defaultVal);
 	}
 
 	
@@ -152,54 +141,24 @@ public abstract class AbstractAzkabanServlet extends HttpServlet {
 	 * @throws ServletException
 	 */
 	public int getIntParam(HttpServletRequest request, String name) throws ServletException {
-		String p = getParam(request, name);
-		return Integer.parseInt(p);
+		return HttpRequestUtils.getIntParam(request, name);
 	}
 	
 	public int getIntParam(HttpServletRequest request, String name, int defaultVal) {
-		if (hasParam(request, name)) {
-			try {
-				return getIntParam(request, name);
-			} catch (Exception e) {
-				return defaultVal;
-			}
-		}
-		
-		return defaultVal;
+		return HttpRequestUtils.getIntParam(request, name, defaultVal);
 	}
 
 	public long getLongParam(HttpServletRequest request, String name) throws ServletException {
-		String p = getParam(request, name);
-		return Long.valueOf(p);
+		return HttpRequestUtils.getLongParam(request, name);
 	}
 	
 	public long getLongParam(HttpServletRequest request, String name, long defaultVal) {
-		if (hasParam(request, name)) {
-			try {
-				return getLongParam(request, name);
-			} catch (Exception e) {
-				return defaultVal;
-			}
-		}
-		
-		return defaultVal;
+		return HttpRequestUtils.getLongParam(request, name, defaultVal);
 	}
 
 	
 	public Map<String, String> getParamGroup(HttpServletRequest request, String groupName)  throws ServletException {
-		@SuppressWarnings("unchecked")
-		Enumeration<Object> enumerate = (Enumeration<Object>)request.getParameterNames();
-		String matchString = groupName + "[";
-
-		HashMap<String, String> groupParam = new HashMap<String, String>();
-		while( enumerate.hasMoreElements() ) {
-			String str = (String)enumerate.nextElement();
-			if (str.startsWith(matchString)) {
-				groupParam.put(str.substring(matchString.length(), str.length() - 1), request.getParameter(str));
-			}
-			
-		}
-		return groupParam;
+		return HttpRequestUtils.getParamGroup(request, groupName);
 	}
 	
 	/**

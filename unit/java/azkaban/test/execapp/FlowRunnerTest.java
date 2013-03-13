@@ -16,7 +16,7 @@ import azkaban.execapp.event.Event;
 import azkaban.execapp.event.Event.Type;
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutableNode;
-import azkaban.executor.ExecutableFlow.FailureAction;
+import azkaban.executor.ExecutionOptions.FailureAction;
 import azkaban.executor.ExecutorLoader;
 import azkaban.executor.Status;
 
@@ -79,7 +79,6 @@ public class FlowRunnerTest {
 		testStatus(exFlow, "job6", Status.SUCCEEDED);
 		testStatus(exFlow, "job7", Status.SUCCEEDED);
 		testStatus(exFlow, "job8", Status.SUCCEEDED);
-		testStatus(exFlow, "job9", Status.SUCCEEDED);
 		testStatus(exFlow, "job10", Status.SUCCEEDED);
 		
 		try {
@@ -125,7 +124,6 @@ public class FlowRunnerTest {
 		testStatus(exFlow, "job6", Status.SKIPPED);
 		testStatus(exFlow, "job7", Status.SUCCEEDED);
 		testStatus(exFlow, "job8", Status.SUCCEEDED);
-		testStatus(exFlow, "job9", Status.SUCCEEDED);
 		testStatus(exFlow, "job10", Status.SKIPPED);
 		
 		try {
@@ -181,7 +179,8 @@ public class FlowRunnerTest {
 		eventCollector.setEventFilterOut(Event.Type.JOB_FINISHED, Event.Type.JOB_STARTED, Event.Type.JOB_STATUS_CHANGED);
 		File testDir = new File("unit/executions/exectest1");
 		ExecutableFlow flow = prepareExecDir(testDir, "exec2", 1);
-		flow.setFailureAction(FailureAction.CANCEL_ALL);
+		flow.getExecutionOptions().setFailureAction(FailureAction.CANCEL_ALL);
+		
 		
 		FlowRunner runner = createFlowRunner(flow, loader, eventCollector);
 		
@@ -220,8 +219,7 @@ public class FlowRunnerTest {
 		eventCollector.setEventFilterOut(Event.Type.JOB_FINISHED, Event.Type.JOB_STARTED, Event.Type.JOB_STATUS_CHANGED);
 		File testDir = new File("unit/executions/exectest1");
 		ExecutableFlow flow = prepareExecDir(testDir, "exec3", 1);
-		flow.setFailureAction(FailureAction.FINISH_ALL_POSSIBLE);
-		
+		flow.getExecutionOptions().setFailureAction(FailureAction.FINISH_ALL_POSSIBLE);
 		FlowRunner runner = createFlowRunner(flow, loader, eventCollector);
 		
 		runner.run();
@@ -288,7 +286,6 @@ public class FlowRunnerTest {
 		testStatus(exFlow, "job5", Status.KILLED);
 		testStatus(exFlow, "job7", Status.KILLED);
 		testStatus(exFlow, "job8", Status.KILLED);
-		testStatus(exFlow, "job9", Status.KILLED);
 		testStatus(exFlow, "job10", Status.KILLED);
 		testStatus(exFlow, "job3", Status.FAILED);
 		testStatus(exFlow, "job4", Status.FAILED);

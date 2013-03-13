@@ -42,6 +42,7 @@ import azkaban.execapp.event.FlowWatcher;
 import azkaban.execapp.event.LocalFlowWatcher;
 import azkaban.execapp.event.RemoteFlowWatcher;
 import azkaban.executor.ExecutableFlow;
+import azkaban.executor.ExecutionOptions;
 import azkaban.executor.ExecutorLoader;
 import azkaban.executor.ExecutorManagerException;
 import azkaban.jobtype.JobTypeManager;
@@ -368,8 +369,9 @@ public class FlowRunnerManager implements EventListener {
 		
 		// Setup flow runner
 		FlowWatcher watcher = null;
-		if (flow.getPipelineExecutionId() != null) {
-			Integer pipelineExecId = flow.getPipelineExecutionId();
+		ExecutionOptions options = flow.getExecutionOptions();
+		if (options.getPipelineExecutionId() != null) {
+			Integer pipelineExecId = options.getPipelineExecutionId();
 			FlowRunner runner = runningFlows.get(pipelineExecId);
 			
 			if (runner != null) {

@@ -26,13 +26,11 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-
-import azkaban.executor.ExecutableFlow.FailureAction;
-import azkaban.scheduler.Schedule.FlowOptions;
-import azkaban.scheduler.Schedule.SlaOptions;
+import azkaban.executor.ExecutionOptions;
 import azkaban.sla.SLA.SlaAction;
 import azkaban.sla.SLA.SlaRule;
 import azkaban.sla.SLA.SlaSetting;
+import azkaban.sla.SlaOptions;
 import azkaban.utils.DataSourceUtils;
 import azkaban.utils.Props;
 
@@ -131,7 +129,7 @@ public class JdbcScheduleLoaderTest {
 		set1.setDuration(Schedule.parsePeriodString("1h"));
 		set1.setRule(SlaRule.FINISH);
 		slaSets.add(set1);
-		FlowOptions flowOptions = new FlowOptions();
+		ExecutionOptions flowOptions = new ExecutionOptions();
 		flowOptions.setFailureEmails(emails);
 		flowOptions.setDisabledJobs(disabledJobs);
 		SlaOptions slaOptions = new SlaOptions();
@@ -159,7 +157,7 @@ public class JdbcScheduleLoaderTest {
 		Assert.assertEquals("America/Los_Angeles", sched.getTimezone().getID());
 		Assert.assertEquals(44444, sched.getSubmitTime());
 		Assert.assertEquals("1d", Schedule.createPeriodString(sched.getPeriod()));
-		FlowOptions fOpt = sched.getFlowOptions();
+		ExecutionOptions fOpt = sched.getExecutionOptions();
 		SlaOptions sOpt = sched.getSlaOptions();
 		Assert.assertEquals(SlaAction.EMAIL, sOpt.getSettings().get(0).getActions().get(0));
 		Assert.assertEquals("", sOpt.getSettings().get(0).getId());
@@ -168,8 +166,8 @@ public class JdbcScheduleLoaderTest {
 		Assert.assertEquals(2, fOpt.getFailureEmails().size());
 		Assert.assertEquals(null, fOpt.getSuccessEmails());
 		Assert.assertEquals(2, fOpt.getDisabledJobs().size());
-		Assert.assertEquals(FailureAction.FINISH_CURRENTLY_RUNNING, fOpt.getFailureAction());
-		Assert.assertEquals(null, fOpt.getFlowOverride());
+		Assert.assertEquals(ExecutionOptions.FailureAction.FINISH_CURRENTLY_RUNNING, fOpt.getFailureAction());
+		Assert.assertEquals(null, fOpt.getFlowParameters());
 	}
 	
 	@Test
@@ -196,7 +194,7 @@ public class JdbcScheduleLoaderTest {
 		set1.setDuration(Schedule.parsePeriodString("1h"));
 		set1.setRule(SlaRule.FINISH);
 		slaSets.add(set1);
-		FlowOptions flowOptions = new FlowOptions();
+		ExecutionOptions flowOptions = new ExecutionOptions();
 		flowOptions.setFailureEmails(emails);
 		flowOptions.setDisabledJobs(disabledJobs);
 		SlaOptions slaOptions = new SlaOptions();
@@ -257,7 +255,7 @@ public class JdbcScheduleLoaderTest {
 			set1.setDuration(Schedule.parsePeriodString("1h"));
 			set1.setRule(SlaRule.FINISH);
 			slaSets.add(set1);
-			FlowOptions flowOptions = new FlowOptions();
+			ExecutionOptions flowOptions = new ExecutionOptions();
 			flowOptions.setFailureEmails(emails);
 			flowOptions.setDisabledJobs(disabledJobs);
 			SlaOptions slaOptions = new SlaOptions();

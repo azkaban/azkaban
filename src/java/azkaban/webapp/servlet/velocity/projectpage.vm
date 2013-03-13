@@ -38,6 +38,8 @@
 			var errorMessage = null;
 			var successMessage = null;
 
+			var projectId = ${project.id};
+
 			var execAccess = ${exec};
 			var projectName = "$project.name";
 		</script>

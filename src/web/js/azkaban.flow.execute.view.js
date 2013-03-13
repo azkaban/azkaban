@@ -34,6 +34,62 @@ azkaban.FlowExecuteDialogView= Backbone.View.extend({
   },
   render: function() {
   },
+  getExecutionOptionData: function() {
+	var failureAction = $('#failureAction').val();
+	var failureEmails = $('#failureEmails').val();
+	var successEmails = $('#successEmails').val();
+	var notifyFailureFirst = $('#notifyFailureFirst').is(':checked');
+	var notifyFailureLast = $('#notifyFailureLast').is(':checked');
+
+	var flowOverride = {};
+	var editRows = $(".editRow");
+	for (var i = 0; i < editRows.length; ++i) {
+		var row = editRows[i];
+		var td = $(row).find('td');
+		var key = $(td[0]).text();
+		var val = $(td[1]).text();
+		
+		if (key && key.length > 0) {
+			flowOverride[key] = val;
+		}
+	}
+	
+	var disabled = "";
+	var disabledMap = this.model.get('disabled');
+	for (var dis in disabledMap) {
+		if (disabledMap[dis]) {
+			disabled += dis + ",";
+		}
+	}
+	
+	var executingData = {
+		projectId: projectId,
+		project: this.projectName,
+		ajax: "executeFlow",
+		flow: this.flowId,
+		disabled: disabled,
+		failureAction: failureAction,
+		failureEmails: failureEmails,
+		successEmails: successEmails,
+		notifyFailureFirst: notifyFailureFirst,
+		notifyFailureLast: notifyFailureLast,
+		flowOverride: flowOverride
+	};
+	
+	// Set concurrency option, default is skip
+
+	var concurrentOption = $('input[name=concurrent]:checked').val();
+	executingData.concurrentOption = concurrentOption;
+	if (concurrentOption == "pipeline") {
+		var pipelineLevel = $("#pipelineLevel").val();
+		executingData.pipelineLevel = pipelineLevel;
+	}
+	else if (concurrentOption == "queue") {
+		executingData.queueLevel = $("#queueLevel").val();
+	}
+	
+	return executingData;
+  },
   changeFlowInfo: function() {
   	var successEmails = this.model.get("successEmails");
   	var failureEmails = this.model.get("failureEmails");
@@ -176,58 +232,7 @@ azkaban.FlowExecuteDialogView= Backbone.View.extend({
   },
   handleExecuteFlow: function(evt) {
   	  	var executeURL = contextURL + "/executor";
-	  	var failureAction = $('#failureAction').val();
-	  	var failureEmails = $('#failureEmails').val();
-	  	var successEmails = $('#successEmails').val();
-	  	var notifyFailureFirst = $('#notifyFailureFirst').is(':checked');
-	  	var notifyFailureLast = $('#notifyFailureLast').is(':checked');
-
-	  	var flowOverride = {};
-	  	var editRows = $(".editRow");
-		for (var i = 0; i < editRows.length; ++i) {
-			var row = editRows[i];
-			var td = $(row).find('td');
-			var key = $(td[0]).text();
-			var val = $(td[1]).text();
-			
-			if (key && key.length > 0) {
-				flowOverride[key] = val;
-			}
-		}
-	  	
-	  	var disabled = "";
-	  	var disabledMap = this.model.get('disabled');
-	  	for (var dis in disabledMap) {
-	  		if (disabledMap[dis]) {
-	  			disabled += dis + ",";
-	  		}
-	  	}
-	  	
-	  	var executingData = {
-	  		project: this.projectName,
-	  		ajax: "executeFlow",
-	  		flow: this.flowId,
-	  		disabled: disabled,
-	  		failureAction: failureAction,
-	  		failureEmails: failureEmails,
-	  		successEmails: successEmails,
-	  		notifyFailureFirst: notifyFailureFirst,
-	  		notifyFailureLast: notifyFailureLast,
-	  		flowOverride: flowOverride
-	  	};
-	  	
-	    // Set concurrency option, default is skip
-
-	  	var concurrentOption = $('input[name=concurrent]:checked').val();
-		executingData.concurrentOption = concurrentOption;
-	  	if (concurrentOption == "pipeline") {
-	  		var pipelineLevel = $("#pipelineLevel").val();
-	  		executingData.pipelineLevel = pipelineLevel;
-	  	}
-	  	else if (concurrentOption == "queue") {
-	  		executingData.queueLevel = $("#queueLevel").val();
-	  	}
-	  	
+		var executingData = this.getExecutionOptionData();
 		executeFlow(executingData);
   }
 });

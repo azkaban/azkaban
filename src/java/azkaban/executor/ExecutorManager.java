@@ -299,16 +299,24 @@ public class ExecutorManager {
 			
 			List<Integer> running = getRunningFlows(projectId, flowId);
 
+			ExecutionOptions options = exflow.getExecutionOptions();
+			
+			// Disable jobs
+			for(String disabledId : options.getDisabledJobs()) {
+				ExecutableNode node = exflow.getExecutableNode(disabledId);
+				node.setStatus(Status.DISABLED);
+			}
+			
 			String message = "";
 			if (!running.isEmpty()) {
-				if (exflow.getConcurrentOption().equals("pipeline")) {
+				if (options.getConcurrentOption().equals("pipeline")) {
 					Collections.sort(running);
 					Integer runningExecId = running.get(running.size() - 1);
 					
-					exflow.setPipelineExecutionId(runningExecId);
-					message = "Flow " + flowId + " is already running with exec id " + runningExecId +". Pipelining level " + exflow.getPipelineLevel() + ". ";
+					options.setPipelineExecutionId(runningExecId);
+					message = "Flow " + flowId + " is already running with exec id " + runningExecId +". Pipelining level " + options.getPipelineLevel() + ". ";
 				}
-				else if (exflow.getConcurrentOption().equals("skip")) {
+				else if (options.getConcurrentOption().equals("skip")) {
 					throw new ExecutorManagerException("Flow " + flowId + " is already running. Skipping execution.");
 				}
 				else {
@@ -582,10 +590,11 @@ public class ExecutorManager {
 		// TODO append to the flow log that we forced killed this flow because the target no longer had
 		// the reference.
 		
+		ExecutionOptions options = flow.getExecutionOptions();
 		// But we can definitely email them.
 		if(flow.getStatus() == Status.FAILED || flow.getStatus() == Status.KILLED)
 		{
-			if(flow.getFailureEmails() != null && !flow.getFailureEmails().isEmpty())
+			if(options.getFailureEmails() != null && !options.getFailureEmails().isEmpty())
 			{
 				try {
 					mailer.sendErrorEmail(flow, "Executor no longer seems to be running this execution. Most likely due to executor bounce.");
@@ -596,7 +605,7 @@ public class ExecutorManager {
 		}
 		else
 		{
-			if(flow.getSuccessEmails() != null && !flow.getSuccessEmails().isEmpty())
+			if(options.getSuccessEmails() != null && !options.getSuccessEmails().isEmpty())
 			{
 				try {
 					mailer.sendSuccessEmail(flow);
@@ -681,9 +690,10 @@ public class ExecutorManager {
 		flow.applyUpdateObject(updateData);
 		Status newStatus = flow.getStatus();
 		
+		ExecutionOptions options = flow.getExecutionOptions();
 		if (oldStatus != newStatus && newStatus.equals(Status.FAILED_FINISHING)) {
 			// We want to see if we should give an email status on first failure.
-			if (flow.getNotifyOnFirstFailure()) {
+			if (options.getNotifyOnFirstFailure()) {
 				mailer.sendFirstErrorMessage(flow);
 			}
 		}

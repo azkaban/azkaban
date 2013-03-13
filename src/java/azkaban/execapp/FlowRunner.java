@@ -28,8 +28,9 @@ import azkaban.execapp.event.EventHandler;
 import azkaban.execapp.event.EventListener;
 import azkaban.execapp.event.FlowWatcher;
 import azkaban.executor.ExecutableFlow;
-import azkaban.executor.ExecutableFlow.FailureAction;
 import azkaban.executor.ExecutableNode;
+import azkaban.executor.ExecutionOptions;
+import azkaban.executor.ExecutionOptions.FailureAction;
 import azkaban.executor.ExecutorLoader;
 import azkaban.executor.ExecutorManagerException;
 import azkaban.executor.Status;
@@ -105,8 +106,9 @@ public class FlowRunner extends EventHandler implements Runnable {
 		this.execDir = new File(flow.getExecutionPath());
 		this.jobtypeManager = jobtypeManager;
 
-		this.pipelineLevel = flow.getPipelineLevel();
-		this.pipelineExecId = flow.getPipelineExecutionId();
+		ExecutionOptions options = flow.getExecutionOptions();
+		this.pipelineLevel = options.getPipelineLevel();
+		this.pipelineExecId = options.getPipelineExecutionId();
 
 		this.proxyUsers = flow.getProxyUsers();
 	}
@@ -344,8 +346,9 @@ public class FlowRunner extends EventHandler implements Runnable {
 		Props parentProps = propsSource == null ? globalProps : sharedProps.get(propsSource);
 
 		// Set up overrides
+		ExecutionOptions options = flow.getExecutionOptions();
 		@SuppressWarnings("unchecked")
-		Props flowProps = new Props(null, flow.getFlowParameters()); 
+		Props flowProps = new Props(null, options.getFlowParameters()); 
 		
 		if (flowProps.size() > 0) {
 			flowProps.setParent(parentProps);
@@ -699,7 +702,8 @@ public class FlowRunner extends EventHandler implements Runnable {
 			}
 		}
 		
-		if (shouldKill || flowCancelled || (flowFailed && flow.getFailureAction() != FailureAction.FINISH_ALL_POSSIBLE)) {
+		ExecutionOptions options = flow.getExecutionOptions();
+		if (shouldKill || flowCancelled || (flowFailed && options.getFailureAction() != FailureAction.FINISH_ALL_POSSIBLE)) {
 			return Status.KILLED;
 		}
 		
@@ -793,7 +797,8 @@ public class FlowRunner extends EventHandler implements Runnable {
 						flowFailed = true;
 						if (!isFailedStatus(flow.getStatus())) {
 							flow.setStatus(Status.FAILED_FINISHING);
-							if (flow.getFailureAction() == FailureAction.CANCEL_ALL) {
+							ExecutionOptions options = flow.getExecutionOptions();
+							if (options.getFailureAction() == FailureAction.CANCEL_ALL) {
 								cancel("azkaban");
 							}
 						}

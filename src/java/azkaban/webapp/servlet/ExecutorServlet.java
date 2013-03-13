@@ -18,22 +18,19 @@ package azkaban.webapp.servlet;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.apache.commons.lang.StringUtils;
-
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutableNode;
-import azkaban.executor.ExecutableFlow.FailureAction;
+import azkaban.executor.ExecutionOptions;
+import azkaban.executor.ExecutionOptions.FailureAction;
 import azkaban.executor.ExecutorManager;
 import azkaban.executor.ExecutorManagerException;
 import azkaban.executor.Status;
@@ -158,6 +155,7 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 			return;
 		}
 		
+		page.add("projectId", project.getId());
 		page.add("projectName", project.getName());
 		page.add("flowid", flow.getFlowId());
 		
@@ -485,11 +483,13 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 			return;
 		}
 		
-		ret.put("successEmails", exflow.getSuccessEmails());
-		ret.put("failureEmails", exflow.getFailureEmails());
-		ret.put("flowParam", exflow.getFlowParameters());
+		ExecutionOptions options = exflow.getExecutionOptions();
 		
-		FailureAction action = exflow.getFailureAction();
+		ret.put("successEmails", options.getSuccessEmails());
+		ret.put("failureEmails", options.getFailureEmails());
+		ret.put("flowParam", options.getFlowParameters());
+		
+		FailureAction action = options.getFailureAction();
 		String failureAction = null;
 		switch (action) {
 			case FINISH_CURRENTLY_RUNNING:
@@ -504,21 +504,23 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 		}
 		ret.put("failureAction", failureAction);
 		
-		ret.put("notifyFailureFirst", exflow.getNotifyOnFirstFailure());
-		ret.put("notifyFailureLast", exflow.getNotifyOnLastFailure());
+		ret.put("notifyFailureFirst", options.getNotifyOnFirstFailure());
+		ret.put("notifyFailureLast", options.getNotifyOnLastFailure());
 		
-		ret.put("concurrentOptions", exflow.getConcurrentOption());
-		ret.put("pipelineLevel", exflow.getPipelineLevel());
-		ret.put("pipelineExecution", exflow.getPipelineExecutionId());
-		ret.put("queueLevel", exflow.getQueueLevel());
+		ret.put("concurrentOptions", options.getConcurrentOption());
+		ret.put("pipelineLevel", options.getPipelineLevel());
+		ret.put("pipelineExecution", options.getPipelineExecutionId());
+		ret.put("queueLevel", options.getQueueLevel());
 		
 		HashMap<String, String> nodeStatus = new HashMap<String,String>();
 		for(ExecutableNode node : exflow.getExecutableNodes()) {
 			nodeStatus.put(node.getJobId(), node.getStatus().toString());
 		}
 		ret.put("nodeStatus", nodeStatus);
+		ret.put("disabled", options.getDisabledJobs());
 		
-		Schedule sflow = null;
+		Schedule sflow = scheduleManager.getSchedule(project.getId(), exflow.getFlowId());
+		
 		for (Schedule sched: scheduleManager.getSchedules()) {
 			if (sched.getProjectId() == project.getId() && sched.getFlowName().equals(exflow.getFlowId())) {
 				sflow = sched;
@@ -715,85 +717,8 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 		exflow.setSubmitUser(user.getUserId());
 		exflow.setProxyUsers(project.getProxyUsers());
 
-		if (hasParam(req, "failureAction")) {
-			String option = getParam(req, "failureAction");
-			if (option.equals("finishCurrent") ) {
-				exflow.setFailureAction(FailureAction.FINISH_CURRENTLY_RUNNING);
-			}
-			else if (option.equals("cancelImmediately")) {
-				exflow.setFailureAction(FailureAction.CANCEL_ALL);
-			}
-			else if (option.equals("finishPossible")) {
-				exflow.setFailureAction(FailureAction.FINISH_ALL_POSSIBLE);
-			}
-		}
-
-		String concurrentOption = "skip";
-		if (hasParam(req, "failureEmails")) {
-			String emails = getParam(req, "failureEmails");
-			String[] emailSplit = emails.split("\\s*,\\s*|\\s*;\\s*|\\s+");
-			exflow.setFailureEmails(Arrays.asList(emailSplit));
-		}
-		if (hasParam(req, "successEmails")) {
-			String emails = getParam(req, "successEmails");
-			String[] emailSplit = emails.split("\\s*,\\s*|\\s*;\\s*|\\s+");
-			exflow.setSuccessEmails(Arrays.asList(emailSplit));
-		}
-		if (hasParam(req, "notifyFailureFirst")) {
-			exflow.setNotifyOnFirstFailure(Boolean.parseBoolean(getParam(req, "notifyFailureFirst")));
-		}
-		if (hasParam(req, "notifyFailureLast")) {
-			exflow.setNotifyOnLastFailure(Boolean.parseBoolean(getParam(req, "notifyFailureLast")));
-		}
-		if (hasParam(req, "concurrentOption")) {
-			concurrentOption = getParam(req, "concurrentOption");
-			exflow.setConcurrentOption(concurrentOption);
-			if (concurrentOption.equals("pipeline")) {
-				int pipelineLevel = getIntParam(req, "pipelineLevel");
-				exflow.setPipelineLevel(pipelineLevel);
-			}
-			else if (concurrentOption.equals("queue")) {
-				// Not yet implemented
-				int queueLevel = getIntParam(req, "queueLevel", 1);
-				exflow.setPipelineLevel(queueLevel);
-			}
-		}
-		
-		Map<String, String> flowParamGroup = this.getParamGroup(req, "flowOverride");
-		exflow.addFlowParameters(flowParamGroup);
-		
-		if (hasParam(req, "job")) {
-			// Disable everything.
-			for(ExecutableNode node : exflow.getExecutableNodes()) {
-				node.setStatus(Status.DISABLED);
-			}
-			
-			String jobId = getParam(req, "job");
-			ExecutableNode job = exflow.getExecutableNode(jobId);
-			if (job == null) {
-				ret.put("error", "Job " + jobId + " doesn't exist in flow.");
-				return;
-			}
-			
-			job.setStatus(Status.READY);
-			
-			if (hasParam(req, "withDep")) {
-				boolean withDep = "true".equals(getParam(req, "withDep"));
-				if (withDep) {
-					enableAllAncestors(job, exflow);
-				}
-			}
-		}
-		else if (hasParam(req, "disabled")) {
-			String disabled = getParam(req, "disabled");
-			String[] disabledNodes = disabled.split("\\s*,\\s*");
-			
-			for (String node: disabledNodes) {
-				if (!node.isEmpty()) {
-					exflow.setNodeStatus(node, Status.DISABLED);
-				}
-			}
-		}
+		ExecutionOptions options = HttpRequestUtils.parseFlowOptions(req);
+		exflow.setExecutionOptions(options);
 		
 		try {
 			String message = executorManager.submitExecutableFlow(exflow);
@@ -805,19 +730,6 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 		}
 
 		ret.put("execid", exflow.getExecutionId());
-	}
-	
-	private void enableAllAncestors(ExecutableNode node, ExecutableFlow flow) {
-		Set<String> inNodes = node.getInNodes();
-		if (inNodes != null) {
-			for (String inNode: inNodes) {
-				ExecutableNode job = flow.getExecutableNode(inNode);
-				if (job != null) {
-					job.setStatus(Status.READY);
-					enableAllAncestors(job, flow);
-				}
-			}
-		}
 	}
 	
 	public class ExecutorVelocityHelper {

@@ -33,22 +33,19 @@ import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 
 import azkaban.executor.ExecutableFlow;
+import azkaban.executor.ExecutionOptions;
 import azkaban.executor.ExecutorManager;
-import azkaban.executor.ExecutorManagerException;
-import azkaban.executor.Status;
 
 import azkaban.flow.Flow;
 import azkaban.project.Project;
 import azkaban.project.ProjectManager;
 
-import azkaban.scheduler.Schedule.FlowOptions;
-import azkaban.scheduler.Schedule.SlaOptions;
 import azkaban.sla.SLA.SlaAction;
 import azkaban.sla.SLA.SlaRule;
 import azkaban.sla.SLAManager;
 import azkaban.sla.SLA.SlaSetting;
+import azkaban.sla.SlaOptions;
 import azkaban.utils.Pair;
-
 
 /**
  * The ScheduleManager stores and executes the schedule. It uses a single thread
@@ -127,8 +124,8 @@ public class ScheduleManager {
 	 * @param id
 	 * @return
 	*/
-	public Schedule getSchedule(Pair<Integer, String> scheduleId) {
-		return scheduleIDMap.get(scheduleId);
+	public Schedule getSchedule(int projectId, String flowId) {
+		return scheduleIDMap.get(new Pair<Integer,String>(projectId, flowId));
 	}
 
 	/**
@@ -136,7 +133,9 @@ public class ScheduleManager {
 	 * 
 	 * @param id
 	 */
-	public synchronized void removeSchedule(Pair<Integer, String> scheduleId) {
+	public synchronized void removeSchedule(int projectId, String flowId) {
+		Pair<Integer,String> scheduleId = new Pair<Integer,String>(projectId, flowId);
+		
 		Schedule sched = scheduleIDMap.get(scheduleId);
 		scheduleIDMap.remove(scheduleId);
 		
@@ -182,11 +181,27 @@ public class ScheduleManager {
 			final long lastModifyTime,
 			final long nextExecTime,
 			final long submitTime,
-			final String submitUser,
-			final FlowOptions flowOptions,
-			final SlaOptions slaOptions
+			final String submitUser
 			) {
-		Schedule sched = new Schedule(projectId, projectName, flowName, status, firstSchedTime, timezone, period, lastModifyTime, nextExecTime, submitTime, submitUser, flowOptions, slaOptions);
+		return scheduleFlow(projectId, projectName, flowName, status, firstSchedTime, timezone, period, lastModifyTime, nextExecTime, submitTime, submitUser, null, null);
+	}
+	
+	public Schedule scheduleFlow(
+			final int projectId,
+			final String projectName,
+			final String flowName,
+			final String status,
+			final long firstSchedTime,
+			final DateTimeZone timezone,
+			final ReadablePeriod period,
+			final long lastModifyTime,
+			final long nextExecTime,
+			final long submitTime,
+			final String submitUser,
+			ExecutionOptions execOptions,
+			SlaOptions slaOptions
+			) {
+		Schedule sched = new Schedule(projectId, projectName, flowName, status, firstSchedTime, timezone, period, lastModifyTime, nextExecTime, submitTime, submitUser, execOptions, slaOptions);
 		logger.info("Scheduling flow '" + sched.getScheduleName() + "' for "
 				+ _dateFormat.print(firstSchedTime) + " with a period of "
 				+ period == null ? "(non-recurring)" : period);
@@ -194,28 +209,6 @@ public class ScheduleManager {
 		insertSchedule(sched);
 		return sched;
 	}
-
-//	/**
-//	 * Schedule the flow
-//	 * 
-//	 * @param flowId
-//	 * @param date
-//	 * @param ignoreDep
-//	 */
-//	public Schedule schedule(
-//			String scheduleId,
-//			String projectId,
-//			String flowId,
-//			String user, 
-//			String userSubmit,
-//			DateTime submitTime,
-//			DateTime firstSchedTime) 
-//	{
-//		logger.info("Scheduling flow '" + scheduleId + "' for " + _dateFormat.print(firstSchedTime));
-//		ScheduledFlow scheduleFlow = new ScheduledFlow(scheduleId, projectId, flowId, user, userSubmit, submitTime, firstSchedTime);
-//		schedule(scheduleFlow);
-//		return scheduleFlow;
-//	}
 
 	/**
 	 * Schedules the flow, but doesn't save the schedule afterwards.
@@ -381,31 +374,8 @@ public class ScheduleManager {
 										exflow.setSubmitUser(runningSched.getSubmitUser());
 										exflow.setProxyUsers(project.getProxyUsers());
 										
-										FlowOptions flowOptions = runningSched.getFlowOptions();
-										
-										if(flowOptions != null) {
-											if (flowOptions.getFailureAction() != null) {
-												exflow.setFailureAction(flowOptions.getFailureAction());
-											}
-											if (flowOptions.getFailureEmails() != null) {
-												exflow.setFailureEmails(flowOptions.getFailureEmails());
-											}
-											if (flowOptions.getSuccessEmails() != null) {
-												exflow.setSuccessEmails(flowOptions.getSuccessEmails());
-											}
-											exflow.setNotifyOnFirstFailure(flowOptions.isnotifyOnFirstFailure());
-											exflow.setNotifyOnLastFailure(flowOptions.isnotifyOnLastFailure());
-											
-											exflow.addFlowParameters(flowOptions.getFlowOverride());
-											
-											List<String> disabled = flowOptions.getDisabledJobs();
-											// Setup disabled
-											if(disabled != null) {
-												for (String job : disabled) {
-													exflow.setNodeStatus(job, Status.DISABLED);
-												}
-											}
-										}
+										ExecutionOptions flowOptions = runningSched.getExecutionOptions();
+										exflow.setExecutionOptions(flowOptions);
 										
 										try {
 											executorManager.submitExecutableFlow(exflow);
@@ -417,7 +387,6 @@ public class ScheduleManager {
 										}
 										
 										SlaOptions slaOptions = runningSched.getSlaOptions();
-										
 										if(slaOptions != null) {
 											// submit flow slas
 											List<SlaSetting> jobsettings = new ArrayList<SlaSetting>();
@@ -452,7 +421,7 @@ public class ScheduleManager {
 									loader.updateSchedule(runningSched);
 								}
 								else {
-									removeSchedule(runningSched.getScheduleId());
+									removeSchedule(runningSched.getProjectId(), runningSched.getFlowName());
 								}								
 							} else {
 								// wait until flow run

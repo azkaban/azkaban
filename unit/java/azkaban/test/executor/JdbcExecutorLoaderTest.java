@@ -185,7 +185,7 @@ public class JdbcExecutorLoaderTest {
 		Assert.assertEquals(flow.getFlowId(), fetchFlow.getFlowId());
 		Assert.assertEquals(flow.getProjectId(), fetchFlow.getProjectId());
 		Assert.assertEquals(flow.getVersion(), fetchFlow.getVersion());
-		Assert.assertEquals(flow.getFailureAction(), fetchFlow.getFailureAction());
+		Assert.assertEquals(flow.getExecutionOptions().getFailureAction(), fetchFlow.getExecutionOptions().getFailureAction());
 		Assert.assertEquals(new HashSet<String>(flow.getEndNodes()), new HashSet<String>(fetchFlow.getEndNodes()));
 	}
 	
@@ -217,7 +217,7 @@ public class JdbcExecutorLoaderTest {
 		Assert.assertEquals(flow.getFlowId(), fetchFlow.getFlowId());
 		Assert.assertEquals(flow.getProjectId(), fetchFlow.getProjectId());
 		Assert.assertEquals(flow.getVersion(), fetchFlow.getVersion());
-		Assert.assertEquals(flow.getFailureAction(), fetchFlow.getFailureAction());
+		Assert.assertEquals(flow.getExecutionOptions().getFailureAction(), fetchFlow.getExecutionOptions().getFailureAction());
 		Assert.assertEquals(new HashSet<String>(flow.getEndNodes()), new HashSet<String>(fetchFlow.getEndNodes()));
 	}
 	
@@ -298,7 +298,7 @@ public class JdbcExecutorLoaderTest {
 		Assert.assertEquals(flow1.getFlowId(), flow1Result.getFlowId());
 		Assert.assertEquals(flow1.getProjectId(), flow1Result.getProjectId());
 		Assert.assertEquals(flow1.getVersion(), flow1Result.getVersion());
-		Assert.assertEquals(flow1.getFailureAction(), flow1Result.getFailureAction());
+		Assert.assertEquals(flow1.getExecutionOptions().getFailureAction(), flow1Result.getExecutionOptions().getFailureAction());
 		
 		ExecutableFlow flow1Result2 = activeFlows1.get(flow2.getExecutionId()).getSecond();
 		Assert.assertNotNull(flow1Result2);
@@ -310,7 +310,7 @@ public class JdbcExecutorLoaderTest {
 		Assert.assertEquals(flow2.getFlowId(), flow1Result2.getFlowId());
 		Assert.assertEquals(flow2.getProjectId(), flow1Result2.getProjectId());
 		Assert.assertEquals(flow2.getVersion(), flow1Result2.getVersion());
-		Assert.assertEquals(flow2.getFailureAction(), flow1Result2.getFailureAction());
+		Assert.assertEquals(flow2.getExecutionOptions().getFailureAction(), flow1Result2.getExecutionOptions().getFailureAction());
 		
 		loader.removeActiveExecutableReference(flow2.getExecutionId());
 		Map<Integer, Pair<ExecutionReference,ExecutableFlow>> activeFlows2 = loader.fetchActiveFlows();

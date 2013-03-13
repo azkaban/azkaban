@@ -24,7 +24,6 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 
 import javax.sql.DataSource;
 
@@ -35,14 +34,7 @@ import org.apache.log4j.Logger;
 
 import org.joda.time.DateTimeZone;
 import org.joda.time.ReadablePeriod;
-import org.joda.time.format.DateTimeFormat;
-import org.joda.time.format.DateTimeFormatter;
 
-import azkaban.scheduler.Schedule.FlowOptions;
-import azkaban.scheduler.Schedule.SlaOptions;
-import azkaban.sla.SLA;
-import azkaban.sla.SLAManagerException;
-import azkaban.sla.JdbcSLALoader.EncodingType;
 import azkaban.utils.DataSourceUtils;
 import azkaban.utils.GZIPUtils;
 import azkaban.utils.JSONUtils;
@@ -328,11 +320,10 @@ public class JdbcScheduleLoader implements ScheduleLoader {
 				int encodingType = rs.getInt(12);
 				byte[] data = rs.getBytes(13);
 				
-				FlowOptions flowOptions = null;
-				SlaOptions slaOptions = null;
+				Object optsObj = null;
 				if (data != null) {
 					EncodingType encType = EncodingType.fromInteger(encodingType);
-					Object optsObj;
+
 					try {
 						// Convoluted way to inflate strings. Should find common package or helper function.
 						if (encType == EncodingType.GZIP) {
@@ -343,15 +334,16 @@ public class JdbcScheduleLoader implements ScheduleLoader {
 						else {
 							String jsonString = new String(data, "UTF-8");
 							optsObj = JSONUtils.parseJSONFromString(jsonString);
-						}						
-						flowOptions = Schedule.createFlowOptionFromObject(optsObj);
-						slaOptions = Schedule.createSlaOptionFromObject(optsObj);
+						}	
 					} catch (IOException e) {
 						throw new SQLException("Error reconstructing schedule options " + projectName + "." + flowName);
 					}
 				}
 				
-				Schedule s = new Schedule(projectId, projectName, flowName, status, firstSchedTime, timezone, period, lastModifyTime, nextExecTime, submitTime, submitUser, flowOptions, slaOptions);
+				Schedule s = new Schedule(projectId, projectName, flowName, status, firstSchedTime, timezone, period, lastModifyTime, nextExecTime, submitTime, submitUser);
+				if (optsObj != null) {
+					s.createAndSetScheduleOptions(optsObj);
+				}
 				
 				schedules.add(s);
 			} while (rs.next());

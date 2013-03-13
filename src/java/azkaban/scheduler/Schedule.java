@@ -16,9 +16,7 @@
 
 package azkaban.scheduler;
 
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import org.joda.time.DateTime;
@@ -32,152 +30,11 @@ import org.joda.time.ReadablePeriod;
 import org.joda.time.Seconds;
 import org.joda.time.Weeks;
 
-import azkaban.executor.ExecutableFlow.FailureAction;
-import azkaban.scheduler.Schedule.FlowOptions;
-import azkaban.scheduler.Schedule.SlaOptions;
-import azkaban.sla.SLA.SlaSetting;
+import azkaban.executor.ExecutionOptions;
+import azkaban.sla.SlaOptions;
 import azkaban.utils.Pair;
 
 public class Schedule{
-	
-	
-	public static class FlowOptions {
-		
-		public List<String> getFailureEmails() {
-			return failureEmails;
-		}
-		public void setFailureEmails(List<String> failureEmails) {
-			this.failureEmails = failureEmails;
-		}
-		public List<String> getSuccessEmails() {
-			return successEmails;
-		}
-		public void setSuccessEmails(List<String> successEmails) {
-			this.successEmails = successEmails;
-		}
-		public FailureAction getFailureAction() {
-			return failureAction;
-		}
-		public void setFailureAction(FailureAction failureAction) {
-			this.failureAction = failureAction;
-		}
-		public boolean isnotifyOnFirstFailure() {
-			return notifyOnFirstFailure;
-		}
-		public void setNotifyOnFirstFailure(boolean notifyOnFirstFailure) {
-			this.notifyOnFirstFailure = notifyOnFirstFailure;
-		}
-		public boolean isnotifyOnLastFailure() {
-			return notifyOnLastFailure;
-		}
-		public void setNotifyOnLastFailure(boolean notifyOnLastFailure) {
-			this.notifyOnLastFailure = notifyOnLastFailure;
-		}
-		public Map<String, String> getFlowOverride() {
-			return flowOverride;
-		}
-		public void setFlowOverride(Map<String, String> flowOverride) {
-			this.flowOverride = flowOverride;
-		}
-		public List<String> getDisabledJobs() {
-			return disabledJobs;
-		}
-		public void setDisabledJobs(List<String> disabledJobs) {
-			this.disabledJobs = disabledJobs;
-		}
-		private List<String> failureEmails;
-		private List<String> successEmails;
-		private FailureAction failureAction = FailureAction.FINISH_CURRENTLY_RUNNING;
-		private boolean notifyOnFirstFailure;
-		private boolean notifyOnLastFailure;
-		Map<String, String> flowOverride;
-		private List<String> disabledJobs;
-		public Object toObject() {
-			Map<String, Object> obj = new HashMap<String, Object>();
-			obj.put("failureEmails", failureEmails);
-			obj.put("successEmails", successEmails);
-			obj.put("failureAction", failureAction.toString());
-			obj.put("notifyOnFirstFailure", notifyOnFirstFailure);
-			obj.put("notifyOnLastFailure", notifyOnLastFailure);
-			obj.put("flowOverride", flowOverride);
-			obj.put("disabledJobs", disabledJobs);
-			return obj;
-		}
-		@SuppressWarnings("unchecked")
-		public static FlowOptions fromObject(Object object) {
-			if(object != null) {
-				FlowOptions flowOptions = new FlowOptions();
-				Map<String, Object> obj = (HashMap<String, Object>) object;
-				if(obj.containsKey("failureEmails")) {
-					flowOptions.setFailureEmails((List<String>) obj.get("failureEmails"));
-				}
-				if(obj.containsKey("successEmails")) {
-					flowOptions.setSuccessEmails((List<String>) obj.get("SuccessEmails"));
-				}
-				if(obj.containsKey("failureAction")) {
-					flowOptions.setFailureAction(FailureAction.valueOf((String)obj.get("failureAction")));
-				}
-				if(obj.containsKey("notifyOnFirstFailure")) {
-					flowOptions.setNotifyOnFirstFailure((Boolean)obj.get("notifyOnFirstFailure"));
-				}
-				if(obj.containsKey("notifyOnLastFailure")) {
-					flowOptions.setNotifyOnFirstFailure((Boolean)obj.get("notifyOnLastFailure"));
-				}
-				if(obj.containsKey("flowOverride")) {
-					flowOptions.setFlowOverride((Map<String, String>) obj.get("flowOverride"));
-				}
-				if(obj.containsKey("disabledJobs")) {
-					flowOptions.setDisabledJobs((List<String>) obj.get("disabledJobs"));
-				}
-				return flowOptions;
-			}
-			return null;
-		}
-	}
-
-	public static class SlaOptions {
-
-		public List<String> getSlaEmails() {
-			return slaEmails;
-		}
-		public void setSlaEmails(List<String> slaEmails) {
-			this.slaEmails = slaEmails;
-		}
-		public List<SlaSetting> getSettings() {
-			return settings;
-		}
-		public void setSettings(List<SlaSetting> settings) {
-			this.settings = settings;
-		}
-		private List<String> slaEmails;
-		private List<SlaSetting> settings;
-		public Object toObject() {
-			Map<String, Object> obj = new HashMap<String, Object>();
-			obj.put("slaEmails", slaEmails);
-			List<Object> slaSettings = new ArrayList<Object>();
-			for(SlaSetting s : settings) {
-				slaSettings.add(s.toObject());
-			}
-			obj.put("settings", slaSettings);
-			return obj;
-		}
-		@SuppressWarnings("unchecked")
-		public static SlaOptions fromObject(Object object) {
-			if(object != null) {
-				SlaOptions slaOptions = new SlaOptions();
-				Map<String, Object> obj = (HashMap<String, Object>) object;
-				slaOptions.setSlaEmails((List<String>) obj.get("slaEmails"));
-				List<SlaSetting> slaSets = new ArrayList<SlaSetting>();
-				for(Object set: (List<Object>)obj.get("settings")) {
-					slaSets.add(SlaSetting.fromObject(set));
-				}
-				slaOptions.setSettings(slaSets);
-				return slaOptions;
-			}
-			return null;			
-		}
-		
-	}
 	
 //	private long projectGuid;
 //	private long flowGuid;
@@ -196,7 +53,7 @@ public class Schedule{
 	private String status;
 	private long submitTime;
 	
-	private FlowOptions flowOptions;
+	private ExecutionOptions executionOptions;
 	private SlaOptions slaOptions;
 	
 	public Schedule(
@@ -223,7 +80,7 @@ public class Schedule{
 		this.submitUser = submitUser;
 		this.status = status;
 		this.submitTime = submitTime;
-		this.flowOptions = null;
+		this.executionOptions = null;
 		this.slaOptions = null;
 	}
 
@@ -239,7 +96,7 @@ public class Schedule{
 						long nextExecTime,						
 						long submitTime,
 						String submitUser,
-						FlowOptions flowOptions,
+						ExecutionOptions executionOptions,
 						SlaOptions slaOptions
 			) {
 		this.projectId = projectId;
@@ -253,7 +110,7 @@ public class Schedule{
 		this.submitUser = submitUser;
 		this.status = status;
 		this.submitTime = submitTime;
-		this.flowOptions = flowOptions;
+		this.executionOptions = executionOptions;
 		this.slaOptions = slaOptions;
 	}
 
@@ -265,11 +122,11 @@ public class Schedule{
 						long firstSchedTime,
 						DateTimeZone timezone,
 						ReadablePeriod period,
-						long lastModifyTime,						
-						long nextExecTime,						
+						long lastModifyTime,
+						long nextExecTime,
 						long submitTime,
 						String submitUser,
-						FlowOptions flowOptions,
+						ExecutionOptions executionOptions,
 						SlaOptions slaOptions
 						) {
 		this.projectId = projectId;
@@ -283,16 +140,16 @@ public class Schedule{
 		this.submitUser = submitUser;
 		this.status = status;
 		this.submitTime = submitTime;
-		this.flowOptions = flowOptions;
+		this.executionOptions = executionOptions;
 		this.slaOptions = slaOptions;
 	}
 
-	public FlowOptions getFlowOptions() {
-		return flowOptions;
+	public ExecutionOptions getExecutionOptions() {
+		return executionOptions;
 	}
 
-	public void setFlowOptions(FlowOptions flowOptions) {
-		this.flowOptions = flowOptions;
+	public void setFlowOptions(ExecutionOptions executionOptions) {
+		this.executionOptions = executionOptions;
 	}
 
 	public SlaOptions getSlaOptions() {
@@ -463,13 +320,13 @@ public class Schedule{
 		return periodStr;
 	}
 	
-
+	
 	public Map<String,Object> optionsToObject() {
-		if(flowOptions != null || slaOptions != null) {
+		if(executionOptions != null || slaOptions != null) {
 			HashMap<String, Object> schedObj = new HashMap<String, Object>();
 			
-			if(flowOptions != null) {
-				schedObj.put("flowOptions", flowOptions.toObject());
+			if(executionOptions != null) {
+				schedObj.put("executionOptions", executionOptions.toObject());
 			}
 			if(slaOptions != null) {
 				schedObj.put("slaOptions", slaOptions.toObject());
@@ -480,26 +337,16 @@ public class Schedule{
 		return null;
 	}
 	
-	@SuppressWarnings("unchecked")
-	public static FlowOptions createFlowOptionFromObject(Object obj) {
-		if(obj != null) {
-			Map<String, Object> options = (HashMap<String, Object>) obj;
-			if(options.containsKey("flowOptions")) {
-				return FlowOptions.fromObject(options.get("flowOptions"));
-			}
-		}		
-		return null;
+	public void createAndSetScheduleOptions(Object obj) {
+		@SuppressWarnings("unchecked")
+		HashMap<String, Object> schedObj = (HashMap<String, Object>)obj;
+		if (schedObj.containsKey("executionOptions")) {
+			ExecutionOptions execOptions = ExecutionOptions.createFromObject(schedObj.get("executionOptions"));
+			this.executionOptions = execOptions;
+		}
+		if (schedObj.containsKey("slaOptions")) {
+			SlaOptions slaOptions = SlaOptions.fromObject(schedObj.get("slaOptions"));
+			this.slaOptions = slaOptions;
+		}
 	}
-	
-	@SuppressWarnings("unchecked")
-	public static SlaOptions createSlaOptionFromObject(Object obj) {
-		if(obj != null) {
-			Map<String, Object> options = (HashMap<String, Object>) obj;
-			if(options.containsKey("slaOptions")) {
-				return SlaOptions.fromObject(options.get("slaOptions"));
-			}
-		}		
-		return null;
-	}
-
 }

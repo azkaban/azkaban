@@ -25,7 +25,6 @@ import azkaban.jobExecutor.ScriptJob;
 import azkaban.utils.Props;
 import azkaban.utils.PropsUtils;
 import azkaban.utils.Utils;
-import azkaban.jobExecutor.utils.InitErrorJob;
 import azkaban.jobExecutor.utils.JobExecutionException;
 import java.io.File;
 import java.net.MalformedURLException;
