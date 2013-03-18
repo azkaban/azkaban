@@ -136,7 +136,7 @@ public class FlowRunnerManager implements EventListener {
 					String fileName = new File(project.getAbsolutePath()).getName();
 					int projectId = Integer.parseInt(fileName.split("\\.")[0]);
 					int versionNum = Integer.parseInt(fileName.split("\\.")[1]);
-					ProjectVersion version = new ProjectVersion(projectId, versionNum);
+					ProjectVersion version = new ProjectVersion(projectId, versionNum, project);
 					allProjects.put(new Pair<Integer, Integer>(projectId, versionNum), version);
 				}
 				catch (Exception e) {
@@ -223,6 +223,7 @@ public class FlowRunnerManager implements EventListener {
 						if (currentTime - OLD_PROJECT_DIR_INTERVAL_MS > lastOldProjectCleanTime) {
 							logger.info("Cleaning old projects");
 							cleanOlderProjects();
+							
 							lastOldProjectCleanTime = currentTime;
 						}
 						
@@ -324,6 +325,7 @@ public class FlowRunnerManager implements EventListener {
 						try {
 							logger.info("Removing old unused installed project " + version.getProjectId() + ":" + version.getVersion());
 							version.deleteDirectory();
+							installedProjects.remove(new Pair<Integer, Integer>(version.getProjectId(), version.getVersion()));
 						} catch (IOException e) {
 							e.printStackTrace();
 						}
