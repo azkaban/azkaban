@@ -16,12 +16,20 @@
 
 package azkaban.executor;
 
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
+import org.apache.log4j.Logger;
 
 import azkaban.executor.ExecutableFlow.Status;
 import azkaban.flow.Node;
@@ -50,6 +58,8 @@ public class ExecutableNode {
 	// Used if proxy node
 	private Integer externalExecutionId;
 	private ArrayList<Attempt> pastAttempts = null;
+	
+	private Logger flowLogger = null;
 	
 	public ExecutableNode(Node node, ExecutableFlow flow) {
 		jobId = node.getId();
@@ -123,7 +133,12 @@ public class ExecutableNode {
 	}
 
 	public void setStatus(Status status) {
+		
+		Status oldStatus = Status.fromInteger(this.status.getNumVal());
 		this.status = status;
+		if (flowLogger != null) {
+			flowLogger.info("setting status of " + this.getJobId() + " from " + oldStatus + " to " + status);
+		}
 	}
 
 	public Object toObject() {
@@ -363,5 +378,9 @@ public class ExecutableNode {
 			attempts.put("status", status.toString());
 			return attempts;
 		}
+	}
+
+	public void attachFlowLogger(Logger logger) {
+		flowLogger = logger;		
 	}
 }
