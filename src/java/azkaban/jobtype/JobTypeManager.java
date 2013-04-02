@@ -106,8 +106,14 @@ public class JobTypeManager
 			if(confFile != null) {
 				globalConf = new Props(null, confFile);
 			}
+			else {
+				globalConf = new Props();
+			}
 			if(sysConfFile != null) {
 				globalSysConf = new Props(null, sysConfFile);
+			}
+			else {
+				globalSysConf = new Props();
 			}
 		}
 		catch (Exception e) {
@@ -199,10 +205,13 @@ public class JobTypeManager
 				conf = new Props(commonConf, confFile);
 //				conf = PropsUtils.resolveProps(conf);
 			}
-			if(sysConfFile != null) {
-				sysConf = new Props(commonSysConf, sysConfFile);
-				sysConf = PropsUtils.resolveProps(sysConf);
+			else {
+				conf = new Props(commonConf);
 			}
+			
+			sysConf = new Props(commonSysConf, sysConfFile);
+			sysConf = PropsUtils.resolveProps(sysConf);
+
 		}
 		catch (Exception e) {
 			throw new JobTypeManagerException("Failed to get jobtype properties" + e.getMessage());
