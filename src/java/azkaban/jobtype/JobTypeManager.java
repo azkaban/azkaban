@@ -247,6 +247,7 @@ public class JobTypeManager
 			Props fakeSysProps = new Props(sysConf);
 			fakeSysProps.put("type", jobtypeName);
 			Props fakeJobProps = new Props(conf);
+			@SuppressWarnings("unused")
 			Job job = (Job)Utils.callConstructor(clazz, "dummy", fakeSysProps, fakeJobProps, logger);
 		}
 		catch (Exception e) {

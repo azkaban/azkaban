@@ -171,9 +171,13 @@ public class ExecutionOptions {
 		options.queueLevel = (Integer)optionsMap.get("queueLevel");
 		
 		// Success emails
-		options.setSuccessEmails((List<String>)optionsMap.get("successEmails"));
+		if (optionsMap.containsKey("successEmails")) {
+			options.setSuccessEmails((List<String>)optionsMap.get("successEmails"));
+		}
 		// Failure emails
-		options.setFailureEmails((List<String>)optionsMap.get("failureEmails"));
+		if (optionsMap.containsKey("failureEmails")) {
+			options.setFailureEmails((List<String>)optionsMap.get("failureEmails"));
+		}
 		
 		return options;
 	}

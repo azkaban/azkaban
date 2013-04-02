@@ -2900,6 +2900,11 @@ div.menuContent {
 	left: -50%;
 }
 
+#schedule-panel p {
+	margin: 10px 30px;
+	font-size: 11pt;
+}
+
 #schedule-panel-top {
 	width: 450px;
 	margin-top: 250px;

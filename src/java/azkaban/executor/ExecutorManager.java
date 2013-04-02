@@ -101,6 +101,10 @@ public class ExecutorManager {
 		return lastThreadCheckTime;
 	}
 	
+	public long getLastCleanerThreadCheckTime() {
+		return this.lastCleanerThreadCheckTime;
+	}
+	
 	private void loadRunningFlows() throws ExecutorManagerException {
 		runningFlows.putAll(executorLoader.fetchActiveFlows());
 	}
