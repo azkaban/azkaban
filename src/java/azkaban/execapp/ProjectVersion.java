@@ -23,6 +23,12 @@ public class ProjectVersion implements Comparable<ProjectVersion> {
 		this.projectId = projectId;
 		this.version = version;
 	}
+	
+	public ProjectVersion(int projectId, int version, File installedDir) {
+		this.projectId = projectId;
+		this.version = version;
+		this.installedDir = installedDir;
+	}
 
 	public int getProjectId() {
 		return projectId;
@@ -77,6 +83,7 @@ public class ProjectVersion implements Comparable<ProjectVersion> {
 	}
 	
 	public synchronized void deleteDirectory() throws IOException {
+		System.out.println("Deleting old unused project versin " + installedDir);
 		if (installedDir != null && installedDir.exists()) {
 			FileUtils.deleteDirectory(installedDir);
 		}

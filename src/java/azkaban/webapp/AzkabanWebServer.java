@@ -114,6 +114,7 @@ public class AzkabanWebServer implements AzkabanServer {
 	public static final String JDO_PROPERTIES_FILE = "jdo.properties";
 
 	private static final int MAX_FORM_CONTENT_SIZE = 10*1024*1024;
+	private static final int MAX_HEADER_BUFFER_SIZE = 10*1024*1024;
 	private static AzkabanWebServer app;
 
 	private static final String DEFAULT_TIMEZONE_ID = "default.timezone.id";
@@ -415,6 +416,7 @@ public class AzkabanWebServer implements AzkabanServer {
 		secureConnector.setKeyPassword(azkabanSettings.getString("jetty.keypassword"));
 		secureConnector.setTruststore(azkabanSettings.getString("jetty.truststore"));
 		secureConnector.setTrustPassword(azkabanSettings.getString("jetty.trustpassword"));
+		secureConnector.setHeaderBufferSize(MAX_HEADER_BUFFER_SIZE);
 		
 		server.addConnector(secureConnector);
 		app = new AzkabanWebServer(server, azkabanSettings);
