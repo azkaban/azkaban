@@ -12,6 +12,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -72,6 +73,7 @@ public class FlowRunner extends EventHandler implements Runnable {
 	
 	private JobRunnerEventListener listener = new JobRunnerEventListener();
 	private BlockingQueue<JobRunner> jobsToRun = new LinkedBlockingQueue<JobRunner>();
+	private Map<String, Future<?>> allFutureJobs = new ConcurrentHashMap<String, Future<?>>();
 	private Map<String, JobRunner> runningJob = new ConcurrentHashMap<String, JobRunner>();
 	private Map<Pair<String, Integer>, JobRunner> allJobs = new ConcurrentHashMap<Pair<String, Integer>, JobRunner>();
 	private List<JobRunner> pausedJobsToRun = Collections.synchronizedList(new ArrayList<JobRunner>());
@@ -191,6 +193,11 @@ public class FlowRunner extends EventHandler implements Runnable {
 		} catch (IOException e) {
 			logger.error("Could not open log file in " + execDir, e);
 		}
+		if (logger != null) {
+			for (ExecutableNode node : flow.getExecutableNodes()) {
+				node.attachFlowLogger(logger);
+			}
+		}
 	}
 	
 	private void closeLogger() {
@@ -265,7 +272,8 @@ public class FlowRunner extends EventHandler implements Runnable {
 					else {
 						runningJob.put(node.getJobId(), runner);
 						allJobs.put(new Pair<String, Integer>(node.getJobId(), node.getAttempt()), runner);
-						executorService.submit(runner);
+						Future<?> futureJob = executorService.submit(runner);
+						allFutureJobs.put(node.getJobId(), futureJob);
 						logger.info("Job Started " + node.getJobId());
 					}
 				}
@@ -355,7 +363,7 @@ public class FlowRunner extends EventHandler implements Runnable {
 		prop.setParent(parentProps);
 		
 		// should have one prop with system secrets, the other user level props
-		JobRunner jobRunner = new JobRunner(azkabanProps, node, prop, path.getParentFile(), proxyUsers, executorLoader, jobtypeManager, logger);
+		JobRunner jobRunner = new JobRunner(azkabanProps, node, prop, path.getParentFile(), proxyUsers, executorLoader, jobtypeManager, logger, flow);
 		jobRunner.addListener(listener);
 
 		return jobRunner;
@@ -612,6 +620,26 @@ public class FlowRunner extends EventHandler implements Runnable {
 			ExecutableNode dependentNode = flow.getExecutableNode(dependent);
 			
 			if (dependentNode.getStatus() == Status.KILLED) {
+				//pop the node off the run queue before resetting it to READY
+				// Also if the JobRunner was already submitted to the ExecutorService,
+				// cancel the JobRunner
+				synchronized(actionSyncObj) {
+					// if node is queued, un-queue it
+					JobRunner[] allScheduledJobs = jobsToRun.toArray(new JobRunner[jobsToRun.size()]);
+					for (JobRunner scheduledJob : allScheduledJobs) {
+						if (scheduledJob.getNode().equals(dependentNode)) {
+							jobsToRun.remove(scheduledJob);
+						}
+					}
+					// if JobRunner is submitted, cancel it
+					Future<?> futureJob = allFutureJobs.get(dependentNode.getJobId());
+					if (futureJob != null) {
+						if (!futureJob.cancel(true)) {
+							// could not cancel this future job, so we don't re-enable it
+							continue;
+						}
+					}
+				}
 				dependentNode.setStatus(Status.READY);
 				dependentNode.setUpdateTime(System.currentTimeMillis());
 				reEnableDependents(dependentNode);

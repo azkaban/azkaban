@@ -37,6 +37,7 @@ import org.apache.log4j.RollingFileAppender;
 import azkaban.execapp.event.Event;
 import azkaban.execapp.event.Event.Type;
 import azkaban.execapp.event.EventHandler;
+import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutableFlow.Status;
 import azkaban.executor.ExecutableNode;
 import azkaban.executor.ExecutorLoader;
@@ -61,6 +62,7 @@ public class JobRunner extends EventHandler implements Runnable {
 	private Logger logger = null;
 	private Layout loggerLayout = DEFAULT_LAYOUT;
 	private Logger flowLogger = null;
+	private ExecutableFlow flow = null;
 	
 	private Appender jobAppender;
 	private File logFile;
@@ -78,7 +80,7 @@ public class JobRunner extends EventHandler implements Runnable {
 	private String jobLogChunkSize;
 	private int jobLogBackupIndex;
 
-	public JobRunner(Props azkabanProps, ExecutableNode node, Props props, File workingDir, HashSet<String> proxyUsers, ExecutorLoader loader, JobTypeManager jobtypeManager, Logger flowLogger) {
+	public JobRunner(Props azkabanProps, ExecutableNode node, Props props, File workingDir, HashSet<String> proxyUsers, ExecutorLoader loader, JobTypeManager jobtypeManager, Logger flowLogger, ExecutableFlow flow) {
 		this.props = props;
 		this.node = node;
 		this.workingDir = workingDir;
@@ -94,6 +96,7 @@ public class JobRunner extends EventHandler implements Runnable {
 		this.jobLogChunkSize = azkabanProps.getString("job.log.chunk.size", "5MB");
 		this.jobLogBackupIndex = azkabanProps.getInt("job.log.backup.index", 4);
 		
+		this.flow = flow;
 	}
 	
 	public ExecutableNode getNode() {
@@ -162,7 +165,23 @@ public class JobRunner extends EventHandler implements Runnable {
 			fireEvent(Event.create(this, Type.JOB_FINISHED));
 			return;
 		}
-		else {
+		else if (node.getStatus() == Status.QUEUED) {
+			// check parent jobs' statuses
+			for (String parentName : node.getInNodes()) {
+				ExecutableNode parentNode = flow.getExecutableNode(parentName);
+				Status parentStatus = parentNode.getStatus();
+				if (parentStatus != Status.SUCCEEDED && parentStatus != Status.DISABLED && parentStatus != Status.SKIPPED) {
+					// probably an error since parent failed
+					flowLogger.error("Job " + node.getJobId() + " tried to run when parent node " + parentName + " has status:" + parentStatus);
+					// Kill the job
+					fireEvent(Event.create(this, Type.JOB_STARTED, null, false));
+					node.setEndTime(System.currentTimeMillis());
+					node.setStatus(Status.KILLED);
+					fireEvent(Event.create(this, Type.JOB_FINISHED));
+					return;
+				}
+			}
+			
 			createLogger();
 			
 			fireEvent(Event.create(this, Type.JOB_STARTED, null, false));
@@ -210,8 +229,14 @@ public class JobRunner extends EventHandler implements Runnable {
 			else {
 				flowLogger.info("Log file for job " + node.getJobId() + " is null");
 			}
+			fireEvent(Event.create(this, Type.JOB_FINISHED));
 		}
-		fireEvent(Event.create(this, Type.JOB_FINISHED));
+		else {
+			flowLogger.warn("Job " + node.getJobId() + " tried to run with unhandled status " + node.getStatus());
+			fireEvent(Event.create(this, Type.JOB_STARTED, null, false));
+			node.setEndTime(System.currentTimeMillis());
+			fireEvent(Event.create(this, Type.JOB_FINISHED));
+		}
 	}
 	
 	private void fireEvent(Event event) {
