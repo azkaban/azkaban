@@ -3,8 +3,8 @@ $.namespace('azkaban');
 function recurseAllAncestors(nodes, disabledMap, id, disable) {
 	var node = nodes[id];
 	
-	if (node.inNodes) {
-		for (var key in node.inNodes) {
+	if (node.in) {
+		for (var key in node.in) {
 			disabledMap[key] = disable;
 			recurseAllAncestors(nodes, disabledMap, key, disable);
 		}
@@ -14,8 +14,8 @@ function recurseAllAncestors(nodes, disabledMap, id, disable) {
 function recurseAllDescendents(nodes, disabledMap, id, disable) {
 	var node = nodes[id];
 	
-	if (node.outNodes) {
-		for (var key in node.outNodes) {
+	if (node.out) {
+		for (var key in node.out) {
 			disabledMap[key] = disable;
 			recurseAllDescendents(nodes, disabledMap, key, disable);
 		}
