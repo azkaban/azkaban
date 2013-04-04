@@ -30,13 +30,17 @@ public class HttpRequestUtils {
 
 		if (hasParam(req, "failureEmails")) {
 			String emails = getParam(req, "failureEmails");
-			String[] emailSplit = emails.split("\\s*,\\s*|\\s*;\\s*|\\s+");
-			execOptions.setFailureEmails(Arrays.asList(emailSplit));
+			if (!emails.isEmpty()) {
+				String[] emailSplit = emails.split("\\s*,\\s*|\\s*;\\s*|\\s+");
+				execOptions.setFailureEmails(Arrays.asList(emailSplit));
+			}
 		}
 		if (hasParam(req, "successEmails")) {
 			String emails = getParam(req, "successEmails");
-			String[] emailSplit = emails.split("\\s*,\\s*|\\s*;\\s*|\\s+");
-			execOptions.setSuccessEmails(Arrays.asList(emailSplit));
+			if (!emails.isEmpty()) {
+				String[] emailSplit = emails.split("\\s*,\\s*|\\s*;\\s*|\\s+");
+				execOptions.setSuccessEmails(Arrays.asList(emailSplit));
+			}
 		}
 		if (hasParam(req, "notifyFailureFirst")) {
 			execOptions.setNotifyOnFirstFailure(Boolean.parseBoolean(getParam(req, "notifyFailureFirst")));
@@ -65,9 +69,10 @@ public class HttpRequestUtils {
 		
 		if (hasParam(req, "disabled")) {
 			String disabled = getParam(req, "disabled");
-			String[] disabledNodes = disabled.split("\\s*,\\s*");
-			
-			execOptions.setDisabledJobs(Arrays.asList(disabledNodes));
+			if (!disabled.isEmpty()) {
+				String[] disabledNodes = disabled.split("\\s*,\\s*");
+				execOptions.setDisabledJobs(Arrays.asList(disabledNodes));
+			}
 		}
 		return execOptions;
 	}
