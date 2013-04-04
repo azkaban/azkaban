@@ -23,7 +23,7 @@ azkaban.PermissionTableView= Backbone.View.extend({
 var changePermissionView;
 azkaban.ChangePermissionView= Backbone.View.extend({
   events : {
-  	"click input['checkbox']": "handleCheckboxClick",
+  	"click input[type=checkbox]": "handleCheckboxClick",
   	"click #change-btn": "handleChangePermissions"
   },
   initialize : function(settings) {
