@@ -23,6 +23,7 @@
 		<script type="text/javascript" src="${context}/js/underscore-1.4.4-min.js"></script>
 		<script type="text/javascript" src="${context}/js/backbone-0.9.10-min.js"></script>
 		<script type="text/javascript" src="${context}/js/jquery.simplemodal-1.4.4.js"></script>
+		<script type="text/javascript" src="${context}/js/azkaban.table.sort.js"></script>
 		<script type="text/javascript" src="${context}/js/azkaban.nav.js"></script>
 		<script type="text/javascript" src="${context}/js/azkaban.main.view.js"></script>
 		<script type="text/javascript">
@@ -69,28 +70,24 @@
 					<a id="create-project-btn" class="btn1 " href="#">Create Project</a>
 				</div><!-- end .section-hd -->
 			</div>
-			<table id="all-jobs" class="all-jobs job-table">
+			<table id="all-jobs" class="all-jobs job-table project-table">
 				<thead>
 					<tr>
 						<th class="tb-name">Name</th>
 						<th class="tb-up-date">Modified Date</th>
 						<th class="tb-owner">Modified By</th>
-						<th class="tb-action last">Actions</th>
 					</tr>
 				</thead>
 				<tbody>
 #if($projects)
 #foreach($project in $projects)
 					<tr class="row">
-						<td class="tb-name">
-							<div class="jobfolder expand" id="${project.name}">
-								<span class="state-icon"></span>
-								<a href="${context}/manager?project=${project.name}">$project.name</a>
-							</div>
+						<td class="tb-name expand project-expand" id="${project.name}">
+							<span class="state-icon"></span>
+							<a href="${context}/manager?project=${project.name}">$project.name</a>
 						</td>
 						<td class="tb-up-date">$utils.formatDate($project.lastModifiedTimestamp)</td>
 						<td class="tb-owner">$project.lastModifiedUser</td>
-						<td class="tb-action last"></td>
 					</tr>
 					<tr class="childrow" id="${project.name}-child" style="display: none;">
 						<td class="expandedFlow">

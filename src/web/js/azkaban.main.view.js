@@ -3,7 +3,7 @@ $.namespace('azkaban');
 var projectTableView;
 azkaban.ProjectTableView= Backbone.View.extend({
   events : {
-    "click .jobfolder": "expandProject"
+    "click .project-expand": "expandProject"
   },
   initialize : function(settings) {
 
@@ -180,8 +180,10 @@ azkaban.CreateProjectView= Backbone.View.extend({
   }
 });
 
+var tableSorterView;
 $(function() {
 	projectHeaderView = new azkaban.ProjectHeaderView({el:$( '#all-jobs-content'), successMsg: successMessage, errorMsg: errorMessage });
 	projectTableView = new azkaban.ProjectTableView({el:$('#all-jobs')});
+	tableSorterView = new azkaban.TableSorter({el:$('#all-jobs')});
 	uploadView = new azkaban.CreateProjectView({el:$('#create-project')});
 });

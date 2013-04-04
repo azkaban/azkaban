@@ -30,6 +30,7 @@
 		
 		<script type="text/javascript" src="${context}/js/jqueryui/jquery-ui-timepicker-addon.js"></script> 
 		<script type="text/javascript" src="${context}/js/jqueryui/jquery-ui-sliderAccess.js"></script>
+		<script type="text/javascript" src="${context}/js/azkaban.table.sort.js"></script>
 		<script type="text/javascript" src="${context}/js/azkaban.nav.js"></script>
 		<script type="text/javascript" src="${context}/js/azkaban.scheduled.view.js"></script>
 		<script type="text/javascript">
@@ -75,7 +76,7 @@
 							<th class="date">Next Execution Time</th>
 							<th class="date">Repeats Every</th>
 							<th>Has SLA</th>
-							<th colspan="2" class="action">Action</th>
+							<th colspan="2" class="action ignoresort">Action</th>
 						</tr>
 					</thead>
 					<tbody>

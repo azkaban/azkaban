@@ -325,13 +325,13 @@ azkaban.ChangeSlaView = Backbone.View.extend({
 });
 
 var slaView;
-
+var tableSorterView;
 $(function() {
 	var selected;
 
 
 	slaView = new azkaban.ChangeSlaView({el:$('#sla-options')});
-	
+	tableSorterView = new azkaban.TableSorter({el:$('#scheduledFlowsTbl')});
 //	var requestURL = contextURL + "/manager";
 
 	// Set up the Flow options view. Create a new one every time :p

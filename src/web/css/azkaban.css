@@ -271,17 +271,19 @@ tr:hover td {
 
 .all-jobs .tb-name {
   padding-left: 2.7272727%;
-  width: 64.818182%;
+  width: 70%;
   border-bottom-width: 0;
   border-bottom-style: none;
 }
 
 .all-jobs .tb-up-date {
-  width: 160px;
+  width: 140px;
+  min-width: 130px;
 }
 
 .all-jobs .tb-owner {
   width: 10%;
+  min-width: 95px;
 }
 
 .all-jobs .tb-pname {
@@ -2927,6 +2929,29 @@ div.menuContent {
 
 #azkabanMessageDialogText {
 	margin: 10px 20px;
+}
+
+.sortableTable .sortable:hover .sortIcon {
+	visibility: visible;
+}
+
+.sortableTable .sortable .sortIcon {
+	float: right;
+	width: 16px;
+	height: 16px;
+	background-image: url("../css/images/ui-icons_cccccc_256x240.png");
+	background-position: -128px -16px;
+	visibility: hidden;
+}
+
+.sortableTable .sortable.desc .sortIcon {
+	background-position: -64px -16px;
+	visibility: visible;
+}
+
+.sortableTable .sortable.asc .sortIcon {
+	background-position: 0 -16px;
+	visibility: visible;
 }
 
 /* old styles */

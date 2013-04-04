@@ -192,7 +192,6 @@ azkaban.FlowTabView= Backbone.View.extend({
   	else {
   		this.handleGraphLinkClick();
   	}
-
   },
   render: function() {
   	console.log("render graph");
