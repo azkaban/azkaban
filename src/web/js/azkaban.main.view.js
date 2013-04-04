@@ -184,6 +184,6 @@ var tableSorterView;
 $(function() {
 	projectHeaderView = new azkaban.ProjectHeaderView({el:$( '#all-jobs-content'), successMsg: successMessage, errorMsg: errorMessage });
 	projectTableView = new azkaban.ProjectTableView({el:$('#all-jobs')});
-	tableSorterView = new azkaban.TableSorter({el:$('#all-jobs')});
+	tableSorterView = new azkaban.TableSorter({el:$('#all-jobs'), initialSort: $('.tb-name')});
 	uploadView = new azkaban.CreateProjectView({el:$('#create-project')});
 });
