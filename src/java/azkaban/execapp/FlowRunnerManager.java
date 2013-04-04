@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
@@ -468,27 +469,17 @@ public class FlowRunnerManager implements EventListener {
 		runner.resume(user);
 	}
 	
-	public void pauseJob(int execId, String jobId, String user) throws ExecutorManagerException {
+	public void retryFailures(int execId, String user) throws ExecutorManagerException {
 		FlowRunner runner = runningFlows.get(execId);
 		
 		if (runner == null) {
 			throw new ExecutorManagerException("Execution " + execId + " is not running.");
 		}
 		
-		runner.pauseJob(jobId, user);
+		runner.retryFailures(user);
 	}
 	
-	public void resumeJob(int execId, String jobId, String user) throws ExecutorManagerException {
-		FlowRunner runner = runningFlows.get(execId);
-		
-		if (runner == null) {
-			throw new ExecutorManagerException("Execution " + execId + " is not running.");
-		}
-		
-		runner.resumeJob(jobId, user);
-	}
-	
-	public void retryJobs(int execId, String user, String ... jobId) throws ExecutorManagerException {
+	public void retryJobs(int execId, String user, List<String> jobId) throws ExecutorManagerException {
 		FlowRunner runner = runningFlows.get(execId);
 		
 		if (runner == null) {
@@ -496,36 +487,6 @@ public class FlowRunnerManager implements EventListener {
 		}
 		
 		runner.retryJobs(jobId, user);
-	}
-	
-	public void disableJob(int execId, String user, String jobId) throws ExecutorManagerException {
-		FlowRunner runner = runningFlows.get(execId);
-		
-		if (runner == null) {
-			throw new ExecutorManagerException("Execution " + execId + " is not running.");
-		}
-		
-		runner.disableJob(jobId, user);
-	}
-	
-	public void enableJob(int execId, String user, String jobId) throws ExecutorManagerException {
-		FlowRunner runner = runningFlows.get(execId);
-		
-		if (runner == null) {
-			throw new ExecutorManagerException("Execution " + execId + " is not running.");
-		}
-		
-		runner.enableJob(jobId, user);
-	}
-	
-	public void cancelJob(int execId, String user, String jobId) throws ExecutorManagerException {
-		FlowRunner runner = runningFlows.get(execId);
-		
-		if (runner == null) {
-			throw new ExecutorManagerException("Execution " + execId + " is not running.");
-		}
-		
-		runner.cancelJob(jobId, user);
 	}
 	
 	public ExecutableFlow getExecutableFlow(int execId) {

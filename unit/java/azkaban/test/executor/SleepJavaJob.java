@@ -8,11 +8,13 @@ public class SleepJavaJob {
 	private boolean fail;
 	private String seconds;
 	private int attempts;
+	private int currentAttempt;
 	private String id;
 
 	public SleepJavaJob(String id, Map<String, String> parameters) {
 		this.id = id;
 		String failStr = parameters.get("fail");
+		
 		if (failStr == null || failStr.equals("false")) {
 			fail = false;
 		}
@@ -20,6 +22,7 @@ public class SleepJavaJob {
 			fail = true;
 		}
 	
+		currentAttempt = parameters.containsKey("azkaban.job.attempt") ? Integer.parseInt(parameters.get("azkaban.job.attempt")) : 0;
 		String attemptString = parameters.get("passRetry");
 		if (attemptString == null) {
 			attempts = -1;
@@ -28,7 +31,13 @@ public class SleepJavaJob {
 			attempts = Integer.valueOf(attemptString);
 		}
 		seconds = parameters.get("seconds");
-		System.out.println("Properly created");
+
+		if (fail) {
+			System.out.println("Planning to fail after " + seconds + " seconds. Attempts left " + currentAttempt + " of " + attempts);
+		}
+		else {
+			System.out.println("Planning to succeed after " + seconds + " seconds.");
+		}
 	}
 	
 	public void run() throws Exception {
@@ -45,19 +54,9 @@ public class SleepJavaJob {
 				System.out.println("Interrupted " + fail);
 			}
 		}
-		
-		File file = new File("");
-		File[] attemptFiles = file.listFiles(new FileFilter() {
-			@Override
-			public boolean accept(File pathname) {
-				return pathname.getName().startsWith(id);
-			}});
-		
-		if (fail) {
-			if (attempts <= 0 || attemptFiles == null || attemptFiles.length > attempts) {
-				File attemptFile = new File(file, id + "." + (attemptFiles == null ? 0 : attemptFiles.length));
 
-				attemptFile.mkdirs();
+		if (fail) {
+			if (attempts <= 0 || currentAttempt <= attempts) {
 				throw new Exception("I failed because I had to.");
 			}
 		}

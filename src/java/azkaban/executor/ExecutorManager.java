@@ -261,6 +261,10 @@ public class ExecutorManager {
 		modifyExecutingJobs(exFlow, ConnectorParams.MODIFY_RESUME_JOBS, userId, jobIds);
 	}
 	
+	public void retryFailures(ExecutableFlow exFlow, String userId) throws ExecutorManagerException {
+		modifyExecutingJobs(exFlow, ConnectorParams.MODIFY_RETRY_FAILURES, userId);
+	}
+	
 	public void retryExecutingJobs(ExecutableFlow exFlow, String userId, String ... jobIds) throws ExecutorManagerException {
 		modifyExecutingJobs(exFlow, ConnectorParams.MODIFY_RETRY_JOBS, userId, jobIds);
 	}
@@ -285,21 +289,31 @@ public class ExecutorManager {
 				throw new ExecutorManagerException("Execution " + exFlow.getExecutionId() + " of flow " + exFlow.getFlowId() + " isn't running.");
 			}
 			
-			for (String jobId: jobIds) {
-				if (!jobId.isEmpty()) {
-					ExecutableNode node = exFlow.getExecutableNode(jobId);
-					if (node == null) {
-						throw new ExecutorManagerException("Job " + jobId + " doesn't exist in execution " + exFlow.getExecutionId() + ".");
+			Map<String, Object> response = null;
+			if (jobIds != null && jobIds.length > 0) {
+				for (String jobId: jobIds) {
+					if (!jobId.isEmpty()) {
+						ExecutableNode node = exFlow.getExecutableNode(jobId);
+						if (node == null) {
+							throw new ExecutorManagerException("Job " + jobId + " doesn't exist in execution " + exFlow.getExecutionId() + ".");
+						}
 					}
 				}
+				String ids = StringUtils.join(jobIds, ',');
+				response = callExecutorServer(
+						pair.getFirst(), 
+						ConnectorParams.MODIFY_EXECUTION_ACTION, 
+						userId, 
+						new Pair<String,String>(ConnectorParams.MODIFY_EXECUTION_ACTION_TYPE, command), 
+						new Pair<String,String>(ConnectorParams.MODIFY_JOBS_LIST, ids));
 			}
-			String ids = StringUtils.join(jobIds, ',');
-			Map<String, Object> response = callExecutorServer(
-					pair.getFirst(), 
-					ConnectorParams.MODIFY_EXECUTION_ACTION, 
-					userId, 
-					new Pair<String,String>(ConnectorParams.MODIFY_EXECUTION_ACTION_TYPE, command), 
-					new Pair<String,String>(ConnectorParams.MODIFY_JOBS_LIST, ids));
+			else {
+				response = callExecutorServer(
+						pair.getFirst(), 
+						ConnectorParams.MODIFY_EXECUTION_ACTION, 
+						userId, 
+						new Pair<String,String>(ConnectorParams.MODIFY_EXECUTION_ACTION_TYPE, command));
+			}
 			
 			return response;
 		}

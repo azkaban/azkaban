@@ -58,7 +58,7 @@ public class ExecutorServlet extends HttpServlet implements ConnectorParams {
 	@Override
 	public void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
 		HashMap<String,Object> respMap= new HashMap<String,Object>();
-		logger.info("ExecutorServer called by " + req.getRemoteAddr());
+		//logger.info("ExecutorServer called by " + req.getRemoteAddr());
 		try {
 			if (!hasParam(req, ACTION_PARAM)) {
 				logger.error("Parameter action not set");
@@ -67,7 +67,7 @@ public class ExecutorServlet extends HttpServlet implements ConnectorParams {
 			else {
 				String action = getParam(req, ACTION_PARAM);
 				if (action.equals(UPDATE_ACTION)) {
-					logger.info("Updated called");
+					//logger.info("Updated called");
 					handleAjaxUpdateRequest(req, respMap);
 				}
 				else if (action.equals(PING_ACTION)) {
@@ -122,27 +122,28 @@ public class ExecutorServlet extends HttpServlet implements ConnectorParams {
 			respMap.put(RESPONSE_ERROR, "Modification type not set.");
 		}
 		String modificationType = getParam(req, MODIFY_EXECUTION_ACTION_TYPE);
-		String modifiedJobList = getParam(req, MODIFY_JOBS_LIST);
-		String[] jobIds = modifiedJobList.split("\\s*,\\s*");
+
 		
 		try {
-			if (MODIFY_RETRY_JOBS.equals(modificationType)) {
-				flowRunnerManager.retryJobs(execId, user, jobIds);
+			if (MODIFY_RETRY_FAILURES.equals(modificationType)) {
+				flowRunnerManager.retryFailures(execId, user);
 			}
-			else if (MODIFY_CANCEL_JOBS.equals(modificationType)) {
-				
-			}
-			else if (MODIFY_DISABLE_JOBS.equals(modificationType)) {
-				
-			}
-			else if (MODIFY_ENABLE_JOBS.equals(modificationType)) {
-				
-			}
-			else if (MODIFY_PAUSE_JOBS.equals(modificationType)) {
-				
-			}
-			else if (MODIFY_RESUME_JOBS.equals(modificationType)) {
-				
+			else {
+//				String modifiedJobList = getParam(req, MODIFY_JOBS_LIST);
+//				String[] jobIds = modifiedJobList.split("\\s*,\\s*");
+//				
+//				if (MODIFY_RETRY_JOBS.equals(modificationType)) {
+//				}
+//				else if (MODIFY_CANCEL_JOBS.equals(modificationType)) {
+//				}
+//				else if (MODIFY_DISABLE_JOBS.equals(modificationType)) {
+//				}
+//				else if (MODIFY_ENABLE_JOBS.equals(modificationType)) {
+//				}
+//				else if (MODIFY_PAUSE_JOBS.equals(modificationType)) {
+//				}
+//				else if (MODIFY_RESUME_JOBS.equals(modificationType)) {
+//				}
 			}
 		} catch (ExecutorManagerException e) {
 			logger.error(e);

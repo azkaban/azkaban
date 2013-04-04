@@ -187,7 +187,7 @@ public class PropsUtils {
 		return resolvedProps;
 	}
 
-	public static Props produceParentProperties(final ExecutableFlow flow) {
+	public static Props addCommonFlowProperties(final ExecutableFlow flow) {
 		Props parentProps = new Props();
 
 		parentProps.put(CommonJobProperties.FLOW_ID, flow.getFlowId());

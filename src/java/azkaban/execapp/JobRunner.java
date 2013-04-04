@@ -130,7 +130,7 @@ public class JobRunner extends EventHandler implements Runnable {
 			logger = Logger.getLogger(loggerName);
 
 			// Create file appender
-			String logName = node.getAttempt() > 0 ? "_job." + executionId + "." + node.getAttempt() + "." + node.getJobId() + ".log" : "_job." + executionId + "." + node.getJobId() + ".log";
+			String logName = createLogFileName(node.getExecutionId(), node.getJobId(), node.getAttempt());
 			logFile = new File(workingDir, logName);
 			String absolutePath = logFile.getAbsolutePath();
 
@@ -377,5 +377,9 @@ public class JobRunner extends EventHandler implements Runnable {
 	
 	public File getLogFile() {
 		return logFile;
+	}
+	
+	public static String createLogFileName(int executionId, String jobId, int attempt) {
+		return attempt > 0 ? "_job." + executionId + "." + attempt + "." + jobId + ".log" : "_job." + executionId + "." + jobId + ".log";
 	}
 }

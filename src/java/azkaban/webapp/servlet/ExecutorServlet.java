@@ -351,11 +351,8 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 			return;
 		}
 		
-		String jobs = getParam(req, "jobIds");
-		String[] jobIds = jobs.split("\\s*,\\s*");
-		
 		try {
-			executorManager.retryExecutingJobs(exFlow, user.getUserId(), jobIds);
+			executorManager.retryFailures(exFlow, user.getUserId());
 		} catch (ExecutorManagerException e) {
 			ret.put("error", e.getMessage());
 		}
