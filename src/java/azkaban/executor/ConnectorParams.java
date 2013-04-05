@@ -72,4 +72,14 @@ public interface ConnectorParams {
 	public static final String UPDATE_MAP_START_TIME = "startTime";
 	public static final String UPDATE_MAP_END_TIME = "endTime";
 	public static final String UPDATE_MAP_NODES = "nodes";
+	
+	public static final String JMX_GET_MBEANS = "getMBeans";
+	public static final String JMX_GET_MBEAN_INFO = "getMBeanInfo";
+	public static final String JMX_GET_MBEAN_ATTRIBUTE = "getAttribute";
+	public static final String JMX_GET_ALL_MBEAN_ATTRIBUTES = "getAllMBeanAttributes";
+	public static final String JMX_ATTRIBUTE = "attribute";
+	public static final String JMX_MBEAN = "mBean";
+	
+	public static final String JMX_GET_ALL_EXECUTOR_ATTRIBUTES = "getAllExecutorAttributes";
+	public static final String JMX_HOSTPORT = "hostPort";
 }

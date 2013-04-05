@@ -1,189 +1,108 @@
 $.namespace('azkaban');
 
-var projectTableView;
-azkaban.ProjectTableView= Backbone.View.extend({
+var jmxTableView;
+azkaban.JMXTableView= Backbone.View.extend({
   events : {
-    "click .project-expand": "expandProject"
+    "click .querybtn": "queryJMX",
+    "click .collapse": "collapseRow"
   },
   initialize : function(settings) {
 
   },
-  expandProject : function(evt) {
-    if (evt.target.tagName!="SPAN") {
-    	return;
-    }
-    
-    var target = evt.currentTarget;
-    var targetId = target.id;
-    var requestURL = contextURL + "/manager";
-    
-    var targetExpanded = $('#' + targetId + '-child');
-    var targetTBody = $('#' + targetId + '-tbody');
-    
-    var createFlowListFunction = this.createFlowListTable;
-    
-    if (target.loading) {
-    	console.log("Still loading.");
-    }
-    else if (target.loaded) {
-    	if($(targetExpanded).is(':visible')) {
-    		$(target).addClass('expand').removeClass('collapse');
-    		$(targetExpanded).fadeOut("fast");
-    	}
-    	else {
-    	    $(target).addClass('collapse').removeClass('expand');
-    		$(targetExpanded).fadeIn();
-    	}
-    }
-    else {
-	    // projectId is available
-	    $(target).addClass('wait').removeClass('collapse').removeClass('expand');
-	    target.loading = true;
-	    
-	    $.get(
-	      requestURL,
-	      {"project": targetId, "ajax":"fetchprojectflows"},
-	      function(data) {
-	        console.log("Success");
-	        target.loaded = true;
-	        target.loading = false;
-	        
-	        createFlowListFunction(data, targetTBody);
-	        
-			$(target).addClass('collapse').removeClass('wait');
-	    	$(targetExpanded).fadeIn("fast");
-	      },
-	      "json"
-	    );
-    }
-  },
-  render: function() {
-  },
-  createFlowListTable : function(data, innerTable) {
-  	var flows = data.flows;
-  	flows.sort(function(a,b){return a.flowId.localeCompare(b.flowId);});
-  	
-  	var requestURL = contextURL + "/manager?project=" + data.project + "&flow=";
-  	for (var i = 0; i < flows.length; ++i) {
-  		var id = flows[i].flowId;
-  		
-  		var tr = document.createElement("tr");
-		var idtd = document.createElement("td");
-		$(idtd).addClass("tb-name");
-  		
-  		var ida = document.createElement("a");
-		ida.project = data.project;
-		$(ida).text(id);
-		$(ida).attr("href", requestURL + id);
-		
-		$(idtd).append(ida);
-		$(tr).append(idtd);
-		$(innerTable).append(tr);
-  	}
-  }
-});
+  queryJMX : function(evt) {
+	var target = evt.currentTarget;
+	var id = target.id;
+	
+	var childID = id + "-child";
+	var tbody = id + "-tbody";
+	
+	var requestURL = contextURL + "/jmx";
+	var canonicalName=$(target).attr("domain") + ":name=" + $(target).attr("name");
 
-var projectHeaderView;
-azkaban.ProjectHeaderView= Backbone.View.extend({
-  events : {
-    "click #create-project-btn":"handleCreateProjectJob"
+	var data = {"ajax":"getAllMBeanAttributes", "mBean":canonicalName};
+	if ($(target).attr("hostPort")) {
+		data.ajax = "getAllExecutorAttributes";
+		data.hostPort = $(target).attr("hostPort");
+	}
+	$.get(
+		requestURL,
+		data,
+		function(data) {
+			var table = $('#' + tbody);
+			$(table).empty();
+			
+			for(var key in data.attributes) {
+				var value = data.attributes[key];
+				
+				var tr = document.createElement("tr");
+				var tdName = document.createElement("td");
+				var tdVal = document.createElement("td");
+				
+				$(tdName).text(key);
+				$(tdVal).text(value);
+				
+				$(tr).append(tdName);
+				$(tr).append(tdVal);
+				
+				$('#' + tbody).append(tr);
+			}
+			
+			var child = $("#" + childID);
+	    	$(child).fadeIn();
+		}
+	);
   },
-  initialize : function(settings) {
-    if (settings.errorMsg && settings.errorMsg != "null") {
-      // Chrome bug in displaying placeholder text. Need to hide the box.
-      $('#searchtextbox').hide();
-      $('.messaging').addClass("error");
-      $('.messaging').removeClass("success");
-      $('.messaging').html(settings.errorMsg);
-    }
-    else if (settings.successMsg && settings.successMsg != "null") {
-      $('#searchtextbox').hide();
-      $('.messaging').addClass("success");
-      $('.messaging').removeClass("error");
-      $('#message').html(settings.successMsg);
-    }
-    else {
-      $('#searchtextbox').show();
-      $('.messaging').removeClass("success");
-      $('.messaging').removeClass("error");
-    }
-    
-    $('#messageClose').click(function() {
-      $('#searchtextbox').show();
-      
-      $('.messaging').slideUp('fast', function() {
-        $('.messaging').removeClass("success");
-        $('.messaging').removeClass("error");
-      });
-    });
+  queryRemote : function(evt) {
+	var target = evt.currentTarget;
+	var id = target.id;
+	
+	var childID = id + "-child";
+	var tbody = id + "-tbody";
+	
+	var requestURL = contextURL + "/jmx";
+	var canonicalName=$(target).attr("domain") + ":name=" + $(target).attr("name");
+	var hostPort = $(target).attr("hostport");
+	$.get(
+		requestURL,
+		{"ajax":"getAllExecutorAttributes", "mBean":canonicalName, "hostPort": hostPort},
+		function(data) {
+			var table = $('#' + tbody);
+			$(table).empty();
+			
+			for(var key in data.attributes) {
+				var value = data.attributes[key];
+				
+				var tr = document.createElement("tr");
+				var tdName = document.createElement("td");
+				var tdVal = document.createElement("td");
+				
+				$(tdName).text(key);
+				$(tdVal).text(value);
+				
+				$(tr).append(tdName);
+				$(tr).append(tdVal);
+				
+				$('#' + tbody).append(tr);
+			}
+			
+			var child = $("#" + childID);
+	    	$(child).fadeIn();
+		}
+	);
   },
-  handleCreateProjectJob : function(evt) {
-    console.log("click create project");
-      $('#create-project').modal({
-          closeHTML: "<a href='#' title='Close' class='modal-close'>x</a>",
-          position: ["20%",],
-          containerId: 'confirm-container',
-          containerCss: {
-            'height': '220px',
-            'width': '565px'
-          },
-          onShow: function (dialog) {
-            var modal = this;
-            $("#errorMsg").hide();
-          }
-        });
+  collapseRow: function(evt) {
+  	$(evt.currentTarget).parent().parent().fadeOut();
   },
   render: function() {
   }
 });
 
-var createProjectView;
-azkaban.CreateProjectView= Backbone.View.extend({
-  events : {
-    "click #create-btn": "handleCreateProject"
-  },
-  initialize : function(settings) {
-    $("#errorMsg").hide();
-  },
-  handleCreateProject : function(evt) {
-	 // First make sure we can upload
-	 var projectName = $('#path').val();
-	 var description = $('#description').val();
-
-     console.log("Creating");
-     $.ajax({
-     	async: "false",
-     	url: "manager",
-     	dataType: "json",
-     	type: "POST",
-     	data: {action:"create", name:projectName, description:description},
-     	success: function(data) {
-     		if (data.status == "success") {
-     			if (data.action == "redirect") {
-     				window.location = data.path;
-     			}
-     		}
-     		else {
-     			if (data.action == "login") {
- 					window.location = "";
-     			}
-     			else {
-	     			$("#errorMsg").text("ERROR: " + data.message);
-	    			$("#errorMsg").slideDown("fast");
-    			}
-     		}
-     	}
-     });
-
-  },
-  render: function() {
-  }
-});
-
-var tableSorterView;
+var remoteTables = new Array();
 $(function() {
-	projectHeaderView = new azkaban.ProjectHeaderView({el:$( '#all-jobs-content'), successMsg: successMessage, errorMsg: errorMessage });
-	projectTableView = new azkaban.ProjectTableView({el:$('#all-jobs')});
-	tableSorterView = new azkaban.TableSorter({el:$('#all-jobs'), initialSort: $('.tb-name')});
-	uploadView = new azkaban.CreateProjectView({el:$('#create-project')});
+	jmxTableView = new azkaban.JMXTableView({el:$('#all-jobs')});
+	
+	$(".remoteJMX").each(function(item) {
+		var newTableView = new azkaban.JMXTableView({el:$(this)});
+		remoteTables.push(newTables);
+	});
 });

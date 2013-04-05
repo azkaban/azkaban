@@ -23,8 +23,10 @@ import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.commons.lang.StringUtils;
@@ -103,6 +105,25 @@ public class ExecutorManager {
 	
 	public long getLastCleanerThreadCheckTime() {
 		return this.lastCleanerThreadCheckTime;
+	}
+	
+	public Set<String> getPrimaryServerHosts() {
+		// Only one for now. More probably later.
+		HashSet<String> ports = new HashSet<String>();
+		ports.add(executorHost + ":" + executorPort);
+		return ports;
+	}
+	
+	public Set<String> getAllActiveExecutorServerHosts() {
+		// Includes non primary server/hosts
+		HashSet<String> ports = new HashSet<String>();
+		ports.add(executorHost + ":" + executorPort);
+		for(Pair<ExecutionReference, ExecutableFlow> running: runningFlows.values()) {
+			ExecutionReference ref = running.getFirst();
+			ports.add(ref.getHost() + ":" + ref.getPort());
+		}
+		
+		return ports;
 	}
 	
 	private void loadRunningFlows() throws ExecutorManagerException {
@@ -469,6 +490,51 @@ public class ExecutorManager {
 			throw new IOException(error);
 		}
 		
+		return jsonResponse;
+	}
+	
+	public Map<String, Object> callExecutorJMX(String hostPort, String action, String mBean) throws IOException {
+		URIBuilder builder = new URIBuilder();
+		
+		String[] hostPortSplit = hostPort.split(":");
+		builder.setScheme("http")
+			.setHost(hostPortSplit[0])
+			.setPort(Integer.parseInt(hostPortSplit[1]))
+			.setPath("/jmx");
+
+		builder.setParameter(action, "");
+		if (mBean != null) {
+			builder.setParameter(ConnectorParams.JMX_MBEAN, mBean);
+		}
+
+		URI uri = null;
+		try {
+			uri = builder.build();
+		} catch (URISyntaxException e) {
+			throw new IOException(e);
+		}
+		
+		ResponseHandler<String> responseHandler = new BasicResponseHandler();
+		
+		HttpClient httpclient = new DefaultHttpClient();
+		HttpGet httpget = new HttpGet(uri);
+		String response = null;
+		try {
+			response = httpclient.execute(httpget, responseHandler);
+		} catch (IOException e) {
+			throw e;
+		}
+		finally {
+			httpclient.getConnectionManager().shutdown();
+		}
+		
+		System.out.println(response);
+		@SuppressWarnings("unchecked")
+		Map<String, Object> jsonResponse = (Map<String, Object>)JSONUtils.parseJSONFromString(response);
+		String error = (String)jsonResponse.get(ConnectorParams.RESPONSE_ERROR);
+		if (error != null) {
+			throw new IOException(error);
+		}
 		return jsonResponse;
 	}
 	

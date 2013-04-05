@@ -92,7 +92,7 @@
 						<td class="tb-owner">$project.lastModifiedUser</td>
 					</tr>
 					<tr class="childrow" id="${project.name}-child" style="display: none;">
-						<td class="expandedFlow">
+						<td class="expandedFlow" colspan="3">
 							<table class="innerTable">
 								<thead>
 									<tr><th class="tb-name">Flows</th></tr>

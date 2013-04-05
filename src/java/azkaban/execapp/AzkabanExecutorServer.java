@@ -22,8 +22,10 @@ import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.TimeZone;
 
+import javax.management.MBeanInfo;
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
 
@@ -92,8 +94,8 @@ public class AzkabanExecutorServer {
 		Context root = new Context(server, "/", Context.SESSIONS);
 		root.setMaxFormContentSize(MAX_FORM_CONTENT_SIZE);
 		
-		ServletHolder executorHolder = new ServletHolder(new ExecutorServlet());
-		root.addServlet(executorHolder, "/executor");
+		root.addServlet(new ServletHolder(new ExecutorServlet()), "/executor");
+		root.addServlet(new ServletHolder(new JMXHttpServlet()), "/jmx");
 		root.setAttribute(AzkabanServletContextListener.AZKABAN_SERVLET_CONTEXT_KEY, this);
 		
 		
@@ -321,5 +323,27 @@ public class AzkabanExecutorServer {
 			logger.error("Error registering mbean " + mbeanClass.getCanonicalName(), e);
 		}
 
+	}
+	
+	public List<ObjectName> getMbeanNames() {
+		return registeredMBeans;
+	}
+	
+	public MBeanInfo getMBeanInfo(ObjectName name) {
+		try {
+			return mbeanServer.getMBeanInfo(name);
+		} catch (Exception e) {
+			logger.error(e);
+			return null;
+		}
+	}
+	
+	public Object getMBeanAttribute(ObjectName name, String attribute) {
+		 try {
+			return mbeanServer.getAttribute(name, attribute);
+		} catch (Exception e) {
+			logger.error(e);
+			return null;
+		}
 	}
 }

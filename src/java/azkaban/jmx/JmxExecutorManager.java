@@ -1,5 +1,8 @@
 package azkaban.jmx;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import azkaban.executor.ExecutorManager;
 
 public class JmxExecutorManager implements JmxExecutorManagerMBean {
@@ -27,5 +30,10 @@ public class JmxExecutorManager implements JmxExecutorManagerMBean {
 	@Override
 	public Long getLastThreadCheckTime() {
 		return manager.getLastThreadCheckTime();
+	}
+	
+	@Override 
+	public List<String> getPrimaryExecutorHostPorts() {
+		return new ArrayList<String>(manager.getPrimaryServerHosts());
 	}
 }
