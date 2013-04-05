@@ -341,10 +341,14 @@ public abstract class AbstractAzkabanServlet extends HttpServlet {
 	 * @throws IOException
 	 */
 	protected void writeJSON(HttpServletResponse resp, Object obj) throws IOException {
-		resp.setContentType(JSON_MIME_TYPE);
-		JSONUtils.toJSON(obj, resp.getOutputStream());
+		writeJSON(resp, obj, false);
 	}
 
+	protected void writeJSON(HttpServletResponse resp, Object obj, boolean pretty) throws IOException {
+		resp.setContentType(JSON_MIME_TYPE);
+		JSONUtils.toJSON(obj, resp.getOutputStream(), true);
+	}
+	
 	/**
 	 * Retrieve the Azkaban application
 	 * 

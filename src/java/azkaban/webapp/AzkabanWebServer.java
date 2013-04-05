@@ -31,8 +31,14 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.TimeZone;
 
+import javax.management.AttributeNotFoundException;
+import javax.management.InstanceNotFoundException;
+import javax.management.IntrospectionException;
+import javax.management.MBeanException;
+import javax.management.MBeanInfo;
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
+import javax.management.ReflectionException;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.log4j.Logger;
@@ -73,6 +79,7 @@ import azkaban.webapp.servlet.AzkabanServletContextListener;
 
 import azkaban.webapp.servlet.AbstractAzkabanServlet;
 import azkaban.webapp.servlet.ExecutorServlet;
+import azkaban.webapp.servlet.JMXHttpServlet;
 import azkaban.webapp.servlet.ScheduleServlet;
 import azkaban.webapp.servlet.HistoryServlet;
 import azkaban.webapp.servlet.IndexServlet;
@@ -179,9 +186,6 @@ public class AzkabanWebServer implements AzkabanServer {
 		}
 		
 		configureMBeanServer();
-		
-		
-		
 	}
 
 	private void setViewerPlugins(List<ViewerPlugin> viewerPlugins) {
@@ -441,6 +445,7 @@ public class AzkabanWebServer implements AzkabanServer {
 		root.addServlet(new ServletHolder(new ExecutorServlet()),"/executor");
 		root.addServlet(new ServletHolder(new HistoryServlet()), "/history");
 		root.addServlet(new ServletHolder(new ScheduleServlet()),"/schedule");
+		root.addServlet(new ServletHolder(new JMXHttpServlet()),"/jmx");
 		
 		String viewerPluginDir = azkabanSettings.getString("viewer.plugin.dir", "plugins/viewer");
 		app.setViewerPlugins(loadViewerPlugins(root, viewerPluginDir, app.getVelocityEngine()));
@@ -723,7 +728,27 @@ public class AzkabanWebServer implements AzkabanServer {
 		} catch (Exception e) {
 			logger.error("Error registering mbean " + mbeanClass.getCanonicalName(), e);
 		}
-
 	}
 	
+	public List<ObjectName> getMbeanNames() {
+		return registeredMBeans;
+	}
+	
+	public MBeanInfo getMBeanInfo(ObjectName name) {
+		try {
+			return mbeanServer.getMBeanInfo(name);
+		} catch (Exception e) {
+			logger.error(e);
+			return null;
+		}
+	}
+	
+	public Object getMBeanAttribute(ObjectName name, String attribute) {
+		 try {
+			return mbeanServer.getAttribute(name, attribute);
+		} catch (Exception e) {
+			logger.error(e);
+			return null;
+		}
+	}
 }

@@ -1,0 +1,86 @@
+#*
+ * Copyright 2012 LinkedIn, Inc
+ * 
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not
+ * use this file except in compliance with the License. You may obtain a copy of
+ * the License at
+ * 
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations under
+ * the License.
+*#
+
+<!DOCTYPE html> 
+<html>
+	<head>
+#parse( "azkaban/webapp/servlet/velocity/style.vm" )
+		<script type="text/javascript" src="${context}/js/jquery/jquery-1.9.1.js"></script>
+		<script type="text/javascript" src="${context}/js/namespace.js"></script>
+		<script type="text/javascript" src="${context}/js/underscore-1.4.4-min.js"></script>
+		<script type="text/javascript" src="${context}/js/backbone-0.9.10-min.js"></script>
+		<script type="text/javascript" src="${context}/js/azkaban.nav.js"></script>
+		<script type="text/javascript">
+			var contextURL = "${context}";
+			var currentTime = ${currentTime};
+			var timezone = "${timezone}";
+			var errorMessage = null;
+			var successMessage = null;
+		</script>
+	</head>
+	<body>
+#set($current_page="all")
+#parse( "azkaban/webapp/servlet/velocity/nav.vm" )
+#if($errorMsg)
+<div class="box-error-message"><pre>$errorMsg</pre></div>
+#end
+
+		<div class="content">
+			<div id="all-jobs-content">
+				<div class="section-hd flow-header">
+					<h2><a href="${context}/jmx">Admin JMX Http Page</span></a></h2>
+				</div>
+			</div>
+			
+			<div id="flow-tabs">
+				<table id="all-jobs" class="all-jobs job-table">
+					<thead>
+						<tr>
+							<th>Name</th>
+							<th>Domain</th>
+							<th>Canonical Name</th>
+							<th></th>
+						</tr>
+					</thead>
+					<tbody>
+#foreach($bean in $mbeans)
+					<tr>
+						<td>${bean.keyPropertyList.get("name")}</td>
+						<td>${bean.domain}</td>
+						<td>${bean.canonicalName}</td>
+						<td><div class="btn4 querybtn" id="${bean.canonicalName}">Query</div></td>
+					</tr>
+					<tr class="childrow" id="${bean.canonicalName}-child" style="display: none;">
+						<td class="expandedFlow">
+							<table class="innerTable">
+								<thead>
+									<tr>
+										<th class="tb-name">Attribute Name</th>
+										<th>Value</th>
+									</tr>
+								</thead>
+								<tbody id="${bean.canonicalName}-tbody">
+								</tbody>
+							</table>
+						</td>
+					</tr>
+#end
+					</tbody>
+				</table>
+			</div>
+		</div>
+	</body>
+</html>
