@@ -144,9 +144,6 @@ public class AzkabanWebServer implements AzkabanServer {
 	private MBeanServer mbeanServer;
 	private ArrayList<ObjectName> registeredMBeans = new ArrayList<ObjectName>();
 
-	
-	
-	
 	/**
 	 * Constructor usually called by tomcat AzkabanServletContext to create the
 	 * initial server

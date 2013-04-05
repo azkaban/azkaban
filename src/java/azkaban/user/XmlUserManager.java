@@ -20,6 +20,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Set;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -49,6 +50,7 @@ public class XmlUserManager implements UserManager {
 	public static final String AZKABAN_USERS_TAG = "azkaban-users";
 	public static final String USER_TAG = "user";
 	public static final String ROLE_TAG = "role";
+	public static final String GROUP_TAG = "group";
 	public static final String ROLENAME_ATTR = "name";
 	public static final String ROLEPERMISSIONS_ATTR = "permissions";
 	public static final String USERNAME_ATTR = "username";
@@ -56,12 +58,14 @@ public class XmlUserManager implements UserManager {
 	public static final String ROLES_ATTR = "roles";
 	public static final String PROXY_ATTR = "proxy";
 	public static final String GROUPS_ATTR = "groups";
-
+	public static final String GROUPNAME_ATTR = "name";
+	
 	private String xmlPath;
 
 	private HashMap<String, User> users;
 	private HashMap<String, String> userPassword;
 	private HashMap<String, Role> roles;
+	private HashMap<String, Set<String>> groupRoles;
 	private HashMap<String, HashSet<String>> proxyUserMap;
 
 	/**
@@ -84,8 +88,9 @@ public class XmlUserManager implements UserManager {
 		HashMap<String, User> users = new HashMap<String, User>();
 		HashMap<String, String> userPassword = new HashMap<String, String>();
 		HashMap<String, Role> roles = new HashMap<String, Role>();
+		HashMap<String, Set<String>> groupRoles = new HashMap<String, Set<String>>();
 		HashMap<String, HashSet<String>> proxyUserMap = new HashMap<String, HashSet<String>>();
-
+		
 		// Creating the document builder to parse xml.
 		DocumentBuilderFactory docBuilderFactory = DocumentBuilderFactory
 				.newInstance();
@@ -122,6 +127,9 @@ public class XmlUserManager implements UserManager {
 				else if (node.getNodeName().equals(ROLE_TAG)) {
 					parseRoleTag(node, roles);
 				}
+				else if (node.getNodeName().equals(GROUP_TAG)) {
+					parseGroupRoleTag(node, groupRoles);
+				}
 			}
 		}
 
@@ -131,6 +139,7 @@ public class XmlUserManager implements UserManager {
 			this.userPassword = userPassword;
 			this.roles = roles;
 			this.proxyUserMap = proxyUserMap;
+			this.groupRoles = groupRoles;
 		}
 	}
 
@@ -251,9 +260,47 @@ public class XmlUserManager implements UserManager {
 		if (user == null) {
 			throw new UserManagerException("Internal error: User not found.");
 		}
+
+		// Add all the roles the group has to the user
+		resolveGroupRoles(user);
 		return user;
 	}
 
+	private void resolveGroupRoles(User user) {
+		for (String group: user.getGroups()) {
+			Set<String> groupRoleSet = groupRoles.get(group);
+			if (groupRoleSet != null) {
+				for (String role: groupRoleSet) {
+					user.addRole(role);
+				}
+			}
+		}
+	}
+	
+	private void parseGroupRoleTag(Node node, HashMap<String, Set<String>> groupRoles) {
+		NamedNodeMap groupAttrMap = node.getAttributes();
+		Node groupNameAttr = groupAttrMap.getNamedItem(GROUPNAME_ATTR);
+		if (groupNameAttr == null) {
+			throw new RuntimeException(
+					"Error loading role. The role 'name' attribute doesn't exist");
+		}
+		
+		String groupName = groupNameAttr.getNodeValue();
+		Set<String> roleSet = new HashSet<String>();
+		
+		Node roles = groupAttrMap.getNamedItem(ROLES_ATTR);
+		if (roles != null) {
+			String value = roles.getNodeValue();
+			String[] roleSplit = value.split("\\s*,\\s*");
+			for (String role : roleSplit) {
+				roleSet.add(role);
+			}
+		}
+		
+		groupRoles.put( groupName, roleSet );
+		logger.info("Group roles " + groupName + " added.");
+	}
+	
 	@Override
 	public boolean validateUser(String username) {
 		return users.containsKey(username);
@@ -269,7 +316,7 @@ public class XmlUserManager implements UserManager {
 		// Return true. Validation should be added when groups are added to the xml.
 		return true;
 	}
-
+	
 	@Override
 	public boolean validateProxyUser(String proxyUser, User realUser) {
 		if(proxyUserMap.containsKey(realUser.getUserId()) && proxyUserMap.get(realUser.getUserId()).contains(proxyUser)) {

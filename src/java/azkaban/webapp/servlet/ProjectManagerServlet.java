@@ -73,12 +73,15 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 	private static final long serialVersionUID = 1;
 	private static final Logger logger = Logger.getLogger(ProjectManagerServlet.class);
 	private static final NodeLevelComparator NODE_LEVEL_COMPARATOR = new NodeLevelComparator();
+	private static final String LOCKDOWN_CREATE_PROJECTS_KEY = "lockdown.create.projects";
 	
 	private ProjectManager projectManager;
 	private ExecutorManager executorManager;
 	private ScheduleManager scheduleManager;
 	private UserManager userManager;
 
+	private boolean lockdownCreateProjects = false;
+	
 	private static Comparator<Flow> FLOW_ID_COMPARATOR = new Comparator<Flow>() {
 		@Override
 		public int compare(Flow f1, Flow f2) {
@@ -95,6 +98,10 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 		executorManager = server.getExecutorManager();
 		scheduleManager = server.getScheduleManager();
 		userManager = server.getUserManager();
+		lockdownCreateProjects = server.getServerProps().getBoolean(LOCKDOWN_CREATE_PROJECTS_KEY, false);
+		if (lockdownCreateProjects) {
+			logger.info("Creation of projects is locked down");
+		}
 	}
 
 	@Override
@@ -137,7 +144,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 		page.add("errorMsg", "No project set.");
 		page.render();
 	}
-
+	
 	@Override
 	protected void handleMultiformPost(HttpServletRequest req, HttpServletResponse resp, Map<String, Object> params, Session session) throws ServletException, IOException {
 		if (params.containsKey("action")) {
@@ -1177,23 +1184,30 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 		logger.info("Create project " + projectName);
 		
 		User user = session.getUser();
-		
+			
 		String status = null;
 		String action = null;
 		String message = null;
 		HashMap<String, Object> params = null;
-		try {
-			projectManager.createProject(projectName, projectDescription, user);
-			status = "success";
-			action = "redirect";
-			String redirect = "manager?project=" + projectName;
-			params = new HashMap<String, Object>();
-			params.put("path", redirect);
-		} catch (ProjectManagerException e) {
-			message = e.getMessage();
+		
+		if (lockdownCreateProjects && !hasPermissionToCreateProject(user)) {
+			message = "User " + user.getUserId() + " doesn't have permission to create projects.";
+			logger.info(message);
 			status = "error";
 		}
-
+		else {
+			try {
+				projectManager.createProject(projectName, projectDescription, user);
+				status = "success";
+				action = "redirect";
+				String redirect = "manager?project=" + projectName;
+				params = new HashMap<String, Object>();
+				params.put("path", redirect);
+			} catch (ProjectManagerException e) {
+				message = e.getMessage();
+				status = "error";
+			}
+		}
 		String response = createJsonResponse(status, message, action, params);
 		try {
 			Writer write = resp.getWriter();
@@ -1320,5 +1334,17 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 		}
 		
 		return perm;
+	}
+	
+	private boolean hasPermissionToCreateProject(User user) {
+		for(String roleName: user.getRoles()) {
+			Role role = userManager.getRole(roleName);
+			Permission perm = role.getPermission();
+			if (perm.isPermissionSet(Permission.Type.ADMIN) || perm.isPermissionSet(Permission.Type.CREATEPROJECTS)) {
+				return true;
+			}
+		}
+		
+		return false;
 	}
 }

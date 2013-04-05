@@ -19,15 +19,23 @@ package azkaban.webapp.servlet;
 import java.io.IOException;
 import java.util.List;
 
+import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.apache.log4j.Logger;
+
 //import org.apache.log4j.Logger;
 
+import azkaban.executor.ExecutorManager;
 import azkaban.project.Project;
 import azkaban.project.ProjectManager;
+import azkaban.scheduler.ScheduleManager;
+import azkaban.user.Permission;
+import azkaban.user.Role;
 import azkaban.user.User;
+import azkaban.user.UserManager;
 import azkaban.webapp.AzkabanWebServer;
 import azkaban.webapp.session.Session;
 
@@ -35,11 +43,27 @@ import azkaban.webapp.session.Session;
  * The main page
  */
 public class IndexServlet extends LoginAbstractAzkabanServlet {
-	// private static final Logger logger =
-	// Logger.getLogger(IndexServlet.class.getName());
-
+	private static final Logger logger = Logger.getLogger(IndexServlet.class.getName());
+	private static final String LOCKDOWN_CREATE_PROJECTS_KEY = "lockdown.create.projects";
 	private static final long serialVersionUID = -1;
 
+	private UserManager userManager;
+
+	private boolean lockdownCreateProjects = false;
+	
+	@Override
+	public void init(ServletConfig config) throws ServletException {
+		super.init(config);
+		
+		AzkabanWebServer server = (AzkabanWebServer)getApplication();
+
+		userManager = server.getUserManager();
+		lockdownCreateProjects = server.getServerProps().getBoolean(LOCKDOWN_CREATE_PROJECTS_KEY, false);
+		if (lockdownCreateProjects) {
+			logger.info("Creation of projects is locked down");
+		}
+	}
+	
 	@Override
 	protected void handleGet(HttpServletRequest req, HttpServletResponse resp, Session session) throws ServletException, IOException {
 		
@@ -58,6 +82,11 @@ public class IndexServlet extends LoginAbstractAzkabanServlet {
 
 		ProjectManager manager = ((AzkabanWebServer)getApplication()).getProjectManager();
 		Page page = newPage(req, resp, session, "azkaban/webapp/servlet/velocity/index.vm");
+		
+		if (lockdownCreateProjects && !hasPermissionToCreateProject(user)) {
+			page.add("hideCreateProject", true);
+		}
+		
 		if (hasParam(req, "all")) {
 			List<Project> projects = manager.getProjects();
 			page.add("allProjects", "true");
@@ -98,5 +127,15 @@ public class IndexServlet extends LoginAbstractAzkabanServlet {
 		
 	}
 
-
+	private boolean hasPermissionToCreateProject(User user) {
+		for(String roleName: user.getRoles()) {
+			Role role = userManager.getRole(roleName);
+			Permission perm = role.getPermission();
+			if (perm.isPermissionSet(Permission.Type.ADMIN) || perm.isPermissionSet(Permission.Type.CREATEPROJECTS)) {
+				return true;
+			}
+		}
+		
+		return false;
+	}
 }

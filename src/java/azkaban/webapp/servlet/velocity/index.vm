@@ -66,8 +66,10 @@
 #end			
 						<input id="searchtextbox" type="text" placeholder="project name containing ..." value=#if($search_term) ${search_term} #else "" #end class="search-input" name="searchterm">
 					</form>
-			
+
+#if (!$hideCreateProject)
 					<a id="create-project-btn" class="btn1 " href="#">Create Project</a>
+#end
 				</div><!-- end .section-hd -->
 			</div>
 			<table id="all-jobs" class="all-jobs job-table project-table">
