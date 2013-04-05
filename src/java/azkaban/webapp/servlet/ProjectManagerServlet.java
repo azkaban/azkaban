@@ -147,7 +147,17 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 	
 	@Override
 	protected void handleMultiformPost(HttpServletRequest req, HttpServletResponse resp, Map<String, Object> params, Session session) throws ServletException, IOException {
-		if (params.containsKey("action")) {
+		// Looks like a duplicate, but this is a move away from the regular multiform post + redirect
+		// to a more ajax like command.
+		if (params.containsKey("ajax")) {
+			String action = (String)params.get("ajax");
+			HashMap<String, String> ret = new HashMap<String, String>();
+			if (action.equals("upload")) {
+				ajaxHandleUpload(req, ret, params, session);
+			}
+			this.writeJSON(resp, ret);
+		}
+		else if (params.containsKey("action")) {
 			String action = (String)params.get("action");
 			if (action.equals("upload")) {
 				handleUpload(req, resp, params, session);
@@ -1218,21 +1228,23 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 		}
 	}
 
-	private void handleUpload(HttpServletRequest req, HttpServletResponse resp, Map<String, Object> multipart, Session session) throws ServletException, IOException {
+	private void ajaxHandleUpload(HttpServletRequest req, Map<String, String> ret, Map<String, Object> multipart, Session session)  throws ServletException, IOException {
 		User user = session.getUser();
 		String projectName = (String) multipart.get("project");
 		Project project = projectManager.getProject(projectName);
 		
 		if (projectName == null || projectName.isEmpty()) {
-			setErrorMessageInCookie(resp, "No project name found.");
+			ret.put("error", "No project name found.");
 		}
 		else if (project == null) {
-			setErrorMessageInCookie(resp, "Installation Failed. Project '" + projectName + "' doesn't exist.");
+			ret.put("error", "Installation Failed. Project '" + projectName + "' doesn't exist.");
 		}
 		else if (!hasPermission(project,user,Type.WRITE)) {
-			setErrorMessageInCookie(resp, "Installation Failed. User '" + user.getUserId() + "' does not have write access.");
+			ret.put("error", "Installation Failed. User '" + user.getUserId() + "' does not have write access.");
 		}
 		else {
+			ret.put("projectId", String.valueOf(project.getId()));
+			
 			FileItem item = (FileItem) multipart.get("file");
 			String name = item.getName();
 			String type = null;
@@ -1243,7 +1255,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 			}
 			else {
 				item.delete();
-				setErrorMessageInCookie(resp, "File type " + contentType + " unrecognized.");
+				ret.put("error", "File type " + contentType + " unrecognized.");
 				
 				return;
 			}
@@ -1264,7 +1276,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 				if (error.length() > 512) {
 					error = error.substring(0, 512) + "\nToo many errors to display.\n";
 				}
-				setErrorMessageInCookie(resp, "Installation Failed.\n" + error);
+				ret.put("error", "Installation Failed.\n" + error);
 			}
 			finally {
 				if (tempDir.exists()) {
@@ -1274,7 +1286,20 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 					out.close();
 				}
 			}
+			
+			ret.put("version", String.valueOf(project.getVersion()));
 		}
+	}
+	
+	private void handleUpload(HttpServletRequest req, HttpServletResponse resp, Map<String, Object> multipart, Session session) throws ServletException, IOException {
+		HashMap<String,String> ret = new HashMap<String,String>();
+		String projectName = (String) multipart.get("project");
+		ajaxHandleUpload(req, ret, multipart, session);
+		
+		if (ret.containsKey("error")) {
+			setErrorMessageInCookie(resp, ret.get("error"));
+		}
+
 		resp.sendRedirect(req.getRequestURI() + "?project=" + projectName);
 	}
 
