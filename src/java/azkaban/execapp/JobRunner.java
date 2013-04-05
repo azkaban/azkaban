@@ -82,6 +82,9 @@ public class JobRunner extends EventHandler implements Runnable {
 
 	private String jobLogChunkSize;
 	private int jobLogBackupIndex;
+
+	private long delayStartMs = 0;
+	private boolean cancelled = false;
 	
 	public JobRunner(ExecutableNode node, Props props, File workingDir, ExecutorLoader loader, JobTypeManager jobtypeManager) {
 		this.props = props;
@@ -102,6 +105,10 @@ public class JobRunner extends EventHandler implements Runnable {
 		this.jobLogBackupIndex = numLogBackup;
 	}
 	
+	public Props getProps() {
+		return props;
+	}
+	
 	public void setPipeline(FlowWatcher watcher, int pipelineLevel) {
 		this.watcher = watcher;
 		this.pipelineLevel = pipelineLevel;
@@ -113,6 +120,14 @@ public class JobRunner extends EventHandler implements Runnable {
 			pipelineJobs.add(node.getJobId());
 			pipelineJobs.addAll(node.getOutNodes());
 		}
+	}
+	
+	public void setDelayStart(long delayMS) {
+		delayStartMs = delayMS;
+	}
+	
+	public long getDelayStart() {
+		return delayStartMs;
 	}
 	
 	public ExecutableNode getNode() {
@@ -206,8 +221,36 @@ public class JobRunner extends EventHandler implements Runnable {
 						logger.info("Pipelined job " + bStatus.getJobId() + " finished.");
 					}
 				}
+				if (watcher.isWatchCancelled()) {
+					logger.info("Job was cancelled while waiting on pipeline. Quiting.");
+					node.setStartTime(System.currentTimeMillis());
+					node.setEndTime(System.currentTimeMillis());
+					fireEvent(Event.create(this, Type.JOB_FINISHED));
+					return;
+				}
 			}
-
+			
+			long currentTime = System.currentTimeMillis();
+			if (delayStartMs > 0) {
+				logger.info("Delaying start of execution for " + delayStartMs + " milliseconds.");
+				synchronized(this) {
+					try {
+						this.wait(delayStartMs);
+						logger.info("Execution has been delayed for " + delayStartMs + " ms. Continuing with execution.");
+					} catch (InterruptedException e) {
+						logger.error("Job " + node.getJobId() + " was to be delayed for " + delayStartMs + ". Interrupted after " + (System.currentTimeMillis() - currentTime));
+					}
+				}
+				
+				if (cancelled) {
+					logger.info("Job was cancelled while in delay. Quiting.");
+					node.setStartTime(System.currentTimeMillis());
+					node.setEndTime(System.currentTimeMillis());
+					fireEvent(Event.create(this, Type.JOB_FINISHED));
+					return;
+				}
+			}
+			
 			node.setStartTime(System.currentTimeMillis());
 			fireEvent(Event.create(this, Type.JOB_STARTED, null, false));
 			try {
@@ -322,6 +365,7 @@ public class JobRunner extends EventHandler implements Runnable {
 			job.run();
 		} catch (Exception e) {
 			e.printStackTrace();
+
 			node.setStatus(Status.FAILED);
 			logError("Job run failed!");
 			logError(e.getMessage() + e.getCause());
@@ -334,15 +378,20 @@ public class JobRunner extends EventHandler implements Runnable {
 			node.setOutputProps(outputProps);
 		}
 	}
-
+	
 	public void cancel() {
 		synchronized (syncObject) {
 			logError("Cancel has been called.");
+			this.cancelled = true;
 			
 			// Cancel code here
 			if (job == null) {
 				node.setStatus(Status.FAILED);
 				logError("Job hasn't started yet.");
+				// Just in case we're waiting on the delay
+				synchronized(this) {
+					this.notify();
+				}
 				return;
 			}
 	
@@ -353,6 +402,10 @@ public class JobRunner extends EventHandler implements Runnable {
 				logError("Failed trying to cancel job. Maybe it hasn't started running yet or just finished.");
 			}
 		}
+	}
+	
+	public boolean isCancelled() {
+		return cancelled;
 	}
 	
 	public Status getStatus() {
@@ -377,6 +430,14 @@ public class JobRunner extends EventHandler implements Runnable {
 	
 	public File getLogFile() {
 		return logFile;
+	}
+	
+	public int getRetries() {
+		return props.getInt("retries", 0);
+	}
+	
+	public long getRetryBackoff() {
+		return props.getLong("retry.backoff", 0);
 	}
 	
 	public static String createLogFileName(int executionId, String jobId, int attempt) {

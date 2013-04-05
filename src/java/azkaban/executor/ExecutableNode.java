@@ -40,9 +40,12 @@ public class ExecutableNode {
 	private int level = 0;
 	private ExecutableFlow flow;
 	private Props outputProps;
+	private Props resolvedProps;
 	private int attempt = 0;
 	private boolean paused = false;
 	
+	private long delayExecution = 0;
+
 	private Set<String> inNodes = new HashSet<String>();
 	private Set<String> outNodes = new HashSet<String>();
 	
@@ -124,7 +127,15 @@ public class ExecutableNode {
 	public void setStatus(Status status) {
 		this.status = status;
 	}
-
+	
+	public long getDelayedExecution() {
+		return delayExecution;
+	}
+	
+	public void setDelayedExecution(long delayMs) {
+		delayExecution = delayMs;
+	}
+	
 	public Object toObject() {
 		HashMap<String, Object> objMap = new HashMap<String, Object>();
 		objMap.put("id", jobId);

@@ -1,7 +1,5 @@
 package azkaban.test.executor;
 
-import java.io.File;
-import java.io.FileFilter;
 import java.util.Map;
 
 public class SleepJavaJob {

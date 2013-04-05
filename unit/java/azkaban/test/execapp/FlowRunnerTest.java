@@ -303,11 +303,39 @@ public class FlowRunnerTest {
 		}
 	}
 	
+	@Test
+	public void execRetries() throws Exception {
+		MockExecutorLoader loader = new MockExecutorLoader();
+		EventCollectorListener eventCollector = new EventCollectorListener();
+		eventCollector.setEventFilterOut(Event.Type.JOB_FINISHED, Event.Type.JOB_STARTED, Event.Type.JOB_STATUS_CHANGED);
+		FlowRunner runner = createFlowRunner(loader, eventCollector, "exec4-retry");
+		
+		runner.run();
+		
+		ExecutableFlow exFlow = runner.getExecutableFlow();
+		testStatus(exFlow, "job-retry", Status.SUCCEEDED);
+		testStatus(exFlow, "job-pass", Status.SUCCEEDED);
+		testStatus(exFlow, "job-retry-fail", Status.FAILED);
+		testAttempts(exFlow,"job-retry", 3);
+		testAttempts(exFlow, "job-pass", 0);
+		testAttempts(exFlow, "job-retry-fail", 2);
+		
+		Assert.assertTrue("Expected FAILED status instead got " + exFlow.getStatus(),exFlow.getStatus() == Status.FAILED);
+	}
+	
 	private void testStatus(ExecutableFlow flow, String name, Status status) {
 		ExecutableNode node = flow.getExecutableNode(name);
 		
 		if (node.getStatus() != status) {
 			Assert.fail("Status of job " + node.getJobId() + " is " + node.getStatus() + " not " + status + " as expected.");
+		}
+	}
+	
+	private void testAttempts(ExecutableFlow flow, String name, int attempt) {
+		ExecutableNode node = flow.getExecutableNode(name);
+		
+		if (node.getAttempt() != attempt) {
+			Assert.fail("Expected " + attempt + " got " + node.getAttempt() + " attempts " + name );
 		}
 	}
 	

@@ -68,7 +68,7 @@ public class FlowRunner extends EventHandler implements Runnable {
 	private final JobTypeManager jobtypeManager;
 	
 	private JobRunnerEventListener listener = new JobRunnerEventListener();
-	private Map<String, JobRunner> runningJob = new ConcurrentHashMap<String, JobRunner>();
+	private Map<String, JobRunner> jobRunners = new ConcurrentHashMap<String, JobRunner>();
 	
 	// Used for pipelining
 	private Integer pipelineLevel = null;
@@ -298,7 +298,7 @@ public class FlowRunner extends EventHandler implements Runnable {
 								JobRunner runner = createJobRunner(node, outputProps);
 								try {
 									executorService.submit(runner);
-									runningJob.put(node.getJobId(), runner);
+									jobRunners.put(node.getJobId(), runner);
 								} catch (RejectedExecutionException e) {
 									logger.error(e);
 								};
@@ -350,7 +350,10 @@ public class FlowRunner extends EventHandler implements Runnable {
 	private List<ExecutableNode> findReadyJobsToRun() {
 		ArrayList<ExecutableNode> jobsToRun = new ArrayList<ExecutableNode>();
 		for (ExecutableNode node : flow.getExecutableNodes()) {
-			if(Status.isStatusFinished(node.getStatus())) {
+			if (node.getStatus() == Status.FAILED) {
+				
+			}
+			else if(Status.isStatusFinished(node.getStatus())) {
 				continue;
 			}
 			else {
@@ -451,6 +454,7 @@ public class FlowRunner extends EventHandler implements Runnable {
 			jobRunner.setValidatedProxyUsers(proxyUsers);
 		}
 		
+		jobRunner.setDelayStart(node.getDelayedExecution());
 		jobRunner.setLogSettings(logger, jobLogFileSize, jobLogNumFiles);
 		jobRunner.addListener(listener);
 
@@ -510,11 +514,12 @@ public class FlowRunner extends EventHandler implements Runnable {
 		synchronized(mainSyncObj) {
 			flowPaused = false;
 			flowCancelled = true;
+			
 			if (watcher != null) {
 				watcher.stopWatcher();
 			}
 			
-			for (JobRunner runner : runningJob.values()) {
+			for (JobRunner runner : jobRunners.values()) {
 				runner.cancel();
 			}
 			
@@ -669,16 +674,31 @@ public class FlowRunner extends EventHandler implements Runnable {
 					logger.info("Job Finished " + node.getJobId() + " with status " + node.getStatus());
 					
 					if (node.getStatus() == Status.FAILED) {
-						flowFailed = true;
-						
-						ExecutionOptions options = flow.getExecutionOptions();
-						// The KILLED status occurs when cancel is invoked. We want to keep this
-						// status even in failure conditions.
-						if (flow.getStatus() != Status.KILLED) {
-							flow.setStatus(Status.FAILED_FINISHING);
-							if (options.getFailureAction() == FailureAction.CANCEL_ALL && !flowCancelled) {
-								logger.info("Flow failed. Failure option is Cancel All. Stopping execution.");
-								cancel();
+						// Retry failure if conditions are met.
+						if (!runner.isCancelled() && runner.getRetries() > node.getAttempt()) {
+							logger.info("Job " + node.getJobId() + " will be retried. Attempt " + node.getAttempt() + " of " + runner.getRetries());
+							node.setDelayedExecution(runner.getRetryBackoff());
+							node.resetForRetry();
+						}
+						else {
+							if (!runner.isCancelled() && runner.getRetries() > 0) {
+					
+								logger.info("Job " + node.getJobId() + " has run out of retry attempts");
+								// Setting delayed execution to 0 in case this is manually re-tried.
+								node.setDelayedExecution(0);
+							}
+
+							flowFailed = true;
+							
+							ExecutionOptions options = flow.getExecutionOptions();
+							// The KILLED status occurs when cancel is invoked. We want to keep this
+							// status even in failure conditions.
+							if (flow.getStatus() != Status.KILLED) {
+								flow.setStatus(Status.FAILED_FINISHING);
+								if (options.getFailureAction() == FailureAction.CANCEL_ALL && !flowCancelled) {
+									logger.info("Flow failed. Failure option is Cancel All. Stopping execution.");
+									cancel();
+								}
 							}
 						}
 					}
@@ -729,6 +749,6 @@ public class FlowRunner extends EventHandler implements Runnable {
 	}
 	
 	public int getNumRunningJobs() {
-		return runningJob.size();
+		return jobRunners.size();
 	}
 }
