@@ -528,7 +528,6 @@ public class ExecutorManager {
 			httpclient.getConnectionManager().shutdown();
 		}
 		
-		System.out.println(response);
 		@SuppressWarnings("unchecked")
 		Map<String, Object> jsonResponse = (Map<String, Object>)JSONUtils.parseJSONFromString(response);
 		String error = (String)jsonResponse.get(ConnectorParams.RESPONSE_ERROR);

@@ -103,6 +103,6 @@ $(function() {
 	
 	$(".remoteJMX").each(function(item) {
 		var newTableView = new azkaban.JMXTableView({el:$(this)});
-		remoteTables.push(newTables);
+		remoteTables.push(newTableView);
 	});
 });
