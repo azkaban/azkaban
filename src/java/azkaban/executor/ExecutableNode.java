@@ -74,10 +74,10 @@ public class ExecutableNode {
 		synchronized (this) {
 			if (pastAttempts == null) {
 				pastAttempts = new ArrayList<Attempt>();
-				pastAttempts.add(pastAttempt);
 			}
+			
+			pastAttempts.add(pastAttempt);
 		}
-		
 		startTime = -1;
 		endTime = -1;
 		updateTime = System.currentTimeMillis();

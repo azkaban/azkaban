@@ -55,6 +55,15 @@ var getDateFormat = function(date) {
 	return datestring;
 }
 
+var getHourMinSec = function(date) {
+	var hours = getTwoDigitStr(date.getHours());
+	var minutes = getTwoDigitStr(date.getMinutes());
+	var second = getTwoDigitStr(date.getSeconds());
+	
+	var timestring = hours + ":" + minutes + " " + second + "s";
+	return timestring;
+}
+
 var getTwoDigitStr = function(value) {
 	if (value < 10) {
 		return "0" + value;

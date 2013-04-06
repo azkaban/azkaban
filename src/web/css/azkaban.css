@@ -1995,6 +1995,11 @@ tr:hover td {
 	background-position: 16px 0px;
 }
 
+.list ul li.QUEUED .icon {
+	opacity: 0.5;
+	background-position: 32px 0px;
+}
+
 .list ul li.RUNNING .icon {
 	background-position: 32px 0px;
 }
@@ -2174,6 +2179,11 @@ svg .READY circle {
 }
 
 svg .RUNNING circle {
+	fill: #009FC9;
+}
+
+svg .QUEUED circle {
+	opacity: 0.5;
 	fill: #009FC9;
 }
 
@@ -2503,6 +2513,14 @@ tr:hover .outerProgress {
 	background-color: #CCC;
 }
 
+.progressBox.attempt:hover {
+	opacity: 1;
+}
+
+.progressBox.attempt {
+	opacity: 0.70;
+}
+
 .progressBox.SUCCEEDED {
 	background-color: #4e911e;
 	background: -moz-linear-gradient(top, #5bb41c 0, #598d1e 100%);
@@ -2520,6 +2538,15 @@ tr:hover .outerProgress {
 }
 
 .progressBox.RUNNING {
+	background-color: #009FC9;
+	background: -moz-linear-gradient(top, #009FC9 0, #007b9b 100%);
+    background: -o-linear-gradient(top, #009FC9 0, #007b9b 100%);
+    background: -webkit-gradient(linear, left top, left bottom, color-stop(0,#009FC9), color-stop(100%,#007b9b));
+    background: linear-gradient(top, #009FC9 0, #007b9b 100%);
+}
+
+.progressBox.QUEUED {
+	opacity: 0.5;
 	background-color: #009FC9;
 	background: -moz-linear-gradient(top, #009FC9 0, #007b9b 100%);
     background: -o-linear-gradient(top, #009FC9 0, #007b9b 100%);

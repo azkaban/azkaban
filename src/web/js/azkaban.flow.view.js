@@ -9,7 +9,8 @@ var statusStringMap = {
 	"KILLED": "Killed",
 	"DISABLED": "Disabled",
 	"READY": "Ready",
-	"UNKNOWN": "Unknown"
+	"UNKNOWN": "Unknown",
+	"QUEUED": "Queued"
 };
 
 var handleJobMenuClick = function(action, el, pos) {
