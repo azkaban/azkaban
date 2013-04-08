@@ -26,12 +26,8 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.apache.log4j.Logger;
 
-//import org.apache.log4j.Logger;
-
-import azkaban.executor.ExecutorManager;
 import azkaban.project.Project;
 import azkaban.project.ProjectManager;
-import azkaban.scheduler.ScheduleManager;
 import azkaban.user.Permission;
 import azkaban.user.Role;
 import azkaban.user.User;

@@ -27,7 +27,7 @@ azkaban.JobLogView = Backbone.View.extend({
 				type: "get",
 				async: false,
 				dataType: "json",
-				data: {"execid": execId, "jobId": jobId, "ajax":"fetchExecJobLogs", "offset": offset, "length": 50000},
+				data: {"execid": execId, "jobId": jobId, "ajax":"fetchExecJobLogs", "offset": offset, "length": 50000, "attempt": attempt},
 				error: function(data) {
 					console.log(data);
 					finished = true;

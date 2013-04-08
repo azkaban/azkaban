@@ -72,5 +72,9 @@ public abstract class FlowWatcher {
 		}
 	}
 	
+	public boolean isWatchCancelled() {
+		return cancelWatch;
+	}
+	
 	public abstract void stopWatcher();
 }

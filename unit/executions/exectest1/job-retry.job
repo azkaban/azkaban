@@ -1,0 +1,8 @@
+type=java
+job.class=azkaban.test.executor.SleepJavaJob
+seconds=1
+fail=true
+passRetry=2
+retries=3
+retry.backoff=1000
+

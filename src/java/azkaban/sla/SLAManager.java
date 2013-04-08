@@ -387,6 +387,7 @@ public class SLAManager {
 		mailer.sendSlaEmail(s, message);
 	}
 	
+	@SuppressWarnings("unused")
 	private void sendSlaSuccessEmail(SLA s, ExecutableFlow exflow) {
 		String message = null;
 		ExecutableNode exnode;

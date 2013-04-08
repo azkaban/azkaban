@@ -37,6 +37,7 @@
 			var flowName = "${flowid}";
 			var execId = "${execid}";
 			var jobId = "${jobid}";
+			var attempt = ${attempt};
 		</script>
 	</head>
 	<body>

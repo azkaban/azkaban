@@ -109,7 +109,7 @@ public class JobRunnerTest {
 		Assert.assertTrue(outputProps == null);
 		Assert.assertTrue(logFile.exists());
 		Assert.assertTrue(eventCollector.checkOrdering());
-		
+		Assert.assertTrue(!runner.isCancelled());
 		Assert.assertTrue(loader.getNodeUpdateCount(node.getJobId()) == 3);
 		
 		try {
@@ -181,7 +181,7 @@ public class JobRunnerTest {
 		Props outputProps = runner.getOutputProps();
 		Assert.assertTrue(outputProps == null);
 		Assert.assertTrue(runner.getLogFilePath() == null);
-		
+		Assert.assertTrue(!runner.isCancelled());
 		try {
 			eventCollector.checkEventExists(new Type[] {Type.JOB_STARTED, Type.JOB_FINISHED});
 		}
@@ -231,13 +231,105 @@ public class JobRunnerTest {
 		Assert.assertTrue(outputProps == null);
 		Assert.assertTrue(logFile.exists());
 		Assert.assertTrue(eventCollector.checkOrdering());
-		
+		Assert.assertTrue(runner.isCancelled());
 		try {
 			eventCollector.checkEventExists(new Type[] {Type.JOB_STARTED, Type.JOB_STATUS_CHANGED, Type.JOB_FINISHED});
 		}
 		catch (Exception e) {
 			System.out.println(e.getMessage());
 			
+			Assert.fail(e.getMessage());
+		}
+	}
+	
+	@Test
+	public void testDelayedExecutionJob() {
+		MockExecutorLoader loader = new MockExecutorLoader();
+		EventCollectorListener eventCollector = new EventCollectorListener();
+		JobRunner runner = createJobRunner(1, "testJob", 1, false, loader, eventCollector);
+		runner.setDelayStart(5000);
+		long startTime = System.currentTimeMillis();
+		ExecutableNode node = runner.getNode();
+		
+		eventCollector.handleEvent(Event.create(null, Event.Type.JOB_STARTED));
+		Assert.assertTrue(runner.getStatus() != Status.SUCCEEDED || runner.getStatus() != Status.FAILED);
+		
+		runner.run();
+		eventCollector.handleEvent(Event.create(null, Event.Type.JOB_FINISHED));
+		
+		Assert.assertTrue(runner.getStatus() == node.getStatus());
+		Assert.assertTrue("Node status is " + node.getStatus(), node.getStatus() == Status.SUCCEEDED);
+		Assert.assertTrue(node.getStartTime() > 0 && node.getEndTime() > 0);
+		Assert.assertTrue( node.getEndTime() - node.getStartTime() > 1000);
+		Assert.assertTrue(node.getStartTime() - startTime >= 5000);
+		
+		File logFile = new File(runner.getLogFilePath());
+		Props outputProps = runner.getOutputProps();
+		Assert.assertTrue(outputProps != null);
+		Assert.assertTrue(logFile.exists());
+		Assert.assertFalse(runner.isCancelled());
+		Assert.assertTrue(loader.getNodeUpdateCount(node.getJobId()) == 3);
+		
+		Assert.assertTrue(eventCollector.checkOrdering());
+		try {
+			eventCollector.checkEventExists(new Type[] {Type.JOB_STARTED, Type.JOB_STATUS_CHANGED, Type.JOB_FINISHED});
+		}
+		catch (Exception e) {
+			Assert.fail(e.getMessage());
+		}
+	}
+	
+	@Test
+	public void testDelayedExecutionCancelledJob() {
+		MockExecutorLoader loader = new MockExecutorLoader();
+		EventCollectorListener eventCollector = new EventCollectorListener();
+		JobRunner runner = createJobRunner(1, "testJob", 1, false, loader, eventCollector);
+		runner.setDelayStart(5000);
+		long startTime = System.currentTimeMillis();
+		ExecutableNode node = runner.getNode();
+		
+		eventCollector.handleEvent(Event.create(null, Event.Type.JOB_STARTED));
+		Assert.assertTrue(runner.getStatus() != Status.SUCCEEDED || runner.getStatus() != Status.FAILED);
+		
+		Thread thread = new Thread(runner);
+		thread.start();
+		
+		synchronized(this) {
+			try {
+				wait(2000);
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			runner.cancel();
+			try {
+				wait(500);
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+
+		eventCollector.handleEvent(Event.create(null, Event.Type.JOB_FINISHED));
+		
+		Assert.assertTrue(runner.getStatus() == node.getStatus());
+		Assert.assertTrue("Node status is " + node.getStatus(), node.getStatus() == Status.FAILED);
+		Assert.assertTrue(node.getStartTime() > 0 && node.getEndTime() > 0);
+		Assert.assertTrue( node.getEndTime() - node.getStartTime() < 1000);
+		Assert.assertTrue(node.getStartTime() - startTime >= 2000);
+		Assert.assertTrue(node.getStartTime() - startTime <= 5000);
+		Assert.assertTrue(runner.isCancelled());
+		
+		File logFile = new File(runner.getLogFilePath());
+		Props outputProps = runner.getOutputProps();
+		Assert.assertTrue(outputProps == null);
+		Assert.assertTrue(logFile.exists());
+		
+		Assert.assertTrue(eventCollector.checkOrdering());
+		try {
+			eventCollector.checkEventExists(new Type[] {Type.JOB_FINISHED});
+		}
+		catch (Exception e) {
 			Assert.fail(e.getMessage());
 		}
 	}

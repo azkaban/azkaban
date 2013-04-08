@@ -87,8 +87,10 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 		User user = session.getUser();
 		int execId = getIntParam(req, "execid");
 		String jobId = getParam(req, "job");
+		int attempt = getIntParam(req, "attempt", 0);
 		page.add("execid", execId);
 		page.add("jobid", jobId);
+		page.add("attempt", attempt);
 		
 		ExecutableFlow flow = null;
 		try {
