@@ -196,6 +196,34 @@ public class FileIOUtils {
 		return new LogData(fileOffset + utf8Range.getFirst(), utf8Range.getSecond(), outputString);
 	}
 	
+	public static JobMetaData readUtf8MetaDataFile(File file, int fileOffset, int length) throws IOException {
+		byte[] buffer = new byte[length];
+		FileInputStream fileStream = new FileInputStream(file);
+		
+		long skipped = fileStream.skip(fileOffset);
+		if (skipped < fileOffset) {
+			return new JobMetaData(fileOffset, 0, "");
+		}
+		
+		BufferedInputStream inputStream = null;
+		int read = 0;
+		try {
+			inputStream = new BufferedInputStream(fileStream);
+			read = inputStream.read(buffer);
+		}
+		finally {
+			IOUtils.closeQuietly(inputStream);
+		}
+		
+		if (read <= 0) {
+			return new JobMetaData(fileOffset, 0, "");
+		}
+		Pair<Integer, Integer> utf8Range = getUtf8Range(buffer, 0, read);
+		String outputString = new String(buffer, utf8Range.getFirst(), utf8Range.getSecond());
+		
+		return new JobMetaData(fileOffset + utf8Range.getFirst(), utf8Range.getSecond(), outputString);
+	}
+	
 	/**
 	 * Returns first and length.
 	 */
@@ -314,4 +342,49 @@ public class FileIOUtils {
 		}
 	}
 
+	public static class JobMetaData {
+		private int offset;
+		private int length;
+		private String data;
+		
+		public JobMetaData(int offset, int length, String data) {
+			this.offset = offset;
+			this.length = length;
+			this.data = data;
+		}
+		
+		public int getOffset() {
+			return offset;
+		}
+		
+		public int getLength() {
+			return length;
+		}
+		
+		public String getData() {
+			return data;
+		}
+		
+		public Map<String,Object> toObject() {
+			HashMap<String,Object> map = new HashMap<String,Object>();
+			map.put("offset", offset);
+			map.put("length", length);
+			map.put("data", data);
+			
+			return map;
+		}
+		
+		public static JobMetaData createJobMetaDataFromObject(Map<String,Object> map) {
+			int offset = (Integer)map.get("offset");
+			int length = (Integer)map.get("length");
+			String data = (String)map.get("data");
+			
+			return new JobMetaData(offset,length, data);
+		}
+		
+		@Override
+		public String toString() {
+			return "[offset=" + offset + ",length="+length + ",data=" + data + "]";
+		}
+	}
 }

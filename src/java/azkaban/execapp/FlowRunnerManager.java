@@ -49,6 +49,7 @@ import azkaban.executor.ExecutorManagerException;
 import azkaban.jobtype.JobTypeManager;
 
 import azkaban.utils.FileIOUtils;
+import azkaban.utils.FileIOUtils.JobMetaData;
 import azkaban.utils.FileIOUtils.LogData;
 import azkaban.utils.Pair;
 import azkaban.utils.Props;
@@ -554,6 +555,35 @@ public class FlowRunnerManager implements EventListener {
 					File logFile = runner.getJobLogFile(jobId, attempt);
 					if (logFile != null && logFile.exists()) {
 						return FileIOUtils.readUtf8File(logFile, startByte, length);
+					}
+					else {
+						throw new ExecutorManagerException("Job log file doesn't exist.");
+					}
+				}
+			} catch (IOException e) {
+				throw new ExecutorManagerException(e);
+			}
+		}
+		
+		throw new ExecutorManagerException("Error reading file. Log directory doesn't exist.");
+	}
+	
+	public JobMetaData readJobMetaData(int execId, String jobId, int attempt, int startByte, int length) throws ExecutorManagerException {
+		FlowRunner runner = runningFlows.get(execId);
+		if (runner == null) {
+			throw new ExecutorManagerException("Running flow " + execId + " not found.");
+		}
+		
+		File dir = runner.getExecutionDir();
+		if (dir != null && dir.exists()) {
+			try {
+				synchronized(executionDirDeletionSync) {
+					if (!dir.exists()) {
+						throw new ExecutorManagerException("Execution dir file doesn't exist. Probably has beend deleted");
+					}
+					File metaDataFile = runner.getJobMetaDataFile(jobId, attempt);
+					if (metaDataFile != null && metaDataFile.exists()) {
+						return FileIOUtils.readUtf8MetaDataFile(metaDataFile, startByte, length);
 					}
 					else {
 						throw new ExecutorManagerException("Job log file doesn't exist.");

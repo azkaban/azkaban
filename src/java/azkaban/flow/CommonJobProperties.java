@@ -52,6 +52,11 @@ public class CommonJobProperties {
 	public static final String JOB_ATTEMPT = "azkaban.job.attempt";
 	
 	/**
+	 * The attempt number of the executing job.
+	 */
+	public static final String JOB_METADATA_FILE = "azkaban.job.metadata.file";
+	
+	/**
 	 * The executing flow id
 	 */
 	public static final String FLOW_ID = "azkaban.flow.flowid";
