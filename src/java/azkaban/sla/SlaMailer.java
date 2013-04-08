@@ -15,7 +15,9 @@ public class SlaMailer {
 	private static Logger logger = Logger.getLogger(SlaMailer.class);
 	
 	private boolean testMode = false;
+	@SuppressWarnings("unused")
 	private String clientHostname;
+	@SuppressWarnings("unused")
 	private String clientPortNumber;
 	
 	private String mailHost;

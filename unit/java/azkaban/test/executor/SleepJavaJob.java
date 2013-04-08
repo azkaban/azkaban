@@ -7,10 +7,8 @@ public class SleepJavaJob {
 	private String seconds;
 	private int attempts;
 	private int currentAttempt;
-	private String id;
 
 	public SleepJavaJob(String id, Map<String, String> parameters) {
-		this.id = id;
 		String failStr = parameters.get("fail");
 		
 		if (failStr == null || failStr.equals("false")) {

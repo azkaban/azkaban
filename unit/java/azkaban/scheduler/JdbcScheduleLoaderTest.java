@@ -4,9 +4,7 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import javax.sql.DataSource;
 
@@ -15,13 +13,6 @@ import junit.framework.Assert;
 import org.apache.commons.dbutils.DbUtils;
 import org.apache.commons.dbutils.QueryRunner;
 import org.apache.commons.dbutils.ResultSetHandler;
-import org.joda.time.DateTimeZone;
-import org.joda.time.DurationFieldType;
-import org.joda.time.Hours;
-import org.joda.time.MutablePeriod;
-import org.joda.time.Period;
-import org.joda.time.PeriodType;
-import org.joda.time.ReadablePeriod;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;

@@ -21,7 +21,6 @@ import azkaban.user.Permission;
 import azkaban.user.Role;
 import azkaban.user.User;
 import azkaban.user.UserManager;
-import azkaban.utils.Pair;
 import azkaban.webapp.AzkabanWebServer;
 import azkaban.webapp.session.Session;
 

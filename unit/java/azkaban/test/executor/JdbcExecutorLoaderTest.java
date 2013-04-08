@@ -376,6 +376,7 @@ public class JdbcExecutorLoaderTest {
 		Assert.assertEquals("Logs length is " + logsResult6.getLength(), logsResult6.getLength(), 185493);
 	}
 	
+	@SuppressWarnings("static-access")
 	@Test
 	public void testRemoveExecutionLogsByTime() throws ExecutorManagerException, IOException, InterruptedException {
 		

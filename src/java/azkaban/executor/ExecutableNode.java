@@ -40,7 +40,6 @@ public class ExecutableNode {
 	private int level = 0;
 	private ExecutableFlow flow;
 	private Props outputProps;
-	private Props resolvedProps;
 	private int attempt = 0;
 	private boolean paused = false;
 	
