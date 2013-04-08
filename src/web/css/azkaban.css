@@ -139,7 +139,7 @@ label.disabled {
 .section-ft,
 .section-hd {
   overflow: hidden;
-  padding: 25px 2.7272727%;
+  padding: 25px 2.7272727% 15px;
 }
      
 .section-hd h2 {
