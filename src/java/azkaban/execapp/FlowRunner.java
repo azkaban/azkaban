@@ -675,6 +675,10 @@ public class FlowRunner extends EventHandler implements Runnable {
 					ExecutableNode node = runner.getNode();
 	
 					logger.info("Job Finished " + node.getJobId() + " with status " + node.getStatus());
+					if (runner.getOutputProps() != null) {
+						logger.info("Job " + node.getJobId() + " had output props.");
+						jobOutputProps.put(node.getJobId(), runner.getOutputProps());
+					}
 					
 					if (node.getStatus() == Status.FAILED) {
 						// Retry failure if conditions are met.
