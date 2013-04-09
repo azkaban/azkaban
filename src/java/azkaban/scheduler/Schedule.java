@@ -344,6 +344,14 @@ public class Schedule{
 			ExecutionOptions execOptions = ExecutionOptions.createFromObject(schedObj.get("executionOptions"));
 			this.executionOptions = execOptions;
 		}
+		else if (schedObj.containsKey("flowOptions")){
+			ExecutionOptions execOptions = ExecutionOptions.createFromObject(schedObj.get("flowOptions"));
+			this.executionOptions = execOptions;
+		}
+		else {
+			this.executionOptions = new ExecutionOptions();
+		}
+
 		if (schedObj.containsKey("slaOptions")) {
 			SlaOptions slaOptions = SlaOptions.fromObject(schedObj.get("slaOptions"));
 			this.slaOptions = slaOptions;

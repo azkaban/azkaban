@@ -2368,7 +2368,7 @@ span.sublabel {
 }
 
 #flow-status table td.PAUSED {
-	color: #FF6600;
+	color: #C82123;
 }
 
 #flow-status table td.FAILED_FINISHING {
@@ -2461,6 +2461,10 @@ td .status.SUCCEEDED {
 }
 
 td .status.FAILED {
+	background-color: #C82123;
+}
+
+td .status.PAUSED {
 	background-color: #C82123;
 }
 

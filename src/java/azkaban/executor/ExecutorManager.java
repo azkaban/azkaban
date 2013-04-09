@@ -371,10 +371,12 @@ public class ExecutorManager {
 
 			ExecutionOptions options = exflow.getExecutionOptions();
 			
-			// Disable jobs
-			for(String disabledId : options.getDisabledJobs()) {
-				ExecutableNode node = exflow.getExecutableNode(disabledId);
-				node.setStatus(Status.DISABLED);
+			if (options.getDisabledJobs() != null) {
+				// Disable jobs
+				for(String disabledId : options.getDisabledJobs()) {
+					ExecutableNode node = exflow.getExecutableNode(disabledId);
+					node.setStatus(Status.DISABLED);
+				}
 			}
 			
 			String message = "";

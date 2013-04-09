@@ -296,6 +296,7 @@ public class FlowRunner extends EventHandler implements Runnable {
 								Props outputProps = collectOutputProps(node);
 								node.setStatus(Status.QUEUED);
 								JobRunner runner = createJobRunner(node, outputProps);
+								logger.info("Submitting job " + node.getJobId() + " to run.");
 								try {
 									executorService.submit(runner);
 									jobRunners.put(node.getJobId(), runner);
@@ -305,10 +306,12 @@ public class FlowRunner extends EventHandler implements Runnable {
 								
 							} // If killed, then auto complete and KILL
 							else if (node.getStatus() == Status.KILLED) {
+								logger.info("Killing " + node.getJobId() + " due to prior errors.");
 								node.setStartTime(currentTime);
 								node.setEndTime(currentTime);
 							} // If disabled, then we auto skip
 							else if (node.getStatus() == Status.DISABLED) {
+								logger.info("Skipping disabled job " + node.getJobId() + ".");
 								node.setStartTime(currentTime);
 								node.setEndTime(currentTime);
 								node.setStatus(Status.SKIPPED);
