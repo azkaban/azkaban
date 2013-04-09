@@ -351,33 +351,32 @@ public class ExecutorManager {
 
 			ExecutionOptions options = exflow.getExecutionOptions();
 			
-			String message = "";
-			if (options != null) {
-				if (options.getDisabledJobs() != null) {
-					// Disable jobs
-					for(String disabledId : options.getDisabledJobs()) {
-						ExecutableNode node = exflow.getExecutableNode(disabledId);
-						node.setStatus(Status.DISABLED);
-					}
-				}
-
-				if (!running.isEmpty()) {
-					if (options.getConcurrentOption().equals("pipeline")) {
-						Collections.sort(running);
-						Integer runningExecId = running.get(running.size() - 1);
-						
-						options.setPipelineExecutionId(runningExecId);
-						message = "Flow " + flowId + " is already running with exec id " + runningExecId +". Pipelining level " + options.getPipelineLevel() + ". ";
-					}
-					else if (options.getConcurrentOption().equals("skip")) {
-						throw new ExecutorManagerException("Flow " + flowId + " is already running. Skipping execution.");
-					}
-					else {
-						// The settings is to run anyways.
-						message = "Flow " + flowId + " is already running with exec id " + StringUtils.join(running, ",") +". Will execute concurrently. ";
-					}
+			if (options.getDisabledJobs() != null) {
+				// Disable jobs
+				for(String disabledId : options.getDisabledJobs()) {
+					ExecutableNode node = exflow.getExecutableNode(disabledId);
+					node.setStatus(Status.DISABLED);
 				}
 			}
+			
+			String message = "";
+			if (!running.isEmpty()) {
+				if (options.getConcurrentOption().equals("pipeline")) {
+					Collections.sort(running);
+					Integer runningExecId = running.get(running.size() - 1);
+					
+					options.setPipelineExecutionId(runningExecId);
+					message = "Flow " + flowId + " is already running with exec id " + runningExecId +". Pipelining level " + options.getPipelineLevel() + ". ";
+				}
+				else if (options.getConcurrentOption().equals("skip")) {
+					throw new ExecutorManagerException("Flow " + flowId + " is already running. Skipping execution.");
+				}
+				else {
+					// The settings is to run anyways.
+					message = "Flow " + flowId + " is already running with exec id " + StringUtils.join(running, ",") +". Will execute concurrently. ";
+				}
+			}
+			
 			// The exflow id is set by the loader. So it's unavailable until after this call.
 			executorLoader.uploadExecutableFlow(exflow);
 			
