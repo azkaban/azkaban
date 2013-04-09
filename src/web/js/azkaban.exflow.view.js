@@ -518,31 +518,58 @@ azkaban.FlowLogView = Backbone.View.extend({
 		var offset = this.model.get("offset");
 		var requestURL = contextURL + "/executor"; 
 		var model = this.model;
-		$.get(
-			requestURL,
-			{"execid": execId, "ajax":"fetchExecFlowLogs", "offset": offset, "length": 50000},
-			function(data) {
-	          console.log("fetchLogs");
-	          if (data.error) {
-	          	console.log(data.error);
-	          }
-	          else {
-	          	var log = $("#logSection").text();
-	          	if (!log) {
-	          		log = data.data;
-	          	}
-	          	else {
-	          		log += data.data;
-	          	}
-	          	
-	          	var newOffset = data.offset + data.length;
-	          	
-	          	$("#logSection").text(log);
-	          	model.set({"offset": newOffset, "log": log});
-	          	$(".logViewer").scrollTop(9999);
-	          }
-	      }
-	    );
+		console.log("fetchLogs offset is " + offset)
+//		$.get(
+//			requestURL,
+//			{"execid": execId, "ajax":"fetchExecFlowLogs", "offset": offset, "length": 50000},
+//			function(data) {
+//	          console.log("fetchLogs");
+//	          if (data.error) {
+//	          	console.log(data.error);
+//	          }
+//	          else {
+//	          	var log = $("#logSection").text();
+//	          	if (!log) {
+//	          		log = data.data;
+//	          	}
+//	          	else {
+//	          		log += data.data;
+//	          	}
+//	          	
+//	          	var newOffset = data.offset + data.length;
+//	          	
+//	          	$("#logSection").text(log);
+//	          	model.set({"offset": newOffset, "log": log});
+//	          	$(".logViewer").scrollTop(9999);
+//	          }
+//	      }
+//	    );
+		$.ajax({async:false, 
+			url:requestURL,
+			data:{"execid": execId, "ajax":"fetchExecFlowLogs", "offset": offset, "length": 50000},
+			success:
+				function(data) {
+				console.log("fetchLogs");
+				if (data.error) {
+					console.log(data.error);
+				}
+				else {
+					var log = $("#logSection").text();
+					if (!log) {
+						log = data.data;
+					}
+					else {
+						log += data.data;
+					}
+
+					var newOffset = data.offset + data.length;
+
+					$("#logSection").text(log);
+					model.set({"offset": newOffset, "log": log});
+					$(".logViewer").scrollTop(9999);
+				}
+			}
+		})
 	}
 });
 
