@@ -378,6 +378,9 @@ public class ScheduleManager {
 										exflow.setProxyUsers(project.getProxyUsers());
 										
 										ExecutionOptions flowOptions = runningSched.getExecutionOptions();
+										if(flowOptions == null) {
+											flowOptions = new ExecutionOptions();
+										}
 										exflow.setExecutionOptions(flowOptions);
 										
 										try {

@@ -370,6 +370,9 @@ public class ExecutorManager {
 			List<Integer> running = getRunningFlows(projectId, flowId);
 
 			ExecutionOptions options = exflow.getExecutionOptions();
+			if (options == null) {
+				options = new ExecutionOptions();
+			}
 			
 			if (options.getDisabledJobs() != null) {
 				// Disable jobs
