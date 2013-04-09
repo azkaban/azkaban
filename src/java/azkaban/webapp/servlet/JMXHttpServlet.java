@@ -162,13 +162,18 @@ public class JMXHttpServlet extends LoginAbstractAzkabanServlet implements Conne
 		Map<String, Object> executorMBeans = new HashMap<String,Object>();
 		Set<String> primaryServerHosts = executorManager.getPrimaryServerHosts();
 		for (String hostPort: executorManager.getAllActiveExecutorServerHosts()) {
-			Map<String, Object> mbeans = executorManager.callExecutorJMX(hostPort, JMX_GET_MBEANS, null);
-
-			if (primaryServerHosts.contains(hostPort)) {
-				executorMBeans.put(hostPort, mbeans.get("mbeans"));
+			try {
+				Map<String, Object> mbeans = executorManager.callExecutorJMX(hostPort, JMX_GET_MBEANS, null);
+	
+				if (primaryServerHosts.contains(hostPort)) {
+					executorMBeans.put(hostPort, mbeans.get("mbeans"));
+				}
+				else {
+					executorMBeans.put(hostPort, mbeans.get("mbeans"));
+				}
 			}
-			else {
-				executorMBeans.put(hostPort, mbeans.get("mbeans"));
+			catch (IOException e) {
+				logger.error("Cannot contact executor " + hostPort, e);
 			}
 		}
 		
