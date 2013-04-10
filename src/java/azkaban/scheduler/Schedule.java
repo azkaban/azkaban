@@ -347,9 +347,11 @@ public class Schedule{
 		else if (schedObj.containsKey("flowOptions")){
 			ExecutionOptions execOptions = ExecutionOptions.createFromObject(schedObj.get("flowOptions"));
 			this.executionOptions = execOptions;
+			execOptions.setConcurrentOption(ExecutionOptions.CONCURRENT_OPTION_SKIP);
 		}
 		else {
 			this.executionOptions = new ExecutionOptions();
+			this.executionOptions.setConcurrentOption(ExecutionOptions.CONCURRENT_OPTION_SKIP);
 		}
 
 		if (schedObj.containsKey("slaOptions")) {

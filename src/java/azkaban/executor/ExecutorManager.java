@@ -384,14 +384,14 @@ public class ExecutorManager {
 			
 			String message = "";
 			if (!running.isEmpty()) {
-				if (options.getConcurrentOption().equals("pipeline")) {
+				if (options.getConcurrentOption().equals(ExecutionOptions.CONCURRENT_OPTION_PIPELINE)) {
 					Collections.sort(running);
 					Integer runningExecId = running.get(running.size() - 1);
 					
 					options.setPipelineExecutionId(runningExecId);
 					message = "Flow " + flowId + " is already running with exec id " + runningExecId +". Pipelining level " + options.getPipelineLevel() + ". ";
 				}
-				else if (options.getConcurrentOption().equals("skip")) {
+				else if (options.getConcurrentOption().equals(ExecutionOptions.CONCURRENT_OPTION_SKIP)) {
 					throw new ExecutorManagerException("Flow " + flowId + " is already running. Skipping execution.");
 				}
 				else {
