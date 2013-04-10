@@ -338,15 +338,17 @@ public class FlowRunner extends EventHandler implements Runnable {
 		logger.info("Finishing up flow. Awaiting Termination");
 		executorService.shutdown();
 		
-		switch(flow.getStatus()) {
-		case FAILED_FINISHING:
-			logger.info("Setting flow status to Failed.");
-			flow.setStatus(Status.FAILED);
-		case FAILED:
-		case KILLED:
-			break;
-		default:
-			flow.setStatus(Status.SUCCEEDED);
+		synchronized(mainSyncObj) {
+			switch(flow.getStatus()) {
+			case FAILED_FINISHING:
+				logger.info("Setting flow status to Failed.");
+				flow.setStatus(Status.FAILED);
+			case FAILED:
+			case KILLED:
+				break;
+			default:
+				flow.setStatus(Status.SUCCEEDED);
+			}
 		}
 	}
 	
@@ -697,7 +699,7 @@ public class FlowRunner extends EventHandler implements Runnable {
 							ExecutionOptions options = flow.getExecutionOptions();
 							// The KILLED status occurs when cancel is invoked. We want to keep this
 							// status even in failure conditions.
-							if (flow.getStatus() != Status.KILLED) {
+							if (flow.getStatus() != Status.KILLED && flow.getStatus() != Status.FAILED) {
 								flow.setStatus(Status.FAILED_FINISHING);
 								if (options.getFailureAction() == FailureAction.CANCEL_ALL && !flowCancelled) {
 									logger.info("Flow failed. Failure option is Cancel All. Stopping execution.");

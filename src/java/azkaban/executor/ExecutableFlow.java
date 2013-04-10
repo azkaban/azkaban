@@ -356,6 +356,8 @@ public class ExecutableFlow {
 		}
 		
 		this.flowStatus = Status.fromInteger((Integer)updateData.get("status"));
+		
+		System.out.println("Updating status to " + flowStatus);
 		this.startTime = JSONUtils.getLongFromObject(updateData.get("startTime"));
 		this.endTime = JSONUtils.getLongFromObject(updateData.get("endTime"));
 		this.updateTime = JSONUtils.getLongFromObject(updateData.get("updateTime"));

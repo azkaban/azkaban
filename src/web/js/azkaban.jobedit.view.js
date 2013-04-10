@@ -153,10 +153,12 @@ azkaban.JobEditView = Backbone.View.extend({
 		$(tdName).append(nameData);
 		$(tdName).addClass("name");
 		$(tdName).addClass("editable");
+		nameData.myparent = tdName;
 
 		$(tdValue).append(valueData);
 	    $(tdValue).addClass("editable");
-
+		valueData.myparent = tdValue;
+		
 		$(tr).addClass("editRow");
 	  	$(tr).append(tdName);
 	  	$(tr).append(tdValue);
@@ -169,8 +171,8 @@ azkaban.JobEditView = Backbone.View.extend({
 		var curTarget = evt.currentTarget;
 	
 		if (this.editingTarget != curTarget) {
-			this.closeEditingTarget();
-			
+			this.closeEditingTarget(evt);
+		
 			var text = $(curTarget).children(".spanValue").text();
 			$(curTarget).empty();
 						
@@ -178,9 +180,17 @@ azkaban.JobEditView = Backbone.View.extend({
 			$(input).attr("type", "text");
 			$(input).css("width", "100%");
 			$(input).val(text);
+			
 			$(curTarget).addClass("editing");
 			$(curTarget).append(input);
 			$(input).focus();
+			var obj = this;
+			$(input).keypress(function(evt) {
+		    	if(evt.which == 13) {
+			        obj.closeEditingTarget(evt);
+			    }
+			});
+			
 			this.editingTarget = curTarget;
 		}
 	},
@@ -191,7 +201,7 @@ azkaban.JobEditView = Backbone.View.extend({
 		$(row).remove();
 	},
 	closeEditingTarget: function(evt) {
-		if (this.editingTarget != null && this.editingTarget != evt.target && this.editingTarget != evt.target.parentElement ) {
+		if (this.editingTarget != null && this.editingTarget != evt.target && this.editingTarget != evt.target.myparent ) {
 	  		var input = $(this.editingTarget).children("input")[0];
 	  		var text = $(input).val();
 	  		$(input).remove();
@@ -208,6 +218,7 @@ azkaban.JobEditView = Backbone.View.extend({
 
 		    $(this.editingTarget).removeClass("editing");
 		    $(this.editingTarget).append(valueData);
+		    valueData.myparent=this.editingTarget;
 		    this.editingTarget = null;
 	  	}
 	}
