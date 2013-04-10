@@ -353,10 +353,7 @@ public class FlowRunner extends EventHandler implements Runnable {
 	private List<ExecutableNode> findReadyJobsToRun() {
 		ArrayList<ExecutableNode> jobsToRun = new ArrayList<ExecutableNode>();
 		for (ExecutableNode node : flow.getExecutableNodes()) {
-			if (node.getStatus() == Status.FAILED) {
-				
-			}
-			else if(Status.isStatusFinished(node.getStatus())) {
+			if (Status.isStatusFinished(node.getStatus())) {
 				continue;
 			}
 			else {
@@ -376,7 +373,7 @@ public class FlowRunner extends EventHandler implements Runnable {
 	private boolean isFlowFinished() {
 		for (String end: flow.getEndNodes()) {
 			ExecutableNode node = flow.getExecutableNode(end);
-			if (!Status.isStatusFinished(node.getStatus())) {
+			if (!Status.isStatusFinished(node.getStatus()) ) {
 				return false;
 			}
 		}
