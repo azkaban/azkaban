@@ -305,6 +305,7 @@ public class FlowRunnerManager implements EventListener {
 			}
 			
 			for (Integer id: executionToKill) {
+				logger.info("Cleaning execution " + id + " from recently finished flows list.");
 				recentlyFinishedFlows.remove(id);
 			}
 		}
@@ -503,8 +504,9 @@ public class FlowRunnerManager implements EventListener {
 		if (event.getType() == Event.Type.FLOW_FINISHED) {
 			FlowRunner flowRunner = (FlowRunner)event.getRunner();
 			ExecutableFlow flow = flowRunner.getExecutableFlow();
-			recentlyFinishedFlows.put(flow.getExecutionId(), flow);
 
+			recentlyFinishedFlows.put(flow.getExecutionId(), flow);
+			logger.info("Flow " + flow.getFlowId() + " is finished. Adding it to recently finished flows list.");
 			runningFlows.remove(flow.getExecutionId());
 		}
 	}

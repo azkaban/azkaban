@@ -816,7 +816,6 @@ public class ExecutorManager {
 		ref.setNextCheckTime(0);
 		ref.setNumErrors(0);
 		Status oldStatus = flow.getStatus();
-		
 		flow.applyUpdateObject(updateData);
 		Status newStatus = flow.getStatus();
 		

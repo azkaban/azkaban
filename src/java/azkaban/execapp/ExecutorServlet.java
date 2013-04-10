@@ -224,7 +224,7 @@ public class ExecutorServlet extends HttpServlet implements ConnectorParams {
 				continue;
 			}
 			
-			if (flow.getUpdateTime() > updateTime) {
+			if (flow.getUpdateTime() >= updateTime) {
 				updateList.add(flow.toUpdateObject(updateTime));
 			}
 		}
