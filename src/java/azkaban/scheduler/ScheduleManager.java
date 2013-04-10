@@ -350,72 +350,66 @@ public class ScheduleManager {
 							if (!(new DateTime(s.getNextExecTime())).isAfterNow()) {
 								// Run flow. The invocation of flows should be quick.
 								Schedule runningSched = schedules.poll();
-								
-								logger.info("Scheduler attempting to run " + runningSched.toString() );
-								
-								// check if it is already running
-								if(!executorManager.isFlowRunning(runningSched.getProjectId(), runningSched.getFlowName()))
-								{
-									logger.info("Scheduler ready to run " + runningSched.toString());
-									// Execute the flow here
+
+								logger.info("Scheduler ready to run " + runningSched.toString());
+								// Execute the flow here
+								try {
+									Project project = projectManager.getProject(runningSched.getProjectId());
+									if (project == null) {
+										logger.error("Scheduled Project " + runningSched.getProjectId() + " does not exist!");
+										throw new RuntimeException("Error finding the scheduled project. "+ runningSched.getProjectId());
+									}	
+									//TODO It is possible that the project is there, but the flow doesn't exist because upload a version that changes flow structure
+
+									Flow flow = project.getFlow(runningSched.getFlowName());
+									if (flow == null) {
+										logger.error("Flow " + runningSched.getScheduleName() + " cannot be found in project " + project.getName());
+										throw new RuntimeException("Error finding the scheduled flow. " + runningSched.getScheduleName());
+									}
+
+									// Create ExecutableFlow
+									ExecutableFlow exflow = new ExecutableFlow(flow);
+									exflow.setSubmitUser(runningSched.getSubmitUser());
+									exflow.setProxyUsers(project.getProxyUsers());
+									
+									ExecutionOptions flowOptions = runningSched.getExecutionOptions();
+									if(flowOptions == null) {
+										flowOptions = new ExecutionOptions();
+										flowOptions.setConcurrentOption(ExecutionOptions.CONCURRENT_OPTION_SKIP);
+									}
+									exflow.setExecutionOptions(flowOptions);
+									
 									try {
-										Project project = projectManager.getProject(runningSched.getProjectId());
-										if (project == null) {
-											logger.error("Scheduled Project " + runningSched.getProjectId() + " does not exist!");
-											throw new RuntimeException("Error finding the scheduled project. "+ runningSched.getProjectId());
-										}	
-										//TODO It is possible that the project is there, but the flow doesn't exist because upload a version that changes flow structure
-	
-										Flow flow = project.getFlow(runningSched.getFlowName());
-										if (flow == null) {
-											logger.error("Flow " + runningSched.getScheduleName() + " cannot be found in project " + project.getName());
-											throw new RuntimeException("Error finding the scheduled flow. " + runningSched.getScheduleName());
-										}
-	
-										// Create ExecutableFlow
-										ExecutableFlow exflow = new ExecutableFlow(flow);
-										exflow.setSubmitUser(runningSched.getSubmitUser());
-										exflow.setProxyUsers(project.getProxyUsers());
-										
-										ExecutionOptions flowOptions = runningSched.getExecutionOptions();
-										if(flowOptions == null) {
-											flowOptions = new ExecutionOptions();
-										}
-										exflow.setExecutionOptions(flowOptions);
-										
-										try {
-											executorManager.submitExecutableFlow(exflow);
-											logger.info("Scheduler has invoked " + exflow.getExecutionId());
-										} catch (Exception e) {	
-											e.printStackTrace();
-											throw new ScheduleManagerException("Scheduler invoked flow " + exflow.getExecutionId() + " has failed.", e);
-										}
-										
-										SlaOptions slaOptions = runningSched.getSlaOptions();
-										if(slaOptions != null) {
-											logger.info("Submitting SLA checkings for " + runningSched.getFlowName());
-											// submit flow slas
-											List<SlaSetting> jobsettings = new ArrayList<SlaSetting>();
-											for(SlaSetting set : slaOptions.getSettings()) {
-												if(set.getId().equals("")) {
-													DateTime checkTime = new DateTime(runningSched.getNextExecTime()).plus(set.getDuration());
-													slaManager.submitSla(exflow.getExecutionId(), "", checkTime, slaOptions.getSlaEmails(), set.getActions(), null, set.getRule());
-												}
-												else {
-													jobsettings.add(set);
-												}
-											}
-											if(jobsettings.size() > 0) {
-												slaManager.submitSla(exflow.getExecutionId(), "", DateTime.now(), slaOptions.getSlaEmails(), new ArrayList<SlaAction>(), jobsettings, SlaRule.WAITANDCHECKJOB);
-											}
-										}
-										
-									} catch (Exception e) {
-										logger.info("Scheduler failed to run job. " + e.getMessage() + e.getCause());
+										executorManager.submitExecutableFlow(exflow);
+										logger.info("Scheduler has invoked " + exflow.getExecutionId());
+									} catch (Exception e) {	
+										e.printStackTrace();
+										throw new ScheduleManagerException("Scheduler invoked flow " + exflow.getExecutionId() + " has failed.", e);
 									}
 									
+									SlaOptions slaOptions = runningSched.getSlaOptions();
+									if(slaOptions != null) {
+										logger.info("Submitting SLA checkings for " + runningSched.getFlowName());
+										// submit flow slas
+										List<SlaSetting> jobsettings = new ArrayList<SlaSetting>();
+										for(SlaSetting set : slaOptions.getSettings()) {
+											if(set.getId().equals("")) {
+												DateTime checkTime = new DateTime(runningSched.getNextExecTime()).plus(set.getDuration());
+												slaManager.submitSla(exflow.getExecutionId(), "", checkTime, slaOptions.getSlaEmails(), set.getActions(), null, set.getRule());
+											}
+											else {
+												jobsettings.add(set);
+											}
+										}
+										if(jobsettings.size() > 0) {
+											slaManager.submitSla(exflow.getExecutionId(), "", DateTime.now(), slaOptions.getSlaEmails(), new ArrayList<SlaAction>(), jobsettings, SlaRule.WAITANDCHECKJOB);
+										}
+									}
+									
+								} catch (Exception e) {
+									logger.info("Scheduler failed to run job. " + e.getMessage() + e.getCause());
 								}
-								
+
 								removeRunnerSchedule(runningSched);
 
 								// Immediately reschedule if it's possible. Let

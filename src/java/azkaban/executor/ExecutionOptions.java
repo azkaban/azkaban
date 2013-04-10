@@ -12,6 +12,9 @@ import java.util.Set;
  * Execution options for submitted flows and scheduled flows
  */
 public class ExecutionOptions {
+	public static final String CONCURRENT_OPTION_SKIP="skip";
+	public static final String CONCURRENT_OPTION_PIPELINE="pipeline";
+	public static final String CONCURRENT_OPTION_IGNORE="ignore";
 	
 	private boolean notifyOnFirstFailure = true;
 	private boolean notifyOnLastFailure = false;
@@ -20,8 +23,8 @@ public class ExecutionOptions {
 	
 	private Integer pipelineLevel = null;
 	private Integer pipelineExecId = null;
-	private Integer queueLevel = null;
-	private String concurrentOption = null;
+	private Integer queueLevel = 0;
+	private String concurrentOption = CONCURRENT_OPTION_IGNORE;
 	private Map<String, String> flowParameters = new HashMap<String, String>();
 	
 	public enum FailureAction {
