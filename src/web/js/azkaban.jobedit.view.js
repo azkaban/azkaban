@@ -86,7 +86,7 @@ azkaban.JobEditView = Backbone.View.extend({
 
 	},
 	handleSet: function(evt) {
-
+		this.closeEditingTarget(evt);
 		var jobOverride = {};
 	  	var editRows = $(".editRow");
 		for (var i = 0; i < editRows.length; ++i) {
