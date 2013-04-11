@@ -18,6 +18,8 @@ public class ExecutionOptions {
 	
 	private boolean notifyOnFirstFailure = true;
 	private boolean notifyOnLastFailure = false;
+	private boolean failureEmailsOverride = true;
+	private boolean successEmailsOverride = true;
 	private ArrayList<String> failureEmails = new ArrayList<String>();
 	private ArrayList<String> successEmails = new ArrayList<String>();
 	
@@ -47,6 +49,22 @@ public class ExecutionOptions {
 	
 	public void setFailureEmails(Collection<String> emails) {
 		failureEmails.addAll(emails);
+	}
+	
+	public boolean isFailureEmailsOverridden() {
+		return this.failureEmailsOverride;
+	}
+	
+	public boolean isSuccessEmailsOverridden() {
+		return this.successEmailsOverride;
+	}
+
+	public void setSuccessEmailsOverridden(boolean override) {
+		this.successEmailsOverride = override;
+	}
+	
+	public void setFailureEmailsOverridden(boolean override) {
+		this.failureEmailsOverride = override;
 	}
 	
 	public List<String> getFailureEmails() {
@@ -135,7 +153,8 @@ public class ExecutionOptions {
 		flowOptionObj.put("queueLevel", queueLevel);
 		flowOptionObj.put("concurrentOption", concurrentOption);
 		flowOptionObj.put("disabled", initiallyDisabledJobs);
-		
+		flowOptionObj.put("failureEmailsOverride", failureEmailsOverride);
+		flowOptionObj.put("successEmailsOverride", successEmailsOverride);
 		return flowOptionObj;
 	}
 	
@@ -180,6 +199,14 @@ public class ExecutionOptions {
 		// Failure emails
 		if (optionsMap.containsKey("failureEmails")) {
 			options.setFailureEmails((List<String>)optionsMap.get("failureEmails"));
+		}
+		
+		if (optionsMap.containsKey("successEmailsOverride")) {
+			options.setSuccessEmailsOverridden((Boolean)optionsMap.get("successEmailsOverride"));
+		}
+		
+		if (optionsMap.containsKey("failureEmailsOverride")) {
+			options.setFailureEmailsOverridden((Boolean)optionsMap.get("failureEmailsOverride"));
 		}
 		
 		return options;

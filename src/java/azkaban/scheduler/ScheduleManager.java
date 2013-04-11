@@ -35,6 +35,7 @@ import org.joda.time.format.DateTimeFormatter;
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutionOptions;
 import azkaban.executor.ExecutorManager;
+import azkaban.executor.ExecutorManagerException;
 
 import azkaban.flow.Flow;
 import azkaban.project.Project;
@@ -379,10 +380,21 @@ public class ScheduleManager {
 									}
 									exflow.setExecutionOptions(flowOptions);
 									
+									if (!flowOptions.isFailureEmailsOverridden()) {
+										flowOptions.setFailureEmails(flow.getFailureEmails());
+									}
+									if (!flowOptions.isSuccessEmailsOverridden()) {
+										flowOptions.setSuccessEmails(flow.getSuccessEmails());
+									}
+									
 									try {
 										executorManager.submitExecutableFlow(exflow);
 										logger.info("Scheduler has invoked " + exflow.getExecutionId());
-									} catch (Exception e) {	
+									} 
+									catch (ExecutorManagerException e) {
+										throw e;
+									}
+									catch (Exception e) {	
 										e.printStackTrace();
 										throw new ScheduleManagerException("Scheduler invoked flow " + exflow.getExecutionId() + " has failed.", e);
 									}
@@ -406,7 +418,16 @@ public class ScheduleManager {
 										}
 									}
 									
-								} catch (Exception e) {
+								} 
+								catch (ExecutorManagerException e) {
+									if (e.getReason() != null && e.getReason() == ExecutorManagerException.Reason.SkippedExecution) {
+										logger.info(e.getMessage());
+									}
+									else {
+										e.printStackTrace();
+									}
+								}
+								catch (Exception e) {
 									logger.info("Scheduler failed to run job. " + e.getMessage() + e.getCause());
 								}
 

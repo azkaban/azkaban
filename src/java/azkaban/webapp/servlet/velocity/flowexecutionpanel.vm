@@ -48,13 +48,22 @@
 					<input id="notifyFailureFirst" class="checkbox" type="checkbox" name="notify" value="first" checked /> <label for="notify">First Failure</label>
 					<input id="notifyFailureLast" class="checkbox" type="checkbox" name="notify" value="last"></input> <label for="notify">Flow Finished</label>
 					
+
 					<h4>Failure Emails</h4>
+					<div>
+						<input id="overrideFailureEmails" type="checkbox" name="overrideFailureEmails" value="overrideFailureEmails" />
+						<label for="overrideFailureEmails">Override flow email settings</label>
+					</div>
 					<p>Notify these addresses on failure. Comma, space or semi-colon delimited list.</p>
 					<textarea id="failureEmails"></textarea>
 				</div>
 			
 				<div>
 					<h4>Success Emails</h4>
+					<div>
+						<input id="overrideSuccessEmails" type="checkbox" name="overrideSuccessEmails" value="overrideSuccessEmails" />
+						<label for="overrideSuccessEmails">Override flow email settings</label>
+					</div>
 					<p>Notify when the flow finishes successfully. Comma, space or semi-colon delimited list.</p>
 					<textarea id="successEmails"></textarea>
 				</div>

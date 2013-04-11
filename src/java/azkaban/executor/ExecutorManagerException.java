@@ -17,8 +17,13 @@
 package azkaban.executor;
 
 public class ExecutorManagerException extends Exception {
+	public enum Reason {
+		SkippedExecution
+	}
+	
 	private static final long serialVersionUID = 1L;
 	private ExecutableFlow flow = null;
+	private Reason reason = null;
 	
 	public ExecutorManagerException(Exception e) {
 		super(e);
@@ -33,11 +38,20 @@ public class ExecutorManagerException extends Exception {
 		this.flow = flow;
 	}
 	
+	public ExecutorManagerException(String message, Reason reason) {
+		super(message);
+		this.reason = reason;
+	}
+	
 	public ExecutorManagerException(String message, Throwable cause) {
 		super(message, cause);
 	}
 
 	public ExecutableFlow getExecutableFlow() {
 		return flow;
+	}
+	
+	public Reason getReason() {
+		return reason;
 	}
 }

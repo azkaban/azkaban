@@ -506,6 +506,9 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 		ret.put("notifyFailureFirst", options.getNotifyOnFirstFailure());
 		ret.put("notifyFailureLast", options.getNotifyOnLastFailure());
 		
+		ret.put("failureEmailsOverride", options.isFailureEmailsOverridden());
+		ret.put("successEmailsOverride", options.isSuccessEmailsOverridden());
+		
 		ret.put("concurrentOptions", options.getConcurrentOption());
 		ret.put("pipelineLevel", options.getPipelineLevel());
 		ret.put("pipelineExecution", options.getPipelineExecutionId());
@@ -718,6 +721,12 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 
 		ExecutionOptions options = HttpRequestUtils.parseFlowOptions(req);
 		exflow.setExecutionOptions(options);
+		if (!options.isFailureEmailsOverridden()) {
+			options.setFailureEmails(flow.getFailureEmails());
+		}
+		if (!options.isSuccessEmailsOverridden()) {
+			options.setSuccessEmails(flow.getSuccessEmails());
+		}
 		
 		try {
 			String message = executorManager.submitExecutableFlow(exflow);

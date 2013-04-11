@@ -28,6 +28,15 @@ public class HttpRequestUtils {
 			}
 		}
 
+		if (hasParam(req, "failureEmailsOverride")) {
+			boolean override = getBooleanParam(req, "failureEmailsOverride", false);
+			execOptions.setFailureEmailsOverridden(override);
+		}
+		if (hasParam(req, "successEmailsOverride")) {
+			boolean override = getBooleanParam(req, "successEmailsOverride", false);
+			execOptions.setSuccessEmailsOverridden(override);
+		}
+		
 		if (hasParam(req, "failureEmails")) {
 			String emails = getParam(req, "failureEmails");
 			if (!emails.isEmpty()) {
@@ -151,6 +160,23 @@ public class HttpRequestUtils {
 		return defaultVal;
 	}
 
+	public static boolean getBooleanParam(HttpServletRequest request, String name) throws ServletException  {
+		String p = getParam(request, name);
+		return Boolean.parseBoolean(p);
+	}
+	
+	public static boolean getBooleanParam(HttpServletRequest request, String name, boolean defaultVal) {
+		if (hasParam(request, name)) {
+			try {
+				return getBooleanParam(request, name);
+			} catch (Exception e) {
+				return defaultVal;
+			}
+		}
+		
+		return defaultVal;
+	}
+	
 	public static long getLongParam(HttpServletRequest request, String name) throws ServletException {
 		String p = getParam(request, name);
 		return Long.valueOf(p);
