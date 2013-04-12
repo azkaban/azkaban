@@ -31,6 +31,24 @@ azkaban.FlowExecuteDialogView= Backbone.View.extend({
   },
   initialize : function(settings) {
   	  this.model.bind('change:flowinfo', this.changeFlowInfo, this);
+  	  
+  	  $("#overrideSuccessEmails").click(function(evt) {
+		 if($(this).is(':checked')){
+		 	$('#successEmails').attr('disabled',null);
+		 }
+		 else {
+		 	$('#successEmails').attr('disabled',"disabled");
+		 }
+  	  });
+  	  
+  	   $("#overrideFailureEmails").click(function(evt) {
+		 if($(this).is(':checked')){
+		 	$('#failureEmails').attr('disabled',null);
+		 }
+		 else {
+		 	$('#failureEmails').attr('disabled',"disabled");
+		 }
+  	  });
   },
   render: function() {
   },
@@ -40,7 +58,9 @@ azkaban.FlowExecuteDialogView= Backbone.View.extend({
 	var successEmails = $('#successEmails').val();
 	var notifyFailureFirst = $('#notifyFailureFirst').is(':checked');
 	var notifyFailureLast = $('#notifyFailureLast').is(':checked');
-
+	var failureEmailsOverride = $("#overrideFailureEmails").is(':checked');
+	var successEmailsOverride = $("#overrideSuccessEmails").is(':checked');
+	
 	var flowOverride = {};
 	var editRows = $(".editRow");
 	for (var i = 0; i < editRows.length; ++i) {
@@ -68,6 +88,8 @@ azkaban.FlowExecuteDialogView= Backbone.View.extend({
 		ajax: "executeFlow",
 		flow: this.flowId,
 		disabled: disabled,
+		failureEmailOverride:failureEmailsOverride,
+		successEmailOverride:successEmailsOverride,
 		failureAction: failureAction,
 		failureEmails: failureEmails,
 		successEmails: successEmails,
@@ -102,6 +124,21 @@ azkaban.FlowExecuteDialogView= Backbone.View.extend({
   	var pipelineExecutionId = this.model.get("pipelineExecution");
   	var queueLevel = this.model.get("queueLevel");
   	var nodeStatus = this.model.get("nodeStatus");
+  	var overrideSuccessEmails = this.model.get("overrideSuccessEmails");
+  	var overrideFailureEmails = this.model.get("overrideFailureEmails");
+  	
+	if (overrideSuccessEmails) {
+		$('#overrideSuccessEmails').attr('checked', true);
+	}
+	else {
+		$('#successEmails').attr('disabled','disabled');
+	}
+	if (overrideFailureEmails) {
+		$('#overrideFailureEmails').attr('checked', true);
+	}
+	else {
+		$('#failureEmails').attr('disabled','disabled');
+	}
   	
   	if (successEmails) {
   		$('#successEmails').val(successEmails.join());
