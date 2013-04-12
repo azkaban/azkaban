@@ -48,7 +48,7 @@ public class ExecutionOptions {
 	}
 	
 	public void setFailureEmails(Collection<String> emails) {
-		failureEmails.addAll(emails);
+		failureEmails = new ArrayList<String>(emails);
 	}
 	
 	public boolean isFailureEmailsOverridden() {
@@ -72,7 +72,7 @@ public class ExecutionOptions {
 	}
 	
 	public void setSuccessEmails(Collection<String> emails) {
-		successEmails.addAll(emails);
+		successEmails = new ArrayList<String>(emails);
 	}
 	
 	public List<String> getSuccessEmails() {
