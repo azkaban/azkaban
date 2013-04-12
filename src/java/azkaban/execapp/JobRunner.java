@@ -189,7 +189,13 @@ public class JobRunner extends EventHandler implements Runnable {
 			node.setEndTime(System.currentTimeMillis());
 			fireEvent(Event.create(this, Type.JOB_FINISHED));
 			return;
-		} else if (node.getStatus() == Status.KILLED) {
+		} else if (this.cancelled) {
+			node.setStartTime(System.currentTimeMillis());
+			fireEvent(Event.create(this, Type.JOB_STARTED, null, false));
+			node.setStatus(Status.FAILED);
+			node.setEndTime(System.currentTimeMillis());
+			fireEvent(Event.create(this, Type.JOB_FINISHED));
+		} else if (node.getStatus() == Status.FAILED || node.getStatus() == Status.KILLED) {
 			node.setStartTime(System.currentTimeMillis());
 			fireEvent(Event.create(this, Type.JOB_STARTED, null, false));
 			node.setEndTime(System.currentTimeMillis());
@@ -314,14 +320,13 @@ public class JobRunner extends EventHandler implements Runnable {
 	
 	private boolean prepareJob() throws RuntimeException {
 		// Check pre conditions
-		if (props == null) {
-			node.setStatus(Status.FAILED);
+		if (props == null || cancelled) {
 			logError("Failing job. The job properties don't exist");
 			return false;
 		}
 		
 		synchronized(syncObject) {
-			if (node.getStatus() == Status.FAILED) {
+			if (node.getStatus() == Status.FAILED || cancelled) {
 				return false;
 			}
 
@@ -386,7 +391,6 @@ public class JobRunner extends EventHandler implements Runnable {
 			
 			// Cancel code here
 			if (job == null) {
-				node.setStatus(Status.FAILED);
 				logError("Job hasn't started yet.");
 				// Just in case we're waiting on the delay
 				synchronized(this) {
