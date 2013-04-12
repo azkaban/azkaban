@@ -18,8 +18,8 @@ public class ExecutionOptions {
 	
 	private boolean notifyOnFirstFailure = true;
 	private boolean notifyOnLastFailure = false;
-	private boolean failureEmailsOverride = true;
-	private boolean successEmailsOverride = true;
+	private boolean failureEmailsOverride = false;
+	private boolean successEmailsOverride = false;
 	private ArrayList<String> failureEmails = new ArrayList<String>();
 	private ArrayList<String> successEmails = new ArrayList<String>();
 	
@@ -164,7 +164,7 @@ public class ExecutionOptions {
 			return null;
 		}
 		
-		Map<String,Object> optionsMap = new HashMap<String,Object>();
+		Map<String,Object> optionsMap = (Map<String,Object>)obj;
 		
 		ExecutionOptions options = new ExecutionOptions();
 		if (optionsMap.containsKey("flowParameters")) {
