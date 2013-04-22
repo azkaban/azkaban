@@ -54,7 +54,7 @@ azkaban.SchedulePanelView= Backbone.View.extend({
   	 console.log("Creating schedule for "+projectName+"."+scheduleData.flow);
 	var scheduleTime = $('#hour').val() + "," + $('#minutes').val() + "," + $('#am_pm').val() + "," + $('#timezone').val();
 	var scheduleDate = $('#datepicker').val();
-	var is_recurring = $('#is_recurring').val();
+	var is_recurring = document.getElementById('is_recurring').checked ? 'on' : 'off'; 
 	var period = $('#period').val() + $('#period_units').val();
 	
 	scheduleData.ajax = "scheduleFlow";
