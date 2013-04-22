@@ -1,0 +1,128 @@
+body {
+	margin: 0px;
+	padding: 0px;
+	background-color: #DDD;
+	font-family: sans-serif;
+}
+
+#block {
+	margin-left: 100px;
+	margin-right: 100px;
+	box-shadow: 0px 0px 10px 3px #888;
+}
+
+/* Template Header Styles */
+#header {
+	height: 108px;
+	background: #212121;
+	background: -moz-linear-gradient(top, #373737, #212121);
+	background: -webkit-linear-gradient(top, #000, #212121);
+	background: -ms-linear-gradient(top, #373737, #212121);
+	background: -o-linear-gradient(top, #373737, #212121);
+	background: linear-gradient(top, #373737, #212121);
+	background-repeat: repeat-x;
+}
+
+#header-title {
+	margin-top: 25px;
+	margin-left: 20px;
+	float: left;
+}
+
+#header-icon {
+	float: left;
+	height: 38px;
+	width: 38px;
+	background-image: url('../images/logo.png');
+}
+
+#header-name {
+	font-family: 'Lucida Grande', 'Calibri', Helvetica, Arial, sans-serif;
+	font-weight: bold;
+	float: left;
+	color: #EEE;
+	font-size: 22pt;
+	text-shadow: #111 0px 0px 10px;
+	margin: 5px 0px 0px 5px;
+}
+
+#header-sub-name {
+	font-weight: normal;
+	clear: both;
+	color: #CCC;
+	margin-left: 45px;
+}
+
+#header-buttons {
+	float: right;
+	margin-top: 45px;
+	margin-right: 10px;
+}
+
+#header-buttons .header-button {
+	float: right;
+	height: 48px;
+	width: 50px;
+	background-image: url('../images/azkaban-bigicons.png');
+}
+
+#sourceLink .header-button {
+	background-position: 0px 49px;
+}
+
+#sourceLink .header-button:hover {
+	background-position: 50px 49px;
+}
+
+#downloadLink .header-button {
+	background-position: 0px 98px;
+}
+
+#downloadLink .header-button:hover {
+	background-position: 50px 98px;
+}
+
+#downloadLink .header-button {
+	background-position: 0px 98px;
+}
+
+#docsLink .header-button {
+	background-position: 0px 0px;
+}
+
+#docsLink .header-button:hover {
+	background-position: 50px 0px;
+}
+
+#bugsLink .header-button {
+	background-position: 0px 148px;
+}
+
+#bugsLink .header-button:hover {
+	background-position: 50px 148px;
+}
+/* navigation */
+#navigation {
+	float: left;
+	width: 200px;
+	background-color: #CCC;
+}
+
+#content {
+	background-color: #DDD;
+}
+
+/* Template Content Styles */
+#content {
+	min-height: 200px;
+	background-color: #FFF;
+}
+
+
+#block {
+	background-color: #FFF;
+}
+
+#main {
+	background-color: #FFF;
+}
