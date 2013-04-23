@@ -3,11 +3,15 @@ package azkaban.execapp.event;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.apache.log4j.Logger;
+
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutableNode;
 import azkaban.executor.Status;
 
 public abstract class FlowWatcher {
+	private static final Logger logger = Logger.getLogger(FlowWatcher.class);
+	
 	private int execId;
 	private ExecutableFlow flow;
 	private Map<String, BlockingStatus> map = new ConcurrentHashMap<String, BlockingStatus>();
@@ -26,6 +30,10 @@ public abstract class FlowWatcher {
 	 * @param jobId
 	 */
 	protected synchronized void handleJobFinished(String jobId, Status status) {
+		if (cancelWatch) {
+			return;
+		}
+
 		BlockingStatus block = map.get(jobId);
 		if (block != null) {
 			block.changeStatus(status);
@@ -65,11 +73,15 @@ public abstract class FlowWatcher {
 	}
 	
 	public synchronized void failAllWatches() {
+		logger.info("Failing all watches on " + execId);
 		cancelWatch = true;
 		
 		for(BlockingStatus status : map.values()) {
+			status.changeStatus(Status.KILLED);
 			status.unblock();
 		}
+		
+		logger.info("Successfully failed all watches on " + execId);
 	}
 	
 	public boolean isWatchCancelled() {
