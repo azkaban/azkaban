@@ -95,6 +95,9 @@ public class RemoteFlowWatcher extends FlowWatcher {
 
 	@Override
 	public synchronized void stopWatcher() {
+		if(isShutdown) {
+			return;
+		}
 		isShutdown = true;
 		if (thread != null) {
 			thread.interrupt();

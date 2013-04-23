@@ -1,5 +1,7 @@
 package azkaban.execapp.event;
 
+import com.sun.org.apache.regexp.internal.recompile;
+
 import azkaban.execapp.FlowRunner;
 import azkaban.execapp.JobRunner;
 import azkaban.executor.ExecutableNode;
@@ -7,6 +9,7 @@ import azkaban.executor.ExecutableNode;
 public class LocalFlowWatcher extends FlowWatcher {
 	private LocalFlowWatcherListener watcherListener;
 	private FlowRunner runner;
+	private boolean isShutdown = false;
 	
 	public LocalFlowWatcher(FlowRunner runner) {
 		super(runner.getExecutableFlow().getExecutionId());
@@ -20,6 +23,11 @@ public class LocalFlowWatcher extends FlowWatcher {
 	@Override
 	public void stopWatcher() {
 		// Just freeing stuff
+		if(isShutdown) {
+			return;
+		}
+		
+		isShutdown = true;
 		runner.removeListener(watcherListener);
 		runner = null;
 		
