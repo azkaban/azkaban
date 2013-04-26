@@ -13,14 +13,17 @@ body {
 
 /* Template Header Styles */
 #header {
-	height: 108px;
-	background: #212121;
-	background: -moz-linear-gradient(top, #373737, #212121);
-	background: -webkit-linear-gradient(top, #000, #212121);
-	background: -ms-linear-gradient(top, #373737, #212121);
-	background: -o-linear-gradient(top, #373737, #212121);
-	background: linear-gradient(top, #373737, #212121);
-	background-repeat: repeat-x;
+	height: 140px;
+
+background: #515557; /* Old browsers */
+background: -moz-linear-gradient(top, #515557 0%, #434749 50%, #323536 51%, #515557 100%); /* FF3.6+ */
+background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,#515557), color-stop(50%,#434749), color-stop(51%,#323536), color-stop(100%,#515557)); /* Chrome,Safari4+ */
+background: -webkit-linear-gradient(top, #515557 0%,#434749 50%,#323536 51%,#515557 100%); /* Chrome10+,Safari5.1+ */
+background: -o-linear-gradient(top, #515557 0%,#434749 50%,#323536 51%,#515557 100%); /* Opera 11.10+ */
+background: -ms-linear-gradient(top, #515557 0%,#434749 50%,#323536 51%,#515557 100%); /* IE10+ */
+background: linear-gradient(to bottom, #515557 0%,#434749 50%,#323536 51%,#515557 100%); /* W3C */
+filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#515557', endColorstr='#515557',GradientType=0 ); /* IE6-9 */
+
 }
 
 #header-title {
@@ -31,31 +34,34 @@ body {
 
 #header-icon {
 	float: left;
-	height: 38px;
-	width: 38px;
-	background-image: url('../images/logo.png');
+	height: 100px;
+	width: 64px;
+	background-size: 100%;
+	background-image: url('../images/whiteazkaban.png');
+}
+
+#header-text {
+	float: left;
 }
 
 #header-name {
 	font-family: 'Lucida Grande', 'Calibri', Helvetica, Arial, sans-serif;
 	font-weight: bold;
-	float: left;
 	color: #EEE;
-	font-size: 22pt;
-	text-shadow: #111 0px 0px 10px;
+	font-size: 30pt;
+	text-shadow: rgba(255,255,255, 0.5) 0px 0px 10px;
 	margin: 5px 0px 0px 5px;
 }
 
 #header-sub-name {
+	margin: 0px 2px;
 	font-weight: normal;
-	clear: both;
 	color: #CCC;
-	margin-left: 45px;
 }
 
 #header-buttons {
 	float: right;
-	margin-top: 45px;
+	margin-top: 78px;
 	margin-right: 10px;
 }
 
@@ -63,43 +69,47 @@ body {
 	float: right;
 	height: 48px;
 	width: 50px;
-	background-image: url('../images/azkaban-bigicons.png');
 }
 
 #sourceLink .header-button {
-	background-position: 0px 49px;
+	background-image: url('../images/azkaban-bigicons-white.png');
+	background-position: 2px 49px;
 }
 
 #sourceLink .header-button:hover {
-	background-position: 50px 49px;
+	background-position: -50px 49px;
 }
 
 #downloadLink .header-button {
-	background-position: 0px 98px;
+	background-image: url('../images/azkaban-bigicons-white.png');
+	background-position: 2px 98px;
 }
 
 #downloadLink .header-button:hover {
-	background-position: 50px 98px;
+	background-position: -50px 98px;
 }
 
 #downloadLink .header-button {
-	background-position: 0px 98px;
+	background-image: url('../images/azkaban-bigicons-white.png');
+	background-position: 2px 98px;
 }
 
 #docsLink .header-button {
-	background-position: 0px 0px;
+	background-image: url('../images/azkaban-bigicons-white.png');
+	background-position: 2px 0px;
 }
 
 #docsLink .header-button:hover {
-	background-position: 50px 0px;
+	background-position: -50px 0px;
 }
 
 #bugsLink .header-button {
-	background-position: 0px 148px;
+	background-image: url('../images/azkaban-bigicons-white.png');
+	background-position: 2px 148px;
 }
 
 #bugsLink .header-button:hover {
-	background-position: 50px 148px;
+	background-position: -50px 148px;
 }
 /* navigation */
 #navigation {
