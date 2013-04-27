@@ -2,7 +2,7 @@
 layout: azkaban
 nav: license
 ---
-## License
+# License
 
 Azkaban has been open-sourced under the [Apache 2.0 License](http://www.apache.org/licenses/LICENSE-2.0).
  This applies to the project itself and may not be applied to its dependencies.

@@ -3,7 +3,7 @@ layout: azkaban
 nav: contact
 ---
 
-##Contact
+#Contact
 
 ### Mailing List
 For questions and comments, please post messages to Azkaban's Google.

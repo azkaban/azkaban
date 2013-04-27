@@ -4,6 +4,11 @@ layout: default
 <div id="navigation">
 	<ul>
 		<li id="nav-home" {% if page.nav == "home" %}class="selected"{% endif %}><a href="./">Home</a></li>
+		<li id="nav-documents" class="expandable  {% if page.nav == "documents" %}selected{% endif %} {% if page.expand == "documents" %}expand{% endif %}"><a href="./documents.html">Documents</a><span class="arrow"></span>
+			<ul class="submenu">
+				<li {% if page.nav == "installation" %}class="selected"{% endif %}><a href="./installation.html">Installation</a></li>
+			</ul>
+		</li>
 		<li id="nav-downloads" {% if page.nav == "downloads" %}class="selected"{% endif %}><a href="./downloads.html">Downloads</a></li>
 		<li id="nav-license" {% if page.nav == "license" %}class="selected"{% endif %}><a href="./license.html">License</a></li>
 		<li id="nav-contact" {% if page.nav == "contact" %}class="selected"{% endif %}><a href="./contact.html">Contact</a></li>

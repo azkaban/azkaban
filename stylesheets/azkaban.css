@@ -14,6 +14,10 @@ h3 {
 	margin-top: 15px;
 }
 
+li > ul {
+	padding-left: 20px;
+}
+
 a:hover {
 	text-decoration: underline;
 }
@@ -84,6 +88,7 @@ a:hover {
 
 #header-buttons {
 	float: right;
+	width: 200px;
 	margin-top: 78px;
 	margin-right: 10px;
 }
@@ -146,7 +151,12 @@ a:hover {
 
 #navigation li {
 	list-style-type: none;
-	margin: 2px 3px 2px;
+	margin: 2px 3px 2px 0px;
+}
+
+#navigation li ul li {
+	margin-left: 1px;
+	list-style-type:none;
 }
 
 #navigation li a {
@@ -156,11 +166,35 @@ a:hover {
 
 #navigation li.selected a {
 	color: #FFF;
-}
-
-#navigation li.selected {
 	background-color: #009FC9;
 }
+
+#navigation li ul {
+	margin-top: 5px;
+}
+
+#navigation li.selected ul.submenu a {
+	background-color: #fff;
+	color: #009FC9;
+	font-weight: normal;
+}
+
+#navigation li.expand .arrow {
+	background-position: 0px -16px;
+}
+
+
+
+#navigation li .arrow {
+	margin-right: 5px;
+	float: right;
+	width: 16px;
+	height: 16px;
+	cursor: pointer;
+	background-image: url('../images/ui-icons_009FC9_256x240.png');
+	background-position: -64px -16px;
+}
+
 
 /* Template Content Styles */
 #content {
