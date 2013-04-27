@@ -10,6 +10,10 @@ a {
 	text-decoration: none;
 }
 
+h3 {
+	margin-top: 15px;
+}
+
 a:hover {
 	text-decoration: underline;
 }
@@ -156,9 +160,9 @@ a:hover {
 /* Template Content Styles */
 #content {
 	margin-left: 200px;
-	min-height: 200px;
+	min-height: 400px;
 	background-color: #FFF;
-	padding: 0px 100px 100px 10px;
+	padding: 0px 80px 80px 10px;
 }
 
 #block {
