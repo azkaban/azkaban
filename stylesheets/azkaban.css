@@ -71,6 +71,11 @@ a:hover {
 	margin: 5px 0px 0px 5px;
 }
 
+#header-name a {
+	color: inherit;
+	text-decoration: none;
+}
+
 #header-sub-name {
 	margin: 0px 2px;
 	font-weight: normal;
