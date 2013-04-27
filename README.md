@@ -1,5 +1,4 @@
-azkaban2
+Azkaban github page source
 ========
 
-The github page source.
-View the page at (https://azkaban.github.io/azkaban2).
+View the page at [Azkaban2 Github Page](http://azkaban.github.io/azkaban2).
