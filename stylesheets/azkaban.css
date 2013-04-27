@@ -172,18 +172,18 @@ a:hover {
 #navigation li ul {
 	margin-top: 5px;
 }
+#navigation .submenu {
+	font-size: 12px;
+}
 
 #navigation li.selected ul.submenu a {
 	background-color: #fff;
 	color: #009FC9;
-	font-weight: normal;
 }
 
 #navigation li.expand .arrow {
 	background-position: 0px -16px;
 }
-
-
 
 #navigation li .arrow {
 	margin-right: 5px;
