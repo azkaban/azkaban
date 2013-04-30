@@ -1,8 +1,7 @@
 ---
 layout: azkaban
 nav: overview
-context: ../..
-version: 2.1
+context: .
 ---
 
 #Overview

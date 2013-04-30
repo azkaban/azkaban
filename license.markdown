@@ -1,6 +1,7 @@
 ---
 layout: azkaban
 nav: license
+context: .
 ---
 # License
 
