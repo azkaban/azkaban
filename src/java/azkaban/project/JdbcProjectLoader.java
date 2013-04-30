@@ -295,6 +295,7 @@ public class JdbcProjectLoader implements ProjectLoader {
 		}
 	}
 
+	@SuppressWarnings("resource")
 	private void uploadProjectFile(Connection connection, Project project, int version, String filetype, String filename, File localFile, String uploader) throws ProjectManagerException {
 		QueryRunner runner = new QueryRunner();
 		long updateTime = System.currentTimeMillis();
@@ -384,6 +385,7 @@ public class JdbcProjectLoader implements ProjectLoader {
 		return handler;
 	}
 	
+	@SuppressWarnings("resource")
 	private ProjectFileHandler getUploadedFile(Connection connection, int projectId, int version) throws ProjectManagerException {
 		QueryRunner runner = new QueryRunner();
 		ProjectVersionResultHandler pfHandler = new ProjectVersionResultHandler();
