@@ -53,6 +53,10 @@ although the search requirement on historically running jobs benefits from a rel
 The AzkabanWebServer is the main manager to all of Azkaban. It handles project management, authentication, scheduler, and monitoring of executions.
 It also serves as the web user interface.
 
+Using Azkaban is easy. Azkaban uses _\*.job_ key-value property files to define individual tasks in a work flow, and the _dependencies_ property to
+define the dependency chain of the jobs. These job files and associated code can be archived into a _\*.zip_ and uploaded through the web server through
+the Azkaban UI or through curl.
+
 <br/>
 <br/>
 ## AzkabanExecutorServer
@@ -60,7 +64,6 @@ Previous versions of Azkaban had both the AzkabanWebServer and the AzkabanExecut
 since been separated into its own server. There were several reasons for splitting these services: we will soon be able to scale the number 
 of executions and fall back on operating Executors if one fails. Also, we are able to roll our upgrades of Azkaban with minimal impact on the users. 
 As Azkaban's usage grew, we found that upgrading Azkaban became increasingly more difficult as all times of the day became 'peak'.
- 
 
 
 
