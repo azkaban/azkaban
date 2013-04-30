@@ -1,6 +1,5 @@
 package azkaban.execapp.event;
 
-import com.sun.org.apache.regexp.internal.recompile;
 
 import azkaban.execapp.FlowRunner;
 import azkaban.execapp.JobRunner;
