@@ -5,7 +5,7 @@ expand: installation
 context: ../..
 
 ---
-#Setup AzkabanExecutorServer
+#Setup Azkaban Executor Server
 Azkaban Executor Server handles the actual execution of the workflow and jobs.
 
 ----------
