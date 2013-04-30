@@ -16,6 +16,13 @@ There are three servers that need to be setup:
 
 ### 1. [Setup the Database](./database.html)
 * Azkaban uses MySQL to manage projects, schedules and executions.
-		
+
 ### 2. [Download and Install the Web Server](./webserversetup.html)
 * Azkaban Web server consists of the web interface, the scheduler and the project manager
+
+### 3. [Download and Install the Executor Server](./execserversetup.html)
+* Azkaban Executor server runs the workflows
+
+### 4. [Install Azkaban Plugins](./pluginsetup.html)
+* Optional step for installing common Azkaban plugins.
+
