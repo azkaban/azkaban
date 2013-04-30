@@ -1,0 +1,12 @@
+	<ul>
+		<li id="nav-home" {% if page.nav == "home" %}class="selected"{% endif %}><a href="{{page.context}}/">Home</a></li>
+		<li id="nav-documents" {% if page.nav == "documents" %}class="selected"{% endif %}><a href="./">Documents</a></li>
+		
+		<li id="nav-installation" class="expandable  {% if page.nav == "installation" %}selected{% endif %} {% if page.expand == "installation" %}expand{% endif %}"><a href="./installation.html">Installation</a><span class="arrow"></span>
+			<ul class="submenu">
+				<li {% if page.nav == "database" %}class="selected"{% endif %}><a href="./database.html">Database Setup</a></li>
+				<li {% if page.nav == "webserversetup" %}class="selected"{% endif %}><a href="./webserversetup.html">Web Server Setup</a></li>
+				<li {% if page.nav == "execserversetup" %}class="selected"{% endif %}><a href="./execserversetup.html">Executor Server Setup</a></li>
+			</ul>
+		</li>
+</ul>

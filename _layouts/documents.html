@@ -1,4 +1,3 @@
-
 <html>
 	<head>
 		{% include includes.html %}
@@ -9,9 +8,10 @@
 			
 			<div id="main">
 				<div id="navigation">
-					{% include basenav.html %}
+					{% include documentsnav.html %}
 				</div>
 				<div id="content">
+					<h1>{{page.title}}</h1>
 					{{ content }}
 				</div>
 			</div>

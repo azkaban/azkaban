@@ -1,6 +1,7 @@
 ---
 layout: azkaban
 nav: home
+context: .
 ---
 
 #Azkaban

@@ -5,13 +5,30 @@ body {
 	font-family: sans-serif;
 }
 
+table {
+	font-size: 11pt;
+}
+
+th {
+	text-align: left;
+}
+
+td {
+	margin: 0px 5px;
+}
+
 a {
 	color: #009FC9;
 	text-decoration: none;
 }
 
 h3 {
-	margin-top: 15px;
+	margin-top: 20px;
+	margin-bottom: 5px;
+}
+
+p {
+	margin: 5px 0px;
 }
 
 li > ul {
