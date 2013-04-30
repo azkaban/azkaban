@@ -37,8 +37,7 @@ Create a user for Azkaban if one hasn't been made, and give the user _INSERT, SE
 mysql> GRANT SELECT,INSERT,UPDATE,DELETE PRIVILEGES ON database.* to 'username'@'%' WITH GRANT OPTION;
 </pre>
 
-* Configure Packet Size
-However, MySQL may have, by default, a ridiculously low allowable packet size. To increase it, you'll need
+* Configure Packet Size may need to be configured. MySQL may have, by default, a ridiculously low allowable packet size. To increase it, you'll need
 to have the property max_allowed_packet set to something higher, say 1024M.
 	* To configure this in linux, open _/etc/my.cnf_.
 	* Somewhere after mysqld, add the following

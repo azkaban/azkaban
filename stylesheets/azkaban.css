@@ -5,16 +5,20 @@ body {
 	font-family: sans-serif;
 }
 
-table {
+table.params {
 	font-size: 11pt;
+	background-color: #EEE;
+	border-spacing: 0px;
 }
 
-th {
+table.params td {
+	padding: 2px 10px;
+	min-width: 100px;
+	border: 1px solid #FFF;
+}
+table.params th  {
 	text-align: left;
-}
-
-td {
-	margin: 0px 5px;
+	padding: 5px 10px;
 }
 
 a {
