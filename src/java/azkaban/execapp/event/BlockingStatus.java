@@ -35,8 +35,10 @@ public class BlockingStatus {
 		return this.status;
 	}
 	
-	public synchronized void unblock() {
-		this.notifyAll();
+	public void unblock() {
+		synchronized(this) {
+			this.notifyAll();
+		}
 	}
 	
 	public void changeStatus(Status status) {

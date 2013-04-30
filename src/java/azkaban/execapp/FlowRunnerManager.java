@@ -502,11 +502,12 @@ public class FlowRunnerManager implements EventListener {
 	@Override
 	public void handleEvent(Event event) {
 		if (event.getType() == Event.Type.FLOW_FINISHED) {
+			
 			FlowRunner flowRunner = (FlowRunner)event.getRunner();
 			ExecutableFlow flow = flowRunner.getExecutableFlow();
 
 			recentlyFinishedFlows.put(flow.getExecutionId(), flow);
-			logger.info("Flow " + flow.getFlowId() + " is finished. Adding it to recently finished flows list.");
+			logger.info("Flow " + flow.getExecutionId() + " is finished. Adding it to recently finished flows list.");
 			runningFlows.remove(flow.getExecutionId());
 		}
 	}

@@ -709,6 +709,10 @@ public class ExecutorManager {
 			}
 
 			// Delete the executing reference.
+			if (flow.getEndTime() == -1) {
+				flow.setEndTime(System.currentTimeMillis());
+				executorLoader.updateExecutableFlow(dsFlow);
+			}
 			executorLoader.removeActiveExecutableReference(execId);
 			
 			runningFlows.remove(execId);

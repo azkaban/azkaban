@@ -155,9 +155,11 @@ public class FlowRunner extends EventHandler implements Runnable {
 			if (watcher != null) {
 				watcher.stopWatcher();
 			}
-			
-			closeLogger();
+
 			flow.setEndTime(System.currentTimeMillis());
+			logger.info("Setting end time for flow " + execId + " to " + System.currentTimeMillis());
+			closeLogger();
+			
 			updateFlow();
 			this.fireEventListeners(Event.create(this, Type.FLOW_FINISHED));
 		}
@@ -347,9 +349,11 @@ public class FlowRunner extends EventHandler implements Runnable {
 				flow.setStatus(Status.FAILED);
 			case FAILED:
 			case KILLED:
+				logger.info("Flow is set to " + flow.getStatus().toString());
 				break;
 			default:
 				flow.setStatus(Status.SUCCEEDED);
+				logger.info("Flow is set to " + flow.getStatus().toString());
 			}
 		}
 	}
@@ -520,18 +524,22 @@ public class FlowRunner extends EventHandler implements Runnable {
 	
 	private void cancel() {
 		synchronized(mainSyncObj) {
+			logger.info("Cancel has been called on flow " + execId);
 			flowPaused = false;
 			flowCancelled = true;
 			
 			if (watcher != null) {
+				logger.info("Watcher is attached. Stopping watcher.");
 				watcher.stopWatcher();
 			}
 			
+			logger.info("Cancelling " + activeJobRunners.size() + " jobs.");
 			for (JobRunner runner : activeJobRunners.values()) {
 				runner.cancel();
 			}
 			
 			if (flow.getStatus() != Status.FAILED && flow.getStatus() != Status.FAILED_FINISHING) {
+				logger.info("Setting flow status to " + Status.KILLED.toString());
 				flow.setStatus(Status.KILLED);
 			}
 		}
@@ -685,6 +693,8 @@ public class FlowRunner extends EventHandler implements Runnable {
 						logger.info("Job " + node.getJobId() + " had output props.");
 						jobOutputProps.put(node.getJobId(), runner.getOutputProps());
 					}
+					
+					updateFlow();
 					
 					if (node.getStatus() == Status.FAILED) {
 						// Retry failure if conditions are met.
