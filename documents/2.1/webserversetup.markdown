@@ -2,7 +2,7 @@
 layout: documents
 nav: webserversetup
 expand: installation
-context: ../../..
+context: ../..
 ---
 #Setup Azkaban Web Server
 

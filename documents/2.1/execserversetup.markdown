@@ -2,7 +2,7 @@
 layout: documents
 nav: execserversetup
 expand: installation
-context: ../../..
+context: ../..
 ---
 #Setup Azkaban Executor Server
 
