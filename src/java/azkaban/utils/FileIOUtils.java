@@ -150,6 +150,7 @@ public class FileIOUtils {
 		
 		long skipped = fileStream.skip(offset);
 		if (skipped < offset) {
+			fileStream.close();
 			return new Pair<Integer,Integer>(0, 0);
 		}
 
@@ -174,6 +175,7 @@ public class FileIOUtils {
 		
 		long skipped = fileStream.skip(fileOffset);
 		if (skipped < fileOffset) {
+			fileStream.close();
 			return new LogData(fileOffset, 0, "");
 		}
 		
