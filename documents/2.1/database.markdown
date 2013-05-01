@@ -1,7 +1,7 @@
 ---
 layout: documents
 nav: database
-expand: installation
+expand: gettingstarted
 context: ../..
 ---
 #Database Setup

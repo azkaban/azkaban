@@ -6,5 +6,8 @@ context: ../..
 
 #Documents ver 2.1
 
-###[Installation](./installation.html)
+###[Getting Started](./gettingstarted.html)
 Instructions on how to setup the database and install Azkaban.
+
+###[Configuration](./configuration.html)
+Different switches and dials for configuring Azkaban

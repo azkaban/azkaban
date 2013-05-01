@@ -16,9 +16,18 @@ table.params td {
 	min-width: 100px;
 	border: 1px solid #FFF;
 }
+
 table.params th  {
 	text-align: left;
 	padding: 5px 10px;
+}
+
+table.params th.parameter  {
+	width: 150px;
+}
+
+table.params th.description  {
+
 }
 
 a {

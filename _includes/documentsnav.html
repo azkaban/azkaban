@@ -2,12 +2,19 @@
 		<li id="nav-home" {% if page.nav == "home" %}class="selected"{% endif %}><a href="{{page.context}}/">Home</a></li>
 		<li id="nav-documents" {% if page.nav == "documents" %}class="selected"{% endif %}><a href="./">Documents</a></li>
 		
-		<li id="nav-installation" class="expandable  {% if page.nav == "installation" %}selected{% endif %} {% if page.expand == "installation" %}expand{% endif %}"><a href="./installation.html">Installation</a><span class="arrow"></span>
+		<li id="nav-gettingstarted" class="expandable  {% if page.nav == "gettingstarted" %}selected{% endif %} {% if page.expand == "gettingstarted" %}expand{% endif %}"><a href="./gettingstarted.html">Getting Started</a><span class="arrow"></span>
 			<ul class="submenu">
 				<li {% if page.nav == "database" %}class="selected"{% endif %}><a href="./database.html">Database Setup</a></li>
 				<li {% if page.nav == "webserversetup" %}class="selected"{% endif %}><a href="./webserversetup.html">Web Setup</a></li>
 				<li {% if page.nav == "execserversetup" %}class="selected"{% endif %}><a href="./execserversetup.html">Executor Setup</a></li>
 				<li {% if page.nav == "pluginsetup" %}class="selected"{% endif %}><a href="./pluginsetup.html">Plugin Setup</a></li>
+				<li {% if page.nav == "upgradefrom20" %}class="selected"{% endif %}><a href="./upgradefrom20.html">Upgrade from 2.0</a></li>
+			</ul>
+		</li>
+		<li id="nav-configuration" class="expandable  {% if page.nav == "configuration" %}selected{% endif %} {% if page.expand == "configuration" %}expand{% endif %}"><a href="./configuration.html">Configurations</a><span class="arrow"></span>
+			<ul class="submenu">
+				<li {% if page.nav == "azkabanwebserver" %}class="selected"{% endif %}><a href="./azkabanwebserver.html">AzkabanWebServer</a></li>
+				<li {% if page.nav == "azkabanexecserver" %}class="selected"{% endif %}><a href="./azkabanexecserver.html">AzkabanExecutorServer</a></li>
 			</ul>
 		</li>
 </ul>

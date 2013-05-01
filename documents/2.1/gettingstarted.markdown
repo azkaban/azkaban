@@ -1,12 +1,12 @@
 ---
 layout: documents
-nav: installation
-expand: installation
+nav: gettingstarted
+expand: gettingstarted
 context: ../..
 version: 2.1
 ---
 
-#Installation
+#Getting Started
 
 Azkaban2 is fairly easy to set up, although has more moving pieces than its predecessor. The most challenging piece to setup is the database.
 There are three servers that need to be setup:
