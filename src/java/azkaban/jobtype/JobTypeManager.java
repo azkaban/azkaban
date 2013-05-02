@@ -81,7 +81,7 @@ public class JobTypeManager
 	private void loadDefaultTypes() throws JobTypeManagerException{
 		jobToClass.put("command", ProcessJob.class);
 		jobToClass.put("javaprocess", JavaProcessJob.class);
-		jobToClass.put("propertyPusher", NoopJob.class);
+		jobToClass.put("noop", NoopJob.class);
 		jobToClass.put("python", PythonJob.class);
 		jobToClass.put("ruby", RubyJob.class);
 		jobToClass.put("script", ScriptJob.class);	

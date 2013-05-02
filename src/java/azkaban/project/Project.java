@@ -17,11 +17,13 @@
 package azkaban.project;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import azkaban.flow.Flow;
 import azkaban.user.Permission;
@@ -43,14 +45,6 @@ public class Project {
 	private LinkedHashMap<String, Permission> groupPermissionMap = new LinkedHashMap<String, Permission>();
 	private Map<String, Flow> flows = null;
 	private HashSet<String> proxyUsers = new HashSet<String>();
-	
-	public HashSet<String> getProxyUsers() {
-		return proxyUsers;
-	}
-	
-	public void setProxyUsers(HashSet<String> proxyUsers) {
-		this.proxyUsers = proxyUsers;
-	}
 	
 	public Project(int id, String name) {
 		this.id = id;
@@ -99,6 +93,26 @@ public class Project {
 		}
 		
 		return permissions;
+	}
+	
+	public Set<String> getProxyUsers() {
+		return new HashSet<String>(proxyUsers);
+	}
+	
+	public void addAllProxyUsers(Collection<String> proxyUsers) {
+		this.proxyUsers.addAll(proxyUsers);
+	}
+	
+	public boolean hasProxyUser(String proxy) {
+		return this.proxyUsers.contains(proxy);
+	}
+	
+	public void addProxyUser(String user) {
+		this.proxyUsers.add(user);
+	}
+	
+	public void removeProxyUser(String user) {
+		this.proxyUsers.remove(user);
 	}
 	
 	public boolean hasPermission(User user, Type type) {
@@ -294,8 +308,7 @@ public class Project {
 		}
 		
 		List<String> proxyUserList = (List<String>) projectObject.get("proxyUsers");
-		HashSet<String> proxyUsers = new HashSet<String>(proxyUserList);
-		project.setProxyUsers(proxyUsers);
+		project.addAllProxyUsers(proxyUserList);
 
 		return project;
 	}
@@ -409,27 +422,4 @@ public class Project {
 	public void setVersion(int version) {
 		this.version = version;
 	}
-
-	public List<String> getProxyUserList() {
-		return new ArrayList<String>(proxyUsers);
-	}
-
-//	public Object getSettingsObject() {
-//		HashMap<String, Object> projectObject = new HashMap<String, Object>();
-//		ArrayList<String> proxyUserList = new ArrayList<String>(proxyUsers);
-//		projectObject.put("proxyUsers", proxyUserList);
-//		
-//		return projectObject;
-//	}
-//	
-//	@SuppressWarnings("unchecked")
-//	public static HashSet<String> proxyUserFromSettingsObj(Object object) {
-//		Map<String, Object> settingsObj = (Map<String, Object>) object;
-//
-//		List<String> proxyUserList = (List<String>) settingsObj.get("proxyUsers");
-//		HashSet<String> proxyUsers = new HashSet<String>(proxyUserList);
-//		
-//		return proxyUsers;
-//	}
-
 }

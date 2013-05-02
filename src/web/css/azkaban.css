@@ -735,10 +735,22 @@ tr:hover td {
 
 #user-box {
 	background-color: #FFF;
-	border-width: 1px;
-	border-color: #CCC;
-	width: 300px;
 	margin-left: 10px;
+	width: 300px;
+	border-style: solid;
+	border-color: #CCC;
+	height: 20px;
+	font-size: 11pt;
+}
+
+#proxy-user-box {
+	background-color: #FFF;
+	margin-left: 10px;
+	width: 300px;
+	border-style: solid;
+	border-color: #CCC;
+	height: 20px;
+	font-size: 11pt;
 }
 
 #create-project #overwrite {
@@ -2065,31 +2077,32 @@ table.parameters tr td {
 }
 
 .permission-table .tb-username {
-	margin: 0px;
+	text-align:left;
+	padding-left: 10px;
 }
 
 .permission-table .tb-perm {
-	width: 60px;
+	width: 41px;
 	margin: 0px;
 }
 
 .permission-table .tb-admin {
-	width: 60px;
+	width: 41px;
 	margin: 0px;
 }
 
 .permission-table .tb-read {
-	width: 60px;
+	width: 33px;
 	margin: 0px;
 }
 
 .permission-table .tb-write {
-	width: 60px;
+	width: 34px;
 	margin: 0px;
 }
 
 .permission-table .tb-execute {
-	width: 60px;
+	width: 51px;
 	margin: 0px;
 }
 
@@ -2100,7 +2113,9 @@ table.parameters tr td {
 
 .permission-table .tb-action {
 	margin: 0px;
-	width: 100px;
+	width: 70px;
+	min-width: 70px;
+	max-width: 70px;
 }
 
 .permission-table thead tr th.tb-username {

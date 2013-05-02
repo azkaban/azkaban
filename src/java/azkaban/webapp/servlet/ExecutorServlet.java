@@ -717,7 +717,7 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 		
 		ExecutableFlow exflow = new ExecutableFlow(flow);
 		exflow.setSubmitUser(user.getUserId());
-		exflow.setProxyUsers(project.getProxyUsers());
+		exflow.addAllProxyUsers(project.getProxyUsers());
 
 		ExecutionOptions options = HttpRequestUtils.parseFlowOptions(req);
 		exflow.setExecutionOptions(options);

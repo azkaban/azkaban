@@ -41,7 +41,7 @@ public class ProjectManager {
 		this.projectVersionRetention = (props.getInt("project.version.retention", 3));
 		logger.info("Project version retention is set to " + projectVersionRetention);
 		
-		this.creatorDefaultPermissions = props.getBoolean("azkaban.creator.default.permissions", true);
+		this.creatorDefaultPermissions = props.getBoolean("creator.default.proxy", true);
 		
 		if (!tempDir.exists()) {
 			tempDir.mkdirs();
@@ -233,6 +233,22 @@ public class ProjectManager {
 
 	public void updateProjectSetting(Project project) throws ProjectManagerException {
 		projectLoader.updateProjectSettings(project);		
+	}
+	
+	public void addProjectProxyUser(Project project, String proxyName, User modifier) throws ProjectManagerException {
+		logger.info("User " + modifier.getUserId() + " adding proxy user " + proxyName + " to project " + project.getName());
+		project.addProxyUser(proxyName);
+		
+		projectLoader.postEvent(project, EventType.PROXY_USER, modifier.getUserId(), "Proxy user " + proxyName + " is added to project.");
+		updateProjectSetting(project);
+	}
+	
+	public void removeProjectProxyUser(Project project, String proxyName, User modifier) throws ProjectManagerException {
+		logger.info("User " + modifier.getUserId() + " removing proxy user " + proxyName + " from project " + project.getName());
+		project.removeProxyUser(proxyName);
+		
+		projectLoader.postEvent(project, EventType.PROXY_USER, modifier.getUserId(), "Proxy user " + proxyName + " has been removed form the project.");
+		updateProjectSetting(project);
 	}
 	
 	public void updateProjectPermission(Project project, String name, Permission perm, boolean group, User modifier) throws ProjectManagerException {

@@ -103,8 +103,8 @@
 			<tbody>
 #if($permissions)
 #foreach($perm in $permissions)
-	<tr id="${perm.first}-row" >
-		<td class="tb-name">#if($perm.first == $username) ${perm.first} <span class="sublabel">(you)</span> #else $perm.first #end</td>
+	<tr>
+		<td class="tb-username">#if($perm.first == $username) ${perm.first} <span class="sublabel">(you)</span> #else $perm.first #end</td>
 		#if ($perm.second.isPermissionNameSet("ADMIN")) 
 			<td><input id="${perm.first}-admin-checkbox" type="checkbox" name="admin" disabled="disabled" checked="true"></input></td>
 			<td><input id="${perm.first}-read-checkbox" type="checkbox" name="read" disabled="disabled" checked="true"></input></td>
@@ -147,8 +147,8 @@
 			<tbody>
 #if($groupPermissions)
 #foreach($perm in $groupPermissions)
-	<tr id="${perm.first}-row" >
-		<td class="tb-name">#if($perm.first == $username) ${perm.first} <span class="sublabel">(you)</span> #else $perm.first #end</td>
+	<tr>
+		<td class="tb-username">#if($perm.first == $username) ${perm.first} <span class="sublabel">(you)</span> #else $perm.first #end</td>
 		#if ($perm.second.isPermissionNameSet("ADMIN")) 
 			<td><input id="group-${perm.first}-admin-checkbox" type="checkbox" name="admin" disabled="disabled" checked="true"></input></td>
 			<td><input id="group-${perm.first}-read-checkbox" type="checkbox" name="read" disabled="disabled" checked="true"></input></td>
@@ -174,17 +174,11 @@
 			</tbody>
 		</table>
 		
-		<br></br>
+		<br/>
 		<table id="proxy-user-table" class="all-jobs permission-table">
 			<thead>
 				<tr>
 					<th class="tb-username">Proxy User</th>
-					<th class="tb-perm">Admin</th>
-					<th class="tb-read">Read</th>
-					<th class="tb-write">Write</th>
-					<th class="tb-execute">Execute</th>
-					<th class="tb-schedule">Schedule</th>
-					<th class="tb-proxy">Proxy</th>
 					#if($isAdmin)
 						<th class="tb-action"></th>
 					#end
@@ -193,17 +187,10 @@
 			<tbody>
 #if($proxyUsers)
 #foreach($proxyUser in $proxyUsers)
-	<tr id="${proxyUser}-row" >
-		<td class="tb-name">#if($proxyUser == $username) ${proxyUser} <span class="sublabel">(you)</span> #else $proxyUser #end</td>
-			<td><input id="proxy-${proxyUser}-admin-checkbox" type="checkbox" name="admin" disabled="disabled" ></input></td>
-			<td><input id="proxy-${proxyUser}-read-checkbox" type="checkbox" name="read" disabled="disabled" ></input></td>
-			<td><input id="proxy-${proxyUser}-write-checkbox" type="checkbox" name="write" disabled="disabled" ></input></td>
-			<td><input id="proxy-${proxyUser}-execute-checkbox" type="checkbox" name="execute" disabled="disabled" ></input></td>
-			<td><input id="proxy-${proxyUser}-schedule-checkbox" type="checkbox" name="schedule" disabled="disabled" ></input></td>
-			<td><input id="proxy-${proxyUser}-proxy-checkbox" type="checkbox" name="proxy" disabled="disabled" checked="true"></input></td>
-
+	<tr>
+		<td class="tb-username">#if($proxyUser == $username) ${proxyUser} <span class="sublabel">(you)</span> #else $proxyUser #end</td>
 		#if($isAdmin)
-			<td><button id="proxy-${proxyUser}" class="change-btn btn2">Change</button></td>
+			<td><button id="proxy-${proxyUser}" name="${proxyUser}" class="remove-btn btn2">Remove</button></td>
 		#end
 	</tr>
 #end
@@ -214,6 +201,29 @@
 		</table>
 #end
 
+		</div>
+	
+		<div id="remove-proxy" class="modal">
+			<h3>Remove Proxy User</h3>
+			<div id="removeProxyErrorMsg" class="box-error-message"></div>
+			<p id="proxyRemoveMsg">Removing Proxy User </p>
+			<div class="actions">
+				<a class="yes btn2" id="remove-proxy-btn" href="#">Remove Proxy User</a>
+				<a class="no simplemodal-close btn3" href="#">Cancel</a>
+			</div>
+		</div>
+	
+		<div id="add-proxy" class="modal">
+			<h3 id="proxy-title">Add Proxy User</h3>
+			<div id="proxyErrorMsg" class="box-error-message"></div>
+			<dl>
+				<dt>Proxy</dt>
+				<dd><input id="proxy-user-box" name="proxyid" type="text" /></dd>
+			</dl>
+			<div class="actions">
+				<a class="yes btn2" id="add-proxy-btn" href="#">Add Proxy User</a>
+				<a class="no simplemodal-close btn3" href="#">Cancel</a>
+			</div>
 		</div>
 	
 		<div id="change-permission" class="modal">
@@ -236,10 +246,6 @@
 					    <dt>Schedule</dt>
 					    <dd><input id="schedule-change" name="schedule" type="checkbox" /></dd>
 					</div>
-					<div id="proxyCheckBox" hidden=true>
-				    	<dt>Proxy</dt>
-				    	<dd><input id="proxy-change" name="proxy" type="checkbox" /></dd>
-				    </div>
 					</dl>
 				</fieldset>
 			</div>
@@ -247,12 +253,12 @@
 				<a class="yes btn2" id="change-btn" href="#">Commit</a>
 				<a class="no simplemodal-close btn3" href="#">Cancel</a>
 			</div>
-			<div id="invalid-session" class="modal">
-				<h3>Invalid Session</h3>
-				<p>Session has expired. Please re-login.</p>
-				<div class="actions">
-					<a class="yes btn2" id="login-btn" href="#">Re-login</a>
-				</div>
+		</div>
+		<div id="invalid-session" class="modal">
+			<h3>Invalid Session</h3>
+			<p>Session has expired. Please re-login.</p>
+			<div class="actions">
+				<a class="yes btn2" id="login-btn" href="#">Re-login</a>
 			</div>
 		</div>
 	</body>
