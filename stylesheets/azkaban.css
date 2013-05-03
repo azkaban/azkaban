@@ -189,7 +189,7 @@ a:hover {
 /* navigation */
 #navigation {
 	float: left;
-	width: 200px;
+	width: 240px;
 }
 
 #navigation ul {
@@ -242,10 +242,14 @@ a:hover {
 	background-position: -64px -16px;
 }
 
+.shadowimg {
+	margin: 10px;
+	box-shadow: 0px 0px 15px #888;
+}
 
 /* Template Content Styles */
 #content {
-	margin-left: 200px;
+	margin-left: 240px;
 	min-height: 400px;
 	background-color: #FFF;
 	padding: 0px 80px 80px 10px;

@@ -4,11 +4,26 @@ nav: hdfsbrowser
 expand: plugins
 context: ../..
 ---
-#Azkaban HDFS Browser Configurations
-These are properties to configure the HDFS Browser on the AzkabanWebServer. They can be set in _azkaban_web_server_dir/plugins/viewer/hdfs/conf/plugin.properties_.
+#Azkaban HDFS Browser
+The Azkaban HDFS Browser is a plugin that allows you to view the HDFS FileSystem and decode several file types.
+It was originally created at LinkedIn to view Avro files, Linkedin's BinaryJson format and text files. As this
+plugin matures further, we may add decoding of different file types in the future.
 
+<img class="shadowimg" title="Azkaban HDFS Browser" src="./images/hdfsbrowser.png" ALT="Azkaban HDFS Browser" width="450" />
+
+### Setup
+Download the hdfs plugin from [the download page](../../downloads.html) and extract it into the web server's plugin's directory.
+This is often _azkaban\_web\_server\_dir/plugins/viewer/_.
+
+### Users
+By default, Azkaban HDFS browser does a do-as to impersonate the logged-in user. Often times, data is created and handled by
+a headless account. To view these files, if user proxy is turned on, then the user can switch to the headless account as long
+as its validated by the UserManager.
 
 ### Settings
+
+These are properties to configure the HDFS Browser on the AzkabanWebServer. They can be set in _azkaban\_web\_server\_dir/plugins/viewer/hdfs/conf/plugin.properties_.
+
 |{.parameter}Parameter               |{.description} Description                                                       					|{.default}Default    |
 |---------------------|-----------------------------------------------------------------------------------------------------------------|---------------------|
 |viewer.name          | The name of this viewer plugin																					| HDFS               |

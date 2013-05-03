@@ -17,6 +17,13 @@
 				<li {% if page.nav == "azkabanexecserver" %}class="selected"{% endif %}><a href="./azkabanexecserver.html">AzkabanExecutorServer</a></li>
 			</ul>
 		</li>
+		<li id="nav-permissions" class="expandable  {% if page.nav == "permissions" %}selected{% endif %} {% if page.expand == "permissions" %}expand{% endif %}"><a href="./permissions.html">Permissions</a><span class="arrow"></span>
+			<ul class="submenu">
+				<li {% if page.nav == "xmlusermanager" %}class="selected"{% endif %}><a href="./xmlusermanager.html">XmlUserManager</a></li>
+				<li {% if page.nav == "customusermanager" %}class="selected"{% endif %}><a href="./customusermanager.html">Custom UserManager</a></li>
+				<li {% if page.nav == "projectpermissions" %}class="selected"{% endif %}><a href="./projectpermissions.html">Project Permissions</a></li>
+			</ul>
+		</li>
 		<li id="nav-plugins" class="expandable  {% if page.nav == "plugins" %}selected{% endif %} {% if page.expand == "plugins" %}expand{% endif %}"><a href="./plugins.html">Plugins</a><span class="arrow"></span>
 			<ul class="submenu">
 				<li {% if page.nav == "hdfsbrowser" %}class="selected"{% endif %}><a href="./hdfsbrowser.html">HDFS Browser</a></li>
