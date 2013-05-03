@@ -94,7 +94,6 @@ public class FlowRunner extends EventHandler implements Runnable {
 		this.flow = flow;
 		this.executorLoader = executorLoader;
 		this.projectLoader = projectLoader;
-		this.executorService = Executors.newFixedThreadPool(numJobThreads);
 		this.execDir = new File(flow.getExecutionPath());
 		this.jobtypeManager = jobtypeManager;
 
@@ -112,6 +111,11 @@ public class FlowRunner extends EventHandler implements Runnable {
 	
 	public FlowRunner setGlobalProps(Props globalProps) {
 		this.globalProps = globalProps;
+		return this;
+	}
+	
+	public FlowRunner setNumJobThreads(int jobs) {
+		numJobThreads = jobs;
 		return this;
 	}
 	
@@ -133,6 +137,9 @@ public class FlowRunner extends EventHandler implements Runnable {
 	
 	public void run() {
 		try {
+			if (this.executorService == null) {
+				this.executorService = Executors.newFixedThreadPool(numJobThreads);
+			}
 			setupFlowExecution();
 			flow.setStartTime(System.currentTimeMillis());
 			
