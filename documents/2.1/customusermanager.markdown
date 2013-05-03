@@ -1,7 +1,6 @@
 ---
 layout: documents
 nav: customusermanager
-expand: permissions
 context: ../..
 ---
 

@@ -1,7 +1,6 @@
 ---
 layout: documents
 nav: plugins
-expand: plugins
 context: ../..
 ---
 #Plugins

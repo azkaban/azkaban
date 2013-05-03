@@ -1,7 +1,6 @@
 ---
 layout: documents
 nav: execserversetup
-expand: gettingstarted
 context: ../..
 
 ---

@@ -1,7 +1,6 @@
 ---
 layout: documents
 nav: azkabanwebserver
-expand: configuration
 context: ../..
 ---
 #Azkaban Web Server Configurations

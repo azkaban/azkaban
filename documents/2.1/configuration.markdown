@@ -1,7 +1,6 @@
 ---
 layout: documents
 nav: configuration
-expand: configuration
 context: ../..
 ---
 #Configuration

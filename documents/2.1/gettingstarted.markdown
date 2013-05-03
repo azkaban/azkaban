@@ -1,7 +1,6 @@
 ---
 layout: documents
 nav: gettingstarted
-expand: gettingstarted
 context: ../..
 version: 2.1
 ---

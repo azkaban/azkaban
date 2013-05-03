@@ -1,7 +1,6 @@
 ---
 layout: documents
 nav: projectpermissions
-expand: permissions
 context: ../..
 ---
 

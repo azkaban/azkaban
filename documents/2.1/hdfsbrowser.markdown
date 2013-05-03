@@ -1,7 +1,6 @@
 ---
 layout: documents
 nav: hdfsbrowser
-expand: plugins
 context: ../..
 ---
 #Azkaban HDFS Browser

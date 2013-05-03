@@ -1,7 +1,6 @@
 ---
 layout: documents
 nav: jobtypeplugin
-expand: plugins
 context: ../..
 ---
 #Azkaban Jobtype Plugins Configurations

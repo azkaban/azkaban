@@ -1,7 +1,6 @@
 ---
 layout: azkaban
 nav: installation
-expand: documents
 context: .
 ---
 

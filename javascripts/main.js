@@ -14,19 +14,27 @@ function toggleExpandCollapse(evt) {
 	
 }
 
+function expandAndRecurse(ul) {
+	if ($(ul).hasClass("root")) {
+		return;
+	}
+	$(ul).show();
+	if ($(ul).parent().prop("tagname") == "LI") {
+		$(ul).parent().addClass("expand");
+		expandAndRecurse($(value).parent().parent());
+	}
+}
+
 $(function() {
 	$(".expandable").each(
 		function(index, value) {
 			// Find collapsable arrow
 			var childArrow = $(value).children(".arrow").click(function(evt) {toggleExpandCollapse(evt);});
 			var subList = $(value).children("ul");
-			
-			if ($(value).hasClass("expand")) {
-				subList.show();
-			}
-			else {
-				subList.hide();
-			}
+			subList.hide();
 		}
 	);
+	
+	$(".selected").children().show();
+	expandAndRecurse($(".selected").parent());
 });

@@ -1,7 +1,6 @@
 ---
 layout: documents
 nav: webserversetup
-expand: gettingstarted
 context: ../..
 ---
 #Setup Azkaban Web Server

@@ -1,7 +1,6 @@
 ---
 layout: documents
 nav: upgradefrom20
-expand: gettingstarted
 context: ../..
 ---
 

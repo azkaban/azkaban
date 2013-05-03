@@ -1,4 +1,4 @@
-	<ul>
+	<ul class="rootnav">
 		<li id="nav-home" {% if page.nav == "home" %}class="selected"{% endif %}><a href="{{page.context}}/">Home</a></li>
 		<li id="nav-documents" {% if page.nav == "documents" %}class="selected"{% endif %}><a href="./">Documents</a></li>
 		
@@ -17,10 +17,15 @@
 				<li {% if page.nav == "azkabanexecserver" %}class="selected"{% endif %}><a href="./azkabanexecserver.html">AzkabanExecutorServer</a></li>
 			</ul>
 		</li>
-		<li id="nav-permissions" class="expandable  {% if page.nav == "permissions" %}selected{% endif %} {% if page.expand == "permissions" %}expand{% endif %}"><a href="./permissions.html">Permissions</a><span class="arrow"></span>
+		<li id="nav-usermanager" class="expandable  {% if page.nav == "usermanager" %}selected{% endif %} {% if page.expand == "usermanager" %}expand{% endif %}"><a href="./usermanager.html">User Manager</a><span class="arrow"></span>
 			<ul class="submenu">
 				<li {% if page.nav == "xmlusermanager" %}class="selected"{% endif %}><a href="./xmlusermanager.html">XmlUserManager</a></li>
 				<li {% if page.nav == "customusermanager" %}class="selected"{% endif %}><a href="./customusermanager.html">Custom UserManager</a></li>
+			</ul>
+		</li>
+		<li id="nav-usingazkaban" class="expandable  {% if page.nav == "usingazkaban" %}selected{% endif %} {% if page.expand == "usingazkaban" %}expand{% endif %}"><a href="./usingazkaban.html">Using Azkaban</a><span class="arrow"></span>
+			<ul class="submenu">
+				<li {% if page.nav == "projectcreateupload" %}class="selected"{% endif %}><a href="./projectcreateupload.html">Create and Upload</a></li>
 				<li {% if page.nav == "projectpermissions" %}class="selected"{% endif %}><a href="./projectpermissions.html">Project Permissions</a></li>
 			</ul>
 		</li>

@@ -1,7 +1,6 @@
 ---
 layout: documents
 nav: pluginsetup
-expand: gettingstarted
 context: ../..
 ---
 #Setup Azkaban Plugins

@@ -1,7 +1,6 @@
 ---
 layout: documents
 nav: xmlusermanager
-expand: permissions
 context: ../..
 ---
 
