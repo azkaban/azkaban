@@ -36,6 +36,7 @@ These are properties to configure the web server. They can be set in _azkaban.pr
 |project.temp.dir                    | The temporary directory used when uploading projects                            | temp                |
 |project.version.retention           | The number of unused project versions retained before cleaning                  | 3                   |
 |creator.default.proxy               | Auto add the creator of the projects as a proxy user to the project.            | true                |
+|lockdown.create.projects            | Prevents anyone except those with Admin roles to create new projects.           | false               |
 {.params}
 
 
