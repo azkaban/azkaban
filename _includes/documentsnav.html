@@ -17,4 +17,10 @@
 				<li {% if page.nav == "azkabanexecserver" %}class="selected"{% endif %}><a href="./azkabanexecserver.html">AzkabanExecutorServer</a></li>
 			</ul>
 		</li>
+		<li id="nav-plugins" class="expandable  {% if page.nav == "plugins" %}selected{% endif %} {% if page.expand == "plugins" %}expand{% endif %}"><a href="./plugins.html">Plugins</a><span class="arrow"></span>
+			<ul class="submenu">
+				<li {% if page.nav == "hdfsbrowser" %}class="selected"{% endif %}><a href="./hdfsbrowser.html">HDFS Browser</a></li>
+				<li {% if page.nav == "jobtypeplugin" %}class="selected"{% endif %}><a href="./jobtypeplugin.html">Jobtype Plugins</a></li>
+			</ul>
+		</li>
 </ul>
