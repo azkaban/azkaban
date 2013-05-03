@@ -42,4 +42,6 @@ In most cases, there is no extra settings needed for job types to work, other th
 However, it is also where most of the customizations come from.
 For example, one can configure a two java job types with the same jar resources but with different hadoop configurations, thereby submitting pig jobs to different clusters.
 One can also configure pig job with pre-registered jars and namespace imports for specific organizations.
-
+Also to be noted: in the list of common job type plugins, we have included different pig versions. The admin needs to make a soft link to one of them, such as<br/><br/>
+ln -s pig-0.10.1 pig<br/><br/>
+so that the users can use a default "pig" type.
