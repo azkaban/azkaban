@@ -19,7 +19,7 @@ function expandAndRecurse(ul) {
 		return;
 	}
 	$(ul).show();
-	if ($(ul).parent().prop("tagname") == "LI") {
+	if ($(ul).parent()[0].tagName == "LI") {
 		$(ul).parent().addClass("expand");
 		expandAndRecurse($(value).parent().parent());
 	}
