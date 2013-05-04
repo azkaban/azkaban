@@ -19,9 +19,9 @@ function expandAndRecurse(ul) {
 		return;
 	}
 	$(ul).show();
-	if ($(ul).parent()[0].tagName == "LI") {
+	if (($(ul).parent())[0].tagName == "LI") {
 		$(ul).parent().addClass("expand");
-		expandAndRecurse($(value).parent().parent());
+		expandAndRecurse($(ul).parent().parent());
 	}
 }
 
