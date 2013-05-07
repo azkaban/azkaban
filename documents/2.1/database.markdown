@@ -58,7 +58,8 @@ sudo /sbin/service mysqld restart
 
 1. Download the azkaban-sql-script tarball from the [download page](../../downloads.html). 
 Contained in this archive are table creation scripts.
-2. Run each of the scripts on the MySQL instance to create your tables. Any script with '_update_' as a prefix can be ignored.
+2. Run individual table creation scripts on the MySQL instance to create your tables. Alternatively, simply run the _create-all-sql_ script.
+Any script with '_update_' as a prefix can be ignored.
 
 
 ----------

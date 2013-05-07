@@ -23,6 +23,12 @@
 				<li {% if page.nav == "customusermanager" %}class="selected"{% endif %}><a href="./customusermanager.html">Custom UserManager</a></li>
 			</ul>
 		</li>
+		<li id="nav-creatingflows" class="expandable  {% if page.nav == "creatingflows" %}selected{% endif %} {% if page.expand == "creatingflows" %}expand{% endif %}"><a href="./creatingflows.html">Creating Flows</a><span class="arrow"></span>
+			<ul class="submenu">
+				<li {% if page.nav == "jobconf" %}class="selected"{% endif %}><a href="./jobconf.html">Job Configuration</a></li>
+				<li {% if page.nav == "builtinjobtypes" %}class="selected"{% endif %}><a href="./jobtypesbuiltin.html">Built-in Job Types</a></li>
+			</ul>
+		</li>
 		<li id="nav-usingazkaban" class="expandable  {% if page.nav == "usingazkaban" %}selected{% endif %} {% if page.expand == "usingazkaban" %}expand{% endif %}"><a href="./usingazkaban.html">Using Azkaban</a><span class="arrow"></span>
 			<ul class="submenu">
 				<li {% if page.nav == "projectcreate" %}class="selected"{% endif %}><a href="./projectcreate.html">Create Projects</a></li>
@@ -38,8 +44,8 @@
 		<li id="nav-plugins" class="expandable  {% if page.nav == "plugins" %}selected{% endif %} {% if page.expand == "plugins" %}expand{% endif %}"><a href="./plugins.html">Plugins</a><span class="arrow"></span>
 			<ul class="submenu">
 				<li {% if page.nav == "hdfsbrowser" %}class="selected"{% endif %}><a href="./hdfsbrowser.html">HDFS Browser</a></li>
-				<li {% if page.nav == "jobtypeplugin" %}class="selected"{% endif %}><a href="./jobtypeplugin.html">Jobtype Plugins</a></li>
-					<li id="nav-jobtypes" class="expandable  {% if page.nav == "jobtypes" %}selected{% endif %} {% if page.expand == "jobtypes" %}expand{% endif %}"><a href="./jobtypes.html">Job Types</a><span class="arrow"></span>
+  				<li {% if page.nav == "jobtypeplugin" %}class="selected"{% endif %}><a href="./jobtypeplugin.html">Jobtype Plugins</a></li>
+<!--					<li id="nav-jobtypes" class="expandable  {% if page.nav == "jobtypes" %}selected{% endif %} {% if page.expand == "jobtypes" %}expand{% endif %}"><a href="./jobtypes.html">Job Types</a><span class="arrow"></span>
                         			<ul class="submenu">
                                 			<li {% if page.nav == "javatype" %}class="selected"{% endif %}><a href="./javatype.html">Java</a></li>
 											<li {% if page.nav == "hadoopjavatype" %}class="selected"{% endif %}><a href="./hadoopjavatype.html">Hadoop Java</a></li>
@@ -48,7 +54,7 @@
 											<li {% if page.nav == "voldemortbuildandpushtype" %}class="selected"{% endif %}><a href="./voldemortbuildandpushtype.html">VoldemortBuildandPush</a></li>
 											<li {% if page.nav == "createnewjobtypes" %}class="selected"{% endif %}><a href="./createnewjobtypes.html">Create Types</a></li>
                         			</ul>
-                			</li>
+                			</li> -->
 			</ul>
 		</li>
 </ul>
