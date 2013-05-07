@@ -71,12 +71,18 @@
 		<delete dir="${dist.sql.package.dir}" />
 		<mkdir dir="${dist.sql.package.dir}" />
 
+		<concat destfile="${dist.sql.package.dir}/create-all-sql-${version}.sql" fixlastline="yes">
+			<fileset dir="${sql.src.dir}" >
+				<exclude name="update*.sql"/>
+			</fileset>	
+		</concat>
+		
 		<copy todir="${dist.sql.package.dir}" >
 			<fileset dir="${sql.src.dir}" />
 		</copy>
 
-                <tar destfile="${dist.sql.package.dir}/${name}-sql-script-${version}.tar.gz" compression="gzip" longfile="gnu">
-                	<tarfileset dir="${dist.sql.package.dir}" prefix="azkaban-${version}" filemode="755" />
+        <tar destfile="${dist.sql.package.dir}/${name}-sql-script-${version}.tar.gz" compression="gzip" longfile="gnu">
+        	<tarfileset dir="${dist.sql.package.dir}" prefix="azkaban-${version}" filemode="755" />
 		</tar>
 
 	</target>
