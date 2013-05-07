@@ -29,6 +29,7 @@
 				<li {% if page.nav == "projectupload" %}class="selected"{% endif %}><a href="./projectupload.html">Upload Projects</a></li>
 				<li {% if page.nav == "flowview" %}class="selected"{% endif %}><a href="./projectflowview.html">Flow View</a></li>
 				<li {% if page.nav == "projectpermissions" %}class="selected"{% endif %}><a href="./projectpermissions.html">Project Permissions</a></li>
+				<li {% if page.nav == "executingflow" %}class="selected"{% endif %}><a href="./executingflow.html">Executing Flows</a></li>
 			</ul>
 		</li>
 		<li id="nav-plugins" class="expandable  {% if page.nav == "plugins" %}selected{% endif %} {% if page.expand == "plugins" %}expand{% endif %}"><a href="./plugins.html">Plugins</a><span class="arrow"></span>
@@ -37,12 +38,12 @@
 				<li {% if page.nav == "jobtypeplugin" %}class="selected"{% endif %}><a href="./jobtypeplugin.html">Jobtype Plugins</a></li>
 					<li id="nav-jobtypes" class="expandable  {% if page.nav == "jobtypes" %}selected{% endif %} {% if page.expand == "jobtypes" %}expand{% endif %}"><a href="./jobtypes.html">Job Types</a><span class="arrow"></span>
                         			<ul class="submenu">
-                                			<li {% if page.nav == "javatype" %}class="selected"{% endif %}><a href="./javatype.html">Java Job Type</a></li>
-											<li {% if page.nav == "hadoopjavatype" %}class="selected"{% endif %}><a href="./hadoopjavatype.html">Hadoop Java Job Type</a></li>
-                                			<li {% if page.nav == "pigtype" %}class="selected"{% endif %}><a href="./pigtype.html">Pig Job Type</a></li>											
-                                			<li {% if page.nav == "hivetype" %}class="selected"{% endif %}><a href="./hivetype.html">Hive Job Type</a></li>
-											<li {% if page.nav == "voldemortbuildandpushtype" %}class="selected"{% endif %}><a href="./voldemortbuildandpushtype.html">VoldemortBuildandPush Job Type</a></li>
-											<li {% if page.nav == "createnewjobtypes" %}class="selected"{% endif %}><a href="./createnewjobtypes.html">Create New Types</a></li>
+                                			<li {% if page.nav == "javatype" %}class="selected"{% endif %}><a href="./javatype.html">Java</a></li>
+											<li {% if page.nav == "hadoopjavatype" %}class="selected"{% endif %}><a href="./hadoopjavatype.html">Hadoop Java</a></li>
+                                			<li {% if page.nav == "pigtype" %}class="selected"{% endif %}><a href="./pigtype.html">Pig</a></li>											
+                                			<li {% if page.nav == "hivetype" %}class="selected"{% endif %}><a href="./hivetype.html">Hive</a></li>
+											<li {% if page.nav == "voldemortbuildandpushtype" %}class="selected"{% endif %}><a href="./voldemortbuildandpushtype.html">VoldemortBuildandPush</a></li>
+											<li {% if page.nav == "createnewjobtypes" %}class="selected"{% endif %}><a href="./createnewjobtypes.html">Create Types</a></li>
                         			</ul>
                 			</li>
 			</ul>
