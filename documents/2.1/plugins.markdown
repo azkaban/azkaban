@@ -10,8 +10,8 @@ execute jobs in a customizable manner. These pages will describe the azkaban-plu
 can be downloaded from [the download page](../../downloads.html) and how to extend
 Azkaban by creating your own plugins or extending an existing one.
 
-* ###[Hdfs Browser Configuration](./hdfsbrowser.html)
-	Properties to configure and customize the hdfs browser.
+###[Hdfs Browser Configuration](./hdfsbrowser.html)
+Properties to configure and customize the hdfs browser.
 
-* ###[Azkaban Jobtype Plugin Configuration](./jobtypeplugin.html)
-	Properties to configure and customize the jobtype plugins.
+###[Azkaban Jobtype Plugin Configuration](./jobtypeplugin.html)
+Properties to configure and customize the jobtype plugins.
