@@ -1,0 +1,27 @@
+---
+layout: documents
+nav: scheduleflow
+context: ../..
+---
+
+#Schedule Flow
+
+From the same panel that is used to [execute flows](./executingflows.html), flows can be scheduled by clicking on
+the *Schedule* button.
+
+<img class="shadowimg" title="Schedule Flow" src="./images/scheduleflowoptions.png" ALT="Schedule Flow" width="450" />
+
+Any flow options set will be preserved for the scheduled flow. For instance, if jobs are disabled, then the scheduled flow's jobs will also be
+disabled.
+
+Select the scheduled time and date. Recurrence allows jobs to repeated every _n_ months, weeks, days, hours, minutes, seconds.
+Scheduling an already scheduled flow will overwrite the previous schedule.
+
+After scheduling, it should appear on the schedule page, where you can remove the scheduled job or set the SLA options.
+<img class="shadowimg" title="Schedule Page" src="./images/schedulepage.png" ALT="Schedule Page" width="450" />
+
+To add SLA notification or pre-emption, click on the SLA button. From here you can set the SLA alert emails.
+Rules can be added and applied to individual jobs or the flow itself. If duration threshold is exceeded, than
+an alert email can be set or the flow can be auto killed.
+
+<img class="shadowimg" title="SLA Page" src="./images/slapanel.png" ALT="SLA Page" width="450" />
