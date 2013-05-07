@@ -231,6 +231,7 @@ public class JobRunner extends EventHandler implements Runnable {
 					logger.info("Job was cancelled while waiting on pipeline. Quiting.");
 					node.setStartTime(System.currentTimeMillis());
 					node.setEndTime(System.currentTimeMillis());
+					node.setStatus(Status.FAILED);
 					fireEvent(Event.create(this, Type.JOB_FINISHED));
 					return;
 				}
