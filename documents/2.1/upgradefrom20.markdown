@@ -7,7 +7,6 @@ context: ../..
 # Upgrading DB from 2.0
 
 If installing Azkaban from scratch, you can ignore this document. This is only for those who are upgrading from 2.0 to 2.1.
-
 The _update\_2.0\_to\_2.1.sql_ needs to be run to alter all the tables. This includes several table alterations and a new table.
 
 Here are the changes:
