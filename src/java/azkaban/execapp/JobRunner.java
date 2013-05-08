@@ -85,6 +85,7 @@ public class JobRunner extends EventHandler implements Runnable {
 
 	private long delayStartMs = 0;
 	private boolean cancelled = false;
+	private BlockingStatus currentBlockStatus = null;
 	
 	public JobRunner(ExecutableNode node, Props props, File workingDir, ExecutorLoader loader, JobTypeManager jobtypeManager) {
 		this.props = props;
@@ -223,8 +224,12 @@ public class JobRunner extends EventHandler implements Runnable {
 					
 					for(BlockingStatus bStatus: blockingStatus) {
 						logger.info("Waiting on pipelined job " + bStatus.getJobId());
+						currentBlockStatus = bStatus;
 						bStatus.blockOnFinishedStatus();
 						logger.info("Pipelined job " + bStatus.getJobId() + " finished.");
+						if (watcher.isWatchCancelled()) {
+							break;
+						}
 					}
 				}
 				if (watcher.isWatchCancelled()) {
@@ -237,6 +242,7 @@ public class JobRunner extends EventHandler implements Runnable {
 				}
 			}
 			
+			currentBlockStatus = null;
 			long currentTime = System.currentTimeMillis();
 			if (delayStartMs > 0) {
 				logger.info("Delaying start of execution for " + delayStartMs + " milliseconds.");
@@ -389,6 +395,11 @@ public class JobRunner extends EventHandler implements Runnable {
 		synchronized (syncObject) {
 			logError("Cancel has been called.");
 			this.cancelled = true;
+			
+			BlockingStatus status = currentBlockStatus;
+			if (status != null) {
+				status.unblock();
+			}
 			
 			// Cancel code here
 			if (job == null) {

@@ -10,7 +10,7 @@ import azkaban.executor.ExecutableNode;
 import azkaban.executor.Status;
 
 public abstract class FlowWatcher {
-	private static final Logger logger = Logger.getLogger(FlowWatcher.class);
+	private Logger logger;
 	
 	private int execId;
 	private ExecutableFlow flow;
@@ -25,15 +25,19 @@ public abstract class FlowWatcher {
 		this.flow = flow;
 	}
 	
+	public void setLogger(Logger logger) {
+		this.logger = logger;
+	}
+	
+	protected Logger getLogger() {
+		return this.logger;
+	}
+	
 	/**
 	 * Called to fire events to the JobRunner listeners
 	 * @param jobId
 	 */
 	protected synchronized void handleJobFinished(String jobId, Status status) {
-		if (cancelWatch) {
-			return;
-		}
-
 		BlockingStatus block = map.get(jobId);
 		if (block != null) {
 			block.changeStatus(status);

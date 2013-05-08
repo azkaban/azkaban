@@ -1170,6 +1170,9 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 				if (perm.isPermissionSet(Type.EXECUTE) || adminPerm) {
 					page.add("exec", true);
 				}
+				else {
+					page.add("exec", false);
+				}
 				
 				List<Flow> flows = project.getFlows();
 				if (!flows.isEmpty()) {
