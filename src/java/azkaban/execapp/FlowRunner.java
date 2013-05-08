@@ -726,7 +726,7 @@ public class FlowRunner extends EventHandler implements Runnable {
 			JobRunner runner = (JobRunner)event.getRunner();
 			
 			if (event.getType() == Type.JOB_STATUS_CHANGED) {
-				
+				updateFlow();
 			}
 			else if (event.getType() == Type.JOB_FINISHED) {
 				synchronized(mainSyncObj) {
