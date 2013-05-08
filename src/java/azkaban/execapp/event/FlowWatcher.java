@@ -81,6 +81,7 @@ public abstract class FlowWatcher {
 		cancelWatch = true;
 		
 		for(BlockingStatus status : map.values()) {
+			logger.info("Unblocking " + status.getJobId());
 			status.changeStatus(Status.KILLED);
 			status.unblock();
 		}
