@@ -36,5 +36,6 @@ $(function() {
 	);
 	
 	$(".selected").children().show();
+	$(".selected").addClass("expand");
 	expandAndRecurse($(".selected").parent());
 });

@@ -16,7 +16,7 @@ other job types wrap the _command_ job type but constructs their own command lin
 
 |{.parameter}Parameter			|{.description} Description             |Required?|
 |-------------------------------|---------------------------------------|---------|
-|command 	| The command line string to execute. i.e. {code}ls -lh{code} | yes     |
+|command 	| The command line string to execute. i.e. _ls -lh_ | yes     |
 |command. _n_ | Where _n_ is a sequence of integers (i.e 1,2,3...). Defines additional commands that run in sequential order after the initial command.| no |
 {.params}
 
@@ -30,7 +30,7 @@ Java process jobs are a convenient wrapper for kicking off Java-based programs. 
 | Xms | The initial memory pool start size. The default is 64M | no |
 | Xmx | The initial maximum memory pool size. The default is 256M | no |
 | main.args | A list of comma delimited arguments to pass to the java main function | no |
-| jvm.args | JVM args. This entire string is passed intact as a VM argument. {code}-Dmyprop=test -Dhello=world{code} | no |
+| jvm.args | JVM args. This entire string is passed intact as a VM argument. _-Dmyprop=test -Dhello=world_ | no |
 {.params}
 
 ### Noop
