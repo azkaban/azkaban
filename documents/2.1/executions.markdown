@@ -27,11 +27,15 @@ Some options that you are able to do on execution flows include the following:
 * __Retry Failed__ -only available when the flow is in a FAILED FINISHING state. Retry will restart all FAILED jobs while the flow is still active. Attempts will appear in the Jobs List page.
 * __Prepare Execution__ -only available on a finished flow, regardless of success or failures. This will auto disable successfully completed jobs.
 
+<hr/>
+
 ##Executing Page
 
 Clicking on the Executing Tab in the header will show the Execution page. This page will show currently running executions as well as recently finished flows.
 
 <img class="shadowimg" title="Executions" src="./images/executingflowspage.png" ALT="Executions" width="450" />
+
+<hr/>
 
 ##History Page
 Currently executing flows as well as completed executions will appear in the History page. Searching options are provided to find the execution you're looking for.

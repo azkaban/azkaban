@@ -7,7 +7,7 @@ version: 2.1
 
 #Getting Started
 
-Azkaban2 is fairly easy to set up, although has more moving pieces than its predecessor. The most challenging piece to setup is the database.
+Azkaban2 is fairly easy to set up, although it has more moving pieces than its predecessor. The most challenging piece to setup is the database.
 There are three servers that need to be setup:
 * **MySQL instance** - Azkaban uses MySQL to store projects and executions
 * **Azkaban Web Server** - Azkaban Web Server is a Jetty server which acts as the controller as well as the web interface

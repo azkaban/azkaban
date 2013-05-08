@@ -33,7 +33,7 @@ Create a user for Azkaban if one hasn't been made, and give the user _INSERT, SE
 
 <pre class="code">
 # Replace db, username with the ones created by the previous steps. 
-mysql> GRANT SELECT,INSERT,UPDATE,DELETE ON &lt;database&rt;.* to '&lt;username&rt;'@'%' WITH GRANT OPTION;
+mysql> GRANT SELECT,INSERT,UPDATE,DELETE ON &lt;database&gt;.* to '&lt;username&gt;'@'%' WITH GRANT OPTION;
 </pre>
 
 * Configure Packet Size may need to be configured. MySQL may have, by default, a ridiculously low allowable packet size. To increase it, you'll need

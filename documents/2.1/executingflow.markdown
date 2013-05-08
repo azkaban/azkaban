@@ -9,12 +9,15 @@ context: ../..
 From the [Flow View](./projectflowview.html) or the Project Page, you can trigger a job to be executed.
 You will see an executing panel pop-up.
 
+<hr/>
+
 ##Executing Flow View
 From the Flow View panel, you can right click on the graph and disable or enable jobs. Disabled jobs will be skipped during execution
 as if their dependencies have been met. Disabled jobs will appear translucent.
 
 <img class="shadowimg" title="Executing Flow View" src="./images/executeflowpanel.png" ALT="Executing Flow View" width="450" />
 
+<hr/>
 
 ##Notification Options
 The notification options allow users to change the flow's success or failure notification behavior.
@@ -29,6 +32,7 @@ the email addresses where failure or success emails are sent. The list can be de
 
 <img class="shadowimg" title="Notification Options" src="./images/executeflownotify.png" ALT="Notification Options" width="450" />
 
+<hr/>
 
 ##Failure Options
 When a job in a flow fails, you are able to control how the rest of the flow will succeed.
@@ -39,6 +43,8 @@ When a job in a flow fails, you are able to control how the rest of the flow wil
 
 <img class="shadowimg" title="Failure Options" src="./images/executeflowfailure.png" ALT="Failure Options" width="450" />
 
+<hr/>
+
 ##Concurrent Options
 If the flow execution is invoked while the flow is concurrently executing, several options can be set.
 * __Skip Execution__ option will not run the flow if its already running.
@@ -48,6 +54,8 @@ If the flow execution is invoked while the flow is concurrently executing, sever
 *	* Level 2 : blocks executing __job A__ until the the children of the previous flow's __job A__ has completed. This is useful if you need to run your flows a few steps behind an already executin flow.
 
 <img class="shadowimg" title="Concurrent Options" src="./images/executeflowconcurrent.png" ALT="Concurrent Options" width="450" />
+
+<hr/>
 
 ##Flow Parameters
 Allows users to override flow parameters. The flow parameters override the global properties for a job, but not the properties of the job itself.

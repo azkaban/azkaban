@@ -18,7 +18,10 @@ Select the scheduled time and date. Recurrence allows jobs to repeated every _n_
 Scheduling an already scheduled flow will overwrite the previous schedule.
 
 After scheduling, it should appear on the schedule page, where you can remove the scheduled job or set the SLA options.
+
 <img class="shadowimg" title="Schedule Page" src="./images/schedulepage.png" ALT="Schedule Page" width="450" />
+
+### SLA
 
 To add SLA notification or pre-emption, click on the SLA button. From here you can set the SLA alert emails.
 Rules can be added and applied to individual jobs or the flow itself. If duration threshold is exceeded, than

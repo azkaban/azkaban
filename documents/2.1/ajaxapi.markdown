@@ -11,6 +11,7 @@ Azkaban has some exposed ajax calls you can make to the web server through curl 
 However, you must have a secure session to call these services. The following are some of the useful calls you can make.
 All ajax responses will be in json format.
 
+<hr/>
 
 ### Authenticated Session
 To get a secure session, make a POST request to Azkaban's base url. The parameters should be:
@@ -39,6 +40,8 @@ session timeout is a day. You can re-login if the session expires.
 curl -k --data "action=login&username=azkaban&password=azkaban" https://localhost:8443
 </pre>
 
+<hr/>
+
 ### Upload Project Zip
 Uploads are multipart POST messages to __/manager__. The following parameters must be set do to the file upload. The content type
 should be _application/zip_ or _application/x-zip-compressed_
@@ -63,6 +66,8 @@ Here's sample a curl command.
 <pre class="code">
 curl -k -i -H "Content-Type: multipart/mixed" -X POST --form 'session.id=e7a29776-5783-49d7-afa0-b0e688096b5e' --form 'ajax=upload' --form 'file=@myproject.zip;type=application/zip' --form 'project=MyProject;type/plain' https://localhost:8443/manager
 </pre>
+
+<hr/>
 
 ### Executing Flow
 
