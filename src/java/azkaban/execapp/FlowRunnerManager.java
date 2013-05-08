@@ -75,6 +75,7 @@ public class FlowRunnerManager implements EventListener {
 	private ExecutorService executorService;
 	private SubmitterThread submitterThread;
 	private CleanerThread cleanerThread;
+	private int numJobThreadPerFlow = 10;
 	
 	private ExecutorLoader executorLoader;
 	private ProjectLoader projectLoader;
@@ -119,6 +120,7 @@ public class FlowRunnerManager implements EventListener {
 		
 		//azkaban.temp.dir
 		numThreads = props.getInt("executor.flow.threads", DEFAULT_NUM_EXECUTING_FLOWS);
+		numJobThreadPerFlow = props.getInt("flow.num.job.threads", numJobThreadPerFlow);
 		executorService = Executors.newFixedThreadPool(numThreads);
 		
 		this.executorLoader = executorLoader;
@@ -388,11 +390,12 @@ public class FlowRunnerManager implements EventListener {
 		}
 
 		FlowRunner runner = new FlowRunner(flow, executorLoader, projectLoader, jobtypeManager);
-		runner.setFlowWatcher(watcher);
-		runner.setJobLogSettings(jobLogChunkSize, jobLogNumFiles);
-		runner.setValidateProxyUser(validateProxyUser);
-		runner.setGlobalProps(globalProps);
-		runner.addListener(this);
+		runner.setFlowWatcher(watcher)
+			.setJobLogSettings(jobLogChunkSize, jobLogNumFiles)
+			.setValidateProxyUser(validateProxyUser)
+			.setGlobalProps(globalProps)
+			.setNumJobThreads(numJobThreadPerFlow)
+			.addListener(this);
 		
 		// Check again.
 		if (runningFlows.containsKey(execId)) {

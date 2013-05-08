@@ -448,7 +448,6 @@ public class AzkabanWebServer implements AzkabanServer {
 		//root.addServlet(new ServletHolder(new HdfsBrowserServlet()), "/hdfs/*");
 		
 		root.setAttribute(AzkabanServletContextListener.AZKABAN_SERVLET_CONTEXT_KEY, app);
-		
 		try {
 			server.start();
 		} 

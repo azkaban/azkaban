@@ -94,12 +94,12 @@ public class ExecutableFlow {
 		return flowProps.values();
 	}
 	
-	public void setProxyUsers(HashSet<String> proxyUsers) {
-		this.proxyUsers = proxyUsers;
+	public void addAllProxyUsers(Collection<String> proxyUsers) {
+		this.proxyUsers.addAll(proxyUsers);
 	}
 	
-	public HashSet<String> getProxyUsers() {
-		return this.proxyUsers;
+	public Set<String> getProxyUsers() {
+		return new HashSet<String>(this.proxyUsers);
 	}
 	
 	public void setExecutionOptions(ExecutionOptions options) {
@@ -286,7 +286,6 @@ public class ExecutableFlow {
 		flowObj.put("nodes", nodes);
 		
 		ArrayList<String> proxyUserList = new ArrayList<String>(proxyUsers);
-		
 		flowObj.put("proxyUsers", proxyUserList);
 
 		return flowObj;
@@ -357,7 +356,6 @@ public class ExecutableFlow {
 		
 		this.flowStatus = Status.fromInteger((Integer)updateData.get("status"));
 		
-		System.out.println("Updating status to " + flowStatus);
 		this.startTime = JSONUtils.getLongFromObject(updateData.get("startTime"));
 		this.endTime = JSONUtils.getLongFromObject(updateData.get("endTime"));
 		this.updateTime = JSONUtils.getLongFromObject(updateData.get("updateTime"));
@@ -406,7 +404,7 @@ public class ExecutableFlow {
 		
 		if(flowObj.containsKey("proxyUsers")) {
 			ArrayList<String> proxyUserList = (ArrayList<String>) flowObj.get("proxyUsers");
-			exFlow.setProxyUsers(new HashSet<String>(proxyUserList));
+			exFlow.addAllProxyUsers(proxyUserList);
 		}
 		
 		return exFlow;

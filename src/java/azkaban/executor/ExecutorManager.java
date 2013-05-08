@@ -79,7 +79,7 @@ public class ExecutorManager {
 		executingManager = new ExecutingManagerUpdaterThread();
 		executingManager.start();
 
-		long executionLogsRetentionMs = props.getLong("azkaban.execution.logs.retention.ms", DEFAULT_EXECUTION_LOGS_RETENTION_MS);
+		long executionLogsRetentionMs = props.getLong("execution.logs.retention.ms", DEFAULT_EXECUTION_LOGS_RETENTION_MS);
 		cleanerThread = new CleanerThread(executionLogsRetentionMs);
 		cleanerThread.start();
 	}

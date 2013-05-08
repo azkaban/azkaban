@@ -4,9 +4,9 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -40,7 +40,7 @@ import azkaban.utils.PropsUtils;
 public class FlowRunner extends EventHandler implements Runnable {
 	private static final Layout DEFAULT_LAYOUT = new PatternLayout("%d{dd-MM-yyyy HH:mm:ss z} %c{1} %p - %m\n");
 	// We check update every 5 minutes, just in case things get stuck. But for the most part, we'll be idling.
-	private static final long CHECK_WAIT_MS = 5*60*60*1000;
+	private static final long CHECK_WAIT_MS = 5*60*1000;
 	
 	private Logger logger;
 	private Layout loggerLayout = DEFAULT_LAYOUT;
@@ -65,6 +65,7 @@ public class FlowRunner extends EventHandler implements Runnable {
 	private Map<String, Props> jobOutputProps = new HashMap<String, Props>();
 	
 	private Props globalProps;
+	private Props commonProps;
 	private final JobTypeManager jobtypeManager;
 	
 	private JobRunnerEventListener listener = new JobRunnerEventListener();
@@ -78,7 +79,7 @@ public class FlowRunner extends EventHandler implements Runnable {
 	// Watches external flows for execution.
 	private FlowWatcher watcher = null;
 
-	private HashSet<String> proxyUsers = null;
+	private Set<String> proxyUsers = null;
 	private boolean validateUserProxy;
 	
 	private String jobLogFileSize = "5MB";
@@ -94,7 +95,6 @@ public class FlowRunner extends EventHandler implements Runnable {
 		this.flow = flow;
 		this.executorLoader = executorLoader;
 		this.projectLoader = projectLoader;
-		this.executorService = Executors.newFixedThreadPool(numJobThreads);
 		this.execDir = new File(flow.getExecutionPath());
 		this.jobtypeManager = jobtypeManager;
 
@@ -112,6 +112,11 @@ public class FlowRunner extends EventHandler implements Runnable {
 	
 	public FlowRunner setGlobalProps(Props globalProps) {
 		this.globalProps = globalProps;
+		return this;
+	}
+	
+	public FlowRunner setNumJobThreads(int jobs) {
+		numJobThreads = jobs;
 		return this;
 	}
 	
@@ -133,6 +138,9 @@ public class FlowRunner extends EventHandler implements Runnable {
 	
 	public void run() {
 		try {
+			if (this.executorService == null) {
+				this.executorService = Executors.newFixedThreadPool(numJobThreads);
+			}
 			setupFlowExecution();
 			flow.setStartTime(System.currentTimeMillis());
 			
@@ -153,7 +161,9 @@ public class FlowRunner extends EventHandler implements Runnable {
 		}
 		finally {
 			if (watcher != null) {
+				logger.info("Watcher is attached. Stopping watcher.");
 				watcher.stopWatcher();
+				logger.info("Watcher cancelled status is " + watcher.isWatchCancelled());
 			}
 
 			flow.setEndTime(System.currentTimeMillis());
@@ -171,10 +181,15 @@ public class FlowRunner extends EventHandler implements Runnable {
 		String flowId = flow.getFlowId();
 		
 		// Add a bunch of common azkaban properties
-		PropsUtils.addCommonFlowProperties(flow);
+		commonProps = PropsUtils.addCommonFlowProperties(flow);
 		
 		// Create execution dir
 		createLogger(flowId);
+		
+		if (this.watcher != null) {
+			this.watcher.setLogger(logger);
+		}
+		
 		logger.info("Running execid:" + execId + " flow:" + flowId + " project:" + projectId + " version:" + version);
 		if (pipelineExecId != null) {
 			logger.info("Running simulateously with " + pipelineExecId + ". Pipelining level " + pipelineLevel);
@@ -289,7 +304,7 @@ public class FlowRunner extends EventHandler implements Runnable {
 				else {
 					List<ExecutableNode> jobsReadyToRun = findReadyJobsToRun();
 					
-					if (!jobsReadyToRun.isEmpty()) {
+					if (!jobsReadyToRun.isEmpty() && !flowCancelled) {
 						for (ExecutableNode node : jobsReadyToRun) {
 							long currentTime = System.currentTimeMillis();
 							
@@ -313,19 +328,21 @@ public class FlowRunner extends EventHandler implements Runnable {
 								logger.info("Killing " + node.getJobId() + " due to prior errors.");
 								node.setStartTime(currentTime);
 								node.setEndTime(currentTime);
+								fireEventListeners(Event.create(this, Type.JOB_FINISHED, node));
 							} // If disabled, then we auto skip
 							else if (node.getStatus() == Status.DISABLED) {
 								logger.info("Skipping disabled job " + node.getJobId() + ".");
 								node.setStartTime(currentTime);
 								node.setEndTime(currentTime);
 								node.setStatus(Status.SKIPPED);
+								fireEventListeners(Event.create(this, Type.JOB_FINISHED, node));
 							}
 						}
 						
 						updateFlow();
 					}
 					else {
-						if (isFlowFinished()) {
+						if (isFlowFinished() || flowCancelled ) {
 							flowFinished = true;
 							break;
 						}
@@ -337,6 +354,32 @@ public class FlowRunner extends EventHandler implements Runnable {
 					}
 				}
 			}
+		}
+		
+		if (flowCancelled) {
+			try {
+				logger.info("Flow was force cancelled cleaning up.");
+				for(JobRunner activeRunner : activeJobRunners.values()) {
+					activeRunner.cancel();
+				}
+				
+				for (ExecutableNode node: flow.getExecutableNodes()) {
+					if (Status.isStatusFinished(node.getStatus())) {
+						continue;
+					}
+					else if (node.getStatus() == Status.DISABLED) {
+						node.setStatus(Status.SKIPPED);
+					}
+					else {
+						node.setStatus(Status.KILLED);
+					}
+					fireEventListeners(Event.create(this, Type.JOB_FINISHED, node));
+				}
+			} catch (Exception e) {
+				logger.error(e);
+			}
+	
+			updateFlow();
 		}
 		
 		logger.info("Finishing up flow. Awaiting Termination");
@@ -419,12 +462,10 @@ public class FlowRunner extends EventHandler implements Runnable {
 		ExecutionOptions options = flow.getExecutionOptions();
 		@SuppressWarnings("unchecked")
 		Props flowProps = new Props(null, options.getFlowParameters()); 
-		
-		if (flowProps.size() > 0) {
-			flowProps.setParent(parentProps);
-			parentProps = flowProps;
-		}
-		
+		flowProps.putAll(commonProps);
+		flowProps.setParent(parentProps);
+		parentProps = flowProps;
+
 		// We add the previous job output and put into this props.
 		if (previousOutput != null) {
 			Props earliestParent = previousOutput.getEarliestAncestor();
@@ -531,6 +572,7 @@ public class FlowRunner extends EventHandler implements Runnable {
 			if (watcher != null) {
 				logger.info("Watcher is attached. Stopping watcher.");
 				watcher.stopWatcher();
+				logger.info("Watcher cancelled status is " + watcher.isWatchCancelled());
 			}
 			
 			logger.info("Cancelling " + activeJobRunners.size() + " jobs.");

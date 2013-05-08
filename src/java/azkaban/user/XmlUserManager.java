@@ -66,7 +66,7 @@ public class XmlUserManager implements UserManager {
 	private HashMap<String, String> userPassword;
 	private HashMap<String, Role> roles;
 	private HashMap<String, Set<String>> groupRoles;
-	private HashMap<String, HashSet<String>> proxyUserMap;
+	private HashMap<String, Set<String>> proxyUserMap;
 
 	/**
 	 * The constructor.
@@ -89,7 +89,7 @@ public class XmlUserManager implements UserManager {
 		HashMap<String, String> userPassword = new HashMap<String, String>();
 		HashMap<String, Role> roles = new HashMap<String, Role>();
 		HashMap<String, Set<String>> groupRoles = new HashMap<String, Set<String>>();
-		HashMap<String, HashSet<String>> proxyUserMap = new HashMap<String, HashSet<String>>();
+		HashMap<String, Set<String>> proxyUserMap = new HashMap<String, Set<String>>();
 		
 		// Creating the document builder to parse xml.
 		DocumentBuilderFactory docBuilderFactory = DocumentBuilderFactory
@@ -143,7 +143,7 @@ public class XmlUserManager implements UserManager {
 		}
 	}
 
-	private void parseUserTag(Node node, HashMap<String, User> users, HashMap<String, String> userPassword, HashMap<String, HashSet<String>> proxyUserMap) {
+	private void parseUserTag(Node node, HashMap<String, User> users, HashMap<String, String> userPassword, HashMap<String, Set<String>> proxyUserMap) {
 		NamedNodeMap userAttrMap = node.getAttributes();
 		Node userNameAttr = userAttrMap.getNamedItem(USERNAME_ATTR);
 		if (userNameAttr == null) {
@@ -175,16 +175,15 @@ public class XmlUserManager implements UserManager {
 		Node proxy = userAttrMap.getNamedItem(PROXY_ATTR);
 		if (proxy != null) {
 			String value = proxy.getNodeValue();
-			String[] groupSplit = value.split("\\s*,\\s*");
-			for (String group : groupSplit) {
-				if(proxyUserMap.containsKey(username)) {
-					proxyUserMap.get(username).add(group);
-				}
-				else {
-					HashSet<String> proxySet = new HashSet<String>();
-					proxySet.add(group);
+			String[] proxySplit = value.split("\\s*,\\s*");
+			for (String proxyUser : proxySplit) {
+				Set<String> proxySet = proxyUserMap.get(username);
+				if (proxySet == null) {
+					proxySet = new HashSet<String>();
 					proxyUserMap.put(username, proxySet);
 				}
+				
+				proxySet.add(proxyUser);
 			}
 		}
 

@@ -371,7 +371,7 @@ public class ScheduleManager {
 									// Create ExecutableFlow
 									ExecutableFlow exflow = new ExecutableFlow(flow);
 									exflow.setSubmitUser(runningSched.getSubmitUser());
-									exflow.setProxyUsers(project.getProxyUsers());
+									exflow.addAllProxyUsers(project.getProxyUsers());
 									
 									ExecutionOptions flowOptions = runningSched.getExecutionOptions();
 									if(flowOptions == null) {

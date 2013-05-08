@@ -2,7 +2,7 @@ $.namespace('azkaban');
 
 var permissionTableView;
 var groupPermissionTableView;
-var proxyTableView;
+
 azkaban.PermissionTableView= Backbone.View.extend({
   events : {
 	"click button": "handleChangePermission"
@@ -19,6 +19,113 @@ azkaban.PermissionTableView= Backbone.View.extend({
   }
 });
 
+var proxyTableView;
+azkaban.ProxyTableView= Backbone.View.extend({
+  events : {
+	"click button": "handleRemoveProxy"
+  },
+  initialize : function(settings) {
+  },
+  render: function() {
+  },
+  handleRemoveProxy: function(evt) {
+	removeProxyView.display($(evt.currentTarget).attr("name"));
+  }
+});
+
+var removeProxyView;
+azkaban.RemoveProxyView = Backbone.View.extend({
+	events: {
+		"click #remove-proxy-btn": "handleRemoveProxy"
+	},
+	initialize : function(settings) {
+		$('#removeProxyErrorMsg').hide();
+	},
+	display: function(proxyName) {
+		this.el.proxyName = proxyName;
+		$("#proxyRemoveMsg").text("Removing proxy user '" + proxyName + "'");
+	  	 $(this.el).modal({
+	          closeHTML: "<a href='#' title='Close' class='modal-close'>x</a>",
+	          position: ["20%",],
+	          containerId: 'confirm-container',
+	          containerCss: {
+	            'height': '220px',
+	            'width': '565px'
+	          },
+	          onShow: function (dialog) {
+	            var modal = this;
+	            $("#removeProxyErrorMsg").hide();
+	          }
+        });
+	},
+	handleRemoveProxy: function() {
+	  	var requestURL = contextURL + "/manager";
+		var proxyName = this.el.proxyName;
+
+	  	$.get(
+	  	      requestURL,
+	  	      {"project": projectName, "name": proxyName, "ajax":"removeProxyUser"},
+	  	      function(data) {
+	  	      	  console.log("Output");
+	  	      	  if (data.error) {
+	  	      	  	$("#removeProxyErrorMsg").text(data.error);
+	  	      	  	$("#removeProxyErrorMsg").show();
+	  	      	  	return;
+	  	      	  }
+	  	      	  
+	  	      	  var replaceURL = requestURL + "?project=" + projectName +"&permissions";
+	  	          window.location.replace(replaceURL);
+	  	      },
+	  	      "json"
+	  	    );
+	}
+});
+
+var addProxyView;
+azkaban.AddProxyView = Backbone.View.extend({
+	events: {
+		"click #add-proxy-btn": "handleAddProxy"
+	},
+	initialize : function(settings) {
+		$('#proxyErrorMsg').hide();
+	},
+	display: function() {
+	  	 $(this.el).modal({
+	          closeHTML: "<a href='#' title='Close' class='modal-close'>x</a>",
+	          position: ["20%",],
+	          containerId: 'confirm-container',
+	          containerCss: {
+	            'height': '220px',
+	            'width': '565px'
+	          },
+	          onShow: function (dialog) {
+	            var modal = this;
+	            $("#errorMsg").hide();
+	          }
+        });
+	},
+	handleAddProxy: function() {
+	  	var requestURL = contextURL + "/manager";
+	  	var name = $('#proxy-user-box').val();
+		
+	  	$.get(
+	  	      requestURL,
+	  	      {"project": projectName, "name": name, "ajax":"addProxyUser"},
+	  	      function(data) {
+	  	      	  console.log("Output");
+	  	      	  if (data.error) {
+	  	      	  	$("#proxyErrorMsg").text(data.error);
+	  	      	  	$("#proxyErrorMsg").show();
+	  	      	  	return;
+	  	      	  }
+	  	      	  
+	  	      	  var replaceURL = requestURL + "?project=" + projectName +"&permissions";
+	  	          window.location.replace(replaceURL);
+	  	      },
+	  	      "json"
+	  	    );
+	}
+});
 
 var changePermissionView;
 azkaban.ChangePermissionView= Backbone.View.extend({
@@ -44,7 +151,6 @@ azkaban.ChangePermissionView= Backbone.View.extend({
 	$('#user-box').val(this.userid);
 	this.newPerm = newPerm;
 	this.group = group;
-	this.proxy = proxy;
 	
 	var prefix = userid;
 	var adminInput = $("#" + prefix + "-admin-checkbox");
@@ -52,7 +158,6 @@ azkaban.ChangePermissionView= Backbone.View.extend({
 	var writeInput = $("#" + prefix + "-write-checkbox");
 	var executeInput = $("#" + prefix + "-execute-checkbox");
 	var scheduleInput = $("#" + prefix + "-schedule-checkbox");
-	var proxyInput = $("#" + prefix + "-proxy-checkbox");
 	
 	if (newPerm) {
 		if (group) {
@@ -72,16 +177,10 @@ azkaban.ChangePermissionView= Backbone.View.extend({
 		this.permission.write = false;
 		this.permission.execute = false;
 		this.permission.schedule = false;
-		this.doProxy = false;
-		
 	}
 	else {
 		if (group) {
 			$('#change-title').text("Change Group Permissions");
-		}
-		else if(proxy){
-			$('#change-title').text("Change Proxy User Permissions");
-			this.doProxy = $(proxyInput).attr("checked");
 		}
 		else {
 			$('#change-title').text("Change User Permissions");
@@ -89,22 +188,11 @@ azkaban.ChangePermissionView= Backbone.View.extend({
 		
 		$('#user-box').attr("disabled", "disabled");
 		
-		
-		
-		this.permission.admin = $(adminInput).attr("checked");
-		this.permission.read = $(readInput).attr("checked");
-		this.permission.write = $(writeInput).attr("checked");
-		this.permission.execute = $(executeInput).attr("checked");
-		this.permission.schedule = $(scheduleInput).attr("checked");
-		this.doProxy = $(proxyInput).attr("checked");
-	}
-	
-	if(proxy) {
-		document.getElementById("otherCheckBoxes").hidden=true;
-		document.getElementById("proxyCheckBox").hidden=false;
-	} else {
-		document.getElementById("otherCheckBoxes").hidden=false;
-		document.getElementById("proxyCheckBox").hidden=true;
+		this.permission.admin = $(adminInput).is(":checked");
+		this.permission.read = $(readInput).is(":checked");
+		this.permission.write = $(writeInput).is(":checked");
+		this.permission.execute = $(executeInput).is(":checked");
+		this.permission.schedule = $(scheduleInput).is(":checked");
 	}
 	
 	this.changeCheckbox();
@@ -123,9 +211,6 @@ azkaban.ChangePermissionView= Backbone.View.extend({
             $("#errorMsg").hide();
           }
         });
-  	 
-
-  	 
   },
   render: function() {
   },
@@ -142,8 +227,6 @@ azkaban.ChangePermissionView= Backbone.View.extend({
   },
   changeCheckbox : function(evt) {
     var perm = this.permission;
-    var proxy = this.proxy;
-    var doProxy = this.doProxy;
 
   	if (perm.admin) {
   		$("#admin-change").attr("checked", true);
@@ -158,9 +241,6 @@ azkaban.ChangePermissionView= Backbone.View.extend({
   		
   		$("#schedule-change").attr("checked", true);
   		$("#schedule-change").attr("disabled", "disabled");
-  		
-  		$("#proxy-change").attr("checked", false);
-		$("#proxy-change").attr("disabled", "disabled");
   	}
   	else {
   		$("#admin-change").attr("checked", false);
@@ -176,16 +256,12 @@ azkaban.ChangePermissionView= Backbone.View.extend({
   		
   		$("#schedule-change").attr("checked", perm.schedule);
 		$("#schedule-change").attr("disabled", null);
-		
-		$("#proxy-change").attr("checked", doProxy);
-		$("#proxy-change").attr("disabled", null);
-		
   	}
   	
   	$("#change-btn").removeClass("btn-disabled");
   	$("#change-btn").attr("disabled", null);
   	
-  	if (perm.admin || perm.read || perm.write || perm.execute || perm.schedule || doProxy) {
+  	if (perm.admin || perm.read || perm.write || perm.execute || perm.schedule) {
   		$("#change-btn").text("Commit");
   	}
   	else {
@@ -202,14 +278,18 @@ azkaban.ChangePermissionView= Backbone.View.extend({
   	var requestURL = contextURL + "/manager";
   	var name = $('#user-box').val();
 	var command = this.newPerm ? "addPermission" : "changePermission";
-	if(this.proxy) {
-		command = "addProxyUser";
-	}
 	var group = this.group;
+	
+	var permission = {};
+	permission.admin = $("#admin-change").is(":checked");
+	permission.read = $("#read-change").is(":checked");
+	permission.write = $("#write-change").is(":checked");
+	permission.execute = $("#execute-change").is(":checked");
+	permission.schedule = $("#schedule-change").is(":checked");
 	
   	$.get(
 	      requestURL,
-	      {"project": projectName, "name": name, "ajax":command, "permissions": this.permission, "doProxy": this.doProxy, "group": group},
+	      {"project": projectName, "name": name, "ajax":command, "permissions": this.permission, "group": group},
 	      function(data) {
 	      	  console.log("Output");
 	      	  if (data.error) {
@@ -229,9 +309,10 @@ azkaban.ChangePermissionView= Backbone.View.extend({
 $(function() {
 	permissionTableView = new azkaban.PermissionTableView({el:$('#permissions-table'), group: false, proxy: false});
 	groupPermissionTableView = new azkaban.PermissionTableView({el:$('#group-permissions-table'), group: true, proxy: false});
-	proxyTableView = new azkaban.PermissionTableView({el:$('#proxy-user-table'), group: false, proxy: true});
+	proxyTableView = new azkaban.ProxyTableView({el:$('#proxy-user-table'), group: false, proxy: true});
 	changePermissionView = new azkaban.ChangePermissionView({el:$('#change-permission')});
-	
+	addProxyView = new azkaban.AddProxyView({el:$('#add-proxy')});
+	removeProxyView = new azkaban.RemoveProxyView({el:$('#remove-proxy')});
 	$('#addUser').bind('click', function() {
 		changePermissionView.display("", true, false, false);
 	});
@@ -241,7 +322,7 @@ $(function() {
 	});
 	
 	$('#addProxyUser').bind('click', function() {
-		changePermissionView.display("", true, false, true);
+		addProxyView.display();
 	});
 	
 });

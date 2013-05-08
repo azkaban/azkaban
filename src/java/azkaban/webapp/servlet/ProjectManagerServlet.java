@@ -28,7 +28,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -233,6 +232,11 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 		else if (ajaxName.equals("addProxyUser")) {
 			if (handleAjaxPermission(project, user, Type.ADMIN, ret)) {
 				ajaxAddProxyUser(project, ret, req, user);
+			}
+		}
+		else if (ajaxName.equals("removeProxyUser")) {
+			if (handleAjaxPermission(project, user, Type.ADMIN, ret)) {
+				ajaxRemoveProxyUser(project, ret, req, user);
 			}
 		}
 		else if (ajaxName.equals("fetchFlowExecutions")) {
@@ -569,53 +573,34 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 		ret.put("nodes", nodeList);
 	}
 	
+	
 	private void ajaxAddProxyUser(Project project, HashMap<String, Object> ret, HttpServletRequest req, User user) throws ServletException {
 		String name = getParam(req, "name");
 		
 		logger.info("Adding proxy user " + name + " by " + user.getUserId());
-		
-
-		
-		boolean doProxy = Boolean.parseBoolean(getParam(req, "doProxy"));
-		
-		
-		HashSet<String> proxyUsers = project.getProxyUsers();
-		//add
-		if(doProxy) {			
-			if(proxyUsers.contains(name)) {
-				return;
-			}
-			else {
-				if(userManager.validateProxyUser(name, user)) {
-					proxyUsers.add(name);
-				}
-				else {
-					ret.put("error", "User " + user.getUserId() + " has no permission to add " + name + " as proxy user for project " + project.getName());
-					return;
-				}
+		if(userManager.validateProxyUser(name, user)) {
+			try {
+				projectManager.addProjectProxyUser(project, name, user);
+			} catch (ProjectManagerException e) {
+				ret.put("error", e.getMessage());
 			}
 		}
 		else {
-			if(!proxyUsers.contains(name)) {
-				return;
-			}
-			else {
-				if(userManager.validateProxyUser(name, user)) {
-					proxyUsers.remove(name);
-				}
-				else {
-					ret.put("error", "User " + user.getUserId() + " has no permission to remove " + name + " as proxy user for project " + project.getName());
-					return;
-				}
-			}
+			ret.put("error", "User " + user.getUserId() + " has no permission to add " + name + " as proxy user.");
+			return;
 		}
+	}
+	
+	private void ajaxRemoveProxyUser(Project project, HashMap<String, Object> ret, HttpServletRequest req, User user) throws ServletException {
+		String name = getParam(req, "name");
+		
+		logger.info("Removing proxy user " + name + " by " + user.getUserId());
+
 		try {
-			projectManager.updateProjectSetting(project);
+			projectManager.removeProjectProxyUser(project, name, user);
 		} catch (ProjectManagerException e) {
-			// TODO Auto-generated catch block
 			ret.put("error", e.getMessage());
 		}
-		
 	}
 	
 	private void ajaxAddPermission(Project project, HashMap<String, Object> ret, HttpServletRequest req, User user) throws ServletException {
@@ -862,9 +847,20 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 					page.add("admin", true);
 				}
 
-				page.add("permissions", project.getUserPermissions());
-				page.add("groupPermissions", project.getGroupPermissions());
-				page.add("proxyUsers", project.getProxyUserList());
+				List<Pair<String, Permission>> userPermission = project.getUserPermissions();
+				if (userPermission != null && !userPermission.isEmpty()) {
+					page.add("permissions", userPermission);
+				}
+				
+				List<Pair<String, Permission>> groupPermission = project.getGroupPermissions();
+				if (groupPermission != null && !groupPermission.isEmpty()) {
+					page.add("groupPermissions", groupPermission);
+				}
+				
+				Set<String> proxyUsers = project.getProxyUsers();
+				if (proxyUsers != null && !proxyUsers.isEmpty()) {
+					page.add("proxyUsers", proxyUsers);
+				}
 				
 				if(hasPermission(project, user, Type.ADMIN)) {
 					page.add("isAdmin", true);
@@ -1173,6 +1169,9 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 				// Set this so we can display execute buttons only to those who have access.
 				if (perm.isPermissionSet(Type.EXECUTE) || adminPerm) {
 					page.add("exec", true);
+				}
+				else {
+					page.add("exec", false);
 				}
 				
 				List<Flow> flows = project.getFlows();
