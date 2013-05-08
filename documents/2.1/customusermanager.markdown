@@ -25,13 +25,13 @@ public interface UserManager {
 </pre>
 <br/>
 
-The constructor should take an _azkaban.utils.Props_ object, and its configuration so
-whatever is added to _azkaban.properties_ will be passed to the UserManager constructure.
+The constructor should take an _azkaban.utils.Props_ object. The contents of _azkaban.properties_ will
+be available for the UserManager for configuration.
 
 <br/>
 
 Package your new custom UserManager into a jar and drop it into the ./extlib directory or 
-alternatively into the plugins directory at _./plugins/_name\_of\_auth_/_custom jar_ (i.e. _./plugins/ldap/linkedin-ldap.jar_).
+alternatively into the plugins directory at _./plugins/_name/_of/_auth_/_custom jar_ (i.e. _./plugins/ldap/linkedin-ldap.jar_).
 
 <br/>
 
