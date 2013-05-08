@@ -8,10 +8,10 @@ context: ../..
 
 ### Common Parameters
 Besides the __type__ and the __dependencies__ parameters, there are several parameters that
-Azkaban reserves for all jobs.
+Azkaban reserves for all jobs. All of the parameters below are optional.
 
-|{.parameter}Parameter			|{.description} Description                                                                                       							|
-|-------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------|
+|{.parameter}Parameter			|{.description} Description                                 |
+|-------------------------------|-----------------------------------------------------------|
 |retries 	| The number of retries that will be automatically attempted for failed jobs 	|
 |retry.backoff  | The millisec time between each retry attempt |
 |working.dir  | Override the working directory for the execution. This is by default the directory that contains the job file that is being run. |
