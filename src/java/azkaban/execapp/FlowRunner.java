@@ -65,6 +65,7 @@ public class FlowRunner extends EventHandler implements Runnable {
 	private Map<String, Props> jobOutputProps = new HashMap<String, Props>();
 	
 	private Props globalProps;
+	private Props commonProps;
 	private final JobTypeManager jobtypeManager;
 	
 	private JobRunnerEventListener listener = new JobRunnerEventListener();
@@ -180,7 +181,7 @@ public class FlowRunner extends EventHandler implements Runnable {
 		String flowId = flow.getFlowId();
 		
 		// Add a bunch of common azkaban properties
-		PropsUtils.addCommonFlowProperties(flow);
+		commonProps = PropsUtils.addCommonFlowProperties(flow);
 		
 		// Create execution dir
 		createLogger(flowId);
@@ -461,12 +462,10 @@ public class FlowRunner extends EventHandler implements Runnable {
 		ExecutionOptions options = flow.getExecutionOptions();
 		@SuppressWarnings("unchecked")
 		Props flowProps = new Props(null, options.getFlowParameters()); 
-		
-		if (flowProps.size() > 0) {
-			flowProps.setParent(parentProps);
-			parentProps = flowProps;
-		}
-		
+		flowProps.putAll(commonProps);
+		flowProps.setParent(parentProps);
+		parentProps = flowProps;
+
 		// We add the previous job output and put into this props.
 		if (previousOutput != null) {
 			Props earliestParent = previousOutput.getEarliestAncestor();
