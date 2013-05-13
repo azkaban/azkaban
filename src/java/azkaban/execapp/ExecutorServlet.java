@@ -18,6 +18,7 @@ import org.codehaus.jackson.map.ObjectMapper;
 import azkaban.executor.ConnectorParams;
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutorManagerException;
+import azkaban.utils.FileIOUtils.JobMetaData;
 import azkaban.utils.FileIOUtils.LogData;
 import azkaban.utils.JSONUtils;
 import azkaban.webapp.servlet.AzkabanServletContextListener;
@@ -78,7 +79,10 @@ public class ExecutorServlet extends HttpServlet implements ConnectorParams {
 					String user = getParam(req, USER_PARAM, null);
 					
 					logger.info("User " + user + " has called action " + action + " on " + execid);
-					if (action.equals(LOG_ACTION)) { 
+					if (action.equals(METADATA_ACTION)) {
+						handleFetchMetaDataEvent(execid, req, resp, respMap);
+					}
+					else if (action.equals(LOG_ACTION)) { 
 						handleFetchLogEvent(execid, req, resp, respMap);
 					}
 					else if (action.equals(EXECUTE_ACTION)) {
@@ -180,6 +184,25 @@ public class ExecutorServlet extends HttpServlet implements ConnectorParams {
 				respMap.put("error", e.getMessage());
 			}
 		}
+	}
+	
+	private void handleFetchMetaDataEvent(int execId, HttpServletRequest req, HttpServletResponse resp, Map<String, Object> respMap) throws ServletException {
+		int startByte = getIntParam(req, "offset");
+		int length = getIntParam(req, "length");
+		
+		resp.setContentType("text/plain");
+		resp.setCharacterEncoding("utf-8");
+		
+		int attempt = getIntParam(req, "attempt", 0);
+		String jobId = getParam(req, "jobId");
+		try {
+			JobMetaData result = flowRunnerManager.readJobMetaData(execId, jobId, attempt, startByte, length);
+			respMap.putAll(result.toObject());
+		} catch (Exception e) {
+			logger.error(e);
+			respMap.put("error", e.getMessage());
+		}
+
 	}
 	
 	@SuppressWarnings("unchecked")

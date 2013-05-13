@@ -40,6 +40,7 @@ import org.apache.log4j.Logger;
 import org.joda.time.DateTime;
 
 import azkaban.project.Project;
+import azkaban.utils.FileIOUtils.JobMetaData;
 import azkaban.utils.FileIOUtils.LogData;
 import azkaban.utils.JSONUtils;
 import azkaban.utils.Pair;
@@ -241,6 +242,25 @@ public class ExecutorManager {
 		else {
 			LogData value = executorLoader.fetchLogs(exFlow.getExecutionId(), jobId, attempt, offset, length);
 			return value;
+		}
+	}
+	
+	public JobMetaData getExecutionJobMetaData(ExecutableFlow exFlow, String jobId, int offset, int length, int attempt) throws ExecutorManagerException {
+		Pair<ExecutionReference, ExecutableFlow> pair = runningFlows.get(exFlow.getExecutionId());
+		if (pair != null) {
+
+			Pair<String,String> typeParam = new Pair<String,String>("type", "job");
+			Pair<String,String> jobIdParam = new Pair<String,String>("jobId", jobId);
+			Pair<String,String> offsetParam = new Pair<String,String>("offset", String.valueOf(offset));
+			Pair<String,String> lengthParam = new Pair<String,String>("length", String.valueOf(length));
+			Pair<String,String> attemptParam = new Pair<String,String>("attempt", String.valueOf(attempt));
+			
+			@SuppressWarnings("unchecked")
+			Map<String, Object> result = callExecutorServer(pair.getFirst(), ConnectorParams.METADATA_ACTION, typeParam, jobIdParam, offsetParam, lengthParam, attemptParam);
+			return JobMetaData.createJobMetaDataFromObject(result);
+		}
+		else {
+			return null;
 		}
 	}
 	

@@ -805,6 +805,20 @@ public class FlowRunner extends EventHandler implements Runnable {
 		return logFile;
 	}
 	
+	public File getJobMetaDataFile(String jobId, int attempt) {
+		ExecutableNode node = flow.getExecutableNode(jobId);
+		File path = new File(execDir, node.getJobPropsSource());
+		
+		String metaDataFileName = JobRunner.createMetaDataFileName(execId, jobId, attempt);
+		File metaDataFile = new File(path.getParentFile(), metaDataFileName);
+		
+		if (!metaDataFile.exists()) {
+			return null;
+		}
+		
+		return metaDataFile;
+	}
+	
 	public boolean isRunnerThreadAlive() {
 		if (flowRunnerThread != null) {
 			return flowRunnerThread.isAlive();

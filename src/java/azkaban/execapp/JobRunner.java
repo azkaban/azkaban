@@ -346,6 +346,7 @@ public class JobRunner extends EventHandler implements Runnable {
 				logInfo("Starting job " + node.getJobId() + " at " + node.getStartTime());
 			}
 			props.put(CommonJobProperties.JOB_ATTEMPT, node.getAttempt());
+			props.put(CommonJobProperties.JOB_METADATA_FILE, createMetaDataFileName(executionId, node.getJobId(), node.getAttempt()));
 			node.setStatus(Status.RUNNING);
 
 			// Ability to specify working directory
@@ -460,5 +461,9 @@ public class JobRunner extends EventHandler implements Runnable {
 	
 	public static String createLogFileName(int executionId, String jobId, int attempt) {
 		return attempt > 0 ? "_job." + executionId + "." + attempt + "." + jobId + ".log" : "_job." + executionId + "." + jobId + ".log";
+	}
+	
+	public static String createMetaDataFileName(int executionId, String jobId, int attempt) {
+		return attempt > 0 ? "_job." + executionId + "." + attempt + "." + jobId + ".meta" : "_job." + executionId + "." + jobId + ".meta";
 	}
 }

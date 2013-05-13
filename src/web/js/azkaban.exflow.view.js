@@ -519,57 +519,33 @@ azkaban.FlowLogView = Backbone.View.extend({
 		var requestURL = contextURL + "/executor"; 
 		var model = this.model;
 		console.log("fetchLogs offset is " + offset)
-//		$.get(
-//			requestURL,
-//			{"execid": execId, "ajax":"fetchExecFlowLogs", "offset": offset, "length": 50000},
-//			function(data) {
-//	          console.log("fetchLogs");
-//	          if (data.error) {
-//	          	console.log(data.error);
-//	          }
-//	          else {
-//	          	var log = $("#logSection").text();
-//	          	if (!log) {
-//	          		log = data.data;
-//	          	}
-//	          	else {
-//	          		log += data.data;
-//	          	}
-//	          	
-//	          	var newOffset = data.offset + data.length;
-//	          	
-//	          	$("#logSection").text(log);
-//	          	model.set({"offset": newOffset, "log": log});
-//	          	$(".logViewer").scrollTop(9999);
-//	          }
-//	      }
-//	    );
+
 		$.ajax({async:false, 
 			url:requestURL,
 			data:{"execid": execId, "ajax":"fetchExecFlowLogs", "offset": offset, "length": 50000},
 			success:
 				function(data) {
-				console.log("fetchLogs");
-				if (data.error) {
-					console.log(data.error);
-				}
-				else {
-					var log = $("#logSection").text();
-					if (!log) {
-						log = data.data;
+					console.log("fetchLogs");
+					if (data.error) {
+						console.log(data.error);
 					}
 					else {
-						log += data.data;
+						var log = $("#logSection").text();
+						if (!log) {
+							log = data.data;
+						}
+						else {
+							log += data.data;
+						}
+	
+						var newOffset = data.offset + data.length;
+	
+						$("#logSection").text(log);
+						model.set({"offset": newOffset, "log": log});
+						$(".logViewer").scrollTop(9999);
 					}
-
-					var newOffset = data.offset + data.length;
-
-					$("#logSection").text(log);
-					model.set({"offset": newOffset, "log": log});
-					$(".logViewer").scrollTop(9999);
 				}
-			}
-		})
+		});
 	}
 });
 
@@ -714,14 +690,16 @@ var attemptRightClick = function(event) {
 
 $(function() {
 	var selected;
-
+	
 	graphModel = new azkaban.GraphModel();
 	logModel = new azkaban.LogModel();
+	
 	flowTabView = new azkaban.FlowTabView({el:$( '#headertabs'), model: graphModel});
 	mainSvgGraphView = new azkaban.SvgGraphView({el:$('#svgDiv'), model: graphModel, rightClick:  { "node": exNodeClickCallback, "edge": exEdgeClickCallback, "graph": exGraphClickCallback }});
 	jobsListView = new azkaban.JobListView({el:$('#jobList'), model: graphModel, contextMenuCallback: exJobClickCallback});
-	statusView = new azkaban.StatusView({el:$('#flow-status'), model: graphModel});
 	flowLogView = new azkaban.FlowLogView({el:$('#flowLogView'), model: logModel});
+	statusView = new azkaban.StatusView({el:$('#flow-status'), model: graphModel});
+	
 	executionListView = new azkaban.ExecutionListView({el: $('#jobListView'), model:graphModel});
 	
 	var requestURL = contextURL + "/executor";
