@@ -12,6 +12,7 @@ $(function() {
 	var totalHeight = (border * 2 + header + 24 * lineHeight);
 	var monthConst = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 	var dayOfWeekConst = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"];
+	var dayMillisConst = 24*3600*1000;
 
 	$("#svgDivCustom").svg({onLoad:
 		function (svg) {
@@ -81,7 +82,7 @@ $(function() {
 					var gDay = svg.group(gMain, {transform: "translate(" + (border + timeWidth + deltaDay * dayWidth) + "," + header + ")"});
 
 					//This is temporary.
-					var date = new Date(firstDay + 24*3600*1000 * deltaDay);
+					var date = new Date(firstDay + dayMillisConst * deltaDay);
 					var day = date.getDate();
 
 					//Draw box around
@@ -103,7 +104,7 @@ $(function() {
 
 				if(isThisWeek != -1)
 				{
-					var date = new Date(firstDay + 24*3600*1000 * isThisWeek);
+					var date = new Date(firstDay + dayMillisConst * isThisWeek);
 					var day = date.getDate();
 					var gDay = svg.group(gMain, {transform: "translate(" + (border + timeWidth + isThisWeek * dayWidth) + "," + header + ")"});
 					svg.rect(gDay, 0, -header, dayWidth, 24 * lineHeight + header, {fill : "none", stroke : "#06F"});
@@ -175,34 +176,68 @@ $(function() {
 								//Draw item
 								var item = columns[i][j];
 								var startTime = new Date(parseInt(item.time));
-								var startY = startTime.getHours() * lineHeight + startTime.getMinutes() * lineHeight / 60;
+								var startY = Math.floor(startTime.getHours() * lineHeight + startTime.getMinutes() * lineHeight / 60);
 								var endTime = new Date(parseInt(item.time) + parseInt(item.length) );
-								var endY = startY + parseInt(item.length)* lineHeight / 3600000;
+								var endY = Math.floor(startY + parseInt(item.length)* lineHeight / 3600000);
 								//var anchor = svg.a(gColumn);
 								var itemUrl = contextURL + "/manager?project=" + item.projectname + "&flow=" + item.flowname;
 								var gItem = svg.link(gColumn, itemUrl, {transform: "translate(0," + startY + ")"});
+
+								//Pass the item into the DOM data store to be retrieved later on
 								$(gItem).data("item", item);
+
 								//Replace the context handler
-								$(gItem)[0].addEventListener('contextmenu', function(ev) {
-									var requestURL = $(this).attr("href");
-									var item = $(this).data("item");
-									var menu = [
-											{title: "Open Job...", callback: function() {window.location.href=requestURL;}},
-											{title: "Open Job in New Window...", callback: function() {window.open(requestURL);}},
-											{title: "Hide This Job", callback: function() {filterFlow.push(item); renderDays();}},
-											{title: "Hide All Jobs from this Project", callback: function() {filterProject.push(item); renderDays();}}
-									];
-									contextMenuView.show(ev, menu);
-									ev.preventDefault();
-									ev.stopPropagation()
-									return false;
-								}, false);
+								gItem.addEventListener('contextmenu', handleContextMenu);
+
+								//Add a tooltip on mouse over
+								gItem.addEventListener('mouseover', handleMouseOver);
+								//Remove the tooltip on mouse out
+								gItem.addEventListener('mouseout', handleMouseOut);
+
 								//$(gItem).attr("style","color:red");
-								var rect = svg.rect(gItem, 0, 0, dayWidth / columns.length, endY - startY, 0, 0, {fill : "#7E7", stroke : "#444", strokeWidth : 1});
+								var rect = svg.rect(gItem, 0, 0, Math.floor(dayWidth / columns.length), endY - startY, 0, 0, {fill : "#7E7", stroke : "#444", strokeWidth : 1});
 								//Draw text
-								svg.text(gItem, 6, 16, item.flowname, {fontSize: "13", fill : "#000", stroke : "none"});
-								//svg.text(gColumn, 6, startY + 32, "Project: " + item["projectname"], {fontSize: "13", fill : "#000", stroke : "none"});
+								//svg.text(gItem, 6, 16, item.flowname, {fontSize: "13", fill : "#000", stroke : "none"});
 							}
+						}
+					}
+				}
+
+				function processItem(item)
+				{
+					var firstTime = parseInt(item.time);
+					var startTime = firstDay;
+					var endTime = firstDay + numDays * dayMillisConst;
+					var period = parseInt(item.period);
+
+					// Shift time until we're past the start time
+					if (period > 0) {
+						// Calculate next execution time efficiently
+						// Take into account items that ends in the date specified, but does not start on that date
+						var periods = Math.floor((startTime - (firstTime + length)) / period);
+						//Make sure we don't subtract
+						if(periods < 0){
+							periods = 0;
+						}
+						firstTime += period * periods;
+						// Increment in case we haven't arrived yet. This will apply to most of the cases
+						while (firstTime + length < startTime) {
+							firstTime += period;
+						}
+					}
+
+					// Bad or no period
+					if (period <= 0) {
+						// Single instance case
+						if (firstTime >= startTime && firstTime < endTime) {
+							addItem({flowname : item.flowname, projectname: item.projectname, time: firstTime.toString(), length: item.length});
+						}
+					}
+					else {
+						// Repetitive schedule, firstTime is assumed to be after startTime
+						while (firstTime < endTime) {
+							addItem({flowname : item.flowname, projectname: item.projectname, time: firstTime.toString(), length: item.length});
+							firstTime += period;
 						}
 					}
 				}
@@ -228,34 +263,61 @@ $(function() {
 					var index = (itemStartDate.valueOf() - firstDay) / (24*3600*1000);
 					if(index >= 0 && index < numDays)
 					{
+						//Add the item to the rendering list
 						itemByDay[index].push(item);
 					}
 				}
 
+				function handleContextMenu(event) {
+					var requestURL = $(this).attr("href");
+					var item = $(this).data("item");
+					var menu = [
+						{title: "View \"" + item.flowname + "\"", callback: function() {window.location.href=requestURL;}},
+						{title: "View \"" + item.flowname + "\" in New Window", callback: function() {window.open(requestURL);}},
+						{title: "Hide \"" + item.flowname + "\"", callback: function() {filterFlow.push(item); renderDays();}},
+						{title: "Hide All Jobs from Project \"" + item.projectname + "\"", callback: function() {filterProject.push(item); renderDays();}}
+					];
+					contextMenuView.show(event, menu);
+					event.preventDefault();
+					event.stopPropagation()
+					return false;			
+				}
+
+				function handleMouseOver(event) {
+					//Create the new tooltip
+					var requestURL = $(this).attr("href");
+					var item = $(this).data("item");
+					tooltip = svg.text(this, 6, 16, item.flowname, {fontSize: "13", fill : "#000", stroke : "none"});
+					//Store tooltip
+					$(this).data("tooltip", tooltip);
+				}
+
+				function handleMouseOut(event) {
+					//Clear the fade interval
+					$($(this).data("tooltip")).fadeOut(750, function(){ svg.remove(this); });
+				}
+
 				var requestURL = contextURL + "/schedule";
 
-				for(var deltaDay = 0; deltaDay < numDays; deltaDay++)
-				{
-					//Asynchronously load data
-					$.ajax({
-						type: "GET",
-						url: requestURL,
-						data: {"ajax": "loadFlow", "day": firstDay + 24*3600*1000 * deltaDay, "loadPrev": deltaDay},
-						dataType: "json",
-						success: jQuery.proxy(function (data)
-						{
-							var items = data.items;
+				//Asynchronously load data
+				$.ajax({
+					type: "GET",
+					url: requestURL,
+					data: {"ajax": "loadFlow"},
+					dataType: "json",
+					success: function (data)
+					{
+						var items = data.items;
 
-							//Sort items by day
-							for(var i = 0; i < items.length; i++)
-							{
-								addItem(items[i]);
-							}
-							//Trigger a re-rendering of all the data
-							renderDays();
-						})
-					});
-				}
+						//Sort items by day
+						for(var i = 0; i < items.length; i++)
+						{
+							processItem(items[i]);
+						}
+						//Trigger a re-rendering of all the data
+						renderDays();
+					}
+				});
 			}
 		}, settings : {
 			"xmlns" : "http://www.w3.org/2000/svg", 
@@ -264,22 +326,17 @@ $(function() {
 			"style" : "width:100%;height:" + totalHeight + "px"
 		}});
 
-	function dayMatch(d1, d2)
-	{
+	function dayMatch(d1, d2) {
 		return d1.getDate() == d2.getDate() && d1.getFullYear() == d2.getFullYear() && d1.getMonth() == d2.getMonth();
 	}
 
-	function getHourText(hour)
-	{
+	function getHourText(hour) {
 		return (hour==0 ? "12 AM" : (hour<12 ? hour + " AM" : (hour==12 ? "12 PM" : (hour-12) + " PM" )));
 	}
 
-	function intersectArray(a, arry)
-	{
-		for(var i = 0; i < arry.length; i++)
-		{
-			if(intersects(a, arry[i]))
-			{
+	function intersectArray(a, arry) {
+		for(var i = 0; i < arry.length; i++) {
+			if(intersects(a, arry[i])) {
 				return true;
 			}
 		}
@@ -287,8 +344,7 @@ $(function() {
 		return false;
 	}
 
-	function intersects(a, b)
-	{
+	function intersects(a, b) {
 		return parseInt(a.time) < parseInt(b.time) + parseInt(b.length) && parseInt(a.time) + parseInt(a.length) > parseInt(b.time);
 	}
 });
