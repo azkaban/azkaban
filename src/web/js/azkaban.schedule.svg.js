@@ -2,7 +2,6 @@ $.namespace('azkaban');
 
 $(function() {
 
-
 	var border = 20;
 	var header = 30;
 	var timeWidth = 60;
@@ -12,7 +11,8 @@ $(function() {
 	var totalHeight = (border * 2 + header + 24 * lineHeight);
 	var monthConst = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 	var dayOfWeekConst = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"];
-	var dayMillisConst = 24*3600*1000;
+	var hourMillisConst = 3600 * 1000;
+	var dayMillisConst = 24 * hourMillisConst;
 
 	$("#svgDivCustom").svg({onLoad:
 		function (svg) {
@@ -35,12 +35,12 @@ $(function() {
 			var filterFlow = new Array();
 
 			$(".nav-prev-week").click(function (event) {
-				svgDate = new Date(svgDate.valueOf() - 7 * 24 *  60 * 60 * 1000);
+				svgDate = new Date(svgDate.valueOf() - 7 * dayMillisConst);
 				loadSvg(svgDate);
 				event.stopPropagation();
 			});
 			$(".nav-next-week").click(function (event) {
-				svgDate = new Date(svgDate.valueOf() + 7 * 24 *  60 * 60 * 1000);
+				svgDate = new Date(svgDate.valueOf() + 7 * dayMillisConst);
 				loadSvg(svgDate);
 				event.stopPropagation();
 			});
@@ -141,6 +141,18 @@ $(function() {
 					for(var deltaDay = 0; deltaDay < numDays; deltaDay++) {
 						var gDay = svg.group(gDayView, {transform: "translate(" + (deltaDay * dayWidth) + ")"});
 						var data = itemByDay[deltaDay];
+						//Sort the arrays to have a better view
+						data.sort(function (a, b){
+							if(a.length == dayMillisConst) return -1;
+							if(b.length == dayMillisConst) return 1;
+							//Smaller time in front
+							var timeDiff = a.time - b.time;
+							if(timeDiff == 0) {
+								//Larger length in front
+								return b.length - b.length;
+							}
+							return timeDiff;
+						});
 						//Sort items to columns
 						var columns = new Array();
 						columns.push(new Array());
@@ -175,10 +187,10 @@ $(function() {
 							for(var j = 0; j < columns[i].length; j++) {
 								//Draw item
 								var item = columns[i][j];
-								var startTime = new Date(parseInt(item.time));
+								var startTime = new Date(item.time);
 								var startY = Math.floor(startTime.getHours() * lineHeight + startTime.getMinutes() * lineHeight / 60);
-								var endTime = new Date(parseInt(item.time) + parseInt(item.length) );
-								var endY = Math.floor(startY + parseInt(item.length)* lineHeight / 3600000);
+								var endTime = new Date(item.time + item.length );
+								var endY = Math.floor(startY + (item.length * lineHeight) / hourMillisConst);
 								//var anchor = svg.a(gColumn);
 								var itemUrl = contextURL + "/manager?project=" + item.projectname + "&flow=" + item.flowname;
 								var gItem = svg.link(gColumn, itemUrl, {transform: "translate(0," + startY + ")"});
@@ -195,7 +207,7 @@ $(function() {
 								gItem.addEventListener('mouseout', handleMouseOut);
 
 								//$(gItem).attr("style","color:red");
-								var rect = svg.rect(gItem, 0, 0, Math.floor(dayWidth / columns.length), endY - startY, 0, 0, {fill : "#7E7", stroke : "#444", strokeWidth : 1});
+								var rect = svg.rect(gItem, 0, 0, Math.ceil(dayWidth / columns.length), Math.floor(endY - startY), 0, 0, {fill : "#7E7", stroke : "#444", strokeWidth : 1});
 								//Draw text
 								//svg.text(gItem, 6, 16, item.flowname, {fontSize: "13", fill : "#000", stroke : "none"});
 							}
@@ -205,23 +217,23 @@ $(function() {
 
 				function processItem(item)
 				{
-					var firstTime = parseInt(item.time);
+					var firstTime = item.time;
 					var startTime = firstDay;
 					var endTime = firstDay + numDays * dayMillisConst;
-					var period = parseInt(item.period);
+					var period = item.period;
 
 					// Shift time until we're past the start time
 					if (period > 0) {
 						// Calculate next execution time efficiently
 						// Take into account items that ends in the date specified, but does not start on that date
-						var periods = Math.floor((startTime - (firstTime + length)) / period);
+						var periods = Math.floor((startTime - (firstTime + item.length)) / period);
 						//Make sure we don't subtract
 						if(periods < 0){
 							periods = 0;
 						}
 						firstTime += period * periods;
 						// Increment in case we haven't arrived yet. This will apply to most of the cases
-						while (firstTime + length < startTime) {
+						while (firstTime + item.length < startTime) {
 							firstTime += period;
 						}
 					}
@@ -230,37 +242,42 @@ $(function() {
 					if (period <= 0) {
 						// Single instance case
 						if (firstTime >= startTime && firstTime < endTime) {
-							addItem({flowname : item.flowname, projectname: item.projectname, time: firstTime.toString(), length: item.length});
+							addItem({flowname : item.flowname, projectname: item.projectname, time: firstTime, length: item.length});
 						}
 					}
 					else {
-						// Repetitive schedule, firstTime is assumed to be after startTime
-						while (firstTime < endTime) {
-							addItem({flowname : item.flowname, projectname: item.projectname, time: firstTime.toString(), length: item.length});
-							firstTime += period;
+						if(period <= hourMillisConst) {
+							addItem({flowname : item.flowname, projectname: item.projectname, time: firstTime, length: endTime - firstTime});
+						}
+						else{
+							// Repetitive schedule, firstTime is assumed to be after startTime
+							while (firstTime < endTime) {
+								addItem({flowname : item.flowname, projectname: item.projectname, time: firstTime, length: item.length});
+								firstTime += period;
+							}
 						}
 					}
 				}
 
 				function addItem(item)
 				{
-					var itemStartTime = new Date(parseInt(item.time));
-					var itemEndTime = new Date(parseInt(item.time) + parseInt(item.length));
+					var itemStartTime = new Date(item.time);
+					var itemEndTime = new Date(item.time + item.length);
 					var itemStartDate = new Date(itemStartTime.getFullYear(), itemStartTime.getMonth(), itemStartTime.getDate());
 					var itemEndDate = new Date(itemEndTime.getFullYear(), itemEndTime.getMonth(), itemEndTime.getDate());
 
 					//Cross date item, cut it to only today's portion and add another item starting tomorrow morning
-					if(itemStartDate.valueOf() != itemEndDate.valueOf() && itemEndTime.valueOf() != itemEndDate.valueOf())
+					if(itemStartDate.valueOf() != itemEndDate.valueOf() && itemEndTime.valueOf() != itemStartDate + dayMillisConst)
 					{
-						var nextMorning = itemStartDate.valueOf() + 24*3600*1000;
+						var nextMorning = itemStartDate.valueOf() + dayMillisConst;
 						var excess = item.length - (nextMorning - itemStartTime.valueOf());
-						item.length = (nextMorning - itemStartTime.valueOf()).toString();
-						var item2 = {time: nextMorning.toString(), length: excess.toString(), projectname: item.projectname, flowname: item.flowname};
+						item.length = nextMorning - itemStartTime.valueOf();
+						var item2 = {time: nextMorning, length: excess, projectname: item.projectname, flowname: item.flowname};
 						addItem(item2);
 					}
 
 					//Now the item should be only in one day
-					var index = (itemStartDate.valueOf() - firstDay) / (24*3600*1000);
+					var index = (itemStartDate.valueOf() - firstDay) / dayMillisConst;
 					if(index >= 0 && index < numDays)
 					{
 						//Add the item to the rendering list
@@ -272,22 +289,30 @@ $(function() {
 					var requestURL = $(this).attr("href");
 					var item = $(this).data("item");
 					var menu = [
-						{title: "View \"" + item.flowname + "\"", callback: function() {window.location.href=requestURL;}},
-						{title: "View \"" + item.flowname + "\" in New Window", callback: function() {window.open(requestURL);}},
-						{title: "Hide \"" + item.flowname + "\"", callback: function() {filterFlow.push(item); renderDays();}},
-						{title: "Hide All Jobs from Project \"" + item.projectname + "\"", callback: function() {filterProject.push(item); renderDays();}}
+						{title: "Job \"" + item.flowname + "\" From Project \"" + item.projectname + "\""},
+						{title: "View Job", callback: function() {window.location.href=requestURL;}},
+						{title: "View Job in New Window", callback: function() {window.open(requestURL);}},
+						{title: "Hide Job", callback: function() {filterFlow.push(item); renderDays();}},
+						{title: "Hide All Jobs From the Same Project", callback: function() {filterProject.push(item); renderDays();}}
 					];
 					contextMenuView.show(event, menu);
 					event.preventDefault();
-					event.stopPropagation()
-					return false;			
+					event.stopPropagation();
+					return false;
 				}
 
 				function handleMouseOver(event) {
 					//Create the new tooltip
 					var requestURL = $(this).attr("href");
 					var item = $(this).data("item");
-					tooltip = svg.text(this, 6, 16, item.flowname, {fontSize: "13", fill : "#000", stroke : "none"});
+					var offset = $("svg").offset();
+					var thisOffset = $(this).offset();
+
+					var tooltip = svg.group({transform: "translate(" + (thisOffset.left - offset.left + 2) + "," + (thisOffset.top - offset.top - 2) + ")"});
+					var rect = svg.rect(tooltip, 0, -20, measureText(svg, item.flowname, {fontSize: "13"}) + 4, 20, {fill : "#FFF", stroke : "none"});
+					svg.text(tooltip, 2, -5, item.flowname, {fontSize: "13", fill : "#000", stroke : "none"});
+
+
 					//Store tooltip
 					$(this).data("tooltip", tooltip);
 				}
@@ -297,9 +322,8 @@ $(function() {
 					$($(this).data("tooltip")).fadeOut(750, function(){ svg.remove(this); });
 				}
 
-				var requestURL = contextURL + "/schedule";
-
 				//Asynchronously load data
+				var requestURL = contextURL + "/schedule";
 				$.ajax({
 					type: "GET",
 					url: requestURL,
@@ -312,6 +336,9 @@ $(function() {
 						//Sort items by day
 						for(var i = 0; i < items.length; i++)
 						{
+							items[i].length = hourMillisConst; //TODO: parseInt(items[i].length);
+							items[i].time = parseInt(items[i].time);
+							items[i].period = parseInt(items[i].period);
 							processItem(items[i]);
 						}
 						//Trigger a re-rendering of all the data
@@ -336,7 +363,8 @@ $(function() {
 
 	function intersectArray(a, arry) {
 		for(var i = 0; i < arry.length; i++) {
-			if(intersects(a, arry[i])) {
+			var b = arry[i];
+			if(a.time < b.time + b.length && a.time + a.length > b.time) {
 				return true;
 			}
 		}
@@ -344,7 +372,10 @@ $(function() {
 		return false;
 	}
 
-	function intersects(a, b) {
-		return parseInt(a.time) < parseInt(b.time) + parseInt(b.length) && parseInt(a.time) + parseInt(a.length) > parseInt(b.time);
+	function measureText(svg, text, options) {
+		var test = svg.text(0, 0, text, options);
+		var width = test.getComputedTextLength();
+		svg.remove(test);
+		return width;
 	}
 });
