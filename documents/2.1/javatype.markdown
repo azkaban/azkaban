@@ -1,7 +1,7 @@
 ---
 layout: documents
 nav: javatype
-context: ../../..
+context: ../..
 ---
 
 #Java Job Type

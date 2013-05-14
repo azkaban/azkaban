@@ -1,7 +1,7 @@
 ---
 layout: documents
 nav: createnewjobtypes
-context: ../../..
+context: ../..
 ---
 
 #Create Your Own Jobtypes

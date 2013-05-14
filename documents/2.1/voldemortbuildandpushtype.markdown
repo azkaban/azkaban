@@ -1,7 +1,7 @@
 ---
 layout: documents
 nav: voldemortbuildandpushtype
-context: ../../..
+context: ../..
 ---
 
 #VoldemortBuildandPush Type

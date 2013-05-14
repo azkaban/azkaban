@@ -1,7 +1,7 @@
 ---
 layout: documents
 nav: pigtype
-context: ../../..
+context: ../..
 ---
 
 #pig Type

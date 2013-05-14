@@ -1,7 +1,7 @@
 ---
 layout: documents
 nav: hadoopjavatype
-context: ../../..
+context: ../..
 ---
 
 #hadoopJava Type
