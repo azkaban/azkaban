@@ -15,8 +15,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import javax.sql.DataSource;
-
 import org.apache.commons.dbutils.DbUtils;
 import org.apache.commons.dbutils.QueryRunner;
 import org.apache.commons.dbutils.ResultSetHandler;
@@ -24,7 +22,7 @@ import org.apache.commons.io.IOUtils;
 import org.apache.log4j.Logger;
 import org.joda.time.DateTime;
 
-import azkaban.utils.DataSourceUtils;
+import azkaban.utils.db.AbstractJdbcLoader;
 import azkaban.utils.FileIOUtils;
 import azkaban.utils.FileIOUtils.LogData;
 import azkaban.utils.GZIPUtils;
@@ -33,53 +31,13 @@ import azkaban.utils.Pair;
 import azkaban.utils.Props;
 import azkaban.utils.PropsUtils;
 
-public class JdbcExecutorLoader implements ExecutorLoader {
+public class JdbcExecutorLoader extends AbstractJdbcLoader implements ExecutorLoader {
 	private static final Logger logger = Logger.getLogger(JdbcExecutorLoader.class);
-	
-	/**
-	 * Used for when we store text data. Plain uses UTF8 encoding.
-	 */
-	public static enum EncodingType {
-		PLAIN(1), GZIP(2);
 
-		private int numVal;
-
-		EncodingType(int numVal) {
-			this.numVal = numVal;
-		}
-
-		public int getNumVal() {
-			return numVal;
-		}
-
-		public static EncodingType fromInteger(int x) {
-			switch (x) {
-			case 1:
-				return PLAIN;
-			case 2:
-				return GZIP;
-			default:
-				return PLAIN;
-			}
-		}
-	}
-	
-	private DataSource dataSource;
 	private EncodingType defaultEncodingType = EncodingType.GZIP;
 	
 	public JdbcExecutorLoader(Props props) {
-		String databaseType = props.getString("database.type");
-
-		if (databaseType.equals("mysql")) {
-			int port = props.getInt("mysql.port");
-			String host = props.getString("mysql.host");
-			String database = props.getString("mysql.database");
-			String user = props.getString("mysql.user");
-			String password = props.getString("mysql.password");
-			int numConnections = props.getInt("mysql.numconnections");
-			
-			dataSource = DataSourceUtils.getMySQLDataSource(host, port, database, user, password, numConnections);
-		}
+		super(props);
 	}
 
 	public EncodingType getDefaultEncodingType() {
@@ -168,7 +126,7 @@ public class JdbcExecutorLoader implements ExecutorLoader {
 	
 	@Override
 	public ExecutableFlow fetchExecutableFlow(int id) throws ExecutorManagerException {
-		QueryRunner runner = new QueryRunner(dataSource);
+		QueryRunner runner = createQueryRunner();
 		FetchExecutableFlows flowHandler = new FetchExecutableFlows();
 
 		try {
@@ -181,7 +139,7 @@ public class JdbcExecutorLoader implements ExecutorLoader {
 	
 	@Override
 	public Map<Integer, Pair<ExecutionReference, ExecutableFlow>> fetchActiveFlows() throws ExecutorManagerException {
-		QueryRunner runner = new QueryRunner(dataSource);
+		QueryRunner runner = createQueryRunner();
 		FetchActiveExecutableFlows flowHandler = new FetchActiveExecutableFlows();
 
 		try {
@@ -194,7 +152,7 @@ public class JdbcExecutorLoader implements ExecutorLoader {
 	
 	@Override
 	public int fetchNumExecutableFlows() throws ExecutorManagerException {
-		QueryRunner runner = new QueryRunner(dataSource);
+		QueryRunner runner = createQueryRunner();
 		
 		IntHandler intHandler = new IntHandler();
 		try {
@@ -207,7 +165,7 @@ public class JdbcExecutorLoader implements ExecutorLoader {
 	
 	@Override
 	public int fetchNumExecutableFlows(int projectId, String flowId) throws ExecutorManagerException {
-		QueryRunner runner = new QueryRunner(dataSource);
+		QueryRunner runner = createQueryRunner();
 		
 		IntHandler intHandler = new IntHandler();
 		try {
@@ -220,7 +178,7 @@ public class JdbcExecutorLoader implements ExecutorLoader {
 	
 	@Override
 	public int fetchNumExecutableNodes(int projectId, String jobId) throws ExecutorManagerException {
-		QueryRunner runner = new QueryRunner(dataSource);
+		QueryRunner runner = createQueryRunner();
 		
 		IntHandler intHandler = new IntHandler();
 		try {
@@ -233,7 +191,7 @@ public class JdbcExecutorLoader implements ExecutorLoader {
 	
 	@Override
 	public List<ExecutableFlow> fetchFlowHistory(int projectId, String flowId, int skip, int num) throws ExecutorManagerException {
-		QueryRunner runner = new QueryRunner(dataSource);
+		QueryRunner runner = createQueryRunner();
 		FetchExecutableFlows flowHandler = new FetchExecutableFlows();
 
 		try {
@@ -246,7 +204,7 @@ public class JdbcExecutorLoader implements ExecutorLoader {
 	
 	@Override
 	public List<ExecutableFlow> fetchFlowHistory(int skip, int num) throws ExecutorManagerException {
-		QueryRunner runner = new QueryRunner(dataSource);
+		QueryRunner runner = createQueryRunner();
 
 		FetchExecutableFlows flowHandler = new FetchExecutableFlows();
 		
@@ -338,7 +296,7 @@ public class JdbcExecutorLoader implements ExecutorLoader {
 			params.add(num);
 		}
 		
-		QueryRunner runner = new QueryRunner(dataSource);
+		QueryRunner runner = createQueryRunner();
 		FetchExecutableFlows flowHandler = new FetchExecutableFlows();
 
 		try {
@@ -352,7 +310,7 @@ public class JdbcExecutorLoader implements ExecutorLoader {
 	@Override
 	public void addActiveExecutableReference(ExecutionReference reference) throws ExecutorManagerException {
 		final String INSERT = "INSERT INTO active_executing_flows (exec_id, host, port, update_time) values (?,?,?,?)";
-		QueryRunner runner = new QueryRunner(dataSource);
+		QueryRunner runner = createQueryRunner();
 		
 		try {
 			runner.update(INSERT, reference.getExecId(), reference.getHost(), reference.getPort(), reference.getUpdateTime());
@@ -365,7 +323,7 @@ public class JdbcExecutorLoader implements ExecutorLoader {
 	public void removeActiveExecutableReference(int execid) throws ExecutorManagerException {
 		final String DELETE = "DELETE FROM active_executing_flows WHERE exec_id=?";
 		
-		QueryRunner runner = new QueryRunner(dataSource);
+		QueryRunner runner = createQueryRunner();
 		try {
 			runner.update(DELETE, execid);
 		} catch (SQLException e) {
@@ -377,7 +335,7 @@ public class JdbcExecutorLoader implements ExecutorLoader {
 	public boolean updateExecutableReference(int execId, long updateTime) throws ExecutorManagerException {
 		final String DELETE = "UPDATE active_executing_flows set update_time=? WHERE exec_id=?";
 		
-		QueryRunner runner = new QueryRunner(dataSource);
+		QueryRunner runner = createQueryRunner();
 		int updateNum = 0;
 		try {
 			updateNum = runner.update(DELETE, updateTime, execId);
@@ -404,7 +362,7 @@ public class JdbcExecutorLoader implements ExecutorLoader {
 		}
 		
 		ExecutableFlow flow = node.getFlow();
-		QueryRunner runner = new QueryRunner(dataSource);
+		QueryRunner runner = createQueryRunner();
 		try {
 			runner.update(
 					INSERT_EXECUTION_NODE, 
@@ -439,7 +397,7 @@ public class JdbcExecutorLoader implements ExecutorLoader {
 			}
 		}
 		
-		QueryRunner runner = new QueryRunner(dataSource);
+		QueryRunner runner = createQueryRunner();
 		try {
 			runner.update(
 					UPSERT_EXECUTION_NODE, 
@@ -457,7 +415,7 @@ public class JdbcExecutorLoader implements ExecutorLoader {
 	
 	@Override
 	public List<ExecutableJobInfo> fetchJobInfoAttempts(int execId, String jobId) throws ExecutorManagerException {
-		QueryRunner runner = new QueryRunner(dataSource);
+		QueryRunner runner = createQueryRunner();
 		
 		try {
 			List<ExecutableJobInfo> info = runner.query(FetchExecutableJobHandler.FETCH_EXECUTABLE_NODE_ATTEMPTS, new FetchExecutableJobHandler(), execId, jobId);
@@ -473,7 +431,7 @@ public class JdbcExecutorLoader implements ExecutorLoader {
 	
 	@Override
 	public ExecutableJobInfo fetchJobInfo(int execId, String jobId, int attempts) throws ExecutorManagerException {
-		QueryRunner runner = new QueryRunner(dataSource);
+		QueryRunner runner = createQueryRunner();
 		
 		try {
 			List<ExecutableJobInfo> info = runner.query(FetchExecutableJobHandler.FETCH_EXECUTABLE_NODE, new FetchExecutableJobHandler(), execId, jobId);
@@ -489,7 +447,7 @@ public class JdbcExecutorLoader implements ExecutorLoader {
 	
 	@Override
 	public Props fetchExecutionJobInputProps(int execId, String jobId) throws ExecutorManagerException {
-		QueryRunner runner = new QueryRunner(dataSource);
+		QueryRunner runner = createQueryRunner();
 		try {
 			Pair<Props, Props> props = runner.query(FetchExecutableJobPropsHandler.FETCH_INPUT_PARAM_EXECUTABLE_NODE, new FetchExecutableJobPropsHandler(), execId, jobId);
 			return props.getFirst();
@@ -501,7 +459,7 @@ public class JdbcExecutorLoader implements ExecutorLoader {
 	
 	@Override
 	public Props fetchExecutionJobOutputProps(int execId, String jobId) throws ExecutorManagerException {
-		QueryRunner runner = new QueryRunner(dataSource);
+		QueryRunner runner = createQueryRunner();
 		try {
 			Pair<Props, Props> props = runner.query(FetchExecutableJobPropsHandler.FETCH_OUTPUT_PARAM_EXECUTABLE_NODE, new FetchExecutableJobPropsHandler(), execId, jobId);
 			return props.getFirst();
@@ -513,7 +471,7 @@ public class JdbcExecutorLoader implements ExecutorLoader {
 	
 	@Override
 	public Pair<Props, Props> fetchExecutionJobProps(int execId, String jobId) throws ExecutorManagerException {
-		QueryRunner runner = new QueryRunner(dataSource);
+		QueryRunner runner = createQueryRunner();
 		try {
 			Pair<Props, Props> props = runner.query(FetchExecutableJobPropsHandler.FETCH_INPUT_OUTPUT_PARAM_EXECUTABLE_NODE, new FetchExecutableJobPropsHandler(), execId, jobId);
 			return props;
@@ -525,7 +483,7 @@ public class JdbcExecutorLoader implements ExecutorLoader {
 	
 	@Override
 	public List<ExecutableJobInfo> fetchJobHistory(int projectId, String jobId, int skip, int size) throws ExecutorManagerException {
-		QueryRunner runner = new QueryRunner(dataSource);
+		QueryRunner runner = createQueryRunner();
 		
 		try {
 			List<ExecutableJobInfo> info = runner.query(FetchExecutableJobHandler.FETCH_PROJECT_EXECUTABLE_NODE, new FetchExecutableJobHandler(), projectId, jobId, skip, size);
@@ -541,7 +499,7 @@ public class JdbcExecutorLoader implements ExecutorLoader {
 	
 	@Override
 	public LogData fetchLogs(int execId, String name, int attempt, int startByte, int length) throws ExecutorManagerException {
-		QueryRunner runner = new QueryRunner(dataSource);
+		QueryRunner runner = createQueryRunner();
 
 		FetchLogsHandler handler = new FetchLogsHandler(startByte, length + startByte);
 		
@@ -638,8 +596,7 @@ public class JdbcExecutorLoader implements ExecutorLoader {
 	private Connection getConnection() throws ExecutorManagerException {
 		Connection connection = null;
 		try {
-			connection = dataSource.getConnection();
-			connection.setAutoCommit(false);
+			connection = super.getDBConnection(false);
 		} catch (Exception e) {
 			DbUtils.closeQuietly(connection);
 			throw new ExecutorManagerException("Error getting DB connection.", e);
@@ -919,7 +876,7 @@ public class JdbcExecutorLoader implements ExecutorLoader {
 	public int removeExecutionLogsByTime(long millis) throws ExecutorManagerException {
 		final String DELETE_BY_TIME = "DELETE FROM execution_logs WHERE upload_time < ?";
 		
-		QueryRunner runner = new QueryRunner(dataSource);
+		QueryRunner runner = createQueryRunner();
 		int updateNum = 0;
 		try {
 			updateNum = runner.update(DELETE_BY_TIME, millis);

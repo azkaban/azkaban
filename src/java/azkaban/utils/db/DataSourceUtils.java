@@ -1,5 +1,5 @@
 
-package azkaban.utils;
+package azkaban.utils.db;
 
 import java.sql.SQLException;
 
@@ -13,6 +13,9 @@ public class DataSourceUtils {
 		return new MySQLBasicDataSource(host, port, dbName, user, password, numConnections);
 	}
 
+	public static DataSource getH2DataSource(String file) {
+		return new EmbeddedH2BasicDataSource(file);
+	}
 	
 	private DataSourceUtils() {
 	}
@@ -29,6 +32,15 @@ public class DataSourceUtils {
 			setMaxActive(numConnections);
 			setValidationQuery("/* ping */ select 1");
 			setTestOnBorrow(true);
+		}
+	}
+	
+	public static class EmbeddedH2BasicDataSource extends BasicDataSource {
+		private EmbeddedH2BasicDataSource(String filePath) {
+			super();
+			String url = "jdbc:h2:file:" + filePath;
+			setDriverClassName("org.h2.Driver");
+			setUrl(url);
 		}
 	}
 	

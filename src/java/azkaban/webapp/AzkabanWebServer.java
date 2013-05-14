@@ -43,6 +43,7 @@ import org.apache.velocity.runtime.resource.loader.ClasspathResourceLoader;
 import org.apache.velocity.runtime.resource.loader.JarResourceLoader;
 import org.joda.time.DateTimeZone;
 import org.mortbay.jetty.Server;
+import org.mortbay.jetty.bio.SocketConnector;
 import org.mortbay.jetty.security.SslSocketConnector;
 import org.mortbay.jetty.servlet.Context;
 import org.mortbay.jetty.servlet.DefaultServlet;
@@ -66,6 +67,7 @@ import azkaban.sla.SLAManager;
 import azkaban.sla.SLAManagerException;
 import azkaban.user.UserManager;
 import azkaban.user.XmlUserManager;
+import azkaban.utils.db.AbstractJdbcLoader;
 import azkaban.utils.FileIOUtils;
 import azkaban.utils.Props;
 import azkaban.utils.PropsUtils;
@@ -120,7 +122,7 @@ public class AzkabanWebServer implements AzkabanServer {
 	private static AzkabanWebServer app;
 
 	private static final String DEFAULT_TIMEZONE_ID = "default.timezone.id";
-	// private static final int DEFAULT_PORT_NUMBER = 8081;
+	private static final int DEFAULT_PORT_NUMBER = 8081;
 	private static final int DEFAULT_SSL_PORT_NUMBER = 8443;
 	private static final int DEFAULT_THREAD_NUMBER = 20;
 	private static final String VELOCITY_DEV_MODE_PARAM = "velocity.dev.mode";
@@ -202,7 +204,6 @@ public class AzkabanWebServer implements AzkabanServer {
 				logger.error("Could not instantiate UserManager "+ userManagerClass.getName());
 				throw new RuntimeException(e);
 			}
-
 		} 
 		else {
 			manager = new XmlUserManager(props);
@@ -210,7 +211,7 @@ public class AzkabanWebServer implements AzkabanServer {
 
 		return manager;
 	}
-
+	
 	private ProjectManager loadProjectManager(Props props) {
 		logger.info("Loading JDBC for project management");
 
@@ -396,25 +397,36 @@ public class AzkabanWebServer implements AzkabanServer {
 			return;
 		}
 
-		// int portNumber =
-		// azkabanSettings.getInt("jetty.port",DEFAULT_PORT_NUMBER);
-		int sslPortNumber = azkabanSettings.getInt("jetty.ssl.port",
-				DEFAULT_SSL_PORT_NUMBER);
-		int maxThreads = azkabanSettings.getInt("jetty.maxThreads",
-				DEFAULT_THREAD_NUMBER);
-
-		logger.info("Setting up Jetty Server with port:" + sslPortNumber + " and numThreads:" + maxThreads);
-		final Server server = new Server();
-		SslSocketConnector secureConnector = new SslSocketConnector();
-		secureConnector.setPort(sslPortNumber);
-		secureConnector.setKeystore(azkabanSettings.getString("jetty.keystore"));
-		secureConnector.setPassword(azkabanSettings.getString("jetty.password"));
-		secureConnector.setKeyPassword(azkabanSettings.getString("jetty.keypassword"));
-		secureConnector.setTruststore(azkabanSettings.getString("jetty.truststore"));
-		secureConnector.setTrustPassword(azkabanSettings.getString("jetty.trustpassword"));
-		secureConnector.setHeaderBufferSize(MAX_HEADER_BUFFER_SIZE);
+		AbstractJdbcLoader.setupTables(azkabanSettings);
 		
-		server.addConnector(secureConnector);
+		int maxThreads = azkabanSettings.getInt("jetty.maxThreads", DEFAULT_THREAD_NUMBER);
+		int port;
+		boolean usingSSL = false;
+		final Server server = new Server();
+		if (azkabanSettings.getBoolean("jetty.use.ssl", true)) {
+			int sslPortNumber = azkabanSettings.getInt("jetty.ssl.port", DEFAULT_SSL_PORT_NUMBER);
+			port = sslPortNumber;
+			usingSSL = true;
+			logger.info("Setting up Jetty Https Server with port:" + sslPortNumber + " and numThreads:" + maxThreads);
+			
+			SslSocketConnector secureConnector = new SslSocketConnector();
+			secureConnector.setPort(sslPortNumber);
+			secureConnector.setKeystore(azkabanSettings.getString("jetty.keystore"));
+			secureConnector.setPassword(azkabanSettings.getString("jetty.password"));
+			secureConnector.setKeyPassword(azkabanSettings.getString("jetty.keypassword"));
+			secureConnector.setTruststore(azkabanSettings.getString("jetty.truststore"));
+			secureConnector.setTrustPassword(azkabanSettings.getString("jetty.trustpassword"));
+			secureConnector.setHeaderBufferSize(MAX_HEADER_BUFFER_SIZE);
+			
+			server.addConnector(secureConnector);
+		}
+		else {
+			port = azkabanSettings.getInt("jetty.port", DEFAULT_PORT_NUMBER);
+			SocketConnector connector = new SocketConnector();
+			connector.setPort(port);
+			connector.setHeaderBufferSize(MAX_HEADER_BUFFER_SIZE);
+			server.addConnector(connector);
+		}
 		app = new AzkabanWebServer(server, azkabanSettings);
 		
 		QueuedThreadPool httpThreadPool = new QueuedThreadPool(maxThreads);
@@ -445,8 +457,6 @@ public class AzkabanWebServer implements AzkabanServer {
 		String viewerPluginDir = azkabanSettings.getString("viewer.plugin.dir", "plugins/viewer");
 		app.setViewerPlugins(loadViewerPlugins(root, viewerPluginDir, app.getVelocityEngine()));
 
-		//root.addServlet(new ServletHolder(new HdfsBrowserServlet()), "/hdfs/*");
-		
 		root.setAttribute(AzkabanServletContextListener.AZKABAN_SERVLET_CONTEXT_KEY, app);
 		try {
 			server.start();
@@ -471,7 +481,7 @@ public class AzkabanWebServer implements AzkabanServer {
 				logger.info("kk thx bye.");
 			}
 		});
-		logger.info("Server running on port " + sslPortNumber + ".");
+		logger.info("Server running on " + (usingSSL ? "ssl" : "") + " port " + port + ".");
 	}
 
 	private static List<ViewerPlugin> loadViewerPlugins(Context root, String pluginPath, VelocityEngine ve) {

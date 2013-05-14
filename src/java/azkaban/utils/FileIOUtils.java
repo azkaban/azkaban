@@ -197,13 +197,14 @@ public class FileIOUtils {
 		
 		return new LogData(fileOffset + utf8Range.getFirst(), utf8Range.getSecond(), outputString);
 	}
-	
+
 	public static JobMetaData readUtf8MetaDataFile(File file, int fileOffset, int length) throws IOException {
 		byte[] buffer = new byte[length];
 		FileInputStream fileStream = new FileInputStream(file);
 		
 		long skipped = fileStream.skip(fileOffset);
 		if (skipped < fileOffset) {
+			fileStream.close();
 			return new JobMetaData(fileOffset, 0, "");
 		}
 		

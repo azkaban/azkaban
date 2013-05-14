@@ -8,8 +8,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import javax.sql.DataSource;
-
 import org.apache.commons.dbutils.DbUtils;
 import org.apache.commons.dbutils.QueryRunner;
 import org.apache.commons.dbutils.ResultSetHandler;
@@ -17,44 +15,13 @@ import org.apache.log4j.Logger;
 import org.joda.time.DateTime;
 
 import azkaban.sla.SLA.SlaRule;
-import azkaban.utils.DataSourceUtils;
+import azkaban.utils.db.AbstractJdbcLoader;
 import azkaban.utils.GZIPUtils;
 import azkaban.utils.JSONUtils;
 import azkaban.utils.Props;
 
-public class JdbcSLALoader implements SLALoader {
-
+public class JdbcSLALoader extends AbstractJdbcLoader implements SLALoader {
 	private static final Logger logger = Logger.getLogger(JdbcSLALoader.class);
-	
-	/**
-	 * Used for when we store text data. Plain uses UTF8 encoding.
-	 */
-	public static enum EncodingType {
-		PLAIN(1), GZIP(2);
-
-		private int numVal;
-
-		EncodingType(int numVal) {
-			this.numVal = numVal;
-		}
-
-		public int getNumVal() {
-			return numVal;
-		}
-
-		public static EncodingType fromInteger(int x) {
-			switch (x) {
-			case 1:
-				return PLAIN;
-			case 2:
-				return GZIP;
-			default:
-				return PLAIN;
-			}
-		}
-	}
-	
-	private DataSource dataSource;
 	private EncodingType defaultEncodingType = EncodingType.GZIP;
 	
 	private static String slaTblName = "active_sla";
@@ -73,28 +40,18 @@ public class JdbcSLALoader implements SLALoader {
 			"DELETE FROM " + slaTblName + " WHERE exec_id=? AND job_name=? AND check_time=? AND rule=?";
 	
 	public JdbcSLALoader(Props props) {
-		String databaseType = props.getString("database.type");
-
-		if (databaseType.equals("mysql")) {
-			int port = props.getInt("mysql.port");
-			String host = props.getString("mysql.host");
-			String database = props.getString("mysql.database");
-			String user = props.getString("mysql.user");
-			String password = props.getString("mysql.password");
-			int numConnections = props.getInt("mysql.numconnections");
-			
-			dataSource = DataSourceUtils.getMySQLDataSource(host, port, database, user, password, numConnections);
-		}
+		super(props);
 	}
 
 	private Connection getConnection() throws SLAManagerException {
 		Connection connection = null;
 		try {
-			connection = dataSource.getConnection();
+			connection = super.getDBConnection(false);
 		} catch (Exception e) {
 			DbUtils.closeQuietly(connection);
 			throw new SLAManagerException("Error getting DB connection.", e);
 		}
+		
 		return connection;
 	}
 	
@@ -166,7 +123,7 @@ public class JdbcSLALoader implements SLALoader {
 
 		logger.info("Removing SLA " + s.toString() + " from db.");
 
-		QueryRunner runner = new QueryRunner(dataSource);
+		QueryRunner runner = createQueryRunner();
 	
 		try {
 			int removes =  runner.update(REMOVE_SLA, s.getExecId(), s.getJobName(), s.getCheckTime().getMillis(), s.getRule().getNumVal());
@@ -322,5 +279,5 @@ public class JdbcSLALoader implements SLALoader {
 		}
 		
 	}
-	
+
 }
