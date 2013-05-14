@@ -17,8 +17,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import javax.sql.DataSource;
-
 import org.apache.commons.dbutils.DbUtils;
 import org.apache.commons.dbutils.QueryRunner;
 import org.apache.commons.dbutils.ResultSetHandler;
@@ -29,7 +27,7 @@ import azkaban.flow.Flow;
 import azkaban.project.ProjectLogEvent.EventType;
 import azkaban.user.Permission;
 import azkaban.user.User;
-import azkaban.utils.DataSourceUtils;
+import azkaban.utils.db.AbstractJdbcLoader;
 import azkaban.utils.GZIPUtils;
 import azkaban.utils.JSONUtils;
 import azkaban.utils.Md5Hasher;
@@ -38,59 +36,19 @@ import azkaban.utils.Props;
 import azkaban.utils.PropsUtils;
 import azkaban.utils.Triple;
 
-public class JdbcProjectLoader implements ProjectLoader {
-	
-	/**
-	 * Used for when we store text data. Plain uses UTF8 encoding.
-	 */
-	public static enum EncodingType {
-		PLAIN(1), GZIP(2);
-
-		private int numVal;
-
-		EncodingType(int numVal) {
-			this.numVal = numVal;
-		}
-
-		public int getNumVal() {
-			return numVal;
-		}
-
-		public static EncodingType fromInteger(int x) {
-			switch (x) {
-			case 1:
-				return PLAIN;
-			case 2:
-				return GZIP;
-			default:
-				return PLAIN;
-			}
-		}
-	}
-	
+public class JdbcProjectLoader extends AbstractJdbcLoader implements ProjectLoader {
 	private static final Logger logger = Logger.getLogger(JdbcProjectLoader.class);
+
 	private static final int CHUCK_SIZE = 1024*1024*10;
 	private File tempDir;
-	
-	private DataSource dataSource;
+
 	private EncodingType defaultEncodingType = EncodingType.GZIP;
 	
 	public JdbcProjectLoader(Props props) {
+		super(props);
 		tempDir = new File(props.getString("project.temp.dir", "temp"));
 		if (!tempDir.exists()) {
 			tempDir.mkdirs();
-		}
-		String databaseType = props.getString("database.type");
-	
-		if (databaseType.equals("mysql")) {
-			int port = props.getInt("mysql.port");
-			String host = props.getString("mysql.host");
-			String database = props.getString("mysql.database");
-			String user = props.getString("mysql.user");
-			String password = props.getString("mysql.password");
-			int numConnections = props.getInt("mysql.numconnections");
-			
-			dataSource = DataSourceUtils.getMySQLDataSource(host, port, database, user, password, numConnections);
 		}
 	}
 	
@@ -240,7 +198,7 @@ public class JdbcProjectLoader implements ProjectLoader {
 		// Insert project
 		try {
 			long time = System.currentTimeMillis();
-			int i = runner.update(connection, INSERT_PROJECT, name, true, time, time, null, creator.getUserId(), description, defaultEncodingType.numVal, null);
+			int i = runner.update(connection, INSERT_PROJECT, name, true, time, time, null, creator.getUserId(), description, defaultEncodingType.getNumVal(), null);
 			if (i == 0) {
 				throw new ProjectManagerException("No projects have been inserted.");
 			}
@@ -468,7 +426,7 @@ public class JdbcProjectLoader implements ProjectLoader {
 	@Override
 	public void changeProjectVersion(Project project, int version, String user) throws ProjectManagerException {
 		long timestamp = System.currentTimeMillis();
-		QueryRunner runner = new QueryRunner(dataSource);
+		QueryRunner runner = createQueryRunner();
 		try {
 			final String UPDATE_PROJECT_VERSION = "UPDATE projects SET version=?,modified_time=?,last_modified_by=? WHERE id=?";
 			
@@ -484,18 +442,32 @@ public class JdbcProjectLoader implements ProjectLoader {
 	
 	@Override
 	public void updatePermission(Project project, String name, Permission perm, boolean isGroup) throws ProjectManagerException {
-		QueryRunner runner = new QueryRunner(dataSource);
+		QueryRunner runner = createQueryRunner();
 		
-		long updateTime = System.currentTimeMillis();
-		final String INSERT_PROJECT_PERMISSION = 
-				"INSERT INTO project_permissions (project_id, modified_time, name, permissions, isGroup) values (?,?,?,?,?)" +
-				"ON DUPLICATE KEY UPDATE modified_time = VALUES(modified_time), permissions = VALUES(permissions)";
-
-		try {
-			runner.update(INSERT_PROJECT_PERMISSION, project.getId(), updateTime, name, perm.toFlags(), isGroup);
-		} catch (SQLException e) {
-			logger.error(e);
-			throw new ProjectManagerException("Error updating project " + project.getName() + " permissions for " + name, e);
+		if (this.allowsOnDuplicateKey()) {
+			long updateTime = System.currentTimeMillis();
+			final String INSERT_PROJECT_PERMISSION = 
+					"INSERT INTO project_permissions (project_id, modified_time, name, permissions, isGroup) values (?,?,?,?,?)" +
+					"ON DUPLICATE KEY UPDATE modified_time = VALUES(modified_time), permissions = VALUES(permissions)";
+	
+			try {
+				runner.update(INSERT_PROJECT_PERMISSION, project.getId(), updateTime, name, perm.toFlags(), isGroup);
+			} catch (SQLException e) {
+				logger.error(e);
+				throw new ProjectManagerException("Error updating project " + project.getName() + " permissions for " + name, e);
+			}
+		}
+		else {
+			long updateTime = System.currentTimeMillis();
+			final String MERGE_PROJECT_PERMISSION = 
+					"MERGE INTO project_permissions (project_id, modified_time, name, permissions, isGroup) KEY (project_id, name) values (?,?,?,?,?)";
+		
+			try {
+				runner.update(MERGE_PROJECT_PERMISSION, project.getId(), updateTime, name, perm.toFlags(), isGroup);
+			} catch (SQLException e) {
+				logger.error(e);
+				throw new ProjectManagerException("Error updating project " + project.getName() + " permissions for " + name, e);
+			}
 		}
 		
 		if (isGroup) {
@@ -542,7 +514,7 @@ public class JdbcProjectLoader implements ProjectLoader {
 		}
 
 		try {
-			runner.update(connection, UPDATE_PROJECT_SETTINGS, encType.numVal, data, project.getId());
+			runner.update(connection, UPDATE_PROJECT_SETTINGS, encType.getNumVal(), data, project.getId());
 			connection.commit();
 		} catch (SQLException e) {
 			throw new ProjectManagerException("Error updating project " + project.getName() + " version " + project.getVersion(), e);
@@ -551,7 +523,7 @@ public class JdbcProjectLoader implements ProjectLoader {
 	
 	@Override
 	public void removePermission(Project project, String name, boolean isGroup) throws ProjectManagerException {
-		QueryRunner runner = new QueryRunner(dataSource);
+		QueryRunner runner = createQueryRunner();
 		final String DELETE_PROJECT_PERMISSION = "DELETE FROM project_permissions WHERE project_id=? AND name=? AND isGroup=?";
 		
 		try {
@@ -572,7 +544,7 @@ public class JdbcProjectLoader implements ProjectLoader {
 	@Override
 	public List<Triple<String, Boolean, Permission>> getProjectPermissions(int projectId) throws ProjectManagerException {
 		ProjectPermissionsResultHandler permHander = new ProjectPermissionsResultHandler();
-		QueryRunner runner = new QueryRunner(dataSource);
+		QueryRunner runner = createQueryRunner();
 		List<Triple<String, Boolean,Permission>> permissions = null;
 		try {
 			permissions = runner.query(ProjectPermissionsResultHandler.SELECT_PROJECT_PERMISSION, permHander, projectId);
@@ -586,7 +558,7 @@ public class JdbcProjectLoader implements ProjectLoader {
 	
 	@Override
 	public void removeProject(Project project, String user) throws ProjectManagerException {
-		QueryRunner runner = new QueryRunner(dataSource);
+		QueryRunner runner = createQueryRunner();
 		
 		long updateTime = System.currentTimeMillis();
 		final String UPDATE_INACTIVE_PROJECT = "UPDATE projects SET active=false,modified_time=?,last_modified_by=? WHERE id=?";
@@ -600,7 +572,7 @@ public class JdbcProjectLoader implements ProjectLoader {
 
 	@Override
 	public boolean postEvent(Project project, EventType type, String user, String message) {
-		QueryRunner runner = new QueryRunner(dataSource);
+		QueryRunner runner = createQueryRunner();
 		
 		final String INSERT_PROJECT_EVENTS = 
 				"INSERT INTO project_events (project_id, event_type, event_time, username, message) values (?,?,?,?,?)";
@@ -623,7 +595,7 @@ public class JdbcProjectLoader implements ProjectLoader {
 	 * @throws ProjectManagerException
 	 */
 	public List<ProjectLogEvent> getProjectEvents(Project project, int num, int skip) throws ProjectManagerException {
-		QueryRunner runner = new QueryRunner(dataSource);
+		QueryRunner runner = createQueryRunner();
 		
 		ProjectLogsResultHandler logHandler = new ProjectLogsResultHandler();
 		List<ProjectLogEvent> events = null;
@@ -638,7 +610,7 @@ public class JdbcProjectLoader implements ProjectLoader {
 
 	@Override
 	public void updateDescription(Project project, String description, String user) throws ProjectManagerException {
-		QueryRunner runner = new QueryRunner(dataSource);
+		QueryRunner runner = createQueryRunner();
 		
 		final String UPDATE_PROJECT_DESCRIPTION =
 				"UPDATE projects SET description=?,modified_time=?,last_modified_by=? WHERE id=?";
@@ -656,7 +628,7 @@ public class JdbcProjectLoader implements ProjectLoader {
 
 	@Override
 	public int getLatestProjectVersion(Project project) throws ProjectManagerException {
-		QueryRunner runner = new QueryRunner(dataSource);
+		QueryRunner runner = createQueryRunner();
 		
 		IntHander handler = new IntHander();
 		try {
@@ -739,7 +711,7 @@ public class JdbcProjectLoader implements ProjectLoader {
 	
 	@Override
 	public Flow fetchFlow(Project project, String flowId) throws ProjectManagerException {
-		QueryRunner runner = new QueryRunner(dataSource);
+		QueryRunner runner = createQueryRunner();
 		ProjectFlowsResultHandler handler = new ProjectFlowsResultHandler();
 		
 		try {
@@ -757,7 +729,7 @@ public class JdbcProjectLoader implements ProjectLoader {
 	
 	@Override
 	public List<Flow> fetchAllProjectFlows(Project project) throws ProjectManagerException {
-		QueryRunner runner = new QueryRunner(dataSource);
+		QueryRunner runner = createQueryRunner();
 		ProjectFlowsResultHandler handler = new ProjectFlowsResultHandler();
 		
 		List<Flow> flows = null;
@@ -867,7 +839,7 @@ public class JdbcProjectLoader implements ProjectLoader {
 
 	@Override
 	public Props fetchProjectProperty(int projectId, int projectVer, String propsName) throws ProjectManagerException {
-		QueryRunner runner = new QueryRunner(dataSource);
+		QueryRunner runner = createQueryRunner();
 		
 		ProjectPropertiesResultsHandler handler = new ProjectPropertiesResultsHandler();
 		try {
@@ -886,7 +858,7 @@ public class JdbcProjectLoader implements ProjectLoader {
 	
 	@Override
 	public Props fetchProjectProperty(Project project, String propsName) throws ProjectManagerException {
-		QueryRunner runner = new QueryRunner(dataSource);
+		QueryRunner runner = createQueryRunner();
 		
 		ProjectPropertiesResultsHandler handler = new ProjectPropertiesResultsHandler();
 		try {
@@ -964,7 +936,7 @@ public class JdbcProjectLoader implements ProjectLoader {
 	
 	@Override
 	public Map<String,Props> fetchProjectProperties(int projectId, int version) throws ProjectManagerException {
-		QueryRunner runner = new QueryRunner(dataSource);
+		QueryRunner runner = createQueryRunner();
 		
 		ProjectPropertiesResultsHandler handler = new ProjectPropertiesResultsHandler();
 		try {
@@ -1278,8 +1250,7 @@ public class JdbcProjectLoader implements ProjectLoader {
 	private Connection getConnection() throws ProjectManagerException {
 		Connection connection = null;
 		try {
-			connection = dataSource.getConnection();
-			connection.setAutoCommit(false);
+			connection = super.getDBConnection(false);
 		} catch (Exception e) {
 			DbUtils.closeQuietly(connection);
 			throw new ProjectManagerException("Error getting DB connection.", e);
@@ -1287,6 +1258,5 @@ public class JdbcProjectLoader implements ProjectLoader {
 		
 		return connection;
 	}
-
 }
 	
