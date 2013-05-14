@@ -76,6 +76,9 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
 		if (hasParam(req, "ajax")) {
 			handleAJAXAction(req, resp, session);
 		}
+		else if (hasParam(req, "calendar")) {
+			handleGetScheduleCalendar(req, resp, session);
+		}
 		else {
 			handleGetAllSchedules(req, resp, session);
 		}
@@ -90,6 +93,9 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
 		}
 		else if(ajaxName.equals("setSla")) {
 			ajaxSetSla(req, ret, session.getUser());
+		}
+		else if(ajaxName.equals("loadFlow")) {
+			ajaxLoadFlows(req, ret, session.getUser());
 		}
 		else if(ajaxName.equals("scheduleFlow")) {
 			ajaxScheduleFlow(req, ret, session.getUser());
@@ -298,6 +304,20 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
 		page.render();
 	}
 	
+	private void handleGetScheduleCalendar(HttpServletRequest req, HttpServletResponse resp,
+			Session session) throws ServletException, IOException{
+		
+		Page page = newPage(req, resp, session, "azkaban/webapp/servlet/velocity/scheduledflowcalendarpage.vm");
+		
+		List<Schedule> schedules = scheduleManager.getSchedules();
+		page.add("schedules", schedules);
+//		
+//		List<SLA> slas = slaManager.getSLAs();
+//		page.add("slas", slas);
+
+		page.render();
+	}
+	
 	@Override
 	protected void handlePost(HttpServletRequest req, HttpServletResponse resp, Session session) throws ServletException, IOException {
 		if (hasParam(req, "ajax")) {
@@ -323,7 +343,95 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
 			this.writeJSON(resp, ret);
 		}
 	}
-	
+
+	private void ajaxLoadFlows(HttpServletRequest req, HashMap<String, Object> ret, User user) throws ServletException {
+		// Very long day...
+//		long day = getLongParam(req, "day");
+//		boolean loadPrevious = getIntParam(req, "loadPrev") != 0;
+
+		List<Schedule> schedules = scheduleManager.getSchedules();
+		// See if anything is scheduled
+		if (schedules.size() <= 0)
+			return;
+//
+//		// Since size is larger than 0, there's at least one element.
+//		DateTime date = new DateTime(day);
+//		// Get only the day component while stripping the time component. This
+//		// gives us 12:00:00AM of that day
+//		DateTime start = date.withTime(0, 0, 0, 0);
+//		// Next day
+//		DateTime end = start.plusDays(1);
+//		// Get microseconds
+//		long startTime = start.getMillis();
+//		long endTime = end.getMillis();
+
+		List<HashMap<String, String>> output = new ArrayList<HashMap<String, String>>();
+		ret.put("items", output);
+
+		for (Schedule schedule : schedules) {
+			writeScheduleData(output, schedule);
+//			long length = 2*3600*1000; //TODO: This is temporary
+//			long firstTime = schedule.getFirstSchedTime();
+//			long period = 0;
+//
+//			if (schedule.getPeriod() != null) {
+//				period = start.plus(schedule.getPeriod()).getMillis() - startTime;
+//
+//				// Shift time until we're past the start time
+//				if (period > 0) {
+//					// Calculate next execution time efficiently
+//					long periods = (startTime - firstTime) / period;
+//					// Take into account items that ends in the date specified, but does not start on that date
+//					if(loadPrevious)
+//					{
+//						periods = (startTime - firstTime - length) / period;
+//					}
+//					if(periods < 0){
+//						periods = 0;
+//					}
+//					firstTime += period * periods;
+//					// Increment in case we haven't arrived yet. This will apply
+//					// to most of the cases
+//					while ((loadPrevious && firstTime < startTime) || (!loadPrevious && firstTime + length < startTime)) {
+//						firstTime += period;
+//					}
+//				}
+//			}
+//
+//			// Bad or no period
+//			if (period <= 0) {
+//				// Single instance case
+//				if (firstTime >= startTime && firstTime < endTime) {
+//					writeScheduleData(output, schedule, firstTime, length, startTime, endTime);
+//				}
+//			}
+//			else {
+//				// Repetitive schedule, firstTime is assumed to be after startTime
+//				while (firstTime < endTime) {
+//					writeScheduleData(output, schedule, firstTime, length, startTime, endTime);
+//					firstTime += period;
+//				}
+//			}
+		}
+	}
+
+	private void writeScheduleData(List<HashMap<String, String>> output, Schedule schedule) {
+		HashMap<String, String> data = new HashMap<String, String>();
+		data.put("flowname", schedule.getFlowName());
+		data.put("projectname", schedule.getProjectName());
+		data.put("time", Long.toString(schedule.getFirstSchedTime()));
+
+		DateTime time = DateTime.now();
+		long period = 0;
+		if(schedule.getPeriod() != null){
+			period = time.plus(schedule.getPeriod()).getMillis() - time.getMillis();
+		}
+		data.put("period", Long.toString(period));
+		data.put("length", Long.toString(2 * 3600 * 1000));
+
+		output.add(data);
+	}
+
 	private void ajaxRemoveSched(HttpServletRequest req, Map<String, Object> ret, User user) throws ServletException{
 		int projectId = getIntParam(req, "projectId");
 		String flowName = getParam(req, "flowName");
