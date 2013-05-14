@@ -4,7 +4,8 @@ $(function() {
 
 	var border = 20;
 	var header = 30;
-	var timeWidth = 60;
+	var minTimeWidth = 80;
+	var timeWidth = minTimeWidth;
 	var lineHeight = 40;
 	var numDays = 7;
 	var today = new Date();
@@ -21,8 +22,6 @@ $(function() {
 
 			$("#svgDivCustom").find("svg").eq(0).removeAttr("width");
 
-			var dayWidth = Math.floor((totalWidth - 3 * border - timeWidth) / numDays);
-
 
 			//Outer g
 			var gMain = svg.group({transform: "translate(" + border + ".5," + border + ".5)", stroke : "#999", strokeWidth: 1});
@@ -30,22 +29,37 @@ $(function() {
 			today = new Date();
 			var svgDate = defaultDate;
 
+			//Load the date from the hash if existing
+			if(window.location.hash) {
+				try {
+					var dateParts = window.location.hash.replace("#", "").split("-");
+					var newDate = new Date(parseInt(dateParts[0]), parseInt(dateParts[1]) - 1, parseInt(dateParts[2]));
+					if(!isNaN(newDate)) {
+						svgDate = newDate;
+					}
+				}
+				catch(err){ }
+			}
+
 			//Used to filter projects or flows out
 			var filterProject = new Array();
 			var filterFlow = new Array();
 
 			$(".nav-prev-week").click(function (event) {
 				svgDate = new Date(svgDate.valueOf() - 7 * dayMillisConst);
+				window.location.hash = "#" + svgDate.getFullYear() + "-" + (svgDate.getMonth() + 1) + "-" + svgDate.getDate();
 				loadSvg(svgDate);
 				event.stopPropagation();
 			});
 			$(".nav-next-week").click(function (event) {
 				svgDate = new Date(svgDate.valueOf() + 7 * dayMillisConst);
+				window.location.hash = "#" + svgDate.getFullYear() + "-" + (svgDate.getMonth() + 1) + "-" + svgDate.getDate();
 				loadSvg(svgDate);
 				event.stopPropagation();
 			});
 			$(".nav-this-week").click(function (event) {
 				svgDate = defaultDate;
+				window.location.hash = "#" + svgDate.getFullYear() + "-" + (svgDate.getMonth() + 1) + "-" + svgDate.getDate();
 				loadSvg(svgDate);
 				event.stopPropagation();
 			});
@@ -56,10 +70,17 @@ $(function() {
 
 			function loadSvg(firstDay)
 			{
+				//Text to show which month/year it is
+				var monthIndicatorText = monthConst[firstDay.getMonth()] + " " + firstDay.getFullYear().toString();
+				//Measure a good width for the text to display well
+				timeWidth = Math.max(minTimeWidth, measureText(svg, monthIndicatorText, {fontSize: "20", style: "text-anchor: end;"}));
+
+				var dayWidth = Math.floor((totalWidth - 3 * border - timeWidth) / numDays);
+
 				//svg.configure({viewBox: "0 0 " + totalWidth + " " + totalHeight, style: "width:100%"}, true);
 				svg.remove(gMain);
 				gMain = svg.group({transform: "translate(" + border + ".5," + border + ".5)", stroke : "#999", strokeWidth: 1});
-				svg.text(gMain, timeWidth, header - 8, monthConst[firstDay.getMonth()], {fontSize: "20", style: "text-anchor: end;", fill : "#F60", stroke : "none"});
+				svg.text(gMain, timeWidth, header - 8, monthIndicatorText, {fontSize: "20", style: "text-anchor: end;", fill : "#F60", stroke : "none"});
 				//time indicator group
 				var gLeft = svg.group(gMain, {transform: "translate(0," + header + ")"});
 				//Draw lines and hours
@@ -143,13 +164,16 @@ $(function() {
 						var data = itemByDay[deltaDay];
 						//Sort the arrays to have a better view
 						data.sort(function (a, b){
-							if(a.length == dayMillisConst) return -1;
-							if(b.length == dayMillisConst) return 1;
 							//Smaller time in front
 							var timeDiff = a.time - b.time;
 							if(timeDiff == 0) {
 								//Larger length in front
-								return b.length - b.length;
+								var lengthDiff = b.length - a.length;
+								if(lengthDiff == 0) {
+									//Sort by alphabetical
+									return (a.flowname < b.flowname ? 1 : a.flowname > b.flowname ? -1 : 0);
+								}
+								return lengthDiff;
 							}
 							return timeDiff;
 						});
@@ -183,7 +207,7 @@ $(function() {
 						//Actually drawing them
 						for(var i = 0; i < columns.length; i++) {
 							//Split into columns
-							var gColumn = svg.group(gDay, {transform: "translate(" + (i * dayWidth / columns.length) + ")", style: "opacity: 0.8"});
+							var gColumn = svg.group(gDay, {transform: "translate(" + Math.floor(i * dayWidth / columns.length) + ")", style: "opacity: 0.8"});
 							for(var j = 0; j < columns[i].length; j++) {
 								//Draw item
 								var item = columns[i][j];
@@ -208,6 +232,8 @@ $(function() {
 
 								//$(gItem).attr("style","color:red");
 								var rect = svg.rect(gItem, 0, 0, Math.ceil(dayWidth / columns.length), Math.floor(endY - startY), 0, 0, {fill : "#7E7", stroke : "#444", strokeWidth : 1});
+								
+								item.rect = rect;
 								//Draw text
 								//svg.text(gItem, 6, 16, item.flowname, {fontSize: "13", fill : "#000", stroke : "none"});
 							}
@@ -242,27 +268,27 @@ $(function() {
 					if (period <= 0) {
 						// Single instance case
 						if (firstTime >= startTime && firstTime < endTime) {
-							addItem({flowname : item.flowname, projectname: item.projectname, time: firstTime, length: item.length});
+							addItem({flowname : item.flowname, projectname: item.projectname, time: firstTime, length: item.length, item: item});
 						}
 					}
 					else {
 						if(period <= hourMillisConst) {
-							addItem({flowname : item.flowname, projectname: item.projectname, time: firstTime, length: endTime - firstTime});
+							addItem({flowname : item.flowname, projectname: item.projectname, time: firstTime, length: endTime - firstTime, item: item});
 						}
 						else{
 							// Repetitive schedule, firstTime is assumed to be after startTime
 							while (firstTime < endTime) {
-								addItem({flowname : item.flowname, projectname: item.projectname, time: firstTime, length: item.length});
+								addItem({flowname : item.flowname, projectname: item.projectname, time: firstTime, length: item.length, item: item});
 								firstTime += period;
 							}
 						}
 					}
 				}
 
-				function addItem(item)
+				function addItem(obj)
 				{
-					var itemStartTime = new Date(item.time);
-					var itemEndTime = new Date(item.time + item.length);
+					var itemStartTime = new Date(obj.time);
+					var itemEndTime = new Date(obj.time + obj.length);
 					var itemStartDate = new Date(itemStartTime.getFullYear(), itemStartTime.getMonth(), itemStartTime.getDate());
 					var itemEndDate = new Date(itemEndTime.getFullYear(), itemEndTime.getMonth(), itemEndTime.getDate());
 
@@ -270,10 +296,20 @@ $(function() {
 					if(itemStartDate.valueOf() != itemEndDate.valueOf() && itemEndTime.valueOf() != itemStartDate + dayMillisConst)
 					{
 						var nextMorning = itemStartDate.valueOf() + dayMillisConst;
-						var excess = item.length - (nextMorning - itemStartTime.valueOf());
-						item.length = nextMorning - itemStartTime.valueOf();
-						var item2 = {time: nextMorning, length: excess, projectname: item.projectname, flowname: item.flowname};
-						addItem(item2);
+						var excess = obj.length - (nextMorning - itemStartTime.valueOf());
+						obj.length = nextMorning - itemStartTime.valueOf();
+						while(excess > 0)
+						{
+							var tempLength = excess;
+							if(tempLength > dayMillisConst){
+								tempLength = dayMillisConst;
+							}
+
+							var item2 = {time: nextMorning, length: tempLength, projectname: obj.projectname, flowname: obj.flowname, item: obj.item};
+							addItem(item2);
+							excess -= tempLength;
+							nextMorning += dayMillisConst;
+						}
 					}
 
 					//Now the item should be only in one day
@@ -281,7 +317,8 @@ $(function() {
 					if(index >= 0 && index < numDays)
 					{
 						//Add the item to the rendering list
-						itemByDay[index].push(item);
+						itemByDay[index].push(obj);
+						obj.item.objs.push(obj);
 					}
 				}
 
@@ -304,22 +341,39 @@ $(function() {
 				function handleMouseOver(event) {
 					//Create the new tooltip
 					var requestURL = $(this).attr("href");
-					var item = $(this).data("item");
+					var obj = $(this).data("item");
 					var offset = $("svg").offset();
 					var thisOffset = $(this).offset();
 
 					var tooltip = svg.group({transform: "translate(" + (thisOffset.left - offset.left + 2) + "," + (thisOffset.top - offset.top - 2) + ")"});
-					var rect = svg.rect(tooltip, 0, -20, measureText(svg, item.flowname, {fontSize: "13"}) + 4, 20, {fill : "#FFF", stroke : "none"});
-					svg.text(tooltip, 2, -5, item.flowname, {fontSize: "13", fill : "#000", stroke : "none"});
+					var text = [
+						"\"" + obj.flowname + "\" from \"" + obj.projectname + "\"",
+						"Repeat: " + formatReadablePeriod(obj.item.period)
+					];
+					var textLength = Math.max(measureText(svg, text[0], {fontSize: "13"}), measureText(svg, text[1], {fontSize: "13"}));
+					var rect = svg.rect(tooltip, 0, -40, textLength + 4, 40, {fill : "#FFF", stroke : "none"});
+					svg.text(tooltip, 2, -25, text[0], {fontSize: "13", fill : "#000", stroke : "none"});
+					svg.text(tooltip, 2, -5, text[1], {fontSize: "13", fill : "#000", stroke : "none"});
 
+					//Item highlight effect
+					for(var i = 0; i < obj.item.objs.length; i++) {
+						var obj2 = obj.item.objs[i];
+						$(obj2.rect).attr("fill", "#F00");
+					}
 
 					//Store tooltip
 					$(this).data("tooltip", tooltip);
 				}
 
 				function handleMouseOut(event) {
+					//Item highlight effect
+					var obj = $(this).data("item");
+					for(var i = 0; i < obj.item.objs.length; i++) {
+						var obj2 = obj.item.objs[i];
+						$(obj2.rect).attr("fill", "#7E7");
+					}
 					//Clear the fade interval
-					$($(this).data("tooltip")).fadeOut(750, function(){ svg.remove(this); });
+					$($(this).data("tooltip")).fadeOut(250, function(){ svg.remove(this); });
 				}
 
 				//Asynchronously load data
@@ -339,6 +393,7 @@ $(function() {
 							items[i].length = hourMillisConst; //TODO: parseInt(items[i].length);
 							items[i].time = parseInt(items[i].time);
 							items[i].period = parseInt(items[i].period);
+							items[i].objs = new Array();
 							processItem(items[i]);
 						}
 						//Trigger a re-rendering of all the data
@@ -377,5 +432,19 @@ $(function() {
 		var width = test.getComputedTextLength();
 		svg.remove(test);
 		return width;
+	}
+
+	function formatReadablePeriod(period) {
+		var days = Math.floor(period / dayMillisConst);
+		var hour = period - days * dayMillisConst;
+		var hours = Math.floor(hour / hourMillisConst);
+		var min = hour - hours * hourMillisConst;
+		var mins = Math.floor(min / 60000);
+
+		var text = "";
+		if(days > 0) text = (days == 1 ? "24 hours" : days.toString() + " days");
+		if(hours > 0) text = text + " " + (hours == 1 ? "1 hour" : hours.toString() + " hours");
+		if(mins > 0) text = text + " " + (mins == 1 ? "1 minute" : mins.toString() + " minutes");
+		return text;
 	}
 });
