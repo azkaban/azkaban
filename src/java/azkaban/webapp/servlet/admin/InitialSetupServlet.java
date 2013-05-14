@@ -39,7 +39,7 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.log4j.Logger;
 
-import azkaban.utils.DataSourceUtils;
+import azkaban.utils.db.DataSourceUtils;
 import azkaban.utils.Props;
 import azkaban.utils.Utils;
 import azkaban.webapp.AzkabanAdminServer;

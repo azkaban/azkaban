@@ -231,6 +231,8 @@ public class JobRunner extends EventHandler implements Runnable {
 							break;
 						}
 					}
+					writeStatus();	
+					fireEvent(Event.create(this, Type.JOB_STATUS_CHANGED));
 				}
 				if (watcher.isWatchCancelled()) {
 					logger.info("Job was cancelled while waiting on pipeline. Quiting.");

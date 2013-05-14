@@ -296,7 +296,7 @@ public class AzkabanExecutorServer {
 		logger.info("Registering MBeans...");
 		mbeanServer = ManagementFactory.getPlatformMBeanServer();
 
-		registerMbean("jetty", new JmxJettyServer(server));
+		registerMbean("executorJetty", new JmxJettyServer(server));
 		registerMbean("flowRunnerManager", new JmxFlowRunnerManager(runnerManager));
 	}
 	

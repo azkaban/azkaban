@@ -16,7 +16,6 @@
 
 package azkaban.scheduler;
 
-
 import java.io.IOException;
 import java.sql.Connection;
 import java.sql.ResultSet;
@@ -24,8 +23,6 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-
-import javax.sql.DataSource;
 
 import org.apache.commons.dbutils.DbUtils;
 import org.apache.commons.dbutils.QueryRunner;
@@ -35,42 +32,15 @@ import org.apache.log4j.Logger;
 import org.joda.time.DateTimeZone;
 import org.joda.time.ReadablePeriod;
 
-import azkaban.utils.DataSourceUtils;
+import azkaban.utils.db.AbstractJdbcLoader;
 import azkaban.utils.GZIPUtils;
 import azkaban.utils.JSONUtils;
 import azkaban.utils.Props;
 
 
-public class JdbcScheduleLoader implements ScheduleLoader {
-
+public class JdbcScheduleLoader extends AbstractJdbcLoader implements ScheduleLoader {
 	private static Logger logger = Logger.getLogger(JdbcScheduleLoader.class);
-	
-	public static enum EncodingType {
-		PLAIN(1), GZIP(2);
 
-		private int numVal;
-
-		EncodingType(int numVal) {
-			this.numVal = numVal;
-		}
-
-		public int getNumVal() {
-			return numVal;
-		}
-
-		public static EncodingType fromInteger(int x) {
-			switch (x) {
-			case 1:
-				return PLAIN;
-			case 2:
-				return GZIP;
-			default:
-				return PLAIN;
-			}
-		}
-	}
-	
-	private DataSource dataSource;
 	private EncodingType defaultEncodingType = EncodingType.GZIP;
 	
 	private static final String scheduleTableName = "schedules";
@@ -90,18 +60,6 @@ public class JdbcScheduleLoader implements ScheduleLoader {
 	private static String UPDATE_NEXT_EXEC_TIME = 
 			"UPDATE " + scheduleTableName + " SET next_exec_time=? WHERE project_id=? AND flow_name=?";
 
-	private Connection getConnection() throws ScheduleManagerException {
-		Connection connection = null;
-		try {
-			connection = dataSource.getConnection();
-		} catch (Exception e) {
-			DbUtils.closeQuietly(connection);
-			throw new ScheduleManagerException("Error getting DB connection.", e);
-		}
-		
-		return connection;
-	}
-	
 	public EncodingType getDefaultEncodingType() {
 		return defaultEncodingType;
 	}
@@ -111,18 +69,7 @@ public class JdbcScheduleLoader implements ScheduleLoader {
 	}
 	
 	public JdbcScheduleLoader(Props props) {
-		String databaseType = props.getString("database.type");
-		
-		if (databaseType.equals("mysql")) {
-			int port = props.getInt("mysql.port");
-			String host = props.getString("mysql.host");
-			String database = props.getString("mysql.database");
-			String user = props.getString("mysql.user");
-			String password = props.getString("mysql.password");
-			int numConnections = props.getInt("mysql.numconnections");
-			
-			dataSource = DataSourceUtils.getMySQLDataSource(host, port, database, user, password, numConnections);
-		}
+		super(props);
 	}
 
 	@Override
@@ -178,8 +125,7 @@ public class JdbcScheduleLoader implements ScheduleLoader {
 	public void removeSchedule(Schedule s) throws ScheduleManagerException {		
 		logger.info("Removing schedule " + s.getScheduleName() + " from db.");
 
-		QueryRunner runner = new QueryRunner(dataSource);
-	
+		QueryRunner runner = createQueryRunner();
 		try {
 			int removes =  runner.update(REMOVE_SCHEDULE_BY_KEY, s.getProjectId(), s.getFlowName());
 			if (removes == 0) {
@@ -214,7 +160,7 @@ public class JdbcScheduleLoader implements ScheduleLoader {
 			throw new ScheduleManagerException("Error encoding the schedule options. " + s.getScheduleName());
 		}
 		
-		QueryRunner runner = new QueryRunner(dataSource);
+		QueryRunner runner = createQueryRunner();
 		try {
 			int inserts =  runner.update( 
 					INSERT_SCHEDULE, 
@@ -281,7 +227,7 @@ public class JdbcScheduleLoader implements ScheduleLoader {
 			throw new ScheduleManagerException("Error encoding the schedule options " + s.getScheduleName());
 		}
 
-		QueryRunner runner = new QueryRunner(dataSource);
+		QueryRunner runner = createQueryRunner();
 	
 		try {
 			int updates =  runner.update( 
@@ -361,5 +307,17 @@ public class JdbcScheduleLoader implements ScheduleLoader {
 			return schedules;
 		}
 		
+	}
+	
+	private Connection getConnection() throws ScheduleManagerException {
+		Connection connection = null;
+		try {
+			connection = super.getDBConnection(false);
+		} catch (Exception e) {
+			DbUtils.closeQuietly(connection);
+			throw new ScheduleManagerException("Error getting DB connection.", e);
+		}
+		
+		return connection;
 	}
 }

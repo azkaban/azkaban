@@ -22,7 +22,7 @@ import azkaban.sla.SLA;
 import azkaban.sla.SLA.SlaAction;
 import azkaban.sla.SLA.SlaRule;
 import azkaban.sla.SLALoader;
-import azkaban.utils.DataSourceUtils;
+import azkaban.utils.db.DataSourceUtils;
 import azkaban.utils.Props;
 
 

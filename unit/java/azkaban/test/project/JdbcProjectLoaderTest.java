@@ -22,7 +22,6 @@ import azkaban.flow.Edge;
 import azkaban.flow.Flow;
 import azkaban.flow.Node;
 import azkaban.project.JdbcProjectLoader;
-import azkaban.project.JdbcProjectLoader.EncodingType;
 import azkaban.project.Project;
 import azkaban.project.ProjectFileHandler;
 import azkaban.project.ProjectLoader;
@@ -31,7 +30,7 @@ import azkaban.project.ProjectLogEvent.EventType;
 import azkaban.project.ProjectManagerException;
 import azkaban.user.Permission;
 import azkaban.user.User;
-import azkaban.utils.DataSourceUtils;
+import azkaban.utils.db.DataSourceUtils;
 import azkaban.utils.Pair;
 import azkaban.utils.Props;
 import azkaban.utils.PropsUtils;
@@ -307,7 +306,7 @@ public class JdbcProjectLoaderTest {
 	@Test
 	public void testFlowUpload() throws ProjectManagerException {
 		ProjectLoader loader = createLoader();
-		((JdbcProjectLoader)loader).setDefaultEncodingType(EncodingType.GZIP);
+		((JdbcProjectLoader)loader).setDefaultEncodingType(JdbcProjectLoader.EncodingType.GZIP);
 		String projectName = "mytestFlowUpload1";
 		String projectDescription = "This is my new project";
 		User user = new User("testUser");
@@ -340,7 +339,7 @@ public class JdbcProjectLoaderTest {
 	@Test
 	public void testFlowUploadPlain() throws ProjectManagerException {
 		ProjectLoader loader = createLoader();
-		((JdbcProjectLoader)loader).setDefaultEncodingType(EncodingType.PLAIN);
+		((JdbcProjectLoader)loader).setDefaultEncodingType(JdbcProjectLoader.EncodingType.PLAIN);
 		String projectName = "mytestFlowUpload2";
 		String projectDescription = "This is my new project";
 		User user = new User("testUser");
@@ -376,7 +375,7 @@ public class JdbcProjectLoaderTest {
 	@Test
 	public void testProjectProperties() throws ProjectManagerException {
 		ProjectLoader loader = createLoader();
-		((JdbcProjectLoader)loader).setDefaultEncodingType(EncodingType.PLAIN);
+		((JdbcProjectLoader)loader).setDefaultEncodingType(JdbcProjectLoader.EncodingType.PLAIN);
 		String projectName = "testProjectProperties";
 		String projectDescription = "This is my new project";
 		User user = new User("testUser");
