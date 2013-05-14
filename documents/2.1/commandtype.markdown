@@ -1,7 +1,7 @@
 ---
 layout: documents
 nav: commandtype
-context: ../../..
+context: ../../../..
 ---
 
 #Command Job Type (built-in)
