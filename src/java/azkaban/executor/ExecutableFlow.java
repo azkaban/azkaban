@@ -34,6 +34,7 @@ import azkaban.utils.JSONUtils;
 public class ExecutableFlow {
 	private int executionId = -1;
 	private String flowId;
+	private int scheduleId = -1;
 	private int projectId;
 	private int version;
 
@@ -57,6 +58,7 @@ public class ExecutableFlow {
 	
 	public ExecutableFlow(Flow flow) {
 		this.projectId = flow.getProjectId();
+		this.scheduleId = -1;
 		this.flowId = flow.getId();
 		this.version = flow.getVersion();
 		this.setFlow(flow);
@@ -64,6 +66,7 @@ public class ExecutableFlow {
 	
 	public ExecutableFlow(int executionId, Flow flow) {
 		this.projectId = flow.getProjectId();
+		this.scheduleId = -1;
 		this.flowId = flow.getId();
 		this.version = flow.getVersion();
 		this.executionId = executionId;
@@ -208,6 +211,14 @@ public class ExecutableFlow {
 		this.projectId = projectId;
 	}
 
+	public int getScheduleId() {
+		return scheduleId;
+	}
+
+	public void setScheduleId(int scheduleId) {
+		this.scheduleId = scheduleId;
+	}
+
 	public String getExecutionPath() {
 		return executionPath;
 	}
@@ -255,6 +266,9 @@ public class ExecutableFlow {
 		flowObj.put("executionPath", executionPath);
 		flowObj.put("flowId", flowId);
 		flowObj.put("projectId", projectId);
+		if(scheduleId >= 0) {
+			flowObj.put("scheduleId", scheduleId);
+		}
 		flowObj.put("submitTime", submitTime);
 		flowObj.put("startTime", startTime);
 		flowObj.put("endTime", endTime);
@@ -370,6 +384,9 @@ public class ExecutableFlow {
 		exFlow.executionPath = (String)flowObj.get("executionPath");
 		exFlow.flowId = (String)flowObj.get("flowId");
 		exFlow.projectId = (Integer)flowObj.get("projectId");
+		if (flowObj.containsKey("scheduleId")) {
+			exFlow.scheduleId = (Integer)flowObj.get("scheduleId");
+		}
 		exFlow.submitTime = JSONUtils.getLongFromObject(flowObj.get("submitTime"));
 		exFlow.startTime = JSONUtils.getLongFromObject(flowObj.get("startTime"));
 		exFlow.endTime = JSONUtils.getLongFromObject(flowObj.get("endTime"));

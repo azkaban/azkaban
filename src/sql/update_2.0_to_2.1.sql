@@ -12,10 +12,14 @@ UPDATE execution_logs SET upload_time=(UNIX_TIMESTAMP()*1000) WHERE upload_time=
 
 ALTER TABLE execution_logs DROP PRIMARY KEY;
 ALTER TABLE execution_logs ADD PRIMARY KEY(exec_id, name, attempt, start_byte);
-ALTER TABLE execution_logs ADD INDEX log_attempt (exec_id, name, attempt)
+ALTER TABLE execution_logs ADD INDEX log_attempt (exec_id, name, attempt);
 
 ALTER TABLE schedules ADD COLUMN enc_type TINYINT;
 ALTER TABLE schedules ADD COLUMN schedule_options LONGBLOB;
+
+ALTER TABLE schedules DROP PRIMARY KEY;
+ALTER TABLE schedules ADD COLUMN schedule_id INT PRIMARY KEY NOT NULL AUTO_INCREMENT;
+ALTER TABLE schedules ADD INDEX project_id (project_id, flow_name);
 
 ALTER TABLE project_events MODIFY COLUMN message VARCHAR(512);
 

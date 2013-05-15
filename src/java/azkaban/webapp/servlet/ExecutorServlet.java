@@ -567,7 +567,7 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 		ret.put("nodeStatus", nodeStatus);
 		ret.put("disabled", options.getDisabledJobs());
 		
-		Schedule sflow = scheduleManager.getSchedule(project.getId(), exflow.getFlowId());
+		Schedule sflow = null;// = scheduleManager.getSchedule(project.getId(), exflow.getFlowId());
 		
 		for (Schedule sched: scheduleManager.getSchedules()) {
 			if (sched.getProjectId() == project.getId() && sched.getFlowName().equals(exflow.getFlowId())) {

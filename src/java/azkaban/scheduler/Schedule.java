@@ -40,7 +40,8 @@ public class Schedule{
 //	private long flowGuid;
 	
 //	private String scheduleId;
-	
+
+	private int scheduleId;
 	private int projectId;
 	private String projectName;
 	private String flowName;
@@ -57,6 +58,7 @@ public class Schedule{
 	private SlaOptions slaOptions;
 	
 	public Schedule(
+						int scheduleId,
 						int projectId,
 						String projectName,
 						String flowName,
@@ -69,22 +71,26 @@ public class Schedule{
 						long submitTime,
 						String submitUser
 						) {
-		this.projectId = projectId;
-		this.projectName = projectName;
-		this.flowName = flowName;
-		this.firstSchedTime = firstSchedTime;
-		this.timezone = timezone;
-		this.lastModifyTime = lastModifyTime;
-		this.period = period;
-		this.nextExecTime = nextExecTime;
-		this.submitUser = submitUser;
-		this.status = status;
-		this.submitTime = submitTime;
-		this.executionOptions = null;
-		this.slaOptions = null;
+
+		this(scheduleId, 
+				projectId, 
+				projectName, 
+				flowName, 
+				status,
+				firstSchedTime, 
+				timezone,
+				period,
+				lastModifyTime,
+				nextExecTime,
+				submitTime,
+				submitUser,
+				null,
+				null
+				);
 	}
 
 	public Schedule(
+						int scheduleId,
 						int projectId,
 						String projectName,
 						String flowName,
@@ -99,22 +105,24 @@ public class Schedule{
 						ExecutionOptions executionOptions,
 						SlaOptions slaOptions
 			) {
-		this.projectId = projectId;
-		this.projectName = projectName;
-		this.flowName = flowName;
-		this.firstSchedTime = firstSchedTime;
-		this.timezone = DateTimeZone.forID(timezoneId);
-		this.lastModifyTime = lastModifyTime;
-		this.period = parsePeriodString(period);
-		this.nextExecTime = nextExecTime;
-		this.submitUser = submitUser;
-		this.status = status;
-		this.submitTime = submitTime;
-		this.executionOptions = executionOptions;
-		this.slaOptions = slaOptions;
+		this(scheduleId, projectId, 
+				projectName, 
+				flowName, 
+				status,
+				firstSchedTime, 
+				DateTimeZone.forID(timezoneId),
+				parsePeriodString(period),
+				lastModifyTime,
+				nextExecTime,
+				submitTime,
+				submitUser,
+				executionOptions,
+				slaOptions
+				);
 	}
 
 	public Schedule(
+						int scheduleId,
 						int projectId,
 						String projectName,
 						String flowName,
@@ -129,6 +137,7 @@ public class Schedule{
 						ExecutionOptions executionOptions,
 						SlaOptions slaOptions
 						) {
+		this.scheduleId = scheduleId;
 		this.projectId = projectId;
 		this.projectName = projectName;
 		this.flowName = flowName;
@@ -169,8 +178,16 @@ public class Schedule{
 				new DateTime(firstSchedTime).toDateTimeISO() + " with recurring period of " + (period == null ? "non-recurring" : createPeriodString(period));
 	}
 	
-	public Pair<Integer, String> getScheduleId() {
+	public Pair<Integer, String> getScheduleIdentityPair() {
 		return new Pair<Integer, String>(getProjectId(), getFlowName());
+	}
+
+	public void setScheduleId(int scheduleId) {
+		this.scheduleId = scheduleId;
+	}
+	
+	public int getScheduleId() {
+		return scheduleId;
 	}
 	
 	public int getProjectId() {

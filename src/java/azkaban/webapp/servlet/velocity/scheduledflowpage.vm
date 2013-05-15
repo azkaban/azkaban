@@ -69,6 +69,7 @@
 					<thead>
 						<tr>
 							<!--th class="execid">Execution Id</th-->
+							<th>ID</th>
 							<th>Flow</th>
 							<th>Project</th>
 							<th>Submitted By</th>
@@ -84,6 +85,7 @@
 #foreach($sched in $schedules)
 						<tr class="row" >
 
+							<td>${sched.scheduleId}</td>
 							<td class="tb-name">
 								<a href="${context}/manager?project=${sched.projectName}&flow=${sched.flowName}">${sched.flowName}</a>
 							</td>
@@ -95,8 +97,8 @@
 							<td>$utils.formatDateTime(${sched.nextExecTime})</td>
 							<td>$utils.formatPeriod(${sched.period})</td>
 							<td>#if(${sched.slaOptions}) true #else false #end</td>
-							<td><button id="removeSchedBtn" onclick="removeSched(${sched.projectId}, '${sched.flowName}')" >Remove Schedule</button></td>
-							<td><button id="addSlaBtn" onclick="slaView.initFromSched(${sched.projectId}, '${sched.flowName}')" >Set SLA</button></td>
+							<td><button id="removeSchedBtn" onclick="removeSched(${sched.scheduleId})" >Remove Schedule</button></td>
+							<td><button id="addSlaBtn" onclick="slaView.initFromSched(${sched.scheduleId}, '${sched.flowName}')" >Set SLA</button></td>
 						</tr>
 #end
 #else
