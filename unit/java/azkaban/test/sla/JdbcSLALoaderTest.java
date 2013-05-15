@@ -22,10 +22,8 @@ import azkaban.sla.SLA;
 import azkaban.sla.SLA.SlaAction;
 import azkaban.sla.SLA.SlaRule;
 import azkaban.sla.SLALoader;
-import azkaban.utils.db.DataSourceUtils;
+import azkaban.database.DataSourceUtils;
 import azkaban.utils.Props;
-
-
 
 public class JdbcSLALoaderTest {
 	private static boolean testDBExists;

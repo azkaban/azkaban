@@ -67,7 +67,6 @@ import azkaban.sla.SLAManager;
 import azkaban.sla.SLAManagerException;
 import azkaban.user.UserManager;
 import azkaban.user.XmlUserManager;
-import azkaban.utils.db.AbstractJdbcLoader;
 import azkaban.utils.FileIOUtils;
 import azkaban.utils.Props;
 import azkaban.utils.PropsUtils;
@@ -397,8 +396,6 @@ public class AzkabanWebServer implements AzkabanServer {
 			return;
 		}
 
-		AbstractJdbcLoader.setupTables(azkabanSettings);
-		
 		int maxThreads = azkabanSettings.getInt("jetty.maxThreads", DEFAULT_THREAD_NUMBER);
 		int port;
 		boolean usingSSL = false;

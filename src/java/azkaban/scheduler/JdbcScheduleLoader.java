@@ -32,7 +32,7 @@ import org.apache.log4j.Logger;
 import org.joda.time.DateTimeZone;
 import org.joda.time.ReadablePeriod;
 
-import azkaban.utils.db.AbstractJdbcLoader;
+import azkaban.database.AbstractJdbcLoader;
 import azkaban.utils.GZIPUtils;
 import azkaban.utils.JSONUtils;
 import azkaban.utils.Props;

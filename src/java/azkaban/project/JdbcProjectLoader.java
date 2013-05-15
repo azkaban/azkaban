@@ -27,7 +27,7 @@ import azkaban.flow.Flow;
 import azkaban.project.ProjectLogEvent.EventType;
 import azkaban.user.Permission;
 import azkaban.user.User;
-import azkaban.utils.db.AbstractJdbcLoader;
+import azkaban.database.AbstractJdbcLoader;
 import azkaban.utils.GZIPUtils;
 import azkaban.utils.JSONUtils;
 import azkaban.utils.Md5Hasher;

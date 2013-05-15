@@ -22,7 +22,7 @@ import azkaban.sla.SLA.SlaAction;
 import azkaban.sla.SLA.SlaRule;
 import azkaban.sla.SLA.SlaSetting;
 import azkaban.sla.SlaOptions;
-import azkaban.utils.db.DataSourceUtils;
+import azkaban.database.DataSourceUtils;
 import azkaban.utils.Props;
 
 public class JdbcScheduleLoaderTest {
