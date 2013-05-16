@@ -6,6 +6,8 @@ import java.sql.SQLException;
 
 import javax.sql.DataSource;
 
+import junit.framework.Assert;
+
 import org.apache.commons.dbutils.QueryRunner;
 import org.apache.commons.io.FileUtils;
 import org.junit.AfterClass;
@@ -37,25 +39,55 @@ public class AzkabanDatabaseSetupTest {
 	public void testH2Query() throws Exception {
 		Props h2Props = getH2Props();
 		AzkabanDatabaseSetup setup = new AzkabanDatabaseSetup(h2Props);
-		setup.checkTableVersion(true, true);
 		
-		setup.checkTableVersion(true, true);
+		// First time will create the tables
+		setup.loadTableInfo();
+		setup.printUpgradePlan();
+		setup.updateDatabase(true, true);
+		Assert.assertTrue(setup.needsUpdating());
+		
+		// Second time will update some tables. This is only for testing purpose and obviously we
+		// wouldn't set things up this way.
+		setup.loadTableInfo();
+		setup.printUpgradePlan();
+		setup.updateDatabase(true, true);
+		Assert.assertTrue(setup.needsUpdating());
+		
+		// Nothing to be done
+		setup.loadTableInfo();
+		setup.printUpgradePlan();
+		Assert.assertFalse(setup.needsUpdating());
 	}
 	
 	@Test
 	public void testMySQLQuery() throws Exception {
 		Props mysqlProps = getMySQLProps();
 		AzkabanDatabaseSetup setup = new AzkabanDatabaseSetup(mysqlProps);
-		setup.checkTableVersion(true, true);
 		
-		setup.checkTableVersion(true, true);
+		// First time will create the tables
+		setup.loadTableInfo();
+		setup.printUpgradePlan();
+		setup.updateDatabase(true, true);
+		Assert.assertTrue(setup.needsUpdating());
+		
+		// Second time will update some tables. This is only for testing purpose and obviously we
+		// wouldn't set things up this way.
+		setup.loadTableInfo();
+		setup.printUpgradePlan();
+		setup.updateDatabase(true, true);
+		Assert.assertTrue(setup.needsUpdating());
+		
+		// Nothing to be done
+		setup.loadTableInfo();
+		setup.printUpgradePlan();
+		Assert.assertFalse(setup.needsUpdating());
 	}
 	
 	private static Props getH2Props() {
 		Props props = new Props();
 		props.put("database.type", "h2");
 		props.put("h2.path", "h2dbtest/h2db");
-		props.put("sql.script.path", "unit/sql");
+		props.put("database.sql.scripts.dir", "unit/sql");
 		
 		return props;
 	}
@@ -68,7 +100,7 @@ public class AzkabanDatabaseSetupTest {
 		props.put("mysql.host", "localhost");
 		props.put("mysql.database", "azkabanunittest");
 		props.put("mysql.user", "root");
-		props.put("sql.script.path", "unit/sql");
+		props.put("database.sql.scripts.dir", "unit/sql");
 		props.put("mysql.password", "");
 		props.put("mysql.numconnections", 10);
 		

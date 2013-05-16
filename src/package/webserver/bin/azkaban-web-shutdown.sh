@@ -1,6 +1,8 @@
+azkaban_dir=$(dirname $0)/..
+
 #!/bin/bash
-proc=`cat currentpid`
+proc=`cat $azkaban_dir/currentpid`
 echo "killing AzkabanWebServer"
 kill $proc
 
-cat /dev/null > currentpid
+cat /dev/null > $azkaban_dir/currentpid

@@ -66,13 +66,16 @@ public class JobTypeManager
 		loadDefaultTypes();
 		
 		if(jobtypePluginDir != null) {
+			File pluginDir = new File(jobtypePluginDir);
+			if (pluginDir.exists()) {
 			logger.info("job type plugin directory set. Loading extra job types.");
-			try {
-				loadPluginJobTypes();
-			}
-			catch (Exception e) {
-				logger.info("Plugin jobtypes failed to load. " + e.getCause());
-				throw new JobTypeManagerException(e);
+				try {
+					loadPluginJobTypes();
+				}
+				catch (Exception e) {
+					logger.info("Plugin jobtypes failed to load. " + e.getCause());
+					throw new JobTypeManagerException(e);
+				}
 			}
 		}
 		
