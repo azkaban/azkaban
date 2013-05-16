@@ -193,6 +193,9 @@ azkaban.JobEditView = Backbone.View.extend({
 			
 			this.editingTarget = curTarget;
 		}
+
+		evt.preventDefault();
+		evt.stopPropagation();
 	},
 	handleRemoveColumn : function(evt) {
 		var curTarget = evt.currentTarget;
