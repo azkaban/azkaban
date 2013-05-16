@@ -1,12 +1,12 @@
 $.namespace('azkaban');
 
 
-function removeSched(projectId, flowName) {
+function removeSched(scheduleId) {
 	var scheduleURL = contextURL + "/schedule"
 	var redirectURL = contextURL + "/schedule"
 	$.post(
 			scheduleURL,
-			{"action":"removeSched", "projectId":projectId, "flowName":flowName},
+			{"action":"removeSched", "scheduleId":scheduleId},
 			function(data) {
 				if (data.error) {
 //                 alert(data.error)
@@ -21,12 +21,12 @@ function removeSched(projectId, flowName) {
 	)
 }
 
-function removeSla(projectId, flowName) {
+function removeSla(scheduleId) {
 	var scheduleURL = contextURL + "/schedule"
 	var redirectURL = contextURL + "/schedule"
 	$.post(
 			scheduleURL,
-			{"action":"removeSla", "projectId":projectId, "flowName":flowName},
+			{"action":"removeSla", "scheduleId":scheduleId},
 			function(data) {
 				if (data.error) {
 //                 alert(data.error)
@@ -68,9 +68,8 @@ azkaban.ChangeSlaView = Backbone.View.extend({
 		}
 		
 	},
-	initFromSched: function(projId, flowName) {
-		this.projectId = projId;
-		this.flowName = flowName;
+	initFromSched: function(scheduleId, flowName) {
+		this.scheduleId = scheduleId;
 		
 		var scheduleURL = contextURL + "/schedule"
 		this.scheduleURL = scheduleURL;
@@ -83,7 +82,7 @@ azkaban.ChangeSlaView = Backbone.View.extend({
 		var ruleBoxOptions = ["SUCCESS", "FINISH"];
 		this.ruleBoxOptions = ruleBoxOptions;
 		
-		var fetchScheduleData = {"projId": this.projectId, "ajax":"slaInfo", "flowName":this.flowName};
+		var fetchScheduleData = {"scheduleId": this.scheduleId, "ajax":"slaInfo"};
 		
 		$.get(
 				this.scheduleURL,
@@ -194,7 +193,7 @@ azkaban.ChangeSlaView = Backbone.View.extend({
 		var redirectURL = this.scheduleURL;
 		$.post(
 				scheduleURL,
-				{"action":"removeSla", "projectId":this.projectId, "flowName":this.flowName},
+				{"action":"removeSla", "scheduleId":this.scheduleId},
 				function(data) {
 				if (data.error) {
 						$('#errorMsg').text(data.error)
@@ -225,8 +224,7 @@ azkaban.ChangeSlaView = Backbone.View.extend({
 		}
 
 		var slaData = {
-			projectId: this.projectId,
-			flowName: this.flowName,
+			scheduleId: this.scheduleId,
 			ajax: "setSla",			
 			slaEmails: slaEmails,
 			settings: settings

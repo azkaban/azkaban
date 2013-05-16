@@ -881,7 +881,8 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements ExecutorLo
 		try {
 			updateNum = runner.update(DELETE_BY_TIME, millis);
 		} catch (SQLException e) {
-			throw new ExecutorManagerException("Error deleting old execution_logs before " + millis);
+			e.printStackTrace();
+			throw new ExecutorManagerException("Error deleting old execution_logs before " + millis, e);			
 		}
 		
 		return updateNum;
