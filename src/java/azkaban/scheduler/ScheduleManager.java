@@ -160,7 +160,7 @@ public class ScheduleManager {
 	 */
 	public synchronized void removeSchedule(Schedule sched) {
 
-		Pair<Integer,String> identityPairMap = new Pair<Integer,String>(sched.getProjectId(), sched.getFlowName());
+		Pair<Integer,String> identityPairMap = sched.getScheduleIdentityPair();
 		Set<Schedule> schedules = scheduleIdentityPairMap.get(identityPairMap);
 		if(schedules != null) {
 			schedules.remove(sched);

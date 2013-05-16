@@ -566,19 +566,6 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 		}
 		ret.put("nodeStatus", nodeStatus);
 		ret.put("disabled", options.getDisabledJobs());
-		
-		Schedule sflow = null;// = scheduleManager.getSchedule(project.getId(), exflow.getFlowId());
-		
-		for (Schedule sched: scheduleManager.getSchedules()) {
-			if (sched.getProjectId() == project.getId() && sched.getFlowName().equals(exflow.getFlowId())) {
-				sflow = sched;
-				break;
-			}
-		}
-		
-		if (sflow != null) {
-			ret.put("scheduled", sflow.getNextExecTime());
-		}
 	}
 	
 	private void ajaxCancelFlow(HttpServletRequest req, HttpServletResponse resp, HashMap<String, Object> ret, User user, ExecutableFlow exFlow) throws ServletException{
