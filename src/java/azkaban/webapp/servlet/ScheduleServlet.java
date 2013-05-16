@@ -76,6 +76,9 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
 		if (hasParam(req, "ajax")) {
 			handleAJAXAction(req, resp, session);
 		}
+		else if (hasParam(req, "calendar")) {
+			handleGetScheduleCalendar(req, resp, session);
+		}
 		else {
 			handleGetAllSchedules(req, resp, session);
 		}
@@ -91,6 +94,9 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
 		else if(ajaxName.equals("setSla")) {
 			ajaxSetSla(req, ret, session.getUser());
 		}
+		else if(ajaxName.equals("loadFlow")) {
+			ajaxLoadFlows(req, ret, session.getUser());
+		}
 		else if(ajaxName.equals("scheduleFlow")) {
 			ajaxScheduleFlow(req, ret, session.getUser());
 		}
@@ -103,16 +109,16 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
 	private void ajaxSetSla(HttpServletRequest req, HashMap<String, Object> ret, User user) {
 		try {
 			
-			int projectId = getIntParam(req, "projectId");
-			String flowName = getParam(req, "flowName");
+			int scheduleId = getIntParam(req, "scheduleId");
 			
-			Project project = projectManager.getProject(projectId);
+			Schedule sched = scheduleManager.getSchedule(scheduleId);
+			
+			Project project = projectManager.getProject(sched.getProjectId());
 			if(!hasPermission(project, user, Permission.Type.SCHEDULE)) {
 				ret.put("error", "User " + user + " does not have permission to set SLA for this flow.");
 				return;
 			}
 			
-			Schedule sched = scheduleManager.getSchedule(projectId, flowName);
 			
 			SlaOptions slaOptions= new SlaOptions();
 			
@@ -149,7 +155,7 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
 			scheduleManager.insertSchedule(sched);
 
 			if(slaOptions != null) {
-				projectManager.postProjectEvent(project, EventType.SLA, user.getUserId(), "SLA for flow " + flowName + " has been added/changed.");
+				projectManager.postProjectEvent(project, EventType.SLA, user.getUserId(), "SLA for flow " + sched.getFlowName() + " has been added/changed.");
 			}
 			
 		} catch (ServletException e) {
@@ -198,25 +204,23 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
 	}
 
 	private void ajaxSlaInfo(HttpServletRequest req, HashMap<String, Object> ret, User user) {
-		int projId;
-		String flowName;
+		int scheduleId;
 		try {
-			projId = getIntParam(req, "projId");
-			flowName = getParam(req, "flowName");
+			scheduleId = getIntParam(req, "scheduleId");
 			
-			Project project = getProjectAjaxByPermission(ret, projId, user, Type.READ);
+			Schedule sched = scheduleManager.getSchedule(scheduleId);
+			
+			Project project = getProjectAjaxByPermission(ret, sched.getProjectId(), user, Type.READ);
 			if (project == null) {
-				ret.put("error", "Error loading project. Project " + projId + " doesn't exist");
+				ret.put("error", "Error loading project. Project " + sched.getProjectId() + " doesn't exist");
 				return;
 			}
 			
-			Flow flow = project.getFlow(flowName);
+			Flow flow = project.getFlow(sched.getFlowName());
 			if (flow == null) {
-				ret.put("error", "Error loading flow. Flow " + flowName + " doesn't exist in " + projId);
+				ret.put("error", "Error loading flow. Flow " + sched.getFlowName() + " doesn't exist in " + sched.getProjectId());
 				return;
 			}
-			
-			Schedule sched = scheduleManager.getSchedule(projId, flowName);
 			
 			SlaOptions slaOptions = sched.getSlaOptions();
 			ExecutionOptions flowOptions = sched.getExecutionOptions();
@@ -298,6 +302,20 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
 		page.render();
 	}
 	
+	private void handleGetScheduleCalendar(HttpServletRequest req, HttpServletResponse resp,
+			Session session) throws ServletException, IOException{
+		
+		Page page = newPage(req, resp, session, "azkaban/webapp/servlet/velocity/scheduledflowcalendarpage.vm");
+		
+		List<Schedule> schedules = scheduleManager.getSchedules();
+		page.add("schedules", schedules);
+//		
+//		List<SLA> slas = slaManager.getSLAs();
+//		page.add("slas", slas);
+
+		page.render();
+	}
+	
 	@Override
 	protected void handlePost(HttpServletRequest req, HttpServletResponse resp, Session session) throws ServletException, IOException {
 		if (hasParam(req, "ajax")) {
@@ -323,34 +341,124 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
 			this.writeJSON(resp, ret);
 		}
 	}
-	
+
+	private void ajaxLoadFlows(HttpServletRequest req, HashMap<String, Object> ret, User user) throws ServletException {
+		// Very long day...
+//		long day = getLongParam(req, "day");
+//		boolean loadPrevious = getIntParam(req, "loadPrev") != 0;
+
+		List<Schedule> schedules = scheduleManager.getSchedules();
+		// See if anything is scheduled
+		if (schedules.size() <= 0)
+			return;
+//
+//		// Since size is larger than 0, there's at least one element.
+//		DateTime date = new DateTime(day);
+//		// Get only the day component while stripping the time component. This
+//		// gives us 12:00:00AM of that day
+//		DateTime start = date.withTime(0, 0, 0, 0);
+//		// Next day
+//		DateTime end = start.plusDays(1);
+//		// Get microseconds
+//		long startTime = start.getMillis();
+//		long endTime = end.getMillis();
+
+		List<HashMap<String, String>> output = new ArrayList<HashMap<String, String>>();
+		ret.put("items", output);
+
+		for (Schedule schedule : schedules) {
+			writeScheduleData(output, schedule);
+//			long length = 2*3600*1000; //TODO: This is temporary
+//			long firstTime = schedule.getFirstSchedTime();
+//			long period = 0;
+//
+//			if (schedule.getPeriod() != null) {
+//				period = start.plus(schedule.getPeriod()).getMillis() - startTime;
+//
+//				// Shift time until we're past the start time
+//				if (period > 0) {
+//					// Calculate next execution time efficiently
+//					long periods = (startTime - firstTime) / period;
+//					// Take into account items that ends in the date specified, but does not start on that date
+//					if(loadPrevious)
+//					{
+//						periods = (startTime - firstTime - length) / period;
+//					}
+//					if(periods < 0){
+//						periods = 0;
+//					}
+//					firstTime += period * periods;
+//					// Increment in case we haven't arrived yet. This will apply
+//					// to most of the cases
+//					while ((loadPrevious && firstTime < startTime) || (!loadPrevious && firstTime + length < startTime)) {
+//						firstTime += period;
+//					}
+//				}
+//			}
+//
+//			// Bad or no period
+//			if (period <= 0) {
+//				// Single instance case
+//				if (firstTime >= startTime && firstTime < endTime) {
+//					writeScheduleData(output, schedule, firstTime, length, startTime, endTime);
+//				}
+//			}
+//			else {
+//				// Repetitive schedule, firstTime is assumed to be after startTime
+//				while (firstTime < endTime) {
+//					writeScheduleData(output, schedule, firstTime, length, startTime, endTime);
+//					firstTime += period;
+//				}
+//			}
+		}
+	}
+
+	private void writeScheduleData(List<HashMap<String, String>> output, Schedule schedule) {
+		HashMap<String, String> data = new HashMap<String, String>();
+		data.put("flowname", schedule.getFlowName());
+		data.put("projectname", schedule.getProjectName());
+		data.put("time", Long.toString(schedule.getFirstSchedTime()));
+
+		DateTime time = DateTime.now();
+		long period = 0;
+		if(schedule.getPeriod() != null){
+			period = time.plus(schedule.getPeriod()).getMillis() - time.getMillis();
+		}
+		data.put("period", Long.toString(period));
+		data.put("length", Long.toString(2 * 3600 * 1000));
+
+		output.add(data);
+	}
+
 	private void ajaxRemoveSched(HttpServletRequest req, Map<String, Object> ret, User user) throws ServletException{
-		int projectId = getIntParam(req, "projectId");
-		String flowName = getParam(req, "flowName");
-		Schedule sched = scheduleManager.getSchedule(projectId, flowName);
+		int scheduleId = getIntParam(req, "scheduleId");
+		Schedule sched = scheduleManager.getSchedule(scheduleId);
+		if(sched == null) {
+			ret.put("message", "Schedule with ID " + scheduleId + " does not exist");
+			ret.put("status", "error");
+			return;
+		}
 
-//		int projectId = sched.getProjectId();
-
-		Project project = projectManager.getProject(projectId);
+		Project project = projectManager.getProject(sched.getProjectId());
 		
 		if (project == null) {
-			ret.put("message", "Project " + projectId + " does not exist");
+			ret.put("message", "Project " + sched.getProjectId() + " does not exist");
 			ret.put("status", "error");
 			return;
 		}
 		
 		if(!hasPermission(project, user, Type.SCHEDULE)) {
 			ret.put("status", "error");
-			ret.put("message", "Permission denied. Cannot remove schedule " + projectId + "."  + flowName);
+			ret.put("message", "Permission denied. Cannot remove schedule with id " + scheduleId);
 			return;
 		}
 
-		scheduleManager.removeSchedule(projectId, flowName);
+		scheduleManager.removeSchedule(sched);
 		logger.info("User '" + user.getUserId() + " has removed schedule " + sched.getScheduleName());
 		projectManager.postProjectEvent(project, EventType.SCHEDULE, user.getUserId(), "Schedule " + sched.toString() + " has been removed.");
 		
 		ret.put("status", "success");
-		ret.put("message", "flow " + flowName + " removed from Schedules.");
+		ret.put("message", "flow " + sched.getFlowName() + " removed from Schedules.");
 		return;
 	}
 
@@ -401,7 +509,7 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
 			ret.put("error", e.getMessage());
 		}
 		
-		Schedule sched = scheduleManager.getSchedule(projectId, flowName);
+		// Schedule sched = scheduleManager.getSchedule(projectId, flowName);
 		ExecutionOptions flowOptions = null;
 		try {
 			flowOptions = HttpRequestUtils.parseFlowOptions(req);
@@ -410,12 +518,12 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
 			ret.put("error", e.getMessage());
 		}
 		SlaOptions slaOptions = null;
-		if(sched != null) {
-			if(sched.getSlaOptions() != null) {
-				slaOptions = sched.getSlaOptions();
-			}
-		}
-		Schedule schedule = scheduleManager.scheduleFlow(projectId, projectName, flowName, "ready", firstSchedTime.getMillis(), firstSchedTime.getZone(), thePeriod, DateTime.now().getMillis(), firstSchedTime.getMillis(), firstSchedTime.getMillis(), user.getUserId(), flowOptions, slaOptions);
+		//		if(sched != null) {
+		//			if(sched.getSlaOptions() != null) {
+		//				slaOptions = sched.getSlaOptions();
+		//			}
+		//		}
+		Schedule schedule = scheduleManager.scheduleFlow(-1, projectId, projectName, flowName, "ready", firstSchedTime.getMillis(), firstSchedTime.getZone(), thePeriod, DateTime.now().getMillis(), firstSchedTime.getMillis(), firstSchedTime.getMillis(), user.getUserId(), flowOptions, slaOptions);
 		logger.info("User '" + user.getUserId() + "' has scheduled " + "[" + projectName + flowName +  " (" + projectId +")" + "].");
 		projectManager.postProjectEvent(project, EventType.SCHEDULE, user.getUserId(), "Schedule " + schedule.toString() + " has been added.");
 

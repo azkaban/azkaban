@@ -90,11 +90,19 @@ public class JobTypeManager
 	// load Job Typs from dir
 	private void loadPluginJobTypes() throws JobTypeManagerException
 	{
-		if(jobtypePluginDir == null || parentLoader == null) throw new JobTypeManagerException("JobTypeDir not set! JobTypeManager not properly initiated!");
-		
 		File jobPluginsDir = new File(jobtypePluginDir);
-		if(!jobPluginsDir.isDirectory()) throw new JobTypeManagerException("Job type plugin dir " + jobtypePluginDir + " is not a directory!");
-		if(!jobPluginsDir.canRead()) throw new JobTypeManagerException("Job type plugin dir " + jobtypePluginDir + " is not readable!");
+		
+		if (!jobPluginsDir.exists()) {
+			return;
+		}
+
+		if (!jobPluginsDir.isDirectory()) {
+			throw new JobTypeManagerException("Job type plugin dir " + jobtypePluginDir + " is not a directory!");
+		}
+		
+		if (!jobPluginsDir.canRead()) {
+			throw new JobTypeManagerException("Job type plugin dir " + jobtypePluginDir + " is not readable!");
+		}
 		
 		// look for global conf
 		Props globalConf = null;
