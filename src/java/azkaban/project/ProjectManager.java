@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
@@ -178,7 +179,7 @@ public class ProjectManager {
 			projectLoader.updatePermission(newProject, creator.getUserId(), new Permission(Permission.Type.ADMIN), false);
 			
 			// Add proxy user 
-			newProject.getProxyUsers().add(creator.getUserId());
+			newProject.addProxyUser(creator.getUserId());
 			try {
 				updateProjectSetting(newProject);
 			} catch (ProjectManagerException e) {
