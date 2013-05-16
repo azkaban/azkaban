@@ -7,35 +7,18 @@ import javax.mail.MessagingException;
 import org.apache.log4j.Logger;
 
 import azkaban.sla.SLA;
+import azkaban.utils.AbstractMailer;
 import azkaban.utils.EmailMessage;
 import azkaban.utils.Props;
-import azkaban.utils.Utils;
 
-public class SlaMailer {
+public class SlaMailer extends AbstractMailer {
 	private static Logger logger = Logger.getLogger(SlaMailer.class);
 	
 	private boolean testMode = false;
-	@SuppressWarnings("unused")
-	private String clientHostname;
-	@SuppressWarnings("unused")
-	private String clientPortNumber;
-	
-	private String mailHost;
-	private String mailUser;
-	private String mailPassword;
-	private String mailSender;
-	private String azkabanName;
 	
 	public SlaMailer(Props props) {
-		this.azkabanName = props.getString("azkaban.name", "azkaban");
-		this.mailHost = props.getString("mail.host", "localhost");
-		this.mailUser = props.getString("mail.user", "");
-		this.mailPassword = props.getString("mail.password", "");
-		this.mailSender = props.getString("mail.sender", "");
-		
-		this.clientHostname = props.getString("jetty.hostname", "localhost");
-		this.clientPortNumber = Utils.nonNull(props.getString("jetty.ssl.port"));
-		
+		super(props);
+
 		testMode = props.getBoolean("test.mode", false);
 	}
 	
@@ -43,12 +26,8 @@ public class SlaMailer {
 		List<String> emailList = s.getEmails();
 		
 		if (emailList != null && !emailList.isEmpty()) {
-			EmailMessage message = new EmailMessage(mailHost, mailUser, mailPassword);
-			message.setFromAddress(mailSender);
-			message.addAllToAddress(emailList);
-			message.setMimeType("text/html");
-			message.setSubject("SLA violation on " + azkabanName);
-			
+			EmailMessage message = super.createEmailMessage("SLA violation on " + getAzkabanName(), "text/html", emailList);
+
 //			message.println("<h2 style=\"color:#FF0000\"> Execution '" + s.getExecId() + "' of flow '" + flow.getFlowId() + "' failed to meet SLA on " + azkabanName + "</h2>");
 //			message.println("<table>");
 //			message.println("<tr><td>Start Time</td><td>" + flow.getStartTime() +"</td></tr>");
@@ -56,7 +35,7 @@ public class SlaMailer {
 //			message.println("<tr><td>Duration</td><td>" + Utils.formatDuration(flow.getStartTime(), flow.getEndTime()) +"</td></tr>");
 //			message.println("</table>");
 //			message.println("");
-//			String executionUrl = "https://" + clientHostname + ":" + clientPortNumber + "/" + "executor?" + "execid=" + execId;
+//			String executionUrl = super.getReferenceURL() + "executor?" + "execid=" + execId;
 //			message.println("<a href='\"" + executionUrl + "\">" + flow.getFlowId() + " Execution Link</a>");
 //			
 //			message.println("");

@@ -30,7 +30,7 @@ import azkaban.project.ProjectLogEvent.EventType;
 import azkaban.project.ProjectManagerException;
 import azkaban.user.Permission;
 import azkaban.user.User;
-import azkaban.utils.db.DataSourceUtils;
+import azkaban.database.DataSourceUtils;
 import azkaban.utils.Pair;
 import azkaban.utils.Props;
 import azkaban.utils.PropsUtils;

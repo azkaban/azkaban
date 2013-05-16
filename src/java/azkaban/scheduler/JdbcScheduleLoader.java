@@ -32,7 +32,7 @@ import org.apache.log4j.Logger;
 import org.joda.time.DateTimeZone;
 import org.joda.time.ReadablePeriod;
 
-import azkaban.utils.db.AbstractJdbcLoader;
+import azkaban.database.AbstractJdbcLoader;
 import azkaban.utils.GZIPUtils;
 import azkaban.utils.JSONUtils;
 import azkaban.utils.Props;
@@ -46,19 +46,19 @@ public class JdbcScheduleLoader extends AbstractJdbcLoader implements ScheduleLo
 	private static final String scheduleTableName = "schedules";
 
 	private static String SELECT_ALL_SCHEDULES =
-			"SELECT project_id, project_name, flow_name, status, first_sched_time, timezone, period, last_modify_time, next_exec_time, submit_time, submit_user, enc_type, schedule_options FROM " + scheduleTableName;
+			"SELECT schedule_id, project_id, project_name, flow_name, status, first_sched_time, timezone, period, last_modify_time, next_exec_time, submit_time, submit_user, enc_type, schedule_options FROM " + scheduleTableName;
 	
 	private static String INSERT_SCHEDULE = 
 			"INSERT INTO " + scheduleTableName + " ( project_id, project_name, flow_name, status, first_sched_time, timezone, period, last_modify_time, next_exec_time, submit_time, submit_user, enc_type, schedule_options) values (?,?,?,?,?,?,?,?,?,?,?,?,?)";
 	
 	private static String REMOVE_SCHEDULE_BY_KEY = 
-			"DELETE FROM " + scheduleTableName + " WHERE project_id=? AND flow_name=?";
+			"DELETE FROM " + scheduleTableName + " WHERE schedule_id=?";
 	
 	private static String UPDATE_SCHEDULE_BY_KEY = 
-			"UPDATE " + scheduleTableName + " SET status=?, first_sched_time=?, timezone=?, period=?, last_modify_time=?, next_exec_time=?, submit_time=?, submit_user=?, enc_type=?, schedule_options=? WHERE project_id=? AND flow_name=?";
+			"UPDATE " + scheduleTableName + " SET status=?, first_sched_time=?, timezone=?, period=?, last_modify_time=?, next_exec_time=?, submit_time=?, submit_user=?, enc_type=?, schedule_options=? WHERE schedule_id=?";
 	
 	private static String UPDATE_NEXT_EXEC_TIME = 
-			"UPDATE " + scheduleTableName + " SET next_exec_time=? WHERE project_id=? AND flow_name=?";
+			"UPDATE " + scheduleTableName + " SET next_exec_time=? WHERE schedule_id=?";
 
 	public EncodingType getDefaultEncodingType() {
 		return defaultEncodingType;
@@ -127,7 +127,7 @@ public class JdbcScheduleLoader extends AbstractJdbcLoader implements ScheduleLo
 
 		QueryRunner runner = createQueryRunner();
 		try {
-			int removes =  runner.update(REMOVE_SCHEDULE_BY_KEY, s.getProjectId(), s.getFlowName());
+			int removes =  runner.update(REMOVE_SCHEDULE_BY_KEY, s.getScheduleId());
 			if (removes == 0) {
 				throw new ScheduleManagerException("No schedule has been removed.");
 			}
@@ -177,6 +177,15 @@ public class JdbcScheduleLoader extends AbstractJdbcLoader implements ScheduleLo
 					s.getSubmitUser(),
 					encType.getNumVal(),
 					data);
+			
+			long id = runner.query(LastInsertID.LAST_INSERT_ID, new LastInsertID());
+
+			if (id == -1l) {
+				throw new ScheduleManagerException("Execution id is not properly created.");
+			}
+			logger.info("Schedule given " + s.getScheduleIdentityPair() + " given id " + id);
+			s.setScheduleId((int)id);
+			
 			if (inserts == 0) {
 				throw new ScheduleManagerException("No schedule has been inserted.");
 			}
@@ -194,7 +203,7 @@ public class JdbcScheduleLoader extends AbstractJdbcLoader implements ScheduleLo
 		QueryRunner runner = new QueryRunner();
 		try {
 			
-			runner.update(connection, UPDATE_NEXT_EXEC_TIME, s.getNextExecTime(), s.getProjectId(), s.getFlowName()); 
+			runner.update(connection, UPDATE_NEXT_EXEC_TIME, s.getNextExecTime(), s.getScheduleId()); 
 		} catch (SQLException e) {
 			e.printStackTrace();
 			logger.error(UPDATE_NEXT_EXEC_TIME + " failed.", e);
@@ -242,8 +251,7 @@ public class JdbcScheduleLoader extends AbstractJdbcLoader implements ScheduleLo
 					s.getSubmitUser(), 	
 					encType.getNumVal(),
 					data,
-					s.getProjectId(), 
-					s.getFlowName());
+					s.getScheduleId());
 			if (updates == 0) {
 				throw new ScheduleManagerException("No schedule has been updated.");
 			}
@@ -253,6 +261,22 @@ public class JdbcScheduleLoader extends AbstractJdbcLoader implements ScheduleLo
 		}
 	}
 
+	
+	private static class LastInsertID implements ResultSetHandler<Long> {
+		private static String LAST_INSERT_ID = "SELECT LAST_INSERT_ID()";
+		
+		@Override
+		public Long handle(ResultSet rs) throws SQLException {
+			if (!rs.next()) {
+				return -1l;
+			}
+
+			long id = rs.getLong(1);
+			return id;
+		}
+		
+	}
+	
 	public class ScheduleResultHandler implements ResultSetHandler<List<Schedule>> {
 		@Override
 		public List<Schedule> handle(ResultSet rs) throws SQLException {
@@ -262,19 +286,20 @@ public class JdbcScheduleLoader extends AbstractJdbcLoader implements ScheduleLo
 			
 			ArrayList<Schedule> schedules = new ArrayList<Schedule>();
 			do {
-				int projectId = rs.getInt(1);
-				String projectName = rs.getString(2);
-				String flowName = rs.getString(3);
-				String status = rs.getString(4);
-				long firstSchedTime = rs.getLong(5);
-				DateTimeZone timezone = DateTimeZone.forID(rs.getString(6));
-				ReadablePeriod period = Schedule.parsePeriodString(rs.getString(7));
-				long lastModifyTime = rs.getLong(8);
-				long nextExecTime = rs.getLong(9);
-				long submitTime = rs.getLong(10);
-				String submitUser = rs.getString(11);
-				int encodingType = rs.getInt(12);
-				byte[] data = rs.getBytes(13);
+				int scheduleId = rs.getInt(1);
+				int projectId = rs.getInt(2);
+				String projectName = rs.getString(3);
+				String flowName = rs.getString(4);
+				String status = rs.getString(5);
+				long firstSchedTime = rs.getLong(6);
+				DateTimeZone timezone = DateTimeZone.forID(rs.getString(7));
+				ReadablePeriod period = Schedule.parsePeriodString(rs.getString(8));
+				long lastModifyTime = rs.getLong(9);
+				long nextExecTime = rs.getLong(10);
+				long submitTime = rs.getLong(11);
+				String submitUser = rs.getString(12);
+				int encodingType = rs.getInt(13);
+				byte[] data = rs.getBytes(14);
 				
 				Object optsObj = null;
 				if (data != null) {
@@ -296,7 +321,7 @@ public class JdbcScheduleLoader extends AbstractJdbcLoader implements ScheduleLo
 					}
 				}
 				
-				Schedule s = new Schedule(projectId, projectName, flowName, status, firstSchedTime, timezone, period, lastModifyTime, nextExecTime, submitTime, submitUser);
+				Schedule s = new Schedule(scheduleId, projectId, projectName, flowName, status, firstSchedTime, timezone, period, lastModifyTime, nextExecTime, submitTime, submitUser);
 				if (optsObj != null) {
 					s.createAndSetScheduleOptions(optsObj);
 				}

@@ -19,9 +19,11 @@ package azkaban.scheduler;
 import java.lang.Thread.State;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -36,15 +38,13 @@ import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutionOptions;
 import azkaban.executor.ExecutorManager;
 import azkaban.executor.ExecutorManagerException;
-
 import azkaban.flow.Flow;
 import azkaban.project.Project;
 import azkaban.project.ProjectManager;
-
 import azkaban.sla.SLA.SlaAction;
 import azkaban.sla.SLA.SlaRule;
-import azkaban.sla.SLAManager;
 import azkaban.sla.SLA.SlaSetting;
+import azkaban.sla.SLAManager;
 import azkaban.sla.SlaOptions;
 import azkaban.utils.Pair;
 
@@ -60,7 +60,8 @@ public class ScheduleManager {
 	private final DateTimeFormatter _dateFormat = DateTimeFormat.forPattern("MM-dd-yyyy HH:mm:ss:SSS");
 	private ScheduleLoader loader;
 
-	private Map<Pair<Integer, String>, Schedule> scheduleIDMap = new LinkedHashMap<Pair<Integer, String>, Schedule>();
+	private Map<Pair<Integer, String>, Set<Schedule>> scheduleIdentityPairMap = new LinkedHashMap<Pair<Integer, String>, Set<Schedule>>();
+	private Map<Integer, Schedule> scheduleIDMap = new LinkedHashMap<Integer, Schedule>();
 	private final ScheduleRunner runner;
 	private final ExecutorManager executorManager;
 	private final ProjectManager projectManager;
@@ -126,20 +127,48 @@ public class ScheduleManager {
 	 * @param id
 	 * @return
 	*/
-	public Schedule getSchedule(int projectId, String flowId) {
-		return scheduleIDMap.get(new Pair<Integer,String>(projectId, flowId));
+	public Set<Schedule> getSchedules(int projectId, String flowId) {
+		return scheduleIdentityPairMap.get(new Pair<Integer,String>(projectId, flowId));
 	}
+
+	/**
+	 * Returns the scheduled flow for the scheduleId
+	 * 
+	 * @param id
+	 * @return
+	*/
+	public Schedule getSchedule(int scheduleId) {
+		return scheduleIDMap.get(scheduleId);
+	}
+
 
 	/**
 	 * Removes the flow from the schedule if it exists.
 	 * 
 	 * @param id
 	 */
-	public synchronized void removeSchedule(int projectId, String flowId) {
-		Pair<Integer,String> scheduleId = new Pair<Integer,String>(projectId, flowId);
-		
-		Schedule sched = scheduleIDMap.get(scheduleId);
-		scheduleIDMap.remove(scheduleId);
+	public synchronized void removeSchedules(int projectId, String flowId) {
+		Set<Schedule> schedules = getSchedules(projectId, flowId);
+		for(Schedule sched : schedules) {
+			removeSchedule(sched);
+		}
+	}
+	/**
+	 * Removes the flow from the schedule if it exists.
+	 * 
+	 * @param id
+	 */
+	public synchronized void removeSchedule(Schedule sched) {
+
+		Pair<Integer,String> identityPairMap = sched.getScheduleIdentityPair();
+		Set<Schedule> schedules = scheduleIdentityPairMap.get(identityPairMap);
+		if(schedules != null) {
+			schedules.remove(sched);
+			if(schedules.size() == 0) {
+				scheduleIdentityPairMap.remove(identityPairMap);
+			}
+		}
+		scheduleIDMap.remove(sched.getScheduleId());
 		
 		runner.removeRunnerSchedule(sched);
 		try {
@@ -173,6 +202,7 @@ public class ScheduleManager {
 	// }
 
 	public Schedule scheduleFlow(
+			final int scheduleId,
 			final int projectId,
 			final String projectName,
 			final String flowName,
@@ -185,10 +215,11 @@ public class ScheduleManager {
 			final long submitTime,
 			final String submitUser
 			) {
-		return scheduleFlow(projectId, projectName, flowName, status, firstSchedTime, timezone, period, lastModifyTime, nextExecTime, submitTime, submitUser, null, null);
+		return scheduleFlow(scheduleId, projectId, projectName, flowName, status, firstSchedTime, timezone, period, lastModifyTime, nextExecTime, submitTime, submitUser, null, null);
 	}
 	
 	public Schedule scheduleFlow(
+			final int scheduleId,
 			final int projectId,
 			final String projectName,
 			final String flowName,
@@ -203,7 +234,7 @@ public class ScheduleManager {
 			ExecutionOptions execOptions,
 			SlaOptions slaOptions
 			) {
-		Schedule sched = new Schedule(projectId, projectName, flowName, status, firstSchedTime, timezone, period, lastModifyTime, nextExecTime, submitTime, submitUser, execOptions, slaOptions);
+		Schedule sched = new Schedule(scheduleId, projectId, projectName, flowName, status, firstSchedTime, timezone, period, lastModifyTime, nextExecTime, submitTime, submitUser, execOptions, slaOptions);
 		logger.info("Scheduling flow '" + sched.getScheduleName() + "' for "
 				+ _dateFormat.print(firstSchedTime) + " with a period of "
 				+ period == null ? "(non-recurring)" : period);
@@ -225,6 +256,12 @@ public class ScheduleManager {
 		s.updateTime();
 		this.runner.addRunnerSchedule(s);
 		scheduleIDMap.put(s.getScheduleId(), s);
+		Set<Schedule> schedules = scheduleIdentityPairMap.get(s.getScheduleIdentityPair());
+		if(schedules == null) {
+			schedules = new HashSet<Schedule>();
+			scheduleIdentityPairMap.put(s.getScheduleIdentityPair(), schedules);
+		}
+		schedules.add(s);
 	}
 
 	/**
@@ -233,7 +270,7 @@ public class ScheduleManager {
 	 * @param flow
 	 */
 	public synchronized void insertSchedule(Schedule s) {
-		boolean exist = scheduleIDMap.containsKey(s.getScheduleId());
+		boolean exist = scheduleIdentityPairMap.containsKey(s.getScheduleIdentityPair());
 		if(s.updateTime()) {
 			internalSchedule(s);
 			try {
@@ -370,6 +407,7 @@ public class ScheduleManager {
 
 									// Create ExecutableFlow
 									ExecutableFlow exflow = new ExecutableFlow(flow);
+									exflow.setScheduleId(runningSched.getScheduleId());
 									exflow.setSubmitUser(runningSched.getSubmitUser());
 									exflow.addAllProxyUsers(project.getProxyUsers());
 									
@@ -441,7 +479,7 @@ public class ScheduleManager {
 									loader.updateSchedule(runningSched);
 								}
 								else {
-									removeSchedule(runningSched.getProjectId(), runningSched.getFlowName());
+									removeSchedule(runningSched);
 								}								
 							} else {
 								// wait until flow run

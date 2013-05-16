@@ -3,6 +3,7 @@ package azkaban.utils;
 import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileFilter;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -20,6 +21,32 @@ import org.apache.commons.io.IOUtils;
  * Runs a few unix commands. Created this so that I can move to JNI in the future.
  */
 public class FileIOUtils {
+	
+	public static class PrefixSuffixFileFilter implements FileFilter {
+		private String prefix;
+		private String suffix;
+		
+		public PrefixSuffixFileFilter(String prefix, String suffix) {
+			this.prefix = prefix;
+			this.suffix = suffix;
+		}
+
+		@Override
+		public boolean accept(File pathname) {			
+			if (!pathname.isFile() || pathname.isHidden()) {
+				return false;
+			}
+
+			String name = pathname.getName();
+			int length = name.length();
+			if (suffix.length() > length || prefix.length() > length ) {
+				return false;
+			}
+			
+			return name.startsWith(prefix) && name.endsWith(suffix);
+		}
+	}
+	
 	public static String getSourcePathFromClass(Class<?> containedClass) {
 		File file = new File(containedClass.getProtectionDomain().getCodeSource().getLocation().getPath());
 

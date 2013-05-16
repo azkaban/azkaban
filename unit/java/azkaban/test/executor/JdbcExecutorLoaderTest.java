@@ -31,7 +31,7 @@ import azkaban.executor.JdbcExecutorLoader;
 import azkaban.executor.Status;
 import azkaban.flow.Flow;
 
-import azkaban.utils.db.DataSourceUtils;
+import azkaban.database.DataSourceUtils;
 import azkaban.utils.FileIOUtils.LogData;
 import azkaban.utils.JSONUtils;
 import azkaban.utils.Pair;

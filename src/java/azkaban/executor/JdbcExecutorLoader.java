@@ -22,7 +22,7 @@ import org.apache.commons.io.IOUtils;
 import org.apache.log4j.Logger;
 import org.joda.time.DateTime;
 
-import azkaban.utils.db.AbstractJdbcLoader;
+import azkaban.database.AbstractJdbcLoader;
 import azkaban.utils.FileIOUtils;
 import azkaban.utils.FileIOUtils.LogData;
 import azkaban.utils.GZIPUtils;

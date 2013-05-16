@@ -21,7 +21,6 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.TimeZone;
 
@@ -44,11 +43,8 @@ import azkaban.project.JdbcProjectLoader;
 import azkaban.project.ProjectLoader;
 import azkaban.utils.Props;
 import azkaban.utils.Utils;
+import azkaban.webapp.AzkabanServer;
 import azkaban.webapp.servlet.AzkabanServletContextListener;
-
-import joptsimple.OptionParser;
-import joptsimple.OptionSet;
-import joptsimple.OptionSpec;
 
 public class AzkabanExecutorServer {
 	private static final Logger logger = Logger.getLogger(AzkabanExecutorServer.class);
@@ -166,35 +162,8 @@ public class AzkabanExecutorServer {
 	 * @throws IOException
 	 */
 	public static void main(String[] args) throws Exception {
-		OptionParser parser = new OptionParser();
-
-		OptionSpec<String> configDirectory = parser
-				.acceptsAll(Arrays.asList("c", "conf"),
-						"The conf directory for Azkaban.").withRequiredArg()
-				.describedAs("conf").ofType(String.class);
-
 		logger.error("Starting Jetty Azkaban Executor...");
-
-		// Grabbing the azkaban settings from the conf directory.
-		Props azkabanSettings = null;
-		OptionSet options = parser.parse(args);
-		if (options.has(configDirectory)) {
-			String path = options.valueOf(configDirectory);
-			logger.info("Loading azkaban settings file from " + path);
-			File confDir = new File(path);
-			if (!confDir.exists()) {
-				logger.error("Conf directory " + path + " doesn't exist.");
-			}
-			else if (!confDir.isDirectory()) {
-				logger.error("Conf directory " + path + " isn't a directory.");
-			}
-			else {
-				azkabanSettings = loadAzkabanConfigurationFromDirectory(confDir);
-			}
-		} else {
-			logger.info("Conf parameter not set, attempting to get value from AZKABAN_HOME env.");
-			azkabanSettings = loadConfigurationFromAzkabanHome();
-		}
+		Props azkabanSettings = AzkabanServer.loadProps(args);
 
 		if (azkabanSettings == null) {
 			logger.error("Azkaban Properties not loaded.");
