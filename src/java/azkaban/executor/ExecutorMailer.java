@@ -8,33 +8,19 @@ import javax.mail.MessagingException;
 import org.apache.log4j.Logger;
 
 import azkaban.executor.ExecutionOptions.FailureAction;
+import azkaban.utils.AbstractMailer;
 import azkaban.utils.EmailMessage;
 import azkaban.utils.Props;
 import azkaban.utils.Utils;
 
-public class ExecutorMailer {
+public class ExecutorMailer extends AbstractMailer {
 	private static Logger logger = Logger.getLogger(ExecutorMailer.class);
 	
 	private boolean testMode = false;
-	private String clientHostname;
-	private String clientPortNumber;
-	
-	private String mailHost;
-	private String mailUser;
-	private String mailPassword;
-	private String mailSender;
-	private String azkabanName;
 	
 	public ExecutorMailer(Props props) {
-		this.azkabanName = props.getString("azkaban.name", "azkaban");
-		this.mailHost = props.getString("mail.host", "localhost");
-		this.mailUser = props.getString("mail.user", "");
-		this.mailPassword = props.getString("mail.password", "");
-		this.mailSender = props.getString("mail.sender", "");
-		
-		this.clientHostname = props.getString("jetty.hostname", "localhost");
-		this.clientPortNumber = Utils.nonNull(props.getString("jetty.ssl.port"));
-		
+		super(props);
+
 		testMode = props.getBoolean("test.mode", false);
 	}
 	
@@ -44,13 +30,12 @@ public class ExecutorMailer {
 		int execId = flow.getExecutionId();
 		
 		if (emailList != null && !emailList.isEmpty()) {
-			EmailMessage message = new EmailMessage(mailHost, mailUser, mailPassword);
-			message.setFromAddress(mailSender);
-			message.addAllToAddress(emailList);
-			message.setMimeType("text/html");
-			message.setSubject("Flow '" + flow.getFlowId() + "' has failed on " + azkabanName);
+			EmailMessage message = super.createEmailMessage(
+					"Flow '" + flow.getFlowId() + "' has failed on " + getAzkabanName(), 
+					"text/html", 
+					emailList);
 			
-			message.println("<h2 style=\"color:#FF0000\"> Execution '" + flow.getExecutionId() + "' of flow '" + flow.getFlowId() + "' has encountered a failure on " + azkabanName + "</h2>");
+			message.println("<h2 style=\"color:#FF0000\"> Execution '" + flow.getExecutionId() + "' of flow '" + flow.getFlowId() + "' has encountered a failure on " + getAzkabanName() + "</h2>");
 			
 			if (option.getFailureAction() == FailureAction.CANCEL_ALL) {
 				message.println("This flow is set to cancel all currently running jobs.");
@@ -68,7 +53,7 @@ public class ExecutorMailer {
 			message.println("<tr><td>Duration</td><td>" + Utils.formatDuration(flow.getStartTime(), flow.getEndTime()) +"</td></tr>");
 			message.println("</table>");
 			message.println("");
-			String executionUrl = "https://" + clientHostname + ":" + clientPortNumber + "/" + "executor?" + "execid=" + execId;
+			String executionUrl = super.getReferenceURL() + "executor?" + "execid=" + execId;
 			message.println("<a href='\"" + executionUrl + "\">" + flow.getFlowId() + " Execution Link</a>");
 			
 			message.println("");
@@ -98,20 +83,20 @@ public class ExecutorMailer {
 		int execId = flow.getExecutionId();
 		
 		if (emailList != null && !emailList.isEmpty()) {
-			EmailMessage message = new EmailMessage(mailHost, mailUser, mailPassword);
-			message.setFromAddress(mailSender);
-			message.addAllToAddress(emailList);
-			message.setMimeType("text/html");
-			message.setSubject("Flow '" + flow.getFlowId() + "' has failed on " + azkabanName);
+			EmailMessage message = super.createEmailMessage(
+					"Flow '" + flow.getFlowId() + "' has failed on " + getAzkabanName(), 
+					"text/html", 
+					emailList);
 			
-			message.println("<h2 style=\"color:#FF0000\"> Execution '" + execId + "' of flow '" + flow.getFlowId() + "' has failed on " + azkabanName + "</h2>");
+			message.println("<h2 style=\"color:#FF0000\"> Execution '" + execId + "' of flow '" + flow.getFlowId() + "' has failed on " + getAzkabanName() + "</h2>");
 			message.println("<table>");
 			message.println("<tr><td>Start Time</td><td>" + flow.getStartTime() +"</td></tr>");
 			message.println("<tr><td>End Time</td><td>" + flow.getEndTime() +"</td></tr>");
 			message.println("<tr><td>Duration</td><td>" + Utils.formatDuration(flow.getStartTime(), flow.getEndTime()) +"</td></tr>");
 			message.println("</table>");
 			message.println("");
-			String executionUrl = "https://" + clientHostname + ":" + clientPortNumber + "/" + "executor?" + "execid=" + execId;
+			
+			String executionUrl = super.getReferenceURL() + "executor?" + "execid=" + execId;
 			message.println("<a href='\"" + executionUrl + "\">" + flow.getFlowId() + " Execution Link</a>");
 			
 			message.println("");
@@ -126,8 +111,6 @@ public class ExecutorMailer {
 			}
 			
 			message.println("</ul>");
-			
-			
 			
 			if (!testMode) {
 				try {
@@ -146,20 +129,19 @@ public class ExecutorMailer {
 		int execId = flow.getExecutionId();
 		
 		if (emailList != null && !emailList.isEmpty()) {
-			EmailMessage message = new EmailMessage(mailHost, mailUser, mailPassword);
-			message.setFromAddress(mailSender);
-			message.addAllToAddress(emailList);
-			message.setMimeType("text/html");
-			message.setSubject("Flow '" + flow.getFlowId() + "' has succeeded on " + azkabanName);
+			EmailMessage message = super.createEmailMessage(
+					"Flow '" + flow.getFlowId() + "' has succeeded on " + getAzkabanName(), 
+					"text/html", 
+					emailList);
 			
-			message.println("<h2> Execution '" + flow.getExecutionId() + "' of flow '" + flow.getFlowId() + "' has succeeded on " + azkabanName + "</h2>");
+			message.println("<h2> Execution '" + flow.getExecutionId() + "' of flow '" + flow.getFlowId() + "' has succeeded on " + getAzkabanName() + "</h2>");
 			message.println("<table>");
 			message.println("<tr><td>Start Time</td><td>" + flow.getStartTime() +"</td></tr>");
 			message.println("<tr><td>End Time</td><td>" + flow.getEndTime() +"</td></tr>");
 			message.println("<tr><td>Duration</td><td>" + Utils.formatDuration(flow.getStartTime(), flow.getEndTime()) +"</td></tr>");
 			message.println("</table>");
 			message.println("");
-			String executionUrl = "https://" + clientHostname + ":" + clientPortNumber + "/" + "executor?" + "execid=" + execId;
+			String executionUrl = super.getReferenceURL() + "executor?" + "execid=" + execId;
 			message.println("<a href=\"" + executionUrl + "\">" + flow.getFlowId() + " Execution Link</a>");
 			
 			if (!testMode) {

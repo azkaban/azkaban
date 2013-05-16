@@ -3,5 +3,5 @@ CREATE TABLE properties (
 	type INT NOT NULL,
 	modified_time BIGINT NOT NULL,
 	value VARCHAR(256),
-	PRIMARY KEY (id, type)
+	PRIMARY KEY (name, type)
 );

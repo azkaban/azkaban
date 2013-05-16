@@ -1,10 +1,7 @@
 azkaban_dir=$(dirname $0)/..
-base_dir=$1
-tmpdir=
 
 if [[ -z "$tmpdir" ]]; then
-echo "temp directory must be set!"
-exit
+tmpdir=temp
 fi
 
 for file in $azkaban_dir/lib/*.jar;
@@ -17,16 +14,15 @@ do
   CLASSPATH=$CLASSPATH:$file
 done
 
-for file in $base_dir/plugins/*/*.jar;
+for file in $azkaban_dir/plugins/*/*.jar;
 do
   CLASSPATH=$CLASSPATH:$file
 done
 
 echo $azkaban_dir;
-echo $base_dir;
 echo $CLASSPATH;
 
-executorport=`cat conf/azkaban.properties | grep executor.port | cut -d = -f 2`
+executorport=`cat $azkaban_dir/conf/azkaban.properties | grep executor.port | cut -d = -f 2`
 serverpath=`pwd`
 
 if [ -z $AZKABAN_OPTS ]; then
@@ -34,7 +30,7 @@ if [ -z $AZKABAN_OPTS ]; then
 fi
 AZKABAN_OPTS=$AZKABAN_OPTS -server -Dcom.sun.management.jmxremote -Djava.io.tmpdir=$tmpdir -Dexecutorport=$executorport -Dserverpath=$serverpath
 
-java $AZKABAN_OPTS -cp $CLASSPATH azkaban.webapp.AzkabanSingleServer -conf $base_dir/conf $@ &
+java $AZKABAN_OPTS -cp $CLASSPATH azkaban.webapp.AzkabanSingleServer -conf $azkaban_dir/conf $@ &
 
 echo $! > currentpid
 

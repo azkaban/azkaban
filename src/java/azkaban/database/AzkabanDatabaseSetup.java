@@ -15,6 +15,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.commons.dbutils.DbUtils;
 import org.apache.commons.dbutils.QueryRunner;
 import org.apache.commons.dbutils.ResultSetHandler;
 import org.apache.commons.io.IOUtils;
@@ -26,7 +27,10 @@ import azkaban.utils.Props;
 
 public class AzkabanDatabaseSetup {
 	private static final Logger logger = Logger.getLogger(AzkabanDatabaseSetup.class);
-	private static final String SCRIPT_PATH_PARAM = "sql.script.path";
+	public static final String DATABASE_CHECK_VERSION = "database.check.version";
+	public static final String DATABASE_AUTO_UPDATE_TABLES = "database.auto.update.tables";
+	public static final String DATABASE_SQL_SCRIPT_DIR = "database.sql.scripts.dir";
+	
 	private static final String DEFAULT_SCRIPT_PATH = "sql";
 	private static final String CREATE_SCRIPT_PREFIX = "create.";
 	private static final String UPDATE_SCRIPT_PREFIX = "update.";
@@ -37,14 +41,19 @@ public class AzkabanDatabaseSetup {
 	private static final String UPDATE_DB_PROPERTY = "UPDATE properties SET value=?,modified_time=? WHERE name=? AND type=?";
 	
 	private AzkabanDataSource dataSource;
-	private Map<String, String> tables = new HashMap<String, String>();
-	private Map<String, String> installedVersions = new HashMap<String, String>();
+	private Map<String, String> tables;
+	private Map<String, String> installedVersions;
+	private Set<String> missingTables;
+	private Map<String, List<String>> upgradeList;
+	private Props dbProps;
+	private String version;
+	private boolean needsUpdating;
 	
 	private String scriptPath = null;
 	
 	public AzkabanDatabaseSetup(Props props) {
 		this(DataSourceUtils.getDataSource(props));
-		this.scriptPath = props.getString(SCRIPT_PATH_PARAM, DEFAULT_SCRIPT_PATH);
+		this.scriptPath = props.getString(DATABASE_SQL_SCRIPT_DIR, DEFAULT_SCRIPT_PATH);
 	}
 	
 	public AzkabanDatabaseSetup(AzkabanDataSource ds) {
@@ -54,10 +63,32 @@ public class AzkabanDatabaseSetup {
 		}
 	}
 	
-	public void checkTableVersion(boolean autoCreate, boolean autoUpdate) throws IOException, SQLException {
+	public void loadTableInfo() throws IOException, SQLException {
+		tables = new HashMap<String, String>();
+		installedVersions = new HashMap<String, String>();
+		missingTables = new HashSet<String>();
+		upgradeList = new HashMap<String, List<String>>();
+		
+		dbProps = loadDBProps();
+		version = dbProps.getString("version");
+		
 		loadInstalledTables();
-		// Loads from the table properties
 		loadTableVersion();
+		findMissingTables();
+		findOutOfDateTables();
+
+		needsUpdating = !upgradeList.isEmpty() || !missingTables.isEmpty();
+	}
+
+	public boolean needsUpdating() {
+		if (version == null) {
+			throw new RuntimeException("Uninitialized. Call loadTableInfo first.");
+		}
+		
+		return needsUpdating;
+	}
+	
+	public void printUpgradePlan() {
 		if (!tables.isEmpty()) {
 			logger.info("The following are installed tables");
 			for (Map.Entry<String, String> installedTable: tables.entrySet()) {
@@ -65,25 +96,19 @@ public class AzkabanDatabaseSetup {
 			}
 		}
 		else {
-			logger.info("No Installed tables found.");
+			logger.info("No installed tables found.");
 		}
-
-		Props dbProps = loadDBProps();
-		String version = dbProps.getString("version");
-		logger.info("The current version of Azkaban DB is " + version);
 		
-		Set<String> missingTables = findMissingTables();
 		if (!missingTables.isEmpty()) {
-			logger.info("The following tables need to be created.");
+			logger.info("The following are missing tables that need to be installed");
 			for (String table: missingTables) {
 				logger.info(" " + table);
 			}
 		}
 		else {
-			logger.info("No tables need to be created");
+			logger.info("There are no missing tables.");
 		}
 		
-		Map<String, List<String>> upgradeList =  findOutOfDateTables();
 		if (!upgradeList.isEmpty()) {
 			logger.info("The following tables need to be updated.");
 			for (Map.Entry<String, List<String>> upgradeTable: upgradeList.entrySet()) {
@@ -98,12 +123,20 @@ public class AzkabanDatabaseSetup {
 		else {
 			logger.info("No tables need to be updated.");
 		}
-		
-		if (autoCreate && !missingTables.isEmpty()) {
-			createNewTables(missingTables, version);
+	}
+	
+	public void updateDatabase(boolean createTable, boolean updateTable) throws SQLException, IOException {
+		// We call this because it has an unitialize check.
+		if (!needsUpdating()) {
+			logger.info("Nothing to be done.");
+			return;
 		}
-		if (autoUpdate && !upgradeList.isEmpty()) {
-			updateTables(upgradeList);
+		
+		if (createTable && !missingTables.isEmpty()) {
+			createNewTables();
+		}
+		if (updateTable && !upgradeList.isEmpty()) {
+			updateTables();
 		}
 	}
 	
@@ -152,12 +185,11 @@ public class AzkabanDatabaseSetup {
 			}
 		}
 		finally {
-			conn.close();
+			DbUtils.commitAndCloseQuietly(conn);
 		}
 	}
 	
-	private Set<String> findMissingTables() {
-		HashSet<String> missingTables = new HashSet<String>();
+	private void findMissingTables() {
 		File directory = new File(scriptPath);
 		File[] createScripts = directory.listFiles(new FileIOUtils.PrefixSuffixFileFilter(CREATE_SCRIPT_PREFIX, SQL_SCRIPT_SUFFIX));
 		
@@ -170,23 +202,17 @@ public class AzkabanDatabaseSetup {
 				missingTables.add(tableName);
 			}
 		}
-		
-		return missingTables;
 	}
 	
-	private Map<String, List<String>> findOutOfDateTables() {
-		Map<String, List<String>> tablesToUpgrade = new HashMap<String, List<String>>();
-
+	private void findOutOfDateTables() {
 		for (String key : tables.keySet()) {
 			String version = tables.get(key);
 			
 			List<String> upgradeVersions = findOutOfDateTable(key, version);
 			if (upgradeVersions != null && !upgradeVersions.isEmpty()) {
-				tablesToUpgrade.put(key, upgradeVersions);
+				upgradeList.put(key, upgradeVersions);
 			}
 		}
-		
-		return tablesToUpgrade;
 	}
 	
 	private List<String> findOutOfDateTable(String table, String version) {
@@ -228,7 +254,7 @@ public class AzkabanDatabaseSetup {
 		return versions;
 	}
 	
-	public void createNewTables(Set<String> missingTables, String version) throws SQLException, IOException {
+	private void createNewTables() throws SQLException, IOException {
 		Connection conn = dataSource.getConnection();
 		conn.setAutoCommit(false);
 		try {
@@ -247,19 +273,19 @@ public class AzkabanDatabaseSetup {
 		}
 	}
 	
-	public void updateTables(Map<String, List<String>> updateTables) throws SQLException, IOException {
+	private void updateTables() throws SQLException, IOException {
 		Connection conn = dataSource.getConnection();
 		conn.setAutoCommit(false);
 		try {
 			// Make sure that properties table is created first.
-			if (updateTables.containsKey("properties")) {
-				for (String version: updateTables.get("properties")) {
+			if (upgradeList.containsKey("properties")) {
+				for (String version: upgradeList.get("properties")) {
 					runTableScripts(conn, "properties", version, dataSource.getDBType(), true);
 				}
 			}
-			for (String table: updateTables.keySet()) {
+			for (String table: upgradeList.keySet()) {
 				if (!table.equals("properties")) {
-					for (String version: updateTables.get(table)) {
+					for (String version: upgradeList.get(table)) {
 						runTableScripts(conn, table, version, dataSource.getDBType(), true);
 					}
 				}

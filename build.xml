@@ -8,9 +8,14 @@
 	<property name="dist.packages.dir" value="${basedir}/dist/packages" />
 	<property name="dist.web.package.dir" value="${dist.packages.dir}/azkaban-web-server" />
 	<property name="dist.exec.package.dir" value="${dist.packages.dir}/azkaban-exec-server" />
+	<property name="dist.solo.package.dir" value="${dist.packages.dir}/azkaban-solo-server" />
 	<property name="dist.sql.package.dir" value="${dist.packages.dir}/sql" />	
 
 	<property name="conf.dir" value="${basedir}/conf" />
+	<property name="web.package.dir" value="${basedir}/src/package/webserver" />
+	<property name="exec.package.dir" value="${basedir}/src/package/execserver" />
+	<property name="solo.package.dir" value="${basedir}/src/package/soloserver" />
+	
 	<property name="lib.dir" value="${basedir}/lib" />
 	<property name="bin.dir" value="${basedir}/bin" />
 	<property name="java.src.dir" value="${basedir}/src/java" />
@@ -67,24 +72,60 @@
 		</jar>
 	</target>
 	
+	<target name="create-update-script" description="Prepare the creation of the Azkaban Scripts">
+		<!-- Generic update table scripts -->
+		<concat destfile="${dist.sql.package.dir}/update-all-sql-${updateVersion}.sql" fixlastline="yes">
+			<fileset dir="${sql.src.dir}" >
+				<include name="update.*.${updateVersion}.sql"/>
+			</fileset>	
+		</concat>
+	</target>
+	
+	<target name="create-update-script-2.1" description="Prepare the creation of the Azkaban Scripts">
+		<!-- 2.1 added the active_sla table -->
+		<concat destfile="${dist.sql.package.dir}/update-all-sql-2.1.sql" fixlastline="yes">
+			<fileset dir="${sql.src.dir}" >
+				<include name="create.active_sla.sql"/>
+				<include name="update.*.2.1.sql"/>
+			</fileset>	
+		</concat>
+	</target>
+	
+	<target name="create-update-script-2.2" description="Prepare the creation of the Azkaban Scripts">
+		<!-- 2.2 added the properties table -->
+		<concat destfile="${dist.sql.package.dir}/update-all-sql-2.2.sql" fixlastline="yes">
+			<fileset dir="${sql.src.dir}" >
+				<include name="create.properties.sql"/>
+				<include name="update.*.2.2.sql"/>
+			</fileset>	
+		</concat>
+	</target>
+	
 	<target name="package-sql-scripts" description="Creates a package of sql">
 		<delete dir="${dist.sql.package.dir}" />
 		<mkdir dir="${dist.sql.package.dir}" />
 
 		<concat destfile="${dist.sql.package.dir}/create-all-sql-${version}.sql" fixlastline="yes">
 			<fileset dir="${sql.src.dir}" >
-				<exclude name="update*.sql"/>
+				<exclude name="update.*.sql"/>
+				<exclude name="database.properties"/>
 			</fileset>	
 		</concat>
+		
+		<!-- Collect various update scripts. -->
+		<!-- Not sure how to do this better yet. -->
+		<antcall target="create-update-script-2.1"></antcall>
+		<antcall target="create-update-script-2.2"></antcall>
+		<!-- End script collection-->
 		
 		<copy todir="${dist.sql.package.dir}" >
 			<fileset dir="${sql.src.dir}" />
 		</copy>
+		<echo file="${dist.sql.package.dir}/database.properties" append="true">version=${version}</echo>
 
-        <tar destfile="${dist.sql.package.dir}/${name}-sql-script-${version}.tar.gz" compression="gzip" longfile="gnu">
-        	<tarfileset dir="${dist.sql.package.dir}" prefix="azkaban-${version}" filemode="755" />
+		<tar destfile="${dist.sql.package.dir}/${name}-sql-script-${version}.tar.gz" compression="gzip" longfile="gnu">
+			<tarfileset dir="${dist.sql.package.dir}" prefix="azkaban-${version}" filemode="755" />
 		</tar>
-
 	</target>
 
 	<target name="package-web-server" depends="jars" description="Creates a package for the webserver">
@@ -107,7 +148,7 @@
 		
 		<!-- Copy bin files for web server only-->
 		<copy todir="${dist.web.package.dir}/bin" >
-			<fileset dir="${bin.dir}" includes="**/azkaban-web*"/>
+			<fileset dir="${web.package.dir}/bin"/>
 		</copy>
 		
 		<!-- Copy web files -->
@@ -117,12 +158,16 @@
 		
 		<!-- Copy conf create table scripts -->
 		<copy todir="${dist.web.package.dir}/conf" >
-			<fileset dir="${conf.dir}" />
+			<fileset dir="${web.package.dir}/conf" />
 		</copy>
 		
 		<!-- Tarball it -->
 		<tar destfile="${dist.web.package.dir}/${name}-web-server-${version}.tar.gz" compression="gzip" longfile="gnu">
-			<tarfileset dir="${dist.web.package.dir}" prefix="azkaban-${version}" filemode="755" />
+			<tarfileset dir="${dist.web.package.dir}" prefix="azkaban-${version}" filemode="755" includes="bin/*" />
+			
+			<tarfileset dir="${dist.web.package.dir}" prefix="azkaban-${version}" includes="**">
+				<exclude name="bin/*"/>
+			</tarfileset>
 		</tar>
 	</target>
 	
@@ -145,20 +190,73 @@
 		
 		<!-- Copy bin files for exec server only-->
 		<copy todir="${dist.exec.package.dir}/bin" >
-			<fileset dir="${bin.dir}" includes="**/azkaban-executor*"/>
+			<fileset dir="${exec.package.dir}/bin"/>
 		</copy>
 
 		<!-- Copy conf files -->
 		<copy todir="${dist.exec.package.dir}/conf" >
-			<fileset dir="${conf.dir}" />
+			<fileset dir="${exec.package.dir}/conf" />
 		</copy>
 		
 		<!-- Tarball it -->
 		<tar destfile="${dist.exec.package.dir}/${name}-executor-server-${version}.tar.gz" compression="gzip" longfile="gnu">
-			<tarfileset dir="${dist.exec.package.dir}" prefix="azkaban-${version}" filemode="755" />
+			<tarfileset dir="${dist.exec.package.dir}" prefix="azkaban-${version}" filemode="755" includes="bin/*" />
+			
+			<tarfileset dir="${dist.exec.package.dir}" prefix="azkaban-${version}" includes="**">
+				<exclude name="bin/*"/>
+			</tarfileset>
 		</tar>
 	</target>
 	
-	<target name="package-all" depends="package-exec-server, package-web-server, package-sql-scripts" description="Create all packages">
+	<target name="package-solo-server" depends="jars" description="Creates a package for the solo server">
+		<delete dir="${dist.solo.package.dir}" />
+		<mkdir dir="${dist.solo.package.dir}" />
+		<mkdir dir="${dist.solo.package.dir}/conf" />
+		<mkdir dir="${dist.solo.package.dir}/bin" />
+		<mkdir dir="${dist.solo.package.dir}/lib" />
+		<mkdir dir="${dist.solo.package.dir}/plugins" />
+		<mkdir dir="${dist.solo.package.dir}/extlib" />
+		<mkdir dir="${dist.solo.package.dir}/sql" />
+				
+		<!-- Copy Azkaban jars and libs-->
+		<copy file="${azkaban.jar}" todir="${dist.solo.package.dir}/lib" />
+		<copy todir="${dist.solo.package.dir}/lib" >
+			<fileset dir="${lib.dir}" >
+				<exclude name="hadoop-core*.jar"/>
+			</fileset>
+		</copy>
+		
+		<!-- Copy bin files for exec server only-->
+		<copy todir="${dist.solo.package.dir}/bin" >
+			<fileset dir="${solo.package.dir}/bin"/>
+		</copy>
+
+		<!-- Copy conf files -->
+		<copy todir="${dist.solo.package.dir}/conf" >
+			<fileset dir="${solo.package.dir}/conf" />
+		</copy>
+		
+		<!-- Copy web files -->
+		<copy todir="${dist.solo.package.dir}/web" >
+			<fileset dir="${web.src.dir}" />
+		</copy>
+		
+		<!-- Copy sql files -->
+		<copy todir="${dist.solo.package.dir}/sql" >
+			<fileset dir="${sql.src.dir}" />
+		</copy>
+		<echo file="${dist.solo.package.dir}/sql/database.properties" append="true">version=${version}</echo>
+			
+		<!-- Tarball it -->
+		<tar destfile="${dist.solo.package.dir}/${name}-solo-server-${version}.tar.gz" compression="gzip" longfile="gnu">
+			<tarfileset dir="${dist.solo.package.dir}" prefix="azkaban-${version}" filemode="755" includes="bin/*" />
+			
+			<tarfileset dir="${dist.solo.package.dir}" prefix="azkaban-${version}" includes="**">
+				<exclude name="bin/*"/>
+			</tarfileset>
+		</tar>
+	</target>
+	
+	<target name="package-all" depends="package-exec-server, package-web-server, package-solo-server, package-sql-scripts" description="Create all packages">
 	</target>
 </project>

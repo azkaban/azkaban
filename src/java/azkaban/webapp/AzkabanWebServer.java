@@ -25,7 +25,6 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
@@ -50,7 +49,7 @@ import org.mortbay.jetty.servlet.DefaultServlet;
 import org.mortbay.jetty.servlet.ServletHolder;
 import org.mortbay.thread.QueuedThreadPool;
 
-
+import azkaban.database.AzkabanDatabaseSetup;
 import azkaban.executor.ExecutorManager;
 import azkaban.executor.JdbcExecutorLoader;
 import azkaban.jmx.JmxExecutorManager;
@@ -83,10 +82,6 @@ import azkaban.webapp.servlet.ProjectManagerServlet;
 import azkaban.webapp.servlet.ViewerPlugin;
 import azkaban.webapp.session.SessionCache;
 
-import joptsimple.OptionParser;
-import joptsimple.OptionSet;
-import joptsimple.OptionSpec;
-
 /**
  * The Azkaban Jetty server class
  * 
@@ -107,14 +102,13 @@ import joptsimple.OptionSpec;
  * keystore password jetty.truststore - Jetty truststore jetty.trustpassword -
  * Jetty truststore password
  */
-public class AzkabanWebServer implements AzkabanServer {
+public class AzkabanWebServer extends AzkabanServer {
 	private static final Logger logger = Logger.getLogger(AzkabanWebServer.class);
 	
 	public static final String AZKABAN_HOME = "AZKABAN_HOME";
 	public static final String DEFAULT_CONF_PATH = "conf";
 	public static final String AZKABAN_PROPERTIES_FILE = "azkaban.properties";
 	public static final String AZKABAN_PRIVATE_PROPERTIES_FILE = "azkaban.private.properties";
-	public static final String JDO_PROPERTIES_FILE = "jdo.properties";
 
 	private static final int MAX_FORM_CONTENT_SIZE = 10*1024*1024;
 	private static final int MAX_HEADER_BUFFER_SIZE = 10*1024*1024;
@@ -129,7 +123,7 @@ public class AzkabanWebServer implements AzkabanServer {
 	private static final String DEFAULT_STATIC_DIR = "";
 
 	private final VelocityEngine velocityEngine;
-
+	
 	private final Server server;
 	private UserManager userManager;
 	private ProjectManager projectManager;
@@ -359,36 +353,8 @@ public class AzkabanWebServer implements AzkabanServer {
 	 * @param args
 	 */
 	public static void main(String[] args) throws Exception {
-		OptionParser parser = new OptionParser();
-
-		OptionSpec<String> configDirectory = parser
-				.acceptsAll(Arrays.asList("c", "conf"), "The conf directory for Azkaban.")
-				.withRequiredArg()
-				.describedAs("conf").ofType(String.class);
-
-		logger.error("Starting Jetty Azkaban...");
-
-		// Grabbing the azkaban settings from the conf directory.
-		Props azkabanSettings = null;
-		OptionSet options = parser.parse(args);
-		if (options.has(configDirectory)) {
-			String path = options.valueOf(configDirectory);
-			logger.info("Loading azkaban settings file from " + path);
-			File dir = new File(path);
-			if (!dir.exists()) {
-				logger.error("Conf directory " + path + " doesn't exist.");
-			}
-			else if (!dir.isDirectory()) {
-				logger.error("Conf directory " + path + " isn't a directory.");
-			}
-			else {
-				azkabanSettings = loadAzkabanConfigurationFromDirectory(dir);
-			}
-		} 
-		else {
-			logger.info("Conf parameter not set, attempting to get value from AZKABAN_HOME env.");
-			azkabanSettings = loadConfigurationFromAzkabanHome();
-		}
+		logger.error("Starting Jetty Azkaban Executor...");
+		Props azkabanSettings = AzkabanServer.loadProps(args);
 
 		if (azkabanSettings == null) {
 			logger.error("Azkaban Properties not loaded.");
@@ -397,13 +363,14 @@ public class AzkabanWebServer implements AzkabanServer {
 		}
 
 		int maxThreads = azkabanSettings.getInt("jetty.maxThreads", DEFAULT_THREAD_NUMBER);
+
+		boolean ssl;
 		int port;
-		boolean usingSSL = false;
 		final Server server = new Server();
 		if (azkabanSettings.getBoolean("jetty.use.ssl", true)) {
 			int sslPortNumber = azkabanSettings.getInt("jetty.ssl.port", DEFAULT_SSL_PORT_NUMBER);
 			port = sslPortNumber;
-			usingSSL = true;
+			ssl = true;
 			logger.info("Setting up Jetty Https Server with port:" + sslPortNumber + " and numThreads:" + maxThreads);
 			
 			SslSocketConnector secureConnector = new SslSocketConnector();
@@ -418,13 +385,33 @@ public class AzkabanWebServer implements AzkabanServer {
 			server.addConnector(secureConnector);
 		}
 		else {
+			ssl = false;
 			port = azkabanSettings.getInt("jetty.port", DEFAULT_PORT_NUMBER);
 			SocketConnector connector = new SocketConnector();
 			connector.setPort(port);
 			connector.setHeaderBufferSize(MAX_HEADER_BUFFER_SIZE);
 			server.addConnector(connector);
 		}
+		
+		String hostname = azkabanSettings.getString("jetty.hostname", "localhost");
+		azkabanSettings.put("server.hostname", hostname);
+		azkabanSettings.put("server.port", port);
+		azkabanSettings.put("server.useSSL", String.valueOf(ssl));
+
 		app = new AzkabanWebServer(server, azkabanSettings);
+		
+		boolean checkDB = azkabanSettings.getBoolean(AzkabanDatabaseSetup.DATABASE_CHECK_VERSION, false);
+		if (checkDB) {
+			AzkabanDatabaseSetup setup = new AzkabanDatabaseSetup(azkabanSettings);
+			setup.loadTableInfo();
+			if(setup.needsUpdating()) {
+				logger.error("Database is out of date.");
+				setup.printUpgradePlan();
+				
+				logger.error("Exiting with error.");
+				System.exit(-1);
+			}
+		}
 		
 		QueuedThreadPool httpThreadPool = new QueuedThreadPool(maxThreads);
 		server.setThreadPool(httpThreadPool);
@@ -478,7 +465,7 @@ public class AzkabanWebServer implements AzkabanServer {
 				logger.info("kk thx bye.");
 			}
 		});
-		logger.info("Server running on " + (usingSSL ? "ssl" : "") + " port " + port + ".");
+		logger.info("Server running on " + (ssl ? "ssl" : "") + " port " + port + ".");
 	}
 
 	private static List<ViewerPlugin> loadViewerPlugins(Context root, String pluginPath, VelocityEngine ve) {
