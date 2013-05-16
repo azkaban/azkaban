@@ -439,10 +439,11 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
 		} else {
 			day = DateTimeFormat.forPattern("MM/dd/yyyy").withZone(timezone).parseDateTime(scheduleDate);
 		}
+
+		hour %= 12;
 		
-		if(isPm && hour < 12)
-		    hour += 12;
-		hour %= 24;
+		if(isPm)
+			hour += 12;
 
 		DateTime firstSchedTime = day.withHourOfDay(hour).withMinuteOfHour(minutes).withSecondOfMinute(0);
 
