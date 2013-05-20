@@ -11,6 +11,9 @@ which can work with essentially all types of systems -- all managed and triggere
 Here we provide a common set of plugins that should be useful to most hadoop related use cases, as well as sample job packages. Most of these job types are being used in LinkedIn's production clusters, only with different configurations.
 We also give a simple guide how one can create new job types, either from scratch or by extending the old ones.
 
+* ###[command job type (built-in)](./commandtype.html)
+	Instructions on how to use command job type.
+
 * ###[java job type](./javatype.html)
 	Instructions on how to use java job type.
 

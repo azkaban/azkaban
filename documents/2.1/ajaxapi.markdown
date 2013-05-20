@@ -17,8 +17,8 @@ All ajax responses will be in json format.
 To get a secure session, make a POST request to Azkaban's base url. The parameters should be:
 <pre class="code">
 action=login
-username=&lt;username&rt;
-password=&lt;password&rt;
+username=&lt;username&gt;
+password=&lt;password&gt;
 </pre>
 
 <br/>
