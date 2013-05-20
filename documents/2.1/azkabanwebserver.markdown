@@ -75,3 +75,8 @@ These are properties to configure the web server. They can be set in _azkaban.pr
 |user.manager.xml.file | Xml file for the XmlUserManager                                                                                                                                            | conf/azkaban-users.xml      |
 {.params}
 
+### User Session Properties
+|{.parameter}Parameter|{.description} Description                           |{.default}Default    |
+|---------------------|-----------------------------------------------------|---------------------|
+|session.time.to.live | The session time to live in ms seconds              | 86400000            |
+|max.num.sessions     | The maximum number of sessions before people are evicted. |  10000        |
