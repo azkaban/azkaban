@@ -16,7 +16,11 @@
 
 package azkaban.webapp.servlet;
 
+import java.io.BufferedInputStream;
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.io.Writer;
 import java.util.HashMap;
 import java.util.Map;
@@ -29,6 +33,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.apache.commons.fileupload.servlet.ServletFileUpload;
+import org.apache.commons.io.IOUtils;
 import org.apache.log4j.Logger;
 
 import azkaban.project.Project;
@@ -51,6 +56,18 @@ public abstract class LoginAbstractAzkabanServlet extends AbstractAzkabanServlet
 	private static final String SESSION_ID_NAME = "azkaban.browser.session.id";
 	private static final int DEFAULT_UPLOAD_DISK_SPOOL_SIZE = 20 * 1024 * 1024;
 	
+	private static HashMap<String, String> contextType = new HashMap<String,String>();
+	static {
+		contextType.put(".js", "application/javascript");
+		contextType.put(".css", "text/css");
+		contextType.put(".png", "image/png");
+		contextType.put(".jpeg", "image/jpeg");
+		contextType.put(".jpg", "image/jpeg");
+	}
+	
+	
+	private File webResourceDirectory = null;
+	
 	private MultipartParser multipartParser;
 	
 	@Override
@@ -58,6 +75,10 @@ public abstract class LoginAbstractAzkabanServlet extends AbstractAzkabanServlet
 		super.init(config);
 		
 		multipartParser = new MultipartParser(DEFAULT_UPLOAD_DISK_SPOOL_SIZE);
+	}
+	
+	public void setResourceDirectory(File file) {
+		this.webResourceDirectory = file;
 	}
 	
 	@Override
@@ -74,6 +95,10 @@ public abstract class LoginAbstractAzkabanServlet extends AbstractAzkabanServlet
 
 		if (session != null) {
 			logger.info("Found session " + session.getUser());
+			if (handleFileGet(req, resp)) {
+				return;
+			}
+			
 			handleGet(req, resp, session);
 		} else {
 			if (hasParam(req, "ajax")) {
@@ -85,6 +110,46 @@ public abstract class LoginAbstractAzkabanServlet extends AbstractAzkabanServlet
 				handleLogin(req, resp);
 			}
 		}
+	}
+	
+	private boolean handleFileGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+		if (webResourceDirectory == null) {
+			return false;
+		}
+		
+		// Check if it's a resource
+		String prefix = req.getContextPath() + req.getServletPath();
+		String path = req.getRequestURI().substring(prefix.length());
+		int index = path.lastIndexOf('.');
+		if (index == -1 ) {
+			return false;
+		}
+		
+		String extension = path.substring(index);
+		if (contextType.containsKey(extension)) {
+			File file = new File(webResourceDirectory, path);
+			if (!file.exists() || !file.isFile()) {
+				return false;
+			}
+			
+			resp.setContentType(contextType.get(extension));
+			
+			OutputStream output = resp.getOutputStream();
+			BufferedInputStream input = null;
+			try {
+				input = new BufferedInputStream(new FileInputStream(file));
+				IOUtils.copy(input, output);
+			}
+			finally {
+				if (input != null) {
+					input.close();
+				}
+			}
+			output.flush();
+			return true;
+		}
+
+		return false;
 	}
 	
 	private Session getSessionFromRequest(HttpServletRequest req) throws ServletException {

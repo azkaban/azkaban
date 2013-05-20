@@ -228,6 +228,10 @@ public class AzkabanDatabaseSetup {
 		for (File file: createScripts) {
 			String fileName = file.getName();
 			if (fileName.compareTo(updateFileNameVersion) > 0) {
+				if (fileName.startsWith(updateFileNameVersion)) {
+					continue;
+				}
+				
 				String[] split = fileName.split("\\.");
 				String versionNum = "";
 				
@@ -243,7 +247,7 @@ public class AzkabanDatabaseSetup {
 				if (versionNum.endsWith(".")) {
 					versionNum = versionNum.substring(0, versionNum.length() - 1);
 					
-					if (versionNum.compareTo(version) > 0) {
+					if (versionNum.compareTo(version) == 0) {
 						versions.add(versionNum);
 					}
 				}

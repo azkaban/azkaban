@@ -17,11 +17,11 @@
 package azkaban.webapp.session;
 
 import azkaban.utils.Props;
-import net.sf.ehcache.Cache;
-import net.sf.ehcache.CacheManager;
-import net.sf.ehcache.Element;
-import net.sf.ehcache.config.CacheConfiguration;
-import net.sf.ehcache.store.MemoryStoreEvictionPolicy;
+import azkaban.utils.cache.Cache;
+import azkaban.utils.cache.CacheManager;
+import azkaban.utils.cache.Cache.EjectionPolicy;
+import azkaban.utils.cache.Element;
+
 
 /**
  * Cache for web session.
@@ -33,8 +33,8 @@ import net.sf.ehcache.store.MemoryStoreEvictionPolicy;
  */
 public class SessionCache {
 	private static final int MAX_NUM_SESSIONS = 10000;
-	private static final int SESSION_TIME_TO_LIVE = 86400;
-	private CacheManager manager = CacheManager.create();
+	private static final int SESSION_TIME_TO_LIVE = 10000;
+//	private CacheManager manager = CacheManager.create();
 	private Cache cache;
 
 	/**
@@ -43,18 +43,12 @@ public class SessionCache {
 	 * @param props
 	 */
 	public SessionCache(Props props) {
-		// disable ehcache auto update
-		System.setProperty("net.sf.ehcache.skipUpdateCheck", "true");
-		CacheConfiguration config = new CacheConfiguration();
-		config.setName("sessionCache");
-		config.setMaxEntriesLocalHeap(props.getInt("max.num.sessions", MAX_NUM_SESSIONS));
-		config.setTimeToLiveSeconds(props.getInt("session.time.to.live", SESSION_TIME_TO_LIVE));
-		config.eternal(false);
-		config.diskPersistent(false);
-		config.memoryStoreEvictionPolicy(MemoryStoreEvictionPolicy.LRU);
-
-		cache = new Cache(config);
-		manager.addCache(cache);
+		CacheManager manager = CacheManager.getInstance();
+		
+		cache = manager.createCache();
+		cache.setEjectionPolicy(EjectionPolicy.LRU);
+		cache.setMaxCacheSize(props.getInt("max.num.sessions", MAX_NUM_SESSIONS));
+		cache.setExpiryTimeToLiveMs(props.getInt("session.time.to.live", SESSION_TIME_TO_LIVE));
 	}
 
 	/**
@@ -64,12 +58,9 @@ public class SessionCache {
 	 * @return
 	 */
 	public Session getSession(String sessionId) {
-		Element elem = cache.get(sessionId);
-		if (elem == null) {
-			return null;
-		}
+		Session elem = cache.<Session>get(sessionId);
 
-		return (Session) elem.getObjectValue();
+		return elem;
 	}
 
 	/**
@@ -79,8 +70,7 @@ public class SessionCache {
 	 * @param session
 	 */
 	public void addSession(Session session) {
-		Element elem = new Element(session.getSessionId(), session);
-		cache.put(elem);
+		cache.put(session.getSessionId(), session);
 	}
 
 	/**

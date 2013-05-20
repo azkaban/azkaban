@@ -63,7 +63,7 @@ public abstract class AbstractAzkabanServlet extends HttpServlet {
 	private String color;
 
 	private List<ViewerPlugin> viewerPlugins;
-	
+
 	/**
 	 * To retrieve the application for the servlet
 	 * 
@@ -92,7 +92,7 @@ public abstract class AbstractAzkabanServlet extends HttpServlet {
 			viewerPlugins = server.getViewerPlugins();
 		}
 	}
-
+	
 	/**
 	 * Checks for the existance of the parameter in the request
 	 * 
