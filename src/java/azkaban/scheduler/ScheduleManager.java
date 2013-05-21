@@ -270,15 +270,17 @@ public class ScheduleManager {
 	 * @param flow
 	 */
 	public synchronized void insertSchedule(Schedule s) {
-		boolean exist = scheduleIdentityPairMap.containsKey(s.getScheduleIdentityPair());
+		boolean exist = s.getScheduleId() != -1;
 		if(s.updateTime()) {
-			internalSchedule(s);
 			try {
 				if(!exist) {
 					loader.insertSchedule(s);
+					internalSchedule(s);
 				}
-				else
+				else{
 					loader.updateSchedule(s);
+					internalSchedule(s);
+				}
 			} catch (ScheduleManagerException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
@@ -407,6 +409,7 @@ public class ScheduleManager {
 
 									// Create ExecutableFlow
 									ExecutableFlow exflow = new ExecutableFlow(flow);
+									System.out.println("ScheduleManager: creating schedule: " +runningSched.getScheduleId());
 									exflow.setScheduleId(runningSched.getScheduleId());
 									exflow.setSubmitUser(runningSched.getSubmitUser());
 									exflow.addAllProxyUsers(project.getProxyUsers());
