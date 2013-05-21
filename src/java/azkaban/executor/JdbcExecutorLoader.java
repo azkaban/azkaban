@@ -223,13 +223,13 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements ExecutorLo
 		ArrayList<Object> params = new ArrayList<Object>();
 		
 		boolean first = true;
-		if (projContain != null) {
+		if (projContain != null && !projContain.isEmpty()) {
 			query += " ef JOIN projects p ON ef.project_id = p.id WHERE name LIKE ?";
 			params.add('%'+projContain+'%');
 			first = false;
 		}
 		
-		if (flowContains != null) {
+		if (flowContains != null && !flowContains.isEmpty()) {
 			if (first) {
 				query += " WHERE ";
 				first = false;
@@ -242,7 +242,7 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements ExecutorLo
 			params.add('%'+flowContains+'%');
 		}
 		
-		if (userNameContains != null) {
+		if (userNameContains != null && !userNameContains.isEmpty()) {
 			if (first) {
 				query += " WHERE ";
 				first = false;
