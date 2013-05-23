@@ -53,6 +53,7 @@ import azkaban.project.ProjectManager;
 import azkaban.scheduler.Schedule;
 import azkaban.scheduler.ScheduleManager;
 import azkaban.scheduler.ScheduleManagerException;
+import azkaban.scheduler.ScheduleStatisticManager;
 import azkaban.sla.SLA;
 import azkaban.sla.SLA.SlaAction;
 import azkaban.sla.SLA.SlaRule;
@@ -373,6 +374,7 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
 	}
 
 	private void writeScheduleData(List<HashMap<String, Object>> output, Schedule schedule) {
+		Map<String, Object> stats = ScheduleStatisticManager.getStatistics(schedule.getScheduleId(), (AzkabanWebServer) getApplication());
 		HashMap<String, Object> data = new HashMap<String, Object>();
 		data.put("scheduleid", schedule.getScheduleId());
 		data.put("flowname", schedule.getFlowName());
@@ -381,13 +383,20 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
 
 		DateTime time = DateTime.now();
 		long period = 0;
-		if(schedule.getPeriod() != null){
+		if (schedule.getPeriod() != null) {
 			period = time.plus(schedule.getPeriod()).getMillis() - time.getMillis();
 		}
 		data.put("period", period);
-		data.put("length", 2 * 3600 * 1000);
+		int length = 3600 * 1000;
+		if (stats.get("average") != null && stats.get("average") instanceof Integer) {
+			length = (int) (Integer) stats.get("average");
+			if (length == 0) {
+				length = 3600 * 1000;
+			}
+		}
+		data.put("length", length);
 		data.put("history", false);
-
+		data.put("stats", stats);
 		output.add(data);
 	}
 	
@@ -407,7 +416,7 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
 		int loadAll = getIntParam(req, "loadAll");
 
 		// Cache file
-		File cache = new File("cache/" + startTime + ".cache");
+		File cache = new File("cache/schedule-history/" + startTime + ".cache");
 		cache.getParentFile().mkdirs();
 
 		if (useCache) {
@@ -453,7 +462,7 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
 		}
 		
 		//Create cache file
-		File cacheTemp = new File("cache/" + startTime + ".tmp");
+		File cacheTemp = new File("cache/schedule-history/" + startTime + ".tmp");
 		cacheTemp.createNewFile();
 		OutputStream cacheOutput = new FileOutputStream(cacheTemp);
 

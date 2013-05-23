@@ -203,6 +203,19 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements ExecutorLo
 	}
 	
 	@Override
+	public List<ExecutableFlow> fetchFlowHistory(int projectId, String flowId, int skip, int num, Status status) throws ExecutorManagerException {
+		QueryRunner runner = createQueryRunner();
+		FetchExecutableFlows flowHandler = new FetchExecutableFlows();
+
+		try {
+			List<ExecutableFlow> properties = runner.query(FetchExecutableFlows.FETCH_EXECUTABLE_FLOW_BY_STATUS, flowHandler, projectId, flowId, status.getNumVal(), skip, num);
+			return properties;
+		} catch (SQLException e) {
+			throw new ExecutorManagerException("Error fetching active flows", e);
+		}
+	}
+	
+	@Override
 	public List<ExecutableFlow> fetchFlowHistory(int skip, int num) throws ExecutorManagerException {
 		QueryRunner runner = createQueryRunner();
 
@@ -816,13 +829,14 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements ExecutorLo
 		//private static String FETCH_ACTIVE_EXECUTABLE_FLOW = "SELECT ex.exec_id exec_id, ex.enc_type enc_type, ex.flow_data flow_data FROM execution_flows ex INNER JOIN active_executing_flows ax ON ex.exec_id = ax.exec_id";
 		private static String FETCH_ALL_EXECUTABLE_FLOW_HISTORY = "SELECT exec_id, enc_type, flow_data FROM execution_flows ORDER BY exec_id DESC LIMIT ?, ?";
 		private static String FETCH_EXECUTABLE_FLOW_HISTORY = "SELECT exec_id, enc_type, flow_data FROM execution_flows WHERE project_id=? AND flow_id=? ORDER BY exec_id DESC LIMIT ?, ?";
+		private static String FETCH_EXECUTABLE_FLOW_BY_STATUS = "SELECT exec_id, enc_type, flow_data FROM execution_flows WHERE project_id=? AND flow_id=? AND status=? ORDER BY exec_id DESC LIMIT ?, ?";
 		
 		@Override
 		public List<ExecutableFlow> handle(ResultSet rs) throws SQLException {
 			if (!rs.next()) {
 				return Collections.<ExecutableFlow>emptyList();
 			}
-
+			
 			List<ExecutableFlow> execFlows = new ArrayList<ExecutableFlow>();
 			do {
 				int id = rs.getInt(1);

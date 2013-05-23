@@ -432,10 +432,12 @@ $(function() {
 					{
 						var items = data.items;
 
+						console.log(data);
+
 						//Sort items by day
 						for(var i = 0; i < items.length; i++)
 						{
-							items[i].length = hourMillisConst; //TODO: Remove this to get the actual length
+							//items[i].length = hourMillisConst; //TODO: Remove this to get the actual length
 							items[i].objs = new Array();
 							items[i].color = "#69F";
 							processItem(items[i], true);
@@ -448,7 +450,7 @@ $(function() {
 					$.ajax({
 						type: "GET",
 						url: requestURL,
-						data: {"ajax": "loadHistory", "startTime": firstDay + deltaDay * dayMillisConst, "loadAll" : 1},
+						data: {"ajax": "loadHistory", "startTime": firstDay + deltaDay * dayMillisConst, "loadAll" : 0},
 						//dataType: "json",
 						success: function (data)
 						{
