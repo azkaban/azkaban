@@ -123,20 +123,25 @@ $(function() {
 					}
 				}
 
+				var gDayViewOuterGroup = svg.group(gMain);
+				var gDayView = svg.group(gDayViewOuterGroup, {transform: "translate(" + (border + timeWidth) + "," + header + ")"});
 				if(isThisWeek != -1)
 				{
 					var date = new Date(firstDay + dayMillisConst * isThisWeek);
 					var day = date.getDate();
 					var gDay = svg.group(gMain, {transform: "translate(" + (border + timeWidth + isThisWeek * dayWidth) + "," + header + ")"});
 					svg.rect(gDay, 0, -header, dayWidth, 24 * lineHeight + header, {fill : "none", stroke : "#06F"});
+					var lineY = Math.floor(today.getHours() * lineHeight + today.getMinutes() * lineHeight / 60);
+					svg.line(gDay, 0, lineY, dayWidth, lineY, {fill : "none", stroke : "#06F", strokeWidth : 4});
 				}
 
-				var gDayView = svg.group(gMain, {transform: "translate(" + (border + timeWidth) + "," + header + ")"});
 				//A list of all items
 				var itemByDay = new Array();
 				for(var deltaDay = 0; deltaDay < numDays; deltaDay++) {
 					itemByDay[deltaDay] = new Array();
 				}
+
+				var itemByScheduleIdMap = {};
 
 				function filterApplies(item) {
 					for(var i = 0; i < filterProject.length; i++) {
@@ -156,7 +161,7 @@ $(function() {
 				function renderDays() {
 					//Clear items inside the day view
 					svg.remove(gDayView);
-					gDayView = svg.group(gMain, {transform: "translate(" + (border + timeWidth) + "," + header + ")"});
+					gDayView = svg.group(gDayViewOuterGroup, {transform: "translate(" + (border + timeWidth) + "," + header + ")"});
 
 					//Add day groups
 					for(var deltaDay = 0; deltaDay < numDays; deltaDay++) {
@@ -214,7 +219,11 @@ $(function() {
 								var startTime = new Date(item.time);
 								var startY = Math.floor(startTime.getHours() * lineHeight + startTime.getMinutes() * lineHeight / 60);
 								var endTime = new Date(item.time + item.length );
-								var endY = Math.floor(startY + (item.length * lineHeight) / hourMillisConst);
+								var endY = Math.ceil(startY + (item.length * lineHeight) / hourMillisConst);
+								var deltaY = Math.ceil(endY - startY);
+								if(deltaY < 5){
+									deltaY = 5;
+								}
 								//var anchor = svg.a(gColumn);
 								var itemUrl = contextURL + "/manager?project=" + item.projectname + "&flow=" + item.flowname;
 								var gItem = svg.link(gColumn, itemUrl, {transform: "translate(0," + startY + ")"});
@@ -231,7 +240,7 @@ $(function() {
 								gItem.addEventListener('mouseout', handleMouseOut);
 
 								//$(gItem).attr("style","color:red");
-								var rect = svg.rect(gItem, 0, 0, Math.ceil(dayWidth / columns.length), Math.floor(endY - startY), 0, 0, {fill : "#7E7", stroke : "#444", strokeWidth : 1});
+								var rect = svg.rect(gItem, 0, 0, Math.ceil(dayWidth / columns.length), deltaY, 0, 0, {fill : item.item.color, stroke : "#444", strokeWidth : 1});
 								
 								item.rect = rect;
 								//Draw text
@@ -241,25 +250,29 @@ $(function() {
 					}
 				}
 
-				function processItem(item)
+				function processItem(item, scheduled)
 				{
 					var firstTime = item.time;
 					var startTime = firstDay;
 					var endTime = firstDay + numDays * dayMillisConst;
 					var period = item.period;
+					var restrictedStartTime = Math.max(firstDay, today.valueOf());
+					if(!scheduled){
+						restrictedStartTime = firstDay;
+					}
 
 					// Shift time until we're past the start time
 					if (period > 0) {
 						// Calculate next execution time efficiently
 						// Take into account items that ends in the date specified, but does not start on that date
-						var periods = Math.floor((startTime - (firstTime + item.length)) / period);
+						var periods = Math.floor((restrictedStartTime - (firstTime)) / period);
 						//Make sure we don't subtract
 						if(periods < 0){
 							periods = 0;
 						}
 						firstTime += period * periods;
 						// Increment in case we haven't arrived yet. This will apply to most of the cases
-						while (firstTime + item.length < startTime) {
+						while (firstTime < restrictedStartTime) {
 							firstTime += period;
 						}
 					}
@@ -267,18 +280,18 @@ $(function() {
 					// Bad or no period
 					if (period <= 0) {
 						// Single instance case
-						if (firstTime >= startTime && firstTime < endTime) {
-							addItem({flowname : item.flowname, projectname: item.projectname, time: firstTime, length: item.length, item: item});
+						if (firstTime >= restrictedStartTime && firstTime < endTime) {
+							addItem({scheduleid: item.scheduleid, flowname : item.flowname, projectname: item.projectname, time: firstTime, length: item.length, item: item});
 						}
 					}
 					else {
 						if(period <= hourMillisConst) {
-							addItem({flowname : item.flowname, projectname: item.projectname, time: firstTime, length: endTime - firstTime, item: item});
+							addItem({scheduleid: item.scheduleid, flowname : item.flowname, projectname: item.projectname, time: firstTime, length: endTime - firstTime, item: item});
 						}
 						else{
 							// Repetitive schedule, firstTime is assumed to be after startTime
 							while (firstTime < endTime) {
-								addItem({flowname : item.flowname, projectname: item.projectname, time: firstTime, length: item.length, item: item});
+								addItem({scheduleid: item.scheduleid, flowname : item.flowname, projectname: item.projectname, time: firstTime, length: item.length, item: item});
 								firstTime += period;
 							}
 						}
@@ -305,7 +318,7 @@ $(function() {
 								tempLength = dayMillisConst;
 							}
 
-							var item2 = {time: nextMorning, length: tempLength, projectname: obj.projectname, flowname: obj.flowname, item: obj.item};
+							var item2 = {scheduleid: obj.scheduleid, time: nextMorning, length: tempLength, projectname: obj.projectname, flowname: obj.flowname, item: obj.item};
 							addItem(item2);
 							excess -= tempLength;
 							nextMorning += dayMillisConst;
@@ -318,7 +331,12 @@ $(function() {
 					{
 						//Add the item to the rendering list
 						itemByDay[index].push(obj);
-						obj.item.objs.push(obj);
+						//obj.item.objs.push(obj);
+
+						if(!itemByScheduleIdMap[obj.scheduleid]){
+							itemByScheduleIdMap[obj.scheduleid] = new Array();
+						}
+						itemByScheduleIdMap[obj.scheduleid].push(obj);
 					}
 				}
 
@@ -350,27 +368,54 @@ $(function() {
 						"\"" + obj.flowname + "\" from \"" + obj.projectname + "\"",
 						"Repeat: " + formatReadablePeriod(obj.item.period)
 					];
+
+					if(obj.item.period == 0){
+						text[1] = "";
+						if(obj.item.history == true) {
+							if(obj.item.status == 50){
+								text[1] = "SUCCEEDED";
+							}
+							else if(obj.item.status == 60){
+								text[1] = "KILLED";
+							}
+							else if(obj.item.status == 70){
+								text[1] = "FAILED";
+							}
+							else if(obj.item.status == 80){
+								text[1] = "FAILED_FINISHING";
+							}
+							else if(obj.item.status == 90){
+								text[1] = "SKIPPED";
+							}
+						}
+					}
 					var textLength = Math.max(measureText(svg, text[0], {fontSize: "13"}), measureText(svg, text[1], {fontSize: "13"}));
 					var rect = svg.rect(tooltip, 0, -40, textLength + 4, 40, {fill : "#FFF", stroke : "none"});
 					svg.text(tooltip, 2, -25, text[0], {fontSize: "13", fill : "#000", stroke : "none"});
 					svg.text(tooltip, 2, -5, text[1], {fontSize: "13", fill : "#000", stroke : "none"});
 
-					//Item highlight effect
-					for(var i = 0; i < obj.item.objs.length; i++) {
-						var obj2 = obj.item.objs[i];
-						$(obj2.rect).attr("fill", "#F00");
-					}
-
 					//Store tooltip
 					$(this).data("tooltip", tooltip);
+
+					if(itemByScheduleIdMap[obj.scheduleid]){
+						//Item highlight effect
+						var arry = itemByScheduleIdMap[obj.scheduleid];
+						for(var i = 0; i < arry.length; i++) {
+							$(arry[i].rect).attr("fill", "#FF0");
+						}
+					}
 				}
 
 				function handleMouseOut(event) {
 					//Item highlight effect
 					var obj = $(this).data("item");
-					for(var i = 0; i < obj.item.objs.length; i++) {
-						var obj2 = obj.item.objs[i];
-						$(obj2.rect).attr("fill", "#7E7");
+						//Item highlight effect
+					if(itemByScheduleIdMap[obj.scheduleid]){
+						var arry = itemByScheduleIdMap[obj.scheduleid];
+						for(var i = 0; i < arry.length; i++) {
+							var obj2 = obj.item.objs[i];
+							$(arry[i].rect).attr("fill", arry[i].item.color);
+						}
 					}
 					//Clear the fade interval
 					$($(this).data("tooltip")).fadeOut(250, function(){ svg.remove(this); });
@@ -387,19 +432,45 @@ $(function() {
 					{
 						var items = data.items;
 
+						console.log(data);
+
 						//Sort items by day
 						for(var i = 0; i < items.length; i++)
 						{
-							items[i].length = hourMillisConst; //TODO: parseInt(items[i].length);
-							items[i].time = parseInt(items[i].time);
-							items[i].period = parseInt(items[i].period);
+							//items[i].length = hourMillisConst; //TODO: Remove this to get the actual length
 							items[i].objs = new Array();
-							processItem(items[i]);
+							items[i].color = "#69F";
+							processItem(items[i], true);
 						}
 						//Trigger a re-rendering of all the data
 						renderDays();
 					}
 				});
+				for(var deltaDay = 0; deltaDay < numDays; deltaDay++) {
+					$.ajax({
+						type: "GET",
+						url: requestURL,
+						data: {"ajax": "loadHistory", "startTime": firstDay + deltaDay * dayMillisConst, "loadAll" : 0},
+						//dataType: "json",
+						success: function (data)
+						{
+							var items = data.items;
+
+							//Sort items by day
+							for(var i = 0; i < items.length; i++)
+							{
+								//if(items[i].length < 5 * 60 * 1000) items[i].length = 5 * 60 * 1000;
+								items[i].objs = new Array();
+								items[i].color = "#7E7";
+								if(items[i].status == 60 || items[i].status == 70 || items[i].status == 80)
+									items[i].color = "#E77";
+								processItem(items[i], false);
+							}
+							//Trigger a re-rendering of all the data
+							renderDays();
+						}
+					});
+				}
 			}
 		}, settings : {
 			"xmlns" : "http://www.w3.org/2000/svg", 

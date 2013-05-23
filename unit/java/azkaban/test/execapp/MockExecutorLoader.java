@@ -11,6 +11,7 @@ import azkaban.executor.ExecutableNode;
 import azkaban.executor.ExecutionReference;
 import azkaban.executor.ExecutorLoader;
 import azkaban.executor.ExecutorManagerException;
+import azkaban.executor.Status;
 import azkaban.utils.FileIOUtils.LogData;
 import azkaban.utils.Pair;
 import azkaban.utils.Props;
@@ -191,6 +192,12 @@ public class MockExecutorLoader implements ExecutorLoader {
 			throws ExecutorManagerException {
 		// TODO Auto-generated method stub
 		return 0;
+	}
+
+	@Override
+	public List<ExecutableFlow> fetchFlowHistory(int projectId, String flowId, int skip, int num, Status status) throws ExecutorManagerException {
+		// TODO Auto-generated method stub
+		return null;
 	}
 
 

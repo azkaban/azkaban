@@ -35,6 +35,8 @@ public interface ExecutorLoader {
 
 	public List<ExecutableFlow> fetchFlowHistory(int projectId, String flowId, int skip, int num) throws ExecutorManagerException;
 
+	public List<ExecutableFlow> fetchFlowHistory(int projectId, String flowId, int skip, int num, Status status) throws ExecutorManagerException;
+
 	public List<ExecutableFlow> fetchFlowHistory(String projContain, String flowContains, String userNameContains, int status, long startData, long endData, int skip, int num) throws ExecutorManagerException;
 
 	public void addActiveExecutableReference(ExecutionReference ref) throws ExecutorManagerException;

@@ -40,6 +40,7 @@ import org.apache.log4j.Logger;
 import org.joda.time.DateTime;
 
 import azkaban.project.Project;
+import azkaban.scheduler.ScheduleStatisticManager;
 import azkaban.utils.FileIOUtils.JobMetaData;
 import azkaban.utils.FileIOUtils.LogData;
 import azkaban.utils.JSONUtils;
@@ -661,6 +662,9 @@ public class ExecutorManager {
 						evictOldRecentlyFinished(recentlyFinishedLifetimeMs);
 						// Add new finished
 						for (ExecutableFlow flow: finishedFlows) {
+							if(flow.getScheduleId() >= 0 && flow.getStatus() == Status.SUCCEEDED){
+								ScheduleStatisticManager.invalidateCache(flow.getScheduleId());
+							}
 							recentlyFinished.put(flow.getExecutionId(), flow);
 						}
 						
@@ -942,7 +946,11 @@ public class ExecutorManager {
 		outputList.addAll(flows);
 		return executorLoader.fetchNumExecutableFlows(projectId, flowId);
 	}
-	
+
+	public List<ExecutableFlow> getExecutableFlows(int projectId, String flowId, int from, int length, Status status) throws ExecutorManagerException {
+		return executorLoader.fetchFlowHistory(projectId, flowId, from, length, status);
+	}
+
 	/* 
 	 * cleaner thread to clean up execution_logs, etc in DB. Runs every day.
 	 * 
