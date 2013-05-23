@@ -16,10 +16,13 @@ import azkaban.webapp.AzkabanWebServer;
 
 public class ScheduleStatisticManager {
 	private static HashMap<Integer, Object> cacheLock = new HashMap<Integer, Object>();
-	private static File cacheDirectory = new File("cache/schedule-statistics");
+	private static File cacheDirectory;
 	private static final int STAT_NUMBERS = 10;
 
 	public static Map<String, Object> getStatistics(int scheduleId, AzkabanWebServer server) {
+		if (cacheDirectory == null) {
+			setCacheFolder(new File(server.getServerProps().getString("cache.directory", "cache")));
+		}
 		Map<String, Object> data = loadCache(scheduleId);
 		if (data != null) {
 			return data;
@@ -74,7 +77,8 @@ public class ScheduleStatisticManager {
 		return data;
 	}
 
-	public static void invalidateCache(int scheduleId) {
+	public static void invalidateCache(int scheduleId, File cacheDir) {
+		setCacheFolder(cacheDir);
 		// This should be silent and not fail
 		try {
 			Object lock = getLock(scheduleId);
@@ -145,6 +149,12 @@ public class ScheduleStatisticManager {
 	private static void unLock(int scheduleId) {
 		synchronized (cacheLock) {
 			cacheLock.remove(scheduleId);
+		}
+	}
+
+	private static void setCacheFolder(File cacheDir) {
+		if (cacheDirectory == null) {
+			cacheDirectory = new File(cacheDir, "schedule-statistics");
 		}
 	}
 }

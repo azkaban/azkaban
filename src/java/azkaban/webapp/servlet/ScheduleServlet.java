@@ -16,6 +16,8 @@
 
 package azkaban.webapp.servlet;
 
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -33,6 +35,7 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.apache.commons.io.IOUtils;
 import org.apache.log4j.Logger;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
@@ -64,7 +67,6 @@ import azkaban.user.Permission.Type;
 import azkaban.user.User;
 import azkaban.utils.JSONUtils;
 import azkaban.utils.SplitterOutputStream;
-import azkaban.utils.Utils;
 import azkaban.webapp.AzkabanWebServer;
 import azkaban.webapp.session.Session;
 
@@ -416,7 +418,9 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
 		int loadAll = getIntParam(req, "loadAll");
 
 		// Cache file
-		File cache = new File("cache/schedule-history/" + startTime + ".cache");
+		String cacheDir = getApplication().getServerProps().getString("cache.directory", "cache");
+		File cacheDirFile = new File(cacheDir, "schedule-history");
+		File cache = new File(cacheDirFile, startTime + ".cache");
 		cache.getParentFile().mkdirs();
 
 		if (useCache) {
@@ -427,8 +431,8 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
 			}
 			if (cacheExists) {
 				// Send the cache instead
-				InputStream cacheInput = new FileInputStream(cache);
-				Utils.copyStream(cacheInput, resp.getOutputStream());
+				InputStream cacheInput = new BufferedInputStream(new FileInputStream(cache));
+				IOUtils.copy(cacheInput, resp.getOutputStream());
 				// System.out.println("Using cache copy for " + start);
 				return;
 			}
@@ -441,8 +445,9 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
 			ExecutorManager executorManager = server.getExecutorManager();
 			history = executorManager.getExecutableFlows(null, null, null, 0, startTime, endTime, -1, -1);
 		} catch (ExecutorManagerException e) {
-			// Return empty should suffice
+			logger.error(e);
 		}
+		
 		HashMap<String, Object> ret = new HashMap<String, Object>();
 		List<HashMap<String, Object>> output = new ArrayList<HashMap<String, Object>>();
 		ret.put("items", output);
@@ -462,14 +467,13 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
 		}
 		
 		//Create cache file
-		File cacheTemp = new File("cache/schedule-history/" + startTime + ".tmp");
+		File cacheTemp = new File(cacheDirFile, startTime + ".tmp");
 		cacheTemp.createNewFile();
-		OutputStream cacheOutput = new FileOutputStream(cacheTemp);
-
+		OutputStream cacheOutput = new BufferedOutputStream(new FileOutputStream(cacheTemp));
+		OutputStream outputStream = new SplitterOutputStream(cacheOutput, resp.getOutputStream());
 		// Write to both the cache file and web output
-		JSONUtils.toJSON(ret, new SplitterOutputStream(cacheOutput, resp.getOutputStream()), false);
-		// System.out.println("Writing cache file for " + start);
-		// JSONUtils.toJSON(ret, new JSONCompressorOutputStream(resp.getOutputStream()), false);
+		JSONUtils.toJSON(ret, outputStream, false);
+		cacheOutput.close();
 		
 		//Move cache file
 		synchronized (this) {
