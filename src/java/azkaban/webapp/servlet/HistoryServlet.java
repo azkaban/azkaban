@@ -120,10 +120,10 @@ public class HistoryServlet extends LoginAbstractAzkabanServlet {
 		}
 		List<ExecutableFlow> history = null;
 		if(hasParam(req, "advfilter")) {
-			String projContain = getParam(req, "projcontain") == "" ? null : getParam(req, "projcontain");
-			String flowContain = getParam(req, "flowcontain") == "" ? null : getParam(req, "flowcontain");
-			String userContain = getParam(req, "usercontain") == "" ? null : getParam(req, "usercontain");
-			int status = getIntParam(req, "status") == 0 ? 0 : getIntParam(req, "status");
+			String projContain = getParam(req, "projcontain");
+			String flowContain = getParam(req, "flowcontain");
+			String userContain = getParam(req, "usercontain");
+			int status = getIntParam(req, "status");
 			String begin = getParam(req, "begin");
 			long beginTime = begin == "" ? -1 : DateTimeFormat.forPattern("MM/dd/yyyy-HH:mm").parseDateTime(begin).getMillis();
 			String end = getParam(req, "end");
@@ -131,7 +131,6 @@ public class HistoryServlet extends LoginAbstractAzkabanServlet {
 			try {
 				history = executorManager.getExecutableFlows(projContain, flowContain, userContain, status, beginTime, endTime, (pageNum - 1)*pageSize, pageSize);
 			} catch (ExecutorManagerException e) {
-				// TODO Auto-generated catch block
 				page.add("error", e.getMessage());
 			}
 		}
