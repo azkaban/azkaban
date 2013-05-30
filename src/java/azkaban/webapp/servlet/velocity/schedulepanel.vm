@@ -18,7 +18,7 @@
 						  <option>am</option>
 						</select>
 						<select id="timezone">
-						  <option>PDT</option>
+						  <option>${timezone}</option>
 						  <option>UTC</option>
 						</select>
 					</dd>
