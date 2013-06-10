@@ -1,0 +1,152 @@
+package azkaban.trigger;
+
+import java.io.File;
+import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.URLClassLoader;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.apache.log4j.Logger;
+
+import azkaban.utils.Props;
+import azkaban.utils.Utils;
+
+
+public class CheckerTypeLoader {
+	
+	private static Logger logger = Logger.getLogger(CheckerTypeLoader.class);
+	
+	public static final String DEFAULT_CONDITION_CHECKER_PLUGIN_DIR = "plugins/conditioncheckers";
+	private static final String CHECKERTYPECONFFILE = "plugin.properties"; // need jars.to.include property, will be loaded with user property
+	private static final String COMMONCONFFILE = "common.properties";	// common properties for multiple plugins
+	
+	protected static Map<String, Class<? extends ConditionChecker>> checkerToClass = new HashMap<String, Class<? extends ConditionChecker>>();
+	
+	public void init(Props props) throws TriggerException {
+		
+		
+		// load built-in checkers
+		
+		loadDefaultCheckers();
+		
+		loadPluginCheckers(props);
+
+	}
+	
+	private void loadPluginCheckers(Props props) throws TriggerException {
+		
+		String checkerDir = props.getString("azkaban.condition.checker.plugin.dir", DEFAULT_CONDITION_CHECKER_PLUGIN_DIR);
+		File pluginDir = new File(checkerDir);
+		if(!pluginDir.exists() || !pluginDir.isDirectory() || !pluginDir.canRead()) {
+			logger.info("No conditon checker plugins to load.");
+			return;
+		}
+		
+		logger.info("Loading plugin condition checkers from " + pluginDir);
+		ClassLoader parentCl = this.getClass().getClassLoader();
+		
+		Props globalCheckerConf = null;
+		File confFile = Utils.findFilefromDir(pluginDir, COMMONCONFFILE);
+		try {
+			if(confFile != null) {
+				globalCheckerConf = new Props(null, confFile);
+			} else {
+				globalCheckerConf = new Props();
+			}
+		} catch (IOException e) {
+			throw new TriggerException("Failed to get global properties." + e);
+		}
+		
+		for(File dir : pluginDir.listFiles()) {
+			if(dir.isDirectory() && dir.canRead()) {
+				try {
+					loadPluginTypes(globalCheckerConf, pluginDir, parentCl);
+				} catch (Exception e) {
+					logger.info("Plugin checkers failed to load. " + e.getCause());
+					throw new TriggerException("Failed to load all condition checkers!", e);
+				}
+			}
+		}
+	}
+	
+	@SuppressWarnings("unchecked")
+	private void loadPluginTypes(Props globalConf, File dir, ClassLoader parentCl) throws TriggerException {
+		Props checkerConf = null;
+		File confFile = Utils.findFilefromDir(dir, CHECKERTYPECONFFILE);
+		if(confFile == null) {
+			logger.info("No checker type found in " + dir.getAbsolutePath());
+			return;
+		}
+		try {
+			checkerConf = new Props(globalConf, confFile);
+		} catch (IOException e) {
+			throw new TriggerException("Failed to load config for the checker type", e);
+		}
+		
+		String checkerName = dir.getName();
+		String checkerClass = checkerConf.getString("checker.class");
+		
+		List<URL> resources = new ArrayList<URL>();		
+		for(File f : dir.listFiles()) {
+			try {
+				if(f.getName().endsWith(".jar")) {
+					resources.add(f.toURI().toURL());
+					logger.info("adding to classpath " + f.toURI().toURL());
+				}
+			} catch (MalformedURLException e) {
+				// TODO Auto-generated catch block
+				throw new TriggerException(e);
+			}
+		}
+		
+		// each job type can have a different class loader
+		ClassLoader checkerCl = new URLClassLoader(resources.toArray(new URL[resources.size()]), parentCl);
+		
+		Class<? extends ConditionChecker> clazz = null;
+		try {
+			clazz = (Class<? extends ConditionChecker>)checkerCl.loadClass(checkerClass);
+			checkerToClass.put(checkerName, clazz);
+		}
+		catch (ClassNotFoundException e) {
+			throw new TriggerException(e);
+		}
+		
+		if(checkerConf.getBoolean("need.init")) {
+			try {
+				Utils.invokeStaticMethod(checkerCl, checkerClass, "init", checkerConf);
+			} catch (Exception e) {
+				e.printStackTrace();
+				logger.error("Failed to init the checker type " + checkerName);
+				throw new TriggerException(e);
+			}
+		}
+		
+		logger.info("Loaded checker type " + checkerName + " " + checkerClass);
+	}
+	
+	private void loadDefaultCheckers() {
+		checkerToClass.put("BasicTimeChecker", BasicTimeChecker.class);		
+	}
+	
+	public ConditionChecker createCheckerFromJson(String type, Object obj) throws SecurityException, IllegalArgumentException, ClassNotFoundException, NoSuchMethodException, IllegalAccessException, InvocationTargetException {
+		ConditionChecker checker = null;
+		Class<? extends ConditionChecker> checkerClass = checkerToClass.get(type);		
+		checker = (ConditionChecker) Utils.invokeStaticMethod(checkerClass.getClassLoader(), checkerClass.getName(), "createFromJson", obj);
+		
+		return checker;
+	}
+	
+	public ConditionChecker createChecker(String type, Object ... args) {
+		ConditionChecker checker = null;
+		Class<? extends ConditionChecker> checkerClass = checkerToClass.get(type);		
+		checker = (ConditionChecker) Utils.callConstructor(checkerClass, args);
+		
+		return checker;
+	}
+	
+}
