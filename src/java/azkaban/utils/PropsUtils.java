@@ -183,7 +183,7 @@ public class PropsUtils {
 			if (visitedVariables.contains(subVariable)) {
 				throw new IllegalArgumentException(
 						String.format("Circular variable substitution found: [%s] -> [%s]", 
-								StringUtils.join(visitedVariables.toArray(), "->"), subVariable));
+								StringUtils.join(visitedVariables, "->"), subVariable));
 			}
 			else {
 				// Add substitute variable and recurse.
@@ -193,7 +193,7 @@ public class PropsUtils {
 				if (replacement == null) {
 					throw new UndefinedPropertyException(
 							String.format("Could not find variable substitution for variable(s) [%s]", 
-									StringUtils.join(visitedVariables.toArray(), "->")));
+									StringUtils.join(visitedVariables, "->")));
 				}
 				
 				buffer.append(resolveVariableReplacement(replacement, props, visitedVariables));
