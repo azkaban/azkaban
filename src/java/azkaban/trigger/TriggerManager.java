@@ -1,7 +1,9 @@
 package azkaban.trigger;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -16,11 +18,18 @@ public class TriggerManager {
 	
 	private final long DEFAULT_TRIGGER_EXPIRE_TIME = 24*60*60*1000L;
 	
-	private List<Trigger> triggers;
+	private Map<Integer, Trigger> triggerIdMap = new HashMap<Integer, Trigger>();
+	
+	private CheckerTypeLoader checkerLoader;
+	private ActionTypeLoader actionLoader;
 	
 	TriggerScannerThread scannerThread;
 	
 	public TriggerManager(Props props, TriggerLoader triggerLoader, CheckerTypeLoader checkerLoader, ActionTypeLoader actionLoader) {
+		
+		this.checkerLoader = checkerLoader;
+		this.actionLoader = actionLoader;
+		scannerThread = new TriggerScannerThread("TriggerScannerThread");
 		
 		// load plugins
 		try{
@@ -36,33 +45,45 @@ public class TriggerManager {
 		
 		try{
 			// expect loader to return valid triggers
-			triggers = triggerLoader.loadTriggers();
+			List<Trigger> triggers = triggerLoader.loadTriggers();
+			for(Trigger t : triggers) {
+				scannerThread.addTrigger(t);
+				triggerIdMap.put(t.getTriggerId(), t);
+			}
 		}catch(Exception e) {
 			e.printStackTrace();
 			logger.error(e.getMessage());
 		}
 		
-		scannerThread = new TriggerScannerThread("TriggerScannerThread");
 		
-		for(Trigger t : triggers) {
-			scannerThread.addTrigger(t);
-		}
 		
 		scannerThread.start();
 	}
 	
+	public CheckerTypeLoader getCheckerLoader() {
+		return checkerLoader;
+	}
+
+	public ActionTypeLoader getActionLoader() {
+		return actionLoader;
+	}
+
 	public synchronized void insertTrigger(Trigger t) {
-		triggers.add(t);
+		triggerIdMap.put(t.getTriggerId(), t);
 		scannerThread.addTrigger(t);
+	}
+	
+	public synchronized void removeTrigger(int id) {
+		removeTrigger(triggerIdMap.get(id));
 	}
 	
 	public synchronized void removeTrigger(Trigger t) {
 		scannerThread.removeTrigger(t);
-		triggers.remove(t);		
+		triggerIdMap.remove(t.getTriggerId());		
 	}
 	
 	public List<Trigger> getTriggers() {
-		return new ArrayList<Trigger>(triggers);
+		return new ArrayList<Trigger>(triggerIdMap.values());
 	}
 
 	//trigger scanner thread

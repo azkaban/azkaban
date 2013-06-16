@@ -8,17 +8,18 @@ import java.util.List;
 
 import org.junit.Test;
 
+import azkaban.actions.ExecuteFlowAction;
 import azkaban.executor.ExecutionOptions;
 import azkaban.trigger.ActionTypeLoader;
-import azkaban.trigger.ExecuteFlowAction;
 import azkaban.trigger.TriggerAction;
+import azkaban.trigger.TriggerException;
 import azkaban.utils.Props;
 
 
 public class ExecuteFlowActionTest {
 	
 	@Test
-	public void ExecuteFlowActionTest() throws SecurityException, IllegalArgumentException, ClassNotFoundException, NoSuchMethodException, IllegalAccessException, InvocationTargetException {
+	public void jsonConversionTest() throws SecurityException, IllegalArgumentException, ClassNotFoundException, NoSuchMethodException, IllegalAccessException, InvocationTargetException, TriggerException {
 		ActionTypeLoader loader = new ActionTypeLoader();
 		loader.init(new Props());
 		
@@ -26,7 +27,7 @@ public class ExecuteFlowActionTest {
 		List<String> disabledJobs = new ArrayList<String>();
 		options.setDisabledJobs(disabledJobs);
 		
-		ExecuteFlowAction executeFlowAction = new ExecuteFlowAction(1, "testflow", "azkaban", options);
+		ExecuteFlowAction executeFlowAction = new ExecuteFlowAction(1, "testproject", "testflow", "azkaban", options);
 		
 		Object obj = executeFlowAction.toJson();
 		

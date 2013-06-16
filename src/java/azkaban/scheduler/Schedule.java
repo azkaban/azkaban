@@ -54,6 +54,8 @@ public class Schedule{
 	private String status;
 	private long submitTime;
 	
+	private boolean skipPastOccurrences = true;
+	
 	private ExecutionOptions executionOptions;
 	private SlaOptions slaOptions;
 	
@@ -376,4 +378,13 @@ public class Schedule{
 			this.slaOptions = slaOptions;
 		}
 	}
+
+	public boolean isRecurring() {
+		return period == null ? false : true;
+	}
+
+	public boolean skipPastOccurrences() {
+		return skipPastOccurrences;
+	}
+	
 }

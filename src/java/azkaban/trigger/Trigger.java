@@ -16,6 +16,8 @@ public class Trigger {
 	private long submitTime = -1;
 	private String submitUser;
 	
+	private String source;
+	
 	private Condition triggerCondition;
 	private Condition expireCondition;
 	private List<TriggerAction> actions;
@@ -30,16 +32,38 @@ public class Trigger {
 		throw new TriggerManagerException("Triggers should always be specified");
 	}
 	
+	public long getSubmitTime() {
+		return submitTime;
+	}
+
+	public String getSubmitUser() {
+		return submitUser;
+	}
+
+	public Condition getTriggerCondition() {
+		return triggerCondition;
+	}
+
+	public Condition getExpireCondition() {
+		return expireCondition;
+	}
+
+	public List<TriggerAction> getActions() {
+		return actions;
+	}
+
 	public Trigger(
 			long lastModifyTime, 
 			long submitTime, 
 			String submitUser, 
+			String source,
 			Condition triggerCondition,
 			Condition expireCondition,
 			List<TriggerAction> actions) {
 		this.lastModifyTime = lastModifyTime;
 		this.submitTime = submitTime;
 		this.submitUser = submitUser;
+		this.source = source;
 		this.triggerCondition = triggerCondition;
 		this.expireCondition = expireCondition;
 		this.actions = actions;
@@ -50,6 +74,7 @@ public class Trigger {
 			long lastModifyTime, 
 			long submitTime, 
 			String submitUser, 
+			String source,
 			Condition triggerCondition,
 			Condition expireCondition,
 			List<TriggerAction> actions) {
@@ -57,6 +82,7 @@ public class Trigger {
 		this.lastModifyTime = lastModifyTime;
 		this.submitTime = submitTime;
 		this.submitUser = submitUser;
+		this.source = source;
 		this.triggerCondition = triggerCondition;
 		this.expireCondition = expireCondition;
 		this.actions = actions;
@@ -125,6 +151,7 @@ public class Trigger {
 		jsonObj.put("resetOnTrigger", String.valueOf(resetOnTrigger));
 		jsonObj.put("resetOnExpire", String.valueOf(resetOnExpire));
 		jsonObj.put("submitUser", submitUser);
+		jsonObj.put("source", source);
 		jsonObj.put("submitTime", String.valueOf(submitTime));
 		jsonObj.put("lastModifyTime", String.valueOf(lastModifyTime));
 		jsonObj.put("triggerId", String.valueOf(triggerId));
@@ -133,6 +160,10 @@ public class Trigger {
 	}
 	
 	
+	public String getSource() {
+		return source;
+	}
+
 	@SuppressWarnings("unchecked")
 	public static Trigger fromJson(Object obj) {
 		
@@ -153,10 +184,11 @@ public class Trigger {
 			boolean resetOnTrigger = Boolean.valueOf((String) jsonObj.get("resetOnTrigger"));
 			boolean resetOnExpire = Boolean.valueOf((String) jsonObj.get("resetOnExpire"));
 			String submitUser = (String) jsonObj.get("submitUser");
+			String source = (String) jsonObj.get("source");
 			long submitTime = Long.valueOf((String) jsonObj.get("submitTime"));
 			long lastModifyTime = Long.valueOf((String) jsonObj.get("lastModifyTime"));
 			int triggerId = Integer.valueOf((String) jsonObj.get("triggerId"));
-			trigger = new Trigger(triggerId, lastModifyTime, submitTime, submitUser, triggerCond, expireCond, actions);
+			trigger = new Trigger(triggerId, lastModifyTime, submitTime, submitUser, source, triggerCond, expireCond, actions);
 			trigger.setResetOnExpire(resetOnExpire);
 			trigger.setResetOnTrigger(resetOnTrigger);
 		}catch(Exception e) {

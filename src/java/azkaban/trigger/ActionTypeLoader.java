@@ -13,6 +13,7 @@ import java.util.Map;
 
 import org.apache.log4j.Logger;
 
+import azkaban.actions.ExecuteFlowAction;
 import azkaban.utils.Props;
 import azkaban.utils.Utils;
 
@@ -34,6 +35,13 @@ public class ActionTypeLoader {
 		
 		loadPluginActions(props);
 
+	}
+	
+	public synchronized void registerActionType(String type, Class<? extends TriggerAction> actionClass) {
+		logger.info("Registering action " + type);
+		if(!actionToClass.containsKey(type)) {
+			actionToClass.put(type, actionClass);
+		}
 	}
 	
 	private void loadPluginActions(Props props) throws TriggerException {
@@ -128,6 +136,7 @@ public class ActionTypeLoader {
 	
 	private void loadDefaultActions() {
 		actionToClass.put(ExecuteFlowAction.type, ExecuteFlowAction.class);		
+		logger.info("Loaded ExecuteFlowAction type.");
 	}
 	
 	public TriggerAction createActionFromJson(String type, Object obj) throws SecurityException, IllegalArgumentException, ClassNotFoundException, NoSuchMethodException, IllegalAccessException, InvocationTargetException {

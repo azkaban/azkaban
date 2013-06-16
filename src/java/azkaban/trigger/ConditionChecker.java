@@ -9,11 +9,13 @@ public interface ConditionChecker {
 	
 	void reset();
 	
+	void setId(String id);
+	
 	String getId();
 	
 	String getType();
 	
-	ConditionChecker fromJson(Object obj);
+	ConditionChecker fromJson(Object obj) throws Exception;
 	
 	Object toJson();
 

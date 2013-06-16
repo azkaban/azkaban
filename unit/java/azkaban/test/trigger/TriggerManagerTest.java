@@ -97,7 +97,7 @@ public class TriggerManagerTest {
 		Condition triggerCond = new Condition(checkers, expr);
 		Condition expireCond = new Condition(checkers, expr);
 		
-		Trigger fakeTrigger = new Trigger(DateTime.now().getMillis(), DateTime.now().getMillis(), "azkaban", triggerCond, expireCond, actions);
+		Trigger fakeTrigger = new Trigger(DateTime.now().getMillis(), DateTime.now().getMillis(), "azkaban", "tester", triggerCond, expireCond, actions);
 		
 		return fakeTrigger;
 	}
@@ -106,7 +106,7 @@ public class TriggerManagerTest {
 		
 		@Override
 		public void init(Props props) {
-			checkerToClass.put(FakeTimeChecker.type, FakeTimeChecker.class);
+			checkerToClass.put(ThresholdChecker.type, ThresholdChecker.class);
 		}
 	}
 	

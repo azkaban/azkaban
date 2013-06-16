@@ -44,13 +44,13 @@ public class JdbcTriggerLoader extends AbstractJdbcLoader implements TriggerLoad
 	private static final String triggerTblName = "triggers";
 
 	private static String GET_ALL_TRIGGERS =
-			"SELECT trigger_id, enc_type, data FROM " + triggerTblName;
+			"SELECT trigger_id, modify_time, enc_type, data FROM " + triggerTblName;
 	
 	private static String GET_TRIGGER = 
-			"SELECT trigger_id, enc_type, data FROM " + triggerTblName + " WHERE trigger_id=?";
+			"SELECT trigger_id, modify_time, enc_type, data FROM " + triggerTblName + " WHERE trigger_id=?";
 	
 	private static String ADD_TRIGGER = 
-			"INSERT INTO " + triggerTblName + " ( modify_time, enc_type, data) values (?,?,?)";
+			"INSERT INTO " + triggerTblName + " ( modify_time) values (?)";
 	
 	private static String REMOVE_TRIGGER = 
 			"DELETE FROM " + triggerTblName + " WHERE trigger_id=?";
@@ -128,37 +128,22 @@ public class JdbcTriggerLoader extends AbstractJdbcLoader implements TriggerLoad
 
 	private synchronized void addTrigger(Connection connection, Trigger t, EncodingType encType) throws TriggerManagerException {
 		
-		String json = JSONUtils.toJSON(t.toJson());
-		byte[] data = null;
-		try {
-			byte[] stringData = json.getBytes("UTF-8");
-			data = stringData;
-	
-			if (encType == EncodingType.GZIP) {
-				data = GZIPUtils.gzipBytes(stringData);
-			}
-			logger.debug("NumChars: " + json.length() + " UTF-8:" + stringData.length + " Gzip:"+ data.length);
-		}
-		catch (IOException e) {
-			throw new TriggerManagerException("Error encoding the trigger " + t.toString());
-		}
-		
 		QueryRunner runner = new QueryRunner();
-		long submitTime = System.currentTimeMillis();
 		
 		long id;
 		
 		try {
-			runner.update(connection, ADD_TRIGGER, DateTime.now().getMillis(), encType.getNumVal(), data);
+			runner.update(connection, ADD_TRIGGER, DateTime.now().getMillis());
 			connection.commit();
 			id = runner.query(connection, LastInsertID.LAST_INSERT_ID, new LastInsertID());
 
 			if (id == -1l) {
 				throw new TriggerManagerException("trigger id is not properly created.");
 			}
-			logger.info("uploaded trigger " + t.toString());
-			t.setTriggerId((int)id);
 			
+			t.setTriggerId((int)id);
+			updateTrigger(t);
+			logger.info("uploaded trigger " + t.toString());
 		} catch (SQLException e) {
 			throw new TriggerManagerException("Error creating trigger.", e);
 		}
@@ -243,7 +228,7 @@ public class JdbcTriggerLoader extends AbstractJdbcLoader implements TriggerLoad
 			ArrayList<Trigger> triggers = new ArrayList<Trigger>();
 			do {
 				int triggerId = rs.getInt(1);
-				long modifyTime = rs.getInt(2);
+				long modifyTime = rs.getLong(2);
 				int encodingType = rs.getInt(3);
 				byte[] data = rs.getBytes(4);
 				

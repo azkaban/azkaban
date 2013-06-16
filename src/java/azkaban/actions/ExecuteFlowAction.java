@@ -1,4 +1,4 @@
-package azkaban.trigger;
+package azkaban.actions;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -12,6 +12,7 @@ import azkaban.executor.ExecutorManagerException;
 import azkaban.flow.Flow;
 import azkaban.project.Project;
 import azkaban.project.ProjectManager;
+import azkaban.trigger.TriggerAction;
 
 public class ExecuteFlowAction implements TriggerAction {
 
@@ -19,15 +20,15 @@ public class ExecuteFlowAction implements TriggerAction {
 	
 	private static ExecutorManager executorManager;
 	private int projectId;
+	private String projectName;
 	private String flowName;
 	private String submitUser;
 	private static ProjectManager projectManager;
 	private ExecutionOptions executionOptions;
-	
 
 	private static Logger logger;
 	
-	public ExecuteFlowAction(int projectId, String flowName, String submitUser, ExecutionOptions executionOptions) {
+	public ExecuteFlowAction(int projectId, String projectName, String flowName, String submitUser, ExecutionOptions executionOptions) {
 		this.projectId = projectId;
 		this.flowName = flowName;
 		this.submitUser = submitUser;
@@ -36,6 +37,10 @@ public class ExecuteFlowAction implements TriggerAction {
 	
 	public static void setLogger(Logger logger) {
 		ExecuteFlowAction.logger = logger;
+	}
+	
+	public String getProjectName() {
+		return projectName;
 	}
 
 	public int getProjectId() {
@@ -92,13 +97,14 @@ public class ExecuteFlowAction implements TriggerAction {
 			throw new RuntimeException("Cannot create action of " + ExecuteFlowAction.type + " from " + type);
 		}
 		int projectId = Integer.valueOf((String)jsonObj.get("projectId"));
+		String projectName = (String) jsonObj.get("projectName");
 		String flowName = (String) jsonObj.get("flowName");
 		String submitUser = (String) jsonObj.get("submitUser");
 		ExecutionOptions executionOptions = ExecutionOptions.createFromObject(jsonObj.get("executionOptions"));
-		return new ExecuteFlowAction(projectId, flowName, submitUser, executionOptions);
+		return new ExecuteFlowAction(projectId, projectName, flowName, submitUser, executionOptions);
 	}
 
-	@SuppressWarnings("unchecked")
+	@SuppressWarnings({ "unchecked", "rawtypes" })
 	public static TriggerAction createFromJson(HashMap obj) {
 		Map<String, Object> jsonObj = (HashMap<String, Object>) obj;
 		String type = (String) jsonObj.get("type");
@@ -106,10 +112,11 @@ public class ExecuteFlowAction implements TriggerAction {
 			throw new RuntimeException("Cannot create action of " + ExecuteFlowAction.type + " from " + type);
 		}
 		int projectId = Integer.valueOf((String)jsonObj.get("projectId"));
+		String projectName = (String) jsonObj.get("projectName");
 		String flowName = (String) jsonObj.get("flowName");
 		String submitUser = (String) jsonObj.get("submitUser");
 		ExecutionOptions executionOptions = ExecutionOptions.createFromObject(jsonObj.get("executionOptions"));
-		return new ExecuteFlowAction(projectId, flowName, submitUser, executionOptions);
+		return new ExecuteFlowAction(projectId, projectName, flowName, submitUser, executionOptions);
 	}
 	
 	@SuppressWarnings("unchecked")
@@ -120,10 +127,11 @@ public class ExecuteFlowAction implements TriggerAction {
 			throw new RuntimeException("Cannot create action of " + ExecuteFlowAction.type + " from " + type);
 		}
 		int projectId = Integer.valueOf((String)jsonObj.get("projectId"));
+		String projectName = (String) jsonObj.get("projectName");
 		String flowName = (String) jsonObj.get("flowName");
 		String submitUser = (String) jsonObj.get("submitUser");
 		ExecutionOptions executionOptions = ExecutionOptions.createFromObject(jsonObj.get("executionOptions"));
-		return new ExecuteFlowAction(projectId, flowName, submitUser, executionOptions);
+		return new ExecuteFlowAction(projectId, projectName, flowName, submitUser, executionOptions);
 	}
 	
 	@Override
@@ -131,6 +139,7 @@ public class ExecuteFlowAction implements TriggerAction {
 		Map<String, Object> jsonObj = new HashMap<String, Object>();
 		jsonObj.put("type", type);
 		jsonObj.put("projectId", String.valueOf(projectId));
+		jsonObj.put("projectName", projectName);
 		jsonObj.put("flowName", flowName);
 		jsonObj.put("submitUser", submitUser);
 		jsonObj.put("executionOptions", executionOptions.toObject());

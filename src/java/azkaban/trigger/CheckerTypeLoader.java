@@ -13,6 +13,7 @@ import java.util.Map;
 
 import org.apache.log4j.Logger;
 
+import azkaban.scheduler.BasicTimeChecker;
 import azkaban.utils.Props;
 import azkaban.utils.Utils;
 
@@ -36,6 +37,13 @@ public class CheckerTypeLoader {
 		
 		loadPluginCheckers(props);
 
+	}
+	
+	public synchronized void registerCheckerType(String type, Class<? extends ConditionChecker> checkerClass) {
+		logger.info("Registering checker " + type);
+		if(!checkerToClass.containsKey(type)) {
+			checkerToClass.put(type, checkerClass);
+		}
 	}
 	
 	private void loadPluginCheckers(Props props) throws TriggerException {
@@ -130,7 +138,8 @@ public class CheckerTypeLoader {
 	}
 	
 	private void loadDefaultCheckers() {
-		checkerToClass.put("BasicTimeChecker", BasicTimeChecker.class);		
+		checkerToClass.put("BasicTimeChecker", BasicTimeChecker.class);
+		logger.info("Loaded BasicTimeChecker type.");
 	}
 	
 	public ConditionChecker createCheckerFromJson(String type, Object obj) throws SecurityException, IllegalArgumentException, ClassNotFoundException, NoSuchMethodException, IllegalAccessException, InvocationTargetException {
