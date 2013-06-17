@@ -34,6 +34,10 @@ public class Condition {
 		Condition.checkerLoader = loader;
 	}
 	
+	public static CheckerTypeLoader getCheckerLoader() {
+		return checkerLoader;
+	}
+	
 	public void registerChecker(ConditionChecker checker) {
 		checkers.put(checker.getId(), checker);
 		context.set(checker.getId(), checker);
@@ -85,7 +89,11 @@ public class Condition {
 	}
 
 	@SuppressWarnings("unchecked")
-	public static Condition fromJson(Object obj) {
+	public static Condition fromJson(Object obj) throws Exception {
+		if(checkerLoader == null) {
+			throw new Exception("Condition Checker loader not initialized!");
+		}
+		
 		Map<String, Object> jsonObj = (HashMap<String, Object>) obj;
 		Condition cond = null;
 		

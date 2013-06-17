@@ -21,7 +21,7 @@ public class BasicTimeChecker implements ConditionChecker {
 	private boolean skipPastChecks = true;
 	private ReadablePeriod period;
 	
-	private String id = type; 
+	private final String id; 
 	
 	public BasicTimeChecker(
 			String id,
@@ -242,9 +242,5 @@ public class BasicTimeChecker implements ConditionChecker {
 		return jsonObj;
 	}
 
-	@Override
-	public void setId(String id) {
-		this.id = id;
-	}
 
 }

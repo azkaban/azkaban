@@ -47,7 +47,7 @@ public class ConditionTest {
 	}
 	
 	@Test
-	public void jsonConversionTest() throws TriggerException, IOException {
+	public void jsonConversionTest() throws Exception {
 		
 		CheckerTypeLoader checkerTypeLoader = new CheckerTypeLoader();
 		checkerTypeLoader.init(new Props());

@@ -26,7 +26,7 @@ public class ExecuteFlowAction implements TriggerAction {
 	private static ProjectManager projectManager;
 	private ExecutionOptions executionOptions;
 
-	private static Logger logger;
+	private static Logger logger = Logger.getLogger(ExecuteFlowAction.class);
 	
 	public ExecuteFlowAction(int projectId, String projectName, String flowName, String submitUser, ExecutionOptions executionOptions) {
 		this.projectId = projectId;
@@ -75,10 +75,18 @@ public class ExecuteFlowAction implements TriggerAction {
 		this.executionOptions = executionOptions;
 	}
 
+	public static ExecutorManager getExecutorManager() {
+		return executorManager;
+	}
+ 	
 	public static void setExecutorManager(ExecutorManager executorManager) {
 		ExecuteFlowAction.executorManager = executorManager;
 	}
 
+	public static ProjectManager getProjectManager() {
+		return projectManager;
+	}
+	
 	public static void setProjectManager(ProjectManager projectManager) {
 		ExecuteFlowAction.projectManager = projectManager;
 	}
@@ -148,7 +156,11 @@ public class ExecuteFlowAction implements TriggerAction {
 	}
 
 	@Override
-	public void doAction() {
+	public void doAction() throws Exception {
+		if(projectManager == null || executorManager == null) {
+			throw new Exception("ExecuteFlowAction not properly initialized!");
+		}
+		
 		Project project = projectManager.getProject(projectId);
 		if(project == null) {
 			logger.error("Project to execute " + projectId + " does not exist!");

@@ -54,12 +54,7 @@ public class TriggerBasedScheduler {
 	private ScheduleLoader loader;
 
 	private Map<Pair<Integer, String>, Schedule> scheduleIDMap = new HashMap<Pair<Integer, String>, Schedule>();
-	private Map<Integer, Pair<Integer, String>> idFlowMap = new HashMap<Integer, Pair<Integer,String>>();
-
-	private final ExecutorManager executorManager;
-	private final ProjectManager projectManager;
-	private final SLAManager slaManager;
-	private final TriggerManager triggerManager;
+	private Map<Integer, Schedule> idFlowMap = new HashMap<Integer, Schedule>();
 	
 	/**
 	 * Give the schedule manager a loader class that will properly load the
@@ -69,15 +64,10 @@ public class TriggerBasedScheduler {
 	 */
 	public TriggerBasedScheduler(ExecutorManager executorManager,
 							ProjectManager projectManager, 
-							SLAManager slaManager,
 							TriggerManager triggerManager,
 							ScheduleLoader loader) 
 	{
-		this.executorManager = executorManager;
-		this.projectManager = projectManager;
-		this.slaManager = slaManager;
-		this.triggerManager = triggerManager;
-		this.loader = loader;
+		this.loader = new TriggerBasedScheduleLoader(triggerManager, executorManager, projectManager);
 
 		List<Schedule> scheduleList = null;
 		try {
@@ -87,7 +77,10 @@ public class TriggerBasedScheduler {
 			logger.error("Failed to load schedules" + e.getCause() + e.getMessage());
 			e.printStackTrace();
 		}
-
+		for(Schedule s : scheduleList) {
+			scheduleIDMap.put(s.getScheduleIdentityPair(), s);
+			idFlowMap.put(s.getScheduleId(), s);
+		}
 	}
 
 	/**

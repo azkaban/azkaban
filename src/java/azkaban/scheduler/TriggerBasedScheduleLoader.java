@@ -16,12 +16,15 @@ import azkaban.trigger.ConditionChecker;
 import azkaban.trigger.Trigger;
 import azkaban.trigger.TriggerAction;
 import azkaban.trigger.TriggerManager;
+import azkaban.trigger.TriggerManagerException;
 
 public class TriggerBasedScheduleLoader implements ScheduleLoader {
 	
 	private static Logger logger = Logger.getLogger(TriggerBasedScheduleLoader.class);
 	
 	private TriggerManager triggerManager;
+	
+	private static final String triggerSource = "TriggerBasedScheduler";
 	
 	public TriggerBasedScheduleLoader(TriggerManager triggerManager, ExecutorManager executorManager, ProjectManager projectManager) {
 		this.triggerManager = triggerManager;
@@ -35,8 +38,10 @@ public class TriggerBasedScheduleLoader implements ScheduleLoader {
 		Condition triggerCondition = createTimeTriggerCondition(s);
 		Condition expireCondition = createTimeExpireCondition(s);
 		List<TriggerAction> actions = createActions(s);
-		Trigger t = new Trigger(s.getLastModifyTime(), s.getSubmitTime(), s.getSubmitUser(), "TriggerBasedScheduler", triggerCondition, expireCondition, actions);
-		
+		Trigger t = new Trigger(s.getLastModifyTime(), s.getSubmitTime(), s.getSubmitUser(), triggerSource, triggerCondition, expireCondition, actions);
+		if(s.isRecurring()) {
+			t.setResetOnTrigger(true);
+		}
 		return t;
 	}
 	
@@ -69,21 +74,33 @@ public class TriggerBasedScheduleLoader implements ScheduleLoader {
 	@Override
 	public void insertSchedule(Schedule s) throws ScheduleManagerException {
 		Trigger t = createScheduleTrigger(s);
-		triggerManager.insertTrigger(t);
+		try {
+			triggerManager.insertTrigger(t);
+		} catch (TriggerManagerException e) {
+			// TODO Auto-generated catch block
+			throw new ScheduleManagerException("Failed to insert new schedule!", e);
+		}
 	}
 
 	@Override
 	public void updateSchedule(Schedule s) throws ScheduleManagerException {
-		
-		
+		Trigger t = createScheduleTrigger(s);
+		try {
+			triggerManager.updateTrigger(t);
+		} catch (TriggerManagerException e) {
+			// TODO Auto-generated catch block
+			throw new ScheduleManagerException("Failed to update schedule!", e);
+		}
 	}
 
+	//TODO
+	// may need to add logic to filter out skip runs
 	@Override
 	public List<Schedule> loadSchedules() throws ScheduleManagerException {
 		List<Trigger> triggers = triggerManager.getTriggers();
 		List<Schedule> schedules = new ArrayList<Schedule>();
 		for(Trigger t : triggers) {
-			if(t.getSource().equals("TriggerBasedScheduler")) {
+			if(t.getSource().equals(triggerSource)) {
 				Schedule s = triggerToSchedule(t);
 				schedules.add(s);
 			}
@@ -133,7 +150,12 @@ public class TriggerBasedScheduleLoader implements ScheduleLoader {
 
 	@Override
 	public void removeSchedule(Schedule s) throws ScheduleManagerException {
-		triggerManager.removeTrigger(s.getScheduleId());
+		try {
+			triggerManager.removeTrigger(s.getScheduleId());
+		} catch (TriggerManagerException e) {
+			// TODO Auto-generated catch block
+			throw new ScheduleManagerException(e.getMessage());
+		}
 		
 	}
 

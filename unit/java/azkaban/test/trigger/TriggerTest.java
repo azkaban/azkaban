@@ -43,7 +43,7 @@ public class TriggerTest {
 	}
 	
 	@Test
-	public void jsonConversionTest() throws TriggerException, IOException {
+	public void jsonConversionTest() throws Exception {
 		DateTime now = DateTime.now();
 		ConditionChecker checker1 = new BasicTimeChecker("timeChecker1", now, now.getZone(), true, true, Utils.parsePeriodString("1h"));
 		Map<String, ConditionChecker> checkers1 = new HashMap<String, ConditionChecker>();

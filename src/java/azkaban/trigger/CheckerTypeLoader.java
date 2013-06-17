@@ -142,9 +142,12 @@ public class CheckerTypeLoader {
 		logger.info("Loaded BasicTimeChecker type.");
 	}
 	
-	public ConditionChecker createCheckerFromJson(String type, Object obj) throws SecurityException, IllegalArgumentException, ClassNotFoundException, NoSuchMethodException, IllegalAccessException, InvocationTargetException {
+	public ConditionChecker createCheckerFromJson(String type, Object obj) throws Exception {
 		ConditionChecker checker = null;
-		Class<? extends ConditionChecker> checkerClass = checkerToClass.get(type);		
+		Class<? extends ConditionChecker> checkerClass = checkerToClass.get(type);	
+		if(checkerClass == null) {
+			throw new Exception("Checker type " + type + " not supported!");
+		}
 		checker = (ConditionChecker) Utils.invokeStaticMethod(checkerClass.getClassLoader(), checkerClass.getName(), "createFromJson", obj);
 		
 		return checker;

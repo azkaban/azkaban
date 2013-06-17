@@ -60,10 +60,16 @@ import azkaban.project.JdbcProjectLoader;
 import azkaban.project.ProjectManager;
 
 import azkaban.scheduler.JdbcScheduleLoader;
+import azkaban.scheduler.ScheduleLoader;
 import azkaban.scheduler.ScheduleManager;
+import azkaban.scheduler.TriggerBasedScheduleLoader;
+import azkaban.scheduler.TriggerBasedScheduler;
 import azkaban.sla.JdbcSLALoader;
 import azkaban.sla.SLAManager;
 import azkaban.sla.SLAManagerException;
+import azkaban.trigger.JdbcTriggerLoader;
+import azkaban.trigger.TriggerLoader;
+import azkaban.trigger.TriggerManager;
 import azkaban.user.UserManager;
 import azkaban.user.XmlUserManager;
 import azkaban.utils.FileIOUtils;
@@ -129,6 +135,9 @@ public class AzkabanWebServer extends AzkabanServer {
 	private ProjectManager projectManager;
 	private ExecutorManager executorManager;
 	private ScheduleManager scheduleManager;
+//	private TriggerBasedScheduler scheduler;
+	private TriggerManager triggerManager;
+	
 	private SLAManager slaManager;
 
 	private final ClassLoader baseClassLoader;
@@ -161,7 +170,12 @@ public class AzkabanWebServer extends AzkabanServer {
 		projectManager = loadProjectManager(props);
 		executorManager = loadExecutorManager(props);
 		slaManager = loadSLAManager(props);
-		scheduleManager = loadScheduleManager(executorManager, slaManager, props);
+		
+		triggerManager = loadTriggerManager(props);
+//		scheduler = loadScheduler(executorManager, projectManager, triggerManager);
+		
+		scheduleManager = loadScheduleManager(projectManager, executorManager, slaManager, triggerManager, props);
+		
 		baseClassLoader = getBaseClassloader();
 		
 		tempDir = new File(props.getString("azkaban.temp.dir", "temp"));
@@ -220,15 +234,33 @@ public class AzkabanWebServer extends AzkabanServer {
 		return execManager;
 	}
 
-	private ScheduleManager loadScheduleManager(ExecutorManager execManager, SLAManager slaManager, Props props ) throws Exception {
-		ScheduleManager schedManager = new ScheduleManager(execManager, projectManager, slaManager, new JdbcScheduleLoader(props));
+	private ScheduleManager loadScheduleManager(ProjectManager projectManager, ExecutorManager executorManager, SLAManager slaManager, TriggerManager triggerManager, Props props ) throws Exception {
+		ScheduleManager schedManager = null;
+		String scheduleLoaderType = props.getString("azkaban.scheduler.loader", "TriggerBasedScheduleLoader");
+		if(scheduleLoaderType.equals("JdbcScheduleLoader")) {
+			ScheduleLoader loader = new JdbcScheduleLoader(props);
+			schedManager = new ScheduleManager(executorManager, projectManager, slaManager, loader, false);
+		} else if(scheduleLoaderType.equals("TriggerBasedScheduleLoader")) {
+			ScheduleLoader loader = new TriggerBasedScheduleLoader(triggerManager, executorManager, projectManager);
+			schedManager = new ScheduleManager(executorManager, projectManager, slaManager, loader, true);
+		}
 
 		return schedManager;
 	}
+	
+//	private TriggerBasedScheduler loadScheduler(ExecutorManager executorManager, ProjectManager projectManager, TriggerManager triggerManager) {
+//		TriggerBasedScheduleLoader loader = new TriggerBasedScheduleLoader(triggerManager, executorManager, projectManager);
+//		return new TriggerBasedScheduler(executorManager, projectManager, triggerManager, loader);
+//	}
 
 	private SLAManager loadSLAManager(Props props) throws SLAManagerException {
 		SLAManager slaManager = new SLAManager(executorManager, new JdbcSLALoader(props), props);
 		return slaManager;
+	}
+	
+	private TriggerManager loadTriggerManager(Props props) {
+		TriggerLoader triggerLoader = new JdbcTriggerLoader(props);
+		return new TriggerManager(props, triggerLoader);
 	}
 	
 	/**
@@ -280,6 +312,14 @@ public class AzkabanWebServer extends AzkabanServer {
 		return scheduleManager;
 	}
 	
+	public TriggerManager getTriggerManager() {
+		return triggerManager;
+	}
+	
+//	public TriggerBasedScheduler getScheduler() {
+//		return scheduler;
+//	}
+//	
 	/**
 	 * Creates and configures the velocity engine.
 	 * 

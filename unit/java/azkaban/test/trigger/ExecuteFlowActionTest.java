@@ -19,7 +19,7 @@ import azkaban.utils.Props;
 public class ExecuteFlowActionTest {
 	
 	@Test
-	public void jsonConversionTest() throws SecurityException, IllegalArgumentException, ClassNotFoundException, NoSuchMethodException, IllegalAccessException, InvocationTargetException, TriggerException {
+	public void jsonConversionTest() throws Exception {
 		ActionTypeLoader loader = new ActionTypeLoader();
 		loader.init(new Props());
 		

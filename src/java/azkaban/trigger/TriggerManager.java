@@ -16,20 +16,20 @@ import azkaban.utils.Props;
 public class TriggerManager {
 	private static Logger logger = Logger.getLogger(TriggerManager.class);
 	
-	private final long DEFAULT_TRIGGER_EXPIRE_TIME = 24*60*60*1000L;
-	
 	private Map<Integer, Trigger> triggerIdMap = new HashMap<Integer, Trigger>();
 	
 	private CheckerTypeLoader checkerLoader;
 	private ActionTypeLoader actionLoader;
 	
+	private TriggerLoader triggerLoader;
+	
 	TriggerScannerThread scannerThread;
 	
-	public TriggerManager(Props props, TriggerLoader triggerLoader, CheckerTypeLoader checkerLoader, ActionTypeLoader actionLoader) {
+	public TriggerManager(Props props, TriggerLoader triggerLoader) {
 		
-		this.checkerLoader = checkerLoader;
-		this.actionLoader = actionLoader;
-		scannerThread = new TriggerScannerThread("TriggerScannerThread");
+		checkerLoader = new CheckerTypeLoader();
+		actionLoader = new ActionTypeLoader();
+		
 		
 		// load plugins
 		try{
@@ -43,6 +43,11 @@ public class TriggerManager {
 		Condition.setCheckerLoader(checkerLoader);
 		Trigger.setActionTypeLoader(actionLoader);
 		
+		long scannerInterval = props.getLong("trigger.scan.interval", TriggerScannerThread.DEFAULT_SCAN_INTERVAL_MS);
+		scannerThread = new TriggerScannerThread(scannerInterval);
+		scannerThread.setName("TriggerScannerThread");
+		
+		this.triggerLoader = triggerLoader;
 		try{
 			// expect loader to return valid triggers
 			List<Trigger> triggers = triggerLoader.loadTriggers();
@@ -55,8 +60,6 @@ public class TriggerManager {
 			logger.error(e.getMessage());
 		}
 		
-		
-		
 		scannerThread.start();
 	}
 	
@@ -68,17 +71,33 @@ public class TriggerManager {
 		return actionLoader;
 	}
 
-	public synchronized void insertTrigger(Trigger t) {
+	public synchronized void insertTrigger(Trigger t) throws TriggerManagerException {
+		
+		triggerLoader.addTrigger(t);
 		triggerIdMap.put(t.getTriggerId(), t);
 		scannerThread.addTrigger(t);
 	}
 	
-	public synchronized void removeTrigger(int id) {
+	public synchronized void removeTrigger(int id) throws TriggerManagerException {
 		removeTrigger(triggerIdMap.get(id));
 	}
 	
-	public synchronized void removeTrigger(Trigger t) {
-		scannerThread.removeTrigger(t);
+	public synchronized void updateTrigger(Trigger t) throws TriggerManagerException {
+		if(!triggerIdMap.containsKey(t.getTriggerId())) {
+			throw new TriggerManagerException("The trigger to update doesn't exist!");
+		}
+		
+		scannerThread.deleteTrigger(t);
+		scannerThread.addTrigger(t);
+		triggerIdMap.put(t.getTriggerId(), t);
+		
+		
+		triggerLoader.updateTrigger(t);
+	}
+	
+	public synchronized void removeTrigger(Trigger t) throws TriggerManagerException {
+		triggerLoader.removeTrigger(t);
+		scannerThread.deleteTrigger(t);
 		triggerIdMap.remove(t.getTriggerId());		
 	}
 	
@@ -88,21 +107,29 @@ public class TriggerManager {
 
 	//trigger scanner thread
 	public class TriggerScannerThread extends Thread {
+		
+		//public static final long DEFAULT_SCAN_INTERVAL_MS = 300000;
+		public static final long DEFAULT_SCAN_INTERVAL_MS = 60000;
+		
 		private final BlockingQueue<Trigger> triggers;
 		private AtomicBoolean stillAlive = new AtomicBoolean(true);
-		private String scannerName;
 		private long lastCheckTime = -1;
+		private final long scanInterval;
 		
 		// Five minute minimum intervals
-		private static final int TIMEOUT_MS = 300000;
 		
-		public TriggerScannerThread(String scannerName){
+		public TriggerScannerThread(){
 			triggers = new LinkedBlockingDeque<Trigger>();
-			this.setName(scannerName);
+			this.scanInterval = DEFAULT_SCAN_INTERVAL_MS;
+		}
+
+		public TriggerScannerThread(long interval){
+			triggers = new LinkedBlockingDeque<Trigger>();
+			this.scanInterval = interval;
 		}
 		
 		public void shutdown() {
-			logger.error("Shutting down trigger manager thread " + scannerName);
+			logger.error("Shutting down trigger manager thread " + this.getName());
 			stillAlive.set(false);
 			this.interrupt();
 		}
@@ -115,7 +142,7 @@ public class TriggerManager {
 			triggers.add(t);
 		}
 		
-		public synchronized void removeTrigger(Trigger t) {
+		public synchronized void deleteTrigger(Trigger t) {
 			triggers.remove(t);
 		}
 		
@@ -135,9 +162,9 @@ public class TriggerManager {
 							logger.error(t.getMessage());
 						}
 						
-						long timeRemaining = TIMEOUT_MS - (System.currentTimeMillis() - lastCheckTime);
+						long timeRemaining = scanInterval - (System.currentTimeMillis() - lastCheckTime);
 						if(timeRemaining < 0) {
-							logger.error("Trigger manager thread " + scannerName + " is too busy!");
+							logger.error("Trigger manager thread " + this.getName() + " is too busy!");
 						} else {
 							wait(timeRemaining);
 						}
@@ -149,7 +176,7 @@ public class TriggerManager {
 			}
 		}
 		
-		private void checkAllTriggers() {
+		private void checkAllTriggers() throws TriggerManagerException {
 			for(Trigger t : triggers) {
 				if(t.triggerConditionMet()) {
 					onTriggerTrigger(t);
@@ -157,32 +184,32 @@ public class TriggerManager {
 					onTriggerExpire(t);
 				}
 			}
-			
 		}
 		
-		private void onTriggerTrigger(Trigger t) {
+		private void onTriggerTrigger(Trigger t) throws TriggerManagerException {
 			List<TriggerAction> actions = t.getTriggerActions();
 			for(TriggerAction action : actions) {
-				action.doAction();
+				try {
+					action.doAction();
+				} catch (Exception e) {
+					// TODO Auto-generated catch block
+					throw new TriggerManagerException("action failed to execute", e);
+				}
 			}
 			if(t.isResetOnTrigger()) {
 				t.resetTriggerConditions();
 			} else {
-				triggers.remove(t);
+				removeTrigger(t);
 			}
 		}
 		
-		private void onTriggerExpire(Trigger t) {
+		private void onTriggerExpire(Trigger t) throws TriggerManagerException {
 			if(t.isResetOnExpire()) {
 				t.resetTriggerConditions();
 			} else {
-				triggers.remove(t);
+				removeTrigger(t);
 			}
 		}
-	}
-	
-	public TriggerAction createTriggerAction() {
-		return null;
 	}
 
 }

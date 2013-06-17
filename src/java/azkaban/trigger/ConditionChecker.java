@@ -8,9 +8,7 @@ public interface ConditionChecker {
 	Object getNum();
 	
 	void reset();
-	
-	void setId(String id);
-	
+
 	String getId();
 	
 	String getType();

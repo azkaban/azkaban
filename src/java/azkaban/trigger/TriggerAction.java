@@ -8,6 +8,6 @@ public interface TriggerAction {
 	
 	Object toJson();
 	
-	void doAction();
+	void doAction() throws Exception;
 	
 }

@@ -92,6 +92,10 @@ public class Trigger {
 		Trigger.actionTypeLoader = loader;
 	}
 	
+	public static ActionTypeLoader getActionTypeLoader() {
+		return actionTypeLoader;
+	}
+	
 	public boolean isResetOnTrigger() {
 		return resetOnTrigger;
 	}
@@ -165,8 +169,12 @@ public class Trigger {
 	}
 
 	@SuppressWarnings("unchecked")
-	public static Trigger fromJson(Object obj) {
+	public static Trigger fromJson(Object obj) throws Exception {
 		
+		if(actionTypeLoader == null) {
+			throw new Exception("Trigger Action Type loader not initialized.");
+		}
+ 		
 		Map<String, Object> jsonObj = (HashMap<String, Object>) obj;
 		
 		Trigger trigger = null;

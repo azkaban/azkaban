@@ -16,6 +16,9 @@ public class ThresholdChecker implements ConditionChecker{
 	
 	private String id;
 	
+	private boolean checkerMet = false;
+	private boolean checkerReset  = false;
+	
 	public ThresholdChecker(String id, int threshold){
 		this.id = id;
 		this.threshold = threshold;
@@ -27,13 +30,24 @@ public class ThresholdChecker implements ConditionChecker{
 	
 	@Override
 	public Boolean eval() {
-		return curVal > threshold;
+		if(curVal > threshold) {
+			checkerMet = true;
+		}
+		return checkerMet;
+	}
+	
+	public boolean isCheckerMet() {
+		return checkerMet;
 	}
 
 	@Override
 	public void reset() {
-		// TODO Auto-generated method stub
-		
+		checkerMet = false;
+		checkerReset = true;
+	}
+	
+	public boolean isCheckerReset() {
+		return checkerReset;
 	}
 	
 	/*
@@ -67,10 +81,5 @@ public class ThresholdChecker implements ConditionChecker{
 		return null;
 	}
 
-	@Override
-	public void setId(String id) {
-		this.id = id;
-		
-	}
 
 }

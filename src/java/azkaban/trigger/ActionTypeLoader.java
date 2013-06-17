@@ -139,9 +139,12 @@ public class ActionTypeLoader {
 		logger.info("Loaded ExecuteFlowAction type.");
 	}
 	
-	public TriggerAction createActionFromJson(String type, Object obj) throws SecurityException, IllegalArgumentException, ClassNotFoundException, NoSuchMethodException, IllegalAccessException, InvocationTargetException {
+	public TriggerAction createActionFromJson(String type, Object obj) throws Exception {
 		TriggerAction action = null;
 		Class<? extends TriggerAction> actionClass = actionToClass.get(type);		
+		if(actionClass == null) {
+			throw new Exception("Action Type " + type + " not supported!");
+		}
 		action = (TriggerAction) Utils.invokeStaticMethod(actionClass.getClassLoader(), actionClass.getName(), "createFromJson", obj);
 		
 		return action;

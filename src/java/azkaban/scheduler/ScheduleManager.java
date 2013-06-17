@@ -62,14 +62,16 @@ public class ScheduleManager {
 
 	private Map<Pair<Integer, String>, Set<Schedule>> scheduleIdentityPairMap = new LinkedHashMap<Pair<Integer, String>, Set<Schedule>>();
 	private Map<Integer, Schedule> scheduleIDMap = new LinkedHashMap<Integer, Schedule>();
-	private final ScheduleRunner runner;
+	
 	private final ExecutorManager executorManager;
 	private final ProjectManager projectManager;
 	private final SLAManager slaManager;
 	
+	private final boolean useExternalRunner;
+	private final ScheduleRunner runner;
+	
 	// Used for mbeans to query Scheduler status
-	private long lastCheckTime = -1;
-	private long nextWakupTime = -1;
+	
 
 	/**
 	 * Give the schedule manager a loader class that will properly load the
@@ -80,13 +82,16 @@ public class ScheduleManager {
 	public ScheduleManager(ExecutorManager executorManager,
 							ProjectManager projectManager, 
 							SLAManager slaManager,
-							ScheduleLoader loader) 
+							ScheduleLoader loader,
+							boolean useExternalRunner) 
 	{
 		this.executorManager = executorManager;
 		this.projectManager = projectManager;
 		this.slaManager = slaManager;
 		this.loader = loader;
-		this.runner = new ScheduleRunner();
+		this.useExternalRunner = useExternalRunner;
+		
+		
 
 		List<Schedule> scheduleList = null;
 		try {
@@ -101,7 +106,12 @@ public class ScheduleManager {
 			internalSchedule(sched);
 		}
 
-		this.runner.start();
+		if(!useExternalRunner) {
+			this.runner = new ScheduleRunner();
+			this.runner.start();
+		} else {
+			this.runner = null;
+		}
 	}
 
 	/**
@@ -109,7 +119,9 @@ public class ScheduleManager {
 	 * it again.
 	 */
 	public void shutdown() {
-		this.runner.shutdown();
+		if(!useExternalRunner) {
+			this.runner.shutdown();
+		}
 	}
 
 	/**
@@ -118,7 +130,8 @@ public class ScheduleManager {
 	 * @return
 	 */
 	public synchronized List<Schedule> getSchedules() {
-		return runner.getRunnerSchedules();
+		//return runner.getRunnerSchedules();
+		return new ArrayList<Schedule>(scheduleIDMap.values());
 	}
 
 	/**
@@ -149,8 +162,10 @@ public class ScheduleManager {
 	 */
 	public synchronized void removeSchedules(int projectId, String flowId) {
 		Set<Schedule> schedules = getSchedules(projectId, flowId);
-		for(Schedule sched : schedules) {
-			removeSchedule(sched);
+		if(schedules != null) {
+			for(Schedule sched : schedules) {
+				removeSchedule(sched);
+			}
 		}
 	}
 	/**
@@ -159,7 +174,7 @@ public class ScheduleManager {
 	 * @param id
 	 */
 	public synchronized void removeSchedule(Schedule sched) {
-
+		
 		Pair<Integer,String> identityPairMap = sched.getScheduleIdentityPair();
 		Set<Schedule> schedules = scheduleIdentityPairMap.get(identityPairMap);
 		if(schedules != null) {
@@ -170,13 +185,17 @@ public class ScheduleManager {
 		}
 		scheduleIDMap.remove(sched.getScheduleId());
 		
-		runner.removeRunnerSchedule(sched);
 		try {
 			loader.removeSchedule(sched);
 		} catch (ScheduleManagerException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+		
+		if(!useExternalRunner) {
+			runner.removeRunnerSchedule(sched);
+		}
+		
 	}
 
 	// public synchronized void pauseScheduledFlow(String scheduleId){
@@ -250,11 +269,13 @@ public class ScheduleManager {
 	 */
 	private synchronized void internalSchedule(Schedule s) {
 		Schedule existing = scheduleIDMap.get(s.getScheduleId());
-		if (existing != null) {
-			this.runner.removeRunnerSchedule(existing);
+		if(!useExternalRunner) {
+			if (existing != null) {
+				this.runner.removeRunnerSchedule(existing);
+			}
+			s.updateTime();
+			this.runner.addRunnerSchedule(s);
 		}
-		s.updateTime();
-		this.runner.addRunnerSchedule(s);
 		scheduleIDMap.put(s.getScheduleId(), s);
 		Set<Schedule> schedules = scheduleIdentityPairMap.get(s.getScheduleIdentityPair());
 		if(schedules == null) {
@@ -306,6 +327,9 @@ public class ScheduleManager {
 	 * 
 	 */
 	public class ScheduleRunner extends Thread {
+		
+		private long lastCheckTime = -1;
+		private long nextWakupTime = -1;
 		private final PriorityBlockingQueue<Schedule> schedules;
 		private AtomicBoolean stillAlive = new AtomicBoolean(true);
 
@@ -322,6 +346,14 @@ public class ScheduleManager {
 			this.interrupt();
 		}
 
+		public long getLastCheckTime() {
+			return lastCheckTime;
+		}
+		
+		public long getNextWakeupTime() {
+			return nextWakupTime;
+		}
+		
 		/**
 		 * Return a list of scheduled flow
 		 * 
@@ -528,18 +560,34 @@ public class ScheduleManager {
 	}
 	
 	public long getLastCheckTime() {
-		return lastCheckTime;
+		if(useExternalRunner) {
+			return -1;
+		} else {
+			return runner.getLastCheckTime();
+		}
 	}
 	
 	public long getNextUpdateTime() {
-		return nextWakupTime;
+		if(useExternalRunner) {
+			return -1;
+		} else {
+			return runner.getNextWakeupTime();
+		}
 	}
 	
 	public State getThreadState() {
-		return runner.getState();
+		if(useExternalRunner) {
+			return null;
+		} else {
+			return runner.getState();
+		}
 	}
 	
 	public boolean isThreadActive() {
-		return runner.isAlive();
+		if(useExternalRunner) {
+			return false;
+		} else {
+			return runner.isAlive();
+		}
 	}
 }
