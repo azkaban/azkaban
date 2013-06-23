@@ -44,10 +44,10 @@ public class JdbcTriggerLoader extends AbstractJdbcLoader implements TriggerLoad
 	private static final String triggerTblName = "triggers";
 
 	private static String GET_ALL_TRIGGERS =
-			"SELECT trigger_id, modify_time, enc_type, data FROM " + triggerTblName;
+			"SELECT trigger_id, trigger_source, modify_time, enc_type, data FROM " + triggerTblName;
 	
 	private static String GET_TRIGGER = 
-			"SELECT trigger_id, modify_time, enc_type, data FROM " + triggerTblName + " WHERE trigger_id=?";
+			"SELECT trigger_source, modify_time, enc_type, data FROM " + triggerTblName + " WHERE trigger_id=?";
 	
 	private static String ADD_TRIGGER = 
 			"INSERT INTO " + triggerTblName + " ( modify_time) values (?)";
@@ -56,7 +56,7 @@ public class JdbcTriggerLoader extends AbstractJdbcLoader implements TriggerLoad
 			"DELETE FROM " + triggerTblName + " WHERE trigger_id=?";
 	
 	private static String UPDATE_TRIGGER = 
-			"UPDATE " + triggerTblName + " SET modify_time=?, enc_type=?, data=? WHERE trigger_id=?";
+			"UPDATE " + triggerTblName + " SET trigger_source=?, modify_time=?, enc_type=?, data=? WHERE trigger_id=?";
 	
 	public EncodingType getDefaultEncodingType() {
 		return defaultEncodingType;
@@ -188,6 +188,7 @@ public class JdbcTriggerLoader extends AbstractJdbcLoader implements TriggerLoad
 		try {
 			int updates =  runner.update( connection, 
 					UPDATE_TRIGGER, 
+					t.getSource(),
 					DateTime.now().getMillis(),
 					encType.getNumVal(),
 					data,
@@ -228,9 +229,10 @@ public class JdbcTriggerLoader extends AbstractJdbcLoader implements TriggerLoad
 			ArrayList<Trigger> triggers = new ArrayList<Trigger>();
 			do {
 				int triggerId = rs.getInt(1);
-				long modifyTime = rs.getLong(2);
-				int encodingType = rs.getInt(3);
-				byte[] data = rs.getBytes(4);
+				String triggerSource = rs.getString(2);
+				long modifyTime = rs.getLong(3);
+				int encodingType = rs.getInt(4);
+				byte[] data = rs.getBytes(5);
 				
 				Object jsonObj = null;
 				if (data != null) {

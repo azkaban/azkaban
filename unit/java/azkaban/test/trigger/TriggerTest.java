@@ -54,7 +54,7 @@ public class TriggerTest {
 		List<TriggerAction> actions = new ArrayList<TriggerAction>();
 		TriggerAction action = new ExecuteFlowAction(1, "testProj", "testFlow", "azkaban", new ExecutionOptions());
 		actions.add(action);
-		Trigger t = new Trigger(now.getMillis(), now.getMillis(), "azkaban", "test", triggerCond, expireCond, actions);
+		Trigger t = new Trigger(now, now, "azkaban", "test", triggerCond, expireCond, actions);
 		
 		File temp = File.createTempFile("temptest", "temptest");
 		temp.deleteOnExit();

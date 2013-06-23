@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.log4j.Logger;
 
@@ -159,6 +160,10 @@ public class CheckerTypeLoader {
 		checker = (ConditionChecker) Utils.callConstructor(checkerClass, args);
 		
 		return checker;
+	}
+	
+	public Map<String, Class<? extends ConditionChecker>> getSupportedCheckers() {
+		return checkerToClass;
 	}
 	
 }

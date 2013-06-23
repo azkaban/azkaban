@@ -42,7 +42,7 @@ public class JdbcTriggerLoaderTest {
 
 	private static boolean testDBExists = false;
 	//@TODO remove this and turn into local host.
-	private static final String host = "cyu-ld.linkedin.biz";
+	private static final String host = "localhost";
 	private static final int port = 3306;
 	private static final String database = "azkaban2";
 	private static final String user = "azkaban";
@@ -196,7 +196,7 @@ public class JdbcTriggerLoaderTest {
 		List<TriggerAction> actions = new ArrayList<TriggerAction>();
 		TriggerAction action = new ExecuteFlowAction(1, projName, flowName, "azkaban", new ExecutionOptions());
 		actions.add(action);
-		Trigger t = new Trigger(now.getMillis(), now.getMillis(), "azkaban", source, triggerCond, expireCond, actions);
+		Trigger t = new Trigger(now, now, "azkaban", source, triggerCond, expireCond, actions);
 		return t;
 	}
 	

@@ -251,6 +251,10 @@ public class Schedule{
 		return false;
 	}
 	
+	public void setNextExecTime(long nextExecTime) {
+		this.nextExecTime = nextExecTime;
+	}
+	
 	private DateTime getNextRuntime(long scheduleTime, DateTimeZone timezone, ReadablePeriod period) {
 		DateTime now = new DateTime();
 		DateTime date = new DateTime(scheduleTime).withZone(timezone);

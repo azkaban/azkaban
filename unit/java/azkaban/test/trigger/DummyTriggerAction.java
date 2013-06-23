@@ -35,4 +35,9 @@ public class DummyTriggerAction implements TriggerAction{
 		System.out.println(message);
 	}
 
+	@Override
+	public String getDescription() {
+		return "this is real dummy action";
+	}
+
 }

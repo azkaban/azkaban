@@ -27,7 +27,9 @@ import java.net.URLClassLoader;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.TimeZone;
 
 import javax.management.MBeanInfo;
@@ -63,13 +65,13 @@ import azkaban.scheduler.JdbcScheduleLoader;
 import azkaban.scheduler.ScheduleLoader;
 import azkaban.scheduler.ScheduleManager;
 import azkaban.scheduler.TriggerBasedScheduleLoader;
-import azkaban.scheduler.TriggerBasedScheduler;
 import azkaban.sla.JdbcSLALoader;
 import azkaban.sla.SLAManager;
 import azkaban.sla.SLAManagerException;
 import azkaban.trigger.JdbcTriggerLoader;
 import azkaban.trigger.TriggerLoader;
 import azkaban.trigger.TriggerManager;
+import azkaban.trigger.TriggerServicer;
 import azkaban.user.UserManager;
 import azkaban.user.XmlUserManager;
 import azkaban.utils.FileIOUtils;
@@ -85,6 +87,8 @@ import azkaban.webapp.servlet.ScheduleServlet;
 import azkaban.webapp.servlet.HistoryServlet;
 import azkaban.webapp.servlet.IndexServlet;
 import azkaban.webapp.servlet.ProjectManagerServlet;
+import azkaban.webapp.servlet.TriggerManagerServlet;
+import azkaban.webapp.servlet.TriggerPlugin;
 import azkaban.webapp.servlet.ViewerPlugin;
 import azkaban.webapp.session.SessionCache;
 
@@ -146,6 +150,7 @@ public class AzkabanWebServer extends AzkabanServer {
 	private SessionCache sessionCache;
 	private File tempDir;
 	private List<ViewerPlugin> viewerPlugins;
+	private Map<String, TriggerPlugin> triggerPlugins;
 	
 	private MBeanServer mbeanServer;
 	private ArrayList<ObjectName> registeredMBeans = new ArrayList<ObjectName>();
@@ -166,12 +171,14 @@ public class AzkabanWebServer extends AzkabanServer {
 		this.server = server;
 		velocityEngine = configureVelocityEngine(props.getBoolean(VELOCITY_DEV_MODE_PARAM, false));
 		sessionCache = new SessionCache(props);
-		userManager = loadUserManager(props);
-		projectManager = loadProjectManager(props);
+		userManager = loadUserManager(props);		
 		executorManager = loadExecutorManager(props);
 		slaManager = loadSLAManager(props);
 		
 		triggerManager = loadTriggerManager(props);
+		
+		projectManager = loadProjectManager(props, triggerManager);
+		
 //		scheduler = loadScheduler(executorManager, projectManager, triggerManager);
 		
 		scheduleManager = loadScheduleManager(projectManager, executorManager, slaManager, triggerManager, props);
@@ -194,6 +201,10 @@ public class AzkabanWebServer extends AzkabanServer {
 
 	private void setViewerPlugins(List<ViewerPlugin> viewerPlugins) {
 		this.viewerPlugins = viewerPlugins;
+	}
+	
+	private void setTriggerPlugins(Map<String, TriggerPlugin> triggerPlugins) {
+		this.triggerPlugins = triggerPlugins;
 	}
 	
 	private UserManager loadUserManager(Props props) {
@@ -219,11 +230,11 @@ public class AzkabanWebServer extends AzkabanServer {
 		return manager;
 	}
 	
-	private ProjectManager loadProjectManager(Props props) {
+	private ProjectManager loadProjectManager(Props props, TriggerManager triggerManager) {
 		logger.info("Loading JDBC for project management");
 
 		JdbcProjectLoader loader = new JdbcProjectLoader(props);
-		ProjectManager manager = new ProjectManager(loader, props);
+		ProjectManager manager = new ProjectManager(loader, props, triggerManager);
 		
 		return manager;
 	}
@@ -241,7 +252,8 @@ public class AzkabanWebServer extends AzkabanServer {
 			ScheduleLoader loader = new JdbcScheduleLoader(props);
 			schedManager = new ScheduleManager(executorManager, projectManager, slaManager, loader, false);
 		} else if(scheduleLoaderType.equals("TriggerBasedScheduleLoader")) {
-			ScheduleLoader loader = new TriggerBasedScheduleLoader(triggerManager, executorManager, projectManager);
+			logger.info("Loading trigger based scheduler");
+			ScheduleLoader loader = new TriggerBasedScheduleLoader(triggerManager, executorManager, projectManager, ScheduleManager.triggerSource);
 			schedManager = new ScheduleManager(executorManager, projectManager, slaManager, loader, true);
 		}
 
@@ -259,8 +271,8 @@ public class AzkabanWebServer extends AzkabanServer {
 	}
 	
 	private TriggerManager loadTriggerManager(Props props) {
-		TriggerLoader triggerLoader = new JdbcTriggerLoader(props);
-		return new TriggerManager(props, triggerLoader);
+		TriggerLoader loader = new JdbcTriggerLoader(props);
+		return new TriggerManager(props, loader);
 	}
 	
 	/**
@@ -477,9 +489,24 @@ public class AzkabanWebServer extends AzkabanServer {
 		root.addServlet(new ServletHolder(new HistoryServlet()), "/history");
 		root.addServlet(new ServletHolder(new ScheduleServlet()),"/schedule");
 		root.addServlet(new ServletHolder(new JMXHttpServlet()),"/jmx");
+		root.addServlet(new ServletHolder(new TriggerManagerServlet()),"/triggers");
 		
 		String viewerPluginDir = azkabanSettings.getString("viewer.plugin.dir", "plugins/viewer");
 		app.setViewerPlugins(loadViewerPlugins(root, viewerPluginDir, app.getVelocityEngine()));
+		
+		// triggerplugin
+		String triggerPluginDir = azkabanSettings.getString("trigger.plugin.dir", "plugins/triggers");
+		Map<String, TriggerPlugin> triggerPlugins = loadTriggerPlugins(root, triggerPluginDir, app);
+		app.setTriggerPlugins(triggerPlugins);
+		// always have basic time trigger
+		app.getTriggerManager().addTriggerServicer(app.getScheduleManager().getTriggerSource(), app.getScheduleManager());
+		// add additional triggers
+		for(TriggerPlugin plugin : triggerPlugins.values()) {
+			TriggerServicer servicer = plugin.getServicer();
+			app.getTriggerManager().addTriggerServicer(servicer.getTriggerSource(), servicer);
+		}
+		// fire up
+		app.getTriggerManager().start();
 
 		root.setAttribute(AzkabanServletContextListener.AZKABAN_SERVLET_CONTEXT_KEY, app);
 		try {
@@ -508,6 +535,159 @@ public class AzkabanWebServer extends AzkabanServer {
 		logger.info("Server running on " + (ssl ? "ssl" : "") + " port " + port + ".");
 	}
 
+	private static Map<String, TriggerPlugin> loadTriggerPlugins(Context root, String pluginPath, AzkabanWebServer azkabanWebApp) {
+		File triggerPluginPath = new File(pluginPath);
+		if (!triggerPluginPath.exists()) {
+			return Collections.<String, TriggerPlugin>emptyMap();
+		}
+			
+		Map<String, TriggerPlugin> installedTriggerPlugins = new HashMap<String, TriggerPlugin>();
+		ClassLoader parentLoader = AzkabanWebServer.class.getClassLoader();
+		File[] pluginDirs = triggerPluginPath.listFiles();
+		ArrayList<String> jarPaths = new ArrayList<String>();
+		for (File pluginDir: pluginDirs) {
+			if (!pluginDir.exists()) {
+				logger.error("Error! Trigger plugin path " + pluginDir.getPath() + " doesn't exist.");
+				continue;
+			}
+			
+			if (!pluginDir.isDirectory()) {
+				logger.error("The plugin path " + pluginDir + " is not a directory.");
+				continue;
+			}
+			
+			// Load the conf directory
+			File propertiesDir = new File(pluginDir, "conf");
+			Props pluginProps = null;
+			if (propertiesDir.exists() && propertiesDir.isDirectory()) {
+				File propertiesFile = new File(propertiesDir, "plugin.properties");
+				File propertiesOverrideFile = new File(propertiesDir, "override.properties");
+				
+				if (propertiesFile.exists()) {
+					if (propertiesOverrideFile.exists()) {
+						pluginProps = PropsUtils.loadProps(null, propertiesFile, propertiesOverrideFile);
+					}
+					else {
+						pluginProps = PropsUtils.loadProps(null, propertiesFile);
+					}
+				}
+				else {
+					logger.error("Plugin conf file " + propertiesFile + " not found.");
+					continue;
+				}
+			}
+			else {
+				logger.error("Plugin conf path " + propertiesDir + " not found.");
+				continue;
+			}
+			
+			String pluginName = pluginProps.getString("trigger.name");
+			String pluginWebPath = pluginProps.getString("trigger.path");
+			int pluginOrder = pluginProps.getInt("trigger.order", 0);
+			boolean pluginHidden = pluginProps.getBoolean("trigger.hidden", false);
+			List<String> extLibClasspath = pluginProps.getStringList("trigger.external.classpaths", (List<String>)null);
+			
+			String pluginClass = pluginProps.getString("trigger.class");
+			if (pluginClass == null) {
+				logger.error("Trigger class is not set.");
+			}
+			else {
+				logger.error("Plugin class " + pluginClass);
+			}
+			
+			URLClassLoader urlClassLoader = null;
+			File libDir = new File(pluginDir, "lib");
+			if (libDir.exists() && libDir.isDirectory()) {
+				File[] files = libDir.listFiles();
+				
+				ArrayList<URL> urls = new ArrayList<URL>();
+				for (int i=0; i < files.length; ++i) {
+					try {
+						URL url = files[i].toURI().toURL();
+						urls.add(url);
+					} catch (MalformedURLException e) {
+						logger.error(e);
+					}
+				}
+				if (extLibClasspath != null) {
+					for (String extLib : extLibClasspath) {
+						try {
+							File file = new File(pluginDir, extLib);
+							URL url = file.toURI().toURL();
+							urls.add(url);
+						} catch (MalformedURLException e) {
+							logger.error(e);
+						}
+					}
+				}
+				
+				urlClassLoader = new URLClassLoader(urls.toArray(new URL[urls.size()]), parentLoader);
+			}
+			else {
+				logger.error("Library path " + propertiesDir + " not found.");
+				continue;
+			}
+			
+			Class<?> triggerClass = null;
+			try {
+				triggerClass = urlClassLoader.loadClass(pluginClass);
+			}
+			catch (ClassNotFoundException e) {
+				logger.error("Class " + pluginClass + " not found.");
+				continue;
+			}
+
+			String source = FileIOUtils.getSourcePathFromClass(triggerClass);
+			logger.info("Source jar " + source);
+			jarPaths.add("jar:file:" + source);
+			
+			Constructor<?> constructor = null;
+			try {
+				constructor = triggerClass.getConstructor(String.class, Props.class, Context.class, AzkabanWebServer.class);
+			} catch (NoSuchMethodException e) {
+				logger.error("Constructor not found in " + pluginClass);
+				continue;
+			}
+			
+			Object obj = null;
+			try {
+				obj = constructor.newInstance(pluginName, pluginProps, root, azkabanWebApp);
+			} catch (Exception e) {
+				logger.error(e);
+			} 
+			
+			if (!(obj instanceof TriggerPlugin)) {
+				logger.error("The object is not an TriggerPlugin");
+				continue;
+			}
+			
+			TriggerPlugin plugin = (TriggerPlugin) obj;
+//			AbstractTriggerServlet avServlet = (AbstractTriggerServlet)obj;
+//			root.addServlet(new ServletHolder(avServlet), "/" + pluginWebPath + "/*");
+			installedTriggerPlugins.put(pluginName, plugin);
+		}
+		
+		// Velocity needs the jar resource paths to be set.
+		String jarResourcePath = StringUtils.join(jarPaths, ", ");
+		logger.info("Setting jar resource path " + jarResourcePath);
+		VelocityEngine ve = azkabanWebApp.getVelocityEngine();
+		ve.addProperty("jar.resource.loader.path", jarResourcePath);
+		
+//		// Sort plugins based on order
+//		Collections.sort(installedTriggerPlugins, new Comparator<TriggerPlugin>() {
+//			@Override
+//			public int compare(TriggerPlugin o1, TriggerPlugin o2) {
+//				return o1.getOrder() - o2.getOrder();
+//			}
+//		});
+		
+		return installedTriggerPlugins;
+	}
+	
+	public Map<String, TriggerPlugin> getTriggerPlugins() {
+		return triggerPlugins;
+	}
+	
 	private static List<ViewerPlugin> loadViewerPlugins(Context root, String pluginPath, VelocityEngine ve) {
 		File viewerPluginPath = new File(pluginPath);
 		if (!viewerPluginPath.exists()) {

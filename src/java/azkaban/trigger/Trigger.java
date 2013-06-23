@@ -6,14 +6,15 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.log4j.Logger;
+import org.joda.time.DateTime;
 
 public class Trigger {
 	
 	private static Logger logger = Logger.getLogger(Trigger.class);
 	
 	private int triggerId = -1;
-	private long lastModifyTime = -1;
-	private long submitTime = -1;
+	private DateTime lastModifyTime;
+	private DateTime submitTime;
 	private String submitUser;
 	
 	private String source;
@@ -24,15 +25,15 @@ public class Trigger {
 	
 	private static ActionTypeLoader actionTypeLoader;
 	
-	private boolean resetOnTrigger = false;
-	private boolean resetOnExpire = false;
+	private boolean resetOnTrigger = true;
+	private boolean resetOnExpire = true;
 	
 	@SuppressWarnings("unused")
 	private Trigger() throws TriggerManagerException {	
 		throw new TriggerManagerException("Triggers should always be specified");
 	}
 	
-	public long getSubmitTime() {
+	public DateTime getSubmitTime() {
 		return submitTime;
 	}
 
@@ -53,8 +54,8 @@ public class Trigger {
 	}
 
 	public Trigger(
-			long lastModifyTime, 
-			long submitTime, 
+			DateTime lastModifyTime, 
+			DateTime submitTime, 
 			String submitUser, 
 			String source,
 			Condition triggerCondition,
@@ -71,8 +72,8 @@ public class Trigger {
 	
 	public Trigger(
 			int triggerId,
-			long lastModifyTime, 
-			long submitTime, 
+			DateTime lastModifyTime, 
+			DateTime submitTime, 
 			String submitUser, 
 			String source,
 			Condition triggerCondition,
@@ -112,7 +113,7 @@ public class Trigger {
 		this.resetOnExpire = resetOnExpire;
 	}
 
-	public long getLastModifyTime() {
+	public DateTime getLastModifyTime() {
 		return lastModifyTime;
 	}
 
@@ -136,6 +137,10 @@ public class Trigger {
 		triggerCondition.resetCheckers();
 	}
 	
+	public void resetExpireCondition() {
+		expireCondition.resetCheckers();
+	}
+	
 	public List<TriggerAction> getTriggerActions () {
 		return actions;
 	}
@@ -156,8 +161,8 @@ public class Trigger {
 		jsonObj.put("resetOnExpire", String.valueOf(resetOnExpire));
 		jsonObj.put("submitUser", submitUser);
 		jsonObj.put("source", source);
-		jsonObj.put("submitTime", String.valueOf(submitTime));
-		jsonObj.put("lastModifyTime", String.valueOf(lastModifyTime));
+		jsonObj.put("submitTime", String.valueOf(submitTime.getMillis()));
+		jsonObj.put("lastModifyTime", String.valueOf(lastModifyTime.getMillis()));
 		jsonObj.put("triggerId", String.valueOf(triggerId));
 		
 		return jsonObj;
@@ -193,8 +198,10 @@ public class Trigger {
 			boolean resetOnExpire = Boolean.valueOf((String) jsonObj.get("resetOnExpire"));
 			String submitUser = (String) jsonObj.get("submitUser");
 			String source = (String) jsonObj.get("source");
-			long submitTime = Long.valueOf((String) jsonObj.get("submitTime"));
-			long lastModifyTime = Long.valueOf((String) jsonObj.get("lastModifyTime"));
+			long submitTimeMillis = Long.valueOf((String) jsonObj.get("submitTime"));
+			long lastModifyTimeMillis = Long.valueOf((String) jsonObj.get("lastModifyTime"));
+			DateTime submitTime = new DateTime(submitTimeMillis);
+			DateTime lastModifyTime = new DateTime(lastModifyTimeMillis);
 			int triggerId = Integer.valueOf((String) jsonObj.get("triggerId"));
 			trigger = new Trigger(triggerId, lastModifyTime, submitTime, submitUser, source, triggerCond, expireCond, actions);
 			trigger.setResetOnExpire(resetOnExpire);
@@ -206,6 +213,18 @@ public class Trigger {
 		}
 		
 		return trigger;
+	}
+
+	public String getDescription() {
+		StringBuffer actionsString = new StringBuffer();
+		for(TriggerAction act : actions) {
+			actionsString.append(", ");
+			actionsString.append(act.getDescription());
+		}
+		return "Trigger from " + getSource() +
+				" with trigger condition of " + triggerCondition.getExpression() +
+				" and expire condition of " + expireCondition.getExpression() + 
+				actionsString;
 	}
 	
 }

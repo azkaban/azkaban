@@ -1,5 +1,7 @@
 package azkaban.trigger;
 
+import java.io.File;
+import java.io.FileFilter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -10,26 +12,30 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.log4j.Logger;
 
+import azkaban.utils.JSONUtils;
 import azkaban.utils.Props;
-
 
 public class TriggerManager {
 	private static Logger logger = Logger.getLogger(TriggerManager.class);
 	
-	private Map<Integer, Trigger> triggerIdMap = new HashMap<Integer, Trigger>();
+	private static final String TRIGGER_SUFFIX = ".trigger";
+	
+	private static Map<Integer, Trigger> triggerIdMap = new HashMap<Integer, Trigger>();
 	
 	private CheckerTypeLoader checkerLoader;
 	private ActionTypeLoader actionLoader;
 	
-	private TriggerLoader triggerLoader;
+	private static TriggerLoader triggerLoader;
 	
-	TriggerScannerThread scannerThread;
+	private static TriggerScannerThread scannerThread;
+	
+	private Map<String, TriggerServicer> triggerServicers = new HashMap<String, TriggerServicer>();
 	
 	public TriggerManager(Props props, TriggerLoader triggerLoader) {
 		
+		TriggerManager.triggerLoader = triggerLoader;
 		checkerLoader = new CheckerTypeLoader();
 		actionLoader = new ActionTypeLoader();
-		
 		
 		// load plugins
 		try{
@@ -43,11 +49,55 @@ public class TriggerManager {
 		Condition.setCheckerLoader(checkerLoader);
 		Trigger.setActionTypeLoader(actionLoader);
 		
+		checkerLoader = new CheckerTypeLoader();
+		actionLoader = new ActionTypeLoader();
+		
 		long scannerInterval = props.getLong("trigger.scan.interval", TriggerScannerThread.DEFAULT_SCAN_INTERVAL_MS);
 		scannerThread = new TriggerScannerThread(scannerInterval);
 		scannerThread.setName("TriggerScannerThread");
 		
-		this.triggerLoader = triggerLoader;
+	}
+	
+	private static class SuffixFilter implements FileFilter {
+		private String suffix;
+		
+		public SuffixFilter(String suffix) {
+			this.suffix = suffix;
+		}
+
+		@Override
+		public boolean accept(File pathname) {
+			String name = pathname.getName();
+			
+			return pathname.isFile() && !pathname.isHidden() && name.length() > suffix.length() && name.endsWith(suffix);
+		}
+	}
+	
+	@SuppressWarnings("unchecked")
+	public void loadTriggerFromDir(File baseDir, Props props) throws Exception {
+		File[] triggerFiles = baseDir.listFiles(new SuffixFilter(TRIGGER_SUFFIX));
+		
+		for(File triggerFile : triggerFiles) {
+			Props triggerProps = new Props(props, triggerFile);
+			String triggerType = triggerProps.getString("trigger.type");
+			TriggerServicer servicer = triggerServicers.get(triggerType);
+			if(servicer != null) {
+				servicer.createTriggerFromProps(triggerProps);
+			} else {
+				throw new Exception("Trigger " + triggerType + " is not supported.");
+			}
+		}
+	}
+	
+	public void addTriggerServicer(String triggerSource, TriggerServicer triggerServicer) throws TriggerManagerException {
+		if(triggerServicers.containsKey(triggerSource)) {
+			throw new TriggerManagerException("Trigger Servicer " + triggerSource + " already exists!" );
+		}
+		this.triggerServicers.put(triggerSource, triggerServicer);
+	}
+	
+	public void start() {
+		
 		try{
 			// expect loader to return valid triggers
 			List<Trigger> triggers = triggerLoader.loadTriggers();
@@ -58,6 +108,10 @@ public class TriggerManager {
 		}catch(Exception e) {
 			e.printStackTrace();
 			logger.error(e.getMessage());
+		}
+		
+		for(TriggerServicer servicer : triggerServicers.values()) {
+			servicer.load();
 		}
 		
 		scannerThread.start();
@@ -82,6 +136,7 @@ public class TriggerManager {
 		removeTrigger(triggerIdMap.get(id));
 	}
 	
+	//TODO: update corresponding servicers
 	public synchronized void updateTrigger(Trigger t) throws TriggerManagerException {
 		if(!triggerIdMap.containsKey(t.getTriggerId())) {
 			throw new TriggerManagerException("The trigger to update doesn't exist!");
@@ -95,6 +150,7 @@ public class TriggerManager {
 		triggerLoader.updateTrigger(t);
 	}
 	
+	//TODO: update corresponding servicers
 	public synchronized void removeTrigger(Trigger t) throws TriggerManagerException {
 		triggerLoader.removeTrigger(t);
 		scannerThread.deleteTrigger(t);
@@ -104,7 +160,13 @@ public class TriggerManager {
 	public List<Trigger> getTriggers() {
 		return new ArrayList<Trigger>(triggerIdMap.values());
 	}
+	
+	public Map<String, Class<? extends ConditionChecker>> getSupportedCheckers() {
+		return checkerLoader.getSupportedCheckers();
+	}
 
+	
+	
 	//trigger scanner thread
 	public class TriggerScannerThread extends Thread {
 		
@@ -198,6 +260,8 @@ public class TriggerManager {
 			}
 			if(t.isResetOnTrigger()) {
 				t.resetTriggerConditions();
+				t.resetExpireCondition();
+				updateTrigger(t);
 			} else {
 				removeTrigger(t);
 			}
@@ -206,10 +270,16 @@ public class TriggerManager {
 		private void onTriggerExpire(Trigger t) throws TriggerManagerException {
 			if(t.isResetOnExpire()) {
 				t.resetTriggerConditions();
+				t.resetExpireCondition();
+				updateTrigger(t);
 			} else {
 				removeTrigger(t);
 			}
 		}
+	}
+
+	public synchronized Trigger getTrigger(int triggerId) {
+		return triggerIdMap.get(triggerId);
 	}
 
 }

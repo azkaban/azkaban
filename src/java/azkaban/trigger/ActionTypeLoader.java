@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.log4j.Logger;
 
@@ -156,5 +157,9 @@ public class ActionTypeLoader {
 		action = (TriggerAction) Utils.callConstructor(actionClass, args);
 		
 		return action;
+	}
+	
+	public Set<String> getSupportedActions() {
+		return actionToClass.keySet();
 	}
 }

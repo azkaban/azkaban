@@ -9,5 +9,7 @@ public interface TriggerAction {
 	Object toJson();
 	
 	void doAction() throws Exception;
+
+	String getDescription();
 	
 }

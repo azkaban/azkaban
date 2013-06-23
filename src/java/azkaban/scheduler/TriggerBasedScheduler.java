@@ -67,7 +67,7 @@ public class TriggerBasedScheduler {
 							TriggerManager triggerManager,
 							ScheduleLoader loader) 
 	{
-		this.loader = new TriggerBasedScheduleLoader(triggerManager, executorManager, projectManager);
+		this.loader = new TriggerBasedScheduleLoader(triggerManager, executorManager, projectManager, ScheduleManager.triggerSource);
 
 		List<Schedule> scheduleList = null;
 		try {

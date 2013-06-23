@@ -16,12 +16,15 @@ import org.apache.log4j.Logger;
 
 import azkaban.flow.Flow;
 import azkaban.project.ProjectLogEvent.EventType;
+import azkaban.trigger.TriggerManager;
 import azkaban.user.Permission;
 import azkaban.user.User;
 import azkaban.user.Permission.Type;
 import azkaban.utils.DirectoryFlowLoader;
 import azkaban.utils.Props;
 import azkaban.utils.Utils;
+import azkaban.webapp.AzkabanWebServer;
+import azkaban.webapp.servlet.TriggerPlugin;
 
 public class ProjectManager {
 	private static final Logger logger = Logger.getLogger(ProjectManager.class);
@@ -34,14 +37,21 @@ public class ProjectManager {
 	private final int projectVersionRetention;
 	private final boolean creatorDefaultPermissions;
 	
-	public ProjectManager(ProjectLoader loader, Props props) {
+	private TriggerManager triggerManager;
+	private boolean loadTriggerFromFile = false;
+	
+	public ProjectManager(ProjectLoader loader, Props props, TriggerManager triggerManager) {
 		this.projectLoader = loader;
 		this.props = props;
 		this.tempDir = new File(this.props.getString("project.temp.dir", "temp"));
 		this.projectVersionRetention = (props.getInt("project.version.retention", 3));
 		logger.info("Project version retention is set to " + projectVersionRetention);
 		
+		this.triggerManager = triggerManager;
+		
 		this.creatorDefaultPermissions = props.getBoolean("creator.default.proxy", true);
+		
+		this.loadTriggerFromFile = props.getBoolean("enable.load.trigger.from.file", false);
 		
 		if (!tempDir.exists()) {
 			tempDir.mkdirs();
@@ -50,6 +60,10 @@ public class ProjectManager {
 		loadAllProjects();
 	}
 	
+	public void setLoadTriggerFromFile(boolean enable) {
+		this.loadTriggerFromFile = enable;
+	}
+
 	private void loadAllProjects() {
 		List<Project> projects;
 		try {
@@ -337,6 +351,21 @@ public class ProjectManager {
 			projectLoader.uploadProjectProperties(project, new ArrayList<Props>(jobProps.values()));
 			logger.info("Uploading Props properties");
 			projectLoader.uploadProjectProperties(project, propProps);
+		}
+		
+		if(loadTriggerFromFile) {
+			logger.info("Loading triggers.");
+			Props triggerProps = new Props();
+			triggerProps.put("projectId", project.getId());
+			triggerProps.put("projectName", project.getName());
+			triggerProps.put("submitUser", uploader.getUserId());
+			try {
+				triggerManager.loadTriggerFromDir(file, triggerProps);
+			} catch (Exception e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+				logger.error("Failed to load triggers.", e);
+			}
 		}
 		
 		logger.info("Uploaded project files. Cleaning up temp files.");

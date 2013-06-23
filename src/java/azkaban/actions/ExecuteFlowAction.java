@@ -30,6 +30,7 @@ public class ExecuteFlowAction implements TriggerAction {
 	
 	public ExecuteFlowAction(int projectId, String projectName, String flowName, String submitUser, ExecutionOptions executionOptions) {
 		this.projectId = projectId;
+		this.projectName = projectName;
 		this.flowName = flowName;
 		this.submitUser = submitUser;
 		this.executionOptions = executionOptions;
@@ -192,6 +193,12 @@ public class ExecuteFlowAction implements TriggerAction {
 			throw new RuntimeException(e);
 		}
 		
+	}
+
+	@Override
+	public String getDescription() {
+		return "Execute flow " + getFlowName() + 
+				" from project " + getProjectName();
 	}
 
 

@@ -24,10 +24,13 @@ public class TriggerBasedScheduleLoader implements ScheduleLoader {
 	
 	private TriggerManager triggerManager;
 	
-	private static final String triggerSource = "TriggerBasedScheduler";
+	private String triggerSource;
 	
-	public TriggerBasedScheduleLoader(TriggerManager triggerManager, ExecutorManager executorManager, ProjectManager projectManager) {
+	private Map<Integer, Trigger> triggersLocalCopy;
+	
+	public TriggerBasedScheduleLoader(TriggerManager triggerManager, ExecutorManager executorManager, ProjectManager projectManager, String triggerSource) {
 		this.triggerManager = triggerManager;
+		this.triggerSource = triggerSource;
 		// need to init the action types and condition checker types 
 		ExecuteFlowAction.setExecutorManager(executorManager);
 		ExecuteFlowAction.setProjectManager(projectManager);
@@ -38,7 +41,7 @@ public class TriggerBasedScheduleLoader implements ScheduleLoader {
 		Condition triggerCondition = createTimeTriggerCondition(s);
 		Condition expireCondition = createTimeExpireCondition(s);
 		List<TriggerAction> actions = createActions(s);
-		Trigger t = new Trigger(s.getLastModifyTime(), s.getSubmitTime(), s.getSubmitUser(), triggerSource, triggerCondition, expireCondition, actions);
+		Trigger t = new Trigger(new DateTime(s.getLastModifyTime()), new DateTime(s.getSubmitTime()), s.getSubmitUser(), triggerSource, triggerCondition, expireCondition, actions);
 		if(s.isRecurring()) {
 			t.setResetOnTrigger(true);
 		}
@@ -76,6 +79,8 @@ public class TriggerBasedScheduleLoader implements ScheduleLoader {
 		Trigger t = createScheduleTrigger(s);
 		try {
 			triggerManager.insertTrigger(t);
+			s.setScheduleId(t.getTriggerId());
+			triggersLocalCopy.put(t.getTriggerId(), t);
 		} catch (TriggerManagerException e) {
 			// TODO Auto-generated catch block
 			throw new ScheduleManagerException("Failed to insert new schedule!", e);
@@ -87,6 +92,7 @@ public class TriggerBasedScheduleLoader implements ScheduleLoader {
 		Trigger t = createScheduleTrigger(s);
 		try {
 			triggerManager.updateTrigger(t);
+			triggersLocalCopy.put(t.getTriggerId(), t);
 		} catch (TriggerManagerException e) {
 			// TODO Auto-generated catch block
 			throw new ScheduleManagerException("Failed to update schedule!", e);
@@ -99,10 +105,13 @@ public class TriggerBasedScheduleLoader implements ScheduleLoader {
 	public List<Schedule> loadSchedules() throws ScheduleManagerException {
 		List<Trigger> triggers = triggerManager.getTriggers();
 		List<Schedule> schedules = new ArrayList<Schedule>();
+		triggersLocalCopy = new HashMap<Integer, Trigger>();
 		for(Trigger t : triggers) {
 			if(t.getSource().equals(triggerSource)) {
+				triggersLocalCopy.put(t.getTriggerId(), t);
 				Schedule s = triggerToSchedule(t);
 				schedules.add(s);
+				System.out.println("loaded schedule for " + s.getProjectId() + s.getProjectName());
 			}
 		}
 		return schedules;
@@ -137,9 +146,9 @@ public class TriggerBasedScheduleLoader implements ScheduleLoader {
 					ck.getFirstCheckTime().getMillis(), 
 					ck.getFirstCheckTime().getZone(), 
 					ck.getPeriod(),
-					t.getLastModifyTime(),
+					t.getLastModifyTime().getMillis(),
 					ck.getNextCheckTime().getMillis(),
-					t.getSubmitTime(),
+					t.getSubmitTime().getMillis(),
 					t.getSubmitUser());
 			return s;
 		} else {
@@ -152,6 +161,7 @@ public class TriggerBasedScheduleLoader implements ScheduleLoader {
 	public void removeSchedule(Schedule s) throws ScheduleManagerException {
 		try {
 			triggerManager.removeTrigger(s.getScheduleId());
+			triggersLocalCopy.remove(s.getScheduleId());
 		} catch (TriggerManagerException e) {
 			// TODO Auto-generated catch block
 			throw new ScheduleManagerException(e.getMessage());
@@ -162,8 +172,9 @@ public class TriggerBasedScheduleLoader implements ScheduleLoader {
 	@Override
 	public void updateNextExecTime(Schedule s)
 			throws ScheduleManagerException {
-		logger.error("no longer doing it here.");
-		throw new ScheduleManagerException("No longer updating execution time in scheduler");
+		Trigger t = triggersLocalCopy.get(s.getScheduleId());
+		BasicTimeChecker ck = (BasicTimeChecker) t.getTriggerCondition().getCheckers().values().toArray()[0];
+		s.setNextExecTime(ck.getNextCheckTime().getMillis());
 	}
 
 }

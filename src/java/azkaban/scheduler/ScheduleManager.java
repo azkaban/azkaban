@@ -16,6 +16,7 @@
 
 package azkaban.scheduler;
 
+import java.io.File;
 import java.lang.Thread.State;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -46,7 +47,9 @@ import azkaban.sla.SLA.SlaRule;
 import azkaban.sla.SLA.SlaSetting;
 import azkaban.sla.SLAManager;
 import azkaban.sla.SlaOptions;
+import azkaban.trigger.TriggerServicer;
 import azkaban.utils.Pair;
+import azkaban.utils.Props;
 
 /**
  * The ScheduleManager stores and executes the schedule. It uses a single thread
@@ -54,9 +57,10 @@ import azkaban.utils.Pair;
  * the flow from the schedule when it is run, which can potentially allow the
  * flow to and overlap each other.
  */
-public class ScheduleManager {
+public class ScheduleManager implements TriggerServicer {
 	private static Logger logger = Logger.getLogger(ScheduleManager.class);
 
+	public static final String triggerSource = "SimpleTimeTrigger";
 	private final DateTimeFormatter _dateFormat = DateTimeFormat.forPattern("MM-dd-yyyy HH:mm:ss:SSS");
 	private ScheduleLoader loader;
 
@@ -79,7 +83,7 @@ public class ScheduleManager {
 	 * 
 	 * @param loader
 	 */
-	public ScheduleManager(ExecutorManager executorManager,
+	public ScheduleManager (ExecutorManager executorManager,
 							ProjectManager projectManager, 
 							SLAManager slaManager,
 							ScheduleLoader loader,
@@ -91,8 +95,17 @@ public class ScheduleManager {
 		this.loader = loader;
 		this.useExternalRunner = useExternalRunner;
 		
+		if(!useExternalRunner) {
+			this.runner = new ScheduleRunner();
+			load();
+		} else {
+			this.runner = null;
+		}
 		
-
+	}
+	
+	@Override
+	public void load() {
 		List<Schedule> scheduleList = null;
 		try {
 			scheduleList = loader.loadSchedules();
@@ -107,10 +120,7 @@ public class ScheduleManager {
 		}
 
 		if(!useExternalRunner) {
-			this.runner = new ScheduleRunner();
 			this.runner.start();
-		} else {
-			this.runner = null;
 		}
 	}
 
@@ -128,8 +138,21 @@ public class ScheduleManager {
 	 * Retrieves a copy of the list of schedules.
 	 * 
 	 * @return
+	 * @throws ScheduleManagerException 
 	 */
 	public synchronized List<Schedule> getSchedules() {
+		if(useExternalRunner) {
+			for(Schedule s : scheduleIDMap.values()) {
+				try {
+					loader.updateNextExecTime(s);
+				} catch (ScheduleManagerException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+					logger.error("Failed to update schedule from external runner for schedule " + s.getScheduleId());
+				}
+			}
+		}
+		
 		//return runner.getRunnerSchedules();
 		return new ArrayList<Schedule>(scheduleIDMap.values());
 	}
@@ -311,14 +334,18 @@ public class ScheduleManager {
 			logger.error("The provided schedule is non-recurring and the scheduled time already passed. " + s.getScheduleName());
 		}
 	}
-
-//	/**
-//	 * Save the schedule
-//	 */
-//	private void saveSchedule() {
-//		loader.saveSchedule(getSchedule());
-//	}
 	
+	@Override
+	public void createTriggerFromProps(Props props) throws ScheduleManagerException {
+		throw new ScheduleManagerException("create " + getTriggerSource() + " from json not supported yet" );
+		
+	}
+
+	@Override
+	public String getTriggerSource() {
+		return triggerSource;
+	}
+
 	/**
 	 * Thread that simply invokes the running of flows when the schedule is
 	 * ready.
@@ -590,4 +617,5 @@ public class ScheduleManager {
 			return runner.isAlive();
 		}
 	}
+
 }
