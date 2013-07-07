@@ -84,7 +84,7 @@
 							<td>${trigger.source}</td>
 							<td>${trigger.submitUser}</td>
 							<td>${trigger.getDescription()}</td>
-							<td><button id="removeTriggerBtn" hidden="true" onclick="removeTrigger(${trigger.triggerId})" >Remove Trigger</button></td>
+							<td><button id="expireTriggerBtn" onclick="expireTrigger(${trigger.triggerId})" >Expire Trigger</button></td>
 						</tr>
 #end
 #else

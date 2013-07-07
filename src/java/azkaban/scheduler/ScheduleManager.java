@@ -47,7 +47,9 @@ import azkaban.sla.SLA.SlaRule;
 import azkaban.sla.SLA.SlaSetting;
 import azkaban.sla.SLAManager;
 import azkaban.sla.SlaOptions;
-import azkaban.trigger.TriggerServicer;
+import azkaban.trigger.Trigger;
+import azkaban.trigger.TriggerAgent;
+import azkaban.trigger.TriggerStatus;
 import azkaban.utils.Pair;
 import azkaban.utils.Props;
 
@@ -57,7 +59,7 @@ import azkaban.utils.Props;
  * the flow from the schedule when it is run, which can potentially allow the
  * flow to and overlap each other.
  */
-public class ScheduleManager implements TriggerServicer {
+public class ScheduleManager implements TriggerAgent {
 	private static Logger logger = Logger.getLogger(ScheduleManager.class);
 
 	public static final String triggerSource = "SimpleTimeTrigger";
@@ -141,17 +143,17 @@ public class ScheduleManager implements TriggerServicer {
 	 * @throws ScheduleManagerException 
 	 */
 	public synchronized List<Schedule> getSchedules() {
-		if(useExternalRunner) {
-			for(Schedule s : scheduleIDMap.values()) {
-				try {
-					loader.updateNextExecTime(s);
-				} catch (ScheduleManagerException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-					logger.error("Failed to update schedule from external runner for schedule " + s.getScheduleId());
-				}
-			}
-		}
+//		if(useExternalRunner) {
+//			for(Schedule s : scheduleIDMap.values()) {
+//				try {
+//					loader.updateNextExecTime(s);
+//				} catch (ScheduleManagerException e) {
+//					// TODO Auto-generated catch block
+//					e.printStackTrace();
+//					logger.error("Failed to update schedule from external runner for schedule " + s.getScheduleId());
+//				}
+//			}
+//		}
 		
 		//return runner.getRunnerSchedules();
 		return new ArrayList<Schedule>(scheduleIDMap.values());
@@ -336,7 +338,7 @@ public class ScheduleManager implements TriggerServicer {
 	}
 	
 	@Override
-	public void createTriggerFromProps(Props props) throws ScheduleManagerException {
+	public void loadTriggerFromProps(Props props) throws ScheduleManagerException {
 		throw new ScheduleManagerException("create " + getTriggerSource() + " from json not supported yet" );
 		
 	}
@@ -344,6 +346,21 @@ public class ScheduleManager implements TriggerServicer {
 	@Override
 	public String getTriggerSource() {
 		return triggerSource;
+	}
+	
+	@Override
+	public void updateLocal(Trigger t) {
+		if(t.getStatus().equals(TriggerStatus.EXPIRED)) {
+			removeSchedule(getSchedule(t.getTriggerId()));
+		} else {
+			try {
+				loader.updateNextExecTime(getSchedule(t.getTriggerId()));
+			} catch (ScheduleManagerException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+				logger.error("Failed to get updated next execution time on schedule " + getSchedule(t.getTriggerId()).toString());
+			}
+		}
 	}
 
 	/**
@@ -617,5 +634,9 @@ public class ScheduleManager implements TriggerServicer {
 			return runner.isAlive();
 		}
 	}
+
+	
+
+	
 
 }

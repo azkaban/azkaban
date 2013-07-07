@@ -1,6 +1,6 @@
 package azkaban.webapp.servlet;
 
-import azkaban.trigger.TriggerServicer;
+import azkaban.trigger.TriggerAgent;
 
 public interface TriggerPlugin {
 	
@@ -13,6 +13,21 @@ public interface TriggerPlugin {
 //	}
 
 	public AbstractAzkabanServlet getServlet();
-	public TriggerServicer getServicer();
+	public TriggerAgent getAgent();
 	public void load();
+	
+	public String getPluginName();
+
+	public String getPluginPath();
+
+	public int getOrder();
+	
+	public boolean isHidden();
+
+	public void setHidden(boolean hidden);
+	
+	public String getInputPanelVM();
+	
+	
+	
 }

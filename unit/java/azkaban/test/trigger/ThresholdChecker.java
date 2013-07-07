@@ -81,5 +81,11 @@ public class ThresholdChecker implements ConditionChecker{
 		return null;
 	}
 
+	@Override
+	public void stopChecker() {
+		return;
+		
+	}
+
 
 }

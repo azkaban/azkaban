@@ -242,5 +242,10 @@ public class BasicTimeChecker implements ConditionChecker {
 		return jsonObj;
 	}
 
+	@Override
+	public void stopChecker() {
+		return;
+	}
+
 
 }

@@ -16,8 +16,8 @@ public class Trigger {
 	private DateTime lastModifyTime;
 	private DateTime submitTime;
 	private String submitUser;
-	
 	private String source;
+	private TriggerStatus status = TriggerStatus.READY;
 	
 	private Condition triggerCondition;
 	private Condition expireCondition;
@@ -39,6 +39,14 @@ public class Trigger {
 
 	public String getSubmitUser() {
 		return submitUser;
+	}
+
+	public TriggerStatus getStatus() {
+		return status;
+	}
+
+	public void setStatus(TriggerStatus status) {
+		this.status = status;
 	}
 
 	public Condition getTriggerCondition() {
@@ -164,6 +172,7 @@ public class Trigger {
 		jsonObj.put("submitTime", String.valueOf(submitTime.getMillis()));
 		jsonObj.put("lastModifyTime", String.valueOf(lastModifyTime.getMillis()));
 		jsonObj.put("triggerId", String.valueOf(triggerId));
+		jsonObj.put("status", status.toString());
 		
 		return jsonObj;
 	}
@@ -203,9 +212,11 @@ public class Trigger {
 			DateTime submitTime = new DateTime(submitTimeMillis);
 			DateTime lastModifyTime = new DateTime(lastModifyTimeMillis);
 			int triggerId = Integer.valueOf((String) jsonObj.get("triggerId"));
+			TriggerStatus status = TriggerStatus.valueOf((String)jsonObj.get("status"));
 			trigger = new Trigger(triggerId, lastModifyTime, submitTime, submitUser, source, triggerCond, expireCond, actions);
 			trigger.setResetOnExpire(resetOnExpire);
 			trigger.setResetOnTrigger(resetOnTrigger);
+			trigger.setStatus(status);
 		}catch(Exception e) {
 			e.printStackTrace();
 			logger.error("Failed to decode the trigger.", e);
@@ -226,5 +237,16 @@ public class Trigger {
 				" and expire condition of " + expireCondition.getExpression() + 
 				actionsString;
 	}
+
+	public void stopCheckers() {
+		for(ConditionChecker checker : triggerCondition.getCheckers().values()) {
+			checker.stopChecker();
+		}
+		for(ConditionChecker checker : expireCondition.getCheckers().values()) {
+			checker.stopChecker();
+		}
+		
+	}
+
 	
 }

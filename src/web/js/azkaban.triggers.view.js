@@ -1,5 +1,24 @@
 $.namespace('azkaban');
 
+function expireTrigger(triggerId) {
+	var triggerURL = contextURL + "/triggers"
+	var redirectURL = contextURL + "/triggers"
+	$.post(
+			triggerURL,
+			{"ajax":"expireTrigger", "triggerId":triggerId},
+			function(data) {
+				if (data.error) {
+//                 alert(data.error)
+					$('#errorMsg').text(data.error);
+				}
+				else {
+// 		 alert("Schedule "+schedId+" removed!")
+					window.location = redirectURL;
+				}
+			},
+			"json"
+	)
+}
 
 function removeSched(scheduleId) {
 	var scheduleURL = contextURL + "/schedule"

@@ -63,7 +63,9 @@ public abstract class AbstractAzkabanServlet extends HttpServlet {
 	private String color;
 
 	private List<ViewerPlugin> viewerPlugins;
-
+	private List<TriggerPlugin> triggerPlugins;
+	
+	
 	/**
 	 * To retrieve the application for the servlet
 	 * 
@@ -90,6 +92,7 @@ public abstract class AbstractAzkabanServlet extends HttpServlet {
 		if (application instanceof AzkabanWebServer) {
 			AzkabanWebServer server = (AzkabanWebServer)application;
 			viewerPlugins = server.getViewerPlugins();
+			triggerPlugins = new ArrayList<TriggerPlugin>(server.getTriggerPlugins().values());
 		}
 	}
 	
@@ -302,6 +305,10 @@ public abstract class AbstractAzkabanServlet extends HttpServlet {
 //			page.add("viewerPath", plugin.getPluginPath());
 		}
 		
+		if(triggerPlugins != null && !triggerPlugins.isEmpty()) {
+			page.add("triggers", triggerPlugins);
+		}
+		
 		return page;
 	}
 
@@ -328,6 +335,10 @@ public abstract class AbstractAzkabanServlet extends HttpServlet {
 			ViewerPlugin plugin = viewerPlugins.get(0);
 			page.add("viewerName", plugin.getPluginName());
 			page.add("viewerPath", plugin.getPluginPath());
+		}
+		
+		if(triggerPlugins != null && !triggerPlugins.isEmpty()) {
+			page.add("triggers", triggerPlugins);
 		}
 		
 		return page;

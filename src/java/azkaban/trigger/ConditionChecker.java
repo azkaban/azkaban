@@ -17,4 +17,6 @@ public interface ConditionChecker {
 	
 	Object toJson();
 
+	void stopChecker();
+
 }

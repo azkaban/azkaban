@@ -61,8 +61,8 @@ public class TriggerManagerServlet extends LoginAbstractAzkabanServlet {
 		String ajaxName = getParam(req, "ajax");
 		
 		try {
-			if (ajaxName.equals("removeTrigger")) {
-				ajaxRemoveTrigger(req, ret, session.getUser());
+			if (ajaxName.equals("expireTrigger")) {
+				ajaxExpireTrigger(req, ret, session.getUser());
 			}
 		} catch (Exception e) {
 			ret.put("error", e.getMessage());
@@ -94,7 +94,7 @@ public class TriggerManagerServlet extends LoginAbstractAzkabanServlet {
 		}
 	}
 
-	private void ajaxRemoveTrigger(HttpServletRequest req, Map<String, Object> ret, User user) throws ServletException, TriggerManagerException{
+	private void ajaxExpireTrigger(HttpServletRequest req, Map<String, Object> ret, User user) throws ServletException, TriggerManagerException{
 		int triggerId = getIntParam(req, "triggerId");
 		Trigger t = triggerManager.getTrigger(triggerId);
 		if(t == null) {
@@ -109,7 +109,7 @@ public class TriggerManagerServlet extends LoginAbstractAzkabanServlet {
 //			return;
 //		}
 
-		triggerManager.removeTrigger(triggerId);
+		triggerManager.expireTrigger(triggerId);
 		logger.info("User '" + user.getUserId() + " has removed trigger " + t.getDescription());
 //		projectManager.postProjectEvent(project, EventType.SCHEDULE, user.getUserId(), "Schedule " + sched.toString() + " has been removed.");
 		

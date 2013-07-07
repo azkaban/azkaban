@@ -29,7 +29,7 @@ public class TriggerManager {
 	
 	private static TriggerScannerThread scannerThread;
 	
-	private Map<String, TriggerServicer> triggerServicers = new HashMap<String, TriggerServicer>();
+	private Map<String, TriggerAgent> triggerAgents = new HashMap<String, TriggerAgent>();
 	
 	public TriggerManager(Props props, TriggerLoader triggerLoader) {
 		
@@ -80,20 +80,20 @@ public class TriggerManager {
 		for(File triggerFile : triggerFiles) {
 			Props triggerProps = new Props(props, triggerFile);
 			String triggerType = triggerProps.getString("trigger.type");
-			TriggerServicer servicer = triggerServicers.get(triggerType);
-			if(servicer != null) {
-				servicer.createTriggerFromProps(triggerProps);
+			TriggerAgent agent = triggerAgents.get(triggerType);
+			if(agent != null) {
+				agent.loadTriggerFromProps(triggerProps);
 			} else {
 				throw new Exception("Trigger " + triggerType + " is not supported.");
 			}
 		}
 	}
 	
-	public void addTriggerServicer(String triggerSource, TriggerServicer triggerServicer) throws TriggerManagerException {
-		if(triggerServicers.containsKey(triggerSource)) {
-			throw new TriggerManagerException("Trigger Servicer " + triggerSource + " already exists!" );
+	public void addTriggerAgent(String triggerSource, TriggerAgent agent) throws TriggerManagerException {
+		if(triggerAgents.containsKey(triggerSource)) {
+			throw new TriggerManagerException("Trigger agent " + triggerSource + " already exists!" );
 		}
-		this.triggerServicers.put(triggerSource, triggerServicer);
+		this.triggerAgents.put(triggerSource, agent);
 	}
 	
 	public void start() {
@@ -110,8 +110,8 @@ public class TriggerManager {
 			logger.error(e.getMessage());
 		}
 		
-		for(TriggerServicer servicer : triggerServicers.values()) {
-			servicer.load();
+		for(TriggerAgent agent : triggerAgents.values()) {
+			agent.load();
 		}
 		
 		scannerThread.start();
@@ -133,10 +133,13 @@ public class TriggerManager {
 	}
 	
 	public synchronized void removeTrigger(int id) throws TriggerManagerException {
-		removeTrigger(triggerIdMap.get(id));
+		Trigger t = triggerIdMap.get(id);
+		if(t != null) {
+			removeTrigger(triggerIdMap.get(id));
+		}
 	}
 	
-	//TODO: update corresponding servicers
+	//TODO: update corresponding agents
 	public synchronized void updateTrigger(Trigger t) throws TriggerManagerException {
 		if(!triggerIdMap.containsKey(t.getTriggerId())) {
 			throw new TriggerManagerException("The trigger to update doesn't exist!");
@@ -146,12 +149,12 @@ public class TriggerManager {
 		scannerThread.addTrigger(t);
 		triggerIdMap.put(t.getTriggerId(), t);
 		
-		
 		triggerLoader.updateTrigger(t);
 	}
-	
-	//TODO: update corresponding servicers
+
+	//TODO: update corresponding agents
 	public synchronized void removeTrigger(Trigger t) throws TriggerManagerException {
+		t.stopCheckers();
 		triggerLoader.removeTrigger(t);
 		scannerThread.deleteTrigger(t);
 		triggerIdMap.remove(t.getTriggerId());		
@@ -165,7 +168,13 @@ public class TriggerManager {
 		return checkerLoader.getSupportedCheckers();
 	}
 
-	
+	private void updateAgent(Trigger t) {
+		TriggerAgent agent = triggerAgents.get(t.getSource());
+		if(agent != null) {
+			agent.updateLocal(t);
+		}
+		
+	}
 	
 	//trigger scanner thread
 	public class TriggerScannerThread extends Thread {
@@ -240,10 +249,12 @@ public class TriggerManager {
 		
 		private void checkAllTriggers() throws TriggerManagerException {
 			for(Trigger t : triggers) {
-				if(t.triggerConditionMet()) {
-					onTriggerTrigger(t);
-				} else if (t.expireConditionMet()) {
-					onTriggerExpire(t);
+				if(t.getStatus().equals(TriggerStatus.READY)) {
+					if(t.triggerConditionMet()) {
+						onTriggerTrigger(t);
+					} else if (t.expireConditionMet()) {
+						onTriggerExpire(t);
+					}
 				}
 			}
 		}
@@ -263,8 +274,9 @@ public class TriggerManager {
 				t.resetExpireCondition();
 				updateTrigger(t);
 			} else {
-				removeTrigger(t);
+				t.setStatus(TriggerStatus.EXPIRED);
 			}
+			updateAgent(t);
 		}
 		
 		private void onTriggerExpire(Trigger t) throws TriggerManagerException {
@@ -273,13 +285,20 @@ public class TriggerManager {
 				t.resetExpireCondition();
 				updateTrigger(t);
 			} else {
-				removeTrigger(t);
+				t.setStatus(TriggerStatus.EXPIRED);
 			}
+			updateAgent(t);
 		}
 	}
 
 	public synchronized Trigger getTrigger(int triggerId) {
 		return triggerIdMap.get(triggerId);
+	}
+
+	public void expireTrigger(int triggerId) {
+		Trigger t = getTrigger(triggerId);
+		t.setStatus(TriggerStatus.EXPIRED);
+		updateAgent(t);
 	}
 
 }

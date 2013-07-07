@@ -71,7 +71,7 @@ import azkaban.sla.SLAManagerException;
 import azkaban.trigger.JdbcTriggerLoader;
 import azkaban.trigger.TriggerLoader;
 import azkaban.trigger.TriggerManager;
-import azkaban.trigger.TriggerServicer;
+import azkaban.trigger.TriggerAgent;
 import azkaban.user.UserManager;
 import azkaban.user.XmlUserManager;
 import azkaban.utils.FileIOUtils;
@@ -499,11 +499,11 @@ public class AzkabanWebServer extends AzkabanServer {
 		Map<String, TriggerPlugin> triggerPlugins = loadTriggerPlugins(root, triggerPluginDir, app);
 		app.setTriggerPlugins(triggerPlugins);
 		// always have basic time trigger
-		app.getTriggerManager().addTriggerServicer(app.getScheduleManager().getTriggerSource(), app.getScheduleManager());
+		app.getTriggerManager().addTriggerAgent(app.getScheduleManager().getTriggerSource(), app.getScheduleManager());
 		// add additional triggers
 		for(TriggerPlugin plugin : triggerPlugins.values()) {
-			TriggerServicer servicer = plugin.getServicer();
-			app.getTriggerManager().addTriggerServicer(servicer.getTriggerSource(), servicer);
+			TriggerAgent agent = plugin.getAgent();
+			app.getTriggerManager().addTriggerAgent(agent.getTriggerSource(), agent);
 		}
 		// fire up
 		app.getTriggerManager().start();
@@ -582,7 +582,7 @@ public class AzkabanWebServer extends AzkabanServer {
 			}
 			
 			String pluginName = pluginProps.getString("trigger.name");
-			String pluginWebPath = pluginProps.getString("trigger.path");
+			String pluginWebPath = pluginProps.getString("trigger.web.path");
 			int pluginOrder = pluginProps.getInt("trigger.order", 0);
 			boolean pluginHidden = pluginProps.getBoolean("trigger.hidden", false);
 			List<String> extLibClasspath = pluginProps.getStringList("trigger.external.classpaths", (List<String>)null);

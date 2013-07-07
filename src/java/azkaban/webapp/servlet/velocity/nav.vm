@@ -36,6 +36,15 @@
 					</li>
 					#end
 				#end
+				
+				#foreach($trigger in $triggers)
+					#if(!$trigger.hidden)
+					<li #if($current_page == $trigger.pluginName) class="selected"#end onClick="navMenuClick('$!context/$trigger.pluginPath')">
+						<a href="$!context/$trigger.pluginPath">$trigger.pluginName</a>
+					</li>
+					#end
+				#end
+				
 			</ul>
 			
 			<div id="user-id">

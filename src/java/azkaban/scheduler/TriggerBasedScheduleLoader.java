@@ -102,7 +102,7 @@ public class TriggerBasedScheduleLoader implements ScheduleLoader {
 	//TODO
 	// may need to add logic to filter out skip runs
 	@Override
-	public List<Schedule> loadSchedules() throws ScheduleManagerException {
+	public synchronized List<Schedule> loadSchedules() throws ScheduleManagerException {
 		List<Trigger> triggers = triggerManager.getTriggers();
 		List<Schedule> schedules = new ArrayList<Schedule>();
 		triggersLocalCopy = new HashMap<Integer, Trigger>();
