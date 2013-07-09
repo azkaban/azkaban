@@ -136,9 +136,9 @@
 		<a class="btn2" id="schedule-btn">Schedule</a>
 		#end
 		
-		#if( $triggers.size() > 0 ) 
-			#foreach( $trigger in $triggers )
-			<a class="btn2" id=set-$trigger.pluginName>$trigger.pluginName</a>
+		#if( $triggerPlugins.size() > 0 ) 
+			#foreach( $triggerPlugin in $triggerPlugins )
+			<a class="btn2" id=set-$triggerPlugin.pluginName>$triggerPlugin.pluginName</a>
 			#end
 		#end
 
@@ -152,11 +152,11 @@
 #parse( "azkaban/webapp/servlet/velocity/schedulepanel.vm" )
 #end
 
-#if( $triggers.size() > 0 ) 
-	#foreach( $trigger in $triggers )
-		#set ($prefix = $trigger.pluginName )
-		#set ($webpath = $trigger.pluginPath )
-		#parse( $trigger.inputPanelVM )
+#if( $triggerPlugins.size() > 0 ) 
+	#foreach( $triggerPlugin in $triggerPlugins )
+		#set ($prefix = $triggerPlugin.pluginName )
+		#set ($webpath = $triggerPlugin.pluginPath )
+		#parse( $triggerPlugin.inputPanelVM )
 	#end
 #end
 

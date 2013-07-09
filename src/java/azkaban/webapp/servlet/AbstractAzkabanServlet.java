@@ -306,7 +306,7 @@ public abstract class AbstractAzkabanServlet extends HttpServlet {
 		}
 		
 		if(triggerPlugins != null && !triggerPlugins.isEmpty()) {
-			page.add("triggers", triggerPlugins);
+			page.add("triggerPlugins", triggerPlugins);
 		}
 		
 		return page;

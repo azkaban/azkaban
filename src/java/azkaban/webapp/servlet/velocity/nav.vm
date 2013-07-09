@@ -37,10 +37,10 @@
 					#end
 				#end
 				
-				#foreach($trigger in $triggers)
-					#if(!$trigger.hidden)
-					<li #if($current_page == $trigger.pluginName) class="selected"#end onClick="navMenuClick('$!context/$trigger.pluginPath')">
-						<a href="$!context/$trigger.pluginPath">$trigger.pluginName</a>
+				#foreach($triggerPlugin in $triggerPlugins)
+					#if(!$triggerPlugin.hidden)
+					<li #if($current_page == $triggerPlugin.pluginName) class="selected"#end onClick="navMenuClick('$!context/$triggerPlugin.pluginPath')">
+						<a href="$!context/$triggerPlugin.pluginPath">$triggerPlugin.pluginName</a>
 					</li>
 					#end
 				#end
