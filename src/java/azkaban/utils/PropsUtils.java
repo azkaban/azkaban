@@ -24,7 +24,6 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.StringTokenizer;
 import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -145,8 +144,7 @@ public class PropsUtils {
 		return false;
 	}
 
-	private static final Pattern VARIABLE_PATTERN = Pattern
-			.compile("\\$\\{([a-zA-Z_.0-9]+)\\}");
+	private static final Pattern VARIABLE_PATTERN = Pattern.compile("\\$\\{([a-zA-Z_.0-9]+)\\}");
 
 	public static Props resolveProps(Props props) {
 		if (props == null) return null;

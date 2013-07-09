@@ -392,6 +392,7 @@ public class FlowRunner extends EventHandler implements Runnable {
 				flow.setStatus(Status.FAILED);
 			case FAILED:
 			case KILLED:
+			case FAILED_SUCCEEDED:
 				logger.info("Flow is set to " + flow.getStatus().toString());
 				break;
 			default:
@@ -674,6 +675,7 @@ public class FlowRunner extends EventHandler implements Runnable {
 		case KILLED:
 		case SKIPPED:
 		case SUCCEEDED:
+		case FAILED_SUCCEEDED:
 		case QUEUED:
 		case RUNNING:
 			return null;
@@ -692,6 +694,7 @@ public class FlowRunner extends EventHandler implements Runnable {
 				shouldKill = true;
 			case SKIPPED:
 			case SUCCEEDED:
+			case FAILED_SUCCEEDED:
 				continue;
 			case RUNNING:
 			case QUEUED:

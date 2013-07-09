@@ -37,7 +37,7 @@ public class Flow {
 	private HashMap<String, Set<Edge>> outEdges = new HashMap<String, Set<Edge>>();
 	private HashMap<String, Set<Edge>> inEdges = new HashMap<String, Set<Edge>>();
 	private HashMap<String, FlowProps> flowProps = new HashMap<String, FlowProps>(); 
-
+	
 	private List<String> failureEmail = new ArrayList<String>();
 	private List<String> successEmail = new ArrayList<String>();
 	private ArrayList<String> errors;
@@ -80,7 +80,7 @@ public class Flow {
 			}
 		}
 	}
-
+	
 	private void recursiveSetLevels(Node node) {
 		Set<Edge> edges = outEdges.get(node.getId());
 		if (edges != null) {
@@ -147,13 +147,13 @@ public class Flow {
 	public void addNode(Node node) {
 		nodes.put(node.getId(), node);
 	}
-
+	
 	public void addAllFlowProperties(Collection<FlowProps> props) {
 		for (FlowProps prop : props) {
 			flowProps.put(prop.getSource(), prop);
 		}
 	}
-
+	
 	public String getId() {
 		return id;
 	}

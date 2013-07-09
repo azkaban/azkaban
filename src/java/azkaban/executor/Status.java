@@ -1,7 +1,7 @@
 package azkaban.executor;
 
 public enum Status {
-	READY(10), PREPARING(20), RUNNING(30), PAUSED(40), SUCCEEDED(50), KILLED(60), FAILED(70), FAILED_FINISHING(80), SKIPPED(90), DISABLED(100), QUEUED(110);
+	READY(10), PREPARING(20), RUNNING(30), PAUSED(40), SUCCEEDED(50), KILLED(60), FAILED(70), FAILED_FINISHING(80), SKIPPED(90), DISABLED(100), QUEUED(110), FAILED_SUCCEEDED(120);
 	
 	private int numVal;
 
@@ -37,6 +37,8 @@ public enum Status {
 			return DISABLED;
 		case 110:
 			return QUEUED;
+		case 120:
+			return FAILED_SUCCEEDED;
 		default:
 			return READY;
 		}
@@ -48,6 +50,7 @@ public enum Status {
 		case KILLED:
 		case SUCCEEDED:
 		case SKIPPED:
+		case FAILED_SUCCEEDED:
 			return true;
 		default:
 			return false;

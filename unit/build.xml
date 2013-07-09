@@ -9,7 +9,8 @@
 	<property name="java.src.dir" value="${base.dir}/unit/java" />
 	<property name="job.conf.dir" value="${base.dir}/unit/executions/exectest1" />
 	<property name="job.conf.dir2" value="${base.dir}/unit/executions/exectest2" />
-	
+	<property name="animal.conf.dir" value="${base.dir}/unit/executions/animal" />
+		
 	<property environment="env" />
 
 	<path id="main.classpath">
@@ -74,6 +75,16 @@
 			<zipfileset dir="${job.conf.dir2}" />
 		</zip>
 	</target>
-
+	
+	<target name="package-animal" depends="jars" description="Creates a test zip">
+		<delete dir="${dist.packages.dir}" />
+		<mkdir dir="${dist.packages.dir}" />
+		
+		<!-- Tarball it -->
+		<zip destfile="${dist.packages.dir}/animals.zip">
+			<zipfileset dir="${dist.jar.dir}" />
+			<zipfileset dir="${animal.conf.dir}" />
+		</zip>
+	</target>
 	
 </project>

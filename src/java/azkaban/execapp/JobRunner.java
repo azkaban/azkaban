@@ -281,7 +281,7 @@ public class JobRunner extends EventHandler implements Runnable {
 			}
 			else {
 				node.setStatus(Status.FAILED);
-				logError("Job run failed!");
+				logError("Job run failed preparing the job.");
 			}
 			
 			node.setEndTime(System.currentTimeMillis());
@@ -362,7 +362,6 @@ public class JobRunner extends EventHandler implements Runnable {
 				}
 			}
 			
-			//job = JobWrappingFactory.getJobWrappingFactory().buildJobExecutor(node.getJobId(), props, logger);
 			try {
 				job = jobtypeManager.buildJobExecutor(node.getJobId(), props, logger);
 			}
@@ -380,10 +379,17 @@ public class JobRunner extends EventHandler implements Runnable {
 			job.run();
 		} catch (Exception e) {
 			e.printStackTrace();
-
-			node.setStatus(Status.FAILED);
-			logError("Job run failed!");
-			logError(e.getMessage() + e.getCause());
+			
+			if (props.getBoolean("job.succeed.on.failure", false)) {
+				node.setStatus(Status.FAILED_SUCCEEDED);
+				logError("Job run failed, but will treat it like success.");
+				logError(e.getMessage() + e.getCause());
+			}
+			else {
+				node.setStatus(Status.FAILED);
+				logError("Job run failed!");
+				logError(e.getMessage() + e.getCause());
+			}
 			return;
 		}
 

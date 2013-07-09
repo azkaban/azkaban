@@ -23,7 +23,6 @@ import java.util.Map;
 import azkaban.utils.Utils;
 
 public class Node {
-
 	private final String id;
 	private String jobSource;
 	private String propsSource;

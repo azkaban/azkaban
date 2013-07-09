@@ -13,6 +13,11 @@ public class CommonJobProperties {
 	public static final String JOB_TYPE = "type";
 	
 	/**
+	 * Force a node to be a root node in a flow, even if there are other jobs dependent on it.
+	 */
+	public static final String ROOT_NODE = "root.node";
+	
+	/**
 	 * Comma delimited list of job names which are dependencies
 	 */
 	public static final String DEPENDENCIES = "dependencies";
@@ -95,5 +100,4 @@ public class CommonJobProperties {
 	public static final String FLOW_START_SECOND = "azkaban.flow.start.second";
 	public static final String FLOW_START_MILLISSECOND = "azkaban.flow.start.milliseconds";
 	public static final String FLOW_START_TIMEZONE = "azkaban.flow.start.timezone";
-
 }
