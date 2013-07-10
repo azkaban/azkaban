@@ -168,13 +168,13 @@ public class TriggerManager {
 		return checkerLoader.getSupportedCheckers();
 	}
 
-	private void updateAgent(Trigger t) {
-		TriggerAgent agent = triggerAgents.get(t.getSource());
-		if(agent != null) {
-			agent.updateLocal(t);
-		}
-		
-	}
+//	private void updateAgent(Trigger t) {
+//		TriggerAgent agent = triggerAgents.get(t.getSource());
+//		if(agent != null) {
+//			agent.updateLocal(t);
+//		}
+//		
+//	}
 	
 	//trigger scanner thread
 	public class TriggerScannerThread extends Thread {
@@ -276,7 +276,7 @@ public class TriggerManager {
 			} else {
 				t.setStatus(TriggerStatus.EXPIRED);
 			}
-			updateAgent(t);
+//			updateAgent(t);
 		}
 		
 		private void onTriggerExpire(Trigger t) throws TriggerManagerException {
@@ -287,7 +287,7 @@ public class TriggerManager {
 			} else {
 				t.setStatus(TriggerStatus.EXPIRED);
 			}
-			updateAgent(t);
+//			updateAgent(t);
 		}
 	}
 
@@ -298,7 +298,27 @@ public class TriggerManager {
 	public void expireTrigger(int triggerId) {
 		Trigger t = getTrigger(triggerId);
 		t.setStatus(TriggerStatus.EXPIRED);
-		updateAgent(t);
+//		updateAgent(t);
+	}
+
+	public List<Trigger> getTriggers(String triggerSource) {
+		List<Trigger> triggers = new ArrayList<Trigger>();
+		for(Trigger t : triggerIdMap.values()) {
+			if(t.getSource().equals(triggerSource)) {
+				triggers.add(t);
+			}
+		}
+		return triggers;
+	}
+
+	public List<Trigger> getUpdatedTriggers(String triggerSource, long lastUpdateTime) {
+		List<Trigger> triggers = new ArrayList<Trigger>();
+		for(Trigger t : triggerIdMap.values()) {
+			if(t.getSource().equals(triggerSource) && t.getLastModifyTime().getMillis() > lastUpdateTime) {
+				triggers.add(t);
+			}
+		}
+		return triggers;
 	}
 
 }

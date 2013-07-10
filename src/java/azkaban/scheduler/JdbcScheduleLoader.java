@@ -345,4 +345,10 @@ public class JdbcScheduleLoader extends AbstractJdbcLoader implements ScheduleLo
 		
 		return connection;
 	}
+
+	@Override
+	public List<Schedule> loadUpdatedSchedules()
+			throws ScheduleManagerException {
+		throw new ScheduleManagerException("Should never be called when using local schedule runner");
+	}
 }

@@ -176,6 +176,8 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
 			
 		} catch (ServletException e) {
 			ret.put("error", e.getMessage());
+		} catch (ScheduleManagerException e) {
+			ret.put("error", e.getMessage());
 		}
 		
 	}
@@ -284,6 +286,9 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
 			ret.put("allJobNames", allJobs);
 		} catch (ServletException e) {
 			ret.put("error", e);
+		} catch (ScheduleManagerException e) {
+			// TODO Auto-generated catch block
+			ret.put("error", e);
 		}
 		
 	}
@@ -309,7 +314,13 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
 		
 		Page page = newPage(req, resp, session, "azkaban/webapp/servlet/velocity/scheduledflowpage.vm");
 		
-		List<Schedule> schedules = scheduleManager.getSchedules();
+		List<Schedule> schedules;
+		try {
+			schedules = scheduleManager.getSchedules();
+		} catch (ScheduleManagerException e) {
+			// TODO Auto-generated catch block
+			throw new ServletException(e);
+		}
 		page.add("schedules", schedules);
 //		
 //		List<SLA> slas = slaManager.getSLAs();
@@ -323,7 +334,13 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
 		
 		Page page = newPage(req, resp, session, "azkaban/webapp/servlet/velocity/scheduledflowcalendarpage.vm");
 		
-		List<Schedule> schedules = scheduleManager.getSchedules();
+		List<Schedule> schedules;
+		try {
+			schedules = scheduleManager.getSchedules();
+		} catch (ScheduleManagerException e) {
+			// TODO Auto-generated catch block
+			throw new ServletException(e);
+		}
 		page.add("schedules", schedules);
 //		
 //		List<SLA> slas = slaManager.getSLAs();
@@ -360,7 +377,13 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
 
 	private void ajaxLoadFlows(HttpServletRequest req, HashMap<String, Object> ret, User user) throws ServletException {
 		
-		List<Schedule> schedules = scheduleManager.getSchedules();
+		List<Schedule> schedules;
+		try {
+			schedules = scheduleManager.getSchedules();
+		} catch (ScheduleManagerException e) {
+			// TODO Auto-generated catch block
+			throw new ServletException(e);
+		}
 		// See if anything is scheduled
 		if (schedules.size() <= 0)
 			return;
@@ -369,11 +392,16 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
 		ret.put("items", output);
 
 		for (Schedule schedule : schedules) {
-			writeScheduleData(output, schedule);
+			try {
+				writeScheduleData(output, schedule);
+			} catch (ScheduleManagerException e) {
+				// TODO Auto-generated catch block
+				throw new ServletException(e);
+			}
 		}
 	}
 
-	private void writeScheduleData(List<HashMap<String, Object>> output, Schedule schedule) {
+	private void writeScheduleData(List<HashMap<String, Object>> output, Schedule schedule) throws ScheduleManagerException {
 		Map<String, Object> stats = ScheduleStatisticManager.getStatistics(schedule.getScheduleId(), (AzkabanWebServer) getApplication());
 		HashMap<String, Object> data = new HashMap<String, Object>();
 		data.put("scheduleid", schedule.getScheduleId());
@@ -499,7 +527,13 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
 
 	private void ajaxRemoveSched(HttpServletRequest req, Map<String, Object> ret, User user) throws ServletException{
 		int scheduleId = getIntParam(req, "scheduleId");
-		Schedule sched = scheduleManager.getSchedule(scheduleId);
+		Schedule sched;
+		try {
+			sched = scheduleManager.getSchedule(scheduleId);
+		} catch (ScheduleManagerException e) {
+			// TODO Auto-generated catch block
+			throw new ServletException(e);
+		}
 		if(sched == null) {
 			ret.put("message", "Schedule with ID " + scheduleId + " does not exist");
 			ret.put("status", "error");

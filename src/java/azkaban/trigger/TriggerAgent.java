@@ -11,6 +11,7 @@ public interface TriggerAgent {
 	
 	void load();
 
-	public void updateLocal(Trigger t);
+//	// update local copy
+//	public void updateLocal();
 
 }

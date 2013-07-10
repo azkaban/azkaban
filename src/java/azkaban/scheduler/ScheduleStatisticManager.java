@@ -19,7 +19,7 @@ public class ScheduleStatisticManager {
 	private static File cacheDirectory = new File("cache/schedule-statistics");
 	private static final int STAT_NUMBERS = 10;
 
-	public static Map<String, Object> getStatistics(int scheduleId, AzkabanWebServer server) {
+	public static Map<String, Object> getStatistics(int scheduleId, AzkabanWebServer server) throws ScheduleManagerException {
 		Map<String, Object> data = loadCache(scheduleId);
 		if (data != null) {
 			return data;
@@ -33,7 +33,7 @@ public class ScheduleStatisticManager {
 		return data;
 	}
 
-	private static Map<String, Object> calculateStats(int scheduleId, AzkabanWebServer server) {
+	private static Map<String, Object> calculateStats(int scheduleId, AzkabanWebServer server) throws ScheduleManagerException {
 		Map<String, Object> data = new HashMap<String, Object>();
 		ExecutorManager executorManager = server.getExecutorManager();
 		ScheduleManager scheduleManager = server.getScheduleManager();

@@ -118,12 +118,36 @@ public class ScheduleManager implements TriggerAgent {
 		}
 
 		for (Schedule sched : scheduleList) {
-			internalSchedule(sched);
+			if(sched.getStatus().equals(TriggerStatus.EXPIRED.toString())) {
+				onScheduleExpire(sched);
+			} else {
+				internalSchedule(sched);
+			}
 		}
 
 		if(!useExternalRunner) {
 			this.runner.start();
 		}
+	}
+	
+	// only do this when using external runner
+	public synchronized void updateLocal() throws ScheduleManagerException {
+		if(!useExternalRunner) {
+			//throw new ScheduleManagerException("Should not change schedule states when using local runner!");
+			return;
+		}
+		List<Schedule> updates = loader.loadUpdatedSchedules();
+		for(Schedule s : updates) {
+			if(s.getStatus().equals(TriggerStatus.EXPIRED.toString())) {
+				onScheduleExpire(s);
+			} else {
+				internalSchedule(s);
+			}
+		}
+	}
+	
+	private void onScheduleExpire(Schedule s) {
+		removeSchedule(s);
 	}
 
 	/**
@@ -142,7 +166,7 @@ public class ScheduleManager implements TriggerAgent {
 	 * @return
 	 * @throws ScheduleManagerException 
 	 */
-	public synchronized List<Schedule> getSchedules() {
+	public synchronized List<Schedule> getSchedules() throws ScheduleManagerException {
 //		if(useExternalRunner) {
 //			for(Schedule s : scheduleIDMap.values()) {
 //				try {
@@ -156,6 +180,7 @@ public class ScheduleManager implements TriggerAgent {
 //		}
 		
 		//return runner.getRunnerSchedules();
+		updateLocal();
 		return new ArrayList<Schedule>(scheduleIDMap.values());
 	}
 
@@ -164,8 +189,10 @@ public class ScheduleManager implements TriggerAgent {
 	 * 
 	 * @param id
 	 * @return
+	 * @throws ScheduleManagerException 
 	*/
-	public Set<Schedule> getSchedules(int projectId, String flowId) {
+	public Set<Schedule> getSchedules(int projectId, String flowId) throws ScheduleManagerException {
+		updateLocal();
 		return scheduleIdentityPairMap.get(new Pair<Integer,String>(projectId, flowId));
 	}
 
@@ -174,8 +201,10 @@ public class ScheduleManager implements TriggerAgent {
 	 * 
 	 * @param id
 	 * @return
+	 * @throws ScheduleManagerException 
 	*/
-	public Schedule getSchedule(int scheduleId) {
+	public Schedule getSchedule(int scheduleId) throws ScheduleManagerException {
+		updateLocal();
 		return scheduleIDMap.get(scheduleId);
 	}
 
@@ -184,8 +213,9 @@ public class ScheduleManager implements TriggerAgent {
 	 * Removes the flow from the schedule if it exists.
 	 * 
 	 * @param id
+	 * @throws ScheduleManagerException 
 	 */
-	public synchronized void removeSchedules(int projectId, String flowId) {
+	public synchronized void removeSchedules(int projectId, String flowId) throws ScheduleManagerException {
 		Set<Schedule> schedules = getSchedules(projectId, flowId);
 		if(schedules != null) {
 			for(Schedule sched : schedules) {
@@ -348,21 +378,6 @@ public class ScheduleManager implements TriggerAgent {
 		return triggerSource;
 	}
 	
-	@Override
-	public void updateLocal(Trigger t) {
-		if(t.getStatus().equals(TriggerStatus.EXPIRED)) {
-			removeSchedule(getSchedule(t.getTriggerId()));
-		} else {
-			try {
-				loader.updateNextExecTime(getSchedule(t.getTriggerId()));
-			} catch (ScheduleManagerException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-				logger.error("Failed to get updated next execution time on schedule " + getSchedule(t.getTriggerId()).toString());
-			}
-		}
-	}
-
 	/**
 	 * Thread that simply invokes the running of flows when the schedule is
 	 * ready.

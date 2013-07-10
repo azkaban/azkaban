@@ -39,6 +39,7 @@ import azkaban.project.Project;
 import azkaban.project.ProjectManager;
 import azkaban.scheduler.Schedule;
 import azkaban.scheduler.ScheduleManager;
+import azkaban.scheduler.ScheduleManagerException;
 import azkaban.user.Permission;
 import azkaban.user.User;
 import azkaban.user.Permission.Type;
@@ -504,11 +505,16 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 		ret.put("failureEmails", flow.getFailureEmails());
 		
 		Schedule sflow = null;
-		for (Schedule sched: scheduleManager.getSchedules()) {
-			if (sched.getProjectId() == project.getId() && sched.getFlowName().equals(flowId)) {
-				sflow = sched;
-				break;
+		try {
+			for (Schedule sched: scheduleManager.getSchedules()) {
+				if (sched.getProjectId() == project.getId() && sched.getFlowName().equals(flowId)) {
+					sflow = sched;
+					break;
+				}
 			}
+		} catch (ScheduleManagerException e) {
+			// TODO Auto-generated catch block
+			throw new ServletException(e);
 		}
 		
 		if (sflow != null) {

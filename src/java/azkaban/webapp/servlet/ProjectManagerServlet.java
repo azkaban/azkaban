@@ -56,6 +56,7 @@ import azkaban.project.ProjectManager;
 import azkaban.project.ProjectManagerException;
 import azkaban.scheduler.Schedule;
 import azkaban.scheduler.ScheduleManager;
+import azkaban.scheduler.ScheduleManagerException;
 import azkaban.user.Permission;
 import azkaban.user.Role;
 import azkaban.user.UserManager;
@@ -360,13 +361,19 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 		
 		// Check if scheduled
 		Schedule sflow = null;
-		for (Schedule flow: scheduleManager.getSchedules()) {
+		try {
+			for (Schedule flow: scheduleManager.getSchedules()) {
 
-			if (flow.getProjectId() == project.getId()) {
-				sflow = flow;
-				break;
+				if (flow.getProjectId() == project.getId()) {
+					sflow = flow;
+					break;
+				}
 			}
+		} catch (ScheduleManagerException e) {
+			// TODO Auto-generated catch block
+			throw new ServletException(e);
 		}
+		
 		if (sflow != null) {
 			this.setErrorMessageInCookie(resp, "Cannot delete. Please unschedule " + sflow.getScheduleName() + ".");
 
