@@ -16,7 +16,6 @@
 
 package azkaban.scheduler;
 
-import java.io.File;
 import java.lang.Thread.State;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -42,12 +41,6 @@ import azkaban.executor.ExecutorManagerException;
 import azkaban.flow.Flow;
 import azkaban.project.Project;
 import azkaban.project.ProjectManager;
-import azkaban.sla.SLA.SlaAction;
-import azkaban.sla.SLA.SlaRule;
-import azkaban.sla.SLA.SlaSetting;
-import azkaban.sla.SLAManager;
-import azkaban.sla.SlaOptions;
-import azkaban.trigger.Trigger;
 import azkaban.trigger.TriggerAgent;
 import azkaban.trigger.TriggerStatus;
 import azkaban.utils.Pair;
@@ -70,8 +63,8 @@ public class ScheduleManager implements TriggerAgent {
 	private Map<Integer, Schedule> scheduleIDMap = new LinkedHashMap<Integer, Schedule>();
 	
 	private final ExecutorManager executorManager;
-	private final ProjectManager projectManager;
-	private final SLAManager slaManager;
+	
+	private ProjectManager projectManager = null;
 	
 	private final boolean useExternalRunner;
 	private final ScheduleRunner runner;
@@ -86,28 +79,27 @@ public class ScheduleManager implements TriggerAgent {
 	 * @param loader
 	 */
 	public ScheduleManager (ExecutorManager executorManager,
-							ProjectManager projectManager, 
-							SLAManager slaManager,
 							ScheduleLoader loader,
 							boolean useExternalRunner) 
 	{
 		this.executorManager = executorManager;
-		this.projectManager = projectManager;
-		this.slaManager = slaManager;
 		this.loader = loader;
 		this.useExternalRunner = useExternalRunner;
 		
 		if(!useExternalRunner) {
 			this.runner = new ScheduleRunner();
-			load();
 		} else {
 			this.runner = null;
 		}
 		
 	}
 	
+	public void setProjectManager(ProjectManager projectManager) {
+		this.projectManager = projectManager;
+	}
+	
 	@Override
-	public void load() {
+	public void start() throws ScheduleManagerException {
 		List<Schedule> scheduleList = null;
 		try {
 			scheduleList = loader.loadSchedules();
@@ -126,6 +118,9 @@ public class ScheduleManager implements TriggerAgent {
 		}
 
 		if(!useExternalRunner) {
+			if(projectManager == null) {
+				throw new ScheduleManagerException("Project Manager must be initialized when using internal schedule runner!");
+			}
 			this.runner.start();
 		}
 	}
@@ -289,7 +284,7 @@ public class ScheduleManager implements TriggerAgent {
 			final long submitTime,
 			final String submitUser
 			) {
-		return scheduleFlow(scheduleId, projectId, projectName, flowName, status, firstSchedTime, timezone, period, lastModifyTime, nextExecTime, submitTime, submitUser, null, null);
+		return scheduleFlow(scheduleId, projectId, projectName, flowName, status, firstSchedTime, timezone, period, lastModifyTime, nextExecTime, submitTime, submitUser, null);
 	}
 	
 	public Schedule scheduleFlow(
@@ -305,10 +300,9 @@ public class ScheduleManager implements TriggerAgent {
 			final long nextExecTime,
 			final long submitTime,
 			final String submitUser,
-			ExecutionOptions execOptions,
-			SlaOptions slaOptions
+			ExecutionOptions execOptions
 			) {
-		Schedule sched = new Schedule(scheduleId, projectId, projectName, flowName, status, firstSchedTime, timezone, period, lastModifyTime, nextExecTime, submitTime, submitUser, execOptions, slaOptions);
+		Schedule sched = new Schedule(scheduleId, projectId, projectName, flowName, status, firstSchedTime, timezone, period, lastModifyTime, nextExecTime, submitTime, submitUser, execOptions);
 		logger.info("Scheduling flow '" + sched.getScheduleName() + "' for "
 				+ _dateFormat.print(firstSchedTime) + " with a period of "
 				+ period == null ? "(non-recurring)" : period);
@@ -529,25 +523,6 @@ public class ScheduleManager implements TriggerAgent {
 									catch (Exception e) {	
 										e.printStackTrace();
 										throw new ScheduleManagerException("Scheduler invoked flow " + exflow.getExecutionId() + " has failed.", e);
-									}
-									
-									SlaOptions slaOptions = runningSched.getSlaOptions();
-									if(slaOptions != null) {
-										logger.info("Submitting SLA checkings for " + runningSched.getFlowName());
-										// submit flow slas
-										List<SlaSetting> jobsettings = new ArrayList<SlaSetting>();
-										for(SlaSetting set : slaOptions.getSettings()) {
-											if(set.getId().equals("")) {
-												DateTime checkTime = new DateTime(runningSched.getNextExecTime()).plus(set.getDuration());
-												slaManager.submitSla(exflow.getExecutionId(), "", checkTime, slaOptions.getSlaEmails(), set.getActions(), null, set.getRule());
-											}
-											else {
-												jobsettings.add(set);
-											}
-										}
-										if(jobsettings.size() > 0) {
-											slaManager.submitSla(exflow.getExecutionId(), "", DateTime.now(), slaOptions.getSlaEmails(), new ArrayList<SlaAction>(), jobsettings, SlaRule.WAITANDCHECKJOB);
-										}
 									}
 									
 								} 

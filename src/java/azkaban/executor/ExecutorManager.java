@@ -70,19 +70,27 @@ public class ExecutorManager {
 	
 	private long lastThreadCheckTime = -1;
 	
-	public ExecutorManager(Props props, ExecutorLoader loader) throws ExecutorManagerException {
+	private final boolean isPrimary;
+	
+	public ExecutorManager(Props props, ExecutorLoader loader, boolean isPrimary) throws ExecutorManagerException {
 		this.executorLoader = loader;
 		this.loadRunningFlows();
 		
 		executorHost = props.getString("executor.host", "localhost");
 		executorPort = props.getInt("executor.port");
+		
 		mailer = new ExecutorMailer(props);
-		executingManager = new ExecutingManagerUpdaterThread();
-		executingManager.start();
+		
+		this.isPrimary = isPrimary;		
+		
+		if(isPrimary) {
+			executingManager = new ExecutingManagerUpdaterThread();
+			executingManager.start();
 
-		long executionLogsRetentionMs = props.getLong("execution.logs.retention.ms", DEFAULT_EXECUTION_LOGS_RETENTION_MS);
-		cleanerThread = new CleanerThread(executionLogsRetentionMs);
-		cleanerThread.start();
+			long executionLogsRetentionMs = props.getLong("execution.logs.retention.ms", DEFAULT_EXECUTION_LOGS_RETENTION_MS);
+			cleanerThread = new CleanerThread(executionLogsRetentionMs);
+			cleanerThread.start();
+		}
 	}
 	
 	public String getExecutorHost() {
@@ -126,6 +134,11 @@ public class ExecutorManager {
 		}
 		
 		return ports;
+	}
+	
+	public ExecutableFlow fetchExecutableFlow(int execId) throws ExecutorManagerException {
+		ExecutableFlow exflow = executorLoader.fetchExecutableFlow(execId);
+		return exflow;
 	}
 	
 	private void loadRunningFlows() throws ExecutorManagerException {
@@ -592,6 +605,8 @@ public class ExecutorManager {
 			while(!shutdown) {
 				try {
 					lastThreadCheckTime = System.currentTimeMillis();
+					
+					loadRunningFlows();
 					
 					Map<ConnectionInfo, List<ExecutableFlow>> exFlowMap = getFlowToExecutorMap();
 					ArrayList<ExecutableFlow> finishedFlows = new ArrayList<ExecutableFlow>();

@@ -13,9 +13,7 @@ import org.junit.Test;
 
 import static org.junit.Assert.*;
 
-import azkaban.actions.ExecuteFlowAction;
 import azkaban.executor.ExecutionOptions;
-import azkaban.scheduler.BasicTimeChecker;
 import azkaban.trigger.ActionTypeLoader;
 import azkaban.trigger.CheckerTypeLoader;
 import azkaban.trigger.Condition;
@@ -23,6 +21,8 @@ import azkaban.trigger.ConditionChecker;
 import azkaban.trigger.Trigger;
 import azkaban.trigger.TriggerAction;
 import azkaban.trigger.TriggerException;
+import azkaban.trigger.builtin.BasicTimeChecker;
+import azkaban.trigger.builtin.ExecuteFlowAction;
 import azkaban.utils.JSONUtils;
 import azkaban.utils.Props;
 import azkaban.utils.Utils;

@@ -13,6 +13,10 @@ public interface TriggerLoader {
 	
 	public void updateTrigger(Trigger t) throws TriggerManagerException;
 	
-	public List<Trigger> loadTriggers() throws TriggerManagerException;	
+	public List<Trigger> loadTriggers() throws TriggerManagerException;
+
+	public Trigger loadTrigger(int triggerId) throws TriggerManagerException;
+
+	public List<Trigger> getUpdatedTriggers(long lastUpdateTime) throws TriggerManagerException;
 	
 }

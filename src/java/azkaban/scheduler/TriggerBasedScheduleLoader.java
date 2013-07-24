@@ -8,7 +8,6 @@ import java.util.Map;
 import org.apache.log4j.Logger;
 import org.joda.time.DateTime;
 
-import azkaban.actions.ExecuteFlowAction;
 import azkaban.executor.ExecutorManager;
 import azkaban.project.ProjectManager;
 import azkaban.trigger.Condition;
@@ -18,6 +17,8 @@ import azkaban.trigger.TriggerAction;
 import azkaban.trigger.TriggerManager;
 import azkaban.trigger.TriggerManagerException;
 import azkaban.trigger.TriggerStatus;
+import azkaban.trigger.builtin.BasicTimeChecker;
+import azkaban.trigger.builtin.ExecuteFlowAction;
 
 public class TriggerBasedScheduleLoader implements ScheduleLoader {
 	
@@ -80,7 +81,7 @@ public class TriggerBasedScheduleLoader implements ScheduleLoader {
 	public void insertSchedule(Schedule s) throws ScheduleManagerException {
 		Trigger t = scheduleToTrigger(s);
 		try {
-			triggerManager.insertTrigger(t);
+			triggerManager.insertTrigger(t, t.getSubmitUser());
 			s.setScheduleId(t.getTriggerId());
 //			triggersLocalCopy.put(t.getTriggerId(), t);
 		} catch (TriggerManagerException e) {
@@ -93,7 +94,7 @@ public class TriggerBasedScheduleLoader implements ScheduleLoader {
 	public void updateSchedule(Schedule s) throws ScheduleManagerException {
 		Trigger t = scheduleToTrigger(s);
 		try {
-			triggerManager.updateTrigger(t);
+			triggerManager.updateTrigger(t, t.getSubmitUser());
 //			triggersLocalCopy.put(t.getTriggerId(), t);
 		} catch (TriggerManagerException e) {
 			// TODO Auto-generated catch block
@@ -161,7 +162,7 @@ public class TriggerBasedScheduleLoader implements ScheduleLoader {
 	@Override
 	public void removeSchedule(Schedule s) throws ScheduleManagerException {
 		try {
-			triggerManager.removeTrigger(s.getScheduleId());
+			triggerManager.removeTrigger(s.getScheduleId(), s.getSubmitUser());
 //			triggersLocalCopy.remove(s.getScheduleId());
 		} catch (TriggerManagerException e) {
 			// TODO Auto-generated catch block
@@ -180,7 +181,14 @@ public class TriggerBasedScheduleLoader implements ScheduleLoader {
 
 	@Override
 	public synchronized List<Schedule> loadUpdatedSchedules() throws ScheduleManagerException {
-		List<Trigger> triggers = triggerManager.getUpdatedTriggers(triggerSource, lastUpdateTime);
+		List<Trigger> triggers;
+		try {
+			triggers = triggerManager.getUpdatedTriggers(triggerSource, lastUpdateTime);
+		} catch (TriggerManagerException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			throw new ScheduleManagerException(e);
+		}
 		List<Schedule> schedules = new ArrayList<Schedule>();
 		for(Trigger t : triggers) {
 			lastUpdateTime = Math.max(lastUpdateTime, t.getLastModifyTime().getMillis());

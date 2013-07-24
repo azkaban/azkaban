@@ -14,7 +14,7 @@ import java.util.Set;
 
 import org.apache.log4j.Logger;
 
-import azkaban.actions.ExecuteFlowAction;
+import azkaban.trigger.builtin.ExecuteFlowAction;
 import azkaban.utils.Props;
 import azkaban.utils.Utils;
 

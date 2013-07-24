@@ -27,5 +27,9 @@ public class TriggerManagerException extends Exception{
 	public TriggerManagerException(String message, Throwable cause) {
 		super(message, cause);
 	}
+	
+	public TriggerManagerException(Throwable e) {
+		super(e);
+	}
 }
 

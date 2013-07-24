@@ -40,14 +40,12 @@ public class ProjectManager {
 	private TriggerManager triggerManager;
 	private boolean loadTriggerFromFile = false;
 	
-	public ProjectManager(ProjectLoader loader, Props props, TriggerManager triggerManager) {
+	public ProjectManager(ProjectLoader loader, Props props) {
 		this.projectLoader = loader;
 		this.props = props;
 		this.tempDir = new File(this.props.getString("project.temp.dir", "temp"));
 		this.projectVersionRetention = (props.getInt("project.version.retention", 3));
 		logger.info("Project version retention is set to " + projectVersionRetention);
-		
-		this.triggerManager = triggerManager;
 		
 		this.creatorDefaultPermissions = props.getBoolean("creator.default.proxy", true);
 		
@@ -58,6 +56,10 @@ public class ProjectManager {
 		}
 		
 		loadAllProjects();
+	}
+
+	public void setTriggerManager(TriggerManager triggerManager) {
+		this.triggerManager = triggerManager;
 	}
 	
 	public void setLoadTriggerFromFile(boolean enable) {

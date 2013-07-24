@@ -11,11 +11,11 @@ import static org.junit.Assert.assertFalse;
 import org.joda.time.DateTime;
 import org.junit.Test;
 
-import azkaban.scheduler.BasicTimeChecker;
 import azkaban.trigger.CheckerTypeLoader;
 import azkaban.trigger.Condition;
 import azkaban.trigger.ConditionChecker;
 import azkaban.trigger.TriggerException;
+import azkaban.trigger.builtin.BasicTimeChecker;
 import azkaban.utils.JSONUtils;
 import azkaban.utils.Props;
 import azkaban.utils.Utils;

@@ -14,7 +14,7 @@ import java.util.Set;
 
 import org.apache.log4j.Logger;
 
-import azkaban.scheduler.BasicTimeChecker;
+import azkaban.trigger.builtin.BasicTimeChecker;
 import azkaban.utils.Props;
 import azkaban.utils.Utils;
 

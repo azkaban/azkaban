@@ -18,10 +18,6 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import azkaban.executor.ExecutionOptions;
-import azkaban.sla.SLA.SlaAction;
-import azkaban.sla.SLA.SlaRule;
-import azkaban.sla.SLA.SlaSetting;
-import azkaban.sla.SlaOptions;
 import azkaban.database.DataSourceUtils;
 import azkaban.utils.Props;
 
@@ -111,28 +107,18 @@ public class JdbcScheduleLoaderTest {
 		List<String> disabledJobs = new ArrayList<String>();
 		disabledJobs.add("job1");
 		disabledJobs.add("job2");
-		List<SlaSetting> slaSets = new ArrayList<SlaSetting>();
-		SlaSetting set1 = new SlaSetting();
-		List<SlaAction> actions = new ArrayList<SlaAction>();
-		actions.add(SlaAction.EMAIL);
-		set1.setActions(actions);
-		set1.setId("");
-		set1.setDuration(Schedule.parsePeriodString("1h"));
-		set1.setRule(SlaRule.FINISH);
-		slaSets.add(set1);
+
 		ExecutionOptions flowOptions = new ExecutionOptions();
 		flowOptions.setFailureEmails(emails);
 		flowOptions.setDisabledJobs(disabledJobs);
-		SlaOptions slaOptions = new SlaOptions();
-		slaOptions.setSlaEmails(emails);
-		slaOptions.setSettings(slaSets);
+
 		
-		Schedule s1 = new Schedule(-1, 1, "proj1", "flow1", "ready", 11111, "America/Los_Angeles", "1d", 22222, 33333, 44444, "cyu", flowOptions, slaOptions);
-		Schedule s2 = new Schedule(-1, 1, "proj1", "flow2", "ready", 11111, "America/Los_Angeles", "1d", 22222, 33333, 44444, "ccc", flowOptions, slaOptions);
-		Schedule s3 = new Schedule(-1, 2, "proj1", "flow1", "ready", 11111, "America/Los_Angeles", "1d", 22222, 33333, 44444, "cyu", flowOptions, slaOptions);
-		Schedule s4 = new Schedule(-1, 3, "proj2", "flow1", "ready", 11111, "America/Los_Angeles", "1d", 22222, 33333, 44444, "cyu", flowOptions, slaOptions);
-		Schedule s5 = new Schedule(-1, 3, "proj2", "flow2", "ready", 11111, "America/Los_Angeles", "1d", 22222, 33333, 44444, "cyu", flowOptions, slaOptions);
-		Schedule s6 = new Schedule(-1, 3, "proj2", "flow3", "error", 11111, "America/Los_Angeles", "1d", 22222, 33333, 44444, "cyu", flowOptions, slaOptions);
+		Schedule s1 = new Schedule(-1, 1, "proj1", "flow1", "ready", 11111, "America/Los_Angeles", "1d", 22222, 33333, 44444, "azkaban", flowOptions);
+		Schedule s2 = new Schedule(-1, 1, "proj1", "flow2", "ready", 11111, "America/Los_Angeles", "1d", 22222, 33333, 44444, "azkaban", flowOptions);
+		Schedule s3 = new Schedule(-1, 2, "proj1", "flow1", "ready", 11111, "America/Los_Angeles", "1d", 22222, 33333, 44444, "azkaban", flowOptions);
+		Schedule s4 = new Schedule(-1, 3, "proj2", "flow1", "ready", 11111, "America/Los_Angeles", "1d", 22222, 33333, 44444, "azkaban", flowOptions);
+		Schedule s5 = new Schedule(-1, 3, "proj2", "flow2", "ready", 11111, "America/Los_Angeles", "1d", 22222, 33333, 44444, "azkaban", flowOptions);
+		Schedule s6 = new Schedule(-1, 3, "proj2", "flow3", "error", 11111, "America/Los_Angeles", "1d", 22222, 33333, 44444, "azkaban", flowOptions);
 		
 		loader.insertSchedule(s1);
 		loader.insertSchedule(s2);
@@ -149,11 +135,6 @@ public class JdbcScheduleLoaderTest {
 		Assert.assertEquals(44444, sched.getSubmitTime());
 		Assert.assertEquals("1d", Schedule.createPeriodString(sched.getPeriod()));
 		ExecutionOptions fOpt = sched.getExecutionOptions();
-		SlaOptions sOpt = sched.getSlaOptions();
-		Assert.assertEquals(SlaAction.EMAIL, sOpt.getSettings().get(0).getActions().get(0));
-		Assert.assertEquals("", sOpt.getSettings().get(0).getId());
-		Assert.assertEquals(Schedule.parsePeriodString("1h"), sOpt.getSettings().get(0).getDuration());
-		Assert.assertEquals(SlaRule.FINISH, sOpt.getSettings().get(0).getRule());
 		Assert.assertEquals(2, fOpt.getFailureEmails().size());
 		Assert.assertEquals(null, fOpt.getSuccessEmails());
 		Assert.assertEquals(2, fOpt.getDisabledJobs().size());
@@ -176,32 +157,19 @@ public class JdbcScheduleLoaderTest {
 		List<String> disabledJobs = new ArrayList<String>();
 		disabledJobs.add("job1");
 		disabledJobs.add("job2");
-		List<SlaSetting> slaSets = new ArrayList<SlaSetting>();
-		SlaSetting set1 = new SlaSetting();
-		List<SlaAction> actions = new ArrayList<SlaAction>();
-		actions.add(SlaAction.EMAIL);
-		set1.setActions(actions);
-		set1.setId("");
-		set1.setDuration(Schedule.parsePeriodString("1h"));
-		set1.setRule(SlaRule.FINISH);
-		slaSets.add(set1);
+		
 		ExecutionOptions flowOptions = new ExecutionOptions();
 		flowOptions.setFailureEmails(emails);
 		flowOptions.setDisabledJobs(disabledJobs);
-		SlaOptions slaOptions = new SlaOptions();
-		slaOptions.setSlaEmails(emails);
-		slaOptions.setSettings(slaSets);
 		
 		System.out.println("the flow options are " + flowOptions);
-		System.out.println("the sla options are " + slaOptions);
-		Schedule s1 = new Schedule(-1, 1, "proj1", "flow1", "ready", 11111, "America/Los_Angeles", "1d", 22222, 33333, 44444, "cyu", flowOptions, slaOptions);
+		Schedule s1 = new Schedule(-1, 1, "proj1", "flow1", "ready", 11111, "America/Los_Angeles", "1d", 22222, 33333, 44444, "azkaban", flowOptions);
 
 		loader.insertSchedule(s1);
 		
 		emails.add("email3");
-		slaOptions.setSlaEmails(emails);
 		
-		Schedule s2 = new Schedule(-1, 1, "proj1", "flow1", "ready", 11112, "America/Los_Angeles", "2M", 22223, 33334, 44445, "cyu", flowOptions, slaOptions);
+		Schedule s2 = new Schedule(-1, 1, "proj1", "flow1", "ready", 11112, "America/Los_Angeles", "2M", 22223, 33334, 44445, "azkaban", flowOptions);
 
 		loader.updateSchedule(s2);
 		
@@ -212,7 +180,6 @@ public class JdbcScheduleLoaderTest {
 		Assert.assertEquals(44445, schedules.get(0).getSubmitTime());
 		Assert.assertEquals("2M", Schedule.createPeriodString(schedules.get(0).getPeriod()));
 //		System.out.println("the options are " + schedules.get(0).getSchedOptions());
-		Assert.assertEquals(3, schedules.get(0).getSlaOptions().getSlaEmails().size());
 	}
 	
 	@Test
@@ -237,23 +204,11 @@ public class JdbcScheduleLoaderTest {
 			List<String> disabledJobs = new ArrayList<String>();
 			disabledJobs.add("job1");
 			disabledJobs.add("job2");
-			List<SlaSetting> slaSets = new ArrayList<SlaSetting>();
-			SlaSetting set1 = new SlaSetting();
-			List<SlaAction> actions = new ArrayList<SlaAction>();
-			actions.add(SlaAction.EMAIL);
-			set1.setActions(actions);
-			set1.setId("");
-			set1.setDuration(Schedule.parsePeriodString("1h"));
-			set1.setRule(SlaRule.FINISH);
-			slaSets.add(set1);
 			ExecutionOptions flowOptions = new ExecutionOptions();
 			flowOptions.setFailureEmails(emails);
 			flowOptions.setDisabledJobs(disabledJobs);
-			SlaOptions slaOptions = new SlaOptions();
-			slaOptions.setSlaEmails(emails);
-			slaOptions.setSettings(slaSets);
 			
-			Schedule s = new Schedule(-1, i+1, "proj"+(i+1), "flow1", "ready", 11111, "America/Los_Angeles", "1d", 22222, 33333, 44444, "cyu", flowOptions, slaOptions);
+			Schedule s = new Schedule(-1, i+1, "proj"+(i+1), "flow1", "ready", 11111, "America/Los_Angeles", "1d", 22222, 33333, 44444, "azkaban", flowOptions);
 			schedules.add(s);
 			try {
 				loader.insertSchedule(s);

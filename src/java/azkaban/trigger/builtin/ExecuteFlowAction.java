@@ -1,4 +1,4 @@
-package azkaban.actions;
+package azkaban.trigger.builtin;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -16,7 +16,7 @@ import azkaban.trigger.TriggerAction;
 
 public class ExecuteFlowAction implements TriggerAction {
 
-	public static final String type = "ExecuteFlow";
+	public static final String type = "ExecuteFlowAction";
 	
 	private static ExecutorManager executorManager;
 	private int projectId;

@@ -113,7 +113,7 @@ public class Condition {
 		} catch(Exception e) {
 			e.printStackTrace();
 			logger.error("Failed to recreate condition from json.", e);
-			return null;
+			throw new Exception("Failed to recreate condition from json.", e);
 		}
 		
 		return cond;

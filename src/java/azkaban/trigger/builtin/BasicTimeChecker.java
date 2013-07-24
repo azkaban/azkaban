@@ -1,4 +1,4 @@
-package azkaban.scheduler;
+package azkaban.trigger.builtin;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -124,7 +124,7 @@ public class BasicTimeChecker implements ConditionChecker {
 	}
 
 	@SuppressWarnings("unchecked")
-	public static ConditionChecker createFromJson(Object obj) throws Exception {
+	public static BasicTimeChecker createFromJson(Object obj) throws Exception {
 		Map<String, Object> jsonObj = (HashMap<String, Object>) obj;
 		if(!jsonObj.get("type").equals(type)) {
 			throw new Exception("Cannot create checker of " + type + " from " + jsonObj.get("type"));
@@ -142,7 +142,7 @@ public class BasicTimeChecker implements ConditionChecker {
 		return new BasicTimeChecker(id, firstCheckTime, timezone, nextCheckTime, isRecurring, skipPastChecks, period);
 	}
 	
-	public static ConditionChecker createFromJson(HashMap<String, Object> obj) throws Exception {
+	public static BasicTimeChecker createFromJson(HashMap<String, Object> obj) throws Exception {
 		Map<String, Object> jsonObj = (HashMap<String, Object>) obj;
 		if(!jsonObj.get("type").equals(type)) {
 			throw new Exception("Cannot create checker of " + type + " from " + jsonObj.get("type"));
@@ -161,7 +161,7 @@ public class BasicTimeChecker implements ConditionChecker {
 	}
 	
 	@Override
-	public ConditionChecker fromJson(Object obj) throws Exception{
+	public BasicTimeChecker fromJson(Object obj) throws Exception{
 		return createFromJson(obj);
 	}
 	
@@ -246,6 +246,5 @@ public class BasicTimeChecker implements ConditionChecker {
 	public void stopChecker() {
 		return;
 	}
-
 
 }

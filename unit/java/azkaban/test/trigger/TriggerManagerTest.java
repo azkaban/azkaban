@@ -53,17 +53,17 @@ public class TriggerManagerTest {
 		
 		ThresholdChecker.setVal(1);
 		
-		triggerManager.insertTrigger(createDummyTrigger("test1", "triggerLoader", 10));
+		triggerManager.insertTrigger(createDummyTrigger("test1", "triggerLoader", 10), "testUser");
 		List<Trigger> triggers = triggerManager.getTriggers();
 		assertTrue(triggers.size() == 1);
 		Trigger t1 = triggers.get(0);
 		t1.setResetOnTrigger(false);
-		triggerManager.updateTrigger(t1);
+		triggerManager.updateTrigger(t1, "testUser");
 		ThresholdChecker checker1 = (ThresholdChecker) t1.getTriggerCondition().getCheckers().values().toArray()[0];
 		assertTrue(t1.getSource().equals("triggerLoader"));
 		
 		Trigger t2 = createDummyTrigger("test2: add new trigger", "addNewTriggerTest", 20);
-		triggerManager.insertTrigger(t2);
+		triggerManager.insertTrigger(t2, "testUser");
 		ThresholdChecker checker2 = (ThresholdChecker) t2.getTriggerCondition().getCheckers().values().toArray()[0];
 		
 		ThresholdChecker.setVal(15);
@@ -133,6 +133,20 @@ public class TriggerManagerTest {
 		@Override
 		public List<Trigger> loadTriggers() {
 			return new ArrayList<Trigger>(triggers.values());
+		}
+
+		@Override
+		public Trigger loadTrigger(int triggerId)
+				throws TriggerManagerException {
+			// TODO Auto-generated method stub
+			return null;
+		}
+
+		@Override
+		public List<Trigger> getUpdatedTriggers(long lastUpdateTime)
+				throws TriggerManagerException {
+			// TODO Auto-generated method stub
+			return null;
 		}
 		
 	}

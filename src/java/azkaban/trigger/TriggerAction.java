@@ -4,7 +4,7 @@ public interface TriggerAction {
 	
 	String getType();
 	
-	TriggerAction fromJson(Object obj);
+	TriggerAction fromJson(Object obj) throws Exception;
 	
 	Object toJson();
 	

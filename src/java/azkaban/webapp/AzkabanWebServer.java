@@ -57,7 +57,6 @@ import azkaban.executor.ExecutorManager;
 import azkaban.executor.JdbcExecutorLoader;
 import azkaban.jmx.JmxExecutorManager;
 import azkaban.jmx.JmxJettyServer;
-import azkaban.jmx.JmxSLAManager;
 import azkaban.jmx.JmxScheduler;
 import azkaban.project.JdbcProjectLoader;
 import azkaban.project.ProjectManager;
@@ -66,13 +65,11 @@ import azkaban.scheduler.JdbcScheduleLoader;
 import azkaban.scheduler.ScheduleLoader;
 import azkaban.scheduler.ScheduleManager;
 import azkaban.scheduler.TriggerBasedScheduleLoader;
-import azkaban.sla.JdbcSLALoader;
-import azkaban.sla.SLAManager;
-import azkaban.sla.SLAManagerException;
 import azkaban.trigger.JdbcTriggerLoader;
 import azkaban.trigger.TriggerLoader;
 import azkaban.trigger.TriggerManager;
 import azkaban.trigger.TriggerAgent;
+import azkaban.trigger.TriggerManagerException;
 import azkaban.user.UserManager;
 import azkaban.user.XmlUserManager;
 import azkaban.utils.FileIOUtils;
@@ -143,8 +140,6 @@ public class AzkabanWebServer extends AzkabanServer {
 //	private TriggerBasedScheduler scheduler;
 	private TriggerManager triggerManager;
 	
-	private SLAManager slaManager;
-
 	private final ClassLoader baseClassLoader;
 	
 	private Props props;
@@ -174,15 +169,14 @@ public class AzkabanWebServer extends AzkabanServer {
 		sessionCache = new SessionCache(props);
 		userManager = loadUserManager(props);		
 		executorManager = loadExecutorManager(props);
-		slaManager = loadSLAManager(props);
 		
 		triggerManager = loadTriggerManager(props);
 		
-		projectManager = loadProjectManager(props, triggerManager);
+		projectManager = loadProjectManager(props);
 		
 //		scheduler = loadScheduler(executorManager, projectManager, triggerManager);
 		
-		scheduleManager = loadScheduleManager(projectManager, executorManager, slaManager, triggerManager, props);
+		scheduleManager = loadScheduleManager(executorManager, triggerManager, props);
 		
 		baseClassLoader = getBaseClassloader();
 		
@@ -231,31 +225,34 @@ public class AzkabanWebServer extends AzkabanServer {
 		return manager;
 	}
 	
-	private ProjectManager loadProjectManager(Props props, TriggerManager triggerManager) {
+	private ProjectManager loadProjectManager(Props props) {
 		logger.info("Loading JDBC for project management");
 
 		JdbcProjectLoader loader = new JdbcProjectLoader(props);
-		ProjectManager manager = new ProjectManager(loader, props, triggerManager);
+		ProjectManager manager = new ProjectManager(loader, props);
+		manager.setTriggerManager(triggerManager);
 		
 		return manager;
 	}
 
 	private ExecutorManager loadExecutorManager(Props props) throws Exception {
 		JdbcExecutorLoader loader = new JdbcExecutorLoader(props);
-		ExecutorManager execManager = new ExecutorManager(props, loader);
+		ExecutorManager execManager = new ExecutorManager(props, loader, true);
 		return execManager;
 	}
 
-	private ScheduleManager loadScheduleManager(ProjectManager projectManager, ExecutorManager executorManager, SLAManager slaManager, TriggerManager triggerManager, Props props ) throws Exception {
+	private ScheduleManager loadScheduleManager(ExecutorManager executorManager, TriggerManager triggerManager, Props props ) throws Exception {
 		ScheduleManager schedManager = null;
 		String scheduleLoaderType = props.getString("azkaban.scheduler.loader", "TriggerBasedScheduleLoader");
 		if(scheduleLoaderType.equals("JdbcScheduleLoader")) {
 			ScheduleLoader loader = new JdbcScheduleLoader(props);
-			schedManager = new ScheduleManager(executorManager, projectManager, slaManager, loader, false);
+			schedManager = new ScheduleManager(executorManager, loader, false);
+			schedManager.setProjectManager(projectManager);
+			schedManager.start();
 		} else if(scheduleLoaderType.equals("TriggerBasedScheduleLoader")) {
 			logger.info("Loading trigger based scheduler");
-			ScheduleLoader loader = new TriggerBasedScheduleLoader(triggerManager, executorManager, projectManager, ScheduleManager.triggerSource);
-			schedManager = new ScheduleManager(executorManager, projectManager, slaManager, loader, true);
+			ScheduleLoader loader = new TriggerBasedScheduleLoader(triggerManager, executorManager, null, ScheduleManager.triggerSource);
+			schedManager = new ScheduleManager(executorManager, loader, true);
 		}
 
 		return schedManager;
@@ -266,12 +263,7 @@ public class AzkabanWebServer extends AzkabanServer {
 //		return new TriggerBasedScheduler(executorManager, projectManager, triggerManager, loader);
 //	}
 
-	private SLAManager loadSLAManager(Props props) throws SLAManagerException {
-		SLAManager slaManager = new SLAManager(executorManager, new JdbcSLALoader(props), props);
-		return slaManager;
-	}
-	
-	private TriggerManager loadTriggerManager(Props props) {
+	private TriggerManager loadTriggerManager(Props props) throws TriggerManagerException {
 		TriggerLoader loader = new JdbcTriggerLoader(props);
 		return new TriggerManager(props, loader);
 	}
@@ -315,10 +307,6 @@ public class AzkabanWebServer extends AzkabanServer {
      */
 	public ExecutorManager getExecutorManager() {
 		return executorManager;
-	}
-	
-	public SLAManager getSLAManager() {
-		return slaManager;
 	}
 	
 	public ScheduleManager getScheduleManager() {
@@ -663,7 +651,7 @@ public class AzkabanWebServer extends AzkabanServer {
 			}
 			
 			TriggerPlugin plugin = (TriggerPlugin) obj;
-//			AbstractTriggerServlet avServlet = (AbstractTriggerServlet)obj;
+//			AbstractAzkabanServlet avServlet = (AbstractAzkabanServlet) plugin.getServlet();
 //			root.addServlet(new ServletHolder(avServlet), "/" + pluginWebPath + "/*");
 			installedTriggerPlugins.put(pluginName, plugin);
 		}
@@ -908,7 +896,6 @@ public class AzkabanWebServer extends AzkabanServer {
 
 		registerMbean("jetty", new JmxJettyServer(server));
 		registerMbean("scheduler", new JmxScheduler(scheduleManager));
-		registerMbean("slaManager", new JmxSLAManager(slaManager));
 		registerMbean("executorManager", new JmxExecutorManager(executorManager));
 	}
 	
@@ -922,7 +909,6 @@ public class AzkabanWebServer extends AzkabanServer {
 			logger.error("Failed to cleanup MBeanServer", e);
 		}
 		scheduleManager.shutdown();
-		slaManager.shutdown();
 		executorManager.shutdown();
 	}
 	
