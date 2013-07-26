@@ -71,7 +71,8 @@ public class DirectoryFlowLoader {
 		duplicateJobs = new HashSet<String>();
 		nodeDependencies = new HashMap<String, Map<String, Edge>>();
 		rootNodes = new HashSet<String>();
-
+		flowDependencies = new HashMap<String, Set<String>>();
+		
 		// Load all the props files and create the Node objects
 		loadProjectFromDir(baseDirectory.getPath(), baseDirectory, null);
 		
@@ -163,9 +164,12 @@ public class DirectoryFlowLoader {
 	}
 	
 	private void resolveEmbeddedFlow(String flowId, Set<String> visited) {
-		visited.add(flowId);
-		
 		Set<String> embeddedFlow = flowDependencies.get(flowId);
+		if (embeddedFlow == null) {
+			return;
+		}
+		
+		visited.add(flowId);
 		for (String embeddedFlowId: embeddedFlow) {
 			if (visited.contains(embeddedFlowId)) {
 				errors.add("Embedded flow cycle found in " + flowId + "->" + embeddedFlowId);
@@ -305,6 +309,7 @@ public class DirectoryFlowLoader {
 				flowDependencies.put(flow.getId(), embeddedFlows);
 			}
 
+			node.setEmbeddedFlowId(embeddedFlow);
 			embeddedFlows.add(embeddedFlow);
 		}
 		Map<String, Edge> dependencies = nodeDependencies.get(node.getId());

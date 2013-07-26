@@ -31,7 +31,6 @@
 		<script type="text/javascript" src="${context}/js/azkaban.nav.js"></script>
 		<script type="text/javascript" src="${context}/js/azkaban.layout.js"></script>
 		<script type="text/javascript" src="${context}/js/azkaban.flow.job.view.js"></script>
-		<script type="text/javascript" src="${context}/js/azkaban.flow.graph.view.js"></script>
 		<script type="text/javascript" src="${context}/js/azkaban.flow.view.js"></script>
 		<script type="text/javascript" src="${context}/js/svgNavigate.js"></script>
 		<script type="text/javascript">
@@ -47,6 +46,7 @@
 			var execId = null;
 		</script>
 		<link rel="stylesheet" type="text/css" href="${context}/css/jquery-ui-1.10.1.custom.css" />
+		<link rel="stylesheet" type="text/css" href="${context}/css/azkaban-graph.css" /> 
 	</head>
 	<body>
 #set($current_page="all")
@@ -87,7 +87,12 @@
 								</div>
 								<div id="list" class="list">
 								</div>
-								<div id="resetPanZoomBtn" class="btn5 resetPanZoomBtn" >Reset Pan Zoom</div>
+								<div id="flowGraphOptions">
+									<div id="autoPanZoom">
+										<input type="checkbox" id="autoPanZoomCheckbox" class="autoPanZoom" value="autoPanZoom" /><label for="autoPanZoom">Auto Pan Zoom</label>
+									</div>
+									<div id="resetPanZoomBtn" class="btn5 resetPanZoomBtn" >Reset Pan Zoom</div>
+								</div>
 							</div>
 							<div id="svgDiv" class="svgDiv">
 								<svg id="svgGraph" class="svgGraph" xmlns="http://www.w3.org/2000/svg" version="1.1" shape-rendering="optimize-speed" text-rendering="optimize-speed" >

@@ -33,7 +33,7 @@ import azkaban.utils.cache.Element;
  */
 public class SessionCache {
 	private static final int MAX_NUM_SESSIONS = 10000;
-	private static final int SESSION_TIME_TO_LIVE = 10000;
+	private static final int SESSION_TIME_TO_LIVE = 86400000;
 //	private CacheManager manager = CacheManager.create();
 	private Cache cache;
 

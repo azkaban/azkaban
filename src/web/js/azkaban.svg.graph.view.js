@@ -34,13 +34,14 @@ azkaban.SvgGraphView = Backbone.View.extend({
 	},
 	initialize: function(settings) {
 		this.model.bind('change:selected', this.changeSelected, this);
+		this.model.bind('centerNode', this.centerNode, this);
 		this.model.bind('change:graph', this.render, this);
 		this.model.bind('resetPanZoom', this.resetPanZoom, this);
 		this.model.bind('change:update', this.handleStatusUpdate, this);
 		this.model.bind('change:disabled', this.handleDisabledChange, this);
 		this.model.bind('change:updateAll', this.handleUpdateAllStatus, this);
 		
-		this.graphMargin = settings.graphMargin ? settings.graphMargin : 200;
+		this.graphMargin = settings.graphMargin ? settings.graphMargin : 25;
 		this.svgns = "http://www.w3.org/2000/svg";
 		this.xlinksn = "http://www.w3.org/1999/xlink";
 		
@@ -59,7 +60,7 @@ azkaban.SvgGraphView = Backbone.View.extend({
 	},
 	initializeDefs: function(self) {
 		var def = document.createElementNS(svgns, 'defs');
-		def.setAttributeNS(null, "id", "buttonDefs");
+		def.setAttribute("id", "buttonDefs");
 
 		// ArrowHead
 		var arrowHeadMarker = document.createElementNS(svgns, 'marker');
@@ -97,14 +98,22 @@ azkaban.SvgGraphView = Backbone.View.extend({
 	
 		nodes.sort();
 		edges.sort();
-		// layout
-		layoutGraph(nodes, edges);
 		
 		var bounds = {};
 		this.nodes = {};
 		for (var i = 0; i < nodes.length; ++i) {
 			this.nodes[nodes[i].id] = nodes[i];
+			nodes[i].label = nodes[i].id;
 		}
+		
+		this.gNodes = {};
+		for (var i = 0; i < nodes.length; ++i) {
+			this.drawNode(this, nodes[i]);
+		}
+		
+		// layout
+		layoutGraph(nodes, edges, 10);
+		this.moveNodes(bounds);
 		
 		for (var i = 0; i < edges.length; ++i) {
 			var inNodes = this.nodes[edges[i].target].inNodes;
@@ -122,11 +131,6 @@ azkaban.SvgGraphView = Backbone.View.extend({
 			outNodes[edges[i].target] = this.nodes[edges[i].target];
 
 			this.drawEdge(this, edges[i]);
-		}
-		
-		this.gNodes = {};
-		for (var i = 0; i < nodes.length; ++i) {
-			this.drawNode(this, nodes[i], bounds);
 		}
 		
 		this.model.set({"nodes": this.nodes, "edges": edges});
@@ -162,7 +166,12 @@ azkaban.SvgGraphView = Backbone.View.extend({
 		for (var i = 0; i < data.nodes.length; ++i) {
 			var updateNode = data.nodes[i];
 			var g = this.gNodes[updateNode.id];
-			addClass(g, updateNode.status);
+			if (updateNode.status) {
+				addClass(g, updateNode.status);
+			}
+			else {
+				addClass(g, "READY");
+			}
 		}
 	},
 	changeSelected: function(self) {
@@ -182,12 +191,15 @@ azkaban.SvgGraphView = Backbone.View.extend({
 			
 			addClass(g, "selected");
 			
-			var offset = 200;
-			var widthHeight = offset*2;
-			var x = node.x - offset;
-			var y = node.y - offset;
-			
-			$(this.svgGraph).svgNavigate("transformToBox", {x: x, y: y, width: widthHeight, height: widthHeight});
+			console.log(this.model.get("autoPanZoom"));
+			if (this.model.get("autoPanZoom")) {
+				var offset = 150;
+				var widthHeight = offset*2;
+				var x = node.x - offset;
+				var y = node.y - offset;
+				
+				$(this.svgGraph).svgNavigate("transformToBox", {x: x, y: y, width: widthHeight, height: widthHeight});
+			}
 		}
 	},
 	handleStatusUpdate: function(evt) {
@@ -240,33 +252,206 @@ azkaban.SvgGraphView = Backbone.View.extend({
 		var startNode = this.nodes[edge.from];
 		var endNode = this.nodes[edge.target];
 		
+		var startPointY = startNode.y + startNode.height/2 - 3;
+		var endPointY = endNode.y - endNode.height/2 + 3;
 		if (edge.guides) {
-			var pointString = "" + startNode.x + "," + startNode.y + " ";
+			var pointString = "" + startNode.x + "," + startPointY + " ";
 
 			for (var i = 0; i < edge.guides.length; ++i ) {
 				edgeGuidePoint = edge.guides[i];
 				pointString += edgeGuidePoint.x + "," + edgeGuidePoint.y + " ";
 			}
 			
-			pointString += endNode.x + "," + endNode.y;
+			pointString += endNode.x + "," + endPointY;
 			var polyLine = document.createElementNS(svgns, "polyline");
-			polyLine.setAttributeNS(null, "class", "edge");
-			polyLine.setAttributeNS(null, "points", pointString);
-			polyLine.setAttributeNS(null, "style", "fill:none;");
-			self.mainG.appendChild(polyLine);
+			polyLine.setAttribute("class", "edge");
+			polyLine.setAttribute("points", pointString);
+			polyLine.setAttribute("style", "fill:none;");
+			$(self.mainG).prepend(polyLine);
 		}
 		else { 
 			var line = document.createElementNS(svgns, 'line');
-			line.setAttributeNS(null, "class", "edge");
-			line.setAttributeNS(null, "x1", startNode.x);
-			line.setAttributeNS(null, "y1", startNode.y);
-			line.setAttributeNS(null, "x2", endNode.x);
-			line.setAttributeNS(null, "y2", endNode.y);
+			line.setAttribute("class", "edge");
+			line.setAttribute("x1", startNode.x);
+			line.setAttribute("y1", startPointY);
+			line.setAttribute("x2", endNode.x);
+			line.setAttribute("y2", endPointY);
 			
-			self.mainG.appendChild(line);
+			$(self.mainG).prepend(line);
 		}
 	},
-	drawNode: function(self, node, bounds) {
+	drawNode: function(self, node) {
+		if (node.type == 'flow') {
+			this.drawFlowNode(self, node);
+		}
+		else {
+			this.drawBoxNode(self,node);
+			//this.drawCircleNode(self,node,bounds);
+		}
+	},
+	moveNodes: function(bounds) {
+		var nodes = this.nodes;
+		var gNodes = this.gNodes;
+		
+		for (var key in nodes) {
+			var node = nodes[key];
+			var gNode = gNodes[node.id];
+			var centerX = node.centerX;
+			var centerY = node.centerY;
+			
+			gNode.setAttribute("transform", "translate(" + node.x + "," + node.y + ")");
+			this.addBounds(bounds, {minX:node.x - centerX, minY: node.y - centerY, maxX: node.x + centerX, maxY: node.y + centerY});
+		}
+	},
+	drawFlowNode: function(self, node) {
+		var svg = self.svgGraph;
+		var svgns = self.svgns;
+
+		var height = 26;
+		var nodeG = document.createElementNS(svgns, "g");
+		nodeG.setAttribute("class", "jobnode");
+		nodeG.setAttribute("font-family", "helvetica");
+		nodeG.setAttribute("transform", "translate(" + node.x + "," + node.y + ")");
+		this.gNodes[node.id] = nodeG;
+		
+		var innerG = document.createElementNS(svgns, "g");
+		innerG.setAttribute("class", "nodebox");
+		
+		var rect = document.createElementNS(svgns, 'rect');
+		rect.setAttribute("rx", 3);
+		rect.setAttribute("ry", 5);
+		rect.setAttribute("style", "width:inherit;stroke-opacity:1");
+		//rect.setAttribute("class", "nodecontainer");
+		
+		var text = document.createElementNS(svgns, 'text');
+		var textLabel = document.createTextNode(node.label);
+		text.appendChild(textLabel);
+		text.setAttribute("y", 1);
+		text.setAttribute("height", 10);
+
+		var flowIdText = document.createElementNS(svgns, 'text');
+		var flowIdLabel = document.createTextNode(node.flowId);
+		flowIdText.appendChild(flowIdLabel);
+		flowIdText.setAttribute("y", 11);
+		flowIdText.setAttribute("font-size", 8);
+		
+		var iconHeight = 20;
+		var iconWidth = 21;
+		var iconMargin = 4;
+		var iconNode = document.createElementNS(svgns, 'image');
+		iconNode.setAttribute("width", iconHeight);
+		iconNode.setAttribute("height", iconWidth);
+		iconNode.setAttribute("x", 0);
+		iconNode.setAttribute("y", -10);
+		iconNode.setAttributeNS('http://www.w3.org/1999/xlink', "xlink:href", contextURL + "/images/graph-icon.png");
+		
+		innerG.appendChild(rect);
+		innerG.appendChild(text);
+		innerG.appendChild(flowIdText);
+		innerG.appendChild(iconNode);
+		innerG.jobid = node.id;
+
+		nodeG.appendChild(innerG);
+		self.mainG.appendChild(nodeG);
+
+		var horizontalMargin = 8;
+		var verticalMargin = 2;
+		
+		// Need to get text width after attaching to SVG.
+		var subLabelTextLength = flowIdText.getComputedTextLength();
+		
+		var computeTextLength = text.getComputedTextLength();
+		var computeTextHeight = 22;
+		
+		var width = computeTextLength > subLabelTextLength ? computeTextLength : subLabelTextLength;
+		width += iconWidth + iconMargin;
+		var halfWidth = width/2;
+		var halfHeight = height/2;
+		
+		// Margin for surrounding box.
+		var boxWidth = width + horizontalMargin * 2;
+		var boxHeight = height + verticalMargin * 2;
+		
+		node.width = boxWidth;
+		node.height = boxHeight;
+		node.centerX = boxWidth/2;
+		node.centerY = boxHeight/2;
+		
+		var textXOffset = -halfWidth + iconWidth + iconMargin;
+		iconNode.setAttribute("x", -halfWidth);
+		text.setAttribute("x", textXOffset);
+		flowIdText.setAttribute("x",textXOffset);
+		rect.setAttribute("x", -node.centerX);
+		rect.setAttribute("y", -node.centerY);
+		rect.setAttribute("width", node.width);
+		rect.setAttribute("height", node.height);
+		
+		nodeG.setAttribute("class", "node");
+		nodeG.jobid=node.id;
+	},
+	drawBoxNode: function(self, node) {
+		var svg = self.svgGraph;
+		var svgns = self.svgns;
+
+		var height = 18;
+		var nodeG = document.createElementNS(svgns, "g");
+		nodeG.setAttribute("class", "jobnode");
+		nodeG.setAttribute("font-family", "helvetica");
+		nodeG.setAttribute("transform", "translate(" + node.x + "," + node.y + ")");
+		this.gNodes[node.id] = nodeG;
+		
+		var innerG = document.createElementNS(svgns, "g");
+		innerG.setAttribute("class", "nodebox");
+		
+		var rect = document.createElementNS(svgns, 'rect');
+		rect.setAttribute("rx", 3);
+		rect.setAttribute("ry", 5);
+		rect.setAttribute("style", "width:inherit;stroke-opacity:1");
+		//rect.setAttribute("class", "nodecontainer");
+		
+		var text = document.createElementNS(svgns, 'text');
+		var textLabel = document.createTextNode(node.label);
+		text.appendChild(textLabel);
+		text.setAttribute("y", 6);
+		text.setAttribute("height", 10); 
+
+		//this.addBounds(bounds, {minX:node.x - xOffset, minY: node.y - yOffset, maxX: node.x + xOffset, maxY: node.y + yOffset});
+
+		innerG.appendChild(rect);
+		innerG.appendChild(text);
+		innerG.jobid = node.id;
+
+		nodeG.appendChild(innerG);
+		self.mainG.appendChild(nodeG);
+
+		var horizontalMargin = 8;
+		var verticalMargin = 2;
+		
+		// Need to get text width after attaching to SVG.
+		var computeText = text.getComputedTextLength();
+		var computeTextHeight = 22;
+		var halfWidth = computeText/2;
+		var halfHeight = height/2;
+		
+		// Margin for surrounding box.
+		var boxWidth = computeText + horizontalMargin * 2;
+		var boxHeight = height + verticalMargin * 2;
+		
+		node.width = boxWidth;
+		node.height = boxHeight;
+		node.centerX = boxWidth/2;
+		node.centerY = boxHeight/2;
+		
+		text.setAttribute("x", -halfWidth);
+		rect.setAttribute("x", -node.centerX);
+		rect.setAttribute("y", -node.centerY);
+		rect.setAttribute("width", node.width);
+		rect.setAttribute("height", node.height);
+		
+		nodeG.setAttribute("class", "node");
+		nodeG.jobid=node.id;
+	},
+	drawCircleNode: function(self, node, bounds) {
 		var svg = self.svgGraph;
 		var svgns = self.svgns;
 
@@ -274,36 +459,36 @@ azkaban.SvgGraphView = Backbone.View.extend({
 		var yOffset = 10;
 		
 		var nodeG = document.createElementNS(svgns, "g");
-		nodeG.setAttributeNS(null, "class", "jobnode");
-		nodeG.setAttributeNS(null, "font-family", "helvetica");
-		nodeG.setAttributeNS(null, "transform", "translate(" + node.x + "," + node.y + ")");
+		nodeG.setAttribute("class", "jobnode");
+		nodeG.setAttribute("font-family", "helvetica");
+		nodeG.setAttribute("transform", "translate(" + node.x + "," + node.y + ")");
 		this.gNodes[node.id] = nodeG;
 		
 		var innerG = document.createElementNS(svgns, "g");
-		innerG.setAttributeNS(null, "transform", "translate(-10,-10)");
+		innerG.setAttribute("transform", "translate(-10,-10)");
 		
 		var circle = document.createElementNS(svgns, 'circle');
-		circle.setAttributeNS(null, "cy", 10);
-		circle.setAttributeNS(null, "cx", 10);
-		circle.setAttributeNS(null, "r", 12);
-		circle.setAttributeNS(null, "style", "width:inherit;stroke-opacity:1");
-		
+		circle.setAttribute("cy", 10);
+		circle.setAttribute("cx", 10);
+		circle.setAttribute("r", 12);
+		circle.setAttribute("style", "width:inherit;stroke-opacity:1");
+		//circle.setAttribute("class", "border");
+		//circle.setAttribute("class", "nodecontainer");
 		
 		var text = document.createElementNS(svgns, 'text');
 		var textLabel = document.createTextNode(node.label);
 		text.appendChild(textLabel);
-		text.setAttributeNS(null, "x", 4);
-		text.setAttributeNS(null, "y", 15);
-		text.setAttributeNS(null, "height", 10); 
+		text.setAttribute("x", 0);
+		text.setAttribute("y", 0);
 				
 		this.addBounds(bounds, {minX:node.x - xOffset, minY: node.y - yOffset, maxX: node.x + xOffset, maxY: node.y + yOffset});
 		
 		var backRect = document.createElementNS(svgns, 'rect');
-		backRect.setAttributeNS(null, "x", 0);
-		backRect.setAttributeNS(null, "y", 2);
-		backRect.setAttributeNS(null, "class", "backboard");
-		backRect.setAttributeNS(null, "width", 10);
-		backRect.setAttributeNS(null, "height", 15);
+		backRect.setAttribute("x", 0);
+		backRect.setAttribute("y", 2);
+		backRect.setAttribute("class", "backboard");
+		backRect.setAttribute("width", 10);
+		backRect.setAttribute("height", 15);
 		
 		innerG.appendChild(circle);
 		innerG.appendChild(backRect);
@@ -316,11 +501,11 @@ azkaban.SvgGraphView = Backbone.View.extend({
 		// Need to get text width after attaching to SVG.
 		var computeText = text.getComputedTextLength();
 		var halfWidth = computeText/2;
-		text.setAttributeNS(null, "x", -halfWidth + 10);
-		backRect.setAttributeNS(null, "x", -halfWidth);
-		backRect.setAttributeNS(null, "width", computeText + 20);
+		text.setAttribute("x", -halfWidth + 10);
+		backRect.setAttribute("x", -halfWidth);
+		backRect.setAttribute("width", computeText + 20);
 
-		nodeG.setAttributeNS(null, "class", "node");
+		nodeG.setAttribute("class", "node");
 		nodeG.jobid=node.id;
 	},
 	addBounds: function(toBounds, addBounds) {
@@ -333,6 +518,20 @@ azkaban.SvgGraphView = Backbone.View.extend({
 		var bounds = this.graphBounds;
 		var param = {x: bounds.minX, y: bounds.minY, width: (bounds.maxX - bounds.minX), height: (bounds.maxY - bounds.minY), duration: duration };
 
-		$(this.svgGraph).svgNavigate("transformToBox", param);
+		this.panZoom(param);
+	},
+	centerNode: function(jobId) {
+		var node = this.nodes[jobId];
+		
+		var offset = 150;
+		var widthHeight = offset*2;
+		var x = node.x - offset;
+		var y = node.y - offset;
+		
+		this.panZoom({x: x, y: y, width: widthHeight, height: widthHeight});
+	},
+	panZoom: function(params) {
+		params.maxScale = 2;
+		$(this.svgGraph).svgNavigate("transformToBox", params);
 	}
 });

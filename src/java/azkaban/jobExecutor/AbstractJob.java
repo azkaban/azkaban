@@ -28,7 +28,6 @@ public abstract class AbstractJob implements Job {
 	public static final String JOB_FULLPATH = "job.fullpath";
 	public static final String JOB_ID = "job.id";
 	
-	
 	private final String _id;
 	private final Logger _log;
 	private volatile double _progress;

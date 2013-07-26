@@ -4,7 +4,7 @@ var degreeRatio = 1/8;
 var maxHeight = 200;
 var cornerGap = 10;
 
-function layoutGraph(nodes, edges) {
+function layoutGraph(nodes, edges, hmargin) {
 	var startLayer = [];
 	var numLayer = 0;
 	var nodeMap = {};
@@ -12,20 +12,17 @@ function layoutGraph(nodes, edges) {
 	var maxLayer = 0;
 	var layers = {};
 	
+	if (!hmargin) {
+		hmargin = 8;
+	}
+	
 	// Assign to layers
 	for (var i = 0; i < nodes.length; ++i) {
 		numLayer = Math.max(numLayer, nodes[i].level);
-		/*
-		if (nodes[i].id.length > maxTextSize) {
-			var label = nodes[i].id.substr(0, reductionSize) + "...";
-			nodes[i].label = label;
-		}
-		else {*/
-			nodes[i].label = nodes[i].id;
-		//}
-		
-		var width = nodes[i].label.length * 10;
-		var node = { id: nodes[i].id, node: nodes[i], level: nodes[i].level, in:[], out:[], width: width, x:0 };
+
+		var width = nodes[i].width ? nodes[i].width : nodes[i].label.length * 11.5 + 4;
+		var height = nodes[i].height ? nodes[i].height : 1;
+		var node = { id: nodes[i].id, node: nodes[i], level: nodes[i].level, in:[], out:[], width: width + hmargin, x:0, height:height };
 		nodeMap[nodes[i].id] = node;
 
 		maxLayer = Math.max(node.level, maxLayer);
@@ -244,15 +241,21 @@ function spreadLayerSmart(layer) {
 function spaceVertically(layers, maxLayer) {
 	var startY = 0;
 	var startLayer = layers[0];
+	var startMaxHeight = 1;
 	for (var i=0; i < startLayer.length; ++i) {
 		startLayer[i].y = startY;
+		startMaxHeight = Math.max(startMaxHeight, startLayer[i].height);
 	}
 	
-	var minHeight = 50;
+	var minHeight = 40;
 	for (var a=1; a <= maxLayer; ++a) {
 		var maxDelta = 0;
 		var layer = layers[a];
+		
+		var layerMaxHeight = 1;
 		for (var i=0; i < layer.length; ++i) {
+			layerMaxHeight = Math.max(layerMaxHeight, layer[i].height);
+
 			for (var j=0; j < layer[i].in.length; ++j) {
 				var upper = layer[i].in[j];
 				var delta = Math.abs(upper.x - layer[i].x);
@@ -264,8 +267,10 @@ function spaceVertically(layers, maxLayer) {
 		console.log("Max " + maxDelta);
 		var calcHeight = maxDelta*degreeRatio;
 		
-		calcHeight = Math.min(calcHeight, maxHeight); 
-		startY += Math.max(calcHeight, minHeight);
+		var newMinHeight = minHeight + startMaxHeight/2 + layerMaxHeight / 2;
+		startMaxHeight = layerMaxHeight;
+
+		startY += Math.max(calcHeight, newMinHeight);
 		for (var i=0; i < layer.length; ++i) {
 			layer[i].y=startY;
 		}

@@ -282,7 +282,9 @@ var exNodeClickCallback = function(event) {
 
 	var menu = [	
 			{title: "Open Job...", callback: function() {window.location.href=requestURL;}},
-			{title: "Open Job in New Window...", callback: function() {window.open(requestURL);}}
+			{title: "Open Job in New Window...", callback: function() {window.open(requestURL);}},
+			{break: 1},
+			{title: "Center Job", callback: function() {graphModel.trigger("centerNode", jobId)}}
 	];
 
 	contextMenuView.show(event, menu);
@@ -295,7 +297,9 @@ var exJobClickCallback = function(event) {
 
 	var menu = [	
 			{title: "Open Job...", callback: function() {window.location.href=requestURL;}},
-			{title: "Open Job in New Window...", callback: function() {window.open(requestURL);}}
+			{title: "Open Job in New Window...", callback: function() {window.open(requestURL);}},
+			{break: 1},
+			{title: "Center Job", callback: function() {graphModel.trigger("centerNode", jobId)}}
 	];
 
 	contextMenuView.show(event, menu);

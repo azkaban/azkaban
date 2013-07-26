@@ -548,7 +548,9 @@ var nodeClickCallback = function(event) {
 									{title: "Descendents", callback: function(){touchDescendents(jobId, true);}},
 									{title: "Disable All", callback: function(){disableAll();}}
 								]
-			}
+			},
+			{break: 1},
+			{title: "Center Job", callback: function() {executableGraphModel.trigger("centerNode", jobId)}}
 	];
 
 	contextMenuView.show(event, menu);

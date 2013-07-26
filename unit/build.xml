@@ -87,4 +87,15 @@
 		</zip>
 	</target>
 	
+	<target name="package-embedded" depends="jars" description="Creates a test zip">
+		<delete dir="${dist.packages.dir}" />
+		<mkdir dir="${dist.packages.dir}" />
+		
+		<!-- Tarball it -->
+		<zip destfile="${dist.packages.dir}/embedded.zip">
+			<zipfileset dir="${dist.jar.dir}" />
+			<zipfileset dir="${base.dir}/unit/executions/embedded" />
+		</zip>
+	</target>
+	
 </project>

@@ -513,7 +513,11 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 			HashMap<String, Object> nodeObj = new HashMap<String,Object>();
 			nodeObj.put("id", node.getId());
 			nodeObj.put("level", node.getLevel());
-
+			nodeObj.put("type", node.getType());
+			if (node.getEmbeddedFlowId() != null) {
+				nodeObj.put("flowId", node.getEmbeddedFlowId());
+			}
+			
 			nodeList.add(nodeObj);
 		}
 		
