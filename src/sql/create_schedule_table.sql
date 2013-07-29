@@ -13,6 +13,6 @@ CREATE TABLE schedules (
 	submit_user VARCHAR(128),
 	enc_type TINYINT,
 	schedule_options LONGBLOB,
-	PRIMARY KEY (schedule_id)
-	INDEX project_id (project_id, flow_name),
+	PRIMARY KEY (schedule_id),
+	INDEX project_id (project_id, flow_name)
 );

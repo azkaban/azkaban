@@ -1,6 +1,7 @@
 package azkaban.utils;
 
 import java.text.NumberFormat;
+import java.util.Collection;
 
 import org.joda.time.DateTime;
 import org.joda.time.DurationFieldType;
@@ -154,6 +155,4 @@ public class WebUtils {
         else
             return sizeBytes + " B";
     }
-    
-    
 }

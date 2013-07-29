@@ -352,6 +352,10 @@ public class ProjectManager {
 		projectLoader.cleanOlderProjectVersion(project.getId(), project.getVersion() - projectVersionRetention);
 	}
 	
+	public void updateFlow(Project project, Flow flow) throws ProjectManagerException {
+		projectLoader.updateFlow(project, flow.getVersion(), flow);
+	}
+	
 	private File unzipFile(File archiveFile) throws IOException {
 		ZipFile zipfile = new ZipFile(archiveFile);
 		File unzipped = Utils.createTempDir(tempDir);

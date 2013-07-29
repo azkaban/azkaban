@@ -159,7 +159,6 @@ public class ScheduleManager {
 	 * @param id
 	 */
 	public synchronized void removeSchedule(Schedule sched) {
-
 		Pair<Integer,String> identityPairMap = sched.getScheduleIdentityPair();
 		Set<Schedule> schedules = scheduleIdentityPairMap.get(identityPairMap);
 		if(schedules != null) {
@@ -427,6 +426,8 @@ public class ScheduleManager {
 									if (!flowOptions.isSuccessEmailsOverridden()) {
 										flowOptions.setSuccessEmails(flow.getSuccessEmails());
 									}
+									
+									flowOptions.setMailCreator(flow.getMailCreator());
 									
 									try {
 										executorManager.submitExecutableFlow(exflow);
