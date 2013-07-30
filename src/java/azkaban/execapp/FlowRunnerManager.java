@@ -388,12 +388,24 @@ public class FlowRunnerManager implements EventListener {
 			}
 		}
 
+		int numJobThreads = numJobThreadPerFlow;
+		if(options.getFlowParameters().containsKey("flow.num.job.threads")) {
+			try{
+				int numJobs = Integer.valueOf(options.getFlowParameters().get("flow.num.job.threads"));
+				if(numJobs > 0 && numJobs <= numJobThreads) {
+					numJobThreads = numJobs;
+				}
+			} catch (Exception e) {
+				throw new ExecutorManagerException("Failed to set the number of job threads " + options.getFlowParameters().get("flow.num.job.threads") + " for flow " + execId, e);
+			}
+		}
+		
 		FlowRunner runner = new FlowRunner(flow, executorLoader, projectLoader, jobtypeManager);
 		runner.setFlowWatcher(watcher)
 			.setJobLogSettings(jobLogChunkSize, jobLogNumFiles)
 			.setValidateProxyUser(validateProxyUser)
 			.setGlobalProps(globalProps)
-			.setNumJobThreads(numJobThreadPerFlow)
+			.setNumJobThreads(numJobThreads)
 			.addListener(this);
 		
 		// Check again.
@@ -604,6 +616,10 @@ public class FlowRunnerManager implements EventListener {
 	public int getNumExecutingFlows() {
 		return runningFlows.size();
 	}
+	
+	public String getRunningFlowIds() {
+		return runningFlows.keySet().toString();
+	}
 
 	public int getNumExecutingJobs() {
 		int jobCount = 0;
@@ -613,5 +629,7 @@ public class FlowRunnerManager implements EventListener {
 		
 		return jobCount;
 	}
+
+	
 	
 }
