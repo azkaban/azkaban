@@ -18,6 +18,7 @@ azkaban.ContextMenuView = Backbone.View.extend({
 
 		var contextMenu = this.setupMenu(menu);
 		$(contextMenu).css({top: y, left: x});
+		
 		$(this.el).after(contextMenu);
 	},
 	hide : function(evt) {

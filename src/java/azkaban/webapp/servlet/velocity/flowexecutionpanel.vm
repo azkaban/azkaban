@@ -1,7 +1,6 @@
 <script type="text/javascript" src="${context}/js/azkaban.layout.js"></script>
 <script type="text/javascript" src="${context}/js/svgNavigate.js"></script>
 <script type="text/javascript" src="${context}/js/azkaban.context.menu.js"></script>
-<script type="text/javascript" src="${context}/js/azkaban.svg.graph.view.js"></script>
 <script type="text/javascript" src="${context}/js/azkaban.flow.execute.view.js"></script>
 <link rel="stylesheet" type="text/css" href="${context}/css/azkaban-graph.css" /> 
 
@@ -147,6 +146,3 @@
 #parse( "azkaban/webapp/servlet/velocity/schedulepanel.vm" )
 #end
 
-<div id="contextMenu">
-	
-</div>

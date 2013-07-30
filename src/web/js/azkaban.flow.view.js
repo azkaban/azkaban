@@ -275,54 +275,6 @@ azkaban.ExecutionsView = Backbone.View.extend({
 	}
 });
 
-var exNodeClickCallback = function(event) {
-	console.log("Node clicked callback");
-	var jobId = event.currentTarget.jobid;
-	var requestURL = contextURL + "/manager?project=" + projectName + "&flow=" + flowId + "&job=" + jobId;
-
-	var menu = [	
-			{title: "Open Job...", callback: function() {window.location.href=requestURL;}},
-			{title: "Open Job in New Window...", callback: function() {window.open(requestURL);}},
-			{break: 1},
-			{title: "Center Job", callback: function() {graphModel.trigger("centerNode", jobId)}}
-	];
-
-	contextMenuView.show(event, menu);
-}
-
-var exJobClickCallback = function(event) {
-	console.log("Node clicked callback");
-	var jobId = event.currentTarget.jobid;
-	var requestURL = contextURL + "/manager?project=" + projectName + "&flow=" + flowId + "&job=" + jobId;
-
-	var menu = [	
-			{title: "Open Job...", callback: function() {window.location.href=requestURL;}},
-			{title: "Open Job in New Window...", callback: function() {window.open(requestURL);}},
-			{break: 1},
-			{title: "Center Job", callback: function() {graphModel.trigger("centerNode", jobId)}}
-	];
-
-	contextMenuView.show(event, menu);
-}
-
-var exEdgeClickCallback = function(event) {
-	console.log("Edge clicked callback");
-}
-
-var exGraphClickCallback = function(event) {
-	console.log("Graph clicked callback");
-	var requestURL = contextURL + "/manager?project=" + projectName + "&flow=" + flowId;
-
-	var menu = [	
-		{title: "Open Flow...", callback: function() {window.location.href=requestURL;}},
-		{title: "Open Flow in New Window...", callback: function() {window.open(requestURL);}},
-		{break: 1},
-		{title: "Center Graph", callback: function() {graphModel.trigger("resetPanZoom");}}
-	];
-	
-	contextMenuView.show(event, menu);
-}
-
 var graphModel;
 azkaban.GraphModel = Backbone.Model.extend({});
 
@@ -339,8 +291,8 @@ $(function() {
 	flowTabView = new azkaban.FlowTabView({el:$( '#headertabs'), selectedView: selected });
 
 	graphModel = new azkaban.GraphModel();
-	mainSvgGraphView = new azkaban.SvgGraphView({el:$('#svgDiv'), model: graphModel, rightClick:  { "node": exNodeClickCallback, "edge": exEdgeClickCallback, "graph": exGraphClickCallback }});
-	jobsListView = new azkaban.JobListView({el:$('#jobList'), model: graphModel, contextMenuCallback: exJobClickCallback});
+	mainSvgGraphView = new azkaban.SvgGraphView({el:$('#svgDiv'), model: graphModel, rightClick:  { "node": nodeClickCallback, "edge": edgeClickCallback, "graph": graphClickCallback }});
+	jobsListView = new azkaban.JobListView({el:$('#jobList'), model: graphModel, contextMenuCallback: jobClickCallback});
 	
 	var requestURL = contextURL + "/manager";
 
@@ -362,32 +314,7 @@ $(function() {
 	      requestURL,
 	      {"project": projectName, "ajax":"fetchflowgraph", "flow":flowId},
 	      function(data) {
-	      	  // Create the nodes
-	      	  var nodes = {};
-	      	  for (var i=0; i < data.nodes.length; ++i) {
-	      	  	var node = data.nodes[i];
-	      	  	nodes[node.id] = node;
-	      	  }
-	      	  for (var i=0; i < data.edges.length; ++i) {
-	      	  	var edge = data.edges[i];
-	      	  	var fromNode = nodes[edge.from];
-	      	  	var toNode = nodes[edge.target];
-	      	  	
-	      	  	if (!fromNode.outNodes) {
-	      	  		fromNode.outNodes = {};
-	      	  	}
-	      	  	fromNode.outNodes[toNode.id] = toNode;
-	      	  	
-	      	  	if (!toNode.inNodes) {
-	      	  		toNode.inNodes = {};
-	      	  	}
-	      	  	toNode.inNodes[fromNode.id] = fromNode;
-	      	  }
-	      
-	          console.log("data fetched");
-	          graphModel.set({data: data});
-	          graphModel.set({nodes: nodes});
-	          graphModel.set({disabled: {}});
+	    	  createModelFromAjaxCall(data, graphModel);
 	          graphModel.trigger("change:graph");
 	          
 	          // Handle the hash changes here so the graph finishes rendering first.

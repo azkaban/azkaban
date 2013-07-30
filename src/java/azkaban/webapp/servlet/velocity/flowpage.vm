@@ -30,9 +30,13 @@
 		<script type="text/javascript" src="${context}/js/azkaban.ajax.utils.js"></script>
 		<script type="text/javascript" src="${context}/js/azkaban.nav.js"></script>
 		<script type="text/javascript" src="${context}/js/azkaban.layout.js"></script>
+		<script type="text/javascript" src="${context}/js/svgNavigate.js"></script>
+		<script type="text/javascript" src="${context}/js/azkaban.svg.graph.helper.js"></script>
+		<script type="text/javascript" src="${context}/js/azkaban.svg.graph.view.js"></script>
+		<script type="text/javascript" src="${context}/js/azkaban.flow.extended.view.js"></script>
 		<script type="text/javascript" src="${context}/js/azkaban.flow.job.view.js"></script>
 		<script type="text/javascript" src="${context}/js/azkaban.flow.view.js"></script>
-		<script type="text/javascript" src="${context}/js/svgNavigate.js"></script>
+
 		<script type="text/javascript">
 			var contextURL = "${context}";
 			var currentTime = ${currentTime};
@@ -147,6 +151,7 @@
 #end
 
 		</div>
+		#parse( "azkaban/webapp/servlet/velocity/flowextendedpanel.vm" )
 		<div id="contextMenu">
 		</div>
 		#parse( "azkaban/webapp/servlet/velocity/messagedialog.vm" )

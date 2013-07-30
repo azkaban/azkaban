@@ -525,7 +525,7 @@ var touchDescendents = function(jobid, disable) {
 	executableGraphModel.trigger("change:disabled");
 }
 
-var nodeClickCallback = function(event) {
+var exNodeClickCallback = function(event) {
 	console.log("Node clicked callback");
 	var jobId = event.currentTarget.jobid;
 	var flowId = executableGraphModel.get("flowId");
@@ -556,11 +556,11 @@ var nodeClickCallback = function(event) {
 	contextMenuView.show(event, menu);
 }
 
-var edgeClickCallback = function(event) {
+var exEdgeClickCallback = function(event) {
 	console.log("Edge clicked callback");
 }
 
-var graphClickCallback = function(event) {
+var exGraphClickCallback = function(event) {
 	console.log("Graph clicked callback");
 	var flowId = executableGraphModel.get("flowId");
 	var requestURL = contextURL + "/manager?project=" + projectName + "&flow=" + flowId;
@@ -580,7 +580,7 @@ var contextMenuView;
 $(function() {
 	executableGraphModel = new azkaban.GraphModel();
 	flowExecuteDialogView = new azkaban.FlowExecuteDialogView({el:$('#execute-flow-panel'), model: executableGraphModel});
-	svgGraphView = new azkaban.SvgGraphView({el:$('#svgDivCustom'), model: executableGraphModel, topGId:"topG", graphMargin: 10, rightClick: { "node": nodeClickCallback, "edge": edgeClickCallback, "graph": graphClickCallback }});
+	svgGraphView = new azkaban.SvgGraphView({el:$('#svgDivCustom'), model: executableGraphModel, topGId:"topG", graphMargin: 10, rightClick: { "node": exNodeClickCallback, "edge": exEdgeClickCallback, "graph": exGraphClickCallback }});
 	
 	sideMenuDialogView = new azkaban.SideMenuDialogView({el:$('#graphOptions')});
 	editTableView = new azkaban.EditTableView({el:$('#editTable')});

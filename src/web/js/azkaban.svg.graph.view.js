@@ -57,6 +57,10 @@ azkaban.SvgGraphView = Backbone.View.extend({
 		}
 
 		$(svg).svgNavigate();
+		
+		if (settings.render) {
+			this.render();
+		}
 	},
 	initializeDefs: function(self) {
 		var def = document.createElementNS(svgns, 'defs');
@@ -133,7 +137,7 @@ azkaban.SvgGraphView = Backbone.View.extend({
 			this.drawEdge(this, edges[i]);
 		}
 		
-		this.model.set({"nodes": this.nodes, "edges": edges});
+		this.model.set({"flowId":data.flowId, "nodes": this.nodes, "edges": edges});
 		
 		var margin = this.graphMargin;
 		bounds.minX = bounds.minX ? bounds.minX - margin : -margin;
@@ -142,7 +146,13 @@ azkaban.SvgGraphView = Backbone.View.extend({
 		bounds.maxY = bounds.maxY ? bounds.maxY + margin : margin;
 		
 		this.assignInitialStatus(self);
-		this.handleDisabledChange(self);
+		
+		if (this.model.get("disabled")) {
+			this.handleDisabledChange(self);
+		}
+		else {
+			this.model.set({"disabled":[]})
+		}
 		this.graphBounds = bounds;
 		this.resetPanZoom(0);
 	},
@@ -232,13 +242,13 @@ azkaban.SvgGraphView = Backbone.View.extend({
 			var callbacks = this.rightClick;
 			var currentTarget = self.currentTarget;
 			if (callbacks.node && currentTarget.jobid) {
-				callbacks.node(self);
+				callbacks.node(self, this.model);
 			}
 			else if (callbacks.edge && (currentTarget.nodeName == "polyline" || currentTarget.nodeName == "line")) {
-				callbacks.edge(self);
+				callbacks.edge(self, this.model);
 			}
 			else if (callbacks.graph) {
-				callbacks.graph(self);
+				callbacks.graph(self, this.model);
 			}
 			return false;
 		}
@@ -350,6 +360,8 @@ azkaban.SvgGraphView = Backbone.View.extend({
 		innerG.appendChild(flowIdText);
 		innerG.appendChild(iconNode);
 		innerG.jobid = node.id;
+		innerG.jobtype = "flow";
+		innerG.flowId = node.flowId;
 
 		nodeG.appendChild(innerG);
 		self.mainG.appendChild(nodeG);

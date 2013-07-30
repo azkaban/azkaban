@@ -180,6 +180,8 @@
 			</div>
 		</div>
 		#parse( "azkaban/webapp/servlet/velocity/flowexecutionpanel.vm" )
+		<div id="contextMenu">
+		</div>
 		#parse( "azkaban/webapp/servlet/velocity/messagedialog.vm" )
 	</body>
 	
