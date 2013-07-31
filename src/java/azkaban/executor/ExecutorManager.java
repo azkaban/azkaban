@@ -67,6 +67,7 @@ public class ExecutorManager {
 	private long lastCleanerThreadCheckTime = -1;
 	
 	private long lastThreadCheckTime = -1;
+	private String updaterStage = "not started";
 	
 	public ExecutorManager(Props props, ExecutorLoader loader) throws ExecutorManagerException {
 		this.executorLoader = loader;
@@ -96,7 +97,7 @@ public class ExecutorManager {
 	}
 	
 	public String getExecutorThreadStage() {
-		return executingManager.getStage();
+		return updaterStage;
 	}
 	
 	public boolean isThreadActive() {
@@ -179,6 +180,7 @@ public class ExecutorManager {
 		for (Pair<ExecutionReference, ExecutableFlow> ref : runningFlows.values()) {
 			allIds.add(ref.getSecond().getExecutionId());
 		}
+		Collections.sort(allIds);
 		return allIds.toString();
 	}
 	
@@ -560,16 +562,11 @@ public class ExecutorManager {
 	
 	private class ExecutingManagerUpdaterThread extends Thread {
 		private boolean shutdown = false;
-		private String stage;
 
 		public ExecutingManagerUpdaterThread() {
 			this.setName("ExecutorManagerUpdaterThread");
 		}
 		
-		public String getStage() {
-			return stage;
-		}
-
 		// 10 mins recently finished threshold.
 		private long recentlyFinishedLifetimeMs = 600000;
 		private int waitTimeIdleMs = 2000;
@@ -589,7 +586,7 @@ public class ExecutorManager {
 				try {
 					lastThreadCheckTime = System.currentTimeMillis();
 					
-					stage = "Starting update all flows.";
+					updaterStage = "Starting update all flows.";
 					
 					Map<ConnectionInfo, List<ExecutableFlow>> exFlowMap = getFlowToExecutorMap();
 					ArrayList<ExecutableFlow> finishedFlows = new ArrayList<ExecutableFlow>();
@@ -602,7 +599,7 @@ public class ExecutorManager {
 						
 							ConnectionInfo connection = entry.getKey();
 							
-							stage = "Starting update flows on " + connection.getHost() + ":" + connection.getPort();
+							updaterStage = "Starting update flows on " + connection.getHost() + ":" + connection.getPort();
 							
 							// We pack the parameters of the same host together before we query.
 							fillUpdateTimeAndExecId(entry.getValue(), executionIdsList, updateTimesList);
@@ -623,7 +620,7 @@ public class ExecutorManager {
 								for (ExecutableFlow flow: entry.getValue()) {
 									Pair<ExecutionReference, ExecutableFlow> pair = runningFlows.get(flow.getExecutionId());
 									
-									stage = "Failed to get update. Doing some clean up for flow " + pair.getSecond().getExecutionId();
+									updaterStage = "Failed to get update. Doing some clean up for flow " + pair.getSecond().getExecutionId();
 									
 									if (pair != null) {
 										ExecutionReference ref = pair.getFirst();
@@ -648,7 +645,7 @@ public class ExecutorManager {
 									try {
 										ExecutableFlow flow = updateExecution(updateMap);
 										
-										stage = "Updated flow " + flow.getExecutionId();
+										updaterStage = "Updated flow " + flow.getExecutionId();
 										
 										if (isFinished(flow)) {
 											finishedFlows.add(flow);
@@ -667,7 +664,7 @@ public class ExecutorManager {
 							}
 						}
 	
-						stage = "Evicting old recently finished flows.";
+						updaterStage = "Evicting old recently finished flows.";
 						
 						evictOldRecentlyFinished(recentlyFinishedLifetimeMs);
 						// Add new finished
@@ -675,13 +672,15 @@ public class ExecutorManager {
 							recentlyFinished.put(flow.getExecutionId(), flow);
 						}
 						
-						stage = "Finalizing " + finalizeFlows.size() + " error flows.";
+						updaterStage = "Finalizing " + finalizeFlows.size() + " error flows.";
 						
 						// Kill error flows
 						for (ExecutableFlow flow: finalizeFlows) {
 							finalizeFlows(flow);
 						}
 					}
+					
+					updaterStage = "Updated all active flows. Waiting for next round.";
 					
 					synchronized(this) {
 						try {

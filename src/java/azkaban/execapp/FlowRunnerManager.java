@@ -618,7 +618,9 @@ public class FlowRunnerManager implements EventListener {
 	}
 	
 	public String getRunningFlowIds() {
-		return runningFlows.keySet().toString();
+		List<Integer> ids = new ArrayList<Integer>(runningFlows.keySet());
+		Collections.sort(ids);
+		return ids.toString();
 	}
 
 	public int getNumExecutingJobs() {
