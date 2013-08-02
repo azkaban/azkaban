@@ -51,7 +51,7 @@ function layoutGraph(nodes, edges, hmargin) {
 		var guides = [];
 		
 		for (var j = srcNode.level + 1; j < destNode.level; ++j) {
-			var dummyNode = {level: j, in: [], x: lastNode.x, out: [], realSrc: srcNode, realDest: destNode, width: 10};
+			var dummyNode = {level: j, in: [], x: lastNode.x, out: [], realSrc: srcNode, realDest: destNode, width: 10, height: 10};
 			layers[j].push(dummyNode);
 			dummyNode.in.push(lastNode);
 			lastNode.out.push(dummyNode);
