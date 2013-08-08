@@ -78,7 +78,7 @@ public class JobRunnerTest {
 		Assert.assertTrue(outputProps != null);
 		Assert.assertTrue(logFile.exists());
 		
-		Assert.assertTrue(loader.getNodeUpdateCount(node.getJobId()) == 3);
+		Assert.assertTrue(loader.getNodeUpdateCount(node.getId()) == 3);
 		
 		Assert.assertTrue(eventCollector.checkOrdering());
 		try {
@@ -110,7 +110,7 @@ public class JobRunnerTest {
 		Assert.assertTrue(logFile.exists());
 		Assert.assertTrue(eventCollector.checkOrdering());
 		Assert.assertTrue(!runner.isCancelled());
-		Assert.assertTrue(loader.getNodeUpdateCount(node.getJobId()) == 3);
+		Assert.assertTrue(loader.getNodeUpdateCount(node.getId()) == 3);
 		
 		try {
 			eventCollector.checkEventExists(new Type[] {Type.JOB_STARTED, Type.JOB_STATUS_CHANGED, Type.JOB_FINISHED});
@@ -145,7 +145,7 @@ public class JobRunnerTest {
 		Assert.assertTrue(runner.getLogFilePath() == null);
 		Assert.assertTrue(eventCollector.checkOrdering());
 		
-		Assert.assertTrue(loader.getNodeUpdateCount(node.getJobId()) == null);
+		Assert.assertTrue(loader.getNodeUpdateCount(node.getId()) == null);
 		
 		try {
 			eventCollector.checkEventExists(new Type[] {Type.JOB_STARTED, Type.JOB_FINISHED});
@@ -175,7 +175,7 @@ public class JobRunnerTest {
 		// Give it 10 ms to fail.
 		Assert.assertTrue( node.getEndTime() - node.getStartTime() < 10);
 		
-		Assert.assertTrue(loader.getNodeUpdateCount(node.getJobId()) == null);
+		Assert.assertTrue(loader.getNodeUpdateCount(node.getId()) == null);
 		
 		// Log file and output files should not exist.
 		Props outputProps = runner.getOutputProps();
@@ -223,7 +223,7 @@ public class JobRunnerTest {
 		Assert.assertTrue(node.getStartTime() > 0 && node.getEndTime() > 0);
 		// Give it 10 ms to fail.
 		Assert.assertTrue(node.getEndTime() - node.getStartTime() < 3000);
-		Assert.assertTrue(loader.getNodeUpdateCount(node.getJobId()) == 3);
+		Assert.assertTrue(loader.getNodeUpdateCount(node.getId()) == 3);
 		
 		// Log file and output files should not exist.
 		File logFile = new File(runner.getLogFilePath());
@@ -268,7 +268,7 @@ public class JobRunnerTest {
 		Assert.assertTrue(outputProps != null);
 		Assert.assertTrue(logFile.exists());
 		Assert.assertFalse(runner.isCancelled());
-		Assert.assertTrue(loader.getNodeUpdateCount(node.getJobId()) == 3);
+		Assert.assertTrue(loader.getNodeUpdateCount(node.getId()) == 3);
 		
 		Assert.assertTrue(eventCollector.checkOrdering());
 		try {
@@ -350,8 +350,8 @@ public class JobRunnerTest {
 		ExecutableFlow flow = new ExecutableFlow();
 		flow.setExecutionId(execId);
 		ExecutableNode node = new ExecutableNode();
-		node.setJobId(name);
-		node.setExecutableFlow(flow);
+		node.setId(name);
+		node.setParentFlow(flow);
 		
 		Props props = createProps(time, fail);
 		HashSet<String> proxyUsers = new HashSet<String>();

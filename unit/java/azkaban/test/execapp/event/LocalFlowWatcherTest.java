@@ -20,6 +20,7 @@ import azkaban.executor.ExecutorLoader;
 import azkaban.executor.Status;
 import azkaban.flow.Flow;
 import azkaban.jobtype.JobTypeManager;
+import azkaban.project.Project;
 import azkaban.project.ProjectLoader;
 import azkaban.test.execapp.EventCollectorListener;
 import azkaban.test.execapp.MockExecutorLoader;
@@ -136,15 +137,15 @@ public class LocalFlowWatcherTest {
 			Assert.assertEquals(node.getStatus(), Status.SUCCEEDED);
 			
 			// check it's start time is after the first's children.
-			ExecutableNode watchedNode = first.getExecutableNode(node.getJobId());
+			ExecutableNode watchedNode = first.getExecutableNode(node.getId());
 			if (watchedNode == null) {
 				continue;
 			}
 			Assert.assertEquals(watchedNode.getStatus(), Status.SUCCEEDED);
 			
-			System.out.println("Node " + node.getJobId() + 
+			System.out.println("Node " + node.getId() + 
 					" start: " + node.getStartTime() + 
-					" dependent on " + watchedNode.getJobId() + 
+					" dependent on " + watchedNode.getId() + 
 					" " + watchedNode.getEndTime() + 
 					" diff: " + (node.getStartTime() - watchedNode.getEndTime()));
 
@@ -170,7 +171,7 @@ public class LocalFlowWatcherTest {
 			Assert.assertEquals(node.getStatus(), Status.SUCCEEDED);
 			
 			// check it's start time is after the first's children.
-			ExecutableNode watchedNode = first.getExecutableNode(node.getJobId());
+			ExecutableNode watchedNode = first.getExecutableNode(node.getId());
 			if (watchedNode == null) {
 				continue;
 			}
@@ -185,7 +186,7 @@ public class LocalFlowWatcherTest {
 				Assert.assertEquals(child.getStatus(), Status.SUCCEEDED);
 				long diff = node.getStartTime() - child.getEndTime();
 				minDiff = Math.min(minDiff, diff);
-				System.out.println("Node " + node.getJobId() + 
+				System.out.println("Node " + node.getId() + 
 						" start: " + node.getStartTime() + 
 						" dependent on " + watchedChild + " " + child.getEndTime() +
 						" diff: " + diff);
@@ -228,8 +229,9 @@ public class LocalFlowWatcherTest {
 		@SuppressWarnings("unchecked")
 		HashMap<String, Object> flowObj = (HashMap<String, Object>) JSONUtils.parseJSONFromFile(jsonFlowFile);
 		
+		Project project = new Project(1, "test");
 		Flow flow = Flow.flowFromObject(flowObj);
-		ExecutableFlow execFlow = new ExecutableFlow(flow);
+		ExecutableFlow execFlow = new ExecutableFlow(project, flow);
 		execFlow.setExecutionId(execId);
 		execFlow.setExecutionPath(workingDir.getPath());
 		return execFlow;

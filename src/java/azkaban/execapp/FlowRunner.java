@@ -24,6 +24,7 @@ import azkaban.execapp.event.EventHandler;
 import azkaban.execapp.event.EventListener;
 import azkaban.execapp.event.FlowWatcher;
 import azkaban.executor.ExecutableFlow;
+import azkaban.executor.ExecutableFlowBase;
 import azkaban.executor.ExecutableNode;
 import azkaban.executor.ExecutionOptions;
 import azkaban.executor.ExecutionOptions.FailureAction;
@@ -71,7 +72,7 @@ public class FlowRunner extends EventHandler implements Runnable {
 	private JobRunnerEventListener listener = new JobRunnerEventListener();
 	private Map<String, JobRunner> jobRunners = new ConcurrentHashMap<String, JobRunner>();
 	private Map<String, JobRunner> activeJobRunners = new ConcurrentHashMap<String, JobRunner>();
-	
+
 	// Used for pipelining
 	private Integer pipelineLevel = null;
 	private Integer pipelineExecId = null;
@@ -314,24 +315,24 @@ public class FlowRunner extends EventHandler implements Runnable {
 								Props outputProps = collectOutputProps(node);
 								node.setStatus(Status.QUEUED);
 								JobRunner runner = createJobRunner(node, outputProps);
-								logger.info("Submitting job " + node.getJobId() + " to run.");
+								logger.info("Submitting job " + node.getId() + " to run.");
 								try {
 									executorService.submit(runner);
-									jobRunners.put(node.getJobId(), runner);
-									activeJobRunners.put(node.getJobId(), runner);
+									jobRunners.put(node.getId(), runner);
+									activeJobRunners.put(node.getId(), runner);
 								} catch (RejectedExecutionException e) {
 									logger.error(e);
 								};
 								
 							} // If killed, then auto complete and KILL
 							else if (node.getStatus() == Status.KILLED) {
-								logger.info("Killing " + node.getJobId() + " due to prior errors.");
+								logger.info("Killing " + node.getId() + " due to prior errors.");
 								node.setStartTime(currentTime);
 								node.setEndTime(currentTime);
 								fireEventListeners(Event.create(this, Type.JOB_FINISHED, node));
 							} // If disabled, then we auto skip
 							else if (node.getStatus() == Status.DISABLED) {
-								logger.info("Skipping disabled job " + node.getJobId() + ".");
+								logger.info("Skipping disabled job " + node.getId() + ".");
 								node.setStartTime(currentTime);
 								node.setEndTime(currentTime);
 								node.setStatus(Status.SKIPPED);
@@ -422,6 +423,26 @@ public class FlowRunner extends EventHandler implements Runnable {
 		return jobsToRun;
 	}
 
+	private List<ExecutableNode> findReadyJobsToRun(ExecutableFlowBase flow) {
+		ArrayList<ExecutableNode> jobsToRun = new ArrayList<ExecutableNode>();
+		for (ExecutableNode node : flow.getExecutableNodes()) {
+			if (Status.isStatusFinished(node.getStatus())) {
+				continue;
+			}
+			else {
+				// Check the dependencies to see if execution conditions are met,
+				// and what the status should be set to.
+				Status impliedStatus = getImpliedStatus(node);
+				if (getImpliedStatus(node) != null) {
+					node.setStatus(impliedStatus);
+					jobsToRun.add(node);
+				}
+			}
+		}
+		
+		return jobsToRun;
+	}
+	
 	private boolean isFlowFinished() {
 		if (!activeJobRunners.isEmpty()) {
 			return false;
@@ -453,7 +474,7 @@ public class FlowRunner extends EventHandler implements Runnable {
 	}
 	
 	private JobRunner createJobRunner(ExecutableNode node, Props previousOutput) {
-		String source = node.getJobPropsSource();
+		String source = node.getJobSource();
 		String propsSource = node.getPropsSource();
 
 		// If no properties are set, we just set the global properties.
@@ -481,11 +502,11 @@ public class FlowRunner extends EventHandler implements Runnable {
 		
 		// load the override props if any
 		try {
-			prop = projectLoader.fetchProjectProperty(flow.getProjectId(), flow.getVersion(), node.getJobId()+".jor");
+			prop = projectLoader.fetchProjectProperty(flow.getProjectId(), flow.getVersion(), node.getId()+".jor");
 		}
 		catch(ProjectManagerException e) {
 			e.printStackTrace();
-			logger.error("Error loading job override property for job " + node.getJobId());
+			logger.error("Error loading job override property for job " + node.getId());
 		}
 		if(prop == null) {
 			// if no override prop, load the original one on disk
@@ -493,7 +514,7 @@ public class FlowRunner extends EventHandler implements Runnable {
 				prop = new Props(null, path);				
 			} catch (IOException e) {
 				e.printStackTrace();
-				logger.error("Error loading job file " + source + " for job " + node.getJobId());
+				logger.error("Error loading job file " + source + " for job " + node.getId());
 			}
 		}
 		// setting this fake source as this will be used to determine the location of log files.
@@ -594,7 +615,7 @@ public class FlowRunner extends EventHandler implements Runnable {
 			ArrayList<String> failures = new ArrayList<String>();
 			for (ExecutableNode node: flow.getExecutableNodes()) {
 				if (node.getStatus() == Status.FAILED) {
-					failures.add(node.getJobId());
+					failures.add(node.getId());
 				}
 				else if (node.getStatus() == Status.KILLED) {
 					node.setStartTime(-1);
@@ -620,7 +641,7 @@ public class FlowRunner extends EventHandler implements Runnable {
 					// Resets the status and increments the attempt number
 					node.resetForRetry();
 					reEnableDependents(node);
-					logger.info("Re-enabling job " + node.getJobId() + " attempt " + node.getAttempt());
+					logger.info("Re-enabling job " + node.getId() + " attempt " + node.getAttempt());
 				}
 				else {
 					logger.error("Cannot retry job " + jobId + " since it hasn't run yet. User " + user);
@@ -734,12 +755,12 @@ public class FlowRunner extends EventHandler implements Runnable {
 			else if (event.getType() == Type.JOB_FINISHED) {
 				synchronized(mainSyncObj) {
 					ExecutableNode node = runner.getNode();
-					activeJobRunners.remove(node.getJobId());
+					activeJobRunners.remove(node.getId());
 					
-					logger.info("Job Finished " + node.getJobId() + " with status " + node.getStatus());
+					logger.info("Job Finished " + node.getId() + " with status " + node.getStatus());
 					if (runner.getOutputProps() != null) {
-						logger.info("Job " + node.getJobId() + " had output props.");
-						jobOutputProps.put(node.getJobId(), runner.getOutputProps());
+						logger.info("Job " + node.getId() + " had output props.");
+						jobOutputProps.put(node.getId(), runner.getOutputProps());
 					}
 					
 					updateFlow();
@@ -747,14 +768,14 @@ public class FlowRunner extends EventHandler implements Runnable {
 					if (node.getStatus() == Status.FAILED) {
 						// Retry failure if conditions are met.
 						if (!runner.isCancelled() && runner.getRetries() > node.getAttempt()) {
-							logger.info("Job " + node.getJobId() + " will be retried. Attempt " + node.getAttempt() + " of " + runner.getRetries());
+							logger.info("Job " + node.getId() + " will be retried. Attempt " + node.getAttempt() + " of " + runner.getRetries());
 							node.setDelayedExecution(runner.getRetryBackoff());
 							node.resetForRetry();
 						}
 						else {
 							if (!runner.isCancelled() && runner.getRetries() > 0) {
 					
-								logger.info("Job " + node.getJobId() + " has run out of retry attempts");
+								logger.info("Job " + node.getId() + " has run out of retry attempts");
 								// Setting delayed execution to 0 in case this is manually re-tried.
 								node.setDelayedExecution(0);
 							}
@@ -796,7 +817,7 @@ public class FlowRunner extends EventHandler implements Runnable {
 	
 	public File getJobLogFile(String jobId, int attempt) {
 		ExecutableNode node = flow.getExecutableNode(jobId);
-		File path = new File(execDir, node.getJobPropsSource());
+		File path = new File(execDir, node.getJobSource());
 		
 		String logFileName = JobRunner.createLogFileName(execId, jobId, attempt);
 		File logFile = new File(path.getParentFile(), logFileName);
@@ -810,7 +831,7 @@ public class FlowRunner extends EventHandler implements Runnable {
 	
 	public File getJobMetaDataFile(String jobId, int attempt) {
 		ExecutableNode node = flow.getExecutableNode(jobId);
-		File path = new File(execDir, node.getJobPropsSource());
+		File path = new File(execDir, node.getJobSource());
 		
 		String metaDataFileName = JobRunner.createMetaDataFileName(execId, jobId, attempt);
 		File metaDataFile = new File(path.getParentFile(), metaDataFileName);

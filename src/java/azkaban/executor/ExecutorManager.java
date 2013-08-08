@@ -361,12 +361,14 @@ public class ExecutorManager {
 		}
 	}
 	
-	public String submitExecutableFlow(ExecutableFlow exflow) throws ExecutorManagerException {
+	public String submitExecutableFlow(ExecutableFlow exflow, String userId) throws ExecutorManagerException {
 		synchronized(exflow) {
 			logger.info("Submitting execution flow " + exflow.getFlowId());
 
 			int projectId = exflow.getProjectId();
 			String flowId = exflow.getFlowId();
+			exflow.setSubmitUser(userId);
+			exflow.setSubmitTime(System.currentTimeMillis());
 			
 			List<Integer> running = getRunningFlows(projectId, flowId);
 

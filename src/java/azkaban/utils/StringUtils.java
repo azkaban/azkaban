@@ -16,7 +16,6 @@
 package azkaban.utils;
 
 import java.util.Collection;
-import java.util.List;
 
 public class StringUtils {
 	public static final char SINGLE_QUOTE = '\'';

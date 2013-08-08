@@ -1,6 +1,6 @@
 package azkaban.execapp.event;
 
-import azkaban.executor.ExecutableFlow;
+import azkaban.executor.ExecutableFlowBase;
 import azkaban.executor.ExecutableNode;
 import azkaban.executor.ExecutorLoader;
 import azkaban.executor.ExecutorManagerException;
@@ -11,7 +11,7 @@ public class RemoteFlowWatcher extends FlowWatcher {
 	
 	private int execId;
 	private ExecutorLoader loader;
-	private ExecutableFlow flow;
+	private ExecutableFlowBase flow;
 	private RemoteUpdaterThread thread;
 	private boolean isShutdown = false;
 	
@@ -46,7 +46,7 @@ public class RemoteFlowWatcher extends FlowWatcher {
 		@Override
 		public void run() {
 			do {
-				ExecutableFlow updateFlow = null;
+				ExecutableFlowBase updateFlow = null;
 				try {
 					updateFlow = loader.fetchExecutableFlow(execId);
 				} catch (ExecutorManagerException e) {
@@ -63,7 +63,7 @@ public class RemoteFlowWatcher extends FlowWatcher {
 					flow.setUpdateTime(updateFlow.getUpdateTime());
 					
 					for (ExecutableNode node : flow.getExecutableNodes()) {
-						String jobId = node.getJobId();
+						String jobId = node.getId();
 						ExecutableNode newNode = updateFlow.getExecutableNode(jobId);
 						long updateTime = node.getUpdateTime();
 						node.setUpdateTime(newNode.getUpdateTime());

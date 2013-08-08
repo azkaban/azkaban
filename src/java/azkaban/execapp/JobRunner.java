@@ -67,6 +67,7 @@ public class JobRunner extends EventHandler implements Runnable {
 	
 	private Job job;
 	private int executionId = -1;
+	private String jobId;
 	
 	private static final Object logCreatorLock = new Object();
 	private Object syncObject = new Object();
@@ -91,7 +92,9 @@ public class JobRunner extends EventHandler implements Runnable {
 		this.props = props;
 		this.node = node;
 		this.workingDir = workingDir;
-		this.executionId = node.getExecutionId();
+		
+		this.executionId = node.getParentFlow().getExecutionId();
+		this.jobId = node.getId();
 		this.loader = loader;
 		this.jobtypeManager = jobtypeManager;
 	}
@@ -115,10 +118,10 @@ public class JobRunner extends EventHandler implements Runnable {
 		this.pipelineLevel = pipelineLevel;
 
 		if (this.pipelineLevel == 1) {
-			pipelineJobs.add(node.getJobId());
+			pipelineJobs.add(node.getId());
 		}
 		else if (this.pipelineLevel == 2) {
-			pipelineJobs.add(node.getJobId());
+			pipelineJobs.add(node.getId());
 			pipelineJobs.addAll(node.getOutNodes());
 		}
 	}
@@ -142,11 +145,11 @@ public class JobRunner extends EventHandler implements Runnable {
 	private void createLogger() {
 		// Create logger
 		synchronized (logCreatorLock) {
-			String loggerName = System.currentTimeMillis() + "." + executionId + "." + node.getJobId();
+			String loggerName = System.currentTimeMillis() + "." + this.executionId + "." + this.jobId;
 			logger = Logger.getLogger(loggerName);
 
 			// Create file appender
-			String logName = createLogFileName(node.getExecutionId(), node.getJobId(), node.getAttempt());
+			String logName = createLogFileName(this.executionId, this.jobId, node.getAttempt());
 			logFile = new File(workingDir, logName);
 			String absolutePath = logFile.getAbsolutePath();
 
@@ -158,7 +161,7 @@ public class JobRunner extends EventHandler implements Runnable {
 				jobAppender = fileAppender;
 				logger.addAppender(jobAppender);
 			} catch (IOException e) {
-				flowLogger.error("Could not open log file in " + workingDir + " for job " + node.getJobId(), e);
+				flowLogger.error("Could not open log file in " + workingDir + " for job " + this.jobId, e);
 			}
 		}
 	}
@@ -175,13 +178,13 @@ public class JobRunner extends EventHandler implements Runnable {
 			node.setUpdateTime(System.currentTimeMillis());
 			loader.updateExecutableNode(node);
 		} catch (ExecutorManagerException e) {
-			flowLogger.error("Could not update job properties in db for " + node.getJobId(), e);
+			flowLogger.error("Could not update job properties in db for " + this.jobId, e);
 		}
 	}
 	
 	@Override
 	public void run() {
-		Thread.currentThread().setName("JobRunner-" + node.getJobId() + "-" + executionId);
+		Thread.currentThread().setName("JobRunner-" + this.jobId + "-" + executionId);
 		
 		if (node.getStatus() == Status.DISABLED) {
 			node.setStartTime(System.currentTimeMillis());
@@ -220,7 +223,7 @@ public class JobRunner extends EventHandler implements Runnable {
 					}
 				}
 				if (!blockingStatus.isEmpty()) {
-					logger.info("Pipeline job " + node.getJobId() + " waiting on " + blockedList + " in execution " + watcher.getExecId());
+					logger.info("Pipeline job " + this.jobId + " waiting on " + blockedList + " in execution " + watcher.getExecId());
 					
 					for(BlockingStatus bStatus: blockingStatus) {
 						logger.info("Waiting on pipelined job " + bStatus.getJobId());
@@ -253,7 +256,7 @@ public class JobRunner extends EventHandler implements Runnable {
 						this.wait(delayStartMs);
 						logger.info("Execution has been delayed for " + delayStartMs + " ms. Continuing with execution.");
 					} catch (InterruptedException e) {
-						logger.error("Job " + node.getJobId() + " was to be delayed for " + delayStartMs + ". Interrupted after " + (System.currentTimeMillis() - currentTime));
+						logger.error("Job " + this.jobId + " was to be delayed for " + delayStartMs + ". Interrupted after " + (System.currentTimeMillis() - currentTime));
 					}
 				}
 				
@@ -286,7 +289,7 @@ public class JobRunner extends EventHandler implements Runnable {
 			
 			node.setEndTime(System.currentTimeMillis());
 
-			logInfo("Finishing job " + node.getJobId() + " at " + node.getEndTime());
+			logInfo("Finishing job " + this.jobId + " at " + node.getEndTime());
 
 			closeLogger();
 			writeStatus();
@@ -304,13 +307,13 @@ public class JobRunner extends EventHandler implements Runnable {
 					Arrays.sort(files, Collections.reverseOrder());
 					
 					
-					loader.uploadLogFile(executionId, node.getJobId(), node.getAttempt(), files);
+					loader.uploadLogFile(executionId, this.jobId, node.getAttempt(), files);
 				} catch (ExecutorManagerException e) {
-					flowLogger.error("Error writing out logs for job " + node.getJobId(), e);
+					flowLogger.error("Error writing out logs for job " + this.jobId, e);
 				}
 			}
 			else {
-				flowLogger.info("Log file for job " + node.getJobId() + " is null");
+				flowLogger.info("Log file for job " + this.jobId + " is null");
 			}
 		}
 		fireEvent(Event.create(this, Type.JOB_FINISHED));
@@ -340,13 +343,13 @@ public class JobRunner extends EventHandler implements Runnable {
 			}
 
 			if (node.getAttempt() > 0) {
-				logInfo("Starting job " + node.getJobId() + " attempt " + node.getAttempt() + " at " + node.getStartTime());
+				logInfo("Starting job " + this.jobId + " attempt " + node.getAttempt() + " at " + node.getStartTime());
 			}
 			else {
-				logInfo("Starting job " + node.getJobId() + " at " + node.getStartTime());
+				logInfo("Starting job " + this.jobId + " at " + node.getStartTime());
 			}
 			props.put(CommonJobProperties.JOB_ATTEMPT, node.getAttempt());
-			props.put(CommonJobProperties.JOB_METADATA_FILE, createMetaDataFileName(executionId, node.getJobId(), node.getAttempt()));
+			props.put(CommonJobProperties.JOB_METADATA_FILE, createMetaDataFileName(executionId, this.jobId, node.getAttempt()));
 			node.setStatus(Status.RUNNING);
 
 			// Ability to specify working directory
@@ -357,13 +360,13 @@ public class JobRunner extends EventHandler implements Runnable {
 			if(props.containsKey("user.to.proxy")) {
 				String jobProxyUser = props.getString("user.to.proxy");
 				if(proxyUsers != null && !proxyUsers.contains(jobProxyUser)) {
-					logger.error("User " + jobProxyUser + " has no permission to execute this job " + node.getJobId() + "!");
+					logger.error("User " + jobProxyUser + " has no permission to execute this job " + this.jobId + "!");
 					return false;
 				}
 			}
 			
 			try {
-				job = jobtypeManager.buildJobExecutor(node.getJobId(), props, logger);
+				job = jobtypeManager.buildJobExecutor(this.jobId, props, logger);
 			}
 			catch (JobTypeManagerException e) {
 				logger.error("Failed to build job type, skipping this job");

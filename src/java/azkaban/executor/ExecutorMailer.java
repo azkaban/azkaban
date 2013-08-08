@@ -154,11 +154,11 @@ public class ExecutorMailer extends AbstractMailer {
 		}
 	}
 	
-	private List<String> findFailedJobs(ExecutableFlow flow) {
+	private List<String> findFailedJobs(ExecutableFlowBase flow) {
 		ArrayList<String> failedJobs = new ArrayList<String>();
 		for (ExecutableNode node: flow.getExecutableNodes()) {
 			if (node.getStatus() == Status.FAILED) {
-				failedJobs.add(node.getJobId());
+				failedJobs.add(node.getId());
 			}
 		}
 		

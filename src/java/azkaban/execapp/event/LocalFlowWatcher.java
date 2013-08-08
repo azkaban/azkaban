@@ -43,14 +43,19 @@ public class LocalFlowWatcher extends FlowWatcher {
 					Object data = event.getData();
 					if (data instanceof ExecutableNode) {
 						ExecutableNode node = (ExecutableNode)data;
-						handleJobFinished(node.getJobId(), node.getStatus());
+						
+						if (node.getId()) {
+							
+						}
+						
+						handleJobFinished(node.getId(), node.getStatus());
 					}
 				}
 				else if (event.getRunner() instanceof JobRunner) {
 					JobRunner runner = (JobRunner)event.getRunner();
 					ExecutableNode node = runner.getNode();
 					
-					handleJobFinished(node.getJobId(), node.getStatus());
+					handleJobFinished(node.getId(), node.getStatus());
 				}
 			}
 			else if (event.getType() == Type.FLOW_FINISHED) {

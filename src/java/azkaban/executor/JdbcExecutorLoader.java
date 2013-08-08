@@ -374,7 +374,14 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements ExecutorLo
 			}
 		}
 		
-		ExecutableFlow flow = node.getFlow();
+		ExecutableFlow flow = node.getExecutableFlow();
+		String flowId = flow.getFlowId();
+		
+		// if the main flow is not the parent, then we'll create a composite key for flowID
+		if (flow != node.getParentFlow()) {
+			flowId = node.getParentFlow().getNestedId();
+		}
+		
 		QueryRunner runner = createQueryRunner();
 		try {
 			runner.update(
@@ -382,8 +389,8 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements ExecutorLo
 					flow.getExecutionId(), 
 					flow.getProjectId(), 
 					flow.getVersion(), 
-					flow.getFlowId(), 
-					node.getJobId(),
+					flowId, 
+					node.getId(),
 					node.getStartTime(),
 					node.getEndTime(), 
 					node.getStatus().getNumVal(),
@@ -391,7 +398,7 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements ExecutorLo
 					node.getAttempt()
 					);
 		} catch (SQLException e) {
-			throw new ExecutorManagerException("Error writing job " + node.getJobId(), e);
+			throw new ExecutorManagerException("Error writing job " + node.getId(), e);
 		}
 	}
 	
@@ -418,11 +425,11 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements ExecutorLo
 					node.getEndTime(), 
 					node.getStatus().getNumVal(), 
 					outputParam,
-					node.getFlow().getExecutionId(),
-					node.getJobId(),
+					node.getExecutableFlow().getExecutionId(),
+					node.getId(),
 					node.getAttempt());
 		} catch (SQLException e) {
-			throw new ExecutorManagerException("Error updating job " + node.getJobId(), e);
+			throw new ExecutorManagerException("Error updating job " + node.getId(), e);
 		}
 	}
 	

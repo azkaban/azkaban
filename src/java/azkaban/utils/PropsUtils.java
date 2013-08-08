@@ -28,7 +28,7 @@ import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import azkaban.executor.ExecutableFlow;
+import azkaban.executor.ExecutableFlowBase;
 import azkaban.flow.CommonJobProperties;
 
 import org.apache.commons.lang.StringUtils;
@@ -208,7 +208,7 @@ public class PropsUtils {
 		return buffer.toString();
 	}
 	
-	public static Props addCommonFlowProperties(final ExecutableFlow flow) {
+	public static Props addCommonFlowProperties(final ExecutableFlowBase flow) {
 		Props parentProps = new Props();
 
 		parentProps.put(CommonJobProperties.FLOW_ID, flow.getFlowId());

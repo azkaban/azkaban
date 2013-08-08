@@ -245,7 +245,7 @@ public class JdbcExecutorLoaderTest {
 		Assert.assertEquals(flow.getProjectId(), info.getProjectId());
 		Assert.assertEquals(flow.getVersion(), info.getVersion());
 		Assert.assertEquals(flow.getFlowId(), info.getFlowId());
-		Assert.assertEquals(oldNode.getJobId(), info.getJobId());
+		Assert.assertEquals(oldNode.getId(), info.getJobId());
 		Assert.assertEquals(oldNode.getStatus(), info.getStatus());
 		Assert.assertEquals(oldNode.getStartTime(), info.getStartTime());
 		Assert.assertEquals("endTime = " + oldNode.getEndTime() + " info endTime = " + info.getEndTime(), oldNode.getEndTime(), info.getEndTime());
@@ -409,7 +409,8 @@ public class JdbcExecutorLoaderTest {
 		HashMap<String, Object> flowObj = (HashMap<String, Object>) JSONUtils.parseJSONFromFile(jsonFlowFile);
 		
 		Flow flow = Flow.flowFromObject(flowObj);
-		ExecutableFlow execFlow = new ExecutableFlow(executionId, flow);
+		ExecutableFlow execFlow = new ExecutableFlow(flow);
+		execFlow.setExecutionId(executionId);
 
 		return execFlow;
 	}
