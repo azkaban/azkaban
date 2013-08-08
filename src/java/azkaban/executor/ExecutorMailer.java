@@ -8,12 +8,13 @@ import javax.mail.MessagingException;
 import org.apache.log4j.Logger;
 
 import azkaban.executor.ExecutionOptions.FailureAction;
+import azkaban.executor.ExecutorManager.Alerter;
 import azkaban.utils.AbstractMailer;
 import azkaban.utils.EmailMessage;
 import azkaban.utils.Props;
 import azkaban.utils.Utils;
 
-public class ExecutorMailer extends AbstractMailer {
+public class ExecutorMailer extends AbstractMailer implements Alerter {
 	private static Logger logger = Logger.getLogger(ExecutorMailer.class);
 	
 	private boolean testMode = false;
@@ -163,5 +164,20 @@ public class ExecutorMailer extends AbstractMailer {
 		}
 		
 		return failedJobs;
+	}
+
+	@Override
+	public void alertOnSuccess(ExecutableFlow exflow) throws Exception {
+		sendSuccessEmail(exflow);
+	}
+	
+	@Override
+	public void alertOnError(ExecutableFlow exflow, String ... extraReasons) throws Exception {
+		sendErrorEmail(exflow, extraReasons);
+	}
+	
+	@Override
+	public void alertOnFirstError(ExecutableFlow exflow) throws Exception {
+		sendFirstErrorMessage(exflow);
 	}
 }
