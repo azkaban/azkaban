@@ -76,7 +76,7 @@ public class ExecutorManager {
 	
 	private long lastThreadCheckTime = -1;
 	
-	private final boolean isPrimary;
+	private final boolean isActive;
 	
 	private Map<String, Alerter> alerters;
 	
@@ -86,24 +86,26 @@ public class ExecutorManager {
 		void alertOnFirstError(ExecutableFlow exflow) throws Exception;
 	}
 	
-	public ExecutorManager(Props props, ExecutorLoader loader, boolean isPrimary) throws ExecutorManagerException {
+	public ExecutorManager(Props props, ExecutorLoader loader, boolean isActive) throws ExecutorManagerException {
 		this.executorLoader = loader;
 		this.loadRunningFlows();
 		
 		executorHost = props.getString("executor.host", "localhost");
 		executorPort = props.getInt("executor.port");
 		
-		alerters = loadAlerters(props);
 		
-		this.isPrimary = isPrimary;		
 		
-		if(isPrimary) {
+		this.isActive = isActive;		
+		
+		if(isActive) {
 			executingManager = new ExecutingManagerUpdaterThread();
 			executingManager.start();
 
 			long executionLogsRetentionMs = props.getLong("execution.logs.retention.ms", DEFAULT_EXECUTION_LOGS_RETENTION_MS);
 			cleanerThread = new CleanerThread(executionLogsRetentionMs);
 			cleanerThread.start();
+			
+			alerters = loadAlerters(props);
 		}
 	}
 	
@@ -861,7 +863,7 @@ public class ExecutorManager {
 	
 	private void finalizeFlows(ExecutableFlow flow) {
 		int execId = flow.getExecutionId();
-		
+
 		// First we check if the execution in the datastore is complete
 		try {
 			ExecutableFlow dsFlow;

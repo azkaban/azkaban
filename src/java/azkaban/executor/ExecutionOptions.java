@@ -40,7 +40,7 @@ public class ExecutionOptions {
 	private Set<String> initiallyDisabledJobs = new HashSet<String>();
 	
 	public void setFlowParameters(Map<String,String> flowParam) {
-		flowParameters.get(flowParam);
+		flowParameters.putAll(flowParam);
 	}
 	
 	public Map<String,String> getFlowParameters() {
