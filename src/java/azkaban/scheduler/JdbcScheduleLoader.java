@@ -17,28 +17,25 @@
 package azkaban.scheduler;
 
 
+import azkaban.utils.DataSourceUtils;
+import azkaban.utils.GZIPUtils;
+import azkaban.utils.JSONUtils;
+import azkaban.utils.Props;
 import java.io.IOException;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
-
 import javax.sql.DataSource;
-
 import org.apache.commons.dbutils.DbUtils;
 import org.apache.commons.dbutils.QueryRunner;
 import org.apache.commons.dbutils.ResultSetHandler;
 import org.apache.log4j.Logger;
-
 import org.joda.time.DateTimeZone;
 import org.joda.time.ReadablePeriod;
-
-import azkaban.utils.DataSourceUtils;
-import azkaban.utils.GZIPUtils;
-import azkaban.utils.JSONUtils;
-import azkaban.utils.Props;
 
 
 public class JdbcScheduleLoader implements ScheduleLoader {
@@ -149,10 +146,12 @@ public class JdbcScheduleLoader implements ScheduleLoader {
 		logger.info("Now trying to update the schedules");
 		
 		// filter the schedules
-		for(Schedule sched : schedules) {
+        Iterator<Schedule> scheduleIterator = schedules.iterator();
+        while (scheduleIterator.hasNext()) {
+            Schedule sched = scheduleIterator.next();
 			if(!sched.updateTime()) {
 				logger.info("Schedule " + sched.getScheduleName() + " was scheduled before azkaban start, skipping it.");
-				schedules.remove(sched);
+				scheduleIterator.remove();
 				removeSchedule(sched);
 			}
 			else {
