@@ -27,7 +27,7 @@ public class ExecuteFlowActionTest {
 		List<String> disabledJobs = new ArrayList<String>();
 		options.setDisabledJobs(disabledJobs);
 		
-		ExecuteFlowAction executeFlowAction = new ExecuteFlowAction(1, "testproject", "testflow", "azkaban", options);
+		ExecuteFlowAction executeFlowAction = new ExecuteFlowAction("ExecuteFlowAction", 1, "testproject", "testflow", "azkaban", options, null);
 		
 		Object obj = executeFlowAction.toJson();
 		

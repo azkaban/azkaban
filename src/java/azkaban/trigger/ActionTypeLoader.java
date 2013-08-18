@@ -2,7 +2,6 @@ package azkaban.trigger;
 
 import java.io.File;
 import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
@@ -32,7 +31,7 @@ public class ActionTypeLoader {
 		// load built-in actions
 		
 
-		loadDefaultActions();
+		loadBuiltinActions();
 		
 		loadPluginActions(props);
 
@@ -135,9 +134,16 @@ public class ActionTypeLoader {
 		logger.info("Loaded action type " + actionName + " " + actionClass);
 	}
 	
-	private void loadDefaultActions() {
+	private void loadBuiltinActions() {
 		actionToClass.put(ExecuteFlowAction.type, ExecuteFlowAction.class);		
 		logger.info("Loaded ExecuteFlowAction type.");
+	}
+	
+	public static void registerBuiltinActions(Map<String, Class<? extends TriggerAction>> builtinActions) {
+		actionToClass.putAll(builtinActions);
+		for(String type : builtinActions.keySet()) {
+			logger.info("Loaded " + type + " action.");
+		}
 	}
 	
 	public TriggerAction createActionFromJson(String type, Object obj) throws Exception {

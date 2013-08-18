@@ -4,11 +4,15 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
+import java.lang.reflect.Constructor;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.TimeZone;
 
 import javax.management.MBeanInfo;
@@ -18,14 +22,15 @@ import javax.management.ObjectName;
 import org.apache.log4j.Logger;
 import org.joda.time.DateTimeZone;
 import org.mortbay.jetty.Server;
-import org.mortbay.jetty.bio.SocketConnector;
-import org.mortbay.jetty.security.SslSocketConnector;
 import org.mortbay.jetty.servlet.Context;
 import org.mortbay.jetty.servlet.ServletHolder;
 import org.mortbay.thread.QueuedThreadPool;
 
+import azkaban.executor.ExecutorMailer;
 import azkaban.executor.ExecutorManager;
 import azkaban.executor.JdbcExecutorLoader;
+import azkaban.executor.ExecutorManager.Alerter;
+import azkaban.jmx.JmxExecutorManager;
 import azkaban.jmx.JmxJettyServer;
 import azkaban.jmx.JmxTriggerRunnerManager;
 import azkaban.project.JdbcProjectLoader;
@@ -36,8 +41,11 @@ import azkaban.trigger.JdbcTriggerLoader;
 import azkaban.trigger.TriggerLoader;
 import azkaban.trigger.builtin.BasicTimeChecker;
 import azkaban.trigger.builtin.CreateTriggerAction;
-import azkaban.trigger.builtin.ExecutableFlowStatusChecker;
+import azkaban.trigger.builtin.ExecutionChecker;
 import azkaban.trigger.builtin.ExecuteFlowAction;
+import azkaban.trigger.builtin.KillExecutionAction;
+import azkaban.trigger.builtin.SlaAlertAction;
+import azkaban.trigger.builtin.SlaChecker;
 import azkaban.utils.FileIOUtils;
 import azkaban.utils.Props;
 import azkaban.utils.PropsUtils;
@@ -142,26 +150,42 @@ public class AzkabanTriggerServer {
 		logger.info("Loading project manager");
 		JdbcProjectLoader loader = new JdbcProjectLoader(props);
 		ProjectManager manager = new ProjectManager(loader, props);
-		
 		return manager;
 	}
 	
 	private void loadBuiltinCheckersAndActions(AzkabanTriggerServer app) {
 		logger.info("Loading built-in checker and action types");
-		ExecutorManager executorManager = app.getExecutorManager();
-		TriggerRunnerManager triggerRunnerManager = app.getTriggerRunnerManager();
+//		ExecutorManager executorManager = app.getExecutorManager();
+//		TriggerRunnerManager triggerRunnerManager = app.getTriggerRunnerManager();
 		CheckerTypeLoader checkerLoader = triggerRunnerManager.getCheckerLoader();
 		ActionTypeLoader actionLoader = triggerRunnerManager.getActionLoader();
 		// time:
 		checkerLoader.registerCheckerType(BasicTimeChecker.type, BasicTimeChecker.class);
-		ExecutableFlowStatusChecker.setExecutorManager(executorManager);
-		checkerLoader.registerCheckerType(ExecutableFlowStatusChecker.type, ExecutableFlowStatusChecker.class);
+//		// execution checker
+//		ExecutionChecker.setExecutorManager(executorManager);
+//		checkerLoader.registerCheckerType(ExecutionChecker.type, ExecutionChecker.class);
+		// Sla checker
+		SlaChecker.setExecutorManager(executorManager);
+		checkerLoader.registerCheckerType(SlaChecker.type, SlaChecker.class);
 		
+		// execut flow action
 		ExecuteFlowAction.setExecutorManager(executorManager);
 		ExecuteFlowAction.setProjectManager(projectManager);
+		ExecuteFlowAction.setTriggerRunnerManager(triggerRunnerManager);
 		actionLoader.registerActionType(ExecuteFlowAction.type, ExecuteFlowAction.class);
+		// kill flow action
+		KillExecutionAction.setExecutorManager(executorManager);
+		actionLoader.registerActionType(KillExecutionAction.type, KillExecutionAction.class);
+		// sla alert
+		SlaAlertAction.setExecutorManager(executorManager);
+		Map<String, Alerter> alerters = loadAlerters(props);
+		SlaAlertAction.setAlerters(alerters);
+		SlaAlertAction.setExecutorManager(executorManager);
+		actionLoader.registerActionType(SlaAlertAction.type, SlaAlertAction.class);
+		// create trigger action
 		CreateTriggerAction.setTriggerRunnerManager(triggerRunnerManager);
 		actionLoader.registerActionType(CreateTriggerAction.type, CreateTriggerAction.class);
+
 	}
 	
 	private void loadPluginCheckersAndActions(String pluginPath, AzkabanTriggerServer app) {
@@ -291,6 +315,143 @@ public class AzkabanTriggerServer {
 		}
 	}
 	
+	private Map<String, Alerter> loadAlerters(Props props) {
+		Map<String, Alerter> allAlerters = new HashMap<String, Alerter>();
+		// load built-in alerters
+		ExecutorMailer mailAlerter = new ExecutorMailer(props);
+		allAlerters.put("email", mailAlerter);
+		// load all plugin alerters
+		String pluginDir = props.getString("alerter.plugin.dir", "plugins/alerter");
+		allAlerters.putAll(loadPluginAlerters(pluginDir));
+		return allAlerters;
+	}
+
+	private Map<String, Alerter> loadPluginAlerters(String pluginPath) {
+		File alerterPluginPath = new File(pluginPath);
+		if (!alerterPluginPath.exists()) {
+			return Collections.<String, Alerter>emptyMap();
+		}
+			
+		Map<String, Alerter> installedAlerterPlugins = new HashMap<String, Alerter>();
+		ClassLoader parentLoader = SlaAlertAction.class.getClass().getClassLoader();
+		File[] pluginDirs = alerterPluginPath.listFiles();
+		ArrayList<String> jarPaths = new ArrayList<String>();
+		for (File pluginDir: pluginDirs) {
+			if (!pluginDir.isDirectory()) {
+				logger.error("The plugin path " + pluginDir + " is not a directory.");
+				continue;
+			}
+			
+			// Load the conf directory
+			File propertiesDir = new File(pluginDir, "conf");
+			Props pluginProps = null;
+			if (propertiesDir.exists() && propertiesDir.isDirectory()) {
+				File propertiesFile = new File(propertiesDir, "plugin.properties");
+				File propertiesOverrideFile = new File(propertiesDir, "override.properties");
+				
+				if (propertiesFile.exists()) {
+					if (propertiesOverrideFile.exists()) {
+						pluginProps = PropsUtils.loadProps(null, propertiesFile, propertiesOverrideFile);
+					}
+					else {
+						pluginProps = PropsUtils.loadProps(null, propertiesFile);
+					}
+				}
+				else {
+					logger.error("Plugin conf file " + propertiesFile + " not found.");
+					continue;
+				}
+			}
+			else {
+				logger.error("Plugin conf path " + propertiesDir + " not found.");
+				continue;
+			}
+			
+			String pluginName = pluginProps.getString("alerter.name");
+			List<String> extLibClasspath = pluginProps.getStringList("alerter.external.classpaths", (List<String>)null);
+			
+			String pluginClass = pluginProps.getString("alerter.class");
+			if (pluginClass == null) {
+				logger.error("Alerter class is not set.");
+			}
+			else {
+				logger.info("Plugin class " + pluginClass);
+			}
+			
+			URLClassLoader urlClassLoader = null;
+			File libDir = new File(pluginDir, "lib");
+			if (libDir.exists() && libDir.isDirectory()) {
+				File[] files = libDir.listFiles();
+				
+				ArrayList<URL> urls = new ArrayList<URL>();
+				for (int i=0; i < files.length; ++i) {
+					try {
+						URL url = files[i].toURI().toURL();
+						urls.add(url);
+					} catch (MalformedURLException e) {
+						logger.error(e);
+					}
+				}
+				if (extLibClasspath != null) {
+					for (String extLib : extLibClasspath) {
+						try {
+							File file = new File(pluginDir, extLib);
+							URL url = file.toURI().toURL();
+							urls.add(url);
+						} catch (MalformedURLException e) {
+							logger.error(e);
+						}
+					}
+				}
+				
+				urlClassLoader = new URLClassLoader(urls.toArray(new URL[urls.size()]), parentLoader);
+			}
+			else {
+				logger.error("Library path " + propertiesDir + " not found.");
+				continue;
+			}
+			
+			Class<?> alerterClass = null;
+			try {
+				alerterClass = urlClassLoader.loadClass(pluginClass);
+			}
+			catch (ClassNotFoundException e) {
+				logger.error("Class " + pluginClass + " not found.");
+				continue;
+			}
+
+			String source = FileIOUtils.getSourcePathFromClass(alerterClass);
+			logger.info("Source jar " + source);
+			jarPaths.add("jar:file:" + source);
+			
+			Constructor<?> constructor = null;
+			try {
+				constructor = alerterClass.getConstructor(Props.class);
+			} catch (NoSuchMethodException e) {
+				logger.error("Constructor not found in " + pluginClass);
+				continue;
+			}
+			
+			Object obj = null;
+			try {
+				obj = constructor.newInstance(pluginProps);
+			} catch (Exception e) {
+				logger.error(e);
+			} 
+			
+			if (!(obj instanceof Alerter)) {
+				logger.error("The object is not an Alerter");
+				continue;
+			}
+			
+			Alerter plugin = (Alerter) obj;
+			installedAlerterPlugins.put(pluginName, plugin);
+		}
+		
+		return installedAlerterPlugins;
+		
+	}
+	
 	private TriggerLoader createTriggerLoader(Props props) {
 		return new JdbcTriggerLoader(props);
 	}
@@ -417,6 +578,7 @@ public class AzkabanTriggerServer {
 
 		registerMbean("triggerServerJetty", new JmxJettyServer(server));
 		registerMbean("triggerRunnerManager", new JmxTriggerRunnerManager(triggerRunnerManager));
+		registerMbean("executorManager", new JmxExecutorManager(executorManager));
 	}
 	
 	public void close() {

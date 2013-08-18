@@ -194,7 +194,7 @@ public class JdbcTriggerLoaderTest {
 		Condition triggerCond = new Condition(checkers1, expr1);
 		Condition expireCond = new Condition(checkers1, expr1);
 		List<TriggerAction> actions = new ArrayList<TriggerAction>();
-		TriggerAction action = new ExecuteFlowAction(1, projName, flowName, "azkaban", new ExecutionOptions());
+		TriggerAction action = new ExecuteFlowAction("executeAction", 1, projName, flowName, "azkaban", new ExecutionOptions(), null);
 		actions.add(action);
 		Trigger t = new Trigger(now, now, "azkaban", source, triggerCond, expireCond, actions);
 		return t;

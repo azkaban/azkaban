@@ -46,6 +46,7 @@ import org.joda.time.DateTime;
 
 import azkaban.project.Project;
 import azkaban.scheduler.ScheduleStatisticManager;
+import azkaban.sla.SlaOption;
 import azkaban.utils.FileIOUtils.JobMetaData;
 import azkaban.utils.FileIOUtils.LogData;
 import azkaban.utils.FileIOUtils;
@@ -84,6 +85,7 @@ public class ExecutorManager {
 		void alertOnSuccess(ExecutableFlow exflow) throws Exception;
 		void alertOnError(ExecutableFlow exflow, String ... extraReasons) throws Exception;
 		void alertOnFirstError(ExecutableFlow exflow) throws Exception;
+		void alertOnSla(SlaOption slaOption, String slaMessage) throws Exception;
 	}
 	
 	public ExecutorManager(Props props, ExecutorLoader loader, boolean isActive) throws ExecutorManagerException {
@@ -97,9 +99,10 @@ public class ExecutorManager {
 		
 		this.isActive = isActive;		
 		
+		executingManager = new ExecutingManagerUpdaterThread();
+		executingManager.start();
+		
 		if(isActive) {
-			executingManager = new ExecutingManagerUpdaterThread();
-			executingManager.start();
 
 			long executionLogsRetentionMs = props.getLong("execution.logs.retention.ms", DEFAULT_EXECUTION_LOGS_RETENTION_MS);
 			cleanerThread = new CleanerThread(executionLogsRetentionMs);
@@ -862,6 +865,7 @@ public class ExecutorManager {
 	}
 	
 	private void finalizeFlows(ExecutableFlow flow) {
+
 		int execId = flow.getExecutionId();
 
 		// First we check if the execution in the datastore is complete
@@ -873,22 +877,30 @@ public class ExecutorManager {
 			else {
 				dsFlow = executorLoader.fetchExecutableFlow(execId);
 			
+				
+			}
+
+			if(isActive) {
 				// If it's marked finished, we're good. If not, we fail everything and then mark it finished.
 				if (!isFinished(dsFlow)) {
 					failEverything(dsFlow);
 					executorLoader.updateExecutableFlow(dsFlow);
 				}
-			}
-
-			// Delete the executing reference.
-			if (flow.getEndTime() == -1) {
-				flow.setEndTime(System.currentTimeMillis());
-				executorLoader.updateExecutableFlow(dsFlow);
-			}
-			executorLoader.removeActiveExecutableReference(execId);
 			
-			runningFlows.remove(execId);
-			recentlyFinished.put(execId, dsFlow);
+				// Delete the executing reference.
+				if (flow.getEndTime() == -1) {
+					flow.setEndTime(System.currentTimeMillis());
+					executorLoader.updateExecutableFlow(dsFlow);
+				}
+				executorLoader.removeActiveExecutableReference(execId);
+				
+				runningFlows.remove(execId);
+				recentlyFinished.put(execId, dsFlow);
+			} else {
+				runningFlows.remove(execId);
+				recentlyFinished.put(execId, dsFlow);
+				return;
+			}
 		} catch (ExecutorManagerException e) {
 			logger.error(e);
 		}
@@ -1005,6 +1017,7 @@ public class ExecutorManager {
 	}
 	
 	private ExecutableFlow updateExecution(Map<String,Object> updateData) throws ExecutorManagerException {
+		
 		Integer execId = (Integer)updateData.get(ConnectorParams.UPDATE_MAP_EXEC_ID);
 		if (execId == null) {
 			throw new ExecutorManagerException("Response is malformed. Need exec id to update.");
@@ -1030,7 +1043,7 @@ public class ExecutorManager {
 		Status newStatus = flow.getStatus();
 		
 		ExecutionOptions options = flow.getExecutionOptions();
-		if (oldStatus != newStatus && newStatus.equals(Status.FAILED_FINISHING)) {
+		if (oldStatus != newStatus && newStatus.equals(Status.FAILED_FINISHING) && isActive) {
 			// We want to see if we should give an email status on first failure.
 			if (options.getNotifyOnFirstFailure()) {
 				Alerter mailAlerter = alerters.get("email");

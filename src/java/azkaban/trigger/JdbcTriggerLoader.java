@@ -7,7 +7,6 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 
 import org.apache.commons.dbutils.DbUtils;
 import org.apache.commons.dbutils.QueryRunner;
@@ -142,6 +141,7 @@ public class JdbcTriggerLoader extends AbstractJdbcLoader implements TriggerLoad
 	@Override
 	public void addTrigger(Trigger t) throws TriggerManagerException {
 		logger.info("Inserting trigger " + t.toString() + " into db.");
+		t.setLastModifyTime(DateTime.now());
 		Connection connection = getConnection();
 		try {
 			addTrigger(connection, t, defaultEncodingType);
@@ -181,6 +181,7 @@ public class JdbcTriggerLoader extends AbstractJdbcLoader implements TriggerLoad
 	@Override
 	public void updateTrigger(Trigger t) throws TriggerManagerException {
 		logger.info("Updating trigger " + t.toString() + " into db.");
+		t.setLastModifyTime(DateTime.now());
 		Connection connection = getConnection();
 		try{
 			t.setLastModifyTime(DateTime.now());
@@ -224,6 +225,7 @@ public class JdbcTriggerLoader extends AbstractJdbcLoader implements TriggerLoad
 					t.getTriggerId());
 			if (updates == 0) {
 				throw new TriggerManagerException("No trigger has been updated.");
+				//logger.error("No trigger is updated!");
 			}
 		} catch (SQLException e) {
 			logger.error(UPDATE_TRIGGER + " failed.");
@@ -258,8 +260,8 @@ public class JdbcTriggerLoader extends AbstractJdbcLoader implements TriggerLoad
 			ArrayList<Trigger> triggers = new ArrayList<Trigger>();
 			do {
 				int triggerId = rs.getInt(1);
-				String triggerSource = rs.getString(2);
-				long modifyTime = rs.getLong(3);
+//				String triggerSource = rs.getString(2);
+//				long modifyTime = rs.getLong(3);
 				int encodingType = rs.getInt(4);
 				byte[] data = rs.getBytes(5);
 				
@@ -331,8 +333,8 @@ public class JdbcTriggerLoader extends AbstractJdbcLoader implements TriggerLoad
 		}
 		
 		if(triggers.size() == 0) {
-			logger.error("Failed to load trigger " + triggerId);
-			throw new TriggerManagerException("Failed to load trigger " + triggerId);
+			logger.error("Loaded 0 triggers. Failed to load trigger " + triggerId);
+			throw new TriggerManagerException("Loaded 0 triggers. Failed to load trigger " + triggerId);
 		}
 		
 		return triggers.get(0);

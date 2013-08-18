@@ -25,6 +25,7 @@ public class Trigger {
 	private List<TriggerAction> expireActions;
 	
 	private Map<String, Object> info = new HashMap<String, Object>();
+	private Map<String, Object> context = new HashMap<String, Object>();
 	
 	private static ActionTypeLoader actionTypeLoader;
 	
@@ -75,7 +76,15 @@ public class Trigger {
 	public void setInfo(Map<String, Object> info) {
 		this.info = info;
 	}
+	
+	public Map<String, Object> getContext() {
+		return context;
+	}
 
+	public void setContext(Map<String, Object> context) {
+		this.context = context;
+	}
+	
 	public Trigger(
 			DateTime lastModifyTime, 
 			DateTime submitTime, 
@@ -85,7 +94,8 @@ public class Trigger {
 			Condition expireCondition,
 			List<TriggerAction> actions, 
 			List<TriggerAction> expireActions,
-			Map<String, Object> info) {
+			Map<String, Object> info,
+			Map<String, Object> context) {
 		this.lastModifyTime = lastModifyTime;
 		this.submitTime = submitTime;
 		this.submitUser = submitUser;
@@ -95,6 +105,7 @@ public class Trigger {
 		this.actions = actions;
 		this.expireActions = expireActions;
 		this.info = info;
+		this.context = context;
 	}
 	
 	public Trigger(
@@ -114,6 +125,39 @@ public class Trigger {
 		this.expireCondition = expireCondition;
 		this.actions = actions;
 		this.expireActions = expireActions;
+	}
+	
+	public Trigger(
+			String submitUser, 
+			String source,
+			Condition triggerCondition,
+			Condition expireCondition,
+			List<TriggerAction> actions, 
+			List<TriggerAction> expireActions) {
+		this.lastModifyTime = DateTime.now();
+		this.submitTime = DateTime.now();
+		this.submitUser = submitUser;
+		this.source = source;
+		this.triggerCondition = triggerCondition;
+		this.expireCondition = expireCondition;
+		this.actions = actions;
+		this.expireActions = expireActions;
+	}
+	
+	public Trigger(
+			String submitUser, 
+			String source,
+			Condition triggerCondition,
+			Condition expireCondition,
+			List<TriggerAction> actions) {
+		this.lastModifyTime = DateTime.now();
+		this.submitTime = DateTime.now();
+		this.submitUser = submitUser;
+		this.source = source;
+		this.triggerCondition = triggerCondition;
+		this.expireCondition = expireCondition;
+		this.actions = actions;
+		this.expireActions = new ArrayList<TriggerAction>();
 	}
 	
 	public Trigger(
@@ -144,7 +188,8 @@ public class Trigger {
 			Condition expireCondition,
 			List<TriggerAction> actions,
 			List<TriggerAction> expireActions,
-			Map<String, Object> info) {
+			Map<String, Object> info,
+			Map<String, Object> context) {
 		this.triggerId = triggerId;
 		this.lastModifyTime = lastModifyTime;
 		this.submitTime = submitTime;
@@ -155,6 +200,7 @@ public class Trigger {
 		this.actions = actions;
 		this.expireActions = expireActions;
 		this.info = info;
+		this.context = context;
 	}
 	
 	public Trigger(
@@ -176,6 +222,26 @@ public class Trigger {
 		this.expireCondition = expireCondition;
 		this.actions = actions;
 		this.expireActions = expireActions;
+	}
+	
+	public Trigger(
+			int triggerId,
+			DateTime lastModifyTime, 
+			DateTime submitTime, 
+			String submitUser, 
+			String source,
+			Condition triggerCondition,
+			Condition expireCondition,
+			List<TriggerAction> actions) {
+		this.triggerId = triggerId;
+		this.lastModifyTime = lastModifyTime;
+		this.submitTime = submitTime;
+		this.submitUser = submitUser;
+		this.source = source;
+		this.triggerCondition = triggerCondition;
+		this.expireCondition = expireCondition;
+		this.actions = actions;
+		this.expireActions = new ArrayList<TriggerAction>();
 	}
 	
 	public static synchronized void setActionTypeLoader(ActionTypeLoader loader) {
@@ -268,6 +334,7 @@ public class Trigger {
 		jsonObj.put("triggerId", String.valueOf(triggerId));
 		jsonObj.put("status", status.toString());
 		jsonObj.put("info", info);
+		jsonObj.put("context", context);
 		return jsonObj;
 	}
 	
@@ -316,7 +383,21 @@ public class Trigger {
 			int triggerId = Integer.valueOf((String) jsonObj.get("triggerId"));
 			TriggerStatus status = TriggerStatus.valueOf((String)jsonObj.get("status"));
 			Map<String, Object> info = (Map<String, Object>) jsonObj.get("info");
-			trigger = new Trigger(triggerId, lastModifyTime, submitTime, submitUser, source, triggerCond, expireCond, actions, expireActions, info);
+			Map<String, Object> context = (Map<String, Object>) jsonObj.get("context");
+			for(ConditionChecker checker : triggerCond.getCheckers().values()) {
+				checker.setContext(context);
+			}
+			for(ConditionChecker checker : expireCond.getCheckers().values()) {
+				checker.setContext(context);
+			}
+			for(TriggerAction action : actions) {
+				action.setContext(context);
+			}
+			for(TriggerAction action : expireActions) {
+				action.setContext(context);
+			}
+			
+			trigger = new Trigger(triggerId, lastModifyTime, submitTime, submitUser, source, triggerCond, expireCond, actions, expireActions, info, context);
 			trigger.setResetOnExpire(resetOnExpire);
 			trigger.setResetOnTrigger(resetOnTrigger);
 			trigger.setStatus(status);

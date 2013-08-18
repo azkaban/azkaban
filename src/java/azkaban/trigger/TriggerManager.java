@@ -37,7 +37,6 @@ import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.impl.client.BasicResponseHandler;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.log4j.Logger;
-import org.joda.time.DateTime;
 
 import azkaban.triggerapp.TriggerConnectorParams;
 import azkaban.utils.JSONUtils;
@@ -51,7 +50,7 @@ import azkaban.utils.Props;
 public class TriggerManager {
 	private static Logger logger = Logger.getLogger(TriggerManager.class);
 
-	private static final String TRIGGER_SUFFIX = ".trigger";
+	public static final String TRIGGER_SUFFIX = ".trigger";
 	
 	private TriggerLoader triggerLoader;
 	private CheckerTypeLoader checkerTypeLoader;
@@ -148,7 +147,11 @@ public class TriggerManager {
 	private void loadTriggers() throws TriggerManagerException {
 		List<Trigger> triggerList = triggerLoader.loadTriggers();
 		for(Trigger t : triggerList) {
-			triggerIdMap.put(t.getTriggerId(), t);
+			if(t.getStatus().equals(TriggerStatus.EXPIRED) && t.getSource().equals("azkaban")) {
+				removeTrigger(t, "azkaban");
+			} else {
+				triggerIdMap.put(t.getTriggerId(), t);
+			}
 		}
 	}
 	
@@ -158,14 +161,16 @@ public class TriggerManager {
 	
 	public void removeTrigger(Trigger t, String userId) throws TriggerManagerException {
 		synchronized(t) {
+			logger.info("Removing trigger " + t.getTriggerId() + " by " + userId);
 			callTriggerServer(t, TriggerConnectorParams.REMOVE_TRIGGER_ACTION, userId);
+			triggerIdMap.remove(t.getTriggerId());
 		}
 	}
-	
 
 	public void updateTrigger(Trigger t, String userId) throws TriggerManagerException {
 		synchronized(t) {
 			try {
+				triggerLoader.updateTrigger(t);
 				callTriggerServer(t, TriggerConnectorParams.UPDATE_TRIGGER_ACTION, userId);
 			} catch(TriggerManagerException e) {
 				throw new TriggerManagerException(e);
@@ -186,6 +191,7 @@ public class TriggerManager {
 			String message = null;
 			logger.info("Inserting trigger into system. " );
 			// The trigger id is set by the loader. So it's unavailable until after this call.
+			t.setStatus(TriggerStatus.PREPARING);
 			triggerLoader.addTrigger(t);
 			try {
 				callTriggerServer(t,  TriggerConnectorParams.INSERT_TRIGGER_ACTION, userId);
@@ -202,8 +208,7 @@ public class TriggerManager {
 	
 	private Map<String, Object> callTriggerServer(Trigger t, String action, String user) throws TriggerManagerException {
 		try {
-			Map<String, Object> info = t.getInfo();
-			return callTriggerServer(triggerServerHost, triggerServerPort, action, t.getTriggerId(), null, (Pair<String,String>[])null);
+			return callTriggerServer(triggerServerHost, triggerServerPort, action, t.getTriggerId(), user, (Pair<String,String>[])null);
 		} catch (IOException e) {
 			throw new TriggerManagerException(e);
 		}
@@ -338,15 +343,22 @@ public class TriggerManager {
 					try{
 						results = callTriggerServer(triggerServer.getFirst(), triggerServer.getSecond(), TriggerConnectorParams.GET_UPDATE_ACTION, null, "azkaban", updateTimeParam);
 //						lastUpdateTime = (Long) results.get(TriggerConnectorParams.RESPONSE_UPDATETIME);
+
 						List<Integer> updates = (List<Integer>) results.get("updates");
 						for(Integer update : updates) {
 							Trigger t = triggerLoader.loadTrigger(update);
 							lastUpdateTime = Math.max(lastUpdateTime, t.getLastModifyTime().getMillis());
-							triggerIdMap.put(update, t);
+							
+							if(t.getStatus().equals(TriggerStatus.EXPIRED) && t.getSource().equals("azkaban")) {
+								removeTrigger(t, "azkaban");
+								//triggerIdMap.remove(update);
+							} else {
+								triggerIdMap.put(update, t);
+							}
 						}
 					} catch (Exception e) {
-						logger.error(e);
-						
+						e.printStackTrace();
+						logger.error(e);	
 					}
 					
 					synchronized(this) {
@@ -493,6 +505,29 @@ public class TriggerManager {
 		removeTrigger(triggerIdMap.get(scheduleId), submitUser);
 	}
 
+	public Set<String> getAllActiveTriggerServerHosts() {
+		Set<String> hostport = new HashSet<String>();
+		hostport.add(triggerServerHost+":"+triggerServerPort);
+		return hostport;
+	}
+
+	public int getNumTriggers() {
+		return triggerIdMap.size();
+	}
+
+	public String getTriggerSources() {
+		Set<String> sources = new HashSet<String>();
+		for(Trigger t : triggerIdMap.values()) {
+			sources.add(t.getSource());
+		}
+		return sources.toString();
+	}
+
+	public String getTriggerIds() {
+		return triggerIdMap.keySet().toString();
+	}
+
+	
 	
 }
 

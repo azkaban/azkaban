@@ -157,7 +157,12 @@ public class BasicTimeChecker implements ConditionChecker {
 		boolean skipPastChecks = Boolean.valueOf((String)jsonObj.get("skipPastChecks"));
 		ReadablePeriod period = Utils.parsePeriodString((String)jsonObj.get("period"));
 		String id = (String) jsonObj.get("id");
-		return new BasicTimeChecker(id, firstCheckTime, timezone, nextCheckTime, isRecurring, skipPastChecks, period);
+
+		BasicTimeChecker checker = new BasicTimeChecker(id, firstCheckTime, timezone, nextCheckTime, isRecurring, skipPastChecks, period);
+		if(skipPastChecks) {
+			checker.updateNextCheckTime();
+		}
+		return checker;
 	}
 	
 	@Override
@@ -203,10 +208,14 @@ public class BasicTimeChecker implements ConditionChecker {
 //		return new BasicTimeChecker(new DateTime(firstMillis, timezone), new DateTime(nextMillis, timezone), isRecurring, skipPastChecks, period);
 //	}
 	
+	private void updateNextCheckTime(){
+		nextCheckTime = calculateNextCheckTime();
+	}
+	
 	private DateTime calculateNextCheckTime(){
 		DateTime date = new DateTime(nextCheckTime);
 		int count = 0;
-		while(!DateTime.now().isBefore(date) && skipPastChecks) {
+		while(!DateTime.now().isBefore(date)) {
 			if(count > 100000) {
 				throw new IllegalStateException("100000 increments of period did not get to present time.");
 			}
@@ -217,6 +226,9 @@ public class BasicTimeChecker implements ConditionChecker {
 				date = date.plus(period);
 			}
 			count += 1;
+			if(!skipPastChecks) {
+				continue;
+			}
 		}
 		return date;
 	}
@@ -245,6 +257,12 @@ public class BasicTimeChecker implements ConditionChecker {
 	@Override
 	public void stopChecker() {
 		return;
+	}
+
+	@Override
+	public void setContext(Map<String, Object> context) {
+		// TODO Auto-generated method stub
+		
 	}
 
 }

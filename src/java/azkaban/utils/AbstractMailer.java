@@ -48,6 +48,10 @@ public class AbstractMailer {
 		return message;
 	}
 	
+	public EmailMessage prepareEmailMessage(String subject, String mimetype, Collection<String> emailList) {
+		return createEmailMessage(subject, mimetype, emailList);
+	}
+	
 	public String getAzkabanName() {
 		return azkabanName;
 	}

@@ -2,7 +2,6 @@ package azkaban.trigger;
 
 import java.io.File;
 import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
@@ -10,7 +9,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import org.apache.log4j.Logger;
 
@@ -34,7 +32,7 @@ public class CheckerTypeLoader {
 		
 		// load built-in checkers
 		
-		loadDefaultCheckers();
+		loadBuiltinCheckers();
 		
 		loadPluginCheckers(props);
 
@@ -138,7 +136,14 @@ public class CheckerTypeLoader {
 		logger.info("Loaded checker type " + checkerName + " " + checkerClass);
 	}
 	
-	private void loadDefaultCheckers() {
+	public static void registerBuiltinCheckers(Map<String, Class<? extends ConditionChecker>> builtinCheckers) {
+		checkerToClass.putAll(checkerToClass);
+		for(String type : builtinCheckers.keySet()) {
+			logger.info("Loaded " + type + " checker.");
+		}
+	}
+	
+	private void loadBuiltinCheckers() {
 		checkerToClass.put("BasicTimeChecker", BasicTimeChecker.class);
 		logger.info("Loaded BasicTimeChecker type.");
 	}

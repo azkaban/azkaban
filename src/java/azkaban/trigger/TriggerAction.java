@@ -1,6 +1,10 @@
 package azkaban.trigger;
 
+import java.util.Map;
+
 public interface TriggerAction {
+	
+	String getId();
 	
 	String getType();
 	
@@ -9,6 +13,8 @@ public interface TriggerAction {
 	Object toJson();
 	
 	void doAction() throws Exception;
+	
+	void setContext(Map<String, Object> context);
 
 	String getDescription();
 	

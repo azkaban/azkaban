@@ -106,9 +106,9 @@ public class Condition {
 				ConditionChecker ck = checkerLoader.createCheckerFromJson(type, oneChecker.get("checkerJson"));
 				checkers.put(ck.getId(), ck);
 			}
-				String expr = (String) jsonObj.get("expression");
+			String expr = (String) jsonObj.get("expression");
 				
-				cond = new Condition(checkers, expr);
+			cond = new Condition(checkers, expr);
 			
 		} catch(Exception e) {
 			e.printStackTrace();

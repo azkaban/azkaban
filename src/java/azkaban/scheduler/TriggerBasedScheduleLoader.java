@@ -10,15 +10,17 @@ import org.joda.time.DateTime;
 
 import azkaban.executor.ExecutorManager;
 import azkaban.project.ProjectManager;
+import azkaban.sla.SlaOption;
 import azkaban.trigger.Condition;
 import azkaban.trigger.ConditionChecker;
 import azkaban.trigger.Trigger;
 import azkaban.trigger.TriggerAction;
 import azkaban.trigger.TriggerManager;
 import azkaban.trigger.TriggerManagerException;
-import azkaban.trigger.TriggerStatus;
 import azkaban.trigger.builtin.BasicTimeChecker;
+import azkaban.trigger.builtin.CreateTriggerAction;
 import azkaban.trigger.builtin.ExecuteFlowAction;
+import azkaban.trigger.builtin.SlaChecker;
 
 public class TriggerBasedScheduleLoader implements ScheduleLoader {
 	
@@ -44,7 +46,7 @@ public class TriggerBasedScheduleLoader implements ScheduleLoader {
 		Condition triggerCondition = createTimeTriggerCondition(s);
 		Condition expireCondition = createTimeExpireCondition(s);
 		List<TriggerAction> actions = createActions(s);
-		Trigger t = new Trigger(new DateTime(s.getLastModifyTime()), new DateTime(s.getSubmitTime()), s.getSubmitUser(), triggerSource, triggerCondition, expireCondition, actions);
+		Trigger t = new Trigger(s.getScheduleId(), new DateTime(s.getLastModifyTime()), new DateTime(s.getSubmitTime()), s.getSubmitUser(), triggerSource, triggerCondition, expireCondition, actions);
 		if(s.isRecurring()) {
 			t.setResetOnTrigger(true);
 		}
@@ -53,8 +55,18 @@ public class TriggerBasedScheduleLoader implements ScheduleLoader {
 	
 	private List<TriggerAction> createActions (Schedule s) {
 		List<TriggerAction> actions = new ArrayList<TriggerAction>();
-		TriggerAction act = new ExecuteFlowAction(s.getProjectId(), s.getProjectName(), s.getFlowName(), s.getSubmitUser(), s.getExecutionOptions());
-		actions.add(act);
+		ExecuteFlowAction executeAct = new ExecuteFlowAction("executeFlowAction", s.getProjectId(), s.getProjectName(), s.getFlowName(), s.getSubmitUser(), s.getExecutionOptions(), s.getSlaOptions());
+		actions.add(executeAct);
+//		List<SlaOption> slaOptions = s.getSlaOptions();
+//		if(slaOptions != null && slaOptions.size() > 0) {
+//			// insert a trigger to keep watching that execution
+//			for(SlaOption sla : slaOptions) {
+//				// need to create triggers for each sla
+//				SlaChecker slaChecker = new SlaChecker("slaChecker", sla, executeAct.getId());
+//				
+//			}
+//		}
+		
 		return actions;
 	}
 	
@@ -110,7 +122,6 @@ public class TriggerBasedScheduleLoader implements ScheduleLoader {
 		List<Schedule> schedules = new ArrayList<Schedule>();
 //		triggersLocalCopy = new HashMap<Integer, Trigger>();
 		for(Trigger t : triggers) {
-//				triggersLocalCopy.put(t.getTriggerId(), t);
 			lastUpdateTime = Math.max(lastUpdateTime, t.getLastModifyTime().getMillis());
 			Schedule s = triggerToSchedule(t);
 			schedules.add(s);
@@ -151,7 +162,9 @@ public class TriggerBasedScheduleLoader implements ScheduleLoader {
 					t.getLastModifyTime().getMillis(),
 					ck.getNextCheckTime().getMillis(),
 					t.getSubmitTime().getMillis(),
-					t.getSubmitUser());
+					t.getSubmitUser(),
+					act.getExecutionOptions(),
+					act.getSlaOptions());
 			return s;
 		} else {
 			logger.error("Failed to parse schedule from trigger!");

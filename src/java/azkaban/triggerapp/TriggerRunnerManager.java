@@ -4,11 +4,12 @@ import java.io.IOException;
 import java.lang.Thread.State;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.log4j.Logger;
 
@@ -39,6 +40,7 @@ public class TriggerRunnerManager {
 	
 	private final TriggerScannerThread runnerThread;
 	private long lastRunnerThreadCheckTime = -1;
+	private long runnerThreadIdleTime = -1;
 	
 			
 	public TriggerRunnerManager(Props props, TriggerLoader triggerLoader) throws IOException {
@@ -117,28 +119,23 @@ public class TriggerRunnerManager {
 	}
 	
 	public synchronized void updateTrigger(int triggerId) throws TriggerManagerException {
+		
+		
 		Trigger t = triggerIdMap.get(triggerId);
-		if(t == null) {
-			throw new TriggerManagerException("The trigger to update doesn't exist!");
-		}
 		
-		runnerThread.deleteTrigger(t);
-		runnerThread.addTrigger(t);
-		triggerIdMap.put(t.getTriggerId(), t);
-		
-		triggerLoader.updateTrigger(t);
+		updateTrigger(t);
 	}
 	
 	public synchronized void updateTrigger(Trigger t) throws TriggerManagerException {
 		if(!triggerIdMap.containsKey(t.getTriggerId())) {
 			throw new TriggerManagerException("The trigger to update doesn't exist!");
 		}
-		
 		runnerThread.deleteTrigger(t);
-		runnerThread.addTrigger(t);
-		triggerIdMap.put(t.getTriggerId(), t);
-		
-		triggerLoader.updateTrigger(t);
+
+		Trigger t2 = triggerLoader.loadTrigger(t.getTriggerId());
+		runnerThread.addTrigger(t2);
+		triggerIdMap.put(t2.getTriggerId(), t2);
+
 	}
 
 	public synchronized void removeTrigger(Trigger t) throws TriggerManagerException {
@@ -205,11 +202,11 @@ public class TriggerRunnerManager {
 							logger.error(t.getMessage());
 						}
 						
-						long timeRemaining = scannerInterval - (System.currentTimeMillis() - getLastRunnerThreadCheckTime());
-						if(timeRemaining < 0) {
+						runnerThreadIdleTime = scannerInterval - (System.currentTimeMillis() - getLastRunnerThreadCheckTime());
+						if(runnerThreadIdleTime < 0) {
 							logger.error("Trigger manager thread " + this.getName() + " is too busy!");
 						} else {
-							wait(timeRemaining);
+							wait(runnerThreadIdleTime);
 						}
 					} catch(InterruptedException e) {
 						logger.info("Interrupted. Probably to shut down.");
@@ -221,6 +218,7 @@ public class TriggerRunnerManager {
 		
 		private void checkAllTriggers() throws TriggerManagerException {
 			for(Trigger t : triggers) {
+				logger.info("Checking trigger " + t.getDescription());
 				if(t.getStatus().equals(TriggerStatus.READY)) {
 					if(t.triggerConditionMet()) {
 						onTriggerTrigger(t);
@@ -235,22 +233,23 @@ public class TriggerRunnerManager {
 			List<TriggerAction> actions = t.getTriggerActions();
 			for(TriggerAction action : actions) {
 				try {
+					logger.info("Doing trigger actions");
 					action.doAction();
 				} catch (Exception e) {
 					// TODO Auto-generated catch block
-					throw new TriggerManagerException("action failed to execute", e);
+					//throw new TriggerManagerException("action failed to execute", e);
+					logger.error("Failed to do action " + action.getDescription(), e);
+				} catch (Throwable th) {
+					logger.error("Failed to do action " + action.getDescription(), th);
 				}
 			}
 			if(t.isResetOnTrigger()) {
 				t.resetTriggerConditions();
 				t.resetExpireCondition();
-//				updateTrigger(t);
 			} else {
 				t.setStatus(TriggerStatus.EXPIRED);
 			}
-			
 			triggerLoader.updateTrigger(t);
-			
 //			updateAgent(t);
 		}
 		
@@ -258,10 +257,14 @@ public class TriggerRunnerManager {
 			List<TriggerAction> expireActions = t.getExpireActions();
 			for(TriggerAction action : expireActions) {
 				try {
+					logger.info("Doing expire actions");
 					action.doAction();
 				} catch (Exception e) {
 					// TODO Auto-generated catch block
-					throw new TriggerManagerException("expire action failed to execute", e);
+					//throw new TriggerManagerException("action failed to execute", e);
+					logger.error("Failed to do expire action " + action.getDescription(), e);
+				} catch (Throwable th) {
+					logger.error("Failed to do expire action " + action.getDescription(), th);
 				}
 			}
 			if(t.isResetOnExpire()) {
@@ -271,7 +274,6 @@ public class TriggerRunnerManager {
 			} else {
 				t.setStatus(TriggerStatus.EXPIRED);
 			}
-//			updateAgent(t);
 			triggerLoader.updateTrigger(t);
 		}
 	}
@@ -336,6 +338,26 @@ public class TriggerRunnerManager {
 			runnerThread.addTrigger(t);
 			t.setStatus(TriggerStatus.READY);
 		}
+	}
+
+	public int getNumTriggers() {
+		return triggerIdMap.size();
+	}
+
+	public String getTriggerSources() {
+		Set<String> sources = new HashSet<String>();
+		for(Trigger t : triggerIdMap.values()) {
+			sources.add(t.getSource());
+		}
+		return sources.toString();
+	}
+
+	public String getTriggerIds() {
+		return triggerIdMap.keySet().toString();
+	}
+
+	public long getScannerIdleTime() {
+		return runnerThreadIdleTime;
 	}
 
 }

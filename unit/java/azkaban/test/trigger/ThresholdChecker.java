@@ -1,5 +1,7 @@
 package azkaban.test.trigger;
 
+import java.util.Map;
+
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 
@@ -84,6 +86,12 @@ public class ThresholdChecker implements ConditionChecker{
 	@Override
 	public void stopChecker() {
 		return;
+		
+	}
+
+	@Override
+	public void setContext(Map<String, Object> context) {
+		// TODO Auto-generated method stub
 		
 	}
 

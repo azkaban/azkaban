@@ -22,7 +22,6 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.log4j.Logger;
-import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.joda.time.ReadablePeriod;
 import org.joda.time.format.DateTimeFormat;
@@ -31,12 +30,8 @@ import org.joda.time.format.DateTimeFormatter;
 import azkaban.executor.ExecutionOptions;
 import azkaban.executor.ExecutorManager;
 import azkaban.project.ProjectManager;
-import azkaban.trigger.Condition;
-import azkaban.trigger.ConditionChecker;
-import azkaban.trigger.Trigger;
-import azkaban.trigger.TriggerAction;
+import azkaban.sla.SlaOption;
 import azkaban.trigger.TriggerManager;
-import azkaban.trigger.builtin.ExecuteFlowAction;
 import azkaban.utils.Pair;
 
 /**
@@ -147,7 +142,7 @@ public class TriggerBasedScheduler {
 			final long submitTime,
 			final String submitUser
 			) {
-		return scheduleFlow(scheduleId, projectId, projectName, flowName, status, firstSchedTime, timezone, period, lastModifyTime, nextExecTime, submitTime, submitUser, null);
+		return scheduleFlow(scheduleId, projectId, projectName, flowName, status, firstSchedTime, timezone, period, lastModifyTime, nextExecTime, submitTime, submitUser, null, null);
 	}
 	
 	public Schedule scheduleFlow(
@@ -163,9 +158,10 @@ public class TriggerBasedScheduler {
 			final long nextExecTime,
 			final long submitTime,
 			final String submitUser,
-			ExecutionOptions execOptions
+			ExecutionOptions execOptions,
+			List<SlaOption> slaOptions
 			) {
-		Schedule sched = new Schedule(scheduleId, projectId, projectName, flowName, status, firstSchedTime, timezone, period, lastModifyTime, nextExecTime, submitTime, submitUser, execOptions);
+		Schedule sched = new Schedule(scheduleId, projectId, projectName, flowName, status, firstSchedTime, timezone, period, lastModifyTime, nextExecTime, submitTime, submitUser, execOptions, slaOptions);
 		logger.info("Scheduling flow '" + sched.getScheduleName() + "' for "
 				+ _dateFormat.print(firstSchedTime) + " with a period of "
 				+ period == null ? "(non-recurring)" : period);

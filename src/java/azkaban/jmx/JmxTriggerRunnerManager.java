@@ -19,4 +19,24 @@ public class JmxTriggerRunnerManager implements JmxTriggerRunnerManagerMBean {
 		return manager.isRunnerThreadActive();
 	}
 
+	@Override
+	public int getNumTriggers() {
+		return manager.getNumTriggers();
+	}
+
+	@Override
+	public String getTriggerSources() {
+		return manager.getTriggerSources();
+	}
+
+	@Override
+	public String getTriggerIds() {
+		return manager.getTriggerIds();
+	}
+
+	@Override
+	public long getScannerIdleTime() {
+		return manager.getScannerIdleTime();
+	}
+
 }

@@ -1,5 +1,7 @@
 package azkaban.test.trigger;
 
+import java.util.Map;
+
 import azkaban.trigger.TriggerAction;
 
 public class DummyTriggerAction implements TriggerAction{
@@ -38,6 +40,17 @@ public class DummyTriggerAction implements TriggerAction{
 	@Override
 	public String getDescription() {
 		return "this is real dummy action";
+	}
+
+	@Override
+	public String getId() {
+		return null;
+	}
+
+	@Override
+	public void setContext(Map<String, Object> context) {
+		// TODO Auto-generated method stub
+		
 	}
 
 }

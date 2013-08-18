@@ -1,5 +1,7 @@
 package azkaban.trigger;
 
+import java.util.Map;
+
 
 public interface ConditionChecker {
 	
@@ -18,5 +20,7 @@ public interface ConditionChecker {
 	Object toJson();
 
 	void stopChecker();
+	
+	void setContext(Map<String, Object> context);
 	
 }

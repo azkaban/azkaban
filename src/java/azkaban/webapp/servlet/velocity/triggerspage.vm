@@ -72,7 +72,8 @@
 							<th>Source</th>
 							<th>Submitted By</th>
 							<th>Description</th>
-							<th colspan="2" class="action ignoresort">Action</th>
+							<th>Status</th>
+							<!--th colspan="2" class="action ignoresort">Action</th-->
 						</tr>
 					</thead>
 					<tbody>
@@ -84,7 +85,8 @@
 							<td>${trigger.source}</td>
 							<td>${trigger.submitUser}</td>
 							<td>${trigger.getDescription()}</td>
-							<td><button id="expireTriggerBtn" onclick="expireTrigger(${trigger.triggerId})" >Expire Trigger</button></td>
+							<td>${trigger.getStatus()}</td>
+							<!--td><button id="expireTriggerBtn" onclick="expireTrigger(${trigger.triggerId})" >Expire Trigger</button></td-->
 						</tr>
 #end
 #else

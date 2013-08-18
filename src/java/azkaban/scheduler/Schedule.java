@@ -16,7 +16,9 @@
 
 package azkaban.scheduler;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.joda.time.DateTime;
@@ -31,6 +33,7 @@ import org.joda.time.Seconds;
 import org.joda.time.Weeks;
 
 import azkaban.executor.ExecutionOptions;
+import azkaban.sla.SlaOption;
 import azkaban.utils.Pair;
 
 public class Schedule{
@@ -56,6 +59,7 @@ public class Schedule{
 	private boolean skipPastOccurrences = true;
 	
 	private ExecutionOptions executionOptions;
+	private List<SlaOption> slaOptions;
 	
 	public Schedule(
 						int scheduleId,
@@ -84,6 +88,7 @@ public class Schedule{
 				nextExecTime,
 				submitTime,
 				submitUser,
+				null,
 				null
 				);
 	}
@@ -101,7 +106,8 @@ public class Schedule{
 						long nextExecTime,						
 						long submitTime,
 						String submitUser,
-						ExecutionOptions executionOptions
+						ExecutionOptions executionOptions,
+						List<SlaOption> slaOptions
 			) {
 		this(scheduleId, projectId, 
 				projectName, 
@@ -114,7 +120,8 @@ public class Schedule{
 				nextExecTime,
 				submitTime,
 				submitUser,
-				executionOptions
+				executionOptions,
+				slaOptions
 				);
 	}
 
@@ -131,7 +138,8 @@ public class Schedule{
 						long nextExecTime,
 						long submitTime,
 						String submitUser,
-						ExecutionOptions executionOptions
+						ExecutionOptions executionOptions,
+						List<SlaOption> slaOptions
 						) {
 		this.scheduleId = scheduleId;
 		this.projectId = projectId;
@@ -146,14 +154,23 @@ public class Schedule{
 		this.status = status;
 		this.submitTime = submitTime;
 		this.executionOptions = executionOptions;
+		this.slaOptions = slaOptions;
 	}
 
 	public ExecutionOptions getExecutionOptions() {
 		return executionOptions;
 	}
+	
+	public List<SlaOption> getSlaOptions() {
+		return slaOptions;
+	}
 
 	public void setFlowOptions(ExecutionOptions executionOptions) {
 		this.executionOptions = executionOptions;
+	}
+	
+	public void setSlaOptions(List<SlaOption> slaOptions) {
+		this.slaOptions = slaOptions;
 	}
 
 	public String getScheduleName() {
@@ -328,13 +345,21 @@ public class Schedule{
 		return periodStr;
 	}
 	
-	
 	public Map<String,Object> optionsToObject() {
 		if(executionOptions != null ) {
 			HashMap<String, Object> schedObj = new HashMap<String, Object>();
 			
 			if(executionOptions != null) {
 				schedObj.put("executionOptions", executionOptions.toObject());
+			}
+			
+			if(slaOptions != null) {
+				List<Object> slaOptionsObject = new ArrayList<Object>();
+//				schedObj.put("slaOptions", slaOptions.toObject());
+				for(SlaOption sla : slaOptions) {
+					slaOptionsObject.add(sla.toObject());
+				}
+				schedObj.put("slaOptions", slaOptionsObject);
 			}
 	
 			return schedObj;
@@ -358,7 +383,17 @@ public class Schedule{
 			this.executionOptions = new ExecutionOptions();
 			this.executionOptions.setConcurrentOption(ExecutionOptions.CONCURRENT_OPTION_SKIP);
 		}
-
+		
+		if(schedObj.containsKey("slaOptions")) {
+			List<Object> slaOptionsObject = (List<Object>) schedObj.get("slaOptions");
+			List<SlaOption> slaOptions = new ArrayList<SlaOption>();
+			for(Object slaObj : slaOptionsObject) {
+				slaOptions.add(SlaOption.fromObject(slaObj));
+			}
+			this.slaOptions = slaOptions;
+		}
+		
+		
 	}
 
 	public boolean isRecurring() {

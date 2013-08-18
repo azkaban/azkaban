@@ -41,6 +41,7 @@ import azkaban.executor.ExecutorManagerException;
 import azkaban.flow.Flow;
 import azkaban.project.Project;
 import azkaban.project.ProjectManager;
+import azkaban.sla.SlaOption;
 import azkaban.trigger.TriggerAgent;
 import azkaban.trigger.TriggerStatus;
 import azkaban.utils.Pair;
@@ -59,8 +60,9 @@ public class ScheduleManager implements TriggerAgent {
 	private final DateTimeFormatter _dateFormat = DateTimeFormat.forPattern("MM-dd-yyyy HH:mm:ss:SSS");
 	private ScheduleLoader loader;
 
-	private Map<Pair<Integer, String>, Set<Schedule>> scheduleIdentityPairMap = new LinkedHashMap<Pair<Integer, String>, Set<Schedule>>();
+//	private Map<Pair<Integer, String>, Set<Schedule>> scheduleIdentityPairMap = new LinkedHashMap<Pair<Integer, String>, Set<Schedule>>();
 	private Map<Integer, Schedule> scheduleIDMap = new LinkedHashMap<Integer, Schedule>();
+	private Map<Pair<Integer, String>, Schedule> scheduleIdentityPairMap = new LinkedHashMap<Pair<Integer, String>, Schedule>();
 	
 	private final ExecutorManager executorManager;
 	
@@ -186,10 +188,14 @@ public class ScheduleManager implements TriggerAgent {
 	 * @return
 	 * @throws ScheduleManagerException 
 	*/
-	public Set<Schedule> getSchedules(int projectId, String flowId) throws ScheduleManagerException {
-		updateLocal();
-		return scheduleIdentityPairMap.get(new Pair<Integer,String>(projectId, flowId));
-	}
+//	public Set<Schedule> getSchedules(int projectId, String flowId) throws ScheduleManagerException {
+//		updateLocal();
+//		return scheduleIdentityPairMap.get(new Pair<Integer,String>(projectId, flowId));
+//	}
+	public Schedule getSchedule(int projectId, String flowId) throws ScheduleManagerException {
+	updateLocal();
+	return scheduleIdentityPairMap.get(new Pair<Integer,String>(projectId, flowId));
+}
 
 	/**
 	 * Returns the scheduled flow for the scheduleId
@@ -210,12 +216,18 @@ public class ScheduleManager implements TriggerAgent {
 	 * @param id
 	 * @throws ScheduleManagerException 
 	 */
-	public synchronized void removeSchedules(int projectId, String flowId) throws ScheduleManagerException {
-		Set<Schedule> schedules = getSchedules(projectId, flowId);
-		if(schedules != null) {
-			for(Schedule sched : schedules) {
-				removeSchedule(sched);
-			}
+//	public synchronized void removeSchedules(int projectId, String flowId) throws ScheduleManagerException {
+//		Set<Schedule> schedules = getSchedules(projectId, flowId);
+//		if(schedules != null) {
+//			for(Schedule sched : schedules) {
+//				removeSchedule(sched);
+//			}
+//		}
+//	}
+	public synchronized void removeSchedule(int projectId, String flowId) throws ScheduleManagerException {
+		Schedule sched = getSchedule(projectId, flowId);
+		if(sched != null) {
+			removeSchedule(sched);
 		}
 	}
 	/**
@@ -226,13 +238,18 @@ public class ScheduleManager implements TriggerAgent {
 	public synchronized void removeSchedule(Schedule sched) {
 		
 		Pair<Integer,String> identityPairMap = sched.getScheduleIdentityPair();
-		Set<Schedule> schedules = scheduleIdentityPairMap.get(identityPairMap);
-		if(schedules != null) {
-			schedules.remove(sched);
-			if(schedules.size() == 0) {
-				scheduleIdentityPairMap.remove(identityPairMap);
-			}
+//		Set<Schedule> schedules = scheduleIdentityPairMap.get(identityPairMap);
+//		if(schedules != null) {
+//			schedules.remove(sched);
+//			if(schedules.size() == 0) {
+//				scheduleIdentityPairMap.remove(identityPairMap);
+//			}
+//		}
+		Schedule schedule = scheduleIdentityPairMap.get(identityPairMap);
+		if(schedule != null) {
+			scheduleIdentityPairMap.remove(identityPairMap);
 		}
+
 		scheduleIDMap.remove(sched.getScheduleId());
 		
 		try {
@@ -284,7 +301,7 @@ public class ScheduleManager implements TriggerAgent {
 			final long submitTime,
 			final String submitUser
 			) {
-		return scheduleFlow(scheduleId, projectId, projectName, flowName, status, firstSchedTime, timezone, period, lastModifyTime, nextExecTime, submitTime, submitUser, null);
+		return scheduleFlow(scheduleId, projectId, projectName, flowName, status, firstSchedTime, timezone, period, lastModifyTime, nextExecTime, submitTime, submitUser, null, null);
 	}
 	
 	public Schedule scheduleFlow(
@@ -300,9 +317,10 @@ public class ScheduleManager implements TriggerAgent {
 			final long nextExecTime,
 			final long submitTime,
 			final String submitUser,
-			ExecutionOptions execOptions
+			ExecutionOptions execOptions,
+			List<SlaOption> slaOptions
 			) {
-		Schedule sched = new Schedule(scheduleId, projectId, projectName, flowName, status, firstSchedTime, timezone, period, lastModifyTime, nextExecTime, submitTime, submitUser, execOptions);
+		Schedule sched = new Schedule(scheduleId, projectId, projectName, flowName, status, firstSchedTime, timezone, period, lastModifyTime, nextExecTime, submitTime, submitUser, execOptions, slaOptions);
 		logger.info("Scheduling flow '" + sched.getScheduleName() + "' for "
 				+ _dateFormat.print(firstSchedTime) + " with a period of "
 				+ period == null ? "(non-recurring)" : period);
@@ -317,7 +335,11 @@ public class ScheduleManager implements TriggerAgent {
 	 * @param flow
 	 */
 	private synchronized void internalSchedule(Schedule s) {
-		Schedule existing = scheduleIDMap.get(s.getScheduleId());
+		//Schedule existing = scheduleIDMap.get(s.getScheduleId());
+		Schedule existing = null;
+		if(scheduleIdentityPairMap.get(s.getScheduleIdentityPair()) != null) {
+			existing = scheduleIdentityPairMap.get(s.getScheduleIdentityPair());
+		}
 		if(!useExternalRunner) {
 			if (existing != null) {
 				this.runner.removeRunnerSchedule(existing);
@@ -326,12 +348,13 @@ public class ScheduleManager implements TriggerAgent {
 			this.runner.addRunnerSchedule(s);
 		}
 		scheduleIDMap.put(s.getScheduleId(), s);
-		Set<Schedule> schedules = scheduleIdentityPairMap.get(s.getScheduleIdentityPair());
-		if(schedules == null) {
-			schedules = new HashSet<Schedule>();
-			scheduleIdentityPairMap.put(s.getScheduleIdentityPair(), schedules);
-		}
-		schedules.add(s);
+//		Set<Schedule> schedules = scheduleIdentityPairMap.get(s.getScheduleIdentityPair());
+//		if(schedules == null) {
+//			schedules = new HashSet<Schedule>();
+//			scheduleIdentityPairMap.put(s.getScheduleIdentityPair(), schedules);
+//		}
+//		schedules.add(s);
+		scheduleIdentityPairMap.put(s.getScheduleIdentityPair(), s);
 	}
 
 	/**
@@ -340,14 +363,16 @@ public class ScheduleManager implements TriggerAgent {
 	 * @param flow
 	 */
 	public synchronized void insertSchedule(Schedule s) {
-		boolean exist = s.getScheduleId() != -1;
+		//boolean exist = s.getScheduleId() != -1;
+		Schedule exist = scheduleIdentityPairMap.get(s.getScheduleIdentityPair());
 		if(s.updateTime()) {
 			try {
-				if(!exist) {
+				if(exist == null) {
 					loader.insertSchedule(s);
 					internalSchedule(s);
 				}
 				else{
+					s.setScheduleId(exist.getScheduleId());
 					loader.updateSchedule(s);
 					internalSchedule(s);
 				}
@@ -524,7 +549,24 @@ public class ScheduleManager implements TriggerAgent {
 										e.printStackTrace();
 										throw new ScheduleManagerException("Scheduler invoked flow " + exflow.getExecutionId() + " has failed.", e);
 									}
-									
+//									SlaOptions slaOptions = runningSched.getSlaOptions();
+//									if(slaOptions != null) {
+//										logger.info("Submitting SLA checkings for " + runningSched.getFlowName());
+//										// submit flow slas
+//										List<SlaSetting> jobsettings = new ArrayList<SlaSetting>();
+//										for(SlaSetting set : slaOptions.getSettings()) {
+//											if(set.getId().equals("")) {
+//												DateTime checkTime = new DateTime(runningSched.getNextExecTime()).plus(set.getDuration());
+//												slaManager.submitSla(exflow.getExecutionId(), "", checkTime, slaOptions.getSlaEmails(), set.getActions(), null, set.getRule());
+//											}
+//											else {
+//												jobsettings.add(set);
+//											}
+//										}
+//										if(jobsettings.size() > 0) {
+//											slaManager.submitSla(exflow.getExecutionId(), "", DateTime.now(), slaOptions.getSlaEmails(), new ArrayList<SlaAction>(), jobsettings, SlaRule.WAITANDCHECKJOB);
+//										}
+//									}
 								} 
 								catch (ExecutorManagerException e) {
 									if (e.getReason() != null && e.getReason() == ExecutorManagerException.Reason.SkippedExecution) {

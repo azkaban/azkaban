@@ -55,9 +55,11 @@ import org.mortbay.thread.QueuedThreadPool;
 import azkaban.database.AzkabanDatabaseSetup;
 import azkaban.executor.ExecutorManager;
 import azkaban.executor.JdbcExecutorLoader;
+import azkaban.executor.ExecutorManager.Alerter;
 import azkaban.jmx.JmxExecutorManager;
 import azkaban.jmx.JmxJettyServer;
 import azkaban.jmx.JmxScheduler;
+import azkaban.jmx.JmxTriggerManager;
 import azkaban.project.JdbcProjectLoader;
 import azkaban.project.ProjectManager;
 
@@ -65,11 +67,20 @@ import azkaban.scheduler.JdbcScheduleLoader;
 import azkaban.scheduler.ScheduleLoader;
 import azkaban.scheduler.ScheduleManager;
 import azkaban.scheduler.TriggerBasedScheduleLoader;
+import azkaban.trigger.ActionTypeLoader;
+import azkaban.trigger.CheckerTypeLoader;
 import azkaban.trigger.JdbcTriggerLoader;
 import azkaban.trigger.TriggerLoader;
 import azkaban.trigger.TriggerManager;
 import azkaban.trigger.TriggerAgent;
 import azkaban.trigger.TriggerManagerException;
+import azkaban.trigger.builtin.BasicTimeChecker;
+import azkaban.trigger.builtin.CreateTriggerAction;
+import azkaban.trigger.builtin.ExecuteFlowAction;
+import azkaban.trigger.builtin.KillExecutionAction;
+import azkaban.trigger.builtin.SlaAlertAction;
+import azkaban.trigger.builtin.SlaChecker;
+import azkaban.triggerapp.AzkabanTriggerServer;
 import azkaban.user.UserManager;
 import azkaban.user.XmlUserManager;
 import azkaban.utils.FileIOUtils;
@@ -167,16 +178,14 @@ public class AzkabanWebServer extends AzkabanServer {
 		this.server = server;
 		velocityEngine = configureVelocityEngine(props.getBoolean(VELOCITY_DEV_MODE_PARAM, false));
 		sessionCache = new SessionCache(props);
-		userManager = loadUserManager(props);		
-		executorManager = loadExecutorManager(props);
+		userManager = loadUserManager(props);
 		
 		triggerManager = loadTriggerManager(props);
-		
-		projectManager = loadProjectManager(props);
-		
-//		scheduler = loadScheduler(executorManager, projectManager, triggerManager);
-		
+		executorManager = loadExecutorManager(props);
+		projectManager = loadProjectManager(props, triggerManager);
 		scheduleManager = loadScheduleManager(executorManager, triggerManager, props);
+		
+		loadBuiltinCheckersAndActions();
 		
 		baseClassLoader = getBaseClassloader();
 		
@@ -225,12 +234,12 @@ public class AzkabanWebServer extends AzkabanServer {
 		return manager;
 	}
 	
-	private ProjectManager loadProjectManager(Props props) {
+	private ProjectManager loadProjectManager(Props props, TriggerManager tm) {
 		logger.info("Loading JDBC for project management");
 
 		JdbcProjectLoader loader = new JdbcProjectLoader(props);
 		ProjectManager manager = new ProjectManager(loader, props);
-		manager.setTriggerManager(triggerManager);
+		manager.setTriggerManager(tm);
 		
 		return manager;
 	}
@@ -241,7 +250,7 @@ public class AzkabanWebServer extends AzkabanServer {
 		return execManager;
 	}
 
-	private ScheduleManager loadScheduleManager(ExecutorManager executorManager, TriggerManager triggerManager, Props props ) throws Exception {
+	private ScheduleManager loadScheduleManager(ExecutorManager executorManager, TriggerManager tm, Props props ) throws Exception {
 		ScheduleManager schedManager = null;
 		String scheduleLoaderType = props.getString("azkaban.scheduler.loader", "TriggerBasedScheduleLoader");
 		if(scheduleLoaderType.equals("JdbcScheduleLoader")) {
@@ -251,7 +260,7 @@ public class AzkabanWebServer extends AzkabanServer {
 			schedManager.start();
 		} else if(scheduleLoaderType.equals("TriggerBasedScheduleLoader")) {
 			logger.info("Loading trigger based scheduler");
-			ScheduleLoader loader = new TriggerBasedScheduleLoader(triggerManager, executorManager, null, ScheduleManager.triggerSource);
+			ScheduleLoader loader = new TriggerBasedScheduleLoader(tm, executorManager, null, ScheduleManager.triggerSource);
 			schedManager = new ScheduleManager(executorManager, loader, true);
 		}
 
@@ -266,6 +275,39 @@ public class AzkabanWebServer extends AzkabanServer {
 	private TriggerManager loadTriggerManager(Props props) throws TriggerManagerException {
 		TriggerLoader loader = new JdbcTriggerLoader(props);
 		return new TriggerManager(props, loader);
+	}
+	
+	private void loadBuiltinCheckersAndActions() {
+		logger.info("Loading built-in checker and action types");
+//		ExecutorManager executorManager = app.getExecutorManager();
+//		TriggerRunnerManager triggerRunnerManager = app.getTriggerRunnerManager();
+		CheckerTypeLoader checkerLoader = triggerManager.getCheckerLoader();
+		ActionTypeLoader actionLoader = triggerManager.getActionLoader();
+		// time:
+		checkerLoader.registerCheckerType(BasicTimeChecker.type, BasicTimeChecker.class);
+//		// execution checker
+//		ExecutionChecker.setExecutorManager(executorManager);
+//		checkerLoader.registerCheckerType(ExecutionChecker.type, ExecutionChecker.class);
+		// Sla checker
+//		SlaChecker.setExecutorManager(executorManager);
+		checkerLoader.registerCheckerType(SlaChecker.type, SlaChecker.class);
+		
+		// execut flow action
+//		ExecuteFlowAction.setExecutorManager(executorManager);
+//		ExecuteFlowAction.setProjectManager(projectManager);
+		actionLoader.registerActionType(ExecuteFlowAction.type, ExecuteFlowAction.class);
+		// kill flow action
+//		KillExecutionAction.setExecutorManager(executorManager);
+		actionLoader.registerActionType(KillExecutionAction.type, KillExecutionAction.class);
+		// sla alert
+//		SlaAlertAction.setExecutorManager(executorManager);
+//		Map<String, Alerter> alerters = loadAlerters(props);
+//		SlaAlertAction.setAlerters(alerters);
+		actionLoader.registerActionType(SlaAlertAction.type, SlaAlertAction.class);
+		// create trigger action
+//		CreateTriggerAction.setTriggerRunnerManager(triggerRunnerManager);
+		actionLoader.registerActionType(CreateTriggerAction.type, CreateTriggerAction.class);
+
 	}
 	
 	/**
@@ -527,7 +569,8 @@ public class AzkabanWebServer extends AzkabanServer {
 	private static Map<String, TriggerPlugin> loadTriggerPlugins(Context root, String pluginPath, AzkabanWebServer azkabanWebApp) {
 		File triggerPluginPath = new File(pluginPath);
 		if (!triggerPluginPath.exists()) {
-			return Collections.<String, TriggerPlugin>emptyMap();
+			//return Collections.<String, TriggerPlugin>emptyMap();
+			return new HashMap<String, TriggerPlugin>();
 		}
 			
 		Map<String, TriggerPlugin> installedTriggerPlugins = new HashMap<String, TriggerPlugin>();
@@ -895,7 +938,7 @@ public class AzkabanWebServer extends AzkabanServer {
 		mbeanServer = ManagementFactory.getPlatformMBeanServer();
 
 		registerMbean("jetty", new JmxJettyServer(server));
-		registerMbean("scheduler", new JmxScheduler(scheduleManager));
+		registerMbean("triggerManager", new JmxTriggerManager(triggerManager));
 		registerMbean("executorManager", new JmxExecutorManager(executorManager));
 	}
 	

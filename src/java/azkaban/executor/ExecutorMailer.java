@@ -9,6 +9,7 @@ import org.apache.log4j.Logger;
 
 import azkaban.executor.ExecutionOptions.FailureAction;
 import azkaban.executor.ExecutorManager.Alerter;
+import azkaban.sla.SlaOption;
 import azkaban.utils.AbstractMailer;
 import azkaban.utils.EmailMessage;
 import azkaban.utils.Props;
@@ -23,6 +24,29 @@ public class ExecutorMailer extends AbstractMailer implements Alerter {
 		super(props);
 
 		testMode = props.getBoolean("test.mode", false);
+	}
+	
+	@SuppressWarnings("unchecked")
+	private void sendSlaAlertEmail(SlaOption slaOption, String slaMessage) {
+		String subject = "Sla Violation Alert";
+		String body = slaMessage;
+		List<String> emailList = (List<String>) slaOption.getInfo().get(SlaOption.INFO_EMAIL_LIST);
+		if (emailList != null && !emailList.isEmpty()) {
+			EmailMessage message = super.createEmailMessage(
+					subject, 
+					"text/html", 
+					emailList);
+			
+			message.setBody(body);
+			
+			if (!testMode) {
+				try {
+					message.sendEmail();
+				} catch (MessagingException e) {
+					logger.error("Email message send failed" , e);
+				}
+			}
+		}
 	}
 	
 	public void sendFirstErrorMessage(ExecutableFlow flow) {
@@ -179,5 +203,11 @@ public class ExecutorMailer extends AbstractMailer implements Alerter {
 	@Override
 	public void alertOnFirstError(ExecutableFlow exflow) throws Exception {
 		sendFirstErrorMessage(exflow);
+	}
+
+	@Override
+	public void alertOnSla(SlaOption slaOption, String slaMessage)
+			throws Exception {
+		sendSlaAlertEmail(slaOption, slaMessage);		
 	}
 }

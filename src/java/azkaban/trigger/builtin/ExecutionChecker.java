@@ -11,18 +11,25 @@ import azkaban.executor.ExecutorManagerException;
 import azkaban.executor.Status;
 import azkaban.trigger.ConditionChecker;
 
-public class ExecutableFlowStatusChecker implements ConditionChecker{
+public class ExecutionChecker implements ConditionChecker{
 	public static final String type = "ExecutableFlowStatusChecker";
-	private static Logger logger = Logger.getLogger(ExecutableFlowStatusChecker.class);
+	private static Logger logger = Logger.getLogger(ExecutionChecker.class);
 	private int execId;
-	private Status status;
+	private String target;
 	private String id;
 	private static ExecutorManager executorManager;
+	private String jobName = null;
 	
-	public ExecutableFlowStatusChecker(int execId, Status status, String id) {
+	public static final String TARGET_FINISHED = "finished";
+	public static final String TARGET_SUCCEED = "succeeded";
+	public static final String TARGET_STARTED = "started";
+	
+	
+	public ExecutionChecker(String id, int execId, String target, String jobName) {
 		this.execId = execId;
-		this.status = status;
+		this.target = target;
 		this.id = id;
+		this.jobName = null;
 	}
 	
 	public static void setExecutorManager(ExecutorManager em) {
@@ -40,8 +47,31 @@ public class ExecutableFlowStatusChecker implements ConditionChecker{
 			logger.error("Failed to get executable flow status.");
 			return Boolean.FALSE;
 		}
-		Status flowStatus = exflow.getStatus();
-		return flowStatus.equals(status);
+//		Status flowStatus = exflow.getStatus();
+//		return flowStatus.equals(status);
+//		if(jobName != null) {
+//			Status jobStatus = exflow.getExecutableNode(jobName).getStatus();
+//			return jobStatus.equals(target);
+//		} else {
+//			Status flowStatus = exflow.getStatus();
+//			return flowStatus.equals(target);
+//		}
+		Status status;
+		if(jobName != null) {
+			status = exflow.getExecutableNode(jobName).getStatus();
+		} else {
+			status = exflow.getStatus();
+		}
+		if(target.equals(TARGET_SUCCEED)) {
+			return status.equals(Status.SUCCEEDED);
+		} else if (target.equals(TARGET_FINISHED)) {
+			return status.equals(Status.SUCCEEDED) || status.equals(Status.FAILED);
+		} else if (target.equals("TARGET_STARTED")) {
+			return !(status.equals(Status.READY) && status.equals(Status.PREPARING));
+		} else {
+			logger.error("Unknown Execution Check target.");
+			return false;
+		}
 	}
 
 	@Override
@@ -68,20 +98,24 @@ public class ExecutableFlowStatusChecker implements ConditionChecker{
 	}
 
 	@Override
-	public ExecutableFlowStatusChecker fromJson(Object obj) throws Exception {
+	public ExecutionChecker fromJson(Object obj) throws Exception {
 		return createFromJson(obj);
 	}
 
 	@SuppressWarnings("unchecked")
-	public static ExecutableFlowStatusChecker createFromJson(Object obj) throws Exception {
+	public static ExecutionChecker createFromJson(Object obj) throws Exception {
 		Map<String, Object> jsonObj = (HashMap<String, Object>) obj;
 		if(!jsonObj.get("type").equals(type)) {
 			throw new Exception("Cannot create checker of " + type + " from " + jsonObj.get("type"));
 		}
 		String id = (String) jsonObj.get("id");
 		int execId = Integer.valueOf((String) jsonObj.get("execId"));
-		Status status = Status.valueOf((String) jsonObj.get("status"));
-		return new ExecutableFlowStatusChecker(execId, status, id);
+		String target = (String) jsonObj.get("target");
+		String jobName = null;
+		if(jsonObj.containsKey("jobName")) {
+			jobName = (String) jsonObj.get("jobName");
+		}
+		return new ExecutionChecker(id, execId, target, jobName);
 	}
 	
 	@Override
@@ -89,13 +123,22 @@ public class ExecutableFlowStatusChecker implements ConditionChecker{
 		Map<String, Object> jsonObj = new HashMap<String, Object>();
 		jsonObj.put("type", type);
 		jsonObj.put("execId", String.valueOf(execId));
-		jsonObj.put("status", status.toString());
+		jsonObj.put("target", target);
 		jsonObj.put("id", id);
+		if(jobName != null) {
+			jsonObj.put("jobName", jobName);
+		}
 		return jsonObj;
 	}
 
 	@Override
 	public void stopChecker() {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void setContext(Map<String, Object> context) {
 		// TODO Auto-generated method stub
 		
 	}

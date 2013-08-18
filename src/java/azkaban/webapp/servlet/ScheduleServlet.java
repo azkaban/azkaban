@@ -54,6 +54,7 @@ import azkaban.scheduler.Schedule;
 import azkaban.scheduler.ScheduleManager;
 import azkaban.scheduler.ScheduleManagerException;
 import azkaban.scheduler.ScheduleStatisticManager;
+import azkaban.sla.SlaOption;
 import azkaban.user.Permission;
 import azkaban.user.Permission.Type;
 import azkaban.user.User;
@@ -95,12 +96,12 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
 		HashMap<String, Object> ret = new HashMap<String, Object>();
 		String ajaxName = getParam(req, "ajax");
 		
-//		if (ajaxName.equals("slaInfo")) {
-//			ajaxSlaInfo(req, ret, session.getUser());
-//		}
-//		else if(ajaxName.equals("setSla")) {
-//			ajaxSetSla(req, ret, session.getUser());
-//		}
+		if (ajaxName.equals("slaInfo")) {
+			ajaxSlaInfo(req, ret, session.getUser());
+		}
+		else if(ajaxName.equals("setSla")) {
+			ajaxSetSla(req, ret, session.getUser());
+		} else
 		if(ajaxName.equals("loadFlow")) {
 			ajaxLoadFlows(req, ret, session.getUser());
 		}
@@ -117,98 +118,110 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
 		}
 	}
 
-//	private void ajaxSetSla(HttpServletRequest req, HashMap<String, Object> ret, User user) {
-//		try {
-//			
-//			int scheduleId = getIntParam(req, "scheduleId");
-//			
-//			Schedule sched = scheduleManager.getSchedule(scheduleId);
-//			
-//			Project project = projectManager.getProject(sched.getProjectId());
-//			if(!hasPermission(project, user, Permission.Type.SCHEDULE)) {
-//				ret.put("error", "User " + user + " does not have permission to set SLA for this flow.");
-//				return;
-//			}
-//			
-//			
-//			SlaOptions slaOptions= new SlaOptions();
-//			
-//			String slaEmails = getParam(req, "slaEmails");
-//			String[] emailSplit = slaEmails.split("\\s*,\\s*|\\s*;\\s*|\\s+");
-//			
-//			Map<String, String> settings = getParamGroup(req, "settings");
-//			List<SlaSetting> slaSettings = new ArrayList<SlaSetting>();
-//			for(String set : settings.keySet()) {
-//				SlaSetting s;
-//				try {
-//				s = parseSlaSetting(settings.get(set));
-//				}
-//				catch (Exception e) {
-//					throw new ServletException(e);
-//				}
-//				if(s != null) {
-//					slaSettings.add(s);
-//				}
-//			}
-//			
-//			if(slaSettings.size() > 0) {
-//				if(slaEmails.equals("")) {
-//					ret.put("error", "Please put correct email settings for your SLA actions");
-//					return;
-//				}
-//				slaOptions.setSlaEmails(Arrays.asList(emailSplit));
-//				slaOptions.setSettings(slaSettings);
-//			}
-//			else {
-//				slaOptions = null;
-//			}
-//			sched.setSlaOptions(slaOptions);
-//			scheduleManager.insertSchedule(sched);
-//
-//			if(slaOptions != null) {
-//				projectManager.postProjectEvent(project, EventType.SLA, user.getUserId(), "SLA for flow " + sched.getFlowName() + " has been added/changed.");
-//			}
-//			
-//		} catch (ServletException e) {
-//			ret.put("error", e.getMessage());
-//		} catch (ScheduleManagerException e) {
-//			ret.put("error", e.getMessage());
-//		}
-//		
-//	}
+	private void ajaxSetSla(HttpServletRequest req, HashMap<String, Object> ret, User user) {
+		try {
+			
+			int scheduleId = getIntParam(req, "scheduleId");
+			
+			Schedule sched = scheduleManager.getSchedule(scheduleId);
+			
+			Project project = projectManager.getProject(sched.getProjectId());
+			if(!hasPermission(project, user, Permission.Type.SCHEDULE)) {
+				ret.put("error", "User " + user + " does not have permission to set SLA for this flow.");
+				return;
+			}
+				
+			String emailStr = getParam(req, "slaEmails");
+			String[] emailSplit = emailStr.split("\\s*,\\s*|\\s*;\\s*|\\s+");
+			List<String> slaEmails = Arrays.asList(emailSplit);
+			
+			Map<String, String> settings = getParamGroup(req, "settings");
+			
+			List<SlaOption> slaOptions = new ArrayList<SlaOption>();
+			for(String set : settings.keySet()) {
+				SlaOption sla;
+				try {
+				sla = parseSlaSetting(settings.get(set));
+				sla.getInfo().put(SlaOption.INFO_FLOW_NAME, sched.getFlowName());
+				sla.getInfo().put(SlaOption.INFO_EMAIL_LIST, slaEmails);
+				}
+				catch (Exception e) {
+					throw new ServletException(e);
+				}
+				if(sla != null) {
+					sla.getInfo().put("SlaEmails", slaEmails);
+					slaOptions.add(sla);
+				}
+			}
+			
+			sched.setSlaOptions(slaOptions);
+			scheduleManager.insertSchedule(sched);
+
+			if(slaOptions != null) {
+				projectManager.postProjectEvent(project, EventType.SLA, user.getUserId(), "SLA for flow " + sched.getFlowName() + " has been added/changed.");
+			}
+			
+		} catch (ServletException e) {
+			ret.put("error", e.getMessage());
+		} catch (ScheduleManagerException e) {
+			ret.put("error", e.getMessage());
+		}
+		
+	}
 	
-//	private SlaSetting parseSlaSetting(String set) throws ScheduleManagerException {
-//		// "" + Duration + EmailAction + KillAction
-//		String[] parts = set.split(",", -1);
-//		String id = parts[0];
-//		String rule = parts[1];
-//		String duration = parts[2];
-//		String emailAction = parts[3];
-//		String killAction = parts[4];
-//		if(emailAction.equals("true") || killAction.equals("true")) {
-//			SlaSetting r = new SlaSetting();			
-//			r.setId(id);
-//			r.setRule(SlaRule.valueOf(rule));
-//			ReadablePeriod dur;
-//			try {
-//				dur = parseDuration(duration);
-//			}
-//			catch (Exception e) {
-//				throw new ScheduleManagerException("Unable to parse duration for a SLA that needs to take actions!", e);
-//			}
-//			r.setDuration(dur);
-//			List<SlaAction> actions = new ArrayList<SLA.SlaAction>();
-//			if(emailAction.equals("true")) {
-//				actions.add(SlaAction.EMAIL);
-//			}
-//			if(killAction.equals("true")) {
-//				actions.add(SlaAction.KILL);
-//			}
-//			r.setActions(actions);
-//			return r;
-//		}
-//		return null;
-//	}
+	private SlaOption parseSlaSetting(String set) throws ScheduleManagerException {
+		// "" + Duration + EmailAction + KillAction
+		logger.info("Tryint to set sla with the following set: " + set);
+		
+		String slaType;
+		List<String> slaActions = new ArrayList<String>();
+		Map<String, Object> slaInfo = new HashMap<String, Object>();
+		String[] parts = set.split(",", -1);
+		String id = parts[0];
+		String rule = parts[1];	
+		String duration = parts[2];
+		String emailAction = parts[3];
+		String killAction = parts[4];
+		if(emailAction.equals("true") || killAction.equals("true")) {
+			//String type = id.equals("") ? SlaOption.RULE_FLOW_RUNTIME_SLA : SlaOption.RULE_JOB_RUNTIME_SLA ;
+			if(emailAction.equals("true")) {
+				slaActions.add(SlaOption.ACTION_ALERT);
+				slaInfo.put(SlaOption.ALERT_TYPE, "email");
+			}
+			if(killAction.equals("true")) {
+				slaActions.add(SlaOption.ACTION_CANCEL_FLOW);
+			}
+			if(id.equals("")) {
+				if(rule.equals("SUCCESS")) {
+					slaType = SlaOption.TYPE_FLOW_SUCCEED;
+				}
+				else {
+					slaType = SlaOption.TYPE_FLOW_FINISH;
+				}
+			} else {
+				slaInfo.put(SlaOption.INFO_JOB_NAME, id);
+				if(rule.equals("SUCCESS")) {
+					slaType = SlaOption.TYPE_JOB_SUCCEED;
+				} else {
+					slaType = SlaOption.TYPE_JOB_FINISH;
+				}
+			}
+			
+			ReadablePeriod dur;
+			try {
+				dur = parseDuration(duration);
+			}
+			catch (Exception e) {
+				throw new ScheduleManagerException("Unable to parse duration for a SLA that needs to take actions!", e);
+			}
+
+			slaInfo.put(SlaOption.INFO_DURATION, Utils.createPeriodString(dur));
+			SlaOption r = new SlaOption(slaType, slaActions, slaInfo);
+			logger.info("Parsing sla as id:" + id + " type:" + slaType + " rule:" + rule + " Duration:" + duration + " actions:" + slaActions);
+			return r;
+		}
+		return null;
+	}
 
 	private ReadablePeriod parseDuration(String duration) {
 		int hour = Integer.parseInt(duration.split(":")[0]);
@@ -216,77 +229,76 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
 		return Minutes.minutes(min+hour*60).toPeriod();
 	}
 
-//	private void ajaxSlaInfo(HttpServletRequest req, HashMap<String, Object> ret, User user) {
-//		int scheduleId;
-//		try {
-//			scheduleId = getIntParam(req, "scheduleId");
-//			
-//			Schedule sched = scheduleManager.getSchedule(scheduleId);
-//			
-//			Project project = getProjectAjaxByPermission(ret, sched.getProjectId(), user, Type.READ);
-//			if (project == null) {
-//				ret.put("error", "Error loading project. Project " + sched.getProjectId() + " doesn't exist");
-//				return;
-//			}
-//			
-//			Flow flow = project.getFlow(sched.getFlowName());
-//			if (flow == null) {
-//				ret.put("error", "Error loading flow. Flow " + sched.getFlowName() + " doesn't exist in " + sched.getProjectId());
-//				return;
-//			}
-//			
-//			SlaOptions slaOptions = sched.getSlaOptions();
-//			ExecutionOptions flowOptions = sched.getExecutionOptions();
-//			
-//			if(slaOptions != null) {
-//				ret.put("slaEmails", slaOptions.getSlaEmails());
-//				List<SlaSetting> settings = slaOptions.getSettings();
-//				List<Object> setObj = new ArrayList<Object>();
-//				for(SlaSetting set: settings) {
-//					setObj.add(set.toObject());
-//				}
-//				ret.put("settings", setObj);
-//			}
-//			else if (flowOptions != null) {
-//				if(flowOptions.getFailureEmails() != null) {
-//					List<String> emails = flowOptions.getFailureEmails();
-//					if(emails.size() > 0) {
-//						ret.put("slaEmails", emails);
-//					}
-//				}
-//			}
-//			else {
-//				if(flow.getFailureEmails() != null) {
-//					List<String> emails = flow.getFailureEmails();
-//					if(emails.size() > 0) {
-//						ret.put("slaEmails", emails);
-//					}
-//				}
-//			}
-//			
-//			List<String> disabledJobs;
-//			if(flowOptions != null) {
-//				disabledJobs = flowOptions.getDisabledJobs() == null ? new ArrayList<String>() : flowOptions.getDisabledJobs();
-//			}
-//			else {
-//				disabledJobs = new ArrayList<String>();
-//			}
-//				
-//			List<String> allJobs = new ArrayList<String>();
-//			for(Node n : flow.getNodes()) {
-//				if(!disabledJobs.contains(n.getId())) {
-//					allJobs.add(n.getId());
-//				}
-//			}
-//			ret.put("allJobNames", allJobs);
-//		} catch (ServletException e) {
-//			ret.put("error", e);
-//		} catch (ScheduleManagerException e) {
-//			// TODO Auto-generated catch block
-//			ret.put("error", e);
-//		}
-//		
-//	}
+	private void ajaxSlaInfo(HttpServletRequest req, HashMap<String, Object> ret, User user) {
+		int scheduleId;
+		try {
+			scheduleId = getIntParam(req, "scheduleId");
+			
+			Schedule sched = scheduleManager.getSchedule(scheduleId);
+			
+			Project project = getProjectAjaxByPermission(ret, sched.getProjectId(), user, Type.READ);
+			if (project == null) {
+				ret.put("error", "Error loading project. Project " + sched.getProjectId() + " doesn't exist");
+				return;
+			}
+			
+			Flow flow = project.getFlow(sched.getFlowName());
+			if (flow == null) {
+				ret.put("error", "Error loading flow. Flow " + sched.getFlowName() + " doesn't exist in " + sched.getProjectId());
+				return;
+			}
+			
+			List<SlaOption> slaOptions = sched.getSlaOptions();
+			ExecutionOptions flowOptions = sched.getExecutionOptions();
+			
+			if(slaOptions != null && slaOptions.size() > 0) {
+				ret.put("slaEmails", slaOptions.get(0).getInfo().get("SlaEmails"));
+				
+				List<Object> setObj = new ArrayList<Object>();
+				for(SlaOption sla: slaOptions) {
+					setObj.add(sla.toWebObject());
+				}
+				ret.put("settings", setObj);
+			}
+			else if (flowOptions != null) {
+				if(flowOptions.getFailureEmails() != null) {
+					List<String> emails = flowOptions.getFailureEmails();
+					if(emails.size() > 0) {
+						ret.put("slaEmails", emails);
+					}
+				}
+			}
+			else {
+				if(flow.getFailureEmails() != null) {
+					List<String> emails = flow.getFailureEmails();
+					if(emails.size() > 0) {
+						ret.put("slaEmails", emails);
+					}
+				}
+			}
+			
+			List<String> disabledJobs;
+			if(flowOptions != null) {
+				disabledJobs = flowOptions.getDisabledJobs() == null ? new ArrayList<String>() : flowOptions.getDisabledJobs();
+			}
+			else {
+				disabledJobs = new ArrayList<String>();
+			}
+				
+			List<String> allJobs = new ArrayList<String>();
+			for(Node n : flow.getNodes()) {
+				if(!disabledJobs.contains(n.getId())) {
+					allJobs.add(n.getId());
+				}
+			}
+			ret.put("allJobNames", allJobs);
+		} catch (ServletException e) {
+			ret.put("error", e);
+		} catch (ScheduleManagerException e) {
+			ret.put("error", e);
+		}
+		
+	}
 
 	protected Project getProjectAjaxByPermission(Map<String, Object> ret, int projectId, User user, Permission.Type type) {
 		Project project = projectManager.getProject(projectId);
@@ -614,7 +626,9 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
 			ret.put("error", e.getMessage());
 		}
 		
-		Schedule schedule = scheduleManager.scheduleFlow(-1, projectId, projectName, flowName, "ready", firstSchedTime.getMillis(), firstSchedTime.getZone(), thePeriod, DateTime.now().getMillis(), firstSchedTime.getMillis(), firstSchedTime.getMillis(), user.getUserId(), flowOptions);
+		List<SlaOption> slaOptions = null;
+		
+		Schedule schedule = scheduleManager.scheduleFlow(-1, projectId, projectName, flowName, "ready", firstSchedTime.getMillis(), firstSchedTime.getZone(), thePeriod, DateTime.now().getMillis(), firstSchedTime.getMillis(), firstSchedTime.getMillis(), user.getUserId(), flowOptions, slaOptions);
 		logger.info("User '" + user.getUserId() + "' has scheduled " + "[" + projectName + flowName +  " (" + projectId +")" + "].");
 		projectManager.postProjectEvent(project, EventType.SCHEDULE, user.getUserId(), "Schedule " + schedule.toString() + " has been added.");
 

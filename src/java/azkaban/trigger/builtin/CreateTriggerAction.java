@@ -12,8 +12,11 @@ public class CreateTriggerAction implements TriggerAction {
 	public static final String type = "CreateTriggerAction";
 	private static TriggerRunnerManager triggerRunnerManager;
 	private Trigger trigger;
-
-	public CreateTriggerAction(Trigger trigger) {
+	private Map<String, Object> context;
+	private String actionId;
+	
+	public CreateTriggerAction(String actionId, Trigger trigger) {
+		this.actionId = actionId;
 		this.trigger = trigger;
 	}
 	
@@ -32,8 +35,9 @@ public class CreateTriggerAction implements TriggerAction {
 		if(!jsonObj.get("type").equals(type)) {
 			throw new Exception("Cannot create action of " + type + " from " + jsonObj.get("type"));
 		}
+		String actionId = (String) jsonObj.get("actionId");
 		Trigger trigger = Trigger.fromJson(jsonObj.get("trigger"));
-		return new CreateTriggerAction(trigger);
+		return new CreateTriggerAction(actionId, trigger);
 	}
 	
 	@Override
@@ -45,6 +49,7 @@ public class CreateTriggerAction implements TriggerAction {
 	@Override
 	public Object toJson() {
 		Map<String, Object> jsonObj = new HashMap<String, Object>();
+		jsonObj.put("actionId", actionId);
 		jsonObj.put("type", type);
 		jsonObj.put("trigger", trigger.toJson());
 
@@ -59,6 +64,16 @@ public class CreateTriggerAction implements TriggerAction {
 	@Override
 	public String getDescription() {
 		return "create another: " + trigger.getDescription();
+	}
+
+	@Override
+	public String getId() {
+		return actionId;
+	}
+
+	@Override
+	public void setContext(Map<String, Object> context) {
+		this.context = context;
 	}
 
 }
