@@ -25,6 +25,9 @@ public interface JmxFlowRunnerManagerMBean {
 	@DisplayName("OPERATION: getNumExecutingFlows")
 	public int getNumExecutingFlows();
 	
+	@DisplayName("OPERATION: getRunningFlows")
+	public String getRunningFlows();
+	
 	@DisplayName("OPERATION: getTotalNumRunningJobs")
 	public int countTotalNumRunningJobs();
 }

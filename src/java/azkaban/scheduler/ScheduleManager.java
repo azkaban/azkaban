@@ -73,7 +73,13 @@ public class ScheduleManager implements TriggerAgent {
 	private final ScheduleRunner runner;
 	
 	// Used for mbeans to query Scheduler status
-	
+//<<<<<<< HEAD
+//	
+//=======
+//	private long lastCheckTime = -1;
+//	private long nextWakupTime = -1;
+//	private String runnerStage = "not started";
+//>>>>>>> 10830aeb8ac819473873cac3bb4e07b4aeda67e8
 
 	/**
 	 * Give the schedule manager a loader class that will properly load the
@@ -483,6 +489,8 @@ public class ScheduleManager implements TriggerAgent {
 				synchronized (this) {
 					try {
 						lastCheckTime = System.currentTimeMillis();
+						
+//						runnerStage = "Starting schedule scan.";
 						// TODO clear up the exception handling
 						Schedule s = schedules.peek();
 
@@ -491,6 +499,7 @@ public class ScheduleManager implements TriggerAgent {
 							// there's something to do. Most likely there will not be.
 							try {
 								logger.info("Nothing scheduled to run. Checking again soon.");
+//								runnerStage = "Waiting for next round scan.";
 								nextWakupTime = System.currentTimeMillis() + TIMEOUT_MS;
 								this.wait(TIMEOUT_MS);
 							} catch (InterruptedException e) {
@@ -502,6 +511,8 @@ public class ScheduleManager implements TriggerAgent {
 								// Run flow. The invocation of flows should be quick.
 								Schedule runningSched = schedules.poll();
 
+//								runnerStage = "Ready to run schedule " + runningSched.toString();
+								
 								logger.info("Scheduler ready to run " + runningSched.toString());
 								// Execute the flow here
 								try {
@@ -517,7 +528,7 @@ public class ScheduleManager implements TriggerAgent {
 										logger.error("Flow " + runningSched.getScheduleName() + " cannot be found in project " + project.getName());
 										throw new RuntimeException("Error finding the scheduled flow. " + runningSched.getScheduleName());
 									}
-
+									
 									// Create ExecutableFlow
 									ExecutableFlow exflow = new ExecutableFlow(flow);
 									System.out.println("ScheduleManager: creating schedule: " +runningSched.getScheduleId());
@@ -539,6 +550,8 @@ public class ScheduleManager implements TriggerAgent {
 										flowOptions.setSuccessEmails(flow.getSuccessEmails());
 									}
 									
+//									runnerStage = "Submitting flow " + exflow.getFlowId();
+									
 									try {
 										executorManager.submitExecutableFlow(exflow, s.getSubmitUser());
 										logger.info("Scheduler has invoked " + exflow.getExecutionId());
@@ -550,6 +563,7 @@ public class ScheduleManager implements TriggerAgent {
 										e.printStackTrace();
 										throw new ScheduleManagerException("Scheduler invoked flow " + exflow.getExecutionId() + " has failed.", e);
 									}
+
 //									SlaOptions slaOptions = runningSched.getSlaOptions();
 //									if(slaOptions != null) {
 //										logger.info("Submitting SLA checkings for " + runningSched.getFlowName());
@@ -581,6 +595,7 @@ public class ScheduleManager implements TriggerAgent {
 									logger.info("Scheduler failed to run job. " + e.getMessage() + e.getCause());
 								}
 
+//								runnerStage = "Done running schedule for " + runningSched.toString();
 								removeRunnerSchedule(runningSched);
 
 								// Immediately reschedule if it's possible. Let
@@ -594,6 +609,7 @@ public class ScheduleManager implements TriggerAgent {
 									removeSchedule(runningSched);
 								}								
 							} else {
+//								runnerStage = "Waiting for next round scan.";
 								// wait until flow run
 								long millisWait = Math.max(0, s.getNextExecTime() - (new DateTime()).getMillis());
 								try {
@@ -668,8 +684,15 @@ public class ScheduleManager implements TriggerAgent {
 		}
 	}
 
+//<<<<<<< HEAD
+//	
+//
+//	
+//
+//=======
+//	public String getThreadStage() {
+//		return runnerStage;
+//	}
 	
-
-	
-
+//>>>>>>> 10830aeb8ac819473873cac3bb4e07b4aeda67e8
 }
