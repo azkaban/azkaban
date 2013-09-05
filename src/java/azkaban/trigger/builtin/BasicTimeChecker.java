@@ -14,8 +14,8 @@ public class BasicTimeChecker implements ConditionChecker {
 
 	public static final String type = "BasicTimeChecker";
 	
-	private DateTime firstCheckTime;
-	private DateTime nextCheckTime;
+	private long firstCheckTime;
+	private long nextCheckTime;
 	private DateTimeZone timezone;
 	private boolean isRecurring = true;
 	private boolean skipPastChecks = true;
@@ -25,7 +25,7 @@ public class BasicTimeChecker implements ConditionChecker {
 	
 	public BasicTimeChecker(
 			String id,
-			DateTime firstCheckTime,
+			long firstCheckTime,
 			DateTimeZone timezone,
 			boolean isRecurring, 
 			boolean skipPastChecks,
@@ -36,12 +36,16 @@ public class BasicTimeChecker implements ConditionChecker {
 		this.isRecurring = isRecurring;
 		this.skipPastChecks = skipPastChecks;
 		this.period = period;
-		this.nextCheckTime = new DateTime(firstCheckTime);
+		this.nextCheckTime = firstCheckTime;
 		this.nextCheckTime = calculateNextCheckTime();
 	}
 	
-	public DateTime getFirstCheckTime() {
+	public long getFirstCheckTime() {
 		return firstCheckTime;
+	}
+	
+	public DateTimeZone getTimeZone() {
+		return timezone;
 	}
 
 	public boolean isRecurring() {
@@ -56,7 +60,7 @@ public class BasicTimeChecker implements ConditionChecker {
 		return period;
 	}
 
-	public DateTime getNextCheckTime() {
+	public long getNextCheckTime() {
 		return nextCheckTime;
 	}
 	
@@ -75,9 +79,9 @@ public class BasicTimeChecker implements ConditionChecker {
 	
 	public BasicTimeChecker(
 			String id,
-			DateTime firstCheckTime,
+			long firstCheckTime,
 			DateTimeZone timezone,
-			DateTime nextCheckTime,
+			long nextCheckTime,
 			boolean isRecurring, 
 			boolean skipPastChecks,
 			ReadablePeriod period) {
@@ -92,7 +96,7 @@ public class BasicTimeChecker implements ConditionChecker {
 	
 	@Override
 	public Boolean eval() {
-		return nextCheckTime.isBeforeNow();
+		return nextCheckTime < System.currentTimeMillis();
 	}
 
 	@Override
@@ -125,21 +129,22 @@ public class BasicTimeChecker implements ConditionChecker {
 
 	@SuppressWarnings("unchecked")
 	public static BasicTimeChecker createFromJson(Object obj) throws Exception {
-		Map<String, Object> jsonObj = (HashMap<String, Object>) obj;
-		if(!jsonObj.get("type").equals(type)) {
-			throw new Exception("Cannot create checker of " + type + " from " + jsonObj.get("type"));
-		}
-		long firstTimeMillis = Long.valueOf((String)jsonObj.get("firstCheckTime"));
-		String timezoneId = (String) jsonObj.get("timezone");
-		long nextTimeMillis = Long.valueOf((String)jsonObj.get("nextCheckTime"));
-		DateTimeZone timezone = DateTimeZone.forID(timezoneId);
-		DateTime firstCheckTime = new DateTime(firstTimeMillis).withZone(timezone);
-		DateTime nextCheckTime = new DateTime(nextTimeMillis).withZone(timezone);
-		boolean isRecurring = Boolean.valueOf((String)jsonObj.get("isRecurring"));
-		boolean skipPastChecks = Boolean.valueOf((String)jsonObj.get("skipPastChecks"));
-		ReadablePeriod period = Utils.parsePeriodString((String)jsonObj.get("period"));
-		String id = (String) jsonObj.get("id");
-		return new BasicTimeChecker(id, firstCheckTime, timezone, nextCheckTime, isRecurring, skipPastChecks, period);
+//		Map<String, Object> jsonObj = (HashMap<String, Object>) obj;
+//		if(!jsonObj.get("type").equals(type)) {
+//			throw new Exception("Cannot create checker of " + type + " from " + jsonObj.get("type"));
+//		}
+//		long firstCheckTime = Long.valueOf((String)jsonObj.get("firstCheckTime"));
+//		String timezoneId = (String) jsonObj.get("timezone");
+//		long nextCheckTime = Long.valueOf((String)jsonObj.get("nextCheckTime"));
+//		DateTimeZone timezone = DateTimeZone.forID(timezoneId);
+////		DateTime firstCheckTime = new DateTime(firstTimeMillis).withZone(timezone);
+////		DateTime nextCheckTime = new DateTime(nextTimeMillis).withZone(timezone);
+//		boolean isRecurring = Boolean.valueOf((String)jsonObj.get("isRecurring"));
+//		boolean skipPastChecks = Boolean.valueOf((String)jsonObj.get("skipPastChecks"));
+//		ReadablePeriod period = Utils.parsePeriodString((String)jsonObj.get("period"));
+//		String id = (String) jsonObj.get("id");
+//		return new BasicTimeChecker(id, firstCheckTime, timezone, nextCheckTime, isRecurring, skipPastChecks, period);
+		return createFromJson((HashMap<String, Object>)obj);
 	}
 	
 	public static BasicTimeChecker createFromJson(HashMap<String, Object> obj) throws Exception {
@@ -147,12 +152,12 @@ public class BasicTimeChecker implements ConditionChecker {
 		if(!jsonObj.get("type").equals(type)) {
 			throw new Exception("Cannot create checker of " + type + " from " + jsonObj.get("type"));
 		}
-		Long firstTimeMillis = Long.valueOf((String) jsonObj.get("firstCheckTime"));
+		Long firstCheckTime = Long.valueOf((String) jsonObj.get("firstCheckTime"));
 		String timezoneId = (String) jsonObj.get("timezone");
-		long nextTimeMillis = Long.valueOf((String) jsonObj.get("nextCheckTime"));
+		long nextCheckTime = Long.valueOf((String) jsonObj.get("nextCheckTime"));
 		DateTimeZone timezone = DateTimeZone.forID(timezoneId);
-		DateTime firstCheckTime = new DateTime(firstTimeMillis).withZone(timezone);
-		DateTime nextCheckTime = new DateTime(nextTimeMillis).withZone(timezone);
+//		DateTime firstCheckTime = new DateTime(firstTimeMillis).withZone(timezone);
+//		DateTime nextCheckTime = new DateTime(nextTimeMillis).withZone(timezone);
 		boolean isRecurring = Boolean.valueOf((String)jsonObj.get("isRecurring"));
 		boolean skipPastChecks = Boolean.valueOf((String)jsonObj.get("skipPastChecks"));
 		ReadablePeriod period = Utils.parsePeriodString((String)jsonObj.get("period"));
@@ -212,10 +217,10 @@ public class BasicTimeChecker implements ConditionChecker {
 		nextCheckTime = calculateNextCheckTime();
 	}
 	
-	private DateTime calculateNextCheckTime(){
-		DateTime date = new DateTime(nextCheckTime);
+	private long calculateNextCheckTime(){
+		DateTime date = new DateTime(nextCheckTime).withZone(timezone);
 		int count = 0;
-		while(!DateTime.now().isBefore(date)) {
+		while(!date.isAfterNow()) {
 			if(count > 100000) {
 				throw new IllegalStateException("100000 increments of period did not get to present time.");
 			}
@@ -230,7 +235,7 @@ public class BasicTimeChecker implements ConditionChecker {
 				continue;
 			}
 		}
-		return date;
+		return date.getMillis();
 	}
 	
 	@Override
@@ -243,9 +248,9 @@ public class BasicTimeChecker implements ConditionChecker {
 	public Object toJson() {
 		Map<String, Object> jsonObj = new HashMap<String, Object>();
 		jsonObj.put("type", type);
-		jsonObj.put("firstCheckTime", String.valueOf(firstCheckTime.getMillis()));
+		jsonObj.put("firstCheckTime", String.valueOf(firstCheckTime));
 		jsonObj.put("timezone", timezone.getID());
-		jsonObj.put("nextCheckTime", String.valueOf(nextCheckTime.getMillis()));
+		jsonObj.put("nextCheckTime", String.valueOf(nextCheckTime));
 		jsonObj.put("isRecurrint", String.valueOf(isRecurring));
 		jsonObj.put("skipPastChecks", String.valueOf(skipPastChecks));
 		jsonObj.put("period", Utils.createPeriodString(period));

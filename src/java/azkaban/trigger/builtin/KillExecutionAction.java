@@ -7,6 +7,7 @@ import org.apache.log4j.Logger;
 
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutorManager;
+import azkaban.executor.ExecutorManagerAdapter;
 import azkaban.trigger.TriggerAction;
 
 public class KillExecutionAction implements TriggerAction{
@@ -17,14 +18,14 @@ public class KillExecutionAction implements TriggerAction{
 	
 	private String actionId;
 	private int execId;
-	private static ExecutorManager executorManager;
+	private static ExecutorManagerAdapter executorManager;
 	
 	public KillExecutionAction(String actionId, int execId) {
 		this.execId = execId;
 		this.actionId = actionId;
 	}
 	
-	public static void setExecutorManager(ExecutorManager em) {
+	public static void setExecutorManager(ExecutorManagerAdapter em) {
 		executorManager = em;
 	}
 	
@@ -73,7 +74,7 @@ public class KillExecutionAction implements TriggerAction{
 	public void doAction() throws Exception {
 		ExecutableFlow exFlow = executorManager.getExecutableFlow(execId);
 		logger.info("ready to kill execution " + execId);
-		if(!executorManager.isFinished(exFlow)) {
+		if(!ExecutableFlow.isFinished(exFlow)) {
 			logger.info("Killing execution " + execId);
 			executorManager.cancelFlow(exFlow, "azkaban_sla");
 		}

@@ -30,6 +30,7 @@ import javax.servlet.http.HttpServletResponse;
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutableNode;
 import azkaban.executor.ExecutionOptions;
+import azkaban.executor.ExecutorManagerAdapter;
 import azkaban.executor.ExecutionOptions.FailureAction;
 import azkaban.executor.ExecutorManager;
 import azkaban.executor.ExecutorManagerException;
@@ -51,7 +52,7 @@ import azkaban.webapp.session.Session;
 public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 	private static final long serialVersionUID = 1L;
 	private ProjectManager projectManager;
-	private ExecutorManager executorManager;
+	private ExecutorManagerAdapter executorManager;
 	private ScheduleManager scheduleManager;
 	private ExecutorVelocityHelper velocityHelper;
 
@@ -768,7 +769,7 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 		}
 		
 		try {
-			String message = executorManager.submitExecutableFlow(exflow);
+			String message = executorManager.submitExecutableFlow(exflow, user.getUserId());
 			ret.put("message", message);
 		}
 		catch (ExecutorManagerException e) {

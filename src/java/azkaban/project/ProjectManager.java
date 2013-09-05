@@ -37,7 +37,6 @@ public class ProjectManager {
 	private final int projectVersionRetention;
 	private final boolean creatorDefaultPermissions;
 	
-	private TriggerManager triggerManager;
 	private boolean loadTriggerFromFile = false;
 	
 	public ProjectManager(ProjectLoader loader, Props props) {
@@ -58,10 +57,6 @@ public class ProjectManager {
 		loadAllProjects();
 	}
 
-	public void setTriggerManager(TriggerManager triggerManager) {
-		this.triggerManager = triggerManager;
-	}
-	
 	public void setLoadTriggerFromFile(boolean enable) {
 		this.loadTriggerFromFile = enable;
 	}
@@ -354,21 +349,22 @@ public class ProjectManager {
 			logger.info("Uploading Props properties");
 			projectLoader.uploadProjectProperties(project, propProps);
 		}
-		
-		if(loadTriggerFromFile) {
-			logger.info("Loading triggers.");
-			Props triggerProps = new Props();
-			triggerProps.put("projectId", project.getId());
-			triggerProps.put("projectName", project.getName());
-			triggerProps.put("submitUser", uploader.getUserId());
-			try {
-				triggerManager.loadTriggerFromDir(file, triggerProps);
-			} catch (Exception e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-				logger.error("Failed to load triggers.", e);
-			}
-		}
+	
+		//TODO: find something else to load triggers
+//		if(loadTriggerFromFile) {
+//			logger.info("Loading triggers.");
+//			Props triggerProps = new Props();
+//			triggerProps.put("projectId", project.getId());
+//			triggerProps.put("projectName", project.getName());
+//			triggerProps.put("submitUser", uploader.getUserId());
+//			try {
+//				triggerManager.loadTriggerFromDir(file, triggerProps);
+//			} catch (Exception e) {
+//				// TODO Auto-generated catch block
+//				e.printStackTrace();
+//				logger.error("Failed to load triggers.", e);
+//			}
+//		}
 		
 		logger.info("Uploaded project files. Cleaning up temp files.");
 		projectLoader.postEvent(project, EventType.UPLOADED, uploader.getUserId(), "Uploaded project files zip " + archive.getName());

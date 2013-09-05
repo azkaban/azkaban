@@ -8,13 +8,15 @@ import java.util.Map;
 import org.apache.log4j.Logger;
 import org.joda.time.DateTime;
 
+import azkaban.utils.JSONUtils;
+
 public class Trigger {
 	
 	private static Logger logger = Logger.getLogger(Trigger.class);
 	
 	private int triggerId = -1;
-	private DateTime lastModifyTime;
-	private DateTime submitTime;
+	private long lastModifyTime;
+	private long submitTime;
 	private String submitUser;
 	private String source;
 	private TriggerStatus status = TriggerStatus.READY;
@@ -32,12 +34,26 @@ public class Trigger {
 	private boolean resetOnTrigger = true;
 	private boolean resetOnExpire = true;
 	
+	private long nextCheckTime = -1;
+	
 	@SuppressWarnings("unused")
 	private Trigger() throws TriggerManagerException {	
 		throw new TriggerManagerException("Triggers should always be specified");
 	}
 	
-	public DateTime getSubmitTime() {
+	public void updateNextCheckTime() {
+		this.nextCheckTime = Math.min(triggerCondition.getNextCheckTime(), expireCondition.getNextCheckTime());
+	}
+	
+	public long getNextCheckTime() {
+		return nextCheckTime;
+	}
+
+	public void setNextCheckTime(long nct) {
+		this.nextCheckTime = nct;
+	}
+	
+	public long getSubmitTime() {
 		return submitTime;
 	}
 
@@ -86,8 +102,8 @@ public class Trigger {
 	}
 	
 	public Trigger(
-			DateTime lastModifyTime, 
-			DateTime submitTime, 
+			long lastModifyTime, 
+			long submitTime, 
 			String submitUser, 
 			String source,
 			Condition triggerCondition,
@@ -109,8 +125,8 @@ public class Trigger {
 	}
 	
 	public Trigger(
-			DateTime lastModifyTime, 
-			DateTime submitTime, 
+			long lastModifyTime, 
+			long submitTime, 
 			String submitUser, 
 			String source,
 			Condition triggerCondition,
@@ -134,8 +150,8 @@ public class Trigger {
 			Condition expireCondition,
 			List<TriggerAction> actions, 
 			List<TriggerAction> expireActions) {
-		this.lastModifyTime = DateTime.now();
-		this.submitTime = DateTime.now();
+		this.lastModifyTime = DateTime.now().getMillis();
+		this.submitTime = DateTime.now().getMillis();
 		this.submitUser = submitUser;
 		this.source = source;
 		this.triggerCondition = triggerCondition;
@@ -150,8 +166,8 @@ public class Trigger {
 			Condition triggerCondition,
 			Condition expireCondition,
 			List<TriggerAction> actions) {
-		this.lastModifyTime = DateTime.now();
-		this.submitTime = DateTime.now();
+		this.lastModifyTime = DateTime.now().getMillis();
+		this.submitTime = DateTime.now().getMillis();
 		this.submitUser = submitUser;
 		this.source = source;
 		this.triggerCondition = triggerCondition;
@@ -161,8 +177,8 @@ public class Trigger {
 	}
 	
 	public Trigger(
-			DateTime lastModifyTime, 
-			DateTime submitTime, 
+			long lastModifyTime, 
+			long submitTime, 
 			String submitUser, 
 			String source,
 			Condition triggerCondition,
@@ -180,8 +196,8 @@ public class Trigger {
 	
 	public Trigger(
 			int triggerId,
-			DateTime lastModifyTime, 
-			DateTime submitTime, 
+			long lastModifyTime, 
+			long submitTime,
 			String submitUser, 
 			String source,
 			Condition triggerCondition,
@@ -205,8 +221,8 @@ public class Trigger {
 	
 	public Trigger(
 			int triggerId,
-			DateTime lastModifyTime, 
-			DateTime submitTime, 
+			long lastModifyTime, 
+			long submitTime, 
 			String submitUser, 
 			String source,
 			Condition triggerCondition,
@@ -226,8 +242,8 @@ public class Trigger {
 	
 	public Trigger(
 			int triggerId,
-			DateTime lastModifyTime, 
-			DateTime submitTime, 
+			long lastModifyTime, 
+			long submitTime,
 			String submitUser, 
 			String source,
 			Condition triggerCondition,
@@ -268,11 +284,11 @@ public class Trigger {
 		this.resetOnExpire = resetOnExpire;
 	}
 
-	public DateTime getLastModifyTime() {
+	public long getLastModifyTime() {
 		return lastModifyTime;
 	}
 	
-	public void setLastModifyTime(DateTime lastModifyTime) {
+	public void setLastModifyTime(long lastModifyTime) {
 		this.lastModifyTime = lastModifyTime;
 	}
 
@@ -329,8 +345,8 @@ public class Trigger {
 		jsonObj.put("resetOnExpire", String.valueOf(resetOnExpire));
 		jsonObj.put("submitUser", submitUser);
 		jsonObj.put("source", source);
-		jsonObj.put("submitTime", String.valueOf(submitTime.getMillis()));
-		jsonObj.put("lastModifyTime", String.valueOf(lastModifyTime.getMillis()));
+		jsonObj.put("submitTime", String.valueOf(submitTime));
+		jsonObj.put("lastModifyTime", String.valueOf(lastModifyTime));
 		jsonObj.put("triggerId", String.valueOf(triggerId));
 		jsonObj.put("status", status.toString());
 		jsonObj.put("info", info);
@@ -354,6 +370,7 @@ public class Trigger {
 		
 		Trigger trigger = null;
 		try{
+			logger.info("Decoding for " + JSONUtils.toJSON(obj));
 			Condition triggerCond = Condition.fromJson(jsonObj.get("triggerCondition"));
 			Condition expireCond = Condition.fromJson(jsonObj.get("expireCondition"));
 			List<TriggerAction> actions = new ArrayList<TriggerAction>();
@@ -376,14 +393,15 @@ public class Trigger {
 			boolean resetOnExpire = Boolean.valueOf((String) jsonObj.get("resetOnExpire"));
 			String submitUser = (String) jsonObj.get("submitUser");
 			String source = (String) jsonObj.get("source");
-			long submitTimeMillis = Long.valueOf((String) jsonObj.get("submitTime"));
-			long lastModifyTimeMillis = Long.valueOf((String) jsonObj.get("lastModifyTime"));
-			DateTime submitTime = new DateTime(submitTimeMillis);
-			DateTime lastModifyTime = new DateTime(lastModifyTimeMillis);
+			long submitTime = Long.valueOf((String) jsonObj.get("submitTime"));
+			long lastModifyTime = Long.valueOf((String) jsonObj.get("lastModifyTime"));
 			int triggerId = Integer.valueOf((String) jsonObj.get("triggerId"));
 			TriggerStatus status = TriggerStatus.valueOf((String)jsonObj.get("status"));
 			Map<String, Object> info = (Map<String, Object>) jsonObj.get("info");
 			Map<String, Object> context = (Map<String, Object>) jsonObj.get("context");
+			if(context == null) {
+				context = new HashMap<String, Object>();
+			}
 			for(ConditionChecker checker : triggerCond.getCheckers().values()) {
 				checker.setContext(context);
 			}

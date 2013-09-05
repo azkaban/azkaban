@@ -20,6 +20,7 @@ import azkaban.trigger.TriggerAction;
 import azkaban.trigger.ActionTypeLoader;
 import azkaban.trigger.TriggerException;
 import azkaban.trigger.TriggerLoader;
+import azkaban.trigger.TriggerLoaderException;
 import azkaban.trigger.TriggerManager;
 import azkaban.trigger.TriggerManagerException;
 import azkaban.utils.Props;
@@ -48,8 +49,8 @@ public class TriggerManagerTest {
 		props.put("trigger.scan.interval", 4000);
 		TriggerManager triggerManager = new TriggerManager(props, triggerLoader);
 		
-		triggerManager.getCheckerLoader().registerCheckerType(ThresholdChecker.type, ThresholdChecker.class);
-		triggerManager.getActionLoader().registerActionType(DummyTriggerAction.type, DummyTriggerAction.class);
+		triggerManager.registerCheckerType(ThresholdChecker.type, ThresholdChecker.class);
+		triggerManager.registerActionType(DummyTriggerAction.type, DummyTriggerAction.class);
 		
 		ThresholdChecker.setVal(1);
 		
@@ -114,19 +115,19 @@ public class TriggerManagerTest {
 		private int idIndex = 0;
 		
 		@Override
-		public void addTrigger(Trigger t) throws TriggerManagerException {
+		public void addTrigger(Trigger t) throws TriggerLoaderException {
 			t.setTriggerId(idIndex++);
 			triggers.put(t.getTriggerId(), t);
 		}
 
 		@Override
-		public void removeTrigger(Trigger s) throws TriggerManagerException {
+		public void removeTrigger(Trigger s) throws TriggerLoaderException {
 			triggers.remove(s.getTriggerId());
 			
 		}
 
 		@Override
-		public void updateTrigger(Trigger t) throws TriggerManagerException {
+		public void updateTrigger(Trigger t) throws TriggerLoaderException {
 			triggers.put(t.getTriggerId(), t);
 		}
 
@@ -137,14 +138,14 @@ public class TriggerManagerTest {
 
 		@Override
 		public Trigger loadTrigger(int triggerId)
-				throws TriggerManagerException {
+				throws TriggerLoaderException {
 			// TODO Auto-generated method stub
 			return null;
 		}
 
 		@Override
 		public List<Trigger> getUpdatedTriggers(long lastUpdateTime)
-				throws TriggerManagerException {
+				throws TriggerLoaderException {
 			// TODO Auto-generated method stub
 			return null;
 		}
@@ -166,7 +167,7 @@ public class TriggerManagerTest {
 		Condition triggerCond = new Condition(checkers, expr);
 		Condition expireCond = new Condition(checkers, expr);
 		
-		Trigger fakeTrigger = new Trigger(DateTime.now(), DateTime.now(), "azkaban", source, triggerCond, expireCond, actions);
+		Trigger fakeTrigger = new Trigger(DateTime.now().getMillis(), DateTime.now().getMillis(), "azkaban", source, triggerCond, expireCond, actions);
 		fakeTrigger.setResetOnTrigger(true);
 		fakeTrigger.setResetOnExpire(true);
 		

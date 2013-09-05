@@ -95,5 +95,11 @@ public class ThresholdChecker implements ConditionChecker{
 		
 	}
 
+	@Override
+	public long getNextCheckTime() {
+		// TODO Auto-generated method stub
+		return 0;
+	}
+
 
 }

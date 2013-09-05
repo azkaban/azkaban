@@ -60,7 +60,7 @@ public class ConditionTest {
 		String period = "6s";
 		
 		//BasicTimeChecker timeChecker = new BasicTimeChecker(now, true, true, period);
-		ConditionChecker timeChecker = new BasicTimeChecker("BasicTimeChecker_1", now, now.getZone(), true, true, Utils.parsePeriodString(period));
+		ConditionChecker timeChecker = new BasicTimeChecker("BasicTimeChecker_1", now.getMillis(), now.getZone(), true, true, Utils.parsePeriodString(period));
 		System.out.println("checker id is " + timeChecker.getId());
 		
 		checkers.put(timeChecker.getId(), timeChecker);

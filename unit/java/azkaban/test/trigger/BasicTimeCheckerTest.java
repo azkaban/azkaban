@@ -26,7 +26,7 @@ public class BasicTimeCheckerTest {
 		DateTime now = DateTime.now();
 		ReadablePeriod period = Utils.parsePeriodString("10s");
 		
-		BasicTimeChecker timeChecker = new BasicTimeChecker("BasicTimeChecket_1", now, now.getZone(), true, true, period);
+		BasicTimeChecker timeChecker = new BasicTimeChecker("BasicTimeChecket_1", now.getMillis(), now.getZone(), true, true, period);
 		checkers.put(timeChecker.getId(), timeChecker);
 		String expr = timeChecker.getId() + ".eval()";
 		

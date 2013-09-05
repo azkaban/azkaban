@@ -8,9 +8,8 @@ import java.util.Map;
 import org.apache.log4j.Logger;
 import org.joda.time.DateTime;
 
-import azkaban.executor.ExecutorManager;
+import azkaban.executor.ExecutorManagerAdapter;
 import azkaban.project.ProjectManager;
-import azkaban.sla.SlaOption;
 import azkaban.trigger.Condition;
 import azkaban.trigger.ConditionChecker;
 import azkaban.trigger.Trigger;
@@ -18,9 +17,7 @@ import azkaban.trigger.TriggerAction;
 import azkaban.trigger.TriggerManager;
 import azkaban.trigger.TriggerManagerException;
 import azkaban.trigger.builtin.BasicTimeChecker;
-import azkaban.trigger.builtin.CreateTriggerAction;
 import azkaban.trigger.builtin.ExecuteFlowAction;
-import azkaban.trigger.builtin.SlaChecker;
 
 public class TriggerBasedScheduleLoader implements ScheduleLoader {
 	
@@ -33,7 +30,7 @@ public class TriggerBasedScheduleLoader implements ScheduleLoader {
 //	private Map<Integer, Trigger> triggersLocalCopy;
 	private long lastUpdateTime = -1;
 	
-	public TriggerBasedScheduleLoader(TriggerManager triggerManager, ExecutorManager executorManager, ProjectManager projectManager, String triggerSource) {
+	public TriggerBasedScheduleLoader(TriggerManager triggerManager, ExecutorManagerAdapter executorManager, ProjectManager projectManager, String triggerSource) {
 		this.triggerManager = triggerManager;
 		this.triggerSource = triggerSource;
 		// need to init the action types and condition checker types 
@@ -46,7 +43,7 @@ public class TriggerBasedScheduleLoader implements ScheduleLoader {
 		Condition triggerCondition = createTimeTriggerCondition(s);
 		Condition expireCondition = createTimeExpireCondition(s);
 		List<TriggerAction> actions = createActions(s);
-		Trigger t = new Trigger(s.getScheduleId(), new DateTime(s.getLastModifyTime()), new DateTime(s.getSubmitTime()), s.getSubmitUser(), triggerSource, triggerCondition, expireCondition, actions);
+		Trigger t = new Trigger(s.getScheduleId(), s.getLastModifyTime(), s.getSubmitTime(), s.getSubmitUser(), triggerSource, triggerCondition, expireCondition, actions);
 		if(s.isRecurring()) {
 			t.setResetOnTrigger(true);
 		}
@@ -72,7 +69,7 @@ public class TriggerBasedScheduleLoader implements ScheduleLoader {
 	
 	private Condition createTimeTriggerCondition (Schedule s) {
 		Map<String, ConditionChecker> checkers = new HashMap<String, ConditionChecker>();
-		ConditionChecker checker = new BasicTimeChecker("BasicTimeChecker_1", new DateTime(s.getFirstSchedTime()), s.getTimezone(), s.isRecurring(), s.skipPastOccurrences(), s.getPeriod());
+		ConditionChecker checker = new BasicTimeChecker("BasicTimeChecker_1", s.getFirstSchedTime(), s.getTimezone(), s.isRecurring(), s.skipPastOccurrences(), s.getPeriod());
 		checkers.put(checker.getId(), checker);
 		String expr = checker.getId() + ".eval()";
 		Condition cond = new Condition(checkers, expr);
@@ -82,7 +79,7 @@ public class TriggerBasedScheduleLoader implements ScheduleLoader {
 	// if failed to trigger, auto expire?
 	private Condition createTimeExpireCondition (Schedule s) {
 		Map<String, ConditionChecker> checkers = new HashMap<String, ConditionChecker>();
-		ConditionChecker checker = new BasicTimeChecker("BasicTimeChecker_2", new DateTime(s.getFirstSchedTime()), s.getTimezone(), s.isRecurring(), s.skipPastOccurrences(), s.getPeriod());
+		ConditionChecker checker = new BasicTimeChecker("BasicTimeChecker_2", s.getFirstSchedTime(), s.getTimezone(), s.isRecurring(), s.skipPastOccurrences(), s.getPeriod());
 		checkers.put(checker.getId(), checker);
 		String expr = checker.getId() + ".eval()";
 		Condition cond = new Condition(checkers, expr);
@@ -122,7 +119,7 @@ public class TriggerBasedScheduleLoader implements ScheduleLoader {
 		List<Schedule> schedules = new ArrayList<Schedule>();
 //		triggersLocalCopy = new HashMap<Integer, Trigger>();
 		for(Trigger t : triggers) {
-			lastUpdateTime = Math.max(lastUpdateTime, t.getLastModifyTime().getMillis());
+			lastUpdateTime = Math.max(lastUpdateTime, t.getLastModifyTime());
 			Schedule s = triggerToSchedule(t);
 			schedules.add(s);
 			System.out.println("loaded schedule for " + s.getProjectId() + s.getProjectName());
@@ -156,12 +153,12 @@ public class TriggerBasedScheduleLoader implements ScheduleLoader {
 					act.getProjectName(), 
 					act.getFlowName(), 
 					t.getStatus().toString(), 
-					ck.getFirstCheckTime().getMillis(), 
-					ck.getFirstCheckTime().getZone(), 
+					ck.getFirstCheckTime(), 
+					ck.getTimeZone(), 
 					ck.getPeriod(),
-					t.getLastModifyTime().getMillis(),
-					ck.getNextCheckTime().getMillis(),
-					t.getSubmitTime().getMillis(),
+					t.getLastModifyTime(),
+					ck.getNextCheckTime(),
+					t.getSubmitTime(),
 					t.getSubmitUser(),
 					act.getExecutionOptions(),
 					act.getSlaOptions());
@@ -196,7 +193,7 @@ public class TriggerBasedScheduleLoader implements ScheduleLoader {
 	public synchronized List<Schedule> loadUpdatedSchedules() throws ScheduleManagerException {
 		List<Trigger> triggers;
 		try {
-			triggers = triggerManager.getUpdatedTriggers(triggerSource, lastUpdateTime);
+			triggers = triggerManager.getTriggerUpdates(triggerSource, lastUpdateTime);
 		} catch (TriggerManagerException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -204,7 +201,7 @@ public class TriggerBasedScheduleLoader implements ScheduleLoader {
 		}
 		List<Schedule> schedules = new ArrayList<Schedule>();
 		for(Trigger t : triggers) {
-			lastUpdateTime = Math.max(lastUpdateTime, t.getLastModifyTime().getMillis());
+			lastUpdateTime = Math.max(lastUpdateTime, t.getLastModifyTime());
 			Schedule s = triggerToSchedule(t);
 			schedules.add(s);
 			System.out.println("loaded schedule for " + s.getProjectId() + s.getProjectName());

@@ -9,6 +9,7 @@ import org.apache.commons.jexl2.Expression;
 import org.apache.commons.jexl2.JexlEngine;
 import org.apache.commons.jexl2.MapContext;
 import org.apache.log4j.Logger;
+import org.joda.time.DateTime;
 
 
 public class Condition {
@@ -20,8 +21,15 @@ public class Condition {
 	private Expression expression;
 	private Map<String, ConditionChecker> checkers = new HashMap<String, ConditionChecker>();
 	private MapContext context = new MapContext();
+	private long nextCheckTime = -1;	
 	
 	public Condition(Map<String, ConditionChecker> checkers, String expr) {
+		setCheckers(checkers);
+		this.expression = jexl.createExpression(expr);
+	}
+	
+	public Condition(Map<String, ConditionChecker> checkers, String expr, long nextCheckTime) {
+		this.nextCheckTime = nextCheckTime;
 		setCheckers(checkers);
 		this.expression = jexl.createExpression(expr);
 	}
@@ -43,6 +51,10 @@ public class Condition {
 		context.set(checker.getId(), checker);
 	}
 	
+	public long getNextCheckTime() {
+		return nextCheckTime;
+	}
+	
 	public Map<String, ConditionChecker> getCheckers() {
 		return this.checkers;
 	}
@@ -55,9 +67,13 @@ public class Condition {
 	}
 	
 	public void resetCheckers() {
+		long time = Long.MAX_VALUE;
 		for(ConditionChecker checker : checkers.values()) {
 			checker.reset();
+			time = Math.min(time, checker.getNextCheckTime());
 		}
+		logger.error("Done resetting checkers. The next check time will be " + new DateTime(time));
+		this.nextCheckTime = time;
 	}
 	
 	public String getExpression() {
@@ -84,6 +100,7 @@ public class Condition {
 			checkersJson.add(oneChecker);
 		}
 		jsonObj.put("checkers", checkersJson);
+		jsonObj.put("nextCheckTime", String.valueOf(nextCheckTime));
 		
 		return jsonObj;
 	}
@@ -107,8 +124,9 @@ public class Condition {
 				checkers.put(ck.getId(), ck);
 			}
 			String expr = (String) jsonObj.get("expression");
+			long nextCheckTime = Long.valueOf((String) jsonObj.get("nextCheckTime"));
 				
-			cond = new Condition(checkers, expr);
+			cond = new Condition(checkers, expr, nextCheckTime);
 			
 		} catch(Exception e) {
 			e.printStackTrace();

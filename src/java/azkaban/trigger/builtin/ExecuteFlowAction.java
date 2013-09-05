@@ -10,6 +10,7 @@ import org.apache.log4j.Logger;
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutionOptions;
 import azkaban.executor.ExecutorManager;
+import azkaban.executor.ExecutorManagerAdapter;
 import azkaban.executor.ExecutorManagerException;
 import azkaban.flow.Flow;
 import azkaban.project.Project;
@@ -19,7 +20,7 @@ import azkaban.trigger.Condition;
 import azkaban.trigger.ConditionChecker;
 import azkaban.trigger.Trigger;
 import azkaban.trigger.TriggerAction;
-import azkaban.triggerapp.TriggerRunnerManager;
+import azkaban.trigger.TriggerManager;
 
 public class ExecuteFlowAction implements TriggerAction {
 
@@ -27,8 +28,8 @@ public class ExecuteFlowAction implements TriggerAction {
 
 	public static final String EXEC_ID = "ExecuteFlowAction.execid";
 	
-	private static ExecutorManager executorManager;
-	private static TriggerRunnerManager triggerRunnerManager;
+	private static ExecutorManagerAdapter executorManager;
+	private static TriggerManager triggerManager;
 	private String actionId;
 	private int projectId;
 	private String projectName;
@@ -99,20 +100,20 @@ public class ExecuteFlowAction implements TriggerAction {
 		this.slaOptions = slaOptions;
 	}
 
-	public static ExecutorManager getExecutorManager() {
+	public static ExecutorManagerAdapter getExecutorManager() {
 		return executorManager;
 	}
  	
-	public static void setExecutorManager(ExecutorManager executorManager) {
+	public static void setExecutorManager(ExecutorManagerAdapter executorManager) {
 		ExecuteFlowAction.executorManager = executorManager;
 	}
 	
-	public static TriggerRunnerManager getTriggerRunnerManager() {
-		return triggerRunnerManager;
+	public static TriggerManager getTriggerManager() {
+		return triggerManager;
 	}
  	
-	public static void setTriggerRunnerManager(TriggerRunnerManager triggerRunnerManager) {
-		ExecuteFlowAction.triggerRunnerManager = triggerRunnerManager;
+	public static void setTriggerManager(TriggerManager triggerManager) {
+		ExecuteFlowAction.triggerManager = triggerManager;
 	}
 
 	public static ProjectManager getProjectManager() {
@@ -214,7 +215,7 @@ public class ExecuteFlowAction implements TriggerAction {
 		exflow.setExecutionOptions(executionOptions);
 		
 		try{
-			executorManager.submitExecutableFlow(exflow);
+			executorManager.submitExecutableFlow(exflow, submitUser);
 			Map<String, Object> outputProps = new HashMap<String, Object>();
 			outputProps.put(EXEC_ID, exflow.getExecutionId());
 			context.put(actionId, outputProps);
@@ -250,7 +251,7 @@ public class ExecuteFlowAction implements TriggerAction {
 				Trigger slaTrigger = new Trigger("azkaban_sla", "azkaban", triggerCond, expireCond, actions);
 				slaTrigger.setResetOnTrigger(false);
 				slaTrigger.setResetOnExpire(false);
-				triggerRunnerManager.insertTrigger(slaTrigger);
+				triggerManager.insertTrigger(slaTrigger);
 			}
 		}
 		

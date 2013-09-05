@@ -17,6 +17,7 @@ import org.apache.log4j.Logger;
 
 import azkaban.executor.ConnectorParams;
 import azkaban.executor.ExecutorManager;
+import azkaban.executor.ExecutorManagerAdapter;
 import azkaban.triggerapp.TriggerConnectorParams;
 import azkaban.trigger.TriggerManager;
 import azkaban.user.Permission;
@@ -39,7 +40,7 @@ public class JMXHttpServlet extends LoginAbstractAzkabanServlet implements Conne
 
 	private UserManager userManager;
 	private AzkabanWebServer server;
-	private ExecutorManager executorManager;
+	private ExecutorManagerAdapter executorManager;
 	private TriggerManager triggerManager;
 	
 	@Override
@@ -49,6 +50,7 @@ public class JMXHttpServlet extends LoginAbstractAzkabanServlet implements Conne
 		server = (AzkabanWebServer)getApplication();
 		userManager = server.getUserManager();
 		executorManager = server.getExecutorManager();
+
 		triggerManager = server.getTriggerManager();
 	}
 	
@@ -79,12 +81,11 @@ public class JMXHttpServlet extends LoginAbstractAzkabanServlet implements Conne
 				if(!hasParam(req, JMX_MBEAN) || !hasParam(req, JMX_HOSTPORT)) {
 					ret.put("error", "Parameters '" + JMX_MBEAN + "' and '"+ JMX_HOSTPORT +"' must be set");
 					this.writeJSON(resp, ret, true);
-                    return;
+					return;
 				}
-				String hostPort = getParam(req, JMX_HOSTPORT);
-                String mbean = getParam(req, JMX_MBEAN);
-                Map<String, Object> result = triggerManager.callTriggerServerJMX(hostPort, JMX_GET_ALL_MBEAN_ATTRIBUTES, mbean);
-                ret = result;
+//				String hostPort = getParam(req, JMX_HOSTPORT);
+//				String mbean = getParam(req, JMX_MBEAN);
+				ret = triggerManager.getJMX().getAllJMXMbeans();
 			}
 			else if (JMX_GET_MBEANS.equals(ajax)) {
 				ret.put("mbeans", server.getMbeanNames());
@@ -175,17 +176,18 @@ public class JMXHttpServlet extends LoginAbstractAzkabanServlet implements Conne
 		page.add("mbeans", server.getMbeanNames());
 		
 		Map<String, Object> executorMBeans = new HashMap<String,Object>();
-		Set<String> primaryServerHosts = executorManager.getPrimaryServerHosts();
+//		Set<String> primaryServerHosts = executorManager.getPrimaryServerHosts();
 		for (String hostPort: executorManager.getAllActiveExecutorServerHosts()) {
 			try {
 				Map<String, Object> mbeans = executorManager.callExecutorJMX(hostPort, JMX_GET_MBEANS, null);
 	
-				if (primaryServerHosts.contains(hostPort)) {
-					executorMBeans.put(hostPort, mbeans.get("mbeans"));
-				}
-				else {
-					executorMBeans.put(hostPort, mbeans.get("mbeans"));
-				}
+				executorMBeans.put(hostPort, mbeans.get("mbeans"));
+//				if (primaryServerHosts.contains(hostPort)) {
+//					executorMBeans.put(hostPort, mbeans.get("mbeans"));
+//				}
+//				else {
+//					executorMBeans.put(hostPort, mbeans.get("mbeans"));
+//				}
 			}
 			catch (IOException e) {
 				logger.error("Cannot contact executor " + hostPort, e);
@@ -195,22 +197,23 @@ public class JMXHttpServlet extends LoginAbstractAzkabanServlet implements Conne
 		page.add("executorRemoteMBeans", executorMBeans);
 		
 		Map<String, Object> triggerserverMBeans = new HashMap<String,Object>();
-		Set<String> primaryTriggerServerHosts = triggerManager.getPrimaryServerHosts();
-		for (String hostPort: triggerManager.getAllActiveTriggerServerHosts()) {
-			try {
-				Map<String, Object> mbeans = triggerManager.callTriggerServerJMX(hostPort, TriggerConnectorParams.JMX_GET_MBEANS, null);
-				
-				if (primaryTriggerServerHosts.contains(hostPort)) {
-					triggerserverMBeans.put(hostPort, mbeans.get("mbeans"));
-				}
-				else {
-					triggerserverMBeans.put(hostPort, mbeans.get("mbeans"));
-				}
-			}
-			catch (IOException e) {
-				logger.error("Cannot contact executor " + hostPort, e);
-			}
-		}
+//		Set<String> primaryTriggerServerHosts = triggerManager.getPrimaryServerHosts();
+//		for (String hostPort: triggerManager.getAllActiveTriggerServerHosts()) {
+//			try {
+//				Map<String, Object> mbeans = triggerManager.callTriggerServerJMX(hostPort, TriggerConnectorParams.JMX_GET_MBEANS, null);
+//				
+//				if (primaryTriggerServerHosts.contains(hostPort)) {
+//					triggerserverMBeans.put(hostPort, mbeans.get("mbeans"));
+//				}
+//				else {
+//					triggerserverMBeans.put(hostPort, mbeans.get("mbeans"));
+//				}
+//			}
+//			catch (IOException e) {
+//				logger.error("Cannot contact executor " + hostPort, e);
+//			}
+//		}
+		triggerserverMBeans.put(triggerManager.getJMX().getPrimaryServerHost(), triggerManager.getJMX().getAllJMXMbeans());
 		
 		page.add("triggerserverRemoteMBeans", triggerserverMBeans);
 		

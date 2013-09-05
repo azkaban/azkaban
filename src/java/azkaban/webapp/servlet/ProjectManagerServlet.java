@@ -45,6 +45,7 @@ import org.apache.log4j.Logger;
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutableJobInfo;
 import azkaban.executor.ExecutorManager;
+import azkaban.executor.ExecutorManagerAdapter;
 import azkaban.executor.ExecutorManagerException;
 import azkaban.flow.Edge;
 import azkaban.flow.Flow;
@@ -76,7 +77,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 	private static final String LOCKDOWN_CREATE_PROJECTS_KEY = "lockdown.create.projects";
 	
 	private ProjectManager projectManager;
-	private ExecutorManager executorManager;
+	private ExecutorManagerAdapter executorManager;
 	private ScheduleManager scheduleManager;
 	private UserManager userManager;
 

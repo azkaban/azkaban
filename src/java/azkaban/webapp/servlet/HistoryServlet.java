@@ -33,6 +33,7 @@ import org.joda.time.format.DateTimeFormat;
 
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutorManager;
+import azkaban.executor.ExecutorManagerAdapter;
 import azkaban.executor.ExecutorManagerException;
 import azkaban.project.Project;
 import azkaban.project.ProjectManager;
@@ -42,7 +43,7 @@ import azkaban.webapp.session.Session;
 public class HistoryServlet extends LoginAbstractAzkabanServlet {
 
 	private static final long serialVersionUID = 1L;
-	private ExecutorManager executorManager;
+	private ExecutorManagerAdapter executorManager;
 	private ProjectManager projectManager;
 	private ExecutorVMHelper vmHelper;
 	

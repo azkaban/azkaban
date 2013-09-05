@@ -5,16 +5,16 @@ import java.util.List;
 public interface JmxTriggerManagerMBean {	
 	
 	@DisplayName("OPERATION: getLastThreadCheckTime")
-	public String getLastThreadCheckTime();
+	public String getLastRunnerThreadCheckTime();
 
 	@DisplayName("OPERATION: isThreadActive")
-	public boolean isThreadActive();
+	public boolean isRunnerThreadActive();
 
-	@DisplayName("OPERATION: getPrimaryTriggerHostPorts")
-	public List<String> getPrimaryTriggerHostPorts();
+	@DisplayName("OPERATION: getPrimaryTriggerHostPort")
+	public String getPrimaryTriggerHostPort();
 	
-	@DisplayName("OPERATION: getAllTriggerHostPorts")
-	public List<String> getAllTriggerHostPorts();
+//	@DisplayName("OPERATION: getAllTriggerHostPorts")
+//	public List<String> getAllTriggerHostPorts();
 	
 	@DisplayName("OPERATION: getNumTriggers")
 	public int getNumTriggers();
@@ -24,4 +24,7 @@ public interface JmxTriggerManagerMBean {
 	
 	@DisplayName("OPERATION: getTriggerIds")
 	public String getTriggerIds();
+	
+	@DisplayName("OPERATION: getScannerIdleTime")
+	public long getScannerIdleTime();
 }

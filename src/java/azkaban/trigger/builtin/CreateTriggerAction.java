@@ -5,12 +5,12 @@ import java.util.Map;
 
 import azkaban.trigger.Trigger;
 import azkaban.trigger.TriggerAction;
-import azkaban.triggerapp.TriggerRunnerManager;
+import azkaban.trigger.TriggerManager;
 
 public class CreateTriggerAction implements TriggerAction {
 	
 	public static final String type = "CreateTriggerAction";
-	private static TriggerRunnerManager triggerRunnerManager;
+	private static TriggerManager triggerManager;
 	private Trigger trigger;
 	private Map<String, Object> context;
 	private String actionId;
@@ -25,8 +25,8 @@ public class CreateTriggerAction implements TriggerAction {
 		return type;
 	}
 	
-	public static void setTriggerRunnerManager(TriggerRunnerManager trm) {
-		triggerRunnerManager = trm;
+	public static void setTriggerManager(TriggerManager trm) {
+		triggerManager = trm;
 	}
 
 	@SuppressWarnings("unchecked")
@@ -58,7 +58,7 @@ public class CreateTriggerAction implements TriggerAction {
 
 	@Override
 	public void doAction() throws Exception {
-		triggerRunnerManager.insertTrigger(trigger);
+		triggerManager.insertTrigger(trigger);
 	}
 
 	@Override

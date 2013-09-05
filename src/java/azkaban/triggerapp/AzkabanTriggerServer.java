@@ -28,20 +28,23 @@ import org.mortbay.thread.QueuedThreadPool;
 
 import azkaban.executor.ExecutorMailer;
 import azkaban.executor.ExecutorManager;
+import azkaban.executor.ExecutorManagerAdapter;
+import azkaban.executor.ExecutorManagerRemoteAdapter;
 import azkaban.executor.JdbcExecutorLoader;
 import azkaban.executor.ExecutorManager.Alerter;
-import azkaban.jmx.JmxExecutorManager;
+import azkaban.jmx.JmxExecutorManagerAdapter;
 import azkaban.jmx.JmxJettyServer;
-import azkaban.jmx.JmxTriggerRunnerManager;
+import azkaban.jmx.JmxTriggerManager;
 import azkaban.project.JdbcProjectLoader;
 import azkaban.project.ProjectManager;
-import azkaban.trigger.ActionTypeLoader;
-import azkaban.trigger.CheckerTypeLoader;
 import azkaban.trigger.JdbcTriggerLoader;
 import azkaban.trigger.TriggerLoader;
+import azkaban.trigger.TriggerManagerException;
+import azkaban.trigger.TriggerManager;
+import azkaban.trigger.TriggerManagerAdapter;
+import azkaban.trigger.TriggerManagerServlet;
 import azkaban.trigger.builtin.BasicTimeChecker;
 import azkaban.trigger.builtin.CreateTriggerAction;
-import azkaban.trigger.builtin.ExecutionChecker;
 import azkaban.trigger.builtin.ExecuteFlowAction;
 import azkaban.trigger.builtin.KillExecutionAction;
 import azkaban.trigger.builtin.SlaAlertAction;
@@ -70,7 +73,7 @@ public class AzkabanTriggerServer {
 	private static AzkabanTriggerServer app;
 	
 	private TriggerLoader triggerLoader;
-	private TriggerRunnerManager triggerRunnerManager;
+	private TriggerManager triggerManager;
 	private ExecutorManager executorManager;
 	private ProjectManager projectManager;
 	private Props props;
@@ -102,23 +105,23 @@ public class AzkabanTriggerServer {
 		Context root = new Context(server, "/", Context.SESSIONS);
 		root.setMaxFormContentSize(MAX_FORM_CONTENT_SIZE);
 		
-		root.addServlet(new ServletHolder(new TriggerServerServlet()), "/trigger");
+		root.addServlet(new ServletHolder(new TriggerManagerServlet()), TriggerManagerServlet.WEB_PATH);
 		root.addServlet(new ServletHolder(new JMXHttpServlet()), "/jmx");
 		root.setAttribute(AzkabanServletContextListener.AZKABAN_SERVLET_CONTEXT_KEY, this);
 		
 		triggerLoader = createTriggerLoader(props);
 		projectManager = loadProjectManager(props);
 		executorManager = loadExecutorManager(props);
-		triggerRunnerManager = loadTriggerRunnerManager(props, triggerLoader);
+		triggerManager = loadTriggerManager(props, triggerLoader);
 		
 		String triggerPluginDir = props.getString("trigger.plugin.dir", "plugins/triggers");
-		loadBuiltinCheckersAndActions(this);
-		loadPluginCheckersAndActions(triggerPluginDir, this);
+		loadBuiltinCheckersAndActions();
+		loadPluginCheckersAndActions(triggerPluginDir);
 		
 		configureMBeanServer();
 		
 		try {
-			triggerRunnerManager.start();
+			triggerManager.start();
 			server.start();
 		} 
 		catch (Exception e) {
@@ -132,18 +135,56 @@ public class AzkabanTriggerServer {
 	
 	
 	
-	private TriggerRunnerManager loadTriggerRunnerManager(Props props, TriggerLoader triggerLoader) throws IOException {
-		logger.info("Loading trigger runner manager");
-		TriggerRunnerManager trm = new TriggerRunnerManager(props, triggerLoader);
-		trm.init();
+	private TriggerManager loadTriggerManager(Props props, TriggerLoader triggerLoader) throws Exception {
+		logger.info("Loading trigger manager");
+		TriggerManager trm;
+		try {
+			trm = new TriggerManager(props, triggerLoader);
+		} catch (TriggerManagerException e) {
+			throw new Exception(e);
+		}
 		return trm;
+	}
+	
+	private TriggerManagerAdapter loadTriggerRunnerManagerAdapter(Props props, TriggerLoader triggerLoader) throws Exception {
+		TriggerManagerAdapter trmAdapter;
+		String trmMode = props.getString("trigger.runner.manager.mode", "local");
+		try {
+			if(trmMode.equals("local")) {
+				trmAdapter = new TriggerManager(props, triggerLoader);
+			} else if(trmMode.equals("remote")) {
+				trmAdapter = null;
+			} else {
+				throw new TriggerManagerException("Unknown trigger runner manager mode " + trmMode);
+			}
+		} catch(Exception e) {
+			throw new Exception("Failed to load Trigger Runner Manager: " + e.getMessage());
+		}
+		return trmAdapter;
 	}
 	
 	private ExecutorManager loadExecutorManager(Props props) throws Exception {
 		logger.info("Loading executor manager");
 		JdbcExecutorLoader loader = new JdbcExecutorLoader(props);
-		ExecutorManager execManager = new ExecutorManager(props, loader, false);
+		ExecutorManager execManager = new ExecutorManager(props, loader);
 		return execManager;
+	}
+	
+	private ExecutorManagerAdapter loadExecutorManagerAdapter(Props props) throws Exception {
+//		JdbcExecutorLoader loader = new JdbcExecutorLoader(props);
+//		ExecutorManager execManager = new ExecutorManager(props, loader, true);
+//		return execManager;
+		String executorMode = props.getString("executor.manager.mode", "local");
+		ExecutorManagerAdapter adapter;
+		if(executorMode.equals("local")) {
+			adapter = loadExecutorManager(props);
+		} else if(executorMode.equals("remote")) {
+			JdbcExecutorLoader loader = new JdbcExecutorLoader(props);
+			adapter = new ExecutorManagerRemoteAdapter(props, loader);
+		} else {
+			throw new Exception("Unknown ExecutorManager mode " + executorMode);
+		}
+		return adapter;
 	}
 	
 	private ProjectManager loadProjectManager(Props props) {
@@ -153,42 +194,31 @@ public class AzkabanTriggerServer {
 		return manager;
 	}
 	
-	private void loadBuiltinCheckersAndActions(AzkabanTriggerServer app) {
+	private void loadBuiltinCheckersAndActions() {
 		logger.info("Loading built-in checker and action types");
-//		ExecutorManager executorManager = app.getExecutorManager();
-//		TriggerRunnerManager triggerRunnerManager = app.getTriggerRunnerManager();
-		CheckerTypeLoader checkerLoader = triggerRunnerManager.getCheckerLoader();
-		ActionTypeLoader actionLoader = triggerRunnerManager.getActionLoader();
-		// time:
-		checkerLoader.registerCheckerType(BasicTimeChecker.type, BasicTimeChecker.class);
-//		// execution checker
-//		ExecutionChecker.setExecutorManager(executorManager);
-//		checkerLoader.registerCheckerType(ExecutionChecker.type, ExecutionChecker.class);
-		// Sla checker
-		SlaChecker.setExecutorManager(executorManager);
-		checkerLoader.registerCheckerType(SlaChecker.type, SlaChecker.class);
 		
-		// execut flow action
-		ExecuteFlowAction.setExecutorManager(executorManager);
-		ExecuteFlowAction.setProjectManager(projectManager);
-		ExecuteFlowAction.setTriggerRunnerManager(triggerRunnerManager);
-		actionLoader.registerActionType(ExecuteFlowAction.type, ExecuteFlowAction.class);
-		// kill flow action
-		KillExecutionAction.setExecutorManager(executorManager);
-		actionLoader.registerActionType(KillExecutionAction.type, KillExecutionAction.class);
-		// sla alert
-		SlaAlertAction.setExecutorManager(executorManager);
-		Map<String, Alerter> alerters = loadAlerters(props);
-		SlaAlertAction.setAlerters(alerters);
-		SlaAlertAction.setExecutorManager(executorManager);
-		actionLoader.registerActionType(SlaAlertAction.type, SlaAlertAction.class);
-		// create trigger action
-		CreateTriggerAction.setTriggerRunnerManager(triggerRunnerManager);
-		actionLoader.registerActionType(CreateTriggerAction.type, CreateTriggerAction.class);
+		if(triggerManager instanceof TriggerManager) {
+			SlaChecker.setExecutorManager(executorManager);
+			ExecuteFlowAction.setExecutorManager(executorManager);
+			ExecuteFlowAction.setProjectManager(projectManager);
+			ExecuteFlowAction.setTriggerManager(triggerManager);
+			KillExecutionAction.setExecutorManager(executorManager);
+			SlaAlertAction.setExecutorManager(executorManager);
+			Map<String, Alerter> alerters = loadAlerters(props);
+			SlaAlertAction.setAlerters(alerters);
+			SlaAlertAction.setExecutorManager(executorManager);
+			CreateTriggerAction.setTriggerManager(triggerManager);
+		}
 
+		triggerManager.registerCheckerType(BasicTimeChecker.type, BasicTimeChecker.class);
+		triggerManager.registerCheckerType(SlaChecker.type, SlaChecker.class);
+		triggerManager.registerActionType(ExecuteFlowAction.type, ExecuteFlowAction.class);
+		triggerManager.registerActionType(KillExecutionAction.type, KillExecutionAction.class);
+		triggerManager.registerActionType(SlaAlertAction.type, SlaAlertAction.class);
+		triggerManager.registerActionType(CreateTriggerAction.type, CreateTriggerAction.class);
 	}
 	
-	private void loadPluginCheckersAndActions(String pluginPath, AzkabanTriggerServer app) {
+	private void loadPluginCheckersAndActions(String pluginPath) {
 		logger.info("Loading plug-in checker and action types");
 		File triggerPluginPath = new File(pluginPath);
 		if (!triggerPluginPath.exists()) {
@@ -196,7 +226,7 @@ public class AzkabanTriggerServer {
 			return;
 		}
 			
-		ClassLoader parentLoader = AzkabanTriggerServer.class.getClassLoader();
+		ClassLoader parentLoader = this.getClass().getClassLoader();
 		File[] pluginDirs = triggerPluginPath.listFiles();
 		ArrayList<String> jarPaths = new ArrayList<String>();
 		for (File pluginDir: pluginDirs) {
@@ -577,8 +607,14 @@ public class AzkabanTriggerServer {
 		mbeanServer = ManagementFactory.getPlatformMBeanServer();
 
 		registerMbean("triggerServerJetty", new JmxJettyServer(server));
-		registerMbean("triggerRunnerManager", new JmxTriggerRunnerManager(triggerRunnerManager));
-		registerMbean("executorManager", new JmxExecutorManager(executorManager));
+//		if(triggerRunnerManager instanceof TriggerRunnerManagerLocalAdapter) {
+//			registerMbean("triggerRunnerManager", new JmxTriggerRunnerManager(((TriggerRunnerManagerLocalAdapter)triggerRunnerManager).getTriggerRunnerManager()));
+//		}
+		registerMbean("triggerManager", new JmxTriggerManager(triggerManager));
+//		if(executorManager instanceof ExecutorManagerLocalAdapter) {
+//			registerMbean("executorManager", new JmxExecutorManager(((ExecutorManagerLocalAdapter)executorManager).getExecutorManager()));
+//		}
+		registerMbean("executorManager", new JmxExecutorManagerAdapter(executorManager));
 	}
 	
 	public void close() {
@@ -603,7 +639,14 @@ public class AzkabanTriggerServer {
 		} catch (Exception e) {
 			logger.error("Error registering mbean " + mbeanClass.getCanonicalName(), e);
 		}
-
+//		if(executorManager instanceof ExecutorManagerLocalAdapter) {
+//			((ExecutorManagerLocalAdapter)executorManager).getExecutorManager().shutdown();
+//		}
+//		if(triggerRunnerManager instanceof TriggerRunnerManagerLocalAdapter) {
+//			
+//		}
+		executorManager.shutdown();
+		triggerManager.shutdown();
 	}
 	
 	public List<ObjectName> getMbeanNames() {
@@ -628,8 +671,8 @@ public class AzkabanTriggerServer {
 		}
 	}
 
-	public TriggerRunnerManager getTriggerRunnerManager() {
-		return triggerRunnerManager;
+	public TriggerManager getTriggerManager() {
+		return triggerManager;
 	}
 	
 	public ExecutorManager getExecutorManager() {

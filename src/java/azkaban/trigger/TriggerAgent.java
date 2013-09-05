@@ -3,10 +3,12 @@ package azkaban.trigger;
 import azkaban.utils.Props;
 
 public interface TriggerAgent {
-	void loadTriggerFromProps(Props props) throws Exception;
+	public void loadTriggerFromProps(Props props) throws Exception;
 
-	String getTriggerSource();
+	public String getTriggerSource();
 	
-	void start() throws Exception;
+	public void start() throws Exception;
+	
+	public void shutdown();
 
 }

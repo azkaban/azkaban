@@ -11,6 +11,7 @@ import org.joda.time.ReadablePeriod;
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutableNode;
 import azkaban.executor.ExecutorManager;
+import azkaban.executor.ExecutorManagerAdapter;
 import azkaban.executor.ExecutorManagerException;
 import azkaban.executor.Status;
 import azkaban.sla.SlaOption;
@@ -28,7 +29,7 @@ public class SlaChecker implements ConditionChecker{
 	private Map<String, Object> context;
 	private boolean passChecker = true;
 	
-	private static ExecutorManager executorManager;
+	private static ExecutorManagerAdapter executorManager;
 	
 	public SlaChecker(String id, SlaOption slaOption, int execId, boolean passChecker) {
 		this.id = id;
@@ -46,7 +47,7 @@ public class SlaChecker implements ConditionChecker{
 		this.passChecker = passChecker;
 	}
 
-	public static void setExecutorManager(ExecutorManager em) {
+	public static void setExecutorManager(ExecutorManagerAdapter em) {
 		executorManager = em;
 	}
 	
@@ -224,6 +225,12 @@ public class SlaChecker implements ConditionChecker{
 	@Override
 	public void setContext(Map<String, Object> context) {
 		this.context = context;
+	}
+
+	@Override
+	public long getNextCheckTime() {
+		// TODO Auto-generated method stub
+		return 0;
 	}
 
 }

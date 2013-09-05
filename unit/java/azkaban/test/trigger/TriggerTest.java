@@ -45,7 +45,7 @@ public class TriggerTest {
 	@Test
 	public void jsonConversionTest() throws Exception {
 		DateTime now = DateTime.now();
-		ConditionChecker checker1 = new BasicTimeChecker("timeChecker1", now, now.getZone(), true, true, Utils.parsePeriodString("1h"));
+		ConditionChecker checker1 = new BasicTimeChecker("timeChecker1", now.getMillis(), now.getZone(), true, true, Utils.parsePeriodString("1h"));
 		Map<String, ConditionChecker> checkers1 = new HashMap<String, ConditionChecker>();
 		checkers1.put(checker1.getId(), checker1);
 		String expr1 = checker1.getId() + ".eval()";
@@ -54,7 +54,7 @@ public class TriggerTest {
 		List<TriggerAction> actions = new ArrayList<TriggerAction>();
 		TriggerAction action = new ExecuteFlowAction("executeAction", 1, "testProj", "testFlow", "azkaban", new ExecutionOptions(), null);
 		actions.add(action);
-		Trigger t = new Trigger(now, now, "azkaban", "test", triggerCond, expireCond, actions);
+		Trigger t = new Trigger(now.getMillis(), now.getMillis(), "azkaban", "test", triggerCond, expireCond, actions);
 		
 		File temp = File.createTempFile("temptest", "temptest");
 		temp.deleteOnExit();

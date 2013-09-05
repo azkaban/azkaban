@@ -29,6 +29,7 @@ import org.joda.time.format.DateTimeFormatter;
 
 import azkaban.executor.ExecutionOptions;
 import azkaban.executor.ExecutorManager;
+import azkaban.executor.ExecutorManagerAdapter;
 import azkaban.project.ProjectManager;
 import azkaban.sla.SlaOption;
 import azkaban.trigger.TriggerManager;
@@ -55,7 +56,7 @@ public class TriggerBasedScheduler {
 	 * 
 	 * @param loader
 	 */
-	public TriggerBasedScheduler(ExecutorManager executorManager,
+	public TriggerBasedScheduler(ExecutorManagerAdapter executorManager,
 							ProjectManager projectManager, 
 							TriggerManager triggerManager,
 							ScheduleLoader loader) 

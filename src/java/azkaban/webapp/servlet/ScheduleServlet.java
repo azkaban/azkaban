@@ -44,6 +44,7 @@ import org.joda.time.format.DateTimeFormat;
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutionOptions;
 import azkaban.executor.ExecutorManager;
+import azkaban.executor.ExecutorManagerAdapter;
 import azkaban.executor.ExecutorManagerException;
 import azkaban.flow.Flow;
 import azkaban.flow.Node;
@@ -252,7 +253,7 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
 			ExecutionOptions flowOptions = sched.getExecutionOptions();
 			
 			if(slaOptions != null && slaOptions.size() > 0) {
-				ret.put("slaEmails", slaOptions.get(0).getInfo().get("SlaEmails"));
+				ret.put("slaEmails", slaOptions.get(0).getInfo().get(SlaOption.INFO_EMAIL_LIST));
 				
 				List<Object> setObj = new ArrayList<Object>();
 				for(SlaOption sla: slaOptions) {
@@ -473,7 +474,7 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
 		List<ExecutableFlow> history = null;
 		try {
 			AzkabanWebServer server = (AzkabanWebServer) getApplication();
-			ExecutorManager executorManager = server.getExecutorManager();
+			ExecutorManagerAdapter executorManager = server.getExecutorManager();
 			history = executorManager.getExecutableFlows(null, null, null, 0, startTime, endTime, -1, -1);
 		} catch (ExecutorManagerException e) {
 			// Return empty should suffice

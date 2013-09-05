@@ -53,10 +53,13 @@ import org.mortbay.jetty.servlet.ServletHolder;
 import org.mortbay.thread.QueuedThreadPool;
 
 import azkaban.database.AzkabanDatabaseSetup;
+import azkaban.executor.ExecutorMailer;
 import azkaban.executor.ExecutorManager;
+import azkaban.executor.ExecutorManagerAdapter;
+import azkaban.executor.ExecutorManagerRemoteAdapter;
 import azkaban.executor.JdbcExecutorLoader;
 import azkaban.executor.ExecutorManager.Alerter;
-import azkaban.jmx.JmxExecutorManager;
+import azkaban.jmx.JmxExecutorManagerAdapter;
 import azkaban.jmx.JmxJettyServer;
 import azkaban.jmx.JmxScheduler;
 import azkaban.jmx.JmxTriggerManager;
@@ -146,7 +149,7 @@ public class AzkabanWebServer extends AzkabanServer {
 	private final Server server;
 	private UserManager userManager;
 	private ProjectManager projectManager;
-	private ExecutorManager executorManager;
+	private ExecutorManagerAdapter executorManager;
 	private ScheduleManager scheduleManager;
 //	private TriggerBasedScheduler scheduler;
 	private TriggerManager triggerManager;
@@ -183,9 +186,13 @@ public class AzkabanWebServer extends AzkabanServer {
 		triggerManager = loadTriggerManager(props);
 		executorManager = loadExecutorManager(props);
 		projectManager = loadProjectManager(props, triggerManager);
+		
+		// load all triggger agents here
 		scheduleManager = loadScheduleManager(executorManager, triggerManager, props);
 		
 		loadBuiltinCheckersAndActions();
+		String triggerPluginDir = props.getString("trigger.plugin.dir", "plugins/triggers");
+		loadPluginCheckersAndActions(triggerPluginDir);
 		
 		baseClassLoader = getBaseClassloader();
 		
@@ -239,34 +246,54 @@ public class AzkabanWebServer extends AzkabanServer {
 
 		JdbcProjectLoader loader = new JdbcProjectLoader(props);
 		ProjectManager manager = new ProjectManager(loader, props);
-		manager.setTriggerManager(tm);
-		
 		return manager;
 	}
 
 	private ExecutorManager loadExecutorManager(Props props) throws Exception {
 		JdbcExecutorLoader loader = new JdbcExecutorLoader(props);
-		ExecutorManager execManager = new ExecutorManager(props, loader, true);
+		ExecutorManager execManager = new ExecutorManager(props, loader);
 		return execManager;
 	}
-
-	private ScheduleManager loadScheduleManager(ExecutorManager executorManager, TriggerManager tm, Props props ) throws Exception {
-		ScheduleManager schedManager = null;
-		String scheduleLoaderType = props.getString("azkaban.scheduler.loader", "TriggerBasedScheduleLoader");
-		if(scheduleLoaderType.equals("JdbcScheduleLoader")) {
-			ScheduleLoader loader = new JdbcScheduleLoader(props);
-			schedManager = new ScheduleManager(executorManager, loader, false);
-			schedManager.setProjectManager(projectManager);
-			schedManager.start();
-		} else if(scheduleLoaderType.equals("TriggerBasedScheduleLoader")) {
-			logger.info("Loading trigger based scheduler");
-			ScheduleLoader loader = new TriggerBasedScheduleLoader(tm, executorManager, null, ScheduleManager.triggerSource);
-			schedManager = new ScheduleManager(executorManager, loader, true);
-		}
-
-		return schedManager;
-	}
 	
+	private ExecutorManagerAdapter loadExecutorManagerAdapter(Props props) throws Exception {
+//		JdbcExecutorLoader loader = new JdbcExecutorLoader(props);
+//		ExecutorManager execManager = new ExecutorManager(props, loader, true);
+//		return execManager;
+		String executorMode = props.getString("executor.manager.mode", "local");
+		ExecutorManagerAdapter adapter;
+		if(executorMode.equals("local")) {
+			adapter = loadExecutorManager(props);
+		} else if(executorMode.equals("remote")) {
+			JdbcExecutorLoader loader = new JdbcExecutorLoader(props);
+			adapter = new ExecutorManagerRemoteAdapter(props, loader);
+		} else {
+			throw new Exception("Unknown ExecutorManager mode " + executorMode);
+		}
+		return adapter;
+	}
+
+//	private ScheduleManager loadScheduleManager(ExecutorManagerAdapter executorManager, TriggerManager tm, Props props ) throws Exception {
+//		ScheduleManager schedManager = null;
+//		String scheduleLoaderType = props.getString("azkaban.scheduler.loader", "TriggerBasedScheduleLoader");
+//		if(scheduleLoaderType.equals("JdbcScheduleLoader")) {
+//			ScheduleLoader loader = new JdbcScheduleLoader(props);
+//			schedManager = new ScheduleManager(executorManager, loader, false);
+//			schedManager.setProjectManager(projectManager);
+//			schedManager.start();
+//		} else if(scheduleLoaderType.equals("TriggerBasedScheduleLoader")) {
+//			logger.info("Loading trigger based scheduler");
+//			ScheduleLoader loader = new TriggerBasedScheduleLoader(tm, executorManager, null, ScheduleManager.triggerSource);
+//			schedManager = new ScheduleManager(executorManager, loader, true);
+//		}
+//
+//		return schedManager;
+//	}
+	
+	private ScheduleManager loadScheduleManager(ExecutorManagerAdapter executorManager, TriggerManager tm, Props props ) throws Exception {
+		logger.info("Loading trigger based scheduler");
+		ScheduleLoader loader = new TriggerBasedScheduleLoader(tm, executorManager, null, ScheduleManager.triggerSource);
+		return new ScheduleManager(executorManager, loader, true);
+	}
 //	private TriggerBasedScheduler loadScheduler(ExecutorManager executorManager, ProjectManager projectManager, TriggerManager triggerManager) {
 //		TriggerBasedScheduleLoader loader = new TriggerBasedScheduleLoader(triggerManager, executorManager, projectManager);
 //		return new TriggerBasedScheduler(executorManager, projectManager, triggerManager, loader);
@@ -279,35 +306,283 @@ public class AzkabanWebServer extends AzkabanServer {
 	
 	private void loadBuiltinCheckersAndActions() {
 		logger.info("Loading built-in checker and action types");
-//		ExecutorManager executorManager = app.getExecutorManager();
-//		TriggerRunnerManager triggerRunnerManager = app.getTriggerRunnerManager();
-		CheckerTypeLoader checkerLoader = triggerManager.getCheckerLoader();
-		ActionTypeLoader actionLoader = triggerManager.getActionLoader();
-		// time:
-		checkerLoader.registerCheckerType(BasicTimeChecker.type, BasicTimeChecker.class);
-//		// execution checker
-//		ExecutionChecker.setExecutorManager(executorManager);
-//		checkerLoader.registerCheckerType(ExecutionChecker.type, ExecutionChecker.class);
-		// Sla checker
-//		SlaChecker.setExecutorManager(executorManager);
-		checkerLoader.registerCheckerType(SlaChecker.type, SlaChecker.class);
 		
-		// execut flow action
-//		ExecuteFlowAction.setExecutorManager(executorManager);
-//		ExecuteFlowAction.setProjectManager(projectManager);
-		actionLoader.registerActionType(ExecuteFlowAction.type, ExecuteFlowAction.class);
-		// kill flow action
-//		KillExecutionAction.setExecutorManager(executorManager);
-		actionLoader.registerActionType(KillExecutionAction.type, KillExecutionAction.class);
-		// sla alert
-//		SlaAlertAction.setExecutorManager(executorManager);
-//		Map<String, Alerter> alerters = loadAlerters(props);
-//		SlaAlertAction.setAlerters(alerters);
-		actionLoader.registerActionType(SlaAlertAction.type, SlaAlertAction.class);
-		// create trigger action
-//		CreateTriggerAction.setTriggerRunnerManager(triggerRunnerManager);
-		actionLoader.registerActionType(CreateTriggerAction.type, CreateTriggerAction.class);
+		if(triggerManager instanceof TriggerManager) {
+			SlaChecker.setExecutorManager(executorManager);
+			ExecuteFlowAction.setExecutorManager(executorManager);
+			ExecuteFlowAction.setProjectManager(projectManager);
+			ExecuteFlowAction.setTriggerManager(triggerManager);
+			KillExecutionAction.setExecutorManager(executorManager);
+			SlaAlertAction.setExecutorManager(executorManager);
+			Map<String, Alerter> alerters = loadAlerters(props);
+			SlaAlertAction.setAlerters(alerters);
+			SlaAlertAction.setExecutorManager(executorManager);
+			CreateTriggerAction.setTriggerManager(triggerManager);
+		}
 
+		triggerManager.registerCheckerType(BasicTimeChecker.type, BasicTimeChecker.class);
+		triggerManager.registerCheckerType(SlaChecker.type, SlaChecker.class);
+		triggerManager.registerActionType(ExecuteFlowAction.type, ExecuteFlowAction.class);
+		triggerManager.registerActionType(KillExecutionAction.type, KillExecutionAction.class);
+		triggerManager.registerActionType(SlaAlertAction.type, SlaAlertAction.class);
+		triggerManager.registerActionType(CreateTriggerAction.type, CreateTriggerAction.class);
+	}
+	
+	private Map<String, Alerter> loadAlerters(Props props) {
+		Map<String, Alerter> allAlerters = new HashMap<String, Alerter>();
+		// load built-in alerters
+		ExecutorMailer mailAlerter = new ExecutorMailer(props);
+		allAlerters.put("email", mailAlerter);
+		// load all plugin alerters
+		String pluginDir = props.getString("alerter.plugin.dir", "plugins/alerter");
+		allAlerters.putAll(loadPluginAlerters(pluginDir));
+		return allAlerters;
+	}
+	
+	private Map<String, Alerter> loadPluginAlerters(String pluginPath) {
+		File alerterPluginPath = new File(pluginPath);
+		if (!alerterPluginPath.exists()) {
+			return Collections.<String, Alerter>emptyMap();
+		}
+			
+		Map<String, Alerter> installedAlerterPlugins = new HashMap<String, Alerter>();
+		ClassLoader parentLoader = SlaAlertAction.class.getClass().getClassLoader();
+		File[] pluginDirs = alerterPluginPath.listFiles();
+		ArrayList<String> jarPaths = new ArrayList<String>();
+		for (File pluginDir: pluginDirs) {
+			if (!pluginDir.isDirectory()) {
+				logger.error("The plugin path " + pluginDir + " is not a directory.");
+				continue;
+			}
+			
+			// Load the conf directory
+			File propertiesDir = new File(pluginDir, "conf");
+			Props pluginProps = null;
+			if (propertiesDir.exists() && propertiesDir.isDirectory()) {
+				File propertiesFile = new File(propertiesDir, "plugin.properties");
+				File propertiesOverrideFile = new File(propertiesDir, "override.properties");
+				
+				if (propertiesFile.exists()) {
+					if (propertiesOverrideFile.exists()) {
+						pluginProps = PropsUtils.loadProps(null, propertiesFile, propertiesOverrideFile);
+					}
+					else {
+						pluginProps = PropsUtils.loadProps(null, propertiesFile);
+					}
+				}
+				else {
+					logger.error("Plugin conf file " + propertiesFile + " not found.");
+					continue;
+				}
+			}
+			else {
+				logger.error("Plugin conf path " + propertiesDir + " not found.");
+				continue;
+			}
+			
+			String pluginName = pluginProps.getString("alerter.name");
+			List<String> extLibClasspath = pluginProps.getStringList("alerter.external.classpaths", (List<String>)null);
+			
+			String pluginClass = pluginProps.getString("alerter.class");
+			if (pluginClass == null) {
+				logger.error("Alerter class is not set.");
+			}
+			else {
+				logger.info("Plugin class " + pluginClass);
+			}
+			
+			URLClassLoader urlClassLoader = null;
+			File libDir = new File(pluginDir, "lib");
+			if (libDir.exists() && libDir.isDirectory()) {
+				File[] files = libDir.listFiles();
+				
+				ArrayList<URL> urls = new ArrayList<URL>();
+				for (int i=0; i < files.length; ++i) {
+					try {
+						URL url = files[i].toURI().toURL();
+						urls.add(url);
+					} catch (MalformedURLException e) {
+						logger.error(e);
+					}
+				}
+				if (extLibClasspath != null) {
+					for (String extLib : extLibClasspath) {
+						try {
+							File file = new File(pluginDir, extLib);
+							URL url = file.toURI().toURL();
+							urls.add(url);
+						} catch (MalformedURLException e) {
+							logger.error(e);
+						}
+					}
+				}
+				
+				urlClassLoader = new URLClassLoader(urls.toArray(new URL[urls.size()]), parentLoader);
+			}
+			else {
+				logger.error("Library path " + propertiesDir + " not found.");
+				continue;
+			}
+			
+			Class<?> alerterClass = null;
+			try {
+				alerterClass = urlClassLoader.loadClass(pluginClass);
+			}
+			catch (ClassNotFoundException e) {
+				logger.error("Class " + pluginClass + " not found.");
+				continue;
+			}
+
+			String source = FileIOUtils.getSourcePathFromClass(alerterClass);
+			logger.info("Source jar " + source);
+			jarPaths.add("jar:file:" + source);
+			
+			Constructor<?> constructor = null;
+			try {
+				constructor = alerterClass.getConstructor(Props.class);
+			} catch (NoSuchMethodException e) {
+				logger.error("Constructor not found in " + pluginClass);
+				continue;
+			}
+			
+			Object obj = null;
+			try {
+				obj = constructor.newInstance(pluginProps);
+			} catch (Exception e) {
+				logger.error(e);
+			} 
+			
+			if (!(obj instanceof Alerter)) {
+				logger.error("The object is not an Alerter");
+				continue;
+			}
+			
+			Alerter plugin = (Alerter) obj;
+			installedAlerterPlugins.put(pluginName, plugin);
+		}
+		
+		return installedAlerterPlugins;
+		
+	}
+	
+	private void loadPluginCheckersAndActions(String pluginPath) {
+		logger.info("Loading plug-in checker and action types");
+		File triggerPluginPath = new File(pluginPath);
+		if (!triggerPluginPath.exists()) {
+			logger.error("plugin path " + pluginPath + " doesn't exist!");
+			return;
+		}
+			
+		ClassLoader parentLoader = this.getClassLoader();
+		File[] pluginDirs = triggerPluginPath.listFiles();
+		ArrayList<String> jarPaths = new ArrayList<String>();
+		for (File pluginDir: pluginDirs) {
+			if (!pluginDir.exists()) {
+				logger.error("Error! Trigger plugin path " + pluginDir.getPath() + " doesn't exist.");
+				continue;
+			}
+			
+			if (!pluginDir.isDirectory()) {
+				logger.error("The plugin path " + pluginDir + " is not a directory.");
+				continue;
+			}
+			
+			// Load the conf directory
+			File propertiesDir = new File(pluginDir, "conf");
+			Props pluginProps = null;
+			if (propertiesDir.exists() && propertiesDir.isDirectory()) {
+				File propertiesFile = new File(propertiesDir, "plugin.properties");
+				File propertiesOverrideFile = new File(propertiesDir, "override.properties");
+				
+				if (propertiesFile.exists()) {
+					if (propertiesOverrideFile.exists()) {
+						pluginProps = PropsUtils.loadProps(null, propertiesFile, propertiesOverrideFile);
+					}
+					else {
+						pluginProps = PropsUtils.loadProps(null, propertiesFile);
+					}
+				}
+				else {
+					logger.error("Plugin conf file " + propertiesFile + " not found.");
+					continue;
+				}
+			}
+			else {
+				logger.error("Plugin conf path " + propertiesDir + " not found.");
+				continue;
+			}
+			
+			List<String> extLibClasspath = pluginProps.getStringList("trigger.external.classpaths", (List<String>)null);
+			
+			String pluginClass = pluginProps.getString("trigger.class");
+			if (pluginClass == null) {
+				logger.error("Trigger class is not set.");
+			}
+			else {
+				logger.error("Plugin class " + pluginClass);
+			}
+			
+			URLClassLoader urlClassLoader = null;
+			File libDir = new File(pluginDir, "lib");
+			if (libDir.exists() && libDir.isDirectory()) {
+				File[] files = libDir.listFiles();
+				
+				ArrayList<URL> urls = new ArrayList<URL>();
+				for (int i=0; i < files.length; ++i) {
+					try {
+						URL url = files[i].toURI().toURL();
+						urls.add(url);
+					} catch (MalformedURLException e) {
+						logger.error(e);
+					}
+				}
+				if (extLibClasspath != null) {
+					for (String extLib : extLibClasspath) {
+						try {
+							File file = new File(pluginDir, extLib);
+							URL url = file.toURI().toURL();
+							urls.add(url);
+						} catch (MalformedURLException e) {
+							logger.error(e);
+						}
+					}
+				}
+				
+				urlClassLoader = new URLClassLoader(urls.toArray(new URL[urls.size()]), parentLoader);
+			}
+			else {
+				logger.error("Library path " + propertiesDir + " not found.");
+				continue;
+			}
+			
+			Class<?> triggerClass = null;
+			try {
+				triggerClass = urlClassLoader.loadClass(pluginClass);
+			}
+			catch (ClassNotFoundException e) {
+				logger.error("Class " + pluginClass + " not found.");
+				continue;
+			}
+
+			String source = FileIOUtils.getSourcePathFromClass(triggerClass);
+			logger.info("Source jar " + source);
+			jarPaths.add("jar:file:" + source);
+			
+			try {
+				Utils.invokeStaticMethod(urlClassLoader, pluginClass, "initiateCheckerTypes", pluginProps, app);
+			} catch (Exception e) {
+				logger.error("Unable to initiate checker types for " + pluginClass);
+				continue;
+			}
+			
+			try {
+				Utils.invokeStaticMethod(urlClassLoader, pluginClass, "initiateActionTypes", pluginProps, app);
+			} catch (Exception e) {
+				logger.error("Unable to initiate action types for " + pluginClass);
+				continue;
+			}
+			
+		}
 	}
 	
 	/**
@@ -347,7 +622,7 @@ public class AzkabanWebServer extends AzkabanServer {
 	/**
      * 
      */
-	public ExecutorManager getExecutorManager() {
+	public ExecutorManagerAdapter getExecutorManager() {
 		return executorManager;
 	}
 	
@@ -530,12 +805,13 @@ public class AzkabanWebServer extends AzkabanServer {
 		Map<String, TriggerPlugin> triggerPlugins = loadTriggerPlugins(root, triggerPluginDir, app);
 		app.setTriggerPlugins(triggerPlugins);
 		// always have basic time trigger
-		app.getTriggerManager().addTriggerAgent(app.getScheduleManager().getTriggerSource(), app.getScheduleManager());
+		//TODO: find something else to do the job
+//		app.getTriggerManager().addTriggerAgent(app.getScheduleManager().getTriggerSource(), app.getScheduleManager());
 		// add additional triggers
-		for(TriggerPlugin plugin : triggerPlugins.values()) {
-			TriggerAgent agent = plugin.getAgent();
-			app.getTriggerManager().addTriggerAgent(agent.getTriggerSource(), agent);
-		}
+//		for(TriggerPlugin plugin : triggerPlugins.values()) {
+//			TriggerAgent agent = plugin.getAgent();
+//			app.getTriggerManager().addTriggerAgent(agent.getTriggerSource(), agent);
+//		}
 		// fire up
 		app.getTriggerManager().start();
 
@@ -939,7 +1215,11 @@ public class AzkabanWebServer extends AzkabanServer {
 
 		registerMbean("jetty", new JmxJettyServer(server));
 		registerMbean("triggerManager", new JmxTriggerManager(triggerManager));
-		registerMbean("executorManager", new JmxExecutorManager(executorManager));
+//		if(executorManager instanceof ExecutorManagerLocalAdapter) {
+//			registerMbean("executorManager", new JmxExecutorManager(((ExecutorManagerLocalAdapter)executorManager).getExecutorManager()));
+//		}
+//		registerMbean("executorManager", new JmxExecutorManager(executorManager));
+		registerMbean("executorManager", new JmxExecutorManagerAdapter(executorManager));
 	}
 	
 	public void close() {
@@ -952,6 +1232,9 @@ public class AzkabanWebServer extends AzkabanServer {
 			logger.error("Failed to cleanup MBeanServer", e);
 		}
 		scheduleManager.shutdown();
+//		if(executorManager instanceof ExecutorManagerLocalAdapter) {
+//			((ExecutorManagerLocalAdapter)executorManager).getExecutorManager().shutdown();
+//		}
 		executorManager.shutdown();
 	}
 	

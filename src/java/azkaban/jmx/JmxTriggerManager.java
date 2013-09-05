@@ -6,47 +6,56 @@ import java.util.List;
 import org.joda.time.DateTime;
 
 import azkaban.trigger.TriggerManager;
+import azkaban.trigger.TriggerManagerAdapter;
+import azkaban.trigger.TriggerManagerAdapter.TriggerJMX;
 
 public class JmxTriggerManager implements JmxTriggerManagerMBean {
-	private TriggerManager manager;
+	private TriggerJMX jmxStats;
 
-	public JmxTriggerManager(TriggerManager manager) {
-		this.manager = manager;
+	public JmxTriggerManager(TriggerManagerAdapter manager) {
+		this.jmxStats = manager.getJMX();
 	}
 
 	@Override
-	public String getLastThreadCheckTime() {
-		return new DateTime(manager.getLastThreadCheckTime()).toString();
+	public String getLastRunnerThreadCheckTime() {
+		return new DateTime(jmxStats.getLastRunnerThreadCheckTime()).toString();
 	}
 
 	@Override
-	public boolean isThreadActive() {
-		return manager.isThreadActive();
+	public boolean isRunnerThreadActive() {
+		return jmxStats.isRunnerThreadActive();
 	}
 
 	@Override
-	public List<String> getPrimaryTriggerHostPorts() {
-		return new ArrayList<String>(manager.getPrimaryServerHosts());
+	public String getPrimaryTriggerHostPort() {
+		return jmxStats.getPrimaryServerHost();
 	}
 
-	@Override
-	public List<String> getAllTriggerHostPorts() {
-		return new ArrayList<String>(manager.getAllActiveTriggerServerHosts());
-	}
+//	@Override
+//	public List<String> getAllTriggerHostPorts() {
+//		return new ArrayList<String>(manager.getAllActiveTriggerServerHosts());
+//	}
 
 	@Override
 	public int getNumTriggers() {
-		return manager.getNumTriggers();
+		return jmxStats.getNumTriggers();
 	}
 
 	@Override
 	public String getTriggerSources() {
-		return manager.getTriggerSources();
+		return jmxStats.getTriggerSources();
 	}
 
 	@Override
 	public String getTriggerIds() {
-		return manager.getTriggerIds();
+		return jmxStats.getTriggerIds();
 	}
+
+	@Override
+	public long getScannerIdleTime() {
+		return jmxStats.getScannerIdleTime();
+	}
+	
+	
 	
 }

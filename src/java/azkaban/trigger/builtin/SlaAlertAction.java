@@ -16,6 +16,7 @@ import org.apache.log4j.Logger;
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutorMailer;
 import azkaban.executor.ExecutorManager;
+import azkaban.executor.ExecutorManagerAdapter;
 import azkaban.executor.ExecutorManager.Alerter;
 import azkaban.executor.ExecutorManagerException;
 import azkaban.sla.SlaOption;
@@ -36,7 +37,7 @@ public class SlaAlertAction implements TriggerAction{
 //	private List<Map<String, Object>> alerts;
 	private static Map<String, Alerter> alerters;
 	private Map<String, Object> context;
-	private static ExecutorManager executorManager;
+	private static ExecutorManagerAdapter executorManager;
 
 	public SlaAlertAction(String id, SlaOption slaOption, int execId) {
 		this.actionId = id;
@@ -49,7 +50,7 @@ public class SlaAlertAction implements TriggerAction{
 		alerters = alts;
 	}
 	
-	public static void setExecutorManager(ExecutorManager em) {
+	public static void setExecutorManager(ExecutorManagerAdapter em) {
 		executorManager = em;
 	}
 	

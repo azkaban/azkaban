@@ -37,6 +37,7 @@ import org.joda.time.format.DateTimeFormatter;
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutionOptions;
 import azkaban.executor.ExecutorManager;
+import azkaban.executor.ExecutorManagerAdapter;
 import azkaban.executor.ExecutorManagerException;
 import azkaban.flow.Flow;
 import azkaban.project.Project;
@@ -64,7 +65,7 @@ public class ScheduleManager implements TriggerAgent {
 	private Map<Integer, Schedule> scheduleIDMap = new LinkedHashMap<Integer, Schedule>();
 	private Map<Pair<Integer, String>, Schedule> scheduleIdentityPairMap = new LinkedHashMap<Pair<Integer, String>, Schedule>();
 	
-	private final ExecutorManager executorManager;
+	private final ExecutorManagerAdapter executorManager;
 	
 	private ProjectManager projectManager = null;
 	
@@ -80,7 +81,7 @@ public class ScheduleManager implements TriggerAgent {
 	 * 
 	 * @param loader
 	 */
-	public ScheduleManager (ExecutorManager executorManager,
+	public ScheduleManager (ExecutorManagerAdapter executorManager,
 							ScheduleLoader loader,
 							boolean useExternalRunner) 
 	{
@@ -539,7 +540,7 @@ public class ScheduleManager implements TriggerAgent {
 									}
 									
 									try {
-										executorManager.submitExecutableFlow(exflow);
+										executorManager.submitExecutableFlow(exflow, s.getSubmitUser());
 										logger.info("Scheduler has invoked " + exflow.getExecutionId());
 									} 
 									catch (ExecutorManagerException e) {

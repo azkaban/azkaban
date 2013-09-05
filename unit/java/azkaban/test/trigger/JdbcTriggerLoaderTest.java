@@ -32,6 +32,7 @@ import azkaban.trigger.Trigger;
 import azkaban.trigger.TriggerAction;
 import azkaban.trigger.TriggerException;
 import azkaban.trigger.TriggerLoader;
+import azkaban.trigger.TriggerLoaderException;
 import azkaban.trigger.TriggerManagerException;
 import azkaban.trigger.builtin.BasicTimeChecker;
 import azkaban.trigger.builtin.ExecuteFlowAction;
@@ -137,7 +138,7 @@ public class JdbcTriggerLoaderTest {
 	}
 	
 	@Test
-	public void addTriggerTest() throws TriggerManagerException {
+	public void addTriggerTest() throws TriggerLoaderException {
 		Trigger t1 = createTrigger("testProj1", "testFlow1", "source1");
 		Trigger t2 = createTrigger("testProj2", "testFlow2", "source2");
 		loader.addTrigger(t1);
@@ -159,7 +160,7 @@ public class JdbcTriggerLoaderTest {
 	}
 	
 	@Test
-	public void removeTriggerTest() throws TriggerManagerException {
+	public void removeTriggerTest() throws TriggerLoaderException {
 		Trigger t1 = createTrigger("testProj1", "testFlow1", "source1");
 		Trigger t2 = createTrigger("testProj2", "testFlow2", "source2");
 		loader.addTrigger(t1);
@@ -173,7 +174,7 @@ public class JdbcTriggerLoaderTest {
 	}
 	
 	@Test
-	public void updateTriggerTest() throws TriggerManagerException {
+	public void updateTriggerTest() throws TriggerLoaderException {
 		Trigger t1 = createTrigger("testProj1", "testFlow1", "source1");
 		t1.setResetOnExpire(true);
 		loader.addTrigger(t1);
@@ -187,7 +188,7 @@ public class JdbcTriggerLoaderTest {
 	
 	private Trigger createTrigger(String projName, String flowName, String source) {
 		DateTime now = DateTime.now();
-		ConditionChecker checker1 = new BasicTimeChecker("timeChecker1", now, now.getZone(), true, true, Utils.parsePeriodString("1h"));
+		ConditionChecker checker1 = new BasicTimeChecker("timeChecker1", now.getMillis(), now.getZone(), true, true, Utils.parsePeriodString("1h"));
 		Map<String, ConditionChecker> checkers1 = new HashMap<String, ConditionChecker>();
 		checkers1.put(checker1.getId(), checker1);
 		String expr1 = checker1.getId() + ".eval()";
@@ -196,7 +197,7 @@ public class JdbcTriggerLoaderTest {
 		List<TriggerAction> actions = new ArrayList<TriggerAction>();
 		TriggerAction action = new ExecuteFlowAction("executeAction", 1, projName, flowName, "azkaban", new ExecutionOptions(), null);
 		actions.add(action);
-		Trigger t = new Trigger(now, now, "azkaban", source, triggerCond, expireCond, actions);
+		Trigger t = new Trigger(now.getMillis(), now.getMillis(), "azkaban", source, triggerCond, expireCond, actions);
 		return t;
 	}
 	
