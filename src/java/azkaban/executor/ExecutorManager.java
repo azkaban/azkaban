@@ -306,7 +306,7 @@ public class ExecutorManager implements ExecutorManagerAdapter {
 	public List<Integer> getRunningFlows(int projectId, String flowId) {
 		ArrayList<Integer> executionIds = new ArrayList<Integer>();
 		for (Pair<ExecutionReference, ExecutableFlow> ref : runningFlows.values()) {
-			if (ref.getSecond().getFlowId().equals(flowId)) {
+			if (ref.getSecond().getFlowId().equals(flowId) && ref.getSecond().getProjectId() == projectId) {
 				executionIds.add(ref.getFirst().getExecId());
 			}
 		}
