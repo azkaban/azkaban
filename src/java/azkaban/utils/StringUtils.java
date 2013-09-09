@@ -15,6 +15,7 @@
  */
 package azkaban.utils;
 
+import java.util.Collection;
 import java.util.List;
 
 public class StringUtils {
@@ -45,7 +46,7 @@ public class StringUtils {
 	 * @param delimiter
 	 * @return
 	 */
-	public static String join(List<String> list, String delimiter) {
+	public static String join(Collection<String> list, String delimiter) {
 		StringBuffer buffer = new StringBuffer();
 		for (String str: list) {
 			buffer.append(str);
@@ -54,4 +55,5 @@ public class StringUtils {
 		
 		return buffer.toString();
 	}
+
 }

@@ -20,9 +20,11 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.StringTokenizer;
 import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -30,6 +32,7 @@ import java.util.regex.Pattern;
 import azkaban.executor.ExecutableFlow;
 import azkaban.flow.CommonJobProperties;
 
+import org.apache.commons.lang.StringUtils;
 import org.joda.time.DateTime;
 
 public class PropsUtils {
@@ -146,47 +149,67 @@ public class PropsUtils {
 			.compile("\\$\\{([a-zA-Z_.0-9]+)\\}");
 
 	public static Props resolveProps(Props props) {
-		if(props == null) return null;
+		if (props == null) return null;
 		
 		Props resolvedProps = new Props();
-
+		
+		LinkedHashSet<String> visitedVariables = new LinkedHashSet<String>();
 		for (String key : props.getKeySet()) {
-			StringBuffer replaced = new StringBuffer();
 			String value = props.get(key);
-			Matcher matcher = VARIABLE_PATTERN.matcher(value);
-			while (matcher.find()) {
-				String variableName = matcher.group(1);
-
-				if (variableName.equals(key)) {
-					throw new IllegalArgumentException(
-							String.format(
-									"Circular property definition starting from property[%s]",
-									key));
-				}
-
-				String replacement = props.get(variableName);
-				if (replacement == null)
-					throw new UndefinedPropertyException(
-							"Could not find variable substitution for variable '"
-									+ variableName + "' in key '" + key + "'.");
-
-				replacement = replacement.replaceAll("\\\\", "\\\\\\\\");
-				replacement = replacement.replaceAll("\\$", "\\\\\\$");
-
-				matcher.appendReplacement(replaced, replacement);
-				matcher.appendTail(replaced);
-
-				value = replaced.toString();
-				replaced = new StringBuffer();
-				matcher = VARIABLE_PATTERN.matcher(value);
-			}
-			matcher.appendTail(replaced);
-			resolvedProps.put(key, replaced.toString());
+			
+			visitedVariables.add(key);
+			String replacedValue = resolveVariableReplacement(value, props, visitedVariables);
+			visitedVariables.clear();
+			
+			resolvedProps.put(key, replacedValue);
 		}
-
+		
 		return resolvedProps;
+	};
+	
+	private static String resolveVariableReplacement(String value, Props props, LinkedHashSet<String> visitedVariables) {
+		StringBuffer buffer = new StringBuffer();
+		int startIndex = 0;
+		
+		Matcher matcher = VARIABLE_PATTERN.matcher(value);
+		while (matcher.find(startIndex)) {
+			if (startIndex < matcher.start()) {
+				// Copy everything up front to the buffer
+				buffer.append(value.substring(startIndex, matcher.start()));
+			}
+			
+			String subVariable = matcher.group(1);
+			// Detected a cycle
+			if (visitedVariables.contains(subVariable)) {
+				throw new IllegalArgumentException(
+						String.format("Circular variable substitution found: [%s] -> [%s]", 
+								StringUtils.join(visitedVariables, "->"), subVariable));
+			}
+			else {
+				// Add substitute variable and recurse.
+				String replacement = props.get(subVariable);
+				visitedVariables.add(subVariable);
+				
+				if (replacement == null) {
+					throw new UndefinedPropertyException(
+							String.format("Could not find variable substitution for variable(s) [%s]", 
+									StringUtils.join(visitedVariables, "->")));
+				}
+				
+				buffer.append(resolveVariableReplacement(replacement, props, visitedVariables));
+				visitedVariables.remove(subVariable);
+			}
+			
+			startIndex = matcher.end();
+		}
+		
+		if (startIndex < value.length()) {
+			buffer.append(value.substring(startIndex));
+		}
+		
+		return buffer.toString();
 	}
-
+	
 	public static Props addCommonFlowProperties(final ExecutableFlow flow) {
 		Props parentProps = new Props();
 

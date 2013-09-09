@@ -644,7 +644,7 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
 		int minutes = Integer.parseInt(parts[1]);
 		boolean isPm = parts[2].equalsIgnoreCase("pm");
 		
-		DateTimeZone timezone = parts[3].equals("UTC") ? DateTimeZone.UTC : DateTimeZone.forID("America/Los_Angeles");
+		DateTimeZone timezone = parts[3].equals("UTC") ? DateTimeZone.UTC : DateTimeZone.getDefault();
 
 		// scheduleDate: 02/10/2013
 		DateTime day = null;
