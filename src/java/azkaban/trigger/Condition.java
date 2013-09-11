@@ -26,6 +26,7 @@ public class Condition {
 	public Condition(Map<String, ConditionChecker> checkers, String expr) {
 		setCheckers(checkers);
 		this.expression = jexl.createExpression(expr);
+		updateNextCheckTime();
 	}
 	
 	public Condition(Map<String, ConditionChecker> checkers, String expr, long nextCheckTime) {
@@ -49,9 +50,11 @@ public class Condition {
 	public void registerChecker(ConditionChecker checker) {
 		checkers.put(checker.getId(), checker);
 		context.set(checker.getId(), checker);
+		updateNextCheckTime();
 	}
 	
 	public long getNextCheckTime() {
+		updateNextCheckTime();
 		return nextCheckTime;
 	}
 	
@@ -64,16 +67,23 @@ public class Condition {
 		for(ConditionChecker checker : checkers.values()) {
 			this.context.set(checker.getId(), checker);
 		}
+		updateNextCheckTime();
+	}
+	
+	private void updateNextCheckTime() {
+		long time = Long.MAX_VALUE;
+		for(ConditionChecker checker : checkers.values()) {
+			time = Math.min(time, checker.getNextCheckTime());
+		}
+		this.nextCheckTime = time;
 	}
 	
 	public void resetCheckers() {
-		long time = Long.MAX_VALUE;
 		for(ConditionChecker checker : checkers.values()) {
 			checker.reset();
-			time = Math.min(time, checker.getNextCheckTime());
 		}
-		logger.error("Done resetting checkers. The next check time will be " + new DateTime(time));
-		this.nextCheckTime = time;
+		updateNextCheckTime();
+		logger.error("Done resetting checkers. The next check time will be " + new DateTime(nextCheckTime));
 	}
 	
 	public String getExpression() {

@@ -42,7 +42,6 @@ import org.apache.velocity.app.VelocityEngine;
 import org.apache.velocity.runtime.log.Log4JLogChute;
 import org.apache.velocity.runtime.resource.loader.ClasspathResourceLoader;
 import org.apache.velocity.runtime.resource.loader.JarResourceLoader;
-import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.mortbay.jetty.Server;
 import org.mortbay.jetty.bio.SocketConnector;
@@ -61,21 +60,16 @@ import azkaban.executor.JdbcExecutorLoader;
 import azkaban.executor.ExecutorManager.Alerter;
 import azkaban.jmx.JmxExecutorManagerAdapter;
 import azkaban.jmx.JmxJettyServer;
-import azkaban.jmx.JmxScheduler;
 import azkaban.jmx.JmxTriggerManager;
 import azkaban.project.JdbcProjectLoader;
 import azkaban.project.ProjectManager;
 
-import azkaban.scheduler.JdbcScheduleLoader;
 import azkaban.scheduler.ScheduleLoader;
 import azkaban.scheduler.ScheduleManager;
 import azkaban.scheduler.TriggerBasedScheduleLoader;
-import azkaban.trigger.ActionTypeLoader;
-import azkaban.trigger.CheckerTypeLoader;
 import azkaban.trigger.JdbcTriggerLoader;
 import azkaban.trigger.TriggerLoader;
 import azkaban.trigger.TriggerManager;
-import azkaban.trigger.TriggerAgent;
 import azkaban.trigger.TriggerManagerException;
 import azkaban.trigger.builtin.BasicTimeChecker;
 import azkaban.trigger.builtin.CreateTriggerAction;
@@ -83,7 +77,6 @@ import azkaban.trigger.builtin.ExecuteFlowAction;
 import azkaban.trigger.builtin.KillExecutionAction;
 import azkaban.trigger.builtin.SlaAlertAction;
 import azkaban.trigger.builtin.SlaChecker;
-import azkaban.triggerapp.AzkabanTriggerServer;
 import azkaban.user.UserManager;
 import azkaban.user.XmlUserManager;
 import azkaban.utils.FileIOUtils;
@@ -292,7 +285,7 @@ public class AzkabanWebServer extends AzkabanServer {
 	private ScheduleManager loadScheduleManager(ExecutorManagerAdapter executorManager, TriggerManager tm, Props props ) throws Exception {
 		logger.info("Loading trigger based scheduler");
 		ScheduleLoader loader = new TriggerBasedScheduleLoader(tm, executorManager, null, ScheduleManager.triggerSource);
-		return new ScheduleManager(executorManager, loader, true);
+		return new ScheduleManager(executorManager, loader);
 	}
 //	private TriggerBasedScheduler loadScheduler(ExecutorManager executorManager, ProjectManager projectManager, TriggerManager triggerManager) {
 //		TriggerBasedScheduleLoader loader = new TriggerBasedScheduleLoader(triggerManager, executorManager, projectManager);

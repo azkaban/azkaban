@@ -5,12 +5,10 @@ import java.util.Map;
 
 import org.apache.log4j.Logger;
 import org.joda.time.DateTime;
-import org.joda.time.DateTimeZone;
 import org.joda.time.ReadablePeriod;
 
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutableNode;
-import azkaban.executor.ExecutorManager;
 import azkaban.executor.ExecutorManagerAdapter;
 import azkaban.executor.ExecutorManagerException;
 import azkaban.executor.Status;
@@ -28,6 +26,7 @@ public class SlaChecker implements ConditionChecker{
 	private int execId;
 	private Map<String, Object> context;
 	private boolean passChecker = true;
+	private long checkTime = -1;
 	
 	private static ExecutorManagerAdapter executorManager;
 	
@@ -62,6 +61,7 @@ public class SlaChecker implements ConditionChecker{
 			ReadablePeriod duration = Utils.parsePeriodString((String) slaOption.getInfo().get(SlaOption.INFO_DURATION));
 			DateTime startTime = new DateTime(flow.getStartTime());
 			DateTime checkTime = startTime.plus(duration);
+			this.checkTime = checkTime.getMillis();
 			if(checkTime.isBeforeNow()) {
 				Status status = flow.getStatus();
 				if(status.equals(Status.FAILED) || status.equals(Status.KILLED) || status.equals(Status.SUCCEEDED)) {
@@ -74,6 +74,7 @@ public class SlaChecker implements ConditionChecker{
 			ReadablePeriod duration = Utils.parsePeriodString((String) slaOption.getInfo().get(SlaOption.INFO_DURATION));
 			DateTime startTime = new DateTime(flow.getStartTime());
 			DateTime checkTime = startTime.plus(duration);
+			this.checkTime = checkTime.getMillis();
 			if(checkTime.isBeforeNow()) {
 				Status status = flow.getStatus();
 				if(status.equals(Status.SUCCEEDED)) {
@@ -89,6 +90,7 @@ public class SlaChecker implements ConditionChecker{
 				ReadablePeriod duration = Utils.parsePeriodString((String) slaOption.getInfo().get(SlaOption.INFO_DURATION));
 				DateTime startTime = new DateTime(node.getStartTime());
 				DateTime checkTime = startTime.plus(duration);
+				this.checkTime = checkTime.getMillis();
 				if(checkTime.isBeforeNow()) {
 					Status status = node.getStatus();
 					if(status.equals(Status.FAILED) || status.equals(Status.KILLED) || status.equals(Status.SUCCEEDED)) {
@@ -105,6 +107,7 @@ public class SlaChecker implements ConditionChecker{
 				ReadablePeriod duration = Utils.parsePeriodString((String) slaOption.getInfo().get(SlaOption.INFO_DURATION));
 				DateTime startTime = new DateTime(node.getStartTime());
 				DateTime checkTime = startTime.plus(duration);
+				this.checkTime = checkTime.getMillis();
 				if(checkTime.isBeforeNow()) {
 					Status status = node.getStatus();
 					if(status.equals(Status.SUCCEEDED)) {
@@ -229,8 +232,7 @@ public class SlaChecker implements ConditionChecker{
 
 	@Override
 	public long getNextCheckTime() {
-		// TODO Auto-generated method stub
-		return 0;
+		return checkTime;
 	}
 
 }

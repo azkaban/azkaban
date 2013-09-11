@@ -27,4 +27,7 @@ public interface JmxTriggerManagerMBean {
 	
 	@DisplayName("OPERATION: getScannerIdleTime")
 	public long getScannerIdleTime();
+	
+	@DisplayName("OPERATION: getScannerThreadStage")
+	public String getScannerThreadStage();
 }

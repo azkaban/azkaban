@@ -55,6 +55,12 @@ public class JmxTriggerManager implements JmxTriggerManagerMBean {
 	public long getScannerIdleTime() {
 		return jmxStats.getScannerIdleTime();
 	}
+
+	@Override
+	public String getScannerThreadStage() {
+		// TODO Auto-generated method stub
+		return jmxStats.getScannerThreadStage();
+	}
 	
 	
 	

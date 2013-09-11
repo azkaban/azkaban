@@ -10,12 +10,13 @@ import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.PriorityBlockingQueue;
 import org.apache.log4j.Logger;
+import org.joda.time.DateTime;
 
 import azkaban.utils.Props;
 
 public class TriggerManager implements TriggerManagerAdapter{
 	private static Logger logger = Logger.getLogger(TriggerManager.class);
-	private static final long DEFAULT_SCANNER_INTERVAL_MS = 60000;
+	public static final long DEFAULT_SCANNER_INTERVAL_MS = 60000;
 
 	private static Map<Integer, Trigger> triggerIdMap = new HashMap<Integer, Trigger>();
 	
@@ -27,6 +28,8 @@ public class TriggerManager implements TriggerManagerAdapter{
 	private long lastRunnerThreadCheckTime = -1;
 	private long runnerThreadIdleTime = -1;
 	private LocalTriggerJMX jmxStats = new LocalTriggerJMX();
+	
+	private String scannerStage = "";
 	
 	public TriggerManager(Props props, TriggerLoader triggerLoader) throws TriggerManagerException {
 
@@ -165,6 +168,8 @@ public class TriggerManager implements TriggerManagerAdapter{
 					try{
 						lastRunnerThreadCheckTime = System.currentTimeMillis();
 						
+						scannerStage = "Ready to start a new scan cycle at " + lastRunnerThreadCheckTime;
+						
 						try{
 							checkAllTriggers();
 						} catch(Exception e) {
@@ -175,7 +180,10 @@ public class TriggerManager implements TriggerManagerAdapter{
 							logger.error(t.getMessage());
 						}
 						
+						scannerStage = "Done flipping all triggers.";
+						
 						runnerThreadIdleTime = scannerInterval - (System.currentTimeMillis() - lastRunnerThreadCheckTime);
+
 						if(runnerThreadIdleTime < 0) {
 							logger.error("Trigger manager thread " + this.getName() + " is too busy!");
 						} else {
@@ -192,6 +200,7 @@ public class TriggerManager implements TriggerManagerAdapter{
 		private void checkAllTriggers() throws TriggerManagerException {
 			long now = System.currentTimeMillis();
 			for(Trigger t : triggers) {
+				scannerStage = "Checking for trigger " + t.getTriggerId();
 				if(t.getNextCheckTime() > now) {
 					logger.info("Skipping trigger" + t.getTriggerId() + " until " + t.getNextCheckTime());
 					continue;
@@ -432,6 +441,11 @@ public class TriggerManager implements TriggerManagerAdapter{
 		@Override
 		public Map<String, Object> getAllJMXMbeans() {
 			return new HashMap<String, Object>();
+		}
+
+		@Override
+		public String getScannerThreadStage() {
+			return scannerStage;
 		}
 		
 	}

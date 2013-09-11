@@ -310,10 +310,12 @@ public class Trigger {
 	
 	public void resetTriggerConditions() {
 		triggerCondition.resetCheckers();
+		updateNextCheckTime();
 	}
 	
 	public void resetExpireCondition() {
 		expireCondition.resetCheckers();
+		updateNextCheckTime();
 	}
 	
 	public List<TriggerAction> getTriggerActions () {

@@ -42,6 +42,7 @@ public interface TriggerManagerAdapter {
 		public String getTriggerIds();
 		public long getScannerIdleTime();
 		public Map<String, Object> getAllJMXMbeans();
+		public String getScannerThreadStage();
 	}
 	
 }
