@@ -74,7 +74,7 @@ public class JobRunnerTest {
 		Assert.assertTrue( node.getEndTime() - node.getStartTime() > 1000);
 		
 		File logFile = new File(runner.getLogFilePath());
-		Props outputProps = runner.getOutputProps();
+		Props outputProps = runner.getNode().getOutputProps();
 		Assert.assertTrue(outputProps != null);
 		Assert.assertTrue(logFile.exists());
 		
@@ -105,7 +105,7 @@ public class JobRunnerTest {
 		Assert.assertTrue(node.getEndTime() - node.getStartTime() > 1000);
 		
 		File logFile = new File(runner.getLogFilePath());
-		Props outputProps = runner.getOutputProps();
+		Props outputProps = runner.getNode().getOutputProps();
 		Assert.assertTrue(outputProps == null);
 		Assert.assertTrue(logFile.exists());
 		Assert.assertTrue(eventCollector.checkOrdering());
@@ -140,7 +140,7 @@ public class JobRunnerTest {
 		Assert.assertTrue( node.getEndTime() - node.getStartTime() < 10);
 		
 		// Log file and output files should not exist.
-		Props outputProps = runner.getOutputProps();
+		Props outputProps = runner.getNode().getOutputProps();
 		Assert.assertTrue(outputProps == null);
 		Assert.assertTrue(runner.getLogFilePath() == null);
 		Assert.assertTrue(eventCollector.checkOrdering());
@@ -178,7 +178,7 @@ public class JobRunnerTest {
 		Assert.assertTrue(loader.getNodeUpdateCount(node.getId()) == null);
 		
 		// Log file and output files should not exist.
-		Props outputProps = runner.getOutputProps();
+		Props outputProps = runner.getNode().getOutputProps();
 		Assert.assertTrue(outputProps == null);
 		Assert.assertTrue(runner.getLogFilePath() == null);
 		Assert.assertTrue(!runner.isCancelled());
@@ -227,7 +227,7 @@ public class JobRunnerTest {
 		
 		// Log file and output files should not exist.
 		File logFile = new File(runner.getLogFilePath());
-		Props outputProps = runner.getOutputProps();
+		Props outputProps = runner.getNode().getOutputProps();
 		Assert.assertTrue(outputProps == null);
 		Assert.assertTrue(logFile.exists());
 		Assert.assertTrue(eventCollector.checkOrdering());
@@ -264,7 +264,7 @@ public class JobRunnerTest {
 		Assert.assertTrue(node.getStartTime() - startTime >= 5000);
 		
 		File logFile = new File(runner.getLogFilePath());
-		Props outputProps = runner.getOutputProps();
+		Props outputProps = runner.getNode().getOutputProps();
 		Assert.assertTrue(outputProps != null);
 		Assert.assertTrue(logFile.exists());
 		Assert.assertFalse(runner.isCancelled());
@@ -321,7 +321,7 @@ public class JobRunnerTest {
 		Assert.assertTrue(runner.isCancelled());
 		
 		File logFile = new File(runner.getLogFilePath());
-		Props outputProps = runner.getOutputProps();
+		Props outputProps = runner.getNode().getOutputProps();
 		Assert.assertTrue(outputProps == null);
 		Assert.assertTrue(logFile.exists());
 		
@@ -354,9 +354,10 @@ public class JobRunnerTest {
 		node.setParentFlow(flow);
 		
 		Props props = createProps(time, fail);
+		node.setInputProps(props);
 		HashSet<String> proxyUsers = new HashSet<String>();
 		proxyUsers.add(flow.getSubmitUser());
-		JobRunner runner = new JobRunner(node, props, workingDir, loader, jobtypeManager);
+		JobRunner runner = new JobRunner(node, workingDir, loader, jobtypeManager);
 		runner.setLogSettings(logger, "5MB", 4);
 
 		runner.addListener(listener);

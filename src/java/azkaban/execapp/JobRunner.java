@@ -54,7 +54,6 @@ public class JobRunner extends EventHandler implements Runnable {
 	
 	private ExecutorLoader loader;
 	private Props props;
-	private Props outputProps;
 	private ExecutableNode node;
 	private File workingDir;
 
@@ -151,7 +150,7 @@ public class JobRunner extends EventHandler implements Runnable {
 			// Create file appender
 			String id = this.jobId;
 			if (node.getExecutableFlow() != node.getParentFlow()) {
-				id = node.getParentFlow().getNestedId("._.");
+				id = node.getPrintableId("._.");
 			}
 			
 			String logName = createLogFileName(this.executionId, id, node.getAttempt());
@@ -403,8 +402,7 @@ public class JobRunner extends EventHandler implements Runnable {
 
 		node.setStatus(Status.SUCCEEDED);
 		if (job != null) {
-			outputProps = job.getJobGeneratedProperties();
-			node.setOutputProps(outputProps);
+			node.setOutputProps(job.getJobGeneratedProperties());
 		}
 	}
 	
@@ -443,10 +441,6 @@ public class JobRunner extends EventHandler implements Runnable {
 	
 	public Status getStatus() {
 		return node.getStatus();
-	}
-
-	public Props getOutputProps() {
-		return outputProps;
 	}
 
 	private void logError(String message) {

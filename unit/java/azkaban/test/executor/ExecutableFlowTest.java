@@ -1,10 +1,8 @@
 package azkaban.test.executor;
 
 import java.io.File;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -20,16 +18,13 @@ import org.junit.Test;
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutableFlowBase;
 import azkaban.executor.ExecutableNode;
-import azkaban.executor.ExecutionAttempt;
 import azkaban.executor.ExecutionOptions;
 import azkaban.executor.ExecutionOptions.FailureAction;
 import azkaban.executor.Status;
 import azkaban.flow.Flow;
-import azkaban.flow.FlowProps;
 import azkaban.project.Project;
 import azkaban.utils.DirectoryFlowLoader;
 import azkaban.utils.JSONUtils;
-import azkaban.utils.Props;
 
 public class ExecutableFlowTest {
 	private Project project;
@@ -136,6 +131,7 @@ public class ExecutableFlowTest {
 		testEquals(exFlow, parsedExFlow);
 	}
 	
+	@SuppressWarnings("rawtypes")
 	@Test
 	public void testExecutorFlowUpdates() throws Exception {
 		Flow flow = project.getFlow("jobe");

@@ -486,6 +486,7 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 	 * @param exFlow
 	 * @throws ServletException
 	 */
+	@SuppressWarnings("unused")
 	private void ajaxFetchJobMetaData(HttpServletRequest req,
 			HttpServletResponse resp, HashMap<String, Object> ret, User user,
 			ExecutableFlow exFlow) throws ServletException {

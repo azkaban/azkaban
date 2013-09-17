@@ -25,7 +25,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
@@ -482,16 +481,6 @@ public class FlowRunnerManager implements EventListener {
 		}
 		
 		runner.retryFailures(user);
-	}
-	
-	public void retryJobs(int execId, String user, List<String> jobId) throws ExecutorManagerException {
-		FlowRunner runner = runningFlows.get(execId);
-		
-		if (runner == null) {
-			throw new ExecutorManagerException("Execution " + execId + " is not running.");
-		}
-		
-		runner.retryJobs(jobId, user);
 	}
 	
 	public ExecutableFlow getExecutableFlow(int execId) {

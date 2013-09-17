@@ -78,14 +78,6 @@ public class ExecutableFlowBase extends ExecutableNode {
 		return flowId;
 	}
 	
-	public String getNestedId(String delimiter) {
-		if (this.getParentFlow() != null) {
-			return this.getParentFlow().getNestedId(delimiter) + delimiter + getId();
-		}
-		
-		return getId();
-	}
-	
 	protected void setFlow(Project project, Flow flow) {
 		this.flowId = flow.getId();
 		

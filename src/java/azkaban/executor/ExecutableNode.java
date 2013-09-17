@@ -241,6 +241,17 @@ public class ExecutableNode {
 		return array;
 	}
 	
+	public String getPrintableId() {
+		return getPrintableId(":");
+	}
+	
+	public String getPrintableId(String delimiter) {
+		if (this.getParentFlow() instanceof ExecutableFlow) {
+			return getId();
+		}
+		return getParentFlow().getPrintableId(delimiter) + delimiter + getId();
+	}
+	
 	public Map<String,Object> toObject() {
 		Map<String,Object> mapObj = new HashMap<String,Object>();
 		fillMapFromExecutable(mapObj);
