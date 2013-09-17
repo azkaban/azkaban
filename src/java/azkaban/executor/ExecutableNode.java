@@ -41,6 +41,7 @@ public class ExecutableNode {
 	private Set<String> inNodes = null;
 	private Set<String> outNodes = null;
 	
+	private Props inputProps;
 	private Props outputProps;
 	
 	public static final String ATTEMPT_PARAM = "attempt";
@@ -60,14 +61,14 @@ public class ExecutableNode {
 	}
 	
 	public ExecutableNode(Node node, ExecutableFlowBase parent) {
-		this(node.getId(), node.getJobSource(), node.getPropsSource(), parent);
+		this(node.getId(), node.getType(), node.getJobSource(), node.getPropsSource(), parent);
 	}
 
-	public ExecutableNode(String id, String jobSource, String propsSource, ExecutableFlowBase parent) {
+	public ExecutableNode(String id, String type, String jobSource, String propsSource, ExecutableFlowBase parent) {
 		this.id = id;
 		this.jobSource = jobSource;
 		this.propsSource = propsSource;
-		
+		this.type = type;
 		setParentFlow(parent);
 	}
 	
@@ -176,10 +177,18 @@ public class ExecutableNode {
 		return propsSource;
 	}
 	
+	public void setInputProps(Props input) {
+		this.inputProps = input;
+	}
+	
 	public void setOutputProps(Props output) {
 		this.outputProps = output;
 	}
 
+	public Props getInputProps() {
+		return this.inputProps;
+	}
+	
 	public Props getOutputProps() {
 		return outputProps;
 	}
@@ -222,7 +231,6 @@ public class ExecutableNode {
 		this.setStatus(Status.READY);
 	}
 	
-	
 	public List<Object> getAttemptObjects() {
 		ArrayList<Object> array = new ArrayList<Object>();
 		
@@ -247,6 +255,7 @@ public class ExecutableNode {
 		objMap.put(ENDTIME_PARAM, endTime);
 		objMap.put(UPDATETIME_PARAM, updateTime);
 		objMap.put(TYPE_PARAM, type);
+		objMap.put(ATTEMPT_PARAM, attempt);
 		
 		if (inNodes != null) {
 			objMap.put(INNODES_PARAM, inNodes);
@@ -283,6 +292,7 @@ public class ExecutableNode {
 		this.endTime = JSONUtils.getLongFromObject(objMap.get(ENDTIME_PARAM));
 		this.updateTime = JSONUtils.getLongFromObject(objMap.get(UPDATETIME_PARAM));
 		this.type = (String)objMap.get(TYPE_PARAM);
+		this.attempt = (Integer)objMap.get(ATTEMPT_PARAM);
 		
 		if (objMap.containsKey(INNODES_PARAM)) {
 			this.inNodes = new HashSet<String>();
@@ -360,6 +370,23 @@ public class ExecutableNode {
 				updatePastAttempts((List<Object>)updateData.get(PASTATTEMPTS_PARAM));
 			}
 		}
+	}
+	
+	public void killNode(long killTime) {
+		if (this.status == Status.DISABLED) {
+			skipNode(killTime);
+		}
+		else {
+			this.setStatus(Status.KILLED);
+			this.setStartTime(killTime);
+			this.setEndTime(killTime);
+		}
+	}
+	
+	public void skipNode(long skipTime) {
+		this.setStatus(Status.SKIPPED);
+		this.setStartTime(skipTime);
+		this.setEndTime(skipTime);
 	}
 	
 	private void updatePastAttempts(List<Object> pastAttemptsList) {

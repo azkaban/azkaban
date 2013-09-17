@@ -156,7 +156,12 @@ public class Props {
 			putAll(props);
 		}
 	}
-
+	
+	public void setEarliestAncestor(Props parent) {
+		Props props = getEarliestAncestor();
+		props.setParent(parent);
+	}
+	
 	public Props getEarliestAncestor() {
 		if (_parent == null) {
 			return this;

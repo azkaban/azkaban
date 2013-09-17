@@ -44,7 +44,7 @@ public class ExecutableFlowBase extends ExecutableNode {
 	public ExecutableFlowBase(Project project, Node node, Flow flow, ExecutableFlowBase parent) {
 		super(node, parent);
 
-		setFlow(project, flow, parent);
+		setFlow(project, flow);
 	}
 	
 	public ExecutableFlowBase() {
@@ -78,15 +78,15 @@ public class ExecutableFlowBase extends ExecutableNode {
 		return flowId;
 	}
 	
-	public String getNestedId() {
+	public String getNestedId(String delimiter) {
 		if (this.getParentFlow() != null) {
-			return this.getParentFlow().getNestedId() + ":" + getId();
+			return this.getParentFlow().getNestedId(delimiter) + delimiter + getId();
 		}
 		
 		return getId();
 	}
 	
-	protected void setFlow(Project project, Flow flow, ExecutableFlowBase parent) {
+	protected void setFlow(Project project, Flow flow) {
 		this.flowId = flow.getId();
 		
 		for (Node node: flow.getNodes()) {
@@ -95,11 +95,11 @@ public class ExecutableFlowBase extends ExecutableNode {
 				String embeddedFlowId = node.getEmbeddedFlowId();
 				Flow subFlow = project.getFlow(embeddedFlowId);
 				
-				ExecutableFlowBase embeddedFlow = new ExecutableFlowBase(project, node, subFlow, parent);
+				ExecutableFlowBase embeddedFlow = new ExecutableFlowBase(project, node, subFlow, this);
 				executableNodes.put(id, embeddedFlow);
 			}
 			else {
-				ExecutableNode exNode = new ExecutableNode(node, parent);
+				ExecutableNode exNode = new ExecutableNode(node, this);
 				executableNodes.put(id, exNode);
 			}
 		}
@@ -269,5 +269,79 @@ public class ExecutableFlowBase extends ExecutableNode {
 			ExecutableNode exNode = executableNodes.get(id);
 			exNode.applyUpdateObject(node);
 		}
+	}
+	
+	public void reEnableDependents(ExecutableNode ... nodes) {
+		for(ExecutableNode node: nodes) {
+			for(String dependent: node.getOutNodes()) {
+				ExecutableNode dependentNode = getExecutableNode(dependent);
+				
+				if (dependentNode.getStatus() == Status.KILLED) {
+					dependentNode.setStatus(Status.READY);
+					dependentNode.setUpdateTime(System.currentTimeMillis());
+					reEnableDependents(dependentNode);
+	
+					if (dependentNode instanceof ExecutableFlowBase) {
+						
+						((ExecutableFlowBase)dependentNode).reEnableDependents();
+					}
+				}
+				else if (dependentNode.getStatus() == Status.SKIPPED) {
+					dependentNode.setStatus(Status.DISABLED);
+					dependentNode.setUpdateTime(System.currentTimeMillis());
+					reEnableDependents(dependentNode);
+				}
+			}
+		}
+	}
+	
+	/**
+	 * Only returns true if the status of all finished nodes is true.
+	 * @return
+	 */
+	public boolean isFlowFinished() {
+		for (String end: getEndNodes()) {
+			ExecutableNode node = getExecutableNode(end);
+			if (!Status.isStatusFinished(node.getStatus()) ) {
+				return false;
+			}
+		}
+		
+		return true;
+	}
+	
+	/**
+	 * Finds all jobs which are ready to run. This occurs when all of its 
+	 * dependency nodes are finished running.
+	 * 
+	 * @param flow
+	 * @return
+	 */
+	public List<ExecutableNode> findNextJobsToRun() {
+		ArrayList<ExecutableNode> jobsToRun = new ArrayList<ExecutableNode>();
+		
+		nodeloop:
+		for (ExecutableNode node: executableNodes.values()) {
+			if(Status.isStatusFinished(node.getStatus())) {
+				continue;
+			}
+
+			if ((node instanceof ExecutableFlowBase) && Status.isStatusRunning(node.getStatus())) {
+				// If the flow is still running, we traverse into the flow
+				jobsToRun.addAll(((ExecutableFlowBase)node).findNextJobsToRun());
+			}
+			else {
+				for (String dependency: node.getInNodes()) {
+					// We find that the outer-loop is unfinished.
+					if (!Status.isStatusFinished(getExecutableNode(dependency).getStatus())) {
+						continue nodeloop;
+					}
+				}
+
+				jobsToRun.add(node);
+			}
+		}
+		
+		return jobsToRun;
 	}
 }

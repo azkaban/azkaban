@@ -57,6 +57,7 @@ public class FlowRunner extends EventHandler implements Runnable {
 	private ExecutableFlow flow;
 	private Thread flowRunnerThread;
 	private int numJobThreads = 10;
+	private ExecutionOptions.FailureAction failureAction;
 	
 	// Sync object for queuing
 	private Object mainSyncObj = new Object();
@@ -66,13 +67,13 @@ public class FlowRunner extends EventHandler implements Runnable {
 	private Map<String, Props> jobOutputProps = new HashMap<String, Props>();
 	
 	private Props globalProps;
-	private Props commonProps;
+//	private Props commonProps;
 	private final JobTypeManager jobtypeManager;
 	
 	private JobRunnerEventListener listener = new JobRunnerEventListener();
 	private Map<String, JobRunner> jobRunners = new ConcurrentHashMap<String, JobRunner>();
 	private Map<String, JobRunner> activeJobRunners = new ConcurrentHashMap<String, JobRunner>();
-
+	
 	// Used for pipelining
 	private Integer pipelineLevel = null;
 	private Integer pipelineExecId = null;
@@ -92,6 +93,10 @@ public class FlowRunner extends EventHandler implements Runnable {
 	private boolean flowCancelled = false;
 	
 	public FlowRunner(ExecutableFlow flow, ExecutorLoader executorLoader, ProjectLoader projectLoader, JobTypeManager jobtypeManager) throws ExecutorManagerException {
+		this(flow, executorLoader, projectLoader, jobtypeManager, null);
+	}
+
+	public FlowRunner(ExecutableFlow flow, ExecutorLoader executorLoader, ProjectLoader projectLoader, JobTypeManager jobtypeManager, ExecutorService executorService) throws ExecutorManagerException {
 		this.execId = flow.getExecutionId();
 		this.flow = flow;
 		this.executorLoader = executorLoader;
@@ -102,8 +107,9 @@ public class FlowRunner extends EventHandler implements Runnable {
 		ExecutionOptions options = flow.getExecutionOptions();
 		this.pipelineLevel = options.getPipelineLevel();
 		this.pipelineExecId = options.getPipelineExecutionId();
-
+		this.failureAction = options.getFailureAction();
 		this.proxyUsers = flow.getProxyUsers();
+		this.executorService = executorService;
 	}
 
 	public FlowRunner setFlowWatcher(FlowWatcher watcher) {
@@ -176,13 +182,28 @@ public class FlowRunner extends EventHandler implements Runnable {
 		}
 	}
 	
+	@SuppressWarnings("unchecked")
 	private void setupFlowExecution() {
 		int projectId = flow.getProjectId();
 		int version = flow.getVersion();
 		String flowId = flow.getFlowId();
 		
 		// Add a bunch of common azkaban properties
-		commonProps = PropsUtils.addCommonFlowProperties(flow);
+		Props commonFlowProps = PropsUtils.addCommonFlowProperties(this.globalProps, flow);
+		
+		if (flow.getJobSource() != null) {
+			String source = flow.getJobSource();
+			Props flowProps = sharedProps.get(source);
+			flowProps.setParent(commonFlowProps);
+			commonFlowProps = flowProps;
+		}
+		
+		// If there are flow overrides, we apply them now.
+		Map<String,String> flowParam = flow.getExecutionOptions().getFlowParameters();
+		if (flowParam != null && !flowParam.isEmpty()) {
+			commonFlowProps = new Props(commonFlowProps, flowParam);
+		}
+		flow.setInputProps(commonFlowProps);
 		
 		// Create execution dir
 		createLogger(flowId);
@@ -199,7 +220,6 @@ public class FlowRunner extends EventHandler implements Runnable {
 		// The current thread is used for interrupting blocks
 		flowRunnerThread = Thread.currentThread();
 		flowRunnerThread.setName("FlowRunner-exec-" + flow.getExecutionId());
-
 	}
 	
 	private void updateFlowReference() throws ExecutorManagerException {
@@ -274,11 +294,6 @@ public class FlowRunner extends EventHandler implements Runnable {
 
 				props.setParent(inherits);
 			}
-			else {
-				String source = fprops.getSource();
-				Props props = sharedProps.get(source);
-				props.setParent(globalProps);
-			}
 		}
 	}
 	
@@ -303,47 +318,8 @@ public class FlowRunner extends EventHandler implements Runnable {
 					continue;
 				}
 				else {
-					List<ExecutableNode> jobsReadyToRun = findReadyJobsToRun();
-					
-					if (!jobsReadyToRun.isEmpty() && !flowCancelled) {
-						for (ExecutableNode node : jobsReadyToRun) {
-							long currentTime = System.currentTimeMillis();
-							
-							// Queue a job only if it's ready to run.
-							if (node.getStatus() == Status.READY) {
-								// Collect output props from the job's dependencies.
-								Props outputProps = collectOutputProps(node);
-								node.setStatus(Status.QUEUED);
-								JobRunner runner = createJobRunner(node, outputProps);
-								logger.info("Submitting job " + node.getId() + " to run.");
-								try {
-									executorService.submit(runner);
-									jobRunners.put(node.getId(), runner);
-									activeJobRunners.put(node.getId(), runner);
-								} catch (RejectedExecutionException e) {
-									logger.error(e);
-								};
-								
-							} // If killed, then auto complete and KILL
-							else if (node.getStatus() == Status.KILLED) {
-								logger.info("Killing " + node.getId() + " due to prior errors.");
-								node.setStartTime(currentTime);
-								node.setEndTime(currentTime);
-								fireEventListeners(Event.create(this, Type.JOB_FINISHED, node));
-							} // If disabled, then we auto skip
-							else if (node.getStatus() == Status.DISABLED) {
-								logger.info("Skipping disabled job " + node.getId() + ".");
-								node.setStartTime(currentTime);
-								node.setEndTime(currentTime);
-								node.setStatus(Status.SKIPPED);
-								fireEventListeners(Event.create(this, Type.JOB_FINISHED, node));
-							}
-						}
-						
-						updateFlow();
-					}
-					else {
-						if (isFlowFinished() || flowCancelled ) {
+					if (!progressGraph(flow)) {
+						if (flow.isFlowFinished() || flowCancelled ) {
 							flowFinished = true;
 							break;
 						}
@@ -364,18 +340,7 @@ public class FlowRunner extends EventHandler implements Runnable {
 					activeRunner.cancel();
 				}
 				
-				for (ExecutableNode node: flow.getExecutableNodes()) {
-					if (Status.isStatusFinished(node.getStatus())) {
-						continue;
-					}
-					else if (node.getStatus() == Status.DISABLED) {
-						node.setStatus(Status.SKIPPED);
-					}
-					else {
-						node.setStatus(Status.KILLED);
-					}
-					fireEventListeners(Event.create(this, Type.JOB_FINISHED, node));
-				}
+				flow.killNode(System.currentTimeMillis());
 			} catch (Exception e) {
 				logger.error(e);
 			}
@@ -403,59 +368,175 @@ public class FlowRunner extends EventHandler implements Runnable {
 		}
 	}
 	
-	private List<ExecutableNode> findReadyJobsToRun() {
-		ArrayList<ExecutableNode> jobsToRun = new ArrayList<ExecutableNode>();
-		for (ExecutableNode node : flow.getExecutableNodes()) {
-			if (Status.isStatusFinished(node.getStatus())) {
-				continue;
-			}
-			else {
-				// Check the dependencies to see if execution conditions are met,
-				// and what the status should be set to.
-				Status impliedStatus = getImpliedStatus(node);
-				if (getImpliedStatus(node) != null) {
-					node.setStatus(impliedStatus);
-					jobsToRun.add(node);
-				}
-			}
-		}
-		
-		return jobsToRun;
-	}
+	private boolean progressGraph(ExecutableFlowBase flow) throws IOException {
+		List<ExecutableNode> jobsReadyToRun = flow.findNextJobsToRun();
 
-	private List<ExecutableNode> findReadyJobsToRun(ExecutableFlowBase flow) {
-		ArrayList<ExecutableNode> jobsToRun = new ArrayList<ExecutableNode>();
-		for (ExecutableNode node : flow.getExecutableNodes()) {
-			if (Status.isStatusFinished(node.getStatus())) {
-				continue;
-			}
-			else {
-				// Check the dependencies to see if execution conditions are met,
-				// and what the status should be set to.
-				Status impliedStatus = getImpliedStatus(node);
-				if (getImpliedStatus(node) != null) {
-					node.setStatus(impliedStatus);
-					jobsToRun.add(node);
+		if (!jobsReadyToRun.isEmpty()) {
+			long currentTime = System.currentTimeMillis();
+			for (ExecutableNode node: jobsReadyToRun) {
+				Status nextStatus = getImpliedStatus(node);
+				
+				// If the flow has seen previous failures and the flow has been cancelled, than 
+				if (nextStatus == Status.KILLED) {
+					logger.info("Killing " + node.getId() + " due to prior errors.");
+					node.killNode(currentTime);
+					fireEventListeners(Event.create(this, Type.JOB_FINISHED, node));
+				}
+				else if (nextStatus == Status.DISABLED) {
+					logger.info("Skipping disabled job " + node.getId() + ".");
+					node.skipNode(currentTime);
+					fireEventListeners(Event.create(this, Type.JOB_FINISHED, node));
+				}
+				else {
+					runExecutableNode(node);
 				}
 			}
+			
+			updateFlow();
+			return true;
 		}
 		
-		return jobsToRun;
+		return false;
 	}
 	
-	private boolean isFlowFinished() {
-		if (!activeJobRunners.isEmpty()) {
-			return false;
+	private void prepareJobProperties(ExecutableNode node) throws IOException {
+		Props props = null;
+		// The following is the hiearchical ordering of dependency resolution
+		// 1. Parent Flow Properties
+		ExecutableFlowBase parentFlow = node.getParentFlow();
+		if (parentFlow != null) {
+			props = parentFlow.getInputProps();
 		}
 		
-		for (String end: flow.getEndNodes()) {
-			ExecutableNode node = flow.getExecutableNode(end);
-			if (!Status.isStatusFinished(node.getStatus()) ) {
-				return false;
+		// 2. Shared Properties
+		String sharedProps = node.getPropsSource();
+		if (sharedProps != null) {
+			Props shared = this.sharedProps.get(sharedProps);
+			if (shared != null) {
+				// Clone because we may clobber
+				shared = Props.clone(shared);
+				shared.setEarliestAncestor(props);
+				props = shared;
 			}
 		}
+
+		// 3. Output Properties
+		Props outputProps = collectOutputProps(node);
+		if (outputProps != null) {
+			outputProps.setEarliestAncestor(props);
+			props = outputProps;
+		}
 		
-		return true;
+		// 4. The job source
+		Props jobSource = loadJobProps(node);
+		if (jobSource != null) {
+			jobSource.setParent(props);
+			props = jobSource;
+		}
+		
+		node.setInputProps(props);
+	}
+	
+	private Props loadJobProps(ExecutableNode node) throws IOException {
+		Props props = null;
+		String source = node.getJobSource();
+		if (source == null) {
+			return null;
+		}
+		
+		// load the override props if any
+		try {
+			props = projectLoader.fetchProjectProperty(flow.getProjectId(), flow.getVersion(), node.getId()+".jor");
+		}
+		catch(ProjectManagerException e) {
+			e.printStackTrace();
+			logger.error("Error loading job override property for job " + node.getId());
+		}
+		
+		File path = new File(execDir, source);
+		if(props == null) {
+			// if no override prop, load the original one on disk
+			try {
+				props = new Props(null, path);				
+			} catch (IOException e) {
+				e.printStackTrace();
+				logger.error("Error loading job file " + source + " for job " + node.getId());
+			}
+		}
+		// setting this fake source as this will be used to determine the location of log files.
+		props.setSource(path.getPath());
+		return props;
+	}
+	
+	private void runExecutableNode(ExecutableNode node) throws IOException {
+		// Collect output props from the job's dependencies.
+		prepareJobProperties(node);
+		
+		if (node instanceof ExecutableFlowBase) {
+			node.setStatus(Status.RUNNING);
+			node.setStartTime(System.currentTimeMillis());
+			
+			logger.info("Starting subflow " + node.getId() + ".");
+		}
+		else {
+			node.setStatus(Status.QUEUED);
+			JobRunner runner = createJobRunner(node);
+			logger.info("Submitting job " + node.getId() + " to run.");
+			try {
+				executorService.submit(runner);
+				jobRunners.put(node.getId(), runner);
+				activeJobRunners.put(node.getId(), runner);
+			} catch (RejectedExecutionException e) {
+				logger.error(e);
+			};
+		}
+	}
+	
+	/**
+	 * Determines what the state of the next node should be.
+	 * 
+	 * @param node
+	 * @return
+	 */
+	public Status getImpliedStatus(ExecutableNode node) {
+		if (flowFailed && failureAction == ExecutionOptions.FailureAction.FINISH_CURRENTLY_RUNNING) {
+			return Status.KILLED;
+		}
+		else if (node.getStatus() == Status.DISABLED) {
+			return Status.DISABLED;
+		}
+		
+		ExecutableFlowBase flow = node.getParentFlow();
+		boolean shouldKill = false;
+		for (String dependency: node.getInNodes()) {
+			ExecutableNode dependencyNode = flow.getExecutableNode(dependency);
+			Status depStatus = dependencyNode.getStatus();
+			
+			switch (depStatus) {
+			case FAILED:
+			case KILLED:
+				shouldKill = true;
+			case SKIPPED:
+			case SUCCEEDED:
+			case FAILED_SUCCEEDED:
+				continue;
+			default:
+				// Should never come here.
+				return null;
+			}
+		}
+
+		if (shouldKill) {
+			return Status.KILLED;
+		}
+		
+		// If it's disabled but ready to run, we want to make sure it continues being disabled.
+		if (node.getStatus() == Status.DISABLED) {
+			return Status.DISABLED;
+		}
+		
+		// All good to go, ready to run.
+		return Status.READY;
 	}
 	
 	private Props collectOutputProps(ExecutableNode node) {
@@ -473,55 +554,11 @@ public class FlowRunner extends EventHandler implements Runnable {
 		return previousOutput;
 	}
 	
-	private JobRunner createJobRunner(ExecutableNode node, Props previousOutput) {
-		String source = node.getJobSource();
-		String propsSource = node.getPropsSource();
-
-		// If no properties are set, we just set the global properties.
-		Props parentProps = propsSource == null ? globalProps : sharedProps.get(propsSource);
-
-		// Set up overrides
-		ExecutionOptions options = flow.getExecutionOptions();
-		@SuppressWarnings("unchecked")
-		Props flowProps = new Props(null, options.getFlowParameters()); 
-		flowProps.putAll(commonProps);
-		flowProps.setParent(parentProps);
-		parentProps = flowProps;
-
-		// We add the previous job output and put into this props.
-		if (previousOutput != null) {
-			Props earliestParent = previousOutput.getEarliestAncestor();
-			earliestParent.setParent(parentProps);
-
-			parentProps = previousOutput;
-		}
-		
+	private JobRunner createJobRunner(ExecutableNode node) {
 		// Load job file.
-		File path = new File(execDir, source);
-		Props prop = null;
+		File path = new File(execDir, node.getJobSource());
 		
-		// load the override props if any
-		try {
-			prop = projectLoader.fetchProjectProperty(flow.getProjectId(), flow.getVersion(), node.getId()+".jor");
-		}
-		catch(ProjectManagerException e) {
-			e.printStackTrace();
-			logger.error("Error loading job override property for job " + node.getId());
-		}
-		if(prop == null) {
-			// if no override prop, load the original one on disk
-			try {
-				prop = new Props(null, path);				
-			} catch (IOException e) {
-				e.printStackTrace();
-				logger.error("Error loading job file " + source + " for job " + node.getId());
-			}
-		}
-		// setting this fake source as this will be used to determine the location of log files.
-		prop.setSource(path.getPath());
-		prop.setParent(parentProps);
-		
-		JobRunner jobRunner = new JobRunner(node, prop, path.getParentFile(), executorLoader, jobtypeManager);
+		JobRunner jobRunner = new JobRunner(node, path.getParentFile(), executorLoader, jobtypeManager);
 		if (watcher != null) {
 			jobRunner.setPipeline(watcher, pipelineLevel);
 		}
@@ -689,62 +726,11 @@ public class FlowRunner extends EventHandler implements Runnable {
 	private void interrupt() {
 		flowRunnerThread.interrupt();
 	}
-	
-	private Status getImpliedStatus(ExecutableNode node) {
-		switch(node.getStatus()) {
-		case FAILED:
-		case KILLED:
-		case SKIPPED:
-		case SUCCEEDED:
-		case FAILED_SUCCEEDED:
-		case QUEUED:
-		case RUNNING:
-			return null;
-		default:
-			break;
-		}
-		
-		boolean shouldKill = false;
-		for (String dependency : node.getInNodes()) {
-			ExecutableNode dependencyNode = flow.getExecutableNode(dependency);
-			
-			Status depStatus = dependencyNode.getStatus();
-			switch (depStatus) {
-			case FAILED:
-			case KILLED:
-				shouldKill = true;
-			case SKIPPED:
-			case SUCCEEDED:
-			case FAILED_SUCCEEDED:
-				continue;
-			case RUNNING:
-			case QUEUED:
-			case DISABLED:
-				return null;
-			default:
-				// Return null means it's not ready to run.
-				return null;
-			}
-		}
-		
-		ExecutionOptions options = flow.getExecutionOptions();
-		if (shouldKill || flowCancelled || (flowFailed && options.getFailureAction() != FailureAction.FINISH_ALL_POSSIBLE)) {
-			return Status.KILLED;
-		}
-		
-		// If it's disabled but ready to run, we want to make sure it continues being disabled.
-		if (node.getStatus() == Status.DISABLED) {
-			return Status.DISABLED;
-		}
-		
-		// All good to go, ready to run.
-		return Status.READY;
-	}
-	
+
 	private class JobRunnerEventListener implements EventListener {
 		public JobRunnerEventListener() {
 		}
-
+		// TODO: HANDLE subflow execution
 		@Override
 		public synchronized void handleEvent(Event event) {
 			JobRunner runner = (JobRunner)event.getRunner();
@@ -774,7 +760,6 @@ public class FlowRunner extends EventHandler implements Runnable {
 						}
 						else {
 							if (!runner.isCancelled() && runner.getRetries() > 0) {
-					
 								logger.info("Job " + node.getId() + " has run out of retry attempts");
 								// Setting delayed execution to 0 in case this is manually re-tried.
 								node.setDelayedExecution(0);

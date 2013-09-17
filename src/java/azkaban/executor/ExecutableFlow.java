@@ -34,7 +34,7 @@ public class ExecutableFlow extends ExecutableFlowBase {
 	public static final String PROJECTID_PARAM ="projectId";
 	public static final String SCHEDULEID_PARAM ="scheduleId";
 	public static final String SUBMITUSER_PARAM = "submitUser";
-	public static final String SUBMITTIME_PARAM = "submitUser";
+	public static final String SUBMITTIME_PARAM = "submitTime";
 	public static final String VERSION_PARAM = "version";
 	public static final String PROXYUSERS_PARAM = "proxyUsers";
 	
@@ -95,8 +95,8 @@ public class ExecutableFlow extends ExecutableFlowBase {
 		return executionOptions;
 	}
 	
-	private void setFlow(Project project, Flow flow) {
-		super.setFlow(project, flow, null);
+	protected void setFlow(Project project, Flow flow) {
+		super.setFlow(project, flow);
 		executionOptions = new ExecutionOptions();
 
 		if (flow.getSuccessEmails() != null) {
@@ -195,34 +195,46 @@ public class ExecutableFlow extends ExecutableFlowBase {
 	public static ExecutableFlow createExecutableFlowFromObject(Object obj) {
 		ExecutableFlow exFlow = new ExecutableFlow();
 		HashMap<String, Object> flowObj = (HashMap<String,Object>)obj;
-		
 		exFlow.fillExecutableFromMapObject(flowObj);
-		exFlow.executionId = (Integer)flowObj.get(EXECUTIONID_PARAM);
-		exFlow.executionPath = (String)flowObj.get(EXECUTIONPATH_PARAM);
-
-		exFlow.projectId = (Integer)flowObj.get(PROJECTID_PARAM);
-		if (flowObj.containsKey(SCHEDULEID_PARAM)) {
-			exFlow.scheduleId = (Integer)flowObj.get(SCHEDULEID_PARAM);
-		}
-		exFlow.submitUser = (String)flowObj.get(SUBMITUSER_PARAM);
-		exFlow.version = (Integer)flowObj.get(VERSION_PARAM);
 		
-		exFlow.submitTime = JSONUtils.getLongFromObject(flowObj.get(SUBMITTIME_PARAM));
+		return exFlow;
+	}
+	
+	@Override
+	@SuppressWarnings("unchecked")
+	public void fillExecutableFromMapObject(Map<String, Object> flowObj) {
+		super.fillExecutableFromMapObject(flowObj);
+		
+		this.executionId = (Integer)flowObj.get(EXECUTIONID_PARAM);
+		this.executionPath = (String)flowObj.get(EXECUTIONPATH_PARAM);
+
+		this.projectId = (Integer)flowObj.get(PROJECTID_PARAM);
+		if (flowObj.containsKey(SCHEDULEID_PARAM)) {
+			this.scheduleId = (Integer)flowObj.get(SCHEDULEID_PARAM);
+		}
+		
+		if (flowObj.containsKey(SUBMITUSER_PARAM)) {
+			this.submitUser = (String)flowObj.get(SUBMITUSER_PARAM);
+		}
+		else {
+			this.submitUser = null;
+		}
+		this.version = (Integer)flowObj.get(VERSION_PARAM);
+		
+		this.submitTime = JSONUtils.getLongFromObject(flowObj.get(SUBMITTIME_PARAM));
 		
 		if (flowObj.containsKey(EXECUTIONOPTIONS_PARAM)) {
-			exFlow.executionOptions = ExecutionOptions.createFromObject(flowObj.get(EXECUTIONOPTIONS_PARAM));
+			this.executionOptions = ExecutionOptions.createFromObject(flowObj.get(EXECUTIONOPTIONS_PARAM));
 		}
 		else {
 			// for backwards compatibility should remove in a few versions.
-			exFlow.executionOptions = ExecutionOptions.createFromObject(flowObj);
+			this.executionOptions = ExecutionOptions.createFromObject(flowObj);
 		}
 		
 		if(flowObj.containsKey(PROXYUSERS_PARAM)) {
 			ArrayList<String> proxyUserList = (ArrayList<String>) flowObj.get(PROXYUSERS_PARAM);
-			exFlow.addAllProxyUsers(proxyUserList);
+			this.addAllProxyUsers(proxyUserList);
 		}
-		
-		return exFlow;
 	}
 	
 	public Map<String, Object> toUpdateObject(long lastUpdateTime) {

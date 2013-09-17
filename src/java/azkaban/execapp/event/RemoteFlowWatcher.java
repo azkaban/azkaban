@@ -1,6 +1,6 @@
 package azkaban.execapp.event;
 
-import azkaban.executor.ExecutableFlowBase;
+import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutableNode;
 import azkaban.executor.ExecutorLoader;
 import azkaban.executor.ExecutorManagerException;
@@ -11,7 +11,7 @@ public class RemoteFlowWatcher extends FlowWatcher {
 	
 	private int execId;
 	private ExecutorLoader loader;
-	private ExecutableFlowBase flow;
+	private ExecutableFlow flow;
 	private RemoteUpdaterThread thread;
 	private boolean isShutdown = false;
 	
@@ -46,7 +46,7 @@ public class RemoteFlowWatcher extends FlowWatcher {
 		@Override
 		public void run() {
 			do {
-				ExecutableFlowBase updateFlow = null;
+				ExecutableFlow updateFlow = null;
 				try {
 					updateFlow = loader.fetchExecutableFlow(execId);
 				} catch (ExecutorManagerException e) {

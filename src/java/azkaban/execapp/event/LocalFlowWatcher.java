@@ -44,9 +44,9 @@ public class LocalFlowWatcher extends FlowWatcher {
 					if (data instanceof ExecutableNode) {
 						ExecutableNode node = (ExecutableNode)data;
 						
-						if (node.getId()) {
-							
-						}
+//						if (node.getId()) {
+//							
+//						}
 						
 						handleJobFinished(node.getId(), node.getStatus());
 					}

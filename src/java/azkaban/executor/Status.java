@@ -56,4 +56,14 @@ public enum Status {
 			return false;
 		}
 	}
+	
+	public static boolean isStatusRunning(Status status) {
+		switch (status) {
+		case RUNNING:
+		case FAILED_FINISHING:
+			return true;
+		default:
+			return false;
+		}
+	}
 }
