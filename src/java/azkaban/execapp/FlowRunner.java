@@ -334,11 +334,11 @@ public class FlowRunner extends EventHandler implements Runnable {
 				}
 				else {
 					if (!progressGraph(flow)) {
-						if (flow.isFlowFinished() || flowCancelled ) {
+						if (flow.isFlowFinished() ) {
 							flowFinished = true;
 							break;
 						}
-					
+						
 						try {
 							mainSyncObj.wait(CHECK_WAIT_MS);
 						} catch (InterruptedException e) {
@@ -348,27 +348,12 @@ public class FlowRunner extends EventHandler implements Runnable {
 			}
 		}
 		
-		if (flowCancelled) {
-			try {
-				logger.info("Flow was force cancelled cleaning up.");
-				for(JobRunner activeRunner : activeJobRunners) {
-					activeRunner.cancel();
-				}
-
-				flow.killNode(System.currentTimeMillis());
-			} catch (Exception e) {
-				logger.error(e);
-			}
-	
-			updateFlow();
-		}
-		
 		logger.info("Finishing up flow. Awaiting Termination");
 		executorService.shutdown();
 		
-		synchronized(mainSyncObj) {
-			finalizeFlow(flow);
-		}
+		finalizeFlow(flow);
+		updateFlow();
+		logger.info("Finished Flow");
 	}
 	
 	private boolean progressGraph(ExecutableFlowBase flow) throws IOException {
@@ -405,6 +390,7 @@ public class FlowRunner extends EventHandler implements Runnable {
 	private void finalizeFlow(ExecutableFlowBase flow) {
 		String id = flow == this.flow ? "" : flow.getPrintableId() + " ";
 		
+		flow.setEndTime(System.currentTimeMillis());
 		switch(flow.getStatus()) {
 		case FAILED_FINISHING:
 			logger.info("Setting flow " + id + "status to Failed.");
@@ -752,7 +738,7 @@ public class FlowRunner extends EventHandler implements Runnable {
 					
 					String id = node.getPrintableId(":");
 					logger.info("Job Finished " + id + " with status " + node.getStatus());
-					if (node.getOutputProps() != null) {
+					if (node.getOutputProps() != null && node.getOutputProps().size() > 0) {
 						logger.info("Job " + id + " had output props.");
 					}
 

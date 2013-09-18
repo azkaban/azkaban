@@ -39,11 +39,13 @@ public class FlowRunnerTest {
 	@Before
 	public void setUp() throws Exception {
 		System.out.println("Create temp dir");
-		workingDir = new File("_AzkabanTestDir_" + System.currentTimeMillis());
-		if (workingDir.exists()) {
-			FileUtils.deleteDirectory(workingDir);
+		synchronized ( this) {
+			workingDir = new File("_AzkabanTestDir_" + System.currentTimeMillis());
+			if (workingDir.exists()) {
+				FileUtils.deleteDirectory(workingDir);
+			}
+			workingDir.mkdirs();
 		}
-		workingDir.mkdirs();
 		jobtypeManager = new JobTypeManager(null, this.getClass().getClassLoader());
 		jobtypeManager.registerJobType("java", JavaJob.class);
 		jobtypeManager.registerJobType("test", InteractiveTestJob.class);
@@ -55,9 +57,11 @@ public class FlowRunnerTest {
 	@After
 	public void tearDown() throws IOException {
 		System.out.println("Teardown temp dir");
-		if (workingDir != null) {
-			FileUtils.deleteDirectory(workingDir);
-			workingDir = null;
+		synchronized ( this) {
+			if (workingDir != null) {
+				FileUtils.deleteDirectory(workingDir);
+				workingDir = null;
+			}
 		}
 	}
 	
@@ -194,8 +198,16 @@ public class FlowRunnerTest {
 		
 		Assert.assertTrue(runner.isCancelled());
 		
-		Assert.assertTrue("Expected flow " + Status.KILLED + " instead " + exFlow.getStatus(), exFlow.getStatus() == Status.KILLED);
+		Assert.assertTrue("Expected flow " + Status.FAILED + " instead " + exFlow.getStatus(), exFlow.getStatus() == Status.FAILED);
 		
+		synchronized(this) {
+			try {
+				wait(500);
+			} catch(InterruptedException e) {
+				
+			}
+		}
+
 		testStatus(exFlow, "job1", Status.SUCCEEDED);
 		testStatus(exFlow, "job2d", Status.FAILED);
 		testStatus(exFlow, "job3", Status.KILLED);
@@ -230,6 +242,14 @@ public class FlowRunnerTest {
 		runner.run();
 		ExecutableFlow exFlow = runner.getExecutableFlow();
 		Assert.assertTrue("Expected flow " + Status.FAILED + " instead " + exFlow.getStatus(), exFlow.getStatus() == Status.FAILED);
+		
+		synchronized(this) {
+			try {
+				wait(500);
+			} catch(InterruptedException e) {
+				
+			}
+		}
 		
 		testStatus(exFlow, "job1", Status.SUCCEEDED);
 		testStatus(exFlow, "job2d", Status.FAILED);
@@ -279,7 +299,7 @@ public class FlowRunnerTest {
 		synchronized(this) {
 			// Wait for cleanup.
 			try {
-				wait(1000);
+				wait(2000);
 			} catch (InterruptedException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
@@ -345,7 +365,9 @@ public class FlowRunnerTest {
 	}
 	
 	private ExecutableFlow prepareExecDir(File execDir, String flowName, int execId) throws IOException {
-		FileUtils.copyDirectory(execDir, workingDir);
+		synchronized ( this) {
+			FileUtils.copyDirectory(execDir, workingDir);
+		}
 		
 		File jsonFlowFile = new File(workingDir, flowName + ".flow");
 		@SuppressWarnings("unchecked")

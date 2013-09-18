@@ -355,7 +355,7 @@ public class JobRunner extends EventHandler implements Runnable {
 			
 			// If it's an embedded flow, we'll add the nested flow info to the job conf
 			if (node.getExecutableFlow() != node.getParentFlow()) {
-				String subFlow = node.getExecutableFlow().getId() + ":" + node.getPrintableId(":");
+				String subFlow = node.getPrintableId(":");
 				props.put(CommonJobProperties.NESTED_FLOW_PATH, subFlow);
 			}
 			

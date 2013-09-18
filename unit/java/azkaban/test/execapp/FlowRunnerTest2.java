@@ -84,7 +84,7 @@ public class FlowRunnerTest2 {
 		ExecutableFlow flow = runner.getExecutableFlow();
 		createExpectedStateMap(flow, expectedStateMap, nodeMap);
 		runFlowRunnerInThread(runner);
-		pause(500);
+		pause(250);
 		
 		// After it starts up, only joba should be running
 		expectedStateMap.put("joba", Status.RUNNING);
@@ -112,21 +112,19 @@ public class FlowRunnerTest2 {
 		Assert.assertEquals("test2.8", joba1.get("param8"));
 		
 		// 2. JOB A COMPLETES SUCCESSFULLY 
-		InteractiveTestJob testJoba = InteractiveTestJob.getTestJob("joba");
-		Props jobAOut = new Props();
-		jobAOut.put("output.joba", "joba");
-		testJoba.succeedJob(jobAOut);
-		pause(500);
+		InteractiveTestJob.getTestJob("joba").succeedJob(Props.of("output.joba", "joba", "output.override", "joba"));
+		pause(250);
 		expectedStateMap.put("joba", Status.SUCCEEDED);
 		expectedStateMap.put("joba1", Status.RUNNING);
 		expectedStateMap.put("jobb", Status.RUNNING);
 		expectedStateMap.put("jobc", Status.RUNNING);
 		expectedStateMap.put("jobd", Status.RUNNING);
-		expectedStateMap.put("joba:innerJobA", Status.RUNNING);
+		expectedStateMap.put("jobd:innerJobA", Status.RUNNING);
 		expectedStateMap.put("jobb:innerJobA", Status.RUNNING);
-		expectedStateMap.put("jobc:innerJobA", Status.RUNNING);
+		compareStates(expectedStateMap, nodeMap);
 		
 		Props jobb = nodeMap.get("jobb").getInputProps();
+		Assert.assertEquals("test1.1", jobb.get("param1"));
 		Assert.assertEquals("test1.1", jobb.get("param1"));
 		Assert.assertEquals("test1.2", jobb.get("param2"));
 		Assert.assertEquals("test1.3", jobb.get("param3"));
@@ -136,6 +134,9 @@ public class FlowRunnerTest2 {
 		Assert.assertEquals("test2.7", jobb.get("param7"));
 		Assert.assertEquals("test2.8", jobb.get("param8"));
 		Assert.assertEquals("test2.8", jobb.get("param8"));
+		// Test that jobb properties overwrites the output properties
+		Assert.assertEquals("moo", jobb.get("testprops"));
+		Assert.assertEquals("jobb", jobb.get("output.override"));
 		Assert.assertEquals("joba", jobb.get("output.joba"));
 		
 		Props jobbInnerJobA = nodeMap.get("jobb:innerJobA").getInputProps();
@@ -148,6 +149,79 @@ public class FlowRunnerTest2 {
 		Assert.assertEquals("test2.7", jobbInnerJobA.get("param7"));
 		Assert.assertEquals("test2.8", jobbInnerJobA.get("param8"));
 		Assert.assertEquals("joba", jobbInnerJobA.get("output.joba"));
+		
+		// 3. jobb:Inner completes
+		/// innerJobA completes
+		InteractiveTestJob.getTestJob("jobb:innerJobA").succeedJob(Props.of("output.jobb.innerJobA", "jobb.innerJobA"));
+		pause(250);
+		expectedStateMap.put("jobb:innerJobA", Status.SUCCEEDED);
+		expectedStateMap.put("jobb:innerJobB", Status.RUNNING);
+		expectedStateMap.put("jobb:innerJobC", Status.RUNNING);
+		compareStates(expectedStateMap, nodeMap);
+		Props jobbInnerJobB = nodeMap.get("jobb:innerJobB").getInputProps();
+		Assert.assertEquals("test1.1", jobbInnerJobB.get("param1"));
+		Assert.assertEquals("override.4", jobbInnerJobB.get("param4"));
+		Assert.assertEquals("jobb.innerJobA", jobbInnerJobB.get("output.jobb.innerJobA"));
+		Assert.assertEquals("moo", jobbInnerJobB.get("testprops"));
+		/// innerJobB, C completes
+		InteractiveTestJob.getTestJob("jobb:innerJobB").succeedJob(Props.of("output.jobb.innerJobB", "jobb.innerJobB"));
+		InteractiveTestJob.getTestJob("jobb:innerJobC").succeedJob(Props.of("output.jobb.innerJobC", "jobb.innerJobC"));
+		pause(250);
+		expectedStateMap.put("jobb:innerJobB", Status.SUCCEEDED);
+		expectedStateMap.put("jobb:innerJobC", Status.SUCCEEDED);
+		expectedStateMap.put("jobb:innerFlow", Status.RUNNING);
+		compareStates(expectedStateMap, nodeMap);
+		
+		Props jobbInnerJobD = nodeMap.get("jobb:innerFlow").getInputProps();
+		Assert.assertEquals("test1.1", jobbInnerJobD.get("param1"));
+		Assert.assertEquals("override.4", jobbInnerJobD.get("param4"));
+		Assert.assertEquals("jobb.innerJobB", jobbInnerJobD.get("output.jobb.innerJobB"));
+		Assert.assertEquals("jobb.innerJobC", jobbInnerJobD.get("output.jobb.innerJobC"));
+		
+		// 4. Finish up on inner flow for jobb
+		InteractiveTestJob.getTestJob("jobb:innerFlow").succeedJob(Props.of("output1.jobb", "test1", "output2.jobb", "test2"));
+		pause(250);
+		expectedStateMap.put("jobb:innerFlow", Status.SUCCEEDED);
+		expectedStateMap.put("jobb", Status.SUCCEEDED);
+		compareStates(expectedStateMap, nodeMap);
+		Props jobbOutput = nodeMap.get("jobb").getOutputProps();
+		Assert.assertEquals("test1", jobbOutput.get("output1.jobb"));
+		Assert.assertEquals("test2", jobbOutput.get("output2.jobb"));
+		
+		// 5. Finish jobc, jobd
+		InteractiveTestJob.getTestJob("jobc").succeedJob(Props.of("output.jobc", "jobc"));
+		pause(250);
+		expectedStateMap.put("jobc", Status.SUCCEEDED);
+		compareStates(expectedStateMap, nodeMap);
+		InteractiveTestJob.getTestJob("jobd:innerJobA").succeedJob();
+		pause(250);
+		InteractiveTestJob.getTestJob("jobd:innerFlow2").succeedJob();
+		pause(250);
+		expectedStateMap.put("jobd:innerJobA", Status.SUCCEEDED);
+		expectedStateMap.put("jobd:innerFlow2", Status.SUCCEEDED);
+		expectedStateMap.put("jobd", Status.SUCCEEDED);
+		expectedStateMap.put("jobe", Status.RUNNING);
+		compareStates(expectedStateMap, nodeMap);
+		
+		Props jobd = nodeMap.get("jobe").getInputProps();
+		Assert.assertEquals("test1", jobd.get("output1.jobb"));
+		Assert.assertEquals("jobc", jobd.get("output.jobc"));
+		
+		// 6. Finish off flow
+		InteractiveTestJob.getTestJob("joba1").succeedJob();
+		pause(250);
+		InteractiveTestJob.getTestJob("jobe").succeedJob();
+		pause(250);
+		expectedStateMap.put("joba1", Status.SUCCEEDED);
+		expectedStateMap.put("jobe", Status.SUCCEEDED);
+		expectedStateMap.put("jobf", Status.RUNNING);
+		compareStates(expectedStateMap, nodeMap);
+		
+		InteractiveTestJob.getTestJob("jobf").succeedJob();
+		pause(250);
+		expectedStateMap.put("jobf", Status.SUCCEEDED);
+		compareStates(expectedStateMap, nodeMap);
+		Assert.assertEquals(Status.SUCCEEDED, flow.getStatus());
 	}
 	
 	private Thread runFlowRunnerInThread(FlowRunner runner) {
@@ -225,4 +299,5 @@ public class FlowRunnerTest2 {
 		
 		return runner;
 	}
+
 }

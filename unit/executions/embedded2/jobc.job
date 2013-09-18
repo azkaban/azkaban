@@ -1,3 +1,2 @@
-type=flow
-flow.name=innerFlow
+type=test
 dependencies=joba
