@@ -16,6 +16,20 @@ public class ExecutionOptions {
 	public static final String CONCURRENT_OPTION_PIPELINE="pipeline";
 	public static final String CONCURRENT_OPTION_IGNORE="ignore";
 	
+	private static final String FLOW_PARAMETERS = "flowParameters";
+	private static final String NOTIFY_ON_FIRST_FAILURE = "notifyOnFirstFailure";
+	private static final String NOTIFY_ON_LAST_FAILURE = "notifyOnLastFailure";
+	private static final String SUCCESS_EMAILS = "successEmails";
+	private static final String FAILURE_EMAILS = "failureEmails";
+	private static final String FAILURE_ACTION = "failureAction";
+	private static final String PIPELINE_LEVEL = "pipelineLevel";
+	private static final String PIPELINE_EXECID = "pipelineExecId";
+	private static final String QUEUE_LEVEL = "queueLevel";
+	private static final String CONCURRENT_OPTION = "concurrentOption";
+	private static final String DISABLE = "disabled";
+	private static final String FAILURE_EMAILS_OVERRIDE = "failureEmailsOverride";
+	private static final String SUCCESS_EMAILS_OVERRIDE = "successEmailsOverride";
+	
 	private boolean notifyOnFirstFailure = true;
 	private boolean notifyOnLastFailure = false;
 	private boolean failureEmailsOverride = false;
@@ -39,8 +53,8 @@ public class ExecutionOptions {
 	
 	private Set<String> initiallyDisabledJobs = new HashSet<String>();
 	
-	public void setFlowParameters(Map<String,String> flowParam) {
-		flowParameters.get(flowParam);
+	public void addAllFlowParameters(Map<String,String> flowParam) {
+		flowParameters.putAll(flowParam);
 	}
 	
 	public Map<String,String> getFlowParameters() {
@@ -142,19 +156,19 @@ public class ExecutionOptions {
 	public Map<String,Object> toObject() {
 		HashMap<String,Object> flowOptionObj = new HashMap<String,Object>();
 		
-		flowOptionObj.put("flowParameters", this.flowParameters);
-		flowOptionObj.put("notifyOnFirstFailure", this.notifyOnFirstFailure);
-		flowOptionObj.put("notifyOnLastFailure", this.notifyOnLastFailure);
-		flowOptionObj.put("successEmails", successEmails);
-		flowOptionObj.put("failureEmails", failureEmails);
-		flowOptionObj.put("failureAction", failureAction.toString());
-		flowOptionObj.put("pipelineLevel", pipelineLevel);
-		flowOptionObj.put("pipelineExecId", pipelineExecId);
-		flowOptionObj.put("queueLevel", queueLevel);
-		flowOptionObj.put("concurrentOption", concurrentOption);
-		flowOptionObj.put("disabled", initiallyDisabledJobs);
-		flowOptionObj.put("failureEmailsOverride", failureEmailsOverride);
-		flowOptionObj.put("successEmailsOverride", successEmailsOverride);
+		flowOptionObj.put(FLOW_PARAMETERS, this.flowParameters);
+		flowOptionObj.put(NOTIFY_ON_FIRST_FAILURE, this.notifyOnFirstFailure);
+		flowOptionObj.put(NOTIFY_ON_LAST_FAILURE, this.notifyOnLastFailure);
+		flowOptionObj.put(SUCCESS_EMAILS, successEmails);
+		flowOptionObj.put(FAILURE_EMAILS, failureEmails);
+		flowOptionObj.put(FAILURE_ACTION, failureAction.toString());
+		flowOptionObj.put(PIPELINE_LEVEL, pipelineLevel);
+		flowOptionObj.put(PIPELINE_EXECID, pipelineExecId);
+		flowOptionObj.put(QUEUE_LEVEL, queueLevel);
+		flowOptionObj.put(CONCURRENT_OPTION, concurrentOption);
+		flowOptionObj.put(DISABLE, initiallyDisabledJobs);
+		flowOptionObj.put(FAILURE_EMAILS_OVERRIDE, failureEmailsOverride);
+		flowOptionObj.put(SUCCESS_EMAILS_OVERRIDE, successEmailsOverride);
 		return flowOptionObj;
 	}
 	
@@ -167,46 +181,47 @@ public class ExecutionOptions {
 		Map<String,Object> optionsMap = (Map<String,Object>)obj;
 		
 		ExecutionOptions options = new ExecutionOptions();
-		if (optionsMap.containsKey("flowParameters")) {
-			options.flowParameters = new HashMap<String, String>((Map<String,String>)optionsMap.get("flowParameters"));
+		if (optionsMap.containsKey(FLOW_PARAMETERS)) {
+			options.flowParameters = new HashMap<String, String>();
+			options.flowParameters.putAll((Map<String,String>)optionsMap.get(FLOW_PARAMETERS));
 		}
 		// Failure notification
-		if (optionsMap.containsKey("notifyOnFirstFailure")) {
-			options.notifyOnFirstFailure = (Boolean)optionsMap.get("notifyOnFirstFailure");
+		if (optionsMap.containsKey(NOTIFY_ON_FIRST_FAILURE)) {
+			options.notifyOnFirstFailure = (Boolean)optionsMap.get(NOTIFY_ON_FIRST_FAILURE);
 		}
-		if (optionsMap.containsKey("notifyOnLastFailure")) {
-			options.notifyOnLastFailure = (Boolean)optionsMap.get("notifyOnLastFailure");
+		if (optionsMap.containsKey(NOTIFY_ON_LAST_FAILURE)) {
+			options.notifyOnLastFailure = (Boolean)optionsMap.get(NOTIFY_ON_LAST_FAILURE);
 		}
-		if (optionsMap.containsKey("concurrentOption")) {
-			options.concurrentOption = (String)optionsMap.get("concurrentOption");
+		if (optionsMap.containsKey(CONCURRENT_OPTION)) {
+			options.concurrentOption = (String)optionsMap.get(CONCURRENT_OPTION);
 		}
-		if (optionsMap.containsKey("disabled")) {
-			options.initiallyDisabledJobs = new HashSet<String>((List<String>)optionsMap.get("disabled"));
+		if (optionsMap.containsKey(DISABLE)) {
+			options.initiallyDisabledJobs = new HashSet<String>((Collection<String>)optionsMap.get(DISABLE));
 		}
 		
 		// Failure action
-		if (optionsMap.containsKey("failureAction")) {
-			options.failureAction = FailureAction.valueOf((String)optionsMap.get("failureAction"));
+		if (optionsMap.containsKey(FAILURE_ACTION)) {
+			options.failureAction = FailureAction.valueOf((String)optionsMap.get(FAILURE_ACTION));
 		}
-		options.pipelineLevel = (Integer)optionsMap.get("pipelineLevel");
-		options.pipelineExecId = (Integer)optionsMap.get("pipelineExecId");
-		options.queueLevel = (Integer)optionsMap.get("queueLevel");
+		options.pipelineLevel = (Integer)optionsMap.get(PIPELINE_LEVEL);
+		options.pipelineExecId = (Integer)optionsMap.get(PIPELINE_EXECID);
+		options.queueLevel = (Integer)optionsMap.get(QUEUE_LEVEL);
 		
 		// Success emails
-		if (optionsMap.containsKey("successEmails")) {
-			options.setSuccessEmails((List<String>)optionsMap.get("successEmails"));
+		if (optionsMap.containsKey(SUCCESS_EMAILS)) {
+			options.setSuccessEmails((List<String>)optionsMap.get(SUCCESS_EMAILS));
 		}
 		// Failure emails
-		if (optionsMap.containsKey("failureEmails")) {
-			options.setFailureEmails((List<String>)optionsMap.get("failureEmails"));
+		if (optionsMap.containsKey(FAILURE_EMAILS)) {
+			options.setFailureEmails((List<String>)optionsMap.get(FAILURE_EMAILS));
 		}
 		
-		if (optionsMap.containsKey("successEmailsOverride")) {
-			options.setSuccessEmailsOverridden((Boolean)optionsMap.get("successEmailsOverride"));
+		if (optionsMap.containsKey(SUCCESS_EMAILS_OVERRIDE)) {
+			options.setSuccessEmailsOverridden((Boolean)optionsMap.get(SUCCESS_EMAILS_OVERRIDE));
 		}
 		
-		if (optionsMap.containsKey("failureEmailsOverride")) {
-			options.setFailureEmailsOverridden((Boolean)optionsMap.get("failureEmailsOverride"));
+		if (optionsMap.containsKey(FAILURE_EMAILS_OVERRIDE)) {
+			options.setFailureEmailsOverridden((Boolean)optionsMap.get(FAILURE_EMAILS_OVERRIDE));
 		}
 		
 		return options;

@@ -1,6 +1,7 @@
 package azkaban.executor;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -38,8 +39,8 @@ public class ExecutableNode {
 	private String jobSource; 
 	// Path to top level props file
 	private String propsSource;
-	private Set<String> inNodes = null;
-	private Set<String> outNodes = null;
+	private Set<String> inNodes = new HashSet<String>();
+	private Set<String> outNodes = new HashSet<String>();
 	
 	private Props inputProps;
 	private Props outputProps;
@@ -140,16 +141,10 @@ public class ExecutableNode {
 	}
 	
 	public void addOutNode(String exNode) {
-		if (outNodes == null) {
-			outNodes = new HashSet<String>();
-		}
 		outNodes.add(exNode);
 	}
 	
 	public void addInNode(String exNode) {
-		if (inNodes == null) {
-			inNodes = new HashSet<String>();
-		}
 		inNodes.add(exNode);
 	}
 
@@ -268,21 +263,21 @@ public class ExecutableNode {
 		objMap.put(TYPE_PARAM, type);
 		objMap.put(ATTEMPT_PARAM, attempt);
 		
-		if (inNodes != null) {
+		if (inNodes != null && !inNodes.isEmpty()) {
 			objMap.put(INNODES_PARAM, inNodes);
 		}
-		if (outNodes != null) {
+		if (outNodes != null && !outNodes.isEmpty()) {
 			objMap.put(OUTNODES_PARAM, outNodes);
 		}
 		
-//		if (hasPropsSource()) {
-//			objMap.put(PROPS_SOURCE_PARAM, this.propsSource);
-//		}
+		if (hasPropsSource()) {
+			objMap.put(PROPS_SOURCE_PARAM, this.propsSource);
+		}
 		if (hasJobSource()) {
 			objMap.put(JOB_SOURCE_PARAM, this.jobSource);
 		}
 		
-		if (outputProps != null) {
+		if (outputProps != null && outputProps.size() > 0) {
 			objMap.put(OUTPUT_PROPS_PARAM, PropsUtils.toStringMap(outputProps, true));
 		}
 		
@@ -307,17 +302,17 @@ public class ExecutableNode {
 		
 		if (objMap.containsKey(INNODES_PARAM)) {
 			this.inNodes = new HashSet<String>();
-			this.inNodes.addAll((List<String>)objMap.get(INNODES_PARAM));
+			this.inNodes.addAll((Collection<String>)objMap.get(INNODES_PARAM));
 		}
 		
 		if (objMap.containsKey(OUTNODES_PARAM)) {
 			this.outNodes = new HashSet<String>();
-			this.outNodes.addAll((List<String>)objMap.get(OUTNODES_PARAM));
+			this.outNodes.addAll((Collection<String>)objMap.get(OUTNODES_PARAM));
 		}
-//	
-//		if (objMap.containsKey(PROPS_SOURCE_PARAM)) {
-//			this.propsSource = (String)objMap.get(PROPS_SOURCE_PARAM);
-//		}
+	
+		if (objMap.containsKey(PROPS_SOURCE_PARAM)) {
+			this.propsSource = (String)objMap.get(PROPS_SOURCE_PARAM);
+		}
 		
 		if (objMap.containsKey(JOB_SOURCE_PARAM)) {
 			this.jobSource = (String)objMap.get(JOB_SOURCE_PARAM);
@@ -327,7 +322,7 @@ public class ExecutableNode {
 			this.outputProps = new Props(null, (Map<String,String>)objMap.get(OUTPUT_PROPS_PARAM));
 		}
 		
-		List<Object> pastAttempts = (List<Object>)objMap.get(PASTATTEMPTS_PARAM);
+		Collection<Object> pastAttempts = (Collection<Object>)objMap.get(PASTATTEMPTS_PARAM);
 		if (pastAttempts!=null) {
 			ArrayList<ExecutionAttempt> attempts = new ArrayList<ExecutionAttempt>();
 			for (Object attemptObj: pastAttempts) {

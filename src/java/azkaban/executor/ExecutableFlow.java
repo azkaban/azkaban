@@ -45,7 +45,6 @@ public class ExecutableFlow extends ExecutableFlowBase {
 	private long submitTime = -1;
 	private String submitUser;
 	private String executionPath;
-	private HashMap<String, FlowProps> flowProps = new HashMap<String, FlowProps>();
 	
 	private HashSet<String> proxyUsers = new HashSet<String>();
 	private ExecutionOptions executionOptions;
@@ -56,10 +55,6 @@ public class ExecutableFlow extends ExecutableFlowBase {
 		this.scheduleId = -1;
 
 		this.setFlow(project, flow);
-	}
-	
-	public ExecutableFlow(Flow flow) {
-		this.setFlow(null, flow);
 	}
 	
 	public ExecutableFlow() {
@@ -73,10 +68,6 @@ public class ExecutableFlow extends ExecutableFlowBase {
 	@Override
 	public ExecutableFlow getExecutableFlow() {
 		return this;
-	}
-	
-	public Collection<FlowProps> getFlowProps() {
-		return flowProps.values();
 	}
 	
 	public void addAllProxyUsers(Collection<String> proxyUsers) {

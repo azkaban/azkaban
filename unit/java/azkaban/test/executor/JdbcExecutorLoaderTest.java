@@ -32,6 +32,7 @@ import azkaban.executor.Status;
 import azkaban.flow.Flow;
 
 import azkaban.database.DataSourceUtils;
+import azkaban.project.Project;
 import azkaban.utils.FileIOUtils.LogData;
 import azkaban.utils.JSONUtils;
 import azkaban.utils.Pair;
@@ -409,7 +410,11 @@ public class JdbcExecutorLoaderTest {
 		HashMap<String, Object> flowObj = (HashMap<String, Object>) JSONUtils.parseJSONFromFile(jsonFlowFile);
 		
 		Flow flow = Flow.flowFromObject(flowObj);
-		ExecutableFlow execFlow = new ExecutableFlow(flow);
+		Project project = new Project(1, "flow");
+		HashMap<String, Flow> flowMap = new HashMap<String, Flow>();
+		flowMap.put(flow.getId(), flow);
+		project.setFlows(flowMap);
+		ExecutableFlow execFlow = new ExecutableFlow(project, flow);
 		execFlow.setExecutionId(executionId);
 
 		return execFlow;
@@ -421,7 +426,11 @@ public class JdbcExecutorLoaderTest {
 		HashMap<String, Object> flowObj = (HashMap<String, Object>) JSONUtils.parseJSONFromFile(jsonFlowFile);
 		
 		Flow flow = Flow.flowFromObject(flowObj);
-		ExecutableFlow execFlow = new ExecutableFlow(flow);
+		Project project = new Project(1, "flow");
+		HashMap<String, Flow> flowMap = new HashMap<String, Flow>();
+		flowMap.put(flow.getId(), flow);
+		project.setFlows(flowMap);
+		ExecutableFlow execFlow = new ExecutableFlow(project, flow);
 
 		return execFlow;
 	}

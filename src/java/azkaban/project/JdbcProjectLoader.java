@@ -77,6 +77,7 @@ public class JdbcProjectLoader extends AbstractJdbcLoader implements ProjectLoad
 			
 			for (Project project: projects) {
 				List<Triple<String, Boolean, Permission>> permissions = fetchPermissionsForProject(connection, project);
+				
 				for (Triple<String, Boolean, Permission> entry: permissions) {
 					if(entry.getSecond()) {
 						project.setGroupPermission(entry.getFirst(), entry.getThird());
@@ -86,7 +87,8 @@ public class JdbcProjectLoader extends AbstractJdbcLoader implements ProjectLoad
 					}
 				}
 			}
-		} catch (SQLException e) {
+		}
+		catch (SQLException e) {
 			throw new ProjectManagerException("Error retrieving all projects", e);
 		}
 		finally {
@@ -673,7 +675,8 @@ public class JdbcProjectLoader extends AbstractJdbcLoader implements ProjectLoad
 		}
 		catch (IOException e) {
 			throw new ProjectManagerException("Flow Upload failed.", e);
-		} catch (SQLException e) {
+		} 
+		catch (SQLException e) {
 			throw new ProjectManagerException("Flow Upload failed commit.", e);
 		}
 		finally {

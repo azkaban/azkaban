@@ -119,7 +119,7 @@ public class ExecutableFlowTest {
 		
 		HashMap<String, String> flowProps = new HashMap<String,String>();
 		flowProps.put("la", "fa");
-		options.setFlowParameters(flowProps);
+		options.addAllFlowParameters(flowProps);
 		exFlow.setExecutionOptions(options);
 		
 		Object obj = exFlow.toObject();

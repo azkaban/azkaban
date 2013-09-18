@@ -1,0 +1,4 @@
+type=flow
+flow.name=innerFlow
+dependencies=joba
+param

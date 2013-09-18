@@ -16,6 +16,7 @@
 package azkaban.executor;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -74,12 +75,17 @@ public class ExecutableFlowBase extends ExecutableNode {
 		return -1;
 	}
 	
+	public Collection<FlowProps> getFlowProps() {
+		return flowProps.values();
+	}
+	
 	public String getFlowId() {
 		return flowId;
 	}
 	
 	protected void setFlow(Project project, Flow flow) {
 		this.flowId = flow.getId();
+		flowProps.putAll(flow.getAllFlowProps());
 		
 		for (Node node: flow.getNodes()) {
 			String id = node.getId();
@@ -100,6 +106,9 @@ public class ExecutableFlowBase extends ExecutableNode {
 			ExecutableNode sourceNode = executableNodes.get(edge.getSourceId());
 			ExecutableNode targetNode = executableNodes.get(edge.getTargetId());
 			
+			if (sourceNode == null) {
+				System.out.println("Source node " + edge.getSourceId() + " doesn't exist");
+			}
 			sourceNode.addOutNode(edge.getTargetId());
 			targetNode.addInNode(edge.getSourceId());
 		}
@@ -250,16 +259,18 @@ public class ExecutableFlowBase extends ExecutableNode {
 		super.applyUpdateObject(updateData);
 
 		List<Map<String,Object>> updatedNodes = (List<Map<String,Object>>)updateData.get(NODES_PARAM);
-		for (Map<String,Object> node: updatedNodes) {
-
-			String id = (String)node.get(ID_PARAM);
-			if (id == null) {
-				// Legacy case
-				id = (String)node.get("jobId");				
+		if (updatedNodes != null) {
+			for (Map<String,Object> node: updatedNodes) {
+	
+				String id = (String)node.get(ID_PARAM);
+				if (id == null) {
+					// Legacy case
+					id = (String)node.get("jobId");				
+				}
+	
+				ExecutableNode exNode = executableNodes.get(id);
+				exNode.applyUpdateObject(node);
 			}
-
-			ExecutableNode exNode = executableNodes.get(id);
-			exNode.applyUpdateObject(node);
 		}
 	}
 	
@@ -314,7 +325,7 @@ public class ExecutableFlowBase extends ExecutableNode {
 		
 		nodeloop:
 		for (ExecutableNode node: executableNodes.values()) {
-			if(Status.isStatusFinished(node.getStatus())) {
+			if(Status.isStatusFinished(node.getStatus()) || Status.isStatusRunning(node.getStatus())) {
 				continue;
 			}
 

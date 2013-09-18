@@ -61,6 +61,7 @@ public enum Status {
 		switch (status) {
 		case RUNNING:
 		case FAILED_FINISHING:
+		case QUEUED:
 			return true;
 		default:
 			return false;

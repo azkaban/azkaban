@@ -24,6 +24,7 @@ import azkaban.flow.Flow;
 import azkaban.jobtype.JobTypeManager;
 import azkaban.project.Project;
 import azkaban.project.ProjectLoader;
+import azkaban.test.executor.InteractiveTestJob;
 import azkaban.test.executor.JavaJob;
 import azkaban.utils.JSONUtils;
 
@@ -45,7 +46,10 @@ public class FlowRunnerTest {
 		workingDir.mkdirs();
 		jobtypeManager = new JobTypeManager(null, this.getClass().getClassLoader());
 		jobtypeManager.registerJobType("java", JavaJob.class);
+		jobtypeManager.registerJobType("test", InteractiveTestJob.class);
 		fakeProjectLoader = new MockProjectLoader(workingDir);
+		
+		InteractiveTestJob.clearTestJobs();
 	}
 	
 	@After
@@ -190,7 +194,7 @@ public class FlowRunnerTest {
 		
 		Assert.assertTrue(runner.isCancelled());
 		
-		Assert.assertTrue("Expected flow " + Status.FAILED + " instead " + exFlow.getStatus(), exFlow.getStatus() == Status.FAILED);
+		Assert.assertTrue("Expected flow " + Status.KILLED + " instead " + exFlow.getStatus(), exFlow.getStatus() == Status.KILLED);
 		
 		testStatus(exFlow, "job1", Status.SUCCEEDED);
 		testStatus(exFlow, "job2d", Status.FAILED);

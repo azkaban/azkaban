@@ -352,6 +352,13 @@ public class JobRunner extends EventHandler implements Runnable {
 			else {
 				logInfo("Starting job " + this.jobId + " at " + node.getStartTime());
 			}
+			
+			// If it's an embedded flow, we'll add the nested flow info to the job conf
+			if (node.getExecutableFlow() != node.getParentFlow()) {
+				String subFlow = node.getExecutableFlow().getId() + "," + node.getPrintableId(",");
+				props.put(CommonJobProperties.NESTED_FLOW_PATH, subFlow);
+			}
+			
 			props.put(CommonJobProperties.JOB_ATTEMPT, node.getAttempt());
 			props.put(CommonJobProperties.JOB_METADATA_FILE, createMetaDataFileName(executionId, this.jobId, node.getAttempt()));
 			node.setStatus(Status.RUNNING);

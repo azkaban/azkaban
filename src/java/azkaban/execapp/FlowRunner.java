@@ -354,7 +354,7 @@ public class FlowRunner extends EventHandler implements Runnable {
 				for(JobRunner activeRunner : activeJobRunners) {
 					activeRunner.cancel();
 				}
-				
+
 				flow.killNode(System.currentTimeMillis());
 			} catch (Exception e) {
 				logger.error(e);
