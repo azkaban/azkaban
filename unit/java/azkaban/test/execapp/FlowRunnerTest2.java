@@ -80,31 +80,74 @@ public class FlowRunnerTest2 {
 		Map<String, Status> expectedStateMap = new HashMap<String, Status>();
 		Map<String, ExecutableNode> nodeMap = new HashMap<String, ExecutableNode>();
 		
-		// 1. STEP ONE: START FLOW
+		// 1. START FLOW
 		ExecutableFlow flow = runner.getExecutableFlow();
 		createExpectedStateMap(flow, expectedStateMap, nodeMap);
 		runFlowRunnerInThread(runner);
-		pause(1000);
+		pause(500);
 		
 		// After it starts up, only joba should be running
 		expectedStateMap.put("joba", Status.RUNNING);
 		expectedStateMap.put("joba1", Status.RUNNING);
 		
 		compareStates(expectedStateMap, nodeMap);
-		ExecutableNode node = nodeMap.get("joba");
-		Props props = node.getInputProps();
-		Assert.assertEquals("joba.1", props.get("param1"));
-		Assert.assertEquals("test1.2", props.get("param2"));
-		Assert.assertEquals("test1.3", props.get("param3"));
-		Assert.assertEquals("override.4", props.get("param4"));
-		Assert.assertEquals("test2.5", props.get("param5"));
-		Assert.assertEquals("test2.6", props.get("param6"));
-		Assert.assertEquals("test2.7", props.get("param7"));
-		Assert.assertEquals("test2.8", props.get("param8"));
+		Props joba = nodeMap.get("joba").getInputProps();
+		Assert.assertEquals("joba.1", joba.get("param1"));
+		Assert.assertEquals("test1.2", joba.get("param2"));
+		Assert.assertEquals("test1.3", joba.get("param3"));
+		Assert.assertEquals("override.4", joba.get("param4"));
+		Assert.assertEquals("test2.5", joba.get("param5"));
+		Assert.assertEquals("test2.6", joba.get("param6"));
+		Assert.assertEquals("test2.7", joba.get("param7"));
+		Assert.assertEquals("test2.8", joba.get("param8"));
 		
-		// Make joba successful
+		Props joba1 = nodeMap.get("joba1").getInputProps();
+		Assert.assertEquals("test1.1", joba1.get("param1"));
+		Assert.assertEquals("test1.2", joba1.get("param2"));
+		Assert.assertEquals("test1.3", joba1.get("param3"));
+		Assert.assertEquals("override.4", joba1.get("param4"));
+		Assert.assertEquals("test2.5", joba1.get("param5"));
+		Assert.assertEquals("test2.6", joba1.get("param6"));
+		Assert.assertEquals("test2.7", joba1.get("param7"));
+		Assert.assertEquals("test2.8", joba1.get("param8"));
 		
+		// 2. JOB A COMPLETES SUCCESSFULLY 
+		InteractiveTestJob testJoba = InteractiveTestJob.getTestJob("joba");
+		Props jobAOut = new Props();
+		jobAOut.put("output.joba", "joba");
+		testJoba.succeedJob(jobAOut);
+		pause(500);
+		expectedStateMap.put("joba", Status.SUCCEEDED);
+		expectedStateMap.put("joba1", Status.RUNNING);
+		expectedStateMap.put("jobb", Status.RUNNING);
+		expectedStateMap.put("jobc", Status.RUNNING);
+		expectedStateMap.put("jobd", Status.RUNNING);
+		expectedStateMap.put("joba:innerJobA", Status.RUNNING);
+		expectedStateMap.put("jobb:innerJobA", Status.RUNNING);
+		expectedStateMap.put("jobc:innerJobA", Status.RUNNING);
 		
+		Props jobb = nodeMap.get("jobb").getInputProps();
+		Assert.assertEquals("test1.1", jobb.get("param1"));
+		Assert.assertEquals("test1.2", jobb.get("param2"));
+		Assert.assertEquals("test1.3", jobb.get("param3"));
+		Assert.assertEquals("override.4", jobb.get("param4"));
+		Assert.assertEquals("test2.5", jobb.get("param5"));
+		Assert.assertEquals("test2.6", jobb.get("param6"));
+		Assert.assertEquals("test2.7", jobb.get("param7"));
+		Assert.assertEquals("test2.8", jobb.get("param8"));
+		Assert.assertEquals("test2.8", jobb.get("param8"));
+		Assert.assertEquals("joba", jobb.get("output.joba"));
+		
+		Props jobbInnerJobA = nodeMap.get("jobb:innerJobA").getInputProps();
+		Assert.assertEquals("test1.1", jobbInnerJobA.get("param1"));
+		Assert.assertEquals("test1.2", jobbInnerJobA.get("param2"));
+		Assert.assertEquals("test1.3", jobbInnerJobA.get("param3"));
+		Assert.assertEquals("override.4", jobbInnerJobA.get("param4"));
+		Assert.assertEquals("test2.5", jobbInnerJobA.get("param5"));
+		Assert.assertEquals("test2.6", jobbInnerJobA.get("param6"));
+		Assert.assertEquals("test2.7", jobbInnerJobA.get("param7"));
+		Assert.assertEquals("test2.8", jobbInnerJobA.get("param8"));
+		Assert.assertEquals("joba", jobbInnerJobA.get("output.joba"));
 	}
 	
 	private Thread runFlowRunnerInThread(FlowRunner runner) {

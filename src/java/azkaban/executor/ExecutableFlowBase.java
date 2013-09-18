@@ -325,13 +325,16 @@ public class ExecutableFlowBase extends ExecutableNode {
 		
 		nodeloop:
 		for (ExecutableNode node: executableNodes.values()) {
-			if(Status.isStatusFinished(node.getStatus()) || Status.isStatusRunning(node.getStatus())) {
+			if(Status.isStatusFinished(node.getStatus())) {
 				continue;
 			}
 
 			if ((node instanceof ExecutableFlowBase) && Status.isStatusRunning(node.getStatus())) {
 				// If the flow is still running, we traverse into the flow
 				jobsToRun.addAll(((ExecutableFlowBase)node).findNextJobsToRun());
+			}
+			else if (Status.isStatusRunning(node.getStatus())) {
+				continue;
 			}
 			else {
 				for (String dependency: node.getInNodes()) {

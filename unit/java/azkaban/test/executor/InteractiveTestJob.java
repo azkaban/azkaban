@@ -29,7 +29,7 @@ public class InteractiveTestJob extends AbstractProcessJob {
 	@Override
 	public void run() throws Exception {
 		String nestedFlowPath = this.getJobProps().get(CommonJobProperties.NESTED_FLOW_PATH);
-		String id = nestedFlowPath == null ? this.getId() : nestedFlowPath + "," + this.getId();
+		String id = nestedFlowPath == null ? this.getId() : nestedFlowPath + ":" + this.getId();
 		testJobs.put(id, this);
 		
 		while(isWaiting) {

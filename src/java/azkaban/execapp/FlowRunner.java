@@ -420,6 +420,7 @@ public class FlowRunner extends EventHandler implements Runnable {
 		}
 	}
 	
+	@SuppressWarnings("unchecked")
 	private void prepareJobProperties(ExecutableNode node) throws IOException {
 		Props props = null;
 		// The following is the hiearchical ordering of dependency resolution
@@ -441,14 +442,20 @@ public class FlowRunner extends EventHandler implements Runnable {
 			}
 		}
 
-		// 3. Output Properties
+		// 3. Flow Override properties
+		Map<String,String> flowParam = flow.getExecutionOptions().getFlowParameters();
+		if (flowParam != null && !flowParam.isEmpty()) {
+			props = new Props(props, flowParam);
+		}
+		
+		// 4. Output Properties
 		Props outputProps = collectOutputProps(node);
 		if (outputProps != null) {
 			outputProps.setEarliestAncestor(props);
 			props = outputProps;
 		}
 		
-		// 4. The job source
+		// 5. The job source
 		Props jobSource = loadJobProps(node);
 		if (jobSource != null) {
 			jobSource.setParent(props);
