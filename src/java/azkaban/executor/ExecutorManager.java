@@ -377,29 +377,43 @@ public class ExecutorManager {
 				options = new ExecutionOptions();
 			}
 			
+			String message = "";
 			if (options.getDisabledJobs() != null) {
 				// Disable jobs
 				for(String disabledId : options.getDisabledJobs()) {
-					ExecutableNode node = exflow.getExecutableNode(disabledId);
+					String[] splits = disabledId.split(":");
+					ExecutableNode node = exflow;
+					
+					for (String split: splits) {
+						if (node instanceof ExecutableFlowBase) {
+							node = ((ExecutableFlowBase)node).getExecutableNode(split);
+						}
+						else {
+							message = "Cannot disable job " + disabledId + " since flow " + split + " cannot be found. \n";
+						}
+					}
+
+					if (node == null) {
+						throw new ExecutorManagerException("Cannot disable job " + disabledId + ". Cannot find corresponding node.");
+					}
 					node.setStatus(Status.DISABLED);
 				}
 			}
 			
-			String message = "";
 			if (!running.isEmpty()) {
 				if (options.getConcurrentOption().equals(ExecutionOptions.CONCURRENT_OPTION_PIPELINE)) {
 					Collections.sort(running);
 					Integer runningExecId = running.get(running.size() - 1);
 					
 					options.setPipelineExecutionId(runningExecId);
-					message = "Flow " + flowId + " is already running with exec id " + runningExecId +". Pipelining level " + options.getPipelineLevel() + ". ";
+					message = "Flow " + flowId + " is already running with exec id " + runningExecId +". Pipelining level " + options.getPipelineLevel() + ". \n";
 				}
 				else if (options.getConcurrentOption().equals(ExecutionOptions.CONCURRENT_OPTION_SKIP)) {
 					throw new ExecutorManagerException("Flow " + flowId + " is already running. Skipping execution.", ExecutorManagerException.Reason.SkippedExecution);
 				}
 				else {
 					// The settings is to run anyways.
-					message = "Flow " + flowId + " is already running with exec id " + StringUtils.join(running, ",") +". Will execute concurrently. ";
+					message = "Flow " + flowId + " is already running with exec id " + StringUtils.join(running, ",") +". Will execute concurrently. \n";
 				}
 			}
 			

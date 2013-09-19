@@ -368,11 +368,13 @@ public class FlowRunner extends EventHandler implements Runnable {
 				if (nextStatus == Status.KILLED) {
 					logger.info("Killing " + node.getId() + " due to prior errors.");
 					node.killNode(currentTime);
+					finalizeFlowIfFinished(node.getParentFlow());
 					fireEventListeners(Event.create(this, Type.JOB_FINISHED, node));
 				}
 				else if (nextStatus == Status.DISABLED) {
 					logger.info("Skipping disabled job " + node.getId() + ".");
 					node.skipNode(currentTime);
+					finalizeFlowIfFinished(node.getParentFlow());
 					fireEventListeners(Event.create(this, Type.JOB_FINISHED, node));
 				}
 				else {
@@ -758,13 +760,12 @@ public class FlowRunner extends EventHandler implements Runnable {
 
 							flowFailed = true;
 							
-							ExecutionOptions options = flow.getExecutionOptions();
 							// The KILLED status occurs when cancel is invoked. We want to keep this
 							// status even in failure conditions.
 							if (flow.getStatus() != Status.KILLED && flow.getStatus() != Status.FAILED) {
 								propagateStatus(node.getParentFlow(), Status.FAILED_FINISHING);
 
-								if (options.getFailureAction() == FailureAction.CANCEL_ALL && !flowCancelled) {
+								if (failureAction == FailureAction.CANCEL_ALL && !flowCancelled) {
 									logger.info("Flow failed. Failure option is Cancel All. Stopping execution.");
 									cancel();
 								}
@@ -786,35 +787,44 @@ public class FlowRunner extends EventHandler implements Runnable {
 				propagateStatus(base.getParentFlow(), status);
 			}
 		}
+	}
 
-		private void finalizeFlowIfFinished(ExecutableFlowBase base) {
-			// We let main thread finalize the main flow. 
-			if (base == flow) {
-				return;
+	private void finalizeFlowIfFinished(ExecutableFlowBase base) {
+		// We let main thread finalize the main flow. 
+		if (base == flow) {
+			return;
+		}
+		
+		if (base.isFlowFinished()) {
+			boolean succeeded = true;
+			Props previousOutput = null;
+			for(String end: base.getEndNodes()) {
+				ExecutableNode node = base.getExecutableNode(end);
+	
+				if (node.getStatus() == Status.KILLED) {
+					succeeded = false;
+				}
+				
+				Props output = node.getOutputProps();
+				if (output != null) {
+					output = Props.clone(output);
+					output.setParent(previousOutput);
+					previousOutput = output;
+				}
 			}
 			
-			if (base.isFlowFinished()) {
-				Props previousOutput = null;
-				for(String end: base.getEndNodes()) {
-					ExecutableNode node = base.getExecutableNode(end);
-		
-					Props output = node.getOutputProps();
-					if (output != null) {
-						output = Props.clone(output);
-						output.setParent(previousOutput);
-						previousOutput = output;
-					}
-				}
-				base.setOutputProps(previousOutput);
-				finalizeFlow(base);
-				
-				if (base.getParentFlow() != null) {
-					finalizeFlowIfFinished(base.getParentFlow());
-				}
+			if (!succeeded && (base.getStatus() == Status.RUNNING)) {
+				base.setStatus(Status.KILLED);
+			}
+			base.setOutputProps(previousOutput);
+			finalizeFlow(base);
+
+			if (base.getParentFlow() != null) {
+				finalizeFlowIfFinished(base.getParentFlow());
 			}
 		}
 	}
-
+	
 	public boolean isCancelled() {
 		return flowCancelled;
 	}
