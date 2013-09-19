@@ -703,7 +703,7 @@ public class FlowRunner extends EventHandler implements Runnable {
 	
 	private void reEnableDependents(ExecutableNode node) {
 		for(String dependent: node.getOutNodes()) {
-			ExecutableNode dependentNode = flow.getExecutableNode(dependent);
+			ExecutableNode dependentNode = node.getParentFlow().getExecutableNode(dependent);
 			
 			if (dependentNode.getStatus() == Status.KILLED) {
 				dependentNode.setStatus(Status.READY);
