@@ -783,11 +783,11 @@ public class FlowRunner extends EventHandler implements Runnable {
 							
 							// The KILLED status occurs when cancel is invoked. We want to keep this
 							// status even in failure conditions.
-							if (flow.getStatus() != Status.KILLED) {
+							if (!flowCancelled) {
 								// During a failure, we propagate the failure to parent flows
 								propagateStatus(node.getParentFlow(), Status.FAILED_FINISHING);
 	
-								if (failureAction == FailureAction.CANCEL_ALL && !flowCancelled) {
+								if (failureAction == FailureAction.CANCEL_ALL) {
 									logger.info("Flow failed. Failure option is Cancel All. Stopping execution.");
 									cancel();
 								}

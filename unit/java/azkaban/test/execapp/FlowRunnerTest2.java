@@ -584,7 +584,7 @@ public class FlowRunnerTest2 {
 		expectedStateMap.put("jobb:innerJobC", Status.FAILED);
 		expectedStateMap.put("jobb:innerFlow", Status.KILLED);
 		expectedStateMap.put("jobc", Status.FAILED);
-		expectedStateMap.put("jobd", Status.FAILED);
+		expectedStateMap.put("jobd", Status.KILLED);
 		expectedStateMap.put("jobd:innerJobA", Status.FAILED);
 		expectedStateMap.put("jobd:innerFlow2", Status.KILLED);
 		expectedStateMap.put("jobe", Status.KILLED);
@@ -807,7 +807,7 @@ public class FlowRunnerTest2 {
 		expectedStateMap.put("jobe", Status.KILLED);
 		expectedStateMap.put("jobf", Status.KILLED);
 		
-		Assert.assertEquals(Status.KILLED, flow.getStatus());
+		Assert.assertEquals(Status.FAILED, flow.getStatus());
 		compareStates(expectedStateMap, nodeMap);
 		Assert.assertFalse(thread.isAlive());
 	}
