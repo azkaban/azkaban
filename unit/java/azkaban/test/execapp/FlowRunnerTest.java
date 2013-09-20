@@ -285,7 +285,7 @@ public class FlowRunnerTest {
 
 		synchronized(this) {
 			try {
-				wait(4500);
+				wait(5000);
 			} catch (InterruptedException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();

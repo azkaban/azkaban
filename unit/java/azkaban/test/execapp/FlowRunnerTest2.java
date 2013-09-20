@@ -223,6 +223,7 @@ public class FlowRunnerTest2 {
 		expectedStateMap.put("jobf", Status.SUCCEEDED);
 		compareStates(expectedStateMap, nodeMap);
 		Assert.assertEquals(Status.SUCCEEDED, flow.getStatus());
+		
 		Assert.assertFalse(thread.isAlive());
 	}
 	
@@ -577,7 +578,7 @@ public class FlowRunnerTest2 {
 		compareStates(expectedStateMap, nodeMap);
 		
 		InteractiveTestJob.getTestJob("jobb:innerJobB").failJob();
-		pause(1000);
+		pause(250);
 		expectedStateMap.put("jobb", Status.FAILED);
 		expectedStateMap.put("jobb:innerJobB", Status.FAILED);
 		expectedStateMap.put("jobb:innerJobC", Status.FAILED);
@@ -588,10 +589,11 @@ public class FlowRunnerTest2 {
 		expectedStateMap.put("jobd:innerFlow2", Status.KILLED);
 		expectedStateMap.put("jobe", Status.KILLED);
 		expectedStateMap.put("jobf", Status.KILLED);
-		
-		Assert.assertEquals(Status.FAILED, flow.getStatus());
 		compareStates(expectedStateMap, nodeMap);
+		
 		Assert.assertFalse(thread.isAlive());
+		Assert.assertEquals(Status.FAILED, flow.getStatus());
+
 	}
 	
 	@Test
@@ -700,7 +702,7 @@ public class FlowRunnerTest2 {
 		// 1. START FLOW
 		createExpectedStateMap(flow, expectedStateMap, nodeMap);
 		Thread thread = runFlowRunnerInThread(runner);
-		pause(250);
+		pause(1000);
 		
 		// After it starts up, only joba should be running
 		expectedStateMap.put("joba", Status.RUNNING);
@@ -728,7 +730,7 @@ public class FlowRunnerTest2 {
 		compareStates(expectedStateMap, nodeMap);
 		
 		runner.cancel("me");
-		pause(1000);
+		pause(250);
 		
 		expectedStateMap.put("jobb", Status.KILLED);
 		expectedStateMap.put("jobb:innerJobB", Status.FAILED);
@@ -805,13 +807,10 @@ public class FlowRunnerTest2 {
 		expectedStateMap.put("jobe", Status.KILLED);
 		expectedStateMap.put("jobf", Status.KILLED);
 		
-		Assert.assertEquals(Status.FAILED, flow.getStatus());
+		Assert.assertEquals(Status.KILLED, flow.getStatus());
 		compareStates(expectedStateMap, nodeMap);
 		Assert.assertFalse(thread.isAlive());
 	}
-	
-	// @TODO write test for:
-	// Pipeline
 	
 	private Thread runFlowRunnerInThread(FlowRunner runner) {
 		Thread thread = new Thread(runner);
