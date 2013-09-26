@@ -25,12 +25,18 @@ public class ExecutorMailer {
 	private String mailSender;
 	private String azkabanName;
 	
+	private int mailTimeout;
+	private int connectionTimeout;
+	
 	public ExecutorMailer(Props props) {
 		this.azkabanName = props.getString("azkaban.name", "azkaban");
 		this.mailHost = props.getString("mail.host", "localhost");
 		this.mailUser = props.getString("mail.user", "");
 		this.mailPassword = props.getString("mail.password", "");
 		this.mailSender = props.getString("mail.sender", "");
+
+		this.mailTimeout = props.getInt("mail.timeout.millis", 10000);
+		this.connectionTimeout = props.getInt("mail.connection.timeout.millis", 10000);
 		
 		this.clientHostname = props.getString("jetty.hostname", "localhost");
 		this.clientPortNumber = Utils.nonNull(props.getString("jetty.ssl.port"));
@@ -48,6 +54,8 @@ public class ExecutorMailer {
 			message.setFromAddress(mailSender);
 			message.addAllToAddress(emailList);
 			message.setMimeType("text/html");
+			message.setTimeout(mailTimeout);
+			message.setConnectionTimeout(connectionTimeout);
 			message.setSubject("Flow '" + flow.getFlowId() + "' has failed on " + azkabanName);
 			
 			message.println("<h2 style=\"color:#FF0000\"> Execution '" + flow.getExecutionId() + "' of flow '" + flow.getFlowId() + "' has encountered a failure on " + azkabanName + "</h2>");
@@ -102,6 +110,8 @@ public class ExecutorMailer {
 			message.setFromAddress(mailSender);
 			message.addAllToAddress(emailList);
 			message.setMimeType("text/html");
+			message.setTimeout(mailTimeout);
+			message.setConnectionTimeout(connectionTimeout);
 			message.setSubject("Flow '" + flow.getFlowId() + "' has failed on " + azkabanName);
 			
 			message.println("<h2 style=\"color:#FF0000\"> Execution '" + execId + "' of flow '" + flow.getFlowId() + "' has failed on " + azkabanName + "</h2>");
@@ -150,6 +160,8 @@ public class ExecutorMailer {
 			message.setFromAddress(mailSender);
 			message.addAllToAddress(emailList);
 			message.setMimeType("text/html");
+			message.setTimeout(mailTimeout);
+			message.setConnectionTimeout(connectionTimeout);
 			message.setSubject("Flow '" + flow.getFlowId() + "' has succeeded on " + azkabanName);
 			
 			message.println("<h2> Execution '" + flow.getExecutionId() + "' of flow '" + flow.getFlowId() + "' has succeeded on " + azkabanName + "</h2>");

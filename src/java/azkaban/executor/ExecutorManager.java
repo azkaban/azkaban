@@ -696,7 +696,7 @@ public class ExecutorManager {
 				}
 				catch (Exception e) {
 					logger.error(e);
-				}
+				} 
 			}
 		}
 	}
@@ -704,6 +704,7 @@ public class ExecutorManager {
 	private void finalizeFlows(ExecutableFlow flow) {
 		int execId = flow.getExecutionId();
 		
+		updaterStage = "finalizing flow " + execId;
 		// First we check if the execution in the datastore is complete
 		try {
 			ExecutableFlow dsFlow;
@@ -711,15 +712,18 @@ public class ExecutorManager {
 				dsFlow = flow;
 			}
 			else {
+				updaterStage = "finalizing flow " + execId + " loading from db";
 				dsFlow = executorLoader.fetchExecutableFlow(execId);
 			
 				// If it's marked finished, we're good. If not, we fail everything and then mark it finished.
 				if (!isFinished(dsFlow)) {
+					updaterStage = "finalizing flow " + execId + " failing the flow";
 					failEverything(dsFlow);
 					executorLoader.updateExecutableFlow(dsFlow);
 				}
 			}
 
+			updaterStage = "finalizing flow " + execId + " deleting active reference";
 			// Delete the executing reference.
 			if (flow.getEndTime() == -1) {
 				flow.setEndTime(System.currentTimeMillis());
@@ -727,6 +731,7 @@ public class ExecutorManager {
 			}
 			executorLoader.removeActiveExecutableReference(execId);
 			
+			updaterStage = "finalizing flow " + execId + " cleaning from memory";
 			runningFlows.remove(execId);
 			recentlyFinished.put(execId, dsFlow);
 		} catch (ExecutorManagerException e) {
@@ -736,6 +741,7 @@ public class ExecutorManager {
 		// TODO append to the flow log that we forced killed this flow because the target no longer had
 		// the reference.
 		
+		updaterStage = "finalizing flow " + execId + " alerting and emailing";
 		ExecutionOptions options = flow.getExecutionOptions();
 		// But we can definitely email them.
 		if(flow.getStatus() == Status.FAILED || flow.getStatus() == Status.KILLED)

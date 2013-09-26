@@ -32,7 +32,9 @@ public class EmailMessage {
 	private String _fromAddress;
 	private String _mimeType = "text/plain";
 	private StringBuffer _body = new StringBuffer();
-
+	private int _mailTimeout = 10000;
+	private int _connectionTimeout = 10000;
+	
 	private ArrayList<BodyPart> _attachments = new ArrayList<BodyPart>();
 
 	public EmailMessage() {
@@ -44,7 +46,17 @@ public class EmailMessage {
 		_mailHost = host;
 		_mailPassword = password;
 	}
-
+	
+	public EmailMessage setTimeout(int timeoutMillis) {
+		_mailTimeout = timeoutMillis;
+		return this;
+	}
+	
+	public EmailMessage setConnectionTimeout(int timeoutMillis) {
+		_connectionTimeout = timeoutMillis;
+		return this;
+	}
+	
 	public EmailMessage setMailHost(String host) {
 		_mailHost = host;
 		return this;
@@ -136,6 +148,8 @@ public class EmailMessage {
 		props.put("mail."+protocol+".auth", "true");
 		props.put("mail.user", _mailUser);
 		props.put("mail.password", _mailPassword);
+		props.put("mail."+protocol+".timeout", _mailTimeout);
+		props.put("mail."+protocol+".connectiontimeout", _connectionTimeout);
 
 		Session session = Session.getInstance(props, null);
 		Message message = new MimeMessage(session);
