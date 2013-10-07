@@ -32,8 +32,8 @@ public class EmailMessage {
 	private String _fromAddress;
 	private String _mimeType = "text/plain";
 	private StringBuffer _body = new StringBuffer();
-	private int _mailTimeout = 10000;
-	private int _connectionTimeout = 10000;
+	private static int _mailTimeout = 10000;
+	private static int _connectionTimeout = 10000;
 	
 	private ArrayList<BodyPart> _attachments = new ArrayList<BodyPart>();
 
@@ -47,14 +47,12 @@ public class EmailMessage {
 		_mailPassword = password;
 	}
 	
-	public EmailMessage setTimeout(int timeoutMillis) {
+	public static void setTimeout(int timeoutMillis) {
 		_mailTimeout = timeoutMillis;
-		return this;
 	}
 	
-	public EmailMessage setConnectionTimeout(int timeoutMillis) {
+	public static void setConnectionTimeout(int timeoutMillis) {
 		_connectionTimeout = timeoutMillis;
-		return this;
 	}
 	
 	public EmailMessage setMailHost(String host) {
