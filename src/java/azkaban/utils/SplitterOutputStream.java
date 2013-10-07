@@ -38,15 +38,31 @@ public class SplitterOutputStream extends OutputStream {
 
 	@Override
 	public void flush() throws IOException {
+		IOException exception = null;
 		for (OutputStream output : outputs) {
-			output.flush();
+			try {
+				output.flush();
+			} catch (IOException e) {
+				exception = e;
+			}
+		}
+		if (exception != null) {
+			throw exception;
 		}
 	}
 
 	@Override
 	public void close() throws IOException {
+		IOException exception = null;
 		for (OutputStream output : outputs) {
-			output.close();
+			try {
+				output.close();
+			} catch (IOException e) {
+				exception = e;
+			}
+		}
+		if (exception != null) {
+			throw exception;
 		}
 	}
 

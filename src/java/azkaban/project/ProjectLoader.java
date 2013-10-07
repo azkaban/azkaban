@@ -122,6 +122,9 @@ public interface ProjectLoader {
 	 * @throws ProjectManagerException
 	 */
 	public void changeProjectVersion(Project project, int version, String user) throws ProjectManagerException;
+
+
+	public void updateFlow(Project project, int version, Flow flow) throws ProjectManagerException;
 	
 	/**
 	 * Uploads all computed flows
