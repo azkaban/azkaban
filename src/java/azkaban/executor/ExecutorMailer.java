@@ -18,9 +18,22 @@ public class ExecutorMailer extends AbstractMailer {
 	
 	private boolean testMode = false;
 	
+	private int mailTimeout;
+	private int connectionTimeout;
+	
 	public ExecutorMailer(Props props) {
-		super(props);
+		this.azkabanName = props.getString("azkaban.name", "azkaban");
+		this.mailHost = props.getString("mail.host", "localhost");
+		this.mailUser = props.getString("mail.user", "");
+		this.mailPassword = props.getString("mail.password", "");
+		this.mailSender = props.getString("mail.sender", "");
 
+		this.mailTimeout = props.getInt("mail.timeout.millis", 10000);
+		this.connectionTimeout = props.getInt("mail.connection.timeout.millis", 10000);
+		
+		this.clientHostname = props.getString("jetty.hostname", "localhost");
+		this.clientPortNumber = Utils.nonNull(props.getString("jetty.ssl.port"));
+		
 		testMode = props.getBoolean("test.mode", false);
 	}
 	
@@ -30,10 +43,13 @@ public class ExecutorMailer extends AbstractMailer {
 		int execId = flow.getExecutionId();
 		
 		if (emailList != null && !emailList.isEmpty()) {
-			EmailMessage message = super.createEmailMessage(
-					"Flow '" + flow.getFlowId() + "' has failed on " + getAzkabanName(), 
-					"text/html", 
-					emailList);
+			EmailMessage message = new EmailMessage(mailHost, mailUser, mailPassword);
+			message.setFromAddress(mailSender);
+			message.addAllToAddress(emailList);
+			message.setMimeType("text/html");
+			message.setTimeout(mailTimeout);
+			message.setConnectionTimeout(connectionTimeout);
+			message.setSubject("Flow '" + flow.getFlowId() + "' has failed on " + azkabanName);
 			
 			message.println("<h2 style=\"color:#FF0000\"> Execution '" + flow.getExecutionId() + "' of flow '" + flow.getFlowId() + "' has encountered a failure on " + getAzkabanName() + "</h2>");
 			
@@ -83,10 +99,13 @@ public class ExecutorMailer extends AbstractMailer {
 		int execId = flow.getExecutionId();
 		
 		if (emailList != null && !emailList.isEmpty()) {
-			EmailMessage message = super.createEmailMessage(
-					"Flow '" + flow.getFlowId() + "' has failed on " + getAzkabanName(), 
-					"text/html", 
-					emailList);
+			EmailMessage message = new EmailMessage(mailHost, mailUser, mailPassword);
+			message.setFromAddress(mailSender);
+			message.addAllToAddress(emailList);
+			message.setMimeType("text/html");
+			message.setTimeout(mailTimeout);
+			message.setConnectionTimeout(connectionTimeout);
+			message.setSubject("Flow '" + flow.getFlowId() + "' has failed on " + azkabanName);
 			
 			message.println("<h2 style=\"color:#FF0000\"> Execution '" + execId + "' of flow '" + flow.getFlowId() + "' has failed on " + getAzkabanName() + "</h2>");
 			message.println("<table>");
@@ -129,10 +148,13 @@ public class ExecutorMailer extends AbstractMailer {
 		int execId = flow.getExecutionId();
 		
 		if (emailList != null && !emailList.isEmpty()) {
-			EmailMessage message = super.createEmailMessage(
-					"Flow '" + flow.getFlowId() + "' has succeeded on " + getAzkabanName(), 
-					"text/html", 
-					emailList);
+			EmailMessage message = new EmailMessage(mailHost, mailUser, mailPassword);
+			message.setFromAddress(mailSender);
+			message.addAllToAddress(emailList);
+			message.setMimeType("text/html");
+			message.setTimeout(mailTimeout);
+			message.setConnectionTimeout(connectionTimeout);
+			message.setSubject("Flow '" + flow.getFlowId() + "' has succeeded on " + azkabanName);
 			
 			message.println("<h2> Execution '" + flow.getExecutionId() + "' of flow '" + flow.getFlowId() + "' has succeeded on " + getAzkabanName() + "</h2>");
 			message.println("<table>");

@@ -21,6 +21,11 @@ public class JmxExecutorManager implements JmxExecutorManagerMBean {
 	public String getExecutorThreadState() {
 		return manager.getExecutorThreadState().toString();
 	}
+	
+	@Override
+	public String getExecutorThreadStage() {
+		return manager.getExecutorThreadStage();
+	}
 
 	@Override
 	public boolean isThreadActive() {
@@ -36,4 +41,11 @@ public class JmxExecutorManager implements JmxExecutorManagerMBean {
 	public List<String> getPrimaryExecutorHostPorts() {
 		return new ArrayList<String>(manager.getPrimaryServerHosts());
 	}
+
+	@Override
+	public String getRunningFlows() {
+		return manager.getRunningFlowIds();
+	}
+
+	
 }

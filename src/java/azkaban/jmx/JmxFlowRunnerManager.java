@@ -54,4 +54,9 @@ public class JmxFlowRunnerManager implements JmxFlowRunnerManagerMBean {
 		return manager.getNumExecutingJobs();
 	}
 
+	@Override
+	public String getRunningFlows() {
+		return manager.getRunningFlowIds();
+	}
+
 }
