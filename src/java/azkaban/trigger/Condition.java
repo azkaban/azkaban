@@ -21,7 +21,7 @@ public class Condition {
 	private Expression expression;
 	private Map<String, ConditionChecker> checkers = new HashMap<String, ConditionChecker>();
 	private MapContext context = new MapContext();
-	private long nextCheckTime = -1;	
+	private Long nextCheckTime = -1L;	
 	
 	public Condition(Map<String, ConditionChecker> checkers, String expr) {
 		setCheckers(checkers);
@@ -32,6 +32,9 @@ public class Condition {
 	public Condition(Map<String, ConditionChecker> checkers, String expr, long nextCheckTime) {
 		this.nextCheckTime = nextCheckTime;
 		setCheckers(checkers);
+//		for(ConditionChecker ck : checkers.values()) {
+//			ck.setCondition(this);
+//		}
 		this.expression = jexl.createExpression(expr);
 	}
 	
@@ -43,18 +46,17 @@ public class Condition {
 		Condition.checkerLoader = loader;
 	}
 	
-	public static CheckerTypeLoader getCheckerLoader() {
+	protected static CheckerTypeLoader getCheckerLoader() {
 		return checkerLoader;
 	}
 	
-	public void registerChecker(ConditionChecker checker) {
+	protected void registerChecker(ConditionChecker checker) {
 		checkers.put(checker.getId(), checker);
 		context.set(checker.getId(), checker);
 		updateNextCheckTime();
 	}
 	
 	public long getNextCheckTime() {
-		updateNextCheckTime();
 		return nextCheckTime;
 	}
 	
@@ -66,8 +68,15 @@ public class Condition {
 		this.checkers = checkers;
 		for(ConditionChecker checker : checkers.values()) {
 			this.context.set(checker.getId(), checker);
+//			checker.setCondition(this);
 		}
 		updateNextCheckTime();
+	}
+	
+	public void updateCheckTime(Long ct) {
+		if(nextCheckTime < ct) {
+			nextCheckTime = ct;
+		}
 	}
 	
 	private void updateNextCheckTime() {
@@ -83,7 +92,7 @@ public class Condition {
 			checker.reset();
 		}
 		updateNextCheckTime();
-		logger.error("Done resetting checkers. The next check time will be " + new DateTime(nextCheckTime));
+		logger.info("Done resetting checkers. The next check time will be " + new DateTime(nextCheckTime));
 	}
 	
 	public String getExpression() {
@@ -95,6 +104,7 @@ public class Condition {
 	}
 	
 	public boolean isMet() {
+		logger.info("Testing ondition " + expression);
 		return expression.evaluate(context).equals(Boolean.TRUE);
 	}
 	
@@ -134,7 +144,7 @@ public class Condition {
 				checkers.put(ck.getId(), ck);
 			}
 			String expr = (String) jsonObj.get("expression");
-			long nextCheckTime = Long.valueOf((String) jsonObj.get("nextCheckTime"));
+			Long nextCheckTime = Long.valueOf((String) jsonObj.get("nextCheckTime"));
 				
 			cond = new Condition(checkers, expr, nextCheckTime);
 			

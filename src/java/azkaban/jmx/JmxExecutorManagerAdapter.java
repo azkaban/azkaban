@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import azkaban.executor.ExecutorManager;
 import azkaban.executor.ExecutorManagerAdapter;
 
 public class JmxExecutorManagerAdapter implements JmxExecutorManagerAdapterMBean {

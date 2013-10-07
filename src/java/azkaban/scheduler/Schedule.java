@@ -367,8 +367,8 @@ public class Schedule{
 		return null;
 	}
 	
+	@SuppressWarnings("unchecked")
 	public void createAndSetScheduleOptions(Object obj) {
-		@SuppressWarnings("unchecked")
 		HashMap<String, Object> schedObj = (HashMap<String, Object>)obj;
 		if (schedObj.containsKey("executionOptions")) {
 			ExecutionOptions execOptions = ExecutionOptions.createFromObject(schedObj.get("executionOptions"));

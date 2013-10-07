@@ -1,4 +1,4 @@
-package azkaban.executor;
+package azkaban.utils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -7,20 +7,24 @@ import javax.mail.MessagingException;
 
 import org.apache.log4j.Logger;
 
+import azkaban.alert.Alerter;
+import azkaban.executor.ExecutableFlow;
+import azkaban.executor.ExecutableNode;
+import azkaban.executor.ExecutionOptions;
 import azkaban.executor.ExecutionOptions.FailureAction;
-import azkaban.executor.ExecutorManager.Alerter;
+import azkaban.executor.Status;
 import azkaban.sla.SlaOption;
 import azkaban.utils.AbstractMailer;
 import azkaban.utils.EmailMessage;
 import azkaban.utils.Props;
 import azkaban.utils.Utils;
 
-public class ExecutorMailer extends AbstractMailer implements Alerter {
-	private static Logger logger = Logger.getLogger(ExecutorMailer.class);
+public class Emailer extends AbstractMailer implements Alerter {
+	private static Logger logger = Logger.getLogger(Emailer.class);
 	
 	private boolean testMode = false;
 	
-	public ExecutorMailer(Props props) {
+	public Emailer(Props props) {
 		super(props);
 
 		testMode = props.getBoolean("test.mode", false);
@@ -28,7 +32,7 @@ public class ExecutorMailer extends AbstractMailer implements Alerter {
 	
 	@SuppressWarnings("unchecked")
 	private void sendSlaAlertEmail(SlaOption slaOption, String slaMessage) {
-		String subject = "Sla Violation Alert";
+		String subject = "Sla Violation Alert on " + getAzkabanName();
 		String body = slaMessage;
 		List<String> emailList = (List<String>) slaOption.getInfo().get(SlaOption.INFO_EMAIL_LIST);
 		if (emailList != null && !emailList.isEmpty()) {

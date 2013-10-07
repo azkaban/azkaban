@@ -1,25 +1,17 @@
 package azkaban.trigger.builtin;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.log4j.Logger;
-
-import azkaban.sla.SlaOption;
-import azkaban.trigger.Trigger;
 import azkaban.trigger.TriggerAction;
 import azkaban.utils.AbstractMailer;
 import azkaban.utils.EmailMessage;
 import azkaban.utils.Props;
 
 public class SendEmailAction implements TriggerAction {
-
-	private static final Logger logger = Logger.getLogger(SendEmailAction.class);
 	
 	private String actionId;
-	private Map<String, Object> context;
 	private static AbstractMailer mailer;
 	private String message;
 	public static final String type = "SendEmailAction";

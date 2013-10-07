@@ -18,7 +18,6 @@ import org.apache.log4j.Logger;
 import azkaban.executor.ConnectorParams;
 import azkaban.executor.ExecutorManager;
 import azkaban.executor.ExecutorManagerAdapter;
-import azkaban.triggerapp.TriggerConnectorParams;
 import azkaban.trigger.TriggerManager;
 import azkaban.user.Permission;
 import azkaban.user.Role;
@@ -77,16 +76,17 @@ public class JMXHttpServlet extends LoginAbstractAzkabanServlet implements Conne
 				Map<String, Object> result = executorManager.callExecutorJMX(hostPort, JMX_GET_ALL_MBEAN_ATTRIBUTES, mbean);
 				ret = result;
 			}
-			else if (TriggerConnectorParams.JMX_GET_ALL_TRIGGER_SERVER_ATTRIBUTES.equals(ajax)) {
-				if(!hasParam(req, JMX_MBEAN) || !hasParam(req, JMX_HOSTPORT)) {
-					ret.put("error", "Parameters '" + JMX_MBEAN + "' and '"+ JMX_HOSTPORT +"' must be set");
-					this.writeJSON(resp, ret, true);
-					return;
-				}
-//				String hostPort = getParam(req, JMX_HOSTPORT);
-//				String mbean = getParam(req, JMX_MBEAN);
-				ret = triggerManager.getJMX().getAllJMXMbeans();
-			}
+//			else 
+//				if (TriggerConnectorParams.JMX_GET_ALL_TRIGGER_SERVER_ATTRIBUTES.equals(ajax)) {
+//				if(!hasParam(req, JMX_MBEAN) || !hasParam(req, JMX_HOSTPORT)) {
+//					ret.put("error", "Parameters '" + JMX_MBEAN + "' and '"+ JMX_HOSTPORT +"' must be set");
+//					this.writeJSON(resp, ret, true);
+//					return;
+//				}
+////				String hostPort = getParam(req, JMX_HOSTPORT);
+////				String mbean = getParam(req, JMX_MBEAN);
+//				ret = triggerManager.getJMX().getAllJMXMbeans();
+//			}
 			else if (JMX_GET_MBEANS.equals(ajax)) {
 				ret.put("mbeans", server.getMbeanNames());
 			}

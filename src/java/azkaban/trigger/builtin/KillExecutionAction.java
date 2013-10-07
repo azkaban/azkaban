@@ -6,7 +6,6 @@ import java.util.Map;
 import org.apache.log4j.Logger;
 
 import azkaban.executor.ExecutableFlow;
-import azkaban.executor.ExecutorManager;
 import azkaban.executor.ExecutorManagerAdapter;
 import azkaban.trigger.TriggerAction;
 

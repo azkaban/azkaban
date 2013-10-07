@@ -8,7 +8,6 @@ import java.util.List;
 import java.util.Map;
 
 import azkaban.executor.ExecutableFlow;
-import azkaban.executor.ExecutorManager;
 import azkaban.executor.ExecutorManagerAdapter;
 import azkaban.executor.ExecutorManagerException;
 import azkaban.executor.Status;

@@ -8,9 +8,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.PriorityBlockingQueue;
 import org.apache.log4j.Logger;
-import org.joda.time.DateTime;
 
 import azkaban.utils.Props;
 
@@ -18,7 +18,7 @@ public class TriggerManager implements TriggerManagerAdapter{
 	private static Logger logger = Logger.getLogger(TriggerManager.class);
 	public static final long DEFAULT_SCANNER_INTERVAL_MS = 60000;
 
-	private static Map<Integer, Trigger> triggerIdMap = new HashMap<Integer, Trigger>();
+	private static Map<Integer, Trigger> triggerIdMap = new ConcurrentHashMap<Integer, Trigger>();
 	
 	private CheckerTypeLoader checkerTypeLoader;
 	private ActionTypeLoader actionTypeLoader;
@@ -47,8 +47,11 @@ public class TriggerManager implements TriggerManagerAdapter{
 		} catch (Exception e) {
 			throw new TriggerManagerException(e);
 		}
+		
 		Condition.setCheckerLoader(checkerTypeLoader);
 		Trigger.setActionTypeLoader(actionTypeLoader);
+		
+		logger.info("TriggerManager loaded.");
 	}
 
 	@Override
@@ -192,7 +195,6 @@ public class TriggerManager implements TriggerManagerAdapter{
 					} catch(InterruptedException e) {
 						logger.info("Interrupted. Probably to shut down.");
 					}
-					
 				}
 			}
 		}
@@ -247,7 +249,6 @@ public class TriggerManager implements TriggerManagerAdapter{
 			catch (TriggerLoaderException e) {
 				throw new TriggerManagerException(e);
 			}
-//			updateAgent(t);
 		}
 		
 		private void onTriggerExpire(Trigger t) throws TriggerManagerException {
@@ -304,6 +305,7 @@ public class TriggerManager implements TriggerManagerAdapter{
 //		updateAgent(t);
 	}
 
+	@Override
 	public List<Trigger> getTriggers(String triggerSource) {
 		List<Trigger> triggers = new ArrayList<Trigger>();
 		for(Trigger t : triggerIdMap.values()) {
@@ -326,29 +328,29 @@ public class TriggerManager implements TriggerManagerAdapter{
 	}
 	
 	@Override
-	public List<Integer> getTriggerUpdates(long lastUpdateTime) throws TriggerManagerException {
-		List<Integer> triggers = new ArrayList<Integer>();
+	public List<Trigger> getAllTriggerUpdates(long lastUpdateTime) throws TriggerManagerException {
+		List<Trigger> triggers = new ArrayList<Trigger>();
 		for(Trigger t : triggerIdMap.values()) {
 			if(t.getLastModifyTime() > lastUpdateTime) {
-				triggers.add(t.getTriggerId());
+				triggers.add(t);
 			}
 		}
 		return triggers;
 	}
 
-	public void loadTrigger(int triggerId) throws TriggerManagerException {
-		Trigger t;
-		try {
-			t = triggerLoader.loadTrigger(triggerId);
-		} catch (TriggerLoaderException e) {
-			throw new TriggerManagerException(e);
-		}
-		if(t.getStatus().equals(TriggerStatus.PREPARING)) {
-			triggerIdMap.put(t.getTriggerId(), t);
-			runnerThread.addTrigger(t);
-			t.setStatus(TriggerStatus.READY);
-		}
-	}
+//	public void loadTrigger(int triggerId) throws TriggerManagerException {
+//		Trigger t;
+//		try {
+//			t = triggerLoader.loadTrigger(triggerId);
+//		} catch (TriggerLoaderException e) {
+//			throw new TriggerManagerException(e);
+//		}
+//		if(t.getStatus().equals(TriggerStatus.PREPARING)) {
+//			triggerIdMap.put(t.getTriggerId(), t);
+//			runnerThread.addTrigger(t);
+//			t.setStatus(TriggerStatus.READY);
+//		}
+//	}
 
 	@Override
 	public void insertTrigger(Trigger t, String user) throws TriggerManagerException {
@@ -361,27 +363,22 @@ public class TriggerManager implements TriggerManagerAdapter{
 	}
 
 	@Override
-	public void updateTrigger(int triggerId, String user) throws TriggerManagerException {
-		updateTrigger(triggerId);
-	}
-
-	@Override
 	public void updateTrigger(Trigger t, String user) throws TriggerManagerException {
 		updateTrigger(t);
 	}
 	
-	@Override
-	public void insertTrigger(int triggerId, String user) throws TriggerManagerException {
-		Trigger t;
-		try {
-			t = triggerLoader.loadTrigger(triggerId);
-		} catch (TriggerLoaderException e) {
-			throw new TriggerManagerException(e);
-		}
-		if(t != null) {
-			insertTrigger(t);
-		}
-	}
+//	@Override
+//	public void insertTrigger(int triggerId, String user) throws TriggerManagerException {
+//		Trigger t;
+//		try {
+//			t = triggerLoader.loadTrigger(triggerId);
+//		} catch (TriggerLoaderException e) {
+//			throw new TriggerManagerException(e);
+//		}
+//		if(t != null) {
+//			insertTrigger(t);
+//		}
+//	}
 	
 	@Override
 	public void shutdown() {

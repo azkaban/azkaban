@@ -24,38 +24,26 @@ public class SlaChecker implements ConditionChecker{
 	private String id;
 	private SlaOption slaOption;
 	private int execId;
-	private Map<String, Object> context;
-	private boolean passChecker = true;
 	private long checkTime = -1;
 	
 	private static ExecutorManagerAdapter executorManager;
 	
-	public SlaChecker(String id, SlaOption slaOption, int execId, boolean passChecker) {
+	public SlaChecker(String id, SlaOption slaOption, int execId) {
 		this.id = id;
 		this.slaOption = slaOption;
 		this.execId = execId;
-		this.passChecker = passChecker;
-	}
-	
-	public SlaChecker(String id, SlaOption sla, String executionActionId, boolean passChecker) {
-		Map<String, Object> executeActionProps = (Map<String, Object>) context.get(executionActionId);
-		int execId = Integer.valueOf((String) executeActionProps.get(ExecuteFlowAction.EXEC_ID));
-		this.id = id;
-		this.slaOption = sla;
-		this.execId = execId;
-		this.passChecker = passChecker;
 	}
 
 	public static void setExecutorManager(ExecutorManagerAdapter em) {
 		executorManager = em;
 	}
 	
-	private Boolean metSla(ExecutableFlow flow) {
+	private Boolean violateSla(ExecutableFlow flow) {
 		String type = slaOption.getType();
 		logger.info("Checking for " + flow.getExecutionId() + " with sla " + type);
 		logger.info("flow is " + flow.getStatus());
 		if(flow.getStartTime() < 0) {
-			return null;
+			return Boolean.FALSE;
 		}
 		if(type.equals(SlaOption.TYPE_FLOW_FINISH)) {
 			ReadablePeriod duration = Utils.parsePeriodString((String) slaOption.getInfo().get(SlaOption.INFO_DURATION));
@@ -65,9 +53,9 @@ public class SlaChecker implements ConditionChecker{
 			if(checkTime.isBeforeNow()) {
 				Status status = flow.getStatus();
 				if(status.equals(Status.FAILED) || status.equals(Status.KILLED) || status.equals(Status.SUCCEEDED)) {
-					return Boolean.TRUE;
-				} else {
 					return Boolean.FALSE;
+				} else {
+					return Boolean.TRUE;
 				}
 			}
 		} else if(type.equals(SlaOption.TYPE_FLOW_SUCCEED)) {
@@ -78,9 +66,9 @@ public class SlaChecker implements ConditionChecker{
 			if(checkTime.isBeforeNow()) {
 				Status status = flow.getStatus();
 				if(status.equals(Status.SUCCEEDED)) {
-					return Boolean.TRUE;
-				} else {
 					return Boolean.FALSE;
+				} else {
+					return Boolean.TRUE;
 				}
 			}
 		} else if(type.equals(SlaOption.TYPE_JOB_FINISH)) {
@@ -94,9 +82,9 @@ public class SlaChecker implements ConditionChecker{
 				if(checkTime.isBeforeNow()) {
 					Status status = node.getStatus();
 					if(status.equals(Status.FAILED) || status.equals(Status.KILLED) || status.equals(Status.SUCCEEDED)) {
-						return Boolean.TRUE;
-					} else {
 						return Boolean.FALSE;
+					} else {
+						return Boolean.TRUE;
 					}
 				}
 			}
@@ -111,9 +99,9 @@ public class SlaChecker implements ConditionChecker{
 				if(checkTime.isBeforeNow()) {
 					Status status = node.getStatus();
 					if(status.equals(Status.SUCCEEDED)) {
-						return Boolean.TRUE;
-					} else {
 						return Boolean.FALSE;
+					} else {
+						return Boolean.TRUE;
 					}
 				}
 			}
@@ -137,10 +125,10 @@ public class SlaChecker implements ConditionChecker{
 //				return Boolean.FALSE;
 //			}
 //		}
-		return null;
+		return Boolean.FALSE;
 	}
 	
-	// return true for should do sla actions
+	// return true to trigger sla action
 	@Override
 	public Object eval() {
 		ExecutableFlow flow;
@@ -149,30 +137,19 @@ public class SlaChecker implements ConditionChecker{
 		} catch (ExecutorManagerException e) {
 			logger.error("Can't get executable flow.", e);
 			e.printStackTrace();
+			// something wrong, send out alerts
 			return Boolean.TRUE;
 		}
-		Boolean metSla = metSla(flow);
-		if(metSla == null) {
-			return Boolean.FALSE;
-		} else {
-			if(passChecker) {
-				return metSla;
-			} else {
-				return !metSla;
-			}
-		}
+		return violateSla(flow);
 	}
 
 	@Override
 	public Object getNum() {
-		// TODO Auto-generated method stub
 		return null;
 	}
 
 	@Override
 	public void reset() {
-		// TODO Auto-generated method stub
-		
 	}
 
 	@Override
@@ -204,8 +181,7 @@ public class SlaChecker implements ConditionChecker{
 		String id = (String) jsonObj.get("id");
 		SlaOption slaOption = SlaOption.fromObject(jsonObj.get("slaOption"));
 		int execId = Integer.valueOf((String) jsonObj.get("execId"));
-		boolean passChecker = Boolean.valueOf((Boolean) jsonObj.get("passChecker"));
-		return new SlaChecker(id, slaOption, execId, passChecker);
+		return new SlaChecker(id, slaOption, execId);
 	}
 	
 	@Override
@@ -215,7 +191,6 @@ public class SlaChecker implements ConditionChecker{
 		jsonObj.put("id", id);
 		jsonObj.put("slaOption", slaOption.toObject());
 		jsonObj.put("execId", String.valueOf(execId));
-		jsonObj.put("passChecker", passChecker);
 	
 		return jsonObj;
 	}
@@ -227,7 +202,6 @@ public class SlaChecker implements ConditionChecker{
 
 	@Override
 	public void setContext(Map<String, Object> context) {
-		this.context = context;
 	}
 
 	@Override

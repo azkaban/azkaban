@@ -1,29 +1,16 @@
 package azkaban.trigger.builtin;
 
-import java.io.File;
-import java.lang.reflect.Constructor;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.net.URLClassLoader;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import org.apache.log4j.Logger;
 
+import azkaban.alert.Alerter;
 import azkaban.executor.ExecutableFlow;
-import azkaban.executor.ExecutorMailer;
-import azkaban.executor.ExecutorManager;
 import azkaban.executor.ExecutorManagerAdapter;
-import azkaban.executor.ExecutorManager.Alerter;
 import azkaban.executor.ExecutorManagerException;
 import azkaban.sla.SlaOption;
 import azkaban.trigger.TriggerAction;
-import azkaban.utils.FileIOUtils;
-import azkaban.utils.Props;
-import azkaban.utils.PropsUtils;
 
 public class SlaAlertAction implements TriggerAction{
 
@@ -35,8 +22,7 @@ public class SlaAlertAction implements TriggerAction{
 	private SlaOption slaOption;
 	private int execId;
 //	private List<Map<String, Object>> alerts;
-	private static Map<String, Alerter> alerters;
-	private Map<String, Object> context;
+	private static Map<String, azkaban.alert.Alerter> alerters;
 	private static ExecutorManagerAdapter executorManager;
 
 	public SlaAlertAction(String id, SlaOption slaOption, int execId) {
@@ -108,7 +94,8 @@ public class SlaAlertAction implements TriggerAction{
 				Alerter alerter = alerters.get(alertType);
 				if(alerter != null) {
 					try {
-						alerter.alertOnSla(slaOption, createSlaMessage());
+						ExecutableFlow flow = executorManager.getExecutableFlow(execId);
+						alerter.alertOnSla(slaOption, SlaOption.createSlaMessage(slaOption, flow));
 					} catch (Exception e) {
 						// TODO Auto-generated catch block
 						e.printStackTrace();
@@ -122,45 +109,44 @@ public class SlaAlertAction implements TriggerAction{
 //		}
 	}
 
-	private String createSlaMessage() {
-		ExecutableFlow flow = null;
-		try {
-			flow = executorManager.getExecutableFlow(execId);
-		} catch (ExecutorManagerException e) {
-			e.printStackTrace();
-			logger.error("Failed to get executable flow.");
-		}
-		String type = slaOption.getType();
-		if(type.equals(SlaOption.TYPE_FLOW_FINISH)) {
-			String flowName = (String) slaOption.getInfo().get(SlaOption.INFO_FLOW_NAME);
-			String duration = (String) slaOption.getInfo().get(SlaOption.INFO_DURATION);
-			String basicinfo =  "SLA Alert: Your flow " + flowName + " failed to FINISH within " + duration + "</br>";
-			String expected = "Here is details : </br>" + "Flow " + flowName + " in execution " + execId + " is expected to FINISH within " + duration + " from " + flow.getStartTime() + "</br>"; 
-			String actual = "Actual flow status is " + flow.getStatus();
-			return basicinfo + expected + actual;
-		} else if(type.equals(SlaOption.TYPE_FLOW_SUCCEED)) {
-			String flowName = (String) slaOption.getInfo().get(SlaOption.INFO_FLOW_NAME);
-			String duration = (String) slaOption.getInfo().get(SlaOption.INFO_DURATION);
-			String basicinfo =  "SLA Alert: Your flow " + flowName + " failed to SUCCEED within " + duration + "</br>";
-			String expected = "Here is details : </br>" + "Flow " + flowName + " in execution " + execId + " expected to FINISH within " + duration + " from " + flow.getStartTime() + "</br>"; 
-			String actual = "Actual flow status is " + flow.getStatus();
-			return basicinfo + expected + actual;
-		} else if(type.equals(SlaOption.TYPE_JOB_FINISH)) {
-			String jobName = (String) slaOption.getInfo().get(SlaOption.INFO_JOB_NAME);
-			String duration = (String) slaOption.getInfo().get(SlaOption.INFO_DURATION);
-			return "SLA Alert: Your job " + jobName + " failed to FINISH within " + duration + " in execution " + execId;
-		} else if(type.equals(SlaOption.TYPE_JOB_SUCCEED)) {
-			String jobName = (String) slaOption.getInfo().get(SlaOption.INFO_JOB_NAME);
-			String duration = (String) slaOption.getInfo().get(SlaOption.INFO_DURATION);
-			return "SLA Alert: Your job " + jobName + " failed to SUCCEED within " + duration + " in execution " + execId;
-		} else {
-			return "Unrecognized SLA type " + type;
-		}
-	}
+//	private String createSlaMessage() {
+//		ExecutableFlow flow = null;
+//		try {
+//			flow = executorManager.getExecutableFlow(execId);
+//		} catch (ExecutorManagerException e) {
+//			e.printStackTrace();
+//			logger.error("Failed to get executable flow.");
+//		}
+//		String type = slaOption.getType();
+//		if(type.equals(SlaOption.TYPE_FLOW_FINISH)) {
+//			String flowName = (String) slaOption.getInfo().get(SlaOption.INFO_FLOW_NAME);
+//			String duration = (String) slaOption.getInfo().get(SlaOption.INFO_DURATION);
+//			String basicinfo =  "SLA Alert: Your flow " + flowName + " failed to FINISH within " + duration + "</br>";
+//			String expected = "Here is details : </br>" + "Flow " + flowName + " in execution " + execId + " is expected to FINISH within " + duration + " from " + flow.getStartTime() + "</br>"; 
+//			String actual = "Actual flow status is " + flow.getStatus();
+//			return basicinfo + expected + actual;
+//		} else if(type.equals(SlaOption.TYPE_FLOW_SUCCEED)) {
+//			String flowName = (String) slaOption.getInfo().get(SlaOption.INFO_FLOW_NAME);
+//			String duration = (String) slaOption.getInfo().get(SlaOption.INFO_DURATION);
+//			String basicinfo =  "SLA Alert: Your flow " + flowName + " failed to SUCCEED within " + duration + "</br>";
+//			String expected = "Here is details : </br>" + "Flow " + flowName + " in execution " + execId + " expected to FINISH within " + duration + " from " + flow.getStartTime() + "</br>"; 
+//			String actual = "Actual flow status is " + flow.getStatus();
+//			return basicinfo + expected + actual;
+//		} else if(type.equals(SlaOption.TYPE_JOB_FINISH)) {
+//			String jobName = (String) slaOption.getInfo().get(SlaOption.INFO_JOB_NAME);
+//			String duration = (String) slaOption.getInfo().get(SlaOption.INFO_DURATION);
+//			return "SLA Alert: Your job " + jobName + " failed to FINISH within " + duration + " in execution " + execId;
+//		} else if(type.equals(SlaOption.TYPE_JOB_SUCCEED)) {
+//			String jobName = (String) slaOption.getInfo().get(SlaOption.INFO_JOB_NAME);
+//			String duration = (String) slaOption.getInfo().get(SlaOption.INFO_DURATION);
+//			return "SLA Alert: Your job " + jobName + " failed to SUCCEED within " + duration + " in execution " + execId;
+//		} else {
+//			return "Unrecognized SLA type " + type;
+//		}
+//	}
 
 	@Override
 	public void setContext(Map<String, Object> context) {
-		this.context = context;
 	}
 
 	@Override

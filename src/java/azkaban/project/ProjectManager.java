@@ -16,15 +16,12 @@ import org.apache.log4j.Logger;
 
 import azkaban.flow.Flow;
 import azkaban.project.ProjectLogEvent.EventType;
-import azkaban.trigger.TriggerManager;
 import azkaban.user.Permission;
 import azkaban.user.User;
 import azkaban.user.Permission.Type;
 import azkaban.utils.DirectoryFlowLoader;
 import azkaban.utils.Props;
 import azkaban.utils.Utils;
-import azkaban.webapp.AzkabanWebServer;
-import azkaban.webapp.servlet.TriggerPlugin;
 
 public class ProjectManager {
 	private static final Logger logger = Logger.getLogger(ProjectManager.class);

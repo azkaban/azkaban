@@ -6,15 +6,13 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.log4j.Logger;
-import org.joda.time.DateTime;
 
-import azkaban.executor.ExecutorManagerAdapter;
-import azkaban.project.ProjectManager;
 import azkaban.trigger.Condition;
 import azkaban.trigger.ConditionChecker;
 import azkaban.trigger.Trigger;
 import azkaban.trigger.TriggerAction;
 import azkaban.trigger.TriggerManager;
+import azkaban.trigger.TriggerManagerAdapter;
 import azkaban.trigger.TriggerManagerException;
 import azkaban.trigger.builtin.BasicTimeChecker;
 import azkaban.trigger.builtin.ExecuteFlowAction;
@@ -23,29 +21,29 @@ public class TriggerBasedScheduleLoader implements ScheduleLoader {
 	
 	private static Logger logger = Logger.getLogger(TriggerBasedScheduleLoader.class);
 	
-	private TriggerManager triggerManager;
+	private TriggerManagerAdapter triggerManager;
 	
 	private String triggerSource;
 	
-//	private Map<Integer, Trigger> triggersLocalCopy;
 	private long lastUpdateTime = -1;
 	
-	public TriggerBasedScheduleLoader(TriggerManager triggerManager, ExecutorManagerAdapter executorManager, ProjectManager projectManager, String triggerSource) {
+	public TriggerBasedScheduleLoader(TriggerManager triggerManager, String triggerSource) {
 		this.triggerManager = triggerManager;
 		this.triggerSource = triggerSource;
-		// need to init the action types and condition checker types 
-		ExecuteFlowAction.setExecutorManager(executorManager);
-		ExecuteFlowAction.setProjectManager(projectManager);
+//		// need to init the action types and condition checker types 
+//		ExecuteFlowAction.setExecutorManager(executorManager);
+//		ExecuteFlowAction.setProjectManager(projectManager);
 	}
 	
 	private Trigger scheduleToTrigger(Schedule s) {
-		
-		Condition triggerCondition = createTimeTriggerCondition(s);
-		Condition expireCondition = createTimeExpireCondition(s);
+		Condition triggerCondition = createTriggerCondition(s);
+		Condition expireCondition = createExpireCondition(s);
 		List<TriggerAction> actions = createActions(s);
 		Trigger t = new Trigger(s.getScheduleId(), s.getLastModifyTime(), s.getSubmitTime(), s.getSubmitUser(), triggerSource, triggerCondition, expireCondition, actions);
 		if(s.isRecurring()) {
 			t.setResetOnTrigger(true);
+		} else {
+			t.setResetOnTrigger(false);
 		}
 		return t;
 	}
@@ -67,7 +65,7 @@ public class TriggerBasedScheduleLoader implements ScheduleLoader {
 		return actions;
 	}
 	
-	private Condition createTimeTriggerCondition (Schedule s) {
+	private Condition createTriggerCondition (Schedule s) {
 		Map<String, ConditionChecker> checkers = new HashMap<String, ConditionChecker>();
 		ConditionChecker checker = new BasicTimeChecker("BasicTimeChecker_1", s.getFirstSchedTime(), s.getTimezone(), s.isRecurring(), s.skipPastOccurrences(), s.getPeriod());
 		checkers.put(checker.getId(), checker);
@@ -77,7 +75,7 @@ public class TriggerBasedScheduleLoader implements ScheduleLoader {
 	}
 	
 	// if failed to trigger, auto expire?
-	private Condition createTimeExpireCondition (Schedule s) {
+	private Condition createExpireCondition (Schedule s) {
 		Map<String, ConditionChecker> checkers = new HashMap<String, ConditionChecker>();
 		ConditionChecker checker = new BasicTimeChecker("BasicTimeChecker_2", s.getFirstSchedTime(), s.getTimezone(), s.isRecurring(), s.skipPastOccurrences(), s.getPeriod());
 		checkers.put(checker.getId(), checker);
@@ -92,9 +90,7 @@ public class TriggerBasedScheduleLoader implements ScheduleLoader {
 		try {
 			triggerManager.insertTrigger(t, t.getSubmitUser());
 			s.setScheduleId(t.getTriggerId());
-//			triggersLocalCopy.put(t.getTriggerId(), t);
 		} catch (TriggerManagerException e) {
-			// TODO Auto-generated catch block
 			throw new ScheduleManagerException("Failed to insert new schedule!", e);
 		}
 	}
@@ -104,9 +100,7 @@ public class TriggerBasedScheduleLoader implements ScheduleLoader {
 		Trigger t = scheduleToTrigger(s);
 		try {
 			triggerManager.updateTrigger(t, t.getSubmitUser());
-//			triggersLocalCopy.put(t.getTriggerId(), t);
 		} catch (TriggerManagerException e) {
-			// TODO Auto-generated catch block
 			throw new ScheduleManagerException("Failed to update schedule!", e);
 		}
 	}

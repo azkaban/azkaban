@@ -1,7 +1,7 @@
 package azkaban.trigger;
 
 public enum TriggerStatus {
-	READY(10), PAUSED(20), EXPIRED(30), PREPARING(40);
+	READY(10), PAUSED(20), EXPIRED(30);
 	
 	private int numVal;
 
@@ -21,8 +21,6 @@ public enum TriggerStatus {
 			return PAUSED;
 		case 30:
 			return EXPIRED;
-		case 40:
-			return PREPARING;
 		default:
 			return READY;
 		}

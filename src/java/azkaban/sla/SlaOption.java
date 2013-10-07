@@ -5,9 +5,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.joda.time.ReadablePeriod;
+import org.joda.time.DateTime;
+import org.joda.time.format.DateTimeFormat;
+import org.joda.time.format.DateTimeFormatter;
 
-import azkaban.utils.Utils;
+import azkaban.executor.ExecutableFlow;
+import azkaban.executor.ExecutorManagerException;
 
 public class SlaOption {
 	
@@ -33,6 +36,8 @@ public class SlaOption {
 	private String type;
 	private Map<String, Object> info;
 	private List<String> actions;
+	
+	private static DateTimeFormatter fmt = DateTimeFormat.forPattern("MM/dd, YYYY HH:mm");
 	
 	public SlaOption(
 			String type,
@@ -125,5 +130,36 @@ public class SlaOption {
 	public String toString() {
 		return "Sla of " + getType() +  getInfo() + getActions();
 	}
+	
+	public static String createSlaMessage(SlaOption slaOption, ExecutableFlow flow) {
+		String type = slaOption.getType();
+		int execId = flow.getExecutionId();
+		if(type.equals(SlaOption.TYPE_FLOW_FINISH)) {
+			String flowName = (String) slaOption.getInfo().get(SlaOption.INFO_FLOW_NAME);
+			String duration = (String) slaOption.getInfo().get(SlaOption.INFO_DURATION);
+			String basicinfo =  "SLA Alert: Your flow " + flowName + " failed to FINISH within " + duration + "</br>";
+			String expected = "Here is details : </br>" + "Flow " + flowName + " in execution " + execId + " is expected to FINISH within " + duration + " from " + fmt.print(new DateTime(flow.getStartTime())) + "</br>"; 
+			String actual = "Actual flow status is " + flow.getStatus();
+			return basicinfo + expected + actual;
+		} else if(type.equals(SlaOption.TYPE_FLOW_SUCCEED)) {
+			String flowName = (String) slaOption.getInfo().get(SlaOption.INFO_FLOW_NAME);
+			String duration = (String) slaOption.getInfo().get(SlaOption.INFO_DURATION);
+			String basicinfo =  "SLA Alert: Your flow " + flowName + " failed to SUCCEED within " + duration + "</br>";
+			String expected = "Here is details : </br>" + "Flow " + flowName + " in execution " + execId + " expected to FINISH within " + duration + " from " + fmt.print(new DateTime(flow.getStartTime())) + "</br>"; 
+			String actual = "Actual flow status is " + flow.getStatus();
+			return basicinfo + expected + actual;
+		} else if(type.equals(SlaOption.TYPE_JOB_FINISH)) {
+			String jobName = (String) slaOption.getInfo().get(SlaOption.INFO_JOB_NAME);
+			String duration = (String) slaOption.getInfo().get(SlaOption.INFO_DURATION);
+			return "SLA Alert: Your job " + jobName + " failed to FINISH within " + duration + " in execution " + execId;
+		} else if(type.equals(SlaOption.TYPE_JOB_SUCCEED)) {
+			String jobName = (String) slaOption.getInfo().get(SlaOption.INFO_JOB_NAME);
+			String duration = (String) slaOption.getInfo().get(SlaOption.INFO_DURATION);
+			return "SLA Alert: Your job " + jobName + " failed to SUCCEED within " + duration + " in execution " + execId;
+		} else {
+			return "Unrecognized SLA type " + type;
+		}
+	}
+
 
 }

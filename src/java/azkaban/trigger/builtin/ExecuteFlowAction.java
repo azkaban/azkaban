@@ -9,9 +9,9 @@ import org.apache.log4j.Logger;
 
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutionOptions;
-import azkaban.executor.ExecutorManager;
 import azkaban.executor.ExecutorManagerAdapter;
 import azkaban.executor.ExecutorManagerException;
+import azkaban.executor.Status;
 import azkaban.flow.Flow;
 import azkaban.project.Project;
 import azkaban.project.ProjectManager;
@@ -38,7 +38,6 @@ public class ExecuteFlowAction implements TriggerAction {
 	private static ProjectManager projectManager;
 	private ExecutionOptions executionOptions = new ExecutionOptions();
 	private List<SlaOption> slaOptions;
-	private Map<String, Object> context;
 	
 	private static Logger logger = Logger.getLogger(ExecuteFlowAction.class);
 	
@@ -64,7 +63,7 @@ public class ExecuteFlowAction implements TriggerAction {
 		return projectId;
 	}
 
-	public void setProjectId(int projectId) {
+	protected void setProjectId(int projectId) {
 		this.projectId = projectId;
 	}
 
@@ -72,7 +71,7 @@ public class ExecuteFlowAction implements TriggerAction {
 		return flowName;
 	}
 
-	public void setFlowName(String flowName) {
+	protected void setFlowName(String flowName) {
 		this.flowName = flowName;
 	}
 
@@ -80,7 +79,7 @@ public class ExecuteFlowAction implements TriggerAction {
 		return submitUser;
 	}
 
-	public void setSubmitUser(String submitUser) {
+	protected void setSubmitUser(String submitUser) {
 		this.submitUser = submitUser;
 	}
 
@@ -88,7 +87,7 @@ public class ExecuteFlowAction implements TriggerAction {
 		return executionOptions;
 	}
 
-	public void setExecutionOptions(ExecutionOptions executionOptions) {
+	protected void setExecutionOptions(ExecutionOptions executionOptions) {
 		this.executionOptions = executionOptions;
 	}
 	
@@ -96,7 +95,7 @@ public class ExecuteFlowAction implements TriggerAction {
 		return slaOptions;
 	}
 
-	public void setSlaOptions(List<SlaOption> slaOptions) {
+	protected void setSlaOptions(List<SlaOption> slaOptions) {
 		this.slaOptions = slaOptions;
 	}
 
@@ -216,9 +215,9 @@ public class ExecuteFlowAction implements TriggerAction {
 		
 		try{
 			executorManager.submitExecutableFlow(exflow, submitUser);
-			Map<String, Object> outputProps = new HashMap<String, Object>();
-			outputProps.put(EXEC_ID, exflow.getExecutionId());
-			context.put(actionId, outputProps);
+//			Map<String, Object> outputProps = new HashMap<String, Object>();
+//			outputProps.put(EXEC_ID, exflow.getExecutionId());
+//			context.put(actionId, outputProps);
 			logger.info("Invoked flow " + project.getName() + "." + flowName);
 		} catch (ExecutorManagerException e) {
 			throw new RuntimeException(e);
@@ -229,14 +228,15 @@ public class ExecuteFlowAction implements TriggerAction {
 			int execId = exflow.getExecutionId();
 			for(SlaOption sla : slaOptions) {
 				logger.info("Adding sla trigger " + sla.toString());
-				SlaChecker slaFailChecker = new SlaChecker("slaFailChecker", sla, execId, false);
-				Map<String, ConditionChecker> failCheckers = new HashMap<String, ConditionChecker>();
-				failCheckers.put(slaFailChecker.getId(), slaFailChecker);
-				Condition triggerCond = new Condition(failCheckers, slaFailChecker.getId() + ".eval()");
-				SlaChecker slaPassChecker = new SlaChecker("slaPassChecker", sla, execId, true);
-				Map<String, ConditionChecker> passCheckers = new HashMap<String, ConditionChecker>();
-				passCheckers.put(slaPassChecker.getId(), slaPassChecker);
-				Condition expireCond = new Condition(passCheckers, slaPassChecker.getId() + ".eval()");
+				SlaChecker slaChecker = new SlaChecker("slaChecker", sla, execId);
+				Map<String, ConditionChecker> slaCheckers = new HashMap<String, ConditionChecker>();
+				slaCheckers.put(slaChecker.getId(), slaChecker);
+				Condition triggerCond = new Condition(slaCheckers, slaChecker.getId() + ".eval()");
+				// if whole flow finish before violate sla, just abort
+				ExecutionChecker execChecker = new ExecutionChecker("execChecker", execId, null, Status.SUCCEEDED);
+				Map<String, ConditionChecker> expireCheckers = new HashMap<String, ConditionChecker>();
+				expireCheckers.put(execChecker.getId(), execChecker);
+				Condition expireCond = new Condition(expireCheckers, execChecker.getId() + ".eval()");
 				List<TriggerAction> actions = new ArrayList<TriggerAction>();
 				List<String> slaActions = sla.getActions();
 				for(String act : slaActions) {
@@ -265,13 +265,11 @@ public class ExecuteFlowAction implements TriggerAction {
 
 	@Override
 	public void setContext(Map<String, Object> context) {
-		this.context = context;
 	}
 
 	@Override
 	public String getId() {
 		return actionId;
 	}
-
 
 }

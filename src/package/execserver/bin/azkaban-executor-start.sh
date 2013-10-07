@@ -19,6 +19,19 @@ do
   CLASSPATH=$CLASSPATH:$file
 done
 
+if [ "HADOOP_HOME" != "" ]; then
+	for file in $HADOOP_HOME/hadoop-core*.jar	do
+		CLASSPATH=$CLASSPATH:$file
+	done
+	CLASSPATH=$CLASSPATH:$HADOOP_HOME/conf
+else
+	echo "Error: HADOOP_HOME is not set. Hadoop job types will not run properly."
+fi
+
+if [ "HIVE_HOME" != "" ]; then
+    CLASSPATH=$CLASSPATH:$HIVE_HOME/conf
+fi
+
 echo $azkaban_dir;
 echo $CLASSPATH;
 
