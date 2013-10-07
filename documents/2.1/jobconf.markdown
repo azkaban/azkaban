@@ -70,7 +70,7 @@ which in turn will inherit from _system.properties_.
 The hierarchical ordering of properties in the same directory is arbitrary.
 
 ### Parameter Substitution
-Azkaban allows for replacing of parameters. Whenever a $\{_parameter_\} is found in a properties or job file,
+Azkaban allows for replacing of parameters. Whenever a $\{*parameter*\} is found in a properties or job file,
 Azkaban will attempt to replace that parameter. The resolution of the parameters is done late.
 
 <pre class="code">
