@@ -10,6 +10,7 @@ import javax.servlet.http.HttpServletRequest;
 
 import azkaban.executor.ExecutionOptions;
 import azkaban.executor.ExecutionOptions.FailureAction;
+import azkaban.executor.mail.DefaultMailCreator;
 
 public class HttpRequestUtils {
 	public static ExecutionOptions parseFlowOptions(HttpServletRequest req) throws ServletException {
@@ -36,7 +37,7 @@ public class HttpRequestUtils {
 			boolean override = getBooleanParam(req, "successEmailsOverride", false);
 			execOptions.setSuccessEmailsOverridden(override);
 		}
-		
+
 		if (hasParam(req, "failureEmails")) {
 			String emails = getParam(req, "failureEmails");
 			if (!emails.isEmpty()) {
@@ -71,6 +72,11 @@ public class HttpRequestUtils {
 				int queueLevel = getIntParam(req, "queueLevel", 1);
 				execOptions.setPipelineLevel(queueLevel);
 			}
+		}
+		String mailCreator = DefaultMailCreator.DEFAULT_MAIL_CREATOR;
+		if (hasParam(req, "mailCreator")) {
+			mailCreator = getParam(req, "mailCreator");
+			execOptions.setMailCreator(mailCreator);
 		}
 		
 		Map<String, String> flowParamGroup = getParamGroup(req, "flowOverride");

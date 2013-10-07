@@ -163,14 +163,15 @@ public class EmailMessage {
 
 		if (_attachments.size() > 0) {
 			MimeMultipart multipart = new MimeMultipart("related");
+			
+			BodyPart messageBodyPart = new MimeBodyPart();
+			messageBodyPart.setContent(_body.toString(), _mimeType);
+			multipart.addBodyPart(messageBodyPart);
+			
 			// Add attachments
 			for (BodyPart part : _attachments) {
 				multipart.addBodyPart(part);
 			}
-
-			BodyPart messageBodyPart = new MimeBodyPart();
-			messageBodyPart.setContent(_body.toString(), _mimeType);
-			multipart.addBodyPart(messageBodyPart);
 
 			message.setContent(multipart);
 		} else {

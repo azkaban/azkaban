@@ -160,7 +160,6 @@ public class ScheduleManager {
 	 * @param id
 	 */
 	public synchronized void removeSchedule(Schedule sched) {
-
 		Pair<Integer,String> identityPairMap = sched.getScheduleIdentityPair();
 		Set<Schedule> schedules = scheduleIdentityPairMap.get(identityPairMap);
 		if(schedules != null) {
@@ -435,6 +434,7 @@ public class ScheduleManager {
 									}
 									
 									runnerStage = "Submitting flow " + exflow.getFlowId();
+									flowOptions.setMailCreator(flow.getMailCreator());
 									
 									try {
 										executorManager.submitExecutableFlow(exflow);

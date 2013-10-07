@@ -16,6 +16,7 @@
 
 package azkaban.executor;
 
+import java.io.File;
 import java.io.IOException;
 import java.lang.Thread.State;
 import java.net.URI;
@@ -71,12 +72,15 @@ public class ExecutorManager {
 	private long lastThreadCheckTime = -1;
 	private String updaterStage = "not started";
 	
+	File cacheDir;
+	
 	public ExecutorManager(Props props, ExecutorLoader loader) throws ExecutorManagerException {
 		this.executorLoader = loader;
 		this.loadRunningFlows();
 		
 		executorHost = props.getString("executor.host", "localhost");
 		executorPort = props.getInt("executor.port");
+		cacheDir = new File(props.getString("cache.directory", "cache"));
 		mailer = new ExecutorMailer(props);
 		executingManager = new ExecutingManagerUpdaterThread();
 		executingManager.start();
@@ -691,7 +695,7 @@ public class ExecutorManager {
 						// Add new finished
 						for (ExecutableFlow flow: finishedFlows) {
 							if(flow.getScheduleId() >= 0 && flow.getStatus() == Status.SUCCEEDED){
-								ScheduleStatisticManager.invalidateCache(flow.getScheduleId());
+								ScheduleStatisticManager.invalidateCache(flow.getScheduleId(), cacheDir);
 							}
 							recentlyFinished.put(flow.getExecutionId(), flow);
 						}
