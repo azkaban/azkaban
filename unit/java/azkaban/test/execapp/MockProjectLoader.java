@@ -224,4 +224,10 @@ public class MockProjectLoader implements ProjectLoader {
 		// TODO Auto-generated method stub
 		
 	}
+
+	@Override
+	public void updateFlow(Project project, int version, Flow flow) throws ProjectManagerException {
+		// TODO Auto-generated method stub
+		
+	}
 }

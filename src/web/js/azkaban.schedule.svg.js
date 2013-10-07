@@ -432,8 +432,6 @@ $(function() {
 					{
 						var items = data.items;
 
-						console.log(data);
-
 						//Sort items by day
 						for(var i = 0; i < items.length; i++)
 						{

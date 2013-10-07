@@ -87,10 +87,11 @@ import azkaban.webapp.servlet.AzkabanServletContextListener;
 
 import azkaban.webapp.servlet.AbstractAzkabanServlet;
 import azkaban.webapp.servlet.ExecutorServlet;
+import azkaban.webapp.servlet.IndexRedirectServlet;
 import azkaban.webapp.servlet.JMXHttpServlet;
 import azkaban.webapp.servlet.ScheduleServlet;
 import azkaban.webapp.servlet.HistoryServlet;
-import azkaban.webapp.servlet.IndexServlet;
+import azkaban.webapp.servlet.ProjectServlet;
 import azkaban.webapp.servlet.ProjectManagerServlet;
 import azkaban.webapp.servlet.TriggerManagerServlet;
 import azkaban.webapp.servlet.TriggerPlugin;
@@ -744,11 +745,13 @@ public class AzkabanWebServer extends AzkabanServer {
 		logger.info("Setting up web resource dir " + staticDir);
 		Context root = new Context(server, "/", Context.SESSIONS);
 		root.setMaxFormContentSize(MAX_FORM_CONTENT_SIZE);
-		
+
+		String defaultServletPath = azkabanSettings.getString("azkaban.default.servlet.path", "/index");
 		root.setResourceBase(staticDir);
-		ServletHolder index = new ServletHolder(new IndexServlet());
+		ServletHolder indexRedirect = new ServletHolder(new IndexRedirectServlet(defaultServletPath));
+		root.addServlet(indexRedirect, "/");
+		ServletHolder index = new ServletHolder(new ProjectServlet());
 		root.addServlet(index, "/index");
-		root.addServlet(index, "/");
 
 		ServletHolder staticServlet = new ServletHolder(new DefaultServlet());
 		root.addServlet(staticServlet, "/css/*");

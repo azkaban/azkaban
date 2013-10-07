@@ -38,8 +38,8 @@ import azkaban.webapp.session.Session;
 /**
  * The main page
  */
-public class IndexServlet extends LoginAbstractAzkabanServlet {
-	private static final Logger logger = Logger.getLogger(IndexServlet.class.getName());
+public class ProjectServlet extends LoginAbstractAzkabanServlet {
+	private static final Logger logger = Logger.getLogger(ProjectServlet.class.getName());
 	private static final String LOCKDOWN_CREATE_PROJECTS_KEY = "lockdown.create.projects";
 	private static final long serialVersionUID = -1;
 

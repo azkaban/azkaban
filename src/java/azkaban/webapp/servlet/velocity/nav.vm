@@ -23,7 +23,7 @@
 			</script>
 
 			<ul id="nav" class="nav">
-				<li id="all-jobs-tab" #if($current_page == 'all')class="selected"#end onClick="navMenuClick('$!context/')"><a href="$!context/">Projects</a></li>
+				<li id="all-jobs-tab" #if($current_page == 'all')class="selected"#end onClick="navMenuClick('$!context/index')"><a href="$!context/index">Projects</a></li>
 				<li id="scheduled-jobs-tab" #if($current_page == 'schedule')class="selected"#end onClick="navMenuClick('$!context/schedule')"><a href="$!context/schedule">Scheduled</a></li>
 
 				<!--li id="triggers-tab" #if($current_page == 'triggers')class="selected"#end onClick="navMenuClick('$!context/triggers')"><a href="$!context/triggers">Triggers</a></li-->

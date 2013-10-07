@@ -135,6 +135,18 @@ public class Utils {
 		zOut.close();
 	}
 
+	public static void zipFolderContent(File folder, File output) throws IOException {
+		FileOutputStream out = new FileOutputStream(output);
+		ZipOutputStream zOut = new ZipOutputStream(out);
+		File[] files = folder.listFiles();
+		if (files != null) {
+			for (File f : files) {
+				zipFile("", f, zOut);
+			}
+		}
+		zOut.close();
+	}
+
 	private static void zipFile(String path, File input, ZipOutputStream zOut) throws IOException {
 		if (input.isDirectory()) {
 			File[] files = input.listFiles();
