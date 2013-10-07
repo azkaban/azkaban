@@ -37,7 +37,7 @@ A session can expire if you log out, change machines or location, Azkaban is res
 session timeout is a day. You can re-login if the session expires.
 
 <pre class="code">
-curl -k --data "action=login&username=azkaban&password=azkaban" https://localhost:8443
+curl -k --data "action=login&amp;username=azkaban&amp;password=azkaban" https://localhost:8443
 </pre>
 
 <hr/>
