@@ -64,13 +64,13 @@ myflow/
 </pre>
 
 That directory structure will be preserved when running in Azkaban. The _baz_ job will inherit only from
-_system.properties_. The jobs _foo_ and _bar_ will inherit from _myflow.properties and _myflow2.properties_, 
+_system.properties_. The jobs _foo_ and _bar_ will inherit from _myflow.properties_ and _myflow2.properties_, 
 which in turn will inherit from _system.properties_.
 
 The hierarchical ordering of properties in the same directory is arbitrary.
 
 ### Parameter Substitution
-Azkaban allows for replacing of parameters. Whenever a \$\{_parameter_\} is found in a properties or job file,
+Azkaban allows for replacing of parameters. Whenever a $\{_parameter_\} is found in a properties or job file,
 Azkaban will attempt to replace that parameter. The resolution of the parameters is done late.
 
 <pre class="code">
@@ -87,6 +87,25 @@ param2=${param1}
 </pre>
 
 In the previous example, before _myjob_ is run, _foo_ will equal _bar_ and _param2_ will equal _mytest_.
+
+Parameter substitution is also recursive, allowing for constructs such as:
+
+<pre class="code">
+# global.properties
+mycluster.environment=production
+
+# shared.properties
+production.database_host=db.example.com
+staging.database_host=some_other_host.example.com
+</pre>
+
+<pre class="code">
+# myjob.job
+database=${${mycluster.environment}.database_host}
+</pre>
+
+In this example, _myjob_ will use the value _db.example.com_, having first evaluated _mycluster.environment_ to be
+_production_ and then _production.database\_host_.
 
 ### Parameter Passing
 There is often a desire to pass these parameters to the executing job code. The method of passing these parameters
