@@ -236,7 +236,7 @@ public class ExecutableNode {
 		return array;
 	}
 	
-	public String getPrintableId() {
+	public String getNestedId() {
 		return getPrintableId(":");
 	}
 	

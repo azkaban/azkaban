@@ -830,8 +830,8 @@ public class FlowRunnerTest2 {
 	
 	private void createExpectedStateMap(ExecutableFlowBase flow, Map<String, Status> expectedStateMap, Map<String, ExecutableNode> nodeMap) {
 		for (ExecutableNode node: flow.getExecutableNodes()) {
-			expectedStateMap.put(node.getPrintableId(), node.getStatus());
-			nodeMap.put(node.getPrintableId(), node);
+			expectedStateMap.put(node.getNestedId(), node.getStatus());
+			nodeMap.put(node.getNestedId(), node);
 			
 			if (node instanceof ExecutableFlowBase) {
 				createExpectedStateMap((ExecutableFlowBase)node, expectedStateMap, nodeMap);

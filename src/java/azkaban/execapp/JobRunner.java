@@ -37,6 +37,7 @@ import azkaban.execapp.event.Event;
 import azkaban.execapp.event.Event.Type;
 import azkaban.execapp.event.EventHandler;
 import azkaban.execapp.event.FlowWatcher;
+import azkaban.executor.ExecutableFlowBase;
 import azkaban.executor.ExecutableNode;
 import azkaban.executor.ExecutorLoader;
 import azkaban.executor.ExecutorManagerException;
@@ -117,12 +118,46 @@ public class JobRunner extends EventHandler implements Runnable {
 		this.pipelineLevel = pipelineLevel;
 
 		if (this.pipelineLevel == 1) {
-			pipelineJobs.add(node.getId());
+			pipelineJobs.add(node.getNestedId());
 		}
 		else if (this.pipelineLevel == 2) {
-			pipelineJobs.add(node.getId());
-			pipelineJobs.addAll(node.getOutNodes());
+			pipelineJobs.add(node.getNestedId());
+			ExecutableFlowBase parentFlow = node.getParentFlow();
+			for (String outNode : node.getOutNodes()) {
+				ExecutableNode nextNode = parentFlow.getExecutableNode(outNode);
+
+				// If the next node is a nested flow, then we add the nested starting nodes 
+				if (nextNode instanceof ExecutableFlowBase) {
+					ExecutableFlowBase nextFlow = (ExecutableFlowBase)nextNode;
+					findAllStartingNodes(nextFlow, pipelineJobs);
+				}
+				else {
+					pipelineJobs.add(nextNode.getNestedId());
+				}
+			}
 		}
+	}
+	
+	private void findAllStartingNodes(ExecutableFlowBase flow, Set<String> pipelineJobs) {
+		for (String startingNode: flow.getStartNodes()) {
+			ExecutableNode node = flow.getExecutableNode(startingNode);
+			if (node instanceof ExecutableFlowBase) {
+				findAllStartingNodes((ExecutableFlowBase)node, pipelineJobs);
+			}
+			else {
+				pipelineJobs.add(node.getNestedId());
+			}
+		}
+	}
+	
+	/**
+	 * Returns a list of jobs that this JobRunner will wait upon to finish before starting.
+	 * It is only relevant if pipeline is turned on.
+	 * 
+	 * @return
+	 */
+	public Set<String> getPipelineWatchedJobs() {
+		return pipelineJobs;
 	}
 	
 	public void setDelayStart(long delayMS) {

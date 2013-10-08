@@ -122,6 +122,30 @@ public class ExecutableFlowBase extends ExecutableNode {
 		return executableNodes.get(id);
 	}
 	
+	public ExecutableNode getExecutableNode(String ... ids) {
+		return getExecutableNode(this, ids, 0);
+	}
+	
+	private ExecutableNode getExecutableNode(ExecutableFlowBase flow, String[] ids, int currentIdIdx) {
+		ExecutableNode node = flow.getExecutableNode(ids[currentIdIdx]);
+		currentIdIdx++;
+		
+		if (node == null) {
+			return null;
+		}
+		
+		if (ids.length == currentIdIdx) {
+			return node;
+		}
+		else if (node instanceof ExecutableFlowBase) {
+			return getExecutableNode((ExecutableFlowBase)node, ids, currentIdIdx);
+		}
+		else {
+			return null;
+		}
+		
+	}
+	
 	public List<String> getStartNodes() {
 		if (startNodes == null) {
 			startNodes = new ArrayList<String>();
@@ -254,13 +278,17 @@ public class ExecutableFlowBase extends ExecutableNode {
 		return updateData;
 	}
 	
-	@SuppressWarnings("unchecked")
-	public void applyUpdateObject(Map<String, Object> updateData) {
+	public void applyUpdateObject(Map<String, Object> updateData, List<ExecutableNode> updatedNodes) {
 		super.applyUpdateObject(updateData);
-
-		List<Map<String,Object>> updatedNodes = (List<Map<String,Object>>)updateData.get(NODES_PARAM);
+		
 		if (updatedNodes != null) {
-			for (Map<String,Object> node: updatedNodes) {
+			updatedNodes.add(this);
+		}
+		
+		@SuppressWarnings("unchecked")
+		List<Map<String,Object>> nodes = (List<Map<String,Object>>)updateData.get(NODES_PARAM);
+		if (nodes != null) {
+			for (Map<String,Object> node: nodes) {
 	
 				String id = (String)node.get(ID_PARAM);
 				if (id == null) {
@@ -269,9 +297,23 @@ public class ExecutableFlowBase extends ExecutableNode {
 				}
 	
 				ExecutableNode exNode = executableNodes.get(id);
-				exNode.applyUpdateObject(node);
+				if (updatedNodes != null) {
+					updatedNodes.add(exNode);
+				}
+				
+				if (exNode instanceof ExecutableFlowBase) {
+					((ExecutableFlowBase)exNode).applyUpdateObject(node, updatedNodes);
+				}
+				else {
+					exNode.applyUpdateObject(updateData);
+				}
 			}
 		}
+		
+	}
+	
+	public void applyUpdateObject(Map<String, Object> updateData) {
+		applyUpdateObject(updateData, null);
 	}
 	
 	public void reEnableDependents(ExecutableNode ... nodes) {

@@ -366,6 +366,7 @@ public class FlowRunner extends EventHandler implements Runnable {
 			
 			if (node instanceof ExecutableFlowBase && ((ExecutableFlowBase)node).isFlowFinished()) {
 				finalizeFlow((ExecutableFlowBase)node);
+				fireEventListeners(Event.create(this, Type.JOB_FINISHED, node));
 			}
 			else if (nextStatus == Status.KILLED || isCancelled()) {
 				logger.info("Killing " + node.getId() + " due to prior errors.");
@@ -392,7 +393,7 @@ public class FlowRunner extends EventHandler implements Runnable {
 	}
 	
 	private void finalizeFlow(ExecutableFlowBase flow) {
-		String id = flow == this.flow ? "" : flow.getPrintableId() + " ";
+		String id = flow == this.flow ? "" : flow.getNestedId() + " ";
 
 		// If it's not the starting flow, we'll create set of output props
 		// for the finished flow.
@@ -519,12 +520,12 @@ public class FlowRunner extends EventHandler implements Runnable {
 			node.setStatus(Status.RUNNING);
 			node.setStartTime(System.currentTimeMillis());
 			
-			logger.info("Starting subflow " + node.getPrintableId() + ".");
+			logger.info("Starting subflow " + node.getNestedId() + ".");
 		}
 		else {
 			node.setStatus(Status.QUEUED);
 			JobRunner runner = createJobRunner(node);
-			logger.info("Submitting job " + node.getPrintableId() + " to run.");
+			logger.info("Submitting job " + node.getNestedId() + " to run.");
 			try {
 				executorService.submit(runner);
 				activeJobRunners.add(runner);
@@ -707,7 +708,7 @@ public class FlowRunner extends EventHandler implements Runnable {
 			
 			if (node.getStatus() == Status.FAILED) {
 				node.resetForRetry();
-				logger.info("Re-enabling job " + node.getPrintableId() + " attempt " + node.getAttempt());
+				logger.info("Re-enabling job " + node.getNestedId() + " attempt " + node.getAttempt());
 				reEnableDependents(node);
 			}
 			else if (node.getStatus() == Status.KILLED) {
@@ -760,7 +761,7 @@ public class FlowRunner extends EventHandler implements Runnable {
 					ExecutableNode node = runner.getNode();
 					activeJobRunners.remove(node.getId());
 					
-					String id = node.getPrintableId();
+					String id = node.getNestedId();
 					logger.info("Job Finished " + id + " with status " + node.getStatus());
 					if (node.getOutputProps() != null && node.getOutputProps().size() > 0) {
 						logger.info("Job " + id + " had output props.");

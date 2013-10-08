@@ -40,22 +40,19 @@ public class LocalFlowWatcher extends FlowWatcher {
 		public void handleEvent(Event event) {
 			if (event.getType() == Type.JOB_FINISHED) {
 				if (event.getRunner() instanceof FlowRunner) {
+					// The flow runner will finish a job without it running
 					Object data = event.getData();
 					if (data instanceof ExecutableNode) {
 						ExecutableNode node = (ExecutableNode)data;
-						
-//						if (node.getId()) {
-//							
-//						}
-						
-						handleJobFinished(node.getId(), node.getStatus());
+						handleJobStatusChange(node.getNestedId(), node.getStatus());
 					}
 				}
 				else if (event.getRunner() instanceof JobRunner) {
+					// A job runner is finished
 					JobRunner runner = (JobRunner)event.getRunner();
 					ExecutableNode node = runner.getNode();
 					
-					handleJobFinished(node.getId(), node.getStatus());
+					handleJobStatusChange(node.getNestedId(), node.getStatus());
 				}
 			}
 			else if (event.getType() == Type.FLOW_FINISHED) {

@@ -37,7 +37,7 @@ public abstract class FlowWatcher {
 	 * Called to fire events to the JobRunner listeners
 	 * @param jobId
 	 */
-	protected synchronized void handleJobFinished(String jobId, Status status) {
+	protected synchronized void handleJobStatusChange(String jobId, Status status) {
 		BlockingStatus block = map.get(jobId);
 		if (block != null) {
 			block.changeStatus(status);
@@ -53,7 +53,8 @@ public abstract class FlowWatcher {
 			return null;
 		}
 		
-		ExecutableNode node = flow.getExecutableNode(jobId);
+		String[] split = jobId.split(":");
+		ExecutableNode node = flow.getExecutableNode(split);
 		if (node == null) {
 			return null;
 		}
@@ -68,7 +69,8 @@ public abstract class FlowWatcher {
 	}
 	
 	public Status peekStatus(String jobId) {
-		ExecutableNode node = flow.getExecutableNode(jobId);
+		String[] split = jobId.split(":");
+		ExecutableNode node = flow.getExecutableNode(split);
 		if (node != null) {
 			return node.getStatus();
 		}
