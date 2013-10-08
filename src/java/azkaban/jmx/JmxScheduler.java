@@ -28,4 +28,9 @@ public class JmxScheduler implements JmxSchedulerMBean {
 	public Boolean isThreadActive() {
 		return manager.isThreadActive();
 	}
+
+	@Override
+	public String getScheduleThreadStage() {
+		return manager.getThreadStage();
+	}
 }

@@ -24,6 +24,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import azkaban.executor.mail.DefaultMailCreator;
+
 /**
  * Execution options for submitted flows and scheduled flows
  */
@@ -43,6 +45,7 @@ public class ExecutionOptions {
 	private Integer pipelineExecId = null;
 	private Integer queueLevel = 0;
 	private String concurrentOption = CONCURRENT_OPTION_IGNORE;
+	private String mailCreator = DefaultMailCreator.DEFAULT_MAIL_CREATOR;
 	private Map<String, String> flowParameters = new HashMap<String, String>();
 	
 	public enum FailureAction {
@@ -56,7 +59,7 @@ public class ExecutionOptions {
 	private Set<String> initiallyDisabledJobs = new HashSet<String>();
 	
 	public void setFlowParameters(Map<String,String> flowParam) {
-		flowParameters.get(flowParam);
+		flowParameters.putAll(flowParam);
 	}
 	
 	public Map<String,String> getFlowParameters() {
@@ -123,8 +126,16 @@ public class ExecutionOptions {
 		this.concurrentOption = concurrentOption;
 	}
 	
+	public void setMailCreator(String mailCreator) {
+		this.mailCreator = mailCreator;
+	}
+	
 	public String getConcurrentOption() {
 		return concurrentOption;
+	}
+	
+	public String getMailCreator() {
+		return mailCreator;
 	}
 	
 	public Integer getPipelineLevel() {
@@ -168,6 +179,7 @@ public class ExecutionOptions {
 		flowOptionObj.put("pipelineExecId", pipelineExecId);
 		flowOptionObj.put("queueLevel", queueLevel);
 		flowOptionObj.put("concurrentOption", concurrentOption);
+		flowOptionObj.put("mailCreator", mailCreator);
 		flowOptionObj.put("disabled", initiallyDisabledJobs);
 		flowOptionObj.put("failureEmailsOverride", failureEmailsOverride);
 		flowOptionObj.put("successEmailsOverride", successEmailsOverride);
@@ -195,6 +207,9 @@ public class ExecutionOptions {
 		}
 		if (optionsMap.containsKey("concurrentOption")) {
 			options.concurrentOption = (String)optionsMap.get("concurrentOption");
+		}
+		if (optionsMap.containsKey("mailCreator")) {
+			options.mailCreator = (String)optionsMap.get("mailCreator");
 		}
 		if (optionsMap.containsKey("disabled")) {
 			options.initiallyDisabledJobs = new HashSet<String>((List<String>)optionsMap.get("disabled"));

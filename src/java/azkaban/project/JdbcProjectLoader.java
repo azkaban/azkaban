@@ -269,7 +269,6 @@ public class JdbcProjectLoader extends AbstractJdbcLoader implements ProjectLoad
 		}
 	}
 
-	@SuppressWarnings("resource")
 	private void uploadProjectFile(Connection connection, Project project, int version, String filetype, String filename, File localFile, String uploader) throws ProjectManagerException {
 		QueryRunner runner = new QueryRunner();
 		long updateTime = System.currentTimeMillis();
@@ -359,7 +358,6 @@ public class JdbcProjectLoader extends AbstractJdbcLoader implements ProjectLoad
 		return handler;
 	}
 	
-	@SuppressWarnings("resource")
 	private ProjectFileHandler getUploadedFile(Connection connection, int projectId, int version) throws ProjectManagerException {
 		QueryRunner runner = new QueryRunner();
 		ProjectVersionResultHandler pfHandler = new ProjectVersionResultHandler();
@@ -688,6 +686,41 @@ public class JdbcProjectLoader extends AbstractJdbcLoader implements ProjectLoad
 			connection.commit();
 		}
 		catch (IOException e) {
+			throw new ProjectManagerException("Flow Upload failed.", e);
+		} catch (SQLException e) {
+			throw new ProjectManagerException("Flow Upload failed commit.", e);
+		}
+		finally {
+			DbUtils.closeQuietly(connection);
+		}
+	}
+
+	@Override
+	public void updateFlow(Project project, int version, Flow flow) throws ProjectManagerException {
+		logger.info("Uploading flows");
+		Connection connection = getConnection();
+
+		try {
+			QueryRunner runner = new QueryRunner();
+			String json = JSONUtils.toJSON(flow.toObject());
+			byte[] stringData = json.getBytes("UTF-8");
+			byte[] data = stringData;
+
+			logger.info("UTF-8 size:" + data.length);
+			if (defaultEncodingType == EncodingType.GZIP) {
+				data = GZIPUtils.gzipBytes(stringData);
+			}
+
+			logger.info("Flow upload " + flow.getId() + " is byte size " + data.length);
+			final String UPDATE_FLOW = "UPDATE project_flows SET encoding_type=?,json=? WHERE project_id=? AND version=? AND flow_id=?";
+			try {
+				runner.update(connection, UPDATE_FLOW, defaultEncodingType.getNumVal(), data, project.getId(), version, flow.getId());
+			} catch (SQLException e) {
+				e.printStackTrace();
+				throw new ProjectManagerException("Error inserting flow " + flow.getId(), e);
+			}
+			connection.commit();
+		} catch (IOException e) {
 			throw new ProjectManagerException("Flow Upload failed.", e);
 		} catch (SQLException e) {
 			throw new ProjectManagerException("Flow Upload failed commit.", e);

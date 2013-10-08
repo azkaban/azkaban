@@ -116,6 +116,18 @@ public class Utils {
 		zOut.close();
 	}
 
+	public static void zipFolderContent(File folder, File output) throws IOException {
+		FileOutputStream out = new FileOutputStream(output);
+		ZipOutputStream zOut = new ZipOutputStream(out);
+		File[] files = folder.listFiles();
+		if (files != null) {
+			for (File f : files) {
+				zipFile("", f, zOut);
+			}
+		}
+		zOut.close();
+	}
+
 	private static void zipFile(String path, File input, ZipOutputStream zOut) throws IOException {
 		if (input.isDirectory()) {
 			File[] files = input.listFiles();
@@ -276,13 +288,5 @@ public class Utils {
 		
 		Method method = clazz.getDeclaredMethod(methodName, argTypes);
 		return method.invoke(null, args);
-	}
-	
-	public static void copyStream(InputStream input, OutputStream output) throws IOException {
-		byte[] buffer = new byte[1024];
-		int bytesRead;
-		while ((bytesRead = input.read(buffer)) != -1) {
-			output.write(buffer, 0, bytesRead);
-		}
 	}
 }

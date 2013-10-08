@@ -760,6 +760,7 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 		if (!options.isSuccessEmailsOverridden()) {
 			options.setSuccessEmails(flow.getSuccessEmails());
 		}
+		options.setMailCreator(flow.getMailCreator());
 		
 		try {
 			String message = executorManager.submitExecutableFlow(exflow);

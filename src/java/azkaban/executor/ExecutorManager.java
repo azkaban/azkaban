@@ -16,6 +16,7 @@
 
 package azkaban.executor;
 
+import java.io.File;
 import java.io.IOException;
 import java.lang.Thread.State;
 import java.net.URI;
@@ -69,6 +70,9 @@ public class ExecutorManager {
 	private long lastCleanerThreadCheckTime = -1;
 	
 	private long lastThreadCheckTime = -1;
+	private String updaterStage = "not started";
+	
+	File cacheDir;
 	
 	public ExecutorManager(Props props, ExecutorLoader loader) throws ExecutorManagerException {
 		this.executorLoader = loader;
@@ -76,6 +80,7 @@ public class ExecutorManager {
 		
 		executorHost = props.getString("executor.host", "localhost");
 		executorPort = props.getInt("executor.port");
+		cacheDir = new File(props.getString("cache.directory", "cache"));
 		mailer = new ExecutorMailer(props);
 		executingManager = new ExecutingManagerUpdaterThread();
 		executingManager.start();
@@ -95,6 +100,10 @@ public class ExecutorManager {
 	
 	public State getExecutorThreadState() {
 		return executingManager.getState();
+	}
+	
+	public String getExecutorThreadStage() {
+		return updaterStage;
 	}
 	
 	public boolean isThreadActive() {
@@ -170,6 +179,15 @@ public class ExecutorManager {
 			flows.add(ref.getSecond());
 		}
 		return flows;
+	}
+	
+	public String getRunningFlowIds() {
+		List<Integer> allIds = new ArrayList<Integer>();
+		for (Pair<ExecutionReference, ExecutableFlow> ref : runningFlows.values()) {
+			allIds.add(ref.getSecond().getExecutionId());
+		}
+		Collections.sort(allIds);
+		return allIds.toString();
 	}
 	
 	public List<ExecutableFlow> getRecentlyFinishedFlows() {
@@ -593,6 +611,8 @@ public class ExecutorManager {
 				try {
 					lastThreadCheckTime = System.currentTimeMillis();
 					
+					updaterStage = "Starting update all flows.";
+					
 					Map<ConnectionInfo, List<ExecutableFlow>> exFlowMap = getFlowToExecutorMap();
 					ArrayList<ExecutableFlow> finishedFlows = new ArrayList<ExecutableFlow>();
 					ArrayList<ExecutableFlow> finalizeFlows = new ArrayList<ExecutableFlow>();
@@ -602,6 +622,10 @@ public class ExecutorManager {
 							List<Long> updateTimesList = new ArrayList<Long>();
 							List<Integer> executionIdsList = new ArrayList<Integer>();
 						
+							ConnectionInfo connection = entry.getKey();
+							
+							updaterStage = "Starting update flows on " + connection.getHost() + ":" + connection.getPort();
+							
 							// We pack the parameters of the same host together before we query.
 							fillUpdateTimeAndExecId(entry.getValue(), executionIdsList, updateTimesList);
 							
@@ -612,7 +636,7 @@ public class ExecutorManager {
 									ConnectorParams.EXEC_ID_LIST_PARAM, 
 									JSONUtils.toJSON(executionIdsList));
 							
-							ConnectionInfo connection = entry.getKey();
+							
 							Map<String, Object> results = null;
 							try {
 								results = callExecutorServer(connection.getHost(), connection.getPort(), ConnectorParams.UPDATE_ACTION, null, null, executionIds, updateTimes);
@@ -620,6 +644,9 @@ public class ExecutorManager {
 								logger.error(e);
 								for (ExecutableFlow flow: entry.getValue()) {
 									Pair<ExecutionReference, ExecutableFlow> pair = runningFlows.get(flow.getExecutionId());
+									
+									updaterStage = "Failed to get update. Doing some clean up for flow " + pair.getSecond().getExecutionId();
+									
 									if (pair != null) {
 										ExecutionReference ref = pair.getFirst();
 										int numErrors = ref.getNumErrors();
@@ -642,6 +669,9 @@ public class ExecutorManager {
 								for (Map<String,Object> updateMap: executionUpdates) {
 									try {
 										ExecutableFlow flow = updateExecution(updateMap);
+										
+										updaterStage = "Updated flow " + flow.getExecutionId();
+										
 										if (isFinished(flow)) {
 											finishedFlows.add(flow);
 											finalizeFlows.add(flow);
@@ -659,20 +689,26 @@ public class ExecutorManager {
 							}
 						}
 	
+						updaterStage = "Evicting old recently finished flows.";
+						
 						evictOldRecentlyFinished(recentlyFinishedLifetimeMs);
 						// Add new finished
 						for (ExecutableFlow flow: finishedFlows) {
 							if(flow.getScheduleId() >= 0 && flow.getStatus() == Status.SUCCEEDED){
-								ScheduleStatisticManager.invalidateCache(flow.getScheduleId());
+								ScheduleStatisticManager.invalidateCache(flow.getScheduleId(), cacheDir);
 							}
 							recentlyFinished.put(flow.getExecutionId(), flow);
 						}
+						
+						updaterStage = "Finalizing " + finalizeFlows.size() + " error flows.";
 						
 						// Kill error flows
 						for (ExecutableFlow flow: finalizeFlows) {
 							finalizeFlows(flow);
 						}
 					}
+					
+					updaterStage = "Updated all active flows. Waiting for next round.";
 					
 					synchronized(this) {
 						try {
@@ -688,7 +724,7 @@ public class ExecutorManager {
 				}
 				catch (Exception e) {
 					logger.error(e);
-				}
+				} 
 			}
 		}
 	}
@@ -696,6 +732,7 @@ public class ExecutorManager {
 	private void finalizeFlows(ExecutableFlow flow) {
 		int execId = flow.getExecutionId();
 		
+		updaterStage = "finalizing flow " + execId;
 		// First we check if the execution in the datastore is complete
 		try {
 			ExecutableFlow dsFlow;
@@ -703,15 +740,18 @@ public class ExecutorManager {
 				dsFlow = flow;
 			}
 			else {
+				updaterStage = "finalizing flow " + execId + " loading from db";
 				dsFlow = executorLoader.fetchExecutableFlow(execId);
 			
 				// If it's marked finished, we're good. If not, we fail everything and then mark it finished.
 				if (!isFinished(dsFlow)) {
+					updaterStage = "finalizing flow " + execId + " failing the flow";
 					failEverything(dsFlow);
 					executorLoader.updateExecutableFlow(dsFlow);
 				}
 			}
 
+			updaterStage = "finalizing flow " + execId + " deleting active reference";
 			// Delete the executing reference.
 			if (flow.getEndTime() == -1) {
 				flow.setEndTime(System.currentTimeMillis());
@@ -719,6 +759,7 @@ public class ExecutorManager {
 			}
 			executorLoader.removeActiveExecutableReference(execId);
 			
+			updaterStage = "finalizing flow " + execId + " cleaning from memory";
 			runningFlows.remove(execId);
 			recentlyFinished.put(execId, dsFlow);
 		} catch (ExecutorManagerException e) {
@@ -728,6 +769,7 @@ public class ExecutorManager {
 		// TODO append to the flow log that we forced killed this flow because the target no longer had
 		// the reference.
 		
+		updaterStage = "finalizing flow " + execId + " alerting and emailing";
 		ExecutionOptions options = flow.getExecutionOptions();
 		// But we can definitely email them.
 		if(flow.getStatus() == Status.FAILED || flow.getStatus() == Status.KILLED)
@@ -1006,4 +1048,8 @@ public class ExecutorManager {
 			cleanOldExecutionLogs(DateTime.now().getMillis() - executionLogsRetentionMs);
 		}
 	}
+
+	
+
+	
 }
