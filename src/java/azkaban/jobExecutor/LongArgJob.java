@@ -1,5 +1,5 @@
 /*
- * Copyright 2012 LinkedIn, Inc
+ * Copyright 2012 LinkedIn Corp.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -13,6 +13,7 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
+
 package azkaban.jobExecutor;
 
 import java.io.File;
@@ -29,7 +30,6 @@ import azkaban.jobExecutor.utils.process.AzkabanProcessBuilder;
 /**
  * A job that passes all the job properties as command line arguments in "long"
  * format, e.g. --key1 value1 --key2 value2 ...
- * 
  */
 public abstract class LongArgJob extends AbstractProcessJob {
 
