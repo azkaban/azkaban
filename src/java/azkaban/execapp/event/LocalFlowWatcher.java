@@ -32,7 +32,7 @@ public class LocalFlowWatcher extends FlowWatcher {
 		runner = null;
 		
 		getLogger().info("Stopping watcher, and unblocking pipeline");
-		super.failAllWatches();
+		super.unblockAllWatches();
 	}
 
 	public class LocalFlowWatcherListener implements EventListener {
@@ -51,7 +51,7 @@ public class LocalFlowWatcher extends FlowWatcher {
 					// A job runner is finished
 					JobRunner runner = (JobRunner)event.getRunner();
 					ExecutableNode node = runner.getNode();
-					
+					System.out.println(node + " looks like " + node.getStatus());
 					handleJobStatusChange(node.getNestedId(), node.getStatus());
 				}
 			}

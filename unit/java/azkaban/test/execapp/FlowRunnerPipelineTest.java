@@ -20,7 +20,6 @@ import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutableFlowBase;
 import azkaban.executor.ExecutableNode;
 import azkaban.executor.ExecutionOptions;
-import azkaban.executor.ExecutionOptions.FailureAction;
 import azkaban.executor.ExecutorLoader;
 import azkaban.executor.Status;
 import azkaban.flow.Flow;
@@ -31,8 +30,28 @@ import azkaban.project.ProjectManagerException;
 import azkaban.test.executor.InteractiveTestJob;
 import azkaban.test.executor.JavaJob;
 import azkaban.utils.DirectoryFlowLoader;
-import azkaban.utils.Props;
 
+/**
+ * Flows in this test:
+ * joba 
+ * jobb
+ * joba1
+ * jobc->joba
+ * jobd->joba
+ * jobe->jobb,jobc,jobd
+ * jobf->jobe,joba1
+ * 
+ * jobb = innerFlow
+ * innerJobA
+ * innerJobB->innerJobA
+ * innerJobC->innerJobB
+ * innerFlow->innerJobB,innerJobC
+ * 
+ * jobd=innerFlow2
+ * innerFlow2->innerJobA
+ * @author rpark
+ *
+ */
 public class FlowRunnerPipelineTest {
 	private File workingDir;
 	private JobTypeManager jobtypeManager;
@@ -174,10 +193,70 @@ public class FlowRunnerPipelineTest {
 		compareStates(previousExpectedStateMap, previousNodeMap);
 		compareStates(pipelineExpectedStateMap, pipelineNodeMap);
 		
-//		Assert.assertEquals(Status.SUCCEEDED, pipelineFlow.getStatus());
-//		Assert.assertEquals(Status.SUCCEEDED, previousFlow.getStatus());
-//		Assert.assertFalse(thread1.isAlive());
-//		Assert.assertFalse(thread2.isAlive());
+		InteractiveTestJob.getTestJob("prev:jobb:innerFlow").succeedJob();
+		InteractiveTestJob.getTestJob("pipe:jobc").succeedJob();
+		pause(250);
+		previousExpectedStateMap.put("jobb:innerFlow", Status.SUCCEEDED);
+		previousExpectedStateMap.put("jobb", Status.SUCCEEDED);
+		previousExpectedStateMap.put("jobe", Status.RUNNING);
+		pipelineExpectedStateMap.put("jobc", Status.SUCCEEDED);
+		
+		compareStates(previousExpectedStateMap, previousNodeMap);
+		compareStates(pipelineExpectedStateMap, pipelineNodeMap);
+		
+		InteractiveTestJob.getTestJob("pipe:jobb:innerJobB").succeedJob();
+		InteractiveTestJob.getTestJob("pipe:jobb:innerJobC").succeedJob();
+		InteractiveTestJob.getTestJob("prev:jobe").succeedJob();
+		pause(250);
+		previousExpectedStateMap.put("jobe", Status.SUCCEEDED);
+		pipelineExpectedStateMap.put("jobb:innerJobB", Status.SUCCEEDED);
+		pipelineExpectedStateMap.put("jobb:innerJobC", Status.SUCCEEDED);
+		pipelineExpectedStateMap.put("jobb:innerFlow", Status.RUNNING);
+		
+		compareStates(previousExpectedStateMap, previousNodeMap);
+		compareStates(pipelineExpectedStateMap, pipelineNodeMap);
+
+		InteractiveTestJob.getTestJob("pipe:jobd:innerJobA").succeedJob();
+		InteractiveTestJob.getTestJob("pipe:jobb:innerFlow").succeedJob();
+		pause(250);
+		pipelineExpectedStateMap.put("jobb", Status.SUCCEEDED);
+		pipelineExpectedStateMap.put("jobd:innerJobA", Status.SUCCEEDED);
+		pipelineExpectedStateMap.put("jobb:innerFlow", Status.SUCCEEDED);
+		pipelineExpectedStateMap.put("jobd:innerFlow2", Status.RUNNING);
+		compareStates(pipelineExpectedStateMap, pipelineNodeMap);
+		
+		InteractiveTestJob.getTestJob("pipe:jobd:innerFlow2").succeedJob();
+		InteractiveTestJob.getTestJob("prev:joba1").succeedJob();
+		pause(250);
+		pipelineExpectedStateMap.put("jobd:innerFlow2", Status.SUCCEEDED);
+		pipelineExpectedStateMap.put("jobd", Status.SUCCEEDED);
+		previousExpectedStateMap.put("jobf", Status.RUNNING);
+		previousExpectedStateMap.put("joba1", Status.SUCCEEDED);
+		pipelineExpectedStateMap.put("joba1", Status.RUNNING);
+		pipelineExpectedStateMap.put("jobe", Status.RUNNING);
+		compareStates(pipelineExpectedStateMap, pipelineNodeMap);
+		compareStates(previousExpectedStateMap, previousNodeMap);
+		
+		InteractiveTestJob.getTestJob("pipe:jobe").succeedJob();
+		InteractiveTestJob.getTestJob("prev:jobf").succeedJob();
+		pause(250);
+		pipelineExpectedStateMap.put("jobe", Status.SUCCEEDED);
+		previousExpectedStateMap.put("jobf", Status.SUCCEEDED);
+		Assert.assertEquals(Status.SUCCEEDED, previousFlow.getStatus());
+		compareStates(previousExpectedStateMap, previousNodeMap);
+		compareStates(pipelineExpectedStateMap, pipelineNodeMap);
+		
+		InteractiveTestJob.getTestJob("pipe:joba1").succeedJob();
+		pause(250);
+		pipelineExpectedStateMap.put("joba1", Status.SUCCEEDED);
+		pipelineExpectedStateMap.put("jobf", Status.RUNNING);
+		compareStates(pipelineExpectedStateMap, pipelineNodeMap);
+		
+		InteractiveTestJob.getTestJob("pipe:jobf").succeedJob();
+		pause(250);
+		Assert.assertEquals(Status.SUCCEEDED, pipelineFlow.getStatus());
+		Assert.assertFalse(thread1.isAlive());
+		Assert.assertFalse(thread2.isAlive());
 	}
 	
 	private Thread runFlowRunnerInThread(FlowRunner runner) {
@@ -232,6 +311,16 @@ public class FlowRunnerPipelineTest {
 		flowMap = loader.getFlowMap();
 		project.setFlows(flowMap);
 		FileUtils.copyDirectory(directory, workingDir);
+	}
+	
+	private void printCurrentState(String prefix, ExecutableFlowBase flow) {
+		for(ExecutableNode node: flow.getExecutableNodes()) {
+
+			System.err.println(prefix + node.getNestedId() + "->" + node.getStatus().name());
+			if (node instanceof ExecutableFlowBase) {
+				printCurrentState(prefix, (ExecutableFlowBase)node);
+			}
+		}
 	}
 	
 	private FlowRunner createFlowRunner(EventCollectorListener eventCollector, String flowName, String groupName) throws Exception {

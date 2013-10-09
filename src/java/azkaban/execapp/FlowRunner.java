@@ -57,8 +57,8 @@ import azkaban.utils.PropsUtils;
 public class FlowRunner extends EventHandler implements Runnable {
 	private static final Layout DEFAULT_LAYOUT = new PatternLayout("%d{dd-MM-yyyy HH:mm:ss z} %c{1} %p - %m\n");
 	// We check update every 5 minutes, just in case things get stuck. But for the most part, we'll be idling.
-	private static final long CHECK_WAIT_MS = 5*60*1000;
-	
+	//private static final long CHECK_WAIT_MS = 5*60*1000;
+	private static final long CHECK_WAIT_MS = 30*1000;
 	private Logger logger;
 	private Layout loggerLayout = DEFAULT_LAYOUT;
 	private Appender flowAppender;
@@ -508,7 +508,9 @@ public class FlowRunner extends EventHandler implements Runnable {
 			}
 		}
 		// setting this fake source as this will be used to determine the location of log files.
-		props.setSource(path.getPath());
+		if (path.getPath() != null) {
+			props.setSource(path.getPath());
+		}
 		return props;
 	}
 	
@@ -794,9 +796,10 @@ public class FlowRunner extends EventHandler implements Runnable {
 								}
 							}
 						}
+						
 					}
-					
 					updateFlow();
+
 					interrupt();
 					fireEventListeners(event);
 				}

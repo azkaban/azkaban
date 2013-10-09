@@ -78,17 +78,17 @@ public abstract class FlowWatcher {
 		return null;
 	}
 	
-	public synchronized void failAllWatches() {
-		logger.info("Failing all watches on " + execId);
+	public synchronized void unblockAllWatches() {
+		logger.info("Unblock all watches on " + execId);
 		cancelWatch = true;
 		
 		for(BlockingStatus status : map.values()) {
 			logger.info("Unblocking " + status.getJobId());
-			status.changeStatus(Status.KILLED);
+			status.changeStatus(Status.SKIPPED);
 			status.unblock();
 		}
 		
-		logger.info("Successfully failed all watches on " + execId);
+		logger.info("Successfully unblocked all watches on " + execId);
 	}
 	
 	public boolean isWatchCancelled() {

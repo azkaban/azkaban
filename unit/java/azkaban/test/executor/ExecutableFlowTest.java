@@ -178,10 +178,11 @@ public class ExecutableFlowTest {
 		exFlow.setUpdateTime(133);
 		
 		// Change one job and see if it updates
-		jobe.setEndTime(System.currentTimeMillis());
-		jobe.setUpdateTime(System.currentTimeMillis());
+		long time = System.currentTimeMillis();
+		jobe.setEndTime(time);
+		jobe.setUpdateTime(time);
 		jobe.setStatus(Status.DISABLED);
-		jobe.setStartTime(System.currentTimeMillis() - 1000);
+		jobe.setStartTime(time - 1);
 		// Should be one node that was changed
 		Map<String,Object> updateObject = exFlow.toUpdateObject(0);
 		Assert.assertEquals(1, ((List)(updateObject.get("nodes"))).size());
@@ -194,16 +195,18 @@ public class ExecutableFlowTest {
 		Assert.assertNull(updateObject.get("nodes"));
 		
 		// Change inner flow
-		jobbInnerFlowA.setEndTime(System.currentTimeMillis());
-		jobbInnerFlowA.setUpdateTime(System.currentTimeMillis());
+		long currentTime = time + 1 ;
+		jobbInnerFlowA.setEndTime(currentTime);
+		jobbInnerFlowA.setUpdateTime(currentTime);
 		jobbInnerFlowA.setStatus(Status.DISABLED);
-		jobbInnerFlowA.setStartTime(System.currentTimeMillis() - 1000);
+		jobbInnerFlowA.setStartTime(currentTime - 100);
 		// We should get 2 updates if we do a toUpdateObject using 0 as the start time
 		updateObject = exFlow.toUpdateObject(0);
 		Assert.assertEquals(2, ((List)(updateObject.get("nodes"))).size());
 
 		// This should provide 1 update. That we can apply
 		updateObject = exFlow.toUpdateObject(jobe.getUpdateTime());
+		Assert.assertNotNull(updateObject.get("nodes"));
 		Assert.assertEquals(1, ((List)(updateObject.get("nodes"))).size());
 		copyFlow.applyUpdateObject(updateObject);
 		testEquals(exFlow, copyFlow);

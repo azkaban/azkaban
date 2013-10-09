@@ -185,7 +185,9 @@ public class JavaJobRunnerMain {
 			new RuntimeException("Unable to store output properties to: " + outputFileStr);
 		} finally {
 			try {
-				writer.close();
+				if (writer != null) {
+					writer.close();
+				}
 			} catch (IOException e) {
 			}
 		}

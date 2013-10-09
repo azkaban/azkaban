@@ -14,6 +14,7 @@ import azkaban.execapp.FlowRunner;
 import azkaban.execapp.event.FlowWatcher;
 import azkaban.execapp.event.RemoteFlowWatcher;
 import azkaban.executor.ExecutableFlow;
+import azkaban.executor.ExecutableFlowBase;
 import azkaban.executor.ExecutableNode;
 import azkaban.executor.ExecutionOptions;
 import azkaban.executor.ExecutorLoader;
@@ -72,8 +73,10 @@ public class RemoteFlowWatcherTest {
 		FlowRunner runner2 = createFlowRunner(workingDir2, loader, eventCollector, "exec1", 2, watcher, 2);
 		Thread runner2Thread = new Thread(runner2);
 		
+		printCurrentState("runner1 ", runner1.getExecutableFlow());
 		runner1Thread.start();
 		runner2Thread.start();
+		
 		runner2Thread.join();
 		
 		FileUtils.deleteDirectory(workingDir1);
@@ -220,6 +223,16 @@ public class RemoteFlowWatcherTest {
 		runner.addListener(eventCollector);
 		
 		return runner;
+	}
+	
+	private void printCurrentState(String prefix, ExecutableFlowBase flow) {
+		for(ExecutableNode node: flow.getExecutableNodes()) {
+
+			System.err.println(prefix + node.getNestedId() + "->" + node.getStatus().name());
+			if (node instanceof ExecutableFlowBase) {
+				printCurrentState(prefix, (ExecutableFlowBase)node);
+			}
+		}
 	}
 	
 	private ExecutableFlow prepareExecDir(File workingDir, File execDir, String flowName, int execId) throws IOException {

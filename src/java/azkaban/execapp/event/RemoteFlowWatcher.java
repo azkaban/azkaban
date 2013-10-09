@@ -102,7 +102,7 @@ public class RemoteFlowWatcher extends FlowWatcher {
 		if (thread != null) {
 			thread.interrupt();
 		}
-		super.failAllWatches();
+		super.unblockAllWatches();
 		loader = null;
 		flow = null;
 	}

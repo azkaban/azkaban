@@ -305,7 +305,7 @@ public class ExecutableFlowBase extends ExecutableNode {
 					((ExecutableFlowBase)exNode).applyUpdateObject(node, updatedNodes);
 				}
 				else {
-					exNode.applyUpdateObject(updateData);
+					exNode.applyUpdateObject(node);
 				}
 			}
 		}

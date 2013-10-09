@@ -241,7 +241,7 @@ public class ExecutableNode {
 	}
 	
 	public String getPrintableId(String delimiter) {
-		if (this.getParentFlow() instanceof ExecutableFlow) {
+		if (this.getParentFlow() == null || this.getParentFlow() instanceof ExecutableFlow) {
 			return getId();
 		}
 		return getParentFlow().getPrintableId(delimiter) + delimiter + getId();

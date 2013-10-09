@@ -222,94 +222,157 @@ public class JobRunner extends EventHandler implements Runnable {
 		}
 	}
 	
+	/**
+	 * Used to handle non-ready and special status's (i.e. KILLED). Returns true
+	 * if they handled anything.
+	 * 
+	 * @return
+	 */
+	private boolean handleNonReadyStatus() {
+		Status nodeStatus = node.getStatus();
+		boolean quickFinish = false;
+		long time = System.currentTimeMillis();
+		
+		if (this.isCancelled() || Status.isStatusFinished(nodeStatus)) {
+			quickFinish = true;
+		}
+		else if (nodeStatus == Status.DISABLED) {
+			changeStatus(Status.SKIPPED, time);
+			quickFinish = true;
+		} 
+		else if (this.cancelled) {
+			changeStatus(Status.FAILED, time);
+			quickFinish = true;
+		} 
+		
+		if (quickFinish) {
+			node.setStartTime(time);
+			fireEvent(Event.create(this, Type.JOB_STARTED, null, false));
+			node.setEndTime(time);
+			fireEvent(Event.create(this, Type.JOB_FINISHED));
+			return true;
+		}
+		
+		return false;
+	}
+	
+	/**
+	 * If pipelining is set, will block on another flow's jobs.
+	 */
+	private boolean blockOnPipeLine() {
+		if (this.isCancelled()) {
+			return true;
+		}
+		
+		// For pipelining of jobs. Will watch other jobs.
+		if (!pipelineJobs.isEmpty()) {
+			String blockedList = "";
+			ArrayList<BlockingStatus> blockingStatus = new ArrayList<BlockingStatus>();
+			for (String waitingJobId : pipelineJobs) {
+				Status status = watcher.peekStatus(waitingJobId);
+				if (status != null && !Status.isStatusFinished(status)) {
+					BlockingStatus block = watcher.getBlockingStatus(waitingJobId);
+					blockingStatus.add(block);
+					blockedList += waitingJobId + ",";
+				}
+			}
+			if (!blockingStatus.isEmpty()) {
+				logger.info("Pipeline job " + this.jobId + " waiting on " + blockedList + " in execution " + watcher.getExecId());
+				
+				for(BlockingStatus bStatus: blockingStatus) {
+					logger.info("Waiting on pipelined job " + bStatus.getJobId());
+					currentBlockStatus = bStatus;
+					bStatus.blockOnFinishedStatus();
+					if (this.isCancelled()) {
+						logger.info("Job was cancelled while waiting on pipeline. Quiting.");
+						return true;
+					}
+					else {
+						logger.info("Pipelined job " + bStatus.getJobId() + " finished.");
+					}
+				}
+			}
+		}
+		
+		currentBlockStatus = null;
+		return false;
+	}
+	
+	private boolean delayExecution() {
+		if (this.isCancelled()) {
+			return true;
+		}
+		
+		long currentTime = System.currentTimeMillis();
+		if (delayStartMs > 0) {
+			logger.info("Delaying start of execution for " + delayStartMs + " milliseconds.");
+			synchronized(this) {
+				try {
+					this.wait(delayStartMs);
+					logger.info("Execution has been delayed for " + delayStartMs + " ms. Continuing with execution.");
+				} catch (InterruptedException e) {
+					logger.error("Job " + this.jobId + " was to be delayed for " + delayStartMs + ". Interrupted after " + (System.currentTimeMillis() - currentTime));
+				}
+			}
+			
+			if (this.isCancelled()) {
+				logger.info("Job was cancelled while in delay. Quiting.");
+				return true;
+			}
+		}
+		
+		return false;
+	}
+	
+	private void finalizeLogFile() {
+		closeLogger();
+		
+		if (logFile != null) {
+			try {
+				File[] files = logFile.getParentFile().listFiles(new FilenameFilter() {
+					
+					@Override
+					public boolean accept(File dir, String name) {
+						return name.startsWith(logFile.getName());
+					}
+				} 
+				);
+				Arrays.sort(files, Collections.reverseOrder());
+				
+				loader.uploadLogFile(executionId, this.jobId, node.getAttempt(), files);
+			} catch (ExecutorManagerException e) {
+				flowLogger.error("Error writing out logs for job " + this.jobId, e);
+			}
+		}
+		else {
+			flowLogger.info("Log file for job " + this.jobId + " is null");
+		}
+	}
+	
+	/**
+	 * The main run thread.
+	 * 
+	 */
 	@Override
 	public void run() {
 		Thread.currentThread().setName("JobRunner-" + this.jobId + "-" + executionId);
 		
-		if (node.getStatus() == Status.DISABLED) {
-			node.setStartTime(System.currentTimeMillis());
-			fireEvent(Event.create(this, Type.JOB_STARTED, null, false));
-			node.setStatus(Status.SKIPPED);
-			node.setEndTime(System.currentTimeMillis());
-			fireEvent(Event.create(this, Type.JOB_FINISHED));
-			return;
-		} else if (this.cancelled) {
-			node.setStartTime(System.currentTimeMillis());
-			fireEvent(Event.create(this, Type.JOB_STARTED, null, false));
-			node.setStatus(Status.FAILED);
-			node.setEndTime(System.currentTimeMillis());
-			fireEvent(Event.create(this, Type.JOB_FINISHED));
-		} else if (node.getStatus() == Status.FAILED || node.getStatus() == Status.KILLED) {
-			node.setStartTime(System.currentTimeMillis());
-			fireEvent(Event.create(this, Type.JOB_STARTED, null, false));
-			node.setEndTime(System.currentTimeMillis());
-			fireEvent(Event.create(this, Type.JOB_FINISHED));
+		// If the job is cancelled, disabled, killed. No log is created in this case
+		if (handleNonReadyStatus()) {
 			return;
 		}
-		else {
-			createLogger();
-			node.setUpdateTime(System.currentTimeMillis());
 
-			// For pipelining of jobs. Will watch other jobs.
-			if (!pipelineJobs.isEmpty()) {
-				String blockedList = "";
-				ArrayList<BlockingStatus> blockingStatus = new ArrayList<BlockingStatus>();
-				for (String waitingJobId : pipelineJobs) {
-					Status status = watcher.peekStatus(waitingJobId);
-					if (status != null && !Status.isStatusFinished(status)) {
-						BlockingStatus block = watcher.getBlockingStatus(waitingJobId);
-						blockingStatus.add(block);
-						blockedList += waitingJobId + ",";
-					}
-				}
-				if (!blockingStatus.isEmpty()) {
-					logger.info("Pipeline job " + this.jobId + " waiting on " + blockedList + " in execution " + watcher.getExecId());
-					
-					for(BlockingStatus bStatus: blockingStatus) {
-						logger.info("Waiting on pipelined job " + bStatus.getJobId());
-						currentBlockStatus = bStatus;
-						bStatus.blockOnFinishedStatus();
-						logger.info("Pipelined job " + bStatus.getJobId() + " finished.");
-						if (watcher.isWatchCancelled()) {
-							break;
-						}
-					}
-					writeStatus();	
-					fireEvent(Event.create(this, Type.JOB_STATUS_CHANGED));
-				}
-				if (watcher.isWatchCancelled()) {
-					logger.info("Job was cancelled while waiting on pipeline. Quiting.");
-					node.setStartTime(System.currentTimeMillis());
-					node.setEndTime(System.currentTimeMillis());
-					node.setStatus(Status.FAILED);
-					fireEvent(Event.create(this, Type.JOB_FINISHED));
-					return;
-				}
-			}
-			
-			currentBlockStatus = null;
-			long currentTime = System.currentTimeMillis();
-			if (delayStartMs > 0) {
-				logger.info("Delaying start of execution for " + delayStartMs + " milliseconds.");
-				synchronized(this) {
-					try {
-						this.wait(delayStartMs);
-						logger.info("Execution has been delayed for " + delayStartMs + " ms. Continuing with execution.");
-					} catch (InterruptedException e) {
-						logger.error("Job " + this.jobId + " was to be delayed for " + delayStartMs + ". Interrupted after " + (System.currentTimeMillis() - currentTime));
-					}
-				}
-				
-				if (cancelled) {
-					logger.info("Job was cancelled while in delay. Quiting.");
-					node.setStartTime(System.currentTimeMillis());
-					node.setEndTime(System.currentTimeMillis());
-					fireEvent(Event.create(this, Type.JOB_FINISHED));
-					return;
-				}
-			}
-			
-			node.setStartTime(System.currentTimeMillis());
+		createLogger();
+		boolean errorFound = false;
+		// Delay execution if necessary. Will return a true if something went wrong.
+		errorFound |= delayExecution();
+
+		// For pipelining of jobs. Will watch other jobs. Will return true if something went wrong.
+		errorFound |= blockOnPipeLine();
+
+		// Start the node.
+		node.setStartTime(System.currentTimeMillis());
+		if (!errorFound && !isCancelled()) {
 			fireEvent(Event.create(this, Type.JOB_STARTED, null, false));
 			try {
 				loader.uploadExecutableNode(node, props);
@@ -318,55 +381,26 @@ public class JobRunner extends EventHandler implements Runnable {
 			}
 			
 			if (prepareJob()) {
+				// Writes status to the db
 				writeStatus();
 				fireEvent(Event.create(this, Type.JOB_STATUS_CHANGED), false);
 				runJob();
+				writeStatus();
 			}
 			else {
-				node.setStatus(Status.FAILED);
+				changeStatus(Status.FAILED);
 				logError("Job run failed preparing the job.");
 			}
-			
-			node.setEndTime(System.currentTimeMillis());
-
-			logInfo("Finishing job " + this.jobId + " at " + node.getEndTime());
-
-			closeLogger();
-			writeStatus();
-			
-			if (logFile != null) {
-				try {
-					File[] files = logFile.getParentFile().listFiles(new FilenameFilter() {
-						
-						@Override
-						public boolean accept(File dir, String name) {
-							return name.startsWith(logFile.getName());
-						}
-					} 
-					);
-					Arrays.sort(files, Collections.reverseOrder());
-					
-					loader.uploadLogFile(executionId, this.jobId, node.getAttempt(), files);
-				} catch (ExecutorManagerException e) {
-					flowLogger.error("Error writing out logs for job " + this.jobId, e);
-				}
-			}
-			else {
-				flowLogger.info("Log file for job " + this.jobId + " is null");
-			}
 		}
-		fireEvent(Event.create(this, Type.JOB_FINISHED));
-	}
-	
-	private void fireEvent(Event event) {
-		fireEvent(event, true);
-	}
-	
-	private void fireEvent(Event event, boolean updateTime) {
-		if (updateTime) {
-			node.setUpdateTime(System.currentTimeMillis());
+		node.setEndTime(System.currentTimeMillis());
+
+		if (isCancelled()) {
+			changeStatus(Status.FAILED);
 		}
-		this.fireEventListeners(event);
+		logInfo("Finishing job " + this.jobId + " at " + node.getEndTime());
+		
+		fireEvent(Event.create(this, Type.JOB_FINISHED), false);
+		finalizeLogFile();
 	}
 	
 	private boolean prepareJob() throws RuntimeException {
@@ -396,8 +430,8 @@ public class JobRunner extends EventHandler implements Runnable {
 			
 			props.put(CommonJobProperties.JOB_ATTEMPT, node.getAttempt());
 			props.put(CommonJobProperties.JOB_METADATA_FILE, createMetaDataFileName(executionId, this.jobId, node.getAttempt()));
-			node.setStatus(Status.RUNNING);
-
+			changeStatus(Status.RUNNING);
+			
 			// Ability to specify working directory
 			if (!props.containsKey(AbstractProcessJob.WORKING_DIR)) {
 				props.put(AbstractProcessJob.WORKING_DIR, workingDir.getAbsolutePath());
@@ -430,22 +464,45 @@ public class JobRunner extends EventHandler implements Runnable {
 			e.printStackTrace();
 			
 			if (props.getBoolean("job.succeed.on.failure", false)) {
-				node.setStatus(Status.FAILED_SUCCEEDED);
+				changeStatus(Status.FAILED_SUCCEEDED);
 				logError("Job run failed, but will treat it like success.");
 				logError(e.getMessage() + e.getCause());
 			}
 			else {
-				node.setStatus(Status.FAILED);
+				changeStatus(Status.FAILED);
 				logError("Job run failed!");
 				logError(e.getMessage() + e.getCause());
 			}
-			return;
 		}
-
-		node.setStatus(Status.SUCCEEDED);
+		
 		if (job != null) {
 			node.setOutputProps(job.getJobGeneratedProperties());
 		}
+		
+		// If the job is still running, set the status to Success.
+		if (!Status.isStatusFinished(node.getStatus())) {
+			changeStatus(Status.SUCCEEDED);
+		}
+	}
+	
+	private void changeStatus(Status status) {
+		changeStatus(status, System.currentTimeMillis());
+	}
+	
+	private void changeStatus(Status status, long time) {
+		node.setStatus(status);
+		node.setUpdateTime(time);
+	}
+	
+	private void fireEvent(Event event) {
+		fireEvent(event, true);
+	}
+	
+	private void fireEvent(Event event, boolean updateTime) {
+		if (updateTime) {
+			node.setUpdateTime(System.currentTimeMillis());
+		}
+		this.fireEventListeners(event);
 	}
 	
 	public void cancel() {

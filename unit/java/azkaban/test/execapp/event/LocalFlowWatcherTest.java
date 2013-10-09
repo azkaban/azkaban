@@ -190,6 +190,7 @@ public class LocalFlowWatcherTest {
 						" start: " + node.getStartTime() + 
 						" dependent on " + watchedChild + " " + child.getEndTime() +
 						" diff: " + diff);
+				
 				Assert.assertTrue(node.getStartTime() >= child.getEndTime());
 			}
 			
