@@ -123,16 +123,36 @@ public class JobRunner extends EventHandler implements Runnable {
 		else if (this.pipelineLevel == 2) {
 			pipelineJobs.add(node.getNestedId());
 			ExecutableFlowBase parentFlow = node.getParentFlow();
-			for (String outNode : node.getOutNodes()) {
-				ExecutableNode nextNode = parentFlow.getExecutableNode(outNode);
-
-				// If the next node is a nested flow, then we add the nested starting nodes 
-				if (nextNode instanceof ExecutableFlowBase) {
-					ExecutableFlowBase nextFlow = (ExecutableFlowBase)nextNode;
-					findAllStartingNodes(nextFlow, pipelineJobs);
+			
+			if (parentFlow.getEndNodes().contains(node.getId())) {
+				if (!parentFlow.getOutNodes().isEmpty()) {
+					ExecutableFlowBase grandParentFlow = parentFlow.getParentFlow();
+					for (String outNode: parentFlow.getOutNodes()) {
+						ExecutableNode nextNode = grandParentFlow.getExecutableNode(outNode);
+						
+						// If the next node is a nested flow, then we add the nested starting nodes 
+						if (nextNode instanceof ExecutableFlowBase) {
+							ExecutableFlowBase nextFlow = (ExecutableFlowBase)nextNode;
+							findAllStartingNodes(nextFlow, pipelineJobs);
+						}
+						else {
+							pipelineJobs.add(nextNode.getNestedId());
+						}
+					}
 				}
-				else {
-					pipelineJobs.add(nextNode.getNestedId());
+			}
+			else {
+				for (String outNode : node.getOutNodes()) {
+					ExecutableNode nextNode = parentFlow.getExecutableNode(outNode);
+	
+					// If the next node is a nested flow, then we add the nested starting nodes 
+					if (nextNode instanceof ExecutableFlowBase) {
+						ExecutableFlowBase nextFlow = (ExecutableFlowBase)nextNode;
+						findAllStartingNodes(nextFlow, pipelineJobs);
+					}
+					else {
+						pipelineJobs.add(nextNode.getNestedId());
+					}
 				}
 			}
 		}
