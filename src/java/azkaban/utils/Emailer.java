@@ -1,6 +1,6 @@
-<<<<<<< HEAD:src/java/azkaban/utils/Emailer.java
+
 package azkaban.utils;
-=======
+
 /*
  * Copyright 2012 LinkedIn Corp.
  * 
@@ -17,8 +17,6 @@ package azkaban.utils;
  * the License.
  */
 
-package azkaban.executor;
->>>>>>> bb34b0f2587431129a808ff7742dfadbbe6817d5:src/java/azkaban/executor/ExecutorMailer.java
 
 import java.util.ArrayList;
 import java.util.List;
