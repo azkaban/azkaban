@@ -1,5 +1,5 @@
 /*
- * Copyright 2012 LinkedIn, Inc
+ * Copyright 2012 LinkedIn Corp.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -395,6 +395,7 @@ public class Schedule{
 		
 		
 	}
+<<<<<<< HEAD
 
 	public boolean isRecurring() {
 		return period == null ? false : true;
@@ -405,3 +406,6 @@ public class Schedule{
 	}
 	
 }
+=======
+}
+>>>>>>> bb34b0f2587431129a808ff7742dfadbbe6817d5

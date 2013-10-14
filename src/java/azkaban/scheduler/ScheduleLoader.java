@@ -1,5 +1,5 @@
 /*
- * Copyright 2012 LinkedIn, Inc
+ * Copyright 2012 LinkedIn Corp.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -29,7 +29,12 @@ public interface ScheduleLoader {
 	public void removeSchedule(Schedule s) throws ScheduleManagerException;
 
 	public void updateNextExecTime(Schedule s) throws ScheduleManagerException;
+<<<<<<< HEAD
 	
 	// only use when using external runner
 	public List<Schedule> loadUpdatedSchedules() throws ScheduleManagerException;
 }
+=======
+
+}
+>>>>>>> bb34b0f2587431129a808ff7742dfadbbe6817d5

@@ -1,5 +1,5 @@
 /*
- * Copyright 2012 LinkedIn, Inc
+ * Copyright 2012 LinkedIn Corp.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -309,6 +309,7 @@ public class Utils {
 		Method method = clazz.getDeclaredMethod(methodName, argTypes);
 		return method.invoke(null, args);
 	}
+<<<<<<< HEAD
 	
 	public static void copyStream(InputStream input, OutputStream output) throws IOException {
 		byte[] buffer = new byte[1024];
@@ -384,3 +385,6 @@ public class Utils {
 		return periodStr;
 	}
 }
+=======
+}
+>>>>>>> bb34b0f2587431129a808ff7742dfadbbe6817d5
