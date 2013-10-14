@@ -309,7 +309,6 @@ public class Utils {
 		Method method = clazz.getDeclaredMethod(methodName, argTypes);
 		return method.invoke(null, args);
 	}
-<<<<<<< HEAD
 	
 	public static void copyStream(InputStream input, OutputStream output) throws IOException {
 		byte[] buffer = new byte[1024];
@@ -385,6 +384,3 @@ public class Utils {
 		return periodStr;
 	}
 }
-=======
-}
->>>>>>> bb34b0f2587431129a808ff7742dfadbbe6817d5

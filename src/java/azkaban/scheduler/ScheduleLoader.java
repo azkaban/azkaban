@@ -29,12 +29,6 @@ public interface ScheduleLoader {
 	public void removeSchedule(Schedule s) throws ScheduleManagerException;
 
 	public void updateNextExecTime(Schedule s) throws ScheduleManagerException;
-<<<<<<< HEAD
-	
-	// only use when using external runner
+
 	public List<Schedule> loadUpdatedSchedules() throws ScheduleManagerException;
 }
-=======
-
-}
->>>>>>> bb34b0f2587431129a808ff7742dfadbbe6817d5

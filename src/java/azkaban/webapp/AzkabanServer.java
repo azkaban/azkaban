@@ -135,9 +135,5 @@ public abstract class AzkabanServer {
 	public abstract VelocityEngine getVelocityEngine();
 	
 	public abstract UserManager getUserManager();
-<<<<<<< HEAD
 	
 }
-=======
-}
->>>>>>> bb34b0f2587431129a808ff7742dfadbbe6817d5

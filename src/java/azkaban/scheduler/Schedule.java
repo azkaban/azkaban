@@ -395,7 +395,6 @@ public class Schedule{
 		
 		
 	}
-<<<<<<< HEAD
 
 	public boolean isRecurring() {
 		return period == null ? false : true;
@@ -406,6 +405,3 @@ public class Schedule{
 	}
 	
 }
-=======
-}
->>>>>>> bb34b0f2587431129a808ff7742dfadbbe6817d5
