@@ -56,7 +56,7 @@ import azkaban.database.AzkabanDatabaseSetup;
 import azkaban.executor.ExecutorManager;
 import azkaban.executor.ExecutorManagerAdapter;
 import azkaban.executor.JdbcExecutorLoader;
-import azkaban.jmx.JmxExecutorManagerAdapter;
+import azkaban.jmx.JmxExecutorManager;
 import azkaban.jmx.JmxJettyServer;
 import azkaban.jmx.JmxTriggerManager;
 import azkaban.project.JdbcProjectLoader;
@@ -1174,11 +1174,11 @@ public class AzkabanWebServer extends AzkabanServer {
 
 		registerMbean("jetty", new JmxJettyServer(server));
 		registerMbean("triggerManager", new JmxTriggerManager(triggerManager));
-//		if(executorManager instanceof ExecutorManagerLocalAdapter) {
-//			registerMbean("executorManager", new JmxExecutorManager(((ExecutorManagerLocalAdapter)executorManager).getExecutorManager()));
-//		}
+		if(executorManager instanceof ExecutorManager) {
+			registerMbean("executorManager", new JmxExecutorManager((ExecutorManager) executorManager));
+		}
 //		registerMbean("executorManager", new JmxExecutorManager(executorManager));
-		registerMbean("executorManager", new JmxExecutorManagerAdapter(executorManager));
+//		registerMbean("executorManager", new JmxExecutorManager(executorManager));
 	}
 	
 	public void close() {

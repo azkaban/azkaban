@@ -17,4 +17,10 @@ public interface JmxExecutorManagerAdapterMBean {
 
 	@DisplayName("OPERATION: getPrimaryExecutorHostPorts")
 	public List<String> getPrimaryExecutorHostPorts();
+	
+//	@DisplayName("OPERATION: getExecutorThreadStage")
+//	public String getExecutorThreadStage();
+//	
+//	@DisplayName("OPERATION: getRunningFlows")
+//	public String getRunningFlows();
 }

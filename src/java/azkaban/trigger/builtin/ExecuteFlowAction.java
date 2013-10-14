@@ -227,7 +227,7 @@ public class ExecuteFlowAction implements TriggerAction {
 		if(slaOptions != null && slaOptions.size() > 0) {
 			int execId = exflow.getExecutionId();
 			for(SlaOption sla : slaOptions) {
-				logger.info("Adding sla trigger " + sla.toString());
+				logger.info("Adding sla trigger " + sla.toString() + " to execution " + execId);
 				SlaChecker slaChecker = new SlaChecker("slaChecker", sla, execId);
 				Map<String, ConditionChecker> slaCheckers = new HashMap<String, ConditionChecker>();
 				slaCheckers.put(slaChecker.getId(), slaChecker);
@@ -251,6 +251,7 @@ public class ExecuteFlowAction implements TriggerAction {
 				Trigger slaTrigger = new Trigger("azkaban_sla", "azkaban", triggerCond, expireCond, actions);
 				slaTrigger.setResetOnTrigger(false);
 				slaTrigger.setResetOnExpire(false);
+				logger.info("Ready to put in the sla trigger");
 				triggerManager.insertTrigger(slaTrigger);
 			}
 		}

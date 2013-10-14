@@ -43,4 +43,5 @@ public class JmxExecutorManagerAdapter implements JmxExecutorManagerAdapterMBean
 	public List<String> getPrimaryExecutorHostPorts() {
 		return new ArrayList<String>(manager.getPrimaryServerHosts());
 	}
+
 }

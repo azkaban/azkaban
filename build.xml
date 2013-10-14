@@ -8,14 +8,12 @@
 	<property name="dist.packages.dir" value="${basedir}/dist/packages" />
 	<property name="dist.web.package.dir" value="${dist.packages.dir}/azkaban-web-server" />
 	<property name="dist.exec.package.dir" value="${dist.packages.dir}/azkaban-exec-server" />
-	<property name="dist.trigger.package.dir" value="${dist.packages.dir}/azkaban-trigger-server" />
 	<property name="dist.solo.package.dir" value="${dist.packages.dir}/azkaban-solo-server" />
 	<property name="dist.sql.package.dir" value="${dist.packages.dir}/sql" />	
 
 	<property name="conf.dir" value="${basedir}/conf" />
 	<property name="web.package.dir" value="${basedir}/src/package/webserver" />
 	<property name="exec.package.dir" value="${basedir}/src/package/execserver" />
-	<property name="trigger.package.dir" value="${basedir}/src/package/triggerserver" />
 	<property name="solo.package.dir" value="${basedir}/src/package/soloserver" />
 	
 	<property name="lib.dir" value="${basedir}/lib" />
@@ -210,44 +208,6 @@
 		</tar>
 	</target>
 	
-	<target name="package-trigger-server" depends="jars" description="Creates a package for the trigger server">
-		<delete dir="${dist.trigger.package.dir}" />
-		<mkdir dir="${dist.trigger.package.dir}" />
-		<mkdir dir="${dist.trigger.package.dir}/conf" />
-		<mkdir dir="${dist.trigger.package.dir}/bin" />
-		<mkdir dir="${dist.trigger.package.dir}/lib" />
-		<mkdir dir="${dist.trigger.package.dir}/plugins" />
-		<mkdir dir="${dist.trigger.package.dir}/extlib" />
-
-		<!-- Copy Azkaban jars and libs-->
-		<copy file="${azkaban.jar}" todir="${dist.trigger.package.dir}/lib" />
-		<copy todir="${dist.trigger.package.dir}/lib" >
-			<fileset dir="${lib.dir}" >
-				<exclude name="hadoop-core*.jar"/>
-			</fileset>
-		</copy>
-
-		<!-- Copy bin files for trigger server only-->
-		<copy todir="${dist.trigger.package.dir}/bin" >
-			<fileset dir="${trigger.package.dir}/bin"/>
-		</copy>
-
-		<!-- Copy conf files -->
-		<copy todir="${dist.trigger.package.dir}/conf" >
-			<fileset dir="${trigger.package.dir}/conf" />
-		</copy>
-
-		<!-- Tarball it -->
-		<tar destfile="${dist.trigger.package.dir}/${name}-trigger-server-${version}.tar.gz" compression="gzip" longfile="gnu">
-			<tarfileset dir="${dist.trigger.package.dir}" prefix="azkaban-${version}" filemode="755" includes="bin/*" />
-
-			<tarfileset dir="${dist.trigger.package.dir}" prefix="azkaban-${version}" includes="**">
-				<exclude name="bin/*"/>
-			</tarfileset>
-		</tar>
-	</target>
-
-
 	<target name="package-solo-server" depends="jars" description="Creates a package for the solo server">
 		<delete dir="${dist.solo.package.dir}" />
 		<mkdir dir="${dist.solo.package.dir}" />
@@ -297,6 +257,6 @@
 		</tar>
 	</target>
 	
-	<target name="package-all" depends="package-trigger-server, package-exec-server, package-web-server, package-solo-server, package-sql-scripts" description="Create all packages">
+	<target name="package-all" depends="package-exec-server, package-web-server, package-solo-server, package-sql-scripts" description="Create all packages">
 	</target>
 </project>
