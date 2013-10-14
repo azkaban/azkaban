@@ -56,7 +56,12 @@ public class ExecutorMailer {
 		EmailMessage.setConnectionTimeout(connectionTimeout);
 		
 		this.clientHostname = props.getString("jetty.hostname", "localhost");
-		this.clientPortNumber = Utils.nonNull(props.getString("jetty.ssl.port"));
+		
+		if (props.getBoolean("jetty.use.ssl", true)) {
+			this.clientPortNumber = props.getString("jetty.ssl.port");
+		} else {
+			this.clientPortNumber = props.getString("jetty.port");
+		}
 		
 		testMode = props.getBoolean("test.mode", false);
 	}
