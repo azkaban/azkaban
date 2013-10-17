@@ -86,7 +86,7 @@ _roles_ tag.
   &lt;user username="a" ... groups="groupa" roles="readall" / &gt;
   &lt;user username="b" ... / &gt;
   ...
-  &lt;group name="groupa" roles="admin" / &gt
+  &lt;group name="groupa" roles="admin" / &gt;
   ...
   &lt;role name="admin" permissions="ADMIN" / &gt;
   &lt;role name="readall" permissions="READ" / &gt;
