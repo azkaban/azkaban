@@ -47,17 +47,18 @@ When a job in a flow fails, you are able to control how the rest of the flow wil
 
 ##Concurrent Options
 If the flow execution is invoked while the flow is concurrently executing, several options can be set.
+
 * __Skip Execution__ option will not run the flow if its already running.
 * __Run Concurrently__ option will run the flow regardless of if its running. Executions are given different working directories.
 * __Pipeline__ runs the the flow in a manner that the new execution will not overrun the concurrent execution.
-*	* Level 1 : blocks executing __job A__ until the the previous flow's __job A__ has completed.
-*	* Level 2 : blocks executing __job A__ until the the children of the previous flow's __job A__ has completed. This is useful if you need to run your flows a few steps behind an already executin flow.
+    * Level 1 : blocks executing __job A__ until the the previous flow's __job A__ has completed.
+    * Level 2 : blocks executing __job A__ until the the children of the previous flow's __job A__ has completed. This is useful if you need to run your flows a few steps behind an already executing flow.
 
 <img class="shadowimg" title="Concurrent Options" src="./images/executeflowconcurrent.png" ALT="Concurrent Options" width="450" />
 
 <hr/>
 
 ##Flow Parameters
-Allows users to override flow parameters. The flow parameters override the global properties for a job, but not the properties of the job itself.
+Allows users to override flow parameters. The flow parameters override properties that jobs inherit from shared files (specified in _.properties_ files), but will not override properties set in the _.job_ file itself.
 
 <img class="shadowimg" title="Flow Parameters Options" src="./images/executeflowparameters.png" ALT="Flow Parameters" width="450" />

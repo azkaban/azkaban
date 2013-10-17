@@ -8,3 +8,5 @@ author :
   name : Richard Park
   email : rpark@linkedin.com
   github : rbpark
+
+markdown: rdiscount
