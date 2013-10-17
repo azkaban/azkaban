@@ -8,7 +8,6 @@ import org.apache.log4j.Logger;
 import azkaban.alert.Alerter;
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutorManagerAdapter;
-import azkaban.executor.ExecutorManagerException;
 import azkaban.sla.SlaOption;
 import azkaban.trigger.TriggerAction;
 

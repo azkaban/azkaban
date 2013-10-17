@@ -10,7 +10,6 @@ import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 
 import azkaban.executor.ExecutableFlow;
-import azkaban.executor.ExecutorManagerException;
 
 public class SlaOption {
 	

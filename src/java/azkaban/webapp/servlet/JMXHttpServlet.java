@@ -74,7 +74,7 @@ public class JMXHttpServlet extends LoginAbstractAzkabanServlet implements Conne
 		if (hasParam(req, "ajax")){
 			Map<String,Object> ret = new HashMap<String,Object>();
 
-			if(!hasAdminRole(session.getUser())) {
+			if(!hasPermission(session.getUser(), Permission.Type.METRICS)) {
 				ret.put("error", "User " + session.getUser().getUserId() + " has no permission.");
 				this.writeJSON(resp, ret, true);
 				return;
@@ -183,7 +183,7 @@ public class JMXHttpServlet extends LoginAbstractAzkabanServlet implements Conne
 	private void handleJMXPage(HttpServletRequest req, HttpServletResponse resp, Session session) throws IOException {
 		Page page = newPage(req, resp, session, "azkaban/webapp/servlet/velocity/jmxpage.vm");
 		
-		if(!hasAdminRole(session.getUser())) {
+		if(!hasPermission(session.getUser(), Permission.Type.METRICS)) {
 			page.add("errorMsg", "User " + session.getUser().getUserId() + " has no permission.");
 			page.render();
 			return;
@@ -241,11 +241,22 @@ public class JMXHttpServlet extends LoginAbstractAzkabanServlet implements Conne
 
 	}
 	
-	private boolean hasAdminRole(User user) {
+//	private boolean hasAdminRole(User user) {
+//		for(String roleName: user.getRoles()) {
+//			Role role = userManager.getRole(roleName);
+//			Permission perm = role.getPermission();
+//			if (perm.isPermissionSet(Permission.Type.ADMIN)) {
+//				return true;
+//			}
+//		}
+//		
+//		return false;
+//	}
+	
+	protected boolean hasPermission(User user, Permission.Type type) {	
 		for(String roleName: user.getRoles()) {
 			Role role = userManager.getRole(roleName);
-			Permission perm = role.getPermission();
-			if (perm.isPermissionSet(Permission.Type.ADMIN)) {
+			if (role.getPermission().isPermissionSet(type) || role.getPermission().isPermissionSet(Permission.Type.ADMIN)) {
 				return true;
 			}
 		}

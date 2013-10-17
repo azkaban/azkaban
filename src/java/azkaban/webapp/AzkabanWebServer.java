@@ -313,7 +313,7 @@ public class AzkabanWebServer extends AzkabanServer {
 		}
 			
 		Map<String, Alerter> installedAlerterPlugins = new HashMap<String, Alerter>();
-		ClassLoader parentLoader = SlaAlertAction.class.getClass().getClassLoader();
+		ClassLoader parentLoader = getClass().getClassLoader();
 		File[] pluginDirs = alerterPluginPath.listFiles();
 		ArrayList<String> jarPaths = new ArrayList<String>();
 		for (File pluginDir: pluginDirs) {

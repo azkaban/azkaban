@@ -172,7 +172,6 @@ public class SlaChecker implements ConditionChecker{
 		return createFromJson((HashMap<String, Object>)obj);
 	}
 	
-	@SuppressWarnings("unchecked")
 	public static SlaChecker createFromJson(HashMap<String, Object> obj) throws Exception {
 		Map<String, Object> jsonObj = (HashMap<String, Object>) obj;
 		if(!jsonObj.get("type").equals(type)) {
