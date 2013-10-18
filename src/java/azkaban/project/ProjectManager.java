@@ -180,7 +180,7 @@ public class ProjectManager {
 		} 
 		else if (description == null || description.trim().isEmpty()) {
 			throw new ProjectManagerException("Description cannot be empty.");
-		}
+		} 
 		else if (creator == null) {
 			throw new ProjectManagerException("Valid creator user must be set.");
 		} 
