@@ -26,7 +26,7 @@ import azkaban.utils.Props;
 public class NoopJob implements Job {
 	private String jobId;
 
-	public NoopJob(String jobid, Props props, Logger log) {
+	public NoopJob(String jobid, Props props, Props jobProps, Logger log) {
 		this.jobId = jobid;
 	}
 

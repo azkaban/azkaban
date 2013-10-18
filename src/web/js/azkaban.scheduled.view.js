@@ -122,10 +122,6 @@ azkaban.ChangeSlaView = Backbone.View.extend({
 							indexToText[i] = "job " + allJobNames[i-1];
 						}
 						
-						
-						
-						
-						
 						// populate with existing settings
 						if(data.settings) {
 							

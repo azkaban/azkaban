@@ -20,7 +20,6 @@ import azkaban.utils.Props;
 import azkaban.utils.cache.Cache;
 import azkaban.utils.cache.CacheManager;
 import azkaban.utils.cache.Cache.EjectionPolicy;
-import azkaban.utils.cache.Element;
 
 
 /**

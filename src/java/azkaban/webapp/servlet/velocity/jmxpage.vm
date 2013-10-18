@@ -89,7 +89,7 @@
 				</tbody>
 			</table>
 
-#foreach($executor in $remoteMBeans.entrySet())
+#foreach($executor in $executorRemoteMBeans.entrySet())
 			<h3 class="subhead">Remote Executor JMX $executor.key</h3>
 			<table class="all-jobs job-table remoteJMX">
 				<thead>
@@ -131,6 +131,50 @@
 				</tbody>
 			</table>
 #end
+
+#foreach($triggerserver in $triggerserverRemoteMBeans.entrySet())
+			<h3 class="subhead">Remote Trigger Server JMX $triggerserver.key</h3>
+			<table class="all-jobs job-table remoteJMX">
+				<thead>
+					<tr>
+						<th>Name</th>
+						<th>Domain</th>
+						<th>Canonical Name</th>
+						<th></th>
+					</tr>
+				</thead>
+				<tbody>
+					#foreach($bean in $triggerserver.value)
+						<tr>
+							<td>${bean.get("keyPropertyList").get("name")}</td>
+							<td>${bean.get("domain")}</td>
+							<td>${bean.get("canonicalName")}</td>
+							<td><div class="btn4 querybtn" id="expandBtn-$counter" domain="${bean.get("domain")}" name="${bean.get("keyPropertyList").get("name")}" hostport="$triggerserver.key">Query</div></td>
+						</tr>
+					<tr class="childrow" id="expandBtn-${counter}-child"  style="display: none;">
+						<td class="expandedFlow" colspan="3">
+							<table class="innerTable">
+								<thead>
+									<tr>
+										<th>Attribute Name</th>
+										<th>Value</th>
+									</tr>
+								</thead>
+								<tbody id="expandBtn-${counter}-tbody">
+								</tbody>
+							</table>
+						</td>
+
+						<td>
+							<div class="btn4 collapse">Collapse</div>
+						</td>
+				</tr>
+				#set($counter=$counter + 1)
+					#end 
+				</tbody>
+			</table>
+#end
+
 		</div>
 	</body>
 </html>

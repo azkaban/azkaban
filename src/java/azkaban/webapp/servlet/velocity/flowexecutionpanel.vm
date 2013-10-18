@@ -151,7 +151,14 @@
 		#if(!$show_schedule || $show_schedule == 'true') 
 		<a class="btn2" id="schedule-btn">Schedule</a>
 		#end
-
+		
+#*
+		#if( $triggerPlugins.size() > 0 ) 
+			#foreach( $triggerPlugin in $triggerPlugins )
+			<a class="btn2" id=set-$triggerPlugin.pluginName>$triggerPlugin.pluginName</a>
+			#end
+		#end
+*#
 		<a class="yes btn1" id="execute-btn">Execute</a>
 		<a class="no simplemodal-close btn3 closeExecPanel">Cancel</a>
 	</div>
@@ -161,6 +168,16 @@
 #if(!$show_schedule || $show_schedule == 'true') 
 #parse( "azkaban/webapp/servlet/velocity/schedulepanel.vm" )
 #end
+
+#*
+#if( $triggerPlugins.size() > 0 ) 
+	#foreach( $triggerPlugin in $triggerPlugins )
+		#set ($prefix = $triggerPlugin.pluginName )
+		#set ($webpath = $triggerPlugin.pluginPath )
+		#parse( $triggerPlugin.inputPanelVM )
+	#end
+#end
+*#
 
 <div id="contextMenu">
 	

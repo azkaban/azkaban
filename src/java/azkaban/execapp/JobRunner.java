@@ -158,6 +158,7 @@ public class JobRunner extends EventHandler implements Runnable {
 				fileAppender.setMaxFileSize(jobLogChunkSize);
 				jobAppender = fileAppender;
 				logger.addAppender(jobAppender);
+				logger.setAdditivity(false);
 			} catch (IOException e) {
 				flowLogger.error("Could not open log file in " + workingDir + " for job " + node.getJobId(), e);
 			}

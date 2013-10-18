@@ -17,6 +17,7 @@
 package azkaban.utils;
 
 import java.util.Collection;
+import java.util.List;
 
 public class StringUtils {
 	public static final char SINGLE_QUOTE = '\'';
@@ -36,6 +37,17 @@ public class StringUtils {
 		buf.append(quoteCh);
 
 		return buf.toString();
+	}
+	
+	@Deprecated
+	public static String join(List<String> list, String delimiter) {
+		StringBuffer buffer = new StringBuffer();
+		for (String str: list) {
+			buffer.append(str);
+			buffer.append(delimiter);
+		}
+		
+		return buffer.toString();
 	}
 	
 	/**

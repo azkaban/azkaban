@@ -1,0 +1,99 @@
+#*
+ * Copyright 2012 LinkedIn, Inc
+ * 
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not
+ * use this file except in compliance with the License. You may obtain a copy of
+ * the License at
+ * 
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations under
+ * the License.
+*#
+
+<!DOCTYPE html> 
+<html>
+	<head>
+#parse( "azkaban/webapp/servlet/velocity/style.vm" )
+		<link rel="stylesheet" type="text/css" href="${context}/css/jquery-ui-1.10.1.custom.css" />
+		<link rel="stylesheet" type="text/css" href="${context}/css/jquery-ui.css" />
+		
+		<script type="text/javascript" src="${context}/js/jquery/jquery-1.9.1.js"></script>    
+		<script type="text/javascript" src="${context}/js/jqueryui/jquery-ui-1.10.1.custom.js"></script>
+		<script type="text/javascript" src="${context}/js/underscore-1.4.4-min.js"></script>
+		<script type="text/javascript" src="${context}/js/namespace.js"></script>
+		<script type="text/javascript" src="${context}/js/backbone-0.9.10-min.js"></script>
+		<script type="text/javascript" src="${context}/js/jquery.simplemodal-1.4.4.js"></script>
+		
+		<script type="text/javascript" src="${context}/js/jqueryui/jquery-ui-timepicker-addon.js"></script> 
+		<script type="text/javascript" src="${context}/js/jqueryui/jquery-ui-sliderAccess.js"></script>
+		<script type="text/javascript" src="${context}/js/azkaban.table.sort.js"></script>
+		<script type="text/javascript" src="${context}/js/azkaban.nav.js"></script>
+		<script type="text/javascript" src="${context}/js/azkaban.triggers.view.js"></script>
+		<script type="text/javascript">
+			var contextURL = "${context}";
+			var currentTime = ${currentTime};
+			var timezone = "${timezone}";
+			var errorMessage = null;
+			var successMessage = null;
+		</script>
+	</head>
+	<body>
+#set($current_page="triggers")
+#parse( "azkaban/webapp/servlet/velocity/nav.vm" )
+		<div class="messaging"><p id="messageClose">X</p><p id="message"></p></div>  
+
+		<div class="content">
+		
+#if($errorMsg)
+		<div class="box-error-message">$errorMsg</div>
+#else
+#if($error_message != "null")
+		<div class="box-error-message">$error_message</div>
+#elseif($success_message != "null")
+		<div class="box-success-message">$success_message</div>
+#end
+#end		
+		
+			<div id="all-triggers-content">
+				<div class="section-hd">
+					<h2>All Triggers</h2>
+				</div>
+			</div>
+			
+			<div class="triggers">
+				<table id="triggersTbl">
+					<thead>
+						<tr>
+							<th>ID</th>
+							<th>Source</th>
+							<th>Submitted By</th>
+							<th>Description</th>
+							<th>Status</th>
+							<!--th colspan="2" class="action ignoresort">Action</th-->
+						</tr>
+					</thead>
+					<tbody>
+						#if($triggers)
+#foreach($trigger in $triggers)
+						<tr class="row" >
+
+							<td>${trigger.triggerId}</td>
+							<td>${trigger.source}</td>
+							<td>${trigger.submitUser}</td>
+							<td>${trigger.getDescription()}</td>
+							<td>${trigger.getStatus()}</td>
+							<!--td><button id="expireTriggerBtn" onclick="expireTrigger(${trigger.triggerId})" >Expire Trigger</button></td-->
+						</tr>
+#end
+#else
+						<tr><td class="last">No Trigger Found</td></tr>
+#end
+					</tbody>
+				</table>
+			</div>
+	</body>
+</html>

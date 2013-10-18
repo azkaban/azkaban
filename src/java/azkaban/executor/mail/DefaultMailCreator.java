@@ -22,8 +22,8 @@ import java.util.List;
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutionOptions;
 import azkaban.executor.ExecutionOptions.FailureAction;
-import azkaban.executor.ExecutorMailer;
 import azkaban.utils.EmailMessage;
+import azkaban.utils.Emailer;
 import azkaban.utils.Utils;
 
 public class DefaultMailCreator implements MailCreator {
@@ -83,7 +83,7 @@ public class DefaultMailCreator implements MailCreator {
 
 			message.println("");
 			message.println("<h3>Reason</h3>");
-			List<String> failedJobs = ExecutorMailer.findFailedJobs(flow);
+			List<String> failedJobs = Emailer.findFailedJobs(flow);
 			message.println("<ul>");
 			for (String jobId : failedJobs) {
 				message.println("<li><a href=\"" + executionUrl + "&job=" + jobId + "\">Failed job '" + jobId + "' Link</a></li>");
@@ -121,7 +121,7 @@ public class DefaultMailCreator implements MailCreator {
 
 			message.println("");
 			message.println("<h3>Reason</h3>");
-			List<String> failedJobs = ExecutorMailer.findFailedJobs(flow);
+			List<String> failedJobs = Emailer.findFailedJobs(flow);
 			message.println("<ul>");
 			for (String jobId : failedJobs) {
 				message.println("<li><a href=\"" + executionUrl + "&job=" + jobId + "\">Failed job '" + jobId + "' Link</a></li>");

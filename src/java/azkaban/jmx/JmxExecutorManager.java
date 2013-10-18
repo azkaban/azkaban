@@ -19,7 +19,7 @@ public class JmxExecutorManager implements JmxExecutorManagerMBean {
 
 	@Override
 	public String getExecutorThreadState() {
-		return manager.getExecutorThreadState().toString();
+		return manager.getExecutorManagerThreadState().toString();
 	}
 	
 	@Override
@@ -29,12 +29,12 @@ public class JmxExecutorManager implements JmxExecutorManagerMBean {
 
 	@Override
 	public boolean isThreadActive() {
-		return manager.isThreadActive();
+		return manager.isExecutorManagerThreadActive();
 	}
 
 	@Override
 	public Long getLastThreadCheckTime() {
-		return manager.getLastThreadCheckTime();
+		return manager.getLastExecutorManagerThreadCheckTime();
 	}
 	
 	@Override 

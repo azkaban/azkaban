@@ -26,4 +26,8 @@ public class ScheduleManagerException extends Exception{
 	public ScheduleManagerException(String message, Throwable cause) {
 		super(message, cause);
 	}
+
+	public ScheduleManagerException(Exception e) {
+		super(e);
+	}
 }

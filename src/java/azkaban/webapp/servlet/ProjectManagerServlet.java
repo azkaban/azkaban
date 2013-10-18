@@ -45,6 +45,7 @@ import org.apache.log4j.Logger;
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutableJobInfo;
 import azkaban.executor.ExecutorManager;
+import azkaban.executor.ExecutorManagerAdapter;
 import azkaban.executor.ExecutorManagerException;
 import azkaban.flow.Edge;
 import azkaban.flow.Flow;
@@ -56,6 +57,7 @@ import azkaban.project.ProjectManager;
 import azkaban.project.ProjectManagerException;
 import azkaban.scheduler.Schedule;
 import azkaban.scheduler.ScheduleManager;
+import azkaban.scheduler.ScheduleManagerException;
 import azkaban.user.Permission;
 import azkaban.user.Role;
 import azkaban.user.UserManager;
@@ -75,7 +77,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 	private static final String LOCKDOWN_CREATE_PROJECTS_KEY = "lockdown.create.projects";
 	
 	private ProjectManager projectManager;
-	private ExecutorManager executorManager;
+	private ExecutorManagerAdapter executorManager;
 	private ScheduleManager scheduleManager;
 	private UserManager userManager;
 
@@ -360,13 +362,19 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 		
 		// Check if scheduled
 		Schedule sflow = null;
-		for (Schedule flow: scheduleManager.getSchedules()) {
+		try {
+			for (Schedule flow: scheduleManager.getSchedules()) {
 
-			if (flow.getProjectId() == project.getId()) {
-				sflow = flow;
-				break;
+				if (flow.getProjectId() == project.getId()) {
+					sflow = flow;
+					break;
+				}
 			}
+		} catch (ScheduleManagerException e) {
+			// TODO Auto-generated catch block
+			throw new ServletException(e);
 		}
+		
 		if (sflow != null) {
 			this.setErrorMessageInCookie(resp, "Cannot delete. Please unschedule " + sflow.getScheduleName() + ".");
 

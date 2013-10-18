@@ -29,6 +29,7 @@ public class Permission {
 		WRITE(0x0000002),
 		EXECUTE(0x0000004),
 		SCHEDULE(0x0000008),
+		METRICS(0x0000010),
 		CREATEPROJECTS(0x40000000), // Only used for roles
 		ADMIN(0x8000000);
 		

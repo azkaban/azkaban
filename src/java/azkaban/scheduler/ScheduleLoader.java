@@ -30,4 +30,5 @@ public interface ScheduleLoader {
 
 	public void updateNextExecTime(Schedule s) throws ScheduleManagerException;
 
+	public List<Schedule> loadUpdatedSchedules() throws ScheduleManagerException;
 }

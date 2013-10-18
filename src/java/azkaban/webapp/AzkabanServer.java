@@ -135,4 +135,5 @@ public abstract class AzkabanServer {
 	public abstract VelocityEngine getVelocityEngine();
 	
 	public abstract UserManager getUserManager();
+	
 }

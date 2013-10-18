@@ -479,4 +479,15 @@ public class ExecutableFlow {
 	public void setVersion(int version) {
 		this.version = version;
 	}
+	
+	public static boolean isFinished(ExecutableFlow flow) {
+		switch(flow.getStatus()) {
+		case SUCCEEDED:
+		case FAILED:
+		case KILLED:
+			return true;
+		default:
+			return false;
+		}
+	}
 }
