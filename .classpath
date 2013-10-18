@@ -31,5 +31,6 @@
 	<classpathentry kind="lib" path="extlib/mysql-connector-java-5.1.16-bin.jar"/>
 	<classpathentry kind="lib" path="lib/commons-pool-1.6.jar"/>
 	<classpathentry kind="lib" path="lib/h2-1.3.170.jar"/>
+	<classpathentry kind="lib" path="lib/commons-jexl-2.1.1.jar"/>
 	<classpathentry kind="output" path="dist/classes"/>
 </classpath>
