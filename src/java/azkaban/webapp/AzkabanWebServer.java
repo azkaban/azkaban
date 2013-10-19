@@ -1029,14 +1029,36 @@ public class AzkabanWebServer extends AzkabanServer {
 						logger.error(e);
 					}
 				}
+				
+				// Load any external libraries.
 				if (extLibClasspath != null) {
 					for (String extLib : extLibClasspath) {
-						try {
-							File file = new File(pluginDir, extLib);
-							URL url = file.toURI().toURL();
-							urls.add(url);
-						} catch (MalformedURLException e) {
-							logger.error(e);
+						File extLibFile = new File(pluginDir, extLib);
+						if (extLibFile.exists()) {
+							if (extLibFile.isDirectory()) {
+								// extLibFile is a directory; load all the files in the directory.
+								File[] extLibFiles = extLibFile.listFiles();
+								for (int i=0; i < extLibFiles.length; ++i) {
+									try {
+										URL url = extLibFiles[i].toURI().toURL();
+										urls.add(url);
+									} catch (MalformedURLException e) {
+										logger.error(e);
+									}
+								}
+							}
+							else { // extLibFile is a file
+								try {
+									URL url = extLibFile.toURI().toURL();
+									urls.add(url);
+								} catch (MalformedURLException e) {
+									logger.error(e);
+								}
+							}
+						}
+						else {
+							logger.error("External library path " + extLibFile.getAbsolutePath() + " not found.");
+							continue;
 						}
 					}
 				}
@@ -1044,7 +1066,7 @@ public class AzkabanWebServer extends AzkabanServer {
 				urlClassLoader = new URLClassLoader(urls.toArray(new URL[urls.size()]), parentLoader);
 			}
 			else {
-				logger.error("Library path " + propertiesDir + " not found.");
+				logger.error("Library path " + libDir.getAbsolutePath() + " not found.");
 				continue;
 			}
 			
