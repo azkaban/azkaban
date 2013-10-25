@@ -61,6 +61,8 @@ public class Page {
 	 */
 	public void render() {
 		try {
+			response.setHeader ("Content-type", "text/html; charset=UTF-8");
+			response.setCharacterEncoding ("UTF-8");
 			response.setContentType(mimeType);
 			engine.mergeTemplate(template, "UTF-8", context, response.getWriter());
 		} catch (Exception e) {
