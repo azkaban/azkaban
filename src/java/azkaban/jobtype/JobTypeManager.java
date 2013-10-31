@@ -91,7 +91,7 @@ public class JobTypeManager
 		jobToClass.put("script", ScriptJob.class);	
 	}
 
-	// load Job Typs from dir
+	// load Job Types from jobtype plugin dir
 	private void loadPluginJobTypes() throws JobTypeManagerException
 	{
 		File jobPluginsDir = new File(jobtypePluginDir);
