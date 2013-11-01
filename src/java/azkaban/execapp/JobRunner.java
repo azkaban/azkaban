@@ -28,9 +28,9 @@ import java.util.Arrays;
 import java.util.Collections;
 
 import org.apache.log4j.Appender;
+import org.apache.log4j.EnhancedPatternLayout;
 import org.apache.log4j.Layout;
 import org.apache.log4j.Logger;
-import org.apache.log4j.PatternLayout;
 import org.apache.log4j.RollingFileAppender;
 
 import azkaban.execapp.event.BlockingStatus;
@@ -51,7 +51,7 @@ import azkaban.jobtype.JobTypeManagerException;
 import azkaban.utils.Props;
 
 public class JobRunner extends EventHandler implements Runnable {
-	private static final Layout DEFAULT_LAYOUT = new PatternLayout("%d{dd-MM-yyyy HH:mm:ss z} %c{1} %p - %m\n");
+	private final Layout DEFAULT_LAYOUT = new EnhancedPatternLayout("%d{dd-MM-yyyy HH:mm:ss z} %c{1} %p - %m\n");
 	
 	private ExecutorLoader loader;
 	private Props props;
