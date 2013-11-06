@@ -205,6 +205,9 @@ public class ExecuteFlowAction implements TriggerAction {
 		exflow.setSubmitUser(submitUser);
 		exflow.addAllProxyUsers(project.getProxyUsers());
 		
+		if(executionOptions == null) {
+			executionOptions = new ExecutionOptions();
+		}
 		if(!executionOptions.isFailureEmailsOverridden()) {
 			executionOptions.setFailureEmails(flow.getFailureEmails());
 		}
@@ -253,6 +256,7 @@ public class ExecuteFlowAction implements TriggerAction {
 				slaTrigger.setResetOnExpire(false);
 				logger.info("Ready to put in the sla trigger");
 				triggerManager.insertTrigger(slaTrigger);
+				logger.info("Sla inserted.");
 			}
 		}
 		
