@@ -168,7 +168,7 @@ public class BasicTimeChecker implements ConditionChecker {
 		jsonObj.put("firstCheckTime", String.valueOf(firstCheckTime));
 		jsonObj.put("timezone", timezone.getID());
 		jsonObj.put("nextCheckTime", String.valueOf(nextCheckTime));
-		jsonObj.put("isRecurrint", String.valueOf(isRecurring));
+		jsonObj.put("isRecurring", String.valueOf(isRecurring));
 		jsonObj.put("skipPastChecks", String.valueOf(skipPastChecks));
 		jsonObj.put("period", Utils.createPeriodString(period));
 		jsonObj.put("id", id);
