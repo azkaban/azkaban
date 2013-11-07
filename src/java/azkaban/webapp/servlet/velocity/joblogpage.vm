@@ -59,9 +59,9 @@
 					<div class="section-sub-hd">
 						<h4><a href="${context}/manager?project=${projectName}">Project <span>$projectName</span></a></h4>
 						<h4 class="separator">&gt;</h4>
-						<h4><a href="${context}/executor?execid=${execid}#jobslist">Execution <span>$execid</span></a></h4>
-						<h4 class="separator">&gt;</h4>
 						<h4><a href="${context}/manager?project=${projectName}&flow=${flowid}">Flow <span>$flowid</span></a></h4>
+						<h4 class="separator">&gt;</h4>
+						<h4><a href="${context}/executor?execid=${execid}#jobslist">Execution <span>$execid</span></a></h4>
 						<h4 class="separator">&gt;</h4>
 						<h4><a href="${context}/manager?project=${projectName}&flow=${flowid}&job=$jobid">Job <span>$jobid</span></a></h4>
 					</div>
