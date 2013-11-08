@@ -1,0 +1,247 @@
+
+svg .edge {
+	stroke: #BBB;
+	stroke-width: 2;
+}
+
+svg .edge:hover {
+	stroke: #009FC9;
+	stroke-width: 4;
+}
+
+svg .node.disabled {
+	opacity: 0.3;
+}
+
+svg .node .backboard {
+	fill: #FFF;
+	opacity: 0.05;
+}
+
+svg .node:hover {
+	cursor: pointer;
+}
+
+svg .node:hover .backboard {
+	opacity: 0.7;
+}
+
+svg .selected .backboard {
+	opacity: 0.4;
+}
+
+svg .node circle {
+	fill: #888;
+	stroke: #777;
+	stroke-width: 2;
+}
+
+svg .node:hover circle {
+	stroke: #009FC9;
+}
+
+svg .node:hover text {
+	fill: #009FC9;
+}
+
+svg .selected text {
+	fill: #338AB0;
+}
+
+svg .selected circle {
+	stroke: #009FC9;
+	stroke-width: 4;
+}
+
+svg .READY circle {
+	fill: #CCC;
+}
+
+svg .RUNNING circle {
+	fill: #009FC9;
+}
+
+svg .QUEUED circle {
+	opacity: 0.5;
+	fill: #009FC9;
+}
+
+svg .FAILED circle {
+	fill: #CC0000;
+}
+
+svg .KILLED circle {
+	fill: #CC0000;
+}
+
+svg .SUCCEEDED circle {
+	fill: #00CC33;
+}
+
+svg .DISABLED circle {
+	opacity: 0.3;
+}
+
+svg .SKIPPED circle {
+	opacity: 0.3;
+}
+
+svg .selected circle {
+	stroke: #009FC9;
+	stroke-width: 4;
+}
+
+svg .selected .nodebox rect {
+	stroke: #009FC9;
+	stroke-width: 3;
+}
+
+svg .node rect {
+	fill: #F8F8F8;
+	stroke: #CCC;
+	stroke-width: 2;
+}
+
+svg .node .nodebox text {
+	fill: #FFF;
+}
+
+svg .READY .nodebox text {
+	fill: #000;
+}
+
+svg .node:hover rect {
+	stroke: #009FC9;
+}
+
+svg .READY rect {
+	fill: #EEE;
+}
+
+svg .RUNNING rect {
+	fill: #009FC9;
+}
+
+svg .QUEUED rect {
+	opacity: 0.5;
+	fill: #009FC9;
+}
+
+svg .FAILED rect {
+	fill: #CC0000;
+}
+
+svg .KILLED rect {
+	fill: #CC0000;
+}
+
+svg .SUCCEEDED rect {
+	fill: #30ad23;
+}
+
+svg .DISABLED rect {
+	opacity: 0.3;
+}
+
+svg .SKIPPED rect {
+	opacity: 0.3;
+}
+
+svg .nodebox text {
+	fill: #fff;
+}
+
+
+#Used for charts
+svg circle.READY {
+	stroke: #CCC;
+	stroke-width: 2px;
+	fill: #FFF;
+}
+
+svg circle.RUNNING {
+	stroke: #009FC9;
+	stroke-width: 2px;
+	fill: #FFF;
+}
+
+svg circle.FAILED {
+	stroke: #CC0000;
+	stroke-width: 2px;
+	fill: #FFF;
+}
+
+svg circle.KILLED {
+	stroke: #CC0000;
+	stroke-width: 2px;
+	fill: #FFF;
+}
+
+svg circle.SUCCEEDED {
+	stroke: #00CC33;
+	stroke-width: 2px;
+	fill: #FFF;
+}
+
+svg circle.DISABLED {
+	stroke: #CCC;
+	opacity: 0.3;
+	stroke-width: 2px;
+	fill: #FFF;
+}
+
+svg circle.SKIPPED {
+	stroke: #CCC;
+	opacity: 0.3;
+	stroke-width: 2px;
+	fill: #FFF;
+}
+
+.flowExtendedView {
+	position: absolute;
+	background-color: rgba(255, 255, 255, 0.95);
+	-moz-box-shadow: 1px 1px 5px rgba(0, 0, 0, 0.5);
+	-webkit-box-shadow: 1px 1px 5px rgba(0, 0, 0, 0.5);
+	box-shadow:         1px 1px 5px rgba(0, 0, 0, 0.5);
+
+	min-width: 200px;
+	min-height: 150px;
+}
+
+.dataJobProperties {
+
+}
+
+.flowInfoTitle {
+	padding-top: 8px;
+	padding-left: 8px;
+	padding-bottom: 5px;
+	cursor: pointer;
+}
+
+.flowInfoTitle:hover {
+	background-color: #CCC;
+}
+
+.nodeId {
+	font-size: 16px;
+	font-weight: bold;
+	margin: 20px 20px;
+}
+
+.nodeType {
+	font-style: italic;
+}
+
+.dataContent {
+	margin: 5px;
+}
+
+.dataFlow {
+	width: 100%;
+}
+
+.svgTiny {
+	width: 100%;
+	height: 100%;
+}
