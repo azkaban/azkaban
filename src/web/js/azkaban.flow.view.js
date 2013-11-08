@@ -40,73 +40,46 @@ var handleJobMenuClick = function(action, el, pos) {
 	}
 }
 
-function hasClass(el, name) 
-{
-	var classes = el.getAttribute("class");
-	if (classes == null) {
-		return false;
-	}
-   return new RegExp('(\\s|^)'+name+'(\\s|$)').test(classes);
-}
-
-function addClass(el, name)
-{
-   if (!hasClass(el, name)) { 
-   		var classes = el.getAttribute("class");
-   		classes += classes ? ' ' + name : '' +name;
-   		el.setAttribute("class", classes);
-   }
-}
-
-function removeClass(el, name)
-{
-   if (hasClass(el, name)) {
-      var classes = el.getAttribute("class");
-      el.setAttribute("class", classes.replace(new RegExp('(\\s|^)'+name+'(\\s|$)'),' ').replace(/^\s+|\s+$/g, ''));
-   }
-}
-
 var flowTabView;
 azkaban.FlowTabView= Backbone.View.extend({
-  events : {
-  	"click #graphViewLink" : "handleGraphLinkClick",
-  	"click #executionsViewLink" : "handleExecutionLinkClick"
-  },
-  initialize : function(settings) {
-  	var selectedView = settings.selectedView;
-  	if (selectedView == "executions") {
-  		this.handleExecutionLinkClick();
-  	}
-  	else {
-  		this.handleGraphLinkClick();
-  	}
+	events : {
+		"click #graphViewLink" : "handleGraphLinkClick",
+		"click #executionsViewLink" : "handleExecutionLinkClick"
+	},
+	initialize : function(settings) {
+		var selectedView = settings.selectedView;
+		if (selectedView == "executions") {
+			this.handleExecutionLinkClick();
+		}
+		else {
+			this.handleGraphLinkClick();
+		}
 
-  },
-  render: function() {
-  	console.log("render graph");
-  },
-  handleGraphLinkClick: function(){
-  	$("#executionsViewLink").removeClass("selected");
-  	$("#graphViewLink").addClass("selected");
-  	
-  	$("#executionsView").hide();
-  	$("#graphView").show();
-  },
-  handleExecutionLinkClick: function() {
-  	$("#graphViewLink").removeClass("selected");
-  	$("#executionsViewLink").addClass("selected");
-  	
-  	 $("#graphView").hide();
-  	 $("#executionsView").show();
-  	 executionModel.trigger("change:view");
-  }
+	},
+	render: function() {
+		console.log("render graph");
+	},
+	handleGraphLinkClick: function(){
+		$("#executionsViewLink").removeClass("selected");
+		$("#graphViewLink").addClass("selected");
+		
+		$("#executionsView").hide();
+		$("#graphView").show();
+	},
+	handleExecutionLinkClick: function() {
+		$("#graphViewLink").removeClass("selected");
+		$("#executionsViewLink").addClass("selected");
+		
+		 $("#graphView").hide();
+		 $("#executionsView").show();
+		 executionModel.trigger("change:view");
+	}
 });
 
 var jobListView;
-
 var svgGraphView;
-
 var executionsView;
+
 azkaban.ExecutionsView = Backbone.View.extend({
 	events: {
 		"click #pageSelection li": "handleChangePageSelection"
@@ -287,7 +260,6 @@ azkaban.ExecutionsView = Backbone.View.extend({
 			},
 			"json"
 		);
-		
 	}
 });
 
@@ -347,65 +319,74 @@ $(function() {
 	// Execution model has to be created before the window switches the tabs.
 	executionModel = new azkaban.ExecutionModel();
 	executionsView = new azkaban.ExecutionsView({el:$('#executionsView'), model: executionModel});
-	
 	flowTabView = new azkaban.FlowTabView({el:$( '#headertabs'), selectedView: selected });
 
 	graphModel = new azkaban.GraphModel();
-	mainSvgGraphView = new azkaban.SvgGraphView({el:$('#svgDiv'), model: graphModel, rightClick:  { "node": exNodeClickCallback, "edge": exEdgeClickCallback, "graph": exGraphClickCallback }});
-	jobsListView = new azkaban.JobListView({el:$('#jobList'), model: graphModel, contextMenuCallback: exJobClickCallback});
+	mainSvgGraphView = new azkaban.SvgGraphView({
+		el: $('#svgDiv'), 
+		model: graphModel, 
+		rightClick:  { 
+			"node": exNodeClickCallback, 
+			"edge": exEdgeClickCallback, 
+			"graph": exGraphClickCallback 
+		}
+	});
+	jobsListView = new azkaban.JobListView({
+		el: $('#jobList'), 
+		model: graphModel, 
+		contextMenuCallback: exJobClickCallback
+	});
 	
 	var requestURL = contextURL + "/manager";
 
 	// Set up the Flow options view. Create a new one every time :p
-	 $('#executebtn').click( function() {
-	  	var data = graphModel.get("data");
-	  	var nodes = data.nodes;
-	  
-	    var executingData = {
-	  		project: projectName,
-	  		ajax: "executeFlow",
-	  		flow: flowId
+	$('#executebtn').click( function() {
+		var data = graphModel.get("data");
+		var nodes = data.nodes;
+		var executingData = {
+			project: projectName,
+			ajax: "executeFlow",
+			flow: flowId
 		};
-	
-	  	flowExecuteDialogView.show(executingData);
-	 });
+
+		flowExecuteDialogView.show(executingData);
+	});
 
 	$.get(
-	      requestURL,
-	      {"project": projectName, "ajax":"fetchflowgraph", "flow":flowId},
-	      function(data) {
-	      	  // Create the nodes
-	      	  var nodes = {};
-	      	  for (var i=0; i < data.nodes.length; ++i) {
-	      	  	var node = data.nodes[i];
-	      	  	nodes[node.id] = node;
-	      	  }
-	      	  for (var i=0; i < data.edges.length; ++i) {
-	      	  	var edge = data.edges[i];
-	      	  	var fromNode = nodes[edge.from];
-	      	  	var toNode = nodes[edge.target];
-	      	  	
-	      	  	if (!fromNode.outNodes) {
-	      	  		fromNode.outNodes = {};
-	      	  	}
-	      	  	fromNode.outNodes[toNode.id] = toNode;
-	      	  	
-	      	  	if (!toNode.inNodes) {
-	      	  		toNode.inNodes = {};
-	      	  	}
-	      	  	toNode.inNodes[fromNode.id] = fromNode;
-	      	  }
-	      
-	          console.log("data fetched");
-	          graphModel.set({data: data});
-	          graphModel.set({nodes: nodes});
-	          graphModel.set({disabled: {}});
-	          graphModel.trigger("change:graph");
-	          
-	          // Handle the hash changes here so the graph finishes rendering first.
-	          if (window.location.hash) {
-				var hash = window.location.hash;
+		requestURL,
+		{"project": projectName, "ajax":"fetchflowgraph", "flow":flowId},
+		function(data) {
+			// Create the nodes
+			var nodes = {};
+			for (var i=0; i < data.nodes.length; ++i) {
+				var node = data.nodes[i];
+				nodes[node.id] = node;
+			}
+			for (var i=0; i < data.edges.length; ++i) {
+				var edge = data.edges[i];
+				var fromNode = nodes[edge.from];
+				var toNode = nodes[edge.target];
 				
+				if (!fromNode.outNodes) {
+					fromNode.outNodes = {};
+				}
+				fromNode.outNodes[toNode.id] = toNode;
+				
+				if (!toNode.inNodes) {
+					toNode.inNodes = {};
+				}
+				toNode.inNodes[fromNode.id] = fromNode;
+			}
+		
+			console.log("data fetched");
+			graphModel.set({data: data});
+			graphModel.set({nodes: nodes});
+			graphModel.set({disabled: {}});
+			graphModel.trigger("change:graph");
+			
+			// Handle the hash changes here so the graph finishes rendering first.
+			if (window.location.hash) {
+				var hash = window.location.hash;
 				if (hash == "#executions") {
 					flowTabView.handleExecutionLinkClick();
 				}
@@ -425,8 +406,7 @@ $(function() {
 					}
 				}
 			}
-	      },
-	      "json"
-	    );
-
+		},
+		"json"
+	);
 });

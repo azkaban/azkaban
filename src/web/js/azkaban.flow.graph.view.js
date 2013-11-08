@@ -120,9 +120,9 @@ azkaban.SvgGraphView = Backbone.View.extend({
 				this.nodes[id].disabled = true;
 				addClass(g, "disabled");
 			}
-		    else {
-		    	this.nodes[id].disabled = false;
-		    	removeClass(g, "disabled");
+			else {
+				this.nodes[id].disabled = false;
+				removeClass(g, "disabled");
 			}
 		}
 	},
@@ -226,7 +226,6 @@ azkaban.SvgGraphView = Backbone.View.extend({
 
 		var xOffset = 10;
 		var yOffset = 10;
-
 		
 		var nodeG = document.createElementNS(svgns, "g");
 		nodeG.setAttributeNS(null, "class", "jobnode");
@@ -250,7 +249,12 @@ azkaban.SvgGraphView = Backbone.View.extend({
 		text.setAttributeNS(null, "y", 15);
 		text.setAttributeNS(null, "height", 10); 
 				
-		this.addBounds(bounds, {minX:node.x - xOffset, minY: node.y - yOffset, maxX: node.x + xOffset, maxY: node.y + yOffset});
+		this.addBounds(bounds, {
+			minX: node.x - xOffset, 
+			minY: node.y - yOffset, 
+			maxX: node.x + xOffset, 
+			maxY: node.y + yOffset
+		});
 		
 		var backRect = document.createElementNS(svgns, 'rect');
 		backRect.setAttributeNS(null, "x", 0);

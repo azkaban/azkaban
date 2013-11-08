@@ -107,7 +107,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 
 	@Override
 	protected void handleGet(HttpServletRequest req, HttpServletResponse resp, Session session) throws ServletException, IOException {
-		if ( hasParam(req, "project") ) {
+		if (hasParam(req, "project") ) {
 			if (hasParam(req, "ajax")) {
 				handleAJAXAction(req, resp, session);
 			}
@@ -825,7 +825,6 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 		pageStartValue++;
 		page.add("page5", new PageSelection(String.valueOf(pageStartValue), pageSize, pageStartValue > maxPage, pageStartValue == pageNum, Math.min(pageStartValue, maxPage)));
 
-		
 		page.render();
 	}
 	
