@@ -15,26 +15,37 @@ var openJobDisplayCallback = function(nodeId, flowId, evt) {
 	
 	$("#flowInfoBase").before(cloneStuff);
 	var requestURL = contextURL + "/manager";
-	
-	$.get(
-      requestURL,
-      {"project": projectName, "ajax":"fetchflownodedata", "flow":flowId, "node": nodeId},
-      function(data) {
-  		var graphModel = new azkaban.GraphModel();
-  		graphModel.set({id: data.id, flow: data.flowData, type: data.type, props: data.props});
+	var successHandler = function(data) {
+		var graphModel = new azkaban.GraphModel();
+		graphModel.set({
+			id: data.id, 
+			flow: data.flowData, 
+			type: data.type, 
+			props: data.props
+		});
 
-  		var flowData = data.flowData;
-  		if (flowData) {
-  			createModelFromAjaxCall(flowData, graphModel);
-  		}
-  		
-  		var backboneView = new azkaban.FlowExtendedViewPanel({el:cloneStuff, model: graphModel});
-  		extendedViewPanels[nodeInfoPanelID] = backboneView;
-  		extendedDataModels[nodeInfoPanelID] = graphModel;
-  		backboneView.showExtendedView(evt);
-      },
-      "json"
-    );
+		var flowData = data.flowData;
+		if (flowData) {
+			createModelFromAjaxCall(flowData, graphModel);
+		}
+		
+		var backboneView = new azkaban.FlowExtendedViewPanel({
+			el: cloneStuff, 
+			model: graphModel
+		});
+		extendedViewPanels[nodeInfoPanelID] = backboneView;
+		extendedDataModels[nodeInfoPanelID] = graphModel;
+		backboneView.showExtendedView(evt);
+  };
+
+  var request = {
+		"project": projectName, 
+		"ajax": "fetchflownodedata", 
+		"flow": flowId, 
+		"node": nodeId
+	};
+
+	$.get(requestURL, request, successHandler, "json");
 }
 
 var createModelFromAjaxCall = function(data, model) {
@@ -69,10 +80,12 @@ var nodeClickCallback = function(event, model, type) {
 	console.log("Node clicked callback");
 	var jobId = event.currentTarget.jobid;
 	var flowId = model.get("flowId");
-	var requestURL = contextURL + "/manager?project=" + projectName + "&flow=" + flowId + "&job=" + jobId;
+	var requestURL = contextURL + "/manager?project=" + projectName + 
+			"&flow=" + flowId + "&job=" + jobId;
 
 	if (event.currentTarget.jobtype == "flow") {
-		var flowRequestURL = contextURL + "/manager?project=" + projectName + "&flow=" + event.currentTarget.flowId;
+		var flowRequestURL = contextURL + "/manager?project=" + projectName + 
+				"&flow=" + event.currentTarget.flowId;
 		menu = [
 				{title: "View Flow...", callback: function() {openJobDisplayCallback(jobId, flowId, event)}},
 				{break: 1},

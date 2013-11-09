@@ -1,29 +1,25 @@
-function hasClass(el, name) 
-{
+function hasClass(el, name) {
 	var classes = el.getAttribute("class");
 	if (classes == null) {
 		return false;
 	}
-   return new RegExp('(\\s|^)'+name+'(\\s|$)').test(classes);
+	return new RegExp('(\\s|^)'+name+'(\\s|$)').test(classes);
 }
 
-function addClass(el, name)
-{
-   if (!hasClass(el, name)) { 
-   		var classes = el.getAttribute("class");
-   		classes += classes ? ' ' + name : '' +name;
-   		el.setAttribute("class", classes);
-   }
+function addClass(el, name) {
+	if (!hasClass(el, name)) { 
+		var classes = el.getAttribute("class");
+		classes += classes ? ' ' + name : '' +name;
+		el.setAttribute("class", classes);
+	}
 }
 
-function removeClass(el, name)
-{
-   if (hasClass(el, name)) {
-      var classes = el.getAttribute("class");
-      el.setAttribute("class", classes.replace(new RegExp('(\\s|^)'+name+'(\\s|$)'),' ').replace(/^\s+|\s+$/g, ''));
-   }
+function removeClass(el, name) {
+	if (hasClass(el, name)) {
+		var classes = el.getAttribute("class");
+		el.setAttribute("class", classes.replace(new RegExp('(\\s|^)'+name+'(\\s|$)'),' ').replace(/^\s+|\s+$/g, ''));
+	}
 }
-
 
 azkaban.SvgGraphView = Backbone.View.extend({
 	events: {
@@ -208,7 +204,12 @@ azkaban.SvgGraphView = Backbone.View.extend({
 				var x = node.x - offset;
 				var y = node.y - offset;
 				
-				$(this.svgGraph).svgNavigate("transformToBox", {x: x, y: y, width: widthHeight, height: widthHeight});
+				$(this.svgGraph).svgNavigate("transformToBox", {
+					x: x, 
+					y: y, 
+					width: widthHeight, 
+					height: widthHeight
+				});
 			}
 		}
 	},
@@ -244,7 +245,9 @@ azkaban.SvgGraphView = Backbone.View.extend({
 			if (callbacks.node && currentTarget.jobid) {
 				callbacks.node(self, this.model);
 			}
-			else if (callbacks.edge && (currentTarget.nodeName == "polyline" || currentTarget.nodeName == "line")) {
+			else if (callbacks.edge && 
+					(currentTarget.nodeName == "polyline" || 
+					 currentTarget.nodeName == "line")) {
 				callbacks.edge(self, this.model);
 			}
 			else if (callbacks.graph) {
