@@ -17,7 +17,8 @@ function addClass(el, name) {
 function removeClass(el, name) {
 	if (hasClass(el, name)) {
 		var classes = el.getAttribute("class");
-		el.setAttribute("class", classes.replace(new RegExp('(\\s|^)'+name+'(\\s|$)'),' ').replace(/^\s+|\s+$/g, ''));
+		el.setAttribute("class", classes.replace(
+				new RegExp('(\\s|^)'+name+'(\\s|$)'),' ').replace(/^\s+|\s+$/g, ''));
 	}
 }
 
@@ -28,6 +29,7 @@ azkaban.SvgGraphView = Backbone.View.extend({
 		"contextmenu g" : "handleRightClick",
 		"contextmenu polyline": "handleRightClick"
 	},
+	
 	initialize: function(settings) {
 		this.model.bind('change:selected', this.changeSelected, this);
 		this.model.bind('centerNode', this.centerNode, this);
@@ -58,6 +60,7 @@ azkaban.SvgGraphView = Backbone.View.extend({
 			this.render();
 		}
 	},
+	
 	initializeDefs: function(self) {
 		var def = document.createElementNS(svgns, 'defs');
 		def.setAttribute("id", "buttonDefs");
@@ -80,6 +83,7 @@ azkaban.SvgGraphView = Backbone.View.extend({
 		
 		this.svgGraph.appendChild(def);
 	},
+	
 	render: function(self) {
 		console.log("graph render");
 
@@ -133,7 +137,11 @@ azkaban.SvgGraphView = Backbone.View.extend({
 			this.drawEdge(this, edges[i]);
 		}
 		
-		this.model.set({"flowId":data.flowId, "nodes": this.nodes, "edges": edges});
+		this.model.set({
+			"flowId": data.flowId, 
+			"nodes": this.nodes, 
+			"edges": edges
+		});
 		
 		var margin = this.graphMargin;
 		bounds.minX = bounds.minX ? bounds.minX - margin : -margin;
@@ -152,6 +160,7 @@ azkaban.SvgGraphView = Backbone.View.extend({
 		this.graphBounds = bounds;
 		this.resetPanZoom(0);
 	},
+	
 	handleDisabledChange: function(evt) {
 		var disabledMap = this.model.get("disabled");
 
@@ -167,6 +176,7 @@ azkaban.SvgGraphView = Backbone.View.extend({
 			}
 		}
 	},
+	
 	assignInitialStatus: function(evt) {
 		var data = this.model.get("data");
 		for (var i = 0; i < data.nodes.length; ++i) {
@@ -180,6 +190,7 @@ azkaban.SvgGraphView = Backbone.View.extend({
 			}
 		}
 	},
+	
 	changeSelected: function(self) {
 		console.log("change selected");
 		var selected = this.model.get("selected");
