@@ -17,6 +17,7 @@
 <script type="text/javascript" src="${context}/js/azkaban.layout.js"></script>
 <script type="text/javascript" src="${context}/js/svgNavigate.js"></script>
 <script type="text/javascript" src="${context}/js/azkaban.context.menu.js"></script>
+<script type="text/javascript" src="${context}/js/azkaban.common.utils.js"></script>
 <script type="text/javascript" src="${context}/js/azkaban.svg.graph.view.js"></script>
 <script type="text/javascript" src="${context}/js/azkaban.flow.execute.view.js"></script>
 

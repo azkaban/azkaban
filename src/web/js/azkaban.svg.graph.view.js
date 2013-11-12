@@ -14,33 +14,6 @@
  * the License.
  */
 
-function hasClass(el, name) 
-{
-	var classes = el.getAttribute("class");
-	if (classes == null) {
-		return false;
-	}
-   return new RegExp('(\\s|^)'+name+'(\\s|$)').test(classes);
-}
-
-function addClass(el, name)
-{
-   if (!hasClass(el, name)) { 
-   		var classes = el.getAttribute("class");
-   		classes += classes ? ' ' + name : '' +name;
-   		el.setAttribute("class", classes);
-   }
-}
-
-function removeClass(el, name)
-{
-   if (hasClass(el, name)) {
-      var classes = el.getAttribute("class");
-      el.setAttribute("class", classes.replace(new RegExp('(\\s|^)'+name+'(\\s|$)'),' ').replace(/^\s+|\s+$/g, ''));
-   }
-}
-
-
 azkaban.SvgGraphView = Backbone.View.extend({
 	events: {
 		"click g" : "clickGraph",
@@ -167,9 +140,9 @@ azkaban.SvgGraphView = Backbone.View.extend({
 				this.nodes[id].disabled = true;
 				addClass(g, "disabled");
 			}
-		    else {
-		    	this.nodes[id].disabled = false;
-		    	removeClass(g, "disabled");
+			else {
+				this.nodes[id].disabled = false;
+				removeClass(g, "disabled");
 			}
 		}
 	},
@@ -304,7 +277,6 @@ azkaban.SvgGraphView = Backbone.View.extend({
 		circle.setAttributeNS(null, "r", 12);
 		circle.setAttributeNS(null, "style", "width:inherit;stroke-opacity:1");
 		
-		
 		var text = document.createElementNS(svgns, 'text');
 		var textLabel = document.createTextNode(node.label);
 		text.appendChild(textLabel);
@@ -312,7 +284,12 @@ azkaban.SvgGraphView = Backbone.View.extend({
 		text.setAttributeNS(null, "y", 15);
 		text.setAttributeNS(null, "height", 10); 
 				
-		this.addBounds(bounds, {minX:node.x - xOffset, minY: node.y - yOffset, maxX: node.x + xOffset, maxY: node.y + yOffset});
+		this.addBounds(bounds, {
+			minX: node.x - xOffset, 
+			minY: node.y - yOffset, 
+			maxX: node.x + xOffset, 
+			maxY: node.y + yOffset
+		});
 		
 		var backRect = document.createElementNS(svgns, 'rect');
 		backRect.setAttributeNS(null, "x", 0);
