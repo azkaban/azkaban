@@ -49,31 +49,31 @@ var openJobDisplayCallback = function(nodeId, flowId, evt) {
 }
 
 var createModelFromAjaxCall = function(data, model) {
-	  var nodes = {};
-  	  for (var i=0; i < data.nodes.length; ++i) {
-  	  	var node = data.nodes[i];
-  	  	nodes[node.id] = node;
-  	  }
-  	  for (var i=0; i < data.edges.length; ++i) {
-  	  	var edge = data.edges[i];
-  	  	var fromNode = nodes[edge.from];
-  	  	var toNode = nodes[edge.target];
-  	  	
-  	  	if (!fromNode.outNodes) {
-  	  		fromNode.outNodes = {};
-  	  	}
-  	  	fromNode.outNodes[toNode.id] = toNode;
-  	  	
-  	  	if (!toNode.inNodes) {
-  	  		toNode.inNodes = {};
-  	  	}
-  	  	toNode.inNodes[fromNode.id] = fromNode;
-  	  }
-  
-      console.log("data fetched");
-      model.set({data: data});
-      model.set({nodes: nodes});
-      model.set({disabled: {}});
+	var nodes = {};
+	for (var i = 0; i < data.nodes.length; ++i) {
+		var node = data.nodes[i];
+		nodes[node.id] = node;
+	}
+	for (var i = 0; i < data.edges.length; ++i) {
+		var edge = data.edges[i];
+		var fromNode = nodes[edge.from];
+		var toNode = nodes[edge.target];
+		
+		if (!fromNode.outNodes) {
+			fromNode.outNodes = {};
+		}
+		fromNode.outNodes[toNode.id] = toNode;
+		
+		if (!toNode.inNodes) {
+			toNode.inNodes = {};
+		}
+		toNode.inNodes[fromNode.id] = fromNode;
+	}
+
+	console.log("data fetched");
+	model.set({data: data});
+	model.set({nodes: nodes});
+	model.set({disabled: {}});
 }
 
 var nodeClickCallback = function(event, model, type) {

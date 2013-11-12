@@ -324,7 +324,12 @@ azkaban.SvgGraphView = Backbone.View.extend({
 			var centerY = node.centerY;
 			
 			gNode.setAttribute("transform", "translate(" + node.x + "," + node.y + ")");
-			this.addBounds(bounds, {minX:node.x - centerX, minY: node.y - centerY, maxX: node.x + centerX, maxY: node.y + centerY});
+			this.addBounds(bounds, {
+				minX: node.x - centerX, 
+				minY: node.y - centerY, 
+				maxX: node.x + centerX, 
+				maxY: node.y + centerY
+			});
 		}
 	},
 	drawFlowNode: function(self, node) {
@@ -441,7 +446,12 @@ azkaban.SvgGraphView = Backbone.View.extend({
 		text.setAttribute("y", 6);
 		text.setAttribute("height", 10); 
 
-		//this.addBounds(bounds, {minX:node.x - xOffset, minY: node.y - yOffset, maxX: node.x + xOffset, maxY: node.y + yOffset});
+		/*this.addBounds(bounds, {
+			minX: node.x - xOffset, 
+			minY: node.y - yOffset, 
+			maxX: node.x + xOffset, 
+			maxY: node.y + yOffset
+		});*/
 
 		innerG.appendChild(rect);
 		innerG.appendChild(text);
@@ -507,7 +517,12 @@ azkaban.SvgGraphView = Backbone.View.extend({
 		text.setAttribute("x", 0);
 		text.setAttribute("y", 0);
 				
-		this.addBounds(bounds, {minX:node.x - xOffset, minY: node.y - yOffset, maxX: node.x + xOffset, maxY: node.y + yOffset});
+		this.addBounds(bounds, {
+			minX: node.x - xOffset, 
+			minY: node.y - yOffset, 
+			maxX: node.x + xOffset, 
+			maxY: node.y + yOffset
+		});
 		
 		var backRect = document.createElementNS(svgns, 'rect');
 		backRect.setAttribute("x", 0);
@@ -542,7 +557,13 @@ azkaban.SvgGraphView = Backbone.View.extend({
 	},
 	resetPanZoom : function(duration) {
 		var bounds = this.graphBounds;
-		var param = {x: bounds.minX, y: bounds.minY, width: (bounds.maxX - bounds.minX), height: (bounds.maxY - bounds.minY), duration: duration };
+		var param = {
+			x: bounds.minX, 
+			y: bounds.minY, 
+			width: (bounds.maxX - bounds.minX), 
+			height: (bounds.maxY - bounds.minY), 
+			duration: duration 
+		};
 
 		this.panZoom(param);
 	},

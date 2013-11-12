@@ -647,10 +647,12 @@ var exNodeClickCallback = function(event) {
 	console.log("Node clicked callback");
 	var jobId = event.currentTarget.jobid;
 	var requestURL = contextURL + "/manager?project=" + projectName + "&flow=" + flowId + "&job=" + jobId;
+	var visualizerURL = contextURL + "/pigvisualizer?execid=" + execId + "&jobid=" + jobId;
 
 	var menu = [	
-			{title: "Open Job...", callback: function() {window.location.href=requestURL;}},
-			{title: "Open Job in New Window...", callback: function() {window.open(requestURL);}}
+			{title: "Open Job...", callback: function() {window.location.href = requestURL;}},
+			{title: "Open Job in New Window...", callback: function() {window.open(requestURL);}},
+			{title: "Visualize Job...", callback: function() {window.location.href = visualizerURL;}}
 	];
 
 	contextMenuView.show(event, menu);
@@ -660,10 +662,12 @@ var exJobClickCallback = function(event) {
 	console.log("Node clicked callback");
 	var jobId = event.currentTarget.jobid;
 	var requestURL = contextURL + "/manager?project=" + projectName + "&flow=" + flowId + "&job=" + jobId;
+	var visualizerURL = contextURL + "/pigvisualizer?execid=" + execId + "&jobid=" + jobId;
 
 	var menu = [	
-			{title: "Open Job...", callback: function() {window.location.href=requestURL;}},
-			{title: "Open Job in New Window...", callback: function() {window.open(requestURL);}}
+			{title: "Open Job...", callback: function() {window.location.href = requestURL;}},
+			{title: "Open Job in New Window...", callback: function() {window.open(requestURL);}},
+			{title: "Visualize Job...", callback: function() {window.location.href = visualizerURL;}}
 	];
 
 	contextMenuView.show(event, menu);
