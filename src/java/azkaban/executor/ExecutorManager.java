@@ -41,6 +41,9 @@ import org.apache.log4j.Logger;
 import org.joda.time.DateTime;
 
 import azkaban.alert.Alerter;
+import azkaban.execapp.event.Event;
+import azkaban.execapp.event.Event.Type;
+import azkaban.execapp.event.EventHandler;
 import azkaban.project.Project;
 import azkaban.scheduler.ScheduleStatisticManager;
 import azkaban.utils.FileIOUtils.JobMetaData;
@@ -53,7 +56,7 @@ import azkaban.utils.Props;
  * Executor manager used to manage the client side job.
  *
  */
-public class ExecutorManager implements ExecutorManagerAdapter {
+public class ExecutorManager extends EventHandler implements ExecutorManagerAdapter {
 	private static Logger logger = Logger.getLogger(ExecutorManager.class);
 	private ExecutorLoader executorLoader;
 	private String executorHost;
@@ -723,6 +726,7 @@ public class ExecutorManager implements ExecutorManagerAdapter {
 							if(flow.getScheduleId() >= 0 && flow.getStatus() == Status.SUCCEEDED){
 								ScheduleStatisticManager.invalidateCache(flow.getScheduleId(), cacheDir);
 							}
+							fireEventListeners(Event.create(flow, Type.FLOW_FINISHED));
 							recentlyFinished.put(flow.getExecutionId(), flow);
 						}
 						
@@ -789,6 +793,7 @@ public class ExecutorManager implements ExecutorManagerAdapter {
 			
 			updaterStage = "finalizing flow " + execId + " cleaning from memory";
 			runningFlows.remove(execId);
+			fireEventListeners(Event.create(dsFlow, Type.FLOW_FINISHED));
 			recentlyFinished.put(execId, dsFlow);
 
 		} catch (ExecutorManagerException e) {

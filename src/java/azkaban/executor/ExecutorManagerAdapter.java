@@ -10,7 +10,7 @@ import azkaban.project.Project;
 import azkaban.utils.FileIOUtils.JobMetaData;
 import azkaban.utils.FileIOUtils.LogData;
 
-public interface ExecutorManagerAdapter {
+public interface ExecutorManagerAdapter{
 	
 	public static final String LOCAL_MODE = "local";
 	public static final String REMOTE_MODE = "remote";

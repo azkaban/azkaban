@@ -28,9 +28,20 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.PriorityBlockingQueue;
 import org.apache.log4j.Logger;
 
+import azkaban.execapp.JobRunner;
+import azkaban.execapp.event.Event;
+import azkaban.execapp.event.EventHandler;
+import azkaban.execapp.event.EventListener;
+import azkaban.execapp.event.Event.Type;
+import azkaban.executor.ExecutableFlow;
+import azkaban.executor.ExecutableNode;
+import azkaban.executor.ExecutionOptions;
+import azkaban.executor.ExecutorManager;
+import azkaban.executor.Status;
+import azkaban.executor.ExecutionOptions.FailureAction;
 import azkaban.utils.Props;
 
-public class TriggerManager implements TriggerManagerAdapter{
+public class TriggerManager extends EventHandler implements TriggerManagerAdapter{
 	private static Logger logger = Logger.getLogger(TriggerManager.class);
 	public static final long DEFAULT_SCANNER_INTERVAL_MS = 60000;
 
@@ -45,9 +56,11 @@ public class TriggerManager implements TriggerManagerAdapter{
 	private long runnerThreadIdleTime = -1;
 	private LocalTriggerJMX jmxStats = new LocalTriggerJMX();
 	
+	private ExecutorManagerEventListener listener = new ExecutorManagerEventListener();
+	
 	private String scannerStage = "";
 	
-	public TriggerManager(Props props, TriggerLoader triggerLoader) throws TriggerManagerException {
+	public TriggerManager(Props props, TriggerLoader triggerLoader, ExecutorManager executorManager) throws TriggerManagerException {
 
 		this.triggerLoader = triggerLoader;
 		
@@ -66,6 +79,8 @@ public class TriggerManager implements TriggerManagerAdapter{
 		
 		Condition.setCheckerLoader(checkerTypeLoader);
 		Trigger.setActionTypeLoader(actionTypeLoader);
+		
+		executorManager.addListener(listener);
 		
 		logger.info("TriggerManager loaded.");
 	}
@@ -154,12 +169,14 @@ public class TriggerManager implements TriggerManagerAdapter{
 	
 	private class TriggerScannerThread extends Thread {
 		private BlockingQueue<Trigger> triggers;
+		private Map<Integer, ExecutableFlow> justFinishedFlows;
 		private boolean shutdown = false;
 		//private AtomicBoolean stillAlive = new AtomicBoolean(true);
 		private final long scannerInterval;
 		
 		public TriggerScannerThread(long scannerInterval) {
 			triggers = new PriorityBlockingQueue<Trigger>(1, new TriggerComparator());
+			justFinishedFlows = new ConcurrentHashMap<Integer, ExecutableFlow>();
 			this.setName("TriggerRunnerManager-Trigger-Scanner-Thread");
 			this.scannerInterval = scannerInterval;;
 		}
@@ -169,6 +186,10 @@ public class TriggerManager implements TriggerManagerAdapter{
 			shutdown = true;
 			//stillAlive.set(false);
 			this.interrupt();
+		}
+		
+		public synchronized void addJustFinishedFlow(ExecutableFlow flow) {
+			justFinishedFlows.put(flow.getExecutionId(), flow);
 		}
 		
 		public synchronized void addTrigger(Trigger t) {
@@ -191,6 +212,7 @@ public class TriggerManager implements TriggerManagerAdapter{
 						
 						try{
 							checkAllTriggers();
+							justFinishedFlows.clear();
 						} catch(Exception e) {
 							e.printStackTrace();
 							logger.error(e.getMessage());
@@ -217,12 +239,27 @@ public class TriggerManager implements TriggerManagerAdapter{
 		
 		private void checkAllTriggers() throws TriggerManagerException {
 			long now = System.currentTimeMillis();
+			
+			// sweep through the rest of them
 			for(Trigger t : triggers) {
 				scannerStage = "Checking for trigger " + t.getTriggerId();
-				if(t.getNextCheckTime() > now) {
-					logger.info("Skipping trigger" + t.getTriggerId() + " until " + t.getNextCheckTime());
-					continue;
+				
+				boolean shouldSkip = true;
+				if(shouldSkip && t.getInfo() != null && t.getInfo().containsKey("monitored.finished.execution")) {
+					int execId = Integer.valueOf((String) t.getInfo().get("monitored.finished.execution"));
+					if(justFinishedFlows.containsKey(execId)) {
+						logger.info("Monitored execution has finished. Checking trigger earlier " + t.getTriggerId());
+						shouldSkip = false;
+					}
 				}
+				if(shouldSkip && t.getNextCheckTime() > now) {
+					shouldSkip = false;
+				}
+
+				if(shouldSkip) {
+					logger.info("Skipping trigger" + t.getTriggerId() + " until " + t.getNextCheckTime());
+				}
+				
 				logger.info("Checking trigger " + t.getTriggerId());
 				if(t.getStatus().equals(TriggerStatus.READY)) {
 					if(t.triggerConditionMet()) {
@@ -473,5 +510,19 @@ public class TriggerManager implements TriggerManagerAdapter{
 		actionTypeLoader.registerActionType(name, action);
 	}
 	
+	private class ExecutorManagerEventListener implements EventListener {
+		public ExecutorManagerEventListener() {
+		}
+		
+		@Override
+		public synchronized void handleEvent(Event event) {
+			
+			ExecutableFlow flow = (ExecutableFlow) event.getRunner();
+			if (event.getType() == Type.FLOW_FINISHED) {
+				logger.info("Flow finish event received. " + flow.getExecutionId() );
+				runnerThread.addJustFinishedFlow(flow);
+			}
+		}
+	}
 	
 }
