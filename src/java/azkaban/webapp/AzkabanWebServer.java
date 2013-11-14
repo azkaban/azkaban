@@ -185,7 +185,7 @@ public class AzkabanWebServer extends AzkabanServer {
 		triggerManager = loadTriggerManager(props);
 		loadBuiltinCheckersAndActions();		
 		
-		// load all triggger agents here
+		// load all trigger agents here
 		scheduleManager = loadScheduleManager(triggerManager, props);
 		
 		String triggerPluginDir = props.getString("trigger.plugin.dir", "plugins/triggers");
