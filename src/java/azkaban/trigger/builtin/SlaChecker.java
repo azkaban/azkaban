@@ -54,99 +54,136 @@ public class SlaChecker implements ConditionChecker{
 		executorManager = em;
 	}
 	
-	private Boolean violateSla(ExecutableFlow flow) {
+	private Boolean isSlaMissed(ExecutableFlow flow) {
 		String type = slaOption.getType();
-		logger.info("Checking for " + flow.getExecutionId() + " with sla " + type);
 		logger.info("flow is " + flow.getStatus());
 		if(flow.getStartTime() < 0) {
 			return Boolean.FALSE;
 		}
+		Status status;
 		if(type.equals(SlaOption.TYPE_FLOW_FINISH)) {
-			ReadablePeriod duration = Utils.parsePeriodString((String) slaOption.getInfo().get(SlaOption.INFO_DURATION));
-			DateTime startTime = new DateTime(flow.getStartTime());
-			DateTime checkTime = startTime.plus(duration);
-			this.checkTime = checkTime.getMillis();
-			if(checkTime.isBeforeNow()) {
-				Status status = flow.getStatus();
-				if(status.equals(Status.FAILED) || status.equals(Status.KILLED) || status.equals(Status.SUCCEEDED)) {
-					return Boolean.FALSE;
-				} else {
-					return Boolean.TRUE;
-				}
+			if(checkTime < flow.getStartTime()) {
+				ReadablePeriod duration = Utils.parsePeriodString((String) slaOption.getInfo().get(SlaOption.INFO_DURATION));
+				DateTime startTime = new DateTime(flow.getStartTime());
+				DateTime nextCheckTime = startTime.plus(duration);
+				this.checkTime = nextCheckTime.getMillis();
+			}
+			status = flow.getStatus();
+			if(checkTime < DateTime.now().getMillis()) {
+				return !isFlowFinished(status);
 			}
 		} else if(type.equals(SlaOption.TYPE_FLOW_SUCCEED)) {
-			ReadablePeriod duration = Utils.parsePeriodString((String) slaOption.getInfo().get(SlaOption.INFO_DURATION));
-			DateTime startTime = new DateTime(flow.getStartTime());
-			DateTime checkTime = startTime.plus(duration);
-			this.checkTime = checkTime.getMillis();
-			if(checkTime.isBeforeNow()) {
-				Status status = flow.getStatus();
-				if(status.equals(Status.SUCCEEDED)) {
-					return Boolean.FALSE;
-				} else {
-					return Boolean.TRUE;
-				}
+			if(checkTime < flow.getStartTime()) {
+				ReadablePeriod duration = Utils.parsePeriodString((String) slaOption.getInfo().get(SlaOption.INFO_DURATION));
+				DateTime startTime = new DateTime(flow.getStartTime());
+				DateTime nextCheckTime = startTime.plus(duration);
+				this.checkTime = nextCheckTime.getMillis();
+			}
+			status = flow.getStatus();
+			if(checkTime < DateTime.now().getMillis()) {
+				return !isFlowSucceeded(status);
+			} else {
+				return status.equals(Status.FAILED) || status.equals(Status.KILLED);
 			}
 		} else if(type.equals(SlaOption.TYPE_JOB_FINISH)) {
 			String jobName = (String) slaOption.getInfo().get(SlaOption.INFO_JOB_NAME); 
 			ExecutableNode node = flow.getExecutableNode(jobName);
-			if(node.getStartTime() > 0) {
+			if(node.getStartTime() < 0) {
+				return Boolean.FALSE;
+			}
+			if(checkTime < node.getStartTime()) {
 				ReadablePeriod duration = Utils.parsePeriodString((String) slaOption.getInfo().get(SlaOption.INFO_DURATION));
 				DateTime startTime = new DateTime(node.getStartTime());
-				DateTime checkTime = startTime.plus(duration);
-				this.checkTime = checkTime.getMillis();
-				if(checkTime.isBeforeNow()) {
-					Status status = node.getStatus();
-					if(status.equals(Status.FAILED) || status.equals(Status.KILLED) || status.equals(Status.SUCCEEDED)) {
-						return Boolean.FALSE;
-					} else {
-						return Boolean.TRUE;
-					}
-				}
+				DateTime nextCheckTime = startTime.plus(duration);
+				this.checkTime = nextCheckTime.getMillis();
+			}
+			status = node.getStatus();
+			if(checkTime < DateTime.now().getMillis()) {
+				return !isJobFinished(status);
 			}
 		} else if(type.equals(SlaOption.TYPE_JOB_SUCCEED)) {
 			String jobName = (String) slaOption.getInfo().get(SlaOption.INFO_JOB_NAME); 
 			ExecutableNode node = flow.getExecutableNode(jobName);
-			if(node.getStartTime() > 0) {
+			if(node.getStartTime() < 0) {
+				return Boolean.FALSE;
+			}
+			if(checkTime < node.getStartTime()) {
 				ReadablePeriod duration = Utils.parsePeriodString((String) slaOption.getInfo().get(SlaOption.INFO_DURATION));
 				DateTime startTime = new DateTime(node.getStartTime());
-				DateTime checkTime = startTime.plus(duration);
-				this.checkTime = checkTime.getMillis();
-				if(checkTime.isBeforeNow()) {
-					Status status = node.getStatus();
-					if(status.equals(Status.SUCCEEDED)) {
-						return Boolean.FALSE;
-					} else {
-						return Boolean.TRUE;
-					}
-				}
+				DateTime nextCheckTime = startTime.plus(duration);
+				this.checkTime = nextCheckTime.getMillis();
+			}
+			status = node.getStatus();
+			if(checkTime < DateTime.now().getMillis()) {
+				return !isJobFinished(status);
+			} else {
+				return status.equals(Status.FAILED) || status.equals(Status.KILLED);
 			}
 		} 
-//		else if(type.equals(SlaOption.TYPE_JOB_PROGRESS)) {
-//			String jobName = (String) slaOption.getInfo().get(SlaOption.INFO_JOB_NAME); 
-//			float targetProgress = Float.valueOf((String) slaOption.getInfo().get(SlaOption.INFO_PROGRESS_PERCENT));
-//			ExecutableNode node = flow.getExecutableNode(jobName);
-//			if(node.getStartTime() > 0) {
-//				ReadablePeriod duration = Utils.parsePeriodString((String) slaOption.getInfo().get(SlaOption.INFO_DURATION));
-//				DateTime startTime = new DateTime(node.getStartTime());
-//				DateTime checkTime = startTime.plus(duration);
-//				if(checkTime.isBeforeNow()) {
-//					if(node.getProgress() > targetProgress) {
-//						return Boolean.FALSE;
-//					} else {
-//						return Boolean.TRUE;
-//					}
-//				}
-//			} else {
-//				return Boolean.FALSE;
-//			}
-//		}
+		return Boolean.FALSE;
+	}
+	
+	private Boolean isSlaGood(ExecutableFlow flow) {
+		String type = slaOption.getType();
+		logger.info("flow is " + flow.getStatus());
+		if(flow.getStartTime() < 0) {
+			return Boolean.FALSE;
+		}
+		Status status;
+		if(type.equals(SlaOption.TYPE_FLOW_FINISH)) {
+			if(checkTime < flow.getStartTime()) {
+				ReadablePeriod duration = Utils.parsePeriodString((String) slaOption.getInfo().get(SlaOption.INFO_DURATION));
+				DateTime startTime = new DateTime(flow.getStartTime());
+				DateTime nextCheckTime = startTime.plus(duration);
+				this.checkTime = nextCheckTime.getMillis();
+			}
+			status = flow.getStatus();
+			return isFlowFinished(status);
+		} else if(type.equals(SlaOption.TYPE_FLOW_SUCCEED)) {
+			if(checkTime < flow.getStartTime()) {
+				ReadablePeriod duration = Utils.parsePeriodString((String) slaOption.getInfo().get(SlaOption.INFO_DURATION));
+				DateTime startTime = new DateTime(flow.getStartTime());
+				DateTime nextCheckTime = startTime.plus(duration);
+				this.checkTime = nextCheckTime.getMillis();
+			}
+			status = flow.getStatus();
+			return isFlowSucceeded(status);
+		} else if(type.equals(SlaOption.TYPE_JOB_FINISH)) {
+			String jobName = (String) slaOption.getInfo().get(SlaOption.INFO_JOB_NAME); 
+			ExecutableNode node = flow.getExecutableNode(jobName);
+			if(node.getStartTime() < 0) {
+				return Boolean.FALSE;
+			}
+			if(checkTime < node.getStartTime()) {
+				ReadablePeriod duration = Utils.parsePeriodString((String) slaOption.getInfo().get(SlaOption.INFO_DURATION));
+				DateTime startTime = new DateTime(node.getStartTime());
+				DateTime nextCheckTime = startTime.plus(duration);
+				this.checkTime = nextCheckTime.getMillis();
+			}
+			status = node.getStatus();
+			return isJobFinished(status);
+		} else if(type.equals(SlaOption.TYPE_JOB_SUCCEED)) {
+			String jobName = (String) slaOption.getInfo().get(SlaOption.INFO_JOB_NAME); 
+			ExecutableNode node = flow.getExecutableNode(jobName);
+			if(node.getStartTime() < 0) {
+				return Boolean.FALSE;
+			}
+			if(checkTime < node.getStartTime()) {
+				ReadablePeriod duration = Utils.parsePeriodString((String) slaOption.getInfo().get(SlaOption.INFO_DURATION));
+				DateTime startTime = new DateTime(node.getStartTime());
+				DateTime nextCheckTime = startTime.plus(duration);
+				this.checkTime = nextCheckTime.getMillis();
+			}
+			status = node.getStatus();
+			return isJobSucceeded(status);
+		} 
 		return Boolean.FALSE;
 	}
 	
 	// return true to trigger sla action
 	@Override
 	public Object eval() {
+		logger.info("Checking sla for execution " + execId);
 		ExecutableFlow flow;
 		try {
 			flow = executorManager.getExecutableFlow(execId);
@@ -156,7 +193,35 @@ public class SlaChecker implements ConditionChecker{
 			// something wrong, send out alerts
 			return Boolean.TRUE;
 		}
-		return violateSla(flow);
+		return isSlaMissed(flow);
+	}
+	
+	public Object isSlaFailed() {
+		logger.info("Testing if sla failed for execution " + execId);
+		ExecutableFlow flow;
+		try {
+			flow = executorManager.getExecutableFlow(execId);
+		} catch (ExecutorManagerException e) {
+			logger.error("Can't get executable flow.", e);
+			e.printStackTrace();
+			// something wrong, send out alerts
+			return Boolean.TRUE;
+		}
+		return isSlaMissed(flow);
+	}
+	
+	public Object isSlaPassed() {
+		logger.info("Testing if sla is good for execution " + execId);
+		ExecutableFlow flow;
+		try {
+			flow = executorManager.getExecutableFlow(execId);
+		} catch (ExecutorManagerException e) {
+			logger.error("Can't get executable flow.", e);
+			e.printStackTrace();
+			// something wrong, send out alerts
+			return Boolean.TRUE;
+		}
+		return isSlaGood(flow);
 	}
 
 	@Override
@@ -223,5 +288,28 @@ public class SlaChecker implements ConditionChecker{
 	public long getNextCheckTime() {
 		return checkTime;
 	}
-
+	
+	private boolean isFlowFinished(Status status) {
+		if(status.equals(Status.FAILED) || status.equals(Status.KILLED) || status.equals(Status.SUCCEEDED)) {
+			return Boolean.TRUE;
+		} else {
+			return Boolean.FALSE;
+		}
+	}
+	
+	private boolean isFlowSucceeded(Status status) {
+		return status.equals(Status.SUCCEEDED);
+	}
+	
+	private boolean isJobFinished(Status status) {
+		if(status.equals(Status.FAILED) || status.equals(Status.KILLED) || status.equals(Status.SUCCEEDED)) {
+			return Boolean.TRUE;
+		} else {
+			return Boolean.FALSE;
+		}
+	}
+	
+	private boolean isJobSucceeded(Status status) {
+		return status.equals(Status.SUCCEEDED);
+	}
 }

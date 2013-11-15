@@ -54,7 +54,6 @@ import org.mortbay.thread.QueuedThreadPool;
 import azkaban.alert.Alerter;
 import azkaban.database.AzkabanDatabaseSetup;
 import azkaban.executor.ExecutorManager;
-import azkaban.executor.ExecutorManagerAdapter;
 import azkaban.executor.JdbcExecutorLoader;
 import azkaban.jmx.JmxExecutorManager;
 import azkaban.jmx.JmxJettyServer;
@@ -143,7 +142,8 @@ public class AzkabanWebServer extends AzkabanServer {
 	private final Server server;
 	private UserManager userManager;
 	private ProjectManager projectManager;
-	private ExecutorManagerAdapter executorManager;
+//	private ExecutorManagerAdapter executorManager;
+	private ExecutorManager executorManager;
 	private ScheduleManager scheduleManager;
 	private TriggerManager triggerManager;
 	private Map<String, Alerter> alerters;
@@ -185,7 +185,7 @@ public class AzkabanWebServer extends AzkabanServer {
 		triggerManager = loadTriggerManager(props);
 		loadBuiltinCheckersAndActions();		
 		
-		// load all triggger agents here
+		// load all trigger agents here
 		scheduleManager = loadScheduleManager(triggerManager, props);
 		
 		String triggerPluginDir = props.getString("trigger.plugin.dir", "plugins/triggers");
@@ -269,7 +269,7 @@ public class AzkabanWebServer extends AzkabanServer {
 
 	private TriggerManager loadTriggerManager(Props props) throws TriggerManagerException {
 		TriggerLoader loader = new JdbcTriggerLoader(props);
-		return new TriggerManager(props, loader);
+		return new TriggerManager(props, loader, executorManager);
 	}
 	
 	private void loadBuiltinCheckersAndActions() {
@@ -590,7 +590,7 @@ public class AzkabanWebServer extends AzkabanServer {
 	/**
      * 
      */
-	public ExecutorManagerAdapter getExecutorManager() {
+	public ExecutorManager getExecutorManager() {
 		return executorManager;
 	}
 	

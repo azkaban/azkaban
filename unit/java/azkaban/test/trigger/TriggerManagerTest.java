@@ -12,6 +12,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import azkaban.executor.ExecutorManager;
 import azkaban.trigger.Condition;
 import azkaban.trigger.ConditionChecker;
 import azkaban.trigger.CheckerTypeLoader;
@@ -33,7 +34,6 @@ public class TriggerManagerTest {
 	public void setup() throws TriggerException, TriggerManagerException {
 		triggerLoader = new MockTriggerLoader();
 		
-		
 	}
 	
 	@After
@@ -47,7 +47,7 @@ public class TriggerManagerTest {
 		
 		Props props = new Props();
 		props.put("trigger.scan.interval", 4000);
-		TriggerManager triggerManager = new TriggerManager(props, triggerLoader);
+		TriggerManager triggerManager = new TriggerManager(props, triggerLoader, null);
 		
 		triggerManager.registerCheckerType(ThresholdChecker.type, ThresholdChecker.class);
 		triggerManager.registerActionType(DummyTriggerAction.type, DummyTriggerAction.class);
