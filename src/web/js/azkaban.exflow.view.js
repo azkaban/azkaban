@@ -648,7 +648,7 @@ var exNodeClickCallback = function(event) {
 	var jobId = event.currentTarget.jobid;
 	var attempt = event.currentTarget.attempt;
 	var requestURL = contextURL + "/manager?project=" + projectName + "&flow=" + flowId + "&job=" + jobId;
-	var visualizerURL = contextURL + "/pigvisualizer?execid=" + execId + "&jobid=" + jobId;
+	var visualizerURL = contextURL + "/pigvisualizer?execid=" + execId + "&jobid=" + jobId + "&attempt=" + attempt;
 
 	var menu = [	
 			{title: "Open Job...", callback: function() {window.location.href = requestURL;}},
@@ -664,7 +664,7 @@ var exJobClickCallback = function(event) {
 	var jobId = event.currentTarget.jobid;
 	var attempt = event.currentTarget.attempt;
 	var requestURL = contextURL + "/manager?project=" + projectName + "&flow=" + flowId + "&job=" + jobId;
-	var visualizerURL = contextURL + "/pigvisualizer?execid=" + execId + "&jobid=" + jobId;
+	var visualizerURL = contextURL + "/pigvisualizer?execid=" + execId + "&jobid=" + jobId + "&attempt=" + attempt;
 
 	var menu = [	
 			{title: "Open Job...", callback: function() {window.location.href = requestURL;}},
