@@ -17,7 +17,7 @@
 <!DOCTYPE html> 
 <html>
 	<head>
-#parse( "azkaban/webapp/servlet/velocity/style.vm" )
+#parse("azkaban/webapp/servlet/velocity/style.vm")
 		<script type="text/javascript" src="${context}/js/jquery/jquery-1.9.1.js"></script>
 		<script type="text/javascript" src="${context}/js/namespace.js"></script>
 		<script type="text/javascript" src="${context}/js/underscore-1.4.4-min.js"></script>
@@ -35,8 +35,8 @@
 		</script>
 	</head>
 	<body>
-		#set($current_page="all")
-#parse( "azkaban/webapp/servlet/velocity/nav.vm" )
+#set($current_page="all")
+#parse("azkaban/webapp/servlet/velocity/nav.vm")
 		<div class="messaging"><p id="messageClose">X</p><p id="message"></p></div>  
 
 		<div class="content">
@@ -81,8 +81,8 @@
 					</tr>
 				</thead>
 				<tbody>
-#if($projects)
-#foreach($project in $projects)
+#if(!$projects.isEmpty())
+	#foreach($project in $projects)
 					<tr class="row">
 						<td class="tb-name expand project-expand" id="${project.name}">
 							<span class="state-icon"></span>
@@ -102,7 +102,7 @@
 							</table>
 						</td>
 					</tr>
-#end
+	#end
 #else
 					<tr><td class="last">No viewable projects found.</td></tr>
 #end

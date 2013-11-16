@@ -81,8 +81,8 @@
 						</tr>
 					</thead>
 					<tbody>
-						#if($schedules)
-#foreach($sched in $schedules)
+#if(!$schedules.isEmpty())
+	#foreach($sched in $schedules)
 						<tr class="row" >
 
 							<td>${sched.scheduleId}</td>
@@ -100,7 +100,7 @@
 							<td><button id="removeSchedBtn" onclick="removeSched(${sched.scheduleId})" >Remove Schedule</button></td>
 							<td><button id="addSlaBtn" onclick="slaView.initFromSched(${sched.scheduleId}, '${sched.flowName}')" >Set SLA</button></td>
 						</tr>
-#end
+	#end
 #else
 						<tr><td class="last">No Scheduled Flow Found</td></tr>
 #end
