@@ -16,13 +16,13 @@
 
 $.namespace('azkaban');
 
-var logModel;
-azkaban.LogModel = Backbone.Model.extend({});
+var summaryModel;
+azkaban.SummaryModel = Backbone.Model.extend({});
 
-var jobLogView;
-azkaban.JobLogView = Backbone.View.extend({
+var jobSummaryView;
+azkaban.JobSummaryView = Backbone.View.extend({
 	events: {
-		"click #updateLogBtn" : "handleUpdate"
+		"click #updateSummaryBtn" : "handleUpdate"
 	},
 	initialize: function(settings) {
 		this.model.set({"offset": 0});
@@ -43,13 +43,13 @@ azkaban.JobLogView = Backbone.View.extend({
 				type: "get",
 				async: false,
 				dataType: "json",
-				data: {"execid": execId, "jobId": jobId, "ajax":"fetchExecJobLogs", "offset": offset, "length": 50000, "attempt": attempt},
+				data: {"execid": execId, "jobId": jobId, "ajax":"fetchExecJobSummary", "offset": offset, "length": 50000, "attempt": attempt},
 				error: function(data) {
 					console.log(data);
 					finished = true;
 				},
 				success: function(data) {
-					console.log("fetchLogs");
+					console.log("fetchSummary");
 					if (data.error) {
 						console.log(data.error);
 						finished = true;
@@ -62,27 +62,27 @@ azkaban.JobLogView = Backbone.View.extend({
 						var endTime = date.getTime();
 						if ((endTime - startTime) > 10000) {
 							finished = true;
-							showDialog("Alert","The log is taking a long time to finish loading. Azkaban has stopped loading them. Please click Refresh to restart the load.");
+							showDialog("Alert","The summary is taking a long time to finish loading. Azkaban has stopped loading them. Please click Refresh to restart the load.");
 						} 
 	
 						var re = /(https?:\/\/(([-\w\.]+)+(:\d+)?(\/([\w/_\.]*(\?\S+)?)?)?))/g;
-						var log = $("#logSection").text();
-						if (!log) {
-							log = data.data;
+						var summary = $("#summarySection").text();
+						if (!summary) {
+							summary = data.data;
 						}
 						else {
-							log += data.data;
+							summary += data.data;
 						}
 	
 						var newOffset = data.offset + data.length;
 	
-						$("#logSection").text(log);
-						log = $("#logSection").html();
-						log = log.replace(re, "<a href=\"$1\" title=\"\">$1</a>");
-						$("#logSection").html(log);
+						$("#summarySection").text(summary);
+						summary = $("#summarySection").html();
+						summary = summary.replace(re, "<a href=\"$1\" title=\"\">$1</a>");
+						$("#summarySection").html(summary);
 	
-						model.set({"offset": newOffset, "log": log});
-						$(".logViewer").scrollTop(9999);
+						model.set({"offset": newOffset, "summary": summary});
+						$(".summaryViewer").scrollTop(9999);
 					}
 				}
 			});
@@ -111,6 +111,6 @@ var showDialog = function(title, message) {
 $(function() {
 	var selected;
 
-	logModel = new azkaban.LogModel();
-	jobLogView = new azkaban.JobLogView({el:$('#jobLogView'), model: logModel});
+	summaryModel = new azkaban.SummaryModel();
+	jobSummaryView = new azkaban.JobSummaryView({el:$('#jobSummaryView'), model: summaryModel});
 });

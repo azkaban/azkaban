@@ -303,6 +303,9 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 				else if (ajaxName.equals("fetchExecJobLogs")) {
 					ajaxFetchJobLogs(req, resp, ret, session.getUser(), exFlow);
 				}
+				else if (ajaxName.equals("fetchExecJobSummary")) {
+					ajaxFetchJobSummary(req, resp, ret, session.getUser(), exFlow);
+				}
 				else if (ajaxName.equals("retryFailedJobs")) {
 					ajaxRestartFailed(req, resp, ret, session.getUser(), exFlow);
 				}
@@ -449,6 +452,51 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 	 * @throws ServletException
 	 */
 	private void ajaxFetchJobLogs(HttpServletRequest req, HttpServletResponse resp, HashMap<String, Object> ret, User user, ExecutableFlow exFlow) throws ServletException {
+		Project project = getProjectAjaxByPermission(ret, exFlow.getProjectId(), user, Type.READ);
+		if (project == null) {
+			return;
+		}
+		
+		int offset = this.getIntParam(req, "offset");
+		int length = this.getIntParam(req, "length");
+		
+		String jobId = this.getParam(req, "jobId");
+		resp.setCharacterEncoding("utf-8");
+
+		try {
+			ExecutableNode node = exFlow.getExecutableNode(jobId);
+			if (node == null) {
+				ret.put("error", "Job " + jobId + " doesn't exist in " + exFlow.getExecutionId());
+				return;
+			}
+			
+			int attempt = this.getIntParam(req, "attempt", node.getAttempt());
+			LogData data = executorManager.getExecutionJobLog(exFlow, jobId, offset, length, attempt);
+			if (data == null) {
+				ret.put("length", 0);
+				ret.put("offset", offset);
+				ret.put("data", "");
+			}
+			else {
+				ret.put("length", data.getLength());
+				ret.put("offset", data.getOffset());
+				ret.put("data", data.getData());
+			}
+		} catch (ExecutorManagerException e) {
+			throw new ServletException(e);
+		}
+	}
+	
+	/**
+	 * Gets the job summary.
+	 * 
+	 * @param req
+	 * @param resp
+	 * @param user
+	 * @param exFlow
+	 * @throws ServletException
+	 */
+	private void ajaxFetchJobSummary(HttpServletRequest req, HttpServletResponse resp, HashMap<String, Object> ret, User user, ExecutableFlow exFlow) throws ServletException {
 		Project project = getProjectAjaxByPermission(ret, exFlow.getProjectId(), user, Type.READ);
 		if (project == null) {
 			return;
