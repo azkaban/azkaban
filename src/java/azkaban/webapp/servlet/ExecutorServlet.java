@@ -45,6 +45,7 @@ import azkaban.user.User;
 import azkaban.user.Permission.Type;
 import azkaban.utils.FileIOUtils.JobMetaData;
 import azkaban.utils.FileIOUtils.LogData;
+import azkaban.utils.LogSummary;
 import azkaban.webapp.AzkabanWebServer;
 import azkaban.webapp.session.Session;
 
@@ -502,9 +503,6 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 			return;
 		}
 		
-		int offset = this.getIntParam(req, "offset");
-		int length = this.getIntParam(req, "length");
-		
 		String jobId = this.getParam(req, "jobId");
 		resp.setCharacterEncoding("utf-8");
 
@@ -516,17 +514,10 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 			}
 			
 			int attempt = this.getIntParam(req, "attempt", node.getAttempt());
-			LogData data = executorManager.getExecutionJobLog(exFlow, jobId, offset, length, attempt);
-			if (data == null) {
-				ret.put("length", 0);
-				ret.put("offset", offset);
-				ret.put("data", "");
-			}
-			else {
-				ret.put("length", data.getLength());
-				ret.put("offset", data.getOffset());
-				ret.put("data", data.getData());
-			}
+			LogData data = executorManager.getExecutionJobLog(exFlow, jobId, 0, Integer.MAX_VALUE, attempt);
+			LogSummary summary = new LogSummary(data);
+			ret.put("statTableHeaders", summary.getStatTableHeaders());
+			ret.put("statTableData", summary.getStatTableData());
 		} catch (ExecutorManagerException e) {
 			throw new ServletException(e);
 		}

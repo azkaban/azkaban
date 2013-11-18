@@ -76,9 +76,12 @@
 
 			<div id="jobSummaryView" class="summaryView">
 				<div class="summaryHeader"><div class="summaryButtonRow"><div id="updateSummaryBtn" class="btn7">Refresh</div></div></div>
-				<div class="summaryViewer">
-					<pre id="summarySection" class="summary"></pre>
-				</div>
+				<table>
+					<thead id="summaryHeader">
+					</thead>
+					<tbody id="summaryBody">
+					</tbody>
+				</table>
 			</div>
 #end
 

@@ -25,67 +25,56 @@ azkaban.JobSummaryView = Backbone.View.extend({
 		"click #updateSummaryBtn" : "handleUpdate"
 	},
 	initialize: function(settings) {
-		this.model.set({"offset": 0});
 		this.handleUpdate();
 	},
 	handleUpdate: function(evt) {
 		var requestURL = contextURL + "/executor"; 
 		var model = this.model;
-		var finished = false;
+		var self = this;
 
-		var date = new Date();
-		var startTime = date.getTime();
-		
-		while(!finished) {
-			var offset = this.model.get("offset");
-			$.ajax({
-				url: requestURL,
-				type: "get",
-				async: false,
-				dataType: "json",
-				data: {"execid": execId, "jobId": jobId, "ajax":"fetchExecJobSummary", "offset": offset, "length": 50000, "attempt": attempt},
-				error: function(data) {
-					console.log(data);
-					finished = true;
-				},
-				success: function(data) {
-					console.log("fetchSummary");
-					if (data.error) {
-						console.log(data.error);
-						finished = true;
-					}
-					else if (data.length == 0) {
-						finished = true;
-					}
-					else {
-						var date = new Date();
-						var endTime = date.getTime();
-						if ((endTime - startTime) > 10000) {
-							finished = true;
-							showDialog("Alert","The summary is taking a long time to finish loading. Azkaban has stopped loading them. Please click Refresh to restart the load.");
-						} 
-	
-						var re = /(https?:\/\/(([-\w\.]+)+(:\d+)?(\/([\w/_\.]*(\?\S+)?)?)?))/g;
-						var summary = $("#summarySection").text();
-						if (!summary) {
-							summary = data.data;
-						}
-						else {
-							summary += data.data;
-						}
-	
-						var newOffset = data.offset + data.length;
-	
-						$("#summarySection").text(summary);
-						summary = $("#summarySection").html();
-						summary = summary.replace(re, "<a href=\"$1\" title=\"\">$1</a>");
-						$("#summarySection").html(summary);
-	
-						model.set({"offset": newOffset, "summary": summary});
-						$(".summaryViewer").scrollTop(9999);
-					}
+		$.ajax({
+			url: requestURL,
+			dataType: "json",
+			data: {"execid": execId, "jobId": jobId, "ajax":"fetchExecJobSummary", "attempt": attempt},
+			error: function(data) {
+				console.log(data);
+			},
+			success: function(data) {
+				console.log("fetchSummary");
+				if (data.error) {
+					console.log(data.error);
 				}
-			});
+				else {
+					self.renderStatTable(data.statTableHeaders, data.statTableData);
+				}
+			}
+		});
+	},
+	renderStatTable: function(headers, data) {
+		if (headers) {
+			// Add table headers
+			var summaryHeader = $("#summaryHeader");
+			var tr = document.createElement("tr");
+			var i;
+			for (i = 0; i < headers.length; i++) {
+				var th = document.createElement("th");
+				$(th).text(headers[i]);
+				$(tr).append(th);
+			}
+			summaryHeader.append(tr);
+			
+			// Add table body
+			var summaryBody = $("#summaryBody");
+			for (i = 0; i < data.length; i++) {
+				tr = document.createElement("tr");
+				var row = data[i];
+				for (var j = 0; j < headers.length; j++) {
+					var td = document.createElement("td");
+					$(td).text(row[j]);
+					$(tr).append(td);
+				}
+				summaryBody.append(tr);
+			}
 		}
 	}
 });
