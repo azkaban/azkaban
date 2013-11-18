@@ -64,8 +64,8 @@ public abstract class LoginAbstractAzkabanServlet extends AbstractAzkabanServlet
 		contextType.put(".jpeg", "image/jpeg");
 		contextType.put(".gif", "image/gif");
 		contextType.put(".jpg", "image/jpeg");
+		contextType.put(".tl", "text/dust-template");
 	}
-	
 	
 	private File webResourceDirectory = null;
 	
