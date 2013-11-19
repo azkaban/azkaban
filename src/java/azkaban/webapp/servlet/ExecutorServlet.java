@@ -515,7 +515,10 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 			
 			int attempt = this.getIntParam(req, "attempt", node.getAttempt());
 			LogData data = executorManager.getExecutionJobLog(exFlow, jobId, 0, Integer.MAX_VALUE, attempt);
+			
 			LogSummary summary = new LogSummary(data);
+			ret.put("summaryTableHeaders", summary.getSummaryTableHeaders());
+			ret.put("summaryTableData", summary.getSummaryTableData());
 			ret.put("statTableHeaders", summary.getStatTableHeaders());
 			ret.put("statTableData", summary.getStatTableData());
 		} catch (ExecutorManagerException e) {

@@ -75,13 +75,26 @@
 			</div>
 
 			<div id="jobSummaryView" class="summaryView">
-				<div class="summaryHeader"><div class="summaryButtonRow"><div id="updateSummaryBtn" class="btn7">Refresh</div></div></div>
-				<table>
-					<thead id="summaryHeader">
-					</thead>
-					<tbody id="summaryBody">
-					</tbody>
-				</table>
+				<br/>
+				<p>Job Summary
+					<table>
+						<thead id="summaryHeader">
+						</thead>
+						<tbody id="summaryBody">
+						</tbody>
+					</table>
+				</p>
+				
+				<br/>
+				
+				<p>Job Stats
+					<table>
+						<thead id="statsHeader">
+						</thead>
+						<tbody id="statsBody">
+						</tbody>
+					</table>
+				</p>
 			</div>
 #end
 

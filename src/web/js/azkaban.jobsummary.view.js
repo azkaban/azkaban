@@ -45,15 +45,16 @@ azkaban.JobSummaryView = Backbone.View.extend({
 					console.log(data.error);
 				}
 				else {
-					self.renderStatTable(data.statTableHeaders, data.statTableData);
+					self.renderTable(data.summaryTableHeaders, data.summaryTableData, "summary");
+					self.renderTable(data.statTableHeaders, data.statTableData, "stats");
 				}
 			}
 		});
 	},
-	renderStatTable: function(headers, data) {
+	renderTable: function(headers, data, prefix) {
 		if (headers) {
 			// Add table headers
-			var summaryHeader = $("#summaryHeader");
+			var header = $("#" + prefix + "Header");
 			var tr = document.createElement("tr");
 			var i;
 			for (i = 0; i < headers.length; i++) {
@@ -61,10 +62,10 @@ azkaban.JobSummaryView = Backbone.View.extend({
 				$(th).text(headers[i]);
 				$(tr).append(th);
 			}
-			summaryHeader.append(tr);
+			header.append(tr);
 			
 			// Add table body
-			var summaryBody = $("#summaryBody");
+			var body = $("#" + prefix + "Body");
 			for (i = 0; i < data.length; i++) {
 				tr = document.createElement("tr");
 				var row = data[i];
@@ -73,7 +74,7 @@ azkaban.JobSummaryView = Backbone.View.extend({
 					$(td).text(row[j]);
 					$(tr).append(td);
 				}
-				summaryBody.append(tr);
+				body.append(tr);
 			}
 		}
 	}
