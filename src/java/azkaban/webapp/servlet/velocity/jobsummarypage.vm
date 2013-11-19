@@ -76,6 +76,10 @@
 
 			<div id="jobSummaryView" class="summaryView">
 				<br/>
+				<table id="commandTable">
+				</table>
+				
+				<br/>
 				<p>Job Summary
 					<table>
 						<thead id="summaryHeader">
@@ -86,7 +90,6 @@
 				</p>
 				
 				<br/>
-				
 				<p>Job Stats
 					<table>
 						<thead id="statsHeader">

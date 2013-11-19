@@ -517,6 +517,9 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 			LogData data = executorManager.getExecutionJobLog(exFlow, jobId, 0, Integer.MAX_VALUE, attempt);
 			
 			LogSummary summary = new LogSummary(data);
+			ret.put("command", summary.getCommand());
+			ret.put("classpath", summary.getClasspath());
+			ret.put("params", summary.getParams());
 			ret.put("summaryTableHeaders", summary.getSummaryTableHeaders());
 			ret.put("summaryTableData", summary.getSummaryTableData());
 			ret.put("statTableHeaders", summary.getStatTableHeaders());

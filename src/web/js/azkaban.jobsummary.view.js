@@ -45,13 +45,60 @@ azkaban.JobSummaryView = Backbone.View.extend({
 					console.log(data.error);
 				}
 				else {
-					self.renderTable(data.summaryTableHeaders, data.summaryTableData, "summary");
-					self.renderTable(data.statTableHeaders, data.statTableData, "stats");
+					self.renderCommandTable(data.command, data.classpath, data.params);
+					self.renderJobTable(data.summaryTableHeaders, data.summaryTableData, "summary");
+					self.renderJobTable(data.statTableHeaders, data.statTableData, "stats");
 				}
 			}
 		});
 	},
-	renderTable: function(headers, data, prefix) {
+	renderCommandTable: function(command, classpath, params) {
+		if (command) {
+			var commandTable = $("#commandTable");
+			var i;
+			
+			// Add row for command
+			var tr = document.createElement("tr");
+			var td = document.createElement("td");
+			$(td).append("<b>Command</b>");
+			$(tr).append(td);
+			td = document.createElement("td");
+			$(td).text(command);
+			$(tr).append(td);
+			commandTable.append(tr);
+			
+			// Add row for classpath
+			if (classpath && classpath.length > 0) {
+				tr = document.createElement("tr");
+				td = document.createElement("td");
+				$(td).append("<b>Classpath</b>");
+				$(tr).append(td);
+				td = document.createElement("td");
+				$(td).append(classpath[0]);
+				for (i = 1; i < classpath.length; i++) {
+					$(td).append("<br/>" + classpath[i]);
+				}
+				$(tr).append(td);
+				commandTable.append(tr);
+			}
+			
+			// Add row for params
+			if (params && params.length > 0) {
+				tr = document.createElement("tr");
+				td = document.createElement("td");
+				$(td).append("<b>Params</b>");
+				$(tr).append(td);
+				td = document.createElement("td");
+				$(td).append(params[0]);
+				for (i = 1; i < params.length; i++) {
+					$(td).append("<br/>" + params[i]);
+				}
+				$(tr).append(td);
+				commandTable.append(tr);
+			}
+		}
+	},
+	renderJobTable: function(headers, data, prefix) {
 		if (headers) {
 			// Add table headers
 			var header = $("#" + prefix + "Header");
