@@ -82,8 +82,8 @@
 						</tr>
 					</thead>
 					<tbody>
-						#if($flowHistory)
-#foreach($flow in $flowHistory)
+#if(!$flowHistory.isEmpty())
+	#foreach($flow in $flowHistory)
 						<tr class="row" >
 							<td class="tb-name execId">
 								<a href="${context}/executor?execid=${flow.executionId}">${flow.executionId}</a>
@@ -101,9 +101,9 @@
 							<td><div class="status ${flow.status}">$utils.formatStatus(${flow.status})</div></td>
 							<td></td>
 						</tr>
-#end
+	#end
 #else
-						<tr><td class="last">No History Results Found</td></tr>
+						<tr><td class="last" colspan="9">No History Results Found</td></tr>
 #end
 					</tbody>
 				</table>

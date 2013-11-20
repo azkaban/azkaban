@@ -62,7 +62,7 @@ azkaban.JobLogView = Backbone.View.extend({
 						var endTime = date.getTime();
 						if ((endTime - startTime) > 10000) {
 							finished = true;
-							showDialog("Alert","The log are taking a long time to finish loading. Azkaban has stopped loading them. Please click Refresh to restart the load.");
+							showDialog("Alert","The log is taking a long time to finish loading. Azkaban has stopped loading them. Please click Refresh to restart the load.");
 						} 
 	
 						var re = /(https?:\/\/(([-\w\.]+)+(:\d+)?(\/([\w/_\.]*(\?\S+)?)?)?))/g;
