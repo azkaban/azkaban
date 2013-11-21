@@ -25,7 +25,7 @@
 		<script type="text/javascript" src="${context}/js/jquery.simplemodal-1.4.4.js"></script>
 		<script type="text/javascript" src="${context}/js/azkaban.ajax.utils.js"></script>
 		<script type="text/javascript" src="${context}/js/azkaban.nav.js"></script>
-		<script type="text/javascript" src="${context}/js/azkaban.joblog.view.js"></script>
+		<script type="text/javascript" src="${context}/js/azkaban.jobdetails.view.js"></script>
 		<script type="text/javascript">
 			var contextURL = "${context}";
 			var currentTime = ${currentTime};
@@ -41,17 +41,17 @@
 		</script>
 	</head>
 	<body>
-		#set($current_page="executing")
-#parse( "azkaban/webapp/servlet/velocity/nav.vm" )
+#set($current_page="executing")
+#parse("azkaban/webapp/servlet/velocity/nav.vm")
 		<div class="content">
 #if($errorMsg)
 				<div class="box-error-message">$errorMsg</div>
 #else
-#if($error_message != "null")
+	#if($error_message != "null")
 				<div class="box-error-message">$error_message</div>
-#elseif($success_message != "null")
+	#elseif($success_message != "null")
 				<div class="box-success-message">$success_message</div>
-#end
+	#end
 		
 			<div id="all-jobs-content">
 				<div class="section-hd flow-header">
@@ -70,9 +70,15 @@
 			
 			<div id="headertabs" class="headertabs">
 				<ul>
-					<li><a id="logViewLink" >Log</a></li>
+					<li><a id="jobSummaryViewLink" href="#jobsummary">Summary</a></li>
+					<li class="lidividier">|</li>
+					<li><a id="jobLogViewLink" href="#joblog">Log</a></li>
+					<li class="lidividier">|</li>
+					<li><a href="${context}/pigvisualizer?execid=${execid}&jobid=${jobid}">Visualization</a></li>
 				</ul>
 			</div>
+
+	## Job log view.
 
 			<div id="jobLogView" class="logView">
 				<div class="logHeader"><div class="logButtonRow"><div id="updateLogBtn" class="btn7">Refresh</div></div></div>
@@ -80,6 +86,32 @@
 					<pre id="logSection" class="log"></pre>
 				</div>
 			</div>
+
+	## Job summary view
+
+			<div id="jobSummaryView" class="summaryView">
+				<table id="commandTable">
+				</table>
+				
+				<br/>
+				<h4>Job Summary</h4>
+				<table>
+					<thead id="summaryHeader">
+					</thead>
+					<tbody id="summaryBody">
+					</tbody>
+				</table>
+				
+				<br/>
+				<h4>Job Stats</h4>
+				<table>
+					<thead id="statsHeader">
+					</thead>
+					<tbody id="statsBody">
+					</tbody>
+				</table>
+			</div>
+
 #end
 
 			<div id="messageDialog" class="modal">

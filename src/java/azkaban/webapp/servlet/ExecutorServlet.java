@@ -71,11 +71,8 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 			handleAJAXAction(req, resp, session);
 		}
 		else if (hasParam(req, "execid")) {
-			if (hasParam(req, "summary")) {
-				handleExecutionJobSummaryPage(req, resp, session);
-			}
-			else if (hasParam(req, "job")) {
-				handleExecutionJobLogPage(req, resp, session);
+			if (hasParam(req, "job")) {
+				handleExecutionJobDetailsPage(req, resp, session);
 			}
 			else {
 				handleExecutionFlowPage(req, resp, session);
@@ -86,45 +83,8 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 		}
 	}
 	
-	private void handleExecutionJobSummaryPage(HttpServletRequest req, HttpServletResponse resp, Session session) throws ServletException, IOException {
-		Page page = newPage(req, resp, session, "azkaban/webapp/servlet/velocity/jobsummarypage.vm");
-		User user = session.getUser();
-		int execId = getIntParam(req, "execid");
-		String jobId = getParam(req, "job");
-		int attempt = getIntParam(req, "attempt", 0);
-		page.add("execid", execId);
-		page.add("jobid", jobId);
-		page.add("attempt", attempt);
-		
-		ExecutableFlow flow = null;
-		try {
-			flow = executorManager.getExecutableFlow(execId);
-			if (flow == null) {
-				page.add("errorMsg", "Error loading executing flow " + execId + ": not found.");
-				page.render();
-				return;
-			}
-		} catch (ExecutorManagerException e) {
-			page.add("errorMsg", "Error loading executing flow: " + e.getMessage());
-			page.render();
-			return;
-		}
-		
-		int projectId = flow.getProjectId();
-		Project project = getProjectPageByPermission(page, projectId, user, Type.READ);
-		if (project == null) {
-			page.render();
-			return;
-		}
-		
-		page.add("projectName", project.getName());
-		page.add("flowid", flow.getFlowId());
-		
-		page.render();
-	}
-	
-	private void handleExecutionJobLogPage(HttpServletRequest req, HttpServletResponse resp, Session session) throws ServletException, IOException {
-		Page page = newPage(req, resp, session, "azkaban/webapp/servlet/velocity/joblogpage.vm");
+	private void handleExecutionJobDetailsPage(HttpServletRequest req, HttpServletResponse resp, Session session) throws ServletException, IOException {
+		Page page = newPage(req, resp, session, "azkaban/webapp/servlet/velocity/jobdetailspage.vm");
 		User user = session.getUser();
 		int execId = getIntParam(req, "execid");
 		String jobId = getParam(req, "job");

@@ -53,7 +53,7 @@
 #set($current_page="all")
 #set($show_schedule="false")
 
-#parse( "azkaban/webapp/servlet/velocity/nav.vm" )
+#parse("azkaban/webapp/servlet/velocity/nav.vm")
 		<div class="messaging"><p id="messageClose">X</p><p id="message"></p></div>  
 		<div class="content">
 #if($errorMsg)
@@ -119,8 +119,7 @@
 									<th class="date">End Time</th>
 									<th class="elapse">Elapsed</th>
 									<th class="status">Status</th>
-									<th class="logs">Logs</th>
-									<th class="summary">Summary</th>
+									<th class="details">Details</th>
 								</tr>
 							</thead>
 							<tbody id="executableBody">
@@ -147,7 +146,7 @@
 					</table>
 				</div>
 
-#parse( "azkaban/webapp/servlet/velocity/flowexecutionpanel.vm" )
+#parse("azkaban/webapp/servlet/velocity/flowexecutionpanel.vm")
 #end
 		</div>
 
