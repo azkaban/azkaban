@@ -21,6 +21,7 @@
 #parse ("azkaban/webapp/servlet/velocity/style2.vm")
 #parse ("azkaban/webapp/servlet/velocity/javascript.vm")
 
+		<script type="text/javascript" src="${context}/js/jqueryui/jquery-ui-1.10.1.custom.js"></script>
 		<script type="text/javascript" src="${context}/js/azkaban.ajax.utils.js"></script>
 		<script type="text/javascript" src="${context}/js/azkaban.nav.js"></script>
 		<script type="text/javascript" src="${context}/js/azkaban.project.view.js"></script>
@@ -126,7 +127,7 @@
 						</table>
 					</div>
 
-					<div class="well">
+					<div class="well" id="project-options">
 						<button id="project-upload-btn" class="btn btn-primary">Upload</button>
 						<button id="project-delete-btn" class="btn btn-danger">Delete Project</button>
 					</div>
@@ -153,24 +154,13 @@
 							<h4 class="modal-title">Upload Project Files</h4>
 						</div>
 						<div class="modal-body">
-							<div class="alert alert-danger" id="modal-error-msg">$error_msg</div>
-							<form id="upload-form" enctype="multipart/form-data" method="post" action="$!context/manager">
+							<div class="alert alert-danger" id="upload-project-modal-error-msg">$error_msg</div>
+							<form id="upload-project-form" enctype="multipart/form-data" method="post" action="$!context/manager">
 								<fieldset class="form-horizontal">
 									<div class="form-group">
 										<label for="path" class="col-sm-2 control-label">Job Archive</label>
 										<div class="col-sm-10">
-											<div class="fileinput fileinput-new" data-provides="datainput">
-												<div class="form-control uneditable-input span3" data-trigger="fileinput">
-													<i class="glyphicon glyphicon-file fileinput-exists"></i>
-													<span class="fileinput-filename"></span>
-												</div>
-												<span class="input-group-addon btn btn-default btn-file">
-													<span class="fileinput-new">Select file</span>
-													<span class="fileinput-exists">Change</span>
-													<input type="file" name="...">
-												</span>
-												<a href="#" class="input-group-addon btn btn-default fileinput-exists" data-dismiss="fileinput">Remove</a>
-											</div>
+											<input type="file" class="form-control" id="file" name="file">
 										</div>
 									</div>
 								</fieldset>
@@ -180,7 +170,7 @@
 							<input type="hidden" name="project" value="$project.name">
 							<input type="hidden" name="action" value="upload">
 							<button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
-							<button type="button" class="btn btn-primary" id="upload-btn">Upload</button>
+							<button type="button" class="btn btn-primary" id="upload-project-btn">Upload</button>
 						</div>
 					</div>
 				</div>
@@ -221,14 +211,14 @@
 							<input type="hidden" name="project" value="$project.name">
 							<input type="hidden" name="delete" value="true">
 							<button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
-							<button type="button" class="btn btn-primary" id="delete-btn">Yes</button>
+							<button type="button" class="btn btn-danger" id="delete-btn">Yes</button>
 						</div>
 					</div>
 				</div>
 			</div>
 
-	#parse ("azkaban/webapp/servlet/velocity/flowexecutionpanel2.vm")
-	#parse ("azkaban/webapp/servlet/velocity/messagedialog2.vm")
+	#parse ("azkaban/webapp/servlet/velocity/flowexecutionpanel.vm")
+	#parse ("azkaban/webapp/servlet/velocity/messagedialog.vm")
 #end
 
 #parse ("azkaban/webapp/servlet/velocity/footer.vm")

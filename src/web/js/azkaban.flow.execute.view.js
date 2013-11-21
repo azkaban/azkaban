@@ -607,7 +607,7 @@ $(function() {
 		model: executableGraphModel
 	});
 	svgGraphView = new azkaban.SvgGraphView({
-		el: $('#svgDivCustom'), 
+		el: $('#svg-div-custom'), 
 		model: executableGraphModel, 
 		topGId:"topG", 
 		graphMargin: 10, 

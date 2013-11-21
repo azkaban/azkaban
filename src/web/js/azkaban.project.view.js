@@ -28,35 +28,12 @@ azkaban.ProjectView = Backbone.View.extend({
 
 	handleUploadProjectJob: function(evt) {
 		console.log("click upload project");
-		$('#upload-project').modal({
-				closeHTML: "<a href='#' title='Close' class='modal-close'>x</a>",
-				position: ["20%",],
-				containerId: 'confirm-container',
-				containerCss: {
-					'height': '220px',
-					'width': '565px'
-				},
-				onShow: function (dialog) {
-					var modal = this;
-					$("#errorMsg").hide();
-				}
-			});
+		$('#upload-project-modal').modal();
 	},
 
 	handleDeleteProject: function(evt) {
-	$('#delete-project').modal({
-			closeHTML: "<a href='#' title='Close' class='modal-close'>x</a>",
-			position: ["20%",],
-			containerId: 'confirm-container',
-			containerCss: {
-				'height': '240px',
-				'width': '640px'
-			},
-			onShow: function (dialog) {
-				var modal = this;
-				$("#errorMsg").hide();
-			}
-		});
+		console.log("click delete project");
+		$('#delete-project-modal').modal();
 	},
 	
 	render: function() {
@@ -64,17 +41,19 @@ azkaban.ProjectView = Backbone.View.extend({
 });
 
 var uploadProjectView;
-azkaban.UploadProjectView= Backbone.View.extend({
+azkaban.UploadProjectView = Backbone.View.extend({
 	events: {
-		"click #upload-btn": "handleCreateProject"
+		"click #upload-project-btn": "handleCreateProject"
 	},
 
 	initialize: function(settings) {
-		$("#errorMsg").hide();
+		console.log("Hide upload project modal error msg");
+		$("#upload-project-modal-error-msg").hide();
 	},
 	
 	handleCreateProject: function(evt) {
-		$("#upload-form").submit();
+		console.log("Upload project button.");
+		$("#upload-project-form").submit();
 	},
 	
 	render: function() {
@@ -380,10 +359,10 @@ azkaban.ProjectSummaryView = Backbone.View.extend({
 });
 
 $(function() {
-	projectView = new azkaban.ProjectView({el:$('#all-jobs-content')});
-	uploadView = new azkaban.UploadProjectView({el:$('#upload-project')});
+	projectView = new azkaban.ProjectView({el:$('#project-options')});
+	uploadView = new azkaban.UploadProjectView({el:$('#upload-project-modal')});
 	flowTableView = new azkaban.FlowTableView({el:$('#flow-tabs')});
 	projectSummary = new azkaban.ProjectSummaryView({el:$('#project-summary')});
-	deleteProjectView = new azkaban.DeleteProjectView({el: $('#delete-project')});
+	deleteProjectView = new azkaban.DeleteProjectView({el: $('#delete-project-modal')});
 	// Setting up the project tabs
 });
