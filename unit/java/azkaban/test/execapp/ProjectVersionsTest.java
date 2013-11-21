@@ -3,8 +3,7 @@ package azkaban.test.execapp;
 import java.util.ArrayList;
 import java.util.Collections;
 
-import junit.framework.Assert;
-
+import org.junit.Assert;
 import org.junit.Test;
 
 import azkaban.execapp.ProjectVersion;

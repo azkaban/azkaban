@@ -50,8 +50,6 @@ public class ProjectManager {
 	private final int projectVersionRetention;
 	private final boolean creatorDefaultPermissions;
 	
-	private boolean loadTriggerFromFile = false;
-	
 	public ProjectManager(ProjectLoader loader, Props props) {
 		this.projectLoader = loader;
 		this.props = props;
@@ -61,17 +59,11 @@ public class ProjectManager {
 		
 		this.creatorDefaultPermissions = props.getBoolean("creator.default.proxy", true);
 		
-		this.loadTriggerFromFile = props.getBoolean("enable.load.trigger.from.file", false);
-		
 		if (!tempDir.exists()) {
 			tempDir.mkdirs();
 		}
 		
 		loadAllProjects();
-	}
-
-	public void setLoadTriggerFromFile(boolean enable) {
-		this.loadTriggerFromFile = enable;
 	}
 
 	private void loadAllProjects() {

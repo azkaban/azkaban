@@ -73,7 +73,6 @@ public class ConditionTest {
 		
 		Condition cond2 = Condition.fromJson(JSONUtils.parseJSONFromFile(temp));
 		
-		Map<String, ConditionChecker> checkers1 = cond.getCheckers();
 		Map<String, ConditionChecker> checkers2 = cond2.getCheckers();
 		
 		assertTrue(cond.getExpression().equals(cond2.getExpression()));

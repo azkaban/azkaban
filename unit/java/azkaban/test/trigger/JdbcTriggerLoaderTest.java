@@ -199,16 +199,6 @@ public class JdbcTriggerLoaderTest {
 		return t;
 	}
 	
-	private boolean isTestSetup() {
-		if (!testDBExists) {
-			System.err.println("Skipping DB test because Db not setup.");
-			return false;
-		}
-		
-		System.out.println("Running DB test because Db setup.");
-		return true;
-	}
-	
 	public static class CountHandler implements ResultSetHandler<Integer> {
 		@Override
 		public Integer handle(ResultSet rs) throws SQLException {

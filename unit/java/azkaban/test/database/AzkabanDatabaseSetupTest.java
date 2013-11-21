@@ -6,11 +6,10 @@ import java.sql.SQLException;
 
 import javax.sql.DataSource;
 
-import junit.framework.Assert;
-
 import org.apache.commons.dbutils.QueryRunner;
 import org.apache.commons.io.FileUtils;
 import org.junit.AfterClass;
+import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
