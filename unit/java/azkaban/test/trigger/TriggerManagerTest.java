@@ -12,13 +12,10 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import azkaban.executor.ExecutorManager;
 import azkaban.trigger.Condition;
 import azkaban.trigger.ConditionChecker;
-import azkaban.trigger.CheckerTypeLoader;
 import azkaban.trigger.Trigger;
 import azkaban.trigger.TriggerAction;
-import azkaban.trigger.ActionTypeLoader;
 import azkaban.trigger.TriggerException;
 import azkaban.trigger.TriggerLoader;
 import azkaban.trigger.TriggerLoaderException;

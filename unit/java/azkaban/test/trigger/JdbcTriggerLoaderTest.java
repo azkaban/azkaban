@@ -21,7 +21,6 @@ import org.junit.Before;
 import org.junit.Test;
 
 import azkaban.database.DataSourceUtils;
-import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutionOptions;
 import azkaban.trigger.ActionTypeLoader;
 import azkaban.trigger.CheckerTypeLoader;
@@ -33,7 +32,6 @@ import azkaban.trigger.TriggerAction;
 import azkaban.trigger.TriggerException;
 import azkaban.trigger.TriggerLoader;
 import azkaban.trigger.TriggerLoaderException;
-import azkaban.trigger.TriggerManagerException;
 import azkaban.trigger.builtin.BasicTimeChecker;
 import azkaban.trigger.builtin.ExecuteFlowAction;
 import azkaban.utils.Props;

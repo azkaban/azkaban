@@ -19,7 +19,6 @@ package azkaban.webapp.servlet;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
 
 import javax.management.MBeanAttributeInfo;
 import javax.management.MBeanInfo;
@@ -32,7 +31,6 @@ import javax.servlet.http.HttpServletResponse;
 import org.apache.log4j.Logger;
 
 import azkaban.executor.ConnectorParams;
-import azkaban.executor.ExecutorManager;
 import azkaban.executor.ExecutorManagerAdapter;
 import azkaban.trigger.TriggerManager;
 import azkaban.user.Permission;

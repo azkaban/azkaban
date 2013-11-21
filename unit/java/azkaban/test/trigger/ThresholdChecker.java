@@ -2,9 +2,6 @@ package azkaban.test.trigger;
 
 import java.util.Map;
 
-import org.joda.time.DateTime;
-import org.joda.time.DateTimeZone;
-
 import azkaban.trigger.ConditionChecker;
 
 

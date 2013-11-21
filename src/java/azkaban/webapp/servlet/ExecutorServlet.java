@@ -43,7 +43,6 @@ import azkaban.scheduler.ScheduleManagerException;
 import azkaban.user.Permission;
 import azkaban.user.User;
 import azkaban.user.Permission.Type;
-import azkaban.utils.FileIOUtils.JobMetaData;
 import azkaban.utils.FileIOUtils.LogData;
 import azkaban.webapp.AzkabanWebServer;
 import azkaban.webapp.session.Session;
@@ -444,51 +443,6 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 		}
 	}
 
-	/**
-	 * Gets the job metadata through ajax plain text stream to reduce memory overhead.
-	 * 
-	 * @param req
-	 * @param resp
-	 * @param user
-	 * @param exFlow
-	 * @throws ServletException
-	 */
-	private void ajaxFetchJobMetaData(HttpServletRequest req, HttpServletResponse resp, HashMap<String, Object> ret, User user, ExecutableFlow exFlow) throws ServletException {
-		Project project = getProjectAjaxByPermission(ret, exFlow.getProjectId(), user, Type.READ);
-		if (project == null) {
-			return;
-		}
-		
-		int offset = this.getIntParam(req, "offset");
-		int length = this.getIntParam(req, "length");
-		
-		String jobId = this.getParam(req, "jobId");
-		resp.setCharacterEncoding("utf-8");
-
-		try {
-			ExecutableNode node = exFlow.getExecutableNode(jobId);
-			if (node == null) {
-				ret.put("error", "Job " + jobId + " doesn't exist in " + exFlow.getExecutionId());
-				return;
-			}
-			
-			int attempt = this.getIntParam(req, "attempt", node.getAttempt());
-			JobMetaData data = executorManager.getExecutionJobMetaData(exFlow, jobId, offset, length, attempt);
-			if (data == null) {
-				ret.put("length", 0);
-				ret.put("offset", offset);
-				ret.put("data", "");
-			}
-			else {
-				ret.put("length", data.getLength());
-				ret.put("offset", data.getOffset());
-				ret.put("data", data.getData());
-			}
-		} catch (ExecutorManagerException e) {
-			throw new ServletException(e);
-		}
-	}
-	
 	private void ajaxFetchFlowInfo(HttpServletRequest req, HttpServletResponse resp, HashMap<String, Object> ret, User user, String projectName, String flowId) throws ServletException {
 		Project project = getProjectAjaxByPermission(ret, projectName, user, Type.READ);
 		if (project == null) {

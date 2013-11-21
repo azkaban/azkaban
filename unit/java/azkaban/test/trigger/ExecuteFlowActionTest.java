@@ -2,7 +2,6 @@ package azkaban.test.trigger;
 
 import static org.junit.Assert.*;
 
-import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -10,8 +9,6 @@ import org.junit.Test;
 
 import azkaban.executor.ExecutionOptions;
 import azkaban.trigger.ActionTypeLoader;
-import azkaban.trigger.TriggerAction;
-import azkaban.trigger.TriggerException;
 import azkaban.trigger.builtin.ExecuteFlowAction;
 import azkaban.utils.Props;
 

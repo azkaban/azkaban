@@ -36,7 +36,6 @@ import azkaban.executor.mail.DefaultMailCreator;
 import azkaban.executor.mail.MailCreator;
 import azkaban.utils.EmailMessage;
 import azkaban.utils.Props;
-import azkaban.utils.Utils;
 
 public class Emailer extends AbstractMailer implements Alerter {
 	private static Logger logger = Logger.getLogger(Emailer.class);
