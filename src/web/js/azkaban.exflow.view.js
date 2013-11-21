@@ -467,6 +467,7 @@ azkaban.ExecutionListView = Backbone.View.extend({
 		var tdElapse = document.createElement("td");
 		var tdStatus = document.createElement("td");
 		var tdLog = document.createElement("td");
+		var tdSummary = document.createElement("td");
 		
 		$(tr).append(tdName);
 		$(tr).append(tdTimeline);
@@ -475,6 +476,7 @@ azkaban.ExecutionListView = Backbone.View.extend({
 		$(tr).append(tdElapse);
 		$(tr).append(tdStatus);
 		$(tr).append(tdLog);
+		$(tr).append(tdSummary);
 		$(tr).attr("id", node.id + "-row");
 		$(tdTimeline).attr("id", node.id + "-timeline");
 		$(tdStart).attr("id", node.id + "-start");
@@ -516,6 +518,15 @@ azkaban.ExecutionListView = Backbone.View.extend({
 		$(a).text("Log");
 		$(tdLog).addClass("logLink");
 		$(tdLog).append(a);
+		
+		var summaryURL = contextURL + "/executor?execid=" + execId + 
+			"&job=" + node.id + "&summary";
+		a = document.createElement("a");
+		$(a).attr("href", summaryURL);
+		$(a).attr("id", node.id + "-summary-link");
+		$(a).text("Summary");
+		$(tdSummary).addClass("logSummary");
+		$(tdSummary).append(a);
 
 		executingBody.append(tr);
 	}
