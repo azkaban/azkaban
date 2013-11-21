@@ -75,7 +75,6 @@
 			</div>
 
 			<div id="jobSummaryView" class="summaryView">
-				<br/>
 				<table id="commandTable">
 				</table>
 				
