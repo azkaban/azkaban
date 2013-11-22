@@ -74,23 +74,27 @@
 
 			<div class="row">
 				<div class="col-lg-8">
-					<div class="panel panel-default">
-						<div class="panel-heading">Flows</div>
+					<div class="panel panel-default" id="flow-tabs">
+						<div class="panel-heading">
+							<div class="pull-right" id="project-options">
+								<button id="project-upload-btn" class="btn btn-xs btn-primary">Upload</button>
+								<button id="project-delete-btn" class="btn btn-xs btn-danger">Delete Project</button>
+							</div>
+							Flows
+						</div>
 						<div class="panel-body">
 
 	#if ($flows)
 		#foreach ($flow in $flows)
 							<div class="panel panel-info" flow="${flow.id}" project="${project.name}">
-								<div class="panel-heading" id="${flow.id}">
-									<span>+</span>
+								<div class="panel-heading flow-expander" id="${flow.id}">
 									<a href="${context}/manager?project=${project.name}&flow=${flow.id}">${flow.id}</a>
 								</div>
-								<div class="panel-body">
-									<div class="panel panel-default">
-										<div class="panel-heading">Jobs</div>
-										<div class="panel-body" id="${flow.id}-body">
-										</div>
-									</div>
+								<div id="${flow.id}-child" class="panel-collapse collapse">
+									<table class="table">
+										<tbody id="${flow.id}-tbody">
+										</tbody>
+									</table>
 								</div>
 								<div class="panel-footer">
 			#if (${exec})
@@ -127,11 +131,6 @@
 						</table>
 					</div>
 
-					<div class="well" id="project-options">
-						<button id="project-upload-btn" class="btn btn-primary">Upload</button>
-						<button id="project-delete-btn" class="btn btn-danger">Delete Project</button>
-					</div>
-
 					<div class="well well-sm">
 						<ul class="nav nav-pills nav-stacked">
 							<li class="active"><a href="${context}/manager?project=${project.name}">Project</a></li>
@@ -149,29 +148,29 @@
 			<div class="modal fade" id="upload-project-modal">
 				<div class="modal-dialog">
 					<div class="modal-content">
-						<div class="modal-header">
-							<button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
-							<h4 class="modal-title">Upload Project Files</h4>
-						</div>
-						<div class="modal-body">
-							<div class="alert alert-danger" id="upload-project-modal-error-msg">$error_msg</div>
-							<form id="upload-project-form" enctype="multipart/form-data" method="post" action="$!context/manager">
-								<fieldset class="form-horizontal">
-									<div class="form-group">
-										<label for="path" class="col-sm-2 control-label">Job Archive</label>
-										<div class="col-sm-10">
-											<input type="file" class="form-control" id="file" name="file">
+						<form id="upload-project-form" enctype="multipart/form-data" method="post" action="$!context/manager">
+							<div class="modal-header">
+								<button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+								<h4 class="modal-title">Upload Project Files</h4>
+							</div>
+							<div class="modal-body">
+								<div class="alert alert-danger" id="upload-project-modal-error-msg">$error_msg</div>
+									<fieldset class="form-horizontal">
+										<div class="form-group">
+											<label for="path" class="col-sm-2 control-label">Job Archive</label>
+											<div class="col-sm-10">
+												<input type="file" class="form-control" id="file" name="file">
+											</div>
 										</div>
-									</div>
-								</fieldset>
-							</form>
-						</div>
-						<div class="modal-footer">
-							<input type="hidden" name="project" value="$project.name">
-							<input type="hidden" name="action" value="upload">
-							<button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
-							<button type="button" class="btn btn-primary" id="upload-project-btn">Upload</button>
-						</div>
+									</fieldset>
+							</div>
+							<div class="modal-footer">
+								<input type="hidden" name="project" value="$project.name">
+								<input type="hidden" name="action" value="upload">
+								<button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+								<button type="button" class="btn btn-primary" id="upload-project-btn">Upload</button>
+							</div>
+						</form>
 					</div>
 				</div>
 			</div>
@@ -208,10 +207,12 @@
 							<p>Warning: This project will be deleted and may not be recoverable.</p>
 						</div>
 						<div class="modal-footer">
-							<input type="hidden" name="project" value="$project.name">
-							<input type="hidden" name="delete" value="true">
-							<button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
-							<button type="button" class="btn btn-danger" id="delete-btn">Yes</button>
+							<form id="delete-form">
+								<input type="hidden" name="project" value="$project.name">
+								<input type="hidden" name="delete" value="true">
+								<button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+								<button type="button" class="btn btn-danger" id="delete-btn">Yes</button>
+							</form>
 						</div>
 					</div>
 				</div>
