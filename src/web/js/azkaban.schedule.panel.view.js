@@ -73,9 +73,9 @@ azkaban.SchedulePanelView= Backbone.View.extend({
 				}
 				else {
 					messageDialogView.show("Flow Scheduled", data.message,
-					function() {
-						window.location.href = scheduleURL;
-					}
+						function() { 
+							window.location.href = scheduleURL; 
+						}
 					);
 				}
 			},

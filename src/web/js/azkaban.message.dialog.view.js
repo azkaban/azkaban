@@ -43,6 +43,7 @@ azkaban.MessageDialogView = Backbone.View.extend({
           	if (callback) {
           		callback.call();
           	}
+          	$.modal.close();
           }
      });
   }
