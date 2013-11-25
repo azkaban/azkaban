@@ -21,166 +21,163 @@
 			<script type="text/javascript" src="${context}/js/azkaban.svg.graph.view.js"></script>
 			<script type="text/javascript" src="${context}/js/azkaban.flow.execute.view.js"></script>
 
-			<div class="modal fade" id="execute-flow-panel">
+			<div class="modal modal-wide fade" id="execute-flow-panel">
 				<div class="modal-dialog">
 					<div class="modal-content">
 						<div class="modal-header">
 							<button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
 							<h4 class="modal-title" id="execute-flow-panel-title"></h4>
 						</div><!-- /modal-header -->
-						<div class="modal-body">
-							<div class="row">
-								<div class="col-sm-4">
-									<ul class="nav nav-stacked" id="graph-options">
-										<li id="flow-option" viewpanel="svg-div-custom">
-											Flow View
-											<small>Right click on the jobs to disable and enable jobs in the flow.</small>
-										</li>
-										<li viewpanel="notification-panel">
-											Notification
-											<small>Change the address where success and failure emails will be sent.</small>
-										</li>
-										<li viewpanel="failure-options">
-											Failure Options
-											<small>Select flow behavior when a failure is detected.</small>
-										</li>
-										<li viewpanel="concurrent-panel">
-											Concurrent
-											<small>Change the behavior of the flow if it is already running.</small>
-										</li>
-										<li viewpanel="flow-parameters-panel">
-											Flow Parameters
-											<small>Add temporary flow parameters that are used to override global settings for each job.</p>
-										</li>
-									</ul>
-								</div><!-- /col-sm-4 -->
-								<div class="col-sm-8">
-									<div id="execution-graph-options-panel">
+						<div class="modal-body row">
+							<div class="col-md-4">
+								<ul class="nav nav-pills nav-stacked" id="graph-options">
+									<li id="flow-option" viewpanel="svg-div-custom">
+										<a href="#">Flow View</a>
+										<small>Right click on the jobs to disable and enable jobs in the flow.</small>
+									</li>
+									<li viewpanel="notification-panel">
+										<a href="#">Notification</a>
+										<small>Change the address where success and failure emails will be sent.</small>
+									</li>
+									<li viewpanel="failure-options">
+										<a href="#">Failure Options</a>
+										<small>Select flow behavior when a failure is detected.</small>
+									</li>
+									<li viewpanel="concurrent-panel">
+										<a href="#">Concurrent</a>
+										<small>Change the behavior of the flow if it is already running.</small>
+									</li>
+									<li viewpanel="flow-parameters-panel">
+										<a href="#">Flow Parameters</a>
+										<small>Add temporary flow parameters that are used to override global settings for each job.</p>
+									</li>
+								</ul>
+							</div><!-- /col-md-4 -->
+							<div class="col-md-8">
+								<div id="execution-graph-options-panel">
 
-	## SVG graph panel.
+## SVG graph panel.
 
-										<div id="svg-div-custom">
-											<svg class="svgGraph" xmlns="http://www.w3.org/2000/svg" version="1.1" shape-rendering="optimize-speed" text-rendering="optimize-speed">
-											</svg>
+									<div id="svg-div-custom" class="side-panel">
+										<svg class="svgGraph" xmlns="http://www.w3.org/2000/svg" version="1.1" shape-rendering="optimize-speed" text-rendering="optimize-speed">
+										</svg>
+									</div>
+
+## Notification panel.
+
+									<div id="notification-panel" class="side-panel">
+										<h4>Notify on failure</h4>
+										<p>On a job failure, notify on either the first failure, and/or when the failed flow finishes.</p>
+										<label class="checkbox-inline">
+											<input id="notify-failure-first" type="checkbox" name="notify" value="first">First failure
+										</label>
+										<label class="checkbox-inline">
+											<input id="notify-failure-last" type="checkbox" name="notify" value="last">Flow finished
+										</label>
+
+										<h4>Failure Emails</h4>
+										<div class="checkbox">
+											<label>
+												<input type="checkbox" id="override-failure-emails" name="overrideFailureEmails" value="overrideFailureEmails">
+												Override flow email settings.
+											</label>
+										</div>
+										<label>Notify these addresses on failure. Comma, space, or semi-colon delimited list.</label>
+										<textarea class="form-control" rows="3" id="failure-emails"></textarea>
+
+										<h4>Success Emails</h4>
+										<div class="checkbox">
+											<label>
+												<input type="checkbox" name="overrideSuccessEmails" value="overrideSuccessEmails">
+												Override flow email settings.
+											</label>
+										</div>
+										<label>Notify when the flow finishes successfully. Comma, space, or semi-colon delimited list.</label>
+										<textarea class="form-control" rows="3" id="success-emails"></textarea>
+									</div>
+
+## Failure options panel.
+
+									<div id="failure-options" class="side-panel">
+										<h4>Failure Options</h4>
+										<p>When a failure first occurs in the flow, select the execution behavior.</p>
+										<ul>
+											<li><strong>Finish Current Running</strong> finishes only the currently running job. It will not start any new jobs.</li>
+											<li><strong>Cancel All</strong> immediately kills all jobs and fails the flow.</li>
+											<li><strong>Finish All Possible</strong> will keep executing jobs as long as its dependencies are met.</li>
+										</ul>
+										<select id="failure-action" name="failureAction">
+											<option value="finishCurrent">Finish Current Running</option>
+											<option value="cancelImmediately">Cancel All</option>
+											<option value="finishPossible">Finish All Possible</option>
+										</select>
+									</div>
+
+## Concurrent execution options panel.
+
+									<div id="concurrent-panel" class="side-panel">
+										<h4>Concurrent Execution Options</h4>
+										<p>If the flow is currently running, these are the options that can be set.</p>
+										<div class="radio">
+											<label>
+												<input type="radio" id="skip" name="concurrent" value="skip" checked="checked">
+												Skip Execution
+											</label>
+											<span class="help-block">Do not run flow if it is already running.</span>
 										</div>
 
-	## Notification panel.
-
-										<div id="notification-panel">
-											<h4>Notify on failure</h4>
-											<p>On a job failure, notify on either the first failure, and/or when the failed flow finishes.</p>
-											<label class="checkbox-inline">
-												<input id="notify-failure-first" type="checkbox" name="notify" value="first">First failure
+										<div class="radio">
+											<label>
+												<input type="radio" id="ignore" name="concurrent" value="ignore">
+												Run Concurrently
 											</label>
-											<label class="checkbox-inline">
-												<input id="notify-failure-last" type="checkbox" name="notify" value="last">Flow finished
-											</label>
-
-											<h4>Failure Emails</h4>
-											<div class="checkbox">
-												<label>
-													<input type="checkbox" id="override-failure-emails" name="overrideFailureEmails" value="overrideFailureEmails">
-													Override flow email settings.
-												</label>
-											</div>
-											<label>Notify these addresses on failure. Comma, space, or semi-colon delimited list.</label>
-											<textarea class="form-control" rows="3" id="failure-emails"></textarea>
-
-											<h4>Success Emails</h4>
-											<div class="checkbox">
-												<label>
-													<input type="checkbox" name="overrideSuccessEmails" value="overrideSuccessEmails">
-													Override flow email settings.
-												</label>
-											</div>
-											<label>Notify when the flow finishes successfully. Comma, space, or semi-colon delimited list.</label>
-											<textarea class="form-control" rows="3" id="success-emails"></textarea>
+											<span class="help-block">Do not run flow if it is already running.</span>
 										</div>
 
-	## Failure options panel.
-
-										<div id="failure-options">
-											<h4>Failure Options</h4>
-											<p>When a failure first occurs in the flow, select the execution behavior.</p>
-											<ul>
-												<li><strong>Finish Current Running</strong> finishes only the currently running job. It will not start any new jobs.</li>
-												<li><strong>Cancel All</strong> immediately kills all jobs and fails the flow.</li>
-												<li><strong>Finish All Possible</strong> will keep executing jobs as long as its dependencies are met.</li>
-											</ul>
-											<select id="failure-action" name="failureAction">
-												<option value="finishCurrent">Finish Current Running</option>
-												<option value="cancelImmediately">Cancel All</option>
-												<option value="finishPossible">Finish All Possible</option>
+										<div class="radio">
+											<label>
+												<input type="radio" id="pipeline" name="concurrent" value="pipeline">
+												Pipeline
+											</label>
+											<select id="pipelineLevel" name="pipelineLevel">
+												<option value="1">Level 1</option>
+												<option value="2">Level 2</option>
 											</select>
+											<span class="help-block">
+												Pipeline the flow, so the current execution will not be overrun.
+												<ul>
+													<li>Level 1: block job A until the previous flow job A has completed.</li>
+													<li>Level 2: block job A until the previous flow job A's children have completed.</li>
+												</li>
+											</span>
 										</div>
-
-	## Concurrent execution options panel.
-
-										<div id="concurrent-panel">
-											<h4>Concurrent Execution Options</h4>
-											<p>If the flow is currently running, these are the options that can be set.</p>
-											<div class="radio">
-												<label>
-													<input type="radio" id="skip" name="concurrent" value="skip" checked="checked">
-													Skip Execution
-												</label>
-												<span class="help-block">Do not run flow if it is already running.</span>
-											</div>
-
-											<div class="radio">
-												<label>
-													<input type="radio" id="ignore" name="concurrent" value="ignore">
-													Run Concurrently
-												</label>
-												<span class="help-block">Do not run flow if it is already running.</span>
-											</div>
-
-											<div class="radio">
-												<label>
-													<input type="radio" id="pipeline" name="concurrent" value="pipeline">
-													Pipeline
-												</label>
-												<select id="pipelineLevel" name="pipelineLevel">
-													<option value="1">Level 1</option>
-													<option value="2">Level 2</option>
-												</select>
-												<span class="help-block">
-													Pipeline the flow, so the current execution will not be overrun.
-													<ul>
-														<li>Level 1: block job A until the previous flow job A has completed.</li>
-														<li>Level 2: block job A until the previous flow job A's children have completed.</li>
-													</li>
-												</span>
-											</div>
-										</div>
+									</div>
 
 ## Flow parameters panel
 
-										<div id="flow-parameters-panel">
-											<h4>Flow Property Override</h4>
-											<div id="editTable">
-												<table>
-													<thead>
-														<tr>
-															<th>Name</th>
-															<th>Value</th>
-														</tr>
-													</thead>
-													<tbody>
-														<tr id="addRow" class="addRow">
-															<td id="addRow-col" colspan="2">
-																<span class="addIcon"></span>
-																<a>Add Row</a>
-															</td>
-														</tr>
-													</tbody>
-												</table>
-											</div>
+									<div id="flow-parameters-panel" class="side-panel">
+										<h4>Flow Property Override</h4>
+										<div id="editTable">
+											<table>
+												<thead>
+													<tr>
+														<th>Name</th>
+														<th>Value</th>
+													</tr>
+												</thead>
+												<tbody>
+													<tr id="addRow" class="addRow">
+														<td id="addRow-col" colspan="2">
+															<button type="button" class="btn btn-success btn-xs">Add Row</button>
+														</td>
+													</tr>
+												</tbody>
+											</table>
 										</div>
+									</div>
 
-									</div><!-- /execution-graph-options-panel -->
-								</div><!-- /col-sm-8 -->
-							</div><!-- /row -->
+								</div><!-- /execution-graph-options-panel -->
+							</div><!-- /col-md-8 -->
 						</div><!-- /modal-body -->
 
 						<div class="modal-footer">

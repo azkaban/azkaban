@@ -241,7 +241,7 @@ azkaban.FlowExecuteDialogView = Backbone.View.extend({
 	},
 	
 	showExecuteJob: function(projectName, flowId, jobId, withDep) {
-		sideMenuDialogView.menuSelect($("#flowOption"));
+		sideMenuDialogView.menuSelect($("#flow-option"));
 		$("#execute-flow-panel-title").text("Execute Flow " + flowId);
 		
 		var nodes = this.model.get("nodeMap");
@@ -264,9 +264,8 @@ azkaban.FlowExecuteDialogView = Backbone.View.extend({
 	},
 	
 	showExecutionOptionPanel: function() {
-		sideMenuDialogView.menuSelect($("#flowOption"));
-		$('#modalBackground').show();
-		$('#execute-flow-panel').show();
+		sideMenuDialogView.menuSelect($("#flow-option"));
+		$('#execute-flow-panel').modal();
 	},
 	
 	hideExecutionOptionPanel: function() {
@@ -404,56 +403,41 @@ azkaban.EditTableView = Backbone.View.extend({
 var sideMenuDialogView;
 azkaban.SideMenuDialogView = Backbone.View.extend({
 	events: {
-		"click .menuHeader": "menuClick"
+		"click .menu-header": "menuClick"
 	},
+	
 	initialize: function(settings) {
 		var children = $(this.el).children();
-		var currentParent;
-		var parents = [];
-		var realChildren = [];
 		for (var i = 0; i < children.length; ++i ) {
 			var child = children[i];
-			if ((i % 2) == 0) {
-				currentParent = child;
-				$(child).addClass("menuHeader");
-				parents.push(child);
-			}
-			else {
-				$(child).addClass("menuContent");
-				$(child).hide();
-				currentParent.child = child;
-				realChildren.push(child);
-			}
+			$(child).addClass("menu-header");
+			var caption = $(child).find("small");
+			$(caption).addClass("menu-caption");
+			$(caption).hide();
 		}
-		
-		this.menuSelect($("#flowOption"));
-		
-		this.parents = parents;
-		this.children = realChildren;
+		this.menuSelect($("#flow-option"));
 	},
+	
 	menuClick: function(evt) {
 		this.menuSelect(evt.currentTarget);
 	},
+	
 	menuSelect: function(target) {
-		if ($(target).hasClass("selected")) {
+		if ($(target).hasClass("active")) {
 			return;
 		}
 		
-		$(".sidePanel").each(function() {
+		$(".side-panel").each(function() {
 			$(this).hide();
 		});
 		
-		$(".menuHeader").each(function() {
-			$(this.child).slideUp("fast");
-			$(this).removeClass("selected");
+		$(".menu-header").each(function() {
+			$(this).find("small").slideUp("fast");
+			$(this).removeClass("active");
 		});
 		
-		$(".sidePanel").each(function() {
-			$(this).hide();
-		});
-		
-		$(target).addClass("selected");
-		$(target.child).slideDown("fast");
+		$(target).addClass("active");
+		$(target).find("small").slideDown("fast");
 		var panelName = $(target).attr("viewpanel");
 		$("#" + panelName).show();
 	}
@@ -609,7 +593,7 @@ $(function() {
 	svgGraphView = new azkaban.SvgGraphView({
 		el: $('#svg-div-custom'), 
 		model: executableGraphModel, 
-		topGId:"topG", 
+		topGId: "topG", 
 		graphMargin: 10, 
 		rightClick: { 
 			"node": nodeClickCallback, 
@@ -618,8 +602,14 @@ $(function() {
 		}
 	});
 	
-	sideMenuDialogView = new azkaban.SideMenuDialogView({el:$('#graphOptions')});
-	editTableView = new azkaban.EditTableView({el:$('#editTable')});
+	sideMenuDialogView = new azkaban.SideMenuDialogView({
+		el: $('#graph-options')
+	});
+	editTableView = new azkaban.EditTableView({
+		el: $('#editTable')
+	});
 
-	contextMenuView = new azkaban.ContextMenuView({el:$('#contextMenu')});
+	contextMenuView = new azkaban.ContextMenuView({
+		el: $('#contextMenu')
+	});
 });

@@ -98,7 +98,7 @@
 								</div>
 								<div class="panel-footer">
 			#if (${exec})
-									<button type="button" class="btn btn-primary" flowId="${flow.id}">Execute Flow</button>
+									<button type="button" class="btn btn-primary execute-flow" flowId="${flow.id}">Execute Flow</button>
 			#end
 								</div>
 							</div>
@@ -134,7 +134,7 @@
 					<div class="well well-sm">
 						<ul class="nav nav-pills nav-stacked">
 							<li class="active"><a href="${context}/manager?project=${project.name}">Project</a></li>
-						<li><a id="project-permission-btn" href="${context}/manager?project=${project.name}&permissions">Permissions</a></li>
+							<li><a id="project-permission-btn" href="${context}/manager?project=${project.name}&permissions">Permissions</a></li>
 	#if ($admin)
 							<li><a id="project-logs-btn" href="${context}/manager?project=${project.name}&logs">Project Logs</a></li>
 	#end

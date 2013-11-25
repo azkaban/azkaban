@@ -85,7 +85,7 @@ azkaban.FlowTableView = Backbone.View.extend({
 		"mouseout .expandedFlow a": "unhighlight",
 		"click .runJob": "runJob",
 		"click .runWithDep": "runWithDep",
-		"click .executeFlow": "executeFlow",
+		"click .execute-flow": "executeFlow",
 		"click .viewFlow": "viewFlow",
 		"click .viewJob": "viewJob"
 	},
