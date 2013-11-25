@@ -68,6 +68,7 @@
 									<div id="notification-panel" class="side-panel">
 										<h4>Notify on failure</h4>
 										<p>On a job failure, notify on either the first failure, and/or when the failed flow finishes.</p>
+										<hr>
 										<label class="checkbox-inline">
 											<input id="notify-failure-first" type="checkbox" name="notify" value="first">First failure
 										</label>
@@ -101,6 +102,7 @@
 									<div id="failure-options" class="side-panel">
 										<h4>Failure Options</h4>
 										<p>When a failure first occurs in the flow, select the execution behavior.</p>
+										<hr>
 										<ul>
 											<li><strong>Finish Current Running</strong> finishes only the currently running job. It will not start any new jobs.</li>
 											<li><strong>Cancel All</strong> immediately kills all jobs and fails the flow.</li>
@@ -118,6 +120,7 @@
 									<div id="concurrent-panel" class="side-panel">
 										<h4>Concurrent Execution Options</h4>
 										<p>If the flow is currently running, these are the options that can be set.</p>
+										<hr>
 										<div class="radio">
 											<label>
 												<input type="radio" id="skip" name="concurrent" value="skip" checked="checked">
@@ -157,8 +160,9 @@
 
 									<div id="flow-parameters-panel" class="side-panel">
 										<h4>Flow Property Override</h4>
+										<hr>
 										<div id="editTable">
-											<table>
+											<table class="table table-striped">
 												<thead>
 													<tr>
 														<th>Name</th>

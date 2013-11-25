@@ -18,7 +18,6 @@ $.namespace('azkaban');
 
 function recurseAllAncestors(nodes, disabledMap, id, disable) {
 	var node = nodes[id];
-	
 	if (node.in) {
 		for (var key in node.in) {
 			disabledMap[key] = disable;
@@ -29,7 +28,6 @@ function recurseAllAncestors(nodes, disabledMap, id, disable) {
 
 function recurseAllDescendents(nodes, disabledMap, id, disable) {
 	var node = nodes[id];
-	
 	if (node.out) {
 		for (var key in node.out) {
 			disabledMap[key] = disable;
@@ -40,33 +38,36 @@ function recurseAllDescendents(nodes, disabledMap, id, disable) {
 
 var flowExecuteDialogView;
 azkaban.FlowExecuteDialogView = Backbone.View.extend({
-	events : {
+	events: {
 		"click .closeExecPanel": "hideExecutionOptionPanel",
-		"click #schedule-btn" : "scheduleClick",
-		"click #execute-btn" : "handleExecuteFlow"
+		"click #schedule-btn": "scheduleClick",
+		"click #execute-btn": "handleExecuteFlow"
 	},
-	initialize : function(settings) {
+	
+	initialize: function(settings) {
 		this.model.bind('change:flowinfo', this.changeFlowInfo, this);
 		$("#overrideSuccessEmails").click(function(evt) {
-			if($(this).is(':checked')){
-				$('#successEmails').attr('disabled',null);
+			if($(this).is(':checked')) {
+				$('#successEmails').attr('disabled', null);
 			}
 			else {
-				$('#successEmails').attr('disabled',"disabled");
+				$('#successEmails').attr('disabled', "disabled");
 			}
-				});
+		});
 				
-			$("#overrideFailureEmails").click(function(evt) {
-			if($(this).is(':checked')){
-				$('#failureEmails').attr('disabled',null);
+		$("#overrideFailureEmails").click(function(evt) {
+			if($(this).is(':checked')) {
+				$('#failureEmails').attr('disabled', null);
 			}
 			else {
-				$('#failureEmails').attr('disabled',"disabled");
+				$('#failureEmails').attr('disabled', "disabled");
 			}
 		});
 	},
+	
 	render: function() {
 	},
+	
 	getExecutionOptionData: function() {
 		var failureAction = $('#failureAction').val();
 		var failureEmails = $('#failureEmails').val();
@@ -127,6 +128,7 @@ azkaban.FlowExecuteDialogView = Backbone.View.extend({
 		
 		return executingData;
 	},
+	
 	changeFlowInfo: function() {
 		var successEmails = this.model.get("successEmails");
 		var failureEmails = this.model.get("failureEmails");
