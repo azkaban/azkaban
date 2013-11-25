@@ -411,8 +411,7 @@ azkaban.SideMenuDialogView = Backbone.View.extend({
 		for (var i = 0; i < children.length; ++i ) {
 			var child = children[i];
 			$(child).addClass("menu-header");
-			var caption = $(child).find("small");
-			$(caption).addClass("menu-caption");
+			var caption = $(child).find(".menu-caption");
 			$(caption).hide();
 		}
 		this.menuSelect($("#flow-option"));
@@ -432,12 +431,12 @@ azkaban.SideMenuDialogView = Backbone.View.extend({
 		});
 		
 		$(".menu-header").each(function() {
-			$(this).find("small").slideUp("fast");
+			$(this).find(".menu-caption").slideUp("fast");
 			$(this).removeClass("active");
 		});
 		
 		$(target).addClass("active");
-		$(target).find("small").slideDown("fast");
+		$(target).find(".menu-caption").slideDown("fast");
 		var panelName = $(target).attr("viewpanel");
 		$("#" + panelName).show();
 	}

@@ -33,23 +33,23 @@
 								<ul class="nav nav-pills nav-stacked" id="graph-options">
 									<li id="flow-option" viewpanel="svg-div-custom">
 										<a href="#">Flow View</a>
-										<small>Right click on the jobs to disable and enable jobs in the flow.</small>
+										<div class="menu-caption">Right click on the jobs to disable and enable jobs in the flow.</div>
 									</li>
 									<li viewpanel="notification-panel">
 										<a href="#">Notification</a>
-										<small>Change the address where success and failure emails will be sent.</small>
+										<div class="menu-caption">Change the address where success and failure emails will be sent.</div>
 									</li>
 									<li viewpanel="failure-options">
 										<a href="#">Failure Options</a>
-										<small>Select flow behavior when a failure is detected.</small>
+										<div class="menu-caption">Select flow behavior when a failure is detected.</div>
 									</li>
 									<li viewpanel="concurrent-panel">
 										<a href="#">Concurrent</a>
-										<small>Change the behavior of the flow if it is already running.</small>
+										<div class="menu-caption">Change the behavior of the flow if it is already running.</div>
 									</li>
 									<li viewpanel="flow-parameters-panel">
 										<a href="#">Flow Parameters</a>
-										<small>Add temporary flow parameters that are used to override global settings for each job.</p>
+										<div class="menu-caption">Add temporary flow parameters that are used to override global settings for each job.</div>
 									</li>
 								</ul>
 							</div><!-- /col-md-4 -->
