@@ -279,6 +279,8 @@ azkaban.FlowExecuteDialogView = Backbone.View.extend({
 	},
 	
 	scheduleClick: function() {
+		console.log("click schedule button.");
+		this.hideExecutionOptionPanel();
 		schedulePanelView.showSchedulePanel();
 	},
 	
@@ -293,6 +295,7 @@ azkaban.FlowExecuteDialogView = Backbone.View.extend({
 	},
 	
 	handleExecuteFlow: function(evt) {
+		console.log("click schedule button.");
 		var executeURL = contextURL + "/executor";
 		var executingData = this.getExecutionOptionData();
 		executeFlow(executingData);

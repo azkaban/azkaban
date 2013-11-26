@@ -67,7 +67,8 @@ var getDateFormat = function(date) {
 	var minutes = getTwoDigitStr(date.getMinutes());
 	var second = getTwoDigitStr(date.getSeconds());
 
-	var datestring = year + "-" + month + "-" + day + "  " + hours + ":" + minutes + " " + second + "s";
+	var datestring = year + "-" + month + "-" + day + "  " + hours + ":" + 
+			minutes + " " + second + "s";
 	return datestring;
 }
 

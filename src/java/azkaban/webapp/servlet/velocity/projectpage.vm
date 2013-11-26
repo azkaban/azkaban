@@ -105,6 +105,8 @@
 								<div class="panel-footer">
 			#if (${exec})
 									<button type="button" class="btn btn-primary execute-flow" flowId="${flow.id}">Execute Flow</button>
+									<button type="button" class="btn btn-primary">Executions</button>
+									<button type="button" class="btn btn-primary">Summary</button>
 			#end
 								</div>
 							</div>
