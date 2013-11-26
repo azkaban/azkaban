@@ -115,6 +115,7 @@
 				</div><!-- /col-lg-8 -->
 
 				<div class="col-lg-4">
+	#set ($project_page = "flows")
 	#parse ("azkaban/webapp/servlet/velocity/projectsidebar.vm")
 				</div><!-- /col-lg-4 -->
 			</div><!-- /row -->
@@ -131,14 +132,14 @@
 							</div>
 							<div class="modal-body">
 								<div class="alert alert-danger" id="upload-project-modal-error-msg">$error_msg</div>
-									<fieldset class="form-horizontal">
-										<div class="form-group">
-											<label for="path" class="col-sm-2 control-label">Job Archive</label>
-											<div class="col-sm-10">
-												<input type="file" class="form-control" id="file" name="file">
-											</div>
+								<fieldset class="form-horizontal">
+									<div class="form-group">
+										<label for="path" class="col-sm-2 control-label">Job Archive</label>
+										<div class="col-sm-10">
+											<input type="file" class="form-control" id="file" name="file">
 										</div>
-									</fieldset>
+									</div>
+								</fieldset>
 							</div>
 							<div class="modal-footer">
 								<input type="hidden" name="project" value="$project.name">

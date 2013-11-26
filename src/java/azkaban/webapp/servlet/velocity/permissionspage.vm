@@ -35,7 +35,7 @@
 	</head>
 	<body>
 
-#set ($current_page="all")
+#set ($current_page = "all")
 #parse ("azkaban/webapp/servlet/velocity/nav2.vm")
 
 	<div class="container">
@@ -194,8 +194,8 @@
 	
 	## Proxy users table.
 							
-							<div class="panel panel-warning">
-								<div class="panel-heading">Group</div>
+							<div class="panel panel-info">
+								<div class="panel-heading">Proxy Users</div>
 								<table class="table table-striped" id="proxy-user-table">
 									<thead>
 										<tr>
@@ -211,7 +211,7 @@
 										<tr>
 											<td class="tb-username">#if($proxyUser == $username) ${proxyUser} <span class="sublabel">(you)</span> #else $proxyUser #end</td>
 			#if($isAdmin)
-											<td><button id="proxy-${proxyUser}" name="${proxyUser}" class="remove-btn btn2">Remove</button></td>
+											<td><button id="proxy-${proxyUser}" name="${proxyUser}" class="btn btn-xs btn-primary">Remove</button></td>
 			#end
 										</tr>
 		#end
@@ -226,73 +226,131 @@
 					</div><!-- /panel -->
 				</div><!-- /col-lg-8 -->
 				<div class="col-lg-4">
+	#set ($project_page = "permissions")
 	#parse ("azkaban/webapp/servlet/velocity/projectsidebar.vm")
 				</div><!-- /col-lg-4 -->
+			</div><!-- /row -->
+
+## Remove proxy user modal dialog.
+
+			<div class="modal fade" id="remove-proxy">
+				<div class="modal-dialog">
+					<div class="modal-content">
+						<div class="modal-header">
+							<button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+							<h4 class="modal-title">Remove Proxy User</h4>
+						</div>
+						<div class="modal-body">
+							<div class="alert alert-danger" id="remove-proxy-error-msg"></div>
+							<p>Removing Proxy User</p>
+						</div>
+						<div class="modal-footer">
+							<button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+							<button type="button" class="btn btn-primary" id="remove-proxy-btn">Remove Proxy User</a>
+						</div>
+					</div>
+				</div>
+			</div>
+
+## Add proxy user modal dialog.
+
+			<div class="modal fade" id="add-proxy">
+				<div class="modal-dialog">
+					<div class="modal-content">
+						<div class="modal-header">
+							<button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+							<h4 class="modal-title">Add Proxy User</h4>
+						</div>
+						<div class="modal-body">
+							<div class="alert alert-danger" id="add-proxy-error-msg"></div>
+							<fieldset class="form-horizontal">
+								<div class="form-group">
+									<label for="path" class="col-sm-2 control-label">Proxy</label>
+									<div class="col-sm-10">
+										<input type="text" name="proxyid" id="proxy-user-box" class="form-control">
+									</div>
+								</div>
+							</fieldset>
+						</div>
+						<div class="modal-footer">
+							<button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+							<button type="button" class="btn btn-primary" id="add-proxy-btn">Add Proxy User</button>
+						</div>
+					</div>
+				</div>
+			</div>
+			
+## Change permissions modal dialog.
+
+			<div class="modal fade" id="change-permission">
+				<div class="modal-dialog">
+					<div class="modal-content">
+						<div class="modal-header">
+							<button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+							<h4 class="modal-title">Change Permissions</h4>
+						</div>
+						<div class="modal-body">
+							<div class="alert alert-danger" id="change-permission-error-msg"></div>
+							<fieldset class="form-horizontal">
+								<div class="form-group">
+									<label for="path" class="col-sm-2 control-label">User</label>
+									<div class="col-sm-10">
+										<input type="text" name="userid" id="user-box" class="form-control">
+									</div>
+								</div>
+								<div class="form-group">
+									<label class="checkbox-inline">
+										<input id="admin-change" name="admin" type="checkbox">
+										Admin
+									</label>
+									<label class="checkbox-inline">
+										<input id="read-change" name="read" type="checkbox">
+										Read
+									</label>
+									<label class="checkbox-inline">
+										<input id="write-change" name="write" type="checkbox">
+										Write
+									</label>
+									<label class="checkbox-inline">
+										<input id="execute-change" name="execute" type="checkbox">
+										Execute
+									</label>
+									<label class="checkbox-inline">
+										<input id="schedule-change" name="schedule" type="checkbox">
+										Schedule
+									</label>
+								</div>
+							</fieldset>
+						</div>
+						<div class="modal-footer">
+							<button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+							<button type="button" class="btn btn-primary" id="change-btn">Commit</button>
+						</div>
+					</div>
+				</div>
+			</div>
+
+## Modal dialog to be displayed when the user sesion is invalid. -->
+			
+			<div class="modal fade" id="invalid-session-modal">
+				<div class="modal-dialog">
+					<div class="modal-content">
+						<div class="modal-header">
+							<button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+							<h4 class="modal-title">Invalid Session</h4>
+						</div>
+						<div class="modal-body">
+							<p>Session has expired. Please re-login.</p>
+						</div>
+						<div class="modal-footer">
+							<button type="button" class="btn btn-primary" id="login-btn">Re-login</button>
+						</div>
+					</div>
+				</div>
 			</div>
 
 #end
-
-	</div><!-- /container -->
-
-## TODO: OLD
-
-		<div id="remove-proxy" class="modal">
-			<h3>Remove Proxy User</h3>
-			<div id="removeProxyErrorMsg" class="box-error-message"></div>
-			<p id="proxyRemoveMsg">Removing Proxy User </p>
-			<div class="actions">
-				<a class="yes btn2" id="remove-proxy-btn" href="#">Remove Proxy User</a>
-				<a class="no simplemodal-close btn3" href="#">Cancel</a>
-			</div>
-		</div>
-	
-		<div id="add-proxy" class="modal">
-			<h3 id="proxy-title">Add Proxy User</h3>
-			<div id="proxyErrorMsg" class="box-error-message"></div>
-			<dl>
-				<dt>Proxy</dt>
-				<dd><input id="proxy-user-box" name="proxyid" type="text" /></dd>
-			</dl>
-			<div class="actions">
-				<a class="yes btn2" id="add-proxy-btn" href="#">Add Proxy User</a>
-				<a class="no simplemodal-close btn3" href="#">Cancel</a>
-			</div>
-		</div>
-	
-		<div id="change-permission" class="modal">
-			<h3 id="change-title">Change Permissions</h3>
-			<div id="errorMsg" class="box-error-message"></div>
-			<div class="message">
-				<fieldset>
-					<dl>
-						<dt>User</dt>
-						<dd><input id="user-box" name="userid" type="text" /></dd>
-					<div id="otherCheckBoxes">
-						<dt class="nextline">Admin</dt>
-						<dd><input id="admin-change" name="admin" type="checkbox" /></dd>
-						<dt>Read</dt>
-					    <dd><input id="read-change" name="read" type="checkbox" /></dd>
-					    <dt>Write</dt>
-					    <dd><input id="write-change" name="write" type="checkbox" /></dd>
-					    <dt>Execute</dt>
-					    <dd><input id="execute-change" name="execute" type="checkbox" /></dd>
-					    <dt>Schedule</dt>
-					    <dd><input id="schedule-change" name="schedule" type="checkbox" /></dd>
-					</div>
-					</dl>
-				</fieldset>
-			</div>
-			<div class="actions">
-				<a class="yes btn2" id="change-btn" href="#">Commit</a>
-				<a class="no simplemodal-close btn3" href="#">Cancel</a>
-			</div>
-		</div>
-		<div id="invalid-session" class="modal">
-			<h3>Invalid Session</h3>
-			<p>Session has expired. Please re-login.</p>
-			<div class="actions">
-				<a class="yes btn2" id="login-btn" href="#">Re-login</a>
-			</div>
-		</div>
+#parse ("azkaban/webapp/servlet/velocity/footer.vm")
+		</div><!-- /container -->
 	</body>
 </html>
