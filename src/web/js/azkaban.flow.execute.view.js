@@ -47,7 +47,7 @@ azkaban.FlowExecuteDialogView = Backbone.View.extend({
 	initialize: function(settings) {
 		this.model.bind('change:flowinfo', this.changeFlowInfo, this);
 		$("#overrideSuccessEmails").click(function(evt) {
-			if($(this).is(':checked')) {
+			if ($(this).is(':checked')) {
 				$('#successEmails').attr('disabled', null);
 			}
 			else {
@@ -56,7 +56,7 @@ azkaban.FlowExecuteDialogView = Backbone.View.extend({
 		});
 				
 		$("#overrideFailureEmails").click(function(evt) {
-			if($(this).is(':checked')) {
+			if ($(this).is(':checked')) {
 				$('#failureEmails').attr('disabled', null);
 			}
 			else {
@@ -207,10 +207,14 @@ azkaban.FlowExecuteDialogView = Backbone.View.extend({
 		
 		if (flowParams) {
 			for (var key in flowParams) {
-				editTableView.handleAddRow({paramkey: key, paramvalue: flowParams[key]});
+				editTableView.handleAddRow({
+					paramkey: key, 
+					paramvalue: flowParams[key]
+				});
 			}
 		}
 	},
+	
 	show: function(data) {
 		var projectName = data.project;
 		var flowId = data.flow;
@@ -271,8 +275,7 @@ azkaban.FlowExecuteDialogView = Backbone.View.extend({
 	},
 	
 	hideExecutionOptionPanel: function() {
-		$('#modalBackground').hide();
-		$('#execute-flow-panel').hide();
+		$('#execute-flow-panel').modal("hide");
 	},
 	
 	scheduleClick: function() {
@@ -368,10 +371,9 @@ azkaban.EditTableView = Backbone.View.extend({
 		
 		$(input).keypress(function(evt) {
 			if (evt.which == 13) {
-					obj.closeEditingTarget(evt);
+				obj.closeEditingTarget(evt);
 			}
 		});
-
 	},
 	
 	handleRemoveColumn: function(evt) {
@@ -451,7 +453,7 @@ var handleJobMenuClick = function(action, el, pos) {
 	if (action == "open") {
 		window.location.href = requestURL;
 	}
-	else if(action == "openwindow") {
+	else if (action == "openwindow") {
 		window.open(requestURL);
 	}
 }

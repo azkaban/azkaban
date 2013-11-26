@@ -15,7 +15,6 @@
  */
 
 function ajaxCall(requestURL, data, callback) {
-	
 	var successHandler = function(data) {
 		if (data.error == "session") {
 			// We need to relogin.
@@ -46,9 +45,11 @@ function executeFlow(executingData) {
 	executeURL = contextURL + "/executor";
 	var successHandler = function(data) {
 		if (data.error) {
+			flowExecuteDialogView.hideExecutionOptionPanel();
 			messageDialogView.show("Error Executing Flow", data.error);
 		}
 		else {
+			flowExecuteDialogView.hideExecutionOptionPanel();
 			messageDialogView.show("Flow submitted", data.message,
 				function() {
 					var redirectURL = contextURL + "/executor?execid=" + data.execid;
@@ -77,7 +78,10 @@ function fetchFlowInfo(model, projectName, flowId, execId) {
 				"successEmails": data.successEmails, 
 				"failureEmails": data.failureEmails,
 				"failureAction": data.failureAction,
-				"notifyFailure": {"first": data.notifyFailureFirst, "last":data.notifyFailureLast},
+				"notifyFailure": {
+					"first": data.notifyFailureFirst, 
+					"last": data.notifyFailureLast
+				},
 				"flowParams": data.flowParam,
 				"isRunning": data.running,
 				"nodeStatus": data.nodeStatus,
@@ -114,7 +118,11 @@ function fetchFlow(model, projectName, flowId, sync) {
 		}
 		else {
 			var disabled = data.disabled ? data.disabled : {};
-			model.set({flowId: data.flowId, data:data, disabled: disabled});
+			model.set({
+				flowId: data.flowId, 
+				data: data, 
+				disabled: disabled
+			});
 			
 			var nodeMap = {};
 			for (var i = 0; i < data.nodes.length; ++i) {

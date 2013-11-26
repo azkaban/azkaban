@@ -17,38 +17,29 @@
 $.namespace('azkaban');
 
 var messageDialogView;
-
 azkaban.MessageDialogView = Backbone.View.extend({
-  events : {
-  },
-  initialize : function(settings) {
+	events: {
+	},
 
-  },
-  show: function(title, message, callback) {
-  	$("#azkabanMessageDialogTitle").text(title);
-  	$("#azkabanMessageDialogText").text(message);
-  	this.callback = callback;
-  	
-      $(this.el).modal({
-          position: ["20%",],
-          closeClass: "continueclass",
-          containerId: 'confirm-container',
-          containerCss: {
-            'height': '220px',
-            'width': '565px'
-          },
-          onShow: function (dialog) {
-          },
-          onClose: function() {
-          	if (callback) {
-          		callback.call();
-          	}
-          }
-     });
-  }
+	initialize: function(settings) {
+	},
+	
+	show: function(title, message, callback) {
+		$("#azkaban-message-dialog-title").text(title);
+		$("#azkaban-message-dialog-text").text(message);
+		this.callback = callback;
+		$(this.el).on('hidden.bs.modal', function() {
+			if (callback) {
+				callback.call();
+			}
+		});
+		$(this.el).modal();
+	}
 });
 
 
 $(function() {
-	messageDialogView = new azkaban.MessageDialogView({el: $('#azkabanMessageDialog')});
+	messageDialogView = new azkaban.MessageDialogView({
+		el: $('#azkaban-message-dialog')
+	});
 });
