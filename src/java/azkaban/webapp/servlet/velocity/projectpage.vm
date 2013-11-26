@@ -67,10 +67,14 @@
 				<p id="messaging-message"></p>
 			</div>
 
+## Page header.
+
 			<div class="page-header">
 				<h1><a href="${context}/manager?project=${project.name}">Project <small>$project.name</small></a></h1>
 				<p>$project.description</p>
 			</div>
+
+## Page content.
 
 			<div class="row">
 				<div class="col-lg-8">
@@ -111,35 +115,7 @@
 				</div><!-- /col-lg-8 -->
 
 				<div class="col-lg-4">
-					<div class="well">
-						<table>
-							<tbody>
-								<tr><th>Name:</td><td>$project.name</td></tr>
-								<tr><th>Created Date:</td><td>$utils.formatDate($project.createTimestamp)</td></tr>
-								<tr><th>Modified Date:</td><td>$utils.formatDate($project.lastModifiedTimestamp)</td></tr>
-								<tr><th>Modified by:</td><td>$project.lastModifiedUser</td></tr>
-							</tbody>
-						</table>
-
-						<hr>
-
-						<table>
-							<tbody>
-								<tr><th>Project Admins:</td><td>$admins</td></tr>
-								<tr><th>Your Permissions:</td><td>$userpermission.toString()</td></tr>
-							</tbody>
-						</table>
-					</div>
-
-					<div class="well well-sm">
-						<ul class="nav nav-pills nav-stacked">
-							<li class="active"><a href="${context}/manager?project=${project.name}">Project</a></li>
-							<li><a id="project-permission-btn" href="${context}/manager?project=${project.name}&permissions">Permissions</a></li>
-	#if ($admin)
-							<li><a id="project-logs-btn" href="${context}/manager?project=${project.name}&logs">Project Logs</a></li>
-	#end
-						</ul>
-					</div>
+	#parse ("azkaban/webapp/servlet/velocity/projectsidebar.vm")
 				</div><!-- /col-lg-4 -->
 			</div><!-- /row -->
 

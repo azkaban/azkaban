@@ -1,0 +1,41 @@
+#*
+ * Copyright 2012 LinkedIn Corp.
+ * 
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not
+ * use this file except in compliance with the License. You may obtain a copy of
+ * the License at
+ * 
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations under
+ * the License.
+*#
+
+					<div class="well">
+						<h4>$project.name</h4>
+						<p><strong>Created on</strong> $utils.formatDate($project.createTimestamp)</p>
+						<p><strong>Last modified by</strong> $utils.formatDate($project.lastModifiedTimestamp)</p>
+						<p><strong>Modified by:</strong> $project.lastModifiedUser</p>
+
+						<hr>
+
+						<table>
+							<tbody>
+								<tr><th>Project Admins:</td><td>$admins</td></tr>
+								<tr><th>Your Permissions:</td><td>$userpermission.toString()</td></tr>
+							</tbody>
+						</table>
+					</div>
+
+					<div class="well well-sm">
+						<ul class="nav nav-pills nav-stacked">
+							<li class="active"><a href="${context}/manager?project=${project.name}">Project</a></li>
+							<li><a id="project-permission-btn" href="${context}/manager?project=${project.name}&permissions">Permissions</a></li>
+	#if ($admin)
+							<li><a id="project-logs-btn" href="${context}/manager?project=${project.name}&logs">Project Logs</a></li>
+	#end
+						</ul>
+					</div>
