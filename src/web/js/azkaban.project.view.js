@@ -91,7 +91,6 @@ azkaban.FlowTableView = Backbone.View.extend({
 	},
 
 	initialize: function(settings) {
-		$('#messaging').hide();
 	},
 
 	expandFlowProject: function(evt) {
@@ -350,6 +349,7 @@ azkaban.ProjectSummaryView = Backbone.View.extend({
 });
 
 $(function() {
+	$('#messaging').hide();
 	projectView = new azkaban.ProjectView({el:$('#project-options')});
 	uploadView = new azkaban.UploadProjectView({el:$('#upload-project-modal')});
 	flowTableView = new azkaban.FlowTableView({el:$('#flow-tabs')});

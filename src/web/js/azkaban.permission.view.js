@@ -62,25 +62,13 @@ azkaban.RemoveProxyView = Backbone.View.extend({
 	},
 	
 	initialize : function(settings) {
-		$('#removeProxyErrorMsg').hide();
+		$('#remove-proxy-error-msg').hide();
 	},
 	
 	display: function(proxyName) {
 		this.el.proxyName = proxyName;
 		$("#proxyRemoveMsg").text("Removing proxy user '" + proxyName + "'");
-		$(this.el).modal({
-			closeHTML: "<a href='#' title='Close' class='modal-close'>x</a>",
-			position: ["20%",],
-			containerId: 'confirm-container',
-			containerCss: {
-				'height': '220px',
-				'width': '565px'
-			},
-			onShow: function (dialog) {
-				var modal = this;
-				$("#removeProxyErrorMsg").hide();
-			}
-		});
+		$(this.el).modal();
 	},
 	handleRemoveProxy: function() {
 		var requestURL = contextURL + "/manager";
@@ -112,23 +100,11 @@ azkaban.AddProxyView = Backbone.View.extend({
 	},
 	
 	initialize : function(settings) {
-		$('#proxyErrorMsg').hide();
+		$('#add-proxy-error-msg').hide();
 	},
 	
 	display: function() {
-		$(this.el).modal({
-			closeHTML: "<a href='#' title='Close' class='modal-close'>x</a>",
-			position: ["20%",],
-			containerId: 'confirm-container',
-			containerCss: {
-				'height': '220px',
-				'width': '565px'
-			},
-			onShow: function (dialog) {
-				var modal = this;
-				$("#errorMsg").hide();
-			}
-		});
+		$(this.el).modal();
 	},
 	
 	handleAddProxy: function() {
@@ -163,7 +139,7 @@ azkaban.ChangePermissionView= Backbone.View.extend({
 	},
 	
 	initialize: function(settings) {
-		$('#errorMsg').hide();
+		$('#change-permission-error-msg').hide();
 	},
 	
 	display: function(userid, newPerm, group, proxy) {
@@ -228,19 +204,7 @@ azkaban.ChangePermissionView= Backbone.View.extend({
 		this.changeCheckbox();
 		
 		changePermissionView.render();
-		$('#change-permission').modal({
-			closeHTML: "<a href='#' title='Close' class='modal-close'>x</a>",
-			position: ["20%",],
-			containerId: 'confirm-container',
-			containerCss: {
-				'height': '220px',
-				'width': '565px'
-			},
-			onShow: function (dialog) {
-				var modal = this;
-				$("#errorMsg").hide();
-			}
-		});
+		$('#change-permission').modal();
 	},
 	
 	render: function() {
@@ -345,6 +309,7 @@ azkaban.ChangePermissionView= Backbone.View.extend({
 });
 
 $(function() {
+	$('#messaging').hide();
 	permissionTableView = new azkaban.PermissionTableView({
 		el: $('#permissions-table'), 
 		group: false, 
