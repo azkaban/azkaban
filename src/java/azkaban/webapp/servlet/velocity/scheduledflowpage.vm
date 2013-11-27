@@ -16,7 +16,7 @@
 
 <!DOCTYPE html> 
 <html>
-	<head>
+	<head lang="en">
 
 #parse ("azkaban/webapp/servlet/velocity/style2.vm")
 #parse ("azkaban/webapp/servlet/velocity/javascript.vm")
@@ -60,7 +60,7 @@
 			<div class="alert alert-success">$success_message</div>
 	#end
 
-## Alert message
+	## Alert message
 
 			<div class="alert alert-dismissable" id="messaging">
 				<button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
