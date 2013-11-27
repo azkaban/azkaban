@@ -91,6 +91,7 @@ azkaban.FlowTableView = Backbone.View.extend({
 	},
 
 	initialize: function(settings) {
+		$('#messaging').hide();
 	},
 
 	expandFlowProject: function(evt) {
@@ -130,7 +131,8 @@ azkaban.FlowTableView = Backbone.View.extend({
 			$.get(requestURL, requestData, successHandler, "json");
 		}
 	},
-	createJobListTable : function(data, innerTable) {
+	
+	createJobListTable: function(data, innerTable) {
 		var nodes = data.nodes;
 		var flowId = data.flowId;
 		var project = data.project;
@@ -192,6 +194,7 @@ azkaban.FlowTableView = Backbone.View.extend({
 			$(innerTable).append(tr);
 		}
 	},
+	
 	unhighlight: function(evt) {
 		var currentTarget = evt.currentTarget;
 		$(".dependent").removeClass("dependent");
