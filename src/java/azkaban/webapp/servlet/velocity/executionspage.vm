@@ -39,7 +39,7 @@
 
 ## Alert message
 
-			<div class="alert alert-dismissable" id="messaging">
+			<div class="alert alert-dismissable alert-messaging" id="messaging">
 				<button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
 				<p id="messaging-message"></p>
 			</div>
@@ -54,104 +54,109 @@
 
 			<div class="row">
 				<div class="col-lg-12">
-					<h2>Currently Running Jobs</h2>
-					<table id="executingJobs" class="table table-striped">
-						<thead>
-							<tr>
-								<th class="execid">Execution Id</th>
-								<th>Flow</th>
-								<th>Project</th>
-								<th class="user">User</th>
-								<th class="user">Proxy User</th>
-								<th class="date">Start Time</th>
-								<th class="date">End Time</th>
-								<th class="elapse">Elapsed</th>
-								<th class="status">Status</th>
-								<th class="action">Action</th>
-							</tr>
-						</thead>
-						<tbody>
+					<div class="panel panel-default">
+						<div class="panel-heading">Currently Running Jobs</div>
+						<table id="executingJobs" class="table table-striped">
+							<thead>
+								<tr>
+									<th class="execid">Execution Id</th>
+									<th>Flow</th>
+									<th>Project</th>
+									<th class="user">User</th>
+									<th class="user">Proxy User</th>
+									<th class="date">Start Time</th>
+									<th class="date">End Time</th>
+									<th class="elapse">Elapsed</th>
+									<th class="status">Status</th>
+									<th class="action">Action</th>
+								</tr>
+							</thead>
+							<tbody>
 #if ($runningFlows)
 	#foreach ($flow in $runningFlows)
-							<tr class="row" >
-								<td class="tb-name">
-									<a href="${context}/executor?execid=${flow.executionId}">${flow.executionId}</a>
-								</td>
-								<td><a href="${context}/manager?project=$vmutils.getProjectName(${flow.projectId})&flow=${flow.flowId}">${flow.flowId}</a></td>
-								<td>
-									<a href="${context}/manager?project=$vmutils.getProjectName(${flow.projectId})">$vmutils.getProjectName(${flow.projectId})</a>
-								</td>
-								<td>${flow.submitUser}</td>
-								<td>${flow.proxyUsers}</td>
-								<td>$utils.formatDate(${flow.startTime})</td>
-								<td>$utils.formatDate(${flow.endTime})</td>
-								<td>$utils.formatDuration(${flow.startTime}, ${flow.endTime})</td>
-								<td><div class="status ${flow.status}">$utils.formatStatus(${flow.status})</div></td>
-								<td></td>
-							</tr>
+								<tr class="row" >
+									<td class="tb-name">
+										<a href="${context}/executor?execid=${flow.executionId}">${flow.executionId}</a>
+									</td>
+									<td><a href="${context}/manager?project=$vmutils.getProjectName(${flow.projectId})&flow=${flow.flowId}">${flow.flowId}</a></td>
+									<td>
+										<a href="${context}/manager?project=$vmutils.getProjectName(${flow.projectId})">$vmutils.getProjectName(${flow.projectId})</a>
+									</td>
+									<td>${flow.submitUser}</td>
+									<td>${flow.proxyUsers}</td>
+									<td>$utils.formatDate(${flow.startTime})</td>
+									<td>$utils.formatDate(${flow.endTime})</td>
+									<td>$utils.formatDuration(${flow.startTime}, ${flow.endTime})</td>
+									<td><div class="status ${flow.status}">$utils.formatStatus(${flow.status})</div></td>
+									<td></td>
+								</tr>
 	#end
 #else
-							<tr>
-								<td></td>
-								<td class="last">No Executing Flows</td>
-							</tr>
+								<tr>
+									<td></td>
+									<td class="last">No Executing Flows</td>
+								</tr>
 #end
-						</tbody>
-					</table>
-				</div>
-			</div>
+							</tbody>
+						</table>
+					</div><!-- /panel -->
+				</div><!-- /col-lg-12 -->
+			</div><!-- /row -->
 
 			<div class="row">
 				<div class="col-lg-12">
-					<h2>Recently Finished Jobs</h2>
-
-					<table id="recentlyFinished" class="table table-striped">
-						<thead>
-							<tr>
-								<th class="execid">Execution Id</th>
-								<th>Flow</th>
-								<th>Project</th>
-								<th class="user">User</th>
-								<th class="user">Proxy User</th>
-								<th class="date">Start Time</th>
-								<th class="date">End Time</th>
-								<th class="elapse">Elapsed</th>
-								<th class="status">Status</th>
-								<th class="action">Action</th>
-							</tr>
-						</thead>
-						<tbody>
+					<div class="panel panel-default">
+						<div class="panel-heading">Recently Finished Jobs</div>
+						<table id="recentlyFinished" class="table table-striped">
+							<thead>
+								<tr>
+									<th class="execid">Execution Id</th>
+									<th>Flow</th>
+									<th>Project</th>
+									<th class="user">User</th>
+									<th class="user">Proxy User</th>
+									<th class="date">Start Time</th>
+									<th class="date">End Time</th>
+									<th class="elapse">Elapsed</th>
+									<th class="status">Status</th>
+									<th class="action">Action</th>
+								</tr>
+							</thead>
+							<tbody>
 #if ($recentlyFinished.isEmpty())
 	#foreach ($flow in $recentlyFinished)
-							<tr class="row" >
-								<td class="tb-name execId">
-									<a href="${context}/executor?execid=${flow.executionId}">${flow.executionId}</a>
-								</td>
-								<td><a href="${context}/manager?project=$vmutils.getProjectName(${flow.projectId})&flow=${flow.flowId}">${flow.flowId}</a></td>
-								<td>
-									<a href="${context}/manager?project=$vmutils.getProjectName(${flow.projectId})">$vmutils.getProjectName(${flow.projectId})</a>
-								</td>
-								<td>${flow.submitUser}</td>
-								<td>${flow.proxyUsers}</td>
-								<td>$utils.formatDate(${flow.startTime})</td>
-								<td>$utils.formatDate(${flow.endTime})</td>
-								<td>$utils.formatDuration(${flow.startTime}, ${flow.endTime})</td>
-								<td><div class="status ${flow.status}">$utils.formatStatus(${flow.status})</div></td>
-								<td></td>
-							</tr>
+								<tr class="row" >
+									<td class="tb-name execId">
+										<a href="${context}/executor?execid=${flow.executionId}">${flow.executionId}</a>
+									</td>
+									<td><a href="${context}/manager?project=$vmutils.getProjectName(${flow.projectId})&flow=${flow.flowId}">${flow.flowId}</a></td>
+									<td>
+										<a href="${context}/manager?project=$vmutils.getProjectName(${flow.projectId})">$vmutils.getProjectName(${flow.projectId})</a>
+									</td>
+									<td>${flow.submitUser}</td>
+									<td>${flow.proxyUsers}</td>
+									<td>$utils.formatDate(${flow.startTime})</td>
+									<td>$utils.formatDate(${flow.endTime})</td>
+									<td>$utils.formatDuration(${flow.startTime}, ${flow.endTime})</td>
+									<td><div class="status ${flow.status}">$utils.formatStatus(${flow.status})</div></td>
+									<td></td>
+								</tr>
 	#end
 #else
-							<tr>
-								<td></td>
-								<td class="last">No Recently Finished</td>
-							</tr>
+								<tr>
+									<td></td>
+									<td class="last">No Recently Finished</td>
+								</tr>
 #end	
-						</tbody>
-					</table>
+							</tbody>
+						</table>
+					</div><!-- /panel -->
 
-				</div>
-			</div>
+				</div><!-- /col-lg-12 -->
+			</div><!-- /row -->
 		
-		</div>
+#parse ("azkaban/webapp/servlet/velocity/footer.vm")
+
+		</div><!-- /container -->
 	</body>
 </html>

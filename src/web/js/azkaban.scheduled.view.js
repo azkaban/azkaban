@@ -62,7 +62,6 @@ azkaban.ChangeSlaView = Backbone.View.extend({
 	},
 	
 	initialize: function(setting) {
-		$('#messaging').hide();
 		$('#sla-options').on('hidden.bs.modal', function() {
 			slaView.handleSlaCancel();
 		});

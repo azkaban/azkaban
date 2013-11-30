@@ -309,7 +309,6 @@ azkaban.ChangePermissionView= Backbone.View.extend({
 });
 
 $(function() {
-	$('#messaging').hide();
 	permissionTableView = new azkaban.PermissionTableView({
 		el: $('#permissions-table'), 
 		group: false, 

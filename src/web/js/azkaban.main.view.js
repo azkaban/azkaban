@@ -122,7 +122,6 @@ azkaban.ProjectHeaderView = Backbone.View.extend({
 			$('#messaging-message').html(settings.successMsg);
 		}
 		else {
-			$('#messaging').hide();
 			$('#messaging').removeClass("alert-success");
 			$('#messaging').removeClass("alert-danger");
 		}

@@ -1,3 +1,7 @@
 .modal-wide .modal-dialog {
 	width: 80%; /* or whatever you wish */
 }
+
+.alert-messaging {
+	display: none;
+}

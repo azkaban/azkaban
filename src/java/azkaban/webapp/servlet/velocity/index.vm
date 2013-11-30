@@ -50,7 +50,7 @@
 ## Alert message
 ## TODO: See if this can be removed.
 
-			<div class="alert alert-dismissable" id="messaging">
+			<div class="alert alert-dismissable alert-messaging" id="messaging">
 				<button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
 				<p id="messaging-message"></p>
 			</div>
