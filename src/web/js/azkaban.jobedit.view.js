@@ -22,18 +22,18 @@ azkaban.JobEditView = Backbone.View.extend({
 		"click" : "closeEditingTarget",
 		"click #set-btn": "handleSet",	
 		"click #cancel-btn": "handleCancel",
-		"click .modal-close": "handleCancel",
 		"click #addRow": "handleAddRow",
 		"click table .editable": "handleEditColumn",
 		"click table .removeIcon": "handleRemoveColumn"
 	},
+	
 	initialize: function(setting) {
 		this.projectURL = contextURL + "manager"
 		this.generalParams = {}
 		this.overrideParams = {}
 	},
+	
 	handleCancel: function(evt) {
-		$('#jobEditModalBackground').hide();
 		$('#job-edit-pane').hide();
 		var tbl = document.getElementById("generalProps").tBodies[0];
 		var rows = tbl.rows;
@@ -42,6 +42,7 @@ azkaban.JobEditView = Backbone.View.extend({
 			tbl.deleteRow(0);
 		}
 	},
+	
 	show: function(projectName, flowName, jobName) {
 		this.projectName = projectName;
 		this.flowName = flowName;
@@ -49,9 +50,7 @@ azkaban.JobEditView = Backbone.View.extend({
 		
 		var projectURL = this.projectURL
 		
-		
-		$('#jobEditModalBackground').show();
-		$('#job-edit-pane').show();
+		$('#job-edit-pane').modal();
 		
 		var handleAddRow = this.handleAddRow;
 		
@@ -244,10 +243,7 @@ azkaban.JobEditView = Backbone.View.extend({
 });
 
 $(function() {
-
-
-	jobEditView = new azkaban.JobEditView({el:$('#job-edit-pane')});
-	
-	 
-	
+	jobEditView = new azkaban.JobEditView({
+		el: $('#job-edit-pane')
+	});
 });
