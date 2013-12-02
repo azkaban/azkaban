@@ -5,3 +5,7 @@
 .alert-messaging {
 	display: none;
 }
+
+.nav-tabs {
+	margin-bottom: 15px;
+}

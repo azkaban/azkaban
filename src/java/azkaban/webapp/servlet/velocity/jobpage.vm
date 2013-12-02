@@ -85,14 +85,19 @@
 						<li><a href="${context}/manager?project=${project.name}&flow=${flowid}"><strong>Flow</strong> $flowid</a></li>
 						<li><a href="${context}/manager?project=${project.name}&flow=${flowid}&job=${jobid}"><strong>Job</strong> $jobid</a></li>
 					</ol>
+				
+	## Tabs
+
+					<ul class="nav nav-tabs">
+						<li class="active"><a href="${context}/manager?project=${project.name}&flow=${flowid}&job=${jobid}">Job</a></li>
+						<li><a id="jobs-logs-btn" href="${context}/manager?project=${project.name}&job=$jobid&history">History</a></li>
+					</ul>
 
 	## Job details table
-	
 
 					<div class="panel panel-default">
 						<div class="panel-heading">
 							<div class="pull-right">
-								<a id="jobs-logs-btn" class="btn btn-xs btn-default" href="${context}/manager?project=${project.name}&job=$jobid&history">Job History</a>
 								<button id="edit-job-btn" class="btn btn-xs btn-primary" onclick='jobEditView.show("${project.name}", "${flowid}", "${jobid}")'>Job Edit</button>
 							</div>
 							Job Properties

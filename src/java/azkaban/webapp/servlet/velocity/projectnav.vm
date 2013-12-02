@@ -14,14 +14,10 @@
  * the License.
 *#
 
-					<div class="well">
-						<h3>$project.name</h3>
-						<p><strong>Created on</strong> $utils.formatDate($project.createTimestamp)</p>
-						<p><strong>Last modified by</strong> $utils.formatDate($project.lastModifiedTimestamp)</p>
-						<p><strong>Modified by</strong> $project.lastModifiedUser</p>
-
-						<hr>
-
-						<p><strong>Project admins:</strong> $admins</p>
-						<p><strong>Your Permissions:</strong> $userpermission.toString()</p>
-					</div>
+					<ul class="nav nav-tabs">
+						<li#if($project_page == 'flows') class="active"#end><a href="${context}/manager?project=${project.name}">Flows</a></li>
+						<li#if($project_page == 'permissions') class="active"#end><a id="project-permission-btn" href="${context}/manager?project=${project.name}&permissions">Permissions</a></li>
+	#if ($admin)
+						<li#if($project_page == 'logs') class="active"#end><a id="project-logs-btn" href="${context}/manager?project=${project.name}&logs">Project Logs</a></li>
+	#end
+					</ul>

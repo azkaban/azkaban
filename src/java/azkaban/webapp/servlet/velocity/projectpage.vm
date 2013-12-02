@@ -80,6 +80,16 @@
 
 			<div class="row">
 				<div class="col-lg-8">
+					
+	## Breadcrumb
+
+					<ol class="breadcrumb">
+						<li><a href="${context}/manager?project=${project.name}"><strong>Project</strong> $project.name</a></li>
+					</ol>
+
+	#set ($project_page = "flows")
+	#parse ("azkaban/webapp/servlet/velocity/projectnav.vm")
+
 					<div class="panel panel-default" id="flow-tabs">
 						<div class="panel-heading">
 							<div class="pull-right" id="project-options">
@@ -119,7 +129,6 @@
 				</div><!-- /col-lg-8 -->
 
 				<div class="col-lg-4">
-	#set ($project_page = "flows")
 	#parse ("azkaban/webapp/servlet/velocity/projectsidebar.vm")
 				</div><!-- /col-lg-4 -->
 			</div><!-- /row -->

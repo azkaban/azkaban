@@ -58,17 +58,27 @@
 			<div class="alert alert-success">$success_message</div>
 	#end
 
-## Page header.
+	## Page header.
 
 			<div class="page-header">
 				<h1><a href="${context}/manager?project=${project.name}">Project <small>$project.name</small></a></h1>
 				<p>$project.description</p>
 			</div>
 
-## Page content.
+	## Page content.
 
 			<div class="row">
 				<div class="col-lg-8">
+	
+	## Breadcrumb
+
+					<ol class="breadcrumb">
+						<li><a href="${context}/manager?project=${project.name}"><strong>Project</strong> $project.name</a></li>
+					</ol>
+
+	#set ($project_page = "logs")
+	#parse ("azkaban/webapp/servlet/velocity/projectnav.vm")
+
 					<div class="panel panel-default" id="flow-tabs">
 						<div class="panel-heading">
 							<div class="pull-right" id="project-options">
@@ -81,7 +91,6 @@
 					</div>
 				</div>
 				<div class="col-lg-4">
-	#set ($project_page = "logs")
 	#parse ("azkaban/webapp/servlet/velocity/projectsidebar.vm")
 				</div>
 			</div>

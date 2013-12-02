@@ -56,7 +56,7 @@
 			<div class="alert alert-success">$success_message</div>
 	#end
 
-## Alert message
+	## Alert message
 
 			<div class="alert alert-dismissable alert-messaging" id="messaging">
 				<button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
@@ -70,6 +70,16 @@
 
 			<div class="row">
 				<div class="col-lg-8">
+	
+	## Breadcrumb
+
+					<ol class="breadcrumb">
+						<li><a href="${context}/manager?project=${project.name}"><strong>Project</strong> $project.name</a></li>
+					</ol>
+
+	#set ($project_page = "permissions")
+	#parse ("azkaban/webapp/servlet/velocity/projectnav.vm")
+
 					<div class="panel panel-default">
 						<div class="panel-heading">
 							Permissions
@@ -226,7 +236,6 @@
 					</div><!-- /panel -->
 				</div><!-- /col-lg-8 -->
 				<div class="col-lg-4">
-	#set ($project_page = "permissions")
 	#parse ("azkaban/webapp/servlet/velocity/projectsidebar.vm")
 				</div><!-- /col-lg-4 -->
 			</div><!-- /row -->
