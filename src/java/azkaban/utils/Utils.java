@@ -368,8 +368,7 @@ public class Utils {
 		if (period.get(DurationFieldType.years()) > 0) {
 			int years = period.get(DurationFieldType.years());
 			periodStr = years + "y";
-		}
-		if (period.get(DurationFieldType.months()) > 0) {
+		} else if (period.get(DurationFieldType.months()) > 0) {
 			int months = period.get(DurationFieldType.months());
 			periodStr = months + "M";
 		} else if (period.get(DurationFieldType.weeks()) > 0) {
