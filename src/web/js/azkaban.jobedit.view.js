@@ -38,7 +38,7 @@ azkaban.JobEditView = Backbone.View.extend({
 		var tbl = document.getElementById("generalProps").tBodies[0];
 		var rows = tbl.rows;
 		var len = rows.length;
-		for(var i=0; i < len-1; i++) {
+		for (var i = 0; i < len-1; i++) {
 			tbl.deleteRow(0);
 		}
 	},
@@ -54,56 +54,55 @@ azkaban.JobEditView = Backbone.View.extend({
 		
 		var handleAddRow = this.handleAddRow;
 		
-//		var overrideParams;
-//		var generalParams;
-//		this.overrideParams = overrideParams;
-//		this.generalParams = generalParams;
-		var fetchJobInfo = {"project": this.projectName, "ajax":"fetchJobInfo", "flowName":this.flowName, "jobName":this.jobName};
-		
+		/*var overrideParams;
+		var generalParams;
+		this.overrideParams = overrideParams;
+		this.generalParams = generalParams;*/
+		var fetchJobInfo = {
+			"project": this.projectName, 
+			"ajax": "fetchJobInfo", 
+			"flowName": this.flowName, 
+			"jobName": this.jobName
+		};
 		var mythis = this;
-		
-		$.get(
-				projectURL,
-				fetchJobInfo,
-				function(data) {
-					if (data.error) {
-						alert(data.error);
+		var fetchJobSuccessHandler = function(data) {
+			if (data.error) {
+				alert(data.error);
+			}
+			else {
+				document.getElementById('jobName').innerHTML = data.jobName;				
+				document.getElementById('jobType').innerHTML = data.jobType;
+				var generalParams = data.generalParams;
+				var overrideParams = data.overrideParams;
+						
+				/*for (var key in generalParams) {
+					var row = handleAddRow();
+					var td = $(row).find('span');
+					$(td[1]).text(key);
+					$(td[2]).text(generalParams[key]);
+				}*/
+						
+				mythis.overrideParams = overrideParams;
+				mythis.generalParams = generalParams;
+				
+				for (var okey in overrideParams) {
+					if (okey != 'type' && okey != 'dependencies') {
+						var row = handleAddRow();
+						var td = $(row).find('span');
+						$(td[1]).text(okey);
+						$(td[2]).text(overrideParams[okey]);
 					}
-					else {
-						document.getElementById('jobName').innerHTML = data.jobName;				
-						document.getElementById('jobType').innerHTML = data.jobType;
-						var generalParams = data.generalParams;
-						var overrideParams = data.overrideParams;
-						
-//						for(var key in generalParams) {
-//							var row = handleAddRow();
-//							var td = $(row).find('span');
-//							$(td[1]).text(key);
-//							$(td[2]).text(generalParams[key]);
-//						}
-						
-						mythis.overrideParams = overrideParams;
-						mythis.generalParams = generalParams;
-						
-						for(var okey in overrideParams) {
-							if(okey != 'type' && okey != 'dependencies') {
-								var row = handleAddRow();
-								var td = $(row).find('span');
-								$(td[1]).text(okey);
-								$(td[2]).text(overrideParams[okey]);
-							}
-						}
-						
-					}
-				},
-				"json"
-			);
+				}
+			}
+		};
 
+		$.get(projectURL, fetchJobInfo, fetchJobSuccessHandler, "json");
 	},
+
 	handleSet: function(evt) {
 		this.closeEditingTarget(evt);
 		var jobOverride = {};
-	  	var editRows = $(".editRow");
+		var editRows = $(".editRow");
 		for (var i = 0; i < editRows.length; ++i) {
 			var row = editRows[i];
 			var td = $(row).find('span');
@@ -119,7 +118,7 @@ azkaban.JobEditView = Backbone.View.extend({
 		var generalParams = this.generalParams
 		
 		jobOverride['type'] = overrideParams['type']
-		if('dependencies' in overrideParams) {
+		if ('dependencies' in overrideParams) {
 			jobOverride['dependencies'] = overrideParams['dependencies']
 		}
 		
@@ -137,32 +136,29 @@ azkaban.JobEditView = Backbone.View.extend({
 
 		var projectURL = this.projectURL
 		var redirectURL = projectURL+'?project='+project+'&flow='+flowName+'&job='+jobName;
+		var jobOverrideSuccessHandler = function(data) {
+			if (data.error) {
+				alert(data.error);
+			}
+			else {
+				window.location = redirectURL;
+			}
+		};
 		
-		$.get(
-			projectURL,
-			jobOverrideData,
-			function(data) {
-				if (data.error) {
-					alert(data.error);
-				}
-				else {
-					window.location = redirectURL;
-				}
-			},
-			"json"
-		);
+		$.get(projectURL, jobOverrideData, jobOverrideSuccessHandler, "json");
 	},
+	
 	handleAddRow: function(evt) {
 		var tr = document.createElement("tr");
-	  	var tdName = document.createElement("td");
-	    var tdValue = document.createElement("td");
+		var tdName = document.createElement("td");
+		var tdValue = document.createElement("td");
 
-	    var icon = document.createElement("span");
-	    $(icon).addClass("removeIcon");
-	    var nameData = document.createElement("span");
-	    $(nameData).addClass("spanValue");
-	    var valueData = document.createElement("span");
-	    $(valueData).addClass("spanValue");
+		var icon = document.createElement("span");
+		$(icon).addClass("removeIcon");
+		var nameData = document.createElement("span");
+		$(nameData).addClass("spanValue");
+		var valueData = document.createElement("span");
+		$(valueData).addClass("spanValue");
 
 		$(tdName).append(icon);
 		$(tdName).append(nameData);
@@ -171,18 +167,18 @@ azkaban.JobEditView = Backbone.View.extend({
 		nameData.myparent = tdName;
 
 		$(tdValue).append(valueData);
-	    $(tdValue).addClass("editable");
+			$(tdValue).addClass("editable");
 		valueData.myparent = tdValue;
 		
 		$(tr).addClass("editRow");
-	  	$(tr).append(tdName);
-	  	$(tr).append(tdValue);
+		$(tr).append(tdName);
+		$(tr).append(tdValue);
 
-	  	$(tr).insertBefore("#addRow");
-	  	return tr;
-
+		$(tr).insertBefore("#addRow");
+		return tr;
 	},
-	handleEditColumn : function(evt) {
+	
+	handleEditColumn: function(evt) {
 		var curTarget = evt.currentTarget;
 	
 		if (this.editingTarget != curTarget) {
@@ -201,9 +197,9 @@ azkaban.JobEditView = Backbone.View.extend({
 			$(input).focus();
 			var obj = this;
 			$(input).keypress(function(evt) {
-		    	if(evt.which == 13) {
-			        obj.closeEditingTarget(evt);
-			    }
+				if (evt.which == 13) {
+					obj.closeEditingTarget(evt);
+				}
 			});
 			
 			this.editingTarget = curTarget;
@@ -212,33 +208,37 @@ azkaban.JobEditView = Backbone.View.extend({
 		evt.preventDefault();
 		evt.stopPropagation();
 	},
-	handleRemoveColumn : function(evt) {
+	
+	handleRemoveColumn: function(evt) {
 		var curTarget = evt.currentTarget;
 		// Should be the table
 		var row = curTarget.parentElement.parentElement;
 		$(row).remove();
 	},
+	
 	closeEditingTarget: function(evt) {
-		if (this.editingTarget != null && this.editingTarget != evt.target && this.editingTarget != evt.target.myparent ) {
-	  		var input = $(this.editingTarget).children("input")[0];
-	  		var text = $(input).val();
-	  		$(input).remove();
+		if (this.editingTarget != null && 
+				this.editingTarget != evt.target && 
+				this.editingTarget != evt.target.myparent) {
+			var input = $(this.editingTarget).children("input")[0];
+			var text = $(input).val();
+			$(input).remove();
 
-		    var valueData = document.createElement("span");
-		    $(valueData).addClass("spanValue");
-		    $(valueData).text(text);
+			var valueData = document.createElement("span");
+			$(valueData).addClass("spanValue");
+			$(valueData).text(text);
 
-	  		if ($(this.editingTarget).hasClass("name")) {
-		  		var icon = document.createElement("span");
-		    	$(icon).addClass("removeIcon");
-		    	$(this.editingTarget).append(icon);
-		    }
+			if ($(this.editingTarget).hasClass("name")) {
+				var icon = document.createElement("span");
+				$(icon).addClass("removeIcon");
+				$(this.editingTarget).append(icon);
+			}
 
-		    $(this.editingTarget).removeClass("editing");
-		    $(this.editingTarget).append(valueData);
-		    valueData.myparent=this.editingTarget;
-		    this.editingTarget = null;
-	  	}
+			$(this.editingTarget).removeClass("editing");
+			$(this.editingTarget).append(valueData);
+			valueData.myparent=this.editingTarget;
+			this.editingTarget = null;
+		}
 	}
 });
 

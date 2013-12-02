@@ -88,24 +88,32 @@
 
 	## Job details table
 	
-					<button id="jobs-logs-btn" class="btn btn-default" href="${context}/manager?project=${project.name}&job=$jobid&history">Job History</button>
-					<button id="edit-job-btn" class="btn btn-primary" onclick='jobEditView.show("${project.name}", "${flowid}", "${jobid}")'>Job Edit</button>
 
-					<table id="all-jobs" class="table table-striped table-bordered">
-						<thead>
-							<tr>
-								<th class="tb-pname">Parameter Name</th>
-								<th class="tb-pvalue">Value</th>
-							</tr>
-						</thead>
-						<tbody>
+					<div class="panel panel-default">
+						<div class="panel-heading">
+							<div class="pull-right">
+								<a id="jobs-logs-btn" class="btn btn-xs btn-default" href="${context}/manager?project=${project.name}&job=$jobid&history">Job History</a>
+								<button id="edit-job-btn" class="btn btn-xs btn-primary" onclick='jobEditView.show("${project.name}", "${flowid}", "${jobid}")'>Job Edit</button>
+							</div>
+							Job Properties
+						</div>
+
+						<table id="all-jobs" class="table table-striped table-bordered">
+							<thead>
+								<tr>
+									<th class="tb-pname">Parameter Name</th>
+									<th class="tb-pvalue">Value</th>
+								</tr>
+							</thead>
+							<tbody>
 	#foreach ($parameter in $parameters)
-							<tr>
-								<td class="first">$parameter.first</td><td>$parameter.second</td>
-							</tr>
+								<tr>
+									<td class="first">$parameter.first</td><td>$parameter.second</td>
+								</tr>
 	#end
-						</tbody>
-					</table>
+							</tbody>
+						</table>
+					</div>
 				</div><!-- /col-lg-8 -->
 				<div class="col-lg-4">
 					<div class="well" id="job-summary">
