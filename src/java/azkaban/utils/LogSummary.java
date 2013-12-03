@@ -26,7 +26,8 @@ public class LogSummary {
 	}
 	
 	private void parseLogData(String data) {
-		data = data.replaceAll(".*? - ", "");
+		// Filter out all the timestamps
+		data = data.replaceAll("(?m)^.*? - ", "");
 		String[] lines = data.split("\n");
 		
 		parseCommand(lines);
