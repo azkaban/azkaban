@@ -207,9 +207,14 @@ azkaban.JobSummaryView = Backbone.View.extend({
 			for (i = 0; i < data.length; i++) {
 				tr = document.createElement("tr");
 				var row = data[i];
-				for (var j = 0; j < headers.length; j++) {
+				for (var j = 0; j < row.length; j++) {
 					var td = document.createElement("td");
-					$(td).text(row[j]);
+					if (j == 0) {
+						// first column is a link to job details page 
+						$(td).html(row[j]);
+					} else {
+						$(td).text(row[j]);
+					}
 					$(tr).append(td);
 				}
 				body.append(tr);

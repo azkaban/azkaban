@@ -4,7 +4,9 @@ import azkaban.utils.FileIOUtils.LogData;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -85,10 +87,36 @@ public class LogSummary {
 		}
 	}
 	
+	/**
+	 * Parses the Pig Job Stats table that includes the max/min mapper and reduce times.
+	 * Adds links to the job details pages on the job tracker.
+	 * @param lines
+	 */
 	private void parseJobStats(String[] lines) {
 		int jobStatsStartIndex = -1;
+		
+		Map<String, String> jobDetailUrls = new HashMap<String, String>();
+
+		// Regex to search for URLs to job details pages.
+		Pattern p = Pattern.compile(
+				"https?://" + // http(s)://
+				"[-\\w\\.]+" + // domain
+				"(?::\\d+)?" + // port
+				"/[\\w/\\.]*" + // path
+				// query string
+				"\\?\\S+" + 
+				"(job_\\d{12}_\\d{4,})" + // job id
+				"\\S*"
+		);
+		
 		for (int i = 0; i < lines.length; i++) {
-			if (lines[i].startsWith("Job Stats (time in seconds):")) {
+			String line = lines[i];
+			Matcher m = p.matcher(line);
+			
+			if (m.find()) {
+				jobDetailUrls.put(m.group(1), m.group(0));
+			}
+			else if (line.startsWith("Job Stats (time in seconds):")) {
 				jobStatsStartIndex = i+1;
 				break;
 			}
@@ -101,7 +129,11 @@ public class LogSummary {
 			int tableRowIndex = jobStatsStartIndex + 1;
 			String line;
 			while (!(line = lines[tableRowIndex]).equals("")) {
-				statTableData.add(line.split("\t"));
+				String[] stats = line.split("\t");
+				if (jobDetailUrls.containsKey(stats[0])) {
+					stats[0] = "<a href=\"" + jobDetailUrls.get(stats[0]) + "\">" + stats[0] + "</a>";
+				}
+				statTableData.add(stats);
 				tableRowIndex++;
 			}
 		}
