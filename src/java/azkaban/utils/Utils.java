@@ -43,6 +43,7 @@ import org.joda.time.Months;
 import org.joda.time.ReadablePeriod;
 import org.joda.time.Seconds;
 import org.joda.time.Weeks;
+import org.joda.time.Years;
 
 /**
  * A util helper class full of static methods that are commonly used.
@@ -328,6 +329,9 @@ public class Utils {
 		int periodInt = Integer.parseInt(periodStr.substring(0,
 				periodStr.length() - 1));
 		switch (periodUnit) {
+		case 'y':
+			period = Years.years(periodInt);
+			break;
 		case 'M':
 			period = Months.months(periodInt);
 			break;
