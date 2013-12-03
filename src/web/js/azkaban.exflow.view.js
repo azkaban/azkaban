@@ -101,8 +101,8 @@ azkaban.FlowTabView= Backbone.View.extend({
   	$("#resumebtn").hide();
   	$("#retrybtn").hide();
   
- 	this.model.bind('change:graph', this.handleFlowStatusChange, this);
-	this.model.bind('change:update', this.handleFlowStatusChange, this);
+		this.model.bind('change:graph', this.handleFlowStatusChange, this);
+		this.model.bind('change:update', this.handleFlowStatusChange, this);
 	
   	var selectedView = settings.selectedView;
   	if (selectedView == "jobslist") {
@@ -466,7 +466,7 @@ azkaban.ExecutionListView = Backbone.View.extend({
 		var tdEnd = document.createElement("td");
 		var tdElapse = document.createElement("td");
 		var tdStatus = document.createElement("td");
-		var tdLog = document.createElement("td");
+		var tdDetails = document.createElement("td");
 		
 		$(tr).append(tdName);
 		$(tr).append(tdTimeline);
@@ -474,7 +474,7 @@ azkaban.ExecutionListView = Backbone.View.extend({
 		$(tr).append(tdEnd);
 		$(tr).append(tdElapse);
 		$(tr).append(tdStatus);
-		$(tr).append(tdLog);
+		$(tr).append(tdDetails);
 		$(tr).attr("id", node.id + "-row");
 		$(tdTimeline).attr("id", node.id + "-timeline");
 		$(tdStart).attr("id", node.id + "-start");
@@ -513,10 +513,10 @@ azkaban.ExecutionListView = Backbone.View.extend({
 		var a = document.createElement("a");
 		$(a).attr("href", logURL);
 		$(a).attr("id", node.id + "-log-link");
-		$(a).text("Log");
-		$(tdLog).addClass("logLink");
-		$(tdLog).append(a);
-
+		$(a).text("Details");
+		$(tdDetails).addClass("details");
+		$(tdDetails).append(a);
+		
 		executingBody.append(tr);
 	}
 });
