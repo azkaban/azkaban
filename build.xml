@@ -61,6 +61,21 @@
 			<src path="${java.src.dir}" />
 			<classpath refid="main.classpath" />
 		</javac>
+
+		<!-- Compile dustjs templates -->
+		<!-- Note: Because apply does not support multiple srcfile and targetfile
+				 elements, and for and foreach requires ant-contrib, we use targetfile 
+				 for the template name parameter and then redirect the output of dustc
+				 to the final output file -->
+		<apply dir="${java.src.dir}/tl" executable="dustc" relative="true">
+			<mapper type="glob" from="*.tl" to="*" />
+			<targetfile prefix="--name=" />
+			<srcfile />
+			<fileset dir="${java.src.dir}/tl" includes="*.tl" />
+			<redirector>
+				<outputmapper id="out" type="glob" from="*.tl" to="${dist.dust.dir}/*.js" />
+			</redirector>
+		</apply>
 	</target>
 	
 	<target name="jars" depends="build" description="Create azkaban jar">

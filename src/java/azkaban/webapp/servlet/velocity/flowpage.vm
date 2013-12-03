@@ -17,7 +17,7 @@
 <!DOCTYPE html> 
 <html>
 	<head>
-#parse( "azkaban/webapp/servlet/velocity/style.vm" )
+#parse("azkaban/webapp/servlet/velocity/style.vm")
 		<script type="text/javascript" src="${context}/js/jquery/jquery-1.9.1.js"></script>    
 		<script type="text/javascript" src="${context}/js/jqueryui/jquery-ui-1.10.1.custom.js"></script>
 		
@@ -50,18 +50,21 @@
 		<link rel="stylesheet" type="text/css" href="${context}/css/jquery-ui-1.10.1.custom.css" />
 	</head>
 	<body>
+
 #set($current_page="all")
-#parse( "azkaban/webapp/servlet/velocity/nav.vm" )
+#parse("azkaban/webapp/servlet/velocity/nav.vm")
+
 		<div class="messaging"><p id="messageClose">X</p><p id="message"></p></div>  
 		<div class="content">
+
 #if($errorMsg)
 				<div class="box-error-message">$errorMsg</div>
 #else
-#if($error_message != "null")
+	#if($error_message != "null")
 				<div class="box-error-message">$error_message</div>
-#elseif($success_message != "null")
+	#elseif($success_message != "null")
 				<div class="box-success-message">$success_message</div>
-#end
+	#end
 
 				<div id="all-jobs-content">
 					<div class="section-hd flow-header">
@@ -80,8 +83,13 @@
 							<li><a id="graphViewLink" href="#graph">Graph</a></li>
 							<li class="lidivider">|</li>
 							<li><a id="executionsViewLink" href="#executions">Executions</a></li>
+							<li class="lidivider">|</li>
+							<li><a id="summaryViewLink" href="#summary">Summary</a></li>
 						</ul>
 					</div>
+
+	## Graph view.
+
 					<div id="graphView">
 						<div class="relative">
 							<div id="jobList" class="jobList">
@@ -97,7 +105,10 @@
 								</svg>
 							</div>
 						</div>
-					</div>
+					</div><!-- /#graphView -->
+
+	## Executions view.
+
 					<div id="executionsView">
 						<div id="executionDiv" class="all-jobs executionInfo">
 							<table id="execTable">
@@ -129,25 +140,31 @@
 							</ul>
 						</div>
 					</div>
-				</div>
-		<!-- modal content -->
+				</div><!-- /#executionsView -->
+
+	## Summary view.
+
+				<div id="summaryView">
+				</div><!-- /#summaryView -->
+
+	## Invalid session modal.
 
 				<div id="invalid-session" class="modal">
 					<h3>Invalid Session</h3>
-						<p>Session has expired. Please re-login.</p>
-						<div class="actions">
-							<a class="yes btn3" id="login-btn" href="#">Re-login</a>
-						</div>
+					<p>Session has expired. Please re-login.</p>
+					<div class="actions">
+						<a class="yes btn3" id="login-btn" href="#">Re-login</a>
+					</div>
 				</div>
 
-#parse( "azkaban/webapp/servlet/velocity/flowexecutionpanel.vm" )
+	#parse("azkaban/webapp/servlet/velocity/flowexecutionpanel.vm")
 
 #end
 
 		</div>
 		<div id="contextMenu">
 		</div>
-		#parse( "azkaban/webapp/servlet/velocity/messagedialog.vm" )
+#parse("azkaban/webapp/servlet/velocity/messagedialog.vm")
 	</body>
 </html>
 
