@@ -529,6 +529,9 @@ $(function() {
 			if (hash == "#executions") {
 				flowTabView.handleExecutionLinkClick();
 			}
+			if (hash == "#summary") {
+				flowTabView.handleSummaryLinkClick();
+			}
 			else if (hash == "#graph") {
 				// Redundant, but we may want to change the default. 
 				selected = "graph";
