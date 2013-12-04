@@ -26,6 +26,7 @@
 		<script type="text/javascript" src="${context}/js/backbone-0.9.10-min.js"></script>
 		<script type="text/javascript" src="${context}/js/jquery.simplemodal-1.4.4.js"></script>
 		
+		<script type="text/javascript" src="${context}/js/dust-core-2.2.2.min.js"></script>
 		<script type="text/javascript" src="${context}/js/azkaban.date.utils.js"></script>
 		<script type="text/javascript" src="${context}/js/azkaban.ajax.utils.js"></script>
 		<script type="text/javascript" src="${context}/js/azkaban.common.utils.js"></script>
