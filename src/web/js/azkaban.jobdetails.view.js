@@ -139,6 +139,7 @@ azkaban.JobSummaryView = Backbone.View.extend({
 					self.renderCommandTable(data.command, data.classpath, data.params);
 					self.renderJobTable(data.summaryTableHeaders, data.summaryTableData, "summary");
 					self.renderJobTable(data.statTableHeaders, data.statTableData, "stats");
+					self.renderHiveTable(data.hiveQueries, data.hiveQueryJobs);
 				}
 			}
 		});
@@ -219,6 +220,71 @@ azkaban.JobSummaryView = Backbone.View.extend({
 				}
 				body.append(tr);
 			}
+		} else {
+			$("#job" + prefix).hide();
+		}
+	},
+	renderHiveTable: function(queries, queryJobs) {
+		if (queries) {
+			// Set up table column headers
+			var header = $("#hiveTableHeader");
+			var tr = document.createElement("tr");
+			var headers = ["Query","Job","Map","Reduce","HDFS Read","HDFS Write"];
+			var i;
+			
+			for (i = 0; i < headers.length; i++) {
+				var th = document.createElement("th");
+				$(th).text(headers[i]);
+				$(tr).append(th);
+			}
+			header.append(tr);
+			
+			// Construct table body
+			var body = $("#hiveTableBody");
+			for (i = 0; i < queries.length; i++) {
+				// new query
+				tr = document.createElement("tr");
+				var td = document.createElement("td");
+				$(td).html(queries[i]);
+				$(tr).append(td);
+				
+				var jobs = queryJobs[i];
+				if (jobs != null) {
+					// add first job for this query
+					var jobValues = jobs[0];
+					var j;
+					for (j = 0; j < jobValues.length; j++) {
+						td = document.createElement("td");
+						$(td).html(jobValues[j]);
+						$(tr).append(td);
+					}
+					body.append(tr);
+					
+					// add remaining jobs for this query
+					for (j = 1; j < jobs.length; j++) {
+						jobValues = jobs[j];
+						tr = document.createElement("tr");
+						
+						// add empty cell for query column
+						td = document.createElement("td");
+						$(td).html("&nbsp;");
+						$(tr).append(td);
+						
+						// add job values
+						for (var k = 0; k < jobValues.length; k++) {
+							td = document.createElement("td");
+							$(td).html(jobValues[k]);
+							$(tr).append(td);
+						}
+						body.append(tr);
+					}
+					
+				} else {
+					body.append(tr);
+				}
+			}
+		} else {
+			$("#hiveTable").hide();
 		}
 	}
 });
