@@ -42,7 +42,7 @@ var handleJobMenuClick = function(action, el, pos) {
 }
 
 var flowTabView;
-azkaban.FlowTabView= Backbone.View.extend({
+azkaban.FlowTabView = Backbone.View.extend({
 	events: {
 		"click #graphViewLink": "handleGraphLinkClick",
 		"click #executionsViewLink": "handleExecutionLinkClick",
@@ -253,7 +253,6 @@ azkaban.ExecutionsView = Backbone.View.extend({
 			return;
 		}
 		var page = evt.currentTarget.page;
-		
 		this.model.set({"page": page});
 	},
 	
@@ -261,7 +260,6 @@ azkaban.ExecutionsView = Backbone.View.extend({
 		if (this.init) {
 			return;
 		}
-		
 		console.log("init");
 		this.handlePageChange(evt);
 		this.init = true;
@@ -291,14 +289,98 @@ azkaban.ExecutionsView = Backbone.View.extend({
 var summaryView;
 azkaban.SummaryView = Backbone.View.extend({
 	events: {
+		"click": "closeEditingTarget",
+		"click table .editable": "handleEditField"
 	},
 	
 	initialize: function(settings) {
+		console.log("summaryView initialize");
+		var general = {
+			flowName: "",
+			flowDescription: "",
+			projectName: projectName,
+			flowId: flowId
+		};
+
+		var scheduling = {};
+		var resources = {};
+		var io = {};
+
+		this.model.bind('change:view', this.handleChangeView, this);
+		this.model.bind('render', this.render, this);
+		this.model.set({
+			'general': general,
+			'scheduling': scheduling,
+			'resources': resources,
+			'io': io
+		});
+		this.model.trigger('render');
+	},
+
+	handleChangeView: function(evt) {
+		console.log("summaryView handleChangeView");
+	},
+
+	handleEditField: function(evt) {
+		var curTarget = evt.currentTarget;
+		console.log("summaryView handleEditField");
+		if (this.editingTarget != curTarget) {
+			this.closeEditingTarget(evt);
+
+			var text = $(curTarget).children('.spanValue').text();
+			$(curTarget).empty();
+
+			var input = document.createElement('input');
+			$(input).attr('type', 'text');
+			$(input).css('width', '100%');
+			$(input).val(text);
+
+			$(curTarget).addClass('editing');
+			$(curTarget).append(input);
+			$(input).focus();
+			var obj = this;
+			$(input).keypress(function(evt) {
+				if (evt.which == 13) {
+					obj.closeEditingTarget(evt);
+				}
+			});
+			this.editingTarget = curTarget;
+		}
+		evt.preventDefault();
+		evt.stopPropagation();
+	},
+
+	closeEditingTarget: function(evt) {
+		console.log("summaryView closeEditingTarget");
+		if (this.editingTarget != null &&
+				this.editingTarget != evt.target &&
+				this.editingTarget != evt.target.myparent) {
+			var input = $(this.editingTarget).children("input")[0];
+			var text = $(input).val();
+			$(input).remove();
+
+			var valueData = document.createElement("span");
+			$(valueData).addClass("spanValue");
+			$(valueData).text(text);
+
+			$(this.editingTarget).removeClass("editing");
+			$(this.editingTarget).append(valueData);
+			valueData.myparent = this.editingTarget;
+			this.editingTarget = null;
+		}
 	},
 	
 	render: function(evt) {
-
-	}
+		console.log("summaryView render");
+		var data = {
+			general: this.model.get('general'),
+			scheduling: this.model.get('scheduling'),
+			resources: this.model.get('resources')
+		};
+		dust.render("flowsummary", data, function(err, out) {
+			$('#summaryView').html(out);
+		});
+	},
 });
 
 var exNodeClickCallback = function(event) {
@@ -352,6 +434,10 @@ azkaban.GraphModel = Backbone.Model.extend({});
 
 var executionModel;
 azkaban.ExecutionModel = Backbone.Model.extend({});
+
+var summaryModel;
+azkaban.SummaryModel = Backbone.Model.extend({});
+
 var mainSvgGraphView;
 
 $(function() {
@@ -362,8 +448,10 @@ $(function() {
 		el: $('#executionsView'), 
 		model: executionModel
 	});
+	summaryModel = new azkaban.SummaryModel();
 	summaryView = new azkaban.SummaryView({
 		el: $('#summaryView'),
+		model: summaryModel
 	});
 	flowTabView = new azkaban.FlowTabView({
 		el: $('#headertabs'), 

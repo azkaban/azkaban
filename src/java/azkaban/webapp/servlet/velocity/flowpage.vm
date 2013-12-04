@@ -27,6 +27,7 @@
 		<script type="text/javascript" src="${context}/js/jquery.simplemodal-1.4.4.js"></script>
 		
 		<script type="text/javascript" src="${context}/js/dust-core-2.2.2.min.js"></script>
+		<script type="text/javascript" src="${context}/js/flowsummary.js"></script>
 		<script type="text/javascript" src="${context}/js/azkaban.date.utils.js"></script>
 		<script type="text/javascript" src="${context}/js/azkaban.ajax.utils.js"></script>
 		<script type="text/javascript" src="${context}/js/azkaban.common.utils.js"></script>
@@ -48,6 +49,11 @@
 			var flowId = "${flowid}";
 			var execId = null;
 		</script>
+		<style>
+			.worksheet-key {
+				width: 25%;
+			}
+		</style>
 		<link rel="stylesheet" type="text/css" href="${context}/css/jquery-ui-1.10.1.custom.css" />
 	</head>
 	<body>
@@ -140,13 +146,14 @@
 								<li id="next"><a>Next<span class="arrow">&rarr;</span></a></li>
 							</ul>
 						</div>
-					</div>
-				</div><!-- /#executionsView -->
-
+					</div><!-- /#executionsView -->
+	
 	## Summary view.
 
-				<div id="summaryView">
-				</div><!-- /#summaryView -->
+					<div id="summaryView">
+					</div><!-- /#summaryView -->
+
+				</div>
 
 	## Invalid session modal.
 

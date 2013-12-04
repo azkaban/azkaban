@@ -265,6 +265,11 @@
 			<fileset dir="${web.src.dir}" />
 		</copy>
 		
+		<!-- Copy compiled dust templates -->
+		<copy todir="${dist.solo.package.dir}/web/js">
+			<fileset dir="${dist.dust.dir}" />
+		</copy>
+		
 		<!-- Copy sql files -->
 		<copy todir="${dist.solo.package.dir}/sql" >
 			<fileset dir="${sql.src.dir}" />
