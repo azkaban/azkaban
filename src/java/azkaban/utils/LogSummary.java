@@ -4,6 +4,7 @@ import azkaban.utils.FileIOUtils.LogData;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -30,9 +31,7 @@ public class LogSummary {
 	);
 	
 	private String jobType = null;
-	private String command = null;
-	private List<String> classpath = new ArrayList<String>();
-	private List<String> params = new ArrayList<String>();
+	private List<Pair<String,String>> commandProperties = new ArrayList<Pair<String,String>>();
 	
 	private String[] pigStatTableHeaders = null;
 	private List<String[]> pigStatTableData = new ArrayList<String[]>();
@@ -92,20 +91,49 @@ public class LogSummary {
 		}
 		
 		if (commandStartIndex != -1) {
-			command = lines[commandStartIndex].substring(9);
+			String command = lines[commandStartIndex].substring(9);
+			commandProperties.add(new Pair<String,String>("Command", command));
 			
 			// Parse classpath
 			Pattern p = Pattern.compile("(?:-cp|-classpath)\\s+(\\S+)");
 			Matcher m = p.matcher(command);
+			StringBuilder sb = new StringBuilder();
 			if (m.find()) {
-				classpath = Arrays.asList(m.group(1).split(":"));
+				sb.append(StringUtils.join((Collection<String>)Arrays.asList(m.group(1).split(":")), "<br/>"));
+				commandProperties.add(new Pair<String,String>("Classpath", sb.toString()));
+			}
+			
+			// Parse environment variables
+			p = Pattern.compile("-D(\\S+)");
+			m = p.matcher(command);
+			sb = new StringBuilder();
+			while (m.find()) {
+				sb.append(m.group(1) + "<br/>");
+			}
+			if (sb.length() > 0) {
+				commandProperties.add(new Pair<String,String>("-D", sb.toString()));
+			}
+			
+			// Parse memory settings
+			p = Pattern.compile("(-Xm\\S+)");
+			m = p.matcher(command);
+			sb = new StringBuilder();
+			while (m.find()) {
+				sb.append(m.group(1) + "<br/>");
+			}
+			if (sb.length() > 0) {
+				commandProperties.add(new Pair<String,String>("Memory Settings", sb.toString()));
 			}
 			
 			// Parse Pig params
 			p = Pattern.compile("-param\\s+(\\S+)");
 			m = p.matcher(command);
+			sb = new StringBuilder();
 			while (m.find()) {
-				params.add(m.group(1));
+				sb.append(m.group(1) + "<br/>");
+			}
+			if (sb.length() > 0) {
+				commandProperties.add(new Pair<String,String>("Params", sb.toString()));
 			}
 			
 			return true;
@@ -307,16 +335,8 @@ public class LogSummary {
 		return jobType;
 	}
 	
-	public String getCommand() {
-		return command;
-	}
-
-	public List<String> getClasspath() {
-		return classpath;
-	}
-
-	public List<String> getParams() {
-		return params;
+	public List<Pair<String,String>> getCommandProperties() {
+		return commandProperties;
 	}
 
 	public List<String> getHiveQueries() {

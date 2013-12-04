@@ -136,7 +136,7 @@ azkaban.JobSummaryView = Backbone.View.extend({
 					console.log(data.error);
 				}
 				else {
-					self.renderCommandTable(data.command, data.classpath, data.params);
+					self.renderCommandTable(data.commandProperties);
 					self.renderJobTable(data.summaryTableHeaders, data.summaryTableData, "summary");
 					self.renderJobTable(data.statTableHeaders, data.statTableData, "stats");
 					self.renderHiveTable(data.hiveQueries, data.hiveQueryJobs);
@@ -144,48 +144,19 @@ azkaban.JobSummaryView = Backbone.View.extend({
 			}
 		});
 	},
-	renderCommandTable: function(command, classpath, params) {
-		if (command) {
+	renderCommandTable: function(commandProperties) {
+		if (commandProperties) {
 			var commandTable = $("#commandTable");
-			var i;
 			
-			// Add row for command
-			var tr = document.createElement("tr");
-			var td = document.createElement("td");
-			$(td).append("<b>Command</b>");
-			$(tr).append(td);
-			td = document.createElement("td");
-			$(td).text(command);
-			$(tr).append(td);
-			commandTable.append(tr);
-			
-			// Add row for classpath
-			if (classpath && classpath.length > 0) {
-				tr = document.createElement("tr");
-				td = document.createElement("td");
-				$(td).append("<b>Classpath</b>");
-				$(tr).append(td);
-				td = document.createElement("td");
-				$(td).append(classpath[0]);
-				for (i = 1; i < classpath.length; i++) {
-					$(td).append("<br/>" + classpath[i]);
-				}
-				$(tr).append(td);
-				commandTable.append(tr);
-			}
-			
-			// Add row for params
-			if (params && params.length > 0) {
-				tr = document.createElement("tr");
-				td = document.createElement("td");
-				$(td).append("<b>Params</b>");
-				$(tr).append(td);
-				td = document.createElement("td");
-				$(td).append(params[0]);
-				for (i = 1; i < params.length; i++) {
-					$(td).append("<br/>" + params[i]);
-				}
-				$(tr).append(td);
+			for (var i = 0; i < commandProperties.length; i++) {
+				var prop = commandProperties[i];
+				var tr = document.createElement("tr");
+				var name = document.createElement("td");
+				var value = document.createElement("td");
+				$(name).html("<b>" + prop.first + "</b>");
+				$(value).html(prop.second);
+				$(tr).append(name);
+				$(tr).append(value);
 				commandTable.append(tr);
 			}
 		}
@@ -245,7 +216,7 @@ azkaban.JobSummaryView = Backbone.View.extend({
 				// new query
 				tr = document.createElement("tr");
 				var td = document.createElement("td");
-				$(td).html(queries[i]);
+				$(td).html("<b>" + queries[i] + "</b>");
 				$(tr).append(td);
 				
 				var jobs = queryJobs[i];
