@@ -64,7 +64,7 @@
 	## Page header.
 
 			<div class="page-header">
-				<h1><a href="${context}/executor?execid=${execid}&job=${jobid}">Job Execution<small>$jobid</small></a></h1>
+				<h1><a href="${context}/executor?execid=${execid}&job=${jobid}">Job Execution <small>$jobid</small></a></h1>
 			</div>
 	
 	## Breadcrumb
@@ -79,7 +79,7 @@
 	## Tabs
 					
 			<ul class="nav nav-tabs" id="headertabs">
-				<li><a id="logViewLink" >Log</a></li>
+				<li class="active"><a id="logViewLink" >Log</a></li>
 			</ul>
 			
 	## Log content.
@@ -91,6 +91,7 @@
 							<div class="pull-right">
 								<button type="button" id="updateLogBtn" class="btn btn-xs btn-default">Refresh</button>
 							</div>
+							Job Logs
 						</div>
 						<div class="panel-body">
 							<pre id="logSection" class="log"></pre>
