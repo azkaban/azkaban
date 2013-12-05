@@ -107,7 +107,7 @@
 							<tbody>
 #if (!$flowHistory.isEmpty())
 	#foreach ($flow in $flowHistory)
-								<tr class="row" >
+								<tr>
 									<td class="tb-name execId">
 										<a href="${context}/executor?execid=${flow.executionId}">${flow.executionId}</a>
 									</td>
@@ -121,13 +121,16 @@
 									<td>$utils.formatDate(${flow.startTime})</td>
 									<td>$utils.formatDate(${flow.endTime})</td>
 									<td>$utils.formatDuration(${flow.startTime}, ${flow.endTime})</td>
-									<td><div class="status ${flow.status}">$utils.formatStatus(${flow.status})</div></td>
+									<td>
+										<div class="status ${flow.status}">$utils.formatStatus(${flow.status})</div>
+									</td>
 									<td></td>
 								</tr>
 	#end
 #else
 								<tr>
-									<td class="last" colspan="9">No History Results Found</td></tr>
+									<td class="last" colspan="9">No History Results Found</td>
+								</tr>
 #end
 							</tbody>
 						</table>

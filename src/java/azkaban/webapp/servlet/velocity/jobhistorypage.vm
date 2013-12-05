@@ -104,6 +104,8 @@
 						<li><a href="${context}/manager?project=${project.name}&flow=${flowid}&job=${jobid}"><strong>Job</strong> $jobid</a></li>
 					</ol>
 			
+	#set ($job_page="history")
+	#parse ("azkaban/webapp/servlet/velocity/jobnav.vm")
 				
 					<div class="panel panel-default">
 						<div class="panel-heading">Job History</div>
@@ -175,11 +177,12 @@
 
 				</div><!-- /col-lg-8 -->
 				<div class="col-lg-4">
-
+	#parse ("azkaban/webapp/servlet/velocity/jobsidebar.vm")
 				</div><!-- /col-lg-4 -->
 			</div><!-- /row -->
 
 #end
+#parse ("azkaban/webapp/servlet/velocity/footer.vm")
 		</div>
 	</body>
 </html>
