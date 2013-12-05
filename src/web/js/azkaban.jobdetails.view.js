@@ -136,55 +136,27 @@ azkaban.JobSummaryView = Backbone.View.extend({
 					console.log(data.error);
 				}
 				else {
-					self.renderCommandTable(data.command, data.classpath, data.params);
+					self.renderCommandTable(data.commandProperties);
 					self.renderJobTable(data.summaryTableHeaders, data.summaryTableData, "summary");
 					self.renderJobTable(data.statTableHeaders, data.statTableData, "stats");
+					self.renderHiveTable(data.hiveQueries, data.hiveQueryJobs);
 				}
 			}
 		});
 	},
-	renderCommandTable: function(command, classpath, params) {
-		if (command) {
+	renderCommandTable: function(commandProperties) {
+		if (commandProperties) {
 			var commandTable = $("#commandTable");
-			var i;
 			
-			// Add row for command
-			var tr = document.createElement("tr");
-			var td = document.createElement("td");
-			$(td).append("<b>Command</b>");
-			$(tr).append(td);
-			td = document.createElement("td");
-			$(td).text(command);
-			$(tr).append(td);
-			commandTable.append(tr);
-			
-			// Add row for classpath
-			if (classpath && classpath.length > 0) {
-				tr = document.createElement("tr");
-				td = document.createElement("td");
-				$(td).append("<b>Classpath</b>");
-				$(tr).append(td);
-				td = document.createElement("td");
-				$(td).append(classpath[0]);
-				for (i = 1; i < classpath.length; i++) {
-					$(td).append("<br/>" + classpath[i]);
-				}
-				$(tr).append(td);
-				commandTable.append(tr);
-			}
-			
-			// Add row for params
-			if (params && params.length > 0) {
-				tr = document.createElement("tr");
-				td = document.createElement("td");
-				$(td).append("<b>Params</b>");
-				$(tr).append(td);
-				td = document.createElement("td");
-				$(td).append(params[0]);
-				for (i = 1; i < params.length; i++) {
-					$(td).append("<br/>" + params[i]);
-				}
-				$(tr).append(td);
+			for (var i = 0; i < commandProperties.length; i++) {
+				var prop = commandProperties[i];
+				var tr = document.createElement("tr");
+				var name = document.createElement("td");
+				var value = document.createElement("td");
+				$(name).html("<b>" + prop.first + "</b>");
+				$(value).html(prop.second);
+				$(tr).append(name);
+				$(tr).append(value);
 				commandTable.append(tr);
 			}
 		}
@@ -207,13 +179,83 @@ azkaban.JobSummaryView = Backbone.View.extend({
 			for (i = 0; i < data.length; i++) {
 				tr = document.createElement("tr");
 				var row = data[i];
-				for (var j = 0; j < headers.length; j++) {
+				for (var j = 0; j < row.length; j++) {
 					var td = document.createElement("td");
-					$(td).text(row[j]);
+					if (j == 0) {
+						// first column is a link to job details page 
+						$(td).html(row[j]);
+					} else {
+						$(td).text(row[j]);
+					}
 					$(tr).append(td);
 				}
 				body.append(tr);
 			}
+		} else {
+			$("#job" + prefix).hide();
+		}
+	},
+	renderHiveTable: function(queries, queryJobs) {
+		if (queries) {
+			// Set up table column headers
+			var header = $("#hiveTableHeader");
+			var tr = document.createElement("tr");
+			var headers = ["Query","Job","Map","Reduce","HDFS Read","HDFS Write"];
+			var i;
+			
+			for (i = 0; i < headers.length; i++) {
+				var th = document.createElement("th");
+				$(th).text(headers[i]);
+				$(tr).append(th);
+			}
+			header.append(tr);
+			
+			// Construct table body
+			var body = $("#hiveTableBody");
+			for (i = 0; i < queries.length; i++) {
+				// new query
+				tr = document.createElement("tr");
+				var td = document.createElement("td");
+				$(td).html("<b>" + queries[i] + "</b>");
+				$(tr).append(td);
+				
+				var jobs = queryJobs[i];
+				if (jobs != null) {
+					// add first job for this query
+					var jobValues = jobs[0];
+					var j;
+					for (j = 0; j < jobValues.length; j++) {
+						td = document.createElement("td");
+						$(td).html(jobValues[j]);
+						$(tr).append(td);
+					}
+					body.append(tr);
+					
+					// add remaining jobs for this query
+					for (j = 1; j < jobs.length; j++) {
+						jobValues = jobs[j];
+						tr = document.createElement("tr");
+						
+						// add empty cell for query column
+						td = document.createElement("td");
+						$(td).html("&nbsp;");
+						$(tr).append(td);
+						
+						// add job values
+						for (var k = 0; k < jobValues.length; k++) {
+							td = document.createElement("td");
+							$(td).html(jobValues[k]);
+							$(tr).append(td);
+						}
+						body.append(tr);
+					}
+					
+				} else {
+					body.append(tr);
+				}
+			}
+		} else {
+			$("#hiveTable").hide();
 		}
 	}
 });

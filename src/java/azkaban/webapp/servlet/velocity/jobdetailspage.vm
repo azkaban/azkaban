@@ -94,22 +94,34 @@
 				</table>
 				
 				<br/>
-				<h4>Job Summary</h4>
-				<table>
-					<thead id="summaryHeader">
-					</thead>
-					<tbody id="summaryBody">
-					</tbody>
-				</table>
+				<div id="jobsummary">Job Summary
+					<table>
+						<thead id="summaryHeader">
+						</thead>
+						<tbody id="summaryBody">
+						</tbody>
+					</table>
+				</div>
 				
 				<br/>
-				<h4>Job Stats</h4>
-				<table>
-					<thead id="statsHeader">
-					</thead>
-					<tbody id="statsBody">
-					</tbody>
-				</table>
+				<div id="jobstats">Job Stats
+					<table>
+						<thead id="statsHeader">
+						</thead>
+						<tbody id="statsBody">
+						</tbody>
+					</table>
+				</div>
+				
+				<br/>
+				<div id="hiveTable">Job Summary
+					<table>
+						<thead id="hiveTableHeader">
+						</thead>
+						<tbody id="hiveTableBody">
+						</tbody>
+					</table>
+				</div>
 			</div>
 
 #end

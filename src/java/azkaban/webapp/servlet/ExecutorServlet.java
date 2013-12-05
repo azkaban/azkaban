@@ -476,13 +476,19 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 			LogData data = executorManager.getExecutionJobLog(exFlow, jobId, 0, Integer.MAX_VALUE, attempt);
 			
 			LogSummary summary = new LogSummary(data);
-			ret.put("command", summary.getCommand());
-			ret.put("classpath", summary.getClasspath());
-			ret.put("params", summary.getParams());
-			ret.put("summaryTableHeaders", summary.getSummaryTableHeaders());
-			ret.put("summaryTableData", summary.getSummaryTableData());
-			ret.put("statTableHeaders", summary.getStatTableHeaders());
-			ret.put("statTableData", summary.getStatTableData());
+			ret.put("commandProperties", summary.getCommandProperties());
+			
+			String jobType = summary.getJobType();
+			
+			if (jobType.contains("pig")) {
+				ret.put("summaryTableHeaders", summary.getPigSummaryTableHeaders());
+				ret.put("summaryTableData", summary.getPigSummaryTableData());
+				ret.put("statTableHeaders", summary.getPigStatTableHeaders());
+				ret.put("statTableData", summary.getPigStatTableData());
+			} else if (jobType.contains("hive")) {
+				ret.put("hiveQueries", summary.getHiveQueries());
+				ret.put("hiveQueryJobs", summary.getHiveQueryJobs());
+			}
 		} catch (ExecutorManagerException e) {
 			throw new ServletException(e);
 		}
