@@ -62,16 +62,16 @@ azkaban.FlowTabView = Backbone.View.extend({
 	},
 	
 	handleGraphLinkClick: function(){
-		$("#executionsViewLink").removeClass("selected");
-		$("#graphViewLink").addClass("selected");
+		$("#executionsViewLink").removeClass("active");
+		$("#graphViewLink").addClass("active");
 		
 		$("#executionsView").hide();
 		$("#graphView").show();
 	},
 	
 	handleExecutionLinkClick: function() {
-		$("#graphViewLink").removeClass("selected");
-		$("#executionsViewLink").addClass("selected");
+		$("#graphViewLink").removeClass("active");
+		$("#executionsViewLink").addClass("active");
 		
 		$("#graphView").hide();
 		$("#executionsView").show();
@@ -360,7 +360,7 @@ $(function() {
 	var requestURL = contextURL + "/manager";
 
 	// Set up the Flow options view. Create a new one every time :p
-	$('#executebtn').click( function() {
+	$('#executebtn').click(function() {
 		var data = graphModel.get("data");
 		var nodes = data.nodes;
 		var executingData = {

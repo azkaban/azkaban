@@ -89,7 +89,7 @@
 			</div>
 			<hr>
 
-	## Breadcrumbs
+	## Breadcrumbs and tabs
 
 			<div class="row">
 				<div class="col-lg-12">
@@ -99,11 +99,13 @@
 					</ol>
 
 					<ul class="nav nav-tabs" id="headertabs">
-						<li class="active"><a href="#" id="graphViewLink">Graph</a></li>
-						<li><a href="#" id="executionsViewLink">Executions</a></li>
+						<li id="graphViewLink"><a href="#">Graph</a></li>
+						<li id="executionsViewLink"><a href="#">Executions</a></li>
 					</ul>
 				</div>
 			</div>
+
+	## Graph view.
 
 			<div class="row" id="graphView">
 				<div class="col-lg-4">
@@ -127,6 +129,8 @@
 					</div>
 				</div>
 			</div>
+
+	## Executions view.
 
 			<div class="row" id="executionsView">
 				<div class="col-lg-12">
