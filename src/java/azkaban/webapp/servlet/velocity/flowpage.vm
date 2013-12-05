@@ -16,16 +16,12 @@
 
 <!DOCTYPE html> 
 <html>
-	<head>
-#parse( "azkaban/webapp/servlet/velocity/style.vm" )
-		<script type="text/javascript" src="${context}/js/jquery/jquery-1.9.1.js"></script>    
+	<head lang="en">
+
+#parse("azkaban/webapp/servlet/velocity/style2.vm")
+#parse("azkaban/webapp/servlet/velocity/javascript.vm")
+
 		<script type="text/javascript" src="${context}/js/jqueryui/jquery-ui-1.10.1.custom.js"></script>
-		
-		<script type="text/javascript" src="${context}/js/underscore-1.4.4-min.js"></script>
-		<script type="text/javascript" src="${context}/js/namespace.js"></script>
-		<script type="text/javascript" src="${context}/js/backbone-0.9.10-min.js"></script>
-		<script type="text/javascript" src="${context}/js/jquery.simplemodal-1.4.4.js"></script>
-		
 		<script type="text/javascript" src="${context}/js/azkaban.date.utils.js"></script>
 		<script type="text/javascript" src="${context}/js/azkaban.ajax.utils.js"></script>
 		<script type="text/javascript" src="${context}/js/azkaban.common.utils.js"></script>
@@ -47,107 +43,147 @@
 			var flowId = "${flowid}";
 			var execId = null;
 		</script>
+		<link rel="stylesheet" type="text/css" href="${context}/css/azkaban-svg.css" />
 		<link rel="stylesheet" type="text/css" href="${context}/css/jquery-ui-1.10.1.custom.css" />
 	</head>
 	<body>
-#set($current_page="all")
-#parse( "azkaban/webapp/servlet/velocity/nav.vm" )
-		<div class="messaging"><p id="messageClose">X</p><p id="message"></p></div>  
-		<div class="content">
-#if($errorMsg)
-				<div class="box-error-message">$errorMsg</div>
+
+#set ($current_page="all")
+#parse ("azkaban/webapp/servlet/velocity/nav2.vm")
+
+		<div class="container">
+
+## Page error or success message.
+
+#if ($errorMsg)
+			<div class="panel panel-danger">
+				<div class="panel-heading">Error</div>
+				<div class="panel-body">
+					$errorMsg
+				</div>
+			</div>
 #else
-#if($error_message != "null")
-				<div class="box-error-message">$error_message</div>
-#elseif($success_message != "null")
-				<div class="box-success-message">$success_message</div>
-#end
+	#if ($error_message != "null")
+			<div class="alert alert-danger">$error_message</div>
+	#elseif ($success_message != "null")
+			<div class="alert alert-success">$success_message</div>
+	#end
 
-				<div id="all-jobs-content">
-					<div class="section-hd flow-header">
-						<h2><a href="${context}/manager?project=${project.name}&flow=${flowid}">Flow <span>$flowid</span></a></h2>
-						<div class="section-sub-hd">
-							<h4><a href="${context}/manager?project=${project.name}">Project <span>$project.name</span></a></h4>
-							<h4 class="separator">&gt;</h4>
-							<h4><a href="${context}/manager?project=${project.name}&flow=${flowid}">Flow <span>$flowid</span></a></h4>
-						</div>
-						
-						<div id="executebtn" class="btn1">Schedule / Execute Flow</div>
-					</div>
-					
-					<div id="headertabs" class="headertabs">
-						<ul>
-							<li><a id="graphViewLink" href="#graph">Graph</a></li>
-							<li class="lidivider">|</li>
-							<li><a id="executionsViewLink" href="#executions">Executions</a></li>
-						</ul>
-					</div>
-					<div id="graphView">
-						<div class="relative">
-							<div id="jobList" class="jobList">
-								<div id="filterList" class="filterList">
-									<input id="filter" class="filter" placeholder="  Job Filter" />
-								</div>
-								<div id="list" class="list">
-								</div>
-								<div id="resetPanZoomBtn" class="btn5 resetPanZoomBtn" >Reset Pan Zoom</div>
+	## Alert message
+
+			<div class="alert alert-dismissable alert-messaging" id="messaging">
+				<button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
+				<p id="messaging-message"></p>
+			</div>
+	
+	## Page header.
+
+			<div class="row">
+				<div class="col-lg-8">
+					<h1><a href="${context}/manager?project=${project.name}">Project <small>$project.name</small></a></h1>
+					<p>$project.description</p>
+				</div>
+				<div class="col-lg-4">
+					<button type="button" class="btn btn-success" id="executebtn">Schedule / Execute Flow</button>
+				</div>
+			</div>
+			<hr>
+
+	## Breadcrumbs
+
+			<div class="row">
+				<div class="col-lg-12">
+					<ol class="breadcrumb">
+						<li><a href="${context}/manager?project=${project.name}"><strong>Project</strong> $project.name</a></li>
+						<li><a href="${context}/manager?project=${project.name}&flow=${flowid}"><strong>Flow</strong> $flowid</a></li>
+					</ol>
+
+					<ul class="nav nav-tabs" id="headertabs">
+						<li class="active"><a href="#" id="graphViewLink">Graph</a></li>
+						<li><a href="#" id="executionsViewLink">Executions</a></li>
+					</ul>
+				</div>
+			</div>
+
+			<div class="row" id="graphView">
+				<div class="col-lg-4">
+					<div class="panel panel-default" id="jobList">
+						<div class="panel-heading">
+							<div class="pull-right">
+								<button type="button" class="btn btn-xs btn-default" id="resetPanZoomBtn">Reset Pan Zoom</button>
 							</div>
-							<div id="svgDiv" class="svgDiv">
-								<svg id="svgGraph" class="svgGraph" xmlns="http://www.w3.org/2000/svg" version="1.1" shape-rendering="optimize-speed" text-rendering="optimize-speed" >
-								</svg>
-							</div>
+							Jobs
 						</div>
-					</div>
-					<div id="executionsView">
-						<div id="executionDiv" class="all-jobs executionInfo">
-							<table id="execTable">
-								<thead>
-									<tr>
-										<th>Execution Id</th>
-										<th>User</th>
-										<th class="date">Start Time</th>
-										<th class="date">End Time</th>
-										<th class="elapse">Elapsed</th>
-										<th class="status">Status</th>
-										<th class="action">Action</th>
-									</tr>
-								</thead>
-								<tbody id="execTableBody">
-								</tbody>
-							</table>
-						</div>
-					
-						<div id="pageSelection">
-							<ul>
-								<li id="previous" class="first"><a><span class="arrow">&larr;</span>Previous</a></li>
-								<li id="page1"><a href="#page1">1</a></li>
-								<li id="page2"><a href="#page2">2</a></li>
-								<li id="page3"><a href="#page3">3</a></li>
-								<li id="page4"><a href="#page4">4</a></li>
-								<li id="page5"><a href="#page5">5</a></li>
-								<li id="next"><a>Next<span class="arrow">&rarr;</span></a></li>
-							</ul>
+						<div class="panel-body">
+							<input id="filter" type="text" placeholder="Job Filter">
+							<div id="list"></div>
 						</div>
 					</div>
 				</div>
-		<!-- modal content -->
-
-				<div id="invalid-session" class="modal">
-					<h3>Invalid Session</h3>
-						<p>Session has expired. Please re-login.</p>
-						<div class="actions">
-							<a class="yes btn3" id="login-btn" href="#">Re-login</a>
-						</div>
+				<div class="col-lg-8">
+					<div id="svgDiv" class="well">
+						<svg id="svgGraph" class="svgGraph" xmlns="http://www.w3.org/2000/svg" version="1.1" shape-rendering="optimize-speed" text-rendering="optimize-speed" >
+						</svg>
+					</div>
 				</div>
+			</div>
 
-#parse( "azkaban/webapp/servlet/velocity/flowexecutionpanel.vm" )
+			<div class="row" id="executionsView">
+				<div class="col-lg-12">
+					<table class="table table-striped table-bordered" id="execTable">
+						<thead>
+							<tr>
+								<th>Execution Id</th>
+								<th>User</th>
+								<th class="date">Start Time</th>
+								<th class="date">End Time</th>
+								<th class="elapse">Elapsed</th>
+								<th class="status">Status</th>
+								<th class="action">Action</th>
+							</tr>
+						</thead>
+						<tbody id="execTableBody">
+						</tbody>
+					</table>
+					<ul id="pageSelection" class="pagination">
+						<li id="previous" class="first"><a><span class="arrow">&larr;</span>Previous</a></li>
+						<li id="page1"><a href="#page1">1</a></li>
+						<li id="page2"><a href="#page2">2</a></li>
+						<li id="page3"><a href="#page3">3</a></li>
+						<li id="page4"><a href="#page4">4</a></li>
+						<li id="page5"><a href="#page5">5</a></li>
+						<li id="next"><a>Next<span class="arrow">&rarr;</span></a></li>
+					</ul>
+				</div>
+			</div>
+		
+			<div id="contextMenu">
+			</div>
 
+	## Modal dialog to be displayed when the user sesion is invalid.
+			
+			<div class="modal fade" id="invalid-session-modal">
+				<div class="modal-dialog">
+					<div class="modal-content">
+						<div class="modal-header">
+							<button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+							<h4 class="modal-title">Invalid Session</h4>
+						</div>
+						<div class="modal-body">
+							<p>Session has expired. Please re-login.</p>
+						</div>
+						<div class="modal-footer">
+							<button type="button" class="btn btn-primary" id="login-btn">Re-login</button>
+						</div>
+					</div>
+				</div>
+			</div>
+
+	#parse ("azkaban/webapp/servlet/velocity/flowexecutionpanel.vm")
+	#parse ("azkaban/webapp/servlet/velocity/messagedialog.vm")
 #end
 
-		</div>
-		<div id="contextMenu">
-		</div>
-		#parse( "azkaban/webapp/servlet/velocity/messagedialog.vm" )
+#parse("azkaban/webapp/servlet/velocity/footer.vm")
+		</div><!-- /.container -->
 	</body>
-</html>
-
+</body>

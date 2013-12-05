@@ -41,12 +41,13 @@ var handleJobMenuClick = function(action, el, pos) {
 }
 
 var flowTabView;
-azkaban.FlowTabView= Backbone.View.extend({
-	events : {
-		"click #graphViewLink" : "handleGraphLinkClick",
-		"click #executionsViewLink" : "handleExecutionLinkClick"
+azkaban.FlowTabView = Backbone.View.extend({
+	events: {
+		"click #graphViewLink": "handleGraphLinkClick",
+		"click #executionsViewLink": "handleExecutionLinkClick"
 	},
-	initialize : function(settings) {
+
+	initialize: function(settings) {
 		var selectedView = settings.selectedView;
 		if (selectedView == "executions") {
 			this.handleExecutionLinkClick();
@@ -54,11 +55,12 @@ azkaban.FlowTabView= Backbone.View.extend({
 		else {
 			this.handleGraphLinkClick();
 		}
-
 	},
+	
 	render: function() {
 		console.log("render graph");
 	},
+	
 	handleGraphLinkClick: function(){
 		$("#executionsViewLink").removeClass("selected");
 		$("#graphViewLink").addClass("selected");
@@ -66,13 +68,14 @@ azkaban.FlowTabView= Backbone.View.extend({
 		$("#executionsView").hide();
 		$("#graphView").show();
 	},
+	
 	handleExecutionLinkClick: function() {
 		$("#graphViewLink").removeClass("selected");
 		$("#executionsViewLink").addClass("selected");
 		
-		 $("#graphView").hide();
-		 $("#executionsView").show();
-		 executionModel.trigger("change:view");
+		$("#graphView").hide();
+		$("#executionsView").show();
+		executionModel.trigger("change:view");
 	}
 });
 
@@ -84,12 +87,14 @@ azkaban.ExecutionsView = Backbone.View.extend({
 	events: {
 		"click #pageSelection li": "handleChangePageSelection"
 	},
+	
 	initialize: function(settings) {
 		this.model.bind('change:view', this.handleChangeView, this);
 		this.model.bind('render', this.render, this);
 		this.model.set({page: 1, pageSize: 16});
 		this.model.bind('change:page', this.handlePageChange, this);
 	},
+	
 	render: function(evt) {
 		console.log("render");
 		// Render page selections
@@ -155,6 +160,7 @@ azkaban.ExecutionsView = Backbone.View.extend({
 		
 		this.renderPagination(evt);
 	},
+	
 	renderPagination: function(evt) {
 		var total = this.model.get("total");
 		total = total? total : 1;
@@ -228,14 +234,15 @@ azkaban.ExecutionsView = Backbone.View.extend({
 			a.attr("href", "#page" + tpage);
 		}
 	},
+	
 	handleChangePageSelection: function(evt) {
 		if ($(evt.currentTarget).hasClass("disabled")) {
 			return;
 		}
 		var page = evt.currentTarget.page;
-		
 		this.model.set({"page": page});
 	},
+	
 	handleChangeView: function(evt) {
 		if (this.init) {
 			return;
@@ -245,21 +252,28 @@ azkaban.ExecutionsView = Backbone.View.extend({
 		this.handlePageChange(evt);
 		this.init = true;
 	},
+	
 	handlePageChange: function(evt) {
 		var page = this.model.get("page") - 1;
 		var pageSize = this.model.get("pageSize");
 		var requestURL = contextURL + "/manager";
 		
 		var model = this.model;
-		$.get(
-			requestURL,
-			{"project": projectName, "flow":flowId, "ajax": "fetchFlowExecutions", "start":page * pageSize, "length": pageSize},
-			function(data) {
-				model.set({"executions": data.executions, "total": data.total});
-				model.trigger("render");
-			},
-			"json"
-		);
+		var requestData = {
+			"project": projectName, 
+			"flow": flowId, 
+			"ajax": "fetchFlowExecutions", 
+			"start": page * pageSize, 
+			"length": pageSize
+		};
+		var successHandler = function(data) {
+			model.set({
+				"executions": data.executions, 
+				"total": data.total
+			});
+			model.trigger("render");
+		};
+		$.get(requestURL, requestData, successHandler, "json");
 	}
 });
 
@@ -269,8 +283,8 @@ var exNodeClickCallback = function(event) {
 	var requestURL = contextURL + "/manager?project=" + projectName + "&flow=" + flowId + "&job=" + jobId;
 
 	var menu = [	
-			{title: "Open Job...", callback: function() {window.location.href=requestURL;}},
-			{title: "Open Job in New Window...", callback: function() {window.open(requestURL);}}
+		{title: "Open Job...", callback: function() {window.location.href=requestURL;}},
+		{title: "Open Job in New Window...", callback: function() {window.open(requestURL);}}
 	];
 
 	contextMenuView.show(event, menu);
@@ -282,8 +296,8 @@ var exJobClickCallback = function(event) {
 	var requestURL = contextURL + "/manager?project=" + projectName + "&flow=" + flowId + "&job=" + jobId;
 
 	var menu = [	
-			{title: "Open Job...", callback: function() {window.location.href=requestURL;}},
-			{title: "Open Job in New Window...", callback: function() {window.open(requestURL);}}
+		{title: "Open Job...", callback: function() {window.location.href=requestURL;}},
+		{title: "Open Job in New Window...", callback: function() {window.open(requestURL);}}
 	];
 
 	contextMenuView.show(event, menu);
@@ -318,14 +332,20 @@ $(function() {
 	var selected;
 	// Execution model has to be created before the window switches the tabs.
 	executionModel = new azkaban.ExecutionModel();
-	executionsView = new azkaban.ExecutionsView({el:$('#executionsView'), model: executionModel});
-	flowTabView = new azkaban.FlowTabView({el:$( '#headertabs'), selectedView: selected });
+	executionsView = new azkaban.ExecutionsView({
+		el: $('#executionsView'), 
+		model: executionModel
+	});
+	flowTabView = new azkaban.FlowTabView({
+		el: $('#headertabs'), 
+		selectedView: selected
+	});
 
 	graphModel = new azkaban.GraphModel();
 	mainSvgGraphView = new azkaban.SvgGraphView({
 		el: $('#svgDiv'), 
 		model: graphModel, 
-		rightClick:  { 
+		rightClick: { 
 			"node": exNodeClickCallback, 
 			"edge": exEdgeClickCallback, 
 			"graph": exGraphClickCallback 
@@ -352,61 +372,63 @@ $(function() {
 		flowExecuteDialogView.show(executingData);
 	});
 
-	$.get(
-		requestURL,
-		{"project": projectName, "ajax":"fetchflowgraph", "flow":flowId},
-		function(data) {
-			// Create the nodes
-			var nodes = {};
-			for (var i=0; i < data.nodes.length; ++i) {
-				var node = data.nodes[i];
-				nodes[node.id] = node;
-			}
-			for (var i=0; i < data.edges.length; ++i) {
-				var edge = data.edges[i];
-				var fromNode = nodes[edge.from];
-				var toNode = nodes[edge.target];
-				
-				if (!fromNode.outNodes) {
-					fromNode.outNodes = {};
-				}
-				fromNode.outNodes[toNode.id] = toNode;
-				
-				if (!toNode.inNodes) {
-					toNode.inNodes = {};
-				}
-				toNode.inNodes[fromNode.id] = fromNode;
-			}
-		
-			console.log("data fetched");
-			graphModel.set({data: data});
-			graphModel.set({nodes: nodes});
-			graphModel.set({disabled: {}});
-			graphModel.trigger("change:graph");
+	var requestData = {
+		"project": projectName, 
+		"ajax":"fetchflowgraph", 
+		"flow": flowId
+	};
+	var successHandler = function(data) {
+		// Create the nodes
+		var nodes = {};
+		for (var i = 0; i < data.nodes.length; ++i) {
+			var node = data.nodes[i];
+			nodes[node.id] = node;
+		}
+		for (var i = 0; i < data.edges.length; ++i) {
+			var edge = data.edges[i];
+			var fromNode = nodes[edge.from];
+			var toNode = nodes[edge.target];
 			
-			// Handle the hash changes here so the graph finishes rendering first.
-			if (window.location.hash) {
-				var hash = window.location.hash;
-				if (hash == "#executions") {
+			if (!fromNode.outNodes) {
+				fromNode.outNodes = {};
+			}
+			fromNode.outNodes[toNode.id] = toNode;
+			
+			if (!toNode.inNodes) {
+				toNode.inNodes = {};
+			}
+			toNode.inNodes[fromNode.id] = fromNode;
+		}
+	
+		console.log("data fetched");
+		graphModel.set({data: data});
+		graphModel.set({nodes: nodes});
+		graphModel.set({disabled: {}});
+		graphModel.trigger("change:graph");
+		
+		// Handle the hash changes here so the graph finishes rendering first.
+		if (window.location.hash) {
+			var hash = window.location.hash;
+			if (hash == "#executions") {
+				flowTabView.handleExecutionLinkClick();
+			}
+			else if (hash == "#graph") {
+				// Redundant, but we may want to change the default. 
+				selected = "graph";
+			}
+			else {
+				if ("#page" == hash.substring(0, "#page".length)) {
+					var page = hash.substring("#page".length, hash.length);
+					console.log("page " + page);
 					flowTabView.handleExecutionLinkClick();
-				}
-				else if (hash == "#graph") {
-					// Redundant, but we may want to change the default. 
-					selected = "graph";
+					executionModel.set({"page": parseInt(page)});
 				}
 				else {
-					if ("#page" == hash.substring(0, "#page".length)) {
-						var page = hash.substring("#page".length, hash.length);
-						console.log("page " + page);
-						flowTabView.handleExecutionLinkClick();
-						executionModel.set({"page": parseInt(page)});
-					}
-					else {
-						selected = "graph";
-					}
+					selected = "graph";
 				}
 			}
-		},
-		"json"
-	);
+		}
+	};
+
+	$.get(requestURL, requestData, successHandler, "json");
 });
