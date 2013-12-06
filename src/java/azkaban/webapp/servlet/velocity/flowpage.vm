@@ -22,6 +22,9 @@
 #parse("azkaban/webapp/servlet/velocity/javascript.vm")
 
 		<script type="text/javascript" src="${context}/js/jqueryui/jquery-ui-1.10.1.custom.js"></script>
+		
+		<script type="text/javascript" src="${context}/js/dust-core-2.2.2.min.js"></script>
+		<script type="text/javascript" src="${context}/js/flowsummary.js"></script>
 		<script type="text/javascript" src="${context}/js/azkaban.date.utils.js"></script>
 		<script type="text/javascript" src="${context}/js/azkaban.ajax.utils.js"></script>
 		<script type="text/javascript" src="${context}/js/azkaban.common.utils.js"></script>
@@ -97,8 +100,9 @@
 			<div class="row">
 				<div class="col-lg-8">
 					<ul class="nav nav-pills" id="headertabs">
-						<li id="graphViewLink"><a href="#">Graph</a></li>
-						<li id="executionsViewLink"><a href="#">Executions</a></li>
+						<li id="graphViewLink"><a href="#graph">Graph</a></li>
+						<li id="executionsViewLink"><a href="#executions">Executions</a></li>
+						<li id="summaryViewLink"><a href="#summary">Summary</a></li>
 					</ul>
 				</div>
 				<div class="col-lg-4">
@@ -108,7 +112,7 @@
 					<div class="clearfix"></div>
 				</div>
 			</div>
-
+					
 	## Graph view.
 
 	#parse ("azkaban/webapp/servlet/velocity/flowgraphview.vm")
@@ -144,6 +148,13 @@
 				</div>
 			</div>
 		
+	## Summary view.
+
+			<div class="row">
+				<div class="col-lg-12" id="summaryView">
+				</div>
+			</div><!-- /#summaryView -->
+
 			<div id="contextMenu">
 			</div>
 

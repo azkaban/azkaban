@@ -13,3 +13,7 @@
 .flow-expander {
 	cursor: pointer;
 }
+
+table .worksheet-key {
+	width: 25%;
+}
