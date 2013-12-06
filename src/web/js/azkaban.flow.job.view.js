@@ -28,8 +28,8 @@ azkaban.JobListView = Backbone.View.extend({
 		this.model.bind('change:graph', this.render, this);
 		this.model.bind('change:update', this.handleStatusUpdate, this);
 		
-		this.filterInput = $(this.el).find(".filter");
-		this.list = $(this.el).find(".list");
+		this.filterInput = $(this.el).find("#filter");
+		this.list = $(this.el).find("#list");
 		this.contextMenu = settings.contextMenuCallback;
 		this.listNodes = {};
 	},
@@ -68,9 +68,10 @@ azkaban.JobListView = Backbone.View.extend({
 			var index = jobid.indexOf(filter);
 			if (index != -1) {
 				var a = $(this).find("a");
-				
 				var endIndex = index + filter.length;
-				var newHTML = jobid.substring(0, index) + "<span>" + jobid.substring(index, endIndex) + "</span>" + jobid.substring(endIndex, jobid.length);
+				var newHTML = jobid.substring(0, index) + "<span>" + 
+						jobid.substring(index, endIndex) + "</span>" + 
+						jobid.substring(endIndex, jobid.length);
 				
 				$(a).html(newHTML);
 				$(this).show();
@@ -114,7 +115,7 @@ azkaban.JobListView = Backbone.View.extend({
 		};
 	
 		var nodeArray = nodes.slice(0);
-		nodeArray.sort(function(a,b) {
+		nodeArray.sort(function(a, b) {
 			var diff = a.y - b.y;
 			if (diff == 0) {
 				return a.x - b.x;
@@ -124,13 +125,13 @@ azkaban.JobListView = Backbone.View.extend({
 			}
 		});
 		
-		var ul = document.createElement("ul");
-		$(ul).attr("class", "jobs");
+		var ul = this.list;
 		this.jobs = $(ul);
 		
 		for (var i = 0; i < nodeArray.length; ++i) {
 			var li = document.createElement("li");
-			li.jobid=nodeArray[i].id;
+			li.jobid = nodeArray[i].id;
+			$(li).addClass('list-group-item');
 			
 			var iconDiv = document.createElement("div");
 			$(iconDiv).addClass("icon");
@@ -139,13 +140,12 @@ azkaban.JobListView = Backbone.View.extend({
 			var a = document.createElement("a");
 			$(a).text(nodeArray[i].id);
 			li.appendChild(a);
-			ul.appendChild(li);
-			li.jobid=nodeArray[i].id;
+			$(ul).append(li);
+			li.jobid = nodeArray[i].id;
 			
 			this.listNodes[nodeArray[i].id] = li;
 		}
 		
-		this.list.append(ul);
 		this.assignInitialStatus(self);
 		this.handleDisabledChange(self);
 	},
@@ -159,7 +159,7 @@ azkaban.JobListView = Backbone.View.extend({
 	
 	handleJobClick: function(evt) {
 		var jobid = evt.currentTarget.jobid;
-		if(!evt.currentTarget.jobid) {
+		if (!evt.currentTarget.jobid) {
 			return;
 		}
 		

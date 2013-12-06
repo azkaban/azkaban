@@ -84,7 +84,7 @@
 	## Breadcrumb
 
 					<ol class="breadcrumb">
-						<li><a href="${context}/manager?project=${project.name}"><strong>Project</strong> $project.name</a></li>
+						<li class="active"><a href="${context}/manager?project=${project.name}"><strong>Project</strong> $project.name</a></li>
 					</ol>
 
 	#set ($project_page = "flows")
@@ -115,8 +115,8 @@
 								<div class="panel-footer">
 			#if (${exec})
 									<button type="button" class="btn btn-sm btn-primary execute-flow" flowId="${flow.id}">Execute Flow</button>
-									<button type="button" class="btn btn-sm btn-primary">Executions</button>
-									<button type="button" class="btn btn-sm btn-primary">Summary</button>
+									<a href="${context}/manager?project=${project.name}&flow=${flow.id}#executions" class="btn btn-primary btn-sm">Executions</a>
+									<a href="${context}/manager?project=${project.name}&flow=${flow.id}#summary" class="btn btn-primary btn-sm">Summary</a>
 			#end
 								</div>
 							</div>

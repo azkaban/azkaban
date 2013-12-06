@@ -95,7 +95,7 @@
 								</fieldset>
 							</form>
 						</div>
-						<table class="table table-striped table-bordered" id="all-jobs">
+						<table class="table table-striped table-bordered table-hover" id="all-jobs">
 							<thead>
 								<tr>
 									<th class="tb-name">Name</th>

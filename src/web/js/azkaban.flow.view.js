@@ -374,7 +374,7 @@ $(function() {
 
 	var requestData = {
 		"project": projectName, 
-		"ajax":"fetchflowgraph", 
+		"ajax": "fetchflowgraph", 
 		"flow": flowId
 	};
 	var successHandler = function(data) {

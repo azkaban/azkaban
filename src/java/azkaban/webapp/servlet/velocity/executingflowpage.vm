@@ -112,45 +112,27 @@
 
 			<div class="row">
 				<div class="col-lg-8">
-					<ul class="nav nav-tabs" id="headertabs">
+					<ul class="nav nav-pills" id="headertabs">
 						<li id="graphViewLink"><a href="#graph">Graph</a></li>
 						<li id="jobslistViewLink"><a href="#jobslist">Job List</a></li>
 						<li id="flowLogViewLink"><a href="#log">Flow Log</a></li>
 					</ul>
 				</div>
 				<div class="col-lg-4">
-					<button id="pausebtn" class="btn btn-primary">Pause</button>
-					<button id="resumebtn" class="btn btn-primary">Resume</button>
-					<button id="cancelbtn" class="btn btn-danger">Cancel</button>
-					<button id="retrybtn" class="btn btn-success">Retry Failed</button>
-					<button id="executebtn" class="btn btn-success">Prepare Execution</button>
+					<div class="pull-right">
+						<button id="pausebtn" class="btn btn-primary">Pause</button>
+						<button id="resumebtn" class="btn btn-primary">Resume</button>
+						<button id="cancelbtn" class="btn btn-danger">Cancel</button>
+						<button id="retrybtn" class="btn btn-success">Retry Failed</button>
+						<button id="executebtn" class="btn btn-success">Prepare Execution</button>
+					</div>
+					<div class="clearfix"></div>
 				</div>
 			</div>
 
 	## Graph View
 
-			<div class="row" id="graphView">
-				<div class="col-lg-4">
-					<div class="panel panel-default" id="jobList">
-						<div class="panel-heading">
-							<div class="pull-right">
-								<button type="button" class="btn btn-xs btn-default" id="resetPanZoomBtn">Reset Pan Zoom</button>
-							</div>
-							Jobs
-						</div>
-						<div class="panel-body" id="filterList">
-							<input id="filter" type="text" placeholder="Job Filter">
-							<div id="list"></div>
-						</div>
-					</div>
-				</div>
-				<div class="col-lg-8">
-					<div id="svgDiv" class="well">
-						<svg id="svgGraph" class="svgGraph" xmlns="http://www.w3.org/2000/svg" version="1.1" shape-rendering="optimize-speed" text-rendering="optimize-speed" >
-						</svg>
-					</div>
-				</div>
-			</div>
+	#parse ("azkaban/webapp/servlet/velocity/flowgraphview.vm")
 	
 	## Job List View
 

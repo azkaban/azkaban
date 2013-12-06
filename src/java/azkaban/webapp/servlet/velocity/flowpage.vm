@@ -78,16 +78,10 @@
 	
 	## Page header.
 
-			<div class="row">
-				<div class="col-lg-8">
-					<h1><a href="${context}/manager?project=${project.name}">Project <small>$project.name</small></a></h1>
-					<p>$project.description</p>
-				</div>
-				<div class="col-lg-4">
-					<button type="button" class="btn btn-success" id="executebtn">Schedule / Execute Flow</button>
-				</div>
+			<div class="page-header">
+				<h1><a href="${context}/manager?project=${project.name}">Project <small>$project.name</small></a></h1>
+				<p>$project.description</p>
 			</div>
-			<hr>
 
 	## Breadcrumbs and tabs
 
@@ -97,38 +91,27 @@
 						<li><a href="${context}/manager?project=${project.name}"><strong>Project</strong> $project.name</a></li>
 						<li><a href="${context}/manager?project=${project.name}&flow=${flowid}"><strong>Flow</strong> $flowid</a></li>
 					</ol>
+				</div>
+			</div>
 
-					<ul class="nav nav-tabs" id="headertabs">
+			<div class="row">
+				<div class="col-lg-8">
+					<ul class="nav nav-pills" id="headertabs">
 						<li id="graphViewLink"><a href="#">Graph</a></li>
 						<li id="executionsViewLink"><a href="#">Executions</a></li>
 					</ul>
+				</div>
+				<div class="col-lg-4">
+					<div class="pull-right">
+						<button type="button" class="btn btn-success" id="executebtn">Schedule / Execute Flow</button>
+					</div>
+					<div class="clearfix"></div>
 				</div>
 			</div>
 
 	## Graph view.
 
-			<div class="row" id="graphView">
-				<div class="col-lg-4">
-					<div class="panel panel-default" id="jobList">
-						<div class="panel-heading">
-							<div class="pull-right">
-								<button type="button" class="btn btn-xs btn-default" id="resetPanZoomBtn">Reset Pan Zoom</button>
-							</div>
-							Jobs
-						</div>
-						<div class="panel-body" id="filterList">
-							<input id="filter" type="text" placeholder="Job Filter">
-							<div id="list"></div>
-						</div>
-					</div>
-				</div>
-				<div class="col-lg-8">
-					<div id="svgDiv" class="well">
-						<svg id="svgGraph" class="svgGraph" xmlns="http://www.w3.org/2000/svg" version="1.1" shape-rendering="optimize-speed" text-rendering="optimize-speed" >
-						</svg>
-					</div>
-				</div>
-			</div>
+	#parse ("azkaban/webapp/servlet/velocity/flowgraphview.vm")
 
 	## Executions view.
 

@@ -6,6 +6,10 @@
 	display: none;
 }
 
-.nav-tabs {
+.nav-tabs, .nav-pills {
 	margin-bottom: 15px;
+}
+
+.flow-expander {
+	cursor: pointer;
 }
