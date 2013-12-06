@@ -30,8 +30,6 @@ public class ActionTypeLoader {
 	private static Logger logger = Logger.getLogger(ActionTypeLoader.class);
 	
 	public static final String DEFAULT_TRIGGER_ACTION_PLUGIN_DIR = "plugins/triggeractions";
-	private static final String ACTIONTYPECONFFILE = "plugin.properties"; // need jars.to.include property, will be loaded with user property
-	private static final String COMMONCONFFILE = "common.properties";	// common properties for multiple plugins
 
 	protected static Map<String, Class<? extends TriggerAction>> actionToClass = new HashMap<String, Class<? extends TriggerAction>>();
 	

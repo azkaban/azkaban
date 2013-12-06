@@ -28,17 +28,12 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.PriorityBlockingQueue;
 import org.apache.log4j.Logger;
 
-import azkaban.execapp.JobRunner;
 import azkaban.execapp.event.Event;
 import azkaban.execapp.event.EventHandler;
 import azkaban.execapp.event.EventListener;
 import azkaban.execapp.event.Event.Type;
 import azkaban.executor.ExecutableFlow;
-import azkaban.executor.ExecutableNode;
-import azkaban.executor.ExecutionOptions;
 import azkaban.executor.ExecutorManager;
-import azkaban.executor.Status;
-import azkaban.executor.ExecutionOptions.FailureAction;
 import azkaban.utils.Props;
 
 public class TriggerManager extends EventHandler implements TriggerManagerAdapter{

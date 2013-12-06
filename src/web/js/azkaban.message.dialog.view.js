@@ -37,7 +37,6 @@ azkaban.MessageDialogView = Backbone.View.extend({
 	}
 });
 
-
 $(function() {
 	messageDialogView = new azkaban.MessageDialogView({
 		el: $('#azkaban-message-dialog')

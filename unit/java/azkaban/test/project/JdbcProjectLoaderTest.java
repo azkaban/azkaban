@@ -9,14 +9,12 @@ import java.util.List;
 
 import javax.sql.DataSource;
 
-import junit.framework.Assert;
-
 import org.apache.commons.dbutils.DbUtils;
 import org.apache.commons.dbutils.QueryRunner;
 import org.apache.commons.dbutils.ResultSetHandler;
+import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
-
 
 import azkaban.flow.Edge;
 import azkaban.flow.Flow;

@@ -1,7 +1,7 @@
 CREATE TABLE project_properties (
 	project_id INT NOT NULL,
 	version INT NOT NULL,
-	name VARCHAR(128),
+	name VARCHAR(255),
 	modified_time BIGINT NOT NULL,
 	encoding_type TINYINT,
 	property BLOB,

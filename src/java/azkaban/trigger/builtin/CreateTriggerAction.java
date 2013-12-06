@@ -28,6 +28,7 @@ public class CreateTriggerAction implements TriggerAction {
 	public static final String type = "CreateTriggerAction";
 	private static TriggerManager triggerManager;
 	private Trigger trigger;
+	@SuppressWarnings("unused")
 	private Map<String, Object> context;
 	private String actionId;
 	

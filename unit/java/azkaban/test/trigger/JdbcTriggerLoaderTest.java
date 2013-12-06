@@ -21,7 +21,6 @@ import org.junit.Before;
 import org.junit.Test;
 
 import azkaban.database.DataSourceUtils;
-import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutionOptions;
 import azkaban.trigger.ActionTypeLoader;
 import azkaban.trigger.CheckerTypeLoader;
@@ -33,7 +32,6 @@ import azkaban.trigger.TriggerAction;
 import azkaban.trigger.TriggerException;
 import azkaban.trigger.TriggerLoader;
 import azkaban.trigger.TriggerLoaderException;
-import azkaban.trigger.TriggerManagerException;
 import azkaban.trigger.builtin.BasicTimeChecker;
 import azkaban.trigger.builtin.ExecuteFlowAction;
 import azkaban.utils.Props;
@@ -199,16 +197,6 @@ public class JdbcTriggerLoaderTest {
 		actions.add(action);
 		Trigger t = new Trigger(now.getMillis(), now.getMillis(), "azkaban", source, triggerCond, expireCond, actions);
 		return t;
-	}
-	
-	private boolean isTestSetup() {
-		if (!testDBExists) {
-			System.err.println("Skipping DB test because Db not setup.");
-			return false;
-		}
-		
-		System.out.println("Running DB test because Db setup.");
-		return true;
 	}
 	
 	public static class CountHandler implements ResultSetHandler<Integer> {

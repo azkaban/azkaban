@@ -16,19 +16,11 @@
 
 package azkaban.trigger;
 
-import java.io.File;
-import java.io.IOException;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.net.URLClassLoader;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import org.apache.log4j.Logger;
 
-import azkaban.trigger.builtin.BasicTimeChecker;
 import azkaban.utils.Props;
 import azkaban.utils.Utils;
 
@@ -38,8 +30,6 @@ public class CheckerTypeLoader {
 	private static Logger logger = Logger.getLogger(CheckerTypeLoader.class);
 	
 	public static final String DEFAULT_CONDITION_CHECKER_PLUGIN_DIR = "plugins/conditioncheckers";
-	private static final String CHECKERTYPECONFFILE = "plugin.properties"; // need jars.to.include property, will be loaded with user property
-	private static final String COMMONCONFFILE = "common.properties";	// common properties for multiple plugins
 	
 	protected static Map<String, Class<? extends ConditionChecker>> checkerToClass = new HashMap<String, Class<? extends ConditionChecker>>();
 	

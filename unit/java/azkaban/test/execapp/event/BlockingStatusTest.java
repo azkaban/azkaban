@@ -1,8 +1,8 @@
 package azkaban.test.execapp.event;
 
+import org.junit.Assert;
 import org.junit.Test;
 
-import junit.framework.Assert;
 import azkaban.execapp.event.BlockingStatus;
 import azkaban.executor.Status;
 

@@ -31,7 +31,6 @@ import org.joda.time.format.DateTimeFormat;
 
 
 import azkaban.executor.ExecutableFlow;
-import azkaban.executor.ExecutorManager;
 import azkaban.executor.ExecutorManagerAdapter;
 import azkaban.executor.ExecutorManagerException;
 import azkaban.project.Project;

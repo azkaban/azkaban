@@ -2,8 +2,7 @@ package azkaban.test.utils;
 
 import java.io.IOException;
 
-import junit.framework.Assert;
-
+import org.junit.Assert;
 import org.junit.Test;
 
 import azkaban.utils.Props;
@@ -88,7 +87,6 @@ public class PropsUtilsTest {
 	
 	private void failIfNotException(Props props) {
 		try {
-			Props resolved = PropsUtils.resolveProps(props);
 			Assert.fail();
 		}
 		catch (UndefinedPropertyException e) {

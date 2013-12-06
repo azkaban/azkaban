@@ -4,11 +4,10 @@ import java.io.File;
 import java.io.IOException;
 import java.util.HashSet;
 
-import junit.framework.Assert;
-
 import org.apache.commons.io.FileUtils;
 import org.apache.log4j.Logger;
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 

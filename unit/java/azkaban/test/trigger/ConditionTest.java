@@ -1,7 +1,6 @@
 package azkaban.test.trigger;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -14,7 +13,6 @@ import org.junit.Test;
 import azkaban.trigger.CheckerTypeLoader;
 import azkaban.trigger.Condition;
 import azkaban.trigger.ConditionChecker;
-import azkaban.trigger.TriggerException;
 import azkaban.trigger.builtin.BasicTimeChecker;
 import azkaban.utils.JSONUtils;
 import azkaban.utils.Props;
@@ -75,7 +73,6 @@ public class ConditionTest {
 		
 		Condition cond2 = Condition.fromJson(JSONUtils.parseJSONFromFile(temp));
 		
-		Map<String, ConditionChecker> checkers1 = cond.getCheckers();
 		Map<String, ConditionChecker> checkers2 = cond2.getCheckers();
 		
 		assertTrue(cond.getExpression().equals(cond2.getExpression()));
