@@ -16,13 +16,11 @@
 
 <!DOCTYPE html> 
 <html>
-	<head>
-#parse( "azkaban/webapp/servlet/velocity/style.vm" )
-		<script type="text/javascript" src="${context}/js/jquery/jquery-1.9.1.js"></script>    
-		<script type="text/javascript" src="${context}/js/underscore-1.4.4-min.js"></script>
-		<script type="text/javascript" src="${context}/js/namespace.js"></script>
-		<script type="text/javascript" src="${context}/js/backbone-0.9.10-min.js"></script>
-		<script type="text/javascript" src="${context}/js/jquery.simplemodal-1.4.4.js"></script>
+	<head lang="en">
+
+#parse("azkaban/webapp/servlet/velocity/style2.vm")
+#parse("azkaban/webapp/servlet/velocity/javascript.vm")
+
 		<script type="text/javascript" src="${context}/js/azkaban.ajax.utils.js"></script>
 		<script type="text/javascript" src="${context}/js/azkaban.nav.js"></script>
 		<script type="text/javascript" src="${context}/js/azkaban.jobdetails.view.js"></script>
@@ -41,97 +39,126 @@
 		</script>
 	</head>
 	<body>
-#set($current_page="executing")
-#parse("azkaban/webapp/servlet/velocity/nav.vm")
-		<div class="content">
-#if($errorMsg)
-				<div class="box-error-message">$errorMsg</div>
+
+#set ($current_page="executing")
+#parse ("azkaban/webapp/servlet/velocity/nav2.vm")
+
+		<div class="container">
+
+## Page error or success message.
+
+#if ($errorMsg)
+			<div class="panel panel-danger">
+				<div class="panel-heading">Error</div>
+				<div class="panel-body">
+					$errorMsg
+				</div>
+			</div>
 #else
-	#if($error_message != "null")
-				<div class="box-error-message">$error_message</div>
-	#elseif($success_message != "null")
-				<div class="box-success-message">$success_message</div>
+	#if ($error_message != "null")
+			<div class="alert alert-danger">$error_message</div>
+	#elseif ($success_message != "null")
+			<div class="alert alert-success">$success_message</div>
 	#end
-		
-			<div id="all-jobs-content">
-				<div class="section-hd flow-header">
-					<h2><a href="${context}/executor?execid=${execid}&job=${jobid}">Job Execution<span>$jobid</span></a></h2>
-					<div class="section-sub-hd">
-						<h4><a href="${context}/manager?project=${projectName}">Project <span>$projectName</span></a></h4>
-						<h4 class="separator">&gt;</h4>
-						<h4><a href="${context}/manager?project=${projectName}&flow=${flowid}">Flow <span>$flowid</span></a></h4>
-						<h4 class="separator">&gt;</h4>
-						<h4><a href="${context}/executor?execid=${execid}#jobslist">Execution <span>$execid</span></a></h4>
-						<h4 class="separator">&gt;</h4>
-						<h4><a href="${context}/manager?project=${projectName}&flow=${flowid}&job=$jobid">Job <span>$jobid</span></a></h4>
+	
+	## Page header.
+
+			<div class="page-header">
+				<h1><a href="${context}/executor?execid=${execid}&job=${jobid}">Job Execution <small>$jobid</small></a></h1>
+			</div>
+	
+	## Breadcrumb
+
+			<ol class="breadcrumb">
+				<li><a href="${context}/manager?project=${projectName}"><strong>Project</strong> $projectName</a></li>
+				<li><a href="${context}/manager?project=${projectName}&flow=${flowid}"><strong>Flow</strong> $flowid</a></li>
+				<li><a href="${context}/executor?execid=${execid}#jobslist"><strong>Execution</strong> $execid</a></li>
+				<li><a href="${context}/manager?project=${projectName}&flow=${flowid}&job=$jobid"><strong>Job</strong> $jobid</a></li>
+			</ol>
+
+	## Tabs
+					
+			<ul class="nav nav-tabs" id="headertabs">
+				<li id="jobSummaryViewLink"><a href="#jobsummary">Summary</a></li>
+				<li id="jobLogViewLink"><a href="#joblog">Log</a></li>
+				<li><a href="${context}/pigvisualizer?execid=${execid}&jobid=${jobid}">Visualization</a></li>
+			</ul>
+			
+	## Log content.
+
+			<div class="row" id="jobLogView">
+				<div class="col-lg-12">
+					<div class="panel panel-default">
+						<div class="panel-heading">
+							<div class="pull-right">
+								<button type="button" id="updateLogBtn" class="btn btn-xs btn-default">Refresh</button>
+							</div>
+							Job Logs
+						</div>
+						<div class="panel-body">
+							<pre id="logSection" class="log"></pre>
+						</div>
+					</div>
+				</div>
+			</div>
+
+	## Job Summary
+			<div id="jobSummaryView" class="row">
+				<div class="col-lg-12">
+					<table id="commandTable" class="table table-striped table-bordered table-hover">
+					</table>
+				
+					<div class="panel panel-default" id="jobsummary">
+						<div class="panel-heading">Job Summary</div>
+						<table class="table table-striped table-bordered table-hover">
+							<thead id="summaryHeader">
+							</thead>
+							<tbody id="summaryBody">
+							</tbody>
+						</table>
+					</div>
+				
+					<div class="panel panel-default" id="jobstats">
+						<div class="panel-heading">Job Stats</div>
+						<table class="table table-striped table-bordered table-hover table-condensed">
+							<thead id="statsHeader">
+							</thead>
+							<tbody id="statsBody">
+							</tbody>
+						</table>
+					</div>
+					
+					<div class="panel panel-default" id="hiveTable">
+						<div class="panel-heading">Job Summary</div>
+						<table class="table table-striped table-bordered table-hover">
+							<thead id="hiveTableHeader">
+							</thead>
+							<tbody id="hiveTableBody">
+							</tbody>
+						</table>
 					</div>
 				</div>
 			</div>
 			
-			<div id="headertabs" class="headertabs">
-				<ul>
-					<li><a id="jobSummaryViewLink" href="#jobsummary">Summary</a></li>
-					<li class="lidividier">|</li>
-					<li><a id="jobLogViewLink" href="#joblog">Log</a></li>
-					<li class="lidividier">|</li>
-					<li><a href="${context}/pigvisualizer?execid=${execid}&jobid=${jobid}">Visualization</a></li>
-				</ul>
-			</div>
+	## Error message message dialog.
 
-	## Job log view.
-
-			<div id="jobLogView" class="logView">
-				<div class="logHeader"><div class="logButtonRow"><div id="updateLogBtn" class="btn7">Refresh</div></div></div>
-				<div class="logViewer">
-					<pre id="logSection" class="log"></pre>
-				</div>
-			</div>
-
-	## Job summary view
-
-			<div id="jobSummaryView" class="summaryView">
-				<table id="commandTable">
-				</table>
-				
-				<br/>
-				<div id="jobsummary">Job Summary
-					<table>
-						<thead id="summaryHeader">
-						</thead>
-						<tbody id="summaryBody">
-						</tbody>
-					</table>
-				</div>
-				
-				<br/>
-				<div id="jobstats">Job Stats
-					<table>
-						<thead id="statsHeader">
-						</thead>
-						<tbody id="statsBody">
-						</tbody>
-					</table>
-				</div>
-				
-				<br/>
-				<div id="hiveTable">Job Summary
-					<table>
-						<thead id="hiveTableHeader">
-						</thead>
-						<tbody id="hiveTableBody">
-						</tbody>
-					</table>
+			<div class="modal fade" id="messageDialog">
+				<div class="modal-dialog">
+					<div class="modal-content">
+						<div class="modal-header" id="messageTitle">
+							<button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+							<h4 class="modal-title">Error</h4>
+						</div>
+						<div class="modal-body" id="messageDiv">
+							<p id="messageBox"></p>
+						</div>
+					</div>
 				</div>
 			</div>
 
 #end
 
-			<div id="messageDialog" class="modal">
-				<h3 id="messageTitle">Error</h3>
-				<div class="messageDiv">
-					<p id="messageBox"></p>
-				</div>
-			</div>
+#parse ("azkaban/webapp/servlet/velocity/footer.vm")
 		</div>
 	</body>
 </html>

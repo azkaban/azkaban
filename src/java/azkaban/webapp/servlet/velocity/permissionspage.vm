@@ -15,14 +15,11 @@
 *#
 
 <!DOCTYPE html> 
-<html>
+<html lang="en">
 	<head>
-#parse( "azkaban/webapp/servlet/velocity/style.vm" )
-		<script type="text/javascript" src="${context}/js/jquery/jquery-1.9.1.js"></script>    
-		<script type="text/javascript" src="${context}/js/underscore-1.4.4-min.js"></script>
-		<script type="text/javascript" src="${context}/js/namespace.js"></script>
-		<script type="text/javascript" src="${context}/js/backbone-0.9.10-min.js"></script>
-		<script type="text/javascript" src="${context}/js/jquery.simplemodal-1.4.4.js"></script>
+
+#parse ("azkaban/webapp/servlet/velocity/style2.vm")
+#parse ("azkaban/webapp/servlet/velocity/javascript.vm")
 
 		<script type="text/javascript" src="${context}/js/azkaban.nav.js"></script>
 		<script type="text/javascript" src="${context}/js/azkaban.permission.view.js"></script>
@@ -37,229 +34,314 @@
 		</script>
 	</head>
 	<body>
-#set($current_page="all")
-#parse( "azkaban/webapp/servlet/velocity/nav.vm" )
-		<div class="messaging"><p id="messageClose">X</p><p id="message"></p></div>  
 
-			<div class="content">
-#if($errorMsg)
-				<div class="box-error-message">$errorMsg</div>
+#set ($current_page = "all")
+#parse ("azkaban/webapp/servlet/velocity/nav2.vm")
+
+	<div class="container">
+
+## Page error or success message.
+
+#if ($errorMsg)
+			<div class="panel panel-danger">
+				<div class="panel-heading">Error</div>
+				<div class="panel-body">
+					$errorMsg
+				</div>
+			</div>
 #else
-#if($error_message != "null")
-				<div class="box-error-message">$error_message</div>
-#elseif($success_message != "null")
-				<div class="box-success-message">$success_message</div>
-#end
+	#if ($error_message != "null")
+			<div class="alert alert-danger">$error_message</div>
+	#elseif ($success_message != "null")
+			<div class="alert alert-success">$success_message</div>
+	#end
 
-				<div id="all-jobs-content">
-					<div class="section-hd">
-						<h2><a href="${context}/manager?project=${project.name}&permissions">Permissions</a></h2>
-						<div class="section-sub-hd">
-							<h4><a href="${context}/manager?project=${project.name}">Project <span>$project.name</span></a></h4>
+	## Alert message
+
+			<div class="alert alert-dismissable alert-messaging" id="messaging">
+				<button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
+				<p id="messaging-message"></p>
+			</div>
+
+			<div class="page-header">
+				<h1><a href="${context}/manager?project=${project.name}">Project <small>$project.name</small></a></h1>
+				<p>$project.description</p>
+			</div>
+
+			<div class="row">
+				<div class="col-lg-8">
+	
+	## Breadcrumb
+
+					<ol class="breadcrumb">
+						<li><a href="${context}/manager?project=${project.name}"><strong>Project</strong> $project.name</a></li>
+					</ol>
+
+	#set ($project_page = "permissions")
+	#parse ("azkaban/webapp/servlet/velocity/projectnav.vm")
+
+					<div class="panel panel-default">
+						<div class="panel-heading">
+							Permissions
+							<div class="pull-right">
+	#if ($isAdmin)
+								<button id="addUser" class="btn btn-xs btn-success">Add User</button>
+								<button id="addGroup" class="btn btn-xs btn-warning">Add Group</button>
+								<button id="addProxyUser" class="btn btn-xs btn-info">Add Proxy User</button>
+	#end
+							</div>
+						</div>
+						<div class="panel-body">
+
+	## User permissions table.
+
+							<div class="panel panel-success">
+								<div class="panel-heading">User</div>
+								<table class="table table-striped" id="permissions-table">
+									<thead>
+										<th class="tb-username">User</th>
+										<th class="tb-perm">Admin</th>
+										<th class="tb-read">Read</th>
+										<th class="tb-write">Write</th>
+										<th class="tb-execute">Execute</th>
+										<th class="tb-schedule">Schedule</th>					
+	#if ($isAdmin)
+											<th class="tb-action"></th>
+	#end
+									</thead>
+									<tbody>
+
+	#if ($permissions)
+		#foreach ($perm in $permissions)
+										<tr>
+											<td class="tb-username">
+			#if ($perm.first == $username) 
+												${perm.first} <span class="sublabel">(you)</span> 
+			#else 
+												$perm.first 
+			#end
+											</td>
+			#if ($perm.second.isPermissionNameSet("ADMIN")) 
+											<td><input id="${perm.first}-admin-checkbox" type="checkbox" name="admin" disabled="disabled" checked="true"></input></td>
+											<td><input id="${perm.first}-read-checkbox" type="checkbox" name="read" disabled="disabled" checked="true"></input></td>
+											<td><input id="${perm.first}-write-checkbox" type="checkbox" name="write" disabled="disabled" checked="true"></input></td>
+											<td><input id="${perm.first}-execute-checkbox" type="checkbox" name="execute" disabled="disabled" checked="true"></input></td>
+											<td><input id="${perm.first}-schedule-checkbox" type="checkbox" name="schedule" disabled="disabled" checked="true"></input></td>
+			#else
+											<td><input id="${perm.first}-admin-checkbox" type="checkbox" name="admin" disabled="disabled"></input></td>
+											<td><input id="${perm.first}-read-checkbox" type="checkbox" name="read" disabled="disabled"  #if ($perm.second.isPermissionNameSet("READ")) checked="true" #end></input></td>
+											<td><input id="${perm.first}-write-checkbox" type="checkbox" name="write" disabled="disabled" #if ($perm.second.isPermissionNameSet("WRITE")) checked="true" #end></input></td>
+											<td><input id="${perm.first}-execute-checkbox" type="checkbox" name="execute" disabled="disabled" #if ($perm.second.isPermissionNameSet("EXECUTE")) checked="true" #end></input></td>
+											<td><input id="${perm.first}-schedule-checkbox" type="checkbox" name="schedule" disabled="disabled" #if ($perm.second.isPermissionNameSet("SCHEDULE")) checked="true" #end></input></td>
+			#end
+
+			#if ($isAdmin)
+											<td><button id="$perm.first" #if($perm.first == $username) disabled="disabled" class="btn btn-xs btn-disabled" #else class="btn btn-xs btn-default" #end >Change</button></td>
+			#end
+										</tr>
+		#end
+	#else
+										<tr><td class="last">No Users Found.</td></tr>
+	#end
+									</tbody>
+								</table>
+							</div>
+
+	## Group permissions table.
+							
+							<div class="panel panel-warning">
+								<div class="panel-heading">Group</div>
+								<table class="table table-striped" id="group-permissions-table">
+									<thead>
+										<tr>
+											<th class="tb-username">Group</th>
+											<th class="tb-perm">Admin</th>
+											<th class="tb-read">Read</th>
+											<th class="tb-write">Write</th>
+											<th class="tb-execute">Execute</th>
+											<th class="tb-schedule">Schedule</th>
+	#if ($isAdmin)
+											<th class="tb-action"></th>
+	#end
+										</tr>
+									</thead>
+									<tbody>
+	#if ($groupPermissions)
+		#foreach ($perm in $groupPermissions)
+										<tr>
+											<td class="tb-username">
+			#if ($perm.first == $username) 
+												${perm.first} <span class="sublabel">(you)</span> 
+			#else 
+												$perm.first 
+			#end
+											</td>
+			#if ($perm.second.isPermissionNameSet("ADMIN")) 
+											<td><input id="group-${perm.first}-admin-checkbox" type="checkbox" name="admin" disabled="disabled" checked="true"></input></td>
+											<td><input id="group-${perm.first}-read-checkbox" type="checkbox" name="read" disabled="disabled" checked="true"></input></td>
+											<td><input id="group-${perm.first}-write-checkbox" type="checkbox" name="write" disabled="disabled" checked="true"></input></td>
+											<td><input id="group-${perm.first}-execute-checkbox" type="checkbox" name="execute" disabled="disabled" checked="true"></input></td>
+											<td><input id="group-${perm.first}-schedule-checkbox" type="checkbox" name="schedule" disabled="disabled" checked="true"></input></td>
+			#else
+											<td><input id="group-${perm.first}-admin-checkbox" type="checkbox" name="admin" disabled="disabled"></input></td>
+											<td><input id="group-${perm.first}-read-checkbox" type="checkbox" name="read" disabled="disabled"  #if ($perm.second.isPermissionNameSet("READ")) checked="true" #end></input></td>
+											<td><input id="group-${perm.first}-write-checkbox" type="checkbox" name="write" disabled="disabled" #if ($perm.second.isPermissionNameSet("WRITE")) checked="true" #end></input></td>
+											<td><input id="group-${perm.first}-execute-checkbox" type="checkbox" name="execute" disabled="disabled" #if ($perm.second.isPermissionNameSet("EXECUTE")) checked="true" #end></input></td>
+											<td><input id="group-${perm.first}-schedule-checkbox" type="checkbox" name="schedule" disabled="disabled" #if ($perm.second.isPermissionNameSet("SCHEDULE")) checked="true" #end></input></td>
+			#end
+
+			#if ($isAdmin)
+											<td><button id="group-$perm.first" class="btn btn-xs btn-default">Change</button></td>
+			#end
+										</tr>
+		#end
+	#else
+										<tr><td class="last">No Groups Found.</td></tr>
+	#end
+									</tbody>
+								</table>
+							</div>
+	
+	## Proxy users table.
+							
+							<div class="panel panel-info">
+								<div class="panel-heading">Proxy Users</div>
+								<table class="table table-striped" id="proxy-user-table">
+									<thead>
+										<tr>
+											<th class="tb-username">Proxy User</th>
+	#if ($isAdmin)
+											<th class="tb-action"></th>
+	#end
+										</tr>
+									</thead>
+									<tbody>
+	#if ($proxyUsers)
+		#foreach ($proxyUser in $proxyUsers)
+										<tr>
+											<td class="tb-username">#if($proxyUser == $username) ${proxyUser} <span class="sublabel">(you)</span> #else $proxyUser #end</td>
+			#if($isAdmin)
+											<td><button id="proxy-${proxyUser}" name="${proxyUser}" class="btn btn-xs btn-primary">Remove</button></td>
+			#end
+										</tr>
+		#end
+	#else
+										<tr><td class="last">No Proxy User Found.</td></tr>
+	#end
+									</tbody>
+								</table>
+							</div>
+	
+						</div><!-- /panel-body -->
+					</div><!-- /panel -->
+				</div><!-- /col-lg-8 -->
+				<div class="col-lg-4">
+	#parse ("azkaban/webapp/servlet/velocity/projectsidebar.vm")
+				</div><!-- /col-lg-4 -->
+			</div><!-- /row -->
+
+## Remove proxy user modal dialog.
+
+			<div class="modal fade" id="remove-proxy">
+				<div class="modal-dialog">
+					<div class="modal-content">
+						<div class="modal-header">
+							<button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+							<h4 class="modal-title">Remove Proxy User</h4>
+						</div>
+						<div class="modal-body">
+							<div class="alert alert-danger" id="remove-proxy-error-msg"></div>
+							<p>Removing Proxy User</p>
+						</div>
+						<div class="modal-footer">
+							<button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+							<button type="button" class="btn btn-primary" id="remove-proxy-btn">Remove Proxy User</a>
 						</div>
 					</div>
 				</div>
-
-				<div id="project-users">
-					<table class="user-table">
-						<tr><td class="first">Project Admins:</td><td>$admins</td></tr>
-						<tr><td class="first">Your Permissions:</td><td>$userpermission.toString()</td></tr>
-						
-						<tr><td class="first"></td></tr>
-					</table>
-					
-					#if($isAdmin)
-						<button id="addUser" class="btn1">Add User</button>
-						<button id="addGroup" class="btn1">Add Group</button>
-						<button id="addProxyUser" class="btn2">Add Proxy User</button>
-					#end
-				</div>
-
-				<div id="project-summary">
-					<table class="summary-table">
-						<tr><td class="first">Name:</td><td>$project.name</td></tr>
-						<tr><td class="first">Created Date:</td><td>$utils.formatDate($project.lastModifiedTimestamp)</td></tr>
-						<tr><td class="first">Modified Date:</td><td>$utils.formatDate($project.createTimestamp)</td></tr>
-						<tr><td class="first">Last Modified by:</td><td>$project.lastModifiedUser</td></tr>
-						<tr><td class="first">Description:</td><td id="pdescription">$project.description</td>
-						</tr>
-					</table>
-				</div>
-
-		<table id="permissions-table" class="all-jobs permission-table">
-			<thead>
-				<tr>
-					<th class="tb-username">User</th>
-					<th class="tb-perm">Admin</th>
-					<th class="tb-read">Read</th>
-					<th class="tb-write">Write</th>
-					<th class="tb-execute">Execute</th>
-					<th class="tb-schedule">Schedule</th>					
-					#if($isAdmin)
-						<th class="tb-action"></th>
-					#end
-				</tr>
-			</thead>
-			<tbody>
-#if($permissions)
-#foreach($perm in $permissions)
-	<tr>
-		<td class="tb-username">#if($perm.first == $username) ${perm.first} <span class="sublabel">(you)</span> #else $perm.first #end</td>
-		#if ($perm.second.isPermissionNameSet("ADMIN")) 
-			<td><input id="${perm.first}-admin-checkbox" type="checkbox" name="admin" disabled="disabled" checked="true"></input></td>
-			<td><input id="${perm.first}-read-checkbox" type="checkbox" name="read" disabled="disabled" checked="true"></input></td>
-			<td><input id="${perm.first}-write-checkbox" type="checkbox" name="write" disabled="disabled" checked="true"></input></td>
-			<td><input id="${perm.first}-execute-checkbox" type="checkbox" name="execute" disabled="disabled" checked="true"></input></td>
-			<td><input id="${perm.first}-schedule-checkbox" type="checkbox" name="schedule" disabled="disabled" checked="true"></input></td>
-		#else
-			<td><input id="${perm.first}-admin-checkbox" type="checkbox" name="admin" disabled="disabled"></input></td>
-			<td><input id="${perm.first}-read-checkbox" type="checkbox" name="read" disabled="disabled"  #if ($perm.second.isPermissionNameSet("READ")) checked="true" #end></input></td>
-			<td><input id="${perm.first}-write-checkbox" type="checkbox" name="write" disabled="disabled" #if ($perm.second.isPermissionNameSet("WRITE")) checked="true" #end></input></td>
-			<td><input id="${perm.first}-execute-checkbox" type="checkbox" name="execute" disabled="disabled" #if ($perm.second.isPermissionNameSet("EXECUTE")) checked="true" #end></input></td>
-			<td><input id="${perm.first}-schedule-checkbox" type="checkbox" name="schedule" disabled="disabled" #if ($perm.second.isPermissionNameSet("SCHEDULE")) checked="true" #end></input></td>
-		#end
-
-		#if($isAdmin)
-			<td><button id="$perm.first" #if($perm.first == $username) disabled="disabled" class="change-btn btn-disabled" #else class="change-btn btn2" #end >Change</button></td>
-		#end
-	</tr>
-#end
-#else
-	<tr><td class="last">No Users Found.</td></tr>
-#end
-			</tbody>
-		</table>
-
-		<table id="group-permissions-table" class="all-jobs permission-table">
-			<thead>
-				<tr>
-					<th class="tb-username">Group</th>
-					<th class="tb-perm">Admin</th>
-					<th class="tb-read">Read</th>
-					<th class="tb-write">Write</th>
-					<th class="tb-execute">Execute</th>
-					<th class="tb-schedule">Schedule</th>
-					#if($isAdmin)
-						<th class="tb-action"></th>
-					#end
-				</tr>
-			</thead>
-			<tbody>
-#if($groupPermissions)
-#foreach($perm in $groupPermissions)
-	<tr>
-		<td class="tb-username">#if($perm.first == $username) ${perm.first} <span class="sublabel">(you)</span> #else $perm.first #end</td>
-		#if ($perm.second.isPermissionNameSet("ADMIN")) 
-			<td><input id="group-${perm.first}-admin-checkbox" type="checkbox" name="admin" disabled="disabled" checked="true"></input></td>
-			<td><input id="group-${perm.first}-read-checkbox" type="checkbox" name="read" disabled="disabled" checked="true"></input></td>
-			<td><input id="group-${perm.first}-write-checkbox" type="checkbox" name="write" disabled="disabled" checked="true"></input></td>
-			<td><input id="group-${perm.first}-execute-checkbox" type="checkbox" name="execute" disabled="disabled" checked="true"></input></td>
-			<td><input id="group-${perm.first}-schedule-checkbox" type="checkbox" name="schedule" disabled="disabled" checked="true"></input></td>
-		#else
-			<td><input id="group-${perm.first}-admin-checkbox" type="checkbox" name="admin" disabled="disabled"></input></td>
-			<td><input id="group-${perm.first}-read-checkbox" type="checkbox" name="read" disabled="disabled"  #if ($perm.second.isPermissionNameSet("READ")) checked="true" #end></input></td>
-			<td><input id="group-${perm.first}-write-checkbox" type="checkbox" name="write" disabled="disabled" #if ($perm.second.isPermissionNameSet("WRITE")) checked="true" #end></input></td>
-			<td><input id="group-${perm.first}-execute-checkbox" type="checkbox" name="execute" disabled="disabled" #if ($perm.second.isPermissionNameSet("EXECUTE")) checked="true" #end></input></td>
-			<td><input id="group-${perm.first}-schedule-checkbox" type="checkbox" name="schedule" disabled="disabled" #if ($perm.second.isPermissionNameSet("SCHEDULE")) checked="true" #end></input></td>
-		#end
-
-		#if($isAdmin)
-			<td><button id="group-$perm.first" class="change-btn btn2">Change</button></td>
-		#end
-	</tr>
-#end
-#else
-	<tr><td class="last">No Groups Found.</td></tr>
-#end
-			</tbody>
-		</table>
-		
-		<br/>
-		<table id="proxy-user-table" class="all-jobs permission-table">
-			<thead>
-				<tr>
-					<th class="tb-username">Proxy User</th>
-					#if($isAdmin)
-						<th class="tb-action"></th>
-					#end
-				</tr>
-			</thead>
-			<tbody>
-#if($proxyUsers)
-#foreach($proxyUser in $proxyUsers)
-	<tr>
-		<td class="tb-username">#if($proxyUser == $username) ${proxyUser} <span class="sublabel">(you)</span> #else $proxyUser #end</td>
-		#if($isAdmin)
-			<td><button id="proxy-${proxyUser}" name="${proxyUser}" class="remove-btn btn2">Remove</button></td>
-		#end
-	</tr>
-#end
-#else
-	<tr><td class="last">No Proxy User Found.</td></tr>
-#end
-			</tbody>
-		</table>
-#end
-
-		</div>
-	
-		<div id="remove-proxy" class="modal">
-			<h3>Remove Proxy User</h3>
-			<div id="removeProxyErrorMsg" class="box-error-message"></div>
-			<p id="proxyRemoveMsg">Removing Proxy User </p>
-			<div class="actions">
-				<a class="yes btn2" id="remove-proxy-btn" href="#">Remove Proxy User</a>
-				<a class="no simplemodal-close btn3" href="#">Cancel</a>
 			</div>
-		</div>
-	
-		<div id="add-proxy" class="modal">
-			<h3 id="proxy-title">Add Proxy User</h3>
-			<div id="proxyErrorMsg" class="box-error-message"></div>
-			<dl>
-				<dt>Proxy</dt>
-				<dd><input id="proxy-user-box" name="proxyid" type="text" /></dd>
-			</dl>
-			<div class="actions">
-				<a class="yes btn2" id="add-proxy-btn" href="#">Add Proxy User</a>
-				<a class="no simplemodal-close btn3" href="#">Cancel</a>
-			</div>
-		</div>
-	
-		<div id="change-permission" class="modal">
-			<h3 id="change-title">Change Permissions</h3>
-			<div id="errorMsg" class="box-error-message"></div>
-			<div class="message">
-				<fieldset>
-					<dl>
-						<dt>User</dt>
-						<dd><input id="user-box" name="userid" type="text" /></dd>
-					<div id="otherCheckBoxes">
-						<dt class="nextline">Admin</dt>
-						<dd><input id="admin-change" name="admin" type="checkbox" /></dd>
-						<dt>Read</dt>
-					    <dd><input id="read-change" name="read" type="checkbox" /></dd>
-					    <dt>Write</dt>
-					    <dd><input id="write-change" name="write" type="checkbox" /></dd>
-					    <dt>Execute</dt>
-					    <dd><input id="execute-change" name="execute" type="checkbox" /></dd>
-					    <dt>Schedule</dt>
-					    <dd><input id="schedule-change" name="schedule" type="checkbox" /></dd>
+
+## Add proxy user modal dialog.
+
+			<div class="modal fade" id="add-proxy">
+				<div class="modal-dialog">
+					<div class="modal-content">
+						<div class="modal-header">
+							<button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+							<h4 class="modal-title">Add Proxy User</h4>
+						</div>
+						<div class="modal-body">
+							<div class="alert alert-danger" id="add-proxy-error-msg"></div>
+							<fieldset class="form-horizontal">
+								<div class="form-group">
+									<label for="path" class="col-sm-2 control-label">Proxy</label>
+									<div class="col-sm-10">
+										<input type="text" name="proxyid" id="proxy-user-box" class="form-control">
+									</div>
+								</div>
+							</fieldset>
+						</div>
+						<div class="modal-footer">
+							<button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+							<button type="button" class="btn btn-primary" id="add-proxy-btn">Add Proxy User</button>
+						</div>
 					</div>
-					</dl>
-				</fieldset>
+				</div>
 			</div>
-			<div class="actions">
-				<a class="yes btn2" id="change-btn" href="#">Commit</a>
-				<a class="no simplemodal-close btn3" href="#">Cancel</a>
+			
+## Change permissions modal dialog.
+
+			<div class="modal fade" id="change-permission">
+				<div class="modal-dialog">
+					<div class="modal-content">
+						<div class="modal-header">
+							<button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+							<h4 class="modal-title">Change Permissions</h4>
+						</div>
+						<div class="modal-body">
+							<div class="alert alert-danger" id="change-permission-error-msg"></div>
+							<fieldset class="form-horizontal">
+								<div class="form-group">
+									<label for="path" class="col-sm-2 control-label">User</label>
+									<div class="col-sm-10">
+										<input type="text" name="userid" id="user-box" class="form-control">
+									</div>
+								</div>
+								<div class="form-group">
+									<label class="checkbox-inline">
+										<input id="admin-change" name="admin" type="checkbox">
+										Admin
+									</label>
+									<label class="checkbox-inline">
+										<input id="read-change" name="read" type="checkbox">
+										Read
+									</label>
+									<label class="checkbox-inline">
+										<input id="write-change" name="write" type="checkbox">
+										Write
+									</label>
+									<label class="checkbox-inline">
+										<input id="execute-change" name="execute" type="checkbox">
+										Execute
+									</label>
+									<label class="checkbox-inline">
+										<input id="schedule-change" name="schedule" type="checkbox">
+										Schedule
+									</label>
+								</div>
+							</fieldset>
+						</div>
+						<div class="modal-footer">
+							<button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+							<button type="button" class="btn btn-primary" id="change-btn">Commit</button>
+						</div>
+					</div>
+				</div>
 			</div>
-		</div>
-		<div id="invalid-session" class="modal">
-			<h3>Invalid Session</h3>
-			<p>Session has expired. Please re-login.</p>
-			<div class="actions">
-				<a class="yes btn2" id="login-btn" href="#">Re-login</a>
-			</div>
-		</div>
+
+	#parse ("azkaban/webapp/servlet/velocity/invalidsessionmodal.vm")
+#end
+#parse ("azkaban/webapp/servlet/velocity/footer.vm")
+		</div><!-- /container -->
 	</body>
 </html>

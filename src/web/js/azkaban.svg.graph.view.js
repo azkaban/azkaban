@@ -176,7 +176,12 @@ azkaban.SvgGraphView = Backbone.View.extend({
 			var x = node.x - offset;
 			var y = node.y - offset;
 			
-			$(this.svgGraph).svgNavigate("transformToBox", {x: x, y: y, width: widthHeight, height: widthHeight});
+			$(this.svgGraph).svgNavigate("transformToBox", {
+				x: x, 
+				y: y, 
+				width: widthHeight, 
+				height: widthHeight
+			});
 		}
 	},
 	handleStatusUpdate: function(evt) {
@@ -211,7 +216,9 @@ azkaban.SvgGraphView = Backbone.View.extend({
 			if (callbacks.node && currentTarget.jobid) {
 				callbacks.node(self);
 			}
-			else if (callbacks.edge && (currentTarget.nodeName == "polyline" || currentTarget.nodeName == "line")) {
+			else if (callbacks.edge && 
+					(currentTarget.nodeName == "polyline" || 
+					 currentTarget.nodeName == "line")) {
 				callbacks.edge(self);
 			}
 			else if (callbacks.graph) {
@@ -317,15 +324,24 @@ azkaban.SvgGraphView = Backbone.View.extend({
 		nodeG.jobid=node.id;
 	},
 	addBounds: function(toBounds, addBounds) {
-		toBounds.minX = toBounds.minX ? Math.min(toBounds.minX, addBounds.minX) : addBounds.minX;
-		toBounds.minY = toBounds.minY ? Math.min(toBounds.minY, addBounds.minY) : addBounds.minY;
-		toBounds.maxX = toBounds.maxX ? Math.max(toBounds.maxX, addBounds.maxX) : addBounds.maxX;
-		toBounds.maxY = toBounds.maxY ? Math.max(toBounds.maxY, addBounds.maxY) : addBounds.maxY;
+		toBounds.minX = toBounds.minX 
+				? Math.min(toBounds.minX, addBounds.minX) : addBounds.minX;
+		toBounds.minY = toBounds.minY 
+				? Math.min(toBounds.minY, addBounds.minY) : addBounds.minY;
+		toBounds.maxX = toBounds.maxX 
+				? Math.max(toBounds.maxX, addBounds.maxX) : addBounds.maxX;
+		toBounds.maxY = toBounds.maxY 
+				? Math.max(toBounds.maxY, addBounds.maxY) : addBounds.maxY;
 	},
 	resetPanZoom : function(duration) {
 		var bounds = this.graphBounds;
-		var param = {x: bounds.minX, y: bounds.minY, width: (bounds.maxX - bounds.minX), height: (bounds.maxY - bounds.minY), duration: duration };
-
+		var param = {
+			x: bounds.minX, 
+			y: bounds.minY, 
+			width: (bounds.maxX - bounds.minX), 
+			height: (bounds.maxY - bounds.minY), 
+			duration: duration 
+		};
 		$(this.svgGraph).svgNavigate("transformToBox", param);
 	}
 });

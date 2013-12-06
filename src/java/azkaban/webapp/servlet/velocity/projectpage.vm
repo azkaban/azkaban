@@ -15,22 +15,18 @@
 *#
 
 <!DOCTYPE html> 
-<html>
+<html lang="en">
 	<head>
-#parse( "azkaban/webapp/servlet/velocity/style.vm" )
-		<script type="text/javascript" src="${context}/js/jquery/jquery-1.9.1.js"></script>    
+
+#parse ("azkaban/webapp/servlet/velocity/style2.vm")
+#parse ("azkaban/webapp/servlet/velocity/javascript.vm")
+
+		<link rel="stylesheet" type="text/css" href="${context}/css/jquery-ui-1.10.1.custom.css" />
+		<link rel="stylesheet" type="text/css" href="${context}/css/azkaban-svg.css" />
 		<script type="text/javascript" src="${context}/js/jqueryui/jquery-ui-1.10.1.custom.js"></script>
-		
-		<script type="text/javascript" src="${context}/js/underscore-1.4.4-min.js"></script>
-		<script type="text/javascript" src="${context}/js/namespace.js"></script>
-		<script type="text/javascript" src="${context}/js/backbone-0.9.10-min.js"></script>
-		<script type="text/javascript" src="${context}/js/jquery.simplemodal-1.4.4.js"></script>
 		<script type="text/javascript" src="${context}/js/azkaban.ajax.utils.js"></script>
 		<script type="text/javascript" src="${context}/js/azkaban.nav.js"></script>
 		<script type="text/javascript" src="${context}/js/azkaban.project.view.js"></script>
-
-		<link rel="stylesheet" type="text/css" href="${context}/css/jquery-ui-1.10.1.custom.css" />
-
 		<script type="text/javascript">
 			var contextURL = "${context}";
 			var currentTime = ${currentTime};
@@ -39,149 +35,168 @@
 			var successMessage = null;
 
 			var projectId = ${project.id};
-
 			var execAccess = ${exec};
 			var projectName = "$project.name";
 		</script>
 	</head>
 	<body>
-#set($current_page="all")
-#parse( "azkaban/webapp/servlet/velocity/nav.vm" )
-		<div class="messaging"><p id="messageClose">X</p><p id="message"></p></div>  
 
-			<div class="content">
-#if($errorMsg)
-				<div class="box-error-message"><pre>$errorMsg</pre></div>
+#set ($current_page="all")
+#parse ("azkaban/webapp/servlet/velocity/nav2.vm")
+
+		<div class="container">
+
+## Page error or success message.
+
+#if ($errorMsg)
+			<div class="panel panel-danger">
+				<div class="panel-heading">Error</div>
+				<div class="panel-body">
+					$errorMsg
+				</div>
+			</div>
 #else
-#if($error_message != "null")
-				<div class="box-error-message"><pre>$error_message</pre></div>
-#elseif($success_message != "null")
-				<div class="box-success-message"><pre>$success_message</pre></div>
-#end
+	#if ($error_message != "null")
+			<div class="alert alert-danger">$error_message</div>
+	#elseif ($success_message != "null")
+			<div class="alert alert-success">$success_message</div>
+	#end
 
-				<div id="all-jobs-content">
-					<div class="section-hd">
-						<h2><a href="${context}/manager?project=${project.name}">Project <span>$project.name</span></a></h2>
-						<a id="project-upload-btn" class="btn1 projectupload">Upload</a>
-						<a id="project-permission-btn" class="btn5 projectpermission" href="${context}/manager?project=${project.name}&permissions">Permissions</a>
-						#if($admin)
-						<a id="project-logs-btn" class="btn2" href="${context}/manager?project=${project.name}&logs">Project Logs</a>
-						<a id="project-delete-btn" class="btn6">Delete Project</a>
-						#end
-					</div><!-- end .section-hd -->
-				</div>
+	## Alert message
 
-				<div id="project-users">
-					<table class="user-table">
-						<tr><td class="first">Project Admins:</td><td>$admins</td></tr>
-						<tr><td class="first">Your Permissions:</td><td>$userpermission.toString()</td></tr>
-					</table>
-				</div>
+			<div class="alert alert-dismissable alert-messaging" id="messaging">
+				<button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
+				<p id="messaging-message"></p>
+			</div>
 
-				<div id="project-summary">
-					<table class="summary-table">
-						<tr><td class="first">Name:</td><td>$project.name</td></tr>
-						<tr><td class="first">Created Date:</td><td>$utils.formatDate($project.createTimestamp)</td></tr>
-						<tr><td class="first">Modified Date:</td><td>$utils.formatDate($project.lastModifiedTimestamp)</td></tr>
-						<tr><td class="first">Modified by:</td><td>$project.lastModifiedUser</td></tr>
-						<tr><td class="first">Description:</td><td id="pdescription">$project.description</td>
-							#if($admin)
-								<td><div id="edit" class="btn5">Edit Description</div></td>
-							#end
-						</tr>
-					</table>
-				</div>
+	## Page header.
 
-			<div id="flow-tabs">
-				<table id="all-jobs" class="all-jobs job-table">
-					<thead>
-						<tr>
-							<th class="tb-name">Flow Name</th>
-						</tr>
-					</thead>
-					<tbody>
-#if($flows)
-#foreach($flow in $flows)
-						<tr class="row flowrow">
-							<td class="tb-name" flow="${flow.id}" project="${project.name}">
-									<div class="jobfolder expand" id="${flow.id}">
-										<span class="state-icon"></span>
-										<a href="${context}/manager?project=${project.name}&flow=${flow.id}">${flow.id}</a>
+			<div class="page-header">
+				<h1><a href="${context}/manager?project=${project.name}">Project <small>$project.name</small></a></h1>
+				<p>$project.description</p>
+			</div>
+
+	## Page content.
+
+			<div class="row">
+				<div class="col-lg-8">
+					
+	## Breadcrumb
+
+					<ol class="breadcrumb">
+						<li class="active"><a href="${context}/manager?project=${project.name}"><strong>Project</strong> $project.name</a></li>
+					</ol>
+
+	#set ($project_page = "flows")
+	#parse ("azkaban/webapp/servlet/velocity/projectnav.vm")
+
+					<div class="panel panel-default" id="flow-tabs">
+						<div class="panel-heading">
+							<div class="pull-right" id="project-options">
+								<button id="project-upload-btn" class="btn btn-xs btn-primary">Upload</button>
+								<button id="project-delete-btn" class="btn btn-xs btn-danger">Delete Project</button>
+							</div>
+							Flows
+						</div>
+						<div class="panel-body">
+
+	#if ($flows)
+		#foreach ($flow in $flows)
+							<div class="panel panel-info" flow="${flow.id}" project="${project.name}">
+								<div class="panel-heading flow-expander" id="${flow.id}">
+									<a href="${context}/manager?project=${project.name}&flow=${flow.id}">${flow.id}</a>
+								</div>
+								<div id="${flow.id}-child" class="panel-collapse collapse">
+									<table class="table">
+										<tbody id="${flow.id}-tbody">
+										</tbody>
+									</table>
+								</div>
+								<div class="panel-footer">
+			#if (${exec})
+									<button type="button" class="btn btn-sm btn-primary execute-flow" flowId="${flow.id}">Execute Flow</button>
+									<a href="${context}/manager?project=${project.name}&flow=${flow.id}#executions" class="btn btn-primary btn-sm">Executions</a>
+									<a href="${context}/manager?project=${project.name}&flow=${flow.id}#summary" class="btn btn-primary btn-sm">Summary</a>
+			#end
+								</div>
+							</div>
+		#end
+	#else
+							<p>No flows uploaded to this project</p>
+	#end
+						</div>
+					</div>
+				</div><!-- /col-lg-8 -->
+
+				<div class="col-lg-4">
+	#parse ("azkaban/webapp/servlet/velocity/projectsidebar.vm")
+				</div><!-- /col-lg-4 -->
+			</div><!-- /row -->
+
+## Upload project modal
+
+			<div class="modal fade" id="upload-project-modal">
+				<div class="modal-dialog">
+					<div class="modal-content">
+						<form id="upload-project-form" enctype="multipart/form-data" method="post" action="$!context/manager">
+							<div class="modal-header">
+								<button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+								<h4 class="modal-title">Upload Project Files</h4>
+							</div>
+							<div class="modal-body">
+								<div class="alert alert-danger" id="upload-project-modal-error-msg">$error_msg</div>
+								<fieldset class="form-horizontal">
+									<div class="form-group">
+										<label for="path" class="col-sm-2 control-label">Job Archive</label>
+										<div class="col-sm-10">
+											<input type="file" class="form-control" id="file" name="file">
+										</div>
 									</div>
-									#if (${exec})
-									<div class="job-hover-menu">
-										<div class="btn1 executeFlow" flowId="${flow.id}">Execute Flow</div>
-									</div>
-									#end
-							</td>
-						</tr>
-						<tr class="childrow" id="${flow.id}-child" style="display: none;">
-							<td class="expandedFlow">
-								<table class="innerTable">
-									<thead>
-										<tr><th class="tb-name">Jobs</th></tr>
-									</thead>
-									<tbody id="${flow.id}-tbody">
-									</tbody>
-								</table>
-							</td>
-						</tr>
-#end
-#else
-						<tr><td class="last">No flows uploaded to this project.</td></tr>
-#end
-					</tbody>
-				</table>
-			</div>
-#end
-		</div>
-	
-		<div id="upload-project" class="modal">
-			<h3>Upload Project Files</h3>
-			<div id="errorMsg" class="box-error-message">$errorMsg</div>
-			<div class="message">
-				<form id="upload-form" enctype="multipart/form-data" method="post" action="$!context/manager">
-					<fieldset>
-						<dl>
-							<dt>Job Archive</dt>
-							<dd><input id="file" name="file" class="file" type="file" /></dd>
-							<input type="hidden" name="project" value="$project.name" />
-							<input type="hidden" name="action" value="upload" />
-						</dl>
-					</fieldset>
-				</form>
-			</div>
-			<div class="actions">
-				<a class="yes btn2" id="upload-btn" href="#">Upload</a>
-				<a class="no simplemodal-close btn3" href="#">Cancel</a>
-			</div>
-			<div id="invalid-session" class="modal">
-				<h3>Invalid Session</h3>
-				<p>Session has expired. Please re-login.</p>
-				<div class="actions">
-					<a class="yes btn2" id="login-btn" href="#">Re-login</a>
+								</fieldset>
+							</div>
+							<div class="modal-footer">
+								<input type="hidden" name="project" value="$project.name">
+								<input type="hidden" name="action" value="upload">
+								<button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+								<button type="button" class="btn btn-primary" id="upload-project-btn">Upload</button>
+							</div>
+						</form>
+					</div>
 				</div>
 			</div>
-		</div>
-		<div id="delete-project" class="modal">
-			<h3>Delete Project</h3>
-			<div class="warn">
-				<div class="warning-icon"></div>
-				<div class="warning-message"><p>Warning: This project will be deleted and may not be recoverable.</p></div>
-			</div>
-			<form id="delete-form">
-				<input type="hidden" name="project" value="$project.name" />
-				<input type="hidden" name="delete" value="true" />
-			</form>
+
+	## Delete project modal.
 			
-			<div class="actions">
-				<a class="no simplemodal-close btn3" href="#">Cancel</a>
-				<a class="yes btn6" id="delete-btn" href="#">Yes</a>
+			<div class="modal fade" id="delete-project-modal">
+				<div class="modal-dialog">
+					<div class="modal-content">
+						<div class="modal-header">
+							<button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+							<h4 class="modal-title">Delete Project</h4>
+						</div>
+						<div class="modal-body">
+							<p>Warning: This project will be deleted and may not be recoverable.</p>
+						</div>
+						<div class="modal-footer">
+							<form id="delete-form">
+								<input type="hidden" name="project" value="$project.name">
+								<input type="hidden" name="delete" value="true">
+								<button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+								<button type="button" class="btn btn-danger" id="delete-btn">Yes</button>
+							</form>
+						</div>
+					</div>
+				</div>
 			</div>
-		</div>
-		#parse( "azkaban/webapp/servlet/velocity/flowexecutionpanel.vm" )
-		#parse( "azkaban/webapp/servlet/velocity/messagedialog.vm" )
+
+	#parse ("azkaban/webapp/servlet/velocity/invalidsessionmodal.vm")
+	#parse ("azkaban/webapp/servlet/velocity/flowexecutionpanel.vm")
+	#parse ("azkaban/webapp/servlet/velocity/messagedialog.vm")
+#end
+
+#parse ("azkaban/webapp/servlet/velocity/footer.vm")
+
+		</div><!-- /container -->
 	</body>
-	
 </html>
 

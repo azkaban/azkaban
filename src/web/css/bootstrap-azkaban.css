@@ -1,0 +1,19 @@
+.modal-wide .modal-dialog {
+	width: 80%; /* or whatever you wish */
+}
+
+.alert-messaging {
+	display: none;
+}
+
+.nav-tabs, .nav-pills {
+	margin-bottom: 15px;
+}
+
+.flow-expander {
+	cursor: pointer;
+}
+
+table .worksheet-key {
+	width: 25%;
+}

@@ -291,9 +291,10 @@ public abstract class LoginAbstractAzkabanServlet extends AbstractAzkabanServlet
 			return true;
 		}
 		
-		for(String roleName: user.getRoles()) {
+		for (String roleName: user.getRoles()) {
 			Role role = userManager.getRole(roleName);
-			if (role.getPermission().isPermissionSet(type) || role.getPermission().isPermissionSet(Permission.Type.ADMIN)) {
+			if (role.getPermission().isPermissionSet(type) || 
+					role.getPermission().isPermissionSet(Permission.Type.ADMIN)) {
 				return true;
 			}
 		}

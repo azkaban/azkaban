@@ -1,3 +1,5 @@
+#!/bin/bash
+
 azkaban_dir=$(dirname $0)/..
 
 if [[ -z "$tmpdir" ]]; then

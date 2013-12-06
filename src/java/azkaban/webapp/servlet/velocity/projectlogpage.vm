@@ -16,18 +16,15 @@
 
 <!DOCTYPE html> 
 <html>
-	<head>
-#parse( "azkaban/webapp/servlet/velocity/style.vm" )
-		<script type="text/javascript" src="${context}/js/jquery/jquery-1.9.1.js"></script>    
-		<script type="text/javascript" src="${context}/js/underscore-1.4.4-min.js"></script>
-		<script type="text/javascript" src="${context}/js/namespace.js"></script>
-		<script type="text/javascript" src="${context}/js/backbone-0.9.10-min.js"></script>
-		<script type="text/javascript" src="${context}/js/jquery.simplemodal-1.4.4.js"></script>
+	<head lang="en">
+
+#parse ("azkaban/webapp/servlet/velocity/style2.vm")
+#parse ("azkaban/webapp/servlet/velocity/javascript.vm")
+
 		<script type="text/javascript" src="${context}/js/azkaban.date.utils.js"></script>
 		<script type="text/javascript" src="${context}/js/azkaban.ajax.utils.js"></script>
 		<script type="text/javascript" src="${context}/js/azkaban.nav.js"></script>
 		<script type="text/javascript" src="${context}/js/azkaban.projectlog.view.js"></script>
-		
 		<script type="text/javascript">
 			var contextURL = "${context}";
 			var currentTime = ${currentTime};
@@ -36,50 +33,72 @@
 			var successMessage = null;
 			
 			var projectName = "${projectName}";
-
 		</script>
 	</head>
 	<body>
-		#set($current_page="executing")
-#parse( "azkaban/webapp/servlet/velocity/nav.vm" )
-		<div class="content">
-#if($errorMsg)
-				<div class="box-error-message">$errorMsg</div>
+
+#set ($current_page="executing")
+#parse ("azkaban/webapp/servlet/velocity/nav2.vm")
+
+		<div class="container">
+
+## Page error or success message.
+
+#if ($errorMsg)
+			<div class="panel panel-danger">
+				<div class="panel-heading">Error</div>
+				<div class="panel-body">
+					$errorMsg
+				</div>
+			</div>
 #else
-#if($error_message != "null")
-				<div class="box-error-message">$error_message</div>
-#elseif($success_message != "null")
-				<div class="box-success-message">$success_message</div>
-#end
-		
-			<div id="all-jobs-content">
-				<div class="section-hd flow-header">
-					<h2><a href="${context}/manager?project=${projectName}">Project Audit Logs <span>$projectName</span></a></h2>
-				</div>
-			</div>
-			
-			<div id="headertabs" class="headertabs">
-				<ul>
-					<li><a id="logViewLink" href="#log">Log</a></li>
-				</ul>
+	#if ($error_message != "null")
+			<div class="alert alert-danger">$error_message</div>
+	#elseif ($success_message != "null")
+			<div class="alert alert-success">$success_message</div>
+	#end
+
+	## Page header.
+
+			<div class="page-header">
+				<h1><a href="${context}/manager?project=${project.name}">Project <small>$project.name</small></a></h1>
+				<p>$project.description</p>
 			</div>
 
-			<div id="projectLogView" class="logView">
-				<div class="logHeader"><div class="logButtonRow"><div id="updateLogBtn" class="btn7">Refresh</div></div></div>
-				<div id="logViewer" class="logViewer">
-					<table id="logTable">
-						
-					</table>
+	## Page content.
+
+			<div class="row">
+				<div class="col-lg-8">
+	
+	## Breadcrumb
+
+					<ol class="breadcrumb">
+						<li><a href="${context}/manager?project=${project.name}"><strong>Project</strong> $project.name</a></li>
+					</ol>
+
+	#set ($project_page = "logs")
+	#parse ("azkaban/webapp/servlet/velocity/projectnav.vm")
+
+					<div class="panel panel-default" id="flow-tabs">
+						<div class="panel-heading">
+							<div class="pull-right" id="project-options">
+								<button type="button" id="updateLogBtn" class="btn btn-xs btn-info">Refresh</button>
+							</div>
+							Audit Logs
+						</div>
+						<table class="table table-striped" id="logTable">
+						</table>
+					</div>
 				</div>
-			</div>
-#end
-			<div id="messageDialog" class="modal">
-				<h3 id="messageTitle">Error</h3>
-				<div class="messageDiv">
-					<p id="messageBox"></p>
+				<div class="col-lg-4">
+	#parse ("azkaban/webapp/servlet/velocity/projectsidebar.vm")
 				</div>
 			</div>
 
-		</div>
+#end
+
+#parse ("azkaban/webapp/servlet/velocity/footer.vm")
+
+		</div><!-- /container -->
 	</body>
 </html>

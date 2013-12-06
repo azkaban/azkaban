@@ -281,16 +281,16 @@ azkaban.JobTabView = Backbone.View.extend({
 	},
 
 	handleJobLogViewLinkClick: function() {
-		$('#jobSummaryViewLink').removeClass('selected');
+		$('#jobSummaryViewLink').removeClass('active');
 		$('#jobSummaryView').hide();
-		$('#jobLogViewLink').addClass('selected');
+		$('#jobLogViewLink').addClass('active');
 		$('#jobLogView').show();
 	},
 	
 	handleJobSummaryViewLinkClick: function() {
-		$('#jobSummaryViewLink').addClass('selected');
+		$('#jobSummaryViewLink').addClass('active');
 		$('#jobSummaryView').show();
-		$('#jobLogViewLink').removeClass('selected');
+		$('#jobLogViewLink').removeClass('active');
 		$('#jobLogView').hide();
 	},
 });
