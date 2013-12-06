@@ -19,7 +19,7 @@
     
 		<link rel="shortcut icon" href="${context}/favicon.ico" />
     <!-- Bootstrap core CSS -->
-    <link href="/css/bootstrap.min.css" rel="stylesheet">
+    <link href="/css/bootstrap.css" rel="stylesheet">
     <link href="/css/bootstrap-fileinput.css" rel="stylesheet">
     <link href="/css/bootstrap-azkaban.css" rel="stylesheet">
 
