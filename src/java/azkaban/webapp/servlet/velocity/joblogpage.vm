@@ -107,7 +107,7 @@
 					<div class="modal-content">
 						<div class="modal-header" id="messageTitle">
 							<button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
-							<h4 class="modal-title">Upload Project Files</h4>
+							<h4 class="modal-title">Error</h4>
 						</div>
 						<div class="modal-body" id="messageDiv">
 							<p id="messageBox"></p>
