@@ -83,7 +83,7 @@
 					<ol class="breadcrumb">
 						<li><a href="${context}/manager?project=${project.name}"><strong>Project</strong> $project.name</a></li>
 						<li><a href="${context}/manager?project=${project.name}&flow=${flowid}"><strong>Flow</strong> $flowid</a></li>
-						<li><a href="${context}/manager?project=${project.name}&flow=${flowid}&job=${jobid}"><strong>Job</strong> $jobid</a></li>
+						<li class="active"><a href="${context}/manager?project=${project.name}&flow=${flowid}&job=${jobid}"><strong>Job</strong> $jobid</a></li>
 					</ol>
 				
 	#set ($job_page="properties")
@@ -123,7 +123,7 @@
 
 ## Edit job modal.
 
-			<div class="modal fade" id="job-edit-pane">
+			<div class="modal modal-wide fade" id="job-edit-pane">
 				<div class="modal-dialog">
 					<div class="modal-content">
 						<div class="modal-header">
@@ -132,7 +132,7 @@
 						</div>
 						<div class="modal-body">
 							<h4>Job Essentials</h4>
-							<dl>
+							<dl class="dl-horizontal">
 								<dt>Job Name</dt>
 								<dd id="jobName"></dd>
 								<dt>Job Type</dt>

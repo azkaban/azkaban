@@ -175,14 +175,14 @@
 							<h4 class="modal-title">Delete Project</h4>
 						</div>
 						<div class="modal-body">
-							<p>Warning: This project will be deleted and may not be recoverable.</p>
+							<p><strong>Warning:</strong> This project will be deleted and may not be recoverable.</p>
 						</div>
 						<div class="modal-footer">
 							<form id="delete-form">
 								<input type="hidden" name="project" value="$project.name">
 								<input type="hidden" name="delete" value="true">
 								<button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
-								<button type="button" class="btn btn-danger" id="delete-btn">Yes</button>
+								<button type="button" class="btn btn-danger" id="delete-btn">Delete Project</button>
 							</form>
 						</div>
 					</div>
