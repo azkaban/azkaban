@@ -5,6 +5,7 @@
 	<property name="base.dir" value="${basedir}" />
 	<property name="dist.jar.dir" value="${basedir}/dist/jars" />
 	<property name="dist.dust.dir" value="${basedir}/dist/dust" />
+	<property name="dist.less.dir" value="${basedir}/dist/less" />
 	<property name="dist.classes.dir" value="${basedir}/dist/classes" />
 	<property name="dist.packages.dir" value="${basedir}/dist/packages" />
 	<property name="dist.web.package.dir" value="${dist.packages.dir}/azkaban-web-server" />
@@ -21,6 +22,7 @@
 	<property name="bin.dir" value="${basedir}/bin" />
 	<property name="java.src.dir" value="${basedir}/src/java" />
 	<property name="dust.src.dir" value="${basedir}/src/tl" />
+	<property name="less.src.dir" value="${basedir}/src/less" />
 	<property name="web.src.dir" value="${basedir}/src/web" />
 	<property name="sql.src.dir" value="${basedir}/src/sql" />
 	
@@ -52,6 +54,8 @@
 		<mkdir dir="${dist.classes.dir}" />
 		<delete dir="${dist.dust.dir}" />
 		<mkdir dir="${dist.dust.dir}" />
+		<delete dir="${dist.less.dir}" />
+		<mkdir dir="${dist.less.dir}" />
 		
 		<!-- copy non-java files to classes dir to load from classpath -->
 		<copy todir="${dist.classes.dir}">
@@ -78,6 +82,16 @@
 			<fileset dir="${dust.src.dir}" includes="*.tl" />
 			<redirector>
 				<outputmapper id="out" type="glob" from="*.tl" to="${dist.dust.dir}/*.js" />
+			</redirector>
+		</apply>
+
+		<!-- Compile LESS to CSS -->
+		<apply dir="${less.src.dir}" executable="lessc" relative="true">
+			<mapper type="glob" from="*.less" to="*.css" />
+			<srcfile />
+			<fileset dir="${less.src.dir}" includes="*.less" />
+			<redirector>
+				<outputmapper id="out" type="glob" from="*.less" to="${dist.less.dir}/*.css" />
 			</redirector>
 		</apply>
 	</target>
@@ -179,6 +193,11 @@
 		<copy todir="${dist.web.package.dir}/web/js">
 			<fileset dir="${dist.dust.dir}" />
 		</copy>
+
+		<!-- Copy compiled less CSS -->
+		<copy todir="${dist.web.package.dir}/web/css">
+			<fileset dir="${dist.less.dir}" />
+		</copy>
 		
 		<!-- Copy conf create table scripts -->
 		<copy todir="${dist.web.package.dir}/conf">
@@ -268,6 +287,11 @@
 		<!-- Copy compiled dust templates -->
 		<copy todir="${dist.solo.package.dir}/web/js">
 			<fileset dir="${dist.dust.dir}" />
+		</copy>
+		
+		<!-- Copy compiled less CSS -->
+		<copy todir="${dist.solo.package.dir}/web/css">
+			<fileset dir="${dist.less.dir}" />
 		</copy>
 		
 		<!-- Copy sql files -->

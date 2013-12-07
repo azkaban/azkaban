@@ -89,7 +89,7 @@
 								</div>
 							</form>
 						</div>
-						<table id="executingJobs" class="table table-striped">
+						<table id="executingJobs" class="table table-striped table-bordered table-hover table-condensed executions-table">
 							<thead>
 								<tr>
 									<th class="execid">Execution Id</th>
