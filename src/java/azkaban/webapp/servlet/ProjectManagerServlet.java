@@ -727,21 +727,49 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 	
 	private void handleProjectLogsPage(HttpServletRequest req, HttpServletResponse resp, Session session) throws ServletException, IOException {
 		Page page = newPage(req, resp, session, "azkaban/webapp/servlet/velocity/projectlogpage.vm");
-
 		String projectName = getParam(req, "project");
-		
-		Project project = projectManager.getProject(projectName);
-		if (project == null) {
-			page.add("errorMsg", "Project " + projectName + " doesn't exist.");
+
+		User user = session.getUser();
+		Project project = null;
+		try {
+			project = projectManager.getProject(projectName);
+			if (project == null) {
+				page.add("errorMsg", "Project " + projectName + " doesn't exist.");
+			}
+			else {
+				if (!hasPermission(project,user,Type.READ)) {
+					throw new AccessControlException( "No permission to view project " + projectName + ".");
+				}
+				
+				page.add("project", project);
+				page.add("admins", Utils.flattenToString(project.getUsersWithPermission(Type.ADMIN), ","));
+				Permission perm = this.getPermissionObject(project, user, Type.ADMIN);
+				page.add("userpermission", perm);
+	
+				boolean adminPerm = perm.isPermissionSet(Type.ADMIN);
+				if (adminPerm) {
+					page.add("admin", true);
+				}
+				// Set this so we can display execute buttons only to those who have access.
+				if (perm.isPermissionSet(Type.EXECUTE) || adminPerm) {
+					page.add("exec", true);
+				}
+				else {
+					page.add("exec", false);
+				}
+			}
 		}
-		page.add("projectName", projectName);
+		catch (AccessControlException e) {
+			page.add("errorMsg", e.getMessage());
+		}
+
 		//page.add("projectManager", projectManager);
 		//int bytesSkip = 0;
 		int numBytes = 1024;
 
-		// Really sucks if we do a lot of these because it'll eat up memory fast. But it's expected
-		// that this won't be a heavily used thing. If it is, then we'll revisit it to make it more stream
-		// friendly.
+		// Really sucks if we do a lot of these because it'll eat up memory fast. 
+		// But it's expected that this won't be a heavily used thing. If it is, 
+		// then we'll revisit it to make it more stream friendly.
 		StringBuffer buffer = new StringBuffer(numBytes);
 		page.add("log", buffer.toString());
 
