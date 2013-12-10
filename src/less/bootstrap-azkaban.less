@@ -1,23 +1,29 @@
+// Wide modal used for certain panels such as executing flow panel.
 .modal-wide .modal-dialog {
-	width: 80%; /* or whatever you wish */
+	width: 80%;
 }
 
+// Hide messaging alert by default.
 .alert-messaging {
 	display: none;
 }
 
+// Add additional space under navs.
 .nav-tabs, .nav-pills {
 	margin-bottom: 15px;
 }
 
+// Flow panel heading.
 .flow-expander {
 	cursor: pointer;
 }
 
+// Flow summary.
 table .worksheet-key {
 	width: 25%;
 }
 
+// Job table.
 #all-jobs {
   .tb-name {
     width: 70%;
@@ -36,6 +42,7 @@ table .worksheet-key {
   }
 }
 
+// Properties table.
 .properties-table {
   .all-jobs .tb-pname {
   }
@@ -44,6 +51,7 @@ table .worksheet-key {
   }
 }
 
+// Permissions page table.
 .permission-table {
   .tb-perm {
     width: 41px;
@@ -83,6 +91,7 @@ table .worksheet-key {
   }
 }
 
+// Table of executions.
 .executions-table {
   th.date {
     width: 140px;
@@ -126,5 +135,64 @@ table .worksheet-key {
 
   td.execId {
     font-weight: bold;
+  }
+}
+
+.navbar-inverse {
+  background-image: -o-linear-gradient(bottom, rgb(56,56,56) 33%, rgb(73,73,73) 66%);
+  background-image: -moz-linear-gradient(bottom, rgb(56,56,56) 33%, rgb(73,73,73) 66%);
+  background-image: -webkit-linear-gradient(bottom, rgb(56,56,56) 33%, rgb(73,73,73) 66%);
+  background-image: -ms-linear-gradient(bottom, rgb(56,56,56) 33%, rgb(73,73,73) 66%);
+  background-image: -webkit-gradient(
+   	linear,
+   	left bottom,
+   	left top,
+   	color-stop(0.33, rgb(56,56,56)),
+   	color-stop(0.66, rgb(73,73,73))
+  );
+  background-image: linear-gradient(bottom, rgb(56,56,56) 33%, rgb(73,73,73) 66%); 
+  border-top: 5px solid #ff3601;
+  box-shadow: 0 1px 4px 1px #000;
+
+  .navbar-brand {
+    background: url('../../images/logo.png') top left no-repeat;
+    color: #ffffff;
+    font-size: 156.25%;
+    font-weight: bold;
+    margin: 15px 0.6% 15px 4.75%;
+    padding: 10px 0 11px 42px;
+  
+    &:hover, &:focus {
+      color: #ffffff;
+    }
+  }
+
+  .navbar-nav {
+    > li {
+      padding: 25px 12px 25px 12px;
+      cursor: pointer;
+      &:hover {
+        background-color: rgba(0, 0, 0, 0.1);
+      }
+    }
+
+    > li > a {
+      padding: 0px;
+      color: #ccc;
+    }
+
+    > .active {
+      background-color: rgba(0, 0, 0, 0.1);
+    }
+
+    > .active > a {
+      color: #fff;
+      font-weight: bold;
+      background-color: transparent;
+      border-bottom: 1px solid #ff3601;
+      &:hover {
+        background-color: transparent;
+      }
+    }
   }
 }

@@ -13,4 +13,8 @@
  * License for the specific language governing permissions and limitations under
  * the License.
 *#
-					<a class="navbar-brand" href="${context}/"><strong>Azkaban</strong> ${azkaban_name} <small>${azkaban_label}</small></a> 
+					<a class="navbar-brand" href="${context}/">Azkaban</a>
+					<!--<div class="navbar-enviro">
+						<div class="navbar-enviro-name">${azkaban_name}</div>
+						<div class="navbar-enviro-server">${azkaban_label}</div>
+					</div>-->
