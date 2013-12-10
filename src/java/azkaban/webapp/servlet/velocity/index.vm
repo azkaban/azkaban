@@ -34,8 +34,8 @@
 	</head>
 	<body>
 
-#set($current_page="all")
-#parse("azkaban/webapp/servlet/velocity/nav2.vm")
+#set ($current_page="all")
+#parse ("azkaban/webapp/servlet/velocity/nav2.vm")
 
 		<div class="container">
 

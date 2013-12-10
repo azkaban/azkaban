@@ -27,20 +27,10 @@
 		</script>
   </head>
   <body>
-    <div class="navbar navbar-inverse navbar-static-top">
-      <div class="container">
-        <div class="navbar-header">
-          <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
-            <span class="icon-bar"></span>
-            <span class="icon-bar"></span>
-            <span class="icon-bar"></span>
-          </button>
-#parse("azkaban/webapp/servlet/velocity/title2.vm")
-        </div>
-        <div class="navbar-collapse collapse">
-				</div>
-			</div>
-		</div>
+
+#set ($current_page="all")
+#set ($navbar_disabled=1)
+#parse ("azkaban/webapp/servlet/velocity/nav2.vm")
 
 		<div class="container">
 			<div class="row">

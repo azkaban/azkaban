@@ -138,6 +138,50 @@ table .worksheet-key {
   }
 }
 
+
+.navbar-logo {
+  float: left;
+  padding: 15px 15px;
+  font-size: 18px;
+  line-height: 20px;
+
+  a {
+    &:hover,
+    &:focus {
+      text-decoration: none;
+    }
+  }
+}
+
+@media (min-width: 768px) {
+  .navbar > .container .navbar-logo {
+    margin-left: -15px;
+  }
+}
+
+@media (min-width: 768px) {
+  .navbar-enviro {
+    width: auto;
+  }
+}
+
+.navbar-enviro {
+  margin: 25px 20px 0px 10px;
+     
+  .navbar-enviro-name {
+    color: #ff3601;
+    font-family: Helvetica, Arial, Sans-Serif;
+    font-size: 118.75%;
+    font-weight: bold;
+  }
+       
+  .navbar-enviro-server {
+    color: #999;
+    font-family: Helvetica, Arial, Sans-Serif;
+    font-size: 75%;
+  }
+}
+
 .navbar-inverse {
   background-image: -o-linear-gradient(bottom, rgb(56,56,56) 33%, rgb(73,73,73) 66%);
   background-image: -moz-linear-gradient(bottom, rgb(56,56,56) 33%, rgb(73,73,73) 66%);
@@ -154,20 +198,28 @@ table .worksheet-key {
   border-top: 5px solid #ff3601;
   box-shadow: 0 1px 4px 1px #000;
 
-  .navbar-brand {
+  .navbar-logo {
     background: url('../../images/logo.png') top left no-repeat;
     color: #ffffff;
     font-size: 156.25%;
     font-weight: bold;
     margin: 15px 0.6% 15px 4.75%;
-    padding: 10px 0 11px 42px;
-  
-    &:hover, &:focus {
+    padding: 12px 0 11px 42px;
+
+    a {
       color: #ffffff;
+      &:hover,
+      &:focus {
+        color: #ffffff;
+        background-color: transparent;
+      }
     }
   }
 
   .navbar-nav {
+    font-family: Arial;
+    font-size: 81.25%;
+
     > li {
       padding: 25px 12px 25px 12px;
       cursor: pointer;
@@ -194,5 +246,10 @@ table .worksheet-key {
         background-color: transparent;
       }
     }
+
+    > .active > .open {
+      background-color: transparent;
+    }
   }
 }
+

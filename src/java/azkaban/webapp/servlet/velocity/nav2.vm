@@ -17,31 +17,40 @@
     <div class="navbar navbar-inverse navbar-static-top">
       <div class="container">
         <div class="navbar-header">
+#if ($navbar_disabled != 1)
           <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
             <span class="icon-bar"></span>
             <span class="icon-bar"></span>
             <span class="icon-bar"></span>
           </button>
-#parse("azkaban/webapp/servlet/velocity/title2.vm")
+#end
+					<div class="navbar-logo">
+						<a href="${context}/">Azkaban</a>
+					</div>
         </div>
+				<div class="navbar-left navbar-enviro">
+					<div class="navbar-enviro-name">${azkaban_name}</div>
+					<div class="navbar-enviro-server">${azkaban_label}</div>
+				</div>
         <div class="navbar-collapse collapse">
+#if ($navbar_disabled != 1)
           <ul class="nav navbar-nav">
 						<li#if($current_page == 'all') class="active"#end><a href="$!context/index">Projects</a></li>
 						<li#if($current_page == 'schedule') class="active"#end><a href="$!context/schedule">Scheduling</a></li>
 						<!--<li#if($current_page == 'triggers') class="active"#end><a href="$!context/triggers">Triggers</a></li>-->
 						<li#if($current_page == 'executing') class="active"#end><a href="$!context/executor">Executing</a></li>
 						<li#if($current_page == 'history') class="active"#end><a href="$!context/history">History</a></li>
-#foreach($viewer in $viewers)
-	#if(!$viewer.hidden)
+	#foreach ($viewer in $viewers)
+		#if (!$viewer.hidden)
 						<li#if($current_page == $viewer.pluginName) class="active"#end><a href="$!context/$viewer.pluginPath">$viewer.pluginName</a></li>
+		#end
 	#end
-#end
 
-#foreach($trigger in $triggerPlugins)
-	#if(!$trigger.hidden)
+	#foreach ($trigger in $triggerPlugins)
+		#if (!$trigger.hidden)
 						<li#if($current_page == $trigger.pluginName) class="active"#end><a href="$!context/$trigger.pluginPath">$trigger.pluginName</a></li>
+		#end
 	#end
-#end
           </ul>
           <ul class="nav navbar-nav navbar-right">
             <li class="dropdown">
@@ -51,6 +60,7 @@
               </ul>
             </li>
           </ul>
+#end
         </div><!--/.nav-collapse -->
       </div>
     </div>
