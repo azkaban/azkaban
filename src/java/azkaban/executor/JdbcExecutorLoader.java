@@ -379,7 +379,7 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements ExecutorLo
 		
 		// if the main flow is not the parent, then we'll create a composite key for flowID
 		if (flow != node.getParentFlow()) {
-			flowId = flow.getId() + "+" + node.getParentFlow().getPrintableId("+");
+			flowId = node.getParentFlow().getNestedId();
 		}
 		
 		QueryRunner runner = createQueryRunner();
@@ -426,6 +426,7 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements ExecutorLo
 					node.getStatus().getNumVal(), 
 					outputParam,
 					node.getExecutableFlow().getExecutionId(),
+					node.getParentFlow().getNestedId(),
 					node.getId(),
 					node.getAttempt());
 		} catch (SQLException e) {

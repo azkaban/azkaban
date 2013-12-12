@@ -27,6 +27,7 @@ import azkaban.flow.FlowProps;
 import azkaban.flow.Node;
 import azkaban.flow.SpecialJobTypes;
 import azkaban.project.Project;
+import azkaban.utils.TypedMapWrapper;
 
 public class ExecutableFlowBase extends ExecutableNode {
 	public static final String FLOW_ID_PARAM = "flowId";
@@ -206,24 +207,23 @@ public class ExecutableFlowBase extends ExecutableNode {
 		flowObjMap.put(PROPERTIES_PARAM, props);
 	}
 
-	/**
-	 * Using the parameters in the map created from a json file, fill the results of this node
-	 */
-	@SuppressWarnings("unchecked")
-	public void fillExecutableFromMapObject(Map<String,Object> flowObjMap) {
+	@Override
+	public void fillExecutableFromMapObject(TypedMapWrapper<String,Object> flowObjMap) {
 		super.fillExecutableFromMapObject(flowObjMap);
 		
-		this.flowId = (String)flowObjMap.get(FLOW_ID_PARAM);
+		this.flowId = flowObjMap.getString(FLOW_ID_PARAM);
+		List<Object> nodes = flowObjMap.<Object>getList(NODES_PARAM);
 		
-		List<Object> nodes = (List<Object>)flowObjMap.get(NODES_PARAM);
 		if (nodes != null) {
 			for (Object nodeObj: nodes) {
+				@SuppressWarnings("unchecked")
 				Map<String,Object> nodeObjMap = (Map<String,Object>)nodeObj;
+				TypedMapWrapper<String,Object> wrapper = new TypedMapWrapper<String,Object>(nodeObjMap);
 				
-				String type = (String)nodeObjMap.get(TYPE_PARAM);
-				if (type.equals(SpecialJobTypes.EMBEDDED_FLOW_TYPE)) {
+				String type = wrapper.getString(TYPE_PARAM);
+				if (type != null && type.equals(SpecialJobTypes.EMBEDDED_FLOW_TYPE)) {
 					ExecutableFlowBase exFlow = new ExecutableFlowBase();
-					exFlow.fillExecutableFromMapObject(nodeObjMap);
+					exFlow.fillExecutableFromMapObject(wrapper);
 					exFlow.setParentFlow(this);
 					
 					executableNodes.put(exFlow.getId(), exFlow);
@@ -238,8 +238,9 @@ public class ExecutableFlowBase extends ExecutableNode {
 			}
 		}
 		
-		List<Object> properties = (List<Object>)flowObjMap.get(PROPERTIES_PARAM);
+		List<Object> properties = flowObjMap.<Object>getList(PROPERTIES_PARAM);
 		for (Object propNode : properties) {
+			@SuppressWarnings("unchecked")
 			HashMap<String, Object> fprop = (HashMap<String, Object>)propNode;
 			String source = (String)fprop.get("source");
 			String inheritedSource = (String)fprop.get("inherited");
@@ -278,22 +279,21 @@ public class ExecutableFlowBase extends ExecutableNode {
 		return updateData;
 	}
 	
-	public void applyUpdateObject(Map<String, Object> updateData, List<ExecutableNode> updatedNodes) {
+	public void applyUpdateObject(TypedMapWrapper<String, Object> updateData, List<ExecutableNode> updatedNodes) {
 		super.applyUpdateObject(updateData);
 		
 		if (updatedNodes != null) {
 			updatedNodes.add(this);
 		}
-		
-		@SuppressWarnings("unchecked")
-		List<Map<String,Object>> nodes = (List<Map<String,Object>>)updateData.get(NODES_PARAM);
+
+		List<Map<String,Object>> nodes = (List<Map<String,Object>>)updateData.<Map<String,Object>>getList(NODES_PARAM);
 		if (nodes != null) {
 			for (Map<String,Object> node: nodes) {
-	
-				String id = (String)node.get(ID_PARAM);
+				TypedMapWrapper<String,Object> nodeWrapper = new TypedMapWrapper<String,Object>(node);
+				String id = nodeWrapper.getString(ID_PARAM);
 				if (id == null) {
 					// Legacy case
-					id = (String)node.get("jobId");				
+					id = nodeWrapper.getString("jobId");				
 				}
 	
 				ExecutableNode exNode = executableNodes.get(id);
@@ -302,18 +302,24 @@ public class ExecutableFlowBase extends ExecutableNode {
 				}
 				
 				if (exNode instanceof ExecutableFlowBase) {
-					((ExecutableFlowBase)exNode).applyUpdateObject(node, updatedNodes);
+					((ExecutableFlowBase)exNode).applyUpdateObject(nodeWrapper, updatedNodes);
 				}
 				else {
-					exNode.applyUpdateObject(node);
+					exNode.applyUpdateObject(nodeWrapper);
 				}
 			}
 		}
-		
 	}
 	
+	public void applyUpdateObject(Map<String, Object> updateData, List<ExecutableNode> updatedNodes) {
+		TypedMapWrapper<String, Object> typedMapWrapper = new TypedMapWrapper<String,Object>(updateData);
+		applyUpdateObject(typedMapWrapper, updatedNodes);
+	}
+	
+	@Override
 	public void applyUpdateObject(Map<String, Object> updateData) {
-		applyUpdateObject(updateData, null);
+		TypedMapWrapper<String, Object> typedMapWrapper = new TypedMapWrapper<String,Object>(updateData);
+		applyUpdateObject(typedMapWrapper, null);
 	}
 	
 	public void reEnableDependents(ExecutableNode ... nodes) {

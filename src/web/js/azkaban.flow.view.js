@@ -298,6 +298,7 @@ $(function() {
 
 	// Set up the Flow options view. Create a new one every time :p
 	 $('#executebtn').click( function() {
+		 closeAllSubDisplays();
 	  	var data = graphModel.get("data");
 	  	var nodes = data.nodes;
 	  
@@ -314,7 +315,7 @@ $(function() {
 	      requestURL,
 	      {"project": projectName, "ajax":"fetchflowgraph", "flow":flowId},
 	      function(data) {
-	    	  createModelFromAjaxCall(data, graphModel);
+	    	  parseFlowData(data, graphModel);
 	          graphModel.trigger("change:graph");
 	          
 	          // Handle the hash changes here so the graph finishes rendering first.

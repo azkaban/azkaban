@@ -6,9 +6,7 @@ azkaban.FlowExtendedViewPanel = Backbone.View.extend({
 		//this.model.bind('change:flowinfo', this.changeFlowInfo, this);
 		$(this.el).show();
 		$(this.el).draggable({cancel: ".dataContent", containment: "document"});
-		
-		this.extendedViewPanels = {};
-		this.extendedDataModels = {};
+
 		this.render();
 		$(this.el).hide();
 	},
@@ -52,10 +50,7 @@ azkaban.FlowExtendedViewPanel = Backbone.View.extend({
 			$(svgDataFlow).append(svgGraph);
 			$(svgDataFlow).resizable();
 			
-			this.innerGraphModel = new azkaban.GraphModel();
-			this.innerGraphModel.set({"data": this.model.get("flow")});
-			
-			this.graphView = new azkaban.SvgGraphView({el: svgDataFlow, model: this.innerGraphModel, render: true, rightClick:  { "node": nodeClickCallback, "graph": graphClickCallback }})
+			this.graphView = new azkaban.SvgGraphView({el: svgDataFlow, model: this.model, render: true, rightClick:  { "node": nodeClickCallback, "graph": graphClickCallback }})
 		}
 		else {
 			$(this.el).find(".dataFlow").hide();

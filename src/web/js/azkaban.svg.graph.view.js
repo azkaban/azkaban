@@ -94,14 +94,12 @@ azkaban.SvgGraphView = Backbone.View.extend({
 
 		var data = this.model.get("data");
 		var nodes = data.nodes;
-		var edges = data.edges;
+		var edges = this.model.get("edges");
+		
 		if (nodes.length == 0) {
 			console.log("No results");
 			return;
 		};
-	
-		nodes.sort();
-		edges.sort();
 		
 		var bounds = {};
 		this.nodes = {};
@@ -120,10 +118,10 @@ azkaban.SvgGraphView = Backbone.View.extend({
 		this.moveNodes(bounds);
 		
 		for (var i = 0; i < edges.length; ++i) {
-			var inNodes = this.nodes[edges[i].target].inNodes;
+			var inNodes = this.nodes[edges[i].to].inNodes;
 			if (!inNodes) {
 				inNodes = {};
-				this.nodes[edges[i].target].inNodes = inNodes;
+				this.nodes[edges[i].to].inNodes = inNodes;
 			}
 			inNodes[edges[i].from] = this.nodes[edges[i].from];
 			
@@ -132,12 +130,12 @@ azkaban.SvgGraphView = Backbone.View.extend({
 				outNodes = {};
 				this.nodes[edges[i].from].outNodes = outNodes;
 			}
-			outNodes[edges[i].target] = this.nodes[edges[i].target];
+			outNodes[edges[i].to] = this.nodes[edges[i].to];
 
 			this.drawEdge(this, edges[i]);
 		}
 		
-		this.model.set({"flowId":data.flowId, "nodes": this.nodes, "edges": edges});
+		this.model.set({"flowId":data.flowId, "edges": edges});
 		
 		var margin = this.graphMargin;
 		bounds.minX = bounds.minX ? bounds.minX - margin : -margin;
@@ -260,7 +258,7 @@ azkaban.SvgGraphView = Backbone.View.extend({
 		var svgns = self.svgns;
 		
 		var startNode = this.nodes[edge.from];
-		var endNode = this.nodes[edge.target];
+		var endNode = this.nodes[edge.to];
 		
 		var startPointY = startNode.y + startNode.height/2 - 3;
 		var endPointY = endNode.y - endNode.height/2 + 3;
@@ -276,7 +274,7 @@ azkaban.SvgGraphView = Backbone.View.extend({
 			var polyLine = document.createElementNS(svgns, "polyline");
 			polyLine.setAttribute("class", "edge");
 			polyLine.setAttribute("points", pointString);
-			polyLine.setAttribute("style", "fill:none;");
+			polyLine.setAttribute("style", "fill:none;stroke-width:3");
 			$(self.mainG).prepend(polyLine);
 		}
 		else { 
@@ -286,7 +284,7 @@ azkaban.SvgGraphView = Backbone.View.extend({
 			line.setAttribute("y1", startPointY);
 			line.setAttribute("x2", endNode.x);
 			line.setAttribute("y2", endPointY);
-			
+			line.setAttribute("style", "stroke-width:3");
 			$(self.mainG).prepend(line);
 		}
 	},
@@ -296,7 +294,7 @@ azkaban.SvgGraphView = Backbone.View.extend({
 		}
 		else {
 			this.drawBoxNode(self,node);
-			//this.drawCircleNode(self,node,bounds);
+			//this.drawCircleNode2(self,node);
 		}
 	},
 	moveNodes: function(bounds) {
@@ -362,7 +360,8 @@ azkaban.SvgGraphView = Backbone.View.extend({
 		innerG.jobid = node.id;
 		innerG.jobtype = "flow";
 		innerG.flowId = node.flowId;
-
+		innerG.nodeobj = node;
+		
 		nodeG.appendChild(innerG);
 		self.mainG.appendChild(nodeG);
 
@@ -400,6 +399,7 @@ azkaban.SvgGraphView = Backbone.View.extend({
 		
 		nodeG.setAttribute("class", "node");
 		nodeG.jobid=node.id;
+		nodeG.jobobj=node;
 	},
 	drawBoxNode: function(self, node) {
 		var svg = self.svgGraph;
@@ -432,7 +432,8 @@ azkaban.SvgGraphView = Backbone.View.extend({
 		innerG.appendChild(rect);
 		innerG.appendChild(text);
 		innerG.jobid = node.id;
-
+		innerG.nodeobj = node;
+		
 		nodeG.appendChild(innerG);
 		self.mainG.appendChild(nodeG);
 
@@ -462,6 +463,7 @@ azkaban.SvgGraphView = Backbone.View.extend({
 		
 		nodeG.setAttribute("class", "node");
 		nodeG.jobid=node.id;
+		nodeG.j=node;
 	},
 	drawCircleNode: function(self, node, bounds) {
 		var svg = self.svgGraph;
@@ -470,6 +472,7 @@ azkaban.SvgGraphView = Backbone.View.extend({
 		var xOffset = 10;
 		var yOffset = 10;
 		
+		var height = 18;
 		var nodeG = document.createElementNS(svgns, "g");
 		nodeG.setAttribute("class", "jobnode");
 		nodeG.setAttribute("font-family", "helvetica");
@@ -484,6 +487,7 @@ azkaban.SvgGraphView = Backbone.View.extend({
 		circle.setAttribute("cx", 10);
 		circle.setAttribute("r", 12);
 		circle.setAttribute("style", "width:inherit;stroke-opacity:1");
+		
 		//circle.setAttribute("class", "border");
 		//circle.setAttribute("class", "nodecontainer");
 		
@@ -492,8 +496,8 @@ azkaban.SvgGraphView = Backbone.View.extend({
 		text.appendChild(textLabel);
 		text.setAttribute("x", 0);
 		text.setAttribute("y", 0);
-				
-		this.addBounds(bounds, {minX:node.x - xOffset, minY: node.y - yOffset, maxX: node.x + xOffset, maxY: node.y + yOffset});
+
+		//this.addBounds(bounds, {minX:node.x - xOffset, minY: node.y - yOffset, maxX: node.x + xOffset, maxY: node.y + yOffset});
 		
 		var backRect = document.createElementNS(svgns, 'rect');
 		backRect.setAttribute("x", 0);
@@ -510,6 +514,9 @@ azkaban.SvgGraphView = Backbone.View.extend({
 		nodeG.appendChild(innerG);
 		self.mainG.appendChild(nodeG);
 
+		
+		var horizontalMargin = 8;
+		var verticalMargin = 2;
 		// Need to get text width after attaching to SVG.
 		var computeText = text.getComputedTextLength();
 		var halfWidth = computeText/2;
@@ -517,6 +524,88 @@ azkaban.SvgGraphView = Backbone.View.extend({
 		backRect.setAttribute("x", -halfWidth);
 		backRect.setAttribute("width", computeText + 20);
 
+		// Margin for surrounding box.
+		var boxWidth = computeText + horizontalMargin * 2;
+		var boxHeight = height + verticalMargin * 2;
+		
+		node.width = boxWidth;
+		node.height = boxHeight;
+		node.centerX = boxWidth/2;
+		node.centerY = boxHeight/2;
+		
+		nodeG.setAttribute("class", "node");
+		nodeG.nodeobj=node;
+		nodeG.jobid=node.id;
+	},
+	drawCircleNode2: function(self, node, bounds) {
+		var svg = self.svgGraph;
+		var svgns = self.svgns;
+
+		var xOffset = 10;
+		var yOffset = 10;
+		
+		var height = 18;
+		var nodeG = document.createElementNS(svgns, "g");
+		nodeG.setAttribute("class", "jobnode");
+		nodeG.setAttribute("font-family", "helvetica");
+		nodeG.setAttribute("transform", "translate(" + node.x + "," + node.y + ")");
+		this.gNodes[node.id] = nodeG;
+		
+		var innerG = document.createElementNS(svgns, "g");
+		innerG.setAttribute("transform", "translate(-10,-10)");
+		
+		var circle = document.createElementNS(svgns, 'circle');
+		circle.setAttribute("cy", 10);
+		circle.setAttribute("cx", 10);
+		circle.setAttribute("r", 12);
+		circle.setAttribute("style", "width:inherit;stroke-opacity:1;stroke:rgb(100,100,100);stroke-width:5");
+		//circle.setAttribute("class", "border");
+		//circle.setAttribute("class", "nodecontainer");
+		
+		var text = document.createElementNS(svgns, 'text');
+		var textLabel = document.createTextNode(node.label);
+		text.appendChild(textLabel);
+		text.setAttribute("x", 0);
+		text.setAttribute("y", 0);
+
+		//this.addBounds(bounds, {minX:node.x - xOffset, minY: node.y - yOffset, maxX: node.x + xOffset, maxY: node.y + yOffset});
+		
+		var backRect = document.createElementNS(svgns, 'rect');
+		backRect.setAttribute("x", 0);
+		backRect.setAttribute("y", 2);
+		backRect.setAttribute("class", "backboard");
+		backRect.setAttribute("width", 10);
+		backRect.setAttribute("height", 15);
+		
+		innerG.appendChild(circle);
+		innerG.appendChild(backRect);
+//		innerG.appendChild(text);
+		innerG.jobid = node.id;
+
+		nodeG.appendChild(innerG);
+		self.mainG.appendChild(nodeG);
+
+		
+		var horizontalMargin = 8;
+		var verticalMargin = 2;
+		// Need to get text width after attaching to SVG.
+		var computeText = 150;
+		var halfWidth = computeText/2;
+		text.setAttribute("x", -halfWidth + 10);
+		backRect.setAttribute("x", -halfWidth);
+		backRect.setAttribute("width", computeText + 20);
+
+		// Margin for surrounding box.
+		var boxWidth = computeText + horizontalMargin * 2;
+		var boxHeight = height + verticalMargin * 2;
+		
+//		innerG.removeChild(text);
+		
+		node.width = boxWidth;
+		node.height = boxHeight;
+		node.centerX = boxWidth/2;
+		node.centerY = boxHeight/2;
+		
 		nodeG.setAttribute("class", "node");
 		nodeG.jobid=node.id;
 	},

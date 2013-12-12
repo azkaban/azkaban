@@ -19,13 +19,13 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import azkaban.flow.Flow;
-import azkaban.flow.FlowProps;
 import azkaban.project.Project;
-import azkaban.utils.JSONUtils;
+import azkaban.utils.TypedMapWrapper;
 
 public class ExecutableFlow extends ExecutableFlowBase {
 	public static final String EXECUTIONID_PARAM = "executionId";
@@ -192,30 +192,20 @@ public class ExecutableFlow extends ExecutableFlowBase {
 	}
 	
 	@Override
-	@SuppressWarnings("unchecked")
-	public void fillExecutableFromMapObject(Map<String, Object> flowObj) {
+	public void fillExecutableFromMapObject(TypedMapWrapper<String, Object> flowObj) {
 		super.fillExecutableFromMapObject(flowObj);
 		
-		this.executionId = (Integer)flowObj.get(EXECUTIONID_PARAM);
-		this.executionPath = (String)flowObj.get(EXECUTIONPATH_PARAM);
+		this.executionId = flowObj.getInt(EXECUTIONID_PARAM);
+		this.executionPath = flowObj.getString(EXECUTIONPATH_PARAM);
 
-		this.projectId = (Integer)flowObj.get(PROJECTID_PARAM);
-		if (flowObj.containsKey(SCHEDULEID_PARAM)) {
-			this.scheduleId = (Integer)flowObj.get(SCHEDULEID_PARAM);
-		}
-		
-		if (flowObj.containsKey(SUBMITUSER_PARAM)) {
-			this.submitUser = (String)flowObj.get(SUBMITUSER_PARAM);
-		}
-		else {
-			this.submitUser = null;
-		}
-		this.version = (Integer)flowObj.get(VERSION_PARAM);
-		
-		this.submitTime = JSONUtils.getLongFromObject(flowObj.get(SUBMITTIME_PARAM));
+		this.projectId = flowObj.getInt(PROJECTID_PARAM);
+		this.scheduleId = flowObj.getInt(SCHEDULEID_PARAM);
+		this.submitUser = flowObj.getString(SUBMITUSER_PARAM);
+		this.version = flowObj.getInt(VERSION_PARAM);
+		this.submitTime = flowObj.getLong(SUBMITTIME_PARAM);
 		
 		if (flowObj.containsKey(EXECUTIONOPTIONS_PARAM)) {
-			this.executionOptions = ExecutionOptions.createFromObject(flowObj.get(EXECUTIONOPTIONS_PARAM));
+			this.executionOptions = ExecutionOptions.createFromObject(flowObj.getObject(EXECUTIONOPTIONS_PARAM));
 		}
 		else {
 			// for backwards compatibility should remove in a few versions.
@@ -223,7 +213,7 @@ public class ExecutableFlow extends ExecutableFlowBase {
 		}
 		
 		if(flowObj.containsKey(PROXYUSERS_PARAM)) {
-			ArrayList<String> proxyUserList = (ArrayList<String>) flowObj.get(PROXYUSERS_PARAM);
+			List<String> proxyUserList = flowObj.<String>getList(PROXYUSERS_PARAM);
 			this.addAllProxyUsers(proxyUserList);
 		}
 	}

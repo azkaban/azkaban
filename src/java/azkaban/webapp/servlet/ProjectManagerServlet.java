@@ -28,6 +28,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -511,7 +512,46 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 	private void ajaxFetchFlowGraph(Project project, HashMap<String, Object> ret, HttpServletRequest req) throws ServletException {
 		String flowId = getParam(req, "flow");
 		
-		fillFlowInfo(project, flowId, ret);
+		fillFlowInfo2(project, flowId, ret);
+	}
+	
+	private void fillFlowInfo2(Project project, String flowId, HashMap<String, Object> ret) {
+		Flow flow = project.getFlow(flowId);
+		
+		ArrayList<Map<String, Object>> nodeList = new ArrayList<Map<String, Object>>();
+		for (Node node: flow.getNodes()) {
+			HashMap<String, Object> nodeObj = new HashMap<String, Object>();
+			nodeObj.put("id", node.getId());
+			nodeObj.put("type", node.getType());
+			if (node.getEmbeddedFlowId() != null) {
+				nodeObj.put("flowId", node.getEmbeddedFlowId());
+//				HashMap<String, Object> embeddedNodeObj = new HashMap<String, Object>();
+//				fillFlowInfo2(project, node.getEmbeddedFlowId(), embeddedNodeObj);
+//				nodeObj.put("flowData", embeddedNodeObj);
+			}
+			
+			nodeList.add(nodeObj);
+			Set<Edge> inEdges = flow.getInEdges(node.getId());
+			if (inEdges != null && !inEdges.isEmpty()) {
+				ArrayList<String> inEdgesList = new ArrayList<String>();
+				for (Edge edge: inEdges) {
+					inEdgesList.add(edge.getSourceId());
+				}
+				Collections.sort(inEdgesList);
+				nodeObj.put("in", inEdgesList);
+			}
+		}
+		
+		Collections.sort(nodeList, new Comparator<Map<String, Object>>() {
+			@Override
+			public int compare(Map<String, Object> o1, Map<String, Object> o2) {
+				String id = (String)o1.get("id");
+				return id.compareTo((String)o2.get("id"));
+			}
+		});
+
+		ret.put("flow", flowId);
+		ret.put("nodes", nodeList);
 	}
 	
 	private void fillFlowInfo(Project project, String flowId, HashMap<String, Object> ret) {
@@ -584,7 +624,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 		if (node.getType().equals("flow")) {
 			if (node.getEmbeddedFlowId() != null) {
 				HashMap<String, Object> flowMap = new HashMap<String, Object>();
-				fillFlowInfo(project, node.getEmbeddedFlowId(), flowMap);
+				fillFlowInfo2(project, node.getEmbeddedFlowId(), flowMap);
 				ret.put("flowData", flowMap);
 			}
 		}

@@ -582,16 +582,16 @@ public class FlowRunnerPipelineTest {
 		FileUtils.copyDirectory(directory, workingDir);
 	}
 	
-	private void printCurrentState(String prefix, ExecutableFlowBase flow) {
-		for(ExecutableNode node: flow.getExecutableNodes()) {
-
-			System.err.println(prefix + node.getNestedId() + "->" + node.getStatus().name());
-			if (node instanceof ExecutableFlowBase) {
-				printCurrentState(prefix, (ExecutableFlowBase)node);
-			}
-		}
-	}
-	
+//	private void printCurrentState(String prefix, ExecutableFlowBase flow) {
+//		for(ExecutableNode node: flow.getExecutableNodes()) {
+//
+//			System.err.println(prefix + node.getNestedId() + "->" + node.getStatus().name());
+//			if (node instanceof ExecutableFlowBase) {
+//				printCurrentState(prefix, (ExecutableFlowBase)node);
+//			}
+//		}
+//	}
+//	
 	private FlowRunner createFlowRunner(EventCollectorListener eventCollector, String flowName, String groupName) throws Exception {
 		return createFlowRunner(eventCollector, flowName, groupName, new ExecutionOptions());
 	}

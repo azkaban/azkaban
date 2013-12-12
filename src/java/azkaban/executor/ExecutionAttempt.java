@@ -3,7 +3,7 @@ package azkaban.executor;
 import java.util.HashMap;
 import java.util.Map;
 
-import azkaban.utils.JSONUtils;
+import azkaban.utils.TypedMapWrapper;
 
 public class ExecutionAttempt {
 	public static final String ATTEMPT_PARAM = "attempt";
@@ -49,10 +49,11 @@ public class ExecutionAttempt {
 	public static ExecutionAttempt fromObject(Object obj) {
 		@SuppressWarnings("unchecked")
 		Map<String, Object> map = (Map<String, Object>)obj;
-		int attempt = (Integer)map.get(ATTEMPT_PARAM);
-		long startTime = JSONUtils.getLongFromObject(map.get(STARTTIME_PARAM));
-		long endTime = JSONUtils.getLongFromObject(map.get(ENDTIME_PARAM));
-		Status status = Status.valueOf((String)map.get(STATUS_PARAM));
+		TypedMapWrapper<String, Object> wrapper = new TypedMapWrapper<String, Object>(map);
+		int attempt = wrapper.getInt(ATTEMPT_PARAM);
+		long startTime = wrapper.getLong(STARTTIME_PARAM);
+		long endTime = wrapper.getLong(ENDTIME_PARAM);
+		Status status = Status.valueOf(wrapper.getString(STATUS_PARAM));
 		
 		return new ExecutionAttempt(attempt, startTime, endTime, status);
 	}

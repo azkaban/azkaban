@@ -277,8 +277,6 @@ public class ExecutableFlowTest {
 		Assert.assertEquals(a.getOutNodes(), a.getOutNodes());
 	}
 	
-	
-	
 	public static void testEquals(ExecutionOptions optionsA, ExecutionOptions optionsB) {
 		Assert.assertEquals(optionsA.getConcurrentOption(), optionsB.getConcurrentOption());
 		Assert.assertEquals(optionsA.getNotifyOnFirstFailure(), optionsB.getNotifyOnFirstFailure());

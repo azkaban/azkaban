@@ -2,15 +2,16 @@ package azkaban.executor;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import azkaban.flow.Node;
-import azkaban.utils.JSONUtils;
 import azkaban.utils.Props;
 import azkaban.utils.PropsUtils;
+import azkaban.utils.TypedMapWrapper;
 
 /**
  * Base Executable that nodes and flows are based.
@@ -291,38 +292,30 @@ public class ExecutableNode {
 	}
 	
 	@SuppressWarnings("unchecked")
-	public void fillExecutableFromMapObject(Map<String,Object> objMap) {
-		this.id = (String)objMap.get(ID_PARAM);
-		this.status = Status.valueOf((String)objMap.get(STATUS_PARAM));
-		this.startTime = JSONUtils.getLongFromObject(objMap.get(STARTTIME_PARAM));
-		this.endTime = JSONUtils.getLongFromObject(objMap.get(ENDTIME_PARAM));
-		this.updateTime = JSONUtils.getLongFromObject(objMap.get(UPDATETIME_PARAM));
-		this.type = (String)objMap.get(TYPE_PARAM);
-		this.attempt = (Integer)objMap.get(ATTEMPT_PARAM);
+	public void fillExecutableFromMapObject(TypedMapWrapper<String, Object> wrappedMap) {
+		this.id = wrappedMap.getString(ID_PARAM);
+		this.type = wrappedMap.getString(TYPE_PARAM);
+		this.status = Status.valueOf(wrappedMap.getString(STATUS_PARAM));
+		this.startTime = wrappedMap.getLong(STARTTIME_PARAM);
+		this.endTime = wrappedMap.getLong(ENDTIME_PARAM);
+		this.updateTime = wrappedMap.getLong(UPDATETIME_PARAM);
+		this.attempt = wrappedMap.getInt(ATTEMPT_PARAM, 0);
+
+		this.inNodes = new HashSet<String>();
+		this.inNodes.addAll(wrappedMap.getStringCollection(INNODES_PARAM, Collections.<String>emptySet()));
 		
-		if (objMap.containsKey(INNODES_PARAM)) {
-			this.inNodes = new HashSet<String>();
-			this.inNodes.addAll((Collection<String>)objMap.get(INNODES_PARAM));
+		this.outNodes = new HashSet<String>();
+		this.outNodes.addAll(wrappedMap.getStringCollection(OUTNODES_PARAM, Collections.<String>emptySet()));
+		
+		this.propsSource = wrappedMap.getString(PROPS_SOURCE_PARAM);
+		this.jobSource = wrappedMap.getString(JOB_SOURCE_PARAM);
+		
+		Map<String, String> outputProps = wrappedMap.<String,String>getMap(OUTPUT_PROPS_PARAM);
+		if (outputProps != null) {
+			this.outputProps = new Props(null, outputProps);
 		}
 		
-		if (objMap.containsKey(OUTNODES_PARAM)) {
-			this.outNodes = new HashSet<String>();
-			this.outNodes.addAll((Collection<String>)objMap.get(OUTNODES_PARAM));
-		}
-	
-		if (objMap.containsKey(PROPS_SOURCE_PARAM)) {
-			this.propsSource = (String)objMap.get(PROPS_SOURCE_PARAM);
-		}
-		
-		if (objMap.containsKey(JOB_SOURCE_PARAM)) {
-			this.jobSource = (String)objMap.get(JOB_SOURCE_PARAM);
-		}
-		
-		if (objMap.containsKey(OUTPUT_PROPS_PARAM)) {
-			this.outputProps = new Props(null, (Map<String,String>)objMap.get(OUTPUT_PROPS_PARAM));
-		}
-		
-		Collection<Object> pastAttempts = (Collection<Object>)objMap.get(PASTATTEMPTS_PARAM);
+		Collection<Object> pastAttempts = wrappedMap.<Object>getCollection(PASTATTEMPTS_PARAM);
 		if (pastAttempts!=null) {
 			ArrayList<ExecutionAttempt> attempts = new ArrayList<ExecutionAttempt>();
 			for (Object attemptObj: pastAttempts) {
@@ -332,6 +325,11 @@ public class ExecutableNode {
 			
 			this.pastAttempts = attempts;
 		}
+	}
+
+	public void fillExecutableFromMapObject(Map<String,Object> objMap) {
+		TypedMapWrapper<String, Object> wrapper = new TypedMapWrapper<String, Object>(objMap);
+		fillExecutableFromMapObject(wrapper);
 	}
 
 	public Map<String, Object> toUpdateObject() {
@@ -355,27 +353,24 @@ public class ExecutableNode {
 		return updatedNodeMap;
 	}
 	
-	@SuppressWarnings("unchecked")
-	public void applyUpdateObject(Map<String, Object> updateData) {
-		if (updateData.containsKey(STATUS_PARAM)) {
-			this.status = Status.fromInteger((Integer)updateData.get(STATUS_PARAM));
-		}
-		if (updateData.containsKey(STARTTIME_PARAM)) {
-			this.startTime = JSONUtils.getLongFromObject(updateData.get(STARTTIME_PARAM));
-		}
-		if (updateData.containsKey(UPDATETIME_PARAM)) {
-			this.updateTime = JSONUtils.getLongFromObject(updateData.get(UPDATETIME_PARAM));
-		}
-		if (updateData.containsKey(ENDTIME_PARAM)) {
-			this.endTime = JSONUtils.getLongFromObject(updateData.get(ENDTIME_PARAM));
-		}
+	public void applyUpdateObject(TypedMapWrapper<String, Object> updateData) {
+		this.status = Status.fromInteger(updateData.getInt(STATUS_PARAM, this.status.getNumVal()));
+		this.startTime = updateData.getLong(STARTTIME_PARAM);
+		this.updateTime = updateData.getLong(UPDATETIME_PARAM);
+		this.endTime = updateData.getLong(ENDTIME_PARAM);
 		
 		if (updateData.containsKey(ATTEMPT_PARAM)) {
-			attempt = (Integer)updateData.get(ATTEMPT_PARAM);
+			attempt = updateData.getInt(ATTEMPT_PARAM);
 			if (attempt > 0) {
-				updatePastAttempts((List<Object>)updateData.get(PASTATTEMPTS_PARAM));
+				updatePastAttempts(
+						updateData.<Object>getList(PASTATTEMPTS_PARAM, Collections.<Object>emptyList()));
 			}
 		}
+	}
+
+	public void applyUpdateObject(Map<String, Object> updateData) {
+		TypedMapWrapper<String,Object> wrapper = new TypedMapWrapper<String,Object>(updateData);
+		applyUpdateObject(wrapper);
 	}
 	
 	public void killNode(long killTime) {
@@ -417,4 +412,6 @@ public class ExecutableNode {
 			}
 		}
 	}
+	
+	
 }

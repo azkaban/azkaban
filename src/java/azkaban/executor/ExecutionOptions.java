@@ -2,11 +2,14 @@ package azkaban.executor;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
+import azkaban.utils.TypedMapWrapper;
 
 /**
  * Execution options for submitted flows and scheduled flows
@@ -179,50 +182,35 @@ public class ExecutionOptions {
 		}
 		
 		Map<String,Object> optionsMap = (Map<String,Object>)obj;
+		TypedMapWrapper<String,Object> wrapper = new TypedMapWrapper<String,Object>(optionsMap);
 		
 		ExecutionOptions options = new ExecutionOptions();
 		if (optionsMap.containsKey(FLOW_PARAMETERS)) {
 			options.flowParameters = new HashMap<String, String>();
-			options.flowParameters.putAll((Map<String,String>)optionsMap.get(FLOW_PARAMETERS));
+			options.flowParameters.putAll(wrapper.<String,String>getMap(FLOW_PARAMETERS));
 		}
 		// Failure notification
-		if (optionsMap.containsKey(NOTIFY_ON_FIRST_FAILURE)) {
-			options.notifyOnFirstFailure = (Boolean)optionsMap.get(NOTIFY_ON_FIRST_FAILURE);
-		}
-		if (optionsMap.containsKey(NOTIFY_ON_LAST_FAILURE)) {
-			options.notifyOnLastFailure = (Boolean)optionsMap.get(NOTIFY_ON_LAST_FAILURE);
-		}
-		if (optionsMap.containsKey(CONCURRENT_OPTION)) {
-			options.concurrentOption = (String)optionsMap.get(CONCURRENT_OPTION);
-		}
-		if (optionsMap.containsKey(DISABLE)) {
-			options.initiallyDisabledJobs = new HashSet<String>((Collection<String>)optionsMap.get(DISABLE));
+		options.notifyOnFirstFailure = wrapper.getBool(NOTIFY_ON_FIRST_FAILURE, options.notifyOnFirstFailure);
+		options.notifyOnLastFailure = wrapper.getBool(NOTIFY_ON_LAST_FAILURE, options.notifyOnLastFailure);
+		options.concurrentOption = wrapper.getString(CONCURRENT_OPTION, options.concurrentOption);
+		
+		if (wrapper.containsKey(DISABLE)) {
+			options.initiallyDisabledJobs = new HashSet<String>(wrapper.<String>getCollection(DISABLE));
 		}
 		
 		// Failure action
-		if (optionsMap.containsKey(FAILURE_ACTION)) {
-			options.failureAction = FailureAction.valueOf((String)optionsMap.get(FAILURE_ACTION));
-		}
-		options.pipelineLevel = (Integer)optionsMap.get(PIPELINE_LEVEL);
-		options.pipelineExecId = (Integer)optionsMap.get(PIPELINE_EXECID);
-		options.queueLevel = (Integer)optionsMap.get(QUEUE_LEVEL);
+		options.failureAction = FailureAction.valueOf(wrapper.getString(FAILURE_ACTION, options.failureAction.toString()));
+		options.pipelineLevel = wrapper.getInt(PIPELINE_LEVEL, options.pipelineLevel);
+		options.pipelineExecId = wrapper.getInt(PIPELINE_EXECID, options.pipelineExecId);
+		options.queueLevel = wrapper.getInt(QUEUE_LEVEL, options.queueLevel);
+
 		
 		// Success emails
-		if (optionsMap.containsKey(SUCCESS_EMAILS)) {
-			options.setSuccessEmails((List<String>)optionsMap.get(SUCCESS_EMAILS));
-		}
-		// Failure emails
-		if (optionsMap.containsKey(FAILURE_EMAILS)) {
-			options.setFailureEmails((List<String>)optionsMap.get(FAILURE_EMAILS));
-		}
+		options.setSuccessEmails(wrapper.<String>getList(SUCCESS_EMAILS, Collections.<String>emptyList()));
+		options.setFailureEmails(wrapper.<String>getList(FAILURE_EMAILS, Collections.<String>emptyList()));
 		
-		if (optionsMap.containsKey(SUCCESS_EMAILS_OVERRIDE)) {
-			options.setSuccessEmailsOverridden((Boolean)optionsMap.get(SUCCESS_EMAILS_OVERRIDE));
-		}
-		
-		if (optionsMap.containsKey(FAILURE_EMAILS_OVERRIDE)) {
-			options.setFailureEmailsOverridden((Boolean)optionsMap.get(FAILURE_EMAILS_OVERRIDE));
-		}
+		options.setSuccessEmailsOverridden(wrapper.getBool(SUCCESS_EMAILS_OVERRIDE, false));
+		options.setFailureEmailsOverridden(wrapper.getBool(FAILURE_EMAILS_OVERRIDE, false));
 		
 		return options;
 	}

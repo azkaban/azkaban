@@ -27,6 +27,7 @@
 		<script type="text/javascript" src="${context}/js/jquery.simplemodal-1.4.4.js"></script>
 		<script type="text/javascript" src="${context}/js/azkaban.ajax.utils.js"></script>
 		<script type="text/javascript" src="${context}/js/azkaban.nav.js"></script>
+		<script type="text/javascript" src="${context}/js/azkaban.svg.graph.view.js"></script>
 		<script type="text/javascript" src="${context}/js/azkaban.project.view.js"></script>
 
 		<link rel="stylesheet" type="text/css" href="${context}/css/jquery-ui-1.10.1.custom.css" />

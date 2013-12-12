@@ -4,16 +4,59 @@ var degreeRatio = 1/8;
 var maxHeight = 200;
 var cornerGap = 10;
 
-function layoutGraph(nodes, edges, hmargin) {
-	var startLayer = [];
-	var numLayer = 0;
-	var nodeMap = {};
-	
+var idSort = function(a, b) {
+	if ( a.id < b.id ) {
+		return -1;
+	}
+	else if ( a.id > b.id ) {
+		return 1;
+	}
+	else {
+		return 0;
+	}
+}
+
+function prepareLayout(nodes, hmargin, layers, nodeMap) {
 	var maxLayer = 0;
-	var layers = {};
+	var numLayer = 0;
+	var nodeQueue = new Array();
+	// Find start layers first
+	for (var i=0; i < nodes.length; ++i) {
+		var node = nodes[i];
+		if (node.inNodes) {
+			// We sort here. Why? To keep the node drawing consistent
+			node.in.sort(idSort);
+		}
+		else {
+			// We sort here. Why? To keep it up and running.
+			nodeQueue.push(node);
+		}
+	}
+	// Sort here. To keep the node drawing consistent
+	nodes.sort(idSort);
 	
-	if (!hmargin) {
-		hmargin = 8;
+	// calculate level
+	// breath first search the sucker
+	var index = 0;
+	while(index < nodeQueue.length) {
+		var node = nodeQueue[index];
+		if (node.inNodes) {
+			var level = 0;
+			for (var key in node.inNodes) {
+				level = Math.max(level, node.inNodes[key].level);
+			}
+			node.level = level + 1;
+		}
+		else {
+			node.level = 0;
+		}
+		
+		if (node.outNodes) {
+			for (var key in node.outNodes) {
+				nodeQueue.push(node.outNodes[key]);
+			}
+		}
+		index++;
 	}
 	
 	// Assign to layers
@@ -33,13 +76,30 @@ function layoutGraph(nodes, edges, hmargin) {
 		layers[node.level].push(node);
 	}
 	
+	layers.numLayer = numLayer;
+	layers.maxLayer = maxLayer;
+}
+
+function layoutGraph(nodes, edges, hmargin) {
+	var startLayer = [];
+
+	var nodeMap = {};
+	var layers = {};
+	
+	if (!hmargin) {
+		hmargin = 8;
+	}
+	
+	prepareLayout(nodes, hmargin, layers, nodeMap);
+	var maxLayer = layers.maxLayer;
+	var numLayer = layers.numLayer;
+	
 	// Create dummy nodes
 	var edgeDummies = {};
-	
 	for (var i=0; i < edges.length; ++i ) {
 		var edge = edges[i];
 		var src = edges[i].from;
-		var dest = edges[i].target;
+		var dest = edges[i].to;
 		
 		var edgeId = src + ">>" + dest;
 		
@@ -96,7 +156,6 @@ function layoutGraph(nodes, edges, hmargin) {
 		spreadLayerSmart(layers[i]);
 	}
 	
-
 	// Space it vertically
 	spaceVertically(layers, maxLayer);
 	
@@ -107,12 +166,12 @@ function layoutGraph(nodes, edges, hmargin) {
 		node.x = layerNode.x;
 		node.y = layerNode.y;
 	}
-	
+
 	// Dummy node for more points.
 	for (var i = 0; i < edges.length; ++i) {
 		var edge = edges[i];
 		var src = edges[i].from;
-		var dest = edges[i].target;
+		var dest = edges[i].to;
 		
 		var edgeId = src + ">>" + dest;
 

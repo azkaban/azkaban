@@ -627,54 +627,6 @@ var logUpdaterFunction = function() {
 	}
 }
 
-var exNodeClickCallback = function(event) {
-	console.log("Node clicked callback");
-	var jobId = event.currentTarget.jobid;
-	var requestURL = contextURL + "/manager?project=" + projectName + "&flow=" + flowId + "&job=" + jobId;
-
-	var menu = [	
-			{title: "Open Job...", callback: function() {window.location.href=requestURL;}},
-			{title: "Open Job in New Window...", callback: function() {window.open(requestURL);}},
-			{break: 1},
-			{title: "Center Job", callback: function() {graphModel.trigger("centerNode", jobId)}}
-	];
-
-	contextMenuView.show(event, menu);
-}
-
-var exJobClickCallback = function(event) {
-	console.log("Node clicked callback");
-	var jobId = event.currentTarget.jobid;
-	var requestURL = contextURL + "/manager?project=" + projectName + "&flow=" + flowId + "&job=" + jobId;
-
-	var menu = [	
-			{title: "Open Job...", callback: function() {window.location.href=requestURL;}},
-			{title: "Open Job in New Window...", callback: function() {window.open(requestURL);}},
-			{break: 1},
-			{title: "Center Job", callback: function() {graphModel.trigger("centerNode", jobId)}}
-	];
-
-	contextMenuView.show(event, menu);
-}
-
-var exEdgeClickCallback = function(event) {
-	console.log("Edge clicked callback");
-}
-
-var exGraphClickCallback = function(event) {
-	console.log("Graph clicked callback");
-	var requestURL = contextURL + "/manager?project=" + projectName + "&flow=" + flowId;
-
-	var menu = [	
-		{title: "Open Flow...", callback: function() {window.location.href=requestURL;}},
-		{title: "Open Flow in New Window...", callback: function() {window.open(requestURL);}},
-		{break: 1},
-		{title: "Center Graph", callback: function() {graphModel.trigger("resetPanZoom");}}
-	];
-	
-	contextMenuView.show(event, menu);
-}
-
 var attemptRightClick = function(event) {
 	var target = event.currentTarget;
 	var job = target.job;
@@ -699,8 +651,8 @@ $(function() {
 	logModel = new azkaban.LogModel();
 	
 	flowTabView = new azkaban.FlowTabView({el:$( '#headertabs'), model: graphModel});
-	mainSvgGraphView = new azkaban.SvgGraphView({el:$('#svgDiv'), model: graphModel, rightClick:  { "node": exNodeClickCallback, "edge": exEdgeClickCallback, "graph": exGraphClickCallback }});
-	jobsListView = new azkaban.JobListView({el:$('#jobList'), model: graphModel, contextMenuCallback: exJobClickCallback});
+	mainSvgGraphView = new azkaban.SvgGraphView({el:$('#svgDiv'), model: graphModel, rightClick:  { "node": nodeClickCallback, "edge": edgeClickCallback, "graph": graphClickCallback }});
+	jobsListView = new azkaban.JobListView({el:$('#jobList'), model: graphModel, contextMenuCallback: nodeClickCallback});
 	flowLogView = new azkaban.FlowLogView({el:$('#flowLogView'), model: logModel});
 	statusView = new azkaban.StatusView({el:$('#flow-status'), model: graphModel});
 	
@@ -712,40 +664,11 @@ $(function() {
 	      requestURL,
 	      {"execid": execId, "ajax":"fetchexecflow"},
 	      function(data) {
-	          console.log("data fetched");
-	          graphModel.set({data: data});
-	          graphModel.set({disabled: {}});
+	    	  console.log("data fetched");
+	    	  createModelFromAjaxCall(data, graphModel);
 	          graphModel.trigger("change:graph");
-	          
-	          updateTime = Math.max(updateTime, data.submitTime);
-	          updateTime = Math.max(updateTime, data.startTime);
-	          updateTime = Math.max(updateTime, data.endTime);
-	          
-	          var nodeMap = {};
-	          for (var i = 0; i < data.nodes.length; ++i) {
-	             var node = data.nodes[i];
-	             nodeMap[node.id] = node;
-	             updateTime = Math.max(updateTime, node.startTime);
-	             updateTime = Math.max(updateTime, node.endTime);
-	          }
-	          for (var i = 0; i < data.edges.length; ++i) {
-	          	 var edge = data.edges[i];
-	          	 
-	          	 if (!nodeMap[edge.target].in) {
-	          	 	nodeMap[edge.target].in = {};
-	          	 }
-	          	 var targetInMap = nodeMap[edge.target].in;
-	          	 targetInMap[edge.from] = nodeMap[edge.from];
-	          	 
-	          	 if (!nodeMap[edge.from].out) {
-	          	 	nodeMap[edge.from].out = {};
-	          	 }
-	          	 var sourceOutMap = nodeMap[edge.from].out;
-	          	 sourceOutMap[edge.target] = nodeMap[edge.target];
-	          }
-	          
-	          graphModel.set({nodeMap: nodeMap});
-	          
+	          updateTime = data.updateTime;
+
 	          if (window.location.hash) {
 					var hash = window.location.hash;
 					if (hash == "#jobslist") {

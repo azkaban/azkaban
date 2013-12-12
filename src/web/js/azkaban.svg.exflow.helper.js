@@ -13,6 +13,9 @@ var openJobDisplayCallback = function(nodeId, flowId, evt) {
 	var cloneStuff = $("#flowInfoBase").clone();
 	$(cloneStuff).attr("id", nodeInfoPanelID);
 	
+	
+	
+	/*
 	$("#flowInfoBase").before(cloneStuff);
 	var requestURL = contextURL + "/manager";
 	
@@ -35,14 +38,18 @@ var openJobDisplayCallback = function(nodeId, flowId, evt) {
       },
       "json"
     );
+    */
 }
 
+var extendedDataModels = {};
 var createModelFromAjaxCall = function(data, model) {
 	  var nodes = {};
   	  for (var i=0; i < data.nodes.length; ++i) {
+  		var graphModel = new azkaban.GraphModel();
   	  	var node = data.nodes[i];
   	  	nodes[node.id] = node;
   	  }
+
   	  for (var i=0; i < data.edges.length; ++i) {
   	  	var edge = data.edges[i];
   	  	var fromNode = nodes[edge.from];
@@ -59,6 +66,47 @@ var createModelFromAjaxCall = function(data, model) {
   	  	toNode.inNodes[fromNode.id] = fromNode;
   	  }
   
+      var nodeQueue = new Array();
+      for (var key in nodes) {
+          if (!nodes[key].inNodes) {
+             nodeQueue.push(nodes[key]);
+          }
+      }
+  	  
+      // calculate level
+      // breath first search the sucker
+      var index = 0;
+      while(index < nodeQueue.length) {
+          var node = nodeQueue[index];
+          if (node.inNodes) {
+              var level = 0;
+        	  for (var key in node.inNodes) {
+        		  level = Math.max(level, node.inNodes[key].level);
+        	  }
+              node.level = level + 1;
+          }
+          else {
+              node.level = 0;
+          }
+          
+          if (node.outNodes) {
+             for (var key in node.outNodes) {
+                 nodeQueue.push(node.outNodes[key]);
+             }
+          }
+          index++;
+      }
+      
+      for (var key in nodes) {
+    	  var node = nodes[key];
+    	  
+    	  if (node.type == "flow") {
+    		  var graphModel = new azkaban.GraphModel();
+    		  createModelFromAjaxCall(node, graphModel);
+    		  extendedDataModels["test"] = graphModel;
+    	  }
+      }
+
       console.log("data fetched");
       model.set({data: data});
       model.set({nodes: nodes});

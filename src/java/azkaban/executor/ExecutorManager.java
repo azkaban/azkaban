@@ -826,7 +826,7 @@ public class ExecutorManager {
 		
 		Pair<ExecutionReference, ExecutableFlow> refPair = this.runningFlows.get(execId);
 		if (refPair == null) {
-			throw new ExecutorManagerException("No running flow found with the execution id.");
+			throw new ExecutorManagerException("No running flow found with the execution id. Removing " + execId);
 		}
 		
 		ExecutionReference ref = refPair.getFirst();

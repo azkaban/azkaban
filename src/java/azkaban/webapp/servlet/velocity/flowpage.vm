@@ -31,7 +31,7 @@
 		<script type="text/javascript" src="${context}/js/azkaban.nav.js"></script>
 		<script type="text/javascript" src="${context}/js/azkaban.layout.js"></script>
 		<script type="text/javascript" src="${context}/js/svgNavigate.js"></script>
-		<script type="text/javascript" src="${context}/js/azkaban.svg.graph.helper.js"></script>
+		<script type="text/javascript" src="${context}/js/azkaban.svg.flow.loader.js"></script>
 		<script type="text/javascript" src="${context}/js/azkaban.svg.graph.view.js"></script>
 		<script type="text/javascript" src="${context}/js/azkaban.flow.extended.view.js"></script>
 		<script type="text/javascript" src="${context}/js/azkaban.flow.job.view.js"></script>
