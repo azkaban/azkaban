@@ -97,7 +97,7 @@
 
 							<div class="panel panel-success">
 								<div class="panel-heading">User</div>
-								<table class="table table-striped" id="permissions-table">
+								<table class="table table-striped permission-table" id="permissions-table">
 									<thead>
 										<th class="tb-username">User</th>
 										<th class="tb-perm">Admin</th>
@@ -151,7 +151,7 @@
 							
 							<div class="panel panel-warning">
 								<div class="panel-heading">Group</div>
-								<table class="table table-striped" id="group-permissions-table">
+								<table class="table table-striped permission-table" id="group-permissions-table">
 									<thead>
 										<tr>
 											<th class="tb-username">Group</th>
@@ -206,7 +206,7 @@
 							
 							<div class="panel panel-info">
 								<div class="panel-heading">Proxy Users</div>
-								<table class="table table-striped" id="proxy-user-table">
+								<table class="table table-striped permission-table" id="proxy-user-table">
 									<thead>
 										<tr>
 											<th class="tb-username">Proxy User</th>
@@ -255,7 +255,7 @@
 						</div>
 						<div class="modal-footer">
 							<button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
-							<button type="button" class="btn btn-primary" id="remove-proxy-btn">Remove Proxy User</a>
+							<button type="button" class="btn btn-danger" id="remove-proxy-btn">Remove Proxy User</a>
 						</div>
 					</div>
 				</div>

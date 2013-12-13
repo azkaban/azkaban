@@ -727,21 +727,49 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 	
 	private void handleProjectLogsPage(HttpServletRequest req, HttpServletResponse resp, Session session) throws ServletException, IOException {
 		Page page = newPage(req, resp, session, "azkaban/webapp/servlet/velocity/projectlogpage.vm");
-
 		String projectName = getParam(req, "project");
-		
-		Project project = projectManager.getProject(projectName);
-		if (project == null) {
-			page.add("errorMsg", "Project " + projectName + " doesn't exist.");
+
+		User user = session.getUser();
+		Project project = null;
+		try {
+			project = projectManager.getProject(projectName);
+			if (project == null) {
+				page.add("errorMsg", "Project " + projectName + " doesn't exist.");
+			}
+			else {
+				if (!hasPermission(project,user,Type.READ)) {
+					throw new AccessControlException( "No permission to view project " + projectName + ".");
+				}
+				
+				page.add("project", project);
+				page.add("admins", Utils.flattenToString(project.getUsersWithPermission(Type.ADMIN), ","));
+				Permission perm = this.getPermissionObject(project, user, Type.ADMIN);
+				page.add("userpermission", perm);
+	
+				boolean adminPerm = perm.isPermissionSet(Type.ADMIN);
+				if (adminPerm) {
+					page.add("admin", true);
+				}
+				// Set this so we can display execute buttons only to those who have access.
+				if (perm.isPermissionSet(Type.EXECUTE) || adminPerm) {
+					page.add("exec", true);
+				}
+				else {
+					page.add("exec", false);
+				}
+			}
 		}
-		page.add("projectName", projectName);
+		catch (AccessControlException e) {
+			page.add("errorMsg", e.getMessage());
+		}
+
 		//page.add("projectManager", projectManager);
 		//int bytesSkip = 0;
 		int numBytes = 1024;
 
-		// Really sucks if we do a lot of these because it'll eat up memory fast. But it's expected
-		// that this won't be a heavily used thing. If it is, then we'll revisit it to make it more stream
-		// friendly.
+		// Really sucks if we do a lot of these because it'll eat up memory fast. 
+		// But it's expected that this won't be a heavily used thing. If it is, 
+		// then we'll revisit it to make it more stream friendly.
 		StringBuffer buffer = new StringBuffer(numBytes);
 		page.add("log", buffer.toString());
 
@@ -908,20 +936,18 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 				}
 				else {
 					page.add("flowid", flow.getId());
-					
 					Node node = flow.getNode(jobName);
-					
 					if (node == null) {
 						page.add("errorMsg", "Job " + jobName + " not found.");
 					}
 					else {
 						Props prop = projectManager.getProperties(project, node.getJobSource());
 						Props overrideProp = projectManager.getJobOverrideProperty(project, jobName);
-						if(overrideProp == null) {
+						if (overrideProp == null) {
 							overrideProp = new Props();
 						}
 						Props comboProp = new Props(prop);
-						for(String key : overrideProp.getKeySet()) {
+						for (String key : overrideProp.getKeySet()) {
 							comboProp.put(key, overrideProp.get(key));
 						}
 						page.add("jobid", node.getId());
@@ -930,7 +956,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 						ArrayList<String> dependencies = new ArrayList<String>();
 						Set<Edge> inEdges = flow.getInEdges(node.getId());
 						if (inEdges != null) {
-							for ( Edge dependency: inEdges ) {
+							for (Edge dependency: inEdges) {
 								dependencies.add(dependency.getSourceId());
 							}
 						}
@@ -941,7 +967,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 						ArrayList<String> dependents = new ArrayList<String>();
 						Set<Edge> outEdges = flow.getOutEdges(node.getId());
 						if (outEdges != null) {
-							for ( Edge dependent: outEdges ) {
+							for (Edge dependent: outEdges) {
 								dependents.add(dependent.getTargetId());
 							}
 						}
@@ -952,15 +978,15 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 						// Resolve property dependencies
 						ArrayList<String> source = new ArrayList<String>(); 
 						String nodeSource = node.getPropsSource();
-						if(nodeSource != null) {
+						if (nodeSource != null) {
 							source.add(nodeSource);
 							FlowProps parent = flow.getFlowProps(nodeSource);
-							while(parent.getInheritedSource() != null) {
+							while (parent.getInheritedSource() != null) {
 								source.add(parent.getInheritedSource());
 								parent = flow.getFlowProps(parent.getInheritedSource()); 
 							}
 						}
-						if(!source.isEmpty()) {
+						if (!source.isEmpty()) {
 							page.add("properties", source);
 						}
 						
@@ -978,7 +1004,8 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 		}
 		catch (AccessControlException e) {
 			page.add("errorMsg", e.getMessage());
-		} catch (ProjectManagerException e) {
+		}
+		catch (ProjectManagerException e) {
 			page.add("errorMsg", e.getMessage());
 		}
 		
@@ -1014,7 +1041,6 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 				}
 				else {
 					page.add("flowid", flow.getId());
-					
 					Node node = flow.getNode(jobName);
 					
 					if (node == null) {

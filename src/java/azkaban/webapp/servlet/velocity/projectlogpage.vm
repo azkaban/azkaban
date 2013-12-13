@@ -31,8 +31,9 @@
 			var timezone = "${timezone}";
 			var errorMessage = null;
 			var successMessage = null;
-			
-			var projectName = "${projectName}";
+		
+			var projectId = ${project.id};
+			var projectName = "$project.name";
 		</script>
 	</head>
 	<body>

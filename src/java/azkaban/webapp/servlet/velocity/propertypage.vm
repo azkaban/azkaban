@@ -85,7 +85,7 @@
 					<div class="panel panel-default">
 						<div class="panel-heading">Property $property</div>
 
-						<table id="all-jobs" class="table table-striped table-bordered">
+						<table class="table table-striped table-bordered properties-table">
 							<thead>
 								<tr>
 									<th class="tb-pname">Parameter Name</th>

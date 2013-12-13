@@ -104,6 +104,13 @@
 		#foreach ($flow in $flows)
 							<div class="panel panel-info" flow="${flow.id}" project="${project.name}">
 								<div class="panel-heading flow-expander" id="${flow.id}">
+			#if (${exec})
+									<div class="pull-right">
+										<button type="button" class="btn btn-xs btn-primary execute-flow" flowId="${flow.id}">Execute Flow</button>
+										<a href="${context}/manager?project=${project.name}&flow=${flow.id}#executions" class="btn btn-primary btn-xs">Executions</a>
+										<a href="${context}/manager?project=${project.name}&flow=${flow.id}#summary" class="btn btn-primary btn-xs">Summary</a>
+									</div>
+			#end
 									<a href="${context}/manager?project=${project.name}&flow=${flow.id}">${flow.id}</a>
 								</div>
 								<div id="${flow.id}-child" class="panel-collapse collapse">
@@ -111,13 +118,6 @@
 										<tbody id="${flow.id}-tbody">
 										</tbody>
 									</table>
-								</div>
-								<div class="panel-footer">
-			#if (${exec})
-									<button type="button" class="btn btn-sm btn-primary execute-flow" flowId="${flow.id}">Execute Flow</button>
-									<a href="${context}/manager?project=${project.name}&flow=${flow.id}#executions" class="btn btn-primary btn-sm">Executions</a>
-									<a href="${context}/manager?project=${project.name}&flow=${flow.id}#summary" class="btn btn-primary btn-sm">Summary</a>
-			#end
 								</div>
 							</div>
 		#end
@@ -175,14 +175,14 @@
 							<h4 class="modal-title">Delete Project</h4>
 						</div>
 						<div class="modal-body">
-							<p>Warning: This project will be deleted and may not be recoverable.</p>
+							<p><strong>Warning:</strong> This project will be deleted and may not be recoverable.</p>
 						</div>
 						<div class="modal-footer">
 							<form id="delete-form">
 								<input type="hidden" name="project" value="$project.name">
 								<input type="hidden" name="delete" value="true">
 								<button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
-								<button type="button" class="btn btn-danger" id="delete-btn">Yes</button>
+								<button type="button" class="btn btn-danger" id="delete-btn">Delete Project</button>
 							</form>
 						</div>
 					</div>

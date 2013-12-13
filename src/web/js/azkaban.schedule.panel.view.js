@@ -72,9 +72,11 @@ azkaban.SchedulePanelView = Backbone.View.extend({
 			
 		var successHandler = function(data) {
 			if (data.error) {
+				schedulePanelView.hideSchedulePanel();
 				messageDialogView.show("Error Scheduling Flow", data.message);
 			}
 			else {
+				schedulePanelView.hideSchedulePanel();
 				messageDialogView.show("Flow Scheduled", data.message,
 					function() {
 						window.location.href = scheduleURL;
