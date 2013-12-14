@@ -15,10 +15,10 @@
 *#
 
 <!DOCTYPE html> 
-<html>
+<html lang="en">
 	<head>
 
-#parse ("azkaban/webapp/servlet/velocity/style2.vm")
+#parse ("azkaban/webapp/servlet/velocity/style.vm")
 #parse ("azkaban/webapp/servlet/velocity/javascript.vm")
 
 		<link rel="stylesheet" type="text/css" href="${context}/css/jquery-ui-1.10.1.custom.css" />
@@ -39,7 +39,7 @@
 	<body>
 		
 #set ($current_page="all")
-#parse ("azkaban/webapp/servlet/velocity/nav2.vm")
+#parse ("azkaban/webapp/servlet/velocity/nav.vm")
 
 		<div class="container">
 
@@ -65,16 +65,20 @@
 				<button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
 				<p id="messaging-message"></p>
 			</div>
+		</div>
 
 	## Page header
 
-			<div class="page-header">
+		<div class="az-page-header">
+			<div class="container">
 				<h1>
 					<a href="${context}/manager?project=${project.name}">$project.name</a> / 
 					<a href="${context}/manager?project=${project.name}&flow=${flowid}">$flowid</a>
 				</h1>
 			</div>
+		</div>
 
+		<div class="container">
 			<div class="row">
 				<div class="col-lg-8">
 

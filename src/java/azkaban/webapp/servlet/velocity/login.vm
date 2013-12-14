@@ -18,7 +18,7 @@
 <html lang="en">
   <head>
 
-#parse("azkaban/webapp/servlet/velocity/style2.vm")
+#parse("azkaban/webapp/servlet/velocity/style.vm")
 #parse("azkaban/webapp/servlet/velocity/javascript.vm")
 
     <script type="text/javascript" src="${context}/js/azkaban.login.js"></script>
@@ -30,7 +30,7 @@
 
 #set ($current_page="all")
 #set ($navbar_disabled=1)
-#parse ("azkaban/webapp/servlet/velocity/nav2.vm")
+#parse ("azkaban/webapp/servlet/velocity/nav.vm")
 
 		<div class="container">
 			<div class="row">
