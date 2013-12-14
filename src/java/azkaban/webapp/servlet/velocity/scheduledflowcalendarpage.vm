@@ -17,18 +17,15 @@
 <!DOCTYPE html> 
 <html>
 	<head>
-#parse( "azkaban/webapp/servlet/velocity/style.vm" )
+
+#parse ("azkaban/webapp/servlet/velocity/style2.vm")
+#parse ("azkaban/webapp/servlet/velocity/javascript.vm")
+
 		<link rel="stylesheet" type="text/css" href="${context}/css/jquery-ui-1.10.1.custom.css" />
 		<link rel="stylesheet" type="text/css" href="${context}/css/jquery-ui.css" />
 		
-		<script type="text/javascript" src="${context}/js/jquery/jquery-1.9.1.js"></script>    
 		<script type="text/javascript" src="${context}/js/jqueryui/jquery-ui-1.10.1.custom.js"></script>
-		<script type="text/javascript" src="${context}/js/underscore-1.4.4-min.js"></script>
-		<script type="text/javascript" src="${context}/js/namespace.js"></script>
-		<script type="text/javascript" src="${context}/js/backbone-0.9.10-min.js"></script>
-		<script type="text/javascript" src="${context}/js/jquery.simplemodal-1.4.4.js"></script>
 		<script type="text/javascript" src="${context}/js/jquery/jquery.svg.min.js"></script>    
-		
 		<script type="text/javascript" src="${context}/js/jqueryui/jquery-ui-timepicker-addon.js"></script> 
 		<script type="text/javascript" src="${context}/js/jqueryui/jquery-ui-sliderAccess.js"></script>
 		<script type="text/javascript" src="${context}/js/azkaban.table.sort.js"></script>
@@ -46,39 +43,58 @@
 		<link rel="stylesheet" type="text/css" href="${context}/css/jquery.svg.css" />
 	</head>
 	<body>
-#set($current_page="schedule")
-#parse( "azkaban/webapp/servlet/velocity/nav.vm" )
-		<div class="messaging"><p id="messageClose">X</p><p id="message"></p></div>  
 
-		<div class="content">
-		
-#if($errorMsg)
-		<div class="box-error-message">$errorMsg</div>
+#set ($current_page="schedule")
+#parse ("azkaban/webapp/servlet/velocity/nav2.vm")
+
+    <div class="container">
+
+## Page error or success message.
+
+#if ($errorMsg)
+			<div class="panel panel-danger">
+				<div class="panel-heading">Error</div>
+				<div class="panel-body">
+					$errorMsg
+				</div>
+			</div>
 #else
-#if($error_message != "null")
-		<div class="box-error-message">$error_message</div>
-#elseif($success_message != "null")
-		<div class="box-success-message">$success_message</div>
+	#if ($error_message != "null")
+			<div class="alert alert-danger">$error_message</div>
+	#elseif ($success_message != "null")
+			<div class="alert alert-success">$success_message</div>
+	#end
 #end
-#end		
-		
-		<div id="all-scheduledFlows-content">
-			<div class="section-hd">
-				<h2>Scheduled Flows</h2>
+
+	## Alert message
+
+			<div class="alert alert-dismissable alert-messaging" id="messaging">
+				<button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
+				<p id="messaging-message"></p>
 			</div>
 		</div>
-		
-		<div class="scheduledFlows">
-			<span class="nav-prev-week btn1" style="margin: 20px; margin-left: 50px;"><a>Previous Week</a></span>
-			<span class="nav-this-week btn1" style="margin: 20px;"><a>Today</a></span>
-			<span class="nav-next-week btn1" style="margin: 20px; margin-right: 50px;"><a>Next Week</a></span>
-			<div id="svgDivCustom">
-			
-			</div>
-		</div>
-		</div>
-		
-		<div id="contextMenu">
-		</div>
+
+    <div class="az-page-header">
+      <div class="container">
+        <h1>Scheduled Flows</h1>
+      </div>
+    </div>
+
+    <div class="container">
+      <div class="row">
+        <div class="col-lg-12">
+          <div class="pull-right">
+            <button type="button" class="nav-prev-week btn btn-default">Previous Week</button>
+            <button type="button" class="nav-this-week btn btn-default">Today</button>
+            <button type="button" class="nav-next-week btn btn-default">Next Week</button>
+          </div>
+          <div id="svgDivCustom"></div>
+        </div>
+      </div>
+      
+      <div id="contextMenu"></div>
+
+#parse ("azkaban/webapp/servlet/velocity/footer.vm")
+    </div>
 	</body>
 </html>

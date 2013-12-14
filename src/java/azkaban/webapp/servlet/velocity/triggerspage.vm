@@ -16,18 +16,15 @@
 
 <!DOCTYPE html> 
 <html>
-	<head>
-#parse( "azkaban/webapp/servlet/velocity/style.vm" )
+	<head lang="en">
+
+#parse("azkaban/webapp/servlet/velocity/style2.vm")
+#parse("azkaban/webapp/servlet/velocity/javascript.vm")
+
 		<link rel="stylesheet" type="text/css" href="${context}/css/jquery-ui-1.10.1.custom.css" />
 		<link rel="stylesheet" type="text/css" href="${context}/css/jquery-ui.css" />
 		
-		<script type="text/javascript" src="${context}/js/jquery/jquery-1.9.1.js"></script>    
 		<script type="text/javascript" src="${context}/js/jqueryui/jquery-ui-1.10.1.custom.js"></script>
-		<script type="text/javascript" src="${context}/js/underscore-1.4.4-min.js"></script>
-		<script type="text/javascript" src="${context}/js/namespace.js"></script>
-		<script type="text/javascript" src="${context}/js/backbone-0.9.10-min.js"></script>
-		<script type="text/javascript" src="${context}/js/jquery.simplemodal-1.4.4.js"></script>
-		
 		<script type="text/javascript" src="${context}/js/jqueryui/jquery-ui-timepicker-addon.js"></script> 
 		<script type="text/javascript" src="${context}/js/jqueryui/jquery-ui-sliderAccess.js"></script>
 		<script type="text/javascript" src="${context}/js/azkaban.table.sort.js"></script>
@@ -42,58 +39,78 @@
 		</script>
 	</head>
 	<body>
-#set($current_page="triggers")
-#parse( "azkaban/webapp/servlet/velocity/nav.vm" )
-		<div class="messaging"><p id="messageClose">X</p><p id="message"></p></div>  
 
-		<div class="content">
-		
-#if($errorMsg)
-		<div class="box-error-message">$errorMsg</div>
-#else
-#if($error_message != "null")
-		<div class="box-error-message">$error_message</div>
-#elseif($success_message != "null")
-		<div class="box-success-message">$success_message</div>
-#end
-#end		
-		
-			<div id="all-triggers-content">
-				<div class="section-hd">
-					<h2>All Triggers</h2>
+#set ($current_page="triggers")
+#parse ("azkaban/webapp/servlet/velocity/nav2.vm")
+
+    <div class="container">
+
+## Alert message
+
+			<div class="alert alert-dismissable alert-messaging" id="messaging">
+				<button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
+				<p id="messaging-message"></p>
+			</div>
+
+## Page error or success message.
+
+#if ($errorMsg)
+			<div class="panel panel-danger">
+				<div class="panel-heading">Error</div>
+				<div class="panel-body">
+					$errorMsg
 				</div>
 			</div>
-			
-			<div class="triggers">
-				<table id="triggersTbl">
-					<thead>
-						<tr>
-							<th>ID</th>
-							<th>Source</th>
-							<th>Submitted By</th>
-							<th>Description</th>
-							<th>Status</th>
-							<!--th colspan="2" class="action ignoresort">Action</th-->
-						</tr>
-					</thead>
-					<tbody>
-						#if($triggers)
-#foreach($trigger in $triggers)
-						<tr class="row" >
-
-							<td>${trigger.triggerId}</td>
-							<td>${trigger.source}</td>
-							<td>${trigger.submitUser}</td>
-							<td>${trigger.getDescription()}</td>
-							<td>${trigger.getStatus()}</td>
-							<!--td><button id="expireTriggerBtn" onclick="expireTrigger(${trigger.triggerId})" >Expire Trigger</button></td-->
-						</tr>
-#end
 #else
-						<tr><td class="last">No Trigger Found</td></tr>
+	#if ($error_message != "null")
+			<div class="alert alert-danger">$error_message</div>
+	#elseif ($success_message != "null")
+			<div class="alert alert-success">$success_message</div>
+	#end
 #end
-					</tbody>
-				</table>
-			</div>
+		</div>
+
+    <div class="az-page-header">
+      <div class="container">
+        <h1>All Triggers</h1>
+      </div>
+    </div>
+			
+    <div class="container">
+			<div class="row">
+        <div class="col-lg-12">
+          <table id="triggersTbl" class="table table-striped table-bordered table-condensed table-hover">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Source</th>
+                <th>Submitted By</th>
+                <th>Description</th>
+                <th>Status</th>
+                <!--th colspan="2" class="action ignoresort">Action</th-->
+              </tr>
+            </thead>
+            <tbody>
+#if($triggers)
+  #foreach($trigger in $triggers)
+              <tr class="row">
+                <td>${trigger.triggerId}</td>
+                <td>${trigger.source}</td>
+                <td>${trigger.submitUser}</td>
+                <td>${trigger.getDescription()}</td>
+                <td>${trigger.getStatus()}</td>
+                <!--td><button id="expireTriggerBtn" onclick="expireTrigger(${trigger.triggerId})" >Expire Trigger</button></td-->
+              </tr>
+  #end
+#else
+              <tr><td class="last">No Trigger Found</td></tr>
+#end
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+#parse ("azkaban/webapp/servlet/velocity/footer.vm")
+    </div>
 	</body>
 </html>

@@ -17,12 +17,9 @@
 <!DOCTYPE html> 
 <html>
 	<head>
-#parse( "azkaban/webapp/servlet/velocity/style.vm" )
-		<script type="text/javascript" src="${context}/js/jquery/jquery-1.9.1.js"></script>    
-		<script type="text/javascript" src="${context}/js/underscore-1.4.4-min.js"></script>
-		<script type="text/javascript" src="${context}/js/namespace.js"></script>
-		<script type="text/javascript" src="${context}/js/backbone-0.9.10-min.js"></script>
-		<script type="text/javascript" src="${context}/js/jquery.simplemodal-1.4.4.js"></script>
+
+#parse("azkaban/webapp/servlet/velocity/style2.vm")
+#parse("azkaban/webapp/servlet/velocity/javascript.vm")
 
 		<script type="text/javascript" src="${context}/js/azkaban.nav.js"></script>
 		<script type="text/javascript">
@@ -41,22 +38,29 @@
 		</style>
 	</head>
 	<body>
-#set($current_page="viewer")
 
-#parse( "azkaban/webapp/servlet/velocity/nav.vm" )
-		<div class="content">
-		
-		#if($errorMsg)
-                	<div class="box-error-message">$errorMsg</div>
-		#else
-			#if($error_message != "null")
-	                <div class="box-error-message">$error_message</div>
-			#elseif($success_message != "null")
-        	        <div class="box-success-message">$success_message</div>
-			#end
-		#end
+#set ($current_page="viewer")
+#parse ("azkaban/webapp/servlet/velocity/nav2.vm")
 
-#parse($viewervm)
+    <div class="container">
+
+#if ($errorMsg)
+			<div class="panel panel-danger">
+				<div class="panel-heading">Error</div>
+				<div class="panel-body">
+					$errorMsg
+				</div>
+			</div>
+#else
+	#if ($error_message != "null")
+			<div class="alert alert-danger">$error_message</div>
+	#elseif ($success_message != "null")
+			<div class="alert alert-success">$success_message</div>
+	#end
+#end
+
+#parse ($viewervm)
+#parse ("azkaban/webapp/servlet/velocity/footer.vm")
 		
 		</div>
 	</body>
