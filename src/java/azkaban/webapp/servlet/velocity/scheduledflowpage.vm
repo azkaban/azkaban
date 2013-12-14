@@ -15,10 +15,10 @@
 *#
 
 <!DOCTYPE html> 
-<html>
-	<head lang="en">
+<html lang="en">
+  <head>
 
-#parse ("azkaban/webapp/servlet/velocity/style2.vm")
+#parse ("azkaban/webapp/servlet/velocity/style.vm")
 #parse ("azkaban/webapp/servlet/velocity/javascript.vm")
 
 		<link rel="stylesheet" type="text/css" href="${context}/css/jquery-ui-1.10.1.custom.css" />
@@ -40,7 +40,7 @@
 	<body>
 
 #set ($current_page="schedule")
-#parse ("azkaban/webapp/servlet/velocity/nav2.vm")
+#parse ("azkaban/webapp/servlet/velocity/nav.vm")
 
 		<div class="container">
 

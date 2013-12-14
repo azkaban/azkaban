@@ -18,8 +18,8 @@
 <html>
 	<head>
 
-#parse("azkaban/webapp/servlet/velocity/style2.vm")
-#parse("azkaban/webapp/servlet/velocity/javascript.vm")
+#parse ("azkaban/webapp/servlet/velocity/style.vm")
+#parse ("azkaban/webapp/servlet/velocity/javascript.vm")
 
 		<script type="text/javascript" src="${context}/js/azkaban.nav.js"></script>
 		<script type="text/javascript">
@@ -40,7 +40,7 @@
 	<body>
 
 #set ($current_page="viewer")
-#parse ("azkaban/webapp/servlet/velocity/nav2.vm")
+#parse ("azkaban/webapp/servlet/velocity/nav.vm")
 
     <div class="container">
 

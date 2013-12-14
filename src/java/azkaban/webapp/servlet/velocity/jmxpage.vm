@@ -15,10 +15,10 @@
 *#
 
 <!DOCTYPE html> 
-<html>
-	<head lang="en">
+<html lang="en">
+	<head>
 		
-#parse ("azkaban/webapp/servlet/velocity/style2.vm")
+#parse ("azkaban/webapp/servlet/velocity/style.vm")
 #parse ("azkaban/webapp/servlet/velocity/javascript.vm")
 
 		<script type="text/javascript" src="${context}/js/azkaban.nav.js"></script>
@@ -35,7 +35,7 @@
 		
 #set ($current_page="all")
 #set ($counter = 0)
-#parse ("azkaban/webapp/servlet/velocity/nav2.vm")
+#parse ("azkaban/webapp/servlet/velocity/nav.vm")
 
 		<div class="container">
 			

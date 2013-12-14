@@ -14,19 +14,17 @@
  * the License.
 *#
 
-		<title>#appname()
-		</title>
-		<link rel="stylesheet" type="text/css" href="${context}/css/azkaban.css" /> 
+    <meta charset="utf-8">
+    <title>#appname()</title>
+    
 		<link rel="shortcut icon" href="${context}/favicon.ico" />
-		<style type="text/css">
-			.enviro-name {
-				color: ${azkaban_color};
-			}
-			.header {
-				border-top-color: ${azkaban_color};
-			}
-			.nav .selected a {
-				border-bottom-color: ${azkaban_color};
-			}
-		</style>
-		<meta http-equiv="content-type" content="text/html;charset=UTF-8" />
+    <!-- Bootstrap core CSS -->
+    <link href="/css/bootstrap.css" rel="stylesheet">
+    <link href="/css/bootstrap-fileinput.css" rel="stylesheet">
+    <link href="/css/bootstrap-azkaban.css" rel="stylesheet">
+
+    <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
+    <!--[if lt IE 9]>
+      <script src="/js/html5shiv.js"></script>
+      <script src="/js/respond.min.js"></script>
+    <![endif]-->
