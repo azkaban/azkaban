@@ -54,16 +54,20 @@
 	#elseif ($success_message != "null")
 			<div class="alert alert-success">$success_message</div>
 	#end
+		</div>
 
 	## Page header
 
-			<div class="page-header">
+		<div class="az-page-header">
+			<div class="container">
 				<h1>
 					<a href="${context}/manager?project=${project.name}">$project.name</a> / 
 					<a href="${context}/manager?project=${project.name}&flow=${flowid}">$flowid</a>
 				</h1>
 			</div>
+		</div>
 
+		<div class="container">
 			<div class="row">
 				<div class="col-lg-8">
 

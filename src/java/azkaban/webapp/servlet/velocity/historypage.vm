@@ -66,12 +66,17 @@
 	#end
 #end
 
+		</div>
+
 ## Page header.
 
-			<div class="page-header">
+		<div class="az-page-header">
+			<div class="container">
 				<h1>History</h1>
 			</div>
+		</div>
 
+		<div class="container">
 			<div class="row">
 				<div class="col-lg-12">
 					<div class="panel panel-default">

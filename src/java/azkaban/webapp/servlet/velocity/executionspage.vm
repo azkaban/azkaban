@@ -43,15 +43,19 @@
 				<button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
 				<p id="messaging-message"></p>
 			</div>
+		</div>
 
 ## Page header.
 
-			<div class="page-header">
+		<div class="az-page-header">
+			<div class="container">
 				<h1>Executing Flows</h1>
 			</div>
+		</div>
 
 ## Page Content
 
+		<div class="container">
 			<div class="row">
 				<div class="col-lg-12">
 					<div class="panel panel-default">

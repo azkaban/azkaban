@@ -75,17 +75,21 @@
 				<button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
 				<p id="messaging-message"></p>
 			</div>
+		</div>
 
 	## Page header
 
-			<div class="page-header">
+		<div class="az-page-header">
+			<div class="container">
 				<h1>
 					<a href="${context}/executor?execid=${execid}">Flow Execution <small>$execid</small></a>
 				</h1>
 			</div>
+		</div>
+
+		<div class="container">
 
 	## Breadcrumb
-				
 			<ol class="breadcrumb">
 				<li><a href="${context}/manager?project=${projectName}"><strong>Project</strong> $projectName</a></li>
 				<li><a href="${context}/manager?project=${projectName}&flow=${flowid}"><strong>Flow</strong> $flowid</a></li>

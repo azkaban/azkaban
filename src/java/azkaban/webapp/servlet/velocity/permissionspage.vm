@@ -62,12 +62,16 @@
 				<button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
 				<p id="messaging-message"></p>
 			</div>
+		</div>
 
-			<div class="page-header">
+		<div class="az-page-header">
+			<div class="container">
 				<h1><a href="${context}/manager?project=${project.name}">Project <small>$project.name</small></a></h1>
 				<p>$project.description</p>
 			</div>
+		</div>
 
+		<div class="container">
 			<div class="row">
 				<div class="col-lg-8">
 	

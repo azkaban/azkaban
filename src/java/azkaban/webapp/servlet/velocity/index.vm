@@ -41,9 +41,9 @@
 
 ## Page error or success message.
 
-#if($error_message != "null")
+#if ($error_message != "null")
 			<div class="alert alert-danger">$error_message</div>
-#elseif($success_message != "null")
+#elseif ($success_message != "null")
 			<div class="alert alert-success">$success_message</div>
 #end
 
@@ -55,9 +55,12 @@
 				<p id="messaging-message"></p>
 			</div>
 
+		</div>
+
 ## Page Header and project search form.
 
-			<div class="page-header">
+		<div class="az-page-header">
+			<div class="container">
 #if ($allProjects)
 				<h1>All Projects</h1>
 				<p>My Projects</p>
@@ -66,9 +69,11 @@
 				<p>All Projects</p>
 #end
 			</div>
+		</div>
 
 ## Table of projects.
 
+		<div class="container">
 			<div class="row">
 				<div class="col-lg-12">
 					<div class="panel panel-default">
