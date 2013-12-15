@@ -28,7 +28,6 @@
 		<script type="text/javascript" src="${context}/js/jqueryui/jquery-ui-timepicker-addon.js"></script> 
 		<script type="text/javascript" src="${context}/js/jqueryui/jquery-ui-sliderAccess.js"></script>
 		<script type="text/javascript" src="${context}/js/azkaban.table.sort.js"></script>
-		<script type="text/javascript" src="${context}/js/azkaban.nav.js"></script>
 		<script type="text/javascript" src="${context}/js/azkaban.triggers.view.js"></script>
 		<script type="text/javascript">
 			var contextURL = "${context}";

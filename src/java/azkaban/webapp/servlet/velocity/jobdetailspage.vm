@@ -22,7 +22,6 @@
 #parse("azkaban/webapp/servlet/velocity/javascript.vm")
 
 		<script type="text/javascript" src="${context}/js/azkaban.ajax.utils.js"></script>
-		<script type="text/javascript" src="${context}/js/azkaban.nav.js"></script>
 		<script type="text/javascript" src="${context}/js/azkaban.jobdetails.view.js"></script>
 		<script type="text/javascript">
 			var contextURL = "${context}";

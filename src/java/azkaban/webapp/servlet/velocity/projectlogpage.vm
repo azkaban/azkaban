@@ -23,7 +23,6 @@
 
 		<script type="text/javascript" src="${context}/js/azkaban.date.utils.js"></script>
 		<script type="text/javascript" src="${context}/js/azkaban.ajax.utils.js"></script>
-		<script type="text/javascript" src="${context}/js/azkaban.nav.js"></script>
 		<script type="text/javascript" src="${context}/js/azkaban.projectlog.view.js"></script>
 		<script type="text/javascript">
 			var contextURL = "${context}";

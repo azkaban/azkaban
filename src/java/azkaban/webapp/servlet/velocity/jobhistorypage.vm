@@ -21,7 +21,6 @@
 #parse("azkaban/webapp/servlet/velocity/style.vm")
 #parse("azkaban/webapp/servlet/velocity/javascript.vm")
 
-		<script type="text/javascript" src="${context}/js/azkaban.nav.js"></script>
 		<script type="text/javascript" src="${context}/js/d3.v3.min.js"></script>
 		<script type="text/javascript" src="${context}/js/azkaban.date.utils.js"></script>
 		<script type="text/javascript" src="${context}/js/azkaban.jobhistory.view.js"></script>
