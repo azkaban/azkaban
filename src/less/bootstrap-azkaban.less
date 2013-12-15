@@ -1,26 +1,26 @@
 // Wide modal used for certain panels such as executing flow panel.
 .modal-wide .modal-dialog {
-	width: 80%;
+  width: 80%;
 }
 
 // Hide messaging alert by default.
 .alert-messaging {
-	display: none;
+  display: none;
 }
 
 // Add additional space under navs.
 .nav-tabs, .nav-pills {
-	margin-bottom: 15px;
+  margin-bottom: 15px;
 }
 
 // Flow panel heading.
 .flow-expander {
-	cursor: pointer;
+  cursor: pointer;
 }
 
 // Flow summary.
 table .worksheet-key {
-	width: 25%;
+  width: 25%;
 }
 
 // Job table.
@@ -93,48 +93,52 @@ table .worksheet-key {
 
 // Table of executions.
 .executions-table {
-  th.date {
-    width: 140px;
+  th {
+    &.date {
+      width: 140px;
+    }
+
+    &.execid {
+      width: 100px;
+    }
+
+    &.project {
+      width: 200px;
+    }
+
+    &.user {
+      width: 60px;
+    }
+
+    &.elapse {
+      width: 90px;
+    }
+
+    &.status {
+      width: 100px;
+    }
+
+    &.details {
+      width: 10px;
+    }
+
+    &.action {
+      width: 20px;
+    }
   }
 
-  th.execid {
-    width: 100px;
-  }
+  td {
+    &.timeline {
+      width: 280px;
+      padding: 0px;
+      height: 100%;
+      vertical-align: bottom;
+      margin: 0px;
+    }
 
-  th.project {
-    width: 200px;
-  }
-
-  th.user {
-    width: 60px;
-  }
-
-  th.elapse {
-    width: 90px;
-  }
-
-  th.status {
-    width: 100px;
-  }
-
-  th.details {
-    width: 10px;
-  }
-
-  th.action {
-    width: 20px;
-  }
-
-  td.timeline {
-    width: 280px;
-    padding: 0px;
-    height: 100%;
-    vertical-align: bottom;
-    margin: 0px;
-  }
-
-  td.execId {
-    font-weight: bold;
+    &.execId {
+      font-weight: bold;
+    }
   }
 }
 
@@ -189,11 +193,11 @@ table .worksheet-key {
   background-image: -webkit-linear-gradient(bottom, rgb(56,56,56) 33%, rgb(73,73,73) 66%);
   background-image: -ms-linear-gradient(bottom, rgb(56,56,56) 33%, rgb(73,73,73) 66%);
   background-image: -webkit-gradient(
-   	linear,
-   	left bottom,
-   	left top,
-   	color-stop(0.33, rgb(56,56,56)),
-   	color-stop(0.66, rgb(73,73,73))
+     linear,
+     left bottom,
+     left top,
+     color-stop(0.33, rgb(56,56,56)),
+     color-stop(0.66, rgb(73,73,73))
   );
   background-image: linear-gradient(bottom, rgb(56,56,56) 33%, rgb(73,73,73) 66%); 
   border-top: 5px solid #ff3601;
@@ -259,7 +263,50 @@ table .worksheet-key {
   margin: 0 0 30px;
   border-bottom: 1px solid #eeeeee;
 
-	h1 {
-		font-size: 32px;
-	}
+  h1 {
+    font-size: 32px;
+  }
+}
+
+.contextMenu {
+  position: absolute;
+  background-color: #FFF;
+  border: 1px solid #DDD;
+  -moz-box-shadow: 2px 2px 5px #888;
+  -webkit-box-shadow: 2px 2px 5px #888;
+  box-shadow: 2px 2px 5px #888;
+
+  ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  li {
+    &.menuitem {
+      background-color: #FFF;
+      padding: 3px 20px;
+      min-width: 50px;
+      font-size: 10pt;
+      cursor: pointer;
+    
+      .expandSymbol {
+        background-image: url("../css/images/ui-icons_cccccc_256x240.png");
+        background-position: -32px -16px;
+        height: 16px;
+        width: 16px;
+        float:right;
+      }
+      
+      &:hover {
+        background-color: #555;
+        color: #FFF;
+      }
+    }
+
+    &.break {
+      border-bottom: 1px solid #BBB;
+      margin: 2px 5px;
+    }
+  }
 }
