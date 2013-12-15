@@ -30,8 +30,8 @@
 					</div>
 				</div>
 				<div class="col-lg-8">
-					<div id="svgDiv" class="well">
-						<svg id="svgGraph" class="svgGraph" xmlns="http://www.w3.org/2000/svg" version="1.1" shape-rendering="optimize-speed" text-rendering="optimize-speed" >
+					<div id="svgDiv" class="well well-clear well-sm">
+						<svg id="flow-graph" xmlns="http://www.w3.org/2000/svg" version="1.1" shape-rendering="optimize-speed" text-rendering="optimize-speed">
 						</svg>
 					</div>
 				</div>
