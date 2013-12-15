@@ -452,7 +452,7 @@ azkaban.SideMenuDialogView = Backbone.View.extend({
 var handleJobMenuClick = function(action, el, pos) {
 	var jobid = el[0].jobid;
 	
-	var requestURL = contextURL + "/manager?project=" + projectName + "&flow=" + flowName + "&job=" + jobid;
+	var requesgURL = contextURL + "/manager?project=" + projectName + "&flow=" + flowName + "&job=" + jobid;
 	if (action == "open") {
 		window.location.href = requestURL;
 	}
