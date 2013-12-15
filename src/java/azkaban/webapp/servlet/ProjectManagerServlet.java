@@ -116,9 +116,6 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 			else if (hasParam(req, "permissions")) {
 				handlePermissionPage(req, resp, session);
 			}
-			else if (hasParam(req, "staging")) {
-				handleFlowStagingPage(req, resp, session);
-			}
 			else if (hasParam(req, "prop")) {
 				handlePropertyPage(req, resp, session);
 			}
@@ -1131,48 +1128,6 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 		page.render();
 	}
 
-	private void handleFlowStagingPage(HttpServletRequest req, HttpServletResponse resp, Session session) throws ServletException {
-		Page page = newPage(req, resp, session, "azkaban/webapp/servlet/velocity/flowstagingpage.vm");
-		String projectName = getParam(req, "project");
-		String flowName = getParam(req, "flow");
-		
-		String retryFlow = null;
-		if (hasParam(req, "retry")) {
-			retryFlow = getParam(req, "retry");
-		}
-		
-		User user = session.getUser();
-		Project project = null;
-		Flow flow = null;
-		try {
-			project = projectManager.getProject(projectName);
-			
-			if (project == null) {
-				page.add("errorMsg", "Project " + projectName + " not found.");
-			}
-			else {
-				if (!hasPermission(project, user, Type.EXECUTE)) {
-					throw new AccessControlException( "No permission Project " + projectName + " to Execute.");
-				}
-				
-				page.add("project", project);
-				
-				flow = project.getFlow(flowName);
-				if (flow == null) {
-					page.add("errorMsg", "Flow " + flowName + " not found.");
-				}
-				
-				page.add("flowid", flow.getId());
-				page.add("retry", retryFlow);
-			}
-		}
-		catch (AccessControlException e) {
-			page.add("errorMsg", e.getMessage());
-		}
-		
-		page.render();
-	}
-	
 	private void handleProjectPage(HttpServletRequest req, HttpServletResponse resp, Session session) throws ServletException {
 		Page page = newPage(req, resp, session, "azkaban/webapp/servlet/velocity/projectpage.vm");
 		String projectName = getParam(req, "project");
