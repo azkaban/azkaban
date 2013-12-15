@@ -158,7 +158,7 @@ azkaban.FlowTabView = Backbone.View.extend({
 		$("#retrybtn").hide();
 
 		if (data.status == "SUCCEEDED") {
-				$("#executebtn").show();
+      $("#executebtn").show();
 		}
 		else if (data.status == "FAILED") {
 			$("#executebtn").show();
@@ -203,7 +203,7 @@ azkaban.FlowTabView = Backbone.View.extend({
 	handleRetryClick: function(evt) {
 		var graphData = graphModel.get("data");
 		var requestURL = contextURL + "/executor";
-		var requestData = {"execid": execId, "ajax":"retryFailedJobs"};
+		var requestData = {"execid": execId, "ajax": "retryFailedJobs"};
 		var successHandler = function(data) {
 			console.log("cancel clicked");
 			if (data.error) {
@@ -218,6 +218,7 @@ azkaban.FlowTabView = Backbone.View.extend({
 	},
 	
 	handleRestartClick: function(evt) {
+    console.log("handleRestartClick");
 		var data = graphModel.get("data");
 		var nodes = data.nodes;
 		var executingData = {
@@ -729,7 +730,8 @@ $(function() {
 		el: $('#headertabs'), 
 		model: graphModel
 	});
-	mainSvgGraphView = new azkaban.SvgGraphView({
+	
+  mainSvgGraphView = new azkaban.SvgGraphView({
 		el: $('#svgDiv'), 
 		model: graphModel, 
 		rightClick:	{ 
@@ -738,16 +740,19 @@ $(function() {
 			"graph": exGraphClickCallback 
 		}
 	});
-	jobsListView = new azkaban.JobListView({
+	
+  jobsListView = new azkaban.JobListView({
 		el: $('#jobList'), 
 		model: graphModel, 
 		contextMenuCallback: exJobClickCallback
 	});
-	flowLogView = new azkaban.FlowLogView({
+	
+  flowLogView = new azkaban.FlowLogView({
 		el: $('#flowLogView'), 
 		model: logModel
 	});
-	statusView = new azkaban.StatusView({
+	
+  statusView = new azkaban.StatusView({
 		el: $('#flow-status'), 
 		model: graphModel
 	});

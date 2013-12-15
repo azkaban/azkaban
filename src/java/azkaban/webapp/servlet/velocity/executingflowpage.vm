@@ -113,9 +113,9 @@
 
 	## Tabs and buttons.
 
-			<div class="row">
+			<div class="row" id="headertabs">
 				<div class="col-lg-8">
-					<ul class="nav nav-pills" id="headertabs">
+					<ul class="nav nav-pills">
 						<li id="graphViewLink"><a href="#graph">Graph</a></li>
 						<li id="jobslistViewLink"><a href="#jobslist">Job List</a></li>
 						<li id="flowLogViewLink"><a href="#log">Flow Log</a></li>
@@ -123,11 +123,11 @@
 				</div>
 				<div class="col-lg-4">
 					<div class="pull-right">
-						<button id="pausebtn" class="btn btn-primary">Pause</button>
-						<button id="resumebtn" class="btn btn-primary">Resume</button>
-						<button id="cancelbtn" class="btn btn-danger">Cancel</button>
-						<button id="retrybtn" class="btn btn-success">Retry Failed</button>
-						<button id="executebtn" class="btn btn-success">Prepare Execution</button>
+						<button type="button" id="pausebtn" class="btn btn-primary">Pause</button>
+						<button type="button" id="resumebtn" class="btn btn-primary">Resume</button>
+						<button type="button" id="cancelbtn" class="btn btn-danger">Cancel</button>
+						<button type="button" id="retrybtn" class="btn btn-success">Retry Failed</button>
+						<button type="button" id="executebtn" class="btn btn-success">Prepare Execution</button>
 					</div>
 					<div class="clearfix"></div>
 				</div>
@@ -189,11 +189,14 @@
 						<div class="modal-body" id="messageDiv">
 							<p id="messageBox"></p>
 						</div>
+						<div class="modal-footer">
+							<button type="button" class="btn btn-primary" data-dismiss="modal">Dismiss</button>
+						</div>
 					</div>
 				</div>
 			</div>
 
-		<div id="contextMenu"></div>
+      <div id="contextMenu"></div>
 
 	#parse ("azkaban/webapp/servlet/velocity/invalidsessionmodal.vm")
 	#parse ("azkaban/webapp/servlet/velocity/flowexecutionpanel.vm")
