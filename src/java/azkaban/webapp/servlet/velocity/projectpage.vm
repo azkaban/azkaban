@@ -78,18 +78,19 @@
 			</div>
 		</div>
 
+  
+	## Breadcrumb
+
+    <div class="container">
+      <ol class="breadcrumb">
+        <li class="active"><strong>Project</strong> $project.name</li>
+      </ol>
+
 	## Page content.
 
-		<div class="container">
 			<div class="row">
 				<div class="col-lg-8">
 					
-	## Breadcrumb
-
-					<ol class="breadcrumb">
-						<li class="active"><a href="${context}/manager?project=${project.name}"><strong>Project</strong> $project.name</a></li>
-					</ol>
-
 	#set ($project_page = "flows")
 	#parse ("azkaban/webapp/servlet/velocity/projectnav.vm")
 

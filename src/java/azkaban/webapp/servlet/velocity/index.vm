@@ -62,10 +62,8 @@
 			<div class="container">
 #if ($allProjects)
 				<h1>All Projects</h1>
-				<p>My Projects</p>
 #else
 				<h1>My Projects</h1>
-				<p>All Projects</p>
 #end
 			</div>
 		</div>

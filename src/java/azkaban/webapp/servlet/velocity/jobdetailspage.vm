@@ -77,17 +77,25 @@
 				<li><a href="${context}/manager?project=${projectName}"><strong>Project</strong> $projectName</a></li>
 				<li><a href="${context}/manager?project=${projectName}&flow=${flowid}"><strong>Flow</strong> $flowid</a></li>
 				<li><a href="${context}/executor?execid=${execid}#jobslist"><strong>Execution</strong> $execid</a></li>
-				<li><a href="${context}/manager?project=${projectName}&flow=${flowid}&job=$jobid"><strong>Job</strong> $jobid</a></li>
+        <li class="active"><strong>Job</strong> $jobid</li>
 			</ol>
-
-	## Tabs
-					
-			<ul class="nav nav-tabs" id="headertabs">
-				<li id="jobSummaryViewLink"><a href="#jobsummary">Summary</a></li>
-				<li id="jobLogViewLink"><a href="#joblog">Log</a></li>
-				<li><a href="${context}/pigvisualizer?execid=${execid}&jobid=${jobid}">Visualization</a></li>
-			</ul>
 			
+      <div class="row">
+				<div class="col-lg-8">
+					<ul class="nav nav-pills" id="headertabs">
+            <li id="jobSummaryViewLink"><a href="#jobsummary">Summary</a></li>
+            <li id="jobLogViewLink"><a href="#joblog">Log</a></li>
+            <li><a href="${context}/pigvisualizer?execid=${execid}&jobid=${jobid}">Visualization</a></li>
+					</ul>
+				</div>
+				<div class="col-lg-4">
+					<div class="pull-right">
+            <a href="${context}/manager?project=${projectName}&flow=${flowid}&job=$jobid" class="btn btn-default">Job Properties</a>
+					</div>
+					<div class="clearfix"></div>
+				</div>
+			</div>
+
 	## Log content.
 
 			<div class="row" id="jobLogView">
