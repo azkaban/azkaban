@@ -78,22 +78,20 @@
 	#parse ("azkaban/webapp/servlet/velocity/projectnav.vm")
 
 					<div class="panel panel-default">
-						<div class="panel-heading">
-							Permissions
-							<div class="pull-right">
-	#if ($isAdmin)
-								<button id="addUser" class="btn btn-xs btn-success">Add User</button>
-								<button id="addGroup" class="btn btn-xs btn-warning">Add Group</button>
-								<button id="addProxyUser" class="btn btn-xs btn-info">Add Proxy User</button>
-	#end
-							</div>
-						</div>
+						<div class="panel-heading">Permissions</div>
 						<div class="panel-body">
 
 	## User permissions table.
 
 							<div class="panel panel-success">
-								<div class="panel-heading">User</div>
+                <div class="panel-heading">
+                  User
+  #if ($isAdmin)
+                  <div class="pull-right">
+                    <button id="addUser" class="btn btn-xs btn-success">Add</button>
+                  </div>
+  #end
+                </div>
 								<table class="table table-striped permission-table" id="permissions-table">
 									<thead>
 										<th class="tb-username">User</th>
@@ -151,7 +149,14 @@
 	## Group permissions table.
 							
 							<div class="panel panel-warning">
-								<div class="panel-heading">Group</div>
+                <div class="panel-heading">
+                  Group
+  #if ($isAdmin)
+                  <div class="pull-right">
+                    <button id="addGroup" class="btn btn-xs btn-warning">Add</button>
+                  </div>
+  #end
+                </div>
 								<table class="table table-striped permission-table" id="group-permissions-table">
 									<thead>
 										<tr>
@@ -210,7 +215,14 @@
 	## Proxy users table.
 							
 							<div class="panel panel-info">
-								<div class="panel-heading">Proxy Users</div>
+                <div class="panel-heading">
+                  Proxy Users
+  #if ($isAdmin)
+                  <div class="pull-right">                
+                    <button id="addProxyUser" class="btn btn-xs btn-info">Add</button>
+                  </div>
+	#end
+                </div>
 								<table class="table table-striped permission-table" id="proxy-user-table">
 									<thead>
 										<tr>
