@@ -21,7 +21,8 @@ azkaban.SvgGraphView = Backbone.View.extend({
 		"contextmenu g" : "handleRightClick",
 		"contextmenu polyline": "handleRightClick"
 	},
-	initialize: function(settings) {
+	
+  initialize: function(settings) {
 		this.model.bind('change:selected', this.changeSelected, this);
 		this.model.bind('change:graph', this.render, this);
 		this.model.bind('resetPanZoom', this.resetPanZoom, this);
@@ -46,7 +47,8 @@ azkaban.SvgGraphView = Backbone.View.extend({
 
 		$(svg).svgNavigate();
 	},
-	initializeDefs: function(self) {
+	
+  initializeDefs: function(self) {
 		var def = document.createElementNS(svgns, 'defs');
 		def.setAttributeNS(null, "id", "buttonDefs");
 
@@ -68,7 +70,8 @@ azkaban.SvgGraphView = Backbone.View.extend({
 		
 		this.svgGraph.appendChild(def);
 	},
-	render: function(self) {
+	
+  render: function(self) {
 		console.log("graph render");
 
 		// Clean everything
@@ -131,7 +134,8 @@ azkaban.SvgGraphView = Backbone.View.extend({
 		this.graphBounds = bounds;
 		this.resetPanZoom(0);
 	},
-	handleDisabledChange: function(evt) {
+	
+  handleDisabledChange: function(evt) {
 		var disabledMap = this.model.get("disabled");
 
 		for(var id in this.nodes) {
@@ -146,7 +150,8 @@ azkaban.SvgGraphView = Backbone.View.extend({
 			}
 		}
 	},
-	assignInitialStatus: function(evt) {
+	
+  assignInitialStatus: function(evt) {
 		var data = this.model.get("data");
 		for (var i = 0; i < data.nodes.length; ++i) {
 			var updateNode = data.nodes[i];
@@ -154,7 +159,8 @@ azkaban.SvgGraphView = Backbone.View.extend({
 			addClass(g, updateNode.status);
 		}
 	},
-	changeSelected: function(self) {
+	
+  changeSelected: function(self) {
 		console.log("change selected");
 		var selected = this.model.get("selected");
 		var previous = this.model.previous("selected");
@@ -184,7 +190,8 @@ azkaban.SvgGraphView = Backbone.View.extend({
 			});
 		}
 	},
-	handleStatusUpdate: function(evt) {
+	
+  handleStatusUpdate: function(evt) {
 		var updateData = this.model.get("update");
 		if (updateData.nodes) {
 			for (var i = 0; i < updateData.nodes.length; ++i) {
@@ -197,19 +204,22 @@ azkaban.SvgGraphView = Backbone.View.extend({
 			}
 		}
 	},
-	handleRemoveAllStatus: function(gNode) {
+	
+  handleRemoveAllStatus: function(gNode) {
 		for (var j = 0; j < statusList.length; ++j) {
 			var status = statusList[j];
 			removeClass(gNode, status);
 		}
 	},
-	clickGraph: function(self) {
+	
+  clickGraph: function(self) {
 		console.log("click");
 		if (self.currentTarget.jobid) {
 			this.model.set({"selected": self.currentTarget.jobid});
 		}
 	},
-	handleRightClick: function(self) {
+	
+  handleRightClick: function(self) {
 		if (this.rightClick) {
 			var callbacks = this.rightClick;
 			var currentTarget = self.currentTarget;
@@ -229,7 +239,8 @@ azkaban.SvgGraphView = Backbone.View.extend({
 	
 		return true;
 	},	
-	drawEdge: function(self, edge) {
+	
+  drawEdge: function(self, edge) {
 		var svg = self.svgGraph;
 		var svgns = self.svgns;
 		
@@ -262,7 +273,8 @@ azkaban.SvgGraphView = Backbone.View.extend({
 			self.mainG.appendChild(line);
 		}
 	},
-	drawNode: function(self, node, bounds) {
+	
+  drawNode: function(self, node, bounds) {
 		var svg = self.svgGraph;
 		var svgns = self.svgns;
 
@@ -323,7 +335,8 @@ azkaban.SvgGraphView = Backbone.View.extend({
 		nodeG.setAttributeNS(null, "class", "node");
 		nodeG.jobid=node.id;
 	},
-	addBounds: function(toBounds, addBounds) {
+	
+  addBounds: function(toBounds, addBounds) {
 		toBounds.minX = toBounds.minX 
 				? Math.min(toBounds.minX, addBounds.minX) : addBounds.minX;
 		toBounds.minY = toBounds.minY 
@@ -333,7 +346,8 @@ azkaban.SvgGraphView = Backbone.View.extend({
 		toBounds.maxY = toBounds.maxY 
 				? Math.max(toBounds.maxY, addBounds.maxY) : addBounds.maxY;
 	},
-	resetPanZoom : function(duration) {
+	
+  resetPanZoom: function(duration) {
 		var bounds = this.graphBounds;
 		var param = {
 			x: bounds.minX, 

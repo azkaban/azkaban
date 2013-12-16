@@ -23,7 +23,6 @@
 
 		<link rel="stylesheet" type="text/css" href="${context}/css/jquery-ui-1.10.1.custom.css" />
 		<script type="text/javascript" src="${context}/js/jqueryui/jquery-ui-1.10.1.custom.js"></script>
-		<script type="text/javascript" src="${context}/js/azkaban.nav.js"></script>
 		<script type="text/javascript" src="${context}/js/azkaban.jobedit.view.js"></script>
 		<script type="text/javascript">
 			var contextURL = "${context}";
@@ -71,25 +70,23 @@
 
 		<div class="az-page-header">
 			<div class="container">
-				<h1>
-					<a href="${context}/manager?project=${project.name}">$project.name</a> / 
-					<a href="${context}/manager?project=${project.name}&flow=${flowid}">$flowid</a>
-				</h1>
+        <h1><a href="${context}/manager?project=${project.name}&flow=${flowid}&job=${jobid}">Job <small>$jobid</small></a></h1>
 			</div>
 		</div>
 
 		<div class="container">
+	
+  ## Breadcrumb
+
+      <ol class="breadcrumb">
+        <li><a href="${context}/manager?project=${project.name}"><strong>Project</strong> $project.name</a></li>
+        <li><a href="${context}/manager?project=${project.name}&flow=${flowid}"><strong>Flow</strong> $flowid</a></li>
+        <li class="active"><strong>Job</strong> $jobid</li>
+      </ol>
+
 			<div class="row">
 				<div class="col-lg-8">
-
-	## Breadcrumb
-
-					<ol class="breadcrumb">
-						<li><a href="${context}/manager?project=${project.name}"><strong>Project</strong> $project.name</a></li>
-						<li><a href="${context}/manager?project=${project.name}&flow=${flowid}"><strong>Flow</strong> $flowid</a></li>
-						<li class="active"><a href="${context}/manager?project=${project.name}&flow=${flowid}&job=${jobid}"><strong>Job</strong> $jobid</a></li>
-					</ol>
-				
+	
 	#set ($job_page="properties")
 	#parse ("azkaban/webapp/servlet/velocity/jobnav.vm")
 

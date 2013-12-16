@@ -27,11 +27,10 @@
 		<script type="text/javascript" src="${context}/js/azkaban.context.menu.js"></script>
 		<script type="text/javascript" src="${context}/js/azkaban.ajax.utils.js"></script>
 		<script type="text/javascript" src="${context}/js/azkaban.job.status.utils.js"></script>
-		<script type="text/javascript" src="${context}/js/azkaban.nav.js"></script>
 		<script type="text/javascript" src="${context}/js/azkaban.layout.js"></script>
+		<script type="text/javascript" src="${context}/js/azkaban.exflow.view.js"></script>
 		<script type="text/javascript" src="${context}/js/azkaban.flow.job.view.js"></script>
 		<script type="text/javascript" src="${context}/js/azkaban.svg.graph.view.js"></script>
-		<script type="text/javascript" src="${context}/js/azkaban.exflow.view.js"></script>
 		<script type="text/javascript" src="${context}/js/svgNavigate.js"></script>
 		<script type="text/javascript">
 			var contextURL = "${context}";
@@ -93,7 +92,7 @@
 			<ol class="breadcrumb">
 				<li><a href="${context}/manager?project=${projectName}"><strong>Project</strong> $projectName</a></li>
 				<li><a href="${context}/manager?project=${projectName}&flow=${flowid}"><strong>Flow</strong> $flowid</a></li>
-				<li><a href="${context}/executor?execid=${execid}"><strong>Execution</strong> $execid</a></li>
+				<li class="active"><strong>Execution</strong> $execid</li>
 			</ol>
 		
 	## Flow status
@@ -114,9 +113,9 @@
 
 	## Tabs and buttons.
 
-			<div class="row">
+			<div class="row" id="headertabs">
 				<div class="col-lg-8">
-					<ul class="nav nav-pills" id="headertabs">
+					<ul class="nav nav-pills">
 						<li id="graphViewLink"><a href="#graph">Graph</a></li>
 						<li id="jobslistViewLink"><a href="#jobslist">Job List</a></li>
 						<li id="flowLogViewLink"><a href="#log">Flow Log</a></li>
@@ -124,11 +123,11 @@
 				</div>
 				<div class="col-lg-4">
 					<div class="pull-right">
-						<button id="pausebtn" class="btn btn-primary">Pause</button>
-						<button id="resumebtn" class="btn btn-primary">Resume</button>
-						<button id="cancelbtn" class="btn btn-danger">Cancel</button>
-						<button id="retrybtn" class="btn btn-success">Retry Failed</button>
-						<button id="executebtn" class="btn btn-success">Prepare Execution</button>
+						<button type="button" id="pausebtn" class="btn btn-primary">Pause</button>
+						<button type="button" id="resumebtn" class="btn btn-primary">Resume</button>
+						<button type="button" id="cancelbtn" class="btn btn-danger">Cancel</button>
+						<button type="button" id="retrybtn" class="btn btn-success">Retry Failed</button>
+						<button type="button" id="executebtn" class="btn btn-success">Prepare Execution</button>
 					</div>
 					<div class="clearfix"></div>
 				</div>
@@ -190,11 +189,14 @@
 						<div class="modal-body" id="messageDiv">
 							<p id="messageBox"></p>
 						</div>
+						<div class="modal-footer">
+							<button type="button" class="btn btn-primary" data-dismiss="modal">Dismiss</button>
+						</div>
 					</div>
 				</div>
 			</div>
 
-		<div id="contextMenu"></div>
+      <div id="contextMenu"></div>
 
 	#parse ("azkaban/webapp/servlet/velocity/invalidsessionmodal.vm")
 	#parse ("azkaban/webapp/servlet/velocity/flowexecutionpanel.vm")

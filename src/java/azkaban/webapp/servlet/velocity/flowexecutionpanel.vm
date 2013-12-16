@@ -59,7 +59,7 @@
 ## SVG graph panel.
 
 									<div id="svg-div-custom" class="side-panel">
-										<svg class="svgGraph" xmlns="http://www.w3.org/2000/svg" version="1.1" shape-rendering="optimize-speed" text-rendering="optimize-speed">
+										<svg id="flow-executing-graph" xmlns="http://www.w3.org/2000/svg" version="1.1" shape-rendering="optimize-speed" text-rendering="optimize-speed">
 										</svg>
 									</div>
 

@@ -28,11 +28,10 @@
 		<script type="text/javascript" src="${context}/js/azkaban.date.utils.js"></script>
 		<script type="text/javascript" src="${context}/js/azkaban.ajax.utils.js"></script>
 		<script type="text/javascript" src="${context}/js/azkaban.common.utils.js"></script>
-		<script type="text/javascript" src="${context}/js/azkaban.nav.js"></script>
 		<script type="text/javascript" src="${context}/js/azkaban.layout.js"></script>
+		<script type="text/javascript" src="${context}/js/azkaban.flow.view.js"></script>
 		<script type="text/javascript" src="${context}/js/azkaban.flow.job.view.js"></script>
 		<script type="text/javascript" src="${context}/js/azkaban.flow.graph.view.js"></script>
-		<script type="text/javascript" src="${context}/js/azkaban.flow.view.js"></script>
 		<script type="text/javascript" src="${context}/js/svgNavigate.js"></script>
 		<script type="text/javascript">
 			var contextURL = "${context}";
@@ -84,7 +83,7 @@
 
 		<div class="az-page-header">
 			<div class="container">
-				<h1><a href="${context}/manager?project=${project.name}">Project <small>$project.name</small></a></h1>
+        <h1><a href="${context}/manager?project=${project.name}&flow=${flowid}">Flow <small>$flowid</small></a></h1>
 				<p>$project.description</p>
 			</div>
 		</div>
@@ -92,14 +91,10 @@
 	## Breadcrumbs and tabs
 
 		<div class="container">
-			<div class="row">
-				<div class="col-lg-12">
-					<ol class="breadcrumb">
-						<li><a href="${context}/manager?project=${project.name}"><strong>Project</strong> $project.name</a></li>
-						<li><a href="${context}/manager?project=${project.name}&flow=${flowid}"><strong>Flow</strong> $flowid</a></li>
-					</ol>
-				</div>
-			</div>
+      <ol class="breadcrumb">
+        <li><a href="${context}/manager?project=${project.name}"><strong>Project</strong> $project.name</a></li>
+        <li class="active"><strong>Flow</strong> $flowid</li>
+      </ol>
 
 			<div class="row">
 				<div class="col-lg-8">

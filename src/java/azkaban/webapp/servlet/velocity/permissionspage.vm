@@ -21,7 +21,6 @@
 #parse ("azkaban/webapp/servlet/velocity/style.vm")
 #parse ("azkaban/webapp/servlet/velocity/javascript.vm")
 
-		<script type="text/javascript" src="${context}/js/azkaban.nav.js"></script>
 		<script type="text/javascript" src="${context}/js/azkaban.permission.view.js"></script>
 		<script type="text/javascript">
 			var contextURL = "${context}";
@@ -145,7 +144,11 @@
 										</tr>
 		#end
 	#else
-										<tr><td class="last">No Users Found.</td></tr>
+    #if ($isAdmin)
+										<tr><td colspan="7">No Users Found.</td></tr>
+    #else
+										<tr><td colspan="6">No Users Found.</td></tr>
+    #end
 	#end
 									</tbody>
 								</table>
@@ -200,7 +203,11 @@
 										</tr>
 		#end
 	#else
-										<tr><td class="last">No Groups Found.</td></tr>
+    #if ($isAdmin)
+										<tr><td colspan="7">No Groups Found.</td></tr>
+    #else
+										<tr><td colspan="6">No Groups Found.</td></tr>
+    #end
 	#end
 									</tbody>
 								</table>
@@ -224,13 +231,17 @@
 		#foreach ($proxyUser in $proxyUsers)
 										<tr>
 											<td class="tb-username">#if($proxyUser == $username) ${proxyUser} <span class="sublabel">(you)</span> #else $proxyUser #end</td>
-			#if($isAdmin)
+			#if ($isAdmin)
 											<td><button id="proxy-${proxyUser}" name="${proxyUser}" class="btn btn-xs btn-primary">Remove</button></td>
 			#end
 										</tr>
 		#end
 	#else
-										<tr><td class="last">No Proxy User Found.</td></tr>
+    #if ($isAdmin)
+										<tr><td colspan="2">No Proxy User Found.</td></tr>
+    #else
+										<tr><td>No Proxy User Found.</td></tr>
+    #end
 	#end
 									</tbody>
 								</table>

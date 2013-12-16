@@ -89,8 +89,10 @@ azkaban.JobListView = Backbone.View.extend({
 		if (updateData.nodes) {
 			for (var i = 0; i < updateData.nodes.length; ++i) {
 				var updateNode = updateData.nodes[i];
-				$(this.listNodes[updateNode.id]).removeClass();
-				$(this.listNodes[updateNode.id]).addClass(updateNode.status);
+				var job = this.listNodes[updateNode.id];
+				$(job).removeClass();
+				$(job).addClass("list-group-item");
+				$(job).addClass(updateNode.status);
 			}
 		}
 	},
@@ -99,7 +101,11 @@ azkaban.JobListView = Backbone.View.extend({
 		var data = this.model.get("data");
 		for (var i = 0; i < data.nodes.length; ++i) {
 			var updateNode = data.nodes[i];
-			$(this.listNodes[updateNode.id]).addClass(updateNode.status);
+			var job = this.listNodes[updateNode.id];
+      if (!$(job).hasClass("list-group-item")) {
+        $(job).addClass("list-group-item");
+      }
+			$(job).addClass(updateNode.status);
 		}
 	},
 	

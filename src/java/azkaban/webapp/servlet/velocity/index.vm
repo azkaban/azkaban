@@ -22,7 +22,6 @@
 #parse("azkaban/webapp/servlet/velocity/javascript.vm")
 
 		<script type="text/javascript" src="${context}/js/azkaban.table.sort.js"></script>
-		<script type="text/javascript" src="${context}/js/azkaban.nav.js"></script>
 		<script type="text/javascript" src="${context}/js/azkaban.main.view.js"></script>
 		<script type="text/javascript">
 			var contextURL = "${context}";
@@ -63,10 +62,8 @@
 			<div class="container">
 #if ($allProjects)
 				<h1>All Projects</h1>
-				<p>My Projects</p>
 #else
 				<h1>My Projects</h1>
-				<p>All Projects</p>
 #end
 			</div>
 		</div>
