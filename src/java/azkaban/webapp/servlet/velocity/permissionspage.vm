@@ -71,13 +71,6 @@
 		</div>
 
 		<div class="container">
-	
-  ## Breadcrumb
-
-      <ol class="breadcrumb">
-        <li class="active"><strong>Project</strong> $project.name</li>
-      </ol>
-
 			<div class="row">
 				<div class="col-lg-8">
 	
