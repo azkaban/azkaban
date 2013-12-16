@@ -77,184 +77,180 @@
 	#set ($project_page = "permissions")
 	#parse ("azkaban/webapp/servlet/velocity/projectnav.vm")
 
-					<div class="panel panel-default">
-						<div class="panel-heading">Permissions</div>
-						<div class="panel-body">
-
 	## User permissions table.
 
-							<div class="panel panel-success">
-                <div class="panel-heading">
-                  User
+          <div class="panel panel-success">
+            <div class="panel-heading">
+              User
   #if ($isAdmin)
-                  <div class="pull-right">
-                    <button id="addUser" class="btn btn-xs btn-success">Add</button>
-                  </div>
+              <div class="pull-right">
+                <button id="addUser" class="btn btn-xs btn-success">Add</button>
+              </div>
   #end
-                </div>
-								<table class="table table-striped permission-table" id="permissions-table">
-									<thead>
-										<th class="tb-username">User</th>
-										<th class="tb-perm">Admin</th>
-										<th class="tb-read">Read</th>
-										<th class="tb-write">Write</th>
-										<th class="tb-execute">Execute</th>
-										<th class="tb-schedule">Schedule</th>					
+            </div>
+            <table class="table table-striped permission-table" id="permissions-table">
+              <thead>
+                <tr>
+                  <th class="tb-username">User</th>
+                  <th class="tb-perm">Admin</th>
+                  <th class="tb-read">Read</th>
+                  <th class="tb-write">Write</th>
+                  <th class="tb-execute">Execute</th>
+                  <th class="tb-schedule">Schedule</th>					
 	#if ($isAdmin)
-											<th class="tb-action"></th>
-	#end
-									</thead>
-									<tbody>
+                  <th class="tb-action"></th>
+  #end
+                </tr>
+              </thead>
+              <tbody>
 
 	#if ($permissions)
 		#foreach ($perm in $permissions)
-										<tr>
-											<td class="tb-username">
+                <tr>
+                  <td class="tb-username">
 			#if ($perm.first == $username) 
-												${perm.first} <span class="sublabel">(you)</span> 
+                    ${perm.first} <span class="sublabel">(you)</span> 
 			#else 
-												$perm.first 
+                    $perm.first 
 			#end
-											</td>
+                  </td>
 			#if ($perm.second.isPermissionNameSet("ADMIN")) 
-											<td><input id="${perm.first}-admin-checkbox" type="checkbox" name="admin" disabled="disabled" checked="true"></input></td>
-											<td><input id="${perm.first}-read-checkbox" type="checkbox" name="read" disabled="disabled" checked="true"></input></td>
-											<td><input id="${perm.first}-write-checkbox" type="checkbox" name="write" disabled="disabled" checked="true"></input></td>
-											<td><input id="${perm.first}-execute-checkbox" type="checkbox" name="execute" disabled="disabled" checked="true"></input></td>
-											<td><input id="${perm.first}-schedule-checkbox" type="checkbox" name="schedule" disabled="disabled" checked="true"></input></td>
+                  <td><input id="${perm.first}-admin-checkbox" type="checkbox" name="admin" disabled="disabled" checked="true"></input></td>
+                  <td><input id="${perm.first}-read-checkbox" type="checkbox" name="read" disabled="disabled" checked="true"></input></td>
+                  <td><input id="${perm.first}-write-checkbox" type="checkbox" name="write" disabled="disabled" checked="true"></input></td>
+                  <td><input id="${perm.first}-execute-checkbox" type="checkbox" name="execute" disabled="disabled" checked="true"></input></td>
+                  <td><input id="${perm.first}-schedule-checkbox" type="checkbox" name="schedule" disabled="disabled" checked="true"></input></td>
 			#else
-											<td><input id="${perm.first}-admin-checkbox" type="checkbox" name="admin" disabled="disabled"></input></td>
-											<td><input id="${perm.first}-read-checkbox" type="checkbox" name="read" disabled="disabled"  #if ($perm.second.isPermissionNameSet("READ")) checked="true" #end></input></td>
-											<td><input id="${perm.first}-write-checkbox" type="checkbox" name="write" disabled="disabled" #if ($perm.second.isPermissionNameSet("WRITE")) checked="true" #end></input></td>
-											<td><input id="${perm.first}-execute-checkbox" type="checkbox" name="execute" disabled="disabled" #if ($perm.second.isPermissionNameSet("EXECUTE")) checked="true" #end></input></td>
-											<td><input id="${perm.first}-schedule-checkbox" type="checkbox" name="schedule" disabled="disabled" #if ($perm.second.isPermissionNameSet("SCHEDULE")) checked="true" #end></input></td>
+                  <td><input id="${perm.first}-admin-checkbox" type="checkbox" name="admin" disabled="disabled"></input></td>
+                  <td><input id="${perm.first}-read-checkbox" type="checkbox" name="read" disabled="disabled"  #if ($perm.second.isPermissionNameSet("READ")) checked="true" #end></input></td>
+                  <td><input id="${perm.first}-write-checkbox" type="checkbox" name="write" disabled="disabled" #if ($perm.second.isPermissionNameSet("WRITE")) checked="true" #end></input></td>
+                  <td><input id="${perm.first}-execute-checkbox" type="checkbox" name="execute" disabled="disabled" #if ($perm.second.isPermissionNameSet("EXECUTE")) checked="true" #end></input></td>
+                  <td><input id="${perm.first}-schedule-checkbox" type="checkbox" name="schedule" disabled="disabled" #if ($perm.second.isPermissionNameSet("SCHEDULE")) checked="true" #end></input></td>
 			#end
 
 			#if ($isAdmin)
-											<td><button id="$perm.first" #if($perm.first == $username) disabled="disabled" class="btn btn-xs btn-disabled" #else class="btn btn-xs btn-default" #end >Change</button></td>
+                  <td><button id="$perm.first" #if($perm.first == $username) disabled="disabled" class="btn btn-xs btn-disabled" #else class="btn btn-xs btn-default" #end >Change</button></td>
 			#end
-										</tr>
+                </tr>
 		#end
 	#else
     #if ($isAdmin)
-										<tr><td colspan="7">No Users Found.</td></tr>
+                <tr><td colspan="7">No Users Found.</td></tr>
     #else
-										<tr><td colspan="6">No Users Found.</td></tr>
+                <tr><td colspan="6">No Users Found.</td></tr>
     #end
 	#end
-									</tbody>
-								</table>
-							</div>
+              </tbody>
+            </table>
+          </div>
 
 	## Group permissions table.
 							
-							<div class="panel panel-warning">
-                <div class="panel-heading">
-                  Group
+          <div class="panel panel-warning">
+            <div class="panel-heading">
+              Group
   #if ($isAdmin)
-                  <div class="pull-right">
-                    <button id="addGroup" class="btn btn-xs btn-warning">Add</button>
-                  </div>
+              <div class="pull-right">
+                <button id="addGroup" class="btn btn-xs btn-warning">Add</button>
+              </div>
   #end
-                </div>
-								<table class="table table-striped permission-table" id="group-permissions-table">
-									<thead>
-										<tr>
-											<th class="tb-username">Group</th>
-											<th class="tb-perm">Admin</th>
-											<th class="tb-read">Read</th>
-											<th class="tb-write">Write</th>
-											<th class="tb-execute">Execute</th>
-											<th class="tb-schedule">Schedule</th>
+            </div>
+            <table class="table table-striped permission-table" id="group-permissions-table">
+              <thead>
+                <tr>
+                  <th class="tb-username">Group</th>
+                  <th class="tb-perm">Admin</th>
+                  <th class="tb-read">Read</th>
+                  <th class="tb-write">Write</th>
+                  <th class="tb-execute">Execute</th>
+                  <th class="tb-schedule">Schedule</th>
 	#if ($isAdmin)
-											<th class="tb-action"></th>
+                  <th class="tb-action"></th>
 	#end
-										</tr>
-									</thead>
-									<tbody>
+                </tr>
+              </thead>
+              <tbody>
 	#if ($groupPermissions)
 		#foreach ($perm in $groupPermissions)
-										<tr>
-											<td class="tb-username">
+                <tr>
+                  <td class="tb-username">
 			#if ($perm.first == $username) 
-												${perm.first} <span class="sublabel">(you)</span> 
+                    ${perm.first} <span class="sublabel">(you)</span> 
 			#else 
-												$perm.first 
+                    $perm.first 
 			#end
-											</td>
+                  </td>
 			#if ($perm.second.isPermissionNameSet("ADMIN")) 
-											<td><input id="group-${perm.first}-admin-checkbox" type="checkbox" name="admin" disabled="disabled" checked="true"></input></td>
-											<td><input id="group-${perm.first}-read-checkbox" type="checkbox" name="read" disabled="disabled" checked="true"></input></td>
-											<td><input id="group-${perm.first}-write-checkbox" type="checkbox" name="write" disabled="disabled" checked="true"></input></td>
-											<td><input id="group-${perm.first}-execute-checkbox" type="checkbox" name="execute" disabled="disabled" checked="true"></input></td>
-											<td><input id="group-${perm.first}-schedule-checkbox" type="checkbox" name="schedule" disabled="disabled" checked="true"></input></td>
+                  <td><input id="group-${perm.first}-admin-checkbox" type="checkbox" name="admin" disabled="disabled" checked="true"></input></td>
+                  <td><input id="group-${perm.first}-read-checkbox" type="checkbox" name="read" disabled="disabled" checked="true"></input></td>
+                  <td><input id="group-${perm.first}-write-checkbox" type="checkbox" name="write" disabled="disabled" checked="true"></input></td>
+                  <td><input id="group-${perm.first}-execute-checkbox" type="checkbox" name="execute" disabled="disabled" checked="true"></input></td>
+                  <td><input id="group-${perm.first}-schedule-checkbox" type="checkbox" name="schedule" disabled="disabled" checked="true"></input></td>
 			#else
-											<td><input id="group-${perm.first}-admin-checkbox" type="checkbox" name="admin" disabled="disabled"></input></td>
-											<td><input id="group-${perm.first}-read-checkbox" type="checkbox" name="read" disabled="disabled"  #if ($perm.second.isPermissionNameSet("READ")) checked="true" #end></input></td>
-											<td><input id="group-${perm.first}-write-checkbox" type="checkbox" name="write" disabled="disabled" #if ($perm.second.isPermissionNameSet("WRITE")) checked="true" #end></input></td>
-											<td><input id="group-${perm.first}-execute-checkbox" type="checkbox" name="execute" disabled="disabled" #if ($perm.second.isPermissionNameSet("EXECUTE")) checked="true" #end></input></td>
-											<td><input id="group-${perm.first}-schedule-checkbox" type="checkbox" name="schedule" disabled="disabled" #if ($perm.second.isPermissionNameSet("SCHEDULE")) checked="true" #end></input></td>
+                  <td><input id="group-${perm.first}-admin-checkbox" type="checkbox" name="admin" disabled="disabled"></input></td>
+                  <td><input id="group-${perm.first}-read-checkbox" type="checkbox" name="read" disabled="disabled"  #if ($perm.second.isPermissionNameSet("READ")) checked="true" #end></input></td>
+                  <td><input id="group-${perm.first}-write-checkbox" type="checkbox" name="write" disabled="disabled" #if ($perm.second.isPermissionNameSet("WRITE")) checked="true" #end></input></td>
+                  <td><input id="group-${perm.first}-execute-checkbox" type="checkbox" name="execute" disabled="disabled" #if ($perm.second.isPermissionNameSet("EXECUTE")) checked="true" #end></input></td>
+                  <td><input id="group-${perm.first}-schedule-checkbox" type="checkbox" name="schedule" disabled="disabled" #if ($perm.second.isPermissionNameSet("SCHEDULE")) checked="true" #end></input></td>
 			#end
 
 			#if ($isAdmin)
-											<td><button id="group-$perm.first" class="btn btn-xs btn-default">Change</button></td>
+                  <td><button id="group-$perm.first" class="btn btn-xs btn-default">Change</button></td>
 			#end
-										</tr>
+                </tr>
 		#end
 	#else
     #if ($isAdmin)
-										<tr><td colspan="7">No Groups Found.</td></tr>
+                <tr><td colspan="7">No Groups Found.</td></tr>
     #else
-										<tr><td colspan="6">No Groups Found.</td></tr>
+                <tr><td colspan="6">No Groups Found.</td></tr>
     #end
 	#end
-									</tbody>
-								</table>
-							</div>
+              </tbody>
+            </table>
+          </div>
 	
 	## Proxy users table.
 							
-							<div class="panel panel-info">
-                <div class="panel-heading">
-                  Proxy Users
+          <div class="panel panel-info">
+            <div class="panel-heading">
+              Proxy Users
   #if ($isAdmin)
-                  <div class="pull-right">                
-                    <button id="addProxyUser" class="btn btn-xs btn-info">Add</button>
-                  </div>
+              <div class="pull-right">                
+                <button id="addProxyUser" class="btn btn-xs btn-info">Add</button>
+              </div>
 	#end
-                </div>
-								<table class="table table-striped permission-table" id="proxy-user-table">
-									<thead>
-										<tr>
-											<th class="tb-username">Proxy User</th>
+            </div>
+            <table class="table table-striped permission-table" id="proxy-user-table">
+              <thead>
+                <tr>
+                  <th class="tb-username">Proxy User</th>
 	#if ($isAdmin)
-											<th class="tb-action"></th>
+                  <th class="tb-action"></th>
 	#end
-										</tr>
-									</thead>
-									<tbody>
+                </tr>
+              </thead>
+              <tbody>
 	#if ($proxyUsers)
 		#foreach ($proxyUser in $proxyUsers)
-										<tr>
-											<td class="tb-username">#if($proxyUser == $username) ${proxyUser} <span class="sublabel">(you)</span> #else $proxyUser #end</td>
+                <tr>
+                  <td class="tb-username">#if($proxyUser == $username) ${proxyUser} <span class="sublabel">(you)</span> #else $proxyUser #end</td>
 			#if ($isAdmin)
-											<td><button id="proxy-${proxyUser}" name="${proxyUser}" class="btn btn-xs btn-primary">Remove</button></td>
+                  <td><button id="proxy-${proxyUser}" name="${proxyUser}" class="btn btn-xs btn-primary">Remove</button></td>
 			#end
-										</tr>
+                </tr>
 		#end
 	#else
     #if ($isAdmin)
-										<tr><td colspan="2">No Proxy User Found.</td></tr>
+                <tr><td colspan="2">No Proxy User Found.</td></tr>
     #else
-										<tr><td>No Proxy User Found.</td></tr>
+                <tr><td>No Proxy User Found.</td></tr>
     #end
 	#end
-									</tbody>
-								</table>
-							</div>
+              </tbody>
+            </table>
+          </div>
 	
-						</div><!-- /panel-body -->
-					</div><!-- /panel -->
 				</div><!-- /col-lg-8 -->
 				<div class="col-lg-4">
 	#parse ("azkaban/webapp/servlet/velocity/projectsidebar.vm")
