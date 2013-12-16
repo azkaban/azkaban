@@ -1,70 +1,17 @@
-					<div class="panel panel-default">
-						<div class="panel-heading">General</div>
+          <div class="panel panel-default">
 						<table class="table table-striped table-bordered table-condensed table-hover">
 							<tbody>
 								<tr>
 									<td class="worksheet-key">Workflow name</td>
 									<td>{general.flowId}</td>
-								</tr>
-								<tr class="editRow">
-									<td class="worksheet-key">Workflow Purpose/Description</td>
-									<td class="editable"><span class="spanValue">{general.flowDescription}</span></td>
-								</tr>
-								<tr>
 									<td class="worksheet-key">Project name</td>
 									<td>{general.projectName}</td>
 								</tr>
 								<tr>
-									<td class="worksheet-key">Name of scheduled item</td>
-									<td>{general.flowId}</td>
-								</tr>
-								<tr>
 									<td class="worksheet-key">Workflow Hadoop User Name</td>
 									<td>{general.user}</td>
-								</tr>
-								<tr>
-									<td class="worksheet-key">Responsible team</td>
-									<td class="editable"><span class="spanValue">{general.team}</span></td>
-								</tr>
-								<tr>
-									<td class="worksheet-key">Responsible manager</td>
-									<td class="editable"><span class="spanValue">{general.manager}</span></td>
-								</tr>
-								<tr>
-									<td class="worksheet-key">Responsible Developer</td>
-									<td class="editable"><span class="spanValue">{general.developer}</span></td>
-								</tr>
-								<tr>
-									<td class="worksheet-key">Hadoop APIs Used</td>
+									<td class="worksheet-key">Job Types Used</td>
 									<td>{general.apis}</td>
-								</tr>
-								<tr>
-									<td class="worksheet-key">Additional Hadoop APIs Used</td>
-									<td>{general.additionalApis}</td>
-								</tr>
-								<tr>
-									<td class="worksheet-key">Streaming Languages Used</td>
-									<td>{general.streamingLanguages}</td>
-								</tr>
-								<tr>
-									<td class="worksheet-key">Code Repository</td>
-									<td>{general.codeRepository}</td>
-								</tr>
-								<tr>
-									<td class="worksheet-key">Does this workflow perform any second, third, or higher level connection graph calculations?</td>
-									<td>{general.higherLevelGraphOperations}</td>
-								</tr>
-								<tr>
-									<td class="worksheet-key">Can this workflow be run with an empty <strong>/jobs</strong> directory</td>
-									<td>{general.emptyJobsDirectory}</td>
-								</tr>
-								<tr>
-									<td class="worksheet-key">If not, why not?</td>
-									<td>{general.emptyJobsDirectoryReason}</td>
-								</tr>
-								<tr>
-									<td class="worksheet-key">How does the result get to front-end servers?</td>
-									<td>{general.toFrontEnd}</td>
 								</tr>
 							</tbody>
 						</table>
@@ -74,6 +21,34 @@
 						<div class="panel-heading">Scheduling</div>
 						<table class="table table-striped table-bordered table-condensed table-hover">
 							<tbody>
+								<tr>
+									<td class="worksheet-key">Recurrence</td>
+									<td>{scheduling.schedule}</td>
+								</tr>
+								<tr>
+									<td class="worksheet-key">Scheduled Time</td>
+									<td>{scheduling.launchTime}</td>
+								</tr>
+								<tr>
+									<td class="worksheet-key">Total Workflow Run Time (hours)</td>
+									<td>{scheduling.totalFlowTime}</td>
+								</tr>
+								<tr>
+									<td class="worksheet-key">Expected Time of Completion</td>
+									<td>{scheduling.expectedCompletionTime}</td>
+								</tr>
+								<tr>
+									<td class="worksheet-key">Max Permitted Delay</td>
+									<td>{scheduling.maxPermittedDelay}</td>
+								</tr>
+							</tbody>
+						</table>
+					</div>
+
+          <div class="panel panel-default">
+            <div class="panel-heading">Performance</div>
+            <table class="table table-striped table-bordered table-condensed table-hover">
+              <tbody>
 								<tr>
 									<td class="worksheet-key">Max Map Slots from Largest Job</td>
 									<td>{scheduling.maxMapSlots}</td>
@@ -94,29 +69,9 @@
 									<td class="worksheet-key">Longest Task Time</td>
 									<td>{scheduling.longestTaskTime}</td>
 								</tr>
-								<tr>
-									<td class="worksheet-key">Required Schedule</td>
-									<td>{scheduling.schedule}</td>
-								</tr>
-								<tr>
-									<td class="worksheet-key">Launch Time</td>
-									<td>{scheduling.launchTime}</td>
-								</tr>
-								<tr>
-									<td class="worksheet-key">Total Workflow Run Time (hours)</td>
-									<td>{scheduling.totalFlowTime}</td>
-								</tr>
-								<tr>
-									<td class="worksheet-key">Expected Time of Completion</td>
-									<td>{scheduling.expectedCompletionTime}</td>
-								</tr>
-								<tr>
-									<td class="worksheet-key">Max Permitted Delay</td>
-									<td>{scheduling.maxPermittedDelay}</td>
-								</tr>
-							</tbody>
-						</table>
-					</div>
+              </tbody>
+            </table>
+          </div>
 
 					<div class="panel panel-default">
 						<div class="panel-heading">Resources</div>
@@ -175,34 +130,6 @@
 									<td>{resources.largestMapredJobReduceMemoryMb.size}</td>
 									<td class="worksheet-key">Used by job</td>
 									<td>{resources.largestMapredJobMapMemoryMb.job}</td>
-								</tr>
-							</tbody>
-						</table>
-					</div>
-
-					<div class="panel panel-default">
-						<div class="panel-heading">Input/Output</div>
-						<table class="table table-striped table-bordered table-condensed table-hover">
-							<tbody>
-								<tr>
-									<td class="worksheet-key">List of input HDFS file paths</td>
-									<td>{io.hdfsPaths}</td>
-								</tr>
-								<tr>
-									<td class="worksheet-key">Number of files generated (hadoop dfs -count)</td>
-									<td>{io.hdfsFileCount}</td>
-								</tr>
-								<tr>
-									<td class="worksheet-key">Average size of files generated in GB</td>
-									<td>{io.averageFileSize}</td>
-								</tr>
-								<tr>
-									<td class="worksheet-key">Size of intermediate data (content of /jobs - output going to production) in GB on HDFS</td>
-									<td>{io.intermediateFileSize}</td>
-								</tr>
-								<tr>
-									<td class="worksheet-key">Size of final output data in GB on HDFS</td>
-									<td>{io.finalOutputSize}</td>
 								</tr>
 							</tbody>
 						</table>
