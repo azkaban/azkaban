@@ -120,7 +120,7 @@
 		#end
 	#else
 								<tr>
-									<td class="last">No scheduled flow found.</td>
+									<td colspan="10">No scheduled flow found.</td>
 								</tr>
 	#end
 							</tbody>
