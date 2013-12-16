@@ -187,20 +187,9 @@ table .worksheet-key {
 
 // Restyle navbar-inverse for Azkaban navbar.
 .navbar-inverse {
-  background-image: -o-linear-gradient(bottom, rgb(56,56,56) 33%, rgb(73,73,73) 66%);
-  background-image: -moz-linear-gradient(bottom, rgb(56,56,56) 33%, rgb(73,73,73) 66%);
-  background-image: -webkit-linear-gradient(bottom, rgb(56,56,56) 33%, rgb(73,73,73) 66%);
-  background-image: -ms-linear-gradient(bottom, rgb(56,56,56) 33%, rgb(73,73,73) 66%);
-  background-image: -webkit-gradient(
-     linear,
-     left bottom,
-     left top,
-     color-stop(0.33, rgb(56,56,56)),
-     color-stop(0.66, rgb(73,73,73))
-  );
-  background-image: linear-gradient(bottom, rgb(56,56,56) 33%, rgb(73,73,73) 66%); 
+  background-color: #383838;
   border-top: 5px solid #ff3601;
-  box-shadow: 0 1px 4px 1px #000;
+  margin-bottom: 0;
 
   .navbar-logo {
     background: url('../../images/logo.png') top left no-repeat;
@@ -258,9 +247,10 @@ table .worksheet-key {
 }
 
 .az-page-header {
-  padding-bottom: 9px;
+  padding: 5px 0 9px;
   margin: 0 0 30px;
-  border-bottom: 1px solid #eeeeee;
+  border-bottom: 1px solid #dddddd;
+  background-color: #f4f4f4;
 
   h1 {
     font-size: 32px;
