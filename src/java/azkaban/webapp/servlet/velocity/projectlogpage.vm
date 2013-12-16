@@ -72,15 +72,16 @@
 	## Page content.
 
 		<div class="container">
+	
+  ## Breadcrumb
+
+      <ol class="breadcrumb">
+        <li class="active"><strong>Project</strong> $project.name</li>
+      </ol>
+
 			<div class="row">
 				<div class="col-lg-8">
 	
-	## Breadcrumb
-
-					<ol class="breadcrumb">
-						<li><a href="${context}/manager?project=${project.name}"><strong>Project</strong> $project.name</a></li>
-					</ol>
-
 	#set ($project_page = "logs")
 	#parse ("azkaban/webapp/servlet/velocity/projectnav.vm")
 
