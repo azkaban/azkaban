@@ -69,12 +69,12 @@
 #end
           </div>
           <div class="col-lg-6">
-            <form id="search-form" method="get" class="form-inline pull-right az-page-header-form" role="form">
+            <form id="search-form" method="get" class="form-inline az-page-header-form" role="form">
               <input type="hidden" name="doaction" value="search">
 #if ($allProjects)
               <input type="hidden" name="all" value="true">				
 #end
-              <div class="form-group col-md-8">
+              <div class="form-group col-md-9">
                 <div class="input-group">
                   <input id="search-textbox" type="text" placeholder="Project name containing..." value=#if($search_term) ${search_term} #else "" #end class="form-control input-sm" name="searchterm">
                   <span class="input-group-btn">
@@ -83,8 +83,12 @@
                 </div>
               </div>
 #if (!$hideCreateProject)
-              <div class="form-group col-md-4" id="create-project">
-                <button type="button" id="create-project-btn" class="btn btn-sm btn-success"><span class="glyphicon glyphicon-plus"></span> Create Project</button>
+              <div class="form-group col-md-3" id="create-project">
+## Note: The Create Project button is not completely flush to the right because
+## form-group has padding.
+                <div class="pull-right">
+                  <button type="button" id="create-project-btn" class="btn btn-sm btn-success"><span class="glyphicon glyphicon-plus"></span> Create Project</button>
+                </div>
               </div>
 #end
             </form>
