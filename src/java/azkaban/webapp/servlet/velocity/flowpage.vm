@@ -105,7 +105,7 @@
         <li class="active"><strong>Flow</strong> $flowid</li>
       </ol>
 
-			<ul class="nav nav-pills" id="headertabs">
+			<ul class="nav nav-tabs" id="headertabs">
 				<li id="graphViewLink"><a href="#graph">Graph</a></li>
 				<li id="executionsViewLink"><a href="#executions">Executions</a></li>
 				<li id="summaryViewLink"><a href="#summary">Summary</a></li>

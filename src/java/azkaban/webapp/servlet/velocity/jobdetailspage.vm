@@ -66,7 +66,16 @@
 
 		<div class="az-page-header">
 			<div class="container">
-				<h1><a href="${context}/executor?execid=${execid}&job=${jobid}">Job Execution <small>$jobid</small></a></h1>
+				<div class="row">
+					<div class="col-lg-6">
+						<h1><a href="${context}/executor?execid=${execid}&job=${jobid}">Job Execution <small>$jobid</small></a></h1>
+					</div>
+					<div class="col-lg-6">
+						<div class="pull-right az-page-header-form">
+							<a href="${context}/manager?project=${projectName}&flow=${flowid}&job=$jobid" class="btn btn-default">Job Properties</a>
+						</div>
+					</div>
+				</div>
 			</div>
 		</div>
 	
@@ -80,21 +89,11 @@
         <li class="active"><strong>Job</strong> $jobid</li>
 			</ol>
 			
-      <div class="row">
-				<div class="col-lg-8">
-					<ul class="nav nav-pills" id="headertabs">
-            <li id="jobSummaryViewLink"><a href="#jobsummary">Summary</a></li>
-            <li id="jobLogViewLink"><a href="#joblog">Log</a></li>
-            <li><a href="${context}/pigvisualizer?execid=${execid}&jobid=${jobid}">Visualization</a></li>
-					</ul>
-				</div>
-				<div class="col-lg-4">
-					<div class="pull-right">
-            <a href="${context}/manager?project=${projectName}&flow=${flowid}&job=$jobid" class="btn btn-default">Job Properties</a>
-					</div>
-					<div class="clearfix"></div>
-				</div>
-			</div>
+			<ul class="nav nav-tabs" id="headertabs">
+				<li id="jobSummaryViewLink"><a href="#jobsummary">Summary</a></li>
+				<li id="jobLogViewLink"><a href="#joblog">Log</a></li>
+				<li><a href="${context}/pigvisualizer?execid=${execid}&jobid=${jobid}">Visualization</a></li>
+			</ul>
 
 	## Log content.
 

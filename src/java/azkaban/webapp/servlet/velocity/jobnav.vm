@@ -14,7 +14,7 @@
  * the License.
 *#
 	
-					<ul class="nav nav-pills">
+					<ul class="nav nav-tabs">
 						<li#if($job_page == 'properties') class="active"#end><a href="${context}/manager?project=${project.name}&flow=${flowid}&job=${jobid}">Job</a></li>
 						<li#if($job_page == 'history') class="active"#end><a id="jobs-logs-btn" href="${context}/manager?project=${project.name}&job=$jobid&history">History</a></li>
 					</ul>
