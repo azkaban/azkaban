@@ -113,16 +113,16 @@
 
 	## Tabs and buttons.
 
-					<ul class="nav nav-tabs" id="headertabs">
-						<li id="graphViewLink"><a href="#graph">Graph</a></li>
-						<li id="jobslistViewLink"><a href="#jobslist">Job List</a></li>
-						<li id="flowLogViewLink"><a href="#log">Flow Log</a></li>
-						<li class="nav-button pull-right"><button type="button" id="pausebtn" class="btn btn-primary">Pause</button></li>
-						<li class="nav-button pull-right"><button type="button" id="resumebtn" class="btn btn-primary">Resume</button></li>
-						<li class="nav-button pull-right"><button type="button" id="cancelbtn" class="btn btn-danger">Cancel</button></li>
-						<li class="nav-button pull-right"><button type="button" id="retrybtn" class="btn btn-success">Retry Failed</button></li>
-						<li class="nav-button pull-right"><button type="button" id="executebtn" class="btn btn-success">Prepare Execution</button></li>
-					</ul>
+			<ul class="nav nav-tabs" id="headertabs">
+				<li id="graphViewLink"><a href="#graph">Graph</a></li>
+				<li id="jobslistViewLink"><a href="#jobslist">Job List</a></li>
+				<li id="flowLogViewLink"><a href="#log">Flow Log</a></li>
+				<li class="nav-button pull-right"><button type="button" id="pausebtn" class="btn btn-primary">Pause</button></li>
+				<li class="nav-button pull-right"><button type="button" id="resumebtn" class="btn btn-primary">Resume</button></li>
+				<li class="nav-button pull-right"><button type="button" id="cancelbtn" class="btn btn-danger">Cancel</button></li>
+				<li class="nav-button pull-right"><button type="button" id="retrybtn" class="btn btn-success">Retry Failed</button></li>
+				<li class="nav-button pull-right"><button type="button" id="executebtn" class="btn btn-success">Prepare Execution</button></li>
+			</ul>
 
 	## Graph View
 

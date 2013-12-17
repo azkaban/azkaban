@@ -81,7 +81,7 @@
             <tbody>
 #if ($runningFlows)
 	#foreach ($flow in $runningFlows)
-              <tr class="row" >
+              <tr>
                 <td class="tb-name">
                   <a href="${context}/executor?execid=${flow.executionId}">${flow.executionId}</a>
                 </td>
@@ -128,7 +128,7 @@
             <tbody>
 #if ($recentlyFinished.isEmpty())
 	#foreach ($flow in $recentlyFinished)
-              <tr class="row" >
+              <tr>
                 <td class="tb-name execId">
                   <a href="${context}/executor?execid=${flow.executionId}">${flow.executionId}</a>
                 </td>
