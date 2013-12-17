@@ -46,6 +46,7 @@ azkaban.FlowTabView = Backbone.View.extend({
 	events: {
 		"click #graphViewLink": "handleGraphLinkClick",
 		"click #executionsViewLink": "handleExecutionLinkClick",
+		"click #schedulingViewLink": "handleSchedulingLinkClick",
 		"click #summaryViewLink": "handleSummaryLinkClick"
 	},
 	
@@ -66,31 +67,49 @@ azkaban.FlowTabView = Backbone.View.extend({
 	handleGraphLinkClick: function(){
 		$("#executionsViewLink").removeClass("active");
 		$("#graphViewLink").addClass("active");
+		$('#schedulingViewLink').removeClass('active');
 		$('#summaryViewLink').removeClass('active');
 		
 		$("#executionsView").hide();
 		$("#graphView").show();
+		$('#schedulingView').hide();
 		$('#summaryView').hide();
 	},
 	
 	handleExecutionLinkClick: function() {
 		$("#graphViewLink").removeClass("active");
 		$("#executionsViewLink").addClass("active");
+		$('#schedulingViewLink').removeClass('active');
 		$('#summaryViewLink').removeClass('active');
 		
 		$("#graphView").hide();
 		$("#executionsView").show();
+		$('#schedulingView').hide();
 		$('#summaryView').hide();
 		executionModel.trigger("change:view");
 	},
 
-	handleSummaryLinkClick: function() {
+	handleSchedulingLinkClick: function() {
 		$('#graphViewLink').removeClass('active');
 		$('#executionsViewLink').removeClass('active');
+		$('#schedulingViewLink').addClass('active');
+		$('#summaryViewLink').removeClass('active');
+
+		$('#graphView').hide();
+		$('#executionsView').hide();
+		$('#schedulingView').show();
+		$('#summaryView').hide();
+	},
+	
+  handleSummaryLinkClick: function() {
+		$('#graphViewLink').removeClass('active');
+		$('#executionsViewLink').removeClass('active');
+		$('#schedulingViewLink').removeClass('active');
 		$('#summaryViewLink').addClass('active');
 
 		$('#graphView').hide();
 		$('#executionsView').hide();
+		$('#schedulingView').hide();
 		$('#summaryView').show();
 	},
 });
@@ -181,7 +200,7 @@ azkaban.ExecutionsView = Backbone.View.extend({
 		var total = this.model.get("total");
 		total = total? total : 1;
 		var pageSize = this.model.get("pageSize");
-		var numPages = Math.ceil(total/pageSize);
+		var numPages = Math.ceil(total / pageSize);
 		
 		this.model.set({"numPages": numPages});
 		var page = this.model.get("page");
@@ -292,33 +311,65 @@ azkaban.ExecutionsView = Backbone.View.extend({
 	}
 });
 
+var schedulingView;
+azkaban.SchedulingView = Backbone.View.extend({
+	events: {
+	},
+	
+	initialize: function(settings) {
+		console.log("schedulingView initialize");
+		this.model.bind('change:view', this.handleChangeView, this);
+		this.model.bind('render', this.render, this);
+    var schedules = [
+      {
+        scheduleId: "0",
+        submitUser: "azkaban",
+        firstSchedTime: "1",
+        nextExecTime: "2",
+        period: "3",
+      }
+    ];
+
+    this.model.set({
+      'schedules': schedules
+    });
+    this.model.trigger('render');
+	},
+
+  handleChangeView: function(evt) {
+    console.log("schedulingView handleChangeView");
+  },
+
+	render: function(evt) {
+		console.log("schedulingView render");
+    var data = {
+      schedules: this.model.get('schedules')
+    };
+		dust.render("flowscheduling", data, function(err, out) {
+      console.log(err);
+			$('#schedulingView').html(out);
+		});
+	},
+});
+
 var summaryView;
 azkaban.SummaryView = Backbone.View.extend({
 	events: {
-		"click": "closeEditingTarget",
-		"click table .editable": "handleEditField"
 	},
 	
 	initialize: function(settings) {
 		console.log("summaryView initialize");
 		var general = {
-			flowName: "",
-			flowDescription: "",
 			projectName: projectName,
 			flowId: flowId
 		};
-
-		var scheduling = {};
-		var resources = {};
-		var io = {};
+    var lastRun = {};
 
 		this.model.bind('change:view', this.handleChangeView, this);
 		this.model.bind('render', this.render, this);
 		this.model.set({
 			'general': general,
-			'scheduling': scheduling,
-			'resources': resources,
-			'io': io
+			'lastRun': lastRun
 		});
 		this.model.trigger('render');
 	},
@@ -327,61 +378,11 @@ azkaban.SummaryView = Backbone.View.extend({
 		console.log("summaryView handleChangeView");
 	},
 
-	handleEditField: function(evt) {
-		var curTarget = evt.currentTarget;
-		console.log("summaryView handleEditField");
-		if (this.editingTarget != curTarget) {
-			this.closeEditingTarget(evt);
-
-			var text = $(curTarget).children('.spanValue').text();
-			$(curTarget).empty();
-
-			var input = document.createElement('input');
-			$(input).attr('type', 'text');
-			$(input).css('width', '100%');
-			$(input).val(text);
-
-			$(curTarget).addClass('editing');
-			$(curTarget).append(input);
-			$(input).focus();
-			var obj = this;
-			$(input).keypress(function(evt) {
-				if (evt.which == 13) {
-					obj.closeEditingTarget(evt);
-				}
-			});
-			this.editingTarget = curTarget;
-		}
-		evt.preventDefault();
-		evt.stopPropagation();
-	},
-
-	closeEditingTarget: function(evt) {
-		console.log("summaryView closeEditingTarget");
-		if (this.editingTarget != null &&
-				this.editingTarget != evt.target &&
-				this.editingTarget != evt.target.myparent) {
-			var input = $(this.editingTarget).children("input")[0];
-			var text = $(input).val();
-			$(input).remove();
-
-			var valueData = document.createElement("span");
-			$(valueData).addClass("spanValue");
-			$(valueData).text(text);
-
-			$(this.editingTarget).removeClass("editing");
-			$(this.editingTarget).append(valueData);
-			valueData.myparent = this.editingTarget;
-			this.editingTarget = null;
-		}
-	},
-	
 	render: function(evt) {
 		console.log("summaryView render");
 		var data = {
 			general: this.model.get('general'),
-			scheduling: this.model.get('scheduling'),
-			resources: this.model.get('resources')
+			lastRun: this.model.get('lastRun')
 		};
 		dust.render("flowsummary", data, function(err, out) {
 			$('#summaryView').html(out);
@@ -441,6 +442,9 @@ azkaban.GraphModel = Backbone.Model.extend({});
 var executionModel;
 azkaban.ExecutionModel = Backbone.Model.extend({});
 
+var schedulingModel;
+azkaban.SchedulingModel = Backbone.Model.extend({});
+
 var summaryModel;
 azkaban.SummaryModel = Backbone.Model.extend({});
 
@@ -454,12 +458,20 @@ $(function() {
 		el: $('#executionsView'), 
 		model: executionModel
 	});
-	summaryModel = new azkaban.SummaryModel();
+	
+  schedulingModel = new azkaban.SchedulingModel();
+	schedulingView = new azkaban.SchedulingView({
+		el: $('#schedulingView'),
+		model: schedulingModel
+	});
+
+  summaryModel = new azkaban.SummaryModel();
 	summaryView = new azkaban.SummaryView({
 		el: $('#summaryView'),
 		model: summaryModel
 	});
-	flowTabView = new azkaban.FlowTabView({
+	
+  flowTabView = new azkaban.FlowTabView({
 		el: $('#headertabs'), 
 		selectedView: selected 
 	});
@@ -474,7 +486,8 @@ $(function() {
 			"graph": exGraphClickCallback 
 		}
 	});
-	jobsListView = new azkaban.JobListView({
+	
+  jobsListView = new azkaban.JobListView({
 		el: $('#jobList'), 
 		model: graphModel, 
 		contextMenuCallback: exJobClickCallback
