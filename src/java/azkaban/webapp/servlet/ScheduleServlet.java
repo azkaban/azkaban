@@ -102,19 +102,21 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
 		if (ajaxName.equals("slaInfo")) {
 			ajaxSlaInfo(req, ret, session.getUser());
 		}
-		else if(ajaxName.equals("setSla")) {
+		else if (ajaxName.equals("setSla")) {
 			ajaxSetSla(req, ret, session.getUser());
-		} else
-		if(ajaxName.equals("loadFlow")) {
+		} else if(ajaxName.equals("loadFlow")) {
 			ajaxLoadFlows(req, ret, session.getUser());
 		}
-		else if(ajaxName.equals("loadHistory")) {
+		else if (ajaxName.equals("loadHistory")) {
 			ajaxLoadHistory(req, resp, session.getUser());
 			ret = null;
 		}
-		else if(ajaxName.equals("scheduleFlow")) {
+		else if (ajaxName.equals("scheduleFlow")) {
 			ajaxScheduleFlow(req, ret, session.getUser());
 		}
+    else if (action.equals("fetchSchedules")) {
+      ajaxFetchSchedules(req, ret, session.getUser());
+    }
 
 		if (ret != null) {
 			this.writeJSON(resp, ret);
@@ -123,9 +125,7 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
 
 	private void ajaxSetSla(HttpServletRequest req, HashMap<String, Object> ret, User user) {
 		try {
-			
 			int scheduleId = getIntParam(req, "scheduleId");
-			
 			Schedule sched = scheduleManager.getSchedule(scheduleId);
 			
 			Project project = projectManager.getProject(sched.getProjectId());
@@ -231,14 +231,27 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
 		int min = Integer.parseInt(duration.split(":")[1]);
 		return Minutes.minutes(min+hour*60).toPeriod();
 	}
-
+  
+  private void ajaxFetchSchedules(HttpServletRequest req, 
+      HashMap<String, Object> ret, User user) throws ServletException {
+		
+	  String flowId = getParam(req, "flowId");	
+		try {
+      List<Schedule> flowSchedules = scheduleManager.getSchedules(flowId);
+      List<Object> schecules = new ArrayList<Object>();
+      
+      ret.put("schedules", schedules);
+		}
+    catch (ScheduleManagerException e) {
+      ret.put("error", e);
+		}
+	}
+	
 	private void ajaxSlaInfo(HttpServletRequest req, HashMap<String, Object> ret, User user) {
 		int scheduleId;
 		try {
 			scheduleId = getIntParam(req, "scheduleId");
-			
 			Schedule sched = scheduleManager.getSchedule(scheduleId);
-			
 			Project project = getProjectAjaxByPermission(ret, sched.getProjectId(), user, Type.READ);
 			if (project == null) {
 				ret.put("error", "Error loading project. Project " + sched.getProjectId() + " doesn't exist");
@@ -300,7 +313,6 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
 		} catch (ScheduleManagerException e) {
 			ret.put("error", e);
 		}
-		
 	}
 
 	protected Project getProjectAjaxByPermission(Map<String, Object> ret, int projectId, User user, Permission.Type type) {
@@ -318,7 +330,7 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
 		
 		return null;
 	}
-	
+
 	private void handleGetAllSchedules(HttpServletRequest req, HttpServletResponse resp,
 			Session session) throws ServletException, IOException{
 		
@@ -371,7 +383,7 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
 				if (action.equals("scheduleFlow")) {
 					ajaxScheduleFlow(req, ret, session.getUser());
 				}
-				else if(action.equals("removeSched")){
+				else if (action.equals("removeSched")){
 					ajaxRemoveSched(req, ret, session.getUser());
 				}
 			}
@@ -384,9 +396,8 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
 			this.writeJSON(resp, ret);
 		}
 	}
-
+	
 	private void ajaxLoadFlows(HttpServletRequest req, HashMap<String, Object> ret, User user) throws ServletException {
-		
 		List<Schedule> schedules;
 		try {
 			schedules = scheduleManager.getSchedules();

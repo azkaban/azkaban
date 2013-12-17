@@ -18,7 +18,7 @@
 
           <div class="panel panel-default">
             <div class="panel-heading">Last Run Stats</div>
-            {?lastRun}
+            {^lastRun}
             <table class="table table-striped table-bordered table-condensed table-hover">
               <tbody>
 								<tr>
