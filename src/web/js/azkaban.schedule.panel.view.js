@@ -24,9 +24,7 @@ azkaban.SchedulePanelView = Backbone.View.extend({
 
 	initialize: function(settings) {
 		$("#datepicker").css("backgroundColor", "transparent");
-		$("#datepicker").datepicker();
-		$("#datepicker").datepicker('setDate', new Date());
-		$("#datepicker").datepicker("hide");
+		$("#datepicker").datetimepicker({pickTime: false});
 	},
 
 	render: function() {

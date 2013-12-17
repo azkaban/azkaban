@@ -236,7 +236,7 @@ azkaban.JobEditView = Backbone.View.extend({
 
 			$(this.editingTarget).removeClass("editing");
 			$(this.editingTarget).append(valueData);
-			valueData.myparent=this.editingTarget;
+			valueData.myparent = this.editingTarget;
 			this.editingTarget = null;
 		}
 	}

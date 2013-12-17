@@ -21,7 +21,8 @@
 #parse("azkaban/webapp/servlet/velocity/style.vm")
 #parse("azkaban/webapp/servlet/velocity/javascript.vm")
 
-		<script type="text/javascript" src="${context}/js/jqueryui/jquery-ui-1.10.1.custom.js"></script>
+		<script type="text/javascript" src="${context}/js/moment.min.js"></script>
+		<script type="text/javascript" src="${context}/js/bootstrap-datetimepicker.min.js"></script>
 		<script type="text/javascript" src="${context}/js/azkaban.common.utils.js"></script>
 		<script type="text/javascript" src="${context}/js/azkaban.date.utils.js"></script>
 		<script type="text/javascript" src="${context}/js/azkaban.context.menu.js"></script>
@@ -44,7 +45,7 @@
 			var execId = "${execid}";
 		</script>
 		<link rel="stylesheet" type="text/css" href="${context}/css/azkaban-svg.css">
-		<link rel="stylesheet" type="text/css" href="${context}/css/jquery-ui-1.10.1.custom.css">
+		<link rel="stylesheet" type="text/css" href="${context}/css/bootstrap-datetimepicker.css" />
 	</head>
 	<body>
 
