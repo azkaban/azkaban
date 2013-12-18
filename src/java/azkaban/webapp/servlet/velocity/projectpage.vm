@@ -95,7 +95,7 @@
 									<span class="glyphicon glyphicon-upload"></span> Upload
 								</button>
 								<button id="project-delete-btn" class="btn btn-xs btn-danger">
-									<span class="glyphicon glyphicon-remove-circle"></span> Delete Project
+									<span class="glyphicon glyphicon-trash"></span> Delete Project
 								</button>
 							</div>
 							Flows
