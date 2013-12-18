@@ -24,6 +24,7 @@
 		<script type="text/javascript" src="${context}/js/azkaban.date.utils.js"></script>
 		<script type="text/javascript" src="${context}/js/azkaban.ajax.utils.js"></script>
 		<script type="text/javascript" src="${context}/js/azkaban.projectlog.view.js"></script>
+		<script type="text/javascript" src="${context}/js/azkaban.projectmodals.view.js"></script>
 		<script type="text/javascript">
 			var contextURL = "${context}";
 			var currentTime = ${currentTime};
@@ -61,13 +62,8 @@
 		</div>
 
 	## Page header.
-
-		<div class="az-page-header">
-			<div class="container">
-				<h1><a href="${context}/manager?project=${project.name}">Project <small>$project.name</small></a></h1>
-				<p>$project.description</p>
-			</div>
-		</div>
+	
+  #parse ("azkaban/webapp/servlet/velocity/projectpageheader.vm")
 
 	## Page content.
 
@@ -94,6 +90,7 @@
 				</div>
 			</div>
 
+	#parse ("azkaban/webapp/servlet/velocity/projectmodals.vm")
 #end
 
 #parse ("azkaban/webapp/servlet/velocity/footer.vm")

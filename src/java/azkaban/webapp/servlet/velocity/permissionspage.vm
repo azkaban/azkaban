@@ -22,6 +22,7 @@
 #parse ("azkaban/webapp/servlet/velocity/javascript.vm")
 
 		<script type="text/javascript" src="${context}/js/azkaban.permission.view.js"></script>
+		<script type="text/javascript" src="${context}/js/azkaban.projectmodals.view.js"></script>
 		<script type="text/javascript">
 			var contextURL = "${context}";
 			var currentTime = ${currentTime};
@@ -63,12 +64,11 @@
 			</div>
 		</div>
 
-		<div class="az-page-header">
-			<div class="container">
-				<h1><a href="${context}/manager?project=${project.name}">Project <small>$project.name</small></a></h1>
-				<p>$project.description</p>
-			</div>
-		</div>
+	## Page header.
+	
+  #parse ("azkaban/webapp/servlet/velocity/projectpageheader.vm")
+
+  ## Page content.
 
 		<div class="container">
 			<div class="row">
@@ -356,6 +356,7 @@
 				</div>
 			</div>
 
+	#parse ("azkaban/webapp/servlet/velocity/projectmodals.vm")
 	#parse ("azkaban/webapp/servlet/velocity/invalidsessionmodal.vm")
 #end
 #parse ("azkaban/webapp/servlet/velocity/footer.vm")
