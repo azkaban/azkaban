@@ -55,7 +55,7 @@ public abstract class AbstractAzkabanServlet extends HttpServlet {
 	public static final String XML_MIME_TYPE = "application/xhtml+xml";
 	public static final String JSON_MIME_TYPE = "application/json";
 
-	private static final WebUtils utils = new WebUtils();
+	protected static final WebUtils utils = new WebUtils();
 	
 	private AzkabanServer application;
 	private String name;

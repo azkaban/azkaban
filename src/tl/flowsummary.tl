@@ -50,7 +50,9 @@
 									{:else} 
 										false 
 									{/schedule.slaOptions}
-										<button type="button" id="addSlaBtn" class="btn btn-xs btn-primary" onclick="slaView.initFromSched({schedule.scheduleId}, '{flowName}')" >Set SLA</button>
+										<div class="pull-right">
+											<button type="button" id="addSlaBtn" class="btn btn-xs btn-primary" onclick="slaView.initFromSched({schedule.scheduleId}, '{flowName}')" >Set SLA</button>
+										</div>
 									</td>
 								</tr>
 							</tbody>

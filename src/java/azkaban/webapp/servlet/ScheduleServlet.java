@@ -245,9 +245,11 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
 				Map<String, String> jsonObj = new HashMap<String, String>();
 				jsonObj.put("scheduleId", Integer.toString(schedule.getScheduleId()));
 				jsonObj.put("submitUser", schedule.getSubmitUser());
-				jsonObj.put("firstSchedTime", Long.toString(schedule.getFirstSchedTime()));
-				jsonObj.put("nextExecTime", Long.toString(schedule.getNextExecTime()));
-				jsonObj.put("period", schedule.getPeriod().toString());
+				jsonObj.put("firstSchedTime", 
+						utils.formatDateTime(schedule.getFirstSchedTime()));
+				jsonObj.put("nextExecTime", 
+						utils.formatDateTime(schedule.getNextExecTime()));
+				jsonObj.put("period", utils.formatPeriod(schedule.getPeriod()));
 				ret.put("schedule", jsonObj);
 			}
 		}
