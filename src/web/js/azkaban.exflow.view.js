@@ -396,7 +396,7 @@ azkaban.ExecutionListView = Backbone.View.extend({
 		var flowLastTime = data.endTime == -1 ? (new Date()).getTime() : data.endTime;
 		var flowStartTime = data.startTime;
 
-		var outerWidth = $(".outerProgress").css("width");
+		var outerWidth = $(".flow-progress").css("width");
 		if (outerWidth) {
 			if (outerWidth.substring(outerWidth.length - 2, outerWidth.length) == "px") {
 				outerWidth = outerWidth.substring(0, outerWidth.length - 2);

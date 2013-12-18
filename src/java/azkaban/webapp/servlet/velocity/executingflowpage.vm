@@ -80,38 +80,42 @@
 	## Page header
 
 		<div class="az-page-header">
-			<div class="container">
-				<h1>
-					<a href="${context}/executor?execid=${execid}">Flow Execution <small>$execid</small></a>
-				</h1>
+			<div class="container" id="flow-status">
+        <div class="row">
+          <div class="col-lg-7">
+            <h1>
+              <a href="${context}/executor?execid=${execid}">
+                Flow Execution <small>$execid <span id="flowStatus">-</span></small>
+              </a>
+            </h1>
+          </div>
+          <div class="col-lg-5">
+            <div class="az-exflow-stats">
+              <div class="col-md-5">
+                <p><strong>Submit User</strong> <span id="submitUser">-</span></p>
+                <p><strong>Duration</strong> <span id="duration">-</span></p>
+              </div>
+              <div class="col-md-7">
+                <p><strong>Start Time</strong> <span id="startTime">-</span></p>
+                <p><strong>End Time</strong> <span id="endTime">-</span></p>
+              </div>
+            </div>
+            <div class="clearfix"></div>
+          </div>
+        </div>
 			</div>
 		</div>
 
 		<div class="container">
 
 	## Breadcrumb
+
 			<ol class="breadcrumb">
 				<li><a href="${context}/manager?project=${projectName}"><strong>Project</strong> $projectName</a></li>
 				<li><a href="${context}/manager?project=${projectName}&flow=${flowid}"><strong>Flow</strong> $flowid</a></li>
 				<li class="active"><strong>Execution</strong> $execid</li>
 			</ol>
 		
-	## Flow status
-			
-			<div class="well">
-				<div class="row" id="flow-status">
-					<div class="col-lg-6">
-						<p><strong>Status</strong> <span id="flowStatus">-</span></p>
-						<p><strong>Submit User</strong> <span id="submitUser">-</span></p>
-					</div>
-					<div class="col-lg-6">
-						<p><strong>Start Time</strong> <span id="startTime">-</span></p>
-						<p><strong>End Time</strong> <span id="endTime">-</span></p>
-						<p><strong>Duration</strong> <span id="duration">-</span></p>
-					</div>
-				</div>
-			</div>
-
 	## Tabs and buttons.
 
 			<ul class="nav nav-tabs" id="headertabs">
