@@ -92,7 +92,7 @@
             <tbody>
 #if($triggers)
   #foreach($trigger in $triggers)
-              <tr class="row">
+              <tr>
                 <td>${trigger.triggerId}</td>
                 <td>${trigger.source}</td>
                 <td>${trigger.submitUser}</td>

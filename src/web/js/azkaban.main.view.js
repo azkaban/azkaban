@@ -26,7 +26,7 @@ azkaban.ProjectTableView = Backbone.View.extend({
 	},
 	
 	expandProject: function(evt) {
-		if (evt.target.tagName != "SPAN") {
+		if (evt.target.tagName == "A") {
 			return;
 		}
 		
@@ -44,10 +44,16 @@ azkaban.ProjectTableView = Backbone.View.extend({
 		else if (target.loaded) {
 			if ($(targetExpanded).is(':visible')) {
 				$(target).addClass('expanded').removeClass('collapsed');
+				var expander = $(target).children('.az-expander')[0];
+				$(expander).removeClass('glyphicon-chevron-up');
+				$(expander).addClass('glyphicon-chevron-down');
 				$(targetExpanded).fadeOut("fast");
 			}
 			else {
 				$(target).addClass('collapsed').removeClass('expanded');
+				var expander = $(target).children('.az-expander')[0];
+				$(expander).removeClass('glyphicon-chevron-down');
+				$(expander).addClass('glyphicon-chevron-up');
 				$(targetExpanded).fadeIn();
 			}
 		}
@@ -69,6 +75,9 @@ azkaban.ProjectTableView = Backbone.View.extend({
 				createFlowListFunction(data, targetTBody);
 				
 				$(target).addClass('collapsed').removeClass('wait');
+				var expander = $(target).children('.az-expander')[0];
+				$(expander).removeClass('glyphicon-chevron-down');
+				$(expander).addClass('glyphicon-chevron-up');
 				$(targetExpanded).fadeIn("fast");
 			};
 			

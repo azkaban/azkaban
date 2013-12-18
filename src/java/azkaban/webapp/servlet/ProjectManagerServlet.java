@@ -366,7 +366,8 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 					break;
 				}
 			}
-		} catch (ScheduleManagerException e) {
+		} 
+    catch (ScheduleManagerException e) {
 			// TODO Auto-generated catch block
 			throw new ServletException(e);
 		}
@@ -395,7 +396,8 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 		//project.info("Project removing by '" + user.getUserId() + "'");
 		try {
 			projectManager.removeProject(project, user);
-		} catch (ProjectManagerException e) {
+		} 
+    catch (ProjectManagerException e) {
 			this.setErrorMessageInCookie(resp, e.getMessage());
 			resp.sendRedirect(req.getRequestURI() + "?project=" + projectName);
 			return;

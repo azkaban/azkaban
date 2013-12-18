@@ -23,17 +23,15 @@ azkaban.AdvFilterView = Backbone.View.extend({
 	},
 	
 	initialize: function(settings) {
-		$( "#datetimebegin" ).datetimepicker({
-			dateFormat: "mm/dd/yy",
-			separator: '-',
-			timeFormat: "HH:mm"
-		});
-		$( "#datetimeend" ).datetimepicker({
-			dateFormat: "mm/dd/yy",
-			separator: '-',
-			timeFormat: "HH:mm"
-		});
-		$("#adv-filter-error-msg").hide();
+		$('#datetimebegin').datetimepicker();
+		$('#datetimeend').datetimepicker();
+		$('#datetimebegin').on('change.dp', function(e) {
+      $('#datetimeend').data('DateTimePicker').setStartDate(e.date);
+    });
+		$('#datetimeend').on('change.dp', function(e) {
+      $('#datetimebegin').data('DateTimePicker').setEndDate(e.date);
+    });
+		$('#adv-filter-error-msg').hide();
 	},
 	
 	handleAdvFilter: function(evt) {

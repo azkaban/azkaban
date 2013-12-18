@@ -1,3 +1,10 @@
+// Since the azkaban navbar no longer has the 20px bottom margin so that the
+// page header sits flush below the navbar, add a 20px top margin to the login
+// form.
+.az-login {
+  margin-top: 20px;
+}
+
 // Wide modal used for certain panels such as executing flow panel.
 .modal-wide .modal-dialog {
   width: 80%;
@@ -13,13 +20,22 @@
   margin-bottom: 15px;
 }
 
+.az-project-row {
+	cursor: pointer;
+}
+
 // Flow panel heading.
 .flow-expander {
   cursor: pointer;
 }
 
 // Flow summary.
-table .worksheet-key {
+td.flow-summary-key {
+  width: 25%;
+  font-weight: bold;
+}
+
+td.flow-summary-value {
   width: 25%;
 }
 
@@ -257,6 +273,14 @@ table .worksheet-key {
   }
 }
 
+.az-page-header-form {
+  margin-top: 20px;
+}
+
+.az-exflow-stats {
+  margin-top: 10px;
+}
+
 .contextMenu {
   position: absolute;
   background-color: #FFF;
@@ -342,11 +366,11 @@ table .worksheet-key {
   }
 
   &.SUCCEEDED {
-    background-color: #82b859;
+    background-color: #5cb85c;
   }
 
   &.FAILED {
-    background-color: #c82123;
+    background-color: #d9534f;
   }
 
   &.RUNNING {
@@ -376,11 +400,11 @@ td {
     margin-top: 2px;
     
     &.SUCCEEDED {
-      background-color: #82b859;
+      background-color: #5cb85c;
     }
 
     &.FAILED {
-      background-color: #c82123;
+      background-color: #d9534f;
     }
 
     &.PAUSED {
@@ -408,11 +432,17 @@ td {
     }
 
     &.KILLED {
-      background-color: #cc0000;
+      background-color: #d9534f;
     }
 
     &.UNKNOWN {
       background-color: #ccc;
     }
   }
+}
+
+.nav {
+	.nav-button {
+		margin-left: 5px;
+	}
 }

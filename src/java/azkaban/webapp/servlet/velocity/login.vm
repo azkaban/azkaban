@@ -28,12 +28,12 @@
   </head>
   <body>
 
-#set ($current_page="all")
-#set ($navbar_disabled=1)
+#set ($current_page = "all")
+#set ($navbar_disabled = 1)
 #parse ("azkaban/webapp/servlet/velocity/nav.vm")
 
 		<div class="container">
-			<div class="row">
+			<div class="row az-login">
 				<div class="col-lg-4">
 				</div>
 				<div class="col-lg-4">

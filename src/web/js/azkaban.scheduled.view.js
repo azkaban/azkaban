@@ -177,10 +177,10 @@ azkaban.ChangeSlaView = Backbone.View.extend({
 						}
 					}
 					cKill.appendChild(killCheck);
-					$('.durationpick').timepicker({hourMax: 99});
+					$('.durationpick').datetimepicker({ pickDate: false });
 				}
 			}
-			$('.durationpick').timepicker({hourMax: 99});
+      $('.durationpick').datetimepicker({ pickDate: false });
 		};
 
 		$.get(this.scheduleURL, fetchScheduleData, successHandler, "json");
@@ -285,7 +285,7 @@ azkaban.ChangeSlaView = Backbone.View.extend({
 		killCheck.type = "checkbox";
 		cKill.appendChild(killCheck);
 		
-		$('.durationpick').timepicker({hourMax: 99});
+    $('.durationpick').datetimepicker({ pickDate: false });
 		return rFlowRule;
 	},
 	

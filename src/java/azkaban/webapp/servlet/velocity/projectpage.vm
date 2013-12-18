@@ -21,11 +21,13 @@
 #parse ("azkaban/webapp/servlet/velocity/style.vm")
 #parse ("azkaban/webapp/servlet/velocity/javascript.vm")
 
-		<link rel="stylesheet" type="text/css" href="${context}/css/jquery-ui-1.10.1.custom.css" />
+		<link rel="stylesheet" type="text/css" href="${context}/css/bootstrap-datetimepicker.css" />
 		<link rel="stylesheet" type="text/css" href="${context}/css/azkaban-svg.css" />
-		<script type="text/javascript" src="${context}/js/jqueryui/jquery-ui-1.10.1.custom.js"></script>
+		<script type="text/javascript" src="${context}/js/moment.min.js"></script>
+		<script type="text/javascript" src="${context}/js/bootstrap-datetimepicker.min.js"></script>
 		<script type="text/javascript" src="${context}/js/azkaban.ajax.utils.js"></script>
 		<script type="text/javascript" src="${context}/js/azkaban.project.view.js"></script>
+		<script type="text/javascript" src="${context}/js/azkaban.projectmodals.view.js"></script>
 		<script type="text/javascript">
 			var contextURL = "${context}";
 			var currentTime = ${currentTime};
@@ -70,66 +72,47 @@
 		</div>
 
 	## Page header.
-
-		<div class="az-page-header">
-			<div class="container">
-				<h1><a href="${context}/manager?project=${project.name}">Project <small>$project.name</small></a></h1>
-				<p>$project.description</p>
-			</div>
-		</div>
-
-  
-	## Breadcrumb
-
-    <div class="container">
-      <ol class="breadcrumb">
-        <li class="active"><strong>Project</strong> $project.name</li>
-      </ol>
+	
+  #parse ("azkaban/webapp/servlet/velocity/projectpageheader.vm")
 
 	## Page content.
 
+    <div class="container">
 			<div class="row">
-				<div class="col-lg-8">
+				<div class="col-lg-8" id="flow-tabs">
 					
 	#set ($project_page = "flows")
 	#parse ("azkaban/webapp/servlet/velocity/projectnav.vm")
 
-					<div class="panel panel-default" id="flow-tabs">
-						<div class="panel-heading">
-							<div class="pull-right" id="project-options">
-								<button id="project-upload-btn" class="btn btn-xs btn-primary">Upload</button>
-								<button id="project-delete-btn" class="btn btn-xs btn-danger">Delete Project</button>
-							</div>
-							Flows
-						</div>
-						<div class="panel-body">
-
+            <div id="flow-tabs">
 	#if ($flows)
 		#foreach ($flow in $flows)
-							<div class="panel panel-info" flow="${flow.id}" project="${project.name}">
-								<div class="panel-heading flow-expander" id="${flow.id}">
+              <div class="panel panel-info" flow="${flow.id}" project="${project.name}">
+                <div class="panel-heading flow-expander" id="${flow.id}">
 			#if (${exec})
-									<div class="pull-right">
-										<button type="button" class="btn btn-xs btn-primary execute-flow" flowId="${flow.id}">Execute Flow</button>
-										<a href="${context}/manager?project=${project.name}&flow=${flow.id}#executions" class="btn btn-primary btn-xs">Executions</a>
-										<a href="${context}/manager?project=${project.name}&flow=${flow.id}#summary" class="btn btn-primary btn-xs">Summary</a>
-									</div>
+                <div class="pull-right">
+                  <button type="button" class="btn btn-xs btn-primary execute-flow" flowId="${flow.id}">Execute Flow</button>
+                  <a href="${context}/manager?project=${project.name}&flow=${flow.id}#executions" class="btn btn-primary btn-xs">Executions</a>
+                  <a href="${context}/manager?project=${project.name}&flow=${flow.id}#summary" class="btn btn-primary btn-xs">Summary</a>
+                </div>
 			#end
-									<a href="${context}/manager?project=${project.name}&flow=${flow.id}">${flow.id}</a>
-								</div>
-								<div id="${flow.id}-child" class="panel-collapse collapse">
-									<table class="table">
-										<tbody id="${flow.id}-tbody">
-										</tbody>
-									</table>
-								</div>
-							</div>
+                <a href="${context}/manager?project=${project.name}&flow=${flow.id}">${flow.id}</a>
+              </div>
+              <div id="${flow.id}-child" class="panel-collapse collapse">
+                <table class="table">
+                  <tbody id="${flow.id}-tbody">
+                  </tbody>
+                </table>
+              </div>
+            </div>
 		#end
 	#else
-							<p>No flows uploaded to this project</p>
+            <div class="alert alert-info">
+              <h4>No Flows</h4>
+              <p>No flows have been uploaded to this project yet.</p>
+            </div>
 	#end
-						</div>
-					</div>
+          </div><!-- /#flow-tabs -->
 				</div><!-- /col-lg-8 -->
 
 				<div class="col-lg-4">
@@ -137,62 +120,7 @@
 				</div><!-- /col-lg-4 -->
 			</div><!-- /row -->
 
-## Upload project modal
-
-			<div class="modal fade" id="upload-project-modal">
-				<div class="modal-dialog">
-					<div class="modal-content">
-						<form id="upload-project-form" enctype="multipart/form-data" method="post" action="$!context/manager">
-							<div class="modal-header">
-								<button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
-								<h4 class="modal-title">Upload Project Files</h4>
-							</div>
-							<div class="modal-body">
-								<div class="alert alert-danger" id="upload-project-modal-error-msg">$error_msg</div>
-								<fieldset class="form-horizontal">
-									<div class="form-group">
-										<label for="path" class="col-sm-2 control-label">Job Archive</label>
-										<div class="col-sm-10">
-											<input type="file" class="form-control" id="file" name="file">
-										</div>
-									</div>
-								</fieldset>
-							</div>
-							<div class="modal-footer">
-								<input type="hidden" name="project" value="$project.name">
-								<input type="hidden" name="action" value="upload">
-								<button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
-								<button type="button" class="btn btn-primary" id="upload-project-btn">Upload</button>
-							</div>
-						</form>
-					</div>
-				</div>
-			</div>
-
-	## Delete project modal.
-			
-			<div class="modal fade" id="delete-project-modal">
-				<div class="modal-dialog">
-					<div class="modal-content">
-						<div class="modal-header">
-							<button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
-							<h4 class="modal-title">Delete Project</h4>
-						</div>
-						<div class="modal-body">
-							<p><strong>Warning:</strong> This project will be deleted and may not be recoverable.</p>
-						</div>
-						<div class="modal-footer">
-							<form id="delete-form">
-								<input type="hidden" name="project" value="$project.name">
-								<input type="hidden" name="delete" value="true">
-								<button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
-								<button type="button" class="btn btn-danger" id="delete-btn">Delete Project</button>
-							</form>
-						</div>
-					</div>
-				</div>
-			</div>
-
+	#parse ("azkaban/webapp/servlet/velocity/projectmodals.vm")
 	#parse ("azkaban/webapp/servlet/velocity/invalidsessionmodal.vm")
 	#parse ("azkaban/webapp/servlet/velocity/flowexecutionpanel.vm")
 	#parse ("azkaban/webapp/servlet/velocity/messagedialog.vm")

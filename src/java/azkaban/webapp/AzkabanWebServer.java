@@ -758,6 +758,7 @@ public class AzkabanWebServer extends AzkabanServer {
 		root.addServlet(staticServlet, "/css/*");
 		root.addServlet(staticServlet, "/js/*");
 		root.addServlet(staticServlet, "/images/*");
+		root.addServlet(staticServlet, "/fonts/*");
 		root.addServlet(staticServlet, "/favicon.ico");
 		
 		root.addServlet(new ServletHolder(new ProjectManagerServlet()),"/manager");

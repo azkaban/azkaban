@@ -102,19 +102,21 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
 		if (ajaxName.equals("slaInfo")) {
 			ajaxSlaInfo(req, ret, session.getUser());
 		}
-		else if(ajaxName.equals("setSla")) {
+		else if (ajaxName.equals("setSla")) {
 			ajaxSetSla(req, ret, session.getUser());
-		} else
-		if(ajaxName.equals("loadFlow")) {
+		} else if(ajaxName.equals("loadFlow")) {
 			ajaxLoadFlows(req, ret, session.getUser());
 		}
-		else if(ajaxName.equals("loadHistory")) {
+		else if (ajaxName.equals("loadHistory")) {
 			ajaxLoadHistory(req, resp, session.getUser());
 			ret = null;
 		}
-		else if(ajaxName.equals("scheduleFlow")) {
+		else if (ajaxName.equals("scheduleFlow")) {
 			ajaxScheduleFlow(req, ret, session.getUser());
 		}
+    else if (ajaxName.equals("fetchSchedule")) {
+      ajaxFetchSchedule(req, ret, session.getUser());
+    }
 
 		if (ret != null) {
 			this.writeJSON(resp, ret);
@@ -123,9 +125,7 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
 
 	private void ajaxSetSla(HttpServletRequest req, HashMap<String, Object> ret, User user) {
 		try {
-			
 			int scheduleId = getIntParam(req, "scheduleId");
-			
 			Schedule sched = scheduleManager.getSchedule(scheduleId);
 			
 			Project project = projectManager.getProject(sched.getProjectId());
@@ -231,14 +231,38 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
 		int min = Integer.parseInt(duration.split(":")[1]);
 		return Minutes.minutes(min+hour*60).toPeriod();
 	}
-
+  
+  private void ajaxFetchSchedule(HttpServletRequest req, 
+      HashMap<String, Object> ret, User user) throws ServletException {
+		
+		int projectId = getIntParam(req, "projectId");
+	  String flowId = getParam(req, "flowId");	
+		try {
+      Schedule schedule = scheduleManager.getSchedule(
+					projectId, flowId);
+    
+			if (schedule != null) {
+				Map<String, String> jsonObj = new HashMap<String, String>();
+				jsonObj.put("scheduleId", Integer.toString(schedule.getScheduleId()));
+				jsonObj.put("submitUser", schedule.getSubmitUser());
+				jsonObj.put("firstSchedTime", 
+						utils.formatDateTime(schedule.getFirstSchedTime()));
+				jsonObj.put("nextExecTime", 
+						utils.formatDateTime(schedule.getNextExecTime()));
+				jsonObj.put("period", utils.formatPeriod(schedule.getPeriod()));
+				ret.put("schedule", jsonObj);
+			}
+		}
+    catch (ScheduleManagerException e) {
+      ret.put("error", e);
+		}
+	}
+	
 	private void ajaxSlaInfo(HttpServletRequest req, HashMap<String, Object> ret, User user) {
 		int scheduleId;
 		try {
 			scheduleId = getIntParam(req, "scheduleId");
-			
 			Schedule sched = scheduleManager.getSchedule(scheduleId);
-			
 			Project project = getProjectAjaxByPermission(ret, sched.getProjectId(), user, Type.READ);
 			if (project == null) {
 				ret.put("error", "Error loading project. Project " + sched.getProjectId() + " doesn't exist");
@@ -300,7 +324,6 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
 		} catch (ScheduleManagerException e) {
 			ret.put("error", e);
 		}
-		
 	}
 
 	protected Project getProjectAjaxByPermission(Map<String, Object> ret, int projectId, User user, Permission.Type type) {
@@ -318,7 +341,7 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
 		
 		return null;
 	}
-	
+
 	private void handleGetAllSchedules(HttpServletRequest req, HttpServletResponse resp,
 			Session session) throws ServletException, IOException{
 		
@@ -371,7 +394,7 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
 				if (action.equals("scheduleFlow")) {
 					ajaxScheduleFlow(req, ret, session.getUser());
 				}
-				else if(action.equals("removeSched")){
+				else if (action.equals("removeSched")){
 					ajaxRemoveSched(req, ret, session.getUser());
 				}
 			}
@@ -384,9 +407,8 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
 			this.writeJSON(resp, ret);
 		}
 	}
-
+	
 	private void ajaxLoadFlows(HttpServletRequest req, HashMap<String, Object> ret, User user) throws ServletException {
-		
 		List<Schedule> schedules;
 		try {
 			schedules = scheduleManager.getSchedules();
