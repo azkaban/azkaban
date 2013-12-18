@@ -15,10 +15,59 @@
               </tr>
             </tbody>
           </table>
+					
+					<div class="panel panel-default">
+						<div class="panel-heading">
+							Scheduling
+							{?schedule}
+							<div class="pull-right">
+								<button type="button" id="removeSchedBtn" class="btn btn-xs btn-danger" onclick="removeSched({schedule.scheduleId})" >Remove Schedule</button>
+							</div>
+							{/schedule}
+						</div>
+						{?schedule}
+						<table class="table table-striped table-condensed table-bordered table-hover">
+							<tbody>
+								<tr>
+									<td class="flow-summary-key">Schedule ID</td>
+									<td class="flow-summary-value">{schedule.scheduleId}</td>
+									<td class="flow-summary-key">Submitted By</td>
+									<td class="flow-summary-value">{schedule.submitUser}</td>
+								</tr>
+								<tr>
+									<td class="flow-summary-key">First Scheduled to Run</td>
+									<td class="flow-summary-value">{schedule.firstSchedTime}</td>
+									<td class="flow-summary-key">Repeats Every</td>
+									<td class="flow-summary-value">{schedule.period}</td>
+								</tr>
+								<tr>
+									<td class="flow-summary-key">Next Execution Time</td>
+									<td class="flow-summary-value">{schedule.nextExecTime}</td>
+									<td class="flow-summary-key">SLA</td>
+									<td class="flow-summary-value">
+									{?schedule.slaOptions}
+										true 
+									{:else} 
+										false 
+									{/schedule.slaOptions}
+										<button type="button" id="addSlaBtn" class="btn btn-xs btn-primary" onclick="slaView.initFromSched({schedule.scheduleId}, '{flowName}')" >Set SLA</button>
+									</td>
+								</tr>
+							</tbody>
+						</table>
+						{:else}
+						<div class="panel-body">
+							<div class="alert alert-info">
+								<h4>No Schedule</h4>
+								<p>This flow has not been scheduled.</p>
+							</div>
+						</div>
+						{/schedule}
+					</div>
 
           <div class="panel panel-default">
             <div class="panel-heading">Last Run Stats</div>
-            {^lastRun}
+            {?lastRun}
             <table class="table table-striped table-bordered table-condensed table-hover">
               <tbody>
 								<tr>
@@ -57,3 +106,5 @@
             {/lastRun}
           </div>
         </div><!-- /.col-lg-12 -->
+
+

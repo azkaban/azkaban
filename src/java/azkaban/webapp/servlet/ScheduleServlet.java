@@ -114,8 +114,8 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
 		else if (ajaxName.equals("scheduleFlow")) {
 			ajaxScheduleFlow(req, ret, session.getUser());
 		}
-    else if (action.equals("fetchSchedules")) {
-      ajaxFetchSchedules(req, ret, session.getUser());
+    else if (ajaxName.equals("fetchSchedule")) {
+      ajaxFetchSchedule(req, ret, session.getUser());
     }
 
 		if (ret != null) {
@@ -232,15 +232,24 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
 		return Minutes.minutes(min+hour*60).toPeriod();
 	}
   
-  private void ajaxFetchSchedules(HttpServletRequest req, 
+  private void ajaxFetchSchedule(HttpServletRequest req, 
       HashMap<String, Object> ret, User user) throws ServletException {
 		
+		int projectId = getIntParam(req, "projectId");
 	  String flowId = getParam(req, "flowId");	
 		try {
-      List<Schedule> flowSchedules = scheduleManager.getSchedules(flowId);
-      List<Object> schecules = new ArrayList<Object>();
-      
-      ret.put("schedules", schedules);
+      Schedule schedule = scheduleManager.getSchedule(
+					projectId, flowId);
+    
+			if (schedule != null) {
+				Map<String, String> jsonObj = new HashMap<String, String>();
+				jsonObj.put("scheduleId", Integer.toString(schedule.getScheduleId()));
+				jsonObj.put("submitUser", schedule.getSubmitUser());
+				jsonObj.put("firstSchedTime", Long.toString(schedule.getFirstSchedTime()));
+				jsonObj.put("nextExecTime", Long.toString(schedule.getNextExecTime()));
+				jsonObj.put("period", schedule.getPeriod().toString());
+				ret.put("schedule", jsonObj);
+			}
 		}
     catch (ScheduleManagerException e) {
       ret.put("error", e);

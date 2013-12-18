@@ -104,7 +104,6 @@ public class ScheduleManager implements TriggerAgent {
 	
 	// only do this when using external runner
 	public synchronized void updateLocal() throws ScheduleManagerException {
-
 		List<Schedule> updates = loader.loadUpdatedSchedules();
 		for(Schedule s : updates) {
 			if(s.getStatus().equals(TriggerStatus.EXPIRED.toString())) {
@@ -157,15 +156,15 @@ public class ScheduleManager implements TriggerAgent {
 	 * @param id
 	 * @return
 	 * @throws ScheduleManagerException 
-	*/
+	 */
 //	public Set<Schedule> getSchedules(int projectId, String flowId) throws ScheduleManagerException {
 //		updateLocal();
 //		return scheduleIdentityPairMap.get(new Pair<Integer,String>(projectId, flowId));
 //	}
 	public Schedule getSchedule(int projectId, String flowId) throws ScheduleManagerException {
-	updateLocal();
-	return scheduleIdentityPairMap.get(new Pair<Integer,String>(projectId, flowId));
-}
+		updateLocal();
+		return scheduleIdentityPairMap.get(new Pair<Integer,String>(projectId, flowId));
+	}
 
 	/**
 	 * Returns the scheduled flow for the scheduleId

@@ -26,7 +26,6 @@
 		
     <script type="text/javascript" src="${context}/js/dust-core-2.2.2.min.js"></script>
 		<script type="text/javascript" src="${context}/js/flowsummary.js"></script>
-		<script type="text/javascript" src="${context}/js/flowscheduling.js"></script>
 
 		<script type="text/javascript" src="${context}/js/azkaban.date.utils.js"></script>
 		<script type="text/javascript" src="${context}/js/azkaban.ajax.utils.js"></script>
@@ -111,7 +110,6 @@
 			<ul class="nav nav-tabs" id="headertabs">
 				<li id="graphViewLink"><a href="#graph">Graph</a></li>
 				<li id="executionsViewLink"><a href="#executions">Executions</a></li>
-				<li id="schedulingViewLink"><a href="#scheduling">Scheduling</a></li>
 				<li id="summaryViewLink"><a href="#summary">Summary</a></li>
 			</ul>
 					
@@ -150,11 +148,6 @@
 				</div>
 			</div>
 
-  ## Scheduling view.
-
-      <div class="row" id="schedulingView">
-      </div>
-		
 	## Summary view.
 
 			<div class="row" id="summaryView">
