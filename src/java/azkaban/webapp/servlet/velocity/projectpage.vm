@@ -91,8 +91,12 @@
 					<div class="panel panel-default" id="flow-tabs">
 						<div class="panel-heading">
 							<div class="pull-right" id="project-options">
-								<button id="project-upload-btn" class="btn btn-xs btn-primary">Upload</button>
-								<button id="project-delete-btn" class="btn btn-xs btn-danger">Delete Project</button>
+								<button id="project-upload-btn" class="btn btn-xs btn-primary">
+									<span class="glyphicon glyphicon-upload"></span> Upload
+								</button>
+								<button id="project-delete-btn" class="btn btn-xs btn-danger">
+									<span class="glyphicon glyphicon-remove-circle"></span> Delete Project
+								</button>
 							</div>
 							Flows
 						</div>
