@@ -2,16 +2,16 @@
           <table class="table table-striped table-bordered table-condensed table-hover">
             <tbody>
               <tr>
-                <td class="flow-summary-key">Workflow name</td>
-                <td class="flow-summary-value">{general.flowId}</td>
+                <td class="flow-summary-key">Flow name</td>
+                <td class="flow-summary-value">{flowName}</td>
                 <td class="flow-summary-key">Project name</td>
-                <td class="flow-summary-value">{general.projectName}</td>
+                <td class="flow-summary-value">{projectName}</td>
               </tr>
               <tr>
-                <td class="flow-summary-key">Workflow Hadoop User Name</td>
-                <td class="flow-summary-value">{general.user}</td>
+                <td class="flow-summary-key">Run As</td>
+                <td class="flow-summary-value">{user}</td>
                 <td class="flow-summary-key">Job Types Used</td>
-                <td class="flow-summary-value">{general.apis}</td>
+                <td class="flow-summary-value">{#jobTypes}{.} {/jobTypes}</td>
               </tr>
             </tbody>
           </table>

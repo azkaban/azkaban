@@ -299,35 +299,33 @@ azkaban.SummaryView = Backbone.View.extend({
 	
 	initialize: function(settings) {
 		console.log("summaryView initialize");
-		var general = {
-			projectName: projectName,
-			flowId: flowId
-		};
-    /*var schedule = {
-			scheduleId: "0",
-			submitUser: "azkaban",
-			firstSchedTime: "1",
-			nextExecTime: "2",
-			period: "3",
-		};
-    var lastRun = {
-			maxMapSlots: 3,
-			maxReduceSlots: 9999,
-			totalMapSlots: 3,
-			totalReduceSlots: 9999,
-			numJobs: 3,
-			longestTaskTime: 1111
-		};*/
-		var lastRun = null;
 
 		this.model.bind('change:view', this.handleChangeView, this);
 		this.model.bind('render', this.render, this);
 		
-		this.model.set({'general': general});
-		this.fetchSchedule();
+		this.fetchDetails();
+    this.fetchSchedule();
 		this.fetchLastRun();
 		this.model.trigger('render');
 	},
+
+  fetchDetails: function() {
+    var requestURL = contextURL + "/manager";
+    var requestData = {
+      'ajax': 'fetchflowdetails',
+      'project': projectName,
+      'flow': flowId
+    };
+		var model = this.model;
+    var successHandler = function(data) {
+      console.log(data);
+      model.set({
+        'jobTypes': data.jobTypes
+      });
+      model.trigger('render');
+    };
+    $.get(requestURL, requestData, successHandler, 'json');
+  },
 
 	fetchSchedule: function() {
 		var requestURL = contextURL + "/schedule"
@@ -338,10 +336,8 @@ azkaban.SummaryView = Backbone.View.extend({
 		};
 		var model = this.model;
 		var successHandler = function(data) {
-			if (data.schedule != null) {
-				model.set({'schedule': data.schedule});
-				model.trigger('render');
-			}
+      model.set({'schedule': data.schedule});
+      model.trigger('render');
 		};
 		$.get(requestURL, requestData, successHandler, 'json');
 	},
@@ -357,7 +353,9 @@ azkaban.SummaryView = Backbone.View.extend({
 	render: function(evt) {
 		console.log("summaryView render");
 		var data = {
+      projectName: projectName,
 			flowName: flowId,
+      jobTypes: this.model.get('jobTypes'),
 			general: this.model.get('general'),
 			schedule: this.model.get('schedule'),
 			lastRun: this.model.get('lastRun')
