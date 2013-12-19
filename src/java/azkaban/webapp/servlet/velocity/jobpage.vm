@@ -68,7 +68,17 @@
 
 		<div class="az-page-header">
 			<div class="container">
-        <h1><a href="${context}/manager?project=${project.name}&flow=${flowid}&job=${jobid}">Job <small>$jobid</small></a></h1>
+        <div class="row">
+          <div class="col-lg-6">
+            <h1><a href="${context}/manager?project=${project.name}&flow=${flowid}&job=${jobid}">Job <small>$jobid</small></a></h1>
+          </div>
+          <div class="col-lg-6">
+            <div class="pull-right az-page-header-form">
+              <a href="${context}/manager?project=${project.name}&job=$jobid&history" class="btn btn-default btn-sm">History</a>
+            </div>
+            <div class="clearfix"></div>
+          </div>
+        </div>
 			</div>
 		</div>
 
@@ -85,9 +95,6 @@
 			<div class="row">
 				<div class="col-lg-8">
 	
-	#set ($job_page="properties")
-	#parse ("azkaban/webapp/servlet/velocity/jobnav.vm")
-
 	## Job details table
 
 					<div class="panel panel-default">
@@ -116,7 +123,60 @@
 					</div>
 				</div><!-- /col-lg-8 -->
 				<div class="col-lg-4">
-	#parse ("azkaban/webapp/servlet/velocity/jobsidebar.vm")
+					<div class="well" id="job-summary">
+						<h3>Job <small>$jobid</small></h3>
+						<p><strong>Job Type</strong> $jobtype</p>
+					</div>
+
+	## Dependencies
+
+					<div class="panel panel-default">
+						<div class="panel-heading">Dependencies</div>
+						<ul class="list-group">
+	#if ($dependencies) 
+		#foreach($dependency in $dependencies)
+							<li class="list-group-item">
+								<a href="${context}/manager?project=${project.name}&flow=${flowid}&job=$dependency">$dependency</a>
+							</li>
+		#end
+	#else
+							<li class="list-group-item">No Dependencies</li>
+	#end
+						</ul>
+					</div><!-- /panel -->
+
+	## Dependents
+
+					<div class="panel panel-default">
+						<div class="panel-heading">Dependents</div>
+						<ul class="list-group">
+	#if ($dependents) 
+		#foreach($dependent in $dependents)
+							<li class="list-group-item">
+								<a href="${context}/manager?project=${project.name}&flow=${flowid}&job=$dependent">$dependent</a>
+							</li>
+		#end
+	#else
+							<li class="list-group-item">No Dependencies</li>
+	#end
+
+						</ul>
+					</div><!-- /panel -->
+
+					<div class="panel panel-default">
+						<div class="panel-heading">Properties</div>
+						<ul class="list-group">
+	#if ($properties) 
+		#foreach($property in $properties)
+							<li class="list-group-item">
+								<a href="${context}/manager?project=${project.name}&flow=${flowid}&job=${jobid}&prop=$property">$property</a>
+							</li>
+		#end
+	#else
+							<li class="list-group-item">No Property Files For This Job</li>
+	#end
+						</ul>
+					</div><!-- /panel -->
 				</div><!-- /col-lg-4 -->
 			</div><!-- /row -->
 
