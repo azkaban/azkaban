@@ -90,7 +90,14 @@ azkaban.ProjectDescriptionView = Backbone.View.extend({
 	
 	handleDescriptionEdit: function(evt) {
 		console.log("Edit description");
-    var description = $('#project-description').text();
+    var description = null;
+    if ($('#project-description').hasClass('editable-placeholder')) {
+      description = '';
+      $('#project-description').removeClass('editable-placeholder');
+    }
+    else {
+      description = $('#project-description').text();
+    }
     $('#project-description-edit').attr("value", description);
     $('#project-description').hide();
     $('#project-description-form').show();
@@ -113,8 +120,14 @@ azkaban.ProjectDescriptionView = Backbone.View.extend({
         alert(data.error);
         return;
       }
-      $('#project-description').text(newText);
       $('#project-description-form').hide();
+      if (newText != '') {
+        $('#project-description').text(newText);
+      }
+      else {
+        $('#project-description').text('Add project description.');
+        $('#project-description').addClass('editable-placeholder');
+      }
       $('#project-description').show();
     };
     $.get(requestURL, requestData, successHandler, "json");
