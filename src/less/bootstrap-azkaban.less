@@ -263,22 +263,38 @@ td.flow-summary-value {
 }
 
 .az-page-header {
-  padding: 5px 0 9px;
+  padding: 5px 0 10px;
   margin: 0 0 30px;
   border-bottom: 1px solid #dddddd;
   background-color: #f4f4f4;
 
   h1 {
     font-size: 32px;
+    margin-bottom: 5px;
   }
-}
+  
+  .az-page-header-form {
+    margin-top: 20px;
+  }
 
-.az-page-header-form {
-  margin-top: 20px;
-}
+  .az-exflow-stats {
+    margin-top: 10px;
+  }
 
-.az-exflow-stats {
-  margin-top: 10px;
+  .editable {
+    margin: 0px;
+    cursor: pointer;
+    &:hover {
+      background-color: #fcfcfc;
+    }
+    &.editable-placeholder {
+      color: #a0a0a0;
+    }
+  }
+
+  .editable-form {
+    display: none;
+  }
 }
 
 .contextMenu {

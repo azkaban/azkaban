@@ -88,85 +88,75 @@
 
 		<div class="az-page-header">
 			<div class="container">
-				<h1>
-					<a href="${context}/manager?project=${project.name}">$project.name</a> / 
-					<a href="${context}/manager?project=${project.name}&flow=${flowid}">$flowid</a>
-				</h1>
+        <h1><a href="${context}/manager?project=${projectName}&job=${jobid}&history">Job History <small>$jobid</small></a></h1>
 			</div>
 		</div>
 
 		<div class="container">
-			<div class="row">
-				<div class="col-lg-8">
 	
-	## Breadcrumb
+  ## Breadcrumb
 
-					<ol class="breadcrumb">
-						<li><a href="${context}/manager?project=${project.name}"><strong>Project</strong> $project.name</a></li>
-						<li><a href="${context}/manager?project=${project.name}&flow=${flowid}"><strong>Flow</strong> $flowid</a></li>
-						<li><a href="${context}/manager?project=${project.name}&flow=${flowid}&job=${jobid}"><strong>Job</strong> $jobid</a></li>
-					</ol>
-			
-	#set ($job_page="history")
-	#parse ("azkaban/webapp/servlet/velocity/jobnav.vm")
-				
-					<div class="panel panel-default">
-						<div class="panel-heading">Job History</div>
-						<div class="panel-body">
-							<div id="timeGraph"></div>
-						</div>
+      <ol class="breadcrumb">
+        <li><a href="${context}/manager?project=${projectName}"><strong>Project</strong> $projectName</a></li>
+        <li class="active"><strong>Job History</strong> $jobid</li>
+      </ol>
 
-						<table id="all-jobs" class="table table-striped table-bordered">
-							<thead>
-								<tr>
-									<th class="execid">Execution Id</th>
-									<th class="jobid">Job</th>
-									<th class="flowid">Flow</th>
-									<th class="date">Start Time</th>
-									<th class="date">End Time</th>
-									<th class="elapse">Elapse</th>		
-									<th class="status">Status</th>
-									<th class="logs">Logs</th>
-								</tr>
-							</thead>
-							<tbody>
+			<div class="row">
+				<div class="col-lg-12">
+					<div class="well well-clear well-sm">
+            <div id="timeGraph"></div>
+          </div>
+
+          <table id="all-jobs" class="table table-striped table-bordered table-condensed table-hover">
+            <thead>
+              <tr>
+                <th class="execid">Execution Id</th>
+                <th class="jobid">Job</th>
+                <th class="flowid">Flow</th>
+                <th class="date">Start Time</th>
+                <th class="date">End Time</th>
+                <th class="elapse">Elapse</th>		
+                <th class="status">Status</th>
+                <th class="logs">Logs</th>
+              </tr>
+            </thead>
+            <tbody>
 	#if ($history)
 		#foreach ($job in $history)
-								<tr>
-									<td class="first">
+              <tr>
+                <td class="first">
 			#if ($job.attempt > 0)
-										<a href="${context}/executor?execid=${job.execId}">${job.execId}.${job.attempt}</a>
+                  <a href="${context}/executor?execid=${job.execId}">${job.execId}.${job.attempt}</a>
 			#else
-										<a href="${context}/executor?execid=${job.execId}">${job.execId}</a>
+                  <a href="${context}/executor?execid=${job.execId}">${job.execId}</a>
 			#end
-									</td>
-									<td>
-										<a href="${context}/manager?project=${projectName}&flow=${job.flowId}&job=${jobid}">${jobid}</a>
-									</td>
-									<td>
-										<a href="${context}/manager?project=${projectName}&flow=${job.flowId}">${job.flowId}</a>
-									</td>
-									<td>$utils.formatDate(${job.startTime})</td>
-									<td>$utils.formatDate(${job.endTime})</td>
-									<td>$utils.formatDuration(${job.startTime}, ${job.endTime})</td>
-									<td>
-										<div class="status ${job.status}">
-											$utils.formatStatus(${job.status})
-										</div>
-									</td>
-									<td class="logLink">
-										<a href="${context}/executor?execid=${job.execId}&job=${jobid}&attempt=${job.attempt}">Logs</a>
-									</td>
-								</tr>
+                </td>
+                <td>
+                  <a href="${context}/manager?project=${projectName}&flow=${job.flowId}&job=${jobid}">${jobid}</a>
+                </td>
+                <td>
+                  <a href="${context}/manager?project=${projectName}&flow=${job.flowId}">${job.flowId}</a>
+                </td>
+                <td>$utils.formatDate(${job.startTime})</td>
+                <td>$utils.formatDate(${job.endTime})</td>
+                <td>$utils.formatDuration(${job.startTime}, ${job.endTime})</td>
+                <td>
+                  <div class="status ${job.status}">
+                    $utils.formatStatus(${job.status})
+                  </div>
+                </td>
+                <td class="logLink">
+                  <a href="${context}/executor?execid=${job.execId}&job=${jobid}&attempt=${job.attempt}">Logs</a>
+                </td>
+              </tr>
 		#end
 	#else
-								<tr>
-									<td colspan="8">No history</td>
-								</tr>
+              <tr>
+                <td colspan="8">No history</td>
+              </tr>
 	#end
-							</tbody>
-						</table>
-					</div>
+            </tbody>
+          </table>
 
 					<ul class="pagination" id="pageSelection">
 						<li id="previous" class="first"><a href="${context}/manager?project=${projectId}&job=${jobid}&history&page=${previous.page}&size=${previous.size}"><span class="arrow">&larr;</span>Previous</a></li>
@@ -178,11 +168,8 @@
 						<li id="next"><a href="${context}/manager?project=${projectName}&job=${jobid}&history&page=${next.page}&size=${next.size}">Next<span class="arrow">&rarr;</span></a></li>
 					</ul>
 
-				</div><!-- /col-lg-8 -->
-				<div class="col-lg-4">
-	#parse ("azkaban/webapp/servlet/velocity/jobsidebar.vm")
-				</div><!-- /col-lg-4 -->
-			</div><!-- /row -->
+				</div><!-- /.col-lg-12 -->
+			</div><!-- /.row -->
 
 #end
 #parse ("azkaban/webapp/servlet/velocity/footer.vm")

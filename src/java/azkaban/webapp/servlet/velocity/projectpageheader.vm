@@ -17,9 +17,17 @@
 		<div class="az-page-header">
 			<div class="container">
         <div class="row">
-          <div class="col-lg-6">
+          <div class="col-lg-6" id="project-page-header">
             <h1><a href="${context}/manager?project=${project.name}">Project <small>$project.name</small></a></h1>
-            <p>$project.description</p>
+            <p class="editable" id="project-description">$project.description</p>
+            <div id="project-description-form" class="editable-form">
+              <div class="input-group">
+                <input type="text" class="form-control input-sm" id="project-description-edit" placeholder="Project description">
+                <span class="input-group-btn">
+                  <button class="btn btn-primary btn-sm" type="button" id="project-description-btn">Save</button>
+                </span>
+              </div>
+            </div>
           </div>
           <div class="col-lg-6">
             <div class="pull-right az-page-header-form" id="project-options">
