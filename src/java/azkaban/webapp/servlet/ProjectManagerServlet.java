@@ -918,88 +918,88 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 		Flow flow = null;
 		try {
 			project = projectManager.getProject(projectName);
-			
 			if (project == null) {
 				page.add("errorMsg", "Project " + projectName + " not found.");
+        page.render();
+        return;
 			}
-			else {
-				if (!hasPermission(project, user, Type.READ)) {
-					throw new AccessControlException( "No permission to view project " + projectName + ".");
-				}
-				
-				page.add("project", project);
-				
-				flow = project.getFlow(flowName);
-				if (flow == null) {
-					page.add("errorMsg", "Flow " + flowName + " not found.");
-				}
-				else {
-					page.add("flowid", flow.getId());
-					Node node = flow.getNode(jobName);
-					if (node == null) {
-						page.add("errorMsg", "Job " + jobName + " not found.");
-					}
-					else {
-						Props prop = projectManager.getProperties(project, node.getJobSource());
-						Props overrideProp = projectManager.getJobOverrideProperty(project, jobName);
-						if (overrideProp == null) {
-							overrideProp = new Props();
-						}
-						Props comboProp = new Props(prop);
-						for (String key : overrideProp.getKeySet()) {
-							comboProp.put(key, overrideProp.get(key));
-						}
-						page.add("jobid", node.getId());
-						page.add("jobtype", node.getType());
-						
-						ArrayList<String> dependencies = new ArrayList<String>();
-						Set<Edge> inEdges = flow.getInEdges(node.getId());
-						if (inEdges != null) {
-							for (Edge dependency: inEdges) {
-								dependencies.add(dependency.getSourceId());
-							}
-						}
-						if (!dependencies.isEmpty()) {
-							page.add("dependencies", dependencies);
-						}
-						
-						ArrayList<String> dependents = new ArrayList<String>();
-						Set<Edge> outEdges = flow.getOutEdges(node.getId());
-						if (outEdges != null) {
-							for (Edge dependent: outEdges) {
-								dependents.add(dependent.getTargetId());
-							}
-						}
-						if (!dependents.isEmpty()) {
-							page.add("dependents", dependents);
-						}
-						
-						// Resolve property dependencies
-						ArrayList<String> source = new ArrayList<String>(); 
-						String nodeSource = node.getPropsSource();
-						if (nodeSource != null) {
-							source.add(nodeSource);
-							FlowProps parent = flow.getFlowProps(nodeSource);
-							while (parent.getInheritedSource() != null) {
-								source.add(parent.getInheritedSource());
-								parent = flow.getFlowProps(parent.getInheritedSource()); 
-							}
-						}
-						if (!source.isEmpty()) {
-							page.add("properties", source);
-						}
-						
-						ArrayList<Pair<String,String>> parameters = new ArrayList<Pair<String, String>>();
-						// Parameter
-						for (String key : comboProp.getKeySet()) {
-							String value = comboProp.get(key);
-							parameters.add(new Pair<String,String>(key, value));
-						}
-						
-						page.add("parameters", parameters);
-					}
-				}
-			}
+      if (!hasPermission(project, user, Type.READ)) {
+        throw new AccessControlException( "No permission to view project " + projectName + ".");
+      }
+      
+      page.add("project", project);
+      flow = project.getFlow(flowName);
+      if (flow == null) {
+        page.add("errorMsg", "Flow " + flowName + " not found.");
+        page.render();
+        return;
+      }
+
+      page.add("flowid", flow.getId());
+      Node node = flow.getNode(jobName);
+      if (node == null) {
+        page.add("errorMsg", "Job " + jobName + " not found.");
+        page.render();
+        return;
+      }
+
+      Props prop = projectManager.getProperties(project, node.getJobSource());
+      Props overrideProp = projectManager.getJobOverrideProperty(project, jobName);
+      if (overrideProp == null) {
+        overrideProp = new Props();
+      }
+      Props comboProp = new Props(prop);
+      for (String key : overrideProp.getKeySet()) {
+        comboProp.put(key, overrideProp.get(key));
+      }
+      page.add("jobid", node.getId());
+      page.add("jobtype", node.getType());
+      
+      ArrayList<String> dependencies = new ArrayList<String>();
+      Set<Edge> inEdges = flow.getInEdges(node.getId());
+      if (inEdges != null) {
+        for (Edge dependency: inEdges) {
+          dependencies.add(dependency.getSourceId());
+        }
+      }
+      if (!dependencies.isEmpty()) {
+        page.add("dependencies", dependencies);
+      }
+      
+      ArrayList<String> dependents = new ArrayList<String>();
+      Set<Edge> outEdges = flow.getOutEdges(node.getId());
+      if (outEdges != null) {
+        for (Edge dependent: outEdges) {
+          dependents.add(dependent.getTargetId());
+        }
+      }
+      if (!dependents.isEmpty()) {
+        page.add("dependents", dependents);
+      }
+      
+      // Resolve property dependencies
+      ArrayList<String> source = new ArrayList<String>(); 
+      String nodeSource = node.getPropsSource();
+      if (nodeSource != null) {
+        source.add(nodeSource);
+        FlowProps parent = flow.getFlowProps(nodeSource);
+        while (parent.getInheritedSource() != null) {
+          source.add(parent.getInheritedSource());
+          parent = flow.getFlowProps(parent.getInheritedSource()); 
+        }
+      }
+      if (!source.isEmpty()) {
+        page.add("properties", source);
+      }
+      
+      ArrayList<Pair<String,String>> parameters = new ArrayList<Pair<String, String>>();
+      // Parameter
+      for (String key : comboProp.getKeySet()) {
+        String value = comboProp.get(key);
+        parameters.add(new Pair<String,String>(key, value));
+      }
+      
+      page.add("parameters", parameters);
 		}
 		catch (AccessControlException e) {
 			page.add("errorMsg", e.getMessage());
@@ -1007,7 +1007,6 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 		catch (ProjectManagerException e) {
 			page.add("errorMsg", e.getMessage());
 		}
-		
 		page.render();
 	}
 	
