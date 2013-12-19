@@ -91,7 +91,7 @@
 					</div>
 					<div class="col-lg-6">
 						<div class="pull-right az-page-header-form">
-							<button type="button" class="btn btn-success" id="executebtn">Schedule / Execute Flow</button>
+							<button type="button" class="btn btn-sm btn-success" id="executebtn">Schedule / Execute Flow</button>
 						</div>
 						<div class="clearfix"></div>
 					</div>

@@ -77,63 +77,64 @@ azkaban.DeleteProjectView = Backbone.View.extend({
 	}
 });
 
-var projectSummary;
-azkaban.ProjectSummaryView = Backbone.View.extend({
+var projectDescription;
+azkaban.ProjectDescriptionView = Backbone.View.extend({
 	events: {
-		"click #edit": "handleDescriptionEdit"
+		"click #project-description": "handleDescriptionEdit",
+    "click #project-description-btn": "handleDescriptionSave"
 	},
 
 	initialize: function(settings) {
+    console.log("project description initialize");
 	},
 	
 	handleDescriptionEdit: function(evt) {
 		console.log("Edit description");
-		var editText = $("#edit").text();
-		var descriptionTD = $('#pdescription');
-		
-		if (editText != "Edit Description") {
-			var requestURL = contextURL + "/manager";
-			var newText = $("#descEdit").val();
-
-			$.get(
-				requestURL,
-				{
-					"project": projectName, 
-					"ajax":"changeDescription", 
-					"description":newText
-				},
-				function(data) {
-					if (data.error) {
-						alert(data.error);
-					}
-				},
-				"json"
-			);
-				
-			$(descriptionTD).remove("#descEdit");
-			$(descriptionTD).text(newText);
-			$("#edit").text("Edit Description");
-		}
-		else {
-			var text = $(descriptionTD).text();
-			var edit = document.createElement("textarea");
-			
-			$(edit).addClass("editTextArea");
-			$(edit).attr("id", "descEdit");
-			$(edit).val(text);
-			$(descriptionTD).text("");
-			$(descriptionTD).append(edit);
-			
-			$("#edit").text("Commit");
-		}
+    var description = $('#project-description').text();
+    $('#project-description-edit').attr("value", description);
+    $('#project-description').hide();
+    $('#project-description-form').show();
 	},
+
+  handleDescriptionSave: function(evt) {
+    var newText = $('#project-description-edit').val();
+    if ($('#project-description-edit').hasClass('has-error')) {
+      $('#project-description-edit').removeClass('has-error');
+    }
+		var requestURL = contextURL + "/manager";
+    var requestData = {
+      "project": projectName, 
+      "ajax":"changeDescription", 
+      "description": newText
+    };
+    var successHandler = function(data) {
+      if (data.error) {
+        $('#project-description-edit').addClass('has-error');
+        alert(data.error);
+        return;
+      }
+      $('#project-description').text(newText);
+      $('#project-description-form').hide();
+      $('#project-description').show();
+    };
+    $.get(requestURL, requestData, successHandler, "json");
+  },
+
 	render: function() {
 	}
 });
 
 $(function() {
-	projectView = new azkaban.ProjectView({el:$('#project-options')});
-	uploadView = new azkaban.UploadProjectView({el:$('#upload-project-modal')});
-	deleteProjectView = new azkaban.DeleteProjectView({el: $('#delete-project-modal')});
-	projectSummary = new azkaban.ProjectSummaryView({el:$('#project-summary')});
+	projectView = new azkaban.ProjectView({
+    el: $('#project-options')
+  });
+	uploadView = new azkaban.UploadProjectView({
+    el: $('#upload-project-modal')
+  });
+	deleteProjectView = new azkaban.DeleteProjectView({
+    el: $('#delete-project-modal')
+  });
+	projectDescription = new azkaban.ProjectDescriptionView({
+    el: $('#project-page-header')
+  });
 });
