@@ -259,7 +259,7 @@
 
 ## Remove proxy user modal dialog.
 
-			<div class="modal fade" id="remove-proxy">
+			<div class="modal" id="remove-proxy">
 				<div class="modal-dialog">
 					<div class="modal-content">
 						<div class="modal-header">
@@ -280,7 +280,7 @@
 
 ## Add proxy user modal dialog.
 
-			<div class="modal fade" id="add-proxy">
+			<div class="modal" id="add-proxy">
 				<div class="modal-dialog">
 					<div class="modal-content">
 						<div class="modal-header">
@@ -308,7 +308,7 @@
 			
 ## Change permissions modal dialog.
 
-			<div class="modal fade" id="change-permission">
+			<div class="modal" id="change-permission">
 				<div class="modal-dialog">
 					<div class="modal-content">
 						<div class="modal-header">

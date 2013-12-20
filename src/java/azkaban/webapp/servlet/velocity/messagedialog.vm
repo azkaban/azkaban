@@ -16,7 +16,7 @@
 
 			<script type="text/javascript" src="${context}/js/azkaban.message.dialog.view.js"></script>
 			
-			<div class="modal fade" id="azkaban-message-dialog">
+			<div class="modal" id="azkaban-message-dialog">
 				<div class="modal-dialog">
 					<div class="modal-content">
 						<div class="modal-header">

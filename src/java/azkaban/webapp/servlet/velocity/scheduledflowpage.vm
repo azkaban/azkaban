@@ -126,7 +126,7 @@
 
 ## Set SLA modal.
 
-			<div class="modal modal-wide fade" id="sla-options">
+			<div class="modal modal-wide" id="sla-options">
 				<div class="modal-dialog">
 					<div class="modal-content">
 						<div class="modal-header">

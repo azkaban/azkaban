@@ -170,7 +170,7 @@
 
 ## Advanced Filter Modal.
 
-			<div class="modal fade" id="adv-filter">
+			<div class="modal" id="adv-filter">
 				<div class="modal-dialog">
 					<div class="modal-content">
 						<div class="modal-header">

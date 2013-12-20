@@ -17,7 +17,7 @@
 			<script type="text/javascript" src="${context}/js/azkaban.date.utils.js"></script>  
 			<script type="text/javascript" src="${context}/js/azkaban.schedule.panel.view.js"></script>
 			
-			<div class="modal fade" id="schedule-modal">
+			<div class="modal" id="schedule-modal">
 				<div class="modal-dialog">
 					<div class="modal-content">
 						<div class="modal-header">

@@ -154,7 +154,7 @@
 			
 	## Error message message dialog.
 
-			<div class="modal fade" id="messageDialog">
+			<div class="modal" id="messageDialog">
 				<div class="modal-dialog">
 					<div class="modal-content">
 						<div class="modal-header" id="messageTitle">

@@ -16,7 +16,7 @@
 
 	## Modal dialog to be displayed when the user sesion is invalid.
 			
-			<div class="modal fade" id="invalid-session-modal">
+			<div class="modal" id="invalid-session-modal">
 				<div class="modal-dialog">
 					<div class="modal-content">
 						<div class="modal-header">
