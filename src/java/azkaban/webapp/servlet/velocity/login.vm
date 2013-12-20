@@ -33,31 +33,20 @@
 #parse ("azkaban/webapp/servlet/velocity/nav.vm")
 
 		<div class="container">
-			<div class="row az-login">
-				<div class="col-lg-4">
-				</div>
-				<div class="col-lg-4">
-					<div class="alert alert-danger" id="error-msg"></div>
-					<div class="well">
-						<form role="form" id="login-form">
-							<fieldset>
-								<legend>Login</legend>
-								<div class="form-group">
-									<input type="text" class="form-control" name="username" id="username" placeholder="username">
-								</div>
-								<div class="form-group">
-									<input type="password" class="form-control" name="password" id="password" placeholder="password">
-								</div>
-								<div class="form-group">
-									<button type="button" class="btn btn-primary btn-lg btn-block" id="login-submit">Login</button>
-								</div>
-							</fieldset>
-						</form>
-					</div><!-- /well -->
-				</div>
-				<div class="col-lg-4"></div>
-			</div><!-- /row -->
-  
+      <div class="login">
+        <div class="alert alert-danger" id="error-msg"></div>
+        <div class="well">
+          <form id="login-form" role="form">
+            <fieldset>
+              <legend>Login</legend>
+              <input type="text" class="form-control" name="username" id="username" placeholder="Username">
+              <input type="password" class="form-control" name="password" id="password" placeholder="Password">
+              <button type="button" class="btn btn-primary btn-lg btn-block" id="login-submit">Login</button>
+            </fieldset>
+          </form>
+        </div><!-- /.well -->
+      </div><!-- /.login -->
+
 #parse("azkaban/webapp/servlet/velocity/footer.vm")
 
 		</div><!-- /container -->

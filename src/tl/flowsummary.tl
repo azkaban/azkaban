@@ -1,5 +1,5 @@
         <div class="col-lg-12">
-          <table class="table table-striped table-bordered table-condensed table-hover">
+          <table class="table table-bordered table-condensed table-striped">
             <tbody>
               <tr>
                 <td class="flow-summary-key">Flow name</td>
@@ -26,7 +26,7 @@
 							{/schedule}
 						</div>
 						{?schedule}
-						<table class="table table-striped table-condensed table-bordered table-hover">
+						<table class="table table-condensed table-bordered table-striped">
 							<tbody>
 								<tr>
 									<td class="flow-summary-key">Schedule ID</td>
@@ -70,7 +70,7 @@
           <div class="panel panel-default">
             <div class="panel-heading">Last Run Stats</div>
             {?lastRun}
-            <table class="table table-striped table-bordered table-condensed table-hover">
+            <table class="table table-bordered table-condensed table-striped">
               <tbody>
 								<tr>
 									<td class="flow-summary-key">Max Map Slots from Largest Job</td>

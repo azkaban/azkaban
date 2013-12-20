@@ -1,7 +1,6 @@
  Azkaban 3 UI Issues
  ===================
  
- - Some UI elements get distorted due to responsive.
  - Remind people to clear cache due to JavaScript mismatches.
  - Fix graph in executing flow panel.
  - Make log view fit screen size
