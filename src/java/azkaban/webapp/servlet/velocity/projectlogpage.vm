@@ -38,7 +38,7 @@
 	</head>
 	<body>
 
-#set ($current_page="executing")
+#set ($current_page="all")
 #parse ("azkaban/webapp/servlet/velocity/nav.vm")
 
 		<div class="container">
