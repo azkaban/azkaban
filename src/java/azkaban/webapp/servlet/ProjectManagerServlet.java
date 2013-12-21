@@ -655,15 +655,18 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 				ret.put("error", "Group permission already exists.");
 				return;
 			}
-		}
-		else {
-			if (!userManager.validateUser(name)) {
-				ret.put("error", "User is invalid.");
+			if (!userManager.validateGroup(name)) {
+				ret.put("error", "Group is invalid.");
 				return;
 			}
-			
+		}
+		else {
 			if (project.getUserPermission(name) != null) {
 				ret.put("error", "User permission already exists.");
+				return;
+			}
+			if (!userManager.validateUser(name)) {
+				ret.put("error", "User is invalid.");
 				return;
 			}
 		}
