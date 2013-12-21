@@ -166,8 +166,8 @@
 							</div>
 							Flow log
 						</div>
-						<div class="panel-body">
-							<pre id="logSection" class="log"></pre>
+						<div class="panel-body log-viewer">
+							<pre id="logSection"></pre>
 						</div>
 					</div>
 				</div>
@@ -175,7 +175,7 @@
 	
 	## Error message message dialog.
 
-			<div class="modal fade" id="messageDialog">
+			<div class="modal" id="messageDialog">
 				<div class="modal-dialog">
 					<div class="modal-content">
 						<div class="modal-header" id="messageTitle">

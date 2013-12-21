@@ -182,7 +182,7 @@
 
 ## Edit job modal.
 
-			<div class="modal modal-wide fade" id="job-edit-pane">
+			<div class="modal modal-wide" id="job-edit-pane">
 				<div class="modal-dialog">
 					<div class="modal-content">
 						<div class="modal-header">

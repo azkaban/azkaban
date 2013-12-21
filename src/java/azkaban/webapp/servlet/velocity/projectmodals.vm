@@ -16,7 +16,7 @@
 
   ## Upload project modal
 
-			<div class="modal fade" id="upload-project-modal">
+			<div class="modal" id="upload-project-modal">
 				<div class="modal-dialog">
 					<div class="modal-content">
 						<form id="upload-project-form" enctype="multipart/form-data" method="post" action="$!context/manager">
@@ -48,7 +48,7 @@
 
 	## Delete project modal.
 			
-			<div class="modal fade" id="delete-project-modal">
+			<div class="modal" id="delete-project-modal">
 				<div class="modal-dialog">
 					<div class="modal-content">
 						<div class="modal-header">

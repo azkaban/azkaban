@@ -1,0 +1,13 @@
+ Azkaban 3 UI Issues
+ ===================
+ 
+ - Remind people to clear cache due to JavaScript mismatches.
+ - Fix graph in executing flow panel.
+ - Make log view fit screen size
+ - Make graph view fit screen size
+ - Fix sidebar on graph views.
+ - Job Summary stats table overflows.
+ - Unify error messages.
+ - Change chevron on My Projects list to proper expanders.
+ - Redesign Project Page flows list.
+ - Fix dependency hovering for job list on flows page

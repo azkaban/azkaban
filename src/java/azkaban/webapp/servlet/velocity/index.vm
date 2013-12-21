@@ -147,7 +147,7 @@
 
 ## Modal dialog to be displayed to create a new project.
 
-			<div class="modal fade" id="create-project-modal">
+			<div class="modal" id="create-project-modal">
 				<div class="modal-dialog">
 					<div class="modal-content">
 						<div class="modal-header">
