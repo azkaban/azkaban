@@ -97,7 +97,8 @@
 							<tbody>
 	#foreach ($parameter in $parameters)
 								<tr>
-									<td class="first">$parameter.first</td><td>$parameter.second</td>
+									<td class="property-key">$parameter.first</td>
+                  <td>$parameter.second</td>
 								</tr>
 	#end
 							</tbody>
