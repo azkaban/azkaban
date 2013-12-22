@@ -42,20 +42,10 @@
 #parse ("azkaban/webapp/servlet/velocity/nav.vm")
 
     <div class="container">
-
 #if ($errorMsg)
-			<div class="panel panel-danger">
-				<div class="panel-heading">Error</div>
-				<div class="panel-body">
-					$errorMsg
-				</div>
-			</div>
+  #parse ("azkaban/webapp/servlet/velocity/errormsg.vm")
 #else
-	#if ($error_message != "null")
-			<div class="alert alert-danger">$error_message</div>
-	#elseif ($success_message != "null")
-			<div class="alert alert-success">$success_message</div>
-	#end
+  #parse ("azkaban/webapp/servlet/velocity/alerts.vm")
 #end
 
 #parse ($viewervm)

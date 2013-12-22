@@ -39,12 +39,7 @@
 		<div class="container">
 			
 #if ($errorMsg)
-			<div class="panel panel-danger">
-				<div class="panel-heading">Error</div>
-				<div class="panel-body">
-					$errorMsg
-				</div>
-			</div>
+  #parse ("azkaban/webapp/servlet/velocity/errormsg.vm")
 #end
 
 		</div>
