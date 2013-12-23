@@ -147,7 +147,7 @@
 					<div class="panel panel-default">
 						<div class="panel-heading">
 							<div class="pull-right">
-								<button type="button" id="updateLogBtn" class="btn btn-xs btn-default">Refresh</button>
+								<button type="button" id="updateLogBtn" class="btn btn-xs btn-info">Refresh</button>
 							</div>
 							Flow log
 						</div>

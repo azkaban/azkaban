@@ -59,7 +59,7 @@
 					</div>
 					<div class="col-lg-6">
 						<div class="pull-right az-page-header-form">
-							<a href="${context}/manager?project=${projectName}&flow=${flowid}&job=$jobid" class="btn btn-default">Job Properties</a>
+							<a href="${context}/manager?project=${projectName}&flow=${flowid}&job=$jobid" class="btn btn-info">Job Properties</a>
 						</div>
 					</div>
 				</div>
