@@ -23,7 +23,7 @@
 						<div class="panel-heading">
 							<input id="filter" type="text" placeholder="Job Filter" class="form-control">
 						</div>
-						<ul id="list" class="list-group"></ul>
+						<div id="list" class="list-group"></div>
 						<div class="panel-footer">
 							<button type="button" class="btn btn-sm btn-default" id="resetPanZoomBtn">Reset Pan Zoom</button>
 						</div>

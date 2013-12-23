@@ -46,29 +46,11 @@
 #parse ("azkaban/webapp/servlet/velocity/nav.vm")
 
 		<div class="container">
-
-## Page error or success message.
-
+#parse ("azkaban/webapp/servlet/velocity/message.vm")
 #if ($errorMsg)
-			<div class="panel panel-danger">
-				<div class="panel-heading">Error</div>
-				<div class="panel-body">
-					$errorMsg
-				</div>
-			</div>
+  #parse ("azkaban/webapp/servlet/velocity/errormsg.vm")
 #else
-	#if ($error_message != "null")
-			<div class="alert alert-danger">$error_message</div>
-	#elseif ($success_message != "null")
-			<div class="alert alert-success">$success_message</div>
-	#end
-
-	## Alert message
-
-			<div class="alert alert-dismissable alert-messaging" id="messaging">
-				<button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
-				<p id="messaging-message"></p>
-			</div>
+  #parse ("azkaban/webapp/servlet/velocity/alerts.vm")
 		</div>
 
 	## Page header.

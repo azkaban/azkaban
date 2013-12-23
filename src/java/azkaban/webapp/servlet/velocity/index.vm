@@ -37,23 +37,8 @@
 #parse ("azkaban/webapp/servlet/velocity/nav.vm")
 
 		<div class="container">
-
-## Page error or success message.
-
-#if ($error_message != "null")
-			<div class="alert alert-danger">$error_message</div>
-#elseif ($success_message != "null")
-			<div class="alert alert-success">$success_message</div>
-#end
-
-## Alert message
-## TODO: See if this can be removed.
-
-			<div class="alert alert-dismissable alert-messaging" id="messaging">
-				<button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
-				<p id="messaging-message"></p>
-			</div>
-
+#parse ("azkaban/webapp/servlet/velocity/message.vm")
+#parse ("azkaban/webapp/servlet/velocity/alerts.vm")
 		</div>
 
 ## Page Header and project search form.

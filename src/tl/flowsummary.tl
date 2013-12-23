@@ -2,16 +2,16 @@
           <table class="table table-bordered table-condensed table-striped">
             <tbody>
               <tr>
-                <td class="flow-summary-key">Flow name</td>
-                <td class="flow-summary-value">{flowName}</td>
-                <td class="flow-summary-key">Project name</td>
-                <td class="flow-summary-value">{projectName}</td>
+                <td class="property-key">Flow name</td>
+                <td class="property-value-half">{flowName}</td>
+                <td class="property-key">Project name</td>
+                <td class="property-value-half">{projectName}</td>
               </tr>
               <tr>
-                <td class="flow-summary-key">Run As</td>
-                <td class="flow-summary-value">{user}</td>
-                <td class="flow-summary-key">Job Types Used</td>
-                <td class="flow-summary-value">{#jobTypes}{.} {/jobTypes}</td>
+                <td class="property-key">Run As</td>
+                <td class="property-value-half">{user}</td>
+                <td class="property-key">Job Types Used</td>
+                <td class="property-value-half">{#jobTypes}{.} {/jobTypes}</td>
               </tr>
             </tbody>
           </table>
@@ -29,22 +29,22 @@
 						<table class="table table-condensed table-bordered table-striped">
 							<tbody>
 								<tr>
-									<td class="flow-summary-key">Schedule ID</td>
-									<td class="flow-summary-value">{schedule.scheduleId}</td>
-									<td class="flow-summary-key">Submitted By</td>
-									<td class="flow-summary-value">{schedule.submitUser}</td>
+									<td class="property-key">Schedule ID</td>
+									<td class="property-value-half">{schedule.scheduleId}</td>
+									<td class="property-key">Submitted By</td>
+									<td class="property-value-half">{schedule.submitUser}</td>
 								</tr>
 								<tr>
-									<td class="flow-summary-key">First Scheduled to Run</td>
-									<td class="flow-summary-value">{schedule.firstSchedTime}</td>
-									<td class="flow-summary-key">Repeats Every</td>
-									<td class="flow-summary-value">{schedule.period}</td>
+									<td class="property-key">First Scheduled to Run</td>
+									<td class="property-value-half">{schedule.firstSchedTime}</td>
+									<td class="property-key">Repeats Every</td>
+									<td class="property-value-half">{schedule.period}</td>
 								</tr>
 								<tr>
-									<td class="flow-summary-key">Next Execution Time</td>
-									<td class="flow-summary-value">{schedule.nextExecTime}</td>
-									<td class="flow-summary-key">SLA</td>
-									<td class="flow-summary-value">
+									<td class="property-key">Next Execution Time</td>
+									<td class="property-value-half">{schedule.nextExecTime}</td>
+									<td class="property-key">SLA</td>
+									<td class="property-value-half">
 									{?schedule.slaOptions}
 										true 
 									{:else} 
@@ -73,27 +73,27 @@
             <table class="table table-bordered table-condensed table-striped">
               <tbody>
 								<tr>
-									<td class="flow-summary-key">Max Map Slots from Largest Job</td>
+									<td class="property-key">Max Map Slots from Largest Job</td>
 									<td>{lastRun.maxMapSlots}</td>
                 </tr>
                 <tr>
-									<td class="flow-summary-key">Max Reduce Slots from Largest Job</td>
+									<td class="property-key">Max Reduce Slots from Largest Job</td>
 									<td>{lastRun.maxReduceSlots}</td>
 								</tr>
 								<tr>
-									<td class="flow-summary-key">Total Map Slots from All Jobs</td>
+									<td class="property-key">Total Map Slots from All Jobs</td>
 									<td>{lastRun.totalMapSlots}</td>
                 </tr>
                 <tr>
-									<td class="flow-summary-key">Total Reduce Slots from All Jobs</td>
+									<td class="property-key">Total Reduce Slots from All Jobs</td>
 									<td>{lastRun.totalReduceSlots}</td>
 								</tr>
 								<tr>
-									<td class="flow-summary-key">Total Number of Jobs</td>
+									<td class="property-key">Total Number of Jobs</td>
 									<td>{lastRun.numJobs}</td>
                 </tr>
                 <tr>
-									<td class="flow-summary-key">Longest Task Time</td>
+									<td class="property-key">Longest Task Time</td>
 									<td>{lastRun.longestTaskTime}</td>
 								</tr>
               </tbody>

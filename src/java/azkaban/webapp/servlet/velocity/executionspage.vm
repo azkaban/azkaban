@@ -36,13 +36,7 @@
 #parse ("azkaban/webapp/servlet/velocity/nav.vm")
 
 		<div class="container">
-
-## Alert message
-
-			<div class="alert alert-dismissable alert-messaging" id="messaging">
-				<button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
-				<p id="messaging-message"></p>
-			</div>
+#parse ("azkaban/webapp/servlet/velocity/message.vm")
 		</div>
 
 ## Page header.

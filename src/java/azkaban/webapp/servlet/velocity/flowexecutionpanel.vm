@@ -186,7 +186,9 @@
 
 						<div class="modal-footer">
 #if (!$show_schedule || $show_schedule == 'true') 
-							<button type="button" class="btn btn-success" id="schedule-btn">Schedule</button>
+              <div class="pull-left">
+                <button type="button" class="btn btn-success" id="schedule-btn">Schedule</button>
+              </div>
 #end
 #*
 #if ($triggerPlugins.size() > 0)
