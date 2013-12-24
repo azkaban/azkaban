@@ -46,6 +46,31 @@
   margin-bottom: 15px;
 }
 
+.panel-list {
+  border: 0;
+}
+
+.list-group-collapse {
+  margin: 0;
+  .list-group-item {
+    border-radius: 0;
+    border-left: 0;
+    border-right: 0;
+    
+    &:first-child {
+      border-top: 0;
+    }
+    
+    &:last-child {
+      border-bottom: 0;
+    }
+
+    button {
+      margin-left: 3px;
+    }
+  }
+}
+
 .az-project-row {
 	cursor: pointer;
 }
