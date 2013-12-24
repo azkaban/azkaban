@@ -52,7 +52,7 @@
 
 		<div class="az-page-header">
 			<div class="container">
-				<h1>Scheduled Flows</h1>
+        <h1><a href="${context}/schedule">Scheduled Flows</a></h1>
 			</div>
 		</div>
 
