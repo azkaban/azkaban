@@ -28,8 +28,8 @@
 								<div class="alert alert-danger" id="upload-project-modal-error-msg">$error_msg</div>
 								<fieldset class="form-horizontal">
 									<div class="form-group">
-										<label for="path" class="col-sm-2 control-label">Job Archive</label>
-										<div class="col-sm-10">
+										<label for="file" class="col-sm-3 control-label">Job Archive</label>
+										<div class="col-sm-9">
 											<input type="file" class="form-control" id="file" name="file">
 										</div>
 									</div>
