@@ -23,7 +23,7 @@ azkaban.SchedulePanelView = Backbone.View.extend({
 	},
 
 	initialize: function(settings) {
-		$("#datepicker").css("backgroundColor", "transparent");
+		$("#timepicker").datetimepicker({pickDate: false});
 		$("#datepicker").datetimepicker({pickTime: false});
 	},
 
@@ -75,11 +75,9 @@ azkaban.SchedulePanelView = Backbone.View.extend({
 			}
 			else {
 				schedulePanelView.hideSchedulePanel();
-				messageDialogView.show("Flow Scheduled", data.message,
-					function() {
-						window.location.href = scheduleURL;
-					}
-				);
+				messageDialogView.show("Flow Scheduled", data.message, function() {
+          window.location.href = scheduleURL;
+        });
 			}
 		};
 

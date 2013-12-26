@@ -198,7 +198,7 @@
 #end
 *#
 							<button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
-							<button type="button" class="btn btn-primary" id="execute-btn">Execute</button>
+							<button type="button" class="btn btn-success" id="execute-btn">Execute</button>
 						</div><!-- /modal-footer -->
 					</div><!-- /modal-content -->
 				</div><!-- /modal-dialog -->

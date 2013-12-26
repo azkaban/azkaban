@@ -73,7 +73,7 @@
                 <div class="panel-heading flow-expander" id="${flow.id}">
 			#if (${exec})
                 <div class="pull-right">
-                  <button type="button" class="btn btn-xs btn-primary execute-flow" flowId="${flow.id}">Execute Flow</button>
+                  <button type="button" class="btn btn-xs btn-success execute-flow" flowId="${flow.id}">Execute Flow</button>
                   <a href="${context}/manager?project=${project.name}&flow=${flow.id}#executions" class="btn btn-info btn-xs">Executions</a>
                   <a href="${context}/manager?project=${project.name}&flow=${flow.id}#summary" class="btn btn-info btn-xs">Summary</a>
                 </div>
