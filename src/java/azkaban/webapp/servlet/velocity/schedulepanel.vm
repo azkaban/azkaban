@@ -28,10 +28,10 @@
 							<fieldset class="form-horizontal">
 								<div class="form-group">
                   <label class="col-sm-2 control-label">Time</label>
-                  <div class="col-sm-8">
+                  <div class="col-sm-7">
                     <input type="text" id="timepicker" class="form-control">
                   </div>
-                  <div class="col-sm-2">
+                  <div class="col-sm-3">
                     <select id="timezone" class="form-control">
                       <option>${timezone}</option>
                       <option>UTC</option>
@@ -55,7 +55,7 @@
                   <div class="col-sm-2">
                     <input id="period" type="text" size="2" value="1" class="form-control">
                   </div>
-                  <div class="col-sm-2">
+                  <div class="col-sm-3">
                     <select id="period_units" class="form-control">
                       <option value="d">Days</option>
                       <option value="h">Hours</option>
