@@ -80,21 +80,19 @@ azkaban.FlowTableView = Backbone.View.extend({
 			var name = job.id;
 			var level = job.level;
 			var nodeId = flowId + "-" + name;
-			
-			var tr = document.createElement("tr");
-			$(tr).addClass("jobrow");
-			var idtd = document.createElement("td");
-			$(idtd).addClass("tb-name");
-			$(idtd).addClass("tb-job-name");
-			idtd.flowId = flowId;
-			idtd.projectName = project;
-			idtd.jobName = name;
+		
+      var li = document.createElement("li");
+      $(li).addClass("list-group-item");
+			li.flowId = flowId;
+			li.projectName = project;
+			li.jobName = name;
 
 			if (execAccess) {
 				var hoverMenuDiv = document.createElement("div");
 				$(hoverMenuDiv).addClass("pull-right");
 				
 				var divRunJob = document.createElement("button");
+        $(divRunJob).attr('type', 'button');
 				$(divRunJob).addClass("btn");
 				$(divRunJob).addClass("btn-success");
 				$(divRunJob).addClass("btn-xs");
@@ -105,6 +103,7 @@ azkaban.FlowTableView = Backbone.View.extend({
 				$(hoverMenuDiv).append(divRunJob);
 				
 				var divRunWithDep = document.createElement("button");
+        $(divRunWithDep).attr('type', 'button');
 				$(divRunWithDep).addClass("btn");
 				$(divRunWithDep).addClass("btn-success");
 				$(divRunWithDep).addClass("btn-xs");
@@ -114,7 +113,7 @@ azkaban.FlowTableView = Backbone.View.extend({
 				divRunWithDep.flowId = flowId;
 				$(hoverMenuDiv).append(divRunWithDep);
 				
-				$(idtd).append(hoverMenuDiv);
+				$(li).append(hoverMenuDiv);
 			}
 			
 			var ida = document.createElement("a");
@@ -127,9 +126,8 @@ azkaban.FlowTableView = Backbone.View.extend({
 			$(ida).css("margin-left", level * 20);
 			$(ida).attr("href", requestURL + name);
 			
-			$(idtd).append(ida);
-			$(tr).append(idtd);
-			$(innerTable).append(tr);
+			$(li).append(ida);
+			$(innerTable).append(li);
 		}
 	},
 	

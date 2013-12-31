@@ -6,5 +6,6 @@
  - Fix sidebar on graph views.
  - Unify error messages.
  - Change chevron on My Projects list to proper expanders.
- - Redesign Project Page flows list.
  - Fix dependency hovering for job list on flows page
+ - Fix bootstrap-datetimepicker to support picking time durations
+ - Properly connect values of new datetimepickers with back-end

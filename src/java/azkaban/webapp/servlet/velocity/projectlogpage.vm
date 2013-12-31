@@ -68,7 +68,17 @@
 							</div>
 							Audit Logs
 						</div>
-						<table class="table table-striped" id="logTable">
+            <table class="table table-striped" id="logTable">
+              <thead>
+                <tr>
+                  <th>Time</th>
+                  <th>User</th>
+                  <th>Type</th>
+                  <th>Message</th>
+                </tr>
+              </thead>
+              <tbody>
+              </tbody>
 						</table>
 					</div>
 				</div>

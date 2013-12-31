@@ -48,9 +48,9 @@
         <div class="row">
           <div class="col-lg-6">
 #if ($allProjects)
-            <h1>All Projects</h1>
+            <h1><a href="${context}/index">All Projects</a></h1>
 #else
-            <h1>My Projects</h1>
+            <h1><a href="${context}/index">My Projects</a></h1>
 #end
           </div>
           <div class="col-lg-6">

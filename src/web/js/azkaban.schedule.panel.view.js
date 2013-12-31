@@ -23,7 +23,7 @@ azkaban.SchedulePanelView = Backbone.View.extend({
 	},
 
 	initialize: function(settings) {
-		$("#datepicker").css("backgroundColor", "transparent");
+		$("#timepicker").datetimepicker({pickDate: false});
 		$("#datepicker").datetimepicker({pickTime: false});
 	},
 
@@ -39,12 +39,12 @@ azkaban.SchedulePanelView = Backbone.View.extend({
 	},
 	
 	scheduleFlow: function() {
-		var hourVal = $('#hour').val();
-		var minutesVal = $('#minutes').val();
-		var ampmVal = $('#am_pm').val();
+    var timeVal = $('#timepicker').val();
 		var timezoneVal = $('#timezone').val();
+
 		var dateVal = $('#datepicker').val();
-		var is_recurringVal = $('#is_recurring').val();
+		
+    var is_recurringVal = $('#is_recurring').val();
 		var periodVal = $('#period').val();
 		var periodUnits = $('#period_units').val();
 	
@@ -53,9 +53,10 @@ azkaban.SchedulePanelView = Backbone.View.extend({
 
 		console.log("Creating schedule for " + projectName + "." + 
 				scheduleData.flow);
+
+    var scheduleTime = moment(timeVal, 'h/mm A').format('h,mm,A,') + timezoneVal;
+    console.log(scheduleTime);
 		
-		var scheduleTime = $('#hour').val() + "," + $('#minutes').val() + "," + 
-				$('#am_pm').val() + "," + $('#timezone').val();
 		var scheduleDate = $('#datepicker').val();
 		var is_recurring = document.getElementById('is_recurring').checked 
 				? 'on' : 'off'; 
@@ -75,11 +76,9 @@ azkaban.SchedulePanelView = Backbone.View.extend({
 			}
 			else {
 				schedulePanelView.hideSchedulePanel();
-				messageDialogView.show("Flow Scheduled", data.message,
-					function() {
-						window.location.href = scheduleURL;
-					}
-				);
+				messageDialogView.show("Flow Scheduled", data.message, function() {
+          window.location.href = scheduleURL;
+        });
 			}
 		};
 

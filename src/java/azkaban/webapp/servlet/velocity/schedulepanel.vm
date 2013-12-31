@@ -25,60 +25,51 @@
 							<h4 class="modal-title">Schedule Flow Options</h4>
 						</div><!-- /modal-header -->
 						<div class="modal-body">
-							<fieldset>
+							<fieldset class="form-horizontal">
 								<div class="form-group">
-									<label>Schedule Time</label>
-									<div class="form-inline">
-										<div class="form-group">
-											<input id="hour" type="text" size="2" value="12" class="form-control">
-										</div>
-										<div class="form-group">
-											<input id="minutes" type="text" size="2" value="00" class="form-control">
-										</div>
-										<div class="form-group">
-											<select id="am_pm" class="form-control">
-												<option>pm</option>
-												<option>am</option>
-											</select>
-										</div>
-										<div class="form-group">
-											<select id="timezone" class="form-control">
-												<option>${timezone}</option>
-												<option>UTC</option>
-											</select>
-										</div>
-									</div>
+                  <label class="col-sm-2 control-label">Time</label>
+                  <div class="col-sm-7">
+                    <input type="text" id="timepicker" class="form-control">
+                  </div>
+                  <div class="col-sm-3">
+                    <select id="timezone" class="form-control">
+                      <option>${timezone}</option>
+                      <option>UTC</option>
+                    </select>
+                  </div>
 								</div>
 								<div class="form-group">
-									<label>Schedule Date</label>
-									<input type="text" id="datepicker" class="form-control">
+                  <label class="col-sm-2 control-label">Date</label>
+                  <div class="col-sm-10">
+                    <input type="text" id="datepicker" class="form-control">
+                  </div>
 								</div>
 								<div class="form-group">
-									<label>Recurrence</label>
-									<div class="form-inline">
-										<div class="checkbox">
-											<input id="is_recurring" type="checkbox" checked="checked">
-											<label>repeat every</label>
-										</div>
-										<div class="form-group">
-											<input id="period" type="text" size="2" value="1" class="form-control">
-										</div>
-										<div class="form-group">
-											<select id="period_units" class="form-control">
-												<option value="d">Days</option>
-												<option value="h">Hours</option>
-												<option value="m">Minutes</option>
-												<option value="M">Months</option>
-												<option value="w">Weeks</option>
-											</select>
-										</div>
-									</div>
+                  <label class="col-sm-2">Recurrence</label>
+                  <div class="col-sm-3">
+                    <div class="checkbox">
+                      <input id="is_recurring" type="checkbox" checked="checked">
+                      <label>repeat every</label>
+                    </div>
+                  </div>
+                  <div class="col-sm-2">
+                    <input id="period" type="text" size="2" value="1" class="form-control">
+                  </div>
+                  <div class="col-sm-3">
+                    <select id="period_units" class="form-control">
+                      <option value="d">Days</option>
+                      <option value="h">Hours</option>
+                      <option value="m">Minutes</option>
+                      <option value="M">Months</option>
+                      <option value="w">Weeks</option>
+                    </select>
+                  </div>
 								</div>
 							</fieldset>
 						</div>
 						<div class="modal-footer">
 							<button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
-							<button type="button" class="btn btn-primary" id="schedule-button">Schedule</button>
+							<button type="button" class="btn btn-success" id="schedule-button">Schedule</button>
 						</div>
 					</div>
 				</div>
