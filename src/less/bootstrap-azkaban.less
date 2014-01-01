@@ -550,3 +550,50 @@ td {
     margin-bottom: 0;
   }
 }
+
+// TODO: Rename this as #job-list
+#list {
+  a {
+    &.nodedisabled,
+    &.DISABLED {
+      opacity: 0.3;
+    }
+
+    &.DISABLED .icon {
+      background-position: 16px 0px;
+    }
+
+    &.READY .icon {
+      background-position: 16px 0px;
+    }
+
+    &.QUEUED .icon {
+      opacity: 0.5;
+      background-position: 32px 0px;
+    }
+
+    &.RUNNING .icon {
+      background-position: 32px 0px;
+    }
+
+    &.SUCCEEDED .icon {
+      background-position: 48px 0px;
+    }
+
+    &.FAILED .icon {
+      background-position: 0px 0px;
+    }
+
+    &.KILLED .icon {
+      background-position: 0px 0px;
+    }
+
+    .icon {
+      float: left;
+      width: 16px;
+      height: 16px;
+      background-image: url("./images/dot-icon.png");
+      background-position: 16px 0px;
+    }
+  }
+}
