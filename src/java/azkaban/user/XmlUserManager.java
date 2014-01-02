@@ -215,7 +215,7 @@ public class XmlUserManager implements UserManager {
 		Node permissionAttr = roleAttrMap.getNamedItem(ROLEPERMISSIONS_ATTR);
 		if (permissionAttr == null) {
 			throw new RuntimeException(
-					"Error loading user. The password doesn't exist for "+ permissionAttr);
+					"Error loading role. The role 'permissions' attribute doesn't exist");
 		}
 
 		String roleName = roleNameAttr.getNodeValue();
