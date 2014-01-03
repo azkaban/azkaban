@@ -56,6 +56,7 @@ public class XmlUserManager implements UserManager {
 	public static final String ROLEPERMISSIONS_ATTR = "permissions";
 	public static final String USERNAME_ATTR = "username";
 	public static final String PASSWORD_ATTR = "password";
+	public static final String EMAIL_ATTR = "email";
 	public static final String ROLES_ATTR = "roles";
 	public static final String PROXY_ATTR = "proxy";
 	public static final String GROUPS_ATTR = "groups";
@@ -150,6 +151,7 @@ public class XmlUserManager implements UserManager {
 		if (userNameAttr == null) {
 			throw new RuntimeException("Error loading user. The '" + USERNAME_ATTR + "' attribute doesn't exist");
 		}
+		
 		Node passwordAttr = userAttrMap.getNamedItem(PASSWORD_ATTR);
 		if (passwordAttr == null) {
 			throw new RuntimeException("Error loading user. The '" + PASSWORD_ATTR + "' attribute doesn't exist");
@@ -196,6 +198,11 @@ public class XmlUserManager implements UserManager {
 				user.addGroup(group);
 			}
 		}
+		
+		Node emailAttr = userAttrMap.getNamedItem(EMAIL_ATTR);
+		if (emailAttr != null) {
+			user.setEmail(emailAttr.getNodeValue());
+		}
 	}
 
 	private void parseRoleTag(Node node, HashMap<String, Role> roles) {
@@ -208,7 +215,7 @@ public class XmlUserManager implements UserManager {
 		Node permissionAttr = roleAttrMap.getNamedItem(ROLEPERMISSIONS_ATTR);
 		if (permissionAttr == null) {
 			throw new RuntimeException(
-					"Error loading user. The password doesn't exist for "+ permissionAttr);
+					"Error loading role. The role 'permissions' attribute doesn't exist");
 		}
 
 		String roleName = roleNameAttr.getNodeValue();
