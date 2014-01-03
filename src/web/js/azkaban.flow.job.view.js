@@ -137,7 +137,11 @@ azkaban.JobListView = Backbone.View.extend({
 			var a = document.createElement("a");
 			$(a).addClass('list-group-item').addClass('job');
       $(a).attr('href', '#');
-			$(a).text(nodeArray[i].id);
+      
+      var iconDiv = document.createElement('div');
+      $(iconDiv).addClass('icon');
+      $(a).append(iconDiv);
+			$(a).append(nodeArray[i].id);
 			$(list).append(a);
 			a.jobid = nodeArray[i].id;
 			this.listNodes[nodeArray[i].id] = a;
