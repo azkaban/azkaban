@@ -44,6 +44,7 @@ import azkaban.user.Permission;
 import azkaban.user.User;
 import azkaban.user.Permission.Type;
 import azkaban.utils.FileIOUtils.LogData;
+import azkaban.utils.LogSummary;
 import azkaban.webapp.AzkabanWebServer;
 import azkaban.webapp.session.Session;
 
@@ -71,7 +72,7 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 		}
 		else if (hasParam(req, "execid")) {
 			if (hasParam(req, "job")) {
-				handleExecutionJobPage(req, resp, session);
+				handleExecutionJobDetailsPage(req, resp, session);
 			}
 			else {
 				handleExecutionFlowPage(req, resp, session);
@@ -82,8 +83,8 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 		}
 	}
 	
-	private void handleExecutionJobPage(HttpServletRequest req, HttpServletResponse resp, Session session) throws ServletException, IOException {
-		Page page = newPage(req, resp, session, "azkaban/webapp/servlet/velocity/joblogpage.vm");
+	private void handleExecutionJobDetailsPage(HttpServletRequest req, HttpServletResponse resp, Session session) throws ServletException, IOException {
+		Page page = newPage(req, resp, session, "azkaban/webapp/servlet/velocity/jobdetailspage.vm");
 		User user = session.getUser();
 		int execId = getIntParam(req, "execid");
 		String jobId = getParam(req, "job");
@@ -96,7 +97,7 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 		try {
 			flow = executorManager.getExecutableFlow(execId);
 			if (flow == null) {
-				page.add("errorMsg", "Error loading executing flow " + execId + " not found.");
+				page.add("errorMsg", "Error loading executing flow " + execId + ": not found.");
 				page.render();
 				return;
 			}
@@ -261,6 +262,9 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 				}
 				else if (ajaxName.equals("fetchExecJobLogs")) {
 					ajaxFetchJobLogs(req, resp, ret, session.getUser(), exFlow);
+				}
+				else if (ajaxName.equals("fetchExecJobSummary")) {
+					ajaxFetchJobSummary(req, resp, ret, session.getUser(), exFlow);
 				}
 				else if (ajaxName.equals("retryFailedJobs")) {
 					ajaxRestartFailed(req, resp, ret, session.getUser(), exFlow);
@@ -437,6 +441,53 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 				ret.put("length", data.getLength());
 				ret.put("offset", data.getOffset());
 				ret.put("data", data.getData());
+			}
+		} catch (ExecutorManagerException e) {
+			throw new ServletException(e);
+		}
+	}
+	
+	/**
+	 * Gets the job summary.
+	 * 
+	 * @param req
+	 * @param resp
+	 * @param user
+	 * @param exFlow
+	 * @throws ServletException
+	 */
+	private void ajaxFetchJobSummary(HttpServletRequest req, HttpServletResponse resp, HashMap<String, Object> ret, User user, ExecutableFlow exFlow) throws ServletException {
+		Project project = getProjectAjaxByPermission(ret, exFlow.getProjectId(), user, Type.READ);
+		if (project == null) {
+			return;
+		}
+		
+		String jobId = this.getParam(req, "jobId");
+		resp.setCharacterEncoding("utf-8");
+
+		try {
+			ExecutableNode node = exFlow.getExecutableNode(jobId);
+			if (node == null) {
+				ret.put("error", "Job " + jobId + " doesn't exist in " + exFlow.getExecutionId());
+				return;
+			}
+			
+			int attempt = this.getIntParam(req, "attempt", node.getAttempt());
+			LogData data = executorManager.getExecutionJobLog(exFlow, jobId, 0, Integer.MAX_VALUE, attempt);
+			
+			LogSummary summary = new LogSummary(data);
+			ret.put("commandProperties", summary.getCommandProperties());
+			
+			String jobType = summary.getJobType();
+			
+			if (jobType.contains("pig")) {
+				ret.put("summaryTableHeaders", summary.getPigSummaryTableHeaders());
+				ret.put("summaryTableData", summary.getPigSummaryTableData());
+				ret.put("statTableHeaders", summary.getPigStatTableHeaders());
+				ret.put("statTableData", summary.getPigStatTableData());
+			} else if (jobType.contains("hive")) {
+				ret.put("hiveQueries", summary.getHiveQueries());
+				ret.put("hiveQueryJobs", summary.getHiveQueryJobs());
 			}
 		} catch (ExecutorManagerException e) {
 			throw new ServletException(e);

@@ -13,51 +13,43 @@
  * License for the specific language governing permissions and limitations under
  * the License.
 *#
-<!DOCTYPE html> 
-<html>
+
+<!DOCTYPE html>
+<html lang="en">
   <head>
-    <head>
-    <title>#appname()</title>
-    <link rel="stylesheet" type="text/css" href="${context}/css/azkaban.css">    
-    <link rel="shortcut icon" href="${context}/favicon.ico" />
-	<script type="text/javascript" src="${context}/js/jquery/jquery-1.9.1.js"></script>    
-	<script type="text/javascript" src="${context}/js/underscore-1.4.4-min.js"></script>
-	<script type="text/javascript" src="${context}/js/namespace.js"></script>
-	<script type="text/javascript" src="${context}/js/backbone-0.9.10-min.js"></script>
-	<script type="text/javascript" src="${context}/js/jquery.simplemodal-1.4.4.js"></script>
+
+#parse("azkaban/webapp/servlet/velocity/style.vm")
+#parse("azkaban/webapp/servlet/velocity/javascript.vm")
 
     <script type="text/javascript" src="${context}/js/azkaban.login.js"></script>
-    #parse( "azkaban/webapp/servlet/velocity/style.vm" )
-	<script type="text/javascript">
-		var contextURL = "${context}";
-	</script>
+		<script type="text/javascript">
+			var contextURL = "${context}";
+		</script>
   </head>
   <body>
-    <div class="header">
-    #parse("azkaban/webapp/servlet/velocity/title.vm" )
-    </div>
-    
-    <div id="login" class="shadow-box">
-    	<div class="shadow-box-header">
-    		<div class="box-title">Login</div>
- 		</div>
-    	<br>
-    	<div id="errorMsg" class="box-error-message">$errorMsg</div>
-    	<div id="loginForm" class="login-form">
-    	    <div id="login-password">
-		    	<p class="login-label">Username</p>
-		    	<input id="username" type="text" name="username" class="login-textbox" ></input>
-	
-				<br/>
-		    	<p class="login-label">Password</p>
-		    	<input id="password" type="password" name="password" class="login-textbox"></input>
-			</div>
 
-	    	<div class="shadow-box-footer">
-	    	  <div id="loginSubmit" class="btn2 button1" class="login-submit">Login</div>
-	    	</div>
-    	</div>
-    </div>
+#set ($current_page = "all")
+#set ($navbar_disabled = 1)
+#parse ("azkaban/webapp/servlet/velocity/nav.vm")
+
+		<div class="container">
+      <div class="login">
+        <div class="alert alert-danger" id="error-msg"></div>
+        <div class="well">
+          <form id="login-form" role="form">
+            <fieldset>
+              <legend>Login</legend>
+              <input type="text" class="form-control" name="username" id="username" placeholder="Username">
+              <input type="password" class="form-control" name="password" id="password" placeholder="Password">
+              <button type="button" class="btn btn-primary btn-lg btn-block" id="login-submit">Login</button>
+            </fieldset>
+          </form>
+        </div><!-- /.well -->
+      </div><!-- /.login -->
+
+#parse("azkaban/webapp/servlet/velocity/footer.vm")
+
+		</div><!-- /container -->
   </body>
 </html>
 

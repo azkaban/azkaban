@@ -1,0 +1,38 @@
+#*
+ * Copyright 2012 LinkedIn Corp.
+ * 
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not
+ * use this file except in compliance with the License. You may obtain a copy of
+ * the License at
+ * 
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations under
+ * the License.
+*#
+
+
+ 	## Graph view.
+ 
+			<div class="row" id="graphView">
+				<div class="col-lg-4">
+					<div class="panel panel-default" id="jobList">
+						<div class="panel-heading">
+							<input id="filter" type="text" placeholder="Job Filter" class="form-control">
+						</div>
+						<div id="list" class="list-group"></div>
+						<div class="panel-footer">
+							<button type="button" class="btn btn-sm btn-default" id="resetPanZoomBtn">Reset Pan Zoom</button>
+						</div>
+					</div>
+				</div>
+				<div class="col-lg-8">
+					<div id="svgDiv" class="well well-clear well-sm">
+						<svg id="flow-graph" xmlns="http://www.w3.org/2000/svg" version="1.1" shape-rendering="optimize-speed" text-rendering="optimize-speed">
+						</svg>
+					</div>
+				</div>
+			</div>

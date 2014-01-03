@@ -156,7 +156,12 @@ azkaban.SvgGraphView = Backbone.View.extend({
 			var x = node.x - offset;
 			var y = node.y - offset;
 			
-			$(this.svgGraph).svgNavigate("transformToBox", {x: x, y: y, width: widthHeight, height: widthHeight});
+			$(this.svgGraph).svgNavigate("transformToBox", {
+        x: x, 
+        y: y, 
+        width: widthHeight, 
+        height: widthHeight
+      });
 		}
 	},
 	handleStatusUpdate: function(evt) {
@@ -294,7 +299,13 @@ azkaban.SvgGraphView = Backbone.View.extend({
 	},
 	resetPanZoom : function(duration) {
 		var bounds = this.graphBounds;
-		var param = {x: bounds.minX, y: bounds.minY, width: (bounds.maxX - bounds.minX), height: (bounds.maxY - bounds.minY), duration: duration };
+		var param = {
+      x: bounds.minX, 
+      y: bounds.minY, 
+      width: (bounds.maxX - bounds.minX), 
+      height: (bounds.maxY - bounds.minY), 
+      duration: duration
+    };
 
 		$(this.svgGraph).svgNavigate("transformToBox", param);
 	}

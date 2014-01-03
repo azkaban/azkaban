@@ -1,0 +1,600 @@
+// Since the azkaban navbar no longer has the 20px bottom margin so that the
+// page header sits flush below the navbar, add a 20px top margin to the login
+// form.
+.login {
+  max-width: 360px;
+  margin: 20px auto;
+  .form-control {
+    position: relative;
+    font-size: 16px;
+    height: auto;
+    padding: 10px;
+    -webkit-box-sizing: border-box;
+       -moz-box-sizing: border-box;
+            box-sizing: border-box;
+
+    &:focus {
+      z-index: 2;
+    }
+  }
+
+  input[type="text"] {
+    margin-bottom: -1px;
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+  }
+
+  input[type="password"] {
+    margin-bottom: 20px;
+    border-top-left-radius: 0;
+    border-top-right-radius: 0;
+  }
+}
+
+// Wide modal used for certain panels such as executing flow panel.
+.modal-wide .modal-dialog {
+  width: 80%;
+}
+
+// Hide messaging alert by default.
+.alert-messaging {
+  display: none;
+}
+
+// Add additional space under navs.
+.nav-tabs, .nav-pills {
+  margin-bottom: 15px;
+}
+
+.panel-list {
+  border: 0;
+}
+
+.list-group-collapse {
+  margin: 0;
+  .list-group-item {
+    border-radius: 0;
+    border-left: 0;
+    border-right: 0;
+    
+    &:first-child {
+      border-top: 0;
+    }
+    
+    &:last-child {
+      border-bottom: 0;
+    }
+
+    button {
+      margin-left: 3px;
+    }
+  }
+}
+
+.az-project-row {
+	cursor: pointer;
+}
+
+// Flow panel heading.
+.flow-expander {
+  cursor: pointer;
+}
+
+table.table-properties {
+  table-layout: fixed;
+  word-wrap: break-word;
+}
+
+// Flow summary.
+td.property-key {
+  width: 25%;
+  font-weight: bold;
+}
+
+td.property-value-half {
+  width: 25%;
+}
+
+// Job table.
+#all-jobs {
+  .tb-name {
+    width: 70%;
+    border-bottom-width: 0;
+    border-bottom-style: none;
+  }
+
+  .tb-up-date {
+    width: 140px;
+    min-width: 130px;
+  }
+
+  .tb-owner {
+    width: 10%;
+    min-width: 95px;
+  }
+}
+
+// Properties table.
+.properties-table {
+  .all-jobs .tb-pname {
+  }
+
+  .all-jobs .tb-pvalue {
+  }
+}
+
+// Permissions page table.
+.permission-table {
+  .tb-perm {
+    width: 41px;
+    margin: 0px;
+  }
+
+  .tb-admin {
+    width: 41px;
+    margin: 0px;
+  }
+
+  .tb-read {
+    width: 33px;
+    margin: 0px;
+  }
+
+  .tb-write {
+    width: 34px;
+    margin: 0px;
+  }
+
+  .tb-execute {
+    width: 51px;
+    margin: 0px;
+  }
+
+  .tb-schedule {
+    margin: 0px;
+    width: 60px;
+  }
+
+  .tb-action {
+    margin: 0px;
+    width: 70px;
+    min-width: 70px;
+    max-width: 70px;
+  }
+}
+
+// Table of executions.
+.executions-table {
+  th {
+    &.date {
+      width: 140px;
+    }
+
+    &.execid {
+      width: 100px;
+    }
+
+    &.project {
+      width: 200px;
+    }
+
+    &.user {
+      width: 60px;
+    }
+
+    &.elapse {
+      width: 90px;
+    }
+
+    &.status {
+      width: 100px;
+    }
+
+    &.details {
+      width: 10px;
+    }
+
+    &.action {
+      width: 20px;
+    }
+  }
+
+  td {
+    &.timeline {
+      width: 280px;
+      padding: 0px;
+      height: 100%;
+      vertical-align: bottom;
+      margin: 0px;
+    }
+
+    &.execId {
+      font-weight: bold;
+    }
+  }
+}
+
+@media (min-width: 768px) {
+  .form-horizontal .control-label-center {
+    text-align: center;
+  }
+}
+
+.navbar-logo {
+  float: left;
+  padding: 15px 15px;
+  font-size: 18px;
+  line-height: 20px;
+
+  a {
+    &:hover,
+    &:focus {
+      text-decoration: none;
+    }
+  }
+}
+
+@media (min-width: 768px) {
+  .navbar > .container .navbar-logo {
+    margin-left: -15px;
+  }
+}
+
+@media (min-width: 768px) {
+  .navbar-enviro {
+    width: auto;
+  }
+}
+
+.navbar-enviro {
+  margin: 25px 20px 0px 10px;
+     
+  .navbar-enviro-name {
+    color: #ff3601;
+    font-family: Helvetica, Arial, Sans-Serif;
+    font-size: 118.75%;
+    font-weight: bold;
+  }
+       
+  .navbar-enviro-server {
+    color: #999;
+    font-family: Helvetica, Arial, Sans-Serif;
+    font-size: 75%;
+  }
+}
+
+// Restyle navbar-inverse for Azkaban navbar.
+.navbar-inverse {
+  background-color: #383838;
+  border-top: 5px solid #ff3601;
+  margin-bottom: 0;
+
+  .navbar-logo {
+    background: url('../../images/logo.png') top left no-repeat;
+    color: #ffffff;
+    font-size: 156.25%;
+    font-weight: bold;
+    margin: 15px 0.6% 15px 4.75%;
+    padding: 12px 0 11px 42px;
+
+    a {
+      color: #ffffff;
+      &:hover,
+      &:focus {
+        color: #ffffff;
+        background-color: transparent;
+      }
+    }
+  }
+
+  .navbar-nav {
+    font-family: Arial;
+    font-size: 81.25%;
+
+    > li {
+      padding: 25px 12px 25px 12px;
+      cursor: pointer;
+      &:hover {
+        background-color: rgba(0, 0, 0, 0.1);
+      }
+    }
+
+    > li > a {
+      padding: 0px;
+      color: #ccc;
+    }
+
+    > .active {
+      background-color: rgba(0, 0, 0, 0.1);
+    }
+
+    > .active > a {
+      color: #fff;
+      font-weight: bold;
+      background-color: transparent;
+      border-bottom: 1px solid #ff3601;
+      &:hover {
+        background-color: transparent;
+      }
+    }
+
+    > .active > .open {
+      background-color: transparent;
+    }
+  }
+}
+
+.az-page-header {
+  padding: 5px 0 10px;
+  margin: 0 0 30px;
+  border-bottom: 1px solid #dddddd;
+  background-color: #f4f4f4;
+
+  h1 {
+    font-size: 32px;
+    margin-bottom: 5px;
+  }
+  
+  .az-page-header-form {
+    margin-top: 20px;
+  }
+
+  .az-exflow-stats {
+    margin-top: 10px;
+  }
+
+  .editable {
+    margin: 0px;
+    cursor: pointer;
+    &:hover {
+      background-color: #fcfcfc;
+    }
+    &.editable-placeholder {
+      color: #a0a0a0;
+    }
+  }
+
+  .editable-form {
+    display: none;
+  }
+}
+
+.contextMenu {
+  position: absolute;
+  background-color: #FFF;
+  border: 1px solid #DDD;
+  -moz-box-shadow: 2px 2px 5px #888;
+  -webkit-box-shadow: 2px 2px 5px #888;
+  box-shadow: 2px 2px 5px #888;
+  z-index: 2010;
+
+  ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  li {
+    &.menuitem {
+      background-color: #FFF;
+      padding: 3px 20px;
+      min-width: 50px;
+      font-size: 10pt;
+      cursor: pointer;
+    
+      .expandSymbol {
+        background-image: url("../css/images/ui-icons_cccccc_256x240.png");
+        background-position: -32px -16px;
+        height: 16px;
+        width: 16px;
+        float:right;
+      }
+      
+      &:hover {
+        background-color: #555;
+        color: #FFF;
+      }
+    }
+
+    &.break {
+      border-bottom: 1px solid #BBB;
+      margin: 2px 5px;
+    }
+  }
+}
+
+.well-clear {
+  background-color: transparent;
+}
+
+#flow-graph {
+  width: 750px;
+  height: 500px;
+}
+
+#flow-executing-graph {
+  width: 100%;
+  height: 500px;
+}
+
+.flow-progress {
+	width: 280px;
+	margin: 4px;
+  background-color: #f5f5f5;
+  height: 24px;
+  border-radius: 4px;
+  -webkit-box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
+          box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.flow-progress-bar {
+	height: 100%;
+  background-color: #ccc;
+  border-radius: 4px;
+  -webkit-box-shadow: inset 0 -1px 0 rgba(0, 0, 0, 0.15);
+          box-shadow: inset 0 -1px 0 rgba(0, 0, 0, 0.15);
+  -webkit-transition: width 0.6s ease;
+          transition: width 0.6s ease;
+
+  &.attempt {
+    opacity: 0.70;
+    &:hover {
+      opacity: 1;
+    }
+  }
+
+  &.SUCCEEDED {
+    background-color: #5cb85c;
+  }
+
+  &.FAILED {
+    background-color: #d9534f;
+  }
+
+  &.RUNNING {
+    background-color: #3398cc;	
+    background-image: -webkit-gradient(linear, 0 100%, 100% 0, color-stop(0.25, rgba(255, 255, 255, 0.15)), color-stop(0.25, transparent), color-stop(0.5, transparent), color-stop(0.5, rgba(255, 255, 255, 0.15)), color-stop(0.75, rgba(255, 255, 255, 0.15)), color-stop(0.75, transparent), to(transparent));
+    background-image: -webkit-linear-gradient(45deg, rgba(255, 255, 255, 0.15) 25%, transparent 25%, transparent 50%, rgba(255, 255, 255, 0.15) 50%, rgba(255, 255, 255, 0.15) 75%, transparent 75%, transparent);
+    background-image: -moz-linear-gradient(45deg, rgba(255, 255, 255, 0.15) 25%, transparent 25%, transparent 50%, rgba(255, 255, 255, 0.15) 50%, rgba(255, 255, 255, 0.15) 75%, transparent 75%, transparent);
+    background-image: linear-gradient(45deg, rgba(255, 255, 255, 0.15) 25%, transparent 25%, transparent 50%, rgba(255, 255, 255, 0.15) 50%, rgba(255, 255, 255, 0.15) 75%, transparent 75%, transparent);
+    background-size: 40px 40px;
+    -webkit-animation: progress-bar-stripes 2s linear infinite;
+            animation: progress-bar-stripes 2s linear infinite;
+  }
+
+  &.QUEUED {
+    background-color: #009fc9;
+  }
+}
+
+td {
+  .status {
+    -moz-border-radius: 2px;
+    border-radius: 2px;
+
+    padding: 2px 2px;
+    color: #FFF;
+    text-align: center;
+    margin-top: 2px;
+    
+    &.SUCCEEDED {
+      background-color: #5cb85c;
+    }
+
+    &.FAILED {
+      background-color: #d9534f;
+    }
+
+    &.PAUSED {
+      background-color: #c82123;
+    }
+
+    &.READY {
+      background-color: #ccc;
+    }
+
+    &.RUNNING {
+      background-color: #3398cc;	
+    }
+
+    &.FAILED_FINISHING {
+      background-color: #f19153;	
+    }
+
+    &.DISABLED {
+      background-color: #aaa;	
+    }
+
+    &.SKIPPED {
+      background-color: #aaa;	
+    }
+
+    &.KILLED {
+      background-color: #d9534f;
+    }
+
+    &.UNKNOWN {
+      background-color: #ccc;
+    }
+  }
+}
+
+.nav {
+	.nav-button {
+		margin-left: 5px;
+	}
+}
+
+.log-viewer {
+  padding: 0;
+  background-color: #fcfcfc;
+
+  pre {
+    margin: 0;
+    border: 0;
+    height: 500px;
+    font-size: 12px;
+    background-color: transparent;
+    overflow: auto;
+    width: auto;
+    word-wrap: normal;
+    white-space: pre;
+  }
+}
+
+.panel-body-stats {
+  padding: 0;
+  overflow: auto;
+
+  table {
+    margin-bottom: 0;
+  }
+}
+
+// TODO: Rename this as #job-list
+#list {
+  a {
+    &.nodedisabled,
+    &.DISABLED {
+      opacity: 0.3;
+    }
+
+    &.DISABLED .icon {
+      background-position: 16px 0px;
+    }
+
+    &.READY .icon {
+      background-position: 16px 0px;
+    }
+
+    &.QUEUED .icon {
+      opacity: 0.5;
+      background-position: 32px 0px;
+    }
+
+    &.RUNNING .icon {
+      background-position: 32px 0px;
+    }
+
+    &.SUCCEEDED .icon {
+      background-position: 48px 0px;
+    }
+
+    &.FAILED .icon {
+      background-position: 0px 0px;
+    }
+
+    &.KILLED .icon {
+      background-position: 0px 0px;
+    }
+
+    .icon {
+      float: left;
+      width: 16px;
+      height: 16px;
+      margin: 2px 4px 0px -5px;
+      background-image: url("./images/dot-icon.png");
+      background-position: 16px 0px;
+    }
+  }
+}

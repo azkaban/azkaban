@@ -16,9 +16,9 @@
 
 function addClass(el, name) {
 	if (!hasClass(el, name)) { 
-			var classes = el.getAttribute("class");
-			classes += classes ? ' ' + name : '' +name;
-			el.setAttribute("class", classes);
+		var classes = el.getAttribute("class");
+		classes += classes ? ' ' + name : '' +name;
+		el.setAttribute("class", classes);
 	}
 }
 
@@ -34,5 +34,5 @@ function hasClass(el, name) {
 	if (classes == null) {
 		return false;
 	}
-   return new RegExp('(\\s|^)'+name+'(\\s|$)').test(classes);
+	return new RegExp('(\\s|^)'+name+'(\\s|$)').test(classes);
 }

@@ -1,0 +1,8 @@
+ Azkaban 3 UI Issues
+ ===================
+ 
+ - Make log view fit screen size
+ - Make graph view fit screen size
+ - Unify error messages.
+ - Change chevron on My Projects list to proper expanders.
+ - Fix dependency hovering for job list on flows page

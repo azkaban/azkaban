@@ -14,52 +14,63 @@
  * the License.
 *#
 
-<script type="text/javascript" src="${context}/js/azkaban.date.utils.js"></script>  
-<script type="text/javascript" src="${context}/js/azkaban.schedule.panel.view.js"></script>
-
-<div id="scheduleModalBackground" class="modalBackground3">
-	<div id="schedule-panel-top">
-		<div id="schedule-panel" class="modal">
-			<a href='#' title='Close' class='modal-close closeSchedule'>x</a>
-			<h3>Schedule Flow Options</h3>
-
-			<div id="scheduleInfo">
-				<dl>
-					<dt>Schedule Time</dt>
-					<dd>
-						<input id="hour" type="text" size="2" value="12"/>
-						<input id="minutes" type="text" size="2" value="00"/>
-						<select id="am_pm">
-						  <option>pm</option>
-						  <option>am</option>
-						</select>
-						<select id="timezone">
-						  <option>${timezone}</option>
-						  <option>UTC</option>
-						</select>
-					</dd>
-					<dt>Schedule Date</dt><dd><input type="text" id="datepicker" /></dd>
-					<dt>Recurrence</dt>
-					<dd>
-						<input id="is_recurring" type="checkbox" checked  />
-						<span>repeat every</span>
-					 	<input id="period" type="text" size="2" value="1"/>
-						<select id="period_units">
-						  <option value="d">Days</option>
-						  <option value="h">Hours</option>
-						  <option value="m">Minutes</option>
-						  <option value="M">Months</option>
-						  <option value="w">Weeks</option>
-						</select>
-					</dd>
-				</dl>
+			<script type="text/javascript" src="${context}/js/azkaban.date.utils.js"></script>  
+			<script type="text/javascript" src="${context}/js/azkaban.schedule.panel.view.js"></script>
+			
+			<div class="modal" id="schedule-modal">
+				<div class="modal-dialog">
+					<div class="modal-content">
+						<div class="modal-header">
+							<button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+							<h4 class="modal-title">Schedule Flow Options</h4>
+						</div><!-- /modal-header -->
+						<div class="modal-body">
+							<fieldset class="form-horizontal">
+								<div class="form-group">
+                  <label class="col-sm-2 control-label">Time</label>
+                  <div class="col-sm-7">
+                    <input type="text" id="timepicker" class="form-control">
+                  </div>
+                  <div class="col-sm-3">
+                    <select id="timezone" class="form-control">
+                      <option>${timezone}</option>
+                      <option>UTC</option>
+                    </select>
+                  </div>
+								</div>
+								<div class="form-group">
+                  <label class="col-sm-2 control-label">Date</label>
+                  <div class="col-sm-10">
+                    <input type="text" id="datepicker" class="form-control">
+                  </div>
+								</div>
+								<div class="form-group">
+                  <label class="col-sm-2">Recurrence</label>
+                  <div class="col-sm-3">
+                    <div class="checkbox">
+                      <input id="is_recurring" type="checkbox" checked="checked">
+                      <label>repeat every</label>
+                    </div>
+                  </div>
+                  <div class="col-sm-2">
+                    <input id="period" type="text" size="2" value="1" class="form-control">
+                  </div>
+                  <div class="col-sm-3">
+                    <select id="period_units" class="form-control">
+                      <option value="d">Days</option>
+                      <option value="h">Hours</option>
+                      <option value="m">Minutes</option>
+                      <option value="M">Months</option>
+                      <option value="w">Weeks</option>
+                    </select>
+                  </div>
+								</div>
+							</fieldset>
+						</div>
+						<div class="modal-footer">
+							<button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+							<button type="button" class="btn btn-success" id="schedule-button">Schedule</button>
+						</div>
+					</div>
+				</div>
 			</div>
-	
-
-			<div class="actions">
-				<a class="yes btn1" id="schedule-button" href="#">Schedule</a>
-				<a class="no simplemodal-close btn3 closeSchedule" id="cancel-schedule-btn" href="#">Cancel</a>
-			</div>
-		</div>
-	</div>
-</div>
