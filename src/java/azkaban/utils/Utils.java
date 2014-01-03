@@ -322,7 +322,7 @@ public class Utils {
 	public static ReadablePeriod parsePeriodString(String periodStr) {
 		ReadablePeriod period;
 		char periodUnit = periodStr.charAt(periodStr.length() - 1);
-		if (periodUnit == 'n') {
+		if (periodStr.equals("null") || periodUnit == 'n') {
 			return null;
 		}
 
