@@ -1,0 +1,32 @@
+// Since the azkaban navbar no longer has the 20px bottom margin so that the
+// page header sits flush below the navbar, add a 20px top margin to the login
+// form.
+.login {
+  max-width: 360px;
+  margin: 20px auto;
+  .form-control {
+    position: relative;
+    font-size: 16px;
+    height: auto;
+    padding: 10px;
+    -webkit-box-sizing: border-box;
+       -moz-box-sizing: border-box;
+            box-sizing: border-box;
+
+    &:focus {
+      z-index: 2;
+    }
+  }
+
+  input[type="text"] {
+    margin-bottom: -1px;
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+  }
+
+  input[type="password"] {
+    margin-bottom: 20px;
+    border-top-left-radius: 0;
+    border-top-right-radius: 0;
+  }
+}
