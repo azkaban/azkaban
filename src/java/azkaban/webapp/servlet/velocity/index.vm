@@ -36,7 +36,7 @@
 #set ($current_page="all")
 #parse ("azkaban/webapp/servlet/velocity/nav.vm")
 
-		<div class="container">
+		<div class="container-full">
 #parse ("azkaban/webapp/servlet/velocity/message.vm")
 #parse ("azkaban/webapp/servlet/velocity/alerts.vm")
 		</div>
@@ -44,7 +44,7 @@
 ## Page Header and project search form.
 
 		<div class="az-page-header">
-      <div class="container">
+      <div class="container-full">
         <div class="row">
           <div class="col-lg-6">
 #if ($allProjects)
@@ -84,7 +84,7 @@
 
 ## Table of projects.
 
-		<div class="container">
+		<div class="container-full">
 			<div class="row">
 				<div class="col-lg-12">
           <table class="table table-condensed table-striped table-bordered table-hover" id="all-jobs">

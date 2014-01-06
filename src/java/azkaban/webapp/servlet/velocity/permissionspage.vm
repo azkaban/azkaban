@@ -38,7 +38,7 @@
 #set ($current_page = "all")
 #parse ("azkaban/webapp/servlet/velocity/nav.vm")
 
-	<div class="container">
+	<div class="container-full">
 #parse ("azkaban/webapp/servlet/velocity/message.vm")
 #if ($errorMsg)
   #parse ("azkaban/webapp/servlet/velocity/errormsg.vm")
@@ -52,7 +52,7 @@
 
   ## Page content.
 
-		<div class="container">
+		<div class="container-full">
 			<div class="row">
 				<div class="col-lg-8">
 	
@@ -344,6 +344,6 @@
 	#parse ("azkaban/webapp/servlet/velocity/invalidsessionmodal.vm")
 #end
 #parse ("azkaban/webapp/servlet/velocity/footer.vm")
-		</div><!-- /container -->
+		</div><!-- /container-full -->
 	</body>
 </html>

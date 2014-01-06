@@ -41,7 +41,7 @@
 #set ($current_page="viewer")
 #parse ("azkaban/webapp/servlet/velocity/nav.vm")
 
-    <div class="container">
+    <div class="container-full">
 #if ($errorMsg)
   #parse ("azkaban/webapp/servlet/velocity/errormsg.vm")
 #else
