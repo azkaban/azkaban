@@ -35,21 +35,21 @@
 #set ($current_page="executing")
 #parse ("azkaban/webapp/servlet/velocity/nav.vm")
 
-		<div class="container">
+		<div class="container-full">
 #parse ("azkaban/webapp/servlet/velocity/message.vm")
 		</div>
 
 ## Page header.
 
 		<div class="az-page-header">
-			<div class="container">
+			<div class="container-full">
         <h1><a href="${context}/executor">Executing Flows</a></h1>
 			</div>
 		</div>
 
 ## Page Content
 
-		<div class="container">
+		<div class="container-full">
       <ul class="nav nav-tabs" id="header-tabs">
         <li id="currently-running-view-link"><a href="#currently-running">Currently Running</a></li>
         <li id="recently-finished-view-link"><a href="#recently-finished">Recently Finished</a></li>
@@ -151,6 +151,6 @@
 		
 #parse ("azkaban/webapp/servlet/velocity/footer.vm")
 
-		</div><!-- /container -->
+		</div><!-- /container-full -->
 	</body>
 </html>

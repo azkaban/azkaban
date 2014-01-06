@@ -60,7 +60,7 @@
 #set ($current_page="all")
 #parse ("azkaban/webapp/servlet/velocity/nav.vm")
 
-		<div class="container">
+		<div class="container-full">
 #parse ("azkaban/webapp/servlet/velocity/message.vm")
 #if ($errorMsg)
   #parse ("azkaban/webapp/servlet/velocity/errormsg.vm")
@@ -71,12 +71,12 @@
 	## Page header
 
 		<div class="az-page-header">
-			<div class="container">
+			<div class="container-full">
         <h1><a href="${context}/manager?project=${projectName}&job=${jobid}&history">Job History <small>$jobid</small></a></h1>
 			</div>
 		</div>
 
-		<div class="container">
+		<div class="container-full">
 	
   ## Breadcrumb
 

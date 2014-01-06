@@ -42,7 +42,7 @@
 #set ($current_page="executing")
 #parse ("azkaban/webapp/servlet/velocity/nav.vm")
 
-		<div class="container">
+		<div class="container-full">
 #if ($errorMsg)
   #parse ("azkaban/webapp/servlet/velocity/errormsg.vm")
 #else
@@ -52,7 +52,7 @@
 	## Page header.
 
 		<div class="az-page-header">
-			<div class="container">
+			<div class="container-full">
 				<div class="row">
 					<div class="col-lg-6">
 						<h1><a href="${context}/executor?execid=${execid}&job=${jobid}">Job Execution <small>$jobid</small></a></h1>
@@ -68,7 +68,7 @@
 	
 	## Breadcrumb
 
-		<div class="container">
+		<div class="container-full">
 			<ol class="breadcrumb">
 				<li><a href="${context}/manager?project=${projectName}"><strong>Project</strong> $projectName</a></li>
 				<li><a href="${context}/manager?project=${projectName}&flow=${flowid}"><strong>Flow</strong> $flowid</a></li>

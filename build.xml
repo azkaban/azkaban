@@ -293,7 +293,10 @@
 		
 		<!-- Copy compiled less CSS -->
 		<copy todir="${dist.solo.package.dir}/web/css">
-			<fileset dir="${dist.less.dir}" />
+      <fileset dir="${dist.less.dir}">
+        <include name="azkaban.css" />
+        <include name="azkaban-svg.css" />
+      </fileset>
 		</copy>
 		
 		<!-- Copy sql files -->

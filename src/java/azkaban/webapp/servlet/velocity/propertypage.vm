@@ -36,7 +36,7 @@
 #set($current_page="all")
 #parse("azkaban/webapp/servlet/velocity/nav.vm")
 		
-		<div class="container">
+		<div class="container-full">
 #if ($errorMsg)
   #parse("azkaban/webapp/servlet/velocity/errormsg.vm")
 #else
@@ -46,14 +46,14 @@
 	## Page header
 
 		<div class="az-page-header">
-			<div class="container">
+			<div class="container-full">
         <h1><a href="${context}/manager?project=${project.name}&flow=${flowid}&job=${jobid}&prop=${property}">Properties <small>$property</small></a></h1>
 			</div>
 		</div>
 
-		<div class="container">
-			<div class="row">
-				<div class="col-lg-8">
+		<div class="container-full">
+			<div class="row row-offcanvas row-offcanvas-right">
+				<div class="col-xs-12 col-sm-9">
 
 	## Breadcrumb
 
@@ -87,7 +87,7 @@
 						</table>
 					</div>
 				</div><!-- /col-lg-8 -->
-				<div class="col-lg-4">
+				<div class="col-xs-6 col-sm-3 sidebar-offcanvas">
 					<div class="well" id="job-summary">
 						<h4>Properties <small>$property</small></h4>
 						<p><strong>Job</strong> $jobid</p>
@@ -124,6 +124,6 @@
 #end
 #parse ("azkaban/webapp/servlet/velocity/footer.vm")
 
-		</div><!-- /container -->
+		</div><!-- /container-full -->
 	</body>
 </html>

@@ -53,7 +53,7 @@
 #set ($show_schedule="false")
 #parse ("azkaban/webapp/servlet/velocity/nav.vm")
 
-		<div class="container">
+		<div class="container-full">
 #parse ("azkaban/webapp/servlet/velocity/message.vm")
 #if ($errorMsg)
   #parse ("azkaban/webapp/servlet/velocity/errormsg.vm")
@@ -65,7 +65,7 @@
 	## Page header
 
 		<div class="az-page-header">
-			<div class="container" id="flow-status">
+			<div class="container-full" id="flow-status">
         <div class="row">
           <div class="col-lg-7">
             <h1>
@@ -91,7 +91,7 @@
 			</div>
 		</div>
 
-		<div class="container">
+		<div class="container-full">
 
 	## Breadcrumb
 

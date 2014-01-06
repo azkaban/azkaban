@@ -32,7 +32,7 @@
 #set ($navbar_disabled = 1)
 #parse ("azkaban/webapp/servlet/velocity/nav.vm")
 
-		<div class="container">
+		<div class="container-full">
       <div class="login">
         <div class="alert alert-danger" id="error-msg"></div>
         <div class="well">
