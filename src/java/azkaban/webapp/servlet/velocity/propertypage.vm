@@ -52,8 +52,8 @@
 		</div>
 
 		<div class="container-full">
-			<div class="row">
-				<div class="col-lg-8">
+			<div class="row row-offcanvas row-offcanvas-right">
+				<div class="col-xs-12 col-sm-9">
 
 	## Breadcrumb
 
@@ -87,7 +87,7 @@
 						</table>
 					</div>
 				</div><!-- /col-lg-8 -->
-				<div class="col-lg-4">
+				<div class="col-xs-6 col-sm-3 sidebar-offcanvas">
 					<div class="well" id="job-summary">
 						<h4>Properties <small>$property</small></h4>
 						<p><strong>Job</strong> $jobid</p>

@@ -60,8 +60,8 @@
 	## Page content.
 
     <div class="container-full">
-			<div class="row">
-				<div class="col-lg-8" id="flow-tabs">
+			<div class="row row-offcanvas row-offcanvas-right">
+				<div class="col-xs-12 col-sm-9" id="flow-tabs">
 					
 	#set ($project_page = "flows")
 	#parse ("azkaban/webapp/servlet/velocity/projectnav.vm")
@@ -95,7 +95,7 @@
           </div><!-- /#flow-tabs -->
 				</div><!-- /col-lg-8 -->
 
-				<div class="col-lg-4">
+				<div class="col-xs-6 col-sm-3 sidebar-offcanvas">
 	#parse ("azkaban/webapp/servlet/velocity/projectsidebar.vm")
 				</div><!-- /col-lg-4 -->
 			</div><!-- /row -->
