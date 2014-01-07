@@ -45,15 +45,15 @@ azkaban.ProjectTableView = Backbone.View.extend({
 			if ($(targetExpanded).is(':visible')) {
 				$(target).addClass('expanded').removeClass('collapsed');
 				var expander = $(target).children('.az-expander')[0];
-				$(expander).removeClass('glyphicon-chevron-up');
-				$(expander).addClass('glyphicon-chevron-down');
+				$(expander).removeClass('state-icon-collapse');
+				$(expander).addClass('state-icon-expand');
 				$(targetExpanded).fadeOut("fast");
 			}
 			else {
 				$(target).addClass('collapsed').removeClass('expanded');
 				var expander = $(target).children('.az-expander')[0];
-				$(expander).removeClass('glyphicon-chevron-down');
-				$(expander).addClass('glyphicon-chevron-up');
+				$(expander).removeClass('state-icon-expand');
+				$(expander).addClass('state-icon-collapse');
 				$(targetExpanded).fadeIn();
 			}
 		}
@@ -76,8 +76,8 @@ azkaban.ProjectTableView = Backbone.View.extend({
 				
 				$(target).addClass('collapsed').removeClass('wait');
 				var expander = $(target).children('.az-expander')[0];
-				$(expander).removeClass('glyphicon-chevron-down');
-				$(expander).addClass('glyphicon-chevron-up');
+				$(expander).removeClass('state-icon-expand');
+				$(expander).addClass('state-icon-collapse');
 				$(targetExpanded).fadeIn("fast");
 			};
 			
