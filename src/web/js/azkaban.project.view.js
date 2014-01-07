@@ -20,8 +20,8 @@ var flowTableView;
 azkaban.FlowTableView = Backbone.View.extend({
 	events : {
 		"click .flow-expander": "expandFlowProject",
-		"mouseover .job-list a": "highlight",
-		"mouseout .job-list a": "unhighlight",
+		"mouseover .expanded-flow-job-list li": "highlight",
+		"mouseout .expanded-flow-job-list li": "unhighlight",
 		"click .runJob": "runJob",
 		"click .runWithDep": "runWithDep",
 		"click .execute-flow": "executeFlow",
@@ -80,18 +80,15 @@ azkaban.FlowTableView = Backbone.View.extend({
 			var name = job.id;
 			var level = job.level;
 			var nodeId = flowId + "-" + name;
-		
-      var ida = document.createElement("a");
-      $(ida).addClass("list-group-item");
-			$(ida).attr("id", nodeId);
-			$(ida).css("padding-left", (level * 20) + 15);
-			$(ida).attr("href", requestURL + name);
-			$(ida).text(name);
-			ida.flowId = flowId;
-			ida.dependents = job.dependents;
-			ida.dependencies = job.dependencies;
-			ida.projectName = project;
-			ida.jobName = name;
+	
+      var li = document.createElement('li');
+      $(li).addClass("list-group-item");
+			$(li).attr("id", nodeId);
+			li.flowId = flowId;
+			li.dependents = job.dependents;
+			li.dependencies = job.dependencies;
+			li.projectName = project;
+			li.jobName = name;
 
 			if (execAccess) {
 				var hoverMenuDiv = document.createElement("div");
@@ -119,10 +116,16 @@ azkaban.FlowTableView = Backbone.View.extend({
 				divRunWithDep.flowId = flowId;
 				$(hoverMenuDiv).append(divRunWithDep);
 				
-				$(ida).append(hoverMenuDiv);
+				$(li).append(hoverMenuDiv);
 			}
 			
-			$(innerTable).append(ida);
+      var ida = document.createElement("a");
+			$(ida).css("margin-left", level * 20);
+      $(ida).attr("href", requestURL + name);
+      $(ida).text(name);
+
+      $(li).append(ida);
+			$(innerTable).append(li);
 		}
 	},
 	
