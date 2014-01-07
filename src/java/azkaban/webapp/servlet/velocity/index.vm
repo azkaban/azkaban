@@ -36,10 +36,6 @@
 #set ($current_page="all")
 #parse ("azkaban/webapp/servlet/velocity/nav.vm")
 
-		<div class="container-full">
-#parse ("azkaban/webapp/servlet/velocity/alerts.vm")
-		</div>
-
 ## Page Header and project search form.
 
 		<div class="az-page-header">
@@ -81,9 +77,12 @@
 			</div>
 		</div>
 
+		<div class="container-full">
+      
+#parse ("azkaban/webapp/servlet/velocity/alerts.vm")
+
 ## Table of projects.
 
-		<div class="container-full">
 			<div class="row">
 				<div class="col-lg-12">
           <table class="table table-condensed table-striped table-bordered table-hover" id="all-jobs">

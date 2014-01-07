@@ -35,10 +35,6 @@
 #set ($current_page="executing")
 #parse ("azkaban/webapp/servlet/velocity/nav.vm")
 
-		<div class="container-full">
-#parse ("azkaban/webapp/servlet/velocity/alerts.vm")
-		</div>
-
 ## Page header.
 
 		<div class="az-page-header">
@@ -47,9 +43,12 @@
 			</div>
 		</div>
 
+		<div class="container-full">
+      
+#parse ("azkaban/webapp/servlet/velocity/alerts.vm")
+
 ## Page Content
 
-		<div class="container-full">
       <ul class="nav nav-tabs" id="header-tabs">
         <li id="currently-running-view-link"><a href="#currently-running">Currently Running</a></li>
         <li id="recently-finished-view-link"><a href="#recently-finished">Recently Finished</a></li>

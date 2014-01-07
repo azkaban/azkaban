@@ -50,8 +50,6 @@
 #if ($errorMsg)
   #parse ("azkaban/webapp/servlet/velocity/errormsg.vm")
 #else
-  #parse ("azkaban/webapp/servlet/velocity/alerts.vm")
-#end
 		</div>
 
     <div class="az-page-header">
@@ -59,6 +57,8 @@
         <h1>Scheduled Flows</h1>
       </div>
     </div>
+
+  #parse ("azkaban/webapp/servlet/velocity/alerts.vm")
 
     <div class="container-full">
       <div class="row">
@@ -73,6 +73,7 @@
       </div>
       
       <div id="contextMenu"></div>
+#end
     </div>
 	</body>
 </html>

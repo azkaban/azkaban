@@ -57,7 +57,6 @@
 #if ($errorMsg)
   #parse ("azkaban/webapp/servlet/velocity/errormsg.vm")
 #else
-  #parse ("azkaban/webapp/servlet/velocity/alerts.vm")
 		</div>
 
 
@@ -91,6 +90,8 @@
 		</div>
 
 		<div class="container-full">
+
+  #parse ("azkaban/webapp/servlet/velocity/alerts.vm")
 
 	## Breadcrumb
 
