@@ -105,8 +105,6 @@
 	#parse ("azkaban/webapp/servlet/velocity/messagedialog.vm")
 #end
 
-#parse ("azkaban/webapp/servlet/velocity/footer.vm")
-
 		</div><!-- /container -->
 	</body>
 </html>

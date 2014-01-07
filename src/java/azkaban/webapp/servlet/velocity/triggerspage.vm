@@ -90,8 +90,6 @@
           </table>
         </div>
       </div>
-
-#parse ("azkaban/webapp/servlet/velocity/footer.vm")
     </div>
 	</body>
 </html>

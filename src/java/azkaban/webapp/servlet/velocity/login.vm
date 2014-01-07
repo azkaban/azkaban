@@ -47,8 +47,6 @@
         </div><!-- /.well -->
       </div><!-- /.login -->
 
-#parse("azkaban/webapp/servlet/velocity/footer.vm")
-
 		</div><!-- /container -->
   </body>
 </html>
