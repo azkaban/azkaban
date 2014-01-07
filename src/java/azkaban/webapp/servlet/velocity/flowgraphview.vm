@@ -18,7 +18,7 @@
  	## Graph view.
 
     <div class="container-full container-fill" id="graphView">
-			<div class="row row-offcanvas row-offcanvas-left" id="graphView">
+			<div class="row row-offcanvas row-offcanvas-left">
 				<div class="col-xs-6 col-sm-3 sidebar-offcanvas graph-sidebar">
           <div class="panel panel-default" id="jobList">
             <div class="panel-heading">
