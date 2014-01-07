@@ -20,8 +20,8 @@ var flowTableView;
 azkaban.FlowTableView = Backbone.View.extend({
 	events : {
 		"click .flow-expander": "expandFlowProject",
-		"mouseover .expandedFlow a": "highlight",
-		"mouseout .expandedFlow a": "unhighlight",
+		"mouseover .job-list a": "highlight",
+		"mouseout .job-list a": "unhighlight",
 		"click .runJob": "runJob",
 		"click .runWithDep": "runWithDep",
 		"click .execute-flow": "executeFlow",
@@ -33,7 +33,7 @@ azkaban.FlowTableView = Backbone.View.extend({
 	},
 
 	expandFlowProject: function(evt) {
-		if (evt.target.tagName == "A") {
+		if (evt.target.tagName == "A" || evt.target.tagName == "BUTTON") {
 			return;
 		}
 		
@@ -81,11 +81,17 @@ azkaban.FlowTableView = Backbone.View.extend({
 			var level = job.level;
 			var nodeId = flowId + "-" + name;
 		
-      var li = document.createElement("li");
-      $(li).addClass("list-group-item");
-			li.flowId = flowId;
-			li.projectName = project;
-			li.jobName = name;
+      var ida = document.createElement("a");
+      $(ida).addClass("list-group-item");
+			$(ida).attr("id", nodeId);
+			$(ida).css("padding-left", (level * 20) + 15);
+			$(ida).attr("href", requestURL + name);
+			$(ida).text(name);
+			ida.flowId = flowId;
+			ida.dependents = job.dependents;
+			ida.dependencies = job.dependencies;
+			ida.projectName = project;
+			ida.jobName = name;
 
 			if (execAccess) {
 				var hoverMenuDiv = document.createElement("div");
@@ -113,21 +119,10 @@ azkaban.FlowTableView = Backbone.View.extend({
 				divRunWithDep.flowId = flowId;
 				$(hoverMenuDiv).append(divRunWithDep);
 				
-				$(li).append(hoverMenuDiv);
+				$(ida).append(hoverMenuDiv);
 			}
 			
-			var ida = document.createElement("a");
-			ida.dependents = job.dependents;
-			ida.dependencies = job.dependencies;
-			ida.flowid = flowId;
-			$(ida).text(name);
-			$(ida).addClass("jobLink");
-			$(ida).attr("id", nodeId);
-			$(ida).css("margin-left", level * 20);
-			$(ida).attr("href", requestURL + name);
-			
-			$(li).append(ida);
-			$(innerTable).append(li);
+			$(innerTable).append(ida);
 		}
 	},
 	
@@ -141,16 +136,13 @@ azkaban.FlowTableView = Backbone.View.extend({
 		var currentTarget = evt.currentTarget;
 		$(".dependent").removeClass("dependent");
 		$(".dependency").removeClass("dependency");
-	
-		if ($(currentTarget).hasClass("jobLink")) {
-			this.highlightJob(currentTarget);
-		}
+    this.highlightJob(currentTarget);
 	},
 
 	highlightJob: function(currentTarget) {
 		var dependents = currentTarget.dependents;
 		var dependencies = currentTarget.dependencies;
-		var flowid = currentTarget.flowid;
+		var flowid = currentTarget.flowId;
 		
 		if (dependents) {
 			for (var i = 0; i < dependents.length; ++i) {
