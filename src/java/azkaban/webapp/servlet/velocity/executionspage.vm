@@ -36,7 +36,7 @@
 #parse ("azkaban/webapp/servlet/velocity/nav.vm")
 
 		<div class="container-full">
-#parse ("azkaban/webapp/servlet/velocity/message.vm")
+#parse ("azkaban/webapp/servlet/velocity/alerts.vm")
 		</div>
 
 ## Page header.

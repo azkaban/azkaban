@@ -47,7 +47,6 @@
 #parse ("azkaban/webapp/servlet/velocity/nav.vm")
 
     <div class="container-full">
-#parse ("azkaban/webapp/servlet/velocity/message.vm")
 #if ($errorMsg)
   #parse ("azkaban/webapp/servlet/velocity/errormsg.vm")
 #else
