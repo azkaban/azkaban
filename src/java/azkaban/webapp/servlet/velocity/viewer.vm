@@ -49,8 +49,6 @@
 #end
 
 #parse ($viewervm)
-#parse ("azkaban/webapp/servlet/velocity/footer.vm")
-		
 		</div>
 	</body>
 </html>

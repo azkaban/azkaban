@@ -298,8 +298,6 @@ azkaban.SummaryView = Backbone.View.extend({
 	},
 	
 	initialize: function(settings) {
-		console.log("summaryView initialize");
-
 		this.model.bind('change:view', this.handleChangeView, this);
 		this.model.bind('render', this.render, this);
 		
@@ -347,11 +345,9 @@ azkaban.SummaryView = Backbone.View.extend({
 	},
 
 	handleChangeView: function(evt) {
-		console.log("summaryView handleChangeView");
 	},
 
 	render: function(evt) {
-		console.log("summaryView render");
 		var data = {
       projectName: projectName,
 			flowName: flowId,
@@ -361,7 +357,7 @@ azkaban.SummaryView = Backbone.View.extend({
 			lastRun: this.model.get('lastRun')
 		};
 		dust.render("flowsummary", data, function(err, out) {
-			$('#summaryView').html(out);
+			$('#summary-view-content').html(out);
 		});
 	},
 });

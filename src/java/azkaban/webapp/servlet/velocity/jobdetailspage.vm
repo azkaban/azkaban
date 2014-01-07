@@ -81,28 +81,32 @@
 				<li id="jobLogViewLink"><a href="#joblog">Log</a></li>
 				<li><a href="${context}/pigvisualizer?execid=${execid}&jobid=${jobid}">Visualization</a></li>
 			</ul>
+    </div>
 
 	## Log content.
 
-			<div class="row" id="jobLogView">
-				<div class="col-lg-12">
-					<div class="panel panel-default">
+    <div class="container-full container-fill" id="jobLogView">
+			<div class="row">
+				<div class="col-lg-12 col-content">
+					<div class="panel panel-default log-panel">
 						<div class="panel-heading">
 							<div class="pull-right">
 								<button type="button" id="updateLogBtn" class="btn btn-xs btn-default">Refresh</button>
 							</div>
 							Job Logs
-						</div>
+            </div>
 						<div class="panel-body log-viewer">
               <pre id="logSection"></pre>
 						</div>
 					</div>
 				</div>
 			</div>
+    </div>
 
 	## Job Summary
 
-			<div id="jobSummaryView" class="row">
+    <div class="container-full" id="jobSummaryView">
+			<div class="row">
 				<div class="col-lg-12">
 					<table id="commandTable" class="table table-striped table-bordered table-hover">
 					</table>
@@ -140,9 +144,11 @@
 					</div>
 				</div>
 			</div>
+    </div>
 			
 	## Error message message dialog.
 
+    <div class="container-full">
 			<div class="modal" id="messageDialog">
 				<div class="modal-dialog">
 					<div class="modal-content">
@@ -158,8 +164,6 @@
 			</div>
 
 #end
-
-#parse ("azkaban/webapp/servlet/velocity/footer.vm")
 		</div>
 	</body>
 </html>

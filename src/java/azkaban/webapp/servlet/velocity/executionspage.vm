@@ -149,8 +149,6 @@
 				</div><!-- /col-lg-12 -->
 			</div><!-- /row -->
 		
-#parse ("azkaban/webapp/servlet/velocity/footer.vm")
-
 		</div><!-- /container-full -->
 	</body>
 </html>

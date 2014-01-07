@@ -156,7 +156,6 @@
 			</div><!-- /.row -->
 
 #end
-#parse ("azkaban/webapp/servlet/velocity/footer.vm")
 		</div>
 	</body>
 </html>

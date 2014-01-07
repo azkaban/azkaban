@@ -74,8 +74,6 @@
       </div>
       
       <div id="contextMenu"></div>
-
-#parse ("azkaban/webapp/servlet/velocity/footer.vm")
     </div>
 	</body>
 </html>
