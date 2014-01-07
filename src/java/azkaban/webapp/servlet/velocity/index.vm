@@ -96,11 +96,11 @@
               </tr>
             </thead>
             <tbody>
-#if(!$projects.isEmpty())
-	#foreach($project in $projects)
+#if (!$projects.isEmpty())
+	#foreach ($project in $projects)
               <tr class="az-project-row">
                 <td id="${project.name}" class="tb-name project-expand expanded">
-                  <span class="glyphicon glyphicon-chevron-down az-expander"></span>
+                  <span class="state-icon state-icon-expand az-expander"></span>
                   <a href="${context}/manager?project=${project.name}">$project.name</a>
                 </td>
                 <td class="tb-up-date">$utils.formatDate($project.lastModifiedTimestamp)</td>
