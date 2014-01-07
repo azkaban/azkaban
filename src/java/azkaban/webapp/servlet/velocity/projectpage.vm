@@ -81,8 +81,7 @@
                 <a href="${context}/manager?project=${project.name}&flow=${flow.id}">${flow.id}</a>
               </div>
               <div id="${flow.id}-child" class="panel-collapse panel-list collapse">
-                <ul class="list-group list-group-collapse" id="${flow.id}-tbody">
-                </ul>
+                <ul class="list-group list-group-collapse expanded-flow-job-list" id="${flow.id}-tbody"></ul>
               </div>
             </div>
 		#end

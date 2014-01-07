@@ -20,8 +20,8 @@ var flowTableView;
 azkaban.FlowTableView = Backbone.View.extend({
 	events : {
 		"click .flow-expander": "expandFlowProject",
-		"mouseover .expandedFlow a": "highlight",
-		"mouseout .expandedFlow a": "unhighlight",
+		"mouseover .expanded-flow-job-list li": "highlight",
+		"mouseout .expanded-flow-job-list li": "unhighlight",
 		"click .runJob": "runJob",
 		"click .runWithDep": "runWithDep",
 		"click .execute-flow": "executeFlow",
@@ -33,7 +33,7 @@ azkaban.FlowTableView = Backbone.View.extend({
 	},
 
 	expandFlowProject: function(evt) {
-		if (evt.target.tagName == "A") {
+		if (evt.target.tagName == "A" || evt.target.tagName == "BUTTON") {
 			return;
 		}
 		
@@ -80,10 +80,13 @@ azkaban.FlowTableView = Backbone.View.extend({
 			var name = job.id;
 			var level = job.level;
 			var nodeId = flowId + "-" + name;
-		
-      var li = document.createElement("li");
+	
+      var li = document.createElement('li');
       $(li).addClass("list-group-item");
+			$(li).attr("id", nodeId);
 			li.flowId = flowId;
+			li.dependents = job.dependents;
+			li.dependencies = job.dependencies;
 			li.projectName = project;
 			li.jobName = name;
 
@@ -116,17 +119,12 @@ azkaban.FlowTableView = Backbone.View.extend({
 				$(li).append(hoverMenuDiv);
 			}
 			
-			var ida = document.createElement("a");
-			ida.dependents = job.dependents;
-			ida.dependencies = job.dependencies;
-			ida.flowid = flowId;
-			$(ida).text(name);
-			$(ida).addClass("jobLink");
-			$(ida).attr("id", nodeId);
+      var ida = document.createElement("a");
 			$(ida).css("margin-left", level * 20);
-			$(ida).attr("href", requestURL + name);
-			
-			$(li).append(ida);
+      $(ida).attr("href", requestURL + name);
+      $(ida).text(name);
+
+      $(li).append(ida);
 			$(innerTable).append(li);
 		}
 	},
@@ -141,16 +139,13 @@ azkaban.FlowTableView = Backbone.View.extend({
 		var currentTarget = evt.currentTarget;
 		$(".dependent").removeClass("dependent");
 		$(".dependency").removeClass("dependency");
-	
-		if ($(currentTarget).hasClass("jobLink")) {
-			this.highlightJob(currentTarget);
-		}
+    this.highlightJob(currentTarget);
 	},
 
 	highlightJob: function(currentTarget) {
 		var dependents = currentTarget.dependents;
 		var dependencies = currentTarget.dependencies;
-		var flowid = currentTarget.flowid;
+		var flowid = currentTarget.flowId;
 		
 		if (dependents) {
 			for (var i = 0; i < dependents.length; ++i) {
