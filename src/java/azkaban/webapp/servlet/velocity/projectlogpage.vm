@@ -41,11 +41,9 @@
 #set ($current_page="all")
 #parse ("azkaban/webapp/servlet/velocity/nav.vm")
 
-		<div class="container-full">
 #if ($errorMsg)
   #parse ("azkaban/webapp/servlet/velocity/errormsg.vm")
 #else
-		</div>
 
 	## Page header.
 	
@@ -90,8 +88,8 @@
 			</div>
 
 	#parse ("azkaban/webapp/servlet/velocity/projectmodals.vm")
-#end
 
 		</div><!-- /container-full -->
+#end
 	</body>
 </html>

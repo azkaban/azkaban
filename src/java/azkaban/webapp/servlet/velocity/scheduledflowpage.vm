@@ -40,11 +40,9 @@
 #set ($current_page="schedule")
 #parse ("azkaban/webapp/servlet/velocity/nav.vm")
 
-		<div class="container-full">
 #if ($errorMsg)
   #parse ("azkaban/webapp/servlet/velocity/errormsg.vm")
 #else
-		</div>
 
 	## Page header.
 
@@ -107,7 +105,7 @@
 				</div><!-- /col-lg-12 -->
 			</div><!-- /row -->
 
-## Set SLA modal.
+  ## Set SLA modal.
 
 			<div class="modal modal-wide" id="sla-options">
 				<div class="modal-dialog">
@@ -153,7 +151,7 @@
 					</div>
 				</div>
 			</div>
-#end
 		</div>
+#end
 	</body>
 </html>

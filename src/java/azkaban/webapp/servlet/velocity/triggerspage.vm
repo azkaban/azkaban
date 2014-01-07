@@ -42,11 +42,9 @@
 #set ($current_page="triggers")
 #parse ("azkaban/webapp/servlet/velocity/nav.vm")
 
-    <div class="container-full">
 #if ($errorMsg)
   #parse ("azkaban/webapp/servlet/velocity/errormsg.vm")
 #else
-		</div>
 
     <div class="az-page-header">
       <div class="container-full">
@@ -90,7 +88,7 @@
           </table>
         </div>
       </div>
-#end
     </div>
+#end
 	</body>
 </html>

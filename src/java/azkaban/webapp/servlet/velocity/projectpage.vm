@@ -45,11 +45,9 @@
 #set ($current_page="all")
 #parse ("azkaban/webapp/servlet/velocity/nav.vm")
 
-		<div class="container-full">
 #if ($errorMsg)
   #parse ("azkaban/webapp/servlet/velocity/errormsg.vm")
 #else
-		</div>
 
 	## Page header.
 	
@@ -104,9 +102,9 @@
 	#parse ("azkaban/webapp/servlet/velocity/invalidsessionmodal.vm")
 	#parse ("azkaban/webapp/servlet/velocity/flowexecutionpanel.vm")
 	#parse ("azkaban/webapp/servlet/velocity/messagedialog.vm")
-#end
 
 		</div><!-- /container -->
+#end
 	</body>
 </html>
 
