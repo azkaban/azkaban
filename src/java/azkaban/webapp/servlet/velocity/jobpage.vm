@@ -172,12 +172,18 @@
 						</div>
 						<div class="modal-body">
 							<h4>Job Essentials</h4>
-							<dl class="dl-horizontal">
-								<dt>Job Name</dt>
-								<dd id="jobName"></dd>
-								<dt>Job Type</dt>
-								<dd id="jobType"></dd>
-							</dl>
+              <table class="table table-bordered table-condensed">
+                <tbody>
+                  <tr>
+                    <td class="property-key">Job Name</td>
+                    <td id="jobName"></td>
+                  </tr>
+                  <tr>
+                    <td class="property-key">Job Type</td>
+                    <td id="jobType"></td>
+                  </tr>
+                </tbody>
+              <table>
 							<h4>General Job Settings</h4>
 							<p><strong>Be Aware:</strong> A job may be shared by multiple flows. The change will be global!</p>
 							<table id="generalProps" class="table table-striped table-bordered">
