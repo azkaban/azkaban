@@ -66,7 +66,8 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 	}
 
 	@Override
-	protected void handleGet(HttpServletRequest req, HttpServletResponse resp, Session session) throws ServletException, IOException {
+	protected void handleGet(HttpServletRequest req, HttpServletResponse resp, 
+			Session session) throws ServletException, IOException {
 		if (hasParam(req, "ajax")) {
 			handleAJAXAction(req, resp, session);
 		}
@@ -80,6 +81,98 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 		}
 		else {
 			handleExecutionsPage(req, resp, session);
+		}
+	}
+	
+	private void handleAJAXAction(HttpServletRequest req, 
+			HttpServletResponse resp, Session session) 
+			throws ServletException, IOException {
+		HashMap<String, Object> ret = new HashMap<String, Object>();
+		String ajaxName = getParam(req, "ajax");
+		
+		if (hasParam(req, "execid")) {
+			int execid = getIntParam(req, "execid");
+			ExecutableFlow exFlow = null;
+
+			try {
+				exFlow = executorManager.getExecutableFlow(execid);
+			} catch (ExecutorManagerException e) {
+				ret.put("error", "Error fetching execution '" + execid + "': " + e.getMessage());
+			}
+
+			if (exFlow == null) {
+				ret.put("error", "Cannot find execution '" + execid + "'");
+			}
+			else {
+				if (ajaxName.equals("fetchexecflow")) {
+					ajaxFetchExecutableFlow(req, resp, ret, session.getUser(), exFlow);
+				}
+				else if (ajaxName.equals("fetchexecflowupdate")) {
+					ajaxFetchExecutableFlowUpdate(req, resp, ret, session.getUser(), exFlow);
+				}
+				else if (ajaxName.equals("cancelFlow")) {
+					ajaxCancelFlow(req, resp, ret, session.getUser(), exFlow);
+				}
+				else if (ajaxName.equals("restartFlow")) {
+					ajaxRestartFlow(req, resp, ret, session.getUser(), exFlow);
+				}
+				else if (ajaxName.equals("pauseFlow")) {
+					ajaxPauseFlow(req, resp, ret, session.getUser(), exFlow);
+				}
+				else if (ajaxName.equals("resumeFlow")) {
+					ajaxResumeFlow(req, resp, ret, session.getUser(), exFlow);
+				}
+				else if (ajaxName.equals("fetchExecFlowLogs")) {
+					ajaxFetchExecFlowLogs(req, resp, ret, session.getUser(), exFlow);
+				}
+				else if (ajaxName.equals("fetchExecJobLogs")) {
+					ajaxFetchJobLogs(req, resp, ret, session.getUser(), exFlow);
+				}
+				else if (ajaxName.equals("fetchExecJobSummary")) {
+					ajaxFetchJobSummary(req, resp, ret, session.getUser(), exFlow);
+				}
+				else if (ajaxName.equals("retryFailedJobs")) {
+					ajaxRestartFailed(req, resp, ret, session.getUser(), exFlow);
+				}
+//				else if (ajaxName.equals("fetchLatestJobStatus")) {
+//					ajaxFetchLatestJobStatus(req, resp, ret, session.getUser(), exFlow);
+//				}
+				else if (ajaxName.equals("flowInfo")) {
+					//String projectName = getParam(req, "project");
+					//Project project = projectManager.getProject(projectName);
+					//String flowName = getParam(req, "flow");
+					ajaxFetchExecutableFlowInfo(req, resp, ret, session.getUser(), exFlow);
+				}
+			}
+		}
+		else if (ajaxName.equals("getRunning")) {
+			String projectName = getParam(req, "project");
+			String flowName = getParam(req, "flow");
+			ajaxGetFlowRunning(req, resp, ret, session.getUser(), projectName, flowName);
+		}
+		else if (ajaxName.equals("flowInfo")) {
+			String projectName = getParam(req, "project");
+			String flowName = getParam(req, "flow");
+			ajaxFetchFlowInfo(req, resp, ret, session.getUser(), projectName, flowName);
+		}
+		else {
+			String projectName = getParam(req, "project");
+			
+			ret.put("project", projectName);
+			if (ajaxName.equals("executeFlow")) {
+				ajaxAttemptExecuteFlow(req, resp, ret, session.getUser());
+			}
+		}
+		if (ret != null) {
+			this.writeJSON(resp, ret);
+		}
+	}
+
+	@Override
+	protected void handlePost(HttpServletRequest req, HttpServletResponse resp, 
+			Session session) throws ServletException, IOException {
+		if (hasParam(req, "ajax")) {
+			handleAJAXAction(req, resp, session);
 		}
 	}
 	
@@ -212,96 +305,7 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 		}
 		
 		return null;
-	}
-	
-	@Override
-	protected void handlePost(HttpServletRequest req, HttpServletResponse resp, Session session) throws ServletException, IOException {
-		if (hasParam(req, "ajax")) {
-			handleAJAXAction(req, resp, session);
-		}
-	}
-
-	private void handleAJAXAction(HttpServletRequest req, HttpServletResponse resp, Session session) throws ServletException, IOException {
-		HashMap<String, Object> ret = new HashMap<String, Object>();
-		String ajaxName = getParam(req, "ajax");
-		
-		if (hasParam(req, "execid")) {
-			int execid = getIntParam(req, "execid");
-			ExecutableFlow exFlow = null;
-
-			try {
-				exFlow = executorManager.getExecutableFlow(execid);
-			} catch (ExecutorManagerException e) {
-				ret.put("error", "Error fetching execution '" + execid + "': " + e.getMessage());
-			}
-
-			if (exFlow == null) {
-				ret.put("error", "Cannot find execution '" + execid + "'");
-			}
-			else {
-				if (ajaxName.equals("fetchexecflow")) {
-					ajaxFetchExecutableFlow(req, resp, ret, session.getUser(), exFlow);
-				}
-				else if (ajaxName.equals("fetchexecflowupdate")) {
-					ajaxFetchExecutableFlowUpdate(req, resp, ret, session.getUser(), exFlow);
-				}
-				else if (ajaxName.equals("cancelFlow")) {
-					ajaxCancelFlow(req, resp, ret, session.getUser(), exFlow);
-				}
-				else if (ajaxName.equals("restartFlow")) {
-					ajaxRestartFlow(req, resp, ret, session.getUser(), exFlow);
-				}
-				else if (ajaxName.equals("pauseFlow")) {
-					ajaxPauseFlow(req, resp, ret, session.getUser(), exFlow);
-				}
-				else if (ajaxName.equals("resumeFlow")) {
-					ajaxResumeFlow(req, resp, ret, session.getUser(), exFlow);
-				}
-				else if (ajaxName.equals("fetchExecFlowLogs")) {
-					ajaxFetchExecFlowLogs(req, resp, ret, session.getUser(), exFlow);
-				}
-				else if (ajaxName.equals("fetchExecJobLogs")) {
-					ajaxFetchJobLogs(req, resp, ret, session.getUser(), exFlow);
-				}
-				else if (ajaxName.equals("fetchExecJobSummary")) {
-					ajaxFetchJobSummary(req, resp, ret, session.getUser(), exFlow);
-				}
-				else if (ajaxName.equals("retryFailedJobs")) {
-					ajaxRestartFailed(req, resp, ret, session.getUser(), exFlow);
-				}
-//				else if (ajaxName.equals("fetchLatestJobStatus")) {
-//					ajaxFetchLatestJobStatus(req, resp, ret, session.getUser(), exFlow);
-//				}
-				else if (ajaxName.equals("flowInfo")) {
-					//String projectName = getParam(req, "project");
-					//Project project = projectManager.getProject(projectName);
-					//String flowName = getParam(req, "flow");
-					ajaxFetchExecutableFlowInfo(req, resp, ret, session.getUser(), exFlow);
-				}
-			}
-		}
-		else if (ajaxName.equals("getRunning")) {
-			String projectName = getParam(req, "project");
-			String flowName = getParam(req, "flow");
-			ajaxGetFlowRunning(req, resp, ret, session.getUser(), projectName, flowName);
-		}
-		else if (ajaxName.equals("flowInfo")) {
-			String projectName = getParam(req, "project");
-			String flowName = getParam(req, "flow");
-			ajaxFetchFlowInfo(req, resp, ret, session.getUser(), projectName, flowName);
-		}
-		else {
-			String projectName = getParam(req, "project");
-			
-			ret.put("project", projectName);
-			if (ajaxName.equals("executeFlow")) {
-				ajaxAttemptExecuteFlow(req, resp, ret, session.getUser());
-			}
-		}
-		if (ret != null) {
-			this.writeJSON(resp, ret);
-		}
-	}
+	}	
 
 //	private void ajaxFetchLatestJobStatus(HttpServletRequest req,HttpServletResponse resp, HashMap<String, Object> ret, User user, ExecutableFlow exFlow) {
 //		Project project = getProjectAjaxByPermission(ret, exFlow.getProjectId(), user, Type.READ);
@@ -732,7 +736,7 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 			return;
 		}
 		
-		ret.put("flow",  flowId);
+		ret.put("flow", flowId);
 		Flow flow = project.getFlow(flowId);
 		if (flow == null) {
 			ret.put("error", "Flow '" + flowId + "' cannot be found in project " + project);
@@ -752,7 +756,7 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 			return;
 		}
 		
-		ret.put("flow",  flowId);
+		ret.put("flow", flowId);
 		Flow flow = project.getFlow(flowId);
 		if (flow == null) {
 			ret.put("error", "Flow '" + flowId + "' cannot be found in project " + project);
