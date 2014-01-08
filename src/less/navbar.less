@@ -25,13 +25,14 @@
 }
 
 .navbar-enviro {
-  margin: 25px 20px 0px 10px;
+  margin: 30px 20px 0px 12px;
      
   .navbar-enviro-name {
     color: #ff3601;
     font-family: Helvetica, Arial, Sans-Serif;
     font-size: 118.75%;
     font-weight: bold;
+		line-height: 100%;
   }
        
   .navbar-enviro-server {
@@ -80,6 +81,11 @@
     > li > a {
       padding: 0px;
       color: #ccc;
+      &:focus,
+      &:hover {
+        color: #ccc;
+        background-color: transparent;
+      }
     }
 
     > .active {
@@ -92,11 +98,23 @@
       background-color: transparent;
       border-bottom: 1px solid #ff3601;
       &:hover {
+        color: #fff;
         background-color: transparent;
       }
     }
 
-    > .active > .open {
+    > li.dropdown {
+      padding: 0;
+    }
+
+    > li.dropdown > a {
+      padding: 25px 12px 25px 12px;
+    }
+
+    > .open > a,
+    > .open > a:hover,
+    > .open > a:focus {
+      color: #ccc;
       background-color: transparent;
     }
   }
