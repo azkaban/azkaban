@@ -24,7 +24,7 @@ azkaban.JobEditView = Backbone.View.extend({
 		"click #cancel-btn": "handleCancel",
 		"click #addRow": "handleAddRow",
 		"click table .editable": "handleEditColumn",
-		"click table .removeIcon": "handleRemoveColumn"
+		"click table .remove-btn": "handleRemoveColumn"
 	},
 	
 	initialize: function(setting) {
@@ -157,8 +157,7 @@ azkaban.JobEditView = Backbone.View.extend({
     $(remove).addClass("pull-right").addClass('remove-btn');
     var removeBtn = document.createElement("button");
     $(removeBtn).attr('type', 'button');
-    $(removeBtn).addClass('btn').addClass('btn-xs').addClass('btn-danger')
-        .addClass('removeIcon');
+    $(removeBtn).addClass('btn').addClass('btn-xs').addClass('btn-danger');
     $(removeBtn).text('Delete');
     $(remove).append(removeBtn);
 
@@ -240,8 +239,7 @@ azkaban.JobEditView = Backbone.View.extend({
       $(remove).addClass("pull-right").addClass('remove-btn');
       var removeBtn = document.createElement("button");
       $(removeBtn).attr('type', 'button');
-      $(removeBtn).addClass('btn').addClass('btn-xs').addClass('btn-danger')
-          .addClass('removeIcon');
+      $(removeBtn).addClass('btn').addClass('btn-xs').addClass('btn-danger');
       $(removeBtn).text('Delete');
       $(remove).append(removeBtn);
 			$(this.editingTarget).append(remove);
