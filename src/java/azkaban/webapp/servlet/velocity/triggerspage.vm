@@ -42,14 +42,9 @@
 #set ($current_page="triggers")
 #parse ("azkaban/webapp/servlet/velocity/nav.vm")
 
-    <div class="container-full">
-#parse ("azkaban/webapp/servlet/velocity/message.vm")
 #if ($errorMsg)
   #parse ("azkaban/webapp/servlet/velocity/errormsg.vm")
 #else
-  #parse ("azkaban/webapp/servlet/velocity/alerts.vm")
-#end
-		</div>
 
     <div class="az-page-header">
       <div class="container-full">
@@ -58,6 +53,9 @@
     </div>
 			
     <div class="container-full">
+
+  #parse ("azkaban/webapp/servlet/velocity/alerts.vm")
+
 			<div class="row">
         <div class="col-lg-12">
           <table id="triggersTbl" class="table table-striped table-bordered table-condensed table-hover">
@@ -72,8 +70,8 @@
               </tr>
             </thead>
             <tbody>
-#if($triggers)
-  #foreach($trigger in $triggers)
+  #if ($triggers)
+    #foreach ($trigger in $triggers)
               <tr>
                 <td>${trigger.triggerId}</td>
                 <td>${trigger.source}</td>
@@ -82,14 +80,15 @@
                 <td>${trigger.getStatus()}</td>
                 <!--td><button id="expireTriggerBtn" onclick="expireTrigger(${trigger.triggerId})" >Expire Trigger</button></td-->
               </tr>
-  #end
-#else
+    #end
+  #else
               <tr><td class="last">No Trigger Found</td></tr>
-#end
+  #end
             </tbody>
           </table>
         </div>
       </div>
     </div>
+#end
 	</body>
 </html>

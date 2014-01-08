@@ -53,14 +53,9 @@
 #set ($show_schedule="false")
 #parse ("azkaban/webapp/servlet/velocity/nav.vm")
 
-		<div class="container-full">
-#parse ("azkaban/webapp/servlet/velocity/message.vm")
 #if ($errorMsg)
   #parse ("azkaban/webapp/servlet/velocity/errormsg.vm")
 #else
-  #parse ("azkaban/webapp/servlet/velocity/alerts.vm")
-		</div>
-
 
 	## Page header
 
@@ -92,6 +87,8 @@
 		</div>
 
 		<div class="container-full">
+
+  #parse ("azkaban/webapp/servlet/velocity/alerts.vm")
 
 	## Breadcrumb
 
@@ -190,7 +187,7 @@
 	#parse ("azkaban/webapp/servlet/velocity/invalidsessionmodal.vm")
 	#parse ("azkaban/webapp/servlet/velocity/flowexecutionpanel.vm")
 	#parse ("azkaban/webapp/servlet/velocity/messagedialog.vm")
-#end
 		</div>
+#end
 	</body>
 </html>

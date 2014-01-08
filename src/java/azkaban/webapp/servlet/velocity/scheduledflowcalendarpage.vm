@@ -46,20 +46,17 @@
 #set ($current_page="schedule")
 #parse ("azkaban/webapp/servlet/velocity/nav.vm")
 
-    <div class="container-full">
-#parse ("azkaban/webapp/servlet/velocity/message.vm")
 #if ($errorMsg)
   #parse ("azkaban/webapp/servlet/velocity/errormsg.vm")
 #else
-  #parse ("azkaban/webapp/servlet/velocity/alerts.vm")
-#end
-		</div>
 
     <div class="az-page-header">
       <div class="container-full">
         <h1>Scheduled Flows</h1>
       </div>
     </div>
+
+  #parse ("azkaban/webapp/servlet/velocity/alerts.vm")
 
     <div class="container-full">
       <div class="row">
@@ -75,5 +72,6 @@
       
       <div id="contextMenu"></div>
     </div>
+#end
 	</body>
 </html>

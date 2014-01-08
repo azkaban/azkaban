@@ -38,13 +38,9 @@
 #set ($current_page="all")
 #parse ("azkaban/webapp/servlet/velocity/nav.vm")
 
-		<div class="container-full">
-#parse ("azkaban/webapp/servlet/velocity/message.vm")
 #if ($errorMsg)
   #parse ("azkaban/webapp/servlet/velocity/errormsg.vm")
 #else
-  #parse ("azkaban/webapp/servlet/velocity/alerts.vm")
-		</div>
 
 	## Page header
 
@@ -66,6 +62,8 @@
 
 		<div class="container-full">
 	
+  #parse ("azkaban/webapp/servlet/velocity/alerts.vm")
+  
   ## Breadcrumb
 
       <ol class="breadcrumb">
@@ -206,7 +204,7 @@
 				</div>
 			</div>
 
-#end
 		</div><!-- /container-full -->
+#end
 	</body>
 </html>

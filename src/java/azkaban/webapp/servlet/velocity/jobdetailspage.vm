@@ -42,12 +42,9 @@
 #set ($current_page="executing")
 #parse ("azkaban/webapp/servlet/velocity/nav.vm")
 
-		<div class="container-full">
 #if ($errorMsg)
   #parse ("azkaban/webapp/servlet/velocity/errormsg.vm")
 #else
-  #parse ("azkaban/webapp/servlet/velocity/alerts.vm")
-		</div>
 
 	## Page header.
 
@@ -66,16 +63,21 @@
 			</div>
 		</div>
 	
-	## Breadcrumb
+    <div class="container-full">
 
-		<div class="container-full">
+  #parse ("azkaban/webapp/servlet/velocity/alerts.vm")
+
+  ## Breadcrumb
+
 			<ol class="breadcrumb">
 				<li><a href="${context}/manager?project=${projectName}"><strong>Project</strong> $projectName</a></li>
 				<li><a href="${context}/manager?project=${projectName}&flow=${flowid}"><strong>Flow</strong> $flowid</a></li>
 				<li><a href="${context}/executor?execid=${execid}#jobslist"><strong>Execution</strong> $execid</a></li>
         <li class="active"><strong>Job</strong> $jobid</li>
 			</ol>
-			
+
+  ## Tabs
+
 			<ul class="nav nav-tabs" id="headertabs">
 				<li id="jobSummaryViewLink"><a href="#jobsummary">Summary</a></li>
 				<li id="jobLogViewLink"><a href="#joblog">Log</a></li>
@@ -165,7 +167,7 @@
 				</div>
 			</div>
 
-#end
 		</div>
+#end
 	</body>
 </html>

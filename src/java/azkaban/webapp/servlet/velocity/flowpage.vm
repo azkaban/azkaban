@@ -55,13 +55,9 @@
 #set ($current_page="all")
 #parse ("azkaban/webapp/servlet/velocity/nav.vm")
 
-		<div class="container-full">
-#parse ("azkaban/webapp/servlet/velocity/message.vm")
 #if ($errorMsg)
   #parse ("azkaban/webapp/servlet/velocity/errormsg.vm")
 #else
-  #parse ("azkaban/webapp/servlet/velocity/alerts.vm")
-		</div>
 	
 	## Page header.
 
@@ -81,13 +77,18 @@
 			</div>
 		</div>
 
-	## Breadcrumbs and tabs
-
 		<div class="container-full">
+      
+  #parse ("azkaban/webapp/servlet/velocity/alerts.vm")
+  
+  ## Breadcrumbs
+
       <ol class="breadcrumb">
         <li><a href="${context}/manager?project=${project.name}"><strong>Project</strong> $project.name</a></li>
         <li class="active"><strong>Flow</strong> $flowid</li>
       </ol>
+
+  ## Tabs
 
 			<ul class="nav nav-tabs" id="headertabs">
 				<li id="graphViewLink"><a href="#graph">Graph</a></li>
@@ -147,9 +148,7 @@
 	#parse ("azkaban/webapp/servlet/velocity/invalidsessionmodal.vm")
 	#parse ("azkaban/webapp/servlet/velocity/flowexecutionpanel.vm")
 	#parse ("azkaban/webapp/servlet/velocity/messagedialog.vm")
-#end
-
-##parse("azkaban/webapp/servlet/velocity/footer.vm")
 		</div><!-- /.container -->
+#end
 	</body>
 </body>

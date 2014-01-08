@@ -60,13 +60,9 @@
 #set ($current_page="all")
 #parse ("azkaban/webapp/servlet/velocity/nav.vm")
 
-		<div class="container-full">
-#parse ("azkaban/webapp/servlet/velocity/message.vm")
 #if ($errorMsg)
   #parse ("azkaban/webapp/servlet/velocity/errormsg.vm")
 #else
-  #parse ("azkaban/webapp/servlet/velocity/alerts.vm")
-		</div>
 	
 	## Page header
 
@@ -78,12 +74,16 @@
 
 		<div class="container-full">
 	
+  #parse ("azkaban/webapp/servlet/velocity/alerts.vm")
+
   ## Breadcrumb
 
       <ol class="breadcrumb">
         <li><a href="${context}/manager?project=${projectName}"><strong>Project</strong> $projectName</a></li>
         <li class="active"><strong>Job History</strong> $jobid</li>
       </ol>
+
+  ## Time graph and job history table.
 
 			<div class="row">
 				<div class="col-lg-12">
@@ -155,7 +155,7 @@
 				</div><!-- /.col-lg-12 -->
 			</div><!-- /.row -->
 
-#end
 		</div>
+#end
 	</body>
 </html>

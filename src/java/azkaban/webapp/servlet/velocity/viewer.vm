@@ -41,14 +41,14 @@
 #set ($current_page="viewer")
 #parse ("azkaban/webapp/servlet/velocity/nav.vm")
 
-    <div class="container-full">
 #if ($errorMsg)
   #parse ("azkaban/webapp/servlet/velocity/errormsg.vm")
 #else
+    <div class="container-full">
   #parse ("azkaban/webapp/servlet/velocity/alerts.vm")
-#end
 
-#parse ($viewervm)
+  #parse ($viewervm)
 		</div>
+#end
 	</body>
 </html>
