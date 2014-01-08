@@ -167,7 +167,7 @@
 				<div class="modal-dialog">
 					<div class="modal-content">
 						<div class="modal-header">
-							<button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+							<button type="button" class="close" data-dismiss="modal" aria-hidden="true" id="close-btn">&times;</button>
 							<h4 class="modal-title">Edit Job</h4>
 						</div>
 						<div class="modal-body">
@@ -203,7 +203,7 @@
 							</table>
 						</div>
 						<div class="modal-footer">
-							<button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+							<button type="button" class="btn btn-default" id="cancel-btn" data-dismiss="modal">Cancel</button>
 							<button type="button" class="btn btn-primary" id="set-btn">Set/Change Job Description</button>
 						</div>
 					</div>
