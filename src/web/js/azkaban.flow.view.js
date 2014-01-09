@@ -295,6 +295,7 @@ azkaban.ExecutionsView = Backbone.View.extend({
 var summaryView;
 azkaban.SummaryView = Backbone.View.extend({
 	events: {
+    'click #analyze-btn': 'analyzeLastRun'
 	},
 	
 	initialize: function(settings) {
@@ -303,7 +304,6 @@ azkaban.SummaryView = Backbone.View.extend({
 		
 		this.fetchDetails();
     this.fetchSchedule();
-		this.fetchLastRun();
 		this.model.trigger('render');
 	},
 
@@ -316,10 +316,7 @@ azkaban.SummaryView = Backbone.View.extend({
     };
 		var model = this.model;
     var successHandler = function(data) {
-      console.log(data);
-      model.set({
-        'jobTypes': data.jobTypes
-      });
+      model.set({ 'jobTypes': data.jobTypes });
       model.trigger('render');
     };
     $.get(requestURL, requestData, successHandler, 'json');
@@ -340,9 +337,49 @@ azkaban.SummaryView = Backbone.View.extend({
 		$.get(requestURL, requestData, successHandler, 'json');
 	},
 
-	fetchLastRun: function() {
-
+	analyzeLastRun: function() {
+		var requestURL = contextURL + "/executor";
+    var requestData = {
+      'ajax': 'fetchLastRunStats',
+      'project': projectName,
+      'flow': flowId
+    };
+    var view = this;
+    var successHandler = function(data) {
+      data = {
+        success: false,
+        message: "No last run data available. This flow has not been run yet.",
+        warnings: {},
+        jobs: {}
+      };
+      view.renderLastRun(data);
+    };
+    $.get(requestURL, requestData, successHandler, 'json');
 	},
+
+  renderLastRun: function(data) {
+    var view = this;
+    if (data == null || data.success == null || data.message == null) {
+      var msg = { message: "Error retrieving last run data."};
+      dust.render("flowsummary-no-data", msg, function(err, out) {
+        view.displayLastRun(out);
+      });
+    }
+    else if (data.success == false) {
+      dust.render("flowsummary-no-data", data, function(err, out) {
+        view.displayLastRun(out);
+      });
+    }
+    else {
+      dust.render("flowsummary-last-run", data, function(err, out) {
+        view.displayLastRun(out);
+      });
+    }
+  },
+
+  displayLastRun: function(out) {
+    $('#last-run-container').html(out);
+  },
 
 	handleChangeView: function(evt) {
 	},
@@ -352,9 +389,7 @@ azkaban.SummaryView = Backbone.View.extend({
       projectName: projectName,
 			flowName: flowId,
       jobTypes: this.model.get('jobTypes'),
-			general: this.model.get('general'),
 			schedule: this.model.get('schedule'),
-			lastRun: this.model.get('lastRun')
 		};
 		dust.render("flowsummary", data, function(err, out) {
 			$('#summary-view-content').html(out);

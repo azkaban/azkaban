@@ -1,5 +1,5 @@
-        <div class="col-lg-12">
-          <table class="table table-bordered table-condensed table-striped">
+        <div class="col-xs-12">
+          <table class="table table-bordered table-condensed">
             <tbody>
               <tr>
                 <td class="property-key">Flow name</td>
@@ -26,7 +26,7 @@
 							{/schedule}
 						</div>
 						{?schedule}
-						<table class="table table-condensed table-bordered table-striped">
+						<table class="table table-condensed table-bordered">
 							<tbody>
 								<tr>
 									<td class="property-key">Schedule ID</td>
@@ -60,52 +60,22 @@
 						{:else}
 						<div class="panel-body">
 							<div class="alert alert-info">
-								<h4>No Schedule</h4>
+								<h4>None</h4>
 								<p>This flow has not been scheduled.</p>
 							</div>
 						</div>
 						{/schedule}
 					</div>
+        </div>
 
-          <div class="panel panel-default">
-            <div class="panel-heading">Last Run Stats</div>
-            {?lastRun}
-            <table class="table table-bordered table-condensed table-striped">
-              <tbody>
-								<tr>
-									<td class="property-key">Max Map Slots from Largest Job</td>
-									<td>{lastRun.maxMapSlots}</td>
-                </tr>
-                <tr>
-									<td class="property-key">Max Reduce Slots from Largest Job</td>
-									<td>{lastRun.maxReduceSlots}</td>
-								</tr>
-								<tr>
-									<td class="property-key">Total Map Slots from All Jobs</td>
-									<td>{lastRun.totalMapSlots}</td>
-                </tr>
-                <tr>
-									<td class="property-key">Total Reduce Slots from All Jobs</td>
-									<td>{lastRun.totalReduceSlots}</td>
-								</tr>
-								<tr>
-									<td class="property-key">Total Number of Jobs</td>
-									<td>{lastRun.numJobs}</td>
-                </tr>
-                <tr>
-									<td class="property-key">Longest Task Time</td>
-									<td>{lastRun.longestTaskTime}</td>
-								</tr>
-              </tbody>
-            </table>
-            {:else}
-            <div class="panel-body">
-              <div class="alert alert-info">
-                <h4>No last run stats available</h4>
-                <p>Last run stats requires at least one successful run of the flow.</p>
-              </div>
-            </div>
-            {/lastRun}
+        <div class="col-xs-12" id="last-run-container">
+          <div class="alert alert-info" id="analyze-last-run">
+            <h4>Analyze last run</h4>
+            <p>Analyze the last run for aggregate performance statistics.</p>
+            <p><strong>Note:</strong> this may take a few minutes, especially if your flow is large.</p>
+            <p>
+              <button type="button" id="analyze-btn" class="btn btn-primary">Analyze</button>
+            </p>
           </div>
         </div><!-- /.col-lg-12 -->
 
