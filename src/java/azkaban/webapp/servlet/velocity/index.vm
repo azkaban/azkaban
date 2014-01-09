@@ -1,5 +1,5 @@
 #*
- * Copyright 2012 LinkedIn, Inc
+ * Copyright 2012 LinkedIn Corp.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -15,16 +15,13 @@
 *#
 
 <!DOCTYPE html> 
-<html>
+<html lang="en">
 	<head>
-#parse( "azkaban/webapp/servlet/velocity/style.vm" )
-		<script type="text/javascript" src="${context}/js/jquery/jquery-1.9.1.js"></script>
-		<script type="text/javascript" src="${context}/js/namespace.js"></script>
-		<script type="text/javascript" src="${context}/js/underscore-1.4.4-min.js"></script>
-		<script type="text/javascript" src="${context}/js/backbone-0.9.10-min.js"></script>
-		<script type="text/javascript" src="${context}/js/jquery.simplemodal-1.4.4.js"></script>
+
+#parse("azkaban/webapp/servlet/velocity/style.vm")
+#parse("azkaban/webapp/servlet/velocity/javascript.vm")
+
 		<script type="text/javascript" src="${context}/js/azkaban.table.sort.js"></script>
-		<script type="text/javascript" src="${context}/js/azkaban.nav.js"></script>
 		<script type="text/javascript" src="${context}/js/azkaban.main.view.js"></script>
 		<script type="text/javascript">
 			var contextURL = "${context}";
@@ -35,111 +32,140 @@
 		</script>
 	</head>
 	<body>
-		#set($current_page="all")
-#parse( "azkaban/webapp/servlet/velocity/nav.vm" )
-		<div class="messaging"><p id="messageClose">X</p><p id="message"></p></div>  
 
-		<div class="content">
-			#if($error_message != "null")
-				<div class="box-error-message">$error_message</div>
-			#elseif($success_message != "null")
-				<div class="box-success-message">$success_message</div>
-			#end
-			<div id="all-jobs-content">
-				<div class="section-hd">
+#set ($current_page="all")
+#parse ("azkaban/webapp/servlet/velocity/nav.vm")
+
+## Page Header and project search form.
+
+		<div class="az-page-header">
+      <div class="container-full">
+        <div class="row">
+          <div class="col-lg-6">
 #if ($allProjects)
-					<h2>All Projects</h2>
-					<div class="section-sub-hd">
-						<h4><a href="${context}/">My Projects</a></h4>
-					</div>
+            <h1><a href="${context}/index">All Projects</a></h1>
 #else
-					<h2>My Projects</h2>
-					<div class="section-sub-hd">
-						<h4><a href="${context}/?all">All Projects</a></h4>
-					</div>
+            <h1><a href="${context}/index">My Projects</a></h1>
 #end
-					<form id="search-form" method="get">
-						<input type="hidden" name="doaction" value="search">
-						<input type="submit" value="Quick Search" class="search-btn">
+          </div>
+          <div class="col-lg-6">
+            <form id="search-form" method="get" class="form-inline az-page-header-form" role="form">
+              <input type="hidden" name="doaction" value="search">
 #if ($allProjects)
-						<input type="hidden" name="all" value="true">			
-#end			
-						<input id="searchtextbox" type="text" placeholder="project name containing ..." value=#if($search_term) ${search_term} #else "" #end class="search-input" name="searchterm">
-					</form>
-
+              <input type="hidden" name="all" value="true">				
+#end
+              <div class="form-group col-md-9">
+                <div class="input-group">
+                  <input id="search-textbox" type="text" placeholder="Project name containing..." value=#if($search_term) ${search_term} #else "" #end class="form-control input-sm" name="searchterm">
+                  <span class="input-group-btn">
+                    <button class="btn btn-sm btn-primary">Quick Search</button>
+                  </span>
+                </div>
+              </div>
 #if (!$hideCreateProject)
-					<a id="create-project-btn" class="btn1 " href="#">Create Project</a>
+              <div class="form-group col-md-3" id="create-project">
+## Note: The Create Project button is not completely flush to the right because
+## form-group has padding.
+                <div class="pull-right">
+                  <button type="button" id="create-project-btn" class="btn btn-sm btn-success"><span class="glyphicon glyphicon-plus"></span> Create Project</button>
+                </div>
+              </div>
 #end
-				</div><!-- end .section-hd -->
+            </form>
+          </div>
+        </div>
 			</div>
-			<table id="all-jobs" class="all-jobs job-table project-table">
-				<thead>
-					<tr>
-						<th class="tb-name">Name</th>
-						<th class="tb-up-date">Modified Date</th>
-						<th class="tb-owner">Modified By</th>
-					</tr>
-				</thead>
-				<tbody>
-#if($projects)
-#foreach($project in $projects)
-					<tr class="row">
-						<td class="tb-name expand project-expand" id="${project.name}">
-							<span class="state-icon"></span>
-							<a href="${context}/manager?project=${project.name}">$project.name</a>
-						</td>
-						<td class="tb-up-date">$utils.formatDate($project.lastModifiedTimestamp)</td>
-						<td class="tb-owner">$project.lastModifiedUser</td>
-					</tr>
-					<tr class="childrow" id="${project.name}-child" style="display: none;">
-						<td class="expandedFlow" colspan="3">
-							<table class="innerTable">
-								<thead>
-									<tr><th class="tb-name">Flows</th></tr>
-								</thead>
-								<tbody id="${project.name}-tbody">
-								</tbody>
-							</table>
-						</td>
-					</tr>
-#end
-#else
-					<tr><td class="last">No viewable projects found.</td></tr>
-#end
-				</tbody>
-			</table>
 		</div>
 
-		<!-- modal content -->
-		<div id="create-project" class="modal">
-			<h3>Create Project</h3>
-			<div id="errorMsg" class="box-error-message">$errorMsg</div>
-			
-			<div class="message">
-				<fieldset>
-					<dl>
-						<dt><label for="path">Project Name</label></dt>
-						<dd><input id="path" name="project" type="text" size="20" title="The project name."/></dd>
-						<dt>Description</dt>
-						<dd><textarea id="description" name="description" rows="2" cols="40"></textarea></dd>
-					
-						<input name="action" type="hidden" value="create" />
-						<input name="redirect" type="hidden" value="$!context/" />
-					</dl>
-				</fieldset>
-			</div>
-			<div class="actions">
-				<a class="yes btn2" id="create-btn" href="#">Create Project</a>
-				<a class="no simplemodal-close btn3" href="#">Cancel</a>
-			</div>
-			<div id="invalid-session" class="modal">
-				<h3>Invalid Session</h3>
-				<p>Session has expired. Please re-login.</p>
-				<div class="actions">
-					<a class="yes btn2" id="login-btn" href="#">Re-login</a>
+		<div class="container-full">
+      
+#parse ("azkaban/webapp/servlet/velocity/alerts.vm")
+
+## Table of projects.
+
+			<div class="row">
+				<div class="col-lg-12">
+          <table class="table table-condensed table-striped table-bordered table-hover" id="all-jobs">
+            <thead>
+              <tr>
+                <th class="tb-name">Name</th>
+                <th class="tb-up-date">Modified Date</th>
+                <th class="tb-owner">Modified By</th>
+              </tr>
+            </thead>
+            <tbody>
+#if (!$projects.isEmpty())
+	#foreach ($project in $projects)
+              <tr class="az-project-row">
+                <td id="${project.name}" class="tb-name project-expand expanded">
+                  <span class="state-icon state-icon-expand az-expander"></span>
+                  <a href="${context}/manager?project=${project.name}">$project.name</a>
+                </td>
+                <td class="tb-up-date">$utils.formatDate($project.lastModifiedTimestamp)</td>
+                <td class="tb-owner">$project.lastModifiedUser</td>
+              </tr>
+              <tr class="childrow collapse" id="${project.name}-child">
+                <td colspan="3">
+                  <table class="table table-bordered">
+                    <thead>
+                      <tr>
+                        <th class="tb-name">Flows</th>
+                      </tr>
+                    </thead>
+                    <tbody id="${project.name}-tbody">
+                    </tbody>
+                  </table>
+                </td>
+              </tr>
+	#end
+#else
+              <tr>
+                <td colspan="3">No viewable projects found.</td>
+              </tr>
+#end
+            </tbody>
+          </table>
 				</div>
 			</div>
-		</div>
+
+## Modal dialog to be displayed to create a new project.
+
+			<div class="modal" id="create-project-modal">
+				<div class="modal-dialog">
+					<div class="modal-content">
+						<div class="modal-header">
+							<button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+							<h4 class="modal-title">Create Project</h4>
+						</div>
+						<div class="modal-body">
+							<div class="alert alert-danger" id="modal-error-msg">$error_msg</div>
+							<fieldset class="form-horizontal">
+								<div class="form-group">
+									<label for="path" class="col-sm-2 control-label">Name</label>
+									<div class="col-sm-10">
+										<input id="path" name="project" type="text" class="form-control" placeholder="Project name">
+									</div>
+								</div>
+								<div class="form-group">
+									<label for="description" class="col-sm-2 control-label">Description</label>
+									<div class="col-sm-10">
+										<textarea id="description" name="description" rows="2" cols="40" class="form-control" placeholder="Project description"></textarea>
+									</div>
+								</div>
+							</fieldset>
+						</div>
+						<div class="modal-footer">
+							<input name="action" type="hidden" value="create">
+							<input name="redirect" type="hidden" value="$!context/">
+							<button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+							<button type="button" class="btn btn-primary" id="create-btn">Create Project</button>
+						</div>
+					</div>
+				</div>
+			</div>
+
+#parse ("azkaban/webapp/servlet/velocity/invalidsessionmodal.vm")
+		</div><!-- /container -->
 	</body>
 </html>
 

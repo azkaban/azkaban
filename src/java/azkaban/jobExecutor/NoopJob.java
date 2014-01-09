@@ -1,5 +1,5 @@
 /*
- * Copyright 2012 LinkedIn, Inc
+ * Copyright 2012 LinkedIn Corp.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -13,6 +13,7 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
+
 package azkaban.jobExecutor;
 
 import org.apache.log4j.Logger;
@@ -25,7 +26,7 @@ import azkaban.utils.Props;
 public class NoopJob implements Job {
 	private String jobId;
 
-	public NoopJob(String jobid, Props props, Logger log) {
+	public NoopJob(String jobid, Props props, Props jobProps, Logger log) {
 		this.jobId = jobid;
 	}
 

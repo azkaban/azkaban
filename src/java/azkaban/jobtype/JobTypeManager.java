@@ -1,7 +1,5 @@
-package azkaban.jobtype;
-
 /*
- * Copyright 2012 LinkedIn, Inc
+ * Copyright 2012 LinkedIn Corp.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -15,6 +13,9 @@ package azkaban.jobtype;
  * License for the specific language governing permissions and limitations under
  * the License.
  */
+
+package azkaban.jobtype;
+
 import azkaban.jobExecutor.JavaProcessJob;
 import azkaban.jobExecutor.Job;
 import azkaban.jobExecutor.NoopJob;
@@ -90,7 +91,7 @@ public class JobTypeManager
 		jobToClass.put("script", ScriptJob.class);	
 	}
 
-	// load Job Typs from dir
+	// load Job Types from jobtype plugin dir
 	private void loadPluginJobTypes() throws JobTypeManagerException
 	{
 		File jobPluginsDir = new File(jobtypePluginDir);
@@ -130,19 +131,33 @@ public class JobTypeManager
 			throw new JobTypeManagerException("Failed to get global jobtype properties" + e.getCause());
 		}
 		
-		for(File dir : jobPluginsDir.listFiles()) {
-			if(dir.isDirectory() && dir.canRead()) {
-				// get its conf file
-				try {
-					loadJob(dir, globalConf, globalSysConf);
+		
+		synchronized (this) {
+			ClassLoader prevCl = Thread.currentThread().getContextClassLoader();
+			try{
+				for(File dir : jobPluginsDir.listFiles()) {
+					if(dir.isDirectory() && dir.canRead()) {
+						// get its conf file
+						try {
+							loadJob(dir, globalConf, globalSysConf);
+							Thread.currentThread().setContextClassLoader(prevCl);
+						}
+						catch (Exception e) {
+							logger.error("Failed to load jobtype " + dir.getName() + e.getMessage());
+							throw new JobTypeManagerException(e);
+						}
+					}
 				}
-				catch (Exception e) {
-					logger.error("Failed to load jobtype " + dir.getName() + e.getMessage());
-					throw new JobTypeManagerException(e);
-				}
+			} catch(Exception e) {
+				e.printStackTrace();
+				throw new JobTypeManagerException(e);
+			} catch(Throwable t) {
+				t.printStackTrace();
+				throw new JobTypeManagerException(t);
+			} finally {
+				Thread.currentThread().setContextClassLoader(prevCl);
 			}
-		}
-
+ 		}
 	}
 	
 	public static File findFilefromDir(File dir, String fn){
@@ -213,7 +228,6 @@ public class JobTypeManager
 		try {
 			if(confFile != null) {
 				conf = new Props(commonConf, confFile);
-//				conf = PropsUtils.resolveProps(conf);
 			}
 			else {
 				conf = new Props(commonConf);
@@ -236,18 +250,56 @@ public class JobTypeManager
 		logger.info("Loading jobtype " + jobtypeName );
 
 		// sysconf says what jars/confs to load
-		//List<String> jobtypeClasspath = sysConf.getStringList("jobtype.classpath", null, ",");
 		List<URL> resources = new ArrayList<URL>();		
-		for(File f : dir.listFiles()) {
-			try {
-				if(f.getName().endsWith(".jar")) {
-					resources.add(f.toURI().toURL());
-					logger.info("adding to classpath " + f.toURI().toURL());
+		
+		try {
+			//first global classpath
+			logger.info("Adding global resources.");
+			List<String> typeGlobalClassPath = sysConf.getStringList("jobtype.global.classpath", null, ",");
+			if(typeGlobalClassPath != null) {
+				for(String jar : typeGlobalClassPath) {
+					URL cpItem = new File(jar).toURI().toURL();
+					if(!resources.contains(cpItem)) {
+						logger.info("adding to classpath " + cpItem);
+						resources.add(cpItem);
+					}
 				}
-			} catch (MalformedURLException e) {
-				// TODO Auto-generated catch block
-				throw new JobTypeManagerException(e);
 			}
+			
+			//type specific classpath
+			logger.info("Adding type resources.");
+			List<String> typeClassPath = sysConf.getStringList("jobtype.classpath", null, ",");
+			if(typeClassPath != null) {
+				for(String jar : typeClassPath) {
+					URL cpItem = new File(jar).toURI().toURL();
+					if(!resources.contains(cpItem)) {
+						logger.info("adding to classpath " + cpItem);
+						resources.add(cpItem);
+					}
+				}
+			}			
+			List<String> jobtypeLibDirs = sysConf.getStringList("jobtype.lib.dir", null, ",");
+			if(jobtypeLibDirs != null) {
+				for(String libDir : jobtypeLibDirs) {
+					for(File f : new File(libDir).listFiles()) {
+						if(f.getName().endsWith(".jar")) {
+								resources.add(f.toURI().toURL());
+								logger.info("adding to classpath " + f.toURI().toURL());
+						}
+					}
+				}
+			}
+			
+			logger.info("Adding type override resources.");
+			for(File f : dir.listFiles()) {
+				if(f.getName().endsWith(".jar")) {
+						resources.add(f.toURI().toURL());
+						logger.info("adding to classpath " + f.toURI().toURL());
+				}
+			}
+			
+		} catch (MalformedURLException e) {
+			throw new JobTypeManagerException(e);
 		}
 		
 		// each job type can have a different class loader
@@ -265,7 +317,7 @@ public class JobTypeManager
 		logger.info("Doing simple testing...");
 		try {
 			Props fakeSysProps = new Props(sysConf);
-			fakeSysProps.put("type", jobtypeName);
+//			fakeSysProps.put("type", jobtypeName);
 			Props fakeJobProps = new Props(conf);
 			@SuppressWarnings("unused")
 			Job job = (Job)Utils.callConstructor(clazz, "dummy", fakeSysProps, fakeJobProps, logger);

@@ -1,5 +1,5 @@
 /*
- * Copyright 2012 LinkedIn, Inc
+ * Copyright 2012 LinkedIn Corp.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -20,7 +20,6 @@ import azkaban.utils.Props;
 import azkaban.utils.cache.Cache;
 import azkaban.utils.cache.CacheManager;
 import azkaban.utils.cache.Cache.EjectionPolicy;
-import azkaban.utils.cache.Element;
 
 
 /**
@@ -33,7 +32,7 @@ import azkaban.utils.cache.Element;
  */
 public class SessionCache {
 	private static final int MAX_NUM_SESSIONS = 10000;
-	private static final int SESSION_TIME_TO_LIVE = 10000;
+	private static final long SESSION_TIME_TO_LIVE = 24*60*60*1000L;
 //	private CacheManager manager = CacheManager.create();
 	private Cache cache;
 
@@ -48,7 +47,7 @@ public class SessionCache {
 		cache = manager.createCache();
 		cache.setEjectionPolicy(EjectionPolicy.LRU);
 		cache.setMaxCacheSize(props.getInt("max.num.sessions", MAX_NUM_SESSIONS));
-		cache.setExpiryTimeToLiveMs(props.getInt("session.time.to.live", SESSION_TIME_TO_LIVE));
+		cache.setExpiryTimeToLiveMs(props.getLong("session.time.to.live", SESSION_TIME_TO_LIVE));
 	}
 
 	/**

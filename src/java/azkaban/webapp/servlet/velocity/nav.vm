@@ -1,5 +1,5 @@
 #*
- * Copyright 2012 LinkedIn, Inc
+ * Copyright 2012 LinkedIn Corp.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -13,34 +13,59 @@
  * License for the specific language governing permissions and limitations under
  * the License.
 *#
-		<div id="header" class="header">
-#parse( "azkaban/webapp/servlet/velocity/title.vm" )
-			<script type="text/javascript">
-				function navMenuClick(url) {
-					window.location.href=url;
-				}
 
-			</script>
-
-			<ul id="nav" class="nav">
-				<li id="all-jobs-tab" #if($current_page == 'all')class="selected"#end onClick="navMenuClick('$!context/')"><a href="$!context/">Projects</a></li>
-				<li id="scheduled-jobs-tab" #if($current_page == 'schedule')class="selected"#end onClick="navMenuClick('$!context/schedule')"><a href="$!context/schedule">Scheduled</a></li>
-				<li id="executing-jobs-tab" #if($current_page == 'executing')class="selected"#end onClick="navMenuClick('$!context/executor')"><a href="$!context/executor">Executing</a></li>
-				<li id="history-jobs-tab" #if($current_page == 'history')class="selected"#end onClick="navMenuClick('$!context/history')"><a href="$!context/history">History</a></li>
-				
-				#foreach($viewer in $viewers)
-					#if(!$viewer.hidden)
-					<li #if($current_page == $viewer.pluginName) class="selected"#end onClick="navMenuClick('$!context/$viewer.pluginPath')">
-						<a href="$!context/$viewer.pluginPath">$viewer.pluginName</a>
-					</li>
-					#end
-				#end
-			</ul>
-			
-			<div id="user-id">
-				<a>${user_id}<div id="user-down"></div></a>    
-				<div id="user-menu">
-					<ul><li><a id="logout" href="$!context?logout">logout</a></li></ul>
+    <script type="text/javascript">
+      function navMenuClick(url) {
+        window.location.href = url;
+      }
+    </script>
+    <div class="navbar navbar-inverse navbar-static-top">
+      <div class="container-full">
+        <div class="navbar-header">
+#if ($navbar_disabled != 1)
+          <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+#end
+					<div class="navbar-logo">
+						<a href="${context}/">Azkaban</a>
+					</div>
+        </div>
+				<div class="navbar-left navbar-enviro">
+					<div class="navbar-enviro-name">${azkaban_name}</div>
+					<div class="navbar-enviro-server">${azkaban_label}</div>
 				</div>
-			</div>
-		</div>
+        <div class="navbar-collapse collapse">
+#if ($navbar_disabled != 1)
+          <ul class="nav navbar-nav">
+						<li#if($current_page == 'all') class="active"#end onClick="navMenuClick('$!context/')"><a href="$!context/index">Projects</a></li>
+						<li#if($current_page == 'schedule') class="active"#end onClick="navMenuClick('$!context/schedule')"><a href="$!context/schedule">Scheduling</a></li>
+						<!--<li#if($current_page == 'triggers') class="active"#end onClick="navMenuClick('$!context/triggers')"><a href="$!context/triggers">Triggers</a></li>-->
+						<li#if($current_page == 'executing') class="active"#end onClick="navMenuClick('$!context/executor')"><a href="$!context/executor">Executing</a></li>
+						<li#if($current_page == 'history') class="active"#end onClick="navMenuClick('$!context/history')"><a href="$!context/history">History</a></li>
+	#foreach ($viewer in $viewers)
+		#if (!$viewer.hidden)
+						<li#if($current_page == $viewer.pluginName) class="active"#end onClick="navMenuClick('$!context/$viewer.pluginPath')"><a href="$!context/$viewer.pluginPath">$viewer.pluginName</a></li>
+		#end
+	#end
+
+	#foreach ($trigger in $triggerPlugins)
+		#if (!$trigger.hidden)
+						<li#if($current_page == $trigger.pluginName) class="active"#end onClick="navMenuClick('$!context/$trigger.pluginPath')"><a href="$!context/$trigger.pluginPath">$trigger.pluginName</a></li>
+		#end
+	#end
+          </ul>
+          <ul class="nav navbar-nav navbar-right">
+            <li class="dropdown">
+							<a href="#" class="dropdown-toggle" data-toggle="dropdown">${user_id} <b class="caret"></b></a>
+              <ul class="dropdown-menu">
+                <li><a href="$!context?logout">Logout</a></li>
+              </ul>
+            </li>
+          </ul>
+#end
+        </div><!--/.nav-collapse -->
+      </div>
+    </div>

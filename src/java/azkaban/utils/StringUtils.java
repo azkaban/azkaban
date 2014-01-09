@@ -1,5 +1,5 @@
 /*
- * Copyright 2012 LinkedIn, Inc
+ * Copyright 2012 LinkedIn Corp.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -13,6 +13,7 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
+
 package azkaban.utils;
 
 import java.util.Collection;
@@ -36,6 +37,17 @@ public class StringUtils {
 		buf.append(quoteCh);
 
 		return buf.toString();
+	}
+	
+	@Deprecated
+	public static String join(List<String> list, String delimiter) {
+		StringBuffer buffer = new StringBuffer();
+		for (String str: list) {
+			buffer.append(str);
+			buffer.append(delimiter);
+		}
+		
+		return buffer.toString();
 	}
 	
 	/**

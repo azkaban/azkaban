@@ -1,5 +1,5 @@
 /*
- * Copyright 2012 LinkedIn, Inc
+ * Copyright 2012 LinkedIn Corp.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -16,6 +16,7 @@
 
 package azkaban.executor;
 
+import java.io.File;
 import java.io.IOException;
 import java.lang.Thread.State;
 import java.net.URI;
@@ -39,6 +40,10 @@ import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.log4j.Logger;
 import org.joda.time.DateTime;
 
+import azkaban.alert.Alerter;
+import azkaban.execapp.event.Event;
+import azkaban.execapp.event.Event.Type;
+import azkaban.execapp.event.EventHandler;
 import azkaban.project.Project;
 import azkaban.scheduler.ScheduleStatisticManager;
 import azkaban.utils.FileIOUtils.JobMetaData;
@@ -51,7 +56,7 @@ import azkaban.utils.Props;
  * Executor manager used to manage the client side job.
  *
  */
-public class ExecutorManager {
+public class ExecutorManager extends EventHandler implements ExecutorManagerAdapter {
 	private static Logger logger = Logger.getLogger(ExecutorManager.class);
 	private ExecutorLoader executorLoader;
 	private String executorHost;
@@ -62,46 +67,54 @@ public class ExecutorManager {
 	private ConcurrentHashMap<Integer, Pair<ExecutionReference, ExecutableFlow>> runningFlows = new ConcurrentHashMap<Integer, Pair<ExecutionReference, ExecutableFlow>>();
 	private ConcurrentHashMap<Integer, ExecutableFlow> recentlyFinished = new ConcurrentHashMap<Integer, ExecutableFlow>();
 
-	private ExecutorMailer mailer;
 	private ExecutingManagerUpdaterThread executingManager;
 	
 	private static final long DEFAULT_EXECUTION_LOGS_RETENTION_MS = 3*4*7*24*60*60*1000l;
 	private long lastCleanerThreadCheckTime = -1;
 	
 	private long lastThreadCheckTime = -1;
+	private String updaterStage = "not started";
+
+	private Map<String, Alerter> alerters;
 	
-	public ExecutorManager(Props props, ExecutorLoader loader) throws ExecutorManagerException {
+	File cacheDir;
+	
+	public ExecutorManager(Props props, ExecutorLoader loader, Map<String, Alerter> alters) throws ExecutorManagerException {
+		
 		this.executorLoader = loader;
 		this.loadRunningFlows();
-		
 		executorHost = props.getString("executor.host", "localhost");
 		executorPort = props.getInt("executor.port");
-		mailer = new ExecutorMailer(props);
+		
+		alerters = alters;
+		
+		cacheDir = new File(props.getString("cache.directory", "cache"));
+
 		executingManager = new ExecutingManagerUpdaterThread();
 		executingManager.start();
-
+		
 		long executionLogsRetentionMs = props.getLong("execution.logs.retention.ms", DEFAULT_EXECUTION_LOGS_RETENTION_MS);
 		cleanerThread = new CleanerThread(executionLogsRetentionMs);
 		cleanerThread.start();
+		
 	}
 	
-	public String getExecutorHost() {
-		return executorHost;
-	}
-	
-	public int getExecutorPort() {
-		return executorPort;
-	}
-	
-	public State getExecutorThreadState() {
+	@Override
+	public State getExecutorManagerThreadState() {
 		return executingManager.getState();
 	}
 	
-	public boolean isThreadActive() {
+	public String getExecutorThreadStage() {
+		return updaterStage;
+	}
+	
+	@Override
+	public boolean isExecutorManagerThreadActive() {
 		return executingManager.isAlive();
 	}
 	
-	public long getLastThreadCheckTime() {
+	@Override
+	public long getLastExecutorManagerThreadCheckTime() {
 		return lastThreadCheckTime;
 	}
 	
@@ -109,6 +122,7 @@ public class ExecutorManager {
 		return this.lastCleanerThreadCheckTime;
 	}
 	
+	@Override
 	public Set<String> getPrimaryServerHosts() {
 		// Only one for now. More probably later.
 		HashSet<String> ports = new HashSet<String>();
@@ -116,6 +130,7 @@ public class ExecutorManager {
 		return ports;
 	}
 	
+	@Override
 	public Set<String> getAllActiveExecutorServerHosts() {
 		// Includes non primary server/hosts
 		HashSet<String> ports = new HashSet<String>();
@@ -132,38 +147,37 @@ public class ExecutorManager {
 		runningFlows.putAll(executorLoader.fetchActiveFlows());
 	}
 	
+	@Override
 	public List<Integer> getRunningFlows(int projectId, String flowId) {
 		ArrayList<Integer> executionIds = new ArrayList<Integer>();
 		for (Pair<ExecutionReference, ExecutableFlow> ref : runningFlows.values()) {
-			if (ref.getSecond().getFlowId().equals(flowId)) {
+			if (ref.getSecond().getFlowId().equals(flowId) && ref.getSecond().getProjectId() == projectId) {
 				executionIds.add(ref.getFirst().getExecId());
 			}
 		}
-		
 		return executionIds;
 	}
 	
+	@Override
 	public boolean isFlowRunning(int projectId, String flowId) {
 		for (Pair<ExecutionReference, ExecutableFlow> ref : runningFlows.values()) {
-
 			if (ref.getSecond().getProjectId() == projectId && ref.getSecond().getFlowId().equals(flowId)) {
 				return true;
 			}
 		}
-		
 		return false;
 	}
 	
+	@Override
 	public ExecutableFlow getExecutableFlow(int execId) throws ExecutorManagerException {
 		Pair<ExecutionReference, ExecutableFlow> active = runningFlows.get(execId);
-		
 		if (active == null) {
 			return executorLoader.fetchExecutableFlow(execId);
 		}
-
 		return active.getSecond();
 	}
 	
+	@Override
 	public List<ExecutableFlow> getRunningFlows() {
 		ArrayList<ExecutableFlow> flows = new ArrayList<ExecutableFlow>();
 		for (Pair<ExecutionReference, ExecutableFlow> ref : runningFlows.values()) {
@@ -172,43 +186,60 @@ public class ExecutorManager {
 		return flows;
 	}
 	
+	public String getRunningFlowIds() {
+		List<Integer> allIds = new ArrayList<Integer>();
+		for (Pair<ExecutionReference, ExecutableFlow> ref : runningFlows.values()) {
+			allIds.add(ref.getSecond().getExecutionId());
+		}
+		Collections.sort(allIds);
+		return allIds.toString();
+	}
+	
 	public List<ExecutableFlow> getRecentlyFinishedFlows() {
 		return new ArrayList<ExecutableFlow>(recentlyFinished.values());
 	}
 	
+	@Override
 	public List<ExecutableFlow> getExecutableFlows(Project project, String flowId, int skip, int size) throws ExecutorManagerException {
 		List<ExecutableFlow> flows = executorLoader.fetchFlowHistory(project.getId(), flowId, skip, size);
 		return flows;
 	}
 	
+	@Override
 	public List<ExecutableFlow> getExecutableFlows(int skip, int size) throws ExecutorManagerException {
 		List<ExecutableFlow> flows = executorLoader.fetchFlowHistory(skip, size);
 		return flows;
 	}
 	
+	@Override
 	public List<ExecutableFlow> getExecutableFlows(String flowIdContains, int skip, int size) throws ExecutorManagerException {
 		List<ExecutableFlow> flows = executorLoader.fetchFlowHistory(null, '%'+flowIdContains+'%', null, 0, -1, -1 , skip, size);
 		return flows;
 	}
 
+	@Override
 	public List<ExecutableFlow> getExecutableFlows(String projContain, String flowContain, String userContain, int status, long begin, long end, int skip, int size) throws ExecutorManagerException {
 		List<ExecutableFlow> flows = executorLoader.fetchFlowHistory(projContain, flowContain, userContain, status, begin, end , skip, size);
 		return flows;
 	}
 	
+	@Override
 	public List<ExecutableJobInfo> getExecutableJobs(Project project, String jobId, int skip, int size) throws ExecutorManagerException {
 		List<ExecutableJobInfo> nodes = executorLoader.fetchJobHistory(project.getId(), jobId, skip, size);
 		return nodes;
 	}
 	
+	@Override
 	public int getNumberOfJobExecutions(Project project, String jobId) throws ExecutorManagerException{
 		return executorLoader.fetchNumExecutableNodes(project.getId(), jobId);
 	}
 	
+	@Override
 	public int getNumberOfExecutions(Project project, String flowId) throws ExecutorManagerException{
 		return executorLoader.fetchNumExecutableFlows(project.getId(), flowId);
 	}
 	
+	@Override
 	public LogData getExecutableFlowLog(ExecutableFlow exFlow, int offset, int length) throws ExecutorManagerException {
 		Pair<ExecutionReference, ExecutableFlow> pair = runningFlows.get(exFlow.getExecutionId());
 		if (pair != null) {
@@ -226,10 +257,10 @@ public class ExecutorManager {
 		}
 	}
 	
+	@Override
 	public LogData getExecutionJobLog(ExecutableFlow exFlow, String jobId, int offset, int length, int attempt) throws ExecutorManagerException {
 		Pair<ExecutionReference, ExecutableFlow> pair = runningFlows.get(exFlow.getExecutionId());
 		if (pair != null) {
-
 			Pair<String,String> typeParam = new Pair<String,String>("type", "job");
 			Pair<String,String> jobIdParam = new Pair<String,String>("jobId", jobId);
 			Pair<String,String> offsetParam = new Pair<String,String>("offset", String.valueOf(offset));
@@ -246,6 +277,7 @@ public class ExecutorManager {
 		}
 	}
 	
+	@Override
 	public JobMetaData getExecutionJobMetaData(ExecutableFlow exFlow, String jobId, int offset, int length, int attempt) throws ExecutorManagerException {
 		Pair<ExecutionReference, ExecutableFlow> pair = runningFlows.get(exFlow.getExecutionId());
 		if (pair != null) {
@@ -265,6 +297,7 @@ public class ExecutorManager {
 		}
 	}
 	
+	@Override
 	public void cancelFlow(ExecutableFlow exFlow, String userId) throws ExecutorManagerException {
 		synchronized(exFlow) {
 			Pair<ExecutionReference, ExecutableFlow> pair = runningFlows.get(exFlow.getExecutionId());
@@ -275,6 +308,7 @@ public class ExecutorManager {
 		}
 	}
 	
+	@Override
 	public void resumeFlow(ExecutableFlow exFlow, String userId) throws ExecutorManagerException {
 		synchronized(exFlow) {
 			Pair<ExecutionReference, ExecutableFlow> pair = runningFlows.get(exFlow.getExecutionId());
@@ -285,6 +319,7 @@ public class ExecutorManager {
 		}
 	}
 	
+	@Override
 	public void pauseFlow(ExecutableFlow exFlow, String userId) throws ExecutorManagerException {
 		synchronized(exFlow) {
 			Pair<ExecutionReference, ExecutableFlow> pair = runningFlows.get(exFlow.getExecutionId());
@@ -295,30 +330,37 @@ public class ExecutorManager {
 		}
 	}
 	
+	@Override
 	public void pauseExecutingJobs(ExecutableFlow exFlow, String userId, String ... jobIds) throws ExecutorManagerException {
 		modifyExecutingJobs(exFlow, ConnectorParams.MODIFY_PAUSE_JOBS, userId, jobIds);
 	}
 	
+	@Override
 	public void resumeExecutingJobs(ExecutableFlow exFlow, String userId, String ... jobIds) throws ExecutorManagerException {
 		modifyExecutingJobs(exFlow, ConnectorParams.MODIFY_RESUME_JOBS, userId, jobIds);
 	}
 	
+	@Override
 	public void retryFailures(ExecutableFlow exFlow, String userId) throws ExecutorManagerException {
 		modifyExecutingJobs(exFlow, ConnectorParams.MODIFY_RETRY_FAILURES, userId);
 	}
 	
+	@Override
 	public void retryExecutingJobs(ExecutableFlow exFlow, String userId, String ... jobIds) throws ExecutorManagerException {
 		modifyExecutingJobs(exFlow, ConnectorParams.MODIFY_RETRY_JOBS, userId, jobIds);
 	}
 	
+	@Override
 	public void disableExecutingJobs(ExecutableFlow exFlow, String userId, String ... jobIds) throws ExecutorManagerException {
 		modifyExecutingJobs(exFlow, ConnectorParams.MODIFY_DISABLE_JOBS, userId, jobIds);
 	}
 	
+	@Override
 	public void enableExecutingJobs(ExecutableFlow exFlow, String userId, String ... jobIds) throws ExecutorManagerException {
 		modifyExecutingJobs(exFlow, ConnectorParams.MODIFY_ENABLE_JOBS, userId, jobIds);
 	}
 	
+	@Override
 	public void cancelExecutingJobs(ExecutableFlow exFlow, String userId, String ... jobIds) throws ExecutorManagerException {
 		modifyExecutingJobs(exFlow, ConnectorParams.MODIFY_CANCEL_JOBS, userId, jobIds);
 	}
@@ -361,9 +403,10 @@ public class ExecutorManager {
 		}
 	}
 	
-	public String submitExecutableFlow(ExecutableFlow exflow) throws ExecutorManagerException {
+	@Override
+	public String submitExecutableFlow(ExecutableFlow exflow, String userId) throws ExecutorManagerException {
 		synchronized(exflow) {
-			logger.info("Submitting execution flow " + exflow.getFlowId());
+			logger.info("Submitting execution flow " + exflow.getFlowId() + " by " + userId);
 
 			int projectId = exflow.getProjectId();
 			String flowId = exflow.getFlowId();
@@ -423,7 +466,7 @@ public class ExecutorManager {
 	}
 	
 	
-	public void cleanOldExecutionLogs(long millis) {
+	private void cleanOldExecutionLogs(long millis) {
 		try {
 			int count = executorLoader.removeExecutionLogsByTime(millis);
 			logger.info("Cleaned up " + count + " log entries.");
@@ -519,6 +562,7 @@ public class ExecutorManager {
 		return jsonResponse;
 	}
 	
+	@Override
 	public Map<String, Object> callExecutorJMX(String hostPort, String action, String mBean) throws IOException {
 		URIBuilder builder = new URIBuilder();
 		
@@ -563,6 +607,7 @@ public class ExecutorManager {
 		return jsonResponse;
 	}
 	
+	@Override
 	public void shutdown() {
 		executingManager.shutdown();
 	}
@@ -592,6 +637,10 @@ public class ExecutorManager {
 			while(!shutdown) {
 				try {
 					lastThreadCheckTime = System.currentTimeMillis();
+
+//					loadRunningFlows();
+
+					updaterStage = "Starting update all flows.";
 					
 					Map<ConnectionInfo, List<ExecutableFlow>> exFlowMap = getFlowToExecutorMap();
 					ArrayList<ExecutableFlow> finishedFlows = new ArrayList<ExecutableFlow>();
@@ -602,6 +651,10 @@ public class ExecutorManager {
 							List<Long> updateTimesList = new ArrayList<Long>();
 							List<Integer> executionIdsList = new ArrayList<Integer>();
 						
+							ConnectionInfo connection = entry.getKey();
+							
+							updaterStage = "Starting update flows on " + connection.getHost() + ":" + connection.getPort();
+							
 							// We pack the parameters of the same host together before we query.
 							fillUpdateTimeAndExecId(entry.getValue(), executionIdsList, updateTimesList);
 							
@@ -612,7 +665,7 @@ public class ExecutorManager {
 									ConnectorParams.EXEC_ID_LIST_PARAM, 
 									JSONUtils.toJSON(executionIdsList));
 							
-							ConnectionInfo connection = entry.getKey();
+							
 							Map<String, Object> results = null;
 							try {
 								results = callExecutorServer(connection.getHost(), connection.getPort(), ConnectorParams.UPDATE_ACTION, null, null, executionIds, updateTimes);
@@ -620,6 +673,9 @@ public class ExecutorManager {
 								logger.error(e);
 								for (ExecutableFlow flow: entry.getValue()) {
 									Pair<ExecutionReference, ExecutableFlow> pair = runningFlows.get(flow.getExecutionId());
+									
+									updaterStage = "Failed to get update. Doing some clean up for flow " + pair.getSecond().getExecutionId();
+									
 									if (pair != null) {
 										ExecutionReference ref = pair.getFirst();
 										int numErrors = ref.getNumErrors();
@@ -642,6 +698,9 @@ public class ExecutorManager {
 								for (Map<String,Object> updateMap: executionUpdates) {
 									try {
 										ExecutableFlow flow = updateExecution(updateMap);
+										
+										updaterStage = "Updated flow " + flow.getExecutionId();
+										
 										if (isFinished(flow)) {
 											finishedFlows.add(flow);
 											finalizeFlows.add(flow);
@@ -659,20 +718,27 @@ public class ExecutorManager {
 							}
 						}
 	
+						updaterStage = "Evicting old recently finished flows.";
+						
 						evictOldRecentlyFinished(recentlyFinishedLifetimeMs);
 						// Add new finished
 						for (ExecutableFlow flow: finishedFlows) {
 							if(flow.getScheduleId() >= 0 && flow.getStatus() == Status.SUCCEEDED){
-								ScheduleStatisticManager.invalidateCache(flow.getScheduleId());
+								ScheduleStatisticManager.invalidateCache(flow.getScheduleId(), cacheDir);
 							}
+							fireEventListeners(Event.create(flow, Type.FLOW_FINISHED));
 							recentlyFinished.put(flow.getExecutionId(), flow);
 						}
+						
+						updaterStage = "Finalizing " + finalizeFlows.size() + " error flows.";
 						
 						// Kill error flows
 						for (ExecutableFlow flow: finalizeFlows) {
 							finalizeFlows(flow);
 						}
 					}
+					
+					updaterStage = "Updated all active flows. Waiting for next round.";
 					
 					synchronized(this) {
 						try {
@@ -688,14 +754,16 @@ public class ExecutorManager {
 				}
 				catch (Exception e) {
 					logger.error(e);
-				}
+				} 
 			}
 		}
 	}
 	
 	private void finalizeFlows(ExecutableFlow flow) {
+
 		int execId = flow.getExecutionId();
 		
+		updaterStage = "finalizing flow " + execId;
 		// First we check if the execution in the datastore is complete
 		try {
 			ExecutableFlow dsFlow;
@@ -703,15 +771,19 @@ public class ExecutorManager {
 				dsFlow = flow;
 			}
 			else {
+				updaterStage = "finalizing flow " + execId + " loading from db";
 				dsFlow = executorLoader.fetchExecutableFlow(execId);
 			
 				// If it's marked finished, we're good. If not, we fail everything and then mark it finished.
 				if (!isFinished(dsFlow)) {
+					updaterStage = "finalizing flow " + execId + " failing the flow";
 					failEverything(dsFlow);
 					executorLoader.updateExecutableFlow(dsFlow);
 				}
 			}
 
+			updaterStage = "finalizing flow " + execId + " deleting active reference";
+			
 			// Delete the executing reference.
 			if (flow.getEndTime() == -1) {
 				flow.setEndTime(System.currentTimeMillis());
@@ -719,8 +791,11 @@ public class ExecutorManager {
 			}
 			executorLoader.removeActiveExecutableReference(execId);
 			
+			updaterStage = "finalizing flow " + execId + " cleaning from memory";
 			runningFlows.remove(execId);
+			fireEventListeners(Event.create(dsFlow, Type.FLOW_FINISHED));
 			recentlyFinished.put(execId, dsFlow);
+
 		} catch (ExecutorManagerException e) {
 			logger.error(e);
 		}
@@ -728,16 +803,34 @@ public class ExecutorManager {
 		// TODO append to the flow log that we forced killed this flow because the target no longer had
 		// the reference.
 		
+		updaterStage = "finalizing flow " + execId + " alerting and emailing";
 		ExecutionOptions options = flow.getExecutionOptions();
 		// But we can definitely email them.
+		Alerter mailAlerter = alerters.get("email");
 		if(flow.getStatus() == Status.FAILED || flow.getStatus() == Status.KILLED)
 		{
 			if(options.getFailureEmails() != null && !options.getFailureEmails().isEmpty())
 			{
 				try {
-					mailer.sendErrorEmail(flow, "Executor no longer seems to be running this execution. Most likely due to executor bounce.");
+					mailAlerter.alertOnError(flow, "Executor no longer seems to be running this execution. Most likely due to executor bounce.");
 				} catch (Exception e) {
 					logger.error(e);
+				}
+			}
+			if(options.getFlowParameters().containsKey("alert.type")) {
+				String alertType = options.getFlowParameters().get("alert.type");
+				Alerter alerter = alerters.get(alertType);
+				if(alerter != null) {
+					try {
+						alerter.alertOnError(flow, "Executor no longer seems to be running this execution. Most likely due to executor bounce.");
+					} catch (Exception e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+						logger.error("Failed to alert by " + alertType);
+					}
+				}
+				else {
+					logger.error("Alerter type " + alertType + " doesn't exist. Failed to alert.");
 				}
 			}
 		}
@@ -746,9 +839,26 @@ public class ExecutorManager {
 			if(options.getSuccessEmails() != null && !options.getSuccessEmails().isEmpty())
 			{
 				try {
-					mailer.sendSuccessEmail(flow);
+					
+					mailAlerter.alertOnSuccess(flow);
 				} catch (Exception e) {
 					logger.error(e);
+				}
+			}
+			if(options.getFlowParameters().containsKey("alert.type")) {
+				String alertType = options.getFlowParameters().get("alert.type");
+				Alerter alerter = alerters.get(alertType);
+				if(alerter != null) {
+					try {
+						alerter.alertOnSuccess(flow);
+					} catch (Exception e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+						logger.error("Failed to alert by " + alertType);
+					}
+				}
+				else {
+					logger.error("Alerter type " + alertType + " doesn't exist. Failed to alert.");
 				}
 			}
 		}
@@ -803,6 +913,7 @@ public class ExecutorManager {
 	}
 	
 	private ExecutableFlow updateExecution(Map<String,Object> updateData) throws ExecutorManagerException {
+		
 		Integer execId = (Integer)updateData.get(ConnectorParams.UPDATE_MAP_EXEC_ID);
 		if (execId == null) {
 			throw new ExecutorManagerException("Response is malformed. Need exec id to update.");
@@ -831,7 +942,29 @@ public class ExecutorManager {
 		if (oldStatus != newStatus && newStatus.equals(Status.FAILED_FINISHING)) {
 			// We want to see if we should give an email status on first failure.
 			if (options.getNotifyOnFirstFailure()) {
-				mailer.sendFirstErrorMessage(flow);
+				Alerter mailAlerter = alerters.get("email");
+				try {
+					mailAlerter.alertOnFirstError(flow);
+				} catch (Exception e) {
+					e.printStackTrace();
+					logger.error("Failed to send first error email." + e.getMessage());
+				}
+			}
+			if(options.getFlowParameters().containsKey("alert.type")) {
+				String alertType = options.getFlowParameters().get("alert.type");
+				Alerter alerter = alerters.get(alertType);
+				if(alerter != null) {
+					try {
+						alerter.alertOnFirstError(flow);
+					} catch (Exception e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+						logger.error("Failed to alert by " + alertType);
+					}
+				}
+				else {
+					logger.error("Alerter type " + alertType + " doesn't exist. Failed to alert.");
+				}
 			}
 		}
 		
@@ -941,12 +1074,14 @@ public class ExecutorManager {
 		}
 	}
 	
+	@Override
 	public int getExecutableFlows(int projectId, String flowId, int from, int length, List<ExecutableFlow> outputList) throws ExecutorManagerException {
 		List<ExecutableFlow> flows = executorLoader.fetchFlowHistory(projectId, flowId, from, length);
 		outputList.addAll(flows);
 		return executorLoader.fetchNumExecutableFlows(projectId, flowId);
 	}
 
+	@Override
 	public List<ExecutableFlow> getExecutableFlows(int projectId, String flowId, int from, int length, Status status) throws ExecutorManagerException {
 		return executorLoader.fetchFlowHistory(projectId, flowId, from, length, status);
 	}
@@ -1006,4 +1141,8 @@ public class ExecutorManager {
 			cleanOldExecutionLogs(DateTime.now().getMillis() - executionLogsRetentionMs);
 		}
 	}
+
+	
+
+	
 }

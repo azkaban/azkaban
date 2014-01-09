@@ -1,5 +1,5 @@
 /*
- * Copyright 2012 LinkedIn, Inc
+ * Copyright 2012 LinkedIn Corp.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -33,6 +33,7 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
+import azkaban.user.User.UserPermissions;
 import azkaban.utils.Props;
 
 /**
@@ -55,6 +56,7 @@ public class XmlUserManager implements UserManager {
 	public static final String ROLEPERMISSIONS_ATTR = "permissions";
 	public static final String USERNAME_ATTR = "username";
 	public static final String PASSWORD_ATTR = "password";
+	public static final String EMAIL_ATTR = "email";
 	public static final String ROLES_ATTR = "roles";
 	public static final String PROXY_ATTR = "proxy";
 	public static final String GROUPS_ATTR = "groups";
@@ -149,6 +151,7 @@ public class XmlUserManager implements UserManager {
 		if (userNameAttr == null) {
 			throw new RuntimeException("Error loading user. The '" + USERNAME_ATTR + "' attribute doesn't exist");
 		}
+		
 		Node passwordAttr = userAttrMap.getNamedItem(PASSWORD_ATTR);
 		if (passwordAttr == null) {
 			throw new RuntimeException("Error loading user. The '" + PASSWORD_ATTR + "' attribute doesn't exist");
@@ -195,6 +198,11 @@ public class XmlUserManager implements UserManager {
 				user.addGroup(group);
 			}
 		}
+		
+		Node emailAttr = userAttrMap.getNamedItem(EMAIL_ATTR);
+		if (emailAttr != null) {
+			user.setEmail(emailAttr.getNodeValue());
+		}
 	}
 
 	private void parseRoleTag(Node node, HashMap<String, Role> roles) {
@@ -207,7 +215,7 @@ public class XmlUserManager implements UserManager {
 		Node permissionAttr = roleAttrMap.getNamedItem(ROLEPERMISSIONS_ATTR);
 		if (permissionAttr == null) {
 			throw new RuntimeException(
-					"Error loading user. The password doesn't exist for "+ permissionAttr);
+					"Error loading role. The role 'permissions' attribute doesn't exist");
 		}
 
 		String roleName = roleNameAttr.getNodeValue();
@@ -262,6 +270,16 @@ public class XmlUserManager implements UserManager {
 
 		// Add all the roles the group has to the user
 		resolveGroupRoles(user);
+		user.setPermissions(new UserPermissions() {
+			@Override
+			public boolean hasPermission(String permission) {
+				return true;
+			}
+
+			@Override
+			public void addPermission(String permission) {
+			}
+		});
 		return user;
 	}
 

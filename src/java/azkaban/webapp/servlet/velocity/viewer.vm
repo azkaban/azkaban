@@ -1,5 +1,5 @@
 #*
- * Copyright 2012 LinkedIn, Inc
+ * Copyright 2012 LinkedIn Corp.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -17,14 +17,10 @@
 <!DOCTYPE html> 
 <html>
 	<head>
-#parse( "azkaban/webapp/servlet/velocity/style.vm" )
-		<script type="text/javascript" src="${context}/js/jquery/jquery-1.9.1.js"></script>    
-		<script type="text/javascript" src="${context}/js/underscore-1.4.4-min.js"></script>
-		<script type="text/javascript" src="${context}/js/namespace.js"></script>
-		<script type="text/javascript" src="${context}/js/backbone-0.9.10-min.js"></script>
-		<script type="text/javascript" src="${context}/js/jquery.simplemodal-1.4.4.js"></script>
 
-		<script type="text/javascript" src="${context}/js/azkaban.nav.js"></script>
+#parse ("azkaban/webapp/servlet/velocity/style.vm")
+#parse ("azkaban/webapp/servlet/velocity/javascript.vm")
+
 		<script type="text/javascript">
 			var contextURL = "${context}";
 			var currentTime = ${currentTime};
@@ -41,23 +37,18 @@
 		</style>
 	</head>
 	<body>
-#set($current_page="viewer")
 
-#parse( "azkaban/webapp/servlet/velocity/nav.vm" )
-		<div class="content">
-		
-		#if($errorMsg)
-                	<div class="box-error-message">$errorMsg</div>
-		#else
-			#if($error_message != "null")
-	                <div class="box-error-message">$error_message</div>
-			#elseif($success_message != "null")
-        	        <div class="box-success-message">$success_message</div>
-			#end
-		#end
+#set ($current_page="viewer")
+#parse ("azkaban/webapp/servlet/velocity/nav.vm")
 
-#parse($viewervm)
-		
+#if ($errorMsg)
+  #parse ("azkaban/webapp/servlet/velocity/errormsg.vm")
+#else
+    <div class="container-full">
+  #parse ("azkaban/webapp/servlet/velocity/alerts.vm")
+
+  #parse ($viewervm)
 		</div>
+#end
 	</body>
 </html>

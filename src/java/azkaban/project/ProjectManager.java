@@ -1,3 +1,19 @@
+/*
+ * Copyright 2012 LinkedIn Corp.
+ * 
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not
+ * use this file except in compliance with the License. You may obtain a copy of
+ * the License at
+ * 
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations under
+ * the License.
+ */
+
 package azkaban.project;
 
 import java.io.File;
@@ -49,7 +65,7 @@ public class ProjectManager {
 		
 		loadAllProjects();
 	}
-	
+
 	private void loadAllProjects() {
 		List<Project> projects;
 		try {
@@ -338,6 +354,22 @@ public class ProjectManager {
 			logger.info("Uploading Props properties");
 			projectLoader.uploadProjectProperties(project, propProps);
 		}
+	
+		//TODO: find something else to load triggers
+//		if(loadTriggerFromFile) {
+//			logger.info("Loading triggers.");
+//			Props triggerProps = new Props();
+//			triggerProps.put("projectId", project.getId());
+//			triggerProps.put("projectName", project.getName());
+//			triggerProps.put("submitUser", uploader.getUserId());
+//			try {
+//				triggerManager.loadTriggerFromDir(file, triggerProps);
+//			} catch (Exception e) {
+//				// TODO Auto-generated catch block
+//				e.printStackTrace();
+//				logger.error("Failed to load triggers.", e);
+//			}
+//		}
 		
 		logger.info("Uploaded project files. Cleaning up temp files.");
 		projectLoader.postEvent(project, EventType.UPLOADED, uploader.getUserId(), "Uploaded project files zip " + archive.getName());
@@ -350,6 +382,10 @@ public class ProjectManager {
 
 		logger.info("Cleaning up old install files older than " + (project.getVersion() - projectVersionRetention));
 		projectLoader.cleanOlderProjectVersion(project.getId(), project.getVersion() - projectVersionRetention);
+	}
+	
+	public void updateFlow(Project project, Flow flow) throws ProjectManagerException {
+		projectLoader.updateFlow(project, flow.getVersion(), flow);
 	}
 	
 	private File unzipFile(File archiveFile) throws IOException {

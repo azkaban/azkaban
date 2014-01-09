@@ -1,0 +1,71 @@
+#*
+ * Copyright 2012 LinkedIn Corp.
+ * 
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not
+ * use this file except in compliance with the License. You may obtain a copy of
+ * the License at
+ * 
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations under
+ * the License.
+*#
+
+  ## Upload project modal
+
+			<div class="modal" id="upload-project-modal">
+				<div class="modal-dialog">
+					<div class="modal-content">
+						<form id="upload-project-form" enctype="multipart/form-data" method="post" action="$!context/manager">
+							<div class="modal-header">
+								<button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+								<h4 class="modal-title">Upload Project Files</h4>
+							</div>
+							<div class="modal-body">
+								<div class="alert alert-danger" id="upload-project-modal-error-msg">$error_msg</div>
+								<fieldset class="form-horizontal">
+									<div class="form-group">
+										<label for="file" class="col-sm-3 control-label">Job Archive</label>
+										<div class="col-sm-9">
+											<input type="file" class="form-control" id="file" name="file">
+										</div>
+									</div>
+								</fieldset>
+							</div>
+							<div class="modal-footer">
+								<input type="hidden" name="project" value="$project.name">
+								<input type="hidden" name="action" value="upload">
+								<button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+								<button type="button" class="btn btn-primary" id="upload-project-btn">Upload</button>
+							</div>
+						</form>
+					</div>
+				</div>
+			</div>
+
+	## Delete project modal.
+			
+			<div class="modal" id="delete-project-modal">
+				<div class="modal-dialog">
+					<div class="modal-content">
+						<div class="modal-header">
+							<button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+							<h4 class="modal-title">Delete Project</h4>
+						</div>
+						<div class="modal-body">
+							<p><strong>Warning:</strong> This project will be deleted and may not be recoverable.</p>
+						</div>
+						<div class="modal-footer">
+							<form id="delete-form">
+								<input type="hidden" name="project" value="$project.name">
+								<input type="hidden" name="delete" value="true">
+								<button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+								<button type="button" class="btn btn-danger" id="delete-btn">Delete Project</button>
+							</form>
+						</div>
+					</div>
+				</div>
+			</div>

@@ -1,5 +1,5 @@
 /*
- * Copyright 2012 LinkedIn, Inc
+ * Copyright 2012 LinkedIn Corp.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -23,15 +23,40 @@ import java.util.Set;
 
 public class User {
 	private final String userid;
+	private String email = "";
 	private Set<String> roles = new HashSet<String>();
 	private Set<String> groups = new HashSet<String>();
-	
+	private UserPermissions userPermissions;
+
 	public User(String userid) {
 		this.userid = userid;
 	}
-	
+
 	public String getUserId() {
 		return userid;
+	}
+
+	public void setEmail(String email) {
+		this.email = email;
+	}
+
+	public String getEmail() {
+		return email;
+	}
+
+	public void setPermissions(UserPermissions checker) {
+		this.userPermissions = checker;
+	}
+
+	public UserPermissions getPermissions() {
+		return userPermissions;
+	}
+
+	public boolean hasPermission(String permission) {
+		if (userPermissions == null) {
+			return false;
+		}
+		return this.userPermissions.hasPermission(permission);
 	}
 
 	public List<String> getGroups() {
@@ -41,27 +66,27 @@ public class User {
 	public void clearGroup() {
 		groups.clear();
 	}
-	
+
 	public void addGroup(String name) {
 		groups.add(name);
 	}
-	
+
 	public boolean isInGroup(String group) {
 		return this.groups.contains(group);
 	}
-	
+
 	public List<String> getRoles() {
 		return new ArrayList<String>(roles);
 	}
-	
+
 	public void addRole(String role) {
 		this.roles.add(role);
 	}
-	
+
 	public boolean hasRole(String role) {
 		return roles.contains(role);
 	}
-	
+
 	public String toString() {
 		String groupStr = "[";
 		for (String group: groups) {
@@ -70,7 +95,7 @@ public class User {
 		groupStr += "]";
 		return userid + ": " + groupStr;
 	}
-	
+
 	@Override
 	public int hashCode() {
 		final int prime = 31;
@@ -87,12 +112,40 @@ public class User {
 			return false;
 		if (getClass() != obj.getClass())
 			return false;
-		User other = (User) obj;
+		User other = (User)obj;
 		if (userid == null) {
 			if (other.userid != null)
 				return false;
-		} else if (!userid.equals(other.userid))
+		}
+		else if (!userid.equals(other.userid))
 			return false;
 		return true;
+	}
+
+	public static interface UserPermissions {
+		public boolean hasPermission(String permission);
+		public void addPermission(String permission);
+	}
+
+	public static class DefaultUserPermission implements UserPermissions {
+		Set<String> permissions;
+
+		public DefaultUserPermission() {
+			this(new HashSet<String>());
+		}
+
+		public DefaultUserPermission(Set<String> permissions) {
+			this.permissions = permissions;
+		}
+
+		@Override
+		public boolean hasPermission(String permission) {
+			return permissions.contains(permission);
+		}
+
+		@Override
+		public void addPermission(String permission) {
+			permissions.add(permission);
+		}
 	}
 }

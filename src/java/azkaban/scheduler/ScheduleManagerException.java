@@ -1,5 +1,5 @@
 /*
- * Copyright 2012 LinkedIn, Inc
+ * Copyright 2012 LinkedIn Corp.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -25,5 +25,9 @@ public class ScheduleManagerException extends Exception{
 	
 	public ScheduleManagerException(String message, Throwable cause) {
 		super(message, cause);
+	}
+
+	public ScheduleManagerException(Exception e) {
+		super(e);
 	}
 }

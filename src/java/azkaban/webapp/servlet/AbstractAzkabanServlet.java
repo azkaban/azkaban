@@ -1,5 +1,5 @@
 /*
- * Copyright 2012 LinkedIn, Inc
+ * Copyright 2012 LinkedIn Corp.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -55,7 +55,7 @@ public abstract class AbstractAzkabanServlet extends HttpServlet {
 	public static final String XML_MIME_TYPE = "application/xhtml+xml";
 	public static final String JSON_MIME_TYPE = "application/json";
 
-	private static final WebUtils utils = new WebUtils();
+	protected static final WebUtils utils = new WebUtils();
 	
 	private AzkabanServer application;
 	private String name;
@@ -63,7 +63,9 @@ public abstract class AbstractAzkabanServlet extends HttpServlet {
 	private String color;
 
 	private List<ViewerPlugin> viewerPlugins;
-
+	private List<TriggerPlugin> triggerPlugins;
+	
+	
 	/**
 	 * To retrieve the application for the servlet
 	 * 
@@ -90,6 +92,7 @@ public abstract class AbstractAzkabanServlet extends HttpServlet {
 		if (application instanceof AzkabanWebServer) {
 			AzkabanWebServer server = (AzkabanWebServer)application;
 			viewerPlugins = server.getViewerPlugins();
+			triggerPlugins = new ArrayList<TriggerPlugin>(server.getTriggerPlugins().values());
 		}
 	}
 	
@@ -302,6 +305,10 @@ public abstract class AbstractAzkabanServlet extends HttpServlet {
 //			page.add("viewerPath", plugin.getPluginPath());
 		}
 		
+		if(triggerPlugins != null && !triggerPlugins.isEmpty()) {
+			page.add("triggerPlugins", triggerPlugins);
+		}
+		
 		return page;
 	}
 
@@ -328,6 +335,10 @@ public abstract class AbstractAzkabanServlet extends HttpServlet {
 			ViewerPlugin plugin = viewerPlugins.get(0);
 			page.add("viewerName", plugin.getPluginName());
 			page.add("viewerPath", plugin.getPluginPath());
+		}
+		
+		if(triggerPlugins != null && !triggerPlugins.isEmpty()) {
+			page.add("triggers", triggerPlugins);
 		}
 		
 		return page;

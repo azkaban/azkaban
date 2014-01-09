@@ -1,5 +1,5 @@
 /*
- * Copyright 2012 LinkedIn, Inc
+ * Copyright 2012 LinkedIn Corp.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -24,6 +24,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import azkaban.executor.mail.DefaultMailCreator;
+
 public class Flow {
 	private final String id;
 	private int projectId;
@@ -40,8 +42,10 @@ public class Flow {
 	
 	private List<String> failureEmail = new ArrayList<String>();
 	private List<String> successEmail = new ArrayList<String>();
+	private String mailCreator = DefaultMailCreator.DEFAULT_MAIL_CREATOR;
 	private ArrayList<String> errors;
 	private int version = -1;
+	private Map<String, Object> metadata = new HashMap<String, Object>();
 	
 	private boolean isLayedOut = false;
 	
@@ -106,8 +110,16 @@ public class Flow {
 		return successEmail;
 	}
 	
+	public String getMailCreator() {
+		return mailCreator;
+	}
+	
 	public List<String> getFailureEmails() {
 		return failureEmail;
+	}
+	
+	public void setMailCreator(String mailCreator) {
+		this.mailCreator = mailCreator;
 	}
 	
 	public void addSuccessEmails(Collection<String> emails) {
@@ -226,9 +238,14 @@ public class Flow {
 		flowObj.put("edges", objectizeEdges());
 		flowObj.put("failure.email", failureEmail);
 		flowObj.put("success.email", successEmail);
+		flowObj.put("mailCreator", mailCreator);
 		flowObj.put("layedout", isLayedOut);
 		if (errors != null) {
 			flowObj.put("errors", errors);
+		}
+
+		if (metadata != null) {
+			flowObj.put("metadata", metadata);
 		}
 		
 		return flowObj;
@@ -294,9 +311,18 @@ public class Flow {
 		List<Object> edgeList = (List<Object>)flowObject.get("edges");
 		List<Edge> edges = loadEdgeFromObjects(edgeList, nodes);
 		flow.addAllEdges(edges);
+
+		Map<String, Object> metadata = (Map<String, Object>)flowObject.get("metadata");
+		
+		if (metadata != null) {
+			flow.setMetadata(metadata);
+		}
 		
 		flow.failureEmail = (List<String>)flowObject.get("failure.email");
 		flow.successEmail = (List<String>)flowObject.get("success.email");
+		if (flowObject.containsKey("mailCreator")) {
+			flow.mailCreator = flowObject.get("mailCreator").toString();
+		}
 		return flow;
 	}
 
@@ -335,6 +361,17 @@ public class Flow {
 
 	public boolean isLayedOut() {
 		return isLayedOut;
+	}
+
+	public Map<String, Object> getMetadata() {
+		if(metadata == null){
+			metadata = new HashMap<String, Object>();
+		}
+		return metadata;
+	}
+
+	public void setMetadata(Map<String, Object> metadata) {
+		this.metadata = metadata;
 	}
 
 	public void setLayedOut(boolean layedOut) {

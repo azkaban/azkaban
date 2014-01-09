@@ -1,3 +1,19 @@
+/*
+ * Copyright 2012 LinkedIn Corp.
+ * 
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not
+ * use this file except in compliance with the License. You may obtain a copy of
+ * the License at
+ * 
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations under
+ * the License.
+ */
+
 package azkaban.utils;
 
 import java.io.File;
@@ -32,7 +48,9 @@ public class EmailMessage {
 	private String _fromAddress;
 	private String _mimeType = "text/plain";
 	private StringBuffer _body = new StringBuffer();
-
+	private static int _mailTimeout = 10000;
+	private static int _connectionTimeout = 10000;
+	
 	private ArrayList<BodyPart> _attachments = new ArrayList<BodyPart>();
 
 	public EmailMessage() {
@@ -44,7 +62,15 @@ public class EmailMessage {
 		_mailHost = host;
 		_mailPassword = password;
 	}
-
+	
+	public static void setTimeout(int timeoutMillis) {
+		_mailTimeout = timeoutMillis;
+	}
+	
+	public static void setConnectionTimeout(int timeoutMillis) {
+		_connectionTimeout = timeoutMillis;
+	}
+	
 	public EmailMessage setMailHost(String host) {
 		_mailHost = host;
 		return this;
@@ -136,6 +162,8 @@ public class EmailMessage {
 		props.put("mail."+protocol+".auth", "true");
 		props.put("mail.user", _mailUser);
 		props.put("mail.password", _mailPassword);
+		props.put("mail."+protocol+".timeout", _mailTimeout);
+		props.put("mail."+protocol+".connectiontimeout", _connectionTimeout);
 
 		Session session = Session.getInstance(props, null);
 		Message message = new MimeMessage(session);
@@ -149,14 +177,15 @@ public class EmailMessage {
 
 		if (_attachments.size() > 0) {
 			MimeMultipart multipart = new MimeMultipart("related");
+			
+			BodyPart messageBodyPart = new MimeBodyPart();
+			messageBodyPart.setContent(_body.toString(), _mimeType);
+			multipart.addBodyPart(messageBodyPart);
+			
 			// Add attachments
 			for (BodyPart part : _attachments) {
 				multipart.addBodyPart(part);
 			}
-
-			BodyPart messageBodyPart = new MimeBodyPart();
-			messageBodyPart.setContent(_body.toString(), _mimeType);
-			multipart.addBodyPart(messageBodyPart);
 
 			message.setContent(multipart);
 		} else {

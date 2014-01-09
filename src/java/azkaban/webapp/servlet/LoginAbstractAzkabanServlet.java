@@ -1,5 +1,5 @@
 /*
- * Copyright 2012 LinkedIn, Inc
+ * Copyright 2012 LinkedIn Corp.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -62,9 +62,13 @@ public abstract class LoginAbstractAzkabanServlet extends AbstractAzkabanServlet
 		contextType.put(".css", "text/css");
 		contextType.put(".png", "image/png");
 		contextType.put(".jpeg", "image/jpeg");
+		contextType.put(".gif", "image/gif");
 		contextType.put(".jpg", "image/jpeg");
+		contextType.put(".eot", "application/vnd.ms-fontobject");
+		contextType.put(".svg", "image/svg+xml");
+		contextType.put(".ttf", "application/octet-stream");
+		contextType.put(".woff", "application/x-font-woff");
 	}
-	
 	
 	private File webResourceDirectory = null;
 	
@@ -121,10 +125,10 @@ public abstract class LoginAbstractAzkabanServlet extends AbstractAzkabanServlet
 		String prefix = req.getContextPath() + req.getServletPath();
 		String path = req.getRequestURI().substring(prefix.length());
 		int index = path.lastIndexOf('.');
-		if (index == -1 ) {
+		if (index == -1) {
 			return false;
 		}
-		
+
 		String extension = path.substring(index);
 		if (contextType.containsKey(extension)) {
 			File file = new File(webResourceDirectory, path);
@@ -291,9 +295,10 @@ public abstract class LoginAbstractAzkabanServlet extends AbstractAzkabanServlet
 			return true;
 		}
 		
-		for(String roleName: user.getRoles()) {
+		for (String roleName: user.getRoles()) {
 			Role role = userManager.getRole(roleName);
-			if (role.getPermission().isPermissionSet(type) || role.getPermission().isPermissionSet(Permission.Type.ADMIN)) {
+			if (role.getPermission().isPermissionSet(type) || 
+					role.getPermission().isPermissionSet(Permission.Type.ADMIN)) {
 				return true;
 			}
 		}

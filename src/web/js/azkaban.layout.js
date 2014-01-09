@@ -1,3 +1,19 @@
+/*
+ * Copyright 2012 LinkedIn Corp.
+ * 
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not
+ * use this file except in compliance with the License. You may obtain a copy of
+ * the License at
+ * 
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations under
+ * the License.
+ */
+
 var maxTextSize = 32;
 var reductionSize = 26;
 var degreeRatio = 1/8;
@@ -25,9 +41,16 @@ function layoutGraph(nodes, edges) {
 		//}
 		
 		var width = nodes[i].label.length * 10;
-		var node = { id: nodes[i].id, node: nodes[i], level: nodes[i].level, in:[], out:[], width: width, x:0 };
+		var node = {
+			id: nodes[i].id, 
+			node: nodes[i], 
+			level: nodes[i].level, 
+			in: [], 
+			out: [], 
+			width: width, 
+			x: 0 
+		};
 		nodeMap[nodes[i].id] = node;
-
 		maxLayer = Math.max(node.level, maxLayer);
 		if(!layers[node.level]) {
 			layers[node.level] = [];
@@ -54,7 +77,15 @@ function layoutGraph(nodes, edges) {
 		var guides = [];
 		
 		for (var j = srcNode.level + 1; j < destNode.level; ++j) {
-			var dummyNode = {level: j, in: [], x: lastNode.x, out: [], realSrc: srcNode, realDest: destNode, width: 10};
+			var dummyNode = {
+				level: j, 
+				in: [], 
+				x: lastNode.x, 
+				out: [], 
+				realSrc: srcNode, 
+				realDest: destNode, 
+				width: 10
+			};
 			layers[j].push(dummyNode);
 			dummyNode.in.push(lastNode);
 			lastNode.out.push(dummyNode);
@@ -98,7 +129,6 @@ function layoutGraph(nodes, edges) {
 		sort(layers[i]);
 		spreadLayerSmart(layers[i]);
 	}
-	
 
 	// Space it vertically
 	spaceVertically(layers, maxLayer);
@@ -118,7 +148,6 @@ function layoutGraph(nodes, edges) {
 		var dest = edges[i].target;
 		
 		var edgeId = src + ">>" + dest;
-
 		if (edgeDummies[edgeId] && edgeDummies[edgeId].length > 0) {
 			var prevX = nodeMap[src].x;
 			var destX = nodeMap[dest].x; 
@@ -130,7 +159,6 @@ function layoutGraph(nodes, edges) {
 				guides.push(point);
 				
 				var nextX = j == dummies.length - 1 ? destX: dummies[j + 1].x; 
-
 				if (point.x != prevX && point.x != nextX) {
 					// Add gap
 					if ((point.x > prevX) == (point.x > nextX)) {
@@ -150,7 +178,13 @@ function layoutGraph(nodes, edges) {
 
 function spreadLayerSmart(layer) {
 	var ranges = [];
-	ranges.push({start: 0, end:0, width: layer[0].width, x: layer[0].x, index: 0});
+	ranges.push({
+		start: 0, 
+		end: 0, 
+		width: layer[0].width, 
+		x: layer[0].x, 
+		index: 0
+	});
 	var largestRangeIndex = -1;
 	
 	var totalX = layer[0].x;
@@ -164,11 +198,17 @@ function spreadLayerSmart(layer) {
 		if (delta == 0) {
 			prevRange.end = i;
 			prevRange.width += layer[i].width;
-			totalWidth+=layer[i].width;
+			totalWidth += layer[i].width;
 		}
 		else {
-			totalWidth+=Math.max(layer[i].width, delta);
-			ranges.push({start: i, end: i, width: layer[i].width, x: layer[i].x, index: ranges.length});
+			totalWidth += Math.max(layer[i].width, delta);
+			ranges.push({
+				start: i, 
+				end: i, 
+				width: layer[i].width, 
+				x: layer[i].x, 
+				index: ranges.length
+			});
 		}
 		
 		totalX += layer[i].x;
@@ -204,34 +244,31 @@ function spreadLayerSmart(layer) {
 		endIndex = e + 1;
 	}
 	
-	for (var i=startIndex; i >= 0; --i) {
+	for (var i = startIndex; i >= 0; --i) {
 		var range = ranges[i];
 		var crossPointS = range.x + range.width/2;
 		var crossPointE = ranges[i + 1].x - ranges[i + 1].width/2;
-		
 		if (crossPointE < crossPointS) {
 			range.x -= crossPointS - crossPointE;
 		}
 	}
 	
-	for (var i=endIndex; i < ranges.length; ++i) {
+	for (var i = endIndex; i < ranges.length; ++i) {
 		var range = ranges[i];
 		var crossPointE = range.x - range.width/2;
 		var crossPointS = ranges[i - 1].x + ranges[i - 1].width/2;
-		
 		if (crossPointE < crossPointS) {
 			range.x += crossPointS - crossPointE;
 		}
 	}
 	
-	for (var i=0; i < ranges.length; ++i) {
+	for (var i = 0; i < ranges.length; ++i) {
 		var range = ranges[i];
 		if (range.start == range.end) {
 			layer[range.start].x = range.x;
 		}
 		else {
 			var start = range.x - range.width/2;
-			
 			for (var j=range.start;j <=range.end; ++j) {
 				layer[j].x = start + layer[j].width/2;
 				start += layer[j].width;
@@ -240,23 +277,21 @@ function spreadLayerSmart(layer) {
 	}
 }
 
-
 function spaceVertically(layers, maxLayer) {
 	var startY = 0;
 	var startLayer = layers[0];
-	for (var i=0; i < startLayer.length; ++i) {
+	for (var i = 0; i < startLayer.length; ++i) {
 		startLayer[i].y = startY;
 	}
 	
 	var minHeight = 50;
-	for (var a=1; a <= maxLayer; ++a) {
+	for (var a = 1; a <= maxLayer; ++a) {
 		var maxDelta = 0;
 		var layer = layers[a];
-		for (var i=0; i < layer.length; ++i) {
-			for (var j=0; j < layer[i].in.length; ++j) {
+		for (var i = 0; i < layer.length; ++i) {
+			for (var j = 0; j < layer[i].in.length; ++j) {
 				var upper = layer[i].in[j];
 				var delta = Math.abs(upper.x - layer[i].x);
-				
 				maxDelta = Math.max(maxDelta, delta);
 			}
 		}
@@ -266,11 +301,10 @@ function spaceVertically(layers, maxLayer) {
 		
 		calcHeight = Math.min(calcHeight, maxHeight); 
 		startY += Math.max(calcHeight, minHeight);
-		for (var i=0; i < layer.length; ++i) {
-			layer[i].y=startY;
+		for (var i = 0; i < layer.length; ++i) {
+			layer[i].y = startY;
 		}
 	}
-
 }
 
 function uncrossWithIn(layer) {
@@ -285,7 +319,6 @@ function findAverage(nodes) {
 	for (var i = 0; i < nodes.length; ++i) {
 		sum += nodes[i].x;
 	}
-	
 	return sum/nodes.length;
 }
 

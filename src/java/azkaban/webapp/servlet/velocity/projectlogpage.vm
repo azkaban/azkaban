@@ -1,5 +1,5 @@
 #*
- * Copyright 2012 LinkedIn, Inc
+ * Copyright 2012 LinkedIn Corp.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -15,71 +15,81 @@
 *#
 
 <!DOCTYPE html> 
-<html>
+<html lang="en">
 	<head>
-#parse( "azkaban/webapp/servlet/velocity/style.vm" )
-		<script type="text/javascript" src="${context}/js/jquery/jquery-1.9.1.js"></script>    
-		<script type="text/javascript" src="${context}/js/underscore-1.4.4-min.js"></script>
-		<script type="text/javascript" src="${context}/js/namespace.js"></script>
-		<script type="text/javascript" src="${context}/js/backbone-0.9.10-min.js"></script>
-		<script type="text/javascript" src="${context}/js/jquery.simplemodal-1.4.4.js"></script>
+
+#parse ("azkaban/webapp/servlet/velocity/style.vm")
+#parse ("azkaban/webapp/servlet/velocity/javascript.vm")
+
 		<script type="text/javascript" src="${context}/js/azkaban.date.utils.js"></script>
 		<script type="text/javascript" src="${context}/js/azkaban.ajax.utils.js"></script>
-		<script type="text/javascript" src="${context}/js/azkaban.nav.js"></script>
 		<script type="text/javascript" src="${context}/js/azkaban.projectlog.view.js"></script>
-		
+		<script type="text/javascript" src="${context}/js/azkaban.projectmodals.view.js"></script>
 		<script type="text/javascript">
 			var contextURL = "${context}";
 			var currentTime = ${currentTime};
 			var timezone = "${timezone}";
 			var errorMessage = null;
 			var successMessage = null;
-			
-			var projectName = "${projectName}";
-
+		
+			var projectId = ${project.id};
+			var projectName = "$project.name";
 		</script>
 	</head>
 	<body>
-		#set($current_page="executing")
-#parse( "azkaban/webapp/servlet/velocity/nav.vm" )
-		<div class="content">
-#if($errorMsg)
-				<div class="box-error-message">$errorMsg</div>
+
+#set ($current_page="all")
+#parse ("azkaban/webapp/servlet/velocity/nav.vm")
+
+#if ($errorMsg)
+  #parse ("azkaban/webapp/servlet/velocity/errormsg.vm")
 #else
-#if($error_message != "null")
-				<div class="box-error-message">$error_message</div>
-#elseif($success_message != "null")
-				<div class="box-success-message">$success_message</div>
-#end
-		
-			<div id="all-jobs-content">
-				<div class="section-hd flow-header">
-					<h2><a href="${context}/manager?project=${projectName}">Project Audit Logs <span>$projectName</span></a></h2>
+
+	## Page header.
+	
+  #parse ("azkaban/webapp/servlet/velocity/projectpageheader.vm")
+
+	## Page content.
+
+    <div class="container-full">
+
+  #parse ("azkaban/webapp/servlet/velocity/alerts.vm")
+
+			<div class="row row-offcanvas row-offcanvas-right">
+				<div class="col-xs-12 col-sm-9">
+	
+	#set ($project_page = "logs")
+	#parse ("azkaban/webapp/servlet/velocity/projectnav.vm")
+
+					<div class="panel panel-default" id="flow-tabs">
+						<div class="panel-heading">
+							<div class="pull-right" id="project-options">
+								<button type="button" id="updateLogBtn" class="btn btn-xs btn-info">Refresh</button>
+							</div>
+							Audit Logs
+						</div>
+            <table class="table table-striped" id="logTable">
+              <thead>
+                <tr>
+                  <th>Time</th>
+                  <th>User</th>
+                  <th>Type</th>
+                  <th>Message</th>
+                </tr>
+              </thead>
+              <tbody>
+              </tbody>
+						</table>
+					</div>
 				</div>
-			</div>
-			
-			<div id="headertabs" class="headertabs">
-				<ul>
-					<li><a id="logViewLink" href="#log">Log</a></li>
-				</ul>
+				<div class="col-xs-6 col-sm-3 sidebar-offcanvas">
+	#parse ("azkaban/webapp/servlet/velocity/projectsidebar.vm")
+				</div>
 			</div>
 
-			<div id="projectLogView" class="logView">
-				<div class="logHeader"><div class="logButtonRow"><div id="updateLogBtn" class="btn7">Refresh</div></div></div>
-				<div id="logViewer" class="logViewer">
-					<table id="logTable">
-						
-					</table>
-				</div>
-			</div>
-#end
-			<div id="messageDialog" class="modal">
-				<h3 id="messageTitle">Error</h3>
-				<div class="messageDiv">
-					<p id="messageBox"></p>
-				</div>
-			</div>
+	#parse ("azkaban/webapp/servlet/velocity/projectmodals.vm")
 
-		</div>
+		</div><!-- /container-full -->
+#end
 	</body>
 </html>

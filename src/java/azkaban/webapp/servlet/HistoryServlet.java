@@ -1,5 +1,5 @@
 /*
- * Copyright 2012 LinkedIn, Inc
+ * Copyright 2012 LinkedIn Corp.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -13,7 +13,6 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
 
 package azkaban.webapp.servlet;
 
@@ -32,7 +31,7 @@ import org.joda.time.format.DateTimeFormat;
 
 
 import azkaban.executor.ExecutableFlow;
-import azkaban.executor.ExecutorManager;
+import azkaban.executor.ExecutorManagerAdapter;
 import azkaban.executor.ExecutorManagerException;
 import azkaban.project.Project;
 import azkaban.project.ProjectManager;
@@ -42,7 +41,7 @@ import azkaban.webapp.session.Session;
 public class HistoryServlet extends LoginAbstractAzkabanServlet {
 
 	private static final long serialVersionUID = 1L;
-	private ExecutorManager executorManager;
+	private ExecutorManagerAdapter executorManager;
 	private ProjectManager projectManager;
 	private ExecutorVMHelper vmHelper;
 	

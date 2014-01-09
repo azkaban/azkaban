@@ -1,5 +1,5 @@
 /*
- * Copyright 2012 LinkedIn, Inc
+ * Copyright 2012 LinkedIn Corp.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -29,6 +29,7 @@ public class Permission {
 		WRITE(0x0000002),
 		EXECUTE(0x0000004),
 		SCHEDULE(0x0000008),
+		METRICS(0x0000010),
 		CREATEPROJECTS(0x40000000), // Only used for roles
 		ADMIN(0x8000000);
 		

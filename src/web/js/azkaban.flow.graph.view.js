@@ -1,3 +1,19 @@
+/*
+ * Copyright 2012 LinkedIn Corp.
+ * 
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not
+ * use this file except in compliance with the License. You may obtain a copy of
+ * the License at
+ * 
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations under
+ * the License.
+ */
+
 var svgGraphView;
 azkaban.SvgGraphView = Backbone.View.extend({
 	events: {
@@ -104,9 +120,9 @@ azkaban.SvgGraphView = Backbone.View.extend({
 				this.nodes[id].disabled = true;
 				addClass(g, "disabled");
 			}
-		    else {
-		    	this.nodes[id].disabled = false;
-		    	removeClass(g, "disabled");
+			else {
+				this.nodes[id].disabled = false;
+				removeClass(g, "disabled");
 			}
 		}
 	},
@@ -140,7 +156,12 @@ azkaban.SvgGraphView = Backbone.View.extend({
 			var x = node.x - offset;
 			var y = node.y - offset;
 			
-			$(this.svgGraph).svgNavigate("transformToBox", {x: x, y: y, width: widthHeight, height: widthHeight});
+			$(this.svgGraph).svgNavigate("transformToBox", {
+        x: x, 
+        y: y, 
+        width: widthHeight, 
+        height: widthHeight
+      });
 		}
 	},
 	handleStatusUpdate: function(evt) {
@@ -210,7 +231,6 @@ azkaban.SvgGraphView = Backbone.View.extend({
 
 		var xOffset = 10;
 		var yOffset = 10;
-
 		
 		var nodeG = document.createElementNS(svgns, "g");
 		nodeG.setAttributeNS(null, "class", "jobnode");
@@ -234,7 +254,12 @@ azkaban.SvgGraphView = Backbone.View.extend({
 		text.setAttributeNS(null, "y", 15);
 		text.setAttributeNS(null, "height", 10); 
 				
-		this.addBounds(bounds, {minX:node.x - xOffset, minY: node.y - yOffset, maxX: node.x + xOffset, maxY: node.y + yOffset});
+		this.addBounds(bounds, {
+			minX: node.x - xOffset, 
+			minY: node.y - yOffset, 
+			maxX: node.x + xOffset, 
+			maxY: node.y + yOffset
+		});
 		
 		var backRect = document.createElementNS(svgns, 'rect');
 		backRect.setAttributeNS(null, "x", 0);
@@ -274,7 +299,13 @@ azkaban.SvgGraphView = Backbone.View.extend({
 	},
 	resetPanZoom : function(duration) {
 		var bounds = this.graphBounds;
-		var param = {x: bounds.minX, y: bounds.minY, width: (bounds.maxX - bounds.minX), height: (bounds.maxY - bounds.minY), duration: duration };
+		var param = {
+      x: bounds.minX, 
+      y: bounds.minY, 
+      width: (bounds.maxX - bounds.minX), 
+      height: (bounds.maxY - bounds.minY), 
+      duration: duration
+    };
 
 		$(this.svgGraph).svgNavigate("transformToBox", param);
 	}

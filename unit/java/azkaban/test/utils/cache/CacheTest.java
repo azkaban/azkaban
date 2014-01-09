@@ -1,7 +1,6 @@
 package azkaban.test.utils.cache;
 
-import junit.framework.Assert;
-
+import org.junit.Assert;
 import org.junit.Test;
 
 import azkaban.utils.cache.Cache;

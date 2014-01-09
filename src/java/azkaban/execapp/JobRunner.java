@@ -1,6 +1,5 @@
-package azkaban.execapp;
 /*
- * Copyright 2012 LinkedIn, Inc
+ * Copyright 2012 LinkedIn Corp.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -15,6 +14,8 @@ package azkaban.execapp;
  * the License.
  */
 
+package azkaban.execapp;
+
 import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
@@ -27,9 +28,9 @@ import java.util.Arrays;
 import java.util.Collections;
 
 import org.apache.log4j.Appender;
+import org.apache.log4j.EnhancedPatternLayout;
 import org.apache.log4j.Layout;
 import org.apache.log4j.Logger;
-import org.apache.log4j.PatternLayout;
 import org.apache.log4j.RollingFileAppender;
 
 import azkaban.execapp.event.BlockingStatus;
@@ -50,7 +51,7 @@ import azkaban.jobtype.JobTypeManagerException;
 import azkaban.utils.Props;
 
 public class JobRunner extends EventHandler implements Runnable {
-	private static final Layout DEFAULT_LAYOUT = new PatternLayout("%d{dd-MM-yyyy HH:mm:ss z} %c{1} %p - %m\n");
+	private final Layout DEFAULT_LAYOUT = new EnhancedPatternLayout("%d{dd-MM-yyyy HH:mm:ss z} %c{1} %p - %m\n");
 	
 	private ExecutorLoader loader;
 	private Props props;
@@ -157,6 +158,7 @@ public class JobRunner extends EventHandler implements Runnable {
 				fileAppender.setMaxFileSize(jobLogChunkSize);
 				jobAppender = fileAppender;
 				logger.addAppender(jobAppender);
+				logger.setAdditivity(false);
 			} catch (IOException e) {
 				flowLogger.error("Could not open log file in " + workingDir + " for job " + node.getJobId(), e);
 			}

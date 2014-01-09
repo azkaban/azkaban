@@ -1,9 +1,24 @@
+/*
+ * Copyright 2012 LinkedIn Corp.
+ * 
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not
+ * use this file except in compliance with the License. You may obtain a copy of
+ * the License at
+ * 
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations under
+ * the License.
+ */
+
 package azkaban.webapp.servlet;
 
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
 
 import javax.management.MBeanAttributeInfo;
 import javax.management.MBeanInfo;
@@ -16,7 +31,8 @@ import javax.servlet.http.HttpServletResponse;
 import org.apache.log4j.Logger;
 
 import azkaban.executor.ConnectorParams;
-import azkaban.executor.ExecutorManager;
+import azkaban.executor.ExecutorManagerAdapter;
+import azkaban.trigger.TriggerManager;
 import azkaban.user.Permission;
 import azkaban.user.Role;
 import azkaban.user.User;
@@ -37,7 +53,8 @@ public class JMXHttpServlet extends LoginAbstractAzkabanServlet implements Conne
 
 	private UserManager userManager;
 	private AzkabanWebServer server;
-	private ExecutorManager executorManager;
+	private ExecutorManagerAdapter executorManager;
+	private TriggerManager triggerManager;
 	
 	@Override
 	public void init(ServletConfig config) throws ServletException {
@@ -46,6 +63,8 @@ public class JMXHttpServlet extends LoginAbstractAzkabanServlet implements Conne
 		server = (AzkabanWebServer)getApplication();
 		userManager = server.getUserManager();
 		executorManager = server.getExecutorManager();
+
+		triggerManager = server.getTriggerManager();
 	}
 	
 	@Override
@@ -53,7 +72,7 @@ public class JMXHttpServlet extends LoginAbstractAzkabanServlet implements Conne
 		if (hasParam(req, "ajax")){
 			Map<String,Object> ret = new HashMap<String,Object>();
 
-			if(!hasAdminRole(session.getUser())) {
+			if(!hasPermission(session.getUser(), Permission.Type.METRICS)) {
 				ret.put("error", "User " + session.getUser().getUserId() + " has no permission.");
 				this.writeJSON(resp, ret, true);
 				return;
@@ -71,6 +90,17 @@ public class JMXHttpServlet extends LoginAbstractAzkabanServlet implements Conne
 				Map<String, Object> result = executorManager.callExecutorJMX(hostPort, JMX_GET_ALL_MBEAN_ATTRIBUTES, mbean);
 				ret = result;
 			}
+//			else 
+//				if (TriggerConnectorParams.JMX_GET_ALL_TRIGGER_SERVER_ATTRIBUTES.equals(ajax)) {
+//				if(!hasParam(req, JMX_MBEAN) || !hasParam(req, JMX_HOSTPORT)) {
+//					ret.put("error", "Parameters '" + JMX_MBEAN + "' and '"+ JMX_HOSTPORT +"' must be set");
+//					this.writeJSON(resp, ret, true);
+//					return;
+//				}
+////				String hostPort = getParam(req, JMX_HOSTPORT);
+////				String mbean = getParam(req, JMX_MBEAN);
+//				ret = triggerManager.getJMX().getAllJMXMbeans();
+//			}
 			else if (JMX_GET_MBEANS.equals(ajax)) {
 				ret.put("mbeans", server.getMbeanNames());
 			}
@@ -151,7 +181,7 @@ public class JMXHttpServlet extends LoginAbstractAzkabanServlet implements Conne
 	private void handleJMXPage(HttpServletRequest req, HttpServletResponse resp, Session session) throws IOException {
 		Page page = newPage(req, resp, session, "azkaban/webapp/servlet/velocity/jmxpage.vm");
 		
-		if(!hasAdminRole(session.getUser())) {
+		if(!hasPermission(session.getUser(), Permission.Type.METRICS)) {
 			page.add("errorMsg", "User " + session.getUser().getUserId() + " has no permission.");
 			page.render();
 			return;
@@ -160,24 +190,47 @@ public class JMXHttpServlet extends LoginAbstractAzkabanServlet implements Conne
 		page.add("mbeans", server.getMbeanNames());
 		
 		Map<String, Object> executorMBeans = new HashMap<String,Object>();
-		Set<String> primaryServerHosts = executorManager.getPrimaryServerHosts();
+//		Set<String> primaryServerHosts = executorManager.getPrimaryServerHosts();
 		for (String hostPort: executorManager.getAllActiveExecutorServerHosts()) {
 			try {
 				Map<String, Object> mbeans = executorManager.callExecutorJMX(hostPort, JMX_GET_MBEANS, null);
 	
-				if (primaryServerHosts.contains(hostPort)) {
-					executorMBeans.put(hostPort, mbeans.get("mbeans"));
-				}
-				else {
-					executorMBeans.put(hostPort, mbeans.get("mbeans"));
-				}
+				executorMBeans.put(hostPort, mbeans.get("mbeans"));
+//				if (primaryServerHosts.contains(hostPort)) {
+//					executorMBeans.put(hostPort, mbeans.get("mbeans"));
+//				}
+//				else {
+//					executorMBeans.put(hostPort, mbeans.get("mbeans"));
+//				}
 			}
 			catch (IOException e) {
 				logger.error("Cannot contact executor " + hostPort, e);
 			}
 		}
 		
-		page.add("remoteMBeans", executorMBeans);
+		page.add("executorRemoteMBeans", executorMBeans);
+		
+		Map<String, Object> triggerserverMBeans = new HashMap<String,Object>();
+//		Set<String> primaryTriggerServerHosts = triggerManager.getPrimaryServerHosts();
+//		for (String hostPort: triggerManager.getAllActiveTriggerServerHosts()) {
+//			try {
+//				Map<String, Object> mbeans = triggerManager.callTriggerServerJMX(hostPort, TriggerConnectorParams.JMX_GET_MBEANS, null);
+//				
+//				if (primaryTriggerServerHosts.contains(hostPort)) {
+//					triggerserverMBeans.put(hostPort, mbeans.get("mbeans"));
+//				}
+//				else {
+//					triggerserverMBeans.put(hostPort, mbeans.get("mbeans"));
+//				}
+//			}
+//			catch (IOException e) {
+//				logger.error("Cannot contact executor " + hostPort, e);
+//			}
+//		}
+		triggerserverMBeans.put(triggerManager.getJMX().getPrimaryServerHost(), triggerManager.getJMX().getAllJMXMbeans());
+		
+		page.add("triggerserverRemoteMBeans", triggerserverMBeans);
+		
 		page.render();
 	}
 	
@@ -186,11 +239,22 @@ public class JMXHttpServlet extends LoginAbstractAzkabanServlet implements Conne
 
 	}
 	
-	private boolean hasAdminRole(User user) {
+//	private boolean hasAdminRole(User user) {
+//		for(String roleName: user.getRoles()) {
+//			Role role = userManager.getRole(roleName);
+//			Permission perm = role.getPermission();
+//			if (perm.isPermissionSet(Permission.Type.ADMIN)) {
+//				return true;
+//			}
+//		}
+//		
+//		return false;
+//	}
+	
+	protected boolean hasPermission(User user, Permission.Type type) {	
 		for(String roleName: user.getRoles()) {
 			Role role = userManager.getRole(roleName);
-			Permission perm = role.getPermission();
-			if (perm.isPermissionSet(Permission.Type.ADMIN)) {
+			if (role.getPermission().isPermissionSet(type) || role.getPermission().isPermissionSet(Permission.Type.ADMIN)) {
 				return true;
 			}
 		}

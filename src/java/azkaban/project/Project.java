@@ -1,5 +1,5 @@
 /*
- * Copyright 2012 LinkedIn, Inc
+ * Copyright 2012 LinkedIn Corp.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -45,6 +45,7 @@ public class Project {
 	private LinkedHashMap<String, Permission> groupPermissionMap = new LinkedHashMap<String, Permission>();
 	private Map<String, Flow> flows = null;
 	private HashSet<String> proxyUsers = new HashSet<String>();
+	private Map<String, Object> metadata = new HashMap<String, Object>();
 	
 	public Project(int id, String name) {
 		this.id = id;
@@ -65,6 +66,10 @@ public class Project {
 		}
 		
 		return flows.get(flowId);
+	}
+	
+	public Map<String, Flow> getFlowMap() {
+		return flows;
 	}
 	
 	public List<Flow> getFlows() {
@@ -218,6 +223,10 @@ public class Project {
 		userPermissionMap.remove(userId);
 	}
 	
+	public void clearUserPermission() {
+		userPermissionMap.clear();
+	}
+	
 	public long getCreateTimestamp() {
 		return createTimestamp;
 	}
@@ -251,6 +260,10 @@ public class Project {
 		if (source != null) {
 			projectObject.put("source", source);
 		}
+		
+		if (metadata != null) {
+			projectObject.put("metadata", metadata);
+		}
 
 		ArrayList<Map<String, Object>> users = new ArrayList<Map<String, Object>>();
 		for (Map.Entry<String, Permission> entry : userPermissionMap.entrySet()) {
@@ -282,6 +295,7 @@ public class Project {
 		Boolean active = (Boolean)projectObject.get("active");
 		active = active == null ? true : active;
 		int version = (Integer)projectObject.get("version");
+		Map<String, Object> metadata = (Map<String, Object>)projectObject.get("metadata");
 		
 		Project project = new Project(id, name);
 		project.setVersion(version);
@@ -293,6 +307,9 @@ public class Project {
 		
 		if (source != null) {
 			project.setSource(source);
+		}
+		if (metadata != null) {
+			project.setMetadata(metadata);
 		}
 		
 		List<Map<String, Object>> users = (List<Map<String, Object>>) projectObject
@@ -401,6 +418,17 @@ public class Project {
 
 	public void setSource(String source) {
 		this.source = source;
+	}
+
+	public Map<String, Object> getMetadata() {
+		if(metadata == null){
+			metadata = new HashMap<String, Object>();
+		}
+		return metadata;
+	}
+
+	protected void setMetadata(Map<String, Object> metadata) {
+		this.metadata = metadata;
 	}
 
 	public int getId() {

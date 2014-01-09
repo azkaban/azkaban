@@ -1,5 +1,5 @@
 /*
- * Copyright 2012 LinkedIn, Inc
+ * Copyright 2012 LinkedIn Corp.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -61,6 +61,8 @@ public class Page {
 	 */
 	public void render() {
 		try {
+			response.setHeader ("Content-type", "text/html; charset=UTF-8");
+			response.setCharacterEncoding ("UTF-8");
 			response.setContentType(mimeType);
 			engine.mergeTemplate(template, "UTF-8", context, response.getWriter());
 		} catch (Exception e) {
