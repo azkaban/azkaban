@@ -189,7 +189,7 @@
 							<table id="generalProps" class="table table-striped table-bordered">
 								<thead>
 									<tr>
-										<th>Name</th>
+										<th class="property-key">Name</th>
 										<th>Value</th>
 									</tr>
 								</thead>
