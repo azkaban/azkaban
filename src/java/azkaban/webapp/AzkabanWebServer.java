@@ -93,8 +93,8 @@ import azkaban.webapp.servlet.HistoryServlet;
 import azkaban.webapp.servlet.ProjectServlet;
 import azkaban.webapp.servlet.ProjectManagerServlet;
 import azkaban.webapp.servlet.TriggerManagerServlet;
-import azkaban.webapp.servlet.TriggerPlugin;
-import azkaban.webapp.servlet.ViewerPlugin;
+import azkaban.webapp.plugin.TriggerPlugin;
+import azkaban.webapp.plugin.ViewerPlugin;
 import azkaban.webapp.session.SessionCache;
 
 /**

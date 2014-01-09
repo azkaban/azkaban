@@ -14,7 +14,7 @@
  * the License.
  */
 
-package azkaban.webapp.servlet;
+package azkaban.webapp.plugin;
 
 public class ViewerPlugin {
 	private final String pluginName;
