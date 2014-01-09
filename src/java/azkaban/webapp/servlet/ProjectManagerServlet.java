@@ -525,9 +525,9 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 			nodeObj.put("type", node.getType());
 			if (node.getEmbeddedFlowId() != null) {
 				nodeObj.put("flowId", node.getEmbeddedFlowId());
-//				HashMap<String, Object> embeddedNodeObj = new HashMap<String, Object>();
-//				fillFlowInfo2(project, node.getEmbeddedFlowId(), embeddedNodeObj);
-//				nodeObj.put("flowData", embeddedNodeObj);
+				HashMap<String, Object> embeddedNodeObj = new HashMap<String, Object>();
+				fillFlowInfo2(project, node.getEmbeddedFlowId(), embeddedNodeObj);
+				nodeObj.put("flowData", embeddedNodeObj);
 			}
 			
 			nodeList.add(nodeObj);

@@ -93,7 +93,6 @@ azkaban.JobListView = Backbone.View.extend({
 	render: function(self) {
 		var data = this.model.get("data");
 		var nodes = data.nodes;
-		var edges = data.edges;
 		
 		this.listNodes = {}; 
 		if (nodes.length == 0) {

@@ -24,32 +24,6 @@ var handleJobMenuClick = function(action, el, pos) {
 	}
 }
 
-function hasClass(el, name) 
-{
-	var classes = el.getAttribute("class");
-	if (classes == null) {
-		return false;
-	}
-   return new RegExp('(\\s|^)'+name+'(\\s|$)').test(classes);
-}
-
-function addClass(el, name)
-{
-   if (!hasClass(el, name)) { 
-   		var classes = el.getAttribute("class");
-   		classes += classes ? ' ' + name : '' +name;
-   		el.setAttribute("class", classes);
-   }
-}
-
-function removeClass(el, name)
-{
-   if (hasClass(el, name)) {
-      var classes = el.getAttribute("class");
-      el.setAttribute("class", classes.replace(new RegExp('(\\s|^)'+name+'(\\s|$)'),' ').replace(/^\s+|\s+$/g, ''));
-   }
-}
-
 var flowTabView;
 azkaban.FlowTabView= Backbone.View.extend({
   events : {
@@ -294,55 +268,49 @@ $(function() {
 	mainSvgGraphView = new azkaban.SvgGraphView({el:$('#svgDiv'), model: graphModel, rightClick:  { "node": nodeClickCallback, "edge": edgeClickCallback, "graph": graphClickCallback }});
 	jobsListView = new azkaban.JobListView({el:$('#jobList'), model: graphModel, contextMenuCallback: jobClickCallback});
 	
-	var requestURL = contextURL + "/manager";
+	setTimeout(
+		function() { 
+			processFlowData(jsonFlowObject);
+			graphModel.set({data:jsonFlowObject});
+    		graphModel.trigger("change:graph");
+		}, 
+	10);
 
-	// Set up the Flow options view. Create a new one every time :p
-	 $('#executebtn').click( function() {
-		 closeAllSubDisplays();
-	  	var data = graphModel.get("data");
-	  	var nodes = data.nodes;
-	  
-	    var executingData = {
-	  		project: projectName,
-	  		ajax: "executeFlow",
-	  		flow: flowId
-		};
-	
-	  	flowExecuteDialogView.show(executingData);
-	 });
 
-	$.get(
-	      requestURL,
-	      {"project": projectName, "ajax":"fetchflowgraph", "flow":flowId},
-	      function(data) {
-	    	  parseFlowData(data, graphModel);
-	          graphModel.trigger("change:graph");
-	          
-	          // Handle the hash changes here so the graph finishes rendering first.
-	          if (window.location.hash) {
-				var hash = window.location.hash;
-				
-				if (hash == "#executions") {
-					flowTabView.handleExecutionLinkClick();
-				}
-				else if (hash == "#graph") {
-					// Redundant, but we may want to change the default. 
-					selected = "graph";
-				}
-				else {
-					if ("#page" == hash.substring(0, "#page".length)) {
-						var page = hash.substring("#page".length, hash.length);
-						console.log("page " + page);
-						flowTabView.handleExecutionLinkClick();
-						executionModel.set({"page": parseInt(page)});
-					}
-					else {
-						selected = "graph";
-					}
-				}
-			}
-	      },
-	      "json"
-	    );
+//
+//	$.get(
+//	      requestURL,
+//	      {},
+//	      function(data) {
+//	    	  processFlowData(data);
+//	    	  graphModel.set({data:data});
+//	          graphModel.trigger("change:graph");
+//	          
+//	          // Handle the hash changes here so the graph finishes rendering first.
+//	          if (window.location.hash) {
+//				var hash = window.location.hash;
+//				
+//				if (hash == "#executions") {
+//					flowTabView.handleExecutionLinkClick();
+//				}
+//				else if (hash == "#graph") {
+//					// Redundant, but we may want to change the default. 
+//					selected = "graph";
+//				}
+//				else {
+//					if ("#page" == hash.substring(0, "#page".length)) {
+//						var page = hash.substring("#page".length, hash.length);
+//						console.log("page " + page);
+//						flowTabView.handleExecutionLinkClick();
+//						executionModel.set({"page": parseInt(page)});
+//					}
+//					else {
+//						selected = "graph";
+//					}
+//				}
+//			}
+//	      },
+//	      "json"
+//	    );
 
 });

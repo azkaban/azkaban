@@ -18,7 +18,6 @@ var idSort = function(a, b) {
 
 function prepareLayout(nodes, hmargin, layers, nodeMap) {
 	var maxLayer = 0;
-	var numLayer = 0;
 	var nodeQueue = new Array();
 	// Find start layers first
 	for (var i=0; i < nodes.length; ++i) {
@@ -61,8 +60,6 @@ function prepareLayout(nodes, hmargin, layers, nodeMap) {
 	
 	// Assign to layers
 	for (var i = 0; i < nodes.length; ++i) {
-		numLayer = Math.max(numLayer, nodes[i].level);
-
 		var width = nodes[i].width ? nodes[i].width : nodes[i].label.length * 11.5 + 4;
 		var height = nodes[i].height ? nodes[i].height : 1;
 		var node = { id: nodes[i].id, node: nodes[i], level: nodes[i].level, in:[], out:[], width: width + hmargin, x:0, height:height };
@@ -76,8 +73,11 @@ function prepareLayout(nodes, hmargin, layers, nodeMap) {
 		layers[node.level].push(node);
 	}
 	
-	layers.numLayer = numLayer;
 	layers.maxLayer = maxLayer;
+}
+
+function respaceGraph(nodes, edges) {
+	
 }
 
 function layoutGraph(nodes, edges, hmargin) {
@@ -92,7 +92,6 @@ function layoutGraph(nodes, edges, hmargin) {
 	
 	prepareLayout(nodes, hmargin, layers, nodeMap);
 	var maxLayer = layers.maxLayer;
-	var numLayer = layers.numLayer;
 	
 	// Create dummy nodes
 	var edgeDummies = {};

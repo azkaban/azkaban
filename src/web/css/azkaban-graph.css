@@ -1,3 +1,126 @@
+.nodebox text {
+	pointer-events: none;
+}
+
+.nodebox image {
+	pointer-events: none;
+}
+
+/* Nodes */
+.node:hover {
+	cursor: pointer;
+}
+
+.nodebox > .border:hover {
+	fill-opacity: 0.7;
+}
+
+.nodebox > .flowborder:hover {
+	stroke-opacity: 0.7;
+}
+
+.border {
+	stroke-width: 1;
+}
+
+.flownode .nodebox .flowborder {
+	stroke-width: 1.25;
+	fill: #FFF;
+	fill-opacity: 0.8;
+}
+
+.READY > g > rect {
+	fill: #DDD;
+	stroke: #CCC;
+}
+
+.READY > g > text {
+	fill: #000;
+}
+
+.RUNNING > g > rect {
+	fill: #39b3d7;
+	stroke: #39b3d7;
+}
+
+.RUNNING > g > text {
+	fill: #FFF;
+}
+
+.SUCCEEDED > g > rect {
+	fill: #5cb85c;
+	stroke: #4cae4c;
+}
+
+.SUCCEEDED > g > text {
+	fill: #FFF;
+}
+
+.FAILED > g > rect {
+	fill: #d2322d;
+	stroke: #d2322d;
+}
+
+.FAILED > g > text {
+	fill: #FFF;
+}
+
+.FAILED_FINISHING > g > rect {
+	fill: #ed9c28;
+	stroke: #ed9c28;
+}
+
+.FAILED_FINISHING > g > text {
+	fill: #FFF;
+}
+
+.DISABLED > g > rect {
+	fill: #800000;
+	stroke: #800000;
+}
+
+.DISABLED > g > rect {
+	fill: #800000;
+	stroke: #800000;
+}
+
+.SKIPPED > g > rect {
+	fill: #CCC;
+	stroke: #CCC;
+}
+
+.SKIPPED > g > rect {
+	fill: #CCC;
+	stroke: #CCC;
+}
+
+.DISABLED {
+	opacity: 0.25;
+}
+
+.SKIPPED {
+	opacity: 0.25;
+}
+
+/* Edges */
+.edge {
+	stroke: #CCC;
+	stroke-width: 1.5;
+}
+
+.edge:hover {
+	stroke: #009FC9;
+	stroke-width: 1.5;
+}
+
+/*
+svg text1 {
+	pointer-events: none;
+}
+
+svg g.nodebox1 {
+	pointer-events: none;
+}
 
 svg .edge {
 	stroke: #BBB;
@@ -97,7 +220,7 @@ svg .selected .nodebox rect {
 }
 
 svg .node rect {
-	fill: #F8F8F8;
+	fill: #CCC;
 	stroke: #CCC;
 	stroke-width: 2;
 }
@@ -115,7 +238,7 @@ svg .node:hover rect {
 }
 
 svg .READY rect {
-	fill: #EEE;
+	fill: #CCC;
 }
 
 svg .RUNNING rect {
@@ -245,3 +368,4 @@ svg circle.SKIPPED {
 	width: 100%;
 	height: 100%;
 }
+*/
