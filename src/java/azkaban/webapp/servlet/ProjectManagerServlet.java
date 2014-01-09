@@ -322,7 +322,6 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 	private void ajaxFetchFlowDetails(Project project, 
       HashMap<String, Object> ret, HttpServletRequest req) 
       throws ServletException {
-		String projectName = getParam(req, "project");
 		String flowName = getParam(req, "flow");
 
 		Flow flow = null;
