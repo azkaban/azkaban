@@ -552,7 +552,7 @@ var touchDescendents = function(jobid, disable) {
 	executableGraphModel.trigger("change:disabled");
 }
 
-var nodeClickCallback = function(event) {
+var exNodeClickCallback = function(event) {
 	console.log("Node clicked callback");
 	var jobId = event.currentTarget.jobid;
 	var flowId = executableGraphModel.get("flowId");
@@ -580,11 +580,11 @@ var nodeClickCallback = function(event) {
 	contextMenuView.show(event, menu);
 }
 
-var edgeClickCallback = function(event) {
+var exEdgeClickCallback = function(event) {
 	console.log("Edge clicked callback");
 }
 
-var graphClickCallback = function(event) {
+var exGraphClickCallback = function(event) {
 	console.log("Graph clicked callback");
 	var flowId = executableGraphModel.get("flowId");
 	var requestURL = contextURL + "/manager?project=" + projectName + "&flow=" + flowId;

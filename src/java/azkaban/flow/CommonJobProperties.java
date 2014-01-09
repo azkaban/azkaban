@@ -82,6 +82,11 @@ public class CommonJobProperties {
 	public static final String FLOW_ID = "azkaban.flow.flowid";
 	
 	/**
+	 * The nested flow id path
+	 */
+	public static final String NESTED_FLOW_PATH = "azkaban.flow.nested.path";
+	
+	/**
 	 * The execution id. This should be unique per flow, but may not be due to 
 	 * restarts.
 	 */

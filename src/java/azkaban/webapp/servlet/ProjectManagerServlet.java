@@ -28,6 +28,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.HashSet;
@@ -66,6 +67,7 @@ import azkaban.user.User;
 import azkaban.utils.JSONUtils;
 import azkaban.utils.Pair;
 import azkaban.utils.Props;
+import azkaban.utils.PropsUtils;
 import azkaban.utils.Utils;
 import azkaban.webapp.AzkabanWebServer;
 import azkaban.webapp.session.Session;
@@ -206,6 +208,11 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 		else if (ajaxName.equals("fetchflowgraph")) {
 			if (handleAjaxPermission(project, user, Type.READ, ret)) {
 				ajaxFetchFlowGraph(project, ret, req);
+			}
+		}
+		else if (ajaxName.equals("fetchflownodedata")) {
+			if (handleAjaxPermission(project, user, Type.READ, ret)) {
+				ajaxFetchFlowNodeData(project, ret, req);
 			}
 		}
 		else if (ajaxName.equals("fetchprojectflows")) {
@@ -455,7 +462,6 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 	}
 	
 	private void ajaxFetchJobInfo(Project project, HashMap<String, Object> ret, HttpServletRequest req) throws ServletException {
-
 		String flowName = getParam(req, "flowName");
 		String jobName = getParam(req, "jobName");
 		
@@ -547,6 +553,50 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 	
 	private void ajaxFetchFlowGraph(Project project, HashMap<String, Object> ret, HttpServletRequest req) throws ServletException {
 		String flowId = getParam(req, "flow");
+		
+		fillFlowInfo2(project, flowId, ret);
+	}
+	
+	private void fillFlowInfo2(Project project, String flowId, HashMap<String, Object> ret) {
+		Flow flow = project.getFlow(flowId);
+		
+		ArrayList<Map<String, Object>> nodeList = new ArrayList<Map<String, Object>>();
+		for (Node node: flow.getNodes()) {
+			HashMap<String, Object> nodeObj = new HashMap<String, Object>();
+			nodeObj.put("id", node.getId());
+			nodeObj.put("type", node.getType());
+			if (node.getEmbeddedFlowId() != null) {
+				nodeObj.put("flowId", node.getEmbeddedFlowId());
+				HashMap<String, Object> embeddedNodeObj = new HashMap<String, Object>();
+				fillFlowInfo2(project, node.getEmbeddedFlowId(), embeddedNodeObj);
+				nodeObj.put("flowData", embeddedNodeObj);
+			}
+			
+			nodeList.add(nodeObj);
+			Set<Edge> inEdges = flow.getInEdges(node.getId());
+			if (inEdges != null && !inEdges.isEmpty()) {
+				ArrayList<String> inEdgesList = new ArrayList<String>();
+				for (Edge edge: inEdges) {
+					inEdgesList.add(edge.getSourceId());
+				}
+				Collections.sort(inEdgesList);
+				nodeObj.put("in", inEdgesList);
+			}
+		}
+		
+		Collections.sort(nodeList, new Comparator<Map<String, Object>>() {
+			@Override
+			public int compare(Map<String, Object> o1, Map<String, Object> o2) {
+				String id = (String)o1.get("id");
+				return id.compareTo((String)o2.get("id"));
+			}
+		});
+
+		ret.put("flow", flowId);
+		ret.put("nodes", nodeList);
+	}
+	
+	private void fillFlowInfo(Project project, String flowId, HashMap<String, Object> ret) {
 		Flow flow = project.getFlow(flowId);
 		
 		//Collections.sort(flowNodes, NODE_LEVEL_COMPARATOR);
@@ -555,7 +605,11 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 			HashMap<String, Object> nodeObj = new HashMap<String,Object>();
 			nodeObj.put("id", node.getId());
 			nodeObj.put("level", node.getLevel());
-
+			nodeObj.put("type", node.getType());
+			if (node.getEmbeddedFlowId() != null) {
+				nodeObj.put("flowId", node.getEmbeddedFlowId());
+			}
+			
 			nodeList.add(nodeObj);
 		}
 		
@@ -575,6 +629,47 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 		ret.put("flowId", flowId);
 		ret.put("nodes", nodeList);
 		ret.put("edges", edgeList);
+	}
+	
+	private void ajaxFetchFlowNodeData(Project project, HashMap<String, Object> ret, HttpServletRequest req) throws ServletException {
+		String flowId = getParam(req, "flow");
+		Flow flow = project.getFlow(flowId);
+		
+		String nodeId = getParam(req, "node");
+		Node node = flow.getNode(nodeId);
+		
+		if (node == null) {
+			ret.put("error", "Job " + nodeId + " doesn't exist.");
+			return;
+		}
+		
+		ret.put("id", nodeId);
+		ret.put("flow", flowId);
+		ret.put("type", node.getType());
+		
+		Props props;
+		try {
+			props = projectManager.getProperties(project, node.getJobSource());
+		} catch (ProjectManagerException e) {
+			ret.put("error", "Failed to upload job override property for " + nodeId);
+			return;
+		}
+		
+		if (props == null) {
+			ret.put("error", "Properties for " + nodeId + " isn't found.");
+			return;
+		}
+		
+		Map<String,String> properties = PropsUtils.toStringMap(props, true);
+		ret.put("props", properties);
+		
+		if (node.getType().equals("flow")) {
+			if (node.getEmbeddedFlowId() != null) {
+				HashMap<String, Object> flowMap = new HashMap<String, Object>();
+				fillFlowInfo2(project, node.getEmbeddedFlowId(), flowMap);
+				ret.put("flowData", flowMap);
+			}
+		}
 	}
 	
 	private void ajaxFetchFlow(Project project, HashMap<String, Object> ret, HttpServletRequest req, HttpServletResponse resp) throws ServletException {

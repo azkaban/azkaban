@@ -1,5 +1,5 @@
 /*
- * Copyright 2012 LinkedIn Corp.
+ * Copyright 2014 LinkedIn Corp.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -410,6 +410,8 @@ public class ExecutorManager extends EventHandler implements ExecutorManagerAdap
 
 			int projectId = exflow.getProjectId();
 			String flowId = exflow.getFlowId();
+			exflow.setSubmitUser(userId);
+			exflow.setSubmitTime(System.currentTimeMillis());
 			
 			List<Integer> running = getRunningFlows(projectId, flowId);
 
@@ -418,29 +420,43 @@ public class ExecutorManager extends EventHandler implements ExecutorManagerAdap
 				options = new ExecutionOptions();
 			}
 			
+			String message = "";
 			if (options.getDisabledJobs() != null) {
 				// Disable jobs
 				for(String disabledId : options.getDisabledJobs()) {
-					ExecutableNode node = exflow.getExecutableNode(disabledId);
+					String[] splits = disabledId.split(":");
+					ExecutableNode node = exflow;
+					
+					for (String split: splits) {
+						if (node instanceof ExecutableFlowBase) {
+							node = ((ExecutableFlowBase)node).getExecutableNode(split);
+						}
+						else {
+							message = "Cannot disable job " + disabledId + " since flow " + split + " cannot be found. \n";
+						}
+					}
+
+					if (node == null) {
+						throw new ExecutorManagerException("Cannot disable job " + disabledId + ". Cannot find corresponding node.");
+					}
 					node.setStatus(Status.DISABLED);
 				}
 			}
 			
-			String message = "";
 			if (!running.isEmpty()) {
 				if (options.getConcurrentOption().equals(ExecutionOptions.CONCURRENT_OPTION_PIPELINE)) {
 					Collections.sort(running);
 					Integer runningExecId = running.get(running.size() - 1);
 					
 					options.setPipelineExecutionId(runningExecId);
-					message = "Flow " + flowId + " is already running with exec id " + runningExecId +". Pipelining level " + options.getPipelineLevel() + ". ";
+					message = "Flow " + flowId + " is already running with exec id " + runningExecId +". Pipelining level " + options.getPipelineLevel() + ". \n";
 				}
 				else if (options.getConcurrentOption().equals(ExecutionOptions.CONCURRENT_OPTION_SKIP)) {
 					throw new ExecutorManagerException("Flow " + flowId + " is already running. Skipping execution.", ExecutorManagerException.Reason.SkippedExecution);
 				}
 				else {
 					// The settings is to run anyways.
-					message = "Flow " + flowId + " is already running with exec id " + StringUtils.join(running, ",") +". Will execute concurrently. ";
+					message = "Flow " + flowId + " is already running with exec id " + StringUtils.join(running, ",") +". Will execute concurrently. \n";
 				}
 			}
 			
@@ -637,9 +653,6 @@ public class ExecutorManager extends EventHandler implements ExecutorManagerAdap
 			while(!shutdown) {
 				try {
 					lastThreadCheckTime = System.currentTimeMillis();
-
-//					loadRunningFlows();
-
 					updaterStage = "Starting update all flows.";
 					
 					Map<ConnectionInfo, List<ExecutableFlow>> exFlowMap = getFlowToExecutorMap();
@@ -921,7 +934,7 @@ public class ExecutorManager extends EventHandler implements ExecutorManagerAdap
 		
 		Pair<ExecutionReference, ExecutableFlow> refPair = this.runningFlows.get(execId);
 		if (refPair == null) {
-			throw new ExecutorManagerException("No running flow found with the execution id.");
+			throw new ExecutorManagerException("No running flow found with the execution id. Removing " + execId);
 		}
 		
 		ExecutionReference ref = refPair.getFirst();
@@ -1141,8 +1154,4 @@ public class ExecutorManager extends EventHandler implements ExecutorManagerAdap
 			cleanOldExecutionLogs(DateTime.now().getMillis() - executionLogsRetentionMs);
 		}
 	}
-
-	
-
-	
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2012 LinkedIn Corp.
+ * Copyright 2014 LinkedIn Corp.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -67,6 +67,17 @@ public enum Status {
 		case SUCCEEDED:
 		case SKIPPED:
 		case FAILED_SUCCEEDED:
+			return true;
+		default:
+			return false;
+		}
+	}
+	
+	public static boolean isStatusRunning(Status status) {
+		switch (status) {
+		case RUNNING:
+		case FAILED_FINISHING:
+		case QUEUED:
 			return true;
 		default:
 			return false;

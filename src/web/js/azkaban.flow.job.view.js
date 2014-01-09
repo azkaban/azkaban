@@ -20,6 +20,7 @@ azkaban.JobListView = Backbone.View.extend({
 		"click .job": "handleJobClick",
 		"click .resetPanZoomBtn": "handleResetPanZoom",
 		"contextmenu li": "handleContextMenuClick"
+		"change .autoPanZoom" : "handleAutoPanZoom",
 	},
 	
 	initialize: function(settings) {
@@ -112,7 +113,6 @@ azkaban.JobListView = Backbone.View.extend({
 	render: function(self) {
 		var data = this.model.get("data");
 		var nodes = data.nodes;
-		var edges = data.edges;
 		
 		this.listNodes = {}; 
 		if (nodes.length == 0) {
@@ -211,5 +211,8 @@ azkaban.JobListView = Backbone.View.extend({
 	
 	handleResetPanZoom: function(evt) {
 		this.model.trigger("resetPanZoom");
+	},
+	handleAutoPanZoom: function(evt) {
+		this.model.set({"autoPanZoom": $(evt.currentTarget).is(':checked')});
 	}
 });

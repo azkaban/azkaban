@@ -87,6 +87,7 @@ public class PropsUtilsTest {
 	
 	private void failIfNotException(Props props) {
 		try {
+			PropsUtils.resolveProps(props);
 			Assert.fail();
 		}
 		catch (UndefinedPropertyException e) {

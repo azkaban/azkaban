@@ -390,7 +390,14 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements ExecutorLo
 			}
 		}
 		
-		ExecutableFlow flow = node.getFlow();
+		ExecutableFlow flow = node.getExecutableFlow();
+		String flowId = flow.getFlowId();
+		
+		// if the main flow is not the parent, then we'll create a composite key for flowID
+		if (flow != node.getParentFlow()) {
+			flowId = node.getParentFlow().getNestedId();
+		}
+		
 		QueryRunner runner = createQueryRunner();
 		try {
 			runner.update(
@@ -398,8 +405,8 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements ExecutorLo
 					flow.getExecutionId(), 
 					flow.getProjectId(), 
 					flow.getVersion(), 
-					flow.getFlowId(), 
-					node.getJobId(),
+					flowId, 
+					node.getId(),
 					node.getStartTime(),
 					node.getEndTime(), 
 					node.getStatus().getNumVal(),
@@ -407,13 +414,13 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements ExecutorLo
 					node.getAttempt()
 					);
 		} catch (SQLException e) {
-			throw new ExecutorManagerException("Error writing job " + node.getJobId(), e);
+			throw new ExecutorManagerException("Error writing job " + node.getId(), e);
 		}
 	}
 	
 	@Override
 	public void updateExecutableNode(ExecutableNode node) throws ExecutorManagerException {
-		final String UPSERT_EXECUTION_NODE = "UPDATE execution_jobs SET start_time=?, end_time=?, status=?, output_params=? WHERE exec_id=? AND job_id=? AND attempt=?";
+		final String UPSERT_EXECUTION_NODE = "UPDATE execution_jobs SET start_time=?, end_time=?, status=?, output_params=? WHERE exec_id=? AND flow_id=? AND job_id=? AND attempt=?";
 		
 		byte[] outputParam = null;
 		Props outputProps = node.getOutputProps();
@@ -434,11 +441,12 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements ExecutorLo
 					node.getEndTime(), 
 					node.getStatus().getNumVal(), 
 					outputParam,
-					node.getFlow().getExecutionId(),
-					node.getJobId(),
+					node.getExecutableFlow().getExecutionId(),
+					node.getParentFlow().getNestedId(),
+					node.getId(),
 					node.getAttempt());
 		} catch (SQLException e) {
-			throw new ExecutorManagerException("Error updating job " + node.getJobId(), e);
+			throw new ExecutorManagerException("Error updating job " + node.getId(), e);
 		}
 	}
 	
