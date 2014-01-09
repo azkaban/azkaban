@@ -29,7 +29,7 @@
 							<h4 class="modal-title" id="execute-flow-panel-title"></h4>
 						</div><!-- /modal-header -->
 						<div class="modal-body row">
-							<div class="col-md-4">
+							<div class="col-xs-4">
 								<ul class="nav nav-pills nav-stacked" id="graph-options">
 									<li id="flow-option" viewpanel="svg-div-custom">
 										<a href="#">Flow View</a>
@@ -52,8 +52,8 @@
 										<div class="menu-caption">Add temporary flow parameters that are used to override global settings for each job.</div>
 									</li>
 								</ul>
-							</div><!-- /col-md-4 -->
-							<div class="col-md-8">
+							</div><!-- /col-xs-4 -->
+							<div class="col-xs-8">
 								<div id="execution-graph-options-panel">
 
 ## SVG graph panel.
@@ -181,7 +181,7 @@
 									</div>
 
 								</div><!-- /execution-graph-options-panel -->
-							</div><!-- /col-md-8 -->
+							</div><!-- /col-xs-8 -->
 						</div><!-- /modal-body -->
 
 						<div class="modal-footer">

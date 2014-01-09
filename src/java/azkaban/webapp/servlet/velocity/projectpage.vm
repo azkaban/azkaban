@@ -91,11 +91,11 @@
             </div>
 	#end
           </div><!-- /#flow-tabs -->
-				</div><!-- /col-lg-8 -->
+				</div><!-- /col-xs-8 -->
 
 				<div class="col-xs-6 col-sm-3 sidebar-offcanvas">
 	#parse ("azkaban/webapp/servlet/velocity/projectsidebar.vm")
-				</div><!-- /col-lg-4 -->
+				</div><!-- /col-xs-4 -->
 			</div><!-- /row -->
 
 	#parse ("azkaban/webapp/servlet/velocity/projectmodals.vm")
