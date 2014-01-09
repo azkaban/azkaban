@@ -46,10 +46,10 @@
 		<div class="az-page-header">
       <div class="container-full">
         <div class="row">
-          <div class="col-xs-6">
+          <div class="header-title">
             <h1><a href="${context}/history">History</a></h1>
           </div>
-          <div class="col-xs-6">
+          <div class="header-control">
             <form id="search-form" method="get" class="form-inline az-page-header-form" role="form">
               <input type="hidden" name="search" value="true">
               <div class="form-group">
