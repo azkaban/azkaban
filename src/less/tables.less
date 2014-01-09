@@ -4,13 +4,23 @@ table.table-properties {
 }
 
 // Flow summary.
-td.property-key {
+.property-key {
   width: 25%;
   font-weight: bold;
 }
 
-td.property-value-half {
+.property-value-half {
   width: 25%;
+}
+
+.editable {
+  .remove-btn {
+    visibility: hidden;
+  }
+
+  &:hover .remove-btn {
+    visibility: visible;
+  }
 }
 
 // Job table.
@@ -45,7 +55,7 @@ td.property-value-half {
 .executions-table {
   th {
     &.date {
-      width: 140px;
+      width: 160px;
     }
 
     &.execid {
@@ -74,6 +84,10 @@ td.property-value-half {
 
     &.action {
       width: 20px;
+    }
+
+    &.logs {
+      width: 30px;
     }
   }
 

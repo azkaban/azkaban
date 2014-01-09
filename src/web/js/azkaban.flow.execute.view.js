@@ -326,10 +326,17 @@ azkaban.EditTableView = Backbone.View.extend({
 	
 		var tr = document.createElement("tr");
 		var tdName = document.createElement("td");
+    $(tdName).addClass('property-key');
 		var tdValue = document.createElement("td");
 		
-		var icon = document.createElement("span");
-		$(icon).addClass("removeIcon");
+		var remove = document.createElement("div");
+    $(remove).addClass("pull-right").addClass('remove-btn');
+    var removeBtn = document.createElement("button");
+    $(removeBtn).attr('type', 'button');
+    $(removeBtn).addClass('btn').addClass('btn-xs').addClass('btn-danger');
+    $(removeBtn).text('Delete');
+    $(remove).append(removeBtn);
+
 		var nameData = document.createElement("span");
 		$(nameData).addClass("spanValue");
 		$(nameData).text(name);
@@ -337,13 +344,12 @@ azkaban.EditTableView = Backbone.View.extend({
 		$(valueData).addClass("spanValue");
 		$(valueData).text(value);
 						
-		$(tdName).append(icon);
 		$(tdName).append(nameData);
-		$(tdName).addClass("name");
 		$(tdName).addClass("editable");
 		
 		$(tdValue).append(valueData);
-		$(tdValue).addClass("editable");
+    $(tdValue).append(remove);
+		$(tdValue).addClass("editable").addClass('value');
 		
 		$(tr).addClass("editRow");
 		$(tr).append(tdName);
@@ -361,6 +367,7 @@ azkaban.EditTableView = Backbone.View.extend({
 					
 		var input = document.createElement("input");
 		$(input).attr("type", "text");
+    $(input).addClass('form-control').addClass('input-sm');
 		$(input).css("width", "100%");
 		$(input).val(text);
 		$(curTarget).addClass("editing");
@@ -396,10 +403,15 @@ azkaban.EditTableView = Backbone.View.extend({
 		$(valueData).addClass("spanValue");
 		$(valueData).text(text);
 
-		if ($(parent).hasClass("name")) {
-			var icon = document.createElement("span");
-			$(icon).addClass("removeIcon");
-			$(parent).append(icon);
+		if ($(parent).hasClass("value")) {
+      var remove = document.createElement("div");
+      $(remove).addClass("pull-right").addClass('remove-btn');
+      var removeBtn = document.createElement("button");
+      $(removeBtn).attr('type', 'button');
+      $(removeBtn).addClass('btn').addClass('btn-xs').addClass('btn-danger');
+      $(removeBtn).text('Delete');
+      $(remove).append(removeBtn);
+			$(parent).append(remove);
 		}
 		
 		$(parent).removeClass("editing");

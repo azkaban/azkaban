@@ -22,9 +22,10 @@ azkaban.JobEditView = Backbone.View.extend({
 		"click" : "closeEditingTarget",
 		"click #set-btn": "handleSet",	
 		"click #cancel-btn": "handleCancel",
+		"click #close-btn": "handleCancel",
 		"click #addRow": "handleAddRow",
 		"click table .editable": "handleEditColumn",
-		"click table .removeIcon": "handleRemoveColumn"
+		"click table .remove-btn": "handleRemoveColumn"
 	},
 	
 	initialize: function(setting) {
@@ -68,30 +69,29 @@ azkaban.JobEditView = Backbone.View.extend({
 		var fetchJobSuccessHandler = function(data) {
 			if (data.error) {
 				alert(data.error);
+				return;
 			}
-			else {
-				document.getElementById('jobName').innerHTML = data.jobName;				
-				document.getElementById('jobType').innerHTML = data.jobType;
-				var generalParams = data.generalParams;
-				var overrideParams = data.overrideParams;
-						
-				/*for (var key in generalParams) {
+			document.getElementById('jobName').innerHTML = data.jobName;				
+			document.getElementById('jobType').innerHTML = data.jobType;
+			var generalParams = data.generalParams;
+			var overrideParams = data.overrideParams;
+					
+			/*for (var key in generalParams) {
+				var row = handleAddRow();
+				var td = $(row).find('span');
+				$(td[1]).text(key);
+				$(td[2]).text(generalParams[key]);
+			}*/
+					
+			mythis.overrideParams = overrideParams;
+			mythis.generalParams = generalParams;
+			
+			for (var okey in overrideParams) {
+				if (okey != 'type' && okey != 'dependencies') {
 					var row = handleAddRow();
 					var td = $(row).find('span');
-					$(td[1]).text(key);
-					$(td[2]).text(generalParams[key]);
-				}*/
-						
-				mythis.overrideParams = overrideParams;
-				mythis.generalParams = generalParams;
-				
-				for (var okey in overrideParams) {
-					if (okey != 'type' && okey != 'dependencies') {
-						var row = handleAddRow();
-						var td = $(row).find('span');
-						$(td[1]).text(okey);
-						$(td[2]).text(overrideParams[okey]);
-					}
+					$(td[0]).text(okey);
+					$(td[1]).text(overrideParams[okey]);
 				}
 			}
 		};
@@ -106,8 +106,8 @@ azkaban.JobEditView = Backbone.View.extend({
 		for (var i = 0; i < editRows.length; ++i) {
 			var row = editRows[i];
 			var td = $(row).find('span');
-			var key = $(td[1]).text();
-			var val = $(td[2]).text();
+			var key = $(td[0]).text();
+			var val = $(td[1]).text();
 
 			if (key && key.length > 0) {
 				jobOverride[key] = val;
@@ -151,23 +151,30 @@ azkaban.JobEditView = Backbone.View.extend({
 	handleAddRow: function(evt) {
 		var tr = document.createElement("tr");
 		var tdName = document.createElement("td");
+    $(tdName).addClass('property-key');
 		var tdValue = document.createElement("td");
 
-		var icon = document.createElement("span");
-		$(icon).addClass("removeIcon");
+		var remove = document.createElement("div");
+    $(remove).addClass("pull-right").addClass('remove-btn');
+    var removeBtn = document.createElement("button");
+    $(removeBtn).attr('type', 'button');
+    $(removeBtn).addClass('btn').addClass('btn-xs').addClass('btn-danger');
+    $(removeBtn).text('Delete');
+    $(remove).append(removeBtn);
+
 		var nameData = document.createElement("span");
 		$(nameData).addClass("spanValue");
 		var valueData = document.createElement("span");
 		$(valueData).addClass("spanValue");
 
-		$(tdName).append(icon);
 		$(tdName).append(nameData);
-		$(tdName).addClass("name");
 		$(tdName).addClass("editable");
 		nameData.myparent = tdName;
 
 		$(tdValue).append(valueData);
-			$(tdValue).addClass("editable");
+    $(tdValue).append(remove);
+		$(tdValue).addClass("editable");
+		$(tdValue).addClass("value");
 		valueData.myparent = tdValue;
 		
 		$(tr).addClass("editRow");
@@ -180,7 +187,6 @@ azkaban.JobEditView = Backbone.View.extend({
 	
 	handleEditColumn: function(evt) {
 		var curTarget = evt.currentTarget;
-	
 		if (this.editingTarget != curTarget) {
 			this.closeEditingTarget(evt);
 		
@@ -189,7 +195,7 @@ azkaban.JobEditView = Backbone.View.extend({
 						
 			var input = document.createElement("input");
 			$(input).attr("type", "text");
-			$(input).css("width", "100%");
+      $(input).addClass("form-control").addClass("input-sm");
 			$(input).val(text);
 			
 			$(curTarget).addClass("editing");
@@ -201,7 +207,6 @@ azkaban.JobEditView = Backbone.View.extend({
 					obj.closeEditingTarget(evt);
 				}
 			});
-			
 			this.editingTarget = curTarget;
 		}
 
@@ -217,28 +222,34 @@ azkaban.JobEditView = Backbone.View.extend({
 	},
 	
 	closeEditingTarget: function(evt) {
-		if (this.editingTarget != null && 
-				this.editingTarget != evt.target && 
-				this.editingTarget != evt.target.myparent) {
-			var input = $(this.editingTarget).children("input")[0];
-			var text = $(input).val();
-			$(input).remove();
-
-			var valueData = document.createElement("span");
-			$(valueData).addClass("spanValue");
-			$(valueData).text(text);
-
-			if ($(this.editingTarget).hasClass("name")) {
-				var icon = document.createElement("span");
-				$(icon).addClass("removeIcon");
-				$(this.editingTarget).append(icon);
-			}
-
-			$(this.editingTarget).removeClass("editing");
-			$(this.editingTarget).append(valueData);
-			valueData.myparent = this.editingTarget;
-			this.editingTarget = null;
+		if (this.editingTarget == null ||
+				this.editingTarget == evt.target ||
+				this.editingTarget == evt.target.myparent) {
+			return;
 		}
+		var input = $(this.editingTarget).children("input")[0];
+		var text = $(input).val();
+		$(input).remove();
+
+		var valueData = document.createElement("span");
+		$(valueData).addClass("spanValue");
+		$(valueData).text(text);
+
+		if ($(this.editingTarget).hasClass("value")) {
+      var remove = document.createElement("div");
+      $(remove).addClass("pull-right").addClass('remove-btn');
+      var removeBtn = document.createElement("button");
+      $(removeBtn).attr('type', 'button');
+      $(removeBtn).addClass('btn').addClass('btn-xs').addClass('btn-danger');
+      $(removeBtn).text('Delete');
+      $(remove).append(removeBtn);
+			$(this.editingTarget).append(remove);
+		}
+
+		$(this.editingTarget).removeClass("editing");
+		$(this.editingTarget).append(valueData);
+		valueData.myparent = this.editingTarget;
+		this.editingTarget = null;
 	}
 });
 

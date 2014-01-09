@@ -9,8 +9,16 @@
 
 .expanded-flow-job-list {
   .list-group-item {
+    .job-buttons {
+      visibility: hidden;
+    }
+
     &:hover {
       background-color: #f5f5f5;
+
+      .job-buttons {
+        visibility: visible;
+      }
     }
   }
 

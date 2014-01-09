@@ -63,7 +63,7 @@
                 <th>Flow</th>
                 <th>Project</th>
                 <th class="user">User</th>
-                <th class="user">Proxy User</th>
+                <th class="user">Proxy</th>
                 <th class="date">Start Time</th>
                 <th class="date">End Time</th>
                 <th class="elapse">Elapsed</th>
@@ -110,7 +110,7 @@
                 <th>Flow</th>
                 <th>Project</th>
                 <th class="user">User</th>
-                <th class="user">Proxy User</th>
+                <th class="user">Proxy</th>
                 <th class="date">Start Time</th>
                 <th class="date">End Time</th>
                 <th class="elapse">Elapsed</th>

@@ -91,10 +91,11 @@ azkaban.FlowTableView = Backbone.View.extend({
 			li.jobName = name;
 
 			if (execAccess) {
-				var hoverMenuDiv = document.createElement("div");
-				$(hoverMenuDiv).addClass("pull-right");
+				var hoverMenuDiv = document.createElement('div');
+				$(hoverMenuDiv).addClass('pull-right');
+        $(hoverMenuDiv).addClass('job-buttons');
 				
-				var divRunJob = document.createElement("button");
+				var divRunJob = document.createElement('button');
         $(divRunJob).attr('type', 'button');
 				$(divRunJob).addClass("btn");
 				$(divRunJob).addClass("btn-success");

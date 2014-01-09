@@ -165,7 +165,7 @@
 											<table class="table table-striped">
 												<thead>
 													<tr>
-														<th>Name</th>
+														<th class="property-key">Name</th>
 														<th>Value</th>
 													</tr>
 												</thead>
@@ -190,6 +190,7 @@
                 <button type="button" class="btn btn-success" id="schedule-btn">Schedule</button>
               </div>
 #end
+
 #*
 #if ($triggerPlugins.size() > 0)
 	#foreach ($triggerPlugin in $triggerPlugins)
