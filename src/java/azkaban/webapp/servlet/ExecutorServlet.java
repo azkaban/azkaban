@@ -131,6 +131,9 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 				else if (ajaxName.equals("fetchExecJobSummary")) {
 					ajaxFetchJobSummary(req, resp, ret, session.getUser(), exFlow);
 				}
+        else if (ajaxName.equals("fetchExecJobStats")) {
+          ajaxFetchJobStats(req, resp, ret, session.getUser(), exFlow);
+        }
 				else if (ajaxName.equals("retryFailedJobs")) {
 					ajaxRestartFailed(req, resp, ret, session.getUser(), exFlow);
 				}
@@ -497,6 +500,38 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 			throw new ServletException(e);
 		}
 	}
+	
+  private void ajaxFetchJobStats(
+      HttpServletRequest req, 
+      HttpServletResponse resp, 
+      HashMap<String, Object> ret, 
+      User user, 
+      ExecutableFlow exFlow) throws ServletException {
+		Project project = getProjectAjaxByPermission(
+        ret, exFlow.getProjectId(), user, Type.READ);
+		if (project == null) {
+			return;
+		}
+		
+		String jobId = this.getParam(req, "jobId");
+		resp.setCharacterEncoding("utf-8");
+		try {
+			ExecutableNode node = exFlow.getExecutableNode(jobId);
+			if (node == null) {
+				ret.put("error", "Job " + jobId + " doesn't exist in " + 
+            exFlow.getExecutionId());
+				return;
+			}
+	
+      // XXX
+      outputDir = props.getString("azkaban.stats.dir",
+				System.getProperty("java.io.tmpdir"));
+      
+		}
+    catch (ExecutorManagerException e) {
+			throw new ServletException(e);
+		}
+  }
 
 	private void ajaxFetchFlowInfo(HttpServletRequest req, HttpServletResponse resp, HashMap<String, Object> ret, User user, String projectName, String flowId) throws ServletException {
 		Project project = getProjectAjaxByPermission(ret, projectName, user, Type.READ);

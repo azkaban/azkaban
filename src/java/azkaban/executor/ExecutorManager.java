@@ -1091,15 +1091,24 @@ public class ExecutorManager extends EventHandler implements ExecutorManagerAdap
 	}
 	
 	@Override
-	public int getExecutableFlows(int projectId, String flowId, int from, int length, List<ExecutableFlow> outputList) throws ExecutorManagerException {
-		List<ExecutableFlow> flows = executorLoader.fetchFlowHistory(projectId, flowId, from, length);
+	public int getExecutableFlows(
+      int projectId, 
+      String flowId, 
+      int from, 
+      int length, 
+      List<ExecutableFlow> outputList) throws ExecutorManagerException {
+		List<ExecutableFlow> flows = executorLoader.fetchFlowHistory(
+        projectId, flowId, from, length);
 		outputList.addAll(flows);
 		return executorLoader.fetchNumExecutableFlows(projectId, flowId);
 	}
 
 	@Override
-	public List<ExecutableFlow> getExecutableFlows(int projectId, String flowId, int from, int length, Status status) throws ExecutorManagerException {
-		return executorLoader.fetchFlowHistory(projectId, flowId, from, length, status);
+	public List<ExecutableFlow> getExecutableFlows(
+      int projectId, String flowId, int from, int length, Status status) 
+      throws ExecutorManagerException {
+		return executorLoader.fetchFlowHistory(
+        projectId, flowId, from, length, status);
 	}
 
 	/* 

@@ -295,7 +295,7 @@ azkaban.ExecutionsView = Backbone.View.extend({
 var summaryView;
 azkaban.SummaryView = Backbone.View.extend({
 	events: {
-    'click #analyze-btn': 'analyzeLastRun'
+    'click #analyze-btn': 'fetchLastRun'
 	},
 	
 	initialize: function(settings) {
@@ -337,29 +337,102 @@ azkaban.SummaryView = Backbone.View.extend({
 		$.get(requestURL, requestData, successHandler, 'json');
 	},
 
-	analyzeLastRun: function() {
-		var requestURL = contextURL + "/executor";
+	fetchLastRun: function() {
+		var requestURL = contextURL + "/manager";
     var requestData = {
-      'ajax': 'fetchLastRunStats',
+      'ajax': 'fetchLastSuccessfulFlowExecution',
       'project': projectName,
       'flow': flowId
     };
     var view = this;
     var successHandler = function(data) {
-      data = {
-        success: false,
-        message: "No last run data available. This flow has not been run yet.",
-        warnings: {},
-        jobs: {}
-      };
-      view.renderLastRun(data);
+      if (data.success == false || data.execId == null) {
+        view.renderLastRun(data);
+        return;
+      }
+      view.analyzeLastRun(data.execId);
     };
     $.get(requestURL, requestData, successHandler, 'json');
 	},
 
+  fetchJobs: function(execId) {
+    var requestURL = contextURL + "/executor";
+    var requestData = {"execid": execId, "ajax":"fetchexecflow"};
+    var jobs = [];
+    var successHandler = function(data) {
+      for (var i = 0; i < data.nodes.length; ++i) {
+        var node = data.nodes[i];
+        jobs.push(node.id);
+      }
+    };
+    return jobs;
+  },
+
+  fetchJobStats: function(jobId) {
+    var requestURL = contextURL + "/executor";
+    var requestData = {
+      "execid": execId,
+      "flowid": flowId,
+      "jobid": jobId,
+      "ajax": "fetchExecJobStats"
+    };
+    var stats = null;
+    var successHandler = function(data) {
+      stats = data;
+    };
+    return stats;
+  },
+
+  updateStats: function(jobStats, data) {
+    var aggregateStats = data.stats;
+    var state = jobStats.state;
+    var conf = jobStats.conf;
+    if (state.numMaps > aggregateStats.maxMapSlots) {
+      aggregateStats.maxMapSlots = state.numMaps;
+    }
+    if (state.numReduces > aggregateStats.maxReduceSlots) {
+      aggregateStats.maxReduceSlots = state.numReduces;
+    }
+    aggregateStats.totalMapSlots += state.numMaps;
+    aggregateStats.totalReduceSlots += state.numReduces;
+  },
+
+  analyzeLastRun: function(execId) {
+    var jobs = this.fetchJobs(execId);
+    if (jobs == null) {
+      this.renderLastRun(null);
+      return;
+    }
+
+    var data = {
+      success: false,
+      message: null,
+      warnings: [],
+      stats: {
+        maxMapSlots: 0,
+        maxReduceSlots: 0,
+        totalMapSlots: 0,
+        totalReduceSlots: 0,
+        numJobs: jobs.length,
+        longestTaskTime: 0
+      }
+    };
+
+    for (var i = 0; i < jobs.length; ++i) {
+      var job = jobs[i];
+      var jobStats = this.fetchJobStats(job.id);
+      if (jobStats == null) {
+        data.warnings.push("No job stats available for job " + job.id);
+      }
+      this.updateStats(jobStats, data);
+    }
+    data.success = true;
+    this.renderLastRun(data);
+  },
+
   renderLastRun: function(data) {
     var view = this;
-    if (data == null || data.success == null || data.message == null) {
+    if (data == null) {
       var msg = { message: "Error retrieving last run data."};
       dust.render("flowsummary-no-data", msg, function(err, out) {
         view.displayLastRun(out);

@@ -15,15 +15,18 @@
               </tr>
             </tbody>
           </table>
-					
+				
+          <h3>
+            Scheduling
+            {?schedule}
+            <div class="pull-right">
+              <button type="button" id="removeSchedBtn" class="btn btn-xs btn-danger" onclick="removeSched({schedule.scheduleId})" >Remove Schedule</button>
+            </div>
+            {/schedule}
+          </h3>
 					<div class="panel panel-default">
 						<div class="panel-heading">
 							Scheduling
-							{?schedule}
-							<div class="pull-right">
-								<button type="button" id="removeSchedBtn" class="btn btn-xs btn-danger" onclick="removeSched({schedule.scheduleId})" >Remove Schedule</button>
-							</div>
-							{/schedule}
 						</div>
 						{?schedule}
 						<table class="table table-condensed table-bordered">
