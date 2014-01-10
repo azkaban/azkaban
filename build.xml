@@ -41,7 +41,7 @@
 	<!-- set the build number based on environment variable, otherwise blank -->
 	<property environment="env" description="System environment variables (including those set by Hudson)" />
 
-	<target name="all" depends="clean, jars" description="Builds all jars" />
+	<target name="all" depends="clean, package" description="Builds jars and packages." />
 
 	<target name="clean" description="Delete generated files.">
 		<echo message="Deleting generated files in dist" />
