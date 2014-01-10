@@ -1,5 +1,3 @@
-					<h4>Last Run Stats</h4>
-          <hr>
           <div class="panel panel-default">
 						<div class="panel-heading">Resources</div>
             <table class="table table-striped table-bordered table-condensed">

@@ -346,7 +346,7 @@ azkaban.SummaryView = Backbone.View.extend({
     };
     var view = this;
     var successHandler = function(data) {
-      if (data.success == false || data.execId == null) {
+      if (data.success == "false" || data.execId == null) {
         view.renderLastRun(data);
         return;
       }
@@ -365,10 +365,17 @@ azkaban.SummaryView = Backbone.View.extend({
         jobs.push(node.id);
       }
     };
+    $.ajax({
+      url: requestURL,
+      data: requestData,
+      success: successHandler,
+      dataType: "json",
+      async: false
+    });
     return jobs;
   },
 
-  fetchJobStats: function(jobId) {
+  fetchJobStats: function(jobId, execId) {
     var requestURL = contextURL + "/executor";
     var requestData = {
       "execid": execId,
@@ -380,6 +387,13 @@ azkaban.SummaryView = Backbone.View.extend({
     var successHandler = function(data) {
       stats = data;
     };
+    $.ajax({
+      url: requestURL,
+      data: requestData,
+      success: successHandler,
+      dataType: "json",
+      async: false
+    });
     return stats;
   },
 
@@ -387,14 +401,16 @@ azkaban.SummaryView = Backbone.View.extend({
     var aggregateStats = data.stats;
     var state = jobStats.state;
     var conf = jobStats.conf;
-    if (state.numMaps > aggregateStats.maxMapSlots) {
-      aggregateStats.maxMapSlots = state.numMaps;
+    var mappers = parseInt(state.totalMappers);
+    var reducers = parseInt(state.totalReducers);
+    if (mappers > aggregateStats.maxMapSlots) {
+      aggregateStats.maxMapSlots = mappers;
     }
-    if (state.numReduces > aggregateStats.maxReduceSlots) {
-      aggregateStats.maxReduceSlots = state.numReduces;
+    if (reducers > aggregateStats.maxReduceSlots) {
+      aggregateStats.maxReduceSlots = reducers;
     }
-    aggregateStats.totalMapSlots += state.numMaps;
-    aggregateStats.totalReduceSlots += state.numReduces;
+    aggregateStats.totalMapSlots += mappers;
+    aggregateStats.totalReduceSlots += reducers;
   },
 
   analyzeLastRun: function(execId) {
@@ -420,11 +436,14 @@ azkaban.SummaryView = Backbone.View.extend({
 
     for (var i = 0; i < jobs.length; ++i) {
       var job = jobs[i];
-      var jobStats = this.fetchJobStats(job.id);
-      if (jobStats == null) {
+      var jobStats = this.fetchJobStats(job, execId);
+      if (jobStats.jobStats == null) {
         data.warnings.push("No job stats available for job " + job.id);
+        continue;
       }
-      this.updateStats(jobStats, data);
+      for (var j = 0; j < jobStats.jobStats.length; ++j) {
+        this.updateStats(jobStats.jobStats[j], data);
+      }
     }
     data.success = true;
     this.renderLastRun(data);
@@ -438,7 +457,7 @@ azkaban.SummaryView = Backbone.View.extend({
         view.displayLastRun(out);
       });
     }
-    else if (data.success == false) {
+    else if (data.success == "false") {
       dust.render("flowsummary-no-data", data, function(err, out) {
         view.displayLastRun(out);
       });
