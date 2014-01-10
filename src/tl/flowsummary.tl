@@ -57,7 +57,7 @@
             </tbody>
           </table>
           {:else}
-            <div class="alert alert-info">
+            <div class="alert alert-default">
               <h4>None</h4>
               <p>This flow has not been scheduled.</p>
             </div>
@@ -69,8 +69,7 @@
           <div id="last-run-container">
             <div class="alert alert-info" id="analyze-last-run">
               <h4>Analyze last run</h4>
-              <p>Analyze the last run for aggregate performance statistics.</p>
-              <p><strong>Note:</strong> this may take a few minutes, especially if your flow is large.</p>
+              <p>Analyze the last run for aggregate performance statistics. <strong>Note:</strong> this may take a few minutes, especially if your flow is large.</p>
               <p>
                 <button type="button" id="analyze-btn" class="btn btn-primary">Analyze</button>
               </p>
