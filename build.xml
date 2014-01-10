@@ -81,13 +81,13 @@
     <!-- Compile dustjs templates -->
     <exec dir="${dust.src.dir}" executable="make" failonerror="true"/>
 		<copy todir="${dist.dust.dir}">
-      <fileset dir="${dust.src.dir}" includes="*.js" />
+      <fileset dir="${dust.src.dir}/obj" includes="*.js" />
 		</copy>
 
 		<!-- Compile LESS to CSS -->
     <exec dir="${less.src.dir}" executable="make" failonerror="true"/>
 		<copy todir="${dist.less.dir}" >
-      <fileset dir="${less.src.dir}" includes="*.css" />
+      <fileset dir="${less.src.dir}/obj" includes="*.css" />
     </copy>
 	</target>
 	
@@ -286,10 +286,7 @@
 		
 		<!-- Copy compiled less CSS -->
 		<copy todir="${dist.solo.package.dir}/web/css">
-      <fileset dir="${dist.less.dir}">
-        <include name="azkaban.css" />
-        <include name="azkaban-svg.css" />
-      </fileset>
+      <fileset dir="${dist.less.dir}" />
 		</copy>
 		
 		<!-- Copy sql files -->

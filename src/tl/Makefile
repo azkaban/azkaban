@@ -1,15 +1,16 @@
+OBJ_DIR = obj
 OBJ = \
-	flowsummary.js \
-	flowsummary-no-data.js \
-	flowsummary-last-run.js
+	$(OBJ_DIR)/flowsummary.js \
+	$(OBJ_DIR)/flowsummary-no-data.js \
+	$(OBJ_DIR)/flowsummary-last-run.js
 
 all: $(OBJ)
 
-.tl.js:
-	dustc --name=$(basename $<) $< $@
+$(OBJ_DIR)/%.js: %.tl
+	mkdir -p $(OBJ_DIR) && dustc --name=$(basename $<) $< $@
 
 clean:
-	rm -f $(OBJ)
+	rm -rf $(OBJ_DIR)
 
 .SUFFIXES: .tl .js
 

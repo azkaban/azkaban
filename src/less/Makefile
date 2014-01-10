@@ -1,26 +1,15 @@
+OBJ_DIR = obj
 OBJ = \
-	azkaban.css \
-	azkaban-svg.css \
-	base.css \
-	context-menu.css \
-	flow.css \
-	header.css \
-	job.css \
-	login.css \
-	log.css \
-	navbar.css \
-	non-responsive.css \
-	off-canvas.css \
-	project.css \
-	tables.css
+	$(OBJ_DIR)/azkaban.css \
+	$(OBJ_DIR)/azkaban-svg.css
 
 all: $(OBJ)
 
-.less.css:
+$(OBJ_DIR)/%.css: %.less
 	lessc $< $@
 
 clean:
-	rm -f $(OBJ)
+	rm -rf $(OBJ_DIR)
 
 .SUFFIXES: .less .css
 
