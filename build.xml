@@ -47,6 +47,14 @@
 		<echo message="Deleting generated files in dist" />
 		<delete dir="${dist.jar.dir}" />
 		<delete dir="${dist.classes.dir}" />
+		<delete dir="${dist.dust.dir}" />
+		<delete dir="${dist.less.dir}" />
+    <exec dir="${dust.src.dir}" executable="make" failonerror="true">
+      <arg value="clean" />
+    </exec>
+    <exec dir="${less.src.dir}" executable="make" failonerror="true">
+      <arg value="clean" />
+    </exec>
 	</target>
 
 	<target name="build" description="Compile main source tree java files">
@@ -70,32 +78,17 @@
 			<classpath refid="main.classpath" />
 		</javac>
 
-		<!-- Compile dustjs templates -->
-		<!-- Note: Because apply does not support multiple srcfile and targetfile
-				 elements, and for and foreach requires ant-contrib, we use targetfile 
-				 for the template name parameter and then redirect the output of dustc
-				 to the final output file -->
-		<echo message="Compiling Dust templates." />
-		<apply dir="${dust.src.dir}" executable="dustc" relative="true">
-			<mapper type="glob" from="*.tl" to="*" />
-			<targetfile prefix="--name=" />
-			<srcfile />
-			<fileset dir="${dust.src.dir}" includes="*.tl" />
-			<redirector>
-				<outputmapper id="out" type="glob" from="*.tl" to="${dist.dust.dir}/*.js" />
-			</redirector>
-		</apply>
+    <!-- Compile dustjs templates -->
+    <exec dir="${dust.src.dir}" executable="make" failonerror="true"/>
+		<copy todir="${dist.dust.dir}">
+      <fileset dir="${dust.src.dir}" includes="*.js" />
+		</copy>
 
 		<!-- Compile LESS to CSS -->
-		<echo message="Compiling LESS style sheets." />
-		<apply dir="${less.src.dir}" executable="lessc" relative="true">
-			<mapper type="glob" from="*.less" to="*.css" />
-			<srcfile />
-			<fileset dir="${less.src.dir}" includes="*.less" />
-			<redirector>
-				<outputmapper id="out" type="glob" from="*.less" to="${dist.less.dir}/*.css" />
-			</redirector>
-		</apply>
+    <exec dir="${less.src.dir}" executable="make" failonerror="true"/>
+		<copy todir="${dist.less.dir}" >
+      <fileset dir="${less.src.dir}" includes="*.css" />
+    </copy>
 	</target>
 	
 	<target name="jars" depends="build" description="Create azkaban jar">
