@@ -200,26 +200,42 @@ public class ExecutorManager extends EventHandler implements ExecutorManagerAdap
 	}
 	
 	@Override
-	public List<ExecutableFlow> getExecutableFlows(Project project, String flowId, int skip, int size) throws ExecutorManagerException {
-		List<ExecutableFlow> flows = executorLoader.fetchFlowHistory(project.getId(), flowId, skip, size);
+	public List<ExecutableFlow> getExecutableFlows(
+      Project project, String flowId, int skip, int size) 
+      throws ExecutorManagerException {
+		List<ExecutableFlow> flows = executorLoader.fetchFlowHistory(
+        project.getId(), flowId, skip, size);
 		return flows;
 	}
 	
 	@Override
-	public List<ExecutableFlow> getExecutableFlows(int skip, int size) throws ExecutorManagerException {
+	public List<ExecutableFlow> getExecutableFlows(int skip, int size) 
+      throws ExecutorManagerException {
 		List<ExecutableFlow> flows = executorLoader.fetchFlowHistory(skip, size);
 		return flows;
 	}
 	
 	@Override
-	public List<ExecutableFlow> getExecutableFlows(String flowIdContains, int skip, int size) throws ExecutorManagerException {
-		List<ExecutableFlow> flows = executorLoader.fetchFlowHistory(null, '%'+flowIdContains+'%', null, 0, -1, -1 , skip, size);
+	public List<ExecutableFlow> getExecutableFlows(
+      String flowIdContains, int skip, int size) 
+      throws ExecutorManagerException {
+		List<ExecutableFlow> flows = executorLoader.fetchFlowHistory(
+        null, '%'+flowIdContains+'%', null, 0, -1, -1 , skip, size);
 		return flows;
 	}
 
 	@Override
-	public List<ExecutableFlow> getExecutableFlows(String projContain, String flowContain, String userContain, int status, long begin, long end, int skip, int size) throws ExecutorManagerException {
-		List<ExecutableFlow> flows = executorLoader.fetchFlowHistory(projContain, flowContain, userContain, status, begin, end , skip, size);
+	public List<ExecutableFlow> getExecutableFlows(
+      String projContain, 
+      String flowContain, 
+      String userContain, 
+      int status, 
+      long begin, 
+      long end, 
+      int skip, 
+      int size) throws ExecutorManagerException {
+		List<ExecutableFlow> flows = executorLoader.fetchFlowHistory(
+        projContain, flowContain, userContain, status, begin, end , skip, size);
 		return flows;
 	}
 	
