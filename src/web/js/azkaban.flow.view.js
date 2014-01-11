@@ -450,7 +450,7 @@ $(function() {
 
   flowStatsModel = new azkaban.FlowStatsModel();
 	flowStatsView = new azkaban.FlowStatsView({
-		el: $('#last-run-stats'),
+		el: $('#flow-stats-container'),
 		model: flowStatsModel
 	});
 

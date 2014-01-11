@@ -76,23 +76,61 @@ azkaban.FlowStatsView = Backbone.View.extend({
   },
 
   updateStats: function(jobStats, data) {
-    var aggregateStats = data.stats;
+    var stats = data.stats;
     var state = jobStats.state;
     var conf = jobStats.conf;
     var mappers = parseInt(state.totalMappers);
     var reducers = parseInt(state.totalReducers);
-    if (mappers > aggregateStats.maxMapSlots) {
-      aggregateStats.maxMapSlots = mappers;
+    if (mappers > stats.maxMapSlots) {
+      stats.maxMapSlots = mappers;
     }
-    if (reducers > aggregateStats.maxReduceSlots) {
-      aggregateStats.maxReduceSlots = reducers;
+    if (reducers > stats.maxReduceSlots) {
+      stats.maxReduceSlots = reducers;
     }
-    aggregateStats.totalMapSlots += mappers;
-    aggregateStats.totalReduceSlots += reducers;
+    stats.totalMapSlots += mappers;
+    stats.totalReduceSlots += reducers;
 
-    var jobMapMemoryMb = conf['mapred.job.map.memory.mb'];
-    var jobReduceMemoryMb = conf['mapred.job.reduce.memory.mb'];
+    var jobMapMemoryMb = parseInt(conf['mapred.job.map.memory.mb']);
+    if (jobMapMemoryMb > stats.maxJobMapMemoryMb) {
+      stats.maxJobMapMemoryMb = jobMapMemoryMb;
+    }
+    var jobReduceMemoryMb = parseInt(conf['mapred.job.reduce.memory.mb']);
+    if (jobReduceMemoryMb > stats.maxJobReduceMemoryMb) {
+      stats.maxJobReduceMemoryMb = jobReduceMemoryMb;
+    }
+
     var childJavaOpts = conf['mapred.child.java.opts'];
+    var parts = childJavaOpts.split(" ");
+    for (var i = 0; i < parts.length; ++i) {
+      var str = parts[i];
+      if (str.indexOf('Xmx') > -1) {
+        if (str.length <= 4) {
+          continue;
+        }
+        var size = str.substring(4, str.length);
+        var val = sizeStrToBytes(size);
+        if (val > stats.xmx.max) {
+          stats.xmx.max = val;
+          stats.xmx.str = size;
+        }
+      }
+      if (str.indexOf('Xms') > -1) {
+        if (str.length <= 4) { 
+          continue;
+        }
+        var size = str.substring(4, str.length);
+        var val = sizeStrToBytes(size);
+        stats.xms.set = true;
+        if (val > stats.xms.max) {
+          stats.xms.max = val;
+          stats.xms.str = size;
+        }
+      }
+    }
+  },
+
+  finalizeStats: function(data) {
+    data.success = true;
   },
 
   analyzeExecution: function(execId) {
@@ -113,7 +151,18 @@ azkaban.FlowStatsView = Backbone.View.extend({
         totalMapSlots: 0,
         totalReduceSlots: 0,
         numJobs: jobs.length,
-        longestTaskTime: 0
+        longestTaskTime: 0,
+        maxJobMapMemoryMb: 0,
+        maxJobReduceMemoryMb: 0,
+        xmx: {
+          max: 0,
+          str: null
+        },
+        xms: {
+          set: false,
+          max: 0,
+          str: null
+        }
       }
     };
 
@@ -128,7 +177,7 @@ azkaban.FlowStatsView = Backbone.View.extend({
         this.updateStats(jobStats.jobStats[j], data);
       }
     }
-    data.success = true;
+    this.finalizeStats(data);
     this.model.set({'data': data});
     this.model.trigger('render');
   },

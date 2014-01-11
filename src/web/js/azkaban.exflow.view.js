@@ -817,7 +817,7 @@ $(function() {
   
   flowStatsModel = new azkaban.FlowStatsModel();
 	flowStatsView = new azkaban.FlowStatsView({
-		el: $('#stats-view-content'),
+		el: $('#flow-stats-container'),
 		model: flowStatsModel
 	});
 

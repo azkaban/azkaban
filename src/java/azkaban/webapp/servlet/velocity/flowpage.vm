@@ -142,10 +142,9 @@
     <div class="container-full" id="summaryView">
 			<div class="row" id="summary-view-content">
       </div><!-- /.row -->
-      <div class="row" id="last-run-stats">
-        <div class="col-xs-12">
-          <h3>Last Run Stats</h3>
-          <div id="flow-stats-container">
+      <div id="flow-stats-container">
+        <div class="row">
+          <div class="col-xs-12">
             <div class="alert alert-info">
               <h4>Analyze last run</h4>
               <p>Analyze the last run for aggregate performance statistics. <strong>Note:</strong> this may take a few minutes, especially if your flow is large.</p>

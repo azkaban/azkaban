@@ -62,4 +62,6 @@
               <p>This flow has not been scheduled.</p>
             </div>
           {/schedule}
+
+          <h3>Last Run Stats</h3>
         </div>
