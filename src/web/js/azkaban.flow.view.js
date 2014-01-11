@@ -347,7 +347,7 @@ azkaban.SummaryView = Backbone.View.extend({
     var view = this;
     var successHandler = function(data) {
       if (data.success == "false" || data.execId == null) {
-        dust.render("flowsummary-no-data", data, function(err, out) {
+        dust.render("flowstats-no-data", data, function(err, out) {
           $('#flow-stats-container').html(out);
         });
         return;

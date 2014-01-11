@@ -25,9 +25,8 @@
     <script type="text/javascript" src="${context}/js/bootstrap-datetimepicker.min.js"></script>
     
     <script type="text/javascript" src="${context}/js/dust-full-2.2.3.min.js"></script>
-    <script type="text/javascript" src="${context}/js/flowsummary.js"></script>
-		<script type="text/javascript" src="${context}/js/flowsummary-no-data.js"></script>
-		<script type="text/javascript" src="${context}/js/flowsummary-last-run.js"></script>
+		<script type="text/javascript" src="${context}/js/flowstats.js"></script>
+		<script type="text/javascript" src="${context}/js/flowstats-no-data.js"></script>
 
 		<script type="text/javascript" src="${context}/js/azkaban.common.utils.js"></script>
 		<script type="text/javascript" src="${context}/js/azkaban.date.utils.js"></script>

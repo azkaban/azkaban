@@ -1,8 +1,8 @@
 OBJ_DIR = obj
 OBJ = \
 	$(OBJ_DIR)/flowsummary.js \
-	$(OBJ_DIR)/flowsummary-no-data.js \
-	$(OBJ_DIR)/flowsummary-last-run.js
+	$(OBJ_DIR)/flowstats.js \
+	$(OBJ_DIR)/flowstats-no-data.js
 
 all: $(OBJ)
 

@@ -134,17 +134,17 @@ azkaban.FlowStatsView = Backbone.View.extend({
     var data = this.model.get('data');
     if (data == null) {
       var msg = { message: "Error retrieving flow stats."};
-      dust.render("flowsummary-no-data", msg, function(err, out) {
+      dust.render("flowstats-no-data", msg, function(err, out) {
         view.display(out);
       });
     }
     else if (data.success == "false") {
-      dust.render("flowsummary-no-data", data, function(err, out) {
+      dust.render("flowstats-no-data", data, function(err, out) {
         view.display(out);
       });
     }
     else {
-      dust.render("flowsummary-last-run", data, function(err, out) {
+      dust.render("flowstats", data, function(err, out) {
         view.display(out);
       });
     }
