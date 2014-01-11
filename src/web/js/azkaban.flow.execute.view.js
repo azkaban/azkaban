@@ -224,7 +224,6 @@ azkaban.FlowExecuteDialogView = Backbone.View.extend({
 		var execId = data.execid;
 	
 		var loadedId = executableGraphModel.get("flowId");
-	
 		this.loadGraph(projectName, flowId);
 		this.loadFlowInfo(projectName, flowId, execId);
 
@@ -291,7 +290,32 @@ azkaban.FlowExecuteDialogView = Backbone.View.extend({
 	
 	loadGraph: function(projectName, flowId) {
 		console.log("Loading flow " + flowId);
-		fetchFlow(this.model, projectName, flowId, true);
+		var requestURL = contextURL + "/manager";
+		
+		var graphModel = executableGraphModel;
+		//fetchFlow(this.model, projectName, flowId, true);
+		var requestData = {
+				"project": projectName, 
+				"ajax": "fetchflowgraph", 
+				"flow": flowId
+			};
+		var successHandler = function(data) {
+			console.log("data fetched");
+			processFlowData(data);
+			graphModel.set({data:data});
+			
+			executingSvgGraphView = new azkaban.SvgGraphView({
+				el: $('#flow-executing-graph'), 
+				model: graphModel,
+				render: true,
+				rightClick: { 
+					"node": nodeClickCallback,
+					"edge": edgeClickCallback, 
+					"graph": graphClickCallback 
+				}
+			});
+		};
+		$.get(requestURL, requestData, successHandler, "json");
 	},
 	
 	handleExecuteFlow: function(evt) {
@@ -607,17 +631,6 @@ $(function() {
 	flowExecuteDialogView = new azkaban.FlowExecuteDialogView({
 		el: $('#execute-flow-panel'), 
 		model: executableGraphModel
-	});
-	svgGraphView = new azkaban.SvgGraphView({
-		el: $('#svg-div-custom'), 
-		model: executableGraphModel, 
-		topGId: "topG", 
-		graphMargin: 10, 
-		rightClick: { 
-			"node": nodeClickCallback, 
-			"edge": edgeClickCallback, 
-			"graph": graphClickCallback 
-		}
 	});
 	
 	sideMenuDialogView = new azkaban.SideMenuDialogView({

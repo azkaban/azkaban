@@ -37,6 +37,7 @@
 		<script type="text/javascript" src="${context}/js/azkaban.context.menu.js"></script>
 		<script type="text/javascript" src="${context}/js/azkaban.job.status.utils.js"></script>
 		<script type="text/javascript" src="${context}/js/azkaban.layout.js"></script>
+		<script type="text/javascript" src="${context}/js/azkaban.flow.execute.view.js"></script>
 		<script type="text/javascript" src="${context}/js/azkaban.flow.view.js"></script>
 		<script type="text/javascript" src="${context}/js/azkaban.flow.job.view.js"></script>
 		<script type="text/javascript" src="${context}/js/azkaban.svg.flow.loader.js"></script>

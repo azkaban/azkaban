@@ -36,10 +36,16 @@ azkaban.SvgGraphView = Backbone.View.extend({
 		
 		var graphDiv = this.el[0];
 		var svg = $(this.el).find('svg')[0];
+		if (!svg) {
+			svg = this.el;
+		}
+
 		this.svgGraph = svg;
 		$(this.svgGraph).svg();
 		this.svg = $(svg).svg('get');
 
+		$(this.svgGraph).empty();
+		
 		// Create mainG node
 		var gNode = document.createElementNS(this.svgns, 'g');
 		gNode.setAttribute("class", "main graph");
@@ -69,7 +75,7 @@ azkaban.SvgGraphView = Backbone.View.extend({
 	},
 	render: function() {
 		console.log("graph render");
-		
+
 		this.graphBounds = this.renderGraph(this.model.get("data"), this.mainG);
 		this.resetPanZoom(0);
 	},
