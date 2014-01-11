@@ -89,6 +89,10 @@ azkaban.FlowStatsView = Backbone.View.extend({
     }
     aggregateStats.totalMapSlots += mappers;
     aggregateStats.totalReduceSlots += reducers;
+
+    var jobMapMemoryMb = conf['mapred.job.map.memory.mb'];
+    var jobReduceMemoryMb = conf['mapred.job.reduce.memory.mb'];
+    var childJavaOpts = conf['mapred.child.java.opts'];
   },
 
   analyzeExecution: function(execId) {
