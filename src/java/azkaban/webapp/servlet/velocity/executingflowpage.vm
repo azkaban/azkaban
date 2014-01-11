@@ -104,6 +104,7 @@
 				<li id="graphViewLink"><a href="#graph">Graph</a></li>
 				<li id="jobslistViewLink"><a href="#jobslist">Job List</a></li>
 				<li id="flowLogViewLink"><a href="#log">Flow Log</a></li>
+				<li id="statsLink"><a href="#stats">Stats</a></li>
 				<li class="nav-button pull-right"><button type="button" id="pausebtn" class="btn btn-primary">Pause</button></li>
 				<li class="nav-button pull-right"><button type="button" id="resumebtn" class="btn btn-primary">Resume</button></li>
 				<li class="nav-button pull-right"><button type="button" id="cancelbtn" class="btn btn-danger">Cancel</button></li>
@@ -160,7 +161,14 @@
           </div><!-- /.log-viewer -->
         </div><!-- /.col-xs-12 -->
       </div><!-- /.row -->
-    </div><!-- /. -->
+    </div><!-- /.container-full -->
+
+  ## Stats view.
+
+    <div class="container-full" id="statsView">
+			<div class="row" id="stats-view-content">
+			</div><!-- /.row -->
+    </div><!-- /.container-fill -->
 	
 	## Error message message dialog.
 

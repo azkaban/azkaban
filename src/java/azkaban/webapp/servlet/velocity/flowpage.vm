@@ -34,6 +34,7 @@
 		<script type="text/javascript" src="${context}/js/azkaban.common.utils.js"></script>
 		<script type="text/javascript" src="${context}/js/azkaban.layout.js"></script>
 		<script type="text/javascript" src="${context}/js/azkaban.flow.view.js"></script>
+		<script type="text/javascript" src="${context}/js/azkaban.flow.stats.view.js"></script>
 		<script type="text/javascript" src="${context}/js/azkaban.flow.job.view.js"></script>
 		<script type="text/javascript" src="${context}/js/azkaban.flow.graph.view.js"></script>
 		<script type="text/javascript" src="${context}/js/svgNavigate.js"></script>
@@ -140,8 +141,24 @@
 
     <div class="container-full" id="summaryView">
 			<div class="row" id="summary-view-content">
-			</div><!-- /.row -->
+      </div><!-- /.row -->
+      <div class="row" id="last-run-stats">
+        <div class="col-xs-12">
+          <h3>Last Run Stats</h3>
+          <div id="flow-stats-container">
+            <div class="alert alert-info">
+              <h4>Analyze last run</h4>
+              <p>Analyze the last run for aggregate performance statistics. <strong>Note:</strong> this may take a few minutes, especially if your flow is large.</p>
+              <p>
+                <button type="button" id="analyze-btn" class="btn btn-primary">Analyze</button>
+              </p>
+            </div>
+          </div>
+        </div><!-- /.col-lg-12 -->
+      </div>
     </div><!-- /.container-fill -->
+
+  ## Context menu and the rest of the page.
 
     <div class="container-full">
 			<div id="contextMenu">
