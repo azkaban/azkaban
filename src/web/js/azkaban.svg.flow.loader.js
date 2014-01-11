@@ -104,14 +104,14 @@ var nodeClickCallback = function(event, model, node) {
 
 	var target = event.currentTarget;
 	var type = node.type;
-	var flowId = node.flowId;
+	var flowId = node.parent.flow;
 	var jobId = node.id;
 	
 	var requestURL = contextURL + "/manager?project=" + projectName + "&flow=" + flowId + "&job=" + jobId;
 	var menu = [];
 
 	if (type == "flow") {
-		var flowRequestURL = contextURL + "/manager?project=" + projectName + "&flow=" + event.currentTarget.flowId;
+		var flowRequestURL = contextURL + "/manager?project=" + projectName + "&flow=" + node.flowId;
 		if (node.expanded) {
 			menu = [{title: "Collapse Flow...", callback: function() {model.trigger("collapseFlow", node);}}];
 		}
@@ -144,17 +144,20 @@ var nodeClickCallback = function(event, model, node) {
 	contextMenuView.show(event, menu);
 }
 
-var jobClickCallback = function(event, model) {
+var jobClickCallback = function(event, model, node) {
 	console.log("Node clicked callback");
-	var jobId = event.currentTarget.jobid;
-	var node = target.data;
-	var requestURL = contextURL + "/manager?project=" + projectName + "&flow=" + flowId + "&job=" + jobId;
+	var target = event.currentTarget;
+	var type = node.type;
+	var flowId = node.parent.flow;
+	var jobId = node.id;
+
+	var requestURL = contextURL + "/manager?project=" + projectName + "&flow=" + flowId + "&job=" + node.id;
 
 	var menu;
-	if (event.currentTarget.jobtype == "flow") {
-		var flowRequestURL = contextURL + "/manager?project=" + projectName + "&flow=" + event.currentTarget.flowId;
+	if (type == "flow") {
+		var flowRequestURL = contextURL + "/manager?project=" + projectName + "&flow=" + node.flowId;
 		menu = [
-				{title: "View Flow...", callback: function() {openJobDisplayCallback(jobId, flowId, event)}},
+				{title: "View Properties...", callback: function() {openJobDisplayCallback(jobId, flowId, event)}},
 				{break: 1},
 				{title: "Open Flow...", callback: function() {window.location.href=flowRequestURL;}},
 				{title: "Open Flow in New Window...", callback: function() {window.open(flowRequestURL);}},

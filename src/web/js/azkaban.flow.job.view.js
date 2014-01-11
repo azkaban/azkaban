@@ -18,11 +18,11 @@ azkaban.JobListView = Backbone.View.extend({
 	events: {
 		"keyup input": "filterJobs",
 		"click .job": "handleJobClick",
-		"click .resetPanZoomBtn": "handleResetPanZoom",
-		"contextmenu li": "handleContextMenuClick"
+		"click #resetPanZoomBtn": "handleResetPanZoom",
+		"contextmenu li.listElement": "handleContextMenuClick",
 		"change .autoPanZoom" : "handleAutoPanZoom",
+		"click .expandarrow" : "handleToggleMenuExpand"
 	},
-	
 	initialize: function(settings) {
 		this.model.bind('change:selected', this.handleSelectionChange, this);
 		this.model.bind('change:disabled', this.handleDisabledChange, this);
@@ -30,61 +30,69 @@ azkaban.JobListView = Backbone.View.extend({
 		this.model.bind('change:update', this.handleStatusUpdate, this);
 		
 		this.filterInput = $(this.el).find("#filter");
-		this.list = $(this.el).find("#list");
+		this.list = $(this.el).find("#joblist");
 		this.contextMenu = settings.contextMenuCallback;
 		this.listNodes = {};
 	},
-	
 	filterJobs: function(self) {
 		var filter = this.filterInput.val();
-		if (filter && filter.trim() != "") {
-			filter = filter.trim();
-			if (filter == "") {
-				if (this.filter) {
-					this.jobs.children().each(function(){
-						var a = $(this).find("a");
-						$(a).html(this.jobid);
-						$(this).show();
-					});
-				}
-				this.filter = null;
-				return;
-			}
-		}
-		else {
-			if (this.filter) {
-				this.jobs.children().each(function(){
-					var a = $(this).find("a");
-					$(a).html(this.jobid);
-					$(this).show();
-				});
-			}
-				
-			this.filter = null;
+		// Clear all filters first
+		if (!filter || filter.trim() == "") {
+			this.unfilterAll(self);
 			return;
 		}
 		
-		this.jobs.children().each(function() {
-			var jobid = this.jobid;
-			var index = jobid.indexOf(filter);
+		this.hideAll(self);
+		var showList = {};
+		
+		// find the jobs that need to be exposed.
+		for (var key in this.listNodes) {
+			var li = this.listNodes[key];
+			var node = li.node;
+			var nodeName = node.id;
+			node.listElement = li;
+
+			var index = nodeName.indexOf(filter);
 			if (index != -1) {
-				var a = $(this).find("a");
-				var endIndex = index + filter.length;
-				var newHTML = jobid.substring(0, index) + "<span>" + 
-						jobid.substring(index, endIndex) + "</span>" + 
-						jobid.substring(endIndex, jobid.length);
+				var spanlabel = $(li).find("> a > span");
 				
-				$(a).html(newHTML);
-				$(this).show();
+				var endIndex = index + filter.length;
+				var newHTML = nodeName.substring(0, index) + "<span class=\"filterHighlight\">" + 
+					nodeName.substring(index, endIndex) + "</span>" + 
+					nodeName.substring(endIndex, nodeName.length);
+				$(spanlabel).html(newHTML);
+				
+				// Apply classes to all the included embedded flows.
+				var pIndex = key.length;
+				while((pIndex = key.lastIndexOf(":", pIndex - 1)) > 0) {
+					var parentId = key.substr(0, pIndex);
+					var parentLi = this.listNodes[parentId];
+					$(parentLi).show();
+					$(parentLi).addClass("subFilter");
+				}
+				
+				$(li).show();
 			}
-			else {
-				$(this).hide();
-			}
-		});
-			
-		this.filter = filter;
+		}
 	},
-	
+	hideAll: function(self) {
+		for (var key in this.listNodes) {
+			var li = this.listNodes[key];
+			var label = $(li).find("> a > span");
+			$(label).text(li.node.id);
+			$(li).removeClass("subFilter");
+			$(li).hide();
+		}
+	},
+	unfilterAll: function(self) {
+		for (var key in this.listNodes) {
+			var li = this.listNodes[key];
+			var label = $(li).find("> a > span");
+			$(label).text(li.node.id);
+			$(li).removeClass("subFilter");
+			$(li).show();
+		}
+	},
 	handleStatusUpdate: function(evt) {
 		var updateData = this.model.get("update");
 		if (updateData.nodes) {
@@ -97,28 +105,38 @@ azkaban.JobListView = Backbone.View.extend({
 			}
 		}
 	},
-	
-	assignInitialStatus: function(evt) {
-		var data = this.model.get("data");
+	changeStatuses: function(data) {
 		for (var i = 0; i < data.nodes.length; ++i) {
-			var updateNode = data.nodes[i];
-			var job = this.listNodes[updateNode.id];
-      if (!$(job).hasClass("list-group-item")) {
-        $(job).addClass("list-group-item");
-      }
-			$(job).addClass(updateNode.status);
+			var node = data.nodes[i];
+			if (node.status) {
+				var liElement = node.listElement;
+				$(liElement).removeClass(statusList.join(' '));
+				$(liElement).addClass(node.status);
+			}
+			
+			if (node.flowData) {
+				this.changeStatuses(node.flowData);
+			}
 		}
 	},
-	
 	render: function(self) {
 		var data = this.model.get("data");
 		var nodes = data.nodes;
 		
-		this.listNodes = {}; 
+		this.renderTree(this.list, data);
+//		
+//		this.assignInitialStatus(self);
+//		this.handleDisabledChange(self);
+	},
+	renderTree : function(el, data, prefix) {
+		var nodes = data.nodes;
 		if (nodes.length == 0) {
 			console.log("No results");
 			return;
 		};
+		if (!prefix) {
+			prefix = "";
+		}
 	
 		var nodeArray = nodes.slice(0);
 		nodeArray.sort(function(a, b) {
@@ -131,53 +149,104 @@ azkaban.JobListView = Backbone.View.extend({
 			}
 		});
 		
-		var list = this.list;
-		this.jobs = $(list);
-		for (var i = 0; i < nodeArray.length; ++i) {
+		var ul = document.createElement('ul');
+		for(var i=0; i < nodeArray.length; ++i) {
+			var li = document.createElement("li");
+			$(li).addClass("listElement");
+			
+			// This is used for the filter step.
+			var listNodeName = prefix + nodeArray[i].id;
+			this.listNodes[listNodeName]=li;
+			li.node = nodeArray[i];
+			li.node.listElement = li;
+
 			var a = document.createElement("a");
+			var iconDiv = document.createElement('div');
+			$(iconDiv).addClass('icon');
+			
+			$(a).append(iconDiv);
 			$(a).addClass('list-group-item').addClass('job');
-      $(a).attr('href', '#');
-      
-      var iconDiv = document.createElement('div');
-      $(iconDiv).addClass('icon');
-      $(a).append(iconDiv);
-			$(a).append(nodeArray[i].id);
-			$(list).append(a);
-			a.jobid = nodeArray[i].id;
-			this.listNodes[nodeArray[i].id] = a;
+			
+			var span = document.createElement("span");
+			$(span).text(nodeArray[i].id);
+			$(span).addClass("jobname");
+			$(a).append(span);
+			$(li).append(a);
+			$(ul).append(li);
+			
+			if (nodeArray[i].flowData) {
+				// Add the up down
+				var expandDiv = document.createElement("div");
+				$(expandDiv).addClass("expandarrow glyphicon glyphicon-chevron-down");
+				$(a).append(expandDiv);
+				
+				// Create subtree
+				var subul = this.renderTree(li, nodeArray[i].flowData, listNodeName + ":");
+				$(subul).hide();
+			}
 		}
 		
-		this.assignInitialStatus(self);
-		this.handleDisabledChange(self);
+		$(el).append(ul);
+		return ul;
 	},
-	
+	handleMenuExpand: function(li) {
+		var expandArrow = $(li).find("> a > .expandarrow");
+		var submenu = $(li).find("> ul");
+		
+		$(expandArrow).removeClass("glyphicon-chevron-down");
+		$(expandArrow).addClass("glyphicon-chevron-up");
+		$(submenu).slideDown();
+	},
+	handleMenuCollapse: function(li) {
+		var expandArrow = $(li).find("> a > .expandarrow");
+		var submenu = $(li).find("> ul");
+		
+		$(expandArrow).removeClass("glyphicon-chevron-up");
+		$(expandArrow).addClass("glyphicon-chevron-down");
+		$(submenu).slideUp();
+	},
+	handleToggleMenuExpand: function(evt) {
+		var expandarrow = evt.currentTarget;
+		var li = $(evt.currentTarget).closest("li.listElement");
+		var submenu = $(li).find("> ul");
+
+		if ($(submenu).is(":visible")) {
+			this.handleMenuCollapse(li);
+		}
+		else {
+			this.handleMenuExpand(li);
+		}
+		
+		evt.stopImmediatePropagation();
+	},
 	handleContextMenuClick: function(evt) {
 		if (this.contextMenu) {
-			this.contextMenu(evt);
+			this.contextMenu(evt, this.model, evt.currentTarget.node);
 			return false;
 		}
 	},
-	
 	handleJobClick: function(evt) {
-		var jobid = evt.currentTarget.jobid;
-		if (!evt.currentTarget.jobid) {
+		console.log("Job clicked");
+		var li = $(evt.currentTarget).closest("li.listElement");
+		var node = li[0].node;
+		if (!node) {
 			return;
 		}
 		
 		if (this.model.has("selected")) {
 			var selected = this.model.get("selected");
-			if (selected == jobid) {
+			if (selected == node) {
 				this.model.unset("selected");
 			}
 			else {
-				this.model.set({"selected": jobid});
+				this.model.set({"selected": node});
 			}
 		}
 		else {
-			this.model.set({"selected": jobid});
+			this.model.set({"selected": node});
 		}
+
 	},
-	
 	handleDisabledChange: function(evt) {
 		var disabledMap = this.model.get("disabled");
 		var nodes = this.model.get("nodes");
@@ -191,7 +260,6 @@ azkaban.JobListView = Backbone.View.extend({
 			}
 		}
 	},
-	
 	handleSelectionChange: function(evt) {
 		if (!this.model.hasChanged("selected")) {
 			return;
@@ -199,16 +267,23 @@ azkaban.JobListView = Backbone.View.extend({
 		
 		var previous = this.model.previous("selected");
 		var current = this.model.get("selected");
-		
+
 		if (previous) {
-			$(this.listNodes[previous]).removeClass("active");
+			$(previous.listElement).removeClass("active");
 		}
 		
 		if (current) {
-			$(this.listNodes[current]).addClass("active");
+			$(current.listElement).addClass("active");
+			this.propagateExpansion(current.listElement);
 		}
 	},
-	
+	propagateExpansion: function(li) {
+		var li = $(li).parent().closest("li.listElement")[0];
+		if (li) {
+			this.propagateExpansion(li);
+			this.handleMenuExpand(li);
+		}
+	},
 	handleResetPanZoom: function(evt) {
 		this.model.trigger("resetPanZoom");
 	},

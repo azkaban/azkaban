@@ -120,51 +120,86 @@ td {
 }
 
 // TODO: Rename this as #job-list
-#list {
+#joblist {
   height: 100%;
-
-  a {
-    &.nodedisabled,
-    &.DISABLED {
-      opacity: 0.3;
-    }
-
-    &.DISABLED .icon {
-      background-position: 16px 0px;
-    }
-
-    &.READY .icon {
-      background-position: 16px 0px;
-    }
-
-    &.QUEUED .icon {
-      opacity: 0.5;
-      background-position: 32px 0px;
-    }
-
-    &.RUNNING .icon {
-      background-position: 32px 0px;
-    }
-
-    &.SUCCEEDED .icon {
-      background-position: 48px 0px;
-    }
-
-    &.FAILED .icon {
-      background-position: 0px 0px;
-    }
-
-    &.KILLED .icon {
-      background-position: 0px 0px;
-    }
-
-    .icon {
-      float: left;
-      width: 16px;
-      height: 16px;
-      margin: 2px 4px 0px -5px;
-      background-image: url("./images/dot-icon.png");
-      background-position: 16px 0px;
-    }
+  ul {
+	list-style-type: none;
+	padding-left: 0px;
+	
+	li {
+		&.active > a {
+			background-color: #D9EDFF;
+		}
+	
+		ul {
+			padding-left: 20px;
+		}
+	
+		&.subFilter > a > .expandarrow {
+			color : #3398cc;
+		}
+	
+		a {
+			clear:both;
+			border-bottom-width: 0;
+		
+			&.nodedisabled,
+			&.DISABLED {
+			  opacity: 0.3;
+			}
+			
+			&.DISABLED .icon {
+			  background-position: 16px 0px;
+			}
+			
+			&.READY .icon {
+			  background-position: 16px 0px;
+			}
+			
+			&.QUEUED .icon {
+			  opacity: 0.5;
+			  background-position: 32px 0px;
+			}
+			
+			&.RUNNING .icon {
+			  background-position: 32px 0px;
+			}
+			
+			&.SUCCEEDED .icon {
+			  background-position: 48px 0px;
+			}
+			
+			&.FAILED .icon {
+			  background-position: 0px 0px;
+			}
+			
+			&.KILLED .icon {
+			  background-position: 0px 0px;
+			}
+			
+			&.FAILED_FINISHING .icon {
+			  background-position: 0px 0px;
+			}
+			
+			.icon {
+			  float: left;
+			  width: 16px;
+			  height: 16px;
+			  margin: 2px 4px 0px -5px;
+			  background-image: url("./images/dot-icon.png");
+			  background-position: 16px 0px;
+			}
+			
+			.expandarrow {
+				float: right;
+				width: 16px;
+				height: 16px;
+			}
+			
+			.filterHighlight {
+				background-color: #FFFF00;
+			}
+		}
+	}
   }
 }

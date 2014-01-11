@@ -637,7 +637,7 @@ public class FlowRunnerManager implements EventListener {
 	}
 	
 	public String getRunningFlowIds() {
-		List<Integer> ids = new ArrayList<Integer>(runningFlows.keySet());
+		ArrayList<Integer> ids = new ArrayList<Integer>(runningFlows.keySet());
 		Collections.sort(ids);
 		return ids.toString();
 	}

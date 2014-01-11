@@ -31,7 +31,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.HashSet;
 import java.util.Set;
 
 import javax.servlet.ServletConfig;
@@ -594,41 +593,6 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 
 		ret.put("flow", flowId);
 		ret.put("nodes", nodeList);
-	}
-	
-	private void fillFlowInfo(Project project, String flowId, HashMap<String, Object> ret) {
-		Flow flow = project.getFlow(flowId);
-		
-		//Collections.sort(flowNodes, NODE_LEVEL_COMPARATOR);
-		ArrayList<Map<String, Object>> nodeList = new ArrayList<Map<String, Object>>();
-		for (Node node: flow.getNodes()) {
-			HashMap<String, Object> nodeObj = new HashMap<String,Object>();
-			nodeObj.put("id", node.getId());
-			nodeObj.put("level", node.getLevel());
-			nodeObj.put("type", node.getType());
-			if (node.getEmbeddedFlowId() != null) {
-				nodeObj.put("flowId", node.getEmbeddedFlowId());
-			}
-			
-			nodeList.add(nodeObj);
-		}
-		
-		ArrayList<Map<String, Object>> edgeList = new ArrayList<Map<String, Object>>();
-		for (Edge edge: flow.getEdges()) {
-			HashMap<String, Object> edgeObj = new HashMap<String,Object>();
-			edgeObj.put("from", edge.getSourceId());
-			edgeObj.put("target", edge.getTargetId());
-			
-			if (edge.hasError()) {
-				edgeObj.put("error", edge.getError());
-			}
-			
-			edgeList.add(edgeObj);
-		}
-		
-		ret.put("flowId", flowId);
-		ret.put("nodes", nodeList);
-		ret.put("edges", edgeList);
 	}
 	
 	private void ajaxFetchFlowNodeData(Project project, HashMap<String, Object> ret, HttpServletRequest req) throws ServletException {

@@ -17,12 +17,8 @@ $.namespace('azkaban');
 
 azkaban.SvgGraphView = Backbone.View.extend({
 	events: {
-
+		
 	},
-	test: function() {
-		console.log("test");
-	},
-	
   initialize: function(settings) {
 		this.model.bind('change:selected', this.changeSelected, this);
 		this.model.bind('centerNode', this.centerNode, this);
@@ -97,8 +93,21 @@ azkaban.SvgGraphView = Backbone.View.extend({
 			nodes[i].label = nodes[i].id;
 		}
 		
+		var self = this;
 		for (var i = 0; i < nodes.length; ++i) {
 			this.drawNode(this, nodes[i], g);
+			$(nodes[i].gNode).click(function(evt) {
+				var selected = self.model.get("selected");
+				if (selected == evt.currentTarget.data) {
+					self.model.unset("selected");
+				}
+				else {
+					self.model.set({"selected":evt.currentTarget.data});
+				}
+				
+				evt.stopPropagation();
+				evt.cancelBubble = true;
+			});
 		}
 
 		// layout
@@ -126,25 +135,6 @@ azkaban.SvgGraphView = Backbone.View.extend({
 			this.handleDisabledChange(self);
 		}
 
-/*
-		if (this.rightClick) {
-			var callbacks = this.rightClick;
-			var currentTarget = self.currentTarget;
-			if (callbacks.node && currentTarget.jobid) {
-				callbacks.node(self, this.model, currentTarget.nodeobj);
-			}
-			else if (callbacks.edge && (currentTarget.nodeName == "polyline" || currentTarget.nodeName == "line")) {
-				callbacks.edge(self, this.model);
-			}
-			else if (callbacks.graph) {
-				callbacks.graph(self, this.model);
-			}
-			return false;
-		}
-	
-*/
-
-		var self = this;
 		if (self.rightClick) {
 			if (self.rightClick.node) {
 				// Proper children selectors don't work properly on svg
@@ -197,36 +187,35 @@ azkaban.SvgGraphView = Backbone.View.extend({
 			$(g).attr("title", initialStatus);
 		}
 	},
-	
-  changeSelected: function(self) {
+	changeSelected: function(self) {
 		console.log("change selected");
 		var selected = this.model.get("selected");
 		var previous = this.model.previous("selected");
 		
 		if (previous) {
 			// Unset previous
-			var g = this.gNodes[previous];
-			removeClass(g, "selected");
+			removeClass(previous.gNode, "selected");
 		}
 		
 		if (selected) {
-			var g = this.gNodes[selected];
-			var node = this.nodes[selected];
-			
+			this.propagateExpansion(selected);
+			var g = selected.gNode;
 			addClass(g, "selected");
 			
 			console.log(this.model.get("autoPanZoom"));
 			if (this.model.get("autoPanZoom")) {
-				var offset = 150;
-				var widthHeight = offset*2;
-				var x = node.x - offset;
-				var y = node.y - offset;
-				
-				$(this.svgGraph).svgNavigate("transformToBox", {x: x, y: y, width: widthHeight, height: widthHeight});
+				this.centerNode(selected);
 			}
 		}
 	},
-	
+  propagateExpansion: function(node) {
+		if (node.parent) {
+			if (node.parent.node) {
+				this.propagateExpansion(node.parent.node);
+				this.expandFlow(node.parent.node);
+			}
+		}
+	},
   handleStatusUpdate: function(evt) {
 		var updateData = this.model.get("update");
 		if (updateData.nodes) {
@@ -251,8 +240,8 @@ azkaban.SvgGraphView = Backbone.View.extend({
 	
   clickGraph: function(self) {
 		console.log("click");
-		if (self.currentTarget.jobid) {
-			this.model.set({"selected": self.currentTarget.jobid});
+		if (self.currentTarget.data) {
+			this.model.set({"selected": self.currentTarget.data});
 		}
 	},
 	
@@ -310,12 +299,6 @@ azkaban.SvgGraphView = Backbone.View.extend({
 		else {
 			this.drawBoxNode(self, node, g);
 		}
-// 		
-// 		var boundingBox = node.gNode.getBBox();
-// 		node.width = boundingBox.width;
-// 		node.height = boundingBox.height;
-// 		node.centerX = node.width/2;
-// 		node.centerY = node.height/2;
 	},
 	moveNodes: function(nodes) {
 		var svg = this.svg;
@@ -326,7 +309,6 @@ azkaban.SvgGraphView = Backbone.View.extend({
 			svg.change(gNode, {"transform": translateStr(node.x, node.y)});
 		}
 	},
-
 	expandFlow: function(node) {
 		var svg = this.svg;
 		var gnode = node.gNode;
@@ -592,8 +574,7 @@ azkaban.SvgGraphView = Backbone.View.extend({
 		$(borderRect).animate({svgWidth: node.width, svgHeight: node.height}, time);
 		$(borderRect).animate({svgFill: 'white'}, time);
 	},
-	
-  resetPanZoom: function(duration) {
+	resetPanZoom: function(duration) {
 		var bounds = this.graphBounds;
 		var param = {x: bounds.minX, y: bounds.minY, width: (bounds.maxX - bounds.minX), height: (bounds.maxY - bounds.minY), duration: duration };
 

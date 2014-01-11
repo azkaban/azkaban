@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
@@ -860,7 +859,7 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 			return;
 		}
 		
-		ExecutableFlow exflow = new ExecutableFlow(flow);
+		ExecutableFlow exflow = new ExecutableFlow(project, flow);
 		exflow.setSubmitUser(user.getUserId());
 		exflow.addAllProxyUsers(project.getProxyUsers());
 

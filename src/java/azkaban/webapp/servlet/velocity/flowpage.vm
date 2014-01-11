@@ -24,16 +24,23 @@
 		<script type="text/javascript" src="${context}/js/moment.min.js"></script>
 		<script type="text/javascript" src="${context}/js/bootstrap-datetimepicker.min.js"></script>
 		
-    <script type="text/javascript" src="${context}/js/dust-core-2.2.2.min.js"></script>
-		<script type="text/javascript" src="${context}/js/flowsummary.js"></script>
+		<script type="text/javascript" src="${context}/js/dust-core-2.2.2.min.js"></script>
+		<script type="text/javascript" src="${context}/js/flowsummary.js"></script> 
+ 
+ 		<script type="text/javascript" src="${context}/js/jquery.svg.min.js"></script> 
+ 		<script type="text/javascript" src="${context}/js/jquery.svganim.min.js"></script> 
+		<script type="text/javascript" src="${context}/js/jquery.svgfilter.min.js"></script>
 
+		<script type="text/javascript" src="${context}/js/svgutils.js"></script> 
 		<script type="text/javascript" src="${context}/js/azkaban.date.utils.js"></script>
 		<script type="text/javascript" src="${context}/js/azkaban.ajax.utils.js"></script>
-		<script type="text/javascript" src="${context}/js/azkaban.common.utils.js"></script>
+		<script type="text/javascript" src="${context}/js/azkaban.context.menu.js"></script>
+		<script type="text/javascript" src="${context}/js/azkaban.job.status.utils.js"></script>
 		<script type="text/javascript" src="${context}/js/azkaban.layout.js"></script>
 		<script type="text/javascript" src="${context}/js/azkaban.flow.view.js"></script>
 		<script type="text/javascript" src="${context}/js/azkaban.flow.job.view.js"></script>
-		<script type="text/javascript" src="${context}/js/azkaban.flow.graph.view.js"></script>
+		<script type="text/javascript" src="${context}/js/azkaban.svg.flow.loader.js"></script>
+		<script type="text/javascript" src="${context}/js/azkaban.svg.graph.view.js"></script>
 		<script type="text/javascript" src="${context}/js/svgNavigate.js"></script>
 		<script type="text/javascript">
 			var contextURL = "${context}";
@@ -47,6 +54,7 @@
 			var flowId = "${flowid}";
 			var execId = null;
 		</script>
+		<link rel="stylesheet" type="text/css" href="${context}/css/flow.css" />
 		<link rel="stylesheet" type="text/css" href="${context}/css/bootstrap-datetimepicker.css" />
 		<link rel="stylesheet" type="text/css" href="${context}/css/azkaban-graph.css" /> 
 	</head>

@@ -6,6 +6,7 @@
 	<property name="dist.jar.dir" value="${basedir}/dist/jars" />
 	<property name="dist.dust.dir" value="${basedir}/dist/dust" />
 	<property name="dist.less.dir" value="${basedir}/dist/less" />
+	<property name="dist.web.dir" value="${basedir}/dist/web" />
 	<property name="dist.classes.dir" value="${basedir}/dist/classes" />
 	<property name="dist.packages.dir" value="${basedir}/dist/packages" />
 	<property name="dist.web.package.dir" value="${dist.packages.dir}/azkaban-web-server" />
@@ -49,6 +50,37 @@
 		<delete dir="${dist.classes.dir}" />
 	</target>
 
+	<target name="dust" description="Compile Less css files.">
+		<!-- Compile dustjs templates -->
+		<!-- Note: Because apply does not support multiple srcfile and targetfile
+				 elements, and for and foreach requires ant-contrib, we use targetfile 
+				 for the template name parameter and then redirect the output of dustc
+				 to the final output file -->
+		<echo message="Compiling Dust templates." />
+		<apply dir="${dust.src.dir}" executable="dustc" relative="true">
+			<mapper type="glob" from="*.tl" to="*" />
+			<targetfile prefix="--name=" />
+			<srcfile />
+			<fileset dir="${dust.src.dir}" includes="*.tl" />
+			<redirector>
+				<outputmapper id="out" type="glob" from="*.tl" to="${dist.dust.dir}/*.js" />
+			</redirector>
+		</apply>
+	</target>
+	
+	<target name="less" description="Compile Less css files.">
+		<!-- Compile LESS to CSS -->
+		<echo message="Compiling LESS style sheets." />
+		<apply dir="${less.src.dir}" executable="lessc" relative="true">
+			<mapper type="glob" from="*.less" to="*.css" />
+			<srcfile />
+			<fileset dir="${less.src.dir}" includes="*.less" />
+			<redirector>
+				<outputmapper id="out" type="glob" from="*.less" to="${dist.less.dir}/*.css" />
+			</redirector>
+		</apply>
+	</target>
+	
 	<target name="build" description="Compile main source tree java files">
 		<delete dir="${dist.classes.dir}" />
 		<mkdir dir="${dist.classes.dir}" />
@@ -70,32 +102,32 @@
 			<classpath refid="main.classpath" />
 		</javac>
 
-		<!-- Compile dustjs templates -->
-		<!-- Note: Because apply does not support multiple srcfile and targetfile
-				 elements, and for and foreach requires ant-contrib, we use targetfile 
-				 for the template name parameter and then redirect the output of dustc
-				 to the final output file -->
-		<echo message="Compiling Dust templates." />
-		<apply dir="${dust.src.dir}" executable="dustc" relative="true">
-			<mapper type="glob" from="*.tl" to="*" />
-			<targetfile prefix="--name=" />
-			<srcfile />
-			<fileset dir="${dust.src.dir}" includes="*.tl" />
-			<redirector>
-				<outputmapper id="out" type="glob" from="*.tl" to="${dist.dust.dir}/*.js" />
-			</redirector>
-		</apply>
+		<antcall target="dust"></antcall>
+		<antcall target="less"></antcall>
+	</target>
+	
+	<target name="webmin" description="Copies only the non compiled web resources to dist dir">
+		<copy todir="${dist.web.dir}" overwrite="true">
+			<fileset dir="${web.src.dir}" />
+		</copy>
+	</target>
+	
+	<target name="web" description="Creates web resourses in a dir. Useful for development">
+		<mkdir dir="${dist.web.dir}" />
+		
+		<antcall target="webmin"></antcall>
+		<antcall target="dust"></antcall>
+		<antcall target="less"></antcall>
+		
+		<!-- Copy compiled dust templates -->
+		<copy todir="${dist.web.dir}/js">
+			<fileset dir="${dist.dust.dir}" />
+		</copy>
 
-		<!-- Compile LESS to CSS -->
-		<echo message="Compiling LESS style sheets." />
-		<apply dir="${less.src.dir}" executable="lessc" relative="true">
-			<mapper type="glob" from="*.less" to="*.css" />
-			<srcfile />
-			<fileset dir="${less.src.dir}" includes="*.less" />
-			<redirector>
-				<outputmapper id="out" type="glob" from="*.less" to="${dist.less.dir}/*.css" />
-			</redirector>
-		</apply>
+		<!-- Copy compiled less CSS -->
+		<copy todir="${dist.web.dir}/css">
+			<fileset dir="${dist.less.dir}" />
+		</copy>
 	</target>
 	
 	<target name="jars" depends="build" description="Create azkaban jar">

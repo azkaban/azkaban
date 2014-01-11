@@ -58,7 +58,6 @@ public class ScheduleManager implements TriggerAgent {
 	 * 
 	 * @param loader
 	 */
-<<<<<<< HEAD
 	public ScheduleManager (ScheduleLoader loader) 
 	{
 		this.loader = loader;

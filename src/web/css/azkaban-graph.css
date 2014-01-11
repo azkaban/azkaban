@@ -11,6 +11,13 @@
 	cursor: pointer;
 }
 
+.node.selected > .nodebox .border {
+	stroke-width: 3;
+}
+
+.node.selected > .nodebox .flowborder {
+	stroke-width: 3;
+}
 .nodebox > .border:hover {
 	fill-opacity: 0.7;
 }

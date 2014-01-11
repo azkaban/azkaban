@@ -14,13 +14,6 @@
  * the License.
 *#
 
-			<script type="text/javascript" src="${context}/js/azkaban.layout.js"></script>
-			<script type="text/javascript" src="${context}/js/svgNavigate.js"></script>
-			<script type="text/javascript" src="${context}/js/azkaban.context.menu.js"></script>
-			<script type="text/javascript" src="${context}/js/azkaban.common.utils.js"></script>
-			<script type="text/javascript" src="${context}/js/azkaban.svg.graph.view.js"></script>
-			<script type="text/javascript" src="${context}/js/azkaban.flow.execute.view.js"></script>
-
 			<div class="modal modal-wide" id="execute-flow-panel">
 				<div class="modal-dialog">
 					<div class="modal-content">
