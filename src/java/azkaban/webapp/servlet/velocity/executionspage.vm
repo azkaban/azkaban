@@ -21,7 +21,7 @@
 #parse("azkaban/webapp/servlet/velocity/style.vm")
 #parse("azkaban/webapp/servlet/velocity/javascript.vm")
 	
-		<script type="text/javascript" src="${context}/js/azkaban.executions.view.js"></script>
+		<script type="text/javascript" src="${context}/js/azkaban/view/executions.js"></script>
 		<script type="text/javascript">
 			var contextURL = "${context}";
 			var currentTime = ${currentTime};

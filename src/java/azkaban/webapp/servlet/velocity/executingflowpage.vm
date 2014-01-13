@@ -28,17 +28,17 @@
 		<script type="text/javascript" src="${context}/js/flowstats.js"></script>
 		<script type="text/javascript" src="${context}/js/flowstats-no-data.js"></script>
 
-		<script type="text/javascript" src="${context}/js/azkaban.common.utils.js"></script>
-		<script type="text/javascript" src="${context}/js/azkaban.date.utils.js"></script>
-		<script type="text/javascript" src="${context}/js/azkaban.context.menu.js"></script>
-		<script type="text/javascript" src="${context}/js/azkaban.ajax.utils.js"></script>
-		<script type="text/javascript" src="${context}/js/azkaban.job.status.utils.js"></script>
-		<script type="text/javascript" src="${context}/js/azkaban.layout.js"></script>
-		<script type="text/javascript" src="${context}/js/azkaban.exflow.view.js"></script>
-		<script type="text/javascript" src="${context}/js/azkaban.flow.stats.view.js"></script>
-		<script type="text/javascript" src="${context}/js/azkaban.flow.job.view.js"></script>
-		<script type="text/javascript" src="${context}/js/azkaban.svg.graph.view.js"></script>
-		<script type="text/javascript" src="${context}/js/svgNavigate.js"></script>
+		<script type="text/javascript" src="${context}/js/azkaban/util/common.js"></script>
+		<script type="text/javascript" src="${context}/js/azkaban/util/date.js"></script>
+		<script type="text/javascript" src="${context}/js/azkaban/view/context-menu.js"></script>
+		<script type="text/javascript" src="${context}/js/azkaban/util/ajax.js"></script>
+		<script type="text/javascript" src="${context}/js/azkaban/util/job-status.js"></script>
+		<script type="text/javascript" src="${context}/js/azkaban/util/layout.js"></script>
+		<script type="text/javascript" src="${context}/js/azkaban/view/exflow.js"></script>
+		<script type="text/javascript" src="${context}/js/azkaban/view/flow-stats.js"></script>
+		<script type="text/javascript" src="${context}/js/azkaban/view/flow-job.js"></script>
+		<script type="text/javascript" src="${context}/js/azkaban/view/svg-graph.js"></script>
+		<script type="text/javascript" src="${context}/js/azkaban/util/svg-navigate.js"></script>
 		<script type="text/javascript">
 			var contextURL = "${context}";
 			var currentTime = ${currentTime};
