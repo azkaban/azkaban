@@ -25,7 +25,7 @@
 
 		<script type="text/javascript" src="${context}/js/moment.min.js"></script>
 		<script type="text/javascript" src="${context}/js/bootstrap-datetimepicker.min.js"></script>
-		<script type="text/javascript" src="${context}/js/azkaban.history.view.js"></script>
+		<script type="text/javascript" src="${context}/js/azkaban/view/history.js"></script>
 		<script type="text/javascript">
 			var contextURL = "${context}";
 			var currentTime = ${currentTime};

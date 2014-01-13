@@ -25,9 +25,9 @@
 		<link rel="stylesheet" type="text/css" href="${context}/css/azkaban-svg.css" />
 		<script type="text/javascript" src="${context}/js/moment.min.js"></script>
 		<script type="text/javascript" src="${context}/js/bootstrap-datetimepicker.min.js"></script>
-		<script type="text/javascript" src="${context}/js/azkaban.ajax.utils.js"></script>
-		<script type="text/javascript" src="${context}/js/azkaban.project.view.js"></script>
-		<script type="text/javascript" src="${context}/js/azkaban.projectmodals.view.js"></script>
+		<script type="text/javascript" src="${context}/js/azkaban/util/ajax.js"></script>
+		<script type="text/javascript" src="${context}/js/azkaban/view/project.js"></script>
+		<script type="text/javascript" src="${context}/js/azkaban/view/project-modals.js"></script>
 		<script type="text/javascript">
 			var contextURL = "${context}";
 			var currentTime = ${currentTime};

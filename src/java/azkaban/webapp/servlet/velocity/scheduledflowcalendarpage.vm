@@ -28,10 +28,11 @@
 		<script type="text/javascript" src="${context}/js/jquery/jquery.svg.min.js"></script>    
 		<script type="text/javascript" src="${context}/js/jqueryui/jquery-ui-timepicker-addon.js"></script> 
 		<script type="text/javascript" src="${context}/js/jqueryui/jquery-ui-sliderAccess.js"></script>
-		<script type="text/javascript" src="${context}/js/azkaban.table.sort.js"></script>
-		<script type="text/javascript" src="${context}/js/azkaban.schedule.svg.js"></script>
-		<script type="text/javascript" src="${context}/js/azkaban.context.menu.js"></script>
-		<script type="text/javascript" src="${context}/js/svgNavigate.js"></script>
+
+		<script type="text/javascript" src="${context}/js/azkaban/view/table-sort.js"></script>
+		<script type="text/javascript" src="${context}/js/azkaban/view/schedule-svg.js"></script>
+		<script type="text/javascript" src="${context}/js/azkaban/view/context-menu.js"></script>
+		<script type="text/javascript" src="${context}/js/azkaban/util/svg-navigate.js"></script>
 		<script type="text/javascript">
 			var contextURL = "${context}";
 			var currentTime = ${currentTime};
