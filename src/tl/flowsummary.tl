@@ -10,10 +10,6 @@
                 <td>{projectName}</td>
               </tr>
               <tr>
-                <td class="property-key">Run As</td>
-                <td>{user}</td>
-              </tr>
-              <tr>
                 <td class="property-key">Job Types Used</td>
                 <td>{#jobTypes}{.} {/jobTypes}</td>
               </tr>

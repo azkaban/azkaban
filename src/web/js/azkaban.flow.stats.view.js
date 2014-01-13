@@ -75,35 +75,37 @@ azkaban.FlowStatsView = Backbone.View.extend({
     return stats;
   },
 
-  updateStats: function(jobStats, data, job) {
+  updateStatsMapred: function(state, data, job) {
     var stats = data.stats;
-    var state = jobStats.state;
-    var conf = jobStats.conf;
     var mappers = parseInt(state.totalMappers);
     var reducers = parseInt(state.totalReducers);
-    if (mappers > stats.mapSlots.max) {
+    if (mappers >= stats.mapSlots.max) {
       stats.mapSlots.max = mappers;
       stats.mapSlots.job = job;
     }
-    if (reducers > stats.reduceSlots.max) {
+    if (reducers >= stats.reduceSlots.max) {
       stats.reduceSlots.max = reducers;
       stats.reduceSlots.job = job;
     }
     stats.totalMapSlots += mappers;
     stats.totalReduceSlots += reducers;
 
+  },
+
+  updateStatsConf: function(conf, data, job) {
+    var stats = data.stats;
     if (conf == null) {
       data.warnings.push("No job conf available for job " + job);
       return;
     }
 
     var jobMapMemoryMb = parseInt(conf['mapred.job.map.memory.mb']);
-    if (jobMapMemoryMb > stats.maxJobMapMemoryMb) {
+    if (jobMapMemoryMb >= stats.jobMapMemoryMb.max) {
       stats.jobMapMemoryMb.max = jobMapMemoryMb;
       stats.jobMapMemoryMb.job = job;
     }
     var jobReduceMemoryMb = parseInt(conf['mapred.job.reduce.memory.mb']);
-    if (jobReduceMemoryMb > stats.maxJobReduceMemoryMb) {
+    if (jobReduceMemoryMb >= stats.jobReduceMemoryMb.max) {
       stats.jobReduceMemoryMb.max = jobReduceMemoryMb;
       stats.jobReduceMemoryMb.job = job;
     }
@@ -118,7 +120,7 @@ azkaban.FlowStatsView = Backbone.View.extend({
         }
         var size = str.substring(4, str.length);
         var val = sizeStrToBytes(size);
-        if (val > stats.xmx.max) {
+        if (val >= stats.xmx.max) {
           stats.xmx.max = val;
           stats.xmx.str = size;
           stats.xmx.job = job;
@@ -131,13 +133,74 @@ azkaban.FlowStatsView = Backbone.View.extend({
         var size = str.substring(4, str.length);
         var val = sizeStrToBytes(size);
         stats.xms.set = true;
-        if (val > stats.xms.max) {
+        if (val >= stats.xms.max) {
           stats.xms.max = val;
           stats.xms.str = size;
           stats.xms.job = job;
         }
       }
     }
+
+    var cacheFiles = conf['mapred.cache.files'];
+    var cacheFilesFilesizes = conf['mapred.cache.files.filesizes'];
+    if (cacheFiles != null && cacheFilesFilesizes != null) {
+      stats.distributedCache.using = true;
+      var parts = cacheFilesFilesizes.split(',');
+      var size = 0;
+      for (var i = 0; i < parts.length; ++i) {
+        size += parseInt(parts[i]);
+      }
+      if (size >= stats.distributedCache.max) {
+        stats.distributedCache.max = size;
+        stats.distributedCache.job = job;
+      }
+    }
+  },
+
+  updateStatsCounters: function(state, data, job) {
+    var stats = data.stats;
+    if (state.counters == null) {
+      data.warnings.push("No job counters available for job " + job);
+      return;
+    }
+    var fileSystemCounters = state.counters['FileSystemCounters'];
+    if (fileSystemCounters == null) {
+      data.warnings.push("No FileSystemCounters available for job " + job);
+      return;
+    }
+    var fileBytesRead = parseInt(fileSystemCounters['FILE_BYTES_READ']);
+    if (fileBytesRead >= stats.fileBytesRead.max) {
+      stats.fileBytesRead.max = fileBytesRead;
+      stats.fileBytesRead.job = job;
+    }
+
+    var fileBytesWritten = parseInt(fileSystemCounters['FILE_BYTES_WRITTEN']);
+    if (fileBytesWritten >= stats.fileBytesWritten.max) {
+      stats.fileBytesWritten.max = fileBytesWritten;
+      stats.fileBytesWritten.job = job;
+    }
+    
+    var hdfsBytesRead = parseInt(fileSystemCounters['HDFS_BYTES_READ']);
+    if (hdfsBytesRead >= stats.hdfsBytesRead.max) {
+      stats.hdfsBytesRead.max = hdfsBytesRead;
+      stats.hdfsBytesRead.job = job;
+    }
+    
+    var hdfsBytesWritten = parseInt(fileSystemCounters['HDFS_BYTES_WRITTEN']);
+    if (hdfsBytesWritten >= stats.hdfsBytesWritten.max) {
+      stats.hdfsBytesWritten.max = hdfsBytesWritten;
+      stats.hdfsBytesWritten.job = job;
+    }
+  },
+
+  updateStats: function(jobStats, data, job) {
+    var stats = data.stats;
+    var state = jobStats.state;
+    var conf = jobStats.conf;
+
+    this.updateStatsMapred(state, data, job);
+    this.updateStatsConf(conf, data, job);
+    this.updateStatsCounters(state, data, job);
   },
 
   finalizeStats: function(data) {
@@ -187,7 +250,28 @@ azkaban.FlowStatsView = Backbone.View.extend({
           max: 0,
           str: null,
           job: null
-        }
+        },
+        fileBytesRead: {
+          max: 0,
+          job: null
+        },
+        hdfsBytesRead: {
+          max: 0,
+          job: null
+        },
+        fileBytesWritten: {
+          max: 0,
+          job: null
+        },
+        hdfsBytesWritten: {
+          max: 0,
+          job: null
+        },
+        distributedCache: {
+          using: false,
+          max: 0,
+          job: null
+        },
       }
     };
 
