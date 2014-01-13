@@ -132,15 +132,9 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 				else if (ajaxName.equals("fetchExecJobLogs")) {
 					ajaxFetchJobLogs(req, resp, ret, session.getUser(), exFlow);
 				}
-<<<<<<< HEAD
-				else if (ajaxName.equals("fetchExecJobSummary")) {
-					ajaxFetchJobSummary(req, resp, ret, session.getUser(), exFlow);
-				}
         else if (ajaxName.equals("fetchExecJobStats")) {
           ajaxFetchJobStats(req, resp, ret, session.getUser(), exFlow);
         }
-=======
->>>>>>> master
 				else if (ajaxName.equals("retryFailedJobs")) {
 					ajaxRestartFailed(req, resp, ret, session.getUser(), exFlow);
 				}
