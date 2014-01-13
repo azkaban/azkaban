@@ -1,21 +1,30 @@
-        <div class="col-xs-12">
+      <div class="row">
+        <div class="col-xs-4">
+          <h1>3 <small>Successful</small> 4 <small>Failed</small></h1>
+        </div>
+        <div class="col-xs-8">
           <table class="table table-bordered table-condensed">
             <tbody>
               <tr>
-                <td class="property-key">Flow name</td>
-                <td class="property-value-half">{flowName}</td>
                 <td class="property-key">Project name</td>
-                <td class="property-value-half">{projectName}</td>
+                <td>{projectName}</td>
               </tr>
               <tr>
                 <td class="property-key">Run As</td>
-                <td class="property-value-half">{user}</td>
+                <td>{user}</td>
+              </tr>
+              <tr>
                 <td class="property-key">Job Types Used</td>
-                <td class="property-value-half">{#jobTypes}{.} {/jobTypes}</td>
+                <td>{#jobTypes}{.} {/jobTypes}</td>
               </tr>
             </tbody>
           </table>
-				
+        </div>
+      </div>
+      <hr>
+			
+      <div class="row">
+        <div class="col-xs-12">
           <h3>
             Scheduling
             {?schedule}
@@ -65,3 +74,4 @@
 
           <h3>Last Run Stats</h3>
         </div>
+      </div>

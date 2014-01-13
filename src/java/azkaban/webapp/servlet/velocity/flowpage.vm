@@ -140,8 +140,8 @@
 	## Summary view.
 
     <div class="container-full" id="summaryView">
-			<div class="row" id="summary-view-content">
-      </div><!-- /.row -->
+      <div id="summary-view-content">
+      </div>
       <div id="flow-stats-container">
         <div class="row">
           <div class="col-xs-12">
