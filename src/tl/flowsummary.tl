@@ -1,8 +1,5 @@
       <div class="row">
-        <div class="col-xs-4">
-          <h1>3 <small>Successful</small> 4 <small>Failed</small></h1>
-        </div>
-        <div class="col-xs-8">
+        <div class="col-xs-12">
           <table class="table table-bordered table-condensed">
             <tbody>
               <tr>
