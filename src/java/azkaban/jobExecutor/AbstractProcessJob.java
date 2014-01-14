@@ -162,7 +162,8 @@ public abstract class AbstractProcessJob extends AbstractJob {
 		File directory = new File(workingDir);
 		File tempFile = null;
 		try {
-			tempFile = File.createTempFile(getId() + "_", "_tmp", directory);
+			// The temp file prefix must be at least 3 characters.
+			tempFile = File.createTempFile(getId() + "_props_", "_tmp", directory);
 			jobProps.storeFlattened(tempFile);
 		} catch (IOException e) {
 			throw new RuntimeException("Failed to create temp property file ", e);

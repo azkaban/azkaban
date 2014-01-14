@@ -47,6 +47,7 @@ import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutableJobInfo;
 import azkaban.executor.ExecutorManagerAdapter;
 import azkaban.executor.ExecutorManagerException;
+import azkaban.executor.Status;
 import azkaban.flow.Edge;
 import azkaban.flow.Flow;
 import azkaban.flow.FlowProps;
@@ -248,6 +249,11 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 				ajaxFetchFlowExecutions(project, ret, req);
 			}
 		}
+		else if (ajaxName.equals("fetchLastSuccessfulFlowExecution")) {
+			if (handleAjaxPermission(project, user, Type.READ, ret)) {
+				ajaxFetchLastSuccessfulFlowExecution(project, ret, req);
+			}
+		}
 		else if (ajaxName.equals("fetchJobInfo")) {
 			if (handleAjaxPermission(project, user, Type.READ, ret)) {
 				ajaxFetchJobInfo(project, ret, req);
@@ -339,7 +345,34 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 		}
   }
 
-	private void ajaxFetchFlowExecutions(Project project, HashMap<String, Object> ret, HttpServletRequest req) throws ServletException {
+  private void ajaxFetchLastSuccessfulFlowExecution(Project project,
+      HashMap<String, Object> ret, HttpServletRequest req)
+      throws ServletException {
+    String flowId = getParam(req, "flow");
+    List<ExecutableFlow> exFlows = null;
+    try {
+			exFlows = executorManager.getExecutableFlows(
+					project.getId(), flowId, 0, 1, Status.SUCCEEDED);
+		}
+		catch (ExecutorManagerException e) {
+			ret.put("error", "Error retrieving executable flows");
+			return;
+		}
+
+		if (exFlows.size() == 0) {
+			ret.put("success", "false");
+			ret.put("message", "This flow has no successful run.");
+			return;
+		}
+
+		ret.put("success", "true");
+		ret.put("message", "");
+		ret.put("execId", exFlows.get(0).getExecutionId());
+  }
+
+	private void ajaxFetchFlowExecutions(Project project, 
+      HashMap<String, Object> ret, HttpServletRequest req) 
+      throws ServletException {
 		String flowId = getParam(req, "flow");
 		int from = Integer.valueOf(getParam(req, "start"));
 		int length = Integer.valueOf(getParam(req, "length"));
@@ -347,8 +380,10 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 		ArrayList<ExecutableFlow> exFlows = new ArrayList<ExecutableFlow>();
 		int total = 0;
 		try {
-			total = executorManager.getExecutableFlows(project.getId(), flowId, from, length, exFlows);
-		} catch (ExecutorManagerException e) {
+			total = executorManager.getExecutableFlows(
+					project.getId(), flowId, from, length, exFlows);
+		}
+    catch (ExecutorManagerException e) {
 			ret.put("error", "Error retrieving executable flows");
 		}
 		

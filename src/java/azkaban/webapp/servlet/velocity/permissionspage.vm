@@ -21,8 +21,8 @@
 #parse ("azkaban/webapp/servlet/velocity/style.vm")
 #parse ("azkaban/webapp/servlet/velocity/javascript.vm")
 
-		<script type="text/javascript" src="${context}/js/azkaban.permission.view.js"></script>
-		<script type="text/javascript" src="${context}/js/azkaban.projectmodals.view.js"></script>
+		<script type="text/javascript" src="${context}/js/azkaban/view/project-permissions.js"></script>
+		<script type="text/javascript" src="${context}/js/azkaban/view/project-modals.js"></script>
 		<script type="text/javascript">
 			var contextURL = "${context}";
 			var currentTime = ${currentTime};
@@ -232,10 +232,10 @@
             </table>
           </div>
 	
-				</div><!-- /col-lg-8 -->
+				</div><!-- /col-xs-8 -->
 				<div class="col-xs-6 col-sm-3 sidebar-offcanvas">
 	#parse ("azkaban/webapp/servlet/velocity/projectsidebar.vm")
-				</div><!-- /col-lg-4 -->
+				</div><!-- /col-xs-4 -->
 			</div><!-- /row -->
 
 ## Remove proxy user modal dialog.

@@ -14,8 +14,8 @@
  * the License.
 *#
 
-			<script type="text/javascript" src="${context}/js/azkaban.date.utils.js"></script>  
-			<script type="text/javascript" src="${context}/js/azkaban.schedule.panel.view.js"></script>
+			<script type="text/javascript" src="${context}/js/azkaban/util/date.js"></script>  
+			<script type="text/javascript" src="${context}/js/azkaban/view/schedule-panel.js"></script>
 			
 			<div class="modal" id="schedule-modal">
 				<div class="modal-dialog">
