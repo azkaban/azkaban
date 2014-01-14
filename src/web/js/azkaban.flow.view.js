@@ -16,19 +16,6 @@
 
 $.namespace('azkaban');
 
-var statusStringMap = {
-	"FAILED": "Failed",
-	"SUCCEEDED": "Success",
-	"FAILED_FINISHING": "Running w/Failure",
-	"RUNNING": "Running",
-	"WAITING": "Waiting",
-	"KILLED": "Killed",
-	"DISABLED": "Disabled",
-	"READY": "Ready",
-	"UNKNOWN": "Unknown",
-	"QUEUED": "Queued"
-};
-
 var handleJobMenuClick = function(action, el, pos) {
 	var jobid = el[0].jobid;
 	var requestURL = contextURL + "/manager?project=" + projectName + "&flow=" + 
@@ -302,28 +289,29 @@ azkaban.SummaryView = Backbone.View.extend({
 		this.model.bind('render', this.render, this);
 		
 		this.fetchDetails();
-    this.fetchSchedule();
+		this.fetchSchedule();
 		this.fetchLastRun();
 		this.model.trigger('render');
 	},
 
-  fetchDetails: function() {
-    var requestURL = contextURL + "/manager";
-    var requestData = {
-      'ajax': 'fetchflowdetails',
-      'project': projectName,
-      'flow': flowId
-    };
+	fetchDetails: function() {
+		var requestURL = contextURL + "/manager";
+		var requestData = {
+			'ajax': 'fetchflowdetails',
+			'project': projectName,
+			'flow': flowId
+		};
+		
 		var model = this.model;
-    var successHandler = function(data) {
-      console.log(data);
-      model.set({
-        'jobTypes': data.jobTypes
-      });
-      model.trigger('render');
-    };
-    $.get(requestURL, requestData, successHandler, 'json');
-  },
+		var successHandler = function(data) {
+			console.log(data);
+			model.set({
+				'jobTypes': data.jobTypes
+			});
+			model.trigger('render');
+		};
+		$.get(requestURL, requestData, successHandler, 'json');
+	},
 
 	fetchSchedule: function() {
 		var requestURL = contextURL + "/schedule"
@@ -334,8 +322,8 @@ azkaban.SummaryView = Backbone.View.extend({
 		};
 		var model = this.model;
 		var successHandler = function(data) {
-      model.set({'schedule': data.schedule});
-      model.trigger('render');
+			model.set({'schedule': data.schedule});
+			model.trigger('render');
 		};
 		$.get(requestURL, requestData, successHandler, 'json');
 	},
@@ -349,9 +337,9 @@ azkaban.SummaryView = Backbone.View.extend({
 
 	render: function(evt) {
 		var data = {
-      projectName: projectName,
+			projectName: projectName,
 			flowName: flowId,
-      jobTypes: this.model.get('jobTypes'),
+			jobTypes: this.model.get('jobTypes'),
 			general: this.model.get('general'),
 			schedule: this.model.get('schedule'),
 			lastRun: this.model.get('lastRun')

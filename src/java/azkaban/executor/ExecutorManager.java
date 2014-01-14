@@ -403,6 +403,34 @@ public class ExecutorManager extends EventHandler implements ExecutorManagerAdap
 		}
 	}
 	
+	private void applyDisabledJobs(List<Object> disabledJobs, ExecutableFlowBase exflow) {
+		for (Object disabled: disabledJobs) {
+			if (disabled instanceof String) {
+				String nodeName = (String)disabled;
+				ExecutableNode node = exflow.getExecutableNode(nodeName);
+				if (node != null) {
+					node.setStatus(Status.DISABLED);
+				}
+			}
+			else if (disabled instanceof Map) {
+				@SuppressWarnings("unchecked")
+				Map<String,Object> nestedDisabled = (Map<String, Object>)disabled;
+				String nodeName = (String)nestedDisabled.get("id");
+				@SuppressWarnings("unchecked")
+				List<Object> subDisabledJobs = (List<Object>)nestedDisabled.get("children");
+				
+				if (nodeName == null || subDisabledJobs == null) {
+					return;
+				}
+				
+				ExecutableNode node = exflow.getExecutableNode(nodeName);
+				if (node != null && node instanceof ExecutableFlowBase) {
+					applyDisabledJobs(subDisabledJobs, (ExecutableFlowBase)node);
+				}
+			}
+		}
+	}
+	
 	@Override
 	public String submitExecutableFlow(ExecutableFlow exflow, String userId) throws ExecutorManagerException {
 		synchronized(exflow) {
@@ -422,25 +450,7 @@ public class ExecutorManager extends EventHandler implements ExecutorManagerAdap
 			
 			String message = "";
 			if (options.getDisabledJobs() != null) {
-				// Disable jobs
-				for(String disabledId : options.getDisabledJobs()) {
-					String[] splits = disabledId.split(":");
-					ExecutableNode node = exflow;
-					
-					for (String split: splits) {
-						if (node instanceof ExecutableFlowBase) {
-							node = ((ExecutableFlowBase)node).getExecutableNode(split);
-						}
-						else {
-							message = "Cannot disable job " + disabledId + " since flow " + split + " cannot be found. \n";
-						}
-					}
-
-					if (node == null) {
-						throw new ExecutorManagerException("Cannot disable job " + disabledId + ". Cannot find corresponding node.");
-					}
-					node.setStatus(Status.DISABLED);
-				}
+				applyDisabledJobs(options.getDisabledJobs(), exflow);
 			}
 			
 			if (!running.isEmpty()) {

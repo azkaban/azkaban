@@ -57,8 +57,7 @@ public class ExecutorServlet extends HttpServlet implements ConnectorParams {
 		application = (AzkabanExecutorServer) config.getServletContext().getAttribute(AzkabanServletContextListener.AZKABAN_SERVLET_CONTEXT_KEY);
 
 		if (application == null) {
-			throw new IllegalStateException(
-					"No batch application is defined in the servlet context!");
+			throw new IllegalStateException("No batch application is defined in the servlet context!");
 		}
 
 		flowRunnerManager = application.getFlowRunnerManager();

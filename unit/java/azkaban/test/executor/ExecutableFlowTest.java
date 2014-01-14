@@ -108,7 +108,7 @@ public class ExecutableFlowTest {
 		
 		ExecutionOptions options = new ExecutionOptions();
 		options.setConcurrentOption("blah");
-		options.setDisabledJobs(Arrays.asList(new String[] {"bee", null, "boo"}));
+		options.setDisabledJobs(Arrays.asList(new Object[] {"bee", null, "boo"}));
 		options.setFailureAction(FailureAction.CANCEL_ALL);
 		options.setFailureEmails(Arrays.asList(new String[] {"doo", null, "daa"}));
 		options.setSuccessEmails(Arrays.asList(new String[] {"dee", null, "dae"}));
@@ -287,7 +287,7 @@ public class ExecutableFlowTest {
 		Assert.assertEquals(optionsA.isFailureEmailsOverridden(), optionsB.isFailureEmailsOverridden());
 		Assert.assertEquals(optionsA.isSuccessEmailsOverridden(), optionsB.isSuccessEmailsOverridden());
 		
-		testEquals(optionsA.getDisabledJobs(), optionsB.getDisabledJobs());
+		testDisabledEquals(optionsA.getDisabledJobs(), optionsB.getDisabledJobs());
 		testEquals(optionsA.getSuccessEmails(), optionsB.getSuccessEmails());
 		testEquals(optionsA.getFailureEmails(), optionsB.getFailureEmails());
 		testEquals(optionsA.getFlowParameters(), optionsB.getFlowParameters());
@@ -329,10 +329,42 @@ public class ExecutableFlowTest {
 		while(iterA.hasNext()) {
 			String aStr = iterA.next();
 			String bStr = iterB.next();
-			
 			Assert.assertEquals(aStr, bStr);
 		}
 	}
+	
+	@SuppressWarnings("unchecked")
+	public static void testDisabledEquals(List<Object> a, List<Object> b) {
+		if (a == b) {
+			return;
+		}
+		
+		if (a == null || b == null) {
+			Assert.fail();
+		}
+		
+		Assert.assertEquals(a.size(), b.size());
+		
+		Iterator<Object> iterA = a.iterator();
+		Iterator<Object> iterB = b.iterator();
+		
+		while(iterA.hasNext()) {
+			Object aStr = iterA.next();
+			Object bStr = iterB.next();
+			
+			if (aStr instanceof Map && bStr instanceof Map) {
+				Map<String, Object> aMap = (Map<String, Object>)aStr;
+				Map<String, Object> bMap = (Map<String, Object>)bStr;
+				
+				Assert.assertEquals((String)aMap.get("id"), (String)bMap.get("id"));
+				testDisabledEquals((List<Object>)aMap.get("children"), (List<Object>)bMap.get("children"));
+			}
+			else {
+				Assert.assertEquals(aStr, bStr);
+			}
+		}
+	}
+	
 	
 	public static void testEquals(Map<String, String> a, Map<String, String> b) {
 		if (a == b) {

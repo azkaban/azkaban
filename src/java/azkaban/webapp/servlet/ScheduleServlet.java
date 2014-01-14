@@ -303,21 +303,12 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
 					}
 				}
 			}
-			
-			List<String> disabledJobs;
-			if(flowOptions != null) {
-				disabledJobs = flowOptions.getDisabledJobs() == null ? new ArrayList<String>() : flowOptions.getDisabledJobs();
-			}
-			else {
-				disabledJobs = new ArrayList<String>();
-			}
-				
+
 			List<String> allJobs = new ArrayList<String>();
 			for(Node n : flow.getNodes()) {
-				if(!disabledJobs.contains(n.getId())) {
-					allJobs.add(n.getId());
-				}
+				allJobs.add(n.getId());
 			}
+			
 			ret.put("allJobNames", allJobs);
 		} catch (ServletException e) {
 			ret.put("error", e);

@@ -19,7 +19,7 @@ azkaban.SvgGraphView = Backbone.View.extend({
 	events: {
 		
 	},
-  initialize: function(settings) {
+	initialize: function(settings) {
 		this.model.bind('change:selected', this.changeSelected, this);
 		this.model.bind('centerNode', this.centerNode, this);
 		this.model.bind('change:graph', this.render, this);
@@ -136,10 +136,6 @@ azkaban.SvgGraphView = Backbone.View.extend({
 		bounds.maxY = bounds.maxY ? bounds.maxY + margin : margin;
 		
 		this.assignInitialStatus(this, data);
-		
-		if (data.disabled && data.disabled.length > 0) {
-			this.handleDisabledChange(self);
-		}
 
 		if (self.rightClick) {
 			if (self.rightClick.node) {
@@ -162,24 +158,31 @@ azkaban.SvgGraphView = Backbone.View.extend({
 					return false;
 				});
 			}
-
 		};
+		
+		$(".node").each( 
+				function(d,i){
+					$(this).tooltip({container:"body", delay: {show: 500, hide: 100}});
+				});
 
 		return bounds;
 	},
-	
-  handleDisabledChange: function(evt) {
-		var disabledMap = this.model.get("disabled");
-
-		for(var id in this.nodes) {
-			 var g = this.gNodes[id];
-			if (disabledMap[id]) {
-				this.nodes[id].disabled = true;
-				addClass(g, "disabled");
+	handleDisabledChange: function(evt) {
+		this.changeDisabled(this.model.get('data'));
+	},
+	changeDisabled: function(data) {
+		for (var i =0; i < data.nodes.length; ++i) {
+			var node = data.nodes[i];
+			if (node.disabled) {
+				addClass(node.gNode, "nodeDisabled");
 			}
 			else {
-				this.nodes[id].disabled = false;
-				removeClass(g, "disabled");
+				if (node.gNode) {
+					removeClass(node.gNode, "nodeDisabled");
+				}
+				if (node.type=='flow') {
+					this.changeDisabled(node);
+				}
 			}
 		}
 	},
@@ -188,9 +191,13 @@ azkaban.SvgGraphView = Backbone.View.extend({
 			var updateNode = data.nodes[i];
 			var g = updateNode.gNode;
 			var initialStatus = updateNode.status ? updateNode.status : "READY";
-
+			
 			addClass(g, initialStatus);
-			$(g).attr("title", initialStatus);
+			$(g).attr("title", updateNode.status + " (" + updateNode.type + ")");
+			
+			if (updateNode.disabled) {
+				addClass(g, "nodeDisabled");
+			}
 		}
 	},
 	changeSelected: function(self) {
@@ -215,39 +222,36 @@ azkaban.SvgGraphView = Backbone.View.extend({
 		}
 	},
   propagateExpansion: function(node) {
-		if (node.parent) {
-			if (node.parent.node) {
-				this.propagateExpansion(node.parent.node);
-				this.expandFlow(node.parent.node);
-			}
+		if (node.parent.type) {
+			this.propagateExpansion(node.parent);
+			this.expandFlow(node.parent);
 		}
 	},
   handleStatusUpdate: function(evt) {
 		var updateData = this.model.get("update");
-		if (updateData.nodes) {
-			for (var i = 0; i < updateData.nodes.length; ++i) {
-				var updateNode = updateData.nodes[i];
+		this.updateStatusChanges(updatedData);
+	},
+	updateStatusChanges: function(changedData) {
+		// Assumes all changes have been applied.
+		if (changedData.nodes) {
+			var nodeMap = previousData.nodeMap;
+			for (var i = 0; i < changedData.nodes.length; ++i) {
+				var node = changedData.nodes[i];
+				var nodeToUpdate = nodeMap[updateNode.id];
 				
-				var g = this.gNodes[updateNode.id];
+				var g = nodeToUpdate.gNode;
 				this.handleRemoveAllStatus(g);
+				addClass(g, nodeToUpdate.status);
+				$(g).attr("title", updateNode.status + " (" + updateNode.type + ")");
 				
-				addClass(g, updateNode.status);
-				$(g).attr("title", updateNode.status);
+				this.updateStatusChanges(node);
 			}
 		}
 	},
-	
   handleRemoveAllStatus: function(gNode) {
 		for (var j = 0; j < statusList.length; ++j) {
 			var status = statusList[j];
 			removeClass(gNode, status);
-		}
-	},
-	
-  clickGraph: function(self) {
-		console.log("click");
-		if (self.currentTarget.data) {
-			this.model.set({"selected": self.currentTarget.data});
 		}
 	},
 	
@@ -323,7 +327,6 @@ azkaban.SvgGraphView = Backbone.View.extend({
 		var innerG = gnode.innerG;
 		var borderRect = innerG.borderRect;
 		var labelG = innerG.labelG;
-		var flowData = node.flowData;
 		
 		var bbox;
 		if (!innerG.expandedFlow) {
@@ -331,7 +334,7 @@ azkaban.SvgGraphView = Backbone.View.extend({
 			var hmargin = 10;
 		
 			var expandedFlow = svg.group(innerG, "", {class: "expandedGraph"});
-			this.renderGraph(flowData, expandedFlow);
+			this.renderGraph(node, expandedFlow);
 			innerG.expandedFlow = expandedFlow;
 			removeClass(innerG, "collapsed");
 			addClass(innerG, "expanded");
@@ -366,7 +369,6 @@ azkaban.SvgGraphView = Backbone.View.extend({
 		var innerG = gnode.innerG;
 		var borderRect = innerG.borderRect;
 		var labelG = innerG.labelG;
-		var flowData = node.flowData;
 
 		removeClass(innerG, "expanded");
 		addClass(innerG, "collapsed");
@@ -395,15 +397,11 @@ azkaban.SvgGraphView = Backbone.View.extend({
 		var parent = node.parent;
 		if (parent) {
 			layoutGraph(parent.nodes, parent.edges, 10);
-			if (parent.node) {
-				this.relayoutFlow(parent.node);
-			}
+			this.relayoutFlow(parent);
+			// Move all points again.
+			this.moveNodeEdges(parent.nodes, parent.edges);
+			this.animateExpandedFlowNode(node, 250);
 		}
-		
-		// Move all points again.
-		this.moveNodeEdges(parent.nodes, parent.edges);
-		this.animateExpandedFlowNode(node, 250);
-		
 	},
 	moveNodeEdges: function(nodes, edges) {
 		var svg = this.svg;
@@ -563,7 +561,7 @@ azkaban.SvgGraphView = Backbone.View.extend({
 		var labelG = innerG.labelG;
 		var expandedFlow = innerG.expandedFlow;
 		
-		var bound = this.calculateBounds(node.flowData.nodes);
+		var bound = this.calculateBounds(node.nodes);
 		
 		node.height = bound.height + topmargin + bottommargin;
 		node.width = bound.width + hmargin*2;
@@ -601,9 +599,9 @@ azkaban.SvgGraphView = Backbone.View.extend({
 		this.panZoom({x: x, y: y, width: node.width, height: node.height});
 	},
 	globalNodePosition: function(gNode) {
-		if (node.parent.node) {
+		if (node.parent) {
 		
-			var parentPos = this.globalNodePosition(node.parent.node);
+			var parentPos = this.globalNodePosition(node.parent);
 			return {x: parentPos.x + node.x, y: parentPos.y + node.y};
 		}
 		else {

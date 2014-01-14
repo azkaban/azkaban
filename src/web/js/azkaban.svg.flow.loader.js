@@ -1,3 +1,16 @@
+var statusStringMap = {
+	"FAILED": "Failed",
+	"SUCCEEDED": "Success",
+	"FAILED_FINISHING": "Running w/Failure",
+	"RUNNING": "Running",
+	"WAITING": "Waiting",
+	"KILLED": "Killed",
+	"DISABLED": "Disabled",
+	"READY": "Ready",
+	"UNKNOWN": "Unknown",
+	"QUEUED": "Queued"
+};
+
 var extendedViewPanels = {};
 var extendedDataModels = {};
 var openJobDisplayCallback = function(nodeId, flowId, evt) {
@@ -81,10 +94,8 @@ var processFlowData = function(data) {
 	for (var key in nodes) {
 		var node = nodes[key];
 		node.parent = data;
-		if (node.type == "flow" && node.flowData) {
-			processFlowData(node.flowData);
-			// Weird cycle. Evaluate whether we can instead unwrap these things.
-			node.flowData.node = node;
+		if (node.type == "flow") {
+			processFlowData(node);
 		}
 	}
 	
@@ -92,7 +103,6 @@ var processFlowData = function(data) {
 	console.log("data fetched");
 	data.nodeMap = nodes;
 	data.edges = edges;
-	data.disabled = {};
 }
 
 var closeAllSubDisplays = function() {

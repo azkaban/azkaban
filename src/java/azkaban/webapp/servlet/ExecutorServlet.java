@@ -643,125 +643,103 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 		}
 	}
 	
-	private long fillUpdateExecutableFlowInfo(ExecutableFlowBase flow, long lastUpdateTime, HashMap<String, Object> ret) {
-		// Just update the nodes and flow states
-		ArrayList<Map<String, Object>> nodeList = new ArrayList<Map<String, Object>>();
-		HashMap<String, Map<String,Object>> nodeMap = new HashMap<String, Map<String,Object>>();
-		
-		long updateTime = flow.getUpdateTime();
-		for (ExecutableNode node : flow.getExecutableNodes()) {
-			HashMap<String, Object> nodeObj = null;
-			if (node instanceof ExecutableFlowBase) {
-				nodeObj = new HashMap<String, Object>();
-				long subUpdateTime = fillUpdateExecutableFlowInfo((ExecutableFlowBase)node, lastUpdateTime, nodeObj);
-				updateTime = Math.max(updateTime, subUpdateTime);
-				if (updateTime <= lastUpdateTime) {
-					continue;
-				}
-			}
-			else if (node.getUpdateTime() <= lastUpdateTime){
-				continue;
-			}
-			else {
-				nodeObj = new HashMap<String, Object>();
-				updateTime = Math.max(updateTime, node.getUpdateTime());
-	
-				nodeObj.put("id", node.getId());
-				nodeObj.put("status", node.getStatus());
-				nodeObj.put("startTime", node.getStartTime());
-				nodeObj.put("endTime", node.getEndTime());
-				nodeObj.put("updateTime", node.getUpdateTime());
-				nodeObj.put("attempt", node.getAttempt());
-	
-				if (node.getAttempt() > 0) {
-					nodeObj.put("pastAttempts", node.getAttemptObjects());
-				}
-			}
-			
-			nodeMap.put(node.getId(), nodeObj);
-			nodeList.add(nodeObj);
-		}
-
-		ret.put("nodes", nodeList);
-		ret.put("status", flow.getStatus().toString());
-		ret.put("startTime", flow.getStartTime());
-		ret.put("endTime", flow.getEndTime());
-		ret.put("updateTime", updateTime);
-		return updateTime;
-	}
-	
-	private void ajaxFetchExecutableFlowUpdate(HttpServletRequest req,
-			HttpServletResponse resp, HashMap<String, Object> ret, User user,
-			ExecutableFlow exFlow) throws ServletException {
-		Long lastUpdateTime = Long.parseLong(getParam(req, "lastUpdateTime"));
-		System.out.println("Fetching " + exFlow.getExecutionId());
-
-		Project project = getProjectAjaxByPermission(ret,
-				exFlow.getProjectId(), user, Type.READ);
-		if (project == null) {
-			return;
-		}
-		
-		fillUpdateExecutableFlowInfo(exFlow, lastUpdateTime, ret);
-	}
-
-	private long fillExecutableFlowInfo(ExecutableFlowBase flow, HashMap<String, Object> ret) {
-		long updateTime = flow.getUpdateTime();
-		
-		ArrayList<Map<String, Object>> nodeList = new ArrayList<Map<String, Object>>();
-		ArrayList<Map<String, Object>> edgeList = new ArrayList<Map<String, Object>>();
-		
-		ArrayList<String> executorQueue = new ArrayList<String>();
-		executorQueue.addAll(flow.getStartNodes());
-
-		for (ExecutableNode node : flow.getExecutableNodes()) {
-			HashMap<String, Object> nodeObj = new HashMap<String, Object>();
+	private Map<String,Object> getExecutableFlowUpdateInfo(ExecutableNode node, long lastUpdateTime) {
+		HashMap<String, Object> nodeObj = new HashMap<String,Object>();
+		if (node.getUpdateTime() > lastUpdateTime) {
 			nodeObj.put("id", node.getId());
 			nodeObj.put("status", node.getStatus());
 			nodeObj.put("startTime", node.getStartTime());
 			nodeObj.put("endTime", node.getEndTime());
-			nodeObj.put("type", node.getType());
+			nodeObj.put("updateTime", node.getUpdateTime());
 			
-			// Add past attempts
-			if (node.getPastAttemptList() != null) {
-				ArrayList<Object> pastAttempts = new ArrayList<Object>();
-				for (ExecutionAttempt attempt : node.getPastAttemptList()) {
-					pastAttempts.add(attempt.toObject());
-				}
-				nodeObj.put("pastAttempts", pastAttempts);
-			}
-			
-			nodeList.add(nodeObj);
-			
-			// Add edges
-			for (String out : node.getOutNodes()) {
-				HashMap<String, Object> edgeObj = new HashMap<String, Object>();
-				edgeObj.put("from", node.getId());
-				edgeObj.put("target", out);
-				edgeList.add(edgeObj);
-			}
-			
-			// If it's an embedded flow, add the embedded flow info
-			if (node instanceof ExecutableFlowBase) {
-				long subUpdateTime = fillExecutableFlowInfo((ExecutableFlowBase)node, nodeObj);
-				updateTime = Math.max(updateTime, subUpdateTime);
-			}
-			else {
-				nodeObj.put("updateTime", updateTime);
+			nodeObj.put("attempt", node.getAttempt());
+			if (node.getAttempt() > 0) {
+				nodeObj.put("pastAttempts", node.getAttemptObjects());
 			}
 		}
 		
-		ret.put("nodes", nodeList);
-		ret.put("edges", edgeList);
-		ret.put("status", flow.getStatus().toString());
-		ret.put("startTime", flow.getStartTime());
-		ret.put("endTime", flow.getEndTime());
-		ret.put("updateTime", updateTime);
-		return updateTime;
+		if (node instanceof ExecutableFlowBase) {
+			ExecutableFlowBase base = (ExecutableFlowBase)node;
+			ArrayList<Map<String, Object>> nodeList = new ArrayList<Map<String, Object>>();
+			
+			for (ExecutableNode subNode: base.getExecutableNodes()) {
+				Map<String,Object> subNodeObj = getExecutableFlowUpdateInfo(subNode, lastUpdateTime);
+				if (!subNodeObj.isEmpty()) {
+					nodeList.add(subNodeObj);
+				}
+			}
+			
+			if (!nodeList.isEmpty()) {
+				nodeObj.put("flow", base.getFlowId());
+				nodeObj.put("nodes", nodeList);
+				// We do this again, because the above update time may not have been built.
+				nodeObj.put("id", node.getId());
+			}
+		}
+		
+		return nodeObj;
 	}
 	
-	private void ajaxFetchExecutableFlow(HttpServletRequest req,
-			HttpServletResponse resp, HashMap<String, Object> ret, User user,
+	private Map<String,Object> getExecutableNodeInfo(ExecutableNode node) {
+		HashMap<String, Object> nodeObj = new HashMap<String,Object>();
+		nodeObj.put("id", node.getId());
+		nodeObj.put("status", node.getStatus());
+		nodeObj.put("startTime", node.getStartTime());
+		nodeObj.put("endTime", node.getEndTime());
+		nodeObj.put("updateTime", node.getUpdateTime());
+		nodeObj.put("type", node.getType());
+		
+		nodeObj.put("attempt", node.getAttempt());
+		if (node.getAttempt() > 0) {
+			nodeObj.put("pastAttempts", node.getAttemptObjects());
+		}
+		
+		if (node.getInNodes() != null && !node.getInNodes().isEmpty()) {
+			nodeObj.put("in", node.getInNodes());
+		}
+		
+		if (node instanceof ExecutableFlowBase) {
+			ExecutableFlowBase base = (ExecutableFlowBase)node;
+			ArrayList<Map<String, Object>> nodeList = new ArrayList<Map<String, Object>>();
+			
+			for (ExecutableNode subNode: base.getExecutableNodes()) {
+				Map<String,Object> subNodeObj = getExecutableNodeInfo(subNode);
+				if (!subNodeObj.isEmpty()) {
+					nodeList.add(subNodeObj);
+				}
+			}
+			
+			nodeObj.put("flow", base.getFlowId());
+			nodeObj.put("nodes", nodeList);
+			nodeObj.put("flowId", base.getFlowId());
+		}
+		
+		return nodeObj;
+	}
+	
+	private void ajaxFetchExecutableFlowUpdate(
+			HttpServletRequest req,
+			HttpServletResponse resp, 
+			HashMap<String, Object> ret, 
+			User user,
+			ExecutableFlow exFlow) throws ServletException {
+		Long lastUpdateTime = Long.parseLong(getParam(req, "lastUpdateTime"));
+		System.out.println("Fetching " + exFlow.getExecutionId());
+
+		Project project = getProjectAjaxByPermission(ret, exFlow.getProjectId(), user, Type.READ);
+		if (project == null) {
+			return;
+		}
+		
+		Map<String, Object> map = getExecutableFlowUpdateInfo(exFlow, lastUpdateTime);
+		ret.putAll(map);
+	}
+
+	private void ajaxFetchExecutableFlow(
+			HttpServletRequest req, 
+			HttpServletResponse resp, 
+			HashMap<String, Object> ret, 
+			User user,
 			ExecutableFlow exFlow) throws ServletException {
 		System.out.println("Fetching " + exFlow.getExecutionId());
 
@@ -771,53 +749,14 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 			return;
 		}
 
-		fillExecutableFlowInfo(exFlow, ret);
 		ret.put("submitTime", exFlow.getSubmitTime());
 		ret.put("submitUser", exFlow.getSubmitUser());
-//		
-//		
-//		ArrayList<Map<String, Object>> nodeList = new ArrayList<Map<String, Object>>();
-//		ArrayList<Map<String, Object>> edgeList = new ArrayList<Map<String, Object>>();
-//		for (ExecutableNode node : exFlow.getExecutableNodes()) {
-//			HashMap<String, Object> nodeObj = new HashMap<String, Object>();
-//			nodeObj.put("id", node.getId());
-//			nodeObj.put("status", node.getStatus());
-//			nodeObj.put("startTime", node.getStartTime());
-//			nodeObj.put("endTime", node.getEndTime());
-//			nodeObj.put("type", node.getType());
-//			
-//			// Add past attempts
-//			if (node.getPastAttemptList() != null) {
-//				ArrayList<Object> pastAttempts = new ArrayList<Object>();
-//				for (ExecutionAttempt attempt : node.getPastAttemptList()) {
-//					pastAttempts.add(attempt.toObject());
-//				}
-//				nodeObj.put("pastAttempts", pastAttempts);
-//			}
-//
-//			nodeList.add(nodeObj);
-//
-//			// Add edges
-//			for (String out : node.getOutNodes()) {
-//				HashMap<String, Object> edgeObj = new HashMap<String, Object>();
-//				edgeObj.put("from", node.getId());
-//				edgeObj.put("target", out);
-//				edgeList.add(edgeObj);
-//			}
-//			
-//			// If it's an embedded flow, add the embedded flow info
-//			if (node instanceof ExecutableFlowBase) {
-//				
-//			}
-//		}
-//
-//		ret.put("nodes", nodeList);
-//		ret.put("edges", edgeList);
-//		ret.put("status", exFlow.getStatus().toString());
-//		ret.put("startTime", exFlow.getStartTime());
-//		ret.put("endTime", exFlow.getEndTime());
-//		ret.put("submitTime", exFlow.getSubmitTime());
-//		ret.put("submitUser", exFlow.getSubmitUser());
+		ret.put("execid", exFlow.getExecutionId());
+		ret.put("projectId", exFlow.getProjectId());
+		ret.put("project", project.getName());
+		
+		Map<String,Object> flowObj = getExecutableNodeInfo(exFlow);
+		ret.putAll(flowObj);
 	}
 
 	private void ajaxAttemptExecuteFlow(HttpServletRequest req,

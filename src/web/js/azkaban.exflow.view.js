@@ -732,20 +732,20 @@ $(function() {
 		model: graphModel
 	});
 	
-  mainSvgGraphView = new azkaban.SvgGraphView({
+	mainSvgGraphView = new azkaban.SvgGraphView({
 		el: $('#svgDiv'), 
 		model: graphModel, 
 		rightClick:	{ 
-			"node": exNodeClickCallback, 
-			"edge": exEdgeClickCallback, 
-			"graph": exGraphClickCallback 
+			"node": nodeClickCallback, 
+			"edge": edgeClickCallback, 
+			"graph": graphClickCallback 
 		}
 	});
 	
   jobsListView = new azkaban.JobListView({
 		el: $('#jobList'), 
 		model: graphModel, 
-		contextMenuCallback: exJobClickCallback
+		contextMenuCallback: jobClickCallback
 	});
 	
   flowLogView = new azkaban.FlowLogView({
@@ -767,52 +767,60 @@ $(function() {
 	var requestData = {"execid": execId, "ajax":"fetchexecflow"};
 	var successHandler = function(data) {
 		console.log("data fetched");
-		graphModel.set({data: data});
-		graphModel.set({disabled: {}});
+		processFlowData(data);
+		graphModel.set({data:data});
 		graphModel.trigger("change:graph");
 		
 		updateTime = Math.max(updateTime, data.submitTime);
 		updateTime = Math.max(updateTime, data.startTime);
 		updateTime = Math.max(updateTime, data.endTime);
-		
-		var nodeMap = {};
-		for (var i = 0; i < data.nodes.length; ++i) {
-			var node = data.nodes[i];
-			nodeMap[node.id] = node;
-			updateTime = Math.max(updateTime, node.startTime);
-			updateTime = Math.max(updateTime, node.endTime);
-		}
-		for (var i = 0; i < data.edges.length; ++i) {
-			var edge = data.edges[i];
-			 
-			if (!nodeMap[edge.target].in) {
-				nodeMap[edge.target].in = {};
-			}
-			var targetInMap = nodeMap[edge.target].in;
-			targetInMap[edge.from] = nodeMap[edge.from];
-			 
-			if (!nodeMap[edge.from].out) {
-				nodeMap[edge.from].out = {};
-			}
-			var sourceOutMap = nodeMap[edge.from].out;
-			sourceOutMap[edge.target] = nodeMap[edge.target];
-		}
-		
-		graphModel.set({nodeMap: nodeMap});
-		if (window.location.hash) {
-			var hash = window.location.hash;
-			if (hash == "#jobslist") {
-				flowTabView.handleJobslistLinkClick();
-			}
-			else if (hash == "#log") {
-				flowTabView.handleLogLinkClick();
-			}
-		}
-		else {
-			flowTabView.handleGraphLinkClick();
-		}
-		updaterFunction();
-		logUpdaterFunction();
+//		
+//		graphModel.set({data: data});
+//		graphModel.set({disabled: {}});
+//		graphModel.trigger("change:graph");
+//		
+//		updateTime = Math.max(updateTime, data.submitTime);
+//		updateTime = Math.max(updateTime, data.startTime);
+//		updateTime = Math.max(updateTime, data.endTime);
+//		
+//		var nodeMap = {};
+//		for (var i = 0; i < data.nodes.length; ++i) {
+//			var node = data.nodes[i];
+//			nodeMap[node.id] = node;
+//			updateTime = Math.max(updateTime, node.startTime);
+//			updateTime = Math.max(updateTime, node.endTime);
+//		}
+//		for (var i = 0; i < data.edges.length; ++i) {
+//			var edge = data.edges[i];
+//			 
+//			if (!nodeMap[edge.target].in) {
+//				nodeMap[edge.target].in = {};
+//			}
+//			var targetInMap = nodeMap[edge.target].in;
+//			targetInMap[edge.from] = nodeMap[edge.from];
+//			 
+//			if (!nodeMap[edge.from].out) {
+//				nodeMap[edge.from].out = {};
+//			}
+//			var sourceOutMap = nodeMap[edge.from].out;
+//			sourceOutMap[edge.target] = nodeMap[edge.target];
+//		}
+//		
+//		graphModel.set({nodeMap: nodeMap});
+//		if (window.location.hash) {
+//			var hash = window.location.hash;
+//			if (hash == "#jobslist") {
+//				flowTabView.handleJobslistLinkClick();
+//			}
+//			else if (hash == "#log") {
+//				flowTabView.handleLogLinkClick();
+//			}
+//		}
+//		else {
+//			flowTabView.handleGraphLinkClick();
+//		}
+//		updaterFunction();
+//		logUpdaterFunction();
 	};
 	ajaxCall(requestURL, requestData, successHandler);
 });

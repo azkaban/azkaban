@@ -20,10 +20,8 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import azkaban.executor.mail.DefaultMailCreator;
 import azkaban.utils.TypedMapWrapper;
@@ -73,7 +71,7 @@ public class ExecutionOptions {
 	
 	private FailureAction failureAction = FailureAction.FINISH_CURRENTLY_RUNNING;
 	
-	private Set<String> initiallyDisabledJobs = new HashSet<String>();
+	private List<Object> initiallyDisabledJobs = new ArrayList<Object>();
 	
 	public void addAllFlowParameters(Map<String,String> flowParam) {
 		flowParameters.putAll(flowParam);
@@ -175,12 +173,12 @@ public class ExecutionOptions {
 		return queueLevel;
 	}
 	
-	public List<String> getDisabledJobs() {
-		return new ArrayList<String>(initiallyDisabledJobs);
+	public List<Object> getDisabledJobs() {
+		return new ArrayList<Object>(initiallyDisabledJobs);
 	}
 	
-	public void setDisabledJobs(List<String> disabledJobs) {
-		initiallyDisabledJobs = new HashSet<String>(disabledJobs);
+	public void setDisabledJobs(List<Object> disabledJobs) {
+		initiallyDisabledJobs = disabledJobs;
 	}
 	
 	public Map<String,Object> toObject() {
@@ -223,7 +221,7 @@ public class ExecutionOptions {
 		options.concurrentOption = wrapper.getString(CONCURRENT_OPTION, options.concurrentOption);
 		
 		if (wrapper.containsKey(DISABLE)) {
-			options.initiallyDisabledJobs = new HashSet<String>(wrapper.<String>getCollection(DISABLE));
+			options.initiallyDisabledJobs = wrapper.<Object>getList(DISABLE);
 		}
 		
 		if (optionsMap.containsKey(MAIL_CREATOR)) {

@@ -33,6 +33,7 @@ azkaban.JobListView = Backbone.View.extend({
 		this.list = $(this.el).find("#joblist");
 		this.contextMenu = settings.contextMenuCallback;
 		this.listNodes = {};
+		
 	},
 	filterJobs: function(self) {
 		var filter = this.filterInput.val();
@@ -110,12 +111,14 @@ azkaban.JobListView = Backbone.View.extend({
 			var node = data.nodes[i];
 			if (node.status) {
 				var liElement = node.listElement;
-				$(liElement).removeClass(statusList.join(' '));
-				$(liElement).addClass(node.status);
+				var child = $(liElement).children("a");
+				$(child).removeClass(statusList.join(' '));
+				$(child).addClass(node.status);
+				$(child).attr("title", node.status + " (" + node.type + ")");
 			}
 			
-			if (node.flowData) {
-				this.changeStatuses(node.flowData);
+			if (node.type == "flow") {
+				this.changeStatuses(node);
 			}
 		}
 	},
@@ -126,7 +129,9 @@ azkaban.JobListView = Backbone.View.extend({
 		this.renderTree(this.list, data);
 //		
 //		this.assignInitialStatus(self);
-//		this.handleDisabledChange(self);
+		this.handleDisabledChange(self);
+		this.changeStatuses(data);
+		$("li.listElement > a").tooltip({delay: {show: 500, hide: 100}, placement: 'top'});
 	},
 	renderTree : function(el, data, prefix) {
 		var nodes = data.nodes;
@@ -174,14 +179,14 @@ azkaban.JobListView = Backbone.View.extend({
 			$(li).append(a);
 			$(ul).append(li);
 			
-			if (nodeArray[i].flowData) {
+			if (nodeArray[i].type == "flow") {
 				// Add the up down
 				var expandDiv = document.createElement("div");
 				$(expandDiv).addClass("expandarrow glyphicon glyphicon-chevron-down");
 				$(a).append(expandDiv);
 				
 				// Create subtree
-				var subul = this.renderTree(li, nodeArray[i].flowData, listNodeName + ":");
+				var subul = this.renderTree(li, nodeArray[i], listNodeName + ":");
 				$(subul).hide();
 			}
 		}
@@ -245,18 +250,21 @@ azkaban.JobListView = Backbone.View.extend({
 		else {
 			this.model.set({"selected": node});
 		}
-
 	},
 	handleDisabledChange: function(evt) {
-		var disabledMap = this.model.get("disabled");
-		var nodes = this.model.get("nodes");
-		
-		for(var id in nodes) {
-			if (disabledMap[id]) {
-				$(this.listNodes[id]).addClass("nodedisabled");
+		this.changeDisabled(this.model.get('data'));
+	},
+	changeDisabled: function(data) {
+		for (var i =0; i < data.nodes; ++i) {
+			var node = data.nodes[i];
+			if (node.disabled = true) {
+				removeClass(node.listElement, "nodedisabled");
+				if (node.type=='flow') {
+					this.changeDisabled(node);
+				}
 			}
 			else {
-				$(this.listNodes[id]).removeClass("nodedisabled");
+				addClass(node.listElement, "nodedisabled");
 			}
 		}
 	},

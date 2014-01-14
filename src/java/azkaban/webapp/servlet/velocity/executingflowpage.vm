@@ -20,19 +20,26 @@
 
 #parse("azkaban/webapp/servlet/velocity/style.vm")
 #parse("azkaban/webapp/servlet/velocity/javascript.vm")
-
 		<script type="text/javascript" src="${context}/js/moment.min.js"></script>
 		<script type="text/javascript" src="${context}/js/bootstrap-datetimepicker.min.js"></script>
-		<script type="text/javascript" src="${context}/js/azkaban.common.utils.js"></script>
+		
+		 <script type="text/javascript" src="${context}/js/jquery.svg.min.js"></script> 
+ 		<script type="text/javascript" src="${context}/js/jquery.svganim.min.js"></script> 
+		<script type="text/javascript" src="${context}/js/jquery.svgfilter.min.js"></script>
+		
+		<script type="text/javascript" src="${context}/js/svgutils.js"></script> 
 		<script type="text/javascript" src="${context}/js/azkaban.date.utils.js"></script>
-		<script type="text/javascript" src="${context}/js/azkaban.context.menu.js"></script>
 		<script type="text/javascript" src="${context}/js/azkaban.ajax.utils.js"></script>
+		<script type="text/javascript" src="${context}/js/azkaban.context.menu.js"></script>
 		<script type="text/javascript" src="${context}/js/azkaban.job.status.utils.js"></script>
 		<script type="text/javascript" src="${context}/js/azkaban.layout.js"></script>
+		<script type="text/javascript" src="${context}/js/azkaban.flow.execute.view.js"></script>
 		<script type="text/javascript" src="${context}/js/azkaban.flow.job.view.js"></script>
+		<script type="text/javascript" src="${context}/js/azkaban.svg.flow.loader.js"></script>
 		<script type="text/javascript" src="${context}/js/azkaban.svg.graph.view.js"></script>
-		<script type="text/javascript" src="${context}/js/azkaban.exflow.view.js"></script>
 		<script type="text/javascript" src="${context}/js/svgNavigate.js"></script>
+		<script type="text/javascript" src="${context}/js/azkaban.exflow.view.js"></script>
+		
 		<script type="text/javascript">
 			var contextURL = "${context}";
 			var currentTime = ${currentTime};
@@ -44,7 +51,6 @@
 			var flowId = "${flowid}";
 			var execId = "${execid}";
 		</script>
-		<link rel="stylesheet" type="text/css" href="${context}/css/bootstrap-datetimepicker.css" />
 
 		<link rel="stylesheet" type="text/css" href="${context}/css/jquery-ui-1.10.1.custom.css" />
 		<link rel="stylesheet" type="text/css" href="${context}/css/azkaban-graph.css" /> 

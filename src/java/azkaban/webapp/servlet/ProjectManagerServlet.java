@@ -553,10 +553,10 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 	private void ajaxFetchFlowGraph(Project project, HashMap<String, Object> ret, HttpServletRequest req) throws ServletException {
 		String flowId = getParam(req, "flow");
 		
-		fillFlowInfo2(project, flowId, ret);
+		fillFlowInfo(project, flowId, ret);
 	}
 	
-	private void fillFlowInfo2(Project project, String flowId, HashMap<String, Object> ret) {
+	private void fillFlowInfo(Project project, String flowId, HashMap<String, Object> ret) {
 		Flow flow = project.getFlow(flowId);
 		
 		ArrayList<Map<String, Object>> nodeList = new ArrayList<Map<String, Object>>();
@@ -566,9 +566,9 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 			nodeObj.put("type", node.getType());
 			if (node.getEmbeddedFlowId() != null) {
 				nodeObj.put("flowId", node.getEmbeddedFlowId());
-				HashMap<String, Object> embeddedNodeObj = new HashMap<String, Object>();
-				fillFlowInfo2(project, node.getEmbeddedFlowId(), embeddedNodeObj);
-				nodeObj.put("flowData", embeddedNodeObj);
+				//HashMap<String, Object> embeddedNodeObj = new HashMap<String, Object>();
+				fillFlowInfo(project, node.getEmbeddedFlowId(), nodeObj);
+				//nodeObj.put("flowData", embeddedNodeObj);
 			}
 			
 			nodeList.add(nodeObj);
@@ -629,9 +629,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 		
 		if (node.getType().equals("flow")) {
 			if (node.getEmbeddedFlowId() != null) {
-				HashMap<String, Object> flowMap = new HashMap<String, Object>();
-				fillFlowInfo2(project, node.getEmbeddedFlowId(), flowMap);
-				ret.put("flowData", flowMap);
+				fillFlowInfo(project, node.getEmbeddedFlowId(), ret);
 			}
 		}
 	}
