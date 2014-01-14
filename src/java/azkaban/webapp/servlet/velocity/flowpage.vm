@@ -23,6 +23,7 @@
 
 		<script type="text/javascript" src="${context}/js/moment.min.js"></script>
 		<script type="text/javascript" src="${context}/js/bootstrap-datetimepicker.min.js"></script>
+		<script type="text/javascript" src="${context}/js/d3.v3.min.js"></script>
 		
     <script type="text/javascript" src="${context}/js/dust-full-2.2.3.min.js"></script>
 		<script type="text/javascript" src="${context}/js/flowsummary.js"></script>
@@ -33,6 +34,7 @@
 		<script type="text/javascript" src="${context}/js/azkaban/util/ajax.js"></script>
 		<script type="text/javascript" src="${context}/js/azkaban/util/common.js"></script>
 		<script type="text/javascript" src="${context}/js/azkaban/util/layout.js"></script>
+		<script type="text/javascript" src="${context}/js/azkaban/view/time-graph.js"></script>
 		<script type="text/javascript" src="${context}/js/azkaban/view/flow.js"></script>
 		<script type="text/javascript" src="${context}/js/azkaban/view/flow-stats.js"></script>
 		<script type="text/javascript" src="${context}/js/azkaban/view/flow-job.js"></script>
@@ -50,6 +52,24 @@
 			var flowId = "${flowid}";
 			var execId = null;
 		</script>
+		<style>
+			.axis path,
+			.axis line {
+			  fill: none;
+			  stroke: #000;
+			  shape-rendering: crispEdges;
+			}
+			
+			.x.axis path {
+			  display: none;
+			}
+			
+			.line {
+			  fill: none;
+			  stroke: steelblue;
+			  stroke-width: 1.5px;
+			}
+		</style>
 		<link rel="stylesheet" type="text/css" href="${context}/css/azkaban-svg.css" />
 		<link rel="stylesheet" type="text/css" href="${context}/css/bootstrap-datetimepicker.css" />
 	</head>
@@ -109,6 +129,10 @@
     <div class="container-full" id="executionsView">
 			<div class="row">
 				<div class="col-xs-12">
+					<div class="well well-clear well-sm">
+            <div id="timeGraph"></div>
+          </div>
+
 					<table class="table table-striped table-bordered table-condensed table-hover" id="execTable">
 						<thead>
 							<tr>

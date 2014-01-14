@@ -431,6 +431,8 @@ azkaban.SummaryModel = Backbone.Model.extend({});
 var flowStatsView;
 var flowStatsModel;
 
+var executionsTimeGraphView;
+
 var mainSvgGraphView;
 
 $(function() {
@@ -474,6 +476,12 @@ $(function() {
 		el: $('#jobList'), 
 		model: graphModel, 
 		contextMenuCallback: exJobClickCallback
+	});
+	
+  executionsTimeGraphView = new azkaban.TimeGraphView({
+		el: $('#timeGraph'), 
+		model: executionModel,
+    modelField: 'executions'
 	});
 	
 	var requestURL = contextURL + "/manager";
