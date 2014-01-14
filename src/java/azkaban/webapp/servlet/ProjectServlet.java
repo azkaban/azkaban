@@ -92,7 +92,7 @@ public class ProjectServlet extends LoginAbstractAzkabanServlet {
 			page.add("projects", projects);
 		}
 		else if (hasParam(req, "group")) {
-			List<Project> projects = manager.getUserProjects(user);
+			List<Project> projects = manager.getGroupProjects(user);
 			page.add("viewProjects", "group");
 			page.add("projects", projects);
 		}
