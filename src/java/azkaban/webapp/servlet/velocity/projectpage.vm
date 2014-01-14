@@ -25,9 +25,9 @@
 		<link rel="stylesheet" type="text/css" href="${context}/css/azkaban-svg.css" />
 		<script type="text/javascript" src="${context}/js/moment.min.js"></script>
 		<script type="text/javascript" src="${context}/js/bootstrap-datetimepicker.min.js"></script>
-		<script type="text/javascript" src="${context}/js/azkaban.ajax.utils.js"></script>
-		<script type="text/javascript" src="${context}/js/azkaban.project.view.js"></script>
-		<script type="text/javascript" src="${context}/js/azkaban.projectmodals.view.js"></script>
+		<script type="text/javascript" src="${context}/js/azkaban/util/ajax.js"></script>
+		<script type="text/javascript" src="${context}/js/azkaban/view/project.js"></script>
+		<script type="text/javascript" src="${context}/js/azkaban/view/project-modals.js"></script>
 		<script type="text/javascript">
 			var contextURL = "${context}";
 			var currentTime = ${currentTime};
@@ -85,17 +85,17 @@
             </div>
 		#end
 	#else
-            <div class="alert alert-info">
+            <div class="alert alert-default">
               <h4>No Flows</h4>
               <p>No flows have been uploaded to this project yet.</p>
             </div>
 	#end
           </div><!-- /#flow-tabs -->
-				</div><!-- /col-lg-8 -->
+				</div><!-- /col-xs-8 -->
 
 				<div class="col-xs-6 col-sm-3 sidebar-offcanvas">
 	#parse ("azkaban/webapp/servlet/velocity/projectsidebar.vm")
-				</div><!-- /col-lg-4 -->
+				</div><!-- /col-xs-4 -->
 			</div><!-- /row -->
 
 	#parse ("azkaban/webapp/servlet/velocity/projectmodals.vm")

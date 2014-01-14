@@ -17,6 +17,7 @@
 package azkaban.webapp.servlet;
 
 import java.io.IOException;
+import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -44,6 +45,7 @@ import azkaban.user.Permission;
 import azkaban.user.User;
 import azkaban.user.Permission.Type;
 import azkaban.utils.FileIOUtils.LogData;
+import azkaban.utils.JSONUtils;
 import azkaban.webapp.AzkabanWebServer;
 import azkaban.webapp.session.Session;
 
@@ -54,6 +56,8 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 	private ScheduleManager scheduleManager;
 	private ExecutorVelocityHelper velocityHelper;
 
+  private String statsDir;
+
 	@Override
 	public void init(ServletConfig config) throws ServletException {
 		super.init(config);
@@ -62,6 +66,7 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 		executorManager = server.getExecutorManager();
 		scheduleManager = server.getScheduleManager();
 		velocityHelper = new ExecutorVelocityHelper();
+    statsDir = server.getServerProps().getString("azkaban.stats.dir");
 	}
 
 	@Override
@@ -127,6 +132,9 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 				else if (ajaxName.equals("fetchExecJobLogs")) {
 					ajaxFetchJobLogs(req, resp, ret, session.getUser(), exFlow);
 				}
+        else if (ajaxName.equals("fetchExecJobStats")) {
+          ajaxFetchJobStats(req, resp, ret, session.getUser(), exFlow);
+        }
 				else if (ajaxName.equals("retryFailedJobs")) {
 					ajaxRestartFailed(req, resp, ret, session.getUser(), exFlow);
 				}
@@ -447,6 +455,42 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 		}
 	}
 	
+  private void ajaxFetchJobStats(
+      HttpServletRequest req, 
+      HttpServletResponse resp, 
+      HashMap<String, Object> ret, 
+      User user, 
+      ExecutableFlow exFlow) throws ServletException {
+		Project project = getProjectAjaxByPermission(
+        ret, exFlow.getProjectId(), user, Type.READ);
+		if (project == null) {
+			return;
+		}
+		
+		String jobId = this.getParam(req, "jobid");
+		resp.setCharacterEncoding("utf-8");
+    String statsFilePath = null;
+		try {
+			ExecutableNode node = exFlow.getExecutableNode(jobId);
+			if (node == null) {
+				ret.put("error", "Job " + jobId + " doesn't exist in " + 
+            exFlow.getExecutionId());
+				return;
+			}
+	
+      statsFilePath = statsDir + "/" + exFlow.getExecutionId() + "-" + 
+          jobId + "-stats.json";
+      File statsFile = new File(statsFilePath);
+      List<Object> jsonObj = 
+          (ArrayList<Object>) JSONUtils.parseJSONFromFile(statsFile);
+      ret.put("jobStats", jsonObj);
+    }
+    catch (IOException e) {
+      ret.put("error", "Cannot open stats file: " + statsFilePath);
+      return;
+		}
+  }
+
 	private void ajaxFetchFlowInfo(HttpServletRequest req, HttpServletResponse resp, HashMap<String, Object> ret, User user, String projectName, String flowId) throws ServletException {
 		Project project = getProjectAjaxByPermission(ret, projectName, user, Type.READ);
 		if (project == null) {

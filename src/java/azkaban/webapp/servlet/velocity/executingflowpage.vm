@@ -22,17 +22,23 @@
 #parse("azkaban/webapp/servlet/velocity/javascript.vm")
 
 		<script type="text/javascript" src="${context}/js/moment.min.js"></script>
-		<script type="text/javascript" src="${context}/js/bootstrap-datetimepicker.min.js"></script>
-		<script type="text/javascript" src="${context}/js/azkaban.common.utils.js"></script>
-		<script type="text/javascript" src="${context}/js/azkaban.date.utils.js"></script>
-		<script type="text/javascript" src="${context}/js/azkaban.context.menu.js"></script>
-		<script type="text/javascript" src="${context}/js/azkaban.ajax.utils.js"></script>
-		<script type="text/javascript" src="${context}/js/azkaban.job.status.utils.js"></script>
-		<script type="text/javascript" src="${context}/js/azkaban.layout.js"></script>
-		<script type="text/javascript" src="${context}/js/azkaban.exflow.view.js"></script>
-		<script type="text/javascript" src="${context}/js/azkaban.flow.job.view.js"></script>
-		<script type="text/javascript" src="${context}/js/azkaban.svg.graph.view.js"></script>
-		<script type="text/javascript" src="${context}/js/svgNavigate.js"></script>
+    <script type="text/javascript" src="${context}/js/bootstrap-datetimepicker.min.js"></script>
+    
+    <script type="text/javascript" src="${context}/js/dust-full-2.2.3.min.js"></script>
+		<script type="text/javascript" src="${context}/js/flowstats.js"></script>
+		<script type="text/javascript" src="${context}/js/flowstats-no-data.js"></script>
+
+		<script type="text/javascript" src="${context}/js/azkaban/util/common.js"></script>
+		<script type="text/javascript" src="${context}/js/azkaban/util/date.js"></script>
+		<script type="text/javascript" src="${context}/js/azkaban/view/context-menu.js"></script>
+		<script type="text/javascript" src="${context}/js/azkaban/util/ajax.js"></script>
+		<script type="text/javascript" src="${context}/js/azkaban/util/job-status.js"></script>
+		<script type="text/javascript" src="${context}/js/azkaban/util/layout.js"></script>
+		<script type="text/javascript" src="${context}/js/azkaban/view/exflow.js"></script>
+		<script type="text/javascript" src="${context}/js/azkaban/view/flow-stats.js"></script>
+		<script type="text/javascript" src="${context}/js/azkaban/view/flow-job.js"></script>
+		<script type="text/javascript" src="${context}/js/azkaban/view/svg-graph.js"></script>
+		<script type="text/javascript" src="${context}/js/azkaban/util/svg-navigate.js"></script>
 		<script type="text/javascript">
 			var contextURL = "${context}";
 			var currentTime = ${currentTime};
@@ -62,20 +68,20 @@
 		<div class="az-page-header">
 			<div class="container-full" id="flow-status">
         <div class="row">
-          <div class="col-lg-7">
+          <div class="header-title">
             <h1>
               <a href="${context}/executor?execid=${execid}">
                 Flow Execution <small>$execid <span id="flowStatus">-</span></small>
               </a>
             </h1>
           </div>
-          <div class="col-lg-5">
+          <div class="header-control">
             <div class="az-exflow-stats">
-              <div class="col-md-5">
+              <div class="col-xs-5">
                 <p><strong>Submit User</strong> <span id="submitUser">-</span></p>
                 <p><strong>Duration</strong> <span id="duration">-</span></p>
               </div>
-              <div class="col-md-7">
+              <div class="col-xs-7">
                 <p><strong>Start Time</strong> <span id="startTime">-</span></p>
                 <p><strong>End Time</strong> <span id="endTime">-</span></p>
               </div>
@@ -104,6 +110,7 @@
 				<li id="graphViewLink"><a href="#graph">Graph</a></li>
 				<li id="jobslistViewLink"><a href="#jobslist">Job List</a></li>
 				<li id="flowLogViewLink"><a href="#log">Flow Log</a></li>
+				<li id="statsViewLink"><a href="#stats">Stats</a></li>
 				<li class="nav-button pull-right"><button type="button" id="pausebtn" class="btn btn-primary">Pause</button></li>
 				<li class="nav-button pull-right"><button type="button" id="resumebtn" class="btn btn-primary">Resume</button></li>
 				<li class="nav-button pull-right"><button type="button" id="cancelbtn" class="btn btn-danger">Cancel</button></li>
@@ -120,7 +127,7 @@
 
     <div class="container-full" id="jobListView">
 			<div class="row">
-				<div class="col-lg-12">
+				<div class="col-xs-12">
 					<table class="table table-striped table-bordered table-condensed table-hover executions-table">
 						<thead>
 							<tr>
@@ -136,7 +143,7 @@
 						<tbody id="executableBody">
 						</tbody>
 					</table>
-        </div><!-- /.col-lg-12 -->
+        </div><!-- /.col-xs-12 -->
       </div><!-- /.row -->
     </div><!-- /.container-full -->
 
@@ -144,7 +151,7 @@
 
     <div class="container-full container-fill" id="flowLogView">
 			<div class="row">
-				<div class="col-lg-12 col-content">
+				<div class="col-xs-12 col-content">
           <div class="log-viewer">
             <div class="panel panel-default">
               <div class="panel-heading">
@@ -158,9 +165,24 @@
               </div>
             </div><!-- /.panel -->
           </div><!-- /.log-viewer -->
-        </div><!-- /.col-lg-12 -->
+        </div><!-- /.col-xs-12 -->
       </div><!-- /.row -->
-    </div><!-- /. -->
+    </div><!-- /.container-full -->
+
+  ## Stats view.
+
+    <div class="container-full" id="statsView">
+      <div id="flow-stats-container">
+        <div class="row">
+          <div class="col-lg-12">
+            <div class="alert alert-default">
+              <h4>No stats available</h4>
+              <p>Stats for this flow execution are not available.</p>
+            </div>
+          </div>
+        </div>
+			</div><!-- /.row -->
+    </div><!-- /.container-fill -->
 	
 	## Error message message dialog.
 

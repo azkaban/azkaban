@@ -16,17 +16,22 @@
 
 $.namespace('azkaban');
 
-var jobHistoryView;
-azkaban.JobHistoryView = Backbone.View.extend({
+azkaban.TimeGraphView = Backbone.View.extend({
 	events: {
 	},
 	
 	initialize: function(settings) {
-		this.render();
+		this.model.bind('render', this.render, this);
+		this.model.bind('change:page', this.render, this);
+    this.modelField = settings.modelField;
+    this.render();
 	},
 	
 	render: function(self) {
-		var data = this.model.get("data");
+		var data = this.model.get(this.modelField);
+    if (data == null) {
+      return;
+    }
 	
 		var margin = {
 			top: 20, 
@@ -117,20 +122,4 @@ azkaban.JobHistoryView = Backbone.View.extend({
 			return d.execId + ":" + d.flowId + " ran in " + getDuration(d.startTime, d.endTime);
 		});
 	}
-});
-
-var dataModel;
-azkaban.DataModel = Backbone.Model.extend({});
-
-$(function() {
-	var selected;
-	var series = dataSeries;
-	dataModel = new azkaban.DataModel();
-	dataModel.set({
-		"data": series
-	});
-	jobDurationView = new azkaban.JobHistoryView({
-		el: $('#timeGraph'), 
-		model: dataModel
-	});
 });
