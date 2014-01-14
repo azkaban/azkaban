@@ -22,8 +22,9 @@
 #parse("azkaban/webapp/servlet/velocity/javascript.vm")
 
 		<script type="text/javascript" src="${context}/js/moment.min.js"></script>
-		<script type="text/javascript" src="${context}/js/bootstrap-datetimepicker.min.js"></script>
-		<script type="text/javascript" src="${context}/js/d3.v3.min.js"></script>
+    <script type="text/javascript" src="${context}/js/bootstrap-datetimepicker.min.js"></script>
+    <script type="text/javascript" src="${context}/js/raphael.min.js"></script>
+    <script type="text/javascript" src="${context}/js/morris.min.js"></script>
 		
     <script type="text/javascript" src="${context}/js/dust-full-2.2.3.min.js"></script>
 		<script type="text/javascript" src="${context}/js/flowsummary.js"></script>
