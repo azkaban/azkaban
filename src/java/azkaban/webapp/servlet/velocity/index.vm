@@ -42,16 +42,12 @@
       <div class="container-full">
         <div class="row">
           <div class="header-title">
-#if ($allProjects)
-            <h1><a href="${context}/index">All Projects</a></h1>
-#else
-            <h1><a href="${context}/index">My Projects</a></h1>
-#end
+            <h1><a href="${context}/index">Projects</a></h1>
           </div>
           <div class="header-control">
             <form id="search-form" method="get" class="form-inline az-page-header-form" role="form">
               <input type="hidden" name="doaction" value="search">
-#if ($allProjects)
+#if ($viewProjects == 'all')
               <input type="hidden" name="all" value="true">				
 #end
               <div class="form-group col-xs-9">
@@ -83,8 +79,15 @@
 
 ## Table of projects.
 
-      <div class="row">
-        <div class="col-xs-12">
+			<div class="row row-offcanvas row-offcanvas-left">
+        <div class="col-xs-6 col-sm-3 sidebar-offcanvas graph-sidebar">
+          <ul class="nav nav-pills nav-stacked">
+            <li#if ($viewProjects == 'personal') class="active"#end><a href="${context}/index">Personal</a></li>
+            <li#if ($viewProjects == 'group') class="active"#end><a href="${context}/index?group">Group</a></li>
+            <li#if ($viewProjects == 'all') class="active"#end><a href="${context}/index?all">All</a></li>
+          </ul>
+        </div>
+				<div class="col-xs-12 col-sm-9 col-content">
 #if (!$projects.isEmpty())
           <ul id="project-list">
 	#foreach ($project in $projects)
