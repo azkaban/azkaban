@@ -39,8 +39,10 @@ import azkaban.webapp.session.Session;
  * The main page
  */
 public class ProjectServlet extends LoginAbstractAzkabanServlet {
-	private static final Logger logger = Logger.getLogger(ProjectServlet.class.getName());
-	private static final String LOCKDOWN_CREATE_PROJECTS_KEY = "lockdown.create.projects";
+	private static final Logger logger = 
+			Logger.getLogger(ProjectServlet.class.getName());
+	private static final String LOCKDOWN_CREATE_PROJECTS_KEY = 
+			"lockdown.create.projects";
 	private static final long serialVersionUID = -1;
 
 	private UserManager userManager;
@@ -50,24 +52,23 @@ public class ProjectServlet extends LoginAbstractAzkabanServlet {
 	@Override
 	public void init(ServletConfig config) throws ServletException {
 		super.init(config);
-		
 		AzkabanWebServer server = (AzkabanWebServer)getApplication();
 
 		userManager = server.getUserManager();
-		lockdownCreateProjects = server.getServerProps().getBoolean(LOCKDOWN_CREATE_PROJECTS_KEY, false);
+		lockdownCreateProjects = server.getServerProps().getBoolean(
+				LOCKDOWN_CREATE_PROJECTS_KEY, false);
 		if (lockdownCreateProjects) {
 			logger.info("Creation of projects is locked down");
 		}
 	}
 	
 	@Override
-	protected void handleGet(HttpServletRequest req, HttpServletResponse resp, Session session) throws ServletException, IOException {
-		
-		if(hasParam(req, "doaction")) {
-			if(getParam(req, "doaction").equals("search")) {
+	protected void handleGet(HttpServletRequest req, HttpServletResponse resp, 
+			Session session) throws ServletException, IOException {
+		if (hasParam(req, "doaction")) {
+			if (getParam(req, "doaction").equals("search")) {
 				String searchTerm = getParam(req, "searchterm");
-				
-				if(!searchTerm.equals("") && !searchTerm.equals(".*")) {
+				if (!searchTerm.equals("") && !searchTerm.equals(".*")) {
 					handleFilter(req, resp, session, searchTerm);
 					return;
 				}
@@ -76,8 +77,10 @@ public class ProjectServlet extends LoginAbstractAzkabanServlet {
 		
 		User user = session.getUser();
 
-		ProjectManager manager = ((AzkabanWebServer)getApplication()).getProjectManager();
-		Page page = newPage(req, resp, session, "azkaban/webapp/servlet/velocity/index.vm");
+		ProjectManager manager = 
+				((AzkabanWebServer)getApplication()).getProjectManager();
+		Page page = newPage(
+				req, resp, session, "azkaban/webapp/servlet/velocity/index.vm");
 		
 		if (lockdownCreateProjects && !hasPermissionToCreateProject(user)) {
 			page.add("hideCreateProject", true);
@@ -88,12 +91,12 @@ public class ProjectServlet extends LoginAbstractAzkabanServlet {
 			page.add("viewProjects", "all");
 			page.add("projects", projects);
 		}
-    else if (hasParam(req, "group")) {
+		else if (hasParam(req, "group")) {
 			List<Project> projects = manager.getUserProjects(user);
 			page.add("viewProjects", "group");
 			page.add("projects", projects);
-    }
-    else {
+		}
+		else {
 			List<Project> projects = manager.getUserProjects(user);
 			page.add("viewProjects", "personal");
 			page.add("projects", projects);
@@ -102,10 +105,13 @@ public class ProjectServlet extends LoginAbstractAzkabanServlet {
 		page.render();
 	}
 	
-	private void handleFilter(HttpServletRequest req, HttpServletResponse resp, Session session, String searchTerm) {
+	private void handleFilter(HttpServletRequest req, HttpServletResponse resp, 
+			Session session, String searchTerm) {
 		User user = session.getUser();
-		ProjectManager manager = ((AzkabanWebServer)getApplication()).getProjectManager();
-		Page page = newPage(req, resp, session, "azkaban/webapp/servlet/velocity/index.vm");
+		ProjectManager manager = 
+				((AzkabanWebServer)getApplication()).getProjectManager();
+		Page page = newPage(
+				req, resp, session, "azkaban/webapp/servlet/velocity/index.vm");
 		if (hasParam(req, "all")) {
 			//do nothing special if one asks for 'ALL' projects
 			List<Project> projects = manager.getProjectsByRegex(searchTerm);
@@ -126,14 +132,14 @@ public class ProjectServlet extends LoginAbstractAzkabanServlet {
 	protected void handlePost(HttpServletRequest req, HttpServletResponse resp,
 			Session session) throws ServletException, IOException {
 		// TODO Auto-generated method stub
-		
 	}
 
 	private boolean hasPermissionToCreateProject(User user) {
-		for(String roleName: user.getRoles()) {
+		for (String roleName: user.getRoles()) {
 			Role role = userManager.getRole(roleName);
 			Permission perm = role.getPermission();
-			if (perm.isPermissionSet(Permission.Type.ADMIN) || perm.isPermissionSet(Permission.Type.CREATEPROJECTS)) {
+			if (perm.isPermissionSet(Permission.Type.ADMIN) || 
+					perm.isPermissionSet(Permission.Type.CREATEPROJECTS)) {
 				return true;
 			}
 		}
