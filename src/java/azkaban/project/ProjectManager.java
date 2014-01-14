@@ -114,6 +114,16 @@ public class ProjectManager {
 		return array;
 	}
 
+  public List<Project> getGroupProjects(User user) {
+    List<Project> array = new ArrayList<Project>();
+    for (Project project : projectsById.values()) {
+      if (project.hasGroupPermission(user, Type.READ)) {
+        array.add(project);
+      }
+    }
+    return array;
+  }
+
 	public List<Project> getUserProjectsByRegex(User user, String regexPattern) {
 		List<Project> array = new ArrayList<Project>();
 		Pattern pattern;
