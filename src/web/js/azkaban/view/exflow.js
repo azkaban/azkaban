@@ -350,66 +350,66 @@ azkaban.ExecutionListView = Backbone.View.extend({
 			var node = nodes[i];
 			if (node.startTime < 0) {
 				continue;
-		}
-		var nodeId = node.id.replace(".", "\\\\.");
-		var row = document.getElementById(nodeId + "-row");
-		if (!row) {
-			this.addNodeRow(node);
-		}
-		
-		var div = $("#" + nodeId + "-status-div");
-		div.text(statusStringMap[node.status]);
-		$(div).attr("class", "status " + node.status);
-
-		var startdate = new Date(node.startTime);
-		$("#" + nodeId + "-start").text(getDateFormat(startdate));
+			}
+			var nodeId = node.id.replace(".", "\\\\.");
+			var row = document.getElementById(nodeId + "-row");
+			if (!row) {
+				this.addNodeRow(node);
+			}
+			
+			var div = $("#" + nodeId + "-status-div");
+			div.text(statusStringMap[node.status]);
+			$(div).attr("class", "status " + node.status);
+	
+			var startdate = new Date(node.startTime);
+			$("#" + nodeId + "-start").text(getDateFormat(startdate));
+	  
+			var endTime = node.endTime;
+			if (node.endTime == -1) {
+				$("#" + nodeId + "-end").text("-");
+				endTime = node.startTime + 1;
+			}
+			else {
+				var enddate = new Date(node.endTime);
+				$("#" + nodeId + "-end").text(getDateFormat(enddate));
+			}
+	  
+			var progressBar = $("#" + nodeId + "-progressbar");
+			if (!progressBar.hasClass(node.status)) {
+				for (var j = 0; j < statusList.length; ++j) {
+					var status = statusList[j];
+					progressBar.removeClass(status);
+				}
+				progressBar.addClass(node.status);
+			}
   
-		var endTime = node.endTime;
-		if (node.endTime == -1) {
-			$("#" + nodeId + "-end").text("-");
-			endTime = node.startTime + 1;
-		}
-		else {
-			var enddate = new Date(node.endTime);
-			$("#" + nodeId + "-end").text(getDateFormat(enddate));
-		}
+			// Create past attempts
+			if (node.pastAttempts) {
+				for (var a = 0; a < node.pastAttempts.length; ++a) {
+					var attemptBarId = nodeId + "-progressbar-" + a;
+					var attempt = node.pastAttempts[a];
+					if ($("#" + attemptBarId).length == 0) {
+						var attemptBox = document.createElement("div");
+						$(attemptBox).attr("id", attemptBarId);
+						$(attemptBox).addClass("flow-progress-bar");
+						$(attemptBox).addClass("attempt");
+						$(attemptBox).addClass(attempt.status);
+						$(attemptBox).css("float","left");
+						$(attemptBox).bind("contextmenu", attemptRightClick);
+						$(progressBar).before(attemptBox);
+						attemptBox.job = nodeId;
+						attemptBox.attempt = a;
+					}
+				}
+			}
   
-		var progressBar = $("#" + nodeId + "-progressbar");
-		if (!progressBar.hasClass(node.status)) {
-			for (var j = 0; j < statusList.length; ++j) {
-				var status = statusList[j];
-				progressBar.removeClass(status);
-		}
-		progressBar.addClass(node.status);
-	}
-  
-  // Create past attempts
-  if (node.pastAttempts) {
-    for (var a = 0; a < node.pastAttempts.length; ++a) {
-      var attemptBarId = nodeId + "-progressbar-" + a;
-      var attempt = node.pastAttempts[a];
-      if ($("#" + attemptBarId).length == 0) {
-        var attemptBox = document.createElement("div");
-        $(attemptBox).attr("id", attemptBarId);
-        $(attemptBox).addClass("flow-progress-bar");
-        $(attemptBox).addClass("attempt");
-        $(attemptBox).addClass(attempt.status);
-        $(attemptBox).css("float","left");
-        $(attemptBox).bind("contextmenu", attemptRightClick);
-        $(progressBar).before(attemptBox);
-        attemptBox.job = nodeId;
-        attemptBox.attempt = a;
-      }
-    }
-  }
-  
-  if (node.endTime == -1) {
-    //$("#" + node.id + "-elapse").text("0 sec");
-    $("#" + nodeId + "-elapse").text(getDuration(node.startTime, (new Date()).getTime()));					
-  }
-  else {
-    $("#" + nodeId + "-elapse").text(getDuration(node.startTime, node.endTime));
-  }
+			if (node.endTime == -1) {
+				//$("#" + node.id + "-elapse").text("0 sec");
+				$("#" + nodeId + "-elapse").text(getDuration(node.startTime, (new Date()).getTime()));					
+			}
+			else {
+				$("#" + nodeId + "-elapse").text(getDuration(node.startTime, node.endTime));
+			}
 		}
 	},
 	
