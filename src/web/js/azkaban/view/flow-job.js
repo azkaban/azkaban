@@ -97,13 +97,7 @@ azkaban.JobListView = Backbone.View.extend({
 	handleStatusUpdate: function(evt) {
 		var updateData = this.model.get("update");
 		if (updateData.nodes) {
-			for (var i = 0; i < updateData.nodes.length; ++i) {
-				var updateNode = updateData.nodes[i];
-				var job = this.listNodes[updateNode.id];
-				$(job).removeClass();
-				$(job).addClass("list-group-item");
-				$(job).addClass(updateNode.status);
-			}
+			this.changeStatuses(updateData);
 		}
 	},
 	changeStatuses: function(data) {
