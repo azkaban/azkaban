@@ -95,24 +95,25 @@ azkaban.JobListView = Backbone.View.extend({
 		}
 	},
 	handleStatusUpdate: function(evt) {
-		var updateData = this.model.get("update");
-		if (updateData.nodes) {
-			this.changeStatuses(updateData);
+		var data = this.model.get("data");
+		var lastUpdateTime = this.model.get("lastUpdateTime");
+		if (data.nodes) {
+			this.changeStatuses(data, lastUpdateTime);
 		}
 	},
-	changeStatuses: function(data) {
+	changeStatuses: function(data, lastUpdateTime) {
 		for (var i = 0; i < data.nodes.length; ++i) {
 			var node = data.nodes[i];
-			if (node.status) {
+			if (lastUpdateTime <= 0 || lastUpdateTime < node.updateTime) {
 				var liElement = node.listElement;
 				var child = $(liElement).children("a");
 				$(child).removeClass(statusList.join(' '));
 				$(child).addClass(node.status);
-				$(child).attr("title", node.status + " (" + node.type + ")");
+				$(child).attr("title", node.status + " (" + node.type + ")").tooltip('fixTitle');
 			}
 			
-			if (node.type == "flow") {
-				this.changeStatuses(node);
+			if (node.nodes) {
+				this.changeStatuses(node, lastUpdateTime);
 			}
 		}
 	},
@@ -124,7 +125,7 @@ azkaban.JobListView = Backbone.View.extend({
 //		
 //		this.assignInitialStatus(self);
 		this.handleDisabledChange(self);
-		this.changeStatuses(data);
+		this.changeStatuses(data, 0);
 		$("li.listElement > a").tooltip({delay: {show: 500, hide: 100}, placement: 'top'});
 	},
 	renderTree : function(el, data, prefix) {
