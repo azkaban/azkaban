@@ -714,6 +714,10 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 		}
 		
 		Map<String, Object> map = getExecutableFlowUpdateInfo(exFlow, lastUpdateTime);
+		map.put("status", exFlow.getStatus());
+		map.put("startTime", exFlow.getStartTime());
+		map.put("endTime",  exFlow.getEndTime());
+		map.put("updateTime", exFlow.getUpdateTime());
 		ret.putAll(map);
 	}
 

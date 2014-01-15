@@ -677,14 +677,18 @@ var updateStatus = function() {
 		"lastUpdateTime": updateTime
 	};
 
+	graphModel.set({"lastUpdateTime":updateTime})
+	
 	var successHandler = function(data) {
 		console.log("data updated");
-		updateTime = data.updateTime;
-		
-		updateGraph(oldData, data);
-
-		graphModel.set({"update": data});
-		graphModel.trigger("change:update");
+		if (data.updateTime) {
+			updateTime = data.updateTime;
+			
+			updateGraph(oldData, data);
+	
+			graphModel.set({"update": data});
+			graphModel.trigger("change:update");
+		}
 	};
 	ajaxCall(requestURL, requestData, successHandler);
 }
@@ -893,9 +897,9 @@ $(function() {
 			else if (hash == "#log") {
 				flowTabView.handleLogLinkClick();
 			}
-      else if (hash == "#stats") {
-        flowTabView.handleStatsLinkClick();
-      }
+			else if (hash == "#stats") {
+				flowTabView.handleStatsLinkClick();
+			}
 		}
 		else {
 			flowTabView.handleGraphLinkClick();
