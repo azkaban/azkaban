@@ -206,11 +206,11 @@ azkaban.JobTabView = Backbone.View.extend({
 
 	initialize: function(settings) {
 		var selectedView = settings.selectedView;
-		if (selectedView == 'joblog') {
-			this.handleJobLogViewLinkClick();
+		if (selectedView == 'summary') {
+			this.handleJobSummaryViewLinkClick();
 		}
 		else {
-			this.handleJobSummaryViewLinkClick();
+			this.handleJobLogViewLinkClick();
 		}
 	},
 
@@ -266,10 +266,10 @@ $(function() {
 
 	if (window.location.hash) {
 		var hash = window.location.hash;
-		if (hash == '#joblog') {
+		if (hash == '#logs') {
 			jobTabView.handleJobLogViewLinkClick();
 		}
-		else if (hash == '#jobsummary') {
+		else if (hash == '#summary') {
 			jobTabView.handleJobSummaryViewLinkClick();
 		}
 	}

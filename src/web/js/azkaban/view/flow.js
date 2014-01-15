@@ -291,7 +291,6 @@ azkaban.SummaryView = Backbone.View.extend({
 		
 		this.fetchDetails();
 		this.fetchSchedule();
-		this.fetchLastRun();
 		this.model.trigger('render');
 	},
 
@@ -314,7 +313,8 @@ azkaban.SummaryView = Backbone.View.extend({
 		};
 		$.get(requestURL, requestData, successHandler, 'json');
 	},
-	fetchSchedule: function() {
+	
+  fetchSchedule: function() {
 		var requestURL = contextURL + "/schedule"
 		var requestData = {
 			'ajax': 'fetchSchedule',
