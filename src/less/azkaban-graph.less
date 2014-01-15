@@ -1,31 +1,36 @@
-.nodebox text {
-	pointer-events: none;
-}
+.nodebox {
+  text {
+    pointer-events: none;
+  }
 
-.nodebox image {
-	pointer-events: none;
+  image {
+    pointer-events: none;
+  }
+
+  > .border:hover {
+    fill-opacity: 0.7;
+  }
+
+  > .flowborder:hover {
+    stroke-opacity: 0.7;
+  }
 }
 
 /* Nodes */
-.node:hover {
-	cursor: pointer;
-}
+.node {
+  &:hover {
+    cursor: pointer;
+  }
 
-.node.selected > .nodebox .border {
-	stroke-width: 3;
-	stroke: #39b3d7;
-}
+  &.selected > .nodebox .border {
+    stroke-width: 3;
+    stroke: #39b3d7;
+  }
 
-.node.selected > .nodebox .flowborder {
-	stroke-width: 3;
-	fill: #D9EDFF;
-}
-.nodebox > .border:hover {
-	fill-opacity: 0.7;
-}
-
-.nodebox > .flowborder:hover {
-	stroke-opacity: 0.7;
+  &.selected > .nodebox .flowborder {
+    stroke-width: 3;
+    fill: #D9EDFF;
+  }
 }
 
 .border {
@@ -123,10 +128,10 @@
 .edge {
 	stroke: #CCC;
 	stroke-width: 1.5;
-}
 
-.edge:hover {
-	stroke: #009FC9;
-	stroke-width: 1.5;
+  &:hover {
+    stroke: #009FC9;
+    stroke-width: 1.5;
+  }
 }
 
