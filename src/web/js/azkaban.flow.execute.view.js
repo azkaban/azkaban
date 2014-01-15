@@ -175,11 +175,12 @@ azkaban.FlowExecuteDialogView = Backbone.View.extend({
 		
 		// ExecId is optional
 		var execId = data.execid;
-	
+		var exgraph = data.exgraph;
+		
 		var loadedId = executableGraphModel.get("flowId");
-		this.loadGraph(projectName, flowId);
+		this.loadGraph(projectName, flowId, exgraph);
 		this.loadFlowInfo(projectName, flowId, execId);
-
+		
 		this.projectName = projectName;
 		this.flowId = flowId;
 		if (jobId) {
@@ -238,7 +239,7 @@ azkaban.FlowExecuteDialogView = Backbone.View.extend({
 		fetchFlowInfo(this.model, projectName, flowId, execId);
 	},
 	
-	loadGraph: function(projectName, flowId) {
+	loadGraph: function(projectName, flowId, exgraph) {
 		console.log("Loading flow " + flowId);
 		var requestURL = contextURL + "/manager";
 		
@@ -249,26 +250,47 @@ azkaban.FlowExecuteDialogView = Backbone.View.extend({
 				"ajax": "fetchflowgraph", 
 				"flow": flowId
 			};
+		var self = this;
 		var successHandler = function(data) {
 			console.log("data fetched");
 			processFlowData(data);
-			disableFinishedJobs(data);
 			graphModel.set({data:data});
 			
+			if (exgraph) {
+				self.assignInitialStatus(data, exgraph);
+			}
+			
+			// Auto disable jobs that are finished.
+			disableFinishedJobs(data);
 			executingSvgGraphView = new azkaban.SvgGraphView({
 				el: $('#flow-executing-graph'), 
 				model: graphModel,
 				render: true,
 				rightClick: { 
-					"node": exNodeClickCallback,
-					"edge": exEdgeClickCallback, 
-					"graph": exGraphClickCallback 
-				}
+					"node": expanelNodeClickCallback,
+					"edge": expanelEdgeClickCallback, 
+					"graph": expanelGraphClickCallback 
+				},
+				tooltipcontainer: "#svg-div-custom"
 			});
 		};
 		$.get(requestURL, requestData, successHandler, "json");
 	},
-	
+	assignInitialStatus: function(data, statusData) {
+		// Copies statuses over from the previous execution if it exists.
+		var statusNodeMap = statusData.nodeMap;
+		var nodes = data.nodes;
+		for(var i=0; i<nodes.length; ++i) {
+			var node = nodes[i];
+			var statusNode = statusNodeMap[node.id];
+			if (statusNode) {
+				node.status = statusNode.status;
+				if (node.type == "flow" && statusNode.type == "flow") {
+					this.assignInitialStatus(node, statusNode);
+				}
+			}
+		}
+	},
 	handleExecuteFlow: function(evt) {
 		console.log("click schedule button.");
 		var executeURL = contextURL + "/executor";
@@ -457,13 +479,17 @@ azkaban.GraphModel = Backbone.Model.extend({});
 var disableFinishedJobs = function(data) {
 	for (var i=0; i < data.nodes.length; ++i) {
 		var node = data.nodes[i];
-		node.status = status;
+		
 		if (node.status == "DISABLED" || node.status == "SKIPPED") {
 			node.status = "READY";
 			node.disabled = true;
 		}
 		else if (node.status == "SUCCEEDED" || node.status=="RUNNING") {
 			node.disabled = true;
+		}
+		else if (node.status == "KILLED") {
+			node.disabled = false;
+			node.status="READY";
 		}
 		else {
 			node.disabled = false;
@@ -581,7 +607,7 @@ function recurseAllDescendents(node, disable) {
 	}
 }
 
-var exNodeClickCallback = function(event, model, node) {
+var expanelNodeClickCallback = function(event, model, node) {
 	console.log("Node clicked callback");
 	var jobId = node.id;
 	var flowId = executableGraphModel.get("flowId");
@@ -634,11 +660,11 @@ var exNodeClickCallback = function(event, model, node) {
 	contextMenuView.show(event, menu);
 }
 
-var exEdgeClickCallback = function(event) {
+var expanelEdgeClickCallback = function(event) {
 	console.log("Edge clicked callback");
 }
 
-var exGraphClickCallback = function(event) {
+var expanelGraphClickCallback = function(event) {
 	console.log("Graph clicked callback");
 	var flowId = executableGraphModel.get("flowId");
 	var requestURL = contextURL + "/manager?project=" + projectName + "&flow=" + flowId;

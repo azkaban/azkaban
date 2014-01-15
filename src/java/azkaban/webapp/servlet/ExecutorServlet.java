@@ -115,9 +115,6 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 				else if (ajaxName.equals("cancelFlow")) {
 					ajaxCancelFlow(req, resp, ret, session.getUser(), exFlow);
 				}
-				else if (ajaxName.equals("restartFlow")) {
-					ajaxRestartFlow(req, resp, ret, session.getUser(), exFlow);
-				}
 				else if (ajaxName.equals("pauseFlow")) {
 					ajaxPauseFlow(req, resp, ret, session.getUser(), exFlow);
 				}
@@ -609,13 +606,6 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 			ret.put("execIds", refs);
 		}
 	}
-	
-	private void ajaxRestartFlow(HttpServletRequest req, HttpServletResponse resp, HashMap<String, Object> ret, User user, ExecutableFlow exFlow) throws ServletException{
-		Project project = getProjectAjaxByPermission(ret, exFlow.getProjectId(), user, Type.EXECUTE);
-		if (project == null) {
-			return;
-		}
-	}
 
 	private void ajaxPauseFlow(HttpServletRequest req, HttpServletResponse resp, HashMap<String, Object> ret, User user, ExecutableFlow exFlow) throws ServletException{
 		Project project = getProjectAjaxByPermission(ret, exFlow.getProjectId(), user, Type.EXECUTE);
@@ -645,19 +635,6 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 	
 	private Map<String,Object> getExecutableFlowUpdateInfo(ExecutableNode node, long lastUpdateTime) {
 		HashMap<String, Object> nodeObj = new HashMap<String,Object>();
-		if (node.getUpdateTime() > lastUpdateTime) {
-			nodeObj.put("id", node.getId());
-			nodeObj.put("status", node.getStatus());
-			nodeObj.put("startTime", node.getStartTime());
-			nodeObj.put("endTime", node.getEndTime());
-			nodeObj.put("updateTime", node.getUpdateTime());
-			
-			nodeObj.put("attempt", node.getAttempt());
-			if (node.getAttempt() > 0) {
-				nodeObj.put("pastAttempts", node.getAttemptObjects());
-			}
-		}
-		
 		if (node instanceof ExecutableFlowBase) {
 			ExecutableFlowBase base = (ExecutableFlowBase)node;
 			ArrayList<Map<String, Object>> nodeList = new ArrayList<Map<String, Object>>();
@@ -672,8 +649,19 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 			if (!nodeList.isEmpty()) {
 				nodeObj.put("flow", base.getFlowId());
 				nodeObj.put("nodes", nodeList);
-				// We do this again, because the above update time may not have been built.
-				nodeObj.put("id", node.getId());
+			}
+		}
+		
+		if (node.getUpdateTime() > lastUpdateTime || !nodeObj.isEmpty()) {
+			nodeObj.put("id", node.getId());
+			nodeObj.put("status", node.getStatus());
+			nodeObj.put("startTime", node.getStartTime());
+			nodeObj.put("endTime", node.getEndTime());
+			nodeObj.put("updateTime", node.getUpdateTime());
+			
+			nodeObj.put("attempt", node.getAttempt());
+			if (node.getAttempt() > 0) {
+				nodeObj.put("pastAttempts", node.getAttemptObjects());
 			}
 		}
 		
@@ -688,6 +676,7 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 		nodeObj.put("endTime", node.getEndTime());
 		nodeObj.put("updateTime", node.getUpdateTime());
 		nodeObj.put("type", node.getType());
+		nodeObj.put("nestedId", node.getNestedId());
 		
 		nodeObj.put("attempt", node.getAttempt());
 		if (node.getAttempt() > 0) {

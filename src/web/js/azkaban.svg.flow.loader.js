@@ -8,7 +8,8 @@ var statusStringMap = {
 	"DISABLED": "Disabled",
 	"READY": "Ready",
 	"UNKNOWN": "Unknown",
-	"QUEUED": "Queued"
+	"QUEUED": "Queued",
+	"SKIPPED": "Skipped"
 };
 
 var extendedViewPanels = {};

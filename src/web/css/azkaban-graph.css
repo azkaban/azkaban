@@ -74,13 +74,9 @@
 	fill: #FFF;
 }
 
-.KILLED {
-	opacity: 0.5;
-}
-
 .KILLED > g > rect {
-	fill: #d2322d;
-	stroke: #d2322d;
+	fill: #FF9999;
+	stroke: #FF9999;
 }
 
 .KILLED > g > text {
@@ -97,13 +93,13 @@
 }
 
 .DISABLED > g > rect {
-	fill: #800000;
-	stroke: #800000;
+	fill: #DDD;
+	stroke: #CCC;
 }
 
 .DISABLED > g > rect {
-	fill: #800000;
-	stroke: #800000;
+	fill: #DDD;
+	stroke: #CCC;
 }
 
 .nodeDisabled {

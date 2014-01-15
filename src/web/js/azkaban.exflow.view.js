@@ -218,14 +218,15 @@ azkaban.FlowTabView = Backbone.View.extend({
 	},
 	
 	handleRestartClick: function(evt) {
-    console.log("handleRestartClick");
+		console.log("handleRestartClick");
 		var data = graphModel.get("data");
-		var nodes = data.nodes;
+		
 		var executingData = {
 			project: projectName,
 			ajax: "executeFlow",
 			flow: flowId,
-			execid: execId
+			execid: execId,
+			exgraph: data
 		};
 		flowExecuteDialogView.show(executingData);
 	},
@@ -318,73 +319,77 @@ azkaban.ExecutionListView = Backbone.View.extend({
 	},
 	
 	updateJobRow: function(nodes) {
+		if (!nodes) {
+			return;
+		}
+		
 		var executingBody = $("#executableBody");
 		nodes.sort(function(a,b) { return a.startTime - b.startTime; });
 		
 		for (var i = 0; i < nodes.length; ++i) {
 			var node = nodes[i];
 			if (node.startTime < 0) {
-        continue;
+				continue;
+		}
+		var nodeId = node.id.replace(".", "\\\\.");
+		var row = document.getElementById(nodeId + "-row");
+		if (!row) {
+			this.addNodeRow(node);
+		}
+		
+		var div = $("#" + nodeId + "-status-div");
+		div.text(statusStringMap[node.status]);
+		$(div).attr("class", "status " + node.status);
+
+		var startdate = new Date(node.startTime);
+		$("#" + nodeId + "-start").text(getDateFormat(startdate));
+  
+		var endTime = node.endTime;
+		if (node.endTime == -1) {
+			$("#" + nodeId + "-end").text("-");
+			endTime = node.startTime + 1;
+		}
+		else {
+			var enddate = new Date(node.endTime);
+			$("#" + nodeId + "-end").text(getDateFormat(enddate));
+		}
+  
+		var progressBar = $("#" + nodeId + "-progressbar");
+		if (!progressBar.hasClass(node.status)) {
+			for (var j = 0; j < statusList.length; ++j) {
+				var status = statusList[j];
+				progressBar.removeClass(status);
+		}
+		progressBar.addClass(node.status);
+	}
+  
+  // Create past attempts
+  if (node.pastAttempts) {
+    for (var a = 0; a < node.pastAttempts.length; ++a) {
+      var attemptBarId = nodeId + "-progressbar-" + a;
+      var attempt = node.pastAttempts[a];
+      if ($("#" + attemptBarId).length == 0) {
+        var attemptBox = document.createElement("div");
+        $(attemptBox).attr("id", attemptBarId);
+        $(attemptBox).addClass("flow-progress-bar");
+        $(attemptBox).addClass("attempt");
+        $(attemptBox).addClass(attempt.status);
+        $(attemptBox).css("float","left");
+        $(attemptBox).bind("contextmenu", attemptRightClick);
+        $(progressBar).before(attemptBox);
+        attemptBox.job = nodeId;
+        attemptBox.attempt = a;
       }
-      var nodeId = node.id.replace(".", "\\\\.");
-      var row = document.getElementById(nodeId + "-row");
-      if (!row) {
-        this.addNodeRow(node);
-      }
-      
-      var div = $("#" + nodeId + "-status-div");
-      div.text(statusStringMap[node.status]);
-      $(div).attr("class", "status " + node.status);
-      
-      var startdate = new Date(node.startTime);
-      $("#" + nodeId + "-start").text(getDateFormat(startdate));
-      
-      var endTime = node.endTime;
-      if (node.endTime == -1) {
-        $("#" + nodeId + "-end").text("-");
-        endTime = node.startTime + 1;
-      }
-      else {
-        var enddate = new Date(node.endTime);
-        $("#" + nodeId + "-end").text(getDateFormat(enddate));
-      }
-      
-      var progressBar = $("#" + nodeId + "-progressbar");
-      if (!progressBar.hasClass(node.status)) {
-        for (var j = 0; j < statusList.length; ++j) {
-          var status = statusList[j];
-          progressBar.removeClass(status);
-        }
-        progressBar.addClass(node.status);
-      }
-      
-      // Create past attempts
-      if (node.pastAttempts) {
-        for (var a = 0; a < node.pastAttempts.length; ++a) {
-          var attemptBarId = nodeId + "-progressbar-" + a;
-          var attempt = node.pastAttempts[a];
-          if ($("#" + attemptBarId).length == 0) {
-            var attemptBox = document.createElement("div");
-            $(attemptBox).attr("id", attemptBarId);
-            $(attemptBox).addClass("flow-progress-bar");
-            $(attemptBox).addClass("attempt");
-            $(attemptBox).addClass(attempt.status);
-            $(attemptBox).css("float","left");
-            $(attemptBox).bind("contextmenu", attemptRightClick);
-            $(progressBar).before(attemptBox);
-            attemptBox.job = nodeId;
-            attemptBox.attempt = a;
-          }
-        }
-      }
-      
-      if (node.endTime == -1) {
-        //$("#" + node.id + "-elapse").text("0 sec");
-        $("#" + nodeId + "-elapse").text(getDuration(node.startTime, (new Date()).getTime()));					
-      }
-      else {
-        $("#" + nodeId + "-elapse").text(getDuration(node.startTime, node.endTime));
-      }
+    }
+  }
+  
+  if (node.endTime == -1) {
+    //$("#" + node.id + "-elapse").text("0 sec");
+    $("#" + nodeId + "-elapse").text(getDuration(node.startTime, (new Date()).getTime()));					
+  }
+  else {
+    $("#" + nodeId + "-elapse").text(getDuration(node.startTime, node.endTime));
+  }
 		}
 	},
 	
@@ -452,8 +457,29 @@ azkaban.ExecutionListView = Backbone.View.extend({
 			elem.attr("title", "attempt:" + elem.attempt + "	start:" + getHourMinSec(new Date(node.startTime)) + "	end:" + getHourMinSec(new Date(node.endTime)));
 		}
 	},
-	
+	toggleExpandFlow: function(flow) {
+		console.log("Toggle Expand");
+		var tr = flow.progressbar;
+		var expandIcon = $(tr).find("> td > .listExpand");
+		if (tr.expanded) {
+			tr.expanded = false;
+			$(expandIcon).removeClass("glyphicon-chevron-up");
+			$(expandIcon).addClass("glyphicon-chevron-down");
+		}
+		else {
+			tr.expanded = true;
+			$(expandIcon).addClass("glyphicon-chevron-up");
+			$(expandIcon).removeClass("glyphicon-chevron-down");
+		}
+	},
+	expandFlow: function(flow) {
+		for (var i = 0; i < flow.nodes.length; ++i) {
+			var node = flow.nodes[i];
+			///@TODO Expand.
+		}
+	},
 	addNodeRow: function(node) {
+		var self = this;
 		var executingBody = $("#executableBody");
 		var tr = document.createElement("tr");
 		var tdName = document.createElement("td");
@@ -463,6 +489,8 @@ azkaban.ExecutionListView = Backbone.View.extend({
 		var tdElapse = document.createElement("td");
 		var tdStatus = document.createElement("td");
 		var tdDetails = document.createElement("td");
+		node.progressbar = tr;
+		tr.node = node;
 		
 		$(tr).append(tdName);
 		$(tr).append(tdTimeline);
@@ -495,24 +523,35 @@ azkaban.ExecutionListView = Backbone.View.extend({
 		$(a).attr("href", requestURL);
 		$(a).text(node.id);
 		$(tdName).append(a);
+		if (node.type=="flow") {
+			var expandIcon = document.createElement("div");
+			$(expandIcon).addClass("listExpand");
+			$(tdName).append(expandIcon);
+			$(expandIcon).addClass("expandarrow glyphicon glyphicon-chevron-down");
+			$(expandIcon).click(function(evt) {
+				var parent = $(evt.currentTarget).parents("tr")[0];
+				self.toggleExpandFlow(parent.node);
+			});
+		}
 
 		var status = document.createElement("div");
 		$(status).addClass("status");
 		$(status).attr("id", node.id + "-status-div");
 		tdStatus.appendChild(status);
 
-		var logURL = contextURL + "/executor?execid=" + execId + "&job=" + node.id;
+		var logURL = contextURL + "/executor?execid=" + execId + "&job=" + node.nestedId;
 		if (node.attempt) {
 			logURL += "&attempt=" + node.attempt;
 		}
 
-		var a = document.createElement("a");
-		$(a).attr("href", logURL);
-		$(a).attr("id", node.id + "-log-link");
-		$(a).text("Details");
-		$(tdDetails).addClass("details");
-		$(tdDetails).append(a);
-		
+		if (node.type != 'flow' && node.status != 'SKIPPED') {
+			var a = document.createElement("a");
+			$(a).attr("href", logURL);
+			$(a).attr("id", node.id + "-log-link");
+			$(a).text("Details");
+			$(tdDetails).addClass("details");
+			$(tdDetails).append(a);
+		}
 		executingBody.append(tr);
 	}
 });
@@ -577,6 +616,7 @@ var updateStatus = function() {
 	var oldData = graphModel.get("data");
 	var nodeMap = graphModel.get("nodeMap");
 	
+	var updateTime = oldData.updateTime ? oldData.updateTime : 0;
 	var requestData = {
 		"execid": execId, 
 		"ajax": "fetchexecflowupdate", 
@@ -586,28 +626,30 @@ var updateStatus = function() {
 	var successHandler = function(data) {
 		console.log("data updated");
 		updateTime = data.updateTime;
-		oldData.submitTime = data.submitTime;
-		oldData.startTime = data.startTime;
-		oldData.endTime = data.endTime;
-		oldData.status = data.status;
 		
-		for (var i = 0; i < data.nodes.length; ++i) {
-			var node = data.nodes[i];
-			var oldNode = nodeMap[node.id];
-			oldNode.startTime = node.startTime;
-			oldNode.updateTime = node.updateTime;
-			oldNode.endTime = node.endTime;
-			oldNode.status = node.status;
-			oldNode.attempt = node.attempt;
-			if (oldNode.attempt > 0) {
-				oldNode.pastAttempts = node.pastAttempts;
-			}
-		}
+		updateGraph(oldData, data);
 
 		graphModel.set({"update": data});
 		graphModel.trigger("change:update");
 	};
 	ajaxCall(requestURL, requestData, successHandler);
+}
+
+var updateGraph = function(data, update) {
+	var nodeMap = data.nodeMap;
+	data.startTime = update.startTime;
+	data.endTime = update.endTime;
+	data.updateTime = update.updateTime;
+	data.status = update.status;
+	
+	if (update.nodes) {
+		for (var i = 0; i < update.nodes.length; ++i) {
+			var newNode = update.nodes[i];
+			var oldNode = nodeMap[newNode.id];
+			
+			updateGraph(oldNode, newNode);
+		}
+	}
 }
 
 var updateTime = -1;
@@ -742,18 +784,18 @@ $(function() {
 		}
 	});
 	
-  jobsListView = new azkaban.JobListView({
+	jobsListView = new azkaban.JobListView({
 		el: $('#jobList'), 
 		model: graphModel, 
 		contextMenuCallback: jobClickCallback
 	});
 	
-  flowLogView = new azkaban.FlowLogView({
+	flowLogView = new azkaban.FlowLogView({
 		el: $('#flowLogView'), 
 		model: logModel
 	});
 	
-  statusView = new azkaban.StatusView({
+	statusView = new azkaban.StatusView({
 		el: $('#flow-status'), 
 		model: graphModel
 	});
@@ -819,8 +861,8 @@ $(function() {
 //		else {
 //			flowTabView.handleGraphLinkClick();
 //		}
-//		updaterFunction();
-//		logUpdaterFunction();
+		updaterFunction();
+		logUpdaterFunction();
 	};
 	ajaxCall(requestURL, requestData, successHandler);
 });

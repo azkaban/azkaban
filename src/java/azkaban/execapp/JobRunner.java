@@ -361,9 +361,9 @@ public class JobRunner extends EventHandler implements Runnable {
 				);
 				Arrays.sort(files, Collections.reverseOrder());
 				
-				loader.uploadLogFile(executionId, this.jobId, node.getAttempt(), files);
+				loader.uploadLogFile(executionId, this.node.getNestedId(), node.getAttempt(), files);
 			} catch (ExecutorManagerException e) {
-				flowLogger.error("Error writing out logs for job " + this.jobId, e);
+				flowLogger.error("Error writing out logs for job " + this.node.getNestedId(), e);
 			}
 		}
 		else {

@@ -69,6 +69,7 @@ azkaban.SvgGraphView = Backbone.View.extend({
 			});
 		}
 
+		this.tooltipcontainer = settings.tooltipcontainer ? settings.tooltipcontainer : "body";
 		if (settings.render) {
 			this.render();
 		}
@@ -161,9 +162,8 @@ azkaban.SvgGraphView = Backbone.View.extend({
 		};
 		
 		$(".node").each( 
-				function(d,i){
-					$(this).tooltip({container:"body", delay: {show: 500, hide: 100}});
-				});
+				function(d,i){$(this).tooltip({container:self.tooltipcontainer, delay: {show: 500, hide: 100}});
+		});
 
 		return bounds;
 	},
@@ -174,11 +174,15 @@ azkaban.SvgGraphView = Backbone.View.extend({
 		for (var i =0; i < data.nodes.length; ++i) {
 			var node = data.nodes[i];
 			if (node.disabled) {
-				addClass(node.gNode, "nodeDisabled");
+				if (node.gNode) {
+					addClass(node.gNode, "nodeDisabled");
+					$(node.gNode).attr("title", "DISABLED (" + node.type + ")").tooltip('fixTitle');
+				}
 			}
 			else {
 				if (node.gNode) {
 					removeClass(node.gNode, "nodeDisabled");
+					$(node.gNode).attr("title", node.status + " (" + node.type + ")").tooltip('fixTitle');
 				}
 				if (node.type=='flow') {
 					this.changeDisabled(node);
@@ -193,11 +197,13 @@ azkaban.SvgGraphView = Backbone.View.extend({
 			var initialStatus = updateNode.status ? updateNode.status : "READY";
 			
 			addClass(g, initialStatus);
-			$(g).attr("title", updateNode.status + " (" + updateNode.type + ")");
+			var title = updateNode.status + " (" + updateNode.type + ")";
 			
 			if (updateNode.disabled) {
 				addClass(g, "nodeDisabled");
+				title = "DISABLED (" + updateNode.type + ")";
 			}
+			$(g).attr("title", title);
 		}
 	},
 	changeSelected: function(self) {
@@ -221,30 +227,41 @@ azkaban.SvgGraphView = Backbone.View.extend({
 			}
 		}
 	},
-  propagateExpansion: function(node) {
+	propagateExpansion: function(node) {
 		if (node.parent.type) {
 			this.propagateExpansion(node.parent);
 			this.expandFlow(node.parent);
 		}
 	},
-  handleStatusUpdate: function(evt) {
+	handleStatusUpdate: function(evt) {
 		var updateData = this.model.get("update");
-		this.updateStatusChanges(updatedData);
+		var data = this.model.get("data");
+		this.updateStatusChanges(updateData, data);
 	},
-	updateStatusChanges: function(changedData) {
+	updateStatusChanges: function(updateData, data) {
 		// Assumes all changes have been applied.
-		if (changedData.nodes) {
-			var nodeMap = previousData.nodeMap;
-			for (var i = 0; i < changedData.nodes.length; ++i) {
-				var node = changedData.nodes[i];
-				var nodeToUpdate = nodeMap[updateNode.id];
+		if (updateData.nodes) {
+			var nodeMap = data.nodeMap;
+			for (var i = 0; i < updateData.nodes.length; ++i) {
+				var node = updateData.nodes[i];
+				var nodeToUpdate = nodeMap[node.id];
 				
 				var g = nodeToUpdate.gNode;
-				this.handleRemoveAllStatus(g);
-				addClass(g, nodeToUpdate.status);
-				$(g).attr("title", updateNode.status + " (" + updateNode.type + ")");
-				
-				this.updateStatusChanges(node);
+				if (g) {
+					this.handleRemoveAllStatus(g);
+					addClass(g, nodeToUpdate.status);
+					
+					var title = nodeToUpdate.status + " (" + nodeToUpdate.type + ")";
+					if (nodeToUpdate.disabled) {
+						addClass(g, "nodeDisabled");
+						title = "DISABLED (" + nodeToUpdate.type + ")";
+					}
+					$(g).attr("title", title).tooltip('fixTitle');
+					
+					if (node.nodes) {
+						this.updateStatusChanges(node, nodeToUpdate);
+					}
+				}
 			}
 		}
 	},
