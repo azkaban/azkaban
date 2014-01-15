@@ -68,6 +68,9 @@ var processFlowData = function(data) {
 	for (var i=0; i < data.nodes.length; ++i) {
 		var node = data.nodes[i];
 		nodes[node.id] = node;
+		if (!node.status) {
+			node.status = "READY";
+		}
 	}
 
 	// Create each node in and out nodes. Create an edge list.

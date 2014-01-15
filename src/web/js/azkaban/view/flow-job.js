@@ -17,14 +17,14 @@
 azkaban.JobListView = Backbone.View.extend({
 	events: {
 		"keyup input": "filterJobs",
-		"click .job": "handleJobClick",
+		"click li.listElement": "handleJobClick",
 		"click #resetPanZoomBtn": "handleResetPanZoom",
 		"click #autoPanZoomBtn": "handleAutoPanZoom",
 		"contextmenu li.listElement": "handleContextMenuClick",
 		"click .expandarrow": "handleToggleMenuExpand"
 	},
 	
-initialize: function(settings) {
+	initialize: function(settings) {
 		this.model.bind('change:selected', this.handleSelectionChange, this);
 		this.model.bind('change:disabled', this.handleDisabledChange, this);
 		this.model.bind('change:graph', this.render, this);
@@ -259,6 +259,9 @@ initialize: function(settings) {
 		else {
 			this.model.set({"selected": node});
 		}
+		
+		evt.stopPropagation();
+		evt.cancelBubble = true;
 	},
 	
 	handleDisabledChange: function(evt) {
