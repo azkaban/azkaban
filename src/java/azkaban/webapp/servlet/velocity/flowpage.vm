@@ -22,8 +22,9 @@
 #parse("azkaban/webapp/servlet/velocity/javascript.vm")
 
 		<script type="text/javascript" src="${context}/js/moment.min.js"></script>
-		<script type="text/javascript" src="${context}/js/bootstrap-datetimepicker.min.js"></script>
-		<script type="text/javascript" src="${context}/js/d3.v3.min.js"></script>
+    <script type="text/javascript" src="${context}/js/bootstrap-datetimepicker.min.js"></script>
+    <script type="text/javascript" src="${context}/js/raphael.min.js"></script>
+    <script type="text/javascript" src="${context}/js/morris.min.js"></script>
 		
     <script type="text/javascript" src="${context}/js/dust-full-2.2.3.min.js"></script>
 		<script type="text/javascript" src="${context}/js/flowsummary.js"></script>
@@ -52,24 +53,7 @@
 			var flowId = "${flowid}";
 			var execId = null;
 		</script>
-		<style>
-			.axis path,
-			.axis line {
-			  fill: none;
-			  stroke: #000;
-			  shape-rendering: crispEdges;
-			}
-			
-			.x.axis path {
-			  display: none;
-			}
-			
-			.line {
-			  fill: none;
-			  stroke: steelblue;
-			  stroke-width: 1.5px;
-			}
-		</style>
+		<link rel="stylesheet" type="text/css" href="${context}/css/morris.css" />
 		<link rel="stylesheet" type="text/css" href="${context}/css/azkaban-svg.css" />
 		<link rel="stylesheet" type="text/css" href="${context}/css/bootstrap-datetimepicker.css" />
 	</head>
