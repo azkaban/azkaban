@@ -38,6 +38,7 @@
 			var jobName = "$jobid";
 			var dataSeries = $dataSeries;
 		</script>
+		<link rel="stylesheet" type="text/css" href="${context}/css/morris.css" />
 	</head>
 	<body>
 
