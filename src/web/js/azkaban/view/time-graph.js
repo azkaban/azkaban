@@ -87,13 +87,29 @@ azkaban.TimeGraphView = Backbone.View.extend({
       }
     };
 
+    var yLabelFormatCallback = function(y) {
+      var seconds = y / 1000.0;
+      return seconds.toString() + " s";
+    };
+
+    var hoverCallback = function(index, options, content) {
+      // Note: series contains the data points in descending order and index
+      // is the index into Morris's internal array of data sorted in ascending
+      // x order.
+      var status = series[options.data.length - index - 1].status;
+      return content + 
+          '<div class="morris-hover-point">Status: ' + status + '</div>';
+    };
+
     Morris.Line({
       element: this.element,
       data: data,
       xkey: 'time',
       ykeys: ['duration'],
       labels: ['Duration'],
-      lineColors: lineColorsCallback
+      lineColors: lineColorsCallback,
+      yLabelFormat: yLabelFormatCallback,
+      hoverCallback: hoverCallback
     });
 	}
 });
