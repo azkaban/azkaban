@@ -34,7 +34,11 @@ azkaban.TimeGraphView = Backbone.View.extend({
       return;
     }
 
+    // Array of points to be passed to Morris.
     var data = [];
+    
+    // Map of y value to index for faster look-up in the lineColorsCallback to
+    // get the status for each point.
     var indexMap = {};
 	  for (var i = 0; i < series.length; ++i) {
       if (series[i].startTime == null || series[i].endTime == null) {
