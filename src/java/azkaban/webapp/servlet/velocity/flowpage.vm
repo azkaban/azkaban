@@ -46,9 +46,7 @@
 			var execId = null;
 		</script>
 		<link rel="stylesheet" type="text/css" href="${context}/css/morris.css" />
-		<link rel="stylesheet" type="text/css" href="${context}/css/azkaban-svg.css" />
 		<link rel="stylesheet" type="text/css" href="${context}/css/bootstrap-datetimepicker.css" />
-		<link rel="stylesheet" type="text/css" href="${context}/css/azkaban-graph.css" /> 
 	</head>
 	<body>
 

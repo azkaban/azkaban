@@ -56,7 +56,7 @@ azkaban.StatusView = Backbone.View.extend({
 		var startTime = data.startTime;
 		var endTime = data.endTime;
 		
-		if (startTime == -1) {
+		if (!startTime || startTime == -1) {
 			$("#startTime").text("-");
 		}
 		else {
@@ -73,7 +73,7 @@ azkaban.StatusView = Backbone.View.extend({
 			$("#duration").text(durationString);
 		}
 		
-		if (endTime == -1) {
+		if (!endTime || endTime == -1) {
 			$("#endTime").text("-");
 		}
 		else {
