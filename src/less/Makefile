@@ -1,7 +1,7 @@
 OBJ_DIR = obj
 OBJ = \
 	$(OBJ_DIR)/azkaban.css \
-	$(OBJ_DIR)/azkaban-svg.css
+	$(OBJ_DIR)/azkaban-graph.css
 
 all: $(OBJ)
 

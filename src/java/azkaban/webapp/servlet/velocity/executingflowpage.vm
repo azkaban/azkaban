@@ -42,7 +42,6 @@
 		</script>
 
 		<link rel="stylesheet" type="text/css" href="${context}/css/jquery-ui-1.10.1.custom.css" />
-		<link rel="stylesheet" type="text/css" href="${context}/css/azkaban-graph.css" /> 
 	</head>
 	<body>
 
