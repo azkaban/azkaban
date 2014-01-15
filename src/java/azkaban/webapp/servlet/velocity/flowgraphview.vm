@@ -24,12 +24,12 @@
             <div class="panel-heading">
               <input id="filter" type="text" placeholder="Job Filter" class="form-control">
             </div>
-            <div id="joblist" class="list-group"></div>
+            <div id="joblist"></div>
             <div class="panel-footer">
             	<div id="autoPanZoom" class="checkbox">
             		<label>
-						<input type="checkbox" id="autoPanZoomCheckbox" class="autoPanZoom" value="autoPanZoom" />Auto Pan Zoom
-              		</label>
+                  <input type="checkbox" id="autoPanZoomCheckbox" class="autoPanZoom" value="autoPanZoom" />Auto Pan Zoom
+                </label>
               	</div>
               <button type="button" class="btn btn-sm btn-default" id="resetPanZoomBtn">Reset Pan Zoom</button>
             </div>
