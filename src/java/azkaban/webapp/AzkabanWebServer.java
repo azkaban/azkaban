@@ -201,6 +201,7 @@ public class AzkabanWebServer extends AzkabanServer {
 		if (!statsDir.exists()) {
 			statsDir.mkdir();
 		}
+    props.put("azkaban.stats.dir", statsDir.getCanonicalPath());
 
 		// Setup time zone
 		if (props.containsKey(DEFAULT_TIMEZONE_ID)) {

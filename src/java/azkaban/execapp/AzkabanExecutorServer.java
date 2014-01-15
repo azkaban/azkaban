@@ -114,6 +114,7 @@ public class AzkabanExecutorServer {
     if (!statsDir.exists()) {
       statsDir.mkdir();
     }
+    props.put("azkaban.stats.dir", statsDir.getCanonicalPath());
 		
 		try {
 			server.start();
