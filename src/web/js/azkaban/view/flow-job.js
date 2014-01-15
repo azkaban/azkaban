@@ -109,7 +109,7 @@ azkaban.JobListView = Backbone.View.extend({
 				var child = $(liElement).children("a");
 				$(child).removeClass(statusList.join(' '));
 				$(child).addClass(node.status);
-				$(child).attr("title", node.status + " (" + node.type + ")").tooltip('fixTitle');
+				$(child).attr("title", node.status + " (" + node.type + ")");
 			}
 			
 			if (node.nodes) {
@@ -126,7 +126,6 @@ azkaban.JobListView = Backbone.View.extend({
 //		this.assignInitialStatus(self);
 		this.handleDisabledChange(self);
 		this.changeStatuses(data, 0);
-		$("li.listElement > a").tooltip({delay: {show: 500, hide: 100}, placement: 'top'});
 	},
 	renderTree : function(el, data, prefix) {
 		var nodes = data.nodes;
