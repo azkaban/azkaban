@@ -19,8 +19,8 @@ azkaban.JobListView = Backbone.View.extend({
 		"keyup input": "filterJobs",
 		"click .job": "handleJobClick",
 		"click #resetPanZoomBtn": "handleResetPanZoom",
+		"click #autoPanZoomBtn": "handleAutoPanZoom",
 		"contextmenu li.listElement": "handleContextMenuClick",
-		"change .autoPanZoom": "handleAutoPanZoom",
 		"click .expandarrow": "handleToggleMenuExpand"
 	},
 	
@@ -311,6 +311,18 @@ initialize: function(settings) {
 	},
 	
 	handleAutoPanZoom: function(evt) {
-		this.model.set({"autoPanZoom": $(evt.currentTarget).is(':checked')});
+		var target = evt.currentTarget;
+		if ($(target).hasClass('btn-default')) {
+			$(target).removeClass('btn-default');
+			$(target).addClass('btn-info');
+		}
+		else if ($(target).hasClass('btn-info')) {
+			$(target).removeClass('btn-info');
+			$(target).addClass('btn-default');
+		}
+	 
+		// Using $().hasClass('active') does not use here because it appears that
+		// this is called before the Bootstrap toggle completes.
+		this.model.set({"autoPanZoom": $(target).hasClass('btn-info')});
 	}
 });
