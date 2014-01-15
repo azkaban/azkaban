@@ -1,7 +1,0 @@
-
-CONF_FILE=
-
-java -cp "lib/*:extlib/*" azkaban.schedule2File.Schedule2File $CONF_FILE schedules
-
-
-

@@ -162,6 +162,13 @@ public class AzkabanProcess {
 	public void hardKill() {
 		checkStarted();
 		if (isRunning()) {
+			if (processId != 0 ) {
+				try {
+					Runtime.getRuntime().exec("kill -9 " + processId);
+				} catch (IOException e) {
+					logger.error("Kill attempt failed.", e);
+				}
+			}
 			process.destroy();
 		}
 	}

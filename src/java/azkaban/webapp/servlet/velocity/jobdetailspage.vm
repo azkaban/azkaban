@@ -21,8 +21,9 @@
 #parse("azkaban/webapp/servlet/velocity/style.vm")
 #parse("azkaban/webapp/servlet/velocity/javascript.vm")
 
-		<script type="text/javascript" src="${context}/js/azkaban.ajax.utils.js"></script>
-		<script type="text/javascript" src="${context}/js/azkaban.jobdetails.view.js"></script>
+		<script type="text/javascript" src="${context}/js/azkaban/util/ajax.js"></script>
+		<script type="text/javascript" src="${context}/js/azkaban/model/log-data.js"></script>
+		<script type="text/javascript" src="${context}/js/azkaban/view/job-details.js"></script>
 		<script type="text/javascript">
 			var contextURL = "${context}";
 			var currentTime = ${currentTime};
@@ -51,10 +52,10 @@
 		<div class="az-page-header">
 			<div class="container-full">
 				<div class="row">
-					<div class="col-lg-6">
+					<div class="col-xs-6">
 						<h1><a href="${context}/executor?execid=${execid}&job=${jobid}">Job Execution <small>$jobid</small></a></h1>
 					</div>
-					<div class="col-lg-6">
+					<div class="col-xs-6">
 						<div class="pull-right az-page-header-form">
 							<a href="${context}/manager?project=${projectName}&flow=${flowid}&job=$jobid" class="btn btn-info">Job Properties</a>
 						</div>
@@ -89,7 +90,7 @@
 
     <div class="container-full container-fill" id="jobLogView">
 			<div class="row">
-				<div class="col-lg-12 col-content">
+				<div class="col-xs-12 col-content">
           <div class="log-viewer">
             <div class="panel panel-default">
               <div class="panel-heading">
@@ -110,44 +111,54 @@
 	## Job Summary
 
     <div class="container-full" id="jobSummaryView">
-			<div class="row">
-				<div class="col-lg-12">
-					<table id="commandTable" class="table table-striped table-bordered table-hover">
-					</table>
-				
-					<div class="panel panel-default" id="jobsummary">
-						<div class="panel-heading">Job Summary</div>
-						<table class="table table-striped table-bordered table-hover">
-							<thead id="summaryHeader">
-							</thead>
-							<tbody id="summaryBody">
-							</tbody>
-						</table>
-					</div>
-				
-					<div class="panel panel-default" id="jobstats">
-						<div class="panel-heading">Job Stats</div>
-            <div class="panel-body panel-body-stats">
-              <table class="table table-striped table-bordered table-hover table-condensed">
-                <thead id="statsHeader">
-                </thead>
-                <tbody id="statsBody">
-                </tbody>
-              </table>
+      <div class="row">
+        <div class="col-lg-12">
+          <h3>
+            Job Summary
+            <div class="pull-right">
+              <button type="button" id="updateSummaryBtn" class="btn btn-xs btn-default">Refresh</button>
             </div>
-					</div>
-					
-					<div class="panel panel-default" id="hiveTable">
-						<div class="panel-heading">Job Summary</div>
-						<table class="table table-striped table-bordered table-hover">
-							<thead id="hiveTableHeader">
-							</thead>
-							<tbody id="hiveTableBody">
-							</tbody>
-						</table>
-					</div>
-				</div>
-			</div>
+          </h3>
+
+          <div id="command-summary">
+            <h4>Command Summary</h4>
+            <table id="commandTable" class="table table-striped table-bordered table-hover">
+            </table>
+          </div>
+        
+          <div id="pigJobSummary">
+            <h4>Pig Job Summary</h4>
+            <table class="table table-striped table-bordered table-hover">
+              <thead id="summaryHeader">
+              </thead>
+              <tbody id="summaryBody">
+              </tbody>
+            </table>
+          </div>
+        
+          <div id="pigJobStats">
+            <h4>Pig Job Stats</h4>
+              <div class="panel-body-stats">
+                <table class="table table-striped table-bordered table-hover table-condensed">
+                  <thead id="statsHeader">
+                  </thead>
+                  <tbody id="statsBody">
+                  </tbody>
+                </table>
+            </div>
+          </div>
+
+          <div id="hiveJobSummary">
+            <h4>Hive Job Summary</h4>
+            <table class="table table-striped table-bordered table-hover" id="hiveTable">
+              <thead id="hiveTableHeader">
+              </thead>
+              <tbody id="hiveTableBody">
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
     </div>
 			
 	## Error message message dialog.

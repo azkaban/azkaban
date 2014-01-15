@@ -17,7 +17,7 @@
 		<div class="az-page-header">
 			<div class="container-full">
         <div class="row">
-          <div class="col-lg-6" id="project-page-header">
+          <div class="header-title" id="project-page-header">
             <h1><a href="${context}/manager?project=${project.name}">Project <small>$project.name</small></a></h1>
             <p class="editable" id="project-description">$project.description</p>
             <div id="project-description-form" class="editable-form">
@@ -29,7 +29,7 @@
               </div>
             </div>
           </div>
-          <div class="col-lg-6">
+          <div class="header-control">
             <div class="pull-right az-page-header-form" id="project-options">
               <button id="project-delete-btn" class="btn btn-sm btn-danger">
                 <span class="glyphicon glyphicon-trash"></span> Delete Project
