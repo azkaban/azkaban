@@ -109,6 +109,11 @@ public class AzkabanExecutorServer {
 		runnerManager.setGlobalProps(executorGlobalProps);
 		
 		configureMBeanServer();
+
+    File statsDir = new File(props.getString("azkaban.stats.dir", "stats"));
+    if (!statsDir.exists()) {
+      statsDir.mkdir();
+    }
 		
 		try {
 			server.start();
