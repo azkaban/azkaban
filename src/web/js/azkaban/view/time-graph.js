@@ -27,7 +27,7 @@ azkaban.TimeGraphView = Backbone.View.extend({
     this.element = settings.el;
     this.render();
 	},
-	
+
 	render: function(self) {
 		var series = this.model.get(this.modelField);
     if (series == null) {
@@ -35,6 +35,7 @@ azkaban.TimeGraphView = Backbone.View.extend({
     }
 
     var data = [];
+    var indexMap = {};
 	  for (var i = 0; i < series.length; ++i) {
       if (series[i].startTime == null || series[i].endTime == null) {
         console.log("Each element in series must have startTime and endTime");
@@ -45,19 +46,50 @@ azkaban.TimeGraphView = Backbone.View.extend({
       if (endTime == -1) {
         endTime = new Date().getTime();
       }
-
+      var duration = endTime - startTime;
       data.push({ 
         time: endTime,
-        duration: endTime - startTime
+        duration: duration
       });
+
+      indexMap[endTime.toString()] = i;
     }
+
+    var lineColorsCallback = function(row, sidx, type) {
+      if (type != 'point') {
+        return "#000000";
+      }
+      var i = indexMap[row.x.toString()];
+      var status = series[i].status;
+      if (status == 'SKIPPED') {
+        return '#aaa';
+      }
+      else if (status == 'SUCCEEDED') {
+        return '#4e911e';
+      }
+      else if (status == 'RUNNING') {
+        return '#009fc9';
+      }
+      else if (status == 'PAUSED') {
+        return '#c92123';
+      }
+      else if (status == 'FAILED' || 
+          status == 'FAILED_FINISHING' || 
+          status == 'KILLED') {
+        return '#cc0000';
+      }
+      else {
+        return '#ccc';
+      }
+    };
 
     Morris.Line({
       element: this.element,
       data: data,
       xkey: 'time',
       ykeys: ['duration'],
-      labels: ['Duration']
+      labels: ['Duration'],
+      lineColors: lineColorsCallback
     });
 	}
 });
