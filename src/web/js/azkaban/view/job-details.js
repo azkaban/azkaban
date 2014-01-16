@@ -136,9 +136,15 @@ azkaban.JobSummaryView = Backbone.View.extend({
 		// Set up table column headers
 		var header = $("#hiveTableHeader");
 		var tr = document.createElement("tr");
-		var headers = ["Query","Job","Map","Reduce","HDFS Read","HDFS Write"];
+
+		var headers;
+		if (this.model.get("hasCumulativeCPU")) {
+			headers = ["Query","Job","Map","Reduce","Cumulative CPU","HDFS Read","HDFS Write"];
+		} else {
+			headers = ["Query","Job","Map","Reduce","HDFS Read","HDFS Write"];
+		}
+
 		var i;
-		
 		for (i = 0; i < headers.length; i++) {
 			var th = document.createElement("th");
 			$(th).text(headers[i]);
