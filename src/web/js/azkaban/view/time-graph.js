@@ -24,7 +24,7 @@ azkaban.TimeGraphView = Backbone.View.extend({
 		this.model.bind('render', this.render, this);
 		this.model.bind('change:page', this.render, this);
     this.modelField = settings.modelField;
-    this.element = settings.el;
+    this.graphContainer = settings.el;
     this.render();
 	},
 
@@ -58,6 +58,14 @@ azkaban.TimeGraphView = Backbone.View.extend({
 
       indexMap[endTime.toString()] = i;
     }
+
+		if (data.length == 0) {
+			$(this.graphContainer).hide();
+			return;
+		}
+
+		var graphDiv = document.createElement('div');
+		$(this.graphContainer).append(graphDiv);
 
     var lineColorsCallback = function(row, sidx, type) {
       if (type != 'point') {
@@ -102,7 +110,7 @@ azkaban.TimeGraphView = Backbone.View.extend({
     };
 
     Morris.Line({
-      element: this.element,
+      element: graphDiv,
       data: data,
       xkey: 'time',
       ykeys: ['duration'],

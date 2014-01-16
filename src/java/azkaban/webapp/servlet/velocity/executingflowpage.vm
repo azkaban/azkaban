@@ -28,6 +28,7 @@
 		<script type="text/javascript" src="${context}/js/flowstats.js"></script>
 		<script type="text/javascript" src="${context}/js/flowstats-no-data.js"></script>
 
+		<script type="text/javascript" src="${context}/js/azkaban/view/flow-execution-list.js"></script>
 		<script type="text/javascript" src="${context}/js/azkaban/view/exflow.js"></script>
 		<script type="text/javascript">
 			var contextURL = "${context}";

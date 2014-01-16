@@ -136,9 +136,15 @@ azkaban.JobSummaryView = Backbone.View.extend({
 		// Set up table column headers
 		var header = $("#hiveTableHeader");
 		var tr = document.createElement("tr");
-		var headers = ["Query","Job","Map","Reduce","HDFS Read","HDFS Write"];
+
+		var headers;
+		if (this.model.get("hasCumulativeCPU")) {
+			headers = ["Query","Job","Map","Reduce","Cumulative CPU","HDFS Read","HDFS Write"];
+		} else {
+			headers = ["Query","Job","Map","Reduce","HDFS Read","HDFS Write"];
+		}
+
 		var i;
-		
 		for (i = 0; i < headers.length; i++) {
 			var th = document.createElement("th");
 			$(th).text(headers[i]);
@@ -206,11 +212,11 @@ azkaban.JobTabView = Backbone.View.extend({
 
 	initialize: function(settings) {
 		var selectedView = settings.selectedView;
-		if (selectedView == 'joblog') {
-			this.handleJobLogViewLinkClick();
+		if (selectedView == 'summary') {
+			this.handleJobSummaryViewLinkClick();
 		}
 		else {
-			this.handleJobSummaryViewLinkClick();
+			this.handleJobLogViewLinkClick();
 		}
 	},
 
@@ -266,10 +272,10 @@ $(function() {
 
 	if (window.location.hash) {
 		var hash = window.location.hash;
-		if (hash == '#joblog') {
+		if (hash == '#logs') {
 			jobTabView.handleJobLogViewLinkClick();
 		}
-		else if (hash == '#jobsummary') {
+		else if (hash == '#summary') {
 			jobTabView.handleJobSummaryViewLinkClick();
 		}
 	}

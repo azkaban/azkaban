@@ -1,3 +1,4 @@
+LESSC = lessc
 OBJ_DIR = obj
 OBJ = \
 	$(OBJ_DIR)/azkaban.css \
@@ -5,12 +6,28 @@ OBJ = \
 
 all: $(OBJ)
 
-$(OBJ_DIR)/%.css: %.less
-	lessc $< $@
+azkaban_css_DEPS = \
+	azkaban.less \
+	base.less \
+	context-menu.less \
+	flow.less \
+	header.less \
+	job.less \
+	login.less \
+	log.less \
+	navbar.less \
+	non-responsive.less \
+	off-canvas.less \
+	project.less \
+	tables.less
+
+$(OBJ_DIR)/azkaban.css: $(azkaban_css_DEPS)
+	$(LESSC) $< $@
+
+$(OBJ_DIR)/azkaban-graph.css: azkaban-graph.less
+	$(LESSC) $< $@
 
 clean:
 	rm -rf $(OBJ_DIR)
-
-.SUFFIXES: .less .css
 
 .PHONY: all clean

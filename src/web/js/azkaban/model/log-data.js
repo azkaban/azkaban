@@ -22,7 +22,7 @@ azkaban.LogDataModel = Backbone.Model.extend({
     HIVE_NUM_MAP_REDUCE_JOBS_STRING: "Total MapReduce jobs = ",
     HIVE_MAP_REDUCE_JOB_START: "Starting Job",
     HIVE_MAP_REDUCE_JOBS_SUMMARY: "MapReduce Jobs Launched:",
-    HIVE_MAP_REDUCE_SUMMARY_REGEX: /Job (\d+): Map: (\d+)  Reduce: (\d+)   HDFS Read: (\d+) HDFS Write: (\d+)/,
+    HIVE_MAP_REDUCE_SUMMARY_REGEX: /Job (\d+):\s+Map: (\d+)\s+Reduce: (\d+)\s+(?:Cumulative CPU: (.+?))?\s+HDFS Read: (\d+)\s+HDFS Write: (\d+)/,
 
     initialize: function() {
         this.set("offset", 0 );
@@ -232,7 +232,7 @@ azkaban.LogDataModel = Backbone.Model.extend({
             var numMRJobs = 0;
             while (i < numLines) {
                 line = lines[i];
-                if (line.contains(this.HIVE_NUM_MAP_REDUCE_JOBS_STRING)) {
+                if (line.indexOf(this.HIVE_NUM_MAP_REDUCE_JOBS_STRING) !== -1) {
                     // query involves map reduce jobs
                     var numMRJobs = parseInt(line.substring(this.HIVE_NUM_MAP_REDUCE_JOBS_STRING.length),10);
                     i++;
@@ -240,7 +240,7 @@ azkaban.LogDataModel = Backbone.Model.extend({
                     // get the map reduce jobs summary
                     while (i < numLines) {
                         line = lines[i];
-                        if (line.contains(this.HIVE_MAP_REDUCE_JOBS_SUMMARY)) {
+                        if (line.indexOf(this.HIVE_MAP_REDUCE_JOBS_SUMMARY) !== -1) {
                             // job summary table found
                             i++;
                             
@@ -264,6 +264,13 @@ azkaban.LogDataModel = Backbone.Model.extend({
                                     job.push(match[3]);
                                     job.push(match[4]);
                                     job.push(match[5]);
+                                    job.push(match[6]);
+
+                                    if (match[7]) {
+                                        this.set("hasCumulativeCPU", true);
+                                        job.push(match[7]);
+                                    }
+
                                     queryJobs.push(job);
                                     previousJob = currJob;
                                     numJobsSeen++;
@@ -281,7 +288,7 @@ azkaban.LogDataModel = Backbone.Model.extend({
                     } 
                     break;
                 }
-                else if (line.contains(this.HIVE_PARSING_START)) {
+                else if (line.indexOf(this.HIVE_PARSING_START) !== -1) {
                     if (numMRJobs === 0) {
                         hiveQueryJobs.push(null);
                     }
