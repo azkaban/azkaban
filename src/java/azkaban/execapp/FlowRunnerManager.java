@@ -581,33 +581,33 @@ public class FlowRunnerManager implements EventListener {
 		FlowRunner runner = runningFlows.get(execId);
 		if (runner == null) {
 			throw new ExecutorManagerException(
-          "Running flow " + execId + " not found.");
+					"Running flow " + execId + " not found.");
 		}
 
-    File dir = runner.getExecutionDir();
-    if (dir == null || !dir.exists()) {
-      throw new ExecutorManagerException(
-          "Error reading file. Log directory doesn't exist.");
-    }
+		File dir = runner.getExecutionDir();
+		if (dir == null || !dir.exists()) {
+			throw new ExecutorManagerException(
+					"Error reading file. Log directory doesn't exist.");
+		}
 
-    try {
-      synchronized (executionDirDeletionSync) {
-        if (!dir.exists()) {
+		try {
+			synchronized (executionDirDeletionSync) {
+				if (!dir.exists()) {
 					throw new ExecutorManagerException(
-              "Execution dir file doesn't exist. Probably has beend deleted");
-        }
+							"Execution dir file doesn't exist. Probably has beend deleted");
+				}
 
-        File attachmentFile = runner.getJobAttachmentFile(jobId, attempt);
-        if (attachmentFile == null || !attachmentFile.exists()) {
-          throw new ExecutorManagerException(
-              "Job attachment file doesn't exist.");
-        }
-        return (ArrayList<Object>) JSONUtils.parseJSONFromFile(attachmentFile);
-      }
-    }
-    catch (IOException e) {
-      throw new ExecutorManagerException(e);
-    }
+				File attachmentFile = runner.getJobAttachmentFile(jobId, attempt);
+				if (attachmentFile == null || !attachmentFile.exists()) {
+					throw new ExecutorManagerException(
+							"Job attachment file doesn't exist.");
+				}
+				return (ArrayList<Object>) JSONUtils.parseJSONFromFile(attachmentFile);
+			}
+		}
+		catch (IOException e) {
+			throw new ExecutorManagerException(e);
+		}
 	}
 	
 	public JobMetaData readJobMetaData(int execId, String jobId, int attempt, int startByte, int length) throws ExecutorManagerException {

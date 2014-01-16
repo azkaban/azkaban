@@ -721,13 +721,13 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader
 					jobId);
 			return (List<Object>) JSONUtils.parseJSONFromString(attachment);
 		}
-    catch (IOException e) {
+		catch (IOException e) {
 			throw new ExecutorManagerException(
-          "Error converting job attachment to JSON " + jobId, e);
-    }
+					"Error converting job attachment to JSON " + jobId, e);
+		}
 		catch (SQLException e) {
 			throw new ExecutorManagerException(
-          "Error query job attachment " + jobId, e);
+					"Error query job attachment " + jobId, e);
 		}
 	}
 	

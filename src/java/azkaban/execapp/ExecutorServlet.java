@@ -214,10 +214,10 @@ public class ExecutorServlet extends HttpServlet implements ConnectorParams {
 			Map<String, Object> respMap) throws ServletException {
 
 		String jobId = getParam(req, "jobId");
-    int attempt = getIntParam(req, "attempt", 0);
+		int attempt = getIntParam(req, "attempt", 0);
 		try {
 			List<Object> result = flowRunnerManager.readJobAttachment(
-          execId, jobId, attempt);
+					execId, jobId, attempt);
 			respMap.put("attachment", result);
 		}
 		catch (Exception e) {

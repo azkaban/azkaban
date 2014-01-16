@@ -201,41 +201,41 @@ public class ExecutorManager extends EventHandler implements ExecutorManagerAdap
 	
 	@Override
 	public List<ExecutableFlow> getExecutableFlows(
-      Project project, String flowId, int skip, int size) 
-      throws ExecutorManagerException {
+			Project project, String flowId, int skip, int size) 
+			throws ExecutorManagerException {
 		List<ExecutableFlow> flows = executorLoader.fetchFlowHistory(
-        project.getId(), flowId, skip, size);
+				project.getId(), flowId, skip, size);
 		return flows;
 	}
 	
 	@Override
 	public List<ExecutableFlow> getExecutableFlows(int skip, int size) 
-      throws ExecutorManagerException {
+			throws ExecutorManagerException {
 		List<ExecutableFlow> flows = executorLoader.fetchFlowHistory(skip, size);
 		return flows;
 	}
 	
 	@Override
 	public List<ExecutableFlow> getExecutableFlows(
-      String flowIdContains, int skip, int size) 
-      throws ExecutorManagerException {
+			String flowIdContains, int skip, int size) 
+			throws ExecutorManagerException {
 		List<ExecutableFlow> flows = executorLoader.fetchFlowHistory(
-        null, '%'+flowIdContains+'%', null, 0, -1, -1 , skip, size);
+				null, '%'+flowIdContains+'%', null, 0, -1, -1 , skip, size);
 		return flows;
 	}
 
 	@Override
 	public List<ExecutableFlow> getExecutableFlows(
-      String projContain, 
-      String flowContain, 
-      String userContain, 
-      int status, 
-      long begin, 
-      long end, 
-      int skip, 
-      int size) throws ExecutorManagerException {
+			String projContain, 
+			String flowContain, 
+			String userContain, 
+			int status, 
+			long begin, 
+			long end, 
+			int skip, 
+			int size) throws ExecutorManagerException {
 		List<ExecutableFlow> flows = executorLoader.fetchFlowHistory(
-        projContain, flowContain, userContain, status, begin, end , skip, size);
+				projContain, flowContain, userContain, status, begin, end , skip, size);
 		return flows;
 	}
 	
@@ -306,24 +306,24 @@ public class ExecutorManager extends EventHandler implements ExecutorManagerAdap
 
 	@Override
 	public List<Object> getExecutionJobStats(
-      ExecutableFlow exFlow, String jobId, int attempt)
+			ExecutableFlow exFlow, String jobId, int attempt)
 			throws ExecutorManagerException {
 		Pair<ExecutionReference, ExecutableFlow> pair = 
 				runningFlows.get(exFlow.getExecutionId());
 		if (pair == null) {
 			return executorLoader.fetchAttachment(
-          exFlow.getExecutionId(), jobId, attempt);
+					exFlow.getExecutionId(), jobId, attempt);
 		}
 
 		Pair<String, String> jobIdParam = new Pair<String, String>("jobId", jobId);
-    Pair<String,String> attemptParam = new Pair<String,String>("attempt", String.valueOf(attempt));
+		Pair<String,String> attemptParam = new Pair<String,String>("attempt", String.valueOf(attempt));
 		
 		@SuppressWarnings("unchecked")
 		Map<String, Object> result = callExecutorServer(
 				pair.getFirst(),
 				ConnectorParams.ATTACHMENT_ACTION,
 				jobIdParam,
-        attemptParam);
+				attemptParam);
 		return (List<Object>) result.get("attachment");
 	}
 	
@@ -527,7 +527,7 @@ public class ExecutorManager extends EventHandler implements ExecutorManagerAdap
 			ExecutionReference reference = new ExecutionReference(exflow.getExecutionId(), executorHost, executorPort);
 			executorLoader.addActiveExecutableReference(reference);
 			try {
-				callExecutorServer(reference,  ConnectorParams.EXECUTE_ACTION);
+				callExecutorServer(reference,	ConnectorParams.EXECUTE_ACTION);
 				runningFlows.put(exflow.getExecutionId(), new Pair<ExecutionReference, ExecutableFlow>(reference, exflow));
 				
 				message += "Execution submitted successfully with exec id " + exflow.getExecutionId();
@@ -1149,23 +1149,23 @@ public class ExecutorManager extends EventHandler implements ExecutorManagerAdap
 	
 	@Override
 	public int getExecutableFlows(
-      int projectId, 
-      String flowId, 
-      int from, 
-      int length, 
-      List<ExecutableFlow> outputList) throws ExecutorManagerException {
+			int projectId, 
+			String flowId, 
+			int from, 
+			int length, 
+			List<ExecutableFlow> outputList) throws ExecutorManagerException {
 		List<ExecutableFlow> flows = executorLoader.fetchFlowHistory(
-        projectId, flowId, from, length);
+				projectId, flowId, from, length);
 		outputList.addAll(flows);
 		return executorLoader.fetchNumExecutableFlows(projectId, flowId);
 	}
 
 	@Override
 	public List<ExecutableFlow> getExecutableFlows(
-      int projectId, String flowId, int from, int length, Status status) 
-      throws ExecutorManagerException {
+			int projectId, String flowId, int from, int length, Status status) 
+			throws ExecutorManagerException {
 		return executorLoader.fetchFlowHistory(
-        projectId, flowId, from, length, status);
+				projectId, flowId, from, length, status);
 	}
 
 	/* 
