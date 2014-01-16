@@ -266,11 +266,10 @@ azkaban.LogDataModel = Backbone.Model.extend({
                                     job.push(match[3]);
                                     job.push(match[4]);
                                     job.push(match[5]);
-                                    job.push(match[6]);
 
-                                    if (match[7]) {
+                                    if (match[6]) {
                                         this.set("hasCumulativeCPU", true);
-                                        job.push(match[7]);
+                                        job.push(match[6]);
                                     }
 
                                     queryJobs.push(job);
