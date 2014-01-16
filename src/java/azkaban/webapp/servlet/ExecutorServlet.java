@@ -468,7 +468,6 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 		
 		String jobId = this.getParam(req, "jobid");
 		resp.setCharacterEncoding("utf-8");
-    String statsFilePath = null;
 		try {
 			ExecutableNode node = exFlow.getExecutableNode(jobId);
 			if (node == null) {
@@ -476,16 +475,18 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
             exFlow.getExecutionId());
 				return;
 			}
-	
-      statsFilePath = statsDir + "/" + exFlow.getExecutionId() + "-" + 
-          jobId + "-stats.json";
-      File statsFile = new File(statsFilePath);
+
+			String statsJson = executorManager.getExecutionJobStats(exFlow, jobId);
       List<Object> jsonObj = 
-          (ArrayList<Object>) JSONUtils.parseJSONFromFile(statsFile);
+          (ArrayList<Object>) JSONUtils.parseJSONFromString(statsJson);
       ret.put("jobStats", jsonObj);
     }
+		catch (ExecutorManagerException e) {
+			ret.put("error", "Error retrieving stats for job " + jobId);
+			return;
+		}
     catch (IOException e) {
-      ret.put("error", "Cannot open stats file: " + statsFilePath);
+      ret.put("error", "Cannot write JSON for stats for job " + jobId);
       return;
 		}
   }

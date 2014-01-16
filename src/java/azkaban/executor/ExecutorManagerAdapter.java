@@ -90,6 +90,8 @@ public interface ExecutorManagerAdapter{
 	public LogData getExecutableFlowLog(ExecutableFlow exFlow, int offset, int length) throws ExecutorManagerException;
 	
 	public LogData getExecutionJobLog(ExecutableFlow exFlow, String jobId, int offset, int length, int attempt) throws ExecutorManagerException;
+
+	public String getExecutionJobStats(ExecutableFlow exflow, String jobId) throws ExecutorManagerException;
 	
 	public JobMetaData getExecutionJobMetaData(ExecutableFlow exFlow, String jobId, int offset, int length, int attempt) throws ExecutorManagerException;
 	

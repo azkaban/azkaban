@@ -707,6 +707,24 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader
 					"Error fetching logs " + execId + " : " + name, e);
 		}
 	}
+
+	@Override
+	public String fetchStats(int execId, String jobId)
+			throws ExecutorManagerException {
+		QueryRunner runner = createQueryRunner();
+
+		try {
+			String stats = runner.query(
+					FetchExecutableJobStatsHandler.FETCH_ATTACHMENT_EXECUTABLE_NODE,
+					new FetchExecutableJobStatsHandler(),
+					execId,
+					jobId);
+			return stats;
+		}
+		catch (SQLException e) {
+			throw new ExecutorManagerException("Error query job stats " + jobId, e);
+		}
+	}
 	
 	@Override
 	public void uploadLogFile(
@@ -975,6 +993,28 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader
 			} while (rs.next());
 
 			return execNodes;
+		}
+	}
+
+	private static class FetchExecutableJobStatsHandler
+			implements ResultSetHandler<String> {
+		private static String FETCH_ATTACHMENT_EXECUTABLE_NODE = 
+				"SELECT attachment FROM execution_jobs WHERE exec_id=? AND job_id=?";
+
+		@SuppressWarnings("unchecked")
+		@Override
+		public String handle(ResultSet rs) throws SQLException {
+			String statsJson = "";
+			if (rs.next()) {
+				try {
+					byte[] stats = rs.getBytes(1);
+					statsJson = GZIPUtils.unGzipString(stats, "UTF-8");
+				}
+				catch (IOException e) {
+					throw new SQLException("Error decoding job stats", e);
+				}
+			}
+			return statsJson;
 		}
 	}
 	

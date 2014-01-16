@@ -47,6 +47,8 @@ public interface ExecutorLoader {
 
 	public LogData fetchLogs(int execId, String name, int attempt, int startByte, int endByte) throws ExecutorManagerException;
 
+	public String fetchStats(int execId, String name) throws ExecutorManagerException;
+
 	public void uploadLogFile(int execId, String name, int attempt, File ... files) throws ExecutorManagerException;
 
 	public void updateExecutableFlow(ExecutableFlow flow) throws ExecutorManagerException;

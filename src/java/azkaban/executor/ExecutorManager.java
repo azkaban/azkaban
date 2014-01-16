@@ -274,8 +274,11 @@ public class ExecutorManager extends EventHandler implements ExecutorManagerAdap
 	}
 	
 	@Override
-	public LogData getExecutionJobLog(ExecutableFlow exFlow, String jobId, int offset, int length, int attempt) throws ExecutorManagerException {
-		Pair<ExecutionReference, ExecutableFlow> pair = runningFlows.get(exFlow.getExecutionId());
+	public LogData getExecutionJobLog(
+			ExecutableFlow exFlow, String jobId, int offset, int length, int attempt)
+			throws ExecutorManagerException {
+		Pair<ExecutionReference, ExecutableFlow> pair = 
+				runningFlows.get(exFlow.getExecutionId());
 		if (pair != null) {
 			Pair<String,String> typeParam = new Pair<String,String>("type", "job");
 			Pair<String,String> jobIdParam = new Pair<String,String>("jobId", jobId);
@@ -284,13 +287,42 @@ public class ExecutorManager extends EventHandler implements ExecutorManagerAdap
 			Pair<String,String> attemptParam = new Pair<String,String>("attempt", String.valueOf(attempt));
 			
 			@SuppressWarnings("unchecked")
-			Map<String, Object> result = callExecutorServer(pair.getFirst(), ConnectorParams.LOG_ACTION, typeParam, jobIdParam, offsetParam, lengthParam, attemptParam);
+			Map<String, Object> result = callExecutorServer(
+					pair.getFirst(), 
+					ConnectorParams.LOG_ACTION, 
+					typeParam, 
+					jobIdParam, 
+					offsetParam, 
+					lengthParam, 
+					attemptParam);
 			return LogData.createLogDataFromObject(result);
 		}
 		else {
-			LogData value = executorLoader.fetchLogs(exFlow.getExecutionId(), jobId, attempt, offset, length);
+			LogData value = executorLoader.fetchLogs(
+					exFlow.getExecutionId(), jobId, attempt, offset, length);
 			return value;
 		}
+	}
+
+	@Override
+	public String getExecutionJobStats(ExecutableFlow exFlow, String jobId)
+			throws ExecutorManagerException {
+		Pair<ExecutionReference, ExecutableFlow> pair = 
+				runningFlows.get(exFlow.getExecutionId());
+		if (pair == null) {
+			return executorLoader.fetchStats(exFlow.getExecutionId(), jobId);
+		}
+
+		Pair<String, String> typeParam = new Pair<String, String>("type", "job");
+		Pair<String, String> jobIdParam = new Pair<String, String>("jobId", jobId);
+
+		@SuppressWarnings("unchecked")
+		Map<String, Object> result = callExecutorServer(
+				pair.getFirst(),
+				ConnectorParams.STATS_ACTION,
+				typeParam,
+				jobIdParam);
+		return (String) result.get("stats");
 	}
 	
 	@Override
