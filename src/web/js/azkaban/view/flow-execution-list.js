@@ -1,7 +1,7 @@
 var executionListView;
 azkaban.ExecutionListView = Backbone.View.extend({
 	events: {
-		//"click .flow-progress-bar": "handleProgressBoxClick"
+		//"contextmenu .flow-progress-bar": "handleProgressBoxClick"
 	},
 	
 	initialize: function(settings) {
@@ -12,45 +12,45 @@ azkaban.ExecutionListView = Backbone.View.extend({
 	renderJobs: function(evt) {
 		var data = this.model.get("data");
 		var lastTime = data.endTime == -1 ? (new Date()).getTime() : data.endTime;
-		this.updateJobRow(data.nodes);
+		var executingBody = $("#executableBody");
+		this.updateJobRow(data.nodes, executingBody);
 		this.updateProgressBar(data);
 	},
-
-	/*handleProgressBoxClick: function(evt) {
-		var target = evt.currentTarget;
-		var job = target.job;
-		var attempt = target.attempt;
-		
-		var data = this.model.get("data");
-		var node = data.nodes[job];
-		
-		var jobId = event.currentTarget.jobid;
-		var requestURL = contextURL + "/manager?project=" + projectName + "&execid=" + execId + "&job=" + job + "&attempt=" + attempt;
-	
-		var menu = [	
-				{title: "Open Job...", callback: function() {window.location.href=requestURL;}},
-				{title: "Open Job in New Window...", callback: function() {window.open(requestURL);}}
-		];
-	
-		contextMenuView.show(evt, menu);
-	},*/
+//
+//	handleProgressBoxClick: function(evt) {
+//		var target = evt.currentTarget;
+//		var job = target.job;
+//		var attempt = target.attempt;
+//		
+//		var data = this.model.get("data");
+//		var node = data.nodes[job];
+//		
+//		var jobId = event.currentTarget.jobid;
+//		var requestURL = contextURL + "/manager?project=" + projectName + "&execid=" + execId + "&job=" + job + "&attempt=" + attempt;
+//	
+//		var menu = [	
+//				{title: "Open Job...", callback: function() {window.location.href=requestURL;}},
+//				{title: "Open Job in New Window...", callback: function() {window.open(requestURL);}}
+//		];
+//	
+//		contextMenuView.show(evt, menu);
+//	},
 	
 	updateJobs: function(evt) {
 		var update = this.model.get("update");
 		var lastTime = update.endTime == -1 ? (new Date()).getTime() : update.endTime;
+		var executingBody = $("#executableBody");
 		
 		if (update.nodes) {
-			this.updateJobRow(update.nodes);
+			this.updateJobRow(update.nodes, executingBody);
 		}
 		this.updateProgressBar(this.model.get("data"));
 	},
-	
-	updateJobRow: function(nodes) {
+	updateJobRow: function(nodes, body) {
 		if (!nodes) {
 			return;
 		}
 		
-		var executingBody = $("#executableBody");
 		nodes.sort(function(a,b) { return a.startTime - b.startTime; });
 		
 		for (var i = 0; i < nodes.length; ++i) {
@@ -62,7 +62,7 @@ azkaban.ExecutionListView = Backbone.View.extend({
 			//var nodeId = node.id.replace(".", "\\\\.");
 			var row = node.joblistrow;
 			if (!row) {
-				this.addNodeRow(node);
+				this.addNodeRow(node, body);
 			}
 			
 			row = node.joblistrow;
@@ -117,10 +117,15 @@ azkaban.ExecutionListView = Backbone.View.extend({
   
 			var elapsedTime = $(row).find("> td.elapsedTime");
 			if (node.endTime == -1) {
-				$(elapsedTime).text(getDuration(node.startTime, (new Date()).getTime()));					
+				$(elapsedTime).text(getDuration(node.startTime, (new Date()).getTime()));
 			}
 			else {
 				$(elapsedTime).text(getDuration(node.startTime, node.endTime));
+			}
+			
+			if (node.nodes) {
+				var subtableBody = $(row.subflowrow).find("> td > table");
+				this.updateJobRow(node.nodes, subtableBody);
 			}
 		}
 	},
@@ -190,21 +195,30 @@ azkaban.ExecutionListView = Backbone.View.extend({
 			progressBar.css("margin-left", left)
 			progressBar.css("width", width);
 			progressBar.attr("title", "attempt:" + progressBar.attempt + "	start:" + getHourMinSec(new Date(node.startTime)) + "	end:" + getHourMinSec(new Date(node.endTime)));
+		
+			if (node.nodes) {
+				this.updateProgressBar(node);
+			}
 		}
 	},
 	toggleExpandFlow: function(flow) {
 		console.log("Toggle Expand");
-		var tr = flow.progressbar;
+		var tr = flow.joblistrow;
+		var subFlowRow = tr.subflowrow;
 		var expandIcon = $(tr).find("> td > .listExpand");
 		if (tr.expanded) {
 			tr.expanded = false;
 			$(expandIcon).removeClass("glyphicon-chevron-up");
 			$(expandIcon).addClass("glyphicon-chevron-down");
+			
+			$(subFlowRow).hide();
 		}
 		else {
 			tr.expanded = true;
 			$(expandIcon).addClass("glyphicon-chevron-up");
 			$(expandIcon).removeClass("glyphicon-chevron-down");
+			
+			$(subFlowRow).show();
 		}
 	},
 	expandFlow: function(flow) {
@@ -213,9 +227,8 @@ azkaban.ExecutionListView = Backbone.View.extend({
 			///@TODO Expand.
 		}
 	},
-	addNodeRow: function(node) {
+	addNodeRow: function(node, body) {
 		var self = this;
-		var executingBody = $("#executableBody");
 		var tr = document.createElement("tr");
 		var tdName = document.createElement("td");
 		var tdTimeline = document.createElement("td");
@@ -235,6 +248,7 @@ azkaban.ExecutionListView = Backbone.View.extend({
 		$(tr).append(tdStatus);
 		$(tr).append(tdDetails);
 		$(tr).addClass("jobListRow");
+		$(tdName).addClass("jobname");
 		$(tdTimeline).addClass("timeline");
 		$(tdStart).addClass("startTime");
 		$(tdEnd).addClass("endTime");
@@ -294,9 +308,44 @@ azkaban.ExecutionListView = Backbone.View.extend({
 			$(a).text("Details");
 			$(tdDetails).append(a);
 		}
-		executingBody.append(tr);
+
+		$(body).append(tr);
+		if (node.type=="flow") {
+			var subFlowRow = document.createElement("tr");
+			var subFlowCell = document.createElement("td");
+			$(subFlowCell).addClass("subflowrow");
+			
+			var numColumn = $(tr).children("td").length;
+			$(subFlowCell).attr("colspan", numColumn);
+			tr.subflowrow = subFlowRow;
+			
+			$(subFlowRow).append(subFlowCell);
+			$(body).append(subFlowRow);
+			$(subFlowRow).hide();
+			var subtable = document.createElement("table");
+			var parentClasses = $(body).closest("table").attr("class");
+			
+			// Seriously stupid... but okay
+			createColGroupElement(subtable, "name");
+			createColGroupElement(subtable, "timeline");
+			createColGroupElement(subtable, "startTime");
+			createColGroupElement(subtable, "endTime");
+			createColGroupElement(subtable, "elapseTime");
+			createColGroupElement(subtable, "status");
+			createColGroupElement(subtable, "details");
+			
+			$(subtable).attr("class", parentClasses);
+			$(subtable).addClass("subtable");
+			$(subFlowCell).append(subtable);
+		}
 	}
 });
+
+var createColGroupElement = function(body, className) {
+	var group = document.createElement("colgroup");
+	$(group).addClass(className);
+	$(body).append(group);
+}
 
 var attemptRightClick = function(event) {
 	var target = event.currentTarget;

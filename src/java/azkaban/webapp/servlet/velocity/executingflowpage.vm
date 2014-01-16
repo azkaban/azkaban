@@ -118,7 +118,7 @@
     <div class="container-full" id="jobListView">
 			<div class="row">
 				<div class="col-xs-12">
-					<table class="table table-striped table-bordered table-condensed table-hover executions-table">
+					<table class="table table-bordered table-condensed table-hover executions-table">
 						<thead>
 							<tr>
 								<th>Name</th>
