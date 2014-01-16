@@ -91,7 +91,7 @@ public interface ExecutorManagerAdapter{
 	
 	public LogData getExecutionJobLog(ExecutableFlow exFlow, String jobId, int offset, int length, int attempt) throws ExecutorManagerException;
 
-	public String getExecutionJobStats(ExecutableFlow exflow, String jobId) throws ExecutorManagerException;
+	public List<Object> getExecutionJobStats(ExecutableFlow exflow, String jobId, int attempt) throws ExecutorManagerException;
 	
 	public JobMetaData getExecutionJobMetaData(ExecutableFlow exFlow, String jobId, int offset, int length, int attempt) throws ExecutorManagerException;
 	

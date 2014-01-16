@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import javax.servlet.ServletConfig;
@@ -98,8 +99,8 @@ public class ExecutorServlet extends HttpServlet implements ConnectorParams {
 					else if (action.equals(LOG_ACTION)) { 
 						handleFetchLogEvent(execid, req, resp, respMap);
 					}
-					else if (action.equals(STATS_ACTION)) { 
-						handleFetchStatsEvent(execid, req, resp, respMap);
+					else if (action.equals(ATTACHMENT_ACTION)) { 
+						handleFetchAttachmentEvent(execid, req, resp, respMap);
 					}
 					else if (action.equals(EXECUTE_ACTION)) {
 						handleAjaxExecute(req, respMap, execid);
@@ -206,16 +207,18 @@ public class ExecutorServlet extends HttpServlet implements ConnectorParams {
 		}
 	}
 
-	private void handleFetchStatsEvent(
+	private void handleFetchAttachmentEvent(
 			int execId, 
 			HttpServletRequest req, 
 			HttpServletResponse resp, 
 			Map<String, Object> respMap) throws ServletException {
 
 		String jobId = getParam(req, "jobId");
+    int attempt = getIntParam(req, "attempt", 0);
 		try {
-			String result = flowRunnerManager.readJobAttachment(execId, jobId);
-			respMap.put("stats", result);
+			List<Object> result = flowRunnerManager.readJobAttachment(
+          execId, jobId, attempt);
+			respMap.put("attachment", result);
 		}
 		catch (Exception e) {
 			logger.error(e);

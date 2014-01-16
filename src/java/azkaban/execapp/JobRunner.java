@@ -588,11 +588,24 @@ public class JobRunner extends EventHandler implements Runnable {
 		return props.getLong("retry.backoff", 0);
 	}
 	
-	public static String createLogFileName(int executionId, String jobId, int attempt) {
-		return attempt > 0 ? "_job." + executionId + "." + attempt + "." + jobId + ".log" : "_job." + executionId + "." + jobId + ".log";
+	public static String createAttachmentFileName(
+      int executionId, String jobId, int attempt) {
+		return attempt > 0 
+        ? "_job." + executionId + "." + attempt + "." + jobId + ".attach" 
+        : "_job." + executionId + "." + jobId + ".attach";
+	}
+
+	public static String createLogFileName(
+      int executionId, String jobId, int attempt) {
+		return attempt > 0 
+        ? "_job." + executionId + "." + attempt + "." + jobId + ".log" 
+        : "_job." + executionId + "." + jobId + ".log";
 	}
 	
-	public static String createMetaDataFileName(int executionId, String jobId, int attempt) {
-		return attempt > 0 ? "_job." + executionId + "." + attempt + "." + jobId + ".meta" : "_job." + executionId + "." + jobId + ".meta";
+	public static String createMetaDataFileName(
+      int executionId, String jobId, int attempt) {
+		return attempt > 0 
+        ? "_job." + executionId + "." + attempt + "." + jobId + ".meta" 
+        : "_job." + executionId + "." + jobId + ".meta";
 	}
 }

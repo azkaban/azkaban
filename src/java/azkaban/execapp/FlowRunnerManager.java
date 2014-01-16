@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
@@ -50,6 +51,7 @@ import azkaban.jobtype.JobTypeManager;
 import azkaban.utils.FileIOUtils;
 import azkaban.utils.FileIOUtils.JobMetaData;
 import azkaban.utils.FileIOUtils.LogData;
+import azkaban.utils.JSONUtils;
 import azkaban.utils.Pair;
 import azkaban.utils.Props;
 
@@ -554,7 +556,7 @@ public class FlowRunnerManager implements EventListener {
 		File dir = runner.getExecutionDir();
 		if (dir != null && dir.exists()) {
 			try {
-				synchronized(executionDirDeletionSync) {
+				synchronized (executionDirDeletionSync) {
 					if (!dir.exists()) {
 						throw new ExecutorManagerException("Execution dir file doesn't exist. Probably has beend deleted");
 					}
@@ -574,14 +576,38 @@ public class FlowRunnerManager implements EventListener {
 		throw new ExecutorManagerException("Error reading file. Log directory doesn't exist.");
 	}
 
-	public String readJobAttachment(int execId, String jobId)
+	public List<Object> readJobAttachment(int execId, String jobId, int attempt)
 			throws ExecutorManagerException {
 		FlowRunner runner = runningFlows.get(execId);
 		if (runner == null) {
-			throw new ExecutorManagerException("Running flow " + execId + " not found.");
+			throw new ExecutorManagerException(
+          "Running flow " + execId + " not found.");
 		}
 
-		return runner.getJobAttachment(jobId);
+    File dir = runner.getExecutionDir();
+    if (dir == null || !dir.exists()) {
+      throw new ExecutorManagerException(
+          "Error reading file. Log directory doesn't exist.");
+    }
+
+    try {
+      synchronized (executionDirDeletionSync) {
+        if (!dir.exists()) {
+					throw new ExecutorManagerException(
+              "Execution dir file doesn't exist. Probably has beend deleted");
+        }
+
+        File attachmentFile = runner.getJobAttachmentFile(jobId, attempt);
+        if (attachmentFile == null || !attachmentFile.exists()) {
+          throw new ExecutorManagerException(
+              "Job attachment file doesn't exist.");
+        }
+        return (ArrayList<Object>) JSONUtils.parseJSONFromFile(attachmentFile);
+      }
+    }
+    catch (IOException e) {
+      throw new ExecutorManagerException(e);
+    }
 	}
 	
 	public JobMetaData readJobMetaData(int execId, String jobId, int attempt, int startByte, int length) throws ExecutorManagerException {

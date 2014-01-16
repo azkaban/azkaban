@@ -62,8 +62,6 @@ public class ExecutableNode {
 	private Props inputProps;
 	private Props outputProps;
 
-	private String attachment;
-	
 	public static final String ATTEMPT_PARAM = "attempt";
 	public static final String PASTATTEMPTS_PARAM = "pastAttempts";
 	
@@ -207,14 +205,6 @@ public class ExecutableNode {
 		return outputProps;
 	}
 
-	public String getAttachment() {
-		return attachment;
-	}
-
-	public void setAttachment(String attachment) {
-		this.attachment = attachment;
-	}
-	
 	public long getDelayedExecution() {
 		return delayExecution;
 	}

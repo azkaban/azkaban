@@ -305,22 +305,26 @@ public class ExecutorManager extends EventHandler implements ExecutorManagerAdap
 	}
 
 	@Override
-	public String getExecutionJobStats(ExecutableFlow exFlow, String jobId)
+	public List<Object> getExecutionJobStats(
+      ExecutableFlow exFlow, String jobId, int attempt)
 			throws ExecutorManagerException {
 		Pair<ExecutionReference, ExecutableFlow> pair = 
 				runningFlows.get(exFlow.getExecutionId());
 		if (pair == null) {
-			return executorLoader.fetchStats(exFlow.getExecutionId(), jobId);
+			return executorLoader.fetchAttachment(
+          exFlow.getExecutionId(), jobId, attempt);
 		}
 
 		Pair<String, String> jobIdParam = new Pair<String, String>("jobId", jobId);
+    Pair<String,String> attemptParam = new Pair<String,String>("attempt", String.valueOf(attempt));
 		
 		@SuppressWarnings("unchecked")
 		Map<String, Object> result = callExecutorServer(
 				pair.getFirst(),
-				ConnectorParams.STATS_ACTION,
-				jobIdParam);
-		return (String) result.get("stats");
+				ConnectorParams.ATTACHMENT_ACTION,
+				jobIdParam,
+        attemptParam);
+		return (List<Object>) result.get("attachment");
 	}
 	
 	@Override

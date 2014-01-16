@@ -58,8 +58,6 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 	private ScheduleManager scheduleManager;
 	private ExecutorVelocityHelper velocityHelper;
 
-  private String statsDir;
-
 	@Override
 	public void init(ServletConfig config) throws ServletException {
 		super.init(config);
@@ -68,7 +66,6 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 		executorManager = server.getExecutorManager();
 		scheduleManager = server.getScheduleManager();
 		velocityHelper = new ExecutorVelocityHelper();
-    statsDir = server.getServerProps().getString("azkaban.stats.dir");
 	}
 
 	@Override
@@ -476,18 +473,14 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 				return;
 			}
 
-			String statsJson = executorManager.getExecutionJobStats(exFlow, jobId);
-      List<Object> jsonObj = 
-          (ArrayList<Object>) JSONUtils.parseJSONFromString(statsJson);
+			int attempt = this.getIntParam(req, "attempt", node.getAttempt());
+			List<Object> jsonObj = executorManager.getExecutionJobStats(
+          exFlow, jobId, attempt);
       ret.put("jobStats", jsonObj);
     }
 		catch (ExecutorManagerException e) {
 			ret.put("error", "Error retrieving stats for job " + jobId);
 			return;
-		}
-    catch (IOException e) {
-      ret.put("error", "Cannot write JSON for stats for job " + jobId);
-      return;
 		}
   }
 

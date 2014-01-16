@@ -709,20 +709,25 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader
 	}
 
 	@Override
-	public String fetchStats(int execId, String jobId)
+	public List<Object> fetchAttachment(int execId, String jobId, int attempt)
 			throws ExecutorManagerException {
 		QueryRunner runner = createQueryRunner();
 
 		try {
-			String stats = runner.query(
-					FetchExecutableJobStatsHandler.FETCH_ATTACHMENT_EXECUTABLE_NODE,
-					new FetchExecutableJobStatsHandler(),
+			String attachment = runner.query(
+					FetchExecutableJobAttachmentHandler.FETCH_ATTACHMENT_EXECUTABLE_NODE,
+					new FetchExecutableJobAttachmentHandler(),
 					execId,
 					jobId);
-			return stats;
+			return (List<Object>) JSONUtils.parseJSONFromString(attachment);
 		}
+    catch (IOException e) {
+			throw new ExecutorManagerException(
+          "Error converting job attachment to JSON " + jobId, e);
+    }
 		catch (SQLException e) {
-			throw new ExecutorManagerException("Error query job stats " + jobId, e);
+			throw new ExecutorManagerException(
+          "Error query job attachment " + jobId, e);
 		}
 	}
 	
@@ -996,7 +1001,7 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader
 		}
 	}
 
-	private static class FetchExecutableJobStatsHandler
+	private static class FetchExecutableJobAttachmentHandler
 			implements ResultSetHandler<String> {
 		private static String FETCH_ATTACHMENT_EXECUTABLE_NODE = 
 				"SELECT attachment FROM execution_jobs WHERE exec_id=? AND job_id=?";
@@ -1004,17 +1009,17 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader
 		@SuppressWarnings("unchecked")
 		@Override
 		public String handle(ResultSet rs) throws SQLException {
-			String statsJson = "";
+			String attachmentJson = "";
 			if (rs.next()) {
 				try {
-					byte[] stats = rs.getBytes(1);
-					statsJson = GZIPUtils.unGzipString(stats, "UTF-8");
+					byte[] attachment = rs.getBytes(1);
+					attachmentJson = GZIPUtils.unGzipString(attachment, "UTF-8");
 				}
 				catch (IOException e) {
-					throw new SQLException("Error decoding job stats", e);
+					throw new SQLException("Error decoding job attachment", e);
 				}
 			}
-			return statsJson;
+			return attachmentJson;
 		}
 	}
 	
