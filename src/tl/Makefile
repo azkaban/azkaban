@@ -1,3 +1,4 @@
+DUSTC = dustc
 OBJ_DIR = obj
 OBJ = \
 	$(OBJ_DIR)/flowsummary.js \
@@ -7,7 +8,7 @@ OBJ = \
 all: $(OBJ)
 
 $(OBJ_DIR)/%.js: %.tl
-	mkdir -p $(OBJ_DIR) && dustc --name=$(basename $<) $< $@
+	mkdir -p $(OBJ_DIR) && $(DUSTC) --name=$(basename $<) $< $@
 
 clean:
 	rm -rf $(OBJ_DIR)
