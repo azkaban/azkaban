@@ -382,25 +382,24 @@ azkaban.GraphModel = Backbone.Model.extend({});
 var logModel;
 azkaban.LogModel = Backbone.Model.extend({});
 
-var updateStatus = function() {
+var updateStatus = function(updateTime) {
 	var requestURL = contextURL + "/executor";
 	var oldData = graphModel.get("data");
 	var nodeMap = graphModel.get("nodeMap");
 	
-	var updateTime = oldData.updateTime ? oldData.updateTime : 0;
+	if (!updateTime) {
+		updateTime = oldData.updateTime ? oldData.updateTime : 0;
+	}
+
 	var requestData = {
 		"execid": execId, 
 		"ajax": "fetchexecflowupdate", 
 		"lastUpdateTime": updateTime
 	};
-
-	graphModel.set({"lastUpdateTime":updateTime})
 	
 	var successHandler = function(data) {
 		console.log("data updated");
 		if (data.updateTime) {
-			updateTime = data.updateTime;
-			
 			updateGraph(oldData, data);
 	
 			graphModel.set({"update": data});
@@ -451,6 +450,7 @@ var updaterFunction = function() {
 		}
 		else {
 			console.log("Flow finished, so no more updates");
+			setTimeout(function() {updateStatus(0);}, 500);
 		}
 	}
 	else {

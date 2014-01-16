@@ -7,6 +7,10 @@ azkaban.ExecutionListView = Backbone.View.extend({
 	initialize: function(settings) {
 		this.model.bind('change:graph', this.renderJobs, this);
 		this.model.bind('change:update', this.updateJobs, this);
+		
+		// This is for tabbing. Blah, hacky
+		var executingBody = $("#executableBody")[0];
+		executingBody.level = 0;
 	},
 	
 	renderJobs: function(evt) {
@@ -14,7 +18,10 @@ azkaban.ExecutionListView = Backbone.View.extend({
 		var lastTime = data.endTime == -1 ? (new Date()).getTime() : data.endTime;
 		var executingBody = $("#executableBody");
 		this.updateJobRow(data.nodes, executingBody);
-		this.updateProgressBar(data);
+		
+		var flowLastTime = data.endTime == -1 ? (new Date()).getTime() : data.endTime;
+		var flowStartTime = data.startTime;
+		this.updateProgressBar(data, flowStartTime, flowLastTime);
 	},
 //
 //	handleProgressBoxClick: function(evt) {
@@ -44,7 +51,11 @@ azkaban.ExecutionListView = Backbone.View.extend({
 		if (update.nodes) {
 			this.updateJobRow(update.nodes, executingBody);
 		}
-		this.updateProgressBar(this.model.get("data"));
+		
+		var data = this.model.get("data");
+		var flowLastTime = data.endTime == -1 ? (new Date()).getTime() : data.endTime;
+		var flowStartTime = data.startTime;
+		this.updateProgressBar(data, flowStartTime, flowLastTime);
 	},
 	updateJobRow: function(nodes, body) {
 		if (!nodes) {
@@ -125,18 +136,16 @@ azkaban.ExecutionListView = Backbone.View.extend({
 			
 			if (node.nodes) {
 				var subtableBody = $(row.subflowrow).find("> td > table");
+				subtableBody[0].level = $(body)[0].level + 1;
 				this.updateJobRow(node.nodes, subtableBody);
 			}
 		}
 	},
 	
-	updateProgressBar: function(data) {
+	updateProgressBar: function(data, flowStartTime, flowLastTime) {
 		if (data.startTime == -1) {
 			return;
 		}
-		
-		var flowLastTime = data.endTime == -1 ? (new Date()).getTime() : data.endTime;
-		var flowStartTime = data.startTime;
 
 		var outerWidth = $(".flow-progress").css("width");
 		if (outerWidth) {
@@ -197,7 +206,7 @@ azkaban.ExecutionListView = Backbone.View.extend({
 			progressBar.attr("title", "attempt:" + progressBar.attempt + "	start:" + getHourMinSec(new Date(node.startTime)) + "	end:" + getHourMinSec(new Date(node.endTime)));
 		
 			if (node.nodes) {
-				this.updateProgressBar(node);
+				this.updateProgressBar(node, flowStartTime, flowLastTime);
 			}
 		}
 	},
@@ -211,13 +220,14 @@ azkaban.ExecutionListView = Backbone.View.extend({
 			$(expandIcon).removeClass("glyphicon-chevron-up");
 			$(expandIcon).addClass("glyphicon-chevron-down");
 			
+			$(tr).removeClass("expanded");
 			$(subFlowRow).hide();
 		}
 		else {
 			tr.expanded = true;
 			$(expandIcon).addClass("glyphicon-chevron-up");
 			$(expandIcon).removeClass("glyphicon-chevron-down");
-			
+			$(tr).addClass("expanded");
 			$(subFlowRow).show();
 		}
 	},
@@ -239,6 +249,7 @@ azkaban.ExecutionListView = Backbone.View.extend({
 		var tdDetails = document.createElement("td");
 		node.joblistrow = tr;
 		tr.node = node;
+		var padding = 15*$(body)[0].level;
 		
 		$(tr).append(tdName);
 		$(tr).append(tdTimeline);
@@ -248,7 +259,11 @@ azkaban.ExecutionListView = Backbone.View.extend({
 		$(tr).append(tdStatus);
 		$(tr).append(tdDetails);
 		$(tr).addClass("jobListRow");
+		
 		$(tdName).addClass("jobname");
+		if (padding) {
+			$(tdName).css("padding-left", padding);
+		}
 		$(tdTimeline).addClass("timeline");
 		$(tdStart).addClass("startTime");
 		$(tdEnd).addClass("endTime");
@@ -256,13 +271,6 @@ azkaban.ExecutionListView = Backbone.View.extend({
 		$(tdStatus).addClass("statustd");
 		$(tdDetails).addClass("details");
 		
-//		$(tr).attr("id", node.id + "-row");
-//		$(tdTimeline).attr("id", node.id + "-timeline");
-//		$(tdStart).attr("id", node.id + "-start");
-//		$(tdEnd).attr("id", node.id + "-end");
-//		$(tdElapse).attr("id", node.id + "-elapse");
-//		$(tdStatus).attr("id", node.id + "-status");
-
 		var outerProgressBar = document.createElement("div");
 		//$(outerProgressBar).attr("id", node.id + "-outerprogressbar");
 		$(outerProgressBar).addClass("flow-progress");
@@ -325,27 +333,12 @@ azkaban.ExecutionListView = Backbone.View.extend({
 			var subtable = document.createElement("table");
 			var parentClasses = $(body).closest("table").attr("class");
 			
-			// Seriously stupid... but okay
-			createColGroupElement(subtable, "name");
-			createColGroupElement(subtable, "timeline");
-			createColGroupElement(subtable, "startTime");
-			createColGroupElement(subtable, "endTime");
-			createColGroupElement(subtable, "elapseTime");
-			createColGroupElement(subtable, "status");
-			createColGroupElement(subtable, "details");
-			
 			$(subtable).attr("class", parentClasses);
 			$(subtable).addClass("subtable");
 			$(subFlowCell).append(subtable);
 		}
 	}
 });
-
-var createColGroupElement = function(body, className) {
-	var group = document.createElement("colgroup");
-	$(group).addClass(className);
-	$(body).append(group);
-}
 
 var attemptRightClick = function(event) {
 	var target = event.currentTarget;

@@ -60,6 +60,10 @@
   &.QUEUED {
     background-color: #009fc9;
   }
+  
+  &.KILLED {
+    background-color: #ff9999;
+  }
 }
 
 td {
@@ -69,10 +73,6 @@ td {
 		float:right;
 		margin-top: 5px;
 		font-size: 8pt;
-	}
-
-	&.subflowrow {
-		height: 20px;
 	}
 
   .status {
@@ -115,7 +115,7 @@ td {
     }
 
     &.KILLED {
-      background-color: #d9534f;
+      background-color: #ff9999;
     }
   }
 }
