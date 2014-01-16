@@ -358,7 +358,6 @@ public class FlowRunner extends EventHandler implements Runnable {
 			return true;
 		}
 
-		long currentTime = System.currentTimeMillis();
 		for (ExecutableNode node: jobsReadyToRun) {
 			Status nextStatus = getImpliedStatus(node);
 			
@@ -368,12 +367,12 @@ public class FlowRunner extends EventHandler implements Runnable {
 			}
 			else if (nextStatus == Status.KILLED || isCancelled()) {
 				logger.info("Killing " + node.getId() + " due to prior errors.");
-				node.killNode(currentTime);
+				node.killNode(System.currentTimeMillis());
 				fireEventListeners(Event.create(this, Type.JOB_FINISHED, node));
 			}
 			else if (nextStatus == Status.DISABLED) {
 				logger.info("Skipping disabled job " + node.getId() + ".");
-				node.skipNode(currentTime);
+				node.skipNode(System.currentTimeMillis());
 				fireEventListeners(Event.create(this, Type.JOB_FINISHED, node));
 			}
 			else {
@@ -401,7 +400,7 @@ public class FlowRunner extends EventHandler implements Runnable {
 		for(String end: flow.getEndNodes()) {
 			ExecutableNode node = flow.getExecutableNode(end);
 
-			if (node.getStatus() == Status.KILLED) {
+			if (node.getStatus() == Status.KILLED || node.getStatus() == Status.FAILED) {
 				succeeded = false;
 			}
 			

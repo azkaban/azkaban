@@ -102,25 +102,23 @@ azkaban.JobListView = Backbone.View.extend({
 	
 	handleStatusUpdate: function(evt) {
 		var data = this.model.get("data");
-		var lastUpdateTime = this.model.get("lastUpdateTime");
-		if (data.nodes) {
-			this.changeStatuses(data, lastUpdateTime);
-		}
+		this.changeStatuses(data);
 	},
 	
-	changeStatuses: function(data, lastUpdateTime) {
+	changeStatuses: function(data) {
 		for (var i = 0; i < data.nodes.length; ++i) {
 			var node = data.nodes[i];
-			if (lastUpdateTime <= 0 || lastUpdateTime < node.updateTime) {
-				var liElement = node.listElement;
-				var child = $(liElement).children("a");
+
+			// Confused? In updates, a node reference is given to the update node.
+			var liElement = node.listElement;
+			var child = $(liElement).children("a");
+			if (!$(child).hasClass(node.status)) {
 				$(child).removeClass(statusList.join(' '));
 				$(child).addClass(node.status);
 				$(child).attr("title", node.status + " (" + node.type + ")");
 			}
-			
 			if (node.nodes) {
-				this.changeStatuses(node, lastUpdateTime);
+				this.changeStatuses(node);
 			}
 		}
 	},
@@ -133,7 +131,7 @@ azkaban.JobListView = Backbone.View.extend({
 		
 		//this.assignInitialStatus(self);
 		this.handleDisabledChange(self);
-		this.changeStatuses(data, 0);
+		this.changeStatuses(data);
 	},
 	
 	renderTree: function(el, data, prefix) {
