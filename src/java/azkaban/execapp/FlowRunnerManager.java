@@ -137,7 +137,6 @@ public class FlowRunnerManager implements EventListener {
 		cleanerThread.start();
 		
 		jobtypeManager = new JobTypeManager(props.getString(AzkabanExecutorServer.JOBTYPE_PLUGIN_DIR, JobTypeManager.DEFAULT_JOBTYPEPLUGINDIR), parentClassLoader);
-		
 	}
 
 	private Map<Pair<Integer, Integer>, ProjectVersion> loadExistingProjects() {
@@ -573,6 +572,16 @@ public class FlowRunnerManager implements EventListener {
 		}
 		
 		throw new ExecutorManagerException("Error reading file. Log directory doesn't exist.");
+	}
+
+	public String readJobAttachment(int execId, String jobId)
+			throws ExecutorManagerException {
+		FlowRunner runner = runningFlows.get(execId);
+		if (runner == null) {
+			throw new ExecutorManagerException("Running flow " + execId + " not found.");
+		}
+
+		return runner.getJobAttachment(jobId);
 	}
 	
 	public JobMetaData readJobMetaData(int execId, String jobId, int attempt, int startByte, int length) throws ExecutorManagerException {

@@ -313,14 +313,12 @@ public class ExecutorManager extends EventHandler implements ExecutorManagerAdap
 			return executorLoader.fetchStats(exFlow.getExecutionId(), jobId);
 		}
 
-		Pair<String, String> typeParam = new Pair<String, String>("type", "job");
 		Pair<String, String> jobIdParam = new Pair<String, String>("jobId", jobId);
-
+		
 		@SuppressWarnings("unchecked")
 		Map<String, Object> result = callExecutorServer(
 				pair.getFirst(),
 				ConnectorParams.STATS_ACTION,
-				typeParam,
 				jobIdParam);
 		return (String) result.get("stats");
 	}

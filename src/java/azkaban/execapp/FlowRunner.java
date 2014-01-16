@@ -839,6 +839,11 @@ public class FlowRunner extends EventHandler implements Runnable {
 		
 		return logFile;
 	}
+
+	public String getJobAttachment(String jobId) {
+		ExecutableNode node = flow.getExecutableNode(jobId);
+		return node.getAttachment();
+	}
 	
 	public File getJobMetaDataFile(String jobId, int attempt) {
 		ExecutableNode node = flow.getExecutableNode(jobId);
