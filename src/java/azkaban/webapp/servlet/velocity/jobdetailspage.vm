@@ -162,6 +162,13 @@
               </tbody>
             </table>
           </div>
+
+          <div id="jobIds">
+            <h4>Map Reduce Jobs</h4>
+            <table class="table table-striped table-bordered table-hover">
+              <tbody id="jobIdsTableBody"></tbody>
+            </table>
+          </div>
         </div>
       </div>
     </div>
