@@ -264,13 +264,12 @@ azkaban.LogDataModel = Backbone.Model.extend({
                                     job.push("<a href='" + this.get("jobTrackerUrlsOrdered")[currMapReduceJob++] + "'>" + currJob + "</a>");
                                     job.push(match[2]);
                                     job.push(match[3]);
-                                    job.push(match[4]);
-                                    job.push(match[5]);
-
-                                    if (match[6]) {
+                                    if (match[4]) {
                                         this.set("hasCumulativeCPU", true);
-                                        job.push(match[6]);
+                                        job.push(match[4]);
                                     }
+                                    job.push(match[5]);
+                                    job.push(match[6]);
 
                                     queryJobs.push(job);
                                     previousJob = currJob;
