@@ -120,6 +120,11 @@
             </div>
           </h3>
 
+          <div id="jobType">
+            <table id="jobTypeTable" class="table table-striped table-bordered table-hover">
+            </table>
+          </div>
+
           <div id="command-summary">
             <h4>Command Summary</h4>
             <table id="commandTable" class="table table-striped table-bordered table-hover">

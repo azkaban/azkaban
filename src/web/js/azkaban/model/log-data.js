@@ -92,13 +92,16 @@ azkaban.LogDataModel = Backbone.Model.extend({
 
         if (this.parseCommand(lines)) {
             this.parseJobTrackerUrls(lines);
+            this.parseJobType(lines);
 
-            var jobType = this.parseJobType(lines);
-            if (jobType.indexOf("pig") !== -1) {
-                this.parsePigTable(lines, "pigSummary", this.PIG_JOB_SUMMARY_START, "", 0);
-                this.parsePigTable(lines, "pigStats", this.PIG_JOB_STATS_START, "", 1);
-            } else if (jobType.indexOf("hive") !== -1) {
-                this.parseHiveQueries(lines);
+            var jobType = this.get("jobType");
+            if (jobType) {
+                if (jobType.indexOf("pig") !== -1) {
+                    this.parsePigTable(lines, "pigSummary", this.PIG_JOB_SUMMARY_START, "", 0);
+                    this.parsePigTable(lines, "pigStats", this.PIG_JOB_STATS_START, "", 1);
+                } else if (jobType.indexOf("hive") !== -1) {
+                    this.parseHiveQueries(lines);
+                }
             }
         }
     },
@@ -166,13 +169,12 @@ azkaban.LogDataModel = Backbone.Model.extend({
     parseJobType: function(lines) {
         var numLines = lines.length;
         var match;
-        for (var i = 0; numLines; i++) {
+        for (var i = 0; i < numLines; i++) {
             if (match = this.JOB_TYPE_REGEX.exec(lines[i])) {
-                return match[1];
+                this.set("jobType", match[1]);
+                break;
             }
         }
-        
-        return null;
     },
 
     parsePigTable: function(lines, tableName, startPattern, endPattern, linesToSkipAfterStart) {

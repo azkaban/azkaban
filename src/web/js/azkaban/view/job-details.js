@@ -45,11 +45,13 @@ azkaban.JobSummaryView = Backbone.View.extend({
 	},
 
 	initialize: function(settings) {
+		$("#jobType").hide();
 		$("#commandSummary").hide();
 		$("#pigJobSummary").hide();
 		$("#pigJobStats").hide();
 		$("#hiveJobSummary").hide();
 
+		this.listenTo(this.model, "change:jobType", this.renderJobTypeTable);
 		this.listenTo(this.model, "change:commandProperties", this.renderCommandTable);
 		this.listenTo(this.model, "change:pigSummary", this.renderPigSummaryTable);
 		this.listenTo(this.model, "change:pigStats", this.renderPigStatsTable);
@@ -65,6 +67,24 @@ azkaban.JobSummaryView = Backbone.View.extend({
 		renderJobTable(jobSummary.statTableHeaders, jobSummary.statTableData, "stats");
 		renderHiveTable(jobSummary.hiveQueries, jobSummary.hiveQueryJobs);
 	},
+
+	renderJobTypeTable: function() {
+		var jobTypeTable = $("#jobTypeTable");
+		var jobType = this.model.get("jobType");
+
+		var tr = document.createElement("tr");
+		var td = document.createElement("td");
+		$(td).html("<b>Job Type</b>");
+		$(tr).append(td);
+		td = document.createElement("td");
+		$(td).html(jobType);
+		$(tr).append(td);
+
+		jobTypeTable.append(tr);
+
+		$("#jobType").show();
+	},
+
 	renderCommandTable: function() {
 		var commandTable = $("#commandTable");
 		var commandProperties = this.model.get("commandProperties");
