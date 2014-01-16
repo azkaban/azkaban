@@ -389,8 +389,8 @@ public class JobRunner extends EventHandler implements Runnable {
 		try {
 			File file = new File(attachmentFileName);
 			if (!file.exists()) {
-				flowLogger.info("Attachment file for job " + this.jobId + 
-						" does not exist.");
+				flowLogger.info("No attachment file for job " + this.jobId + 
+						" written.");
 				return;
 			}
 			loader.uploadAttachmentFile(
@@ -415,6 +415,7 @@ public class JobRunner extends EventHandler implements Runnable {
 			return;
 		}
 
+		createAttachmentFile();
 		createLogger();
 		boolean errorFound = false;
 		// Delay execution if necessary. Will return a true if something went wrong.

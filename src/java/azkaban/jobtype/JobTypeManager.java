@@ -365,13 +365,13 @@ public class JobTypeManager
 			if (jobtypeJobProps.containsKey(jobType)) {
 				Props p = jobtypeJobProps.get(jobType);
 				for (String k : p.getKeySet()) {
-					if(!jobConf.containsKey(k)) {
+					if (!jobConf.containsKey(k)) {
 						jobConf.put(k, p.get(k));
 					}
 				}
 			}
 			jobConf = PropsUtils.resolveProps(jobConf);
-
+			
 			if (sysConf != null) {
 				sysConf = PropsUtils.resolveProps(sysConf);
 			}
@@ -382,7 +382,8 @@ public class JobTypeManager
 //			logger.info("sysConf is " + sysConf);
 //			logger.info("jobConf is " + jobConf);
 //			
-			job = (Job)Utils.callConstructor(executorClass, jobId, sysConf, jobConf, logger);
+			job = (Job) Utils.callConstructor(
+					executorClass, jobId, sysConf, jobConf, logger);
 		}
 		catch (Exception e) {
 			//job = new InitErrorJob(jobId, e);
