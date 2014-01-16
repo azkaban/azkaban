@@ -1,0 +1,63 @@
+<h1 id='upgrading_db_from_20'>Upgrading DB from 2.0</h1>
+
+<p>If installing Azkaban from scratch, you can ignore this document. This is only for those who are upgrading from 2.0 to 2.1. The <em>update_2.0_to_2.1.sql</em> needs to be run to alter all the tables. This includes several table alterations and a new table.</p>
+
+<p>Here are the changes:</p>
+
+<ul>
+<li>
+<p>Alter execution_jobs table</p>
+
+<ul>
+<li>add int column &#8216;attempt&#8217;</li>
+
+<li>change primary key to (exec_id, job_id, attempt)</li>
+
+<li>add index for (exec_id, job_id)</li>
+</ul>
+</li>
+
+<li>
+<p>Alter execution_logs table</p>
+
+<ul>
+<li>add int column &#8216;attempt&#8217;</li>
+
+<li>add bigint column &#8216;upload_time&#8217;</li>
+
+<li>default upload_time to current time in millisec</li>
+
+<li>change primary key to (exec_id, name, attempt, start_byte)</li>
+
+<li>add index for (exec_id, name, attempt)</li>
+</ul>
+</li>
+
+<li>
+<p>Alter schedules table</p>
+
+<ul>
+<li>Add tinyint column &#8216;enc_type&#8217;</li>
+
+<li>Add longblob column &#8216;schedule_options&#8217;</li>
+</ul>
+</li>
+
+<li>
+<p>Alter project_events table * Modify &#8216;message&#8217; column to be 512 characters</p>
+</li>
+
+<li>
+<p>Alter projects table</p>
+
+<ul>
+<li>add tinyint column enc_type</li>
+
+<li>add longblob column projects</li>
+</ul>
+</li>
+
+<li>
+<p>Create new table active_sla</p>
+</li>
+</ul>

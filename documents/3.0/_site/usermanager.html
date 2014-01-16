@@ -1,0 +1,13 @@
+<h1 id='usermanager'>UserManager</h1>
+
+<p>When you start Azkaban, you may notice the login page. Azkaban makes you authenticate before you can use it. This is prevent seeing or executing workflows you shoudn&#8217;t see or touch. We also used authenticated users for auditing purposes. Whenever project files change, is modified, scheduled, etc. we often want to know which user performed that action.</p>
+<img title='Azkaban Login' ALT='Azkaban Login' src='./images/login.png' width='400' class='shadowimg' />
+<h2 id='usermanager'>UserManager</h2>
+
+<p>All of the authentication occurs in the UserManager. The UserManager determines validates users, group ownership and roles. The <a href='./xmlusermanager.html'>XmlUserManager</a> is the default UserManager.</p>
+
+<p>If you&#8217;re trying to integrate Azkaban with an already established authentication mechanism, it is easy to create your own <a href='./customusermanager.html'>Custom UserManager</a> (i.e. an LDAPUserManager).</p>
+
+<h2 id='project_permissions'>Project Permissions</h2>
+
+<p>A project owner can control which users can perform certain actions on a project. User permissions can only be added by &#8216;admins&#8217; of a project, or those with an admin role. Adding and removing project permissions should be very <a href='./projectpermissions.html'>straight forward</a>.</p>

@@ -1,0 +1,27 @@
+<h1 id='azkaban_hdfs_browser'>Azkaban HDFS Browser</h1>
+
+<p>The Azkaban HDFS Browser is a plugin that allows you to view the HDFS FileSystem and decode several file types. It was originally created at LinkedIn to view Avro files, Linkedin&#8217;s BinaryJson format and text files. As this plugin matures further, we may add decoding of different file types in the future.</p>
+<img title='Azkaban HDFS Browser' ALT='Azkaban HDFS Browser' src='./images/hdfsbrowser.png' width='450' class='shadowimg' />
+<h3 id='setup'>Setup</h3>
+
+<p>Download the hdfs plugin from <a href='../../downloads.html'>the download page</a> and extract it into the web server&#8217;s plugin&#8217;s directory. This is often <em>azkaban_web_server_dir/plugins/viewer/</em>.</p>
+
+<h3 id='users'>Users</h3>
+
+<p>By default, Azkaban HDFS browser does a do-as to impersonate the logged-in user. Often times, data is created and handled by a headless account. To view these files, if user proxy is turned on, then the user can switch to the headless account as long as its validated by the UserManager.</p>
+
+<h3 id='settings'>Settings</h3>
+
+<p>These are properties to configure the HDFS Browser on the AzkabanWebServer. They can be set in <em>azkaban_web_server_dir/plugins/viewer/hdfs/conf/plugin.properties</em>.</p>
+<table class='params'><thead><tr><th class='parameter'>Parameter</th><th class='description'> Description</th><th class='default'>Default</th></tr></thead><tbody><tr><td style='text-align: left;'>viewer.name</td><td style='text-align: left;'>The name of this viewer plugin</td><td style='text-align: left;'>HDFS</td>
+</tr><tr><td style='text-align: left;'>viewer.path</td><td style='text-align: left;'>The path to this viewer plugin inside viewer directory.</td><td style='text-align: left;'>hdfs</td>
+</tr><tr><td style='text-align: left;'>viewer.order</td><td style='text-align: left;'>The order of this viewer plugin amongst all viewer plugins.</td><td style='text-align: left;'>1</td>
+</tr><tr><td style='text-align: left;'>viewer.hidden</td><td style='text-align: left;'>Whether this plugin should show up on the web UI.</td><td style='text-align: left;'>false</td>
+</tr><tr><td style='text-align: left;'>viewer.external.classpath</td><td style='text-align: left;'>Extra jars this viewer plugin should load upon init.</td><td style='text-align: left;'>extlib/*</td>
+</tr><tr><td style='text-align: left;'>viewer.servlet.class</td><td style='text-align: left;'>The main servelet class for this viewer plugin. Use <em>azkaban.viewer.hdfs.HdfsBrowserServlet</em> for hdfs browser</td><td style='text-align: left;' />
+</tr><tr><td style='text-align: left;'>hadoop.security.manager.class</td><td style='text-align: left;'>The class that handles talking to hadoop clusters. Use <em>azkaban.security.HadoopSecurityManager_H_1_0</em> for hadoop 1.x</td><td style='text-align: left;' />
+</tr><tr><td style='text-align: left;'>azkaban.should.proxy</td><td style='text-align: left;'>Whether Azkaban should proxy as individual user hadoop accounts on a secure cluster, defaults to false</td><td style='text-align: left;'>false</td>
+</tr><tr><td style='text-align: left;'>proxy.user</td><td style='text-align: left;'>The Azkaban user configured with kerberos and hadoop. Similar to how oozie should be configured, for secure hadoop installations</td><td style='text-align: left;' />
+</tr><tr><td style='text-align: left;'>proxy.keytab.location</td><td style='text-align: left;'>The location of the keytab file with which Azkaban can authenticate with Kerberos for the specified proxy.user</td><td style='text-align: left;' />
+</tr><tr><td style='text-align: left;'>allow.group.proxy</td><td style='text-align: left;'>Whether to allow users in the same headless user group to view hdfs filesystem as that headless user</td><td style='text-align: left;'>false</td>
+</tr></tbody></table>

@@ -1,0 +1,62 @@
+<h1 id='database_setup'>Database Setup</h1>
+
+<p>Currently, Azkaban2 only uses MySQL as its data store, although we are evaluating other possible storage systems.</p>
+<hr />
+<h3 id='1_install_mysql'>1. Install MySQL</h3>
+
+<p>Installation of MySQL DB won&#8217;t be covered by these instructions, but you can access the instructions on <a href='http://dev.mysql.com/doc/index.html'>MySQL&#8217;s Document Site</a>.</p>
+<hr />
+<h3 id='2_setup_the_database'>2. Setup the Database</h3>
+
+<ul>
+<li><a href='http://dev.mysql.com/doc/refman/5.7/en/create-database.html'>Create a database</a> for Azkaban. I.E:</li>
+</ul>
+<pre class='code'>
+# Example database creation command, although the db name doesn't need to be 'azkaban'
+mysql> CREATE DATABASE azkaban;
+</pre>
+<ul>
+<li><a href='http://dev.mysql.com/doc/refman/5.7/en/create-user.html'>Create a database user</a> for Azkaban. I.E</li>
+</ul>
+<pre class='code'>
+# Example database creation command. The user name doesn't need to be 'azkaban'
+mysql> CREATE USER 'username'@'%' IDENTIFIED BY 'password';
+</pre>
+<ul>
+<li><a href='http://dev.mysql.com/doc/refman/5.7/en/grant.html'>Set user permission</a> on the database. Create a user for Azkaban if one hasn&#8217;t been made, and give the user <em>INSERT, SELECT, UPDATE, DELETE</em> permission on all tables in the Azkaban db.</li>
+</ul>
+<pre class='code'>
+# Replace db, username with the ones created by the previous steps. 
+mysql> GRANT SELECT,INSERT,UPDATE,DELETE ON &lt;database&gt;.* to '&lt;username&gt;'@'%' WITH GRANT OPTION;
+</pre>
+<ul>
+<li>
+<p>Configure Packet Size may need to be configured. MySQL may have, by default, a ridiculously low allowable packet size. To increase it, you&#8217;ll need to have the property max_allowed_packet set to something higher, say 1024M.</p>
+
+<ul>
+<li>To configure this in linux, open <em>/etc/my.cnf</em>.</li>
+
+<li>Somewhere after mysqld, add the following</li>
+</ul>
+</li>
+</ul>
+<pre class='code'>
+[mysqld]
+...
+max_allowed_packet=1024M
+</pre>
+<p>To restart MySQL, you can run&#8230; <pre class='code'>
+sudo /sbin/service mysqld restart
+</pre></p>
+<hr />
+<h3 id='3_creating_the_azkaban_tables'>3. Creating the Azkaban Tables</h3>
+
+<ol>
+<li>Download the azkaban-sql-script tarball from the <a href='../../downloads.html'>download page</a>. Contained in this archive are table creation scripts.</li>
+
+<li>Run individual table creation scripts on the MySQL instance to create your tables. Alternatively, simply run the <em>create-all-sql</em> script. Any script with &#8216;_update_&#8217; as a prefix can be ignored.</li>
+</ol>
+<hr />
+<h3 id='4_get_the_jdbc_connector_jar'>4. Get the JDBC Connector Jar</h3>
+
+<p>For various reasons, Azkaban does not distribute the MySQL JDBC connector jar. You can download the jar from this link: <a href='http://www.mysql.com/downloads/connector/j/'>http://www.mysql.com/downloads/connector/j/</a>. This jar will be needed for both the web server and the executor server and should be dropped into the /extlib directory for both servers.</p>

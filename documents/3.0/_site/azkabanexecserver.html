@@ -1,0 +1,21 @@
+<h1 id='azkaban_executor_server_configurations'>Azkaban Executor Server Configurations</h1>
+
+<h3 id='executor_server_properties'>Executor Server Properties</h3>
+<table class='params'><thead><tr><th class='parameter'>Parameter</th><th class='description'> Description</th><th class='default'>Default</th></tr></thead><tbody><tr><td style='text-align: left;'>executor.port</td><td style='text-align: left;'>The port for azkaban executor server</td><td style='text-align: left;'>12321</td>
+</tr><tr><td style='text-align: left;'>executor.global.properties</td><td style='text-align: left;'>A path to the properties that will be the parent for all jobs.</td><td style='text-align: left;'><em>none</em></td>
+</tr><tr><td style='text-align: left;'>azkaban.execution.dir</td><td style='text-align: left;'>The folder for executing working directories</td><td style='text-align: left;'>executions</td>
+</tr><tr><td style='text-align: left;'>azkaban.project.dir</td><td style='text-align: left;'>The folder for storing temporary copies of project files used for executions</td><td style='text-align: left;'>projects</td>
+</tr><tr><td style='text-align: left;'>executor.flow.threads</td><td style='text-align: left;'>The number of simulateous flows that can be run. These threads are mostly idle.</td><td style='text-align: left;'>30</td>
+</tr><tr><td style='text-align: left;'>job.log.chunk.size</td><td style='text-align: left;'>For rolling job logs. The chuck size for each roll over</td><td style='text-align: left;'>5MB</td>
+</tr><tr><td style='text-align: left;'>job.log.backup.index</td><td style='text-align: left;'>The number of log chunks. The max size of each logs is then the index * chunksize</td><td style='text-align: left;'>4</td>
+</tr><tr><td style='text-align: left;'>flow.num.job.threads</td><td style='text-align: left;'>The number of concurrent running jobs in each flow. These threads are mostly idle.</td><td style='text-align: left;'>10</td>
+</tr></tbody></table>
+<h3 id='mysql_connection_parameter'>MySQL Connection Parameter</h3>
+<table class='params'><thead><tr><th class='parameter'>Parameter</th><th class='description'> Description</th><th class='default'>Default</th></tr></thead><tbody><tr><td style='text-align: left;'>database.type</td><td style='text-align: left;'>The database type. Currently, the only database supported is mysql.</td><td style='text-align: left;'>mysql</td>
+</tr><tr><td style='text-align: left;'>mysql.port</td><td style='text-align: left;'>The port to the mysql db</td><td style='text-align: left;'>3306</td>
+</tr><tr><td style='text-align: left;'>mysql.host</td><td style='text-align: left;'>The mysql host</td><td style='text-align: left;'>localhost</td>
+</tr><tr><td style='text-align: left;'>mysql.database</td><td style='text-align: left;'>The mysql database</td><td style='text-align: left;' />
+</tr><tr><td style='text-align: left;'>mysql.user</td><td style='text-align: left;'>The mysql user</td><td style='text-align: left;' />
+</tr><tr><td style='text-align: left;'>mysql.password</td><td style='text-align: left;'>The mysql password</td><td style='text-align: left;' />
+</tr><tr><td style='text-align: left;'>mysql.numconnections</td><td style='text-align: left;'>The number of connections that Azkaban web client can open to the database</td><td style='text-align: left;'>100</td>
+</tr></tbody></table>
