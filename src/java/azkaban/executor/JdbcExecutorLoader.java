@@ -35,6 +35,7 @@ import org.apache.commons.dbutils.DbUtils;
 import org.apache.commons.dbutils.QueryRunner;
 import org.apache.commons.dbutils.ResultSetHandler;
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.io.FileUtils;
 import org.apache.log4j.Logger;
 import org.joda.time.DateTime;
 
@@ -859,6 +860,53 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader
 				startByte + length, 
 				buf, 
 				DateTime.now().getMillis());
+	}
+	
+	@Override
+	public void uploadAttachmentFile(
+			int execId, String name, int attempt, File file)
+			throws ExecutorManagerException {
+		Connection connection = getConnection();
+		try {
+			uploadAttachmentFile(
+					connection, execId, name, attempt, file, defaultEncodingType);
+			connection.commit();
+		}
+		catch (SQLException e) {
+			throw new ExecutorManagerException("Error committing attachment ", e);
+		}
+		catch (IOException e) {
+			throw new ExecutorManagerException("Error uploading attachment ", e);
+		}
+		finally {
+			DbUtils.closeQuietly(connection);
+		}
+	}
+
+	private void uploadAttachmentFile(
+			Connection connection,
+			int execId,
+			String name,
+			int attempt,
+			File file,
+			EncodingType encType) throws SQLException, IOException {
+
+		String jsonString = FileUtils.readFileToString(file);
+		byte[] attachment = GZIPUtils.gzipString(jsonString, "UTF-8");
+
+		final String UPDATE_EXECUTION_NODE_ATTACHMENT = 
+				"UPDATE execution_jobs " +
+						"SET attachment=? " + 
+						"WHERE exec_id=? AND flow_id=? AND job_id=? AND attempt=?";
+
+		QueryRunner runner = new QueryRunner();
+		runner.update(
+				connection,
+				UPDATE_EXECUTION_NODE_ATTACHMENT,
+				attachment,
+				execId,
+				name,
+				attempt);
 	}
 	
 	private Connection getConnection() throws ExecutorManagerException {

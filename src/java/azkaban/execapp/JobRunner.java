@@ -65,6 +65,7 @@ public class JobRunner extends EventHandler implements Runnable {
 	
 	private Appender jobAppender;
 	private File logFile;
+	private String attachmentFileName;
 	
 	private Job job;
 	private int executionId = -1;
@@ -229,6 +230,13 @@ public class JobRunner extends EventHandler implements Runnable {
 		}
 	}
 
+	private void createAttachmentFile() {
+		String fileName = createAttachmentFileName(
+				this.executionId, this.jobId, node.getAttempt());
+		File file = new File(workingDir, fileName);
+		attachmentFileName = file.getAbsolutePath();
+	}
+
 	private void closeLogger() {
 		if (jobAppender != null) {
 			logger.removeAppender(jobAppender);
@@ -358,7 +366,6 @@ public class JobRunner extends EventHandler implements Runnable {
 		
 		try {
 			File[] files = logFile.getParentFile().listFiles(new FilenameFilter() {
-				
 				@Override
 				public boolean accept(File dir, String name) {
 					return name.startsWith(logFile.getName());
@@ -370,6 +377,28 @@ public class JobRunner extends EventHandler implements Runnable {
 		}
 		catch (ExecutorManagerException e) {
 			flowLogger.error("Error writing out logs for job " + this.node.getNestedId(), e);
+		}
+	}
+
+	private void finalizeAttachmentFile() {
+		if (attachmentFileName == null) {
+			flowLogger.info("Attachment file for job " + this.jobId + " is null");
+			return;
+		}
+
+		try {
+			File file = new File(attachmentFileName);
+			if (!file.exists()) {
+				flowLogger.info("Attachment file for job " + this.jobId + 
+						" does not exist.");
+				return;
+			}
+			loader.uploadAttachmentFile(
+					executionId, node.getNestedId(), node.getAttempt(), file);
+		}
+		catch (ExecutorManagerException e) {
+			flowLogger.error("Error writing out attachment for job " + 
+					this.node.getNestedId(), e);
 		}
 	}
 	
@@ -391,7 +420,8 @@ public class JobRunner extends EventHandler implements Runnable {
 		// Delay execution if necessary. Will return a true if something went wrong.
 		errorFound |= delayExecution();
 
-		// For pipelining of jobs. Will watch other jobs. Will return true if something went wrong.
+		// For pipelining of jobs. Will watch other jobs. Will return true if
+		// something went wrong.
 		errorFound |= blockOnPipeLine();
 
 		// Start the node.
@@ -400,7 +430,8 @@ public class JobRunner extends EventHandler implements Runnable {
 			fireEvent(Event.create(this, Type.JOB_STARTED, null, false));
 			try {
 				loader.uploadExecutableNode(node, props);
-			} catch (ExecutorManagerException e1) {
+			}
+			catch (ExecutorManagerException e1) {
 				logger.error("Error writing initial node properties");
 			}
 			
@@ -425,6 +456,7 @@ public class JobRunner extends EventHandler implements Runnable {
 		
 		fireEvent(Event.create(this, Type.JOB_FINISHED), false);
 		finalizeLogFile();
+		finalizeAttachmentFile();
 	}
 	
 	private boolean prepareJob() throws RuntimeException {
@@ -455,6 +487,7 @@ public class JobRunner extends EventHandler implements Runnable {
 			props.put(CommonJobProperties.JOB_ATTEMPT, node.getAttempt());
 			props.put(CommonJobProperties.JOB_METADATA_FILE,
 					createMetaDataFileName(executionId, this.jobId, node.getAttempt()));
+			props.put(CommonJobProperties.JOB_ATTACHMENT_FILE, attachmentFileName);
 			changeStatus(Status.RUNNING);
 			
 			// Ability to specify working directory

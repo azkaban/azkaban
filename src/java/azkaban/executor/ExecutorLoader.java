@@ -50,6 +50,8 @@ public interface ExecutorLoader {
 	public List<Object> fetchAttachment(int execId, String name, int attempt) throws ExecutorManagerException;
 
 	public void uploadLogFile(int execId, String name, int attempt, File ... files) throws ExecutorManagerException;
+	
+	public void uploadAttachmentFile(int execId, String name, int attempt, File file) throws ExecutorManagerException;
 
 	public void updateExecutableFlow(ExecutableFlow flow) throws ExecutorManagerException;
 
