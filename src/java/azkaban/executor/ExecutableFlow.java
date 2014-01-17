@@ -89,7 +89,8 @@ public class ExecutableFlow extends ExecutableFlowBase {
 	protected void setFlow(Project project, Flow flow) {
 		super.setFlow(project, flow);
 		executionOptions = new ExecutionOptions();
-
+		executionOptions.setMailCreator(flow.getMailCreator());
+		
 		if (flow.getSuccessEmails() != null) {
 			executionOptions.setSuccessEmails(flow.getSuccessEmails());
 		}
