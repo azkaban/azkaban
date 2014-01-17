@@ -39,6 +39,8 @@ import azkaban.utils.Props;
 import azkaban.webapp.AzkabanServer;
 import azkaban.webapp.AzkabanWebServer;
 import azkaban.webapp.session.Session;
+import azkaban.webapp.plugin.ViewerPlugin;
+import azkaban.webapp.plugin.TriggerPlugin;
 
 /**
  * Base Servlet for pages

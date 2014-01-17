@@ -16,6 +16,8 @@
 
 package azkaban.webapp.plugin;
 
+import java.util.List;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -23,15 +25,40 @@ public class PluginRegistry {
 
   private static PluginRegistry registry;
 
-  public Map<String, ViewerPlugin> plugins;
+  public Map<String, ViewerPlugin> viewerPlugins;
+
+	public Map<String, List<ViewerPlugin>> jobTypeViewerPlugins;
 
   private PluginRegistry() {
-
+		viewerPlugins = new HashMap<String, ViewerPlugin>();
+		jobTypeViewerPlugins = new HashMap<String, List<ViewerPlugin>>();
   }
 
   public void register(ViewerPlugin plugin) {
-
+		viewerPlugins.put(plugin.getPluginName(), plugin);
+		String jobType = plugin.getJobType();
+		if (jobType == null) {
+			return;
+		}
+		List<ViewerPlugin> plugins = null;
+		if (!jobTypeViewerPlugins.containsKey(jobType)) {
+			plugins = new ArrayList<ViewerPlugin>();
+			plugins.add(plugin);
+			jobTypeViewerPlugins.put(jobType, plugins);
+		}
+		else {
+			plugins = jobTypeViewerPlugins.get(jobType);
+			plugins.add(plugin);
+		}
   }
+
+	public List<ViewerPlugin> getViewerPlugins() {
+		return new ArrayList<ViewerPlugin>(viewerPlugins.values());
+	}
+
+	public List<ViewerPlugin> getViewerPluginsForJobType(String jobType) {
+		return jobTypeViewerPlugins.get(jobType);
+	}
 
   public static PluginRegistry getRegistry() {
     if (registry == null) {

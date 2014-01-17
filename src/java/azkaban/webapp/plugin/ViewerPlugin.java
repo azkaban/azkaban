@@ -19,14 +19,21 @@ package azkaban.webapp.plugin;
 public class ViewerPlugin {
 	private final String pluginName;
 	private final String pluginPath;
+	private final String jobType;
 	private final int order;
 	private boolean hidden;
 	
-	public ViewerPlugin(String pluginName, String pluginPath, int order, boolean hidden) {
+	public ViewerPlugin(
+			String pluginName, 
+			String pluginPath, 
+			int order, 
+			boolean hidden,
+			String jobType) {
 		this.pluginName = pluginName;
 		this.pluginPath = pluginPath;
 		this.order = order;
 		this.setHidden(hidden);
+		this.jobType = jobType;
 	}
 
 	public String getPluginName() {
@@ -47,5 +54,9 @@ public class ViewerPlugin {
 
 	public void setHidden(boolean hidden) {
 		this.hidden = hidden;
+	}
+
+	public String getJobType() {
+		return jobType;
 	}
 }

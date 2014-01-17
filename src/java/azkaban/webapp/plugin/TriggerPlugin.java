@@ -18,6 +18,8 @@ package azkaban.webapp.plugin;
 
 import azkaban.trigger.TriggerAgent;
 
+import azkaban.webapp.servlet.AbstractAzkabanServlet;
+
 public interface TriggerPlugin {
 	
 //	public TriggerPlugin(String pluginName, Props props, AzkabanWebServer azkabanWebApp) {
