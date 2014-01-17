@@ -50,6 +50,8 @@ import azkaban.utils.FileIOUtils.LogData;
 import azkaban.utils.JSONUtils;
 import azkaban.webapp.AzkabanWebServer;
 import azkaban.webapp.session.Session;
+import azkaban.webapp.plugin.PluginRegistry;
+import azkaban.webapp.plugin.ViewerPlugin;
 
 public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 	private static final long serialVersionUID = 1L;
@@ -194,7 +196,18 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 				page.render();
 				return;
 			}
-		} catch (ExecutorManagerException e) {
+
+			ExecutableNode node = flow.getExecutableNode(jobId);
+			if (node == null) {
+				page.add("errorMsg", "Job " + jobId + " doesn't exist in " + flow.getExecutionId());
+				return;
+			}
+		
+			List<ViewerPlugin> jobViewerPlugins = PluginRegistry.getRegistry()
+					.getViewerPluginsForJobType(node.getType());
+			page.add("jobViewerPlugins", jobViewerPlugins);
+		}
+		catch (ExecutorManagerException e) {
 			page.add("errorMsg", "Error loading executing flow: " + e.getMessage());
 			page.render();
 			return;
@@ -206,7 +219,7 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 			page.render();
 			return;
 		}
-		
+
 		page.add("projectName", project.getName());
 		page.add("flowid", flow.getFlowId());
 		
