@@ -20,29 +20,31 @@ import java.util.List;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.TreeSet;
+import java.util.Set;
 
 public class PluginRegistry {
 
   private static PluginRegistry registry;
 
-  public Map<String, ViewerPlugin> viewerPlugins;
+  public TreeSet<ViewerPlugin> viewerPlugins;
 
-	public Map<String, List<ViewerPlugin>> jobTypeViewerPlugins;
+	public Map<String, TreeSet<ViewerPlugin>> jobTypeViewerPlugins;
 
   private PluginRegistry() {
-		viewerPlugins = new HashMap<String, ViewerPlugin>();
-		jobTypeViewerPlugins = new HashMap<String, List<ViewerPlugin>>();
+		viewerPlugins = new TreeSet<ViewerPlugin>(ViewerPlugin.COMPARATOR);
+		jobTypeViewerPlugins = new HashMap<String, TreeSet<ViewerPlugin>>();
   }
 
   public void register(ViewerPlugin plugin) {
-		viewerPlugins.put(plugin.getPluginName(), plugin);
+		viewerPlugins.add(plugin);
 		String jobType = plugin.getJobType();
 		if (jobType == null) {
 			return;
 		}
-		List<ViewerPlugin> plugins = null;
+		TreeSet<ViewerPlugin> plugins = null;
 		if (!jobTypeViewerPlugins.containsKey(jobType)) {
-			plugins = new ArrayList<ViewerPlugin>();
+			plugins = new TreeSet<ViewerPlugin>(ViewerPlugin.COMPARATOR);
 			plugins.add(plugin);
 			jobTypeViewerPlugins.put(jobType, plugins);
 		}
@@ -53,11 +55,11 @@ public class PluginRegistry {
   }
 
 	public List<ViewerPlugin> getViewerPlugins() {
-		return new ArrayList<ViewerPlugin>(viewerPlugins.values());
+		return new ArrayList<ViewerPlugin>(viewerPlugins);
 	}
 
 	public List<ViewerPlugin> getViewerPluginsForJobType(String jobType) {
-		return jobTypeViewerPlugins.get(jobType);
+		return new ArrayList<ViewerPlugin>(jobTypeViewerPlugins.get(jobType));
 	}
 
   public static PluginRegistry getRegistry() {
