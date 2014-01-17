@@ -24,6 +24,8 @@ azkaban.LogDataModel = Backbone.Model.extend({
     HIVE_MAP_REDUCE_JOBS_SUMMARY: "MapReduce Jobs Launched:",
     HIVE_MAP_REDUCE_SUMMARY_REGEX: /Job (\d+):\s+Map: (\d+)\s+Reduce: (\d+)\s+(?:Cumulative CPU: (.+?))?\s+HDFS Read: (\d+)\s+HDFS Write: (\d+)/,
 
+    JOB_ID_REGEX: /job_\d{12}_\d{4,}/,
+
     initialize: function() {
         this.set("offset", 0 );
         this.set("logData", "");
@@ -91,14 +93,19 @@ azkaban.LogDataModel = Backbone.Model.extend({
         var lines = data.split("\n");
 
         if (this.parseCommand(lines)) {
+            this.parseJobType(lines);
             this.parseJobTrackerUrls(lines);
 
-            var jobType = this.parseJobType(lines);
-            if (jobType.indexOf("pig") !== -1) {
-                this.parsePigTable(lines, "pigSummary", this.PIG_JOB_SUMMARY_START, "", 0);
-                this.parsePigTable(lines, "pigStats", this.PIG_JOB_STATS_START, "", 1);
-            } else if (jobType.indexOf("hive") !== -1) {
-                this.parseHiveQueries(lines);
+            var jobType = this.get("jobType");
+            if (jobType) {
+                if (jobType.indexOf("pig") !== -1) {
+                    this.parsePigTable(lines, "pigSummary", this.PIG_JOB_SUMMARY_START, "", 0);
+                    this.parsePigTable(lines, "pigStats", this.PIG_JOB_STATS_START, "", 1);
+                } else if (jobType.indexOf("hive") !== -1) {
+                    this.parseHiveQueries(lines);
+                } else {
+                    this.parseJobIds(lines);
+                }
             }
         }
     },
@@ -163,16 +170,32 @@ azkaban.LogDataModel = Backbone.Model.extend({
         this.set("jobTrackerUrlsOrdered", jobTrackerUrlsOrdered);
     },
 
+    parseJobIds: function(lines) {
+        var seenJobIds = {};
+        var jobIds = [];
+        var numLines = lines.length;
+        var match;
+        for (var i = 0; i < numLines; i++) {
+            if ((match = this.JOB_ID_REGEX.exec(lines[i])) && !seenJobIds[match[0]]) {
+                seenJobIds[match[0]] = true;
+                jobIds.push(match[0]);
+            }
+        }
+
+        if (jobIds.length > 0) {
+            this.set("jobIds", jobIds);
+        }
+    },
+
     parseJobType: function(lines) {
         var numLines = lines.length;
         var match;
-        for (var i = 0; numLines; i++) {
+        for (var i = 0; i < numLines; i++) {
             if (match = this.JOB_TYPE_REGEX.exec(lines[i])) {
-                return match[1];
+                this.set("jobType", match[1]);
+                break;
             }
         }
-        
-        return null;
     },
 
     parsePigTable: function(lines, tableName, startPattern, endPattern, linesToSkipAfterStart) {
@@ -262,14 +285,12 @@ azkaban.LogDataModel = Backbone.Model.extend({
                                     job.push("<a href='" + this.get("jobTrackerUrlsOrdered")[currMapReduceJob++] + "'>" + currJob + "</a>");
                                     job.push(match[2]);
                                     job.push(match[3]);
-                                    job.push(match[4]);
+                                    if (match[4]) {
+                                        this.set("hasCumulativeCPU", true);
+                                        job.push(match[4]);
+                                    }
                                     job.push(match[5]);
                                     job.push(match[6]);
-
-                                    if (match[7]) {
-                                        this.set("hasCumulativeCPU", true);
-                                        job.push(match[7]);
-                                    }
 
                                     queryJobs.push(job);
                                     previousJob = currJob;

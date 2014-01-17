@@ -45,15 +45,19 @@ azkaban.JobSummaryView = Backbone.View.extend({
 	},
 
 	initialize: function(settings) {
+		$("#jobType").hide();
 		$("#commandSummary").hide();
 		$("#pigJobSummary").hide();
 		$("#pigJobStats").hide();
 		$("#hiveJobSummary").hide();
+		$("#jobIds").hide();
 
+		this.listenTo(this.model, "change:jobType", this.renderJobTypeTable);
 		this.listenTo(this.model, "change:commandProperties", this.renderCommandTable);
 		this.listenTo(this.model, "change:pigSummary", this.renderPigSummaryTable);
 		this.listenTo(this.model, "change:pigStats", this.renderPigStatsTable);
 		this.listenTo(this.model, "change:hiveSummary", this.renderHiveTable);
+		this.listenTo(this.model, "change:jobIds", this.renderJobIdsTable);
 	},
 
 	refresh: function() {
@@ -65,6 +69,46 @@ azkaban.JobSummaryView = Backbone.View.extend({
 		renderJobTable(jobSummary.statTableHeaders, jobSummary.statTableData, "stats");
 		renderHiveTable(jobSummary.hiveQueries, jobSummary.hiveQueryJobs);
 	},
+
+	renderJobTypeTable: function() {
+		var jobTypeTable = $("#jobTypeTable");
+		var jobType = this.model.get("jobType");
+
+		var tr = document.createElement("tr");
+		var td = document.createElement("td");
+		$(td).html("<b>Job Type</b>");
+		$(tr).append(td);
+		td = document.createElement("td");
+		$(td).html(jobType);
+		$(tr).append(td);
+
+		jobTypeTable.append(tr);
+
+		$("#jobType").show();
+	},
+
+	renderJobIdsTable: function() {
+		var oldBody = $("#jobIdsTableBody");
+		var newBody = $(document.createElement("tbody")).attr("id", "jobIdsTableBody");
+
+		var jobIds = this.model.get("jobIds");
+		var jobUrls = this.model.get("jobTrackerUrls");
+		var numJobs = jobIds.length;
+		for (var i = 0; i < numJobs; i++) {
+			var job = jobIds[i];
+			var tr = document.createElement("tr");
+			var td = document.createElement("td");
+			var html = jobUrls[job] ? "<a href='" + jobUrls[job] + "'>" + job + "</a>" : job;
+			$(td).html(html);
+			$(tr).append(td);
+			newBody.append(tr);
+		}
+
+		oldBody.replaceWith(newBody);
+
+		$("#jobIds").show();
+	},
+
 	renderCommandTable: function() {
 		var commandTable = $("#commandTable");
 		var commandProperties = this.model.get("commandProperties");

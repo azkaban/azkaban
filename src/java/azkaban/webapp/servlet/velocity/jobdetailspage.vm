@@ -84,6 +84,11 @@
             </div>
           </h3>
 
+          <div id="jobType">
+            <table id="jobTypeTable" class="table table-striped table-bordered table-hover">
+            </table>
+          </div>
+
           <div id="command-summary">
             <h4>Command Summary</h4>
             <table id="commandTable" class="table table-striped table-bordered table-hover">
@@ -119,6 +124,13 @@
               </thead>
               <tbody id="hiveTableBody">
               </tbody>
+            </table>
+          </div>
+
+          <div id="jobIds">
+            <h4>Map Reduce Jobs</h4>
+            <table class="table table-striped table-bordered table-hover">
+              <tbody id="jobIdsTableBody"></tbody>
             </table>
           </div>
         </div>
