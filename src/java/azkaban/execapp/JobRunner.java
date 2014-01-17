@@ -393,8 +393,7 @@ public class JobRunner extends EventHandler implements Runnable {
 						" written.");
 				return;
 			}
-			loader.uploadAttachmentFile(
-					executionId, node.getNestedId(), node.getAttempt(), file);
+			loader.uploadAttachmentFile(node, file);
 		}
 		catch (ExecutorManagerException e) {
 			flowLogger.error("Error writing out attachment for job " + 

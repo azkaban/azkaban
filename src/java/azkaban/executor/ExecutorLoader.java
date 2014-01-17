@@ -47,11 +47,11 @@ public interface ExecutorLoader {
 
 	public LogData fetchLogs(int execId, String name, int attempt, int startByte, int endByte) throws ExecutorManagerException;
 
-	public List<Object> fetchAttachment(int execId, String name, int attempt) throws ExecutorManagerException;
+	public List<Object> fetchAttachments(int execId, String name, int attempt) throws ExecutorManagerException;
 
 	public void uploadLogFile(int execId, String name, int attempt, File ... files) throws ExecutorManagerException;
 	
-	public void uploadAttachmentFile(int execId, String name, int attempt, File file) throws ExecutorManagerException;
+	public void uploadAttachmentFile(ExecutableNode node, File file) throws ExecutorManagerException;
 
 	public void updateExecutableFlow(ExecutableFlow flow) throws ExecutorManagerException;
 

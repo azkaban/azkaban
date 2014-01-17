@@ -710,25 +710,25 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader
 	}
 
 	@Override
-	public List<Object> fetchAttachment(int execId, String jobId, int attempt)
+	public List<Object> fetchAttachments(int execId, String jobId, int attempt)
 			throws ExecutorManagerException {
 		QueryRunner runner = createQueryRunner();
 
 		try {
-			String attachment = runner.query(
-					FetchExecutableJobAttachmentHandler.FETCH_ATTACHMENT_EXECUTABLE_NODE,
-					new FetchExecutableJobAttachmentHandler(),
+			String attachments = runner.query(
+					FetchExecutableJobAttachmentsHandler.FETCH_ATTACHMENTS_EXECUTABLE_NODE,
+					new FetchExecutableJobAttachmentsHandler(),
 					execId,
 					jobId);
-			return (List<Object>) JSONUtils.parseJSONFromString(attachment);
+			return (List<Object>) JSONUtils.parseJSONFromString(attachments);
 		}
 		catch (IOException e) {
 			throw new ExecutorManagerException(
-					"Error converting job attachment to JSON " + jobId, e);
+					"Error converting job attachments to JSON " + jobId, e);
 		}
 		catch (SQLException e) {
 			throw new ExecutorManagerException(
-					"Error query job attachment " + jobId, e);
+					"Error query job attachments " + jobId, e);
 		}
 	}
 	
@@ -863,20 +863,18 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader
 	}
 	
 	@Override
-	public void uploadAttachmentFile(
-			int execId, String name, int attempt, File file)
+	public void uploadAttachmentFile(ExecutableNode node, File file)
 			throws ExecutorManagerException {
 		Connection connection = getConnection();
 		try {
-			uploadAttachmentFile(
-					connection, execId, name, attempt, file, defaultEncodingType);
+			uploadAttachmentFile(connection, node, file, defaultEncodingType);
 			connection.commit();
 		}
 		catch (SQLException e) {
-			throw new ExecutorManagerException("Error committing attachment ", e);
+			throw new ExecutorManagerException("Error committing attachments ", e);
 		}
 		catch (IOException e) {
-			throw new ExecutorManagerException("Error uploading attachment ", e);
+			throw new ExecutorManagerException("Error uploading attachments ", e);
 		}
 		finally {
 			DbUtils.closeQuietly(connection);
@@ -885,28 +883,27 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader
 
 	private void uploadAttachmentFile(
 			Connection connection,
-			int execId,
-			String name,
-			int attempt,
+			ExecutableNode node,
 			File file,
 			EncodingType encType) throws SQLException, IOException {
 
 		String jsonString = FileUtils.readFileToString(file);
-		byte[] attachment = GZIPUtils.gzipString(jsonString, "UTF-8");
+		byte[] attachments = GZIPUtils.gzipString(jsonString, "UTF-8");
 
-		final String UPDATE_EXECUTION_NODE_ATTACHMENT = 
+		final String UPDATE_EXECUTION_NODE_ATTACHMENTS = 
 				"UPDATE execution_jobs " +
-						"SET attachment=? " + 
+						"SET attachments=? " + 
 						"WHERE exec_id=? AND flow_id=? AND job_id=? AND attempt=?";
 
 		QueryRunner runner = new QueryRunner();
 		runner.update(
 				connection,
-				UPDATE_EXECUTION_NODE_ATTACHMENT,
-				attachment,
-				execId,
-				name,
-				attempt);
+				UPDATE_EXECUTION_NODE_ATTACHMENTS,
+				attachments,
+				node.getExecutableFlow().getExecutionId(),
+				node.getParentFlow().getNestedId(),
+				node.getId(),
+				node.getAttempt());
 	}
 	
 	private Connection getConnection() throws ExecutorManagerException {
@@ -1049,25 +1046,25 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader
 		}
 	}
 
-	private static class FetchExecutableJobAttachmentHandler
+	private static class FetchExecutableJobAttachmentsHandler
 			implements ResultSetHandler<String> {
-		private static String FETCH_ATTACHMENT_EXECUTABLE_NODE = 
-				"SELECT attachment FROM execution_jobs WHERE exec_id=? AND job_id=?";
+		private static String FETCH_ATTACHMENTS_EXECUTABLE_NODE = 
+				"SELECT attachments FROM execution_jobs WHERE exec_id=? AND job_id=?";
 
 		@SuppressWarnings("unchecked")
 		@Override
 		public String handle(ResultSet rs) throws SQLException {
-			String attachmentJson = "";
+			String attachmentsJson = "";
 			if (rs.next()) {
 				try {
-					byte[] attachment = rs.getBytes(1);
-					attachmentJson = GZIPUtils.unGzipString(attachment, "UTF-8");
+					byte[] attachments = rs.getBytes(1);
+					attachmentsJson = GZIPUtils.unGzipString(attachments, "UTF-8");
 				}
 				catch (IOException e) {
-					throw new SQLException("Error decoding job attachment", e);
+					throw new SQLException("Error decoding job attachments", e);
 				}
 			}
-			return attachmentJson;
+			return attachmentsJson;
 		}
 	}
 	

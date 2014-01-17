@@ -576,7 +576,7 @@ public class FlowRunnerManager implements EventListener {
 		throw new ExecutorManagerException("Error reading file. Log directory doesn't exist.");
 	}
 
-	public List<Object> readJobAttachment(int execId, String jobId, int attempt)
+	public List<Object> readJobAttachments(int execId, String jobId, int attempt)
 			throws ExecutorManagerException {
 		FlowRunner runner = runningFlows.get(execId);
 		if (runner == null) {

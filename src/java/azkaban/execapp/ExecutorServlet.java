@@ -99,8 +99,8 @@ public class ExecutorServlet extends HttpServlet implements ConnectorParams {
 					else if (action.equals(LOG_ACTION)) { 
 						handleFetchLogEvent(execid, req, resp, respMap);
 					}
-					else if (action.equals(ATTACHMENT_ACTION)) { 
-						handleFetchAttachmentEvent(execid, req, resp, respMap);
+					else if (action.equals(ATTACHMENTS_ACTION)) { 
+						handleFetchAttachmentsEvent(execid, req, resp, respMap);
 					}
 					else if (action.equals(EXECUTE_ACTION)) {
 						handleAjaxExecute(req, respMap, execid);
@@ -207,7 +207,7 @@ public class ExecutorServlet extends HttpServlet implements ConnectorParams {
 		}
 	}
 
-	private void handleFetchAttachmentEvent(
+	private void handleFetchAttachmentsEvent(
 			int execId, 
 			HttpServletRequest req, 
 			HttpServletResponse resp, 
@@ -216,9 +216,9 @@ public class ExecutorServlet extends HttpServlet implements ConnectorParams {
 		String jobId = getParam(req, "jobId");
 		int attempt = getIntParam(req, "attempt", 0);
 		try {
-			List<Object> result = flowRunnerManager.readJobAttachment(
+			List<Object> result = flowRunnerManager.readJobAttachments(
 					execId, jobId, attempt);
-			respMap.put("attachment", result);
+			respMap.put("attachments", result);
 		}
 		catch (Exception e) {
 			logger.error(e);

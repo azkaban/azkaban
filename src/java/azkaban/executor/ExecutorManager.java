@@ -311,7 +311,7 @@ public class ExecutorManager extends EventHandler implements ExecutorManagerAdap
 		Pair<ExecutionReference, ExecutableFlow> pair = 
 				runningFlows.get(exFlow.getExecutionId());
 		if (pair == null) {
-			return executorLoader.fetchAttachment(
+			return executorLoader.fetchAttachments(
 					exFlow.getExecutionId(), jobId, attempt);
 		}
 
@@ -321,10 +321,10 @@ public class ExecutorManager extends EventHandler implements ExecutorManagerAdap
 		@SuppressWarnings("unchecked")
 		Map<String, Object> result = callExecutorServer(
 				pair.getFirst(),
-				ConnectorParams.ATTACHMENT_ACTION,
+				ConnectorParams.ATTACHMENTS_ACTION,
 				jobIdParam,
 				attemptParam);
-		return (List<Object>) result.get("attachment");
+		return (List<Object>) result.get("attachments");
 	}
 	
 	@Override
