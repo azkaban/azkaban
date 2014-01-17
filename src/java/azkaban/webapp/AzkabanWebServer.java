@@ -197,12 +197,6 @@ public class AzkabanWebServer extends AzkabanServer {
 		
 		tempDir = new File(props.getString("azkaban.temp.dir", "temp"));
 
-		File statsDir = new File(props.getString("azkaban.stats.dir", "stats"));
-		if (!statsDir.exists()) {
-			statsDir.mkdir();
-		}
-    props.put("azkaban.stats.dir", statsDir.getCanonicalPath());
-
 		// Setup time zone
 		if (props.containsKey(DEFAULT_TIMEZONE_ID)) {
 			String timezone = props.getString(DEFAULT_TIMEZONE_ID);

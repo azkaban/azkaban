@@ -35,6 +35,7 @@ import org.apache.commons.dbutils.DbUtils;
 import org.apache.commons.dbutils.QueryRunner;
 import org.apache.commons.dbutils.ResultSetHandler;
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.io.FileUtils;
 import org.apache.log4j.Logger;
 import org.joda.time.DateTime;
 
@@ -707,6 +708,32 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader
 					"Error fetching logs " + execId + " : " + name, e);
 		}
 	}
+
+	@Override
+	public List<Object> fetchAttachments(int execId, String jobId, int attempt)
+			throws ExecutorManagerException {
+		QueryRunner runner = createQueryRunner();
+
+		try {
+			String attachments = runner.query(
+					FetchExecutableJobAttachmentsHandler.FETCH_ATTACHMENTS_EXECUTABLE_NODE,
+					new FetchExecutableJobAttachmentsHandler(),
+					execId,
+					jobId);
+			if (attachments == null) {
+				return null;
+			}
+			return (List<Object>) JSONUtils.parseJSONFromString(attachments);
+		}
+		catch (IOException e) {
+			throw new ExecutorManagerException(
+					"Error converting job attachments to JSON " + jobId, e);
+		}
+		catch (SQLException e) {
+			throw new ExecutorManagerException(
+					"Error query job attachments " + jobId, e);
+		}
+	}
 	
 	@Override
 	public void uploadLogFile(
@@ -836,6 +863,50 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader
 				startByte + length, 
 				buf, 
 				DateTime.now().getMillis());
+	}
+	
+	@Override
+	public void uploadAttachmentFile(ExecutableNode node, File file)
+			throws ExecutorManagerException {
+		Connection connection = getConnection();
+		try {
+			uploadAttachmentFile(connection, node, file, defaultEncodingType);
+			connection.commit();
+		}
+		catch (SQLException e) {
+			throw new ExecutorManagerException("Error committing attachments ", e);
+		}
+		catch (IOException e) {
+			throw new ExecutorManagerException("Error uploading attachments ", e);
+		}
+		finally {
+			DbUtils.closeQuietly(connection);
+		}
+	}
+
+	private void uploadAttachmentFile(
+			Connection connection,
+			ExecutableNode node,
+			File file,
+			EncodingType encType) throws SQLException, IOException {
+
+		String jsonString = FileUtils.readFileToString(file);
+		byte[] attachments = GZIPUtils.gzipString(jsonString, "UTF-8");
+
+		final String UPDATE_EXECUTION_NODE_ATTACHMENTS = 
+				"UPDATE execution_jobs " +
+						"SET attachments=? " + 
+						"WHERE exec_id=? AND flow_id=? AND job_id=? AND attempt=?";
+
+		QueryRunner runner = new QueryRunner();
+		runner.update(
+				connection,
+				UPDATE_EXECUTION_NODE_ATTACHMENTS,
+				attachments,
+				node.getExecutableFlow().getExecutionId(),
+				node.getParentFlow().getNestedId(),
+				node.getId(),
+				node.getAttempt());
 	}
 	
 	private Connection getConnection() throws ExecutorManagerException {
@@ -975,6 +1046,30 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader
 			} while (rs.next());
 
 			return execNodes;
+		}
+	}
+
+	private static class FetchExecutableJobAttachmentsHandler
+			implements ResultSetHandler<String> {
+		private static String FETCH_ATTACHMENTS_EXECUTABLE_NODE = 
+				"SELECT attachments FROM execution_jobs WHERE exec_id=? AND job_id=?";
+
+		@SuppressWarnings("unchecked")
+		@Override
+		public String handle(ResultSet rs) throws SQLException {
+			String attachmentsJson = null;
+			if (rs.next()) {
+				try {
+					byte[] attachments = rs.getBytes(1);
+					if (attachments != null) {
+						attachmentsJson = GZIPUtils.unGzipString(attachments, "UTF-8");
+					}
+				}
+				catch (IOException e) {
+					throw new SQLException("Error decoding job attachments", e);
+				}
+			}
+			return attachmentsJson;
 		}
 	}
 	

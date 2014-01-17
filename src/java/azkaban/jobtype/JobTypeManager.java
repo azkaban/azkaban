@@ -338,15 +338,16 @@ public class JobTypeManager
 		
 	}
 	
-	public Job buildJobExecutor(String jobId, Props jobProps, Logger logger) throws JobTypeManagerException
-	{
+	public Job buildJobExecutor(String jobId, Props jobProps, Logger logger) 
+			throws JobTypeManagerException {
 		Job job = null;
 		try {
 			String jobType = jobProps.getString("type");
 			if (jobType == null || jobType.length() == 0) {
 				/*throw an exception when job name is null or empty*/
-				throw new JobExecutionException (
-						String.format("The 'type' parameter for job[%s] is null or empty", jobProps, logger));
+				throw new JobExecutionException(
+						String.format("The 'type' parameter for job[%s] is null or empty",
+								jobProps, logger));
 			}
 			
 			logger.info("Building " + jobType + " job executor. ");
@@ -361,17 +362,16 @@ public class JobTypeManager
 			Props sysConf = jobtypeSysProps.get(jobType);
 			
 			Props jobConf = jobProps;
-			if(jobtypeJobProps.containsKey(jobType)) {
+			if (jobtypeJobProps.containsKey(jobType)) {
 				Props p = jobtypeJobProps.get(jobType);
-				for(String k : p.getKeySet())
-				{
-					if(!jobConf.containsKey(k)) {
+				for (String k : p.getKeySet()) {
+					if (!jobConf.containsKey(k)) {
 						jobConf.put(k, p.get(k));
 					}
 				}
 			}
 			jobConf = PropsUtils.resolveProps(jobConf);
-
+			
 			if (sysConf != null) {
 				sysConf = PropsUtils.resolveProps(sysConf);
 			}
@@ -379,11 +379,11 @@ public class JobTypeManager
 				sysConf = new Props();
 			}
 			
-			
 //			logger.info("sysConf is " + sysConf);
 //			logger.info("jobConf is " + jobConf);
 //			
-			job = (Job)Utils.callConstructor(executorClass, jobId, sysConf, jobConf, logger);
+			job = (Job) Utils.callConstructor(
+					executorClass, jobId, sysConf, jobConf, logger);
 		}
 		catch (Exception e) {
 			//job = new InitErrorJob(jobId, e);

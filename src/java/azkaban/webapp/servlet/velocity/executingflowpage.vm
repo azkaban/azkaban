@@ -122,6 +122,7 @@
 						<thead>
 							<tr>
 								<th>Name</th>
+								<th class="jobtype">Type</th>
 								<th class="timeline">Timeline</th>
 								<th class="date">Start Time</th>
 								<th class="date">End Time</th>

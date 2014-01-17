@@ -9,8 +9,22 @@ table.table-properties {
   font-weight: bold;
 }
 
+.property-value {
+
+}
+
 .property-value-half {
   width: 25%;
+}
+
+.property-key,
+.property-value,
+.property-value-half {
+	pre {
+		background: transparent;
+		padding: 0;
+		border: 0;
+	}
 }
 
 .editable {
@@ -75,6 +89,10 @@ table.table-properties {
 
     &.date {
       width: 160px;
+    }
+
+    &.jobtype {
+      width: 90px;
     }
 
     &.execid {

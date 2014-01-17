@@ -65,6 +65,7 @@ public class JobRunner extends EventHandler implements Runnable {
 	
 	private Appender jobAppender;
 	private File logFile;
+	private String attachmentFileName;
 	
 	private Job job;
 	private int executionId = -1;
@@ -222,10 +223,18 @@ public class JobRunner extends EventHandler implements Runnable {
 				jobAppender = fileAppender;
 				logger.addAppender(jobAppender);
 				logger.setAdditivity(false);
-			} catch (IOException e) {
+			}
+			catch (IOException e) {
 				flowLogger.error("Could not open log file in " + workingDir + " for job " + this.jobId, e);
 			}
 		}
+	}
+
+	private void createAttachmentFile() {
+		String fileName = createAttachmentFileName(
+				this.executionId, this.jobId, node.getAttempt());
+		File file = new File(workingDir, fileName);
+		attachmentFileName = file.getAbsolutePath();
 	}
 
 	private void closeLogger() {
@@ -239,7 +248,8 @@ public class JobRunner extends EventHandler implements Runnable {
 		try {
 			node.setUpdateTime(System.currentTimeMillis());
 			loader.updateExecutableNode(node);
-		} catch (ExecutorManagerException e) {
+		}
+		catch (ExecutorManagerException e) {
 			flowLogger.error("Could not update job properties in db for " + this.jobId, e);
 		}
 	}
@@ -301,7 +311,7 @@ public class JobRunner extends EventHandler implements Runnable {
 			if (!blockingStatus.isEmpty()) {
 				logger.info("Pipeline job " + this.jobId + " waiting on " + blockedList + " in execution " + watcher.getExecId());
 				
-				for(BlockingStatus bStatus: blockingStatus) {
+				for (BlockingStatus bStatus: blockingStatus) {
 					logger.info("Waiting on pipelined job " + bStatus.getJobId());
 					currentBlockStatus = bStatus;
 					bStatus.blockOnFinishedStatus();
@@ -328,11 +338,12 @@ public class JobRunner extends EventHandler implements Runnable {
 		long currentTime = System.currentTimeMillis();
 		if (delayStartMs > 0) {
 			logger.info("Delaying start of execution for " + delayStartMs + " milliseconds.");
-			synchronized(this) {
+			synchronized (this) {
 				try {
 					this.wait(delayStartMs);
 					logger.info("Execution has been delayed for " + delayStartMs + " ms. Continuing with execution.");
-				} catch (InterruptedException e) {
+				}
+				catch (InterruptedException e) {
 					logger.error("Job " + this.jobId + " was to be delayed for " + delayStartMs + ". Interrupted after " + (System.currentTimeMillis() - currentTime));
 				}
 			}
@@ -348,26 +359,45 @@ public class JobRunner extends EventHandler implements Runnable {
 	
 	private void finalizeLogFile() {
 		closeLogger();
-		
-		if (logFile != null) {
-			try {
-				File[] files = logFile.getParentFile().listFiles(new FilenameFilter() {
-					
-					@Override
-					public boolean accept(File dir, String name) {
-						return name.startsWith(logFile.getName());
-					}
-				} 
-				);
-				Arrays.sort(files, Collections.reverseOrder());
-				
-				loader.uploadLogFile(executionId, this.node.getNestedId(), node.getAttempt(), files);
-			} catch (ExecutorManagerException e) {
-				flowLogger.error("Error writing out logs for job " + this.node.getNestedId(), e);
-			}
-		}
-		else {
+		if (logFile == null) {
 			flowLogger.info("Log file for job " + this.jobId + " is null");
+			return;
+		}
+		
+		try {
+			File[] files = logFile.getParentFile().listFiles(new FilenameFilter() {
+				@Override
+				public boolean accept(File dir, String name) {
+					return name.startsWith(logFile.getName());
+				}
+			});
+			Arrays.sort(files, Collections.reverseOrder());
+			
+			loader.uploadLogFile(executionId, this.node.getNestedId(), node.getAttempt(), files);
+		}
+		catch (ExecutorManagerException e) {
+			flowLogger.error("Error writing out logs for job " + this.node.getNestedId(), e);
+		}
+	}
+
+	private void finalizeAttachmentFile() {
+		if (attachmentFileName == null) {
+			flowLogger.info("Attachment file for job " + this.jobId + " is null");
+			return;
+		}
+
+		try {
+			File file = new File(attachmentFileName);
+			if (!file.exists()) {
+				flowLogger.info("No attachment file for job " + this.jobId + 
+						" written.");
+				return;
+			}
+			loader.uploadAttachmentFile(node, file);
+		}
+		catch (ExecutorManagerException e) {
+			flowLogger.error("Error writing out attachment for job " + 
+					this.node.getNestedId(), e);
 		}
 	}
 	
@@ -384,12 +414,14 @@ public class JobRunner extends EventHandler implements Runnable {
 			return;
 		}
 
+		createAttachmentFile();
 		createLogger();
 		boolean errorFound = false;
 		// Delay execution if necessary. Will return a true if something went wrong.
 		errorFound |= delayExecution();
 
-		// For pipelining of jobs. Will watch other jobs. Will return true if something went wrong.
+		// For pipelining of jobs. Will watch other jobs. Will return true if
+		// something went wrong.
 		errorFound |= blockOnPipeLine();
 
 		// Start the node.
@@ -398,7 +430,8 @@ public class JobRunner extends EventHandler implements Runnable {
 			fireEvent(Event.create(this, Type.JOB_STARTED, null, false));
 			try {
 				loader.uploadExecutableNode(node, props);
-			} catch (ExecutorManagerException e1) {
+			}
+			catch (ExecutorManagerException e1) {
 				logger.error("Error writing initial node properties");
 			}
 			
@@ -423,6 +456,7 @@ public class JobRunner extends EventHandler implements Runnable {
 		
 		fireEvent(Event.create(this, Type.JOB_FINISHED), false);
 		finalizeLogFile();
+		finalizeAttachmentFile();
 	}
 	
 	private boolean prepareJob() throws RuntimeException {
@@ -432,7 +466,7 @@ public class JobRunner extends EventHandler implements Runnable {
 			return false;
 		}
 		
-		synchronized(syncObject) {
+		synchronized (syncObject) {
 			if (node.getStatus() == Status.FAILED || cancelled) {
 				return false;
 			}
@@ -451,7 +485,9 @@ public class JobRunner extends EventHandler implements Runnable {
 			}
 			
 			props.put(CommonJobProperties.JOB_ATTEMPT, node.getAttempt());
-			props.put(CommonJobProperties.JOB_METADATA_FILE, createMetaDataFileName(executionId, this.jobId, node.getAttempt()));
+			props.put(CommonJobProperties.JOB_METADATA_FILE,
+					createMetaDataFileName(executionId, this.jobId, node.getAttempt()));
+			props.put(CommonJobProperties.JOB_ATTACHMENT_FILE, attachmentFileName);
 			changeStatus(Status.RUNNING);
 			
 			// Ability to specify working directory
@@ -459,9 +495,9 @@ public class JobRunner extends EventHandler implements Runnable {
 				props.put(AbstractProcessJob.WORKING_DIR, workingDir.getAbsolutePath());
 			}
 			
-			if(props.containsKey("user.to.proxy")) {
+			if (props.containsKey("user.to.proxy")) {
 				String jobProxyUser = props.getString("user.to.proxy");
-				if(proxyUsers != null && !proxyUsers.contains(jobProxyUser)) {
+				if (proxyUsers != null && !proxyUsers.contains(jobProxyUser)) {
 					logger.error("User " + jobProxyUser + " has no permission to execute this job " + this.jobId + "!");
 					return false;
 				}
@@ -482,7 +518,8 @@ public class JobRunner extends EventHandler implements Runnable {
 	private void runJob() {
 		try {
 			job.run();
-		} catch (Exception e) {
+		}
+		catch (Exception e) {
 			e.printStackTrace();
 			
 			if (props.getBoolean("job.succeed.on.failure", false)) {
@@ -549,7 +586,8 @@ public class JobRunner extends EventHandler implements Runnable {
 	
 			try {
 				job.cancel();
-			} catch (Exception e) {
+			}
+			catch (Exception e) {
 				logError(e.getMessage());
 				logError("Failed trying to cancel job. Maybe it hasn't started running yet or just finished.");
 			}
@@ -588,11 +626,24 @@ public class JobRunner extends EventHandler implements Runnable {
 		return props.getLong("retry.backoff", 0);
 	}
 	
-	public static String createLogFileName(int executionId, String jobId, int attempt) {
-		return attempt > 0 ? "_job." + executionId + "." + attempt + "." + jobId + ".log" : "_job." + executionId + "." + jobId + ".log";
+	public static String createAttachmentFileName(
+			int executionId, String jobId, int attempt) {
+		return attempt > 0 
+				? "_job." + executionId + "." + attempt + "." + jobId + ".attach" 
+				: "_job." + executionId + "." + jobId + ".attach";
+	}
+
+	public static String createLogFileName(
+			int executionId, String jobId, int attempt) {
+		return attempt > 0 
+				? "_job." + executionId + "." + attempt + "." + jobId + ".log" 
+				: "_job." + executionId + "." + jobId + ".log";
 	}
 	
-	public static String createMetaDataFileName(int executionId, String jobId, int attempt) {
-		return attempt > 0 ? "_job." + executionId + "." + attempt + "." + jobId + ".meta" : "_job." + executionId + "." + jobId + ".meta";
+	public static String createMetaDataFileName(
+			int executionId, String jobId, int attempt) {
+		return attempt > 0 
+				? "_job." + executionId + "." + attempt + "." + jobId + ".meta" 
+				: "_job." + executionId + "." + jobId + ".meta";
 	}
 }

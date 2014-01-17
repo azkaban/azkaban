@@ -1,3 +1,19 @@
+/*
+ * Copyright 2014 LinkedIn Corp.
+ * 
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not
+ * use this file except in compliance with the License. You may obtain a copy of
+ * the License at
+ * 
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations under
+ * the License.
+ */
+
 var executionListView;
 azkaban.ExecutionListView = Backbone.View.extend({
 	events: {
@@ -241,6 +257,7 @@ azkaban.ExecutionListView = Backbone.View.extend({
 		var self = this;
 		var tr = document.createElement("tr");
 		var tdName = document.createElement("td");
+		var tdType = document.createElement("td");
 		var tdTimeline = document.createElement("td");
 		var tdStart = document.createElement("td");
 		var tdEnd = document.createElement("td");
@@ -252,6 +269,7 @@ azkaban.ExecutionListView = Backbone.View.extend({
 		var padding = 15*$(body)[0].level;
 		
 		$(tr).append(tdName);
+		$(tr).append(tdType);
 		$(tr).append(tdTimeline);
 		$(tr).append(tdStart);
 		$(tr).append(tdEnd);
@@ -261,6 +279,7 @@ azkaban.ExecutionListView = Backbone.View.extend({
 		$(tr).addClass("jobListRow");
 		
 		$(tdName).addClass("jobname");
+		$(tdType).addClass("jobtype");
 		if (padding) {
 			$(tdName).css("padding-left", padding);
 		}
@@ -270,6 +289,8 @@ azkaban.ExecutionListView = Backbone.View.extend({
 		$(tdElapse).addClass("elapsedTime");
 		$(tdStatus).addClass("statustd");
 		$(tdDetails).addClass("details");
+
+		$(tdType).text(node.type);
 		
 		var outerProgressBar = document.createElement("div");
 		//$(outerProgressBar).attr("id", node.id + "-outerprogressbar");
@@ -318,7 +339,7 @@ azkaban.ExecutionListView = Backbone.View.extend({
 		}
 
 		$(body).append(tr);
-		if (node.type=="flow") {
+		if (node.type == "flow") {
 			var subFlowRow = document.createElement("tr");
 			var subFlowCell = document.createElement("td");
 			$(subFlowCell).addClass("subflowrow");

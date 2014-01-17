@@ -29,7 +29,10 @@ public class ViewerPlugin {
 			new Comparator<ViewerPlugin>() {
 		@Override
 		public int compare(ViewerPlugin o1, ViewerPlugin o2) {
-			return o1.getOrder() - o2.getOrder();
+			if (o1.getOrder() != o2.getOrder()) {
+				return o1.getOrder() - o2.getOrder();
+			}
+			return o1.getPluginName().compareTo(o2.getPluginName());
 		}
 	};
 
