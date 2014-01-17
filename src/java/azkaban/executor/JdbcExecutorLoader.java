@@ -720,6 +720,9 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader
 					new FetchExecutableJobAttachmentsHandler(),
 					execId,
 					jobId);
+			if (attachments == null) {
+				return null;
+			}
 			return (List<Object>) JSONUtils.parseJSONFromString(attachments);
 		}
 		catch (IOException e) {
@@ -1054,11 +1057,13 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader
 		@SuppressWarnings("unchecked")
 		@Override
 		public String handle(ResultSet rs) throws SQLException {
-			String attachmentsJson = "";
+			String attachmentsJson = null;
 			if (rs.next()) {
 				try {
 					byte[] attachments = rs.getBytes(1);
-					attachmentsJson = GZIPUtils.unGzipString(attachments, "UTF-8");
+					if (attachments != null) {
+						attachmentsJson = GZIPUtils.unGzipString(attachments, "UTF-8");
+					}
 				}
 				catch (IOException e) {
 					throw new SQLException("Error decoding job attachments", e);

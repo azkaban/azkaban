@@ -599,8 +599,7 @@ public class FlowRunnerManager implements EventListener {
 
 				File attachmentFile = runner.getJobAttachmentFile(jobId, attempt);
 				if (attachmentFile == null || !attachmentFile.exists()) {
-					throw new ExecutorManagerException(
-							"Job attachment file doesn't exist.");
+					return null;
 				}
 				return (ArrayList<Object>) JSONUtils.parseJSONFromFile(attachmentFile);
 			}
