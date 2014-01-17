@@ -56,7 +56,7 @@ azkaban.StatusView = Backbone.View.extend({
 		var startTime = data.startTime;
 		var endTime = data.endTime;
 		
-		if (startTime == -1) {
+		if (!startTime || startTime == -1) {
 			$("#startTime").text("-");
 		}
 		else {
@@ -73,7 +73,7 @@ azkaban.StatusView = Backbone.View.extend({
 			$("#duration").text(durationString);
 		}
 		
-		if (endTime == -1) {
+		if (!endTime || endTime == -1) {
 			$("#endTime").text("-");
 		}
 		else {
@@ -238,14 +238,15 @@ azkaban.FlowTabView = Backbone.View.extend({
 	},
 	
 	handleRestartClick: function(evt) {
-    console.log("handleRestartClick");
+		console.log("handleRestartClick");
 		var data = graphModel.get("data");
-		var nodes = data.nodes;
+		
 		var executingData = {
 			project: projectName,
 			ajax: "executeFlow",
 			flow: flowId,
-			execid: execId
+			execid: execId,
+			exgraph: data
 		};
 		flowExecuteDialogView.show(executingData);
 	},
@@ -291,251 +292,6 @@ var showDialog = function(title, message) {
 
 var jobListView;
 var mainSvgGraphView;
-
-var executionListView;
-azkaban.ExecutionListView = Backbone.View.extend({
-	events: {
-		//"click .flow-progress-bar": "handleProgressBoxClick"
-	},
-	
-	initialize: function(settings) {
-		this.model.bind('change:graph', this.renderJobs, this);
-		this.model.bind('change:update', this.updateJobs, this);
-	},
-	
-	renderJobs: function(evt) {
-		var data = this.model.get("data");
-		var lastTime = data.endTime == -1 ? (new Date()).getTime() : data.endTime;
-		this.updateJobRow(data.nodes);
-		this.updateProgressBar(data);
-	},
-
-	/*handleProgressBoxClick: function(evt) {
-		var target = evt.currentTarget;
-		var job = target.job;
-		var attempt = target.attempt;
-		
-		var data = this.model.get("data");
-		var node = data.nodes[job];
-		
-		var jobId = event.currentTarget.jobid;
-		var requestURL = contextURL + "/manager?project=" + projectName + "&execid=" + execId + "&job=" + job + "&attempt=" + attempt;
-	
-		var menu = [	
-				{title: "Open Job...", callback: function() {window.location.href=requestURL;}},
-				{title: "Open Job in New Window...", callback: function() {window.open(requestURL);}}
-		];
-	
-		contextMenuView.show(evt, menu);
-	},*/
-	
-	updateJobs: function(evt) {
-		var data = this.model.get("update");
-		var lastTime = data.endTime == -1 ? (new Date()).getTime() : data.endTime;
-		
-		this.updateJobRow(data.nodes);
-		this.updateProgressBar(this.model.get("data"));
-	},
-	
-	updateJobRow: function(nodes) {
-		var executingBody = $("#executableBody");
-		nodes.sort(function(a,b) { return a.startTime - b.startTime; });
-		
-		for (var i = 0; i < nodes.length; ++i) {
-			var node = nodes[i];
-			if (node.startTime < 0) {
-        continue;
-      }
-      var nodeId = node.id.replace(".", "\\\\.");
-      var row = document.getElementById(nodeId + "-row");
-      if (!row) {
-        this.addNodeRow(node);
-      }
-      
-      var div = $("#" + nodeId + "-status-div");
-      div.text(statusStringMap[node.status]);
-      $(div).attr("class", "status " + node.status);
-      
-      var startdate = new Date(node.startTime);
-      $("#" + nodeId + "-start").text(getDateFormat(startdate));
-      
-      var endTime = node.endTime;
-      if (node.endTime == -1) {
-        $("#" + nodeId + "-end").text("-");
-        endTime = node.startTime + 1;
-      }
-      else {
-        var enddate = new Date(node.endTime);
-        $("#" + nodeId + "-end").text(getDateFormat(enddate));
-      }
-      
-      var progressBar = $("#" + nodeId + "-progressbar");
-      if (!progressBar.hasClass(node.status)) {
-        for (var j = 0; j < statusList.length; ++j) {
-          var status = statusList[j];
-          progressBar.removeClass(status);
-        }
-        progressBar.addClass(node.status);
-      }
-      
-      // Create past attempts
-      if (node.pastAttempts) {
-        for (var a = 0; a < node.pastAttempts.length; ++a) {
-          var attemptBarId = nodeId + "-progressbar-" + a;
-          var attempt = node.pastAttempts[a];
-          if ($("#" + attemptBarId).length == 0) {
-            var attemptBox = document.createElement("div");
-            $(attemptBox).attr("id", attemptBarId);
-            $(attemptBox).addClass("flow-progress-bar");
-            $(attemptBox).addClass("attempt");
-            $(attemptBox).addClass(attempt.status);
-            $(attemptBox).css("float","left");
-            $(attemptBox).bind("contextmenu", attemptRightClick);
-            $(progressBar).before(attemptBox);
-            attemptBox.job = nodeId;
-            attemptBox.attempt = a;
-          }
-        }
-      }
-      
-      if (node.endTime == -1) {
-        //$("#" + node.id + "-elapse").text("0 sec");
-        $("#" + nodeId + "-elapse").text(getDuration(node.startTime, (new Date()).getTime()));					
-      }
-      else {
-        $("#" + nodeId + "-elapse").text(getDuration(node.startTime, node.endTime));
-      }
-		}
-	},
-	
-	updateProgressBar: function(data) {
-		if (data.startTime == -1) {
-			return;
-		}
-		
-		var flowLastTime = data.endTime == -1 ? (new Date()).getTime() : data.endTime;
-		var flowStartTime = data.startTime;
-
-		var outerWidth = $(".flow-progress").css("width");
-		if (outerWidth) {
-			if (outerWidth.substring(outerWidth.length - 2, outerWidth.length) == "px") {
-				outerWidth = outerWidth.substring(0, outerWidth.length - 2);
-			}
-			outerWidth = parseInt(outerWidth);
-		}
-		
-		var nodes = data.nodes;
-		var diff = flowLastTime - flowStartTime;
-		var factor = outerWidth/diff;
-		for (var i = 0; i < nodes.length; ++i) {
-			var node = nodes[i];
-			var nodeId = node.id.replace(".", "\\\\.");
-			// calculate the progress
-
-			var elem = $("#" + node.id + "-progressbar");
-			var offsetLeft = 0;
-			var minOffset = 0;
-			elem.attempt = 0;
-			
-			// Add all the attempts
-			if (node.pastAttempts) {
-				var logURL = contextURL + "/executor?execid=" + execId + "&job=" + node.id + "&attempt=" +	node.pastAttempts.length;
-				var aId = node.id + "-log-link";
-				$("#" + aId).attr("href", logURL);
-				elem.attempt = node.pastAttempts.length;
-				
-				// Calculate the node attempt bars
-				for (var p = 0; p < node.pastAttempts.length; ++p) {
-					var pastAttempt = node.pastAttempts[p];
-					var pastAttemptBox = $("#" + nodeId + "-progressbar-" + p);
-					
-					var left = (pastAttempt.startTime - flowStartTime)*factor;
-					var width =	Math.max((pastAttempt.endTime - pastAttempt.startTime)*factor, 3);
-					
-					var margin = left - offsetLeft;
-					$(pastAttemptBox).css("margin-left", left - offsetLeft);
-					$(pastAttemptBox).css("width", width);
-					
-					$(pastAttemptBox).attr("title", "attempt:" + p + "	start:" + getHourMinSec(new Date(pastAttempt.startTime)) + "	end:" + getHourMinSec(new Date(pastAttempt.endTime)));
-					offsetLeft += width + margin;
-				}
-			}
-			
-			var nodeLastTime = node.endTime == -1 ? (new Date()).getTime() : node.endTime;
-			var left = Math.max((node.startTime-flowStartTime)*factor, minOffset);
-			var margin = left - offsetLeft;
-			var width = Math.max((nodeLastTime - node.startTime)*factor, 3);
-			width = Math.min(width, outerWidth);
-			
-			elem.css("margin-left", left)
-			elem.css("width", width);
-			elem.attr("title", "attempt:" + elem.attempt + "	start:" + getHourMinSec(new Date(node.startTime)) + "	end:" + getHourMinSec(new Date(node.endTime)));
-		}
-	},
-	
-	addNodeRow: function(node) {
-		var executingBody = $("#executableBody");
-		var tr = document.createElement("tr");
-		var tdName = document.createElement("td");
-		var tdTimeline = document.createElement("td");
-		var tdStart = document.createElement("td");
-		var tdEnd = document.createElement("td");
-		var tdElapse = document.createElement("td");
-		var tdStatus = document.createElement("td");
-		var tdDetails = document.createElement("td");
-		
-		$(tr).append(tdName);
-		$(tr).append(tdTimeline);
-		$(tr).append(tdStart);
-		$(tr).append(tdEnd);
-		$(tr).append(tdElapse);
-		$(tr).append(tdStatus);
-		$(tr).append(tdDetails);
-		$(tr).attr("id", node.id + "-row");
-		$(tdTimeline).attr("id", node.id + "-timeline");
-		$(tdStart).attr("id", node.id + "-start");
-		$(tdEnd).attr("id", node.id + "-end");
-		$(tdElapse).attr("id", node.id + "-elapse");
-		$(tdStatus).attr("id", node.id + "-status");
-
-		var outerProgressBar = document.createElement("div");
-		$(outerProgressBar).attr("id", node.id + "-outerprogressbar");
-		$(outerProgressBar).addClass("flow-progress");
-
-		var progressBox = document.createElement("div");
-		progressBox.job = node.id;
-		$(progressBox).attr("id", node.id + "-progressbar");
-		$(progressBox).addClass("flow-progress-bar");
-		$(outerProgressBar).append(progressBox);
-		$(tdTimeline).append(outerProgressBar);
-		$(tdTimeline).addClass("timeline");
-
-		var requestURL = contextURL + "/manager?project=" + projectName + "&job=" + node.id + "&history";
-		var a = document.createElement("a");
-		$(a).attr("href", requestURL);
-		$(a).text(node.id);
-		$(tdName).append(a);
-
-		var status = document.createElement("div");
-		$(status).addClass("status");
-		$(status).attr("id", node.id + "-status-div");
-		tdStatus.appendChild(status);
-
-		var logURL = contextURL + "/executor?execid=" + execId + "&job=" + node.id;
-		if (node.attempt) {
-			logURL += "&attempt=" + node.attempt;
-		}
-
-		var a = document.createElement("a");
-		$(a).attr("href", logURL);
-		$(a).attr("id", node.id + "-log-link");
-		$(a).text("Details");
-		$(tdDetails).addClass("details");
-		$(tdDetails).append(a);
-		
-		executingBody.append(tr);
-	}
-});
 
 var flowLogView;
 azkaban.FlowLogView = Backbone.View.extend({
@@ -626,42 +382,49 @@ azkaban.GraphModel = Backbone.Model.extend({});
 var logModel;
 azkaban.LogModel = Backbone.Model.extend({});
 
-var updateStatus = function() {
+var updateStatus = function(updateTime) {
 	var requestURL = contextURL + "/executor";
 	var oldData = graphModel.get("data");
 	var nodeMap = graphModel.get("nodeMap");
 	
+	if (!updateTime) {
+		updateTime = oldData.updateTime ? oldData.updateTime : 0;
+	}
+
 	var requestData = {
 		"execid": execId, 
 		"ajax": "fetchexecflowupdate", 
 		"lastUpdateTime": updateTime
 	};
-
+	
 	var successHandler = function(data) {
 		console.log("data updated");
-		updateTime = data.updateTime;
-		oldData.submitTime = data.submitTime;
-		oldData.startTime = data.startTime;
-		oldData.endTime = data.endTime;
-		oldData.status = data.status;
-		
-		for (var i = 0; i < data.nodes.length; ++i) {
-			var node = data.nodes[i];
-			var oldNode = nodeMap[node.id];
-			oldNode.startTime = node.startTime;
-			oldNode.updateTime = node.updateTime;
-			oldNode.endTime = node.endTime;
-			oldNode.status = node.status;
-			oldNode.attempt = node.attempt;
-			if (oldNode.attempt > 0) {
-				oldNode.pastAttempts = node.pastAttempts;
-			}
+		if (data.updateTime) {
+			updateGraph(oldData, data);
+	
+			graphModel.set({"update": data});
+			graphModel.trigger("change:update");
 		}
-
-		graphModel.set({"update": data});
-		graphModel.trigger("change:update");
 	};
 	ajaxCall(requestURL, requestData, successHandler);
+}
+
+var updateGraph = function(data, update) {
+	var nodeMap = data.nodeMap;
+	data.startTime = update.startTime;
+	data.endTime = update.endTime;
+	data.updateTime = update.updateTime;
+	data.status = update.status;
+	update.changedNode = data;
+	
+	if (update.nodes) {
+		for (var i = 0; i < update.nodes.length; ++i) {
+			var newNode = update.nodes[i];
+			var oldNode = nodeMap[newNode.id];
+			
+			updateGraph(oldNode, newNode);
+		}
+	}
 }
 
 var updateTime = -1;
@@ -687,6 +450,7 @@ var updaterFunction = function() {
 		}
 		else {
 			console.log("Flow finished, so no more updates");
+			setTimeout(function() {updateStatus(0);}, 500);
 		}
 	}
 	else {
@@ -758,23 +522,6 @@ var exGraphClickCallback = function(event) {
 	contextMenuView.show(event, menu);
 }
 
-var attemptRightClick = function(event) {
-	var target = event.currentTarget;
-	var job = target.job;
-	var attempt = target.attempt;
-	
-	var jobId = event.currentTarget.jobid;
-	var requestURL = contextURL + "/executor?project=" + projectName + "&execid=" + execId + "&job=" + job + "&attempt=" + attempt;
-
-	var menu = [	
-		{title: "Open Attempt Log...", callback: function() {window.location.href=requestURL;}},
-		{title: "Open Attempt Log in New Window...", callback: function() {window.open(requestURL);}}
-	];
-
-	contextMenuView.show(event, menu);
-	return false;
-}
-
 var flowStatsView;
 var flowStatsModel;
 
@@ -789,28 +536,28 @@ $(function() {
 		model: graphModel
 	});
 	
-  mainSvgGraphView = new azkaban.SvgGraphView({
+	mainSvgGraphView = new azkaban.SvgGraphView({
 		el: $('#svgDiv'), 
 		model: graphModel, 
 		rightClick:	{ 
-			"node": exNodeClickCallback, 
-			"edge": exEdgeClickCallback, 
-			"graph": exGraphClickCallback 
+			"node": nodeClickCallback, 
+			"edge": edgeClickCallback, 
+			"graph": graphClickCallback 
 		}
 	});
 	
-  jobsListView = new azkaban.JobListView({
+	jobsListView = new azkaban.JobListView({
 		el: $('#jobList'), 
 		model: graphModel, 
-		contextMenuCallback: exJobClickCallback
+		contextMenuCallback: jobClickCallback
 	});
 	
-  flowLogView = new azkaban.FlowLogView({
+	flowLogView = new azkaban.FlowLogView({
 		el: $('#flowLogView'), 
 		model: logModel
 	});
 	
-  statusView = new azkaban.StatusView({
+	statusView = new azkaban.StatusView({
 		el: $('#flow-status'), 
 		model: graphModel
 	});
@@ -835,38 +582,14 @@ $(function() {
 	var requestData = {"execid": execId, "ajax":"fetchexecflow"};
 	var successHandler = function(data) {
 		console.log("data fetched");
-		graphModel.set({data: data});
-		graphModel.set({disabled: {}});
+		processFlowData(data);
+		graphModel.set({data:data});
 		graphModel.trigger("change:graph");
 		
 		updateTime = Math.max(updateTime, data.submitTime);
 		updateTime = Math.max(updateTime, data.startTime);
 		updateTime = Math.max(updateTime, data.endTime);
 		
-		var nodeMap = {};
-		for (var i = 0; i < data.nodes.length; ++i) {
-			var node = data.nodes[i];
-			nodeMap[node.id] = node;
-			updateTime = Math.max(updateTime, node.startTime);
-			updateTime = Math.max(updateTime, node.endTime);
-		}
-		for (var i = 0; i < data.edges.length; ++i) {
-			var edge = data.edges[i];
-			 
-			if (!nodeMap[edge.target].in) {
-				nodeMap[edge.target].in = {};
-			}
-			var targetInMap = nodeMap[edge.target].in;
-			targetInMap[edge.from] = nodeMap[edge.from];
-			 
-			if (!nodeMap[edge.from].out) {
-				nodeMap[edge.from].out = {};
-			}
-			var sourceOutMap = nodeMap[edge.from].out;
-			sourceOutMap[edge.target] = nodeMap[edge.target];
-		}
-		
-		graphModel.set({nodeMap: nodeMap});
 		if (window.location.hash) {
 			var hash = window.location.hash;
 			if (hash == "#jobslist") {
@@ -875,9 +598,9 @@ $(function() {
 			else if (hash == "#log") {
 				flowTabView.handleLogLinkClick();
 			}
-      else if (hash == "#stats") {
-        flowTabView.handleStatsLinkClick();
-      }
+			else if (hash == "#stats") {
+				flowTabView.handleStatsLinkClick();
+			}
 		}
 		else {
 			flowTabView.handleGraphLinkClick();

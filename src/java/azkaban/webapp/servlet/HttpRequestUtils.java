@@ -19,6 +19,7 @@ package azkaban.webapp.servlet;
 import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import javax.servlet.ServletException;
@@ -27,6 +28,7 @@ import javax.servlet.http.HttpServletRequest;
 import azkaban.executor.ExecutionOptions;
 import azkaban.executor.ExecutionOptions.FailureAction;
 import azkaban.executor.mail.DefaultMailCreator;
+import azkaban.utils.JSONUtils;
 
 public class HttpRequestUtils {
 	public static ExecutionOptions parseFlowOptions(HttpServletRequest req) throws ServletException {
@@ -96,13 +98,14 @@ public class HttpRequestUtils {
 		}
 		
 		Map<String, String> flowParamGroup = getParamGroup(req, "flowOverride");
-		execOptions.setFlowParameters(flowParamGroup);
+		execOptions.addAllFlowParameters(flowParamGroup);
 		
 		if (hasParam(req, "disabled")) {
 			String disabled = getParam(req, "disabled");
 			if (!disabled.isEmpty()) {
-				String[] disabledNodes = disabled.split("\\s*,\\s*");
-				execOptions.setDisabledJobs(Arrays.asList(disabledNodes));
+				@SuppressWarnings("unchecked")
+				List<Object> disabledList = (List<Object>)JSONUtils.parseJSONFromStringQuiet(disabled);
+				execOptions.setDisabledJobs(disabledList);
 			}
 		}
 		return execOptions;

@@ -20,36 +20,65 @@ var degreeRatio = 1/8;
 var maxHeight = 200;
 var cornerGap = 10;
 
-function layoutGraph(nodes, edges) {
-	var startLayer = [];
-	var numLayer = 0;
-	var nodeMap = {};
-	
+var idSort = function(a, b) {
+	if ( a.id < b.id ) {
+		return -1;
+	}
+	else if ( a.id > b.id ) {
+		return 1;
+	}
+	else {
+		return 0;
+	}
+}
+
+function prepareLayout(nodes, hmargin, layers, nodeMap) {
 	var maxLayer = 0;
-	var layers = {};
+	var nodeQueue = new Array();
+	// Find start layers first
+	for (var i=0; i < nodes.length; ++i) {
+		var node = nodes[i];
+		if (node.inNodes) {
+			// We sort here. Why? To keep the node drawing consistent
+			node.in.sort(idSort);
+		}
+		else {
+			// We sort here. Why? To keep it up and running.
+			nodeQueue.push(node);
+		}
+	}
+	// Sort here. To keep the node drawing consistent
+	nodes.sort(idSort);
+	
+	// calculate level
+	// breath first search the sucker
+	var index = 0;
+	while(index < nodeQueue.length) {
+		var node = nodeQueue[index];
+		if (node.inNodes) {
+			var level = 0;
+			for (var key in node.inNodes) {
+				level = Math.max(level, node.inNodes[key].level);
+			}
+			node.level = level + 1;
+		}
+		else {
+			node.level = 0;
+		}
+		
+		if (node.outNodes) {
+			for (var key in node.outNodes) {
+				nodeQueue.push(node.outNodes[key]);
+			}
+		}
+		index++;
+	}
 	
 	// Assign to layers
 	for (var i = 0; i < nodes.length; ++i) {
-		numLayer = Math.max(numLayer, nodes[i].level);
-		/*
-		if (nodes[i].id.length > maxTextSize) {
-			var label = nodes[i].id.substr(0, reductionSize) + "...";
-			nodes[i].label = label;
-		}
-		else {*/
-			nodes[i].label = nodes[i].id;
-		//}
-		
-		var width = nodes[i].label.length * 10;
-		var node = {
-			id: nodes[i].id, 
-			node: nodes[i], 
-			level: nodes[i].level, 
-			in: [], 
-			out: [], 
-			width: width, 
-			x: 0 
-		};
+		var width = nodes[i].width ? nodes[i].width : nodes[i].label.length * 11.5 + 4;
+		var height = nodes[i].height ? nodes[i].height : 1;
+		var node = { id: nodes[i].id, node: nodes[i], level: nodes[i].level, in:[], out:[], width: width + hmargin, x:0, height:height };
 		nodeMap[nodes[i].id] = node;
 		maxLayer = Math.max(node.level, maxLayer);
 		if(!layers[node.level]) {
@@ -59,13 +88,32 @@ function layoutGraph(nodes, edges) {
 		layers[node.level].push(node);
 	}
 	
+	layers.maxLayer = maxLayer;
+}
+
+function respaceGraph(nodes, edges) {
+	
+}
+
+function layoutGraph(nodes, edges, hmargin) {
+	var startLayer = [];
+
+	var nodeMap = {};
+	var layers = {};
+	
+	if (!hmargin) {
+		hmargin = 8;
+	}
+	
+	prepareLayout(nodes, hmargin, layers, nodeMap);
+	var maxLayer = layers.maxLayer;
+	
 	// Create dummy nodes
 	var edgeDummies = {};
-	
 	for (var i=0; i < edges.length; ++i ) {
 		var edge = edges[i];
 		var src = edges[i].from;
-		var dest = edges[i].target;
+		var dest = edges[i].to;
 		
 		var edgeId = src + ">>" + dest;
 		
@@ -77,15 +125,7 @@ function layoutGraph(nodes, edges) {
 		var guides = [];
 		
 		for (var j = srcNode.level + 1; j < destNode.level; ++j) {
-			var dummyNode = {
-				level: j, 
-				in: [], 
-				x: lastNode.x, 
-				out: [], 
-				realSrc: srcNode, 
-				realDest: destNode, 
-				width: 10
-			};
+			var dummyNode = {level: j, in: [], x: lastNode.x, out: [], realSrc: srcNode, realDest: destNode, width: 10, height: 10};
 			layers[j].push(dummyNode);
 			dummyNode.in.push(lastNode);
 			lastNode.out.push(dummyNode);
@@ -140,12 +180,12 @@ function layoutGraph(nodes, edges) {
 		node.x = layerNode.x;
 		node.y = layerNode.y;
 	}
-	
+
 	// Dummy node for more points.
 	for (var i = 0; i < edges.length; ++i) {
 		var edge = edges[i];
 		var src = edges[i].from;
-		var dest = edges[i].target;
+		var dest = edges[i].to;
 		
 		var edgeId = src + ">>" + dest;
 		if (edgeDummies[edgeId] && edgeDummies[edgeId].length > 0) {
@@ -280,16 +320,22 @@ function spreadLayerSmart(layer) {
 function spaceVertically(layers, maxLayer) {
 	var startY = 0;
 	var startLayer = layers[0];
-	for (var i = 0; i < startLayer.length; ++i) {
+	var startMaxHeight = 1;
+	for (var i=0; i < startLayer.length; ++i) {
 		startLayer[i].y = startY;
+		startMaxHeight = Math.max(startMaxHeight, startLayer[i].height);
 	}
 	
-	var minHeight = 50;
-	for (var a = 1; a <= maxLayer; ++a) {
+	var minHeight = 40;
+	for (var a=1; a <= maxLayer; ++a) {
 		var maxDelta = 0;
 		var layer = layers[a];
-		for (var i = 0; i < layer.length; ++i) {
-			for (var j = 0; j < layer[i].in.length; ++j) {
+		
+		var layerMaxHeight = 1;
+		for (var i=0; i < layer.length; ++i) {
+			layerMaxHeight = Math.max(layerMaxHeight, layer[i].height);
+
+			for (var j=0; j < layer[i].in.length; ++j) {
 				var upper = layer[i].in[j];
 				var delta = Math.abs(upper.x - layer[i].x);
 				maxDelta = Math.max(maxDelta, delta);
@@ -299,10 +345,12 @@ function spaceVertically(layers, maxLayer) {
 		console.log("Max " + maxDelta);
 		var calcHeight = maxDelta*degreeRatio;
 		
-		calcHeight = Math.min(calcHeight, maxHeight); 
-		startY += Math.max(calcHeight, minHeight);
-		for (var i = 0; i < layer.length; ++i) {
-			layer[i].y = startY;
+		var newMinHeight = minHeight + startMaxHeight/2 + layerMaxHeight / 2;
+		startMaxHeight = layerMaxHeight;
+
+		startY += Math.max(calcHeight, newMinHeight);
+		for (var i=0; i < layer.length; ++i) {
+			layer[i].y=startY;
 		}
 	}
 }

@@ -53,7 +53,26 @@ table.table-properties {
 
 // Table of executions.
 .executions-table {
-  th {
+  tr {
+    &.expanded {
+      opacity: 0.6;
+    }
+  }
+
+  td {
+  	&.subflowrow {
+  		padding: 0px 0px;
+  	
+  		table {
+  			margin: 0px;
+  			background-color: rgba(230, 230, 230, 0.75);
+  			
+  			td {
+  				background-color: none;
+  			}
+  		}
+  	}
+
     &.date {
       width: 160px;
     }
@@ -74,7 +93,7 @@ table.table-properties {
       width: 90px;
     }
 
-    &.status {
+    &.statustd {
       width: 100px;
     }
 
@@ -89,19 +108,24 @@ table.table-properties {
     &.logs {
       width: 30px;
     }
-  }
-
-  td {
-    &.timeline {
+    
+     &.timeline {
       width: 280px;
       padding: 0px;
       height: 100%;
       vertical-align: bottom;
       margin: 0px;
     }
-
-    &.execId {
-      font-weight: bold;
-    }
+    
+    &.startTime {
+  		width: 160px;
+  	}
+  	
+  	&.endTime {
+  		width: 160px;
+  	}
+    &.elapsedTime {
+  		width: 90px;
+  	}
   }
 }

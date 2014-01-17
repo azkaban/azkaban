@@ -48,20 +48,23 @@ public class ProcessJob extends AbstractProcessJob {
 			resolveProps();
 		}
 		catch (Exception e) {
-			error("Bad property definition! " + e.getMessage());
-			
+			handleError("Bad property definition! " + e.getMessage(), e);
 		}
 		
 		List<String> commands = null;
 		try {
-		commands = getCommandList();
+			commands = getCommandList();
 		}
 		catch (Exception e) {
-			error("Job set up failed " + e.getCause());
+			handleError("Job set up failed " + e.getCause(), e);
 		}
 
 		long startMs = System.currentTimeMillis();
 
+		if (commands == null) {
+			handleError("There are no commands to execute", null);
+		}
+		
 		info(commands.size() + " commands to execute.");
 		File[] propFiles = initPropsFiles();
 		Map<String, String> envVars = getEnvironmentVariables();
@@ -100,7 +103,16 @@ public class ProcessJob extends AbstractProcessJob {
 		generateProperties(propFiles[1]);
 	}
 
-
+	protected void handleError(String errorMsg, Exception e) throws Exception {
+		error(errorMsg);
+		if (e != null) {
+			throw new Exception(errorMsg, e);
+		}
+		else {
+			throw new Exception(errorMsg);
+		}
+	}
+	
 	protected List<String> getCommandList() {
 		List<String> commands = new ArrayList<String>();
 		commands.add(jobProps.getString(COMMAND));

@@ -88,6 +88,15 @@ public class JSONUtils {
 		stream.close();
 	}
 	
+	public static Object parseJSONFromStringQuiet(String json) {
+		try {
+			return parseJSONFromString(json);
+		} catch (IOException e) {
+			e.printStackTrace();
+			return null;
+		}
+	}
+	
 	public static Object parseJSONFromString(String json) throws IOException {
 		ObjectMapper mapper = new ObjectMapper();
 		JsonFactory factory = new JsonFactory();

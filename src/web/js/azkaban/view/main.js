@@ -96,18 +96,12 @@ azkaban.ProjectTableView = Backbone.View.extend({
 		var requestURL = contextURL + "/manager?project=" + data.project + "&flow=";
 		for (var i = 0; i < flows.length; ++i) {
 			var id = flows[i].flowId;
-			var tr = document.createElement("tr");
-			var idtd = document.createElement("td");
-			$(idtd).addClass("tb-name");
-			
 			var ida = document.createElement("a");
 			ida.project = data.project;
 			$(ida).text(id);
 			$(ida).attr("href", requestURL + id);
-			
-			$(idtd).append(ida);
-			$(tr).append(idtd);
-			$(innerTable).append(tr);
+      $(ida).addClass('list-group-item');
+			$(innerTable).append(ida);
 		}
 	}
 });

@@ -14,6 +14,7 @@
  * the License.
  */
 
+
 $.namespace('azkaban');
 
 var jobHistoryView;

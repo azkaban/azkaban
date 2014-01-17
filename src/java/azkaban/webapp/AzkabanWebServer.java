@@ -197,6 +197,12 @@ public class AzkabanWebServer extends AzkabanServer {
 		
 		tempDir = new File(props.getString("azkaban.temp.dir", "temp"));
 
+		File statsDir = new File(props.getString("azkaban.stats.dir", "stats"));
+		if (!statsDir.exists()) {
+			statsDir.mkdir();
+		}
+    props.put("azkaban.stats.dir", statsDir.getCanonicalPath());
+
 		// Setup time zone
 		if (props.containsKey(DEFAULT_TIMEZONE_ID)) {
 			String timezone = props.getString(DEFAULT_TIMEZONE_ID);
@@ -588,8 +594,8 @@ public class AzkabanWebServer extends AzkabanServer {
 	}
 
 	/**
-     * 
-     */
+		 * 
+		 */
 	public ExecutorManager getExecutorManager() {
 		return executorManager;
 	}
@@ -1098,10 +1104,11 @@ public class AzkabanWebServer extends AzkabanServer {
 				obj = constructor.newInstance(pluginProps);
 			} catch (Exception e) {
 				logger.error(e);
+				logger.error(e.getCause());
 			} 
 			
 			if (!(obj instanceof AbstractAzkabanServlet)) {
-				logger.error("The object is not an AbstractViewerServlet");
+				logger.error("The object is not an AbstractAzkabanServlet");
 				continue;
 			}
 			

@@ -60,9 +60,21 @@
   &.QUEUED {
     background-color: #009fc9;
   }
+  
+  &.KILLED {
+    background-color: #ff9999;
+  }
 }
 
 td {
+	> .listExpand {
+		width: 16px;
+		height: 16px;
+		float:right;
+		margin-top: 5px;
+		font-size: 8pt;
+	}
+
   .status {
     -moz-border-radius: 2px;
     border-radius: 2px;
@@ -103,7 +115,7 @@ td {
     }
 
     &.KILLED {
-      background-color: #d9534f;
+      background-color: #ff9999;
     }
   }
 }
@@ -138,44 +150,80 @@ td {
 }
 
 // TODO: Rename this as #job-list
-#list {
+#joblist {
   height: 100%;
+}
+ul.tree-list {
+  list-style-type: none;
+  padding-left: 0px;
+  margin: 0;
+}
+  
+li.tree-list-item {
+  &.active > a {
+    background-color: #D9EDFF;
+  }
 
-  a {
+  ul.tree-list {
+    padding-left: 20px;
+  }
+
+  &.subFilter > a > .expandarrow {
+    color : #3398cc;
+  }
+
+  > a {
+    clear: both;
+    position: relative;
+    display: block;
+    border-bottom-width: 0;
+    padding: 10px 15px;
+
+    &:hover,
+    &:focus {
+      text-decoration: none;
+      background-color: #f5f5f5;
+      cursor: pointer;
+    }
+  
     &.nodedisabled,
     &.DISABLED {
       opacity: 0.3;
     }
-
+    
     &.DISABLED .icon {
       background-position: 16px 0px;
     }
-
+    
     &.READY .icon {
       background-position: 16px 0px;
     }
-
+    
     &.QUEUED .icon {
       opacity: 0.5;
       background-position: 32px 0px;
     }
-
+    
     &.RUNNING .icon {
       background-position: 32px 0px;
     }
-
+    
     &.SUCCEEDED .icon {
       background-position: 48px 0px;
     }
-
+    
     &.FAILED .icon {
       background-position: 0px 0px;
     }
-
+    
     &.KILLED .icon {
       background-position: 0px 0px;
     }
-
+    
+    &.FAILED_FINISHING .icon {
+      background-position: 0px 0px;
+    }
+    
     .icon {
       float: left;
       width: 16px;
@@ -183,6 +231,17 @@ td {
       margin: 2px 4px 0px -5px;
       background-image: url("./images/dot-icon.png");
       background-position: 16px 0px;
+    }
+    
+    .expandarrow {
+      float: right;
+      width: 16px;
+      height: 16px;
+      font-size: 8pt;
+    }
+    
+    .filterHighlight {
+      background-color: #FFFF00;
     }
   }
 }

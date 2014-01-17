@@ -21,7 +21,9 @@ import azkaban.executor.Status;
 
 import azkaban.flow.Flow;
 import azkaban.jobtype.JobTypeManager;
+import azkaban.project.Project;
 import azkaban.project.ProjectLoader;
+import azkaban.test.executor.InteractiveTestJob;
 import azkaban.test.executor.JavaJob;
 import azkaban.utils.JSONUtils;
 
@@ -36,22 +38,29 @@ public class FlowRunnerTest {
 	@Before
 	public void setUp() throws Exception {
 		System.out.println("Create temp dir");
-		workingDir = new File("_AzkabanTestDir_" + System.currentTimeMillis());
-		if (workingDir.exists()) {
-			FileUtils.deleteDirectory(workingDir);
+		synchronized ( this) {
+			workingDir = new File("_AzkabanTestDir_" + System.currentTimeMillis());
+			if (workingDir.exists()) {
+				FileUtils.deleteDirectory(workingDir);
+			}
+			workingDir.mkdirs();
 		}
-		workingDir.mkdirs();
 		jobtypeManager = new JobTypeManager(null, this.getClass().getClassLoader());
 		jobtypeManager.registerJobType("java", JavaJob.class);
+		jobtypeManager.registerJobType("test", InteractiveTestJob.class);
 		fakeProjectLoader = new MockProjectLoader(workingDir);
+		
+		InteractiveTestJob.clearTestJobs();
 	}
 	
 	@After
 	public void tearDown() throws IOException {
 		System.out.println("Teardown temp dir");
-		if (workingDir != null) {
-			FileUtils.deleteDirectory(workingDir);
-			workingDir = null;
+		synchronized ( this) {
+			if (workingDir != null) {
+				FileUtils.deleteDirectory(workingDir);
+				workingDir = null;
+			}
 		}
 	}
 	
@@ -190,6 +199,14 @@ public class FlowRunnerTest {
 		
 		Assert.assertTrue("Expected flow " + Status.FAILED + " instead " + exFlow.getStatus(), exFlow.getStatus() == Status.FAILED);
 		
+		synchronized(this) {
+			try {
+				wait(500);
+			} catch(InterruptedException e) {
+				
+			}
+		}
+
 		testStatus(exFlow, "job1", Status.SUCCEEDED);
 		testStatus(exFlow, "job2d", Status.FAILED);
 		testStatus(exFlow, "job3", Status.KILLED);
@@ -225,6 +242,14 @@ public class FlowRunnerTest {
 		ExecutableFlow exFlow = runner.getExecutableFlow();
 		Assert.assertTrue("Expected flow " + Status.FAILED + " instead " + exFlow.getStatus(), exFlow.getStatus() == Status.FAILED);
 		
+		synchronized(this) {
+			try {
+				wait(500);
+			} catch(InterruptedException e) {
+				
+			}
+		}
+		
 		testStatus(exFlow, "job1", Status.SUCCEEDED);
 		testStatus(exFlow, "job2d", Status.FAILED);
 		testStatus(exFlow, "job3", Status.SUCCEEDED);
@@ -259,7 +284,7 @@ public class FlowRunnerTest {
 
 		synchronized(this) {
 			try {
-				wait(4500);
+				wait(5000);
 			} catch (InterruptedException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
@@ -273,7 +298,7 @@ public class FlowRunnerTest {
 		synchronized(this) {
 			// Wait for cleanup.
 			try {
-				wait(1000);
+				wait(2000);
 			} catch (InterruptedException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
@@ -326,7 +351,7 @@ public class FlowRunnerTest {
 		ExecutableNode node = flow.getExecutableNode(name);
 		
 		if (node.getStatus() != status) {
-			Assert.fail("Status of job " + node.getJobId() + " is " + node.getStatus() + " not " + status + " as expected.");
+			Assert.fail("Status of job " + node.getId() + " is " + node.getStatus() + " not " + status + " as expected.");
 		}
 	}
 	
@@ -339,14 +364,19 @@ public class FlowRunnerTest {
 	}
 	
 	private ExecutableFlow prepareExecDir(File execDir, String flowName, int execId) throws IOException {
-		FileUtils.copyDirectory(execDir, workingDir);
+		synchronized ( this) {
+			FileUtils.copyDirectory(execDir, workingDir);
+		}
 		
 		File jsonFlowFile = new File(workingDir, flowName + ".flow");
 		@SuppressWarnings("unchecked")
 		HashMap<String, Object> flowObj = (HashMap<String, Object>) JSONUtils.parseJSONFromFile(jsonFlowFile);
 		
+		Project project = new Project(1, "myproject");
+		project.setVersion(2);
+
 		Flow flow = Flow.flowFromObject(flowObj);
-		ExecutableFlow execFlow = new ExecutableFlow(flow);
+		ExecutableFlow execFlow = new ExecutableFlow(project, flow);
 		execFlow.setExecutionId(execId);
 		execFlow.setExecutionPath(workingDir.getPath());
 		return execFlow;
@@ -372,7 +402,7 @@ public class FlowRunnerTest {
 		
 		//System.out.println("Node " + node.getJobId() + " start:" + startTime + " end:" + endTime + " previous:" + previousEndTime);
 		Assert.assertTrue("Checking start and end times", startTime > 0 && endTime >= startTime);
-		Assert.assertTrue("Start time for " + node.getJobId() + " is " + startTime +" and less than " + previousEndTime, startTime >= previousEndTime);
+		Assert.assertTrue("Start time for " + node.getId() + " is " + startTime +" and less than " + previousEndTime, startTime >= previousEndTime);
 		
 		for (String outNode : node.getOutNodes()) {
 			ExecutableNode childNode = flow.getExecutableNode(outNode);

@@ -1,0 +1,4 @@
+type=flow
+flow.name=innerFlow2
+dependencies=joba
+jobdprop=poop

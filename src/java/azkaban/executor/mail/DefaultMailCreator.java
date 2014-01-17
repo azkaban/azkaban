@@ -52,7 +52,7 @@ public class DefaultMailCreator implements MailCreator {
 	public boolean createFirstErrorMessage(ExecutableFlow flow, EmailMessage message, String azkabanName, String clientHostname, String clientPortNumber, String... vars) {
 
 		ExecutionOptions option = flow.getExecutionOptions();
-		List<String> emailList = option.getDisabledJobs();
+		List<String> emailList = option.getFailureEmails();
 		int execId = flow.getExecutionId();
 
 		if (emailList != null && !emailList.isEmpty()) {

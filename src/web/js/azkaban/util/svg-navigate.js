@@ -332,8 +332,19 @@
 			var aspectRatioDiv = divHeight/divWidth;
 
 			var scale = aspectRatioGraph > aspectRatioDiv ? (divHeight/height)*factor : (divWidth/width)*factor;
-			console.log("(" + x + "," + y + "," + width.toPrecision(4) + "," + height.toPrecision(4) + ")");
-			console.log("(rg:" + aspectRatioGraph.toPrecision(3) + ",rd:" + aspectRatioDiv.toPrecision(3) + "," + scale.toPrecision(3) + ")");
+			//console.log("(" + x + "," + y + "," + width.toPrecision(4) + "," + height.toPrecision(4) + ")");
+			//console.log("(rg:" + aspectRatioGraph.toPrecision(3) + ",rd:" + aspectRatioDiv.toPrecision(3) + "," + scale.toPrecision(3) + ")");
+			
+			if (arguments.maxScale) {
+				if (scale > arguments.maxScale) {
+					scale = arguments.maxScale;
+				}
+			}
+			if (arguments.minScale) {
+				if (scale < arguments.minScale) {
+					scale = arguments.minScale;
+				}
+			}
 			
 			// Center
 			var scaledWidth = width*scale;

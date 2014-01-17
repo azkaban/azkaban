@@ -384,7 +384,6 @@ public class JobTypeManager
 //			logger.info("jobConf is " + jobConf);
 //			
 			job = (Job)Utils.callConstructor(executorClass, jobId, sysConf, jobConf, logger);
-			logger.info("job built.");
 		}
 		catch (Exception e) {
 			//job = new InitErrorJob(jobId, e);

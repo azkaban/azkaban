@@ -32,7 +32,7 @@ import org.apache.log4j.Logger;
 import org.codehaus.jackson.map.ObjectMapper;
 
 import azkaban.executor.ConnectorParams;
-import azkaban.executor.ExecutableFlow;
+import azkaban.executor.ExecutableFlowBase;
 import azkaban.executor.ExecutorManagerException;
 import azkaban.utils.FileIOUtils.JobMetaData;
 import azkaban.utils.FileIOUtils.LogData;
@@ -57,8 +57,7 @@ public class ExecutorServlet extends HttpServlet implements ConnectorParams {
 		application = (AzkabanExecutorServer) config.getServletContext().getAttribute(AzkabanServletContextListener.AZKABAN_SERVLET_CONTEXT_KEY);
 
 		if (application == null) {
-			throw new IllegalStateException(
-					"No batch application is defined in the servlet context!");
+			throw new IllegalStateException("No batch application is defined in the servlet context!");
 		}
 
 		flowRunnerManager = application.getFlowRunnerManager();
@@ -231,7 +230,7 @@ public class ExecutorServlet extends HttpServlet implements ConnectorParams {
 			long updateTime = JSONUtils.getLongFromObject(updateTimesList.get(i));
 			int execId = (Integer)execIDList.get(i);
 			
-			ExecutableFlow flow = flowRunnerManager.getExecutableFlow(execId);
+			ExecutableFlowBase flow = flowRunnerManager.getExecutableFlow(execId);
 			if (flow == null) {
 				Map<String, Object> errorResponse = new HashMap<String,Object>();
 				errorResponse.put(RESPONSE_ERROR, "Flow does not exist");
@@ -259,7 +258,7 @@ public class ExecutorServlet extends HttpServlet implements ConnectorParams {
 	}
 	
 	private void handleAjaxFlowStatus(Map<String, Object> respMap, int execid) {
-		ExecutableFlow flow = flowRunnerManager.getExecutableFlow(execid);
+		ExecutableFlowBase flow = flowRunnerManager.getExecutableFlow(execid);
 		if (flow == null) {
 			respMap.put(STATUS_PARAM, RESPONSE_NOTFOUND);
 		}

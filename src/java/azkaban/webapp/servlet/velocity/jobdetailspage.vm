@@ -80,8 +80,8 @@
   ## Tabs
 
 			<ul class="nav nav-tabs" id="headertabs">
-				<li id="jobSummaryViewLink"><a href="#jobsummary">Summary</a></li>
-				<li id="jobLogViewLink"><a href="#joblog">Log</a></li>
+				<li id="jobLogViewLink"><a href="#logs">Job Logs</a></li>
+				<li id="jobSummaryViewLink"><a href="#summary">Summary</a></li>
 				<li><a href="${context}/pigvisualizer?execid=${execid}&jobid=${jobid}">Visualization</a></li>
 			</ul>
     </div>

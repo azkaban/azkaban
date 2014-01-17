@@ -31,6 +31,7 @@ import azkaban.executor.Status;
 import azkaban.flow.Flow;
 
 import azkaban.database.DataSourceUtils;
+import azkaban.project.Project;
 import azkaban.utils.FileIOUtils.LogData;
 import azkaban.utils.JSONUtils;
 import azkaban.utils.Pair;
@@ -244,7 +245,7 @@ public class JdbcExecutorLoaderTest {
 		Assert.assertEquals(flow.getProjectId(), info.getProjectId());
 		Assert.assertEquals(flow.getVersion(), info.getVersion());
 		Assert.assertEquals(flow.getFlowId(), info.getFlowId());
-		Assert.assertEquals(oldNode.getJobId(), info.getJobId());
+		Assert.assertEquals(oldNode.getId(), info.getJobId());
 		Assert.assertEquals(oldNode.getStatus(), info.getStatus());
 		Assert.assertEquals(oldNode.getStartTime(), info.getStartTime());
 		Assert.assertEquals("endTime = " + oldNode.getEndTime() + " info endTime = " + info.getEndTime(), oldNode.getEndTime(), info.getEndTime());
@@ -408,7 +409,12 @@ public class JdbcExecutorLoaderTest {
 		HashMap<String, Object> flowObj = (HashMap<String, Object>) JSONUtils.parseJSONFromFile(jsonFlowFile);
 		
 		Flow flow = Flow.flowFromObject(flowObj);
-		ExecutableFlow execFlow = new ExecutableFlow(executionId, flow);
+		Project project = new Project(1, "flow");
+		HashMap<String, Flow> flowMap = new HashMap<String, Flow>();
+		flowMap.put(flow.getId(), flow);
+		project.setFlows(flowMap);
+		ExecutableFlow execFlow = new ExecutableFlow(project, flow);
+		execFlow.setExecutionId(executionId);
 
 		return execFlow;
 	}
@@ -419,7 +425,11 @@ public class JdbcExecutorLoaderTest {
 		HashMap<String, Object> flowObj = (HashMap<String, Object>) JSONUtils.parseJSONFromFile(jsonFlowFile);
 		
 		Flow flow = Flow.flowFromObject(flowObj);
-		ExecutableFlow execFlow = new ExecutableFlow(flow);
+		Project project = new Project(1, "flow");
+		HashMap<String, Flow> flowMap = new HashMap<String, Flow>();
+		flowMap.put(flow.getId(), flow);
+		project.setFlows(flowMap);
+		ExecutableFlow execFlow = new ExecutableFlow(project, flow);
 
 		return execFlow;
 	}

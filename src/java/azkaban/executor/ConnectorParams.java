@@ -62,11 +62,11 @@ public interface ConnectorParams {
 	public static final int NODE_END_INDEX = 3;
 
 	public static final String UPDATE_TIME_LIST_PARAM = "updatetime";
-	public static final String EXEC_ID_LIST_PARAM = "execid";
+	public static final String EXEC_ID_LIST_PARAM = "executionId";
 	
 	public static final String FORCED_FAILED_MARKER = ".failed";
 	
-	public static final String UPDATE_MAP_EXEC_ID = "execId";
+	public static final String UPDATE_MAP_EXEC_ID = "executionId";
 	public static final String UPDATE_MAP_JOBID = "jobId";
 	public static final String UPDATE_MAP_UPDATE_TIME = "updateTime";
 	public static final String UPDATE_MAP_STATUS = "status";

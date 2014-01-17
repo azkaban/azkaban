@@ -47,22 +47,10 @@ public class ScheduleManager implements TriggerAgent {
 	private final DateTimeFormatter _dateFormat = DateTimeFormat.forPattern("MM-dd-yyyy HH:mm:ss:SSS");
 	private ScheduleLoader loader;
 
-//	private Map<Pair<Integer, String>, Set<Schedule>> scheduleIdentityPairMap = new LinkedHashMap<Pair<Integer, String>, Set<Schedule>>();
 	private Map<Integer, Schedule> scheduleIDMap = new LinkedHashMap<Integer, Schedule>();
 	private Map<Pair<Integer, String>, Schedule> scheduleIdentityPairMap = new LinkedHashMap<Pair<Integer, String>, Schedule>();
-	
-//	private final ExecutorManagerAdapter executorManager;
-//	
-//	private ProjectManager projectManager = null;
-//	
+
 	// Used for mbeans to query Scheduler status
-//<<<<<<< HEAD
-//	
-//=======
-//	private long lastCheckTime = -1;
-//	private long nextWakupTime = -1;
-//	private String runnerStage = "not started";
-//>>>>>>> 10830aeb8ac819473873cac3bb4e07b4aeda67e8
 
 	/**
 	 * Give the schedule manager a loader class that will properly load the
@@ -72,15 +60,9 @@ public class ScheduleManager implements TriggerAgent {
 	 */
 	public ScheduleManager (ScheduleLoader loader) 
 	{
-//		this.executorManager = executorManager;
 		this.loader = loader;
-		
 	}
-	
-//	public void setProjectManager(ProjectManager projectManager) {
-//		this.projectManager = projectManager;
-//	}
-	
+
 	@Override
 	public void start() throws ScheduleManagerException {
 		List<Schedule> scheduleList = null;
@@ -178,7 +160,6 @@ public class ScheduleManager implements TriggerAgent {
 		return scheduleIDMap.get(scheduleId);
 	}
 
-
 	/**
 	 * Removes the flow from the schedule if it exists.
 	 * 
@@ -199,6 +180,7 @@ public class ScheduleManager implements TriggerAgent {
 			removeSchedule(sched);
 		}
 	}
+
 	/**
 	 * Removes the flow from the schedule if it exists.
 	 * 
@@ -219,15 +201,13 @@ public class ScheduleManager implements TriggerAgent {
 		}
 
 		scheduleIDMap.remove(sched.getScheduleId());
-		
+	
 		try {
 			loader.removeSchedule(sched);
 		} catch (ScheduleManagerException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-
-		
 	}
 
 	// public synchronized void pauseScheduledFlow(String scheduleId){
@@ -339,12 +319,11 @@ public class ScheduleManager implements TriggerAgent {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
-		}
-		else {
-			logger.error("The provided schedule is non-recurring and the scheduled time already passed. " + s.getScheduleName());
+		} else {
+			logger.error("The provided schedule is non-recurring and the scheduled time already passed. "
+					+ s.getScheduleName());
 		}
 	}
-	
 
 	@Override
 	public void loadTriggerFromProps(Props props) throws ScheduleManagerException {
@@ -354,9 +333,6 @@ public class ScheduleManager implements TriggerAgent {
 	/**
 	 * Thread that simply invokes the running of flows when the schedule is
 	 * ready.
-	 * 
-	 * @author Richard Park
-	 * 
 	 */
 //	public class ScheduleRunner extends Thread {
 //		private final PriorityBlockingQueue<Schedule> schedules;
@@ -612,6 +588,4 @@ public class ScheduleManager implements TriggerAgent {
 	public String getTriggerSource() {
 		return triggerSource;
 	}
-	
-
 }

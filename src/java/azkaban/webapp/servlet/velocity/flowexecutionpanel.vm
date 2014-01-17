@@ -14,13 +14,6 @@
  * the License.
 *#
 
-			<script type="text/javascript" src="${context}/js/azkaban/util/layout.js"></script>
-			<script type="text/javascript" src="${context}/js/azkaban/util/svg-navigate.js"></script>
-			<script type="text/javascript" src="${context}/js/azkaban/view/context-menu.js"></script>
-			<script type="text/javascript" src="${context}/js/azkaban/util/common.js"></script>
-			<script type="text/javascript" src="${context}/js/azkaban/view/svg-graph.js"></script>
-			<script type="text/javascript" src="${context}/js/azkaban/view/flow-execute.js"></script>
-
 			<div class="modal modal-wide" id="execute-flow-panel">
 				<div class="modal-dialog">
 					<div class="modal-content">
@@ -220,4 +213,3 @@
 *#
 
 			<div id="contextMenu"></div>
-

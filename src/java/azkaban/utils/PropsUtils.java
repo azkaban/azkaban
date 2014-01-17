@@ -28,7 +28,7 @@ import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import azkaban.executor.ExecutableFlow;
+import azkaban.executor.ExecutableFlowBase;
 import azkaban.flow.CommonJobProperties;
 
 import org.apache.commons.lang.StringUtils;
@@ -144,8 +144,7 @@ public class PropsUtils {
 		return false;
 	}
 
-	private static final Pattern VARIABLE_PATTERN = Pattern
-			.compile("\\$\\{([a-zA-Z_.0-9]+)\\}");
+	private static final Pattern VARIABLE_PATTERN = Pattern.compile("\\$\\{([a-zA-Z_.0-9]+)\\}");
 
 	public static Props resolveProps(Props props) {
 		if (props == null) return null;
@@ -209,27 +208,27 @@ public class PropsUtils {
 		return buffer.toString();
 	}
 	
-	public static Props addCommonFlowProperties(final ExecutableFlow flow) {
-		Props parentProps = new Props();
+	public static Props addCommonFlowProperties(Props parentProps, final ExecutableFlowBase flow) {
+		Props props = new Props(parentProps);
 
-		parentProps.put(CommonJobProperties.FLOW_ID, flow.getFlowId());
-		parentProps.put(CommonJobProperties.EXEC_ID, flow.getExecutionId());
-		parentProps.put(CommonJobProperties.PROJECT_ID, flow.getProjectId());
-		parentProps.put(CommonJobProperties.PROJECT_VERSION, flow.getVersion());
-		parentProps.put(CommonJobProperties.FLOW_UUID, UUID.randomUUID().toString());
+		props.put(CommonJobProperties.FLOW_ID, flow.getFlowId());
+		props.put(CommonJobProperties.EXEC_ID, flow.getExecutionId());
+		props.put(CommonJobProperties.PROJECT_ID, flow.getProjectId());
+		props.put(CommonJobProperties.PROJECT_VERSION, flow.getVersion());
+		props.put(CommonJobProperties.FLOW_UUID, UUID.randomUUID().toString());
 
 		DateTime loadTime = new DateTime();
 
-		parentProps.put(CommonJobProperties.FLOW_START_TIMESTAMP, loadTime.toString());
-		parentProps.put(CommonJobProperties.FLOW_START_YEAR, loadTime.toString("yyyy"));
-		parentProps.put(CommonJobProperties.FLOW_START_MONTH, loadTime.toString("MM"));
-		parentProps.put(CommonJobProperties.FLOW_START_DAY, loadTime.toString("dd"));
-		parentProps.put(CommonJobProperties.FLOW_START_HOUR, loadTime.toString("HH"));
-		parentProps.put(CommonJobProperties.FLOW_START_MINUTE, loadTime.toString("mm"));
-		parentProps.put(CommonJobProperties.FLOW_START_SECOND, loadTime.toString("ss"));
-		parentProps.put(CommonJobProperties.FLOW_START_MILLISSECOND, loadTime.toString("SSS"));
-		parentProps.put(CommonJobProperties.FLOW_START_TIMEZONE, loadTime.toString("ZZZZ"));
-		return parentProps;
+		props.put(CommonJobProperties.FLOW_START_TIMESTAMP, loadTime.toString());
+		props.put(CommonJobProperties.FLOW_START_YEAR, loadTime.toString("yyyy"));
+		props.put(CommonJobProperties.FLOW_START_MONTH, loadTime.toString("MM"));
+		props.put(CommonJobProperties.FLOW_START_DAY, loadTime.toString("dd"));
+		props.put(CommonJobProperties.FLOW_START_HOUR, loadTime.toString("HH"));
+		props.put(CommonJobProperties.FLOW_START_MINUTE, loadTime.toString("mm"));
+		props.put(CommonJobProperties.FLOW_START_SECOND, loadTime.toString("ss"));
+		props.put(CommonJobProperties.FLOW_START_MILLISSECOND, loadTime.toString("SSS"));
+		props.put(CommonJobProperties.FLOW_START_TIMEZONE, loadTime.toString("ZZZZ"));
+		return props;
 	}
 
 	public static String toJSONString(Props props, boolean localOnly) {

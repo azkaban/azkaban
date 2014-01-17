@@ -102,15 +102,9 @@
               </div>
               <div class="clearfix"></div>
               <div class="project-flows" id="${project.name}-child">
-                <table class="table">
-                  <thead>
-                    <tr>
-                      <th class="tb-name">Flows</th>
-                    </tr>
-                  </thead>
-                  <tbody id="${project.name}-tbody">
-                  </tbody>
-                </table>
+                <h5>Flows</h5>
+                <div class="list-group" id="${project.name}-tbody">
+                </div>
               </div>
             </li>
   #end

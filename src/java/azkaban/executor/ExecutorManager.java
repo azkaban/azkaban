@@ -1,5 +1,5 @@
 /*
- * Copyright 2012 LinkedIn Corp.
+ * Copyright 2014 LinkedIn Corp.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -419,6 +419,34 @@ public class ExecutorManager extends EventHandler implements ExecutorManagerAdap
 		}
 	}
 	
+	private void applyDisabledJobs(List<Object> disabledJobs, ExecutableFlowBase exflow) {
+		for (Object disabled: disabledJobs) {
+			if (disabled instanceof String) {
+				String nodeName = (String)disabled;
+				ExecutableNode node = exflow.getExecutableNode(nodeName);
+				if (node != null) {
+					node.setStatus(Status.DISABLED);
+				}
+			}
+			else if (disabled instanceof Map) {
+				@SuppressWarnings("unchecked")
+				Map<String,Object> nestedDisabled = (Map<String, Object>)disabled;
+				String nodeName = (String)nestedDisabled.get("id");
+				@SuppressWarnings("unchecked")
+				List<Object> subDisabledJobs = (List<Object>)nestedDisabled.get("children");
+				
+				if (nodeName == null || subDisabledJobs == null) {
+					return;
+				}
+				
+				ExecutableNode node = exflow.getExecutableNode(nodeName);
+				if (node != null && node instanceof ExecutableFlowBase) {
+					applyDisabledJobs(subDisabledJobs, (ExecutableFlowBase)node);
+				}
+			}
+		}
+	}
+	
 	@Override
 	public String submitExecutableFlow(ExecutableFlow exflow, String userId) throws ExecutorManagerException {
 		synchronized(exflow) {
@@ -426,6 +454,8 @@ public class ExecutorManager extends EventHandler implements ExecutorManagerAdap
 
 			int projectId = exflow.getProjectId();
 			String flowId = exflow.getFlowId();
+			exflow.setSubmitUser(userId);
+			exflow.setSubmitTime(System.currentTimeMillis());
 			
 			List<Integer> running = getRunningFlows(projectId, flowId);
 
@@ -434,29 +464,25 @@ public class ExecutorManager extends EventHandler implements ExecutorManagerAdap
 				options = new ExecutionOptions();
 			}
 			
+			String message = "";
 			if (options.getDisabledJobs() != null) {
-				// Disable jobs
-				for(String disabledId : options.getDisabledJobs()) {
-					ExecutableNode node = exflow.getExecutableNode(disabledId);
-					node.setStatus(Status.DISABLED);
-				}
+				applyDisabledJobs(options.getDisabledJobs(), exflow);
 			}
 			
-			String message = "";
 			if (!running.isEmpty()) {
 				if (options.getConcurrentOption().equals(ExecutionOptions.CONCURRENT_OPTION_PIPELINE)) {
 					Collections.sort(running);
 					Integer runningExecId = running.get(running.size() - 1);
 					
 					options.setPipelineExecutionId(runningExecId);
-					message = "Flow " + flowId + " is already running with exec id " + runningExecId +". Pipelining level " + options.getPipelineLevel() + ". ";
+					message = "Flow " + flowId + " is already running with exec id " + runningExecId +". Pipelining level " + options.getPipelineLevel() + ". \n";
 				}
 				else if (options.getConcurrentOption().equals(ExecutionOptions.CONCURRENT_OPTION_SKIP)) {
 					throw new ExecutorManagerException("Flow " + flowId + " is already running. Skipping execution.", ExecutorManagerException.Reason.SkippedExecution);
 				}
 				else {
 					// The settings is to run anyways.
-					message = "Flow " + flowId + " is already running with exec id " + StringUtils.join(running, ",") +". Will execute concurrently. ";
+					message = "Flow " + flowId + " is already running with exec id " + StringUtils.join(running, ",") +". Will execute concurrently. \n";
 				}
 			}
 			
@@ -653,9 +679,6 @@ public class ExecutorManager extends EventHandler implements ExecutorManagerAdap
 			while(!shutdown) {
 				try {
 					lastThreadCheckTime = System.currentTimeMillis();
-
-//					loadRunningFlows();
-
 					updaterStage = "Starting update all flows.";
 					
 					Map<ConnectionInfo, List<ExecutableFlow>> exFlowMap = getFlowToExecutorMap();
@@ -937,7 +960,7 @@ public class ExecutorManager extends EventHandler implements ExecutorManagerAdap
 		
 		Pair<ExecutionReference, ExecutableFlow> refPair = this.runningFlows.get(execId);
 		if (refPair == null) {
-			throw new ExecutorManagerException("No running flow found with the execution id.");
+			throw new ExecutorManagerException("No running flow found with the execution id. Removing " + execId);
 		}
 		
 		ExecutionReference ref = refPair.getFirst();
@@ -1166,8 +1189,4 @@ public class ExecutorManager extends EventHandler implements ExecutorManagerAdap
 			cleanOldExecutionLogs(DateTime.now().getMillis() - executionLogsRetentionMs);
 		}
 	}
-
-	
-
-	
 }

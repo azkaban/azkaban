@@ -21,7 +21,7 @@ public class ExecuteFlowActionTest {
 		loader.init(new Props());
 		
 		ExecutionOptions options = new ExecutionOptions();
-		List<String> disabledJobs = new ArrayList<String>();
+		List<Object> disabledJobs = new ArrayList<Object>();
 		options.setDisabledJobs(disabledJobs);
 		
 		ExecuteFlowAction executeFlowAction = new ExecuteFlowAction("ExecuteFlowAction", 1, "testproject", "testflow", "azkaban", options, null);

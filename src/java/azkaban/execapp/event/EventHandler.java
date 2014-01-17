@@ -16,6 +16,7 @@
 
 package azkaban.execapp.event;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 
 public class EventHandler {
@@ -29,6 +30,7 @@ public class EventHandler {
 	}
 	
 	public void fireEventListeners(Event event) {
+		ArrayList<EventListener> listeners = new ArrayList<EventListener>(this.listeners);
 		for (EventListener listener: listeners) {
 			listener.handleEvent(event);
 		}

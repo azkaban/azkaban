@@ -16,6 +16,9 @@
 
 package azkaban.execapp.event;
 
+import java.util.ArrayList;
+import java.util.Map;
+
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutableNode;
 import azkaban.executor.ExecutorLoader;
@@ -70,27 +73,24 @@ public class RemoteFlowWatcher extends FlowWatcher {
 					isShutdown = true;
 				}
 				
+				long updateTime = 0;
 				if (flow == null) {
 					flow = updateFlow;
 				}
 				else {
+					Map<String, Object> updateData = updateFlow.toUpdateObject(updateTime);
+					ArrayList<ExecutableNode> updatedNodes = new ArrayList<ExecutableNode>();
+					flow.applyUpdateObject(updateData, updatedNodes);
+
 					flow.setStatus(updateFlow.getStatus());
 					flow.setEndTime(updateFlow.getEndTime());
 					flow.setUpdateTime(updateFlow.getUpdateTime());
 					
-					for (ExecutableNode node : flow.getExecutableNodes()) {
-						String jobId = node.getJobId();
-						ExecutableNode newNode = updateFlow.getExecutableNode(jobId);
-						long updateTime = node.getUpdateTime();
-						node.setUpdateTime(newNode.getUpdateTime());
-						node.setStatus(newNode.getStatus());
-						node.setStartTime(newNode.getStartTime());
-						node.setEndTime(newNode.getEndTime());
-						
-						if (updateTime < newNode.getUpdateTime()) {
-							handleJobFinished(jobId, newNode.getStatus());
-						}
+					for (ExecutableNode node : updatedNodes) {
+						handleJobStatusChange(node.getNestedId(), node.getStatus());
 					}
+					
+					updateTime = flow.getUpdateTime();
 				}
 				
 				if (Status.isStatusFinished(flow.getStatus())) {
@@ -108,7 +108,7 @@ public class RemoteFlowWatcher extends FlowWatcher {
 		}
 		
 	}
-
+	
 	@Override
 	public synchronized void stopWatcher() {
 		if(isShutdown) {
@@ -118,7 +118,7 @@ public class RemoteFlowWatcher extends FlowWatcher {
 		if (thread != null) {
 			thread.interrupt();
 		}
-		super.failAllWatches();
+		super.unblockAllWatches();
 		loader = null;
 		flow = null;
 	}

@@ -33,6 +33,7 @@ import azkaban.utils.cache.Cache.EjectionPolicy;
 public class SessionCache {
 	private static final int MAX_NUM_SESSIONS = 10000;
 	private static final long SESSION_TIME_TO_LIVE = 24*60*60*1000L;
+
 //	private CacheManager manager = CacheManager.create();
 	private Cache cache;
 

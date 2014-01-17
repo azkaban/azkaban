@@ -65,7 +65,6 @@ public class MockExecutorLoader implements ExecutorLoader {
 
 	}
 
-	@SuppressWarnings("unchecked")
 	@Override
 	public void updateExecutableFlow(ExecutableFlow flow) throws ExecutorManagerException {
 		ExecutableFlow toUpdate = flows.get(flow.getExecutionId());
@@ -76,24 +75,27 @@ public class MockExecutorLoader implements ExecutorLoader {
 
 	@Override
 	public void uploadExecutableNode(ExecutableNode node, Props inputParams) throws ExecutorManagerException {
-		nodes.put(node.getJobId(), ExecutableNode.createNodeFromObject(node.toObject(), null));
-		jobUpdateCount.put(node.getJobId(), 1);
+		ExecutableNode exNode = new ExecutableNode();
+		exNode.fillExecutableFromMapObject(node.toObject());
+		
+		nodes.put(node.getId(), exNode);
+		jobUpdateCount.put(node.getId(), 1);
 	}
 
 	@Override
 	public void updateExecutableNode(ExecutableNode node) throws ExecutorManagerException {
-		ExecutableNode foundNode = nodes.get(node.getJobId());
+		ExecutableNode foundNode = nodes.get(node.getId());
 		foundNode.setEndTime(node.getEndTime());
 		foundNode.setStartTime(node.getStartTime());
 		foundNode.setStatus(node.getStatus());
 		foundNode.setUpdateTime(node.getUpdateTime());
 		
-		Integer value = jobUpdateCount.get(node.getJobId());
+		Integer value = jobUpdateCount.get(node.getId());
 		if (value == null) {
 			throw new ExecutorManagerException("The node has not been uploaded");
 		}
 		else {
-			jobUpdateCount.put(node.getJobId(), ++value);
+			jobUpdateCount.put(node.getId(), ++value);
 		}
 		
 		flowUpdateCount++;

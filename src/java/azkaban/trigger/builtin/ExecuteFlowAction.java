@@ -216,7 +216,7 @@ public class ExecuteFlowAction implements TriggerAction {
 			throw new RuntimeException("Error finding the flow to execute " + flowName);
 		}
 		
-		ExecutableFlow exflow = new ExecutableFlow(flow);
+		ExecutableFlow exflow = new ExecutableFlow(project, flow);
 		exflow.setSubmitUser(submitUser);
 		exflow.addAllProxyUsers(project.getProxyUsers());
 		

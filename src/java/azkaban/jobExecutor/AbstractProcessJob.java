@@ -52,7 +52,7 @@ public abstract class AbstractProcessJob extends AbstractJob {
 
 	protected String _cwd;
 
-	private volatile Props generatedPropeties;
+	private volatile Props generatedProperties;
 
 	protected AbstractProcessJob(String jobid, final Props sysProps, final Props jobProps, final Logger log) {
 		super(jobid, log);
@@ -83,7 +83,7 @@ public abstract class AbstractProcessJob extends AbstractJob {
 
 	@Override
 	public Props getJobGeneratedProperties() {
-		return generatedPropeties;
+		return generatedProperties;
 	}
 
 	/**
@@ -188,7 +188,7 @@ public abstract class AbstractProcessJob extends AbstractJob {
 	}
 
 	public void generateProperties(final File outputFile) {
-		generatedPropeties = loadOutputFileProps(outputFile);
+		generatedProperties = loadOutputFileProps(outputFile);
 	}
 
 }

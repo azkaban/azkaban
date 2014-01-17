@@ -1,0 +1,5 @@
+type=flow
+flow.name=innerFlow
+dependencies=joba
+testprops=moo
+output.override=jobb

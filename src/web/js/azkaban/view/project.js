@@ -81,8 +81,8 @@ azkaban.FlowTableView = Backbone.View.extend({
 			var level = job.level;
 			var nodeId = flowId + "-" + name;
 	
-      var li = document.createElement('li');
-      $(li).addClass("list-group-item");
+			var li = document.createElement('li');
+			$(li).addClass("list-group-item");
 			$(li).attr("id", nodeId);
 			li.flowId = flowId;
 			li.dependents = job.dependents;

@@ -23,7 +23,6 @@ import java.util.Map;
 import azkaban.utils.Utils;
 
 public class Node {
-
 	private final String id;
 	private String jobSource;
 	private String propsSource;
@@ -32,6 +31,8 @@ public class Node {
 	private int level;
 	private int expectedRunTimeSec = 1;
 	private String type;
+	
+	private String embeddedFlowId;
 	
 	public Node(String id) {
 		this.id = id;
@@ -103,6 +104,14 @@ public class Node {
 		return expectedRunTimeSec;
 	}
 	
+	public void setEmbeddedFlowId(String flowId) {
+		embeddedFlowId = flowId;
+	}
+	
+	public String getEmbeddedFlowId() {
+		return embeddedFlowId;
+	}
+	
 	@SuppressWarnings("unchecked")
 	public static Node fromObject(Object obj) {
 		Map<String,Object> mapObj = (Map<String,Object>)obj;
@@ -112,10 +121,13 @@ public class Node {
 		String jobSource = (String)mapObj.get("jobSource");
 		String propSource = (String)mapObj.get("propSource");
 		String jobType = (String)mapObj.get("jobType");
-		
+
+		String embeddedFlowId = (String)mapObj.get("embeddedFlowId");
+
 		node.setJobSource(jobSource);
 		node.setPropsSource(propSource);
 		node.setType(jobType);
+		node.setEmbeddedFlowId(embeddedFlowId);
 		
 		Integer expectedRuntime = (Integer)mapObj.get("expectedRuntime");
 		if (expectedRuntime != null) {
@@ -154,6 +166,9 @@ public class Node {
 		objMap.put("jobSource", jobSource);
 		objMap.put("propSource", propsSource);
 		objMap.put("jobType", type);
+		if (embeddedFlowId != null) {
+			objMap.put("embeddedFlowId", embeddedFlowId);
+		}
 		objMap.put("expectedRuntime", expectedRunTimeSec);
 
 		HashMap<String, Object> layoutInfo = new HashMap<String, Object>();

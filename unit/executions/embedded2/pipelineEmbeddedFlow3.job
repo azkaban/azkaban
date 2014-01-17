@@ -1,0 +1,5 @@
+type=flow
+flow.name=innerFlow
+dependencies=pipeline2
+testprops=moo
+output.override=jobb

@@ -16,26 +16,6 @@
 
 $.namespace('azkaban');
 
-function recurseAllAncestors(nodes, disabledMap, id, disable) {
-	var node = nodes[id];
-	if (node.in) {
-		for (var key in node.in) {
-			disabledMap[key] = disable;
-			recurseAllAncestors(nodes, disabledMap, key, disable);
-		}
-	}
-}
-
-function recurseAllDescendents(nodes, disabledMap, id, disable) {
-	var node = nodes[id];
-	if (node.out) {
-		for (var key in node.out) {
-			disabledMap[key] = disable;
-			recurseAllDescendents(nodes, disabledMap, key, disable);
-		}
-	}
-}
-
 var flowExecuteDialogView;
 azkaban.FlowExecuteDialogView = Backbone.View.extend({
 	events: {
@@ -90,20 +70,15 @@ azkaban.FlowExecuteDialogView = Backbone.View.extend({
 			}
 		}
 		
-		var disabled = "";
-		var disabledMap = this.model.get('disabled');
-		for (var dis in disabledMap) {
-			if (disabledMap[dis]) {
-				disabled += dis + ",";
-			}
-		}
+		var data = this.model.get("data");
+		var disabledList = gatherDisabledNodes(data);
 		
 		var executingData = {
 			projectId: projectId,
 			project: this.projectName,
 			ajax: "executeFlow",
 			flow: this.flowId,
-			disabled: disabled,
+			disabled: JSON.stringify(disabledList),
 			failureEmailsOverride:failureEmailsOverride,
 			successEmailsOverride:successEmailsOverride,
 			failureAction: failureAction,
@@ -128,7 +103,6 @@ azkaban.FlowExecuteDialogView = Backbone.View.extend({
 		
 		return executingData;
 	},
-	
 	changeFlowInfo: function() {
 		var successEmails = this.model.get("successEmails");
 		var failureEmails = this.model.get("failureEmails");
@@ -183,28 +157,7 @@ azkaban.FlowExecuteDialogView = Backbone.View.extend({
 		if (queueLevel) {
 			$('#queueLevel').val(queueLevel);
 		}
-		
-		if (nodeStatus) {
-			var nodeMap = this.model.get("nodeMap");
-			var disabled = {};
-			for (var key in nodeStatus) {
-				var status = nodeStatus[key];
-				
-				var node = nodeMap[key];
-				if (node) {
-					node.status = status;
-					if (node.status == "DISABLED" || node.status == "SKIPPED") {
-						node.status = "READY";
-						disabled[node.id] = true;
-					}
-					if (node.status == "SUCCEEDED" || node.status=="RUNNING") {
-						disabled[node.id] = true;
-					}
-				}
-			}
-			this.model.set({"disabled":disabled});
-		}
-		
+
 		if (flowParams) {
 			for (var key in flowParams) {
 				editTableView.handleAddRow({
@@ -222,20 +175,25 @@ azkaban.FlowExecuteDialogView = Backbone.View.extend({
 		
 		// ExecId is optional
 		var execId = data.execid;
-	
-		var loadedId = executableGraphModel.get("flowId");
-	
-		this.loadGraph(projectName, flowId);
-		this.loadFlowInfo(projectName, flowId, execId);
-
+		var exgraph = data.exgraph;
+		
 		this.projectName = projectName;
 		this.flowId = flowId;
-		if (jobId) {
-			this.showExecuteJob(projectName, flowId, jobId, data.withDep);
+		
+		var self = this;
+		var loadCallback = function() {
+			if (jobId) {
+				self.showExecuteJob(projectName, flowId, jobId, data.withDep);
+			}
+			else {
+				self.showExecuteFlow(projectName, flowId);
+			}
 		}
-		else {
-			this.showExecuteFlow(projectName, flowId);
-		}
+		
+		var loadedId = executableGraphModel.get("flowId");
+		this.loadGraph(projectName, flowId, exgraph, loadCallback);
+		this.loadFlowInfo(projectName, flowId, execId);
+
 	},
 	
 	showExecuteFlow: function(projectName, flowId) {
@@ -250,19 +208,17 @@ azkaban.FlowExecuteDialogView = Backbone.View.extend({
 		sideMenuDialogView.menuSelect($("#flow-option"));
 		$("#execute-flow-panel-title").text("Execute Flow " + flowId);
 		
-		var nodes = this.model.get("nodeMap");
+		var data = this.model.get("data");
 		var disabled = this.model.get("disabled");
 		
 		// Disable all, then re-enable those you want.
-		for (var key in nodes) {
-			disabled[key] = true;
-		}
+		disableAll();
 		
-		var jobNode = nodes[jobId];
-		disabled[jobId] = false;
+		var jobNode = data.nodeMap[jobId];
+		touchNode(jobNode, false);
 		
 		if (withDep) {
-			recurseAllAncestors(nodes, disabled, jobId, false);
+			recurseAllAncestors(jobNode, false);
 		}
 
 		this.showExecutionOptionPanel();
@@ -289,11 +245,62 @@ azkaban.FlowExecuteDialogView = Backbone.View.extend({
 		fetchFlowInfo(this.model, projectName, flowId, execId);
 	},
 	
-	loadGraph: function(projectName, flowId) {
+	loadGraph: function(projectName, flowId, exgraph, callback) {
 		console.log("Loading flow " + flowId);
-		fetchFlow(this.model, projectName, flowId, true);
+		var requestURL = contextURL + "/manager";
+		
+		var graphModel = executableGraphModel;
+		// fetchFlow(this.model, projectName, flowId, true);
+		var requestData = {
+				"project": projectName, 
+				"ajax": "fetchflowgraph", 
+				"flow": flowId
+			};
+		var self = this;
+		var successHandler = function(data) {
+			console.log("data fetched");
+			processFlowData(data);
+			graphModel.set({data:data});
+			
+			if (exgraph) {
+				self.assignInitialStatus(data, exgraph);
+			}
+			
+			// Auto disable jobs that are finished.
+			disableFinishedJobs(data);
+			executingSvgGraphView = new azkaban.SvgGraphView({
+				el: $('#flow-executing-graph'), 
+				model: graphModel,
+				render: false,
+				rightClick: { 
+					"node": expanelNodeClickCallback,
+					"edge": expanelEdgeClickCallback, 
+					"graph": expanelGraphClickCallback 
+				},
+				tooltipcontainer: "#svg-div-custom"
+			});
+			
+			if (callback) {
+				callback.call(this);
+			}
+		};
+		$.get(requestURL, requestData, successHandler, "json");
 	},
-	
+	assignInitialStatus: function(data, statusData) {
+		// Copies statuses over from the previous execution if it exists.
+		var statusNodeMap = statusData.nodeMap;
+		var nodes = data.nodes;
+		for(var i=0; i<nodes.length; ++i) {
+			var node = nodes[i];
+			var statusNode = statusNodeMap[node.id];
+			if (statusNode) {
+				node.status = statusNode.status;
+				if (node.type == "flow" && statusNode.type == "flow") {
+					this.assignInitialStatus(node, statusNode);
+				}
+			}
+		}
+	},
 	handleExecuteFlow: function(evt) {
 		console.log("click schedule button.");
 		var executeURL = contextURL + "/executor";
@@ -326,16 +333,16 @@ azkaban.EditTableView = Backbone.View.extend({
 	
 		var tr = document.createElement("tr");
 		var tdName = document.createElement("td");
-    $(tdName).addClass('property-key');
+		$(tdName).addClass('property-key');
 		var tdValue = document.createElement("td");
 		
 		var remove = document.createElement("div");
-    $(remove).addClass("pull-right").addClass('remove-btn');
-    var removeBtn = document.createElement("button");
-    $(removeBtn).attr('type', 'button');
-    $(removeBtn).addClass('btn').addClass('btn-xs').addClass('btn-danger');
-    $(removeBtn).text('Delete');
-    $(remove).append(removeBtn);
+		$(remove).addClass("pull-right").addClass('remove-btn');
+		var removeBtn = document.createElement("button");
+		$(removeBtn).attr('type', 'button');
+		$(removeBtn).addClass('btn').addClass('btn-xs').addClass('btn-danger');
+		$(removeBtn).text('Delete');
+		$(remove).append(removeBtn);
 
 		var nameData = document.createElement("span");
 		$(nameData).addClass("spanValue");
@@ -348,7 +355,7 @@ azkaban.EditTableView = Backbone.View.extend({
 		$(tdName).addClass("editable");
 		
 		$(tdValue).append(valueData);
-    $(tdValue).append(remove);
+		$(tdValue).append(remove);
 		$(tdValue).addClass("editable").addClass('value');
 		
 		$(tr).addClass("editRow");
@@ -367,7 +374,7 @@ azkaban.EditTableView = Backbone.View.extend({
 					
 		var input = document.createElement("input");
 		$(input).attr("type", "text");
-    $(input).addClass('form-control').addClass('input-sm');
+		$(input).addClass('form-control').addClass('input-sm');
 		$(input).css("width", "100%");
 		$(input).val(text);
 		$(curTarget).addClass("editing");
@@ -404,13 +411,13 @@ azkaban.EditTableView = Backbone.View.extend({
 		$(valueData).text(text);
 
 		if ($(parent).hasClass("value")) {
-      var remove = document.createElement("div");
-      $(remove).addClass("pull-right").addClass('remove-btn');
-      var removeBtn = document.createElement("button");
-      $(removeBtn).attr('type', 'button');
-      $(removeBtn).addClass('btn').addClass('btn-xs').addClass('btn-danger');
-      $(removeBtn).text('Delete');
-      $(remove).append(removeBtn);
+			var remove = document.createElement("div");
+			$(remove).addClass("pull-right").addClass('remove-btn');
+			var removeBtn = document.createElement("button");
+			$(removeBtn).attr('type', 'button');
+			$(removeBtn).addClass('btn').addClass('btn-xs').addClass('btn-danger');
+			$(removeBtn).text('Delete');
+			$(remove).append(removeBtn);
 			$(parent).append(remove);
 		}
 		
@@ -464,7 +471,7 @@ azkaban.SideMenuDialogView = Backbone.View.extend({
 var handleJobMenuClick = function(action, el, pos) {
 	var jobid = el[0].jobid;
 	
-	var requesgURL = contextURL + "/manager?project=" + projectName + "&flow=" + flowName + "&job=" + jobid;
+	var requestURL = contextURL + "/manager?project=" + projectName + "&flow=" + flowName + "&job=" + jobid;
 	if (action == "open") {
 		window.location.href = requestURL;
 	}
@@ -476,115 +483,198 @@ var handleJobMenuClick = function(action, el, pos) {
 var executableGraphModel;
 azkaban.GraphModel = Backbone.Model.extend({});
 
+/**
+ * Disable jobs that need to be disabled
+ */
+var disableFinishedJobs = function(data) {
+	for (var i=0; i < data.nodes.length; ++i) {
+		var node = data.nodes[i];
+		
+		if (node.status == "DISABLED" || node.status == "SKIPPED") {
+			node.status = "READY";
+			node.disabled = true;
+		}
+		else if (node.status == "SUCCEEDED" || node.status=="RUNNING") {
+			node.disabled = true;
+		}
+		else if (node.status == "KILLED") {
+			node.disabled = false;
+			node.status="READY";
+		}
+		else {
+			node.disabled = false;
+			if (node.flowData) {
+				disableFinishedJobs(node.flowData);
+			}
+		}
+	}
+}
+
+/**
+ * Enable all jobs. Recurse
+ */
 var enableAll = function() {
-	disabled = {};
-	executableGraphModel.set({disabled: disabled});
+	recurseTree(executableGraphModel.get("data"), false, false);
 	executableGraphModel.trigger("change:disabled");
 }
 
 var disableAll = function() {
-	var disabled = executableGraphModel.get("disabled");
+	recurseTree(executableGraphModel.get("data"), true, false);
+	executableGraphModel.trigger("change:disabled");
+}
 
-	var nodes = executableGraphModel.get("nodes");
-	for (var key in nodes) {
-		disabled[key] = true;
+var recurseTree = function(data, disabled, recurse) {
+	for (var i=0; i < data.nodes.length; ++i) {
+		var node = data.nodes[i];
+		node.disabled = disabled;
+		
+		if (node.flowData && recurse) {
+			recurseTree(node.flowData, disabled);
+		}
 	}
+}
 
-	executableGraphModel.set({disabled: disabled});
+var touchNode = function(node, disable) {
+	node.disabled = disable;
 	executableGraphModel.trigger("change:disabled");
 }
 
-var touchNode = function(jobid, disable) {
-	var disabled = executableGraphModel.get("disabled");
-
-	disabled[jobid] = disable;
-	executableGraphModel.set({disabled: disabled});
-	executableGraphModel.trigger("change:disabled");
-}
-
-var touchParents = function(jobid, disable) {
-	var disabled = executableGraphModel.get("disabled");
-	var nodes = executableGraphModel.get("nodes");
-	var inNodes = nodes[jobid].inNodes;
+var touchParents = function(node, disable) {
+	var inNodes = node.inNodes;
 
 	if (inNodes) {
 		for (var key in inNodes) {
-			disabled[key] = disable;
+			inNodes[key].disabled = disable;
 		}
 	}
-	
-	executableGraphModel.set({disabled: disabled});
+
 	executableGraphModel.trigger("change:disabled");
 }
 
-var touchChildren = function(jobid, disable) {
-	var disabledMap = executableGraphModel.get("disabled");
-	var nodes = executableGraphModel.get("nodes");
-	var outNodes = nodes[jobid].outNodes;
+var touchChildren = function(node, disable) {
+	var outNodes = node.outNodes;
 
 	if (outNodes) {
 		for (var key in outNodes) {
-			disabledMap[key] = disable;
+			outNodes[key].disabled = disable;
 		}
 	}
 	
-	executableGraphModel.set({disabled: disabledMap});
 	executableGraphModel.trigger("change:disabled");
 }
 
-var touchAncestors = function(jobid, disable) {
-	var disabled = executableGraphModel.get("disabled");
-	var nodes = executableGraphModel.get("nodes");
+var touchAncestors = function(node, disable) {
+	recurseAllAncestors(node, disable);
 	
-	recurseAllAncestors(nodes, disabled, jobid, disable);
-	
-	executableGraphModel.set({disabled: disabled});
 	executableGraphModel.trigger("change:disabled");
 }
 
 var touchDescendents = function(jobid, disable) {
-	var disabled = executableGraphModel.get("disabled");
-	var nodes = executableGraphModel.get("nodes");
+	recurseAllDescendents(node, disable);
 	
-	recurseAllDescendents(nodes, disabled, jobid, disable);
-	
-	executableGraphModel.set({disabled: disabled});
 	executableGraphModel.trigger("change:disabled");
 }
 
-var nodeClickCallback = function(event) {
-	console.log("Node clicked callback");
-	var jobId = event.currentTarget.jobid;
-	var flowId = executableGraphModel.get("flowId");
-	var requestURL = contextURL + "/manager?project=" + projectName + "&flow=" + flowId + "&job=" + jobId;
+var gatherDisabledNodes = function(data) {
+	var nodes = data.nodes;
+	var disabled = [];
+	
+	for (var i = 0; i < nodes.length; ++i) {
+		var node = nodes[i];
+		if (node.disabled) {
+			disabled.push(node.id);
+		}
+		else {
+			if (node.flowData) {
+				var array = gatherDisabledNodes(node.flowData);
+				if (array && array.length > 0) {
+					disabled.push({id: node.id, children: array});
+				}
+			}
+		}
+	}
+	
+	return disabled;
+}
 
-	var menu = [
-		{title: "Open Job in New Window...", callback: function() {window.open(requestURL);}},
+function recurseAllAncestors(node, disable) {
+	var inNodes = node.inNodes;
+	if (inNodes) {
+		for (var key in inNodes) {
+			inNodes[key].disabled = disable;
+			recurseAllAncestors(inNodes[key], disable);
+		}
+	}
+}
+
+function recurseAllDescendents(node, disable) {
+	var outNodes = node.outNodes;
+	if (outNodes) {
+		for (var key in outNodes) {
+			outNodes[key].disabled = disable;
+			recurseAllDescendents(outNodes[key], disable);
+		}
+	}
+}
+
+var expanelNodeClickCallback = function(event, model, node) {
+	console.log("Node clicked callback");
+	var jobId = node.id;
+	var flowId = executableGraphModel.get("flowId");
+	var type = node.type;
+	
+	var menu;
+	if (type == "flow") {
+		var flowRequestURL = contextURL + "/manager?project=" + projectName + "&flow=" + node.flowId;
+		if (node.expanded) {
+			menu = [
+				{title: "Collapse Flow...", callback: function() {model.trigger("collapseFlow", node);}},
+				{title: "Open Flow in New Window...", callback: function() {window.open(flowRequestURL);}}
+			];
+	
+		}
+		else {
+			menu = [
+				{title: "Expand Flow...", callback: function() {model.trigger("expandFlow", node);}},
+				{title: "Open Flow in New Window...", callback: function() {window.open(flowRequestURL);}}
+			];
+		}
+	}
+	else {
+		var requestURL = contextURL + "/manager?project=" + projectName + "&flow=" + flowId + "&job=" + jobId;
+		menu = [
+				{title: "Open Job in New Window...", callback: function() {window.open(requestURL);}},
+			];
+	}
+
+	$.merge(menu, [
 		{break: 1},
-		{title: "Enable", callback: function() {touchNode(jobId, false);}, submenu: [
-			{title: "Parents", callback: function(){touchParents(jobId, false);}},
-			{title: "Ancestors", callback: function(){touchAncestors(jobId, false);}},
-			{title: "Children", callback: function(){touchChildren(jobId, false);}},
-			{title: "Descendents", callback: function(){touchDescendents(jobId, false);}},
+		{title: "Enable", callback: function() {touchNode(node, false);}, submenu: [
+			{title: "Parents", callback: function(){touchParents(node, false);}},
+			{title: "Ancestors", callback: function(){touchAncestors(node, false);}},
+			{title: "Children", callback: function(){touchChildren(node, false);}},
+			{title: "Descendents", callback: function(){touchDescendents(node, false);}},
 			{title: "Enable All", callback: function(){enableAll();}}
 		]},
-		{title: "Disable", callback: function() {touchNode(jobId, true)}, submenu: [
-			{title: "Parents", callback: function(){touchParents(jobId, true);}},
-			{title: "Ancestors", callback: function(){touchAncestors(jobId, true);}},
-			{title: "Children", callback: function(){touchChildren(jobId, true);}},
-			{title: "Descendents", callback: function(){touchDescendents(jobId, true);}},
+		{title: "Disable", callback: function() {touchNode(node, true)}, submenu: [
+			{title: "Parents", callback: function(){touchParents(node, true);}},
+			{title: "Ancestors", callback: function(){touchAncestors(node, true);}},
+			{title: "Children", callback: function(){touchChildren(node, true);}},
+			{title: "Descendents", callback: function(){touchDescendents(node, true);}},
 			{title: "Disable All", callback: function(){disableAll();}}
-		]}
-	];
+		]},
+		{title: "Center Job", callback: function() {model.trigger("centerNode", node);}}
+	]);
+
 
 	contextMenuView.show(event, menu);
 }
 
-var edgeClickCallback = function(event) {
+var expanelEdgeClickCallback = function(event) {
 	console.log("Edge clicked callback");
 }
 
-var graphClickCallback = function(event) {
+var expanelGraphClickCallback = function(event) {
 	console.log("Graph clicked callback");
 	var flowId = executableGraphModel.get("flowId");
 	var requestURL = contextURL + "/manager?project=" + projectName + "&flow=" + flowId;
@@ -607,17 +697,6 @@ $(function() {
 	flowExecuteDialogView = new azkaban.FlowExecuteDialogView({
 		el: $('#execute-flow-panel'), 
 		model: executableGraphModel
-	});
-	svgGraphView = new azkaban.SvgGraphView({
-		el: $('#svg-div-custom'), 
-		model: executableGraphModel, 
-		topGId: "topG", 
-		graphMargin: 10, 
-		rightClick: { 
-			"node": nodeClickCallback, 
-			"edge": edgeClickCallback, 
-			"graph": graphClickCallback 
-		}
 	});
 	
 	sideMenuDialogView = new azkaban.SideMenuDialogView({

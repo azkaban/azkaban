@@ -35,6 +35,7 @@ import azkaban.flow.Edge;
 import azkaban.flow.Flow;
 import azkaban.flow.FlowProps;
 import azkaban.flow.Node;
+import azkaban.flow.SpecialJobTypes;
 
 public class DirectoryFlowLoader {
 	private static final DirFilter DIR_FILTER = new DirFilter();
@@ -42,15 +43,20 @@ public class DirectoryFlowLoader {
 	private static final String JOB_SUFFIX = ".job";
 	
 	private final Logger logger;
+	private HashSet<String> rootNodes;
 	private HashMap<String, Flow> flowMap;
 	private HashMap<String, Node> nodeMap;
 	private HashMap<String, Map<String, Edge>> nodeDependencies;
 	private HashMap<String, Props> jobPropsMap;
+	
+	// Flow dependencies for embedded flows.
+	private HashMap<String, Set<String>> flowDependencies;
+	
 	private ArrayList<FlowProps> flowPropsList;
 	private ArrayList<Props> propsList;
 	private Set<String> errors;
 	private Set<String> duplicateJobs;
-	
+
 	public DirectoryFlowLoader(Logger logger) {
 		this.logger = logger;
 	}
@@ -80,16 +86,20 @@ public class DirectoryFlowLoader {
 		errors = new HashSet<String>();
 		duplicateJobs = new HashSet<String>();
 		nodeDependencies = new HashMap<String, Map<String, Edge>>();
-
+		rootNodes = new HashSet<String>();
+		flowDependencies = new HashMap<String, Set<String>>();
+		
 		// Load all the props files and create the Node objects
 		loadProjectFromDir(baseDirectory.getPath(), baseDirectory, null);
 		
 		// Create edges and find missing dependencies
 		resolveDependencies();
-
+		
 		// Create the flows.
 		buildFlowsFromDependencies();
-
+		
+		// Resolve embedded flows
+		resolveEmbeddedFlows();
 	}
 	
 	private void loadProjectFromDir(String base, File dir, Props parent) {
@@ -111,7 +121,6 @@ public class DirectoryFlowLoader {
 			logger.info("Adding " + relative);
 			propsList.add(parent);
 		}
-		
 		
 		// Load all Job files. If there's a duplicate name, then we don't load
 		File[] jobFiles = dir.listFiles(new SuffixFilter(JOB_SUFFIX));
@@ -143,11 +152,15 @@ public class DirectoryFlowLoader {
 							node.setPropsSource(parent.getSource());
 						}
 
+						// Force root node
+						if(prop.getBoolean(CommonJobProperties.ROOT_NODE, false)) {
+							rootNodes.add(jobName);
+						}
+						
 						jobPropsMap.put(jobName, prop);
 						nodeMap.put(jobName, node);
 					}
 				}
-				
 			} catch (IOException e) {
 				errors.add("Error loading job file " + file.getName() + ":" + e.getMessage());
 			}
@@ -157,6 +170,37 @@ public class DirectoryFlowLoader {
 		for (File file: subDirs) {
 			loadProjectFromDir(base, file, parent);
 		}
+	}
+	
+	private void resolveEmbeddedFlows() {
+		for (String flowId: flowDependencies.keySet()) {
+			HashSet<String> visited = new HashSet<String>();
+			resolveEmbeddedFlow(flowId, visited);
+		}
+	}
+	
+	private void resolveEmbeddedFlow(String flowId, Set<String> visited) {
+		Set<String> embeddedFlow = flowDependencies.get(flowId);
+		if (embeddedFlow == null) {
+			return;
+		}
+		
+		visited.add(flowId);
+		for (String embeddedFlowId: embeddedFlow) {
+			if (visited.contains(embeddedFlowId)) {
+				errors.add("Embedded flow cycle found in " + flowId + "->" + embeddedFlowId);
+				return;
+			}
+			else if (!flowMap.containsKey(embeddedFlowId)) {
+				errors.add("Flow " + flowId + " depends on " + embeddedFlowId + " but can't be found.");
+				return;
+			}
+			else {
+				resolveEmbeddedFlow(embeddedFlowId, visited);
+			}
+		}
+		
+		visited.remove(flowId);
 	}
 	
 	private void resolveDependencies() {
@@ -227,7 +271,9 @@ public class DirectoryFlowLoader {
 		// Now create flows. Bad flows are marked invalid
 		Set<String> visitedNodes = new HashSet<String>();
 		for (Node base: nodeMap.values()) {
-			if (!nonRootNodes.contains(base.getId())) {
+			// Root nodes can be discovered when parsing jobs
+			if (rootNodes.contains(base.getId()) || !nonRootNodes.contains(base.getId())) {
+				rootNodes.add(base.getId());
 				Flow flow = new Flow(base.getId());
 				Props jobProp = jobPropsMap.get(base.getId());
 				
@@ -268,8 +314,20 @@ public class DirectoryFlowLoader {
 	private void constructFlow(Flow flow, Node node, Set<String> visited) {
 		visited.add(node.getId());
 
-		// Clone the node so each flow can operate on its own node
 		flow.addNode(node);
+		if (SpecialJobTypes.EMBEDDED_FLOW_TYPE.equals(node.getType())) {
+			Props props = jobPropsMap.get(node.getId());
+			String embeddedFlow = props.get(SpecialJobTypes.FLOW_NAME);
+			
+			Set<String> embeddedFlows = flowDependencies.get(flow.getId());
+			if (embeddedFlows == null) {
+				embeddedFlows = new HashSet<String>();
+				flowDependencies.put(flow.getId(), embeddedFlows);
+			}
+
+			node.setEmbeddedFlowId(embeddedFlow);
+			embeddedFlows.add(embeddedFlow);
+		}
 		Map<String, Edge> dependencies = nodeDependencies.get(node.getId());
 
 		if (dependencies != null) {
@@ -295,7 +353,7 @@ public class DirectoryFlowLoader {
 
 		visited.remove(node.getId());
 	}
-
+	
 	private String getNameWithoutExtension(File file) {
 		String filename = file.getName();
 		int index = filename.lastIndexOf('.');

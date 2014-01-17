@@ -24,102 +24,100 @@ azkaban.TimeGraphView = Backbone.View.extend({
 		this.model.bind('render', this.render, this);
 		this.model.bind('change:page', this.render, this);
     this.modelField = settings.modelField;
+    this.graphContainer = settings.el;
     this.render();
 	},
-	
+
 	render: function(self) {
-		var data = this.model.get(this.modelField);
-    if (data == null) {
+		var series = this.model.get(this.modelField);
+    if (series == null) {
       return;
     }
-	
-		var margin = {
-			top: 20, 
-			right: 20, 
-			bottom: 30, 
-			left: 70
-		};
-	  var width = $(this.el).width() - margin.left - margin.right;
-	  var height = 300 - margin.top - margin.bottom;
-	    
-		var x = d3.time.scale()
-		    .range([0, width]);
-		
-		var y = d3.scale.linear()
-		    .range([height, 0]);
-	    
-		var xAxis = d3.svg.axis()
-				.scale(x)
-				.orient("bottom");
 
-		var yAxis = d3.svg.axis()
-		    .scale(y)
-		    .orient("left");
-		yAxis.tickFormat(
-			function(d) {
-				return formatDuration(d, 1);
-			}
-		);
-		
-		var line = d3.svg.line()
-		    .x(function(d) { return x(d.startTime); })
-		    .y(function(d) { return y(d.endTime - d.startTime); });
-		 
-		var svg = d3.select("#timeGraph").append("svg")
-		    .attr("width", width + margin.left + margin.right)
-		    .attr("height", height + margin.top + margin.bottom)
-		    .append("g")
-		    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
-		  
-		var xextent = d3.extent(data, function(d) {
-			return d.startTime;
-		});
-		var diff = (xextent[1] - xextent[0])*0.05;
-		
-		xextent[0] -= diff;
-		xextent[1] += diff;
-		x.domain(xextent);
-		
-		var yextent = d3.extent(data, function(d) {
-			return d.endTime - d.startTime;
-		});
-		var upperYbound = yextent[1]*1.25;
-		y.domain([0, upperYbound]);
-	
-		svg.append("g")
-				.attr("class", "x axis")
-				.attr("transform", "translate(0," + height + ")")
-				.call(xAxis);
-	
-		svg.append("g")
-				.attr("class", "y axis")
-				.call(yAxis)
-				.append("text")
-				.attr("transform", "rotate(-90)")
-				.attr("y", 6)
-				.attr("dy", ".71em")
-				.style("text-anchor", "end")
-				.text("Duration");
-	
-		svg.append("path")
-				.datum(data)
-				.attr("class", "line")
-				.attr("d", line);
-				
-		var node = svg.selectAll("g.node")
-				.data(data)
-				.attr("class", "node")
-				.enter().append("g")
-				.attr("transform",  function(d) {
-			return "translate(" + x(d.startTime) + "," + y(d.endTime-d.startTime) + ")";
-		});
-		
-		node.append("circle")
-				.attr("r", 5)
-				.attr("class", function(d) {return d.status;})
-				.append("svg:title")
-				.text(function(d) {
-			return d.execId + ":" + d.flowId + " ran in " + getDuration(d.startTime, d.endTime);
-		});
+    // Array of points to be passed to Morris.
+    var data = [];
+    
+    // Map of y value to index for faster look-up in the lineColorsCallback to
+    // get the status for each point.
+    var indexMap = {};
+	  for (var i = 0; i < series.length; ++i) {
+      if (series[i].startTime == null || series[i].endTime == null) {
+        console.log("Each element in series must have startTime and endTime");
+        return;
+      }
+      var startTime = series[i].startTime;
+      var endTime = series[i].endTime;
+      if (endTime == -1) {
+        endTime = new Date().getTime();
+      }
+      var duration = endTime - startTime;
+      data.push({ 
+        time: endTime,
+        duration: duration
+      });
+
+      indexMap[endTime.toString()] = i;
+    }
+
+		if (data.length == 0) {
+			$(this.graphContainer).hide();
+			return;
+		}
+
+		var graphDiv = document.createElement('div');
+		$(this.graphContainer).append(graphDiv);
+
+    var lineColorsCallback = function(row, sidx, type) {
+      if (type != 'point') {
+        return "#000000";
+      }
+      var i = indexMap[row.x.toString()];
+      var status = series[i].status;
+      if (status == 'SKIPPED') {
+        return '#aaa';
+      }
+      else if (status == 'SUCCEEDED') {
+        return '#4e911e';
+      }
+      else if (status == 'RUNNING') {
+        return '#009fc9';
+      }
+      else if (status == 'PAUSED') {
+        return '#c92123';
+      }
+      else if (status == 'FAILED' || 
+          status == 'FAILED_FINISHING' || 
+          status == 'KILLED') {
+        return '#cc0000';
+      }
+      else {
+        return '#ccc';
+      }
+    };
+
+    var yLabelFormatCallback = function(y) {
+      var seconds = y / 1000.0;
+      return seconds.toString() + " s";
+    };
+
+    var hoverCallback = function(index, options, content) {
+      // Note: series contains the data points in descending order and index
+      // is the index into Morris's internal array of data sorted in ascending
+      // x order.
+      var status = series[options.data.length - index - 1].status;
+      return content + 
+          '<div class="morris-hover-point">Status: ' + status + '</div>';
+    };
+
+    Morris.Line({
+      element: graphDiv,
+      data: data,
+      xkey: 'time',
+      ykeys: ['duration'],
+      labels: ['Duration'],
+      lineColors: lineColorsCallback,
+      yLabelFormat: yLabelFormatCallback,
+      hoverCallback: hoverCallback
+    });
 	}
 });

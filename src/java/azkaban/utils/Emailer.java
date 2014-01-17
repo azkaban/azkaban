@@ -163,7 +163,7 @@ public class Emailer extends AbstractMailer implements Alerter {
 		ArrayList<String> failedJobs = new ArrayList<String>();
 		for (ExecutableNode node : flow.getExecutableNodes()) {
 			if (node.getStatus() == Status.FAILED) {
-				failedJobs.add(node.getJobId());
+				failedJobs.add(node.getId());
 			}
 		}
 		return failedJobs;

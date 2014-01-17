@@ -1,6 +1,9 @@
 package azkaban.test.executor;
 
+import java.io.BufferedReader;
+import java.io.FileReader;
 import java.util.Map;
+import java.util.Properties;
 
 public class SleepJavaJob {
 	private boolean fail;
@@ -8,8 +11,19 @@ public class SleepJavaJob {
 	private int attempts;
 	private int currentAttempt;
 
+	public SleepJavaJob(String id, Properties props) {
+		setup(props);
+	}
+	
 	public SleepJavaJob(String id, Map<String, String> parameters) {
-		String failStr = parameters.get("fail");
+		Properties properties = new Properties();
+		properties.putAll(parameters);
+		
+		setup(properties);
+	}
+	
+	private void setup(Properties props) {
+		String failStr = (String)props.get("fail");
 		
 		if (failStr == null || failStr.equals("false")) {
 			fail = false;
@@ -18,15 +32,15 @@ public class SleepJavaJob {
 			fail = true;
 		}
 	
-		currentAttempt = parameters.containsKey("azkaban.job.attempt") ? Integer.parseInt(parameters.get("azkaban.job.attempt")) : 0;
-		String attemptString = parameters.get("passRetry");
+		currentAttempt = props.containsKey("azkaban.job.attempt") ? Integer.parseInt((String)props.get("azkaban.job.attempt")) : 0;
+		String attemptString = (String)props.get("passRetry");
 		if (attemptString == null) {
 			attempts = -1;
 		}
 		else {
 			attempts = Integer.valueOf(attemptString);
 		}
-		seconds = parameters.get("seconds");
+		seconds = (String)props.get("seconds");
 
 		if (fail) {
 			System.out.println("Planning to fail after " + seconds + " seconds. Attempts left " + currentAttempt + " of " + attempts);
@@ -34,6 +48,17 @@ public class SleepJavaJob {
 		else {
 			System.out.println("Planning to succeed after " + seconds + " seconds.");
 		}
+	}
+	
+	public static void main(String[] args) throws Exception {
+		String propsFile = System.getenv("JOB_PROP_FILE");
+		Properties prop = new Properties();
+		prop.load(new BufferedReader(new FileReader(propsFile)));
+		
+		String jobName = System.getenv("JOB_NAME");
+		SleepJavaJob job = new SleepJavaJob(jobName, prop);
+		
+		job.run();
 	}
 	
 	public void run() throws Exception {

@@ -16,19 +16,6 @@
 
 $.namespace('azkaban');
 
-var statusStringMap = {
-	"FAILED": "Failed",
-	"SUCCEEDED": "Success",
-	"FAILED_FINISHING": "Running w/Failure",
-	"RUNNING": "Running",
-	"WAITING": "Waiting",
-	"KILLED": "Killed",
-	"DISABLED": "Disabled",
-	"READY": "Ready",
-	"UNKNOWN": "Unknown",
-	"QUEUED": "Queued"
-};
-
 var handleJobMenuClick = function(action, el, pos) {
 	var jobid = el[0].jobid;
 	var requestURL = contextURL + "/manager?project=" + projectName + "&flow=" + 
@@ -303,26 +290,31 @@ azkaban.SummaryView = Backbone.View.extend({
 		this.model.bind('render', this.render, this);
 		
 		this.fetchDetails();
-    this.fetchSchedule();
+		this.fetchSchedule();
 		this.model.trigger('render');
 	},
 
-  fetchDetails: function() {
-    var requestURL = contextURL + "/manager";
-    var requestData = {
-      'ajax': 'fetchflowdetails',
-      'project': projectName,
-      'flow': flowId
-    };
+	fetchDetails: function() {
+		var requestURL = contextURL + "/manager";
+		var requestData = {
+			'ajax': 'fetchflowdetails',
+			'project': projectName,
+			'flow': flowId
+		};
+		
 		var model = this.model;
-    var successHandler = function(data) {
-      model.set({ 'jobTypes': data.jobTypes });
-      model.trigger('render');
-    };
-    $.get(requestURL, requestData, successHandler, 'json');
-  },
 
-	fetchSchedule: function() {
+		var successHandler = function(data) {
+			console.log(data);
+			model.set({
+				'jobTypes': data.jobTypes
+			});
+			model.trigger('render');
+		};
+		$.get(requestURL, requestData, successHandler, 'json');
+	},
+	
+  fetchSchedule: function() {
 		var requestURL = contextURL + "/schedule"
 		var requestData = {
 			'ajax': 'fetchSchedule',
@@ -331,8 +323,8 @@ azkaban.SummaryView = Backbone.View.extend({
 		};
 		var model = this.model;
 		var successHandler = function(data) {
-      model.set({'schedule': data.schedule});
-      model.trigger('render');
+			model.set({'schedule': data.schedule});
+			model.trigger('render');
 		};
 		$.get(requestURL, requestData, successHandler, 'json');
 	},
@@ -362,9 +354,9 @@ azkaban.SummaryView = Backbone.View.extend({
 
 	render: function(evt) {
 		var data = {
-      projectName: projectName,
+			projectName: projectName,
 			flowName: flowId,
-      jobTypes: this.model.get('jobTypes'),
+      		jobTypes: this.model.get('jobTypes'),
 			schedule: this.model.get('schedule'),
 		};
 		dust.render("flowsummary", data, function(err, out) {
@@ -372,52 +364,6 @@ azkaban.SummaryView = Backbone.View.extend({
 		});
 	},
 });
-
-var exNodeClickCallback = function(event) {
-	console.log("Node clicked callback");
-	var jobId = event.currentTarget.jobid;
-	var requestURL = contextURL + "/manager?project=" + projectName + "&flow=" + 
-			flowId + "&job=" + jobId;
-
-	var menu = [	
-		{title: "Open Job...", callback: function() {window.location.href=requestURL;}},
-		{title: "Open Job in New Window...", callback: function() {window.open(requestURL);}}
-	];
-
-	contextMenuView.show(event, menu);
-}
-
-var exJobClickCallback = function(event) {
-	console.log("Node clicked callback");
-	var jobId = event.currentTarget.jobid;
-	var requestURL = contextURL + "/manager?project=" + projectName + "&flow=" + 
-			flowId + "&job=" + jobId;
-
-	var menu = [	
-		{title: "Open Job...", callback: function() {window.location.href=requestURL;}},
-		{title: "Open Job in New Window...", callback: function() {window.open(requestURL);}}
-	];
-
-	contextMenuView.show(event, menu);
-}
-
-var exEdgeClickCallback = function(event) {
-	console.log("Edge clicked callback");
-}
-
-var exGraphClickCallback = function(event) {
-	console.log("Graph clicked callback");
-	var requestURL = contextURL + "/manager?project=" + projectName + "&flow=" + flowId;
-
-	var menu = [	
-		{title: "Open Flow...", callback: function() {window.location.href=requestURL;}},
-		{title: "Open Flow in New Window...", callback: function() {window.open(requestURL);}},
-		{break: 1},
-		{title: "Center Graph", callback: function() {graphModel.trigger("resetPanZoom");}}
-	];
-	
-	contextMenuView.show(event, menu);
-}
 
 var graphModel;
 azkaban.GraphModel = Backbone.Model.extend({});
@@ -466,16 +412,16 @@ $(function() {
 		el: $('#svgDiv'), 
 		model: graphModel, 
 		rightClick: { 
-			"node": exNodeClickCallback, 
-			"edge": exEdgeClickCallback, 
-			"graph": exGraphClickCallback 
+			"node": nodeClickCallback, 
+			"edge": edgeClickCallback, 
+			"graph": graphClickCallback 
 		}
 	});
 	
   jobsListView = new azkaban.JobListView({
 		el: $('#jobList'), 
 		model: graphModel, 
-		contextMenuCallback: exJobClickCallback
+		contextMenuCallback: jobClickCallback
 	});
 	
   executionsTimeGraphView = new azkaban.TimeGraphView({
@@ -505,32 +451,9 @@ $(function() {
 		"flow": flowId
 	};
 	var successHandler = function(data) {
-		// Create the nodes
-		var nodes = {};
-		for (var i = 0; i < data.nodes.length; ++i) {
-			var node = data.nodes[i];
-			nodes[node.id] = node;
-		}
-		for (var i = 0; i < data.edges.length; ++i) {
-			var edge = data.edges[i];
-			var fromNode = nodes[edge.from];
-			var toNode = nodes[edge.target];
-			
-			if (!fromNode.outNodes) {
-				fromNode.outNodes = {};
-			}
-			fromNode.outNodes[toNode.id] = toNode;
-			
-			if (!toNode.inNodes) {
-				toNode.inNodes = {};
-			}
-			toNode.inNodes[fromNode.id] = fromNode;
-		}
-	
 		console.log("data fetched");
-		graphModel.set({data: data});
-		graphModel.set({nodes: nodes});
-		graphModel.set({disabled: {}});
+		processFlowData(data);
+		graphModel.set({data:data});
 		graphModel.trigger("change:graph");
 		
 		// Handle the hash changes here so the graph finishes rendering first.

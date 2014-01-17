@@ -7,9 +7,8 @@
 	<property name="dist.packages.dir" value="${base.dir}/dist/unit/packages" />
 	
 	<property name="java.src.dir" value="${base.dir}/unit/java" />
-	<property name="job.conf.dir" value="${base.dir}/unit/executions/exectest1" />
-	<property name="job.conf.dir2" value="${base.dir}/unit/executions/exectest2" />
-	
+	<property name="job.conf.dir" value="${base.dir}/unit/executions" />
+		
 	<property environment="env" />
 
 	<path id="main.classpath">
@@ -23,7 +22,7 @@
 	<!-- set the build number based on environment variable, otherwise blank -->
 	<property environment="env" description="System environment variables (including those set by Hudson)" />
 
-	<target name="all" depends="clean, jars" description="Builds all jars" />
+	<target name="all" depends="clean, package" description="Builds and packages" />
 
 	<target name="clean" description="Delete generated files.">
 		<echo message="Deleting generated files in dist" />
@@ -53,27 +52,62 @@
 		</jar>
 	</target>
 	
-	<target name="package-testjob" depends="jars" description="Creates a test zip">
-		<delete dir="${dist.packages.dir}" />
-		<mkdir dir="${dist.packages.dir}" />
-		
+	<target name="package-exectest1" depends="jars" description="Creates a test zip">
 		<!-- Tarball it -->
-		<zip destfile="${dist.packages.dir}/testjob.zip">
+		<zip destfile="${dist.packages.dir}/exectest1.zip">
 			<zipfileset dir="${dist.jar.dir}" />
-			<zipfileset dir="${job.conf.dir}" />
+      <zipfileset dir="${job.conf.dir}/exectest1" />
 		</zip>
 	</target>
 
 	<target name="package-exectest2" depends="jars" description="Creates a test zip">
-		<delete dir="${dist.packages.dir}" />
-		<mkdir dir="${dist.packages.dir}" />
-		
 		<!-- Tarball it -->
 		<zip destfile="${dist.packages.dir}/exectest2.zip">
 			<zipfileset dir="${dist.jar.dir}" />
-			<zipfileset dir="${job.conf.dir2}" />
+      <zipfileset dir="${job.conf.dir}/exectest2" />
+		</zip>
+	</target>
+	
+	<target name="package-animal" depends="jars" description="Creates a test zip">
+		<!-- Tarball it -->
+		<zip destfile="${dist.packages.dir}/animal.zip">
+			<zipfileset dir="${dist.jar.dir}" />
+      <zipfileset dir="${job.conf.dir}/animal" />
+		</zip>
+	</target>
+	
+	<target name="package-embedded" depends="jars" description="Creates a test zip">
+		<!-- Tarball it -->
+		<zip destfile="${dist.packages.dir}/embedded.zip">
+			<zipfileset dir="${dist.jar.dir}" />
+      <zipfileset dir="${job.conf.dir}/embedded" />
 		</zip>
 	</target>
 
-	
+	<target name="package-embedded2" depends="jars" description="Creates a test zip">
+		<!-- Tarball it -->
+		<zip destfile="${dist.packages.dir}/embedded2.zip">
+			<zipfileset dir="${dist.jar.dir}" />
+      <zipfileset dir="${job.conf.dir}/embedded2" />
+		</zip>
+  </target>	
+  
+  <target name="package-embedded3" depends="jars" description="Creates a test zip">
+		<!-- Tarball it -->
+		<zip destfile="${dist.packages.dir}/embedded3.zip">
+			<zipfileset dir="${dist.jar.dir}" />
+      <zipfileset dir="${job.conf.dir}/embedded3" />
+		</zip>
+  </target>	
+  
+  <target name="package-embeddedBad" depends="jars" description="Creates a test zip">
+		<!-- Tarball it -->
+		<zip destfile="${dist.packages.dir}/embeddedBad.zip">
+			<zipfileset dir="${dist.jar.dir}" />
+      <zipfileset dir="${job.conf.dir}/embeddedBad" />
+		</zip>
+  </target>	
+  
+  <target name="package" depends="package-exectest1, package-exectest2, package-animal, package-embedded, package-embedded2, package-embedded3, package-embeddedBad" description="Creates all packages">
+  </target>
 </project>
