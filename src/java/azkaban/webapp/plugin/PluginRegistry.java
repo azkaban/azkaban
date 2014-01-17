@@ -59,7 +59,11 @@ public class PluginRegistry {
 	}
 
 	public List<ViewerPlugin> getViewerPluginsForJobType(String jobType) {
-		return new ArrayList<ViewerPlugin>(jobTypeViewerPlugins.get(jobType));
+		TreeSet<ViewerPlugin> plugins = jobTypeViewerPlugins.get(jobType);
+		if (plugins == null) {
+			return null;
+		}
+		return new ArrayList<ViewerPlugin>(plugins);
 	}
 
   public static PluginRegistry getRegistry() {
