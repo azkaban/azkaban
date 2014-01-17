@@ -47,44 +47,8 @@
   #parse ("azkaban/webapp/servlet/velocity/errormsg.vm")
 #else
 
-	## Page header.
 
-		<div class="az-page-header">
-			<div class="container-full">
-				<div class="row">
-					<div class="col-xs-6">
-						<h1><a href="${context}/executor?execid=${execid}&job=${jobid}">Job Execution <small>$jobid</small></a></h1>
-					</div>
-					<div class="col-xs-6">
-						<div class="pull-right az-page-header-form">
-							<a href="${context}/manager?project=${projectName}&flow=${flowid}&job=$jobid" class="btn btn-info">Job Properties</a>
-						</div>
-					</div>
-				</div>
-			</div>
-		</div>
-	
-    <div class="container-full">
-
-  #parse ("azkaban/webapp/servlet/velocity/alerts.vm")
-
-  ## Breadcrumb
-
-			<ol class="breadcrumb">
-				<li><a href="${context}/manager?project=${projectName}"><strong>Project</strong> $projectName</a></li>
-				<li><a href="${context}/manager?project=${projectName}&flow=${flowid}"><strong>Flow</strong> $flowid</a></li>
-				<li><a href="${context}/executor?execid=${execid}#jobslist"><strong>Execution</strong> $execid</a></li>
-        <li class="active"><strong>Job</strong> $jobid</li>
-			</ol>
-
-  ## Tabs
-
-			<ul class="nav nav-tabs" id="headertabs">
-				<li id="jobLogViewLink"><a href="#logs">Job Logs</a></li>
-				<li id="jobSummaryViewLink"><a href="#summary">Summary</a></li>
-				<li><a href="${context}/pigvisualizer?execid=${execid}&jobid=${jobid}">Visualization</a></li>
-			</ul>
-    </div>
+  #parse ("azkaban/webapp/servlet/velocity/jobdetailsheader.vm")
 
 	## Log content.
 

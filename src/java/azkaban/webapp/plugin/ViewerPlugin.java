@@ -14,19 +14,36 @@
  * the License.
  */
 
-package azkaban.webapp.servlet;
+package azkaban.webapp.plugin;
+
+import java.util.Comparator;
 
 public class ViewerPlugin {
 	private final String pluginName;
 	private final String pluginPath;
+	private final String jobType;
 	private final int order;
 	private boolean hidden;
-	
-	public ViewerPlugin(String pluginName, String pluginPath, int order, boolean hidden) {
+
+	public static final Comparator<ViewerPlugin> COMPARATOR = 
+			new Comparator<ViewerPlugin>() {
+		@Override
+		public int compare(ViewerPlugin o1, ViewerPlugin o2) {
+			return o1.getOrder() - o2.getOrder();
+		}
+	};
+
+	public ViewerPlugin(
+			String pluginName, 
+			String pluginPath, 
+			int order, 
+			boolean hidden,
+			String jobType) {
 		this.pluginName = pluginName;
 		this.pluginPath = pluginPath;
 		this.order = order;
 		this.setHidden(hidden);
+		this.jobType = jobType;
 	}
 
 	public String getPluginName() {
@@ -47,5 +64,9 @@ public class ViewerPlugin {
 
 	public void setHidden(boolean hidden) {
 		this.hidden = hidden;
+	}
+
+	public String getJobType() {
+		return jobType;
 	}
 }

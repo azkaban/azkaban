@@ -93,8 +93,9 @@ import azkaban.webapp.servlet.HistoryServlet;
 import azkaban.webapp.servlet.ProjectServlet;
 import azkaban.webapp.servlet.ProjectManagerServlet;
 import azkaban.webapp.servlet.TriggerManagerServlet;
-import azkaban.webapp.servlet.TriggerPlugin;
-import azkaban.webapp.servlet.ViewerPlugin;
+import azkaban.webapp.plugin.TriggerPlugin;
+import azkaban.webapp.plugin.ViewerPlugin;
+import azkaban.webapp.plugin.PluginRegistry;
 import azkaban.webapp.session.SessionCache;
 
 /**
@@ -153,7 +154,6 @@ public class AzkabanWebServer extends AzkabanServer {
 	private Props props;
 	private SessionCache sessionCache;
 	private File tempDir;
-	private List<ViewerPlugin> viewerPlugins;
 	private Map<String, TriggerPlugin> triggerPlugins;
 	
 	private MBeanServer mbeanServer;
@@ -215,10 +215,6 @@ public class AzkabanWebServer extends AzkabanServer {
 		configureMBeanServer();
 	}
 
-	private void setViewerPlugins(List<ViewerPlugin> viewerPlugins) {
-		this.viewerPlugins = viewerPlugins;
-	}
-	
 	private void setTriggerPlugins(Map<String, TriggerPlugin> triggerPlugins) {
 		this.triggerPlugins = triggerPlugins;
 	}
@@ -775,7 +771,7 @@ public class AzkabanWebServer extends AzkabanServer {
 		root.addServlet(new ServletHolder(new TriggerManagerServlet()),"/triggers");
 		
 		String viewerPluginDir = azkabanSettings.getString("viewer.plugin.dir", "plugins/viewer");
-		app.setViewerPlugins(loadViewerPlugins(root, viewerPluginDir, app.getVelocityEngine()));
+		loadViewerPlugins(root, viewerPluginDir, app.getVelocityEngine());
 		
 		// triggerplugin
 		String triggerPluginDir = azkabanSettings.getString("trigger.plugin.dir", "plugins/triggers");
@@ -963,13 +959,12 @@ public class AzkabanWebServer extends AzkabanServer {
 		return triggerPlugins;
 	}
 	
-	private static List<ViewerPlugin> loadViewerPlugins(Context root, String pluginPath, VelocityEngine ve) {
+	private static void loadViewerPlugins(Context root, String pluginPath, VelocityEngine ve) {
 		File viewerPluginPath = new File(pluginPath);
 		if (!viewerPluginPath.exists()) {
-			return Collections.<ViewerPlugin>emptyList();
+			return;
 		}
 			
-		ArrayList<ViewerPlugin> installedViewerPlugins = new ArrayList<ViewerPlugin>();
 		ClassLoader parentLoader = AzkabanWebServer.class.getClassLoader();
 		File[] pluginDirs = viewerPluginPath.listFiles();
 		ArrayList<String> jarPaths = new ArrayList<String>();
@@ -1011,6 +1006,7 @@ public class AzkabanWebServer extends AzkabanServer {
 			
 			String pluginName = pluginProps.getString("viewer.name");
 			String pluginWebPath = pluginProps.getString("viewer.path");
+			String pluginJobType = pluginProps.getString("viewer.jobtype", null);
 			int pluginOrder = pluginProps.getInt("viewer.order", 0);
 			boolean pluginHidden = pluginProps.getBoolean("viewer.hidden", false);
 			List<String> extLibClasspath = pluginProps.getStringList("viewer.external.classpaths", (List<String>)null);
@@ -1114,27 +1110,18 @@ public class AzkabanWebServer extends AzkabanServer {
 			
 			AbstractAzkabanServlet avServlet = (AbstractAzkabanServlet)obj;
 			root.addServlet(new ServletHolder(avServlet), "/" + pluginWebPath + "/*");
-			installedViewerPlugins.add(new ViewerPlugin(pluginName, pluginWebPath, pluginOrder, pluginHidden));
+			PluginRegistry.getRegistry().register(new ViewerPlugin(
+						pluginName, 
+						pluginWebPath, 
+						pluginOrder, 
+						pluginHidden,
+						pluginJobType));
 		}
 		
 		// Velocity needs the jar resource paths to be set.
 		String jarResourcePath = StringUtils.join(jarPaths, ", ");
 		logger.info("Setting jar resource path " + jarResourcePath);
 		ve.addProperty("jar.resource.loader.path", jarResourcePath);
-		
-		// Sort plugins based on order
-		Collections.sort(installedViewerPlugins, new Comparator<ViewerPlugin>() {
-			@Override
-			public int compare(ViewerPlugin o1, ViewerPlugin o2) {
-				return o1.getOrder() - o2.getOrder();
-			}
-		});
-		
-		return installedViewerPlugins;
-	}
-	
-	public List<ViewerPlugin> getViewerPlugins() {
-		return viewerPlugins;
 	}
 	
 	/**
