@@ -473,9 +473,8 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 				return;
 			}
 
-			int attempt = this.getIntParam(req, "attempt", node.getAttempt());
 			List<Object> jsonObj = executorManager.getExecutionJobStats(
-					exFlow, jobId, attempt);
+					exFlow, jobId, node.getAttempt());
 			ret.put("jobStats", jsonObj);
 		}
 		catch (ExecutorManagerException e) {
