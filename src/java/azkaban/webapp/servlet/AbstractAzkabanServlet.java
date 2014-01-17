@@ -41,6 +41,7 @@ import azkaban.webapp.AzkabanWebServer;
 import azkaban.webapp.session.Session;
 import azkaban.webapp.plugin.ViewerPlugin;
 import azkaban.webapp.plugin.TriggerPlugin;
+import azkaban.webapp.plugin.PluginRegistry;
 
 /**
  * Base Servlet for pages
@@ -93,7 +94,7 @@ public abstract class AbstractAzkabanServlet extends HttpServlet {
 		
 		if (application instanceof AzkabanWebServer) {
 			AzkabanWebServer server = (AzkabanWebServer)application;
-			viewerPlugins = server.getViewerPlugins();
+			viewerPlugins = PluginRegistry.getRegistry().getViewerPlugins();
 			triggerPlugins = new ArrayList<TriggerPlugin>(server.getTriggerPlugins().values());
 		}
 	}
