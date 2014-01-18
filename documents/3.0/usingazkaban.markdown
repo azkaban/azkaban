@@ -31,3 +31,9 @@ Schedule your project flow, set schedule options and add SLA notification.
 
 ###[Job Page](./jobpage.html)
 View job parameters, edit jobs and view job execution history.
+
+###[Job Details](./jobdetails.html)
+Logs and summary information about a particular job run.
+
+###[Ajax API](./ajaxapi.html)
+Interact with Azkaban without having to use the web ui.
