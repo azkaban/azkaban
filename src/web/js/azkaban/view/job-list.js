@@ -14,6 +14,10 @@
  * the License.
  */
 
+/*
+ * Job list sidebar view to accompany SVG graph.
+ */
+
 azkaban.JobListView = Backbone.View.extend({
 	events: {
 		"keyup input": "filterJobs",
