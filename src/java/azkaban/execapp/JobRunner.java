@@ -204,12 +204,7 @@ public class JobRunner extends EventHandler implements Runnable {
 			logger = Logger.getLogger(loggerName);
 
 			// Create file appender
-			String id = this.jobId;
-			if (node.getExecutableFlow() != node.getParentFlow()) {
-				id = node.getPrintableId("._.");
-			}
-			
-			String logName = createLogFileName(this.executionId, id, node.getAttempt());
+			String logName = createLogFileName(node);
 			logFile = new File(workingDir, logName);
 			
 			String absolutePath = logFile.getAbsolutePath();
@@ -451,7 +446,7 @@ public class JobRunner extends EventHandler implements Runnable {
 			}
 			
 			props.put(CommonJobProperties.JOB_ATTEMPT, node.getAttempt());
-			props.put(CommonJobProperties.JOB_METADATA_FILE, createMetaDataFileName(executionId, this.jobId, node.getAttempt()));
+			props.put(CommonJobProperties.JOB_METADATA_FILE, createMetaDataFileName(node));
 			changeStatus(Status.RUNNING);
 			
 			// Ability to specify working directory
@@ -580,19 +575,32 @@ public class JobRunner extends EventHandler implements Runnable {
 		return logFile;
 	}
 	
-	public int getRetries() {
-		return props.getInt("retries", 0);
-	}
-	
-	public long getRetryBackoff() {
-		return props.getLong("retry.backoff", 0);
-	}
-	
-	public static String createLogFileName(int executionId, String jobId, int attempt) {
+	public static String createLogFileName(ExecutableNode node, int attempt) {
+		int executionId = node.getExecutableFlow().getExecutionId();
+		String jobId = node.getId();
+		if (node.getExecutableFlow() != node.getParentFlow()) {
+			// Posix safe file delimiter
+			jobId = node.getPrintableId("._.");
+		}
 		return attempt > 0 ? "_job." + executionId + "." + attempt + "." + jobId + ".log" : "_job." + executionId + "." + jobId + ".log";
 	}
 	
-	public static String createMetaDataFileName(int executionId, String jobId, int attempt) {
+	public static String createLogFileName(ExecutableNode node) {
+		return JobRunner.createLogFileName(node, node.getAttempt());
+	}
+	
+	public static String createMetaDataFileName(ExecutableNode node, int attempt) {
+		int executionId = node.getExecutableFlow().getExecutionId();
+		String jobId = node.getId();
+		if (node.getExecutableFlow() != node.getParentFlow()) {
+			// Posix safe file delimiter
+			jobId = node.getPrintableId("._.");
+		}
+		
 		return attempt > 0 ? "_job." + executionId + "." + attempt + "." + jobId + ".meta" : "_job." + executionId + "." + jobId + ".meta";
+	}
+	
+	public static String createMetaDataFileName(ExecutableNode node) {
+		return JobRunner.createMetaDataFileName(node, node.getAttempt());
 	}
 }

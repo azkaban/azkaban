@@ -16,8 +16,12 @@
 
 package azkaban.executor;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+
+import azkaban.utils.Pair;
 
 public class ExecutableJobInfo {
 	private final int execId;
@@ -29,6 +33,8 @@ public class ExecutableJobInfo {
 	private final long endTime;
 	private final Status status;
 	private final int attempt;
+
+	private ArrayList<Pair<String, String>> jobPath;
 	
 	public ExecutableJobInfo(int execId, int projectId, int version, String flowId, String jobId, long startTime, long endTime, Status status, int attempt) {
 		this.execId = execId;
@@ -40,6 +46,8 @@ public class ExecutableJobInfo {
 		this.flowId = flowId;
 		this.jobId = jobId;
 		this.attempt = attempt;
+		
+		parseFlowId();
 	}
 
 	public int getProjectId() {
@@ -58,6 +66,20 @@ public class ExecutableJobInfo {
 		return flowId;
 	}
 
+	public String getImmediateFlowId() {
+		if (jobPath.size() == 1) {
+			return flowId;
+		}
+		Pair<String, String> pair = jobPath.get(jobPath.size() - 1);		
+		return pair.getSecond();
+	}
+	
+	public String getHeadFlowId() {
+		Pair<String, String> pair = jobPath.get(0);	
+		
+		return pair.getFirst();
+	}
+	
 	public String getJobId() {
 		return jobId;
 	}
@@ -76,6 +98,40 @@ public class ExecutableJobInfo {
 	
 	public int getAttempt() {
 		return attempt;
+	}
+	
+	public List<Pair<String,String>> getParsedFlowId() {
+		return jobPath;
+	}
+	
+	private void parseFlowId() {
+		jobPath = new ArrayList<Pair<String,String>>();
+		String[] flowPairs = flowId.split(",");
+		
+		for (String flowPair: flowPairs) {
+			String[] pairSplit = flowPair.split(":");
+			Pair<String, String> pair;
+			if (pairSplit.length == 1) {
+				pair = new Pair<String, String>(pairSplit[0], pairSplit[0]);
+			}
+			else {
+				pair = new Pair<String, String>(pairSplit[0], pairSplit[1]);
+			}
+			
+			jobPath.add(pair);
+		}
+	}
+	
+	public String getJobIdPath() {
+		// Skip the first one because it's always just the root.
+		String path = "";
+		for (int i=1; i < jobPath.size(); ++i) {
+			Pair<String,String> pair = jobPath.get(i);
+			path += pair.getFirst() + ":";
+		}
+		
+		path += jobId;
+		return path;
 	}
 	
 	public Map<String, Object> toObject() {

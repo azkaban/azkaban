@@ -497,14 +497,8 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader
 		}
 		
 		ExecutableFlow flow = node.getExecutableFlow();
-		String flowId = flow.getFlowId();
-		
-		// If the main flow is not the parent, then we'll create a composite key 
-		// for flowID.
-		if (flow != node.getParentFlow()) {
-			flowId = node.getParentFlow().getNestedId();
-		}
-		
+		String flowId = node.getParentFlow().getFlowPath();
+		System.out.println("Uploading flowId " + flowId);
 		QueryRunner runner = createQueryRunner();
 		try {
 			runner.update(
@@ -555,7 +549,7 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader
 					node.getStatus().getNumVal(), 
 					outputParam,
 					node.getExecutableFlow().getExecutionId(),
-					node.getParentFlow().getNestedId(),
+					node.getParentFlow().getFlowPath(),
 					node.getId(),
 					node.getAttempt());
 		} catch (SQLException e) {
@@ -595,7 +589,8 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader
 					FetchExecutableJobHandler.FETCH_EXECUTABLE_NODE, 
 					new FetchExecutableJobHandler(), 
 					execId, 
-					jobId);
+					jobId,
+					attempts);
 			if (info == null || info.isEmpty()) {
 				return null;
 			}

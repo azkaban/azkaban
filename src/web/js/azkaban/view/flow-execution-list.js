@@ -155,19 +155,28 @@ azkaban.ExecutionListView = Backbone.View.extend({
 			outerWidth = parseInt(outerWidth);
 		}
 		
+		var parentLastTime = data.endTime == -1 ? (new Date()).getTime() : data.endTime;
+		var parentStartTime = data.startTime;
+		
+		var factor = outerWidth / (flowLastTime - flowStartTime);
+		var outerProgressBarWidth = factor * (parentLastTime - parentStartTime);
+		var outerLeftMargin = factor * (parentStartTime - flowStartTime);
+			
 		var nodes = data.nodes;
-		var diff = flowLastTime - flowStartTime;
-		var factor = outerWidth/diff;
 		for (var i = 0; i < nodes.length; ++i) {
 			var node = nodes[i];
 			
 			// calculate the progress
 			var tr = node.joblistrow;
-			
+			var outerProgressBar = $(tr).find("> td.timeline > .flow-progress");
 			var progressBar = $(tr).find("> td.timeline > .flow-progress > .main-progress");
 			var offsetLeft = 0;
 			var minOffset = 0;
 			progressBar.attempt = 0;
+			
+			// Shift the outer progress
+			$(outerProgressBar).css("width", outerProgressBarWidth)
+			$(outerProgressBar).css("margin-left", outerLeftMargin);
 			
 			// Add all the attempts
 			if (node.pastAttempts) {
@@ -196,7 +205,7 @@ azkaban.ExecutionListView = Backbone.View.extend({
 			}
 			
 			var nodeLastTime = node.endTime == -1 ? (new Date()).getTime() : node.endTime;
-			var left = Math.max((node.startTime-flowStartTime)*factor, minOffset);
+			var left = Math.max((node.startTime-parentStartTime)*factor, minOffset);
 			var margin = left - offsetLeft;
 			var width = Math.max((nodeLastTime - node.startTime)*factor, 3);
 			width = Math.min(width, outerWidth);
@@ -229,12 +238,6 @@ azkaban.ExecutionListView = Backbone.View.extend({
 			$(expandIcon).removeClass("glyphicon-chevron-down");
 			$(tr).addClass("expanded");
 			$(subFlowRow).show();
-		}
-	},
-	expandFlow: function(flow) {
-		for (var i = 0; i < flow.nodes.length; ++i) {
-			var node = flow.nodes[i];
-			///@TODO Expand.
 		}
 	},
 	addNodeRow: function(node, body) {

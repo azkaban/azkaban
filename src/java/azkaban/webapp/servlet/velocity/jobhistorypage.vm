@@ -100,10 +100,10 @@
 			#end
                 </td>
                 <td>
-                  <a href="${context}/manager?project=${projectName}&flow=${job.flowId}&job=${jobid}">${jobid}</a>
+                  <a href="${context}/manager?project=${projectName}&flow=${job.immediateFlowId}&job=${jobid}">${jobid}</a>
                 </td>
                 <td>
-                  <a href="${context}/manager?project=${projectName}&flow=${job.flowId}">${job.flowId}</a>
+                  <a href="${context}/manager?project=${projectName}&flow=${job.headFlowId}">${job.flowId}</a>
                 </td>
                 <td>$utils.formatDate(${job.startTime})</td>
                 <td>$utils.formatDate(${job.endTime})</td>
@@ -114,7 +114,7 @@
                   </div>
                 </td>
                 <td class="logLink">
-                  <a href="${context}/executor?execid=${job.execId}&job=${jobid}&attempt=${job.attempt}">Logs</a>
+                  <a href="${context}/executor?execid=${job.execId}&job=${job.jobIdPath}&attempt=${job.attempt}">Logs</a>
                 </td>
               </tr>
 		#end

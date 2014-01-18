@@ -80,7 +80,6 @@ public class ExecutorManager extends EventHandler implements ExecutorManagerAdap
 	File cacheDir;
 	
 	public ExecutorManager(Props props, ExecutorLoader loader, Map<String, Alerter> alters) throws ExecutorManagerException {
-		
 		this.executorLoader = loader;
 		this.loadRunningFlows();
 		executorHost = props.getString("executor.host", "localhost");

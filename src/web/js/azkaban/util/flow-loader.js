@@ -133,7 +133,7 @@ var nodeClickCallback = function(event, model, node) {
 		}
 
 		$.merge(menu, [
-				{title: "View Properties...", callback: function() {openJobDisplayCallback(jobId, flowId, event)}},
+		//		{title: "View Properties...", callback: function() {openJobDisplayCallback(jobId, flowId, event)}},
 				{break: 1},
 				{title: "Open Flow...", callback: function() {window.location.href=flowRequestURL;}},
 				{title: "Open Flow in New Window...", callback: function() {window.open(flowRequestURL);}},
@@ -146,8 +146,8 @@ var nodeClickCallback = function(event, model, node) {
 	}
 	else {
 		menu = [
-				{title: "View Properties...", callback: function() {openJobDisplayCallback(jobId, flowId, event)}},
-				{break: 1},
+		//		{title: "View Properties...", callback: function() {openJobDisplayCallback(jobId, flowId, event)}},
+		//		{break: 1},
 				{title: "Open Job...", callback: function() {window.location.href=requestURL;}},
 				{title: "Open Job in New Window...", callback: function() {window.open(requestURL);}},
 				{break: 1},
@@ -170,8 +170,8 @@ var jobClickCallback = function(event, model, node) {
 	if (type == "flow") {
 		var flowRequestURL = contextURL + "/manager?project=" + projectName + "&flow=" + node.flowId;
 		menu = [
-				{title: "View Properties...", callback: function() {openJobDisplayCallback(jobId, flowId, event)}},
-				{break: 1},
+		//		{title: "View Properties...", callback: function() {openJobDisplayCallback(jobId, flowId, event)}},
+		//		{break: 1},
 				{title: "Open Flow...", callback: function() {window.location.href=flowRequestURL;}},
 				{title: "Open Flow in New Window...", callback: function() {window.open(flowRequestURL);}},
 				{break: 1},
@@ -183,8 +183,8 @@ var jobClickCallback = function(event, model, node) {
 	}
 	else {
 		menu = [
-				{title: "View Job...", callback: function() {openJobDisplayCallback(jobId, flowId, event)}},
-				{break: 1},
+		//		{title: "View Job...", callback: function() {openJobDisplayCallback(jobId, flowId, event)}},
+		//		{break: 1},
 				{title: "Open Job...", callback: function() {window.location.href=requestURL;}},
 				{title: "Open Job in New Window...", callback: function() {window.open(requestURL);}},
 				{break: 1},

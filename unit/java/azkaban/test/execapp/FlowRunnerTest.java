@@ -315,7 +315,7 @@ public class FlowRunnerTest {
 		testStatus(exFlow, "job4", Status.FAILED);
 		testStatus(exFlow, "job6", Status.FAILED);
 		
-		Assert.assertTrue("Expected KILLED status instead got " + exFlow.getStatus(),exFlow.getStatus() == Status.KILLED);
+		Assert.assertTrue("Expected FAILED status instead got " + exFlow.getStatus(),exFlow.getStatus() == Status.FAILED);
 		
 		try {
 			eventCollector.checkEventExists(new Type[] {Type.FLOW_STARTED, Type.FLOW_FINISHED});

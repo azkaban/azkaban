@@ -31,7 +31,6 @@ import javax.servlet.http.HttpServletResponse;
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutableFlowBase;
 import azkaban.executor.ExecutableNode;
-import azkaban.executor.ExecutionAttempt;
 import azkaban.executor.ExecutionOptions;
 import azkaban.executor.ExecutorManagerAdapter;
 import azkaban.executor.ExecutionOptions.FailureAction;
@@ -210,8 +209,11 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 			return;
 		}
 		
+		ExecutableNode node = flow.getExecutableNodePath(jobId);
 		page.add("projectName", project.getName());
-		page.add("flowid", flow.getFlowId());
+		page.add("flowid", flow.getId());
+		page.add("parentflowid", node.getParentFlow().getFlowId());
+		page.add("jobname", node.getId());
 		
 		page.render();
 	}
@@ -431,7 +433,7 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 		resp.setCharacterEncoding("utf-8");
 
 		try {
-			ExecutableNode node = exFlow.getExecutableNode(jobId);
+			ExecutableNode node = exFlow.getExecutableNodePath(jobId);
 			if (node == null) {
 				ret.put("error", "Job " + jobId + " doesn't exist in " + exFlow.getExecutionId());
 				return;
@@ -454,41 +456,38 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 		}
 	}
 	
-  private void ajaxFetchJobStats(
-      HttpServletRequest req, 
-      HttpServletResponse resp, 
-      HashMap<String, Object> ret, 
-      User user, 
-      ExecutableFlow exFlow) throws ServletException {
-		Project project = getProjectAjaxByPermission(
-        ret, exFlow.getProjectId(), user, Type.READ);
+	private void ajaxFetchJobStats(HttpServletRequest req,
+			HttpServletResponse resp, HashMap<String, Object> ret, User user,
+			ExecutableFlow exFlow) throws ServletException {
+		Project project = getProjectAjaxByPermission(ret,
+				exFlow.getProjectId(), user, Type.READ);
 		if (project == null) {
 			return;
 		}
-		
+
 		String jobId = this.getParam(req, "jobid");
 		resp.setCharacterEncoding("utf-8");
-    String statsFilePath = null;
+		String statsFilePath = null;
 		try {
 			ExecutableNode node = exFlow.getExecutableNode(jobId);
 			if (node == null) {
-				ret.put("error", "Job " + jobId + " doesn't exist in " + 
-            exFlow.getExecutionId());
+				ret.put("error",
+						"Job " + jobId + " doesn't exist in "
+								+ exFlow.getExecutionId());
 				return;
 			}
-	
-      statsFilePath = statsDir + "/" + exFlow.getExecutionId() + "-" + 
-          jobId + "-stats.json";
-      File statsFile = new File(statsFilePath);
-      List<Object> jsonObj = 
-          (ArrayList<Object>) JSONUtils.parseJSONFromFile(statsFile);
-      ret.put("jobStats", jsonObj);
-    }
-    catch (IOException e) {
-      ret.put("error", "Cannot open stats file: " + statsFilePath);
-      return;
+
+			statsFilePath = statsDir + "/" + exFlow.getExecutionId() + "-"
+					+ jobId + "-stats.json";
+			File statsFile = new File(statsFilePath);
+			@SuppressWarnings("unchecked")
+			List<Object> jsonObj = (ArrayList<Object>) JSONUtils.parseJSONFromFile(statsFile);
+			ret.put("jobStats", jsonObj);
+		} catch (IOException e) {
+			ret.put("error", "Cannot open stats file: " + statsFilePath);
+			return;
 		}
-  }
+	}
 
 	private void ajaxFetchFlowInfo(HttpServletRequest req, HttpServletResponse resp, HashMap<String, Object> ret, User user, String projectName, String flowId) throws ServletException {
 		Project project = getProjectAjaxByPermission(ret, projectName, user, Type.READ);
