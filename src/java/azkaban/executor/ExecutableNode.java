@@ -61,7 +61,7 @@ public class ExecutableNode {
 	
 	private Props inputProps;
 	private Props outputProps;
-	
+
 	public static final String ATTEMPT_PARAM = "attempt";
 	public static final String PASTATTEMPTS_PARAM = "pastAttempts";
 	
@@ -204,7 +204,7 @@ public class ExecutableNode {
 	public Props getOutputProps() {
 		return outputProps;
 	}
-	
+
 	public long getDelayedExecution() {
 		return delayExecution;
 	}
@@ -439,3 +439,4 @@ public class ExecutableNode {
 		return inputProps.getLong("retry.backoff", 0);
 	}
 }
+

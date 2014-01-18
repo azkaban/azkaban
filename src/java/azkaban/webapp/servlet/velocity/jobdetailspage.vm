@@ -47,8 +47,8 @@
   #parse ("azkaban/webapp/servlet/velocity/errormsg.vm")
 #else
 
-	## Page header.
 
+<<<<<<< HEAD
 		<div class="az-page-header">
 			<div class="container-full">
 				<div class="row">
@@ -85,6 +85,9 @@
 				<li><a href="${context}/pigvisualizer?execid=${execid}&jobid=${jobid}">Visualization</a></li>
 			</ul>
     </div>
+=======
+  #parse ("azkaban/webapp/servlet/velocity/jobdetailsheader.vm")
+>>>>>>> 00fce49bbc08509c17de9efbd475c9ca92311dfd
 
 	## Log content.
 
@@ -119,6 +122,11 @@
               <button type="button" id="updateSummaryBtn" class="btn btn-xs btn-default">Refresh</button>
             </div>
           </h3>
+
+          <div id="jobType">
+            <table id="jobTypeTable" class="table table-striped table-bordered table-hover">
+            </table>
+          </div>
 
           <div id="command-summary">
             <h4>Command Summary</h4>
@@ -155,6 +163,13 @@
               </thead>
               <tbody id="hiveTableBody">
               </tbody>
+            </table>
+          </div>
+
+          <div id="jobIds">
+            <h4>Map Reduce Jobs</h4>
+            <table class="table table-striped table-bordered table-hover">
+              <tbody id="jobIdsTableBody"></tbody>
             </table>
           </div>
         </div>

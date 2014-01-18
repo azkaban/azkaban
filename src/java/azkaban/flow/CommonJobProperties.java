@@ -75,6 +75,11 @@ public class CommonJobProperties {
 	 * The attempt number of the executing job.
 	 */
 	public static final String JOB_METADATA_FILE = "azkaban.job.metadata.file";
+
+	/**
+	 * The attempt number of the executing job.
+	 */
+	public static final String JOB_ATTACHMENT_FILE = "azkaban.job.attachment.file";
 	
 	/**
 	 * The executing flow id

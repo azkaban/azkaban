@@ -1013,9 +1013,21 @@ public class FlowRunner extends EventHandler implements Runnable {
 		
 		return logFile;
 	}
+
+	public File getJobAttachmentFile(String jobId, int attempt) {
+		ExecutableNode node = flow.getExecutableNodePath(jobId);
+		File path = new File(execDir, node.getJobSource());
+
+		String attachmentFileName = JobRunner.createAttachmentFileName(node, attempt);
+		File attachmentFile = new File(path.getParentFile(), attachmentFileName);
+		if (!attachmentFile.exists()) {
+			return null;
+		}
+		return attachmentFile;
+	}
 	
 	public File getJobMetaDataFile(String jobId, int attempt) {
-		ExecutableNode node = flow.getExecutableNode(jobId);
+		ExecutableNode node = flow.getExecutableNodePath(jobId);
 		File path = new File(execDir, node.getJobSource());
 		
 		String metaDataFileName = JobRunner.createMetaDataFileName(node, attempt);

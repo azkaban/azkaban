@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import javax.servlet.ServletConfig;
@@ -47,7 +48,6 @@ public class ExecutorServlet extends HttpServlet implements ConnectorParams {
 	private AzkabanExecutorServer application;
 	private FlowRunnerManager flowRunnerManager;
 
-	
 	public ExecutorServlet() {
 		super();
 	}
@@ -63,7 +63,6 @@ public class ExecutorServlet extends HttpServlet implements ConnectorParams {
 		flowRunnerManager = application.getFlowRunnerManager();
 	}
 
-	
 	protected void writeJSON(HttpServletResponse resp, Object obj) throws IOException {
 		resp.setContentType(JSON_MIME_TYPE);
 		ObjectMapper mapper = new ObjectMapper();
@@ -99,6 +98,9 @@ public class ExecutorServlet extends HttpServlet implements ConnectorParams {
 					}
 					else if (action.equals(LOG_ACTION)) { 
 						handleFetchLogEvent(execid, req, resp, respMap);
+					}
+					else if (action.equals(ATTACHMENTS_ACTION)) { 
+						handleFetchAttachmentsEvent(execid, req, resp, respMap);
 					}
 					else if (action.equals(EXECUTE_ACTION)) {
 						handleAjaxExecute(req, respMap, execid);
@@ -170,7 +172,11 @@ public class ExecutorServlet extends HttpServlet implements ConnectorParams {
 		}
 	}
 	
-	private void handleFetchLogEvent(int execId, HttpServletRequest req, HttpServletResponse resp, Map<String, Object> respMap) throws ServletException {
+	private void handleFetchLogEvent(
+			int execId, 
+			HttpServletRequest req, 
+			HttpServletResponse resp, 
+			Map<String, Object> respMap) throws ServletException {
 		String type = getParam(req, "type");
 		int startByte = getIntParam(req, "offset");
 		int length = getIntParam(req, "length");
@@ -200,6 +206,25 @@ public class ExecutorServlet extends HttpServlet implements ConnectorParams {
 			}
 		}
 	}
+
+	private void handleFetchAttachmentsEvent(
+			int execId, 
+			HttpServletRequest req, 
+			HttpServletResponse resp, 
+			Map<String, Object> respMap) throws ServletException {
+
+		String jobId = getParam(req, "jobId");
+		int attempt = getIntParam(req, "attempt", 0);
+		try {
+			List<Object> result = flowRunnerManager.readJobAttachments(
+					execId, jobId, attempt);
+			respMap.put("attachments", result);
+		}
+		catch (Exception e) {
+			logger.error(e);
+			respMap.put("error", e.getMessage());
+		}
+	}
 	
 	private void handleFetchMetaDataEvent(int execId, HttpServletRequest req, HttpServletResponse resp, Map<String, Object> respMap) throws ServletException {
 		int startByte = getIntParam(req, "offset");
@@ -217,7 +242,6 @@ public class ExecutorServlet extends HttpServlet implements ConnectorParams {
 			logger.error(e);
 			respMap.put("error", e.getMessage());
 		}
-
 	}
 	
 	@SuppressWarnings("unchecked")

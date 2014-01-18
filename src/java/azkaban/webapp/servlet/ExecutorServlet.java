@@ -17,7 +17,6 @@
 package azkaban.webapp.servlet;
 
 import java.io.IOException;
-import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -46,9 +45,10 @@ import azkaban.user.Permission;
 import azkaban.user.User;
 import azkaban.user.Permission.Type;
 import azkaban.utils.FileIOUtils.LogData;
-import azkaban.utils.JSONUtils;
 import azkaban.webapp.AzkabanWebServer;
 import azkaban.webapp.session.Session;
+import azkaban.webapp.plugin.PluginRegistry;
+import azkaban.webapp.plugin.ViewerPlugin;
 
 public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 	private static final long serialVersionUID = 1L;
@@ -56,8 +56,6 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 	private ExecutorManagerAdapter executorManager;
 	private ScheduleManager scheduleManager;
 	private ExecutorVelocityHelper velocityHelper;
-
-  private String statsDir;
 
 	@Override
 	public void init(ServletConfig config) throws ServletException {
@@ -67,7 +65,6 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 		executorManager = server.getExecutorManager();
 		scheduleManager = server.getScheduleManager();
 		velocityHelper = new ExecutorVelocityHelper();
-    statsDir = server.getServerProps().getString("azkaban.stats.dir");
 	}
 
 	@Override
@@ -130,9 +127,9 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 				else if (ajaxName.equals("fetchExecJobLogs")) {
 					ajaxFetchJobLogs(req, resp, ret, session.getUser(), exFlow);
 				}
-        else if (ajaxName.equals("fetchExecJobStats")) {
-          ajaxFetchJobStats(req, resp, ret, session.getUser(), exFlow);
-        }
+				else if (ajaxName.equals("fetchExecJobStats")) {
+					ajaxFetchJobStats(req, resp, ret, session.getUser(), exFlow);
+				}
 				else if (ajaxName.equals("retryFailedJobs")) {
 					ajaxRestartFailed(req, resp, ret, session.getUser(), exFlow);
 				}
@@ -189,6 +186,7 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 		page.add("attempt", attempt);
 		
 		ExecutableFlow flow = null;
+		ExecutableNode node = null;
 		try {
 			flow = executorManager.getExecutableFlow(execId);
 			if (flow == null) {
@@ -196,7 +194,18 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 				page.render();
 				return;
 			}
-		} catch (ExecutorManagerException e) {
+
+			node = flow.getExecutableNodePath(jobId);
+			if (node == null) {
+				page.add("errorMsg", "Job " + jobId + " doesn't exist in " + flow.getExecutionId());
+				return;
+			}
+		
+			List<ViewerPlugin> jobViewerPlugins = PluginRegistry.getRegistry()
+					.getViewerPluginsForJobType(node.getType());
+			page.add("jobViewerPlugins", jobViewerPlugins);
+		}
+		catch (ExecutorManagerException e) {
 			page.add("errorMsg", "Error loading executing flow: " + e.getMessage());
 			page.render();
 			return;
@@ -209,7 +218,6 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 			return;
 		}
 		
-		ExecutableNode node = flow.getExecutableNodePath(jobId);
 		page.add("projectName", project.getName());
 		page.add("flowid", flow.getId());
 		page.add("parentflowid", node.getParentFlow().getFlowId());
@@ -456,35 +464,35 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 		}
 	}
 	
-	private void ajaxFetchJobStats(HttpServletRequest req,
-			HttpServletResponse resp, HashMap<String, Object> ret, User user,
+	private void ajaxFetchJobStats(
+			HttpServletRequest req, 
+			HttpServletResponse resp, 
+			HashMap<String, Object> ret, 
+			User user, 
 			ExecutableFlow exFlow) throws ServletException {
-		Project project = getProjectAjaxByPermission(ret,
-				exFlow.getProjectId(), user, Type.READ);
+		Project project = getProjectAjaxByPermission(
+				ret, exFlow.getProjectId(), user, Type.READ);
 		if (project == null) {
 			return;
 		}
 
 		String jobId = this.getParam(req, "jobid");
 		resp.setCharacterEncoding("utf-8");
-		String statsFilePath = null;
+
 		try {
-			ExecutableNode node = exFlow.getExecutableNode(jobId);
+			ExecutableNode node = exFlow.getExecutableNodePath(jobId);
 			if (node == null) {
-				ret.put("error",
-						"Job " + jobId + " doesn't exist in "
-								+ exFlow.getExecutionId());
+				ret.put("error", "Job " + jobId + " doesn't exist in " + 
+						exFlow.getExecutionId());
 				return;
 			}
 
-			statsFilePath = statsDir + "/" + exFlow.getExecutionId() + "-"
-					+ jobId + "-stats.json";
-			File statsFile = new File(statsFilePath);
-			@SuppressWarnings("unchecked")
-			List<Object> jsonObj = (ArrayList<Object>) JSONUtils.parseJSONFromFile(statsFile);
+			List<Object> jsonObj = executorManager.getExecutionJobStats(
+					exFlow, jobId, node.getAttempt());
 			ret.put("jobStats", jsonObj);
-		} catch (IOException e) {
-			ret.put("error", "Cannot open stats file: " + statsFilePath);
+		}
+		catch (ExecutorManagerException e) {
+			ret.put("error", "Error retrieving stats for job " + jobId);
 			return;
 		}
 	}
@@ -715,7 +723,7 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 		Map<String, Object> map = getExecutableFlowUpdateInfo(exFlow, lastUpdateTime);
 		map.put("status", exFlow.getStatus());
 		map.put("startTime", exFlow.getStartTime());
-		map.put("endTime",  exFlow.getEndTime());
+		map.put("endTime",	exFlow.getEndTime());
 		map.put("updateTime", exFlow.getUpdateTime());
 		ret.putAll(map);
 	}
