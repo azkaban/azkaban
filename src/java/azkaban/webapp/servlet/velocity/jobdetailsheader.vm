@@ -24,12 +24,13 @@
 					</div>
 					<div class="col-xs-6">
 						<div class="pull-right az-page-header-form">
-							<a href="${context}/manager?project=${projectName}&flow=${flowid}&job=$jobid" class="btn btn-info">Job Properties</a>
+							<a href="${context}/manager?project=${projectName}&flow=${parentflowid}&job=$jobname" class="btn btn-info">Job Properties</a>
 						</div>
 					</div>
 				</div>
 			</div>
 		</div>
+	
 	
     <div class="container-full">
 
@@ -41,7 +42,7 @@
 				<li><a href="${context}/manager?project=${projectName}"><strong>Project</strong> $projectName</a></li>
 				<li><a href="${context}/manager?project=${projectName}&flow=${flowid}"><strong>Flow</strong> $flowid</a></li>
 				<li><a href="${context}/executor?execid=${execid}#jobslist"><strong>Execution</strong> $execid</a></li>
-        <li class="active"><strong>Job</strong> $jobid</li>
+				<li class="active"><strong>Job</strong> $jobid</li>
 			</ol>
 
   ## Tabs

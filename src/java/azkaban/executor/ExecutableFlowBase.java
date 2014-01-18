@@ -123,11 +123,16 @@ public class ExecutableFlowBase extends ExecutableNode {
 		return executableNodes.get(id);
 	}
 	
-	public ExecutableNode getExecutableNode(String ... ids) {
-		return getExecutableNode(this, ids, 0);
+	public ExecutableNode getExecutableNodePath(String ids) {
+		String[] split = ids.split(":");
+		return getExecutableNodePath(split);
 	}
 	
-	private ExecutableNode getExecutableNode(ExecutableFlowBase flow, String[] ids, int currentIdIdx) {
+	public ExecutableNode getExecutableNodePath(String ... ids) {
+		return getExecutableNodePath(this, ids, 0);
+	}
+	
+	private ExecutableNode getExecutableNodePath(ExecutableFlowBase flow, String[] ids, int currentIdIdx) {
 		ExecutableNode node = flow.getExecutableNode(ids[currentIdIdx]);
 		currentIdIdx++;
 		
@@ -139,7 +144,7 @@ public class ExecutableFlowBase extends ExecutableNode {
 			return node;
 		}
 		else if (node instanceof ExecutableFlowBase) {
-			return getExecutableNode((ExecutableFlowBase)node, ids, currentIdIdx);
+			return getExecutableNodePath((ExecutableFlowBase)node, ids, currentIdIdx);
 		}
 		else {
 			return null;
@@ -405,5 +410,14 @@ public class ExecutableFlowBase extends ExecutableNode {
 		}
 		
 		return jobsToRun;
+	}
+	
+	public String getFlowPath() {
+		if (this.getParentFlow() == null) {
+			return this.getFlowId();
+		}
+		else {
+			return this.getParentFlow().getFlowPath() + "," + this.getId() + ":"+ this.getFlowId();
+		}
 	}
 }

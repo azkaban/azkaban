@@ -225,4 +225,10 @@ public class ExecutableFlow extends ExecutableFlowBase {
 		updateData.put(EXECUTIONID_PARAM, this.executionId);
 		return updateData;
 	}
+	
+	public void resetForRetry() {
+		super.resetForRetry();
+		this.setStatus(Status.RUNNING);
+	}
+	
 }

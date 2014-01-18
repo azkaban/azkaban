@@ -17,7 +17,6 @@
 package azkaban.webapp.servlet;
 
 import java.io.IOException;
-import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -31,7 +30,6 @@ import javax.servlet.http.HttpServletResponse;
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutableFlowBase;
 import azkaban.executor.ExecutableNode;
-import azkaban.executor.ExecutionAttempt;
 import azkaban.executor.ExecutionOptions;
 import azkaban.executor.ExecutorManagerAdapter;
 import azkaban.executor.ExecutionOptions.FailureAction;
@@ -47,7 +45,6 @@ import azkaban.user.Permission;
 import azkaban.user.User;
 import azkaban.user.Permission.Type;
 import azkaban.utils.FileIOUtils.LogData;
-import azkaban.utils.JSONUtils;
 import azkaban.webapp.AzkabanWebServer;
 import azkaban.webapp.session.Session;
 import azkaban.webapp.plugin.PluginRegistry;
@@ -189,6 +186,7 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 		page.add("attempt", attempt);
 		
 		ExecutableFlow flow = null;
+		ExecutableNode node = null;
 		try {
 			flow = executorManager.getExecutableFlow(execId);
 			if (flow == null) {
@@ -197,7 +195,7 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 				return;
 			}
 
-			ExecutableNode node = flow.getExecutableNode(jobId);
+			node = flow.getExecutableNodePath(jobId);
 			if (node == null) {
 				page.add("errorMsg", "Job " + jobId + " doesn't exist in " + flow.getExecutionId());
 				return;
@@ -219,9 +217,11 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 			page.render();
 			return;
 		}
-
+		
 		page.add("projectName", project.getName());
-		page.add("flowid", flow.getFlowId());
+		page.add("flowid", flow.getId());
+		page.add("parentflowid", node.getParentFlow().getFlowId());
+		page.add("jobname", node.getId());
 		
 		page.render();
 	}
@@ -441,7 +441,7 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 		resp.setCharacterEncoding("utf-8");
 
 		try {
-			ExecutableNode node = exFlow.getExecutableNode(jobId);
+			ExecutableNode node = exFlow.getExecutableNodePath(jobId);
 			if (node == null) {
 				ret.put("error", "Job " + jobId + " doesn't exist in " + exFlow.getExecutionId());
 				return;
@@ -475,11 +475,12 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 		if (project == null) {
 			return;
 		}
-		
+
 		String jobId = this.getParam(req, "jobid");
 		resp.setCharacterEncoding("utf-8");
+
 		try {
-			ExecutableNode node = exFlow.getExecutableNode(jobId);
+			ExecutableNode node = exFlow.getExecutableNodePath(jobId);
 			if (node == null) {
 				ret.put("error", "Job " + jobId + " doesn't exist in " + 
 						exFlow.getExecutionId());

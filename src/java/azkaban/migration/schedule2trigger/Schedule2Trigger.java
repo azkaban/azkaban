@@ -1,6 +1,7 @@
 package azkaban.migration.schedule2trigger;
 
 import java.io.File;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -26,6 +27,7 @@ import azkaban.trigger.builtin.BasicTimeChecker;
 import azkaban.trigger.builtin.ExecuteFlowAction;
 import azkaban.utils.Utils;
 
+@SuppressWarnings("deprecation")
 public class Schedule2Trigger {
 	
 	private static final Logger logger = Logger.getLogger(Schedule2Trigger.class);
@@ -162,6 +164,7 @@ public class Schedule2Trigger {
 		props.storeLocal(outputFile);
 	}
 
+	@SuppressWarnings("unchecked")
 	private static void file2ScheduleTrigger() throws Exception {
 		
 		TriggerLoader triggerLoader = new JdbcTriggerLoader(props);

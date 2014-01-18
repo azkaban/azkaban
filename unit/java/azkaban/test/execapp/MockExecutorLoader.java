@@ -202,5 +202,19 @@ public class MockExecutorLoader implements ExecutorLoader {
 		return null;
 	}
 
+	@Override
+	public List<Object> fetchAttachments(int execId, String name, int attempt)
+			throws ExecutorManagerException {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public void uploadAttachmentFile(ExecutableNode node, File file)
+			throws ExecutorManagerException {
+		// TODO Auto-generated method stub
+		
+	}
+
 
 }

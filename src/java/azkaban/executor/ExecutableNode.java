@@ -397,6 +397,7 @@ public class ExecutableNode {
 			this.setStatus(Status.KILLED);
 			this.setStartTime(killTime);
 			this.setEndTime(killTime);
+			this.setUpdateTime(killTime);
 		}
 	}
 	
@@ -404,6 +405,7 @@ public class ExecutableNode {
 		this.setStatus(Status.SKIPPED);
 		this.setStartTime(skipTime);
 		this.setEndTime(skipTime);
+		this.setUpdateTime(skipTime);
 	}
 	
 	private void updatePastAttempts(List<Object> pastAttemptsList) {
@@ -428,4 +430,13 @@ public class ExecutableNode {
 			}
 		}
 	}
+	
+	public int getRetries() {
+		return inputProps.getInt("retries", 0);
+	}
+	
+	public long getRetryBackoff() {
+		return inputProps.getLong("retry.backoff", 0);
+	}
 }
+

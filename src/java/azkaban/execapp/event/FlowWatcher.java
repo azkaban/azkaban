@@ -69,8 +69,7 @@ public abstract class FlowWatcher {
 			return null;
 		}
 		
-		String[] split = jobId.split(":");
-		ExecutableNode node = flow.getExecutableNode(split);
+		ExecutableNode node = flow.getExecutableNodePath(jobId);
 		if (node == null) {
 			return null;
 		}
@@ -85,8 +84,7 @@ public abstract class FlowWatcher {
 	}
 	
 	public Status peekStatus(String jobId) {
-		String[] split = jobId.split(":");
-		ExecutableNode node = flow.getExecutableNode(split);
+		ExecutableNode node = flow.getExecutableNodePath(jobId);
 		if (node != null) {
 			return node.getStatus();
 		}

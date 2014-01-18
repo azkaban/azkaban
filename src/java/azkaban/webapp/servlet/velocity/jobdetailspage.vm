@@ -47,7 +47,6 @@
   #parse ("azkaban/webapp/servlet/velocity/errormsg.vm")
 #else
 
-
   #parse ("azkaban/webapp/servlet/velocity/jobdetailsheader.vm")
 
 	## Log content.
