@@ -29,6 +29,7 @@
 
 	<script type="text/javascript" src="${context}/js/azkaban/util/date.js"></script>	
 	<script type="text/javascript" src="${context}/js/azkaban/view/job-list.js"></script>
+	<script type="text/javascript" src="${context}/js/azkaban/model/svg-graph.js"></script>
 	<script type="text/javascript" src="${context}/js/azkaban/view/svg-graph.js"></script>
 	<script type="text/javascript" src="${context}/js/azkaban/util/svg-navigate.js"></script>
 

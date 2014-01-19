@@ -430,7 +430,6 @@ azkaban.SvgGraphView = Backbone.View.extend({
 		bounds.maxX = bounds.maxX ? bounds.maxX + margin : margin;
 		bounds.maxY = bounds.maxY ? bounds.maxY + margin : margin;
 		this.graphBounds = bounds;
-
 	},
 
 	relayoutFlow: function(node) {

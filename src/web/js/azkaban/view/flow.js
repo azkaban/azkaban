@@ -366,7 +366,7 @@ azkaban.SummaryView = Backbone.View.extend({
 });
 
 var graphModel;
-azkaban.GraphModel = Backbone.Model.extend({});
+var mainSvgGraphView;
 
 var executionModel;
 azkaban.ExecutionModel = Backbone.Model.extend({});
@@ -378,8 +378,6 @@ var flowStatsView;
 var flowStatsModel;
 
 var executionsTimeGraphView;
-
-var mainSvgGraphView;
 
 $(function() {
 	var selected;
@@ -452,8 +450,7 @@ $(function() {
 	};
 	var successHandler = function(data) {
 		console.log("data fetched");
-		processFlowData(data);
-		graphModel.set({data:data});
+		graphModel.addFlow(data);
 		graphModel.trigger("change:graph");
 		
 		// Handle the hash changes here so the graph finishes rendering first.
