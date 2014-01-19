@@ -47,14 +47,14 @@ azkaban.ProjectTableView = Backbone.View.extend({
 				var expander = $(target).children('.project-expander-icon')[0];
 				$(expander).removeClass('glyphicon-chevron-up');
 				$(expander).addClass('glyphicon-chevron-down');
-				$(targetExpanded).slideUp();
+				$(targetExpanded).slideUp(300);
 			}
 			else {
 				$(target).addClass('collapsed').removeClass('expanded');
 				var expander = $(target).children('.project-expander-icon')[0];
 				$(expander).removeClass('glyphicon-chevron-down');
 				$(expander).addClass('glyphicon-chevron-up');
-				$(targetExpanded).slideDown();
+				$(targetExpanded).slideDown(300);
 			}
 		}
 		else {
@@ -78,7 +78,7 @@ azkaban.ProjectTableView = Backbone.View.extend({
 				var expander = $(target).children('.project-expander-icon')[0];
 				$(expander).removeClass('glyphicon-chevron-down');
 				$(expander).addClass('glyphicon-chevron-up');
-				$(targetExpanded).slideDown();
+				$(targetExpanded).slideDown(300);
 			};
 			
 			$.get(requestURL, request, successHandler, "json");

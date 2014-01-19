@@ -21,9 +21,9 @@
 #parse ("azkaban/webapp/servlet/velocity/style.vm")
 #parse ("azkaban/webapp/servlet/velocity/javascript.vm")
 #parse ("azkaban/webapp/servlet/velocity/svgflowincludes.vm")
-		<link rel="stylesheet" type="text/css" href="${context}/css/bootstrap-datetimepicker.css" />
 		<script type="text/javascript" src="${context}/js/moment.min.js"></script>
 		<script type="text/javascript" src="${context}/js/bootstrap-datetimepicker.min.js"></script>
+		<script type="text/javascript" src="${context}/js/azkaban/view/flow-execute-dialog.js"></script>
 		<script type="text/javascript" src="${context}/js/azkaban/view/project.js"></script>
 		<script type="text/javascript" src="${context}/js/azkaban/view/project-modals.js"></script>
 		<script type="text/javascript">
@@ -37,6 +37,7 @@
 			var execAccess = ${exec};
 			var projectName = "$project.name";
 		</script>
+		<link rel="stylesheet" type="text/css" href="${context}/css/bootstrap-datetimepicker.css" />
 	</head>
 	<body>
 

@@ -377,7 +377,6 @@ azkaban.StatsView = Backbone.View.extend({
 });
 
 var graphModel;
-azkaban.GraphModel = Backbone.Model.extend({});
 
 var logModel;
 azkaban.LogModel = Backbone.Model.extend({});
@@ -582,8 +581,7 @@ $(function() {
 	var requestData = {"execid": execId, "ajax":"fetchexecflow"};
 	var successHandler = function(data) {
 		console.log("data fetched");
-		processFlowData(data);
-		graphModel.set({data:data});
+		graphModel.addFlow(data);
 		graphModel.trigger("change:graph");
 		
 		updateTime = Math.max(updateTime, data.submitTime);

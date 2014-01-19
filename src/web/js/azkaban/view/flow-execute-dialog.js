@@ -259,8 +259,7 @@ azkaban.FlowExecuteDialogView = Backbone.View.extend({
 		var self = this;
 		var successHandler = function(data) {
 			console.log("data fetched");
-			processFlowData(data);
-			graphModel.set({data:data});
+			graphModel.addFlow(data);
 			
 			if (exgraph) {
 				self.assignInitialStatus(data, exgraph);
@@ -481,7 +480,6 @@ var handleJobMenuClick = function(action, el, pos) {
 }
 
 var executableGraphModel;
-azkaban.GraphModel = Backbone.Model.extend({});
 
 /**
  * Disable jobs that need to be disabled

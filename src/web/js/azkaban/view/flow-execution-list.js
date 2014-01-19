@@ -14,6 +14,10 @@
  * the License.
  */
 
+/*
+ * List of executing jobs on executing flow page.
+ */
+
 var executionListView;
 azkaban.ExecutionListView = Backbone.View.extend({
 	events: {
@@ -39,6 +43,7 @@ azkaban.ExecutionListView = Backbone.View.extend({
 		var flowStartTime = data.startTime;
 		this.updateProgressBar(data, flowStartTime, flowLastTime);
 	},
+
 //
 //	handleProgressBoxClick: function(evt) {
 //		var target = evt.currentTarget;
@@ -61,7 +66,9 @@ azkaban.ExecutionListView = Backbone.View.extend({
 	
 	updateJobs: function(evt) {
 		var update = this.model.get("update");
-		var lastTime = update.endTime == -1 ? (new Date()).getTime() : update.endTime;
+		var lastTime = update.endTime == -1 
+				? (new Date()).getTime() 
+				: update.endTime;
 		var executingBody = $("#executableBody");
 		
 		if (update.nodes) {
@@ -69,17 +76,19 @@ azkaban.ExecutionListView = Backbone.View.extend({
 		}
 		
 		var data = this.model.get("data");
-		var flowLastTime = data.endTime == -1 ? (new Date()).getTime() : data.endTime;
+		var flowLastTime = data.endTime == -1 
+				? (new Date()).getTime() 
+				: data.endTime;
 		var flowStartTime = data.startTime;
 		this.updateProgressBar(data, flowStartTime, flowLastTime);
 	},
+
 	updateJobRow: function(nodes, body) {
 		if (!nodes) {
 			return;
 		}
 		
 		nodes.sort(function(a,b) { return a.startTime - b.startTime; });
-		
 		for (var i = 0; i < nodes.length; ++i) {
 			var node = nodes[i].changedNode ? nodes[i].changedNode : nodes[i];
 			
@@ -235,6 +244,7 @@ azkaban.ExecutionListView = Backbone.View.extend({
 			}
 		}
 	},
+
 	toggleExpandFlow: function(flow) {
 		console.log("Toggle Expand");
 		var tr = flow.joblistrow;
@@ -256,6 +266,7 @@ azkaban.ExecutionListView = Backbone.View.extend({
 			$(subFlowRow).show();
 		}
 	},
+
 	addNodeRow: function(node, body) {
 		var self = this;
 		var tr = document.createElement("tr");
