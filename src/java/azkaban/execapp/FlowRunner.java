@@ -618,6 +618,10 @@ public class FlowRunner extends EventHandler implements Runnable {
 	
 	@SuppressWarnings("unchecked")
 	private void prepareJobProperties(ExecutableNode node) throws IOException {
+		if (node instanceof ExecutableFlow) {
+			return;
+		}
+		
 		Props props = null;
 		// The following is the hiearchical ordering of dependency resolution
 		// 1. Parent Flow Properties
