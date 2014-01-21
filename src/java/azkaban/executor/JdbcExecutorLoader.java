@@ -718,7 +718,11 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader
 			if (attachments == null) {
 				return null;
 			}
-			return (List<Object>) JSONUtils.parseJSONFromString(attachments);
+			
+			@SuppressWarnings("unchecked")
+      List<Object> attachmentList = (List<Object>) JSONUtils.parseJSONFromString(attachments);
+			
+			return attachmentList;
 		}
 		catch (IOException e) {
 			throw new ExecutorManagerException(
@@ -1049,7 +1053,6 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader
 		private static String FETCH_ATTACHMENTS_EXECUTABLE_NODE = 
 				"SELECT attachments FROM execution_jobs WHERE exec_id=? AND job_id=?";
 
-		@SuppressWarnings("unchecked")
 		@Override
 		public String handle(ResultSet rs) throws SQLException {
 			String attachmentsJson = null;

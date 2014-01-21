@@ -323,7 +323,11 @@ public class ExecutorManager extends EventHandler implements ExecutorManagerAdap
 				ConnectorParams.ATTACHMENTS_ACTION,
 				jobIdParam,
 				attemptParam);
-		return (List<Object>) result.get("attachments");
+		
+		@SuppressWarnings("unchecked")
+    List<Object> jobStats = (List<Object>) result.get("attachments"); 
+		
+		return jobStats;
 	}
 	
 	@Override
