@@ -378,6 +378,7 @@ var flowStatsView;
 var flowStatsModel;
 
 var executionsTimeGraphView;
+var slaView;
 
 $(function() {
 	var selected;
@@ -428,8 +429,9 @@ $(function() {
     modelField: 'executions'
 	});
 	
+	slaView = new azkaban.ChangeSlaView({el:$('#sla-options')});
+	
 	var requestURL = contextURL + "/manager";
-
 	// Set up the Flow options view. Create a new one every time :p
 	$('#executebtn').click(function() {
 		var data = graphModel.get("data");
