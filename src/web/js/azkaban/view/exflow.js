@@ -89,6 +89,7 @@ azkaban.FlowTabView = Backbone.View.extend({
 		"click #graphViewLink": "handleGraphLinkClick",
 		"click #jobslistViewLink": "handleJobslistLinkClick",
 		"click #flowLogViewLink": "handleLogLinkClick",
+		"click #statsViewLink": "handleStatsLinkClick",
 		"click #cancelbtn": "handleCancelClick",
 		"click #executebtn": "handleRestartClick",
 		"click #pausebtn": "handlePauseClick",
@@ -123,30 +124,49 @@ azkaban.FlowTabView = Backbone.View.extend({
 		$("#jobslistViewLink").removeClass("active");
 		$("#graphViewLink").addClass("active");
 		$("#flowLogViewLink").removeClass("active");
+		$("#statsViewLink").removeClass("active");
 		
 		$("#jobListView").hide();
 		$("#graphView").show();
 		$("#flowLogView").hide();
+		$("#statsView").hide();
 	},
 	
 	handleJobslistLinkClick: function() {
 		$("#graphViewLink").removeClass("active");
 		$("#jobslistViewLink").addClass("active");
 		$("#flowLogViewLink").removeClass("active");
+		$("#statsViewLink").removeClass("active");
 		
 		$("#graphView").hide();
 		$("#jobListView").show();
 		$("#flowLogView").hide();
+		$("#statsView").hide();
 	},
 	
 	handleLogLinkClick: function() {
 		$("#graphViewLink").removeClass("active");
 		$("#jobslistViewLink").removeClass("active");
 		$("#flowLogViewLink").addClass("active");
+		$("#statsViewLink").removeClass("active");
 		
 		$("#graphView").hide();
 		$("#jobListView").hide();
 		$("#flowLogView").show();
+		$("#statsView").hide();
+	},
+	
+  handleStatsLinkClick: function() {
+		$("#graphViewLink").removeClass("active");
+		$("#jobslistViewLink").removeClass("active");
+		$("#flowLogViewLink").removeClass("active");
+		$("#statsViewLink").addClass("active");
+		
+		$("#graphView").hide();
+		$("#jobListView").hide();
+		$("#flowLogView").hide();
+    statsView.show();
+		$("#statsView").show();
 	},
 	
 	handleFlowStatusChange: function() {
@@ -566,6 +586,40 @@ azkaban.FlowLogView = Backbone.View.extend({
 	}
 });
 
+var statsView;
+azkaban.StatsView = Backbone.View.extend({
+	events: {
+	},
+	
+  initialize: function(settings) {
+    this.model.bind('change:graph', this.statusUpdate, this);
+    this.model.bind('change:update', this.statusUpdate, this);
+		this.model.bind('render', this.render, this);
+    this.status = null;
+    this.rendered = false;
+  },
+
+  statusUpdate: function(evt) {
+    var data = this.model.get('data');
+    this.status = data.status;
+  },
+
+  show: function() {
+    this.model.trigger("render");
+  },
+
+  render: function(evt) {
+    if (this.rendered == true) {
+      return;
+    }
+    if (this.status != 'SUCCEEDED') {
+      return;
+    }
+    flowStatsView.show(execId);
+    this.rendered = true;
+  }
+});
+
 var graphModel;
 azkaban.GraphModel = Backbone.Model.extend({});
 
@@ -721,6 +775,9 @@ var attemptRightClick = function(event) {
 	return false;
 }
 
+var flowStatsView;
+var flowStatsModel;
+
 $(function() {
 	var selected;
 	
@@ -755,6 +812,17 @@ $(function() {
 	
   statusView = new azkaban.StatusView({
 		el: $('#flow-status'), 
+		model: graphModel
+	});
+  
+  flowStatsModel = new azkaban.FlowStatsModel();
+	flowStatsView = new azkaban.FlowStatsView({
+		el: $('#flow-stats-container'),
+		model: flowStatsModel
+	});
+
+  statsView = new azkaban.StatsView({
+		el: $('#statsView'), 
 		model: graphModel
 	});
 	
@@ -807,6 +875,9 @@ $(function() {
 			else if (hash == "#log") {
 				flowTabView.handleLogLinkClick();
 			}
+      else if (hash == "#stats") {
+        flowTabView.handleStatsLinkClick();
+      }
 		}
 		else {
 			flowTabView.handleGraphLinkClick();

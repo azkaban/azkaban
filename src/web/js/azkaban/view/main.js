@@ -19,7 +19,7 @@ $.namespace('azkaban');
 var projectTableView;
 azkaban.ProjectTableView = Backbone.View.extend({
 	events: {
-		"click .project-expand": "expandProject"
+		"click .project-expander": "expandProject"
 	},
 	
 	initialize: function(settings) {
@@ -44,17 +44,17 @@ azkaban.ProjectTableView = Backbone.View.extend({
 		else if (target.loaded) {
 			if ($(targetExpanded).is(':visible')) {
 				$(target).addClass('expanded').removeClass('collapsed');
-				var expander = $(target).children('.az-expander')[0];
-				$(expander).removeClass('state-icon-collapse');
-				$(expander).addClass('state-icon-expand');
-				$(targetExpanded).fadeOut("fast");
+				var expander = $(target).children('.project-expander-icon')[0];
+				$(expander).removeClass('glyphicon-chevron-up');
+				$(expander).addClass('glyphicon-chevron-down');
+				$(targetExpanded).slideUp();
 			}
 			else {
 				$(target).addClass('collapsed').removeClass('expanded');
-				var expander = $(target).children('.az-expander')[0];
-				$(expander).removeClass('state-icon-expand');
-				$(expander).addClass('state-icon-collapse');
-				$(targetExpanded).fadeIn();
+				var expander = $(target).children('.project-expander-icon')[0];
+				$(expander).removeClass('glyphicon-chevron-down');
+				$(expander).addClass('glyphicon-chevron-up');
+				$(targetExpanded).slideDown();
 			}
 		}
 		else {
@@ -75,10 +75,10 @@ azkaban.ProjectTableView = Backbone.View.extend({
 				createFlowListFunction(data, targetTBody);
 				
 				$(target).addClass('collapsed').removeClass('wait');
-				var expander = $(target).children('.az-expander')[0];
-				$(expander).removeClass('state-icon-expand');
-				$(expander).addClass('state-icon-collapse');
-				$(targetExpanded).fadeIn("fast");
+				var expander = $(target).children('.project-expander-icon')[0];
+				$(expander).removeClass('glyphicon-chevron-down');
+				$(expander).addClass('glyphicon-chevron-up');
+				$(targetExpanded).slideDown();
 			};
 			
 			$.get(requestURL, request, successHandler, "json");
@@ -201,13 +201,13 @@ $(function() {
 	});
 	
 	projectTableView = new azkaban.ProjectTableView({
-		el: $('#all-jobs')
+		el: $('#project-list')
 	});
 	
-	tableSorterView = new azkaban.TableSorter({
+	/*tableSorterView = new azkaban.TableSorter({
 		el: $('#all-jobs'), 
 		initialSort: $('.tb-name')
-	});
+	});*/
 	
 	uploadView = new azkaban.CreateProjectView({
 		el: $('#create-project-modal')

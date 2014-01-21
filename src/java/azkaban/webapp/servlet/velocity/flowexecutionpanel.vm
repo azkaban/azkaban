@@ -14,12 +14,12 @@
  * the License.
 *#
 
-			<script type="text/javascript" src="${context}/js/azkaban.layout.js"></script>
-			<script type="text/javascript" src="${context}/js/svgNavigate.js"></script>
-			<script type="text/javascript" src="${context}/js/azkaban.context.menu.js"></script>
-			<script type="text/javascript" src="${context}/js/azkaban.common.utils.js"></script>
-			<script type="text/javascript" src="${context}/js/azkaban.svg.graph.view.js"></script>
-			<script type="text/javascript" src="${context}/js/azkaban.flow.execute.view.js"></script>
+			<script type="text/javascript" src="${context}/js/azkaban/util/layout.js"></script>
+			<script type="text/javascript" src="${context}/js/azkaban/util/svg-navigate.js"></script>
+			<script type="text/javascript" src="${context}/js/azkaban/view/context-menu.js"></script>
+			<script type="text/javascript" src="${context}/js/azkaban/util/common.js"></script>
+			<script type="text/javascript" src="${context}/js/azkaban/view/svg-graph.js"></script>
+			<script type="text/javascript" src="${context}/js/azkaban/view/flow-execute.js"></script>
 
 			<div class="modal modal-wide" id="execute-flow-panel">
 				<div class="modal-dialog">
@@ -29,7 +29,7 @@
 							<h4 class="modal-title" id="execute-flow-panel-title"></h4>
 						</div><!-- /modal-header -->
 						<div class="modal-body row">
-							<div class="col-md-4">
+							<div class="col-xs-4">
 								<ul class="nav nav-pills nav-stacked" id="graph-options">
 									<li id="flow-option" viewpanel="svg-div-custom">
 										<a href="#">Flow View</a>
@@ -52,8 +52,8 @@
 										<div class="menu-caption">Add temporary flow parameters that are used to override global settings for each job.</div>
 									</li>
 								</ul>
-							</div><!-- /col-md-4 -->
-							<div class="col-md-8">
+							</div><!-- /col-xs-4 -->
+							<div class="col-xs-8">
 								<div id="execution-graph-options-panel">
 
 ## SVG graph panel.
@@ -181,7 +181,7 @@
 									</div>
 
 								</div><!-- /execution-graph-options-panel -->
-							</div><!-- /col-md-8 -->
+							</div><!-- /col-xs-8 -->
 						</div><!-- /modal-body -->
 
 						<div class="modal-footer">
@@ -199,7 +199,7 @@
 #end
 *#
 							<button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
-							<button type="button" class="btn btn-success" id="execute-btn">Execute</button>
+							<button type="button" class="btn btn-primary" id="execute-btn">Execute</button>
 						</div><!-- /modal-footer -->
 					</div><!-- /modal-content -->
 				</div><!-- /modal-dialog -->

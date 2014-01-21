@@ -21,7 +21,7 @@
 #parse ("azkaban/webapp/servlet/velocity/style.vm")
 #parse ("azkaban/webapp/servlet/velocity/javascript.vm")
 
-		<script type="text/javascript" src="${context}/js/azkaban.jobedit.view.js"></script>
+		<script type="text/javascript" src="${context}/js/azkaban/view/job-edit.js"></script>
 		<script type="text/javascript">
 			var contextURL = "${context}";
 			var currentTime = ${currentTime};
@@ -47,10 +47,10 @@
 		<div class="az-page-header">
 			<div class="container-full">
         <div class="row">
-          <div class="col-lg-6">
+          <div class="col-xs-6">
             <h1><a href="${context}/manager?project=${project.name}&flow=${flowid}&job=${jobid}">Job <small>$jobid</small></a></h1>
           </div>
-          <div class="col-lg-6">
+          <div class="col-xs-6">
             <div class="pull-right az-page-header-form">
               <a href="${context}/manager?project=${project.name}&job=$jobid&history" class="btn btn-info btn-sm">History</a>
             </div>
@@ -102,7 +102,7 @@
 							</tbody>
 						</table>
 					</div>
-				</div><!-- /col-lg-8 -->
+				</div><!-- /col-xs-8 -->
 				<div class="col-xs-6 col-sm-3 sidebar-offcanvas">
 					<div class="well" id="job-summary">
 						<h3>Job <small>$jobid</small></h3>
@@ -158,7 +158,7 @@
 	#end
 						</ul>
 					</div><!-- /panel -->
-				</div><!-- /col-lg-4 -->
+				</div><!-- /col-xs-4 -->
 			</div><!-- /row -->
 
 ## Edit job modal.

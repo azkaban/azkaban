@@ -21,8 +21,8 @@
 #parse("azkaban/webapp/servlet/velocity/style.vm")
 #parse("azkaban/webapp/servlet/velocity/javascript.vm")
 
-		<script type="text/javascript" src="${context}/js/azkaban.table.sort.js"></script>
-		<script type="text/javascript" src="${context}/js/azkaban.main.view.js"></script>
+		<script type="text/javascript" src="${context}/js/azkaban/view/table-sort.js"></script>
+		<script type="text/javascript" src="${context}/js/azkaban/view/main.js"></script>
 		<script type="text/javascript">
 			var contextURL = "${context}";
 			var currentTime = ${currentTime};
@@ -41,20 +41,16 @@
 		<div class="az-page-header">
       <div class="container-full">
         <div class="row">
-          <div class="col-lg-6">
-#if ($allProjects)
-            <h1><a href="${context}/index">All Projects</a></h1>
-#else
-            <h1><a href="${context}/index">My Projects</a></h1>
-#end
+          <div class="header-title">
+            <h1><a href="${context}/index">Projects</a></h1>
           </div>
-          <div class="col-lg-6">
+          <div class="header-control">
             <form id="search-form" method="get" class="form-inline az-page-header-form" role="form">
               <input type="hidden" name="doaction" value="search">
-#if ($allProjects)
+#if ($viewProjects == 'all')
               <input type="hidden" name="all" value="true">				
 #end
-              <div class="form-group col-md-9">
+              <div class="form-group col-xs-9">
                 <div class="input-group">
                   <input id="search-textbox" type="text" placeholder="Project name containing..." value=#if($search_term) ${search_term} #else "" #end class="form-control input-sm" name="searchterm">
                   <span class="input-group-btn">
@@ -63,7 +59,7 @@
                 </div>
               </div>
 #if (!$hideCreateProject)
-              <div class="form-group col-md-3" id="create-project">
+              <div class="form-group col-xs-3" id="create-project">
 ## Note: The Create Project button is not completely flush to the right because
 ## form-group has padding.
                 <div class="pull-right">
@@ -83,50 +79,50 @@
 
 ## Table of projects.
 
-			<div class="row">
-				<div class="col-lg-12">
-          <table class="table table-condensed table-striped table-bordered table-hover" id="all-jobs">
-            <thead>
-              <tr>
-                <th class="tb-name">Name</th>
-                <th class="tb-up-date">Modified Date</th>
-                <th class="tb-owner">Modified By</th>
-              </tr>
-            </thead>
-            <tbody>
+			<div class="row row-offcanvas row-offcanvas-left">
+        <div class="col-xs-6 col-sm-3 sidebar-offcanvas graph-sidebar">
+          <ul class="nav nav-pills nav-stacked">
+            <li#if ($viewProjects == 'personal') class="active"#end><a href="${context}/index">Personal</a></li>
+            <li#if ($viewProjects == 'group') class="active"#end><a href="${context}/index?group">Group</a></li>
+            <li#if ($viewProjects == 'all') class="active"#end><a href="${context}/index?all">All</a></li>
+          </ul>
+        </div>
+				<div class="col-xs-12 col-sm-9 col-content">
 #if (!$projects.isEmpty())
+          <ul id="project-list">
 	#foreach ($project in $projects)
-              <tr class="az-project-row">
-                <td id="${project.name}" class="tb-name project-expand expanded">
-                  <span class="state-icon state-icon-expand az-expander"></span>
-                  <a href="${context}/manager?project=${project.name}">$project.name</a>
-                </td>
-                <td class="tb-up-date">$utils.formatDate($project.lastModifiedTimestamp)</td>
-                <td class="tb-owner">$project.lastModifiedUser</td>
-              </tr>
-              <tr class="childrow collapse" id="${project.name}-child">
-                <td colspan="3">
-                  <table class="table table-bordered">
-                    <thead>
-                      <tr>
-                        <th class="tb-name">Flows</th>
-                      </tr>
-                    </thead>
-                    <tbody id="${project.name}-tbody">
-                    </tbody>
-                  </table>
-                </td>
-              </tr>
-	#end
+            <li>
+              <div class="project-info">
+                <h4><a href="${context}/manager?project=${project.name}">$project.name</a></h4>
+                <p class="project-description">$project.description</p>
+                <p class="project-last-modified">Last modified on <strong>$utils.formatDate($project.lastModifiedTimestamp)</strong> by <strong>$project.lastModifiedUser</strong>.</p>
+              </div>
+              <div class="project-expander" id="${project.name}">
+                <span class="glyphicon glyphicon-chevron-down project-expander-icon"></span>
+              </div>
+              <div class="clearfix"></div>
+              <div class="project-flows" id="${project.name}-child">
+                <table class="table">
+                  <thead>
+                    <tr>
+                      <th class="tb-name">Flows</th>
+                    </tr>
+                  </thead>
+                  <tbody id="${project.name}-tbody">
+                  </tbody>
+                </table>
+              </div>
+            </li>
+  #end
+          </ul>
 #else
-              <tr>
-                <td colspan="3">No viewable projects found.</td>
-              </tr>
+          <div class="alert alert-default">
+            <h4>No Viewable Projects</h4>
+            <p>Click Create Project to create a new project.</p>
+          </div>
 #end
-            </tbody>
-          </table>
-				</div>
-			</div>
+        </div>
+      </div>
 
 ## Modal dialog to be displayed to create a new project.
 

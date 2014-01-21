@@ -295,6 +295,7 @@ azkaban.ExecutionsView = Backbone.View.extend({
 var summaryView;
 azkaban.SummaryView = Backbone.View.extend({
 	events: {
+    'click #analyze-btn': 'fetchLastRun'
 	},
 	
 	initialize: function(settings) {
@@ -303,7 +304,6 @@ azkaban.SummaryView = Backbone.View.extend({
 		
 		this.fetchDetails();
     this.fetchSchedule();
-		this.fetchLastRun();
 		this.model.trigger('render');
 	},
 
@@ -316,10 +316,7 @@ azkaban.SummaryView = Backbone.View.extend({
     };
 		var model = this.model;
     var successHandler = function(data) {
-      console.log(data);
-      model.set({
-        'jobTypes': data.jobTypes
-      });
+      model.set({ 'jobTypes': data.jobTypes });
       model.trigger('render');
     };
     $.get(requestURL, requestData, successHandler, 'json');
@@ -341,7 +338,23 @@ azkaban.SummaryView = Backbone.View.extend({
 	},
 
 	fetchLastRun: function() {
-
+		var requestURL = contextURL + "/manager";
+    var requestData = {
+      'ajax': 'fetchLastSuccessfulFlowExecution',
+      'project': projectName,
+      'flow': flowId
+    };
+    var view = this;
+    var successHandler = function(data) {
+      if (data.success == "false" || data.execId == null) {
+        dust.render("flowstats-no-data", data, function(err, out) {
+          $('#flow-stats-container').html(out);
+        });
+        return;
+      }
+      flowStatsView.show(data.execId);
+    };
+    $.get(requestURL, requestData, successHandler, 'json');
 	},
 
 	handleChangeView: function(evt) {
@@ -352,9 +365,7 @@ azkaban.SummaryView = Backbone.View.extend({
       projectName: projectName,
 			flowName: flowId,
       jobTypes: this.model.get('jobTypes'),
-			general: this.model.get('general'),
 			schedule: this.model.get('schedule'),
-			lastRun: this.model.get('lastRun')
 		};
 		dust.render("flowsummary", data, function(err, out) {
 			$('#summary-view-content').html(out);
@@ -417,6 +428,11 @@ azkaban.ExecutionModel = Backbone.Model.extend({});
 var summaryModel;
 azkaban.SummaryModel = Backbone.Model.extend({});
 
+var flowStatsView;
+var flowStatsModel;
+
+var executionsTimeGraphView;
+
 var mainSvgGraphView;
 
 $(function() {
@@ -433,7 +449,13 @@ $(function() {
 		el: $('#summaryView'),
 		model: summaryModel
 	});
-	
+
+  flowStatsModel = new azkaban.FlowStatsModel();
+	flowStatsView = new azkaban.FlowStatsView({
+		el: $('#flow-stats-container'),
+		model: flowStatsModel
+	});
+
   flowTabView = new azkaban.FlowTabView({
 		el: $('#headertabs'), 
 		selectedView: selected 
@@ -454,6 +476,12 @@ $(function() {
 		el: $('#jobList'), 
 		model: graphModel, 
 		contextMenuCallback: exJobClickCallback
+	});
+	
+  executionsTimeGraphView = new azkaban.TimeGraphView({
+		el: $('#timeGraph'), 
+		model: executionModel,
+    modelField: 'executions'
 	});
 	
 	var requestURL = contextURL + "/manager";

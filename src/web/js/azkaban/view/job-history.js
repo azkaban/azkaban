@@ -1,4 +1,4 @@
-#*
+/*
  * Copyright 2012 LinkedIn Corp.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
@@ -12,10 +12,27 @@
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
  * License for the specific language governing permissions and limitations under
  * the License.
-*#
+ */
 
-		<script type="text/javascript" src="${context}/js/jquery/jquery-1.9.1.js"></script>    
-		<script type="text/javascript" src="${context}/js/bootstrap.min.js"></script>    
-		<script type="text/javascript" src="${context}/js/underscore-1.4.4-min.js"></script>
-		<script type="text/javascript" src="${context}/js/azkaban/namespace.js"></script>
-		<script type="text/javascript" src="${context}/js/backbone-0.9.10-min.js"></script>
+$.namespace('azkaban');
+
+var jobHistoryView;
+
+var dataModel;
+azkaban.DataModel = Backbone.Model.extend({});
+
+$(function() {
+	var selected;
+	var series = dataSeries;
+	dataModel = new azkaban.DataModel();
+	dataModel.set({
+		"data": series
+	});
+  dataModel.trigger('render');
+
+	jobHistoryView = new azkaban.TimeGraphView({
+		el: $('#timeGraph'), 
+		model: dataModel,
+    modelField: "data"
+	});
+});

@@ -36,3 +36,22 @@ function hasClass(el, name) {
 	}
 	return new RegExp('(\\s|^)'+name+'(\\s|$)').test(classes);
 }
+
+function sizeStrToBytes(str) {
+  if (str.length == 0) {
+    return 0;
+  }
+  var unit = str.charAt(str.length - 1)
+  if (!isNaN(unit)) {
+    return parseInt(str);
+  }
+  var val = parseInt(str.substring(0, str.length - 1));
+  unit = unit.toUpperCase();
+  if (unit == 'M') {
+    val *= 0x100000;
+  }
+  else if (unit == 'G') {
+    val *= 0x40000000;
+  }
+  return val;
+}
