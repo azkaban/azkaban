@@ -1,0 +1,248 @@
+<!DOCTYPE html> 
+<html lang="en">
+	<head>
+		<meta charset="utf-8">
+		<title></title>
+
+				<link rel="shortcut icon" href="/img/favicon.ico" type="image/x-icon">
+    <!-- Bootstrap core CSS -->
+    <link href="/css/bootstrap.css" rel="stylesheet">
+		<link href="/css/azkaban.css" rel="stylesheet">
+
+		<script type="text/javascript" src="/js/jquery-1.9.1.js"></script>    
+		<script type="text/javascript" src="/js/bootstrap.min.js"></script>    
+
+
+	</head>
+	<body>
+		    <script type="text/javascript">
+      function navMenuClick(url) {
+        window.location.href = url;
+      }
+    </script>
+    <div class="navbar navbar-inverse navbar-static-top">
+      <div class="container">
+				<div class="navbar-header">
+					<button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+						<span class="icon-bar"></span>
+						<span class="icon-bar"></span>
+						<span class="icon-bar"></span>
+					</button>
+					<div class="navbar-logo">
+						<a href="/">Azkaban</a>
+					</div>
+        </div>
+        <div class="navbar-collapse collapse">
+          <ul class="nav navbar-nav">
+						<li onClick="navMenuClick('overview.html')"><a href="overview.html">Overview</a></li>
+						<li class="active" onClick="navMenuClick('/')"><a href="/">Documentation</a></li>
+						<li onClick="navMenuClick('downloads.html')"><a href="downloads.html">Downloads</a></li>
+						<li onClick="navMenuClick('license.html')"><a href="license.html">License</a></li>
+						<li onClick="navMenuClick('contact.html')"><a href="contact.html">Contact</a></li>
+          </ul>
+        </div><!--/.nav-collapse -->
+      </div>
+    </div>
+
+
+
+		<div class="az-page-header">
+			<div class="container">
+				<div class="row">
+					<div class="col-lg-12">
+						<h1></h1>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<div class="container">
+			<div class="row">
+				<div class="col-md-3">
+										<div class="bs-sidebar hidden-print" role="complementary">
+						<ul class="bs-sidenav nav">
+							<li>
+								<a href="#getting-started">Getting Started</a>
+								<ul class="nav">
+									<li><a href="#database-setup">Database Setup</a></li>
+									<li><a href="#webserver-setup">Web Server Setup</a></li>
+									<li><a href="#executor-setup">Executor Setup</a></li>
+									<li><a href="#plugin-setup">Plugin Setup</a></li>
+									<li><a href="#upgrade-21">Upgrade from 2.1</a></li>
+								</ul>
+							</li>
+							<li>
+								<a href="#configuration">Configuration</a>
+								<ul class="nav">
+									<li><a href="#azkaban-webserver">AzkabanWebServer</a></li>
+									<li><a href="#azkaban-execserver">AzkabanExecutorServer</a></li>
+								</ul>
+							</li>
+							<li>
+								<a href="#user-manager">User Manager</a>
+								<ul class="nav">
+									<li><a href="#xml-usermanager">XmlUserManager</a></li>
+									<li><a href="#custom-usermanager">Custom UserManager</a></li>
+								</ul>
+							</li>
+							<li>
+								<a href="#creating-flows">Creating Flows</a>
+								<ul class="nav">
+									<li><a href="#job-conf">Job Configuration</a></li>
+									<li><a href="#builtin-jobtypes">Built-in JobTypes</a></li>
+								</ul>
+							</li>
+							<li>
+								<a href="#using-azkaban">Using Azkaban</a>
+								<ul class="nav">
+									<li><a href="#create-projects">Create Projects</a></li>
+									<li><a href="#upload-projects">Upload Projects</a></li>
+									<li><a href="#flow-view">Flow View</a></li>
+									<li><a href="#project-permissions">Project Permissions</a></li>
+									<li><a href="#executing-flows">Executing Flows</a></li>
+									<li><a href="#executions">Executions</a></li>
+									<li><a href="#job-page">Job Page</a></li>
+									<li><a href="#ajax-api">AJAX API</a></li>
+								</ul>
+							</li>
+							<li>
+								<a href="#plugins">Plugins</a>
+								<ul class="nav">
+									<li><a href="#hadoopsecuritymanager">HadoopSecurityManager</a></li>
+									<li><a href="#hdfs-browser">HDFS Browser</a></li>
+									<li><a href="#jobtype-plugins">JobType Plugins</a></li>
+									<li>
+										<a href="#jobtypes">JobTypes</a>
+										<ul class="nav">
+											<li><a href="#command-type">Command</a></li>
+											<li><a href="#java-type">Java</a></li>
+											<li><a href="#hadoopjava-type">Hadoop Java</a></li>
+											<li><a href="#pig-type">Pig</a></li>
+											<li><a href="#hive-type">Hive</a></li>
+											<li><a href="#voldemortbuildandpush-type">VoldemortBuildAndPush</a></li>
+											<li><a href="#create-types">Create Types</a></li>
+										</ul>
+									</li>
+								</ul>
+							</li>
+						</ul>
+					</div>
+
+
+				</div>
+				<div class="col-md-9">
+					<h1 id="executing_flow">Executing Flow</h1>
+
+<p>From the <a href="./projectflowview.html">Flow View</a> or the Project Page, you can trigger a job to be executed. You will see an executing panel pop-up.</p>
+<hr />
+<h2 id="executing_flow_view">Executing Flow View</h2>
+
+<p>From the Flow View panel, you can right click on the graph and disable or enable jobs. Disabled jobs will be skipped during execution as if their dependencies have been met. Disabled jobs will appear translucent.</p>
+
+<p><img class='shadowimg' title='Executing Flow View' src='./images/executeflowpanel.png' ALT='Executing Flow View' width='450' /></p>
+<hr />
+<h2 id="notification_options">Notification Options</h2>
+
+<p>The notification options allow users to change the flow’s success or failure notification behavior.</p>
+
+<h4 id="notify_on_failure">Notify on Failure</h4>
+
+<ul>
+<li><strong>First Failure</strong> - Send failure emails after the first failure is detected.</li>
+
+<li><strong>Flow Finished</strong> - If the flow has a job that has failed, it will send failure emails after all jobs in the flow have finished.</li>
+</ul>
+
+<h4 id="email_overrides">Email overrides</h4>
+
+<p>Azkaban will use the default notification emails set in the final job in the flow. If overridden, a user can change the email addresses where failure or success emails are sent. The list can be delimited by commas, whitespace or a semi-colon.</p>
+
+<p><img class='shadowimg' title='Notification Options' src='./images/executeflownotify.png' ALT='Notification Options' width='450' /></p>
+<hr />
+<h2 id="failure_options">Failure Options</h2>
+
+<p>When a job in a flow fails, you are able to control how the rest of the flow will succeed.</p>
+
+<ul>
+<li><strong>Finish Current Running</strong> will finish the jobs that are currently running, but it will not start new jobs. The flow will be put in the <em>FAILED FINISHING</em> state and be set to FAILED once everything completes.</li>
+
+<li><strong>Cancel All</strong> will immediately kill all running jobs and set the state of the executing flow to FAILED.</li>
+
+<li><strong>Finish All Possible</strong> will keep executing jobs in the flow as long as its dependencies are met. The flow will be put in the <em>FAILED FINISHING</em> state and be set to FAILED once everything completes.</li>
+</ul>
+
+<p><img class='shadowimg' title='Failure Options' src='./images/executeflowfailure.png' ALT='Failure Options' width='450' /></p>
+<hr />
+<h2 id="concurrent_options">Concurrent Options</h2>
+
+<p>If the flow execution is invoked while the flow is concurrently executing, several options can be set.</p>
+
+<ul>
+<li><strong>Skip Execution</strong> option will not run the flow if its already running.</li>
+
+<li><strong>Run Concurrently</strong> option will run the flow regardless of if its running. Executions are given different working directories.</li>
+
+<li><strong>Pipeline</strong> runs the the flow in a manner that the new execution will not overrun the concurrent execution.
+<ul>
+<li>Level 1 : blocks executing <strong>job A</strong> until the the previous flow’s <strong>job A</strong> has completed.</li>
+
+<li>Level 2 : blocks executing <strong>job A</strong> until the the children of the previous flow’s <strong>job A</strong> has completed. This is useful if you need to run your flows a few steps behind an already executing flow.</li>
+</ul>
+</li>
+</ul>
+
+<p><img class='shadowimg' title='Concurrent Options' src='./images/executeflowconcurrent.png' ALT='Concurrent Options' width='450' /></p>
+<hr />
+<h2 id="flow_parameters">Flow Parameters</h2>
+
+<p>Allows users to override flow parameters. The flow parameters override properties that jobs inherit from shared files (specified in <em>.properties</em> files), but will not override properties set in the <em>.job</em> file itself.</p>
+
+<p><img class='shadowimg' title='Flow Parameters Options' src='./images/executeflowparameters.png' ALT='Flow Parameters' width='450' /></p>
+				</div>
+			</div>
+		</div>
+
+		<script>
+			$(function(){
+				$(document.body).scrollspy({
+					target: '.bs-sidebar'
+				});
+			 // back to top
+				setTimeout(function () {
+					var $sideBar = $('.bs-sidebar')
+					$sideBar.affix({
+						offset: {
+							top: function () {
+								var navOuterHeight = $('.navbar').height();
+								var headerHeight = $('.az-page-header').height();
+
+								return (this.top = navOuterHeight + headerHeight);
+							},
+							bottom: function () {
+								return (this.bottom = $('.page-footer').outerHeight(true));
+							}
+						}
+					});
+				}, 100)
+			});
+		</script>
+
+				<div class="page-footer">
+			<div class="container">
+				<div class="row">
+					<div class="col-xs-12">
+						<ul class="footer-nav">
+							<li><a href="/">Documentation</a></li>
+							<li><a href="downloads.html">Downloads</a></li>
+							<li><a href="https://github.com/azkaban/azkaban2/issues">Issues</a></li>
+							<li><a href="https://github.com/azkaban/azkaban2">Repository</a></li>
+						</ul>
+					</div>
+				</div>
+			</div>
+		</div>
+
+
+	</body>
+</html>
+

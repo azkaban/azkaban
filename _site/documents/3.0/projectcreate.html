@@ -1,0 +1,198 @@
+<!DOCTYPE html> 
+<html lang="en">
+	<head>
+		<meta charset="utf-8">
+		<title></title>
+
+				<link rel="shortcut icon" href="/img/favicon.ico" type="image/x-icon">
+    <!-- Bootstrap core CSS -->
+    <link href="/css/bootstrap.css" rel="stylesheet">
+		<link href="/css/azkaban.css" rel="stylesheet">
+
+		<script type="text/javascript" src="/js/jquery-1.9.1.js"></script>    
+		<script type="text/javascript" src="/js/bootstrap.min.js"></script>    
+
+
+	</head>
+	<body>
+		    <script type="text/javascript">
+      function navMenuClick(url) {
+        window.location.href = url;
+      }
+    </script>
+    <div class="navbar navbar-inverse navbar-static-top">
+      <div class="container">
+				<div class="navbar-header">
+					<button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+						<span class="icon-bar"></span>
+						<span class="icon-bar"></span>
+						<span class="icon-bar"></span>
+					</button>
+					<div class="navbar-logo">
+						<a href="/">Azkaban</a>
+					</div>
+        </div>
+        <div class="navbar-collapse collapse">
+          <ul class="nav navbar-nav">
+						<li onClick="navMenuClick('overview.html')"><a href="overview.html">Overview</a></li>
+						<li class="active" onClick="navMenuClick('/')"><a href="/">Documentation</a></li>
+						<li onClick="navMenuClick('downloads.html')"><a href="downloads.html">Downloads</a></li>
+						<li onClick="navMenuClick('license.html')"><a href="license.html">License</a></li>
+						<li onClick="navMenuClick('contact.html')"><a href="contact.html">Contact</a></li>
+          </ul>
+        </div><!--/.nav-collapse -->
+      </div>
+    </div>
+
+
+
+		<div class="az-page-header">
+			<div class="container">
+				<div class="row">
+					<div class="col-lg-12">
+						<h1></h1>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<div class="container">
+			<div class="row">
+				<div class="col-md-3">
+										<div class="bs-sidebar hidden-print" role="complementary">
+						<ul class="bs-sidenav nav">
+							<li>
+								<a href="#getting-started">Getting Started</a>
+								<ul class="nav">
+									<li><a href="#database-setup">Database Setup</a></li>
+									<li><a href="#webserver-setup">Web Server Setup</a></li>
+									<li><a href="#executor-setup">Executor Setup</a></li>
+									<li><a href="#plugin-setup">Plugin Setup</a></li>
+									<li><a href="#upgrade-21">Upgrade from 2.1</a></li>
+								</ul>
+							</li>
+							<li>
+								<a href="#configuration">Configuration</a>
+								<ul class="nav">
+									<li><a href="#azkaban-webserver">AzkabanWebServer</a></li>
+									<li><a href="#azkaban-execserver">AzkabanExecutorServer</a></li>
+								</ul>
+							</li>
+							<li>
+								<a href="#user-manager">User Manager</a>
+								<ul class="nav">
+									<li><a href="#xml-usermanager">XmlUserManager</a></li>
+									<li><a href="#custom-usermanager">Custom UserManager</a></li>
+								</ul>
+							</li>
+							<li>
+								<a href="#creating-flows">Creating Flows</a>
+								<ul class="nav">
+									<li><a href="#job-conf">Job Configuration</a></li>
+									<li><a href="#builtin-jobtypes">Built-in JobTypes</a></li>
+								</ul>
+							</li>
+							<li>
+								<a href="#using-azkaban">Using Azkaban</a>
+								<ul class="nav">
+									<li><a href="#create-projects">Create Projects</a></li>
+									<li><a href="#upload-projects">Upload Projects</a></li>
+									<li><a href="#flow-view">Flow View</a></li>
+									<li><a href="#project-permissions">Project Permissions</a></li>
+									<li><a href="#executing-flows">Executing Flows</a></li>
+									<li><a href="#executions">Executions</a></li>
+									<li><a href="#job-page">Job Page</a></li>
+									<li><a href="#ajax-api">AJAX API</a></li>
+								</ul>
+							</li>
+							<li>
+								<a href="#plugins">Plugins</a>
+								<ul class="nav">
+									<li><a href="#hadoopsecuritymanager">HadoopSecurityManager</a></li>
+									<li><a href="#hdfs-browser">HDFS Browser</a></li>
+									<li><a href="#jobtype-plugins">JobType Plugins</a></li>
+									<li>
+										<a href="#jobtypes">JobTypes</a>
+										<ul class="nav">
+											<li><a href="#command-type">Command</a></li>
+											<li><a href="#java-type">Java</a></li>
+											<li><a href="#hadoopjava-type">Hadoop Java</a></li>
+											<li><a href="#pig-type">Pig</a></li>
+											<li><a href="#hive-type">Hive</a></li>
+											<li><a href="#voldemortbuildandpush-type">VoldemortBuildAndPush</a></li>
+											<li><a href="#create-types">Create Types</a></li>
+										</ul>
+									</li>
+								</ul>
+							</li>
+						</ul>
+					</div>
+
+
+				</div>
+				<div class="col-md-9">
+					<h1 id="create_projects">Create Projects</h1>
+
+<p>After logging onto Azkaban, you will Projects page. This page will show you a list of all the projects that you have read permissions on. Projects where only group permissions as or those with a role with READ or ADMIN will not appear.</p>
+
+<p><img class='shadowimg' title='Empty Project Page' src='./images/emptyprojectpage.png' ALT='Project Page' width='400' /></p>
+
+<p>If you are just starting out, the project page may be empty. However you can see all the existing projects by clicking on <strong>All Projects</strong>.</p>
+
+<p>Clicking on <strong>Create Projects</strong> will pop open a dialog box. Enter in a unique project name and description of the project. The description can be changed in the future, but the project name cannot be. If you don’t see this button, it is likely that the ability to create new projects has been locked down except for users with the proper permissions.</p>
+
+<p><img class='shadowimg' title='Create project' src='./images/createproject.png' ALT='Create project' width='400' /></p>
+
+<p>After creating your project, an empty project page will appear. You will automatically be given <em>admin</em> status for this project. Add and remove permissions by clicking on the <a href="./projectpermissions.html">Permissions Button</a></p>
+
+<p><img class='shadowimg' title='New Project' src='./images/newprojectpage.png' ALT='New Project' width='400' /></p>
+
+<p>If you have the proper permissions (which you should if you created the project), you can delete the project, update the description, upload files and view the project logs from this page.</p>
+				</div>
+			</div>
+		</div>
+
+		<script>
+			$(function(){
+				$(document.body).scrollspy({
+					target: '.bs-sidebar'
+				});
+			 // back to top
+				setTimeout(function () {
+					var $sideBar = $('.bs-sidebar')
+					$sideBar.affix({
+						offset: {
+							top: function () {
+								var navOuterHeight = $('.navbar').height();
+								var headerHeight = $('.az-page-header').height();
+
+								return (this.top = navOuterHeight + headerHeight);
+							},
+							bottom: function () {
+								return (this.bottom = $('.page-footer').outerHeight(true));
+							}
+						}
+					});
+				}, 100)
+			});
+		</script>
+
+				<div class="page-footer">
+			<div class="container">
+				<div class="row">
+					<div class="col-xs-12">
+						<ul class="footer-nav">
+							<li><a href="/">Documentation</a></li>
+							<li><a href="downloads.html">Downloads</a></li>
+							<li><a href="https://github.com/azkaban/azkaban2/issues">Issues</a></li>
+							<li><a href="https://github.com/azkaban/azkaban2">Repository</a></li>
+						</ul>
+					</div>
+				</div>
+			</div>
+		</div>
+
+
+	</body>
+</html>
+

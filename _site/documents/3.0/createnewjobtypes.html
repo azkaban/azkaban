@@ -1,0 +1,208 @@
+<!DOCTYPE html> 
+<html lang="en">
+	<head>
+		<meta charset="utf-8">
+		<title></title>
+
+				<link rel="shortcut icon" href="/img/favicon.ico" type="image/x-icon">
+    <!-- Bootstrap core CSS -->
+    <link href="/css/bootstrap.css" rel="stylesheet">
+		<link href="/css/azkaban.css" rel="stylesheet">
+
+		<script type="text/javascript" src="/js/jquery-1.9.1.js"></script>    
+		<script type="text/javascript" src="/js/bootstrap.min.js"></script>    
+
+
+	</head>
+	<body>
+		    <script type="text/javascript">
+      function navMenuClick(url) {
+        window.location.href = url;
+      }
+    </script>
+    <div class="navbar navbar-inverse navbar-static-top">
+      <div class="container">
+				<div class="navbar-header">
+					<button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+						<span class="icon-bar"></span>
+						<span class="icon-bar"></span>
+						<span class="icon-bar"></span>
+					</button>
+					<div class="navbar-logo">
+						<a href="/">Azkaban</a>
+					</div>
+        </div>
+        <div class="navbar-collapse collapse">
+          <ul class="nav navbar-nav">
+						<li onClick="navMenuClick('overview.html')"><a href="overview.html">Overview</a></li>
+						<li class="active" onClick="navMenuClick('/')"><a href="/">Documentation</a></li>
+						<li onClick="navMenuClick('downloads.html')"><a href="downloads.html">Downloads</a></li>
+						<li onClick="navMenuClick('license.html')"><a href="license.html">License</a></li>
+						<li onClick="navMenuClick('contact.html')"><a href="contact.html">Contact</a></li>
+          </ul>
+        </div><!--/.nav-collapse -->
+      </div>
+    </div>
+
+
+
+		<div class="az-page-header">
+			<div class="container">
+				<div class="row">
+					<div class="col-lg-12">
+						<h1></h1>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<div class="container">
+			<div class="row">
+				<div class="col-md-3">
+										<div class="bs-sidebar hidden-print" role="complementary">
+						<ul class="bs-sidenav nav">
+							<li>
+								<a href="#getting-started">Getting Started</a>
+								<ul class="nav">
+									<li><a href="#database-setup">Database Setup</a></li>
+									<li><a href="#webserver-setup">Web Server Setup</a></li>
+									<li><a href="#executor-setup">Executor Setup</a></li>
+									<li><a href="#plugin-setup">Plugin Setup</a></li>
+									<li><a href="#upgrade-21">Upgrade from 2.1</a></li>
+								</ul>
+							</li>
+							<li>
+								<a href="#configuration">Configuration</a>
+								<ul class="nav">
+									<li><a href="#azkaban-webserver">AzkabanWebServer</a></li>
+									<li><a href="#azkaban-execserver">AzkabanExecutorServer</a></li>
+								</ul>
+							</li>
+							<li>
+								<a href="#user-manager">User Manager</a>
+								<ul class="nav">
+									<li><a href="#xml-usermanager">XmlUserManager</a></li>
+									<li><a href="#custom-usermanager">Custom UserManager</a></li>
+								</ul>
+							</li>
+							<li>
+								<a href="#creating-flows">Creating Flows</a>
+								<ul class="nav">
+									<li><a href="#job-conf">Job Configuration</a></li>
+									<li><a href="#builtin-jobtypes">Built-in JobTypes</a></li>
+								</ul>
+							</li>
+							<li>
+								<a href="#using-azkaban">Using Azkaban</a>
+								<ul class="nav">
+									<li><a href="#create-projects">Create Projects</a></li>
+									<li><a href="#upload-projects">Upload Projects</a></li>
+									<li><a href="#flow-view">Flow View</a></li>
+									<li><a href="#project-permissions">Project Permissions</a></li>
+									<li><a href="#executing-flows">Executing Flows</a></li>
+									<li><a href="#executions">Executions</a></li>
+									<li><a href="#job-page">Job Page</a></li>
+									<li><a href="#ajax-api">AJAX API</a></li>
+								</ul>
+							</li>
+							<li>
+								<a href="#plugins">Plugins</a>
+								<ul class="nav">
+									<li><a href="#hadoopsecuritymanager">HadoopSecurityManager</a></li>
+									<li><a href="#hdfs-browser">HDFS Browser</a></li>
+									<li><a href="#jobtype-plugins">JobType Plugins</a></li>
+									<li>
+										<a href="#jobtypes">JobTypes</a>
+										<ul class="nav">
+											<li><a href="#command-type">Command</a></li>
+											<li><a href="#java-type">Java</a></li>
+											<li><a href="#hadoopjava-type">Hadoop Java</a></li>
+											<li><a href="#pig-type">Pig</a></li>
+											<li><a href="#hive-type">Hive</a></li>
+											<li><a href="#voldemortbuildandpush-type">VoldemortBuildAndPush</a></li>
+											<li><a href="#create-types">Create Types</a></li>
+										</ul>
+									</li>
+								</ul>
+							</li>
+						</ul>
+					</div>
+
+
+				</div>
+				<div class="col-md-9">
+					<h1 id="create_your_own_jobtypes">Create Your Own Jobtypes</h1>
+
+<p>With plugin design of Azkaban job types, it is possible to extend Azkaban for various system environments. You should be able to execute any job under the same Azkaban work flow management and scheduling.</p>
+
+<p>Creating new job types is often times very easy. Here are several ways one can do it:</p>
+
+<h2 id="new_types_with_only_configuration_changes">New Types with only Configuration Changes</h2>
+
+<p>One doesn’t always need to write java code to create job types for end users. Often times, configuration changes of existing job types would create significantly different behavior to the end users. For example, in LinkedIn, apart from the <em>pig</em> types, we also have <em>pigLi</em> types that come with all the useful library jars pre-registered and imported. This way, normal users only need to provide their pig scripts, and the their own udf jars to Azkaban. The pig job should run as if it is run on the gateway machine from pig grunt. In comparison, if users are required to use the basic <em>pig</em> job types, they will need to package all the necessary jars in the Azkaban job package, and do all the register and import by themselves, which often poses some learning curve for new pig/Azkaban users.</p>
+
+<p>The same practice applies to most other job types. Admins should create or tailor job types to their specific company needs or clusters.</p>
+
+<h2 id="new_types_using_existing_job_types">New Types Using Existing Job Types</h2>
+
+<p>If one needs to create a different job type, a good starting point is to see if this can be done by using an existing job type. In hadoop land, this most often means the hadoopJava type. Essentially all hadoop jobs, from the most basic mapreduce job, to pig, hive, crunch, etc, are java programs that submit jobs to hadoop clusters. It is usually straight forward to create a job type that takes user input and runs a hadoopJava job.</p>
+
+<p>For exampke, one can take a look at the VoldemortBuildandPush job type. It will take in user input such as which cluster to push to, voldemort store name, etc, and runs hadoopJava job that does the work. For end users though, this is a VoldemortBuildandPush job type with which they only need to fill out the .job file to push data from hadoop to voldemort stores.</p>
+
+<p>The same applies to the hive type.</p>
+
+<h2 id="new_types_by_extending_existing_ones">New Types by Extending Existing Ones</h2>
+
+<p>For the most flexibility, one can always build new types by extending the existing ones. Azkaban uses reflection to load job types that implements the <em>job</em> interface, and tries to construct a sample object upon loading for basic testing. When executing a real job, Azkaban calls the <em>run</em> method to run the job, and <em>cancel</em> method to cancel it.</p>
+
+<p>For new hadoop job types, it is important to use the correct <em>hadoopsecuritymanager</em> class, which is also included in <em>azkaban-plugins</em> repo. This class handles talking to the hadoop cluster, and if needed, requests tokens for job execution or for name node communication.</p>
+
+<p>For better security, tokens should be requested in Azkaban main process and be written to a file. Before executing user code, the job type should implement a wrapper that picks up the token file, set it in the <em>Configuration</em> or <em>JobConf</em> object. Please refer to <em>HadoopJavaJob</em> and <em>HadoopPigJob</em> to see example usage.</p>
+				</div>
+			</div>
+		</div>
+
+		<script>
+			$(function(){
+				$(document.body).scrollspy({
+					target: '.bs-sidebar'
+				});
+			 // back to top
+				setTimeout(function () {
+					var $sideBar = $('.bs-sidebar')
+					$sideBar.affix({
+						offset: {
+							top: function () {
+								var navOuterHeight = $('.navbar').height();
+								var headerHeight = $('.az-page-header').height();
+
+								return (this.top = navOuterHeight + headerHeight);
+							},
+							bottom: function () {
+								return (this.bottom = $('.page-footer').outerHeight(true));
+							}
+						}
+					});
+				}, 100)
+			});
+		</script>
+
+				<div class="page-footer">
+			<div class="container">
+				<div class="row">
+					<div class="col-xs-12">
+						<ul class="footer-nav">
+							<li><a href="/">Documentation</a></li>
+							<li><a href="downloads.html">Downloads</a></li>
+							<li><a href="https://github.com/azkaban/azkaban2/issues">Issues</a></li>
+							<li><a href="https://github.com/azkaban/azkaban2">Repository</a></li>
+						</ul>
+					</div>
+				</div>
+			</div>
+		</div>
+
+
+	</body>
+</html>
+

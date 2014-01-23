@@ -1,0 +1,210 @@
+<!DOCTYPE html> 
+<html lang="en">
+	<head>
+		<meta charset="utf-8">
+		<title></title>
+
+				<link rel="shortcut icon" href="/img/favicon.ico" type="image/x-icon">
+    <!-- Bootstrap core CSS -->
+    <link href="/css/bootstrap.css" rel="stylesheet">
+		<link href="/css/azkaban.css" rel="stylesheet">
+
+		<script type="text/javascript" src="/js/jquery-1.9.1.js"></script>    
+		<script type="text/javascript" src="/js/bootstrap.min.js"></script>    
+
+
+	</head>
+	<body>
+		    <script type="text/javascript">
+      function navMenuClick(url) {
+        window.location.href = url;
+      }
+    </script>
+    <div class="navbar navbar-inverse navbar-static-top">
+      <div class="container">
+				<div class="navbar-header">
+					<button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+						<span class="icon-bar"></span>
+						<span class="icon-bar"></span>
+						<span class="icon-bar"></span>
+					</button>
+					<div class="navbar-logo">
+						<a href="/">Azkaban</a>
+					</div>
+        </div>
+        <div class="navbar-collapse collapse">
+          <ul class="nav navbar-nav">
+						<li onClick="navMenuClick('overview.html')"><a href="overview.html">Overview</a></li>
+						<li class="active" onClick="navMenuClick('/')"><a href="/">Documentation</a></li>
+						<li onClick="navMenuClick('downloads.html')"><a href="downloads.html">Downloads</a></li>
+						<li onClick="navMenuClick('license.html')"><a href="license.html">License</a></li>
+						<li onClick="navMenuClick('contact.html')"><a href="contact.html">Contact</a></li>
+          </ul>
+        </div><!--/.nav-collapse -->
+      </div>
+    </div>
+
+
+
+		<div class="az-page-header">
+			<div class="container">
+				<div class="row">
+					<div class="col-lg-12">
+						<h1></h1>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<div class="container">
+			<div class="row">
+				<div class="col-md-3">
+										<div class="bs-sidebar hidden-print" role="complementary">
+						<ul class="bs-sidenav nav">
+							<li>
+								<a href="#getting-started">Getting Started</a>
+								<ul class="nav">
+									<li><a href="#database-setup">Database Setup</a></li>
+									<li><a href="#webserver-setup">Web Server Setup</a></li>
+									<li><a href="#executor-setup">Executor Setup</a></li>
+									<li><a href="#plugin-setup">Plugin Setup</a></li>
+									<li><a href="#upgrade-21">Upgrade from 2.1</a></li>
+								</ul>
+							</li>
+							<li>
+								<a href="#configuration">Configuration</a>
+								<ul class="nav">
+									<li><a href="#azkaban-webserver">AzkabanWebServer</a></li>
+									<li><a href="#azkaban-execserver">AzkabanExecutorServer</a></li>
+								</ul>
+							</li>
+							<li>
+								<a href="#user-manager">User Manager</a>
+								<ul class="nav">
+									<li><a href="#xml-usermanager">XmlUserManager</a></li>
+									<li><a href="#custom-usermanager">Custom UserManager</a></li>
+								</ul>
+							</li>
+							<li>
+								<a href="#creating-flows">Creating Flows</a>
+								<ul class="nav">
+									<li><a href="#job-conf">Job Configuration</a></li>
+									<li><a href="#builtin-jobtypes">Built-in JobTypes</a></li>
+								</ul>
+							</li>
+							<li>
+								<a href="#using-azkaban">Using Azkaban</a>
+								<ul class="nav">
+									<li><a href="#create-projects">Create Projects</a></li>
+									<li><a href="#upload-projects">Upload Projects</a></li>
+									<li><a href="#flow-view">Flow View</a></li>
+									<li><a href="#project-permissions">Project Permissions</a></li>
+									<li><a href="#executing-flows">Executing Flows</a></li>
+									<li><a href="#executions">Executions</a></li>
+									<li><a href="#job-page">Job Page</a></li>
+									<li><a href="#ajax-api">AJAX API</a></li>
+								</ul>
+							</li>
+							<li>
+								<a href="#plugins">Plugins</a>
+								<ul class="nav">
+									<li><a href="#hadoopsecuritymanager">HadoopSecurityManager</a></li>
+									<li><a href="#hdfs-browser">HDFS Browser</a></li>
+									<li><a href="#jobtype-plugins">JobType Plugins</a></li>
+									<li>
+										<a href="#jobtypes">JobTypes</a>
+										<ul class="nav">
+											<li><a href="#command-type">Command</a></li>
+											<li><a href="#java-type">Java</a></li>
+											<li><a href="#hadoopjava-type">Hadoop Java</a></li>
+											<li><a href="#pig-type">Pig</a></li>
+											<li><a href="#hive-type">Hive</a></li>
+											<li><a href="#voldemortbuildandpush-type">VoldemortBuildAndPush</a></li>
+											<li><a href="#create-types">Create Types</a></li>
+										</ul>
+									</li>
+								</ul>
+							</li>
+						</ul>
+					</div>
+
+
+				</div>
+				<div class="col-md-9">
+					<h1 id="azkaban_hdfs_browser">Azkaban HDFS Browser</h1>
+
+<p>The Azkaban HDFS Browser is a plugin that allows you to view the HDFS FileSystem and decode several file types. It was originally created at LinkedIn to view Avro files, Linkedin’s BinaryJson format and text files. As this plugin matures further, we may add decoding of different file types in the future.</p>
+
+<p><img class='shadowimg' title='Azkaban HDFS Browser' src='./images/hdfsbrowser.png' ALT='Azkaban HDFS Browser' width='450' /></p>
+
+<h3 id="setup">Setup</h3>
+
+<p>Download the hdfs plugin from <a href="../../downloads.html">the download page</a> and extract it into the web server’s plugin’s directory. This is often <em>azkaban_web_server_dir/plugins/viewer/</em>.</p>
+
+<h3 id="users">Users</h3>
+
+<p>By default, Azkaban HDFS browser does a do-as to impersonate the logged-in user. Often times, data is created and handled by a headless account. To view these files, if user proxy is turned on, then the user can switch to the headless account as long as its validated by the UserManager.</p>
+
+<h3 id="settings">Settings</h3>
+
+<p>These are properties to configure the HDFS Browser on the AzkabanWebServer. They can be set in <em>azkaban_web_server_dir/plugins/viewer/hdfs/conf/plugin.properties</em>.</p>
+<table class="params"><thead><tr><th class="parameter">Parameter</th><th class="description"> Description</th><th class="default">Default</th></tr></thead><tbody><tr><td style="text-align: left;">viewer.name</td><td style="text-align: left;">The name of this viewer plugin</td><td style="text-align: left;">HDFS</td></tr>
+<tr><td style="text-align: left;">viewer.path</td><td style="text-align: left;">The path to this viewer plugin inside viewer directory.</td><td style="text-align: left;">hdfs</td></tr>
+<tr><td style="text-align: left;">viewer.order</td><td style="text-align: left;">The order of this viewer plugin amongst all viewer plugins.</td><td style="text-align: left;">1</td></tr>
+<tr><td style="text-align: left;">viewer.hidden</td><td style="text-align: left;">Whether this plugin should show up on the web UI.</td><td style="text-align: left;">false</td></tr>
+<tr><td style="text-align: left;">viewer.external.classpath</td><td style="text-align: left;">Extra jars this viewer plugin should load upon init.</td><td style="text-align: left;">extlib/*</td></tr>
+<tr><td style="text-align: left;">viewer.servlet.class</td><td style="text-align: left;">The main servelet class for this viewer plugin. Use <em>azkaban.viewer.hdfs.HdfsBrowserServlet</em> for hdfs browser</td><td style="text-align: left;"></td></tr>
+<tr><td style="text-align: left;">hadoop.security.manager.class</td><td style="text-align: left;">The class that handles talking to hadoop clusters. Use <em>azkaban.security.HadoopSecurityManager_H_1_0</em> for hadoop 1.x</td><td style="text-align: left;"></td></tr>
+<tr><td style="text-align: left;">azkaban.should.proxy</td><td style="text-align: left;">Whether Azkaban should proxy as individual user hadoop accounts on a secure cluster, defaults to false</td><td style="text-align: left;">false</td></tr>
+<tr><td style="text-align: left;">proxy.user</td><td style="text-align: left;">The Azkaban user configured with kerberos and hadoop. Similar to how oozie should be configured, for secure hadoop installations</td><td style="text-align: left;"></td></tr>
+<tr><td style="text-align: left;">proxy.keytab.location</td><td style="text-align: left;">The location of the keytab file with which Azkaban can authenticate with Kerberos for the specified proxy.user</td><td style="text-align: left;"></td></tr>
+<tr><td style="text-align: left;">allow.group.proxy</td><td style="text-align: left;">Whether to allow users in the same headless user group to view hdfs filesystem as that headless user</td><td style="text-align: left;">false</td></tr>
+</tbody></table>
+				</div>
+			</div>
+		</div>
+
+		<script>
+			$(function(){
+				$(document.body).scrollspy({
+					target: '.bs-sidebar'
+				});
+			 // back to top
+				setTimeout(function () {
+					var $sideBar = $('.bs-sidebar')
+					$sideBar.affix({
+						offset: {
+							top: function () {
+								var navOuterHeight = $('.navbar').height();
+								var headerHeight = $('.az-page-header').height();
+
+								return (this.top = navOuterHeight + headerHeight);
+							},
+							bottom: function () {
+								return (this.bottom = $('.page-footer').outerHeight(true));
+							}
+						}
+					});
+				}, 100)
+			});
+		</script>
+
+				<div class="page-footer">
+			<div class="container">
+				<div class="row">
+					<div class="col-xs-12">
+						<ul class="footer-nav">
+							<li><a href="/">Documentation</a></li>
+							<li><a href="downloads.html">Downloads</a></li>
+							<li><a href="https://github.com/azkaban/azkaban2/issues">Issues</a></li>
+							<li><a href="https://github.com/azkaban/azkaban2">Repository</a></li>
+						</ul>
+					</div>
+				</div>
+			</div>
+		</div>
+
+
+	</body>
+</html>
+

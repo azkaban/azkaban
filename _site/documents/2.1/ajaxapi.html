@@ -1,0 +1,233 @@
+<!DOCTYPE html> 
+<html lang="en">
+	<head>
+		<meta charset="utf-8">
+		<title></title>
+
+				<link rel="shortcut icon" href="/img/favicon.ico" type="image/x-icon">
+    <!-- Bootstrap core CSS -->
+    <link href="/css/bootstrap.css" rel="stylesheet">
+		<link href="/css/azkaban.css" rel="stylesheet">
+
+		<script type="text/javascript" src="/js/jquery-1.9.1.js"></script>    
+		<script type="text/javascript" src="/js/bootstrap.min.js"></script>    
+
+
+	</head>
+	<body>
+		    <script type="text/javascript">
+      function navMenuClick(url) {
+        window.location.href = url;
+      }
+    </script>
+    <div class="navbar navbar-inverse navbar-static-top">
+      <div class="container">
+				<div class="navbar-header">
+					<button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+						<span class="icon-bar"></span>
+						<span class="icon-bar"></span>
+						<span class="icon-bar"></span>
+					</button>
+					<div class="navbar-logo">
+						<a href="/">Azkaban</a>
+					</div>
+        </div>
+        <div class="navbar-collapse collapse">
+          <ul class="nav navbar-nav">
+						<li onClick="navMenuClick('overview.html')"><a href="overview.html">Overview</a></li>
+						<li class="active" onClick="navMenuClick('/')"><a href="/">Documentation</a></li>
+						<li onClick="navMenuClick('downloads.html')"><a href="downloads.html">Downloads</a></li>
+						<li onClick="navMenuClick('license.html')"><a href="license.html">License</a></li>
+						<li onClick="navMenuClick('contact.html')"><a href="contact.html">Contact</a></li>
+          </ul>
+        </div><!--/.nav-collapse -->
+      </div>
+    </div>
+
+
+
+		<div class="az-page-header">
+			<div class="container">
+				<div class="row">
+					<div class="col-lg-12">
+						<h1></h1>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<div class="container">
+			<div class="row">
+				<div class="col-md-3">
+										<div class="bs-sidebar hidden-print" role="complementary">
+						<ul class="bs-sidenav nav">
+							<li>
+								<a href="#getting-started">Getting Started</a>
+								<ul class="nav">
+									<li><a href="#database-setup">Database Setup</a></li>
+									<li><a href="#webserver-setup">Web Server Setup</a></li>
+									<li><a href="#executor-setup">Executor Setup</a></li>
+									<li><a href="#plugin-setup">Plugin Setup</a></li>
+									<li><a href="#upgrade-21">Upgrade from 2.1</a></li>
+								</ul>
+							</li>
+							<li>
+								<a href="#configuration">Configuration</a>
+								<ul class="nav">
+									<li><a href="#azkaban-webserver">AzkabanWebServer</a></li>
+									<li><a href="#azkaban-execserver">AzkabanExecutorServer</a></li>
+								</ul>
+							</li>
+							<li>
+								<a href="#user-manager">User Manager</a>
+								<ul class="nav">
+									<li><a href="#xml-usermanager">XmlUserManager</a></li>
+									<li><a href="#custom-usermanager">Custom UserManager</a></li>
+								</ul>
+							</li>
+							<li>
+								<a href="#creating-flows">Creating Flows</a>
+								<ul class="nav">
+									<li><a href="#job-conf">Job Configuration</a></li>
+									<li><a href="#builtin-jobtypes">Built-in JobTypes</a></li>
+								</ul>
+							</li>
+							<li>
+								<a href="#using-azkaban">Using Azkaban</a>
+								<ul class="nav">
+									<li><a href="#create-projects">Create Projects</a></li>
+									<li><a href="#upload-projects">Upload Projects</a></li>
+									<li><a href="#flow-view">Flow View</a></li>
+									<li><a href="#project-permissions">Project Permissions</a></li>
+									<li><a href="#executing-flows">Executing Flows</a></li>
+									<li><a href="#executions">Executions</a></li>
+									<li><a href="#job-page">Job Page</a></li>
+									<li><a href="#ajax-api">AJAX API</a></li>
+								</ul>
+							</li>
+							<li>
+								<a href="#plugins">Plugins</a>
+								<ul class="nav">
+									<li><a href="#hadoopsecuritymanager">HadoopSecurityManager</a></li>
+									<li><a href="#hdfs-browser">HDFS Browser</a></li>
+									<li><a href="#jobtype-plugins">JobType Plugins</a></li>
+									<li>
+										<a href="#jobtypes">JobTypes</a>
+										<ul class="nav">
+											<li><a href="#command-type">Command</a></li>
+											<li><a href="#java-type">Java</a></li>
+											<li><a href="#hadoopjava-type">Hadoop Java</a></li>
+											<li><a href="#pig-type">Pig</a></li>
+											<li><a href="#hive-type">Hive</a></li>
+											<li><a href="#voldemortbuildandpush-type">VoldemortBuildAndPush</a></li>
+											<li><a href="#create-types">Create Types</a></li>
+										</ul>
+									</li>
+								</ul>
+							</li>
+						</ul>
+					</div>
+
+
+				</div>
+				<div class="col-md-9">
+					<h1 id="ajax_api">Ajax API</h1>
+
+<p>Often there’s a desire to interact with Azkaban without having to use the web ui. Azkaban has some exposed ajax calls you can make to the web server through curl or some other Http get or post methods. However, you must have a secure session to call these services. The following are some of the useful calls you can make. All ajax responses will be in json format.</p>
+<hr />
+<h3 id="authenticated_session">Authenticated Session</h3>
+
+<p>To get a secure session, make a POST request to Azkaban’s base url. The parameters should be:</p>
+<pre class='code'>
+action=login
+username=&lt;username&gt;
+password=&lt;password&gt;
+</pre>
+<p><br /></p>
+
+<p>The response will be json with the following parameters set:</p>
+<table class="params"><thead><tr><th class="parameter">Parameter</th><th class="description"> Description</th></tr></thead><tbody><tr><td style="text-align: left;">error</td><td style="text-align: left;">Error message if authentication has failed</td></tr>
+<tr><td style="text-align: left;">session.id</td><td style="text-align: left;">If login has occurred successfully, this is the session id that will be returned</td></tr>
+</tbody></table>
+<p>This session id must be submitted with all subsequent requests into Azkaban.</p>
+
+<p>Once a session id has been returned, until the session has expired, this id can be used to do further requests into Azkaban. A session can expire if you log out, change machines or location, Azkaban is restarted or if the session timed out. By default session timeout is a day. You can re-login if the session expires.</p>
+<pre class='code'>
+curl -k --data "action=login&amp;username=azkaban&amp;password=azkaban" https://localhost:8443
+</pre><hr />
+<h3 id="upload_project_zip">Upload Project Zip</h3>
+
+<p>Uploads are multipart POST messages to <strong>/manager</strong>. The following parameters must be set do to the file upload. The content type should be <em>application/zip</em> or <em>application/x-zip-compressed</em></p>
+<pre class='code'>
+session.id=&lt;session.id&gt;
+ajax=upload
+project=&lt;projectName&gt;
+file=$lt;file&gt;
+</pre>
+<p>The response will be json with the following parameters set:</p>
+<table class="params"><thead><tr><th class="parameter">Parameter</th><th class="description"> Description</th></tr></thead><tbody><tr><td style="text-align: left;">error</td><td style="text-align: left;">Error message if the call has failed</td></tr>
+<tr><td style="text-align: left;">projectId</td><td style="text-align: left;">The numerical id of the project</td></tr>
+<tr><td style="text-align: left;">version</td><td style="text-align: left;">The version # of the upload</td></tr>
+</tbody></table>
+<p>Here’s sample a curl command.</p>
+<pre class='code'>
+curl -k -i -H "Content-Type: multipart/mixed" -X POST --form 'session.id=e7a29776-5783-49d7-afa0-b0e688096b5e' --form 'ajax=upload' --form 'file=@myproject.zip;type=application/zip' --form 'project=MyProject;type/plain' https://localhost:8443/manager
+</pre><hr />
+<h3 id="executing_flow">Executing Flow</h3>
+<pre class='code'>
+session.id=&lt;session.id&gt;
+ajax=executeFlow
+project=&lt;projectName&gt;
+flow=&lt;flowName&gt;
+</pre><table class="params"><thead><tr><th class="parameter">Parameter</th><th class="description"> Description</th></tr></thead><tbody><tr><td style="text-align: left;">error</td><td style="text-align: left;">Error message if the call has failed</td></tr>
+<tr><td style="text-align: left;">flow</td><td style="text-align: left;">The executed flow id</td></tr>
+<tr><td style="text-align: left;">execid</td><td style="text-align: left;">The execution id</td></tr>
+</tbody></table>
+				</div>
+			</div>
+		</div>
+
+		<script>
+			$(function(){
+				$(document.body).scrollspy({
+					target: '.bs-sidebar'
+				});
+			 // back to top
+				setTimeout(function () {
+					var $sideBar = $('.bs-sidebar')
+					$sideBar.affix({
+						offset: {
+							top: function () {
+								var navOuterHeight = $('.navbar').height();
+								var headerHeight = $('.az-page-header').height();
+
+								return (this.top = navOuterHeight + headerHeight);
+							},
+							bottom: function () {
+								return (this.bottom = $('.page-footer').outerHeight(true));
+							}
+						}
+					});
+				}, 100)
+			});
+		</script>
+
+				<div class="page-footer">
+			<div class="container">
+				<div class="row">
+					<div class="col-xs-12">
+						<ul class="footer-nav">
+							<li><a href="/">Documentation</a></li>
+							<li><a href="downloads.html">Downloads</a></li>
+							<li><a href="https://github.com/azkaban/azkaban2/issues">Issues</a></li>
+							<li><a href="https://github.com/azkaban/azkaban2">Repository</a></li>
+						</ul>
+					</div>
+				</div>
+			</div>
+		</div>
+
+
+	</body>
+</html>
+

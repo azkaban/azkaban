@@ -1,0 +1,1 @@
+(function(){dust.register("flowstats-no-data",body_0);function body_0(chk,ctx){return chk.write("      <div class=\"row\"><div class=\"col-xs-12\"><div class=\"alert alert-default\"><h4>No Flow Stats Available</h4><p>").reference(ctx._get(false, ["message"]),ctx,"h").write("</p></div></div></div>");}return body_0;})();

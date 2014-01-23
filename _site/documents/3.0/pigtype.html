@@ -1,0 +1,222 @@
+<!DOCTYPE html> 
+<html lang="en">
+	<head>
+		<meta charset="utf-8">
+		<title></title>
+
+				<link rel="shortcut icon" href="/img/favicon.ico" type="image/x-icon">
+    <!-- Bootstrap core CSS -->
+    <link href="/css/bootstrap.css" rel="stylesheet">
+		<link href="/css/azkaban.css" rel="stylesheet">
+
+		<script type="text/javascript" src="/js/jquery-1.9.1.js"></script>    
+		<script type="text/javascript" src="/js/bootstrap.min.js"></script>    
+
+
+	</head>
+	<body>
+		    <script type="text/javascript">
+      function navMenuClick(url) {
+        window.location.href = url;
+      }
+    </script>
+    <div class="navbar navbar-inverse navbar-static-top">
+      <div class="container">
+				<div class="navbar-header">
+					<button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+						<span class="icon-bar"></span>
+						<span class="icon-bar"></span>
+						<span class="icon-bar"></span>
+					</button>
+					<div class="navbar-logo">
+						<a href="/">Azkaban</a>
+					</div>
+        </div>
+        <div class="navbar-collapse collapse">
+          <ul class="nav navbar-nav">
+						<li onClick="navMenuClick('overview.html')"><a href="overview.html">Overview</a></li>
+						<li class="active" onClick="navMenuClick('/')"><a href="/">Documentation</a></li>
+						<li onClick="navMenuClick('downloads.html')"><a href="downloads.html">Downloads</a></li>
+						<li onClick="navMenuClick('license.html')"><a href="license.html">License</a></li>
+						<li onClick="navMenuClick('contact.html')"><a href="contact.html">Contact</a></li>
+          </ul>
+        </div><!--/.nav-collapse -->
+      </div>
+    </div>
+
+
+
+		<div class="az-page-header">
+			<div class="container">
+				<div class="row">
+					<div class="col-lg-12">
+						<h1></h1>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<div class="container">
+			<div class="row">
+				<div class="col-md-3">
+										<div class="bs-sidebar hidden-print" role="complementary">
+						<ul class="bs-sidenav nav">
+							<li>
+								<a href="#getting-started">Getting Started</a>
+								<ul class="nav">
+									<li><a href="#database-setup">Database Setup</a></li>
+									<li><a href="#webserver-setup">Web Server Setup</a></li>
+									<li><a href="#executor-setup">Executor Setup</a></li>
+									<li><a href="#plugin-setup">Plugin Setup</a></li>
+									<li><a href="#upgrade-21">Upgrade from 2.1</a></li>
+								</ul>
+							</li>
+							<li>
+								<a href="#configuration">Configuration</a>
+								<ul class="nav">
+									<li><a href="#azkaban-webserver">AzkabanWebServer</a></li>
+									<li><a href="#azkaban-execserver">AzkabanExecutorServer</a></li>
+								</ul>
+							</li>
+							<li>
+								<a href="#user-manager">User Manager</a>
+								<ul class="nav">
+									<li><a href="#xml-usermanager">XmlUserManager</a></li>
+									<li><a href="#custom-usermanager">Custom UserManager</a></li>
+								</ul>
+							</li>
+							<li>
+								<a href="#creating-flows">Creating Flows</a>
+								<ul class="nav">
+									<li><a href="#job-conf">Job Configuration</a></li>
+									<li><a href="#builtin-jobtypes">Built-in JobTypes</a></li>
+								</ul>
+							</li>
+							<li>
+								<a href="#using-azkaban">Using Azkaban</a>
+								<ul class="nav">
+									<li><a href="#create-projects">Create Projects</a></li>
+									<li><a href="#upload-projects">Upload Projects</a></li>
+									<li><a href="#flow-view">Flow View</a></li>
+									<li><a href="#project-permissions">Project Permissions</a></li>
+									<li><a href="#executing-flows">Executing Flows</a></li>
+									<li><a href="#executions">Executions</a></li>
+									<li><a href="#job-page">Job Page</a></li>
+									<li><a href="#ajax-api">AJAX API</a></li>
+								</ul>
+							</li>
+							<li>
+								<a href="#plugins">Plugins</a>
+								<ul class="nav">
+									<li><a href="#hadoopsecuritymanager">HadoopSecurityManager</a></li>
+									<li><a href="#hdfs-browser">HDFS Browser</a></li>
+									<li><a href="#jobtype-plugins">JobType Plugins</a></li>
+									<li>
+										<a href="#jobtypes">JobTypes</a>
+										<ul class="nav">
+											<li><a href="#command-type">Command</a></li>
+											<li><a href="#java-type">Java</a></li>
+											<li><a href="#hadoopjava-type">Hadoop Java</a></li>
+											<li><a href="#pig-type">Pig</a></li>
+											<li><a href="#hive-type">Hive</a></li>
+											<li><a href="#voldemortbuildandpush-type">VoldemortBuildAndPush</a></li>
+											<li><a href="#create-types">Create Types</a></li>
+										</ul>
+									</li>
+								</ul>
+							</li>
+						</ul>
+					</div>
+
+
+				</div>
+				<div class="col-md-9">
+					<h1 id="pig_type">pig Type</h1>
+
+<p>Pig type is for running pig jobs. In <em>azkaban-plugins</em> repo, we have included pig types from pig-0.9.2 to pig-0.11.0. It is up to the admin to alias one of them as <em>the pig type</em> for Azkaban users.</p>
+
+<p>Pig type is built on using hadoop tokens to talk to secure hadoop clusters. Therefore, individual Azkaban pig jobs are restricted to run within the token’s lifetime, which is set by hadoop admins. It is also important that individual MR step inside a single pig script doesn’t cancel the tokens upon its completion. Otherwise, all following steps will fail on authentication with job tracker or name node.</p>
+
+<p>Vanilla pig types don’t provide all udf jars. It is often up to the admin who sets up Azkaban to provide a pre-configured pig job type with company specific udfs registered and name space imported, so that the users don’t need to provide all the jars and do the configurations in their specific pig job conf files.</p>
+
+<h2 id="howtouse">How-To-Use</h2>
+
+<p>The pig job runs user pig scripts. It is important to remember, however, that running any pig script might require a number of dependency libraries that need to be placed on local Azkaban job classpath, or be registered with pig and carried remotely, or both. By using classpath settings, as well as <em>pig_additional_jars</em> and <em>udf_import_list</em>, the admin can create a pig job type that has very different default behavior than the most basic “pig” type.</p>
+
+<p>pig job type talks to a secure cluster via hadoop tokens. The admin should specify “obtain.binary.token=true” if the hadoop cluster security is turned on. Before executing a job, Azkaban will obtain name node and job tracker tokens for this job. These tokens will be written to a token file, which will be picked up by user job process during its execution. After the job finishes, Azkaban takes care of canceling these tokens from name node and job tracker. <br /></p>
+
+<p>Since Azkaban only obtains the tokens at the beginning of the job run, and does not request new tokens or renew old tokens during the execution, it is important that the job does not run longer than configured token life. It is also important that individual MR step inside a single pig script doesn’t cancel the tokens upon its completion. Otherwise, all following steps will fail on authentication with hadoop services.<br /></p>
+
+<p>Here are the common configurations that make a pig job for a <em>user</em>:</p>
+<table class="params"><thead><tr><th class="parameter">Parameter</th><th class="description"> Description</th></tr></thead><tbody><tr><td style="text-align: left;">type</td><td style="text-align: left;">The type name as set by the admin, e.g. “pig”</td></tr>
+<tr><td style="text-align: left;">pig.script</td><td style="text-align: left;">The pig script locatipn. e.g. src/wordcountpig.pig</td></tr>
+<tr><td style="text-align: left;">classpath</td><td style="text-align: left;">The resources that should be on the execution classpath, accessible to the local filesystem.</td></tr>
+<tr><td style="text-align: left;">dependencies</td><td style="text-align: left;">The other jobs in the flow this job is dependent upon.</td></tr>
+<tr><td style="text-align: left;">user.to.proxy</td><td style="text-align: left;">The hadoop user this job should run under.</td></tr>
+<tr><td style="text-align: left;">param.SOME_PARAM</td><td style="text-align: left;">Equivalent to pig’s -param</td></tr>
+</tbody></table>
+<p>Here are what’s needed and normally configured by the admn:</p>
+<table class="params"><thead><tr><th class="parameter">Parameter</th><th class="description"> Description</th></tr></thead><tbody><tr><td style="text-align: left;">hadoop.security.manager.class</td><td style="text-align: left;">The class that handles talking to hadoop clusters.</td></tr>
+<tr><td style="text-align: left;">azkaban.should.proxy</td><td style="text-align: left;">Whether Azkaban should proxy as individual user hadoop accounts.</td></tr>
+<tr><td style="text-align: left;">proxy.user</td><td style="text-align: left;">The Azkaban user configured with kerberos and hadoop, for secure clusters.</td></tr>
+<tr><td style="text-align: left;">proxy.keytab.location</td><td style="text-align: left;">The location of the keytab file with which Azkaban can authenticate with Kerberos for the specified proxy.user</td></tr>
+<tr><td style="text-align: left;">hadoop.home</td><td style="text-align: left;">The hadoop home where the jars and conf resources are installed.</td></tr>
+<tr><td style="text-align: left;">jobtype.classpath</td><td style="text-align: left;">The items that every such job should have on its classpath.</td></tr>
+<tr><td style="text-align: left;">jobtype.class</td><td style="text-align: left;">Should be set to <em>azkaban.jobtype.HadoopJavaJob</em></td></tr>
+<tr><td style="text-align: left;">obtain.binary.token</td><td style="text-align: left;">Whether Azkaban should request tokens. Set this to true for secure clusters.</td></tr>
+</tbody></table>
+<p>Since pig jobs are essentially java programs, the configurations for java jobs could also be set.</p>
+
+<p>Since Azkaban job types are named by their directory names, the admin should also make those naming public and consistent. For example, while there are multiple versions of pig job types, the admin can link one of them as <em>pig</em> for default pig type. Experimental pig versions can be tested in parallel with a different name and can be promoted to default pig type if it is proven stable. In LinkedIn, we also provide pig job types that have a number of useful udf libraries, including datafu and LinkedIn specific ones, pre-registered and imported, so that users in most cases will only need pig scripts in their Azkaban job packages.</p>
+
+<h2 id="sample_job_package">Sample Job Package</h2>
+
+<p>Here is a sample job package that does word count. It assumes you have hadoop installed and gets some dependency jars from $HADOOP_HOME. <a href="https://s3.amazonaws.com/azkaban2/azkaban2/samplejobs/pig-wc.zip">pig-wc.zip</a> <em>Uploaded May 13, 2013</em></p>
+				</div>
+			</div>
+		</div>
+
+		<script>
+			$(function(){
+				$(document.body).scrollspy({
+					target: '.bs-sidebar'
+				});
+			 // back to top
+				setTimeout(function () {
+					var $sideBar = $('.bs-sidebar')
+					$sideBar.affix({
+						offset: {
+							top: function () {
+								var navOuterHeight = $('.navbar').height();
+								var headerHeight = $('.az-page-header').height();
+
+								return (this.top = navOuterHeight + headerHeight);
+							},
+							bottom: function () {
+								return (this.bottom = $('.page-footer').outerHeight(true));
+							}
+						}
+					});
+				}, 100)
+			});
+		</script>
+
+				<div class="page-footer">
+			<div class="container">
+				<div class="row">
+					<div class="col-xs-12">
+						<ul class="footer-nav">
+							<li><a href="/">Documentation</a></li>
+							<li><a href="downloads.html">Downloads</a></li>
+							<li><a href="https://github.com/azkaban/azkaban2/issues">Issues</a></li>
+							<li><a href="https://github.com/azkaban/azkaban2">Repository</a></li>
+						</ul>
+					</div>
+				</div>
+			</div>
+		</div>
+
+
+	</body>
+</html>
+

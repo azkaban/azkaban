@@ -1,0 +1,261 @@
+<!DOCTYPE html> 
+<html lang="en">
+	<head>
+		<meta charset="utf-8">
+		<title></title>
+
+				<link rel="shortcut icon" href="/img/favicon.ico" type="image/x-icon">
+    <!-- Bootstrap core CSS -->
+    <link href="/css/bootstrap.css" rel="stylesheet">
+		<link href="/css/azkaban.css" rel="stylesheet">
+
+		<script type="text/javascript" src="/js/jquery-1.9.1.js"></script>    
+		<script type="text/javascript" src="/js/bootstrap.min.js"></script>    
+
+
+	</head>
+	<body>
+		    <script type="text/javascript">
+      function navMenuClick(url) {
+        window.location.href = url;
+      }
+    </script>
+    <div class="navbar navbar-inverse navbar-static-top">
+      <div class="container">
+				<div class="navbar-header">
+					<button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+						<span class="icon-bar"></span>
+						<span class="icon-bar"></span>
+						<span class="icon-bar"></span>
+					</button>
+					<div class="navbar-logo">
+						<a href="/">Azkaban</a>
+					</div>
+        </div>
+        <div class="navbar-collapse collapse">
+          <ul class="nav navbar-nav">
+						<li onClick="navMenuClick('overview.html')"><a href="overview.html">Overview</a></li>
+						<li class="active" onClick="navMenuClick('/')"><a href="/">Documentation</a></li>
+						<li onClick="navMenuClick('downloads.html')"><a href="downloads.html">Downloads</a></li>
+						<li onClick="navMenuClick('license.html')"><a href="license.html">License</a></li>
+						<li onClick="navMenuClick('contact.html')"><a href="contact.html">Contact</a></li>
+          </ul>
+        </div><!--/.nav-collapse -->
+      </div>
+    </div>
+
+
+
+		<div class="az-page-header">
+			<div class="container">
+				<div class="row">
+					<div class="col-lg-12">
+						<h1></h1>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<div class="container">
+			<div class="row">
+				<div class="col-md-3">
+										<div class="bs-sidebar hidden-print" role="complementary">
+						<ul class="bs-sidenav nav">
+							<li>
+								<a href="#getting-started">Getting Started</a>
+								<ul class="nav">
+									<li><a href="#database-setup">Database Setup</a></li>
+									<li><a href="#webserver-setup">Web Server Setup</a></li>
+									<li><a href="#executor-setup">Executor Setup</a></li>
+									<li><a href="#plugin-setup">Plugin Setup</a></li>
+									<li><a href="#upgrade-21">Upgrade from 2.1</a></li>
+								</ul>
+							</li>
+							<li>
+								<a href="#configuration">Configuration</a>
+								<ul class="nav">
+									<li><a href="#azkaban-webserver">AzkabanWebServer</a></li>
+									<li><a href="#azkaban-execserver">AzkabanExecutorServer</a></li>
+								</ul>
+							</li>
+							<li>
+								<a href="#user-manager">User Manager</a>
+								<ul class="nav">
+									<li><a href="#xml-usermanager">XmlUserManager</a></li>
+									<li><a href="#custom-usermanager">Custom UserManager</a></li>
+								</ul>
+							</li>
+							<li>
+								<a href="#creating-flows">Creating Flows</a>
+								<ul class="nav">
+									<li><a href="#job-conf">Job Configuration</a></li>
+									<li><a href="#builtin-jobtypes">Built-in JobTypes</a></li>
+								</ul>
+							</li>
+							<li>
+								<a href="#using-azkaban">Using Azkaban</a>
+								<ul class="nav">
+									<li><a href="#create-projects">Create Projects</a></li>
+									<li><a href="#upload-projects">Upload Projects</a></li>
+									<li><a href="#flow-view">Flow View</a></li>
+									<li><a href="#project-permissions">Project Permissions</a></li>
+									<li><a href="#executing-flows">Executing Flows</a></li>
+									<li><a href="#executions">Executions</a></li>
+									<li><a href="#job-page">Job Page</a></li>
+									<li><a href="#ajax-api">AJAX API</a></li>
+								</ul>
+							</li>
+							<li>
+								<a href="#plugins">Plugins</a>
+								<ul class="nav">
+									<li><a href="#hadoopsecuritymanager">HadoopSecurityManager</a></li>
+									<li><a href="#hdfs-browser">HDFS Browser</a></li>
+									<li><a href="#jobtype-plugins">JobType Plugins</a></li>
+									<li>
+										<a href="#jobtypes">JobTypes</a>
+										<ul class="nav">
+											<li><a href="#command-type">Command</a></li>
+											<li><a href="#java-type">Java</a></li>
+											<li><a href="#hadoopjava-type">Hadoop Java</a></li>
+											<li><a href="#pig-type">Pig</a></li>
+											<li><a href="#hive-type">Hive</a></li>
+											<li><a href="#voldemortbuildandpush-type">VoldemortBuildAndPush</a></li>
+											<li><a href="#create-types">Create Types</a></li>
+										</ul>
+									</li>
+								</ul>
+							</li>
+						</ul>
+					</div>
+
+
+				</div>
+				<div class="col-md-9">
+					<h1 id="setup_azkaban_web_server">Setup Azkaban Web Server</h1>
+
+<p>Azkaban Web Server handles project management, authentication, scheduling and trigger of executions.</p>
+<hr />
+<h3 id="installing_the_web_server">Installing the Web Server</h3>
+
+<p>Grab the azkaban-web-server package from the <a href="../../downloads.html">download page</a>.</p>
+
+<p>Alternatively, by cloning the <a href="https://github.com/azkaban/azkaban2">github repo</a>, you can run <strong>ant -package-all</strong> build the latest version from master.</p>
+
+<p>Extract the package into a directory. The install path should be different from the AzkabanExecutorServer.</p>
+
+<p>After extraction, there should be the following directories.</p>
+
+<p><br /></p>
+<table class="params"><thead><tr><th>Folder</th><th>Description</th></tr></thead><tbody><tr><td style="text-align: left;">bin</td><td style="text-align: left;">The scripts to start Azkaban jetty server</td></tr>
+<tr><td style="text-align: left;">conf</td><td style="text-align: left;">The configurations for Azkaban web server</td></tr>
+<tr><td style="text-align: left;">lib</td><td style="text-align: left;">The jar dependencies for Azkaban</td></tr>
+<tr><td style="text-align: left;">extlib</td><td style="text-align: left;">Additional jars that are added to extlib will be added to Azkaban’s classpath</td></tr>
+<tr><td style="text-align: left;">plugins</td><td style="text-align: left;">the directory where plugins can be installed</td></tr>
+<tr><td style="text-align: left;">web</td><td style="text-align: left;">The web (css, javascript, image) files for Azkaban web server.</td></tr>
+</tbody></table>
+<p>In the <em>conf</em> directory, there should be three files</p>
+
+<ul>
+<li><strong>azkaban.properties</strong> - Used by Azkaban for runtime parameters</li>
+
+<li><strong>global.properties</strong> - Global static properties that are passed as shared properties to every workflow and job.</li>
+
+<li><strong>azkaban-users.xml</strong> - Used to add users and roles for authentication. This file is not used if the XmLUserManager is not set up to use it.</li>
+</ul>
+
+<p>The <em>azkaban.properties</em> file will be the main configuration file that is necessary to setup Azkaban.</p>
+<hr />
+<h3 id="getting_keystore_for_ssl">Getting KeyStore for SSL</h3>
+
+<p>Azkaban uses SSL socket connectors, which means a keystore will have to be available. You call follow the steps provided at this link (<a href="http://docs.codehaus.org/display/JETTY/How+to+configure+SSL">http://docs.codehaus.org/display/JETTY/How+to+configure+SSL</a>) to create one. Once a keystore file has been created, Azkaban must be given its location and password. Within <em>azkaban.properties</em>, the following properties should be overridden.</p>
+<pre class='code'>
+jetty.keystore=keystore
+jetty.password=password
+jetty.keypassword=password
+jetty.truststore=keystore
+jetty.trustpassword=password
+</pre><hr />
+<h3 id="setting_up_the_db">Setting up the DB</h3>
+
+<p>If you haven’t gotten the MySQL JDBC driver, you can get it from this link: <a href="http://www.mysql.com/downloads/connector/j/">http://www.mysql.com/downloads/connector/j/</a>. Drop this jar into the <em>extlib</em> directory. All external dependencies should be added to the extlib directory.</p>
+
+<p>To point Azkaban web client to the MySQL instance, you will need to add the connection parameters to <em>azkaban.properties</em>.</p>
+<pre class='code'>
+database.type=mysql
+mysql.port=3306
+mysql.host=localhost
+mysql.database=azkaban
+mysql.user=azkaban
+mysql.password=azkaban
+mysql.numconnections=100
+</pre>
+<p>Currently MySQL is the only data store type supported in Azkaban. So <em>database.type</em> should always be <em>mysql</em>.</p>
+<hr />
+<h3 id="setting_up_the_usermanager">Setting up the UserManager</h3>
+
+<p>Azkaban uses the UserManager to provide authentication and user roles. By default, Azkaban includes and uses the <em>XmlUserManager</em> which gets username/passwords and roles from the <em>azkaban-users.xml</em> as can be seen in the <em>azkaban.properties</em> file.</p>
+
+<ul>
+<li><code>user.manager.class=azkaban.user.XmlUserManager</code></li>
+
+<li><code>user.manager.xml.file=conf/azkaban-users.xml</code></li>
+</ul>
+<hr />
+<h3 id="running_web_server">Running Web Server</h3>
+
+<p>The following properties in <em>azkaban.properties</em> are used to configure jetty.</p>
+<pre class='code'>
+jetty.maxThreads=25
+jetty.ssl.port=8443
+</pre>
+<p>Execute <em>bin/azkaban-web-start.sh</em> to start AzkabanWebServer. To shutdown the AzkabanWebServer, run <em>bin/azkaban-web-shutdown.sh</em></p>
+
+<p>You can test access by accessing the web server through a browser.</p>
+				</div>
+			</div>
+		</div>
+
+		<script>
+			$(function(){
+				$(document.body).scrollspy({
+					target: '.bs-sidebar'
+				});
+			 // back to top
+				setTimeout(function () {
+					var $sideBar = $('.bs-sidebar')
+					$sideBar.affix({
+						offset: {
+							top: function () {
+								var navOuterHeight = $('.navbar').height();
+								var headerHeight = $('.az-page-header').height();
+
+								return (this.top = navOuterHeight + headerHeight);
+							},
+							bottom: function () {
+								return (this.bottom = $('.page-footer').outerHeight(true));
+							}
+						}
+					});
+				}, 100)
+			});
+		</script>
+
+				<div class="page-footer">
+			<div class="container">
+				<div class="row">
+					<div class="col-xs-12">
+						<ul class="footer-nav">
+							<li><a href="/">Documentation</a></li>
+							<li><a href="downloads.html">Downloads</a></li>
+							<li><a href="https://github.com/azkaban/azkaban2/issues">Issues</a></li>
+							<li><a href="https://github.com/azkaban/azkaban2">Repository</a></li>
+						</ul>
+					</div>
+				</div>
+			</div>
+		</div>
+
+
+	</body>
+</html>
+

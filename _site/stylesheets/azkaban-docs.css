@@ -1,0 +1,269 @@
+body {
+	margin: 0px;
+	padding: 0px;
+	background-color: #DDD;
+	font-family: sans-serif;
+}
+
+table.params {
+	background-color: #EEE;
+	border-spacing: 0px;
+}
+
+table.params td {
+	padding: 2px 10px;
+	border: 1px solid #FFF;
+	word-wrap:break-word;
+}
+
+table.params tbody td {
+	font-size: 10pt;
+}
+
+table.params th  {
+	text-align: left;
+	padding: 5px 10px;
+}
+
+table.params th.parameter  {
+
+}
+
+table.params th.description  {
+
+}
+
+a {
+	color: #009FC9;
+	text-decoration: none;
+}
+
+hr {
+	margin: 20px 0px;
+	border: 0;
+	height: 2px;
+	background-image: -webkit-linear-gradient(left, rgba(0,0,0,0), rgba(0,0,0,0.5), rgba(0,0,0,0)); 
+	background-image:    -moz-linear-gradient(left, rgba(0,0,0,0), rgba(0,0,0,0.5), rgba(0,0,0,0)); 
+	background-image:     -ms-linear-gradient(left, rgba(0,0,0,0), rgba(0,0,0,0.5), rgba(0,0,0,0)); 
+	background-image:      -o-linear-gradient(left, rgba(0,0,0,0), rgba(0,0,0,0.5), rgba(0,0,0,0)); 
+}
+
+.code {
+	background-color: #EEE;
+	margin: 10px;
+	padding: 10px;
+	font-family: Courier New, monospace;
+	font-size: 10pt;
+	overflow: auto;
+}
+
+h3 {
+	margin-top: 20px;
+	margin-bottom: 5px;
+}
+
+p {
+	margin: 5px 0px;
+}
+
+li > ul {
+	padding-left: 15px;
+}
+
+a:hover {
+	text-decoration: underline;
+}
+
+#block {
+	margin-left: 100px;
+	margin-right: 100px;
+	box-shadow: 0px 0px 10px 3px #888;
+	min-width: 600px;
+}
+
+#main {
+	width: 100%;
+	font-family: "Open Sans", "Helvetica", Arial, sans-serif;
+	font-size: 14px;
+}
+
+/* Template Header Styles */
+#header {
+	height: 140px;
+	background: #515557; /* Old browsers */
+	background: -moz-linear-gradient(top, #515557 0%, #434749 50%, #323536 51%, #515557 100%); /* FF3.6+ */
+	background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,#515557), color-stop(50%,#434749), color-stop(51%,#323536), color-stop(100%,#515557)); /* Chrome,Safari4+ */
+	background: -webkit-linear-gradient(top, #515557 0%,#434749 50%,#323536 51%,#515557 100%); /* Chrome10+,Safari5.1+ */
+	background: -o-linear-gradient(top, #515557 0%,#434749 50%,#323536 51%,#515557 100%); /* Opera 11.10+ */
+	background: -ms-linear-gradient(top, #515557 0%,#434749 50%,#323536 51%,#515557 100%); /* IE10+ */
+	background: linear-gradient(to bottom, #515557 0%,#434749 50%,#323536 51%,#515557 100%); /* W3C */
+	filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#515557', endColorstr='#515557',GradientType=0 ); /* IE6-9 */
+}
+
+#header-title {
+	margin-top: 40px;
+	margin-left: 20px;
+	float: left;
+}
+
+#header-icon {
+	float: left;
+	height: 100px;
+	width: 64px;
+	background-size: 100%;
+	background-image: url('../images/whiteazkaban.png');
+}
+
+#header-text {
+	float: left;
+}
+
+#header-name {
+	font-family: 'Lucida Grande', 'Calibri', Helvetica, Arial, sans-serif;
+	font-weight: bold;
+	color: #EEE;
+	font-size: 30pt;
+	text-shadow: rgba(255,255,255, 0.5) 0px 0px 10px;
+	margin: 5px 0px 0px 5px;
+}
+
+#header-name a {
+	color: inherit;
+	text-decoration: none;
+}
+
+#header-sub-name {
+	margin: 0px 2px;
+	font-weight: normal;
+	color: #CCC;
+}
+
+#header-buttons {
+	float: right;
+	width: 200px;
+	margin-top: 78px;
+	margin-right: 10px;
+}
+
+#header-buttons .header-button {
+	float: right;
+	height: 48px;
+	width: 50px;
+}
+
+#sourceLink .header-button {
+	background-image: url('../images/azkaban-bigicons-white.png');
+	background-position: 2px 49px;
+}
+
+#sourceLink .header-button:hover {
+	background-position: -50px 49px;
+}
+
+#downloadLink .header-button {
+	background-image: url('../images/azkaban-bigicons-white.png');
+	background-position: 2px 98px;
+}
+
+#downloadLink .header-button:hover {
+	background-position: -50px 98px;
+}
+
+#downloadLink .header-button {
+	background-image: url('../images/azkaban-bigicons-white.png');
+	background-position: 2px 98px;
+}
+
+#docsLink .header-button {
+	background-image: url('../images/azkaban-bigicons-white.png');
+	background-position: 2px 0px;
+}
+
+#docsLink .header-button:hover {
+	background-position: -50px 0px;
+}
+
+#bugsLink .header-button {
+	background-image: url('../images/azkaban-bigicons-white.png');
+	background-position: 2px 148px;
+}
+
+#bugsLink .header-button:hover {
+	background-position: -50px 148px;
+}
+/* navigation */
+#navigation {
+	float: left;
+	width: 220px;
+}
+
+#navigation ul {
+	margin: 0px;
+}
+
+#navigation li {
+	list-style-type: none;
+	margin: 2px 3px 2px 0px;
+}
+
+#navigation li ul li {
+	margin-left: 1px;
+	list-style-type:none;
+}
+
+#navigation li a {
+	padding: 2px 4px;
+	font-weight: bold;
+}
+
+#navigation li.selected a {
+	color: #FFF;
+	background-color: #009FC9;
+}
+
+#navigation li ul {
+	margin-top: 5px;
+}
+#navigation .submenu {
+	font-size: 12px;
+}
+
+#navigation li.selected ul.submenu a {
+	background-color: #fff;
+	color: #009FC9;
+}
+
+#navigation li.expand .arrow {
+	background-position: 0px -16px;
+}
+
+#navigation li .arrow {
+	margin-right: 5px;
+	float: right;
+	width: 16px;
+	height: 16px;
+	cursor: pointer;
+	background-image: url('../images/ui-icons_009FC9_256x240.png');
+	background-position: -64px -16px;
+}
+
+.shadowimg {
+	margin: 10px;
+	box-shadow: 0px 0px 15px #888;
+}
+
+/* Template Content Styles */
+#content {
+	margin-left: 220px;
+	min-height: 400px;
+	background-color: #FFF;
+	padding: 0px 80px 80px 10px;
+}
+
+#block {
+	background-color: #FFF;
+}
+
+#main {
+	background-color: #FFF;
+}
