@@ -495,14 +495,14 @@ var disableFinishedJobs = function(data) {
 		else if (node.status == "SUCCEEDED" || node.status=="RUNNING") {
 			node.disabled = true;
 		}
-		else if (node.status == "KILLED") {
+		else if (node.status == "CANCELLED") {
 			node.disabled = false;
 			node.status="READY";
 		}
 		else {
 			node.disabled = false;
-			if (node.flowData) {
-				disableFinishedJobs(node.flowData);
+			if (node.type == "flow") {
+				disableFinishedJobs(node);
 			}
 		}
 	}
@@ -526,8 +526,8 @@ var recurseTree = function(data, disabled, recurse) {
 		var node = data.nodes[i];
 		node.disabled = disabled;
 		
-		if (node.flowData && recurse) {
-			recurseTree(node.flowData, disabled);
+		if (node.type == "flow" && recurse) {
+			recurseTree(node, disabled);
 		}
 	}
 }
@@ -583,8 +583,8 @@ var gatherDisabledNodes = function(data) {
 			disabled.push(node.id);
 		}
 		else {
-			if (node.flowData) {
-				var array = gatherDisabledNodes(node.flowData);
+			if (node.type == "flow") {
+				var array = gatherDisabledNodes(node);
 				if (array && array.length > 0) {
 					disabled.push({id: node.id, children: array});
 				}

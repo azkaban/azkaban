@@ -319,21 +319,21 @@ public class FlowRunnerTest2 {
 		Assert.assertEquals(Status.FAILED_FINISHING, flow.getStatus());
 		expectedStateMap.put("joba", Status.FAILED);
 		expectedStateMap.put("joba1", Status.RUNNING);
-		expectedStateMap.put("jobb", Status.KILLED);
-		expectedStateMap.put("jobc", Status.KILLED);
-		expectedStateMap.put("jobd", Status.KILLED);
+		expectedStateMap.put("jobb", Status.CANCELLED);
+		expectedStateMap.put("jobc", Status.CANCELLED);
+		expectedStateMap.put("jobd", Status.CANCELLED);
 		expectedStateMap.put("jobd:innerJobA", Status.READY);
 		expectedStateMap.put("jobd:innerFlow2", Status.READY);
 		expectedStateMap.put("jobb:innerJobA", Status.READY);
 		expectedStateMap.put("jobb:innerFlow", Status.READY);
-		expectedStateMap.put("jobe", Status.KILLED);
+		expectedStateMap.put("jobe", Status.CANCELLED);
 		compareStates(expectedStateMap, nodeMap);
 
 		// 3. jobb:Inner completes
 		/// innerJobA completes
 		InteractiveTestJob.getTestJob("joba1").succeedJob();
 		pause(250);
-		expectedStateMap.put("jobf", Status.KILLED);
+		expectedStateMap.put("jobf", Status.CANCELLED);
 		Assert.assertEquals(Status.FAILED, flow.getStatus());
 		Assert.assertFalse(thread.isAlive());
 	}
@@ -379,10 +379,10 @@ public class FlowRunnerTest2 {
 		pause(250);
 		expectedStateMap.put("jobb:innerJobA", Status.SUCCEEDED);
 		expectedStateMap.put("jobd:innerJobA", Status.SUCCEEDED);
-		expectedStateMap.put("jobb:innerJobB", Status.KILLED);
-		expectedStateMap.put("jobb:innerJobC", Status.KILLED);
-		expectedStateMap.put("jobb:innerFlow", Status.KILLED);
-		expectedStateMap.put("jobd:innerFlow2", Status.KILLED);
+		expectedStateMap.put("jobb:innerJobB", Status.CANCELLED);
+		expectedStateMap.put("jobb:innerJobC", Status.CANCELLED);
+		expectedStateMap.put("jobb:innerFlow", Status.CANCELLED);
+		expectedStateMap.put("jobd:innerFlow2", Status.CANCELLED);
 		expectedStateMap.put("jobb", Status.KILLED);
 		expectedStateMap.put("jobd", Status.KILLED);
 		compareStates(expectedStateMap, nodeMap);
@@ -391,8 +391,8 @@ public class FlowRunnerTest2 {
 		InteractiveTestJob.getTestJob("jobc").succeedJob();
 		pause(250);
 		expectedStateMap.put("jobc", Status.SUCCEEDED);
-		expectedStateMap.put("jobe", Status.KILLED);
-		expectedStateMap.put("jobf", Status.KILLED);
+		expectedStateMap.put("jobe", Status.CANCELLED);
+		expectedStateMap.put("jobf", Status.CANCELLED);
 		compareStates(expectedStateMap, nodeMap);
 		Assert.assertEquals(Status.FAILED, flow.getStatus());
 		
@@ -401,7 +401,7 @@ public class FlowRunnerTest2 {
 	
 	@Test
 	public void testNormalFailure3() throws Exception {
-		// Test propagation of KILLED status to embedded flows different branch
+		// Test propagation of CANCELLED status to embedded flows different branch
 		EventCollectorListener eventCollector = new EventCollectorListener();
 		FlowRunner runner = createFlowRunner(eventCollector, "jobf");
 		ExecutableFlow flow = runner.getExecutableFlow();
@@ -449,10 +449,10 @@ public class FlowRunnerTest2 {
 		InteractiveTestJob.getTestJob("jobd:innerJobA").succeedJob();
 		pause(250);
 		expectedStateMap.put("jobd:innerJobA", Status.SUCCEEDED);
-		expectedStateMap.put("jobd:innerFlow2", Status.KILLED);
+		expectedStateMap.put("jobd:innerFlow2", Status.CANCELLED);
 		expectedStateMap.put("jobd", Status.KILLED);
 		expectedStateMap.put("jobb:innerJobC", Status.SUCCEEDED);
-		expectedStateMap.put("jobb:innerFlow", Status.KILLED);
+		expectedStateMap.put("jobb:innerFlow", Status.CANCELLED);
 		expectedStateMap.put("jobb", Status.FAILED);
 		compareStates(expectedStateMap, nodeMap);
 
@@ -460,8 +460,8 @@ public class FlowRunnerTest2 {
 		InteractiveTestJob.getTestJob("jobc").succeedJob();
 		pause(250);
 		expectedStateMap.put("jobc", Status.SUCCEEDED);
-		expectedStateMap.put("jobe", Status.KILLED);
-		expectedStateMap.put("jobf", Status.KILLED);
+		expectedStateMap.put("jobe", Status.CANCELLED);
+		expectedStateMap.put("jobf", Status.CANCELLED);
 		compareStates(expectedStateMap, nodeMap);
 		Assert.assertEquals(Status.FAILED, flow.getStatus());
 		
@@ -521,7 +521,7 @@ public class FlowRunnerTest2 {
 		expectedStateMap.put("jobd:innerJobA", Status.SUCCEEDED);
 		expectedStateMap.put("jobd:innerFlow2", Status.RUNNING);
 		expectedStateMap.put("jobb:innerJobC", Status.SUCCEEDED);
-		expectedStateMap.put("jobb:innerFlow", Status.KILLED);
+		expectedStateMap.put("jobb:innerFlow", Status.CANCELLED);
 		compareStates(expectedStateMap, nodeMap);
 
 		InteractiveTestJob.getTestJob("jobd:innerFlow2").succeedJob();
@@ -533,8 +533,8 @@ public class FlowRunnerTest2 {
 		InteractiveTestJob.getTestJob("jobc").succeedJob();
 		pause(250);
 		expectedStateMap.put("jobc", Status.SUCCEEDED);
-		expectedStateMap.put("jobe", Status.KILLED);
-		expectedStateMap.put("jobf", Status.KILLED);
+		expectedStateMap.put("jobe", Status.CANCELLED);
+		expectedStateMap.put("jobf", Status.CANCELLED);
 		compareStates(expectedStateMap, nodeMap);
 		Assert.assertEquals(Status.FAILED, flow.getStatus());
 		Assert.assertFalse(thread.isAlive());
@@ -583,14 +583,14 @@ public class FlowRunnerTest2 {
 		pause(250);
 		expectedStateMap.put("jobb", Status.FAILED);
 		expectedStateMap.put("jobb:innerJobB", Status.FAILED);
-		expectedStateMap.put("jobb:innerJobC", Status.FAILED);
-		expectedStateMap.put("jobb:innerFlow", Status.KILLED);
-		expectedStateMap.put("jobc", Status.FAILED);
-		expectedStateMap.put("jobd", Status.FAILED);
-		expectedStateMap.put("jobd:innerJobA", Status.FAILED);
-		expectedStateMap.put("jobd:innerFlow2", Status.KILLED);
-		expectedStateMap.put("jobe", Status.KILLED);
-		expectedStateMap.put("jobf", Status.KILLED);
+		expectedStateMap.put("jobb:innerJobC", Status.KILLED);
+		expectedStateMap.put("jobb:innerFlow", Status.CANCELLED);
+		expectedStateMap.put("jobc", Status.KILLED);
+		expectedStateMap.put("jobd", Status.KILLED);
+		expectedStateMap.put("jobd:innerJobA", Status.KILLED);
+		expectedStateMap.put("jobd:innerFlow2", Status.CANCELLED);
+		expectedStateMap.put("jobe", Status.CANCELLED);
+		expectedStateMap.put("jobf", Status.CANCELLED);
 		compareStates(expectedStateMap, nodeMap);
 		
 		Assert.assertFalse(thread.isAlive());
@@ -640,7 +640,7 @@ public class FlowRunnerTest2 {
 		expectedStateMap.put("jobb:innerJobB", Status.FAILED);
 		expectedStateMap.put("jobb:innerJobC", Status.FAILED);
 		expectedStateMap.put("jobb:innerFlow", Status.SKIPPED);
-		expectedStateMap.put("jobd:innerFlow2", Status.KILLED);
+		expectedStateMap.put("jobd:innerFlow2", Status.CANCELLED);
 		expectedStateMap.put("jobd:innerJobA", Status.SUCCEEDED);
 		expectedStateMap.put("jobd", Status.KILLED);
 		Assert.assertEquals(Status.FAILED_FINISHING, flow.getStatus());
@@ -739,21 +739,21 @@ public class FlowRunnerTest2 {
 		expectedStateMap.put("jobb:innerJobC", Status.RUNNING);
 		compareStates(expectedStateMap, nodeMap);
 		
-		runner.cancel("me");
+		runner.kill("me");
 		pause(250);
 		
-		expectedStateMap.put("jobb", Status.FAILED);
-		expectedStateMap.put("jobb:innerJobB", Status.FAILED);
-		expectedStateMap.put("jobb:innerJobC", Status.FAILED);
-		expectedStateMap.put("jobb:innerFlow", Status.KILLED);
-		expectedStateMap.put("jobc", Status.FAILED);
-		expectedStateMap.put("jobd", Status.FAILED);
-		expectedStateMap.put("jobd:innerJobA", Status.FAILED);
-		expectedStateMap.put("jobd:innerFlow2", Status.KILLED);
-		expectedStateMap.put("jobe", Status.KILLED);
-		expectedStateMap.put("jobf", Status.KILLED);
+		expectedStateMap.put("jobb", Status.KILLED);
+		expectedStateMap.put("jobb:innerJobB", Status.KILLED);
+		expectedStateMap.put("jobb:innerJobC", Status.KILLED);
+		expectedStateMap.put("jobb:innerFlow", Status.CANCELLED);
+		expectedStateMap.put("jobc", Status.KILLED);
+		expectedStateMap.put("jobd", Status.KILLED);
+		expectedStateMap.put("jobd:innerJobA", Status.KILLED);
+		expectedStateMap.put("jobd:innerFlow2", Status.CANCELLED);
+		expectedStateMap.put("jobe", Status.CANCELLED);
+		expectedStateMap.put("jobf", Status.CANCELLED);
 		
-		Assert.assertEquals(Status.FAILED, flow.getStatus());
+		Assert.assertEquals(Status.KILLED, flow.getStatus());
 		compareStates(expectedStateMap, nodeMap);
 		Assert.assertFalse(thread.isAlive());
 	}
@@ -804,18 +804,18 @@ public class FlowRunnerTest2 {
 		Assert.assertEquals(Status.FAILED_FINISHING, flow.getStatus());
 		compareStates(expectedStateMap, nodeMap);
 		
-		runner.cancel("me");
+		runner.kill("me");
 		pause(1000);
 		
 		expectedStateMap.put("jobb", Status.FAILED);
-		expectedStateMap.put("jobb:innerJobC", Status.FAILED);
-		expectedStateMap.put("jobb:innerFlow", Status.KILLED);
-		expectedStateMap.put("jobc", Status.FAILED);
-		expectedStateMap.put("jobd", Status.FAILED);
-		expectedStateMap.put("jobd:innerJobA", Status.FAILED);
-		expectedStateMap.put("jobd:innerFlow2", Status.KILLED);
-		expectedStateMap.put("jobe", Status.KILLED);
-		expectedStateMap.put("jobf", Status.KILLED);
+		expectedStateMap.put("jobb:innerJobC", Status.KILLED);
+		expectedStateMap.put("jobb:innerFlow", Status.CANCELLED);
+		expectedStateMap.put("jobc", Status.KILLED);
+		expectedStateMap.put("jobd", Status.KILLED);
+		expectedStateMap.put("jobd:innerJobA", Status.KILLED);
+		expectedStateMap.put("jobd:innerFlow2", Status.CANCELLED);
+		expectedStateMap.put("jobe", Status.CANCELLED);
+		expectedStateMap.put("jobf", Status.CANCELLED);
 		
 		Assert.assertEquals(Status.FAILED, flow.getStatus());
 		compareStates(expectedStateMap, nodeMap);

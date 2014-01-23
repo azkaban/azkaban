@@ -439,8 +439,8 @@ var updaterFunction = function() {
 
 		var data = graphModel.get("data");
 		if (data.status == "UNKNOWN" || 
-				data.status == "WAITING" || 
-				data.status == "PREPARING") {
+			data.status == "WAITING" || 
+			data.status == "PREPARING") {
 			setTimeout(function() {updaterFunction();}, 1000);
 		}
 		else if (data.status != "SUCCEEDED" && data.status != "FAILED") {

@@ -114,7 +114,7 @@ public class FlowRunner extends EventHandler implements Runnable {
 	private boolean flowPaused = false;
 	private boolean flowFailed = false;
 	private boolean flowFinished = false;
-	private boolean flowCancelled = false;
+	private boolean flowKilled = false;
 	
 	// The following is state that will trigger a retry of all failed jobs
 	private boolean retryFailedJobs = false;
@@ -392,7 +392,7 @@ public class FlowRunner extends EventHandler implements Runnable {
 		logger.info("Restarting all failed jobs");
 		
 		this.retryFailedJobs = false;
-		this.flowCancelled = false;
+		this.flowKilled = false;
 		this.flowFailed = false;
 		this.flow.setStatus(Status.RUNNING);
 		
@@ -415,7 +415,7 @@ public class FlowRunner extends EventHandler implements Runnable {
 		
 		updateFlow();
 	}
-	
+
 	private boolean progressGraph() throws IOException {
 		finishedNodes.swap();
 
@@ -433,7 +433,7 @@ public class FlowRunner extends EventHandler implements Runnable {
 				if (!retryJobIfPossible(node)) {
 					propagateStatus(node.getParentFlow(), Status.FAILED_FINISHING);
 					if (failureAction == FailureAction.CANCEL_ALL) {
-						this.cancel();
+						this.kill();
 					}
 					this.flowFailed = true;
 				}
@@ -495,9 +495,9 @@ public class FlowRunner extends EventHandler implements Runnable {
 			return false;
 		}
 		
-		if (nextNodeStatus == Status.KILLED) {
-			logger.info("Killing '" + node.getNestedId() + "' due to prior errors.");
-			node.killNode(System.currentTimeMillis());
+		if (nextNodeStatus == Status.CANCELLED) {
+			logger.info("Cancelling '" + node.getNestedId() + "' due to prior errors.");
+			node.cancelNode(System.currentTimeMillis());
 			finishExecutableNode(node);
 		}
 		else if (nextNodeStatus == Status.SKIPPED) {
@@ -573,7 +573,7 @@ public class FlowRunner extends EventHandler implements Runnable {
 		for(String end: flow.getEndNodes()) {
 			ExecutableNode node = flow.getExecutableNode(end);
 
-			if (node.getStatus() == Status.KILLED || node.getStatus() == Status.FAILED) {
+			if (node.getStatus() == Status.KILLED || node.getStatus() == Status.FAILED || node.getStatus() == Status.CANCELLED) {
 				succeeded = false;
 			}
 			
@@ -600,6 +600,7 @@ public class FlowRunner extends EventHandler implements Runnable {
 			break;
 		case FAILED:
 		case KILLED:
+		case CANCELLED:
 		case FAILED_SUCCEEDED:
 			logger.info("Flow '" + id + "' is set to " + flow.getStatus().toString() + " in " + durationSec + " seconds");
 			break;
@@ -675,7 +676,7 @@ public class FlowRunner extends EventHandler implements Runnable {
 		// load the override props if any
 		try {
 			props = projectLoader.fetchProjectProperty(flow.getProjectId(), flow.getVersion(), node.getId()+".jor");
-		}
+		} 
 		catch(ProjectManagerException e) {
 			e.printStackTrace();
 			logger.error("Error loading job override property for job " + node.getId());
@@ -741,7 +742,7 @@ public class FlowRunner extends EventHandler implements Runnable {
 			if (!Status.isStatusFinished(depStatus)) {
 				return null;
 			}
-			else if (depStatus == Status.FAILED || depStatus == Status.KILLED) {
+			else if (depStatus == Status.FAILED || depStatus == Status.CANCELLED || depStatus == Status.KILLED) {
 				// We propagate failures as KILLED states.
 				shouldKill = true;
 			}
@@ -755,10 +756,10 @@ public class FlowRunner extends EventHandler implements Runnable {
 		// If the flow has failed, and we want to finish only the currently running jobs, we just
 		// kill everything else. We also kill, if the flow has been cancelled.
 		if (flowFailed && failureAction == ExecutionOptions.FailureAction.FINISH_CURRENTLY_RUNNING) {
-			return Status.KILLED;
+			return Status.CANCELLED;
 		}
-		else if (shouldKill || isCancelled()) {
-			return Status.KILLED;
+		else if (shouldKill || isKilled()) {
+			return Status.CANCELLED;
 		}
 		
 		// All good to go, ready to run.
@@ -827,7 +828,7 @@ public class FlowRunner extends EventHandler implements Runnable {
 				if (flowFailed) {
 					flow.setStatus(Status.FAILED_FINISHING);
 				}
-				else if (flowCancelled) {
+				else if (flowKilled) {
 					flow.setStatus(Status.KILLED);
 				}
 				else {
@@ -839,20 +840,20 @@ public class FlowRunner extends EventHandler implements Runnable {
 		}
 	}
 	
-	public void cancel(String user) {
+	public void kill(String user) {
 		synchronized(mainSyncObj) {
-			logger.info("Flow cancelled by " + user);
-			cancel();
+			logger.info("Flow killed by " + user);
+			kill();
 			updateFlow();
 		}
 		interrupt();
 	}
 	
-	private void cancel() {
+	private void kill() {
 		synchronized(mainSyncObj) {
-			logger.info("Cancel has been called on flow " + execId);
+			logger.info("Kill has been called on flow " + execId);
 			flowPaused = false;
-			flowCancelled = true;
+			flowKilled = true;
 			
 			if (watcher != null) {
 				logger.info("Watcher is attached. Stopping watcher.");
@@ -860,9 +861,9 @@ public class FlowRunner extends EventHandler implements Runnable {
 				logger.info("Watcher cancelled status is " + watcher.isWatchCancelled());
 			}
 			
-			logger.info("Cancelling " + activeJobRunners.size() + " jobs.");
+			logger.info("Killing " + activeJobRunners.size() + " jobs.");
 			for (JobRunner runner : activeJobRunners) {
-				runner.cancel();
+				runner.kill();
 			}
 		}
 	}
@@ -910,22 +911,26 @@ public class FlowRunner extends EventHandler implements Runnable {
 				case KILLED:
 				case FAILED:
 				case FAILED_FINISHING:
-					resetFailedState(base, nodesToRetry);	
+					resetFailedState(base, nodesToRetry);
+					continue;
+				case CANCELLED:
+					node.setStatus(Status.READY);
+					node.setEndTime(-1);
+					node.setStartTime(-1);
+					node.setUpdateTime(currentTime);
+					break;
 				default:
-				}
-				
-				if (base.getStatus() != Status.KILLED) {
 					continue;
 				}
 			}
-			else if (node.getStatus() == Status.KILLED) {
+			else if (node.getStatus() == Status.CANCELLED) {
 				// Not a flow, but killed
 				node.setStatus(Status.READY);
 				node.setStartTime(-1);
 				node.setEndTime(-1);
 				node.setUpdateTime(currentTime);
 			}
-			else if(node.getStatus() == Status.FAILED) {
+			else if(node.getStatus() == Status.FAILED || node.getStatus() == Status.KILLED) {
 				node.resetForRetry();
 				nodesToRetry.add(node);
 			}
@@ -992,8 +997,8 @@ public class FlowRunner extends EventHandler implements Runnable {
 		}
 	}
 
-	public boolean isCancelled() {
-		return flowCancelled;
+	public boolean isKilled() {
+		return flowKilled;
 	}
 	
 	public ExecutableFlow getExecutableFlow() {
