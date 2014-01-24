@@ -573,7 +573,9 @@ public class FlowRunner extends EventHandler implements Runnable {
 		for(String end: flow.getEndNodes()) {
 			ExecutableNode node = flow.getExecutableNode(end);
 
-			if (node.getStatus() == Status.KILLED || node.getStatus() == Status.FAILED || node.getStatus() == Status.CANCELLED) {
+			if (node.getStatus() == Status.KILLED || 
+				node.getStatus() == Status.FAILED || 
+				node.getStatus() == Status.CANCELLED) {
 				succeeded = false;
 			}
 			
@@ -742,7 +744,9 @@ public class FlowRunner extends EventHandler implements Runnable {
 			if (!Status.isStatusFinished(depStatus)) {
 				return null;
 			}
-			else if (depStatus == Status.FAILED || depStatus == Status.CANCELLED || depStatus == Status.KILLED) {
+			else if (depStatus == Status.FAILED || 
+					depStatus == Status.CANCELLED || 
+					depStatus == Status.KILLED) {
 				// We propagate failures as KILLED states.
 				shouldKill = true;
 			}
