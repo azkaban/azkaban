@@ -40,7 +40,4 @@ public interface ConditionChecker {
 	
 	long getNextCheckTime();
 	
-//	void setCondition(Condition c);
-//	
-//	String getDescription();
 }
