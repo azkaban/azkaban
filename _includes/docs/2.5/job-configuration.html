@@ -1,0 +1,181 @@
+<h2 id="job-configuration">Job Configurations</h2>
+
+<h3>Common Parameters</h3>
+
+Besides the __type__ and the __dependencies__ parameters, there are several parameters that
+Azkaban reserves for all jobs. All of the parameters below are optional.
+
+<table class="table table-bordered table-condensed table-striped">
+	<thead>
+		<tr>
+			<th>Parameter</th>
+			<th>Description</th>
+		</tr>
+	</thead>
+	<tbody>
+		<tr>
+			<td>retries</td>
+			<td>The number of retries that will be automatically attempted for failed jobs</td>
+		</tr>
+		<tr>
+			<td>retry.backoff</td>
+			<td>The millisec time between each retry attempt</td>
+		</tr>
+		<tr>
+			<td>working.dir</td>
+			<td>Override the working directory for the execution. This is by default the directory that contains the job file that is being run.</td>
+		</tr>
+		<tr>
+			<td>env.<em>property</em></td>
+			<td>Set the environment variable with named <em>property</em></td>
+		</tr>
+		<tr>
+			<td>failure.emails</td>
+			<td>Comma delimited list of emails to notify during a failure. *</td>
+		</tr>
+		<tr>
+			<td>success.emails</td>
+			<td>Comma delimited list of emails to notify during a success. *</td>
+		</tr>
+		<tr>
+			<td>notify.emails</td>
+			<td>Comma delimited list of emails to notify during either a success or failure. *</td>
+		</tr>
+	</tbody>
+</table>
+
+<div class="bs-callout bs-callout-warning">
+	<h4>Email properties</h4>
+	<p>Note that for email properties, this property is retrieved from the last job in the flow and applied flow level. All other email properties of jobs in the flow are ignored.</p>
+</div>
+
+
+<h3>Runtime Properties</h3>
+
+<p>These properties are automatically added to Azkaban properties during runtime for a job to use.</p>
+
+<table class="table table-bordered table-striped table-condensed">
+	<thead>
+		<tr>
+			<th>Parameter</th>
+			<th>Description</th>
+		</tr>
+	</thead>
+	<tbody>
+		<tr>
+			<td>azkaban.job.attempt</td>
+			<td>The attempt number for the job. Starts with attempt 0 and increments with every retry.</td>
+		</tr>
+		<tr>
+			<td>azkaban.flow.flowid</td>
+			<td>The flow name that the job is running in.</td>
+		</tr>
+		<tr>
+			<td>azkaban.flow.execid</td>
+			<td>The execution id that is assigned to the running flow.</td>
+		</tr>
+		<tr>
+			<td>azkaban.flow.projectid</td>
+			<td>The numerical project id.</td>
+		</tr>
+		<tr>
+			<td>azkaban.flow.projectversion</td>
+			<td>The project upload version.</td>
+		</tr>
+		<tr>
+			<td>azkaban.flow.uuid</td>
+			<td>A unique identifier assigned to a flow&#8217;s execution.</td>
+		</tr>
+		<tr>
+			<td>azkaban.flow.start.timestamp</td>
+			<td>The millisecs since epoch start time.</td>
+		</tr>
+		<tr>
+			<td>azkaban.flow.start.year</td>
+			<td>The start year.</td>
+		</tr>
+		<tr>
+			<td>azkaban.flow.start.month</td>
+			<td>The start month of the year (1-12)</td>
+		</tr>
+		<tr>
+			<td>azkaban.flow.start.day</td>
+			<td>The start day of the month.</td>
+		</tr>
+		<tr>
+			<td>azkaban.flow.start.hour</td>
+			<td>The start hour in the day.</td>
+		</tr>
+		<tr>
+			<td>azkaban.flow.start.minute</td>
+			<td>The start minute.</td>
+		</tr>
+		<tr>
+			<td>azkaban.flow.start.second</td>
+			<td>The start second in the minute.</td>
+		</tr>
+		<tr>
+			<td>azkaban.flow.start.milliseconds</td>
+			<td>The start millisec in the sec</td>
+		</tr>
+		<tr>
+			<td>azkaban.flow.start.timezone</td>
+			<td>The start timezone that is set.</td>
+		</tr>
+	</tbody>
+</table>
+
+<h3>Inherited Parameters</h3>
+
+<p>Any included _.properties_ files will be treated as properties that are shared amongst the individual jobs of the flow. The properties are resolved in a hierarchical manner by directory.</p>
+
+<p>For instance, suppose you have the following directory structure in your zip file.</p>
+
+<pre class="code">
+system.properties
+baz.job
+myflow/
+   myflow.properties
+   myflow2.properties
+   foo.job
+   bar.job
+</pre>
+
+<p>That directory structure will be preserved when running in Azkaban. The _baz_ job will inherit only from _system.properties_. The jobs _foo_ and _bar_ will inherit from _myflow.properties and _myflow2.properties_, which in turn will inherit from _system.properties_.</p>
+
+<p>The hierarchical ordering of properties in the same directory is arbitrary.</p>
+
+<h3>Parameter Substitution</h3>
+
+<p>Azkaban allows for replacing of parameters. Whenever a \$\{_parameter_\} is found in a properties or job file, Azkaban will attempt to replace that parameter. The resolution of the parameters is done late.</p>
+
+<pre class="code">
+# shared.properties
+replaceparameter=bar
+</pre>
+
+<pre class="code">
+# myjob.job
+param1=mytest
+foo=${replaceparameter}
+
+param2=${param1}
+</pre>
+
+<p>In the previous example, before _myjob_ is run, _foo_ will equal _bar_ and _param2_ will equal _mytest_.</p>
+
+<h3>Parameter Passing</h3>
+
+<p>There is often a desire to pass these parameters to the executing job code. The method of passing these parameters is dependent on the jobtype that is run, but usually Azkaban writes these parameters to a temporary file that is readable by the job.</p>
+
+<p>The path of the file is set in _JOB\_PROP\_FILE_ environment variable. The format is the same key value pair property files. Certain built-in job types do this automatically for you. The _java_ type, for instance, will invoke your Runnable and given a proper constructor, Azkaban can pass parameters to your code automatically.</p>
+
+<h3>Parameter Output</h3>
+
+<p>Properties can be exported to be passed to its dependencies. A second environment variable _JOB\_OUTPUT\_PROP\_FILE_ is set by Azkaban. If a job writes a file to that path, Azkaban will read this file and then pass the output to the next jobs in the flow.</p>
+
+<p>The output file should be in json format. Certain built-in job types can handle this automatically, such as the _java_ type.</p>
+
+
+
+
