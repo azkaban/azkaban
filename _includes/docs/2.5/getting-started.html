@@ -1,0 +1,42 @@
+          <div class="page-header">
+            <h1 id="getting-started">Getting Started</h1>
+          </div>
+
+          <p>In version 3.0 we provide two modes: the stand alone "solo-server" mode and the heavier weight two server mode. Here are the differences between the two modes:</p>
+          <ul>
+            <li>
+              In solo server mode, the DB is embedded H2 and both web server and executor server run in the same process. This should be useful if one just wants to try things out. It can also be used on small scale use cases.
+              <ol>
+                <li><a href="#soloserver-setup">Download and Install Solo Server Package</a></li>
+                <li><a href="#plugin-setup">Install Azkaban Plugins</a></li>
+              </ol>
+            </li>
+            <li>
+              The two server mode is for more serious production environment. Its DB should be backed by MySQL instances with master-slave set up. The web server and executor server should run in different processes so that upgrading and maintenance shouldn't affect users.
+            </li>
+          </ul>
+
+          <p>Below are instructions on how to set Azkaban up.</p>
+
+          <h2>Solo Server Mode</h2>
+
+Azkaban2 two server mode is fairly easy to set up, although it has more moving pieces than its predecessor. The most challenging piece to setup is the database.
+There are three servers that need to be setup:
+<ul>
+  <li><strong>MySQL instance</strong> - Azkaban uses MySQL to store projects and executions</li>
+  <li><strong>Azkaban Web Server</strong> - Azkaban Web Server is a Jetty server which acts as the controller as well as the web interface</li>
+  <li><strong>Azkaban Executor Server</strong> - Azkaban Executor Server executes submitted workflow.</li>
+</ul>
+
+<h3>1. [Setup the Database](./database.html)</h3>
+* Azkaban uses MySQL to manage projects, schedules and executions.
+
+<h3>2. [Download and Install the Web Server](./webserversetup.html)</h3>
+* Azkaban Web server consists of the web interface, the scheduler and the project manager
+
+<h3>3. [Download and Install the Executor Server](./execserversetup.html)</h3>
+* Azkaban Executor server runs the workflows
+
+<h3>4. [Install Azkaban Plugins](./pluginsetup.html)</h3>
+* Optional step for installing common Azkaban plugins.
+

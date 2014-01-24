@@ -470,3 +470,6 @@ ul.footer-nav li a:hover {
 .navbar-inverse .navbar-nav > .active > a {
   border-bottom: 1px solid #ff3601;
 }
+.docs-section + .docs-section {
+  padding-top: 40px;
+}

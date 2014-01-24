@@ -6,7 +6,7 @@
 
 		{% include includes.html %}
 	</head>
-	<body>
+	<body data-spy="scroll" data-target=".bs-sidebar">
 		{% include header-documents.html %}
 
 		<div class="az-page-header">
@@ -32,10 +32,6 @@
 
 		<script>
 			$(function(){
-				$(document.body).scrollspy({
-					target: '.bs-sidebar'
-				});
-			 // back to top
 				setTimeout(function () {
 					var $sideBar = $('.bs-sidebar')
 					$sideBar.affix({
