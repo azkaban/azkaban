@@ -1,27 +1,27 @@
----
-layout: documents
-nav: upgradefrom21
-context: ../..
----
+<h2 id="upgrade-21">Upgrading DB from 2.1</h2>
 
-If installing Azkaban from scratch, you can ignore this document. This is only for those who are upgrading from 2.1 to 3.0.
+<p>If installing Azkaban from scratch, you can ignore this document. This is only for those who are upgrading from 2.1 to 2.5.</p>
 
+<p>The <code>update_2.1_to_3.0.sql</code> needs to be run to alter all the tables. This includes several table alterations and a new table.</p>
 
-# Upgrading DB from 2.1
+<p>Here are the changes:</p>
 
-The _update\_2.1\_to\_3.0.sql_ needs to be run to alter all the tables. This includes several table alterations and a new table.
+<ul>
+	<li>
+		Alter project_properties table'
+		<ul>
+			<li>Modify 'name' column to be 255 characters</li>
+		</ul>
+	</li>
+	<li>Create new table triggers</li>
+</ul>
 
-Here are the changes:
+<h3>Importing Existing Schedules from 2.1</h3>
 
-* Alter project_properties table
-	* Modify 'name' column to be 255 characters
-* Create new table triggers
+<p>In 3.0, the scheduling system is merged into the new triggering system. The information will be persisted in <code>triggers</code> table in DB. We have a simple tool to import your existing schedules into this new table.</p>
 
+<p>After you download and install web server, please run this command <strong>once</strong> from web server install directory:</p>
 
-# Importing Existing Schedules from 2.1
-
-In 3.0, the scheduling system is merged into the new triggering system. The information will be persisted in _triggers_ table in DB. We have a simple tool to import your existing schedules into this new table.
-
-After you download and install web server, please run this command _once_ from web server install directory:
-
-bash bin/schedule2trigger.sh
+<pre>
+$ bash bin/schedule2trigger.sh
+</pre>
