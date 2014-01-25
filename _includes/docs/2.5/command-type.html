@@ -1,0 +1,28 @@
+<h2 id="command-type">Command Job Type (built-in)</h2>
+
+<p>The command job type is one of the basic built-in types. It runs multiple unix commands using java processbuilder.  Upon execution, Azkaban spawns off a process to run the command.</p>
+
+<h3>How To Use</h3>
+
+<p>One can run one or multiple commands within one command job. Here is what is needed:</p>
+
+<table class="table table-bordered table-striped table-condensed">
+  <thead>
+    <tr>
+      <th>Type</th>
+      <th>Command</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>command</td>
+      <td>The full command to run</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>For multiple commands, do it like <code>command.1, command.2</code>, etc.</p>
+
+<h3>Sample Job Package</h3>
+
+<p>Here is a sample job package, just to show how it works. [command.zip](https://s3.amazonaws.com/azkaban2/azkaban2/samplejobs/command.zip) _Uploaded May 13, 2013_</p>
