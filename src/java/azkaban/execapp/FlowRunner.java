@@ -400,7 +400,7 @@ public class FlowRunner extends EventHandler implements Runnable {
 		resetFailedState(this.flow, retryJobs);
 		
 		for (ExecutableNode node: retryJobs) {
-			if(node.getStatus() == Status.READY || node.getStatus() == Status.DISABLED) {
+			if (node.getStatus() == Status.READY || node.getStatus() == Status.DISABLED) {
 				runReadyJob(node);
 			}
 			else if (node.getStatus() == Status.SUCCEEDED){
@@ -570,7 +570,7 @@ public class FlowRunner extends EventHandler implements Runnable {
 		boolean succeeded = true;
 		Props previousOutput = null;
 		
-		for(String end: flow.getEndNodes()) {
+		for (String end: flow.getEndNodes()) {
 			ExecutableNode node = flow.getExecutableNode(end);
 
 			if (node.getStatus() == Status.KILLED || 
@@ -685,7 +685,7 @@ public class FlowRunner extends EventHandler implements Runnable {
 		}
 		
 		File path = new File(execDir, source);
-		if(props == null) {
+		if (props == null) {
 			// if no override prop, load the original one on disk
 			try {
 				props = new Props(null, path);				
@@ -934,7 +934,7 @@ public class FlowRunner extends EventHandler implements Runnable {
 				node.setEndTime(-1);
 				node.setUpdateTime(currentTime);
 			}
-			else if(node.getStatus() == Status.FAILED || node.getStatus() == Status.KILLED) {
+			else if (node.getStatus() == Status.FAILED || node.getStatus() == Status.KILLED) {
 				node.resetForRetry();
 				nodesToRetry.add(node);
 			}
@@ -943,7 +943,7 @@ public class FlowRunner extends EventHandler implements Runnable {
 				logger.info("Resetting job '" + node.getNestedId() + "' from " + oldStatus + " to " + node.getStatus());
 			}
 			
-			for(String inId: node.getInNodes()) {
+			for (String inId: node.getInNodes()) {
 				ExecutableNode nodeUp = flow.getExecutableNode(inId);
 				queue.add(nodeUp);
 			}
