@@ -5,7 +5,7 @@
 
 <p>Azkaban is able to support all Hadoop versions, with support for Hadoop security features; Azkaban is able to support various ecosystem components with all different versions, such as different versions of pig, hive, on the same instance.</p>
 
-<p>A common pattern to achieve this is by using the _HadoopSecurityManager_ class, which handles talking to a Hadoop cluster and take care of Hadoop security, in a secure way.</p>
+<p>A common pattern to achieve this is by using the <code>HadoopSecurityManager</code> class, which handles talking to a Hadoop cluster and take care of Hadoop security, in a secure way.</p>
 
 <h3>Hadoop Security with Kerberos, Hadoop Tokens</h3>
 
@@ -19,17 +19,17 @@
 
 <h4>Hadoop Tokens</h4>
 
-<p>Once a user is authenticated with Hadoop services, Hadoop will issue tokens to the user so that its internal services won't flood KDC. For a description of tokens, see [here](http://hortonworks.com/blog/the-role-of-delegation-tokens-in-apache-hadoop-security/).</p>
+<p>Once a user is authenticated with Hadoop services, Hadoop will issue tokens to the user so that its internal services won't flood KDC. For a description of tokens, see <a href="http://hortonworks.com/blog/the-role-of-delegation-tokens-in-apache-hadoop-security/" target="_blank">here</a>.</p>
 
 <h4>Hadoop SecurityManager</h4>
 
-<p>For human users, one authenticate with KDC with a kinit command. But for scheduler such as Azkaban that runs jobs on behalf as other users, it needs to acquire tokens that will be used by the users. Specific Azkaban job types should handle this, with the use of HadoopSecurityManager class.</p>
+<p>For human users, one authenticate with KDC with a kinit command. But for scheduler such as Azkaban that runs jobs on behalf as other users, it needs to acquire tokens that will be used by the users. Specific Azkaban job types should handle this, with the use of <code>HadoopSecurityManager</code> class.</p>
 
 <p>For instance, when Azkaban loads the pig job type, it will initiate a HadoopSecurityManager that is authenticated with the desired KDC and Hadoop Cluster. The pig job type conf should specify which tokens are needed to talk to different services. At minimum it needs tokens from name node and job tracker. When a pig job starts, it will go to the HadoopSecurityManager to acquire all those tokens. When the user process finishes, the pig job type calls HadoopSecurityManager again to cancel all those tokens.</p>
 
 <h3>Settings Common to All Hadoop Clusters</h3>
 
-<p>When a user program wants to talk to a Hadoop cluster, it needs to know where are the name node and job tracker. It also needs to know how to authenticate with them. These information are all in the Hadoop config files that are normally in _$HADOOP\_HOME/conf_. For this reason, this conf directory as well as hadoop-core jar need to be on azkaban executor server classpath.</p>
+<p>When a user program wants to talk to a Hadoop cluster, it needs to know where are the name node and job tracker. It also needs to know how to authenticate with them. These information are all in the Hadoop config files that are normally in <code>$HADOOP_HOME/conf</code>. For this reason, this conf directory as well as the hadoop-core jar need to be on azkaban executor server classpath.</p>
 
 <p>If you are using Hive that uses HCat as its metastore, you also need relevant hive jars and hive conf on the classpath as well.</p>
 
@@ -39,15 +39,15 @@
 
 <h4>temp dir</h4>
 
-<p>Besides those, many tools on Hadoop, such as Pig/Hive/Crunch write files into temporary directory. By default, they all go to /tmp. This could cause operations issue when a lot of jobs run concurrently. Because of this, you may want to change this by setting _java.io.tmp.dir_ to a different directory.</p>
+<p>Besides those, many tools on Hadoop, such as Pig/Hive/Crunch write files into temporary directory. By default, they all go to <code>/tmp</code>. This could cause operations issue when a lot of jobs run concurrently. Because of this, you may want to change this by setting <code>java.io.tmp.dir</code> to a different directory.</p>
 
 <h3>Settings To Talk to UNSECURE Hadoop Cluster</h3>
 
 <p>If you are just starting out with Hadoop, chances are you don't have kerberos authentication for your Hadoop. Depending on whether you want to run everything as azkaban user (or whatever user started the azkaban executor server), you can do the following settings:</p>
 
 <ul>
-  <li>If you started the executor server with user named azkaban, and you want to run all the jobs as azkaban on Hadoop, just set _azkaban.should.proxy=false_ and _obtain.binary.token=false_</li>
-  <li>If you started the executor server with user named azkaban, but you want to run Hadoop jobs as their individual users, you need to set _azkaban.should.proxy=true_ and _obtain.binary.token=false_</li>
+  <li>If you started the executor server with user named azkaban, and you want to run all the jobs as azkaban on Hadoop, just set <code>azkaban.should.proxy=false</code> and <code>obtain.binary.token=false</code></li>
+  <li>If you started the executor server with user named azkaban, but you want to run Hadoop jobs as their individual users, you need to set <code>azkaban.should.proxy=true</code> and <code>obtain.binary.token=false</code></li>
 </ul>
 
 <h3>Settings To Talk to SECURE Hadoop Cluster</h3>

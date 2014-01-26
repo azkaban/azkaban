@@ -1,6 +1,6 @@
 <h2 id="voldemortbuildandpush-type">VoldemortBuildandPush Type</h2>
 
-<p>Pushing data from hadoop to voldemort store used to be entirely in java. This created lots of problems, mostly due to users having to keep track of jars and dependencies and keep them up-to-date. We created the "VoldemortBuildandPush" job type to address this problem. Jars and dependencies are now managed by admins; absolutely no jars or java code are required from users.</p>
+<p>Pushing data from hadoop to voldemort store used to be entirely in java. This created lots of problems, mostly due to users having to keep track of jars and dependencies and keep them up-to-date. We created the <code>VoldemortBuildandPush</code> job type to address this problem. Jars and dependencies are now managed by admins; absolutely no jars or java code are required from users.</p>
 
 <h3>How to Use</h3>
 
@@ -61,9 +61,9 @@
   </tbody>
 </table>
 
-<p>Here are what's needed and normally configured by the admn (always put common properties in commonprivate.properties and common.properties for all job types).</p>
+<p>Here are what's needed and normally configured by the admn (always put common properties in <code>commonprivate.properties</code> and <code>common.properties</code> for all job types).</p>
 
-<p>These go into private.properties:</p>
+<p>These go into <code>private.properties</code>:</p>
 
 <table class="table table-condensed table-bordered table-striped">
   <thead>
@@ -112,7 +112,7 @@
   </tbody>
 </table>
 
-<p>These go into plugin.properties:</p>
+<p>These go into <code>plugin.properties</code>:</p>
 
 <table class="table table-condensed table-bordered table-striped">
   <thead>

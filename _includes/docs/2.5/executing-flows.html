@@ -1,6 +1,6 @@
 <h2 id="executing-flows">Executing Flow</h2>
 
-From the [Flow View](./projectflowview.html) or the Project Page, you can trigger a job to be executed.
+From the <a href="#flow-view">Flow View</a> or the Project Page, you can trigger a job to be executed.
 You will see an executing panel pop-up.
 
 <h3>Executing Flow View</h3>
@@ -32,9 +32,9 @@ as if their dependencies have been met. Disabled jobs will appear translucent.
 <p>When a job in a flow fails, you are able to control how the rest of the flow will succeed.</p>
 
 <ul>
-	<li><strong>Finish Current Running</strong> will finish the jobs that are currently running, but it will not start new jobs. The flow will be put in the _FAILED FINISHING_ state and be set to FAILED once everything completes.</li>
+  <li><strong>Finish Current Running</strong> will finish the jobs that are currently running, but it will not start new jobs. The flow will be put in the <code>FAILED FINISHING</code> state and be set to FAILED once everything completes.</li>
 	<li><strong>Cancel All</strong> will immediately kill all running jobs and set the state of the executing flow to FAILED.</li>
-	<li><strong>Finish All Possible</strong> will keep executing jobs in the flow as long as its dependencies are met. The flow will be put in the _FAILED FINISHING_ state and be set to FAILED once everything completes.</li>
+  <li><strong>Finish All Possible</strong> will keep executing jobs in the flow as long as its dependencies are met. The flow will be put in the <code>FAILED FINISHING</code> state and be set to FAILED once everything completes.</li>
 </ul>
 
 <img class="img-thumbnail" title="Failure Options" src="./images/executeflowfailure.png" ALT="Failure Options" width="450" />
@@ -49,8 +49,8 @@ as if their dependencies have been met. Disabled jobs will appear translucent.
 	<li>
 		<strong>Pipeline</strong> runs the the flow in a manner that the new execution will not overrun the concurrent execution.
 		<ul>
-			<li>Level 1: blocks executing __job A__ until the the previous flow's __job A__ has completed.</li>
-			<li>Level 2: blocks executing __job A__ until the the children of the previous flow's __job A__ has completed. This is useful if you need to run your flows a few steps behind an already executin flow.</li>
+      <li>Level 1: blocks executing <strong>job A</strong> until the the previous flow's <strong>job A</strong> has completed.</li>
+      <li>Level 2: blocks executing <strong>job A</strong> until the the children of the previous flow's <strong>job A</strong> has completed. This is useful if you need to run your flows a few steps behind an already executin flow.</li>
 		</ul>
 	</li>
 </ul>

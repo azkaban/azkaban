@@ -20,17 +20,13 @@ Azkaban is designed to make non-core functionalities plugin-based, so that
 	<li>pluggable job type executors on AzkabanExecutorServer, such as job types for hadoop ecosystem components.</li>
 </ul>
 
-<p>We recommend installing these plugins for the best usage of Azkaban.</p>
-
-<p>A set of common plugins are available to download from the [download page](../../downloads.html).</p>
-
-<p>Alternatively, by cloning the <a href="https://github.com/azkaban/azkaban-plugins">GitHub repo</a>, you can run _ant -package_ in different plugin directories to create tar ball packages.</p>
+<p>We recommend installing these plugins for the best usage of Azkaban. A set of common plugins are available to download from the <a href="{{ site.home }}/downloads.html">download page</a>. Alternatively, by cloning the <a href="https://github.com/azkaban/azkaban-plugins">GitHub repo</a>, you can run <code>ant</code> in different plugin directories to create tar ball packages.</p>
 
 <p>Below are instructions of how to install these plugins to work with Azkaban.</p>
 
 <h3>User Manager Plugins</h3>
-<p>By default, Azkaban ships with the XMLUserManager class which authenticates users based on a xml file, which is located at _conf/azkaban-users.xml_.</p>
-<p>This is not secure and doesn't serve many users. In real production deployment, you should rely on your own user manager class that suits your need, such as a LDAP based one. The XMLUserManager can still be used for special user accounts and managing user roles. You can find examples of these two cases in the default _azkaban-users.xml_ file.</p>
+<p>By default, Azkaban ships with the XMLUserManager class which authenticates users based on a xml file, which is located at <code>conf/azkaban-users.xml</code>.</p>
+<p>This is not secure and doesn't serve many users. In real production deployment, you should rely on your own user manager class that suits your need, such as a LDAP based one. The <code>XMLUserManager</code> can still be used for special user accounts and managing user roles. You can find examples of these two cases in the default <code>azkaban-users.xml</code> file.</p>
 
 <p>To install your own user manager class, specify in <code>Azkaban2-web-server-install-dir/conf/azkaban.properties</code>:</p>
 
@@ -43,16 +39,17 @@ Azkaban is designed to make non-core functionalities plugin-based, so that
 <h4>HDFS Viewer Plugins</h4>
 
 <p>HDFS Viewer Plugin should be installed in AzkabanWebServer plugins directory, which is specified in AzkabanWebServer's config file, for example, in <code>Azkaban2-web-server-install-dir/conf/azkaban.properties</code>:</p>
+
 <pre>viewer.plugins=hdfs</pre>
 
-<p>This tells Azkaban to load hdfs viewer plugin from <code>Azkaban2-web-server-install-dir/plugins/viewer/hdfs</code></p>
+<p>This tells Azkaban to load hdfs viewer plugin from <code>Azkaban2-web-server-install-dir/plugins/viewer/hdfs</code>.</p>
 
-<p>Extract the <code>azkaban-hdfs-viewer</code> archive to the AzkabanWebServer <code>./plugins/viewer</code> directory. Rename the directory to _hdfs_, as specified in step 1).</p>
+<p>Extract the <code>azkaban-hdfs-viewer</code> archive to the AzkabanWebServer <code>./plugins/viewer</code> directory. Rename the directory to <code>hdfs</code>, as specified above.</p>
 
 <p>Depending on if the hadoop installation is turned on:</p>
 <ol>
-	<li>If the hadoop installation does not have security turned on, the default config is good enough. One can simply restart AzkabanWebServer and start using the hdfs viewer.</li>
-	<li>If the hadoop installation does have security turned on, the following configs should be set differently than their default values, in plugin's config file:</li>
+  <li>If the Hadoop installation does not have security turned on, the default config is good enough. One can simply restart <code>AzkabanWebServer</code> and start using the HDFS viewer.</li>
+	<li>If the Hadoop installation does have security turned on, the following configs should be set differently than their default values, in plugin's config file:</li>
 </ol>
 
 <table class="table table-bordered table-condensed table-striped">
@@ -90,11 +87,9 @@ Azkaban is designed to make non-core functionalities plugin-based, so that
 
 <p>Job type plugins should be installed with AzkabanExecutorServer's plugins directory, and specified in AzkabanExecutorServer's config file. For example, in <code>Azkaban2-exec-server-install-dir/conf/azkaban.properties</code>:</p>
 
-<code>azkaban.jobtype.plugin.dir=plugins/jobtypes</code>
+<pre>azkaban.jobtype.plugin.dir=plugins/jobtypes</pre>
 
-<p>This tells Azkaban to load all job types from <code>Azkaban2-exec-server-install-dir/plugins/jobtypes</code></p>
-	
-<p>Extract the archive into AzkabanExecutorServer <code>./plugins/</code> directory, rename it to <code>jobtypes</code> as specified in step 1).</p>
+<p>This tells Azkaban to load all job types from <code>Azkaban2-exec-server-install-dir/plugins/jobtypes</code>. Extract the archive into AzkabanExecutorServer <code>./plugins/</code> directory, rename it to <code>jobtypes</code> as specified above.</p>
 
 <p>The following setting is often needed when you run Hadoop Jobs:</p>
 
@@ -117,10 +112,12 @@ Azkaban is designed to make non-core functionalities plugin-based, so that
 	</tbody>
 </table>
 
-Depending on if the hadoop installation is turned on, 
-3a) If the hadoop installation does not have security turned on, you can likely rely on the default settings.
+Depending on if the hadoop installation is turned on:
 
-3b) If the Hadoop installation does have kerberos authentication turned on, you need to fill out the following hadoop settings:
+<ul>
+  <li>If the hadoop installation does not have security turned on, you can likely rely on the default settings.</li>
+  <li>If the Hadoop installation does have kerberos authentication turned on, you need to fill out the following hadoop settings:</li>
+</ul>
 
 <table class="table table-bordered table-condensed table-striped">
 	<thead>
@@ -145,6 +142,6 @@ Depending on if the hadoop installation is turned on,
 	</tbody>
 </table>
 
-<p>For more Hadoop security related information, see [HadoopSecurityManager](./hadoopsecuritymanager.html)</p>
+<p>For more Hadoop security related information, see <a href="#hadoopsecuritymanager">HadoopSecurityManager</a></p>
 
-4) Start the executor, watch for error messages and check executor server log. For job type plugins, the executor should do minimum testing and let you know if it is properly installed.
+Finally, start the executor, watch for error messages and check executor server log. For job type plugins, the executor should do minimum testing and let you know if it is properly installed.
