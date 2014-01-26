@@ -43,7 +43,7 @@ sudo /sbin/service mysqld restart
 
 <h3>3. Creating the Azkaban Tables</h3>
 <p>Download the azkaban-sql-script tarball from the <a href="###">download page</a>. Contained in this archive are table creation scripts.</p>
-<p>Run individual table creation scripts on the MySQL instance to create your tables. Alternatively, simply run the <code>create-all-sql</code> script. Any script with <code>_update_</code> as a prefix can be ignored.</p>
+<p>Run individual table creation scripts on the MySQL instance to create your tables. Alternatively, simply run the <code>create-all-sql</code> script. Any script with <code>update</code> as a prefix can be ignored.</p>
 
 <h3>4. Get the JDBC Connector Jar</h3>
 <p>For various reasons, Azkaban does not distribute the MySQL JDBC connector jar. You can download the jar from <a href="http://www.mysql.com/downloads/connector/j/" target="_blank">this link</a>. </p>

@@ -1,28 +1,15 @@
----
-layout: documents
-nav: commandtype
-context: ../..
----
+<h2 id='command-type'>Command Job Type (built-in)</h2>
 
-#Command Job Type (built-in)
-The command job type is one of the basic built-in types. It runs multiple unix commands using java processbuilder. 
-Upon execution, Azkaban spawns off a process to run the command.
+<p>The command job type is one of the basic built-in types. It runs multiple unix commands using java processbuilder. Upon execution, Azkaban spawns off a process to run the command.</p>
 
-## How-To-Use
-One can run one or multiple commands within one command job.
-Here is what is needed:
+<h3 id='howtouse'>How-To-Use</h3>
 
-|{.parameter}Parameter               |{.description} Description                                                       					|
-|---------------------|-----------------------------------------------------------------------------------------------------------------|
-|type		          | command																											|
-|command 		  	  | The full command to run.										 												|
-{.params}
+<p>One can run one or multiple commands within one command job. Here is what is needed:</p>
+<table class='params'><thead><tr><th class='parameter'>Parameter</th><th class='description'> Description</th></tr></thead><tbody><tr><td style='text-align: left;'>type</td><td style='text-align: left;'>command</td>
+</tr><tr><td style='text-align: left;'>command</td><td style='text-align: left;'>The full command to run.</td>
+</tr></tbody></table>
+<p>For multiple commands, do it like <em>command.1</em>, <em>command.2</em>, etc.</p>
 
-For multiple commands, do it like _command\.1_, _command\.2_, etc.
+<h3 id='sample_job_package'>Sample Job Package</h3>
 
-
-## Sample Job Package
-Here is a sample job package, just to show how it works.
-[command.zip](https://s3.amazonaws.com/azkaban2/azkaban2/samplejobs/command.zip) _Uploaded May 13, 2013_
-
-
+<p>Here is a sample job package, just to show how it works. <a href='https://s3.amazonaws.com/azkaban2/azkaban2/samplejobs/command.zip'>command.zip</a> <em>Uploaded May 13, 2013</em></p>

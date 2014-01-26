@@ -1,58 +1,38 @@
----
-layout: documents
-nav: creatingflows
-context: ../..
----
+<div class="page-header">
+  <h1 id='creating-flows'>Creating Flows</h1>
+</div>
 
-#Creating Flows
+<p>A job is a process you want to run in Azkaban. Jobs can be set up to be dependent on other jobs. The graph created by a set of jobs and their dependencies are what make up a flow.</p>
 
-A job is a process you want to run in Azkaban. Jobs can be set up to be dependent on other jobs.
-The graph created by a set of jobs and their dependencies are what make up a flow. 
+<h3>Creating Jobs</h3>
 
-### Creating Jobs
-Creating a job is very easy. We create a properties file with __.job__ extension. This job file defines
-the type of job to be run, the dependencies and any parameters needed to set up your job correctly.
-
-<pre class="code">
+<p>Creating a job is very easy. We create a properties file with <strong>.job</strong> extension. This job file defines the type of job to be run, the dependencies and any parameters needed to set up your job correctly.</p>
+<pre class='code'>
 # foo.job
 type=command
 command=echo "Hello World"
 </pre>
+<p>In the example, the <em>type</em> of job is <em>command</em>. The <em>command</em> parameter is a parameter that the <em>command</em> job type understands. In this case, it will run the command to print &#8220;Hello World&#8221;. Standard output and the standard error of the job are written to logs which are viewable in the Azkaban Web UI.</p>
 
-In the example, the _type_ of job is _command_. The _command_ parameter is a parameter that the _command_ job type
-understands. In this case, it will run the command to print "Hello World". Standard output and the standard error
-of the job are written to logs which are viewable in the Azkaban Web UI.
+<p>For more information about jobs, see the <a href='./jobconf.html'>jobs configuration</a> page.</p>
 
-For more information about jobs, see the [jobs configuration](./jobconf.html) page.
+<h3>Creating Flows</h3>
 
-### Creating Flows
-A flow is a set of jobs that depends on one another. The dependencies of a job always run before the job itself can run. 
-To add dependencies to a job, add the __dependencies__ property as shown in the following example.
-
-<pre class="code">
+<p>A flow is a set of jobs that depends on one another. The dependencies of a job always run before the job itself can run. To add dependencies to a job, add the <strong>dependencies</strong> property as shown in the following example.</p>
+<pre class='code'>
 #foo.job
 type=command
 command=echo foo
-</pre>
-
-<pre class="code">
+</pre><pre class='code'>
 #bar.job
 type=command
 dependencies=foo
 command=echo bar
 </pre>
+<p>The <em>dependencies</em> parameter takes a comma separated list of job names. Make sure that the job names exist and that there are no cyclical dependencies.</p>
 
-The _dependencies_ parameter takes a comma separated list of job names. Make sure that the job names exist and that
-there are no cyclical dependencies.
+<p>A flow is created for every job that has no job dependent on it, and the flow is given the same name as the job. For instance, in the above example, <em>bar</em> depends on <em>foo</em>, but nothing depends on <em>bar</em>. So a flow will be created with the name <em>bar</em>.</p>
 
-A flow is created for every job that has no job dependent on it, and the flow is given the same name as the job. For
-instance, in the above example, _bar_ depends on _foo_, but nothing depends on _bar_. So a flow will be created with
-the name _bar_.
+<h3>Uploading Flows</h3>
 
-### Uploading Flows
-
-To upload the flow, all that is required is that all of your _.job_ and any binaries that need to be executed are
-archived in a _.zip_ file. Through the Azkaban UI, you can then deploy your workflow. The flow will be validated for
-missing or cyclical dependencies. See [project uploads](./projectupload.html).
-
-
+<p>To upload the flow, all that is required is that all of your <em>.job</em> and any binaries that need to be executed are archived in a <em>.zip</em> file. Through the Azkaban UI, you can then deploy your workflow. The flow will be validated for missing or cyclical dependencies. See <a href='./projectupload.html'>project uploads</a>.</p>
