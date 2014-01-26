@@ -1,18 +1,18 @@
 <h2 id="hadoopjava-type">hadoopJava Type</h2>
 
-<p>In large part, this is the same "java" type. The difference is its ability to talk to a hadoop cluster securely, via hadoop tokens. Most hadoop job types can be created by running a hadoopJava job, such as pig, hive, etc.</p>
+<p>In large part, this is the same <code>java</code> type. The difference is its ability to talk to a Hadoop cluster securely, via Hadoop tokens. Most Hadoop job types can be created by running a hadoopJava job, such as Pig, Hive, etc.</p>
 
 <h3>How To Use</h3>
 
-<p>hadoopJava type runs user java program after all. Upon execution, it tries to construct an object that has the constructor signature of _constructor\(String, Props\)_ and runs its method of _run\(\)_. If user wants to cancel the job, it tries the user defined _cancel\(\)_ method before doing a hard kill on that process.</p>
+<p>The <code>hadoopJava</code> type runs user java program after all. Upon execution, it tries to construct an object that has the constructor signature of <code>constructor(String, Props)</code> and runs its <code>run</code> method. If user wants to cancel the job, it tries the user defined <code>cancel</code> method before doing a hard kill on that process.</p>
 
-<p>hadoopJava job type talks to a secure cluster via hadoop tokens. The admin should specify "obtain.binary.token=true" if the hadoop cluster security is turned on. Before executing a job, Azkaban will obtain name node token and job tracker tokens for this job. These tokens will be written to a token file, to be picked up by user job process during its execution. After the job finishes, Azkaban takes care of canceling these tokens from name node and job tracker. </p>
+<p>The <code>hadoopJava</code> job type talks to a secure cluster via Hadoop tokens. The admin should specify <code>obtain.binary.token=true</code> if the Hadoop cluster security is turned on. Before executing a job, Azkaban will obtain name node token and job tracker tokens for this job. These tokens will be written to a token file, to be picked up by user job process during its execution. After the job finishes, Azkaban takes care of canceling these tokens from name node and job tracker. </p>
 
 <p>Since Azkaban only obtains the tokens at the beginning of the job run, and does not requesting new tokens or renew old tokens during the execution, it is important that the job does not run longer than configured token life.</p>
 
-<p>If there are multiple job submissions inside the user program, the user should also take care not to have a single MR step cancel the tokens upon completion, thereby failing all other MR steps when they try to authenticate with hadoop services.</p>
+<p>If there are multiple job submissions inside the user program, the user should also take care not to have a single MR step cancel the tokens upon completion, thereby failing all other MR steps when they try to authenticate with Hadoop services.</p>
 
-<p>In many cases, it is also necessary to add the following code to make sure user program picks up the hadoop tokens in "conf" or "jobconf" like the following:</p>
+<p>In many cases, it is also necessary to add the following code to make sure user program picks up the Hadoop tokens in "conf" or "jobconf" like the following:</p>
 
 <pre class="code">
 // Suppose this is how one gets the conf
@@ -23,7 +23,7 @@ if (System.getenv("HADOOP_TOKEN_FILE_LOCATION") != null) {
 }
 </pre>
 
-<p>Here are some common configurations that make a hadoopJava job for a user:</p>
+<p>Here are some common configurations that make a <code>hadoopJava</code> job for a user:</p>
 
 <table class="table table-striped table-condensed table-bordered">
   <thead>
@@ -35,7 +35,7 @@ if (System.getenv("HADOOP_TOKEN_FILE_LOCATION") != null) {
   <tbody>
     <tr>
       <td>type</td>
-      <td>The type name as set by the admin, e.g. &#8220;hadoopJava&#8221;</td>
+      <td>The type name as set by the admin, e.g. <code>hadoopJava</code></td>
     </tr>
     <tr>
       <td>job.class</td>
@@ -55,7 +55,7 @@ if (System.getenv("HADOOP_TOKEN_FILE_LOCATION") != null) {
     </tr>
     <tr>
       <td>user.to.proxy</td>
-      <td>The hadoop user this job should run under.</td>
+      <td>The Hadoop user this job should run under.</td>
     </tr>
     <tr>
       <td>method.run</td>
@@ -71,7 +71,7 @@ if (System.getenv("HADOOP_TOKEN_FILE_LOCATION") != null) {
     </tr>
     <tr>
       <td>jvm.args</td>
-      <td>The &#8220;-D&#8221; for the new jvm process</td>
+      <td>The <code>-D</code> for the new jvm process</td>
     </tr>
   </tbody>
 </table>
@@ -88,15 +88,15 @@ if (System.getenv("HADOOP_TOKEN_FILE_LOCATION") != null) {
   <tbody>
     <tr>
       <td>hadoop.security.manager.class</td>
-      <td>The class that handles talking to hadoop clusters.</td>
+      <td>The class that handles talking to Hadoop clusters.</td>
     </tr>
     <tr>
       <td>azkaban.should.proxy</td>
-      <td>Whether Azkaban should proxy as individual user hadoop accounts.</td>
+      <td>Whether Azkaban should proxy as individual user Hadoop accounts.</td>
     </tr>
     <tr>
       <td>proxy.user</td>
-      <td>The Azkaban user configured with kerberos and hadoop, for secure clusters.</td>
+      <td>The Azkaban user configured with kerberos and Hadoop, for secure clusters.</td>
     </tr>
     <tr>
       <td>proxy.keytab.location</td>
@@ -104,7 +104,7 @@ if (System.getenv("HADOOP_TOKEN_FILE_LOCATION") != null) {
     </tr>
     <tr>
       <td>hadoop.home</td>
-      <td>The hadoop home where the jars and conf resources are installed.</td>
+      <td>The Hadoop home where the jars and conf resources are installed.</td>
     </tr>
     <tr>
       <td>jobtype.classpath</td>
@@ -123,5 +123,8 @@ if (System.getenv("HADOOP_TOKEN_FILE_LOCATION") != null) {
 
 <p>Since Azkaban job types are named by their directory names, the admin should also make those naming public and consistent.</p>
 
-<h3>Sample Job Package</h3>
-<p>Here is a sample job package that does a word count. It relies on a pig job to first upload the text file onto HDFS. One can also manually upload a file and run the word count program alone. The source code is in _azkaban-plugins/plugins/jobtype/src/azkaban/jobtype/examples/java/WordCount.java_ [java-wc.zip](https://s3.amazonaws.com/azkaban2/azkaban2/samplejobs/java-wc.zip) _Uploaded May 13, 2013_</p>
+<div class="bs-callout bs-callout-info">
+  <h4>Sample Job Package</h4>
+  <p>Here is a sample job package that does a word count. It relies on a Pig job to first upload the text file onto HDFS. One can also manually upload a file and run the word count program alone.The source code is in <code>azkaban-plugins/plugins/jobtype/src/azkaban/jobtype/examples/java/WordCount.java</code></p>
+  <a class="btn btn-primary" href="https://s3.amazonaws.com/azkaban2/azkaban2/samplejobs/java-wc.zip" target="_blank"><span class="glyphicon glyphicon-download-alt"></span> Download java-wc.zip</a> (Uploaded May 13, 2013)
+</div>

@@ -6,6 +6,7 @@ pygments: true
 tagline: "Open-source Workflow Manager"
 image: "img/app.png"
 repo: "azkaban/azkaban2"
+plugins_repo: "azkaban/azkaban-plugins"
 docs: "/"
 
 author :
