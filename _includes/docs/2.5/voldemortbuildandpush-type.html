@@ -1,17 +1,10 @@
----
-layout: documents
-nav: voldemortbuildandpushtype
-context: ../..
----
+<h2 id="voldemortbuildandpush-type">VoldemortBuildandPush Type</h2>
 
-#VoldemortBuildandPush Type
+<p>Pushing data from hadoop to voldemort store used to be entirely in java. This created lots of problems, mostly due to users having to keep track of jars and dependencies and keep them up-to-date. We created the "VoldemortBuildandPush" job type to address this problem. Jars and dependencies are now managed by admins; absolutely no jars or java code are required from users.</p>
 
-Pushing data from hadoop to voldemort store used to be entirely in java. This created lots of problems, mostly due to users having to keep track of jars and dependencies and keep them up-to-date. We created the "VoldemortBuildandPush" job type to address this problem. Jars and dependencies are now managed by admins; absolutely no jars or java code are required from users.
+<h3>How-To-Use</h3>
 
-## How-To-Use
-
-This is essentially a hadoopJava job, with all jars controlled by the admins. User only need to provide a .job file for the job and specify all the parameters.
-The following needs to be specified:
+<p>This is essentially a hadoopJava job, with all jars controlled by the admins. User only need to provide a .job file for the job and specify all the parameters. The following needs to be specified:</p>
 
 |{.parameter}Parameter               |{.description} Description                                                       					|
 |---------------------|-----------------------------------------------------------------------------------------------------------------|
@@ -28,9 +21,9 @@ The following needs to be specified:
 |avro.value.field 		| if using avro data, value field										 					|
 {.params}
 
-Here are what's needed and normally configured by the admn (always put common properties in commonprivate.properties and common.properties for all job types)
+<p>Here are what's needed and normally configured by the admn (always put common properties in commonprivate.properties and common.properties for all job types).</p>
 
-These go into private.properties
+<p>These go into private.properties:</p>
 
 |{.parameter}Parameter               |{.description} Description																		|
 |---------------------|-----------------------------------------------------------------------------------------------------------------|
@@ -45,7 +38,7 @@ These go into private.properties
 |azkaban.no.user.classpath			| Set to true such that Azkaban doesn't pick up user supplied jars.							|
 {.params}
 
-These go into plugin.properties
+<p>These go into plugin.properties:</p>
 
 |{.parameter}Parameter               |{.description} Description																		|
 |---------------------|-----------------------------------------------------------------------------------------------------------------|
@@ -55,5 +48,4 @@ These go into plugin.properties
 |hdfs.default.classpath.dir.enable        | set to true if using distributed cache to ship dependency jars		|
 {.params}
 
-Please refer to voldemort project site for more info:
-[project voldemort](http://www.project-voldemort.com/voldemort/)
+<p>Please refer to voldemort project site for more info: [project voldemort](http://www.project-voldemort.com/voldemort/)</p>

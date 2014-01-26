@@ -6,7 +6,7 @@
 
 <p>To get a secure session, make a POST request to Azkaban's base url. The parameters should be:</p>
 
-<pre class="code">
+<pre>
 action=login
 username=&lt;username&gt;
 password=&lt;password&gt;
@@ -38,7 +38,7 @@ password=&lt;password&gt;
 <p>Once a session id has been returned, until the session has expired, this id can be used to do further requests into Azkaban. A session can expire if you log out, change machines or location, Azkaban is restarted or if the session timed out. By default session timeout is a day. You can re-login if the session expires.</p>
 
 <pre class="code">
-curl -k --data "action=login&username=azkaban&password=azkaban" https://localhost:8443
+curl -k --data "action=login&amp;username=azkaban&amp;password=azkaban" https://localhost:8443
 </pre>
 
 <h3>Upload Project Zip</h3>
