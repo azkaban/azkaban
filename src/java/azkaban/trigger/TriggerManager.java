@@ -215,9 +215,8 @@ public class TriggerManager extends EventHandler implements TriggerManagerAdapte
 		public void run() {
 			//while(stillAlive.get()) {
 			while(!shutdown) {
-				
-				try{
-					synchronized (syncObj) {
+				synchronized (syncObj) {
+					try{
 						lastRunnerThreadCheckTime = System.currentTimeMillis();
 						
 						scannerStage = "Ready to start a new scan cycle at " + lastRunnerThreadCheckTime;
@@ -242,9 +241,9 @@ public class TriggerManager extends EventHandler implements TriggerManagerAdapte
 						} else {
 							syncObj.wait(runnerThreadIdleTime);
 						}
+					} catch(InterruptedException e) {
+						logger.info("Interrupted. Probably to shut down.");
 					}
-				} catch(InterruptedException e) {
-					logger.info("Interrupted. Probably to shut down.");
 				}
 			}
 		}
