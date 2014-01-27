@@ -17,11 +17,11 @@
         </div>
         <div class="navbar-collapse collapse">
           <ul class="nav navbar-nav">
-						<li onClick="navMenuClick('overview.html')"><a href="overview.html">Overview</a></li>
+            <li onClick="navMenuClick('{{ site.home }}/overview.html')"><a href="{{ site.home }}/overview.html">Overview</a></li>
 						<li class="active" onClick="navMenuClick('{{ site.docs }}')"><a href="{{ site.docs }}">Documentation</a></li>
-						<li onClick="navMenuClick('downloads.html')"><a href="downloads.html">Downloads</a></li>
-						<li onClick="navMenuClick('license.html')"><a href="license.html">License</a></li>
-						<li onClick="navMenuClick('contact.html')"><a href="contact.html">Contact</a></li>
+            <li onClick="navMenuClick('{{ site.home }}/downloads.html')"><a href="{{ site.home }}/downloads.html">Downloads</a></li>
+            <li onClick="navMenuClick('{{ site.home }}/license.html')"><a href="{{ site.home }}/license.html">License</a></li>
+            <li onClick="navMenuClick('{{ site.home }}/contact.html')"><a href="{{ site.home }}/contact.html">Contact</a></li>
           </ul>
         </div><!--/.nav-collapse -->
       </div>
