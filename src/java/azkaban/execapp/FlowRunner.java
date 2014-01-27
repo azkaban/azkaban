@@ -912,18 +912,21 @@ public class FlowRunner extends EventHandler implements Runnable {
 			else if (node instanceof ExecutableFlowBase) {
 				ExecutableFlowBase base = (ExecutableFlowBase)node;
 				switch (base.getStatus()) {
-				case KILLED:
-				case FAILED:
-				case FAILED_FINISHING:
-					resetFailedState(base, nodesToRetry);
-					continue;
 				case CANCELLED:
 					node.setStatus(Status.READY);
 					node.setEndTime(-1);
 					node.setStartTime(-1);
 					node.setUpdateTime(currentTime);
+					// Break out of the switch. We'll reset the flow just like a normal node
 					break;
+				case KILLED:
+				case FAILED:
+				case FAILED_FINISHING:
+					resetFailedState(base, nodesToRetry);
+					continue;
 				default:
+					// Continue the while loop. If the job is in a finished state that's not
+					// a failure, we don't want to reset the job.
 					continue;
 				}
 			}
@@ -949,6 +952,7 @@ public class FlowRunner extends EventHandler implements Runnable {
 			}
 		}
 		
+		// At this point, the following code will reset the flow
 		Status oldFlowState = flow.getStatus();
 		if (maxStartTime == -1) {
 			// Nothing has run inside the flow, so we assume the flow hasn't even started running yet.
