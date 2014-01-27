@@ -53,7 +53,7 @@ public class TriggerManager extends EventHandler implements TriggerManagerAdapte
 	
 	private ExecutorManagerEventListener listener = new ExecutorManagerEventListener();
 	
-	private Object syncObj = new Object();
+	private final Object syncObj = new Object();
 	
 	private String scannerStage = "";
 	
@@ -215,8 +215,9 @@ public class TriggerManager extends EventHandler implements TriggerManagerAdapte
 		public void run() {
 			//while(stillAlive.get()) {
 			while(!shutdown) {
-				synchronized (syncObj) {
-					try{
+				
+				try{
+					synchronized (syncObj) {
 						lastRunnerThreadCheckTime = System.currentTimeMillis();
 						
 						scannerStage = "Ready to start a new scan cycle at " + lastRunnerThreadCheckTime;
@@ -231,19 +232,19 @@ public class TriggerManager extends EventHandler implements TriggerManagerAdapte
 							t.printStackTrace();
 							logger.error(t.getMessage());
 						}
-						
+					
 						scannerStage = "Done flipping all triggers.";
 						
 						runnerThreadIdleTime = scannerInterval - (System.currentTimeMillis() - lastRunnerThreadCheckTime);
-
+	
 						if(runnerThreadIdleTime < 0) {
 							logger.error("Trigger manager thread " + this.getName() + " is too busy!");
 						} else {
-							wait(runnerThreadIdleTime);
+							syncObj.wait(runnerThreadIdleTime);
 						}
-					} catch(InterruptedException e) {
-						logger.info("Interrupted. Probably to shut down.");
 					}
+				} catch(InterruptedException e) {
+					logger.info("Interrupted. Probably to shut down.");
 				}
 			}
 		}
