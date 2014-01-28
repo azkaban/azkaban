@@ -239,7 +239,7 @@ public class TriggerManager extends EventHandler implements TriggerManagerAdapte
 						if(runnerThreadIdleTime < 0) {
 							logger.error("Trigger manager thread " + this.getName() + " is too busy!");
 						} else {
-							wait(runnerThreadIdleTime);
+							syncObj.wait(runnerThreadIdleTime);
 						}
 					} catch(InterruptedException e) {
 						logger.info("Interrupted. Probably to shut down.");
