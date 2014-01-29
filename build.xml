@@ -26,8 +26,6 @@
 	<property name="less.src.dir" value="${basedir}/src/less" />
 	<property name="web.src.dir" value="${basedir}/src/web" />
 	<property name="sql.src.dir" value="${basedir}/src/sql" />
-	
-	<property name="azkaban.jar" value="${dist.jar.dir}/${name}-${repository.tag}.jar" />
 
 	<property environment="env" />
 
@@ -141,7 +139,7 @@
 	
 	<target name="jars" depends="build" description="Create azkaban jar">
 		<mkdir dir="${dist.jar.dir}" />
-		<jar destfile="${azkaban.jar}">
+		<jar destfile="azkaban-${repository.tag}.jar">
 			<fileset dir="${dist.classes.dir}">
 				<include name="**/*.*" />
 			</fileset>
@@ -215,7 +213,7 @@
 		<mkdir dir="${dist.web.package.dir}/extlib" />	
 			
 		<!-- Copy Azkaban jars and libs-->
-		<copy file="${azkaban.jar}" todir="${dist.web.package.dir}/lib" />
+		<copy file="azkaban-${repository.tag}.jar" todir="${dist.web.package.dir}/lib" />
 		<copy todir="${dist.web.package.dir}/lib" >
 			<fileset dir="${lib.dir}" >
 				<exclude name="hadoop-core*.jar"/>
@@ -267,7 +265,7 @@
 		<mkdir dir="${dist.exec.package.dir}/extlib" />
 				
 		<!-- Copy Azkaban jars and libs-->
-		<copy file="${azkaban.jar}" todir="${dist.exec.package.dir}/lib" />
+		<copy file="azkaban-${repository.tag}.jar" todir="${dist.exec.package.dir}/lib" />
 		<copy todir="${dist.exec.package.dir}/lib" >
 			<fileset dir="${lib.dir}" >
 				<exclude name="hadoop-core*.jar"/>
@@ -305,7 +303,7 @@
 		<mkdir dir="${dist.solo.package.dir}/sql" />
 				
 		<!-- Copy Azkaban jars and libs-->
-		<copy file="${azkaban.jar}" todir="${dist.solo.package.dir}/lib" />
+		<copy file="azkaban-${repository.tag}.jar" todir="${dist.solo.package.dir}/lib" />
 		<copy todir="${dist.solo.package.dir}/lib" >
 			<fileset dir="${lib.dir}" >
 				<exclude name="hadoop-core*.jar"/>
