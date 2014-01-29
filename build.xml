@@ -27,7 +27,7 @@
 	<property name="web.src.dir" value="${basedir}/src/web" />
 	<property name="sql.src.dir" value="${basedir}/src/sql" />
 	
-	<property name="azkaban.jar" value="${dist.jar.dir}/${name}-${version}.jar" />
+	<property name="azkaban.jar" value="${dist.jar.dir}/${name}-${repository.tag}.jar" />
 
 	<property environment="env" />
 
@@ -41,9 +41,24 @@
 
 	<!-- set the build number based on environment variable, otherwise blank -->
 	<property environment="env" description="System environment variables (including those set by Hudson)" />
-
+	
 	<target name="all" depends="clean, package" description="Builds jars and packages." />
-
+	
+	<available file=".git" type="dir" property="git.present"/>
+	<target name="git.tag" description="Store git revision in ${repository.tag}" if="git.present">
+		<echo>Building Classes</echo>
+	    <exec executable="git" outputproperty="git.tag" failifexecutionfails="false" errorproperty="">
+	        <arg value="tag"/>
+	    </exec>
+	    <condition property="repository.tag" value="${git.tag}" else="${version}">
+	        <and>
+	            <isset property="git.tag"/>
+	            <length string="${git.tag}" trim="yes" length="0" when="greater"/>
+	        </and>
+	    </condition>
+		<echo>Git tag found to be ${repository.tag}</echo>
+	</target>
+	
 	<target name="clean" description="Delete generated files.">
 		<echo message="Deleting generated files in dist" />
 		<delete dir="${dist.jar.dir}" />
@@ -78,7 +93,8 @@
     	</copy>
 	</target>
 	
-	<target name="build" description="Compile main source tree java files">
+	<target name="build" depends="git.tag" description="Compile main source tree java files">
+		<echo>Building Classes</echo>
 		<delete dir="${dist.classes.dir}" />
 		<mkdir dir="${dist.classes.dir}" />
 		
@@ -165,7 +181,7 @@
 		<delete dir="${dist.sql.package.dir}" />
 		<mkdir dir="${dist.sql.package.dir}" />
 
-		<concat destfile="${dist.sql.package.dir}/create-all-sql-${version}.sql" fixlastline="yes">
+		<concat destfile="${dist.sql.package.dir}/create-all-sql-${repository.tag}.sql" fixlastline="yes">
 			<fileset dir="${sql.src.dir}" >
 				<exclude name="update.*.sql"/>
 				<exclude name="database.properties"/>
@@ -181,10 +197,10 @@
 		<copy todir="${dist.sql.package.dir}" >
 			<fileset dir="${sql.src.dir}" />
 		</copy>
-		<echo file="${dist.sql.package.dir}/database.properties" append="true">version=${version}</echo>
+		<echo file="${dist.sql.package.dir}/database.properties" append="true">version=${repository.tag}</echo>
 
-		<tar destfile="${dist.sql.package.dir}/${name}-sql-script-${version}.tar.gz" compression="gzip" longfile="gnu">
-			<tarfileset dir="${dist.sql.package.dir}" prefix="azkaban-${version}" filemode="755" />
+		<tar destfile="${dist.sql.package.dir}/${name}-sql-script-${repository.tag}.tar.gz" compression="gzip" longfile="gnu">
+			<tarfileset dir="${dist.sql.package.dir}" prefix="azkaban-${repository.tag}" filemode="755" />
 		</tar>
 	</target>
 
@@ -232,10 +248,10 @@
 		</copy>
 		
 		<!-- Tarball it -->
-		<tar destfile="${dist.web.package.dir}/${name}-web-server-${version}.tar.gz" compression="gzip" longfile="gnu">
-			<tarfileset dir="${dist.web.package.dir}" prefix="azkaban-${version}" filemode="755" includes="bin/*" />
+		<tar destfile="${dist.web.package.dir}/${name}-web-server-${repository.tag}.tar.gz" compression="gzip" longfile="gnu">
+			<tarfileset dir="${dist.web.package.dir}" prefix="azkaban-${repository.tag}" filemode="755" includes="bin/*" />
 			
-			<tarfileset dir="${dist.web.package.dir}" prefix="azkaban-${version}" includes="**">
+			<tarfileset dir="${dist.web.package.dir}" prefix="azkaban-${repository.tag}" includes="**">
 				<exclude name="bin/*"/>
 			</tarfileset>
 		</tar>
@@ -269,10 +285,10 @@
 		</copy>
 		
 		<!-- Tarball it -->
-		<tar destfile="${dist.exec.package.dir}/${name}-executor-server-${version}.tar.gz" compression="gzip" longfile="gnu">
-			<tarfileset dir="${dist.exec.package.dir}" prefix="azkaban-${version}" filemode="755" includes="bin/*" />
+		<tar destfile="${dist.exec.package.dir}/${name}-executor-server-${repository.tag}.tar.gz" compression="gzip" longfile="gnu">
+			<tarfileset dir="${dist.exec.package.dir}" prefix="azkaban-${repository.tag}" filemode="755" includes="bin/*" />
 			
-			<tarfileset dir="${dist.exec.package.dir}" prefix="azkaban-${version}" includes="**">
+			<tarfileset dir="${dist.exec.package.dir}" prefix="azkaban-${repository.tag}" includes="**">
 				<exclude name="bin/*"/>
 			</tarfileset>
 		</tar>
@@ -325,13 +341,13 @@
 		<copy todir="${dist.solo.package.dir}/sql" >
 			<fileset dir="${sql.src.dir}" />
 		</copy>
-		<echo file="${dist.solo.package.dir}/sql/database.properties" append="true">version=${version}</echo>
+		<echo file="${dist.solo.package.dir}/sql/database.properties" append="true">version=${repository.tag}</echo>
 			
 		<!-- Tarball it -->
-		<tar destfile="${dist.solo.package.dir}/${name}-solo-server-${version}.tar.gz" compression="gzip" longfile="gnu">
-			<tarfileset dir="${dist.solo.package.dir}" prefix="azkaban-${version}" filemode="755" includes="bin/*" />
+		<tar destfile="${dist.solo.package.dir}/${name}-solo-server-${repository.tag}.tar.gz" compression="gzip" longfile="gnu">
+			<tarfileset dir="${dist.solo.package.dir}" prefix="azkaban-${repository.tag}" filemode="755" includes="bin/*" />
 			
-			<tarfileset dir="${dist.solo.package.dir}" prefix="azkaban-${version}" includes="**">
+			<tarfileset dir="${dist.solo.package.dir}" prefix="azkaban-${repository.tag}" includes="**">
 				<exclude name="bin/*"/>
 			</tarfileset>
 		</tar>
