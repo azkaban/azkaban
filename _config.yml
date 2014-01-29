@@ -1,11 +1,12 @@
+name: Azkaban
 safe: true
 lsi: false
 pygments: true
 
-title : Azkaban
+tagline: "Open-source Workflow Manager"
+image: "img/app.png"
+repo: "azkaban/azkaban2"
 
-author :
-  name : Richard Park
-  email : rpark@linkedin.com
-  github : rbpark
-
+plugins_repo: "azkaban/azkaban-plugins"
+docs: "/"
+home: "http://azkaban.github.io"

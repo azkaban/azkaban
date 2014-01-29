@@ -1,0 +1,29 @@
+    <script type="text/javascript">
+      function navMenuClick(url) {
+        window.location.href = url;
+      }
+    </script>
+    <div class="navbar navbar-inverse navbar-static-top">
+      <div class="container">
+				<div class="navbar-header">
+					<button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+						<span class="icon-bar"></span>
+						<span class="icon-bar"></span>
+						<span class="icon-bar"></span>
+					</button>
+					<div class="navbar-logo">
+						<a href="/">{{ site.name }}</a>
+					</div>
+        </div>
+        <div class="navbar-collapse collapse">
+          <ul class="nav navbar-nav">
+            <li onClick="navMenuClick('{{ site.home }}/overview.html')"><a href="{{ site.home }}/overview.html">Overview</a></li>
+						<li class="active" onClick="navMenuClick('{{ site.docs }}')"><a href="{{ site.docs }}">Documentation</a></li>
+            <li onClick="navMenuClick('{{ site.home }}/downloads.html')"><a href="{{ site.home }}/downloads.html">Downloads</a></li>
+            <li onClick="navMenuClick('{{ site.home }}/license.html')"><a href="{{ site.home }}/license.html">License</a></li>
+            <li onClick="navMenuClick('{{ site.home }}/contact.html')"><a href="{{ site.home }}/contact.html">Contact</a></li>
+          </ul>
+        </div><!--/.nav-collapse -->
+      </div>
+    </div>
+

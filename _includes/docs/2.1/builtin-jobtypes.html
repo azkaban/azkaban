@@ -1,0 +1,23 @@
+<h2 id='builtin-jobtypes'>Built-in Job types</h2>
+
+<p>Azkaban allows custom job types to be added as <a href='./jobtypeplugin.html'>plugins</a>. However it also supplies several built-in job types. On top of the job parameters that can be set, each job type has additional properties that can be used.</p>
+
+<h3 id='command'>Command</h3>
+
+<p>Command type of job can be set with <em>type=command</em>. It is a barebones command line executor. Many of the other job types wrap the <em>command</em> job type but constructs their own command lines.</p>
+<table class='params'><thead><tr><th class='parameter'>Parameter</th><th class='description'> Description</th><th>Required?</th></tr></thead><tbody><tr><td style='text-align: left;'>command</td><td style='text-align: left;'>The command line string to execute. i.e. <em>ls -lh</em></td><td style='text-align: left;'>yes</td>
+</tr><tr><td style='text-align: left;'>command. <em>n</em></td><td style='text-align: left;'>Where <em>n</em> is a sequence of integers (i.e 1,2,3&#8230;). Defines additional commands that run in sequential order after the initial command.</td><td style='text-align: left;'>no</td>
+</tr></tbody></table>
+<h3 id='java_process'>Java Process</h3>
+
+<p>Java process jobs are a convenient wrapper for kicking off Java-based programs. It is equivalent to running a class with a main method from the command line. The following properties are available in javaprocess jobs:</p>
+<table class='params'><thead><tr><th class='parameter'>Parameter</th><th class='description'> Description</th><th>Required?</th></tr></thead><tbody><tr><td style='text-align: left;'>java.class</td><td style='text-align: left;'>The class that contains the main function. {code}i.e azkaban.example.text.HelloWorld{code}</td><td style='text-align: left;'>yes</td>
+</tr><tr><td style='text-align: left;'>classpath</td><td style='text-align: left;'>Comma delimited list of jars and directories to be added to the classpath. Default is all jars in the current working directory.</td><td style='text-align: left;'>no</td>
+</tr><tr><td style='text-align: left;'>Xms</td><td style='text-align: left;'>The initial memory pool start size. The default is 64M</td><td style='text-align: left;'>no</td>
+</tr><tr><td style='text-align: left;'>Xmx</td><td style='text-align: left;'>The initial maximum memory pool size. The default is 256M</td><td style='text-align: left;'>no</td>
+</tr><tr><td style='text-align: left;'>main.args</td><td style='text-align: left;'>A list of comma delimited arguments to pass to the java main function</td><td style='text-align: left;'>no</td>
+</tr><tr><td style='text-align: left;'>jvm.args</td><td style='text-align: left;'>JVM args. This entire string is passed intact as a VM argument. <em>-Dmyprop=test -Dhello=world</em></td><td style='text-align: left;'>no</td>
+</tr></tbody></table>
+<h3 id='noop'>Noop</h3>
+
+<p>A job that takes no parameters and is essentially a null operation. Used for organizing your graph.</p>

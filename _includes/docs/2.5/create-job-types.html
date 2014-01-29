@@ -1,0 +1,27 @@
+<h2 id="create-job-types">Create Your Own Jobtypes</h2>
+
+<p>With plugin design of Azkaban job types, it is possible to extend Azkaban for various system environments. You should be able to execute any job under the same Azkaban work flow management and scheduling.</p>
+
+<p>Creating new job types is often times very easy. Here are several ways one can do it:</p>
+
+<h3>New Types with only Configuration Changes</h3>
+
+<p>One doesn't always need to write java code to create job types for end users. Often times, configuration changes of existing job types would create significantly different behavior to the end users. For example, in LinkedIn, apart from the <em>pig</em> types, we also have <em>pigLi</em> types that come with all the useful library jars pre-registered and imported. This way, normal users only need to provide their pig scripts, and the their own udf jars to Azkaban. The pig job should run as if it is run on the gateway machine from pig grunt. In comparison, if users are required to use the basic <em>pig</em> job types, they will need to package all the necessary jars in the Azkaban job package, and do all the register and import by themselves, which often poses some learning curve for new pig/Azkaban users.</p>
+
+<p>The same practice applies to most other job types. Admins should create or tailor job types to their specific company needs or clusters. </p>
+
+<h3>New Types Using Existing Job Types</h3>
+
+<p>If one needs to create a different job type, a good starting point is to see if this can be done by using an existing job type. In hadoop land, this most often means the hadoopJava type. Essentially all hadoop jobs, from the most basic mapreduce job, to pig, hive, crunch, etc, are java programs that submit jobs to hadoop clusters. It is usually straight forward to create a job type that takes user input and runs a hadoopJava job.</p>
+
+<p>For example, one can take a look at the VoldemortBuildandPush job type. It will take in user input such as which cluster to push to, voldemort store name, etc, and runs hadoopJava job that does the work. For end users though, this is a VoldemortBuildandPush job type with which they only need to fill out the <code>.job</code> file to push data from hadoop to voldemort stores.</p>
+
+<p>The same applies to the hive type.</p>
+
+<h3>New Types by Extending Existing Ones</h3>
+
+<p>For the most flexibility, one can always build new types by extending the existing ones. Azkaban uses reflection to load job types that implements the <code>job</code> interface, and tries to construct a sample object upon loading for basic testing. When executing a real job, Azkaban calls the <code>run</code> method to run the job, and <code>cancel</code> method to cancel it. </p>
+
+<p>For new hadoop job types, it is important to use the correct <code>hadoopsecuritymanager</code> class, which is also included in <code>azkaban-plugins</code> repo. This class handles talking to the hadoop cluster, and if needed, requests tokens for job execution or for name node communication.</p>
+
+<p>For better security, tokens should be requested in Azkaban main process and be written to a file. Before executing user code, the job type should implement a wrapper that picks up the token file, set it in the <code>Configuration</code> or <code>JobConf</code> object. Please refer to <code>HadoopJavaJob</code> and <code>HadoopPigJob</code> to see example usage.</p>

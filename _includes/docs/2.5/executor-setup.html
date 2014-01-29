@@ -1,0 +1,70 @@
+
+<h2 id="executor-setup">Set up Azkaban Executor Server</h2>
+
+<p>Azkaban Executor Server handles the actual execution of the workflow and jobs.</p>
+
+<h3>Installing the Executor Server</h3>
+
+<p>Grab the azkaban-exec-server package from the <a href="{{ site.home }}/downloads.html">downloads page</a>.</p>
+
+<p>Alternatively, by cloning the <a href="https://github.com/azkaban/azkaban2" target="_blank">GitHub repo</a>, you can run <code>ant</code> build the latest version from master.</p>
+
+<p>Extract the package into a directory. The install path should be different from the Azkaban Web Server.</p>
+
+<p>After extraction, there should be the following directories.</p>
+
+<ul>
+	<li><code>bin</code> - The scripts to start Azkaban jetty server.</li>
+	<li><code>conf</code> - The configurations for Azkaban exec server.</li>
+	<li><code>lib</code> - The jar dependencies for Azkaban.</li>
+	<li><code>extlib</code> - Additional jars that are added to extlib will be added to Azkaban's classpath.</li>
+	<li><code>plugins</code> - The directory where plugins can be installed.</li>
+</ul>
+
+<p>In the <code>conf</code> directory, we only need to configure the <code>azkaban.properties</code> file. </p>
+<p>This file is the be the main configuration file that is necessary to setup Azkaban Executor.</p>
+
+<h3>Setting up the DB</h3>
+
+<p>If you haven't gotten the MySQL JDBC driver, you can get it from <a href="http://www.mysql.com/downloads/connector/j/" target="_blank">this link</a>.</p>
+<p>Drop this jar into the <code>extlib</code> directory. All external dependencies should be added to the extlib directory.</p>
+
+<p>To point Azkaban web client to the MySQL instance, you will need to add the connection parameters to <code>azkaban.properties</code>.</p>
+
+<pre class="code">
+database.type=mysql
+mysql.port=3306
+mysql.host=localhost
+mysql.database=azkaban
+mysql.user=azkaban
+mysql.password=azkaban
+mysql.numconnections=100
+</pre>
+
+<p>Currently MySQL is the only data store type supported in Azkaban. So <code>database.type</code> should always be <code>mysql</code>.</p>
+
+<h3>Configuring AzabanWebServer and AzkabanExecutorServer clients</h3>
+
+<p>The Executor server needs to be setup with a port, and the AzabanWebServer will need to know what this port is.</p>
+<p>The following properties need to be set on AzkabanExecutorServer's <code>azkaban.properties</code>.</p>
+
+<pre class="code">
+# Azkaban Executor settings
+executor.maxThreads=50
+executor.port=12321
+executor.flow.threads=30
+</pre>
+
+<p>By default the <code>executor.port</code> is set to <code>12321</code>. The AzkabanWebServer will have to point to this port as well.</p>
+<p>This is done by setting the following property in AzkabanWebServer's <code>azkaban.properties</code>.</p>
+<pre class="code">
+executor.port=12321
+</pre>
+
+<p>These changes are only picked up after restarting the servers.</p>
+
+<h3>Running Executor Server</h3>
+
+<p>Execute <code>bin/azkaban-exec-start.sh</code> to start AzkabanExecutorServer. </p>
+<p>To shutdown the AzkabanExecutorServer, run <code>bin/azkaban-exec-shutdown.sh</code></p>
+
