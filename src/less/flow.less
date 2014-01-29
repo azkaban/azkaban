@@ -45,6 +45,10 @@
   &.FAILED {
     background-color: #d9534f;
   }
+  
+  &.KILLED {
+    background-color: #d9534f;
+  }
 
   &.RUNNING {
     background-color: #3398cc;	
@@ -61,7 +65,7 @@
     background-color: #009fc9;
   }
   
-  &.KILLED {
+  &.CANCELLED {
     background-color: #ff9999;
   }
 }
@@ -91,6 +95,10 @@ td {
     &.FAILED {
       background-color: #d9534f;
     }
+    
+    &.KILLED {
+      background-color: #d9534f;
+    }
 
     &.PAUSED {
       background-color: #c82123;
@@ -114,7 +122,7 @@ td {
       background-color: #aaa;	
     }
 
-    &.KILLED {
+    &.CANCELLED {
       background-color: #ff9999;
     }
   }
@@ -139,7 +147,8 @@ td {
 
   &.FAILED,
   &.FAILED_FINISHING,
-  &.KILLED {
+  &.KILLED,
+  &.CANCELLED {
     color: #cc0000;
   }
 }
@@ -218,6 +227,11 @@ li.tree-list-item {
     
     &.KILLED .icon {
       background-position: 0px 0px;
+    }
+    
+    &.CANCELLED .icon {
+      background-position: 0px 0px;
+      opacity: 0.5;
     }
     
     &.FAILED_FINISHING .icon {

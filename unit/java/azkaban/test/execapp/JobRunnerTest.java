@@ -108,7 +108,7 @@ public class JobRunnerTest {
 		Assert.assertTrue(outputProps == null);
 		Assert.assertTrue(logFile.exists());
 		Assert.assertTrue(eventCollector.checkOrdering());
-		Assert.assertTrue(!runner.isCancelled());
+		Assert.assertTrue(!runner.isKilled());
 		Assert.assertTrue(loader.getNodeUpdateCount(node.getId()) == 3);
 		
 		try {
@@ -180,7 +180,7 @@ public class JobRunnerTest {
 		Props outputProps = runner.getNode().getOutputProps();
 		Assert.assertTrue(outputProps == null);
 		Assert.assertTrue(runner.getLogFilePath() == null);
-		Assert.assertTrue(!runner.isCancelled());
+		Assert.assertTrue(!runner.isKilled());
 		try {
 			eventCollector.checkEventExists(new Type[] {Type.JOB_STARTED, Type.JOB_FINISHED});
 		}
@@ -208,7 +208,7 @@ public class JobRunnerTest {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
-			runner.cancel();
+			runner.kill();
 			try {
 				wait(500);
 			} catch (InterruptedException e) {
@@ -218,7 +218,7 @@ public class JobRunnerTest {
 		}
 		
 		Assert.assertTrue(runner.getStatus() == node.getStatus());
-		Assert.assertTrue("Status is " + node.getStatus(), node.getStatus() == Status.FAILED);
+		Assert.assertTrue("Status is " + node.getStatus(), node.getStatus() == Status.KILLED);
 		Assert.assertTrue(node.getStartTime() > 0 && node.getEndTime() > 0);
 		// Give it 10 ms to fail.
 		Assert.assertTrue(node.getEndTime() - node.getStartTime() < 3000);
@@ -230,7 +230,7 @@ public class JobRunnerTest {
 		Assert.assertTrue(outputProps == null);
 		Assert.assertTrue(logFile.exists());
 		Assert.assertTrue(eventCollector.checkOrdering());
-		Assert.assertTrue(runner.isCancelled());
+		Assert.assertTrue(runner.isKilled());
 		try {
 			eventCollector.checkEventExists(new Type[] {Type.JOB_STARTED, Type.JOB_STATUS_CHANGED, Type.JOB_FINISHED});
 		}
@@ -266,7 +266,7 @@ public class JobRunnerTest {
 		Props outputProps = runner.getNode().getOutputProps();
 		Assert.assertTrue(outputProps != null);
 		Assert.assertTrue(logFile.exists());
-		Assert.assertFalse(runner.isCancelled());
+		Assert.assertFalse(runner.isKilled());
 		Assert.assertTrue(loader.getNodeUpdateCount(node.getId()) == 3);
 		
 		Assert.assertTrue(eventCollector.checkOrdering());
@@ -300,7 +300,7 @@ public class JobRunnerTest {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
-			runner.cancel();
+			runner.kill();
 			try {
 				wait(500);
 			} catch (InterruptedException e) {
@@ -312,12 +312,12 @@ public class JobRunnerTest {
 		eventCollector.handleEvent(Event.create(null, Event.Type.JOB_FINISHED));
 		
 		Assert.assertTrue(runner.getStatus() == node.getStatus());
-		Assert.assertTrue("Node status is " + node.getStatus(), node.getStatus() == Status.FAILED);
+		Assert.assertTrue("Node status is " + node.getStatus(), node.getStatus() == Status.KILLED);
 		Assert.assertTrue(node.getStartTime() > 0 && node.getEndTime() > 0);
 		Assert.assertTrue( node.getEndTime() - node.getStartTime() < 1000);
 		Assert.assertTrue(node.getStartTime() - startTime >= 2000);
 		Assert.assertTrue(node.getStartTime() - startTime <= 5000);
-		Assert.assertTrue(runner.isCancelled());
+		Assert.assertTrue(runner.isKilled());
 		
 		File logFile = new File(runner.getLogFilePath());
 		Props outputProps = runner.getNode().getOutputProps();

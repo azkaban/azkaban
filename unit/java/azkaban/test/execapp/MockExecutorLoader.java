@@ -23,6 +23,7 @@ public class MockExecutorLoader implements ExecutorLoader {
 	HashMap<Integer, ExecutionReference> refs = new HashMap<Integer, ExecutionReference>();
 	int flowUpdateCount = 0;
 	HashMap<String, Integer> jobUpdateCount = new HashMap<String,Integer>();
+	Map<Integer, Pair<ExecutionReference, ExecutableFlow>> activeFlows = new HashMap<Integer, Pair<ExecutionReference,ExecutableFlow>>();
 	
 	@Override
 	public void uploadExecutableFlow(ExecutableFlow flow) throws ExecutorManagerException {
@@ -38,7 +39,7 @@ public class MockExecutorLoader implements ExecutorLoader {
 
 	@Override
 	public Map<Integer, Pair<ExecutionReference, ExecutableFlow>> fetchActiveFlows() throws ExecutorManagerException {
-		return null;
+		return activeFlows;
 	}
 
 	@Override

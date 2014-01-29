@@ -389,15 +389,15 @@ public class ExecutableNode {
 		applyUpdateObject(wrapper);
 	}
 	
-	public void killNode(long killTime) {
+	public void cancelNode(long cancelTime) {
 		if (this.status == Status.DISABLED) {
-			skipNode(killTime);
+			skipNode(cancelTime);
 		}
 		else {
-			this.setStatus(Status.KILLED);
-			this.setStartTime(killTime);
-			this.setEndTime(killTime);
-			this.setUpdateTime(killTime);
+			this.setStatus(Status.CANCELLED);
+			this.setStartTime(cancelTime);
+			this.setEndTime(cancelTime);
+			this.setUpdateTime(cancelTime);
 		}
 	}
 	

@@ -87,7 +87,7 @@ public class JobRunner extends EventHandler implements Runnable {
 	private int jobLogBackupIndex;
 
 	private long delayStartMs = 0;
-	private boolean cancelled = false;
+	private boolean killed = false;
 	private BlockingStatus currentBlockStatus = null;
 	
 	public JobRunner(ExecutableNode node, File workingDir, ExecutorLoader loader, JobTypeManager jobtypeManager) {
@@ -259,15 +259,15 @@ public class JobRunner extends EventHandler implements Runnable {
 		boolean quickFinish = false;
 		long time = System.currentTimeMillis();
 		
-		if (this.isCancelled() || Status.isStatusFinished(nodeStatus)) {
+		if (this.isKilled() || Status.isStatusFinished(nodeStatus)) {
 			quickFinish = true;
 		}
 		else if (nodeStatus == Status.DISABLED) {
 			changeStatus(Status.SKIPPED, time);
 			quickFinish = true;
 		} 
-		else if (this.cancelled) {
-			changeStatus(Status.FAILED, time);
+		else if (this.killed) {
+			changeStatus(Status.KILLED, time);
 			quickFinish = true;
 		} 
 		
@@ -286,7 +286,7 @@ public class JobRunner extends EventHandler implements Runnable {
 	 * If pipelining is set, will block on another flow's jobs.
 	 */
 	private boolean blockOnPipeLine() {
-		if (this.isCancelled()) {
+		if (this.isKilled()) {
 			return true;
 		}
 		
@@ -309,8 +309,8 @@ public class JobRunner extends EventHandler implements Runnable {
 					logger.info("Waiting on pipelined job " + bStatus.getJobId());
 					currentBlockStatus = bStatus;
 					bStatus.blockOnFinishedStatus();
-					if (this.isCancelled()) {
-						logger.info("Job was cancelled while waiting on pipeline. Quiting.");
+					if (this.isKilled()) {
+						logger.info("Job was killed while waiting on pipeline. Quiting.");
 						return true;
 					}
 					else {
@@ -325,7 +325,7 @@ public class JobRunner extends EventHandler implements Runnable {
 	}
 	
 	private boolean delayExecution() {
-		if (this.isCancelled()) {
+		if (this.isKilled()) {
 			return true;
 		}
 		
@@ -342,8 +342,8 @@ public class JobRunner extends EventHandler implements Runnable {
 				}
 			}
 			
-			if (this.isCancelled()) {
-				logger.info("Job was cancelled while in delay. Quiting.");
+			if (this.isKilled()) {
+				logger.info("Job was killed while in delay. Quiting.");
 				return true;
 			}
 		}
@@ -420,7 +420,7 @@ public class JobRunner extends EventHandler implements Runnable {
 
 		// Start the node.
 		node.setStartTime(System.currentTimeMillis());
-		if (!errorFound && !isCancelled()) {
+		if (!errorFound && !isKilled()) {
 			fireEvent(Event.create(this, Type.JOB_STARTED, null, false));
 			try {
 				loader.uploadExecutableNode(node, props);
@@ -443,10 +443,10 @@ public class JobRunner extends EventHandler implements Runnable {
 		}
 		node.setEndTime(System.currentTimeMillis());
 
-		if (isCancelled()) {
-			changeStatus(Status.FAILED);
+		if (isKilled()) {
+			changeStatus(Status.KILLED);
 		}
-		logInfo("Finishing job " + this.jobId + " at " + node.getEndTime());
+		logInfo("Finishing job " + this.jobId + " at " + node.getEndTime() + " with status " + node.getStatus());
 		
 		fireEvent(Event.create(this, Type.JOB_FINISHED), false);
 		finalizeLogFile();
@@ -455,13 +455,13 @@ public class JobRunner extends EventHandler implements Runnable {
 	
 	private boolean prepareJob() throws RuntimeException {
 		// Check pre conditions
-		if (props == null || cancelled) {
+		if (props == null || killed) {
 			logError("Failing job. The job properties don't exist");
 			return false;
 		}
 		
 		synchronized (syncObject) {
-			if (node.getStatus() == Status.FAILED || cancelled) {
+			if (node.getStatus() == Status.FAILED || killed) {
 				return false;
 			}
 
@@ -557,10 +557,10 @@ public class JobRunner extends EventHandler implements Runnable {
 		this.fireEventListeners(event);
 	}
 	
-	public void cancel() {
+	public void kill() {
 		synchronized (syncObject) {
-			logError("Cancel has been called.");
-			this.cancelled = true;
+			logError("Kill has been called.");
+			this.killed = true;
 			
 			BlockingStatus status = currentBlockStatus;
 			if (status != null) {
@@ -587,8 +587,8 @@ public class JobRunner extends EventHandler implements Runnable {
 		}
 	}
 	
-	public boolean isCancelled() {
-		return cancelled;
+	public boolean isKilled() {
+		return killed;
 	}
 	
 	public Status getStatus() {

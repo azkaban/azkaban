@@ -463,7 +463,7 @@ public class FlowRunnerManager implements EventListener {
 			throw new ExecutorManagerException("Execution " + execId + " is not running.");
 		}
 		
-		runner.cancel(user);
+		runner.kill(user);
 	}
 	
 	public void pauseFlow(int execId, String user) throws ExecutorManagerException {

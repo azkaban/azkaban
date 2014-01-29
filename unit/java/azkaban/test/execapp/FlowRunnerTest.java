@@ -73,7 +73,7 @@ public class FlowRunnerTest {
 		eventCollector.setEventFilterOut(Event.Type.JOB_FINISHED, Event.Type.JOB_STARTED, Event.Type.JOB_STATUS_CHANGED);
 		FlowRunner runner = createFlowRunner(loader, eventCollector, "exec1");
 		
-		Assert.assertTrue(!runner.isCancelled());
+		Assert.assertTrue(!runner.isKilled());
 		runner.run();
 		ExecutableFlow exFlow = runner.getExecutableFlow();
 		Assert.assertTrue(exFlow.getStatus() == Status.SUCCEEDED);
@@ -115,7 +115,7 @@ public class FlowRunnerTest {
 		
 		FlowRunner runner = createFlowRunner(exFlow, loader, eventCollector);
 
-		Assert.assertTrue(!runner.isCancelled());
+		Assert.assertTrue(!runner.isKilled());
 		Assert.assertTrue(exFlow.getStatus() == Status.READY);
 		runner.run();
 
@@ -156,19 +156,19 @@ public class FlowRunnerTest {
 		
 		runner.run();
 		ExecutableFlow exFlow = runner.getExecutableFlow();
-		Assert.assertTrue(!runner.isCancelled());
+		Assert.assertTrue(!runner.isKilled());
 		Assert.assertTrue("Flow status " + exFlow.getStatus(), exFlow.getStatus() == Status.FAILED);
 		
 		testStatus(exFlow, "job1", Status.SUCCEEDED);
 		testStatus(exFlow, "job2d", Status.FAILED);
-		testStatus(exFlow, "job3", Status.KILLED);
-		testStatus(exFlow, "job4", Status.KILLED);
-		testStatus(exFlow, "job5", Status.KILLED);
+		testStatus(exFlow, "job3", Status.CANCELLED);
+		testStatus(exFlow, "job4", Status.CANCELLED);
+		testStatus(exFlow, "job5", Status.CANCELLED);
 		testStatus(exFlow, "job6", Status.SUCCEEDED);
-		testStatus(exFlow, "job7", Status.KILLED);
-		testStatus(exFlow, "job8", Status.KILLED);
-		testStatus(exFlow, "job9", Status.KILLED);
-		testStatus(exFlow, "job10", Status.KILLED);
+		testStatus(exFlow, "job7", Status.CANCELLED);
+		testStatus(exFlow, "job8", Status.CANCELLED);
+		testStatus(exFlow, "job9", Status.CANCELLED);
+		testStatus(exFlow, "job10", Status.CANCELLED);
 
 		try {
 			eventCollector.checkEventExists(new Type[] {Type.FLOW_STARTED, Type.FLOW_FINISHED});
@@ -195,7 +195,7 @@ public class FlowRunnerTest {
 		runner.run();
 		ExecutableFlow exFlow = runner.getExecutableFlow();
 		
-		Assert.assertTrue(runner.isCancelled());
+		Assert.assertTrue(runner.isKilled());
 		
 		Assert.assertTrue("Expected flow " + Status.FAILED + " instead " + exFlow.getStatus(), exFlow.getStatus() == Status.FAILED);
 		
@@ -209,14 +209,14 @@ public class FlowRunnerTest {
 
 		testStatus(exFlow, "job1", Status.SUCCEEDED);
 		testStatus(exFlow, "job2d", Status.FAILED);
-		testStatus(exFlow, "job3", Status.KILLED);
-		testStatus(exFlow, "job4", Status.KILLED);
-		testStatus(exFlow, "job5", Status.KILLED);
-		testStatus(exFlow, "job6", Status.FAILED);
-		testStatus(exFlow, "job7", Status.KILLED);
-		testStatus(exFlow, "job8", Status.KILLED);
-		testStatus(exFlow, "job9", Status.KILLED);
-		testStatus(exFlow, "job10", Status.KILLED);
+		testStatus(exFlow, "job3", Status.CANCELLED);
+		testStatus(exFlow, "job4", Status.CANCELLED);
+		testStatus(exFlow, "job5", Status.CANCELLED);
+		testStatus(exFlow, "job6", Status.KILLED);
+		testStatus(exFlow, "job7", Status.CANCELLED);
+		testStatus(exFlow, "job8", Status.CANCELLED);
+		testStatus(exFlow, "job9", Status.CANCELLED);
+		testStatus(exFlow, "job10", Status.CANCELLED);
 		
 		try {
 			eventCollector.checkEventExists(new Type[] {Type.FLOW_STARTED, Type.FLOW_FINISHED});
@@ -246,20 +246,19 @@ public class FlowRunnerTest {
 			try {
 				wait(500);
 			} catch(InterruptedException e) {
-				
 			}
 		}
 		
 		testStatus(exFlow, "job1", Status.SUCCEEDED);
 		testStatus(exFlow, "job2d", Status.FAILED);
 		testStatus(exFlow, "job3", Status.SUCCEEDED);
-		testStatus(exFlow, "job4", Status.KILLED);
-		testStatus(exFlow, "job5", Status.KILLED);
-		testStatus(exFlow, "job6", Status.KILLED);
+		testStatus(exFlow, "job4", Status.CANCELLED);
+		testStatus(exFlow, "job5", Status.CANCELLED);
+		testStatus(exFlow, "job6", Status.CANCELLED);
 		testStatus(exFlow, "job7", Status.SUCCEEDED);
 		testStatus(exFlow, "job8", Status.SUCCEEDED);
 		testStatus(exFlow, "job9", Status.SUCCEEDED);
-		testStatus(exFlow, "job10", Status.KILLED);
+		testStatus(exFlow, "job10", Status.CANCELLED);
 		
 		try {
 			eventCollector.checkEventExists(new Type[] {Type.FLOW_STARTED, Type.FLOW_FINISHED});
@@ -278,7 +277,7 @@ public class FlowRunnerTest {
 		eventCollector.setEventFilterOut(Event.Type.JOB_FINISHED, Event.Type.JOB_STARTED, Event.Type.JOB_STATUS_CHANGED);
 		FlowRunner runner = createFlowRunner(loader, eventCollector, "exec1");
 		
-		Assert.assertTrue(!runner.isCancelled());
+		Assert.assertTrue(!runner.isKilled());
 		Thread thread = new Thread(runner);
 		thread.start();
 
@@ -290,8 +289,8 @@ public class FlowRunnerTest {
 				e.printStackTrace();
 			}
 			
-			runner.cancel("me");
-			Assert.assertTrue(runner.isCancelled());
+			runner.kill("me");
+			Assert.assertTrue(runner.isKilled());
 		}
 		
 
@@ -307,15 +306,15 @@ public class FlowRunnerTest {
 		ExecutableFlow exFlow = runner.getExecutableFlow();
 		testStatus(exFlow, "job1", Status.SUCCEEDED);
 		testStatus(exFlow, "job2", Status.SUCCEEDED);
-		testStatus(exFlow, "job5", Status.KILLED);
-		testStatus(exFlow, "job7", Status.KILLED);
-		testStatus(exFlow, "job8", Status.KILLED);
-		testStatus(exFlow, "job10", Status.KILLED);
-		testStatus(exFlow, "job3", Status.FAILED);
-		testStatus(exFlow, "job4", Status.FAILED);
-		testStatus(exFlow, "job6", Status.FAILED);
+		testStatus(exFlow, "job5", Status.CANCELLED);
+		testStatus(exFlow, "job7", Status.CANCELLED);
+		testStatus(exFlow, "job8", Status.CANCELLED);
+		testStatus(exFlow, "job10", Status.CANCELLED);
+		testStatus(exFlow, "job3", Status.KILLED);
+		testStatus(exFlow, "job4", Status.KILLED);
+		testStatus(exFlow, "job6", Status.KILLED);
 		
-		Assert.assertTrue("Expected FAILED status instead got " + exFlow.getStatus(),exFlow.getStatus() == Status.FAILED);
+		Assert.assertTrue("Expected FAILED status instead got " + exFlow.getStatus(),exFlow.getStatus() == Status.KILLED);
 		
 		try {
 			eventCollector.checkEventExists(new Type[] {Type.FLOW_STARTED, Type.FLOW_FINISHED});

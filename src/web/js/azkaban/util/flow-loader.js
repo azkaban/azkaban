@@ -14,20 +14,6 @@
  * the License.
  */
 
-var statusStringMap = {
-	"FAILED": "Failed",
-	"SUCCEEDED": "Success",
-	"FAILED_FINISHING": "Running w/Failure",
-	"RUNNING": "Running",
-	"WAITING": "Waiting",
-	"KILLED": "Killed",
-	"DISABLED": "Disabled",
-	"READY": "Ready",
-	"UNKNOWN": "Unknown",
-	"QUEUED": "Queued",
-	"SKIPPED": "Skipped"
-};
-
 var extendedViewPanels = {};
 var extendedDataModels = {};
 var openJobDisplayCallback = function(nodeId, flowId, evt) {
