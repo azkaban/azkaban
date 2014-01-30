@@ -145,14 +145,13 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
 				SlaOption sla;
 				try {
 				sla = parseSlaSetting(settings.get(set));
-				sla.getInfo().put(SlaOption.INFO_FLOW_NAME, sched.getFlowName());
-				sla.getInfo().put(SlaOption.INFO_EMAIL_LIST, slaEmails);
 				}
 				catch (Exception e) {
 					throw new ServletException(e);
 				}
 				if(sla != null) {
-					sla.getInfo().put("SlaEmails", slaEmails);
+					sla.getInfo().put(SlaOption.INFO_FLOW_NAME, sched.getFlowName());
+					sla.getInfo().put(SlaOption.INFO_EMAIL_LIST, slaEmails);
 					slaOptions.add(sla);
 				}
 			}
