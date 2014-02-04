@@ -166,7 +166,7 @@ public class SlaAlertAction implements TriggerAction{
 
 	@Override
 	public String getDescription() {
-		return type + " with " + slaOption.toString();
+		return type + " for " + execId + " with " + slaOption.toString();
 	}
 
 }

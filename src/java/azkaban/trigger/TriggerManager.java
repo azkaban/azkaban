@@ -53,7 +53,7 @@ public class TriggerManager extends EventHandler implements TriggerManagerAdapte
 	
 	private ExecutorManagerEventListener listener = new ExecutorManagerEventListener();
 	
-	private Object syncObj = new Object();
+	private final Object syncObj = new Object();
 	
 	private String scannerStage = "";
 	
@@ -85,7 +85,7 @@ public class TriggerManager extends EventHandler implements TriggerManagerAdapte
 	@Override
 	public void start() throws TriggerManagerException{
 		
-		try{
+		try {
 			// expect loader to return valid triggers
 			List<Trigger> triggers = triggerLoader.loadTriggers();
 			for(Trigger t : triggers) {
@@ -185,7 +185,7 @@ public class TriggerManager extends EventHandler implements TriggerManagerAdapte
 			triggers = new PriorityBlockingQueue<Trigger>(1, new TriggerComparator());
 			justFinishedFlows = new ConcurrentHashMap<Integer, ExecutableFlow>();
 			this.setName("TriggerRunnerManager-Trigger-Scanner-Thread");
-			this.scannerInterval = scannerInterval;;
+			this.scannerInterval = scannerInterval;
 		}
 
 		public void shutdown() {
@@ -216,12 +216,12 @@ public class TriggerManager extends EventHandler implements TriggerManagerAdapte
 			//while(stillAlive.get()) {
 			while(!shutdown) {
 				synchronized (syncObj) {
-					try{
+					try {
 						lastRunnerThreadCheckTime = System.currentTimeMillis();
 						
 						scannerStage = "Ready to start a new scan cycle at " + lastRunnerThreadCheckTime;
 						
-						try{
+						try {
 							checkAllTriggers();
 							justFinishedFlows.clear();
 						} catch(Exception e) {
@@ -231,11 +231,11 @@ public class TriggerManager extends EventHandler implements TriggerManagerAdapte
 							t.printStackTrace();
 							logger.error(t.getMessage());
 						}
-						
+					
 						scannerStage = "Done flipping all triggers.";
 						
 						runnerThreadIdleTime = scannerInterval - (System.currentTimeMillis() - lastRunnerThreadCheckTime);
-
+	
 						if(runnerThreadIdleTime < 0) {
 							logger.error("Trigger manager thread " + this.getName() + " is too busy!");
 						} else {

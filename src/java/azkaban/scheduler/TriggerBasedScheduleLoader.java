@@ -30,9 +30,6 @@ public class TriggerBasedScheduleLoader implements ScheduleLoader {
 	public TriggerBasedScheduleLoader(TriggerManager triggerManager, String triggerSource) {
 		this.triggerManager = triggerManager;
 		this.triggerSource = triggerSource;
-//		// need to init the action types and condition checker types 
-//		ExecuteFlowAction.setExecutorManager(executorManager);
-//		ExecuteFlowAction.setProjectManager(projectManager);
 	}
 	
 	private Trigger scheduleToTrigger(Schedule s) {
@@ -52,15 +49,6 @@ public class TriggerBasedScheduleLoader implements ScheduleLoader {
 		List<TriggerAction> actions = new ArrayList<TriggerAction>();
 		ExecuteFlowAction executeAct = new ExecuteFlowAction("executeFlowAction", s.getProjectId(), s.getProjectName(), s.getFlowName(), s.getSubmitUser(), s.getExecutionOptions(), s.getSlaOptions());
 		actions.add(executeAct);
-//		List<SlaOption> slaOptions = s.getSlaOptions();
-//		if(slaOptions != null && slaOptions.size() > 0) {
-//			// insert a trigger to keep watching that execution
-//			for(SlaOption sla : slaOptions) {
-//				// need to create triggers for each sla
-//				SlaChecker slaChecker = new SlaChecker("slaChecker", sla, executeAct.getId());
-//				
-//			}
-//		}
 		
 		return actions;
 	}
@@ -178,9 +166,7 @@ public class TriggerBasedScheduleLoader implements ScheduleLoader {
 	@Override
 	public void updateNextExecTime(Schedule s)
 			throws ScheduleManagerException {
-//		Trigger t = triggersLocalCopy.get(s.getScheduleId());
-//		BasicTimeChecker ck = (BasicTimeChecker) t.getTriggerCondition().getCheckers().values().toArray()[0];
-//		s.setNextExecTime(ck.getNextCheckTime().getMillis());
+
 	}
 
 	@Override
