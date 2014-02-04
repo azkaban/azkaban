@@ -1,0 +1,4 @@
+languages: java
+install:
+ - time npm install -g less dustjs-linkedin
+script: ant
