@@ -59,6 +59,7 @@
 		
 	    <exec executable="git" outputproperty="git.tag" failifexecutionfails="false" errorproperty="">
 	        <arg value="describe"/>
+	    	<arg value="--abbrev=0"/>
 	    </exec>
 	    <condition property="git.tag" value="${git.tag}" else="${version}">
 	        <and>
