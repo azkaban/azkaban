@@ -314,9 +314,9 @@ azkaban.FlowExecuteDialogView = Backbone.View.extend({
 var editTableView;
 azkaban.EditTableView = Backbone.View.extend({
 	events: {
-		"click table .addRow": "handleAddRow",
+		"click table #add-btn": "handleAddRow",
 		"click table .editable": "handleEditColumn",
-		"click table .removeIcon": "handleRemoveColumn"
+		"click table .remove-btn": "handleRemoveColumn"
 	},
 
 	initialize: function(setting) {
