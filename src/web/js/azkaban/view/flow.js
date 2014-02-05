@@ -208,6 +208,7 @@ azkaban.ExecutionsView = Backbone.View.extend({
 		
 		// Selection is always in middle unless at barrier.
 		var startPage = 0;
+		var selectionPosition = 0;
 		if (page < 3) {
 			selectionPosition = page;
 			startPage = 1;
