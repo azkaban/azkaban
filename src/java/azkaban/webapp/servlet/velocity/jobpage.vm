@@ -196,7 +196,7 @@
 								<tbody>
 									<tr id="addRow">
 										<td id="addRow-col" colspan="2">
-											<button type="button" class="btn btn-xs btn-success">Add Row</button>
+											<button type="button" class="btn btn-xs btn-success" id="add-btn">Add Row</button>
 										</td>
 									</tr>
 								</tbody>

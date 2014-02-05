@@ -23,7 +23,7 @@ azkaban.JobEditView = Backbone.View.extend({
 		"click #set-btn": "handleSet",	
 		"click #cancel-btn": "handleCancel",
 		"click #close-btn": "handleCancel",
-		"click #addRow": "handleAddRow",
+		"click #add-btn": "handleAddRow",
 		"click table .editable": "handleEditColumn",
 		"click table .remove-btn": "handleRemoveColumn"
 	},

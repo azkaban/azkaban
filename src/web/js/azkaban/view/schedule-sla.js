@@ -21,7 +21,7 @@ azkaban.ChangeSlaView = Backbone.View.extend({
 		"click": "closeEditingTarget",
 		"click #set-sla-btn": "handleSetSla",	
 		"click #remove-sla-btn": "handleRemoveSla",
-		"click #addRow": "handleAddRow"
+		"click #add-btn": "handleAddRow"
 	},
 	
 	initialize: function(setting) {

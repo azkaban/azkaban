@@ -44,7 +44,7 @@
 									<tr id="addRow">
 										<td id="addRow-col" colspan="5">
 											<span class="addIcon"></span>
-											<button type="button" class="btn btn-xs btn-success">Add Row</button>
+											<button type="button" class="btn btn-xs btn-success" id="add-btn">Add Row</button>
 										</td>
 									</tr>
 								</tbody>

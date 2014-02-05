@@ -61,10 +61,10 @@ azkaban.FlowExecuteDialogView = Backbone.View.extend({
 		var editRows = $(".editRow");
 		for (var i = 0; i < editRows.length; ++i) {
 			var row = editRows[i];
-			var td = $(row).find('td');
+			var td = $(row).find('span');
 			var key = $(td[0]).text();
 			var val = $(td[1]).text();
-			
+
 			if (key && key.length > 0) {
 				flowOverride[key] = val;
 			}
@@ -103,6 +103,7 @@ azkaban.FlowExecuteDialogView = Backbone.View.extend({
 		
 		return executingData;
 	},
+
 	changeFlowInfo: function() {
 		var successEmails = this.model.get("successEmails");
 		var failureEmails = this.model.get("failureEmails");
@@ -285,6 +286,7 @@ azkaban.FlowExecuteDialogView = Backbone.View.extend({
 		};
 		$.get(requestURL, requestData, successHandler, "json");
 	},
+
 	assignInitialStatus: function(data, statusData) {
 		// Copies statuses over from the previous execution if it exists.
 		var statusNodeMap = statusData.nodeMap;
@@ -300,6 +302,7 @@ azkaban.FlowExecuteDialogView = Backbone.View.extend({
 			}
 		}
 	},
+
 	handleExecuteFlow: function(evt) {
 		console.log("click schedule button.");
 		var executeURL = contextURL + "/executor";
@@ -311,9 +314,9 @@ azkaban.FlowExecuteDialogView = Backbone.View.extend({
 var editTableView;
 azkaban.EditTableView = Backbone.View.extend({
 	events: {
-		"click table .addRow": "handleAddRow",
+		"click table #add-btn": "handleAddRow",
 		"click table .editable": "handleEditColumn",
-		"click table .removeIcon": "handleRemoveColumn"
+		"click table .remove-btn": "handleRemoveColumn"
 	},
 
 	initialize: function(setting) {
@@ -391,7 +394,7 @@ azkaban.EditTableView = Backbone.View.extend({
 			}
 		});
 	},
-	
+
 	handleRemoveColumn: function(evt) {
 		var curTarget = evt.currentTarget;
 		// Should be the table
@@ -485,7 +488,7 @@ var executableGraphModel;
  * Disable jobs that need to be disabled
  */
 var disableFinishedJobs = function(data) {
-	for (var i=0; i < data.nodes.length; ++i) {
+	for (var i = 0; i < data.nodes.length; ++i) {
 		var node = data.nodes[i];
 		
 		if (node.status == "DISABLED" || node.status == "SKIPPED") {
@@ -522,7 +525,7 @@ var disableAll = function() {
 }
 
 var recurseTree = function(data, disabled, recurse) {
-	for (var i=0; i < data.nodes.length; ++i) {
+	for (var i = 0; i < data.nodes.length; ++i) {
 		var node = data.nodes[i];
 		node.disabled = disabled;
 		
