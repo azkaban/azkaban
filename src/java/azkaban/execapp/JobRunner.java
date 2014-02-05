@@ -259,14 +259,14 @@ public class JobRunner extends EventHandler implements Runnable {
 		boolean quickFinish = false;
 		long time = System.currentTimeMillis();
 		
-		if (this.isKilled() || Status.isStatusFinished(nodeStatus)) {
+		if (Status.isStatusFinished(nodeStatus)) {
 			quickFinish = true;
 		}
 		else if (nodeStatus == Status.DISABLED) {
 			changeStatus(Status.SKIPPED, time);
 			quickFinish = true;
 		} 
-		else if (this.killed) {
+		else if (this.isKilled()) {
 			changeStatus(Status.KILLED, time);
 			quickFinish = true;
 		} 
@@ -443,6 +443,9 @@ public class JobRunner extends EventHandler implements Runnable {
 		node.setEndTime(System.currentTimeMillis());
 
 		if (isKilled()) {
+			// even if it's killed, there is a chance that the job failed is marked as failure,
+			// So we set it to KILLED to make sure we know that we forced kill it rather than
+			// it being a legitimate failure.
 			changeStatus(Status.KILLED);
 		}
 		logInfo("Finishing job " + this.jobId + " at " + node.getEndTime() + " with status " + node.getStatus());
@@ -455,13 +458,13 @@ public class JobRunner extends EventHandler implements Runnable {
 	
 	private boolean prepareJob() throws RuntimeException {
 		// Check pre conditions
-		if (props == null || killed) {
+		if (props == null || this.isKilled()) {
 			logError("Failing job. The job properties don't exist");
 			return false;
 		}
 		
 		synchronized (syncObject) {
-			if (node.getStatus() == Status.FAILED || killed) {
+			if (node.getStatus() == Status.FAILED || this.isKilled()) {
 				return false;
 			}
 
@@ -559,6 +562,9 @@ public class JobRunner extends EventHandler implements Runnable {
 	
 	public void kill() {
 		synchronized (syncObject) {
+			if (Status.isStatusFinished(node.getStatus())) {
+				return;
+			}
 			logError("Kill has been called.");
 			this.killed = true;
 			
@@ -576,7 +582,7 @@ public class JobRunner extends EventHandler implements Runnable {
 				}
 				return;
 			}
-	
+
 			try {
 				job.cancel();
 			}
@@ -584,6 +590,8 @@ public class JobRunner extends EventHandler implements Runnable {
 				logError(e.getMessage());
 				logError("Failed trying to cancel job. Maybe it hasn't started running yet or just finished.");
 			}
+			
+			this.changeStatus(Status.KILLED);
 		}
 	}
 	
@@ -654,6 +662,5 @@ public class JobRunner extends EventHandler implements Runnable {
 		}
 
 		return attempt > 0 ? "_job." + executionId + "." + attempt + "." + jobId + ".attach" : "_job." + executionId + "." + jobId + ".attach";
-
 	}
 }

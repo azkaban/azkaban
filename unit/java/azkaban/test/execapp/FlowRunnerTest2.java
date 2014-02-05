@@ -817,10 +817,360 @@ public class FlowRunnerTest2 {
 		expectedStateMap.put("jobe", Status.CANCELLED);
 		expectedStateMap.put("jobf", Status.CANCELLED);
 		
-		Assert.assertEquals(Status.FAILED, flow.getStatus());
+		Assert.assertEquals(Status.KILLED, flow.getStatus());
 		compareStates(expectedStateMap, nodeMap);
 		Assert.assertFalse(thread.isAlive());
 	}
+	
+	@Test
+	public void testPause() throws Exception {
+		EventCollectorListener eventCollector = new EventCollectorListener();
+		FlowRunner runner = createFlowRunner(eventCollector, "jobf");
+		
+		Map<String, Status> expectedStateMap = new HashMap<String, Status>();
+		Map<String, ExecutableNode> nodeMap = new HashMap<String, ExecutableNode>();
+		
+		// 1. START FLOW
+		ExecutableFlow flow = runner.getExecutableFlow();
+		createExpectedStateMap(flow, expectedStateMap, nodeMap);
+		Thread thread = runFlowRunnerInThread(runner);
+		pause(250);
+		
+		// After it starts up, only joba should be running
+		expectedStateMap.put("joba", Status.RUNNING);
+		expectedStateMap.put("joba1", Status.RUNNING);
+		compareStates(expectedStateMap, nodeMap);
+
+		runner.pause("test");
+		InteractiveTestJob.getTestJob("joba").succeedJob();
+		// 2.1 JOB A COMPLETES SUCCESSFULLY AFTER PAUSE
+		pause(250);
+		expectedStateMap.put("joba", Status.SUCCEEDED);
+		compareStates(expectedStateMap, nodeMap);
+		Assert.assertEquals(flow.getStatus(), Status.PAUSED);
+		
+		// 2.2 Flow is unpaused
+		runner.resume("test");
+		pause(250);
+		Assert.assertEquals(flow.getStatus(), Status.RUNNING);
+		expectedStateMap.put("joba", Status.SUCCEEDED);
+		expectedStateMap.put("joba1", Status.RUNNING);
+		expectedStateMap.put("jobb", Status.RUNNING);
+		expectedStateMap.put("jobc", Status.RUNNING);
+		expectedStateMap.put("jobd", Status.RUNNING);
+		expectedStateMap.put("jobd:innerJobA", Status.RUNNING);
+		expectedStateMap.put("jobb:innerJobA", Status.RUNNING);
+		compareStates(expectedStateMap, nodeMap);		
+		
+		// 3. jobb:Inner completes
+		runner.pause("test");
+		
+		/// innerJobA completes, but paused
+		InteractiveTestJob.getTestJob("jobb:innerJobA").succeedJob(Props.of("output.jobb.innerJobA", "jobb.innerJobA"));
+		pause(250);
+		expectedStateMap.put("jobb:innerJobA", Status.SUCCEEDED);
+		compareStates(expectedStateMap, nodeMap);
+
+		runner.resume("test");
+		pause(250);
+		expectedStateMap.put("jobb:innerJobB", Status.RUNNING);
+		expectedStateMap.put("jobb:innerJobC", Status.RUNNING);
+		compareStates(expectedStateMap, nodeMap);
+		
+		/// innerJobB, C completes
+		InteractiveTestJob.getTestJob("jobb:innerJobB").succeedJob(Props.of("output.jobb.innerJobB", "jobb.innerJobB"));
+		InteractiveTestJob.getTestJob("jobb:innerJobC").succeedJob(Props.of("output.jobb.innerJobC", "jobb.innerJobC"));
+		pause(250);
+		expectedStateMap.put("jobb:innerJobB", Status.SUCCEEDED);
+		expectedStateMap.put("jobb:innerJobC", Status.SUCCEEDED);
+		expectedStateMap.put("jobb:innerFlow", Status.RUNNING);
+		compareStates(expectedStateMap, nodeMap);
+		
+		// 4. Finish up on inner flow for jobb
+		InteractiveTestJob.getTestJob("jobb:innerFlow").succeedJob(Props.of("output1.jobb", "test1", "output2.jobb", "test2"));
+		pause(250);
+		expectedStateMap.put("jobb:innerFlow", Status.SUCCEEDED);
+		expectedStateMap.put("jobb", Status.SUCCEEDED);
+		compareStates(expectedStateMap, nodeMap);
+		
+		// 5. Finish jobc, jobd
+		InteractiveTestJob.getTestJob("jobc").succeedJob(Props.of("output.jobc", "jobc"));
+		pause(250);
+		expectedStateMap.put("jobc", Status.SUCCEEDED);
+		compareStates(expectedStateMap, nodeMap);
+		InteractiveTestJob.getTestJob("jobd:innerJobA").succeedJob();
+		pause(250);
+		InteractiveTestJob.getTestJob("jobd:innerFlow2").succeedJob();
+		pause(250);
+		expectedStateMap.put("jobd:innerJobA", Status.SUCCEEDED);
+		expectedStateMap.put("jobd:innerFlow2", Status.SUCCEEDED);
+		expectedStateMap.put("jobd", Status.SUCCEEDED);
+		expectedStateMap.put("jobe", Status.RUNNING);
+		compareStates(expectedStateMap, nodeMap);
+		
+		// 6. Finish off flow
+		InteractiveTestJob.getTestJob("joba1").succeedJob();
+		pause(250);
+		InteractiveTestJob.getTestJob("jobe").succeedJob();
+		pause(250);
+		expectedStateMap.put("joba1", Status.SUCCEEDED);
+		expectedStateMap.put("jobe", Status.SUCCEEDED);
+		expectedStateMap.put("jobf", Status.RUNNING);
+		compareStates(expectedStateMap, nodeMap);
+		
+		InteractiveTestJob.getTestJob("jobf").succeedJob();
+		pause(250);
+		expectedStateMap.put("jobf", Status.SUCCEEDED);
+		compareStates(expectedStateMap, nodeMap);
+		Assert.assertEquals(Status.SUCCEEDED, flow.getStatus());
+		
+		Assert.assertFalse(thread.isAlive());
+	}
+	
+	@Test
+	public void testPauseKill() throws Exception {
+		EventCollectorListener eventCollector = new EventCollectorListener();
+		FlowRunner runner = createFlowRunner(eventCollector, "jobf");
+		
+		Map<String, Status> expectedStateMap = new HashMap<String, Status>();
+		Map<String, ExecutableNode> nodeMap = new HashMap<String, ExecutableNode>();
+		
+		// 1. START FLOW
+		ExecutableFlow flow = runner.getExecutableFlow();
+		createExpectedStateMap(flow, expectedStateMap, nodeMap);
+		Thread thread = runFlowRunnerInThread(runner);
+		pause(250);
+		
+		// After it starts up, only joba should be running
+		expectedStateMap.put("joba", Status.RUNNING);
+		expectedStateMap.put("joba1", Status.RUNNING);
+		compareStates(expectedStateMap, nodeMap);
+
+		// 2. JOB A COMPLETES SUCCESSFULLY 
+		InteractiveTestJob.getTestJob("joba").succeedJob();
+		pause(250);
+		expectedStateMap.put("joba", Status.SUCCEEDED);
+		expectedStateMap.put("joba1", Status.RUNNING);
+		expectedStateMap.put("jobb", Status.RUNNING);
+		expectedStateMap.put("jobc", Status.RUNNING);
+		expectedStateMap.put("jobd", Status.RUNNING);
+		expectedStateMap.put("jobd:innerJobA", Status.RUNNING);
+		expectedStateMap.put("jobb:innerJobA", Status.RUNNING);
+		compareStates(expectedStateMap, nodeMap);
+
+		runner.pause("me");
+		pause(250);
+		Assert.assertEquals(flow.getStatus(), Status.PAUSED);
+		InteractiveTestJob.getTestJob("jobb:innerJobA").succeedJob();
+		InteractiveTestJob.getTestJob("jobd:innerJobA").succeedJob();
+		pause(250);
+		expectedStateMap.put("jobb:innerJobA", Status.SUCCEEDED);
+		expectedStateMap.put("jobd:innerJobA", Status.SUCCEEDED);
+		compareStates(expectedStateMap, nodeMap);
+		
+		runner.kill("me");
+		pause(250);
+		expectedStateMap.put("joba1", Status.KILLED);
+		expectedStateMap.put("jobb:innerJobB", Status.CANCELLED);
+		expectedStateMap.put("jobb:innerJobC", Status.CANCELLED);
+		expectedStateMap.put("jobb:innerFlow", Status.CANCELLED);
+		expectedStateMap.put("jobb", Status.KILLED);
+		expectedStateMap.put("jobc", Status.KILLED);
+		expectedStateMap.put("jobd:innerFlow2", Status.CANCELLED);
+		expectedStateMap.put("jobd", Status.KILLED);
+		expectedStateMap.put("jobe", Status.CANCELLED);
+		expectedStateMap.put("jobf", Status.CANCELLED);
+
+		compareStates(expectedStateMap, nodeMap);
+		Assert.assertEquals(Status.KILLED, flow.getStatus());
+		Assert.assertFalse(thread.isAlive());
+	}
+	
+	@Test
+	public void testPauseFail() throws Exception {
+		EventCollectorListener eventCollector = new EventCollectorListener();
+		FlowRunner runner = createFlowRunner(eventCollector, "jobf", FailureAction.FINISH_CURRENTLY_RUNNING);
+		
+		Map<String, Status> expectedStateMap = new HashMap<String, Status>();
+		Map<String, ExecutableNode> nodeMap = new HashMap<String, ExecutableNode>();
+		
+		// 1. START FLOW
+		ExecutableFlow flow = runner.getExecutableFlow();
+		createExpectedStateMap(flow, expectedStateMap, nodeMap);
+		Thread thread = runFlowRunnerInThread(runner);
+		pause(250);
+		
+		// After it starts up, only joba should be running
+		expectedStateMap.put("joba", Status.RUNNING);
+		expectedStateMap.put("joba1", Status.RUNNING);
+		compareStates(expectedStateMap, nodeMap);
+
+		// 2. JOB A COMPLETES SUCCESSFULLY 
+		InteractiveTestJob.getTestJob("joba").succeedJob();
+		pause(250);
+		expectedStateMap.put("joba", Status.SUCCEEDED);
+		expectedStateMap.put("joba1", Status.RUNNING);
+		expectedStateMap.put("jobb", Status.RUNNING);
+		expectedStateMap.put("jobc", Status.RUNNING);
+		expectedStateMap.put("jobd", Status.RUNNING);
+		expectedStateMap.put("jobd:innerJobA", Status.RUNNING);
+		expectedStateMap.put("jobb:innerJobA", Status.RUNNING);
+		compareStates(expectedStateMap, nodeMap);
+
+		runner.pause("me");
+		pause(250);
+		Assert.assertEquals(flow.getStatus(), Status.PAUSED);
+		InteractiveTestJob.getTestJob("jobb:innerJobA").succeedJob();
+		InteractiveTestJob.getTestJob("jobd:innerJobA").failJob();
+		pause(250);
+		expectedStateMap.put("jobd:innerJobA", Status.FAILED);
+		expectedStateMap.put("jobb:innerJobA", Status.SUCCEEDED);
+		compareStates(expectedStateMap, nodeMap);
+	
+		runner.resume("me");
+		pause(250);
+		expectedStateMap.put("jobb:innerJobB", Status.CANCELLED);
+		expectedStateMap.put("jobb:innerJobC", Status.CANCELLED);
+		expectedStateMap.put("jobb:innerFlow", Status.CANCELLED);
+		expectedStateMap.put("jobb", Status.KILLED);
+		expectedStateMap.put("jobd:innerFlow2", Status.CANCELLED);
+		expectedStateMap.put("jobd", Status.FAILED);
+
+		InteractiveTestJob.getTestJob("jobc").succeedJob();
+		InteractiveTestJob.getTestJob("joba1").succeedJob();
+		pause(250);
+		expectedStateMap.put("jobc", Status.SUCCEEDED);
+		expectedStateMap.put("joba1", Status.SUCCEEDED);
+		expectedStateMap.put("jobf", Status.CANCELLED);
+		expectedStateMap.put("jobe", Status.CANCELLED);
+		
+		compareStates(expectedStateMap, nodeMap);
+		Assert.assertEquals(Status.FAILED, flow.getStatus());
+		Assert.assertFalse(thread.isAlive());
+	}
+	
+	@Test
+	public void testPauseFailFinishAll() throws Exception {
+		EventCollectorListener eventCollector = new EventCollectorListener();
+		FlowRunner runner = createFlowRunner(eventCollector, "jobf", FailureAction.FINISH_ALL_POSSIBLE);
+		
+		Map<String, Status> expectedStateMap = new HashMap<String, Status>();
+		Map<String, ExecutableNode> nodeMap = new HashMap<String, ExecutableNode>();
+		
+		// 1. START FLOW
+		ExecutableFlow flow = runner.getExecutableFlow();
+		createExpectedStateMap(flow, expectedStateMap, nodeMap);
+		Thread thread = runFlowRunnerInThread(runner);
+		pause(250);
+		
+		// After it starts up, only joba should be running
+		expectedStateMap.put("joba", Status.RUNNING);
+		expectedStateMap.put("joba1", Status.RUNNING);
+		compareStates(expectedStateMap, nodeMap);
+
+		// 2. JOB A COMPLETES SUCCESSFULLY 
+		InteractiveTestJob.getTestJob("joba").succeedJob();
+		pause(250);
+		expectedStateMap.put("joba", Status.SUCCEEDED);
+		expectedStateMap.put("joba1", Status.RUNNING);
+		expectedStateMap.put("jobb", Status.RUNNING);
+		expectedStateMap.put("jobc", Status.RUNNING);
+		expectedStateMap.put("jobd", Status.RUNNING);
+		expectedStateMap.put("jobd:innerJobA", Status.RUNNING);
+		expectedStateMap.put("jobb:innerJobA", Status.RUNNING);
+		compareStates(expectedStateMap, nodeMap);
+
+		runner.pause("me");
+		pause(250);
+		Assert.assertEquals(flow.getStatus(), Status.PAUSED);
+		InteractiveTestJob.getTestJob("jobb:innerJobA").succeedJob();
+		InteractiveTestJob.getTestJob("jobd:innerJobA").failJob();
+		pause(250);
+		expectedStateMap.put("jobd:innerJobA", Status.FAILED);
+		expectedStateMap.put("jobb:innerJobA", Status.SUCCEEDED);
+		compareStates(expectedStateMap, nodeMap);
+	
+		runner.resume("me");
+		pause(250);
+		expectedStateMap.put("jobb:innerJobB", Status.RUNNING);
+		expectedStateMap.put("jobb:innerJobC", Status.RUNNING);
+		expectedStateMap.put("jobd:innerFlow2", Status.CANCELLED);
+		expectedStateMap.put("jobd", Status.FAILED);
+
+		InteractiveTestJob.getTestJob("jobc").succeedJob();
+		InteractiveTestJob.getTestJob("joba1").succeedJob();
+		InteractiveTestJob.getTestJob("jobb:innerJobB").succeedJob();
+		InteractiveTestJob.getTestJob("jobb:innerJobC").succeedJob();
+		pause(250);
+		InteractiveTestJob.getTestJob("jobb:innerFlow").succeedJob();
+		pause(250);
+		expectedStateMap.put("jobc", Status.SUCCEEDED);
+		expectedStateMap.put("joba1", Status.SUCCEEDED);
+		expectedStateMap.put("jobb:innerJobB", Status.SUCCEEDED);
+		expectedStateMap.put("jobb:innerJobC", Status.SUCCEEDED);
+		expectedStateMap.put("jobb:innerFlow", Status.SUCCEEDED);
+		expectedStateMap.put("jobb", Status.SUCCEEDED);
+		expectedStateMap.put("jobe", Status.CANCELLED);
+		expectedStateMap.put("jobf", Status.CANCELLED);
+		
+		compareStates(expectedStateMap, nodeMap);
+		Assert.assertEquals(Status.FAILED, flow.getStatus());
+		Assert.assertFalse(thread.isAlive());
+	}
+	
+	@Test
+	public void testPauseFailKill() throws Exception {
+		EventCollectorListener eventCollector = new EventCollectorListener();
+		FlowRunner runner = createFlowRunner(eventCollector, "jobf", FailureAction.CANCEL_ALL);
+		
+		Map<String, Status> expectedStateMap = new HashMap<String, Status>();
+		Map<String, ExecutableNode> nodeMap = new HashMap<String, ExecutableNode>();
+		
+		// 1. START FLOW
+		ExecutableFlow flow = runner.getExecutableFlow();
+		createExpectedStateMap(flow, expectedStateMap, nodeMap);
+		Thread thread = runFlowRunnerInThread(runner);
+		pause(250);
+		// After it starts up, only joba should be running
+		expectedStateMap.put("joba", Status.RUNNING);
+		expectedStateMap.put("joba1", Status.RUNNING);
+		compareStates(expectedStateMap, nodeMap);
+
+		// 2. JOB A COMPLETES SUCCESSFULLY 
+		InteractiveTestJob.getTestJob("joba").succeedJob();
+		pause(500);
+		expectedStateMap.put("joba", Status.SUCCEEDED);
+		expectedStateMap.put("joba1", Status.RUNNING);
+		expectedStateMap.put("jobb", Status.RUNNING);
+		expectedStateMap.put("jobc", Status.RUNNING);
+		expectedStateMap.put("jobd", Status.RUNNING);
+		expectedStateMap.put("jobd:innerJobA", Status.RUNNING);
+		expectedStateMap.put("jobb:innerJobA", Status.RUNNING);
+		compareStates(expectedStateMap, nodeMap);
+
+		runner.pause("me");
+		pause(250);
+		Assert.assertEquals(flow.getStatus(), Status.PAUSED);
+		InteractiveTestJob.getTestJob("jobd:innerJobA").failJob();
+		pause(250);
+		expectedStateMap.put("jobd:innerJobA", Status.FAILED);
+		expectedStateMap.put("jobd:innerFlow2", Status.CANCELLED);
+		expectedStateMap.put("jobd", Status.FAILED);
+		expectedStateMap.put("jobb:innerJobA", Status.KILLED);
+		expectedStateMap.put("jobb:innerJobB", Status.CANCELLED);
+		expectedStateMap.put("jobb:innerJobC", Status.CANCELLED);
+		expectedStateMap.put("jobb:innerFlow", Status.CANCELLED);
+		expectedStateMap.put("jobb", Status.KILLED);
+		expectedStateMap.put("jobc", Status.KILLED);
+		expectedStateMap.put("jobe", Status.CANCELLED);
+		expectedStateMap.put("jobf", Status.CANCELLED);
+		expectedStateMap.put("joba1", Status.KILLED);
+		compareStates(expectedStateMap, nodeMap);
+
+		Assert.assertEquals(Status.FAILED, flow.getStatus());
+		Assert.assertFalse(thread.isAlive());
+	}
+	
 	
 	private Thread runFlowRunnerInThread(FlowRunner runner) {
 		Thread thread = new Thread(runner);

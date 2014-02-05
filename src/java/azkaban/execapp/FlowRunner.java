@@ -704,7 +704,7 @@ public class FlowRunner extends EventHandler implements Runnable {
 	private void runExecutableNode(ExecutableNode node) throws IOException {
 		// Collect output props from the job's dependencies.
 		prepareJobProperties(node);
-		
+
 		node.setStatus(Status.QUEUED);
 		JobRunner runner = createJobRunner(node);
 		logger.info("Submitting job '" + node.getNestedId() + "' to run.");
@@ -714,7 +714,6 @@ public class FlowRunner extends EventHandler implements Runnable {
 		} catch (RejectedExecutionException e) {
 			logger.error(e);
 		};
-
 	}
 	
 	/**
@@ -842,11 +841,14 @@ public class FlowRunner extends EventHandler implements Runnable {
 				updateFlow();
 			}
 		}
+
+		interrupt();
 	}
 	
 	public void kill(String user) {
 		synchronized(mainSyncObj) {
 			logger.info("Flow killed by " + user);
+			flow.setStatus(Status.KILLED);
 			kill();
 			updateFlow();
 		}
@@ -856,6 +858,8 @@ public class FlowRunner extends EventHandler implements Runnable {
 	private void kill() {
 		synchronized(mainSyncObj) {
 			logger.info("Kill has been called on flow " + execId);
+			
+			// If the flow is paused, then we'll also unpause
 			flowPaused = false;
 			flowKilled = true;
 			
@@ -996,6 +1000,13 @@ public class FlowRunner extends EventHandler implements Runnable {
 				long seconds = (node.getEndTime() - node.getStartTime())/1000;
 				synchronized(mainSyncObj) {
 					logger.info("Job " + node.getNestedId() + " finished with status " + node.getStatus() + " in " + seconds + " seconds");
+					
+					// Cancellation is handled in the main thread, but if the flow is paused, the main thread is paused too.
+					// This unpauses the flow for cancellation.
+					if (flowPaused && node.getStatus() == Status.FAILED && failureAction == FailureAction.CANCEL_ALL) {
+						flowPaused = false;
+					}
+					
 					finishedNodes.add(node);
 					node.getParentFlow().setUpdateTime(System.currentTimeMillis());
 					interrupt();
