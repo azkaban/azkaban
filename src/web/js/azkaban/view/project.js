@@ -50,6 +50,15 @@ azkaban.FlowTableView = Backbone.View.extend({
 		}
 		else if (target.loaded) {
 			$(targetExpanded).collapse('toggle');
+      var expander = $(target).children('.flow-expander-icon')[0];
+      if ($(expander).hasClass('glyphicon-chevron-down')) {
+        $(expander).removeClass('glyphicon-chevron-down');
+        $(expander).addClass('glyphicon-chevron-up');
+      }
+      else {
+        $(expander).removeClass('glyphicon-chevron-up');
+        $(expander).addClass('glyphicon-chevron-down');
+      }
 		}
 		else {
 			// projectName is available
@@ -65,6 +74,9 @@ azkaban.FlowTableView = Backbone.View.extend({
 				target.loading = false;
 				createJobListFunction(data, targetTBody);
 				$(targetExpanded).collapse('show');
+        var expander = $(target).children('.flow-expander-icon')[0];
+        $(expander).removeClass('glyphicon-chevron-down');
+        $(expander).addClass('glyphicon-chevron-up');
 			};
 			$.get(requestURL, requestData, successHandler, "json");
 		}
