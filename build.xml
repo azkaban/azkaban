@@ -91,7 +91,7 @@
 		<mkdir dir="${dist.dust.dir}" />
 		<exec dir="${dust.src.dir}" executable="make" failonerror="true"/>
 		<copy todir="${dist.dust.dir}">
-      		<fileset dir="${dust.src.dir}/obj" includes="*.js" />
+			<fileset dir="${dust.src.dir}/obj" includes="*.js" />
 		</copy>
 	</target>
 	
@@ -99,10 +99,10 @@
 		<!-- Compile LESS to CSS -->
 		<delete dir="${dist.less.dir}" />
 		<mkdir dir="${dist.less.dir}" />
-    	<exec dir="${less.src.dir}" executable="make" failonerror="true"/>
+		<exec dir="${less.src.dir}" executable="make" failonerror="true"/>
 		<copy todir="${dist.less.dir}" >
-      		<fileset dir="${less.src.dir}/obj" includes="*.css" />
-    	</copy>
+			<fileset dir="${less.src.dir}/obj" includes="*.css" />
+		</copy>
 	</target>
 	
 	<target name="repo.file" depends="git.info" description="Create a file to reference the git commit">

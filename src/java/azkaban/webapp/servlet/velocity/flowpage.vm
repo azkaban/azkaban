@@ -32,6 +32,8 @@
 		<script type="text/javascript" src="${context}/js/flowstats.js"></script>
 		
 		<script type="text/javascript" src="${context}/js/azkaban/view/time-graph.js"></script>
+		<script type="text/javascript" src="${context}/js/azkaban/util/schedule.js"></script>
+		<script type="text/javascript" src="${context}/js/azkaban/view/schedule-sla.js"></script>
 		<script type="text/javascript" src="${context}/js/azkaban/view/flow-stats.js"></script>
 		<script type="text/javascript" src="${context}/js/azkaban/view/flow-execute-dialog.js"></script>
 		<script type="text/javascript" src="${context}/js/azkaban/view/flow.js"></script>
@@ -166,6 +168,7 @@
 	#parse ("azkaban/webapp/servlet/velocity/invalidsessionmodal.vm")
 	#parse ("azkaban/webapp/servlet/velocity/flowexecutionpanel.vm")
 	#parse ("azkaban/webapp/servlet/velocity/messagedialog.vm")
+	#parse ("azkaban/webapp/servlet/velocity/slapanel.vm")
 		</div><!-- /.container -->
 #end
 	</body>
