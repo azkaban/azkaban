@@ -567,7 +567,7 @@ var touchAncestors = function(node, disable) {
 	executableGraphModel.trigger("change:disabled");
 }
 
-var touchDescendents = function(jobid, disable) {
+var touchDescendents = function(node, disable) {
 	recurseAllDescendents(node, disable);
 	
 	executableGraphModel.trigger("change:disabled");
