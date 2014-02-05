@@ -26,9 +26,9 @@
 	<property name="less.src.dir" value="${basedir}/src/less" />
 	<property name="web.src.dir" value="${basedir}/src/web" />
 	<property name="sql.src.dir" value="${basedir}/src/sql" />
-	
-	<property name="azkaban.jar" value="${dist.jar.dir}/${name}-${version}.jar" />
 
+	<property name="version.file" value="${dist.packages.dir}/azkaban.version" />
+	
 	<property environment="env" />
 
 	<path id="main.classpath">
@@ -41,9 +41,36 @@
 
 	<!-- set the build number based on environment variable, otherwise blank -->
 	<property environment="env" description="System environment variables (including those set by Hudson)" />
-
+	
 	<target name="all" depends="clean, package" description="Builds jars and packages." />
-
+	
+	<available file=".git" type="dir" property="git.present"/>
+	<target name="git.info" description="Store git info" if="git.present">
+	    <exec executable="git" outputproperty="git.commithash" failifexecutionfails="false" errorproperty="">
+	        <arg value="rev-parse"/>
+	    	<arg value="HEAD"/>
+	    </exec>
+		
+	    <exec executable="git" outputproperty="git.repo" failifexecutionfails="false" errorproperty="">
+	        <arg value="config"/>
+	    	<arg value="--get"/>
+	    	<arg value="remote.origin.url"/>
+	    </exec>
+		
+	    <exec executable="git" outputproperty="git.tag" failifexecutionfails="false" errorproperty="">
+	        <arg value="describe"/>
+	    	<arg value="--abbrev=0"/>
+	    	<arg value="--tags"/>
+	    </exec>
+	    <condition property="git.tag" value="${git.tag}" else="${version}">
+	        <and>
+	            <isset property="git.tag"/>
+	            <length string="${git.tag}" trim="yes" length="0" when="greater"/>
+	        </and>
+	    </condition>
+		<echo>Git tag found to be ${git.commithash} with tag ${git.tag} from repo ${git.repo}</echo>
+	</target>
+	
 	<target name="clean" description="Delete generated files.">
 		<echo message="Deleting generated files in dist" />
 		<delete dir="${dist.jar.dir}" />
@@ -78,7 +105,24 @@
 		</copy>
 	</target>
 	
-	<target name="build" description="Compile main source tree java files">
+	<target name="repo.file" depends="git.info" description="Create a file to reference the git commit">
+		<delete file="azkaban.version" />
+		
+		<tstamp>
+			<format timezone="UTC" property="current.time" pattern="yyyy-MM-dd hh:mm zzz"/>
+		</tstamp>
+		
+		<!-- Need to remove indents of the echo contents, because echo into file includes the tabs -->
+<echo file="${version.file}">
+${git.tag}
+${git.commithash}
+${git.repo}
+${current.time}
+</echo>
+	</target>
+	
+	<target name="build" depends="git.info, repo.file" description="Compile main source tree java files">
+		<echo>Building Classes</echo>
 		<delete dir="${dist.classes.dir}" />
 		<mkdir dir="${dist.classes.dir}" />
 		
@@ -125,7 +169,7 @@
 	
 	<target name="jars" depends="build" description="Create azkaban jar">
 		<mkdir dir="${dist.jar.dir}" />
-		<jar destfile="${azkaban.jar}">
+		<jar destfile="azkaban-${git.tag}.jar">
 			<fileset dir="${dist.classes.dir}">
 				<include name="**/*.*" />
 			</fileset>
@@ -165,7 +209,7 @@
 		<delete dir="${dist.sql.package.dir}" />
 		<mkdir dir="${dist.sql.package.dir}" />
 
-		<concat destfile="${dist.sql.package.dir}/create-all-sql-${version}.sql" fixlastline="yes">
+		<concat destfile="${dist.sql.package.dir}/create-all-sql-${git.tag}.sql" fixlastline="yes">
 			<fileset dir="${sql.src.dir}" >
 				<exclude name="update.*.sql"/>
 				<exclude name="database.properties"/>
@@ -181,10 +225,10 @@
 		<copy todir="${dist.sql.package.dir}" >
 			<fileset dir="${sql.src.dir}" />
 		</copy>
-		<echo file="${dist.sql.package.dir}/database.properties" append="true">version=${version}</echo>
+		<echo file="${dist.sql.package.dir}/database.properties" append="true">version=${git.tag}</echo>
 
-		<tar destfile="${dist.sql.package.dir}/${name}-sql-script-${version}.tar.gz" compression="gzip" longfile="gnu">
-			<tarfileset dir="${dist.sql.package.dir}" prefix="azkaban-${version}" filemode="755" />
+		<tar destfile="${dist.sql.package.dir}/${name}-sql-script-${git.tag}.tar.gz" compression="gzip" longfile="gnu">
+			<tarfileset dir="${dist.sql.package.dir}" prefix="azkaban-${git.tag}" filemode="755" />
 		</tar>
 	</target>
 
@@ -199,7 +243,7 @@
 		<mkdir dir="${dist.web.package.dir}/extlib" />	
 			
 		<!-- Copy Azkaban jars and libs-->
-		<copy file="${azkaban.jar}" todir="${dist.web.package.dir}/lib" />
+		<copy file="azkaban-${git.tag}.jar" todir="${dist.web.package.dir}/lib" />
 		<copy todir="${dist.web.package.dir}/lib" >
 			<fileset dir="${lib.dir}" >
 				<exclude name="hadoop-core*.jar"/>
@@ -231,11 +275,14 @@
 			<fileset dir="${web.package.dir}/conf" />
 		</copy>
 		
+		<!-- Copy version file -->
+		<copy file="${version.file}" todir="${dist.web.package.dir}" />
+		
 		<!-- Tarball it -->
-		<tar destfile="${dist.web.package.dir}/${name}-web-server-${version}.tar.gz" compression="gzip" longfile="gnu">
-			<tarfileset dir="${dist.web.package.dir}" prefix="azkaban-${version}" filemode="755" includes="bin/*" />
+		<tar destfile="${dist.web.package.dir}/${name}-web-server-${git.tag}.tar.gz" compression="gzip" longfile="gnu">
+			<tarfileset dir="${dist.web.package.dir}" prefix="azkaban-${git.tag}" filemode="755" includes="bin/*" />
 			
-			<tarfileset dir="${dist.web.package.dir}" prefix="azkaban-${version}" includes="**">
+			<tarfileset dir="${dist.web.package.dir}" prefix="azkaban-${git.tag}" includes="**">
 				<exclude name="bin/*"/>
 			</tarfileset>
 		</tar>
@@ -251,7 +298,7 @@
 		<mkdir dir="${dist.exec.package.dir}/extlib" />
 				
 		<!-- Copy Azkaban jars and libs-->
-		<copy file="${azkaban.jar}" todir="${dist.exec.package.dir}/lib" />
+		<copy file="azkaban-${git.tag}.jar" todir="${dist.exec.package.dir}/lib" />
 		<copy todir="${dist.exec.package.dir}/lib" >
 			<fileset dir="${lib.dir}" >
 				<exclude name="hadoop-core*.jar"/>
@@ -268,11 +315,14 @@
 			<fileset dir="${exec.package.dir}/conf" />
 		</copy>
 		
+		<!-- Copy version file -->
+		<copy file="${version.file}" todir="${dist.exec.package.dir}" />
+		
 		<!-- Tarball it -->
-		<tar destfile="${dist.exec.package.dir}/${name}-executor-server-${version}.tar.gz" compression="gzip" longfile="gnu">
-			<tarfileset dir="${dist.exec.package.dir}" prefix="azkaban-${version}" filemode="755" includes="bin/*" />
+		<tar destfile="${dist.exec.package.dir}/${name}-executor-server-${git.tag}.tar.gz" compression="gzip" longfile="gnu">
+			<tarfileset dir="${dist.exec.package.dir}" prefix="azkaban-${git.tag}" filemode="755" includes="bin/*" />
 			
-			<tarfileset dir="${dist.exec.package.dir}" prefix="azkaban-${version}" includes="**">
+			<tarfileset dir="${dist.exec.package.dir}" prefix="azkaban-${git.tag}" includes="**">
 				<exclude name="bin/*"/>
 			</tarfileset>
 		</tar>
@@ -289,7 +339,7 @@
 		<mkdir dir="${dist.solo.package.dir}/sql" />
 				
 		<!-- Copy Azkaban jars and libs-->
-		<copy file="${azkaban.jar}" todir="${dist.solo.package.dir}/lib" />
+		<copy file="azkaban-${git.tag}.jar" todir="${dist.solo.package.dir}/lib" />
 		<copy todir="${dist.solo.package.dir}/lib" >
 			<fileset dir="${lib.dir}" >
 				<exclude name="hadoop-core*.jar"/>
@@ -325,13 +375,16 @@
 		<copy todir="${dist.solo.package.dir}/sql" >
 			<fileset dir="${sql.src.dir}" />
 		</copy>
-		<echo file="${dist.solo.package.dir}/sql/database.properties" append="true">version=${version}</echo>
-			
+		<echo file="${dist.solo.package.dir}/sql/database.properties" append="true">version=${git.tag}</echo>
+		
+		<!-- Copy version file -->
+		<copy file="${version.file}" todir="${dist.solo.package.dir}" />
+
 		<!-- Tarball it -->
-		<tar destfile="${dist.solo.package.dir}/${name}-solo-server-${version}.tar.gz" compression="gzip" longfile="gnu">
-			<tarfileset dir="${dist.solo.package.dir}" prefix="azkaban-${version}" filemode="755" includes="bin/*" />
+		<tar destfile="${dist.solo.package.dir}/${name}-solo-server-${git.tag}.tar.gz" compression="gzip" longfile="gnu">
+			<tarfileset dir="${dist.solo.package.dir}" prefix="azkaban-${git.tag}" filemode="755" includes="bin/*" />
 			
-			<tarfileset dir="${dist.solo.package.dir}" prefix="azkaban-${version}" includes="**">
+			<tarfileset dir="${dist.solo.package.dir}" prefix="azkaban-${git.tag}" includes="**">
 				<exclude name="bin/*"/>
 			</tarfileset>
 		</tar>

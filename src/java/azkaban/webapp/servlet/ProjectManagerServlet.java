@@ -944,10 +944,9 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 				jobInfo = null;
 			}
 			page.add("history", jobInfo);
+
+			page.add("previous", new PageSelection("Previous", pageSize, true, false, Math.max(pageNum - 1, 1)));
 			
-			if (pageNum == 1) {
-				page.add("previous", new PageSelection("Previous", pageSize, true, false, pageNum - 1));
-			}
 			page.add("next", new PageSelection("Next", pageSize, false, false, Math.min(pageNum + 1, maxPage)));
 
 			if (jobInfo != null) {

@@ -65,7 +65,7 @@ azkaban.TimeGraphView = Backbone.View.extend({
 		}
 
 		var graphDiv = document.createElement('div');
-		$(this.graphContainer).append(graphDiv);
+		$(this.graphContainer).html(graphDiv);
 
     var lineColorsCallback = function(row, sidx, type) {
       if (type != 'point') {

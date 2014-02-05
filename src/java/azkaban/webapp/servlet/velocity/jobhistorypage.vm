@@ -127,13 +127,13 @@
           </table>
 
 					<ul class="pagination" id="pageSelection">
-						<li id="previous" class="first"><a href="${context}/manager?project=${projectId}&job=${jobid}&history&page=${previous.page}&size=${previous.size}"><span class="arrow">&larr;</span>Previous</a></li>
-						<li id="page1" #if($page1.selected) class="selected" #elseif ($page1.disabled) class="disabled" #end><a href="${context}/manager?project=${projectName}&job=${jobid}&history&page=${page1.nextPage}&size=${page1.size}">${page1.page}</a></li>
-						<li id="page2" #if($page2.selected) class="selected" #elseif ($page2.disabled) class="disabled" #end><a href="${context}/manager?project=${projectName}&job=${jobid}&history&page=${page2.nextPage}&size=${page2.size}">${page2.page}</a></li>
-						<li id="page3" #if($page3.selected) class="selected" #elseif ($page3.disabled) class="disabled" #end><a href="${context}/manager?project=${projectName}&job=${jobid}&history&page=${page3.nextPage}&size=${page3.size}">${page3.page}</a></li>
-						<li id="page4" #if($page4.selected) class="selected" #elseif ($page4.disabled) class="disabled" #end><a href="${context}/manager?project=${projectName}&job=${jobid}&history&page=${page4.nextPage}&size=${page4.size}">${page4.page}</a></li>
-						<li id="page5" #if($page5.selected) class="selected" #elseif ($page5.disabled) class="disabled" #end><a href="${context}/manager?project=${projectName}&job=${jobid}&history&page=${page5.nextPage}&size=${page5.size}">${page5.page}</a></li>
-						<li id="next"><a href="${context}/manager?project=${projectName}&job=${jobid}&history&page=${next.page}&size=${next.size}">Next<span class="arrow">&rarr;</span></a></li>
+						<li id="previous" class="first"><a href="${context}/manager?project=${projectName}&job=${jobid}&history&page=${previous.nextPage}&size=${previous.size}"><span class="arrow">&larr;</span>Previous</a></li>
+						<li id="page1" #if($page1.selected) class="active" #elseif ($page1.disabled) class="disabled" #end><a href="${context}/manager?project=${projectName}&job=${jobid}&history&page=${page1.nextPage}&size=${page1.size}">${page1.page}</a></li>
+						<li id="page2" #if($page2.selected) class="active" #elseif ($page2.disabled) class="disabled" #end><a href="${context}/manager?project=${projectName}&job=${jobid}&history&page=${page2.nextPage}&size=${page2.size}">${page2.page}</a></li>
+						<li id="page3" #if($page3.selected) class="active" #elseif ($page3.disabled) class="disabled" #end><a href="${context}/manager?project=${projectName}&job=${jobid}&history&page=${page3.nextPage}&size=${page3.size}">${page3.page}</a></li>
+						<li id="page4" #if($page4.selected) class="active" #elseif ($page4.disabled) class="disabled" #end><a href="${context}/manager?project=${projectName}&job=${jobid}&history&page=${page4.nextPage}&size=${page4.size}">${page4.page}</a></li>
+						<li id="page5" #if($page5.selected) class="active" #elseif ($page5.disabled) class="disabled" #end><a href="${context}/manager?project=${projectName}&job=${jobid}&history&page=${page5.nextPage}&size=${page5.size}">${page5.page}</a></li>
+						<li id="next"><a href="${context}/manager?project=${projectName}&job=${jobid}&history&page=${next.nextPage}&size=${next.size}">Next<span class="arrow">&rarr;</span></a></li>
 					</ul>
 
 				</div><!-- /.col-xs-12 -->
