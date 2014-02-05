@@ -434,7 +434,6 @@ public class JobRunner extends EventHandler implements Runnable {
 				writeStatus();
 				fireEvent(Event.create(this, Type.JOB_STATUS_CHANGED), false);
 				runJob();
-				writeStatus();
 			}
 			else {
 				changeStatus(Status.FAILED);
@@ -451,6 +450,7 @@ public class JobRunner extends EventHandler implements Runnable {
 		fireEvent(Event.create(this, Type.JOB_FINISHED), false);
 		finalizeLogFile();
 		finalizeAttachmentFile();
+		writeStatus();
 	}
 	
 	private boolean prepareJob() throws RuntimeException {
