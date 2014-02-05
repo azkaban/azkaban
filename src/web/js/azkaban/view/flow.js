@@ -174,7 +174,7 @@ azkaban.ExecutionsView = Backbone.View.extend({
 		var page = this.model.get("page");
 		
 		//Start it off
-		$("#pageSelection .selected").removeClass("selected");
+		$("#pageSelection .active").removeClass("active");
 		
 		// Disable if less than 5
 		console.log("Num pages " + numPages)
@@ -207,34 +207,38 @@ azkaban.ExecutionsView = Backbone.View.extend({
 		}
 		
 		// Selection is always in middle unless at barrier.
+		var startPage = 0;
 		if (page < 3) {
 			selectionPosition = page;
+			startPage = 1;
 		}
-		else if (page > numPages - 2) {
-			selectionPosition = 5 - (numPages - page) - 1;
+		else if (page == numPages) {
+			selectionPosition = 5;
+			startPage = numPages - 4;
+		}
+		else if (page == numPages - 1) {
+			selectionPosition = 4;
+			startPage = numPages - 4;
 		}
 		else {
 			selectionPosition = 3;
+			startPage = page - 2;
 		}
 
-		$("#page"+selectionPosition).addClass("selected");
+		$("#page"+selectionPosition).addClass("active");
 		$("#page"+selectionPosition)[0].page = page;
 		var selecta = $("#page" + selectionPosition + " a");
 		selecta.text(page);
 		selecta.attr("href", "#page" + page);
 
-		for (var j = 1, tpage = page - selectionPosition + 1; j < selectionPosition; ++j, ++tpage) {
-			$("#page" + j)[0].page = tpage;
-			var a = $("#page" + i + " a");
-			a.text(tpage);
-			a.attr("href", "#page" + tpage);
-		}
-
-		for (var i = selectionPosition + 1, tpage = page + 1; i <= numPages; ++i, ++tpage) {
-			$("#page" + i)[0].page = tpage;
-			var a = $("#page" + i + " a");
-			a.text(tpage);
-			a.attr("href", "#page" + tpage);
+		for (var j = 0; j < 5; ++j) {
+			var realPage = startPage + j;
+			var elementId = "#page" + (j+1);
+			
+			$(elementId)[0].page = realPage;
+			var a = $(elementId + " a");
+			a.text(realPage);
+			a.attr("href", "#page" + realPage);
 		}
 	},
 	
