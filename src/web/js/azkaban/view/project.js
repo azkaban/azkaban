@@ -50,6 +50,15 @@ azkaban.FlowTableView = Backbone.View.extend({
 		}
 		else if (target.loaded) {
 			$(targetExpanded).collapse('toggle');
+			var expander = $(target).children('.flow-expander-icon')[0];
+			if ($(expander).hasClass('glyphicon-chevron-down')) {
+				$(expander).removeClass('glyphicon-chevron-down');
+				$(expander).addClass('glyphicon-chevron-up');
+			}
+			else {
+				$(expander).removeClass('glyphicon-chevron-up');
+				$(expander).addClass('glyphicon-chevron-down');
+			}
 		}
 		else {
 			// projectName is available
@@ -65,6 +74,9 @@ azkaban.FlowTableView = Backbone.View.extend({
 				target.loading = false;
 				createJobListFunction(data, targetTBody);
 				$(targetExpanded).collapse('show');
+				var expander = $(target).children('.flow-expander-icon')[0];
+				$(expander).removeClass('glyphicon-chevron-down');
+				$(expander).addClass('glyphicon-chevron-up');
 			};
 			$.get(requestURL, requestData, successHandler, "json");
 		}
@@ -93,10 +105,10 @@ azkaban.FlowTableView = Backbone.View.extend({
 			if (execAccess) {
 				var hoverMenuDiv = document.createElement('div');
 				$(hoverMenuDiv).addClass('pull-right');
-        $(hoverMenuDiv).addClass('job-buttons');
+				$(hoverMenuDiv).addClass('job-buttons');
 				
 				var divRunJob = document.createElement('button');
-        $(divRunJob).attr('type', 'button');
+				$(divRunJob).attr('type', 'button');
 				$(divRunJob).addClass("btn");
 				$(divRunJob).addClass("btn-success");
 				$(divRunJob).addClass("btn-xs");
@@ -107,7 +119,7 @@ azkaban.FlowTableView = Backbone.View.extend({
 				$(hoverMenuDiv).append(divRunJob);
 				
 				var divRunWithDep = document.createElement("button");
-        $(divRunWithDep).attr('type', 'button');
+				$(divRunWithDep).attr('type', 'button');
 				$(divRunWithDep).addClass("btn");
 				$(divRunWithDep).addClass("btn-success");
 				$(divRunWithDep).addClass("btn-xs");
@@ -120,12 +132,12 @@ azkaban.FlowTableView = Backbone.View.extend({
 				$(li).append(hoverMenuDiv);
 			}
 			
-      var ida = document.createElement("a");
+			var ida = document.createElement("a");
 			$(ida).css("margin-left", level * 20);
-      $(ida).attr("href", requestURL + name);
-      $(ida).text(name);
+			$(ida).attr("href", requestURL + name);
+			$(ida).text(name);
 
-      $(li).append(ida);
+			$(li).append(ida);
 			$(innerTable).append(li);
 		}
 	},
@@ -140,7 +152,7 @@ azkaban.FlowTableView = Backbone.View.extend({
 		var currentTarget = evt.currentTarget;
 		$(".dependent").removeClass("dependent");
 		$(".dependency").removeClass("dependency");
-    this.highlightJob(currentTarget);
+		this.highlightJob(currentTarget);
 	},
 
 	highlightJob: function(currentTarget) {

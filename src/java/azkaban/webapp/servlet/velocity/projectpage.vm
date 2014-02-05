@@ -75,7 +75,8 @@
                   <a href="${context}/manager?project=${project.name}&flow=${flow.id}#executions" class="btn btn-info btn-xs">Executions</a>
                   <a href="${context}/manager?project=${project.name}&flow=${flow.id}#summary" class="btn btn-info btn-xs">Summary</a>
                 </div>
-			#end
+      #end
+                <span class="glyphicon glyphicon-chevron-down flow-expander-icon"></span>
                 <a href="${context}/manager?project=${project.name}&flow=${flow.id}">${flow.id}</a>
               </div>
               <div id="${flow.id}-child" class="panel-collapse panel-list collapse">
