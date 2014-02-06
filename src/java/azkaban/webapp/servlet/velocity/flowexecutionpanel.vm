@@ -116,7 +116,7 @@
 										<hr>
 										<div class="radio">
 											<label>
-												<input type="radio" id="skip" name="concurrent" value="skip" checked="checked">
+												<input type="radio" id="skip" name="concurrent" value="skip">
 												Skip Execution
 											</label>
 											<span class="help-block">Do not run flow if it is already running.</span>
@@ -124,7 +124,7 @@
 
 										<div class="radio">
 											<label>
-												<input type="radio" id="ignore" name="concurrent" value="ignore">
+												<input type="radio" id="ignore" name="concurrent" value="ignore" checked="checked">
 												Run Concurrently
 											</label>
 											<span class="help-block">Do not run flow if it is already running.</span>
