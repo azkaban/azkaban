@@ -127,7 +127,7 @@
 												<input type="radio" id="ignore" name="concurrent" value="ignore" checked="checked">
 												Run Concurrently
 											</label>
-											<span class="help-block">Do not run flow if it is already running.</span>
+											<span class="help-block">Run the flow anyway. Previous execution is unaffected.</span>
 										</div>
 
 										<div class="radio">
