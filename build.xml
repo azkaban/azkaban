@@ -147,8 +147,10 @@
   
   <target name="distclean" depends="clean" description="Delete all generated files.">
     <delete dir="${build.dir}" />
-    <delete dir="${ivy.dir}">
-      <include name="*.jar" />
+    <delete>
+      <fileset dir="${ivy.dir}">
+        <include name="*.jar" />
+      </fileset>
     </delete>
   </target>
 
