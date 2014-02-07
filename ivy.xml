@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ivy-module version="1.0" xmlns:m="http://ant.apache.org/ivy/maven">
   <info 
-      organisation="com.linkedin.azkaban.scrape" 
-      module="azkaban-project-audit"
-      revision="1.0" status="release">
+      organisation="azkaban"
+      module="azkaban"
+      revision="2.5" status="release">
   </info>
 
   <dependencies>
