@@ -1,6 +1,7 @@
 <?xml version="1.0"?>
 
-<project name="azkaban" basedir="." default="all">
+<project name="azkaban" basedir="." default="all"
+    xmlns:ivy="antlib:org.apache.ivy.ant">
 	<property file="build.properties" />
 	<property name="base.dir" value="${basedir}" />
 	<property name="dist.jar.dir" value="${basedir}/dist/jars" />
@@ -26,13 +27,31 @@
 	<property name="less.src.dir" value="${basedir}/src/less" />
 	<property name="web.src.dir" value="${basedir}/src/web" />
 	<property name="sql.src.dir" value="${basedir}/src/sql" />
-
+	
 	<property name="version.file" value="${dist.packages.dir}/azkaban.version" />
 	
+	<!-- Ivy properties -->
+	<property name="mvnrepo" value="http://repo2.maven.org/maven2" />
+	<property name="build.dir" value="${base.dir}/build" />
+	<property name="ivy.dir" location="ivy" />
+	<loadproperties srcfile="${ivy.dir}/libraries.properties" />
+	
+	<property name="loglevel" value="default" />
+	<property name="ivy.jar" value="${ivy.dir}/ivy-${ivy.version}.jar" />
+	<property name="ivy.repo.url" 
+			value="${mvnrepo}/org/apache/ivy/ivy/${ivy.version}/ivy-${ivy.version}.jar" />
+	<property name="ivysettings.xml" value="${ivy.dir}/ivysettings.xml" />
+	<property name="build.ivy.dir" location="${build.dir}/ivy" />
+	<property name="build.ivy.lib.dir" location="${build.ivy.dir}/lib" />
+	<property name="ivy.artifact.retrieve.pattern" value="[artifact]-[revision].[ext]" />
+
 	<property environment="env" />
 
 	<path id="main.classpath">
 		<fileset dir="${lib.dir}">
+			<include name="*.jar" />
+		</fileset>
+		<fileset dir="${build.ivy.lib.dir}">
 			<include name="*.jar" />
 		</fileset>
 
@@ -44,30 +63,75 @@
 	
 	<target name="all" depends="clean, package" description="Builds jars and packages." />
 	
+	<target name="ivy-probe-antlib">
+		<condition property="ivy.found">
+			<typefound uri="antlib:org.apache.ivy.ant" name="cleancache" />
+		</condition>
+	</target>
+
+	<target name="ivy-download" description="Downloads Ivy." unless="offline">
+		<get src="${ivy.repo.url}" dest="${ivy.jar}" usetimestamp="true" />
+	</target>
+
+	<target name="ivy-init-dirs">
+		<mkdir dir="${build.ivy.dir}" />
+		<mkdir dir="${build.ivy.lib.dir}" />
+	</target>
+
+	<target name="ivy-init-antlib" depends="ivy-download, ivy-init-dirs, ivy-probe-antlib" unless="ivy.found">
+		<typedef uri="antlib:org.apache.ivy.ant" onerror="fail" loaderRef="ivyLoader">
+			<classpath>
+				<pathelement location="${ivy.jar}" />
+			</classpath>
+		</typedef>
+		<fail>
+			<condition>
+				<not>
+					<typefound uri="antlib:org.apache.ivy.ant" name="cleancache" />
+				</not>
+			</condition>
+			You need Apache Ivy 2.0 or later from http://ant.apache.org/
+			It sould not be loaded from ${ivy.repo.url}
+		</fail>
+	</target>
+
+	<target name="ivy-init" depends="ivy-init-antlib">
+		<ivy:configure settingsid="${ant.project.name}.ivy.settings" file="${ivysettings.xml}" override="false" />
+	</target>
+
+	<target name="ivy-resolve" depends="ivy-init" description="Resolve dependencies with Ivy">
+		<ivy:resolve settingsRef="${ant.project.name}.ivy.settings" log="${loglevel}" />
+	</target>
+
+	<target name="ivy-retrieve" depends="ivy-resolve" description="Retrieve Ivy-managed artifacts.">
+		<ivy:retrieve settingsRef="${ant.project.name}.ivy.settings"
+				pattern="${build.ivy.lib.dir}/${ivy.artifact.retrieve.pattern}" log="${loglevel}" />
+	</target>
+	
 	<available file=".git" type="dir" property="git.present"/>
 	<target name="git.info" description="Store git info" if="git.present">
-	    <exec executable="git" outputproperty="git.commithash" failifexecutionfails="false" errorproperty="">
-	        <arg value="rev-parse"/>
-	    	<arg value="HEAD"/>
-	    </exec>
-		
-	    <exec executable="git" outputproperty="git.repo" failifexecutionfails="false" errorproperty="">
-	        <arg value="config"/>
-	    	<arg value="--get"/>
-	    	<arg value="remote.origin.url"/>
-	    </exec>
-		
-	    <exec executable="git" outputproperty="git.tag" failifexecutionfails="false" errorproperty="">
-	        <arg value="describe"/>
-	    	<arg value="--abbrev=0"/>
-	    	<arg value="--tags"/>
-	    </exec>
-	    <condition property="git.tag" value="${git.tag}" else="${version}">
-	        <and>
-	            <isset property="git.tag"/>
-	            <length string="${git.tag}" trim="yes" length="0" when="greater"/>
-	        </and>
-	    </condition>
+		<exec executable="git" outputproperty="git.commithash" failifexecutionfails="false" errorproperty="">
+			<arg value="rev-parse"/>
+			<arg value="HEAD"/>
+		</exec>
+	
+		<exec executable="git" outputproperty="git.repo" failifexecutionfails="false" errorproperty="">
+			<arg value="config"/>
+			<arg value="--get"/>
+			<arg value="remote.origin.url"/>
+		</exec>
+	
+		<exec executable="git" outputproperty="git.tag" failifexecutionfails="false" errorproperty="">
+			<arg value="describe"/>
+			<arg value="--abbrev=0"/>
+			<arg value="--tags"/>
+		</exec>
+		<condition property="git.tag" value="${git.tag}" else="${version}">
+			<and>
+				<isset property="git.tag"/>
+				<length string="${git.tag}" trim="yes" length="0" when="greater"/>
+			</and>
+		</condition>
 		<echo>Git tag found to be ${git.commithash} with tag ${git.tag} from repo ${git.repo}</echo>
 	</target>
 	
@@ -77,13 +141,20 @@
 		<delete dir="${dist.classes.dir}" />
 		<delete dir="${dist.dust.dir}" />
 		<delete dir="${dist.less.dir}" />
-    <exec dir="${dust.src.dir}" executable="make" failonerror="true">
-      <arg value="clean" />
-    </exec>
-    <exec dir="${less.src.dir}" executable="make" failonerror="true">
-      <arg value="clean" />
-    </exec>
+		<delete dir="${build.dir}" />
+		<exec dir="${dust.src.dir}" executable="make" failonerror="true">
+			<arg value="clean" />
+		</exec>
+		<exec dir="${less.src.dir}" executable="make" failonerror="true">
+			<arg value="clean" />
+		</exec>
 	</target>
+	
+	<target name="distclean" depends="clean" description="Delete all generated files.">
+    <delete dir="${ivy.dir}">
+      <include name="*.jar" />
+    </delete>
+  </target>
 
 	<target name="dust" description="Compile Less css files.">
 		<!-- Compile dustjs templates -->
@@ -121,7 +192,7 @@ ${current.time}
 </echo>
 	</target>
 	
-	<target name="build" depends="git.info, repo.file" description="Compile main source tree java files">
+	<target name="build" depends="git.info, repo.file, ivy-retrieve" description="Compile main source tree java files">
 		<echo>Building Classes</echo>
 		<delete dir="${dist.classes.dir}" />
 		<mkdir dir="${dist.classes.dir}" />

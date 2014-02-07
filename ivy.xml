@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ivy-module version="1.0" xmlns:m="http://ant.apache.org/ivy/maven">
+  <info 
+      organisation="com.linkedin.azkaban.scrape" 
+      module="azkaban-project-audit"
+      revision="1.0" status="release">
+  </info>
+
+  <dependencies>
+    <dependency name="commons-io" org="commons-io"
+        rev="${commons-io.version}" conf="default->master" />
+    <dependency name="commons-cli" org="commons-cli" 
+        rev="${commons-cli.version}" conf="default->master" />
+    <dependency name="commons-dbcp" org="commons-dbcp" 
+        rev="${commons-dbcp.version}" conf="default->master" />
+    <dependency name="commons-dbutils" org="commons-dbutils" 
+        rev="${commons-dbutils.version}" conf="default->master" />
+    <dependency name="commons-pool" org="commons-pool" 
+        rev="${commons-pool.version}" conf="default->master" />
+    <dependency name="log4j" org="log4j" 
+        rev="${log4j.version}" conf="default->master" />
+    <dependency name="mysql-connector-java" org="mysql" 
+        rev="${mysql-connector.version}" conf="default->master" />
+    <dependency name="jackson-core-asl" org="org.codehaus.jackson" 
+        rev="${jackson-core.version}" conf="default->master" />
+    <dependency name="jackson-mapper-asl" org="org.codehaus.jackson" 
+        rev="${jackson-mapper.version}" conf="default->master" />
+  </dependencies>
+</ivy-module>
