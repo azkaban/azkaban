@@ -7,23 +7,65 @@
   </info>
 
   <dependencies>
+    <dependency name="commons-collections" org="commons-collections"
+        rev="${commons-collections.version}" conf="default->master" />
+    <dependency name="commons-configuration" org="commons-configuration"
+        rev="${commons-configuration.version}" conf="default->master" />
+    <dependency name="commons-email" org="org.apache.commons"
+        rev="${commons-email.version}" conf="default->master" />
+    <dependency name="commons-fileupload" org="commons-fileupload"
+        rev="${commons-fileupload.version}" conf="default->master" />
+    <dependency name="commons-jexl" org="org.apache.commons"
+        rev="${commons-jexl.version}" conf="default->master" />
+    <dependency name="commons-lang" org="commons-lang"
+        rev="${commons-lang.version}" conf="default->master" />
+    <dependency name="commons-logging" org="commons-logging"
+        rev="${commons-logging.version}" conf="default->master" />
     <dependency name="commons-io" org="commons-io"
         rev="${commons-io.version}" conf="default->master" />
-    <dependency name="commons-cli" org="commons-cli" 
-        rev="${commons-cli.version}" conf="default->master" />
     <dependency name="commons-dbcp" org="commons-dbcp" 
         rev="${commons-dbcp.version}" conf="default->master" />
     <dependency name="commons-dbutils" org="commons-dbutils" 
         rev="${commons-dbutils.version}" conf="default->master" />
     <dependency name="commons-pool" org="commons-pool" 
         rev="${commons-pool.version}" conf="default->master" />
-    <dependency name="log4j" org="log4j" 
-        rev="${log4j.version}" conf="default->master" />
-    <dependency name="mysql-connector-java" org="mysql" 
-        rev="${mysql-connector.version}" conf="default->master" />
+    <dependency name="guava" org="com.google.guava"
+        rev="${guava.version}" conf="default->master" />
+    <dependency name="h2" org="com.h2database" 
+        rev="${h2.version}" conf="default->master" />
+    <dependency name="hadoop-core" org="org.apache.hadoop" 
+        rev="${hadoop-core.version}" conf="default->master" />
+    <dependency name="httpclient" org="org.apache.httpcomponents" 
+        rev="${httpclient.version}" conf="default->master" />
+    <dependency name="httpcore" org="org.apache.httpcomponents" 
+        rev="${httpcore.version}" conf="default->master" />
     <dependency name="jackson-core-asl" org="org.codehaus.jackson" 
         rev="${jackson-core.version}" conf="default->master" />
     <dependency name="jackson-mapper-asl" org="org.codehaus.jackson" 
         rev="${jackson-mapper.version}" conf="default->master" />
+    <dependency name="jetty" org="org.mortbay.jetty" 
+        rev="${jetty.version}" conf="default->master" />
+    <dependency name="jetty-util" org="org.mortbay.jetty" 
+        rev="${jetty-util.version}" conf="default->master" />
+    <dependency name="joda-time" org="joda-time" 
+        rev="${joda-time.version}" conf="default->master" />
+    <dependency name="jopt-simple" org="net.sf.jopt-simple" 
+        rev="${jopt-simple.version}" conf="default->master" />
+    <dependency name="log4j" org="log4j" 
+        rev="${log4j.version}" conf="default->master" />
+    <dependency name="mail" org="javax.mail" 
+        rev="${mail.version}" conf="default->master" />
+    <dependency name="mysql-connector-java" org="mysql" 
+        rev="${mysql-connector.version}" conf="default->master" />
+    <dependency name="servlet-api" org="javax.servlet" 
+        rev="${servlet-api.version}" conf="default->master" />
+    <dependency name="slf4j-api" org="org.slf4j" 
+        rev="${slf4j-api.version}" conf="default->master" />
+    <dependency name="slf4j-log4j12" org="org.slf4j" 
+        rev="${slf4j-log4j12.version}" conf="default->master" />
+    <dependency name="velocity" org="org.apache.velocity" 
+        rev="${velocity.version}" conf="default->master" />
+    <dependency name="velocity-tools" org="org.apache.velocity" 
+        rev="${velocity-tools.version}" conf="default->master" />
   </dependencies>
 </ivy-module>

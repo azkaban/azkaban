@@ -20,7 +20,6 @@
 	<property name="exec.package.dir" value="${basedir}/src/package/execserver" />
 	<property name="solo.package.dir" value="${basedir}/src/package/soloserver" />
 	
-	<property name="lib.dir" value="${basedir}/lib" />
 	<property name="bin.dir" value="${basedir}/bin" />
 	<property name="java.src.dir" value="${basedir}/src/java" />
 	<property name="dust.src.dir" value="${basedir}/src/tl" />
@@ -48,9 +47,6 @@
 	<property environment="env" />
 
 	<path id="main.classpath">
-		<fileset dir="${lib.dir}">
-			<include name="*.jar" />
-		</fileset>
 		<fileset dir="${build.ivy.lib.dir}">
 			<include name="*.jar" />
 		</fileset>
@@ -141,7 +137,6 @@
 		<delete dir="${dist.classes.dir}" />
 		<delete dir="${dist.dust.dir}" />
 		<delete dir="${dist.less.dir}" />
-		<delete dir="${build.dir}" />
 		<exec dir="${dust.src.dir}" executable="make" failonerror="true">
 			<arg value="clean" />
 		</exec>
@@ -151,6 +146,7 @@
 	</target>
 	
 	<target name="distclean" depends="clean" description="Delete all generated files.">
+		<delete dir="${build.dir}" />
     <delete dir="${ivy.dir}">
       <include name="*.jar" />
     </delete>
@@ -316,7 +312,7 @@ ${current.time}
 		<!-- Copy Azkaban jars and libs-->
 		<copy file="${dist.jar.dir}/azkaban-${git.tag}.jar" todir="${dist.web.package.dir}/lib" />
 		<copy todir="${dist.web.package.dir}/lib" >
-			<fileset dir="${lib.dir}" >
+			<fileset dir="${build.ivy.lib.dir}" >
 				<exclude name="hadoop-core*.jar"/>
 			</fileset>		
 		</copy>
@@ -371,7 +367,7 @@ ${current.time}
 		<!-- Copy Azkaban jars and libs-->
 		<copy file="${dist.jar.dir}/azkaban-${git.tag}.jar" todir="${dist.exec.package.dir}/lib" />
 		<copy todir="${dist.exec.package.dir}/lib" >
-			<fileset dir="${lib.dir}" >
+			<fileset dir="${build.ivy.lib.dir}" >
 				<exclude name="hadoop-core*.jar"/>
 			</fileset>
 		</copy>
@@ -412,7 +408,7 @@ ${current.time}
 		<!-- Copy Azkaban jars and libs-->
 		<copy file="${dist.jar.dir}/azkaban-${git.tag}.jar" todir="${dist.solo.package.dir}/lib" />
 		<copy todir="${dist.solo.package.dir}/lib" >
-			<fileset dir="${lib.dir}" >
+			<fileset dir="${build.ivy.lib.dir}" >
 				<exclude name="hadoop-core*.jar"/>
 			</fileset>
 		</copy>
