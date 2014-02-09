@@ -5,8 +5,22 @@
   background-color: #f4f4f4;
 
   h1 {
-    font-size: 28px;
-    margin: 0;
+    font-size: 22px;
+    margin: 4px 0 2px 0;
+    font-weight: 400;
+
+    small {
+      font-size: 22px;
+      font-weight: 300;
+    }
+
+    a {
+      color: #9a9a9a;
+      &:hover,
+      &:active {
+        text-decoration: none;
+      }
+    }
   }
   
   .az-page-header-form {
@@ -21,21 +35,6 @@
     }
   }
 
-  .editable {
-    margin: 0px;
-    cursor: pointer;
-    &:hover {
-      background-color: #fcfcfc;
-    }
-    &.editable-placeholder {
-      color: #a0a0a0;
-    }
-  }
-
-  .editable-form {
-    display: none;
-  }
-
   .header-title {
     padding-left: 15px;
     float: left;
@@ -48,7 +47,7 @@
     width: 500px;
 
     form {
-      margin-top: 5px;
+      margin: 0;
     }
 
     .form-group {

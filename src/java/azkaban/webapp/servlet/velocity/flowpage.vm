@@ -66,14 +66,13 @@
 		<div class="az-page-header">
 			<div class="container-full">
 				<div class="row">
-					<div class="col-xs-6">
+					<div class="header-title">
 						<h1><a href="${context}/manager?project=${project.name}&flow=${flowid}">Flow <small>$flowid</small></a></h1>
 					</div>
-					<div class="col-xs-6">
-						<div class="pull-right az-page-header-form">
-							<button type="button" class="btn btn-sm btn-success" id="executebtn">Schedule / Execute Flow</button>
-						</div>
-						<div class="clearfix"></div>
+					<div class="header-control">
+            <div class="pull-right">
+              <button type="button" class="btn btn-sm btn-success" id="executebtn">Schedule / Execute Flow</button>
+            </div>
 					</div>
 				</div>
 			</div>

@@ -148,6 +148,6 @@ $(function() {
     el: $('#delete-project-modal')
   });
 	projectDescription = new azkaban.ProjectDescriptionView({
-    el: $('#project-page-header')
+    el: $('#project-sidebar')
   });
 });
