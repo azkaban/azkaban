@@ -80,7 +80,7 @@
 ## Table of projects.
 
 			<div class="row row-offcanvas row-offcanvas-left">
-        <div class="col-xs-6 col-sm-3 sidebar-offcanvas graph-sidebar">
+        <div class="col-xs-6 col-sm-3 sidebar-offcanvas">
           <ul class="nav nav-pills nav-stacked">
             <li#if ($viewProjects == 'personal') class="active"#end><a href="${context}/index">Personal</a></li>
             <li#if ($viewProjects == 'group') class="active"#end><a href="${context}/index?group">Group</a></li>
