@@ -36,6 +36,7 @@ azkaban.JobListView = Backbone.View.extend({
 		this.model.bind('change:update', this.handleStatusUpdate, this);
 		
 		$("#openJobList").click(this.handleOpen);
+		$("#joblistpanel").hide();
 		
 		this.filterInput = $(this.el).find("#filter");
 		this.list = $(this.el).find("#joblist");
