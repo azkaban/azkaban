@@ -49,7 +49,7 @@
 
 ## Page Content
 
-      <ul class="nav nav-tabs" id="header-tabs">
+      <ul class="nav nav-tabs nav-sm" id="header-tabs">
         <li id="currently-running-view-link"><a href="#currently-running">Currently Running</a></li>
         <li id="recently-finished-view-link"><a href="#recently-finished">Recently Finished</a></li>
       </ul>

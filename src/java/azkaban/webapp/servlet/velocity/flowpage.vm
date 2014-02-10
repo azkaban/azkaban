@@ -92,7 +92,7 @@
   
   ## Tabs
 
-			<ul class="nav nav-tabs" id="headertabs">
+			<ul class="nav nav-tabs nav-sm" id="headertabs">
 				<li id="graphViewLink"><a href="#graph">Graph</a></li>
 				<li id="executionsViewLink"><a href="#executions">Executions</a></li>
 				<li id="summaryViewLink"><a href="#summary">Summary</a></li>

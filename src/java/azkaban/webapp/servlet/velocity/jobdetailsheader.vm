@@ -47,7 +47,7 @@
 
   ## Tabs
 
-			<ul class="nav nav-tabs" id="headertabs">
+			<ul class="nav nav-tabs nav-sm" id="headertabs">
 	#if ($current_page == "executing")
 				<li id="jobLogViewLink"><a href="#logs">Job Logs</a></li>
 				<li id="jobSummaryViewLink"><a href="#summary">Summary</a></li>
