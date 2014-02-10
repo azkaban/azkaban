@@ -19,11 +19,11 @@
 		<div class="az-page-header">
 			<div class="container-full">
 				<div class="row">
-					<div class="col-xs-6">
+					<div class="header-title">
 						<h1><a href="${context}/executor?execid=${execid}&job=${jobid}">Job Execution <small>$jobid</small></a></h1>
 					</div>
-					<div class="col-xs-6">
-						<div class="pull-right az-page-header-form">
+					<div class="header-control">
+						<div class="pull-right header-form">
 							<a href="${context}/manager?project=${projectName}&flow=${parentflowid}&job=$jobname" class="btn btn-info">Job Properties</a>
 						</div>
 					</div>

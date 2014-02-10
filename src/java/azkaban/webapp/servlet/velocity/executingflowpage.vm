@@ -69,7 +69,7 @@
             </h1>
           </div>
           <div class="header-control">
-            <div class="az-exflow-stats">
+            <div class="exflow-stats">
               <div class="col-xs-5">
                 <p><strong>Submit User</strong> <span id="submitUser">-</span></p>
                 <p><strong>Duration</strong> <span id="duration">-</span></p>

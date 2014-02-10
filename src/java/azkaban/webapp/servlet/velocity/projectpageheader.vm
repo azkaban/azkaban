@@ -21,7 +21,7 @@
             <h1><a href="${context}/manager?project=${project.name}">Project <small>$project.name</small></a></h1>
           </div>
           <div class="header-control">
-            <div class="pull-right" id="project-options">
+            <div class="header-form pull-right" id="project-options">
               <button id="project-delete-btn" class="btn btn-sm btn-danger">
                 <span class="glyphicon glyphicon-trash"></span> Delete Project
               </button>
