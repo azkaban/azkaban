@@ -423,7 +423,7 @@ $(function() {
 	});
 	
   jobsListView = new azkaban.JobListView({
-		el: $('#jobList'), 
+		el: $('#joblistpanel'), 
 		model: graphModel, 
 		contextMenuCallback: jobClickCallback
 	});
