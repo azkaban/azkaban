@@ -8,11 +8,12 @@
 	
 	<property name="java.src.dir" value="${base.dir}/unit/java" />
 	<property name="job.conf.dir" value="${base.dir}/unit/executions" />
+  <property name="build.ivy.lib.dir" location="../build/ivy/lib" />
 		
 	<property environment="env" />
 
 	<path id="main.classpath">
-		<fileset dir="../lib">
+    <fileset dir="${build.ivy.lib.dir}">
 			<include name="*.jar" />
 		</fileset>
 
