@@ -8,7 +8,7 @@
 
 .container-fill {
   position: absolute;
-  top: 300px;
+  top: 230px;
   bottom: 50px;
 
   .row {
@@ -114,4 +114,24 @@
   &.state-icon-wait {
     background-position: -64px -80px;
   }
+}
+  
+.editable {
+  margin: 0px;
+  cursor: pointer;
+  &:hover {
+    background-color: #fcfcfc;
+  }
+  &.editable-placeholder {
+    color: #a0a0a0;
+  }
+}
+
+.editable-form {
+  display: none;
+}
+
+.nav.nav-sm > li > a {
+  padding: 8px 12px;
+  font-size: 13px;
 }

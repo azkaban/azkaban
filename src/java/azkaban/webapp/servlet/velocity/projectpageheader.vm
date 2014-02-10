@@ -19,18 +19,9 @@
         <div class="row">
           <div class="header-title" id="project-page-header">
             <h1><a href="${context}/manager?project=${project.name}">Project <small>$project.name</small></a></h1>
-            <p class="editable" id="project-description">$project.description</p>
-            <div id="project-description-form" class="editable-form">
-              <div class="input-group">
-                <input type="text" class="form-control input-sm" id="project-description-edit" placeholder="Project description">
-                <span class="input-group-btn">
-                  <button class="btn btn-primary btn-sm" type="button" id="project-description-btn">Save</button>
-                </span>
-              </div>
-            </div>
           </div>
           <div class="header-control">
-            <div class="pull-right az-page-header-form" id="project-options">
+            <div class="header-form pull-right" id="project-options">
               <button id="project-delete-btn" class="btn btn-sm btn-danger">
                 <span class="glyphicon glyphicon-trash"></span> Delete Project
               </button>

@@ -50,7 +50,7 @@
             <h1><a href="${context}/history">History</a></h1>
           </div>
           <div class="header-control">
-            <form id="search-form" method="get" class="form-inline az-page-header-form" role="form">
+            <form id="search-form" method="get" class="form-inline header-form" role="form">
               <input type="hidden" name="search" value="true">
               <div class="form-group">
                 <div class="input-group">

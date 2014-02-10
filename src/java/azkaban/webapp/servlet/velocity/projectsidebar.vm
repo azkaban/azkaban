@@ -14,8 +14,18 @@
  * the License.
 *#
 
-					<div class="well">
+					<div class="well" id="project-sidebar">
 						<h3>$project.name</h3>
+						<p class="editable" id="project-description">$project.description</p>
+						<div id="project-description-form" class="editable-form">
+							<div class="input-group">
+								<input type="text" class="form-control input-sm" id="project-description-edit" placeholder="Project description">
+								<span class="input-group-btn">
+									<button class="btn btn-primary btn-sm" type="button" id="project-description-btn">Save</button>
+								</span>
+							</div>
+						</div>
+						<hr>
 						<p><strong>Created on</strong> $utils.formatDate($project.createTimestamp)</p>
 						<p><strong>Last modified by</strong> $utils.formatDate($project.lastModifiedTimestamp)</p>
 						<p><strong>Modified by</strong> $project.lastModifiedUser</p>

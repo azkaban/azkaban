@@ -44,34 +44,35 @@
 
 	## Page header
 
-		<div class="az-page-header">
+		<div class="az-page-header page-header-bare">
 			<div class="container-full">
         <div class="row">
-          <div class="col-xs-6">
+          <div class="header-title">
             <h1><a href="${context}/manager?project=${project.name}&flow=${flowid}&job=${jobid}">Job <small>$jobid</small></a></h1>
           </div>
-          <div class="col-xs-6">
-            <div class="pull-right az-page-header-form">
+          <div class="header-control">
+            <div class="pull-right header-form">
               <a href="${context}/manager?project=${project.name}&job=$jobid&history" class="btn btn-info btn-sm">History</a>
             </div>
             <div class="clearfix"></div>
           </div>
         </div>
 			</div>
-		</div>
+    </div>
+    <div class="page-breadcrumb">
+      <div class="container-full">
+        <ol class="breadcrumb">
+          <li><a href="${context}/manager?project=${project.name}"><strong>Project</strong> $project.name</a></li>
+          <li><a href="${context}/manager?project=${project.name}&flow=${flowid}"><strong>Flow</strong> $flowid</a></li>
+          <li class="active"><strong>Job</strong> $jobid</li>
+        </ol>
+      </div>
+    </div>
 
 		<div class="container-full">
 	
   #parse ("azkaban/webapp/servlet/velocity/alerts.vm")
   
-  ## Breadcrumb
-
-      <ol class="breadcrumb">
-        <li><a href="${context}/manager?project=${project.name}"><strong>Project</strong> $project.name</a></li>
-        <li><a href="${context}/manager?project=${project.name}&flow=${flowid}"><strong>Flow</strong> $flowid</a></li>
-        <li class="active"><strong>Job</strong> $jobid</li>
-      </ol>
-
 			<div class="row row-offcanvas row-offcanvas-right">
 				<div class="col-xs-12 col-sm-9">
 	

@@ -58,7 +58,7 @@
 
 	## Page header
 
-		<div class="az-page-header">
+		<div class="az-page-header page-header-bare">
 			<div class="container-full" id="flow-status">
         <div class="row">
           <div class="header-title">
@@ -69,7 +69,7 @@
             </h1>
           </div>
           <div class="header-control">
-            <div class="az-exflow-stats">
+            <div class="exflow-stats">
               <div class="col-xs-5">
                 <p><strong>Submit User</strong> <span id="submitUser">-</span></p>
                 <p><strong>Duration</strong> <span id="duration">-</span></p>
@@ -83,32 +83,33 @@
           </div>
         </div>
 			</div>
-		</div>
+    </div>
+    <div class="page-breadcrumb">
+      <div class="container-full">
+        <ol class="breadcrumb">
+          <li><a href="${context}/manager?project=${projectName}"><strong>Project</strong> $projectName</a></li>
+          <li><a href="${context}/manager?project=${projectName}&flow=${flowid}"><strong>Flow</strong> $flowid</a></li>
+          <li class="active"><strong>Execution</strong> $execid</li>
+        </ol>
+      </div>
+    </div>
 
 		<div class="container-full">
 
   #parse ("azkaban/webapp/servlet/velocity/alerts.vm")
-
-	## Breadcrumb
-
-			<ol class="breadcrumb">
-				<li><a href="${context}/manager?project=${projectName}"><strong>Project</strong> $projectName</a></li>
-				<li><a href="${context}/manager?project=${projectName}&flow=${flowid}"><strong>Flow</strong> $flowid</a></li>
-				<li class="active"><strong>Execution</strong> $execid</li>
-			</ol>
-		
+	
 	## Tabs and buttons.
 
-			<ul class="nav nav-tabs" id="headertabs">
+			<ul class="nav nav-tabs nav-sm" id="headertabs">
 				<li id="graphViewLink"><a href="#graph">Graph</a></li>
 				<li id="jobslistViewLink"><a href="#jobslist">Job List</a></li>
 				<li id="flowLogViewLink"><a href="#log">Flow Log</a></li>
 				<li id="statsViewLink"><a href="#stats">Stats</a></li>
-				<li class="nav-button pull-right"><button type="button" id="pausebtn" class="btn btn-primary">Pause</button></li>
-				<li class="nav-button pull-right"><button type="button" id="resumebtn" class="btn btn-primary">Resume</button></li>
-				<li class="nav-button pull-right"><button type="button" id="cancelbtn" class="btn btn-danger">Kill</button></li>
-				<li class="nav-button pull-right"><button type="button" id="retrybtn" class="btn btn-success">Retry Failed</button></li>
-				<li class="nav-button pull-right"><button type="button" id="executebtn" class="btn btn-success">Prepare Execution</button></li>
+				<li class="nav-button pull-right"><button type="button" id="pausebtn" class="btn btn-primary btn-sm">Pause</button></li>
+				<li class="nav-button pull-right"><button type="button" id="resumebtn" class="btn btn-primary btn-sm">Resume</button></li>
+				<li class="nav-button pull-right"><button type="button" id="cancelbtn" class="btn btn-danger btn-sm">Kill</button></li>
+				<li class="nav-button pull-right"><button type="button" id="retrybtn" class="btn btn-success btn-sm">Retry Failed</button></li>
+				<li class="nav-button pull-right"><button type="button" id="executebtn" class="btn btn-success btn-sm">Prepare Execution</button></li>
 			</ul>
     </div>
 

@@ -42,11 +42,21 @@
 
 	## Page header
 
-		<div class="az-page-header">
+		<div class="az-page-header page-header-bare">
 			<div class="container-full">
         <h1><a href="${context}/manager?project=${project.name}&flow=${flowid}&job=${jobid}&prop=${property}">Properties <small>$property</small></a></h1>
 			</div>
-		</div>
+    </div>
+    <div class="page-breadcrumb">
+      <div class="container-full">
+        <ol class="breadcrumb">
+          <li><a href="${context}/manager?project=${project.name}"><strong>Project</strong> $project.name</a></li>
+          <li><a href="${context}/manager?project=${project.name}&flow=${flowid}"><strong>Flow</strong> $flowid</a></li>
+          <li><a href="${context}/manager?project=${project.name}&flow=${flowid}&job=${jobid}"><strong>Job</strong> $jobid</a></li>
+          <li class="active"><strong>Properties</strong> $property</li>
+        </ol>
+      </div>
+    </div>
 
     <div class="container-full">
 
@@ -55,15 +65,6 @@
 			<div class="row row-offcanvas row-offcanvas-right">
 				<div class="col-xs-12 col-sm-9">
 
-	## Breadcrumb
-
-					<ol class="breadcrumb">
-						<li><a href="${context}/manager?project=${project.name}"><strong>Project</strong> $project.name</a></li>
-						<li><a href="${context}/manager?project=${project.name}&flow=${flowid}"><strong>Flow</strong> $flowid</a></li>
-						<li><a href="${context}/manager?project=${project.name}&flow=${flowid}&job=${jobid}"><strong>Job</strong> $jobid</a></li>
-            <li class="active"><strong>Properties</strong> $property</li>
-					</ol>
-	
 	## Properties
 
 					<div class="panel panel-default">
