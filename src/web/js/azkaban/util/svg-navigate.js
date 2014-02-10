@@ -108,7 +108,7 @@
 		var x = evt.offsetX;
 
 		evt.stopPropagation();
-        evt.preventDefault();
+		evt.preventDefault();
 		
 		scaleGraph(target, scale, x, y);
 	}

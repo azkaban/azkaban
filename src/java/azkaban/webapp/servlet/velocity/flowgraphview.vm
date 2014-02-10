@@ -16,12 +16,12 @@
 
 	## Graph view.
 		<div class="container-full container-fill" id="graphView">
-			<div class="glyphicon glyphicon-th-list" id="openJobList" title="Open Job List Panel"></div>
+			<div class="glyphicon glyphicon-th-list" id="open-joblist-btn" title="Open Job List Panel"></div>
 			<div class="graph-sidebar">
-				<div class="panel panel-default" id="joblistpanel">
+				<div class="panel panel-default" id="joblist-panel">
 					<div class="panel-heading">
-						<div id="closebtn" title="Close Panel"><span class="glyphicon glyphicon-remove"> </span></div>
-						<div id="inputboxpanel">
+						<div id="close-btn" title="Close Panel"><span class="glyphicon glyphicon-remove"></span></div>
+						<div id="inputbox-panel">
 							<input id="filter" type="text" placeholder="Job Filter" class="form-control input-sm">
 						</div>
 					</div>

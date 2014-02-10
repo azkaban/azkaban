@@ -26,7 +26,7 @@ azkaban.JobListView = Backbone.View.extend({
 		"click #autoPanZoomBtn": "handleAutoPanZoom",
 		"contextmenu li.listElement": "handleContextMenuClick",
 		"click .expandarrow": "handleToggleMenuExpand",
-		"click #closebtn" : "handleClose"
+		"click #close-btn" : "handleClose"
 	},
 	
 	initialize: function(settings) {
@@ -35,8 +35,8 @@ azkaban.JobListView = Backbone.View.extend({
 		this.model.bind('change:graph', this.render, this);
 		this.model.bind('change:update', this.handleStatusUpdate, this);
 		
-		$("#openJobList").click(this.handleOpen);
-		$("#joblistpanel").hide();
+		$("#open-joblist-btn").click(this.handleOpen);
+		$("#joblist-panel").hide();
 		
 		this.filterInput = $(this.el).find("#filter");
 		this.list = $(this.el).find("#joblist");
@@ -336,9 +336,9 @@ azkaban.JobListView = Backbone.View.extend({
 	},
 	
 	handleClose: function(evt) {
-		$("#joblistpanel").fadeOut();
+		$("#joblist-panel").fadeOut();
 	},
 	handleOpen: function(evt) {
-		$("#joblistpanel").fadeIn();
+		$("#joblist-panel").fadeIn();
 	}
 });
