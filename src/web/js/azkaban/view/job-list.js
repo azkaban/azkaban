@@ -25,7 +25,8 @@ azkaban.JobListView = Backbone.View.extend({
 		"click #resetPanZoomBtn": "handleResetPanZoom",
 		"click #autoPanZoomBtn": "handleAutoPanZoom",
 		"contextmenu li.listElement": "handleContextMenuClick",
-		"click .expandarrow": "handleToggleMenuExpand"
+		"click .expandarrow": "handleToggleMenuExpand",
+		"click #close-btn" : "handleClose"
 	},
 	
 	initialize: function(settings) {
@@ -33,6 +34,9 @@ azkaban.JobListView = Backbone.View.extend({
 		this.model.bind('change:disabled', this.handleDisabledChange, this);
 		this.model.bind('change:graph', this.render, this);
 		this.model.bind('change:update', this.handleStatusUpdate, this);
+		
+		$("#open-joblist-btn").click(this.handleOpen);
+		$("#joblist-panel").hide();
 		
 		this.filterInput = $(this.el).find("#filter");
 		this.list = $(this.el).find("#joblist");
@@ -329,5 +333,12 @@ azkaban.JobListView = Backbone.View.extend({
 		// Using $().hasClass('active') does not use here because it appears that
 		// this is called before the Bootstrap toggle completes.
 		this.model.set({"autoPanZoom": $(target).hasClass('btn-info')});
+	},
+	
+	handleClose: function(evt) {
+		$("#joblist-panel").fadeOut();
+	},
+	handleOpen: function(evt) {
+		$("#joblist-panel").fadeIn();
 	}
 });

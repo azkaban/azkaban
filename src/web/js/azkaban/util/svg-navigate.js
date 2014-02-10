@@ -71,7 +71,6 @@
 		}
 		var target = evt.target;
 		
-		
 		var leftOffset = 0;
 		var topOffset = 0;
 		if (!target.marker) {
@@ -105,9 +104,12 @@
 		target.zoomIndex = zoomLevel;
 		var scale = target.zoomLevels[zoomLevel];
 		
-		var y = evt.layerY;
-		var x = evt.layerX;
+		var y = evt.offsetY;
+		var x = evt.offsetX;
 
+		evt.stopPropagation();
+		evt.preventDefault();
+		
 		scaleGraph(target, scale, x, y);
 	}
 	
@@ -134,7 +136,7 @@
 		}
 		retransform(target);
 	}
-	
+
 	this.translateDeltaGraph = function(target, x, y) {
 		target.translateX += x;
 		target.translateY += y;

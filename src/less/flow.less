@@ -2,9 +2,23 @@
   height: 100%;
 }
 
+#graphView {
+   -moz-user-select: none;
+   -khtml-user-select: none;
+   -webkit-user-select: none;
+   user-select: none;
+}
+
 #flow-graph {
   width: 100%;
   height: 100%;
+}
+
+#headertabs {
+   -moz-user-select: none;
+   -khtml-user-select: none;
+   -webkit-user-select: none;
+   user-select: none;
 }
 
 #flow-executing-graph {
@@ -154,13 +168,48 @@ td {
 }
 
 .graph-sidebar {
-  height: 100%;
-  overflow-y: auto;
+  position: absolute;
+  top: 0px;
+  bottom: 0px;
+}
+
+#inputbox-panel {
+	width: 206px;
+	margin: 0px;
+}
+
+#close-btn {
+	float: right;
+	color: #CCC;
+	padding: 5px 0px;
+	
+	&:hover {
+	  color: #666;
+	}
+}
+
+#joblist-panel {
+	height: 100%;
+	
+	.panel-heading {
+		padding-right: 10px;
+	}
+}
+
+#open-joblist-btn {
+	position: absolute;
+	margin: 10px;
+	color: #CCC;
+	
+	&:hover {
+		color: #666;
+	}
 }
 
 // TODO: Rename this as #job-list
 #joblist {
-  height: 100%;
+  overflow-y: auto;
+  height: calc(~"100% - 102px");
 }
 ul.tree-list {
   list-style-type: none;
@@ -186,7 +235,8 @@ li.tree-list-item {
     position: relative;
     display: block;
     border-bottom-width: 0;
-    padding: 10px 15px;
+    padding: 5px 15px;
+    font-size: 8pt;
 
     &:hover,
     &:focus {

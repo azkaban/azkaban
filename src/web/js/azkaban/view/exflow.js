@@ -546,7 +546,7 @@ $(function() {
 	});
 	
 	jobsListView = new azkaban.JobListView({
-		el: $('#jobList'), 
+		el: $('#joblist-panel'), 
 		model: graphModel, 
 		contextMenuCallback: jobClickCallback
 	});
