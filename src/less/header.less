@@ -1,8 +1,13 @@
 .az-page-header {
   padding: 5px 0 5px;
-  margin: 0 0 30px;
+  margin: 0 0 20px;
   border-bottom: 1px solid #dddddd;
-  background-color: #f4f4f4;
+  background-color: #f0f0f0;
+
+  &.page-header-bare {
+    margin-bottom: 0px;
+    border-bottom: 1px solid #dfdfdf;
+  }
 
   h1 {
     font-size: 22px;
@@ -49,5 +54,18 @@
     .form-group {
       padding: 0;
     }
+  }
+}
+
+.page-breadcrumb {
+  background-color: #f0f0f0;
+  border-bottom: 1px solid #dddddd;
+  padding: 5px 0 5px 0;
+  margin-bottom: 20px;
+
+  .breadcrumb {
+    margin: 0px;
+    padding: 0px;
+    background: transparent;
   }
 }

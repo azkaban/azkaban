@@ -44,7 +44,7 @@
 
 	## Page header
 
-		<div class="az-page-header">
+		<div class="az-page-header page-header-bare">
 			<div class="container-full">
         <div class="row">
           <div class="header-title">
@@ -58,20 +58,21 @@
           </div>
         </div>
 			</div>
-		</div>
+    </div>
+    <div class="page-breadcrumb">
+      <div class="container-full">
+        <ol class="breadcrumb">
+          <li><a href="${context}/manager?project=${project.name}"><strong>Project</strong> $project.name</a></li>
+          <li><a href="${context}/manager?project=${project.name}&flow=${flowid}"><strong>Flow</strong> $flowid</a></li>
+          <li class="active"><strong>Job</strong> $jobid</li>
+        </ol>
+      </div>
+    </div>
 
 		<div class="container-full">
 	
   #parse ("azkaban/webapp/servlet/velocity/alerts.vm")
   
-  ## Breadcrumb
-
-      <ol class="breadcrumb">
-        <li><a href="${context}/manager?project=${project.name}"><strong>Project</strong> $project.name</a></li>
-        <li><a href="${context}/manager?project=${project.name}&flow=${flowid}"><strong>Flow</strong> $flowid</a></li>
-        <li class="active"><strong>Job</strong> $jobid</li>
-      </ol>
-
 			<div class="row row-offcanvas row-offcanvas-right">
 				<div class="col-xs-12 col-sm-9">
 	
