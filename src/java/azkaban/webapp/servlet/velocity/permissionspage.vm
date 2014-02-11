@@ -249,7 +249,7 @@
 						</div>
 						<div class="modal-body">
 							<div class="alert alert-danger" id="remove-proxy-error-msg"></div>
-              <p><strong>Warning:</strong> Removing Proxy User</p>
+              <p><strong>Warning:</strong> <span id="remove-proxy-msg"></span></p>
 						</div>
 						<div class="modal-footer">
 							<button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
@@ -294,10 +294,10 @@
 					<div class="modal-content">
 						<div class="modal-header">
 							<button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
-							<h4 class="modal-title">Change Permissions</h4>
+							<h4 class="modal-title" id="change-title">Change Permissions</h4>
 						</div>
 						<div class="modal-body">
-							<div class="alert alert-danger" id="change-permission-error-msg"></div>
+              <div class="alert alert-danger" id="change-permission-error-msg"></div>
 							<fieldset class="form-horizontal">
 								<div class="form-group">
 									<label for="path" class="col-sm-2 control-label">User</label>
