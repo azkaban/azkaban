@@ -67,9 +67,12 @@ azkaban.RemoveProxyView = Backbone.View.extend({
 	
 	display: function(proxyName) {
 		this.el.proxyName = proxyName;
-		$("#proxyRemoveMsg").text("Removing proxy user '" + proxyName + "'");
-		$(this.el).modal();
+		$("#remove-proxy-msg").text("Removing proxy user '" + proxyName + "'");
+		$(this.el).modal().on('hide.bs.modal', function(e) {
+      $('#remove-proxy-error-msg').hide();
+    });
 	},
+
 	handleRemoveProxy: function() {
 		var requestURL = contextURL + "/manager";
 		var proxyName = this.el.proxyName;
@@ -81,8 +84,8 @@ azkaban.RemoveProxyView = Backbone.View.extend({
 		var successHandler = function(data) {
 			console.log("Output");
 			if (data.error) {
-				$("#removeProxyErrorMsg").text(data.error);
-				$("#removeProxyErrorMsg").show();
+				$("#remove-proxy-error-msg").text(data.error);
+				$("#remove-proxy-error-msg").slideDown();
 				return;
 			}
 			var replaceURL = requestURL + "?project=" + projectName +"&permissions";
@@ -104,12 +107,14 @@ azkaban.AddProxyView = Backbone.View.extend({
 	},
 	
 	display: function() {
-		$(this.el).modal();
+		$(this.el).modal().on('hide.bs.modal', function(e) {
+      $('#add-proxy-error-msg').hide();
+    });
 	},
 	
 	handleAddProxy: function() {
 		var requestURL = contextURL + "/manager";
-		var name = $('#proxy-user-box').val();
+		var name = $('#proxy-user-box').val().trim();
 		var requestData = {
 			"project": projectName, 
 			"name": name, 
@@ -119,8 +124,8 @@ azkaban.AddProxyView = Backbone.View.extend({
 		var successHandler = function(data) {
 			console.log("Output");
 			if (data.error) {
-				$("#proxyErrorMsg").text(data.error);
-				$("#proxyErrorMsg").show();
+				$("#add-proxy-error-msg").text(data.error);
+				$("#add-proxy-error-msg").slideDown();
 				return;
 			}
 			
@@ -204,7 +209,9 @@ azkaban.ChangePermissionView= Backbone.View.extend({
 		this.changeCheckbox();
 		
 		changePermissionView.render();
-		$('#change-permission').modal();
+		$('#change-permission').modal().on('hide.bs.modal', function(e) {
+      $('#change-permission-error-msg').hide();
+    });
 	},
 	
 	render: function() {
@@ -262,7 +269,7 @@ azkaban.ChangePermissionView= Backbone.View.extend({
 			$("#change-btn").text("Commit");
 		}
 		else {
-			if(	this.newPerm) {
+			if (this.newPerm) {
 				$("#change-btn").disabled = true;
 				$("#change-btn").addClass("btn-disabled");
 			}
@@ -274,7 +281,7 @@ azkaban.ChangePermissionView= Backbone.View.extend({
 	
 	handleChangePermissions : function(evt) {
 		var requestURL = contextURL + "/manager";
-		var name = $('#user-box').val();
+		var name = $('#user-box').val().trim();
 		var command = this.newPerm ? "addPermission" : "changePermission";
 		var group = this.group;
 		
@@ -295,8 +302,8 @@ azkaban.ChangePermissionView= Backbone.View.extend({
 		var successHandler = function(data) {
 			console.log("Output");
 			if (data.error) {
-				$("#errorMsg").text(data.error);
-				$("#errorMsg").show();
+				$("#change-permission-error-msg").text(data.error);
+				$("#change-permission-error-msg").slideDown();
 				return;
 			}
 			
