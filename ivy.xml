@@ -33,8 +33,6 @@
         rev="${guava.version}" conf="default->master" />
     <dependency name="h2" org="com.h2database" 
         rev="${h2.version}" conf="default->master" />
-    <dependency name="hadoop-core" org="org.apache.hadoop" 
-        rev="${hadoop-core.version}" conf="default->master" />
     <dependency name="httpclient" org="org.apache.httpcomponents" 
         rev="${httpclient.version}" conf="default->master" />
     <dependency name="httpcore" org="org.apache.httpcomponents" 
