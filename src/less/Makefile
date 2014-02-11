@@ -19,7 +19,8 @@ azkaban_css_DEPS = \
 	non-responsive.less \
 	off-canvas.less \
 	project.less \
-	tables.less
+	tables.less \
+	callout.less
 
 $(OBJ_DIR)/azkaban.css: $(azkaban_css_DEPS)
 	$(LESSC) $< $@
