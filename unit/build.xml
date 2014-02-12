@@ -37,10 +37,11 @@
 		<mkdir dir="${dist.classes.dir}" />
 		<mkdir dir="${dist.packages.dir}" />
 		
-		<javac fork="true" destdir="${dist.classes.dir}"
-			target="1.6" debug="true" deprecation="false" failonerror="true" srcdir="${java.src.dir}/azkaban/test/executor" includes="SleepJavaJob.java">
-			<classpath refid="main.classpath" />
-		</javac>
+    <javac fork="true" destdir="${dist.classes.dir}"
+      target="1.6" debug="true" deprecation="false" failonerror="true">
+      <src path="${java.src.dir}" />
+      <classpath refid="main.classpath" />
+    </javac>
 	</target>
 	
 	<target name="jars" depends="build" description="Create azkaban jar">
