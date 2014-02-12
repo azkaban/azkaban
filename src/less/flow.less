@@ -1,17 +1,8 @@
-#svgDiv {
-  height: 100%;
-}
-
 #graphView {
    -moz-user-select: none;
    -khtml-user-select: none;
    -webkit-user-select: none;
    user-select: none;
-}
-
-#flow-graph {
-  width: 100%;
-  height: 100%;
 }
 
 #headertabs {
@@ -168,17 +159,48 @@ td {
 }
 
 .graph-sidebar {
+  height: 100%;
+  overflow-y: auto;
+
+  .graph-sidebar-list {
+    height: 100%;
+  }
+}
+
+.graph-sidebar-float {
   position: absolute;
   top: 0px;
   bottom: 0px;
+
+  .graph-sidebar-list {
+    overflow-y: auto;
+    height: calc(~"100% - 102px");
+  }
+
+  .panel {
+    height: 100%;
+    
+    .panel-heading {
+      padding-right: 10px;
+    }
+  }
 }
 
-#inputbox-panel {
+.graph-container {
+  height: 100%;
+
+  svg {
+    width: 100%;
+    height: 100%;
+  }
+}
+
+.graph-sidebar-search {
 	width: 206px;
 	margin: 0px;
 }
 
-#close-btn {
+.graph-sidebar-close {
 	float: right;
 	color: #CCC;
 	padding: 5px 0px;
@@ -189,15 +211,7 @@ td {
 	}
 }
 
-#joblist-panel {
-	height: 100%;
-	
-	.panel-heading {
-		padding-right: 10px;
-	}
-}
-
-#open-joblist-btn {
+.graph-sidebar-open {
 	position: absolute;
 	margin: 10px;
 	color: #CCC;
@@ -208,11 +222,6 @@ td {
 	}
 }
 
-// TODO: Rename this as #job-list
-#joblist {
-  overflow-y: auto;
-  height: calc(~"100% - 102px");
-}
 ul.tree-list {
   list-style-type: none;
   padding-left: 0px;
