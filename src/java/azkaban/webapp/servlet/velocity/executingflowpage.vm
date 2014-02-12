@@ -170,7 +170,7 @@
       <div id="flow-stats-container">
         <div class="row">
           <div class="col-lg-12">
-            <div class="alert alert-default">
+            <div class="callout callout-default">
               <h4>No stats available</h4>
               <p>Stats for this flow execution are not available.</p>
             </div>
