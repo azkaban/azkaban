@@ -85,7 +85,7 @@
             </div>
 		#end
 	#else
-            <div class="alert alert-default">
+            <div class="callout callout-default">
               <h4>No Flows</h4>
               <p>No flows have been uploaded to this project yet.</p>
             </div>

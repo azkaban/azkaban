@@ -58,7 +58,7 @@
             </tbody>
           </table>
           {:else}
-            <div class="alert alert-default">
+            <div class="callout callout-default">
               <h4>None</h4>
               <p>This flow has not been scheduled.</p>
             </div>
