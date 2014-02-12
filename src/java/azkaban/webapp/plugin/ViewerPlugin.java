@@ -16,14 +16,16 @@
 
 package azkaban.webapp.plugin;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Comparator;
 
 public class ViewerPlugin {
 	private final String pluginName;
 	private final String pluginPath;
-	private final String jobType;
 	private final int order;
 	private boolean hidden;
+	private final List<String> jobTypes;
 
 	public static final Comparator<ViewerPlugin> COMPARATOR = 
 			new Comparator<ViewerPlugin>() {
@@ -41,12 +43,12 @@ public class ViewerPlugin {
 			String pluginPath, 
 			int order, 
 			boolean hidden,
-			String jobType) {
+			String jobTypes) {
 		this.pluginName = pluginName;
 		this.pluginPath = pluginPath;
 		this.order = order;
 		this.setHidden(hidden);
-		this.jobType = jobType;
+		this.jobTypes = parseJobTypes(jobTypes);
 	}
 
 	public String getPluginName() {
@@ -69,7 +71,19 @@ public class ViewerPlugin {
 		this.hidden = hidden;
 	}
 
-	public String getJobType() {
-		return jobType;
+	protected List<String> parseJobTypes(String jobTypesStr) {
+		if (jobTypesStr == null) {
+			return null;
+		}
+		String[] parts = jobTypesStr.split(",");
+		List<String> jobTypes = new ArrayList<String>();
+		for (int i = 0; i < parts.length; ++i) {
+			jobTypes.add(parts[i].trim());
+		}
+		return jobTypes;
+	}
+
+	public List<String> getJobTypes() {
+		return jobTypes;
 	}
 }
