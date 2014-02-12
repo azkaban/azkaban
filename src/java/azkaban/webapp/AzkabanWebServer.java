@@ -999,7 +999,7 @@ public class AzkabanWebServer extends AzkabanServer {
 			
 			String pluginName = pluginProps.getString("viewer.name");
 			String pluginWebPath = pluginProps.getString("viewer.path");
-			String pluginJobType = pluginProps.getString("viewer.jobtype", null);
+			String pluginJobTypes = pluginProps.getString("viewer.jobtypes", null);
 			int pluginOrder = pluginProps.getInt("viewer.order", 0);
 			boolean pluginHidden = pluginProps.getBoolean("viewer.hidden", false);
 			List<String> extLibClasspath = pluginProps.getStringList("viewer.external.classpaths", (List<String>)null);
@@ -1108,7 +1108,7 @@ public class AzkabanWebServer extends AzkabanServer {
 						pluginWebPath, 
 						pluginOrder, 
 						pluginHidden,
-						pluginJobType));
+						pluginJobTypes));
 		}
 		
 		// Velocity needs the jar resource paths to be set.
