@@ -1,3 +1,4 @@
+      {?histogram}
       <div class="row">
         <div class="col-xs-12">
           <div class="well well-clear well-sm">
@@ -5,6 +6,7 @@
           </div>
         </div>
       </div>
+      {/histogram}
 
       <div class="row">
         <div class="col-xs-12">

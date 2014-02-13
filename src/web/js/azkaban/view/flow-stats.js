@@ -21,9 +21,14 @@ azkaban.FlowStatsView = Backbone.View.extend({
   events: {
   },
 
+  histogram: true,
+
 	initialize: function(settings) {
 		this.model.bind('change:view', this.handleChangeView, this);
 		this.model.bind('render', this.render, this);
+    if (settings.histogram != null) {
+      this.histogram = settings.histogram;
+    }
   },
 
   render: function(evt) {
@@ -38,6 +43,9 @@ azkaban.FlowStatsView = Backbone.View.extend({
     var requestData = {"execid": execId, "ajax":"fetchexecflow"};
     var jobs = [];
     var successHandler = function(data) {
+      data.nodes.sort(function(a, b) {
+        return a.startTime - b.startTime;
+      });
       jobs = data.nodes;
     };
     $.ajax({
@@ -217,6 +225,7 @@ azkaban.FlowStatsView = Backbone.View.extend({
       message: null,
       warnings: [],
       durations: [],
+      histogram: this.histogram,
       stats: {
         mapSlots: {
           max: 0,
@@ -310,15 +319,24 @@ azkaban.FlowStatsView = Backbone.View.extend({
       });
     }
     else {
+      var histogram = this.histogram;
       dust.render("flowstats", data, function(err, out) {
         view.display(out);
-        Morris.Bar({
-          element: "job-histogram",
-          data: data.durations,
-          xkey: "job",
-          ykeys: ["duration"],
-          labels: ["Duration"]
-        });
+        if (histogram == true) {
+          var yLabelFormatCallback = function(y) {
+            var seconds = y / 1000.0;
+            return seconds.toString() + " s";
+          };
+
+          Morris.Bar({
+            element: "job-histogram",
+            data: data.durations,
+            xkey: "job",
+            ykeys: ["duration"],
+            labels: ["Duration"],
+            yLabelFormat: yLabelFormatCallback
+          });
+        }
       });
     }
   },
