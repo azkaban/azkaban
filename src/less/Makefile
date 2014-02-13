@@ -12,7 +12,6 @@ azkaban_css_DEPS = \
 	context-menu.less \
 	flow.less \
 	header.less \
-	job.less \
 	login.less \
 	log.less \
 	navbar.less \
