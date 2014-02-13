@@ -1,12 +1,12 @@
 /*
  * Copyright 2012 LinkedIn Corp.
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
  * the License at
- * 
+ *
  * http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
@@ -19,7 +19,7 @@ $.namespace('azkaban');
 azkaban.TimeGraphView = Backbone.View.extend({
 	events: {
 	},
-	
+
 	initialize: function(settings) {
 		this.model.bind('render', this.render, this);
 		this.model.bind('change:page', this.render, this);
@@ -36,7 +36,7 @@ azkaban.TimeGraphView = Backbone.View.extend({
 
     // Array of points to be passed to Morris.
     var data = [];
-    
+
     // Map of y value to index for faster look-up in the lineColorsCallback to
     // get the status for each point.
     var indexMap = {};
@@ -47,11 +47,16 @@ azkaban.TimeGraphView = Backbone.View.extend({
       }
       var startTime = series[i].startTime;
       var endTime = series[i].endTime;
-      if (endTime == -1) {
-        endTime = new Date().getTime();
+      if (startTime == -1 && endTime == -1) {
+        console.log("Ignoring data point with both start and end time invalid.");
+        continue;
       }
-      var duration = endTime - startTime;
-      data.push({ 
+
+      var duration = 0;
+      if (endTime != -1 && startTime != -1) {
+        duration = endTime - startTime;
+      }
+      data.push({
         time: endTime,
         duration: duration
       });
@@ -85,8 +90,8 @@ azkaban.TimeGraphView = Backbone.View.extend({
       else if (status == 'PAUSED') {
         return '#c92123';
       }
-      else if (status == 'FAILED' || 
-          status == 'FAILED_FINISHING' || 
+      else if (status == 'FAILED' ||
+          status == 'FAILED_FINISHING' ||
           status == 'KILLED') {
         return '#cc0000';
       }
@@ -105,7 +110,7 @@ azkaban.TimeGraphView = Backbone.View.extend({
       // is the index into Morris's internal array of data sorted in ascending
       // x order.
       var status = series[options.data.length - index - 1].status;
-      return content + 
+      return content +
           '<div class="morris-hover-point">Status: ' + status + '</div>';
     };
 
