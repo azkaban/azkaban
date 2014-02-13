@@ -282,6 +282,7 @@ azkaban.FlowStatsView = Backbone.View.extend({
       }
     };
 
+    var jobsAnalyzed = 0;
     for (var i = 0; i < jobs.length; ++i) {
       var job = jobs[i];
       var duration = job.endTime - job.startTime;
@@ -298,8 +299,19 @@ azkaban.FlowStatsView = Backbone.View.extend({
       for (var j = 0; j < jobStats.jobStats.length; ++j) {
         this.updateStats(jobStats.jobStats[j], data, job.id);
       }
+      ++jobsAnalyzed;
     }
-    this.finalizeStats(data);
+
+    // If no jobs were analyzed, then no jobs had any job stats available. In
+    // this case, display a No Flow Stats Available message.
+    if (jobsAnalyzed == 0) {
+      data.success = false;
+      data.message = "There were no job stats provided by any job.";
+    }
+    else {
+      this.finalizeStats(data);
+    }
+
     this.model.set({'data': data});
     this.model.trigger('render');
   },
@@ -313,7 +325,7 @@ azkaban.FlowStatsView = Backbone.View.extend({
         view.display(out);
       });
     }
-    else if (data.success == "false") {
+    else if (data.success == false) {
       dust.render("flowstats-no-data", data, function(err, out) {
         view.display(out);
       });
