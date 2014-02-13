@@ -1,5 +1,13 @@
       <div class="row">
         <div class="col-xs-12">
+          <div class="well well-clear well-sm">
+            <div id="job-histogram"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col-xs-12">
           <h4>Resources</h4>
           <table class="table table-bordered table-condensed table-striped">
             <thead>

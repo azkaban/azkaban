@@ -1,12 +1,12 @@
 #*
  * Copyright 2012 LinkedIn Corp.
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
  * the License at
- * 
+ *
  * http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
@@ -14,7 +14,7 @@
  * the License.
 *#
 
-<!DOCTYPE html> 
+<!DOCTYPE html>
 <html lang="en">
 	<head>
 
@@ -32,7 +32,7 @@
 			var timezone = "${timezone}";
 			var errorMessage = null;
 			var successMessage = null;
-			
+
 			var projectId = "$projectId";
 			var projectName = "$projectName";
 			var jobName = "$jobid";
@@ -48,7 +48,7 @@
 #if ($errorMsg)
   #parse ("azkaban/webapp/servlet/velocity/errormsg.vm")
 #else
-	
+
 	## Page header
 
 		<div class="az-page-header page-header-bare">
@@ -66,7 +66,7 @@
     </div>
 
 		<div class="container-full">
-	
+
   #parse ("azkaban/webapp/servlet/velocity/alerts.vm")
 
   ## Time graph and job history table.
@@ -84,7 +84,7 @@
                 <th class="flowid">Flow</th>
                 <th class="date">Start Time</th>
                 <th class="date">End Time</th>
-                <th class="elapse">Elapse</th>		
+                <th class="elapse">Elapse</th>
                 <th class="status">Status</th>
                 <th class="logs">Logs</th>
               </tr>
