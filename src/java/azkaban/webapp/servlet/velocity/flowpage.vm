@@ -149,7 +149,7 @@
           <div class="col-xs-12">
             <div class="callout callout-info">
               <h4>Analyze last run</h4>
-              <p>Analyze the last run for aggregate performance statistics. <strong>Note:</strong> this may take a few minutes, especially if your flow is large.</p>
+              <p>Analyze the last run for aggregate performance statistics. Note: this may take a few minutes, especially if your flow is large.</p>
               <p>
                 <button type="button" id="analyze-btn" class="btn btn-primary">Analyze</button>
               </p>

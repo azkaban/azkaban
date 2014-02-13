@@ -327,8 +327,33 @@ azkaban.SummaryView = Backbone.View.extend({
 			'flowId': flowId
 		};
 		var model = this.model;
+    var view = this;
 		var successHandler = function(data) {
 			model.set({'schedule': data.schedule});
+			model.trigger('render');
+      view.fetchSla();
+		};
+		$.get(requestURL, requestData, successHandler, 'json');
+	},
+
+  fetchSla: function() {
+    var schedule = this.model.get('schedule');
+    if (schedule == null || schedule.scheduleId == null) {
+      return;
+    }
+
+		var requestURL = contextURL + "/schedule"
+		var requestData = {
+			"scheduleId": schedule.scheduleId,
+			"ajax": "slaInfo"
+		};
+		var model = this.model;
+		var successHandler = function(data) {
+      if (data == null || data.settings == null || data.settings.length == 0) {
+        return;
+      }
+      schedule.slaOptions = true;
+      model.set({'schedule': schedule});
 			model.trigger('render');
 		};
 		$.get(requestURL, requestData, successHandler, 'json');
