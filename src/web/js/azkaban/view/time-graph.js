@@ -56,6 +56,9 @@ azkaban.TimeGraphView = Backbone.View.extend({
       if (endTime != -1 && startTime != -1) {
         duration = endTime - startTime;
       }
+      if (endTime == -1) {
+        endTime = new Date().getTime();
+      }
       data.push({
         time: endTime,
         duration: duration
