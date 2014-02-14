@@ -143,6 +143,9 @@
     <exec dir="${less.src.dir}" executable="make" failonerror="true">
       <arg value="clean" />
     </exec>
+		<subant target="clean">
+			<fileset dir="unit" includes="build.xml" />
+		</subant>
   </target>
   
   <target name="distclean" depends="clean" description="Delete all generated files.">

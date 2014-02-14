@@ -6,66 +6,75 @@
       revision="2.5" status="release">
   </info>
 
+  <configurations defaultconfmapping="default">
+    <conf name="default" extends="master,runtime" />
+    <conf name="master" description="contains the artifact but no dependencies" />
+    <conf name="runtime" extends="compile" description="runtime but not the artifact" />
+
+    <conf name="compile" visibility="private" description="Build dependencies" />
+    <conf name="test" extends="compile" visibility="private" description="Test dependencies" />
+  </configurations>
+
   <dependencies>
     <dependency name="commons-collections" org="commons-collections"
-        rev="${commons-collections.version}" conf="default->master" />
+        rev="${commons-collections.version}" conf="compile->default" />
     <dependency name="commons-configuration" org="commons-configuration"
-        rev="${commons-configuration.version}" conf="default->master" />
+        rev="${commons-configuration.version}" conf="compile->default" />
     <dependency name="commons-dbcp" org="commons-dbcp" 
-        rev="${commons-dbcp.version}" conf="default->master" />
+        rev="${commons-dbcp.version}" conf="compile->default" />
     <dependency name="commons-dbutils" org="commons-dbutils" 
-        rev="${commons-dbutils.version}" conf="default->master" />
+        rev="${commons-dbutils.version}" conf="compile->default" />
     <dependency name="commons-email" org="org.apache.commons"
-        rev="${commons-email.version}" conf="default->master" />
+        rev="${commons-email.version}" conf="compile->default" />
     <dependency name="commons-fileupload" org="commons-fileupload"
-        rev="${commons-fileupload.version}" conf="default->master" />
+        rev="${commons-fileupload.version}" conf="compile->default" />
     <dependency name="commons-io" org="commons-io"
-        rev="${commons-io.version}" conf="default->master" />
+        rev="${commons-io.version}" conf="compile->default" />
     <dependency name="commons-jexl" org="org.apache.commons"
-        rev="${commons-jexl.version}" conf="default->master" />
+        rev="${commons-jexl.version}" conf="compile->default" />
     <dependency name="commons-lang" org="commons-lang"
-        rev="${commons-lang.version}" conf="default->master" />
+        rev="${commons-lang.version}" conf="compile->default" />
     <dependency name="commons-logging" org="commons-logging"
-        rev="${commons-logging.version}" conf="default->master" />
+        rev="${commons-logging.version}" conf="compile->default" />
     <dependency name="commons-pool" org="commons-pool" 
-        rev="${commons-pool.version}" conf="default->master" />
+        rev="${commons-pool.version}" conf="compile->default" />
     <dependency name="guava" org="com.google.guava"
-        rev="${guava.version}" conf="default->master" />
+        rev="${guava.version}" conf="compile->default" />
     <dependency name="h2" org="com.h2database" 
-        rev="${h2.version}" conf="default->master" />
+        rev="${h2.version}" conf="compile->default" />
     <dependency name="httpclient" org="org.apache.httpcomponents" 
-        rev="${httpclient.version}" conf="default->master" />
+        rev="${httpclient.version}" conf="compile->default" />
     <dependency name="httpcore" org="org.apache.httpcomponents" 
-        rev="${httpcore.version}" conf="default->master" />
+        rev="${httpcore.version}" conf="compile->default" />
     <dependency name="jackson-core-asl" org="org.codehaus.jackson" 
-        rev="${jackson-core.version}" conf="default->master" />
+        rev="${jackson-core.version}" conf="compile->default" />
     <dependency name="jackson-mapper-asl" org="org.codehaus.jackson" 
-        rev="${jackson-mapper.version}" conf="default->master" />
+        rev="${jackson-mapper.version}" conf="compile->default" />
     <dependency name="jetty" org="org.mortbay.jetty" 
-        rev="${jetty.version}" conf="default->master" />
+        rev="${jetty.version}" conf="compile->default" />
     <dependency name="jetty-util" org="org.mortbay.jetty" 
-        rev="${jetty-util.version}" conf="default->master" />
+        rev="${jetty-util.version}" conf="compile->default" />
     <dependency name="joda-time" org="joda-time" 
-        rev="${joda-time.version}" conf="default->master" />
+        rev="${joda-time.version}" conf="compile->default" />
     <dependency name="jopt-simple" org="net.sf.jopt-simple" 
-        rev="${jopt-simple.version}" conf="default->master" />
+        rev="${jopt-simple.version}" conf="compile->default" />
     <dependency name="junit" org="junit"
-        rev="${junit.version}" conf="default->master" />
+        rev="${junit.version}" conf="test->default" />
     <dependency name="log4j" org="log4j" 
-        rev="${log4j.version}" conf="default->master" />
+        rev="${log4j.version}" conf="compile->default" />
     <dependency name="mail" org="javax.mail" 
-        rev="${mail.version}" conf="default->master" />
+        rev="${mail.version}" conf="compile->default" />
     <dependency name="mysql-connector-java" org="mysql" 
-        rev="${mysql-connector.version}" conf="default->master" />
+        rev="${mysql-connector.version}" conf="compile->default" />
     <dependency name="servlet-api" org="javax.servlet" 
-        rev="${servlet-api.version}" conf="default->master" />
+        rev="${servlet-api.version}" conf="compile->default" />
     <dependency name="slf4j-api" org="org.slf4j" 
-        rev="${slf4j-api.version}" conf="default->master" />
+        rev="${slf4j-api.version}" conf="compile->default" />
     <dependency name="slf4j-log4j12" org="org.slf4j" 
-        rev="${slf4j-log4j12.version}" conf="default->master" />
+        rev="${slf4j-log4j12.version}" conf="compile->default" />
     <dependency name="velocity" org="org.apache.velocity" 
-        rev="${velocity.version}" conf="default->master" />
+        rev="${velocity.version}" conf="compile->default" />
     <dependency name="velocity-tools" org="org.apache.velocity" 
-        rev="${velocity-tools.version}" conf="default->master" />
+        rev="${velocity-tools.version}" conf="compile->default" />
   </dependencies>
 </ivy-module>
