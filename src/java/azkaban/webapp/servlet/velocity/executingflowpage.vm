@@ -1,12 +1,12 @@
 #*
  * Copyright 2012 LinkedIn Corp.
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
  * the License at
- * 
+ *
  * http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
@@ -14,16 +14,18 @@
  * the License.
 *#
 
-<!DOCTYPE html> 
+<!DOCTYPE html>
 <html lang="en">
 	<head>
 
 #parse("azkaban/webapp/servlet/velocity/style.vm")
 #parse("azkaban/webapp/servlet/velocity/javascript.vm")
 #parse("azkaban/webapp/servlet/velocity/svgflowincludes.vm")
+    <script type="text/javascript" src="${context}/js/raphael.min.js"></script>
+    <script type="text/javascript" src="${context}/js/morris.min.js"></script>
 		<script type="text/javascript" src="${context}/js/moment.min.js"></script>
     <script type="text/javascript" src="${context}/js/bootstrap-datetimepicker.min.js"></script>
-    
+
     <script type="text/javascript" src="${context}/js/dust-full-2.2.3.min.js"></script>
 		<script type="text/javascript" src="${context}/js/flowstats.js"></script>
 		<script type="text/javascript" src="${context}/js/flowstats-no-data.js"></script>
@@ -43,7 +45,7 @@
 			var flowId = "${flowid}";
 			var execId = "${execid}";
 		</script>
-
+		<link rel="stylesheet" type="text/css" href="${context}/css/morris.css" />
 		<link rel="stylesheet" type="text/css" href="${context}/css/jquery-ui-1.10.1.custom.css" />
 	</head>
 	<body>
@@ -97,7 +99,7 @@
 		<div class="container-full">
 
   #parse ("azkaban/webapp/servlet/velocity/alerts.vm")
-	
+
 	## Tabs and buttons.
 
 			<ul class="nav nav-tabs nav-sm" id="headertabs">
@@ -116,7 +118,7 @@
 	## Graph View
 
 	#parse ("azkaban/webapp/servlet/velocity/flowgraphview.vm")
-	
+
 	## Job List View
 
     <div class="container-full" id="jobListView">
@@ -178,7 +180,7 @@
         </div>
 			</div><!-- /.row -->
     </div><!-- /.container-fill -->
-	
+
 	## Error message message dialog.
 
     <div class="container-full">
