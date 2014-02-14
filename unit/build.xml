@@ -9,6 +9,7 @@
 	<property name="java.src.dir" value="${base.dir}/unit/java" />
 	<property name="job.conf.dir" value="${base.dir}/unit/executions" />
   <property name="build.ivy.lib.dir" location="../build/ivy/lib" />
+  <property name="build.jars.dir" location="../dist/jars" />
 		
 	<property environment="env" />
 
@@ -16,8 +17,9 @@
     <fileset dir="${build.ivy.lib.dir}">
 			<include name="*.jar" />
 		</fileset>
-
-		<pathelement path="${dist.classes.dir}" />
+    <fileset dir="${build.jars.dir}">
+			<include name="*.jar" />
+		</fileset>
 	</path>
 	
 	<!-- set the build number based on environment variable, otherwise blank -->

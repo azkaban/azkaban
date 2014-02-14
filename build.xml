@@ -465,7 +465,7 @@ ${current.time}
   <target name="package" depends="package-all" description="Create all packages">
   </target>
 
-  <target name="test" depends="git.info, repo.file, ivy-retrieve" description="Build and run tests">
+  <target name="test" depends="jars" description="Build and run tests">
 		<subant target="all">
 			<fileset dir="unit" includes="build.xml" />
 		</subant>

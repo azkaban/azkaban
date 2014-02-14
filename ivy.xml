@@ -49,6 +49,8 @@
         rev="${joda-time.version}" conf="default->master" />
     <dependency name="jopt-simple" org="net.sf.jopt-simple" 
         rev="${jopt-simple.version}" conf="default->master" />
+    <dependency name="junit" org="junit"
+        rev="${junit.version}" conf="default->master" />
     <dependency name="log4j" org="log4j" 
         rev="${log4j.version}" conf="default->master" />
     <dependency name="mail" org="javax.mail" 
