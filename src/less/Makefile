@@ -8,11 +8,11 @@ all: $(OBJ)
 
 azkaban_css_DEPS = \
 	azkaban.less \
+	variables.less \
 	base.less \
 	context-menu.less \
 	flow.less \
 	header.less \
-	job.less \
 	login.less \
 	log.less \
 	navbar.less \

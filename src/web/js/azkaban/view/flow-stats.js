@@ -1,12 +1,12 @@
 /*
  * Copyright 2012 LinkedIn Corp.
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
  * the License at
- * 
+ *
  * http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
@@ -21,11 +21,16 @@ azkaban.FlowStatsView = Backbone.View.extend({
   events: {
   },
 
+  histogram: true,
+
 	initialize: function(settings) {
 		this.model.bind('change:view', this.handleChangeView, this);
 		this.model.bind('render', this.render, this);
+    if (settings.histogram != null) {
+      this.histogram = settings.histogram;
+    }
   },
-	
+
   render: function(evt) {
   },
 
@@ -38,10 +43,10 @@ azkaban.FlowStatsView = Backbone.View.extend({
     var requestData = {"execid": execId, "ajax":"fetchexecflow"};
     var jobs = [];
     var successHandler = function(data) {
-      for (var i = 0; i < data.nodes.length; ++i) {
-        var node = data.nodes[i];
-        jobs.push(node.id);
-      }
+      data.nodes.sort(function(a, b) {
+        return a.startTime - b.startTime;
+      });
+      jobs = data.nodes;
     };
     $.ajax({
       url: requestURL,
@@ -127,7 +132,7 @@ azkaban.FlowStatsView = Backbone.View.extend({
         }
       }
       if (str.indexOf('Xms') > -1) {
-        if (str.length <= 4) { 
+        if (str.length <= 4) {
           continue;
         }
         var size = str.substring(4, str.length);
@@ -179,13 +184,13 @@ azkaban.FlowStatsView = Backbone.View.extend({
       stats.fileBytesWritten.max = fileBytesWritten;
       stats.fileBytesWritten.job = job;
     }
-    
+
     var hdfsBytesRead = parseInt(fileSystemCounters['HDFS_BYTES_READ']);
     if (hdfsBytesRead >= stats.hdfsBytesRead.max) {
       stats.hdfsBytesRead.max = hdfsBytesRead;
       stats.hdfsBytesRead.job = job;
     }
-    
+
     var hdfsBytesWritten = parseInt(fileSystemCounters['HDFS_BYTES_WRITTEN']);
     if (hdfsBytesWritten >= stats.hdfsBytesWritten.max) {
       stats.hdfsBytesWritten.max = hdfsBytesWritten;
@@ -219,6 +224,8 @@ azkaban.FlowStatsView = Backbone.View.extend({
       success: false,
       message: null,
       warnings: [],
+      durations: [],
+      histogram: this.histogram,
       stats: {
         mapSlots: {
           max: 0,
@@ -275,18 +282,36 @@ azkaban.FlowStatsView = Backbone.View.extend({
       }
     };
 
+    var jobsAnalyzed = 0;
     for (var i = 0; i < jobs.length; ++i) {
       var job = jobs[i];
-      var jobStats = this.fetchJobStats(job, execId);
+      var duration = job.endTime - job.startTime;
+      data.durations.push({
+        job: job.id,
+        duration: duration
+      });
+
+      var jobStats = this.fetchJobStats(job.id, execId);
       if (jobStats.jobStats == null) {
         data.warnings.push("No job stats available for job " + job.id);
         continue;
       }
       for (var j = 0; j < jobStats.jobStats.length; ++j) {
-        this.updateStats(jobStats.jobStats[j], data, job);
+        this.updateStats(jobStats.jobStats[j], data, job.id);
       }
+      ++jobsAnalyzed;
     }
-    this.finalizeStats(data);
+
+    // If no jobs were analyzed, then no jobs had any job stats available. In
+    // this case, display a No Flow Stats Available message.
+    if (jobsAnalyzed == 0) {
+      data.success = false;
+      data.message = "There were no job stats provided by any job.";
+    }
+    else {
+      this.finalizeStats(data);
+    }
+
     this.model.set({'data': data});
     this.model.trigger('render');
   },
@@ -300,14 +325,30 @@ azkaban.FlowStatsView = Backbone.View.extend({
         view.display(out);
       });
     }
-    else if (data.success == "false") {
+    else if (data.success == false) {
       dust.render("flowstats-no-data", data, function(err, out) {
         view.display(out);
       });
     }
     else {
+      var histogram = this.histogram;
       dust.render("flowstats", data, function(err, out) {
         view.display(out);
+        if (histogram == true) {
+          var yLabelFormatCallback = function(y) {
+            var seconds = y / 1000.0;
+            return seconds.toString() + " s";
+          };
+
+          Morris.Bar({
+            element: "job-histogram",
+            data: data.durations,
+            xkey: "job",
+            ykeys: ["duration"],
+            labels: ["Duration"],
+            yLabelFormat: yLabelFormatCallback
+          });
+        }
       });
     }
   },
