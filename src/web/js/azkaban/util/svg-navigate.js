@@ -14,7 +14,7 @@
  * the License.
  */
 
-(function($) {	
+(function($) {
 
 	var mouseUp = function(evt) {
 		if (evt.button > 1) {
@@ -28,9 +28,9 @@
 	
 	var mouseDown = function(evt) {
 		if (evt.button > 1) {
-                        return;
-                }
-		//alert("mouseDown");
+			return;
+		}
+
 		var target = evt.target;
 		target.mx = evt.clientX;
 		target.my = evt.clientY;
@@ -49,28 +49,28 @@
 		if (target.mDown) {
 			var dx = evt.clientX - target.mx;
 			var dy = evt.clientY - target.my;
-			
+
 			evt.dragX = dx;
 			evt.dragY = dy;
 			mouseDrag(evt);
 		}
-		
+
 		target.mx = evt.clientX;
 		target.my = evt.clientY;
 	}
-	
+
 	var mouseDrag = function(evt) {
-		//alert("mouseDragged ");
+		// alert("mouseDragged ");
 		translateDeltaGraph(evt.target, evt.dragX, evt.dragY);
 	}
 	
 	var mouseScrolled = function(evt) {
-		//alert("scroll");
+		// alert("scroll");
 		if (!evt) {
 			evt = window.event;
 		}
-		var target = evt.target;
-		
+		var target = evt.currentTarget;
+
 		var leftOffset = 0;
 		var topOffset = 0;
 		if (!target.marker) {
@@ -80,57 +80,58 @@
 
 			target = target.farthestViewportElement;
 		}
-		
+
 		// Trackball/trackpad vs wheel. Need to accommodate
 		var delta = 0;
 		if (evt.wheelDelta) {
 			if (evt.wheelDelta > 0) {
 				delta = Math.ceil(evt.wheelDelta / 120);
-			}
-			else {
+			} else {
 				delta = Math.floor(evt.wheelDelta / 120);
 			}
-		}
-		else if (evt.detail) {
+		} else if (evt.detail) {
 			if (evt.detail > 0) {
 				delta = -Math.ceil(evt.detail / 3);
-			}
-			else {
+			} else {
 				delta = -Math.floor(evt.detail / 3);
 			}
 		}
-		
+
 		var zoomLevel = boundZoomLevel(target, target.zoomIndex + delta);
 		target.zoomIndex = zoomLevel;
 		var scale = target.zoomLevels[zoomLevel];
-		
-		var y = evt.offsetY;
+
 		var x = evt.offsetX;
+		var y = evt.offsetY;
+		if (!x) {
+			var position = $(target.parentElement).position();
+			x = evt.layerX - position.left;
+			y = evt.layerY - position.top;
+		}
 
 		evt.stopPropagation();
 		evt.preventDefault();
 		
 		scaleGraph(target, scale, x, y);
 	}
-	
+
 	this.boundZoomLevel = function(target, level) {
 		if (level >= target.settings.zoomNumLevels) {
 			return target.settings.zoomNumLevels - 1;
-		}
-		else if (level <= 0 ) {
+		} else if (level <= 0) {
 			return 0;
 		}
-		
+
 		return level;
 	}
-	
+
 	this.scaleGraph = function(target, scale, x, y) {
-		var sfactor = scale/target.scale;
+		var sfactor = scale / target.scale;
 		target.scale = scale;
-		
-		target.translateX = sfactor*target.translateX + x - sfactor*x;
-		target.translateY = sfactor*target.translateY + y - sfactor*y;
-		
+
+		target.translateX = sfactor * target.translateX + x - sfactor * x;
+		target.translateY = sfactor * target.translateY + y - sfactor * y;
+
 		if (target.model) {
 			target.model.trigger("scaled");
 		}
@@ -145,60 +146,64 @@
 		}
 		retransform(target);
 	}
-	
+
 	this.retransform = function(target) {
-		//$(target).children('g').attr("transform", "translate(" + target.translateX + "," + target.translateY + ") scale(" + target.scale + ")");
+		// $(target).children('g').attr("transform", "translate(" +
+		// target.translateX + "," + target.translateY + ") scale(" +
+		// target.scale + ")");
 		var gs = target.childNodes;
-		
-		var transformString = "translate(" + target.translateX + "," + target.translateY + ") scale(" + target.scale + ")";
-		for (var i = 0; i < gs.length; ++i) {
+
+		var transformString = "translate(" + target.translateX + ","
+		        + target.translateY + ") scale(" + target.scale + ")";
+		for ( var i = 0; i < gs.length; ++i) {
 			var g = gs[i];
 			if (g.nodeName == 'g') {
 				g.setAttribute("transform", transformString);
 			}
 		}
-		
+
 		if (target.model) {
 			var obj = target.model.get("transform");
 			if (obj) {
 				obj.scale = target.scale;
 				obj.height = target.parentNode.clientHeight;
 				obj.width = target.parentNode.clientWidth;
-				
+
 				obj.x1 = target.translateX;
 				obj.y1 = target.translateY;
-				obj.x2 = obj.x1 + obj.width*obj.scale;
-				obj.y2 = obj.y1 + obj.height*obj.scale;
+				obj.x2 = obj.x1 + obj.width * obj.scale;
+				obj.y2 = obj.y1 + obj.height * obj.scale;
 			}
 		}
 	}
-	
+
 	this.resetTransform = function(target) {
 		var settings = target.settings;
 		target.translateX = settings.x;
 		target.translateY = settings.y;
-		
+
 		if (settings.x < settings.x2) {
 			var factor = 0.90;
-			
+
 			// Reset scale and stuff.
 			var divHeight = target.parentNode.clientHeight;
 			var divWidth = target.parentNode.clientWidth;
-			
+
 			var width = settings.x2 - settings.x;
 			var height = settings.y2 - settings.y;
-			var aspectRatioGraph = height/width;
-			var aspectRatioDiv = divHeight/divWidth;
-			
-			var scale = aspectRatioGraph > aspectRatioDiv ? (divHeight/height)*factor : (divWidth/width)*factor;
+			var aspectRatioGraph = height / width;
+			var aspectRatioDiv = divHeight / divWidth;
+
+			var scale = aspectRatioGraph > aspectRatioDiv ? (divHeight / height)
+			        * factor
+			        : (divWidth / width) * factor;
 			target.scale = scale;
-		}
-		else {
+		} else {
 			target.zoomIndex = boundZoomLevel(target, settings.zoomIndex);
 			target.scale = target.zoomLevels[target.zoomIndex];
 		}
 	}
-	
+
 	this.animateTransform = function(target, scale, x, y, duration) {
 		var zoomLevel = calculateZoomLevel(scale, target.zoomLevels);
 		target.fromScaleLevel = target.zoomIndex;
@@ -211,25 +216,30 @@
 		target.toY = y;
 		target.startTime = new Date().getTime();
 		target.endTime = target.startTime + duration;
-		
+
 		this.animateTick(target);
 	}
-	
+
 	this.animateTick = function(target) {
 		var time = new Date().getTime();
 		if (time < target.endTime) {
 			var timeDiff = time - target.startTime;
 			var progress = timeDiff / (target.endTime - target.startTime);
-			
-			//target.zoomIndex = Math.floor((target.toScaleLevel - target.fromScaleLevel)*progress) + target.fromScaleLevel;
-			//target.scale = target.zoomLevels[target.zoomIndex];
-			target.scale = (target.toScale - target.fromScale)*progress + target.fromScale;
-			target.translateX = (target.toX - target.fromX)*progress + target.fromX;
-			target.translateY = (target.toY - target.fromY)*progress + target.fromY;
+
+			// target.zoomIndex = Math.floor((target.toScaleLevel -
+			// target.fromScaleLevel)*progress) + target.fromScaleLevel;
+			// target.scale = target.zoomLevels[target.zoomIndex];
+			target.scale = (target.toScale - target.fromScale) * progress
+			        + target.fromScale;
+			target.translateX = (target.toX - target.fromX) * progress
+			        + target.fromX;
+			target.translateY = (target.toY - target.fromY) * progress
+			        + target.fromY;
 			retransform(target);
-			setTimeout(function() {this.animateTick(target)}, 1);
-		}
-		else {
+			setTimeout(function() {
+				this.animateTick(target)
+			}, 1);
+		} else {
 			target.zoomIndex = target.toScaleLevel;
 			target.scale = target.zoomLevels[target.zoomIndex];
 			target.translateX = target.toX;
@@ -237,31 +247,29 @@
 			retransform(target);
 		}
 	}
-	
+
 	this.calculateZoomScale = function(scaleLevel, numLevels, points) {
 		if (scaleLevel <= 0) {
 			return points[0];
-		}
-		else if (scaleLevel >= numLevels) {
+		} else if (scaleLevel >= numLevels) {
 			return points[points.length - 1];
 		}
 		var factor = (scaleLevel / numLevels) * (points.length - 1);
 		var floorIdx = Math.floor(factor);
 		var ceilingIdx = Math.ceil(factor);
-		
+
 		var b = factor - floorIdx;
-		
-		return b*(points[ceilingIdx] - points[floorIdx]) + points[floorIdx];
+
+		return b * (points[ceilingIdx] - points[floorIdx]) + points[floorIdx];
 	}
-	
+
 	this.calculateZoomLevel = function(scale, zoomLevels) {
 		if (scale >= zoomLevels[zoomLevels.length - 1]) {
 			return zoomLevels.length - 1;
-		}
-		else if (scale <= zoomLevels[0]) {
+		} else if (scale <= zoomLevels[0]) {
 			return 0;
 		}
-		
+
 		var i = 0;
 		// Plain old linear scan
 		for (; i < zoomLevels.length; ++i) {
@@ -270,123 +278,134 @@
 				break;
 			}
 		}
-		
+
 		if (i < 0) {
 			return 0;
 		}
-		
+
 		return i;
 	}
-	
-	var methods = {	
-		init : function(options) {
-			var settings = {
-				x: 0,
-				y: 0,
-				x2: 0,
-				y2: 0,
-				minX: -1000,
-				minY: -1000,
-				maxX: 1000,
-				maxY: 1000,
-				zoomIndex: 24,
-				zoomPoints: [0.1, 0.14, 0.2, 0.4, 0.8, 1, 1.6, 2.4, 4, 8, 16],
-				zoomNumLevels: 48
-			};
-			if (options) {
-				$.extend(settings, options);
-			}
-			return this.each(function() {
-				var $this = $(this);
-				this.settings = settings;
-				this.marker = true;
-				
-				if (window.addEventListener) this.addEventListener('DOMMouseScroll', mouseScrolled, false);
-				this.onmousewheel = mouseScrolled;
-				this.onmousedown = mouseDown;
-				this.onmouseup = mouseUp;
-				this.onmousemove = mouseMove;
-				this.onmouseout = mouseOut;
-				
-				this.zoomLevels = new Array(settings.zoomNumLevels);
-				for (var i = 0; i < settings.zoomNumLevels; ++i) {
-					var scale = calculateZoomScale(i, settings.zoomNumLevels, settings.zoomPoints);
-					this.zoomLevels[i] = scale;
-				}
-				resetTransform(this);
-			});
-		},
-		transformToBox : function(arguments) {
-			var $this = $(this);
-			var target = ($this)[0];
-			var x = arguments.x;
-			var y = arguments.y;
-			var factor = 0.9;
-			var duration = arguments.duration;
-			
-			var width = arguments.width ? arguments.width : 1;
-			var height = arguments.height ? arguments.height : 1;
-			
-			var divHeight = target.parentNode.clientHeight;
-			var divWidth = target.parentNode.clientWidth;
-			
-			var aspectRatioGraph = height/width;
-			var aspectRatioDiv = divHeight/divWidth;
 
-			var scale = aspectRatioGraph > aspectRatioDiv ? (divHeight/height)*factor : (divWidth/width)*factor;
-			//console.log("(" + x + "," + y + "," + width.toPrecision(4) + "," + height.toPrecision(4) + ")");
-			//console.log("(rg:" + aspectRatioGraph.toPrecision(3) + ",rd:" + aspectRatioDiv.toPrecision(3) + "," + scale.toPrecision(3) + ")");
-			
-			if (arguments.maxScale) {
-				if (scale > arguments.maxScale) {
-					scale = arguments.maxScale;
-				}
-			}
-			if (arguments.minScale) {
-				if (scale < arguments.minScale) {
-					scale = arguments.minScale;
-				}
-			}
-			
-			// Center
-			var scaledWidth = width*scale;
-			var scaledHeight = height*scale;
-			
-			var sx = (divWidth - scaledWidth)/2 -scale*x;
-			var sy = (divHeight - scaledHeight)/2 -scale*y;
-			console.log("sx,sy:" + sx + "," + sy);
-			
-			if (duration != 0 && !duration) {
-				duration = 500;
-			}
-			
-			animateTransform(target, scale, sx, sy, duration);
-		},
-		attachNavigateModel : function(arguments) {
-			var $this = $(this);
-			var target = ($this)[0];
-			target.model = arguments;
-			
-			if (target.model) {
-				var obj = {};
-				obj.scale = target.scale;
-				obj.height = target.parentNode.clientHeight;
-				obj.width = target.parentNode.clientWidth;
-				
-				obj.x1 = target.translateX;
-				obj.y1 = target.translateY;
-				obj.x2 = obj.x1 + obj.height*obj.scale;
-				obj.y2 = obj.y1 + obj.width*obj.scale;
-				
-				target.model.set({transform : obj});
-			}
-		}
+	var methods = {
+	    init : function(options) {
+		    var settings = {
+		        x : 0,
+		        y : 0,
+		        x2 : 0,
+		        y2 : 0,
+		        minX : -1000,
+		        minY : -1000,
+		        maxX : 1000,
+		        maxY : 1000,
+		        zoomIndex : 24,
+		        zoomPoints : [ 0.1, 0.14, 0.2, 0.4, 0.8, 1, 1.6, 2.4, 4, 8, 16 ],
+		        zoomNumLevels : 48
+		    };
+		    if (options) {
+			    $.extend(settings, options);
+		    }
+		    return this.each(function() {
+			    var $this = $(this);
+			    this.settings = settings;
+			    this.marker = true;
+
+			    if (window.addEventListener)
+				    this.addEventListener('DOMMouseScroll', mouseScrolled,
+				            false);
+			    this.onmousewheel = mouseScrolled;
+			    this.onmousedown = mouseDown;
+			    this.onmouseup = mouseUp;
+			    this.onmousemove = mouseMove;
+			    this.onmouseout = mouseOut;
+
+			    this.zoomLevels = new Array(settings.zoomNumLevels);
+			    for ( var i = 0; i < settings.zoomNumLevels; ++i) {
+				    var scale = calculateZoomScale(i, settings.zoomNumLevels,
+				            settings.zoomPoints);
+				    this.zoomLevels[i] = scale;
+			    }
+			    resetTransform(this);
+		    });
+	    },
+	    transformToBox : function(arguments) {
+		    var $this = $(this);
+		    var target = ($this)[0];
+		    var x = arguments.x;
+		    var y = arguments.y;
+		    var factor = 0.9;
+		    var duration = arguments.duration;
+
+		    var width = arguments.width ? arguments.width : 1;
+		    var height = arguments.height ? arguments.height : 1;
+
+		    var divHeight = target.parentNode.clientHeight;
+		    var divWidth = target.parentNode.clientWidth;
+
+		    var aspectRatioGraph = height / width;
+		    var aspectRatioDiv = divHeight / divWidth;
+
+		    var scale = aspectRatioGraph > aspectRatioDiv ? (divHeight / height)
+		            * factor
+		            : (divWidth / width) * factor;
+		    // console.log("(" + x + "," + y + "," + width.toPrecision(4) + ","
+			// + height.toPrecision(4) + ")");
+		    // console.log("(rg:" + aspectRatioGraph.toPrecision(3) + ",rd:" +
+			// aspectRatioDiv.toPrecision(3) + "," + scale.toPrecision(3) +
+			// ")");
+
+		    if (arguments.maxScale) {
+			    if (scale > arguments.maxScale) {
+				    scale = arguments.maxScale;
+			    }
+		    }
+		    if (arguments.minScale) {
+			    if (scale < arguments.minScale) {
+				    scale = arguments.minScale;
+			    }
+		    }
+
+		    // Center
+		    var scaledWidth = width * scale;
+		    var scaledHeight = height * scale;
+
+		    var sx = (divWidth - scaledWidth) / 2 - scale * x;
+		    var sy = (divHeight - scaledHeight) / 2 - scale * y;
+		    console.log("sx,sy:" + sx + "," + sy);
+
+		    if (duration != 0 && !duration) {
+			    duration = 500;
+		    }
+
+		    animateTransform(target, scale, sx, sy, duration);
+	    },
+	    attachNavigateModel : function(arguments) {
+		    var $this = $(this);
+		    var target = ($this)[0];
+		    target.model = arguments;
+
+		    if (target.model) {
+			    var obj = {};
+			    obj.scale = target.scale;
+			    obj.height = target.parentNode.clientHeight;
+			    obj.width = target.parentNode.clientWidth;
+
+			    obj.x1 = target.translateX;
+			    obj.y1 = target.translateY;
+			    obj.x2 = obj.x1 + obj.height * obj.scale;
+			    obj.y2 = obj.y1 + obj.width * obj.scale;
+
+			    target.model.set({
+				    transform : obj
+			    });
+		    }
+	    }
 	};
-	
+
 	// Main Constructor
 	$.fn.svgNavigate = function(method) {
 		if (methods[method]) {
-			return methods[method].apply(this, Array.prototype.slice.call(arguments, 1));
+			return methods[method].apply(this, Array.prototype.slice.call(
+			        arguments, 1));
 		} else if (typeof method === 'object' || !method) {
 			return methods.init.apply(this, arguments);
 		} else {

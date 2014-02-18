@@ -151,9 +151,8 @@ var edgeClickCallback = function(event, model) {
 
 var graphClickCallback = function(event, model) {
 	console.log("Graph clicked callback");
-
-	var jobId = event.currentTarget.jobid;
-	var flowId = model.get("flowId");
+	var data = model.get("data");
+	var flowId = data.flow;
 	var requestURL = contextURL + "/manager?project=" + projectName + "&flow=" + flowId;
 
 	var menu = [	
