@@ -3,35 +3,35 @@
 	<classpathentry kind="src" path="src/java"/>
 	<classpathentry kind="src" path="unit/java"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
-	<classpathentry kind="lib" path="lib/commons-collections-3.2.1.jar"/>
-	<classpathentry kind="lib" path="lib/commons-fileupload-1.2.1.jar"/>
-	<classpathentry kind="lib" path="lib/commons-lang-2.6.jar"/>
-	<classpathentry kind="lib" path="lib/jackson-core-asl-1.9.5.jar"/>
-	<classpathentry kind="lib" path="lib/jackson-mapper-asl-1.9.5.jar"/>
-	<classpathentry kind="lib" path="lib/jetty-6.1.26.jar"/>
-	<classpathentry kind="lib" path="lib/jetty-util-6.1.26.jar"/>
-	<classpathentry kind="lib" path="lib/joda-time-2.0.jar"/>
-	<classpathentry kind="lib" path="lib/jopt-simple-4.3.jar"/>
-	<classpathentry kind="lib" path="lib/log4j-1.2.16.jar"/>
-	<classpathentry kind="lib" path="lib/servlet-api-2.5.jar"/>
-	<classpathentry kind="lib" path="lib/slf4j-api-1.6.1.jar"/>
-	<classpathentry kind="lib" path="lib/slf4j-log4j12-1.6.4.jar"/>
-	<classpathentry kind="lib" path="lib/velocity-1.7.jar"/>
-	<classpathentry kind="lib" path="lib/velocity-tools-2.0.jar"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.junit.JUNIT_CONTAINER/4"/>
-	<classpathentry kind="lib" path="lib/httpclient-4.2.1.jar"/>
-	<classpathentry kind="lib" path="lib/commons-io-2.4.jar"/>
-	<classpathentry kind="lib" path="lib/httpcore-4.2.1.jar"/>
-	<classpathentry kind="lib" path="lib/commons-logging-1.1.1.jar"/>
-	<classpathentry kind="lib" path="lib/guava-13.0.1.jar"/>
-	<classpathentry kind="lib" path="lib/commons-email-1.2.jar"/>
-	<classpathentry kind="lib" path="lib/mail-1.4.5.jar"/>
-	<classpathentry kind="lib" path="lib/commons-configuration-1.8.jar"/>
-	<classpathentry kind="lib" path="lib/commons-dbutils-1.5.jar"/>
-	<classpathentry kind="lib" path="lib/commons-dbcp-1.4.jar"/>
-	<classpathentry kind="lib" path="extlib/mysql-connector-java-5.1.16-bin.jar"/>
-	<classpathentry kind="lib" path="lib/commons-pool-1.6.jar"/>
-	<classpathentry kind="lib" path="lib/h2-1.3.170.jar"/>
-	<classpathentry kind="lib" path="lib/commons-jexl-2.1.1.jar"/>
+	<classpathentry kind="lib" path="build/ivy/lib/commons-collections-3.2.1.jar"/>
+	<classpathentry kind="lib" path="build/ivy/lib/commons-configuration-1.8.jar"/>
+	<classpathentry kind="lib" path="build/ivy/lib/commons-dbcp-1.4.jar"/>
+	<classpathentry kind="lib" path="build/ivy/lib/commons-dbutils-1.5.jar"/>
+	<classpathentry kind="lib" path="build/ivy/lib/commons-email-1.2.jar"/>
+	<classpathentry kind="lib" path="build/ivy/lib/commons-fileupload-1.2.1.jar"/>
+	<classpathentry kind="lib" path="build/ivy/lib/commons-io-2.4.jar"/>
+	<classpathentry kind="lib" path="build/ivy/lib/commons-jexl-2.1.1.jar"/>
+	<classpathentry kind="lib" path="build/ivy/lib/commons-lang-2.6.jar"/>
+	<classpathentry kind="lib" path="build/ivy/lib/commons-logging-1.1.1.jar"/>
+	<classpathentry kind="lib" path="build/ivy/lib/commons-pool-1.6.jar"/>
+	<classpathentry kind="lib" path="build/ivy/lib/guava-13.0.1.jar"/>
+	<classpathentry kind="lib" path="build/ivy/lib/h2-1.3.170.jar"/>
+	<classpathentry kind="lib" path="build/ivy/lib/httpclient-4.2.1.jar"/>
+	<classpathentry kind="lib" path="build/ivy/lib/httpcore-4.2.1.jar"/>
+	<classpathentry kind="lib" path="build/ivy/lib/jackson-core-asl-1.9.5.jar"/>
+	<classpathentry kind="lib" path="build/ivy/lib/jackson-mapper-asl-1.9.5.jar"/>
+	<classpathentry kind="lib" path="build/ivy/lib/jetty-6.1.26.jar"/>
+	<classpathentry kind="lib" path="build/ivy/lib/jetty-util-6.1.26.jar"/>
+	<classpathentry kind="lib" path="build/ivy/lib/joda-time-2.0.jar"/>
+	<classpathentry kind="lib" path="build/ivy/lib/jopt-simple-4.3.jar"/>
+	<classpathentry kind="lib" path="build/ivy/lib/log4j-1.2.16.jar"/>
+	<classpathentry kind="lib" path="build/ivy/lib/mail-1.4.5.jar"/>
+	<classpathentry kind="lib" path="build/ivy/lib/mysql-connector-java-5.1.28.jar"/>
+	<classpathentry kind="lib" path="build/ivy/lib/servlet-api-2.5.jar"/>
+	<classpathentry kind="lib" path="build/ivy/lib/slf4j-api-1.6.1.jar"/>
+	<classpathentry kind="lib" path="build/ivy/lib/slf4j-log4j12-1.6.4.jar"/>
+	<classpathentry kind="lib" path="build/ivy/lib/velocity-1.7.jar"/>
+	<classpathentry kind="lib" path="build/ivy/lib/velocity-tools-2.0.jar"/>
 	<classpathentry kind="output" path="dist/classes"/>
 </classpath>
