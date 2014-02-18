@@ -265,17 +265,6 @@ public class Project {
 			projectObject.put("metadata", metadata);
 		}
 
-		ArrayList<Map<String, Object>> users = new ArrayList<Map<String, Object>>();
-		for (Map.Entry<String, Permission> entry : userPermissionMap.entrySet()) {
-			HashMap<String, Object> userMap = new HashMap<String, Object>();
-			userMap.put("userId", entry.getKey());
-			userMap.put("permissions", entry.getValue().toStringArray());
-			users.add(userMap);
-		}
-		
-		projectObject.put("users", users);
-		
-
 		ArrayList<String> proxyUserList = new ArrayList<String>(proxyUsers);
 		projectObject.put("proxyUsers", proxyUserList);
 		
@@ -310,18 +299,6 @@ public class Project {
 		}
 		if (metadata != null) {
 			project.setMetadata(metadata);
-		}
-		
-		List<Map<String, Object>> users = (List<Map<String, Object>>) projectObject
-				.get("users");
-
-		for (Map<String, Object> user : users) {
-			String userid = (String) user.get("userId");
-			Permission perm = new Permission();
-			List<String> list = (List<String>) user.get("permissions");
-			perm.addPermissionsByName(list);
-
-			project.setUserPermission(userid, perm);
 		}
 		
 		List<String> proxyUserList = (List<String>) projectObject.get("proxyUsers");
