@@ -35,7 +35,6 @@ import azkaban.utils.PropsUtils;
 
 public class JdbcProjectLoaderTest {
 	private static boolean testDBExists;
-	//@TODO remove this and turn into local host.
 	private static final String host = "localhost";
 	private static final int port = 3306;
 	private static final String database = "test";

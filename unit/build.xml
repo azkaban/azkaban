@@ -153,7 +153,7 @@
       <report todir="${test.output.dir}" />
     </junitreport>
 
-    <fail message="Unit tests failed." if="test.failure" />
+    <fail message="Unit tests failed. See ${test.output.dir} for a summary of test results." if="test.failure" />
   </target>
 
   <target name="test" depends="test-junit" description="Runs tests">
