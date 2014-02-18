@@ -14,7 +14,7 @@
           </table>
         </div>
       </div>
-			
+
       <div class="row">
         <div class="col-xs-12">
           <h3>
@@ -46,19 +46,19 @@
                 <td class="property-key">SLA</td>
                 <td class="property-value-half">
                 {?schedule.slaOptions}
-                  true 
-                {:else} 
-                  false 
+                  true
+                {:else}
+                  false
                 {/schedule.slaOptions}
                   <div class="pull-right">
-                    <button type="button" id="addSlaBtn" class="btn btn-xs btn-primary" onclick="slaView.initFromSched({schedule.scheduleId}, '{flowName}')" >Set SLA</button>
+                    <button type="button" id="addSlaBtn" class="btn btn-xs btn-primary" onclick="slaView.initFromSched({schedule.scheduleId}, '{flowName}')" >View/Set SLA</button>
                   </div>
                 </td>
               </tr>
             </tbody>
           </table>
           {:else}
-            <div class="alert alert-default">
+            <div class="callout callout-default">
               <h4>None</h4>
               <p>This flow has not been scheduled.</p>
             </div>

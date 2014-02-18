@@ -1,6 +1,6 @@
 #svgDiv {
-  height: 100%;
-  padding: 0px;
+    height: 100%;
+    padding: 0px;
 }
 
 #graphView {
@@ -11,8 +11,8 @@
 }
 
 #flow-graph {
-  width: 100%;
-  height: 100%;
+    width: 100%;
+    height: 100%;
 }
 
 #headertabs {
@@ -54,19 +54,19 @@
   }
 
   &.SUCCEEDED {
-    background-color: #5cb85c;
+    background-color: @flow-succeeded-color;
   }
 
   &.FAILED {
-    background-color: #d9534f;
+    background-color: @flow-failed-color;
   }
   
   &.KILLED {
-    background-color: #d9534f;
+    background-color: @flow-killed-color;
   }
 
   &.RUNNING {
-    background-color: #3398cc;	
+    background-color: @flow-running-color;
     background-image: -webkit-gradient(linear, 0 100%, 100% 0, color-stop(0.25, rgba(255, 255, 255, 0.15)), color-stop(0.25, transparent), color-stop(0.5, transparent), color-stop(0.5, rgba(255, 255, 255, 0.15)), color-stop(0.75, rgba(255, 255, 255, 0.15)), color-stop(0.75, transparent), to(transparent));
     background-image: -webkit-linear-gradient(45deg, rgba(255, 255, 255, 0.15) 25%, transparent 25%, transparent 50%, rgba(255, 255, 255, 0.15) 50%, rgba(255, 255, 255, 0.15) 75%, transparent 75%, transparent);
     background-image: -moz-linear-gradient(45deg, rgba(255, 255, 255, 0.15) 25%, transparent 25%, transparent 50%, rgba(255, 255, 255, 0.15) 50%, rgba(255, 255, 255, 0.15) 75%, transparent 75%, transparent);
@@ -77,11 +77,11 @@
   }
 
   &.QUEUED {
-    background-color: #009fc9;
+    background-color: @flow-queued-color;
   }
   
   &.CANCELLED {
-    background-color: #ff9999;
+    background-color: @flow-cancelled-color;
   }
 }
 
@@ -104,82 +104,123 @@ td {
     margin-top: 2px;
     
     &.SUCCEEDED {
-      background-color: #5cb85c;
+      background-color: @flow-succeeded-color;
     }
 
     &.FAILED {
-      background-color: #d9534f;
+      background-color: @flow-failed-color;
     }
     
     &.KILLED {
-      background-color: #d9534f;
+      background-color: @flow-killed-color;
     }
 
     &.PAUSED {
-      background-color: #c82123;
+      background-color: @flow-paused-color;
     }
 
     &.READY,
-    &.UNKNOWN {
-      background-color: #ccc;
+    &.UNKNOWN,
+    &.PREPARING {
+      background-color: @flow-default-color;
     }
 
     &.RUNNING {
-      background-color: #3398cc;	
+      background-color: @flow-running-color;
     }
 
     &.FAILED_FINISHING {
-      background-color: #f19153;	
+      background-color: @flow-failed-finishing-color;
     }
 
     &.DISABLED,
     &.SKIPPED {
-      background-color: #aaa;	
+      background-color: @flow-disabled-color;
     }
 
     &.CANCELLED {
-      background-color: #ff9999;
+      background-color: @flow-cancelled-color;
     }
   }
 }
 
 #flowStatus {
   &.SKIPPED {
-    color: #aaa;
+    color: @flow-disabled-color;
   }
 
   &.SUCCEEDED {
-    color: #4e911e;
+    color: @flow-succeeded-color;
   }
 
   &.RUNNING {
-    color: #009fc9;
+    color: @flow-running-color;
   }
 
   &.PAUSED {
-    color: #c92123;
+    color: @flow-paused-color;
   }
 
-  &.FAILED,
-  &.FAILED_FINISHING,
-  &.KILLED,
+  &.FAILED {
+    color: @flow-failed-color;
+  }
+
+  &.KILLED {
+    color: @flow-killed-color;
+  }
+
   &.CANCELLED {
-    color: #cc0000;
+    color: @flow-cancelled-color;
+  }
+
+  &.FAILED_FINISHING {
+    color: @flow-failed-finishing-color;
   }
 }
 
 .graph-sidebar {
+  height: 100%;
+  overflow-y: auto;
+
+  .graph-sidebar-list {
+    height: 100%;
+  }
+}
+
+.graph-sidebar-float {
   position: absolute;
   top: 0px;
   bottom: 0px;
+
+  .graph-sidebar-list {
+    overflow-y: auto;
+    height: calc(~"100% - 102px");
+  }
+
+  .panel {
+    height: 100%;
+    
+    .panel-heading {
+      padding-right: 10px;
+    }
+  }
 }
 
-#inputbox-panel {
+.graph-container {
+  height: 100%;
+
+  svg {
+    width: 100%;
+    height: 100%;
+  }
+}
+
+.graph-sidebar-search {
 	width: 206px;
 	margin: 0px;
 }
 
-#close-btn {
+.graph-sidebar-close {
 	float: right;
 	color: #CCC;
 	padding: 5px 0px;
@@ -190,15 +231,7 @@ td {
 	}
 }
 
-#joblist-panel {
-	height: 100%;
-	
-	.panel-heading {
-		padding-right: 10px;
-	}
-}
-
-#open-joblist-btn {
+.graph-sidebar-open {
 	position: absolute;
 	margin: 10px;
 	color: #CCC;
@@ -209,11 +242,6 @@ td {
 	}
 }
 
-// TODO: Rename this as #job-list
-#joblist {
-  overflow-y: auto;
-  height: calc(~"100% - 102px");
-}
 ul.tree-list {
   list-style-type: none;
   padding-left: 0px;

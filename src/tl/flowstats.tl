@@ -1,3 +1,25 @@
+      {?histogram}
+      <div class="row">
+        <div class="col-xs-12">
+          <div class="well well-clear well-sm">
+            <div id="job-histogram"></div>
+          </div>
+        </div>
+      </div>
+      {/histogram}
+
+      {?warnings}
+      <div class="alert alert-warning">
+        <h4>Warnings</h4>
+        <p>These stats may have reduced accuracy due to the following missing information:</p>
+        <ul>
+        {#warnings}
+          <li>{.}</li>
+        {/warnings}
+        </ul>
+      </div>
+      {/warnings}
+
       <div class="row">
         <div class="col-xs-12">
           <h4>Resources</h4>

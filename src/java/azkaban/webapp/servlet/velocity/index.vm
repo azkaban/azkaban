@@ -110,7 +110,7 @@
   #end
           </ul>
 #else
-          <div class="alert alert-default">
+          <div class="callout callout-default">
             <h4>No Viewable Projects</h4>
             <p>Click Create Project to create a new project.</p>
           </div>

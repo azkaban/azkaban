@@ -1,12 +1,12 @@
 /*
  * Copyright 2012 LinkedIn Corp.
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
  * the License at
- * 
+ *
  * http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
@@ -35,16 +35,16 @@ azkaban.StatusView = Backbone.View.extend({
 	},
 	render: function(evt) {
 		var data = this.model.get("data");
-		
+
 		var user = data.submitUser;
 		$("#submitUser").text(user);
-		
+
 		this.statusUpdate(evt);
 	},
-	
+
 	statusUpdate: function(evt) {
 		var data = this.model.get("data");
-		
+
 		statusItem = $("#flowStatus");
 		for (var j = 0; j < statusList.length; ++j) {
 			var status = statusList[j];
@@ -52,27 +52,27 @@ azkaban.StatusView = Backbone.View.extend({
 		}
 		$("#flowStatus").addClass(data.status);
 		$("#flowStatus").text(data.status);
-		
+
 		var startTime = data.startTime;
 		var endTime = data.endTime;
-		
+
 		if (!startTime || startTime == -1) {
 			$("#startTime").text("-");
 		}
 		else {
 			var date = new Date(startTime);
 			$("#startTime").text(getDateFormat(date));
-			
+
 			var lastTime = endTime;
 			if (endTime == -1) {
 				var currentDate = new Date();
 				lastTime = currentDate.getTime();
 			}
-			
+
 			var durationString = getDuration(startTime, lastTime);
 			$("#duration").text(durationString);
 		}
-		
+
 		if (!endTime || endTime == -1) {
 			$("#endTime").text("-");
 		}
@@ -96,17 +96,17 @@ azkaban.FlowTabView = Backbone.View.extend({
 		"click #resumebtn": "handleResumeClick",
 		"click #retrybtn": "handleRetryClick"
 	},
-	
+
 	initialize: function(settings) {
 		$("#cancelbtn").hide();
 		$("#executebtn").hide();
 		$("#pausebtn").hide();
 		$("#resumebtn").hide();
 		$("#retrybtn").hide();
-	
+
 		this.model.bind('change:graph', this.handleFlowStatusChange, this);
 		this.model.bind('change:update', this.handleFlowStatusChange, this);
-	
+
 		var selectedView = settings.selectedView;
 		if (selectedView == "jobslist") {
 			this.handleJobslistLinkClick();
@@ -115,60 +115,60 @@ azkaban.FlowTabView = Backbone.View.extend({
 			this.handleGraphLinkClick();
 		}
 	},
-	
+
 	render: function() {
 		console.log("render graph");
 	},
-	
+
 	handleGraphLinkClick: function(){
 		$("#jobslistViewLink").removeClass("active");
 		$("#graphViewLink").addClass("active");
 		$("#flowLogViewLink").removeClass("active");
 		$("#statsViewLink").removeClass("active");
-		
+
 		$("#jobListView").hide();
 		$("#graphView").show();
 		$("#flowLogView").hide();
 		$("#statsView").hide();
 	},
-	
+
 	handleJobslistLinkClick: function() {
 		$("#graphViewLink").removeClass("active");
 		$("#jobslistViewLink").addClass("active");
 		$("#flowLogViewLink").removeClass("active");
 		$("#statsViewLink").removeClass("active");
-		
+
 		$("#graphView").hide();
 		$("#jobListView").show();
 		$("#flowLogView").hide();
 		$("#statsView").hide();
 	},
-	
+
 	handleLogLinkClick: function() {
 		$("#graphViewLink").removeClass("active");
 		$("#jobslistViewLink").removeClass("active");
 		$("#flowLogViewLink").addClass("active");
 		$("#statsViewLink").removeClass("active");
-		
+
 		$("#graphView").hide();
 		$("#jobListView").hide();
 		$("#flowLogView").show();
 		$("#statsView").hide();
 	},
-	
+
   handleStatsLinkClick: function() {
 		$("#graphViewLink").removeClass("active");
 		$("#jobslistViewLink").removeClass("active");
 		$("#flowLogViewLink").removeClass("active");
 		$("#statsViewLink").addClass("active");
-		
+
 		$("#graphView").hide();
 		$("#jobListView").hide();
 		$("#flowLogView").hide();
     statsView.show();
 		$("#statsView").show();
 	},
-	
+
 	handleFlowStatusChange: function() {
 		var data = this.model.get("data");
 		$("#cancelbtn").hide();
@@ -203,7 +203,7 @@ azkaban.FlowTabView = Backbone.View.extend({
 			$("#executebtn").show();
 		}
 	},
-	
+
 	handleCancelClick: function(evt) {
 		var requestURL = contextURL + "/executor";
 		var requestData = {"execid": execId, "ajax": "cancelFlow"};
@@ -219,7 +219,7 @@ azkaban.FlowTabView = Backbone.View.extend({
 		};
 		ajaxCall(requestURL, requestData, successHandler);
 	},
-	
+
 	handleRetryClick: function(evt) {
 		var graphData = graphModel.get("data");
 		var requestURL = contextURL + "/executor";
@@ -236,11 +236,11 @@ azkaban.FlowTabView = Backbone.View.extend({
 		};
 		ajaxCall(requestURL, requestData, successHandler);
 	},
-	
+
 	handleRestartClick: function(evt) {
 		console.log("handleRestartClick");
 		var data = graphModel.get("data");
-		
+
 		var executingData = {
 			project: projectName,
 			ajax: "executeFlow",
@@ -250,7 +250,7 @@ azkaban.FlowTabView = Backbone.View.extend({
 		};
 		flowExecuteDialogView.show(executingData);
 	},
-	
+
 	handlePauseClick: function(evt) {
 		var requestURL = contextURL + "/executor";
 		var requestData = {"execid": execId, "ajax":"pauseFlow"};
@@ -266,7 +266,7 @@ azkaban.FlowTabView = Backbone.View.extend({
 		};
 		ajaxCall(requestURL, requestData, successHandler);
 	},
-	
+
 	handleResumeClick: function(evt) {
 		var requestURL = contextURL + "/executor";
 		var requestData = {"execid": execId, "ajax":"resumeFlow"};
@@ -304,17 +304,17 @@ azkaban.FlowLogView = Backbone.View.extend({
 	},
 	handleUpdate: function(evt) {
 		var offset = this.model.get("offset");
-		var requestURL = contextURL + "/executor"; 
+		var requestURL = contextURL + "/executor";
 		var model = this.model;
 		console.log("fetchLogs offset is " + offset)
 
 		$.ajax({
-			async: false, 
+			async: false,
 			url: requestURL,
 			data: {
-				"execid": execId, 
-				"ajax": "fetchExecFlowLogs", 
-				"offset": offset, 
+				"execid": execId,
+				"ajax": "fetchExecFlowLogs",
+				"offset": offset,
 				"length": 50000
 			},
 			success: function(data) {
@@ -346,7 +346,7 @@ var statsView;
 azkaban.StatsView = Backbone.View.extend({
 	events: {
 	},
-	
+
   initialize: function(settings) {
     this.model.bind('change:graph', this.statusUpdate, this);
     this.model.bind('change:update', this.statusUpdate, this);
@@ -385,22 +385,22 @@ var updateStatus = function(updateTime) {
 	var requestURL = contextURL + "/executor";
 	var oldData = graphModel.get("data");
 	var nodeMap = graphModel.get("nodeMap");
-	
+
 	if (!updateTime) {
 		updateTime = oldData.updateTime ? oldData.updateTime : 0;
 	}
 
 	var requestData = {
-		"execid": execId, 
-		"ajax": "fetchexecflowupdate", 
+		"execid": execId,
+		"ajax": "fetchexecflowupdate",
 		"lastUpdateTime": updateTime
 	};
-	
+
 	var successHandler = function(data) {
 		console.log("data updated");
 		if (data.updateTime) {
 			updateGraph(oldData, data);
-	
+
 			graphModel.set({"update": data});
 			graphModel.trigger("change:update");
 		}
@@ -415,12 +415,12 @@ var updateGraph = function(data, update) {
 	data.updateTime = update.updateTime;
 	data.status = update.status;
 	update.changedNode = data;
-	
+
 	if (update.nodes) {
 		for (var i = 0; i < update.nodes.length; ++i) {
 			var newNode = update.nodes[i];
 			var oldNode = nodeMap[newNode.id];
-			
+
 			updateGraph(oldNode, newNode);
 		}
 	}
@@ -429,17 +429,17 @@ var updateGraph = function(data, update) {
 var updateTime = -1;
 var updaterFunction = function() {
 	var oldData = graphModel.get("data");
-	var keepRunning = 
-			oldData.status != "SUCCEEDED" && 
-			oldData.status != "FAILED" && 
+	var keepRunning =
+			oldData.status != "SUCCEEDED" &&
+			oldData.status != "FAILED" &&
 			oldData.status != "KILLED";
 
 	if (keepRunning) {
 		updateStatus();
 
 		var data = graphModel.get("data");
-		if (data.status == "UNKNOWN" || 
-			data.status == "WAITING" || 
+		if (data.status == "UNKNOWN" ||
+			data.status == "WAITING" ||
 			data.status == "PREPARING") {
 			setTimeout(function() {updaterFunction();}, 1000);
 		}
@@ -459,9 +459,9 @@ var updaterFunction = function() {
 
 var logUpdaterFunction = function() {
 	var oldData = graphModel.get("data");
-	var keepRunning = 
-			oldData.status != "SUCCEEDED" && 
-			oldData.status != "FAILED" && 
+	var keepRunning =
+			oldData.status != "SUCCEEDED" &&
+			oldData.status != "FAILED" &&
 			oldData.status != "KILLED";
 	if (keepRunning) {
 		// update every 30 seconds for the logs until finished
@@ -479,7 +479,7 @@ var exNodeClickCallback = function(event) {
 	var requestURL = contextURL + "/manager?project=" + projectName + "&flow=" + flowId + "&job=" + jobId;
 	var visualizerURL = contextURL + "/pigvisualizer?execid=" + execId + "&jobid=" + jobId;
 
-	var menu = [	
+	var menu = [
 		{title: "Open Job...", callback: function() {window.location.href = requestURL;}},
 		{title: "Open Job in New Window...", callback: function() {window.open(requestURL);}},
 		{title: "Visualize Job...", callback: function() {window.location.href = visualizerURL;}}
@@ -494,7 +494,7 @@ var exJobClickCallback = function(event) {
 	var requestURL = contextURL + "/manager?project=" + projectName + "&flow=" + flowId + "&job=" + jobId;
 	var visualizerURL = contextURL + "/pigvisualizer?execid=" + execId + "&jobid=" + jobId;
 
-	var menu = [	
+	var menu = [
 		{title: "Open Job...", callback: function() {window.location.href = requestURL;}},
 		{title: "Open Job in New Window...", callback: function() {window.open(requestURL);}},
 		{title: "Visualize Job...", callback: function() {window.location.href = visualizerURL;}}
@@ -511,13 +511,13 @@ var exGraphClickCallback = function(event) {
 	console.log("Graph clicked callback");
 	var requestURL = contextURL + "/manager?project=" + projectName + "&flow=" + flowId;
 
-	var menu = [	
+	var menu = [
 		{title: "Open Flow...", callback: function() {window.location.href=requestURL;}},
 		{title: "Open Flow in New Window...", callback: function() {window.open(requestURL);}},
 		{break: 1},
 		{title: "Center Graph", callback: function() {graphModel.trigger("resetPanZoom");}}
 	];
-	
+
 	contextMenuView.show(event, menu);
 }
 
@@ -526,68 +526,69 @@ var flowStatsModel;
 
 $(function() {
 	var selected;
-	
+
 	graphModel = new azkaban.GraphModel();
 	logModel = new azkaban.LogModel();
-	
+
 	flowTabView = new azkaban.FlowTabView({
-		el: $('#headertabs'), 
+		el: $('#headertabs'),
 		model: graphModel
 	});
-	
+
 	mainSvgGraphView = new azkaban.SvgGraphView({
-		el: $('#svgDiv'), 
-		model: graphModel, 
-		rightClick:	{ 
-			"node": nodeClickCallback, 
-			"edge": edgeClickCallback, 
-			"graph": graphClickCallback 
+		el: $('#svgDiv'),
+		model: graphModel,
+		rightClick:	{
+			"node": nodeClickCallback,
+			"edge": edgeClickCallback,
+			"graph": graphClickCallback
 		}
 	});
-	
+
 	jobsListView = new azkaban.JobListView({
-		el: $('#joblist-panel'), 
-		model: graphModel, 
+		el: $('#joblist-panel'),
+		model: graphModel,
 		contextMenuCallback: jobClickCallback
 	});
-	
+
 	flowLogView = new azkaban.FlowLogView({
-		el: $('#flowLogView'), 
+		el: $('#flowLogView'),
 		model: logModel
 	});
-	
+
 	statusView = new azkaban.StatusView({
-		el: $('#flow-status'), 
+		el: $('#flow-status'),
 		model: graphModel
 	});
-  
+
   flowStatsModel = new azkaban.FlowStatsModel();
 	flowStatsView = new azkaban.FlowStatsView({
 		el: $('#flow-stats-container'),
-		model: flowStatsModel
+		model: flowStatsModel,
+    histogram: false
 	});
 
   statsView = new azkaban.StatsView({
-		el: $('#statsView'), 
+		el: $('#statsView'),
 		model: graphModel
 	});
-	
+
 	executionListView = new azkaban.ExecutionListView({
-		el: $('#jobListView'), 
+		el: $('#jobListView'),
 		model: graphModel
 	});
-	
+
 	var requestURL = contextURL + "/executor";
 	var requestData = {"execid": execId, "ajax":"fetchexecflow"};
 	var successHandler = function(data) {
 		console.log("data fetched");
 		graphModel.addFlow(data);
 		graphModel.trigger("change:graph");
-		
+
 		updateTime = Math.max(updateTime, data.submitTime);
 		updateTime = Math.max(updateTime, data.startTime);
 		updateTime = Math.max(updateTime, data.endTime);
-		
+
 		if (window.location.hash) {
 			var hash = window.location.hash;
 			if (hash == "#jobslist") {
