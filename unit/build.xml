@@ -1,124 +1,132 @@
 <?xml version="1.0"?>
 
 <project name="azkaban-testjob" basedir="." default="all">
-	<property name="base.dir" value="${basedir}/.." />
-	<property name="dist.jar.dir" value="${base.dir}/dist/unit/jars" />
-	<property name="dist.classes.dir" value="${base.dir}/dist/unit/classes" />
-	<property name="dist.packages.dir" value="${base.dir}/dist/unit/packages" />
+  <property name="base.dir" value="${basedir}/.." />
+  <property name="dist.jar.dir" value="${base.dir}/dist/unit/jars" />
+  <property name="dist.classes.dir" value="${base.dir}/dist/unit/classes" />
+  <property name="dist.packages.dir" value="${base.dir}/dist/unit/packages" />
 
-	<property name="java.src.dir" value="${base.dir}/unit/java" />
-	<property name="job.conf.dir" value="${base.dir}/unit/executions" />
-  <property name="build.ivy.lib.dir" location="../build/ivy/lib" />
-  <property name="build.jar.dir" location="../dist/jars" />
+  <property name="java.src.dir" value="${base.dir}/unit/java" />
+  <property name="job.conf.dir" value="${base.dir}/unit/executions" />
+  <property name="build.ivy.lib.dir" location="${base.dir}/build/ivy/lib" />
+  <property name="build.jar.dir" location="${base.dir}/dist/jars" />
   <property name="test.output.dir" location="${base.dir}/reports" />
 
-	<property environment="env" />
+  <property environment="env" />
 
-	<path id="main.classpath">
+  <path id="main.classpath">
     <fileset dir="${build.ivy.lib.dir}">
-			<include name="*.jar" />
-		</fileset>
+      <include name="*.jar" />
+    </fileset>
     <fileset dir="${build.jar.dir}">
-			<include name="*.jar" />
-		</fileset>
-	</path>
+      <include name="*.jar" />
+    </fileset>
+  </path>
 
-	<!-- set the build number based on environment variable, otherwise blank -->
-	<property environment="env" description="System environment variables (including those set by Hudson)" />
+  <!-- set the build number based on environment variable, otherwise blank -->
+  <property environment="env" description="System environment variables (including those set by Hudson)" />
 
-	<target name="all" depends="clean, test" description="Builds and packages" />
+  <target name="all" depends="clean, test" description="Builds and packages" />
 
-	<target name="clean" description="Delete generated files.">
-		<echo message="Deleting generated files in dist" />
-		<delete dir="${dist.jar.dir}" />
-		<delete dir="${dist.classes.dir}" />
-		<delete dir="${dist.packages.dir}" />
-		<delete dir="${test.output.dir}" />
-	</target>
+  <target name="clean" description="Delete generated files.">
+    <echo message="Deleting generated files in dist" />
+    <delete dir="${dist.jar.dir}" />
+    <delete dir="${dist.classes.dir}" />
+    <delete dir="${dist.packages.dir}" />
+    <delete dir="${test.output.dir}" />
+    <delete dir="${base.dir}/h2dbtest" />
+    <delete dir="${base.dir}/temp" />
+    <delete>
+      <fileset dir="${base.dir}">
+        <include name="azkaban-*.log" />
+        <include name="TestProcess_*" />
+      </fileset>
+    </delete>
+  </target>
 
-	<target name="build" description="Compile main source tree java files">
-		<delete dir="${dist.classes.dir}" />
-		<mkdir dir="${dist.classes.dir}" />
-		<mkdir dir="${dist.packages.dir}" />
+  <target name="build" description="Compile main source tree java files">
+    <delete dir="${dist.classes.dir}" />
+    <mkdir dir="${dist.classes.dir}" />
+    <mkdir dir="${dist.packages.dir}" />
 
     <javac fork="true" destdir="${dist.classes.dir}"
       target="1.6" debug="true" deprecation="false" failonerror="true">
       <src path="${java.src.dir}" />
       <classpath refid="main.classpath" />
     </javac>
-	</target>
+  </target>
 
-	<target name="jars" depends="build" description="Create azkaban jar">
-		<delete dir="${dist.jar.dir}" />
-		<mkdir dir="${dist.jar.dir}" />
-		<jar destfile="${dist.jar.dir}/test.jar">
-			<fileset dir="${dist.classes.dir}">
-				<include name="**/*.*" />
-			</fileset>
-		</jar>
-	</target>
+  <target name="jars" depends="build" description="Create azkaban jar">
+    <delete dir="${dist.jar.dir}" />
+    <mkdir dir="${dist.jar.dir}" />
+    <jar destfile="${dist.jar.dir}/test.jar">
+      <fileset dir="${dist.classes.dir}">
+        <include name="**/*.*" />
+      </fileset>
+    </jar>
+  </target>
 
-	<target name="package-exectest1" depends="jars" description="Creates a test zip">
-		<!-- Tarball it -->
-		<zip destfile="${dist.packages.dir}/exectest1.zip">
-			<zipfileset dir="${dist.jar.dir}" />
+  <target name="package-exectest1" depends="jars" description="Creates a test zip">
+    <!-- Tarball it -->
+    <zip destfile="${dist.packages.dir}/exectest1.zip">
+      <zipfileset dir="${dist.jar.dir}" />
       <zipfileset dir="${job.conf.dir}/exectest1" />
-		</zip>
-	</target>
+    </zip>
+  </target>
 
-	<target name="package-exectest2" depends="jars" description="Creates a test zip">
-		<!-- Tarball it -->
-		<zip destfile="${dist.packages.dir}/exectest2.zip">
-			<zipfileset dir="${dist.jar.dir}" />
+  <target name="package-exectest2" depends="jars" description="Creates a test zip">
+    <!-- Tarball it -->
+    <zip destfile="${dist.packages.dir}/exectest2.zip">
+      <zipfileset dir="${dist.jar.dir}" />
       <zipfileset dir="${job.conf.dir}/exectest2" />
-		</zip>
-	</target>
+    </zip>
+  </target>
 
-	<target name="package-animal" depends="jars" description="Creates a test zip">
-		<!-- Tarball it -->
-		<zip destfile="${dist.packages.dir}/animal.zip">
-			<zipfileset dir="${dist.jar.dir}" />
+  <target name="package-animal" depends="jars" description="Creates a test zip">
+    <!-- Tarball it -->
+    <zip destfile="${dist.packages.dir}/animal.zip">
+      <zipfileset dir="${dist.jar.dir}" />
       <zipfileset dir="${job.conf.dir}/animal" />
-		</zip>
-	</target>
+    </zip>
+  </target>
 
-	<target name="package-embedded" depends="jars" description="Creates a test zip">
-		<!-- Tarball it -->
-		<zip destfile="${dist.packages.dir}/embedded.zip">
-			<zipfileset dir="${dist.jar.dir}" />
+  <target name="package-embedded" depends="jars" description="Creates a test zip">
+    <!-- Tarball it -->
+    <zip destfile="${dist.packages.dir}/embedded.zip">
+      <zipfileset dir="${dist.jar.dir}" />
       <zipfileset dir="${job.conf.dir}/embedded" />
-		</zip>
-	</target>
+    </zip>
+  </target>
 
-	<target name="package-embedded2" depends="jars" description="Creates a test zip">
-		<!-- Tarball it -->
-		<zip destfile="${dist.packages.dir}/embedded2.zip">
-			<zipfileset dir="${dist.jar.dir}" />
+  <target name="package-embedded2" depends="jars" description="Creates a test zip">
+    <!-- Tarball it -->
+    <zip destfile="${dist.packages.dir}/embedded2.zip">
+      <zipfileset dir="${dist.jar.dir}" />
       <zipfileset dir="${job.conf.dir}/embedded2" />
-		</zip>
+    </zip>
   </target>
 
   <target name="package-embedded3" depends="jars" description="Creates a test zip">
-		<!-- Tarball it -->
-		<zip destfile="${dist.packages.dir}/embedded3.zip">
-			<zipfileset dir="${dist.jar.dir}" />
+    <!-- Tarball it -->
+    <zip destfile="${dist.packages.dir}/embedded3.zip">
+      <zipfileset dir="${dist.jar.dir}" />
       <zipfileset dir="${job.conf.dir}/embedded3" />
-		</zip>
+    </zip>
   </target>
 
   <target name="package-embeddedBad" depends="jars" description="Creates a test zip">
-		<!-- Tarball it -->
-		<zip destfile="${dist.packages.dir}/embeddedBad.zip">
-			<zipfileset dir="${dist.jar.dir}" />
+    <!-- Tarball it -->
+    <zip destfile="${dist.packages.dir}/embeddedBad.zip">
+      <zipfileset dir="${dist.jar.dir}" />
       <zipfileset dir="${job.conf.dir}/embeddedBad" />
-		</zip>
+    </zip>
   </target>
 
   <target name="package" depends="package-exectest1, package-exectest2, package-animal, package-embedded, package-embedded2, package-embedded3, package-embeddedBad" description="Creates all packages">
   </target>
 
   <target name="test-junit" depends="package" description="Runs JUnit tests.">
-		<mkdir dir="${test.output.dir}" />
+    <mkdir dir="${test.output.dir}" />
     <junit failureProperty="test.failure" fork="yes" forkmode="once">
       <classpath>
         <fileset dir="${build.ivy.lib.dir}">
