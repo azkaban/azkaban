@@ -39,9 +39,9 @@ public class Edge {
 	}
 
 	public Edge(Edge clone) {
-		this.sourceId = clone.sourceId;
-		this.targetId = clone.targetId;
-		this.error = clone.error;
+		this.sourceId = clone.getSourceId();
+		this.targetId = clone.getTargetId();
+		this.error = clone.getError();
 	}
 	
 	public String getId() {
@@ -101,7 +101,7 @@ public class Edge {
 		HashMap<String, Object> obj = new HashMap<String, Object>();
 		obj.put("source", getSourceId());
 		obj.put("target", getTargetId());
-		if (error != null) {
+		if (hasError()) {
 			obj.put("error", error);
 		}
 		if (guideValues != null) {
