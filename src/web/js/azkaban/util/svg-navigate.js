@@ -59,12 +59,10 @@
 	}
 
 	var mouseDrag = function(evt) {
-		// alert("mouseDragged ");
 		translateDeltaGraph(evt.target, evt.dragX, evt.dragY);
 	}
 	
 	var mouseScrolled = function(evt) {
-		// alert("scroll");
 		if (!evt) {
 			evt = window.event;
 		}
@@ -156,7 +154,7 @@
 		var transformString = "translate(" + target.translateX + "," + target.translateY + 
 							  ") scale(" + target.scale + ")";
 
-		for ( var i = 0; i < gs.length; ++i) {
+		for (var i = 0; i < gs.length; ++i) {
 			var g = gs[i];
 			if (g.nodeName == 'g') {
 				g.setAttribute("transform", transformString);
@@ -199,7 +197,8 @@
 							? (divHeight / height) * factor 
 							: (divWidth / width) * factor;
 			target.scale = scale;
-		} else {
+		}
+		else {
 			target.zoomIndex = boundZoomLevel(target, settings.zoomIndex);
 			target.scale = target.zoomLevels[target.zoomIndex];
 		}
@@ -307,9 +306,9 @@
 				this.settings = settings;
 				this.marker = true;
 
-				if (window.addEventListener)
-					this.addEventListener('DOMMouseScroll', mouseScrolled,
-							false);
+				if (window.addEventListener) {
+					this.addEventListener('DOMMouseScroll', mouseScrolled,false);
+				}
 				this.onmousewheel = mouseScrolled;
 				this.onmousedown = mouseDown;
 				this.onmouseup = mouseUp;
@@ -318,8 +317,7 @@
 
 				this.zoomLevels = new Array(settings.zoomNumLevels);
 				for ( var i = 0; i < settings.zoomNumLevels; ++i) {
-					var scale = calculateZoomScale(i, settings.zoomNumLevels,
-							settings.zoomPoints);
+					var scale = calculateZoomScale(i, settings.zoomNumLevels, settings.zoomPoints);
 					this.zoomLevels[i] = scale;
 				}
 				resetTransform(this);
@@ -342,8 +340,9 @@
 			var aspectRatioGraph = height / width;
 			var aspectRatioDiv = divHeight / divWidth;
 
-			var scale = aspectRatioGraph > aspectRatioDiv ? (divHeight / height) * factor
-					: (divWidth / width) * factor;
+			var scale = aspectRatioGraph > aspectRatioDiv 
+							? (divHeight / height) * factor
+							: (divWidth / width) * factor;
 
 			if (arguments.maxScale) {
 				if (scale > arguments.maxScale) {
