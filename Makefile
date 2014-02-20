@@ -14,6 +14,7 @@ azkaban_css_DEPS = \
 	less/feature.less \
 	less/sidebar.less \
 	less/callout.less \
+	less/team.less \
 	less/custom.less
 
 css/azkaban.css: $(azkaban_css_DEPS)

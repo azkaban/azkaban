@@ -203,6 +203,7 @@
 .az-page-header h1 {
   font-size: 32px;
   margin-bottom: 5px;
+  font-weight: 300;
 }
 .az-page-header .az-page-header-form {
   margin-top: 20px;
@@ -460,6 +461,35 @@ ul.footer-nav li a:hover {
 }
 .bs-callout-info h4 {
   color: #34789a;
+}
+/*
+ * Team members
+ *
+ * Avatars, names, and usernames for core team.
+ */
+.github-btn {
+  border: 0;
+  overflow: hidden;
+}
+.az-team .team-member {
+  color: #555;
+  line-height: 32px;
+}
+.az-team .team-member:hover {
+  color: #333;
+  text-decoration: none;
+}
+.az-team .github-btn {
+  float: right;
+  margin-top: 6px;
+  width: 180px;
+  height: 20px;
+}
+.az-team img {
+  float: left;
+  width: 32px;
+  margin-right: 10px;
+  border-radius: 4px;
 }
 .navbar-enviro .navbar-enviro-name {
   color: #ff3601;
