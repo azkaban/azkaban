@@ -23,13 +23,13 @@ command=echo "Hello World"
 <p>A flow is a set of jobs that depends on one another. The dependencies of a job always run before the job itself can run. To add dependencies to a job, add the <code>dependencies</code> property as shown in the following example.</p>
 
 <pre class="code">
-#foo.job
+# foo.job
 type=command
 command=echo foo
 </pre>
 
 <pre class="code">
-#bar.job
+# bar.job
 type=command
 dependencies=foo
 command=echo bar
@@ -38,6 +38,26 @@ command=echo bar
 <p>The <code>dependencies</code> parameter takes a comma separated list of job names. Make sure that the job names exist and that there are no cyclical dependencies.</p>
 
 <p>A flow is created for every job that has no job dependent on it, and the flow is given the same name as the job. For instance, in the above example, <code>bar</code> depends on <code>foo</code>, but nothing depends on <code>bar</code>. So a flow will be created with the name <code>bar</code>.</p>
+
+<h3>Embedded Flows</h3>
+
+<div class="row">
+  <div class="col-md-6 col-md-offset-3">
+    <a href="./images/embedded-flow.png" data-lightbox="embedded-flow" title="Embedded flows">
+      <img src="./images/embedded-flow.png" class="img-thumbnail img-figure" alt="Embedded flow" width="400" />
+    </a>
+  </div>
+</div>
+
+<p>A flow can also be included as a node in other flow as an <strong>embedded flow</strong>. To create an embedded flow, simply create a <code>.job</code> file with <code>type=flow</code> and <code>flow.name</code> set to the name of the name of the flow. For example:</p>
+
+<pre class="code">
+# baz.job
+type=flow
+flow.name=bar
+</pre>
+
+<p>This also allows one to include the same flow multiple times but with different settings for each by adding parameters to each embedded flow's <code>.job</code> file.</p>
 
 <h3>Uploading Flows</h3>
 
