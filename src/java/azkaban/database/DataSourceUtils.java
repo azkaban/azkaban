@@ -124,7 +124,7 @@ public class DataSourceUtils {
 		private MySQLBasicDataSource(String host, int port, String dbName, String user, String password, int numConnections) {
 			super();
 			
-			String url = "jdbc:mysql://" + (host + ":" + port + "/" + dbName+"?useUnicode=yes&characterEncoding=UTF-8");
+			String url = "jdbc:mysql://" + (host + ":" + port + "/" + dbName + "?useUnicode=yes&characterEncoding=UTF-8");
 			setDriverClassName("com.mysql.jdbc.Driver");
 			setUsername(user);
 			setPassword(password);
