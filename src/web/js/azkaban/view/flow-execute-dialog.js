@@ -139,11 +139,11 @@ azkaban.FlowExecuteDialogView = Backbone.View.extend({
 			$('#failure-emails').val(failureEmails.join());
 		}
 		if (failureActions) {
-      $('#failure-action').val(failureActions);
+			$('#failure-action').val(failureActions);
 		}
 
 		if (notifyFailure.first) {
-      $('#notify-failure-first').attr('checked', true);
+			$('#notify-failure-first').attr('checked', true);
 			$('#notify-failure-first').parent('.btn').addClass('active');
 		}
 		if (notifyFailure.last) {
