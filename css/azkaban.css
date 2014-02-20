@@ -89,6 +89,9 @@
 .state-icon.state-icon-wait {
   background-position: -64px -80px;
 }
+.img-figure {
+  margin: 10px 0px;
+}
 .navbar-logo {
   float: left;
   padding: 15px 15px;

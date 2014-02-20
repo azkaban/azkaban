@@ -41,15 +41,23 @@ command=echo bar
 
 <h3>Embedded Flows</h3>
 
-<img src="./images/embedded-flow.png" class="img-thumbnail" alt="Embedded flow" />
+<div class="row">
+  <div class="col-md-6 col-md-offset-3">
+    <a href="./images/embedded-flow.png" data-lightbox="embedded-flow" title="Embedded flows">
+      <img src="./images/embedded-flow.png" class="img-thumbnail img-figure" alt="Embedded flow" width="400" />
+    </a>
+  </div>
+</div>
 
-<p>A flow can also be included in other flows</p>
+<p>A flow can also be included as a node in other flow as an <strong>embedded flow</strong>. To create an embedded flow, simply create a <code>.job</code> file with <code>type=flow</code> and <code>flow.name</code> set to the name of the name of the flow. For example:</p>
 
 <pre class="code">
 # baz.job
 type=flow
 flow.name=bar
 </pre>
+
+<p>This also allows one to include the same flow multiple times but with different settings for each by adding parameters to each embedded flow's <code>.job</code> file.</p>
 
 <h3>Uploading Flows</h3>
 
