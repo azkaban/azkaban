@@ -1,0 +1,55 @@
+<h2 id='azkaban-webserver'>Azkaban Web Server Configurations</h2>
+
+<p>These are properties to configure the web server. They can be set in <em>azkaban.properties</em>.</p>
+
+<h3 id='general_properties'>General Properties</h3>
+<table class='params'><thead><tr><th class='parameter'>Parameter</th><th class='description'> Description</th><th class='default'>Default</th></tr></thead><tbody><tr><td style='text-align: left;'>azkaban.name</td><td style='text-align: left;'>The name of the azkaban instance that will show up in the UI. Useful if you run more than one Azkaban instance.</td><td style='text-align: left;'>Local</td>
+</tr><tr><td style='text-align: left;'>azkaban.label</td><td style='text-align: left;'>A label to describe the Azkaban instance.</td><td style='text-align: left;'>My Local Azkaban</td>
+</tr><tr><td style='text-align: left;'>azkaban.color</td><td style='text-align: left;'>Hex value that allows you to set a style color for the Azkaban UI.</td><td style='text-align: left;'>#FF3601</td>
+</tr><tr><td style='text-align: left;'>web.resource.dir</td><td style='text-align: left;'>Sets the directory for the ui’s css and javascript files.</td><td style='text-align: left;'>web/</td>
+</tr><tr><td style='text-align: left;'>default.timezone</td><td style='text-align: left;'>The timezone that will be displayed by Azkaban.</td><td style='text-align: left;'>America/Los_Angeles</td>
+</tr><tr><td style='text-align: left;'>viewer.plugin.dir</td><td style='text-align: left;'>Directory where viewer plugins are installed.</td><td style='text-align: left;'>plugins/viewer</td>
+</tr></tbody></table>
+<h3 id='jetty_parameter'>Jetty Parameter</h3>
+<table class='params'><thead><tr><th class='parameter'>Parameter</th><th class='description'> Description</th><th class='default'>Default</th></tr></thead><tbody><tr><td style='text-align: left;'>jetty.maxThreads</td><td style='text-align: left;'>Max request threads</td><td style='text-align: left;'>25</td>
+</tr><tr><td style='text-align: left;'>jetty.ssl.port</td><td style='text-align: left;'>The ssl port</td><td style='text-align: left;'>8443</td>
+</tr><tr><td style='text-align: left;'>jetty.keystore</td><td style='text-align: left;'>The keystore file</td><td style='text-align: left;' />
+</tr><tr><td style='text-align: left;'>jetty.password</td><td style='text-align: left;'>The jetty password</td><td style='text-align: left;' />
+</tr><tr><td style='text-align: left;'>jetty.keypassword</td><td style='text-align: left;'>The keypassword</td><td style='text-align: left;' />
+</tr><tr><td style='text-align: left;'>jetty.truststore</td><td style='text-align: left;'>The trust store</td><td style='text-align: left;' />
+</tr><tr><td style='text-align: left;'>jetty.trustpassword</td><td style='text-align: left;'>The trust password</td><td style='text-align: left;' />
+</tr></tbody></table>
+<h3 id='project_manager_settings'>Project Manager Settings</h3>
+<table class='params'><thead><tr><th class='parameter'>Parameter</th><th class='description'> Description</th><th class='default'>Default</th></tr></thead><tbody><tr><td style='text-align: left;'>project.temp.dir</td><td style='text-align: left;'>The temporary directory used when uploading projects</td><td style='text-align: left;'>temp</td>
+</tr><tr><td style='text-align: left;'>project.version.retention</td><td style='text-align: left;'>The number of unused project versions retained before cleaning</td><td style='text-align: left;'>3</td>
+</tr><tr><td style='text-align: left;'>creator.default.proxy</td><td style='text-align: left;'>Auto add the creator of the projects as a proxy user to the project.</td><td style='text-align: left;'>true</td>
+</tr><tr><td style='text-align: left;'>lockdown.create.projects</td><td style='text-align: left;'>Prevents anyone except those with Admin roles to create new projects.</td><td style='text-align: left;'>false</td>
+</tr></tbody></table>
+<h3 id='mysql_connection_parameter'>MySQL Connection Parameter</h3>
+<table class='params'><thead><tr><th class='parameter'>Parameter</th><th class='description'> Description</th><th class='default'>Default</th></tr></thead><tbody><tr><td style='text-align: left;'>database.type</td><td style='text-align: left;'>The database type. Currently, the only database supported is mysql.</td><td style='text-align: left;'>mysql</td>
+</tr><tr><td style='text-align: left;'>mysql.port</td><td style='text-align: left;'>The port to the mysql db</td><td style='text-align: left;'>3306</td>
+</tr><tr><td style='text-align: left;'>mysql.host</td><td style='text-align: left;'>The mysql host</td><td style='text-align: left;'>localhost</td>
+</tr><tr><td style='text-align: left;'>mysql.database</td><td style='text-align: left;'>The mysql database</td><td style='text-align: left;' />
+</tr><tr><td style='text-align: left;'>mysql.user</td><td style='text-align: left;'>The mysql user</td><td style='text-align: left;' />
+</tr><tr><td style='text-align: left;'>mysql.password</td><td style='text-align: left;'>The mysql password</td><td style='text-align: left;' />
+</tr><tr><td style='text-align: left;'>mysql.numconnections</td><td style='text-align: left;'>The number of connections that Azkaban web client can open to the database</td><td style='text-align: left;'>100</td>
+</tr></tbody></table>
+<h3 id='executor_manager_properties'>Executor Manager Properties</h3>
+<table class='params'><thead><tr><th class='parameter'>Parameter</th><th class='description'> Description</th><th class='default'>Default</th></tr></thead><tbody><tr><td style='text-align: left;'>executor.port</td><td style='text-align: left;'>The port for the azkaban executor server</td><td style='text-align: left;'>12321</td>
+</tr><tr><td style='text-align: left;'>executor.host</td><td style='text-align: left;'>The host for azkaban executor server</td><td style='text-align: left;'>localhost</td>
+</tr><tr><td style='text-align: left;'>execution.logs.retention.ms</td><td style='text-align: left;'>Time in milliseconds that execution logs are retained</td><td style='text-align: left;'>7257600000L (12 weeks)</td>
+</tr></tbody></table>
+<h3 id='notification_email_properties'>Notification Email Properties</h3>
+<table class='params'><thead><tr><th class='parameter'>Parameter</th><th class='description'> Description</th><th class='default'>Default</th></tr></thead><tbody><tr><td style='text-align: left;'>mail.sender</td><td style='text-align: left;'>The email address that azkaban uses to send emails.</td><td style='text-align: left;' />
+</tr><tr><td style='text-align: left;'>mail.host</td><td style='text-align: left;'>The email server host machine.</td><td style='text-align: left;' />
+</tr><tr><td style='text-align: left;'>mail.user</td><td style='text-align: left;'>The email server user name.</td><td style='text-align: left;' />
+</tr><tr><td style='text-align: left;'>mail.password</td><td style='text-align: left;'>The email password user name.</td><td style='text-align: left;' />
+</tr></tbody></table>
+<h3 id='user_manager_properties'>User Manager Properties</h3>
+<table class='params'><thead><tr><th class='parameter'>Parameter</th><th class='description'> Description</th><th class='default'>Default</th></tr></thead><tbody><tr><td style='text-align: left;'>user.manager.class</td><td style='text-align: left;'>The user manager that is used to authenticate a user. The default is an XML user manager, but it can be overwritten to support other authentication methods, such as JDNI.</td><td style='text-align: left;'>azkaban.user.XmlUserManager</td>
+</tr><tr><td style='text-align: left;'>user.manager.xml.file</td><td style='text-align: left;'>Xml file for the XmlUserManager</td><td style='text-align: left;'>conf/azkaban-users.xml</td>
+</tr></tbody></table>
+<h3 id='user_session_properties'>User Session Properties</h3>
+<table class='params'><thead><tr><th class='parameter'>Parameter</th><th class='description'> Description</th><th class='default'>Default</th></tr></thead><tbody><tr><td style='text-align: left;'>session.time.to.live</td><td style='text-align: left;'>The session time to live in ms seconds</td><td style='text-align: left;'>86400000</td>
+</tr><tr><td style='text-align: left;'>max.num.sessions</td><td style='text-align: left;'>The maximum number of sessions before people are evicted.</td><td style='text-align: left;'>10000</td>
+</tr></tbody></table>

@@ -1,20 +1,65 @@
-<html>
+<!DOCTYPE html> 
+<html lang="en">
 	<head>
+		<meta charset="utf-8">
+		<title>{{ page.title }}</title>
+
 		{% include includes.html %}
 	</head>
-	<body>
-		<div id="block">
-			{% include header.html %}
-			
-			<div id="main">
-				<div id="navigation">
-					{% include documentsnav.html %}
-				</div>
-				<div id="content">
-					<h1>{{page.title}}</h1>
-					{{ content }}
+	<body data-spy="scroll" data-target=".bs-sidebar">
+		{% include header-documents.html %}
+
+		<div class="az-page-header">
+			<div class="container">
+				<div class="row">
+					<div class="col-lg-12">
+						<h1>{{ page.title }}</h1>
+					</div>
 				</div>
 			</div>
 		</div>
+
+		<div class="container">
+			<div class="row">
+			{% if page.sidebar %}
+				{% capture sidebar_path %}docs/{{ page.sidebar }}/sidebar.html{% endcapture %}
+				<div class="col-md-3">
+					{% include {{sidebar_path}} %}
+				</div>
+				<div class="col-md-9">
+					{{ content }}
+				</div>
+			{% else %}
+				<div class="col-lg-12">
+					{{ content }}
+				</div>
+			{% endif %}
+			</div>
+		</div>
+
+    {% include footer.html %}
+
+		<script>
+			$(function(){
+				setTimeout(function () {
+					var $sideBar = $('.bs-sidebar')
+					$sideBar.affix({
+						offset: {
+							top: function () {
+								var navOuterHeight = $('.navbar').height();
+								var headerHeight = $('.az-page-header').height();
+
+								return (this.top = navOuterHeight + headerHeight);
+							},
+							bottom: function () {
+								return (this.bottom = $('.page-footer').outerHeight(true));
+							}
+						}
+					});
+				}, 100)
+			});
+		</script>
+
 	</body>
 </html>
+

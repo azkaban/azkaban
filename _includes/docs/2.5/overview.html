@@ -1,0 +1,57 @@
+<div class="page-header">
+  <h1 id="overview">Overview</h1>
+</div>
+
+<p>Azkaban was implemented at LinkedIn to solve the problem of Hadoop job dependencies. We had jobs that needed to run in order, from ETL jobs to data analytics products.</p>
+
+<p>Initially a single server solution, with the increased number of Hadoop users over the years, Azkaban has evolved to be a more robust solution.</p>
+
+<p>Azkaban consists of 3 key components:</p>
+
+<ul>
+  <li>Relational Database (MySQL)</li>
+  <li>AzkabanWebServer</li>
+  <li>AzkabanExecutorServer</li>
+</ul>
+
+<img title="Azkaban Overview" src="./images/azkaban2overviewdesign.png" alt="Azkaban Overview" width="500" />
+
+<h3>Relational Database (MySQL)</h3>
+
+<p>Azkaban uses MySQL to store much of its state. Both the AzkabanWebServer and the AzkabanExecutorServer access the DB.</p>
+
+<h4>How does AzkabanWebServer use the DB?</h4>
+
+<p>The web server uses the db for the following reasons:</p>
+
+<ul>
+  <li><strong>Project Management</strong> - The projects, the permissions on the projects as well as the uploaded files.</li>
+  <li><strong>Executing Flow State</strong> - Keep track of executing flows and which Executor is running them.</li>
+  <li><strong>Previous Flow/Jobs</strong> - Search through previous executions of jobs and flows as well as access their log files.</li>
+  <li><strong>Scheduler</strong> - Keeps the state of the scheduled jobs.</li>
+  <li><strong>SLA</strong> - Keeps all the sla rules</li>
+</ul>
+
+<h4>How does the AzkabanExecutorServer use the DB?</h4>
+
+<p>The executor server uses the db for the following reasons:</p>
+
+<ul>
+  <li><strong>Access the project</strong> - Retrieves project files from the db.</li>
+  <li><strong>Executing Flows/Jobs</strong> - Retrieves and updates data for flows and that are executing</li>
+  <li><strong>Logs</strong> - Stores the output logs for jobs and flows into the db.</li>
+  <li><strong>Interflow dependency</strong> - If a flow is running on a different executor, it will take state from the DB.</li>
+</ul>
+
+<p>There is no reason why MySQL was chosen except that it is a widely used DB. We are looking to implement compatibility with other DB's, although the search requirement on historically running jobs benefits from a relational data store.</p>
+
+<h3>AzkabanWebServer</h3>
+
+<p>The AzkabanWebServer is the main manager to all of Azkaban. It handles project management, authentication, scheduler, and monitoring of executions. It also serves as the web user interface.</p>
+
+<p>Using Azkaban is easy. Azkaban uses <code>*.job</code> key-value property files to define individual tasks in a work flow, and the _dependencies_ property to define the dependency chain of the jobs. These job files and associated code can be archived into a <code>*.zip</code> and uploaded through the web server through the Azkaban UI or through curl.</p>
+
+<h3>AzkabanExecutorServer</h3>
+
+<p>Previous versions of Azkaban had both the AzkabanWebServer and the AzkabanExecutorServer features in a single server. The Executor has since been separated into its own server. There were several reasons for splitting these services: we will soon be able to scale the number of executions and fall back on operating Executors if one fails. Also, we are able to roll our upgrades of Azkaban with minimal impact on the users. As Azkaban's usage grew, we found that upgrading Azkaban became increasingly more difficult as all times of the day became 'peak'.<?p>
+
