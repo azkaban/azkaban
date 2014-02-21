@@ -47,5 +47,5 @@ AZKABAN_OPTS="$AZKABAN_OPTS -server -Dcom.sun.management.jmxremote -Djava.io.tmp
 
 java $AZKABAN_OPTS -cp $CLASSPATH azkaban.webapp.AzkabanSingleServer -conf $azkaban_dir/conf $@ &
 
-echo $! > currentpid
+echo $! > $azkaban_dir/currentpid
 
