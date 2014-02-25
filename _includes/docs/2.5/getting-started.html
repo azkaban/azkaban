@@ -6,7 +6,7 @@
 
 <p>In <strong>solo server mode</strong>, the DB is embedded H2 and both web server and executor server run in the same process. This should be useful if one just wants to try things out. It can also be used on small scale use cases.</p>
 <ol>
-	<li><a href="#soloserver-setup">Download and Install Solo Server Package</a></li>
+	<li><a href="#solo-setup">Download and Install Solo Server Package</a></li>
 	<li><a href="#plugin-setup">Install Azkaban Plugins</a></li>
 </ol>
 <p>The <strong>two server mode</strong> is for more serious production environment. Its DB should be backed by MySQL instances with master-slave set up. The web server and executor server should run in different processes so that upgrading and maintenance shouldn't affect users.</p>
