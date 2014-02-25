@@ -1,25 +1,43 @@
-
 <h2 id="executor-setup">Set up Azkaban Executor Server</h2>
 
-<p>Azkaban Executor Server handles the actual execution of the workflow and jobs.</p>
+<p class="lead">Azkaban Executor Server handles the actual execution of the workflow and jobs.</p>
 
 <h3>Installing the Executor Server</h3>
 
 <p>Grab the azkaban-exec-server package from the <a href="{{ site.home }}/downloads.html">downloads page</a>.</p>
 
-<p>Alternatively, by cloning the <a href="https://github.com/azkaban/azkaban2" target="_blank">GitHub repo</a>, you can run <code>ant</code> build the latest version from master.</p>
+<p>Alternatively, you can clone the <a href="https://github.com/azkaban/azkaban2" target="_blank">GitHub repo</a>, you can build the latest version from the master branch. <a href="#building-from-source">See here</a> for instructions on building from source.</p>
 
-<p>Extract the package into a directory. The install path should be different from the Azkaban Web Server.</p>
+<p>Extract the package into a directory. The install path should be different from the Azkaban Web Server. After extraction, there should be the following directories.</p>
 
-<p>After extraction, there should be the following directories.</p>
-
-<ul>
-	<li><code>bin</code> - The scripts to start Azkaban jetty server.</li>
-	<li><code>conf</code> - The configurations for Azkaban exec server.</li>
-	<li><code>lib</code> - The jar dependencies for Azkaban.</li>
-	<li><code>extlib</code> - Additional jars that are added to extlib will be added to Azkaban's classpath.</li>
-	<li><code>plugins</code> - The directory where plugins can be installed.</li>
-</ul>
+<table class="table table-striped table-bordered table-condensed">
+  <thead>
+    <th>Folder</th>
+    <th>Description</th>
+  </thead>
+  <tbody>
+    <tr>
+      <td>bin</td>
+      <td>The scripts to start Azkaban jetty server</td>
+    </tr>
+    <tr>
+      <td>conf</td>
+      <td>The configurations for Azkaban solo server</td>
+    </tr>
+    <tr>
+      <td>lib</td>
+      <td>The jar dependencies for Azkaban</td>
+    </tr>
+    <tr>
+      <td>extlib</td>
+      <td>Additional jars that are added to extlib will be added to Azkaban's classpath</td>
+    </tr>
+    <tr>
+      <td>plugins</td>
+      <td>the directory where plugins can be installed</td>
+    </tr>
+  </tbody>
+</table>
 
 <p>In the <code>conf</code> directory, we only need to configure the <code>azkaban.properties</code> file. </p>
 <p>This file is the be the main configuration file that is necessary to setup Azkaban Executor.</p>
@@ -67,4 +85,3 @@ executor.port=12321
 
 <p>Execute <code>bin/azkaban-exec-start.sh</code> to start AzkabanExecutorServer. </p>
 <p>To shutdown the AzkabanExecutorServer, run <code>bin/azkaban-exec-shutdown.sh</code></p>
-
