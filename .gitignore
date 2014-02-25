@@ -2,3 +2,7 @@ dist/
 build/
 .idea/
 *.iml
+*.log
+TestProcess_*
+_AzkabanTestDir_*
+reports/
