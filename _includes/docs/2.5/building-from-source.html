@@ -1,0 +1,15 @@
+<h2 id="building-from-source">Building from Source</h2>
+
+<p>Azkaban builds using <a href="http://ant.apache.org" target="_blank">Ant</a> and uses <a href="http://ant.apache.org/ivy/" target="_blank">Ivy</a> to resolve dependencies. Ivy does not need to be installed in order to build Azkaban.</p>
+
+<p>Azkaban's web server depends on <a href="http://lesscss.org/" target="_blank">LESS</a> and <a href="http://linkedin.github.io/dustjs/" target="_blank">Dust.js</a>. These <a href="https://www.npmjs.org/" target="_blank">NPM packages</a> must be installed to build Azkaban:</p>
+
+<pre>
+$ npm install -g less dustjs-linkedin
+</pre>
+
+<p>Simply invoke Ant to build Azkaban:</p>
+
+<pre>
+$ ant
+</pre>

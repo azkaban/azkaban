@@ -1,26 +1,47 @@
-
 <h2 id="webserver-setup">Set up Azkaban Web Server</h2>
 
-<p>Azkaban Web Server handles project management, authentication, scheduling and trigger of executions.</p>
+<p class="lead">Azkaban Web Server handles project management, authentication, scheduling and trigger of executions.</p>
 
 <h3>Installing the Web Server</h3>
 
 <p>Grab the azkaban-web-server package from the <a href="{{ site.home }}/downloads.html">download page</a></p>
 
-<p>Alternatively, by cloning the <a href="https://github.com/azkaban/azkaban2" target="_blank">GitHub repo</a>, you can run <code>ant</code> build the latest version from master.</p>
+<p>Alternatively, you can clone the <a href="https://github.com/azkaban/azkaban2" target="_blank">GitHub repo</a>, you can build the latest version from the master branch. <a href="#building-from-source">See here</a> for instructions on building from source.</p>
 
-<p>Extract the package into a directory. The install path should be different from the AzkabanExecutorServer.</p>
+<p>Extract the package into a directory. The install path should be different from the AzkabanExecutorServer. After extraction, there should be the following directories:</p>
 
-<p>After extraction, there should be the following directories:</p>
-
-<ul>
-	<li><code>bin</code> - The scripts to start Azkaban jetty server</li>
-	<li><code>conf</code> - The configurations for Azkaban web server</li>
-	<li><code>lib</code> - The jar dependencies for Azkaban</li>
-	<li><code>extlib</code> - Additional jars that are added to extlib will be added to Azkaban's classpath</li>
-	<li><code>plugins</code> - The directory where plugins can be installed</li>
-	<li><code>web</code> - The web (css, javascript, image) files for Azkaban web server.</li>
-</ul>
+<table class="table table-striped table-bordered table-condensed">
+  <thead>
+    <th>Folder</th>
+    <th>Description</th>
+  </thead>
+  <tbody>
+    <tr>
+      <td>bin</td>
+      <td>The scripts to start Azkaban jetty server</td>
+    </tr>
+    <tr>
+      <td>conf</td>
+      <td>The configurations for Azkaban solo server</td>
+    </tr>
+    <tr>
+      <td>lib</td>
+      <td>The jar dependencies for Azkaban</td>
+    </tr>
+    <tr>
+      <td>extlib</td>
+      <td>Additional jars that are added to extlib will be added to Azkaban's classpath</td>
+    </tr>
+    <tr>
+      <td>plugins</td>
+      <td>the directory where plugins can be installed</td>
+    </tr>
+    <tr>
+      <td>web</td>
+      <td>The web (css, javascript, image) files for Azkaban web server.</td>
+    </tr>
+  </tbody>
+</table>
 
 <p>In the <code>conf</code> directory, there should be three files</p>
 
@@ -69,10 +90,10 @@ mysql.numconnections=100
 <p>Azkaban uses the <code>UserManager</code> to provide authentication and user roles.</p>
 <p>By default, Azkaban includes and uses the <code>XmlUserManager</code> which gets username/passwords and roles from the <code>azkaban-users.xml</code> as can be seen in the <code>azkaban.properties</code> file.</p>
 
-<ul>
-	<li><code>user.manager.class=azkaban.user.XmlUserManager</code></li>
-	<li><code>user.manager.xml.file=conf/azkaban-users.xml</code></li>
-</ul>
+<pre class="code">
+user.manager.class=azkaban.user.XmlUserManager
+user.manager.xml.file=conf/azkaban-users.xml
+</pre>
 
 <h3>Running Web Server</h3>
 
@@ -87,4 +108,3 @@ jetty.ssl.port=8443
 <p>To shutdown the AzkabanWebServer, run <code>bin/azkaban-web-shutdown.sh</code>.</p>
 
 <p>You can test access by accessing the web server through a browser.</p>
-

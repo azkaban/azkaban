@@ -1,5 +1,6 @@
 <h2 id="database-setup">Database Setup</h2>
-<p>Currently, Azkaban2 only uses MySQL as its data store, although we are evaluating other possible storage systems.</p>
+
+<p class="lead">Currently, Azkaban2 only uses MySQL as its data store, although we are evaluating other possible storage systems.</p>
 
 <h3>1. Install MySQL</h3>
 <p>Installation of MySQL DB won't be covered by these instructions, but you can access the instructions on <a href="http://dev.mysql.com/doc/index.html" target="_blank">MySQL Documentation Site</a>.</p>
@@ -9,26 +10,26 @@
 
 <pre class="code">
 # Example database creation command, although the db name doesn't need to be 'azkaban'
-mysql> CREATE DATABASE azkaban;
+mysql&gt; CREATE DATABASE azkaban;
 </pre>
-		
+
 <p><a href="http://dev.mysql.com/doc/refman/5.7/en/create-user.html" target="_blank">Create a database user</a> for Azkaban. For example:</p>
-    
+
 <pre class="code">
 # Example database creation command. The user name doesn't need to be 'azkaban'
-mysql> CREATE USER 'username'@'%' IDENTIFIED BY 'password';
+mysql&gt; CREATE USER 'username'@'%' IDENTIFIED BY 'password';
 </pre>
 
 <p><a href="http://dev.mysql.com/doc/refman/5.7/en/grant.html" target="_blank">Set user permissions</a> on the database. Create a user for Azkaban if one hasn't been made, and give the user <code>INSERT</code>, <code>SELECT</code>, <code>UPDATE</code>, <code>DELETE</code> permission on all tables in the Azkaban db.</p>
-    
+
 <pre class="code">
-# Replace db, username with the ones created by the previous steps. 
-mysql> GRANT SELECT,INSERT,UPDATE,DELETE ON &lt;database&gt;.* to '&lt;username&gt;'@'%' WITH GRANT OPTION;
+# Replace db, username with the ones created by the previous steps.
+mysql&gt; GRANT SELECT,INSERT,UPDATE,DELETE ON &lt;database&gt;.* to '&lt;username&gt;'@'%' WITH GRANT OPTION;
 </pre>
 
 <p>Configure Packet Size may need to be configured. MySQL may have, by default, a ridiculously low allowable packet size. To increase it, you'll need to have the property <code>max_allowed_packet</code> set to something higher, say 1024M.</p>
 <p>To configure this in linux, open <code>/etc/my.cnf</code>. Somewhere after <code>mysqld</code>, add the following:</p>
-    
+
 <pre class="code">
 [mysqld]
 ...
@@ -38,7 +39,7 @@ max_allowed_packet=1024M
 To restart MySQL, you can run...
 
 <pre class="code">
-sudo /sbin/service mysqld restart
+$ sudo /sbin/service mysqld restart
 </pre>
 
 <h3>3. Creating the Azkaban Tables</h3>
