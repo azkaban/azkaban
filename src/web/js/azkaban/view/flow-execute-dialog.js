@@ -1,12 +1,12 @@
 /*
  * Copyright 2012 LinkedIn Corp.
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
  * the License at
- * 
+ *
  * http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
@@ -23,40 +23,40 @@ azkaban.FlowExecuteDialogView = Backbone.View.extend({
 		"click #schedule-btn": "scheduleClick",
 		"click #execute-btn": "handleExecuteFlow"
 	},
-	
+
 	initialize: function(settings) {
 		this.model.bind('change:flowinfo', this.changeFlowInfo, this);
-		$("#overrideSuccessEmails").click(function(evt) {
+		$("#override-success-emails").click(function(evt) {
 			if ($(this).is(':checked')) {
-				$('#successEmails').attr('disabled', null);
+				$('#success-emails').attr('disabled', null);
 			}
 			else {
-				$('#successEmails').attr('disabled', "disabled");
+				$('#success-emails').attr('disabled', "disabled");
 			}
 		});
-				
-		$("#overrideFailureEmails").click(function(evt) {
+
+		$("#override-failure-emails").click(function(evt) {
 			if ($(this).is(':checked')) {
-				$('#failureEmails').attr('disabled', null);
+				$('#failure-emails').attr('disabled', null);
 			}
 			else {
-				$('#failureEmails').attr('disabled', "disabled");
+				$('#failure-emails').attr('disabled', "disabled");
 			}
 		});
 	},
-	
+
 	render: function() {
 	},
-	
+
 	getExecutionOptionData: function() {
-		var failureAction = $('#failureAction').val();
-		var failureEmails = $('#failureEmails').val();
-		var successEmails = $('#successEmails').val();
-		var notifyFailureFirst = $('#notifyFailureFirst').is(':checked');
-		var notifyFailureLast = $('#notifyFailureLast').is(':checked');
-		var failureEmailsOverride = $("#overrideFailureEmails").is(':checked');
-		var successEmailsOverride = $("#overrideSuccessEmails").is(':checked');
-		
+		var failureAction = $('#failure-action').val();
+		var failureEmails = $('#failure-emails').val();
+		var successEmails = $('#success-emails').val();
+		var notifyFailureFirst = $('#notify-failure-first').is(':checked');
+		var notifyFailureLast = $('#notify-failure-last').is(':checked');
+		var failureEmailsOverride = $("#override-failure-emails").is(':checked');
+		var successEmailsOverride = $("#override-success-emails").is(':checked');
+
 		var flowOverride = {};
 		var editRows = $(".editRow");
 		for (var i = 0; i < editRows.length; ++i) {
@@ -69,18 +69,18 @@ azkaban.FlowExecuteDialogView = Backbone.View.extend({
 				flowOverride[key] = val;
 			}
 		}
-		
+
 		var data = this.model.get("data");
 		var disabledList = gatherDisabledNodes(data);
-		
+
 		var executingData = {
 			projectId: projectId,
 			project: this.projectName,
 			ajax: "executeFlow",
 			flow: this.flowId,
 			disabled: JSON.stringify(disabledList),
-			failureEmailsOverride:failureEmailsOverride,
-			successEmailsOverride:successEmailsOverride,
+			failureEmailsOverride: failureEmailsOverride,
+			successEmailsOverride: successEmailsOverride,
 			failureAction: failureAction,
 			failureEmails: failureEmails,
 			successEmails: successEmails,
@@ -88,19 +88,19 @@ azkaban.FlowExecuteDialogView = Backbone.View.extend({
 			notifyFailureLast: notifyFailureLast,
 			flowOverride: flowOverride
 		};
-		
+
 		// Set concurrency option, default is skip
 
 		var concurrentOption = $('input[name=concurrent]:checked').val();
 		executingData.concurrentOption = concurrentOption;
 		if (concurrentOption == "pipeline") {
-			var pipelineLevel = $("#pipelineLevel").val();
+			var pipelineLevel = $("#pipeline-level").val();
 			executingData.pipelineLevel = pipelineLevel;
 		}
 		else if (concurrentOption == "queue") {
 			executingData.queueLevel = $("#queueLevel").val();
 		}
-		
+
 		return executingData;
 	},
 
@@ -116,44 +116,46 @@ azkaban.FlowExecuteDialogView = Backbone.View.extend({
 		var pipelineExecutionId = this.model.get("pipelineExecution");
 		var queueLevel = this.model.get("queueLevel");
 		var nodeStatus = this.model.get("nodeStatus");
-		var overrideSuccessEmails = this.model.get("overrideSuccessEmails");
-		var overrideFailureEmails = this.model.get("overrideFailureEmails");
-		
+		var overrideSuccessEmails = this.model.get("failureEmailsOverride");
+		var overrideFailureEmails = this.model.get("successEmailsOverride");
+
 		if (overrideSuccessEmails) {
-			$('#overrideSuccessEmails').attr('checked', true);
+			$('#override-success-emails').attr('checked', true);
 		}
 		else {
-			$('#successEmails').attr('disabled','disabled');
+			$('#success-emails').attr('disabled','disabled');
 		}
 		if (overrideFailureEmails) {
-			$('#overrideFailureEmails').attr('checked', true);
+			$('#override-failure-emails').attr('checked', true);
 		}
 		else {
-			$('#failureEmails').attr('disabled','disabled');
+			$('#failure-emails').attr('disabled','disabled');
 		}
-		
+
 		if (successEmails) {
-			$('#successEmails').val(successEmails.join());
+			$('#success-emails').val(successEmails.join());
 		}
 		if (failureEmails) {
-			$('#failureEmails').val(failureEmails.join());
+			$('#failure-emails').val(failureEmails.join());
 		}
 		if (failureActions) {
-		$('#failureAction').val(failureActions);
+			$('#failure-action').val(failureActions);
 		}
-		
+
 		if (notifyFailure.first) {
-		$('#notifyFailureFirst').attr('checked', true);
+			$('#notify-failure-first').attr('checked', true);
+			$('#notify-failure-first').parent('.btn').addClass('active');
 		}
 		if (notifyFailure.last) {
-			$('#notifyFailureLast').attr('checked', true);
+			$('#notify-failure-last').attr('checked', true);
+			$('#notify-failure-last').parent('.btn').addClass('active');
 		}
-		
+
 		if (concurrentOption) {
 			$('input[value='+concurrentOption+'][name="concurrent"]').attr('checked', true);
 		}
 		if (pipelineLevel) {
-			$('#pipelineLevel').val(pipelineLevel);
+			$('#pipeline-level').val(pipelineLevel);
 		}
 		if (queueLevel) {
 			$('#queueLevel').val(queueLevel);
@@ -162,25 +164,25 @@ azkaban.FlowExecuteDialogView = Backbone.View.extend({
 		if (flowParams) {
 			for (var key in flowParams) {
 				editTableView.handleAddRow({
-					paramkey: key, 
+					paramkey: key,
 					paramvalue: flowParams[key]
 				});
 			}
 		}
 	},
-	
+
 	show: function(data) {
 		var projectName = data.project;
 		var flowId = data.flow;
 		var jobId = data.job;
-		
+
 		// ExecId is optional
 		var execId = data.execid;
 		var exgraph = data.exgraph;
-		
+
 		this.projectName = projectName;
 		this.flowId = flowId;
-		
+
 		var self = this;
 		var loadCallback = function() {
 			if (jobId) {
@@ -190,13 +192,12 @@ azkaban.FlowExecuteDialogView = Backbone.View.extend({
 				self.showExecuteFlow(projectName, flowId);
 			}
 		}
-		
+
 		var loadedId = executableGraphModel.get("flowId");
 		this.loadGraph(projectName, flowId, exgraph, loadCallback);
 		this.loadFlowInfo(projectName, flowId, execId);
-
 	},
-	
+
 	showExecuteFlow: function(projectName, flowId) {
 		$("#execute-flow-panel-title").text("Execute Flow " + flowId);
 		this.showExecutionOptionPanel();
@@ -204,20 +205,20 @@ azkaban.FlowExecuteDialogView = Backbone.View.extend({
 		// Triggers a render
 		this.model.trigger("change:graph");
 	},
-	
+
 	showExecuteJob: function(projectName, flowId, jobId, withDep) {
 		sideMenuDialogView.menuSelect($("#flow-option"));
 		$("#execute-flow-panel-title").text("Execute Flow " + flowId);
-		
+
 		var data = this.model.get("data");
 		var disabled = this.model.get("disabled");
-		
+
 		// Disable all, then re-enable those you want.
 		disableAll();
-		
+
 		var jobNode = data.nodeMap[jobId];
 		touchNode(jobNode, false);
-		
+
 		if (withDep) {
 			recurseAllAncestors(jobNode, false);
 		}
@@ -225,61 +226,61 @@ azkaban.FlowExecuteDialogView = Backbone.View.extend({
 		this.showExecutionOptionPanel();
 		this.model.trigger("change:graph");
 	},
-	
+
 	showExecutionOptionPanel: function() {
 		sideMenuDialogView.menuSelect($("#flow-option"));
 		$('#execute-flow-panel').modal();
 	},
-	
+
 	hideExecutionOptionPanel: function() {
 		$('#execute-flow-panel').modal("hide");
 	},
-	
+
 	scheduleClick: function() {
 		console.log("click schedule button.");
 		this.hideExecutionOptionPanel();
 		schedulePanelView.showSchedulePanel();
 	},
-	
+
 	loadFlowInfo: function(projectName, flowId, execId) {
 		console.log("Loading flow " + flowId);
 		fetchFlowInfo(this.model, projectName, flowId, execId);
 	},
-	
+
 	loadGraph: function(projectName, flowId, exgraph, callback) {
 		console.log("Loading flow " + flowId);
 		var requestURL = contextURL + "/manager";
-		
+
 		var graphModel = executableGraphModel;
 		// fetchFlow(this.model, projectName, flowId, true);
 		var requestData = {
-				"project": projectName, 
-				"ajax": "fetchflowgraph", 
+				"project": projectName,
+				"ajax": "fetchflowgraph",
 				"flow": flowId
 			};
 		var self = this;
 		var successHandler = function(data) {
 			console.log("data fetched");
 			graphModel.addFlow(data);
-			
+
 			if (exgraph) {
 				self.assignInitialStatus(data, exgraph);
 			}
-			
+
 			// Auto disable jobs that are finished.
 			disableFinishedJobs(data);
 			executingSvgGraphView = new azkaban.SvgGraphView({
-				el: $('#flow-executing-graph'), 
+				el: $('#flow-executing-graph'),
 				model: graphModel,
 				render: false,
-				rightClick: { 
+				rightClick: {
 					"node": expanelNodeClickCallback,
-					"edge": expanelEdgeClickCallback, 
-					"graph": expanelGraphClickCallback 
+					"edge": expanelEdgeClickCallback,
+					"graph": expanelGraphClickCallback
 				},
 				tooltipcontainer: "#svg-div-custom"
 			});
-			
+
 			if (callback) {
 				callback.call(this);
 			}
@@ -291,7 +292,7 @@ azkaban.FlowExecuteDialogView = Backbone.View.extend({
 		// Copies statuses over from the previous execution if it exists.
 		var statusNodeMap = statusData.nodeMap;
 		var nodes = data.nodes;
-		for(var i=0; i<nodes.length; ++i) {
+		for (var i = 0; i<nodes.length; ++i) {
 			var node = nodes[i];
 			var statusNode = statusNodeMap[node.id];
 			if (statusNode) {
@@ -321,23 +322,23 @@ azkaban.EditTableView = Backbone.View.extend({
 
 	initialize: function(setting) {
 	},
-	
+
 	handleAddRow: function(data) {
 		var name = "";
 		if (data.paramkey) {
 			name = data.paramkey;
 		}
-		
+
 		var value = "";
 		if (data.paramvalue) {
 			value = data.paramvalue;
 		}
-	
+
 		var tr = document.createElement("tr");
 		var tdName = document.createElement("td");
 		$(tdName).addClass('property-key');
 		var tdValue = document.createElement("td");
-		
+
 		var remove = document.createElement("div");
 		$(remove).addClass("pull-right").addClass('remove-btn');
 		var removeBtn = document.createElement("button");
@@ -352,28 +353,28 @@ azkaban.EditTableView = Backbone.View.extend({
 		var valueData = document.createElement("span");
 		$(valueData).addClass("spanValue");
 		$(valueData).text(value);
-						
+
 		$(tdName).append(nameData);
 		$(tdName).addClass("editable");
-		
+
 		$(tdValue).append(valueData);
 		$(tdValue).append(remove);
 		$(tdValue).addClass("editable").addClass('value');
-		
+
 		$(tr).addClass("editRow");
 		$(tr).append(tdName);
 		$(tr).append(tdValue);
-	 
+
 		$(tr).insertBefore(".addRow");
 		return tr;
 	},
-	
+
 	handleEditColumn: function(evt) {
 		var curTarget = evt.currentTarget;
-	
+
 		var text = $(curTarget).children(".spanValue").text();
 		$(curTarget).empty();
-					
+
 		var input = document.createElement("input");
 		$(input).attr("type", "text");
 		$(input).addClass('form-control').addClass('input-sm');
@@ -382,12 +383,12 @@ azkaban.EditTableView = Backbone.View.extend({
 		$(curTarget).addClass("editing");
 		$(curTarget).append(input);
 		$(input).focus();
-		
+
 		var obj = this;
 		$(input).focusout(function(evt) {
 			obj.closeEditingTarget(evt);
 		});
-		
+
 		$(input).keypress(function(evt) {
 			if (evt.which == 13) {
 				obj.closeEditingTarget(evt);
@@ -401,7 +402,7 @@ azkaban.EditTableView = Backbone.View.extend({
 		var row = curTarget.parentElement.parentElement;
 		$(row).remove();
 	},
-	
+
 	closeEditingTarget: function(evt) {
 		var input = evt.currentTarget;
 		var text = $(input).val();
@@ -422,7 +423,7 @@ azkaban.EditTableView = Backbone.View.extend({
 			$(remove).append(removeBtn);
 			$(parent).append(remove);
 		}
-		
+
 		$(parent).removeClass("editing");
 		$(parent).append(valueData);
 	}
@@ -433,7 +434,7 @@ azkaban.SideMenuDialogView = Backbone.View.extend({
 	events: {
 		"click .menu-header": "menuClick"
 	},
-	
+
 	initialize: function(settings) {
 		var children = $(this.el).children();
 		for (var i = 0; i < children.length; ++i ) {
@@ -444,25 +445,25 @@ azkaban.SideMenuDialogView = Backbone.View.extend({
 		}
 		this.menuSelect($("#flow-option"));
 	},
-	
+
 	menuClick: function(evt) {
 		this.menuSelect(evt.currentTarget);
 	},
-	
+
 	menuSelect: function(target) {
 		if ($(target).hasClass("active")) {
 			return;
 		}
-		
+
 		$(".side-panel").each(function() {
 			$(this).hide();
 		});
-		
+
 		$(".menu-header").each(function() {
 			$(this).find(".menu-caption").slideUp("fast");
 			$(this).removeClass("active");
 		});
-		
+
 		$(target).addClass("active");
 		$(target).find(".menu-caption").slideDown("fast");
 		var panelName = $(target).attr("viewpanel");
@@ -472,7 +473,7 @@ azkaban.SideMenuDialogView = Backbone.View.extend({
 
 var handleJobMenuClick = function(action, el, pos) {
 	var jobid = el[0].jobid;
-	
+
 	var requestURL = contextURL + "/manager?project=" + projectName + "&flow=" + flowName + "&job=" + jobid;
 	if (action == "open") {
 		window.location.href = requestURL;
@@ -490,7 +491,7 @@ var executableGraphModel;
 var disableFinishedJobs = function(data) {
 	for (var i = 0; i < data.nodes.length; ++i) {
 		var node = data.nodes[i];
-		
+
 		if (node.status == "DISABLED" || node.status == "SKIPPED") {
 			node.status = "READY";
 			node.disabled = true;
@@ -528,7 +529,7 @@ var recurseTree = function(data, disabled, recurse) {
 	for (var i = 0; i < data.nodes.length; ++i) {
 		var node = data.nodes[i];
 		node.disabled = disabled;
-		
+
 		if (node.type == "flow" && recurse) {
 			recurseTree(node, disabled);
 		}
@@ -560,26 +561,26 @@ var touchChildren = function(node, disable) {
 			outNodes[key].disabled = disable;
 		}
 	}
-	
+
 	executableGraphModel.trigger("change:disabled");
 }
 
 var touchAncestors = function(node, disable) {
 	recurseAllAncestors(node, disable);
-	
+
 	executableGraphModel.trigger("change:disabled");
 }
 
 var touchDescendents = function(node, disable) {
 	recurseAllDescendents(node, disable);
-	
+
 	executableGraphModel.trigger("change:disabled");
 }
 
 var gatherDisabledNodes = function(data) {
 	var nodes = data.nodes;
 	var disabled = [];
-	
+
 	for (var i = 0; i < nodes.length; ++i) {
 		var node = nodes[i];
 		if (node.disabled) {
@@ -594,7 +595,7 @@ var gatherDisabledNodes = function(data) {
 			}
 		}
 	}
-	
+
 	return disabled;
 }
 
@@ -623,7 +624,7 @@ var expanelNodeClickCallback = function(event, model, node) {
 	var jobId = node.id;
 	var flowId = executableGraphModel.get("flowId");
 	var type = node.type;
-	
+
 	var menu;
 	if (type == "flow") {
 		var flowRequestURL = contextURL + "/manager?project=" + projectName + "&flow=" + node.flowId;
@@ -632,7 +633,7 @@ var expanelNodeClickCallback = function(event, model, node) {
 				{title: "Collapse Flow...", callback: function() {model.trigger("collapseFlow", node);}},
 				{title: "Open Flow in New Window...", callback: function() {window.open(flowRequestURL);}}
 			];
-	
+
 		}
 		else {
 			menu = [
@@ -679,7 +680,7 @@ var expanelGraphClickCallback = function(event) {
 	console.log("Graph clicked callback");
 	var flowId = executableGraphModel.get("flowId");
 	var requestURL = contextURL + "/manager?project=" + projectName + "&flow=" + flowId;
-	
+
 	var menu = [
 		{title: "Open Flow in New Window...", callback: function() {window.open(requestURL);}},
 		{break: 1},
@@ -688,7 +689,7 @@ var expanelGraphClickCallback = function(event) {
 		{break: 1},
 		{title: "Center Graph", callback: function() {executableGraphModel.trigger("resetPanZoom");}}
 	];
-	
+
 	contextMenuView.show(event, menu);
 }
 
@@ -696,10 +697,10 @@ var contextMenuView;
 $(function() {
 	executableGraphModel = new azkaban.GraphModel();
 	flowExecuteDialogView = new azkaban.FlowExecuteDialogView({
-		el: $('#execute-flow-panel'), 
+		el: $('#execute-flow-panel'),
 		model: executableGraphModel
 	});
-	
+
 	sideMenuDialogView = new azkaban.SideMenuDialogView({
 		el: $('#graph-options')
 	});
