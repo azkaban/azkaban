@@ -1,12 +1,12 @@
 #*
  * Copyright 2012 LinkedIn Corp.
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
  * the License at
- * 
+ *
  * http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
@@ -61,13 +61,15 @@
 									<div id="notification-panel" class="side-panel">
 										<h4>Notify on failure</h4>
 										<p>On a job failure, notify on either the first failure, and/or when the failed flow finishes.</p>
-										<hr>
-										<label class="checkbox-inline">
-											<input id="notify-failure-first" type="checkbox" name="notify" value="first">First failure
-										</label>
-										<label class="checkbox-inline">
-											<input id="notify-failure-last" type="checkbox" name="notify" value="last">Flow finished
-										</label>
+                    <hr>
+                    <div class="btn-group" data-toggle="buttons">
+                      <label class="btn btn-default">
+                        <input id="notify-failure-first" type="radio" name="notify" value="first">First failure
+                      </label>
+                      <label class="btn btn-default">
+                        <input id="notify-failure-last" type="radio" name="notify" value="last">Flow finished
+                      </label>
+                    </div>
 
 										<h4>Failure Emails</h4>
 										<div class="checkbox">
@@ -82,7 +84,7 @@
 										<h4>Success Emails</h4>
 										<div class="checkbox">
 											<label>
-												<input type="checkbox" name="overrideSuccessEmails" value="overrideSuccessEmails">
+												<input type="checkbox" id="override-success-emails" name="overrideSuccessEmails" value="overrideSuccessEmails">
 												Override flow email settings.
 											</label>
 										</div>
@@ -101,7 +103,7 @@
 											<li><strong>Cancel All</strong> immediately kills all jobs and fails the flow.</li>
 											<li><strong>Finish All Possible</strong> will keep executing jobs as long as its dependencies are met.</li>
 										</ul>
-										<select id="failure-action" name="failureAction">
+										<select id="failure-action" name="failureAction" class="form-control form-control-auto">
 											<option value="finishCurrent">Finish Current Running</option>
 											<option value="cancelImmediately">Cancel All</option>
 											<option value="finishPossible">Finish All Possible</option>
@@ -135,7 +137,7 @@
 												<input type="radio" id="pipeline" name="concurrent" value="pipeline">
 												Pipeline
 											</label>
-											<select id="pipelineLevel" name="pipelineLevel">
+											<select id="pipeline-level" name="pipelineLevel" class="form-control form-control-auto input-sm">
 												<option value="1">Level 1</option>
 												<option value="2">Level 2</option>
 											</select>
@@ -178,7 +180,7 @@
 						</div><!-- /modal-body -->
 
 						<div class="modal-footer">
-#if (!$show_schedule || $show_schedule == 'true') 
+#if (!$show_schedule || $show_schedule == 'true')
               <div class="pull-left">
                 <button type="button" class="btn btn-success" id="schedule-btn">Schedule</button>
               </div>
@@ -198,7 +200,7 @@
 				</div><!-- /modal-dialog -->
 			</div><!-- /modal -->
 
-#if (!$show_schedule || $show_schedule == 'true') 
+#if (!$show_schedule || $show_schedule == 'true')
 	#parse ("azkaban/webapp/servlet/velocity/schedulepanel.vm")
 #end
 

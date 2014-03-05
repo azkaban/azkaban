@@ -22,18 +22,16 @@ do
 done
 
 if [ "HADOOP_HOME" != "" ]; then
-	for file in $HADOOP_HOME/hadoop-core*.jar ;
-	do
-		CLASSPATH=$CLASSPATH:$file
-	done
-	CLASSPATH=$CLASSPATH:$HADOOP_HOME/conf
-    JAVA_LIB_PATH="-Djava.library.path=$HADOOP_HOME/lib/native/Linux-amd64-64"
+        echo "Using Hadoop from $HADOOP_HOME"
+        CLASSPATH=$CLASSPATH:$HADOOP_HOME/conf:$HADOOP_HOME/*
+        JAVA_LIB_PATH="-Djava.library.path=$HADOOP_HOME/lib/native/Linux-amd64-64"
 else
-	echo "Error: HADOOP_HOME is not set. Hadoop job types will not run properly."
+        echo "Error: HADOOP_HOME is not set. Hadoop job types will not run properly."
 fi
 
 if [ "HIVE_HOME" != "" ]; then
-    CLASSPATH=$CLASSPATH:$HIVE_HOME/conf
+        echo "Using Hive from $HIVE_HOME"
+        CLASSPATH=$CLASSPATH:$HIVE_HOME/conf:$HIVE_HOME/lib/*
 fi
 
 echo $azkaban_dir;
@@ -50,5 +48,5 @@ AZKABAN_OPTS="$AZKABAN_OPTS -server -Dcom.sun.management.jmxremote -Djava.io.tmp
 
 java $AZKABAN_OPTS $JAVA_LIB_PATH -cp $CLASSPATH azkaban.execapp.AzkabanExecutorServer -conf $azkaban_dir/conf $@ &
 
-echo $! > currentpid
+echo $! > $azkaban_dir/currentpid
 
