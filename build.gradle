@@ -1,8 +1,18 @@
 apply plugin: 'java'
 apply plugin: 'eclipse'
 
-
-version = '2.5'
+def getVersionName = { ->
+    def stdout = new ByteArrayOutputStream()
+    exec {
+        commandLine 'git', 'describe', '--tags', '--abbrev=0'
+        standardOutput = stdout
+    }
+    
+    def out = stdout.toString().trim()
+    println out
+    return stdout.toString().trim()
+}
+version = getVersionName()
 archivesBaseName = 'azkaban'
 check.dependsOn.remove(test)
 
@@ -13,6 +23,8 @@ repositories {
 
 configurations {
     all {
+        // We don't want the kitchen sink for dependencies. Only the ones we know we need for
+        // compile and ones we need to package.
         transitive = false
     }
     compile {
@@ -75,9 +87,13 @@ jar {
 }
 
 eclipse.classpath.file {
+    // Erase the whole classpath
     beforeMerged {
-        classpath -> classpath.entries.removeAll { entry -> entry.kind == 'src' && entry.path == 'src/java' }
+        classpath -> classpath.entries.removeAll { entry -> true }
     }
+    
+    // We want to make sure that if there is an entry for src, that it doesn't have any
+    // include parameters
     whenMerged { classpath -> 
         classpath.entries.findAll { entry -> entry.kind == 'src' }*.includes = []
     }
@@ -89,6 +105,7 @@ sourceSets {
       srcDir 'src/java'
     }
     resources {
+      // Used to include all vm's and property files in the src code
       srcDir 'src/java'
       include '**/*.vm'
       include '**/*.properties'
@@ -101,6 +118,9 @@ sourceSets {
   }
 }
 
+/**
+ * Invokes a makefile target that will compile less files
+ */
 task compileLess(type:Exec) {
     workingDir 'src/less'
     commandLine 'make', '-e'
@@ -109,6 +129,9 @@ task compileLess(type:Exec) {
    )
 }
 
+/**
+ * Invokes a makefile target that will compile dust files
+ */
 task compileDust(type:Exec) {
     workingDir 'src/tl'
     commandLine 'make', '-e'
@@ -117,6 +140,9 @@ task compileDust(type:Exec) {
    )
 }
 
+/**
+ * Copies web files to a build directory
+ */
 task web(dependsOn: ['compileLess', 'compileDust']) << {
     println 'Copying web files'
     copy {
@@ -134,7 +160,14 @@ task web(dependsOn: ['compileLess', 'compileDust']) << {
     }
 }
 
-task packageSolo(dependsOn: [jar, 'web']) << {
+/*
+ * Gets the version name from the latest Git tag
+ */
+task createVersionFile() << {
+
+}
+
+task packageSolo(dependsOn: [jar, 'web', 'createVersionFile']) << {
     String packageDir = 'build/package/azkaban-solo-server'
  
     println 'Creating Azkaban Solo Server Package into ' + packageDir
