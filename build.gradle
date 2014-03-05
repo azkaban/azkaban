@@ -1,6 +1,7 @@
 apply plugin: 'java'
 apply plugin: 'eclipse'
 
+
 version = '2.5'
 archivesBaseName = 'azkaban'
 check.dependsOn.remove(test)
@@ -11,9 +12,11 @@ repositories {
 }
 
 configurations {
+    all {
+        transitive = false
+    }
     compile {
         description = 'compile classpath'
-        transitive = true
     }
     test {
         extendsFrom compile
@@ -72,6 +75,9 @@ jar {
 }
 
 eclipse.classpath.file {
+    beforeMerged {
+        classpath -> classpath.entries.removeAll { entry -> entry.kind == 'src' && entry.path == 'src/java' }
+    }
     whenMerged { classpath -> 
         classpath.entries.findAll { entry -> entry.kind == 'src' }*.includes = []
     }
@@ -128,6 +134,41 @@ task web(dependsOn: ['compileLess', 'compileDust']) << {
     }
 }
 
-task prePackage(dependsOn: [jar, 'web']) << {
+task packageSolo(dependsOn: [jar, 'web']) << {
+    String packageDir = 'build/package/azkaban-solo-server'
+ 
+    println 'Creating Azkaban Solo Server Package into ' + packageDir
+    mkdir packageDir
+    mkdir packageDir + '/extlib'
+    mkdir packageDir + '/plugins'
     
+    println 'Copying Soloserver bin & conf'
+    copy {
+        from('src/package/soloserver')
+        into(packageDir)
+    }
+    
+    println 'Copying Azkaban lib'
+    copy {
+        from('$buildDir/libs')
+        into(packageDir + '/lib')
+    }
+    
+    println 'Copying web'
+    copy {
+        from('$buildDir/web')
+        into(packageDir + '/web')
+    }
+
+    println 'Copying sql'
+    copy {
+        from('src/sql')
+        into(packageDir + '/sql')
+    }
+
+    println 'Copying dependency jars'
+    copy {
+        into packageDir + '/lib'
+        from configurations.compile
+    }
 } 
