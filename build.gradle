@@ -1,17 +1,27 @@
 apply plugin: 'java'
 apply plugin: 'eclipse'
 
-def getVersionName = { ->
+/**
+ * Helper that calls a command and returns the output
+ */
+def cmdCaller = { commandln ->
     def stdout = new ByteArrayOutputStream()
     exec {
-        commandLine 'git', 'describe', '--tags', '--abbrev=0'
+        commandLine commandln
         standardOutput = stdout
     }
     
     def out = stdout.toString().trim()
-    println out
     return stdout.toString().trim()
 }
+
+/**
+ * Git version name from git tag
+ */
+def getVersionName = { ->
+    return cmdCaller(['git', 'describe', '--tags', '--abbrev=0'])
+}
+
 version = getVersionName()
 archivesBaseName = 'azkaban'
 check.dependsOn.remove(test)
@@ -164,7 +174,19 @@ task web(dependsOn: ['compileLess', 'compileDust']) << {
  * Gets the version name from the latest Git tag
  */
 task createVersionFile() << {
+    String gitCommitHash = cmdCaller(['git', 'rev-parse', 'HEAD']);
+    String gitRepo = cmdCaller(['git', 'config', '--get', 'remote.origin.url']);
+    def date = new Date()
+    def formattedDate = date.format('yyyy-MM-dd hh:mm zzz')
 
+    String versionStr = version + '\n' +
+                        gitCommitHash + '\n' +
+                        gitRepo + '\n' +
+                        formattedDate + '\n'
+
+    File versionFile = file('build/package/version.file')
+    versionFile.write(versionStr)
+    
 }
 
 task packageSolo(dependsOn: [jar, 'web', 'createVersionFile']) << {
@@ -203,5 +225,86 @@ task packageSolo(dependsOn: [jar, 'web', 'createVersionFile']) << {
     copy {
         into packageDir + '/lib'
         from configurations.compile
+    }
+    
+    copy {
+        into packageDir
+        from 'build/package/version.file'
+    }
+} 
+
+task packageExec(dependsOn: [jar, 'web', 'createVersionFile']) << {
+    String packageDir = 'build/package/azkaban-exec-server'
+ 
+    println 'Creating Azkaban Executor Server Package into ' + packageDir
+    mkdir packageDir
+    mkdir packageDir + '/extlib'
+    mkdir packageDir + '/plugins'
+    
+    println 'Copying Exec server bin & conf'
+    copy {
+        from('src/package/execserver')
+        into(packageDir)
+    }
+    
+    println 'Copying Azkaban lib'
+    copy {
+        from('$buildDir/libs')
+        into(packageDir + '/lib')
+    }
+    
+    println 'Copying web'
+    copy {
+        from('$buildDir/web')
+        into(packageDir + '/web')
+    }
+
+    println 'Copying dependency jars'
+    copy {
+        into packageDir + '/lib'
+        from configurations.compile
+    }
+    
+    copy {
+        into packageDir
+        from 'build/package/version.file'
+    }
+}
+
+task packageWeb(dependsOn: [jar, 'web', 'createVersionFile']) << {
+    String packageDir = 'build/package/azkaban-web-server'
+ 
+    println 'Creating Azkaban Web Server Package into ' + packageDir
+    mkdir packageDir
+    mkdir packageDir + '/extlib'
+    mkdir packageDir + '/plugins'
+    
+    println 'Copying Web server bin & conf'
+    copy {
+        from('src/package/webserver')
+        into(packageDir)
+    }
+    
+    println 'Copying Azkaban lib'
+    copy {
+        from('$buildDir/libs')
+        into(packageDir + '/lib')
+    }
+    
+    println 'Copying web'
+    copy {
+        from('$buildDir/web')
+        into(packageDir + '/web')
+    }
+
+    println 'Copying dependency jars'
+    copy {
+        into packageDir + '/lib'
+        from configurations.compile
+    }
+    
+    copy {
+        into packageDir
+        from 'build/package/version.file'
     }
 } 
