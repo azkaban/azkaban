@@ -2,7 +2,8 @@ apply plugin: 'java'
 apply plugin: 'eclipse'
 
 version = '2.5'
-baseName = 'azkaban'
+archivesBaseName = 'azkaban'
+check.dependsOn.remove(test)
 
 repositories {
   mavenCentral()
@@ -70,6 +71,12 @@ jar {
     }
 }
 
+eclipse.classpath.file {
+    whenMerged { classpath -> 
+        classpath.entries.findAll { entry -> entry.kind == 'src' }*.includes = []
+    }
+}
+
 sourceSets {
   main {
     java {
@@ -77,8 +84,8 @@ sourceSets {
     }
     resources {
       srcDir 'src/java'
-      include '**/*.properties'
       include '**/*.vm'
+      include '**/*.properties'
     }
   }
   test {
@@ -104,13 +111,7 @@ task compileDust(type:Exec) {
    )
 }
 
-task web << {
-    println 'Compiling Less'
-    tasks.compileLess.execute()
-
-    println 'compiling Dust'
-    tasks.compileDust.execute()
-
+task web(dependsOn: ['compileLess', 'compileDust']) << {
     println 'Copying web files'
     copy {
         from('src/web')
@@ -127,3 +128,6 @@ task web << {
     }
 }
 
+task prePackage(dependsOn: [jar, 'web']) << {
+    
+} 
