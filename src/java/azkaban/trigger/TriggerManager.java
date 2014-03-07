@@ -294,8 +294,6 @@ public class TriggerManager extends EventHandler implements TriggerManagerAdapte
 					logger.info("Doing trigger actions");
 					action.doAction();
 				} catch (Exception e) {
-					// TODO Auto-generated catch block
-					//throw new TriggerManagerException("action failed to execute", e);
 					logger.error("Failed to do action " + action.getDescription(), e);
 				} catch (Throwable th) {
 					logger.error("Failed to do action " + action.getDescription(), th);
@@ -322,8 +320,6 @@ public class TriggerManager extends EventHandler implements TriggerManagerAdapte
 					logger.info("Doing expire actions");
 					action.doAction();
 				} catch (Exception e) {
-					// TODO Auto-generated catch block
-					//throw new TriggerManagerException("action failed to execute", e);
 					logger.error("Failed to do expire action " + action.getDescription(), e);
 				} catch (Throwable th) {
 					logger.error("Failed to do expire action " + action.getDescription(), th);
@@ -433,13 +429,11 @@ public class TriggerManager extends EventHandler implements TriggerManagerAdapte
 
 		@Override
 		public long getLastRunnerThreadCheckTime() {
-			// TODO Auto-generated method stub
 			return lastRunnerThreadCheckTime;
 		}
 
 		@Override
 		public boolean isRunnerThreadActive() {
-			// TODO Auto-generated method stub
 			return runnerThread.isAlive();
 		}
 
@@ -450,7 +444,6 @@ public class TriggerManager extends EventHandler implements TriggerManagerAdapte
 
 		@Override
 		public int getNumTriggers() {
-			// TODO Auto-generated method stub
 			return triggerIdMap.size();
 		}
 
@@ -470,7 +463,6 @@ public class TriggerManager extends EventHandler implements TriggerManagerAdapte
 
 		@Override
 		public long getScannerIdleTime() {
-			// TODO Auto-generated method stub
 			return runnerThreadIdleTime;
 		}
 

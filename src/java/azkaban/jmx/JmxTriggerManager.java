@@ -1,7 +1,5 @@
 package azkaban.jmx;
 
-import org.joda.time.DateTime;
-
 import azkaban.trigger.TriggerManagerAdapter;
 import azkaban.trigger.TriggerManagerAdapter.TriggerJMX;
 
@@ -13,8 +11,8 @@ public class JmxTriggerManager implements JmxTriggerManagerMBean {
 	}
 
 	@Override
-	public String getLastRunnerThreadCheckTime() {
-		return new DateTime(jmxStats.getLastRunnerThreadCheckTime()).toString();
+	public long getLastRunnerThreadCheckTime() {
+		return jmxStats.getLastRunnerThreadCheckTime();
 	}
 
 	@Override
@@ -57,7 +55,4 @@ public class JmxTriggerManager implements JmxTriggerManagerMBean {
 		// TODO Auto-generated method stub
 		return jmxStats.getScannerThreadStage();
 	}
-	
-	
-	
 }
