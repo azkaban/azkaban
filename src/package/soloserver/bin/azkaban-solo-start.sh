@@ -21,7 +21,7 @@ do
   CLASSPATH=$CLASSPATH:$file
 done
 
-if [ "HADOOP_HOME" != "" ]; then
+if [ "$HADOOP_HOME" != "" ]; then
         echo "Using Hadoop from $HADOOP_HOME"
         CLASSPATH=$CLASSPATH:$HADOOP_HOME/conf:$HADOOP_HOME/*
         JAVA_LIB_PATH="-Djava.library.path=$HADOOP_HOME/lib/native/Linux-amd64-64"
@@ -29,7 +29,7 @@ else
         echo "Error: HADOOP_HOME is not set. Hadoop job types will not run properly."
 fi
 
-if [ "HIVE_HOME" != "" ]; then
+if [ "$HIVE_HOME" != "" ]; then
         echo "Using Hive from $HIVE_HOME"
         CLASSPATH=$CLASSPATH:$HIVE_HOME/conf:$HIVE_HOME/lib/*
 fi
