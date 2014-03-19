@@ -361,9 +361,9 @@ ${current.time}
 
     <!-- Tarball it -->
     <tar destfile="${dist.web.package.dir}/${name}-web-server-${git.tag}.tar.gz" compression="gzip" longfile="gnu">
-      <tarfileset dir="${dist.web.package.dir}" prefix="azkaban-${git.tag}" filemode="755" includes="bin/*" />
-
-      <tarfileset dir="${dist.web.package.dir}" prefix="azkaban-${git.tag}" includes="**">
+      <tarfileset dir="${dist.web.package.dir}" prefix="azkaban-web-${git.tag}" filemode="755" includes="bin/*" />
+      
+      <tarfileset dir="${dist.web.package.dir}" prefix="azkaban-web-${git.tag}" includes="**">
         <exclude name="bin/*"/>
       </tarfileset>
     </tar>
@@ -401,9 +401,9 @@ ${current.time}
 
     <!-- Tarball it -->
     <tar destfile="${dist.exec.package.dir}/${name}-executor-server-${git.tag}.tar.gz" compression="gzip" longfile="gnu">
-      <tarfileset dir="${dist.exec.package.dir}" prefix="azkaban-${git.tag}" filemode="755" includes="bin/*" />
-
-      <tarfileset dir="${dist.exec.package.dir}" prefix="azkaban-${git.tag}" includes="**">
+      <tarfileset dir="${dist.exec.package.dir}" prefix="azkaban-executor-${git.tag}" filemode="755" includes="bin/*" />
+      
+      <tarfileset dir="${dist.exec.package.dir}" prefix="azkaban-executor-${git.tag}" includes="**">
         <exclude name="bin/*"/>
       </tarfileset>
     </tar>
@@ -463,9 +463,9 @@ ${current.time}
 
     <!-- Tarball it -->
     <tar destfile="${dist.solo.package.dir}/${name}-solo-server-${git.tag}.tar.gz" compression="gzip" longfile="gnu">
-      <tarfileset dir="${dist.solo.package.dir}" prefix="azkaban-${git.tag}" filemode="755" includes="bin/*" />
-
-      <tarfileset dir="${dist.solo.package.dir}" prefix="azkaban-${git.tag}" includes="**">
+      <tarfileset dir="${dist.solo.package.dir}" prefix="azkaban-solo-${git.tag}" filemode="755" includes="bin/*" />
+      
+      <tarfileset dir="${dist.solo.package.dir}" prefix="azkaban-solo-${git.tag}" includes="**">
         <exclude name="bin/*"/>
       </tarfileset>
     </tar>

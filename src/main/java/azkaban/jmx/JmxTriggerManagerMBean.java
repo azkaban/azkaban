@@ -3,7 +3,7 @@ package azkaban.jmx;
 public interface JmxTriggerManagerMBean {	
 	
 	@DisplayName("OPERATION: getLastThreadCheckTime")
-	public String getLastRunnerThreadCheckTime();
+	public long getLastRunnerThreadCheckTime();
 
 	@DisplayName("OPERATION: isThreadActive")
 	public boolean isRunnerThreadActive();
