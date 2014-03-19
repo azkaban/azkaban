@@ -21,9 +21,9 @@
   <property name="solo.package.dir" value="${basedir}/src/package/soloserver" />
 
   <property name="bin.dir" value="${basedir}/bin" />
-  <property name="java.src.dir" value="${basedir}/src/java" />
-  <property name="dust.src.dir" value="${basedir}/src/tl" />
-  <property name="less.src.dir" value="${basedir}/src/less" />
+  <property name="java.src.dir" value="${basedir}/src/main/java" />
+  <property name="dust.src.dir" value="${basedir}/src/main/tl" />
+  <property name="less.src.dir" value="${basedir}/src/main/less" />
   <property name="web.src.dir" value="${basedir}/src/web" />
   <property name="sql.src.dir" value="${basedir}/src/sql" />
 
