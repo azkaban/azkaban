@@ -11,7 +11,6 @@ def cmdCaller = { commandln ->
         standardOutput = stdout
     }
     
-    def out = stdout.toString().trim()
     return stdout.toString().trim()
 }
 
@@ -78,8 +77,7 @@ dependencies {
     [group: 'mysql', name:'mysql-connector-java', version: '5.1.28'],
     [group: 'javax.servlet', name:'servlet-api', version: '2.5'],
     [group: 'org.slf4j', name:'slf4j-api', version: '1.6.1'],
-    [group: 'org.apache.velocity', name:'velocity', version: '1.7'],
-    [group: 'org.apache.velocity', name:'velocity-tools', version: '2.0']
+    [group: 'org.apache.velocity', name:'velocity', version: '1.7']
   )
   
   testCompile (
@@ -171,6 +169,9 @@ task createVersionFile() << {
     versionFile.write(versionStr)
 }
 
+/**
+ * Packages the SoloServer version of Azkaban
+ */
 task packageSolo(type: Tar, dependsOn: [jar, 'web', 'createVersionFile']) {
     appendix = 'solo-server'
     packageDir = 'build/package/' + baseName + '-' + appendix
@@ -234,10 +235,13 @@ task packageSolo(type: Tar, dependsOn: [jar, 'web', 'createVersionFile']) {
     }
 } 
 
+/**
+ * Packages the Sql Scripts for Azkaban DB
+ */
 task packageSql(type: Tar) {
     String packageDir = 'build/package/sql'
  
-    println 'Creating Azkaban Solo Server Package into ' + packageDir
+    println 'Creating Azkaban SQL Scripts into ' + packageDir
     mkdir packageDir
     
     println 'Copying SQL files'
@@ -268,6 +272,9 @@ task packageSql(type: Tar) {
     }
 } 
 
+/**
+ * Packages the Azkaban Executor Server
+ */
 task packageExec(type: Tar, dependsOn: [jar, 'createVersionFile']) {
     appendix = 'exec-server'
     String packageDir = 'build/package/' + baseName + '-' + appendix
@@ -321,6 +328,9 @@ task packageExec(type: Tar, dependsOn: [jar, 'createVersionFile']) {
     }
 }
 
+/**
+ * Packages the Azkaban Web Server
+ */
 task packageWeb(type: Tar, dependsOn: [jar, 'web', 'createVersionFile']) {
     appendix = 'web-server'
     String packageDir = 'build/package/' + baseName + '-' + appendix
