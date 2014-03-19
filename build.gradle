@@ -22,6 +22,7 @@ def getVersionName = { ->
     return cmdCaller(['git', 'describe', '--tags', '--abbrev=0'])
 }
 
+
 version = getVersionName()
 archivesBaseName = 'azkaban'
 check.dependsOn.remove(test)
@@ -109,30 +110,11 @@ eclipse.classpath.file {
     }
 }
 
-sourceSets {
-  main {
-    java {
-      srcDir 'src/java'
-    }
-    resources {
-      // Used to include all vm's and property files in the src code
-      srcDir 'src/java'
-      include '**/*.vm'
-      include '**/*.properties'
-    }
-  }
-  test {
-    java {
-      srcDir 'unit/java'
-    }
-  }
-}
-
 /**
  * Invokes a makefile target that will compile less files
  */
 task compileLess(type:Exec) {
-    workingDir 'src/less'
+    workingDir 'src/main/less'
     commandLine 'make', '-e'
     environment (
       OBJ_DIR : file(new File(buildDir,'/less'))
@@ -143,7 +125,7 @@ task compileLess(type:Exec) {
  * Invokes a makefile target that will compile dust files
  */
 task compileDust(type:Exec) {
-    workingDir 'src/tl'
+    workingDir 'src/main/tl'
     commandLine 'make', '-e'
     environment (
       OBJ_DIR : file(new File(buildDir,'/dust'))
@@ -185,13 +167,14 @@ task createVersionFile() << {
                         formattedDate + '\n'
 
     File versionFile = file('build/package/version.file')
+    versionFile.parentFile.mkdirs()
     versionFile.write(versionStr)
-    
 }
 
-task packageSolo(dependsOn: [jar, 'web', 'createVersionFile']) << {
-    String packageDir = 'build/package/azkaban-solo-server'
- 
+task packageSolo(type: Tar, dependsOn: [jar, 'web', 'createVersionFile']) {
+    appendix = 'solo-server'
+    packageDir = 'build/package/' + baseName + '-' + appendix
+
     println 'Creating Azkaban Solo Server Package into ' + packageDir
     mkdir packageDir
     mkdir packageDir + '/extlib'
@@ -205,13 +188,13 @@ task packageSolo(dependsOn: [jar, 'web', 'createVersionFile']) << {
     
     println 'Copying Azkaban lib'
     copy {
-        from('$buildDir/libs')
+        from('build/libs')
         into(packageDir + '/lib')
     }
     
     println 'Copying web'
     copy {
-        from('$buildDir/web')
+        from('build/web')
         into(packageDir + '/web')
     }
 
@@ -231,10 +214,63 @@ task packageSolo(dependsOn: [jar, 'web', 'createVersionFile']) << {
         into packageDir
         from 'build/package/version.file'
     }
+    
+    println 'Tarballing Solo Package'
+    extension = 'tar.gz'
+    compression = Compression.GZIP
+  
+    basedir = baseName + '-' + appendix + '-' + version
+    println 'Source is in ' + packageDir
+    into(basedir) { 
+        from packageDir
+        exclude 'bin'
+    }
+    
+    dst_bin = basedir + '/bin'
+    src_bin = packageDir + '/bin'
+    from(src_bin) { 
+        into dst_bin
+        fileMode = 0755
+    }
 } 
 
-task packageExec(dependsOn: [jar, 'web', 'createVersionFile']) << {
-    String packageDir = 'build/package/azkaban-exec-server'
+task packageSql(type: Tar) {
+    String packageDir = 'build/package/sql'
+ 
+    println 'Creating Azkaban Solo Server Package into ' + packageDir
+    mkdir packageDir
+    
+    println 'Copying SQL files'
+    copy {
+        from('src/sql')
+        into(packageDir)
+    }
+    
+    String destFile = packageDir + '/create-all-sql-' + version + '.sql';
+    println('Concating create scripts to ' + destFile)
+    ant.concat(destfile:destFile, fixlastline:'yes') {
+        fileset(dir: 'src/sql') {
+            exclude(name: 'update.*.sql')
+            exclude(name: 'database.properties')
+        }
+    }
+    
+    println 'Tarballing SQL Package'
+    extension = 'tar.gz'
+    compression = Compression.GZIP
+    appendix = 'sql'
+  
+    basedir = baseName + '-' + appendix + '-' + version
+    packageDir = 'build/package/sql'
+    println 'Source is in ' + packageDir
+    into(basedir) { 
+        from packageDir
+    }
+} 
+
+task packageExec(type: Tar, dependsOn: [jar, 'createVersionFile']) {
+    appendix = 'exec-server'
+    String packageDir = 'build/package/' + baseName + '-' + appendix
  
     println 'Creating Azkaban Executor Server Package into ' + packageDir
     mkdir packageDir
@@ -249,14 +285,8 @@ task packageExec(dependsOn: [jar, 'web', 'createVersionFile']) << {
     
     println 'Copying Azkaban lib'
     copy {
-        from('$buildDir/libs')
+        from('build/libs')
         into(packageDir + '/lib')
-    }
-    
-    println 'Copying web'
-    copy {
-        from('$buildDir/web')
-        into(packageDir + '/web')
     }
 
     println 'Copying dependency jars'
@@ -269,10 +299,31 @@ task packageExec(dependsOn: [jar, 'web', 'createVersionFile']) << {
         into packageDir
         from 'build/package/version.file'
     }
+    
+    println 'Tarballing Web Package'
+    extension = 'tar.gz'
+    compression = Compression.GZIP
+  
+    basedir = baseName + '-' + appendix + '-' + version
+    packageDir = 'build/package/' + baseName + '-' + appendix
+    println 'Source is in ' + packageDir
+
+    into(basedir) { 
+        from packageDir
+        exclude 'bin'
+    }
+    
+    dst_bin = basedir + '/bin'
+    src_bin = packageDir + '/bin'
+    from(src_bin) { 
+        into dst_bin
+        fileMode = 0755
+    }
 }
 
-task packageWeb(dependsOn: [jar, 'web', 'createVersionFile']) << {
-    String packageDir = 'build/package/azkaban-web-server'
+task packageWeb(type: Tar, dependsOn: [jar, 'web', 'createVersionFile']) {
+    appendix = 'web-server'
+    String packageDir = 'build/package/' + baseName + '-' + appendix
  
     println 'Creating Azkaban Web Server Package into ' + packageDir
     mkdir packageDir
@@ -287,13 +338,13 @@ task packageWeb(dependsOn: [jar, 'web', 'createVersionFile']) << {
     
     println 'Copying Azkaban lib'
     copy {
-        from('$buildDir/libs')
+        from('build/libs')
         into(packageDir + '/lib')
     }
     
     println 'Copying web'
     copy {
-        from('$buildDir/web')
+        from('build/web')
         into(packageDir + '/web')
     }
 
@@ -307,4 +358,25 @@ task packageWeb(dependsOn: [jar, 'web', 'createVersionFile']) << {
         into packageDir
         from 'build/package/version.file'
     }
-} 
+    
+    println 'Tarballing Web Package'
+    extension = 'tar.gz'
+    compression = Compression.GZIP
+  
+    basedir = baseName + '-' + appendix + '-' + version
+    println 'Source is in ' + packageDir
+    into(basedir) { 
+        from packageDir
+        exclude 'bin'
+    }
+    
+    dst_bin = basedir + '/bin'
+    src_bin = packageDir + '/bin'
+    from(src_bin) { 
+        into dst_bin
+        fileMode = 0755
+    }
+}
+
+task packageAll(dependsOn : ['packageWeb', 'packageExec', 'packageSolo', 'packageSql']) {
+}
