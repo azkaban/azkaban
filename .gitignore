@@ -10,3 +10,5 @@ TestProcess_*
 _AzkabanTestDir_*
 reports/
 /bin
+.classpath
+.project
