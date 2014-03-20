@@ -1,0 +1,392 @@
+apply plugin: 'java'
+apply plugin: 'eclipse'
+
+/**
+ * Helper that calls a command and returns the output
+ */
+def cmdCaller = { commandln ->
+    def stdout = new ByteArrayOutputStream()
+    exec {
+        commandLine commandln
+        standardOutput = stdout
+    }
+    
+    return stdout.toString().trim()
+}
+
+/**
+ * Git version name from git tag
+ */
+def getVersionName = { ->
+    return cmdCaller(['git', 'describe', '--tags', '--abbrev=0'])
+}
+
+
+version = getVersionName()
+archivesBaseName = 'azkaban'
+check.dependsOn.remove(test)
+
+repositories {
+  mavenCentral()
+  mavenLocal()
+}
+
+configurations {
+    all {
+        // We don't want the kitchen sink for dependencies. Only the ones we know we need for
+        // compile and ones we need to package.
+        transitive = false
+    }
+    compile {
+        description = 'compile classpath'
+    }
+    test {
+        extendsFrom compile
+    }
+}
+configurations.compile {
+    description = 'compile classpath'
+}
+
+dependencies {
+  compile (
+    [group: 'commons-collections', name:'commons-collections', version: '3.2.1'],
+    [group: 'commons-configuration', name:'commons-configuration', version: '1.8'],
+    [group: 'commons-dbcp', name:'commons-dbcp', version: '1.4'],
+    [group: 'commons-dbutils', name:'commons-dbutils', version: '1.5'],
+    [group: 'org.apache.commons', name:'commons-email', version: '1.2'],
+    [group: 'commons-fileupload', name:'commons-fileupload', version: '1.2.1'],
+    [group: 'commons-io', name:'commons-io', version: '2.4'],
+    [group: 'org.apache.commons', name:'commons-jexl', version: '2.1.1'],
+    [group: 'commons-lang', name:'commons-lang', version: '2.6'],
+    [group: 'commons-logging', name:'commons-logging', version: '1.1.1'],
+    [group: 'commons-pool', name:'commons-pool', version: '1.6'],
+    [group: 'com.google.guava', name:'guava', version: '13.0.1'],
+    [group: 'com.h2database', name:'h2', version: '1.3.170'],
+    [group: 'org.apache.httpcomponents', name: 'httpclient', version: '4.2.1'],
+    [group: 'org.apache.httpcomponents', name:'httpcore', version: '4.2.1'],
+    [group: 'org.codehaus.jackson', name:'jackson-core-asl', version: '1.9.5'],
+    [group: 'org.codehaus.jackson', name:'jackson-mapper-asl',version: '1.9.5'],
+    [group: 'org.codehaus.jackson', name:'jackson-core-asl', version: '1.9.5'],
+    [group: 'org.mortbay.jetty', name:'jetty', version: '6.1.26'],
+    [group: 'org.mortbay.jetty', name:'jetty-util', version: '6.1.26'],
+    [group: 'joda-time', name:'joda-time', version: '2.0'],
+    [group: 'net.sf.jopt-simple', name:'jopt-simple', version: '4.3'],
+    [group: 'log4j', name:'log4j', version: '1.2.16'],
+    [group: 'javax.mail', name:'mail', version: '1.4.5'],
+    [group: 'mysql', name:'mysql-connector-java', version: '5.1.28'],
+    [group: 'javax.servlet', name:'servlet-api', version: '2.5'],
+    [group: 'org.slf4j', name:'slf4j-api', version: '1.6.1'],
+    [group: 'org.apache.velocity', name:'velocity', version: '1.7']
+  )
+  
+  testCompile (
+    [group: 'junit', name:'junit', version: '4.11']
+  )
+}
+
+jar {
+    baseName =  'azkaban'
+    manifest {
+      attributes(
+        'Implementation-Title': 'Azkaban', 
+        'Implementation-Version': version
+      )
+    }
+}
+
+eclipse.classpath.file {
+    // Erase the whole classpath
+    beforeMerged {
+        classpath -> classpath.entries.removeAll { entry -> true }
+    }
+    
+    // We want to make sure that if there is an entry for src, that it doesn't have any
+    // include parameters
+    whenMerged { classpath -> 
+        classpath.entries.findAll { entry -> entry.kind == 'src' }*.includes = []
+    }
+}
+
+/**
+ * Invokes a makefile target that will compile less files
+ */
+task compileLess(type:Exec) {
+    workingDir 'src/main/less'
+    commandLine 'make', '-e'
+    environment (
+      OBJ_DIR : file(new File(buildDir,'/less'))
+   )
+}
+
+/**
+ * Invokes a makefile target that will compile dust files
+ */
+task compileDust(type:Exec) {
+    workingDir 'src/main/tl'
+    commandLine 'make', '-e'
+    environment (
+      OBJ_DIR : file(new File(buildDir,'/dust'))
+   )
+}
+
+/**
+ * Copies web files to a build directory
+ */
+task web(dependsOn: ['compileLess', 'compileDust']) << {
+    println 'Copying web files'
+    copy {
+        from('src/web')
+        into('build/web') 
+    }
+
+    copy {
+        from('build/dust')
+        into('build/web/js')
+    }
+    copy {
+        from('build/less')
+        into('build/web/css')
+    }
+}
+
+/*
+ * Gets the version name from the latest Git tag
+ */
+task createVersionFile() << {
+    String gitCommitHash = cmdCaller(['git', 'rev-parse', 'HEAD']);
+    String gitRepo = cmdCaller(['git', 'config', '--get', 'remote.origin.url']);
+    def date = new Date()
+    def formattedDate = date.format('yyyy-MM-dd hh:mm zzz')
+
+    String versionStr = version + '\n' +
+                        gitCommitHash + '\n' +
+                        gitRepo + '\n' +
+                        formattedDate + '\n'
+
+    File versionFile = file('build/package/version.file')
+    versionFile.parentFile.mkdirs()
+    versionFile.write(versionStr)
+}
+
+/**
+ * Packages the SoloServer version of Azkaban
+ */
+task packageSolo(type: Tar, dependsOn: [jar, 'web', 'createVersionFile']) {
+    appendix = 'solo-server'
+    packageDir = 'build/package/' + baseName + '-' + appendix
+
+    println 'Creating Azkaban Solo Server Package into ' + packageDir
+    mkdir packageDir
+    mkdir packageDir + '/extlib'
+    mkdir packageDir + '/plugins'
+    
+    println 'Copying Soloserver bin & conf'
+    copy {
+        from('src/package/soloserver')
+        into(packageDir)
+    }
+    
+    println 'Copying Azkaban lib'
+    copy {
+        from('build/libs')
+        into(packageDir + '/lib')
+    }
+    
+    println 'Copying web'
+    copy {
+        from('build/web')
+        into(packageDir + '/web')
+    }
+
+    println 'Copying sql'
+    copy {
+        from('src/sql')
+        into(packageDir + '/sql')
+    }
+
+    println 'Copying dependency jars'
+    copy {
+        into packageDir + '/lib'
+        from configurations.compile
+    }
+    
+    copy {
+        into packageDir
+        from 'build/package/version.file'
+    }
+    
+    println 'Tarballing Solo Package'
+    extension = 'tar.gz'
+    compression = Compression.GZIP
+  
+    basedir = baseName + '-' + appendix + '-' + version
+    println 'Source is in ' + packageDir
+    into(basedir) { 
+        from packageDir
+        exclude 'bin'
+    }
+    
+    dst_bin = basedir + '/bin'
+    src_bin = packageDir + '/bin'
+    from(src_bin) { 
+        into dst_bin
+        fileMode = 0755
+    }
+} 
+
+/**
+ * Packages the Sql Scripts for Azkaban DB
+ */
+task packageSql(type: Tar) {
+    String packageDir = 'build/package/sql'
+ 
+    println 'Creating Azkaban SQL Scripts into ' + packageDir
+    mkdir packageDir
+    
+    println 'Copying SQL files'
+    copy {
+        from('src/sql')
+        into(packageDir)
+    }
+    
+    String destFile = packageDir + '/create-all-sql-' + version + '.sql';
+    println('Concating create scripts to ' + destFile)
+    ant.concat(destfile:destFile, fixlastline:'yes') {
+        fileset(dir: 'src/sql') {
+            exclude(name: 'update.*.sql')
+            exclude(name: 'database.properties')
+        }
+    }
+    
+    println 'Tarballing SQL Package'
+    extension = 'tar.gz'
+    compression = Compression.GZIP
+    appendix = 'sql'
+  
+    basedir = baseName + '-' + appendix + '-' + version
+    packageDir = 'build/package/sql'
+    println 'Source is in ' + packageDir
+    into(basedir) { 
+        from packageDir
+    }
+} 
+
+/**
+ * Packages the Azkaban Executor Server
+ */
+task packageExec(type: Tar, dependsOn: [jar, 'createVersionFile']) {
+    appendix = 'exec-server'
+    String packageDir = 'build/package/' + baseName + '-' + appendix
+ 
+    println 'Creating Azkaban Executor Server Package into ' + packageDir
+    mkdir packageDir
+    mkdir packageDir + '/extlib'
+    mkdir packageDir + '/plugins'
+    
+    println 'Copying Exec server bin & conf'
+    copy {
+        from('src/package/execserver')
+        into(packageDir)
+    }
+    
+    println 'Copying Azkaban lib'
+    copy {
+        from('build/libs')
+        into(packageDir + '/lib')
+    }
+
+    println 'Copying dependency jars'
+    copy {
+        into packageDir + '/lib'
+        from configurations.compile
+    }
+    
+    copy {
+        into packageDir
+        from 'build/package/version.file'
+    }
+    
+    println 'Tarballing Web Package'
+    extension = 'tar.gz'
+    compression = Compression.GZIP
+  
+    basedir = baseName + '-' + appendix + '-' + version
+    packageDir = 'build/package/' + baseName + '-' + appendix
+    println 'Source is in ' + packageDir
+
+    into(basedir) { 
+        from packageDir
+        exclude 'bin'
+    }
+    
+    dst_bin = basedir + '/bin'
+    src_bin = packageDir + '/bin'
+    from(src_bin) { 
+        into dst_bin
+        fileMode = 0755
+    }
+}
+
+/**
+ * Packages the Azkaban Web Server
+ */
+task packageWeb(type: Tar, dependsOn: [jar, 'web', 'createVersionFile']) {
+    appendix = 'web-server'
+    String packageDir = 'build/package/' + baseName + '-' + appendix
+ 
+    println 'Creating Azkaban Web Server Package into ' + packageDir
+    mkdir packageDir
+    mkdir packageDir + '/extlib'
+    mkdir packageDir + '/plugins'
+    
+    println 'Copying Web server bin & conf'
+    copy {
+        from('src/package/webserver')
+        into(packageDir)
+    }
+    
+    println 'Copying Azkaban lib'
+    copy {
+        from('build/libs')
+        into(packageDir + '/lib')
+    }
+    
+    println 'Copying web'
+    copy {
+        from('build/web')
+        into(packageDir + '/web')
+    }
+
+    println 'Copying dependency jars'
+    copy {
+        into packageDir + '/lib'
+        from configurations.compile
+    }
+    
+    copy {
+        into packageDir
+        from 'build/package/version.file'
+    }
+    
+    println 'Tarballing Web Package'
+    extension = 'tar.gz'
+    compression = Compression.GZIP
+  
+    basedir = baseName + '-' + appendix + '-' + version
+    println 'Source is in ' + packageDir
+    into(basedir) { 
+        from packageDir
+        exclude 'bin'
+    }
+    
+    dst_bin = basedir + '/bin'
+    src_bin = packageDir + '/bin'
+    from(src_bin) { 
+        into dst_bin
+        fileMode = 0755
+    }
+}
+
+task packageAll(dependsOn : ['packageWeb', 'packageExec', 'packageSolo', 'packageSql']) {
+}
