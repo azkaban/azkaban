@@ -975,8 +975,6 @@ public class FlowRunner extends EventHandler implements Runnable {
 		}
 		flow.setUpdateTime(System.currentTimeMillis());
 		flow.setEndTime(-1);
-		flow.setStartTime(maxStartTime);
-		
 		logger.info("Resetting flow '" + flow.getNestedId() + "' from " + oldFlowState + " to " + flow.getStatus());
 	}
 	
