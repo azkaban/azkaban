@@ -1,0 +1,10 @@
+{
+  "type": "record",
+  "name": "User",
+  "namespace": "azkaban.restli.user",
+  "doc": "Azkaban User restli info",
+  "fields": [
+    {"name": "userId", "type": "string","doc": "The username this session"},
+    {"name": "email", "type": "string","doc": "User email"}
+  ]
+}

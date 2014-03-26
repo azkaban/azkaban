@@ -50,6 +50,8 @@ import org.mortbay.jetty.servlet.DefaultServlet;
 import org.mortbay.jetty.servlet.ServletHolder;
 import org.mortbay.thread.QueuedThreadPool;
 
+import com.linkedin.restli.server.RestliServlet;
+
 import azkaban.alert.Alerter;
 import azkaban.database.AzkabanDatabaseSetup;
 import azkaban.executor.ExecutorManager;
@@ -158,6 +160,10 @@ public class AzkabanWebServer extends AzkabanServer {
 	private MBeanServer mbeanServer;
 	private ArrayList<ObjectName> registeredMBeans = new ArrayList<ObjectName>();
 
+	public static AzkabanWebServer getInstance() {
+		return app;
+	}
+	
 	/**
 	 * Constructor usually called by tomcat AzkabanServletContext to create the
 	 * initial server
@@ -762,6 +768,10 @@ public class AzkabanWebServer extends AzkabanServer {
 		root.addServlet(new ServletHolder(new ScheduleServlet()),"/schedule");
 		root.addServlet(new ServletHolder(new JMXHttpServlet()),"/jmx");
 		root.addServlet(new ServletHolder(new TriggerManagerServlet()),"/triggers");
+
+		ServletHolder restliHolder = new ServletHolder(new RestliServlet());
+		restliHolder.setInitParameter("resourcePackages", "azkaban.restli");
+		root.addServlet(restliHolder, "/restli/*");
 		
 		String viewerPluginDir = azkabanSettings.getString("viewer.plugin.dir", "plugins/viewer");
 		loadViewerPlugins(root, viewerPluginDir, app.getVelocityEngine());
