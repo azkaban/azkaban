@@ -22,6 +22,7 @@
 
   <property name="bin.dir" value="${basedir}/bin" />
   <property name="java.src.dir" value="${basedir}/src/main/java" />
+  <property name="resources.src.dir" value="${basedir}/src/main/resources" />
   <property name="dust.src.dir" value="${basedir}/src/main/tl" />
   <property name="less.src.dir" value="${basedir}/src/main/less" />
   <property name="web.src.dir" value="${basedir}/src/web" />
@@ -212,6 +213,7 @@ ${current.time}
       <fileset dir="${java.src.dir}">
         <exclude name="**/*.java" />
       </fileset>
+      <fileset dir="${resources.src.dir}"></fileset>
     </copy>
 
     <javac fork="true" destdir="${dist.classes.dir}"
