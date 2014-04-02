@@ -35,6 +35,7 @@ public class LoginResource extends ResourceContextHolder {
 			@ActionParam("username") String username,
 			@ActionParam("password") String password)
 			throws UserManagerException, ServletException {
+		String ip = this.getContext().getRequestHeaders().get("client_ip");
 //		String ip = requestContext.getRemoteAddr();
 //
 //		Session session = createSession(username, password, ip);
