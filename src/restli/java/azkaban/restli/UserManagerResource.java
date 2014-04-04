@@ -3,31 +3,26 @@ package azkaban.restli;
 import java.util.UUID;
 
 import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
+
+import org.apache.log4j.Logger;
 
 import azkaban.restli.user.User;
 import azkaban.user.UserManager;
 import azkaban.user.UserManagerException;
-import azkaban.webapp.AzkabanServer;
 import azkaban.webapp.AzkabanWebServer;
 import azkaban.webapp.session.Session;
 
 import com.linkedin.restli.server.annotations.Action;
 import com.linkedin.restli.server.annotations.ActionParam;
-import com.linkedin.restli.server.annotations.Context;
 import com.linkedin.restli.server.annotations.RestLiActions;
 import com.linkedin.restli.server.resources.ResourceContextHolder;
 
 @RestLiActions(name = "user", namespace = "azkaban.restli")
 public class UserManagerResource extends ResourceContextHolder {
-	private AzkabanServer azkaban;
-
+	private static final Logger logger = Logger.getLogger(UserManagerResource.class);
+	
 	public AzkabanWebServer getAzkaban() {
 		return AzkabanWebServer.getInstance();
-	}
-
-	public void setAzkaban(AzkabanServer azkaban) {
-		this.azkaban = azkaban;
 	}
 
 	@Action(name = "login")
@@ -36,8 +31,11 @@ public class UserManagerResource extends ResourceContextHolder {
 			@ActionParam("password") String password)
 			throws UserManagerException, ServletException {
 		String ip = this.getContext().getRequestHeaders().get("client_ip");
-
+		logger.info("Attempting to login for " + username + " from ip '" + ip + "'");
+		
 		Session session = createSession(username, password, ip);
+		
+		logger.info("Session id " + session.getSessionId() + " created for user '" + username + "' and ip " + ip);
 		return session.getSessionId();
 	}
 
@@ -62,7 +60,8 @@ public class UserManagerResource extends ResourceContextHolder {
 
 		String randomUID = UUID.randomUUID().toString();
 		Session session = new Session(randomUID, user, ip);
-
+		getAzkaban().getSessionCache().addSession(session);
+		
 		return session;
 	}
 
