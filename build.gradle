@@ -48,7 +48,7 @@ configurations {
     }
 }
 
-pegasusVersion = '1.13.4'
+pegasusVersion = '1.15.7'
 
 dependencies {
   compile (

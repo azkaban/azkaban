@@ -1,27 +1,12 @@
 package azkaban.restli;
 
-import java.io.BufferedInputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.security.KeyFactory;
-import java.security.PublicKey;
-import java.security.Security;
-import java.security.spec.X509EncodedKeySpec;
 import java.util.UUID;
-
-import javax.crypto.Cipher;
 import javax.servlet.ServletException;
-
-import org.apache.commons.codec.binary.Base64;
-import org.apache.commons.io.IOUtils;
 import org.apache.log4j.Logger;
-import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
 import azkaban.restli.user.User;
 import azkaban.user.UserManager;
 import azkaban.user.UserManagerException;
-import azkaban.utils.cache.Cache;
-import azkaban.utils.cache.CacheManager;
 import azkaban.webapp.AzkabanWebServer;
 import azkaban.webapp.session.Session;
 
@@ -44,7 +29,10 @@ public class UserManagerResource extends ResourceContextHolder {
 			@ActionParam("username") String username,
 			@ActionParam("password") String password)
 			throws UserManagerException, ServletException {
-		String ip = this.getContext().getRequestHeaders().get("client_ip");
+		String ip = (String)this.getContext().getRawRequestContext().getLocalAttr("REMOTE_ADDR");
+		for(String key : this.getContext().getRawRequestContext().getLocalAttrs().keySet()) {
+			System.out.println("Key: " + key + ", Value: " + this.getContext().getRawRequestContext().getLocalAttr(key));
+		}
 		logger.info("Attempting to login for " + username + " from ip '" + ip + "'");
 		
 		Session session = createSession(username, password, ip);
@@ -91,26 +79,5 @@ public class UserManagerResource extends ResourceContextHolder {
 		}
 
 		return session;
-	}
-	
-	/**
-	 * 
-	 */
-	private static class LoginChallenge {
-		private final String user;
-		private final String challenge;
-		
-		public LoginChallenge(String user, String challenge) {
-			this.user = user;
-			this.challenge = challenge;
-		}
-
-		public String getUser() {
-			return user;
-		}
-
-		public String getChallenge() {
-			return challenge;
-		}
 	}
 }
