@@ -40,13 +40,13 @@ public class ProjectManagerResource extends ResourceContextHolder {
 	
 	@Action(name = "deploy")
 	public String deploy(
-			@ActionParam("session.id") String sessionId,
-			@ActionParam("project.name") String projectName,
-			@ActionParam("package.url") String packageUrl)
+			@ActionParam("sessionId") String sessionId,
+			@ActionParam("projectName") String projectName,
+			@ActionParam("packageUrl") String packageUrl)
 			throws ProjectManagerException, UserManagerException, ServletException, IOException {
-		logger.info("Deploy called. {session.id: " + sessionId +
-				", project.name: " + projectName + 
-				", package.url:" + packageUrl + "}");
+		logger.info("Deploy called. {sessionId: " + sessionId +
+				", projectName: " + projectName + 
+				", packageUrl:" + packageUrl + "}");
 		
 		User user = ResourceUtils.getUserFromSessionId(sessionId);
 		ProjectManager projectManager = getAzkaban().getProjectManager();

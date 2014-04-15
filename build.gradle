@@ -54,6 +54,7 @@ dependencies {
   compile (
     [group: 'commons-collections', name:'commons-collections', version: '3.2.1'],
     [group: 'commons-configuration', name:'commons-configuration', version: '1.8'],
+    [group: 'commons-codec', name:'commons-codec', version: '1.9'],
     [group: 'commons-dbcp', name:'commons-dbcp', version: '1.4'],
     [group: 'commons-dbutils', name:'commons-dbutils', version: '1.5'],
     [group: 'org.apache.commons', name:'commons-email', version: '1.2'],
@@ -69,7 +70,6 @@ dependencies {
     [group: 'org.apache.httpcomponents', name:'httpcore', version: '4.2.1'],
     [group: 'org.codehaus.jackson', name:'jackson-core-asl', version: '1.9.5'],
     [group: 'org.codehaus.jackson', name:'jackson-mapper-asl',version: '1.9.5'],
-    [group: 'org.codehaus.jackson', name:'jackson-core-asl', version: '1.9.5'],
     [group: 'org.mortbay.jetty', name:'jetty', version: '6.1.26'],
     [group: 'org.mortbay.jetty', name:'jetty-util', version: '6.1.26'],
     [group: 'joda-time', name:'joda-time', version: '2.0'],

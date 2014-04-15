@@ -34,7 +34,7 @@ public interface UserManager {
 	 * @throws UserManagerException If the username/password combination doesn't exist.
 	 */
 	public User getUser(String username, String password) throws UserManagerException;
-	
+
 	/**
 	 * Returns true if the user is valid. This is used when adding permissions for users
 	 * 

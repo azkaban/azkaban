@@ -10,6 +10,7 @@ import azkaban.webapp.AzkabanWebServer;
 import azkaban.webapp.session.Session;
 
 public class ResourceUtils {
+	
 	public static boolean hasPermission(Project project, User user, Permission.Type type) {
 		UserManager userManager = AzkabanWebServer.getInstance().getUserManager();
 		if (project.hasPermission(user, type)) {
@@ -19,7 +20,7 @@ public class ResourceUtils {
 		for (String roleName: user.getRoles()) {
 			Role role = userManager.getRole(roleName);
 			if (role.getPermission().isPermissionSet(type) || 
-					role.getPermission().isPermissionSet(Permission.Type.ADMIN)) {
+				role.getPermission().isPermissionSet(Permission.Type.ADMIN)) {
 				return true;
 			}
 		}

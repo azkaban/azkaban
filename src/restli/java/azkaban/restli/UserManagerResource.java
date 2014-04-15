@@ -1,14 +1,27 @@
 package azkaban.restli;
 
+import java.io.BufferedInputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.security.KeyFactory;
+import java.security.PublicKey;
+import java.security.Security;
+import java.security.spec.X509EncodedKeySpec;
 import java.util.UUID;
 
+import javax.crypto.Cipher;
 import javax.servlet.ServletException;
 
+import org.apache.commons.codec.binary.Base64;
+import org.apache.commons.io.IOUtils;
 import org.apache.log4j.Logger;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
 import azkaban.restli.user.User;
 import azkaban.user.UserManager;
 import azkaban.user.UserManagerException;
+import azkaban.utils.cache.Cache;
+import azkaban.utils.cache.CacheManager;
 import azkaban.webapp.AzkabanWebServer;
 import azkaban.webapp.session.Session;
 
@@ -17,6 +30,7 @@ import com.linkedin.restli.server.annotations.ActionParam;
 import com.linkedin.restli.server.annotations.RestLiActions;
 import com.linkedin.restli.server.resources.ResourceContextHolder;
 
+
 @RestLiActions(name = "user", namespace = "azkaban.restli")
 public class UserManagerResource extends ResourceContextHolder {
 	private static final Logger logger = Logger.getLogger(UserManagerResource.class);
@@ -24,7 +38,7 @@ public class UserManagerResource extends ResourceContextHolder {
 	public AzkabanWebServer getAzkaban() {
 		return AzkabanWebServer.getInstance();
 	}
-
+	
 	@Action(name = "login")
 	public String login(
 			@ActionParam("username") String username,
@@ -77,5 +91,26 @@ public class UserManagerResource extends ResourceContextHolder {
 		}
 
 		return session;
+	}
+	
+	/**
+	 * 
+	 */
+	private static class LoginChallenge {
+		private final String user;
+		private final String challenge;
+		
+		public LoginChallenge(String user, String challenge) {
+			this.user = user;
+			this.challenge = challenge;
+		}
+
+		public String getUser() {
+			return user;
+		}
+
+		public String getChallenge() {
+			return challenge;
+		}
 	}
 }
