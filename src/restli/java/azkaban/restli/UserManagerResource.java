@@ -30,9 +30,6 @@ public class UserManagerResource extends ResourceContextHolder {
 			@ActionParam("password") String password)
 			throws UserManagerException, ServletException {
 		String ip = (String)this.getContext().getRawRequestContext().getLocalAttr("REMOTE_ADDR");
-		for(String key : this.getContext().getRawRequestContext().getLocalAttrs().keySet()) {
-			System.out.println("Key: " + key + ", Value: " + this.getContext().getRawRequestContext().getLocalAttr(key));
-		}
 		logger.info("Attempting to login for " + username + " from ip '" + ip + "'");
 		
 		Session session = createSession(username, password, ip);
@@ -44,7 +41,7 @@ public class UserManagerResource extends ResourceContextHolder {
 	@Action(name = "getUserFromSessionId")
 	public User getUserFromSessionId(@ActionParam("sessionId") String sessionId) {
 		// String ip = req.getRemoteAddr();
-		String ip = this.getContext().getParameter("ip");
+		String ip = (String)this.getContext().getRawRequestContext().getLocalAttr("REMOTE_ADDR");
 		Session session = getSessionFromSessionId(sessionId, ip);
 		azkaban.user.User azUser = session.getUser();
 
