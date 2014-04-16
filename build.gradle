@@ -286,7 +286,7 @@ task packageSql(type: Tar) {
  
     println 'Creating Azkaban SQL Scripts into ' + packageDir
     mkdir packageDir
-    
+    delete packageDir
     println 'Copying SQL files'
     copy {
         from('src/sql')
@@ -321,7 +321,8 @@ task packageSql(type: Tar) {
 task packageExec(type: Tar, dependsOn: [jar, 'createVersionFile']) {
     appendix = 'exec-server'
     String packageDir = 'build/package/' + baseName + '-' + appendix
- 
+    delete packageDir
+    
     println 'Creating Azkaban Executor Server Package into ' + packageDir
     mkdir packageDir
     mkdir packageDir + '/extlib'
@@ -333,9 +334,10 @@ task packageExec(type: Tar, dependsOn: [jar, 'createVersionFile']) {
         into(packageDir)
     }
     
-    println 'Copying Azkaban lib'
+    String jarFile = 'build/libs/' + baseName + '-' + version + '.jar'
+    println 'Copying Azkaban lib ' + jarFile
     copy {
-        from('build/libs')
+        from(jarFile)
         into(packageDir + '/lib')
     }
 
@@ -378,6 +380,7 @@ task packageWeb(type: Tar, dependsOn: [jar, 'web', 'createVersionFile']) {
     appendix = 'web-server'
     String packageDir = 'build/package/' + baseName + '-' + appendix
  
+    delete packageDir
     println 'Creating Azkaban Web Server Package into ' + packageDir
     mkdir packageDir
     mkdir packageDir + '/extlib'
@@ -389,9 +392,10 @@ task packageWeb(type: Tar, dependsOn: [jar, 'web', 'createVersionFile']) {
         into(packageDir)
     }
     
-    println 'Copying Azkaban lib'
+    String jarFile = 'build/libs/' + baseName + '-' + version + '.jar'
+    println 'Copying Azkaban lib ' + jarFile
     copy {
-        from('build/libs')
+        from(jarFile)
         into(packageDir + '/lib')
     }
     
