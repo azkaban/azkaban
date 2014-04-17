@@ -132,20 +132,26 @@ public class Utils {
 	public static void zip(File input, File output) throws IOException {
 		FileOutputStream out = new FileOutputStream(output);
 		ZipOutputStream zOut = new ZipOutputStream(out);
-		zipFile("", input, zOut);
-		zOut.close();
+		try {
+			zipFile("", input, zOut);
+		} finally {
+			zOut.close();
+		}
 	}
 
 	public static void zipFolderContent(File folder, File output) throws IOException {
 		FileOutputStream out = new FileOutputStream(output);
 		ZipOutputStream zOut = new ZipOutputStream(out);
-		File[] files = folder.listFiles();
-		if (files != null) {
-			for (File f : files) {
-				zipFile("", f, zOut);
+		try {
+			File[] files = folder.listFiles();
+			if (files != null) {
+				for (File f : files) {
+					zipFile("", f, zOut);
+				}
 			}
+		} finally {
+			zOut.close();
 		}
-		zOut.close();
 	}
 
 	private static void zipFile(String path, File input, ZipOutputStream zOut) throws IOException {
@@ -165,8 +171,11 @@ public class Utils {
 			zOut.putNextEntry(entry);
 			InputStream fileInputStream = new BufferedInputStream(
 					new FileInputStream(input));
-			IOUtils.copy(fileInputStream, zOut);
-			fileInputStream.close();
+			try {
+				IOUtils.copy(fileInputStream, zOut);
+			} finally {
+				fileInputStream.close();
+			}
 		}
 	}
 
@@ -180,11 +189,17 @@ public class Utils {
 			} else {
 				newFile.getParentFile().mkdirs();
 				InputStream src = source.getInputStream(entry);
-				OutputStream output = new BufferedOutputStream(
-						new FileOutputStream(newFile));
-				IOUtils.copy(src, output);
-				src.close();
-				output.close();
+				try {
+					OutputStream output = new BufferedOutputStream(
+							new FileOutputStream(newFile));
+					try {
+						IOUtils.copy(src, output);
+					} finally {
+						output.close();
+					}
+				} finally {
+					src.close();
+				}
 			}
 		}
 	}

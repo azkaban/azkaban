@@ -480,9 +480,13 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
 			if (cacheExists) {
 				// Send the cache instead
 				InputStream cacheInput = new BufferedInputStream(new FileInputStream(cache));
-				IOUtils.copy(cacheInput, resp.getOutputStream());
-				// System.out.println("Using cache copy for " + start);
-				return;
+				try {
+					IOUtils.copy(cacheInput, resp.getOutputStream());
+					// System.out.println("Using cache copy for " + start);
+					return;
+				} finally {
+					IOUtils.closeQuietly(cacheInput);
+				}
 			}
 		}
 
@@ -518,11 +522,13 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
 		File cacheTemp = new File(cacheDirFile, startTime + ".tmp");
 		cacheTemp.createNewFile();
 		OutputStream cacheOutput = new BufferedOutputStream(new FileOutputStream(cacheTemp));
-		OutputStream outputStream = new SplitterOutputStream(cacheOutput, resp.getOutputStream());
-		// Write to both the cache file and web output
-		JSONUtils.toJSON(ret, outputStream, false);
-		cacheOutput.close();
-		
+		try {
+			OutputStream outputStream = new SplitterOutputStream(cacheOutput, resp.getOutputStream());
+			// Write to both the cache file and web output
+			JSONUtils.toJSON(ret, outputStream, false);
+		} finally {
+			IOUtils.closeQuietly(cacheOutput);
+		}
 		//Move cache file
 		synchronized (this) {
 			cacheTemp.renameTo(cache);

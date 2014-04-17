@@ -25,6 +25,7 @@ import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.commons.io.IOUtils;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 
@@ -72,35 +73,41 @@ public class AzkabanProcess {
 		builder.directory(new File(workingDir));
 		builder.environment().putAll(env);
 		this.process = builder.start();
-		this.processId = processId(process);
-		if (processId == 0) {
-			logger.debug("Spawned thread with unknown process id");
-		} else {
-			logger.debug("Spawned thread with process id " + processId);
-		}
-
-		this.startupLatch.countDown();
-
-		LogGobbler outputGobbler = new LogGobbler(new InputStreamReader(process.getInputStream()), logger, Level.INFO, 30);
-		LogGobbler errorGobbler = new LogGobbler(new InputStreamReader(process.getErrorStream()), logger, Level.ERROR, 30);
-		
-		outputGobbler.start();
-		errorGobbler.start();
-		int exitCode = -1;
 		try {
-			exitCode = process.waitFor();
-		} catch (InterruptedException e) {
-			logger.info("Process interrupted. Exit code is " + exitCode, e);
+			this.processId = processId(process);
+			if (processId == 0) {
+				logger.debug("Spawned thread with unknown process id");
+			} else {
+				logger.debug("Spawned thread with process id " + processId);
+			}
+	
+			this.startupLatch.countDown();
+	
+			LogGobbler outputGobbler = new LogGobbler(new InputStreamReader(process.getInputStream()), logger, Level.INFO, 30);
+			LogGobbler errorGobbler = new LogGobbler(new InputStreamReader(process.getErrorStream()), logger, Level.ERROR, 30);
+			
+			outputGobbler.start();
+			errorGobbler.start();
+			int exitCode = -1;
+			try {
+				exitCode = process.waitFor();
+			} catch (InterruptedException e) {
+				logger.info("Process interrupted. Exit code is " + exitCode, e);
+			}
+	
+			completeLatch.countDown();
+			if (exitCode != 0) {
+				throw new ProcessFailureException(exitCode, errorGobbler.getRecentLog());
+			}
+	
+			// try to wait for everything to get logged out before exiting
+			outputGobbler.awaitCompletion(5000);
+			errorGobbler.awaitCompletion(5000);
+		} finally {
+			IOUtils.closeQuietly(process.getInputStream());
+			IOUtils.closeQuietly(process.getOutputStream());
+			IOUtils.closeQuietly(process.getErrorStream());
 		}
-
-		completeLatch.countDown();
-		if (exitCode != 0) {
-			throw new ProcessFailureException(exitCode, errorGobbler.getRecentLog());
-		}
-
-		// try to wait for everything to get logged out before exiting
-		outputGobbler.awaitCompletion(5000);
-		errorGobbler.awaitCompletion(5000);
 	}
 
 	/**

@@ -768,37 +768,40 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader
 		int pos = 0;
 		int length = buffer.length;
 		int startByte = 0;
-		BufferedInputStream bufferedStream = null;
 		try {
 			for (int i = 0; i < files.length; ++i) {
 				File file = files[i];
 				
-				bufferedStream = new BufferedInputStream(new FileInputStream(file));
-				int size = bufferedStream.read(buffer, pos, length);
-				while (size >= 0) {
-					if (pos + size == buffer.length) {
-						// Flush here.
-						uploadLogPart(
-								connection, 
-								execId, 
-								name, 
-								attempt, 
-								startByte, 
-								startByte + buffer.length, 
-								encType, 
-								buffer, 
-								buffer.length);
-						
-						pos = 0;
-						length = buffer.length;
-						startByte += buffer.length;
+				BufferedInputStream bufferedStream = new BufferedInputStream(new FileInputStream(file));
+				try {
+					int size = bufferedStream.read(buffer, pos, length);
+					while (size >= 0) {
+						if (pos + size == buffer.length) {
+							// Flush here.
+							uploadLogPart(
+									connection, 
+									execId, 
+									name, 
+									attempt, 
+									startByte, 
+									startByte + buffer.length, 
+									encType, 
+									buffer, 
+									buffer.length);
+							
+							pos = 0;
+							length = buffer.length;
+							startByte += buffer.length;
+						}
+						else {
+							// Usually end of file.
+							pos += size;
+							length = buffer.length - pos;
+						}
+						size = bufferedStream.read(buffer, pos, length);
 					}
-					else {
-						// Usually end of file.
-						pos += size;
-						length = buffer.length - pos;
-					}
-					size = bufferedStream.read(buffer, pos, length);
+				} finally {
+					IOUtils.closeQuietly(bufferedStream);
 				}
 			}
 			
@@ -821,9 +824,6 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader
 		}
 		catch (IOException e) {
 			throw new ExecutorManagerException("Error chunking", e);
-		}
-		finally {
-			IOUtils.closeQuietly(bufferedStream);
 		}
 	}
 	
