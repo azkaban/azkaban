@@ -111,27 +111,34 @@ public class FileIOUtils {
 		//System.out.println(command);
 		ProcessBuilder builder = new ProcessBuilder().command("sh", "-c", command);
 		builder.directory(destDir);
-		
+
+		// XXX what about stopping threads ??
 		Process process = builder.start();
-		NullLogger errorLogger = new NullLogger(process.getErrorStream());
-		NullLogger inputLogger = new NullLogger(process.getInputStream());
-		errorLogger.start();
-		inputLogger.start();
-		
 		try {
-			if (process.waitFor() < 0) {
-				// Assume that the error will be in standard out. Otherwise it'll be in standard in.
-				String errorMessage = errorLogger.getLastMessages();
-				if (errorMessage.isEmpty()) {
-					errorMessage = inputLogger.getLastMessages();
+			NullLogger errorLogger = new NullLogger(process.getErrorStream());
+			NullLogger inputLogger = new NullLogger(process.getInputStream());
+			errorLogger.start();
+			inputLogger.start();
+			
+			try {
+				if (process.waitFor() < 0) {
+					// Assume that the error will be in standard out. Otherwise it'll be in standard in.
+					String errorMessage = errorLogger.getLastMessages();
+					if (errorMessage.isEmpty()) {
+						errorMessage = inputLogger.getLastMessages();
+					}
+					
+					throw new IOException(errorMessage);
 				}
 				
-				throw new IOException(errorMessage);
+			//	System.out.println(errorLogger.getLastMessages());
+			} catch (InterruptedException e) {
+				e.printStackTrace();
 			}
-			
-		//	System.out.println(errorLogger.getLastMessages());
-		} catch (InterruptedException e) {
-			e.printStackTrace();
+		} finally {
+			IOUtils.closeQuietly(process.getInputStream());
+			IOUtils.closeQuietly(process.getOutputStream());
+			IOUtils.closeQuietly(process.getErrorStream());
 		}
 	}
 	

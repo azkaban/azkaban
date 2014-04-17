@@ -89,10 +89,10 @@ public class Props {
 		try {
 			loadFrom(input);
 		} catch (IOException e) {
-			input.close();
 			throw e;
+		} finally {
+			input.close();
 		}
-		input.close();
 	}
 
 	/**
