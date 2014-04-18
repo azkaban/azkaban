@@ -113,8 +113,11 @@ public class ScheduleStatisticManager {
 				File cache = getCacheFile(scheduleId);
 				cache.createNewFile();
 				OutputStream output = new FileOutputStream(cache);
-				JSONUtils.toJSON(data, output, false);
-				output.close();
+				try {
+					JSONUtils.toJSON(data, output, false);
+				} finally {
+					output.close();
+				}
 			}
 		} catch (Exception e) {
 			e.printStackTrace();

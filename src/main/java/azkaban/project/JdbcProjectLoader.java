@@ -271,7 +271,6 @@ public class JdbcProjectLoader extends AbstractJdbcLoader implements ProjectLoad
 		}
 	}
 
-	@SuppressWarnings("resource")
 	private void uploadProjectFile(Connection connection, Project project, int version, String filetype, String filename, File localFile, String uploader) throws ProjectManagerException {
 		QueryRunner runner = new QueryRunner();
 		long updateTime = System.currentTimeMillis();
@@ -306,18 +305,16 @@ public class JdbcProjectLoader extends AbstractJdbcLoader implements ProjectLoad
 					runner.update(connection, INSERT_PROJECT_FILES, project.getId(), version, chunk, size, buf);
 					logger.info("Finished update for " + filename + " chunk " + chunk);
 				} catch (SQLException e) {
-					IOUtils.closeQuietly(bufferedStream);
 					throw new ProjectManagerException("Error chunking", e);
 				}
 				++chunk;
 				
 				size = bufferedStream.read(buffer);
 			}
-			
-			bufferedStream.close();
 		} catch (IOException e) {
-			IOUtils.closeQuietly(bufferedStream);
 			throw new ProjectManagerException("Error chunking file " + filename);
+		} finally {
+			IOUtils.closeQuietly(bufferedStream);
 		}
 
 		final String INSERT_PROJECT_VERSION =
@@ -361,7 +358,6 @@ public class JdbcProjectLoader extends AbstractJdbcLoader implements ProjectLoad
 		return handler;
 	}
 	
-	@SuppressWarnings("resource")
 	private ProjectFileHandler getUploadedFile(Connection connection, int projectId, int version) throws ProjectManagerException {
 		QueryRunner runner = new QueryRunner();
 		ProjectVersionResultHandler pfHandler = new ProjectVersionResultHandler();
@@ -382,45 +378,45 @@ public class JdbcProjectLoader extends AbstractJdbcLoader implements ProjectLoad
 		BufferedOutputStream bStream = null;
 		File file = null;
 		try {
-			file = File.createTempFile(projHandler.getFileName(), String.valueOf(version), tempDir);
-	
-			bStream = new BufferedOutputStream(new FileOutputStream(file));
-		}
-		catch (IOException e) {
-			IOUtils.closeQuietly(bStream);
-			throw new ProjectManagerException("Error creating temp file for stream.");
-		}
+			try {
+				file = File.createTempFile(projHandler.getFileName(), String.valueOf(version), tempDir);
 		
-		int collect = 5;
-		int fromChunk = 0;
-		int toChunk = collect;
-		do {
-			ProjectFileChunkResultHandler chunkHandler = new ProjectFileChunkResultHandler();
-			List<byte[]> data = null;
-			try {
-				data = runner.query(connection, ProjectFileChunkResultHandler.SELECT_PROJECT_CHUNKS_FILE, chunkHandler, projectId, version, fromChunk, toChunk);
-			}
-			catch(SQLException e) {
-				logger.error(e);
-				IOUtils.closeQuietly(bStream);
-				throw new ProjectManagerException("Query for uploaded file for " + projectId + " failed.", e);
-			}
-			
-			try {
-				for (byte[] d : data) {
-					bStream.write(d);
-				}
+				bStream = new BufferedOutputStream(new FileOutputStream(file));
 			}
 			catch (IOException e) {
-				IOUtils.closeQuietly(bStream);
-				throw new ProjectManagerException("Error writing file", e);
+				throw new ProjectManagerException("Error creating temp file for stream.");
 			}
 			
-			// Add all the bytes to the stream.
-			fromChunk += collect;
-			toChunk += collect;
-		} while (fromChunk <= numChunks);
-		IOUtils.closeQuietly(bStream);
+			int collect = 5;
+			int fromChunk = 0;
+			int toChunk = collect;
+			do {
+				ProjectFileChunkResultHandler chunkHandler = new ProjectFileChunkResultHandler();
+				List<byte[]> data = null;
+				try {
+					data = runner.query(connection, ProjectFileChunkResultHandler.SELECT_PROJECT_CHUNKS_FILE, chunkHandler, projectId, version, fromChunk, toChunk);
+				}
+				catch(SQLException e) {
+					logger.error(e);
+					throw new ProjectManagerException("Query for uploaded file for " + projectId + " failed.", e);
+				}
+				
+				try {
+					for (byte[] d : data) {
+						bStream.write(d);
+					}
+				}
+				catch (IOException e) {
+					throw new ProjectManagerException("Error writing file", e);
+				}
+				
+				// Add all the bytes to the stream.
+				fromChunk += collect;
+				toChunk += collect;
+			} while (fromChunk <= numChunks);
+		} finally {
+			IOUtils.closeQuietly(bStream);
+		}
 		
 		// Check md5.
 		byte[] md5 = null;

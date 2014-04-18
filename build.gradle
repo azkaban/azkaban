@@ -1,6 +1,8 @@
 apply plugin: 'java'
 apply plugin: 'eclipse'
 
+defaultTasks 'dist'
+
 /**
  * Helper that calls a command and returns the output
  */
@@ -10,7 +12,7 @@ def cmdCaller = { commandln ->
         commandLine commandln
         standardOutput = stdout
     }
-    
+
     return stdout.toString().trim()
 }
 
@@ -20,7 +22,6 @@ def cmdCaller = { commandln ->
 def getVersionName = { ->
     return cmdCaller(['git', 'describe', '--tags', '--abbrev=0'])
 }
-
 
 version = getVersionName()
 archivesBaseName = 'azkaban'
@@ -33,8 +34,8 @@ repositories {
 
 configurations {
     all {
-        // We don't want the kitchen sink for dependencies. Only the ones we know we need for
-        // compile and ones we need to package.
+        // We don't want the kitchen sink for dependencies. Only the ones we
+        // know we need for compile and ones we need to package.
         transitive = false
     }
     compile {
@@ -47,7 +48,9 @@ configurations {
         extendsFrom compile
     }
 }
-
+configurations.compile {
+    description = 'compile classpath'
+}
 pegasusVersion = '1.15.7'
 
 dependencies {
@@ -95,7 +98,7 @@ dependencies {
       [group: 'com.linkedin.pegasus', name:'generator', version: pegasusVersion],
       [group: 'com.linkedin.pegasus', name:'restli-tools', version: pegasusVersion]
   )
-  
+
   testCompile (
     [group: 'junit', name:'junit', version: '4.11']
   )
@@ -113,7 +116,7 @@ jar {
     baseName =  'azkaban'
     manifest {
       attributes(
-        'Implementation-Title': 'Azkaban', 
+        'Implementation-Title': 'Azkaban',
         'Implementation-Version': version
       )
     }
@@ -143,10 +146,10 @@ eclipse.classpath.file {
     beforeMerged {
         classpath -> classpath.entries.removeAll { entry -> true }
     }
-    
-    // We want to make sure that if there is an entry for src, that it doesn't have any
-    // include parameters
-    whenMerged { classpath -> 
+
+    // We want to make sure that if there is an entry for src, that it doesn't
+    // have any include parameters
+    whenMerged { classpath ->
         classpath.entries.findAll { entry -> entry.kind == 'src' }*.includes = []
     }
 }
@@ -180,7 +183,7 @@ task web(dependsOn: ['compileLess', 'compileDust']) << {
     println 'Copying web files'
     copy {
         from('src/web')
-        into('build/web') 
+        into('build/web')
     }
 
     copy {
@@ -223,19 +226,19 @@ task packageSolo(type: Tar, dependsOn: [jar, 'web', 'createVersionFile']) {
     mkdir packageDir
     mkdir packageDir + '/extlib'
     mkdir packageDir + '/plugins'
-    
+
     println 'Copying Soloserver bin & conf'
     copy {
         from('src/package/soloserver')
         into(packageDir)
     }
-    
+
     println 'Copying Azkaban lib'
     copy {
         from('build/libs')
         into(packageDir + '/lib')
     }
-    
+
     println 'Copying web'
     copy {
         from('build/web')
@@ -253,46 +256,46 @@ task packageSolo(type: Tar, dependsOn: [jar, 'web', 'createVersionFile']) {
         into packageDir + '/lib'
         from configurations.compile
     }
-    
+
     copy {
         into packageDir
         from 'build/package/version.file'
     }
-    
+
     println 'Tarballing Solo Package'
     extension = 'tar.gz'
     compression = Compression.GZIP
-  
+
     basedir = baseName + '-' + appendix + '-' + version
     println 'Source is in ' + packageDir
-    into(basedir) { 
+    into(basedir) {
         from packageDir
         exclude 'bin'
     }
-    
+
     dst_bin = basedir + '/bin'
     src_bin = packageDir + '/bin'
-    from(src_bin) { 
+    from(src_bin) {
         into dst_bin
         fileMode = 0755
     }
-} 
+}
 
 /**
  * Packages the Sql Scripts for Azkaban DB
  */
 task packageSql(type: Tar) {
     String packageDir = 'build/package/sql'
- 
+
     println 'Creating Azkaban SQL Scripts into ' + packageDir
-    mkdir packageDir
-    delete packageDir
+	mkdir packageDir
+
     println 'Copying SQL files'
     copy {
         from('src/sql')
         into(packageDir)
     }
-    
+
     String destFile = packageDir + '/create-all-sql-' + version + '.sql';
     println('Concating create scripts to ' + destFile)
     ant.concat(destfile:destFile, fixlastline:'yes') {
@@ -301,19 +304,19 @@ task packageSql(type: Tar) {
             exclude(name: 'database.properties')
         }
     }
-    
+
     println 'Tarballing SQL Package'
     extension = 'tar.gz'
     compression = Compression.GZIP
     appendix = 'sql'
-  
+
     basedir = baseName + '-' + appendix + '-' + version
     packageDir = 'build/package/sql'
     println 'Source is in ' + packageDir
-    into(basedir) { 
+    into(basedir) {
         from packageDir
     }
-} 
+}
 
 /**
  * Packages the Azkaban Executor Server
@@ -321,13 +324,13 @@ task packageSql(type: Tar) {
 task packageExec(type: Tar, dependsOn: [jar, 'createVersionFile']) {
     appendix = 'exec-server'
     String packageDir = 'build/package/' + baseName + '-' + appendix
+
     delete packageDir
-    
     println 'Creating Azkaban Executor Server Package into ' + packageDir
     mkdir packageDir
     mkdir packageDir + '/extlib'
     mkdir packageDir + '/plugins'
-    
+
     println 'Copying Exec server bin & conf'
     copy {
         from('src/package/execserver')
@@ -346,28 +349,28 @@ task packageExec(type: Tar, dependsOn: [jar, 'createVersionFile']) {
         into packageDir + '/lib'
         from configurations.compile
     }
-    
+
     copy {
         into packageDir
         from 'build/package/version.file'
     }
-    
+
     println 'Tarballing Web Package'
     extension = 'tar.gz'
     compression = Compression.GZIP
-  
+
     basedir = baseName + '-' + appendix + '-' + version
     packageDir = 'build/package/' + baseName + '-' + appendix
     println 'Source is in ' + packageDir
 
-    into(basedir) { 
+    into(basedir) {
         from packageDir
         exclude 'bin'
     }
-    
+
     dst_bin = basedir + '/bin'
     src_bin = packageDir + '/bin'
-    from(src_bin) { 
+    from(src_bin) {
         into dst_bin
         fileMode = 0755
     }
@@ -379,13 +382,13 @@ task packageExec(type: Tar, dependsOn: [jar, 'createVersionFile']) {
 task packageWeb(type: Tar, dependsOn: [jar, 'web', 'createVersionFile']) {
     appendix = 'web-server'
     String packageDir = 'build/package/' + baseName + '-' + appendix
- 
     delete packageDir
+
     println 'Creating Azkaban Web Server Package into ' + packageDir
     mkdir packageDir
     mkdir packageDir + '/extlib'
     mkdir packageDir + '/plugins'
-    
+
     println 'Copying Web server bin & conf'
     copy {
         from('src/package/webserver')
@@ -394,11 +397,12 @@ task packageWeb(type: Tar, dependsOn: [jar, 'web', 'createVersionFile']) {
     
     String jarFile = 'build/libs/' + baseName + '-' + version + '.jar'
     println 'Copying Azkaban lib ' + jarFile
+
     copy {
         from(jarFile)
         into(packageDir + '/lib')
     }
-    
+
     println 'Copying web'
     copy {
         from('build/web')
@@ -410,30 +414,40 @@ task packageWeb(type: Tar, dependsOn: [jar, 'web', 'createVersionFile']) {
         into packageDir + '/lib'
         from configurations.compile
     }
-    
+
     copy {
         into packageDir
         from 'build/package/version.file'
     }
-    
+
     println 'Tarballing Web Package'
     extension = 'tar.gz'
     compression = Compression.GZIP
-  
+
     basedir = baseName + '-' + appendix + '-' + version
     println 'Source is in ' + packageDir
-    into(basedir) { 
+    into(basedir) {
         from packageDir
         exclude 'bin'
     }
-    
+
     dst_bin = basedir + '/bin'
     src_bin = packageDir + '/bin'
-    from(src_bin) { 
+    from(src_bin) {
         into dst_bin
         fileMode = 0755
     }
 }
 
-task packageAll(dependsOn : ['packageWeb', 'packageExec', 'packageSolo', 'packageSql']) {
+task packageAll(dependsOn: ['packageWeb',
+                            'packageExec',
+                            'packageSolo',
+                            'packageSql']) {
+}
+
+task dist(dependsOn: 'packageAll') {
+}
+
+task wrapper(type: Wrapper) {
+    gradleVersion = '1.11'
 }

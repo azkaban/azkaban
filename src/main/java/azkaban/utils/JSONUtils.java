@@ -84,8 +84,11 @@ public class JSONUtils {
 	
 	public static void toJSON(Object obj, File file, boolean prettyPrint) throws IOException {
 		BufferedOutputStream stream = new BufferedOutputStream(new FileOutputStream(file));
-		toJSON(obj, stream, prettyPrint);
-		stream.close();
+		try {
+			toJSON(obj, stream, prettyPrint);
+		} finally {
+			stream.close();
+		}
 	}
 	
 	public static Object parseJSONFromStringQuiet(String json) {
