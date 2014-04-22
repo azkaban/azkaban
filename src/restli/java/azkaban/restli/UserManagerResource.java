@@ -40,7 +40,6 @@ public class UserManagerResource extends ResourceContextHolder {
 
 	@Action(name = "getUserFromSessionId")
 	public User getUserFromSessionId(@ActionParam("sessionId") String sessionId) {
-		// String ip = req.getRemoteAddr();
 		String ip = (String)this.getContext().getRawRequestContext().getLocalAttr("REMOTE_ADDR");
 		Session session = getSessionFromSessionId(sessionId, ip);
 		azkaban.user.User azUser = session.getUser();
