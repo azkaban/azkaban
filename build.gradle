@@ -130,7 +130,7 @@ task restliTemplateGenerator(type: JavaExec) {
     classpath = configurations.generateRestli
 }
 
-task restliRestSpecGenerator(dependsOn: [build,restliTemplateGenerator], type: JavaExec) {
+task restliRestSpecGenerator(dependsOn: [restliTemplateGenerator], type: JavaExec) << {
     mkdir 'src/restli/generatedRestSpec'
 
     main = 'com.linkedin.restli.tools.idlgen.RestLiResourceModelExporterCmdLineApp'
@@ -138,8 +138,10 @@ task restliRestSpecGenerator(dependsOn: [build,restliTemplateGenerator], type: J
     classpath = configurations.generateRestli
 }
 
-task restli(dependsOn: restliTemplateGenerator) {
+task restli(dependsOn: restliTemplateGenerator) << {
 }
+
+compileJava.dependsOn.add('restli')
 
 eclipse.classpath.file {
     // Erase the whole classpath

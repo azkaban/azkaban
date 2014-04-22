@@ -57,37 +57,39 @@ public class ProjectManagerResource extends ResourceContextHolder {
 		}
 		
 		if (!ResourceUtils.hasPermission(project, user, Permission.Type.WRITE)) {
-			logger.error("User " + user.getUserId() + " has no permission to write to project " + project.getName());
-			throw new ProjectManagerException("User '" + user + "' doesn't have permissions to deploy to " + project.getName());
+			String errorMsg = "User " + user.getUserId() + " has no permission to write to project " + project.getName();
+			logger.error(errorMsg);
+			throw new ProjectManagerException(errorMsg);
 		}
 
 		// Deploy stuff here. Move the code to a more formal area later.
 		logger.info("Downloading file from " + packageUrl);
 		URL url = null;
-		InputStream in = null;
+		InputStream urlFileInputStream = null;
 		try {
 			url = new URL(packageUrl);
-			in = url.openStream();
+			InputStream in = url.openStream();
+			urlFileInputStream = new BufferedInputStream(in);
 		} catch (MalformedURLException e) {
-			logger.error("Url " + packageUrl + " is malformed.", e);
-			throw new ProjectManagerException("Url " + packageUrl + " is malformed.", e);
+			String errorMsg = "Url " + packageUrl + " is malformed.";
+			logger.error(errorMsg, e);
+			throw new ProjectManagerException(errorMsg, e);
 		} catch (IOException e) {
-			logger.error("Error opening input stream.", e);
-			throw new ProjectManagerException("Error opening input stream. Couldn't download file.", e);
+			String errorMsg = "Error opening input stream to " + packageUrl;
+			logger.error(errorMsg, e);
+			throw new ProjectManagerException(errorMsg, e);
 		}
 		
 		String filename = getFileName(url.getFile());
 
-		BufferedInputStream buff = new BufferedInputStream(in);
 		File tempDir = Utils.createTempDir();
-		OutputStream out = null;
-		
+		OutputStream fileOutputStream = null;
 		try {
 			logger.error("Downloading " + filename);
 			File archiveFile = new File(tempDir, filename);
-			out = new BufferedOutputStream(new FileOutputStream(archiveFile));
-			IOUtils.copy(buff, out);
-			out.close();
+			fileOutputStream = new BufferedOutputStream(new FileOutputStream(archiveFile));
+			IOUtils.copy(urlFileInputStream, fileOutputStream);
+			fileOutputStream.close();
 			
 			logger.error("Downloaded to " + archiveFile.toString() + " " + archiveFile.length() + " bytes.");
 			projectManager.uploadProject(project, archiveFile, "zip", user);
@@ -104,11 +106,11 @@ public class ProjectManagerResource extends ResourceContextHolder {
 			if (tempDir.exists()) {
 				FileUtils.deleteDirectory(tempDir);
 			}
-			if (buff != null) {
-				buff.close();
+			if (urlFileInputStream != null) {
+				urlFileInputStream.close();
 			}
-			if (out != null) {
-				out.close();
+			if (fileOutputStream != null) {
+				fileOutputStream.close();
 			}
 		}
 		
