@@ -89,7 +89,6 @@ public class ProjectManagerResource extends ResourceContextHolder {
 			File archiveFile = new File(tempDir, filename);
 			fileOutputStream = new BufferedOutputStream(new FileOutputStream(archiveFile));
 			IOUtils.copy(urlFileInputStream, fileOutputStream);
-			fileOutputStream.close();
 			
 			logger.error("Downloaded to " + archiveFile.toString() + " " + archiveFile.length() + " bytes.");
 			projectManager.uploadProject(project, archiveFile, "zip", user);
