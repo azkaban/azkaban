@@ -158,6 +158,10 @@ public class AzkabanWebServer extends AzkabanServer {
 	private MBeanServer mbeanServer;
 	private ArrayList<ObjectName> registeredMBeans = new ArrayList<ObjectName>();
 
+	public static AzkabanWebServer getInstance() {
+		return app;
+	}
+
 	/**
 	 * Constructor usually called by tomcat AzkabanServletContext to create the
 	 * initial server
