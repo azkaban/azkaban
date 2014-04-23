@@ -298,13 +298,16 @@ public class JobTypeManager
 	
 	public Job buildJobExecutor(String jobId, Props jobProps, Logger logger) 
 			throws JobTypeManagerException {
-		// Synchronize on getting the plugin set.
-		// Should be safe without this synchronize, but I want to show that this is
-		JobTypePluginSet pluginSet = null;
-		synchronized(this) {
-			pluginSet = this.pluginSet;
-		}
-		
+		JobTypePluginSet pluginSet = getJobTypePluginSet();
+		return buildJobExecutor(jobId, jobProps, pluginSet, logger);
+	}
+	
+	private Job buildJobExecutor(
+			String jobId, 
+			Props jobProps, 
+			JobTypePluginSet pluginSet, 
+			Logger logger) 
+			throws JobTypeManagerException {
 		Job job = null;
 		try {
 			String jobType = jobProps.getString("type");
@@ -359,7 +362,7 @@ public class JobTypeManager
 	/**
 	 * Public for test reasons. Will need to move tests to the same package
 	 */
-	public JobTypePluginSet getJobTypePluginSet() {
+	public synchronized JobTypePluginSet getJobTypePluginSet() {
 		return this.pluginSet;
 	}
 }
