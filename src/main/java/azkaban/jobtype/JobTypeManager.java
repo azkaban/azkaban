@@ -296,18 +296,11 @@ public class JobTypeManager
 		return jobTypeLoader;
 	}
 	
-	public Job buildJobExecutor(String jobId, Props jobProps, Logger logger) 
-			throws JobTypeManagerException {
-		JobTypePluginSet pluginSet = getJobTypePluginSet();
-		return buildJobExecutor(jobId, jobProps, pluginSet, logger);
-	}
-	
-	private Job buildJobExecutor(
-			String jobId, 
-			Props jobProps, 
-			JobTypePluginSet pluginSet, 
-			Logger logger) 
-			throws JobTypeManagerException {
+	public Job buildJobExecutor( String jobId, Props jobProps, Logger logger) throws JobTypeManagerException {
+		// This is final because during build phase, you should never need to swap
+		// the pluginSet for safety reasons
+		final JobTypePluginSet pluginSet = getJobTypePluginSet();
+		
 		Job job = null;
 		try {
 			String jobType = jobProps.getString("type");

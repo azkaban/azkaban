@@ -12,8 +12,8 @@ import azkaban.utils.Props;
  * This contains the jobClass objects, the properties for loading plugins, and the
  * properties given by default to the plugin.
  * 
- * This class is not thread safe, so adding to this class should only occur when
- * 
+ * This class is not thread safe, so adding to this class should only be populated 
+ * and controlled by the JobTypeManager
  */
 public class JobTypePluginSet {
 	private Map<String, Class<? extends Job>> jobToClass;
