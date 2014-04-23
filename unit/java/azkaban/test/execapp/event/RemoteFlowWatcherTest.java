@@ -38,7 +38,7 @@ public class RemoteFlowWatcherTest {
 	@Before
 	public void setUp() throws Exception {
 		jobtypeManager = new JobTypeManager(null, this.getClass().getClassLoader());
-		jobtypeManager.registerJobType("java", JavaJob.class);
+		jobtypeManager.getJobTypePluginSet().addPluginClass("java", JavaJob.class);
 		fakeProjectLoader = new MockProjectLoader(workingDir);
 	}
 	
