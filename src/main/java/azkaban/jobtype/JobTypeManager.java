@@ -51,8 +51,7 @@ public class JobTypeManager
 	
 	private JobTypePluginSet pluginSet;
 
-	public JobTypeManager(String jobtypePluginDir, ClassLoader parentClassLoader)
-	{
+	public JobTypeManager(String jobtypePluginDir, ClassLoader parentClassLoader) {
 		this.jobTypePluginDir = jobtypePluginDir;
 		this.parentLoader = parentClassLoader;
 		
@@ -63,10 +62,10 @@ public class JobTypeManager
 		JobTypePluginSet plugins = new JobTypePluginSet();
 		
 		loadDefaultTypes(plugins);
-		if(jobTypePluginDir != null) {
+		if (jobTypePluginDir != null) {
 			File pluginDir = new File(jobTypePluginDir);
 			if (pluginDir.exists()) {
-			logger.info("Job type plugin directory set. Loading extra job types from " + pluginDir);
+				logger.info("Job type plugin directory set. Loading extra job types from " + pluginDir);
 				try {
 					loadPluginJobTypes(plugins);
 				}
@@ -78,7 +77,7 @@ public class JobTypeManager
 		}
 		
 		// Swap the plugin set. If exception is thrown, then plugin isn't swapped.
-		synchronized(this) {
+		synchronized (this) {
 			pluginSet = plugins;
 		}
 	}
@@ -144,10 +143,10 @@ public class JobTypeManager
 		plugins.setCommonPluginLoadProps(commonPluginLoadProps);
 		
 		// Loading job types
-		for(File dir : jobPluginsDir.listFiles()) {
-			if(dir.isDirectory() && dir.canRead()) {
+		for (File dir : jobPluginsDir.listFiles()) {
+			if (dir.isDirectory() && dir.canRead()) {
 				try {
-					loadJob(dir, plugins);
+					loadJobTypes(dir, plugins);
 				}
 				catch (Exception e) {
 					logger.error("Failed to load jobtype " + dir.getName() + e.getMessage());
@@ -158,7 +157,7 @@ public class JobTypeManager
 	}
 	
 	@SuppressWarnings("unchecked")
-	private void loadJob(File pluginDir, JobTypePluginSet plugins) throws JobTypeManagerException {
+	private void loadJobTypes(File pluginDir, JobTypePluginSet plugins) throws JobTypeManagerException {
 		// Directory is the jobtypeName
 		String jobTypeName = pluginDir.getName();
 		logger.info("Loading plugin " + jobTypeName);
@@ -169,7 +168,7 @@ public class JobTypeManager
 		File pluginJobPropsFile = new File(pluginDir, JOBTYPECONFFILE);
 		File pluginLoadPropsFile = new File(pluginDir, JOBTYPESYSCONFFILE);
 
-		if(!pluginLoadPropsFile.exists()) {
+		if (!pluginLoadPropsFile.exists()) {
 			logger.info("Plugin load props file " + pluginLoadPropsFile + " not found.");
 			return;
 		}
@@ -177,7 +176,7 @@ public class JobTypeManager
 		try {
 			Props commonPluginJobProps = plugins.getCommonPluginJobProps();
 			Props commonPluginLoadProps = plugins.getCommonPluginLoadProps();
-			if(pluginJobPropsFile.exists()) {
+			if (pluginJobPropsFile.exists()) {
 				pluginJobProps = new Props(commonPluginJobProps, pluginJobPropsFile);
 			}
 			else {
@@ -245,10 +244,10 @@ public class JobTypeManager
 			//first global classpath
 			logger.info("Adding global resources for " + jobTypeName);
 			List<String> typeGlobalClassPath = pluginLoadProps.getStringList("jobtype.global.classpath", null, ",");
-			if(typeGlobalClassPath != null) {
-				for(String jar : typeGlobalClassPath) {
+			if (typeGlobalClassPath != null) {
+				for (String jar : typeGlobalClassPath) {
 					URL cpItem = new File(jar).toURI().toURL();
-					if(!resources.contains(cpItem)) {
+					if (!resources.contains(cpItem)) {
 						logger.info("adding to classpath " + cpItem);
 						resources.add(cpItem);
 					}
@@ -258,32 +257,32 @@ public class JobTypeManager
 			//type specific classpath
 			logger.info("Adding type resources.");
 			List<String> typeClassPath = pluginLoadProps.getStringList("jobtype.classpath", null, ",");
-			if(typeClassPath != null) {
-				for(String jar : typeClassPath) {
+			if (typeClassPath != null) {
+				for (String jar : typeClassPath) {
 					URL cpItem = new File(jar).toURI().toURL();
-					if(!resources.contains(cpItem)) {
+					if (!resources.contains(cpItem)) {
 						logger.info("adding to classpath " + cpItem);
 						resources.add(cpItem);
 					}
 				}
 			}			
 			List<String> jobtypeLibDirs = pluginLoadProps.getStringList("jobtype.lib.dir", null, ",");
-			if(jobtypeLibDirs != null) {
-				for(String libDir : jobtypeLibDirs) {
-					for(File f : new File(libDir).listFiles()) {
-						if(f.getName().endsWith(".jar")) {
-								resources.add(f.toURI().toURL());
-								logger.info("adding to classpath " + f.toURI().toURL());
+			if (jobtypeLibDirs != null) {
+				for (String libDir : jobtypeLibDirs) {
+					for (File f : new File(libDir).listFiles()) {
+						if (f.getName().endsWith(".jar")) {
+							resources.add(f.toURI().toURL());
+							logger.info("adding to classpath " + f.toURI().toURL());
 						}
 					}
 				}
 			}
 			
 			logger.info("Adding type override resources.");
-			for(File f : pluginDir.listFiles()) {
-				if(f.getName().endsWith(".jar")) {
-						resources.add(f.toURI().toURL());
-						logger.info("adding to classpath " + f.toURI().toURL());
+			for (File f : pluginDir.listFiles()) {
+				if (f.getName().endsWith(".jar")) {
+					resources.add(f.toURI().toURL());
+					logger.info("adding to classpath " + f.toURI().toURL());
 				}
 			}
 			
