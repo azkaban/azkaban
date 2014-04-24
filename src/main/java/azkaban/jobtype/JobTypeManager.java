@@ -114,7 +114,8 @@ public class JobTypeManager
 			logger.info("Common plugin job props file " + commonJobPropsFile + " found. Attempt to load.");
 			try {
 				commonPluginJobProps = new Props(null, commonJobPropsFile);
-			} catch (IOException e) {
+			}
+			catch (IOException e) {
 				throw new JobTypeManagerException("Failed to load common plugin job properties" + e.getCause());
 			}
 		}
@@ -130,7 +131,8 @@ public class JobTypeManager
 			logger.info("Common plugin load props file " + commonLoadPropsFile + " found. Attempt to load.");
 			try {
 				commonPluginLoadProps = new Props(null, commonLoadPropsFile);
-			} catch (IOException e) {
+			}
+			catch (IOException e) {
 				throw new JobTypeManagerException("Failed to load common plugin loader properties" + e.getCause());
 			}
 		}
@@ -286,7 +288,8 @@ public class JobTypeManager
 				}
 			}
 			
-		} catch (MalformedURLException e) {
+		}
+		catch (MalformedURLException e) {
 			throw new JobTypeManagerException(e);
 		}
 		
@@ -295,7 +298,7 @@ public class JobTypeManager
 		return jobTypeLoader;
 	}
 	
-	public Job buildJobExecutor( String jobId, Props jobProps, Logger logger) throws JobTypeManagerException {
+	public Job buildJobExecutor(String jobId, Props jobProps, Logger logger) throws JobTypeManagerException {
 		// This is final because during build phase, you should never need to swap
 		// the pluginSet for safety reasons
 		final JobTypePluginSet pluginSet = getJobTypePluginSet();
