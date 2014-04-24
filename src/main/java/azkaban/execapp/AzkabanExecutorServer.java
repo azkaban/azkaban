@@ -88,7 +88,7 @@ public class AzkabanExecutorServer {
 		QueuedThreadPool httpThreadPool = new QueuedThreadPool(maxThreads);
 		server.setThreadPool(httpThreadPool);
 		
-		boolean isStatsOn = props.getBoolean("executor.connector.stats", Boolean.TRUE);
+		boolean isStatsOn = props.getBoolean("executor.connector.stats", true);
 		logger.info("Setting up connector with stats on: " + isStatsOn);
 		
 		for (Connector connector : server.getConnectors()) {

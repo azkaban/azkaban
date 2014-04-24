@@ -683,7 +683,7 @@ public class AzkabanWebServer extends AzkabanServer {
 		}
 
 		int maxThreads = azkabanSettings.getInt("jetty.maxThreads", DEFAULT_THREAD_NUMBER);
-		boolean isStatsOn = azkabanSettings.getBoolean("jetty.connector.stats", Boolean.TRUE);
+		boolean isStatsOn = azkabanSettings.getBoolean("jetty.connector.stats", true);
 		logger.info("Setting up connector with stats on: " + isStatsOn);
 		
 		boolean ssl;
