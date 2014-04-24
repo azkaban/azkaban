@@ -42,6 +42,7 @@ import org.apache.velocity.runtime.log.Log4JLogChute;
 import org.apache.velocity.runtime.resource.loader.ClasspathResourceLoader;
 import org.apache.velocity.runtime.resource.loader.JarResourceLoader;
 import org.joda.time.DateTimeZone;
+import org.mortbay.jetty.Connector;
 import org.mortbay.jetty.Server;
 import org.mortbay.jetty.bio.SocketConnector;
 import org.mortbay.jetty.security.SslSocketConnector;
@@ -59,7 +60,6 @@ import azkaban.jmx.JmxJettyServer;
 import azkaban.jmx.JmxTriggerManager;
 import azkaban.project.JdbcProjectLoader;
 import azkaban.project.ProjectManager;
-
 import azkaban.scheduler.ScheduleLoader;
 import azkaban.scheduler.ScheduleManager;
 import azkaban.scheduler.TriggerBasedScheduleLoader;
@@ -82,7 +82,6 @@ import azkaban.utils.Props;
 import azkaban.utils.PropsUtils;
 import azkaban.utils.Utils;
 import azkaban.webapp.servlet.AzkabanServletContextListener;
-
 import azkaban.webapp.servlet.AbstractAzkabanServlet;
 import azkaban.webapp.servlet.ExecutorServlet;
 import azkaban.webapp.servlet.IndexRedirectServlet;
@@ -684,7 +683,9 @@ public class AzkabanWebServer extends AzkabanServer {
 		}
 
 		int maxThreads = azkabanSettings.getInt("jetty.maxThreads", DEFAULT_THREAD_NUMBER);
-
+		boolean isStatsOn = azkabanSettings.getBoolean("jetty.connector.stats", Boolean.TRUE);
+		logger.info("Setting up connector with stats on: " + isStatsOn);
+		
 		boolean ssl;
 		int port;
 		final Server server = new Server();
@@ -712,6 +713,11 @@ public class AzkabanWebServer extends AzkabanServer {
 			connector.setPort(port);
 			connector.setHeaderBufferSize(MAX_HEADER_BUFFER_SIZE);
 			server.addConnector(connector);
+		}
+		
+		// setting stats configuration for connectors
+		for (Connector connector : server.getConnectors()) {
+			connector.setStatsOn(isStatsOn);
 		}
 		
 		String hostname = azkabanSettings.getString("jetty.hostname", "localhost");
