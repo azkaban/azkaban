@@ -47,6 +47,7 @@ import azkaban.executor.ExecutionOptions;
 import azkaban.executor.ExecutorLoader;
 import azkaban.executor.ExecutorManagerException;
 import azkaban.jobtype.JobTypeManager;
+import azkaban.jobtype.JobTypeManagerException;
 
 import azkaban.utils.FileIOUtils;
 import azkaban.utils.FileIOUtils.JobMetaData;
@@ -689,6 +690,7 @@ public class FlowRunnerManager implements EventListener {
 		return jobCount;
 	}
 
-	
-	
+	public void reloadJobTypePlugins() throws JobTypeManagerException {
+		jobtypeManager.loadPlugins();
+	}
 }
