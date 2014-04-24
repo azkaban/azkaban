@@ -145,7 +145,7 @@ azkaban.ExecutionListView = Backbone.View.extend({
 						$(attemptBox).bind("contextmenu", attemptRightClick);
 						
 						$(progressBar).before(attemptBox);
-						attemptBox.job = nodeId;
+						attemptBox.job = node.id;
 						attemptBox.attempt = a;
 					}
 				}

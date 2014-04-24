@@ -162,7 +162,7 @@ public class AzkabanWebServer extends AzkabanServer {
 	public static AzkabanWebServer getInstance() {
 		return app;
 	}
-	
+
 	/**
 	 * Constructor usually called by tomcat AzkabanServletContext to create the
 	 * initial server
