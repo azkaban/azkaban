@@ -5,10 +5,9 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
-import junit.framework.Assert;
-
 import org.apache.commons.io.FileUtils;
 import org.apache.log4j.Logger;
+import org.junit.Assert;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -24,6 +23,7 @@ import azkaban.executor.ExecutorLoader;
 import azkaban.executor.Status;
 import azkaban.flow.Flow;
 import azkaban.jobtype.JobTypeManager;
+import azkaban.jobtype.JobTypePluginSet;
 import azkaban.project.Project;
 import azkaban.project.ProjectLoader;
 import azkaban.project.ProjectManagerException;
@@ -74,8 +74,10 @@ public class FlowRunnerPipelineTest {
 		}
 		workingDir.mkdirs();
 		jobtypeManager = new JobTypeManager(null, this.getClass().getClassLoader());
-		jobtypeManager.registerJobType("java", JavaJob.class);
-		jobtypeManager.registerJobType("test", InteractiveTestJob.class);
+		JobTypePluginSet pluginSet = jobtypeManager.getJobTypePluginSet();
+		
+		pluginSet.addPluginClass("java", JavaJob.class);
+		pluginSet.addPluginClass("test", InteractiveTestJob.class);
 		fakeProjectLoader = new MockProjectLoader(workingDir);
 		fakeExecutorLoader = new MockExecutorLoader();
 		project = new Project(1, "testProject");

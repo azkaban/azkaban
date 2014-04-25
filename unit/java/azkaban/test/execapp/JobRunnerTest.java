@@ -42,7 +42,8 @@ public class JobRunnerTest {
 		}
 		workingDir.mkdirs();
 		jobtypeManager = new JobTypeManager(null, this.getClass().getClassLoader());
-		jobtypeManager.registerJobType("java", JavaJob.class);
+		
+		jobtypeManager.getJobTypePluginSet().addPluginClass("java", JavaJob.class);
 	}
 
 	@After
