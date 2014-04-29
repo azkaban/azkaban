@@ -1,0 +1,6 @@
+type=flow
+flow.name=job4
+dependencies=job2
+props5=innerflow5
+props6=innerflow6
+props8=innerflow8
