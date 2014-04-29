@@ -50,14 +50,16 @@ public class JobTypeManager
 	private static final Logger logger = Logger.getLogger(JobTypeManager.class);
 	
 	private JobTypePluginSet pluginSet;
-
-	public JobTypeManager(String jobtypePluginDir, ClassLoader parentClassLoader) {
+	private Props globalProperties;
+	
+	public JobTypeManager(String jobtypePluginDir, Props globalProperties, ClassLoader parentClassLoader) {
 		this.jobTypePluginDir = jobtypePluginDir;
 		this.parentLoader = parentClassLoader;
+		this.globalProperties = globalProperties;
 		
 		loadPlugins();
 	}
-
+	
 	public void loadPlugins() throws JobTypeManagerException {
 		JobTypePluginSet plugins = new JobTypePluginSet();
 		
@@ -113,7 +115,7 @@ public class JobTypeManager
 		if (commonJobPropsFile.exists()) {
 			logger.info("Common plugin job props file " + commonJobPropsFile + " found. Attempt to load.");
 			try {
-				commonPluginJobProps = new Props(null, commonJobPropsFile);
+				commonPluginJobProps = new Props(globalProperties, commonJobPropsFile);
 			}
 			catch (IOException e) {
 				throw new JobTypeManagerException("Failed to load common plugin job properties" + e.getCause());

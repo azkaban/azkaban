@@ -52,7 +52,7 @@ public class JobTypeManagerTest {
 		jobTypeDir.mkdirs();
 		
 		FileUtils.copyDirectory(new File("unit/plugins/jobtypes"), jobTypeDir);
-		manager = new JobTypeManager(TEST_PLUGIN_DIR, this.getClass().getClassLoader());
+		manager = new JobTypeManager(TEST_PLUGIN_DIR, null, this.getClass().getClassLoader());
 	}
 	
 	@After

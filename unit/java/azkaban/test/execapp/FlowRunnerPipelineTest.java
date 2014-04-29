@@ -73,7 +73,7 @@ public class FlowRunnerPipelineTest {
 			FileUtils.deleteDirectory(workingDir);
 		}
 		workingDir.mkdirs();
-		jobtypeManager = new JobTypeManager(null, this.getClass().getClassLoader());
+		jobtypeManager = new JobTypeManager(null, null, this.getClass().getClassLoader());
 		JobTypePluginSet pluginSet = jobtypeManager.getJobTypePluginSet();
 		
 		pluginSet.addPluginClass("java", JavaJob.class);

@@ -92,7 +92,7 @@ public class FlowRunnerTest2 {
 			FileUtils.deleteDirectory(workingDir);
 		}
 		workingDir.mkdirs();
-		jobtypeManager = new JobTypeManager(null, this.getClass().getClassLoader());
+		jobtypeManager = new JobTypeManager(null, null, this.getClass().getClassLoader());
 		JobTypePluginSet pluginSet = jobtypeManager.getJobTypePluginSet();
 		
 		pluginSet.addPluginClass("java", JavaJob.class);
@@ -176,16 +176,7 @@ public class FlowRunnerTest2 {
 		ExecutableNode node = nodeMap.get("jobb");
 		Assert.assertEquals(Status.RUNNING, node.getStatus());
 		Props jobb = node.getInputProps();
-		Assert.assertEquals("test1.1", jobb.get("param1"));
-		Assert.assertEquals("test1.1", jobb.get("param1"));
-		Assert.assertEquals("test1.2", jobb.get("param2"));
-		Assert.assertEquals("test1.3", jobb.get("param3"));
 		Assert.assertEquals("override.4", jobb.get("param4"));
-		Assert.assertEquals("test2.5", jobb.get("param5"));
-		Assert.assertEquals("test2.6", jobb.get("param6"));
-		Assert.assertEquals("test2.7", jobb.get("param7"));
-		Assert.assertEquals("test2.8", jobb.get("param8"));
-		Assert.assertEquals("test2.8", jobb.get("param8"));
 		// Test that jobb properties overwrites the output properties
 		Assert.assertEquals("moo", jobb.get("testprops"));
 		Assert.assertEquals("jobb", jobb.get("output.override"));
