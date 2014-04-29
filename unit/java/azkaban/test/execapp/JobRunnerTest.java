@@ -41,8 +41,9 @@ public class JobRunnerTest {
 			FileUtils.deleteDirectory(workingDir);
 		}
 		workingDir.mkdirs();
-		jobtypeManager = new JobTypeManager(null, this.getClass().getClassLoader());
-		jobtypeManager.registerJobType("java", JavaJob.class);
+		jobtypeManager = new JobTypeManager(null, null, this.getClass().getClassLoader());
+		
+		jobtypeManager.getJobTypePluginSet().addPluginClass("java", JavaJob.class);
 	}
 
 	@After

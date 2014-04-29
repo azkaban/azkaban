@@ -42,6 +42,7 @@ import org.apache.velocity.runtime.log.Log4JLogChute;
 import org.apache.velocity.runtime.resource.loader.ClasspathResourceLoader;
 import org.apache.velocity.runtime.resource.loader.JarResourceLoader;
 import org.joda.time.DateTimeZone;
+import org.mortbay.jetty.Connector;
 import org.mortbay.jetty.Server;
 import org.mortbay.jetty.bio.SocketConnector;
 import org.mortbay.jetty.security.SslSocketConnector;
@@ -49,6 +50,8 @@ import org.mortbay.jetty.servlet.Context;
 import org.mortbay.jetty.servlet.DefaultServlet;
 import org.mortbay.jetty.servlet.ServletHolder;
 import org.mortbay.thread.QueuedThreadPool;
+
+import com.linkedin.restli.server.RestliServlet;
 
 import azkaban.alert.Alerter;
 import azkaban.database.AzkabanDatabaseSetup;
@@ -59,7 +62,6 @@ import azkaban.jmx.JmxJettyServer;
 import azkaban.jmx.JmxTriggerManager;
 import azkaban.project.JdbcProjectLoader;
 import azkaban.project.ProjectManager;
-
 import azkaban.scheduler.ScheduleLoader;
 import azkaban.scheduler.ScheduleManager;
 import azkaban.scheduler.TriggerBasedScheduleLoader;
@@ -82,7 +84,6 @@ import azkaban.utils.Props;
 import azkaban.utils.PropsUtils;
 import azkaban.utils.Utils;
 import azkaban.webapp.servlet.AzkabanServletContextListener;
-
 import azkaban.webapp.servlet.AbstractAzkabanServlet;
 import azkaban.webapp.servlet.ExecutorServlet;
 import azkaban.webapp.servlet.IndexRedirectServlet;
@@ -157,6 +158,10 @@ public class AzkabanWebServer extends AzkabanServer {
 	
 	private MBeanServer mbeanServer;
 	private ArrayList<ObjectName> registeredMBeans = new ArrayList<ObjectName>();
+
+	public static AzkabanWebServer getInstance() {
+		return app;
+	}
 
 	/**
 	 * Constructor usually called by tomcat AzkabanServletContext to create the
@@ -684,7 +689,9 @@ public class AzkabanWebServer extends AzkabanServer {
 		}
 
 		int maxThreads = azkabanSettings.getInt("jetty.maxThreads", DEFAULT_THREAD_NUMBER);
-
+		boolean isStatsOn = azkabanSettings.getBoolean("jetty.connector.stats", true);
+		logger.info("Setting up connector with stats on: " + isStatsOn);
+		
 		boolean ssl;
 		int port;
 		final Server server = new Server();
@@ -712,6 +719,11 @@ public class AzkabanWebServer extends AzkabanServer {
 			connector.setPort(port);
 			connector.setHeaderBufferSize(MAX_HEADER_BUFFER_SIZE);
 			server.addConnector(connector);
+		}
+		
+		// setting stats configuration for connectors
+		for (Connector connector : server.getConnectors()) {
+			connector.setStatsOn(isStatsOn);
 		}
 		
 		String hostname = azkabanSettings.getString("jetty.hostname", "localhost");
@@ -762,6 +774,10 @@ public class AzkabanWebServer extends AzkabanServer {
 		root.addServlet(new ServletHolder(new ScheduleServlet()),"/schedule");
 		root.addServlet(new ServletHolder(new JMXHttpServlet()),"/jmx");
 		root.addServlet(new ServletHolder(new TriggerManagerServlet()),"/triggers");
+
+		ServletHolder restliHolder = new ServletHolder(new RestliServlet());
+		restliHolder.setInitParameter("resourcePackages", "azkaban.restli");
+		root.addServlet(restliHolder, "/restli/*");
 		
 		String viewerPluginDir = azkabanSettings.getString("viewer.plugin.dir", "plugins/viewer");
 		loadViewerPlugins(root, viewerPluginDir, app.getVelocityEngine());

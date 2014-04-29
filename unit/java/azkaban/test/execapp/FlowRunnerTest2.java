@@ -21,6 +21,7 @@ import azkaban.executor.ExecutorLoader;
 import azkaban.executor.Status;
 import azkaban.flow.Flow;
 import azkaban.jobtype.JobTypeManager;
+import azkaban.jobtype.JobTypePluginSet;
 import azkaban.project.Project;
 import azkaban.project.ProjectLoader;
 import azkaban.project.ProjectManagerException;
@@ -91,9 +92,11 @@ public class FlowRunnerTest2 {
 			FileUtils.deleteDirectory(workingDir);
 		}
 		workingDir.mkdirs();
-		jobtypeManager = new JobTypeManager(null, this.getClass().getClassLoader());
-		jobtypeManager.registerJobType("java", JavaJob.class);
-		jobtypeManager.registerJobType("test", InteractiveTestJob.class);
+		jobtypeManager = new JobTypeManager(null, null, this.getClass().getClassLoader());
+		JobTypePluginSet pluginSet = jobtypeManager.getJobTypePluginSet();
+		
+		pluginSet.addPluginClass("java", JavaJob.class);
+		pluginSet.addPluginClass("test", InteractiveTestJob.class);
 		fakeProjectLoader = new MockProjectLoader(workingDir);
 		fakeExecutorLoader = new MockExecutorLoader();
 		project = new Project(1, "testProject");
@@ -173,16 +176,7 @@ public class FlowRunnerTest2 {
 		ExecutableNode node = nodeMap.get("jobb");
 		Assert.assertEquals(Status.RUNNING, node.getStatus());
 		Props jobb = node.getInputProps();
-		Assert.assertEquals("test1.1", jobb.get("param1"));
-		Assert.assertEquals("test1.1", jobb.get("param1"));
-		Assert.assertEquals("test1.2", jobb.get("param2"));
-		Assert.assertEquals("test1.3", jobb.get("param3"));
 		Assert.assertEquals("override.4", jobb.get("param4"));
-		Assert.assertEquals("test2.5", jobb.get("param5"));
-		Assert.assertEquals("test2.6", jobb.get("param6"));
-		Assert.assertEquals("test2.7", jobb.get("param7"));
-		Assert.assertEquals("test2.8", jobb.get("param8"));
-		Assert.assertEquals("test2.8", jobb.get("param8"));
 		// Test that jobb properties overwrites the output properties
 		Assert.assertEquals("moo", jobb.get("testprops"));
 		Assert.assertEquals("jobb", jobb.get("output.override"));

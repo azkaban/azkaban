@@ -88,6 +88,10 @@ public class ExecutorServlet extends HttpServlet implements ConnectorParams {
 				else if (action.equals(PING_ACTION)) {
 					respMap.put("status", "alive");
 				}
+				else if (action.equals(RELOAD_JOBTYPE_PLUGINS_ACTION)) {
+					logger.info("Reloading Jobtype plugins");
+					handleReloadJobTypePlugins(respMap);
+				}
 				else {
 					int execid = Integer.parseInt(getParam(req, EXECID_PARAM));
 					String user = getParam(req, USER_PARAM, null);
@@ -332,6 +336,17 @@ public class ExecutorServlet extends HttpServlet implements ConnectorParams {
 			flowRunnerManager.cancelFlow(execid, user);
 			respMap.put(STATUS_PARAM, RESPONSE_SUCCESS);
 		} catch (ExecutorManagerException e) {
+			logger.error(e);
+			respMap.put(RESPONSE_ERROR, e.getMessage());
+		}
+	}
+	
+	private void handleReloadJobTypePlugins(Map<String, Object> respMap) throws ServletException {
+		try {
+			flowRunnerManager.reloadJobTypePlugins();
+			respMap.put(STATUS_PARAM, RESPONSE_SUCCESS);
+		}
+		catch (Exception e) {
 			logger.error(e);
 			respMap.put(RESPONSE_ERROR, e.getMessage());
 		}

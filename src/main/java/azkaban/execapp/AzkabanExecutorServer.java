@@ -30,6 +30,7 @@ import javax.management.ObjectName;
 
 import org.apache.log4j.Logger;
 import org.joda.time.DateTimeZone;
+import org.mortbay.jetty.Connector;
 import org.mortbay.jetty.Server;
 import org.mortbay.jetty.servlet.Context;
 import org.mortbay.jetty.servlet.ServletHolder;
@@ -86,6 +87,13 @@ public class AzkabanExecutorServer {
 		server = new Server(portNumber);
 		QueuedThreadPool httpThreadPool = new QueuedThreadPool(maxThreads);
 		server.setThreadPool(httpThreadPool);
+		
+		boolean isStatsOn = props.getBoolean("executor.connector.stats", true);
+		logger.info("Setting up connector with stats on: " + isStatsOn);
+		
+		for (Connector connector : server.getConnectors()) {
+			connector.setStatsOn(isStatsOn);
+		}
 
 		Context root = new Context(server, "/", Context.SESSIONS);
 		root.setMaxFormContentSize(MAX_FORM_CONTENT_SIZE);
@@ -98,15 +106,6 @@ public class AzkabanExecutorServer {
 		executionLoader = createExecLoader(props);
 		projectLoader = createProjectLoader(props);
 		runnerManager = new FlowRunnerManager(props, executionLoader, projectLoader, this.getClass().getClassLoader());
-		
-		String globalPropsPath = props.getString("executor.global.properties", null);
-		if (globalPropsPath == null) {
-			executorGlobalProps = new Props();
-		}
-		else {
-			executorGlobalProps = new Props(null, globalPropsPath);
-		}
-		runnerManager.setGlobalProps(executorGlobalProps);
 		
 		configureMBeanServer();
 
