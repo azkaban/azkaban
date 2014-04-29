@@ -88,8 +88,6 @@ public class FlowRunner extends EventHandler implements Runnable {
 	
 	// Properties map
 	private Map<String, Props> sharedProps = new HashMap<String, Props>();
-	
-	private Props globalProps;
 	private final JobTypeManager jobtypeManager;
 	
 	private JobRunnerEventListener listener = new JobRunnerEventListener();
@@ -167,11 +165,6 @@ public class FlowRunner extends EventHandler implements Runnable {
 		return this;
 	}
 	
-	public FlowRunner setGlobalProps(Props globalProps) {
-		this.globalProps = globalProps;
-		return this;
-	}
-	
 	public FlowRunner setNumJobThreads(int jobs) {
 		numJobThreads = jobs;
 		return this;
@@ -239,7 +232,7 @@ public class FlowRunner extends EventHandler implements Runnable {
 		String flowId = flow.getFlowId();
 		
 		// Add a bunch of common azkaban properties
-		Props commonFlowProps = PropsUtils.addCommonFlowProperties(this.globalProps, flow);
+		Props commonFlowProps = PropsUtils.addCommonFlowProperties(null, flow);
 		
 		if (flow.getJobSource() != null) {
 			String source = flow.getJobSource();

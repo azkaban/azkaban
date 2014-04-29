@@ -107,15 +107,6 @@ public class AzkabanExecutorServer {
 		projectLoader = createProjectLoader(props);
 		runnerManager = new FlowRunnerManager(props, executionLoader, projectLoader, this.getClass().getClassLoader());
 		
-		String globalPropsPath = props.getString("executor.global.properties", null);
-		if (globalPropsPath == null) {
-			executorGlobalProps = new Props();
-		}
-		else {
-			executorGlobalProps = new Props(null, globalPropsPath);
-		}
-		runnerManager.setGlobalProps(executorGlobalProps);
-		
 		configureMBeanServer();
 
 		try {

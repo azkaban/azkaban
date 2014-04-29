@@ -84,7 +84,7 @@ public class FlowRunnerManager implements EventListener {
 	
 	private JobTypeManager jobtypeManager;
 	
-	private Props globalProps;
+	private Props globalProps = null;
 	
 	private final Props azkabanProps;
 	
@@ -139,7 +139,15 @@ public class FlowRunnerManager implements EventListener {
 		cleanerThread = new CleanerThread();
 		cleanerThread.start();
 		
-		jobtypeManager = new JobTypeManager(props.getString(AzkabanExecutorServer.JOBTYPE_PLUGIN_DIR, JobTypeManager.DEFAULT_JOBTYPEPLUGINDIR), parentClassLoader);
+		String globalPropsPath = props.getString("executor.global.properties", null);
+		if (globalPropsPath != null) {
+			globalProps = new Props(null, globalPropsPath);
+		}
+		
+		jobtypeManager = new JobTypeManager(
+				props.getString(AzkabanExecutorServer.JOBTYPE_PLUGIN_DIR, JobTypeManager.DEFAULT_JOBTYPEPLUGINDIR),
+				globalProps,
+				parentClassLoader);
 	}
 
 	private Map<Pair<Integer, Integer>, ProjectVersion> loadExistingProjects() {
@@ -406,7 +414,6 @@ public class FlowRunnerManager implements EventListener {
 		runner.setFlowWatcher(watcher)
 			.setJobLogSettings(jobLogChunkSize, jobLogNumFiles)
 			.setValidateProxyUser(validateProxyUser)
-			.setGlobalProps(globalProps)
 			.setNumJobThreads(numJobThreads)
 			.addListener(this);
 		

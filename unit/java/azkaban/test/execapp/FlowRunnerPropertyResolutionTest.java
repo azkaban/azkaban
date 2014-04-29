@@ -64,7 +64,7 @@ public class FlowRunnerPropertyResolutionTest {
 			FileUtils.deleteDirectory(workingDir);
 		}
 		workingDir.mkdirs();
-		jobtypeManager = new JobTypeManager(null, this.getClass().getClassLoader());
+		jobtypeManager = new JobTypeManager(null, null, this.getClass().getClassLoader());
 		jobtypeManager.getJobTypePluginSet().addPluginClass("java", JavaJob.class);
 		jobtypeManager.getJobTypePluginSet().addPluginClass("test", InteractiveTestJob.class);
 		fakeProjectLoader = new MockProjectLoader(workingDir);
