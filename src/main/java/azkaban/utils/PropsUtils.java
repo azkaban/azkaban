@@ -31,6 +31,9 @@ import java.util.regex.Pattern;
 import azkaban.executor.ExecutableFlowBase;
 import azkaban.flow.CommonJobProperties;
 
+import org.apache.commons.jexl2.Expression;
+import org.apache.commons.jexl2.JexlEngine;
+import org.apache.commons.jexl2.MapContext;
 import org.apache.commons.lang.StringUtils;
 import org.joda.time.DateTime;
 
@@ -144,7 +147,7 @@ public class PropsUtils {
 		return false;
 	}
 
-	private static final Pattern VARIABLE_PATTERN = Pattern.compile("\\$\\{([a-zA-Z_.0-9]+)\\}");
+	private static final Pattern VARIABLE_REPLACEMENT_PATTERN = Pattern.compile("\\$\\{([a-zA-Z_.0-9]+)\\}");
 
 	public static Props resolveProps(Props props) {
 		if (props == null) return null;
@@ -157,9 +160,16 @@ public class PropsUtils {
 			
 			visitedVariables.add(key);
 			String replacedValue = resolveVariableReplacement(value, props, visitedVariables);
+			String expressedValue = resolveVariableExpression(replacedValue);
 			visitedVariables.clear();
 			
-			resolvedProps.put(key, replacedValue);
+			resolvedProps.put(key, expressedValue);
+		}
+		
+		for (String key : resolvedProps.getKeySet()) {
+			String value = resolvedProps.get(key);
+			String expressedValue = resolveVariableExpression(value);
+			resolvedProps.put(key, expressedValue);
 		}
 		
 		return resolvedProps;
@@ -169,7 +179,7 @@ public class PropsUtils {
 		StringBuffer buffer = new StringBuffer();
 		int startIndex = 0;
 		
-		Matcher matcher = VARIABLE_PATTERN.matcher(value);
+		Matcher matcher = VARIABLE_REPLACEMENT_PATTERN.matcher(value);
 		while (matcher.find(startIndex)) {
 			if (startIndex < matcher.start()) {
 				// Copy everything up front to the buffer
@@ -206,6 +216,35 @@ public class PropsUtils {
 		}
 		
 		return buffer.toString();
+	}
+
+	private static final Pattern VARIABLE_EXPRESSION_PATTERN = Pattern.compile("\\$\\(([a-zA-Z_.0-9\\s\\+\\-\\*\\/\"']+)\\)");
+	private static String resolveVariableExpression(String value) {
+		Matcher matcher = VARIABLE_EXPRESSION_PATTERN.matcher(value);
+		JexlEngine jexl = new JexlEngine();
+		
+		if (!matcher.find()) {
+			System.out.println("No matches found");
+			return value;
+		}
+		
+		StringBuilder builder = new StringBuilder();
+		
+		int startIndex = 0;
+		while (matcher.find(startIndex)) {
+			int start = matcher.start();
+			int end = matcher.end();
+			builder.append(value.substring(startIndex, start));
+			
+			String group = matcher.group(1);
+
+			Expression e = jexl.createExpression(group);
+			Object result = e.evaluate(new MapContext());
+			builder.append(result);
+			startIndex = end;
+		}
+		builder.append(value.substring(startIndex));
+		return resolveVariableExpression(builder.toString());
 	}
 	
 	public static Props addCommonFlowProperties(Props parentProps, final ExecutableFlowBase flow) {
