@@ -1,5 +1,15 @@
+buildscript {
+  repositories {
+    mavenCentral()
+  }
+  dependencies {
+    classpath 'de.obqo.gradle:gradle-lesscss-plugin:1.0-1.3.3'
+  }
+}
+
 apply plugin: 'java'
 apply plugin: 'eclipse'
+apply plugin: 'lesscss'
 
 defaultTasks 'dist'
 
@@ -41,18 +51,21 @@ configurations {
     compile {
         description = 'compile classpath'
     }
+    generateRestli {
+        transitive = true
+    }
     test {
         extendsFrom compile
     }
 }
-configurations.compile {
-    description = 'compile classpath'
-}
+
+ext.pegasusVersion = '1.15.7'
 
 dependencies {
   compile (
     [group: 'commons-collections', name:'commons-collections', version: '3.2.1'],
     [group: 'commons-configuration', name:'commons-configuration', version: '1.8'],
+    [group: 'commons-codec', name:'commons-codec', version: '1.9'],
     [group: 'commons-dbcp', name:'commons-dbcp', version: '1.4'],
     [group: 'commons-dbutils', name:'commons-dbutils', version: '1.5'],
     [group: 'org.apache.commons', name:'commons-email', version: '1.2'],
@@ -68,7 +81,6 @@ dependencies {
     [group: 'org.apache.httpcomponents', name:'httpcore', version: '4.2.1'],
     [group: 'org.codehaus.jackson', name:'jackson-core-asl', version: '1.9.5'],
     [group: 'org.codehaus.jackson', name:'jackson-mapper-asl',version: '1.9.5'],
-    [group: 'org.codehaus.jackson', name:'jackson-core-asl', version: '1.9.5'],
     [group: 'org.mortbay.jetty', name:'jetty', version: '6.1.26'],
     [group: 'org.mortbay.jetty', name:'jetty-util', version: '6.1.26'],
     [group: 'joda-time', name:'joda-time', version: '2.0'],
@@ -78,12 +90,40 @@ dependencies {
     [group: 'mysql', name:'mysql-connector-java', version: '5.1.28'],
     [group: 'javax.servlet', name:'servlet-api', version: '2.5'],
     [group: 'org.slf4j', name:'slf4j-api', version: '1.6.1'],
-    [group: 'org.apache.velocity', name:'velocity', version: '1.7']
+    [group: 'org.apache.velocity', name:'velocity', version: '1.7'],
+    [group: 'com.linkedin.pegasus', name: 'gradle-plugins', version: pegasusVersion],
+    [group: 'com.linkedin.pegasus', name: 'pegasus-common', version: pegasusVersion],
+    [group: 'com.linkedin.pegasus', name: 'restli-common', version: pegasusVersion],
+    [group: 'com.linkedin.pegasus', name: 'restli-server', version: pegasusVersion],
+    [group: 'com.linkedin.pegasus', name: 'data', version: pegasusVersion],
+    [group: 'com.linkedin.pegasus', name: 'r2', version: pegasusVersion],
+    [group: 'com.linkedin.pegasus', name: 'li-jersey-uri', version: pegasusVersion],
+    [group: 'com.linkedin.parseq', name: 'parseq', version: '1.3.7'],
+    [group: 'com.fasterxml.jackson.core', name: 'jackson-core', version: '2.3.2']
+  )
+
+  generateRestli (
+      [group: 'com.linkedin.pegasus', name:'generator', version: pegasusVersion],
+      [group: 'com.linkedin.pegasus', name:'restli-tools', version: pegasusVersion]
   )
 
   testCompile (
-    [group: 'junit', name:'junit', version: '4.11']
+    [group: 'junit', name:'junit', version: '4.11'],
+    [group: 'org.hamcrest', name:'hamcrest-all', version: '1.3']
   )
+}
+
+sourceSets {
+    main {
+        java {
+            srcDirs 'src/main/java', 'src/restli/generatedJava', 'src/restli/java'
+        }
+    }
+    test {
+        java {
+            srcDirs 'unit/java'
+        }
+    }
 }
 
 jar {
@@ -95,6 +135,27 @@ jar {
       )
     }
 }
+
+task restliTemplateGenerator(type: JavaExec) {
+    mkdir 'src/restli/generatedJava'
+
+    main = 'com.linkedin.pegasus.generator.PegasusDataTemplateGenerator'
+    args = ['src/restli/generatedJava','src/restli/schemas']
+    classpath = configurations.generateRestli
+}
+
+task restliRestSpecGenerator(dependsOn: [restliTemplateGenerator], type: JavaExec) << {
+    mkdir 'src/restli/generatedRestSpec'
+
+    main = 'com.linkedin.restli.tools.idlgen.RestLiResourceModelExporterCmdLineApp'
+    args = ['-outdir', 'src/restli/generatedRestSpec', '-sourcepath', 'src/restli/java']
+    classpath = configurations.generateRestli
+}
+
+task restli(dependsOn: restliTemplateGenerator) << {
+}
+
+compileJava.dependsOn.add('restli')
 
 eclipse.classpath.file {
     // Erase the whole classpath
@@ -109,15 +170,12 @@ eclipse.classpath.file {
     }
 }
 
-/**
- * Invokes a makefile target that will compile less files
- */
-task compileLess(type:Exec) {
-    workingDir 'src/main/less'
-    commandLine 'make', '-e'
-    environment (
-      OBJ_DIR : file(new File(buildDir,'/less'))
-   )
+lesscss {
+  source = fileTree('src/main/less') {
+    include 'azkaban.less'
+    include 'azkaban-graph.less'
+  }
+  dest = 'build/web/css'
 }
 
 /**
@@ -128,26 +186,21 @@ task compileDust(type:Exec) {
     commandLine 'make', '-e'
     environment (
       OBJ_DIR : file(new File(buildDir,'/dust'))
-   )
+    )
 }
 
 /**
  * Copies web files to a build directory
  */
-task web(dependsOn: ['compileLess', 'compileDust']) << {
+task web(dependsOn: ['lesscss', 'compileDust']) << {
     println 'Copying web files'
     copy {
         from('src/web')
         into('build/web')
     }
-
     copy {
         from('build/dust')
         into('build/web/js')
-    }
-    copy {
-        from('build/less')
-        into('build/web/css')
     }
 }
 
@@ -170,219 +223,240 @@ task createVersionFile() << {
     versionFile.write(versionStr)
 }
 
+ext.soloAppendix = 'solo-server'
+ext.soloPackageDir = 'build/package/' + jar.baseName + '-' + soloAppendix
+
 /**
- * Packages the SoloServer version of Azkaban
+ * Copies the Azkaban Solo Server files into its package directory.
  */
-task packageSolo(type: Tar, dependsOn: [jar, 'web', 'createVersionFile']) {
-    appendix = 'solo-server'
-    packageDir = 'build/package/' + baseName + '-' + appendix
+task copySolo(dependsOn: ['jar', 'web', 'createVersionFile']) << {
+    delete soloPackageDir
+    mkdir soloPackageDir
 
-    println 'Creating Azkaban Solo Server Package into ' + packageDir
-    mkdir packageDir
-    mkdir packageDir + '/extlib'
-    mkdir packageDir + '/plugins'
+    println 'Creating Azkaban Solo Server Package into ' + soloPackageDir
+    mkdir soloPackageDir + '/lib'
+    mkdir soloPackageDir + '/extlib'
+    mkdir soloPackageDir + '/plugins'
 
-    println 'Copying Soloserver bin & conf'
     copy {
+        println 'Copying Soloserver bin & conf'
         from('src/package/soloserver')
-        into(packageDir)
+        into(soloPackageDir)
     }
 
-    println 'Copying Azkaban lib'
     copy {
+        println 'Copying Azkaban lib'
         from('build/libs')
-        into(packageDir + '/lib')
+        into(soloPackageDir + '/lib')
     }
 
-    println 'Copying web'
     copy {
+        println 'Copying web'
         from('build/web')
-        into(packageDir + '/web')
+        into(soloPackageDir + '/web')
     }
 
-    println 'Copying sql'
     copy {
+        println 'Copying sql'
         from('src/sql')
-        into(packageDir + '/sql')
+        into(soloPackageDir + '/sql')
     }
 
-    println 'Copying dependency jars'
     copy {
-        into packageDir + '/lib'
+        println 'Copying dependency jars'
+        into soloPackageDir + '/lib'
         from configurations.compile
     }
 
     copy {
-        into packageDir
+        println 'Copying version file'
+        into soloPackageDir
         from 'build/package/version.file'
     }
+}
 
-    println 'Tarballing Solo Package'
+/**
+ * Packages the SoloServer version of Azkaban
+ */
+task packageSolo(type: Tar, dependsOn: 'copySolo') {
+    appendix = soloAppendix
     extension = 'tar.gz'
     compression = Compression.GZIP
 
-    basedir = baseName + '-' + appendix + '-' + version
-    println 'Source is in ' + packageDir
+    ext.basedir = baseName + '-' + appendix + '-' + version
     into(basedir) {
-        from packageDir
+        from soloPackageDir
         exclude 'bin'
     }
 
-    dst_bin = basedir + '/bin'
-    src_bin = packageDir + '/bin'
+    ext.dst_bin = basedir + '/bin'
+    ext.src_bin = soloPackageDir + '/bin'
     from(src_bin) {
         into dst_bin
         fileMode = 0755
+    }
+}
+
+ext.sqlPackageDir = 'build/package/sql'
+
+/**
+ * Copies the SQL files into its package directory.
+ */
+task copySql() << {
+    println 'Creating Azkaban SQL Scripts into ' + sqlPackageDir
+    delete sqlPackageDir
+    mkdir sqlPackageDir
+
+    copy {
+        println 'Copying SQL files'
+        from('src/sql')
+        into(sqlPackageDir)
+    }
+
+    String destFile = sqlPackageDir + '/create-all-sql-' + version + '.sql';
+    ant.concat(destfile:destFile, fixlastline:'yes') {
+        println('Concating create scripts to ' + destFile)
+        fileset(dir: 'src/sql') {
+            exclude(name: 'update.*.sql')
+            exclude(name: 'database.properties')
+        }
     }
 }
 
 /**
  * Packages the Sql Scripts for Azkaban DB
  */
-task packageSql(type: Tar) {
-    String packageDir = 'build/package/sql'
-
-    println 'Creating Azkaban SQL Scripts into ' + packageDir
-    mkdir packageDir
-
-    println 'Copying SQL files'
-    copy {
-        from('src/sql')
-        into(packageDir)
-    }
-
-    String destFile = packageDir + '/create-all-sql-' + version + '.sql';
-    println('Concating create scripts to ' + destFile)
-    ant.concat(destfile:destFile, fixlastline:'yes') {
-        fileset(dir: 'src/sql') {
-            exclude(name: 'update.*.sql')
-            exclude(name: 'database.properties')
-        }
-    }
-
-    println 'Tarballing SQL Package'
+task packageSql(type: Tar, dependsOn: 'copySql') {
     extension = 'tar.gz'
     compression = Compression.GZIP
     appendix = 'sql'
 
-    basedir = baseName + '-' + appendix + '-' + version
-    packageDir = 'build/package/sql'
-    println 'Source is in ' + packageDir
+    ext.basedir = baseName + '-' + appendix + '-' + version
     into(basedir) {
-        from packageDir
+        from sqlPackageDir
+    }
+}
+
+ext.execAppendix = 'exec-server'
+ext.execPackageDir = 'build/package/' + jar.baseName + '-' + execAppendix
+
+/**
+ * Copies the Azkaban Executor Server files into its package directory.
+ */
+task copyExec(dependsOn: ['jar', 'createVersionFile']) << {
+    delete execPackageDir
+    println 'Creating Azkaban Executor Server Package into ' + execPackageDir
+    mkdir execPackageDir
+    mkdir execPackageDir + '/lib'
+    mkdir execPackageDir + '/extlib'
+    mkdir execPackageDir + '/plugins'
+
+    copy {
+        println 'Copying Exec server bin & conf'
+        from('src/package/execserver')
+        into(execPackageDir)
+    }
+
+    copy {
+        println 'Copying Azkaban lib '
+        from('build/libs')
+        into(execPackageDir + '/lib')
+    }
+
+    copy {
+        println 'Copying dependency jars'
+        into execPackageDir + '/lib'
+        from configurations.compile
+    }
+
+    copy {
+        into execPackageDir
+        from 'build/package/version.file'
     }
 }
 
 /**
  * Packages the Azkaban Executor Server
  */
-task packageExec(type: Tar, dependsOn: [jar, 'createVersionFile']) {
-    appendix = 'exec-server'
-    String packageDir = 'build/package/' + baseName + '-' + appendix
-
-    println 'Creating Azkaban Executor Server Package into ' + packageDir
-    mkdir packageDir
-    mkdir packageDir + '/extlib'
-    mkdir packageDir + '/plugins'
-
-    println 'Copying Exec server bin & conf'
-    copy {
-        from('src/package/execserver')
-        into(packageDir)
-    }
-
-    println 'Copying Azkaban lib'
-    copy {
-        from('build/libs')
-        into(packageDir + '/lib')
-    }
-
-    println 'Copying dependency jars'
-    copy {
-        into packageDir + '/lib'
-        from configurations.compile
-    }
-
-    copy {
-        into packageDir
-        from 'build/package/version.file'
-    }
-
-    println 'Tarballing Web Package'
+task packageExec(type: Tar, dependsOn: 'copyExec') {
+    appendix = execAppendix
     extension = 'tar.gz'
     compression = Compression.GZIP
 
-    basedir = baseName + '-' + appendix + '-' + version
-    packageDir = 'build/package/' + baseName + '-' + appendix
-    println 'Source is in ' + packageDir
-
+    ext.basedir = baseName + '-' + appendix + '-' + version
     into(basedir) {
-        from packageDir
+        from execPackageDir
         exclude 'bin'
     }
 
-    dst_bin = basedir + '/bin'
-    src_bin = packageDir + '/bin'
+    ext.dst_bin = basedir + '/bin'
+    ext.src_bin = execPackageDir + '/bin'
     from(src_bin) {
         into dst_bin
         fileMode = 0755
     }
 }
 
-/**
- * Packages the Azkaban Web Server
- */
-task packageWeb(type: Tar, dependsOn: [jar, 'web', 'createVersionFile']) {
-    appendix = 'web-server'
-    String packageDir = 'build/package/' + baseName + '-' + appendix
+ext.webAppendix = 'web-server'
+ext.webPackageDir = 'build/package/' + jar.baseName + '-' + webAppendix
 
-    println 'Creating Azkaban Web Server Package into ' + packageDir
-    mkdir packageDir
-    mkdir packageDir + '/extlib'
-    mkdir packageDir + '/plugins'
+/**
+ * Copies the Azkaban Web Server files into its package directory.
+ */
+task copyWeb(dependsOn: ['jar', 'web', 'createVersionFile']) << {
+    println 'Creating Azkaban Web Server Package into ' + webPackageDir
+    delete webPackageDir
+    mkdir webPackageDir
+    mkdir webPackageDir + '/lib'
+    mkdir webPackageDir + '/extlib'
+    mkdir webPackageDir + '/plugins'
 
     println 'Copying Web server bin & conf'
     copy {
         from('src/package/webserver')
-        into(packageDir)
+        into(webPackageDir)
     }
 
-    println 'Copying Azkaban lib'
+    println 'Copying Azkaban lib '
     copy {
         from('build/libs')
-        into(packageDir + '/lib')
+        into(webPackageDir + '/lib')
     }
 
     println 'Copying web'
     copy {
         from('build/web')
-        into(packageDir + '/web')
+        into(webPackageDir + '/web')
     }
 
     println 'Copying dependency jars'
     copy {
-        into packageDir + '/lib'
+        into webPackageDir + '/lib'
         from configurations.compile
     }
 
     copy {
-        into packageDir
+        into webPackageDir
         from 'build/package/version.file'
     }
+}
 
-    println 'Tarballing Web Package'
+/**
+ * Packages the Azkaban Web Server
+ */
+task packageWeb(type: Tar, dependsOn: 'copyWeb') {
+    appendix = webAppendix
     extension = 'tar.gz'
     compression = Compression.GZIP
 
-    basedir = baseName + '-' + appendix + '-' + version
-    println 'Source is in ' + packageDir
+    ext.basedir = baseName + '-' + appendix + '-' + version
     into(basedir) {
-        from packageDir
+        from webPackageDir
         exclude 'bin'
     }
 
-    dst_bin = basedir + '/bin'
-    src_bin = packageDir + '/bin'
+    ext.dst_bin = basedir + '/bin'
+    ext.src_bin = webPackageDir + '/bin'
     from(src_bin) {
         into dst_bin
         fileMode = 0755
