@@ -618,47 +618,38 @@ public class FlowRunner extends EventHandler implements Runnable {
 		}
 	}
 	
-	
-	@SuppressWarnings("unchecked")
 	private void prepareJobProperties(ExecutableNode node) throws IOException {
 		if (node instanceof ExecutableFlow) {
 			return;
 		}
 		
 		Props props = null;
-		// The following is the hiearchical ordering of dependency resolution
-		// 1. Parent Flow Properties
-		ExecutableFlowBase parentFlow = node.getParentFlow();
-		if (parentFlow != null) {
-			props = parentFlow.getInputProps();
-		}
-		
-		// 2. Shared Properties
-		String sharedProps = node.getPropsSource();
-		if (sharedProps != null) {
-			Props shared = this.sharedProps.get(sharedProps);
-			if (shared != null) {
-				// Clone because we may clobber
-				shared = Props.clone(shared);
-				shared.setEarliestAncestor(props);
-				props = shared;
+		// 1. Shared properties (i.e. *.properties) for the jobs only. This takes the
+		// least precedence
+		if (!(node instanceof ExecutableFlowBase)) {
+			String sharedProps = node.getPropsSource();
+			if (sharedProps != null) {
+				props = this.sharedProps.get(sharedProps);
 			}
 		}
-
-		// 3. Flow Override properties
-		Map<String,String> flowParam = flow.getExecutionOptions().getFlowParameters();
-		if (flowParam != null && !flowParam.isEmpty()) {
-			props = new Props(props, flowParam);
+		
+		// The following is the hiearchical ordering of dependency resolution
+		// 2. Parent Flow Properties
+		ExecutableFlowBase parentFlow = node.getParentFlow();
+		if (parentFlow != null) {
+			Props flowProps = Props.clone(parentFlow.getInputProps());
+			flowProps.setEarliestAncestor(props);
+			props = flowProps;
 		}
 		
-		// 4. Output Properties
+		// 3. Output Properties. The call creates a clone, so we can overwrite it.
 		Props outputProps = collectOutputProps(node);
 		if (outputProps != null) {
 			outputProps.setEarliestAncestor(props);
 			props = outputProps;
 		}
 		
-		// 5. The job source
+		// 4. The job source.
 		Props jobSource = loadJobProps(node);
 		if (jobSource != null) {
 			jobSource.setParent(props);
