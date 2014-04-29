@@ -60,10 +60,12 @@ public class PropsUtilsTest {
 			"variablereplaced", "${num1}",
 			"expression1", "$(1+10)",
 			"expression2", "$(1+10)*2",
-			"expression3", "$((${num1} + ${num3})*10)",
+			"expression3", "$($(${num1} + ${num3})*10)",
 			"expression4", "$(${num1} + ${expression3})",
-			"expression5", "$($($(2+3)) + 3) + $(${expression3} + 1))",
-			"expression6", "$(1 + ${normkey}))"
+			"expression5", "$($($(2+3)) + 3) + $(${expression3} + 1)",
+			"expression6", "$(1 + ${normkey})",
+			"expression7", "$(\"${normkey}\" + 1)",
+			"expression8", "${expression1}"
 		);
 
 		Props resolved = PropsUtils.resolveProps(props);
@@ -76,8 +78,10 @@ public class PropsUtilsTest {
 		Assert.assertEquals("11*2", resolved.get("expression2"));
 		Assert.assertEquals("40", resolved.get("expression3"));
 		Assert.assertEquals("41", resolved.get("expression4"));
-		Assert.assertEquals("11 + 41", resolved.get("expression5"));
-		Assert.assertEquals("1 + normal", resolved.get("expression6"));
+		Assert.assertEquals("8 + 41", resolved.get("expression5"));
+		Assert.assertEquals("1", resolved.get("expression6"));
+		Assert.assertEquals("normal1", resolved.get("expression7"));
+		Assert.assertEquals("11", resolved.get("expression8"));
 	}
 	
 	@Test
