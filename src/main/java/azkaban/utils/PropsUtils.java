@@ -240,15 +240,15 @@ public class PropsUtils {
 		
 		// Want to check that everything is well formed, and that
 		// we properly capture $( ...(...)...).
-		int count = 0;
+		int bracketCount = 0;
 		int nextClosed = lastIndex + 2;
 		for (; nextClosed < value.length(); ++nextClosed) {
 			if (value.charAt(nextClosed) == '(') {
-				count++;
+				bracketCount++;
 			}
 			else if (value.charAt(nextClosed) == ')') {
-				count--;
-				if (count == -1) {
+				bracketCount--;
+				if (bracketCount == -1) {
 					break;
 				}
 			}
