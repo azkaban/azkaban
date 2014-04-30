@@ -33,6 +33,7 @@ import azkaban.flow.CommonJobProperties;
 
 import org.apache.commons.jexl2.Expression;
 import org.apache.commons.jexl2.JexlEngine;
+import org.apache.commons.jexl2.JexlException;
 import org.apache.commons.jexl2.MapContext;
 import org.apache.commons.lang.StringUtils;
 import org.joda.time.DateTime;
@@ -160,10 +161,9 @@ public class PropsUtils {
 			
 			visitedVariables.add(key);
 			String replacedValue = resolveVariableReplacement(value, props, visitedVariables);
-			String expressedValue = resolveVariableExpression(replacedValue);
 			visitedVariables.clear();
 			
-			resolvedProps.put(key, expressedValue);
+			resolvedProps.put(key, replacedValue);
 		}
 		
 		for (String key : resolvedProps.getKeySet()) {
@@ -217,34 +217,60 @@ public class PropsUtils {
 		
 		return buffer.toString();
 	}
-
-	private static final Pattern VARIABLE_EXPRESSION_PATTERN = Pattern.compile("\\$\\(([a-zA-Z_.0-9\\s\\+\\-\\*\\/\"']+)\\)");
+	
 	private static String resolveVariableExpression(String value) {
-		Matcher matcher = VARIABLE_EXPRESSION_PATTERN.matcher(value);
 		JexlEngine jexl = new JexlEngine();
-		
-		if (!matcher.find()) {
-			System.out.println("No matches found");
+		return resolveVariableExpression(value, value.length(), jexl);
+	}
+	
+	/**
+	 * Function that looks for expressions to parse.
+	 * It parses backwards to capture embedded expressions
+	 * 
+	 * @param value
+	 * @param last
+	 * @param jexl
+	 * @return
+	 */
+	private static String resolveVariableExpression(String value, int last, JexlEngine jexl) {
+		int lastIndex = value.lastIndexOf("$(", last);
+		if (lastIndex == -1) {
 			return value;
 		}
 		
-		StringBuilder builder = new StringBuilder();
-		
-		int startIndex = 0;
-		while (matcher.find(startIndex)) {
-			int start = matcher.start();
-			int end = matcher.end();
-			builder.append(value.substring(startIndex, start));
-			
-			String group = matcher.group(1);
-
-			Expression e = jexl.createExpression(group);
-			Object result = e.evaluate(new MapContext());
-			builder.append(result);
-			startIndex = end;
+		// Want to check that everything is well formed, and that
+		// we properly capture $( ...(...)...).
+		int count = 0;
+		int nextClosed = lastIndex + 2;
+		for (; nextClosed < value.length(); ++nextClosed) {
+			if (value.charAt(nextClosed) == '(') {
+				count++;
+			}
+			else if (value.charAt(nextClosed) == ')') {
+				count--;
+				if (count == -1) {
+					break;
+				}
+			}
 		}
-		builder.append(value.substring(startIndex));
-		return resolveVariableExpression(builder.toString());
+		
+		if (nextClosed == value.length()) {
+			throw new IllegalArgumentException("Expression " + value + " not well formed.");
+		}
+		
+		String innerExpression = value.substring(lastIndex + 2, nextClosed);
+		Object result = null;
+		try {
+			Expression e = jexl.createExpression(innerExpression);
+			result = e.evaluate(new MapContext());
+		}
+		catch (JexlException e) {
+			throw new IllegalArgumentException("Expression " + value + " not well formed. " + e.getMessage(), e);
+		}
+		
+		String newValue = value.substring(0, lastIndex) + result.toString() + value.substring(nextClosed + 1);
+		System.out.println("Value " + newValue);
+		return resolveVariableExpression(newValue, lastIndex, jexl);
 	}
 	
 	public static Props addCommonFlowProperties(Props parentProps, final ExecutableFlowBase flow) {

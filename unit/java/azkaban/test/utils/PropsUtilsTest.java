@@ -65,7 +65,8 @@ public class PropsUtilsTest {
 			"expression5", "$($($(2+3)) + 3) + $(${expression3} + 1)",
 			"expression6", "$(1 + ${normkey})",
 			"expression7", "$(\"${normkey}\" + 1)",
-			"expression8", "${expression1}"
+			"expression8", "${expression1}",
+			"expression9", "$((2+3) + 3)"
 		);
 
 		Props resolved = PropsUtils.resolveProps(props);
@@ -82,6 +83,29 @@ public class PropsUtilsTest {
 		Assert.assertEquals("1", resolved.get("expression6"));
 		Assert.assertEquals("normal1", resolved.get("expression7"));
 		Assert.assertEquals("11", resolved.get("expression8"));
+		Assert.assertEquals("8", resolved.get("expression9"));
+	}
+	
+	@Test
+	public void testMalformedExpressionProps() throws IOException {
+		// unclosed
+		Props props = Props.of("key", "$(1+2");
+		failIfNotException(props);
+		
+		props = Props.of("key", "$((1+2)");
+		failIfNotException(props);
+		
+		// bad variable replacement
+		props = Props.of("key", "$(${dontexist}+2)");
+		failIfNotException(props);
+	
+		// bad expression
+		props = Props.of("key", "$(2 +)");
+		failIfNotException(props);
+		
+		// bad expression
+		props = Props.of("key", "$(2 + #hello)");
+		failIfNotException(props);
 	}
 	
 	@Test
