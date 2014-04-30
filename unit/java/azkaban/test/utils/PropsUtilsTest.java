@@ -51,6 +51,64 @@ public class PropsUtilsTest {
 	}
 	
 	@Test
+	public void testExpressionResolution() throws IOException {
+		Props props = Props.of(
+			"normkey", "normal",
+			"num1", "1",
+			"num2", "2",
+			"num3", "3",
+			"variablereplaced", "${num1}",
+			"expression1", "$(1+10)",
+			"expression2", "$(1+10)*2",
+			"expression3", "$($(${num1} + ${num3})*10)",
+			"expression4", "$(${num1} + ${expression3})",
+			"expression5", "$($($(2+3)) + 3) + $(${expression3} + 1)",
+			"expression6", "$(1 + ${normkey})",
+			"expression7", "$(\"${normkey}\" + 1)",
+			"expression8", "${expression1}",
+			"expression9", "$((2+3) + 3)"
+		);
+
+		Props resolved = PropsUtils.resolveProps(props);
+		Assert.assertEquals("normal", resolved.get("normkey"));
+		Assert.assertEquals("1", resolved.get("num1"));
+		Assert.assertEquals("2", resolved.get("num2"));
+		Assert.assertEquals("3", resolved.get("num3"));
+		Assert.assertEquals("1", resolved.get("variablereplaced"));
+		Assert.assertEquals("11", resolved.get("expression1"));
+		Assert.assertEquals("11*2", resolved.get("expression2"));
+		Assert.assertEquals("40", resolved.get("expression3"));
+		Assert.assertEquals("41", resolved.get("expression4"));
+		Assert.assertEquals("8 + 41", resolved.get("expression5"));
+		Assert.assertEquals("1", resolved.get("expression6"));
+		Assert.assertEquals("normal1", resolved.get("expression7"));
+		Assert.assertEquals("11", resolved.get("expression8"));
+		Assert.assertEquals("8", resolved.get("expression9"));
+	}
+	
+	@Test
+	public void testMalformedExpressionProps() throws IOException {
+		// unclosed
+		Props props = Props.of("key", "$(1+2");
+		failIfNotException(props);
+		
+		props = Props.of("key", "$((1+2)");
+		failIfNotException(props);
+		
+		// bad variable replacement
+		props = Props.of("key", "$(${dontexist}+2)");
+		failIfNotException(props);
+	
+		// bad expression
+		props = Props.of("key", "$(2 +)");
+		failIfNotException(props);
+		
+		// bad expression
+		props = Props.of("key", "$(2 + #hello)");
+		failIfNotException(props);
+	}
+	
+	@Test
 	public void testCyclesResolveProps() throws IOException {
 		Props propsGrandParent = new Props();
 		Props propsParent = new Props(propsGrandParent);

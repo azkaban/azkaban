@@ -31,6 +31,10 @@ import java.util.regex.Pattern;
 import azkaban.executor.ExecutableFlowBase;
 import azkaban.flow.CommonJobProperties;
 
+import org.apache.commons.jexl2.Expression;
+import org.apache.commons.jexl2.JexlEngine;
+import org.apache.commons.jexl2.JexlException;
+import org.apache.commons.jexl2.MapContext;
 import org.apache.commons.lang.StringUtils;
 import org.joda.time.DateTime;
 
@@ -144,7 +148,7 @@ public class PropsUtils {
 		return false;
 	}
 
-	private static final Pattern VARIABLE_PATTERN = Pattern.compile("\\$\\{([a-zA-Z_.0-9]+)\\}");
+	private static final Pattern VARIABLE_REPLACEMENT_PATTERN = Pattern.compile("\\$\\{([a-zA-Z_.0-9]+)\\}");
 
 	public static Props resolveProps(Props props) {
 		if (props == null) return null;
@@ -162,6 +166,12 @@ public class PropsUtils {
 			resolvedProps.put(key, replacedValue);
 		}
 		
+		for (String key : resolvedProps.getKeySet()) {
+			String value = resolvedProps.get(key);
+			String expressedValue = resolveVariableExpression(value);
+			resolvedProps.put(key, expressedValue);
+		}
+		
 		return resolvedProps;
 	};
 	
@@ -169,7 +179,7 @@ public class PropsUtils {
 		StringBuffer buffer = new StringBuffer();
 		int startIndex = 0;
 		
-		Matcher matcher = VARIABLE_PATTERN.matcher(value);
+		Matcher matcher = VARIABLE_REPLACEMENT_PATTERN.matcher(value);
 		while (matcher.find(startIndex)) {
 			if (startIndex < matcher.start()) {
 				// Copy everything up front to the buffer
@@ -206,6 +216,60 @@ public class PropsUtils {
 		}
 		
 		return buffer.toString();
+	}
+	
+	private static String resolveVariableExpression(String value) {
+		JexlEngine jexl = new JexlEngine();
+		return resolveVariableExpression(value, value.length(), jexl);
+	}
+	
+	/**
+	 * Function that looks for expressions to parse.
+	 * It parses backwards to capture embedded expressions
+	 * 
+	 * @param value
+	 * @param last
+	 * @param jexl
+	 * @return
+	 */
+	private static String resolveVariableExpression(String value, int last, JexlEngine jexl) {
+		int lastIndex = value.lastIndexOf("$(", last);
+		if (lastIndex == -1) {
+			return value;
+		}
+		
+		// Want to check that everything is well formed, and that
+		// we properly capture $( ...(...)...).
+		int bracketCount = 0;
+		int nextClosed = lastIndex + 2;
+		for (; nextClosed < value.length(); ++nextClosed) {
+			if (value.charAt(nextClosed) == '(') {
+				bracketCount++;
+			}
+			else if (value.charAt(nextClosed) == ')') {
+				bracketCount--;
+				if (bracketCount == -1) {
+					break;
+				}
+			}
+		}
+		
+		if (nextClosed == value.length()) {
+			throw new IllegalArgumentException("Expression " + value + " not well formed.");
+		}
+		
+		String innerExpression = value.substring(lastIndex + 2, nextClosed);
+		Object result = null;
+		try {
+			Expression e = jexl.createExpression(innerExpression);
+			result = e.evaluate(new MapContext());
+		}
+		catch (JexlException e) {
+			throw new IllegalArgumentException("Expression " + value + " not well formed. " + e.getMessage(), e);
+		}
+		
+		String newValue = value.substring(0, lastIndex) + result.toString() + value.substring(nextClosed + 1);
+		return resolveVariableExpression(newValue, lastIndex, jexl);
 	}
 	
 	public static Props addCommonFlowProperties(Props parentProps, final ExecutableFlowBase flow) {
