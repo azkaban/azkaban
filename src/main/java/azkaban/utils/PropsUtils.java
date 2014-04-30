@@ -269,7 +269,6 @@ public class PropsUtils {
 		}
 		
 		String newValue = value.substring(0, lastIndex) + result.toString() + value.substring(nextClosed + 1);
-		System.out.println("Value " + newValue);
 		return resolveVariableExpression(newValue, lastIndex, jexl);
 	}
 	
