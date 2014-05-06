@@ -15,20 +15,13 @@
  */
 package azkaban.restli;
 
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
-
 import javax.servlet.ServletException;
 
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.IOUtils;
 import org.apache.log4j.Logger;
 
 import azkaban.project.Project;
@@ -77,57 +70,37 @@ public class ProjectManagerResource extends ResourceContextHolder {
 			throw new ProjectManagerException(errorMsg);
 		}
 
-		// Deploy stuff here. Move the code to a more formal area later.
-		logger.info("Downloading file from " + packageUrl);
+		logger.info("Target package URL is " + packageUrl);
 		URL url = null;
-		InputStream urlFileInputStream = null;
 		try {
 			url = new URL(packageUrl);
-			InputStream in = url.openStream();
-			urlFileInputStream = new BufferedInputStream(in);
 		} catch (MalformedURLException e) {
-			String errorMsg = "Url " + packageUrl + " is malformed.";
-			logger.error(errorMsg, e);
-			throw new ProjectManagerException(errorMsg, e);
-		} catch (IOException e) {
-			String errorMsg = "Error opening input stream to " + packageUrl;
+			String errorMsg = "URL " + packageUrl + " is malformed.";
 			logger.error(errorMsg, e);
 			throw new ProjectManagerException(errorMsg, e);
 		}
 		
 		String filename = getFileName(url.getFile());
-
 		File tempDir = Utils.createTempDir();
-		OutputStream fileOutputStream = null;
+		File archiveFile = new File(tempDir, filename);
 		try {
-			logger.error("Downloading " + filename);
-			File archiveFile = new File(tempDir, filename);
-			fileOutputStream = new BufferedOutputStream(new FileOutputStream(archiveFile));
-			IOUtils.copy(urlFileInputStream, fileOutputStream);
+			// Since zip files can be large, don't specify an explicit read or connection
+			// timeout. This will cause the call to block until the download is complete.
+			logger.info("Downloading package from " + packageUrl);
+			FileUtils.copyURLToFile(url, archiveFile);
 			
-			logger.error("Downloaded to " + archiveFile.toString() + " " + archiveFile.length() + " bytes.");
+			logger.info("Downloaded to " + archiveFile.toString());
 			projectManager.uploadProject(project, archiveFile, "zip", user);
-		} catch (Exception e) {
-			logger.info("Installation Failed.", e);
-			String error = e.getMessage();
-			if (error.length() > 512) {
-				error = error.substring(0, 512) + "\nToo many errors to display.\n";
-			}
-			
-			throw new ProjectManagerException("Installation failed: " + error);
+		} catch (IOException e) {
+			String errorMsg = "Download of URL " + packageUrl + " to " + archiveFile.toString() + " failed";
+			logger.error(errorMsg, e);
+			throw new ProjectManagerException(errorMsg, e);
 		}
 		finally {
 			if (tempDir.exists()) {
 				FileUtils.deleteDirectory(tempDir);
 			}
-			if (urlFileInputStream != null) {
-				urlFileInputStream.close();
-			}
-			if (fileOutputStream != null) {
-				fileOutputStream.close();
-			}
 		}
-		
 		return Integer.toString(project.getVersion());
 	}
 
