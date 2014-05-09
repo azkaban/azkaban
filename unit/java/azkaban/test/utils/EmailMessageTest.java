@@ -3,8 +3,10 @@ package azkaban.test.utils;
 import java.io.IOException;
 
 import javax.mail.MessagingException;
+
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import azkaban.utils.EmailMessage;
@@ -29,6 +31,7 @@ public class EmailMessageTest {
 	public void tearDown() throws Exception {
 	}
 
+	@Ignore
 	@Test
 	public void testSendEmail() throws IOException {
 		em.addToAddress(toAddr);
