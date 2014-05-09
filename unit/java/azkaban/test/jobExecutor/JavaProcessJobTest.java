@@ -30,7 +30,7 @@ public class JavaProcessJobTest
     " By JULIE BOSMAN \n" +
     "Published: August 11, 2010 \n" +
     " \n" +
-    "Twelve years later, it may be Joe Fox���s turn to worry. Readers have gone from skipping small \n" +
+    "Twelve years later, it may be Joe Fox's turn to worry. Readers have gone from skipping small \n" +
     "bookstores to wondering if they need bookstores at all. More people are ordering books online  \n" +
     "or plucking them from the best-seller bin at Wal-Mart";
 
