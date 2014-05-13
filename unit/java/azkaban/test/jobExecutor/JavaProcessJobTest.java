@@ -30,7 +30,7 @@ public class JavaProcessJobTest
     " By JULIE BOSMAN \n" +
     "Published: August 11, 2010 \n" +
     " \n" +
-    "Twelve years later, it may be Joe Fox�s turn to worry. Readers have gone from skipping small \n" +
+    "Twelve years later, it may be Joe Fox's turn to worry. Readers have gone from skipping small \n" +
     "bookstores to wondering if they need bookstores at all. More people are ordering books online  \n" +
     "or plucking them from the best-seller bin at Wal-Mart";
 
@@ -103,7 +103,7 @@ public class JavaProcessJobTest
   @Test
   public void testJavaJob() throws Exception {
     /* initialize the Props */
-    props.put(JavaProcessJob.JOB_CLASS, "azkaban.test.jobExecutor.WordCountLocal");
+    props.put(JavaProcessJob.JAVA_CLASS, "azkaban.test.jobExecutor.WordCountLocal");
     props.put(ProcessJob.WORKING_DIR, ".");
     props.put("input", inputFile);
     props.put("output", outputFile);
@@ -114,7 +114,7 @@ public class JavaProcessJobTest
   @Test
   public void testJavaJobHashmap() throws Exception {
     /* initialize the Props */
-    props.put(JavaProcessJob.JOB_CLASS, "azkaban.test.executor.SleepJavaJob");
+    props.put(JavaProcessJob.JAVA_CLASS, "azkaban.test.executor.SleepJavaJob");
     props.put("seconds", 1);
     props.put(ProcessJob.WORKING_DIR, ".");
     props.put("input", inputFile);
@@ -125,7 +125,7 @@ public class JavaProcessJobTest
   
   @Test
   public void testFailedJavaJob() throws Exception {
-    props.put(JavaProcessJob.JOB_CLASS, "azkaban.test.jobExecutor.WordCountLocal");
+    props.put(JavaProcessJob.JAVA_CLASS, "azkaban.test.jobExecutor.WordCountLocal");
     props.put(ProcessJob.WORKING_DIR, ".");
     props.put("input", errorInputFile);
     props.put("output", outputFile);

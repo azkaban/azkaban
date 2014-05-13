@@ -268,6 +268,11 @@ public class PropsUtils {
 			throw new IllegalArgumentException("Expression " + value + " not well formed. " + e.getMessage(), e);
 		}
 		
+		if (result == null) {
+			// for backward compatibility it is best to return value
+			return value;
+		}
+		
 		String newValue = value.substring(0, lastIndex) + result.toString() + value.substring(nextClosed + 1);
 		return resolveVariableExpression(newValue, lastIndex, jexl);
 	}

@@ -3,15 +3,18 @@ package azkaban.test.jobExecutor;
 import java.io.BufferedReader;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.FileReader;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Properties;
 import java.util.StringTokenizer;
 
 import org.apache.log4j.Logger;
 
 import azkaban.jobExecutor.AbstractJob;
+import azkaban.jobExecutor.ProcessJob;
 import azkaban.utils.Props;
 
 public class WordCountLocal extends AbstractJob {
@@ -20,6 +23,13 @@ public class WordCountLocal extends AbstractJob {
     private String _output = null;
     private Map<String, Integer> _dic = new HashMap<String,Integer>();
     
+    public static void main(String[] args) throws Exception {
+    		String propsFile = System.getenv(ProcessJob.JOB_PROP_ENV);
+    		System.out.println("propsFile: " + propsFile);
+		Props prop = new Props(null, propsFile);
+    		WordCountLocal instance = new WordCountLocal("", prop);
+    		instance.run();
+    }
     public WordCountLocal(String id, Props prop)
     {
         super(id, Logger.getLogger(WordCountLocal.class));

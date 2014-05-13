@@ -51,6 +51,19 @@ public class PropsUtilsTest {
 	}
 	
 	@Test
+	public void testInvalidSyntax() throws Exception {
+		Props propsGrandParent = new Props();
+		Props propsParent = new Props(propsGrandParent);
+		Props props = new Props(propsParent);
+		
+		propsParent.put("my", "name");
+		props.put("res1", "$(my)");
+		
+		Props resolved = PropsUtils.resolveProps(props);
+		Assert.assertEquals("$(my)", resolved.get("res1"));
+	}
+	
+	@Test
 	public void testExpressionResolution() throws IOException {
 		Props props = Props.of(
 			"normkey", "normal",
