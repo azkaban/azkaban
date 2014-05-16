@@ -125,4 +125,54 @@ public class CommonJobProperties {
 	public static final String FLOW_START_SECOND = "azkaban.flow.start.second";
 	public static final String FLOW_START_MILLISSECOND = "azkaban.flow.start.milliseconds";
 	public static final String FLOW_START_TIMEZONE = "azkaban.flow.start.timezone";
+
+    public static final String FLOW_BACK_ONE_HOUR_TIMESTAMP = "azkaban.flow.one.hour.back.timestamp";
+    public static final String FLOW_BACK_ONE_HOUR_YEAR = "azkaban.flow.one.hour.back.year";
+    public static final String FLOW_BACK_ONE_HOUR_MONTH = "azkaban.flow.one.hour.back.month";
+    public static final String FLOW_BACK_ONE_HOUR_DAY = "azkaban.flow.one.hour.back.day";
+    public static final String FLOW_BACK_ONE_HOUR_HOUR = "azkaban.flow.one.hour.back.hour";
+    public static final String FLOW_BACK_ONE_HOUR_MINUTE = "azkaban.flow.one.hour.back.minute";
+    public static final String FLOW_BACK_ONE_HOUR_SECOND = "azkaban.flow.one.hour.back.second";
+    public static final String FLOW_BACK_ONE_HOUR_MILLISSECOND = "azkaban.flow.one.hour.back.milliseconds";
+    public static final String FLOW_BACK_ONE_HOUR_TIMEZONE = "azkaban.flow.one.hour.back.timezone";
+
+    public static final String FLOW_BACK_ONE_DAY_TIMESTAMP = "azkaban.flow.one.day.back.timestamp";
+    public static final String FLOW_BACK_ONE_DAY_YEAR = "azkaban.flow.one.day.back.year";
+    public static final String FLOW_BACK_ONE_DAY_MONTH = "azkaban.flow.one.day.back.month";
+    public static final String FLOW_BACK_ONE_DAY_DAY = "azkaban.flow.one.day.back.day";
+    public static final String FLOW_BACK_ONE_DAY_HOUR = "azkaban.flow.one.day.back.hour";
+    public static final String FLOW_BACK_ONE_DAY_MINUTE = "azkaban.flow.one.day.back.minute";
+    public static final String FLOW_BACK_ONE_DAY_SECOND = "azkaban.flow.one.day.back.second";
+    public static final String FLOW_BACK_ONE_DAY_MILLISSECOND = "azkaban.flow.one.day.back.milliseconds";
+    public static final String FLOW_BACK_ONE_DAY_TIMEZONE = "azkaban.flow.one.day.back.timezone";
+
+    public static final String FLOW_BACK_ONE_WEEK_TIMESTAMP = "azkaban.flow.one.week.back.timestamp";
+    public static final String FLOW_BACK_ONE_WEEK_YEAR = "azkaban.flow.one.week.back.year";
+    public static final String FLOW_BACK_ONE_WEEK_MONTH = "azkaban.flow.one.week.back.month";
+    public static final String FLOW_BACK_ONE_WEEK_DAY = "azkaban.flow.one.week.back.day";
+    public static final String FLOW_BACK_ONE_WEEK_HOUR = "azkaban.flow.one.week.back.hour";
+    public static final String FLOW_BACK_ONE_WEEK_MINUTE = "azkaban.flow.one.week.back.minute";
+    public static final String FLOW_BACK_ONE_WEEK_SECOND = "azkaban.flow.one.week.back.second";
+    public static final String FLOW_BACK_ONE_WEEK_MILLISSECOND = "azkaban.flow.one.week.back.milliseconds";
+    public static final String FLOW_BACK_ONE_WEEK_TIMEZONE = "azkaban.flow.one.week.back.timezone";
+
+    public static final String FLOW_BACK_ONE_MONTH_TIMESTAMP = "azkaban.flow.one.month.back.timestamp";
+    public static final String FLOW_BACK_ONE_MONTH_YEAR = "azkaban.flow.one.month.back.year";
+    public static final String FLOW_BACK_ONE_MONTH_MONTH = "azkaban.flow.one.month.back.month";
+    public static final String FLOW_BACK_ONE_MONTH_DAY = "azkaban.flow.one.month.back.day";
+    public static final String FLOW_BACK_ONE_MONTH_HOUR = "azkaban.flow.one.month.back.hour";
+    public static final String FLOW_BACK_ONE_MONTH_MINUTE = "azkaban.flow.one.month.back.minute";
+    public static final String FLOW_BACK_ONE_MONTH_SECOND = "azkaban.flow.one.month.back.second";
+    public static final String FLOW_BACK_ONE_MONTH_MILLISSECOND = "azkaban.flow.one.month.back.milliseconds";
+    public static final String FLOW_BACK_ONE_MONTH_TIMEZONE = "azkaban.flow.one.month.back.timezone";
+
+    public static final String FLOW_BACK_ONE_YEAR_TIMESTAMP = "azkaban.flow.one.year.back.timestamp";
+    public static final String FLOW_BACK_ONE_YEAR_YEAR = "azkaban.flow.one.year.back.year";
+    public static final String FLOW_BACK_ONE_YEAR_MONTH = "azkaban.flow.one.year.back.month";
+    public static final String FLOW_BACK_ONE_YEAR_DAY = "azkaban.flow.one.year.back.day";
+    public static final String FLOW_BACK_ONE_YEAR_HOUR = "azkaban.flow.one.year.back.hour";
+    public static final String FLOW_BACK_ONE_YEAR_MINUTE = "azkaban.flow.one.year.back.minute";
+    public static final String FLOW_BACK_ONE_YEAR_SECOND = "azkaban.flow.one.year.back.second";
+    public static final String FLOW_BACK_ONE_YEAR_MILLISSECOND = "azkaban.flow.one.year.back.milliseconds";
+    public static final String FLOW_BACK_ONE_YEAR_TIMEZONE = "azkaban.flow.one.year.back.timezone";
 }
