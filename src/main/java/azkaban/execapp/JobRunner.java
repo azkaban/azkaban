@@ -50,7 +50,7 @@ import azkaban.utils.Props;
 
 public class JobRunner extends EventHandler implements Runnable {
 	private final Layout DEFAULT_LAYOUT = new EnhancedPatternLayout("%d{dd-MM-yyyy HH:mm:ss z} %c{1} %p - %m\n");
-	
+
 	private ExecutorLoader loader;
 	private Props props;
 	private ExecutableNode node;
@@ -59,18 +59,18 @@ public class JobRunner extends EventHandler implements Runnable {
 	private Logger logger = null;
 	private Layout loggerLayout = DEFAULT_LAYOUT;
 	private Logger flowLogger = null;
-	
+
 	private Appender jobAppender;
 	private File logFile;
 	private String attachmentFileName;
-	
+
 	private Job job;
 	private int executionId = -1;
 	private String jobId;
-	
+
 	private static final Object logCreatorLock = new Object();
 	private Object syncObject = new Object();
-	
+
 	private final JobTypeManager jobtypeManager;
 
 	// Used by the job to watch and block against another flow
@@ -86,32 +86,32 @@ public class JobRunner extends EventHandler implements Runnable {
 	private long delayStartMs = 0;
 	private boolean killed = false;
 	private BlockingStatus currentBlockStatus = null;
-	
+
 	public JobRunner(ExecutableNode node, File workingDir, ExecutorLoader loader, JobTypeManager jobtypeManager) {
 		this.props = node.getInputProps();
 		this.node = node;
 		this.workingDir = workingDir;
-		
+
 		this.executionId = node.getParentFlow().getExecutionId();
 		this.jobId = node.getId();
 		this.loader = loader;
 		this.jobtypeManager = jobtypeManager;
 	}
-	
+
 	public void setValidatedProxyUsers(Set<String> proxyUsers) {
 		this.proxyUsers = proxyUsers;
 	}
-	
-	public void setLogSettings(Logger flowLogger, String logFileChuckSize, int numLogBackup ) {
+
+	public void setLogSettings(Logger flowLogger, String logFileChuckSize, int numLogBackup) {
 		this.flowLogger = flowLogger;
 		this.jobLogChunkSize = logFileChuckSize;
 		this.jobLogBackupIndex = numLogBackup;
 	}
-	
+
 	public Props getProps() {
 		return props;
 	}
-	
+
 	public void setPipeline(FlowWatcher watcher, int pipelineLevel) {
 		this.watcher = watcher;
 		this.pipelineLevel = pipelineLevel;
@@ -122,14 +122,14 @@ public class JobRunner extends EventHandler implements Runnable {
 		else if (this.pipelineLevel == 2) {
 			pipelineJobs.add(node.getNestedId());
 			ExecutableFlowBase parentFlow = node.getParentFlow();
-			
+
 			if (parentFlow.getEndNodes().contains(node.getId())) {
 				if (!parentFlow.getOutNodes().isEmpty()) {
 					ExecutableFlowBase grandParentFlow = parentFlow.getParentFlow();
 					for (String outNode: parentFlow.getOutNodes()) {
 						ExecutableNode nextNode = grandParentFlow.getExecutableNode(outNode);
-						
-						// If the next node is a nested flow, then we add the nested starting nodes 
+
+						// If the next node is a nested flow, then we add the nested starting nodes
 						if (nextNode instanceof ExecutableFlowBase) {
 							ExecutableFlowBase nextFlow = (ExecutableFlowBase)nextNode;
 							findAllStartingNodes(nextFlow, pipelineJobs);
@@ -141,10 +141,10 @@ public class JobRunner extends EventHandler implements Runnable {
 				}
 			}
 			else {
-				for (String outNode : node.getOutNodes()) {
+				for (String outNode: node.getOutNodes()) {
 					ExecutableNode nextNode = parentFlow.getExecutableNode(outNode);
-	
-					// If the next node is a nested flow, then we add the nested starting nodes 
+
+					// If the next node is a nested flow, then we add the nested starting nodes
 					if (nextNode instanceof ExecutableFlowBase) {
 						ExecutableFlowBase nextFlow = (ExecutableFlowBase)nextNode;
 						findAllStartingNodes(nextFlow, pipelineJobs);
@@ -156,7 +156,7 @@ public class JobRunner extends EventHandler implements Runnable {
 			}
 		}
 	}
-	
+
 	private void findAllStartingNodes(ExecutableFlowBase flow, Set<String> pipelineJobs) {
 		for (String startingNode: flow.getStartNodes()) {
 			ExecutableNode node = flow.getExecutableNode(startingNode);
@@ -168,7 +168,7 @@ public class JobRunner extends EventHandler implements Runnable {
 			}
 		}
 	}
-	
+
 	/**
 	 * Returns a list of jobs that this JobRunner will wait upon to finish before starting.
 	 * It is only relevant if pipeline is turned on.
@@ -178,23 +178,23 @@ public class JobRunner extends EventHandler implements Runnable {
 	public Set<String> getPipelineWatchedJobs() {
 		return pipelineJobs;
 	}
-	
+
 	public void setDelayStart(long delayMS) {
 		delayStartMs = delayMS;
 	}
-	
+
 	public long getDelayStart() {
 		return delayStartMs;
 	}
-	
+
 	public ExecutableNode getNode() {
 		return node;
 	}
-	
+
 	public String getLogFilePath() {
 		return logFile == null ? null : logFile.getPath();
 	}
-	
+
 	private void createLogger() {
 		// Create logger
 		synchronized (logCreatorLock) {
@@ -204,7 +204,7 @@ public class JobRunner extends EventHandler implements Runnable {
 			// Create file appender
 			String logName = createLogFileName(node);
 			logFile = new File(workingDir, logName);
-			
+
 			String absolutePath = logFile.getAbsolutePath();
 
 			jobAppender = null;
@@ -215,8 +215,7 @@ public class JobRunner extends EventHandler implements Runnable {
 				jobAppender = fileAppender;
 				logger.addAppender(jobAppender);
 				logger.setAdditivity(false);
-			}
-			catch (IOException e) {
+			} catch (IOException e) {
 				flowLogger.error("Could not open log file in " + workingDir + " for job " + this.jobId, e);
 			}
 		}
@@ -234,17 +233,16 @@ public class JobRunner extends EventHandler implements Runnable {
 			jobAppender.close();
 		}
 	}
-	
+
 	private void writeStatus() {
 		try {
 			node.setUpdateTime(System.currentTimeMillis());
 			loader.updateExecutableNode(node);
-		}
-		catch (ExecutorManagerException e) {
+		} catch (ExecutorManagerException e) {
 			flowLogger.error("Could not update job properties in db for " + this.jobId, e);
 		}
 	}
-	
+
 	/**
 	 * Used to handle non-ready and special status's (i.e. KILLED). Returns true
 	 * if they handled anything.
@@ -255,19 +253,19 @@ public class JobRunner extends EventHandler implements Runnable {
 		Status nodeStatus = node.getStatus();
 		boolean quickFinish = false;
 		long time = System.currentTimeMillis();
-		
+
 		if (Status.isStatusFinished(nodeStatus)) {
 			quickFinish = true;
 		}
 		else if (nodeStatus == Status.DISABLED) {
 			changeStatus(Status.SKIPPED, time);
 			quickFinish = true;
-		} 
+		}
 		else if (this.isKilled()) {
 			changeStatus(Status.KILLED, time);
 			quickFinish = true;
-		} 
-		
+		}
+
 		if (quickFinish) {
 			node.setStartTime(time);
 			fireEvent(Event.create(this, Type.JOB_STARTED, null, false));
@@ -275,10 +273,10 @@ public class JobRunner extends EventHandler implements Runnable {
 			fireEvent(Event.create(this, Type.JOB_FINISHED));
 			return true;
 		}
-		
+
 		return false;
 	}
-	
+
 	/**
 	 * If pipelining is set, will block on another flow's jobs.
 	 */
@@ -286,12 +284,12 @@ public class JobRunner extends EventHandler implements Runnable {
 		if (this.isKilled()) {
 			return true;
 		}
-		
+
 		// For pipelining of jobs. Will watch other jobs.
 		if (!pipelineJobs.isEmpty()) {
 			String blockedList = "";
 			ArrayList<BlockingStatus> blockingStatus = new ArrayList<BlockingStatus>();
-			for (String waitingJobId : pipelineJobs) {
+			for (String waitingJobId: pipelineJobs) {
 				Status status = watcher.peekStatus(waitingJobId);
 				if (status != null && !Status.isStatusFinished(status)) {
 					BlockingStatus block = watcher.getBlockingStatus(waitingJobId);
@@ -301,7 +299,7 @@ public class JobRunner extends EventHandler implements Runnable {
 			}
 			if (!blockingStatus.isEmpty()) {
 				logger.info("Pipeline job " + this.jobId + " waiting on " + blockedList + " in execution " + watcher.getExecId());
-				
+
 				for (BlockingStatus bStatus: blockingStatus) {
 					logger.info("Waiting on pipelined job " + bStatus.getJobId());
 					currentBlockStatus = bStatus;
@@ -316,16 +314,16 @@ public class JobRunner extends EventHandler implements Runnable {
 				}
 			}
 		}
-		
+
 		currentBlockStatus = null;
 		return false;
 	}
-	
+
 	private boolean delayExecution() {
 		if (this.isKilled()) {
 			return true;
 		}
-		
+
 		long currentTime = System.currentTimeMillis();
 		if (delayStartMs > 0) {
 			logger.info("Delaying start of execution for " + delayStartMs + " milliseconds.");
@@ -333,28 +331,27 @@ public class JobRunner extends EventHandler implements Runnable {
 				try {
 					this.wait(delayStartMs);
 					logger.info("Execution has been delayed for " + delayStartMs + " ms. Continuing with execution.");
-				}
-				catch (InterruptedException e) {
+				} catch (InterruptedException e) {
 					logger.error("Job " + this.jobId + " was to be delayed for " + delayStartMs + ". Interrupted after " + (System.currentTimeMillis() - currentTime));
 				}
 			}
-			
+
 			if (this.isKilled()) {
 				logger.info("Job was killed while in delay. Quiting.");
 				return true;
 			}
 		}
-		
+
 		return false;
 	}
-	
+
 	private void finalizeLogFile() {
 		closeLogger();
 		if (logFile == null) {
 			flowLogger.info("Log file for job " + this.jobId + " is null");
 			return;
 		}
-		
+
 		try {
 			File[] files = logFile.getParentFile().listFiles(new FilenameFilter() {
 				@Override
@@ -363,10 +360,9 @@ public class JobRunner extends EventHandler implements Runnable {
 				}
 			});
 			Arrays.sort(files, Collections.reverseOrder());
-			
+
 			loader.uploadLogFile(executionId, this.node.getNestedId(), node.getAttempt(), files);
-		}
-		catch (ExecutorManagerException e) {
+		} catch (ExecutorManagerException e) {
 			flowLogger.error("Error writing out logs for job " + this.node.getNestedId(), e);
 		}
 	}
@@ -380,26 +376,24 @@ public class JobRunner extends EventHandler implements Runnable {
 		try {
 			File file = new File(attachmentFileName);
 			if (!file.exists()) {
-				flowLogger.info("No attachment file for job " + this.jobId + 
+				flowLogger.info("No attachment file for job " + this.jobId +
 						" written.");
 				return;
 			}
 			loader.uploadAttachmentFile(node, file);
-		}
-		catch (ExecutorManagerException e) {
-			flowLogger.error("Error writing out attachment for job " + 
+		} catch (ExecutorManagerException e) {
+			flowLogger.error("Error writing out attachment for job " +
 					this.node.getNestedId(), e);
 		}
 	}
-	
+
 	/**
 	 * The main run thread.
-	 * 
 	 */
 	@Override
 	public void run() {
 		Thread.currentThread().setName("JobRunner-" + this.jobId + "-" + executionId);
-		
+
 		// If the job is cancelled, disabled, killed. No log is created in this case
 		if (handleNonReadyStatus()) {
 			return;
@@ -421,11 +415,10 @@ public class JobRunner extends EventHandler implements Runnable {
 			fireEvent(Event.create(this, Type.JOB_STARTED, null, false));
 			try {
 				loader.uploadExecutableNode(node, props);
-			}
-			catch (ExecutorManagerException e1) {
+			} catch (ExecutorManagerException e1) {
 				logger.error("Error writing initial node properties");
 			}
-			
+
 			if (prepareJob()) {
 				// Writes status to the db
 				writeStatus();
@@ -446,20 +439,20 @@ public class JobRunner extends EventHandler implements Runnable {
 			changeStatus(Status.KILLED);
 		}
 		logInfo("Finishing job " + this.jobId + " at " + node.getEndTime() + " with status " + node.getStatus());
-		
+
 		fireEvent(Event.create(this, Type.JOB_FINISHED), false);
 		finalizeLogFile();
 		finalizeAttachmentFile();
 		writeStatus();
 	}
-	
+
 	private boolean prepareJob() throws RuntimeException {
 		// Check pre conditions
 		if (props == null || this.isKilled()) {
 			logError("Failing job. The job properties don't exist");
 			return false;
 		}
-		
+
 		synchronized (syncObject) {
 			if (node.getStatus() == Status.FAILED || this.isKilled()) {
 				return false;
@@ -471,25 +464,25 @@ public class JobRunner extends EventHandler implements Runnable {
 			else {
 				logInfo("Starting job " + this.jobId + " at " + node.getStartTime());
 			}
-			
+
 			// If it's an embedded flow, we'll add the nested flow info to the job conf
 			if (node.getExecutableFlow() != node.getParentFlow()) {
 				String subFlow = node.getPrintableId(":");
 				props.put(CommonJobProperties.NESTED_FLOW_PATH, subFlow);
 			}
-			
-      insertLinks();
+
+			insertLinks();
 
 			props.put(CommonJobProperties.JOB_ATTEMPT, node.getAttempt());
 			props.put(CommonJobProperties.JOB_METADATA_FILE, createMetaDataFileName(node));
 			props.put(CommonJobProperties.JOB_ATTACHMENT_FILE, attachmentFileName);
 			changeStatus(Status.RUNNING);
-			
+
 			// Ability to specify working directory
 			if (!props.containsKey(AbstractProcessJob.WORKING_DIR)) {
 				props.put(AbstractProcessJob.WORKING_DIR, workingDir.getAbsolutePath());
 			}
-			
+
 			if (props.containsKey("user.to.proxy")) {
 				String jobProxyUser = props.getString("user.to.proxy");
 				if (proxyUsers != null && !proxyUsers.contains(jobProxyUser)) {
@@ -497,45 +490,43 @@ public class JobRunner extends EventHandler implements Runnable {
 					return false;
 				}
 			}
-			
+
 			try {
 				job = jobtypeManager.buildJobExecutor(this.jobId, props, logger);
-			}
-			catch (JobTypeManagerException e) {
+			} catch (JobTypeManagerException e) {
 				logger.error("Failed to build job type", e);
 				return false;
 			}
 		}
-		
+
 		return true;
 	}
 
-  private void insertLinks() {
-    Props azkProps = AzkabanExecutorServer.getApp().getAzkabanProps();
-    String baseURL = azkProps.get("azkaban.webserver.url");
-    if (baseURL == null)
-      return;
+	private void insertLinks() {
+		Props azkProps = AzkabanExecutorServer.getApp().getAzkabanProps();
+		String baseURL = azkProps.get("azkaban.webserver.url");
+		if (baseURL == null)
+			return;
 
-    String flowName = node.getParentFlow().getFlowId();
-    String projectName = node.getParentFlow().getProjectName();
+		String flowName = node.getParentFlow().getFlowId();
+		String projectName = node.getParentFlow().getProjectName();
 
-    props.put(CommonJobProperties.EXECUTION_LINK,
-        String.format("%s/executor?execid=%d", baseURL, executionId));
-    props.put(CommonJobProperties.JOBEXEC_LINK,
-        String.format("%s/executor?execid=%d&job=%s", baseURL, executionId, jobId));
-    props.put(CommonJobProperties.WORKFLOW_LINK, String.format(
-        "%s/manager?project=%s&flow=%s", baseURL, projectName, flowName));
-    props.put(CommonJobProperties.JOB_LINK, String.format(
-        "%s/manager?project=%s&flow=%s&job=%s", baseURL, projectName, flowName, jobId));
-  }
+		props.put(CommonJobProperties.EXECUTION_LINK,
+				String.format("%s/executor?execid=%d", baseURL, executionId));
+		props.put(CommonJobProperties.JOBEXEC_LINK,
+				String.format("%s/executor?execid=%d&job=%s", baseURL, executionId, jobId));
+		props.put(CommonJobProperties.WORKFLOW_LINK, String.format(
+				"%s/manager?project=%s&flow=%s", baseURL, projectName, flowName));
+		props.put(CommonJobProperties.JOB_LINK, String.format(
+				"%s/manager?project=%s&flow=%s&job=%s", baseURL, projectName, flowName, jobId));
+	}
 
 	private void runJob() {
 		try {
 			job.run();
-		}
-		catch (Exception e) {
+		} catch (Exception e) {
 			e.printStackTrace();
-			
+
 			if (props.getBoolean("job.succeed.on.failure", false)) {
 				changeStatus(Status.FAILED_SUCCEEDED);
 				logError("Job run failed, but will treat it like success.");
@@ -547,37 +538,37 @@ public class JobRunner extends EventHandler implements Runnable {
 				logError(e.getMessage() + e.getCause());
 			}
 		}
-		
+
 		if (job != null) {
 			node.setOutputProps(job.getJobGeneratedProperties());
 		}
-		
+
 		// If the job is still running, set the status to Success.
 		if (!Status.isStatusFinished(node.getStatus())) {
 			changeStatus(Status.SUCCEEDED);
 		}
 	}
-	
+
 	private void changeStatus(Status status) {
 		changeStatus(status, System.currentTimeMillis());
 	}
-	
+
 	private void changeStatus(Status status, long time) {
 		node.setStatus(status);
 		node.setUpdateTime(time);
 	}
-	
+
 	private void fireEvent(Event event) {
 		fireEvent(event, true);
 	}
-	
+
 	private void fireEvent(Event event, boolean updateTime) {
 		if (updateTime) {
 			node.setUpdateTime(System.currentTimeMillis());
 		}
 		this.fireEventListeners(event);
 	}
-	
+
 	public void kill() {
 		synchronized (syncObject) {
 			if (Status.isStatusFinished(node.getStatus())) {
@@ -585,17 +576,17 @@ public class JobRunner extends EventHandler implements Runnable {
 			}
 			logError("Kill has been called.");
 			this.killed = true;
-			
+
 			BlockingStatus status = currentBlockStatus;
 			if (status != null) {
 				status.unblock();
 			}
-			
+
 			// Cancel code here
 			if (job == null) {
 				logError("Job hasn't started yet.");
 				// Just in case we're waiting on the delay
-				synchronized(this) {
+				synchronized (this) {
 					this.notify();
 				}
 				return;
@@ -603,20 +594,19 @@ public class JobRunner extends EventHandler implements Runnable {
 
 			try {
 				job.cancel();
-			}
-			catch (Exception e) {
+			} catch (Exception e) {
 				logError(e.getMessage());
 				logError("Failed trying to cancel job. Maybe it hasn't started running yet or just finished.");
 			}
-			
+
 			this.changeStatus(Status.KILLED);
 		}
 	}
-	
+
 	public boolean isKilled() {
 		return killed;
 	}
-	
+
 	public Status getStatus() {
 		return node.getStatus();
 	}
@@ -632,11 +622,11 @@ public class JobRunner extends EventHandler implements Runnable {
 			logger.info(message);
 		}
 	}
-	
+
 	public File getLogFile() {
 		return logFile;
 	}
-	
+
 	public static String createLogFileName(ExecutableNode node, int attempt) {
 		int executionId = node.getExecutableFlow().getExecutionId();
 		String jobId = node.getId();
@@ -646,11 +636,11 @@ public class JobRunner extends EventHandler implements Runnable {
 		}
 		return attempt > 0 ? "_job." + executionId + "." + attempt + "." + jobId + ".log" : "_job." + executionId + "." + jobId + ".log";
 	}
-	
+
 	public static String createLogFileName(ExecutableNode node) {
 		return JobRunner.createLogFileName(node, node.getAttempt());
 	}
-	
+
 	public static String createMetaDataFileName(ExecutableNode node, int attempt) {
 		int executionId = node.getExecutableFlow().getExecutionId();
 		String jobId = node.getId();
@@ -658,19 +648,19 @@ public class JobRunner extends EventHandler implements Runnable {
 			// Posix safe file delimiter
 			jobId = node.getPrintableId("._.");
 		}
-		
+
 		return attempt > 0 ? "_job." + executionId + "." + attempt + "." + jobId + ".meta" : "_job." + executionId + "." + jobId + ".meta";
 	}
-	
+
 	public static String createMetaDataFileName(ExecutableNode node) {
 		return JobRunner.createMetaDataFileName(node, node.getAttempt());
 	}
 
 	public static String createAttachmentFileName(ExecutableNode node) {
-		
+
 		return JobRunner.createAttachmentFileName(node, node.getAttempt());
 	}
-	
+
 	public static String createAttachmentFileName(ExecutableNode node, int attempt) {
 		int executionId = node.getExecutableFlow().getExecutionId();
 		String jobId = node.getId();

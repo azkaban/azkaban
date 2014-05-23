@@ -29,31 +29,31 @@ import azkaban.utils.TypedMapWrapper;
 
 public class ExecutableFlow extends ExecutableFlowBase {
 	public static final String EXECUTIONID_PARAM = "executionId";
-	public static final String EXECUTIONPATH_PARAM ="executionPath";
-	public static final String EXECUTIONOPTIONS_PARAM ="executionOptions";
-	public static final String PROJECTID_PARAM ="projectId";
-	public static final String SCHEDULEID_PARAM ="scheduleId";
+	public static final String EXECUTIONPATH_PARAM = "executionPath";
+	public static final String EXECUTIONOPTIONS_PARAM = "executionOptions";
+	public static final String PROJECTID_PARAM = "projectId";
+	public static final String SCHEDULEID_PARAM = "scheduleId";
 	public static final String SUBMITUSER_PARAM = "submitUser";
 	public static final String SUBMITTIME_PARAM = "submitTime";
 	public static final String VERSION_PARAM = "version";
 	public static final String PROXYUSERS_PARAM = "proxyUsers";
-  private static final String PROJECTNAME_PARAM = "projectName";
-	
+	private static final String PROJECTNAME_PARAM = "projectName";
+
 	private int executionId = -1;
 	private int scheduleId = -1;
 	private int projectId;
-  private String projectName;
+	private String projectName;
 	private int version;
 	private long submitTime = -1;
 	private String submitUser;
 	private String executionPath;
-	
+
 	private HashSet<String> proxyUsers = new HashSet<String>();
 	private ExecutionOptions executionOptions;
-	
+
 	public ExecutableFlow(Project project, Flow flow) {
 		this.projectId = project.getId();
-    this.projectName = project.getName();
+		this.projectName = project.getName();
 		this.version = project.getVersion();
 		this.scheduleId = -1;
 
@@ -67,7 +67,7 @@ public class ExecutableFlow extends ExecutableFlowBase {
 	public String getId() {
 		return getFlowId();
 	}
-	
+
 	@Override
 	public ExecutableFlow getExecutableFlow() {
 		return this;
@@ -88,13 +88,13 @@ public class ExecutableFlow extends ExecutableFlowBase {
 	public ExecutionOptions getExecutionOptions() {
 		return executionOptions;
 	}
-	
-  @Override
+
+	@Override
 	protected void setFlow(Project project, Flow flow) {
 		super.setFlow(project, flow);
 		executionOptions = new ExecutionOptions();
 		executionOptions.setMailCreator(flow.getMailCreator());
-		
+
 		if (flow.getSuccessEmails() != null) {
 			executionOptions.setSuccessEmails(flow.getSuccessEmails());
 		}
@@ -103,7 +103,7 @@ public class ExecutableFlow extends ExecutableFlowBase {
 		}
 	}
 
-  @Override
+	@Override
 	public int getExecutionId() {
 		return executionId;
 	}
@@ -121,10 +121,10 @@ public class ExecutableFlow extends ExecutableFlowBase {
 		this.projectId = projectId;
 	}
 
-  @Override
-  public String getProjectName() {
-    return projectName;
-  }
+	@Override
+	public String getProjectName() {
+		return projectName;
+	}
 
 	public int getScheduleId() {
 		return scheduleId;
@@ -149,7 +149,7 @@ public class ExecutableFlow extends ExecutableFlowBase {
 	public void setSubmitUser(String submitUser) {
 		this.submitUser = submitUser;
 	}
-	
+
 	@Override
 	public int getVersion() {
 		return version;
@@ -167,57 +167,57 @@ public class ExecutableFlow extends ExecutableFlowBase {
 		this.submitTime = submitTime;
 	}
 
-  @Override
+	@Override
 	public Map<String, Object> toObject() {
 		HashMap<String, Object> flowObj = new HashMap<String, Object>();
 		fillMapFromExecutable(flowObj);
-		
+
 		flowObj.put(EXECUTIONID_PARAM, executionId);
-		flowObj.put(EXECUTIONPATH_PARAM, executionPath);		
+		flowObj.put(EXECUTIONPATH_PARAM, executionPath);
 		flowObj.put(PROJECTID_PARAM, projectId);
-    flowObj.put(PROJECTNAME_PARAM, projectName);
-		
-		if(scheduleId >= 0) {
+		flowObj.put(PROJECTNAME_PARAM, projectName);
+
+		if (scheduleId >= 0) {
 			flowObj.put(SCHEDULEID_PARAM, scheduleId);
 		}
 
 		flowObj.put(SUBMITUSER_PARAM, submitUser);
 		flowObj.put(VERSION_PARAM, version);
-		
+
 		flowObj.put(EXECUTIONOPTIONS_PARAM, this.executionOptions.toObject());
 		flowObj.put(VERSION_PARAM, version);
-		
+
 		ArrayList<String> proxyUserList = new ArrayList<String>(proxyUsers);
 		flowObj.put(PROXYUSERS_PARAM, proxyUserList);
 
 		flowObj.put(SUBMITTIME_PARAM, submitTime);
-		
+
 		return flowObj;
 	}
 
 	@SuppressWarnings("unchecked")
 	public static ExecutableFlow createExecutableFlowFromObject(Object obj) {
 		ExecutableFlow exFlow = new ExecutableFlow();
-		HashMap<String, Object> flowObj = (HashMap<String,Object>)obj;
+		HashMap<String, Object> flowObj = (HashMap<String, Object>)obj;
 		exFlow.fillExecutableFromMapObject(flowObj);
-		
+
 		return exFlow;
 	}
-	
+
 	@Override
 	public void fillExecutableFromMapObject(TypedMapWrapper<String, Object> flowObj) {
 		super.fillExecutableFromMapObject(flowObj);
-		
+
 		this.executionId = flowObj.getInt(EXECUTIONID_PARAM);
 		this.executionPath = flowObj.getString(EXECUTIONPATH_PARAM);
 
 		this.projectId = flowObj.getInt(PROJECTID_PARAM);
-    this.projectName = flowObj.getString(PROJECTNAME_PARAM);
+		this.projectName = flowObj.getString(PROJECTNAME_PARAM);
 		this.scheduleId = flowObj.getInt(SCHEDULEID_PARAM);
 		this.submitUser = flowObj.getString(SUBMITUSER_PARAM);
 		this.version = flowObj.getInt(VERSION_PARAM);
 		this.submitTime = flowObj.getLong(SUBMITTIME_PARAM);
-		
+
 		if (flowObj.containsKey(EXECUTIONOPTIONS_PARAM)) {
 			this.executionOptions = ExecutionOptions.createFromObject(flowObj.getObject(EXECUTIONOPTIONS_PARAM));
 		}
@@ -225,25 +225,25 @@ public class ExecutableFlow extends ExecutableFlowBase {
 			// for backwards compatibility should remove in a few versions.
 			this.executionOptions = ExecutionOptions.createFromObject(flowObj);
 		}
-		
-		if(flowObj.containsKey(PROXYUSERS_PARAM)) {
-			List<String> proxyUserList = flowObj.<String>getList(PROXYUSERS_PARAM);
+
+		if (flowObj.containsKey(PROXYUSERS_PARAM)) {
+			List<String> proxyUserList = flowObj.<String> getList(PROXYUSERS_PARAM);
 			this.addAllProxyUsers(proxyUserList);
 
 		}
 	}
-	
-  @Override
+
+	@Override
 	public Map<String, Object> toUpdateObject(long lastUpdateTime) {
 		Map<String, Object> updateData = super.toUpdateObject(lastUpdateTime);
 		updateData.put(EXECUTIONID_PARAM, this.executionId);
 		return updateData;
 	}
-	
-  @Override
+
+	@Override
 	public void resetForRetry() {
 		super.resetForRetry();
 		this.setStatus(Status.RUNNING);
 	}
-	
+
 }
