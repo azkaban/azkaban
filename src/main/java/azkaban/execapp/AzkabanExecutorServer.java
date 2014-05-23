@@ -49,7 +49,7 @@ import azkaban.webapp.servlet.AzkabanServletContextListener;
 
 public class AzkabanExecutorServer {
 	private static final Logger logger = Logger.getLogger(AzkabanExecutorServer.class);
-	private static final int MAX_FORM_CONTENT_SIZE = 10*1024*1024;
+	private static final int MAX_FORM_CONTENT_SIZE = 10 * 1024 * 1024;
 
 	public static final String AZKABAN_HOME = "AZKABAN_HOME";
 	public static final String DEFAULT_CONF_PATH = "conf";
@@ -57,19 +57,19 @@ public class AzkabanExecutorServer {
 	public static final String AZKABAN_PRIVATE_PROPERTIES_FILE = "azkaban.private.properties";
 	public static final String JOBTYPE_PLUGIN_DIR = "azkaban.jobtype.plugin.dir";
 	public static final int DEFAULT_PORT_NUMBER = 12321;
-	
+
 	private static final String DEFAULT_TIMEZONE_ID = "default.timezone.id";
 	private static final int DEFAULT_THREAD_NUMBER = 50;
 
 	private static AzkabanExecutorServer app;
-	
+
 	private ExecutorLoader executionLoader;
 	private ProjectLoader projectLoader;
 	private FlowRunnerManager runnerManager;
 	private Props props;
 	private Props executorGlobalProps;
 	private Server server;
-	
+
 	private ArrayList<ObjectName> registeredMBeans = new ArrayList<ObjectName>();
 	private MBeanServer mbeanServer;
 
@@ -87,52 +87,50 @@ public class AzkabanExecutorServer {
 		server = new Server(portNumber);
 		QueuedThreadPool httpThreadPool = new QueuedThreadPool(maxThreads);
 		server.setThreadPool(httpThreadPool);
-		
+
 		boolean isStatsOn = props.getBoolean("executor.connector.stats", true);
 		logger.info("Setting up connector with stats on: " + isStatsOn);
-		
-		for (Connector connector : server.getConnectors()) {
+
+		for (Connector connector: server.getConnectors()) {
 			connector.setStatsOn(isStatsOn);
 		}
 
 		Context root = new Context(server, "/", Context.SESSIONS);
 		root.setMaxFormContentSize(MAX_FORM_CONTENT_SIZE);
-		
+
 		root.addServlet(new ServletHolder(new ExecutorServlet()), "/executor");
 		root.addServlet(new ServletHolder(new JMXHttpServlet()), "/jmx");
 		root.setAttribute(AzkabanServletContextListener.AZKABAN_SERVLET_CONTEXT_KEY, this);
-		
-		
+
 		executionLoader = createExecLoader(props);
 		projectLoader = createProjectLoader(props);
 		runnerManager = new FlowRunnerManager(props, executionLoader, projectLoader, this.getClass().getClassLoader());
-		
+
 		configureMBeanServer();
 
 		try {
 			server.start();
-		} 
-		catch (Exception e) {
+		} catch (Exception e) {
 			logger.warn(e);
 			Utils.croak(e.getMessage(), 1);
 		}
-		
+
 		logger.info("Azkaban Executor Server started on port " + portNumber);
 	}
 
 	private ExecutorLoader createExecLoader(Props props) {
 		return new JdbcExecutorLoader(props);
 	}
-	
+
 	private ProjectLoader createProjectLoader(Props props) {
 		return new JdbcProjectLoader(props);
 	}
-	
+
 	public void stopServer() throws Exception {
 		server.stop();
 		server.destroy();
 	}
-	
+
 	public ProjectLoader getProjectLoader() {
 		return projectLoader;
 	}
@@ -140,7 +138,7 @@ public class AzkabanExecutorServer {
 	public ExecutorLoader getExecutorLoader() {
 		return executionLoader;
 	}
-	
+
 	/**
 	 * Returns the global azkaban properties
 	 * 
@@ -149,9 +147,18 @@ public class AzkabanExecutorServer {
 	public Props getAzkabanProps() {
 		return props;
 	}
-	
+
 	public Props getExecutorGlobalProps() {
 		return executorGlobalProps;
+	}
+
+	/**
+	 * Returns the currently executing executor server, if one exists.
+	 * 
+	 * @return
+	 */
+	public static AzkabanExecutorServer getApp() {
+		return app;
 	}
 
 	/**
@@ -184,6 +191,7 @@ public class AzkabanExecutorServer {
 
 		Runtime.getRuntime().addShutdownHook(new Thread() {
 
+			@Override
 			public void run() {
 				logger.info("Shutting down http server...");
 				try {
@@ -201,7 +209,7 @@ public class AzkabanExecutorServer {
 	 * 
 	 * @return
 	 */
-	/*package*/ static Props loadConfigurationFromAzkabanHome() {
+	/* package */static Props loadConfigurationFromAzkabanHome() {
 		String azkabanHome = System.getenv("AZKABAN_HOME");
 
 		if (azkabanHome == null) {
@@ -229,7 +237,7 @@ public class AzkabanExecutorServer {
 	public FlowRunnerManager getFlowRunnerManager() {
 		return runnerManager;
 	}
-	
+
 	/**
 	 * Loads the Azkaban conf file int a Props object
 	 * 
@@ -239,17 +247,17 @@ public class AzkabanExecutorServer {
 	private static Props loadAzkabanConfigurationFromDirectory(File dir) {
 		File azkabanPrivatePropsFile = new File(dir, AZKABAN_PRIVATE_PROPERTIES_FILE);
 		File azkabanPropsFile = new File(dir, AZKABAN_PROPERTIES_FILE);
-		
+
 		Props props = null;
 		try {
 			// This is purely optional
 			if (azkabanPrivatePropsFile.exists() && azkabanPrivatePropsFile.isFile()) {
-				logger.info("Loading azkaban private properties file" );
+				logger.info("Loading azkaban private properties file");
 				props = new Props(null, azkabanPrivatePropsFile);
 			}
 
 			if (azkabanPropsFile.exists() && azkabanPropsFile.isFile()) {
-				logger.info("Loading azkaban properties file" );
+				logger.info("Loading azkaban properties file");
 				props = new Props(props, azkabanPropsFile);
 			}
 		} catch (FileNotFoundException e) {
@@ -257,7 +265,7 @@ public class AzkabanExecutorServer {
 		} catch (IOException e) {
 			logger.error("File found, but error reading. Could not load azkaban config file", e);
 		}
-		
+
 		return props;
 	}
 
@@ -268,10 +276,10 @@ public class AzkabanExecutorServer {
 		registerMbean("executorJetty", new JmxJettyServer(server));
 		registerMbean("flowRunnerManager", new JmxFlowRunnerManager(runnerManager));
 	}
-	
+
 	public void close() {
 		try {
-			for (ObjectName name : registeredMBeans) {
+			for (ObjectName name: registeredMBeans) {
 				mbeanServer.unregisterMBean(name);
 				logger.info("Jmx MBean " + name.getCanonicalName() + " unregistered.");
 			}
@@ -279,7 +287,7 @@ public class AzkabanExecutorServer {
 			logger.error("Failed to cleanup MBeanServer", e);
 		}
 	}
-	
+
 	private void registerMbean(String name, Object mbean) {
 		Class<?> mbeanClass = mbean.getClass();
 		ObjectName mbeanName;
@@ -293,11 +301,11 @@ public class AzkabanExecutorServer {
 		}
 
 	}
-	
+
 	public List<ObjectName> getMbeanNames() {
 		return registeredMBeans;
 	}
-	
+
 	public MBeanInfo getMBeanInfo(ObjectName name) {
 		try {
 			return mbeanServer.getMBeanInfo(name);
@@ -306,9 +314,9 @@ public class AzkabanExecutorServer {
 			return null;
 		}
 	}
-	
+
 	public Object getMBeanAttribute(ObjectName name, String attribute) {
-		 try {
+		try {
 			return mbeanServer.getAttribute(name, attribute);
 		} catch (Exception e) {
 			logger.error(e);
