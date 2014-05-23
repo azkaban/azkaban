@@ -20,12 +20,10 @@ import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
 import java.util.ArrayList;
-
-import java.util.HashSet;
-import java.util.Set;
-
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
 
 import org.apache.log4j.Appender;
 import org.apache.log4j.EnhancedPatternLayout;
@@ -48,7 +46,6 @@ import azkaban.jobExecutor.AbstractProcessJob;
 import azkaban.jobExecutor.Job;
 import azkaban.jobtype.JobTypeManager;
 import azkaban.jobtype.JobTypeManagerException;
-
 import azkaban.utils.Props;
 
 public class JobRunner extends EventHandler implements Runnable {
@@ -481,6 +478,8 @@ public class JobRunner extends EventHandler implements Runnable {
 				props.put(CommonJobProperties.NESTED_FLOW_PATH, subFlow);
 			}
 			
+      insertLinks();
+
 			props.put(CommonJobProperties.JOB_ATTEMPT, node.getAttempt());
 			props.put(CommonJobProperties.JOB_METADATA_FILE, createMetaDataFileName(node));
 			props.put(CommonJobProperties.JOB_ATTACHMENT_FILE, attachmentFileName);
@@ -510,6 +509,25 @@ public class JobRunner extends EventHandler implements Runnable {
 		
 		return true;
 	}
+
+  private void insertLinks() {
+    Props azkProps = AzkabanExecutorServer.getApp().getAzkabanProps();
+    String baseURL = azkProps.get("azkaban.webserver.url");
+    if (baseURL == null)
+      return;
+
+    String flowName = node.getParentFlow().getFlowId();
+    String projectName = node.getParentFlow().getProjectName();
+
+    props.put(CommonJobProperties.EXECUTION_LINK,
+        String.format("%s/executor?execid=%d", baseURL, executionId));
+    props.put(CommonJobProperties.JOBEXEC_LINK,
+        String.format("%s/executor?execid=%d&job=%s", baseURL, executionId, jobId));
+    props.put(CommonJobProperties.WORKFLOW_LINK, String.format(
+        "%s/manager?project=%s&flow=%s", baseURL, projectName, flowName));
+    props.put(CommonJobProperties.JOB_LINK, String.format(
+        "%s/manager?project=%s&flow=%s&job=%s", baseURL, projectName, flowName, jobId));
+  }
 
 	private void runJob() {
 		try {
