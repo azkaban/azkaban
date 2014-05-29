@@ -17,47 +17,51 @@ import azkaban.utils.Utils;
 
 public class BasicTimeCheckerTest {
 
-	@Test
-	public void basicTimerTest(){
-		
-		Map<String, ConditionChecker> checkers = new HashMap<String, ConditionChecker>();
-		
-		// get a new timechecker, start from now, repeat every minute. should evaluate to false now, and true a minute later.
-		DateTime now = DateTime.now();
-		ReadablePeriod period = Utils.parsePeriodString("10s");
-		
-		BasicTimeChecker timeChecker = new BasicTimeChecker("BasicTimeChecket_1", now.getMillis(), now.getZone(), true, true, period);
-		checkers.put(timeChecker.getId(), timeChecker);
-		String expr = timeChecker.getId() + ".eval()";
-		
-		Condition cond = new Condition(checkers, expr);
-		System.out.println(expr);
-		
-		assertFalse(cond.isMet());
-		
-		//sleep for 1 min
-		try {
-			Thread.sleep(10000);
-		} catch (InterruptedException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		
-		assertTrue(cond.isMet());
-		
-		cond.resetCheckers();
-		
-		assertFalse(cond.isMet());
-		
-		//sleep for 1 min
-		try {
-			Thread.sleep(10000);
-		} catch (InterruptedException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		
-		assertTrue(cond.isMet());
-		
-	}
+  @Test
+  public void basicTimerTest() {
+
+    Map<String, ConditionChecker> checkers =
+        new HashMap<String, ConditionChecker>();
+
+    // get a new timechecker, start from now, repeat every minute. should
+    // evaluate to false now, and true a minute later.
+    DateTime now = DateTime.now();
+    ReadablePeriod period = Utils.parsePeriodString("10s");
+
+    BasicTimeChecker timeChecker =
+        new BasicTimeChecker("BasicTimeChecket_1", now.getMillis(),
+            now.getZone(), true, true, period);
+    checkers.put(timeChecker.getId(), timeChecker);
+    String expr = timeChecker.getId() + ".eval()";
+
+    Condition cond = new Condition(checkers, expr);
+    System.out.println(expr);
+
+    assertFalse(cond.isMet());
+
+    // sleep for 1 min
+    try {
+      Thread.sleep(10000);
+    } catch (InterruptedException e) {
+      // TODO Auto-generated catch block
+      e.printStackTrace();
+    }
+
+    assertTrue(cond.isMet());
+
+    cond.resetCheckers();
+
+    assertFalse(cond.isMet());
+
+    // sleep for 1 min
+    try {
+      Thread.sleep(10000);
+    } catch (InterruptedException e) {
+      // TODO Auto-generated catch block
+      e.printStackTrace();
+    }
+
+    assertTrue(cond.isMet());
+
+  }
 }

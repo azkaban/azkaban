@@ -17,19 +17,19 @@
 $.namespace('azkaban');
 
 azkaban.TimeGraphView = Backbone.View.extend({
-	events: {
-	},
+  events: {
+  },
 
-	initialize: function(settings) {
-		this.model.bind('render', this.render, this);
-		this.model.bind('change:page', this.render, this);
+  initialize: function(settings) {
+    this.model.bind('render', this.render, this);
+    this.model.bind('change:page', this.render, this);
     this.modelField = settings.modelField;
     this.graphContainer = settings.el;
     this.render();
-	},
+  },
 
-	render: function(self) {
-		var series = this.model.get(this.modelField);
+  render: function(self) {
+    var series = this.model.get(this.modelField);
     if (series == null) {
       return;
     }
@@ -40,7 +40,7 @@ azkaban.TimeGraphView = Backbone.View.extend({
     // Map of y value to index for faster look-up in the lineColorsCallback to
     // get the status for each point.
     var indexMap = {};
-	  for (var i = 0; i < series.length; ++i) {
+    for (var i = 0; i < series.length; ++i) {
       if (series[i].startTime == null || series[i].endTime == null) {
         console.log("Each element in series must have startTime and endTime");
         return;
@@ -67,13 +67,13 @@ azkaban.TimeGraphView = Backbone.View.extend({
       indexMap[endTime.toString()] = i;
     }
 
-		if (data.length == 0) {
-			$(this.graphContainer).hide();
-			return;
-		}
+    if (data.length == 0) {
+      $(this.graphContainer).hide();
+      return;
+    }
 
-		var graphDiv = document.createElement('div');
-		$(this.graphContainer).html(graphDiv);
+    var graphDiv = document.createElement('div');
+    $(this.graphContainer).html(graphDiv);
 
     var lineColorsCallback = function(row, sidx, type) {
       if (type != 'point') {
@@ -127,5 +127,5 @@ azkaban.TimeGraphView = Backbone.View.extend({
       yLabelFormat: yLabelFormatCallback,
       hoverCallback: hoverCallback
     });
-	}
+  }
 });

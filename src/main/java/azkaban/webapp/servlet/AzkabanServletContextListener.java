@@ -25,28 +25,29 @@ import azkaban.webapp.AzkabanWebServer;
  * A ServletContextListener that loads the batch application
  */
 public class AzkabanServletContextListener implements ServletContextListener {
-	public static final String AZKABAN_SERVLET_CONTEXT_KEY = "azkaban_app";
+  public static final String AZKABAN_SERVLET_CONTEXT_KEY = "azkaban_app";
 
-	private AzkabanWebServer app;
+  private AzkabanWebServer app;
 
-	/**
-	 * Delete the app
-	 */
-	public void contextDestroyed(ServletContextEvent event) {
-		this.app = null;
-	}
+  /**
+   * Delete the app
+   */
+  public void contextDestroyed(ServletContextEvent event) {
+    this.app = null;
+  }
 
-	/**
-	 * Load the app for use in non jetty containers.
-	 */
-	public void contextInitialized(ServletContextEvent event) {
-		try {
-			this.app = new AzkabanWebServer();
-		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+  /**
+   * Load the app for use in non jetty containers.
+   */
+  public void contextInitialized(ServletContextEvent event) {
+    try {
+      this.app = new AzkabanWebServer();
+    } catch (Exception e) {
+      // TODO Auto-generated catch block
+      e.printStackTrace();
+    }
 
-		event.getServletContext().setAttribute(AZKABAN_SERVLET_CONTEXT_KEY, this.app);
-	}
+    event.getServletContext().setAttribute(AZKABAN_SERVLET_CONTEXT_KEY,
+        this.app);
+  }
 }

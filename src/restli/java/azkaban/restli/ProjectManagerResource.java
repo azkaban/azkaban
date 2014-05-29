@@ -40,71 +40,79 @@ import com.linkedin.restli.server.resources.ResourceContextHolder;
 
 @RestLiActions(name = "project", namespace = "azkaban.restli")
 public class ProjectManagerResource extends ResourceContextHolder {
-	private static final Logger logger = Logger.getLogger(ProjectManagerResource.class);
-	
-	public AzkabanWebServer getAzkaban() {
-		return AzkabanWebServer.getInstance();
-	}
-	
-	@Action(name = "deploy")
-	public String deploy(
-			@ActionParam("sessionId") String sessionId,
-			@ActionParam("projectName") String projectName,
-			@ActionParam("packageUrl") String packageUrl)
-			throws ProjectManagerException, UserManagerException, ServletException, IOException {
-		logger.info("Deploy called. {sessionId: " + sessionId +
-				", projectName: " + projectName + 
-				", packageUrl:" + packageUrl + "}");
-		
-		String ip = (String)this.getContext().getRawRequestContext().getLocalAttr("REMOTE_ADDR");
-		User user = ResourceUtils.getUserFromSessionId(sessionId, ip);
-		ProjectManager projectManager = getAzkaban().getProjectManager();
-		Project project = projectManager.getProject(projectName);
-		if (project == null) {
-			throw new ProjectManagerException("Project '" + projectName + "' not found.");
-		}
-		
-		if (!ResourceUtils.hasPermission(project, user, Permission.Type.WRITE)) {
-			String errorMsg = "User " + user.getUserId() + " has no permission to write to project " + project.getName();
-			logger.error(errorMsg);
-			throw new ProjectManagerException(errorMsg);
-		}
+  private static final Logger logger = Logger
+      .getLogger(ProjectManagerResource.class);
 
-		logger.info("Target package URL is " + packageUrl);
-		URL url = null;
-		try {
-			url = new URL(packageUrl);
-		} catch (MalformedURLException e) {
-			String errorMsg = "URL " + packageUrl + " is malformed.";
-			logger.error(errorMsg, e);
-			throw new ProjectManagerException(errorMsg, e);
-		}
-		
-		String filename = getFileName(url.getFile());
-		File tempDir = Utils.createTempDir();
-		File archiveFile = new File(tempDir, filename);
-		try {
-			// Since zip files can be large, don't specify an explicit read or connection
-			// timeout. This will cause the call to block until the download is complete.
-			logger.info("Downloading package from " + packageUrl);
-			FileUtils.copyURLToFile(url, archiveFile);
-			
-			logger.info("Downloaded to " + archiveFile.toString());
-			projectManager.uploadProject(project, archiveFile, "zip", user);
-		} catch (IOException e) {
-			String errorMsg = "Download of URL " + packageUrl + " to " + archiveFile.toString() + " failed";
-			logger.error(errorMsg, e);
-			throw new ProjectManagerException(errorMsg, e);
-		}
-		finally {
-			if (tempDir.exists()) {
-				FileUtils.deleteDirectory(tempDir);
-			}
-		}
-		return Integer.toString(project.getVersion());
-	}
+  public AzkabanWebServer getAzkaban() {
+    return AzkabanWebServer.getInstance();
+  }
 
-	private String getFileName(String file) {
-		return file.substring(file.lastIndexOf("/") + 1);
-	}
+  @Action(name = "deploy")
+  public String deploy(@ActionParam("sessionId") String sessionId,
+      @ActionParam("projectName") String projectName,
+      @ActionParam("packageUrl") String packageUrl)
+      throws ProjectManagerException, UserManagerException, ServletException,
+      IOException {
+    logger.info("Deploy called. {sessionId: " + sessionId + ", projectName: "
+        + projectName + ", packageUrl:" + packageUrl + "}");
+
+    String ip =
+        (String) this.getContext().getRawRequestContext()
+            .getLocalAttr("REMOTE_ADDR");
+    User user = ResourceUtils.getUserFromSessionId(sessionId, ip);
+    ProjectManager projectManager = getAzkaban().getProjectManager();
+    Project project = projectManager.getProject(projectName);
+    if (project == null) {
+      throw new ProjectManagerException("Project '" + projectName
+          + "' not found.");
+    }
+
+    if (!ResourceUtils.hasPermission(project, user, Permission.Type.WRITE)) {
+      String errorMsg =
+          "User " + user.getUserId()
+              + " has no permission to write to project " + project.getName();
+      logger.error(errorMsg);
+      throw new ProjectManagerException(errorMsg);
+    }
+
+    logger.info("Target package URL is " + packageUrl);
+    URL url = null;
+    try {
+      url = new URL(packageUrl);
+    } catch (MalformedURLException e) {
+      String errorMsg = "URL " + packageUrl + " is malformed.";
+      logger.error(errorMsg, e);
+      throw new ProjectManagerException(errorMsg, e);
+    }
+
+    String filename = getFileName(url.getFile());
+    File tempDir = Utils.createTempDir();
+    File archiveFile = new File(tempDir, filename);
+    try {
+      // Since zip files can be large, don't specify an explicit read or
+      // connection
+      // timeout. This will cause the call to block until the download is
+      // complete.
+      logger.info("Downloading package from " + packageUrl);
+      FileUtils.copyURLToFile(url, archiveFile);
+
+      logger.info("Downloaded to " + archiveFile.toString());
+      projectManager.uploadProject(project, archiveFile, "zip", user);
+    } catch (IOException e) {
+      String errorMsg =
+          "Download of URL " + packageUrl + " to " + archiveFile.toString()
+              + " failed";
+      logger.error(errorMsg, e);
+      throw new ProjectManagerException(errorMsg, e);
+    } finally {
+      if (tempDir.exists()) {
+        FileUtils.deleteDirectory(tempDir);
+      }
+    }
+    return Integer.toString(project.getVersion());
+  }
+
+  private String getFileName(String file) {
+    return file.substring(file.lastIndexOf("/") + 1);
+  }
 }

@@ -33,8 +33,9 @@ import azkaban.utils.Props;
 /**
  * Test the flow run, especially with embedded flows.
  * 
- * This test uses executions/embedded2. It also mainly uses the flow named jobf. The test is designed to
- * control success/failures explicitly so we don't have to time the flow exactly.
+ * This test uses executions/embedded2. It also mainly uses the flow named 
+ * jobf. The test is designed to control success/failures explicitly so we
+ * don't have to time the flow exactly.
  * 
  * Flow jobf looks like the following:
  * 
@@ -69,7 +70,8 @@ import azkaban.utils.Props;
  *           |
  *       innerFlow2
  *       
- *  The following tests checks each stage of the flow run by forcing jobs to succeed or fail.
+ *  The following tests checks each stage of the flow run by forcing jobs to
+ *  succeed or fail.
  */
 public class FlowRunnerTest2 {
 	private File workingDir;

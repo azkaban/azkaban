@@ -23,136 +23,136 @@ import java.util.List;
 import java.util.Set;
 
 public class User {
-	private final String userid;
-	private String email = "";
-	private Set<String> roles = new HashSet<String>();
-	private Set<String> groups = new HashSet<String>();
-	private UserPermissions userPermissions;
+  private final String userid;
+  private String email = "";
+  private Set<String> roles = new HashSet<String>();
+  private Set<String> groups = new HashSet<String>();
+  private UserPermissions userPermissions;
 
-	private HashMap<String,String> properties = new HashMap<String,String>();
-	
-	public User(String userid) {
-		this.userid = userid;
-	}
+  private HashMap<String, String> properties = new HashMap<String, String>();
 
-	public String getUserId() {
-		return userid;
-	}
+  public User(String userid) {
+    this.userid = userid;
+  }
 
-	public void setEmail(String email) {
-		this.email = email;
-	}
+  public String getUserId() {
+    return userid;
+  }
 
-	public String getEmail() {
-		return email;
-	}
+  public void setEmail(String email) {
+    this.email = email;
+  }
 
-	public void setPermissions(UserPermissions checker) {
-		this.userPermissions = checker;
-	}
+  public String getEmail() {
+    return email;
+  }
 
-	public UserPermissions getPermissions() {
-		return userPermissions;
-	}
+  public void setPermissions(UserPermissions checker) {
+    this.userPermissions = checker;
+  }
 
-	public boolean hasPermission(String permission) {
-		if (userPermissions == null) {
-			return false;
-		}
-		return this.userPermissions.hasPermission(permission);
-	}
+  public UserPermissions getPermissions() {
+    return userPermissions;
+  }
 
-	public List<String> getGroups() {
-		return new ArrayList<String>(groups);
-	}
+  public boolean hasPermission(String permission) {
+    if (userPermissions == null) {
+      return false;
+    }
+    return this.userPermissions.hasPermission(permission);
+  }
 
-	public void clearGroup() {
-		groups.clear();
-	}
+  public List<String> getGroups() {
+    return new ArrayList<String>(groups);
+  }
 
-	public void addGroup(String name) {
-		groups.add(name);
-	}
+  public void clearGroup() {
+    groups.clear();
+  }
 
-	public boolean isInGroup(String group) {
-		return this.groups.contains(group);
-	}
+  public void addGroup(String name) {
+    groups.add(name);
+  }
 
-	public List<String> getRoles() {
-		return new ArrayList<String>(roles);
-	}
+  public boolean isInGroup(String group) {
+    return this.groups.contains(group);
+  }
 
-	public void addRole(String role) {
-		this.roles.add(role);
-	}
+  public List<String> getRoles() {
+    return new ArrayList<String>(roles);
+  }
 
-	public boolean hasRole(String role) {
-		return roles.contains(role);
-	}
-	
-	public String getProperty(String name) {
-		return properties.get(name);
-	}
+  public void addRole(String role) {
+    this.roles.add(role);
+  }
 
-	public String toString() {
-		String groupStr = "[";
-		for (String group: groups) {
-			groupStr += group + ",";
-		}
-		groupStr += "]";
-		return userid + ": " + groupStr;
-	}
+  public boolean hasRole(String role) {
+    return roles.contains(role);
+  }
 
-	@Override
-	public int hashCode() {
-		final int prime = 31;
-		int result = 1;
-		result = prime * result + ((userid == null) ? 0 : userid.hashCode());
-		return result;
-	}
+  public String getProperty(String name) {
+    return properties.get(name);
+  }
 
-	@Override
-	public boolean equals(Object obj) {
-		if (this == obj)
-			return true;
-		if (obj == null)
-			return false;
-		if (getClass() != obj.getClass())
-			return false;
-		User other = (User)obj;
-		if (userid == null) {
-			if (other.userid != null)
-				return false;
-		}
-		else if (!userid.equals(other.userid))
-			return false;
-		return true;
-	}
+  public String toString() {
+    String groupStr = "[";
+    for (String group : groups) {
+      groupStr += group + ",";
+    }
+    groupStr += "]";
+    return userid + ": " + groupStr;
+  }
 
-	public static interface UserPermissions {
-		public boolean hasPermission(String permission);
-		public void addPermission(String permission);
-	}
+  @Override
+  public int hashCode() {
+    final int prime = 31;
+    int result = 1;
+    result = prime * result + ((userid == null) ? 0 : userid.hashCode());
+    return result;
+  }
 
-	public static class DefaultUserPermission implements UserPermissions {
-		Set<String> permissions;
+  @Override
+  public boolean equals(Object obj) {
+    if (this == obj)
+      return true;
+    if (obj == null)
+      return false;
+    if (getClass() != obj.getClass())
+      return false;
+    User other = (User) obj;
+    if (userid == null) {
+      if (other.userid != null)
+        return false;
+    } else if (!userid.equals(other.userid))
+      return false;
+    return true;
+  }
 
-		public DefaultUserPermission() {
-			this(new HashSet<String>());
-		}
+  public static interface UserPermissions {
+    public boolean hasPermission(String permission);
 
-		public DefaultUserPermission(Set<String> permissions) {
-			this.permissions = permissions;
-		}
+    public void addPermission(String permission);
+  }
 
-		@Override
-		public boolean hasPermission(String permission) {
-			return permissions.contains(permission);
-		}
+  public static class DefaultUserPermission implements UserPermissions {
+    Set<String> permissions;
 
-		@Override
-		public void addPermission(String permission) {
-			permissions.add(permission);
-		}
-	}
+    public DefaultUserPermission() {
+      this(new HashSet<String>());
+    }
+
+    public DefaultUserPermission(Set<String> permissions) {
+      this.permissions = permissions;
+    }
+
+    @Override
+    public boolean hasPermission(String permission) {
+      return permissions.contains(permission);
+    }
+
+    @Override
+    public void addPermission(String permission) {
+      permissions.add(permission);
+    }
+  }
 }

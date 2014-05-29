@@ -27,44 +27,51 @@ import azkaban.utils.Props;
 import azkaban.utils.Utils;
 
 public class TriggerTest {
-	
-	private CheckerTypeLoader checkerLoader;
-	private ActionTypeLoader actionLoader;
-	
-	@Before
-	public void setup() throws TriggerException {
-		checkerLoader = new CheckerTypeLoader();
-		checkerLoader.init(new Props());
-		Condition.setCheckerLoader(checkerLoader);
-		actionLoader = new ActionTypeLoader();
-		actionLoader.init(new Props());
-		Trigger.setActionTypeLoader(actionLoader);
-	}
-	
-	@Test
-	public void jsonConversionTest() throws Exception {
-		DateTime now = DateTime.now();
-		ConditionChecker checker1 = new BasicTimeChecker("timeChecker1", now.getMillis(), now.getZone(), true, true, Utils.parsePeriodString("1h"));
-		Map<String, ConditionChecker> checkers1 = new HashMap<String, ConditionChecker>();
-		checkers1.put(checker1.getId(), checker1);
-		String expr1 = checker1.getId() + ".eval()";
-		Condition triggerCond = new Condition(checkers1, expr1);
-		Condition expireCond = new Condition(checkers1, expr1);
-		List<TriggerAction> actions = new ArrayList<TriggerAction>();
-		TriggerAction action = new ExecuteFlowAction("executeAction", 1, "testProj", "testFlow", "azkaban", new ExecutionOptions(), null);
-		actions.add(action);
-		Trigger t = new Trigger(now.getMillis(), now.getMillis(), "azkaban", "test", triggerCond, expireCond, actions);
-		
-		File temp = File.createTempFile("temptest", "temptest");
-		temp.deleteOnExit();
-		Object obj = t.toJson();
-		JSONUtils.toJSON(obj, temp);
-		
-		Trigger t2 = Trigger.fromJson(JSONUtils.parseJSONFromFile(temp));
-		
-		assertTrue(t.getSource().equals(t2.getSource()));
-		assertTrue(t.getTriggerId() == t2.getTriggerId());
-		
-	}
+
+  private CheckerTypeLoader checkerLoader;
+  private ActionTypeLoader actionLoader;
+
+  @Before
+  public void setup() throws TriggerException {
+    checkerLoader = new CheckerTypeLoader();
+    checkerLoader.init(new Props());
+    Condition.setCheckerLoader(checkerLoader);
+    actionLoader = new ActionTypeLoader();
+    actionLoader.init(new Props());
+    Trigger.setActionTypeLoader(actionLoader);
+  }
+
+  @Test
+  public void jsonConversionTest() throws Exception {
+    DateTime now = DateTime.now();
+    ConditionChecker checker1 =
+        new BasicTimeChecker("timeChecker1", now.getMillis(), now.getZone(),
+            true, true, Utils.parsePeriodString("1h"));
+    Map<String, ConditionChecker> checkers1 =
+        new HashMap<String, ConditionChecker>();
+    checkers1.put(checker1.getId(), checker1);
+    String expr1 = checker1.getId() + ".eval()";
+    Condition triggerCond = new Condition(checkers1, expr1);
+    Condition expireCond = new Condition(checkers1, expr1);
+    List<TriggerAction> actions = new ArrayList<TriggerAction>();
+    TriggerAction action =
+        new ExecuteFlowAction("executeAction", 1, "testProj", "testFlow",
+            "azkaban", new ExecutionOptions(), null);
+    actions.add(action);
+    Trigger t =
+        new Trigger(now.getMillis(), now.getMillis(), "azkaban", "test",
+            triggerCond, expireCond, actions);
+
+    File temp = File.createTempFile("temptest", "temptest");
+    temp.deleteOnExit();
+    Object obj = t.toJson();
+    JSONUtils.toJSON(obj, temp);
+
+    Trigger t2 = Trigger.fromJson(JSONUtils.parseJSONFromFile(temp));
+
+    assertTrue(t.getSource().equals(t2.getSource()));
+    assertTrue(t.getTriggerId() == t2.getTriggerId());
+
+  }
 
 }

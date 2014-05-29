@@ -28,23 +28,26 @@ import azkaban.webapp.session.Session;
  * The main page
  */
 public class IndexRedirectServlet extends LoginAbstractAzkabanServlet {
-	private static final long serialVersionUID = -1;
-	private String defaultServletPath;
+  private static final long serialVersionUID = -1;
+  private String defaultServletPath;
 
-	public IndexRedirectServlet(String defaultServletPath) {
-		this.defaultServletPath = defaultServletPath;
-		if (this.defaultServletPath.isEmpty() || this.defaultServletPath.equals("/")) {
-			this.defaultServletPath = "/index";
-		}
-	}
+  public IndexRedirectServlet(String defaultServletPath) {
+    this.defaultServletPath = defaultServletPath;
+    if (this.defaultServletPath.isEmpty()
+        || this.defaultServletPath.equals("/")) {
+      this.defaultServletPath = "/index";
+    }
+  }
 
-	@Override
-	protected void handleGet(HttpServletRequest req, HttpServletResponse resp, Session session) throws ServletException, IOException {
-		resp.sendRedirect(defaultServletPath);
-	}
+  @Override
+  protected void handleGet(HttpServletRequest req, HttpServletResponse resp,
+      Session session) throws ServletException, IOException {
+    resp.sendRedirect(defaultServletPath);
+  }
 
-	@Override
-	protected void handlePost(HttpServletRequest req, HttpServletResponse resp, Session session) throws ServletException, IOException {
-		resp.sendRedirect(defaultServletPath);
-	}
+  @Override
+  protected void handlePost(HttpServletRequest req, HttpServletResponse resp,
+      Session session) throws ServletException, IOException {
+    resp.sendRedirect(defaultServletPath);
+  }
 }

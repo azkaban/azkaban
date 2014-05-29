@@ -32,108 +32,112 @@ import azkaban.user.UserManager;
 import azkaban.utils.Props;
 import azkaban.webapp.session.SessionCache;
 
-
 public abstract class AzkabanServer {
-	private static final Logger logger = Logger.getLogger(AzkabanServer.class);
-	public static final String AZKABAN_PROPERTIES_FILE = "azkaban.properties";
-	public static final String AZKABAN_PRIVATE_PROPERTIES_FILE = "azkaban.private.properties";
-	public static final String DEFAULT_CONF_PATH = "conf";
-	
-	public static Props loadProps(String[] args) {
-		return loadProps(args, new OptionParser());
-	}
-	
-	public static Props loadProps(String[] args, OptionParser parser) {;
-		OptionSpec<String> configDirectory = parser
-				.acceptsAll(Arrays.asList("c", "conf"), "The conf directory for Azkaban.")
-				.withRequiredArg()
-				.describedAs("conf").ofType(String.class);
+  private static final Logger logger = Logger.getLogger(AzkabanServer.class);
+  public static final String AZKABAN_PROPERTIES_FILE = "azkaban.properties";
+  public static final String AZKABAN_PRIVATE_PROPERTIES_FILE =
+      "azkaban.private.properties";
+  public static final String DEFAULT_CONF_PATH = "conf";
 
-		// Grabbing the azkaban settings from the conf directory.
-		Props azkabanSettings = null;
-		OptionSet options = parser.parse(args);
-		
-		if (options.has(configDirectory)) {
-			String path = options.valueOf(configDirectory);
-			logger.info("Loading azkaban settings file from " + path);
-			File dir = new File(path);
-			if (!dir.exists()) {
-				logger.error("Conf directory " + path + " doesn't exist.");
-			}
-			else if (!dir.isDirectory()) {
-				logger.error("Conf directory " + path + " isn't a directory.");
-			}
-			else {
-				azkabanSettings = loadAzkabanConfigurationFromDirectory(dir);
-			}
-		} 
-		else {
-			logger.info("Conf parameter not set, attempting to get value from AZKABAN_HOME env.");
-			azkabanSettings = loadConfigurationFromAzkabanHome();
-		}
-		
-		return azkabanSettings;
-	}
+  public static Props loadProps(String[] args) {
+    return loadProps(args, new OptionParser());
+  }
 
-	private static Props loadAzkabanConfigurationFromDirectory(File dir) {
-		File azkabanPrivatePropsFile = new File(dir, AZKABAN_PRIVATE_PROPERTIES_FILE);
-		File azkabanPropsFile = new File(dir, AZKABAN_PROPERTIES_FILE);
-		
-		Props props = null;
-		try {
-			// This is purely optional
-			if (azkabanPrivatePropsFile.exists() && azkabanPrivatePropsFile.isFile()) {
-				logger.info("Loading azkaban private properties file" );
-				props = new Props(null, azkabanPrivatePropsFile);
-			}
+  public static Props loadProps(String[] args, OptionParser parser) {
+    ;
+    OptionSpec<String> configDirectory =
+        parser
+            .acceptsAll(Arrays.asList("c", "conf"),
+                "The conf directory for Azkaban.").withRequiredArg()
+            .describedAs("conf").ofType(String.class);
 
-			if (azkabanPropsFile.exists() && azkabanPropsFile.isFile()) {
-				logger.info("Loading azkaban properties file" );
-				props = new Props(props, azkabanPropsFile);
-			}
-		} catch (FileNotFoundException e) {
-			logger.error("File not found. Could not load azkaban config file", e);
-		} catch (IOException e) {
-			logger.error("File found, but error reading. Could not load azkaban config file", e);
-		}
-		
-		return props;
-	}
-	
-	/**
-	 * Loads the Azkaban property file from the AZKABAN_HOME conf directory
-	 * 
-	 * @return
-	 */
-	private static Props loadConfigurationFromAzkabanHome() {
-		String azkabanHome = System.getenv("AZKABAN_HOME");
+    // Grabbing the azkaban settings from the conf directory.
+    Props azkabanSettings = null;
+    OptionSet options = parser.parse(args);
 
-		if (azkabanHome == null) {
-			logger.error("AZKABAN_HOME not set. Will try default.");
-			return null;
-		}
+    if (options.has(configDirectory)) {
+      String path = options.valueOf(configDirectory);
+      logger.info("Loading azkaban settings file from " + path);
+      File dir = new File(path);
+      if (!dir.exists()) {
+        logger.error("Conf directory " + path + " doesn't exist.");
+      } else if (!dir.isDirectory()) {
+        logger.error("Conf directory " + path + " isn't a directory.");
+      } else {
+        azkabanSettings = loadAzkabanConfigurationFromDirectory(dir);
+      }
+    } else {
+      logger
+          .info("Conf parameter not set, attempting to get value from AZKABAN_HOME env.");
+      azkabanSettings = loadConfigurationFromAzkabanHome();
+    }
 
-		if (!new File(azkabanHome).isDirectory() || !new File(azkabanHome).canRead()) {
-			logger.error(azkabanHome + " is not a readable directory.");
-			return null;
-		}
+    return azkabanSettings;
+  }
 
-		File confPath = new File(azkabanHome, DEFAULT_CONF_PATH);
-		if (!confPath.exists() || !confPath.isDirectory()
-				|| !confPath.canRead()) {
-			logger.error(azkabanHome + " does not contain a readable conf directory.");
-			return null;
-		}
+  private static Props loadAzkabanConfigurationFromDirectory(File dir) {
+    File azkabanPrivatePropsFile =
+        new File(dir, AZKABAN_PRIVATE_PROPERTIES_FILE);
+    File azkabanPropsFile = new File(dir, AZKABAN_PROPERTIES_FILE);
 
-		return loadAzkabanConfigurationFromDirectory(confPath);
-	}
-	
-	public abstract Props getServerProps();
-	
-	public abstract SessionCache getSessionCache();
-	
-	public abstract VelocityEngine getVelocityEngine();
-	
-	public abstract UserManager getUserManager();
-	
+    Props props = null;
+    try {
+      // This is purely optional
+      if (azkabanPrivatePropsFile.exists() && azkabanPrivatePropsFile.isFile()) {
+        logger.info("Loading azkaban private properties file");
+        props = new Props(null, azkabanPrivatePropsFile);
+      }
+
+      if (azkabanPropsFile.exists() && azkabanPropsFile.isFile()) {
+        logger.info("Loading azkaban properties file");
+        props = new Props(props, azkabanPropsFile);
+      }
+    } catch (FileNotFoundException e) {
+      logger.error("File not found. Could not load azkaban config file", e);
+    } catch (IOException e) {
+      logger.error(
+          "File found, but error reading. Could not load azkaban config file",
+          e);
+    }
+
+    return props;
+  }
+
+  /**
+   * Loads the Azkaban property file from the AZKABAN_HOME conf directory
+   * 
+   * @return
+   */
+  private static Props loadConfigurationFromAzkabanHome() {
+    String azkabanHome = System.getenv("AZKABAN_HOME");
+
+    if (azkabanHome == null) {
+      logger.error("AZKABAN_HOME not set. Will try default.");
+      return null;
+    }
+
+    if (!new File(azkabanHome).isDirectory()
+        || !new File(azkabanHome).canRead()) {
+      logger.error(azkabanHome + " is not a readable directory.");
+      return null;
+    }
+
+    File confPath = new File(azkabanHome, DEFAULT_CONF_PATH);
+    if (!confPath.exists() || !confPath.isDirectory() || !confPath.canRead()) {
+      logger
+          .error(azkabanHome + " does not contain a readable conf directory.");
+      return null;
+    }
+
+    return loadAzkabanConfigurationFromDirectory(confPath);
+  }
+
+  public abstract Props getServerProps();
+
+  public abstract SessionCache getSessionCache();
+
+  public abstract VelocityEngine getVelocityEngine();
+
+  public abstract UserManager getUserManager();
+
 }
