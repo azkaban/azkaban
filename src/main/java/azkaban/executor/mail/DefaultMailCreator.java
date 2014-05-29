@@ -141,7 +141,7 @@ public class DefaultMailCreator implements MailCreator {
       message.println("</table>");
       message.println("");
       String executionUrl =
-          "https://" + clientHostname + ":" + clientPortNumber + "/"
+          "http://" + clientHostname + ":" + clientPortNumber + "/"
               + "executor?" + "execid=" + execId;
       message.println("<a href=\"" + executionUrl + "\">" + flow.getFlowId()
           + " Execution Link</a>");
