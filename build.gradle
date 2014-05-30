@@ -4,12 +4,14 @@ buildscript {
   }
   dependencies {
     classpath 'de.obqo.gradle:gradle-lesscss-plugin:1.0-1.3.3'
+    classpath 'com.linkedin:gradle-dustjs-plugin:1.0.0'
   }
 }
 
 apply plugin: 'java'
 apply plugin: 'eclipse'
 apply plugin: 'lesscss'
+apply plugin: 'dustjs'
 
 defaultTasks 'dist'
 
@@ -178,29 +180,19 @@ lesscss {
   dest = 'build/web/css'
 }
 
-/**
- * Invokes a makefile target that will compile dust files
- */
-task compileDust(type:Exec) {
-    workingDir 'src/main/tl'
-    commandLine 'make', '-e'
-    environment (
-      OBJ_DIR : file(new File(buildDir,'/dust'))
-    )
+dustjs {
+  source = fileTree('src/main/tl')
+  dest = 'build/web/js'
 }
 
 /**
  * Copies web files to a build directory
  */
-task web(dependsOn: ['lesscss', 'compileDust']) << {
+task web(dependsOn: ['lesscss', 'dustjs']) << {
     println 'Copying web files'
     copy {
         from('src/web')
         into('build/web')
-    }
-    copy {
-        from('build/dust')
-        into('build/web/js')
     }
 }
 
