@@ -113,8 +113,8 @@ public class DefaultMailCreator implements MailCreator {
 
   @Override
   public boolean createErrorEmail(ExecutableFlow flow, EmailMessage message,
-      String azkabanName, String clientHostname, String clientPortNumber,
-      String... vars) {
+      String azkabanName, String scheme, String clientHostname,
+      String clientPortNumber, String... vars) {
 
     ExecutionOptions option = flow.getExecutionOptions();
 
@@ -141,7 +141,7 @@ public class DefaultMailCreator implements MailCreator {
       message.println("</table>");
       message.println("");
       String executionUrl =
-          "http://" + clientHostname + ":" + clientPortNumber + "/"
+          scheme + "://" + clientHostname + ":" + clientPortNumber + "/"
               + "executor?" + "execid=" + execId;
       message.println("<a href=\"" + executionUrl + "\">" + flow.getFlowId()
           + " Execution Link</a>");

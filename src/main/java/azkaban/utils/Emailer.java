@@ -40,6 +40,7 @@ public class Emailer extends AbstractMailer implements Alerter {
 
   private boolean testMode = false;
 
+  private String scheme;
   private String clientHostname;
   private String clientPortNumber;
 
@@ -66,8 +67,10 @@ public class Emailer extends AbstractMailer implements Alerter {
     this.clientHostname = props.getString("jetty.hostname", "localhost");
 
     if (props.getBoolean("jetty.use.ssl", true)) {
+      this.scheme = "https";
       this.clientPortNumber = props.getString("jetty.ssl.port");
     } else {
+      this.scheme = "http";
       this.clientPortNumber = props.getString("jetty.port");
     }
 
@@ -133,7 +136,7 @@ public class Emailer extends AbstractMailer implements Alerter {
         + mailCreator.getClass().getCanonicalName());
 
     boolean mailCreated =
-        mailCreator.createErrorEmail(flow, message, azkabanName,
+        mailCreator.createErrorEmail(flow, message, azkabanName, scheme,
             clientHostname, clientPortNumber, extraReasons);
 
     if (mailCreated && !testMode) {

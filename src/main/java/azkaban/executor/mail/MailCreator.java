@@ -25,8 +25,8 @@ public interface MailCreator {
       String clientPortNumber, String... vars);
 
   public boolean createErrorEmail(ExecutableFlow flow, EmailMessage message,
-      String azkabanName, String clientHostname, String clientPortNumber,
-      String... vars);
+      String azkabanName, String scheme, String clientHostname,
+      String clientPortNumber, String... vars);
 
   public boolean createSuccessEmail(ExecutableFlow flow, EmailMessage message,
       String azkabanName, String clientHostname, String clientPortNumber,
