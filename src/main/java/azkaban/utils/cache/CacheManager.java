@@ -20,113 +20,113 @@ import java.util.HashSet;
 import java.util.Set;
 
 public class CacheManager {
-	// Thread that expires caches at
-	private static final long UPDATE_FREQUENCY = 30000; // Every 30 sec by default.
+  // Thread that expires caches at
+  // Every 30 sec by default.
+  private static final long UPDATE_FREQUENCY = 30000;
 
-	private long updateFrequency = UPDATE_FREQUENCY;
-	private Set<Cache> caches;
-	private static CacheManager manager = null;
-	private final CacheManagerThread updaterThread;
+  private long updateFrequency = UPDATE_FREQUENCY;
+  private Set<Cache> caches;
+  private static CacheManager manager = null;
+  private final CacheManagerThread updaterThread;
 
-	private boolean activeExpiry = false;
+  private boolean activeExpiry = false;
 
-	public static CacheManager getInstance() {
-		if (manager == null) {
-			manager = new CacheManager();
-		}
-		
-		return manager;
-	}
-	
-	private CacheManager() {
-		updaterThread = new CacheManagerThread();
-		caches = new HashSet<Cache>();
+  public static CacheManager getInstance() {
+    if (manager == null) {
+      manager = new CacheManager();
+    }
 
-		updaterThread.start();
-	}
+    return manager;
+  }
 
-	public static void setUpdateFrequency(long updateFreqMs) {
-		manager.internalUpdateFrequency(updateFreqMs);
-	}
+  private CacheManager() {
+    updaterThread = new CacheManagerThread();
+    caches = new HashSet<Cache>();
 
-	public static void shutdown() {
-		manager.internalShutdown();
-	}
+    updaterThread.start();
+  }
 
-	public Cache createCache() {
-		Cache cache = new Cache(manager);
-		manager.internalAddCache(cache);
-		return cache;
-	}
+  public static void setUpdateFrequency(long updateFreqMs) {
+    manager.internalUpdateFrequency(updateFreqMs);
+  }
 
-	public void removeCache(Cache cache) {
-		manager.internalRemoveCache(cache);
-	}
+  public static void shutdown() {
+    manager.internalShutdown();
+  }
 
-	private void internalUpdateFrequency(long updateFreq) {
-		updateFrequency = updateFreq;
-		updaterThread.interrupt();
-	}
+  public Cache createCache() {
+    Cache cache = new Cache(manager);
+    manager.internalAddCache(cache);
+    return cache;
+  }
 
-	private void internalAddCache(Cache cache) {
-		caches.add(cache);
-		updaterThread.interrupt();
-	}
+  public void removeCache(Cache cache) {
+    manager.internalRemoveCache(cache);
+  }
 
-	private void internalRemoveCache(Cache cache) {
-		caches.remove(cache);
-	}
+  private void internalUpdateFrequency(long updateFreq) {
+    updateFrequency = updateFreq;
+    updaterThread.interrupt();
+  }
 
-	private synchronized void internalShutdown() {
-		updaterThread.shutdown();
-	}
+  private void internalAddCache(Cache cache) {
+    caches.add(cache);
+    updaterThread.interrupt();
+  }
 
-	/* package */synchronized void update() {
-		boolean activeExpiry = false;
-		for (Cache cache : caches) {
-			if (cache.getExpireTimeToIdle() > 0
-					|| cache.getExpireTimeToLive() > 0) {
-				activeExpiry = true;
-				break;
-			}
-		}
+  private void internalRemoveCache(Cache cache) {
+    caches.remove(cache);
+  }
 
-		if (this.activeExpiry != activeExpiry && activeExpiry) {
-			this.activeExpiry = activeExpiry;
-			updaterThread.interrupt();
-		}
-	}
+  private synchronized void internalShutdown() {
+    updaterThread.shutdown();
+  }
 
-	private class CacheManagerThread extends Thread {
-		private boolean shutdown = false;
+  /* package */synchronized void update() {
+    boolean activeExpiry = false;
+    for (Cache cache : caches) {
+      if (cache.getExpireTimeToIdle() > 0 || cache.getExpireTimeToLive() > 0) {
+        activeExpiry = true;
+        break;
+      }
+    }
 
-		public void run() {
-			while (!shutdown) {
-				if (activeExpiry) {
-					for (Cache cache : caches) {
-						cache.expireCache();
-					}
+    if (this.activeExpiry != activeExpiry && activeExpiry) {
+      this.activeExpiry = activeExpiry;
+      updaterThread.interrupt();
+    }
+  }
 
-					synchronized (this) {
-						try {
-							wait(updateFrequency);
-						} catch (InterruptedException e) {
-						}
-					}
-				} else {
-					synchronized (this) {
-						try {
-							wait();
-						} catch (InterruptedException e) {
-						}
-					}
-				}
-			}
-		}
+  private class CacheManagerThread extends Thread {
+    private boolean shutdown = false;
 
-		public void shutdown() {
-			this.shutdown = true;
-			updaterThread.interrupt();
-		}
-	}
+    public void run() {
+      while (!shutdown) {
+        if (activeExpiry) {
+          for (Cache cache : caches) {
+            cache.expireCache();
+          }
+
+          synchronized (this) {
+            try {
+              wait(updateFrequency);
+            } catch (InterruptedException e) {
+            }
+          }
+        } else {
+          synchronized (this) {
+            try {
+              wait();
+            } catch (InterruptedException e) {
+            }
+          }
+        }
+      }
+    }
+
+    public void shutdown() {
+      this.shutdown = true;
+      updaterThread.interrupt();
+    }
+  }
 }

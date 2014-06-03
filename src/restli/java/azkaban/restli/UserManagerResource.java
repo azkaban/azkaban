@@ -31,65 +31,70 @@ import com.linkedin.restli.server.annotations.ActionParam;
 import com.linkedin.restli.server.annotations.RestLiActions;
 import com.linkedin.restli.server.resources.ResourceContextHolder;
 
-
 @RestLiActions(name = "user", namespace = "azkaban.restli")
 public class UserManagerResource extends ResourceContextHolder {
-	private static final Logger logger = Logger.getLogger(UserManagerResource.class);
-	
-	public AzkabanWebServer getAzkaban() {
-		return AzkabanWebServer.getInstance();
-	}
-	
-	@Action(name = "login")
-	public String login(
-			@ActionParam("username") String username,
-			@ActionParam("password") String password)
-			throws UserManagerException, ServletException {
-		String ip = (String)this.getContext().getRawRequestContext().getLocalAttr("REMOTE_ADDR");
-		logger.info("Attempting to login for " + username + " from ip '" + ip + "'");
-		
-		Session session = createSession(username, password, ip);
-		
-		logger.info("Session id " + session.getSessionId() + " created for user '" + username + "' and ip " + ip);
-		return session.getSessionId();
-	}
+  private static final Logger logger = Logger
+      .getLogger(UserManagerResource.class);
 
-	@Action(name = "getUserFromSessionId")
-	public User getUserFromSessionId(@ActionParam("sessionId") String sessionId) {
-		String ip = (String)this.getContext().getRawRequestContext().getLocalAttr("REMOTE_ADDR");
-		Session session = getSessionFromSessionId(sessionId, ip);
-		azkaban.user.User azUser = session.getUser();
+  public AzkabanWebServer getAzkaban() {
+    return AzkabanWebServer.getInstance();
+  }
 
-		// Fill out the restli object with properties from the Azkaban user
-		User user = new User();
-		user.setUserId(azUser.getUserId());
-		user.setEmail(azUser.getEmail());
-		return user;
-	}
+  @Action(name = "login")
+  public String login(@ActionParam("username") String username,
+      @ActionParam("password") String password) throws UserManagerException,
+      ServletException {
+    String ip =
+        (String) this.getContext().getRawRequestContext()
+            .getLocalAttr("REMOTE_ADDR");
+    logger
+        .info("Attempting to login for " + username + " from ip '" + ip + "'");
 
-	private Session createSession(String username, String password, String ip)
-			throws UserManagerException, ServletException {
-		UserManager manager = getAzkaban().getUserManager();
-		azkaban.user.User user = manager.getUser(username, password);
+    Session session = createSession(username, password, ip);
 
-		String randomUID = UUID.randomUUID().toString();
-		Session session = new Session(randomUID, user, ip);
-		getAzkaban().getSessionCache().addSession(session);
-		
-		return session;
-	}
+    logger.info("Session id " + session.getSessionId() + " created for user '"
+        + username + "' and ip " + ip);
+    return session.getSessionId();
+  }
 
-	private Session getSessionFromSessionId(String sessionId, String remoteIp) {
-		if (sessionId == null) {
-			return null;
-		}
+  @Action(name = "getUserFromSessionId")
+  public User getUserFromSessionId(@ActionParam("sessionId") String sessionId) {
+    String ip =
+        (String) this.getContext().getRawRequestContext()
+            .getLocalAttr("REMOTE_ADDR");
+    Session session = getSessionFromSessionId(sessionId, ip);
+    azkaban.user.User azUser = session.getUser();
 
-		Session session = getAzkaban().getSessionCache().getSession(sessionId);
-		// Check if the IP's are equal. If not, we invalidate the sesson.
-		if (session == null || !remoteIp.equals(session.getIp())) {
-			return null;
-		}
+    // Fill out the restli object with properties from the Azkaban user
+    User user = new User();
+    user.setUserId(azUser.getUserId());
+    user.setEmail(azUser.getEmail());
+    return user;
+  }
 
-		return session;
-	}
+  private Session createSession(String username, String password, String ip)
+      throws UserManagerException, ServletException {
+    UserManager manager = getAzkaban().getUserManager();
+    azkaban.user.User user = manager.getUser(username, password);
+
+    String randomUID = UUID.randomUUID().toString();
+    Session session = new Session(randomUID, user, ip);
+    getAzkaban().getSessionCache().addSession(session);
+
+    return session;
+  }
+
+  private Session getSessionFromSessionId(String sessionId, String remoteIp) {
+    if (sessionId == null) {
+      return null;
+    }
+
+    Session session = getAzkaban().getSessionCache().getSession(sessionId);
+    // Check if the IP's are equal. If not, we invalidate the sesson.
+    if (session == null || !remoteIp.equals(session.getIp())) {
+      return null;
+    }
+
+    return session;
+  }
 }

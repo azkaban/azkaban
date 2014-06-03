@@ -16,39 +16,39 @@
 
 <!DOCTYPE html>
 <html lang="en">
-	<head>
+  <head>
 
 #parse("azkaban/webapp/servlet/velocity/style.vm")
 #parse("azkaban/webapp/servlet/velocity/javascript.vm")
 #parse("azkaban/webapp/servlet/velocity/svgflowincludes.vm")
     <script type="text/javascript" src="${context}/js/raphael.min.js"></script>
     <script type="text/javascript" src="${context}/js/morris.min.js"></script>
-		<script type="text/javascript" src="${context}/js/moment.min.js"></script>
+    <script type="text/javascript" src="${context}/js/moment.min.js"></script>
     <script type="text/javascript" src="${context}/js/bootstrap-datetimepicker.min.js"></script>
 
     <script type="text/javascript" src="${context}/js/dust-full-2.2.3.min.js"></script>
-		<script type="text/javascript" src="${context}/js/flowstats.js"></script>
-		<script type="text/javascript" src="${context}/js/flowstats-no-data.js"></script>
+    <script type="text/javascript" src="${context}/js/flowstats.js"></script>
+    <script type="text/javascript" src="${context}/js/flowstats-no-data.js"></script>
 
-		<script type="text/javascript" src="${context}/js/azkaban/view/flow-execution-list.js"></script>
-		<script type="text/javascript" src="${context}/js/azkaban/view/flow-execute-dialog.js"></script>
-		<script type="text/javascript" src="${context}/js/azkaban/view/flow-stats.js"></script>
-		<script type="text/javascript" src="${context}/js/azkaban/view/exflow.js"></script>
-		<script type="text/javascript">
-			var contextURL = "${context}";
-			var currentTime = ${currentTime};
-			var timezone = "${timezone}";
-			var errorMessage = null;
-			var successMessage = null;;
-			var projectId = "${projectId}";
-			var projectName = "${projectName}";
-			var flowId = "${flowid}";
-			var execId = "${execid}";
-		</script>
-		<link rel="stylesheet" type="text/css" href="${context}/css/morris.css" />
-		<link rel="stylesheet" type="text/css" href="${context}/css/jquery-ui-1.10.1.custom.css" />
-	</head>
-	<body>
+    <script type="text/javascript" src="${context}/js/azkaban/view/flow-execution-list.js"></script>
+    <script type="text/javascript" src="${context}/js/azkaban/view/flow-execute-dialog.js"></script>
+    <script type="text/javascript" src="${context}/js/azkaban/view/flow-stats.js"></script>
+    <script type="text/javascript" src="${context}/js/azkaban/view/exflow.js"></script>
+    <script type="text/javascript">
+      var contextURL = "${context}";
+      var currentTime = ${currentTime};
+      var timezone = "${timezone}";
+      var errorMessage = null;
+      var successMessage = null;;
+      var projectId = "${projectId}";
+      var projectName = "${projectName}";
+      var flowId = "${flowid}";
+      var execId = "${execid}";
+    </script>
+    <link rel="stylesheet" type="text/css" href="${context}/css/morris.css" />
+    <link rel="stylesheet" type="text/css" href="${context}/css/jquery-ui-1.10.1.custom.css" />
+  </head>
+  <body>
 
 #set ($current_page="all")
 #set ($show_schedule="false")
@@ -58,10 +58,10 @@
   #parse ("azkaban/webapp/servlet/velocity/errormsg.vm")
 #else
 
-	## Page header
+  ## Page header
 
-		<div class="az-page-header page-header-bare">
-			<div class="container-full" id="flow-status">
+    <div class="az-page-header page-header-bare">
+      <div class="container-full" id="flow-status">
         <div class="row">
           <div class="header-title">
             <h1>
@@ -84,7 +84,7 @@
             <div class="clearfix"></div>
           </div>
         </div>
-			</div>
+      </div>
     </div>
     <div class="page-breadcrumb">
       <div class="container-full">
@@ -96,59 +96,59 @@
       </div>
     </div>
 
-		<div class="container-full">
+    <div class="container-full">
 
   #parse ("azkaban/webapp/servlet/velocity/alerts.vm")
 
-	## Tabs and buttons.
+  ## Tabs and buttons.
 
-			<ul class="nav nav-tabs nav-sm" id="headertabs">
-				<li id="graphViewLink"><a href="#graph">Graph</a></li>
-				<li id="jobslistViewLink"><a href="#jobslist">Job List</a></li>
-				<li id="flowLogViewLink"><a href="#log">Flow Log</a></li>
-				<li id="statsViewLink"><a href="#stats">Stats</a></li>
-				<li class="nav-button pull-right"><button type="button" id="pausebtn" class="btn btn-primary btn-sm">Pause</button></li>
-				<li class="nav-button pull-right"><button type="button" id="resumebtn" class="btn btn-primary btn-sm">Resume</button></li>
-				<li class="nav-button pull-right"><button type="button" id="cancelbtn" class="btn btn-danger btn-sm">Kill</button></li>
-				<li class="nav-button pull-right"><button type="button" id="retrybtn" class="btn btn-success btn-sm">Retry Failed</button></li>
-				<li class="nav-button pull-right"><button type="button" id="executebtn" class="btn btn-success btn-sm">Prepare Execution</button></li>
-			</ul>
+      <ul class="nav nav-tabs nav-sm" id="headertabs">
+        <li id="graphViewLink"><a href="#graph">Graph</a></li>
+        <li id="jobslistViewLink"><a href="#jobslist">Job List</a></li>
+        <li id="flowLogViewLink"><a href="#log">Flow Log</a></li>
+        <li id="statsViewLink"><a href="#stats">Stats</a></li>
+        <li class="nav-button pull-right"><button type="button" id="pausebtn" class="btn btn-primary btn-sm">Pause</button></li>
+        <li class="nav-button pull-right"><button type="button" id="resumebtn" class="btn btn-primary btn-sm">Resume</button></li>
+        <li class="nav-button pull-right"><button type="button" id="cancelbtn" class="btn btn-danger btn-sm">Kill</button></li>
+        <li class="nav-button pull-right"><button type="button" id="retrybtn" class="btn btn-success btn-sm">Retry Failed</button></li>
+        <li class="nav-button pull-right"><button type="button" id="executebtn" class="btn btn-success btn-sm">Prepare Execution</button></li>
+      </ul>
     </div>
 
-	## Graph View
+  ## Graph View
 
-	#parse ("azkaban/webapp/servlet/velocity/flowgraphview.vm")
+  #parse ("azkaban/webapp/servlet/velocity/flowgraphview.vm")
 
-	## Job List View
+  ## Job List View
 
     <div class="container-full" id="jobListView">
-			<div class="row">
-				<div class="col-xs-12">
-					<table class="table table-bordered table-condensed table-hover executions-table">
-						<thead>
-							<tr>
-								<th>Name</th>
-								<th class="jobtype">Type</th>
-								<th class="timeline">Timeline</th>
-								<th class="date">Start Time</th>
-								<th class="date">End Time</th>
-								<th class="elapse">Elapsed</th>
-								<th class="status">Status</th>
-								<th class="logs">Details</th>
-							</tr>
-						</thead>
-						<tbody id="executableBody">
-						</tbody>
-					</table>
+      <div class="row">
+        <div class="col-xs-12">
+          <table class="table table-bordered table-condensed table-hover executions-table">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th class="jobtype">Type</th>
+                <th class="timeline">Timeline</th>
+                <th class="date">Start Time</th>
+                <th class="date">End Time</th>
+                <th class="elapse">Elapsed</th>
+                <th class="status">Status</th>
+                <th class="logs">Details</th>
+              </tr>
+            </thead>
+            <tbody id="executableBody">
+            </tbody>
+          </table>
         </div><!-- /.col-xs-12 -->
       </div><!-- /.row -->
     </div><!-- /.container-full -->
 
-	## Flow Log View
+  ## Flow Log View
 
     <div class="container-full container-fill" id="flowLogView">
-			<div class="row">
-				<div class="col-xs-12 col-content">
+      <div class="row">
+        <div class="col-xs-12 col-content">
           <div class="log-viewer">
             <div class="panel panel-default">
               <div class="panel-heading">
@@ -178,35 +178,35 @@
             </div>
           </div>
         </div>
-			</div><!-- /.row -->
+      </div><!-- /.row -->
     </div><!-- /.container-fill -->
 
-	## Error message message dialog.
+  ## Error message message dialog.
 
     <div class="container-full">
-			<div class="modal" id="messageDialog">
-				<div class="modal-dialog">
-					<div class="modal-content">
-						<div class="modal-header" id="messageTitle">
-							<button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
-							<h4 class="modal-title">Error</h4>
-						</div>
-						<div class="modal-body" id="messageDiv">
-							<p id="messageBox"></p>
-						</div>
-						<div class="modal-footer">
-							<button type="button" class="btn btn-primary" data-dismiss="modal">Dismiss</button>
-						</div>
-					</div>
-				</div>
-			</div>
+      <div class="modal" id="messageDialog">
+        <div class="modal-dialog">
+          <div class="modal-content">
+            <div class="modal-header" id="messageTitle">
+              <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+              <h4 class="modal-title">Error</h4>
+            </div>
+            <div class="modal-body" id="messageDiv">
+              <p id="messageBox"></p>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-primary" data-dismiss="modal">Dismiss</button>
+            </div>
+          </div>
+        </div>
+      </div>
 
       <div id="contextMenu"></div>
 
-	#parse ("azkaban/webapp/servlet/velocity/invalidsessionmodal.vm")
-	#parse ("azkaban/webapp/servlet/velocity/flowexecutionpanel.vm")
-	#parse ("azkaban/webapp/servlet/velocity/messagedialog.vm")
-		</div>
+  #parse ("azkaban/webapp/servlet/velocity/invalidsessionmodal.vm")
+  #parse ("azkaban/webapp/servlet/velocity/flowexecutionpanel.vm")
+  #parse ("azkaban/webapp/servlet/velocity/messagedialog.vm")
+    </div>
 #end
-	</body>
+  </body>
 </html>

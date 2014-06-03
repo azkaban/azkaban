@@ -18,135 +18,135 @@ $.namespace('azkaban');
 
 var jmxTableView;
 azkaban.JMXTableView = Backbone.View.extend({
-	events: {
-		"click .query-btn": "queryJMX",
-		"click .collapse-btn": "collapseRow"
-	},
+  events: {
+    "click .query-btn": "queryJMX",
+    "click .collapse-btn": "collapseRow"
+  },
 
-	initialize: function(settings) {
-	},
+  initialize: function(settings) {
+  },
 
-	formatValue: function(value) {
-		if (String(value).length != TIMESTAMP_LENGTH) {
-			return value;
-		}
-		if (isNaN(parseInt(value))) {
-			return value;
-		}
-		var date = new Date(value);
-		if (date.getTime() <= 0) {
-			return value;
-		}
-		return value + " (" + date.toISOString() + ")";
-	},
+  formatValue: function(value) {
+    if (String(value).length != TIMESTAMP_LENGTH) {
+      return value;
+    }
+    if (isNaN(parseInt(value))) {
+      return value;
+    }
+    var date = new Date(value);
+    if (date.getTime() <= 0) {
+      return value;
+    }
+    return value + " (" + date.toISOString() + ")";
+  },
 
-	queryJMX: function(evt) {
-		var target = evt.currentTarget;
-		var id = target.id;
+  queryJMX: function(evt) {
+    var target = evt.currentTarget;
+    var id = target.id;
 
-		var childID = id + "-child";
-		var tbody = id + "-tbody";
+    var childID = id + "-child";
+    var tbody = id + "-tbody";
 
-		var requestURL = contextURL + "/jmx";
-		var canonicalName=$(target).attr("domain") + ":name=" + $(target).attr("name");
+    var requestURL = contextURL + "/jmx";
+    var canonicalName=$(target).attr("domain") + ":name=" + $(target).attr("name");
 
-		var data = {
-			"ajax": "getAllMBeanAttributes",
-			"mBean": canonicalName
-		};
-		if ($(target).attr("hostPort")) {
-			data.ajax = "getAllExecutorAttributes";
-			data.hostPort = $(target).attr("hostPort");
-		}
-		var view = this;
-		var successHandler = function(data) {
-			var table = $('#' + tbody);
-			$(table).empty();
+    var data = {
+      "ajax": "getAllMBeanAttributes",
+      "mBean": canonicalName
+    };
+    if ($(target).attr("hostPort")) {
+      data.ajax = "getAllExecutorAttributes";
+      data.hostPort = $(target).attr("hostPort");
+    }
+    var view = this;
+    var successHandler = function(data) {
+      var table = $('#' + tbody);
+      $(table).empty();
 
-			for (var key in data.attributes) {
-				var value = data.attributes[key];
+      for (var key in data.attributes) {
+        var value = data.attributes[key];
 
-				var tr = document.createElement("tr");
-				var tdName = document.createElement("td");
-				var tdVal = document.createElement("td");
+        var tr = document.createElement("tr");
+        var tdName = document.createElement("td");
+        var tdVal = document.createElement("td");
 
-				$(tdName).addClass('property-key');
-				$(tdName).text(key);
+        $(tdName).addClass('property-key');
+        $(tdName).text(key);
 
-				value = view.formatValue(value);
-				$(tdVal).text(value);
+        value = view.formatValue(value);
+        $(tdVal).text(value);
 
-				$(tr).append(tdName);
-				$(tr).append(tdVal);
+        $(tr).append(tdName);
+        $(tr).append(tdVal);
 
-				$('#' + tbody).append(tr);
-			}
+        $('#' + tbody).append(tr);
+      }
 
-			var child = $("#" + childID);
-			$(child).fadeIn();
-		};
-		$.get(requestURL, data, successHandler);
-	},
+      var child = $("#" + childID);
+      $(child).fadeIn();
+    };
+    $.get(requestURL, data, successHandler);
+  },
 
-	queryRemote: function(evt) {
-		var target = evt.currentTarget;
-		var id = target.id;
+  queryRemote: function(evt) {
+    var target = evt.currentTarget;
+    var id = target.id;
 
-		var childID = id + "-child";
-		var tbody = id + "-tbody";
+    var childID = id + "-child";
+    var tbody = id + "-tbody";
 
-		var requestURL = contextURL + "/jmx";
-		var canonicalName = $(target).attr("domain") + ":name=" + $(target).attr("name");
-		var hostPort = $(target).attr("hostport");
-		var requestData = {
-			"ajax": "getAllExecutorAttributes",
-			"mBean": canonicalName,
-			"hostPort": hostPort
-		};
-		var view = this;
-		var successHandler = function(data) {
-			var table = $('#' + tbody);
-			$(table).empty();
+    var requestURL = contextURL + "/jmx";
+    var canonicalName = $(target).attr("domain") + ":name=" + $(target).attr("name");
+    var hostPort = $(target).attr("hostport");
+    var requestData = {
+      "ajax": "getAllExecutorAttributes",
+      "mBean": canonicalName,
+      "hostPort": hostPort
+    };
+    var view = this;
+    var successHandler = function(data) {
+      var table = $('#' + tbody);
+      $(table).empty();
 
-			for (var key in data.attributes) {
-				var value = data.attributes[key];
+      for (var key in data.attributes) {
+        var value = data.attributes[key];
 
-				var tr = document.createElement("tr");
-				var tdName = document.createElement("td");
-				var tdVal = document.createElement("td");
+        var tr = document.createElement("tr");
+        var tdName = document.createElement("td");
+        var tdVal = document.createElement("td");
 
-				$(tdName).addClass('property-key');
-				$(tdName).text(key);
+        $(tdName).addClass('property-key');
+        $(tdName).text(key);
 
-				value = view.formatValue(value);
-				$(tdVal).text(value);
+        value = view.formatValue(value);
+        $(tdVal).text(value);
 
-				$(tr).append(tdName);
-				$(tr).append(tdVal);
+        $(tr).append(tdName);
+        $(tr).append(tdVal);
 
-				$('#' + tbody).append(tr);
-			}
+        $('#' + tbody).append(tr);
+      }
 
-			var child = $("#" + childID);
-				$(child).fadeIn();
-		};
-		$.get(requestURL, requestData, successHandler);
-	},
+      var child = $("#" + childID);
+        $(child).fadeIn();
+    };
+    $.get(requestURL, requestData, successHandler);
+  },
 
-	collapseRow: function(evt) {
-		$(evt.currentTarget).parent().parent().fadeOut();
-	},
+  collapseRow: function(evt) {
+    $(evt.currentTarget).parent().parent().fadeOut();
+  },
 
-	render: function() {
-	}
+  render: function() {
+  }
 });
 
 var remoteTables = new Array();
 $(function() {
-	jmxTableView = new azkaban.JMXTableView({el:$('#all-jmx')});
+  jmxTableView = new azkaban.JMXTableView({el:$('#all-jmx')});
 
-	$(".remoteJMX").each(function(item) {
-		var newTableView = new azkaban.JMXTableView({el:$(this)});
-		remoteTables.push(newTableView);
-	});
+  $(".remoteJMX").each(function(item) {
+    var newTableView = new azkaban.JMXTableView({el:$(this)});
+    remoteTables.push(newTableView);
+  });
 });

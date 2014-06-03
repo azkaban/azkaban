@@ -1,12 +1,12 @@
 /*
  * Copyright 2012 LinkedIn Corp.
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
  * the License at
- * 
+ *
  * http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
@@ -15,26 +15,26 @@
  */
 
 function addClass(el, name) {
-	if (!hasClass(el, name)) { 
-		var classes = el.getAttribute("class");
-		classes += classes ? ' ' + name : '' +name;
-		el.setAttribute("class", classes);
-	}
+  if (!hasClass(el, name)) {
+    var classes = el.getAttribute("class");
+    classes += classes ? ' ' + name : '' +name;
+    el.setAttribute("class", classes);
+  }
 }
 
 function removeClass(el, name) {
-	if (hasClass(el, name)) {
-		var classes = el.getAttribute("class");
-		el.setAttribute("class", classes.replace(new RegExp('(\\s|^)'+name+'(\\s|$)'),' ').replace(/^\s+|\s+$/g, ''));
-	}
+  if (hasClass(el, name)) {
+    var classes = el.getAttribute("class");
+    el.setAttribute("class", classes.replace(new RegExp('(\\s|^)'+name+'(\\s|$)'),' ').replace(/^\s+|\s+$/g, ''));
+  }
 }
 
 function hasClass(el, name) {
-	var classes = el.getAttribute("class");
-	if (classes == null) {
-		return false;
-	}
-	return new RegExp('(\\s|^)'+name+'(\\s|$)').test(classes);
+  var classes = el.getAttribute("class");
+  if (classes == null) {
+    return false;
+  }
+  return new RegExp('(\\s|^)'+name+'(\\s|$)').test(classes);
 }
 
 function sizeStrToBytes(str) {

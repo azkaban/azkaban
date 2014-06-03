@@ -21,69 +21,65 @@ import java.util.List;
 import java.util.Comparator;
 
 public class ViewerPlugin {
-	private final String pluginName;
-	private final String pluginPath;
-	private final int order;
-	private boolean hidden;
-	private final List<String> jobTypes;
+  private final String pluginName;
+  private final String pluginPath;
+  private final int order;
+  private boolean hidden;
+  private final List<String> jobTypes;
 
-	public static final Comparator<ViewerPlugin> COMPARATOR = 
-			new Comparator<ViewerPlugin>() {
-		@Override
-		public int compare(ViewerPlugin o1, ViewerPlugin o2) {
-			if (o1.getOrder() != o2.getOrder()) {
-				return o1.getOrder() - o2.getOrder();
-			}
-			return o1.getPluginName().compareTo(o2.getPluginName());
-		}
-	};
+  public static final Comparator<ViewerPlugin> COMPARATOR =
+      new Comparator<ViewerPlugin>() {
+        @Override
+        public int compare(ViewerPlugin o1, ViewerPlugin o2) {
+          if (o1.getOrder() != o2.getOrder()) {
+            return o1.getOrder() - o2.getOrder();
+          }
+          return o1.getPluginName().compareTo(o2.getPluginName());
+        }
+      };
 
-	public ViewerPlugin(
-			String pluginName, 
-			String pluginPath, 
-			int order, 
-			boolean hidden,
-			String jobTypes) {
-		this.pluginName = pluginName;
-		this.pluginPath = pluginPath;
-		this.order = order;
-		this.setHidden(hidden);
-		this.jobTypes = parseJobTypes(jobTypes);
-	}
+  public ViewerPlugin(String pluginName, String pluginPath, int order,
+      boolean hidden, String jobTypes) {
+    this.pluginName = pluginName;
+    this.pluginPath = pluginPath;
+    this.order = order;
+    this.setHidden(hidden);
+    this.jobTypes = parseJobTypes(jobTypes);
+  }
 
-	public String getPluginName() {
-		return pluginName;
-	}
+  public String getPluginName() {
+    return pluginName;
+  }
 
-	public String getPluginPath() {
-		return pluginPath;
-	}
+  public String getPluginPath() {
+    return pluginPath;
+  }
 
-	public int getOrder() {
-		return order;
-	}
+  public int getOrder() {
+    return order;
+  }
 
-	public boolean isHidden() {
-		return hidden;
-	}
+  public boolean isHidden() {
+    return hidden;
+  }
 
-	public void setHidden(boolean hidden) {
-		this.hidden = hidden;
-	}
+  public void setHidden(boolean hidden) {
+    this.hidden = hidden;
+  }
 
-	protected List<String> parseJobTypes(String jobTypesStr) {
-		if (jobTypesStr == null) {
-			return null;
-		}
-		String[] parts = jobTypesStr.split(",");
-		List<String> jobTypes = new ArrayList<String>();
-		for (int i = 0; i < parts.length; ++i) {
-			jobTypes.add(parts[i].trim());
-		}
-		return jobTypes;
-	}
+  protected List<String> parseJobTypes(String jobTypesStr) {
+    if (jobTypesStr == null) {
+      return null;
+    }
+    String[] parts = jobTypesStr.split(",");
+    List<String> jobTypes = new ArrayList<String>();
+    for (int i = 0; i < parts.length; ++i) {
+      jobTypes.add(parts[i].trim());
+    }
+    return jobTypes;
+  }
 
-	public List<String> getJobTypes() {
-		return jobTypes;
-	}
+  public List<String> getJobTypes() {
+    return jobTypes;
+  }
 }

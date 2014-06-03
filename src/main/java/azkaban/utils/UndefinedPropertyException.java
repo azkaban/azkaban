@@ -21,10 +21,10 @@ package azkaban.utils;
  */
 public class UndefinedPropertyException extends RuntimeException {
 
-	private static final long serialVersionUID = 1;
+  private static final long serialVersionUID = 1;
 
-	public UndefinedPropertyException(String message) {
-		super(message);
-	}
+  public UndefinedPropertyException(String message) {
+    super(message);
+  }
 
 }

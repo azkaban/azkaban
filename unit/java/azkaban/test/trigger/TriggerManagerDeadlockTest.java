@@ -26,158 +26,171 @@ import azkaban.trigger.builtin.CreateTriggerAction;
 import azkaban.utils.Props;
 
 public class TriggerManagerDeadlockTest {
-	
-	TriggerLoader loader;
-	TriggerManager triggerManager;
-	ExecutorLoader execLoader;
-	
-	@Before
-	public void setup() throws ExecutorManagerException, TriggerManagerException {
-		loader = new MockTriggerLoader();
-		Props props = new Props();
-		props.put("trigger.scan.interval", 1000);
-		props.put("executor.port", 12321);
-		execLoader = new MockExecutorLoader();
-		Map<String, Alerter> alerters = new HashMap<String, Alerter>();
-		ExecutorManager executorManager = new ExecutorManager(props, execLoader, alerters);
-		triggerManager = new TriggerManager(props, loader, executorManager);
-	}
 
-	@After
-	public void tearDown() {
-		
-	}
-	
-	@Test
-	public void deadlockTest() throws TriggerLoaderException, TriggerManagerException {
-		// this should well saturate it
-		for(int i = 0; i < 1000; i++) {
-			Trigger t = createSelfRegenTrigger();
-			loader.addTrigger(t);
-		}
-		// keep going and add more
-		for(int i = 0; i < 10000; i++) {
-			Trigger d = createDummyTrigger();
-			triggerManager.insertTrigger(d);
-			triggerManager.removeTrigger(d);
-		}
-		
-		System.out.println("No dead lock.");
-	}
-	
-	public class AlwaysOnChecker implements ConditionChecker {
+  TriggerLoader loader;
+  TriggerManager triggerManager;
+  ExecutorLoader execLoader;
 
-		public static final String type = "AlwaysOnChecker";
-		
-		private final String id;
-		private final Boolean alwaysOn;
-		
-		public AlwaysOnChecker(String id, Boolean alwaysOn) {
-			this.id = id;
-			this.alwaysOn = alwaysOn;
-		}
-		
-		@Override
-		public Object eval() {
-			// TODO Auto-generated method stub
-			return alwaysOn;
-		}
+  @Before
+  public void setup() throws ExecutorManagerException, TriggerManagerException {
+    loader = new MockTriggerLoader();
+    Props props = new Props();
+    props.put("trigger.scan.interval", 1000);
+    props.put("executor.port", 12321);
+    execLoader = new MockExecutorLoader();
+    Map<String, Alerter> alerters = new HashMap<String, Alerter>();
+    ExecutorManager executorManager =
+        new ExecutorManager(props, execLoader, alerters);
+    triggerManager = new TriggerManager(props, loader, executorManager);
+  }
 
-		@Override
-		public Object getNum() {
-			// TODO Auto-generated method stub
-			return null;
-		}
+  @After
+  public void tearDown() {
 
-		@Override
-		public void reset() {
-			// TODO Auto-generated method stub
-			
-		}
+  }
 
-		@Override
-		public String getId() {
-			return id;
-		}
+  @Test
+  public void deadlockTest() throws TriggerLoaderException,
+      TriggerManagerException {
+    // this should well saturate it
+    for (int i = 0; i < 1000; i++) {
+      Trigger t = createSelfRegenTrigger();
+      loader.addTrigger(t);
+    }
+    // keep going and add more
+    for (int i = 0; i < 10000; i++) {
+      Trigger d = createDummyTrigger();
+      triggerManager.insertTrigger(d);
+      triggerManager.removeTrigger(d);
+    }
 
-		@Override
-		public String getType() {
-			// TODO Auto-generated method stub
-			return type;
-		}
+    System.out.println("No dead lock.");
+  }
 
-		@Override
-		public ConditionChecker fromJson(Object obj) throws Exception {
-			// TODO Auto-generated method stub
-			return null;
-		}
+  public class AlwaysOnChecker implements ConditionChecker {
 
-		@Override
-		public Object toJson() {
-			// TODO Auto-generated method stub
-			return null;
-		}
+    public static final String type = "AlwaysOnChecker";
 
-		@Override
-		public void stopChecker() {
-			// TODO Auto-generated method stub
-			
-		}
+    private final String id;
+    private final Boolean alwaysOn;
 
-		@Override
-		public void setContext(Map<String, Object> context) {
-			// TODO Auto-generated method stub
-			
-		}
+    public AlwaysOnChecker(String id, Boolean alwaysOn) {
+      this.id = id;
+      this.alwaysOn = alwaysOn;
+    }
 
-		@Override
-		public long getNextCheckTime() {
-			// TODO Auto-generated method stub
-			return 0;
-		}
-		
-	}
-	
-	private Trigger createSelfRegenTrigger() {
-		ConditionChecker alwaysOnChecker = new AlwaysOnChecker("alwaysOn", Boolean.TRUE);
-		String triggerExpr = alwaysOnChecker.getId() + ".eval()";
-		Map<String, ConditionChecker> triggerCheckers = new HashMap<String, ConditionChecker>();
-		triggerCheckers.put(alwaysOnChecker.getId(), alwaysOnChecker);
-		Condition triggerCond = new Condition(triggerCheckers, triggerExpr);
-		
-		TriggerAction triggerAct = new CreateTriggerAction("dummyTrigger", createDummyTrigger());
-		List<TriggerAction> actions = new ArrayList<TriggerAction>();
-		actions.add(triggerAct);
-		
-		ConditionChecker alwaysOffChecker = new AlwaysOnChecker("alwaysOff", Boolean.FALSE);
-		String expireExpr = alwaysOffChecker.getId() + ".eval()";
-		Map<String, ConditionChecker> expireCheckers = new HashMap<String, ConditionChecker>();
-		expireCheckers.put(alwaysOffChecker.getId(), alwaysOffChecker);
-		Condition expireCond = new Condition(expireCheckers, expireExpr);
-			
-		Trigger t = new Trigger("azkaban", "azkabanTest", triggerCond, expireCond, actions);
-		return t;
-	}
+    @Override
+    public Object eval() {
+      // TODO Auto-generated method stub
+      return alwaysOn;
+    }
 
-	private Trigger createDummyTrigger() {
-		ConditionChecker alwaysOnChecker = new AlwaysOnChecker("alwaysOn", Boolean.TRUE);
-		String triggerExpr = alwaysOnChecker.getId() + ".eval()";
-		Map<String, ConditionChecker> triggerCheckers = new HashMap<String, ConditionChecker>();
-		triggerCheckers.put(alwaysOnChecker.getId(), alwaysOnChecker);
-		Condition triggerCond = new Condition(triggerCheckers, triggerExpr);
-		
-		TriggerAction triggerAct = new DummyTriggerAction("howdy!");
-		List<TriggerAction> actions = new ArrayList<TriggerAction>();
-		actions.add(triggerAct);
-		
-		ConditionChecker alwaysOffChecker = new AlwaysOnChecker("alwaysOff", Boolean.FALSE);
-		String expireExpr = alwaysOffChecker.getId() + ".eval()";
-		Map<String, ConditionChecker> expireCheckers = new HashMap<String, ConditionChecker>();
-		expireCheckers.put(alwaysOffChecker.getId(), alwaysOffChecker);
-		Condition expireCond = new Condition(expireCheckers, expireExpr);
+    @Override
+    public Object getNum() {
+      // TODO Auto-generated method stub
+      return null;
+    }
 
-		Trigger t = new Trigger("azkaban", "azkabanTest", triggerCond, expireCond, actions);
-		return t;
-	}
-	
+    @Override
+    public void reset() {
+      // TODO Auto-generated method stub
+
+    }
+
+    @Override
+    public String getId() {
+      return id;
+    }
+
+    @Override
+    public String getType() {
+      // TODO Auto-generated method stub
+      return type;
+    }
+
+    @Override
+    public ConditionChecker fromJson(Object obj) throws Exception {
+      // TODO Auto-generated method stub
+      return null;
+    }
+
+    @Override
+    public Object toJson() {
+      // TODO Auto-generated method stub
+      return null;
+    }
+
+    @Override
+    public void stopChecker() {
+      // TODO Auto-generated method stub
+
+    }
+
+    @Override
+    public void setContext(Map<String, Object> context) {
+      // TODO Auto-generated method stub
+
+    }
+
+    @Override
+    public long getNextCheckTime() {
+      // TODO Auto-generated method stub
+      return 0;
+    }
+
+  }
+
+  private Trigger createSelfRegenTrigger() {
+    ConditionChecker alwaysOnChecker =
+        new AlwaysOnChecker("alwaysOn", Boolean.TRUE);
+    String triggerExpr = alwaysOnChecker.getId() + ".eval()";
+    Map<String, ConditionChecker> triggerCheckers =
+        new HashMap<String, ConditionChecker>();
+    triggerCheckers.put(alwaysOnChecker.getId(), alwaysOnChecker);
+    Condition triggerCond = new Condition(triggerCheckers, triggerExpr);
+
+    TriggerAction triggerAct =
+        new CreateTriggerAction("dummyTrigger", createDummyTrigger());
+    List<TriggerAction> actions = new ArrayList<TriggerAction>();
+    actions.add(triggerAct);
+
+    ConditionChecker alwaysOffChecker =
+        new AlwaysOnChecker("alwaysOff", Boolean.FALSE);
+    String expireExpr = alwaysOffChecker.getId() + ".eval()";
+    Map<String, ConditionChecker> expireCheckers =
+        new HashMap<String, ConditionChecker>();
+    expireCheckers.put(alwaysOffChecker.getId(), alwaysOffChecker);
+    Condition expireCond = new Condition(expireCheckers, expireExpr);
+
+    Trigger t =
+        new Trigger("azkaban", "azkabanTest", triggerCond, expireCond, actions);
+    return t;
+  }
+
+  private Trigger createDummyTrigger() {
+    ConditionChecker alwaysOnChecker =
+        new AlwaysOnChecker("alwaysOn", Boolean.TRUE);
+    String triggerExpr = alwaysOnChecker.getId() + ".eval()";
+    Map<String, ConditionChecker> triggerCheckers =
+        new HashMap<String, ConditionChecker>();
+    triggerCheckers.put(alwaysOnChecker.getId(), alwaysOnChecker);
+    Condition triggerCond = new Condition(triggerCheckers, triggerExpr);
+
+    TriggerAction triggerAct = new DummyTriggerAction("howdy!");
+    List<TriggerAction> actions = new ArrayList<TriggerAction>();
+    actions.add(triggerAct);
+
+    ConditionChecker alwaysOffChecker =
+        new AlwaysOnChecker("alwaysOff", Boolean.FALSE);
+    String expireExpr = alwaysOffChecker.getId() + ".eval()";
+    Map<String, ConditionChecker> expireCheckers =
+        new HashMap<String, ConditionChecker>();
+    expireCheckers.put(alwaysOffChecker.getId(), alwaysOffChecker);
+    Condition expireCond = new Condition(expireCheckers, expireExpr);
+
+    Trigger t =
+        new Trigger("azkaban", "azkabanTest", triggerCond, expireCond, actions);
+    return t;
+  }
+
 }

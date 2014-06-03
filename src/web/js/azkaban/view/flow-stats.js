@@ -23,9 +23,9 @@ azkaban.FlowStatsView = Backbone.View.extend({
 
   histogram: true,
 
-	initialize: function(settings) {
-		this.model.bind('change:view', this.handleChangeView, this);
-		this.model.bind('render', this.render, this);
+  initialize: function(settings) {
+    this.model.bind('change:view', this.handleChangeView, this);
+    this.model.bind('render', this.render, this);
     if (settings.histogram != null) {
       this.histogram = settings.histogram;
     }
@@ -316,7 +316,7 @@ azkaban.FlowStatsView = Backbone.View.extend({
     this.model.trigger('render');
   },
 
-	render: function(evt) {
+  render: function(evt) {
     var view = this;
     var data = this.model.get('data');
     if (data == null) {

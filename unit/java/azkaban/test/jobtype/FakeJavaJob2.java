@@ -21,8 +21,7 @@ import azkaban.jobExecutor.JavaProcessJob;
 import azkaban.utils.Props;
 
 public class FakeJavaJob2 extends JavaProcessJob {
-	public FakeJavaJob2(String jobid, Props sysProps, Props jobProps, Logger log) {
-		super(jobid, sysProps, jobProps, log);
-	}
+  public FakeJavaJob2(String jobid, Props sysProps, Props jobProps, Logger log) {
+    super(jobid, sysProps, jobProps, log);
+  }
 }
-

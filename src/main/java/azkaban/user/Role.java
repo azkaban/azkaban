@@ -17,23 +17,23 @@
 package azkaban.user;
 
 public class Role {
-	private final String name;
-	private final Permission globalPermission;
-	
-	public Role(String name, Permission permission) {
-		this.name = name;
-		this.globalPermission = permission;
-	}
+  private final String name;
+  private final Permission globalPermission;
 
-	public Permission getPermission() {
-		return globalPermission;
-	}
+  public Role(String name, Permission permission) {
+    this.name = name;
+    this.globalPermission = permission;
+  }
 
-	public String getName() {
-		return name;
-	}
-	
-	public String toString() {
-		return "Role " + name;
-	}
+  public Permission getPermission() {
+    return globalPermission;
+  }
+
+  public String getName() {
+    return name;
+  }
+
+  public String toString() {
+    return "Role " + name;
+  }
 }

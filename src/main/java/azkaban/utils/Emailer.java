@@ -1,6 +1,3 @@
-
-package azkaban.utils;
-
 /*
  * Copyright 2012 LinkedIn Corp.
  * 
@@ -17,6 +14,7 @@ package azkaban.utils;
  * the License.
  */
 
+package azkaban.utils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -38,155 +36,168 @@ import azkaban.utils.EmailMessage;
 import azkaban.utils.Props;
 
 public class Emailer extends AbstractMailer implements Alerter {
-	private static Logger logger = Logger.getLogger(Emailer.class);
-	
-	private boolean testMode = false;
+  private static Logger logger = Logger.getLogger(Emailer.class);
 
-	private String clientHostname;
-	private String clientPortNumber;
+  private boolean testMode = false;
 
-	private String mailHost;
-	private String mailUser;
-	private String mailPassword;
-	private String mailSender;
-	private String azkabanName;
+  private String clientHostname;
+  private String clientPortNumber;
 
-	public Emailer(Props props) {
-		super(props);
-		this.azkabanName = props.getString("azkaban.name", "azkaban");
-		this.mailHost = props.getString("mail.host", "localhost");
-		this.mailUser = props.getString("mail.user", "");
-		this.mailPassword = props.getString("mail.password", "");
-		this.mailSender = props.getString("mail.sender", "");
+  private String mailHost;
+  private String mailUser;
+  private String mailPassword;
+  private String mailSender;
+  private String azkabanName;
 
-		int mailTimeout = props.getInt("mail.timeout.millis", 10000);
-		EmailMessage.setTimeout(mailTimeout);
-		int connectionTimeout = props.getInt("mail.connection.timeout.millis", 10000);
-		EmailMessage.setConnectionTimeout(connectionTimeout);
-		
-		this.clientHostname = props.getString("jetty.hostname", "localhost");
-		
-		if (props.getBoolean("jetty.use.ssl", true)) {
-			this.clientPortNumber = props.getString("jetty.ssl.port");
-		} else {
-			this.clientPortNumber = props.getString("jetty.port");
-		}
-		
-		testMode = props.getBoolean("test.mode", false);
-	}
-	
-	@SuppressWarnings("unchecked")
-	private void sendSlaAlertEmail(SlaOption slaOption, String slaMessage) {
-		String subject = "Sla Violation Alert on " + getAzkabanName();
-		String body = slaMessage;
-		List<String> emailList = (List<String>) slaOption.getInfo().get(SlaOption.INFO_EMAIL_LIST);
-		if (emailList != null && !emailList.isEmpty()) {
-			EmailMessage message = super.createEmailMessage(
-					subject, 
-					"text/html", 
-					emailList);
-			
-			message.setBody(body);
-			
-			if (!testMode) {
-				try {
-					message.sendEmail();
-				} catch (MessagingException e) {
-					logger.error("Email message send failed" , e);
-				}
-			}
-		}
-	}
+  public Emailer(Props props) {
+    super(props);
+    this.azkabanName = props.getString("azkaban.name", "azkaban");
+    this.mailHost = props.getString("mail.host", "localhost");
+    this.mailUser = props.getString("mail.user", "");
+    this.mailPassword = props.getString("mail.password", "");
+    this.mailSender = props.getString("mail.sender", "");
 
-	public void sendFirstErrorMessage(ExecutableFlow flow) {
-		EmailMessage message = new EmailMessage(mailHost, mailUser, mailPassword);
-		message.setFromAddress(mailSender);
+    int mailTimeout = props.getInt("mail.timeout.millis", 10000);
+    EmailMessage.setTimeout(mailTimeout);
+    int connectionTimeout =
+        props.getInt("mail.connection.timeout.millis", 10000);
+    EmailMessage.setConnectionTimeout(connectionTimeout);
 
-		ExecutionOptions option = flow.getExecutionOptions();
+    this.clientHostname = props.getString("jetty.hostname", "localhost");
 
-		MailCreator mailCreator = DefaultMailCreator.getCreator(option.getMailCreator());
+    if (props.getBoolean("jetty.use.ssl", true)) {
+      this.clientPortNumber = props.getString("jetty.ssl.port");
+    } else {
+      this.clientPortNumber = props.getString("jetty.port");
+    }
 
-		logger.debug("ExecutorMailer using mail creator:" + mailCreator.getClass().getCanonicalName());
+    testMode = props.getBoolean("test.mode", false);
+  }
 
-		boolean mailCreated = mailCreator.createFirstErrorMessage(flow, message, azkabanName, clientHostname, clientPortNumber);
+  @SuppressWarnings("unchecked")
+  private void sendSlaAlertEmail(SlaOption slaOption, String slaMessage) {
+    String subject = "Sla Violation Alert on " + getAzkabanName();
+    String body = slaMessage;
+    List<String> emailList =
+        (List<String>) slaOption.getInfo().get(SlaOption.INFO_EMAIL_LIST);
+    if (emailList != null && !emailList.isEmpty()) {
+      EmailMessage message =
+          super.createEmailMessage(subject, "text/html", emailList);
 
-		if (mailCreated && !testMode) {
-			try {
-				message.sendEmail();
-			} catch (MessagingException e) {
-				logger.error("Email message send failed", e);
-			}
-		}
-	}
+      message.setBody(body);
 
-	public void sendErrorEmail(ExecutableFlow flow, String... extraReasons) {
-		EmailMessage message = new EmailMessage(mailHost, mailUser, mailPassword);
-		message.setFromAddress(mailSender);
+      if (!testMode) {
+        try {
+          message.sendEmail();
+        } catch (MessagingException e) {
+          logger.error("Email message send failed", e);
+        }
+      }
+    }
+  }
 
-		ExecutionOptions option = flow.getExecutionOptions();
+  public void sendFirstErrorMessage(ExecutableFlow flow) {
+    EmailMessage message = new EmailMessage(mailHost, mailUser, mailPassword);
+    message.setFromAddress(mailSender);
 
-		MailCreator mailCreator = DefaultMailCreator.getCreator(option.getMailCreator());
-		logger.debug("ExecutorMailer using mail creator:" + mailCreator.getClass().getCanonicalName());
+    ExecutionOptions option = flow.getExecutionOptions();
 
-		boolean mailCreated = mailCreator.createErrorEmail(flow, message, azkabanName, clientHostname, clientPortNumber, extraReasons);
+    MailCreator mailCreator =
+        DefaultMailCreator.getCreator(option.getMailCreator());
 
-		if (mailCreated && !testMode) {
-			try {
-				message.sendEmail();
-			} catch (MessagingException e) {
-				logger.error("Email message send failed", e);
-			}
-		}
-	}
+    logger.debug("ExecutorMailer using mail creator:"
+        + mailCreator.getClass().getCanonicalName());
 
-	public void sendSuccessEmail(ExecutableFlow flow) {
-		EmailMessage message = new EmailMessage(mailHost, mailUser, mailPassword);
-		message.setFromAddress(mailSender);
+    boolean mailCreated =
+        mailCreator.createFirstErrorMessage(flow, message, azkabanName,
+            clientHostname, clientPortNumber);
 
-		ExecutionOptions option = flow.getExecutionOptions();
+    if (mailCreated && !testMode) {
+      try {
+        message.sendEmail();
+      } catch (MessagingException e) {
+        logger.error("Email message send failed", e);
+      }
+    }
+  }
 
-		MailCreator mailCreator = DefaultMailCreator.getCreator(option.getMailCreator());
-		logger.debug("ExecutorMailer using mail creator:" + mailCreator.getClass().getCanonicalName());
+  public void sendErrorEmail(ExecutableFlow flow, String... extraReasons) {
+    EmailMessage message = new EmailMessage(mailHost, mailUser, mailPassword);
+    message.setFromAddress(mailSender);
 
-		boolean mailCreated = mailCreator.createSuccessEmail(flow, message, azkabanName, clientHostname, clientPortNumber);
+    ExecutionOptions option = flow.getExecutionOptions();
 
-		if (mailCreated && !testMode) {
-			try {
-				message.sendEmail();
-			} catch (MessagingException e) {
-				logger.error("Email message send failed", e);
-			}
-		}
-	}
+    MailCreator mailCreator =
+        DefaultMailCreator.getCreator(option.getMailCreator());
+    logger.debug("ExecutorMailer using mail creator:"
+        + mailCreator.getClass().getCanonicalName());
 
-	public static List<String> findFailedJobs(ExecutableFlow flow) {
-		ArrayList<String> failedJobs = new ArrayList<String>();
-		for (ExecutableNode node : flow.getExecutableNodes()) {
-			if (node.getStatus() == Status.FAILED) {
-				failedJobs.add(node.getId());
-			}
-		}
-		return failedJobs;
-	}
+    boolean mailCreated =
+        mailCreator.createErrorEmail(flow, message, azkabanName,
+            clientHostname, clientPortNumber, extraReasons);
 
-	@Override
-	public void alertOnSuccess(ExecutableFlow exflow) throws Exception {
-		sendSuccessEmail(exflow);
-	}
-	
-	@Override
-	public void alertOnError(ExecutableFlow exflow, String ... extraReasons) throws Exception {
-		sendErrorEmail(exflow, extraReasons);
-	}
-	
-	@Override
-	public void alertOnFirstError(ExecutableFlow exflow) throws Exception {
-		sendFirstErrorMessage(exflow);
-	}
+    if (mailCreated && !testMode) {
+      try {
+        message.sendEmail();
+      } catch (MessagingException e) {
+        logger.error("Email message send failed", e);
+      }
+    }
+  }
 
-	@Override
-	public void alertOnSla(SlaOption slaOption, String slaMessage)
-			throws Exception {
-		sendSlaAlertEmail(slaOption, slaMessage);		
-	}
+  public void sendSuccessEmail(ExecutableFlow flow) {
+    EmailMessage message = new EmailMessage(mailHost, mailUser, mailPassword);
+    message.setFromAddress(mailSender);
+
+    ExecutionOptions option = flow.getExecutionOptions();
+
+    MailCreator mailCreator =
+        DefaultMailCreator.getCreator(option.getMailCreator());
+    logger.debug("ExecutorMailer using mail creator:"
+        + mailCreator.getClass().getCanonicalName());
+
+    boolean mailCreated =
+        mailCreator.createSuccessEmail(flow, message, azkabanName,
+            clientHostname, clientPortNumber);
+
+    if (mailCreated && !testMode) {
+      try {
+        message.sendEmail();
+      } catch (MessagingException e) {
+        logger.error("Email message send failed", e);
+      }
+    }
+  }
+
+  public static List<String> findFailedJobs(ExecutableFlow flow) {
+    ArrayList<String> failedJobs = new ArrayList<String>();
+    for (ExecutableNode node : flow.getExecutableNodes()) {
+      if (node.getStatus() == Status.FAILED) {
+        failedJobs.add(node.getId());
+      }
+    }
+    return failedJobs;
+  }
+
+  @Override
+  public void alertOnSuccess(ExecutableFlow exflow) throws Exception {
+    sendSuccessEmail(exflow);
+  }
+
+  @Override
+  public void alertOnError(ExecutableFlow exflow, String... extraReasons)
+      throws Exception {
+    sendErrorEmail(exflow, extraReasons);
+  }
+
+  @Override
+  public void alertOnFirstError(ExecutableFlow exflow) throws Exception {
+    sendFirstErrorMessage(exflow);
+  }
+
+  @Override
+  public void alertOnSla(SlaOption slaOption, String slaMessage)
+      throws Exception {
+    sendSlaAlertEmail(slaOption, slaMessage);
+  }
 }

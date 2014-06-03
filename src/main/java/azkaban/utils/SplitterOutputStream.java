@@ -22,64 +22,64 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class SplitterOutputStream extends OutputStream {
-	List<OutputStream> outputs;
+  List<OutputStream> outputs;
 
-	public SplitterOutputStream(OutputStream... outputs) {
-		this.outputs = new ArrayList<OutputStream>(outputs.length);
-		for (OutputStream output : outputs) {
-			this.outputs.add(output);
-		}
-	}
+  public SplitterOutputStream(OutputStream... outputs) {
+    this.outputs = new ArrayList<OutputStream>(outputs.length);
+    for (OutputStream output : outputs) {
+      this.outputs.add(output);
+    }
+  }
 
-	@Override
-	public void write(int b) throws IOException {
-		for (OutputStream output : outputs) {
-			output.write(b);
-		}
-	}
+  @Override
+  public void write(int b) throws IOException {
+    for (OutputStream output : outputs) {
+      output.write(b);
+    }
+  }
 
-	@Override
-	public void write(byte[] b) throws IOException {
-		for (OutputStream output : outputs) {
-			output.write(b);
-		}
-	}
+  @Override
+  public void write(byte[] b) throws IOException {
+    for (OutputStream output : outputs) {
+      output.write(b);
+    }
+  }
 
-	@Override
-	public void write(byte[] b, int off, int len) throws IOException {
-		for (OutputStream output : outputs) {
-			output.write(b, off, len);
-		}
-	}
+  @Override
+  public void write(byte[] b, int off, int len) throws IOException {
+    for (OutputStream output : outputs) {
+      output.write(b, off, len);
+    }
+  }
 
-	@Override
-	public void flush() throws IOException {
-		IOException exception = null;
-		for (OutputStream output : outputs) {
-			try {
-				output.flush();
-			} catch (IOException e) {
-				exception = e;
-			}
-		}
-		if (exception != null) {
-			throw exception;
-		}
-	}
+  @Override
+  public void flush() throws IOException {
+    IOException exception = null;
+    for (OutputStream output : outputs) {
+      try {
+        output.flush();
+      } catch (IOException e) {
+        exception = e;
+      }
+    }
+    if (exception != null) {
+      throw exception;
+    }
+  }
 
-	@Override
-	public void close() throws IOException {
-		IOException exception = null;
-		for (OutputStream output : outputs) {
-			try {
-				output.close();
-			} catch (IOException e) {
-				exception = e;
-			}
-		}
-		if (exception != null) {
-			throw exception;
-		}
-	}
+  @Override
+  public void close() throws IOException {
+    IOException exception = null;
+    for (OutputStream output : outputs) {
+      try {
+        output.close();
+      } catch (IOException e) {
+        exception = e;
+      }
+    }
+    if (exception != null) {
+      throw exception;
+    }
+  }
 
 }

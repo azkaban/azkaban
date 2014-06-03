@@ -1,12 +1,12 @@
 /*
  * Copyright 2012 LinkedIn Corp.
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
  * the License at
- * 
+ *
  * http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
@@ -26,20 +26,23 @@ import azkaban.utils.Props;
  * A script job issues a command of the form [EXECUTABLE] [SCRIPT] --key1 val1
  * ... --key2 val2 executable -- the interpretor command to execute script --
  * the script to pass in (requried)
- * 
+ *
  */
 public class ScriptJob extends LongArgJob {
 
-	private static final String DEFAULT_EXECUTABLE_KEY = "executable";
-	private static final String SCRIPT_KEY = "script";
+  private static final String DEFAULT_EXECUTABLE_KEY = "executable";
+  private static final String SCRIPT_KEY = "script";
 
-	public ScriptJob(String jobid, Props sysProps, Props jobProps, Logger log) {
-		super(jobid, 
-				new String[] { jobProps.getString(DEFAULT_EXECUTABLE_KEY), jobProps.getString(SCRIPT_KEY) }, 
-				sysProps,
-				jobProps,
-				log, 
-				ImmutableSet.of(DEFAULT_EXECUTABLE_KEY, SCRIPT_KEY, JOB_TYPE));
-	}
+  public ScriptJob(String jobid, Props sysProps, Props jobProps, Logger log) {
+    super(jobid,
+        new String[] {
+          jobProps.getString(DEFAULT_EXECUTABLE_KEY),
+          jobProps.getString(SCRIPT_KEY)
+        },
+        sysProps,
+        jobProps,
+        log,
+        ImmutableSet.of(DEFAULT_EXECUTABLE_KEY, SCRIPT_KEY, JOB_TYPE));
+  }
 
 }

@@ -26,82 +26,84 @@ import azkaban.utils.EmailMessage;
 import azkaban.utils.Props;
 
 public class SendEmailAction implements TriggerAction {
-	
-	private String actionId;
-	private static AbstractMailer mailer;
-	private String message;
-	public static final String type = "SendEmailAction";
-	private String mimetype = "text/html";
-	private List<String> emailList;
-	private String subject;
-	
-	public static void init(Props props) {
-		mailer = new AbstractMailer(props);
-	}
-	
-	public SendEmailAction(String actionId, String subject, String message, List<String> emailList) {
-		this.actionId = actionId;
-		this.message = message;
-		this.subject = subject;
-		this.emailList = emailList;
-	}
-	
-	@Override
-	public String getId() {
-		return actionId;
-	}
 
-	@Override
-	public String getType() {
-		return type;
-	}
+  private String actionId;
+  private static AbstractMailer mailer;
+  private String message;
+  public static final String type = "SendEmailAction";
+  private String mimetype = "text/html";
+  private List<String> emailList;
+  private String subject;
 
-	@SuppressWarnings("unchecked")
-	public static SendEmailAction createFromJson(Object obj) throws Exception {
-		Map<String, Object> jsonObj = (HashMap<String, Object>) obj;
-		if(!jsonObj.get("type").equals(type)) {
-			throw new Exception("Cannot create action of " + type + " from " + jsonObj.get("type"));
-		}
-		String actionId = (String) jsonObj.get("actionId");
-		String subject = (String) jsonObj.get("subject");
-		String message = (String) jsonObj.get("message");
-		List<String> emailList = (List<String>) jsonObj.get("emailList");
-		return new SendEmailAction(actionId, subject, message, emailList);
-	}
-	
-	@Override
-	public TriggerAction fromJson(Object obj) throws Exception {
-		return createFromJson(obj);
-	}
+  public static void init(Props props) {
+    mailer = new AbstractMailer(props);
+  }
 
-	@Override
-	public Object toJson() {
-		Map<String, Object> jsonObj = new HashMap<String, Object>();
-		jsonObj.put("actionId", actionId);
-		jsonObj.put("type", type);
-		jsonObj.put("subject", subject);
-		jsonObj.put("message", message);
-		jsonObj.put("emailList", emailList);
+  public SendEmailAction(String actionId, String subject, String message,
+      List<String> emailList) {
+    this.actionId = actionId;
+    this.message = message;
+    this.subject = subject;
+    this.emailList = emailList;
+  }
 
-		return jsonObj;
-	}
+  @Override
+  public String getId() {
+    return actionId;
+  }
 
-	@Override
-	public void doAction() throws Exception {
-		EmailMessage email = mailer.prepareEmailMessage(subject, mimetype, emailList);
-		email.setBody(message);
-		email.sendEmail();
-	}
+  @Override
+  public String getType() {
+    return type;
+  }
 
-	@Override
-	public void setContext(Map<String, Object> context) {
-		
-	}
+  @SuppressWarnings("unchecked")
+  public static SendEmailAction createFromJson(Object obj) throws Exception {
+    Map<String, Object> jsonObj = (HashMap<String, Object>) obj;
+    if (!jsonObj.get("type").equals(type)) {
+      throw new Exception("Cannot create action of " + type + " from "
+          + jsonObj.get("type"));
+    }
+    String actionId = (String) jsonObj.get("actionId");
+    String subject = (String) jsonObj.get("subject");
+    String message = (String) jsonObj.get("message");
+    List<String> emailList = (List<String>) jsonObj.get("emailList");
+    return new SendEmailAction(actionId, subject, message, emailList);
+  }
 
-	@Override
-	public String getDescription() {
-		return type;
-	}
+  @Override
+  public TriggerAction fromJson(Object obj) throws Exception {
+    return createFromJson(obj);
+  }
 
-	
+  @Override
+  public Object toJson() {
+    Map<String, Object> jsonObj = new HashMap<String, Object>();
+    jsonObj.put("actionId", actionId);
+    jsonObj.put("type", type);
+    jsonObj.put("subject", subject);
+    jsonObj.put("message", message);
+    jsonObj.put("emailList", emailList);
+
+    return jsonObj;
+  }
+
+  @Override
+  public void doAction() throws Exception {
+    EmailMessage email =
+        mailer.prepareEmailMessage(subject, mimetype, emailList);
+    email.setBody(message);
+    email.sendEmail();
+  }
+
+  @Override
+  public void setContext(Map<String, Object> context) {
+
+  }
+
+  @Override
+  public String getDescription() {
+    return type;
+  }
+
 }

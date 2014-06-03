@@ -19,71 +19,83 @@ import azkaban.utils.Props;
 import azkaban.utils.Utils;
 
 public class ConditionTest {
-	
-	@Test
-	public void conditionTest(){
-		
-		Map<String, ConditionChecker> checkers = new HashMap<String, ConditionChecker>();
 
-		ThresholdChecker fake1 = new ThresholdChecker("thresholdchecker1", 10);
-		ThresholdChecker fake2 = new ThresholdChecker("thresholdchecker2", 20);
-		ThresholdChecker.setVal(15);
-		checkers.put(fake1.getId(), fake1);
-		checkers.put(fake2.getId(), fake2);
+  @Test
+  public void conditionTest() {
 
-		String expr1 = "( " + fake1.getId()+ ".eval()" + " && " + fake2.getId()+ ".eval()" + " )" + " || " + "( " + fake1.getId()+".eval()" + " && " + "!" + fake2.getId()+".eval()" + " )";
-		String expr2 = "( " + fake1.getId()+ ".eval()" + " && " + fake2.getId()+ ".eval()" + " )" + " || " + "( " + fake1.getId()+".eval()" + " && " + fake2.getId()+".eval()" + " )";
+    Map<String, ConditionChecker> checkers =
+        new HashMap<String, ConditionChecker>();
 
-		Condition cond = new Condition(checkers, expr1);
+    ThresholdChecker fake1 = new ThresholdChecker("thresholdchecker1", 10);
+    ThresholdChecker fake2 = new ThresholdChecker("thresholdchecker2", 20);
+    ThresholdChecker.setVal(15);
+    checkers.put(fake1.getId(), fake1);
+    checkers.put(fake2.getId(), fake2);
 
-		System.out.println("Setting expression " + expr1);
-		assertTrue(cond.isMet());
-		cond.setExpression(expr2);
-		System.out.println("Setting expression " + expr2);
-		assertFalse(cond.isMet());
-		
-	}
-	
-	@Test
-	public void jsonConversionTest() throws Exception {
-		
-		CheckerTypeLoader checkerTypeLoader = new CheckerTypeLoader();
-		checkerTypeLoader.init(new Props());
-		Condition.setCheckerLoader(checkerTypeLoader);
+    String expr1 =
+        "( " + fake1.getId() + ".eval()" + " && " + fake2.getId() + ".eval()"
+            + " )" + " || " + "( " + fake1.getId() + ".eval()" + " && " + "!"
+            + fake2.getId() + ".eval()" + " )";
+    String expr2 =
+        "( " + fake1.getId() + ".eval()" + " && " + fake2.getId() + ".eval()"
+            + " )" + " || " + "( " + fake1.getId() + ".eval()" + " && "
+            + fake2.getId() + ".eval()" + " )";
 
-		Map<String, ConditionChecker> checkers = new HashMap<String, ConditionChecker>();
-		
-		// get a new timechecker, start from now, repeat every minute. should evaluate to false now, and true a minute later.
-		DateTime now = DateTime.now();
-		String period = "6s";
-		
-		//BasicTimeChecker timeChecker = new BasicTimeChecker(now, true, true, period);
-		ConditionChecker timeChecker = new BasicTimeChecker("BasicTimeChecker_1", now.getMillis(), now.getZone(), true, true, Utils.parsePeriodString(period));
-		System.out.println("checker id is " + timeChecker.getId());
-		
-		checkers.put(timeChecker.getId(), timeChecker);
-		String expr = timeChecker.getId() + ".eval()";
-		
-		Condition cond = new Condition(checkers, expr);
-		
-		File temp = File.createTempFile("temptest", "temptest");
-		temp.deleteOnExit();
-		Object obj = cond.toJson();
-		JSONUtils.toJSON(obj, temp);
-		
-		Condition cond2 = Condition.fromJson(JSONUtils.parseJSONFromFile(temp));
-		
-		Map<String, ConditionChecker> checkers2 = cond2.getCheckers();
-		
-		assertTrue(cond.getExpression().equals(cond2.getExpression()));
-		System.out.println("cond1: " + cond.getExpression());
-		System.out.println("cond2: " + cond2.getExpression());
-		assertTrue(checkers2.size() == 1);
-		ConditionChecker checker2 = checkers2.get(timeChecker.getId());
-		//assertTrue(checker2.getId().equals(timeChecker.getId()));
-		System.out.println("checker1: " + timeChecker.getId());
-		System.out.println("checker2: " + checker2.getId());
-		assertTrue(timeChecker.getId().equals(checker2.getId()));
-	}
-	
+    Condition cond = new Condition(checkers, expr1);
+
+    System.out.println("Setting expression " + expr1);
+    assertTrue(cond.isMet());
+    cond.setExpression(expr2);
+    System.out.println("Setting expression " + expr2);
+    assertFalse(cond.isMet());
+
+  }
+
+  @Test
+  public void jsonConversionTest() throws Exception {
+
+    CheckerTypeLoader checkerTypeLoader = new CheckerTypeLoader();
+    checkerTypeLoader.init(new Props());
+    Condition.setCheckerLoader(checkerTypeLoader);
+
+    Map<String, ConditionChecker> checkers =
+        new HashMap<String, ConditionChecker>();
+
+    // get a new timechecker, start from now, repeat every minute. should
+    // evaluate to false now, and true a minute later.
+    DateTime now = DateTime.now();
+    String period = "6s";
+
+    // BasicTimeChecker timeChecker = new BasicTimeChecker(now, true, true,
+    // period);
+    ConditionChecker timeChecker =
+        new BasicTimeChecker("BasicTimeChecker_1", now.getMillis(),
+            now.getZone(), true, true, Utils.parsePeriodString(period));
+    System.out.println("checker id is " + timeChecker.getId());
+
+    checkers.put(timeChecker.getId(), timeChecker);
+    String expr = timeChecker.getId() + ".eval()";
+
+    Condition cond = new Condition(checkers, expr);
+
+    File temp = File.createTempFile("temptest", "temptest");
+    temp.deleteOnExit();
+    Object obj = cond.toJson();
+    JSONUtils.toJSON(obj, temp);
+
+    Condition cond2 = Condition.fromJson(JSONUtils.parseJSONFromFile(temp));
+
+    Map<String, ConditionChecker> checkers2 = cond2.getCheckers();
+
+    assertTrue(cond.getExpression().equals(cond2.getExpression()));
+    System.out.println("cond1: " + cond.getExpression());
+    System.out.println("cond2: " + cond2.getExpression());
+    assertTrue(checkers2.size() == 1);
+    ConditionChecker checker2 = checkers2.get(timeChecker.getId());
+    // assertTrue(checker2.getId().equals(timeChecker.getId()));
+    System.out.println("checker1: " + timeChecker.getId());
+    System.out.println("checker2: " + checker2.getId());
+    assertTrue(timeChecker.getId().equals(checker2.getId()));
+  }
+
 }

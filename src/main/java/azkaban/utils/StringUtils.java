@@ -20,52 +20,51 @@ import java.util.Collection;
 import java.util.List;
 
 public class StringUtils {
-	public static final char SINGLE_QUOTE = '\'';
-	public static final char DOUBLE_QUOTE = '\"';
+  public static final char SINGLE_QUOTE = '\'';
+  public static final char DOUBLE_QUOTE = '\"';
 
-	public static String shellQuote(String s, char quoteCh) {
-		StringBuffer buf = new StringBuffer(s.length() + 2);
+  public static String shellQuote(String s, char quoteCh) {
+    StringBuffer buf = new StringBuffer(s.length() + 2);
 
-		buf.append(quoteCh);
-		for (int i = 0; i < s.length(); i++) {
-			final char ch = s.charAt(i);
-			if (ch == quoteCh) {
-				buf.append('\\');
-			}
-			buf.append(ch);
-		}
-		buf.append(quoteCh);
+    buf.append(quoteCh);
+    for (int i = 0; i < s.length(); i++) {
+      final char ch = s.charAt(i);
+      if (ch == quoteCh) {
+        buf.append('\\');
+      }
+      buf.append(ch);
+    }
+    buf.append(quoteCh);
 
-		return buf.toString();
-	}
-	
-	@Deprecated
-	public static String join(List<String> list, String delimiter) {
-		StringBuffer buffer = new StringBuffer();
-		for (String str: list) {
-			buffer.append(str);
-			buffer.append(delimiter);
-		}
-		
-		return buffer.toString();
-	}
-	
-	/**
-	 * Use this when you don't want to include Apache Common's string for
-	 * plugins.
-	 * 
-	 * @param list
-	 * @param delimiter
-	 * @return
-	 */
-	public static String join(Collection<String> list, String delimiter) {
-		StringBuffer buffer = new StringBuffer();
-		for (String str: list) {
-			buffer.append(str);
-			buffer.append(delimiter);
-		}
-		
-		return buffer.toString();
-	}
+    return buf.toString();
+  }
+
+  @Deprecated
+  public static String join(List<String> list, String delimiter) {
+    StringBuffer buffer = new StringBuffer();
+    for (String str : list) {
+      buffer.append(str);
+      buffer.append(delimiter);
+    }
+
+    return buffer.toString();
+  }
+
+  /**
+   * Use this when you don't want to include Apache Common's string for plugins.
+   * 
+   * @param list
+   * @param delimiter
+   * @return
+   */
+  public static String join(Collection<String> list, String delimiter) {
+    StringBuffer buffer = new StringBuffer();
+    for (String str : list) {
+      buffer.append(str);
+      buffer.append(delimiter);
+    }
+
+    return buffer.toString();
+  }
 
 }

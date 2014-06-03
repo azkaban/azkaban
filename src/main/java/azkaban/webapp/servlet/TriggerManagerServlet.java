@@ -35,88 +35,99 @@ import azkaban.webapp.AzkabanWebServer;
 import azkaban.webapp.session.Session;
 
 public class TriggerManagerServlet extends LoginAbstractAzkabanServlet {
-	private static final long serialVersionUID = 1L;
-	private static final Logger logger = Logger.getLogger(TriggerManagerServlet.class);
-	private TriggerManager triggerManager;
+  private static final long serialVersionUID = 1L;
+  private static final Logger logger = Logger
+      .getLogger(TriggerManagerServlet.class);
+  private TriggerManager triggerManager;
 
-	@Override
-	public void init(ServletConfig config) throws ServletException {
-		super.init(config);
-		AzkabanWebServer server = (AzkabanWebServer)getApplication();
-		triggerManager = server.getTriggerManager();
-	}
-	
-	@Override
-	protected void handleGet(HttpServletRequest req, HttpServletResponse resp,
-			Session session) throws ServletException, IOException {
-		if (hasParam(req, "ajax")) {
-			handleAJAXAction(req, resp, session);
-		} else {
-			handleGetAllSchedules(req, resp, session);
-		}
-	}
-	
-	private void handleAJAXAction(HttpServletRequest req, HttpServletResponse resp, Session session) throws ServletException, IOException {
-		HashMap<String, Object> ret = new HashMap<String, Object>();
-		String ajaxName = getParam(req, "ajax");
-		
-		try {
-			if (ajaxName.equals("expireTrigger")) {
-				ajaxExpireTrigger(req, ret, session.getUser());
-			}
-		} catch (Exception e) {
-			ret.put("error", e.getMessage());
-		}
-		
-		if (ret != null) {
-			this.writeJSON(resp, ret);
-		}
-	}
+  @Override
+  public void init(ServletConfig config) throws ServletException {
+    super.init(config);
+    AzkabanWebServer server = (AzkabanWebServer) getApplication();
+    triggerManager = server.getTriggerManager();
+  }
 
-	private void handleGetAllSchedules(HttpServletRequest req, HttpServletResponse resp,
-			Session session) throws ServletException, IOException{
-		
-		Page page = newPage(req, resp, session, "azkaban/webapp/servlet/velocity/triggerspage.vm");
-		
-		List<Trigger> triggers = triggerManager.getTriggers();
-		page.add("triggers", triggers);
-//		
-//		List<SLA> slas = slaManager.getSLAs();
-//		page.add("slas", slas);
+  @Override
+  protected void handleGet(HttpServletRequest req, HttpServletResponse resp,
+      Session session) throws ServletException, IOException {
+    if (hasParam(req, "ajax")) {
+      handleAJAXAction(req, resp, session);
+    } else {
+      handleGetAllSchedules(req, resp, session);
+    }
+  }
 
-		page.render();
-	}
-	
-	@Override
-	protected void handlePost(HttpServletRequest req, HttpServletResponse resp, Session session) throws ServletException, IOException {
-		if (hasParam(req, "ajax")) {
-			handleAJAXAction(req, resp, session);
-		}
-	}
+  private void handleAJAXAction(HttpServletRequest req,
+      HttpServletResponse resp, Session session) throws ServletException,
+      IOException {
+    HashMap<String, Object> ret = new HashMap<String, Object>();
+    String ajaxName = getParam(req, "ajax");
 
-	private void ajaxExpireTrigger(HttpServletRequest req, Map<String, Object> ret, User user) throws ServletException, TriggerManagerException{
-		int triggerId = getIntParam(req, "triggerId");
-		Trigger t = triggerManager.getTrigger(triggerId);
-		if(t == null) {
-			ret.put("message", "Trigger with ID " + triggerId + " does not exist");
-			ret.put("status", "error");
-			return;
-		}
-		
-//		if(!hasPermission(project, user, Type.SCHEDULE)) {
-//			ret.put("status", "error");
-//			ret.put("message", "Permission denied. Cannot remove trigger with id " + triggerId);
-//			return;
-//		}
+    try {
+      if (ajaxName.equals("expireTrigger")) {
+        ajaxExpireTrigger(req, ret, session.getUser());
+      }
+    } catch (Exception e) {
+      ret.put("error", e.getMessage());
+    }
 
-		triggerManager.expireTrigger(triggerId);
-		logger.info("User '" + user.getUserId() + " has removed trigger " + t.getDescription());
-//		projectManager.postProjectEvent(project, EventType.SCHEDULE, user.getUserId(), "Schedule " + sched.toString() + " has been removed.");
-		
-		ret.put("status", "success");
-		ret.put("message", "trigger " + triggerId + " removed from Schedules.");
-		return;
-	}
+    if (ret != null) {
+      this.writeJSON(resp, ret);
+    }
+  }
+
+  private void handleGetAllSchedules(HttpServletRequest req,
+      HttpServletResponse resp, Session session) throws ServletException,
+      IOException {
+
+    Page page =
+        newPage(req, resp, session,
+            "azkaban/webapp/servlet/velocity/triggerspage.vm");
+
+    List<Trigger> triggers = triggerManager.getTriggers();
+    page.add("triggers", triggers);
+    //
+    // List<SLA> slas = slaManager.getSLAs();
+    // page.add("slas", slas);
+
+    page.render();
+  }
+
+  @Override
+  protected void handlePost(HttpServletRequest req, HttpServletResponse resp,
+      Session session) throws ServletException, IOException {
+    if (hasParam(req, "ajax")) {
+      handleAJAXAction(req, resp, session);
+    }
+  }
+
+  private void ajaxExpireTrigger(HttpServletRequest req,
+      Map<String, Object> ret, User user) throws ServletException,
+      TriggerManagerException {
+    int triggerId = getIntParam(req, "triggerId");
+    Trigger t = triggerManager.getTrigger(triggerId);
+    if (t == null) {
+      ret.put("message", "Trigger with ID " + triggerId + " does not exist");
+      ret.put("status", "error");
+      return;
+    }
+
+    // if(!hasPermission(project, user, Type.SCHEDULE)) {
+    // ret.put("status", "error");
+    // ret.put("message", "Permission denied. Cannot remove trigger with id " +
+    // triggerId);
+    // return;
+    // }
+
+    triggerManager.expireTrigger(triggerId);
+    logger.info("User '" + user.getUserId() + " has removed trigger "
+        + t.getDescription());
+    // projectManager.postProjectEvent(project, EventType.SCHEDULE,
+    // user.getUserId(), "Schedule " + sched.toString() + " has been removed.");
+
+    ret.put("status", "success");
+    ret.put("message", "trigger " + triggerId + " removed from Schedules.");
+    return;
+  }
 
 }
-

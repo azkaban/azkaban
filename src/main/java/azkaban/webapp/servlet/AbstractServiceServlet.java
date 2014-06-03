@@ -10,82 +10,89 @@ import javax.servlet.http.HttpServletResponse;
 import org.codehaus.jackson.map.ObjectMapper;
 import azkaban.webapp.AzkabanServer;
 
-public class AbstractServiceServlet extends HttpServlet{
-	
-	private static final long serialVersionUID = 1L;
-	public static final String JSON_MIME_TYPE = "application/json";
-	
-	private AzkabanServer application;
+public class AbstractServiceServlet extends HttpServlet {
 
-	@Override
-	public void init(ServletConfig config) throws ServletException {
-		application = (AzkabanServer) config.getServletContext().getAttribute(AzkabanServletContextListener.AZKABAN_SERVLET_CONTEXT_KEY);
+  private static final long serialVersionUID = 1L;
+  public static final String JSON_MIME_TYPE = "application/json";
 
-		if (application == null) {
-			throw new IllegalStateException(
-					"No batch application is defined in the servlet context!");
-		}
-	}
+  private AzkabanServer application;
 
-	protected void writeJSON(HttpServletResponse resp, Object obj) throws IOException {
-		resp.setContentType(JSON_MIME_TYPE);
-		ObjectMapper mapper = new ObjectMapper();
-		OutputStream stream = resp.getOutputStream();
-		mapper.writeValue(stream, obj);
-	}
+  @Override
+  public void init(ServletConfig config) throws ServletException {
+    application =
+        (AzkabanServer) config.getServletContext().getAttribute(
+            AzkabanServletContextListener.AZKABAN_SERVLET_CONTEXT_KEY);
 
-	public boolean hasParam(HttpServletRequest request, String param) {
-		return request.getParameter(param) != null;
-	}
+    if (application == null) {
+      throw new IllegalStateException(
+          "No batch application is defined in the servlet context!");
+    }
+  }
 
-	public String getParam(HttpServletRequest request, String name)
-			throws ServletException {
-		String p = request.getParameter(name);
-		if (p == null)
-			throw new ServletException("Missing required parameter '" + name + "'.");
-		else
-			return p;
-	}
-	
-	public String getParam(HttpServletRequest request, String name, String defaultVal ) {
-		String p = request.getParameter(name);
-		if (p == null) {
-			return defaultVal;
-		}
+  protected void writeJSON(HttpServletResponse resp, Object obj)
+      throws IOException {
+    resp.setContentType(JSON_MIME_TYPE);
+    ObjectMapper mapper = new ObjectMapper();
+    OutputStream stream = resp.getOutputStream();
+    mapper.writeValue(stream, obj);
+  }
 
-		return p;
-	}
+  public boolean hasParam(HttpServletRequest request, String param) {
+    return request.getParameter(param) != null;
+  }
 
-	public int getIntParam(HttpServletRequest request, String name) throws ServletException {
-		String p = getParam(request, name);
-		return Integer.parseInt(p);
-	}
-	
-	public int getIntParam(HttpServletRequest request, String name, int defaultVal) {
-		if (hasParam(request, name)) {
-			try {
-				return getIntParam(request, name);
-			} catch (Exception e) {
-				return defaultVal;
-			}
-		}
-		return defaultVal;
-	}
-	
-	public long getLongParam(HttpServletRequest request, String name) throws ServletException {
-		String p = getParam(request, name);
-		return Long.parseLong(p);
-	}
-	
-	public long getLongParam(HttpServletRequest request, String name, long defaultVal) {
-		if (hasParam(request, name)) {
-			try {
-				return getLongParam(request, name);
-			} catch (Exception e) {
-				return defaultVal;
-			}
-		}
-		return defaultVal;
-	}
-	
+  public String getParam(HttpServletRequest request, String name)
+      throws ServletException {
+    String p = request.getParameter(name);
+    if (p == null)
+      throw new ServletException("Missing required parameter '" + name + "'.");
+    else
+      return p;
+  }
+
+  public String getParam(HttpServletRequest request, String name,
+      String defaultVal) {
+    String p = request.getParameter(name);
+    if (p == null) {
+      return defaultVal;
+    }
+
+    return p;
+  }
+
+  public int getIntParam(HttpServletRequest request, String name)
+      throws ServletException {
+    String p = getParam(request, name);
+    return Integer.parseInt(p);
+  }
+
+  public int getIntParam(HttpServletRequest request, String name, int defaultVal) {
+    if (hasParam(request, name)) {
+      try {
+        return getIntParam(request, name);
+      } catch (Exception e) {
+        return defaultVal;
+      }
+    }
+    return defaultVal;
+  }
+
+  public long getLongParam(HttpServletRequest request, String name)
+      throws ServletException {
+    String p = getParam(request, name);
+    return Long.parseLong(p);
+  }
+
+  public long getLongParam(HttpServletRequest request, String name,
+      long defaultVal) {
+    if (hasParam(request, name)) {
+      try {
+        return getLongParam(request, name);
+      } catch (Exception e) {
+        return defaultVal;
+      }
+    }
+    return defaultVal;
+  }
+
 }

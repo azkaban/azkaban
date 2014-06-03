@@ -1,12 +1,12 @@
 /*
  * Copyright 2012 LinkedIn Corp.
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
  * the License at
- * 
+ *
  * http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
@@ -34,161 +34,166 @@ import azkaban.utils.PropsUtils;
 
 /*
  * A revised process-based job
- * 
+ *
  */
 public abstract class AbstractProcessJob extends AbstractJob {
-	private final Logger log;
-	public static final String ENV_PREFIX = "env.";
-	public static final String ENV_PREFIX_UCASE = "ENV.";
-	public static final String WORKING_DIR = "working.dir";
-	public static final String JOB_PROP_ENV = "JOB_PROP_FILE";
-	public static final String JOB_NAME_ENV = "JOB_NAME";
-	public static final String JOB_OUTPUT_PROP_FILE = "JOB_OUTPUT_PROP_FILE";
+  private final Logger log;
+  public static final String ENV_PREFIX = "env.";
+  public static final String ENV_PREFIX_UCASE = "ENV.";
+  public static final String WORKING_DIR = "working.dir";
+  public static final String JOB_PROP_ENV = "JOB_PROP_FILE";
+  public static final String JOB_NAME_ENV = "JOB_NAME";
+  public static final String JOB_OUTPUT_PROP_FILE = "JOB_OUTPUT_PROP_FILE";
 
-	protected final String _jobPath;
+  protected final String _jobPath;
 
-	protected volatile Props jobProps;
-	protected volatile Props sysProps;
+  protected volatile Props jobProps;
+  protected volatile Props sysProps;
 
-	protected String _cwd;
+  protected String _cwd;
 
-	private volatile Props generatedProperties;
+  private volatile Props generatedProperties;
 
-	protected AbstractProcessJob(String jobid, final Props sysProps, final Props jobProps, final Logger log) {
-		super(jobid, log);
+  protected AbstractProcessJob(String jobid, final Props sysProps,
+      final Props jobProps, final Logger log) {
+    super(jobid, log);
 
-		this.jobProps = jobProps;
-		this.sysProps = sysProps;
-		_cwd = getWorkingDirectory();
-		_jobPath = _cwd;
-		
-		this.log = log;
-	}
+    this.jobProps = jobProps;
+    this.sysProps = sysProps;
+    _cwd = getWorkingDirectory();
+    _jobPath = _cwd;
 
-	public Props getJobProps()	{
-		return jobProps;
-	}
-	
-	public Props getSysProps()	{
-		return sysProps;
-	}
+    this.log = log;
+  }
 
-	public String getJobPath() {
-		return _jobPath;
-	}
+  public Props getJobProps() {
+    return jobProps;
+  }
 
-	protected void resolveProps() {
-		jobProps = PropsUtils.resolveProps(jobProps);
-	}
+  public Props getSysProps() {
+    return sysProps;
+  }
 
-	@Override
-	public Props getJobGeneratedProperties() {
-		return generatedProperties;
-	}
+  public String getJobPath() {
+    return _jobPath;
+  }
 
-	/**
-	 * initialize temporary and final property file
-	* 
-	* @return {tmpPropFile, outputPropFile}
-	*/
-	public File[] initPropsFiles() {
-		// Create properties file with additionally all input generated properties.
-		File[] files = new File[2];
-		files[0] = createFlattenedPropsFile(_cwd);
+  protected void resolveProps() {
+    jobProps = PropsUtils.resolveProps(jobProps);
+  }
 
-		jobProps.put(ENV_PREFIX + JOB_PROP_ENV, files[0].getAbsolutePath());
-		jobProps.put(ENV_PREFIX + JOB_NAME_ENV, getId());
+  @Override
+  public Props getJobGeneratedProperties() {
+    return generatedProperties;
+  }
 
-		files[1] = createOutputPropsFile(getId(), _cwd);
-		jobProps.put(ENV_PREFIX + JOB_OUTPUT_PROP_FILE, files[1].getAbsolutePath());
+  /**
+   * initialize temporary and final property file
+   * 
+   * @return {tmpPropFile, outputPropFile}
+   */
+  public File[] initPropsFiles() {
+    // Create properties file with additionally all input generated properties.
+    File[] files = new File[2];
+    files[0] = createFlattenedPropsFile(_cwd);
 
-		return files;
-	}
+    jobProps.put(ENV_PREFIX + JOB_PROP_ENV, files[0].getAbsolutePath());
+    jobProps.put(ENV_PREFIX + JOB_NAME_ENV, getId());
 
-	public String getCwd() {
-		return _cwd;
-	}
+    files[1] = createOutputPropsFile(getId(), _cwd);
+    jobProps.put(ENV_PREFIX + JOB_OUTPUT_PROP_FILE, files[1].getAbsolutePath());
 
-	public Map<String, String> getEnvironmentVariables() {
-		Props props = getJobProps();
-		Map<String, String> envMap = props.getMapByPrefix(ENV_PREFIX);
-		envMap.putAll(props.getMapByPrefix(ENV_PREFIX_UCASE));
-		return envMap;
-	}
+    return files;
+  }
 
-	public String getWorkingDirectory() {
-		String workingDir =  getJobProps().getString(WORKING_DIR, _jobPath);
-		if (workingDir == null) {
-			return "";
-		}
-		
-		return workingDir;
-	}
+  public String getCwd() {
+    return _cwd;
+  }
 
-	public Props loadOutputFileProps(final File outputPropertiesFile) {
-		InputStream reader = null;
-		try {
-			System.err.println("output properties file=" + outputPropertiesFile.getAbsolutePath());
-			reader = new BufferedInputStream(new FileInputStream(outputPropertiesFile));
+  public Map<String, String> getEnvironmentVariables() {
+    Props props = getJobProps();
+    Map<String, String> envMap = props.getMapByPrefix(ENV_PREFIX);
+    envMap.putAll(props.getMapByPrefix(ENV_PREFIX_UCASE));
+    return envMap;
+  }
 
-			Props outputProps = new Props();
-			final String content = Streams.asString(reader).trim();
+  public String getWorkingDirectory() {
+    String workingDir = getJobProps().getString(WORKING_DIR, _jobPath);
+    if (workingDir == null) {
+      return "";
+    }
 
-			if (!content.isEmpty()) {
-				@SuppressWarnings("unchecked")
-				Map<String, Object> propMap = (Map<String, Object>)JSONUtils.parseJSONFromString(content);
+    return workingDir;
+  }
 
-				for (Map.Entry<String, Object> entry : propMap.entrySet()) {
-					outputProps.put(entry.getKey(), entry.getValue().toString());
-				}
-			}
-			return outputProps;
-		} catch (FileNotFoundException e) {
-			log.info(String.format(
-					"File[%s] wasn't found, returning empty props.",
-					outputPropertiesFile));
-			return new Props();
-		} catch (Exception e) {
-			log.error(
-					"Exception thrown when trying to load output file props.  Returning empty Props instead of failing.  Is this really the best thing to do?",
-					e);
-			return new Props();
-		} finally {
-			IOUtils.closeQuietly(reader);
-		}
-	}
+  public Props loadOutputFileProps(final File outputPropertiesFile) {
+    InputStream reader = null;
+    try {
+      System.err.println("output properties file="
+          + outputPropertiesFile.getAbsolutePath());
+      reader =
+          new BufferedInputStream(new FileInputStream(outputPropertiesFile));
 
-	public File createFlattenedPropsFile(final String workingDir) {
-		File directory = new File(workingDir);
-		File tempFile = null;
-		try {
-			// The temp file prefix must be at least 3 characters.
-			tempFile = File.createTempFile(getId() + "_props_", "_tmp", directory);
-			jobProps.storeFlattened(tempFile);
-		} catch (IOException e) {
-			throw new RuntimeException("Failed to create temp property file ", e);
-		}
+      Props outputProps = new Props();
+      final String content = Streams.asString(reader).trim();
 
-		return tempFile;
-	}
+      if (!content.isEmpty()) {
+        @SuppressWarnings("unchecked")
+        Map<String, Object> propMap =
+            (Map<String, Object>) JSONUtils.parseJSONFromString(content);
 
-	public static File createOutputPropsFile(final String id, final String workingDir) {
-		System.err.println("cwd=" + workingDir);
+        for (Map.Entry<String, Object> entry : propMap.entrySet()) {
+          outputProps.put(entry.getKey(), entry.getValue().toString());
+        }
+      }
+      return outputProps;
+    } catch (FileNotFoundException e) {
+      log.info(String.format("File[%s] wasn't found, returning empty props.",
+          outputPropertiesFile));
+      return new Props();
+    } catch (Exception e) {
+      log.error(
+          "Exception thrown when trying to load output file props.  Returning empty Props instead of failing.  Is this really the best thing to do?",
+          e);
+      return new Props();
+    } finally {
+      IOUtils.closeQuietly(reader);
+    }
+  }
 
-		File directory = new File(workingDir);
-		File tempFile = null;
-		try {
-			tempFile = File.createTempFile(id + "_output_", "_tmp", directory);
-		} catch (IOException e) {
-			System.err.println("Failed to create temp output property file :\n");
-			e.printStackTrace(System.err);
-			throw new RuntimeException("Failed to create temp output property file ", e);
-		}
-		return tempFile;
-	}
+  public File createFlattenedPropsFile(final String workingDir) {
+    File directory = new File(workingDir);
+    File tempFile = null;
+    try {
+      // The temp file prefix must be at least 3 characters.
+      tempFile = File.createTempFile(getId() + "_props_", "_tmp", directory);
+      jobProps.storeFlattened(tempFile);
+    } catch (IOException e) {
+      throw new RuntimeException("Failed to create temp property file ", e);
+    }
 
-	public void generateProperties(final File outputFile) {
-		generatedProperties = loadOutputFileProps(outputFile);
-	}
+    return tempFile;
+  }
+
+  public static File createOutputPropsFile(final String id,
+      final String workingDir) {
+    System.err.println("cwd=" + workingDir);
+
+    File directory = new File(workingDir);
+    File tempFile = null;
+    try {
+      tempFile = File.createTempFile(id + "_output_", "_tmp", directory);
+    } catch (IOException e) {
+      System.err.println("Failed to create temp output property file :\n");
+      e.printStackTrace(System.err);
+      throw new RuntimeException("Failed to create temp output property file ",
+          e);
+    }
+    return tempFile;
+  }
+
+  public void generateProperties(final File outputFile) {
+    generatedProperties = loadOutputFileProps(outputFile);
+  }
 
 }
