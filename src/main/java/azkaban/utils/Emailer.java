@@ -38,6 +38,10 @@ import azkaban.utils.Props;
 public class Emailer extends AbstractMailer implements Alerter {
   private static Logger logger = Logger.getLogger(Emailer.class);
 
+  private static final String HTTPS = "https";
+
+  private static final String HTTP = "http";
+
   private boolean testMode = false;
 
   private String scheme;
@@ -67,10 +71,10 @@ public class Emailer extends AbstractMailer implements Alerter {
     this.clientHostname = props.getString("jetty.hostname", "localhost");
 
     if (props.getBoolean("jetty.use.ssl", true)) {
-      this.scheme = "https";
+      this.scheme = HTTPS;
       this.clientPortNumber = props.getString("jetty.ssl.port");
     } else {
-      this.scheme = "http";
+      this.scheme = HTTP;
       this.clientPortNumber = props.getString("jetty.port");
     }
 
