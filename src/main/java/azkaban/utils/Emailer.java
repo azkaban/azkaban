@@ -112,7 +112,7 @@ public class Emailer extends AbstractMailer implements Alerter {
         + mailCreator.getClass().getCanonicalName());
 
     boolean mailCreated =
-        mailCreator.createFirstErrorMessage(flow, message, azkabanName,
+        mailCreator.createFirstErrorMessage(flow, message, azkabanName, scheme,
             clientHostname, clientPortNumber);
 
     if (mailCreated && !testMode) {
@@ -160,7 +160,7 @@ public class Emailer extends AbstractMailer implements Alerter {
         + mailCreator.getClass().getCanonicalName());
 
     boolean mailCreated =
-        mailCreator.createSuccessEmail(flow, message, azkabanName,
+        mailCreator.createSuccessEmail(flow, message, azkabanName, scheme,
             clientHostname, clientPortNumber);
 
     if (mailCreated && !testMode) {
