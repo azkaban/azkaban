@@ -38,8 +38,13 @@ import azkaban.utils.Props;
 public class Emailer extends AbstractMailer implements Alerter {
   private static Logger logger = Logger.getLogger(Emailer.class);
 
+  private static final String HTTPS = "https";
+
+  private static final String HTTP = "http";
+
   private boolean testMode = false;
 
+  private String scheme;
   private String clientHostname;
   private String clientPortNumber;
 
@@ -66,8 +71,10 @@ public class Emailer extends AbstractMailer implements Alerter {
     this.clientHostname = props.getString("jetty.hostname", "localhost");
 
     if (props.getBoolean("jetty.use.ssl", true)) {
+      this.scheme = HTTPS;
       this.clientPortNumber = props.getString("jetty.ssl.port");
     } else {
+      this.scheme = HTTP;
       this.clientPortNumber = props.getString("jetty.port");
     }
 
@@ -109,7 +116,7 @@ public class Emailer extends AbstractMailer implements Alerter {
         + mailCreator.getClass().getCanonicalName());
 
     boolean mailCreated =
-        mailCreator.createFirstErrorMessage(flow, message, azkabanName,
+        mailCreator.createFirstErrorMessage(flow, message, azkabanName, scheme,
             clientHostname, clientPortNumber);
 
     if (mailCreated && !testMode) {
@@ -133,7 +140,7 @@ public class Emailer extends AbstractMailer implements Alerter {
         + mailCreator.getClass().getCanonicalName());
 
     boolean mailCreated =
-        mailCreator.createErrorEmail(flow, message, azkabanName,
+        mailCreator.createErrorEmail(flow, message, azkabanName, scheme,
             clientHostname, clientPortNumber, extraReasons);
 
     if (mailCreated && !testMode) {
@@ -157,7 +164,7 @@ public class Emailer extends AbstractMailer implements Alerter {
         + mailCreator.getClass().getCanonicalName());
 
     boolean mailCreated =
-        mailCreator.createSuccessEmail(flow, message, azkabanName,
+        mailCreator.createSuccessEmail(flow, message, azkabanName, scheme,
             clientHostname, clientPortNumber);
 
     if (mailCreated && !testMode) {
