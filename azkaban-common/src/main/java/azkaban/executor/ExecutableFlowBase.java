@@ -71,6 +71,14 @@ public class ExecutableFlowBase extends ExecutableNode {
     return -1;
   }
 
+  public String getProjectName() {
+    if (this.getParentFlow() != null) {
+      return this.getParentFlow().getProjectName();
+    }
+
+    return null;
+  }
+
   public int getVersion() {
     if (this.getParentFlow() != null) {
       return this.getParentFlow().getVersion();
@@ -181,6 +189,7 @@ public class ExecutableFlowBase extends ExecutableNode {
     return endNodes;
   }
 
+  @Override
   public Map<String, Object> toObject() {
     Map<String, Object> mapObj = new HashMap<String, Object>();
     fillMapFromExecutable(mapObj);
@@ -188,6 +197,7 @@ public class ExecutableFlowBase extends ExecutableNode {
     return mapObj;
   }
 
+  @Override
   protected void fillMapFromExecutable(Map<String, Object> flowObjMap) {
     super.fillMapFromExecutable(flowObjMap);
 
@@ -303,7 +313,7 @@ public class ExecutableFlowBase extends ExecutableNode {
 
     List<Map<String, Object>> nodes =
         (List<Map<String, Object>>) updateData
-            .<Map<String, Object>> getList(NODES_PARAM);
+        .<Map<String, Object>> getList(NODES_PARAM);
     if (nodes != null) {
       for (Map<String, Object> node : nodes) {
         TypedMapWrapper<String, Object> nodeWrapper =

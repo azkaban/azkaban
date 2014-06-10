@@ -105,6 +105,11 @@ public class CommonJobProperties {
   public static final String PROJECT_ID = "azkaban.flow.projectid";
 
   /**
+   * The project name.
+   */
+  public static final String PROJECT_NAME = "azkaban.flow.projectname";
+
+  /**
    * The version of the project the flow is running. This may change if a forced
    * hotspot occurs.
    */
@@ -114,6 +119,12 @@ public class CommonJobProperties {
    * A uuid assigned to every execution
    */
   public static final String FLOW_UUID = "azkaban.flow.uuid";
+
+  public static final String JOB_LINK = "azkaban.link.job.url";
+  public static final String WORKFLOW_LINK = "azkaban.link.workflow.url";
+  public static final String EXECUTION_LINK = "azkaban.link.execution.url";
+  public static final String JOBEXEC_LINK = "azkaban.link.jobexec.url";
+  public static final String ATTEMPT_LINK = "azkaban.link.attempt.url";
 
   /**
    * Properties for passing the flow start time to the jobs.
@@ -130,4 +141,5 @@ public class CommonJobProperties {
       "azkaban.flow.start.milliseconds";
   public static final String FLOW_START_TIMEZONE =
       "azkaban.flow.start.timezone";
+
 }

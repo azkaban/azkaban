@@ -160,6 +160,15 @@ public class AzkabanExecutorServer {
   }
 
   /**
+   * Returns the currently executing executor server, if one exists.
+   * 
+   * @return
+   */
+  public static AzkabanExecutorServer getApp() {
+    return app;
+  }
+
+  /**
    * Azkaban using Jetty
    *
    * @param args
@@ -189,6 +198,7 @@ public class AzkabanExecutorServer {
 
     Runtime.getRuntime().addShutdownHook(new Thread() {
 
+      @Override
       public void run() {
         logger.info("Shutting down http server...");
         try {
