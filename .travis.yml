@@ -1,2 +1,2 @@
 languages: java
-script: ./gradlew dist
+script: ./gradlew distTar
