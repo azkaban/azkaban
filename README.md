@@ -1,7 +1,24 @@
-## Azkaban2
+Azkaban2 [![Build Status](http://img.shields.io/travis/azkaban/azkaban2.svg?style=flat)](https://travis-ci.org/azkaban/azkaban2)
+========
 
-[![Build Status](https://travis-ci.org/azkaban/azkaban2.png?branch=master)](https://travis-ci.org/azkaban/azkaban2)
+Building from Source
+--------------------
 
-For Azkaban documentation, please go to
-[Azkaban Project Site](http://azkaban.github.io/azkaban2/)
-There is a google groups: [Azkaban Group](https://groups.google.com/forum/?fromgroups#!forum/azkaban-dev)
+To build Azkaban packages from source, run:
+
+```
+./gradlew distTar
+```
+
+The above command builds all Azkaban packages and packages them into GZipped Tar archives. To build Zip archives, run:
+
+```
+./gradlew distZip
+```
+
+Documentation
+-------------
+
+For Azkaban documentation, please go to [Azkaban Project Site](http://azkaban.github.io)
+
+For help, please visit the Azkaban Google Group: [Azkaban Group](https://groups.google.com/forum/?fromgroups#!forum/azkaban-dev)
