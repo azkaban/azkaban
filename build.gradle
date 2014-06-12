@@ -3,8 +3,8 @@ buildscript {
     mavenCentral()
   }
   dependencies {
-    classpath 'de.obqo.gradle:gradle-lesscss-plugin:1.0-1.3.3'
     classpath 'com.linkedin:gradle-dustjs-plugin:1.0.0'
+    classpath 'de.obqo.gradle:gradle-lesscss-plugin:1.0-1.3.3'
   }
 }
 
@@ -81,34 +81,34 @@ project(':azkaban-common') {
   }
 
   dependencies {
+    compile('com.google.guava:guava:13.0.1')
+    compile('com.h2database:h2:1.3.170')
+    compile('commons-codec:commons-codec:1.9')
     compile('commons-collections:commons-collections:3.2.1')
     compile('commons-configuration:commons-configuration:1.8')
-    compile('commons-codec:commons-codec:1.9')
     compile('commons-dbcp:commons-dbcp:1.4')
     compile('commons-dbutils:commons-dbutils:1.5')
-    compile('commons-io:commons-io:2.4')
     compile('commons-fileupload:commons-fileupload:1.2.1')
+    compile('commons-io:commons-io:2.4')
     compile('commons-lang:commons-lang:2.6')
-    compile('org.apache.commons:commons-email:1.2')
-    compile('org.apache.commons:commons-jexl:2.1.1')
     compile('commons-logging:commons-logging:1.1.1')
     compile('commons-pool:commons-pool:1.6')
-    compile('com.google.guava:guava:13.0.1')
-    compile('org.apache.velocity:velocity:1.7')
-    compile('javax.servlet:servlet-api:2.5')
-    compile('com.h2database:h2:1.3.170')
-    compile('org.apache.httpcomponents:httpclient:4.2.1')
-    compile('org.apache.httpcomponents:httpcore:4.2.1')
-    compile('org.mortbay.jetty:jetty:6.1.26')
-    compile('org.mortbay.jetty:jetty-util:6.1.26')
-    compile('org.codehaus.jackson:jackson-core-asl:1.9.5')
-    compile('org.codehaus.jackson:jackson-mapper-asl:1.9.5')
     compile('javax.mail:mail:1.4.5')
-    compile('net.sf.jopt-simple:jopt-simple:4.3')
-    compile('mysql:mysql-connector-java:5.1.28')
-    compile('org.slf4j:slf4j-api:1.6.1')
+    compile('javax.servlet:servlet-api:2.5')
     compile('joda-time:joda-time:2.0')
     compile('log4j:log4j:1.2.16')
+    compile('mysql:mysql-connector-java:5.1.28')
+    compile('net.sf.jopt-simple:jopt-simple:4.3')
+    compile('org.apache.commons:commons-email:1.2')
+    compile('org.apache.commons:commons-jexl:2.1.1')
+    compile('org.apache.httpcomponents:httpclient:4.2.1')
+    compile('org.apache.httpcomponents:httpcore:4.2.1')
+    compile('org.apache.velocity:velocity:1.7')
+    compile('org.codehaus.jackson:jackson-core-asl:1.9.5')
+    compile('org.codehaus.jackson:jackson-mapper-asl:1.9.5')
+    compile('org.mortbay.jetty:jetty:6.1.26')
+    compile('org.mortbay.jetty:jetty-util:6.1.26')
+    compile('org.slf4j:slf4j-api:1.6.1')
 
     testCompile('junit:junit:4.11')
     testCompile('org.hamcrest:hamcrest-all:1.3')
@@ -124,10 +124,10 @@ project(':azkaban-migration') {
 
   dependencies {
     compile(project(':azkaban-common'))
-    compile('joda-time:joda-time:2.0')
     compile('commons-io:commons-io:2.4')
     compile('commons-dbcp:commons-dbcp:1.4')
     compile('commons-dbutils:commons-dbutils:1.5')
+    compile('joda-time:joda-time:2.0')
     compile('log4j:log4j:1.2.16')
   }
 
@@ -172,25 +172,25 @@ project(':azkaban-webserver') {
 
   dependencies {
     compile(project(':azkaban-common'))
+    compile('com.linkedin.parseq:parseq:1.3.7')
+    compile('com.linkedin.pegasus:data:' + pegasusVersion)
+    compile('com.linkedin.pegasus:gradle-plugins:' + pegasusVersion)
+    compile('com.linkedin.pegasus:li-jersey-uri:' + pegasusVersion)
+    compile('com.linkedin.pegasus:pegasus-common:' + pegasusVersion)
+    compile('com.linkedin.pegasus:restli-common:' + pegasusVersion)
+    compile('com.linkedin.pegasus:restli-server:' + pegasusVersion)
+    compile('com.linkedin.pegasus:r2:' + pegasusVersion)
+    compile('com.fasterxml.jackson.core:jackson-core:2.3.2')
+    compile('commons-lang:commons-lang:2.6')
+    compile('commons-io:commons-io:2.4')
+    compile('commons-fileupload:commons-fileupload:1.2.1')
     compile('javax.servlet:servlet-api:2.5')
+    compile('joda-time:joda-time:2.0')
+    compile('log4j:log4j:1.2.16')
     compile('net.sf.jopt-simple:jopt-simple:4.3')
     compile('org.apache.velocity:velocity:1.7')
     compile('org.mortbay.jetty:jetty:6.1.26')
     compile('org.mortbay.jetty:jetty-util:6.1.26')
-    compile('commons-lang:commons-lang:2.6')
-    compile('commons-io:commons-io:2.4')
-    compile('commons-fileupload:commons-fileupload:1.2.1')
-    compile('joda-time:joda-time:2.0')
-    compile('log4j:log4j:1.2.16')
-    compile('com.linkedin.pegasus:gradle-plugins:' + pegasusVersion)
-    compile('com.linkedin.pegasus:pegasus-common:' + pegasusVersion)
-    compile('com.linkedin.pegasus:restli-common:' + pegasusVersion)
-    compile('com.linkedin.pegasus:restli-server:' + pegasusVersion)
-    compile('com.linkedin.pegasus:data:' + pegasusVersion)
-    compile('com.linkedin.pegasus:r2:' + pegasusVersion)
-    compile('com.linkedin.pegasus:li-jersey-uri:' + pegasusVersion)
-    compile('com.linkedin.parseq:parseq:1.3.7')
-    compile('com.fasterxml.jackson.core:jackson-core:2.3.2')
 
     generateRestli('com.linkedin.pegasus:generator:' + pegasusVersion)
     generateRestli('com.linkedin.pegasus:restli-tools:' + pegasusVersion)
@@ -294,14 +294,14 @@ project(':azkaban-execserver') {
 
   dependencies {
     compile(project(':azkaban-common'))
-    compile('javax.servlet:servlet-api:2.5')
-    compile('org.mortbay.jetty:jetty:6.1.26')
-    compile('org.mortbay.jetty:jetty-util:6.1.26')
     compile('commons-io:commons-io:2.4')
-    compile('org.codehaus.jackson:jackson-core-asl:1.9.5')
-    compile('org.codehaus.jackson:jackson-mapper-asl:1.9.5')
+    compile('javax.servlet:servlet-api:2.5')
     compile('joda-time:joda-time:2.0')
     compile('log4j:log4j:1.2.16')
+    compile('org.mortbay.jetty:jetty:6.1.26')
+    compile('org.mortbay.jetty:jetty-util:6.1.26')
+    compile('org.codehaus.jackson:jackson-core-asl:1.9.5')
+    compile('org.codehaus.jackson:jackson-mapper-asl:1.9.5')
 
     testCompile('junit:junit:4.11')
     testCompile('org.hamcrest:hamcrest-all:1.3')
