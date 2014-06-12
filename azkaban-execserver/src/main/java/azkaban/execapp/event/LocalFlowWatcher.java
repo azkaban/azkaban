@@ -16,11 +16,11 @@
 
 package azkaban.execapp.event;
 
-import azkaban.execapp.FlowRunner;
-import azkaban.execapp.JobRunner;
 import azkaban.event.Event;
 import azkaban.event.Event.Type;
 import azkaban.event.EventListener;
+import azkaban.execapp.FlowRunner;
+import azkaban.execapp.JobRunner;
 import azkaban.executor.ExecutableNode;
 
 public class LocalFlowWatcher extends FlowWatcher {

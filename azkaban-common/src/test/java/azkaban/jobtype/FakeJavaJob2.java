@@ -17,6 +17,7 @@
 package azkaban.jobtype;
 
 import org.apache.log4j.Logger;
+
 import azkaban.jobExecutor.JavaProcessJob;
 import azkaban.utils.Props;
 

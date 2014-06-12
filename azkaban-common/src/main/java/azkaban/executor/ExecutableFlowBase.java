@@ -368,7 +368,7 @@ public class ExecutableFlowBase extends ExecutableNode {
 
   /**
    * Only returns true if the status of all finished nodes is true.
-   * 
+   *
    * @return
    */
   public boolean isFlowFinished() {
@@ -385,10 +385,10 @@ public class ExecutableFlowBase extends ExecutableNode {
   /**
    * Finds all jobs which are ready to run. This occurs when all of its
    * dependency nodes are finished running.
-   * 
+   *
    * It will also return any subflow that has been completed such that the
    * FlowRunner can properly handle them.
-   * 
+   *
    * @param flow
    * @return
    */

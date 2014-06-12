@@ -38,6 +38,7 @@ import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.impl.client.BasicResponseHandler;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.log4j.Logger;
+
 import org.joda.time.DateTime;
 
 import azkaban.alert.Alerter;
@@ -54,7 +55,7 @@ import azkaban.utils.Props;
 
 /**
  * Executor manager used to manage the client side job.
- * 
+ *
  */
 public class ExecutorManager extends EventHandler implements
     ExecutorManagerAdapter {

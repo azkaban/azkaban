@@ -32,9 +32,8 @@ import azkaban.utils.JSONUtils;
 import azkaban.utils.Props;
 import azkaban.utils.PropsUtils;
 
-/*
+/**
  * A revised process-based job
- *
  */
 public abstract class AbstractProcessJob extends AbstractJob {
   private final Logger log;
@@ -89,7 +88,7 @@ public abstract class AbstractProcessJob extends AbstractJob {
 
   /**
    * initialize temporary and final property file
-   * 
+   *
    * @return {tmpPropFile, outputPropFile}
    */
   public File[] initPropsFiles() {

@@ -69,6 +69,7 @@ import azkaban.scheduler.ScheduleManager;
 import azkaban.scheduler.TriggerBasedScheduleLoader;
 import azkaban.server.AzkabanServer;
 import azkaban.server.ServerConstants;
+import azkaban.server.session.SessionCache;
 import azkaban.trigger.JdbcTriggerLoader;
 import azkaban.trigger.TriggerLoader;
 import azkaban.trigger.TriggerManager;
@@ -100,7 +101,6 @@ import azkaban.webapp.servlet.TriggerManagerServlet;
 import azkaban.webapp.plugin.TriggerPlugin;
 import azkaban.webapp.plugin.ViewerPlugin;
 import azkaban.webapp.plugin.PluginRegistry;
-import azkaban.server.session.SessionCache;
 
 /**
  * The Azkaban Jetty server class

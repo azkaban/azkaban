@@ -1,12 +1,12 @@
 /*
  * Copyright 2012 LinkedIn Corp.
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
  * the License at
- * 
+ *
  * http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
@@ -55,7 +55,7 @@ public class Props {
 
   /**
    * Constructor for empty Props with parent override.
-   * 
+   *
    * @param parent
    */
   public Props(Props parent) {
@@ -65,7 +65,7 @@ public class Props {
 
   /**
    * Load props from a file.
-   * 
+   *
    * @param parent
    * @param file
    * @throws IOException
@@ -76,7 +76,7 @@ public class Props {
 
   /**
    * Load props from a file.
-   * 
+   *
    * @param parent
    * @param file
    * @throws IOException
@@ -97,7 +97,7 @@ public class Props {
 
   /**
    * Create props from property input streams
-   * 
+   *
    * @param parent
    * @param inputStreams
    * @throws IOException
@@ -108,7 +108,7 @@ public class Props {
   }
 
   /**
-   * 
+   *
    * @param inputStream
    * @throws IOException
    */
@@ -120,7 +120,7 @@ public class Props {
 
   /**
    * Create properties from maps of properties
-   * 
+   *
    * @param parent
    * @param props
    */
@@ -133,7 +133,7 @@ public class Props {
 
   /**
    * Create properties from Properties objects
-   * 
+   *
    * @param parent
    * @param properties
    */
@@ -146,7 +146,7 @@ public class Props {
 
   /**
    * Create a Props object with the contents set to that of props.
-   * 
+   *
    * @param parent
    * @param props
    */
@@ -173,7 +173,7 @@ public class Props {
   /**
    * Create a Props with a null parent from a list of key value pairing. i.e.
    * [key1, value1, key2, value2 ...]
-   * 
+   *
    * @param args
    * @return
    */
@@ -184,7 +184,7 @@ public class Props {
   /**
    * Create a Props from a list of key value pairing. i.e. [key1, value1, key2,
    * value2 ...]
-   * 
+   *
    * @param args
    * @return
    */
@@ -212,7 +212,7 @@ public class Props {
 
   /**
    * Check key in current Props then search in parent
-   * 
+   *
    * @param k
    * @return
    */
@@ -223,7 +223,7 @@ public class Props {
 
   /**
    * Check value in current Props then search in parent
-   * 
+   *
    * @param value
    * @return
    */
@@ -234,7 +234,7 @@ public class Props {
 
   /**
    * Return value if available in current Props otherwise return from parent
-   * 
+   *
    * @param key
    * @return
    */
@@ -250,7 +250,7 @@ public class Props {
 
   /**
    * Get the key set from the current Props
-   * 
+   *
    * @return
    */
   public Set<String> localKeySet() {
@@ -259,7 +259,7 @@ public class Props {
 
   /**
    * Get parent Props
-   * 
+   *
    * @return
    */
   public Props getParent() {
@@ -270,10 +270,10 @@ public class Props {
    * Put the given string value for the string key. This method performs any
    * variable substitution in the value replacing any occurance of ${name} with
    * the value of get("name").
-   * 
+   *
    * @param key The key to put the value to
    * @param value The value to do substitution on and store
-   * 
+   *
    * @throws IllegalArgumentException If the variable given for substitution is
    *           not a valid key in this Props.
    */
@@ -286,9 +286,9 @@ public class Props {
    * substitution in the value replacing any occurrence of ${name} with the
    * value of get("name"). get() is called first on the Props and next on the
    * Properties object.
-   * 
+   *
    * @param properties The properties to put
-   * 
+   *
    * @throws IllegalArgumentException If the variable given for substitution is
    *           not a valid key in this Props.
    */
@@ -300,7 +300,7 @@ public class Props {
 
   /**
    * Put integer
-   * 
+   *
    * @param key
    * @param value
    * @return
@@ -311,7 +311,7 @@ public class Props {
 
   /**
    * Put Long. Stores as String.
-   * 
+   *
    * @param key
    * @param value
    * @return
@@ -322,7 +322,7 @@ public class Props {
 
   /**
    * Put Double. Stores as String.
-   * 
+   *
    * @param key
    * @param value
    * @return
@@ -333,7 +333,7 @@ public class Props {
 
   /**
    * Put everything in the map into the props.
-   * 
+   *
    * @param m
    */
   public void putAll(Map<? extends String, ? extends String> m) {
@@ -348,7 +348,7 @@ public class Props {
 
   /**
    * Put all properties in the props into the current props. Will handle null p.
-   * 
+   *
    * @param p
    */
   public void putAll(Props p) {
@@ -363,7 +363,7 @@ public class Props {
 
   /**
    * Puts only the local props from p into the current properties
-   * 
+   *
    * @param p
    */
   public void putLocal(Props p) {
@@ -374,7 +374,7 @@ public class Props {
 
   /**
    * Remove only the local value of key s, and not the parents.
-   * 
+   *
    * @param s
    * @return
    */
@@ -400,7 +400,7 @@ public class Props {
   /**
    * Attempts to return the Class that corresponds to the Props value. If the
    * class doesn't exit, an IllegalArgumentException will be thrown.
-   * 
+   *
    * @param key
    * @return
    */
@@ -433,7 +433,7 @@ public class Props {
   /**
    * Gets the class from the Props. If it doesn't exist, it will return the
    * defaultClass
-   * 
+   *
    * @param key
    * @param c
    * @return
@@ -449,7 +449,7 @@ public class Props {
   /**
    * Gets the string from the Props. If it doesn't exist, it will return the
    * defaultValue
-   * 
+   *
    * @param key
    * @param defaultValue
    * @return
@@ -465,7 +465,7 @@ public class Props {
   /**
    * Gets the string from the Props. If it doesn't exist, throw and
    * UndefinedPropertiesException
-   * 
+   *
    * @param key
    * @param defaultValue
    * @return
@@ -481,7 +481,7 @@ public class Props {
 
   /**
    * Returns a list of strings with the comma as the separator of the value
-   * 
+   *
    * @param key
    * @return
    */
@@ -491,7 +491,7 @@ public class Props {
 
   /**
    * Returns a list of strings with the sep as the separator of the value
-   * 
+   *
    * @param key
    * @param sep
    * @return
@@ -513,7 +513,7 @@ public class Props {
   /**
    * Returns a list of strings with the comma as the separator of the value. If
    * the value is null, it'll return the defaultValue.
-   * 
+   *
    * @param key
    * @return
    */
@@ -528,7 +528,7 @@ public class Props {
   /**
    * Returns a list of strings with the sep as the separator of the value. If
    * the value is null, it'll return the defaultValue.
-   * 
+   *
    * @param key
    * @return
    */
@@ -544,7 +544,7 @@ public class Props {
   /**
    * Returns true if the value equals "true". If the value is null, then the
    * default value is returned.
-   * 
+   *
    * @param key
    * @param defaultValue
    * @return
@@ -560,7 +560,7 @@ public class Props {
   /**
    * Returns true if the value equals "true". If the value is null, then an
    * UndefinedPropertyException is thrown.
-   * 
+   *
    * @param key
    * @return
    */
@@ -576,7 +576,7 @@ public class Props {
    * Returns the long representation of the value. If the value is null, then
    * the default value is returned. If the value isn't a long, then a parse
    * exception will be thrown.
-   * 
+   *
    * @param key
    * @param defaultValue
    * @return
@@ -593,7 +593,7 @@ public class Props {
    * Returns the long representation of the value. If the value is null, then a
    * UndefinedPropertyException will be thrown. If the value isn't a long, then
    * a parse exception will be thrown.
-   * 
+   *
    * @param key
    * @return
    */
@@ -610,7 +610,7 @@ public class Props {
    * Returns the int representation of the value. If the value is null, then the
    * default value is returned. If the value isn't a int, then a parse exception
    * will be thrown.
-   * 
+   *
    * @param key
    * @param defaultValue
    * @return
@@ -627,7 +627,7 @@ public class Props {
    * Returns the int representation of the value. If the value is null, then a
    * UndefinedPropertyException will be thrown. If the value isn't a int, then a
    * parse exception will be thrown.
-   * 
+   *
    * @param key
    * @return
    */
@@ -644,7 +644,7 @@ public class Props {
    * Returns the double representation of the value. If the value is null, then
    * the default value is returned. If the value isn't a double, then a parse
    * exception will be thrown.
-   * 
+   *
    * @param key
    * @param defaultValue
    * @return
@@ -661,7 +661,7 @@ public class Props {
    * Returns the double representation of the value. If the value is null, then
    * a UndefinedPropertyException will be thrown. If the value isn't a double,
    * then a parse exception will be thrown.
-   * 
+   *
    * @param key
    * @return
    */
@@ -678,7 +678,7 @@ public class Props {
    * Returns the uri representation of the value. If the value is null, then the
    * default value is returned. If the value isn't a uri, then a
    * IllegalArgumentException will be thrown.
-   * 
+   *
    * @param key
    * @param defaultValue
    * @return
@@ -700,7 +700,7 @@ public class Props {
    * Returns the double representation of the value. If the value is null, then
    * the default value is returned. If the value isn't a uri, then a
    * IllegalArgumentException will be thrown.
-   * 
+   *
    * @param key
    * @param defaultValue
    * @return
@@ -723,7 +723,7 @@ public class Props {
 
   /**
    * Store only those properties defined at this local level
-   * 
+   *
    * @param file The file to write to
    * @throws IOException If the file can't be found or there is an io error
    */
@@ -739,7 +739,7 @@ public class Props {
 
   /**
    * Returns a copy of only the local values of this props
-   * 
+   *
    * @return
    */
   @SuppressWarnings("unchecked")
@@ -749,7 +749,7 @@ public class Props {
 
   /**
    * Store only those properties defined at this local level
-   * 
+   *
    * @param out The output stream to write to
    * @throws IOException If the file can't be found or there is an io error
    */
@@ -763,7 +763,7 @@ public class Props {
 
   /**
    * Returns a java.util.Properties file populated with the stuff in here.
-   * 
+   *
    * @return
    */
   public Properties toProperties() {
@@ -777,7 +777,7 @@ public class Props {
 
   /**
    * Store all properties, those local and also those in parent props
-   * 
+   *
    * @param file The file to store to
    * @throws IOException If there is an error writing
    */
@@ -793,7 +793,7 @@ public class Props {
 
   /**
    * Store all properties, those local and also those in parent props
-   * 
+   *
    * @param out The stream to write to
    * @throws IOException If there is an error writing
    */
@@ -812,7 +812,7 @@ public class Props {
 
   /**
    * Get a map of all properties by string prefix
-   * 
+   *
    * @param prefix The string prefix
    */
   public Map<String, String> getMapByPrefix(String prefix) {
@@ -835,7 +835,7 @@ public class Props {
 
   /**
    * Returns a set of all keys, including the parents
-   * 
+   *
    * @return
    */
   public Set<String> getKeySet() {
@@ -852,7 +852,7 @@ public class Props {
 
   /**
    * Logs the property in the given logger
-   * 
+   *
    * @param logger
    * @param comment
    */
@@ -866,7 +866,7 @@ public class Props {
 
   /**
    * Clones the Props p object and all of its parents.
-   * 
+   *
    * @param p
    * @return
    */
@@ -875,7 +875,7 @@ public class Props {
   }
 
   /**
-   * 
+   *
    * @param source
    * @return
    */
@@ -910,7 +910,7 @@ public class Props {
 
   /**
    * Returns true if the properties are equivalent, regardless of the hierarchy.
-   * 
+   *
    * @param p
    * @return
    */
@@ -930,7 +930,7 @@ public class Props {
   }
 
   /**
-     * 
+     *
      */
   @Override
   public int hashCode() {
@@ -941,7 +941,7 @@ public class Props {
   }
 
   /**
-     * 
+     *
      */
   @Override
   public String toString() {

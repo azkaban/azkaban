@@ -22,6 +22,8 @@ import java.io.IOException;
 import java.io.PrintWriter;
 
 public class Utils {
+  private Utils() {
+  }
 
   public static void dumpFile(String filename, String filecontent)
       throws IOException {
@@ -34,5 +36,4 @@ public class Utils {
     File file = new File(filename);
     file.delete();
   }
-
 }

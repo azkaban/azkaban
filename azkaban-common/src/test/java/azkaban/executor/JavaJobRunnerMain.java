@@ -16,14 +16,6 @@
 
 package azkaban.executor;
 
-import azkaban.jobExecutor.ProcessJob;
-import azkaban.utils.Props;
-
-import org.apache.log4j.ConsoleAppender;
-import org.apache.log4j.Layout;
-import org.apache.log4j.Logger;
-import org.apache.log4j.PatternLayout;
-
 import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
 import java.io.FileOutputStream;
@@ -37,6 +29,14 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Properties;
+
+import org.apache.log4j.ConsoleAppender;
+import org.apache.log4j.Layout;
+import org.apache.log4j.Logger;
+import org.apache.log4j.PatternLayout;
+
+import azkaban.jobExecutor.ProcessJob;
+import azkaban.utils.Props;
 
 public class JavaJobRunnerMain {
 

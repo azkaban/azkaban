@@ -28,9 +28,8 @@ import azkaban.jobExecutor.utils.process.AzkabanProcess;
 import azkaban.jobExecutor.utils.process.AzkabanProcessBuilder;
 import azkaban.utils.Props;
 
-/*
+/**
  * A job that runs a simple unix command
- *
  */
 public class ProcessJob extends AbstractProcessJob {
 
@@ -148,7 +147,7 @@ public class ProcessJob extends AbstractProcessJob {
   /**
    * Splits the command into a unix like command line structure. Quotes and
    * single quotes are treated as nested strings.
-   * 
+   *
    * @param command
    * @return
    */

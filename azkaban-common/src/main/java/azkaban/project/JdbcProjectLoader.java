@@ -39,11 +39,11 @@ import org.apache.commons.dbutils.ResultSetHandler;
 import org.apache.commons.io.IOUtils;
 import org.apache.log4j.Logger;
 
+import azkaban.database.AbstractJdbcLoader;
 import azkaban.flow.Flow;
 import azkaban.project.ProjectLogEvent.EventType;
 import azkaban.user.Permission;
 import azkaban.user.User;
-import azkaban.database.AbstractJdbcLoader;
 import azkaban.utils.GZIPUtils;
 import azkaban.utils.JSONUtils;
 import azkaban.utils.Md5Hasher;
@@ -191,7 +191,7 @@ public class JdbcProjectLoader extends AbstractJdbcLoader implements
 
   /**
    * Creates a Project in the db.
-   * 
+   *
    * It will throw an exception if it finds an active project of the same name,
    * or the SQL fails
    */
@@ -674,7 +674,7 @@ public class JdbcProjectLoader extends AbstractJdbcLoader implements
 
   /**
    * Get all the logs for a given project
-   * 
+   *
    * @param project
    * @return
    * @throws ProjectManagerException

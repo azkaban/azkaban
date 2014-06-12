@@ -17,7 +17,6 @@
 package azkaban.migration.schedule2trigger;
 
 import java.io.File;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -26,13 +25,12 @@ import java.util.Map;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.log4j.Logger;
-import azkaban.executor.ExecutionOptions;
-import static azkaban.migration.schedule2trigger.CommonParams.*;
-import azkaban.utils.JSONUtils;
-import azkaban.utils.Props;
+
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.joda.time.ReadablePeriod;
+
+import azkaban.executor.ExecutionOptions;
 import azkaban.trigger.Condition;
 import azkaban.trigger.ConditionChecker;
 import azkaban.trigger.JdbcTriggerLoader;
@@ -41,7 +39,11 @@ import azkaban.trigger.TriggerAction;
 import azkaban.trigger.TriggerLoader;
 import azkaban.trigger.builtin.BasicTimeChecker;
 import azkaban.trigger.builtin.ExecuteFlowAction;
+import azkaban.utils.JSONUtils;
+import azkaban.utils.Props;
 import azkaban.utils.Utils;
+
+import static azkaban.migration.schedule2trigger.CommonParams.*;
 
 @SuppressWarnings("deprecation")
 public class Schedule2Trigger {

@@ -32,7 +32,7 @@ public interface ProjectLoader {
 
   /**
    * Returns all projects which are active
-   * 
+   *
    * @return
    * @throws ProjectManagerException
    */
@@ -40,7 +40,7 @@ public interface ProjectLoader {
 
   /**
    * Loads whole project, including permissions, by the project id.
-   * 
+   *
    * @param id
    * @return
    * @throws ProjectManagerException
@@ -51,11 +51,11 @@ public interface ProjectLoader {
    * Should create an empty project with the given name and user and adds it to
    * the data store. It will auto assign a unique id for this project if
    * successful.
-   * 
+   *
    * If an active project of the same name exists, it will throw an exception.
    * If the name and description of the project exceeds the store's constraints,
    * it will throw an exception.
-   * 
+   *
    * @param name
    * @return
    * @throws ProjectManagerException if an active project of the same name
@@ -66,7 +66,7 @@ public interface ProjectLoader {
 
   /**
    * Removes the project by marking it inactive.
-   * 
+   *
    * @param project
    * @throws ProjectManagerException
    */
@@ -77,7 +77,7 @@ public interface ProjectLoader {
    * Adds and updates the user permissions. Does not check if the user is valid.
    * If the permission doesn't exist, it adds. If the permission exists, it
    * updates.
-   * 
+   *
    * @param project
    * @param name
    * @param perm
@@ -92,7 +92,7 @@ public interface ProjectLoader {
 
   /**
    * Modifies and commits the project description.
-   * 
+   *
    * @param project
    * @param description
    * @throws ProjectManagerException
@@ -103,7 +103,7 @@ public interface ProjectLoader {
   /**
    * Stores logs for a particular project. Will soft fail rather than throw
    * exception.
-   * 
+   *
    * @param project
    * @param type
    * @param message return true if the posting was success.
@@ -113,7 +113,7 @@ public interface ProjectLoader {
 
   /**
    * Returns all the events for a project sorted
-   * 
+   *
    * @param project
    * @return
    */
@@ -129,7 +129,7 @@ public interface ProjectLoader {
 
   /**
    * Get file that's uploaded.
-   * 
+   *
    * @return
    */
   public ProjectFileHandler getUploadedFile(Project project, int version)
@@ -137,7 +137,7 @@ public interface ProjectLoader {
 
   /**
    * Get file that's uploaded.
-   * 
+   *
    * @return
    */
   public ProjectFileHandler getUploadedFile(int projectId, int version)
@@ -145,7 +145,7 @@ public interface ProjectLoader {
 
   /**
    * Changes and commits different project version.
-   * 
+   *
    * @param project
    * @param version
    * @throws ProjectManagerException
@@ -158,7 +158,7 @@ public interface ProjectLoader {
 
   /**
    * Uploads all computed flows
-   * 
+   *
    * @param project
    * @param version
    * @param flows
@@ -169,7 +169,7 @@ public interface ProjectLoader {
 
   /**
    * Upload just one flow.
-   * 
+   *
    * @param project
    * @param version
    * @param flow
@@ -180,7 +180,7 @@ public interface ProjectLoader {
 
   /**
    * Fetches one particular flow.
-   * 
+   *
    * @param project
    * @param version
    * @param flowId
@@ -191,7 +191,7 @@ public interface ProjectLoader {
 
   /**
    * Fetches all flows.
-   * 
+   *
    * @param project
    * @param version
    * @param flowId
@@ -208,7 +208,7 @@ public interface ProjectLoader {
 
   /**
    * Upload Project properties
-   * 
+   *
    * @param project
    * @param path
    * @param properties
@@ -219,7 +219,7 @@ public interface ProjectLoader {
 
   /**
    * Upload Project properties. Map contains key value of path and properties
-   * 
+   *
    * @param project
    * @param path
    * @param properties
@@ -230,7 +230,7 @@ public interface ProjectLoader {
 
   /**
    * Fetch project properties
-   * 
+   *
    * @param project
    * @param propsName
    * @return
@@ -241,7 +241,7 @@ public interface ProjectLoader {
 
   /**
    * Fetch all project properties
-   * 
+   *
    * @param project
    * @return
    * @throws ProjectManagerException
@@ -251,7 +251,7 @@ public interface ProjectLoader {
 
   /**
    * Cleans all project versions less tha
-   * 
+   *
    * @param projectId
    * @param version
    * @throws ProjectManagerException

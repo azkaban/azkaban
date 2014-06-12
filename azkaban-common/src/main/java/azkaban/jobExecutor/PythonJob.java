@@ -28,7 +28,7 @@ public class PythonJob extends LongArgJob {
   private static final String SCRIPT_KEY = "script";
 
   public PythonJob(String jobid, Props sysProps, Props jobProps, Logger log) {
-    super(jobid, 
+    super(jobid,
         new String[] {
           jobProps.getString(PYTHON_BINARY_KEY, "python"),
           jobProps.getString(SCRIPT_KEY)

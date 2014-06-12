@@ -1,12 +1,12 @@
 /*
  * Copyright 2012 LinkedIn Corp.
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
  * the License at
- * 
+ *
  * http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
@@ -23,7 +23,7 @@ import azkaban.utils.cache.Cache.EjectionPolicy;
 
 /**
  * Cache for web session.
- * 
+ *
  * The following global azkaban properties can be used: max.num.sessions - used
  * to determine the number of live sessions that azkaban will handle. Default is
  * 10000 session.time.to.live -Number of seconds before session expires. Default
@@ -38,7 +38,7 @@ public class SessionCache {
 
   /**
    * Constructor taking global props.
-   * 
+   *
    * @param props
    */
   public SessionCache(Props props) {
@@ -53,7 +53,7 @@ public class SessionCache {
 
   /**
    * Returns the cached session using the session id.
-   * 
+   *
    * @param sessionId
    * @return
    */
@@ -65,7 +65,7 @@ public class SessionCache {
 
   /**
    * Adds a session to the cache. Accessible through the session ID.
-   * 
+   *
    * @param id
    * @param session
    */
@@ -75,7 +75,7 @@ public class SessionCache {
 
   /**
    * Removes the session from the cache.
-   * 
+   *
    * @param id
    * @return
    */

@@ -29,18 +29,18 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 
+import azkaban.event.Event;
+import azkaban.event.Event.Type;
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutableNode;
 import azkaban.executor.ExecutorLoader;
+import azkaban.executor.JavaJob;
+import azkaban.executor.MockExecutorLoader;
+import azkaban.executor.SleepJavaJob;
 import azkaban.executor.Status;
-import azkaban.event.Event;
-import azkaban.event.Event.Type;
 import azkaban.jobExecutor.ProcessJob;
 import azkaban.jobtype.JobTypeManager;
 import azkaban.project.MockProjectLoader;
-import azkaban.executor.MockExecutorLoader;
-import azkaban.executor.JavaJob;
-import azkaban.executor.SleepJavaJob;
 import azkaban.utils.Props;
 
 public class JobRunnerTest {

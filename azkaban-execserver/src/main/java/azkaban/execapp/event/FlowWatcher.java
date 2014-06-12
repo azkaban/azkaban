@@ -52,7 +52,7 @@ public abstract class FlowWatcher {
 
   /**
    * Called to fire events to the JobRunner listeners
-   * 
+   *
    * @param jobId
    */
   protected synchronized void handleJobStatusChange(String jobId, Status status) {

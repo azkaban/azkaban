@@ -1,12 +1,12 @@
 /*
  * Copyright 2012 LinkedIn Corp.
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
  * the License at
- * 
+ *
  * http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
@@ -27,10 +27,12 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 
 import org.apache.log4j.Logger;
+
 import org.w3c.dom.Document;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
+
 import org.xml.sax.SAXException;
 
 import azkaban.user.User.UserPermissions;
@@ -39,7 +41,7 @@ import azkaban.utils.Props;
 /**
  * Xml implementation of the UserManager. Looks for the property
  * user.manager.xml.file in the azkaban properties.
- * 
+ *
  * The xml to be in the following form: <azkaban-users> <user
  * username="username" password="azkaban" roles="admin" groups="azkaban"/>
  * </azkaban-users>
@@ -73,7 +75,7 @@ public class XmlUserManager implements UserManager {
 
   /**
    * The constructor.
-   * 
+   *
    * @param props
    */
   public XmlUserManager(Props props) {

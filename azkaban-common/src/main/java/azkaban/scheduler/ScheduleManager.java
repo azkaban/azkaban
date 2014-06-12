@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.log4j.Logger;
+
 import org.joda.time.DateTimeZone;
 import org.joda.time.ReadablePeriod;
 import org.joda.time.format.DateTimeFormat;
@@ -56,7 +57,7 @@ public class ScheduleManager implements TriggerAgent {
   /**
    * Give the schedule manager a loader class that will properly load the
    * schedule.
-   * 
+   *
    * @param loader
    */
   public ScheduleManager(ScheduleLoader loader) {
@@ -110,7 +111,7 @@ public class ScheduleManager implements TriggerAgent {
 
   /**
    * Retrieves a copy of the list of schedules.
-   * 
+   *
    * @return
    * @throws ScheduleManagerException
    */
@@ -123,7 +124,7 @@ public class ScheduleManager implements TriggerAgent {
 
   /**
    * Returns the scheduled flow for the flow name
-   * 
+   *
    * @param id
    * @return
    * @throws ScheduleManagerException
@@ -138,7 +139,7 @@ public class ScheduleManager implements TriggerAgent {
 
   /**
    * Returns the scheduled flow for the scheduleId
-   * 
+   *
    * @param id
    * @return
    * @throws ScheduleManagerException
@@ -150,7 +151,7 @@ public class ScheduleManager implements TriggerAgent {
 
   /**
    * Removes the flow from the schedule if it exists.
-   * 
+   *
    * @param id
    * @throws ScheduleManagerException
    */
@@ -165,7 +166,7 @@ public class ScheduleManager implements TriggerAgent {
 
   /**
    * Removes the flow from the schedule if it exists.
-   * 
+   *
    * @param id
    */
   public synchronized void removeSchedule(Schedule sched) {
@@ -217,7 +218,7 @@ public class ScheduleManager implements TriggerAgent {
 
   /**
    * Schedules the flow, but doesn't save the schedule afterwards.
-   * 
+   *
    * @param flow
    */
   private synchronized void internalSchedule(Schedule s) {
@@ -227,7 +228,7 @@ public class ScheduleManager implements TriggerAgent {
 
   /**
    * Adds a flow to the schedule.
-   * 
+   *
    * @param flow
    */
   public synchronized void insertSchedule(Schedule s) {

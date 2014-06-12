@@ -68,7 +68,6 @@ public class JmxTriggerManager implements JmxTriggerManagerMBean {
 
   @Override
   public String getScannerThreadStage() {
-    // TODO Auto-generated method stub
     return jmxStats.getScannerThreadStage();
   }
 }

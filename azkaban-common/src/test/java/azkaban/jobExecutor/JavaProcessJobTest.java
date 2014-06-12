@@ -21,6 +21,7 @@ import java.util.Date;
 import java.util.Properties;
 
 import org.apache.log4j.Logger;
+
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.Before;

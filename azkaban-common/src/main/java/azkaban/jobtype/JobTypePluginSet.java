@@ -23,10 +23,10 @@ import azkaban.utils.Props;
 
 /**
  * Container for job type plugins
- * 
+ *
  * This contains the jobClass objects, the properties for loading plugins, and
  * the properties given by default to the plugin.
- * 
+ *
  * This class is not thread safe, so adding to this class should only be
  * populated and controlled by the JobTypeManager
  */
@@ -49,7 +49,7 @@ public class JobTypePluginSet {
 
   /**
    * Copy constructor
-   * 
+   *
    * @param clone
    */
   public JobTypePluginSet(JobTypePluginSet clone) {
@@ -62,7 +62,7 @@ public class JobTypePluginSet {
 
   /**
    * Sets the common properties shared in every jobtype
-   * 
+   *
    * @param commonJobProps
    */
   public void setCommonPluginJobProps(Props commonJobProps) {
@@ -71,7 +71,7 @@ public class JobTypePluginSet {
 
   /**
    * Sets the common properties used to load every plugin
-   * 
+   *
    * @param commonLoadProps
    */
   public void setCommonPluginLoadProps(Props commonLoadProps) {
@@ -80,7 +80,7 @@ public class JobTypePluginSet {
 
   /**
    * Gets common properties for every jobtype
-   * 
+   *
    * @return
    */
   public Props getCommonPluginJobProps() {
@@ -89,7 +89,7 @@ public class JobTypePluginSet {
 
   /**
    * Gets the common properties used to load a plugin
-   * 
+   *
    * @return
    */
   public Props getCommonPluginLoadProps() {
@@ -98,7 +98,7 @@ public class JobTypePluginSet {
 
   /**
    * Get the properties for a jobtype used to setup and load a plugin
-   * 
+   *
    * @param jobTypeName
    * @return
    */
@@ -109,7 +109,7 @@ public class JobTypePluginSet {
   /**
    * Get the properties that will be given to the plugin as default job
    * properties.
-   * 
+   *
    * @param jobTypeName
    * @return
    */
@@ -119,7 +119,7 @@ public class JobTypePluginSet {
 
   /**
    * Gets the plugin job runner class
-   * 
+   *
    * @param jobTypeName
    * @return
    */

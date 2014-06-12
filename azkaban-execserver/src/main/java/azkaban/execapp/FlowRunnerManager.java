@@ -48,7 +48,6 @@ import azkaban.executor.ExecutorLoader;
 import azkaban.executor.ExecutorManagerException;
 import azkaban.jobtype.JobTypeManager;
 import azkaban.jobtype.JobTypeManagerException;
-
 import azkaban.utils.FileIOUtils;
 import azkaban.utils.FileIOUtils.JobMetaData;
 import azkaban.utils.FileIOUtils.LogData;
@@ -58,7 +57,7 @@ import azkaban.utils.Props;
 
 /**
  * Execution manager for the server side execution.
- * 
+ *
  */
 public class FlowRunnerManager implements EventListener {
   private static Logger logger = Logger.getLogger(FlowRunnerManager.class);

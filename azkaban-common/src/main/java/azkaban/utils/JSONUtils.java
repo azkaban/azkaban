@@ -1,12 +1,12 @@
 /*
  * Copyright 2012 LinkedIn Corp.
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
  * the License at
- * 
+ *
  * http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
@@ -180,11 +180,11 @@ public class JSONUtils {
 
   /*
    * Writes json to a stream without using any external dependencies.
-   * 
+   *
    * This is useful for plugins or extensions that want to write properties to a
    * writer without having to import the jackson, or json libraries. The
    * properties are expected to be a map of String keys and String values.
-   * 
+   *
    * The other json writing methods are more robust and will handle more cases.
    */
   public static void writePropsNoJarDependency(Map<String, String> properties,

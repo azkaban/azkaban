@@ -40,7 +40,7 @@ public class Node {
 
   /**
    * Clones nodes
-   * 
+   *
    * @param node
    */
   public Node(Node clone) {

@@ -20,10 +20,8 @@ import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
 import java.util.ArrayList;
-
 import java.util.HashSet;
 import java.util.Set;
-
 import java.util.Arrays;
 import java.util.Collections;
 
@@ -33,10 +31,10 @@ import org.apache.log4j.Layout;
 import org.apache.log4j.Logger;
 import org.apache.log4j.RollingFileAppender;
 
-import azkaban.execapp.event.BlockingStatus;
 import azkaban.event.Event;
 import azkaban.event.Event.Type;
 import azkaban.event.EventHandler;
+import azkaban.execapp.event.BlockingStatus;
 import azkaban.execapp.event.FlowWatcher;
 import azkaban.executor.ExecutableFlowBase;
 import azkaban.executor.ExecutableNode;
@@ -48,7 +46,6 @@ import azkaban.jobExecutor.AbstractProcessJob;
 import azkaban.jobExecutor.Job;
 import azkaban.jobtype.JobTypeManager;
 import azkaban.jobtype.JobTypeManagerException;
-
 import azkaban.utils.Props;
 
 public class JobRunner extends EventHandler implements Runnable {
@@ -177,7 +174,7 @@ public class JobRunner extends EventHandler implements Runnable {
   /**
    * Returns a list of jobs that this JobRunner will wait upon to finish before
    * starting. It is only relevant if pipeline is turned on.
-   * 
+   *
    * @return
    */
   public Set<String> getPipelineWatchedJobs() {
@@ -256,7 +253,7 @@ public class JobRunner extends EventHandler implements Runnable {
   /**
    * Used to handle non-ready and special status's (i.e. KILLED). Returns true
    * if they handled anything.
-   * 
+   *
    * @return
    */
   private boolean handleNonReadyStatus() {
@@ -404,7 +401,7 @@ public class JobRunner extends EventHandler implements Runnable {
 
   /**
    * The main run thread.
-   * 
+   *
    */
   @Override
   public void run() {

@@ -16,10 +16,6 @@
 
 package azkaban.migration.scheduler;
 
-import azkaban.database.DataSourceUtils;
-import azkaban.utils.GZIPUtils;
-import azkaban.utils.JSONUtils;
-import azkaban.utils.Props;
 import java.io.IOException;
 import java.sql.Connection;
 import java.sql.ResultSet;
@@ -28,13 +24,21 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+
 import javax.sql.DataSource;
+
 import org.apache.commons.dbutils.DbUtils;
 import org.apache.commons.dbutils.QueryRunner;
 import org.apache.commons.dbutils.ResultSetHandler;
 import org.apache.log4j.Logger;
+
 import org.joda.time.DateTimeZone;
 import org.joda.time.ReadablePeriod;
+
+import azkaban.database.DataSourceUtils;
+import azkaban.utils.GZIPUtils;
+import azkaban.utils.JSONUtils;
+import azkaban.utils.Props;
 
 @Deprecated
 public class JdbcScheduleLoader implements ScheduleLoader {

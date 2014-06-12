@@ -28,21 +28,21 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 
+import azkaban.execapp.EventCollectorListener;
 import azkaban.execapp.FlowRunner;
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutableFlowBase;
 import azkaban.executor.ExecutableNode;
 import azkaban.executor.ExecutionOptions;
 import azkaban.executor.ExecutorLoader;
+import azkaban.executor.JavaJob;
+import azkaban.executor.MockExecutorLoader;
 import azkaban.executor.Status;
 import azkaban.flow.Flow;
 import azkaban.jobtype.JobTypeManager;
 import azkaban.project.Project;
 import azkaban.project.ProjectLoader;
-import azkaban.execapp.EventCollectorListener;
-import azkaban.executor.MockExecutorLoader;
 import azkaban.project.MockProjectLoader;
-import azkaban.executor.JavaJob;
 import azkaban.utils.JSONUtils;
 
 public class RemoteFlowWatcherTest {

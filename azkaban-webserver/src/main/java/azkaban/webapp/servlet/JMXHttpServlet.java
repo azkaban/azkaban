@@ -32,13 +32,13 @@ import org.apache.log4j.Logger;
 
 import azkaban.executor.ConnectorParams;
 import azkaban.executor.ExecutorManagerAdapter;
+import azkaban.server.session.Session;
 import azkaban.trigger.TriggerManager;
 import azkaban.user.Permission;
 import azkaban.user.Role;
 import azkaban.user.User;
 import azkaban.user.UserManager;
 import azkaban.webapp.AzkabanWebServer;
-import azkaban.server.session.Session;
 
 /**
  * Limited set of jmx calls for when you cannot attach to the jvm

@@ -37,13 +37,11 @@ public class DummyTriggerAction implements TriggerAction {
 
   @Override
   public TriggerAction fromJson(Object obj) {
-    // TODO Auto-generated method stub
     return null;
   }
 
   @Override
   public Object toJson() {
-    // TODO Auto-generated method stub
     return null;
   }
 
@@ -65,7 +63,5 @@ public class DummyTriggerAction implements TriggerAction {
 
   @Override
   public void setContext(Map<String, Object> context) {
-    // TODO Auto-generated method stub
-
   }
 }

@@ -20,8 +20,8 @@ import org.apache.log4j.Logger;
 
 import azkaban.database.AzkabanDatabaseSetup;
 import azkaban.database.AzkabanDatabaseUpdater;
-import azkaban.server.AzkabanServer;
 import azkaban.execapp.AzkabanExecutorServer;
+import azkaban.server.AzkabanServer;
 import azkaban.webapp.AzkabanWebServer;
 import azkaban.utils.Props;
 

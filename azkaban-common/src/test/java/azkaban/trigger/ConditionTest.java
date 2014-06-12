@@ -25,13 +25,13 @@ import org.joda.time.DateTime;
 import org.junit.Test;
 import org.junit.Ignore;
 
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertFalse;
+
 import azkaban.trigger.builtin.BasicTimeChecker;
 import azkaban.utils.JSONUtils;
 import azkaban.utils.Props;
 import azkaban.utils.Utils;
-
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.assertFalse;
 
 public class ConditionTest {
 

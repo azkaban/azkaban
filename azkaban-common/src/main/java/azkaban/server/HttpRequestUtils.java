@@ -1,12 +1,12 @@
 /*
  * Copyright 2012 LinkedIn Corp.
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
  * the License at
- * 
+ *
  * http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
@@ -114,7 +114,7 @@ public class HttpRequestUtils {
 
   /**
    * Checks for the existance of the parameter in the request
-   * 
+   *
    * @param request
    * @param param
    * @return
@@ -126,7 +126,7 @@ public class HttpRequestUtils {
   /**
    * Retrieves the param from the http servlet request. Will throw an exception
    * if not found
-   * 
+   *
    * @param request
    * @param name
    * @return
@@ -144,11 +144,11 @@ public class HttpRequestUtils {
 
   /**
    * Retrieves the param from the http servlet request.
-   * 
+   *
    * @param request
    * @param name
    * @param default
-   * 
+   *
    * @return
    */
   public static String getParam(HttpServletRequest request, String name,
@@ -163,7 +163,7 @@ public class HttpRequestUtils {
   /**
    * Returns the param and parses it into an int. Will throw an exception if not
    * found, or a parse error if the type is incorrect.
-   * 
+   *
    * @param request
    * @param name
    * @return

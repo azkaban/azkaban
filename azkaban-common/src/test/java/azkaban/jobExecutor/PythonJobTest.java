@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.util.Date;
 
 import org.apache.log4j.Logger;
+
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -33,7 +34,7 @@ public class PythonJobTest {
   private Props props = null;
   private Logger log = Logger.getLogger(PythonJob.class);
 
-  private static final String scriptContent = 
+  private static final String scriptContent =
       "#!/usr/bin/python  \n" +
           "import re, string, sys  \n" +
           "# if no arguments were given, print a helpful message \n" +

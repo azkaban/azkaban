@@ -23,10 +23,10 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 
+import static org.junit.Assert.fail;
+
 import azkaban.utils.Props;
 import azkaban.utils.UndefinedPropertyException;
-
-import static org.junit.Assert.fail;
 
 public class XmlUserManagerTest {
   private Props baseProps = new Props();

@@ -16,17 +16,6 @@
 
 package azkaban.jobtype;
 
-import azkaban.jobExecutor.JavaProcessJob;
-import azkaban.jobExecutor.Job;
-import azkaban.jobExecutor.NoopJob;
-import azkaban.jobExecutor.ProcessJob;
-import azkaban.jobExecutor.PythonJob;
-import azkaban.jobExecutor.RubyJob;
-import azkaban.jobExecutor.ScriptJob;
-import azkaban.utils.Props;
-import azkaban.utils.PropsUtils;
-import azkaban.utils.Utils;
-import azkaban.jobExecutor.utils.JobExecutionException;
 import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
@@ -36,6 +25,18 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.log4j.Logger;
+
+import azkaban.jobExecutor.JavaProcessJob;
+import azkaban.jobExecutor.Job;
+import azkaban.jobExecutor.NoopJob;
+import azkaban.jobExecutor.ProcessJob;
+import azkaban.jobExecutor.PythonJob;
+import azkaban.jobExecutor.RubyJob;
+import azkaban.jobExecutor.ScriptJob;
+import azkaban.jobExecutor.utils.JobExecutionException;
+import azkaban.utils.Props;
+import azkaban.utils.PropsUtils;
+import azkaban.utils.Utils;
 
 public class JobTypeManager {
   private final String jobTypePluginDir; // the dir for jobtype plugins
@@ -244,7 +245,7 @@ public class JobTypeManager {
 
   /**
    * Creates and loads all plugin resources (jars) into a ClassLoader
-   * 
+   *
    * @param pluginDir
    * @param jobTypeName
    * @param plugins

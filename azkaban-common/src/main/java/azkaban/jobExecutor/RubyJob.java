@@ -28,7 +28,7 @@ public class RubyJob extends LongArgJob {
   private static final String SCRIPT_KEY = "script";
 
   public RubyJob(String jobid, Props sysProps, Props jobProps, Logger log) {
-    super(jobid, 
+    super(jobid,
         new String[] {
           jobProps.getString(RUBY_BINARY_KEY, "ruby"),
           jobProps.getString(SCRIPT_KEY)

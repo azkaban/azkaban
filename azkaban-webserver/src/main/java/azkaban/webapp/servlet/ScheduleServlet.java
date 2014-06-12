@@ -56,6 +56,8 @@ import azkaban.project.ProjectManager;
 import azkaban.scheduler.Schedule;
 import azkaban.scheduler.ScheduleManager;
 import azkaban.scheduler.ScheduleManagerException;
+import azkaban.server.session.Session;
+import azkaban.server.HttpRequestUtils;
 import azkaban.sla.SlaOption;
 import azkaban.user.Permission;
 import azkaban.user.Permission.Type;
@@ -65,8 +67,6 @@ import azkaban.utils.SplitterOutputStream;
 import azkaban.utils.Utils;
 import azkaban.webapp.AzkabanWebServer;
 import azkaban.webapp.SchedulerStatistics;
-import azkaban.server.session.Session;
-import azkaban.server.HttpRequestUtils;
 
 public class ScheduleServlet extends LoginAbstractAzkabanServlet {
   private static final long serialVersionUID = 1L;

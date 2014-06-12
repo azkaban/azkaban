@@ -16,9 +16,9 @@
 
 package azkaban.project;
 
-import static org.junit.Assert.*;
-
 import org.junit.Test;
+
+import static org.junit.Assert.*;
 
 import azkaban.user.Permission;
 import azkaban.user.Permission.Type;

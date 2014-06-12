@@ -31,9 +31,9 @@ import javax.servlet.http.HttpServletResponse;
 import org.apache.log4j.Logger;
 
 import azkaban.executor.ConnectorParams;
-import azkaban.utils.JSONUtils;
 import azkaban.server.ServerConstants;
 import azkaban.server.HttpRequestUtils;
+import azkaban.utils.JSONUtils;
 
 public class JMXHttpServlet extends HttpServlet implements ConnectorParams {
   private static final long serialVersionUID = -3085603824826446270L;

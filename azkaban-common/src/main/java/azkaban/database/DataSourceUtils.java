@@ -17,12 +17,16 @@
 package azkaban.database;
 
 import java.sql.SQLException;
+
 import javax.sql.DataSource;
+
 import org.apache.commons.dbutils.DbUtils;
 import org.apache.commons.dbutils.QueryRunner;
 import org.apache.log4j.Logger;
+
 import java.sql.PreparedStatement;
 import java.sql.Connection;
+
 import azkaban.utils.Props;
 
 public class DataSourceUtils {

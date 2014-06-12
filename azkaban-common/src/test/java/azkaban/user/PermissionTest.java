@@ -20,9 +20,9 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import azkaban.user.Permission.Type;
-
 import static org.junit.Assert.assertTrue;
+
+import azkaban.user.Permission.Type;
 
 public class PermissionTest {
   @Before
@@ -113,7 +113,7 @@ public class PermissionTest {
 
   /**
    * Why? because it's quicker.
-   * 
+   *
    * @param message
    */
   public void info(String message) {

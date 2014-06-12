@@ -25,7 +25,7 @@ import azkaban.utils.Props;
  * <li>Job ID/Name : {String}</li>
  * <li>Arguments: Key/Value Map for Strings</li>
  * </ul>
- * 
+ *
  * A job is required to have a constructor Job(String jobId, Props props)
  */
 
@@ -33,7 +33,7 @@ public interface Job {
 
   /**
    * Returns a unique(should be checked in xml) string name/id for the Job.
-   * 
+   *
    * @return
    */
   public String getId();
@@ -46,7 +46,7 @@ public interface Job {
 
   /**
    * Best effort attempt to cancel the job.
-   * 
+   *
    * @throws Exception If cancel fails
    */
   public void cancel() throws Exception;
@@ -54,21 +54,21 @@ public interface Job {
   /**
    * Returns a progress report between [0 - 1.0] to indicate the percentage
    * complete
-   * 
+   *
    * @throws Exception If getting progress fails
    */
   public double getProgress() throws Exception;
 
   /**
    * Get the generated properties from this job.
-   * 
+   *
    * @return
    */
   public Props getJobGeneratedProperties();
 
   /**
    * Determine if the job was cancelled.
-   * 
+   *
    * @return
    */
   public boolean isCanceled();

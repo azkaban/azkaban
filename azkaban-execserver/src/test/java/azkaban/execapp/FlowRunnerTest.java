@@ -28,22 +28,22 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 
+import azkaban.event.Event;
+import azkaban.event.Event.Type;
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutableNode;
 import azkaban.executor.ExecutionOptions.FailureAction;
 import azkaban.executor.ExecutorLoader;
+import azkaban.executor.InteractiveTestJob;
+import azkaban.executor.JavaJob;
+import azkaban.executor.MockExecutorLoader;
 import azkaban.executor.Status;
-import azkaban.event.Event;
-import azkaban.event.Event.Type;
 import azkaban.flow.Flow;
 import azkaban.jobtype.JobTypeManager;
 import azkaban.jobtype.JobTypePluginSet;
 import azkaban.project.Project;
 import azkaban.project.ProjectLoader;
 import azkaban.project.MockProjectLoader;
-import azkaban.executor.MockExecutorLoader;
-import azkaban.executor.InteractiveTestJob;
-import azkaban.executor.JavaJob;
 import azkaban.utils.JSONUtils;
 
 public class FlowRunnerTest {
