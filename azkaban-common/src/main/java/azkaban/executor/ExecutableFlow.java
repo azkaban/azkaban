@@ -37,10 +37,12 @@ public class ExecutableFlow extends ExecutableFlowBase {
   public static final String SUBMITTIME_PARAM = "submitTime";
   public static final String VERSION_PARAM = "version";
   public static final String PROXYUSERS_PARAM = "proxyUsers";
+  public static final String PROJECTNAME_PARAM = "projectName";
 
   private int executionId = -1;
   private int scheduleId = -1;
   private int projectId;
+  private String projectName;
   private int version;
   private long submitTime = -1;
   private String submitUser;
@@ -51,6 +53,7 @@ public class ExecutableFlow extends ExecutableFlowBase {
 
   public ExecutableFlow(Project project, Flow flow) {
     this.projectId = project.getId();
+    this.projectName = project.getName();
     this.version = project.getVersion();
     this.scheduleId = -1;
 
@@ -86,6 +89,7 @@ public class ExecutableFlow extends ExecutableFlowBase {
     return executionOptions;
   }
 
+  @Override
   protected void setFlow(Project project, Flow flow) {
     super.setFlow(project, flow);
     executionOptions = new ExecutionOptions();
@@ -99,6 +103,7 @@ public class ExecutableFlow extends ExecutableFlowBase {
     }
   }
 
+  @Override
   public int getExecutionId() {
     return executionId;
   }
@@ -114,6 +119,11 @@ public class ExecutableFlow extends ExecutableFlowBase {
 
   public void setProjectId(int projectId) {
     this.projectId = projectId;
+  }
+
+  @Override
+  public String getProjectName() {
+    return projectName;
   }
 
   public int getScheduleId() {
@@ -157,6 +167,7 @@ public class ExecutableFlow extends ExecutableFlowBase {
     this.submitTime = submitTime;
   }
 
+  @Override
   public Map<String, Object> toObject() {
     HashMap<String, Object> flowObj = new HashMap<String, Object>();
     fillMapFromExecutable(flowObj);
@@ -164,6 +175,7 @@ public class ExecutableFlow extends ExecutableFlowBase {
     flowObj.put(EXECUTIONID_PARAM, executionId);
     flowObj.put(EXECUTIONPATH_PARAM, executionPath);
     flowObj.put(PROJECTID_PARAM, projectId);
+    flowObj.put(PROJECTNAME_PARAM, projectName);
 
     if (scheduleId >= 0) {
       flowObj.put(SCHEDULEID_PARAM, scheduleId);
@@ -201,6 +213,7 @@ public class ExecutableFlow extends ExecutableFlowBase {
     this.executionPath = flowObj.getString(EXECUTIONPATH_PARAM);
 
     this.projectId = flowObj.getInt(PROJECTID_PARAM);
+    this.projectName = flowObj.getString(PROJECTNAME_PARAM);
     this.scheduleId = flowObj.getInt(SCHEDULEID_PARAM);
     this.submitUser = flowObj.getString(SUBMITUSER_PARAM);
     this.version = flowObj.getInt(VERSION_PARAM);
@@ -222,12 +235,14 @@ public class ExecutableFlow extends ExecutableFlowBase {
     }
   }
 
+  @Override
   public Map<String, Object> toUpdateObject(long lastUpdateTime) {
     Map<String, Object> updateData = super.toUpdateObject(lastUpdateTime);
     updateData.put(EXECUTIONID_PARAM, this.executionId);
     return updateData;
   }
 
+  @Override
   public void resetForRetry() {
     super.resetForRetry();
     this.setStatus(Status.RUNNING);

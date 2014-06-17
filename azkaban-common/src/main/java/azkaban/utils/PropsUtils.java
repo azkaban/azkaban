@@ -282,6 +282,7 @@ public class PropsUtils {
     props.put(CommonJobProperties.FLOW_ID, flow.getFlowId());
     props.put(CommonJobProperties.EXEC_ID, flow.getExecutionId());
     props.put(CommonJobProperties.PROJECT_ID, flow.getProjectId());
+    props.put(CommonJobProperties.PROJECT_NAME, flow.getProjectName());
     props.put(CommonJobProperties.PROJECT_VERSION, flow.getVersion());
     props.put(CommonJobProperties.FLOW_UUID, UUID.randomUUID().toString());
 
