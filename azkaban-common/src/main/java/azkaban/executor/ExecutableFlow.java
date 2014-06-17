@@ -37,7 +37,7 @@ public class ExecutableFlow extends ExecutableFlowBase {
   public static final String SUBMITTIME_PARAM = "submitTime";
   public static final String VERSION_PARAM = "version";
   public static final String PROXYUSERS_PARAM = "proxyUsers";
-  private static final String PROJECTNAME_PARAM = "projectName";
+  public static final String PROJECTNAME_PARAM = "projectName";
 
   private int executionId = -1;
   private int scheduleId = -1;

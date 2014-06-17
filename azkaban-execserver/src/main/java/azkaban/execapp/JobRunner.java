@@ -521,11 +521,16 @@ public class JobRunner extends EventHandler implements Runnable {
     return true;
   }
 
+  /**
+   * Add relevant links to the job properties so that downstream consumers may
+   * know what executions initiated their execution.
+   */
   private void insertLinks() {
     Props azkProps = AzkabanExecutorServer.getApp().getAzkabanProps();
     String baseURL = azkProps.get("azkaban.webserver.url");
-    if (baseURL == null)
+    if (baseURL == null){
       return;
+    }
 
     String flowName = node.getParentFlow().getFlowId();
     String projectName = node.getParentFlow().getProjectName();
