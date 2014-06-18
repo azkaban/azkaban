@@ -1,4 +1,4 @@
-Azkaban2 [![Build Status](http://img.shields.io/travis/azkaban/azkaban2.svg?style=flat)](https://travis-ci.org/azkaban/azkaban2)
+Azkaban2 [![Build Status](http://img.shields.io/travis/azkaban/azkaban.svg?style=flat)](https://travis-ci.org/azkaban/azkaban)
 ========
 
 Building from Source
