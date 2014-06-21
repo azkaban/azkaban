@@ -100,8 +100,6 @@ public class KillExecutionAction implements TriggerAction {
 
   @Override
   public void setContext(Map<String, Object> context) {
-    // TODO Auto-generated method stub
-
   }
 
   @Override

@@ -38,11 +38,6 @@ import azkaban.utils.Pair;
 
 public class Schedule {
 
-  // private long projectGuid;
-  // private long flowGuid;
-
-  // private String scheduleId;
-
   private int scheduleId;
   private int projectId;
   private String projectName;
@@ -305,7 +300,6 @@ public class Schedule {
 
       if (slaOptions != null) {
         List<Object> slaOptionsObject = new ArrayList<Object>();
-        // schedObj.put("slaOptions", slaOptions.toObject());
         for (SlaOption sla : slaOptions) {
           slaOptionsObject.add(sla.toObject());
         }

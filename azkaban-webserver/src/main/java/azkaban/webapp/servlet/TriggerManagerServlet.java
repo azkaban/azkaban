@@ -87,10 +87,6 @@ public class TriggerManagerServlet extends LoginAbstractAzkabanServlet {
 
     List<Trigger> triggers = triggerManager.getTriggers();
     page.add("triggers", triggers);
-    //
-    // List<SLA> slas = slaManager.getSLAs();
-    // page.add("slas", slas);
-
     page.render();
   }
 
@@ -113,18 +109,9 @@ public class TriggerManagerServlet extends LoginAbstractAzkabanServlet {
       return;
     }
 
-    // if(!hasPermission(project, user, Type.SCHEDULE)) {
-    // ret.put("status", "error");
-    // ret.put("message", "Permission denied. Cannot remove trigger with id " +
-    // triggerId);
-    // return;
-    // }
-
     triggerManager.expireTrigger(triggerId);
     logger.info("User '" + user.getUserId() + " has removed trigger "
         + t.getDescription());
-    // projectManager.postProjectEvent(project, EventType.SCHEDULE,
-    // user.getUserId(), "Schedule " + sched.toString() + " has been removed.");
 
     ret.put("status", "success");
     ret.put("message", "trigger " + triggerId + " removed from Schedules.");

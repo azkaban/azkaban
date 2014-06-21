@@ -277,8 +277,6 @@ public abstract class AbstractAzkabanServlet extends HttpServlet {
     Cookie[] cookies = request.getCookies();
     if (cookies != null) {
       for (Cookie cookie : cookies) {
-        // if (name.equals(cookie.getName()) && cookie.getPath()!=null &&
-        // cookie.getPath().equals("/")) {
         if (name.equals(cookie.getName())) {
           return cookie;
         }
@@ -324,9 +322,6 @@ public abstract class AbstractAzkabanServlet extends HttpServlet {
     // the first one
     if (viewerPlugins != null && !viewerPlugins.isEmpty()) {
       page.add("viewers", viewerPlugins);
-      // ViewerPlugin plugin = viewerPlugins.get(0);
-      // page.add("viewerName", plugin.getPluginName());
-      // page.add("viewerPath", plugin.getPluginPath());
     }
 
     if (triggerPlugins != null && !triggerPlugins.isEmpty()) {

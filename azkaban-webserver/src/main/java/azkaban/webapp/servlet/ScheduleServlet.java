@@ -172,7 +172,6 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
   }
 
   private SlaOption parseSlaSetting(String set) throws ScheduleManagerException {
-    // "" + Duration + EmailAction + KillAction
     logger.info("Tryint to set sla with the following set: " + set);
 
     String slaType;
@@ -185,8 +184,6 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
     String emailAction = parts[3];
     String killAction = parts[4];
     if (emailAction.equals("true") || killAction.equals("true")) {
-      // String type = id.equals("") ? SlaOption.RULE_FLOW_RUNTIME_SLA :
-      // SlaOption.RULE_JOB_RUNTIME_SLA ;
       if (emailAction.equals("true")) {
         slaActions.add(SlaOption.ACTION_ALERT);
         slaInfo.put(SlaOption.ALERT_TYPE, "email");
@@ -348,14 +345,9 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
     try {
       schedules = scheduleManager.getSchedules();
     } catch (ScheduleManagerException e) {
-      // TODO Auto-generated catch block
       throw new ServletException(e);
     }
     page.add("schedules", schedules);
-    //
-    // List<SLA> slas = slaManager.getSLAs();
-    // page.add("slas", slas);
-
     page.render();
   }
 
@@ -371,14 +363,9 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
     try {
       schedules = scheduleManager.getSchedules();
     } catch (ScheduleManagerException e) {
-      // TODO Auto-generated catch block
       throw new ServletException(e);
     }
     page.add("schedules", schedules);
-    //
-    // List<SLA> slas = slaManager.getSLAs();
-    // page.add("slas", slas);
-
     page.render();
   }
 
@@ -413,7 +400,6 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
     try {
       schedules = scheduleManager.getSchedules();
     } catch (ScheduleManagerException e) {
-      // TODO Auto-generated catch block
       throw new ServletException(e);
     }
     // See if anything is scheduled
@@ -428,7 +414,6 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
       try {
         writeScheduleData(output, schedule);
       } catch (ScheduleManagerException e) {
-        // TODO Auto-generated catch block
         throw new ServletException(e);
       }
     }
@@ -477,7 +462,6 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
       useCache = true;
     }
     long endTime = startTime + 24 * 3600 * 1000;
-    // long endTime = getLongParam(req, "endTime");
     int loadAll = getIntParam(req, "loadAll");
 
     // Cache file
@@ -499,7 +483,6 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
             new BufferedInputStream(new FileInputStream(cache));
         try {
           IOUtils.copy(cacheInput, resp.getOutputStream());
-          // System.out.println("Using cache copy for " + start);
           return;
         } finally {
           IOUtils.closeQuietly(cacheInput);
@@ -585,7 +568,6 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
     try {
       sched = scheduleManager.getSchedule(scheduleId);
     } catch (ScheduleManagerException e) {
-      // TODO Auto-generated catch block
       throw new ServletException(e);
     }
     if (sched == null) {
@@ -671,7 +653,6 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
       ret.put("error", e.getMessage());
     }
 
-    // Schedule sched = scheduleManager.getSchedule(projectId, flowName);
     ExecutionOptions flowOptions = null;
     try {
       flowOptions = HttpRequestUtils.parseFlowOptions(req);
@@ -712,9 +693,8 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
     if (scheduleDate == null || scheduleDate.trim().length() == 0) {
       day = new LocalDateTime().toDateTime();
     } else {
-      day =
-          DateTimeFormat.forPattern("MM/dd/yyyy").withZone(timezone)
-              .parseDateTime(scheduleDate);
+      day = DateTimeFormat.forPattern("MM/dd/yyyy")
+          .withZone(timezone).parseDateTime(scheduleDate);
     }
 
     hour %= 12;

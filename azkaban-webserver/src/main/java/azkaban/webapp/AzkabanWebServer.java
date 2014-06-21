@@ -204,7 +204,6 @@ public class AzkabanWebServer extends AzkabanServer {
 
     loadPluginCheckersAndActions(triggerPluginDir);
 
-    // baseClassLoader = getBaseClassloader();
     baseClassLoader = this.getClassLoader();
 
     tempDir = new File(props.getString("azkaban.temp.dir", "temp"));
@@ -259,18 +258,6 @@ public class AzkabanWebServer extends AzkabanServer {
     return execManager;
   }
 
-  // private ExecutorManagerAdapter loadExecutorManagerAdapter(Props props)
-  // throws Exception {
-  // String executorMode = props.getString("executor.manager.mode", "local");
-  // ExecutorManagerAdapter adapter;
-  // if(executorMode.equals("local")) {
-  // adapter = loadExecutorManager(props);
-  // } else {
-  // throw new Exception("Unknown ExecutorManager mode " + executorMode);
-  // }
-  // return adapter;
-  // }
-
   private ScheduleManager loadScheduleManager(TriggerManager tm, Props props)
       throws Exception {
     logger.info("Loading trigger based scheduler");
@@ -294,7 +281,6 @@ public class AzkabanWebServer extends AzkabanServer {
       ExecuteFlowAction.setTriggerManager(triggerManager);
       KillExecutionAction.setExecutorManager(executorManager);
       SlaAlertAction.setExecutorManager(executorManager);
-      // Map<String, azkaban.alert.Alerter> alerters = loadAlerters(props);
       SlaAlertAction.setAlerters(alerters);
       SlaAlertAction.setExecutorManager(executorManager);
       CreateTriggerAction.setTriggerManager(triggerManager);
@@ -625,10 +611,6 @@ public class AzkabanWebServer extends AzkabanServer {
     return triggerManager;
   }
 
-  // public TriggerBasedScheduler getScheduler() {
-  // return scheduler;
-  // }
-  //
   /**
    * Creates and configures the velocity engine.
    *
@@ -665,29 +647,6 @@ public class AzkabanWebServer extends AzkabanServer {
     engine.setProperty("parser.pool.size", 3);
     return engine;
   }
-
-  // private ClassLoader getBaseClassloader() throws MalformedURLException {
-  // final ClassLoader retVal;
-  //
-  // String hadoopHome = System.getenv("HADOOP_HOME");
-  // String hadoopConfDir = System.getenv("HADOOP_CONF_DIR");
-  //
-  // if (hadoopConfDir != null) {
-  // logger.info("Using hadoop config found in " + hadoopConfDir);
-  // retVal = new URLClassLoader(new URL[] { new File(hadoopConfDir)
-  // .toURI().toURL() }, getClass().getClassLoader());
-  // } else if (hadoopHome != null) {
-  // logger.info("Using hadoop config found in " + hadoopHome);
-  // retVal = new URLClassLoader(
-  // new URL[] { new File(hadoopHome, "conf").toURI().toURL() },
-  // getClass().getClassLoader());
-  // } else {
-  // logger.info("HADOOP_HOME not set, using default hadoop config.");
-  // retVal = getClass().getClassLoader();
-  // }
-  //
-  // return retVal;
-  // }
 
   public ClassLoader getClassLoader() {
     return baseClassLoader;
@@ -831,14 +790,6 @@ public class AzkabanWebServer extends AzkabanServer {
     app.setTriggerPlugins(triggerPlugins);
     // always have basic time trigger
     // TODO: find something else to do the job
-    // app.getTriggerManager().addTriggerAgent(app.getScheduleManager().getTriggerSource(),
-    // app.getScheduleManager());
-    // add additional triggers
-    // for(TriggerPlugin plugin : triggerPlugins.values()) {
-    // TriggerAgent agent = plugin.getAgent();
-    // app.getTriggerManager().addTriggerAgent(agent.getTriggerSource(), agent);
-    // }
-    // fire up
     app.getTriggerManager().start();
 
     root.setAttribute(ServerConstants.AZKABAN_SERVLET_CONTEXT_KEY, app);
@@ -871,7 +822,6 @@ public class AzkabanWebServer extends AzkabanServer {
       String pluginPath, AzkabanWebServer azkabanWebApp) {
     File triggerPluginPath = new File(pluginPath);
     if (!triggerPluginPath.exists()) {
-      // return Collections.<String, TriggerPlugin>emptyMap();
       return new HashMap<String, TriggerPlugin>();
     }
 
@@ -918,9 +868,6 @@ public class AzkabanWebServer extends AzkabanServer {
       }
 
       String pluginName = pluginProps.getString("trigger.name");
-      // String pluginWebPath = pluginProps.getString("trigger.web.path");
-      // int pluginOrder = pluginProps.getInt("trigger.order", 0);
-      // boolean pluginHidden = pluginProps.getBoolean("trigger.hidden", false);
       List<String> extLibClasspath =
           pluginProps.getStringList("trigger.external.classpaths",
               (List<String>) null);
@@ -1259,10 +1206,6 @@ public class AzkabanWebServer extends AzkabanServer {
       registerMbean("executorManager", new JmxExecutorManager(
           (ExecutorManager) executorManager));
     }
-    // registerMbean("executorManager", new
-    // JmxExecutorManager(executorManager));
-    // registerMbean("executorManager", new
-    // JmxExecutorManager(executorManager));
   }
 
   public void close() {
@@ -1275,9 +1218,6 @@ public class AzkabanWebServer extends AzkabanServer {
       logger.error("Failed to cleanup MBeanServer", e);
     }
     scheduleManager.shutdown();
-    // if(executorManager instanceof ExecutorManagerLocalAdapter) {
-    // ((ExecutorManagerLocalAdapter)executorManager).getExecutorManager().shutdown();
-    // }
     executorManager.shutdown();
   }
 

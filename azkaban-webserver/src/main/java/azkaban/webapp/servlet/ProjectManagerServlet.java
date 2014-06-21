@@ -438,7 +438,6 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
         }
       }
     } catch (ScheduleManagerException e) {
-      // TODO Auto-generated catch block
       throw new ServletException(e);
     }
 
@@ -465,7 +464,6 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
       return;
     }
 
-    // project.info("Project removing by '" + user.getUserId() + "'");
     try {
       projectManager.removeProject(project, user);
     } catch (ProjectManagerException e) {
@@ -539,7 +537,6 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
       generalParams.put(ps, prop.getString(ps));
     }
     for (String ops : overrideProp.getKeySet()) {
-      // generalParams.put(ops, overrideProp.getString(ops));
       overrideParams.put(ops, overrideProp.getString(ops));
     }
     ret.put("generalParams", generalParams);
@@ -609,10 +606,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
       nodeObj.put("type", node.getType());
       if (node.getEmbeddedFlowId() != null) {
         nodeObj.put("flowId", node.getEmbeddedFlowId());
-        // HashMap<String, Object> embeddedNodeObj = new HashMap<String,
-        // Object>();
         fillFlowInfo(project, node.getEmbeddedFlowId(), nodeObj);
-        // nodeObj.put("flowData", embeddedNodeObj);
       }
 
       nodeList.add(nodeObj);
@@ -914,8 +908,6 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
       page.add("errorMsg", e.getMessage());
     }
 
-    // page.add("projectManager", projectManager);
-    // int bytesSkip = 0;
     int numBytes = 1024;
 
     // Really sucks if we do a lot of these because it'll eat up memory fast.

@@ -60,7 +60,6 @@ public class CreateTriggerAction implements TriggerAction {
 
   @Override
   public CreateTriggerAction fromJson(Object obj) throws Exception {
-    // TODO Auto-generated method stub
     return createFromJson(obj);
   }
 

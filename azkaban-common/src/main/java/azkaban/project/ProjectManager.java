@@ -408,22 +408,6 @@ public class ProjectManager {
       projectLoader.uploadProjectProperties(project, propProps);
     }
 
-    // TODO: find something else to load triggers
-    // if(loadTriggerFromFile) {
-    // logger.info("Loading triggers.");
-    // Props triggerProps = new Props();
-    // triggerProps.put("projectId", project.getId());
-    // triggerProps.put("projectName", project.getName());
-    // triggerProps.put("submitUser", uploader.getUserId());
-    // try {
-    // triggerManager.loadTriggerFromDir(file, triggerProps);
-    // } catch (Exception e) {
-    // // TODO Auto-generated catch block
-    // e.printStackTrace();
-    // logger.error("Failed to load triggers.", e);
-    // }
-    // }
-
     logger.info("Uploaded project files. Cleaning up temp files.");
     projectLoader.postEvent(project, EventType.UPLOADED, uploader.getUserId(),
         "Uploaded project files zip " + archive.getName());

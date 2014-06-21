@@ -133,14 +133,6 @@ public class EmailMessage {
       throw new RuntimeException("Mail host not set.");
     }
 
-    // if (_mailUser == null) {
-    // throw new RuntimeException("Mail user not set.");
-    // }
-    //
-    // if (_mailPassword == null) {
-    // throw new RuntimeException("Mail password not set.");
-    // }
-
     if (_fromAddress == null || _fromAddress.length() == 0) {
       throw new RuntimeException("From address not set.");
     }
@@ -157,7 +149,6 @@ public class EmailMessage {
   public void sendEmail() throws MessagingException {
     checkSettings();
     Properties props = new Properties();
-    // props.setProperty("mail.transport.protocol", "smtp");
     props.put("mail." + protocol + ".host", _mailHost);
     props.put("mail." + protocol + ".auth", "true");
     props.put("mail.user", _mailUser);

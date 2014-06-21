@@ -110,9 +110,6 @@ public class SlaOption {
   public Object toWebObject() {
     HashMap<String, Object> slaObj = new HashMap<String, Object>();
 
-    // slaObj.put("type", type);
-    // slaObj.put("info", info);
-    // slaObj.put("actions", actions);
     if (type.equals(TYPE_FLOW_FINISH) || type.equals(TYPE_FLOW_SUCCEED)) {
       slaObj.put("id", "");
     } else {

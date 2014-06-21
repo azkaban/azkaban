@@ -70,7 +70,6 @@ public class ScheduleManager implements TriggerAgent {
     try {
       scheduleList = loader.loadSchedules();
     } catch (ScheduleManagerException e) {
-      // TODO Auto-generated catch block
       logger.error("Failed to load schedules" + e.getCause() + e.getMessage());
       e.printStackTrace();
     }
@@ -182,7 +181,6 @@ public class ScheduleManager implements TriggerAgent {
     try {
       loader.removeSchedule(sched);
     } catch (ScheduleManagerException e) {
-      // TODO Auto-generated catch block
       e.printStackTrace();
     }
   }
@@ -232,7 +230,6 @@ public class ScheduleManager implements TriggerAgent {
    * @param flow
    */
   public synchronized void insertSchedule(Schedule s) {
-    // boolean exist = s.getScheduleId() != -1;
     Schedule exist = scheduleIdentityPairMap.get(s.getScheduleIdentityPair());
     if (s.updateTime()) {
       try {
@@ -245,7 +242,6 @@ public class ScheduleManager implements TriggerAgent {
           internalSchedule(s);
         }
       } catch (ScheduleManagerException e) {
-        // TODO Auto-generated catch block
         e.printStackTrace();
       }
     } else {

@@ -50,9 +50,6 @@ public class Condition {
       long nextCheckTime) {
     this.nextCheckTime = nextCheckTime;
     setCheckers(checkers);
-    // for(ConditionChecker ck : checkers.values()) {
-    // ck.setCondition(this);
-    // }
     this.expression = jexl.createExpression(expr);
   }
 
@@ -86,7 +83,6 @@ public class Condition {
     this.checkers = checkers;
     for (ConditionChecker checker : checkers.values()) {
       this.context.set(checker.getId(), checker);
-      // checker.setCondition(this);
     }
     updateNextCheckTime();
   }

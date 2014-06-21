@@ -147,22 +147,6 @@ public class ExecutorServlet extends HttpServlet implements ConnectorParams {
     try {
       if (MODIFY_RETRY_FAILURES.equals(modificationType)) {
         flowRunnerManager.retryFailures(execId, user);
-      } else {
-        // String modifiedJobList = getParam(req, MODIFY_JOBS_LIST);
-        // String[] jobIds = modifiedJobList.split("\\s*,\\s*");
-        //
-        // if (MODIFY_RETRY_JOBS.equals(modificationType)) {
-        // }
-        // else if (MODIFY_CANCEL_JOBS.equals(modificationType)) {
-        // }
-        // else if (MODIFY_DISABLE_JOBS.equals(modificationType)) {
-        // }
-        // else if (MODIFY_ENABLE_JOBS.equals(modificationType)) {
-        // }
-        // else if (MODIFY_PAUSE_JOBS.equals(modificationType)) {
-        // }
-        // else if (MODIFY_RESUME_JOBS.equals(modificationType)) {
-        // }
       }
     } catch (ExecutorManagerException e) {
       logger.error(e);
