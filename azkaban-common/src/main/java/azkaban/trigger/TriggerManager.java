@@ -185,7 +185,6 @@ public class TriggerManager extends EventHandler implements
     private BlockingQueue<Trigger> triggers;
     private Map<Integer, ExecutableFlow> justFinishedFlows;
     private boolean shutdown = false;
-    // private AtomicBoolean stillAlive = new AtomicBoolean(true);
     private final long scannerInterval;
 
     public TriggerScannerThread(long scannerInterval) {
@@ -198,7 +197,6 @@ public class TriggerManager extends EventHandler implements
     public void shutdown() {
       logger.error("Shutting down trigger manager thread " + this.getName());
       shutdown = true;
-      // stillAlive.set(false);
       this.interrupt();
     }
 
@@ -220,7 +218,6 @@ public class TriggerManager extends EventHandler implements
     }
 
     public void run() {
-      // while(stillAlive.get()) {
       while (!shutdown) {
         synchronized (syncObj) {
           try {
@@ -348,7 +345,6 @@ public class TriggerManager extends EventHandler implements
       if (t.isResetOnExpire()) {
         t.resetTriggerConditions();
         t.resetExpireCondition();
-        // updateTrigger(t);
       } else {
         t.setStatus(TriggerStatus.EXPIRED);
       }
@@ -384,7 +380,6 @@ public class TriggerManager extends EventHandler implements
   public void expireTrigger(int triggerId) {
     Trigger t = getTrigger(triggerId);
     t.setStatus(TriggerStatus.EXPIRED);
-    // updateAgent(t);
   }
 
   @Override

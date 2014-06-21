@@ -85,27 +85,6 @@ public class HistoryServlet extends LoginAbstractAzkabanServlet {
   private void fetchHistoryData(HttpServletRequest req,
       HttpServletResponse resp, HashMap<String, Object> ret)
       throws ServletException {
-    // long start = getLongParam(req, "start");
-    // long end = getLongParam(req, "end");
-    //
-    // ret.put("start", start);
-    // ret.put("end", end);
-    //
-    // List<ExecutionReference> refs = executorManager.getFlowHistory(start,
-    // end);
-    // ArrayList<Object> refList = new ArrayList<Object>();
-    // for (ExecutionReference ref: refs) {
-    //
-    // HashMap<String,Object> refObj = new HashMap<String,Object>();
-    // refObj.put("execId", ref.getExecId());
-    // refObj.put("start", ref.getStartTime());
-    // refObj.put("end", ref.getEndTime());
-    // refObj.put("status", ref.getStatus().toString());
-    //
-    // refList.add(refObj);
-    // }
-    //
-    // ret.put("data", refList);
   }
 
   private void handleHistoryPage(HttpServletRequest req,
@@ -149,7 +128,6 @@ public class HistoryServlet extends LoginAbstractAzkabanServlet {
             executorManager.getExecutableFlows(searchTerm, (pageNum - 1)
                 * pageSize, pageSize);
       } catch (ExecutorManagerException e) {
-        // TODO Auto-generated catch block
         page.add("error", e.getMessage());
       }
     } else {
@@ -179,9 +157,6 @@ public class HistoryServlet extends LoginAbstractAzkabanServlet {
       page.add("begin", getParam(req, "begin"));
       page.add("end", getParam(req, "end"));
     }
-    // else {
-    // page.add("search_term", "");
-    // }
 
     if (pageNum == 1) {
       page.add("previous", new PageSelection(1, pageSize, true, false));
@@ -217,60 +192,10 @@ public class HistoryServlet extends LoginAbstractAzkabanServlet {
 
   private void handleHistoryTimelinePage(HttpServletRequest req,
       HttpServletResponse resp, Session session) {
-    // Page page = newPage(req, resp, session,
-    // "azkaban/webapp/servlet/velocity/historytimelinepage.vm");
-    // long currentTime = System.currentTimeMillis();
-    // long begin = getLongParam(req, "begin", currentTime - 86400000);
-    // long end = getLongParam(req, "end", currentTime);
-    //
-    // page.add("begin", begin);
-    // page.add("end", end);
-    //
-    // List<ExecutionReference> refs = executorManager.getFlowHistory(begin,
-    // end);
-    // ArrayList<Object> refList = new ArrayList<Object>();
-    // for (ExecutionReference ref: refs) {
-    //
-    // HashMap<String,Object> refObj = new HashMap<String,Object>();
-    // refObj.put("execId", ref.getExecId());
-    // refObj.put("start", ref.getStartTime());
-    // refObj.put("end", ref.getEndTime());
-    // refObj.put("status", ref.getStatus().toString());
-    //
-    // refList.add(refObj);
-    // }
-    //
-    // page.add("data", JSONUtils.toJSON(refList));
-    // page.render();
   }
 
   private void handleHistoryDayPage(HttpServletRequest req,
       HttpServletResponse resp, Session session) {
-    // Page page = newPage(req, resp, session,
-    // "azkaban/webapp/servlet/velocity/historydaypage.vm");
-    // long currentTime = System.currentTimeMillis();
-    // long begin = getLongParam(req, "begin", currentTime - 86400000);
-    // long end = getLongParam(req, "end", currentTime);
-    //
-    // page.add("begin", begin);
-    // page.add("end", end);
-    //
-    // List<ExecutionReference> refs = executorManager.getFlowHistory(begin,
-    // end);
-    // ArrayList<Object> refList = new ArrayList<Object>();
-    // for (ExecutionReference ref: refs) {
-    //
-    // HashMap<String,Object> refObj = new HashMap<String,Object>();
-    // refObj.put("execId", ref.getExecId());
-    // refObj.put("start", ref.getStartTime());
-    // refObj.put("end", ref.getEndTime());
-    // refObj.put("status", ref.getStatus().toString());
-    //
-    // refList.add(refObj);
-    // }
-    //
-    // page.add("data", JSONUtils.toJSON(refList));
-    // page.render();
   }
 
   public class PageSelection {
@@ -310,8 +235,6 @@ public class HistoryServlet extends LoginAbstractAzkabanServlet {
   @Override
   protected void handlePost(HttpServletRequest req, HttpServletResponse resp,
       Session session) throws ServletException, IOException {
-    // TODO Auto-generated method stub
-
   }
 
   public class ExecutorVMHelper {

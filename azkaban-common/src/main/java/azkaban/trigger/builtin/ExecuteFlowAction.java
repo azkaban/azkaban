@@ -241,9 +241,6 @@ public class ExecuteFlowAction implements TriggerAction {
 
     try {
       executorManager.submitExecutableFlow(exflow, submitUser);
-      // Map<String, Object> outputProps = new HashMap<String, Object>();
-      // outputProps.put(EXEC_ID, exflow.getExecutionId());
-      // context.put(actionId, outputProps);
       logger.info("Invoked flow " + project.getName() + "." + flowName);
     } catch (ExecutorManagerException e) {
       throw new RuntimeException(e);

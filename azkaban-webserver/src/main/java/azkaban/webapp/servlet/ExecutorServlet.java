@@ -123,14 +123,7 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
           ajaxFetchJobStats(req, resp, ret, session.getUser(), exFlow);
         } else if (ajaxName.equals("retryFailedJobs")) {
           ajaxRestartFailed(req, resp, ret, session.getUser(), exFlow);
-        }
-        // else if (ajaxName.equals("fetchLatestJobStatus")) {
-        // ajaxFetchLatestJobStatus(req, resp, ret, session.getUser(), exFlow);
-        // }
-        else if (ajaxName.equals("flowInfo")) {
-          // String projectName = getParam(req, "project");
-          // Project project = projectManager.getProject(projectName);
-          // String flowName = getParam(req, "flow");
+        } else if (ajaxName.equals("flowInfo")) {
           ajaxFetchExecutableFlowInfo(req, resp, ret, session.getUser(), exFlow);
         }
       }
@@ -330,55 +323,6 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 
     return null;
   }
-
-  // private void ajaxFetchLatestJobStatus(HttpServletRequest
-  // req,HttpServletResponse resp, HashMap<String, Object> ret, User user,
-  // ExecutableFlow exFlow) {
-  // Project project = getProjectAjaxByPermission(ret, exFlow.getProjectId(),
-  // user, Type.READ);
-  // if (project == null) {
-  // ret.put("error", "Project doesn't exist or incorrect access permission.");
-  // return;
-  // }
-  //
-  // String projectName;
-  // String flowName;
-  // String jobName;
-  // try {
-  // projectName = getParam(req, "projectName");
-  // flowName = getParam(req, "flowName");
-  // jobName = getParam(req, "jobName");
-  // } catch (Exception e) {
-  // ret.put("error", e.getMessage());
-  // return;
-  // }
-  //
-  // try {
-  // ExecutableNode node = exFlow.getExecutableNode(jobId);
-  // if (node == null) {
-  // ret.put("error", "Job " + jobId + " doesn't exist in " +
-  // exFlow.getExecutionId());
-  // return;
-  // }
-  //
-  // int attempt = this.getIntParam(req, "attempt", node.getAttempt());
-  // LogData data = executorManager.getExecutionJobLog(exFlow, jobId, offset,
-  // length, attempt);
-  // if (data == null) {
-  // ret.put("length", 0);
-  // ret.put("offset", offset);
-  // ret.put("data", "");
-  // }
-  // else {
-  // ret.put("length", data.getLength());
-  // ret.put("offset", data.getOffset());
-  // ret.put("data", data.getData());
-  // }
-  // } catch (ExecutorManagerException e) {
-  // throw new ServletException(e);
-  // }
-  //
-  // }
 
   private void ajaxRestartFailed(HttpServletRequest req,
       HttpServletResponse resp, HashMap<String, Object> ret, User user,

@@ -237,7 +237,6 @@ public class JdbcTriggerLoader extends AbstractJdbcLoader implements
       connection.commit();
       if (updates == 0) {
         throw new TriggerLoaderException("No trigger has been updated.");
-        // logger.error("No trigger is updated!");
       } else {
         logger.info("Updated " + updates + " records.");
       }
@@ -274,8 +273,6 @@ public class JdbcTriggerLoader extends AbstractJdbcLoader implements
       ArrayList<Trigger> triggers = new ArrayList<Trigger>();
       do {
         int triggerId = rs.getInt(1);
-        // String triggerSource = rs.getString(2);
-        // long modifyTime = rs.getLong(3);
         int encodingType = rs.getInt(4);
         byte[] data = rs.getBytes(5);
 
@@ -304,7 +301,6 @@ public class JdbcTriggerLoader extends AbstractJdbcLoader implements
           t = Trigger.fromJson(jsonObj);
           triggers.add(t);
         } catch (Exception e) {
-          // TODO Auto-generated catch block
           e.printStackTrace();
           logger.error("Failed to load trigger " + triggerId);
         }

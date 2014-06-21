@@ -61,7 +61,7 @@ public class DataSourceUtils {
 
   /**
    * Create Datasource from parameters in the properties
-   * 
+   *
    * @param props
    * @return
    */
@@ -90,7 +90,7 @@ public class DataSourceUtils {
 
   /**
    * Create a MySQL DataSource
-   * 
+   *
    * @param host
    * @param port
    * @param dbName
@@ -107,7 +107,7 @@ public class DataSourceUtils {
 
   /**
    * Create H2 DataSource
-   * 
+   *
    * @param file
    * @return
    */
@@ -123,7 +123,7 @@ public class DataSourceUtils {
 
   /**
    * MySQL data source based on AzkabanDataSource
-   * 
+   *
    */
   public static class MySQLBasicDataSource extends AzkabanDataSource {
 
@@ -210,7 +210,7 @@ public class DataSourceUtils {
 
   /**
    * H2 Datasource
-   * 
+   *
    */
   public static class EmbeddedH2BasicDataSource extends AzkabanDataSource {
     private EmbeddedH2BasicDataSource(String filePath) {

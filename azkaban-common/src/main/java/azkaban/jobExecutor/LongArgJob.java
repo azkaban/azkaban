@@ -44,10 +44,7 @@ public abstract class LongArgJob extends AbstractProcessJob {
 
   public LongArgJob(String jobid, String[] command, Props sysProps,
       Props jobProp, Logger log, Set<String> suppressedKeys) {
-    // super(command, desc);
     super(jobid, sysProps, jobProp, log);
-    // String cwd = descriptor.getProps().getString(WORKING_DIR, new
-    // File(descriptor.getFullPath()).getParent());
 
     this.builder =
         new AzkabanProcessBuilder(command)
@@ -71,7 +68,6 @@ public abstract class LongArgJob extends AbstractProcessJob {
     info("Working directory: " + builder.getWorkingDir());
 
     File[] propFiles = initPropsFiles();
-    // System.err.println("outputfile=" + propFiles[1]);
 
     boolean success = false;
     this.process = builder.build();

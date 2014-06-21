@@ -102,7 +102,6 @@ public class FileIOUtils {
     createDirsFindFiles(sourceDir, sourceDir, destDir, paths);
 
     StringBuffer buffer = new StringBuffer();
-    // buffer.append("sh '");
     for (String path : paths) {
       File sourceLink = new File(sourceDir, path);
       path = "." + path;
@@ -111,9 +110,7 @@ public class FileIOUtils {
           .append(" ").append(path).append(";");
     }
 
-    // buffer.append("'");
     String command = buffer.toString();
-    // System.out.println(command);
     ProcessBuilder builder = new ProcessBuilder().command("sh", "-c", command);
     builder.directory(destDir);
 

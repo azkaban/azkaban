@@ -326,7 +326,6 @@ public class JdbcProjectLoader extends AbstractJdbcLoader implements
     final String INSERT_PROJECT_FILES =
         "INSERT INTO project_files (project_id, version, chunk, size, file) values (?,?,?,?,?)";
 
-    // int numChunks = (localFileSize / buffer.length) + 1;
     BufferedInputStream bufferedStream = null;
     int chunk = 0;
     try {
@@ -1219,8 +1218,6 @@ public class JdbcProjectLoader extends AbstractJdbcLoader implements
       ArrayList<Triple<String, Boolean, Permission>> permissions =
           new ArrayList<Triple<String, Boolean, Permission>>();
       do {
-        // int project_id = rs.getInt(1);
-        // long modifiedTime = rs.getLong(2);
         String username = rs.getString(3);
         int permissionFlag = rs.getInt(4);
         boolean val = rs.getBoolean(5);
@@ -1250,10 +1247,7 @@ public class JdbcProjectLoader extends AbstractJdbcLoader implements
 
       ArrayList<Flow> flows = new ArrayList<Flow>();
       do {
-        // int projectId = rs.getInt(1);
-        // int version = rs.getInt(2);
         String flowId = rs.getString(3);
-        // long modifiedTime = rs.getLong(4);
         int encodingType = rs.getInt(5);
         byte[] dataBytes = rs.getBytes(6);
 
@@ -1305,10 +1299,7 @@ public class JdbcProjectLoader extends AbstractJdbcLoader implements
       List<Pair<String, Props>> properties =
           new ArrayList<Pair<String, Props>>();
       do {
-        // int projectId = rs.getInt(1);
-        // int version = rs.getInt(2);
         String name = rs.getString(3);
-        // long modifiedTime = rs.getLong(4);
         int eventType = rs.getInt(5);
         byte[] dataBytes = rs.getBytes(6);
 
@@ -1377,10 +1368,6 @@ public class JdbcProjectLoader extends AbstractJdbcLoader implements
 
       ArrayList<byte[]> data = new ArrayList<byte[]>();
       do {
-        // int project_id = rs.getInt(1);
-        // int version = rs.getInt(2);
-        // int chunk = rs.getInt(3);
-        // int size = rs.getInt(4);
         byte[] bytes = rs.getBytes(5);
 
         data.add(bytes);
@@ -1395,9 +1382,6 @@ public class JdbcProjectLoader extends AbstractJdbcLoader implements
       ResultSetHandler<List<ProjectFileHandler>> {
     private static String SELECT_PROJECT_VERSION =
         "SELECT project_id, version, upload_time, uploader, file_type, file_name, md5, num_chunks FROM project_versions WHERE project_id=? AND version=?";
-
-    // private static String SELECT_ALL_PER_PROJECT =
-    // "SELECT project_id, version, upload_time, uploader, file_type, file_name, md5, num_chunks FROM project_versions WHERE project_id=?";
 
     @Override
     public List<ProjectFileHandler> handle(ResultSet rs) throws SQLException {

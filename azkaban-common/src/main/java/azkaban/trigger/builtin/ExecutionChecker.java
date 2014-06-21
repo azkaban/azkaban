@@ -54,7 +54,6 @@ public class ExecutionChecker implements ConditionChecker {
     try {
       exflow = executorManager.getExecutableFlow(execId);
     } catch (ExecutorManagerException e) {
-      // TODO Auto-generated catch block
       e.printStackTrace();
       return Boolean.FALSE;
     }

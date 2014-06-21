@@ -125,14 +125,12 @@ public class TriggerBasedScheduleLoader implements ScheduleLoader {
     }
   }
 
-  // TODO
-  // may need to add logic to filter out skip runs
+  // TODO may need to add logic to filter out skip runs
   @Override
   public synchronized List<Schedule> loadSchedules()
       throws ScheduleManagerException {
     List<Trigger> triggers = triggerManager.getTriggers(triggerSource);
     List<Schedule> schedules = new ArrayList<Schedule>();
-    // triggersLocalCopy = new HashMap<Integer, Trigger>();
     for (Trigger t : triggers) {
       lastUpdateTime = Math.max(lastUpdateTime, t.getLastModifyTime());
       Schedule s = triggerToSchedule(t);
@@ -182,9 +180,7 @@ public class TriggerBasedScheduleLoader implements ScheduleLoader {
   public void removeSchedule(Schedule s) throws ScheduleManagerException {
     try {
       triggerManager.removeTrigger(s.getScheduleId(), s.getSubmitUser());
-      // triggersLocalCopy.remove(s.getScheduleId());
     } catch (TriggerManagerException e) {
-      // TODO Auto-generated catch block
       throw new ScheduleManagerException(e.getMessage());
     }
 
@@ -203,7 +199,6 @@ public class TriggerBasedScheduleLoader implements ScheduleLoader {
       triggers =
           triggerManager.getTriggerUpdates(triggerSource, lastUpdateTime);
     } catch (TriggerManagerException e) {
-      // TODO Auto-generated catch block
       e.printStackTrace();
       throw new ScheduleManagerException(e);
     }
