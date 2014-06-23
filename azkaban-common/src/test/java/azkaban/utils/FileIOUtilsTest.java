@@ -16,35 +16,52 @@
 
 package azkaban.utils;
 
+import com.google.common.io.Resources;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.net.URL;
 
 import org.apache.commons.io.FileUtils;
 
 import org.junit.After;
-import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Ignore;
+import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.Rule;
+import org.junit.rules.TemporaryFolder;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertNotNull;
 
 public class FileIOUtilsTest {
-  File sourceDir = new File("unit/project/testjob");
-  File destDir = new File("unit/executions/unixsymlink");
+  @Rule
+  public TemporaryFolder temp = new TemporaryFolder();
+
+  private static File sourceDir;
+
+  private File destDir;
+
+  @BeforeClass
+  public static void createSourceDir() throws Exception {
+    URL resourceUrl = Resources.getResource("project/testjob");
+    assertNotNull(resourceUrl);
+    sourceDir = new File(resourceUrl.toURI());
+  }
 
   @Before
   public void setUp() throws Exception {
-    if (destDir.exists()) {
-      FileUtils.deleteDirectory(destDir);
-    }
-    destDir.mkdirs();
+    destDir = temp.newFolder("unixsymlink");
   }
 
   @After
   public void tearDown() throws Exception {
+    temp.delete();
   }
 
-  @Ignore @Test
+  @Test
   public void testSymlinkCopy() throws IOException {
     FileIOUtils.createDeepSymlink(sourceDir, destDir);
   }
@@ -60,7 +77,7 @@ public class FileIOUtilsTest {
       exception = true;
     }
 
-    Assert.assertTrue(exception);
+    assertTrue(exception);
   }
 
   @Test
@@ -83,9 +100,9 @@ public class FileIOUtilsTest {
         pair.getSecond(), "UTF-8");
     System.out.println("correctString:" + correctString);
 
-    Assert.assertEquals(pair, new Pair<Integer,Integer>(1, 20));
+    assertEquals(pair, new Pair<Integer,Integer>(1, 20));
     // Two characters stripped from this.
-    Assert.assertEquals(correctString.length(), foreignText.length() - 6);
+    assertEquals(correctString.length(), foreignText.length() - 6);
 
   }
 
@@ -109,9 +126,9 @@ public class FileIOUtilsTest {
         pair.getSecond(), "UTF-8");
     System.out.println("correctString:" + correctString);
 
-    Assert.assertEquals(pair, new Pair<Integer,Integer>(3, 40));
+    assertEquals(pair, new Pair<Integer,Integer>(3, 40));
     // Two characters stripped from this.
-    Assert.assertEquals(correctString.length(), foreignText.length() - 3);
+    assertEquals(correctString.length(), foreignText.length() - 3);
 
 
     // Testing mixed bytes
@@ -122,10 +139,9 @@ public class FileIOUtilsTest {
     correctString = new String(mixedBytes, pair2.getFirst(), pair2.getSecond(),
         "UTF-8");
     System.out.println("correctString:" + correctString);
-    Assert.assertEquals(pair2, new Pair<Integer,Integer>(1, 45));
+    assertEquals(pair2, new Pair<Integer,Integer>(1, 45));
     // Two characters stripped from this.
-    Assert.assertEquals(correctString.length(), mixedText.length() - 3);
-
+    assertEquals(correctString.length(), mixedText.length() - 3);
   }
 
   private byte[] createUTF8ByteArray(String text) {
