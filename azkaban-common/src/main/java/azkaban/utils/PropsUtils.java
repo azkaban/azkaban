@@ -39,6 +39,8 @@ import org.joda.time.DateTime;
 import azkaban.executor.ExecutableFlowBase;
 import azkaban.flow.CommonJobProperties;
 
+import javax.print.attribute.standard.DateTimeAtCompleted;
+
 public class PropsUtils {
 
   /**
@@ -287,6 +289,11 @@ public class PropsUtils {
     props.put(CommonJobProperties.FLOW_UUID, UUID.randomUUID().toString());
 
     DateTime loadTime = new DateTime();
+    DateTime hourAgo = loadTime.minusHours(1);
+    DateTime dayAgo = loadTime.minusDays(1);
+    DateTime weekAgo = loadTime.minusWeeks(1);
+    DateTime monthAgo = loadTime.minusMonths(1);
+    DateTime yearAgo = loadTime.minusYears(1);
 
     props.put(CommonJobProperties.FLOW_START_TIMESTAMP, loadTime.toString());
     props.put(CommonJobProperties.FLOW_START_YEAR, loadTime.toString("yyyy"));
@@ -299,6 +306,57 @@ public class PropsUtils {
         loadTime.toString("SSS"));
     props.put(CommonJobProperties.FLOW_START_TIMEZONE,
         loadTime.toString("ZZZZ"));
+
+    props.put(CommonJobProperties.FLOW_BACK_ONE_HOUR_TIMESTAMP, hourAgo.toString());
+    props.put(CommonJobProperties.FLOW_BACK_ONE_HOUR_YEAR, hourAgo.toString("yyyy"));
+    props.put(CommonJobProperties.FLOW_BACK_ONE_HOUR_MONTH, hourAgo.toString("MM"));
+    props.put(CommonJobProperties.FLOW_BACK_ONE_HOUR_DAY, hourAgo.toString("dd"));
+    props.put(CommonJobProperties.FLOW_BACK_ONE_HOUR_HOUR, hourAgo.toString("HH"));
+    props.put(CommonJobProperties.FLOW_BACK_ONE_HOUR_MINUTE, hourAgo.toString("mm"));
+    props.put(CommonJobProperties.FLOW_BACK_ONE_HOUR_SECOND, hourAgo.toString("ss"));
+    props.put(CommonJobProperties.FLOW_BACK_ONE_HOUR_MILLISSECOND, hourAgo.toString("SSS"));
+    props.put(CommonJobProperties.FLOW_BACK_ONE_HOUR_TIMEZONE, hourAgo.toString("ZZZZ"));
+
+    props.put(CommonJobProperties.FLOW_BACK_ONE_DAY_TIMESTAMP, dayAgo.toString());
+    props.put(CommonJobProperties.FLOW_BACK_ONE_DAY_YEAR, dayAgo.toString("yyyy"));
+    props.put(CommonJobProperties.FLOW_BACK_ONE_DAY_MONTH, dayAgo.toString("MM"));
+    props.put(CommonJobProperties.FLOW_BACK_ONE_DAY_DAY, dayAgo.toString("dd"));
+    props.put(CommonJobProperties.FLOW_BACK_ONE_DAY_HOUR, dayAgo.toString("HH"));
+    props.put(CommonJobProperties.FLOW_BACK_ONE_DAY_MINUTE, dayAgo.toString("mm"));
+    props.put(CommonJobProperties.FLOW_BACK_ONE_DAY_SECOND, dayAgo.toString("ss"));
+    props.put(CommonJobProperties.FLOW_BACK_ONE_DAY_MILLISSECOND, dayAgo.toString("SSS"));
+    props.put(CommonJobProperties.FLOW_BACK_ONE_DAY_TIMEZONE, dayAgo.toString("ZZZZ"));
+
+    props.put(CommonJobProperties.FLOW_BACK_ONE_WEEK_TIMESTAMP, weekAgo.toString());
+    props.put(CommonJobProperties.FLOW_BACK_ONE_WEEK_YEAR, weekAgo.toString("yyyy"));
+    props.put(CommonJobProperties.FLOW_BACK_ONE_WEEK_MONTH, weekAgo.toString("MM"));
+    props.put(CommonJobProperties.FLOW_BACK_ONE_WEEK_DAY, weekAgo.toString("dd"));
+    props.put(CommonJobProperties.FLOW_BACK_ONE_WEEK_HOUR, weekAgo.toString("HH"));
+    props.put(CommonJobProperties.FLOW_BACK_ONE_WEEK_MINUTE, weekAgo.toString("mm"));
+    props.put(CommonJobProperties.FLOW_BACK_ONE_WEEK_SECOND, weekAgo.toString("ss"));
+    props.put(CommonJobProperties.FLOW_BACK_ONE_WEEK_MILLISSECOND, weekAgo.toString("SSS"));
+    props.put(CommonJobProperties.FLOW_BACK_ONE_WEEK_TIMEZONE, weekAgo.toString("ZZZZ"));
+
+    props.put(CommonJobProperties.FLOW_BACK_ONE_MONTH_TIMESTAMP, monthAgo.toString());
+    props.put(CommonJobProperties.FLOW_BACK_ONE_MONTH_YEAR, monthAgo.toString("yyyy"));
+    props.put(CommonJobProperties.FLOW_BACK_ONE_MONTH_MONTH, monthAgo.toString("MM"));
+    props.put(CommonJobProperties.FLOW_BACK_ONE_MONTH_DAY, monthAgo.toString("dd"));
+    props.put(CommonJobProperties.FLOW_BACK_ONE_MONTH_HOUR, monthAgo.toString("HH"));
+    props.put(CommonJobProperties.FLOW_BACK_ONE_MONTH_MINUTE, monthAgo.toString("mm"));
+    props.put(CommonJobProperties.FLOW_BACK_ONE_MONTH_SECOND, monthAgo.toString("ss"));
+    props.put(CommonJobProperties.FLOW_BACK_ONE_MONTH_MILLISSECOND, monthAgo.toString("SSS"));
+    props.put(CommonJobProperties.FLOW_BACK_ONE_MONTH_TIMEZONE, monthAgo.toString("ZZZZ"));
+
+    props.put(CommonJobProperties.FLOW_BACK_ONE_YEAR_TIMESTAMP, yearAgo.toString());
+    props.put(CommonJobProperties.FLOW_BACK_ONE_YEAR_YEAR, yearAgo.toString("yyyy"));
+    props.put(CommonJobProperties.FLOW_BACK_ONE_YEAR_MONTH, yearAgo.toString("MM"));
+    props.put(CommonJobProperties.FLOW_BACK_ONE_YEAR_DAY, yearAgo.toString("dd"));
+    props.put(CommonJobProperties.FLOW_BACK_ONE_YEAR_HOUR, yearAgo.toString("HH"));
+    props.put(CommonJobProperties.FLOW_BACK_ONE_YEAR_MINUTE, yearAgo.toString("mm"));
+    props.put(CommonJobProperties.FLOW_BACK_ONE_YEAR_SECOND, yearAgo.toString("ss"));
+    props.put(CommonJobProperties.FLOW_BACK_ONE_YEAR_MILLISSECOND, yearAgo.toString("SSS"));
+    props.put(CommonJobProperties.FLOW_BACK_ONE_YEAR_TIMEZONE, yearAgo.toString("ZZZZ"));
+
     return props;
   }
 
