@@ -16,6 +16,7 @@
 
 package azkaban.utils;
 
+import java.lang.String;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -53,6 +54,7 @@ public class Emailer extends AbstractMailer implements Alerter {
   private String mailPassword;
   private String mailSender;
   private String azkabanName;
+  private String tls;
 
   public Emailer(Props props) {
     super(props);
@@ -61,6 +63,7 @@ public class Emailer extends AbstractMailer implements Alerter {
     this.mailUser = props.getString("mail.user", "");
     this.mailPassword = props.getString("mail.password", "");
     this.mailSender = props.getString("mail.sender", "");
+    this.tls = props.getString("mail.tls", "false");
 
     int mailTimeout = props.getInt("mail.timeout.millis", 10000);
     EmailMessage.setTimeout(mailTimeout);
@@ -106,6 +109,7 @@ public class Emailer extends AbstractMailer implements Alerter {
   public void sendFirstErrorMessage(ExecutableFlow flow) {
     EmailMessage message = new EmailMessage(mailHost, mailUser, mailPassword);
     message.setFromAddress(mailSender);
+    message.setTLS(tls);
 
     ExecutionOptions option = flow.getExecutionOptions();
 
@@ -131,6 +135,7 @@ public class Emailer extends AbstractMailer implements Alerter {
   public void sendErrorEmail(ExecutableFlow flow, String... extraReasons) {
     EmailMessage message = new EmailMessage(mailHost, mailUser, mailPassword);
     message.setFromAddress(mailSender);
+    message.setTLS(tls);
 
     ExecutionOptions option = flow.getExecutionOptions();
 
@@ -155,6 +160,7 @@ public class Emailer extends AbstractMailer implements Alerter {
   public void sendSuccessEmail(ExecutableFlow flow) {
     EmailMessage message = new EmailMessage(mailHost, mailUser, mailPassword);
     message.setFromAddress(mailSender);
+    message.setTLS(tls);
 
     ExecutionOptions option = flow.getExecutionOptions();
 

@@ -47,6 +47,7 @@ public class EmailMessage {
   private String _subject;
   private String _fromAddress;
   private String _mimeType = "text/plain";
+  private String _tls;
   private StringBuffer _body = new StringBuffer();
   private static int _mailTimeout = 10000;
   private static int _connectionTimeout = 10000;
@@ -106,6 +107,11 @@ public class EmailMessage {
     return this;
   }
 
+  public EmailMessage setTLS(String tls) {
+    _tls = tls;
+    return this;
+  }
+
   public EmailMessage addAttachment(File file) throws MessagingException {
     return addAttachment(file.getName(), file);
   }
@@ -155,6 +161,8 @@ public class EmailMessage {
     props.put("mail.password", _mailPassword);
     props.put("mail." + protocol + ".timeout", _mailTimeout);
     props.put("mail." + protocol + ".connectiontimeout", _connectionTimeout);
+    props.put("mail.smtp.starttls.enable", _tls);
+    props.put("mail.smtp.ssl.trust", _mailHost);
 
     Session session = Session.getInstance(props, null);
     Message message = new MimeMessage(session);
