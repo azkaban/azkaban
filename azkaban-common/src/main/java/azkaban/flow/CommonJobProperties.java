@@ -194,4 +194,14 @@ public class CommonJobProperties {
   public static final String FLOW_BACK_ONE_YEAR_SECOND = "azkaban.flow.one.year.back.second";
   public static final String FLOW_BACK_ONE_YEAR_MILLISSECOND = "azkaban.flow.one.year.back.milliseconds";
   public static final String FLOW_BACK_ONE_YEAR_TIMEZONE = "azkaban.flow.one.year.back.timezone";
+
+  public static final String FLOW_BACK_TWO_DAY_TIMESTAMP = "azkaban.flow.two.day.back.timestamp";
+  public static final String FLOW_BACK_TWO_DAY_YEAR = "azkaban.flow.two.day.back.year";
+  public static final String FLOW_BACK_TWO_DAY_MONTH = "azkaban.flow.two.day.back.month";
+  public static final String FLOW_BACK_TWO_DAY_DAY = "azkaban.flow.two.day.back.day";
+  public static final String FLOW_BACK_TWO_DAY_HOUR = "azkaban.flow.two.day.back.hour";
+  public static final String FLOW_BACK_TWO_DAY_MINUTE = "azkaban.flow.two.day.back.minute";
+  public static final String FLOW_BACK_TWO_DAY_SECOND = "azkaban.flow.two.day.back.second";
+  public static final String FLOW_BACK_TWO_DAY_MILLISSECOND = "azkaban.flow.two.day.back.milliseconds";
+  public static final String FLOW_BACK_TWO_DAY_TIMEZONE = "azkaban.flow.two.day.back.timezone";
 }
