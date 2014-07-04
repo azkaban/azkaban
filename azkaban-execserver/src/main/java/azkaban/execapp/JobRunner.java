@@ -174,7 +174,7 @@ public class JobRunner extends EventHandler implements Runnable {
   /**
    * Returns a list of jobs that this JobRunner will wait upon to finish before
    * starting. It is only relevant if pipeline is turned on.
-   *
+   * 
    * @return
    */
   public Set<String> getPipelineWatchedJobs() {
@@ -253,7 +253,7 @@ public class JobRunner extends EventHandler implements Runnable {
   /**
    * Used to handle non-ready and special status's (i.e. KILLED). Returns true
    * if they handled anything.
-   *
+   * 
    * @return
    */
   private boolean handleNonReadyStatus() {
@@ -401,7 +401,6 @@ public class JobRunner extends EventHandler implements Runnable {
 
   /**
    * The main run thread.
-   *
    */
   @Override
   public void run() {
@@ -528,7 +527,7 @@ public class JobRunner extends EventHandler implements Runnable {
   private void insertLinks() {
     Props azkProps = AzkabanExecutorServer.getApp().getAzkabanProps();
     String baseURL = azkProps.get("azkaban.webserver.url");
-    if (baseURL == null){
+    if (baseURL == null) {
       return;
     }
 
@@ -540,7 +539,8 @@ public class JobRunner extends EventHandler implements Runnable {
     props.put(CommonJobProperties.JOBEXEC_LINK, String.format(
         "%s/executor?execid=%d&job=%s", baseURL, executionId, jobId));
     props.put(CommonJobProperties.ATTEMPT_LINK, String.format(
-        "%s/executor?execid=%d&job=%s&attempt=%d", baseURL, executionId, jobId, node.getAttempt()));
+        "%s/executor?execid=%d&job=%s&attempt=%d", baseURL, executionId, jobId,
+        node.getAttempt()));
     props.put(CommonJobProperties.WORKFLOW_LINK, String.format(
         "%s/manager?project=%s&flow=%s", baseURL, projectName, flowName));
     props.put(CommonJobProperties.JOB_LINK, String.format(
@@ -551,17 +551,16 @@ public class JobRunner extends EventHandler implements Runnable {
   private void runJob() {
     try {
       job.run();
-    } catch (Exception e) {
-      e.printStackTrace();
+    } catch (Throwable e) {
 
       if (props.getBoolean("job.succeed.on.failure", false)) {
         changeStatus(Status.FAILED_SUCCEEDED);
         logError("Job run failed, but will treat it like success.");
-        logError(e.getMessage() + e.getCause());
+        logError(e.getMessage() + " cause: " + e.getCause(), e);
       } else {
         changeStatus(Status.FAILED);
-        logError("Job run failed!");
-        logError(e.getMessage() + e.getCause());
+        logError("Job run failed!", e);
+        logError(e.getMessage() + " cause: " + e.getCause());
       }
     }
 
@@ -640,6 +639,12 @@ public class JobRunner extends EventHandler implements Runnable {
   private void logError(String message) {
     if (logger != null) {
       logger.error(message);
+    }
+  }
+
+  private void logError(String message, Throwable t) {
+    if (logger != null) {
+      logger.error(message, t);
     }
   }
 
