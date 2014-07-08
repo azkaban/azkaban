@@ -19,7 +19,6 @@ package azkaban.utils;
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.Calendar;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -301,10 +300,7 @@ public class PropsUtils {
     props.put(CommonJobProperties.FLOW_START_TIMEZONE,
         loadTime.toString("ZZZZ"));
 
-    Calendar cal = Calendar.getInstance();
-    cal.setTime(loadTime);
-    cal.add(Calendar.DATE, -1);
-    DateTime yesterday = cal.getTime();
+    DateTime yesterday = new DateTime().minusDays(1);
 
     props.put(CommonJobProperties.FLOW_YESTERDAY_YEAR, yesterday.toString("yyyy"));
     props.put(CommonJobProperties.FLOW_YESTERDAY_MONTH, yesterday.toString("MM"));
