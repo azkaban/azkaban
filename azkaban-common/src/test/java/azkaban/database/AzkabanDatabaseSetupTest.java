@@ -16,8 +16,12 @@
 
 package azkaban.database;
 
+import com.google.common.io.Resources;
+
 import java.io.File;
 import java.io.IOException;
+import java.net.URL;
+import java.net.URISyntaxException;
 import java.sql.SQLException;
 
 import javax.sql.DataSource;
@@ -26,90 +30,94 @@ import org.apache.commons.dbutils.QueryRunner;
 import org.apache.commons.io.FileUtils;
 
 import org.junit.AfterClass;
-import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.junit.Rule;
+import org.junit.rules.TemporaryFolder;
+
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 import azkaban.utils.Props;
 
-@Ignore
 public class AzkabanDatabaseSetupTest {
+  @Rule
+  public TemporaryFolder temp = new TemporaryFolder();
+
+  private static String sqlScriptsDir;
+
   @BeforeClass
-  public static void setupDB() throws IOException, SQLException {
-    File dbDir = new File("h2dbtest");
-    if (dbDir.exists()) {
-      FileUtils.deleteDirectory(dbDir);
-    }
-
-    dbDir.mkdir();
-
-    clearUnitTestDB();
+  public static void setupDB() throws IOException, URISyntaxException {
+    URL resourceUrl = Resources.getResource("sql");
+    assertNotNull(resourceUrl);
+    sqlScriptsDir = new File(resourceUrl.toURI()).getCanonicalPath();
   }
 
   @AfterClass
   public static void teardownDB() {
   }
 
-  @Test
+  @Ignore @Test
   public void testH2Query() throws Exception {
-    Props h2Props = getH2Props();
+    File dbDir = temp.newFolder("h2dbtest");
+    Props h2Props = getH2Props(dbDir.getCanonicalPath(), sqlScriptsDir);
     AzkabanDatabaseSetup setup = new AzkabanDatabaseSetup(h2Props);
 
     // First time will create the tables
     setup.loadTableInfo();
     setup.printUpgradePlan();
     setup.updateDatabase(true, true);
-    Assert.assertTrue(setup.needsUpdating());
+    assertTrue(setup.needsUpdating());
 
     // Second time will update some tables. This is only for testing purpose and
-    // obviously we
-    // wouldn't set things up this way.
+    // obviously we wouldn't set things up this way.
     setup.loadTableInfo();
     setup.printUpgradePlan();
     setup.updateDatabase(true, true);
-    Assert.assertTrue(setup.needsUpdating());
+    assertTrue(setup.needsUpdating());
 
     // Nothing to be done
     setup.loadTableInfo();
     setup.printUpgradePlan();
-    Assert.assertFalse(setup.needsUpdating());
+    assertFalse(setup.needsUpdating());
   }
 
-  @Test
+  @Ignore @Test
   public void testMySQLQuery() throws Exception {
-    Props mysqlProps = getMySQLProps();
+    clearMySQLTestDB();
+    Props mysqlProps = getMySQLProps(sqlScriptsDir);
     AzkabanDatabaseSetup setup = new AzkabanDatabaseSetup(mysqlProps);
 
     // First time will create the tables
     setup.loadTableInfo();
     setup.printUpgradePlan();
     setup.updateDatabase(true, true);
-    Assert.assertTrue(setup.needsUpdating());
+    assertTrue(setup.needsUpdating());
 
     // Second time will update some tables. This is only for testing purpose
     // and obviously we wouldn't set things up this way.
     setup.loadTableInfo();
     setup.printUpgradePlan();
     setup.updateDatabase(true, true);
-    Assert.assertTrue(setup.needsUpdating());
+    assertTrue(setup.needsUpdating());
 
     // Nothing to be done
     setup.loadTableInfo();
     setup.printUpgradePlan();
-    Assert.assertFalse(setup.needsUpdating());
+    assertFalse(setup.needsUpdating());
   }
 
-  private static Props getH2Props() {
+  private static Props getH2Props(String dbDir, String sqlScriptsDir) {
     Props props = new Props();
     props.put("database.type", "h2");
-    props.put("h2.path", "h2dbtest/h2db");
-    props.put("database.sql.scripts.dir", "unit/sql");
-
+    props.put("h2.path", dbDir);
+    props.put("database.sql.scripts.dir", sqlScriptsDir);
     return props;
   }
 
-  private static Props getMySQLProps() {
+  private static Props getMySQLProps(String sqlScriptsDir) {
     Props props = new Props();
 
     props.put("database.type", "mysql");
@@ -117,16 +125,15 @@ public class AzkabanDatabaseSetupTest {
     props.put("mysql.host", "localhost");
     props.put("mysql.database", "azkabanunittest");
     props.put("mysql.user", "root");
-    props.put("database.sql.scripts.dir", "unit/sql");
+    props.put("database.sql.scripts.dir", sqlScriptsDir);
     props.put("mysql.password", "");
     props.put("mysql.numconnections", 10);
 
     return props;
   }
 
-  private static void clearUnitTestDB() throws SQLException {
+  private static void clearMySQLTestDB() throws SQLException {
     Props props = new Props();
-
     props.put("database.type", "mysql");
     props.put("mysql.host", "localhost");
     props.put("mysql.port", "3306");

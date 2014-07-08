@@ -17,26 +17,35 @@
 package azkaban.jobExecutor;
 
 import java.io.IOException;
+import java.io.File;
 import java.util.Date;
 import java.util.Properties;
 
 import org.apache.log4j.Logger;
 
+import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
+import org.junit.ClassRule;
 import org.junit.Test;
+import org.junit.Rule;
+import org.junit.rules.TemporaryFolder;
 
 import azkaban.utils.Props;
 
 public class JavaProcessJobTest {
+  @ClassRule
+  public static TemporaryFolder classTemp = new TemporaryFolder();
+
+  @Rule
+  public TemporaryFolder temp = new TemporaryFolder();
 
   private JavaProcessJob job = null;
-  // private JobDescriptor descriptor = null;
   private Props props = null;
   private Logger log = Logger.getLogger(JavaProcessJob.class);
+
   private static String classPaths;
 
   private static final String inputContent =
@@ -63,17 +72,19 @@ public class JavaProcessJobTest {
   private static String outputFile;
 
   @BeforeClass
-  public static void init() {
-    // get the classpath
+  public static void init() throws IOException {
+    // Get the classpath
     Properties prop = System.getProperties();
     classPaths =
         String.format("'%s'", prop.getProperty("java.class.path", null));
 
     long time = (new Date()).getTime();
-    inputFile = "/tmp/azkaban_input_" + time;
-    errorInputFile = "/tmp/azkaban_input_error_" + time;
-    outputFile = "/tmp/azkaban_output_" + time;
-    // dump input files
+    inputFile = classTemp.newFile("azkaban_input_" + time).getCanonicalPath();
+    errorInputFile =
+        classTemp.newFile("azkaban_input_error_" + time).getCanonicalPath();
+    outputFile = classTemp.newFile("azkaban_output_" + time).getCanonicalPath();
+
+    // Dump input files
     try {
       Utils.dumpFile(inputFile, inputContent);
       Utils.dumpFile(errorInputFile, errorInputContent);
@@ -81,57 +92,47 @@ public class JavaProcessJobTest {
       e.printStackTrace(System.err);
       Assert.fail("error in creating input file:" + e.getLocalizedMessage());
     }
-
   }
 
   @AfterClass
   public static void cleanup() {
-    // remove the input file and error input file
-    Utils.removeFile(inputFile);
-    Utils.removeFile(errorInputFile);
-    // Utils.removeFile(outputFile);
+    classTemp.delete();
   }
 
   @Before
-  public void setUp() {
+  public void setUp() throws IOException {
+    File workingDir = temp.newFolder("testJavaProcess");
 
-    /* initialize job */
-    // descriptor = EasyMock.createMock(JobDescriptor.class);
-
+    // Initialize job
     props = new Props();
-    props.put(AbstractProcessJob.WORKING_DIR, ".");
+    props.put(AbstractProcessJob.WORKING_DIR, workingDir.getCanonicalPath());
     props.put("type", "java");
     props.put("fullPath", ".");
-
-    // EasyMock.expect(descriptor.getId()).andReturn("java").times(1);
-    // EasyMock.expect(descriptor.getProps()).andReturn(props).times(1);
-    // EasyMock.expect(descriptor.getFullPath()).andReturn(".").times(1);
-    //
-    // EasyMock.replay(descriptor);
-
     job = new JavaProcessJob("testJavaProcess", props, props, log);
-
-    // EasyMock.verify(descriptor);
   }
 
-  @Ignore @Test
+  @After
+  public void tearDown() {
+    temp.delete();
+  }
+
+  @Test
   public void testJavaJob() throws Exception {
-    /* initialize the Props */
+    // initialize the Props
     props.put(JavaProcessJob.JAVA_CLASS,
-        "azkaban.test.jobExecutor.WordCountLocal");
-    props.put(ProcessJob.WORKING_DIR, ".");
+        "azkaban.jobExecutor.WordCountLocal");
     props.put("input", inputFile);
     props.put("output", outputFile);
     props.put("classpath", classPaths);
     job.run();
   }
 
-  @Ignore @Test
+  @Test
   public void testJavaJobHashmap() throws Exception {
-    /* initialize the Props */
-    props.put(JavaProcessJob.JAVA_CLASS, "azkaban.test.executor.SleepJavaJob");
+    // initialize the Props
+    props.put(JavaProcessJob.JAVA_CLASS,
+        "azkaban.executor.SleepJavaJob");
     props.put("seconds", 1);
-    props.put(ProcessJob.WORKING_DIR, ".");
     props.put("input", inputFile);
     props.put("output", outputFile);
     props.put("classpath", classPaths);
@@ -141,8 +142,7 @@ public class JavaProcessJobTest {
   @Test
   public void testFailedJavaJob() throws Exception {
     props.put(JavaProcessJob.JAVA_CLASS,
-        "azkaban.test.jobExecutor.WordCountLocal");
-    props.put(ProcessJob.WORKING_DIR, ".");
+        "azkaban.jobExecutor.WordCountLocal");
     props.put("input", errorInputFile);
     props.put("output", outputFile);
     props.put("classpath", classPaths);
@@ -153,5 +153,4 @@ public class JavaProcessJobTest {
       Assert.assertTrue(true);
     }
   }
-
 }

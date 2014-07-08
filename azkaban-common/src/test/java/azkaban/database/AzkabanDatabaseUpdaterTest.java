@@ -16,8 +16,11 @@
 
 package azkaban.database;
 
+import com.google.common.io.Resources;
+
 import java.io.File;
 import java.io.IOException;
+import java.net.URL;
 import java.sql.SQLException;
 
 import javax.sql.DataSource;
@@ -30,29 +33,20 @@ import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 
+import static org.junit.Assert.assertNotNull;
+
 import azkaban.utils.Props;
 
-@Ignore
 public class AzkabanDatabaseUpdaterTest {
-  @BeforeClass
-  public static void setupDB() throws IOException, SQLException {
-    File dbDir = new File("h2dbtest");
-    if (dbDir.exists()) {
-      FileUtils.deleteDirectory(dbDir);
-    }
-
-    dbDir.mkdir();
-
-    clearUnitTestDB();
-  }
-
-  @AfterClass
-  public static void teardownDB() {
-  }
-
-  @Test
+  @Ignore @Test
   public void testMySQLAutoCreate() throws Exception {
-    String confDir = "unit/conf/dbtestmysql";
+    clearMySQLTestDb();
+
+    URL resourceUrl = Resources.getResource("conf/dbtestmysql");
+    assertNotNull(resourceUrl);
+    File resource = new File(resourceUrl.toURI());
+    String confDir = resource.getParent();
+
     System.out.println("1.***Now testing check");
     AzkabanDatabaseUpdater.main(new String[] { "-c", confDir });
 
@@ -71,7 +65,11 @@ public class AzkabanDatabaseUpdaterTest {
 
   @Test
   public void testH2AutoCreate() throws Exception {
-    String confDir = "unit/conf/dbtesth2";
+    URL resourceUrl = Resources.getResource("conf/dbtesth2");
+    assertNotNull(resourceUrl);
+    File resource = new File(resourceUrl.toURI());
+    String confDir = resource.getParent();
+
     System.out.println("1.***Now testing check");
     AzkabanDatabaseUpdater.main(new String[] { "-c", confDir });
 
@@ -88,7 +86,7 @@ public class AzkabanDatabaseUpdaterTest {
     AzkabanDatabaseUpdater.main(new String[] { "-c", confDir });
   }
 
-  private static void clearUnitTestDB() throws SQLException {
+  private static void clearMySQLTestDb() throws SQLException {
     Props props = new Props();
 
     props.put("database.type", "mysql");

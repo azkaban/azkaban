@@ -16,56 +16,57 @@
 
 package azkaban.jobExecutor;
 
+import java.io.File;
+import java.io.IOException;
+
 import org.apache.log4j.Logger;
 
+import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.Rule;
+import org.junit.rules.TemporaryFolder;
 
 import azkaban.utils.Props;
 
 public class ProcessJobTest {
+  @Rule
+  public TemporaryFolder temp = new TemporaryFolder();
+
   private ProcessJob job = null;
-  // private JobDescriptor descriptor = null;
   private Props props = null;
   private Logger log = Logger.getLogger(ProcessJob.class);
 
   @Before
-  public void setUp() {
-
-    /* initialize job */
-    // props = EasyMock.createMock(Props.class);
+  public void setUp() throws IOException {
+    File workingDir = temp.newFolder("TestProcess");
 
     props = new Props();
-    props.put(AbstractProcessJob.WORKING_DIR, ".");
+    props.put(AbstractProcessJob.WORKING_DIR, workingDir.getCanonicalPath());
     props.put("type", "command");
     props.put("fullPath", ".");
 
-    // EasyMock.expect(props.getString("type")).andReturn("command").times(1);
-    // EasyMock.expect(props.getProps()).andReturn(props).times(1);
-    // EasyMock.expect(props.getString("fullPath")).andReturn(".").times(1);
-    //
-    // EasyMock.replay(props);
-
     job = new ProcessJob("TestProcess", props, props, log);
+  }
 
+  @After
+  public void tearDown() {
+    temp.delete();
   }
 
   @Test
   public void testOneUnixCommand() throws Exception {
-    /* initialize the Props */
+    // Initialize the Props
     props.put(ProcessJob.COMMAND, "ls -al");
-    props.put(ProcessJob.WORKING_DIR, ".");
-
     job.run();
 
   }
 
   @Test
   public void testFailedUnixCommand() throws Exception {
-    /* initialize the Props */
+    // Initialize the Props
     props.put(ProcessJob.COMMAND, "xls -al");
-    props.put(ProcessJob.WORKING_DIR, ".");
 
     try {
       job.run();
@@ -77,8 +78,7 @@ public class ProcessJobTest {
 
   @Test
   public void testMultipleUnixCommands() throws Exception {
-    /* initialize the Props */
-    props.put(ProcessJob.WORKING_DIR, ".");
+    // Initialize the Props
     props.put(ProcessJob.COMMAND, "pwd");
     props.put("command.1", "date");
     props.put("command.2", "whoami");
