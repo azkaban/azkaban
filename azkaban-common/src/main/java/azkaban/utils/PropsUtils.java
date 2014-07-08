@@ -299,6 +299,16 @@ public class PropsUtils {
         loadTime.toString("SSS"));
     props.put(CommonJobProperties.FLOW_START_TIMEZONE,
         loadTime.toString("ZZZZ"));
+
+    Calendar cal = Calendar.gotInstance();
+    cal.setTime(date);
+    cal.add(Calendar.DATE, -1);
+    DateTime yesterday = cal.getDate();
+
+    props.put(CommonJobProperties.FLOW_YESTERDAY_YEAR, yesterday.toString("yyyy"));
+    props.put(CommonJobProperties.FLOW_YESTERDAY_MONTH, yesterday.toString("MM"));
+    props.put(CommonJobProperties.FLOW_YESTERDAY_DAY, yesterday.toString("dd"));
+
     return props;
   }
 

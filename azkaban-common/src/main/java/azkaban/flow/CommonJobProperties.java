@@ -142,4 +142,11 @@ public class CommonJobProperties {
   public static final String FLOW_START_TIMEZONE =
       "azkaban.flow.start.timezone";
 
+  /**
+  * Properties to describe yesterday with.
+  */
+  public static final String FLOW_YESTERDAY_YEAR = "azkaban.flow.yesterday.year";
+  public static final String FLOW_YESTERDAY_MONTH = "azkaban.flow.yesterday.month";
+  public static final String FLOW_YESTERDAY_DAY = "azkaban.flow.yesterday.day";
+
 }
