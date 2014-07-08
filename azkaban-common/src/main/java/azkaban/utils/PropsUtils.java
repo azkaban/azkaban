@@ -301,10 +301,10 @@ public class PropsUtils {
     props.put(CommonJobProperties.FLOW_START_TIMEZONE,
         loadTime.toString("ZZZZ"));
 
-    Calendar cal = Calendar.gotInstance();
-    cal.setTime(date);
+    Calendar cal = Calendar.getInstance();
+    cal.setTime(loadTime);
     cal.add(Calendar.DATE, -1);
-    DateTime yesterday = cal.getDate();
+    DateTime yesterday = cal.getTime();
 
     props.put(CommonJobProperties.FLOW_YESTERDAY_YEAR, yesterday.toString("yyyy"));
     props.put(CommonJobProperties.FLOW_YESTERDAY_MONTH, yesterday.toString("MM"));
