@@ -17,7 +17,6 @@
 package azkaban.webapp.servlet;
 
 import java.io.IOException;
-
 import java.util.HashMap;
 import java.util.List;
 
@@ -38,6 +37,7 @@ import azkaban.webapp.AzkabanWebServer;
 
 public class HistoryServlet extends LoginAbstractAzkabanServlet {
 
+  private static final String FILTER_BY_DATE_PATTERN = "MM/dd/yyyy hh:mm aa";
   private static final long serialVersionUID = 1L;
   private ExecutorManagerAdapter executorManager;
   private ProjectManager projectManager;
@@ -106,12 +106,14 @@ public class HistoryServlet extends LoginAbstractAzkabanServlet {
       String userContain = getParam(req, "usercontain");
       int status = getIntParam(req, "status");
       String begin = getParam(req, "begin");
+
       long beginTime =
-          begin == "" ? -1 : DateTimeFormat.forPattern("MM/dd/yyyy-HH:mm")
+          begin == "" ? -1 : DateTimeFormat.forPattern(FILTER_BY_DATE_PATTERN)
               .parseDateTime(begin).getMillis();
       String end = getParam(req, "end");
+
       long endTime =
-          end == "" ? -1 : DateTimeFormat.forPattern("MM/dd/yyyy-HH:mm")
+          end == "" ? -1 : DateTimeFormat.forPattern(FILTER_BY_DATE_PATTERN)
               .parseDateTime(end).getMillis();
       try {
         history =
