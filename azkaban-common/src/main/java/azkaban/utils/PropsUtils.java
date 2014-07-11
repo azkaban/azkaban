@@ -290,6 +290,7 @@ public class PropsUtils {
 
     DateTime loadTime = new DateTime();
     DateTime hourAgo = loadTime.minusHours(1);
+    DateTime twoHoursAgo = loadTime.minusHours(2);
     DateTime dayAgo = loadTime.minusDays(1);
     DateTime twoDaysAgo = loadTime.minusDays(2);
     DateTime weekAgo = loadTime.minusWeeks(1);
@@ -367,6 +368,16 @@ public class PropsUtils {
     props.put(CommonJobProperties.FLOW_BACK_TWO_DAY_SECOND, twoDaysAgo.toString("ss"));
     props.put(CommonJobProperties.FLOW_BACK_TWO_DAY_MILLISSECOND, twoDaysAgo.toString("SSS"));
     props.put(CommonJobProperties.FLOW_BACK_TWO_DAY_TIMEZONE, twoDaysAgo.toString("ZZZZ"));
+
+    props.put(CommonJobProperties.FLOW_BACK_TWO_HOUR_TIMESTAMP, twoHoursAgo.toString());
+    props.put(CommonJobProperties.FLOW_BACK_TWO_HOUR_YEAR, twoHoursAgo.toString("yyyy"));
+    props.put(CommonJobProperties.FLOW_BACK_TWO_HOUR_MONTH, twoHoursAgo.toString("MM"));
+    props.put(CommonJobProperties.FLOW_BACK_TWO_HOUR_DAY, twoHoursAgo.toString("dd"));
+    props.put(CommonJobProperties.FLOW_BACK_TWO_HOUR_HOUR, twoHoursAgo.toString("HH"));
+    props.put(CommonJobProperties.FLOW_BACK_TWO_HOUR_MINUTE, twoHoursAgo.toString("mm"));
+    props.put(CommonJobProperties.FLOW_BACK_TWO_HOUR_SECOND, twoHoursAgo.toString("ss"));
+    props.put(CommonJobProperties.FLOW_BACK_TWO_HOUR_MILLISSECOND, twoHoursAgo.toString("SSS"));
+    props.put(CommonJobProperties.FLOW_BACK_TWO_HOUR_TIMEZONE, twoHoursAgo.toString("ZZZZ"));
 
     return props;
   }
