@@ -29,12 +29,18 @@
     <script type="text/javascript" src="${context}/js/azkaban/view/schedule-sla.js"></script>
     <script type="text/javascript" src="${context}/js/azkaban/view/scheduled.js"></script>
     <script type="text/javascript" src="${context}/js/azkaban/util/schedule.js"></script>
+    <script type="text/javascript" src="${context}/js/jquery/jquery.tablesorter.js"></script>
     <script type="text/javascript">
       var contextURL = "${context}";
       var currentTime = ${currentTime};
       var timezone = "${timezone}";
       var errorMessage = null;
       var successMessage = null;
+      
+      $(document).ready(function () {
+        var flowTable = $("#scheduledFlowsTbl");
+      	flowTable.tablesorter();
+      });
     </script>
   </head>
   <body>
@@ -66,6 +72,7 @@
             <thead>
               <tr>
                 <!--th class="execid">Execution Id</th-->
+                <th>#</th>
                 <th>ID</th>
                 <th>Flow</th>
                 <th>Project</th>
@@ -81,6 +88,9 @@
   #if(!$schedules.isEmpty())
     #foreach($sched in $schedules)
               <tr>
+                <td class="tb-name">
+                   $velocityCount
+                </td>
                 <td>${sched.scheduleId}</td>
                 <td class="tb-name">
                   <a href="${context}/manager?project=${sched.projectName}&flow=${sched.flowName}">${sched.flowName}</a>
