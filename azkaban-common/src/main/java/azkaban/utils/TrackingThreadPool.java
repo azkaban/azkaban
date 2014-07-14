@@ -1,3 +1,18 @@
+/*
+ * Copyright 2012 LinkedIn Corp.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not
+ * use this file except in compliance with the License. You may obtain a copy of
+ * the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations under
+ * the License.
+ */
 package azkaban.utils;
 
 import java.util.Collections;
@@ -7,6 +22,8 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+
+import org.apache.log4j.Logger;
 
 /**
  * A simple subclass of {@link ThreadPoolExecutor} to keep track of in progress
@@ -19,6 +36,8 @@ import java.util.concurrent.TimeUnit;
  * 
  */
 public class TrackingThreadPool extends ThreadPoolExecutor {
+
+  private static Logger logger = Logger.getLogger(TrackingThreadPool.class);
 
   private final Map<Runnable, Boolean> inProgress =
       new ConcurrentHashMap<Runnable, Boolean>();
@@ -39,17 +58,20 @@ public class TrackingThreadPool extends ThreadPoolExecutor {
     }
   }
 
+  @Override
   protected void beforeExecute(Thread t, Runnable r) {
     try {
       executingListener.beforeExecute(r);
-    } finally {
+    } catch (Throwable e) {
       // to ensure the listener doesn't cause any issues
+      logger.warn("Listener threw exception", e);
     }
     super.beforeExecute(t, r);
     inProgress.put(r, Boolean.TRUE);
     startTime.set(new Long(System.currentTimeMillis()));
   }
 
+  @Override
   protected void afterExecute(Runnable r, Throwable t) {
     long time = System.currentTimeMillis() - startTime.get().longValue();
     synchronized (this) {
@@ -60,8 +82,9 @@ public class TrackingThreadPool extends ThreadPoolExecutor {
     super.afterExecute(r, t);
     try {
       executingListener.afterExecute(r);
-    } finally {
+    } catch (Throwable e) {
       // to ensure the listener doesn't cause any issues
+      logger.warn("Listener threw exception", e);
     }
   }
 
