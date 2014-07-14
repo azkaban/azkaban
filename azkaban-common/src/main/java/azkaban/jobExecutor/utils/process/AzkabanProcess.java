@@ -35,7 +35,7 @@ import com.google.common.base.Joiner;
 
 /**
  * A less shitty version of java.lang.Process.
- *
+ * 
  * Output is read by separate threads to avoid deadlock and logged to log4j
  * loggers.
  */
@@ -72,6 +72,7 @@ public class AzkabanProcess {
     ProcessBuilder builder = new ProcessBuilder(cmd);
     builder.directory(new File(workingDir));
     builder.environment().putAll(env);
+    builder.redirectErrorStream(true);
     this.process = builder.start();
     try {
       this.processId = processId(process);
@@ -116,7 +117,7 @@ public class AzkabanProcess {
 
   /**
    * Await the completion of this process
-   *
+   * 
    * @throws InterruptedException if the thread is interrupted while waiting.
    */
   public void awaitCompletion() throws InterruptedException {
@@ -125,7 +126,7 @@ public class AzkabanProcess {
 
   /**
    * Await the start of this process
-   *
+   * 
    * @throws InterruptedException if the thread is interrupted while waiting.
    */
   public void awaitStartup() throws InterruptedException {
@@ -134,7 +135,7 @@ public class AzkabanProcess {
 
   /**
    * Get the process id for this process, if it has started.
-   *
+   * 
    * @return The process id or -1 if it cannot be fetched
    */
   public int getProcessId() {
@@ -144,7 +145,7 @@ public class AzkabanProcess {
 
   /**
    * Attempt to kill the process, waiting up to the given time for it to die
-   *
+   * 
    * @param time The amount of time to wait
    * @param unit The time unit
    * @return true iff this soft kill kills the process in the given wait time.
@@ -183,7 +184,7 @@ public class AzkabanProcess {
 
   /**
    * Attempt to get the process id for this process
-   *
+   * 
    * @param process The process to get the id from
    * @return The id of the process
    */
