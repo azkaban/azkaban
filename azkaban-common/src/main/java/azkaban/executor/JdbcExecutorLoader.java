@@ -34,9 +34,10 @@ import java.util.Map;
 import org.apache.commons.dbutils.DbUtils;
 import org.apache.commons.dbutils.QueryRunner;
 import org.apache.commons.dbutils.ResultSetHandler;
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.io.FileUtils;
 import org.apache.log4j.Logger;
+
 import org.joda.time.DateTime;
 
 import azkaban.database.AbstractJdbcLoader;
@@ -167,11 +168,7 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements
       List<ExecutableFlow> properties =
           runner.query(FetchExecutableFlows.FETCH_EXECUTABLE_FLOW, flowHandler,
               id);
-      if (properties.isEmpty()) {
-        return null;
-      } else {
-        return properties.get(0);
-      }
+      return properties.get(0);
     } catch (SQLException e) {
       throw new ExecutorManagerException("Error fetching flow id " + id, e);
     }
