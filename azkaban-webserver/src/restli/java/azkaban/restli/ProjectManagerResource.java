@@ -50,11 +50,13 @@ public class ProjectManagerResource extends ResourceContextHolder {
   @Action(name = "deploy")
   public String deploy(@ActionParam("sessionId") String sessionId,
       @ActionParam("projectName") String projectName,
+      @ActionParam("projectUser") String projectUser,
       @ActionParam("packageUrl") String packageUrl)
       throws ProjectManagerException, UserManagerException, ServletException,
       IOException {
     logger.info("Deploy called. {sessionId: " + sessionId + ", projectName: "
-        + projectName + ", packageUrl:" + packageUrl + "}");
+        + projectName + ", projectUser: " + projectUser
+        + ", packageUrl:" + packageUrl + "}");
 
     String ip =
         (String) this.getContext().getRawRequestContext()
@@ -62,6 +64,7 @@ public class ProjectManagerResource extends ResourceContextHolder {
     User user = ResourceUtils.getUserFromSessionId(sessionId, ip);
     ProjectManager projectManager = getAzkaban().getProjectManager();
     Project project = projectManager.getProject(projectName);
+
     if (project == null) {
       throw new ProjectManagerException("Project '" + projectName
           + "' not found.");
@@ -75,7 +78,21 @@ public class ProjectManagerResource extends ResourceContextHolder {
       throw new ProjectManagerException(errorMsg);
     }
 
-    logger.info("Target package URL is " + packageUrl);
+    if (projectUser != null && !projectUser.isEmpty()) {
+      User projectWriteUser = new User(projectUser);
+
+      // If the project write user is specified, check that this user has
+      // explicit write permissions on the project, rather than inheriting
+      // these permissions through group or role permissions.
+      if (!project.hasPermission(projectWriteUser, Permission.Type.WRITE)) {
+        String errorMsg =
+            "User " + projectWriteUser.getUserId()
+                + " has no permission to write to project " + project.getName();
+        logger.error(errorMsg);
+        throw new ProjectManagerException(errorMsg);
+      }
+    }
+
     URL url = null;
     try {
       url = new URL(packageUrl);
@@ -90,14 +107,14 @@ public class ProjectManagerResource extends ResourceContextHolder {
     File archiveFile = new File(tempDir, filename);
     try {
       // Since zip files can be large, don't specify an explicit read or
-      // connection
-      // timeout. This will cause the call to block until the download is
-      // complete.
+      // connection timeout. This will cause the call to block until the
+      // download is complete.
       logger.info("Downloading package from " + packageUrl);
       FileUtils.copyURLToFile(url, archiveFile);
 
       logger.info("Downloaded to " + archiveFile.toString());
       projectManager.uploadProject(project, archiveFile, "zip", user);
+      return Integer.toString(project.getVersion());
     } catch (IOException e) {
       String errorMsg =
           "Download of URL " + packageUrl + " to " + archiveFile.toString()
@@ -109,7 +126,6 @@ public class ProjectManagerResource extends ResourceContextHolder {
         FileUtils.deleteDirectory(tempDir);
       }
     }
-    return Integer.toString(project.getVersion());
   }
 
   private String getFileName(String file) {
