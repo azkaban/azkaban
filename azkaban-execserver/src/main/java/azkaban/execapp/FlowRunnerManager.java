@@ -78,8 +78,6 @@ public class FlowRunnerManager implements EventListener,
   private static final long RECENTLY_FINISHED_TIME_TO_LIVE = 60 * 1000;
 
   private static final int DEFAULT_NUM_EXECUTING_FLOWS = 30;
-  private static final int DEFAULT_FLOW_NUM_JOB_TREADS = 10;
-
   private Map<Pair<Integer, Integer>, ProjectVersion> installedProjects =
       new ConcurrentHashMap<Pair<Integer, Integer>, ProjectVersion>();
   private Map<Future<?>, Integer> submittedFlows =
@@ -95,7 +93,7 @@ public class FlowRunnerManager implements EventListener,
   private TrackingThreadPool executorService;
 
   private CleanerThread cleanerThread;
-  private int numJobThreadPerFlow = DEFAULT_FLOW_NUM_JOB_TREADS;
+  private int numJobThreadPerFlow = 10;
 
   private ExecutorLoader executorLoader;
   private ProjectLoader projectLoader;
@@ -147,7 +145,7 @@ public class FlowRunnerManager implements EventListener,
     numThreads =
         props.getInt(EXECUTOR_FLOW_THREADS, DEFAULT_NUM_EXECUTING_FLOWS);
     numJobThreadPerFlow =
-        props.getInt(FLOW_NUM_JOB_THREADS, DEFAULT_FLOW_NUM_JOB_TREADS);
+        props.getInt(FLOW_NUM_JOB_THREADS, numJobThreadPerFlow);
     executorService = createExecutorService(numThreads);
 
     this.executorLoader = executorLoader;
@@ -590,6 +588,7 @@ public class FlowRunnerManager implements EventListener,
       logger.info("Flow " + flow.getExecutionId()
           + " is finished. Adding it to recently finished flows list.");
       runningFlows.remove(flow.getExecutionId());
+      submittedFlows.remove(flow.getExecutionId());
     }
   }
 
@@ -759,7 +758,7 @@ public class FlowRunnerManager implements EventListener,
         new ArrayList<Integer>(inProgressTasks.size());
 
     for (Runnable task : inProgressTasks) {
-      Integer execId = submittedFlows.get((Future<?>) task);
+      Integer execId = submittedFlows.get(task);
       if (execId != null) {
         runningFlowIds.add(execId);
       } else {
