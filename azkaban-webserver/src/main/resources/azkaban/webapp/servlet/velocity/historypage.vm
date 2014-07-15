@@ -26,10 +26,16 @@
     <script type="text/javascript" src="${context}/js/moment.min.js"></script>
     <script type="text/javascript" src="${context}/js/bootstrap-datetimepicker.min.js"></script>
     <script type="text/javascript" src="${context}/js/azkaban/view/history.js"></script>
+    <script type="text/javascript" src="${context}/js/jquery/jquery.tablesorter.js"></script>
     <script type="text/javascript">
       var contextURL = "${context}";
       var currentTime = ${currentTime};
       var timezone = "${timezone}";
+      
+      $(document).ready(function () {
+        var jobTable = $("#executingJobs");
+        jobTable.tablesorter();
+      });
     </script>
   </head>
   <body>
@@ -76,6 +82,7 @@
           <table id="executingJobs" class="table table-striped table-bordered table-hover table-condensed executions-table">
             <thead>
               <tr>
+              	<th>#</th>
                 <th class="execid">Execution Id</th>
                 <th>Flow</th>
                 <th>Project</th>
@@ -91,6 +98,9 @@
   #if (!$flowHistory.isEmpty())
     #foreach ($flow in $flowHistory)
               <tr>
+                <td class="tb-name">
+                   $velocityCount
+                </td>
                 <td class="tb-name execId">
                   <a href="${context}/executor?execid=${flow.executionId}">${flow.executionId}</a>
                 </td>

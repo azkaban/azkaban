@@ -27,14 +27,12 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.apache.log4j.Logger;
-
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutableFlowBase;
 import azkaban.executor.ExecutableNode;
 import azkaban.executor.ExecutionOptions;
-import azkaban.executor.ExecutionOptions.FailureAction;
 import azkaban.executor.ExecutorManagerAdapter;
+import azkaban.executor.ExecutionOptions.FailureAction;
 import azkaban.executor.ExecutorManagerException;
 import azkaban.executor.Status;
 import azkaban.flow.Flow;
@@ -46,8 +44,8 @@ import azkaban.scheduler.ScheduleManagerException;
 import azkaban.server.HttpRequestUtils;
 import azkaban.server.session.Session;
 import azkaban.user.Permission;
-import azkaban.user.Permission.Type;
 import azkaban.user.User;
+import azkaban.user.Permission.Type;
 import azkaban.utils.FileIOUtils.LogData;
 import azkaban.webapp.AzkabanWebServer;
 import azkaban.webapp.plugin.PluginRegistry;
@@ -55,9 +53,6 @@ import azkaban.webapp.plugin.ViewerPlugin;
 
 public class ExecutorServlet extends LoginAbstractAzkabanServlet {
   private static final long serialVersionUID = 1L;
-
-  private static final Logger logger = Logger.getLogger(ExecutorServlet.class);
-
   private ProjectManager projectManager;
   private ExecutorManagerAdapter executorManager;
   private ScheduleManager scheduleManager;
@@ -354,7 +349,7 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 
   /**
    * Gets the logs through plain text stream to reduce memory overhead.
-   * 
+   *
    * @param req
    * @param resp
    * @param user
@@ -394,7 +389,7 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 
   /**
    * Gets the logs through ajax plain text stream to reduce memory overhead.
-   * 
+   *
    * @param req
    * @param resp
    * @param user
@@ -714,7 +709,7 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
       HttpServletResponse resp, HashMap<String, Object> ret, User user,
       ExecutableFlow exFlow) throws ServletException {
     Long lastUpdateTime = Long.parseLong(getParam(req, "lastUpdateTime"));
-    logger.info("Fetching " + exFlow.getExecutionId());
+    System.out.println("Fetching " + exFlow.getExecutionId());
 
     Project project =
         getProjectAjaxByPermission(ret, exFlow.getProjectId(), user, Type.READ);
@@ -734,7 +729,7 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
   private void ajaxFetchExecutableFlow(HttpServletRequest req,
       HttpServletResponse resp, HashMap<String, Object> ret, User user,
       ExecutableFlow exFlow) throws ServletException {
-    logger.info("Fetching " + exFlow.getExecutionId());
+    System.out.println("Fetching " + exFlow.getExecutionId());
 
     Project project =
         getProjectAjaxByPermission(ret, exFlow.getProjectId(), user, Type.READ);
