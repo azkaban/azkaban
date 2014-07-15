@@ -61,6 +61,25 @@ import azkaban.utils.TrackingThreadPool;
 /**
  * Execution manager for the server side execution.
  * 
+ * When a flow is submitted to FlowRunnerManager, it is the
+ * {@link Status.PREPARING} status. When a flow is about to be executed by
+ * FlowRunner, its status is updated to {@link Status.RUNNING}
+ * 
+ * Two main data structures are used in this class to maintain flows.
+ * 
+ * runningFlows: this is used as a bookkeeping for submitted flows in
+ * FlowRunnerManager. It has nothing to do with the executor service that is
+ * used to execute the flows. This bookkeeping is used at the time of canceling
+ * or killing a flow. The flows in this data structure is removed in the
+ * handleEvent method.
+ * 
+ * submittedFlows: this is used to keep track the execution of the flows, so it
+ * has the mapping between a Future<?> and an execution id. This would allow us
+ * to find out the execution ids of the flows that are in the Status.PREPARING
+ * status. The entries in this map is removed once the flow execution is
+ * completed.
+ * 
+ * 
  */
 public class FlowRunnerManager implements EventListener,
     ThreadPoolExecutingListener {
