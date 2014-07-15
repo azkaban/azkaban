@@ -43,6 +43,7 @@ import azkaban.executor.ExecutorManagerException;
 import azkaban.executor.Status;
 import azkaban.flow.CommonJobProperties;
 import azkaban.jobExecutor.AbstractProcessJob;
+import azkaban.jobExecutor.JavaProcessJob;
 import azkaban.jobExecutor.Job;
 import azkaban.jobtype.JobTypeManager;
 import azkaban.jobtype.JobTypeManagerException;
@@ -50,7 +51,7 @@ import azkaban.utils.Props;
 
 public class JobRunner extends EventHandler implements Runnable {
   private final Layout DEFAULT_LAYOUT = new EnhancedPatternLayout(
-      "%d{dd-MM-yyyy HH:mm:ss z} %c{1} %p - %m\n");
+      "%d{dd-MM-yyyy HH:mm:ss z} %c %p - %m\n");
 
   private ExecutorLoader loader;
   private Props props;
@@ -488,6 +489,7 @@ public class JobRunner extends EventHandler implements Runnable {
       }
 
       insertLinks();
+      insertJVMAargs();
 
       props.put(CommonJobProperties.JOB_ATTEMPT, node.getAttempt());
       props.put(CommonJobProperties.JOB_METADATA_FILE,
@@ -518,6 +520,29 @@ public class JobRunner extends EventHandler implements Runnable {
     }
 
     return true;
+  }
+
+  /**
+   * Add useful JVM arguments so it is easier to map a running Java process to a
+   * flow, execution id and job
+   */
+  private void insertJVMAargs() {
+    String flowName = node.getParentFlow().getFlowId();
+    String jobId = node.getId();
+
+    String jobJVMArgs =
+        String.format(
+            "-Dazkaban.flowid=%s -Dazkaban.execid=%s -Dazkaban.jobid=%s",
+            flowName, executionId, jobId);
+    String previousJVMArgs = props.get(JavaProcessJob.JVM_PARAMS);
+    if (previousJVMArgs == null) {
+      previousJVMArgs = jobJVMArgs;
+    } else {
+      previousJVMArgs += " " + jobJVMArgs;
+    }
+
+    logger.info("job JVM args: " + previousJVMArgs);
+    props.put(JavaProcessJob.JVM_PARAMS, previousJVMArgs);
   }
 
   /**

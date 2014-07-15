@@ -78,7 +78,7 @@ public class JobTypeManager {
         try {
           loadPluginJobTypes(plugins);
         } catch (Exception e) {
-          logger.info("Plugin jobtypes failed to load. " + e.getCause());
+          logger.info("Plugin jobtypes failed to load. " + e.getCause(), e);
           throw new JobTypeManagerException(e);
         }
       }
@@ -163,8 +163,8 @@ public class JobTypeManager {
         try {
           loadJobTypes(dir, plugins);
         } catch (Exception e) {
-          logger.error("Failed to load jobtype " + dir.getName()
-              + e.getMessage());
+          logger.error(
+              "Failed to load jobtype " + dir.getName() + e.getMessage(), e);
           throw new JobTypeManagerException(e);
         }
       }
@@ -202,8 +202,10 @@ public class JobTypeManager {
       pluginLoadProps = new Props(commonPluginLoadProps, pluginLoadPropsFile);
       pluginLoadProps = PropsUtils.resolveProps(pluginLoadProps);
     } catch (Exception e) {
+      logger
+          .error("pluginLoadProps to help with debugging: " + pluginLoadProps);
       throw new JobTypeManagerException("Failed to get jobtype properties"
-          + e.getMessage());
+          + e.getMessage(), e);
     }
     // Add properties into the plugin set
     pluginLoadProps.put("plugin.dir", pluginDir.getAbsolutePath());
@@ -232,9 +234,6 @@ public class JobTypeManager {
       Job job =
           (Job) Utils.callConstructor(clazz, "dummy", fakeSysProps,
               fakeJobProps, logger);
-    } catch (Exception e) {
-      logger.info("Jobtype " + jobTypeName + " failed test!", e);
-      throw new JobExecutionException(e);
     } catch (Throwable t) {
       logger.info("Jobtype " + jobTypeName + " failed test!", t);
       throw new JobExecutionException(t);
@@ -245,7 +244,7 @@ public class JobTypeManager {
 
   /**
    * Creates and loads all plugin resources (jars) into a ClassLoader
-   *
+   * 
    * @param pluginDir
    * @param jobTypeName
    * @param plugins
