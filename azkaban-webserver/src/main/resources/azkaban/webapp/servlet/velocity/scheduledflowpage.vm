@@ -39,7 +39,7 @@
       
       $(document).ready(function () {
         var flowTable = $("#scheduledFlowsTbl");
-      	flowTable.tablesorter();
+        flowTable.tablesorter();
       });
     </script>
   </head>
