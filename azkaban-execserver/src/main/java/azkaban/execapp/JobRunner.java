@@ -51,7 +51,7 @@ import azkaban.utils.Props;
 
 public class JobRunner extends EventHandler implements Runnable {
   private final Layout DEFAULT_LAYOUT = new EnhancedPatternLayout(
-      "%d{dd-MM-yyyy HH:mm:ss z} %c %p - %m\n");
+      "%d{dd-MM-yyyy HH:mm:ss z} %c{1} %p - %m\n");
 
   private ExecutorLoader loader;
   private Props props;
