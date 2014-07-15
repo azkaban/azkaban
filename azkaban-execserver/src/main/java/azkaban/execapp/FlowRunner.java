@@ -60,7 +60,7 @@ import azkaban.utils.SwapQueue;
 
 /**
  * Class that handles the running of a ExecutableFlow DAG
- *
+ * 
  */
 public class FlowRunner extends EventHandler implements Runnable {
   private static final Layout DEFAULT_LAYOUT = new PatternLayout(
@@ -122,7 +122,7 @@ public class FlowRunner extends EventHandler implements Runnable {
 
   /**
    * Constructor. This will create its own ExecutorService for thread pools
-   *
+   * 
    * @param flow
    * @param executorLoader
    * @param projectLoader
@@ -138,7 +138,7 @@ public class FlowRunner extends EventHandler implements Runnable {
   /**
    * Constructor. If executorService is null, then it will create it's own for
    * thread pools.
-   *
+   * 
    * @param flow
    * @param executorLoader
    * @param projectLoader
@@ -356,7 +356,7 @@ public class FlowRunner extends EventHandler implements Runnable {
 
   /**
    * Main method that executes the jobs.
-   *
+   * 
    * @throws Exception
    */
   private void runFlow() throws Exception {
@@ -725,7 +725,7 @@ public class FlowRunner extends EventHandler implements Runnable {
   /**
    * Determines what the state of the next node should be. Returns null if the
    * node should not be run.
-   *
+   * 
    * @param node
    * @return
    */
@@ -1093,5 +1093,9 @@ public class FlowRunner extends EventHandler implements Runnable {
 
   public int getNumRunningJobs() {
     return activeJobRunners.size();
+  }
+
+  public int getExecutionId() {
+    return execId;
   }
 }

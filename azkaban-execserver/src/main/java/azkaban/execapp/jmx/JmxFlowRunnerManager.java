@@ -31,23 +31,8 @@ public class JmxFlowRunnerManager implements JmxFlowRunnerManagerMBean {
   }
 
   @Override
-  public long getLastSubmitterThreadCheckTime() {
-    return manager.getLastSubmitterThreadCheckTime();
-  }
-
-  @Override
-  public boolean isSubmitterThreadActive() {
-    return manager.isSubmitterThreadActive();
-  }
-
-  @Override
   public boolean isCleanerThreadActive() {
     return manager.isCleanerThreadActive();
-  }
-
-  @Override
-  public String getSubmitterThreadState() {
-    return manager.getSubmitterThreadState().toString();
   }
 
   @Override
@@ -61,13 +46,13 @@ public class JmxFlowRunnerManager implements JmxFlowRunnerManagerMBean {
   }
 
   @Override
-  public int getNumExecutingFlows() {
-    return manager.getNumExecutingFlows();
+  public int getNumRunningFlows() {
+    return manager.getNumRunningFlows();
   }
 
   @Override
-  public int countTotalNumRunningJobs() {
-    return manager.getNumExecutingJobs();
+  public int getNumQueuedFlows() {
+    return manager.getNumQueuedFlows();
   }
 
   @Override
@@ -75,4 +60,23 @@ public class JmxFlowRunnerManager implements JmxFlowRunnerManagerMBean {
     return manager.getRunningFlowIds();
   }
 
+  @Override
+  public String getQueuedFlows() {
+    return manager.getQueuedFlowIds();
+  }
+
+  @Override
+  public int getMaxNumRunningFlows() {
+    return manager.getMaxNumRunningFlows();
+  }
+
+  @Override
+  public int getMaxQueuedFlows() {
+    return manager.getTheadPoolQueueSize();
+  }
+
+  @Override
+  public int getTotalNumExecutedFlows() {
+    return manager.getTotalNumExecutedFlows();
+  }
 }

@@ -27,16 +27,16 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.BlockingQueue;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.log4j.Logger;
 
-import azkaban.project.ProjectLoader;
 import azkaban.event.Event;
 import azkaban.event.EventListener;
 import azkaban.execapp.event.FlowWatcher;
@@ -48,18 +48,47 @@ import azkaban.executor.ExecutorLoader;
 import azkaban.executor.ExecutorManagerException;
 import azkaban.jobtype.JobTypeManager;
 import azkaban.jobtype.JobTypeManagerException;
+import azkaban.project.ProjectLoader;
 import azkaban.utils.FileIOUtils;
 import azkaban.utils.FileIOUtils.JobMetaData;
 import azkaban.utils.FileIOUtils.LogData;
 import azkaban.utils.JSONUtils;
 import azkaban.utils.Pair;
 import azkaban.utils.Props;
+import azkaban.utils.ThreadPoolExecutingListener;
+import azkaban.utils.TrackingThreadPool;
 
 /**
  * Execution manager for the server side execution.
- *
+ * 
+ * When a flow is submitted to FlowRunnerManager, it is the
+ * {@link Status.PREPARING} status. When a flow is about to be executed by
+ * FlowRunner, its status is updated to {@link Status.RUNNING}
+ * 
+ * Two main data structures are used in this class to maintain flows.
+ * 
+ * runningFlows: this is used as a bookkeeping for submitted flows in
+ * FlowRunnerManager. It has nothing to do with the executor service that is
+ * used to execute the flows. This bookkeeping is used at the time of canceling
+ * or killing a flow. The flows in this data structure is removed in the
+ * handleEvent method.
+ * 
+ * submittedFlows: this is used to keep track the execution of the flows, so it
+ * has the mapping between a Future<?> and an execution id. This would allow us
+ * to find out the execution ids of the flows that are in the Status.PREPARING
+ * status. The entries in this map is removed once the flow execution is
+ * completed.
+ * 
+ * 
  */
-public class FlowRunnerManager implements EventListener {
+public class FlowRunnerManager implements EventListener,
+    ThreadPoolExecutingListener {
+  private static final String EXECUTOR_USE_BOUNDED_THREADPOOL_QUEUE =
+      "executor.use.bounded.threadpool.queue";
+  private static final String EXECUTOR_THREADPOOL_WORKQUEUE_SIZE =
+      "executor.threadpool.workqueue.size";
+  private static final String EXECUTOR_FLOW_THREADS = "executor.flow.threads";
+  private static final String FLOW_NUM_JOB_THREADS = "flow.num.job.threads";
   private static Logger logger = Logger.getLogger(FlowRunnerManager.class);
   private File executionDirectory;
   private File projectDirectory;
@@ -68,20 +97,27 @@ public class FlowRunnerManager implements EventListener {
   private static final long RECENTLY_FINISHED_TIME_TO_LIVE = 60 * 1000;
 
   private static final int DEFAULT_NUM_EXECUTING_FLOWS = 30;
+  private static final int DEFAULT_FLOW_NUM_JOB_TREADS = 10;
+
   private Map<Pair<Integer, Integer>, ProjectVersion> installedProjects =
       new ConcurrentHashMap<Pair<Integer, Integer>, ProjectVersion>();
+  // this map is used to store the flows that have been submitted to
+  // the executor service. Once a flow has been submitted, it is either
+  // in the queue waiting to be executed or in executing state.
+  private Map<Future<?>, Integer> submittedFlows =
+      new ConcurrentHashMap<Future<?>, Integer>();
   private Map<Integer, FlowRunner> runningFlows =
       new ConcurrentHashMap<Integer, FlowRunner>();
   private Map<Integer, ExecutableFlow> recentlyFinishedFlows =
       new ConcurrentHashMap<Integer, ExecutableFlow>();
-  private LinkedBlockingQueue<FlowRunner> flowQueue =
-      new LinkedBlockingQueue<FlowRunner>();
-  private int numThreads = DEFAULT_NUM_EXECUTING_FLOWS;
 
-  private ExecutorService executorService;
-  private SubmitterThread submitterThread;
+  private int numThreads = DEFAULT_NUM_EXECUTING_FLOWS;
+  private int threadPoolQueueSize = -1;
+
+  private TrackingThreadPool executorService;
+
   private CleanerThread cleanerThread;
-  private int numJobThreadPerFlow = 10;
+  private int numJobThreadPerFlow = DEFAULT_FLOW_NUM_JOB_TREADS;
 
   private ExecutorLoader executorLoader;
   private ProjectLoader projectLoader;
@@ -92,7 +128,6 @@ public class FlowRunnerManager implements EventListener {
 
   private final Props azkabanProps;
 
-  private long lastSubmitterThreadCheckTime = -1;
   private long lastCleanerThreadCheckTime = -1;
   private long executionDirRetention = 1 * 24 * 60 * 60 * 1000;
 
@@ -132,10 +167,10 @@ public class FlowRunnerManager implements EventListener {
 
     // azkaban.temp.dir
     numThreads =
-        props.getInt("executor.flow.threads", DEFAULT_NUM_EXECUTING_FLOWS);
+        props.getInt(EXECUTOR_FLOW_THREADS, DEFAULT_NUM_EXECUTING_FLOWS);
     numJobThreadPerFlow =
-        props.getInt("flow.num.job.threads", numJobThreadPerFlow);
-    executorService = Executors.newFixedThreadPool(numThreads);
+        props.getInt(FLOW_NUM_JOB_THREADS, DEFAULT_FLOW_NUM_JOB_TREADS);
+    executorService = createExecutorService(numThreads);
 
     this.executorLoader = executorLoader;
     this.projectLoader = projectLoader;
@@ -145,9 +180,6 @@ public class FlowRunnerManager implements EventListener {
 
     this.validateProxyUser =
         azkabanProps.getBoolean("proxy.user.lock.down", false);
-
-    submitterThread = new SubmitterThread(flowQueue);
-    submitterThread.start();
 
     cleanerThread = new CleanerThread();
     cleanerThread.start();
@@ -163,6 +195,32 @@ public class FlowRunnerManager implements EventListener {
             AzkabanExecutorServer.JOBTYPE_PLUGIN_DIR,
             JobTypeManager.DEFAULT_JOBTYPEPLUGINDIR), globalProps,
             parentClassLoader);
+  }
+
+  private TrackingThreadPool createExecutorService(int nThreads) {
+    boolean useNewThreadPool =
+        azkabanProps.getBoolean(EXECUTOR_USE_BOUNDED_THREADPOOL_QUEUE, false);
+    logger.info("useNewThreadPool: " + useNewThreadPool);
+
+    if (useNewThreadPool) {
+      threadPoolQueueSize =
+          azkabanProps.getInt(EXECUTOR_THREADPOOL_WORKQUEUE_SIZE, nThreads);
+      logger.info("workQueueSize: " + threadPoolQueueSize);
+
+      // using a bounded queue for the work queue. The default rejection policy
+      // {@ThreadPoolExecutor.AbortPolicy} is used
+      TrackingThreadPool executor =
+          new TrackingThreadPool(nThreads, nThreads, 0L, TimeUnit.MILLISECONDS,
+              new LinkedBlockingQueue<Runnable>(threadPoolQueueSize), this);
+
+      return executor;
+    } else {
+      // the old way of using unbounded task queue.
+      // if the running tasks are taking a long time or stuck, this queue
+      // will be very very long.
+      return new TrackingThreadPool(nThreads, nThreads, 0L,
+          TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>(), this);
+    }
   }
 
   private Map<Pair<Integer, Integer>, ProjectVersion> loadExistingProjects() {
@@ -200,34 +258,6 @@ public class FlowRunnerManager implements EventListener {
 
   public void setGlobalProps(Props globalProps) {
     this.globalProps = globalProps;
-  }
-
-  private class SubmitterThread extends Thread {
-    private BlockingQueue<FlowRunner> queue;
-    private boolean shutdown = false;
-
-    public SubmitterThread(BlockingQueue<FlowRunner> queue) {
-      this.setName("FlowRunnerManager-Submitter-Thread");
-      this.queue = queue;
-    }
-
-    @SuppressWarnings("unused")
-    public void shutdown() {
-      shutdown = true;
-      this.interrupt();
-    }
-
-    public void run() {
-      while (!shutdown) {
-        try {
-          lastSubmitterThreadCheckTime = System.currentTimeMillis();
-          FlowRunner flowRunner = queue.take();
-          executorService.submit(flowRunner);
-        } catch (InterruptedException e) {
-          logger.info("Interrupted. Probably to shut down.");
-        }
-      }
-    }
   }
 
   private class CleanerThread extends Thread {
@@ -430,18 +460,18 @@ public class FlowRunnerManager implements EventListener {
     }
 
     int numJobThreads = numJobThreadPerFlow;
-    if (options.getFlowParameters().containsKey("flow.num.job.threads")) {
+    if (options.getFlowParameters().containsKey(FLOW_NUM_JOB_THREADS)) {
       try {
         int numJobs =
             Integer.valueOf(options.getFlowParameters().get(
-                "flow.num.job.threads"));
+                FLOW_NUM_JOB_THREADS));
         if (numJobs > 0 && numJobs <= numJobThreads) {
           numJobThreads = numJobs;
         }
       } catch (Exception e) {
         throw new ExecutorManagerException(
             "Failed to set the number of job threads "
-                + options.getFlowParameters().get("flow.num.job.threads")
+                + options.getFlowParameters().get(FLOW_NUM_JOB_THREADS)
                 + " for flow " + execId, e);
       }
     }
@@ -461,7 +491,21 @@ public class FlowRunnerManager implements EventListener {
 
     // Finally, queue the sucker.
     runningFlows.put(execId, runner);
-    flowQueue.add(runner);
+
+    try {
+      // The executorService already has a queue.
+      // The submit method below actually returns an instance of FutureTask,
+      // which implements interface RunnableFuture, which extends both
+      // Runnable and Future interfaces
+      Future<?> future = executorService.submit(runner);
+      // keep track of this future
+      submittedFlows.put(future, runner.getExecutionId());
+    } catch (RejectedExecutionException re) {
+      throw new ExecutorManagerException(
+          "Azkaban server can't execute any more flows. "
+              + "The number of running flows has reached the system configured limit."
+              + "Please notify Azkaban administrators");
+    }
   }
 
   private void setupFlow(ExecutableFlow flow) throws ExecutorManagerException {
@@ -713,20 +757,8 @@ public class FlowRunnerManager implements EventListener {
     return lastCleanerThreadCheckTime;
   }
 
-  public long getLastSubmitterThreadCheckTime() {
-    return lastSubmitterThreadCheckTime;
-  }
-
-  public boolean isSubmitterThreadActive() {
-    return this.submitterThread.isAlive();
-  }
-
   public boolean isCleanerThreadActive() {
     return this.cleanerThread.isAlive();
-  }
-
-  public State getSubmitterThreadState() {
-    return this.submitterThread.getState();
   }
 
   public State getCleanerThreadState() {
@@ -737,26 +769,76 @@ public class FlowRunnerManager implements EventListener {
     return executorService.isShutdown();
   }
 
-  public int getNumExecutingFlows() {
-    return runningFlows.size();
+  public int getNumQueuedFlows() {
+    return executorService.getQueue().size();
+  }
+
+  public int getNumRunningFlows() {
+    return executorService.getActiveCount();
   }
 
   public String getRunningFlowIds() {
-    ArrayList<Integer> ids = new ArrayList<Integer>(runningFlows.keySet());
-    Collections.sort(ids);
-    return ids.toString();
-  }
+    // The in progress tasks are actually of type FutureTask
+    Set<Runnable> inProgressTasks = executorService.getInProgressTasks();
 
-  public int getNumExecutingJobs() {
-    int jobCount = 0;
-    for (FlowRunner runner : runningFlows.values()) {
-      jobCount += runner.getNumRunningJobs();
+    List<Integer> runningFlowIds =
+        new ArrayList<Integer>(inProgressTasks.size());
+
+    for (Runnable task : inProgressTasks) {
+      // add casting here to ensure it matches the expected type in
+      // submittedFlows
+      Integer execId = submittedFlows.get((Future<?>) task);
+      if (execId != null) {
+        runningFlowIds.add(execId);
+      } else {
+        logger.warn("getRunningFlowIds: got null execId for task: " + task);
+      }
     }
 
-    return jobCount;
+    Collections.sort(runningFlowIds);
+    return runningFlowIds.toString();
+  }
+
+  public String getQueuedFlowIds() {
+    List<Integer> flowIdList =
+        new ArrayList<Integer>(executorService.getQueue().size());
+
+    for (Runnable task : executorService.getQueue()) {
+      Integer execId = submittedFlows.get(task);
+      if (execId != null) {
+        flowIdList.add(execId);
+      } else {
+        logger
+            .warn("getQueuedFlowIds: got null execId for queuedTask: " + task);
+      }
+    }
+    Collections.sort(flowIdList);
+    return flowIdList.toString();
+  }
+
+  public int getMaxNumRunningFlows() {
+    return numThreads;
+  }
+
+  public int getTheadPoolQueueSize() {
+    return threadPoolQueueSize;
   }
 
   public void reloadJobTypePlugins() throws JobTypeManagerException {
     jobtypeManager.loadPlugins();
   }
+
+  public int getTotalNumExecutedFlows() {
+    return executorService.getTotalTasks();
+  }
+
+  @Override
+  public void beforeExecute(Runnable r) {
+  }
+
+  @Override
+  public void afterExecute(Runnable r) {
+    submittedFlows.remove(r);
+  }
+
 }

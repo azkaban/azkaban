@@ -22,17 +22,8 @@ public interface JmxFlowRunnerManagerMBean {
   @DisplayName("OPERATION: getLastCleanerThreadCheckTime")
   public long getLastCleanerThreadCheckTime();
 
-  @DisplayName("OPERATION: getLastSubmitterThreadCheckTime")
-  public long getLastSubmitterThreadCheckTime();
-
-  @DisplayName("OPERATION: isSubmitterThreadActive")
-  public boolean isSubmitterThreadActive();
-
   @DisplayName("OPERATION: isCleanerThreadActive")
   public boolean isCleanerThreadActive();
-
-  @DisplayName("OPERATION: getSubmitterThreadState")
-  public String getSubmitterThreadState();
 
   @DisplayName("OPERATION: getCleanerThreadState")
   public String getCleanerThreadState();
@@ -40,12 +31,25 @@ public interface JmxFlowRunnerManagerMBean {
   @DisplayName("OPERATION: isExecutorThreadPoolShutdown")
   public boolean isExecutorThreadPoolShutdown();
 
-  @DisplayName("OPERATION: getNumExecutingFlows")
-  public int getNumExecutingFlows();
+  @DisplayName("OPERATION: getNumRunningFlows")
+  public int getNumRunningFlows();
+
+  @DisplayName("OPERATION: getNumQueuedFlows")
+  public int getNumQueuedFlows();
 
   @DisplayName("OPERATION: getRunningFlows")
   public String getRunningFlows();
 
-  @DisplayName("OPERATION: getTotalNumRunningJobs")
-  public int countTotalNumRunningJobs();
+  @DisplayName("OPERATION: getQueuedFlows")
+  public String getQueuedFlows();
+
+  @DisplayName("OPERATION: getMaxNumRunningFlows")
+  public int getMaxNumRunningFlows();
+
+  @DisplayName("OPERATION: getMaxQueuedFlows")
+  public int getMaxQueuedFlows();
+
+  @DisplayName("OPERATION: getTotalNumExecutedFlows")
+  public int getTotalNumExecutedFlows();
+
 }
