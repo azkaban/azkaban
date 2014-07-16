@@ -70,7 +70,6 @@ public class JMXHttpServlet extends LoginAbstractAzkabanServlet implements
     triggerManager = server.getTriggerManager();
   }
 
-  @SuppressWarnings({ "unchecked", "rawtypes" })
   @Override
   protected void handleGet(HttpServletRequest req, HttpServletResponse resp,
       Session session) throws ServletException, IOException {
@@ -100,7 +99,9 @@ public class JMXHttpServlet extends LoginAbstractAzkabanServlet implements
         // order the attribute by name
         for (Map.Entry<String, Object> entry : result.entrySet()) {
           if (entry.getValue() instanceof Map) {
-            result.put(entry.getKey(), new TreeMap((Map) entry.getValue()));
+            @SuppressWarnings("unchecked")
+            Map<String, Object> entryValue = (Map<String, Object>) entry.getValue();
+            result.put(entry.getKey(), new TreeMap<String,Object>(entryValue));
           }
         }
         ret = result;
