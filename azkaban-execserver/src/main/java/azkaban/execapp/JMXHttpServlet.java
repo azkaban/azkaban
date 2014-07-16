@@ -59,7 +59,7 @@ public class JMXHttpServlet extends HttpServlet implements ConnectorParams {
 
   protected void doGet(HttpServletRequest req, HttpServletResponse resp)
       throws ServletException, IOException {
-    HashMap<String, Object> ret = new HashMap<String, Object>();
+    Map<String, Object> ret = new HashMap<String, Object>();
 
     if (hasParam(req, JMX_GET_MBEANS)) {
       ret.put("mbeans", server.getMbeanNames());
