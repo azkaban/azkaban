@@ -202,8 +202,7 @@ public class JobTypeManager {
       pluginLoadProps = new Props(commonPluginLoadProps, pluginLoadPropsFile);
       pluginLoadProps = PropsUtils.resolveProps(pluginLoadProps);
     } catch (Exception e) {
-      logger
-          .error("pluginLoadProps to help with debugging: " + pluginLoadProps);
+      logger.error("pluginLoadProps to help with debugging: " + pluginLoadProps);
       throw new JobTypeManagerException("Failed to get jobtype properties"
           + e.getMessage(), e);
     }
@@ -244,7 +243,7 @@ public class JobTypeManager {
 
   /**
    * Creates and loads all plugin resources (jars) into a ClassLoader
-   * 
+   *
    * @param pluginDir
    * @param jobTypeName
    * @param plugins

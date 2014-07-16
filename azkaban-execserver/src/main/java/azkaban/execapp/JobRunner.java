@@ -534,15 +534,12 @@ public class JobRunner extends EventHandler implements Runnable {
         String.format(
             "-Dazkaban.flowid=%s -Dazkaban.execid=%s -Dazkaban.jobid=%s",
             flowName, executionId, jobId);
-    String previousJVMArgs = props.get(JavaProcessJob.JVM_PARAMS);
-    if (previousJVMArgs == null) {
-      previousJVMArgs = jobJVMArgs;
-    } else {
-      previousJVMArgs += " " + jobJVMArgs;
-    }
+    
+    String previousJVMArgs = props.get(JavaProcessJob.JVM_PARAMS);    
+    jobJVMArgs += (previousJVMArgs == null) ? "" : " " + previousJVMArgs; 
 
-    logger.info("job JVM args: " + previousJVMArgs);
-    props.put(JavaProcessJob.JVM_PARAMS, previousJVMArgs);
+    logger.info("job JVM args: " + jobJVMArgs);
+    props.put(JavaProcessJob.JVM_PARAMS, jobJVMArgs);
   }
 
   /**
