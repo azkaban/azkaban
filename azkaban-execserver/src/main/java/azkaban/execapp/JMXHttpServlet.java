@@ -18,6 +18,8 @@ package azkaban.execapp;
 
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.Map;
+import java.util.TreeMap;
 
 import javax.management.MBeanAttributeInfo;
 import javax.management.MBeanInfo;
@@ -31,8 +33,8 @@ import javax.servlet.http.HttpServletResponse;
 import org.apache.log4j.Logger;
 
 import azkaban.executor.ConnectorParams;
-import azkaban.server.ServerConstants;
 import azkaban.server.HttpRequestUtils;
+import azkaban.server.ServerConstants;
 import azkaban.utils.JSONUtils;
 
 public class JMXHttpServlet extends HttpServlet implements ConnectorParams {
@@ -57,7 +59,7 @@ public class JMXHttpServlet extends HttpServlet implements ConnectorParams {
 
   protected void doGet(HttpServletRequest req, HttpServletResponse resp)
       throws ServletException, IOException {
-    HashMap<String, Object> ret = new HashMap<String, Object>();
+    Map<String, Object> ret = new HashMap<String, Object>();
 
     if (hasParam(req, JMX_GET_MBEANS)) {
       ret.put("mbeans", server.getMbeanNames());
@@ -71,7 +73,7 @@ public class JMXHttpServlet extends HttpServlet implements ConnectorParams {
           MBeanInfo info = server.getMBeanInfo(name);
 
           MBeanAttributeInfo[] mbeanAttrs = info.getAttributes();
-          HashMap<String, Object> attributes = new HashMap<String, Object>();
+          Map<String, Object> attributes = new TreeMap<String, Object>();
 
           for (MBeanAttributeInfo attrInfo : mbeanAttrs) {
             Object obj = server.getMBeanAttribute(name, attrInfo.getName());

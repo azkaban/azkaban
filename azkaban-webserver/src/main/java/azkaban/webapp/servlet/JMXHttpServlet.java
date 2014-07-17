@@ -19,6 +19,7 @@ package azkaban.webapp.servlet;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.TreeMap;
 
 import javax.management.MBeanAttributeInfo;
 import javax.management.MBeanInfo;
@@ -95,6 +96,14 @@ public class JMXHttpServlet extends LoginAbstractAzkabanServlet implements
         Map<String, Object> result =
             executorManager.callExecutorJMX(hostPort,
                 JMX_GET_ALL_MBEAN_ATTRIBUTES, mbean);
+        // order the attribute by name
+        for (Map.Entry<String, Object> entry : result.entrySet()) {
+          if (entry.getValue() instanceof Map) {
+            @SuppressWarnings("unchecked")
+            Map<String, Object> entryValue = (Map<String, Object>) entry.getValue();
+            result.put(entry.getKey(), new TreeMap<String,Object>(entryValue));
+          }
+        }
         ret = result;
       } else if (JMX_GET_MBEANS.equals(ajax)) {
         ret.put("mbeans", server.getMbeanNames());
@@ -139,7 +148,7 @@ public class JMXHttpServlet extends LoginAbstractAzkabanServlet implements
             MBeanInfo info = server.getMBeanInfo(name);
 
             MBeanAttributeInfo[] mbeanAttrs = info.getAttributes();
-            HashMap<String, Object> attributes = new HashMap<String, Object>();
+            Map<String, Object> attributes = new TreeMap<String, Object>();
 
             for (MBeanAttributeInfo attrInfo : mbeanAttrs) {
               Object obj = server.getMBeanAttribute(name, attrInfo.getName());
