@@ -18,6 +18,9 @@ var TIMESTAMP_LENGTH = 13;
 
 var getDuration = function(startMs, endMs) {
   if (startMs) {
+    if (startMs == -1) {
+      return "-";
+    }
     if (endMs == null || endMs < startMs) {
       return "-";
     }
