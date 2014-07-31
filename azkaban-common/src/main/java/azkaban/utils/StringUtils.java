@@ -67,4 +67,25 @@ public class StringUtils {
     return buffer.toString();
   }
 
+  /**
+   * Don't bother to add delimiter for last element
+   * 
+   * @param list
+   * @param delimiter
+   * @return String - elements in the list separated by delimiter
+   */
+  public static String join2(Collection<String> list, String delimiter) {
+    StringBuffer buffer = new StringBuffer();
+    boolean first = true;
+    for (String str : list) {
+      if (!first) {
+        buffer.append(delimiter);
+      }
+      buffer.append(str);
+      first = false;
+
+    }
+
+    return buffer.toString();
+  }
 }
