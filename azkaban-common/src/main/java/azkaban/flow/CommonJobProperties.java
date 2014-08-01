@@ -125,6 +125,8 @@ public class CommonJobProperties {
   public static final String EXECUTION_LINK = "azkaban.link.execution.url";
   public static final String JOBEXEC_LINK = "azkaban.link.jobexec.url";
   public static final String ATTEMPT_LINK = "azkaban.link.attempt.url";
+  public static final String OUT_NODES = "azkaban.job.outnodes";
+  public static final String IN_NODES = "azkaban.job.innodes";
 
   /**
    * Properties for passing the flow start time to the jobs.
