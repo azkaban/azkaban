@@ -61,10 +61,10 @@ import azkaban.scheduler.ScheduleManager;
 import azkaban.scheduler.ScheduleManagerException;
 import azkaban.server.session.Session;
 import azkaban.user.Permission;
-import azkaban.user.Role;
-import azkaban.user.UserManager;
 import azkaban.user.Permission.Type;
+import azkaban.user.Role;
 import azkaban.user.User;
+import azkaban.user.UserManager;
 import azkaban.utils.JSONUtils;
 import azkaban.utils.Pair;
 import azkaban.utils.Props;
@@ -1304,9 +1304,9 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
       flow = project.getFlow(flowName);
       if (flow == null) {
         page.add("errorMsg", "Flow " + flowName + " not found.");
+      } else {
+        page.add("flowid", flow.getId());
       }
-
-      page.add("flowid", flow.getId());
     } catch (AccessControlException e) {
       page.add("errorMsg", e.getMessage());
     }
