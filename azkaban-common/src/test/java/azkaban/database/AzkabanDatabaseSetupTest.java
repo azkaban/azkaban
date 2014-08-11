@@ -27,7 +27,6 @@ import java.sql.SQLException;
 import javax.sql.DataSource;
 
 import org.apache.commons.dbutils.QueryRunner;
-import org.apache.commons.io.FileUtils;
 
 import org.junit.AfterClass;
 import org.junit.BeforeClass;

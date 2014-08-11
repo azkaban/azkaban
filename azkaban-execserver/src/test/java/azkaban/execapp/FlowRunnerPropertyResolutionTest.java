@@ -125,7 +125,7 @@ public class FlowRunnerPropertyResolutionTest {
     createNodeMap(runner.getExecutableFlow(), nodeMap);
 
     // 1. Start flow. Job 2 should start
-    Thread thread = runFlowRunnerInThread(runner);
+    runFlowRunnerInThread(runner);
     pause(250);
 
     // Job 2 is a normal job.

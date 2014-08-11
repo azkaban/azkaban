@@ -35,7 +35,6 @@ import org.joda.time.format.DateTimeFormatter;
 
 import azkaban.server.AzkabanServer;
 import azkaban.server.HttpRequestUtils;
-import azkaban.server.ServerConstants;
 import azkaban.server.session.Session;
 import azkaban.utils.Props;
 import azkaban.utils.JSONUtils;
