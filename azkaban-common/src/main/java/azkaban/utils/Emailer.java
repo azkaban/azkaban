@@ -32,9 +32,6 @@ import azkaban.executor.Status;
 import azkaban.executor.mail.DefaultMailCreator;
 import azkaban.executor.mail.MailCreator;
 import azkaban.sla.SlaOption;
-import azkaban.utils.AbstractMailer;
-import azkaban.utils.EmailMessage;
-import azkaban.utils.Props;
 
 public class Emailer extends AbstractMailer implements Alerter {
   private static Logger logger = Logger.getLogger(Emailer.class);
@@ -55,8 +52,11 @@ public class Emailer extends AbstractMailer implements Alerter {
   private String mailSender;
   private String azkabanName;
   private String tls;
-  private String attachmentMode;
+  private Boolean mailAttachmentFlow;
+  private Boolean mailAttachmentJob;
+  private Boolean mailInlineBody;
   boolean mailAttached;
+  boolean inlineBody;
 
   public Emailer(Props props) {
     super(props);
@@ -65,7 +65,9 @@ public class Emailer extends AbstractMailer implements Alerter {
     this.mailUser = props.getString("mail.user", "");
     this.mailPassword = props.getString("mail.password", "");
     this.mailSender = props.getString("mail.sender", "");
-    this.attachmentMode = props.getString("attachment.mode");
+    this.mailAttachmentFlow = props.getBoolean("mail.attachment.flow");
+    this.mailAttachmentJob = props.getBoolean("mail.attachment.job");
+    this.mailInlineBody = props.getBoolean("mail.inline.body");
     this.tls = props.getString("mail.tls", "false");
 
     int mailTimeout = props.getInt("mail.timeout.millis", 10000);
@@ -151,8 +153,12 @@ public class Emailer extends AbstractMailer implements Alerter {
     boolean mailCreated =
         mailCreator.createErrorEmail(flow, message, azkabanName, scheme,
             clientHostname, clientPortNumber, extraReasons);
-      if(attachmentMode.equals("enabled"))
-          mailAttached=mailCreator.createAttachmentEmail(message);
+      if(mailAttachmentFlow)
+          mailAttached =  mailCreator.createAttachmentEmail(message,"_flow");
+      if(mailAttachmentJob)
+          mailAttached = mailCreator.createAttachmentEmail(message,"_job");
+      if(mailInlineBody)
+          inlineBody = mailCreator.createInlineMessageEmail(message);
 
     if (mailCreated && !testMode) {
       try {
@@ -162,6 +168,8 @@ public class Emailer extends AbstractMailer implements Alerter {
       }
       if(!mailAttached)
         logger.error("Email Attachment failed");
+      if(!inlineBody)
+        logger.error("Inline message to Email body failed");
     }
   }
 
@@ -180,8 +188,12 @@ public class Emailer extends AbstractMailer implements Alerter {
     boolean mailCreated =
         mailCreator.createSuccessEmail(flow, message, azkabanName, scheme,
             clientHostname, clientPortNumber);
-      if(attachmentMode.equals("enabled"))
-        mailAttached =  mailCreator.createAttachmentEmail(message);
+      if(mailAttachmentFlow)
+        mailAttached =  mailCreator.createAttachmentEmail(message,"_flow");
+      if(mailAttachmentJob)
+        mailAttached = mailCreator.createAttachmentEmail(message,"_job");
+      if(mailInlineBody)
+        mailAttached = mailCreator.createInlineMessageEmail(message);
 
 
     if (mailCreated && !testMode) {
@@ -192,6 +204,9 @@ public class Emailer extends AbstractMailer implements Alerter {
       }
       if(!mailAttached)
         logger.error("Email Attachment failed");
+
+      if(!inlineBody)
+        logger.error("Inline message to Email body failed");
     }
   }
 

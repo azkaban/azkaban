@@ -32,5 +32,7 @@ public interface MailCreator {
       String azkabanName, String scheme, String clientHostname,
       String clientPortNumber, String... vars);
 
-  public boolean createAttachmentEmail(EmailMessage message);
+  public boolean createAttachmentEmail(EmailMessage message, String attachedLogFile);
+
+  public boolean createInlineMessageEmail(EmailMessage message);
 }
