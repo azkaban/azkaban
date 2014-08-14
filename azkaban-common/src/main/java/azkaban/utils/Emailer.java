@@ -55,6 +55,8 @@ public class Emailer extends AbstractMailer implements Alerter {
   private String mailSender;
   private String azkabanName;
   private String tls;
+  private String attachmentMode;
+  boolean mailAttached;
 
   public Emailer(Props props) {
     super(props);
@@ -63,6 +65,7 @@ public class Emailer extends AbstractMailer implements Alerter {
     this.mailUser = props.getString("mail.user", "");
     this.mailPassword = props.getString("mail.password", "");
     this.mailSender = props.getString("mail.sender", "");
+    this.attachmentMode = props.getString("attachment.mode");
     this.tls = props.getString("mail.tls", "false");
 
     int mailTimeout = props.getInt("mail.timeout.millis", 10000);
@@ -123,6 +126,7 @@ public class Emailer extends AbstractMailer implements Alerter {
         mailCreator.createFirstErrorMessage(flow, message, azkabanName, scheme,
             clientHostname, clientPortNumber);
 
+
     if (mailCreated && !testMode) {
       try {
         message.sendEmail();
@@ -147,6 +151,8 @@ public class Emailer extends AbstractMailer implements Alerter {
     boolean mailCreated =
         mailCreator.createErrorEmail(flow, message, azkabanName, scheme,
             clientHostname, clientPortNumber, extraReasons);
+      if(attachmentMode.equals("enabled"))
+          mailAttached=mailCreator.createAttachmentEmail(message);
 
     if (mailCreated && !testMode) {
       try {
@@ -154,6 +160,8 @@ public class Emailer extends AbstractMailer implements Alerter {
       } catch (MessagingException e) {
         logger.error("Email message send failed", e);
       }
+      if(!mailAttached)
+        logger.error("Email Attachment failed");
     }
   }
 
@@ -172,6 +180,9 @@ public class Emailer extends AbstractMailer implements Alerter {
     boolean mailCreated =
         mailCreator.createSuccessEmail(flow, message, azkabanName, scheme,
             clientHostname, clientPortNumber);
+      if(attachmentMode.equals("enabled"))
+        mailAttached =  mailCreator.createAttachmentEmail(message);
+
 
     if (mailCreated && !testMode) {
       try {
@@ -179,6 +190,8 @@ public class Emailer extends AbstractMailer implements Alerter {
       } catch (MessagingException e) {
         logger.error("Email message send failed", e);
       }
+      if(!mailAttached)
+        logger.error("Email Attachment failed");
     }
   }
 

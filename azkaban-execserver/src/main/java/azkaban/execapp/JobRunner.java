@@ -392,8 +392,9 @@ public class JobRunner extends EventHandler implements Runnable {
     try {
       File file = new File(attachmentFileName);
       if (!file.exists()) {
-        flowLogger.info("No attachment file for job " + this.jobId
-            + " written.");
+       /* flowLogger.info("No attachment file for job " + this.jobId
+            + " written.");*/
+          //The file is being attached in Emailer.java so this logging is not required here
         return;
       }
       loader.uploadAttachmentFile(node, file);
@@ -590,17 +591,17 @@ public class JobRunner extends EventHandler implements Runnable {
       if (props.getBoolean("job.succeed.on.failure", false)) {
         changeStatus(Status.FAILED_SUCCEEDED);
         logError("Job run failed, but will treat it like success.");
-        logError(e.getMessage() + " cause: " + e.getCause(), e);
+      // logError(e.getMessage() + " cause: " + e.getCause(), e);
       } else {
         changeStatus(Status.FAILED);
-        logError("Job run failed!", e);
-        logError(e.getMessage() + " cause: " + e.getCause());
+        logError("Job run failed!");
+      //  logError(e.getMessage() + " cause: " + e.getCause());
       }
     }
 
-    if (job != null) {
+   /* if (job != null) {
       node.setOutputProps(job.getJobGeneratedProperties());
-    }
+    }*/
 
     // If the job is still running, set the status to Success.
     if (!Status.isStatusFinished(node.getStatus())) {

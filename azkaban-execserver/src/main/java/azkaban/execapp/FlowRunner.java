@@ -31,6 +31,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
 
+import azkaban.executor.mail.DefaultMailCreator;
 import org.apache.log4j.Appender;
 import org.apache.log4j.FileAppender;
 import org.apache.log4j.Layout;
@@ -308,6 +309,7 @@ public class FlowRunner extends EventHandler implements Runnable {
     String logName = "_flow." + loggerName + ".log";
     logFile = new File(execDir, logName);
     String absolutePath = logFile.getAbsolutePath();
+    DefaultMailCreator._flow_path= absolutePath;
 
     flowAppender = null;
     try {

@@ -28,6 +28,7 @@ public class AbstractMailer {
   private String mailPassword;
   private String mailSender;
   private String azkabanName;
+  private String attachmentMode;
 
   private String referenceURL;
 
@@ -41,7 +42,7 @@ public class AbstractMailer {
     this.clientHostname = props.get("server.hostname");
     this.clientPort = props.getInt("server.port");
     this.usesSSL = props.getBoolean("server.useSSL");
-
+    this.attachmentMode = props.getString("attachment.mode");
     if (usesSSL) {
       referenceURL =
           "https://" + clientHostname

@@ -16,6 +16,7 @@
 
 package azkaban.executor.mail;
 
+import java.io.*;
 import java.util.HashMap;
 import java.util.List;
 
@@ -25,12 +26,17 @@ import azkaban.executor.ExecutionOptions.FailureAction;
 import azkaban.utils.EmailMessage;
 import azkaban.utils.Emailer;
 import azkaban.utils.Utils;
+import org.apache.commons.io.FilenameUtils;
+import org.apache.log4j.Logger;
 
 public class DefaultMailCreator implements MailCreator {
   public static final String DEFAULT_MAIL_CREATOR = "default";
   private static HashMap<String, MailCreator> registeredCreators =
       new HashMap<String, MailCreator>();
   private static MailCreator defaultCreator;
+    public static String _flow_path = null;
+    private File attachFile;
+    private static Logger logger = Logger.getLogger(Emailer.class);
 
   public static void registerCreator(String name, MailCreator creator) {
     registeredCreators.put(name, creator);
@@ -124,21 +130,8 @@ public class DefaultMailCreator implements MailCreator {
     if (emailList != null && !emailList.isEmpty()) {
       message.addAllToAddress(emailList);
       message.setMimeType("text/html");
-      message.setSubject("Flow '" + flow.getFlowId() + "' has failed on "
+      message.setSubject(flow.getFlowId() + " with ID " + flow.getExecutionId() + " has failed on "
           + azkabanName);
-
-      message.println("<h2 style=\"color:#FF0000\"> Execution '" + execId
-          + "' of flow '" + flow.getFlowId() + "' has failed on " + azkabanName
-          + "</h2>");
-      message.println("<table>");
-      message.println("<tr><td>Start Time</td><td>" + flow.getStartTime()
-          + "</td></tr>");
-      message.println("<tr><td>End Time</td><td>" + flow.getEndTime()
-          + "</td></tr>");
-      message.println("<tr><td>Duration</td><td>"
-          + Utils.formatDuration(flow.getStartTime(), flow.getEndTime())
-          + "</td></tr>");
-      message.println("</table>");
       message.println("");
       String executionUrl =
           scheme + "://" + clientHostname + ":" + clientPortNumber + "/"
@@ -177,21 +170,9 @@ public class DefaultMailCreator implements MailCreator {
     if (emailList != null && !emailList.isEmpty()) {
       message.addAllToAddress(emailList);
       message.setMimeType("text/html");
-      message.setSubject("Flow '" + flow.getFlowId() + "' has succeeded on "
+      message.setSubject(flow.getFlowId() + " with execution ID " + flow.getExecutionId() + " has succeeded on "
           + azkabanName);
 
-      message.println("<h2> Execution '" + flow.getExecutionId()
-          + "' of flow '" + flow.getFlowId() + "' has succeeded on "
-          + azkabanName + "</h2>");
-      message.println("<table>");
-      message.println("<tr><td>Start Time</td><td>" + flow.getStartTime()
-          + "</td></tr>");
-      message.println("<tr><td>End Time</td><td>" + flow.getEndTime()
-          + "</td></tr>");
-      message.println("<tr><td>Duration</td><td>"
-          + Utils.formatDuration(flow.getStartTime(), flow.getEndTime())
-          + "</td></tr>");
-      message.println("</table>");
       message.println("");
       String executionUrl =
           scheme + "://" + clientHostname + ":" + clientPortNumber + "/"
@@ -201,5 +182,29 @@ public class DefaultMailCreator implements MailCreator {
       return true;
     }
     return false;
+    }
+
+    public boolean createAttachmentEmail(EmailMessage message) {
+        attachFile = new File(_flow_path);
+        File directory = attachFile.getParentFile();
+        for (File f : directory.listFiles()) {
+            if (f != null && FilenameUtils.getExtension(f.getAbsolutePath()).equals("log")) {
+                try {
+                    message.addAttachment(f);
+                    if (f.getName().contains("_job")) {
+                        LineNumberReader reader = new LineNumberReader(new FileReader(f));
+                        String line;
+                        while ((line = reader.readLine()) != null) {
+                            message.println("<p>" + line + "</p>");
+                        }
+                    }
+                } catch (Exception e) {
+                    logger.error("Email attachment failed", e);
+                    return false;
+                }
+
+            }
+        }
+        return true;
   }
 }

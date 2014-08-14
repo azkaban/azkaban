@@ -163,6 +163,7 @@ public class EmailMessage {
     props.put("mail." + protocol + ".connectiontimeout", _connectionTimeout);
     props.put("mail.smtp.starttls.enable", _tls);
     props.put("mail.smtp.ssl.trust", _mailHost);
+    props.put("mail."+protocol+".starttls.enable", "true");
 
     Session session = Session.getInstance(props, null);
     Message message = new MimeMessage(session);
