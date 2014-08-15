@@ -1,7 +1,7 @@
 <h2 id="ajax-api">AJAX API</h2>
 
 <p>
-Often there's a desire to interact with Azkaban without having to use the web UI. Azkaban has some exposed ajax calls accessible through curl or some other HTTP request clients. All API calls require authentification first.
+Often there's a desire to interact with Azkaban without having to use the web UI. Azkaban has some exposed ajax calls accessible through curl or some other HTTP request clients. All API calls require a proper authentification first.
 <br/><br/>
 Azkaban assumes the following request header in servlet's <code>isAjaxCall(HttpServletRequest request)</code> method:
 <pre>
@@ -9,7 +9,7 @@ Azkaban assumes the following request header in servlet's <code>isAjaxCall(HttpS
   Content-Type:    application/x-www-form-urlencoded
   X-Requested-With:    XMLHttpRequest
 </pre> 
-However, currently for most of APIs in this version, it is not checking the request header. Many APIs still treat a request as an ajax call if <code>request</code> simply contains the parameter <code>ajax</code>. Or even, several APIs is implicitly assuming it is an ajax call even without this keyword. For ease of use, it is recommended to always keep the correct request header.
+However, currently for most of APIs in this version, it is not checking the request header. Many APIs still treat a request as an ajax call if <code>request</code> simply contains the parameter <code>ajax</code>. Or even, several APIs is implicitly assuming it is an ajax call even without this keyword. For ease of use though, it is recommended to always keep the correct request header.
 </p>
 
 <h3 id="api-authenticate">Authenticate</h3>
@@ -27,10 +27,10 @@ However, currently for most of APIs in this version, it is not checking the requ
 
 <p>This API helps authentiate a user and provide a <code>session.id</code> in response.</p>
 
-<p>Once a <code>session.id</code> has been returned, until the session has expired, this id can be used to do further requests in Azkaban. A session can expire if you log out, change machines or location, Azkaban is restarted or if the session timed out. By default session timeout is 24 hours (one day). You can re-login no matter if the session expires. For the same user, a new session will always override old sessions.</p>
+<p>Once a <code>session.id</code> has been returned, until the session expires, this id can be used to do any API requests with a proper permission granted. A session expires if you log out, change machines, browsers or locations, if Azkaban is restarted, or if the session expires. The default session timeout is 24 hours (one day). You can re-login whether the session has expired or not. For the same user, a new session will always override old one.</p>
 
 <p>
-<strong> Importantly, </strong> <code>session.id</code> should be provided for almost all other API calls. <code>session.id</code> can be simply appended as one of the request parameters, or set via setting the cookie: <code>azkaban.browser.session.id</code>. As a result, the below two HTTP requests are equivalent:
+<strong> Importantly, </strong> <code>session.id</code> should be provided for almost all API calls (other than authentification). <code>session.id</code> can be simply appended as one of the request parameters, or set via the cookie: <code>azkaban.browser.session.id</code>. The two HTTP requests below are equivalent:
 <pre class="code">
 # a) Provide session.id parameter directly
 curl -k --get -data "session.id=bca1d75d-6bae-4163-a5b0-378a7d7b5a91&ajax=fetchflowgraph&project=azkaban-test-project&flow=test" https://localhost:8443/manager
@@ -40,7 +40,7 @@ curl -k --get -b "azkaban.browser.session.id=bca1d75d-6bae-4163-a5b0-378a7d7b5a9
 </pre>
 </p>
 
-<h5> Request Parameters </h5>
+<h5><strong> Request Parameters </strong></h5>
 <table class="table table-striped table-condensed table-bordered">
 	<thead>
 		<tr>
@@ -65,7 +65,7 @@ curl -k --get -b "azkaban.browser.session.id=bca1d75d-6bae-4163-a5b0-378a7d7b5a9
 </table>
 
 
-<h5> Response Object </h5>
+<h5><strong> Response Object </strong></h5>
 <table class="table table-striped table-condensed table-bordered">
 	<thead>
 		<tr>
@@ -76,11 +76,11 @@ curl -k --get -b "azkaban.browser.session.id=bca1d75d-6bae-4163-a5b0-378a7d7b5a9
 	<tbody>
 		<tr>
 			<td>error</td>
-			<td>Error message if authentication has failed</td>
+			<td>Return an error message if the login attempt fails.</td>
 		</tr>
 		<tr>
 			<td>session.id</td>
-			<td>If login has occurred successfully, this is the session id that will be returned</td>
+			<td>Return a session id if the login attempt succeeds.</td>
 		</tr>
 	</tbody>
 </table>
@@ -103,7 +103,7 @@ A sample response:
 The ajax API for creating a new project.
 <br>
 <strong>Notice:</strong>
-before uploading any project zip files, the project should be created first using this API.
+before uploading any project zip files, the project should be created first via this API.
 </p>
 
 <ul class="list-unstyled">
@@ -118,7 +118,7 @@ before uploading any project zip files, the project should be created first usin
   </li>
 </ul>
 
-<h5> Request Parameters </h5>
+<h5><strong> Request Parameters </strong></h5>
 
 <table class="table table-striped table-condensed table-bordered">
 	<thead>
@@ -130,11 +130,11 @@ before uploading any project zip files, the project should be created first usin
 	<tbody>
 		<tr>
 			<td>session.id</td>
-			<td><p> User session token. </p></td>
+			<td><p> The user session id. </p></td>
 		</tr>
 		<tr>
 			<td>action=create</td>
-			<td>Fixed parameter to indicate the create project action.</td>
+			<td>The fixed parameter indicating the create project action.</td>
 		</tr>
 		<tr>
 			<td>name</td>
@@ -142,12 +142,12 @@ before uploading any project zip files, the project should be created first usin
 		</tr>
 		<tr>
 			<td>description</td>
-			<td>The description for the project. This field also cannot be empty.</td>
+			<td>The description for the project. This field cannot be empty.</td>
 		</tr>
 	</tbody>
 </table>
 
-<h5> Response Object 1. (if the request succeeds): </h5>
+<h5><strong> Response Object 1. (if the request succeeds): </strong></h5>
 
 <table class="table table-striped table-condensed table-bordered">
 	<thead>
@@ -158,8 +158,8 @@ before uploading any project zip files, the project should be created first usin
 	</thead>
 	<tbody>
 		<tr>
-			<tr>status</tr>
-			<tr>The status of the creation action.</tr>
+			<td>status</td>
+			<td>The status of the creation attempt.</td>
 		</tr>
 		<tr>
 			<td>path</td>
@@ -167,24 +167,28 @@ before uploading any project zip files, the project should be created first usin
 		</tr>
 		<tr>
 			<td>action</td>
-			<td>The action that suggests to execute.</td>
+			<td>The action that is suggested for the frontend to execute. (This is designed for the usage of the Azkaban frontend javascripts, external users can ignore this field.)</td>
 		</tr>
 	</tbody>
 </table>
 
-<h5> Response Object 2. (if the request fails): </h5>
+<h5><strong> Response Object 2. (if the request fails): </strong></h5>
 
 <table class="table table-striped table-condensed table-bordered">
 	<thead>
-		<tr>
-			<th>message</th>
-			<th>The error message.</th>
-		</tr>
+    <tr>
+      <th>Parameter</th>
+      <th>Description</th>
+    </tr>
 	</thead>
 	<tbody>
+    <tr>
+      <td>message</td>
+      <td>The error message.</td>
+    </tr>
 		<tr>
 			<td>error</td>
-			<td>The error name</td>
+			<td>The error name.</td>
 		</tr>
 	</tbody>
 </table>
@@ -222,7 +226,7 @@ Currently no response message will be returned after finishing the delete operat
   </li>
 </ul>
 
-<h5> Request Parameters </h5>
+<h5><strong> Request Parameters </strong></h5>
 <table class="table table-striped table-condensed table-bordered">
 	<thead>
 		<tr>
@@ -233,11 +237,11 @@ Currently no response message will be returned after finishing the delete operat
 	<tbody>
 		<tr>
 			<td>session.id</td>
-			<td><p> User session token. </p></td>
+			<td><p> The user session id. </p></td>
 		</tr>
 		<tr>
 			<td>delete=true</td>
-			<td>Fixed parameter to indicate the deleting project action.</td>
+			<td>The fixed parameter to indicate the deleting project action.</td>
 		</tr>
 		<tr>
 			<td>project</td>
@@ -254,7 +258,7 @@ curl -k --get --data "session.id=bca1d75d-6bae-4163-a5b0-378a7d7b5a91&delete=tru
 
 <h3 id="api-upload-a-project-zip">Upload a Project Zip</h3>
 <p>
-The ajax version of uploading a project zip file. The zip file structure should follows the requirements described in 
+The ajax call to upload a project zip file. The zip file structure should follows the requirements described in 
 <a href="/docs/2.5/#upload-projects"> Upload Projects </a>.
 <br/>
 <strong>Notice: </strong> This API should be called after a project is successfully created.
@@ -274,7 +278,7 @@ The ajax version of uploading a project zip file. The zip file structure should 
   </li>
 </ul> 
 
-<h5> Request Parameters </h5>
+<h5><strong> Request Parameters </strong></h5>
 <table class="table table-striped table-condensed table-bordered">
 	<thead>
 		<tr>
@@ -285,11 +289,11 @@ The ajax version of uploading a project zip file. The zip file structure should 
 	<tbody>
 		<tr>
 			<td>session.id</td>
-			<td><p> User session token. </p></td>
+			<td><p> The user session id. </p></td>
 		</tr>
 		<tr>
 			<td>ajax=upload</td>
-			<td>Fixed parameter to the upload action.</td>
+			<td>The fixed parameter to the upload action.</td>
 		</tr>
 		<tr>
 			<td>project</td>
@@ -297,12 +301,12 @@ The ajax version of uploading a project zip file. The zip file structure should 
 		</tr>
 		<tr>
 			<td>file</td>
-			<td>The uploading file. The type should be set as application/zip or application/</td>
+			<td>The project zip file. The type should be set as <code>application/zip</code> or <code>application/x-zip-compressed</code>.</td>
 		</tr>
 	</tbody>
 </table>
 
-<h5> Response Object </h5>
+<h5><strong> Response Object </strong></h5>
 <table class="table table-striped table-condensed table-bordered">
 	<thead>
 		<tr>
@@ -313,7 +317,7 @@ The ajax version of uploading a project zip file. The zip file structure should 
 	<tbody>
 		<tr>
 			<td>error</td>
-			<td>Error message if the call has failed</td>
+			<td>The error message if the upload attempt fails.</td>
 		</tr>
 		<tr>
 			<td>projectId</td>
@@ -321,7 +325,7 @@ The ajax version of uploading a project zip file. The zip file structure should 
 		</tr>
 		<tr>
 			<td>version</td>
-			<td>The version # of the upload</td>
+			<td>The version number of the upload</td>
 		</tr>
 	</tbody>
 </table>
@@ -343,7 +347,7 @@ A response sample:
 
 <h3 id="api-fetch-flows-of-a-project">Fetch Flows of a Project</h3>
 <p>
-Given a project name, fetch all flow ids of that project.
+Given a project name, this API call fetches all flow ids of that project.
 </p>
 
 <ul class="list-unstyled">
@@ -358,7 +362,7 @@ Given a project name, fetch all flow ids of that project.
   </li>
 </ul> 
 
-<h5> Request Parameters </h5>
+<h5><strong> Request Parameters </strong></h5>
 <table class="table table-striped table-condensed table-bordered">
 	<thead>
 		<tr>
@@ -369,11 +373,11 @@ Given a project name, fetch all flow ids of that project.
 	<tbody>
 		<tr>
 			<td>session.id</td>
-			<td><p> User session token. </p></td>
+			<td><p> The user session id. </p></td>
 		</tr>
 		<tr>
 			<td>ajax=fetchprojectflows</td>
-			<td>Fixed parameter indicating the fetchProjectFlows action.</td>
+			<td>The fixed parameter indicating the fetchProjectFlows action.</td>
 		</tr>
 		<tr>
 			<td>project</td>
@@ -382,7 +386,7 @@ Given a project name, fetch all flow ids of that project.
 	</tbody>
 </table>
 
-<h5> Response Object </h5>
+<h5><strong> Response Object </strong></h5>
 <table class="table table-striped table-condensed table-bordered">
 	<thead>
 		<tr>
@@ -402,7 +406,7 @@ Given a project name, fetch all flow ids of that project.
 		<tr>
 			<td>flows</td>
 			<td>
-				A list of flow Ids.
+				A list of flow ids.
 				<p>
 				<strong> Example values:</strong>
 				[{"flowId": "aaa"}, {"flowId": "bbb"}]
@@ -433,7 +437,7 @@ A response sample:
 
 <h3 id="api-fetch-jobs-of-a-flow">Fetch Jobs of a Flow</h3>
 <p>
-For a given project and a flow id, get all the jobs that belong to this flow. This API also returns the corresponding graph structure of those jobs.
+For a given project and a flow id, this API call fetches all the jobs that belong to this flow. It also returns the corresponding graph structure of those jobs.
 </p>
 
 <ul class="list-unstyled">
@@ -448,7 +452,7 @@ For a given project and a flow id, get all the jobs that belong to this flow. Th
   </li>
 </ul> 
 
-<h5> Request Parameters </h5>
+<h5><strong> Request Parameters </strong></h5>
 <table class="table table-striped table-condensed table-bordered">
     <thead>
         <tr>
@@ -459,11 +463,11 @@ For a given project and a flow id, get all the jobs that belong to this flow. Th
     <tbody>
         <tr>
             <td>session.id</td>
-            <td><p> User session token. </p></td>
+            <td><p> The user session id. </p></td>
         </tr>
         <tr>
             <td>ajax=fetchflowgraph</td>
-            <td>Fixed parameter indicating the fetchProjectFlows action.</td>
+            <td>The fixed parameter indicating the fetchProjectFlows action.</td>
         </tr>
         <tr>
             <td>project</td>
@@ -476,7 +480,7 @@ For a given project and a flow id, get all the jobs that belong to this flow. Th
     </tbody>
 </table>
 
-<h5> Response Object </h5>
+<h5><strong> Response Object </strong></h5>
 <table class="table table-striped table-condensed table-bordered">
     <thead>
         <tr>
@@ -552,7 +556,7 @@ A response sample:
 </pre>
 
 <h3 id="api-fetch-executions-of-a-flow">Fetch Executions of a Flow</h3>
-Given a project name, and a certain flow, provide a list of its executions. Those executions are sorted in descendent submit time order. Also you should provide start index and the length of the list, which can be used to handle pagination.
+Given a project name, and a certain flow, this API call provides a list of corresponding executions. Those executions are sorted in descendent submit time order. Also parameters are expected to specify the start index and the length of the list. This is originally used to handle pagination.
 
 <ul class="list-unstyled">
   <li>
@@ -566,7 +570,7 @@ Given a project name, and a certain flow, provide a list of its executions. Thos
   </li>
 </ul> 
 
-<h5> Request Parameters </h5>
+<h5><strong> Request Parameters </strong></h5>
 <table class="table table-striped table-condensed table-bordered">
 	<thead>
 		<tr>
@@ -577,11 +581,11 @@ Given a project name, and a certain flow, provide a list of its executions. Thos
 	<tbody>
 		<tr>
 			<td>session.id</td>
-			<td><p> User session token. </p></td>
+			<td><p> The user session id. </p></td>
 		</tr>
 		<tr>
 			<td>ajax=fetchFlowExecutions</td>
-			<td>Fixed parameter indicating the fetchFlowExecutions action.</td>
+			<td>The fixed parameter indicating the fetchFlowExecutions action.</td>
 		</tr>
 		<tr>
 			<td>project</td>
@@ -593,16 +597,16 @@ Given a project name, and a certain flow, provide a list of its executions. Thos
 		</tr>
 		<tr>
 			<td>start</td>
-			<td>The start index(inclusive) of the list.</td>
+			<td>The start index(inclusive) of the returned list.</td>
 		</tr>
 		<tr>
 			<td>length</td>
-			<td>The length of the list.</td>
+			<td>The max length of the returned list. For example, if the start index is 2, and the length is 10, then the returned list will include executions of indices: [2, 3, 4, 5, 6, 7, 8, 9, 10, 11].</td>
 		</tr>
 	</tbody>
 </table>
 
-<h5> Response Object </h5>
+<h5><strong> Response Object </strong></h5>
 <table class="table table-striped table-condensed table-bordered">
 	<thead>
 		<tr>
@@ -689,7 +693,7 @@ A response sample:
 
 <h3 id="api-fetch-running-executions-of-a-flow"> Fetch Running Executions of a Flow </h3>
 <p>
-Given a project name and a flow id, fetching only executions that are currently running.
+Given a project name and a flow id, this API call fetches only executions that are currently running.
 </p>
 <ul class="list-unstyled">
   <li>
@@ -703,7 +707,7 @@ Given a project name and a flow id, fetching only executions that are currently 
   </li>
 </ul> 
 
-<h5> Request Parameters </h5>
+<h5><strong> Request Parameters </strong></h5>
 <table class="table table-striped table-condensed table-bordered">
     <thead>
         <tr>
@@ -714,11 +718,11 @@ Given a project name and a flow id, fetching only executions that are currently 
     <tbody>
         <tr>
             <td>session.id</td>
-            <td><p> User session token. </p></td>
+            <td><p> The user session id. </p></td>
         </tr>
         <tr>
             <td>ajax=getRunning</td>
-            <td>Fixed parameter indicating the getRunning action.</td>
+            <td>The fixed parameter indicating the getRunning action.</td>
         </tr>
         <tr>
             <td>project</td>
@@ -731,7 +735,7 @@ Given a project name and a flow id, fetching only executions that are currently 
     </tbody>
 </table>
 
-<h5> Response Object </h5>
+<h5><strong> Response Object </strong></h5>
 <table class="table table-striped table-condensed table-bordered">
     <thead>
         <tr>
@@ -781,7 +785,7 @@ by disabling all other jobs in the same flow.
   </li>
 </ul> 
 
-<h5> Request Parameters </h5>
+<h5><strong> Request Parameters </strong></h5>
 
 <table class="table table-striped table-condensed table-bordered">
 	<thead>
@@ -794,7 +798,7 @@ by disabling all other jobs in the same flow.
 		<tr>
 			<td>session.id</td>
 			<td>
-				<p> User session token. </p>
+				<p> The user session id. </p>
 				<p>
 					<strong>Example Values:</strong> 30d538e2-4794-4e7e-8a35-25a9e2fd5300
 				</p>
@@ -804,7 +808,7 @@ by disabling all other jobs in the same flow.
 			<td> ajax=executeFlow </td>
 			<td>
 				<p>
-				Fixed parameter indicating the current ajax action is executeFlow.
+				The fixed parameter indicating the current ajax action is executeFlow.
 				</p>
 			</td>
 		</tr>
@@ -888,7 +892,7 @@ by disabling all other jobs in the same flow.
 	</tbody>
 </table>
 
-<h5> Response Object </h5>
+<h5><strong> Response Object </strong></h5>
 <table class="table table-striped table-condensed table-bordered">
 	<thead>
 		<tr>
@@ -929,7 +933,7 @@ Sample response:
 <h3 id="api-cancel-a-flow-execution"> Cancel a Flow Execution </h3>
 
 <p>
-Given an execution id, this API will cancel a running flow. If the flow is not running, it will return an error message.
+Given an execution id, this API call cancels a running flow. If the flow is not running, it will return an error message.
 </p>
 <ul class="list-unstyled">
   <li>
@@ -943,7 +947,7 @@ Given an execution id, this API will cancel a running flow. If the flow is not r
   </li>
 </ul>
 
-<h5> Request Parameters </h5>
+<h5><strong> Request Parameters </strong></h5>
 
 <table class="table table-striped table-condensed table-bordered">
 	<thead>
@@ -956,14 +960,14 @@ Given an execution id, this API will cancel a running flow. If the flow is not r
 		<tr>
 			<td>session.id</td>
 			<td>
-				<p> User session token. </p>
+				<p> The user session id. </p>
 			</td>
 		</tr>
 		<tr>
 			<td> ajax=cancelFlow </td>
 			<td>
 				<p>
-				Fixed parameter indicating the current ajax action is cancelFlow.
+				The fixed parameter indicating the current ajax action is cancelFlow.
 				</p>
 			</td>
 		</tr>
@@ -995,7 +999,7 @@ A response sample if fails:
 
 <h3 id="api-pause-a-flow-execution"> Pause a Flow Execution</h3>
 <p>
-Given an execution id, this API will pause a running flow. If an execution has already been paused, it will not throw any errors and the response message is still blank.
+Given an execution id, this API pauses a running flow. If an execution has already been paused, it will not return any error; if an execution is not running, it will return an error message.
 </p>
 <ul class="list-unstyled">
   <li>
@@ -1009,7 +1013,7 @@ Given an execution id, this API will pause a running flow. If an execution has a
   </li>
 </ul>
 
-<h5> Request Parameters </h5>
+<h5><strong> Request Parameters </strong></h5>
 
 <table class="table table-striped table-condensed table-bordered">
 	<thead>
@@ -1022,14 +1026,14 @@ Given an execution id, this API will pause a running flow. If an execution has a
 		<tr>
 			<td>session.id</td>
 			<td>
-				<p> User session token. </p>
+				<p> The user session id. </p>
 			</td>
 		</tr>
 		<tr>
 			<td> ajax=pauseFlow </td>
 			<td>
 				<p>
-				Fixed parameter indicating the current ajax action is pauseFlow.
+				The fixed parameter indicating the current ajax action is pauseFlow.
 				</p>
 			</td>
 		</tr>
@@ -1060,7 +1064,7 @@ A response sample (if fails, only when the flow is not actually running):
 
 <h3 id="api-resume-a-flow-execution"> Resume a Flow Execution</h3>
 <p>
-Given an execution id, this API will resume a paused running flow. If an execution has already been resumed, it will not throw any errors and the response message is still blank.
+Given an execution id, this API resumes a paused running flow. If an execution has already been resumed, it will not return any errors; if an execution is not runnning, it will return an error message.
 </p>
 <ul class="list-unstyled">
   <li>
@@ -1074,7 +1078,7 @@ Given an execution id, this API will resume a paused running flow. If an executi
   </li>
 </ul>
 
-<h5> Request Parameters </h5>
+<h5><strong> Request Parameters </strong></h5>
 
 <table class="table table-striped table-condensed table-bordered">
 	<thead>
@@ -1087,14 +1091,14 @@ Given an execution id, this API will resume a paused running flow. If an executi
 		<tr>
 			<td>session.id</td>
 			<td>
-				<p> User session token. </p>
+				<p> The user session id. </p>
 			</td>
 		</tr>
 		<tr>
 			<td> ajax=resumeFlow </td>
 			<td>
 				<p>
-				Fixed parameter indicating the current ajax action is resumeFlow.
+				The fixed parameter indicating the current ajax action is resumeFlow.
 				</p>
 			</td>
 		</tr>
@@ -1125,7 +1129,7 @@ A response sample (if fails, only when the flow is not actually running):
 
 <h3 id="api-fetch-a-flow-execution"> Fetch a Flow Execution</h3>
 <p>
-Given an execution id, fetch the detailed information of that execution, including a list of all the job executions.
+Given an execution id, this API call fetches all the detailed information of that execution, including a list of all the job executions.
 </p>
 
 <ul class="list-unstyled">
@@ -1140,7 +1144,7 @@ Given an execution id, fetch the detailed information of that execution, includi
   </li>
 </ul> 
 
-<h5> Request Parameters </h5>
+<h5><strong> Request Parameters </strong></h5>
 <table class="table table-striped table-condensed table-bordered">
     <thead>
         <tr>
@@ -1151,11 +1155,11 @@ Given an execution id, fetch the detailed information of that execution, includi
     <tbody>
         <tr>
             <td>session.id</td>
-            <td><p> User session token. </p></td>
+            <td><p> The user session id. </p></td>
         </tr>
         <tr>
             <td>ajax=fetchexecflow</td>
-            <td>Fixed parameter indicating the fetchexecflow action.</td>
+            <td>The fixed parameter indicating the fetchexecflow action.</td>
         </tr>
         <tr>
             <td>execid</td>
@@ -1164,10 +1168,10 @@ Given an execution id, fetch the detailed information of that execution, includi
     </tbody>
 </table>
 
-<h5> Response Object </h5>
+<h5><strong> Response Object </strong></h5>
 <p>
-	Basically it will return a very detailed information about the execution (check the example below). One thing to 
-	notice is that "nodes[i].in" actually indicates what are the dependencies of this job.
+	It returns a detailed information about the execution (check the example below). One thing to 
+	notice is that the field <code>nodes[i].in</code> actually indicates what are the dependencies of this node.
 </p>
 
 <p>Here's a curl command sample:</p>
@@ -1238,6 +1242,9 @@ A response sample:
 
 
 <h3 id="api-fetch-execution-job-logs"> Fetch Execution Job Logs </h3>
+<p>
+Given an execution id and a job id, this API call fetches the correponding job logs. The log text can be quite large sometimes, so this API call also expects the parameters <code> offset</code> and <code>length</code> to be specified.
+</p>
 
 <ul class="list-unstyled">
   <li>
@@ -1251,7 +1258,7 @@ A response sample:
   </li>
 </ul> 
 
-<h5> Request Parameters </h5>
+<h5><strong> Request Parameters </strong></h5>
 
 <table class="table table-striped table-condensed table-bordered">
 	<thead>
@@ -1263,11 +1270,11 @@ A response sample:
 	<tbody>
 		<tr>
 			<td>session.id</td>
-			<td><p> User session token. </p></td>
+			<td><p> The user session id. </p></td>
 		</tr>
 		<tr>
 			<td>ajax=fetchExecJobLogs</td>
-			<td>Fixed parameter indicating the fetchExecJobLogs action.</td>
+			<td>The fixed parameter indicating the fetchExecJobLogs action.</td>
 		</tr>
 		<tr>
 			<td>execid</td>
@@ -1283,12 +1290,12 @@ A response sample:
 		</tr>
 		<tr>
 			<td>length</td>
-			<td>The length of the log data.</td>
+			<td>The length of the log data. For example, if the offset set is 10 and the length is 1000, the returned log will starts from the 10th character and has a length of 1000 (less if the remaining log is less than 1000 long).</td>
 		</tr>
 	</tbody>
 </table>
 
-<h5> Response Object </h5>
+<h5><strong> Response Object </strong></h5>
 
 <table class="table table-striped table-condensed table-bordered">
 	<thead>
@@ -1329,7 +1336,9 @@ A response sample:
 </pre>
 
 <h3 id="api-fetch-execution-job-status"> Fetch Execution Job Status </h3>
-
+<p>
+This API call fetches the status of a job execution.
+</p>
 <ul class="list-unstyled">
   <li>
     <strong>Method:</strong> GET
@@ -1342,7 +1351,7 @@ A response sample:
   </li>
 </ul> 
 
-<h5> Request Parameters </h5>
+<h5><strong> Request Parameters </strong></h5>
 
 <table class="table table-striped table-condensed table-bordered">
 	<thead>
@@ -1354,24 +1363,24 @@ A response sample:
 	<tbody>
 		<tr>
 			<td>session.id</td>
-			<td><p> User session token. </p></td>
+			<td><p> The user session id. </p></td>
 		</tr>
 		<tr>
 			<td>ajax=fetchExecJobStats</td>
-			<td>Fixed parameter indicating the fetch job status action.</td>
+			<td>The fixed parameter indicating the fetch job status action.</td>
 		</tr>
 		<tr>
 			<td>execid</td>
-			<td>The unique id for an execution.</td>
+			<td>The execution id.</td>
 		</tr>
 		<tr>
 			<td>jobid</td>
-			<td>The unique id for the job to be fetched.</td>
+			<td>The job id.</td>
 		</tr>
 	</tbody>
 </table>
 
-<h5> Response Object </h5>
+<h5><strong> Response Object </strong></h5>
 
 <table class="table table-striped table-condensed table-bordered">
 	<thead>
@@ -1383,7 +1392,7 @@ A response sample:
 	<tbody>
 		<tr>
 			<td>jobStats</td>
-			<td>The stats of a job.</td>
+			<td>The status of a job.</td>
 		</tr>
 	</tbody>
 </table>
