@@ -1,0 +1,558 @@
+buildscript {
+  repositories {
+    mavenCentral()
+  }
+  dependencies {
+    classpath 'com.linkedin:gradle-dustjs-plugin:1.0.0'
+    classpath 'de.obqo.gradle:gradle-lesscss-plugin:1.0-1.3.3'
+  }
+}
+
+apply plugin: 'distribution'
+
+allprojects {
+  repositories {
+    mavenCentral()
+    mavenLocal()
+  }
+}
+
+/**
+ * Helper that calls a command and returns the output.
+ */
+def cmdCaller = { commandln ->
+  def stdout = new ByteArrayOutputStream()
+  exec {
+    commandLine commandln
+    standardOutput = stdout
+  }
+  return stdout.toString().trim()
+}
+
+subprojects {
+  apply plugin: 'java'
+  apply plugin: 'eclipse'
+
+  /**
+   * Gets the version name from the latest Git tag
+   */
+  task createVersionFile() << {
+    String gitCommitHash = cmdCaller(['git', 'rev-parse', 'HEAD']);
+    String gitRepo = cmdCaller(['git', 'config', '--get', 'remote.origin.url']);
+    def date = new Date()
+    def formattedDate = date.format('yyyy-MM-dd hh:mm zzz')
+
+    String versionStr = version + '\n' +
+        gitCommitHash + '\n' +
+        gitRepo + '\n' +
+        formattedDate + '\n'
+
+    File versionFile = file('build/package/azkaban.version')
+    versionFile.parentFile.mkdirs()
+    versionFile.write(versionStr)
+  }
+
+  /*
+   * Print test execution summary when informational logging is enabled.
+   */
+  test {
+    testLogging {
+      afterSuite { desc, result ->
+        if (desc.getParent()) {
+          logger.info desc.getName()
+        } else {
+          logger.info "Overall"
+        }
+        logger.info "  ${result.resultType} (" +
+              "${result.testCount} tests, " +
+              "${result.successfulTestCount} passed, " +
+              "${result.failedTestCount} failed, " +
+              "${result.skippedTestCount} skipped)"
+      }
+    }
+  }
+}
+
+project(':azkaban-common') {
+  configurations {
+    all {
+      transitive = false
+    }
+  }
+
+  dependencies {
+    compile('com.google.guava:guava:13.0.1')
+    compile('com.h2database:h2:1.3.170')
+    compile('commons-codec:commons-codec:1.9')
+    compile('commons-collections:commons-collections:3.2.1')
+    compile('commons-configuration:commons-configuration:1.8')
+    compile('commons-dbcp:commons-dbcp:1.4')
+    compile('commons-dbutils:commons-dbutils:1.5')
+    compile('commons-fileupload:commons-fileupload:1.2.1')
+    compile('commons-io:commons-io:2.4')
+    compile('commons-lang:commons-lang:2.6')
+    compile('commons-logging:commons-logging:1.1.1')
+    compile('commons-pool:commons-pool:1.6')
+    compile('javax.mail:mail:1.4.5')
+    compile('javax.servlet:servlet-api:2.5')
+    compile('joda-time:joda-time:2.0')
+    compile('log4j:log4j:1.2.16')
+    compile('mysql:mysql-connector-java:5.1.28')
+    compile('net.sf.jopt-simple:jopt-simple:4.3')
+    compile('org.apache.commons:commons-email:1.2')
+    compile('org.apache.commons:commons-jexl:2.1.1')
+    compile('org.apache.httpcomponents:httpclient:4.2.1')
+    compile('org.apache.httpcomponents:httpcore:4.2.1')
+    compile('org.apache.velocity:velocity:1.7')
+    compile('org.codehaus.jackson:jackson-core-asl:1.9.5')
+    compile('org.codehaus.jackson:jackson-mapper-asl:1.9.5')
+    compile('org.mortbay.jetty:jetty:6.1.26')
+    compile('org.mortbay.jetty:jetty-util:6.1.26')
+    compile('org.slf4j:slf4j-api:1.6.1')
+
+    testCompile('junit:junit:4.11')
+    testCompile('org.hamcrest:hamcrest-all:1.3')
+  }
+}
+
+project(':azkaban-migration') {
+  configurations {
+    all {
+      transitive = false
+    }
+  }
+
+  dependencies {
+    compile(project(':azkaban-common'))
+    compile('commons-io:commons-io:2.4')
+    compile('commons-dbcp:commons-dbcp:1.4')
+    compile('commons-dbutils:commons-dbutils:1.5')
+    compile('joda-time:joda-time:2.0')
+    compile('log4j:log4j:1.2.16')
+  }
+
+  task copyLibs(type: Copy, dependsOn: 'build') {
+    from('build/libs')
+    into('build/package/lib')
+  }
+
+  task copyDeps(type: Copy, dependsOn: 'build') {
+    from(project(':azkaban-common').configurations.compile)
+    from(configurations.compile)
+    into('build/package/lib')
+  }
+
+  task copyPackage(type: Copy) {
+    from('src/package')
+    into('build/package')
+  }
+
+  task copy(dependsOn: [
+      'createVersionFile',
+      'copyLibs',
+      'copyDeps',
+      'copyPackage']) {
+  }
+}
+
+project(':azkaban-webserver') {
+  apply plugin: 'lesscss'
+  apply plugin: 'dustjs'
+
+  ext.pegasusVersion = '1.15.7'
+
+  configurations {
+    all {
+      transitive = false
+    }
+    generateRestli {
+      transitive = true
+    }
+  }
+
+  dependencies {
+    compile(project(':azkaban-common'))
+    compile('com.linkedin.parseq:parseq:1.3.7')
+    compile('com.linkedin.pegasus:data:' + pegasusVersion)
+    compile('com.linkedin.pegasus:gradle-plugins:' + pegasusVersion)
+    compile('com.linkedin.pegasus:li-jersey-uri:' + pegasusVersion)
+    compile('com.linkedin.pegasus:pegasus-common:' + pegasusVersion)
+    compile('com.linkedin.pegasus:restli-common:' + pegasusVersion)
+    compile('com.linkedin.pegasus:restli-server:' + pegasusVersion)
+    compile('com.linkedin.pegasus:r2:' + pegasusVersion)
+    compile('com.fasterxml.jackson.core:jackson-core:2.3.2')
+    compile('commons-lang:commons-lang:2.6')
+    compile('commons-io:commons-io:2.4')
+    compile('commons-fileupload:commons-fileupload:1.2.1')
+    compile('javax.servlet:servlet-api:2.5')
+    compile('joda-time:joda-time:2.0')
+    compile('log4j:log4j:1.2.16')
+    compile('net.sf.jopt-simple:jopt-simple:4.3')
+    compile('org.apache.velocity:velocity:1.7')
+    compile('org.mortbay.jetty:jetty:6.1.26')
+    compile('org.mortbay.jetty:jetty-util:6.1.26')
+
+    generateRestli('com.linkedin.pegasus:generator:' + pegasusVersion)
+    generateRestli('com.linkedin.pegasus:restli-tools:' + pegasusVersion)
+  }
+
+  sourceSets {
+    main {
+      java {
+        srcDirs 'src/main/java', 'src/restli/generatedJava', 'src/restli/java'
+      }
+    }
+  }
+
+  task restliTemplateGenerator(type: JavaExec) {
+    mkdir 'src/restli/generatedJava'
+
+    main = 'com.linkedin.pegasus.generator.PegasusDataTemplateGenerator'
+    args = ['src/restli/generatedJava','src/restli/schemas']
+    classpath = configurations.generateRestli
+  }
+
+  task restliRestSpecGenerator(dependsOn: [restliTemplateGenerator], type: JavaExec) << {
+    mkdir 'src/restli/generatedRestSpec'
+
+    main = 'com.linkedin.restli.tools.idlgen.RestLiResourceModelExporterCmdLineApp'
+    args = ['-outdir', 'src/restli/generatedRestSpec', '-sourcepath', 'src/restli/java']
+    classpath = configurations.generateRestli
+  }
+
+  task restli(dependsOn: restliTemplateGenerator) << {
+  }
+
+  compileJava.dependsOn.add('restli')
+
+  lesscss {
+    source = fileTree('src/main/less') {
+      include 'azkaban.less'
+      include 'azkaban-graph.less'
+    }
+    dest = 'build/less'
+  }
+
+  dustjs {
+    source = fileTree('src/main/tl')
+    dest = 'build/dust'
+  }
+
+  task createDirs() << {
+    file('build/package/extlib').mkdirs()
+    file('build/package/plugins').mkdirs()
+  }
+
+  task copyWeb(type: Copy) {
+    from('src/web')
+    into('build/package/web')
+  }
+
+  task copyLess(type: Copy, dependsOn: ['lesscss', 'copyWeb']) {
+    from('build/less')
+    into('build/package/web/css')
+  }
+
+  task copyDust(type: Copy, dependsOn: ['dustjs', 'copyWeb']) {
+    from('build/dust')
+    into('build/package/web/js')
+  }
+
+  task copyDeps(type: Copy, dependsOn: 'build') {
+    from(project(':azkaban-common').configurations.compile)
+    from(configurations.compile)
+    into('build/package/lib')
+  }
+
+  task copyLibs(type: Copy, dependsOn: 'build') {
+    from('build/libs')
+    into('build/package/lib')
+  }
+
+  task copyPackage(type: Copy) {
+    from('src/package')
+    into('build/package')
+  }
+
+  task copy(dependsOn: [
+      'createVersionFile',
+      'createDirs',
+      'copyLess',
+      'copyDust',
+      'copyDeps',
+      'copyLibs',
+      'copyPackage']) {
+  }
+}
+
+project(':azkaban-execserver') {
+  configurations {
+    all {
+      transitive = false
+    }
+  }
+
+  dependencies {
+    compile(project(':azkaban-common'))
+    compile('commons-io:commons-io:2.4')
+    compile('javax.servlet:servlet-api:2.5')
+    compile('joda-time:joda-time:2.0')
+    compile('log4j:log4j:1.2.16')
+    compile('org.mortbay.jetty:jetty:6.1.26')
+    compile('org.mortbay.jetty:jetty-util:6.1.26')
+    compile('org.codehaus.jackson:jackson-core-asl:1.9.5')
+    compile('org.codehaus.jackson:jackson-mapper-asl:1.9.5')
+
+    testCompile('junit:junit:4.11')
+    testCompile('org.hamcrest:hamcrest-all:1.3')
+    testCompile(project(':azkaban-common').sourceSets.test.output)
+  }
+
+  task createDirs() << {
+    file('build/package/extlib').mkdirs()
+    file('build/package/plugins').mkdirs()
+  }
+
+  task copyDeps(type: Copy, dependsOn: 'build') {
+    from(project(':azkaban-common').configurations.compile)
+    from(configurations.compile)
+    into('build/package/lib')
+  }
+
+  task copyLibs(type: Copy, dependsOn: 'build') {
+    from('build/libs')
+    into('build/package/lib')
+  }
+
+  task copyPackage(type: Copy) {
+    from('src/package')
+    into('build/package')
+  }
+
+  task copy(dependsOn: [
+      'createVersionFile',
+      'createDirs',
+      'copyDeps',
+      'copyLibs',
+      'copyPackage']) {
+  }
+}
+
+project(':azkaban-soloserver') {
+  dependencies {
+    compile(project(':azkaban-common'))
+    compile(project(':azkaban-webserver'))
+    compile(project(':azkaban-execserver'))
+  }
+
+  task createDirs() << {
+    file('build/package/extlib').mkdirs()
+    file('build/package/plugins').mkdirs()
+  }
+
+  task copyDeps(type: Copy, dependsOn: 'build') {
+    from(configurations.compile)
+    into('build/package/lib')
+  }
+
+  task copyLibs(type: Copy, dependsOn: 'build') {
+    from('build/libs')
+    into('build/package/lib')
+  }
+
+  task copyPackage(type: Copy) {
+    from('src/package')
+    into('build/package')
+  }
+
+  task copyWeb(type: Copy, dependsOn: ':azkaban-webserver:copy') {
+    from(project(':azkaban-webserver').files('build/package/web'))
+    into('build/package/web')
+  }
+
+  task copySql(type: Copy) {
+    from(project(':azkaban-sql').files('src/sql'))
+    into('build/package/sql')
+  }
+
+  task copy(dependsOn: [
+      'createVersionFile',
+      'createDirs',
+      'copyDeps',
+      'copyLibs',
+      'copyPackage',
+      'copyWeb',
+      'copySql']) {
+  }
+}
+
+project(':azkaban-sql') {
+  task concat() << {
+    ext.destFile = 'build/sql/create-all-sql-' + version + '.sql';
+    ant.concat(destfile: destFile, fixlastline: 'yes') {
+      logger.info('Concating create scripts to ' + destFile)
+      fileset(dir: 'src/sql') {
+        exclude(name: 'update.*.sql')
+        exclude(name: 'database.properties')
+      }
+    }
+  }
+}
+
+project(':azkaban-test') {
+  apply plugin: 'distribution'
+
+  distributions {
+    animal {
+      baseName = 'test-animal'
+      contents {
+        from { 'src/test/resources/executions/animal' }
+      }
+    }
+
+    embedded {
+      baseName = 'test-embedded'
+      contents {
+        from { 'src/test/resources/executions/embedded' }
+      }
+    }
+
+    embedded2 {
+      baseName = 'test-embedded2'
+      contents {
+        from { 'src/test/resources/executions/embedded2' }
+      }
+    }
+
+    embedded3 {
+      baseName = 'test-embedded3'
+      contents {
+        from { 'src/test/resources/executions/embedded3' }
+      }
+    }
+
+    embeddedBad {
+      baseName = 'test-embedded-bad'
+      contents {
+        from { 'src/test/resources/executions/embeddedBad' }
+      }
+    }
+
+    execpropstest {
+      baseName = 'test-execpropstest'
+      contents {
+        from { 'src/test/resources/executions/execpropstest' }
+      }
+    }
+
+    exectest1 {
+      baseName = 'test-exectest1'
+      contents {
+        from { 'src/test/resources/executions/exectest1' }
+      }
+    }
+
+    exectest2 {
+      baseName = 'test-exectest2'
+      contents {
+        from { 'src/test/resources/executions/exectest2' }
+      }
+    }
+
+    logtest {
+      baseName = 'test-logtest'
+      contents {
+        from { 'src/test/resources/executions/logtest' }
+      }
+    }
+  }
+
+  distZip.dependsOn build, animalDistZip, embeddedDistZip, embedded2DistZip,
+      embedded3DistZip, embeddedBadDistZip, execpropstestDistZip,
+      exectest1DistZip, exectest2DistZip, logtestDistZip
+
+  distTar.dependsOn build, animalDistTar, embeddedDistTar, embedded2DistTar,
+      embedded3DistTar, embeddedBadDistTar, execpropstestDistTar,
+      exectest1DistTar, exectest2DistTar, logtestDistTar
+}
+
+distributions {
+  migration {
+    baseName = 'azkaban-migration'
+    contents {
+      from { project(':azkaban-migration').file('build/package') }
+    }
+  }
+
+  webserver {
+    baseName = 'azkaban-web-server'
+    contents {
+      from { project(':azkaban-webserver').file('build/package') }
+    }
+  }
+
+  execserver {
+    baseName = 'azkaban-exec-server'
+    contents {
+      from { project(':azkaban-execserver').file('build/package') }
+    }
+  }
+
+  soloserver {
+    baseName = 'azkaban-solo-server'
+    contents {
+      from { project(':azkaban-soloserver').files('build/package') }
+    }
+  }
+
+  sql {
+    baseName = 'azkaban-sql'
+    contents {
+      from { project(':azkaban-sql').file('src/sql') }
+      from { project(':azkaban-sql').file('build/sql') }
+    }
+  }
+}
+
+// Set up dependencies for distribution tasks.
+//
+// N.B. The extension for the Tar tasks is set since the Gradle Distribution
+//      plugin uses the .tar file extension for GZipped Tar files by default.
+//
+// N.B. When the distribution tasks are run, azkaban-execserver,
+//      azkaban-webserver, azkaban-migration, and azkaban-soloserver only
+//      have a dependency on the azkaban-common build artifacts. As a result,
+//      the full :azkaban-common:build task is not run, meaning that the
+//      tests are skipped. Thus, the dependency on :azkaban-common:build
+//      is set here so that the azkaban-common unit tests are run when running
+//      the dist tasks.
+
+migrationDistTar.dependsOn ':azkaban-common:build', ':azkaban-migration:copy'
+migrationDistTar.extension = 'tar.gz'
+migrationDistZip.dependsOn ':azkaban-common:build', ':azkaban-migration:copy'
+
+webserverDistTar.dependsOn ':azkaban-common:build', ':azkaban-webserver:copy'
+webserverDistTar.extension = 'tar.gz'
+webserverDistZip.dependsOn ':azkaban-common:build', ':azkaban-webserver:copy'
+
+execserverDistTar.dependsOn ':azkaban-common:build', ':azkaban-execserver:copy'
+execserverDistTar.extension = 'tar.gz'
+execserverDistZip.dependsOn ':azkaban-common:build', ':azkaban-execserver:copy'
+
+soloserverDistTar.dependsOn ':azkaban-common:build', ':azkaban-soloserver:copy'
+soloserverDistTar.extension = 'tar.gz'
+soloserverDistZip.dependsOn ':azkaban-common:build', ':azkaban-soloserver:copy'
+
+sqlDistTar.dependsOn ':azkaban-sql:concat'
+sqlDistTar.extension = 'tar.gz'
+sqlDistZip.dependsOn ':azkaban-sql:concat'
+
+distTar.dependsOn migrationDistTar, webserverDistTar, execserverDistTar, soloserverDistTar, sqlDistTar
+distZip.dependsOn migrationDistZip, webserverDistZip, execserverDistZip, soloserverDistZip, sqlDistZip
+
+/**
+ * Gradle wrapper task.
+ */
+task wrapper(type: Wrapper) {
+  gradleVersion = '1.12'
+}

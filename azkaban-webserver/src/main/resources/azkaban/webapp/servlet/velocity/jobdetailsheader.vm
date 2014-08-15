@@ -1,0 +1,60 @@
+#*
+ * Copyright 2014 LinkedIn Corp.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not
+ * use this file except in compliance with the License. You may obtain a copy of
+ * the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations under
+ * the License.
+*#
+
+  ## Page header.
+
+    <div class="az-page-header page-header-bare">
+      <div class="container-full">
+        <div class="row">
+          <div class="header-title">
+            <h1><a href="${context}/executor?execid=${execid}&job=${jobid}">Job Execution <small>$jobid</small></a></h1>
+          </div>
+          <div class="header-control">
+            <div class="pull-right header-form">
+              <a href="${context}/manager?project=${projectName}&flow=${parentflowid}&job=$jobname" class="btn btn-info btn-sm">Job Properties</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="page-breadcrumb">
+      <div class="container-full">
+        <ol class="breadcrumb">
+          <li><a href="${context}/manager?project=${projectName}"><strong>Project</strong> $projectName</a></li>
+          <li><a href="${context}/manager?project=${projectName}&flow=${flowid}"><strong>Flow</strong> $flowid</a></li>
+          <li><a href="${context}/executor?execid=${execid}#jobslist"><strong>Execution</strong> $execid</a></li>
+          <li class="active"><strong>Job</strong> $jobid</li>
+        </ol>
+      </div>
+    </div>
+
+    <div class="container-full">
+
+  #parse ("azkaban/webapp/servlet/velocity/alerts.vm")
+
+  ## Tabs
+
+      <ul class="nav nav-tabs nav-sm" id="headertabs">
+  #if ($current_page == "executing")
+        <li class="active" id="jobLogViewLink"><a href="#logs">Job Logs</a></li>
+  #else
+        <li id="jobLogViewLink"><a href="${context}/executor?execid=${execid}&job=${jobid}#logs">Job Logs</a></li>
+  #end
+  #foreach ($jobViewerPlugin in $jobViewerPlugins)
+        <li#if($current_page == $jobViewerPlugin.pluginName) class="active"#end><a href="$!context/${jobViewerPlugin.pluginPath}?execid=${execid}&jobid=${jobid}">$jobViewerPlugin.pluginName</a></li>
+  #end
+      </ul>
+    </div>

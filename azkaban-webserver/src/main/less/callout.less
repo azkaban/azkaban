@@ -1,0 +1,64 @@
+/*
+ * Callouts
+ *
+ * Not quite alerts, but custom and helpful notes for folks reading the docs.
+ * Requires a base and modifier class.
+ */
+
+/* Common styles for all types */
+.callout {
+  margin: 0 0 20px 0;
+  padding: 20px;
+  border-left: 3px solid #eee;
+
+  h4 {
+    margin-top: 0;
+    margin-bottom: 5px;
+  }
+
+  p:last-child {
+    margin-bottom: 0;
+  }
+
+  code {
+    background-color: #fff;
+    border-radius: 3px;
+  }
+}
+
+/* Variations */
+.callout-danger {
+  background-color: #fdf7f7;
+  border-color: #d9534f;
+
+  h4 {
+    color: #d9534f;
+  }
+}
+
+.callout-warning {
+  background-color: #fcf8f2;
+  border-color: #f0ad4e;
+
+  h4 {
+    color: #f0ad4e;
+  }
+}
+
+.callout-info {
+  background-color: #f4f8fa;
+  border-color: #5bc0de;
+
+  h4 {
+    color: #5bc0de;
+  }
+}
+
+.callout-default {
+  background-color: #f5f5f5;
+  border-color: #dddddd;
+
+  h4 {
+    color: #a0a0a0;
+  }
+}

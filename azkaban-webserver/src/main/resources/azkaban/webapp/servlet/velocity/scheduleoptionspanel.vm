@@ -1,0 +1,175 @@
+#*
+ * Copyright 2012 LinkedIn Corp.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not
+ * use this file except in compliance with the License. You may obtain a copy of
+ * the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations under
+ * the License.
+*#
+
+<div id="scheduleModalBackground" class="modalBackground2">
+  <div id="schedule-options" class="modal modalContainer2">
+    <a href='#' title='Close' class='modal-close'>x</a>
+      <h3>Schedule Flow Options</h3>
+      <div>
+        <ul class="optionsPicker">
+          <li id="scheduleGeneralOptions">General Options</li>
+          <li id="scheduleFlowOptions">Flow Options</li>
+          <!--li id="scheduleSlaOptions">SLA Options</li-->
+        </ul>
+      </div>
+      <div class="optionsPane">
+        <!--div id="scheduleSlaPanel" class="generalPanel panel">
+          <div id="slaActions">
+            <h4>SLA Alert Emails</h4>
+            <dl>
+              <dt >SLA Alert Emails</dt>
+              <dd>
+                <textarea id="slaEmails"></textarea>
+              </dd>
+            </dl>
+          </div>
+          <div id="slaRules">
+            <h4>Flow SLA Rules</h4>
+            <div class="tableDiv">
+              <table id="flowRulesTbl">
+                <thead>
+                  <tr>
+                    <th>Flow/Job</th>
+                    <th>Finish In</th>
+                    <th>Email Action</th>
+                    <th>Kill Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                </tbody>
+              </table>
+            </div>
+            <h4>Job SLA Rules</h4>
+            <div class="tableDiv">
+              <table id="jobRulesTbl">
+                <thead>
+                  <tr>
+                    <th>Flow/Job</th>
+                    <th>Finish In</th>
+                    <th>Email Action</th>
+                    <th>Kill Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div-->
+        <div id="scheduleGeneralPanel" class="generalPanel panel">
+          <div id="scheduleInfo">
+            <dl>
+              <dt>Schedule Time</dt>
+              <dd>
+                <input id="advhour" type="text" size="2" value="12"/>
+                <input id="advminutes" type="text" size="2" value="00"/>
+                <select id="advam_pm">
+                  <option>pm</option>
+                  <option>am</option>
+                </select>
+                <select id="advtimezone">
+                  <option>PDT</option>
+                  <option>UTC</option>
+                </select>
+              </dd>
+              <dt>Schedule Date</dt><dd><input type="text" id="advdatepicker" /></dd>
+              <dt>Recurrence</dt>
+              <dd>
+                <input id="advis_recurring" type="checkbox" checked  />
+                <span>repeat every</span>
+                 <input id="advperiod" type="text" size="2" value="1"/>
+                <select id="advperiod_units">
+                  <option value="d">Days</option>
+                  <option value="h">Hours</option>
+                  <option value="m">Minutes</option>
+                  <option value="M">Months</option>
+                  <option value="w">Weeks</option>
+                </select>
+              </dd>
+            </dl>
+          </div>
+          <br></br>
+          <br></br>
+          <div id="scheduleCompleteActions">
+            <h4>Completion Actions</h4>
+            <dl>
+              <dt>Failure Action</dt>
+              <dd>
+                <select id="scheduleFailureAction" name="failureAction">
+                  <option value="finishCurrent">Finish Current Running</option>
+                  <option value="cancelImmediately">Cancel All</option>
+                  <option value="finishPossible">Finish All Possible</option>
+                </select>
+                      </dd>
+              <dt>Failure Email</dt>
+              <dd>
+                <textarea id="scheduleFailureEmails"></textarea>
+              </dd>
+              <dt>Notify on Failure</dt>
+              <dd>
+                <input id="scheduleNotifyFailureFirst" class="checkbox" type="checkbox" name="notify" value="first" checked >First Failure</input>
+                <input id="scheduleNotifyFailureLast" class="checkbox" type="checkbox" name="notify" value="last">Flow Stop</input>
+              </dd>
+              <dt>Success Email</dt>
+              <dd>
+                <textarea id="scheduleSuccessEmails"></textarea>
+              </dd>
+              <dt>Concurrent Execution</dt>
+              <dd id="scheduleExecutingJob" class="disabled">
+                <input id="scheduleIgnore" class="radio" type="radio" name="concurrent" value="ignore" checked /><label class="radioLabel" for="ignore">Run Concurrently</label>
+                <input id="schedulePipeline" class="radio" type="radio" name="concurrent" value="pipeline" /><label class="radioLabel" for="pipeline">Pipeline</label>
+                <input id="scheduleQueue" class="radio" type="radio" name="concurrent" value="queue" /><label class="radioLabel" for="queue">Queue Job</label>
+              </dd>
+            </dl>
+          </div>
+          <div id="scheduleFlowPropertyOverride">
+            <h4>Flow Property Override</h4>
+            <div class="tableDiv">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Value</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr id="scheduleAddRow"><td id="addRow-col" colspan="2"><span class="addIcon"></span><a href="#">Add Row</a></td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        <div id="scheduleGraphPanel" class="graphPanel panel">
+          <div id="scheduleJobListCustom" class="jobList">
+            <div class="filterList">
+              <input class="filter" placeholder="  Job Filter" />
+            </div>
+            <div class="list">
+            </div>
+            <div class="btn5 resetPanZoomBtn" >Reset Pan Zoom</div>
+            </div>
+            <div id="scheduleSvgDivCustom" class="svgDiv" >
+              <svg class="svgGraph" xmlns="http://www.w3.org/2000/svg" version="1.1" shape-rendering="optimize-speed" text-rendering="optimize-speed" >
+              </svg>
+            </div>
+        </div>
+    </div>
+    <div class="actions">
+  <a class="yes btn1" id="adv-schedule-btn" href="#">Schedule</a>
+  <a class="no simplemodal-close btn3" id="schedule-cancel-btn" href="#">Cancel</a>
+  </div>
+  </div>
+</div>

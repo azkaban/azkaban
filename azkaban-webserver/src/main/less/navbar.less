@@ -1,0 +1,121 @@
+.navbar-logo {
+  float: left;
+  padding: 15px 15px;
+  font-size: 18px;
+  line-height: 20px;
+
+  a {
+    &:hover,
+    &:focus {
+      text-decoration: none;
+    }
+  }
+}
+
+@media (min-width: 768px) {
+  .navbar > .container .navbar-logo {
+    margin-left: -15px;
+  }
+}
+
+@media (min-width: 768px) {
+  .navbar-enviro {
+    width: auto;
+  }
+}
+
+.navbar-enviro {
+  margin: 30px 20px 0px 12px;
+
+  .navbar-enviro-name {
+    color: #ff3601;
+    font-family: Helvetica, Arial, Sans-Serif;
+    font-size: 118.75%;
+    font-weight: bold;
+		line-height: 100%;
+  }
+
+  .navbar-enviro-server {
+    color: #999;
+    font-family: Helvetica, Arial, Sans-Serif;
+    font-size: 75%;
+  }
+}
+
+// Restyle navbar-inverse for Azkaban navbar.
+.navbar-inverse {
+  background-color: #383838;
+  border-top: 5px solid #ff3601;
+  margin-bottom: 0;
+
+  .navbar-logo {
+    background: url('../../images/logo.png') top left no-repeat;
+    color: #ffffff;
+    font-size: 156.25%;
+    font-weight: bold;
+    margin: 15px 0.6% 15px 4.75%;
+    padding: 12px 0 11px 42px;
+
+    a {
+      color: #ffffff;
+      &:hover,
+      &:focus {
+        color: #ffffff;
+        background-color: transparent;
+      }
+    }
+  }
+
+  .navbar-nav {
+    font-family: Arial;
+    font-size: 81.25%;
+
+    > li {
+      padding: 25px 12px 25px 12px;
+      cursor: pointer;
+      &:hover {
+        background-color: rgba(0, 0, 0, 0.1);
+      }
+    }
+
+    > li > a {
+      padding: 0px;
+      color: #ccc;
+      &:focus,
+      &:hover {
+        color: #ccc;
+        background-color: transparent;
+      }
+    }
+
+    > .active {
+      background-color: rgba(0, 0, 0, 0.1);
+    }
+
+    > .active > a {
+      color: #fff;
+      font-weight: bold;
+      background-color: transparent;
+      border-bottom: 1px solid #ff3601;
+      &:hover {
+        color: #fff;
+        background-color: transparent;
+      }
+    }
+
+    > li.dropdown {
+      padding: 0;
+    }
+
+    > li.dropdown > a {
+      padding: 25px 12px 25px 12px;
+    }
+
+    > .open > a,
+    > .open > a:hover,
+    > .open > a:focus {
+      color: #ccc;
+      background-color: transparent;
+    }
+  }
+}

@@ -1,0 +1,22 @@
+<div id="flowInfoBase" class="flowExtendedView" style="display:none">
+  <div class="flowExtendedViewHeader">
+    <h3 class="flowInfoTitle"><span class="nodeId"></span><span class="nodeType"></span></h3>
+    <a title="Close" class="modal-close closeInfoPanel">x</a>
+  </div>
+  <div class="dataContent">
+    <div class="dataFlow">
+    </div>
+    <div class="dataJobProperties">
+      <table class="dataPropertiesTable">
+        <thead class="dataPropertiesHead">
+          <tr>
+            <th>Name</th>
+            <th>Value</th>
+          </tr>
+        </thead>
+        <tbody class="dataPropertiesBody">
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>

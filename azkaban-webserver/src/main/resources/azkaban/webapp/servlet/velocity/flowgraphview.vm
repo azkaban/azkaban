@@ -1,0 +1,44 @@
+#*
+ * Copyright 2012 LinkedIn Corp.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not
+ * use this file except in compliance with the License. You may obtain a copy of
+ * the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations under
+ * the License.
+*#
+
+  ## Graph view.
+
+    <div class="container-full container-fill" id="graphView">
+      <div class="graph-sidebar-open" id="open-joblist-btn">
+        <span class="glyphicon glyphicon-th-list" title="Open Job List Panel"></span>
+      </div>
+      <div class="graph-sidebar-float">
+        <div class="panel panel-default" id="joblist-panel">
+          <div class="panel-heading">
+            <div class="graph-sidebar-close" id="close-btn" title="Close Panel"><span class="glyphicon glyphicon-remove"></span></div>
+            <div class="graph-sidebar-search">
+              <input id="filter" type="text" placeholder="Job Filter" class="form-control input-sm">
+            </div>
+          </div>
+          <div id="joblist" class="graph-sidebar-list"></div>
+          <div class="panel-footer">
+            <button type="button" class="btn btn-sm btn-default" id="resetPanZoomBtn">Reset Pan Zoom</button>
+            <button type="button" class="btn btn-sm btn-default" id="autoPanZoomBtn" data-toggle="button">Auto Pan Zoom</button>
+          </div>
+        </div><!-- /.panel -->
+      </div>
+      <div class="col-content">
+        <div id="svgDiv" class="well well-clear well-sm graph-container">
+          <svg id="flow-graph" xmlns="http://www.w3.org/2000/svg" version="1.1" shape-rendering="optimize-speed" text-rendering="optimize-speed">
+          </svg>
+        </div>
+      </div>
+    </div>

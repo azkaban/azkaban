@@ -1,0 +1,165 @@
+.nodebox {
+  text {
+    pointer-events: none;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -khtml-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+  }
+
+  image {
+    pointer-events: none;
+  }
+
+  > .border:hover {
+    fill-opacity: 0.7;
+  }
+
+  > .flowborder:hover {
+    stroke-opacity: 0.7;
+  }
+}
+
+/* Nodes */
+.node {
+  &:hover {
+    cursor: pointer;
+  }
+
+  &.selected > .nodebox .border {
+    stroke-width: 3;
+    stroke: #39b3d7;
+  }
+
+  &.selected > .nodebox .flowborder {
+    stroke-width: 3;
+    fill: #D9EDFF;
+  }
+}
+
+.border {
+  stroke-width: 1;
+}
+
+.flownode .nodebox .flowborder {
+  stroke-width: 1.25;
+  fill: #FFF;
+  fill-opacity: 0.8;
+}
+
+.READY > g > rect {
+  fill: #DDD;
+  stroke: #CCC;
+}
+
+.READY > g > text {
+  fill: #000;
+}
+
+.RUNNING > g > rect {
+  fill: #39b3d7;
+  stroke: #39b3d7;
+}
+
+.RUNNING > g > text {
+  fill: #FFF;
+}
+
+.SUCCEEDED > g > rect {
+  fill: #5cb85c;
+  stroke: #4cae4c;
+}
+
+.SUCCEEDED > g > text {
+  fill: #FFF;
+}
+
+.FAILED > g > rect {
+  fill: #d2322d;
+  stroke: #d2322d;
+}
+
+.FAILED > g > text {
+  fill: #FFF;
+}
+
+.KILLED > g > rect {
+  fill: #d2322d;
+  stroke: #d2322d;
+}
+
+.KILLED > g > text {
+  fill: #FFF;
+}
+
+.CANCELLED > g > rect {
+  fill: #FF9999;
+  stroke: #FF9999;
+}
+
+.CANCELLED > g > text {
+  fill: #FFF;
+}
+
+.FAILED_FINISHING > g > rect {
+  fill: #ed9c28;
+  stroke: #ed9c28;
+}
+
+.FAILED_FINISHING > g > text {
+  fill: #FFF;
+}
+
+.DISABLED > g > rect {
+  fill: #DDD;
+  stroke: #CCC;
+}
+
+.DISABLED > g > rect {
+  fill: #DDD;
+  stroke: #CCC;
+}
+
+.nodeDisabled {
+  opacity: 0.25;
+}
+
+.SKIPPED > g > rect {
+  fill: #DDD;
+  stroke: #CCC;
+}
+
+.DISABLED {
+  opacity: 0.25;
+}
+
+.SKIPPED {
+  opacity: 0.25;
+}
+
+.QUEUED > g > rect {
+  fill: #39b3d7;
+  stroke: #39b3d7;
+}
+
+.QUEUED > g > text {
+  fill: #FFF;
+}
+
+.QUEUED {
+  opacity: 0.5;
+}
+
+/* Edges */
+.edge {
+  stroke: #CCC;
+  stroke-width: 1.5;
+
+  &:hover {
+    stroke: #009FC9;
+    stroke-width: 1.5;
+  }
+}
+

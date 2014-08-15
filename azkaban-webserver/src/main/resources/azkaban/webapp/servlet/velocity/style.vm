@@ -1,0 +1,40 @@
+#*
+ * Copyright 2012 LinkedIn Corp.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not
+ * use this file except in compliance with the License. You may obtain a copy of
+ * the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations under
+ * the License.
+*#
+
+    <meta charset="utf-8">
+    <title>#appname()</title>
+
+    <link rel="shortcut icon" href="${context}/favicon.ico" />
+    <!-- Bootstrap core CSS -->
+    <link href="/css/bootstrap.css" rel="stylesheet">
+    <link href="/css/azkaban.css" rel="stylesheet">
+    <style type="text/css">
+      .navbar-enviro .navbar-enviro-name {
+        color: ${azkaban_color};
+      }
+      .navbar-inverse {
+        border-top: 5px solid ${azkaban_color};
+      }
+      .navbar-inverse .navbar-nav > .active >a {
+        border-bottom: 1px solid ${azkaban_color};
+      }
+    </style>
+
+    <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
+    <!--[if lt IE 9]>
+      <script src="/js/html5shiv.js"></script>
+      <script src="/js/respond.min.js"></script>
+    <![endif]-->

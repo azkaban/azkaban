@@ -1,0 +1,43 @@
+.contextMenu {
+  position: absolute;
+  background-color: #FFF;
+  border: 1px solid #DDD;
+  -moz-box-shadow: 2px 2px 5px #888;
+  -webkit-box-shadow: 2px 2px 5px #888;
+  box-shadow: 2px 2px 5px #888;
+  z-index: 2010;
+
+  ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  li {
+    &.menuitem {
+      background-color: #FFF;
+      padding: 3px 20px;
+      min-width: 50px;
+      font-size: 10pt;
+      cursor: pointer;
+
+      .expandSymbol {
+        background-image: url("../css/images/ui-icons_cccccc_256x240.png");
+        background-position: -32px -16px;
+        height: 16px;
+        width: 16px;
+        float:right;
+      }
+
+      &:hover {
+        background-color: #555;
+        color: #FFF;
+      }
+    }
+
+    &.break {
+      border-bottom: 1px solid #BBB;
+      margin: 2px 5px;
+    }
+  }
+}

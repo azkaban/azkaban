@@ -1,0 +1,146 @@
+#*
+ * Copyright 2012 LinkedIn Corp.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not
+ * use this file except in compliance with the License. You may obtain a copy of
+ * the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations under
+ * the License.
+*#
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+
+#parse("azkaban/webapp/servlet/velocity/style.vm")
+#parse("azkaban/webapp/servlet/velocity/javascript.vm")
+
+    <script type="text/javascript" src="${context}/js/raphael.min.js"></script>
+    <script type="text/javascript" src="${context}/js/morris.min.js"></script>
+    <script type="text/javascript" src="${context}/js/azkaban/util/date.js"></script>
+    <script type="text/javascript" src="${context}/js/azkaban/view/time-graph.js"></script>
+    <script type="text/javascript" src="${context}/js/azkaban/view/job-history.js"></script>
+    <script type="text/javascript">
+      var contextURL = "${context}";
+      var currentTime = ${currentTime};
+      var timezone = "${timezone}";
+      var errorMessage = null;
+      var successMessage = null;
+
+      var projectId = "$projectId";
+      var projectName = "$projectName";
+      var jobName = "$jobid";
+      var dataSeries = $dataSeries;
+    </script>
+    <link rel="stylesheet" type="text/css" href="${context}/css/morris.css" />
+  </head>
+  <body>
+
+#set ($current_page="all")
+#parse ("azkaban/webapp/servlet/velocity/nav.vm")
+
+#if ($errorMsg)
+  #parse ("azkaban/webapp/servlet/velocity/errormsg.vm")
+#else
+
+  ## Page header
+
+    <div class="az-page-header page-header-bare">
+      <div class="container-full">
+        <h1><a href="${context}/manager?project=${projectName}&job=${jobid}&history">Job History <small>$jobid</small></a></h1>
+      </div>
+    </div>
+    <div class="page-breadcrumb">
+      <div class="container-full">
+        <ol class="breadcrumb">
+          <li><a href="${context}/manager?project=${projectName}"><strong>Project</strong> $projectName</a></li>
+          <li class="active"><strong>Job History</strong> $jobid</li>
+        </ol>
+      </div>
+    </div>
+
+    <div class="container-full">
+
+  #parse ("azkaban/webapp/servlet/velocity/alerts.vm")
+
+  ## Time graph and job history table.
+
+      <div class="row">
+        <div class="col-xs-12">
+          <div class="well well-clear well-sm" id="timeGraph">
+          </div>
+
+          <table id="all-jobs" class="table table-striped table-bordered table-condensed table-hover">
+            <thead>
+              <tr>
+                <th class="execid">Execution Id</th>
+                <th class="jobid">Job</th>
+                <th class="flowid">Flow</th>
+                <th class="date">Start Time</th>
+                <th class="date">End Time</th>
+                <th class="elapse">Elapse</th>
+                <th class="status">Status</th>
+                <th class="logs">Logs</th>
+              </tr>
+            </thead>
+            <tbody>
+  #if ($history)
+    #foreach ($job in $history)
+              <tr>
+                <td class="first">
+      #if ($job.attempt > 0)
+                  <a href="${context}/executor?execid=${job.execId}">${job.execId}.${job.attempt}</a>
+      #else
+                  <a href="${context}/executor?execid=${job.execId}">${job.execId}</a>
+      #end
+                </td>
+                <td>
+                  <a href="${context}/manager?project=${projectName}&flow=${job.immediateFlowId}&job=${jobid}">${jobid}</a>
+                </td>
+                <td>
+                  <a href="${context}/manager?project=${projectName}&flow=${job.headFlowId}">${job.flowId}</a>
+                </td>
+                <td>$utils.formatDate(${job.startTime})</td>
+                <td>$utils.formatDate(${job.endTime})</td>
+                <td>$utils.formatDuration(${job.startTime}, ${job.endTime})</td>
+                <td>
+                  <div class="status ${job.status}">
+                    $utils.formatStatus(${job.status})
+                  </div>
+                </td>
+                <td class="logLink">
+                  <a href="${context}/executor?execid=${job.execId}&job=${job.jobIdPath}&attempt=${job.attempt}">Logs</a>
+                </td>
+              </tr>
+    #end
+  #else
+              <tr>
+                <td colspan="8">No history</td>
+              </tr>
+  #end
+            </tbody>
+          </table>
+
+          <ul class="pagination" id="pageSelection">
+            <li id="previous" class="first"><a href="${context}/manager?project=${projectName}&job=${jobid}&history&page=${previous.nextPage}&size=${previous.size}"><span class="arrow">&larr;</span>Previous</a></li>
+            <li id="page1" #if($page1.selected) class="active" #elseif ($page1.disabled) class="disabled" #end><a href="${context}/manager?project=${projectName}&job=${jobid}&history&page=${page1.nextPage}&size=${page1.size}">${page1.page}</a></li>
+            <li id="page2" #if($page2.selected) class="active" #elseif ($page2.disabled) class="disabled" #end><a href="${context}/manager?project=${projectName}&job=${jobid}&history&page=${page2.nextPage}&size=${page2.size}">${page2.page}</a></li>
+            <li id="page3" #if($page3.selected) class="active" #elseif ($page3.disabled) class="disabled" #end><a href="${context}/manager?project=${projectName}&job=${jobid}&history&page=${page3.nextPage}&size=${page3.size}">${page3.page}</a></li>
+            <li id="page4" #if($page4.selected) class="active" #elseif ($page4.disabled) class="disabled" #end><a href="${context}/manager?project=${projectName}&job=${jobid}&history&page=${page4.nextPage}&size=${page4.size}">${page4.page}</a></li>
+            <li id="page5" #if($page5.selected) class="active" #elseif ($page5.disabled) class="disabled" #end><a href="${context}/manager?project=${projectName}&job=${jobid}&history&page=${page5.nextPage}&size=${page5.size}">${page5.page}</a></li>
+            <li id="next"><a href="${context}/manager?project=${projectName}&job=${jobid}&history&page=${next.nextPage}&size=${next.size}">Next<span class="arrow">&rarr;</span></a></li>
+          </ul>
+
+        </div><!-- /.col-xs-12 -->
+      </div><!-- /.row -->
+
+    </div>
+#end
+  </body>
+</html>

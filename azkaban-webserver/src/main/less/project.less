@@ -1,0 +1,142 @@
+#project-list {
+  padding: 0;
+  margin: 0px 0px 40px 0px;
+
+  li {
+    list-style: none;
+    border-bottom: 1px solid #cccccc;
+    padding-top: 14px;
+    padding-bottom: 0px;
+    &:first-child {
+      border-top: 1px solid #cccccc;
+    }
+  }
+
+  .project-expander {
+    float: right;
+    cursor: pointer;
+    &:hover {
+      color: #2a6496;
+    }
+  }
+
+  .project-info {
+    float: left;
+    h4 {
+      margin-top: 0;
+      margin-bottom: 4px;
+    }
+
+    .project-description {
+      margin-bottom: 4px;
+    }
+
+    .project-last-modified {
+      color: #a0a0a0;
+      margin-bottom: 16px;
+      strong {
+        font-weight: normal;
+        color: #000000;
+      }
+    }
+  }
+}
+
+#project-sidebar {
+  h3 {
+    margin-bottom: 5px;
+  }
+}
+
+.project-flows {
+  display: none;
+  background-color: #f9f9f9;
+  padding: 10px 15px 10px 15px;
+
+  h5 {
+    margin-top: 5px;
+  }
+
+  .list-group {
+    margin-bottom: 10px;
+  }
+
+  .list-group-item {
+    background: transparent;
+    padding: 7px 12px 7px 12px;
+  }
+}
+
+// Flow panel heading.
+.flow-expander {
+  cursor: pointer;
+
+  .flow-expander-icon {
+    color: #9a9a9a;
+    margin-right: 5px;
+  }
+}
+
+.expanded-flow-job-list {
+  .list-group-item {
+    .job-buttons {
+      visibility: hidden;
+    }
+
+    &:hover {
+      background-color: #f5f5f5;
+
+      .job-buttons {
+        visibility: visible;
+      }
+    }
+  }
+
+  .dependency {
+    background-color: #f0f0f0;
+  }
+
+  .dependent {
+    background-color: #fafafa;
+  }
+}
+
+// Permissions page table.
+.permission-table {
+  .tb-perm {
+    width: 41px;
+    margin: 0px;
+  }
+
+  .tb-admin {
+    width: 41px;
+    margin: 0px;
+  }
+
+  .tb-read {
+    width: 33px;
+    margin: 0px;
+  }
+
+  .tb-write {
+    width: 34px;
+    margin: 0px;
+  }
+
+  .tb-execute {
+    width: 51px;
+    margin: 0px;
+  }
+
+  .tb-schedule {
+    margin: 0px;
+    width: 60px;
+  }
+
+  .tb-action {
+    margin: 0px;
+    width: 70px;
+    min-width: 70px;
+    max-width: 70px;
+  }
+}

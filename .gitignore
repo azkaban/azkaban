@@ -1,8 +1,9 @@
-dist/
 build/
+.gradle/
+.settings/
 .idea/
 *.iml
-*.log
-TestProcess_*
-_AzkabanTestDir_*
-reports/
+/bin
+.classpath
+.project
+*.swp

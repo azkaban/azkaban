@@ -1,0 +1,7 @@
+include 'azkaban-common'
+include 'azkaban-execserver'
+include 'azkaban-migration'
+include 'azkaban-soloserver'
+include 'azkaban-sql'
+include 'azkaban-webserver'
+include 'azkaban-test'

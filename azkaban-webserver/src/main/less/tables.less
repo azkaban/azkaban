@@ -1,0 +1,149 @@
+table.table-properties {
+  table-layout: fixed;
+  word-wrap: break-word;
+}
+
+// Flow summary.
+.property-key {
+  width: 25%;
+  font-weight: bold;
+}
+
+.property-value {
+
+}
+
+.property-value-half {
+  width: 25%;
+}
+
+.property-key,
+.property-value,
+.property-value-half {
+  pre {
+    background: transparent;
+    padding: 0;
+    border: 0;
+  }
+}
+
+.editable {
+  .remove-btn {
+    visibility: hidden;
+  }
+
+  &:hover .remove-btn {
+    visibility: visible;
+  }
+}
+
+// Job table.
+#all-jobs {
+  .tb-name {
+    width: 70%;
+    border-bottom-width: 0;
+    border-bottom-style: none;
+  }
+
+  .tb-up-date {
+    width: 140px;
+    min-width: 130px;
+  }
+
+  .tb-owner {
+    width: 10%;
+    min-width: 95px;
+  }
+}
+
+// Properties table.
+.properties-table {
+  .all-jobs .tb-pname {
+  }
+
+  .all-jobs .tb-pvalue {
+  }
+}
+
+// Table of executions.
+.executions-table {
+  tr {
+    &.expanded {
+      opacity: 0.6;
+    }
+  }
+
+  td {
+    &.subflowrow {
+      padding: 0px 0px;
+
+      table {
+        margin: 0px;
+        background-color: rgba(230, 230, 230, 0.75);
+
+        td {
+          background-color: none;
+        }
+      }
+    }
+
+    &.date {
+      width: 160px;
+    }
+
+    &.jobtype {
+      width: 90px;
+    }
+
+    &.execid {
+      width: 100px;
+    }
+
+    &.project {
+      width: 200px;
+    }
+
+    &.user {
+      width: 60px;
+    }
+
+    &.elapse {
+      width: 90px;
+    }
+
+    &.statustd {
+      width: 100px;
+    }
+
+    &.details {
+      width: 10px;
+    }
+
+    &.action {
+      width: 20px;
+    }
+
+    &.logs {
+      width: 30px;
+    }
+
+     &.timeline {
+      width: 280px;
+      padding: 0px 0px 0px 4px;
+      height: 100%;
+      vertical-align: bottom;
+      margin: 0px;
+    }
+
+    &.startTime {
+      width: 160px;
+    }
+
+    &.endTime {
+      width: 160px;
+    }
+    &.elapsedTime {
+      width: 90px;
+    }
+  }
+}

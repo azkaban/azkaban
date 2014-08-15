@@ -1,0 +1,41 @@
+.log-viewer {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+
+  .panel {
+    position: relative;
+    height: 100%;
+
+    .panel-heading {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 40px;
+    }
+
+    .panel-body {
+      position: absolute;
+      top: 40px;
+      left: 0;
+      right: 0;
+      bottom: 0;
+
+      padding: 0;
+      background-color: #fcfcfc;
+
+      pre {
+        margin: 0;
+        border: 0;
+        height: 100%;
+        font-size: 12px;
+        background-color: transparent;
+        overflow: auto;
+        width: auto;
+        word-wrap: normal;
+        white-space: pre;
+      }
+    }
+  }
+}

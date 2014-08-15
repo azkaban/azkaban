@@ -1,0 +1,37 @@
+#*
+ * Copyright 2012 LinkedIn Corp.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not
+ * use this file except in compliance with the License. You may obtain a copy of
+ * the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations under
+ * the License.
+*#
+
+  <script type="text/javascript" src="${context}/js/jquery.svg.min.js"></script>
+  <script type="text/javascript" src="${context}/js/jquery.svganim.min.js"></script>
+  <script type="text/javascript" src="${context}/js/jquery.svgfilter.min.js"></script>
+
+  <script type="text/javascript" src="${context}/js/azkaban/util/common.js"></script>
+  <script type="text/javascript" src="${context}/js/azkaban/util/date.js"></script>
+  <script type="text/javascript" src="${context}/js/azkaban/util/ajax.js"></script>
+
+  <script type="text/javascript" src="${context}/js/azkaban/util/svgutils.js"></script>
+  <script type="text/javascript" src="${context}/js/azkaban/util/svg-navigate.js"></script>
+  <script type="text/javascript" src="${context}/js/azkaban/util/layout.js"></script>
+
+  <script type="text/javascript" src="${context}/js/azkaban/view/context-menu.js"></script>
+  <script type="text/javascript" src="${context}/js/azkaban/util/job-status.js"></script>
+
+  <script type="text/javascript" src="${context}/js/azkaban/util/flow-loader.js"></script>
+  <script type="text/javascript" src="${context}/js/azkaban/view/job-list.js"></script>
+  <script type="text/javascript" src="${context}/js/azkaban/model/svg-graph.js"></script>
+  <script type="text/javascript" src="${context}/js/azkaban/view/svg-graph.js"></script>
+
+  <link rel="stylesheet" type="text/css" href="${context}/css/azkaban-graph.css" />
