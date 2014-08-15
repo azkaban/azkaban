@@ -1,19 +1,71 @@
 <h2 id="ajax-api">AJAX API</h2>
 
-<p>Often there's a desire to interact with Azkaban without having to use the web ui. Azkaban has some exposed ajax calls you can make to the web server through curl or some other Http get or post methods. However, you must have a secure session to call these services. The following are some of the useful calls you can make. All ajax responses will be in json format.</p>
-
-<h3>Authenticated Session</h3>
-
-<p>To get a secure session, make a POST request to Azkaban's base url. The parameters should be:</p>
-
+<p>
+Often there's a desire to interact with Azkaban without having to use the web UI. Azkaban has some exposed ajax calls accessible through curl or some other HTTP request clients. All API calls require authentification first.
+<br/><br/>
+Azkaban assumes the following request header in servlet's <code>isAjaxCall(HttpServletRequest request)</code> method:
 <pre>
-action=login
-username=&lt;username&gt;
-password=&lt;password&gt;
+<ul class="list-unstyled">
+  Content-Type:    application/x-www-form-urlencoded
+  X-Requested-With:    XMLHttpRequest
+</pre> 
+However, currently for most of APIs in this version, it is not checking the request header. Many APIs still treat a request as an ajax call if <code>request</code> simply contains the parameter <code>ajax</code>. Or even, several APIs is implicitly assuming it is an ajax call even without this keyword. For ease of use, it is recommended to always keep the correct request header.
+</p>
+
+<h3 id="api-authenticate">Authenticate</h3>
+<ul class="list-unstyled">
+  <li>
+    <strong>Method:</strong> POST
+  </li>
+  <li>
+    <strong>Request URL:</strong> /?action=login
+  </li>
+  <li>
+  	<strong>Parameter Location:</strong> Request Query String
+  </li>
+</ul> 
+
+<p>This API helps authentiate a user and provide a <code>session.id</code> in response.</p>
+
+<p>Once a <code>session.id</code> has been returned, until the session has expired, this id can be used to do further requests in Azkaban. A session can expire if you log out, change machines or location, Azkaban is restarted or if the session timed out. By default session timeout is 24 hours (one day). You can re-login no matter if the session expires. For the same user, a new session will always override old sessions.</p>
+
+<p>
+<strong> Importantly, </strong> <code>session.id</code> should be provided for almost all other API calls. <code>session.id</code> can be simply appended as one of the request parameters, or set via setting the cookie: <code>azkaban.browser.session.id</code>. As a result, the below two HTTP requests are equivalent:
+<pre class="code">
+# a) Provide session.id parameter directly
+curl -k --get -data "session.id=bca1d75d-6bae-4163-a5b0-378a7d7b5a91&ajax=fetchflowgraph&project=azkaban-test-project&flow=test" https://localhost:8443/manager
+
+# b) Provide azkaban.browser.session.id cookie
+curl -k --get -b "azkaban.browser.session.id=bca1d75d-6bae-4163-a5b0-378a7d7b5a91" --data "ajax=fetchflowgraph&project=azkaban-test-project&flow=test" https://localhost:8443/manager
 </pre>
+</p>
 
-<p>The response will be json with the following parameters set:</p>
+<h5> Request Parameters </h5>
+<table class="table table-striped table-condensed table-bordered">
+	<thead>
+		<tr>
+			<th>Parameter</th>
+			<th> Description</th>
+		</tr>
+	</thead>
+	<tbody>
+		<tr>
+			<td>action=login</td>
+			<td>The fixed parameter indicating the login action.</td>
+		</tr>
+		<tr>
+			<td>username</td>
+			<td>The Azkaban username.</td>
+		</tr>
+		<tr>
+			<td>password</td>
+			<td>The corresponding password.</td>
+		</tr>
+	</tbody>
+</table>
 
+
+<h5> Response Object </h5>
 <table class="table table-striped table-condensed table-bordered">
 	<thead>
 		<tr>
@@ -33,27 +85,224 @@ password=&lt;password&gt;
 	</tbody>
 </table>
 
-<p>This session id must be submitted with all subsequent requests into Azkaban.</p>
-
-<p>Once a session id has been returned, until the session has expired, this id can be used to do further requests into Azkaban. A session can expire if you log out, change machines or location, Azkaban is restarted or if the session timed out. By default session timeout is a day. You can re-login if the session expires.</p>
+A sample call via curl:
 
 <pre class="code">
-curl -k --data "action=login&amp;username=azkaban&amp;password=azkaban" https://localhost:8443
+curl -k -X POST --data "action=login&amp;username=azkaban&amp;password=azkaban" https://localhost:8443
+</pre>
+A sample response:
+<pre class="code">
+{
+  "status" : "success",
+  "session.id" : "c001aba5-a90f-4daf-8f11-62330d034c0a"
+}
 </pre>
 
-<h3>Upload Project Zip</h3>
+<h3 id="api-create-a-project">Create a Project</h3>
+<p>
+The ajax API for creating a new project.
+<br>
+<strong>Notice:</strong>
+before uploading any project zip files, the project should be created first using this API.
+</p>
 
-<p>Uploads are multipart POST messages to __/manager__. The following parameters must be set do to the file upload. The content type should be _application/zip_ or _application/x-zip-compressed_</p>
+<ul class="list-unstyled">
+  <li>
+    <strong>Method:</strong> POST
+  </li>
+   <li>
+  	<strong>Request URL:</strong> /manager?action=create
+  </li>
+  <li>
+  	<strong>Parameter Location:</strong> Request Query
+  </li>
+</ul>
+
+<h5> Request Parameters </h5>
+
+<table class="table table-striped table-condensed table-bordered">
+	<thead>
+		<tr>
+			<th>Parameter</th>
+			<th> Description</th>
+		</tr>
+	</thead>
+	<tbody>
+		<tr>
+			<td>session.id</td>
+			<td><p> User session token. </p></td>
+		</tr>
+		<tr>
+			<td>action=create</td>
+			<td>Fixed parameter to indicate the create project action.</td>
+		</tr>
+		<tr>
+			<td>name</td>
+			<td>The project name to be uploaded.</td>
+		</tr>
+		<tr>
+			<td>description</td>
+			<td>The description for the project. This field also cannot be empty.</td>
+		</tr>
+	</tbody>
+</table>
+
+<h5> Response Object 1. (if the request succeeds): </h5>
+
+<table class="table table-striped table-condensed table-bordered">
+	<thead>
+		<tr>
+			<th>Parameter</th>
+			<th>Description</th>
+		</tr>
+	</thead>
+	<tbody>
+		<tr>
+			<tr>status</tr>
+			<tr>The status of the creation action.</tr>
+		</tr>
+		<tr>
+			<td>path</td>
+			<td>The url path to redirect</td>
+		</tr>
+		<tr>
+			<td>action</td>
+			<td>The action that suggests to execute.</td>
+		</tr>
+	</tbody>
+</table>
+
+<h5> Response Object 2. (if the request fails): </h5>
+
+<table class="table table-striped table-condensed table-bordered">
+	<thead>
+		<tr>
+			<th>message</th>
+			<th>The error message.</th>
+		</tr>
+	</thead>
+	<tbody>
+		<tr>
+			<td>error</td>
+			<td>The error name</td>
+		</tr>
+	</tbody>
+</table>
+
+<p>Here's a curl command sample:</p>
 
 <pre class="code">
-session.id=&lt;session.id&gt;
-ajax=upload
-project=&lt;projectName&gt;
-file=$lt;file&gt;
-</pre> 
+curl -k -X POST --data "session.id=9089beb2-576d-47e3-b040-86dbdc7f523e&name=aaaa&description=11" https://localhost:8443/manager?action=create
+</pre>
 
-<p>The response will be json with the following parameters set:</p>
+A sample response:
+<pre class="code">
+{
+  "status":"success",
+  "path":"manager?project=aaaa",
+  "action":"redirect"
+}
+</pre>
 
+<h3 id="api-delete-a-project">Delete a Project</h3>
+<p>
+The ajax API for deleting an existing project. <br/>
+<strong> Notice: </strong>
+Currently no response message will be returned after finishing the delete operation.
+</p>
+<ul class="list-unstyled">
+  <li>
+    <strong>Method:</strong> GET
+  </li>
+   <li>
+  	<strong>Request URL:</strong> /manager?delete=true
+  </li>
+  <li>
+  	<strong>Parameter Location:</strong> Request Query
+  </li>
+</ul>
+
+<h5> Request Parameters </h5>
+<table class="table table-striped table-condensed table-bordered">
+	<thead>
+		<tr>
+			<th>Parameter</th>
+			<th> Description</th>
+		</tr>
+	</thead>
+	<tbody>
+		<tr>
+			<td>session.id</td>
+			<td><p> User session token. </p></td>
+		</tr>
+		<tr>
+			<td>delete=true</td>
+			<td>Fixed parameter to indicate the deleting project action.</td>
+		</tr>
+		<tr>
+			<td>project</td>
+			<td>The project name to be deleted.</td>
+		</tr>
+	</tbody>
+</table>
+
+<p>Here's a curl command sample:</p>
+<pre class="code">
+curl -k --get --data "session.id=bca1d75d-6bae-4163-a5b0-378a7d7b5a91&delete=true&project=test-delete-project" https://localhost:8443/manager
+</pre>
+
+
+<h3 id="api-upload-a-project-zip">Upload a Project Zip</h3>
+<p>
+The ajax version of uploading a project zip file. The zip file structure should follows the requirements described in 
+<a href="/docs/2.5/#upload-projects"> Upload Projects </a>.
+<br/>
+<strong>Notice: </strong> This API should be called after a project is successfully created.
+</p>
+<ul class="list-unstyled">
+  <li>
+    <strong>Method:</strong> POST
+  </li>
+  <li>
+  	<strong>Content-Type:</strong> multipart/mixed
+  </li>
+   <li>
+  	<strong>Request URL:</strong> /manager?ajax=upload
+  </li>
+  <li>
+  	<strong>Parameter Location:</strong> Request Body
+  </li>
+</ul> 
+
+<h5> Request Parameters </h5>
+<table class="table table-striped table-condensed table-bordered">
+	<thead>
+		<tr>
+			<th>Parameter</th>
+			<th> Description</th>
+		</tr>
+	</thead>
+	<tbody>
+		<tr>
+			<td>session.id</td>
+			<td><p> User session token. </p></td>
+		</tr>
+		<tr>
+			<td>ajax=upload</td>
+			<td>Fixed parameter to the upload action.</td>
+		</tr>
+		<tr>
+			<td>project</td>
+			<td>The project name to be uploaded.</td>
+		</tr>
+		<tr>
+			<td>file</td>
+			<td>The uploading file. The type should be set as application/zip or application/</td>
+		</tr>
+	</tbody>
+</table>
+
+<h5> Response Object </h5>
 <table class="table table-striped table-condensed table-bordered">
 	<thead>
 		<tr>
@@ -77,21 +326,569 @@ file=$lt;file&gt;
 	</tbody>
 </table>
 
-<p>Here's sample a curl command.</p>
+<p>Here's a curl command sample:</p>
 
 <pre class="code">
 curl -k -i -H "Content-Type: multipart/mixed" -X POST --form 'session.id=e7a29776-5783-49d7-afa0-b0e688096b5e' --form 'ajax=upload' --form 'file=@myproject.zip;type=application/zip' --form 'project=MyProject;type/plain' https://localhost:8443/manager
 </pre>
 
-<h3>Executing Flow</h3>
-
+A response sample:
 <pre class="code">
-session.id=&lt;session.id&gt;
-ajax=executeFlow
-project=&lt;projectName&gt;
-flow=&lt;flowName&gt;
+{
+  "error" : "Installation Failed.\nError unzipping file.",
+  "projectId" : "192",
+  "version" : "1"
+}
 </pre>
 
+<h3 id="api-fetch-flows-of-a-project">Fetch Flows of a Project</h3>
+<p>
+Given a project name, fetch all flow ids of that project.
+</p>
+
+<ul class="list-unstyled">
+  <li>
+    <strong>Method:</strong> GET
+  </li>
+   <li>
+  	<strong>Request URL:</strong> /manager?ajax=fetchprojectflows
+  </li>
+  <li>
+  	<strong>Parameter Location:</strong> Request Query String
+  </li>
+</ul> 
+
+<h5> Request Parameters </h5>
+<table class="table table-striped table-condensed table-bordered">
+	<thead>
+		<tr>
+			<th>Parameter</th>
+			<th> Description</th>
+		</tr>
+	</thead>
+	<tbody>
+		<tr>
+			<td>session.id</td>
+			<td><p> User session token. </p></td>
+		</tr>
+		<tr>
+			<td>ajax=fetchprojectflows</td>
+			<td>Fixed parameter indicating the fetchProjectFlows action.</td>
+		</tr>
+		<tr>
+			<td>project</td>
+			<td>The project name to be fetched.</td>
+		</tr>
+	</tbody>
+</table>
+
+<h5> Response Object </h5>
+<table class="table table-striped table-condensed table-bordered">
+	<thead>
+		<tr>
+			<th>Parameter</th>
+			<th>Description</th>
+		</tr>
+	</thead>
+	<tbody>
+		<tr>
+			<td>project</td>
+			<td>The project name.</td>
+		</tr>
+		<tr>
+			<td>projectId</td>
+			<td>The numerical id of the project.</td>
+		</tr>
+		<tr>
+			<td>flows</td>
+			<td>
+				A list of flow Ids.
+				<p>
+				<strong> Example values:</strong>
+				[{"flowId": "aaa"}, {"flowId": "bbb"}]
+			</td>
+		</tr>
+	</tbody>
+</table>
+
+
+
+<p>Here's a curl command sample:</p>
+<pre class="code">
+curl -k --get --data "session.id=6c96e7d8-4df5-470d-88fe-259392c09eea&ajax=fetchprojectflows&project=azkaban-test-project" https://localhost:8443/manager
+</pre>
+
+A response sample:
+<pre class="code">
+{
+  "project" : "test-azkaban",
+  "projectId" : 192,
+  "flows" : [ {
+    "flowId" : "test"
+  }, {
+    "flowId" : "test2"
+  } ]
+}
+</pre>
+
+<h3 id="api-fetch-jobs-of-a-flow">Fetch Jobs of a Flow</h3>
+<p>
+For a given project and a flow id, get all the jobs that belong to this flow. This API also returns the corresponding graph structure of those jobs.
+</p>
+
+<ul class="list-unstyled">
+  <li>
+    <strong>Method:</strong> GET
+  </li>
+   <li>
+    <strong>Request URL:</strong> /manager?ajax=fetchflowgraph
+  </li>
+  <li>
+    <strong>Parameter Location:</strong> Request Query String
+  </li>
+</ul> 
+
+<h5> Request Parameters </h5>
+<table class="table table-striped table-condensed table-bordered">
+    <thead>
+        <tr>
+            <th>Parameter</th>
+            <th> Description</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>session.id</td>
+            <td><p> User session token. </p></td>
+        </tr>
+        <tr>
+            <td>ajax=fetchflowgraph</td>
+            <td>Fixed parameter indicating the fetchProjectFlows action.</td>
+        </tr>
+        <tr>
+            <td>project</td>
+            <td>The project name to be fetched.</td>
+        </tr>
+        <tr>
+            <td>flow</td>
+            <td>The project id to be fetched.</td>
+        </tr>
+    </tbody>
+</table>
+
+<h5> Response Object </h5>
+<table class="table table-striped table-condensed table-bordered">
+    <thead>
+        <tr>
+            <th>Parameter</th>
+            <th>Description</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>project</td>
+            <td>The project name.</td>
+        </tr>
+        <tr>
+            <td>projectId</td>
+            <td>The numerical id of the project.</td>
+        </tr>
+        <tr>
+            <td>flow</td>
+            <td>The flow id fetched.</td>
+        </tr>
+        <tr>
+            <td>nodes</td>
+            <td>
+                A list of job nodes belonging to this flow.
+                <p>
+                	<strong> Structure:</strong>
+                	<pre>
+{
+  "id": "job.id"
+  "type": "job.type"
+  "in": ["job.ids that this job is directly depending upon.
+  Indirect ancestors is not included in this list"]
+}
+                	</pre>
+                </p>
+                <p>
+                <strong> Example values:</strong>
+                [{"id": "first_job", "type": "java"}, {"id": "second_job", "type": "command", "in":["first_job"]}]
+	            </p>
+            </td>
+        </tr>
+    </tbody>
+</table>
+
+<p>Here's a curl command sample:</p>
+<pre class="code">
+curl -k --get --data "session.id=bca1d75d-6bae-4163-a5b0-378a7d7b5a91&ajax=fetchflowgraph&project=texter-1-1&flow=test" https://localhost:8445/manager
+</pre>
+
+A response sample:
+<pre class="code">
+{
+  "project" : "azkaban-test-project",
+  "nodes" : [ {
+    "id" : "test-final",
+    "type" : "command",
+    "in" : [ "test-job-3" ]
+  }, {
+    "id" : "test-job-start",
+    "type" : "java"
+  }, {
+    "id" : "test-job-3",
+    "type" : "java",
+    "in" : [ "test-job-2" ]
+  }, {
+    "id" : "test-job-2",
+    "type" : "java",
+    "in" : [ "test-job-start" ]
+  } ],
+  "flow" : "test",
+  "projectId" : 192
+}
+</pre>
+
+<h3 id="api-fetch-executions-of-a-flow">Fetch Executions of a Flow</h3>
+Given a project name, and a certain flow, provide a list of its executions. Those executions are sorted in descendent submit time order. Also you should provide start index and the length of the list, which can be used to handle pagination.
+
+<ul class="list-unstyled">
+  <li>
+    <strong>Method:</strong> GET
+  </li>
+   <li>
+  	<strong>Request URL:</strong> /manager?ajax=fetchFlowExecutions
+  </li>
+  <li>
+  	<strong>Parameter Location:</strong> Request Query String
+  </li>
+</ul> 
+
+<h5> Request Parameters </h5>
+<table class="table table-striped table-condensed table-bordered">
+	<thead>
+		<tr>
+			<th>Parameter</th>
+			<th> Description</th>
+		</tr>
+	</thead>
+	<tbody>
+		<tr>
+			<td>session.id</td>
+			<td><p> User session token. </p></td>
+		</tr>
+		<tr>
+			<td>ajax=fetchFlowExecutions</td>
+			<td>Fixed parameter indicating the fetchFlowExecutions action.</td>
+		</tr>
+		<tr>
+			<td>project</td>
+			<td>The project name to be fetched.</td>
+		</tr>
+		<tr>
+			<td>flow</td>
+			<td>The flow id to be fetched.</td>
+		</tr>
+		<tr>
+			<td>start</td>
+			<td>The start index(inclusive) of the list.</td>
+		</tr>
+		<tr>
+			<td>length</td>
+			<td>The length of the list.</td>
+		</tr>
+	</tbody>
+</table>
+
+<h5> Response Object </h5>
+<table class="table table-striped table-condensed table-bordered">
+	<thead>
+		<tr>
+			<th>Parameter</th>
+			<th>Description</th>
+		</tr>
+	</thead>
+	<tbody>
+		<tr>
+			<td>executions</td>
+			<td>A list of execution objects, with the resquested start index and length.</td>
+		</tr>
+		<tr>
+			<td>total</td>
+			<td>The total number of all relevant execution</td>
+		</tr>
+		<tr>
+			<td>project</td>
+			<td>The project name fetched.</td>
+		</tr>
+		<tr>
+			<td>projectId</td>
+			<td>The numerical project id fetched.</td>
+		</tr>
+		<tr>
+			<td>flow</td>
+			<td>The flow id fetched.</td>
+		</tr>
+		<tr>
+			<td>from</td>
+			<td>The start index of the fetched executions</td>
+		</tr>
+		<tr>
+			<td>length</td>
+			<td>The length of the fetched executions.</td>
+		</tr>
+	</tbody>
+</table>
+
+<p>Here's a curl command sample:</p>
+<pre class="code">
+curl -k --get --data "session.id=6c96e7d8-4df5-470d-88fe-259392c09eea&ajax=fetchFlowExecutions&project=azkaban-test-project&flow=test&start=0&length=3" https://localhost:8443/manager
+</pre>
+
+A response sample:
+<pre class="code">
+{
+  "executions" : [ {
+    "startTime" : 1407779928865,
+    "submitUser" : "1",
+    "status" : "FAILED",
+    "submitTime" : 1407779928829,
+    "execId" : 306,
+    "projectId" : 192,
+    "endTime" : 1407779950602,
+    "flowId" : "test"
+  }, {
+    "startTime" : 1407779877807,
+    "submitUser" : "1",
+    "status" : "FAILED",
+    "submitTime" : 1407779877779,
+    "execId" : 305,
+    "projectId" : 192,
+    "endTime" : 1407779899599,
+    "flowId" : "test"
+  }, {
+    "startTime" : 1407779473354,
+    "submitUser" : "1",
+    "status" : "FAILED",
+    "submitTime" : 1407779473318,
+    "execId" : 304,
+    "projectId" : 192,
+    "endTime" : 1407779495093,
+    "flowId" : "test"
+  } ],
+  "total" : 16,
+  "project" : "azkaban-test-project",
+  "length" : 3,
+  "from" : 0,
+  "flow" : "test",
+  "projectId" : 192
+}
+</pre>
+
+<h3 id="api-fetch-running-executions-of-a-flow"> Fetch Running Executions of a Flow </h3>
+<p>
+Given a project name and a flow id, fetching only executions that are currently running.
+</p>
+<ul class="list-unstyled">
+  <li>
+    <strong>Method:</strong> GET
+  </li>
+   <li>
+    <strong>Request URL:</strong> /executor?ajax=getRunning
+  </li>
+  <li>
+    <strong>Parameter Location:</strong> Request Query String
+  </li>
+</ul> 
+
+<h5> Request Parameters </h5>
+<table class="table table-striped table-condensed table-bordered">
+    <thead>
+        <tr>
+            <th>Parameter</th>
+            <th> Description</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>session.id</td>
+            <td><p> User session token. </p></td>
+        </tr>
+        <tr>
+            <td>ajax=getRunning</td>
+            <td>Fixed parameter indicating the getRunning action.</td>
+        </tr>
+        <tr>
+            <td>project</td>
+            <td>The project name to be fetched.</td>
+        </tr>
+         <tr>
+            <td>flow</td>
+            <td>The flow id to be fetched.</td>
+        </tr>
+    </tbody>
+</table>
+
+<h5> Response Object </h5>
+<table class="table table-striped table-condensed table-bordered">
+    <thead>
+        <tr>
+            <th>Parameter</th>
+            <th>Description</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>execIds</td>
+            <td>A list of execution ids fetched.
+            	<p>
+            		<strong> Example values: </strong>
+            		[301, 302, 111, 999]
+            	</p>
+            </td>
+        </tr>
+    </tbody>
+</table>
+
+<p>Here's a curl command sample:</p>
+<pre class="code">
+curl -k -data "session.id=34ba08fd-5cfa-4b65-94c4-9117aee48dda&ajax=getRunning&project=azkaban-test-project&flow=test"' https://localhost:8443/executor
+</pre>
+
+A response sample:
+<pre class="code">
+{
+  "execIds": [301, 302]
+}
+</pre>
+
+<h3 id="api-execute-a-flow">Execute a Flow</h3>
+<p>
+This API executes a flow via an ajax call, supporting a rich selection of different options. Running an individual job can also be achieved via this API
+by disabling all other jobs in the same flow.
+</p>
+<ul class="list-unstyled">
+  <li>
+    <strong>Method:</strong> GET
+  </li>
+  <li>
+  	<strong> Request URL: </strong> /executor?ajax=executeFlow
+  </li>
+  <li>
+  	<strong>Parameter Location:</strong> Request Query String
+  </li>
+</ul> 
+
+<h5> Request Parameters </h5>
+
+<table class="table table-striped table-condensed table-bordered">
+	<thead>
+		<tr>
+			<th>Parameter</th>
+			<th>Description</th>
+		</tr>
+	</thead>
+	<tbody>
+		<tr>
+			<td>session.id</td>
+			<td>
+				<p> User session token. </p>
+				<p>
+					<strong>Example Values:</strong> 30d538e2-4794-4e7e-8a35-25a9e2fd5300
+				</p>
+			</td>
+		</tr>
+		<tr>
+			<td> ajax=executeFlow </td>
+			<td>
+				<p>
+				Fixed parameter indicating the current ajax action is executeFlow.
+				</p>
+			</td>
+		</tr>
+		<tr>
+			<td>project</td>
+			<td>
+				<p>The project name of the executing flow.</p>
+				<p> <strong> Example Values: </strong> run-all-jobs </p>
+			</td>
+		</tr>
+    <tr>
+      <td>flow</td>
+      <td>
+        <p>The flow id to be executed.</p>
+        <p> <strong> Example Values: </strong> test-flow </p>
+      </td>
+    </tr>
+		<tr>
+			<td>disabled (optional)</td>
+			<td>
+				<p>A list of job names that should be disabled for this execution. Should be formatted as a JSON Array String.</p>
+				<p> <strong> Example Values: </strong> ["job_name_1", "job_name_2", "job_name_N"] </p>
+			</td>
+		</tr>
+		<tr>
+			<td>successEmails (optional)</td>
+			<td>
+				<p>A list of emails to be notified if the execution succeeds. All emails are delimitted with [,|;|\\s+].</p>
+				<p> <strong> Example Values: </strong> foo@email.com,bar@email.com </p>
+			</td>
+		</tr>
+		<tr>
+			<td>failureEmails (optional)</td>
+			<td>
+				<p>A list of emails to be notified if the execution fails. All emails are delimitted with [,|;|\\s+].</p>
+				<p> <strong> Example Values: </strong> foo@email.com,bar@email.com </p>
+			</td>
+		</tr>
+		<tr>
+			<td>successEmailsOverride (optional)</td>
+			<td>
+				<p>Whether uses system default email settings to override successEmails.</p>
+				<p> <strong> Possible Values: </strong> true, false </p>
+			</td>
+		</tr>
+		<tr>
+			<td>failureEmailsOverride (optional)</td>
+			<td>
+				<p>Whether uses system default email settings to override failureEmails.</p>
+				<p> <strong> Possible Values: </strong> true, false </p>
+			</td>
+		</tr>
+		<tr>
+			<td>notifyFailureFirst (optional)</td>
+			<td>
+				<p>Whether sends out email notifications as long as the first failure occurs.</p>
+				<p> <strong> Possible Values: </strong> true, false </p>
+			</td>
+		</tr>
+		<tr>
+			<td>notifyFailureLast (optional)</td>
+			<td>
+				<p>Whether sends out email notifications as long as the last failure occurs.</p>
+				<p> <strong> Possible Values: </strong> true, false </p>
+			</td>
+		</tr>
+		<tr>
+			<td>failureAction (Optional)</td>
+			<td>
+				<p>If a failure occurs, how should the execution behaves.</p>
+				<p> <strong> Possible Values: </strong> finishCurrent, cancelImmediately, finishPossible </p>
+			</td>
+		</tr>
+		<tr>
+			<td>concurrentOption (Optional)</td>
+			<td>
+				<p>Concurrent choices. Use ignore if nothing specifical is required. </p>
+				<p> <strong> Possible Values: </strong> ignore, pipeline, queue </p>
+			</td>
+		</tr>
+	</tbody>
+</table>
+
+<h5> Response Object </h5>
 <table class="table table-striped table-condensed table-bordered">
 	<thead>
 		<tr>
@@ -114,3 +911,492 @@ flow=&lt;flowName&gt;
 		</tr>
 	</tbody>
 </table>
+Here is a curl command example:
+<pre class="code">
+curl -k --get --data 'session.id=189b956b-f39f-421e-9a95-e3117e7543c9' --data 'ajax=executeFlow' --data 'project=azkaban-test-project' --data 'flow=test' https://localhost:8443/executor
+</pre>
+
+Sample response:
+<pre class="code">
+{
+  message: "Execution submitted successfully with exec id 295",
+  project: "foo-demo",
+  flow: "test",
+  execid: 295
+}
+</pre>
+
+<h3 id="api-cancel-a-flow-execution"> Cancel a Flow Execution </h3>
+
+<p>
+Given an execution id, this API will cancel a running flow. If the flow is not running, it will return an error message.
+</p>
+<ul class="list-unstyled">
+  <li>
+    <strong>Method:</strong> GET
+  </li>
+  <li>
+  	<strong> Request URL: </strong> /executor?ajax=cancelFlow
+  </li>
+  <li>
+  	<strong>Parameter Location:</strong> Request Query String
+  </li>
+</ul>
+
+<h5> Request Parameters </h5>
+
+<table class="table table-striped table-condensed table-bordered">
+	<thead>
+		<tr>
+			<th>Parameter</th>
+			<th>Description</th>
+		</tr>
+	</thead>
+	<tbody>
+		<tr>
+			<td>session.id</td>
+			<td>
+				<p> User session token. </p>
+			</td>
+		</tr>
+		<tr>
+			<td> ajax=cancelFlow </td>
+			<td>
+				<p>
+				Fixed parameter indicating the current ajax action is cancelFlow.
+				</p>
+			</td>
+		</tr>
+		<tr>
+			<td>execid</td>
+			<td>
+				<p> The execution id. </p>
+			</td>
+		</tr>
+	</tbody>
+</table>
+
+<p>Here's a curl command sample:</p>
+
+<pre class="code">
+curl -k --data "session.id=34ba08fd-5cfa-4b65-94c4-9117aee48dda&ajax=cancelFlow&execid=302" https://localhost:8443/executor
+</pre>
+
+A response sample if succeeds:
+<pre class="code">
+{ }
+</pre>
+A response sample if fails:
+<pre class="code">
+{
+  "error" : "Execution 302 of flow test isn't running."
+}
+</pre>
+
+<h3 id="api-pause-a-flow-execution"> Pause a Flow Execution</h3>
+<p>
+Given an execution id, this API will pause a running flow. If an execution has already been paused, it will not throw any errors and the response message is still blank.
+</p>
+<ul class="list-unstyled">
+  <li>
+    <strong>Method:</strong> GET
+  </li>
+  <li>
+  	<strong> Request URL: </strong> /executor?ajax=pauseFlow
+  </li>
+  <li>
+  	<strong>Parameter Location:</strong> Request Query String
+  </li>
+</ul>
+
+<h5> Request Parameters </h5>
+
+<table class="table table-striped table-condensed table-bordered">
+	<thead>
+		<tr>
+			<th>Parameter</th>
+			<th>Description</th>
+		</tr>
+	</thead>
+	<tbody>
+		<tr>
+			<td>session.id</td>
+			<td>
+				<p> User session token. </p>
+			</td>
+		</tr>
+		<tr>
+			<td> ajax=pauseFlow </td>
+			<td>
+				<p>
+				Fixed parameter indicating the current ajax action is pauseFlow.
+				</p>
+			</td>
+		</tr>
+		<tr>
+			<td>execid</td>
+			<td>
+				<p> The execution id. </p>
+			</td>
+		</tr>
+	</tbody>
+</table>
+<p>Here's a curl command sample:</p>
+
+<pre class="code">
+curl -k --data "session.id=34ba08fd-5cfa-4b65-94c4-9117aee48dda&ajax=pauseFlow&execid=303" https://localhost:8443/executor
+</pre>
+
+A response sample (if succeeds, or pauseFlow is called multiple times):
+<pre class="code">
+{ }
+</pre>
+A response sample (if fails, only when the flow is not actually running):
+<pre class="code">
+{
+  "error" : "Execution 303 of flow test isn't running."
+}
+</pre>
+
+<h3 id="api-resume-a-flow-execution"> Resume a Flow Execution</h3>
+<p>
+Given an execution id, this API will resume a paused running flow. If an execution has already been resumed, it will not throw any errors and the response message is still blank.
+</p>
+<ul class="list-unstyled">
+  <li>
+    <strong>Method:</strong> GET
+  </li>
+  <li>
+  	<strong> Request URL: </strong> /executor?ajax=resumeFlow
+  </li>
+  <li>
+  	<strong>Parameter Location:</strong> Request Query String
+  </li>
+</ul>
+
+<h5> Request Parameters </h5>
+
+<table class="table table-striped table-condensed table-bordered">
+	<thead>
+		<tr>
+			<th>Parameter</th>
+			<th>Description</th>
+		</tr>
+	</thead>
+	<tbody>
+		<tr>
+			<td>session.id</td>
+			<td>
+				<p> User session token. </p>
+			</td>
+		</tr>
+		<tr>
+			<td> ajax=resumeFlow </td>
+			<td>
+				<p>
+				Fixed parameter indicating the current ajax action is resumeFlow.
+				</p>
+			</td>
+		</tr>
+		<tr>
+			<td>execid</td>
+			<td>
+				<p> The execution id. </p>
+			</td>
+		</tr>
+	</tbody>
+</table>
+<p>Here's a curl command sample:</p>
+
+<pre class="code">
+curl -k --data "session.id=34ba08fd-5cfa-4b65-94c4-9117aee48dda&ajax=resumeFlow&execid=303" https://localhost:8443/executor
+</pre>
+
+A response sample (if succeeds, or resumeFlow is called multiple times):
+<pre class="code">
+{ }
+</pre>
+A response sample (if fails, only when the flow is not actually running):
+<pre class="code">
+{
+  "error" : "Execution 303 of flow test isn't running."
+}
+</pre>
+
+<h3 id="api-fetch-a-flow-execution"> Fetch a Flow Execution</h3>
+<p>
+Given an execution id, fetch the detailed information of that execution, including a list of all the job executions.
+</p>
+
+<ul class="list-unstyled">
+  <li>
+    <strong>Method:</strong> GET
+  </li>
+   <li>
+    <strong>Request URL:</strong> /executor?ajax=fetchexecflow
+  </li>
+  <li>
+    <strong>Parameter Location:</strong> Request Query String
+  </li>
+</ul> 
+
+<h5> Request Parameters </h5>
+<table class="table table-striped table-condensed table-bordered">
+    <thead>
+        <tr>
+            <th>Parameter</th>
+            <th> Description</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>session.id</td>
+            <td><p> User session token. </p></td>
+        </tr>
+        <tr>
+            <td>ajax=fetchexecflow</td>
+            <td>Fixed parameter indicating the fetchexecflow action.</td>
+        </tr>
+        <tr>
+            <td>execid</td>
+            <td>The execution id to be fetched.</td>
+        </tr>
+    </tbody>
+</table>
+
+<h5> Response Object </h5>
+<p>
+	Basically it will return a very detailed information about the execution (check the example below). One thing to 
+	notice is that "nodes[i].in" actually indicates what are the dependencies of this job.
+</p>
+
+<p>Here's a curl command sample:</p>
+<pre class="code">
+curl -k --data "session.id=34ba08fd-5cfa-4b65-94c4-9117aee48dda&ajax=fetchexecflow&execid=304" https://localhost:8443/executor
+</pre>
+
+A response sample:
+<pre class="code">
+{
+  "attempt" : 0,
+  "submitUser" : "1",
+  "updateTime" : 1407779495095,
+  "status" : "FAILED",
+  "submitTime" : 1407779473318,
+  "projectId" : 192,
+  "flow" : "test",
+  "endTime" : 1407779495093,
+  "type" : null,
+  "nestedId" : "test",
+  "startTime" : 1407779473354,
+  "id" : "test",
+  "project" : "test-azkaban",
+  "nodes" : [ {
+    "attempt" : 0,
+    "startTime" : 1407779495077,
+    "id" : "test",
+    "updateTime" : 1407779495077,
+    "status" : "CANCELLED",
+    "nestedId" : "test",
+    "type" : "command",
+    "endTime" : 1407779495077,
+    "in" : [ "test-foo" ]
+  }, {
+    "attempt" : 0,
+    "startTime" : 1407779473357,
+    "id" : "test-bar",
+    "updateTime" : 1407779484241,
+    "status" : "SUCCEEDED",
+    "nestedId" : "test-bar",
+    "type" : "pig",
+    "endTime" : 1407779484236
+  }, {
+    "attempt" : 0,
+    "startTime" : 1407779484240,
+    "id" : "test-foobar",
+    "updateTime" : 1407779495073,
+    "status" : "FAILED",
+    "nestedId" : "test-foobar",
+    "type" : "java",
+    "endTime" : 1407779495068,
+    "in" : [ "test-bar" ]
+  }, {
+    "attempt" : 0,
+    "startTime" : 1407779495069,
+    "id" : "test-foo",
+    "updateTime" : 1407779495069,
+    "status" : "CANCELLED",
+    "nestedId" : "test-foo",
+    "type" : "java",
+    "endTime" : 1407779495069,
+    "in" : [ "test-foobar" ]
+  } ],
+  "flowId" : "test",
+  "execid" : 304
+}
+</pre>
+
+
+<h3 id="api-fetch-execution-job-logs"> Fetch Execution Job Logs </h3>
+
+<ul class="list-unstyled">
+  <li>
+    <strong>Method:</strong> GET
+  </li>
+   <li>
+  	<strong>Request URL:</strong> /executor?ajax=fetchExecJobLogs
+  </li>
+  <li>
+  	<strong>Parameter Location:</strong> Request Query String
+  </li>
+</ul> 
+
+<h5> Request Parameters </h5>
+
+<table class="table table-striped table-condensed table-bordered">
+	<thead>
+		<tr>
+			<th>Parameter</th>
+			<th> Description</th>
+		</tr>
+	</thead>
+	<tbody>
+		<tr>
+			<td>session.id</td>
+			<td><p> User session token. </p></td>
+		</tr>
+		<tr>
+			<td>ajax=fetchExecJobLogs</td>
+			<td>Fixed parameter indicating the fetchExecJobLogs action.</td>
+		</tr>
+		<tr>
+			<td>execid</td>
+			<td>The unique id for an execution.</td>
+		</tr>
+		<tr>
+			<td>jobId</td>
+			<td>The unique id for the job to be fetched.</td>
+		</tr>
+		<tr>
+			<td>offset</td>
+			<td>The offset for the log data.</td>
+		</tr>
+		<tr>
+			<td>length</td>
+			<td>The length of the log data.</td>
+		</tr>
+	</tbody>
+</table>
+
+<h5> Response Object </h5>
+
+<table class="table table-striped table-condensed table-bordered">
+	<thead>
+		<tr>
+			<th>Parameter</th>
+			<th> Description</th>
+		</tr>
+	</thead>
+	<tbody>
+		<tr>
+			<td>data</td>
+			<td>The text data of the logs.</td>
+		</tr>
+		<tr>
+			<td>offset</td>
+			<td>The offset for the log data.</td>
+		</tr>
+		<tr>
+			<td>length</td>
+			<td>The length of the log data.</td>
+		</tr>
+	</tbody>
+</table>
+
+<p>Here's a curl command sample:</p>
+
+<pre class="code">
+curl -k --data "session.id=9089beb2-576d-47e3-b040-86dbdc7f523e&ajax=fetchExecJobLogs&execid=297&jobId=test-foobar&offset=0&length=100" https://localhost:8443/executor
+</pre>
+
+A response sample:
+<pre class="code">
+{
+  "data" : "05-08-2014 16:53:02 PDT test-foobar INFO - Starting job test-foobar at 140728278",
+  "length" : 100,
+  "offset" : 0
+}
+</pre>
+
+<h3 id="api-fetch-execution-job-status"> Fetch Execution Job Status </h3>
+
+<ul class="list-unstyled">
+  <li>
+    <strong>Method:</strong> GET
+  </li>
+   <li>
+  	<strong>Request URL:</strong> /executor?ajax=fetchExecJobStats
+  </li>
+  <li>
+  	<strong>Parameter Location:</strong> Request Query String
+  </li>
+</ul> 
+
+<h5> Request Parameters </h5>
+
+<table class="table table-striped table-condensed table-bordered">
+	<thead>
+		<tr>
+			<th>Parameter</th>
+			<th> Description</th>
+		</tr>
+	</thead>
+	<tbody>
+		<tr>
+			<td>session.id</td>
+			<td><p> User session token. </p></td>
+		</tr>
+		<tr>
+			<td>ajax=fetchExecJobStats</td>
+			<td>Fixed parameter indicating the fetch job status action.</td>
+		</tr>
+		<tr>
+			<td>execid</td>
+			<td>The unique id for an execution.</td>
+		</tr>
+		<tr>
+			<td>jobid</td>
+			<td>The unique id for the job to be fetched.</td>
+		</tr>
+	</tbody>
+</table>
+
+<h5> Response Object </h5>
+
+<table class="table table-striped table-condensed table-bordered">
+	<thead>
+		<tr>
+			<th>Parameter</th>
+			<th> Description</th>
+		</tr>
+	</thead>
+	<tbody>
+		<tr>
+			<td>jobStats</td>
+			<td>The stats of a job.</td>
+		</tr>
+	</tbody>
+</table>
+
+<p>Here's a curl command sample:</p>
+
+<pre class="code">
+curl -k --data "session.id=9089beb2-576d-47e3-b040-86dbdc7f523e&ajax=fetchExecJobStats&execid=297&jobid=foo" https://localhost:8443/executor
+</pre>
+
+A response sample:
+<pre class="code">
+{
+  "jobStats" : null
+}
+</pre>
