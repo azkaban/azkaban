@@ -19,7 +19,6 @@ package azkaban.webapp.servlet;
 import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;
 
-import azkaban.server.ServerConstants;
 import azkaban.webapp.AzkabanWebServer;
 
 /**

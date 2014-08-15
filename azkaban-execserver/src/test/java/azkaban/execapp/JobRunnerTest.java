@@ -40,7 +40,6 @@ import azkaban.executor.SleepJavaJob;
 import azkaban.executor.Status;
 import azkaban.jobExecutor.ProcessJob;
 import azkaban.jobtype.JobTypeManager;
-import azkaban.project.MockProjectLoader;
 import azkaban.utils.Props;
 
 public class JobRunnerTest {
