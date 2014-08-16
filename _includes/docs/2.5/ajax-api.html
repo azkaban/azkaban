@@ -1,7 +1,7 @@
 <h2 id="ajax-api">AJAX API</h2>
 
 <p>
-Often there's a desire to interact with Azkaban without having to use the web UI. Azkaban has some exposed ajax calls accessible through curl or some other HTTP request clients. All API calls require a proper authentification first.
+Often there's a desire to interact with Azkaban without having to use the web UI. Azkaban has some exposed ajax calls accessible through curl or some other HTTP request clients. All API calls require a proper authentication first.
 <br/><br/>
 Azkaban assumes the following request header in servlet's <code>isAjaxCall(HttpServletRequest request)</code> method:
 <pre>
@@ -21,16 +21,16 @@ However, currently for most of APIs in this version, it is not checking the requ
     <strong>Request URL:</strong> /?action=login
   </li>
   <li>
-  	<strong>Parameter Location:</strong> Request Query String
+    <strong>Parameter Location:</strong> Request Query String
   </li>
 </ul> 
 
-<p>This API helps authentiate a user and provide a <code>session.id</code> in response.</p>
+<p>This API helps authenticate a user and provides a <code>session.id</code> in response.</p>
 
 <p>Once a <code>session.id</code> has been returned, until the session expires, this id can be used to do any API requests with a proper permission granted. A session expires if you log out, change machines, browsers or locations, if Azkaban is restarted, or if the session expires. The default session timeout is 24 hours (one day). You can re-login whether the session has expired or not. For the same user, a new session will always override old one.</p>
 
 <p>
-<strong> Importantly, </strong> <code>session.id</code> should be provided for almost all API calls (other than authentification). <code>session.id</code> can be simply appended as one of the request parameters, or set via the cookie: <code>azkaban.browser.session.id</code>. The two HTTP requests below are equivalent:
+<strong> Importantly, </strong> <code>session.id</code> should be provided for almost all API calls (other than authentication). <code>session.id</code> can be simply appended as one of the request parameters, or set via the cookie: <code>azkaban.browser.session.id</code>. The two HTTP requests below are equivalent:
 <pre class="code">
 # a) Provide session.id parameter directly
 curl -k --get -data "session.id=bca1d75d-6bae-4163-a5b0-378a7d7b5a91&ajax=fetchflowgraph&project=azkaban-test-project&flow=test" https://localhost:8443/manager
@@ -42,47 +42,47 @@ curl -k --get -b "azkaban.browser.session.id=bca1d75d-6bae-4163-a5b0-378a7d7b5a9
 
 <h5><strong> Request Parameters </strong></h5>
 <table class="table table-striped table-condensed table-bordered">
-	<thead>
-		<tr>
-			<th>Parameter</th>
-			<th> Description</th>
-		</tr>
-	</thead>
-	<tbody>
-		<tr>
-			<td>action=login</td>
-			<td>The fixed parameter indicating the login action.</td>
-		</tr>
-		<tr>
-			<td>username</td>
-			<td>The Azkaban username.</td>
-		</tr>
-		<tr>
-			<td>password</td>
-			<td>The corresponding password.</td>
-		</tr>
-	</tbody>
+  <thead>
+    <tr>
+      <th>Parameter</th>
+      <th> Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>action=login</td>
+      <td>The fixed parameter indicating the login action.</td>
+    </tr>
+    <tr>
+      <td>username</td>
+      <td>The Azkaban username.</td>
+    </tr>
+    <tr>
+      <td>password</td>
+      <td>The corresponding password.</td>
+    </tr>
+  </tbody>
 </table>
 
 
 <h5><strong> Response Object </strong></h5>
 <table class="table table-striped table-condensed table-bordered">
-	<thead>
-		<tr>
-			<th>Parameter</th>
-			<th> Description</th>
-		</tr>
-	</thead>
-	<tbody>
-		<tr>
-			<td>error</td>
-			<td>Return an error message if the login attempt fails.</td>
-		</tr>
-		<tr>
-			<td>session.id</td>
-			<td>Return a session id if the login attempt succeeds.</td>
-		</tr>
-	</tbody>
+  <thead>
+    <tr>
+      <th>Parameter</th>
+      <th> Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>error</td>
+      <td>Return an error message if the login attempt fails.</td>
+    </tr>
+    <tr>
+      <td>session.id</td>
+      <td>Return a session id if the login attempt succeeds.</td>
+    </tr>
+  </tbody>
 </table>
 
 A sample call via curl:
@@ -111,86 +111,86 @@ before uploading any project zip files, the project should be created first via 
     <strong>Method:</strong> POST
   </li>
    <li>
-  	<strong>Request URL:</strong> /manager?action=create
+    <strong>Request URL:</strong> /manager?action=create
   </li>
   <li>
-  	<strong>Parameter Location:</strong> Request Query
+    <strong>Parameter Location:</strong> Request Query
   </li>
 </ul>
 
 <h5><strong> Request Parameters </strong></h5>
 
 <table class="table table-striped table-condensed table-bordered">
-	<thead>
-		<tr>
-			<th>Parameter</th>
-			<th> Description</th>
-		</tr>
-	</thead>
-	<tbody>
-		<tr>
-			<td>session.id</td>
-			<td><p> The user session id. </p></td>
-		</tr>
-		<tr>
-			<td>action=create</td>
-			<td>The fixed parameter indicating the create project action.</td>
-		</tr>
-		<tr>
-			<td>name</td>
-			<td>The project name to be uploaded.</td>
-		</tr>
-		<tr>
-			<td>description</td>
-			<td>The description for the project. This field cannot be empty.</td>
-		</tr>
-	</tbody>
+  <thead>
+    <tr>
+      <th>Parameter</th>
+      <th> Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>session.id</td>
+      <td><p> The user session id. </p></td>
+    </tr>
+    <tr>
+      <td>action=create</td>
+      <td>The fixed parameter indicating the create project action.</td>
+    </tr>
+    <tr>
+      <td>name</td>
+      <td>The project name to be uploaded.</td>
+    </tr>
+    <tr>
+      <td>description</td>
+      <td>The description for the project. This field cannot be empty.</td>
+    </tr>
+  </tbody>
 </table>
 
 <h5><strong> Response Object 1. (if the request succeeds): </strong></h5>
 
 <table class="table table-striped table-condensed table-bordered">
-	<thead>
-		<tr>
-			<th>Parameter</th>
-			<th>Description</th>
-		</tr>
-	</thead>
-	<tbody>
-		<tr>
-			<td>status</td>
-			<td>The status of the creation attempt.</td>
-		</tr>
-		<tr>
-			<td>path</td>
-			<td>The url path to redirect</td>
-		</tr>
-		<tr>
-			<td>action</td>
-			<td>The action that is suggested for the frontend to execute. (This is designed for the usage of the Azkaban frontend javascripts, external users can ignore this field.)</td>
-		</tr>
-	</tbody>
+  <thead>
+    <tr>
+      <th>Parameter</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>status</td>
+      <td>The status of the creation attempt.</td>
+    </tr>
+    <tr>
+      <td>path</td>
+      <td>The url path to redirect</td>
+    </tr>
+    <tr>
+      <td>action</td>
+      <td>The action that is suggested for the frontend to execute. (This is designed for the usage of the Azkaban frontend javascripts, external users can ignore this field.)</td>
+    </tr>
+  </tbody>
 </table>
 
 <h5><strong> Response Object 2. (if the request fails): </strong></h5>
 
 <table class="table table-striped table-condensed table-bordered">
-	<thead>
+  <thead>
     <tr>
       <th>Parameter</th>
       <th>Description</th>
     </tr>
-	</thead>
-	<tbody>
+  </thead>
+  <tbody>
     <tr>
       <td>message</td>
       <td>The error message.</td>
     </tr>
-		<tr>
-			<td>error</td>
-			<td>The error name.</td>
-		</tr>
-	</tbody>
+    <tr>
+      <td>error</td>
+      <td>The error name.</td>
+    </tr>
+  </tbody>
 </table>
 
 <p>Here's a curl command sample:</p>
@@ -219,35 +219,35 @@ Currently no response message will be returned after finishing the delete operat
     <strong>Method:</strong> GET
   </li>
    <li>
-  	<strong>Request URL:</strong> /manager?delete=true
+    <strong>Request URL:</strong> /manager?delete=true
   </li>
   <li>
-  	<strong>Parameter Location:</strong> Request Query
+    <strong>Parameter Location:</strong> Request Query
   </li>
 </ul>
 
 <h5><strong> Request Parameters </strong></h5>
 <table class="table table-striped table-condensed table-bordered">
-	<thead>
-		<tr>
-			<th>Parameter</th>
-			<th> Description</th>
-		</tr>
-	</thead>
-	<tbody>
-		<tr>
-			<td>session.id</td>
-			<td><p> The user session id. </p></td>
-		</tr>
-		<tr>
-			<td>delete=true</td>
-			<td>The fixed parameter to indicate the deleting project action.</td>
-		</tr>
-		<tr>
-			<td>project</td>
-			<td>The project name to be deleted.</td>
-		</tr>
-	</tbody>
+  <thead>
+    <tr>
+      <th>Parameter</th>
+      <th> Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>session.id</td>
+      <td><p> The user session id. </p></td>
+    </tr>
+    <tr>
+      <td>delete=true</td>
+      <td>The fixed parameter to indicate the deleting project action.</td>
+    </tr>
+    <tr>
+      <td>project</td>
+      <td>The project name to be deleted.</td>
+    </tr>
+  </tbody>
 </table>
 
 <p>Here's a curl command sample:</p>
@@ -268,66 +268,66 @@ The ajax call to upload a project zip file. The zip file structure should follow
     <strong>Method:</strong> POST
   </li>
   <li>
-  	<strong>Content-Type:</strong> multipart/mixed
+    <strong>Content-Type:</strong> multipart/mixed
   </li>
    <li>
-  	<strong>Request URL:</strong> /manager?ajax=upload
+    <strong>Request URL:</strong> /manager?ajax=upload
   </li>
   <li>
-  	<strong>Parameter Location:</strong> Request Body
+    <strong>Parameter Location:</strong> Request Body
   </li>
 </ul> 
 
 <h5><strong> Request Parameters </strong></h5>
 <table class="table table-striped table-condensed table-bordered">
-	<thead>
-		<tr>
-			<th>Parameter</th>
-			<th> Description</th>
-		</tr>
-	</thead>
-	<tbody>
-		<tr>
-			<td>session.id</td>
-			<td><p> The user session id. </p></td>
-		</tr>
-		<tr>
-			<td>ajax=upload</td>
-			<td>The fixed parameter to the upload action.</td>
-		</tr>
-		<tr>
-			<td>project</td>
-			<td>The project name to be uploaded.</td>
-		</tr>
-		<tr>
-			<td>file</td>
-			<td>The project zip file. The type should be set as <code>application/zip</code> or <code>application/x-zip-compressed</code>.</td>
-		</tr>
-	</tbody>
+  <thead>
+    <tr>
+      <th>Parameter</th>
+      <th> Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>session.id</td>
+      <td><p> The user session id. </p></td>
+    </tr>
+    <tr>
+      <td>ajax=upload</td>
+      <td>The fixed parameter to the upload action.</td>
+    </tr>
+    <tr>
+      <td>project</td>
+      <td>The project name to be uploaded.</td>
+    </tr>
+    <tr>
+      <td>file</td>
+      <td>The project zip file. The type should be set as <code>application/zip</code> or <code>application/x-zip-compressed</code>.</td>
+    </tr>
+  </tbody>
 </table>
 
 <h5><strong> Response Object </strong></h5>
 <table class="table table-striped table-condensed table-bordered">
-	<thead>
-		<tr>
-			<th>Parameter</th>
-			<th> Description</th>
-		</tr>
-	</thead>
-	<tbody>
-		<tr>
-			<td>error</td>
-			<td>The error message if the upload attempt fails.</td>
-		</tr>
-		<tr>
-			<td>projectId</td>
-			<td>The numerical id of the project</td>
-		</tr>
-		<tr>
-			<td>version</td>
-			<td>The version number of the upload</td>
-		</tr>
-	</tbody>
+  <thead>
+    <tr>
+      <th>Parameter</th>
+      <th> Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>error</td>
+      <td>The error message if the upload attempt fails.</td>
+    </tr>
+    <tr>
+      <td>projectId</td>
+      <td>The numerical id of the project</td>
+    </tr>
+    <tr>
+      <td>version</td>
+      <td>The version number of the upload</td>
+    </tr>
+  </tbody>
 </table>
 
 <p>Here's a curl command sample:</p>
@@ -355,64 +355,64 @@ Given a project name, this API call fetches all flow ids of that project.
     <strong>Method:</strong> GET
   </li>
    <li>
-  	<strong>Request URL:</strong> /manager?ajax=fetchprojectflows
+    <strong>Request URL:</strong> /manager?ajax=fetchprojectflows
   </li>
   <li>
-  	<strong>Parameter Location:</strong> Request Query String
+    <strong>Parameter Location:</strong> Request Query String
   </li>
 </ul> 
 
 <h5><strong> Request Parameters </strong></h5>
 <table class="table table-striped table-condensed table-bordered">
-	<thead>
-		<tr>
-			<th>Parameter</th>
-			<th> Description</th>
-		</tr>
-	</thead>
-	<tbody>
-		<tr>
-			<td>session.id</td>
-			<td><p> The user session id. </p></td>
-		</tr>
-		<tr>
-			<td>ajax=fetchprojectflows</td>
-			<td>The fixed parameter indicating the fetchProjectFlows action.</td>
-		</tr>
-		<tr>
-			<td>project</td>
-			<td>The project name to be fetched.</td>
-		</tr>
-	</tbody>
+  <thead>
+    <tr>
+      <th>Parameter</th>
+      <th> Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>session.id</td>
+      <td><p> The user session id. </p></td>
+    </tr>
+    <tr>
+      <td>ajax=fetchprojectflows</td>
+      <td>The fixed parameter indicating the fetchProjectFlows action.</td>
+    </tr>
+    <tr>
+      <td>project</td>
+      <td>The project name to be fetched.</td>
+    </tr>
+  </tbody>
 </table>
 
 <h5><strong> Response Object </strong></h5>
 <table class="table table-striped table-condensed table-bordered">
-	<thead>
-		<tr>
-			<th>Parameter</th>
-			<th>Description</th>
-		</tr>
-	</thead>
-	<tbody>
-		<tr>
-			<td>project</td>
-			<td>The project name.</td>
-		</tr>
-		<tr>
-			<td>projectId</td>
-			<td>The numerical id of the project.</td>
-		</tr>
-		<tr>
-			<td>flows</td>
-			<td>
-				A list of flow ids.
-				<p>
-				<strong> Example values:</strong>
-				[{"flowId": "aaa"}, {"flowId": "bbb"}]
-			</td>
-		</tr>
-	</tbody>
+  <thead>
+    <tr>
+      <th>Parameter</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>project</td>
+      <td>The project name.</td>
+    </tr>
+    <tr>
+      <td>projectId</td>
+      <td>The numerical id of the project.</td>
+    </tr>
+    <tr>
+      <td>flows</td>
+      <td>
+        A list of flow ids.
+        <p>
+        <strong> Example values:</strong>
+        [{"flowId": "aaa"}, {"flowId": "bbb"}]
+      </td>
+    </tr>
+  </tbody>
 </table>
 
 
@@ -506,20 +506,20 @@ For a given project and a flow id, this API call fetches all the jobs that belon
             <td>
                 A list of job nodes belonging to this flow.
                 <p>
-                	<strong> Structure:</strong>
-                	<pre>
+                  <strong> Structure:</strong>
+                  <pre>
 {
   "id": "job.id"
   "type": "job.type"
   "in": ["job.ids that this job is directly depending upon.
   Indirect ancestors is not included in this list"]
 }
-                	</pre>
+                  </pre>
                 </p>
                 <p>
                 <strong> Example values:</strong>
                 [{"id": "first_job", "type": "java"}, {"id": "second_job", "type": "command", "in":["first_job"]}]
-	            </p>
+              </p>
             </td>
         </tr>
     </tbody>
@@ -563,87 +563,87 @@ Given a project name, and a certain flow, this API call provides a list of corre
     <strong>Method:</strong> GET
   </li>
    <li>
-  	<strong>Request URL:</strong> /manager?ajax=fetchFlowExecutions
+    <strong>Request URL:</strong> /manager?ajax=fetchFlowExecutions
   </li>
   <li>
-  	<strong>Parameter Location:</strong> Request Query String
+    <strong>Parameter Location:</strong> Request Query String
   </li>
 </ul> 
 
 <h5><strong> Request Parameters </strong></h5>
 <table class="table table-striped table-condensed table-bordered">
-	<thead>
-		<tr>
-			<th>Parameter</th>
-			<th> Description</th>
-		</tr>
-	</thead>
-	<tbody>
-		<tr>
-			<td>session.id</td>
-			<td><p> The user session id. </p></td>
-		</tr>
-		<tr>
-			<td>ajax=fetchFlowExecutions</td>
-			<td>The fixed parameter indicating the fetchFlowExecutions action.</td>
-		</tr>
-		<tr>
-			<td>project</td>
-			<td>The project name to be fetched.</td>
-		</tr>
-		<tr>
-			<td>flow</td>
-			<td>The flow id to be fetched.</td>
-		</tr>
-		<tr>
-			<td>start</td>
-			<td>The start index(inclusive) of the returned list.</td>
-		</tr>
-		<tr>
-			<td>length</td>
-			<td>The max length of the returned list. For example, if the start index is 2, and the length is 10, then the returned list will include executions of indices: [2, 3, 4, 5, 6, 7, 8, 9, 10, 11].</td>
-		</tr>
-	</tbody>
+  <thead>
+    <tr>
+      <th>Parameter</th>
+      <th> Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>session.id</td>
+      <td><p> The user session id. </p></td>
+    </tr>
+    <tr>
+      <td>ajax=fetchFlowExecutions</td>
+      <td>The fixed parameter indicating the fetchFlowExecutions action.</td>
+    </tr>
+    <tr>
+      <td>project</td>
+      <td>The project name to be fetched.</td>
+    </tr>
+    <tr>
+      <td>flow</td>
+      <td>The flow id to be fetched.</td>
+    </tr>
+    <tr>
+      <td>start</td>
+      <td>The start index(inclusive) of the returned list.</td>
+    </tr>
+    <tr>
+      <td>length</td>
+      <td>The max length of the returned list. For example, if the start index is 2, and the length is 10, then the returned list will include executions of indices: [2, 3, 4, 5, 6, 7, 8, 9, 10, 11].</td>
+    </tr>
+  </tbody>
 </table>
 
 <h5><strong> Response Object </strong></h5>
 <table class="table table-striped table-condensed table-bordered">
-	<thead>
-		<tr>
-			<th>Parameter</th>
-			<th>Description</th>
-		</tr>
-	</thead>
-	<tbody>
-		<tr>
-			<td>executions</td>
-			<td>A list of execution objects, with the resquested start index and length.</td>
-		</tr>
-		<tr>
-			<td>total</td>
-			<td>The total number of all relevant execution</td>
-		</tr>
-		<tr>
-			<td>project</td>
-			<td>The project name fetched.</td>
-		</tr>
-		<tr>
-			<td>projectId</td>
-			<td>The numerical project id fetched.</td>
-		</tr>
-		<tr>
-			<td>flow</td>
-			<td>The flow id fetched.</td>
-		</tr>
-		<tr>
-			<td>from</td>
-			<td>The start index of the fetched executions</td>
-		</tr>
-		<tr>
-			<td>length</td>
-			<td>The length of the fetched executions.</td>
-		</tr>
-	</tbody>
+  <thead>
+    <tr>
+      <th>Parameter</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>executions</td>
+      <td>A list of execution objects, with the resquested start index and length.</td>
+    </tr>
+    <tr>
+      <td>total</td>
+      <td>The total number of all relevant execution</td>
+    </tr>
+    <tr>
+      <td>project</td>
+      <td>The project name fetched.</td>
+    </tr>
+    <tr>
+      <td>projectId</td>
+      <td>The numerical project id fetched.</td>
+    </tr>
+    <tr>
+      <td>flow</td>
+      <td>The flow id fetched.</td>
+    </tr>
+    <tr>
+      <td>from</td>
+      <td>The start index of the fetched executions</td>
+    </tr>
+    <tr>
+      <td>length</td>
+      <td>The length of the fetched executions.</td>
+    </tr>
+  </tbody>
 </table>
 
 <p>Here's a curl command sample:</p>
@@ -747,10 +747,10 @@ Given a project name and a flow id, this API call fetches only executions that a
         <tr>
             <td>execIds</td>
             <td>A list of execution ids fetched.
-            	<p>
-            		<strong> Example values: </strong>
-            		[301, 302, 111, 999]
-            	</p>
+              <p>
+                <strong> Example values: </strong>
+                [301, 302, 111, 999]
+              </p>
             </td>
         </tr>
     </tbody>
@@ -778,47 +778,47 @@ by disabling all other jobs in the same flow.
     <strong>Method:</strong> GET
   </li>
   <li>
-  	<strong> Request URL: </strong> /executor?ajax=executeFlow
+    <strong> Request URL: </strong> /executor?ajax=executeFlow
   </li>
   <li>
-  	<strong>Parameter Location:</strong> Request Query String
+    <strong>Parameter Location:</strong> Request Query String
   </li>
 </ul> 
 
 <h5><strong> Request Parameters </strong></h5>
 
 <table class="table table-striped table-condensed table-bordered">
-	<thead>
-		<tr>
-			<th>Parameter</th>
-			<th>Description</th>
-		</tr>
-	</thead>
-	<tbody>
-		<tr>
-			<td>session.id</td>
-			<td>
-				<p> The user session id. </p>
-				<p>
-					<strong>Example Values:</strong> 30d538e2-4794-4e7e-8a35-25a9e2fd5300
-				</p>
-			</td>
-		</tr>
-		<tr>
-			<td> ajax=executeFlow </td>
-			<td>
-				<p>
-				The fixed parameter indicating the current ajax action is executeFlow.
-				</p>
-			</td>
-		</tr>
-		<tr>
-			<td>project</td>
-			<td>
-				<p>The project name of the executing flow.</p>
-				<p> <strong> Example Values: </strong> run-all-jobs </p>
-			</td>
-		</tr>
+  <thead>
+    <tr>
+      <th>Parameter</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>session.id</td>
+      <td>
+        <p> The user session id. </p>
+        <p>
+          <strong>Example Values:</strong> 30d538e2-4794-4e7e-8a35-25a9e2fd5300
+        </p>
+      </td>
+    </tr>
+    <tr>
+      <td> ajax=executeFlow </td>
+      <td>
+        <p>
+        The fixed parameter indicating the current ajax action is executeFlow.
+        </p>
+      </td>
+    </tr>
+    <tr>
+      <td>project</td>
+      <td>
+        <p>The project name of the executing flow.</p>
+        <p> <strong> Example Values: </strong> run-all-jobs </p>
+      </td>
+    </tr>
     <tr>
       <td>flow</td>
       <td>
@@ -826,94 +826,94 @@ by disabling all other jobs in the same flow.
         <p> <strong> Example Values: </strong> test-flow </p>
       </td>
     </tr>
-		<tr>
-			<td>disabled (optional)</td>
-			<td>
-				<p>A list of job names that should be disabled for this execution. Should be formatted as a JSON Array String.</p>
-				<p> <strong> Example Values: </strong> ["job_name_1", "job_name_2", "job_name_N"] </p>
-			</td>
-		</tr>
-		<tr>
-			<td>successEmails (optional)</td>
-			<td>
-				<p>A list of emails to be notified if the execution succeeds. All emails are delimitted with [,|;|\\s+].</p>
-				<p> <strong> Example Values: </strong> foo@email.com,bar@email.com </p>
-			</td>
-		</tr>
-		<tr>
-			<td>failureEmails (optional)</td>
-			<td>
-				<p>A list of emails to be notified if the execution fails. All emails are delimitted with [,|;|\\s+].</p>
-				<p> <strong> Example Values: </strong> foo@email.com,bar@email.com </p>
-			</td>
-		</tr>
-		<tr>
-			<td>successEmailsOverride (optional)</td>
-			<td>
-				<p>Whether uses system default email settings to override successEmails.</p>
-				<p> <strong> Possible Values: </strong> true, false </p>
-			</td>
-		</tr>
-		<tr>
-			<td>failureEmailsOverride (optional)</td>
-			<td>
-				<p>Whether uses system default email settings to override failureEmails.</p>
-				<p> <strong> Possible Values: </strong> true, false </p>
-			</td>
-		</tr>
-		<tr>
-			<td>notifyFailureFirst (optional)</td>
-			<td>
-				<p>Whether sends out email notifications as long as the first failure occurs.</p>
-				<p> <strong> Possible Values: </strong> true, false </p>
-			</td>
-		</tr>
-		<tr>
-			<td>notifyFailureLast (optional)</td>
-			<td>
-				<p>Whether sends out email notifications as long as the last failure occurs.</p>
-				<p> <strong> Possible Values: </strong> true, false </p>
-			</td>
-		</tr>
-		<tr>
-			<td>failureAction (Optional)</td>
-			<td>
-				<p>If a failure occurs, how should the execution behaves.</p>
-				<p> <strong> Possible Values: </strong> finishCurrent, cancelImmediately, finishPossible </p>
-			</td>
-		</tr>
-		<tr>
-			<td>concurrentOption (Optional)</td>
-			<td>
-				<p>Concurrent choices. Use ignore if nothing specifical is required. </p>
-				<p> <strong> Possible Values: </strong> ignore, pipeline, queue </p>
-			</td>
-		</tr>
-	</tbody>
+    <tr>
+      <td>disabled (optional)</td>
+      <td>
+        <p>A list of job names that should be disabled for this execution. Should be formatted as a JSON Array String.</p>
+        <p> <strong> Example Values: </strong> ["job_name_1", "job_name_2", "job_name_N"] </p>
+      </td>
+    </tr>
+    <tr>
+      <td>successEmails (optional)</td>
+      <td>
+        <p>A list of emails to be notified if the execution succeeds. All emails are delimitted with [,|;|\\s+].</p>
+        <p> <strong> Example Values: </strong> foo@email.com,bar@email.com </p>
+      </td>
+    </tr>
+    <tr>
+      <td>failureEmails (optional)</td>
+      <td>
+        <p>A list of emails to be notified if the execution fails. All emails are delimitted with [,|;|\\s+].</p>
+        <p> <strong> Example Values: </strong> foo@email.com,bar@email.com </p>
+      </td>
+    </tr>
+    <tr>
+      <td>successEmailsOverride (optional)</td>
+      <td>
+        <p>Whether uses system default email settings to override successEmails.</p>
+        <p> <strong> Possible Values: </strong> true, false </p>
+      </td>
+    </tr>
+    <tr>
+      <td>failureEmailsOverride (optional)</td>
+      <td>
+        <p>Whether uses system default email settings to override failureEmails.</p>
+        <p> <strong> Possible Values: </strong> true, false </p>
+      </td>
+    </tr>
+    <tr>
+      <td>notifyFailureFirst (optional)</td>
+      <td>
+        <p>Whether sends out email notifications as long as the first failure occurs.</p>
+        <p> <strong> Possible Values: </strong> true, false </p>
+      </td>
+    </tr>
+    <tr>
+      <td>notifyFailureLast (optional)</td>
+      <td>
+        <p>Whether sends out email notifications as long as the last failure occurs.</p>
+        <p> <strong> Possible Values: </strong> true, false </p>
+      </td>
+    </tr>
+    <tr>
+      <td>failureAction (Optional)</td>
+      <td>
+        <p>If a failure occurs, how should the execution behaves.</p>
+        <p> <strong> Possible Values: </strong> finishCurrent, cancelImmediately, finishPossible </p>
+      </td>
+    </tr>
+    <tr>
+      <td>concurrentOption (Optional)</td>
+      <td>
+        <p>Concurrent choices. Use ignore if nothing specifical is required. </p>
+        <p> <strong> Possible Values: </strong> ignore, pipeline, queue </p>
+      </td>
+    </tr>
+  </tbody>
 </table>
 
 <h5><strong> Response Object </strong></h5>
 <table class="table table-striped table-condensed table-bordered">
-	<thead>
-		<tr>
-			<th>Parameter</th>
-			<th>Description</th>
-		</tr>
-	</thead>
-	<tbody>
-		<tr>
-			<td>error</td>
-			<td>Error message if the call has failed</td>
-		</tr>
-		<tr>
-			<td>flow</td>
-			<td>The executed flow id</td>
-		</tr>
-		<tr>
-			<td>execid</td>
-			<td>The execution id</td>
-		</tr>
-	</tbody>
+  <thead>
+    <tr>
+      <th>Parameter</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>error</td>
+      <td>Error message if the call has failed</td>
+    </tr>
+    <tr>
+      <td>flow</td>
+      <td>The executed flow id</td>
+    </tr>
+    <tr>
+      <td>execid</td>
+      <td>The execution id</td>
+    </tr>
+  </tbody>
 </table>
 Here is a curl command example:
 <pre class="code">
@@ -940,44 +940,44 @@ Given an execution id, this API call cancels a running flow. If the flow is not 
     <strong>Method:</strong> GET
   </li>
   <li>
-  	<strong> Request URL: </strong> /executor?ajax=cancelFlow
+    <strong> Request URL: </strong> /executor?ajax=cancelFlow
   </li>
   <li>
-  	<strong>Parameter Location:</strong> Request Query String
+    <strong>Parameter Location:</strong> Request Query String
   </li>
 </ul>
 
 <h5><strong> Request Parameters </strong></h5>
 
 <table class="table table-striped table-condensed table-bordered">
-	<thead>
-		<tr>
-			<th>Parameter</th>
-			<th>Description</th>
-		</tr>
-	</thead>
-	<tbody>
-		<tr>
-			<td>session.id</td>
-			<td>
-				<p> The user session id. </p>
-			</td>
-		</tr>
-		<tr>
-			<td> ajax=cancelFlow </td>
-			<td>
-				<p>
-				The fixed parameter indicating the current ajax action is cancelFlow.
-				</p>
-			</td>
-		</tr>
-		<tr>
-			<td>execid</td>
-			<td>
-				<p> The execution id. </p>
-			</td>
-		</tr>
-	</tbody>
+  <thead>
+    <tr>
+      <th>Parameter</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>session.id</td>
+      <td>
+        <p> The user session id. </p>
+      </td>
+    </tr>
+    <tr>
+      <td> ajax=cancelFlow </td>
+      <td>
+        <p>
+        The fixed parameter indicating the current ajax action is cancelFlow.
+        </p>
+      </td>
+    </tr>
+    <tr>
+      <td>execid</td>
+      <td>
+        <p> The execution id. </p>
+      </td>
+    </tr>
+  </tbody>
 </table>
 
 <p>Here's a curl command sample:</p>
@@ -1006,44 +1006,44 @@ Given an execution id, this API pauses a running flow. If an execution has alrea
     <strong>Method:</strong> GET
   </li>
   <li>
-  	<strong> Request URL: </strong> /executor?ajax=pauseFlow
+    <strong> Request URL: </strong> /executor?ajax=pauseFlow
   </li>
   <li>
-  	<strong>Parameter Location:</strong> Request Query String
+    <strong>Parameter Location:</strong> Request Query String
   </li>
 </ul>
 
 <h5><strong> Request Parameters </strong></h5>
 
 <table class="table table-striped table-condensed table-bordered">
-	<thead>
-		<tr>
-			<th>Parameter</th>
-			<th>Description</th>
-		</tr>
-	</thead>
-	<tbody>
-		<tr>
-			<td>session.id</td>
-			<td>
-				<p> The user session id. </p>
-			</td>
-		</tr>
-		<tr>
-			<td> ajax=pauseFlow </td>
-			<td>
-				<p>
-				The fixed parameter indicating the current ajax action is pauseFlow.
-				</p>
-			</td>
-		</tr>
-		<tr>
-			<td>execid</td>
-			<td>
-				<p> The execution id. </p>
-			</td>
-		</tr>
-	</tbody>
+  <thead>
+    <tr>
+      <th>Parameter</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>session.id</td>
+      <td>
+        <p> The user session id. </p>
+      </td>
+    </tr>
+    <tr>
+      <td> ajax=pauseFlow </td>
+      <td>
+        <p>
+        The fixed parameter indicating the current ajax action is pauseFlow.
+        </p>
+      </td>
+    </tr>
+    <tr>
+      <td>execid</td>
+      <td>
+        <p> The execution id. </p>
+      </td>
+    </tr>
+  </tbody>
 </table>
 <p>Here's a curl command sample:</p>
 
@@ -1071,44 +1071,44 @@ Given an execution id, this API resumes a paused running flow. If an execution h
     <strong>Method:</strong> GET
   </li>
   <li>
-  	<strong> Request URL: </strong> /executor?ajax=resumeFlow
+    <strong> Request URL: </strong> /executor?ajax=resumeFlow
   </li>
   <li>
-  	<strong>Parameter Location:</strong> Request Query String
+    <strong>Parameter Location:</strong> Request Query String
   </li>
 </ul>
 
 <h5><strong> Request Parameters </strong></h5>
 
 <table class="table table-striped table-condensed table-bordered">
-	<thead>
-		<tr>
-			<th>Parameter</th>
-			<th>Description</th>
-		</tr>
-	</thead>
-	<tbody>
-		<tr>
-			<td>session.id</td>
-			<td>
-				<p> The user session id. </p>
-			</td>
-		</tr>
-		<tr>
-			<td> ajax=resumeFlow </td>
-			<td>
-				<p>
-				The fixed parameter indicating the current ajax action is resumeFlow.
-				</p>
-			</td>
-		</tr>
-		<tr>
-			<td>execid</td>
-			<td>
-				<p> The execution id. </p>
-			</td>
-		</tr>
-	</tbody>
+  <thead>
+    <tr>
+      <th>Parameter</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>session.id</td>
+      <td>
+        <p> The user session id. </p>
+      </td>
+    </tr>
+    <tr>
+      <td> ajax=resumeFlow </td>
+      <td>
+        <p>
+        The fixed parameter indicating the current ajax action is resumeFlow.
+        </p>
+      </td>
+    </tr>
+    <tr>
+      <td>execid</td>
+      <td>
+        <p> The execution id. </p>
+      </td>
+    </tr>
+  </tbody>
 </table>
 <p>Here's a curl command sample:</p>
 
@@ -1170,8 +1170,8 @@ Given an execution id, this API call fetches all the detailed information of tha
 
 <h5><strong> Response Object </strong></h5>
 <p>
-	It returns a detailed information about the execution (check the example below). One thing to 
-	notice is that the field <code>nodes[i].in</code> actually indicates what are the dependencies of this node.
+  It returns a detailed information about the execution (check the example below). One thing to 
+  notice is that the field <code>nodes[i].in</code> actually indicates what are the dependencies of this node.
 </p>
 
 <p>Here's a curl command sample:</p>
@@ -1251,73 +1251,73 @@ Given an execution id and a job id, this API call fetches the correponding job l
     <strong>Method:</strong> GET
   </li>
    <li>
-  	<strong>Request URL:</strong> /executor?ajax=fetchExecJobLogs
+    <strong>Request URL:</strong> /executor?ajax=fetchExecJobLogs
   </li>
   <li>
-  	<strong>Parameter Location:</strong> Request Query String
+    <strong>Parameter Location:</strong> Request Query String
   </li>
 </ul> 
 
 <h5><strong> Request Parameters </strong></h5>
 
 <table class="table table-striped table-condensed table-bordered">
-	<thead>
-		<tr>
-			<th>Parameter</th>
-			<th> Description</th>
-		</tr>
-	</thead>
-	<tbody>
-		<tr>
-			<td>session.id</td>
-			<td><p> The user session id. </p></td>
-		</tr>
-		<tr>
-			<td>ajax=fetchExecJobLogs</td>
-			<td>The fixed parameter indicating the fetchExecJobLogs action.</td>
-		</tr>
-		<tr>
-			<td>execid</td>
-			<td>The unique id for an execution.</td>
-		</tr>
-		<tr>
-			<td>jobId</td>
-			<td>The unique id for the job to be fetched.</td>
-		</tr>
-		<tr>
-			<td>offset</td>
-			<td>The offset for the log data.</td>
-		</tr>
-		<tr>
-			<td>length</td>
-			<td>The length of the log data. For example, if the offset set is 10 and the length is 1000, the returned log will starts from the 10th character and has a length of 1000 (less if the remaining log is less than 1000 long).</td>
-		</tr>
-	</tbody>
+  <thead>
+    <tr>
+      <th>Parameter</th>
+      <th> Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>session.id</td>
+      <td><p> The user session id. </p></td>
+    </tr>
+    <tr>
+      <td>ajax=fetchExecJobLogs</td>
+      <td>The fixed parameter indicating the fetchExecJobLogs action.</td>
+    </tr>
+    <tr>
+      <td>execid</td>
+      <td>The unique id for an execution.</td>
+    </tr>
+    <tr>
+      <td>jobId</td>
+      <td>The unique id for the job to be fetched.</td>
+    </tr>
+    <tr>
+      <td>offset</td>
+      <td>The offset for the log data.</td>
+    </tr>
+    <tr>
+      <td>length</td>
+      <td>The length of the log data. For example, if the offset set is 10 and the length is 1000, the returned log will starts from the 10th character and has a length of 1000 (less if the remaining log is less than 1000 long).</td>
+    </tr>
+  </tbody>
 </table>
 
 <h5><strong> Response Object </strong></h5>
 
 <table class="table table-striped table-condensed table-bordered">
-	<thead>
-		<tr>
-			<th>Parameter</th>
-			<th> Description</th>
-		</tr>
-	</thead>
-	<tbody>
-		<tr>
-			<td>data</td>
-			<td>The text data of the logs.</td>
-		</tr>
-		<tr>
-			<td>offset</td>
-			<td>The offset for the log data.</td>
-		</tr>
-		<tr>
-			<td>length</td>
-			<td>The length of the log data.</td>
-		</tr>
-	</tbody>
+  <thead>
+    <tr>
+      <th>Parameter</th>
+      <th> Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>data</td>
+      <td>The text data of the logs.</td>
+    </tr>
+    <tr>
+      <td>offset</td>
+      <td>The offset for the log data.</td>
+    </tr>
+    <tr>
+      <td>length</td>
+      <td>The length of the log data.</td>
+    </tr>
+  </tbody>
 </table>
 
 <p>Here's a curl command sample:</p>
@@ -1344,57 +1344,57 @@ This API call fetches the status of a job execution.
     <strong>Method:</strong> GET
   </li>
    <li>
-  	<strong>Request URL:</strong> /executor?ajax=fetchExecJobStats
+    <strong>Request URL:</strong> /executor?ajax=fetchExecJobStats
   </li>
   <li>
-  	<strong>Parameter Location:</strong> Request Query String
+    <strong>Parameter Location:</strong> Request Query String
   </li>
 </ul> 
 
 <h5><strong> Request Parameters </strong></h5>
 
 <table class="table table-striped table-condensed table-bordered">
-	<thead>
-		<tr>
-			<th>Parameter</th>
-			<th> Description</th>
-		</tr>
-	</thead>
-	<tbody>
-		<tr>
-			<td>session.id</td>
-			<td><p> The user session id. </p></td>
-		</tr>
-		<tr>
-			<td>ajax=fetchExecJobStats</td>
-			<td>The fixed parameter indicating the fetch job status action.</td>
-		</tr>
-		<tr>
-			<td>execid</td>
-			<td>The execution id.</td>
-		</tr>
-		<tr>
-			<td>jobid</td>
-			<td>The job id.</td>
-		</tr>
-	</tbody>
+  <thead>
+    <tr>
+      <th>Parameter</th>
+      <th> Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>session.id</td>
+      <td><p> The user session id. </p></td>
+    </tr>
+    <tr>
+      <td>ajax=fetchExecJobStats</td>
+      <td>The fixed parameter indicating the fetch job status action.</td>
+    </tr>
+    <tr>
+      <td>execid</td>
+      <td>The execution id.</td>
+    </tr>
+    <tr>
+      <td>jobid</td>
+      <td>The job id.</td>
+    </tr>
+  </tbody>
 </table>
 
 <h5><strong> Response Object </strong></h5>
 
 <table class="table table-striped table-condensed table-bordered">
-	<thead>
-		<tr>
-			<th>Parameter</th>
-			<th> Description</th>
-		</tr>
-	</thead>
-	<tbody>
-		<tr>
-			<td>jobStats</td>
-			<td>The status of a job.</td>
-		</tr>
-	</tbody>
+  <thead>
+    <tr>
+      <th>Parameter</th>
+      <th> Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>jobStats</td>
+      <td>The status of a job.</td>
+    </tr>
+  </tbody>
 </table>
 
 <p>Here's a curl command sample:</p>
