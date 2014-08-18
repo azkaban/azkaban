@@ -1335,16 +1335,16 @@ A response sample:
 }
 </pre>
 
-<h3 id="api-fetch-execution-job-status"> Fetch Execution Job Status </h3>
+<h3 id="api-fetch-flow-execution-updates"> Fetch Flow Execution Updates </h3>
 <p>
-This API call fetches the status of a job execution.
+This API call fetches the updated information for an execution. It filters by <code>lastUpdateTime</code> which only returns job information updated afterwards.
 </p>
 <ul class="list-unstyled">
   <li>
     <strong>Method:</strong> GET
   </li>
    <li>
-    <strong>Request URL:</strong> /executor?ajax=fetchExecJobStats
+    <strong>Request URL:</strong> /executor?ajax=fetchexecflowupdate
   </li>
   <li>
     <strong>Parameter Location:</strong> Request Query String
@@ -1366,16 +1366,16 @@ This API call fetches the status of a job execution.
       <td><p> The user session id. </p></td>
     </tr>
     <tr>
-      <td>ajax=fetchExecJobStats</td>
-      <td>The fixed parameter indicating the fetch job status action.</td>
+      <td>ajax=fetchexecflowupdate</td>
+      <td>The fixed parameter indicating the fetch execution updates action.</td>
     </tr>
     <tr>
       <td>execid</td>
       <td>The execution id.</td>
     </tr>
     <tr>
-      <td>jobid</td>
-      <td>The job id.</td>
+      <td>lastUpdateTime</td>
+      <td>The criteria to filter by last update time. Set the value to be <code>-1</code> if all job information are needed.</td>
     </tr>
   </tbody>
 </table>
@@ -1391,8 +1391,47 @@ This API call fetches the status of a job execution.
   </thead>
   <tbody>
     <tr>
-      <td>jobStats</td>
-      <td>The status of a job.</td>
+      <td>id</td>
+      <td>The flow id.</td>
+    </tr>
+    <tr>
+      <td>flow</td>
+      <td>The flow name.</td>
+    </tr>
+    <tr>
+      <td>startTime</td>
+      <td>The start time of this flow execution.</td>
+    </tr>
+    <tr>
+      <td>updateTime</td>
+      <td>The last updated time of this flow execution.</td>
+    </tr>
+    <tr>
+      <td>endTime</td>
+      <td>The end time of this flow execution (if it finishes).</td>
+    </tr>
+    <tr>
+      <td>status</td>
+      <td>The current status of the flow.</td>
+    </tr>
+    <tr>
+      <td>attempt</td>
+      <td>The attempt number of this flow execution.</td>
+    </tr>
+    <tr>
+      <td>nodes</td>
+      <td>Inforation for each execution job. Containing the following fields:
+        <pre class="code">
+{
+  "attempt": String,
+  "startTime": Number,
+  "id": String (the job id),
+  "updateTime":Number,
+  "status": String,
+  "endTime": Number
+}
+        </pre>
+      </td>
     </tr>
   </tbody>
 </table>
@@ -1400,12 +1439,47 @@ This API call fetches the status of a job execution.
 <p>Here's a curl command sample:</p>
 
 <pre class="code">
-curl -k --data "session.id=9089beb2-576d-47e3-b040-86dbdc7f523e&ajax=fetchExecJobStats&execid=297&jobid=foo" https://localhost:8443/executor
+curl -k --data "execid=301&lastUpdateTime=-1&session.id=6668c180-efe7-46a-8dd2-e36508b440d8" https://localhost:8443/executor?ajax=fetchexecflowupdate
 </pre>
 
 A response sample:
 <pre class="code">
 {
-  "jobStats" : null
+  "id" : "test",
+  "startTime" : 1407778382894,
+  "attempt" : 0,
+  "status" : "FAILED",
+  "updateTime" : 1407778404708,
+  "nodes" : [ {
+    "attempt" : 0,
+    "startTime" : 1407778404683,
+    "id" : "test",
+    "updateTime" : 1407778404683,
+    "status" : "CANCELLED",
+    "endTime" : 1407778404683
+  }, {
+    "attempt" : 0,
+    "startTime" : 1407778382913,
+    "id" : "test-job-1",
+    "updateTime" : 1407778393850,
+    "status" : "SUCCEEDED",
+    "endTime" : 1407778393845
+  }, {
+    "attempt" : 0,
+    "startTime" : 1407778393849,
+    "id" : "test-job-2",
+    "updateTime" : 1407778404679,
+    "status" : "FAILED",
+    "endTime" : 1407778404675
+  }, {
+    "attempt" : 0,
+    "startTime" : 1407778404675,
+    "id" : "test-job-3",
+    "updateTime" : 1407778404675,
+    "status" : "CANCELLED",
+    "endTime" : 1407778404675
+  } ],
+  "flow" : "test",
+  "endTime" : 1407778404705
 }
 </pre>
