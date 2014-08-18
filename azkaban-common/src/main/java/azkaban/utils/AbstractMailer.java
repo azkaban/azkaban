@@ -44,8 +44,8 @@ public class AbstractMailer {
     this.clientHostname = props.get("server.hostname");
     this.clientPort = props.getInt("server.port");
     this.usesSSL = props.getBoolean("server.useSSL");
-    this.mailAttachmentFlow = props.getBoolean("mail.attachment.flow",true);
-    this.mailAttachmentJob = props.getBoolean("mail.attachment.job",true);
+    this.mailAttachmentFlow = props.getBoolean("mail.attachment.flow", false);
+    this.mailAttachmentJob = props.getBoolean("mail.attachment.job", false);
     this.mailInlineBody = props.getBoolean("mail.inline.body",false);
     if (usesSSL) {
       referenceURL =

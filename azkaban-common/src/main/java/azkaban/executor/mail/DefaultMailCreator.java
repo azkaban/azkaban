@@ -195,7 +195,8 @@ public class DefaultMailCreator implements MailCreator {
     return false;
     }
 
-    public boolean createAttachmentEmail(EmailMessage message, String attachedLogFile) {
+  @Override
+  public boolean createAttachmentEmail(EmailMessage message, String attachedLogFile) {
         attachFile = new File(_flow_path);
         File directory = attachFile.getParentFile();
         for (File f : directory.listFiles()) {
@@ -209,29 +210,29 @@ public class DefaultMailCreator implements MailCreator {
 
             }
         }
-        return true;
-  }
+    return true;
+    }
 
-  public boolean createInlineMessageEmail(EmailMessage message)
-  {
-      try {
-      attachFile = new File(_flow_path);
-      File directory = attachFile.getParentFile();
-      for(File f : directory.listFiles()) {
-          if( f!= null && FilenameUtils.getExtension(f.getAbsolutePath()).equals("log")&&f.getName().contains("_job")){
-             LineNumberReader reader = new LineNumberReader(new FileReader(f));
-             String line;
-             while ((line = reader.readLine()) != null) {
-               message.println("<p>" + line + "</p>");
-             }
-          }
+  @Override
+  public boolean createInlineMessageEmail(EmailMessage message) {
+        try {
+            attachFile = new File(_flow_path);
+            File directory = attachFile.getParentFile();
+            for(File f : directory.listFiles()) {
+                if( f!= null && FilenameUtils.getExtension(f.getAbsolutePath()).equals("log")&&f.getName().contains("_job")){
+                    LineNumberReader reader = new LineNumberReader(new FileReader(f));
+                    String line;
+                    while ((line = reader.readLine()) != null) {
+                        message.println("<p>" + line + "</p>");
+                    }
+                }
 
-      }
-      }
-      catch(Exception e){
-          logger.error("Writing contents to message body failed");
-          return false;
-      }
-      return true;
-  }
+            }
+        }
+        catch(Exception e){
+            logger.error("Writing contents to message body failed");
+            return false;
+        }
+    return true;
+    }
 }

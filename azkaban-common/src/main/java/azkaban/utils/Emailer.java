@@ -65,9 +65,9 @@ public class Emailer extends AbstractMailer implements Alerter {
     this.mailUser = props.getString("mail.user", "");
     this.mailPassword = props.getString("mail.password", "");
     this.mailSender = props.getString("mail.sender", "");
-    this.mailAttachmentFlow = props.getBoolean("mail.attachment.flow");
-    this.mailAttachmentJob = props.getBoolean("mail.attachment.job");
-    this.mailInlineBody = props.getBoolean("mail.inline.body");
+    this.mailAttachmentFlow = props.getBoolean("mail.attachment.flow",false);
+    this.mailAttachmentJob = props.getBoolean("mail.attachment.job",false);
+    this.mailInlineBody = props.getBoolean("mail.inline.body",false);
     this.tls = props.getString("mail.tls", "false");
 
     int mailTimeout = props.getInt("mail.timeout.millis", 10000);
