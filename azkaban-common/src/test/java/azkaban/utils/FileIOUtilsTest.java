@@ -111,10 +111,12 @@ public class FileIOUtilsTest {
     String foreignText = "안녕하세요, 제 이름은 박병호입니다";
     byte[] utf8ByteArray = createUTF8ByteArray(foreignText);
 
+//
     int length = utf8ByteArray.length;
     System.out.println("char length:" + foreignText.length()
         + " utf8BytesLength:" + utf8ByteArray.length + " for:" + foreignText);
 
+//
     Pair<Integer,Integer> pair = FileIOUtils.getUtf8Range(utf8ByteArray, 1,
         length - 6);
     System.out.println("Pair :" + pair.toString());

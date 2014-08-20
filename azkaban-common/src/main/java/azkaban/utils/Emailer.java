@@ -55,7 +55,8 @@ public class Emailer extends AbstractMailer implements Alerter {
   private Boolean mailAttachmentFlow;
   private Boolean mailAttachmentJob;
   private Boolean mailInlineBody;
-  boolean mailAttached;
+  public static String _flow_path;
+  boolean mailAttached=true;
   boolean inlineBody;
 
   public Emailer(Props props) {
@@ -142,7 +143,8 @@ public class Emailer extends AbstractMailer implements Alerter {
     EmailMessage message = new EmailMessage(mailHost, mailUser, mailPassword);
     message.setFromAddress(mailSender);
     message.setTLS(tls);
-
+    String workingDir = System.getProperty("user.dir");
+    _flow_path=workingDir+"/executions/"+flow.getExecutionId()+"/";
     ExecutionOptions option = flow.getExecutionOptions();
 
     MailCreator mailCreator =
@@ -150,7 +152,7 @@ public class Emailer extends AbstractMailer implements Alerter {
     logger.debug("ExecutorMailer using mail creator:"
         + mailCreator.getClass().getCanonicalName());
 
-    boolean mailCreated =
+      boolean mailCreated =
         mailCreator.createErrorEmail(flow, message, azkabanName, scheme,
             clientHostname, clientPortNumber, extraReasons);
       if(mailAttachmentFlow)
@@ -177,7 +179,8 @@ public class Emailer extends AbstractMailer implements Alerter {
     EmailMessage message = new EmailMessage(mailHost, mailUser, mailPassword);
     message.setFromAddress(mailSender);
     message.setTLS(tls);
-
+    String workingDir = System.getProperty("user.dir");
+    _flow_path=workingDir+"/executions/"+flow.getExecutionId()+"/";
     ExecutionOptions option = flow.getExecutionOptions();
 
     MailCreator mailCreator =

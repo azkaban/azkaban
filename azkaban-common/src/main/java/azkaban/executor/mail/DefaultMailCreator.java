@@ -34,7 +34,6 @@ public class DefaultMailCreator implements MailCreator {
   private static HashMap<String, MailCreator> registeredCreators =
       new HashMap<String, MailCreator>();
   private static MailCreator defaultCreator;
-    public static String _flow_path = null;
     private File attachFile;
     private static Logger logger = Logger.getLogger(Emailer.class);
 
@@ -130,9 +129,9 @@ public class DefaultMailCreator implements MailCreator {
     if (emailList != null && !emailList.isEmpty()) {
       message.addAllToAddress(emailList);
       message.setMimeType("text/html");
-      message.setSubject(flow.getFlowId() + " with execution ID " + flow.getExecutionId() + " has failed on "
+      message.setSubject("Flow "+ flow.getFlowId() +" has failed on "
           + azkabanName);
-      message.println("<h2> Execution '" + flow.getExecutionId()
+      message.println("<h2 style=\"color:#FF0000\"> Execution '" + flow.getExecutionId()
           + "' of flow '" + flow.getFlowId() + "' has failed on "
           + azkabanName + "</h2>");
       message.println("<table>");
@@ -169,7 +168,7 @@ public class DefaultMailCreator implements MailCreator {
     if (emailList != null && !emailList.isEmpty()) {
       message.addAllToAddress(emailList);
       message.setMimeType("text/html");
-      message.setSubject(flow.getFlowId() + " with execution ID " + flow.getExecutionId() + " has succeeded on "
+      message.setSubject("Flow "+flow.getFlowId() + " has succeeded on "
           + azkabanName);
       message.println("<h2> Execution '" + flow.getExecutionId()
               + "' of flow '" + flow.getFlowId() + "' has succeeded on "
@@ -197,28 +196,26 @@ public class DefaultMailCreator implements MailCreator {
 
   @Override
   public boolean createAttachmentEmail(EmailMessage message, String attachedLogFile) {
-        attachFile = new File(_flow_path);
-        File directory = attachFile.getParentFile();
-        for (File f : directory.listFiles()) {
-            if (f != null && FilenameUtils.getExtension(f.getAbsolutePath()).equals("log") && f.getName().contains(attachedLogFile)) {
-                try {
-                    message.addAttachment(f);
-                } catch (Exception e) {
-                    logger.error("Email attachment failed", e);
-                    return false;
-                }
-
-            }
-        }
-    return true;
+      try {
+          attachFile = new File(Emailer._flow_path);
+          for (File f : attachFile.listFiles()) {
+              if (f != null && FilenameUtils.getExtension(f.getAbsolutePath()).equals("log") && f.getName().contains(attachedLogFile)) {
+                  message.addAttachment(f);
+              }
+          }
+      }
+      catch(Exception i){
+          logger.error("Email attachment not loaded",i);
+          return false;
+      }
+      return true;
     }
 
   @Override
   public boolean createInlineMessageEmail(EmailMessage message) {
         try {
-            attachFile = new File(_flow_path);
-            File directory = attachFile.getParentFile();
-            for(File f : directory.listFiles()) {
+            attachFile = new File(Emailer._flow_path);
+            for(File f : attachFile.listFiles()) {
                 if( f!= null && FilenameUtils.getExtension(f.getAbsolutePath()).equals("log")&&f.getName().contains("_job")){
                     LineNumberReader reader = new LineNumberReader(new FileReader(f));
                     String line;

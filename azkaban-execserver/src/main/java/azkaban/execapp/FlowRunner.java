@@ -31,7 +31,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
 
-import azkaban.executor.mail.DefaultMailCreator;
 import org.apache.log4j.Appender;
 import org.apache.log4j.FileAppender;
 import org.apache.log4j.Layout;
@@ -58,6 +57,8 @@ import azkaban.project.ProjectManagerException;
 import azkaban.utils.Props;
 import azkaban.utils.PropsUtils;
 import azkaban.utils.SwapQueue;
+import azkaban.executor.mail.DefaultMailCreator;
+import azkaban.utils.Emailer;
 
 /**
  * Class that handles the running of a ExecutableFlow DAG
@@ -309,7 +310,6 @@ public class FlowRunner extends EventHandler implements Runnable {
     String logName = "_flow." + loggerName + ".log";
     logFile = new File(execDir, logName);
     String absolutePath = logFile.getAbsolutePath();
-    DefaultMailCreator._flow_path= absolutePath;
 
     flowAppender = null;
     try {
