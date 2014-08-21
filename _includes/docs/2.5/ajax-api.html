@@ -5,9 +5,8 @@ Often there's a desire to interact with Azkaban without having to use the web UI
 <br/><br/>
 Azkaban assumes the following request header in servlet's <code>isAjaxCall(HttpServletRequest request)</code> method:
 <pre>
-<ul class="list-unstyled">
-  Content-Type:    application/x-www-form-urlencoded
-  X-Requested-With:    XMLHttpRequest
+  Content-Type:     application/x-www-form-urlencoded
+  X-Requested-With: XMLHttpRequest
 </pre> 
 However, currently for most of APIs in this version, it is not checking the request header. Many APIs still treat a request as an ajax call if <code>request</code> simply contains the parameter <code>ajax</code>. Or even, several APIs is implicitly assuming it is an ajax call even without this keyword. For ease of use though, it is recommended to always keep the correct request header.
 </p>
