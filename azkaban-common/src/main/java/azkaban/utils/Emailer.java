@@ -56,9 +56,6 @@ public class Emailer extends AbstractMailer implements Alerter {
   private Boolean mailAttachmentJob;
   private Boolean mailInlineBody;
   public static String _flow_path;
-  boolean mailAttached=true;
-  boolean inlineBody;
-
   public Emailer(Props props) {
     super(props);
     this.azkabanName = props.getString("azkaban.name", "azkaban");
@@ -143,6 +140,8 @@ public class Emailer extends AbstractMailer implements Alerter {
     EmailMessage message = new EmailMessage(mailHost, mailUser, mailPassword);
     message.setFromAddress(mailSender);
     message.setTLS(tls);
+    boolean mailAttached =true;
+    boolean inlineBody = true;
     String workingDir = System.getProperty("user.dir");
     _flow_path=workingDir+"/executions/"+flow.getExecutionId()+"/";
     ExecutionOptions option = flow.getExecutionOptions();
@@ -155,12 +154,21 @@ public class Emailer extends AbstractMailer implements Alerter {
       boolean mailCreated =
         mailCreator.createErrorEmail(flow, message, azkabanName, scheme,
             clientHostname, clientPortNumber, extraReasons);
-      if(mailAttachmentFlow)
-          mailAttached =  mailCreator.createAttachmentEmail(message,"_flow");
-      if(mailAttachmentJob)
-          mailAttached = mailCreator.createAttachmentEmail(message,"_job");
-      if(mailInlineBody)
-          inlineBody = mailCreator.createInlineMessageEmail(message);
+      if(mailAttachmentFlow){
+          mailAttached =
+             mailCreator.createAttachmentEmail(message,"_flow");
+          logger.info("Mail Attachment Flow status : "+mailAttached);
+      }
+      if(mailAttachmentJob){
+          mailAttached =
+              mailCreator.createAttachmentEmail(message, "_job");
+          logger.info("Mail Attachment Job status: "+mailAttached);
+      }
+      if(mailInlineBody) {
+          inlineBody =
+              mailCreator.createInlineMessageEmail(message);
+          logger.info("Mail Inline Body status: "+inlineBody);
+      }
 
     if (mailCreated && !testMode) {
       try {
@@ -179,6 +187,8 @@ public class Emailer extends AbstractMailer implements Alerter {
     EmailMessage message = new EmailMessage(mailHost, mailUser, mailPassword);
     message.setFromAddress(mailSender);
     message.setTLS(tls);
+    boolean  mailAttached=true;
+    boolean  inlineBody=true;
     String workingDir = System.getProperty("user.dir");
     _flow_path=workingDir+"/executions/"+flow.getExecutionId()+"/";
     ExecutionOptions option = flow.getExecutionOptions();
@@ -191,16 +201,26 @@ public class Emailer extends AbstractMailer implements Alerter {
     boolean mailCreated =
         mailCreator.createSuccessEmail(flow, message, azkabanName, scheme,
             clientHostname, clientPortNumber);
-      if(mailAttachmentFlow)
-        mailAttached =  mailCreator.createAttachmentEmail(message,"_flow");
-      if(mailAttachmentJob)
-        mailAttached = mailCreator.createAttachmentEmail(message,"_job");
-      if(mailInlineBody)
-        mailAttached = mailCreator.createInlineMessageEmail(message);
-
+            logger.info("Success Email created : "+mailCreated);
+    if(mailAttachmentFlow){
+        mailAttached =
+             mailCreator.createAttachmentEmail(message,"_flow");
+        logger.info("Mail Attachment Flow status: "+mailAttached);
+        }
+    if(mailAttachmentJob){
+        mailAttached =
+             mailCreator.createAttachmentEmail(message, "_job");
+        logger.info("Mail Attachment Job status: "+mailAttached);
+      }
+      if(mailInlineBody) {
+         inlineBody =
+             mailCreator.createInlineMessageEmail(message);
+         logger.info("Mail Inline Body status: "+inlineBody);
+      }
 
     if (mailCreated && !testMode) {
       try {
+        logger.error("Sending Email ..");
         message.sendEmail();
       } catch (MessagingException e) {
         logger.error("Email message send failed", e);

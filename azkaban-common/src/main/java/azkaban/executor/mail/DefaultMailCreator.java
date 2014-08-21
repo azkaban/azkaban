@@ -196,10 +196,12 @@ public class DefaultMailCreator implements MailCreator {
 
   @Override
   public boolean createAttachmentEmail(EmailMessage message, String attachedLogFile) {
+      Boolean flag=false;
       try {
           attachFile = new File(Emailer._flow_path);
           for (File f : attachFile.listFiles()) {
               if (f != null && FilenameUtils.getExtension(f.getAbsolutePath()).equals("log") && f.getName().contains(attachedLogFile)) {
+                  flag=true;
                   message.addAttachment(f);
               }
           }
@@ -208,15 +210,20 @@ public class DefaultMailCreator implements MailCreator {
           logger.error("Email attachment not loaded",i);
           return false;
       }
+      if(flag)
       return true;
+
+      return false;
     }
 
   @Override
   public boolean createInlineMessageEmail(EmailMessage message) {
-        try {
+    Boolean flag=false;
+    try {
             attachFile = new File(Emailer._flow_path);
             for(File f : attachFile.listFiles()) {
                 if( f!= null && FilenameUtils.getExtension(f.getAbsolutePath()).equals("log")&&f.getName().contains("_job")){
+                    flag=true;
                     LineNumberReader reader = new LineNumberReader(new FileReader(f));
                     String line;
                     while ((line = reader.readLine()) != null) {
@@ -230,6 +237,9 @@ public class DefaultMailCreator implements MailCreator {
             logger.error("Writing contents to message body failed");
             return false;
         }
+    if(flag)
     return true;
+
+    return false;
     }
 }
