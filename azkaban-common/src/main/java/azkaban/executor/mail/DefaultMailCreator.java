@@ -195,12 +195,12 @@ public class DefaultMailCreator implements MailCreator {
     }
 
   @Override
-  public boolean createAttachmentEmail(EmailMessage message, String attachedLogFile) {
+  public boolean createAttachmentEmail(EmailMessage message, String nameRegex) {
       Boolean flag=false;
       try {
           attachFile = new File(Emailer._flow_path);
           for (File f : attachFile.listFiles()) {
-              if (f != null && FilenameUtils.getExtension(f.getAbsolutePath()).equals("log") && f.getName().contains(attachedLogFile)) {
+              if (f != null && f.getName().matches(nameRegex)) {
                   flag=true;
                   message.addAttachment(f);
               }
@@ -227,6 +227,7 @@ public class DefaultMailCreator implements MailCreator {
                     LineNumberReader reader = new LineNumberReader(new FileReader(f));
                     String line;
                     while ((line = reader.readLine()) != null) {
+                        if(line.contains("ERROR"))
                         message.println("<p>" + line + "</p>");
                     }
                 }

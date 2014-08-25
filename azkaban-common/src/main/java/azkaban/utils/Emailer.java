@@ -18,6 +18,8 @@ package azkaban.utils;
 
 import java.lang.String;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import javax.mail.MessagingException;
@@ -52,9 +54,8 @@ public class Emailer extends AbstractMailer implements Alerter {
   private String mailSender;
   private String azkabanName;
   private String tls;
-  private Boolean mailAttachmentFlow;
-  private Boolean mailAttachmentJob;
-  private Boolean mailInlineBody;
+  private String mailAttachName;
+  private Boolean mailInlineError;
   public static String _flow_path;
   public Emailer(Props props) {
     super(props);
@@ -63,11 +64,9 @@ public class Emailer extends AbstractMailer implements Alerter {
     this.mailUser = props.getString("mail.user", "");
     this.mailPassword = props.getString("mail.password", "");
     this.mailSender = props.getString("mail.sender", "");
-    this.mailAttachmentFlow = props.getBoolean("mail.attachment.flow",false);
-    this.mailAttachmentJob = props.getBoolean("mail.attachment.job",false);
-    this.mailInlineBody = props.getBoolean("mail.inline.body",false);
+    this.mailAttachName = props.getString("mail.attach.name", null);
+    this.mailInlineError = props.getBoolean("mail.inline.error",false);
     this.tls = props.getString("mail.tls", "false");
-
     int mailTimeout = props.getInt("mail.timeout.millis", 10000);
     EmailMessage.setTimeout(mailTimeout);
     int connectionTimeout =
@@ -154,17 +153,12 @@ public class Emailer extends AbstractMailer implements Alerter {
       boolean mailCreated =
         mailCreator.createErrorEmail(flow, message, azkabanName, scheme,
             clientHostname, clientPortNumber, extraReasons);
-      if(mailAttachmentFlow){
+      if(mailAttachName!=null){
           mailAttached =
-             mailCreator.createAttachmentEmail(message,"_flow");
-          logger.info("Mail Attachment Flow status : "+mailAttached);
+             mailCreator.createAttachmentEmail(message, mailAttachName);
+          logger.info("Mail Attachment status : "+mailAttached);
       }
-      if(mailAttachmentJob){
-          mailAttached =
-              mailCreator.createAttachmentEmail(message, "_job");
-          logger.info("Mail Attachment Job status: "+mailAttached);
-      }
-      if(mailInlineBody) {
+      if(mailInlineError) {
           inlineBody =
               mailCreator.createInlineMessageEmail(message);
           logger.info("Mail Inline Body status: "+inlineBody);
@@ -202,17 +196,12 @@ public class Emailer extends AbstractMailer implements Alerter {
         mailCreator.createSuccessEmail(flow, message, azkabanName, scheme,
             clientHostname, clientPortNumber);
             logger.info("Success Email created : "+mailCreated);
-    if(mailAttachmentFlow){
+    if(mailAttachName!=null){
         mailAttached =
-             mailCreator.createAttachmentEmail(message,"_flow");
-        logger.info("Mail Attachment Flow status: "+mailAttached);
+             mailCreator.createAttachmentEmail(message,mailAttachName);
+        logger.info("Mail Attachment status: "+mailAttached);
         }
-    if(mailAttachmentJob){
-        mailAttached =
-             mailCreator.createAttachmentEmail(message, "_job");
-        logger.info("Mail Attachment Job status: "+mailAttached);
-      }
-      if(mailInlineBody) {
+      if(mailInlineError) {
          inlineBody =
              mailCreator.createInlineMessageEmail(message);
          logger.info("Mail Inline Body status: "+inlineBody);
