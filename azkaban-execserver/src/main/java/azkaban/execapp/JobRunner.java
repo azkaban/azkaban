@@ -593,7 +593,7 @@ public class JobRunner extends EventHandler implements Runnable {
         logError(e.getMessage() + " cause: " + e.getCause(), e);
       } else {
         changeStatus(Status.FAILED);
-        logError("Job run failed!",e);
+        logError("Job run failed!", e);
         logError(e.getMessage() + " cause: " + e.getCause());
       }
     }
