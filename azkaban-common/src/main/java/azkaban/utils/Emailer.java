@@ -142,6 +142,7 @@ public class Emailer extends AbstractMailer implements Alerter {
     EmailMessage message = new EmailMessage(mailHost, mailUser, mailPassword);
     message.setFromAddress(mailSender);
     message.setTLS(tls);
+
     boolean mailAttached =true;
     boolean inlineBody = true;
     String workingDir = System.getProperty("user.dir");

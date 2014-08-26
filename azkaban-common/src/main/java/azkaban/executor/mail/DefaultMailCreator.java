@@ -34,8 +34,8 @@ public class DefaultMailCreator implements MailCreator {
   private static HashMap<String, MailCreator> registeredCreators =
       new HashMap<String, MailCreator>();
   private static MailCreator defaultCreator;
-    private File attachFile;
-    private static Logger logger = Logger.getLogger(Emailer.class);
+  private File attachFile;
+  private static Logger logger = Logger.getLogger(Emailer.class);
 
   public static void registerCreator(String name, MailCreator creator) {
     registeredCreators.put(name, creator);
@@ -131,6 +131,7 @@ public class DefaultMailCreator implements MailCreator {
       message.setMimeType("text/html");
       message.setSubject("Flow '" + flow.getFlowId() + "' has failed on "
           + azkabanName);
+
       message.println("<h2 style=\"color:#FF0000\"> Execution '" + execId
           + "' of flow '" + flow.getFlowId() + "' has failed on " + azkabanName
           + "</h2>");
@@ -149,17 +150,19 @@ public class DefaultMailCreator implements MailCreator {
               + "executor?" + "execid=" + execId;
       message.println("<a href=\"" + executionUrl + "\">" + flow.getFlowId()
           + " Execution Link</a>");
+
       message.println("");
       message.println("<h3>Reason</h3>");
       List<String> failedJobs = Emailer.findFailedJobs(flow);
       message.println("<ul>");
       for (String jobId : failedJobs) {
         message.println("<li><a href=\"" + executionUrl + "&job=" + jobId
-         + "\">Failed job '" + jobId + "' Link</a></li>");
+            + "\">Failed job '" + jobId + "' Link</a></li>");
       }
       for (String reasons : vars) {
         message.println("<li>" + reasons + "</li>");
       }
+
       message.println("</ul>");
       return true;
     }
