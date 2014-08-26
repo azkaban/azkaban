@@ -129,11 +129,11 @@ public class DefaultMailCreator implements MailCreator {
     if (emailList != null && !emailList.isEmpty()) {
       message.addAllToAddress(emailList);
       message.setMimeType("text/html");
-      message.setSubject("Flow "+ flow.getFlowId() +" has failed on "
+      message.setSubject("Flow '" + flow.getFlowId() + "' has failed on "
           + azkabanName);
-      message.println("<h2 style=\"color:#FF0000\"> Execution '" + flow.getExecutionId()
-          + "' of flow '" + flow.getFlowId() + "' has failed on "
-          + azkabanName + "</h2>");
+      message.println("<h2 style=\"color:#FF0000\"> Execution '" + execId
+          + "' of flow '" + flow.getFlowId() + "' has failed on " + azkabanName
+          + "</h2>");
       message.println("<table>");
       message.println("<tr><td>Start Time</td><td>" + flow.getStartTime()
           + "</td></tr>");
@@ -143,13 +143,24 @@ public class DefaultMailCreator implements MailCreator {
           + Utils.formatDuration(flow.getStartTime(), flow.getEndTime())
           + "</td></tr>");
       message.println("</table>");
-
       message.println("");
       String executionUrl =
           scheme + "://" + clientHostname + ":" + clientPortNumber + "/"
               + "executor?" + "execid=" + execId;
       message.println("<a href=\"" + executionUrl + "\">" + flow.getFlowId()
           + " Execution Link</a>");
+      message.println("");
+      message.println("<h3>Reason</h3>");
+      List<String> failedJobs = Emailer.findFailedJobs(flow);
+      message.println("<ul>");
+      for (String jobId : failedJobs) {
+        message.println("<li><a href=\"" + executionUrl + "&job=" + jobId
+         + "\">Failed job '" + jobId + "' Link</a></li>");
+      }
+      for (String reasons : vars) {
+        message.println("<li>" + reasons + "</li>");
+      }
+      message.println("</ul>");
       return true;
     }
     return false;
@@ -168,21 +179,21 @@ public class DefaultMailCreator implements MailCreator {
     if (emailList != null && !emailList.isEmpty()) {
       message.addAllToAddress(emailList);
       message.setMimeType("text/html");
-      message.setSubject("Flow "+flow.getFlowId() + " has succeeded on "
+      message.setSubject("Flow '" + flow.getFlowId() + "' has succeeded on "
           + azkabanName);
+
       message.println("<h2> Execution '" + flow.getExecutionId()
-              + "' of flow '" + flow.getFlowId() + "' has succeeded on "
-              + azkabanName + "</h2>");
+          + "' of flow '" + flow.getFlowId() + "' has succeeded on "
+          + azkabanName + "</h2>");
       message.println("<table>");
       message.println("<tr><td>Start Time</td><td>" + flow.getStartTime()
-              + "</td></tr>");
+          + "</td></tr>");
       message.println("<tr><td>End Time</td><td>" + flow.getEndTime()
-              + "</td></tr>");
+          + "</td></tr>");
       message.println("<tr><td>Duration</td><td>"
-              + Utils.formatDuration(flow.getStartTime(), flow.getEndTime())
-              + "</td></tr>");
+          + Utils.formatDuration(flow.getStartTime(), flow.getEndTime())
+          + "</td></tr>");
       message.println("</table>");
-
       message.println("");
       String executionUrl =
           scheme + "://" + clientHostname + ":" + clientPortNumber + "/"

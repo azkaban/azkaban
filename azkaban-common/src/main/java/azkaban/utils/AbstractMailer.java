@@ -28,9 +28,6 @@ public class AbstractMailer {
   private String mailPassword;
   private String mailSender;
   private String azkabanName;
-  private Boolean mailAttachmentFlow;
-  private Boolean mailAttachmentJob;
-  private Boolean mailInlineBody;
 
   private String referenceURL;
 
@@ -44,9 +41,7 @@ public class AbstractMailer {
     this.clientHostname = props.get("server.hostname");
     this.clientPort = props.getInt("server.port");
     this.usesSSL = props.getBoolean("server.useSSL");
-    this.mailAttachmentFlow = props.getBoolean("mail.attachment.flow", false);
-    this.mailAttachmentJob = props.getBoolean("mail.attachment.job", false);
-    this.mailInlineBody = props.getBoolean("mail.inline.body",false);
+
     if (usesSSL) {
       referenceURL =
           "https://" + clientHostname

@@ -18,8 +18,6 @@ package azkaban.utils;
 
 import java.lang.String;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 
 import javax.mail.MessagingException;
@@ -34,6 +32,9 @@ import azkaban.executor.Status;
 import azkaban.executor.mail.DefaultMailCreator;
 import azkaban.executor.mail.MailCreator;
 import azkaban.sla.SlaOption;
+import azkaban.utils.AbstractMailer;
+import azkaban.utils.EmailMessage;
+import azkaban.utils.Props;
 
 public class Emailer extends AbstractMailer implements Alerter {
   private static Logger logger = Logger.getLogger(Emailer.class);
@@ -57,6 +58,7 @@ public class Emailer extends AbstractMailer implements Alerter {
   private String mailAttachName;
   private Boolean mailInlineError;
   public static String _flow_path;
+
   public Emailer(Props props) {
     super(props);
     this.azkabanName = props.getString("azkaban.name", "azkaban");
@@ -67,6 +69,7 @@ public class Emailer extends AbstractMailer implements Alerter {
     this.mailAttachName = props.getString("mail.attach.name", null);
     this.mailInlineError = props.getBoolean("mail.inline.error",false);
     this.tls = props.getString("mail.tls", "false");
+
     int mailTimeout = props.getInt("mail.timeout.millis", 10000);
     EmailMessage.setTimeout(mailTimeout);
     int connectionTimeout =
@@ -150,19 +153,19 @@ public class Emailer extends AbstractMailer implements Alerter {
     logger.debug("ExecutorMailer using mail creator:"
         + mailCreator.getClass().getCanonicalName());
 
-      boolean mailCreated =
+    boolean mailCreated =
         mailCreator.createErrorEmail(flow, message, azkabanName, scheme,
             clientHostname, clientPortNumber, extraReasons);
-      if(mailAttachName!=null){
+    if(mailAttachName!=null){
           mailAttached =
              mailCreator.createAttachmentEmail(message, mailAttachName);
           logger.info("Mail Attachment status : "+mailAttached);
-      }
-      if(mailInlineError) {
+    }
+    if(mailInlineError) {
           inlineBody =
               mailCreator.createInlineMessageEmail(message);
           logger.info("Mail Inline Body status: "+inlineBody);
-      }
+    }
 
     if (mailCreated && !testMode) {
       try {
@@ -181,6 +184,7 @@ public class Emailer extends AbstractMailer implements Alerter {
     EmailMessage message = new EmailMessage(mailHost, mailUser, mailPassword);
     message.setFromAddress(mailSender);
     message.setTLS(tls);
+
     boolean  mailAttached=true;
     boolean  inlineBody=true;
     String workingDir = System.getProperty("user.dir");
