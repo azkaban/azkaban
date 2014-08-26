@@ -206,7 +206,7 @@ public class DefaultMailCreator implements MailCreator {
       return true;
     }
     return false;
-    }
+  }
 
   @Override
   public boolean createAttachmentEmail(EmailMessage message, String nameRegex) {
