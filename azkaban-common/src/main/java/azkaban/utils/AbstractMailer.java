@@ -22,6 +22,7 @@ public class AbstractMailer {
   private String clientHostname;
   private int clientPort;
   private boolean usesSSL;
+  private boolean usesAuth;
 
   private String mailHost;
   private String mailUser;
@@ -37,11 +38,12 @@ public class AbstractMailer {
     this.mailUser = props.getString("mail.user", "");
     this.mailPassword = props.getString("mail.password", "");
     this.mailSender = props.getString("mail.sender", "");
-
+    this.usesAuth = props.getBoolean("mail.useAuth",true);
+    
     this.clientHostname = props.get("server.hostname");
     this.clientPort = props.getInt("server.port");
     this.usesSSL = props.getBoolean("server.useSSL");
-
+    
     if (usesSSL) {
       referenceURL =
           "https://" + clientHostname
@@ -64,6 +66,7 @@ public class AbstractMailer {
     message.addAllToAddress(emailList);
     message.setMimeType(mimetype);
     message.setSubject(subject);
+    message.setAuth(usesAuth);
 
     return message;
   }

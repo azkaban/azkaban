@@ -48,6 +48,7 @@ public class EmailMessage {
   private String _fromAddress;
   private String _mimeType = "text/plain";
   private String _tls;
+  private boolean _usesAuth = true;
   private StringBuffer _body = new StringBuffer();
   private static int _mailTimeout = 10000;
   private static int _connectionTimeout = 10000;
@@ -111,6 +112,11 @@ public class EmailMessage {
     _tls = tls;
     return this;
   }
+  
+  public EmailMessage setAuth(boolean auth){
+      _usesAuth = auth;
+      return this;
+  }
 
   public EmailMessage addAttachment(File file) throws MessagingException {
     return addAttachment(file.getName(), file);
@@ -155,10 +161,14 @@ public class EmailMessage {
   public void sendEmail() throws MessagingException {
     checkSettings();
     Properties props = new Properties();
+    if (_usesAuth){
+        props.put("mail." + protocol + ".auth", "true");
+        props.put("mail.user", _mailUser);
+        props.put("mail.password", _mailPassword);
+    }else{
+        props.put("mail." + protocol + ".auth", "false");
+    }
     props.put("mail." + protocol + ".host", _mailHost);
-    props.put("mail." + protocol + ".auth", "true");
-    props.put("mail.user", _mailUser);
-    props.put("mail.password", _mailPassword);
     props.put("mail." + protocol + ".timeout", _mailTimeout);
     props.put("mail." + protocol + ".connectiontimeout", _connectionTimeout);
     props.put("mail.smtp.starttls.enable", _tls);
@@ -194,7 +204,11 @@ public class EmailMessage {
     // Transport transport = session.getTransport();
 
     SMTPTransport t = (SMTPTransport) session.getTransport(protocol);
-    t.connect(_mailHost, _mailUser, _mailPassword);
+    if (_usesAuth){
+        t.connect(_mailHost, _mailUser, _mailPassword);
+    }else{
+        t.connect();
+    }
     t.sendMessage(message, message.getRecipients(Message.RecipientType.TO));
     t.close();
   }

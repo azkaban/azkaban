@@ -55,6 +55,7 @@ public class Emailer extends AbstractMailer implements Alerter {
   private String mailSender;
   private String azkabanName;
   private String tls;
+  private boolean usesAuth;
 
   public Emailer(Props props) {
     super(props);
@@ -64,7 +65,8 @@ public class Emailer extends AbstractMailer implements Alerter {
     this.mailPassword = props.getString("mail.password", "");
     this.mailSender = props.getString("mail.sender", "");
     this.tls = props.getString("mail.tls", "false");
-
+    this.usesAuth = props.getBoolean("mail.useAuth",true);
+    
     int mailTimeout = props.getInt("mail.timeout.millis", 10000);
     EmailMessage.setTimeout(mailTimeout);
     int connectionTimeout =
@@ -110,6 +112,7 @@ public class Emailer extends AbstractMailer implements Alerter {
     EmailMessage message = new EmailMessage(mailHost, mailUser, mailPassword);
     message.setFromAddress(mailSender);
     message.setTLS(tls);
+    message.setAuth(usesAuth);
 
     ExecutionOptions option = flow.getExecutionOptions();
 
@@ -136,7 +139,8 @@ public class Emailer extends AbstractMailer implements Alerter {
     EmailMessage message = new EmailMessage(mailHost, mailUser, mailPassword);
     message.setFromAddress(mailSender);
     message.setTLS(tls);
-
+    message.setAuth(usesAuth);
+    
     ExecutionOptions option = flow.getExecutionOptions();
 
     MailCreator mailCreator =
@@ -161,7 +165,8 @@ public class Emailer extends AbstractMailer implements Alerter {
     EmailMessage message = new EmailMessage(mailHost, mailUser, mailPassword);
     message.setFromAddress(mailSender);
     message.setTLS(tls);
-
+    message.setAuth(usesAuth);
+    
     ExecutionOptions option = flow.getExecutionOptions();
 
     MailCreator mailCreator =
