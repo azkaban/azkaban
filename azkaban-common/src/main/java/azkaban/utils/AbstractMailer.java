@@ -38,7 +38,7 @@ public class AbstractMailer {
     this.mailUser = props.getString("mail.user", "");
     this.mailPassword = props.getString("mail.password", "");
     this.mailSender = props.getString("mail.sender", "");
-    this.usesAuth = props.getBoolean("mail.useAuth",true);
+    this.usesAuth = props.getBoolean("mail.useAuth", true);
     
     this.clientHostname = props.get("server.hostname");
     this.clientPort = props.getInt("server.port");

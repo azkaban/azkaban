@@ -113,7 +113,7 @@ public class EmailMessage {
     return this;
   }
   
-  public EmailMessage setAuth(boolean auth){
+  public EmailMessage setAuth(boolean auth) {
       _usesAuth = auth;
       return this;
   }
@@ -161,11 +161,11 @@ public class EmailMessage {
   public void sendEmail() throws MessagingException {
     checkSettings();
     Properties props = new Properties();
-    if (_usesAuth){
+    if (_usesAuth) {
         props.put("mail." + protocol + ".auth", "true");
         props.put("mail.user", _mailUser);
         props.put("mail.password", _mailPassword);
-    }else{
+    } else {
         props.put("mail." + protocol + ".auth", "false");
     }
     props.put("mail." + protocol + ".host", _mailHost);
@@ -204,9 +204,9 @@ public class EmailMessage {
     // Transport transport = session.getTransport();
 
     SMTPTransport t = (SMTPTransport) session.getTransport(protocol);
-    if (_usesAuth){
+    if (_usesAuth) {
         t.connect(_mailHost, _mailUser, _mailPassword);
-    }else{
+    } else {
         t.connect();
     }
     t.sendMessage(message, message.getRecipients(Message.RecipientType.TO));
