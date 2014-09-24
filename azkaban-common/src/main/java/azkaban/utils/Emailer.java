@@ -16,7 +16,6 @@
 
 package azkaban.utils;
 
-import java.lang.String;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -32,9 +31,6 @@ import azkaban.executor.Status;
 import azkaban.executor.mail.DefaultMailCreator;
 import azkaban.executor.mail.MailCreator;
 import azkaban.sla.SlaOption;
-import azkaban.utils.AbstractMailer;
-import azkaban.utils.EmailMessage;
-import azkaban.utils.Props;
 
 public class Emailer extends AbstractMailer implements Alerter {
   private static Logger logger = Logger.getLogger(Emailer.class);
@@ -70,6 +66,8 @@ public class Emailer extends AbstractMailer implements Alerter {
     int connectionTimeout =
         props.getInt("mail.connection.timeout.millis", 10000);
     EmailMessage.setConnectionTimeout(connectionTimeout);
+
+    EmailMessage.setAttachmentMaxSize(getAttachmentMaxSize());
 
     this.clientHostname = props.getString("jetty.hostname", "localhost");
 

@@ -18,6 +18,7 @@ package azkaban.utils;
 
 import java.io.File;
 import java.io.InputStream;
+import java.net.SocketTimeoutException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
@@ -36,9 +37,13 @@ import javax.mail.internet.MimeBodyPart;
 import javax.mail.internet.MimeMessage;
 import javax.mail.internet.MimeMultipart;
 
+import org.apache.log4j.Logger;
+
 import com.sun.mail.smtp.SMTPTransport;
 
 public class EmailMessage {
+  private final Logger logger = Logger.getLogger(EmailMessage.class);
+
   private static String protocol = "smtp";
   private List<String> _toAddress = new ArrayList<String>();
   private String _mailHost;
@@ -48,9 +53,11 @@ public class EmailMessage {
   private String _fromAddress;
   private String _mimeType = "text/plain";
   private String _tls;
+
   private StringBuffer _body = new StringBuffer();
   private static int _mailTimeout = 10000;
   private static int _connectionTimeout = 10000;
+  private static long _attachmentMaxSizeInByte = 134217728; // 1 GB
 
   private ArrayList<BodyPart> _attachments = new ArrayList<BodyPart>();
 
@@ -70,6 +77,14 @@ public class EmailMessage {
 
   public static void setConnectionTimeout(int timeoutMillis) {
     _connectionTimeout = timeoutMillis;
+  }
+
+  public static void setAttachmentMaxSize(long sizeInByte) {
+    if (sizeInByte < 1) {
+      throw new IllegalArgumentException(
+          "attachment max size can't be 0 or negative");
+    }
+    _attachmentMaxSizeInByte = sizeInByte;
   }
 
   public EmailMessage setMailHost(String host) {
@@ -118,6 +133,12 @@ public class EmailMessage {
 
   public EmailMessage addAttachment(String attachmentName, File file)
       throws MessagingException {
+
+    if (file.length() > _attachmentMaxSizeInByte) {
+      throw new MessageAttachmentExceededMaximumSizeException("Attachment '"
+          + attachmentName + "' exceeded maximum size "
+          + _attachmentMaxSizeInByte);
+    }
     BodyPart attachmentPart = new MimeBodyPart();
     DataSource fileDataSource = new FileDataSource(file);
     attachmentPart.setDataHandler(new DataHandler(fileDataSource));
@@ -194,7 +215,23 @@ public class EmailMessage {
     // Transport transport = session.getTransport();
 
     SMTPTransport t = (SMTPTransport) session.getTransport(protocol);
-    t.connect(_mailHost, _mailUser, _mailPassword);
+    try {
+      t.connect(_mailHost, _mailUser, _mailPassword);
+    } catch (MessagingException ste) {
+      if (ste.getCause() instanceof SocketTimeoutException) {
+        try {
+          // retry on SocketTimeoutException
+          t.connect(_mailHost, _mailUser, _mailPassword);
+          logger
+              .info("Email retry on SocketTimeoutException completed successfully");
+        } catch (MessagingException me) {
+          logger.info("Email retry on SocketTimeoutException failed");
+          throw me;
+        }
+      } else {
+        throw ste;
+      }
+    }
     t.sendMessage(message, message.getRecipients(Message.RecipientType.TO));
     t.close();
   }
