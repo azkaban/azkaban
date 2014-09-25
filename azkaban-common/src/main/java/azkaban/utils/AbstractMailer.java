@@ -95,4 +95,8 @@ public class AbstractMailer {
   public String getMailSender() {
     return mailSender;
   }
+  
+  public boolean hasMailAuth(){
+      return usesAuth;
+  }
 }

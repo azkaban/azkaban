@@ -65,7 +65,7 @@ public class Emailer extends AbstractMailer implements Alerter {
     this.mailPassword = props.getString("mail.password", "");
     this.mailSender = props.getString("mail.sender", "");
     this.tls = props.getString("mail.tls", "false");
-    this.usesAuth = props.getBoolean("mail.useAuth", true);
+    this.usesAuth = super.hasMailAuth();
     
     int mailTimeout = props.getInt("mail.timeout.millis", 10000);
     EmailMessage.setTimeout(mailTimeout);
