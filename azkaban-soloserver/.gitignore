@@ -1,0 +1,5 @@
+data/
+conf/
+temp/
+plugins/
+*.log

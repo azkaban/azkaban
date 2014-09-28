@@ -31,6 +31,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 
 import javax.servlet.ServletConfig;
@@ -56,6 +57,7 @@ import azkaban.project.Project;
 import azkaban.project.ProjectLogEvent;
 import azkaban.project.ProjectManager;
 import azkaban.project.ProjectManagerException;
+import azkaban.project.validator.ValidationReport;
 import azkaban.scheduler.Schedule;
 import azkaban.scheduler.ScheduleManager;
 import azkaban.scheduler.ScheduleManagerException;
@@ -1450,7 +1452,27 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
         IOUtils.copy(item.getInputStream(), out);
         out.close();
 
-        projectManager.uploadProject(project, archiveFile, type, user);
+        Map<String, ValidationReport> reports = projectManager.uploadProject(
+            project, archiveFile, type, user);
+        StringBuffer message = new StringBuffer();
+        for (Entry<String, ValidationReport> reportEntry : reports.entrySet()) {
+          ValidationReport report = reportEntry.getValue();
+          if (!report.getErrorMsgs().isEmpty()) {
+            message.append("Validator " + reportEntry.getKey() + " reports errors:\n");
+            for (String msg : report.getErrorMsgs()) {
+              message.append(msg + "\n");
+            }
+          }
+          if (!report.getWarningMsgs().isEmpty()) {
+            message.append("Validator " + reportEntry.getKey() + " reports warnings:\n");
+            for (String msg : report.getWarningMsgs()) {
+              message.append(msg + "\n");
+            }
+          }
+        }
+        if (message.toString().length() > 0) {
+          ret.put("error", message.toString());
+        }
       } catch (Exception e) {
         logger.info("Installation Failed.", e);
         String error = e.getMessage();

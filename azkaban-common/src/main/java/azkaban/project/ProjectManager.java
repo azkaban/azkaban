@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
@@ -32,6 +33,10 @@ import org.apache.log4j.Logger;
 
 import azkaban.flow.Flow;
 import azkaban.project.ProjectLogEvent.EventType;
+import azkaban.project.validator.Status;
+import azkaban.project.validator.ValidationReport;
+import azkaban.project.validator.ValidatorManager;
+import azkaban.project.validator.XmlValidatorManager;
 import azkaban.user.Permission;
 import azkaban.user.User;
 import azkaban.user.Permission.Type;
@@ -47,6 +52,7 @@ public class ProjectManager {
   private ConcurrentHashMap<String, Project> projectsByName =
       new ConcurrentHashMap<String, Project>();
   private final ProjectLoader projectLoader;
+  private final ValidatorManager validatorManager;
   private final Props props;
   private final File tempDir;
   private final int projectVersionRetention;
@@ -68,6 +74,7 @@ public class ProjectManager {
       tempDir.mkdirs();
     }
 
+    validatorManager = new XmlValidatorManager(props);
     loadAllProjects();
   }
 
@@ -337,7 +344,7 @@ public class ProjectManager {
     }
   }
 
-  public void uploadProject(Project project, File archive, String fileType,
+  public Map<String, ValidationReport> uploadProject(Project project, File archive, String fileType,
       User uploader) throws ProjectManagerException {
     logger.info("Uploading files to " + project.getName());
 
@@ -355,6 +362,31 @@ public class ProjectManager {
       }
     } catch (IOException e) {
       throw new ProjectManagerException("Error unzipping file.", e);
+    }
+
+    logger.info("Validating project using the registered validators "
+        + validatorManager.getValidatorsInfo().toString());
+    Map<String, ValidationReport> reports = validatorManager.validate(file);
+    Status status = Status.PASS;
+    for (Entry<String, ValidationReport> report : reports.entrySet()) {
+      logger.info("Before: " + report.getValue().getStatus());
+      if (report.getValue().getStatus().compareTo(status) > 0) {
+        status = report.getValue().getStatus();
+      }
+      logger.info("After: " + status);
+    }
+    if (status == Status.ERROR) {
+      logger.error("Error found in upload to " + project.getName()
+          + ". Cleaning up.");
+
+      try {
+        FileUtils.deleteDirectory(file);
+      } catch (IOException e) {
+        file.deleteOnExit();
+        e.printStackTrace();
+      }
+
+      return reports;
     }
 
     logger.info("Validating Flow for upload " + archive.getName());
@@ -422,6 +454,8 @@ public class ProjectManager {
         + (project.getVersion() - projectVersionRetention));
     projectLoader.cleanOlderProjectVersion(project.getId(),
         project.getVersion() - projectVersionRetention);
+
+    return reports;
   }
 
   public void updateFlow(Project project, Flow flow)
