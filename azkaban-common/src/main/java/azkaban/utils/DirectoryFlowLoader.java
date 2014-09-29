@@ -36,8 +36,11 @@ import azkaban.flow.Flow;
 import azkaban.flow.FlowProps;
 import azkaban.flow.Node;
 import azkaban.flow.SpecialJobTypes;
+import azkaban.project.validator.ProjectValidator;
+import azkaban.project.validator.ValidationReport;
+import azkaban.project.validator.XmlValidatorManager;
 
-public class DirectoryFlowLoader {
+public class DirectoryFlowLoader implements ProjectValidator {
   private static final DirFilter DIR_FILTER = new DirFilter();
   private static final String PROPERTY_SUFFIX = ".properties";
   private static final String JOB_SUFFIX = ".job";
@@ -395,5 +398,23 @@ public class DirectoryFlowLoader {
       return pathname.isFile() && !pathname.isHidden()
           && name.length() > suffix.length() && name.endsWith(suffix);
     }
+  }
+
+  @Override
+  public boolean initialize(Props configuration) {
+    return true;
+  }
+
+  @Override
+  public String getValidatorInfo() {
+    return XmlValidatorManager.DEFAULT_VALIDATOR_KEY;
+  }
+
+  @Override
+  public ValidationReport validateProject(File projectDir) {
+    loadProjectFlow(projectDir);
+    ValidationReport report = new ValidationReport();
+    report.addErrorMsgs(errors);
+    return report;
   }
 }

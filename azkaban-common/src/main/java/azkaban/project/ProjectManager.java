@@ -47,6 +47,8 @@ import azkaban.utils.Utils;
 public class ProjectManager {
   private static final Logger logger = Logger.getLogger(ProjectManager.class);
 
+  public static final String PROJECT_ARCHIVE_FILE = "project.archive.file";
+
   private ConcurrentHashMap<Integer, Project> projectsById =
       new ConcurrentHashMap<Integer, Project>();
   private ConcurrentHashMap<String, Project> projectsByName =
@@ -364,16 +366,16 @@ public class ProjectManager {
       throw new ProjectManagerException("Error unzipping file.", e);
     }
 
+    props.put(PROJECT_ARCHIVE_FILE, archive.getAbsolutePath());
+    validatorManager.loadValidators(props, logger);
     logger.info("Validating project using the registered validators "
         + validatorManager.getValidatorsInfo().toString());
     Map<String, ValidationReport> reports = validatorManager.validate(file);
     Status status = Status.PASS;
     for (Entry<String, ValidationReport> report : reports.entrySet()) {
-      logger.info("Before: " + report.getValue().getStatus());
       if (report.getValue().getStatus().compareTo(status) > 0) {
         status = report.getValue().getStatus();
       }
-      logger.info("After: " + status);
     }
     if (status == Status.ERROR) {
       logger.error("Error found in upload to " + project.getName()
@@ -389,30 +391,7 @@ public class ProjectManager {
       return reports;
     }
 
-    logger.info("Validating Flow for upload " + archive.getName());
-    DirectoryFlowLoader loader = new DirectoryFlowLoader(logger);
-    loader.loadProjectFlow(file);
-    if (!loader.getErrors().isEmpty()) {
-      logger.error("Error found in upload to " + project.getName()
-          + ". Cleaning up.");
-
-      try {
-        FileUtils.deleteDirectory(file);
-      } catch (IOException e) {
-        file.deleteOnExit();
-        e.printStackTrace();
-      }
-
-      StringBuffer errorMessage = new StringBuffer();
-      errorMessage.append("Error found in upload. Cannot upload.\n");
-      for (String error : loader.getErrors()) {
-        errorMessage.append(error);
-        errorMessage.append('\n');
-      }
-
-      throw new ProjectManagerException(errorMessage.toString());
-    }
-
+    DirectoryFlowLoader loader = (DirectoryFlowLoader) validatorManager.getDefaultValidator();
     Map<String, Props> jobProps = loader.getJobProps();
     List<Props> propProps = loader.getProps();
 

@@ -1,10 +1,11 @@
 package azkaban.project.validator;
 
 import java.io.File;
-import java.util.Properties;
+
+import azkaban.utils.Props;
 
 public interface ProjectValidator {
-  boolean initialize(Properties configuration);
+  boolean initialize(Props configuration);
   String getValidatorInfo();
   ValidationReport validateProject(File projectDir);
 }

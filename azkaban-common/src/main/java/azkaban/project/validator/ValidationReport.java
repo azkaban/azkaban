@@ -1,20 +1,54 @@
 package azkaban.project.validator;
 
+import java.util.HashSet;
 import java.util.Set;
 
-public interface ValidationReport {
-  void addPassMsgs(Set<String> msgs);
+public class ValidationReport {
 
-  void addWarningMsgs(Set<String> msgs);
+  protected Status _status;
+  protected Set<String> _passMsgs;
+  protected Set<String> _warningMsgs;
+  protected Set<String> _errorMsgs;
 
-  void addErrorMsgs(Set<String> msgs);
+  public ValidationReport() {
+    _status = Status.PASS;
+    _passMsgs = new HashSet<String>();
+    _warningMsgs = new HashSet<String>();
+    _errorMsgs = new HashSet<String>();
+  }
 
-  Status getStatus();
+  public void addPassMsgs(Set<String> msgs) {
+    _passMsgs.addAll(msgs);
+  }
 
-  Set<String> getPassMsgs();
+  public void addWarningMsgs(Set<String> msgs) {
+    _warningMsgs.addAll(msgs);
+    if (!msgs.isEmpty() && _errorMsgs.isEmpty()) {
+      _status = Status.WARN;
+    }
+  }
 
-  Set<String> getWarningMsgs();
+  public void addErrorMsgs(Set<String> msgs) {
+    _errorMsgs.addAll(msgs);
+    if (!msgs.isEmpty()) {
+      _status = Status.ERROR;
+    }
+  }
 
-  Set<String> getErrorMsgs();
+  public Status getStatus() {
+    return _status;
+  }
+
+  public Set<String> getPassMsgs() {
+    return _passMsgs;
+  }
+
+  public Set<String> getWarningMsgs() {
+    return _warningMsgs;
+  }
+
+  public Set<String> getErrorMsgs() {
+    return _errorMsgs;
+  }
 
 }

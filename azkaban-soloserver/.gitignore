@@ -2,4 +2,7 @@ data/
 conf/
 temp/
 plugins/
+validators/
+executions/
+projects/
 *.log
