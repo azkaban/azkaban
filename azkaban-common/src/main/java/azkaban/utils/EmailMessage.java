@@ -53,11 +53,12 @@ public class EmailMessage {
   private String _fromAddress;
   private String _mimeType = "text/plain";
   private String _tls;
+  private long _totalAttachmentSizeSoFar;
 
   private StringBuffer _body = new StringBuffer();
   private static int _mailTimeout = 10000;
   private static int _connectionTimeout = 10000;
-  private static long _attachmentMaxSizeInByte = 134217728; // 1 GB
+  private static long _attachmentMaxSizeInByte = 1000000000; // 1 GB
 
   private ArrayList<BodyPart> _attachments = new ArrayList<BodyPart>();
 
@@ -79,12 +80,12 @@ public class EmailMessage {
     _connectionTimeout = timeoutMillis;
   }
 
-  public static void setAttachmentMaxSize(long sizeInByte) {
-    if (sizeInByte < 1) {
+  public static void setAttachmentMaxSize(long sizeInBytes) {
+    if (sizeInBytes < 1) {
       throw new IllegalArgumentException(
           "attachment max size can't be 0 or negative");
     }
-    _attachmentMaxSizeInByte = sizeInByte;
+    _attachmentMaxSizeInByte = sizeInBytes;
   }
 
   public EmailMessage setMailHost(String host) {
@@ -136,9 +137,19 @@ public class EmailMessage {
 
     if (file.length() > _attachmentMaxSizeInByte) {
       throw new MessageAttachmentExceededMaximumSizeException("Attachment '"
-          + attachmentName + "' exceeded maximum size "
+          + attachmentName + "' exceeds the allowed maximum size of "
           + _attachmentMaxSizeInByte);
     }
+
+    if ((file.length() + _totalAttachmentSizeSoFar) > _attachmentMaxSizeInByte) {
+      throw new MessageAttachmentExceededMaximumSizeException(
+          "Adding attachment '" + attachmentName
+              + "' will exceed the allowed maximum size of "
+              + _attachmentMaxSizeInByte);
+    }
+
+    _totalAttachmentSizeSoFar += file.length();
+
     BodyPart attachmentPart = new MimeBodyPart();
     DataSource fileDataSource = new FileDataSource(file);
     attachmentPart.setDataHandler(new DataHandler(fileDataSource));
@@ -222,13 +233,13 @@ public class EmailMessage {
         try {
           // retry on SocketTimeoutException
           t.connect(_mailHost, _mailUser, _mailPassword);
-          logger
-              .info("Email retry on SocketTimeoutException completed successfully");
+          logger.info("Email retry on SocketTimeoutException succeeded");
         } catch (MessagingException me) {
-          logger.info("Email retry on SocketTimeoutException failed");
+          logger.error("Email retry on SocketTimeoutException failed", me);
           throw me;
         }
       } else {
+        logger.error("Encountered issue while connecting to email server", ste);
         throw ste;
       }
     }
