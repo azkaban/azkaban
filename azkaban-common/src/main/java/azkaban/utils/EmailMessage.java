@@ -58,7 +58,7 @@ public class EmailMessage {
   private StringBuffer _body = new StringBuffer();
   private static int _mailTimeout = 10000;
   private static int _connectionTimeout = 10000;
-  private static long _attachmentMaxSizeInByte = 1000000000; // 1 GB
+  private static long _attachmentMaxSizeInBytes = 1024 * 1024 * 1024; // 1 GB
 
   private ArrayList<BodyPart> _attachments = new ArrayList<BodyPart>();
 
@@ -85,7 +85,7 @@ public class EmailMessage {
       throw new IllegalArgumentException(
           "attachment max size can't be 0 or negative");
     }
-    _attachmentMaxSizeInByte = sizeInBytes;
+    _attachmentMaxSizeInBytes = sizeInBytes;
   }
 
   public EmailMessage setMailHost(String host) {
@@ -135,17 +135,17 @@ public class EmailMessage {
   public EmailMessage addAttachment(String attachmentName, File file)
       throws MessagingException {
 
-    if (file.length() > _attachmentMaxSizeInByte) {
+    if (file.length() > _attachmentMaxSizeInBytes) {
       throw new MessageAttachmentExceededMaximumSizeException("Attachment '"
           + attachmentName + "' exceeds the allowed maximum size of "
-          + _attachmentMaxSizeInByte);
+          + _attachmentMaxSizeInBytes);
     }
 
-    if ((file.length() + _totalAttachmentSizeSoFar) > _attachmentMaxSizeInByte) {
+    if ((file.length() + _totalAttachmentSizeSoFar) > _attachmentMaxSizeInBytes) {
       throw new MessageAttachmentExceededMaximumSizeException(
           "Adding attachment '" + attachmentName
               + "' will exceed the allowed maximum size of "
-              + _attachmentMaxSizeInByte);
+              + _attachmentMaxSizeInBytes);
     }
 
     _totalAttachmentSizeSoFar += file.length();
