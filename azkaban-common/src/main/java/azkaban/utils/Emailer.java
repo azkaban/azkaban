@@ -67,7 +67,7 @@ public class Emailer extends AbstractMailer implements Alerter {
         props.getInt("mail.connection.timeout.millis", 10000);
     EmailMessage.setConnectionTimeout(connectionTimeout);
 
-    EmailMessage.setAttachmentMaxSize(getAttachmentMaxSize());
+    EmailMessage.setTotalAttachmentMaxSize(getAttachmentMaxSize());
 
     this.clientHostname = props.getString("jetty.hostname", "localhost");
 
