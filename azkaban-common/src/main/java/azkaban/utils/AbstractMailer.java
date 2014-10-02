@@ -40,7 +40,7 @@ public class AbstractMailer {
     this.mailUser = props.getString("mail.user", "");
     this.mailPassword = props.getString("mail.password", "");
     long maxAttachmentSizeInMB =
-        props.getInt("mail.max.attachment.size.mb", 1000);
+        props.getInt("mail.max.attachment.size.mb", 100);
 
     attachmentMazSizeInByte = maxAttachmentSizeInMB * MB_IN_BYTES;
 

@@ -58,7 +58,8 @@ public class EmailMessage {
   private StringBuffer _body = new StringBuffer();
   private static int _mailTimeout = 10000;
   private static int _connectionTimeout = 10000;
-  private static long _attachmentMaxSizeInBytes = 1024 * 1024 * 1024; // 1 GB
+  private static long _totalAttachmentMaxSizeInByte = 1024 * 1024 * 1024; // 1
+                                                                          // GB
 
   private ArrayList<BodyPart> _attachments = new ArrayList<BodyPart>();
 
@@ -80,12 +81,12 @@ public class EmailMessage {
     _connectionTimeout = timeoutMillis;
   }
 
-  public static void setAttachmentMaxSize(long sizeInBytes) {
+  public static void setTotalAttachmentMaxSize(long sizeInBytes) {
     if (sizeInBytes < 1) {
       throw new IllegalArgumentException(
           "attachment max size can't be 0 or negative");
     }
-    _attachmentMaxSizeInBytes = sizeInBytes;
+    _totalAttachmentMaxSizeInByte = sizeInBytes;
   }
 
   public EmailMessage setMailHost(String host) {
@@ -135,20 +136,14 @@ public class EmailMessage {
   public EmailMessage addAttachment(String attachmentName, File file)
       throws MessagingException {
 
-    if (file.length() > _attachmentMaxSizeInBytes) {
-      throw new MessageAttachmentExceededMaximumSizeException("Attachment '"
-          + attachmentName + "' exceeds the allowed maximum size of "
-          + _attachmentMaxSizeInBytes);
-    }
+    _totalAttachmentSizeSoFar += file.length();
 
-    if ((file.length() + _totalAttachmentSizeSoFar) > _attachmentMaxSizeInBytes) {
+    if (_totalAttachmentSizeSoFar > _totalAttachmentMaxSizeInByte) {
       throw new MessageAttachmentExceededMaximumSizeException(
           "Adding attachment '" + attachmentName
               + "' will exceed the allowed maximum size of "
-              + _attachmentMaxSizeInBytes);
+              + _totalAttachmentMaxSizeInByte);
     }
-
-    _totalAttachmentSizeSoFar += file.length();
 
     BodyPart attachmentPart = new MimeBodyPart();
     DataSource fileDataSource = new FileDataSource(file);
