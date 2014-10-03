@@ -528,22 +528,27 @@ distributions {
 //      the dist tasks.
 
 migrationDistTar.dependsOn ':azkaban-common:build', ':azkaban-migration:copy'
+migrationDistTar.compression = Compression.GZIP
 migrationDistTar.extension = 'tar.gz'
 migrationDistZip.dependsOn ':azkaban-common:build', ':azkaban-migration:copy'
 
 webserverDistTar.dependsOn ':azkaban-common:build', ':azkaban-webserver:copy'
+webserverDistTar.compression = Compression.GZIP
 webserverDistTar.extension = 'tar.gz'
 webserverDistZip.dependsOn ':azkaban-common:build', ':azkaban-webserver:copy'
 
 execserverDistTar.dependsOn ':azkaban-common:build', ':azkaban-execserver:copy'
+execserverDistTar.compression = Compression.GZIP
 execserverDistTar.extension = 'tar.gz'
 execserverDistZip.dependsOn ':azkaban-common:build', ':azkaban-execserver:copy'
 
 soloserverDistTar.dependsOn ':azkaban-common:build', ':azkaban-soloserver:copy'
+soloserverDistTar.compression = Compression.GZIP
 soloserverDistTar.extension = 'tar.gz'
 soloserverDistZip.dependsOn ':azkaban-common:build', ':azkaban-soloserver:copy'
 
 sqlDistTar.dependsOn ':azkaban-sql:concat'
+sqlDistTar.compression = Compression.GZIP
 sqlDistTar.extension = 'tar.gz'
 sqlDistZip.dependsOn ':azkaban-sql:concat'
 
