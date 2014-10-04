@@ -26,9 +26,21 @@ import org.xml.sax.SAXException;
 import azkaban.utils.DirectoryFlowLoader;
 import azkaban.utils.Props;
 
+/**
+ * Xml implementation of the ValidatorManager. Looks for the property
+ * project.validators.xml.file in the azkaban properties.
+ *
+ * The xml to be in the following form:
+ * <azkaban-validators>
+ *   <validator classname="validator class name">
+ *     <!-- optional configurations for each individual validator -->
+ *     <item key="validator property key" value="validator property value" />
+ *     ...
+ *   </validator>
+ * </azkaban-validators>
+ */
 public class XmlValidatorManager implements ValidatorManager {
-  private static final Logger logger = Logger.getLogger(XmlValidatorManager.class
-      .getName());
+  private static final Logger logger = Logger.getLogger(XmlValidatorManager.class);
 
   public static final String DEFAULT_VALIDATOR_DIR = "validators";
   public static final String VALIDATOR_PLUGIN_DIR = "project.validators.dir";
@@ -42,12 +54,19 @@ public class XmlValidatorManager implements ValidatorManager {
   private Map<String, ProjectValidator> validators;
   private ClassLoader validatorLoader;
 
+  /**
+   * Load the validator plugins from the validator directory (default being validators/) into
+   * the validator ClassLoader. This enables creating instances of these validators in the
+   * loadValidators() method.
+   *
+   * @param props
+   */
   public XmlValidatorManager(Props props) {
     String validatorDirPath = props.getString(VALIDATOR_PLUGIN_DIR, DEFAULT_VALIDATOR_DIR);
     File validatorDir = new File(validatorDirPath);
     if (!validatorDir.canRead() || !validatorDir.isDirectory()) {
       throw new ValidatorManagerException("Validator directory " + validatorDirPath
-          + " does not exist or is not a direcotry.");
+          + " does not exist or is not a directory.");
     }
 
     List<URL> resources = new ArrayList<URL>();
@@ -68,11 +87,20 @@ public class XmlValidatorManager implements ValidatorManager {
     try {
       loadValidators(props, logger);
     } catch (Exception e) {
-      logger.error("Cannot load all the validaotors.");
+      logger.error("Cannot load all the validators.");
       throw new ValidatorManagerException(e);
     }
   }
 
+  /**
+   * Instances of the validators are created here rather than in the constructors. This is because
+   * some validators might need to maintain project-specific states, such as {@link DirectoryFlowLoader}.
+   * By instantiating the validators here, it ensures that the validator objects are project-specific,
+   * rather than global.
+   *
+   * {@inheritDoc}
+   * @see azkaban.project.validator.ValidatorManager#loadValidators(azkaban.utils.Props, org.apache.log4j.Logger)
+   */
   @Override
   public void loadValidators(Props props, Logger log) {
     validators = new LinkedHashMap<String, ProjectValidator>();
@@ -81,11 +109,13 @@ public class XmlValidatorManager implements ValidatorManager {
     validators.put(flowLoader.getValidatorInfo(), flowLoader);
 
     if (!props.containsKey(XML_FILE_PARAM)) {
+      logger.warn("Azkaban properties file does not contain the key " + XML_FILE_PARAM);
       return;
     }
     String xmlPath = props.get(XML_FILE_PARAM);
     File file = new File(xmlPath);
     if (!file.exists()) {
+      logger.error("Azkaban validator configuration file " + xmlPath + " does not exist.");
       return;
     }
 

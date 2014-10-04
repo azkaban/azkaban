@@ -1470,7 +1470,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
             }
           }
         }
-        if (message.toString().length() > 0) {
+        if (message.length() > 0) {
           ret.put("error", message.toString());
         }
       } catch (Exception e) {

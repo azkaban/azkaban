@@ -33,7 +33,7 @@ import org.apache.log4j.Logger;
 
 import azkaban.flow.Flow;
 import azkaban.project.ProjectLogEvent.EventType;
-import azkaban.project.validator.Status;
+import azkaban.project.validator.ValidationStatus;
 import azkaban.project.validator.ValidationReport;
 import azkaban.project.validator.ValidatorManager;
 import azkaban.project.validator.XmlValidatorManager;
@@ -47,7 +47,7 @@ import azkaban.utils.Utils;
 public class ProjectManager {
   private static final Logger logger = Logger.getLogger(ProjectManager.class);
 
-  public static final String PROJECT_ARCHIVE_FILE = "project.archive.file";
+  public static final String PROJECT_ARCHIVE_FILE_PATH = "project.archive.file.path";
 
   private ConcurrentHashMap<Integer, Project> projectsById =
       new ConcurrentHashMap<Integer, Project>();
@@ -366,18 +366,18 @@ public class ProjectManager {
       throw new ProjectManagerException("Error unzipping file.", e);
     }
 
-    props.put(PROJECT_ARCHIVE_FILE, archive.getAbsolutePath());
+    props.put(PROJECT_ARCHIVE_FILE_PATH, archive.getAbsolutePath());
     validatorManager.loadValidators(props, logger);
-    logger.info("Validating project using the registered validators "
+    logger.info("Validating project " + archive.getName() + " using the registered validators "
         + validatorManager.getValidatorsInfo().toString());
     Map<String, ValidationReport> reports = validatorManager.validate(file);
-    Status status = Status.PASS;
+    ValidationStatus status = ValidationStatus.PASS;
     for (Entry<String, ValidationReport> report : reports.entrySet()) {
       if (report.getValue().getStatus().compareTo(status) > 0) {
         status = report.getValue().getStatus();
       }
     }
-    if (status == Status.ERROR) {
+    if (status == ValidationStatus.ERROR) {
       logger.error("Error found in upload to " + project.getName()
           + ". Cleaning up.");
 
