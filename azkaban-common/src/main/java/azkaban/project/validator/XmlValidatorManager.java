@@ -48,7 +48,7 @@ public class XmlValidatorManager implements ValidatorManager {
   public static final String AZKABAN_VALIDATOR_TAG = "azkaban-validators";
   public static final String VALIDATOR_TAG = "validator";
   public static final String CLASSNAME_ATTR = "classname";
-  public static final String ITEM_TAG = "item";
+  public static final String ITEM_TAG = "property";
   public static final String DEFAULT_VALIDATOR_KEY = "Directory Flow";
 
   private Map<String, ProjectValidator> validators;
