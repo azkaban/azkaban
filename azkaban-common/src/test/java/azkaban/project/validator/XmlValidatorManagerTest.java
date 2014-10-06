@@ -17,18 +17,12 @@ public class XmlValidatorManagerTest {
    * Test that if the validator directory does not exist, XmlValidatorManager
    * should throw an exception.
    */
-  @Test
+  @Test(expected=ValidatorManagerException.class)
   public void testNoValidatorsDir() {
     Props props = new Props(baseProps);
 
-    try {
-      @SuppressWarnings("unused")
-      XmlValidatorManager manager = new XmlValidatorManager(props);
-    } catch(ValidatorManagerException e) {
-      return;
-    }
-
-    fail("XmlValidatorManager should throw an exception when the validator directory does not exist.");
+    @SuppressWarnings("unused")
+    XmlValidatorManager manager = new XmlValidatorManager(props);
   }
 
   /**
@@ -52,7 +46,7 @@ public class XmlValidatorManagerTest {
    * Test that if the xml config file specifies a validator classname that does not exist,
    * XmlValidatorManager should throw an exception.
    */
-  @Test
+  @Test(expected=ValidatorManagerException.class)
   public void testValidatorDoesNotExist() {
     Props props = new Props(baseProps);
     URL validatorUrl = Resources.getResource("project/testValidators");
@@ -61,19 +55,15 @@ public class XmlValidatorManagerTest {
     props.put(XmlValidatorManager.XML_FILE_PARAM,
         configUrl.getPath());
 
-    try {
-      @SuppressWarnings("unused")
-      XmlValidatorManager manager = new XmlValidatorManager(props);
-    } catch(ValidatorManagerException e) {
-      return;
-    }
+    @SuppressWarnings("unused")
+    XmlValidatorManager manager = new XmlValidatorManager(props);
 
-    fail("XmlValidatorManager should throw an exception when the validator class cannot be found.");
   }
 
   /**
    * Test that if the xml config file is properly set, XmlValidatorManager loads both the default
-   * validator and the one specified in the xml file.
+   * validator and the one specified in the xml file. The TestValidator class specified in the xml
+   * configuration file is located with the jar file inside test resource directory project/testValidators.
    */
   @Test
   public void testLoadValidators() {
