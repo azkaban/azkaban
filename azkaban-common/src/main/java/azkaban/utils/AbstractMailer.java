@@ -23,6 +23,7 @@ public class AbstractMailer {
   private String clientHostname;
   private int clientPort;
   private boolean usesSSL;
+  private boolean usesAuth;
 
   private String mailHost;
   private String mailUser;
@@ -45,6 +46,7 @@ public class AbstractMailer {
     attachmentMazSizeInByte = maxAttachmentSizeInMB * MB_IN_BYTES;
 
     this.mailSender = props.getString("mail.sender", "");
+    this.usesAuth = props.getBoolean("mail.useAuth", true);
 
     this.clientHostname = props.get("server.hostname");
     this.clientPort = props.getInt("server.port");
@@ -72,6 +74,7 @@ public class AbstractMailer {
     message.addAllToAddress(emailList);
     message.setMimeType(mimetype);
     message.setSubject(subject);
+    message.setAuth(usesAuth);
 
     return message;
   }
@@ -108,5 +111,9 @@ public class AbstractMailer {
    */
   public long getAttachmentMaxSize() {
     return attachmentMazSizeInByte;
+  }
+
+  public boolean hasMailAuth() {
+    return usesAuth;
   }
 }
