@@ -21,8 +21,7 @@ public class XmlValidatorManagerTest {
   public void testNoValidatorsDir() {
     Props props = new Props(baseProps);
 
-    @SuppressWarnings("unused")
-    XmlValidatorManager manager = new XmlValidatorManager(props);
+    new XmlValidatorManager(props);
   }
 
   /**
@@ -55,8 +54,7 @@ public class XmlValidatorManagerTest {
     props.put(XmlValidatorManager.XML_FILE_PARAM,
         configUrl.getPath());
 
-    @SuppressWarnings("unused")
-    XmlValidatorManager manager = new XmlValidatorManager(props);
+    new XmlValidatorManager(props);
 
   }
 
