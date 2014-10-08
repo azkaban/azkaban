@@ -406,7 +406,7 @@ public class DirectoryFlowLoader implements ProjectValidator {
   }
 
   @Override
-  public String getValidatorInfo() {
+  public String getValidatorName() {
     return XmlValidatorManager.DEFAULT_VALIDATOR_KEY;
   }
 

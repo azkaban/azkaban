@@ -19,11 +19,11 @@ public interface ProjectValidator {
   boolean initialize(Props configuration);
 
   /**
-   * Return the name of the validator.
+   * Return a user friendly name of the validator.
    *
    * @return
    */
-  String getValidatorInfo();
+  String getValidatorName();
 
   /**
    * Validate the project inside the given directory. The validator, using its own

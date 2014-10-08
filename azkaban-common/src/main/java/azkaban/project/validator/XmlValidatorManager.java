@@ -106,7 +106,7 @@ public class XmlValidatorManager implements ValidatorManager {
     validators = new LinkedHashMap<String, ProjectValidator>();
     // Add the default validator
     DirectoryFlowLoader flowLoader = new DirectoryFlowLoader(log);
-    validators.put(flowLoader.getValidatorInfo(), flowLoader);
+    validators.put(flowLoader.getValidatorName(), flowLoader);
 
     if (!props.containsKey(XML_FILE_PARAM)) {
       logger.warn("Azkaban properties file does not contain the key " + XML_FILE_PARAM);
@@ -179,7 +179,7 @@ public class XmlValidatorManager implements ValidatorManager {
           validatorClass.getConstructor(Logger.class);
       ProjectValidator validator = (ProjectValidator) validatorConstructor.newInstance(log);
       validator.initialize(props);
-      validators.put(validator.getValidatorInfo(), validator);
+      validators.put(validator.getValidatorName(), validator);
       logger.info("Added validator " + className + " to list of validators.");
     } catch (Exception e) {
       logger.error("Could not instantiate ProjectValidator " + className);
