@@ -34,7 +34,7 @@ import azkaban.utils.Props;
  * <azkaban-validators>
  *   <validator classname="validator class name">
  *     <!-- optional configurations for each individual validator -->
- *     <item key="validator property key" value="validator property value" />
+ *     <property key="validator property key" value="validator property value" />
  *     ...
  *   </validator>
  * </azkaban-validators>
