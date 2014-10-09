@@ -1,0 +1,5 @@
+<azkaban-validators>
+  <validator classname="azkaban.project.validator.TestValidator">
+    <property key="key" value="value" />
+  </validator>
+</azkaban-validators>

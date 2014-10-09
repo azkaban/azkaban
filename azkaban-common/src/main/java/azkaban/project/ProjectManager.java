@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
@@ -32,6 +33,10 @@ import org.apache.log4j.Logger;
 
 import azkaban.flow.Flow;
 import azkaban.project.ProjectLogEvent.EventType;
+import azkaban.project.validator.ValidationStatus;
+import azkaban.project.validator.ValidationReport;
+import azkaban.project.validator.ValidatorManager;
+import azkaban.project.validator.XmlValidatorManager;
 import azkaban.user.Permission;
 import azkaban.user.User;
 import azkaban.user.Permission.Type;
@@ -42,11 +47,14 @@ import azkaban.utils.Utils;
 public class ProjectManager {
   private static final Logger logger = Logger.getLogger(ProjectManager.class);
 
+  public static final String PROJECT_ARCHIVE_FILE_PATH = "project.archive.file.path";
+
   private ConcurrentHashMap<Integer, Project> projectsById =
       new ConcurrentHashMap<Integer, Project>();
   private ConcurrentHashMap<String, Project> projectsByName =
       new ConcurrentHashMap<String, Project>();
   private final ProjectLoader projectLoader;
+  private final ValidatorManager validatorManager;
   private final Props props;
   private final File tempDir;
   private final int projectVersionRetention;
@@ -68,6 +76,7 @@ public class ProjectManager {
       tempDir.mkdirs();
     }
 
+    validatorManager = new XmlValidatorManager(props);
     loadAllProjects();
   }
 
@@ -337,7 +346,7 @@ public class ProjectManager {
     }
   }
 
-  public void uploadProject(Project project, File archive, String fileType,
+  public Map<String, ValidationReport> uploadProject(Project project, File archive, String fileType,
       User uploader) throws ProjectManagerException {
     logger.info("Uploading files to " + project.getName());
 
@@ -357,10 +366,18 @@ public class ProjectManager {
       throw new ProjectManagerException("Error unzipping file.", e);
     }
 
-    logger.info("Validating Flow for upload " + archive.getName());
-    DirectoryFlowLoader loader = new DirectoryFlowLoader(logger);
-    loader.loadProjectFlow(file);
-    if (!loader.getErrors().isEmpty()) {
+    props.put(PROJECT_ARCHIVE_FILE_PATH, archive.getAbsolutePath());
+    validatorManager.loadValidators(props, logger);
+    logger.info("Validating project " + archive.getName() + " using the registered validators "
+        + validatorManager.getValidatorsInfo().toString());
+    Map<String, ValidationReport> reports = validatorManager.validate(file);
+    ValidationStatus status = ValidationStatus.PASS;
+    for (Entry<String, ValidationReport> report : reports.entrySet()) {
+      if (report.getValue().getStatus().compareTo(status) > 0) {
+        status = report.getValue().getStatus();
+      }
+    }
+    if (status == ValidationStatus.ERROR) {
       logger.error("Error found in upload to " + project.getName()
           + ". Cleaning up.");
 
@@ -371,16 +388,10 @@ public class ProjectManager {
         e.printStackTrace();
       }
 
-      StringBuffer errorMessage = new StringBuffer();
-      errorMessage.append("Error found in upload. Cannot upload.\n");
-      for (String error : loader.getErrors()) {
-        errorMessage.append(error);
-        errorMessage.append('\n');
-      }
-
-      throw new ProjectManagerException(errorMessage.toString());
+      return reports;
     }
 
+    DirectoryFlowLoader loader = (DirectoryFlowLoader) validatorManager.getDefaultValidator();
     Map<String, Props> jobProps = loader.getJobProps();
     List<Props> propProps = loader.getProps();
 
@@ -422,6 +433,8 @@ public class ProjectManager {
         + (project.getVersion() - projectVersionRetention));
     projectLoader.cleanOlderProjectVersion(project.getId(),
         project.getVersion() - projectVersionRetention);
+
+    return reports;
   }
 
   public void updateFlow(Project project, Flow flow)
