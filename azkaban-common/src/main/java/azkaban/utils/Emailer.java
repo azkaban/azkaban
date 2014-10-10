@@ -16,7 +16,6 @@
 
 package azkaban.utils;
 
-import java.lang.String;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -32,9 +31,6 @@ import azkaban.executor.Status;
 import azkaban.executor.mail.DefaultMailCreator;
 import azkaban.executor.mail.MailCreator;
 import azkaban.sla.SlaOption;
-import azkaban.utils.AbstractMailer;
-import azkaban.utils.EmailMessage;
-import azkaban.utils.Props;
 
 public class Emailer extends AbstractMailer implements Alerter {
   private static Logger logger = Logger.getLogger(Emailer.class);
@@ -64,12 +60,14 @@ public class Emailer extends AbstractMailer implements Alerter {
     this.mailPassword = props.getString("mail.password", "");
     this.mailSender = props.getString("mail.sender", "");
     this.tls = props.getString("mail.tls", "false");
-    
+
     int mailTimeout = props.getInt("mail.timeout.millis", 10000);
     EmailMessage.setTimeout(mailTimeout);
     int connectionTimeout =
         props.getInt("mail.connection.timeout.millis", 10000);
     EmailMessage.setConnectionTimeout(connectionTimeout);
+
+    EmailMessage.setTotalAttachmentMaxSize(getAttachmentMaxSize());
 
     this.clientHostname = props.getString("jetty.hostname", "localhost");
 
@@ -138,7 +136,7 @@ public class Emailer extends AbstractMailer implements Alerter {
     message.setFromAddress(mailSender);
     message.setTLS(tls);
     message.setAuth(super.hasMailAuth());
-    
+
     ExecutionOptions option = flow.getExecutionOptions();
 
     MailCreator mailCreator =
@@ -164,7 +162,7 @@ public class Emailer extends AbstractMailer implements Alerter {
     message.setFromAddress(mailSender);
     message.setTLS(tls);
     message.setAuth(super.hasMailAuth());
-    
+
     ExecutionOptions option = flow.getExecutionOptions();
 
     MailCreator mailCreator =

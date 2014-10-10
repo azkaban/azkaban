@@ -18,6 +18,7 @@ package azkaban.utils;
 
 import java.io.File;
 import java.io.InputStream;
+import java.net.SocketTimeoutException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
@@ -36,9 +37,13 @@ import javax.mail.internet.MimeBodyPart;
 import javax.mail.internet.MimeMessage;
 import javax.mail.internet.MimeMultipart;
 
+import org.apache.log4j.Logger;
+
 import com.sun.mail.smtp.SMTPTransport;
 
 public class EmailMessage {
+  private final Logger logger = Logger.getLogger(EmailMessage.class);
+
   private static String protocol = "smtp";
   private List<String> _toAddress = new ArrayList<String>();
   private String _mailHost;
@@ -48,10 +53,13 @@ public class EmailMessage {
   private String _fromAddress;
   private String _mimeType = "text/plain";
   private String _tls;
+  private long _totalAttachmentSizeSoFar;
   private boolean _usesAuth = true;
   private StringBuffer _body = new StringBuffer();
   private static int _mailTimeout = 10000;
   private static int _connectionTimeout = 10000;
+  private static long _totalAttachmentMaxSizeInByte = 1024 * 1024 * 1024; // 1
+                                                                          // GB
 
   private ArrayList<BodyPart> _attachments = new ArrayList<BodyPart>();
 
@@ -71,6 +79,14 @@ public class EmailMessage {
 
   public static void setConnectionTimeout(int timeoutMillis) {
     _connectionTimeout = timeoutMillis;
+  }
+
+  public static void setTotalAttachmentMaxSize(long sizeInBytes) {
+    if (sizeInBytes < 1) {
+      throw new IllegalArgumentException(
+          "attachment max size can't be 0 or negative");
+    }
+    _totalAttachmentMaxSizeInByte = sizeInBytes;
   }
 
   public EmailMessage setMailHost(String host) {
@@ -112,10 +128,10 @@ public class EmailMessage {
     _tls = tls;
     return this;
   }
-  
+
   public EmailMessage setAuth(boolean auth) {
-      _usesAuth = auth;
-      return this;
+    _usesAuth = auth;
+    return this;
   }
 
   public EmailMessage addAttachment(File file) throws MessagingException {
@@ -124,6 +140,16 @@ public class EmailMessage {
 
   public EmailMessage addAttachment(String attachmentName, File file)
       throws MessagingException {
+
+    _totalAttachmentSizeSoFar += file.length();
+
+    if (_totalAttachmentSizeSoFar > _totalAttachmentMaxSizeInByte) {
+      throw new MessageAttachmentExceededMaximumSizeException(
+          "Adding attachment '" + attachmentName
+              + "' will exceed the allowed maximum size of "
+              + _totalAttachmentMaxSizeInByte);
+    }
+
     BodyPart attachmentPart = new MimeBodyPart();
     DataSource fileDataSource = new FileDataSource(file);
     attachmentPart.setDataHandler(new DataHandler(fileDataSource));
@@ -162,11 +188,11 @@ public class EmailMessage {
     checkSettings();
     Properties props = new Properties();
     if (_usesAuth) {
-        props.put("mail." + protocol + ".auth", "true");
-        props.put("mail.user", _mailUser);
-        props.put("mail.password", _mailPassword);
+      props.put("mail." + protocol + ".auth", "true");
+      props.put("mail.user", _mailUser);
+      props.put("mail.password", _mailPassword);
     } else {
-        props.put("mail." + protocol + ".auth", "false");
+      props.put("mail." + protocol + ".auth", "false");
     }
     props.put("mail." + protocol + ".host", _mailHost);
     props.put("mail." + protocol + ".timeout", _mailTimeout);
@@ -204,13 +230,34 @@ public class EmailMessage {
     // Transport transport = session.getTransport();
 
     SMTPTransport t = (SMTPTransport) session.getTransport(protocol);
-    if (_usesAuth) {
-        t.connect(_mailHost, _mailUser, _mailPassword);
-    } else {
-        t.connect();
+
+    try {
+      connectToSMTPServer(t);
+    } catch (MessagingException ste) {
+      if (ste.getCause() instanceof SocketTimeoutException) {
+        try {
+          // retry on SocketTimeoutException
+          connectToSMTPServer(t);
+          logger.info("Email retry on SocketTimeoutException succeeded");
+        } catch (MessagingException me) {
+          logger.error("Email retry on SocketTimeoutException failed", me);
+          throw me;
+        }
+      } else {
+        logger.error("Encountered issue while connecting to email server", ste);
+        throw ste;
+      }
     }
     t.sendMessage(message, message.getRecipients(Message.RecipientType.TO));
     t.close();
+  }
+
+  private void connectToSMTPServer(SMTPTransport t) throws MessagingException {
+    if (_usesAuth) {
+      t.connect(_mailHost, _mailUser, _mailPassword);
+    } else {
+      t.connect();
+    }
   }
 
   public void setBody(String body) {

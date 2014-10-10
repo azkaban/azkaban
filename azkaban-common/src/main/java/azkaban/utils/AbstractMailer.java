@@ -19,6 +19,7 @@ package azkaban.utils;
 import java.util.Collection;
 
 public class AbstractMailer {
+  private static int MB_IN_BYTES = 1048576;
   private String clientHostname;
   private int clientPort;
   private boolean usesSSL;
@@ -32,18 +33,25 @@ public class AbstractMailer {
 
   private String referenceURL;
 
+  private long attachmentMazSizeInByte;
+
   public AbstractMailer(Props props) {
     this.azkabanName = props.getString("azkaban.name", "azkaban");
     this.mailHost = props.getString("mail.host", "localhost");
     this.mailUser = props.getString("mail.user", "");
     this.mailPassword = props.getString("mail.password", "");
+    long maxAttachmentSizeInMB =
+        props.getInt("mail.max.attachment.size.mb", 100);
+
+    attachmentMazSizeInByte = maxAttachmentSizeInMB * MB_IN_BYTES;
+
     this.mailSender = props.getString("mail.sender", "");
     this.usesAuth = props.getBoolean("mail.useAuth", true);
-    
+
     this.clientHostname = props.get("server.hostname");
     this.clientPort = props.getInt("server.port");
     this.usesSSL = props.getBoolean("server.useSSL");
-    
+
     if (usesSSL) {
       referenceURL =
           "https://" + clientHostname
@@ -95,8 +103,17 @@ public class AbstractMailer {
   public String getMailSender() {
     return mailSender;
   }
-  
-  public boolean hasMailAuth(){
-      return usesAuth;
+
+  /**
+   * Attachment maximum size in bytes
+   * 
+   * @return
+   */
+  public long getAttachmentMaxSize() {
+    return attachmentMazSizeInByte;
+  }
+
+  public boolean hasMailAuth() {
+    return usesAuth;
   }
 }
