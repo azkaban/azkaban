@@ -57,6 +57,8 @@ import azkaban.project.ProjectManagerException;
 import azkaban.utils.Props;
 import azkaban.utils.PropsUtils;
 import azkaban.utils.SwapQueue;
+import azkaban.executor.mail.DefaultMailCreator;
+import azkaban.utils.Emailer;
 
 /**
  * Class that handles the running of a ExecutableFlow DAG

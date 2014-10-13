@@ -51,6 +51,9 @@ public class Emailer extends AbstractMailer implements Alerter {
   private String mailSender;
   private String azkabanName;
   private String tls;
+  private String mailAttachName;
+  private Boolean mailInlineError;
+  public static String _flow_path;
 
   public Emailer(Props props) {
     super(props);
@@ -59,6 +62,8 @@ public class Emailer extends AbstractMailer implements Alerter {
     this.mailUser = props.getString("mail.user", "");
     this.mailPassword = props.getString("mail.password", "");
     this.mailSender = props.getString("mail.sender", "");
+    this.mailAttachName = props.getString("mail.attach.name", null);
+    this.mailInlineError = props.getBoolean("mail.inline.error",false);
     this.tls = props.getString("mail.tls", "false");
 
     int mailTimeout = props.getInt("mail.timeout.millis", 10000);
@@ -122,6 +127,7 @@ public class Emailer extends AbstractMailer implements Alerter {
         mailCreator.createFirstErrorMessage(flow, message, azkabanName, scheme,
             clientHostname, clientPortNumber);
 
+
     if (mailCreated && !testMode) {
       try {
         message.sendEmail();
@@ -137,6 +143,10 @@ public class Emailer extends AbstractMailer implements Alerter {
     message.setTLS(tls);
     message.setAuth(super.hasMailAuth());
 
+    boolean mailAttached =true;
+    boolean inlineBody = true;
+    String workingDir = System.getProperty("user.dir");
+    _flow_path=workingDir+"/executions/"+flow.getExecutionId()+"/";
     ExecutionOptions option = flow.getExecutionOptions();
 
     MailCreator mailCreator =
@@ -147,6 +157,16 @@ public class Emailer extends AbstractMailer implements Alerter {
     boolean mailCreated =
         mailCreator.createErrorEmail(flow, message, azkabanName, scheme,
             clientHostname, clientPortNumber, extraReasons);
+    if(mailAttachName!=null){
+          mailAttached =
+             mailCreator.createAttachmentEmail(message, mailAttachName);
+          logger.info("Mail Attachment status : "+mailAttached);
+    }
+    if(mailInlineError) {
+          inlineBody =
+              mailCreator.createInlineMessageEmail(message);
+          logger.info("Mail Inline Body status: "+inlineBody);
+    }
 
     if (mailCreated && !testMode) {
       try {
@@ -154,6 +174,10 @@ public class Emailer extends AbstractMailer implements Alerter {
       } catch (MessagingException e) {
         logger.error("Email message send failed", e);
       }
+      if(!mailAttached)
+        logger.error("Email Attachment failed");
+      if(!inlineBody)
+        logger.error("Inline message to Email body failed");
     }
   }
 
@@ -163,6 +187,10 @@ public class Emailer extends AbstractMailer implements Alerter {
     message.setTLS(tls);
     message.setAuth(super.hasMailAuth());
 
+    boolean  mailAttached=true;
+    boolean  inlineBody=true;
+    String workingDir = System.getProperty("user.dir");
+    _flow_path=workingDir+"/executions/"+flow.getExecutionId()+"/";
     ExecutionOptions option = flow.getExecutionOptions();
 
     MailCreator mailCreator =
@@ -173,13 +201,30 @@ public class Emailer extends AbstractMailer implements Alerter {
     boolean mailCreated =
         mailCreator.createSuccessEmail(flow, message, azkabanName, scheme,
             clientHostname, clientPortNumber);
+            logger.info("Success Email created : "+mailCreated);
+    if(mailAttachName!=null){
+        mailAttached =
+             mailCreator.createAttachmentEmail(message,mailAttachName);
+        logger.info("Mail Attachment status: "+mailAttached);
+        }
+      if(mailInlineError) {
+         inlineBody =
+             mailCreator.createInlineMessageEmail(message);
+         logger.info("Mail Inline Body status: "+inlineBody);
+      }
 
     if (mailCreated && !testMode) {
       try {
+        logger.error("Sending Email ..");
         message.sendEmail();
       } catch (MessagingException e) {
         logger.error("Email message send failed", e);
       }
+      if(!mailAttached)
+        logger.error("Email Attachment failed");
+
+      if(!inlineBody)
+        logger.error("Inline message to Email body failed");
     }
   }
 
