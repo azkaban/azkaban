@@ -16,6 +16,9 @@
 
 package azkaban.executor.mail;
 
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 
@@ -31,6 +34,9 @@ public class DefaultMailCreator implements MailCreator {
   private static HashMap<String, MailCreator> registeredCreators =
       new HashMap<String, MailCreator>();
   private static MailCreator defaultCreator;
+
+  private static final DateFormat DATE_FORMATTER = new SimpleDateFormat(
+      "yyyy/MM/dd HH:mm:ss z");
 
   public static void registerCreator(String name, MailCreator creator) {
     registeredCreators.put(name, creator);
@@ -80,10 +86,10 @@ public class DefaultMailCreator implements MailCreator {
       }
 
       message.println("<table>");
-      message.println("<tr><td>Start Time</td><td>" + flow.getStartTime()
-          + "</td></tr>");
-      message.println("<tr><td>End Time</td><td>" + flow.getEndTime()
-          + "</td></tr>");
+      message.println("<tr><td>Start Time</td><td>"
+          + convertMSToString(flow.getStartTime()) + "</td></tr>");
+      message.println("<tr><td>End Time</td><td>"
+          + convertMSToString(flow.getEndTime()) + "</td></tr>");
       message.println("<tr><td>Duration</td><td>"
           + Utils.formatDuration(flow.getStartTime(), flow.getEndTime())
           + "</td></tr>");
@@ -131,10 +137,10 @@ public class DefaultMailCreator implements MailCreator {
           + "' of flow '" + flow.getFlowId() + "' has failed on " + azkabanName
           + "</h2>");
       message.println("<table>");
-      message.println("<tr><td>Start Time</td><td>" + flow.getStartTime()
-          + "</td></tr>");
-      message.println("<tr><td>End Time</td><td>" + flow.getEndTime()
-          + "</td></tr>");
+      message.println("<tr><td>Start Time</td><td>"
+          + convertMSToString(flow.getStartTime()) + "</td></tr>");
+      message.println("<tr><td>End Time</td><td>"
+          + convertMSToString(flow.getEndTime()) + "</td></tr>");
       message.println("<tr><td>Duration</td><td>"
           + Utils.formatDuration(flow.getStartTime(), flow.getEndTime())
           + "</td></tr>");
@@ -184,10 +190,10 @@ public class DefaultMailCreator implements MailCreator {
           + "' of flow '" + flow.getFlowId() + "' has succeeded on "
           + azkabanName + "</h2>");
       message.println("<table>");
-      message.println("<tr><td>Start Time</td><td>" + flow.getStartTime()
-          + "</td></tr>");
-      message.println("<tr><td>End Time</td><td>" + flow.getEndTime()
-          + "</td></tr>");
+      message.println("<tr><td>Start Time</td><td>"
+          + convertMSToString(flow.getStartTime()) + "</td></tr>");
+      message.println("<tr><td>End Time</td><td>"
+          + convertMSToString(flow.getEndTime()) + "</td></tr>");
       message.println("<tr><td>Duration</td><td>"
           + Utils.formatDuration(flow.getStartTime(), flow.getEndTime())
           + "</td></tr>");
@@ -201,5 +207,13 @@ public class DefaultMailCreator implements MailCreator {
       return true;
     }
     return false;
+  }
+
+  private static String convertMSToString(long timeInMS) {
+    if (timeInMS < 0) {
+      return "N/A";
+    } else {
+      return DATE_FORMATTER.format(new Date(timeInMS));
+    }
   }
 }
