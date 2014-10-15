@@ -359,7 +359,7 @@ public class JobRunner extends EventHandler implements Runnable {
     return false;
   }
 
-  private void finalizeLogFile() {
+  private void finalizeLogFile(int attemptNo) {
     closeLogger();
     if (logFile == null) {
       flowLogger.info("Log file for job " + this.jobId + " is null");
@@ -375,8 +375,8 @@ public class JobRunner extends EventHandler implements Runnable {
       });
       Arrays.sort(files, Collections.reverseOrder());
 
-      loader.uploadLogFile(executionId, this.node.getNestedId(),
-          node.getAttempt(), files);
+      loader.uploadLogFile(executionId, this.node.getNestedId(), attemptNo,
+          files);
     } catch (ExecutorManagerException e) {
       flowLogger.error(
           "Error writing out logs for job " + this.node.getNestedId(), e);
@@ -456,11 +456,13 @@ public class JobRunner extends EventHandler implements Runnable {
       // it being a legitimate failure.
       changeStatus(Status.KILLED);
     }
-    logInfo("Finishing job " + this.jobId + " at " + node.getEndTime()
-        + " with status " + node.getStatus());
+
+    int attemptNo = node.getAttempt();
+    logInfo("Finishing job " + this.jobId + " attempt: " + attemptNo + " at "
+        + node.getEndTime() + " with status " + node.getStatus());
 
     fireEvent(Event.create(this, Type.JOB_FINISHED), false);
-    finalizeLogFile();
+    finalizeLogFile(attemptNo);
     finalizeAttachmentFile();
     writeStatus();
   }
