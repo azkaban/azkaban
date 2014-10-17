@@ -52,7 +52,7 @@
 #end
               <div class="form-group col-xs-9">
                 <div class="input-group">
-                  <input id="search-textbox" type="text" placeholder="Project name containing..." value=#if($search_term) ${search_term} #else "" #end class="form-control input-sm" name="searchterm">
+                  <input id="search-textbox" type="text" placeholder="Project name containing..." value=#if($search_term) "$esc.html(${search_term})" #else "" #end class="form-control input-sm" name="searchterm">
                   <span class="input-group-btn">
                     <button class="btn btn-sm btn-primary">Quick Search</button>
                   </span>

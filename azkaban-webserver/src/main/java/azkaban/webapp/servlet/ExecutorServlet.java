@@ -27,12 +27,14 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.apache.commons.lang.StringEscapeUtils;
+
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutableFlowBase;
 import azkaban.executor.ExecutableNode;
 import azkaban.executor.ExecutionOptions;
-import azkaban.executor.ExecutorManagerAdapter;
 import azkaban.executor.ExecutionOptions.FailureAction;
+import azkaban.executor.ExecutorManagerAdapter;
 import azkaban.executor.ExecutorManagerException;
 import azkaban.executor.Status;
 import azkaban.flow.Flow;
@@ -44,8 +46,8 @@ import azkaban.scheduler.ScheduleManagerException;
 import azkaban.server.HttpRequestUtils;
 import azkaban.server.session.Session;
 import azkaban.user.Permission;
-import azkaban.user.User;
 import azkaban.user.Permission.Type;
+import azkaban.user.User;
 import azkaban.utils.FileIOUtils.LogData;
 import azkaban.webapp.AzkabanWebServer;
 import azkaban.webapp.plugin.PluginRegistry;
@@ -380,7 +382,7 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
       } else {
         ret.put("length", data.getLength());
         ret.put("offset", data.getOffset());
-        ret.put("data", data.getData());
+        ret.put("data", StringEscapeUtils.escapeHtml(data.getData()));
       }
     } catch (ExecutorManagerException e) {
       throw new ServletException(e);
