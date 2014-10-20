@@ -21,6 +21,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.apache.velocity.VelocityContext;
 import org.apache.velocity.app.VelocityEngine;
+import org.apache.velocity.tools.generic.EscapeTool;
 
 import azkaban.utils.Utils;
 
@@ -52,6 +53,7 @@ public class Page {
     this.engine = Utils.nonNull(engine);
     this.template = Utils.nonNull(template);
     this.context = new VelocityContext();
+    this.context.put("esc", new EscapeTool());
     this.context.put("session", request.getSession(true));
     this.context.put("context", request.getContextPath());
   }
