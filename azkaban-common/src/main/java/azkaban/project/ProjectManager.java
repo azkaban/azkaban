@@ -76,6 +76,9 @@ public class ProjectManager {
       tempDir.mkdirs();
     }
 
+    // The prop passed to XmlValidatorManager is used to initialize all the validators
+    // Each validator will take certain key/value pairs from the prop to initialize
+    // itself.
     Props prop = new Props(props);
     prop.put(PROJECT_ARCHIVE_FILE_PATH, "initialize");
     validatorManager = new XmlValidatorManager(prop);
@@ -368,6 +371,10 @@ public class ProjectManager {
       throw new ProjectManagerException("Error unzipping file.", e);
     }
 
+    // Since props is an instance variable of ProjectManager, and each invocation to the
+    // uploadProject manager needs to pass a different value for the PROJECT_ARCHIVE_FILE_PATH
+    // key, it is necessary to create a new instance of Props to make sure these different
+    // values are isolated from each other.
     Props prop = new Props(props);
     prop.put(PROJECT_ARCHIVE_FILE_PATH, archive.getAbsolutePath());
     validatorManager.loadValidators(prop, logger);
