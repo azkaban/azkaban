@@ -1458,16 +1458,18 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
         for (Entry<String, ValidationReport> reportEntry : reports.entrySet()) {
           ValidationReport report = reportEntry.getValue();
           if (!report.getErrorMsgs().isEmpty()) {
-            message.append("Validator " + reportEntry.getKey() + " reports errors:\n");
+            message.append("Validator " + reportEntry.getKey() + " reports errors:<ul>");
             for (String msg : report.getErrorMsgs()) {
-              message.append(msg + "\n");
+              message.append("<li>" + msg + "</li>");
             }
+            message.append("</ul>");
           }
           if (!report.getWarningMsgs().isEmpty()) {
-            message.append("Validator " + reportEntry.getKey() + " reports warnings:\n");
+            message.append("Validator " + reportEntry.getKey() + " reports warnings:<br><ul>");
             for (String msg : report.getWarningMsgs()) {
-              message.append(msg + "\n");
+              message.append("<li>" + msg + "</li>");
             }
+            message.append("</ul>");
           }
         }
         if (message.length() > 0) {
@@ -1477,9 +1479,9 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
         logger.info("Installation Failed.", e);
         String error = e.getMessage();
         if (error.length() > 512) {
-          error = error.substring(0, 512) + "\nToo many errors to display.\n";
+          error = error.substring(0, 512) + "<br>Too many errors to display.<br>";
         }
-        ret.put("error", "Installation Failed.\n" + error);
+        ret.put("error", "Installation Failed.<br>" + error);
       } finally {
         if (tempDir.exists()) {
           FileUtils.deleteDirectory(tempDir);
