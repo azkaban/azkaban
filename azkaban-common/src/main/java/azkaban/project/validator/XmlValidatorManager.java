@@ -5,7 +5,6 @@ import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.net.URLClassLoader;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -81,7 +80,8 @@ public class XmlValidatorManager implements ValidatorManager {
     } catch (MalformedURLException e) {
       throw new ValidatorManagerException(e);
     }
-    validatorLoader = new URLClassLoader(resources.toArray(new URL[resources.size()]));
+    validatorLoader = new ValidatorClassLoader(resources.toArray(new URL[resources.size()]),
+        XmlValidatorManager.class.getClassLoader());
 
     // Test loading the validators specified in the xml file.
     try {
@@ -221,6 +221,11 @@ public class XmlValidatorManager implements ValidatorManager {
       info.add(key);
     }
     return info;
+  }
+
+  @Override
+  public ClassLoader getClassLoader() {
+    return validatorLoader;
   }
 
 }

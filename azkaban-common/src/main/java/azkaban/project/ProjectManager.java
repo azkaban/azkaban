@@ -76,7 +76,9 @@ public class ProjectManager {
       tempDir.mkdirs();
     }
 
-    validatorManager = new XmlValidatorManager(props);
+    Props prop = new Props(props);
+    prop.put(PROJECT_ARCHIVE_FILE_PATH, "initialize");
+    validatorManager = new XmlValidatorManager(prop);
     loadAllProjects();
   }
 
@@ -366,11 +368,17 @@ public class ProjectManager {
       throw new ProjectManagerException("Error unzipping file.", e);
     }
 
-    props.put(PROJECT_ARCHIVE_FILE_PATH, archive.getAbsolutePath());
-    validatorManager.loadValidators(props, logger);
+    Props prop = new Props(props);
+    prop.put(PROJECT_ARCHIVE_FILE_PATH, archive.getAbsolutePath());
+    validatorManager.loadValidators(prop, logger);
     logger.info("Validating project " + archive.getName() + " using the registered validators "
         + validatorManager.getValidatorsInfo().toString());
+    ClassLoader currentClassLoader = Thread.currentThread().getContextClassLoader();
+    // Switching the classloader to ValidatorClassLoader which prefers the validator's classpath
+    // over the parent classloader's classpath.
+    Thread.currentThread().setContextClassLoader(validatorManager.getClassLoader());
     Map<String, ValidationReport> reports = validatorManager.validate(file);
+    Thread.currentThread().setContextClassLoader(currentClassLoader);
     ValidationStatus status = ValidationStatus.PASS;
     for (Entry<String, ValidationReport> report : reports.entrySet()) {
       if (report.getValue().getStatus().compareTo(status) > 0) {
