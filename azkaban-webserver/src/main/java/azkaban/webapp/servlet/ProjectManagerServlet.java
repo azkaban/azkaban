@@ -1465,7 +1465,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
             message.append("</ul>");
           }
           if (!report.getWarningMsgs().isEmpty()) {
-            message.append("Validator " + reportEntry.getKey() + " reports warnings:<br><ul>");
+            message.append("Validator " + reportEntry.getKey() + " reports warnings:<ul>");
             for (String msg : report.getWarningMsgs()) {
               message.append("<li>" + msg + "</li>");
             }

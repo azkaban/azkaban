@@ -48,9 +48,4 @@ public interface ValidatorManager {
    * @return
    */
   List<String> getValidatorsInfo();
-
-  /**
-   * Returns the classloader used to load the validator classes
-   */
-  ClassLoader getClassLoader();
 }
