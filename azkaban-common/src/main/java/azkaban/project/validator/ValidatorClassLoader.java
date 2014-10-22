@@ -10,7 +10,6 @@ import java.util.List;
 
 import org.apache.log4j.Logger;
 
-import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Splitter;
 
 /**
@@ -44,7 +43,6 @@ public class ValidatorClassLoader extends URLClassLoader {
     this(constructUrlsFromClasspath(classpath), parent);
   }
 
-  @VisibleForTesting
   static URL[] constructUrlsFromClasspath(String classpath)
       throws MalformedURLException {
     List<URL> urls = new ArrayList<URL>();
