@@ -105,7 +105,8 @@ public class XmlValidatorManager implements ValidatorManager {
       for (File f : validatorDir.listFiles()) {
         if (f.getName().endsWith(".jar")) {
           resources.add(f.toURI().toURL());
-          if (resourceTimestamps.get(f.getName()) != f.lastModified()) {
+          if (resourceTimestamps.get(f.getName()) == null
+              || resourceTimestamps.get(f.getName()) != f.lastModified()) {
             reloadResources = true;
             logger.info("Resource " + f.getName() + " is updated. Reload the classloader.");
             resourceTimestamps.put(f.getName(), f.lastModified());
