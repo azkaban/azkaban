@@ -7,6 +7,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -52,6 +53,8 @@ public class XmlValidatorManager implements ValidatorManager {
   public static final String DEFAULT_VALIDATOR_KEY = "Directory Flow";
 
   private Map<String, ProjectValidator> validators;
+  private Map<String, Long> resourceTimestamps;
+  private String validatorDirPath;
   private ClassLoader validatorLoader;
 
   /**
@@ -62,18 +65,20 @@ public class XmlValidatorManager implements ValidatorManager {
    * @param props
    */
   public XmlValidatorManager(Props props) {
-    String validatorDirPath = props.getString(VALIDATOR_PLUGIN_DIR, DEFAULT_VALIDATOR_DIR);
+    validatorDirPath = props.getString(VALIDATOR_PLUGIN_DIR, DEFAULT_VALIDATOR_DIR);
     File validatorDir = new File(validatorDirPath);
     if (!validatorDir.canRead() || !validatorDir.isDirectory()) {
       throw new ValidatorManagerException("Validator directory " + validatorDirPath
           + " does not exist or is not a directory.");
     }
 
+    resourceTimestamps = new HashMap<String, Long>();
     List<URL> resources = new ArrayList<URL>();
     try {
       logger.info("Adding validator resources.");
       for (File f : validatorDir.listFiles()) {
         if (f.getName().endsWith(".jar")) {
+          resourceTimestamps.put(f.getName(), f.lastModified());
           resources.add(f.toURI().toURL());
           logger.debug("adding to classpath " + f.toURI().toURL());
         }
@@ -89,6 +94,31 @@ public class XmlValidatorManager implements ValidatorManager {
     } catch (Exception e) {
       logger.error("Cannot load all the validators.");
       throw new ValidatorManagerException(e);
+    }
+  }
+
+  private void checkResources() {
+    File validatorDir = new File(validatorDirPath);
+    List<URL> resources = new ArrayList<URL>();
+    boolean reloadResources = false;
+    try {
+      for (File f : validatorDir.listFiles()) {
+        if (f.getName().endsWith(".jar")) {
+          resources.add(f.toURI().toURL());
+          if (resourceTimestamps.get(f.getName()) == null
+              || resourceTimestamps.get(f.getName()) != f.lastModified()) {
+            reloadResources = true;
+            logger.info("Resource " + f.getName() + " is updated. Reload the classloader.");
+            resourceTimestamps.put(f.getName(), f.lastModified());
+          }
+        }
+      }
+    } catch (MalformedURLException e) {
+      throw new ValidatorManagerException(e);
+    }
+
+    if (reloadResources) {
+      validatorLoader = new URLClassLoader(resources.toArray(new URL[resources.size()]));
     }
   }
 
@@ -118,6 +148,9 @@ public class XmlValidatorManager implements ValidatorManager {
       logger.error("Azkaban validator configuration file " + xmlPath + " does not exist.");
       return;
     }
+
+    // Check for updated validator JAR files
+    checkResources();
 
     // Creating the document builder to parse xml.
     DocumentBuilderFactory docBuilderFactory =
