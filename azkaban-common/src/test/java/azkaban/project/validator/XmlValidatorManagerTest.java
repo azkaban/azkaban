@@ -15,13 +15,17 @@ public class XmlValidatorManagerTest {
 
   /**
    * Test that if the validator directory does not exist, XmlValidatorManager
-   * should throw an exception.
+   * should still load the default validator.
    */
-  @Test(expected=ValidatorManagerException.class)
+  @Test
   public void testNoValidatorsDir() {
     Props props = new Props(baseProps);
 
-    new XmlValidatorManager(props);
+    XmlValidatorManager manager = new XmlValidatorManager(props);
+    assertEquals("XmlValidatorManager should contain only the default validator when no xml configuration "
+        + "file is present.", manager.getValidatorsInfo().size(), 1);
+    assertEquals("XmlValidatorManager should contain only the default validator when no xml configuration "
+        + "file is present.", manager.getValidatorsInfo().get(0), XmlValidatorManager.DEFAULT_VALIDATOR_KEY);
   }
 
   /**
