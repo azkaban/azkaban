@@ -68,7 +68,7 @@ public class XmlValidatorManager implements ValidatorManager {
     validatorDirPath = props.getString(VALIDATOR_PLUGIN_DIR, DEFAULT_VALIDATOR_DIR);
     File validatorDir = new File(validatorDirPath);
     if (!validatorDir.canRead() || !validatorDir.isDirectory()) {
-      throw new ValidatorManagerException("Validator directory " + validatorDirPath
+      logger.warn("Validator directory " + validatorDirPath
           + " does not exist or is not a directory.");
     }
 
@@ -76,11 +76,14 @@ public class XmlValidatorManager implements ValidatorManager {
     List<URL> resources = new ArrayList<URL>();
     try {
       logger.info("Adding validator resources.");
-      for (File f : validatorDir.listFiles()) {
-        if (f.getName().endsWith(".jar")) {
-          resourceTimestamps.put(f.getName(), f.lastModified());
-          resources.add(f.toURI().toURL());
-          logger.debug("adding to classpath " + f.toURI().toURL());
+      // Find JAR files only if the validator directory exists
+      if (validatorDir.canRead() && validatorDir.isDirectory()) {
+        for (File f : validatorDir.listFiles()) {
+          if (f.getName().endsWith(".jar")) {
+            resourceTimestamps.put(f.getName(), f.lastModified());
+            resources.add(f.toURI().toURL());
+            logger.debug("adding to classpath " + f.toURI().toURL());
+          }
         }
       }
     } catch (MalformedURLException e) {
@@ -102,14 +105,16 @@ public class XmlValidatorManager implements ValidatorManager {
     List<URL> resources = new ArrayList<URL>();
     boolean reloadResources = false;
     try {
-      for (File f : validatorDir.listFiles()) {
-        if (f.getName().endsWith(".jar")) {
-          resources.add(f.toURI().toURL());
-          if (resourceTimestamps.get(f.getName()) == null
-              || resourceTimestamps.get(f.getName()) != f.lastModified()) {
-            reloadResources = true;
-            logger.info("Resource " + f.getName() + " is updated. Reload the classloader.");
-            resourceTimestamps.put(f.getName(), f.lastModified());
+      if (validatorDir.canRead() && validatorDir.isDirectory()) {
+        for (File f : validatorDir.listFiles()) {
+          if (f.getName().endsWith(".jar")) {
+            resources.add(f.toURI().toURL());
+            if (resourceTimestamps.get(f.getName()) == null
+                || resourceTimestamps.get(f.getName()) != f.lastModified()) {
+              reloadResources = true;
+              logger.info("Resource " + f.getName() + " is updated. Reload the classloader.");
+              resourceTimestamps.put(f.getName(), f.lastModified());
+            }
           }
         }
       }
