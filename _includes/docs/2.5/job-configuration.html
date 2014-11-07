@@ -162,6 +162,17 @@ param2=${param1}
 </pre>
 
 <p>In the previous example, before <code>myjob</code> is run, <code>foo</code> will equal <code>bar</code> and <code>param2</code> will equal <code>mytest</code>.</p>
+<p>
+A parameter cannot contain spaces. Following <code>invalid.job</code> is an example of incorrect parameter name.
+</p>
+
+<pre class="code">
+# invalid.job
+type=commandt
+command.1=${wh oa mi}
+command.2=${whoami }
+</pre>
+
 
 <h3>Parameter Passing</h3>
 
