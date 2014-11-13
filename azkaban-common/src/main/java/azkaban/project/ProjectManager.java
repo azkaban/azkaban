@@ -54,7 +54,6 @@ public class ProjectManager {
   private ConcurrentHashMap<String, Project> projectsByName =
       new ConcurrentHashMap<String, Project>();
   private final ProjectLoader projectLoader;
-  private final ValidatorManager validatorManager;
   private final Props props;
   private final File tempDir;
   private final int projectVersionRetention;
@@ -81,7 +80,6 @@ public class ProjectManager {
     // itself.
     Props prop = new Props(props);
     prop.put(PROJECT_ARCHIVE_FILE_PATH, "initialize");
-    validatorManager = new XmlValidatorManager(prop);
     loadAllProjects();
   }
 
@@ -377,7 +375,17 @@ public class ProjectManager {
     // values are isolated from each other.
     Props prop = new Props(props);
     prop.put(PROJECT_ARCHIVE_FILE_PATH, archive.getAbsolutePath());
-    validatorManager.loadValidators(prop, logger);
+    // Basically, we want to make sure that for different invocations to the uploadProject method,
+    // the validators are using different values for the PROJECT_ARCHIVE_FILE_PATH configuration key.
+    // In addition, we want to reload the validator objects for each upload, so that
+    // we can change the validator configuration files without having to restart Azkaban web server.
+    // If the XmlValidatorManager is an instance variable, 2 consecutive invocations to the uploadProject
+    // method might cause the second one to overwrite the PROJECT_ARCHIVE_FILE_PATH configuration parameter
+    // of the first, thus causing a wrong archive file path to be passed to the validators. Creating a
+    // separate XmlValidatorManager object for each upload will prevent this issue without having to add
+    // synchronization between uploads. Since we're already reloading the XML config file and creating
+    // validator objects for each upload, this does not add too much additional overhead.
+    ValidatorManager validatorManager = new XmlValidatorManager(prop);
     logger.info("Validating project " + archive.getName() + " using the registered validators "
         + validatorManager.getValidatorsInfo().toString());
     Map<String, ValidationReport> reports = validatorManager.validate(file);
