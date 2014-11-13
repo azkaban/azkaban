@@ -52,10 +52,11 @@ public class XmlValidatorManager implements ValidatorManager {
   public static final String ITEM_TAG = "property";
   public static final String DEFAULT_VALIDATOR_KEY = "Directory Flow";
 
+  private static Map<String, Long> resourceTimestamps = new HashMap<String, Long>();
+  private static ClassLoader validatorLoader;
+
   private Map<String, ProjectValidator> validators;
-  private Map<String, Long> resourceTimestamps;
   private String validatorDirPath;
-  private ClassLoader validatorLoader;
 
   /**
    * Load the validator plugins from the validator directory (default being validators/) into
@@ -72,26 +73,10 @@ public class XmlValidatorManager implements ValidatorManager {
           + " does not exist or is not a directory.");
     }
 
-    resourceTimestamps = new HashMap<String, Long>();
-    List<URL> resources = new ArrayList<URL>();
-    try {
-      logger.info("Adding validator resources.");
-      // Find JAR files only if the validator directory exists
-      if (validatorDir.canRead() && validatorDir.isDirectory()) {
-        for (File f : validatorDir.listFiles()) {
-          if (f.getName().endsWith(".jar")) {
-            resourceTimestamps.put(f.getName(), f.lastModified());
-            resources.add(f.toURI().toURL());
-            logger.debug("adding to classpath " + f.toURI().toURL());
-          }
-        }
-      }
-    } catch (MalformedURLException e) {
-      throw new ValidatorManagerException(e);
-    }
-    validatorLoader = new URLClassLoader(resources.toArray(new URL[resources.size()]));
+    // Check for updated validator JAR files
+    checkResources();
 
-    // Test loading the validators specified in the xml file.
+    // Load the validators specified in the xml file.
     try {
       loadValidators(props, logger);
     } catch (Exception e) {
@@ -153,9 +138,6 @@ public class XmlValidatorManager implements ValidatorManager {
       logger.error("Azkaban validator configuration file " + xmlPath + " does not exist.");
       return;
     }
-
-    // Check for updated validator JAR files
-    checkResources();
 
     // Creating the document builder to parse xml.
     DocumentBuilderFactory docBuilderFactory =
