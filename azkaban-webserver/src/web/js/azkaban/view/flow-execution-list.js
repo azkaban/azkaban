@@ -145,7 +145,7 @@ azkaban.ExecutionListView = Backbone.View.extend({
             $(attemptBox).bind("contextmenu", attemptRightClick);
 
             $(progressBar).before(attemptBox);
-            attemptBox.job = node.id;
+            attemptBox.job = node.nestedId;
             attemptBox.attempt = a;
           }
         }
@@ -205,7 +205,7 @@ azkaban.ExecutionListView = Backbone.View.extend({
 
       // Add all the attempts
       if (node.pastAttempts) {
-        var logURL = contextURL + "/executor?execid=" + execId + "&job=" + node.id + "&attempt=" +  node.pastAttempts.length;
+        var logURL = contextURL + "/executor?execid=" + execId + "&job=" + node.nestedId + "&attempt=" +  node.pastAttempts.length;
         var anchor = $(tr).find("> td.details > a");
         if (anchor.length != 0) {
           $(anchor).attr("href", logURL);
