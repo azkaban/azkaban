@@ -115,7 +115,7 @@ public class XmlValidatorManager implements ValidatorManager {
       } catch (IOException e) {
         logger.error("Cannot reload validator classloader because failure "
             + "to close the validator classloader.");
-        throw new ValidatorManagerException(e);
+        // We do not throw the ValidatorManagerException because we do not want to crash Azkaban at runtime.
       }
       validatorLoader = new URLClassLoader(resources.toArray(new URL[resources.size()]));
     }
