@@ -28,7 +28,7 @@ public class ValidatorClassLoader extends URLClassLoader {
     super(urls);
   }
 
-  public void close() {
+  public void close() throws ValidatorManagerException {
     setJarFileNames2Close.clear();
     closeClassLoader(this);
     finalizeNativeLibs(this);
@@ -39,13 +39,13 @@ public class ValidatorClassLoader extends URLClassLoader {
    * cleanup jar file factory cache
    */
   @SuppressWarnings({ "nls", "rawtypes" })
-  public boolean cleanupJarFileFactory() {
+  public boolean cleanupJarFileFactory() throws ValidatorManagerException {
     boolean res = false;
     Class classJarURLConnection = null;
     try {
       classJarURLConnection = Class.forName("sun.net.www.protocol.jar.JarURLConnection");
     } catch (ClassNotFoundException e) {
-      //ignore
+      throw new ValidatorManagerException(e);
     }
     if (classJarURLConnection == null) {
       return res;
@@ -54,7 +54,7 @@ public class ValidatorClassLoader extends URLClassLoader {
     try {
       f = classJarURLConnection.getDeclaredField("factory");
     } catch (NoSuchFieldException e) {
-      //ignore
+      throw new ValidatorManagerException(e);
     }
     if (f == null) {
       return res;
@@ -64,13 +64,13 @@ public class ValidatorClassLoader extends URLClassLoader {
     try {
       obj = f.get(null);
     } catch (IllegalAccessException e) {
-      //ignore
+      throw new ValidatorManagerException(e);
     }
     if (obj == null) {
       return res;
     }
     Class classJarFileFactory = obj.getClass();
-    //
+
     HashMap fileCache = null;
     try {
       f = classJarFileFactory.getDeclaredField("fileCache");
@@ -81,7 +81,7 @@ public class ValidatorClassLoader extends URLClassLoader {
       }
     } catch (NoSuchFieldException e) {
     } catch (IllegalAccessException e) {
-      //ignore
+      throw new ValidatorManagerException(e);
     }
     HashMap urlCache = null;
     try {
@@ -93,7 +93,7 @@ public class ValidatorClassLoader extends URLClassLoader {
       }
     } catch (NoSuchFieldException e) {
     } catch (IllegalAccessException e) {
-      //ignore
+      throw new ValidatorManagerException(e);
     }
     if (urlCache != null) {
       HashMap urlCacheTmp = (HashMap) urlCache.clone();
@@ -108,7 +108,7 @@ public class ValidatorClassLoader extends URLClassLoader {
           try {
             jarFile.close();
           } catch (IOException e) {
-            //ignore
+            throw new ValidatorManagerException(e);
           }
           if (fileCache != null) {
             fileCache.remove(urlCache.get(jarFile));
@@ -118,7 +118,6 @@ public class ValidatorClassLoader extends URLClassLoader {
       }
       res = true;
     } else if (fileCache != null) {
-      // urlCache := null
       HashMap fileCacheTmp = (HashMap) fileCache.clone();
       Iterator it = fileCacheTmp.keySet().iterator();
       while (it.hasNext()) {
@@ -132,7 +131,7 @@ public class ValidatorClassLoader extends URLClassLoader {
           try {
             jarFile.close();
           } catch (IOException e) {
-            //ignore
+            throw new ValidatorManagerException(e);
           }
           fileCache.remove(key);
         }
@@ -149,7 +148,7 @@ public class ValidatorClassLoader extends URLClassLoader {
    * @return
    */
   @SuppressWarnings({ "nls", "rawtypes" })
-  public boolean closeClassLoader(ClassLoader cl) {
+  public boolean closeClassLoader(ClassLoader cl) throws ValidatorManagerException {
     boolean res = false;
     if (cl == null) {
       return res;
@@ -158,24 +157,24 @@ public class ValidatorClassLoader extends URLClassLoader {
     Field f = null;
     try {
       f = classURLClassLoader.getDeclaredField("ucp");
-    } catch (NoSuchFieldException e1) {
-      //ignore
+    } catch (NoSuchFieldException e) {
+      throw new ValidatorManagerException(e);
     }
     if (f != null) {
       f.setAccessible(true);
       Object obj = null;
       try {
         obj = f.get(cl);
-      } catch (IllegalAccessException e1) {
-        //ignore
+      } catch (IllegalAccessException e) {
+        throw new ValidatorManagerException(e);
       }
       if (obj != null) {
         final Object ucp = obj;
         f = null;
         try {
           f = ucp.getClass().getDeclaredField("loaders");
-        } catch (NoSuchFieldException e1) {
-          //ignore
+        } catch (NoSuchFieldException e) {
+          throw new ValidatorManagerException(e);
         }
         if (f != null) {
           f.setAccessible(true);
@@ -183,8 +182,8 @@ public class ValidatorClassLoader extends URLClassLoader {
           try {
             loaders = (ArrayList) f.get(ucp);
             res = true;
-          } catch (IllegalAccessException e1) {
-            //ignore
+          } catch (IllegalAccessException e) {
+            throw new ValidatorManagerException(e);
           }
           for (int i = 0; loaders != null && i < loaders.size(); i++) {
             obj = loaders.get(i);
@@ -192,14 +191,14 @@ public class ValidatorClassLoader extends URLClassLoader {
             try {
               f = obj.getClass().getDeclaredField("jar");
             } catch (NoSuchFieldException e) {
-              //ignore
+              throw new ValidatorManagerException(e);
             }
             if (f != null) {
               f.setAccessible(true);
               try {
                 obj = f.get(obj);
-              } catch (IllegalAccessException e1) {
-                // ignore
+              } catch (IllegalAccessException e) {
+                throw new ValidatorManagerException(e);
               }
               if (obj instanceof JarFile) {
                 final JarFile jarFile = (JarFile) obj;
@@ -207,7 +206,7 @@ public class ValidatorClassLoader extends URLClassLoader {
                 try {
                   jarFile.close();
                 } catch (IOException e) {
-                  // ignore
+                  throw new ValidatorManagerException(e);
                 }
               }
             }
@@ -224,14 +223,14 @@ public class ValidatorClassLoader extends URLClassLoader {
    * @return
    */
   @SuppressWarnings({ "nls", "rawtypes" })
-  public boolean finalizeNativeLibs(ClassLoader cl) {
+  public boolean finalizeNativeLibs(ClassLoader cl) throws ValidatorManagerException {
     boolean res = false;
     Class classClassLoader = ClassLoader.class;
     java.lang.reflect.Field nativeLibraries = null;
     try {
       nativeLibraries = classClassLoader.getDeclaredField("nativeLibraries");
-    } catch (NoSuchFieldException e1) {
-      //ignore
+    } catch (NoSuchFieldException e) {
+      throw new ValidatorManagerException(e);
     }
     if (nativeLibraries == null) {
       return res;
@@ -240,8 +239,8 @@ public class ValidatorClassLoader extends URLClassLoader {
     Object obj = null;
     try {
       obj = nativeLibraries.get(cl);
-    } catch (IllegalAccessException e1) {
-      //ignore
+    } catch (IllegalAccessException e) {
+      throw new ValidatorManagerException(e);
     }
     if (!(obj instanceof Vector)) {
       return res;
@@ -253,7 +252,7 @@ public class ValidatorClassLoader extends URLClassLoader {
       try {
         finalize = lib.getClass().getDeclaredMethod("finalize", new Class[0]);
       } catch (NoSuchMethodException e) {
-        //ignore
+        throw new ValidatorManagerException(e);
       }
       if (finalize != null) {
         finalize.setAccessible(true);
@@ -261,7 +260,7 @@ public class ValidatorClassLoader extends URLClassLoader {
           finalize.invoke(lib, new Object[0]);
         } catch (IllegalAccessException e) {
         } catch (InvocationTargetException e) {
-          //ignore
+          throw new ValidatorManagerException(e);
         }
       }
     }
