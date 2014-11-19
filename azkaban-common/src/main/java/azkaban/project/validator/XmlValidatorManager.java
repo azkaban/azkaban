@@ -108,9 +108,14 @@ public class XmlValidatorManager implements ValidatorManager {
 
     if (reloadResources) {
       if (validatorLoader != null) {
+        try {
         // Since we cannot use Java 7 feature inside Azkaban (....), we need a customized class loader
         // that does the close for us.
-        validatorLoader.close();
+          validatorLoader.close();
+        } catch (ValidatorManagerException e) {
+          logger.error(e.getMessage(), e);
+          // We do not throw the ValidatorManagerException because we do not want to crash Azkaban at runtime.
+        }
       }
       validatorLoader = new ValidatorClassLoader(resources.toArray(new URL[resources.size()]));
     }
