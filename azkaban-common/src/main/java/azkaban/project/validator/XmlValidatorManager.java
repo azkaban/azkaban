@@ -113,7 +113,8 @@ public class XmlValidatorManager implements ValidatorManager {
         // that does the close for us.
           validatorLoader.close();
         } catch (ValidatorManagerException e) {
-          logger.error(e.getMessage(), e);
+          logger.error("Cannot reload validator classloader because failure "
+              + "to close the validator classloader.", e);
           // We do not throw the ValidatorManagerException because we do not want to crash Azkaban at runtime.
         }
       }
