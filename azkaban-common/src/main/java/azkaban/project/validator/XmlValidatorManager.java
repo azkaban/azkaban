@@ -113,7 +113,8 @@ public class XmlValidatorManager implements ValidatorManager {
           validatorLoader.close();
         }
       } catch (IOException e) {
-        logger.error("Cannot reload validator classloader.");
+        logger.error("Cannot reload validator classloader because failure "
+            + "to close the validator classloader.");
         throw new ValidatorManagerException(e);
       }
       validatorLoader = new URLClassLoader(resources.toArray(new URL[resources.size()]));
