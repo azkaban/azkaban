@@ -53,7 +53,7 @@ public class XmlValidatorManager implements ValidatorManager {
   public static final String DEFAULT_VALIDATOR_KEY = "Directory Flow";
 
   private static Map<String, Long> resourceTimestamps = new HashMap<String, Long>();
-  private static ClassLoader validatorLoader;
+  private static URLClassLoader validatorLoader;
 
   private Map<String, ProjectValidator> validators;
   private String validatorDirPath;
@@ -108,6 +108,14 @@ public class XmlValidatorManager implements ValidatorManager {
     }
 
     if (reloadResources) {
+      try {
+        if (validatorLoader != null) {
+          validatorLoader.close();
+        }
+      } catch (IOException e) {
+        logger.error("Cannot reload validator classloader.");
+        throw new ValidatorManagerException(e);
+      }
       validatorLoader = new URLClassLoader(resources.toArray(new URL[resources.size()]));
     }
   }
