@@ -80,6 +80,7 @@ public class ValidatorClassLoader extends URLClassLoader {
         fileCache = (HashMap) obj;
       }
     } catch (NoSuchFieldException e) {
+      throw new ValidatorManagerException(e);
     } catch (IllegalAccessException e) {
       throw new ValidatorManagerException(e);
     }
@@ -92,6 +93,7 @@ public class ValidatorClassLoader extends URLClassLoader {
         urlCache = (HashMap) obj;
       }
     } catch (NoSuchFieldException e) {
+      throw new ValidatorManagerException(e);
     } catch (IllegalAccessException e) {
       throw new ValidatorManagerException(e);
     }
@@ -259,6 +261,7 @@ public class ValidatorClassLoader extends URLClassLoader {
         try {
           finalize.invoke(lib, new Object[0]);
         } catch (IllegalAccessException e) {
+          throw new ValidatorManagerException(e);
         } catch (InvocationTargetException e) {
           throw new ValidatorManagerException(e);
         }
