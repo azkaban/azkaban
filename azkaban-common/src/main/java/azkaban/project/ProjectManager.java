@@ -35,6 +35,7 @@ import azkaban.flow.Flow;
 import azkaban.project.ProjectLogEvent.EventType;
 import azkaban.project.validator.ValidationStatus;
 import azkaban.project.validator.ValidationReport;
+import azkaban.project.validator.ValidatorConfigs;
 import azkaban.project.validator.ValidatorManager;
 import azkaban.project.validator.XmlValidatorManager;
 import azkaban.user.Permission;
@@ -47,7 +48,6 @@ import azkaban.utils.Utils;
 public class ProjectManager {
   private static final Logger logger = Logger.getLogger(ProjectManager.class);
 
-  public static final String PROJECT_ARCHIVE_FILE_PATH = "project.archive.file.path";
 
   private ConcurrentHashMap<Integer, Project> projectsById =
       new ConcurrentHashMap<Integer, Project>();
@@ -79,7 +79,7 @@ public class ProjectManager {
     // Each validator will take certain key/value pairs from the prop to initialize
     // itself.
     Props prop = new Props(props);
-    prop.put(PROJECT_ARCHIVE_FILE_PATH, "initialize");
+    prop.put(ValidatorConfigs.PROJECT_ARCHIVE_FILE_PATH, "initialize");
     loadAllProjects();
   }
 
@@ -116,6 +116,10 @@ public class ProjectManager {
 
   public List<String> getProjectNames() {
     return new ArrayList<String>(projectsByName.keySet());
+  }
+
+  public Props getProps() {
+    return props;
   }
 
   public List<Project> getUserProjects(User user) {
@@ -350,7 +354,7 @@ public class ProjectManager {
   }
 
   public Map<String, ValidationReport> uploadProject(Project project, File archive, String fileType,
-      User uploader) throws ProjectManagerException {
+      User uploader, Props additionalProp) throws ProjectManagerException {
     logger.info("Uploading files to " + project.getName());
 
     // Unzip.
@@ -374,7 +378,8 @@ public class ProjectManager {
     // key, it is necessary to create a new instance of Props to make sure these different
     // values are isolated from each other.
     Props prop = new Props(props);
-    prop.put(PROJECT_ARCHIVE_FILE_PATH, archive.getAbsolutePath());
+    prop.putAll(additionalProp);
+    prop.put(ValidatorConfigs.PROJECT_ARCHIVE_FILE_PATH, archive.getAbsolutePath());
     // Basically, we want to make sure that for different invocations to the uploadProject method,
     // the validators are using different values for the PROJECT_ARCHIVE_FILE_PATH configuration key.
     // In addition, we want to reload the validator objects for each upload, so that

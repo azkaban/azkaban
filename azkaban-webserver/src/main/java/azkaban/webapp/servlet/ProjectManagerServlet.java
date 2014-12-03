@@ -58,6 +58,7 @@ import azkaban.project.ProjectLogEvent;
 import azkaban.project.ProjectManager;
 import azkaban.project.ProjectManagerException;
 import azkaban.project.validator.ValidationReport;
+import azkaban.project.validator.ValidatorConfigs;
 import azkaban.scheduler.Schedule;
 import azkaban.scheduler.ScheduleManager;
 import azkaban.scheduler.ScheduleManagerException;
@@ -1340,6 +1341,13 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
             project.getUsersWithPermission(Type.ADMIN), ","));
         Permission perm = this.getPermissionObject(project, user, Type.ADMIN);
         page.add("userpermission", perm);
+        page.add("validatorFixPrompt", projectManager.getProps()
+            .getBoolean(ValidatorConfigs.VALIDATOR_AUTO_FIX_PROMPT_FLAG_PARAM,
+                ValidatorConfigs.DEFAULT_VALIDATOR_AUTO_FIX_PROMPT_FLAG));
+        page.add("validatorFixLabel", projectManager.getProps()
+            .get(ValidatorConfigs.VALIDATOR_AUTO_FIX_PROMPT_LABEL_PARAM));
+        page.add("validatorFixLink", projectManager.getProps()
+            .get(ValidatorConfigs.VALIDATOR_AUTO_FIX_PROMPT_LINK_PARAM));
 
         boolean adminPerm = perm.isPermissionSet(Type.ADMIN);
         if (adminPerm) {
@@ -1414,6 +1422,13 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
     User user = session.getUser();
     String projectName = (String) multipart.get("project");
     Project project = projectManager.getProject(projectName);
+    String autoFix = (String) multipart.get("fix");
+    Props prop = new Props();
+    if (autoFix == null) {
+      prop.put(ValidatorConfigs.CUSTOM_AUTO_FIX_FLAG_PARAM, "false");
+    } else if (autoFix.equals("on")) {
+      prop.put(ValidatorConfigs.CUSTOM_AUTO_FIX_FLAG_PARAM, "true");
+    }
 
     if (projectName == null || projectName.isEmpty()) {
       ret.put("error", "No project name found.");
@@ -1453,10 +1468,16 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
         out.close();
 
         Map<String, ValidationReport> reports = projectManager.uploadProject(
-            project, archiveFile, type, user);
+            project, archiveFile, type, user, prop);
         StringBuffer message = new StringBuffer();
         for (Entry<String, ValidationReport> reportEntry : reports.entrySet()) {
           ValidationReport report = reportEntry.getValue();
+          if (!report.getPassMsgs().isEmpty()) {
+            for (String msg : report.getPassMsgs()) {
+              message.append(msg + "<br/>");
+            }
+            message.append("<br/>");
+          }
           if (!report.getErrorMsgs().isEmpty()) {
             message.append("Validator " + reportEntry.getKey() + " reports errors:<ul>");
             for (String msg : report.getErrorMsgs()) {

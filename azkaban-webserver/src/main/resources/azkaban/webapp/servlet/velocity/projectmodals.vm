@@ -34,6 +34,18 @@
                     </div>
                   </div>
                 </fieldset>
+                #if ($validatorFixPrompt.booleanValue())
+                  <fieldset class="form-horizontal">
+                    <div class="form-group">
+                      <label for="fix" class="col-sm-3 control-label">
+                        $validatorFixLabel.toString()<a href=$validatorFixLink.toString() target="_blank">?</a>
+                      </label>
+                      <div class="col-sm-9">
+                        <input type="checkbox" class="form-control" id="fix" name="fix" checked>
+                      </div>
+                    </div>
+                  </fieldset>
+                #end
               </div>
               <div class="modal-footer">
                 <input type="hidden" name="project" value="$project.name">
