@@ -178,7 +178,7 @@ public class JobRunner extends EventHandler implements Runnable {
   /**
    * Returns a list of jobs that this JobRunner will wait upon to finish before
    * starting. It is only relevant if pipeline is turned on.
-   * 
+   *
    * @return
    */
   public Set<String> getPipelineWatchedJobs() {
@@ -257,7 +257,7 @@ public class JobRunner extends EventHandler implements Runnable {
   /**
    * Used to handle non-ready and special status's (i.e. KILLED). Returns true
    * if they handled anything.
-   * 
+   *
    * @return
    */
   private boolean handleNonReadyStatus() {
@@ -558,6 +558,7 @@ public class JobRunner extends EventHandler implements Runnable {
       String flowName = node.getParentFlow().getFlowId();
       String projectName = node.getParentFlow().getProjectName();
 
+      props.put(CommonJobProperties.AZKABAN_URL, baseURL);
       props.put(CommonJobProperties.EXECUTION_LINK,
           String.format("%s/executor?execid=%d", baseURL, executionId));
       props.put(CommonJobProperties.JOBEXEC_LINK, String.format(

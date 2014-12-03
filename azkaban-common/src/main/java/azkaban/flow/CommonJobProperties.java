@@ -66,6 +66,10 @@ public class CommonJobProperties {
   /*
    * The following are the common props that will be added to the job by azkaban
    */
+  /**
+   * Url to access azkaban on a given host
+   */
+  public static final String AZKABAN_URL = "azkaban.url";
 
   /**
    * The attempt number of the executing job.
