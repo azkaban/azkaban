@@ -97,10 +97,10 @@ public class ProjectManagerResource extends ResourceContextHolder {
       // complete.
       logger.info("Downloading package from " + packageUrl);
       FileUtils.copyURLToFile(url, archiveFile);
-      Props prop = new Props();
+      Props props = new Props();
 
       logger.info("Downloaded to " + archiveFile.toString());
-      projectManager.uploadProject(project, archiveFile, "zip", user, prop);
+      projectManager.uploadProject(project, archiveFile, "zip", user, props);
     } catch (IOException e) {
       String errorMsg =
           "Download of URL " + packageUrl + " to " + archiveFile.toString()

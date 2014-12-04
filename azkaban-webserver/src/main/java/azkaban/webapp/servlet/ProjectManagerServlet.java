@@ -1423,11 +1423,11 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
     String projectName = (String) multipart.get("project");
     Project project = projectManager.getProject(projectName);
     String autoFix = (String) multipart.get("fix");
-    Props prop = new Props();
-    if (autoFix == null) {
-      prop.put(ValidatorConfigs.CUSTOM_AUTO_FIX_FLAG_PARAM, "false");
-    } else if (autoFix.equals("on")) {
-      prop.put(ValidatorConfigs.CUSTOM_AUTO_FIX_FLAG_PARAM, "true");
+    Props props = new Props();
+    if (autoFix.equals("on")) {
+      props.put(ValidatorConfigs.CUSTOM_AUTO_FIX_FLAG_PARAM, "true");
+    } else {
+      props.put(ValidatorConfigs.CUSTOM_AUTO_FIX_FLAG_PARAM, "false");
     }
 
     if (projectName == null || projectName.isEmpty()) {
@@ -1468,7 +1468,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
         out.close();
 
         Map<String, ValidationReport> reports = projectManager.uploadProject(
-            project, archiveFile, type, user, prop);
+            project, archiveFile, type, user, props);
         StringBuffer message = new StringBuffer();
         for (Entry<String, ValidationReport> reportEntry : reports.entrySet()) {
           ValidationReport report = reportEntry.getValue();

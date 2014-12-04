@@ -26,6 +26,7 @@
     <script type="text/javascript" src="${context}/js/azkaban/view/flow-execute-dialog.js"></script>
     <script type="text/javascript" src="${context}/js/azkaban/view/project.js"></script>
     <script type="text/javascript" src="${context}/js/azkaban/view/project-modals.js"></script>
+    <link rel="stylesheet" href="//code.jquery.com/ui/1.11.2/themes/smoothness/jquery-ui.css">
     <script type="text/javascript">
       var contextURL = "${context}";
       var currentTime = ${currentTime};

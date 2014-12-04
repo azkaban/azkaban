@@ -354,7 +354,7 @@ public class ProjectManager {
   }
 
   public Map<String, ValidationReport> uploadProject(Project project, File archive, String fileType,
-      User uploader, Props additionalProp) throws ProjectManagerException {
+      User uploader, Props additionalProps) throws ProjectManagerException {
     logger.info("Uploading files to " + project.getName());
 
     // Unzip.
@@ -378,7 +378,7 @@ public class ProjectManager {
     // key, it is necessary to create a new instance of Props to make sure these different
     // values are isolated from each other.
     Props prop = new Props(props);
-    prop.putAll(additionalProp);
+    prop.putAll(additionalProps);
     prop.put(ValidatorConfigs.PROJECT_ARCHIVE_FILE_PATH, archive.getAbsolutePath());
     // Basically, we want to make sure that for different invocations to the uploadProject method,
     // the validators are using different values for the PROJECT_ARCHIVE_FILE_PATH configuration key.

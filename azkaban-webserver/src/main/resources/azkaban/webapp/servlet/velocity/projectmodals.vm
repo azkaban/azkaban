@@ -33,19 +33,22 @@
                       <input type="file" class="form-control" id="file" name="file">
                     </div>
                   </div>
-                </fieldset>
-                #if ($validatorFixPrompt.booleanValue())
-                  <fieldset class="form-horizontal">
+                  #if ($validatorFixPrompt.booleanValue())
                     <div class="form-group">
                       <label for="fix" class="col-sm-3 control-label">
-                        $validatorFixLabel.toString()<a href=$validatorFixLink.toString() target="_blank">?</a>
+                        $validatorFixLabel.toString()
+                        <a href=$validatorFixLink.toString() target="_blank">
+                          <span class="ui-icon ui-icon-info" style="display:inline-block;"></span>
+                        </a>
                       </label>
-                      <div class="col-sm-9">
-                        <input type="checkbox" class="form-control" id="fix" name="fix" checked>
+                      <div class="col-sm-3">
+                        <div class="checkbox">
+                          <input type="checkbox" id="fix" name="fix" checked="checked">
+                        </div>
                       </div>
                     </div>
-                  </fieldset>
-                #end
+                  #end
+                </fieldset>
               </div>
               <div class="modal-footer">
                 <input type="hidden" name="project" value="$project.name">

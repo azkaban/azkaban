@@ -2,6 +2,8 @@ package azkaban.project.validator;
 
 public class ValidatorConfigs {
 
+  private ValidatorConfigs() {} // Prevents instantiation
+
   /** Key for the config param specifying the directory containing validator JAR files **/
   public static final String VALIDATOR_PLUGIN_DIR = "project.validators.dir";
 
