@@ -142,7 +142,7 @@ public class AzkabanExecutorServer {
 
       metricManager.AddMetric(new NumRunningJobMetric());
       metricManager.AddMetric(new NumRunningFlowMetric(runnerManager));
-      logger.info("Copleted configuring Metric Reports");
+      logger.info("Completed configuring Metric Reports");
     }
   }
 

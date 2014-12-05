@@ -25,7 +25,7 @@ import org.apache.log4j.Logger;
 
 
 public class MetricReportManager {
-  private static final int MAX_EMITTER_THREADS = 2;
+  private static final int MAX_EMITTER_THREADS = 4;
   private static final Logger logger = Logger.getLogger(MetricReportManager.class);
 
   private List<IMetric<?>> metrics;
@@ -58,7 +58,8 @@ public class MetricReportManager {
   // each element of metrics List is responsible to call this method and report metrics
   public void reportMetric(final IMetric<?> metric) {
     if (metric != null) {
-      logger.debug(String.format("Submitting %s metric for metric emission pool", metric.getName()));
+      // TODO: change to debug level
+      logger.info(String.format("Submitting %s metric for metric emission pool", metric.getName()));
       executorService.submit(new Runnable() {
         @Override
         public void run() {

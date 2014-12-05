@@ -32,16 +32,16 @@ public class NumRunningJobMetric extends AbstractMetric<Integer> implements Even
 
   @Override
   public void UpdateValueAndNotifyManager() {
-    metricManager.reportMetric(this);
+    notifyManager();
   }
 
   @Override
-  public void handleEvent(Event event) {
+  public synchronized void handleEvent(Event event) {
     if (event.getType() == Type.JOB_STARTED) {
       value = value + 1;
     } else if (event.getType() == Type.JOB_FINISHED) {
       value = value - 1;
     }
-    notifyManager();
+    UpdateValueAndNotifyManager();
   }
 }
