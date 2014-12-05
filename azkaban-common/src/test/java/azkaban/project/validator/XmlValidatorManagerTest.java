@@ -36,7 +36,7 @@ public class XmlValidatorManagerTest {
   public void testDefaultValidator() {
     Props props = new Props(baseProps);
     URL validatorUrl = Resources.getResource("project/testValidators");
-    props.put(XmlValidatorManager.VALIDATOR_PLUGIN_DIR, validatorUrl.getPath());
+    props.put(ValidatorConfigs.VALIDATOR_PLUGIN_DIR, validatorUrl.getPath());
 
     XmlValidatorManager manager = new XmlValidatorManager(props);
     assertEquals("XmlValidatorManager should contain only the default validator when no xml configuration "
@@ -54,9 +54,8 @@ public class XmlValidatorManagerTest {
     Props props = new Props(baseProps);
     URL validatorUrl = Resources.getResource("project/testValidators");
     URL configUrl = Resources.getResource("test-conf/azkaban-validators-test1.xml");
-    props.put(XmlValidatorManager.VALIDATOR_PLUGIN_DIR, validatorUrl.getPath());
-    props.put(XmlValidatorManager.XML_FILE_PARAM,
-        configUrl.getPath());
+    props.put(ValidatorConfigs.VALIDATOR_PLUGIN_DIR, validatorUrl.getPath());
+    props.put(ValidatorConfigs.XML_FILE_PARAM, configUrl.getPath());
 
     new XmlValidatorManager(props);
 
@@ -72,9 +71,8 @@ public class XmlValidatorManagerTest {
     Props props = new Props(baseProps);
     URL validatorUrl = Resources.getResource("project/testValidators");
     URL configUrl = Resources.getResource("test-conf/azkaban-validators-test2.xml");
-    props.put(XmlValidatorManager.VALIDATOR_PLUGIN_DIR, validatorUrl.getPath());
-    props.put(XmlValidatorManager.XML_FILE_PARAM,
-        configUrl.getPath());
+    props.put(ValidatorConfigs.VALIDATOR_PLUGIN_DIR, validatorUrl.getPath());
+    props.put(ValidatorConfigs.XML_FILE_PARAM, configUrl.getPath());
 
     XmlValidatorManager manager = new XmlValidatorManager(props);
     assertEquals("XmlValidatorManager should contain 2 validators.", manager.getValidatorsInfo().size(), 2);

@@ -42,9 +42,6 @@ import azkaban.utils.Props;
 public class XmlValidatorManager implements ValidatorManager {
   private static final Logger logger = Logger.getLogger(XmlValidatorManager.class);
 
-  public static final String DEFAULT_VALIDATOR_DIR = "validators";
-  public static final String VALIDATOR_PLUGIN_DIR = "project.validators.dir";
-  public static final String XML_FILE_PARAM = "project.validators.xml.file";
   public static final String AZKABAN_VALIDATOR_TAG = "azkaban-validators";
   public static final String VALIDATOR_TAG = "validator";
   public static final String CLASSNAME_ATTR = "classname";
@@ -65,7 +62,7 @@ public class XmlValidatorManager implements ValidatorManager {
    * @param props
    */
   public XmlValidatorManager(Props props) {
-    validatorDirPath = props.getString(VALIDATOR_PLUGIN_DIR, DEFAULT_VALIDATOR_DIR);
+    validatorDirPath = props.getString(ValidatorConfigs.VALIDATOR_PLUGIN_DIR, ValidatorConfigs.DEFAULT_VALIDATOR_DIR);
     File validatorDir = new File(validatorDirPath);
     if (!validatorDir.canRead() || !validatorDir.isDirectory()) {
       logger.warn("Validator directory " + validatorDirPath
@@ -138,11 +135,11 @@ public class XmlValidatorManager implements ValidatorManager {
     DirectoryFlowLoader flowLoader = new DirectoryFlowLoader(log);
     validators.put(flowLoader.getValidatorName(), flowLoader);
 
-    if (!props.containsKey(XML_FILE_PARAM)) {
-      logger.warn("Azkaban properties file does not contain the key " + XML_FILE_PARAM);
+    if (!props.containsKey(ValidatorConfigs.XML_FILE_PARAM)) {
+      logger.warn("Azkaban properties file does not contain the key " + ValidatorConfigs.XML_FILE_PARAM);
       return;
     }
-    String xmlPath = props.get(XML_FILE_PARAM);
+    String xmlPath = props.get(ValidatorConfigs.XML_FILE_PARAM);
     File file = new File(xmlPath);
     if (!file.exists()) {
       logger.error("Azkaban validator configuration file " + xmlPath + " does not exist.");

@@ -38,6 +38,7 @@
       var projectName = "$project.name";
     </script>
     <link rel="stylesheet" type="text/css" href="${context}/css/bootstrap-datetimepicker.css" />
+    <link rel="stylesheet" type="text/css" href="${context}/css/jquery-ui.css">
   </head>
   <body>
 
