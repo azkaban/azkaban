@@ -42,6 +42,7 @@ import azkaban.event.Event.Type;
 import azkaban.event.EventHandler;
 import azkaban.event.EventListener;
 import azkaban.execapp.event.FlowWatcher;
+import azkaban.execapp.metric.NumRunningJobMetric;
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutableFlowBase;
 import azkaban.executor.ExecutableNode;
@@ -52,6 +53,8 @@ import azkaban.executor.ExecutorManagerException;
 import azkaban.executor.Status;
 import azkaban.flow.FlowProps;
 import azkaban.jobtype.JobTypeManager;
+import azkaban.metric.IMetric;
+import azkaban.metric.MetricReportManager;
 import azkaban.project.ProjectLoader;
 import azkaban.project.ProjectManagerException;
 import azkaban.utils.Props;
@@ -60,7 +63,7 @@ import azkaban.utils.SwapQueue;
 
 /**
  * Class that handles the running of a ExecutableFlow DAG
- * 
+ *
  */
 public class FlowRunner extends EventHandler implements Runnable {
   private static final Layout DEFAULT_LAYOUT = new PatternLayout(
@@ -122,7 +125,7 @@ public class FlowRunner extends EventHandler implements Runnable {
 
   /**
    * Constructor. This will create its own ExecutorService for thread pools
-   * 
+   *
    * @param flow
    * @param executorLoader
    * @param projectLoader
@@ -138,7 +141,7 @@ public class FlowRunner extends EventHandler implements Runnable {
   /**
    * Constructor. If executorService is null, then it will create it's own for
    * thread pools.
-   * 
+   *
    * @param flow
    * @param executorLoader
    * @param projectLoader
@@ -356,7 +359,7 @@ public class FlowRunner extends EventHandler implements Runnable {
 
   /**
    * Main method that executes the jobs.
-   * 
+   *
    * @throws Exception
    */
   private void runFlow() throws Exception {
@@ -725,7 +728,7 @@ public class FlowRunner extends EventHandler implements Runnable {
   /**
    * Determines what the state of the next node should be. Returns null if the
    * node should not be run.
-   * 
+   *
    * @param node
    * @return
    */
@@ -810,7 +813,17 @@ public class FlowRunner extends EventHandler implements Runnable {
     jobRunner.setLogSettings(logger, jobLogFileSize, jobLogNumFiles);
     jobRunner.addListener(listener);
 
+    configureJobLevelMetrics(jobRunner);
+
     return jobRunner;
+  }
+
+  private void configureJobLevelMetrics(JobRunner jobRunner) {
+    if(MetricReportManager.isInstantiated()) {
+      MetricReportManager metricManager = MetricReportManager.getInstance();
+      NumRunningJobMetric metric = (NumRunningJobMetric) metricManager.getMetricFromName(NumRunningJobMetric.NUM_RUNNING_JOB_METRIC_NAME);
+      jobRunner.addListener(metric);
+    }
   }
 
   public void pause(String user) {

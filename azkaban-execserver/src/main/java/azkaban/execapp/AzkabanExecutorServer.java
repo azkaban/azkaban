@@ -29,9 +29,7 @@ import javax.management.MBeanServer;
 import javax.management.ObjectName;
 
 import org.apache.log4j.Logger;
-
 import org.joda.time.DateTimeZone;
-
 import org.mortbay.jetty.Connector;
 import org.mortbay.jetty.Server;
 import org.mortbay.jetty.servlet.Context;
@@ -41,7 +39,12 @@ import org.mortbay.thread.QueuedThreadPool;
 import azkaban.executor.ExecutorLoader;
 import azkaban.executor.JdbcExecutorLoader;
 import azkaban.execapp.jmx.JmxFlowRunnerManager;
+import azkaban.execapp.metric.NumRunningFlowMetric;
+import azkaban.execapp.metric.NumRunningJobMetric;
 import azkaban.jmx.JmxJettyServer;
+import azkaban.metric.GangliaMetricEmitter;
+import azkaban.metric.IMetricEmitter;
+import azkaban.metric.MetricReportManager;
 import azkaban.project.JdbcProjectLoader;
 import azkaban.project.ProjectLoader;
 import azkaban.server.AzkabanServer;
@@ -114,6 +117,7 @@ public class AzkabanExecutorServer {
             .getClass().getClassLoader());
 
     configureMBeanServer();
+    configureMetricReports(runnerManager, props);
 
     try {
       server.start();
@@ -123,6 +127,23 @@ public class AzkabanExecutorServer {
     }
 
     logger.info("Azkaban Executor Server started on port " + portNumber);
+  }
+
+  /**
+   * Configure Metric Reporting as per azkaban.properties settings
+   *
+   */
+  private void configureMetricReports(FlowRunnerManager runnerManager, Props props) {
+    if (props.getBoolean("executor.metric.reports", false)) {
+      logger.info("Starting to configure Metric Reports");
+      MetricReportManager metricManager = MetricReportManager.getInstance();
+      IMetricEmitter metricEmitter = new GangliaMetricEmitter(props);
+      metricManager.setMetricEmitter(metricEmitter);
+
+      metricManager.AddMetric(new NumRunningJobMetric());
+      metricManager.AddMetric(new NumRunningFlowMetric(runnerManager));
+      logger.info("Copleted configuring Metric Reports");
+    }
   }
 
   private ExecutorLoader createExecLoader(Props props) {
@@ -161,7 +182,7 @@ public class AzkabanExecutorServer {
 
   /**
    * Returns the currently executing executor server, if one exists.
-   * 
+   *
    * @return
    */
   public static AzkabanExecutorServer getApp() {
