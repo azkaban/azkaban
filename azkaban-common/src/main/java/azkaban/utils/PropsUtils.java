@@ -299,6 +299,13 @@ public class PropsUtils {
         loadTime.toString("SSS"));
     props.put(CommonJobProperties.FLOW_START_TIMEZONE,
         loadTime.toString("ZZZZ"));
+
+    DateTime yesterday = new DateTime().minusDays(1);
+
+    props.put(CommonJobProperties.FLOW_YESTERDAY_YEAR, yesterday.toString("yyyy"));
+    props.put(CommonJobProperties.FLOW_YESTERDAY_MONTH, yesterday.toString("MM"));
+    props.put(CommonJobProperties.FLOW_YESTERDAY_DAY, yesterday.toString("dd"));
+
     return props;
   }
 
