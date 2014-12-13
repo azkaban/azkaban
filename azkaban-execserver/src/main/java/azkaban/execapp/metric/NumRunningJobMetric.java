@@ -19,20 +19,17 @@ package azkaban.execapp.metric;
 import azkaban.event.Event;
 import azkaban.event.Event.Type;
 import azkaban.event.EventListener;
-import azkaban.metric.AbstractMetric;
+import azkaban.metric.MetricReportManager;
+import azkaban.metric.TimeBasedReportingMetric;
 
-public class NumRunningJobMetric extends AbstractMetric<Integer> implements EventListener {
+
+public class NumRunningJobMetric extends TimeBasedReportingMetric<Integer> implements EventListener {
   public static final String NUM_RUNNING_JOB_METRIC_NAME = "NumRunningJobMetric";
-  public static final String NUM_RUNNING_JOB_METRIC_TYPE = "uint16";
+  private static final String NUM_RUNNING_JOB_METRIC_TYPE = "uint16";
 
-  public NumRunningJobMetric() {
-    super(NUM_RUNNING_JOB_METRIC_NAME, NUM_RUNNING_JOB_METRIC_TYPE , 0);
+  public NumRunningJobMetric(MetricReportManager manager, long interval) {
+    super(NUM_RUNNING_JOB_METRIC_NAME, NUM_RUNNING_JOB_METRIC_TYPE, 0, manager, interval);
     logger.debug("Instantiated NumRunningJobMetric");
-  }
-
-  @Override
-  public void UpdateValueAndNotifyManager() {
-    notifyManager();
   }
 
   @Override
@@ -42,6 +39,11 @@ public class NumRunningJobMetric extends AbstractMetric<Integer> implements Even
     } else if (event.getType() == Type.JOB_FINISHED) {
       value = value - 1;
     }
-    UpdateValueAndNotifyManager();
   }
+
+  @Override
+  protected synchronized void finalizeValue() {
+    // nothing to finalize value is already updated
+  }
+
 }

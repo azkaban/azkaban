@@ -21,19 +21,15 @@ import azkaban.utils.Props;
 
 public class GangliaMetricEmitter implements IMetricEmitter {
   private static final String GANGLIA_METRIC_REPORTER_PATH = "azkaban.metric.ganglia.path";
-  private static final String GANGLIA_METRIC_REPORTER_GROUP = "azkaban.metric.ganglia.group";
 
   private String gmetricPath;
-  private String gangliaGroup;
 
   public GangliaMetricEmitter(Props azkProps) {
     gmetricPath = azkProps.get(GANGLIA_METRIC_REPORTER_PATH);
-    gangliaGroup = azkProps.get(GANGLIA_METRIC_REPORTER_GROUP);
   }
 
   private String buildCommand(IMetric<?> metric) {
-    return String.format("%s -t %s -g \"%s\" -n %s -v %s", gmetricPath, metric.getValueType(), gangliaGroup,
-        metric.getName(), metric.getValue().toString());
+    return String.format("%s -t %s -n %s -v %s", gmetricPath, metric.getValueType(), metric.getName(), metric.getValue().toString());
   }
 
   @Override

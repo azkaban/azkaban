@@ -16,38 +16,26 @@
 
 package azkaban.execapp.metric;
 
-import java.util.Timer;
-import java.util.TimerTask;
 import azkaban.execapp.FlowRunnerManager;
-import azkaban.metric.AbstractMetric;
+import azkaban.metric.MetricReportManager;
+import azkaban.metric.TimeBasedReportingMetric;
 
 
-public class NumRunningFlowMetric extends AbstractMetric<Integer> {
+public class NumRunningFlowMetric extends TimeBasedReportingMetric<Integer> {
   public static final String NUM_RUNNING_FLOW_METRIC_NAME = "NumRunningFlowMetric";
-  public static final String NUM_RUNNING_FLOW_METRIC_TYPE = "uint16";
-  private static final int NUM_RUNNING_FLOW_INTERVAL = 5 * 1000; //milliseconds TODO: increase frequency
+  private static final String NUM_RUNNING_FLOW_METRIC_TYPE = "uint16";
 
   private FlowRunnerManager flowManager;
-  private Timer timer = new Timer();
 
-  public NumRunningFlowMetric(FlowRunnerManager flowRunnerManager) {
-    super(NUM_RUNNING_FLOW_METRIC_NAME, NUM_RUNNING_FLOW_METRIC_TYPE, 0);
+  public NumRunningFlowMetric(FlowRunnerManager flowRunnerManager, MetricReportManager manager, long interval) {
+    super(NUM_RUNNING_FLOW_METRIC_NAME, NUM_RUNNING_FLOW_METRIC_TYPE, 0, manager, interval);
     logger.debug("Instantiated NumRunningFlowMetric");
     flowManager = flowRunnerManager;
-
-    // schedule timer to trigger UpdateValueAndNotifyManager
-    timer.schedule(new TimerTask() {
-
-      @Override
-      public void run() {
-        UpdateValueAndNotifyManager();
-      }
-    }, NUM_RUNNING_FLOW_INTERVAL, NUM_RUNNING_FLOW_INTERVAL);
-
   }
 
-  public synchronized void UpdateValueAndNotifyManager() {
+  @Override
+  protected synchronized void finalizeValue() {
     value = flowManager.getNumRunningFlows();
-    notifyManager();
   }
+
 }

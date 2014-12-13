@@ -16,10 +16,29 @@
 
 package azkaban.metric;
 
-public interface IMetric<T> {
-  String getName();
-  String getValueType();
-  void updateMetricManager(final MetricReportManager manager);
-  void notifyManager();
-  T getValue();
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+
+public class InMemoryHistoryNode {
+  private Object value;
+  private Date date;
+
+  public InMemoryHistoryNode(Object val) {
+    value = val;
+    date = new Date();
+  }
+
+  public Object getValue() {
+    return value;
+  }
+
+  public Date getTimestamp() {
+    return date;
+  }
+
+  public String formattedTimestamp() {
+    DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+    return dateFormat.format(date);
+  }
 }

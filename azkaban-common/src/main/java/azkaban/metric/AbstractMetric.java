@@ -26,11 +26,11 @@ public abstract class AbstractMetric<T> implements IMetric<T> {
   protected String type;
   protected MetricReportManager metricManager;
 
-  public AbstractMetric(String metricName, String metricType, T initialValue) {
+  public AbstractMetric(String metricName, String metricType, T initialValue, MetricReportManager manager) {
     name = metricName;
     type = metricType;
     value = initialValue;
-    metricManager = null;
+    metricManager = manager;
   }
 
   public String getName() {
@@ -41,7 +41,7 @@ public abstract class AbstractMetric<T> implements IMetric<T> {
     return type;
   }
 
-  public void setMetricManager(final MetricReportManager manager) {
+  public void updateMetricManager(final MetricReportManager manager) {
     metricManager = manager;
   }
 
@@ -49,7 +49,7 @@ public abstract class AbstractMetric<T> implements IMetric<T> {
     return value;
   }
 
-  protected void notifyManager() {
+  public synchronized void notifyManager() {
     logger.debug(String.format("Notifying Manager for %s", this.getClass().getName()));
     try {
       metricManager.reportMetric(this);

@@ -17,6 +17,7 @@
 package azkaban.metric;
 
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -29,7 +30,7 @@ public class MetricReportManager {
   private static final Logger logger = Logger.getLogger(MetricReportManager.class);
 
   private List<IMetric<?>> metrics;
-  private IMetricEmitter metricEmitter;
+  private List<IMetricEmitter> metricEmitters;
   private ExecutorService executorService;
   private static volatile MetricReportManager instance = null;
 
@@ -37,6 +38,7 @@ public class MetricReportManager {
   private MetricReportManager() {
     executorService = Executors.newFixedThreadPool(MAX_EMITTER_THREADS);
     metrics = new ArrayList<IMetric<?>>();
+    metricEmitters = new LinkedList<IMetricEmitter>();
   }
 
   public static boolean isInstantiated() {
@@ -58,35 +60,44 @@ public class MetricReportManager {
   // each element of metrics List is responsible to call this method and report metrics
   public void reportMetric(final IMetric<?> metric) {
     if (metric != null) {
-      // TODO: change to debug level
-      logger.info(String.format("Submitting %s metric for metric emission pool", metric.getName()));
-      executorService.submit(new Runnable() {
-        @Override
-        public void run() {
-          try {
-            metricEmitter.reportMetric(metric);
-          } catch (Exception ex) {
-            logger.error(String.format("Failed to report %s metric due to %s", metric.getName(), ex.toString()));
-          }
+
+      // Report metric to all the emitters
+      synchronized (metric) {
+        logger.debug(String.format("Submitting %s metric for metric emission pool", metric.getName()));
+        for (final IMetricEmitter metricEmitter : metricEmitters) {
+          executorService.submit(new Runnable() {
+            @Override
+            public void run() {
+              try {
+                metricEmitter.reportMetric(metric);
+              } catch (Exception ex) {
+                logger.error(String.format("Failed to report %s metric due to %s", metric.getName(), ex.toString()));
+              }
+            }
+          });
         }
-      });
+      }
     }
   }
 
-  public void setMetricEmitter(final IMetricEmitter emitter) {
-    metricEmitter = emitter;
+  public void addMetricEmitter(final IMetricEmitter emitter) {
+    metricEmitters.add(emitter);
   }
 
-  public IMetricEmitter getMetricEmitter() {
-    return metricEmitter;
+  public void removeMetricEmitter(final IMetricEmitter emitter) {
+    metricEmitters.remove(emitter);
   }
 
-  public void AddMetric(final IMetric<?> metric) {
+  public List<IMetricEmitter> getMetricEmitters() {
+    return metricEmitters;
+  }
+
+  public void addMetric(final IMetric<?> metric) {
     // metric null or already present
     if (metric != null && getMetricFromName(metric.getName()) == null) {
       logger.debug(String.format("Adding %s metric in Metric Manager", metric.getName()));
       metrics.add(metric);
-      metric.setMetricManager(this);
+      metric.updateMetricManager(this);
     }
   }
 
@@ -101,6 +112,10 @@ public class MetricReportManager {
       }
     }
     return metric;
+  }
+
+  public List<IMetric<?>> getAllMetrics() {
+    return metrics;
   }
 
   protected void finalize() {

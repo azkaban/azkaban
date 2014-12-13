@@ -44,6 +44,7 @@ import azkaban.execapp.metric.NumRunningJobMetric;
 import azkaban.jmx.JmxJettyServer;
 import azkaban.metric.GangliaMetricEmitter;
 import azkaban.metric.IMetricEmitter;
+import azkaban.metric.InMemoryMetricEmitter;
 import azkaban.metric.MetricReportManager;
 import azkaban.project.JdbcProjectLoader;
 import azkaban.project.ProjectLoader;
@@ -137,11 +138,18 @@ public class AzkabanExecutorServer {
     if (props.getBoolean("executor.metric.reports", false)) {
       logger.info("Starting to configure Metric Reports");
       MetricReportManager metricManager = MetricReportManager.getInstance();
-      IMetricEmitter metricEmitter = new GangliaMetricEmitter(props);
-      metricManager.setMetricEmitter(metricEmitter);
+      IMetricEmitter metricEmitter = new InMemoryMetricEmitter(props);
+      metricManager.addMetricEmitter(metricEmitter);
 
-      metricManager.AddMetric(new NumRunningJobMetric());
-      metricManager.AddMetric(new NumRunningFlowMetric(runnerManager));
+      // Adding number of Jobs
+      metricManager.addMetric(new NumRunningJobMetric(metricManager, props.getInt("executor.metric.interval."
+          + NumRunningJobMetric.NUM_RUNNING_JOB_METRIC_NAME, props.getInt("executor.metric.interval.default"))));
+
+      // Adding number of flows
+      metricManager.addMetric(new NumRunningFlowMetric(runnerManager, metricManager, props.getInt(
+          "executor.metric.interval." + NumRunningFlowMetric.NUM_RUNNING_FLOW_METRIC_NAME,
+          props.getInt("executor.metric.interval.default"))));
+
       logger.info("Completed configuring Metric Reports");
     }
   }
