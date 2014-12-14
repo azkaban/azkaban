@@ -28,6 +28,9 @@
               <button id="project-upload-btn" class="btn btn-sm btn-primary">
                 <span class="glyphicon glyphicon-upload"></span> Upload
               </button>
+              <a class="btn btn-sm btn-info" href="${context}/manager?project=${project.name}&download=true">
+                <span class="glyphicon glyphicon-download"></span> Download
+              </a>
             </div>
           </div>
         </div>

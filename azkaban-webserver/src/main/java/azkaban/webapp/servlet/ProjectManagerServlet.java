@@ -18,6 +18,7 @@ package azkaban.webapp.servlet;
 
 import java.io.BufferedOutputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -54,6 +55,7 @@ import azkaban.flow.Flow;
 import azkaban.flow.FlowProps;
 import azkaban.flow.Node;
 import azkaban.project.Project;
+import azkaban.project.ProjectFileHandler;
 import azkaban.project.ProjectLogEvent;
 import azkaban.project.ProjectManager;
 import azkaban.project.ProjectManagerException;
@@ -76,6 +78,7 @@ import azkaban.utils.Utils;
 import azkaban.webapp.AzkabanWebServer;
 
 public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
+  private static final String APPLICATION_ZIP_MIME_TYPE = "application/zip";
   private static final long serialVersionUID = 1;
   private static final Logger logger = Logger
       .getLogger(ProjectManagerServlet.class);
@@ -134,6 +137,8 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
         handleFlowPage(req, resp, session);
       } else if (hasParam(req, "delete")) {
         handleRemoveProject(req, resp, session);
+      } else if (hasParam(req, "download")) {
+        handleDownloadProject(req, resp, session);
       } else {
         handleProjectPage(req, resp, session);
       }
@@ -407,6 +412,93 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
     }
 
     ret.put("executions", history);
+  }
+
+  /**
+   * Download project zip file from DB and send it back client.
+   * 
+   * This method requires a project name and an optional project version.
+   * 
+   * @param req
+   * @param resp
+   * @param session
+   * @throws ServletException
+   * @throws IOException
+   */
+  private void handleDownloadProject(HttpServletRequest req,
+      HttpServletResponse resp, Session session) throws ServletException,
+      IOException {
+
+    User user = session.getUser();
+    String projectName = getParam(req, "project");
+    logger.info(user.getUserId() + " is downloading project: " + projectName);
+
+    Project project = projectManager.getProject(projectName);
+    if (project == null) {
+      this.setErrorMessageInCookie(resp, "Project " + projectName
+          + " doesn't exist.");
+      resp.sendRedirect(req.getContextPath());
+      return;
+    }
+
+    int version = -1;
+    if (hasParam(req, "version")) {
+      version = getIntParam(req, "version");
+    }
+
+    ProjectFileHandler projectFileHandler = null;
+    try {
+      projectFileHandler =
+          projectManager.getProjectFileHandler(project, version);
+      if (projectFileHandler == null) {
+        this.setErrorMessageInCookie(resp, "Project " + projectName
+            + " with version " + version + " doesn't exist");
+        resp.sendRedirect(req.getContextPath());
+        return;
+      }
+      File projectZipFile = projectFileHandler.getLocalFile();
+      String logStr =
+          String.format(
+              "downloading project zip file for project \"%s\" at \"%s\""
+                  + " size: %d type: %s  fileName: \"%s\"",
+              projectFileHandler.getFileName(),
+              projectZipFile.getAbsolutePath(), projectZipFile.length(),
+              projectFileHandler.getFileType(),
+              projectFileHandler.getFileName());
+      logger.info(logStr);
+
+      // now set up HTTP response for downloading file
+      FileInputStream inStream = new FileInputStream(projectZipFile);
+
+      resp.setContentType(APPLICATION_ZIP_MIME_TYPE);
+      resp.setContentLength((int) projectZipFile.length());
+
+      String headerKey = "Content-Disposition";
+      String headerValue =
+          String.format("attachment; filename=\"%s\"",
+              projectFileHandler.getFileName());
+      resp.setHeader(headerKey, headerValue);
+
+      OutputStream outStream = resp.getOutputStream();
+
+      byte[] buffer = new byte[4096];
+      int bytesRead = -1;
+
+      while ((bytesRead = inStream.read(buffer)) != -1) {
+        outStream.write(buffer, 0, bytesRead);
+      }
+
+      inStream.close();
+      outStream.close();
+
+    } catch (ProjectManagerException e) {
+      throw new ServletException(e);
+    } finally {
+      if (projectFileHandler != null) {
+        projectFileHandler.deleteLocalFile();
+      }
+    }
+
   }
 
   private void handleRemoveProject(HttpServletRequest req,
@@ -1341,13 +1433,19 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
             project.getUsersWithPermission(Type.ADMIN), ","));
         Permission perm = this.getPermissionObject(project, user, Type.ADMIN);
         page.add("userpermission", perm);
-        page.add("validatorFixPrompt", projectManager.getProps()
-            .getBoolean(ValidatorConfigs.VALIDATOR_AUTO_FIX_PROMPT_FLAG_PARAM,
+        page.add(
+            "validatorFixPrompt",
+            projectManager.getProps().getBoolean(
+                ValidatorConfigs.VALIDATOR_AUTO_FIX_PROMPT_FLAG_PARAM,
                 ValidatorConfigs.DEFAULT_VALIDATOR_AUTO_FIX_PROMPT_FLAG));
-        page.add("validatorFixLabel", projectManager.getProps()
-            .get(ValidatorConfigs.VALIDATOR_AUTO_FIX_PROMPT_LABEL_PARAM));
-        page.add("validatorFixLink", projectManager.getProps()
-            .get(ValidatorConfigs.VALIDATOR_AUTO_FIX_PROMPT_LINK_PARAM));
+        page.add(
+            "validatorFixLabel",
+            projectManager.getProps().get(
+                ValidatorConfigs.VALIDATOR_AUTO_FIX_PROMPT_LABEL_PARAM));
+        page.add(
+            "validatorFixLink",
+            projectManager.getProps().get(
+                ValidatorConfigs.VALIDATOR_AUTO_FIX_PROMPT_LINK_PARAM));
 
         boolean adminPerm = perm.isPermissionSet(Type.ADMIN);
         if (adminPerm) {
@@ -1447,7 +1545,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 
       final String contentType = item.getContentType();
       if (contentType != null
-          && (contentType.startsWith("application/zip")
+          && (contentType.startsWith(APPLICATION_ZIP_MIME_TYPE)
               || contentType.startsWith("application/x-zip-compressed") || contentType
                 .startsWith("application/octet-stream"))) {
         type = "zip";
@@ -1467,8 +1565,9 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
         IOUtils.copy(item.getInputStream(), out);
         out.close();
 
-        Map<String, ValidationReport> reports = projectManager.uploadProject(
-            project, archiveFile, type, user, props);
+        Map<String, ValidationReport> reports =
+            projectManager.uploadProject(project, archiveFile, type, user,
+                props);
         StringBuffer message = new StringBuffer();
         for (Entry<String, ValidationReport> reportEntry : reports.entrySet()) {
           ValidationReport report = reportEntry.getValue();
@@ -1479,14 +1578,16 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
             message.append("<br/>");
           }
           if (!report.getErrorMsgs().isEmpty()) {
-            message.append("Validator " + reportEntry.getKey() + " reports errors:<ul>");
+            message.append("Validator " + reportEntry.getKey()
+                + " reports errors:<ul>");
             for (String msg : report.getErrorMsgs()) {
               message.append("<li>" + msg + "</li>");
             }
             message.append("</ul>");
           }
           if (!report.getWarningMsgs().isEmpty()) {
-            message.append("Validator " + reportEntry.getKey() + " reports warnings:<ul>");
+            message.append("Validator " + reportEntry.getKey()
+                + " reports warnings:<ul>");
             for (String msg : report.getWarningMsgs()) {
               message.append("<li>" + msg + "</li>");
             }
@@ -1500,7 +1601,8 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
         logger.info("Installation Failed.", e);
         String error = e.getMessage();
         if (error.length() > 512) {
-          error = error.substring(0, 512) + "<br>Too many errors to display.<br>";
+          error =
+              error.substring(0, 512) + "<br>Too many errors to display.<br>";
         }
         ret.put("error", "Installation Failed.<br>" + error);
       } finally {
