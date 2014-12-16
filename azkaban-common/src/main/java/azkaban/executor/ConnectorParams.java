@@ -88,4 +88,13 @@ public interface ConnectorParams {
   public static final String JMX_GET_ALL_EXECUTOR_ATTRIBUTES =
       "getAllExecutorAttributes";
   public static final String JMX_HOSTPORT = "hostPort";
+
+  public static final String STATS_GET_ALLMETRICSNAME = "getAllMetricNames";
+  public static final String STATS_GET_METRICHISTORY = "metricHistory";
+  public static final String STATS_SET_REPORTINGINTERVAL = "changeMetricInterval";
+  public static final String STATS_MAP_METRICNAMEPARAM =  "metricName";
+  public static final String STATS_MAP_STARTDATE =  "from";
+  public static final String STATS_MAP_ENDDATE =  "to";
+    public static final String STATS_MAP_REPORTINGINTERVAL =  "interval";
+
 }

@@ -25,6 +25,7 @@ import java.util.Set;
 import azkaban.project.Project;
 import azkaban.utils.FileIOUtils.JobMetaData;
 import azkaban.utils.FileIOUtils.LogData;
+import azkaban.utils.Pair;
 
 public interface ExecutorManagerAdapter {
 
@@ -163,6 +164,9 @@ public interface ExecutorManagerAdapter {
 
   public String submitExecutableFlow(ExecutableFlow exflow, String userId)
       throws ExecutorManagerException;
+
+  public Map<String, Object> callExecutorStats(String action,
+      Pair<String, String>... params) throws IOException;
 
   public Map<String, Object> callExecutorJMX(String hostPort, String action,
       String mBean) throws IOException;

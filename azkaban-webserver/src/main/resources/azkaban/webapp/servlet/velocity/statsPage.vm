@@ -35,7 +35,7 @@
       function refreshMetricChart() {
             var requestURL = '/stats';
             var requestData = {
-              'ajax': 'metricHistory',
+              'action': 'metricHistory',
               'from': $('#datetimebegin').val(),
               'to'  : $('#datetimeend').val(),
               'metricName': $('#metricName').val()

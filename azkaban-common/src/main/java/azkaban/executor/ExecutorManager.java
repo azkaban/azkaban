@@ -38,7 +38,6 @@ import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.impl.client.BasicResponseHandler;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.log4j.Logger;
-
 import org.joda.time.DateTime;
 
 import azkaban.alert.Alerter;
@@ -717,6 +716,52 @@ public class ExecutorManager extends EventHandler implements
 
     return jsonResponse;
   }
+
+  @Override
+  public Map<String, Object> callExecutorStats(String action, Pair<String, String>... params) throws IOException {
+
+    URIBuilder builder = new URIBuilder();
+    builder.setScheme("http").setHost(executorHost).setPort(executorPort).setPath("/stats");
+
+    builder.setParameter(ConnectorParams.ACTION_PARAM, action);
+
+    if (params != null) {
+      for (Pair<String, String> pair : params) {
+        builder.setParameter(pair.getFirst(), pair.getSecond());
+      }
+    }
+
+    URI uri = null;
+    try {
+      uri = builder.build();
+    } catch (URISyntaxException e) {
+      throw new IOException(e);
+    }
+
+    ResponseHandler<String> responseHandler = new BasicResponseHandler();
+
+    HttpClient httpclient = new DefaultHttpClient();
+    HttpGet httpget = new HttpGet(uri);
+    String response = null;
+    try {
+      response = httpclient.execute(httpget, responseHandler);
+    } catch (IOException e) {
+      throw e;
+    } finally {
+      httpclient.getConnectionManager().shutdown();
+    }
+
+    @SuppressWarnings("unchecked")
+    Map<String, Object> jsonResponse =
+        (Map<String, Object>) JSONUtils.parseJSONFromString(response);
+    String error = (String) jsonResponse.get(ConnectorParams.RESPONSE_ERROR);
+    if (error != null) {
+      throw new IOException(error);
+    }
+
+    return jsonResponse;
+  }
+
 
   @Override
   public Map<String, Object> callExecutorJMX(String hostPort, String action,
