@@ -87,10 +87,14 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
   private static final String LOCKDOWN_CREATE_PROJECTS_KEY =
       "lockdown.create.projects";
 
+  private static final String PROJECT_DOWNLOAD_BUFFER_SIZE =
+      "project.download.bufffer.size";
+
   private ProjectManager projectManager;
   private ExecutorManagerAdapter executorManager;
   private ScheduleManager scheduleManager;
   private UserManager userManager;
+  private int downloadBufferSize;
 
   private boolean lockdownCreateProjects = false;
 
@@ -115,6 +119,11 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
     if (lockdownCreateProjects) {
       logger.info("Creation of projects is locked down");
     }
+
+    downloadBufferSize =
+        server.getServerProps().getInt(PROJECT_DOWNLOAD_BUFFER_SIZE, 8192);
+
+    logger.info("downloadBufferSize: " + downloadBufferSize);
   }
 
   @Override
@@ -447,6 +456,8 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
     }
 
     ProjectFileHandler projectFileHandler = null;
+    FileInputStream inStream = null;
+    OutputStream outStream = null;
     try {
       projectFileHandler =
           projectManager.getProjectFileHandler(project, version);
@@ -468,10 +479,9 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
       logger.info(logStr);
 
       // now set up HTTP response for downloading file
-      FileInputStream inStream = new FileInputStream(projectZipFile);
+      inStream = new FileInputStream(projectZipFile);
 
       resp.setContentType(APPLICATION_ZIP_MIME_TYPE);
-      resp.setContentLength((int) projectZipFile.length());
 
       String headerKey = "Content-Disposition";
       String headerValue =
@@ -479,21 +489,21 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
               projectFileHandler.getFileName());
       resp.setHeader(headerKey, headerValue);
 
-      OutputStream outStream = resp.getOutputStream();
+      outStream = resp.getOutputStream();
 
-      byte[] buffer = new byte[4096];
+      byte[] buffer = new byte[downloadBufferSize];
       int bytesRead = -1;
 
       while ((bytesRead = inStream.read(buffer)) != -1) {
         outStream.write(buffer, 0, bytesRead);
       }
 
-      inStream.close();
-      outStream.close();
-
-    } catch (ProjectManagerException e) {
+    } catch (Throwable e) {
       throw new ServletException(e);
     } finally {
+      IOUtils.closeQuietly(inStream);
+      IOUtils.closeQuietly(outStream);
+
       if (projectFileHandler != null) {
         projectFileHandler.deleteLocalFile();
       }
