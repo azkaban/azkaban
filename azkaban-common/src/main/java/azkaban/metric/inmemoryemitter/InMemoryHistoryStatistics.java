@@ -28,7 +28,7 @@ public final class InMemoryHistoryStatistics {
    * @param data
    * @return mean of data
    */
-  public static double mean(List<InMemoryHistoryNode> data) {
+  public static double mean(final List<InMemoryHistoryNode> data) {
     double total = 0.0;
     for (InMemoryHistoryNode node : data) {
       total = total + ((Number)node.getValue()).doubleValue() ;
@@ -41,7 +41,7 @@ public final class InMemoryHistoryStatistics {
    * @param data
    * @return standard deviation of data
    */
-  public static double sdev(List<InMemoryHistoryNode> data) {
+  public static double sdev(final List<InMemoryHistoryNode> data) {
     return Math.sqrt(variance(data));
   }
 
@@ -51,7 +51,7 @@ public final class InMemoryHistoryStatistics {
    * @param data
    * @return variance of data
    */
-  public static double variance(List<InMemoryHistoryNode> data) {
+  public static double variance(final List<InMemoryHistoryNode> data) {
     double mu = mean(data);
     double sumsq = 0.0;
     for (InMemoryHistoryNode node : data) {
@@ -65,7 +65,7 @@ public final class InMemoryHistoryStatistics {
    * @param x
    * @return x*x
    */
-  public static double sqr(double x) {
+  public static double sqr(final double x) {
     return x * x;
   }
 }

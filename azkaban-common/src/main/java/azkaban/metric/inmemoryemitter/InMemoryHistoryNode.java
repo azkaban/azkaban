@@ -29,7 +29,7 @@ public class InMemoryHistoryNode {
    * Takes snapshot of the metric with a given value
    * @param val
    */
-  public InMemoryHistoryNode(Object val) {
+  public InMemoryHistoryNode(final Object val) {
     value = val;
     date = new Date();
   }

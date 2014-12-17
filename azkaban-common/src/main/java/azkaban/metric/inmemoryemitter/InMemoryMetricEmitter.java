@@ -30,6 +30,7 @@ import azkaban.metric.IMetric;
 import azkaban.metric.IMetricEmitter;
 import azkaban.utils.Props;
 
+
 /**
  * Metric Emitter which maintains in memory snapshots of the metrics
  * This is also the default metric emitter and used by /stats servlet
@@ -84,7 +85,7 @@ public class InMemoryMetricEmitter implements IMetricEmitter {
    * @see azkaban.metric.IMetricEmitter#reportMetric(azkaban.metric.IMetric)
    */
   @Override
-  public void reportMetric(IMetric<?> metric) throws Exception {
+  public void reportMetric(final IMetric<?> metric) throws Exception {
     String metricName = metric.getName();
     if (!historyListMapping.containsKey(metricName)) {
       logger.info("First time capturing metric: " + metricName);
@@ -105,7 +106,8 @@ public class InMemoryMetricEmitter implements IMetricEmitter {
    * @param useStats get statistically significant points only
    * @return List of snapshots
    */
-  public List<InMemoryHistoryNode> getDrawMetric(String metricName, Date from, Date to, Boolean useStats) {
+  public List<InMemoryHistoryNode> getDrawMetric(final String metricName, final Date from, final Date to,
+      final Boolean useStats) {
     LinkedList<InMemoryHistoryNode> selectedLists = new LinkedList<InMemoryHistoryNode>();
     if (historyListMapping.containsKey(metricName)) {
 
@@ -136,27 +138,27 @@ public class InMemoryMetricEmitter implements IMetricEmitter {
    * filter snapshots using statistically significant points only
    * @param selectedLists list of snapshots
    */
-  private void statBasedSelectMetricHistory(LinkedList<InMemoryHistoryNode> selectedLists) {
+  private void statBasedSelectMetricHistory(final LinkedList<InMemoryHistoryNode> selectedLists) {
     logger.debug("selecting snapshots which are far away from mean value");
     Iterator<InMemoryHistoryNode> ite = selectedLists.iterator();
-      Double mean = InMemoryHistoryStatistics.mean(selectedLists);
-      Double std = InMemoryHistoryStatistics.sdev(selectedLists);
+    Double mean = InMemoryHistoryStatistics.mean(selectedLists);
+    Double std = InMemoryHistoryStatistics.sdev(selectedLists);
 
-      while (ite.hasNext()) {
-        InMemoryHistoryNode currentNode = ite.next();
-        double value = ((Number)currentNode.getValue()).doubleValue() ;
-        // remove all elements which lies in 95% value band
-        if (value > mean + 2*std && value < mean + 2*std) {
-          ite.remove();
-        }
+    while (ite.hasNext()) {
+      InMemoryHistoryNode currentNode = ite.next();
+      double value = ((Number) currentNode.getValue()).doubleValue();
+      // remove all elements which lies in 95% value band
+      if (value > mean + 2 * std && value < mean + 2 * std) {
+        ite.remove();
       }
+    }
   }
 
   /**
    * filter snapshots by evenly selecting points across the interval
    * @param selectedLists list of snapshots
    */
-  private void generalSelectMetricHistory(LinkedList<InMemoryHistoryNode> selectedLists) {
+  private void generalSelectMetricHistory(final LinkedList<InMemoryHistoryNode> selectedLists) {
     logger.debug("selecting snapshots evenly from across the time interval");
     if (selectedLists.size() > numInstances) {
       double step = (double) selectedLists.size() / numInstances;
@@ -180,7 +182,7 @@ public class InMemoryMetricEmitter implements IMetricEmitter {
    * @param metricName Name of the metric
    * @param firstAllowedDate End date of the interval
    */
-  private void cleanUsingTime(String metricName, Date firstAllowedDate) {
+  private void cleanUsingTime(final String metricName, final Date firstAllowedDate) {
     if (historyListMapping.containsKey(metricName) && historyListMapping.get(metricName) != null) {
       synchronized (historyListMapping.get(metricName)) {
 
