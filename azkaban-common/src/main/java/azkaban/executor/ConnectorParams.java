@@ -32,8 +32,7 @@ public interface ConnectorParams {
   public static final String LOG_ACTION = "log";
   public static final String ATTACHMENTS_ACTION = "attachments";
   public static final String METADATA_ACTION = "metadata";
-  public static final String RELOAD_JOBTYPE_PLUGINS_ACTION =
-      "reloadJobTypePlugins";
+  public static final String RELOAD_JOBTYPE_PLUGINS_ACTION = "reloadJobTypePlugins";
 
   public static final String MODIFY_EXECUTION_ACTION = "modifyExecution";
   public static final String MODIFY_EXECUTION_ACTION_TYPE = "modifyType";
@@ -80,21 +79,27 @@ public interface ConnectorParams {
   public static final String JMX_GET_MBEANS = "getMBeans";
   public static final String JMX_GET_MBEAN_INFO = "getMBeanInfo";
   public static final String JMX_GET_MBEAN_ATTRIBUTE = "getAttribute";
-  public static final String JMX_GET_ALL_MBEAN_ATTRIBUTES =
-      "getAllMBeanAttributes";
+  public static final String JMX_GET_ALL_MBEAN_ATTRIBUTES = "getAllMBeanAttributes";
   public static final String JMX_ATTRIBUTE = "attribute";
   public static final String JMX_MBEAN = "mBean";
 
-  public static final String JMX_GET_ALL_EXECUTOR_ATTRIBUTES =
-      "getAllExecutorAttributes";
+  public static final String JMX_GET_ALL_EXECUTOR_ATTRIBUTES = "getAllExecutorAttributes";
   public static final String JMX_HOSTPORT = "hostPort";
 
   public static final String STATS_GET_ALLMETRICSNAME = "getAllMetricNames";
   public static final String STATS_GET_METRICHISTORY = "metricHistory";
   public static final String STATS_SET_REPORTINGINTERVAL = "changeMetricInterval";
-  public static final String STATS_MAP_METRICNAMEPARAM =  "metricName";
-  public static final String STATS_MAP_STARTDATE =  "from";
-  public static final String STATS_MAP_ENDDATE =  "to";
-    public static final String STATS_MAP_REPORTINGINTERVAL =  "interval";
+  public static final String STATS_SET_CLEANINGINTERVAL = "changeCleaningInterval";
+  public static final String STATS_SET_MAXREPORTERPOINTS = "changeEmitterPoints";
+  public static final String STATS_SET_ENABLEMETRICS = "enableMetrics";
+  public static final String STATS_SET_DISBLEMETRICS = "disableMetrics";
+  public static final String STATS_MAP_METRICNAMEPARAM = "metricName";
+  public static final String STATS_MAP_METRICRETRIVALMODE = "useStats";
+  public static final String STATS_MAP_STARTDATE = "from";
+  public static final String STATS_MAP_ENDDATE = "to";
+  public static final String STATS_MAP_REPORTINGINTERVAL = "interval";
+  public static final String STATS_MAP_CLEANINGINTERVAL = "interval";
+  public static final String STATS_MAP_EMITTERNUMINSTANCES = "numInstances";
+
 
 }

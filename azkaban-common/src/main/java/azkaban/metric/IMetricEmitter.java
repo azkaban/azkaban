@@ -18,4 +18,5 @@ package azkaban.metric;
 
 public interface IMetricEmitter {
   void reportMetric(final IMetric<?> metric) throws Exception;
+  void purgeAllData() throws Exception;
 }

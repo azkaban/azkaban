@@ -38,7 +38,8 @@
               'action': 'metricHistory',
               'from': $('#datetimebegin').val(),
               'to'  : $('#datetimeend').val(),
-              'metricName': $('#metricName').val()
+              'metricName': $('#metricName').val(),
+              'useStats': $("#useStats").is(':checked')
             };
             var successHandler = function(responseData) {
               if(responseData.error != null) {
@@ -87,10 +88,10 @@
     <div class="az-page-header">
       <div class="container-full">
         <div class="row">
-          <div class="header-title">
+          <div class="header-title" style="width: 17%;">
             <h1><a href="${context}/stats">Statistics</a></h1>
           </div>
-          <div class="header-control" style="width:900px">
+          <div class="header-control" style="width: 900px; padding-top: 5px;">
 
             <form id="metric-form" method="get">
                         <label for="metricLabel" >Metric</label>
@@ -103,12 +104,12 @@
               #end
                    <label for="datetimebegin" >Between</label>
 
-                    <input type="text" id="datetimebegin" value="" class="ui-datetime-container" style="width:200px">
+                    <input type="text" id="datetimebegin" value="" class="ui-datetime-container" style="width:150px">
 
                    <label for="datetimeend" >and</label>
 
-                     <input type="text" id="datetimeend" value="" class="ui-datetime-container" style="width:200px">
-
+                     <input type="text" id="datetimeend" value="" class="ui-datetime-container" style="width:150px">
+                    <input type="checkbox" name="useStats" id="useStats" value="true"> useStats
                     <input type="button" id="retrieve" value="Retrieve" class="btn btn-success" >
                 </div>
               </div>

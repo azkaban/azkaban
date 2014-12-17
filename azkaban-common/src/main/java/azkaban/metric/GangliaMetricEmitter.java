@@ -44,4 +44,9 @@ public class GangliaMetricEmitter implements IMetricEmitter {
       }
     }
   }
+
+  @Override
+  public void purgeAllData() throws Exception {
+
+  }
 }

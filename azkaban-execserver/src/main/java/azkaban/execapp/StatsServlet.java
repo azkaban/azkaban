@@ -36,10 +36,10 @@ import org.apache.log4j.Logger;
 import azkaban.executor.ConnectorParams;
 import azkaban.metric.IMetric;
 import azkaban.metric.IMetricEmitter;
-import azkaban.metric.InMemoryHistoryNode;
-import azkaban.metric.InMemoryMetricEmitter;
 import azkaban.metric.MetricReportManager;
 import azkaban.metric.TimeBasedReportingMetric;
+import azkaban.metric.inmemoryemitter.InMemoryHistoryNode;
+import azkaban.metric.inmemoryemitter.InMemoryMetricEmitter;
 import azkaban.server.HttpRequestUtils;
 import azkaban.server.ServerConstants;
 import azkaban.utils.JSONUtils;
@@ -63,6 +63,10 @@ public class StatsServlet extends HttpServlet implements ConnectorParams {
     return HttpRequestUtils.getParam(request, name);
   }
 
+  public Boolean getBooleanParam(HttpServletRequest request, String name) throws ServletException {
+    return HttpRequestUtils.getBooleanParam(request, name);
+  }
+
   public long getLongParam(HttpServletRequest request, String name) throws ServletException {
     return HttpRequestUtils.getLongParam(request, name);
   }
@@ -74,34 +78,83 @@ public class StatsServlet extends HttpServlet implements ConnectorParams {
       String action = getParam(req, ACTION_PARAM);
       if (action.equals(STATS_SET_REPORTINGINTERVAL)) {
         handleChangeMetricInterval(req, ret);
+      } else if (action.equals(STATS_SET_CLEANINGINTERVAL)) {
+        handleChangeCleaningInterval(req, ret);
+      } else if (action.equals(STATS_SET_MAXREPORTERPOINTS)) {
+        handleChangeEmitterPoints(req, ret);
       } else if (action.equals(STATS_GET_ALLMETRICSNAME)) {
         handleGetAllMMetricsName(req, ret);
       } else if (action.equals(STATS_GET_METRICHISTORY)) {
         handleGetMetricHistory(req, ret);
+      } else if (action.equals(STATS_SET_ENABLEMETRICS)) {
+        handleChangeManagerStatusRequest(req, ret, true);
+      } else if (action.equals(STATS_SET_DISBLEMETRICS)) {
+        handleChangeManagerStatusRequest(req, ret, false);
       }
     }
 
     JSONUtils.toJSON(ret, resp.getOutputStream(), true);
   }
 
+  private void handleChangeManagerStatusRequest(HttpServletRequest req, Map<String, Object> ret, boolean enable) {
+    try {
+      if (MetricReportManager.isInstantiated()) {
+        MetricReportManager metricManager = MetricReportManager.getInstance();
+        if (enable) {
+          metricManager.enableManager();
+        } else {
+          metricManager.disableManager();
+        }
+      }
+      ret.put(STATUS_PARAM, RESPONSE_SUCCESS);
+    } catch (Exception e) {
+      logger.error(e);
+      ret.put(RESPONSE_ERROR, e.getMessage());
+    }
+  }
+
+  private void handleChangeEmitterPoints(HttpServletRequest req, Map<String, Object> ret) {
+    try {
+      long numInstance = getLongParam(req, STATS_MAP_EMITTERNUMINSTANCES);
+      if (MetricReportManager.isInstantiated()) {
+        MetricReportManager metricManager = MetricReportManager.getInstance();
+        InMemoryMetricEmitter memoryEmitter = extractInMemoryMetricEmitter(metricManager);
+        memoryEmitter.setReportingInstances(numInstance);
+      }
+      ret.put(STATUS_PARAM, RESPONSE_SUCCESS);
+    } catch (Exception e) {
+      logger.error(e);
+      ret.put(RESPONSE_ERROR, e.getMessage());
+    }
+  }
+
+  private void handleChangeCleaningInterval(HttpServletRequest req, Map<String, Object> ret) {
+    try {
+      long newInterval = getLongParam(req, STATS_MAP_CLEANINGINTERVAL);
+      if (MetricReportManager.isInstantiated()) {
+        MetricReportManager metricManager = MetricReportManager.getInstance();
+        InMemoryMetricEmitter memoryEmitter = extractInMemoryMetricEmitter(metricManager);
+        memoryEmitter.setReportingInterval(newInterval);
+      }
+      ret.put(STATUS_PARAM, RESPONSE_SUCCESS);
+    } catch (Exception e) {
+      logger.error(e);
+      ret.put(RESPONSE_ERROR, e.getMessage());
+    }
+  }
+
   private void handleGetMetricHistory(HttpServletRequest req, Map<String, Object> ret) throws ServletException {
     if (MetricReportManager.isInstantiated()) {
       MetricReportManager metricManager = MetricReportManager.getInstance();
-      InMemoryMetricEmitter memoryEmitter = null;
-
-      for (IMetricEmitter emitter : metricManager.getMetricEmitters()) {
-        if (emitter instanceof InMemoryMetricEmitter) {
-          memoryEmitter = (InMemoryMetricEmitter) emitter;
-          break;
-        }
-      }
+      InMemoryMetricEmitter memoryEmitter = extractInMemoryMetricEmitter(metricManager);
 
       // if we have a memory emitter
       if (memoryEmitter != null) {
         try {
           List<InMemoryHistoryNode> result =
               memoryEmitter.getDrawMetric(getParam(req, STATS_MAP_METRICNAMEPARAM),
-                  parseDate(getParam(req, STATS_MAP_STARTDATE)), parseDate(getParam(req, STATS_MAP_ENDDATE)));
+                  parseDate(getParam(req, STATS_MAP_STARTDATE)), parseDate(getParam(req, STATS_MAP_ENDDATE)),
+                  getBooleanParam(req, STATS_MAP_METRICRETRIVALMODE));
 
           if (result != null && result.size() > 0) {
             ret.put("data", result);
@@ -120,11 +173,22 @@ public class StatsServlet extends HttpServlet implements ConnectorParams {
     }
   }
 
+  private InMemoryMetricEmitter extractInMemoryMetricEmitter(MetricReportManager metricManager) {
+    InMemoryMetricEmitter memoryEmitter = null;
+    for (IMetricEmitter emitter : metricManager.getMetricEmitters()) {
+      if (emitter instanceof InMemoryMetricEmitter) {
+        memoryEmitter = (InMemoryMetricEmitter) emitter;
+        break;
+      }
+    }
+    return memoryEmitter;
+  }
+
   private void handleGetAllMMetricsName(HttpServletRequest req, Map<String, Object> ret) {
     if (MetricReportManager.isInstantiated()) {
       MetricReportManager metricManager = MetricReportManager.getInstance();
       List<IMetric<?>> result = metricManager.getAllMetrics();
-      if(result.size() == 0) {
+      if (result.size() == 0) {
         ret.put(RESPONSE_ERROR, "No Metric being tracked");
       } else {
         ret.put("data", result);

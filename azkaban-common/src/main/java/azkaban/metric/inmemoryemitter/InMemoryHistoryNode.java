@@ -14,7 +14,7 @@
  * the License.
  */
 
-package azkaban.metric;
+package azkaban.metric.inmemoryemitter;
 
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;

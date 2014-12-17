@@ -21,24 +21,30 @@ import java.util.TimerTask;
 
 
 public abstract class TimeBasedReportingMetric<T> extends AbstractMetric<T> {
-  private Timer timer = new Timer();
-  private TimerTask recurringReporting = new TimerTask() {
-    @Override
-    public void run() {
-      finalizeValue();
-      notifyManager();
-    }
-  };
+  private Timer timer;
 
   public TimeBasedReportingMetric(String metricName, String metricType, T initialValue, MetricReportManager manager,
       long interval) {
     super(metricName, metricType, initialValue, manager);
-    timer.schedule(recurringReporting, interval, interval);
+    timer = new Timer();
+    timer.schedule(getTimerTask(), interval, interval);
+  }
+
+  private TimerTask getTimerTask() {
+    TimerTask recurringReporting = new TimerTask() {
+      @Override
+      public void run() {
+        finalizeValue();
+        notifyManager();
+      }
+    };
+    return recurringReporting;
   }
 
   public void updateInterval(long interval) {
     timer.cancel();
-    timer.schedule(recurringReporting, interval, interval);
+    timer = new Timer();
+    timer.schedule(getTimerTask(), interval, interval);
   }
 
   /**

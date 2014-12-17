@@ -33,12 +33,14 @@ public class MetricReportManager {
   private List<IMetricEmitter> metricEmitters;
   private ExecutorService executorService;
   private static volatile MetricReportManager instance = null;
+  boolean isManagerEnabled;
 
   // For singleton
   private MetricReportManager() {
     executorService = Executors.newFixedThreadPool(MAX_EMITTER_THREADS);
     metrics = new ArrayList<IMetric<?>>();
     metricEmitters = new LinkedList<IMetricEmitter>();
+    enableManager();
   }
 
   public static boolean isInstantiated() {
@@ -59,7 +61,7 @@ public class MetricReportManager {
 
   // each element of metrics List is responsible to call this method and report metrics
   public void reportMetric(final IMetric<?> metric) {
-    if (metric != null) {
+    if (metric != null && isManagerEnabled) {
 
       // Report metric to all the emitters
       synchronized (metric) {
@@ -116,6 +118,23 @@ public class MetricReportManager {
 
   public List<IMetric<?>> getAllMetrics() {
     return metrics;
+  }
+
+  public void enableManager() {
+    isManagerEnabled = true;
+  }
+
+  public void disableManager() {
+    if(isManagerEnabled) {
+      isManagerEnabled = false;
+      for(IMetricEmitter emitter: metricEmitters) {
+        try {
+          emitter.purgeAllData();
+        } catch (Exception ex) {
+          logger.error("Failed to purge data "  + ex.toString());
+        }
+      }
+    }
   }
 
   protected void finalize() {

@@ -14,7 +14,7 @@
  * the License.
  */
 
-package azkaban.metric;
+package azkaban.metric.inmemoryemitter;
 
 import java.util.Date;
 import java.util.HashMap;
@@ -24,6 +24,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+import azkaban.metric.IMetric;
+import azkaban.metric.IMetricEmitter;
 import azkaban.utils.Props;
 
 
@@ -32,13 +34,21 @@ public class InMemoryMetricEmitter implements IMetricEmitter {
   private static final String INMEMORY_METRIC_REPORTER_WINDOW = "azkaban.metric.inmemory.interval";
   private static final String INMEMORY_METRIC_NUM_INSTANCES = "azkaban.metric.inmemory.maxinstances";
 
-  long Interval;
+  long interval;
   long numInstances;
 
   public InMemoryMetricEmitter(Props azkProps) {
     historyListMapping = new HashMap<String, LinkedList<InMemoryHistoryNode>>();
-    Interval = azkProps.getLong(INMEMORY_METRIC_REPORTER_WINDOW, 60 * 60 * 24 * 7);
-    numInstances = azkProps.getLong(INMEMORY_METRIC_NUM_INSTANCES, 10000);
+    interval = azkProps.getLong(INMEMORY_METRIC_REPORTER_WINDOW, 60 * 60 * 24 * 7 * 1000);
+    numInstances = azkProps.getLong(INMEMORY_METRIC_NUM_INSTANCES, 50);
+  }
+
+  public synchronized void setReportingInterval(long val) {
+    interval = val;
+  }
+
+  public void setReportingInstances(long num) {
+    numInstances = num;
   }
 
   @Override
@@ -53,7 +63,7 @@ public class InMemoryMetricEmitter implements IMetricEmitter {
     }
   }
 
-  public List<InMemoryHistoryNode> getDrawMetric(String metricName, Date from, Date to) {
+  public List<InMemoryHistoryNode> getDrawMetric(String metricName, Date from, Date to, Boolean useStats) {
     LinkedList<InMemoryHistoryNode> selectedLists = new LinkedList<InMemoryHistoryNode>();
     if (historyListMapping.containsKey(metricName)) {
 
@@ -70,25 +80,47 @@ public class InMemoryMetricEmitter implements IMetricEmitter {
       }
 
       // selecting nodes if num of nodes > numInstances
-      if (selectedLists.size() > numInstances) {
-        double step = (double) selectedLists.size() / numInstances;
-        long nextIndex = 0, currentIndex = 0, numSelectedInstances = 1;
-        Iterator<InMemoryHistoryNode> ite = selectedLists.iterator();
-
-        while(ite.hasNext()) {
-          ite.next();
-          if (currentIndex == nextIndex) {
-            nextIndex = (long) Math.floor(numSelectedInstances * step + 0.5);
-            numSelectedInstances++;
-          } else {
-            ite.remove();
-          }
-          currentIndex++;
-        }
+      if (useStats) {
+        statBasedSelectMetricHistory(selectedLists);
+      } else {
+        generalSelectMetricHistory(selectedLists);
       }
     }
     cleanUsingTime(metricName, new Date());
     return selectedLists;
+  }
+
+  private void statBasedSelectMetricHistory(LinkedList<InMemoryHistoryNode> selectedLists) {
+      Iterator<InMemoryHistoryNode> ite = selectedLists.iterator();
+      Double mean = InMemoryHistoryStatistics.mean(selectedLists);
+      Double std = InMemoryHistoryStatistics.sdev(selectedLists);
+
+      while (ite.hasNext()) {
+        InMemoryHistoryNode currentNode = ite.next();
+        double value = ((Number)currentNode.getValue()).doubleValue() ;
+        // remove all elements which lies in 95% value band
+        if (value > mean + 2*std && value < mean + 2*std) {
+          ite.remove();
+        }
+      }
+  }
+
+  private void generalSelectMetricHistory(LinkedList<InMemoryHistoryNode> selectedLists) {
+    if (selectedLists.size() > numInstances) {
+      double step = (double) selectedLists.size() / numInstances;
+      long nextIndex = 0, currentIndex = 0, numSelectedInstances = 1;
+      Iterator<InMemoryHistoryNode> ite = selectedLists.iterator();
+      while (ite.hasNext()) {
+        ite.next();
+        if (currentIndex == nextIndex) {
+          nextIndex = (long) Math.floor(numSelectedInstances * step + 0.5);
+          numSelectedInstances++;
+        } else {
+          ite.remove();
+        }
+        currentIndex++;
+      }
+    }
   }
 
   private void cleanUsingTime(String metricName, Date firstAllowedDate) {
@@ -96,13 +128,26 @@ public class InMemoryMetricEmitter implements IMetricEmitter {
       synchronized (historyListMapping.get(metricName)) {
 
         InMemoryHistoryNode firstNode = historyListMapping.get(metricName).peekFirst();
+        long localCopyOfInterval = 0;
+
+        // go ahead for clean up using latest possible value of interval
+        // any interval change will not affect on going clean up
+        synchronized (this) {
+          localCopyOfInterval = interval;
+        }
+
         // removing objects older than Interval time from firstAllowedDate
         while (firstNode != null
-            && TimeUnit.MILLISECONDS.toSeconds(firstAllowedDate.getTime() - firstNode.getTimestamp().getTime()) > Interval) {
+            && TimeUnit.MILLISECONDS.toMillis(firstAllowedDate.getTime() - firstNode.getTimestamp().getTime()) > localCopyOfInterval) {
           historyListMapping.get(metricName).removeFirst();
           firstNode = historyListMapping.get(metricName).peekFirst();
         }
       }
     }
+  }
+
+  @Override
+  public void purgeAllData() throws Exception {
+    historyListMapping.clear();
   }
 }

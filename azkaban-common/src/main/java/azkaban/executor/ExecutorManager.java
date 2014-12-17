@@ -754,10 +754,6 @@ public class ExecutorManager extends EventHandler implements
     @SuppressWarnings("unchecked")
     Map<String, Object> jsonResponse =
         (Map<String, Object>) JSONUtils.parseJSONFromString(response);
-    String error = (String) jsonResponse.get(ConnectorParams.RESPONSE_ERROR);
-    if (error != null) {
-      throw new IOException(error);
-    }
 
     return jsonResponse;
   }

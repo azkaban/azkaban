@@ -1,3 +1,19 @@
+/*
+ * Copyright 2014 LinkedIn Corp.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not
+ * use this file except in compliance with the License. You may obtain a copy of
+ * the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations under
+ * the License.
+ */
+
 package azkaban.webapp.servlet;
 
 import java.io.IOException;
@@ -56,38 +72,38 @@ public class StatsServlet extends LoginAbstractAzkabanServlet {
     if (actionName.equals(ConnectorParams.STATS_GET_METRICHISTORY)) {
       handleGetMetricHistory(req, ret, session.getUser());
     } else if (actionName.equals(ConnectorParams.STATS_SET_REPORTINGINTERVAL)) {
-      handleChangeMetricInterval(req, ret, session);
+      handleChangeConfigurationRequest(ConnectorParams.STATS_SET_REPORTINGINTERVAL, req, ret);
+    } else if (actionName.equals(ConnectorParams.STATS_SET_CLEANINGINTERVAL)) {
+      handleChangeConfigurationRequest(ConnectorParams.STATS_SET_CLEANINGINTERVAL, req, ret);
+    } else if (actionName.equals(ConnectorParams.STATS_SET_MAXREPORTERPOINTS)) {
+      handleChangeConfigurationRequest(ConnectorParams.STATS_SET_MAXREPORTERPOINTS, req, ret);
+    } else if (actionName.equals(ConnectorParams.STATS_SET_ENABLEMETRICS)) {
+      handleChangeConfigurationRequest(ConnectorParams.STATS_SET_ENABLEMETRICS, req, ret);
+    } else if (actionName.equals(ConnectorParams.STATS_SET_DISBLEMETRICS)) {
+      handleChangeConfigurationRequest(ConnectorParams.STATS_SET_DISBLEMETRICS, req, ret);
     }
 
     writeJSON(resp, ret);
   }
 
-  private void handleChangeMetricInterval(HttpServletRequest req, HashMap<String, Object> ret, Session session)
+  private void handleChangeConfigurationRequest(String actionName, HttpServletRequest req, HashMap<String, Object> ret)
       throws ServletException, IOException {
-    try {
-      Map<String, Object> result =
-          execManager.callExecutorStats(ConnectorParams.STATS_GET_ALLMETRICSNAME, getAllParams(req));
-
-      if (result.containsKey(ConnectorParams.RESPONSE_ERROR)) {
-        throw new Exception(result.get(ConnectorParams.RESPONSE_ERROR).toString());
-      }
+    Map<String, Object> result = execManager.callExecutorStats(actionName, getAllParams(req));
+    if (result.containsKey(ConnectorParams.RESPONSE_ERROR)) {
+      ret.put(ConnectorParams.RESPONSE_ERROR, result.get(ConnectorParams.RESPONSE_ERROR).toString());
+    } else {
       ret.put(ConnectorParams.STATUS_PARAM, result.get(ConnectorParams.STATUS_PARAM));
-    } catch (Exception e) {
-      ret.put(ConnectorParams.RESPONSE_ERROR, e.toString());
     }
   }
 
   private void handleGetMetricHistory(HttpServletRequest req, HashMap<String, Object> ret, User user)
       throws IOException, ServletException {
-    try {
-      Map<String, Object> result =
-          execManager.callExecutorStats(ConnectorParams.STATS_GET_METRICHISTORY, getAllParams(req));
-      if (result.containsKey(ConnectorParams.RESPONSE_ERROR)) {
-        throw new Exception(result.get(ConnectorParams.RESPONSE_ERROR).toString());
-      }
+    Map<String, Object> result =
+        execManager.callExecutorStats(ConnectorParams.STATS_GET_METRICHISTORY, getAllParams(req));
+    if (result.containsKey(ConnectorParams.RESPONSE_ERROR)) {
+      ret.put(ConnectorParams.RESPONSE_ERROR, result.get(ConnectorParams.RESPONSE_ERROR).toString());
+    } else {
       ret.put("data", result.get("data"));
-    } catch (Exception e) {
-      ret.put(ConnectorParams.RESPONSE_ERROR, e.toString());
     }
   }
 
@@ -99,16 +115,19 @@ public class StatsServlet extends LoginAbstractAzkabanServlet {
       page.render();
       return;
     }
+
     try {
       Map<String, Object> result =
           execManager.callExecutorStats(ConnectorParams.STATS_GET_ALLMETRICSNAME, (Pair<String, String>[]) null);
       if (result.containsKey(ConnectorParams.RESPONSE_ERROR)) {
-        throw new Exception(result.get(ConnectorParams.RESPONSE_ERROR).toString());
+        page.add("errorMsg", result.get(ConnectorParams.RESPONSE_ERROR).toString());
+      } else {
+        page.add("metricList", result.get("data"));
       }
-      page.add("metricList", result.get("data"));
-    } catch (Exception e) {
-      page.add("errorMsg", e.toString());
+    } catch (IOException e) {
+      page.add("errorMsg", "Failed to get a response from Azkaban exec serve");
     }
+
     page.render();
   }
 
@@ -128,16 +147,16 @@ public class StatsServlet extends LoginAbstractAzkabanServlet {
     return false;
   }
 
-  @SuppressWarnings("unchecked")
+  @SuppressWarnings({ "unchecked", "rawtypes" })
   private Pair<String, String>[] getAllParams(HttpServletRequest req) {
     List<Pair<String, String>> allParams = new LinkedList<Pair<String, String>>();
 
     Iterator it = req.getParameterMap().entrySet().iterator();
     while (it.hasNext()) {
-        Map.Entry pairs = (Map.Entry)it.next();
-        for(Object value : (String [])pairs.getValue()) {
-          allParams.add(new Pair<String, String>((String) pairs.getKey(), (String) value));
-        }
+      Map.Entry pairs = (Map.Entry) it.next();
+      for (Object value : (String[]) pairs.getValue()) {
+        allParams.add(new Pair<String, String>((String) pairs.getKey(), (String) value));
+      }
     }
 
     return allParams.toArray(new Pair[allParams.size()]);
