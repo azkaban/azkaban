@@ -411,21 +411,17 @@ public class ProjectManager {
     // the validators are using different values for the
     // PROJECT_ARCHIVE_FILE_PATH configuration key.
     // In addition, we want to reload the validator objects for each upload, so
-    // that
-    // we can change the validator configuration files without having to restart
-    // Azkaban web server.
-    // If the XmlValidatorManager is an instance variable, 2 consecutive
-    // invocations to the uploadProject
+    // that we can change the validator configuration files without having to
+    // restart Azkaban web server. If the XmlValidatorManager is an instance
+    // variable, 2 consecutive invocations to the uploadProject
     // method might cause the second one to overwrite the
     // PROJECT_ARCHIVE_FILE_PATH configuration parameter
     // of the first, thus causing a wrong archive file path to be passed to the
-    // validators. Creating a
-    // separate XmlValidatorManager object for each upload will prevent this
-    // issue without having to add
+    // validators. Creating a separate XmlValidatorManager object for each
+    // upload will prevent this issue without having to add
     // synchronization between uploads. Since we're already reloading the XML
-    // config file and creating
-    // validator objects for each upload, this does not add too much additional
-    // overhead.
+    // config file and creating validator objects for each upload, this does
+    // not add too much additional overhead.
     ValidatorManager validatorManager = new XmlValidatorManager(prop);
     logger.info("Validating project " + archive.getName()
         + " using the registered validators "

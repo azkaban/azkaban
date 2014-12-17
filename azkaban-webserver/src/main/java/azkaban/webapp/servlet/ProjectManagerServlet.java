@@ -87,7 +87,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
   private static final String LOCKDOWN_CREATE_PROJECTS_KEY =
       "lockdown.create.projects";
 
-  private static final String PROJECT_DOWNLOAD_BUFFER_SIZE =
+  private static final String PROJECT_DOWNLOAD_BUFFER_SIZE_IN_BYTE =
       "project.download.bufffer.size";
 
   private ProjectManager projectManager;
@@ -121,7 +121,8 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
     }
 
     downloadBufferSize =
-        server.getServerProps().getInt(PROJECT_DOWNLOAD_BUFFER_SIZE, 8192);
+        server.getServerProps().getInt(PROJECT_DOWNLOAD_BUFFER_SIZE_IN_BYTE,
+            8192);
 
     logger.info("downloadBufferSize: " + downloadBufferSize);
   }
@@ -499,6 +500,9 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
       }
 
     } catch (Throwable e) {
+      logger.error(
+          "Encountered error while downloading project zip file for project: "
+              + projectName + " by user: " + user.getUserId(), e);
       throw new ServletException(e);
     } finally {
       IOUtils.closeQuietly(inStream);
