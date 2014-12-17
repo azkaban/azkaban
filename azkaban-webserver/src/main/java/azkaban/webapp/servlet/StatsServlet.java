@@ -40,7 +40,9 @@ import azkaban.user.UserManager;
 import azkaban.utils.Pair;
 import azkaban.webapp.AzkabanWebServer;
 
-
+/**
+ * User facing servlet for Azkaban default metric display
+ */
 public class StatsServlet extends LoginAbstractAzkabanServlet {
   private static final long serialVersionUID = 1L;
   private UserManager userManager;
@@ -86,6 +88,10 @@ public class StatsServlet extends LoginAbstractAzkabanServlet {
     writeJSON(resp, ret);
   }
 
+  /**
+   * Generic method to facilitate actionName action using Azkaban exec server
+   * @param actionName  Name of the action
+   */
   private void handleChangeConfigurationRequest(String actionName, HttpServletRequest req, HashMap<String, Object> ret)
       throws ServletException, IOException {
     Map<String, Object> result = execManager.callExecutorStats(actionName, getAllParams(req));
@@ -96,6 +102,10 @@ public class StatsServlet extends LoginAbstractAzkabanServlet {
     }
   }
 
+  /**
+   * Get metric snapshots for a metric and date specification
+   * @throws ServletException
+   */
   private void handleGetMetricHistory(HttpServletRequest req, HashMap<String, Object> ret, User user)
       throws IOException, ServletException {
     Map<String, Object> result =
@@ -107,6 +117,9 @@ public class StatsServlet extends LoginAbstractAzkabanServlet {
     }
   }
 
+  /**
+   *
+   */
   private void handleStatePageLoad(HttpServletRequest req, HttpServletResponse resp, Session session)
       throws ServletException {
     Page page = newPage(req, resp, session, "azkaban/webapp/servlet/velocity/statsPage.vm");
@@ -143,10 +156,13 @@ public class StatsServlet extends LoginAbstractAzkabanServlet {
         return true;
       }
     }
-
     return false;
   }
 
+  /**
+   * Parse all Http request params
+   * @return
+   */
   @SuppressWarnings({ "unchecked", "rawtypes" })
   private Pair<String, String>[] getAllParams(HttpServletRequest req) {
     List<Pair<String, String>> allParams = new LinkedList<Pair<String, String>>();

@@ -22,16 +22,27 @@ import azkaban.event.EventListener;
 import azkaban.metric.MetricReportManager;
 import azkaban.metric.TimeBasedReportingMetric;
 
-
+/**
+ * Metric to keep track of number of running jobs in Azkaban exec server
+ */
 public class NumRunningJobMetric extends TimeBasedReportingMetric<Integer> implements EventListener {
   public static final String NUM_RUNNING_JOB_METRIC_NAME = "NumRunningJobMetric";
   private static final String NUM_RUNNING_JOB_METRIC_TYPE = "uint16";
 
+  /**
+   * @param manager metric manager
+   * @param interval reporting interval
+   */
   public NumRunningJobMetric(MetricReportManager manager, long interval) {
     super(NUM_RUNNING_JOB_METRIC_NAME, NUM_RUNNING_JOB_METRIC_TYPE, 0, manager, interval);
     logger.debug("Instantiated NumRunningJobMetric");
   }
 
+  /**
+   * Listen for events to maintain correct value of number of running jobs
+   * {@inheritDoc}
+   * @see azkaban.event.EventListener#handleEvent(azkaban.event.Event)
+   */
   @Override
   public synchronized void handleEvent(Event event) {
     if (event.getType() == Type.JOB_STARTED) {

@@ -24,29 +24,47 @@ import java.util.concurrent.Executors;
 
 import org.apache.log4j.Logger;
 
-
+/**
+ * Manager for access or updating metric related functionality of Azkaban
+ */
 public class MetricReportManager {
+  /**
+   * Maximum number of metrics reporting threads
+   */
   private static final int MAX_EMITTER_THREADS = 4;
   private static final Logger logger = Logger.getLogger(MetricReportManager.class);
 
+  /**
+   * List of all the metrics that Azkaban is tracking
+   */
   private List<IMetric<?>> metrics;
+  /**
+   * List of all the emitter listening all the metrics
+   */
   private List<IMetricEmitter> metricEmitters;
   private ExecutorService executorService;
+  // Singleton variable
   private static volatile MetricReportManager instance = null;
   boolean isManagerEnabled;
 
-  // For singleton
   private MetricReportManager() {
+    logger.debug("Instantiating Metric Manager");
     executorService = Executors.newFixedThreadPool(MAX_EMITTER_THREADS);
     metrics = new ArrayList<IMetric<?>>();
     metricEmitters = new LinkedList<IMetricEmitter>();
     enableManager();
   }
 
+  /**
+   * @return true, if we have enabled metric manager from Azkaban exec server
+   */
   public static boolean isInstantiated() {
     return instance != null;
   }
 
+  /**
+   * Get a singleton object for Metric Manager
+   */
   public static MetricReportManager getInstance() {
     if (instance == null) {
       synchronized (MetricReportManager.class) {
@@ -82,27 +100,50 @@ public class MetricReportManager {
     }
   }
 
+  /**
+   * Add a metric emitter to report metric
+   * @param emitter
+   */
   public void addMetricEmitter(final IMetricEmitter emitter) {
     metricEmitters.add(emitter);
   }
 
+  /**
+   * remove a metric emitter
+   * @param emitter
+   */
   public void removeMetricEmitter(final IMetricEmitter emitter) {
     metricEmitters.remove(emitter);
   }
 
+  /**
+   * Get all the metric emitters
+   * @return
+   */
   public List<IMetricEmitter> getMetricEmitters() {
     return metricEmitters;
   }
 
+  /**
+   * Add a metric to be managed by Metric Manager
+   * @param metric
+   */
   public void addMetric(final IMetric<?> metric) {
     // metric null or already present
     if (metric != null && getMetricFromName(metric.getName()) == null) {
       logger.debug(String.format("Adding %s metric in Metric Manager", metric.getName()));
       metrics.add(metric);
       metric.updateMetricManager(this);
+    } else {
+      logger.error("Failed to add metric");
     }
   }
 
+  /**
+   * Get metric object for a given metric name
+   * @param name metricName
+   * @return metric Object, if found. Otherwise null.
+   */
   public IMetric<?> getMetricFromName(final String name) {
     IMetric<?> metric = null;
     if (name != null) {
@@ -116,15 +157,24 @@ public class MetricReportManager {
     return metric;
   }
 
+  /**
+   * Get all the emitters
+   * @return
+   */
   public List<IMetric<?>> getAllMetrics() {
     return metrics;
   }
 
   public void enableManager() {
+    logger.info("Enabling Metric Manager");
     isManagerEnabled = true;
   }
 
+  /**
+   * Disable Metric Manager and ask all emitters to purge all available data.
+   */
   public void disableManager() {
+    logger.info("Disabling Metric Manager");
     if(isManagerEnabled) {
       isManagerEnabled = false;
       for(IMetricEmitter emitter: metricEmitters) {
@@ -137,6 +187,11 @@ public class MetricReportManager {
     }
   }
 
+  /**
+   * Shutdown execution service
+   * {@inheritDoc}
+   * @see java.lang.Object#finalize()
+   */
   protected void finalize() {
     executorService.shutdown();
   }

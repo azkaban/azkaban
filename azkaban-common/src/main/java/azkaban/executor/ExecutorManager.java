@@ -717,6 +717,11 @@ public class ExecutorManager extends EventHandler implements
     return jsonResponse;
   }
 
+  /**
+   * Manage servlet call for stats servlet in Azkaban execution server
+   * {@inheritDoc}
+   * @see azkaban.executor.ExecutorManagerAdapter#callExecutorStats(java.lang.String, azkaban.utils.Pair[])
+   */
   @Override
   public Map<String, Object> callExecutorStats(String action, Pair<String, String>... params) throws IOException {
 

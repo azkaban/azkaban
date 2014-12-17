@@ -18,7 +18,10 @@ package azkaban.metric;
 
 import org.apache.log4j.Logger;
 
-
+/**
+ * Abstract class for Metric
+ * @param <T> Type of Value of a given metric
+ */
 public abstract class AbstractMetric<T> implements IMetric<T> {
   protected static final Logger logger = Logger.getLogger(MetricReportManager.class);
   protected String name;
@@ -26,6 +29,12 @@ public abstract class AbstractMetric<T> implements IMetric<T> {
   protected String type;
   protected MetricReportManager metricManager;
 
+  /**
+   * @param metricName Name of metric
+   * @param metricType Metric type. For display purposes.
+   * @param initialValue Initial Value of a metric
+   * @param manager Metric Manager whom a metric will report to
+   */
   public AbstractMetric(String metricName, String metricType, T initialValue, MetricReportManager manager) {
     name = metricName;
     type = metricType;
@@ -33,22 +42,45 @@ public abstract class AbstractMetric<T> implements IMetric<T> {
     metricManager = manager;
   }
 
+  /**
+   * {@inheritDoc}
+   * @see azkaban.metric.IMetric#getName()
+   */
   public String getName() {
     return name;
   }
 
+  /**
+   * {@inheritDoc}
+   * @see azkaban.metric.IMetric#getValueType()
+   */
   public String getValueType() {
     return type;
   }
 
+  /**
+   * {@inheritDoc}
+   * @see azkaban.metric.IMetric#updateMetricManager(azkaban.metric.MetricReportManager)
+   */
   public void updateMetricManager(final MetricReportManager manager) {
     metricManager = manager;
   }
 
+  /**
+   * {@inheritDoc}
+   * @see azkaban.metric.IMetric#getValue()
+   */
   public T getValue() {
     return value;
   }
 
+  /**
+   * Method used to notify manager for a tracking event.
+   * Metric is free to call this method as per implementation.
+   * Timer based or Azkaban events can be the most common implementation
+   * {@inheritDoc}
+   * @see azkaban.metric.IMetric#notifyManager()
+   */
   public synchronized void notifyManager() {
     logger.debug(String.format("Notifying Manager for %s", this.getClass().getName()));
     try {

@@ -16,14 +16,19 @@
 
 package azkaban.metric.inmemoryemitter;
 
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
 import java.util.Date;
 
+/**
+ * A snapshot of metric's value
+ */
 public class InMemoryHistoryNode {
   private Object value;
   private Date date;
 
+  /**
+   * Takes snapshot of the metric with a given value
+   * @param val
+   */
   public InMemoryHistoryNode(Object val) {
     value = val;
     date = new Date();
@@ -35,10 +40,5 @@ public class InMemoryHistoryNode {
 
   public Date getTimestamp() {
     return date;
-  }
-
-  public String formattedTimestamp() {
-    DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-    return dateFormat.format(date);
   }
 }

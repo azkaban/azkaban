@@ -18,10 +18,15 @@ package azkaban.metric.inmemoryemitter;
 
 import java.util.List;
 
+/**
+ * Utility class for mathematical function of metric's history objects
+ */
 public final class InMemoryHistoryStatistics {
 
   /**
    * Returns the average
+   * @param data
+   * @return mean of data
    */
   public static double mean(List<InMemoryHistoryNode> data) {
     double total = 0.0;
@@ -33,13 +38,18 @@ public final class InMemoryHistoryStatistics {
 
   /**
    * Returns the sample standard deviation
+   * @param data
+   * @return standard deviation of data
    */
   public static double sdev(List<InMemoryHistoryNode> data) {
     return Math.sqrt(variance(data));
   }
 
+
   /**
    * Returns the sample variance
+   * @param data
+   * @return variance of data
    */
   public static double variance(List<InMemoryHistoryNode> data) {
     double mu = mean(data);
@@ -50,6 +60,11 @@ public final class InMemoryHistoryStatistics {
     return sumsq / data.size();
   }
 
+  /**
+   * Square of a number
+   * @param x
+   * @return x*x
+   */
   public static double sqr(double x) {
     return x * x;
   }

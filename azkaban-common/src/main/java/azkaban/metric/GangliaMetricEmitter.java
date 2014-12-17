@@ -18,12 +18,17 @@ package azkaban.metric;
 
 import azkaban.utils.Props;
 
-
+/**
+ * MetricEmitter implementation to report metric to a ganglia gmetric process
+ */
 public class GangliaMetricEmitter implements IMetricEmitter {
   private static final String GANGLIA_METRIC_REPORTER_PATH = "azkaban.metric.ganglia.path";
 
   private String gmetricPath;
 
+  /**
+   * @param azkProps Azkaban Properties
+   */
   public GangliaMetricEmitter(Props azkProps) {
     gmetricPath = azkProps.get(GANGLIA_METRIC_REPORTER_PATH);
   }
@@ -32,6 +37,11 @@ public class GangliaMetricEmitter implements IMetricEmitter {
     return String.format("%s -t %s -n %s -v %s", gmetricPath, metric.getValueType(), metric.getName(), metric.getValue().toString());
   }
 
+  /**
+   * Report metric by executing command line interface of gmetrics
+   * {@inheritDoc}
+   * @see azkaban.metric.IMetricEmitter#reportMetric(azkaban.metric.IMetric)
+   */
   @Override
   public void reportMetric(final IMetric<?> metric) throws Exception {
     String gangliaCommand = buildCommand(metric);

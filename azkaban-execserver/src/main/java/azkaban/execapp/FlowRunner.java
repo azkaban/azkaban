@@ -818,7 +818,12 @@ public class FlowRunner extends EventHandler implements Runnable {
     return jobRunner;
   }
 
+  /**
+   * Configure Azkaban metrics tracking for a new jobRunner instance
+   * @param jobRunner
+   */
   private void configureJobLevelMetrics(JobRunner jobRunner) {
+    logger.info("Configuring Azkaban metrics tracking for jobrunner object");
     if(MetricReportManager.isInstantiated()) {
       MetricReportManager metricManager = MetricReportManager.getInstance();
       NumRunningJobMetric metric = (NumRunningJobMetric) metricManager.getMetricFromName(NumRunningJobMetric.NUM_RUNNING_JOB_METRIC_NAME);

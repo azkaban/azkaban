@@ -44,7 +44,10 @@ import azkaban.server.HttpRequestUtils;
 import azkaban.server.ServerConstants;
 import azkaban.utils.JSONUtils;
 
-
+/**
+ * Servlet to communicate with Azkaban exec server
+ * This servlet get requests from stats servlet in Azkaban Web server
+ */
 public class StatsServlet extends HttpServlet implements ConnectorParams {
   private static final long serialVersionUID = 2L;
   private static final Logger logger = Logger.getLogger(StatsServlet.class);
@@ -71,6 +74,11 @@ public class StatsServlet extends HttpServlet implements ConnectorParams {
     return HttpRequestUtils.getLongParam(request, name);
   }
 
+  /**
+   * Handle all get request to Stats Servlet
+   * {@inheritDoc}
+   * @see javax.servlet.http.HttpServlet#doGet(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse)
+   */
   protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
     Map<String, Object> ret = new HashMap<String, Object>();
 
@@ -96,11 +104,16 @@ public class StatsServlet extends HttpServlet implements ConnectorParams {
     JSONUtils.toJSON(ret, resp.getOutputStream(), true);
   }
 
-  private void handleChangeManagerStatusRequest(HttpServletRequest req, Map<String, Object> ret, boolean enable) {
+  /**
+   * enable or disable metric Manager
+   * A disable will also purge all data from all metric emitters
+   */
+  private void handleChangeManagerStatusRequest(HttpServletRequest req, Map<String, Object> ret, boolean enableMetricManager) {
     try {
+      logger.info("Updating metric manager status");
       if (MetricReportManager.isInstantiated()) {
         MetricReportManager metricManager = MetricReportManager.getInstance();
-        if (enable) {
+        if (enableMetricManager) {
           metricManager.enableManager();
         } else {
           metricManager.disableManager();
@@ -113,6 +126,9 @@ public class StatsServlet extends HttpServlet implements ConnectorParams {
     }
   }
 
+  /**
+   * Update number of display snapshots for /stats graphs
+   */
   private void handleChangeEmitterPoints(HttpServletRequest req, Map<String, Object> ret) {
     try {
       long numInstance = getLongParam(req, STATS_MAP_EMITTERNUMINSTANCES);
@@ -128,6 +144,9 @@ public class StatsServlet extends HttpServlet implements ConnectorParams {
     }
   }
 
+  /**
+   * Update InMemoryMetricEmitter interval to maintain metric snapshots
+   */
   private void handleChangeCleaningInterval(HttpServletRequest req, Map<String, Object> ret) {
     try {
       long newInterval = getLongParam(req, STATS_MAP_CLEANINGINTERVAL);
@@ -143,6 +162,10 @@ public class StatsServlet extends HttpServlet implements ConnectorParams {
     }
   }
 
+  /**
+   * Get metric snapshots for a metric and date specification
+   * @throws ServletException
+   */
   private void handleGetMetricHistory(HttpServletRequest req, Map<String, Object> ret) throws ServletException {
     if (MetricReportManager.isInstantiated()) {
       MetricReportManager metricManager = MetricReportManager.getInstance();
@@ -173,6 +196,9 @@ public class StatsServlet extends HttpServlet implements ConnectorParams {
     }
   }
 
+  /**
+   * Get InMemoryMetricEmitter, if available else null
+   */
   private InMemoryMetricEmitter extractInMemoryMetricEmitter(MetricReportManager metricManager) {
     InMemoryMetricEmitter memoryEmitter = null;
     for (IMetricEmitter emitter : metricManager.getMetricEmitters()) {
@@ -184,6 +210,9 @@ public class StatsServlet extends HttpServlet implements ConnectorParams {
     return memoryEmitter;
   }
 
+  /**
+   * Get all the metrics tracked by metric manager
+   */
   private void handleGetAllMMetricsName(HttpServletRequest req, Map<String, Object> ret) {
     if (MetricReportManager.isInstantiated()) {
       MetricReportManager metricManager = MetricReportManager.getInstance();
@@ -198,6 +227,10 @@ public class StatsServlet extends HttpServlet implements ConnectorParams {
     }
   }
 
+  /**
+   * Update tracking interval for a given metrics
+   * @throws ServletException
+   */
   private void handleChangeMetricInterval(HttpServletRequest req, Map<String, Object> ret) throws ServletException {
     try {
       String metricName = getParam(req, STATS_MAP_METRICNAMEPARAM);

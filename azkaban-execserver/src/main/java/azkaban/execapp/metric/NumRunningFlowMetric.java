@@ -20,19 +20,31 @@ import azkaban.execapp.FlowRunnerManager;
 import azkaban.metric.MetricReportManager;
 import azkaban.metric.TimeBasedReportingMetric;
 
-
+/**
+ * Metric to keep track of number of running flows in Azkaban exec server
+ */
 public class NumRunningFlowMetric extends TimeBasedReportingMetric<Integer> {
   public static final String NUM_RUNNING_FLOW_METRIC_NAME = "NumRunningFlowMetric";
   private static final String NUM_RUNNING_FLOW_METRIC_TYPE = "uint16";
 
   private FlowRunnerManager flowManager;
 
+  /**
+   * @param flowRunnerManager Flow runner manager
+   * @param manager metric report manager
+   * @param interval reporting interval
+   */
   public NumRunningFlowMetric(FlowRunnerManager flowRunnerManager, MetricReportManager manager, long interval) {
     super(NUM_RUNNING_FLOW_METRIC_NAME, NUM_RUNNING_FLOW_METRIC_TYPE, 0, manager, interval);
     logger.debug("Instantiated NumRunningFlowMetric");
     flowManager = flowRunnerManager;
   }
 
+  /**
+   * Update value using flow manager
+   * {@inheritDoc}
+   * @see azkaban.metric.TimeBasedReportingMetric#finalizeValue()
+   */
   @Override
   protected synchronized void finalizeValue() {
     value = flowManager.getNumRunningFlows();

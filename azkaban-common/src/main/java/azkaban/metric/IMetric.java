@@ -16,6 +16,10 @@
 
 package azkaban.metric;
 
+/**
+ * Interface of any Metric
+ * @param <T> Type of Value of a given metric
+ */
 public interface IMetric<T> {
   String getName();
   String getValueType();

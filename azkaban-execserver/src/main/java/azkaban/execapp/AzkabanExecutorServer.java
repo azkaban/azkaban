@@ -129,7 +129,6 @@ public class AzkabanExecutorServer {
 
   /**
    * Configure Metric Reporting as per azkaban.properties settings
-   *
    */
   private void configureMetricReports() {
     Props props = getAzkabanProps();
@@ -139,11 +138,11 @@ public class AzkabanExecutorServer {
       IMetricEmitter metricEmitter = new InMemoryMetricEmitter(props);
       metricManager.addMetricEmitter(metricEmitter);
 
-      // Adding number of Jobs
+      logger.info("Adding number of Jobs metric");
       metricManager.addMetric(new NumRunningJobMetric(metricManager, props.getInt("executor.metric.interval."
           + NumRunningJobMetric.NUM_RUNNING_JOB_METRIC_NAME, props.getInt("executor.metric.interval.default"))));
 
-      // Adding number of flows
+      logger.info("Adding number of flows metric");
       metricManager.addMetric(new NumRunningFlowMetric(runnerManager, metricManager, props.getInt(
           "executor.metric.interval." + NumRunningFlowMetric.NUM_RUNNING_FLOW_METRIC_NAME,
           props.getInt("executor.metric.interval.default"))));
