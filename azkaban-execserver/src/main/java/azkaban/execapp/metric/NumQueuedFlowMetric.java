@@ -20,12 +20,9 @@ import azkaban.execapp.FlowRunnerManager;
 import azkaban.metric.MetricReportManager;
 import azkaban.metric.TimeBasedReportingMetric;
 
-/**
- * Metric to keep track of number of running flows in Azkaban exec server
- */
-public class NumRunningFlowMetric extends TimeBasedReportingMetric<Integer> {
-  public static final String NUM_RUNNING_FLOW_METRIC_NAME = "NumRunningFlowMetric";
-  private static final String NUM_RUNNING_FLOW_METRIC_TYPE = "uint16";
+public class NumQueuedFlowMetric extends TimeBasedReportingMetric<Integer> {
+  public static final String NUM_QUEUED_FLOW_METRIC_NAME = "NumRunningFlowMetric";
+  private static final String NUM_QUEUED_FLOW_METRIC_TYPE = "uint16";
 
   private FlowRunnerManager flowManager;
 
@@ -34,9 +31,9 @@ public class NumRunningFlowMetric extends TimeBasedReportingMetric<Integer> {
    * @param manager metric report manager
    * @param interval reporting interval
    */
-  public NumRunningFlowMetric(FlowRunnerManager flowRunnerManager, MetricReportManager manager, long interval) {
-    super(NUM_RUNNING_FLOW_METRIC_NAME, NUM_RUNNING_FLOW_METRIC_TYPE, 0, manager, interval);
-    logger.debug("Instantiated NumRunningFlowMetric");
+  public NumQueuedFlowMetric(FlowRunnerManager flowRunnerManager, MetricReportManager manager, long interval) {
+    super(NUM_QUEUED_FLOW_METRIC_NAME, NUM_QUEUED_FLOW_METRIC_TYPE, 0, manager, interval);
+    logger.debug("Instantiated NumQueuedFlowMetric");
     flowManager = flowRunnerManager;
   }
 
@@ -47,7 +44,7 @@ public class NumRunningFlowMetric extends TimeBasedReportingMetric<Integer> {
    */
   @Override
   protected synchronized void preTrackingEventMethod() {
-    value = flowManager.getNumRunningFlows();
+    value = flowManager.getNumQueuedFlows();
   }
 
   @Override

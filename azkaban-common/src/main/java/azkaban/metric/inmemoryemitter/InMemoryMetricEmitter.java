@@ -44,7 +44,9 @@ public class InMemoryMetricEmitter implements IMetricEmitter {
   Map<String, LinkedList<InMemoryHistoryNode>> historyListMapping;
   private static final String INMEMORY_METRIC_REPORTER_WINDOW = "azkaban.metric.inmemory.interval";
   private static final String INMEMORY_METRIC_NUM_INSTANCES = "azkaban.metric.inmemory.maxinstances";
+  private static final String INMEMORY_METRIC_DEVIAION_FACTOR = "azkaban.metric.inmemory.statisticalDeviationFactor";
 
+  double statisticalDeviationFactor;
   /**
    * Interval (in millisecond) from today for which we should maintain the in memory snapshots
    */
@@ -61,6 +63,7 @@ public class InMemoryMetricEmitter implements IMetricEmitter {
     historyListMapping = new HashMap<String, LinkedList<InMemoryHistoryNode>>();
     interval = azkProps.getLong(INMEMORY_METRIC_REPORTER_WINDOW, 60 * 60 * 24 * 7 * 1000);
     numInstances = azkProps.getLong(INMEMORY_METRIC_NUM_INSTANCES, 50);
+    statisticalDeviationFactor = azkProps.getDouble(INMEMORY_METRIC_DEVIAION_FACTOR, 2);
   }
 
   /**
@@ -148,7 +151,7 @@ public class InMemoryMetricEmitter implements IMetricEmitter {
       InMemoryHistoryNode currentNode = ite.next();
       double value = ((Number) currentNode.getValue()).doubleValue();
       // remove all elements which lies in 95% value band
-      if (value > mean + 2 * std && value < mean + 2 * std) {
+      if (value > mean + statisticalDeviationFactor * std && value < mean - statisticalDeviationFactor * std) {
         ite.remove();
       }
     }

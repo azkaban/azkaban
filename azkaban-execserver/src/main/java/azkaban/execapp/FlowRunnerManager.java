@@ -42,12 +42,15 @@ import azkaban.event.EventListener;
 import azkaban.execapp.event.FlowWatcher;
 import azkaban.execapp.event.LocalFlowWatcher;
 import azkaban.execapp.event.RemoteFlowWatcher;
+import azkaban.execapp.metric.NumFailedFlowMetric;
+import azkaban.execapp.metric.NumFailedJobMetric;
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutionOptions;
 import azkaban.executor.ExecutorLoader;
 import azkaban.executor.ExecutorManagerException;
 import azkaban.jobtype.JobTypeManager;
 import azkaban.jobtype.JobTypeManagerException;
+import azkaban.metric.MetricReportManager;
 import azkaban.project.ProjectLoader;
 import azkaban.utils.FileIOUtils;
 import azkaban.utils.FileIOUtils.JobMetaData;
@@ -60,26 +63,26 @@ import azkaban.utils.TrackingThreadPool;
 
 /**
  * Execution manager for the server side execution.
- * 
+ *
  * When a flow is submitted to FlowRunnerManager, it is the
  * {@link Status.PREPARING} status. When a flow is about to be executed by
  * FlowRunner, its status is updated to {@link Status.RUNNING}
- * 
+ *
  * Two main data structures are used in this class to maintain flows.
- * 
+ *
  * runningFlows: this is used as a bookkeeping for submitted flows in
  * FlowRunnerManager. It has nothing to do with the executor service that is
  * used to execute the flows. This bookkeeping is used at the time of canceling
  * or killing a flow. The flows in this data structure is removed in the
  * handleEvent method.
- * 
+ *
  * submittedFlows: this is used to keep track the execution of the flows, so it
  * has the mapping between a Future<?> and an execution id. This would allow us
  * to find out the execution ids of the flows that are in the Status.PREPARING
  * status. The entries in this map is removed once the flow execution is
  * completed.
- * 
- * 
+ *
+ *
  */
 public class FlowRunnerManager implements EventListener,
     ThreadPoolExecutingListener {
@@ -483,6 +486,8 @@ public class FlowRunnerManager implements EventListener,
         .setValidateProxyUser(validateProxyUser)
         .setNumJobThreads(numJobThreads).addListener(this);
 
+    configureFlowLevelMetrics(runner);
+
     // Check again.
     if (runningFlows.containsKey(execId)) {
       throw new ExecutorManagerException("Execution " + execId
@@ -505,6 +510,21 @@ public class FlowRunnerManager implements EventListener,
           "Azkaban server can't execute any more flows. "
               + "The number of running flows has reached the system configured limit."
               + "Please notify Azkaban administrators");
+    }
+  }
+
+  /**
+   * Configure Azkaban metrics tracking for a new flowRunner instance
+   * @param flowRunner
+   */
+  private void configureFlowLevelMetrics(FlowRunner flowRunner) {
+    logger.info("Configuring Azkaban metrics tracking for flow runner object");
+
+    if (MetricReportManager.isInstantiated()) {
+      MetricReportManager metricManager = MetricReportManager.getInstance();
+      //Adding NumFailedFlow Metric listener
+      flowRunner.addListener((NumFailedFlowMetric) metricManager
+          .getMetricFromName(NumFailedFlowMetric.NUM_FAILED_FLOW_METRIC_NAME));
     }
   }
 

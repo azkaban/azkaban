@@ -48,8 +48,9 @@ public abstract class TimeBasedReportingMetric<T> extends AbstractMetric<T> {
     TimerTask recurringReporting = new TimerTask() {
       @Override
       public void run() {
-        finalizeValue();
+        preTrackingEventMethod();
         notifyManager();
+        postTrackingEventMethod();
       }
     };
     return recurringReporting;
@@ -67,8 +68,13 @@ public abstract class TimeBasedReportingMetric<T> extends AbstractMetric<T> {
   }
 
   /**
-   * This method is responsible for making a final update to value, if any
+   * This method is responsible for making any last minute update to value, if any
    */
-  protected abstract void finalizeValue();
+  protected abstract void preTrackingEventMethod();
+
+  /**
+   * This method is responsible for making any post processing after tracking
+   */
+  protected abstract void postTrackingEventMethod();
 
 }

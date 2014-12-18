@@ -36,8 +36,8 @@
             var requestURL = '/stats';
             var requestData = {
               'action': 'metricHistory',
-              'from': $('#datetimebegin').val(),
-              'to'  : $('#datetimeend').val(),
+              'from': new Date($('#datetimebegin').val()).toUTCString(),
+              'to'  : new Date($('#datetimeend').val()).toUTCString(),
               'metricName': $('#metricName').val(),
               'useStats': $("#useStats").is(':checked')
             };

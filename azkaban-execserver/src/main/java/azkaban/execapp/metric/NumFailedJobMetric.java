@@ -19,47 +19,44 @@ package azkaban.execapp.metric;
 import azkaban.event.Event;
 import azkaban.event.Event.Type;
 import azkaban.event.EventListener;
+import azkaban.execapp.JobRunner;
+import azkaban.executor.Status;
 import azkaban.metric.MetricReportManager;
 import azkaban.metric.TimeBasedReportingMetric;
 
 /**
- * Metric to keep track of number of running jobs in Azkaban exec server
+ * Metric to keep track of number of failed jobs in between the tracking events
  */
-public class NumRunningJobMetric extends TimeBasedReportingMetric<Integer> implements EventListener {
-  public static final String NUM_RUNNING_JOB_METRIC_NAME = "NumRunningJobMetric";
-  private static final String NUM_RUNNING_JOB_METRIC_TYPE = "uint16";
+public class NumFailedJobMetric extends TimeBasedReportingMetric<Integer> implements EventListener {
+  public static final String NUM_FAILED_JOB_METRIC_NAME = "NumFailedJobMetric";
+  private static final String NUM_FAILED_JOB_METRIC_TYPE = "uint16";
 
-  /**
-   * @param manager metric manager
-   * @param interval reporting interval
-   */
-  public NumRunningJobMetric(MetricReportManager manager, long interval) {
-    super(NUM_RUNNING_JOB_METRIC_NAME, NUM_RUNNING_JOB_METRIC_TYPE, 0, manager, interval);
-    logger.debug("Instantiated NumRunningJobMetric");
+  public NumFailedJobMetric(MetricReportManager manager, long interval) {
+    super(NUM_FAILED_JOB_METRIC_NAME, NUM_FAILED_JOB_METRIC_TYPE, 0, manager, interval);
+    logger.debug("Instantiated NumFailedJobMetric");
   }
 
   /**
-   * Listen for events to maintain correct value of number of running jobs
+   * Listen for events to maintain correct value of number of failed jobs
    * {@inheritDoc}
    * @see azkaban.event.EventListener#handleEvent(azkaban.event.Event)
    */
   @Override
   public synchronized void handleEvent(Event event) {
-    if (event.getType() == Type.JOB_STARTED) {
+    JobRunner runner = (JobRunner) event.getRunner();
+    if (event.getType() == Type.JOB_FINISHED && runner.getStatus().equals(Status.FAILED)) {
       value = value + 1;
-    } else if (event.getType() == Type.JOB_FINISHED) {
-      value = value - 1;
     }
   }
 
   @Override
-  protected synchronized void preTrackingEventMethod() {
-    // nothing to finalize value is already updated
+  protected void preTrackingEventMethod() {
+    // Nothing to finalize before tracking event
   }
 
   @Override
-  protected void postTrackingEventMethod() {
-    // nothing to post process
+  protected synchronized void postTrackingEventMethod() {
+    value = 0;
   }
 
 }

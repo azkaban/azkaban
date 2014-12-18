@@ -248,7 +248,7 @@ public class StatsServlet extends HttpServlet implements ConnectorParams {
   }
 
   private Date parseDate(String date) throws ParseException {
-    DateFormat format = new SimpleDateFormat("MM/dd/yyyy HH:mm a");
+    DateFormat format = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss zzz");
     return format.parse(date);
   }
 }

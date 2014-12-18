@@ -39,6 +39,9 @@ import org.mortbay.thread.QueuedThreadPool;
 import azkaban.executor.ExecutorLoader;
 import azkaban.executor.JdbcExecutorLoader;
 import azkaban.execapp.jmx.JmxFlowRunnerManager;
+import azkaban.execapp.metric.NumFailedFlowMetric;
+import azkaban.execapp.metric.NumFailedJobMetric;
+import azkaban.execapp.metric.NumQueuedFlowMetric;
 import azkaban.execapp.metric.NumRunningFlowMetric;
 import azkaban.execapp.metric.NumRunningJobMetric;
 import azkaban.jmx.JmxJettyServer;
@@ -138,13 +141,26 @@ public class AzkabanExecutorServer {
       IMetricEmitter metricEmitter = new InMemoryMetricEmitter(props);
       metricManager.addMetricEmitter(metricEmitter);
 
-      logger.info("Adding number of Jobs metric");
+      logger.info("Adding number of failed flow metric");
+      metricManager.addMetric(new NumFailedFlowMetric(metricManager, props.getInt("executor.metric.interval."
+          + NumFailedFlowMetric.NUM_FAILED_FLOW_METRIC_NAME, props.getInt("executor.metric.interval.default"))));
+
+      logger.info("Adding number of failed jobs metric");
+      metricManager.addMetric(new NumFailedJobMetric(metricManager, props.getInt("executor.metric.interval."
+          + NumFailedJobMetric.NUM_FAILED_JOB_METRIC_NAME, props.getInt("executor.metric.interval.default"))));
+
+      logger.info("Adding number of running Jobs metric");
       metricManager.addMetric(new NumRunningJobMetric(metricManager, props.getInt("executor.metric.interval."
           + NumRunningJobMetric.NUM_RUNNING_JOB_METRIC_NAME, props.getInt("executor.metric.interval.default"))));
 
-      logger.info("Adding number of flows metric");
+      logger.info("Adding number of running flows metric");
       metricManager.addMetric(new NumRunningFlowMetric(runnerManager, metricManager, props.getInt(
           "executor.metric.interval." + NumRunningFlowMetric.NUM_RUNNING_FLOW_METRIC_NAME,
+          props.getInt("executor.metric.interval.default"))));
+
+      logger.info("Adding number of queued flows metric");
+      metricManager.addMetric(new NumQueuedFlowMetric(runnerManager, metricManager, props.getInt(
+          "executor.metric.interval." + NumQueuedFlowMetric.NUM_QUEUED_FLOW_METRIC_NAME,
           props.getInt("executor.metric.interval.default"))));
 
       logger.info("Completed configuring Metric Reports");
