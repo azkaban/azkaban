@@ -33,21 +33,20 @@ import org.apache.log4j.Logger;
 
 import azkaban.flow.Flow;
 import azkaban.project.ProjectLogEvent.EventType;
-import azkaban.project.validator.ValidationStatus;
 import azkaban.project.validator.ValidationReport;
+import azkaban.project.validator.ValidationStatus;
 import azkaban.project.validator.ValidatorConfigs;
 import azkaban.project.validator.ValidatorManager;
 import azkaban.project.validator.XmlValidatorManager;
 import azkaban.user.Permission;
-import azkaban.user.User;
 import azkaban.user.Permission.Type;
+import azkaban.user.User;
 import azkaban.utils.DirectoryFlowLoader;
 import azkaban.utils.Props;
 import azkaban.utils.Utils;
 
 public class ProjectManager {
   private static final Logger logger = Logger.getLogger(ProjectManager.class);
-
 
   private ConcurrentHashMap<Integer, Project> projectsById =
       new ConcurrentHashMap<Integer, Project>();
@@ -75,9 +74,10 @@ public class ProjectManager {
       tempDir.mkdirs();
     }
 
-    // The prop passed to XmlValidatorManager is used to initialize all the validators
-    // Each validator will take certain key/value pairs from the prop to initialize
-    // itself.
+    // The prop passed to XmlValidatorManager is used to initialize all the
+    // validators
+    // Each validator will take certain key/value pairs from the prop to
+    // initialize itself.
     Props prop = new Props(props);
     prop.put(ValidatorConfigs.PROJECT_ARCHIVE_FILE_PATH, "initialize");
     loadAllProjects();
@@ -353,8 +353,32 @@ public class ProjectManager {
     }
   }
 
-  public Map<String, ValidationReport> uploadProject(Project project, File archive, String fileType,
-      User uploader, Props additionalProps) throws ProjectManagerException {
+  /**
+   * This method retrieves the uploaded project zip file from DB. A temporary
+   * file is created to hold the content of the uploaded zip file. This
+   * temporary file is provided in the ProjectFileHandler instance and the
+   * caller of this method should call method
+   * {@ProjectFileHandler.deleteLocalFile}
+   * to delete the temporary file.
+   * 
+   * @param project
+   * @param version - latest version is used if value is -1
+   * @return ProjectFileHandler - null if can't find project zip file based on
+   *         project name and version
+   * @throws ProjectManagerException
+   */
+  public ProjectFileHandler getProjectFileHandler(Project project, int version)
+      throws ProjectManagerException {
+
+    if (version == -1) {
+      version = projectLoader.getLatestProjectVersion(project);
+    }
+    return projectLoader.getUploadedFile(project, version);
+  }
+
+  public Map<String, ValidationReport> uploadProject(Project project,
+      File archive, String fileType, User uploader, Props additionalProps)
+      throws ProjectManagerException {
     logger.info("Uploading files to " + project.getName());
 
     // Unzip.
@@ -373,25 +397,34 @@ public class ProjectManager {
       throw new ProjectManagerException("Error unzipping file.", e);
     }
 
-    // Since props is an instance variable of ProjectManager, and each invocation to the
-    // uploadProject manager needs to pass a different value for the PROJECT_ARCHIVE_FILE_PATH
-    // key, it is necessary to create a new instance of Props to make sure these different
-    // values are isolated from each other.
+    // Since props is an instance variable of ProjectManager, and each
+    // invocation to the uploadProject manager needs to pass a different
+    // value for the PROJECT_ARCHIVE_FILE_PATH key, it is necessary to
+    // create a new instance of Props to make sure these different values
+    // are isolated from each other.
     Props prop = new Props(props);
     prop.putAll(additionalProps);
-    prop.put(ValidatorConfigs.PROJECT_ARCHIVE_FILE_PATH, archive.getAbsolutePath());
-    // Basically, we want to make sure that for different invocations to the uploadProject method,
-    // the validators are using different values for the PROJECT_ARCHIVE_FILE_PATH configuration key.
-    // In addition, we want to reload the validator objects for each upload, so that
-    // we can change the validator configuration files without having to restart Azkaban web server.
-    // If the XmlValidatorManager is an instance variable, 2 consecutive invocations to the uploadProject
-    // method might cause the second one to overwrite the PROJECT_ARCHIVE_FILE_PATH configuration parameter
-    // of the first, thus causing a wrong archive file path to be passed to the validators. Creating a
-    // separate XmlValidatorManager object for each upload will prevent this issue without having to add
-    // synchronization between uploads. Since we're already reloading the XML config file and creating
-    // validator objects for each upload, this does not add too much additional overhead.
+    prop.put(ValidatorConfigs.PROJECT_ARCHIVE_FILE_PATH,
+        archive.getAbsolutePath());
+    // Basically, we want to make sure that for different invocations to the
+    // uploadProject method,
+    // the validators are using different values for the
+    // PROJECT_ARCHIVE_FILE_PATH configuration key.
+    // In addition, we want to reload the validator objects for each upload, so
+    // that we can change the validator configuration files without having to
+    // restart Azkaban web server. If the XmlValidatorManager is an instance
+    // variable, 2 consecutive invocations to the uploadProject
+    // method might cause the second one to overwrite the
+    // PROJECT_ARCHIVE_FILE_PATH configuration parameter
+    // of the first, thus causing a wrong archive file path to be passed to the
+    // validators. Creating a separate XmlValidatorManager object for each
+    // upload will prevent this issue without having to add
+    // synchronization between uploads. Since we're already reloading the XML
+    // config file and creating validator objects for each upload, this does
+    // not add too much additional overhead.
     ValidatorManager validatorManager = new XmlValidatorManager(prop);
-    logger.info("Validating project " + archive.getName() + " using the registered validators "
+    logger.info("Validating project " + archive.getName()
+        + " using the registered validators "
         + validatorManager.getValidatorsInfo().toString());
     Map<String, ValidationReport> reports = validatorManager.validate(file);
     ValidationStatus status = ValidationStatus.PASS;
@@ -414,7 +447,8 @@ public class ProjectManager {
       return reports;
     }
 
-    DirectoryFlowLoader loader = (DirectoryFlowLoader) validatorManager.getDefaultValidator();
+    DirectoryFlowLoader loader =
+        (DirectoryFlowLoader) validatorManager.getDefaultValidator();
     Map<String, Props> jobProps = loader.getJobProps();
     List<Props> propProps = loader.getProps();
 
