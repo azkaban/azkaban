@@ -38,13 +38,18 @@ public class ExecutableFlow extends ExecutableFlowBase {
   public static final String VERSION_PARAM = "version";
   public static final String PROXYUSERS_PARAM = "proxyUsers";
   public static final String PROJECTNAME_PARAM = "projectName";
+  public static final String LASTMODIFIEDTIME_PARAM = "lastModfiedTime";
+  public static final String LASTMODIFIEDUSER_PARAM = "lastModifiedUser";
+
 
   private int executionId = -1;
   private int scheduleId = -1;
   private int projectId;
   private String projectName;
+  private String lastModifiedUser;
   private int version;
   private long submitTime = -1;
+  private long lastModifiedTimestamp;
   private String submitUser;
   private String executionPath;
 
@@ -56,7 +61,8 @@ public class ExecutableFlow extends ExecutableFlowBase {
     this.projectName = project.getName();
     this.version = project.getVersion();
     this.scheduleId = -1;
-
+    this.lastModifiedTimestamp = project.getLastModifiedTimestamp();
+    this.lastModifiedUser = project.getLastModifiedUser();
     this.setFlow(project, flow);
   }
 
@@ -110,6 +116,24 @@ public class ExecutableFlow extends ExecutableFlowBase {
 
   public void setExecutionId(int executionId) {
     this.executionId = executionId;
+  }
+
+  @Override
+  public long getLastModifiedTimestamp() {
+    return lastModifiedTimestamp;
+  }
+
+  public void setLastModifiedTimestamp(long lastModifiedTimestamp) {
+    this.lastModifiedTimestamp = lastModifiedTimestamp;
+  }
+
+  @Override
+  public String getLastModifiedByUser() {
+    return lastModifiedUser;
+  }
+
+  public void setLastModifiedByUser(String lastModifiedUser) {
+    this.lastModifiedUser = lastModifiedUser;
   }
 
   @Override
@@ -183,6 +207,8 @@ public class ExecutableFlow extends ExecutableFlowBase {
 
     flowObj.put(SUBMITUSER_PARAM, submitUser);
     flowObj.put(VERSION_PARAM, version);
+    flowObj.put(LASTMODIFIEDTIME_PARAM, lastModifiedTimestamp);
+    flowObj.put(LASTMODIFIEDUSER_PARAM, lastModifiedUser);
 
     flowObj.put(EXECUTIONOPTIONS_PARAM, this.executionOptions.toObject());
     flowObj.put(VERSION_PARAM, version);
@@ -217,6 +243,8 @@ public class ExecutableFlow extends ExecutableFlowBase {
     this.scheduleId = flowObj.getInt(SCHEDULEID_PARAM);
     this.submitUser = flowObj.getString(SUBMITUSER_PARAM);
     this.version = flowObj.getInt(VERSION_PARAM);
+    this.lastModifiedTimestamp = flowObj.getLong(LASTMODIFIEDTIME_PARAM);
+    this.lastModifiedUser = flowObj.getString(LASTMODIFIEDUSER_PARAM);
     this.submitTime = flowObj.getLong(SUBMITTIME_PARAM);
 
     if (flowObj.containsKey(EXECUTIONOPTIONS_PARAM)) {
