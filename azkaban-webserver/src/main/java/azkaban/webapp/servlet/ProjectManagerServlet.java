@@ -87,8 +87,8 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
   private static final String LOCKDOWN_CREATE_PROJECTS_KEY =
       "lockdown.create.projects";
 
-  private static final String PROJECT_DOWNLOAD_BUFFER_SIZE_IN_BYTE =
-      "project.download.bufffer.size";
+  private static final String PROJECT_DOWNLOAD_BUFFER_SIZE_IN_BYTES =
+      "project.download.buffer.size";
 
   private ProjectManager projectManager;
   private ExecutorManagerAdapter executorManager;
@@ -121,7 +121,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
     }
 
     downloadBufferSize =
-        server.getServerProps().getInt(PROJECT_DOWNLOAD_BUFFER_SIZE_IN_BYTE,
+        server.getServerProps().getInt(PROJECT_DOWNLOAD_BUFFER_SIZE_IN_BYTES,
             8192);
 
     logger.info("downloadBufferSize: " + downloadBufferSize);
