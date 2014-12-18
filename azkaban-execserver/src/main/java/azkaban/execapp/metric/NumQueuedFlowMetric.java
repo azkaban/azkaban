@@ -21,7 +21,7 @@ import azkaban.metric.MetricReportManager;
 import azkaban.metric.TimeBasedReportingMetric;
 
 public class NumQueuedFlowMetric extends TimeBasedReportingMetric<Integer> {
-  public static final String NUM_QUEUED_FLOW_METRIC_NAME = "NumRunningFlowMetric";
+  public static final String NUM_QUEUED_FLOW_METRIC_NAME = "NumQueuedFlowMetric";
   private static final String NUM_QUEUED_FLOW_METRIC_TYPE = "uint16";
 
   private FlowRunnerManager flowManager;
