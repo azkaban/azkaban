@@ -151,7 +151,7 @@ public class InMemoryMetricEmitter implements IMetricEmitter {
       InMemoryHistoryNode currentNode = ite.next();
       double value = ((Number) currentNode.getValue()).doubleValue();
       // remove all elements which lies in 95% value band
-      if (value > mean + statisticalDeviationFactor * std && value < mean - statisticalDeviationFactor * std) {
+      if (value < mean + statisticalDeviationFactor * std && value > mean - statisticalDeviationFactor * std) {
         ite.remove();
       }
     }
