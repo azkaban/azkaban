@@ -45,12 +45,15 @@ public abstract class TimeBasedReportingMetric<T> extends AbstractMetric<T> {
    * @return An anonymous TimerTask class
    */
   private TimerTask getTimerTask() {
+    final TimeBasedReportingMetric<T> lockObject = this;
     TimerTask recurringReporting = new TimerTask() {
       @Override
       public void run() {
-        preTrackingEventMethod();
-        notifyManager();
-        postTrackingEventMethod();
+        synchronized (lockObject) {
+          preTrackingEventMethod();
+          notifyManager();
+          postTrackingEventMethod();
+        }
       }
     };
     return recurringReporting;

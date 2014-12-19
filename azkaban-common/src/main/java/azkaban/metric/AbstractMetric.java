@@ -22,7 +22,7 @@ import org.apache.log4j.Logger;
  * Abstract class for Metric
  * @param <T> Type of Value of a given metric
  */
-public abstract class AbstractMetric<T> implements IMetric<T> {
+public abstract class AbstractMetric<T> implements IMetric<T>, Cloneable{
   protected static final Logger logger = Logger.getLogger(MetricReportManager.class);
   protected String name;
   protected T value;
@@ -84,9 +84,11 @@ public abstract class AbstractMetric<T> implements IMetric<T> {
   public synchronized void notifyManager() {
     logger.debug(String.format("Notifying Manager for %s", this.getClass().getName()));
     try {
-      metricManager.reportMetric(this);
+      metricManager.reportMetric( (IMetric<?>) this.clone());
     } catch (NullPointerException ex) {
       logger.error(String.format("Metric Manager is not set for %s metric %s", this.getClass().getName(), ex.toString()));
+    } catch (CloneNotSupportedException ex) {
+      logger.error(String.format("Failed to take snapshot for %s metric %s", this.getClass().getName(), ex.toString()));
     }
   }
 }
