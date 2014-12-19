@@ -116,12 +116,12 @@ public class CommonJobProperties {
   /**
    * The project last modified by user.
    */
-  public static final String PROJECT_LAST_CHANGED_BY = "azkaban.flow.projectlasychangedby";
+  public static final String PROJECT_LAST_CHANGED_BY = "azkaban.flow.projectlastchangedby";
 
   /**
    * The project last modified on date.
    */
-  public static final String PROJECT_LAST_CHANGED_ON = "azkaban.flow.projectlastchangeddate";
+  public static final String PROJECT_LAST_CHANGED_DATE = "azkaban.flow.projectlastchangeddate";
 
   /**
    * The version of the project the flow is running. This may change if a forced

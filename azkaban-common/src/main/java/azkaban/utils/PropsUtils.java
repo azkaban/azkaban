@@ -286,7 +286,7 @@ public class PropsUtils {
     props.put(CommonJobProperties.PROJECT_VERSION, flow.getVersion());
     props.put(CommonJobProperties.FLOW_UUID, UUID.randomUUID().toString());
     props.put(CommonJobProperties.PROJECT_LAST_CHANGED_BY, flow.getLastModifiedByUser());
-    props.put(CommonJobProperties.PROJECT_LAST_CHANGED_ON, flow.getLastModifiedTimestamp());
+    props.put(CommonJobProperties.PROJECT_LAST_CHANGED_DATE, flow.getLastModifiedTimestamp());
 
     DateTime loadTime = new DateTime();
 
