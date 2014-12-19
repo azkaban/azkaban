@@ -285,6 +285,8 @@ public class PropsUtils {
     props.put(CommonJobProperties.PROJECT_NAME, flow.getProjectName());
     props.put(CommonJobProperties.PROJECT_VERSION, flow.getVersion());
     props.put(CommonJobProperties.FLOW_UUID, UUID.randomUUID().toString());
+    props.put(CommonJobProperties.PROJECT_LAST_CHANGED_BY, flow.getLastModifiedByUser());
+    props.put(CommonJobProperties.PROJECT_LAST_CHANGED_DATE, flow.getLastModifiedTimestamp());
 
     DateTime loadTime = new DateTime();
 
@@ -299,6 +301,7 @@ public class PropsUtils {
         loadTime.toString("SSS"));
     props.put(CommonJobProperties.FLOW_START_TIMEZONE,
         loadTime.toString("ZZZZ"));
+
     return props;
   }
 

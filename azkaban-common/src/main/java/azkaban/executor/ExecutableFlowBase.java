@@ -87,6 +87,22 @@ public class ExecutableFlowBase extends ExecutableNode {
     return -1;
   }
 
+  public String getLastModifiedByUser() {
+    if (this.getParentFlow() != null) {
+      return this.getParentFlow().getLastModifiedByUser();
+    }
+
+    return null;
+  }
+
+  public long getLastModifiedTimestamp() {
+    if (this.getParentFlow() != null) {
+      return this.getParentFlow().getLastModifiedTimestamp();
+    }
+
+    return -1;
+  }
+
   public Collection<FlowProps> getFlowProps() {
     return flowProps.values();
   }
