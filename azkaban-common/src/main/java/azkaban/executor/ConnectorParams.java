@@ -92,9 +92,15 @@ public interface ConnectorParams {
   public static final String STATS_SET_CLEANINGINTERVAL = "changeCleaningInterval";
   public static final String STATS_SET_MAXREPORTERPOINTS = "changeEmitterPoints";
   public static final String STATS_SET_ENABLEMETRICS = "enableMetrics";
-  public static final String STATS_SET_DISBLEMETRICS = "disableMetrics";
+  public static final String STATS_SET_DISABLEMETRICS = "disableMetrics";
   public static final String STATS_MAP_METRICNAMEPARAM = "metricName";
-  public static final String STATS_MAP_METRICRETRIVALMODE = "useStats";
+
+  /**
+   * useStats param is used to filter datapoints on /stats graph by using standard deviation and means
+   * By default, we consider only top/bottom 5% datapoints
+   */
+
+  public static final String STATS_MAP_METRICRETRIEVALMODE = "useStats";
   public static final String STATS_MAP_STARTDATE = "from";
   public static final String STATS_MAP_ENDDATE = "to";
   public static final String STATS_MAP_REPORTINGINTERVAL = "interval";

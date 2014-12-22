@@ -51,11 +51,9 @@ import azkaban.utils.JSONUtils;
 public class StatsServlet extends HttpServlet implements ConnectorParams {
   private static final long serialVersionUID = 2L;
   private static final Logger logger = Logger.getLogger(StatsServlet.class);
-  private AzkabanExecutorServer server;
 
   public void init(ServletConfig config) throws ServletException {
-    server =
-        (AzkabanExecutorServer) config.getServletContext().getAttribute(ServerConstants.AZKABAN_SERVLET_CONTEXT_KEY);
+    // Nothing to initialize
   }
 
   public boolean hasParam(HttpServletRequest request, String param) {
@@ -96,8 +94,10 @@ public class StatsServlet extends HttpServlet implements ConnectorParams {
         handleGetMetricHistory(req, ret);
       } else if (action.equals(STATS_SET_ENABLEMETRICS)) {
         handleChangeManagerStatusRequest(req, ret, true);
-      } else if (action.equals(STATS_SET_DISBLEMETRICS)) {
+      } else if (action.equals(STATS_SET_DISABLEMETRICS)) {
         handleChangeManagerStatusRequest(req, ret, false);
+      } else {
+        ret.put(RESPONSE_ERROR, "Invalid action");
       }
     }
 
@@ -177,7 +177,7 @@ public class StatsServlet extends HttpServlet implements ConnectorParams {
           List<InMemoryHistoryNode> result =
               memoryEmitter.getDrawMetric(getParam(req, STATS_MAP_METRICNAMEPARAM),
                   parseDate(getParam(req, STATS_MAP_STARTDATE)), parseDate(getParam(req, STATS_MAP_ENDDATE)),
-                  getBooleanParam(req, STATS_MAP_METRICRETRIVALMODE));
+                  getBooleanParam(req, STATS_MAP_METRICRETRIEVALMODE));
 
           if (result != null && result.size() > 0) {
             ret.put("data", result);

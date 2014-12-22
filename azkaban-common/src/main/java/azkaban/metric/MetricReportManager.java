@@ -26,6 +26,12 @@ import org.apache.log4j.Logger;
 
 /**
  * Manager for access or updating metric related functionality of Azkaban
+ * MetricManager is responsible all handling all action requests from statsServlet in Exec server
+ * <p> Metric Manager 'has a' relationship with :-
+ * <ul>
+ * <li>all the metric Azkaban is tracking</li>
+ * <li>all the emitters Azkaban is supposed to report metrics</li>
+ * </ul></p>
  */
 public class MetricReportManager {
   /**
@@ -36,10 +42,14 @@ public class MetricReportManager {
 
   /**
    * List of all the metrics that Azkaban is tracking
+   * Manager is not concerned with type of metric as long as it honors IMetric contracts
    */
   private List<IMetric<?>> metrics;
+
   /**
    * List of all the emitter listening all the metrics
+   * Manager is not concerned with how emitter is reporting value.
+   * Manager is only responsible to notify all emitters whenever an IMetric wants to be notified
    */
   private List<IMetricEmitter> metricEmitters;
   private ExecutorService executorService;

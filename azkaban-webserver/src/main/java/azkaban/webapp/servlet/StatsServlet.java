@@ -81,8 +81,8 @@ public class StatsServlet extends LoginAbstractAzkabanServlet {
       handleChangeConfigurationRequest(ConnectorParams.STATS_SET_MAXREPORTERPOINTS, req, ret);
     } else if (actionName.equals(ConnectorParams.STATS_SET_ENABLEMETRICS)) {
       handleChangeConfigurationRequest(ConnectorParams.STATS_SET_ENABLEMETRICS, req, ret);
-    } else if (actionName.equals(ConnectorParams.STATS_SET_DISBLEMETRICS)) {
-      handleChangeConfigurationRequest(ConnectorParams.STATS_SET_DISBLEMETRICS, req, ret);
+    } else if (actionName.equals(ConnectorParams.STATS_SET_DISABLEMETRICS)) {
+      handleChangeConfigurationRequest(ConnectorParams.STATS_SET_DISABLEMETRICS, req, ret);
     }
 
     writeJSON(resp, ret);

@@ -16,7 +16,10 @@
 
 package azkaban.metric;
 
+import org.apache.commons.collections.bag.SynchronizedBag;
+
 import azkaban.utils.Props;
+
 
 /**
  * MetricEmitter implementation to report metric to a ganglia gmetric process
@@ -34,7 +37,15 @@ public class GangliaMetricEmitter implements IMetricEmitter {
   }
 
   private String buildCommand(IMetric<?> metric) {
-    return String.format("%s -t %s -n %s -v %s", gmetricPath, metric.getValueType(), metric.getName(), metric.getValue().toString());
+    String cmd = null;
+
+    synchronized (metric) {
+      cmd =
+          String.format("%s -t %s -n %s -v %s", gmetricPath, metric.getValueType(), metric.getName(), metric.getValue()
+              .toString());
+    }
+
+    return cmd;
   }
 
   /**
@@ -45,13 +56,16 @@ public class GangliaMetricEmitter implements IMetricEmitter {
   @Override
   public void reportMetric(final IMetric<?> metric) throws Exception {
     String gangliaCommand = buildCommand(metric);
-    synchronized (metric) {
+
+    if (gangliaCommand != null) {
       // executes shell command to report metric to ganglia dashboard
       Process emission = Runtime.getRuntime().exec(gangliaCommand);
       int exitCode = emission.waitFor();
       if (exitCode != 0) {
         throw new RuntimeException("Failed to report metric using gmetric");
       }
+    } else {
+      throw new Exception("Failed to build ganglia Command");
     }
   }
 

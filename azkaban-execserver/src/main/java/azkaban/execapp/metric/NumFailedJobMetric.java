@@ -33,7 +33,7 @@ public class NumFailedJobMetric extends TimeBasedReportingMetric<Integer> implem
 
   public NumFailedJobMetric(MetricReportManager manager, long interval) {
     super(NUM_FAILED_JOB_METRIC_NAME, NUM_FAILED_JOB_METRIC_TYPE, 0, manager, interval);
-    logger.debug("Instantiated NumFailedJobMetric");
+    _logger.debug("Instantiated NumFailedJobMetric");
   }
 
   /**

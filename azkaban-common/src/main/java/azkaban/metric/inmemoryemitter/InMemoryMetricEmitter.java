@@ -44,26 +44,26 @@ public class InMemoryMetricEmitter implements IMetricEmitter {
   Map<String, LinkedList<InMemoryHistoryNode>> historyListMapping;
   private static final String INMEMORY_METRIC_REPORTER_WINDOW = "azkaban.metric.inmemory.interval";
   private static final String INMEMORY_METRIC_NUM_INSTANCES = "azkaban.metric.inmemory.maxinstances";
-  private static final String INMEMORY_METRIC_DEVIAION_FACTOR = "azkaban.metric.inmemory.statisticalDeviationFactor";
+  private static final String INMEMORY_METRIC_STANDARDDEVIATION_FACTOR = "azkaban.metric.inmemory.standardDeviationFactor";
 
-  double statisticalDeviationFactor;
+  private double standardDeviationFactor;
   /**
    * Interval (in millisecond) from today for which we should maintain the in memory snapshots
    */
-  long interval;
+  private long timeWindow;
   /**
    * Maximum number of snapshots that should be displayed on /stats servlet
    */
-  long numInstances;
+  private long numInstances;
 
   /**
    * @param azkProps Azkaban Properties
    */
   public InMemoryMetricEmitter(Props azkProps) {
     historyListMapping = new HashMap<String, LinkedList<InMemoryHistoryNode>>();
-    interval = azkProps.getLong(INMEMORY_METRIC_REPORTER_WINDOW, 60 * 60 * 24 * 7 * 1000);
+    timeWindow = azkProps.getLong(INMEMORY_METRIC_REPORTER_WINDOW, 60 * 60 * 24 * 7 * 1000);
     numInstances = azkProps.getLong(INMEMORY_METRIC_NUM_INSTANCES, 50);
-    statisticalDeviationFactor = azkProps.getDouble(INMEMORY_METRIC_DEVIAION_FACTOR, 2);
+    standardDeviationFactor = azkProps.getDouble(INMEMORY_METRIC_STANDARDDEVIATION_FACTOR, 2);
   }
 
   /**
@@ -71,7 +71,7 @@ public class InMemoryMetricEmitter implements IMetricEmitter {
    * @param val interval in milli seconds
    */
   public synchronized void setReportingInterval(long val) {
-    interval = val;
+    timeWindow = val;
   }
 
   /**
@@ -151,7 +151,7 @@ public class InMemoryMetricEmitter implements IMetricEmitter {
       InMemoryHistoryNode currentNode = ite.next();
       double value = ((Number) currentNode.getValue()).doubleValue();
       // remove all elements which lies in 95% value band
-      if (value < mean + statisticalDeviationFactor * std && value > mean - statisticalDeviationFactor * std) {
+      if (value < mean + standardDeviationFactor * std && value > mean - standardDeviationFactor * std) {
         ite.remove();
       }
     }
@@ -195,7 +195,7 @@ public class InMemoryMetricEmitter implements IMetricEmitter {
         // go ahead for clean up using latest possible value of interval
         // any interval change will not affect on going clean up
         synchronized (this) {
-          localCopyOfInterval = interval;
+          localCopyOfInterval = timeWindow;
         }
 
         // removing objects older than Interval time from firstAllowedDate

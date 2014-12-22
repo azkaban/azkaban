@@ -35,7 +35,7 @@ public class NumRunningJobMetric extends TimeBasedReportingMetric<Integer> imple
    */
   public NumRunningJobMetric(MetricReportManager manager, long interval) {
     super(NUM_RUNNING_JOB_METRIC_NAME, NUM_RUNNING_JOB_METRIC_TYPE, 0, manager, interval);
-    logger.debug("Instantiated NumRunningJobMetric");
+    _logger.debug("Instantiated NumRunningJobMetric");
   }
 
   /**
@@ -53,7 +53,7 @@ public class NumRunningJobMetric extends TimeBasedReportingMetric<Integer> imple
   }
 
   @Override
-  protected synchronized void preTrackingEventMethod() {
+  protected void preTrackingEventMethod() {
     // nothing to finalize value is already updated
   }
 

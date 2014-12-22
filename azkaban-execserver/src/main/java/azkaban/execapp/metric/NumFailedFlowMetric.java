@@ -31,7 +31,7 @@ public class NumFailedFlowMetric extends TimeBasedReportingMetric<Integer> imple
 
   public NumFailedFlowMetric(MetricReportManager manager, long interval) {
     super(NUM_FAILED_FLOW_METRIC_NAME, NUM_FAILED_FLOW_METRIC_TYPE, 0, manager, interval);
-    logger.debug("Instantiated NumFailedJobMetric");
+    _logger.debug("Instantiated NumFailedJobMetric");
   }
 
   /**

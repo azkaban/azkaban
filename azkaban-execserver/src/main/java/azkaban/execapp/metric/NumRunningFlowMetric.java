@@ -36,7 +36,7 @@ public class NumRunningFlowMetric extends TimeBasedReportingMetric<Integer> {
    */
   public NumRunningFlowMetric(FlowRunnerManager flowRunnerManager, MetricReportManager manager, long interval) {
     super(NUM_RUNNING_FLOW_METRIC_NAME, NUM_RUNNING_FLOW_METRIC_TYPE, 0, manager, interval);
-    logger.debug("Instantiated NumRunningFlowMetric");
+    _logger.debug("Instantiated NumRunningFlowMetric");
     flowManager = flowRunnerManager;
   }
 

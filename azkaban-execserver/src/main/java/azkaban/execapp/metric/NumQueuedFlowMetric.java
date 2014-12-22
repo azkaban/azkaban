@@ -33,7 +33,7 @@ public class NumQueuedFlowMetric extends TimeBasedReportingMetric<Integer> {
    */
   public NumQueuedFlowMetric(FlowRunnerManager flowRunnerManager, MetricReportManager manager, long interval) {
     super(NUM_QUEUED_FLOW_METRIC_NAME, NUM_QUEUED_FLOW_METRIC_TYPE, 0, manager, interval);
-    logger.debug("Instantiated NumQueuedFlowMetric");
+    _logger.debug("Instantiated NumQueuedFlowMetric");
     flowManager = flowRunnerManager;
   }
 

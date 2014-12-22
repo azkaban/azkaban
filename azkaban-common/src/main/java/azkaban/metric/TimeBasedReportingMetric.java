@@ -64,7 +64,7 @@ public abstract class TimeBasedReportingMetric<T> extends AbstractMetric<T> {
    * @param interval
    */
   public void updateInterval(final long interval) {
-    logger.debug(String.format("Updating tracking interval to %d milisecond for %s metric", interval, getName()));
+    _logger.debug(String.format("Updating tracking interval to %d milisecond for %s metric", interval, getName()));
     timer.cancel();
     timer = new Timer();
     timer.schedule(getTimerTask(), interval, interval);
