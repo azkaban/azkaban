@@ -45,7 +45,7 @@ public class NumFailedJobMetric extends TimeBasedReportingMetric<Integer> implem
   public synchronized void handleEvent(Event event) {
     JobRunner runner = (JobRunner) event.getRunner();
     if (event.getType() == Type.JOB_FINISHED && runner.getStatus().equals(Status.FAILED)) {
-      value = value + 1;
+      _value = _value + 1;
     }
   }
 
@@ -56,7 +56,7 @@ public class NumFailedJobMetric extends TimeBasedReportingMetric<Integer> implem
 
   @Override
   protected synchronized void postTrackingEventMethod() {
-    value = 0;
+    _value = 0;
   }
 
 }

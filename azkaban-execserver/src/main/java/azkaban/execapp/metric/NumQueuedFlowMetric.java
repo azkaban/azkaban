@@ -24,7 +24,7 @@ public class NumQueuedFlowMetric extends TimeBasedReportingMetric<Integer> {
   public static final String NUM_QUEUED_FLOW_METRIC_NAME = "NumQueuedFlowMetric";
   private static final String NUM_QUEUED_FLOW_METRIC_TYPE = "uint16";
 
-  private FlowRunnerManager flowManager;
+  private FlowRunnerManager _flowManager;
 
   /**
    * @param flowRunnerManager Flow runner manager
@@ -34,7 +34,7 @@ public class NumQueuedFlowMetric extends TimeBasedReportingMetric<Integer> {
   public NumQueuedFlowMetric(FlowRunnerManager flowRunnerManager, MetricReportManager manager, long interval) {
     super(NUM_QUEUED_FLOW_METRIC_NAME, NUM_QUEUED_FLOW_METRIC_TYPE, 0, manager, interval);
     _logger.debug("Instantiated NumQueuedFlowMetric");
-    flowManager = flowRunnerManager;
+    _flowManager = flowRunnerManager;
   }
 
   /**
@@ -44,7 +44,7 @@ public class NumQueuedFlowMetric extends TimeBasedReportingMetric<Integer> {
    */
   @Override
   protected synchronized void preTrackingEventMethod() {
-    value = flowManager.getNumQueuedFlows();
+    _value = _flowManager.getNumQueuedFlows();
   }
 
   @Override

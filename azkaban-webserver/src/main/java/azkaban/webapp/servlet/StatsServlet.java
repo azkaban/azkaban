@@ -22,8 +22,6 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
 
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
@@ -45,15 +43,15 @@ import azkaban.webapp.AzkabanWebServer;
  */
 public class StatsServlet extends LoginAbstractAzkabanServlet {
   private static final long serialVersionUID = 1L;
-  private UserManager userManager;
-  private ExecutorManager execManager;
+  private UserManager _userManager;
+  private ExecutorManager _execManager;
 
   @Override
   public void init(ServletConfig config) throws ServletException {
     super.init(config);
     AzkabanWebServer server = (AzkabanWebServer) getApplication();
-    userManager = server.getUserManager();
-    execManager = server.getExecutorManager();
+    _userManager = server.getUserManager();
+    _execManager = server.getExecutorManager();
   }
 
   @Override
@@ -94,7 +92,7 @@ public class StatsServlet extends LoginAbstractAzkabanServlet {
    */
   private void handleChangeConfigurationRequest(String actionName, HttpServletRequest req, HashMap<String, Object> ret)
       throws ServletException, IOException {
-    Map<String, Object> result = execManager.callExecutorStats(actionName, getAllParams(req));
+    Map<String, Object> result = _execManager.callExecutorStats(actionName, getAllParams(req));
     if (result.containsKey(ConnectorParams.RESPONSE_ERROR)) {
       ret.put(ConnectorParams.RESPONSE_ERROR, result.get(ConnectorParams.RESPONSE_ERROR).toString());
     } else {
@@ -109,7 +107,7 @@ public class StatsServlet extends LoginAbstractAzkabanServlet {
   private void handleGetMetricHistory(HttpServletRequest req, HashMap<String, Object> ret, User user)
       throws IOException, ServletException {
     Map<String, Object> result =
-        execManager.callExecutorStats(ConnectorParams.STATS_GET_METRICHISTORY, getAllParams(req));
+        _execManager.callExecutorStats(ConnectorParams.STATS_GET_METRICHISTORY, getAllParams(req));
     if (result.containsKey(ConnectorParams.RESPONSE_ERROR)) {
       ret.put(ConnectorParams.RESPONSE_ERROR, result.get(ConnectorParams.RESPONSE_ERROR).toString());
     } else {
@@ -131,7 +129,7 @@ public class StatsServlet extends LoginAbstractAzkabanServlet {
 
     try {
       Map<String, Object> result =
-          execManager.callExecutorStats(ConnectorParams.STATS_GET_ALLMETRICSNAME, (Pair<String, String>[]) null);
+          _execManager.callExecutorStats(ConnectorParams.STATS_GET_ALLMETRICSNAME, (Pair<String, String>[]) null);
       if (result.containsKey(ConnectorParams.RESPONSE_ERROR)) {
         page.add("errorMsg", result.get(ConnectorParams.RESPONSE_ERROR).toString());
       } else {
@@ -151,7 +149,7 @@ public class StatsServlet extends LoginAbstractAzkabanServlet {
 
   protected boolean hasPermission(User user, Permission.Type type) {
     for (String roleName : user.getRoles()) {
-      Role role = userManager.getRole(roleName);
+      Role role = _userManager.getRole(roleName);
       if (role.getPermission().isPermissionSet(type) || role.getPermission().isPermissionSet(Permission.Type.ADMIN)) {
         return true;
       }

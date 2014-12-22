@@ -50,7 +50,7 @@ import azkaban.utils.JSONUtils;
  */
 public class StatsServlet extends HttpServlet implements ConnectorParams {
   private static final long serialVersionUID = 2L;
-  private static final Logger logger = Logger.getLogger(StatsServlet.class);
+  private static final Logger _logger = Logger.getLogger(StatsServlet.class);
 
   public void init(ServletConfig config) throws ServletException {
     // Nothing to initialize
@@ -110,7 +110,7 @@ public class StatsServlet extends HttpServlet implements ConnectorParams {
    */
   private void handleChangeManagerStatusRequest(HttpServletRequest req, Map<String, Object> ret, boolean enableMetricManager) {
     try {
-      logger.info("Updating metric manager status");
+      _logger.info("Updating metric manager status");
       if (MetricReportManager.isInstantiated()) {
         MetricReportManager metricManager = MetricReportManager.getInstance();
         if (enableMetricManager) {
@@ -121,7 +121,7 @@ public class StatsServlet extends HttpServlet implements ConnectorParams {
       }
       ret.put(STATUS_PARAM, RESPONSE_SUCCESS);
     } catch (Exception e) {
-      logger.error(e);
+      _logger.error(e);
       ret.put(RESPONSE_ERROR, e.getMessage());
     }
   }
@@ -139,7 +139,7 @@ public class StatsServlet extends HttpServlet implements ConnectorParams {
       }
       ret.put(STATUS_PARAM, RESPONSE_SUCCESS);
     } catch (Exception e) {
-      logger.error(e);
+      _logger.error(e);
       ret.put(RESPONSE_ERROR, e.getMessage());
     }
   }
@@ -157,7 +157,7 @@ public class StatsServlet extends HttpServlet implements ConnectorParams {
       }
       ret.put(STATUS_PARAM, RESPONSE_SUCCESS);
     } catch (Exception e) {
-      logger.error(e);
+      _logger.error(e);
       ret.put(RESPONSE_ERROR, e.getMessage());
     }
   }
@@ -242,7 +242,7 @@ public class StatsServlet extends HttpServlet implements ConnectorParams {
       }
       ret.put(STATUS_PARAM, RESPONSE_SUCCESS);
     } catch (Exception e) {
-      logger.error(e);
+      _logger.error(e);
       ret.put(RESPONSE_ERROR, e.getMessage());
     }
   }

@@ -24,7 +24,7 @@ import java.util.TimerTask;
  * @param <T> Type of Value of a given metric
  */
 public abstract class TimeBasedReportingMetric<T> extends AbstractMetric<T> {
-  private Timer timer;
+  private Timer _timer;
 
   /**
    * @param metricName Name of metric
@@ -36,8 +36,8 @@ public abstract class TimeBasedReportingMetric<T> extends AbstractMetric<T> {
   public TimeBasedReportingMetric(String metricName, String metricType, T initialValue, MetricReportManager manager,
       long interval) {
     super(metricName, metricType, initialValue, manager);
-    timer = new Timer();
-    timer.schedule(getTimerTask(), interval, interval);
+    _timer = new Timer();
+    _timer.schedule(getTimerTask(), interval, interval);
   }
 
   /**
@@ -65,9 +65,9 @@ public abstract class TimeBasedReportingMetric<T> extends AbstractMetric<T> {
    */
   public void updateInterval(final long interval) {
     _logger.debug(String.format("Updating tracking interval to %d milisecond for %s metric", interval, getName()));
-    timer.cancel();
-    timer = new Timer();
-    timer.schedule(getTimerTask(), interval, interval);
+    _timer.cancel();
+    _timer = new Timer();
+    _timer.schedule(getTimerTask(), interval, interval);
   }
 
   /**

@@ -109,6 +109,7 @@ project(':azkaban-common') {
     compile('org.mortbay.jetty:jetty:6.1.26')
     compile('org.mortbay.jetty:jetty-util:6.1.26')
     compile('org.slf4j:slf4j-api:1.6.1')
+    compile('org.apache.commons:commons-math3:3.0')
 
     testCompile('junit:junit:4.11')
     testCompile('org.hamcrest:hamcrest-all:1.3')

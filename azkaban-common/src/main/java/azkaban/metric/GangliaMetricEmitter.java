@@ -26,14 +26,13 @@ import azkaban.utils.Props;
  */
 public class GangliaMetricEmitter implements IMetricEmitter {
   private static final String GANGLIA_METRIC_REPORTER_PATH = "azkaban.metric.ganglia.path";
-
-  private String gmetricPath;
+  private String _gmetricPath;
 
   /**
    * @param azkProps Azkaban Properties
    */
   public GangliaMetricEmitter(Props azkProps) {
-    gmetricPath = azkProps.get(GANGLIA_METRIC_REPORTER_PATH);
+    _gmetricPath = azkProps.get(GANGLIA_METRIC_REPORTER_PATH);
   }
 
   private String buildCommand(IMetric<?> metric) {
@@ -41,7 +40,7 @@ public class GangliaMetricEmitter implements IMetricEmitter {
 
     synchronized (metric) {
       cmd =
-          String.format("%s -t %s -n %s -v %s", gmetricPath, metric.getValueType(), metric.getName(), metric.getValue()
+          String.format("%s -t %s -n %s -v %s", _gmetricPath, metric.getValueType(), metric.getName(), metric.getValue()
               .toString());
     }
 

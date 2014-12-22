@@ -24,10 +24,10 @@ import org.apache.log4j.Logger;
  */
 public abstract class AbstractMetric<T> implements IMetric<T>, Cloneable{
   protected static final Logger _logger = Logger.getLogger(MetricReportManager.class);
-  protected String name;
-  protected T value;
-  protected String type;
-  protected MetricReportManager metricManager;
+  protected String _name;
+  protected T _value;
+  protected String _type;
+  protected MetricReportManager _metricManager;
 
   /**
    * @param metricName Name of metric
@@ -36,10 +36,10 @@ public abstract class AbstractMetric<T> implements IMetric<T>, Cloneable{
    * @param manager Metric Manager whom a metric will report to
    */
   protected AbstractMetric(String metricName, String metricType, T initialValue, MetricReportManager manager) {
-    name = metricName;
-    type = metricType;
-    value = initialValue;
-    metricManager = manager;
+    _name = metricName;
+    _type = metricType;
+    _value = initialValue;
+    _metricManager = manager;
   }
 
   /**
@@ -47,7 +47,7 @@ public abstract class AbstractMetric<T> implements IMetric<T>, Cloneable{
    * @see azkaban.metric.IMetric#getName()
    */
   public String getName() {
-    return name;
+    return _name;
   }
 
   /**
@@ -55,7 +55,7 @@ public abstract class AbstractMetric<T> implements IMetric<T>, Cloneable{
    * @see azkaban.metric.IMetric#getValueType()
    */
   public String getValueType() {
-    return type;
+    return _type;
   }
 
   /**
@@ -63,7 +63,7 @@ public abstract class AbstractMetric<T> implements IMetric<T>, Cloneable{
    * @see azkaban.metric.IMetric#updateMetricManager(azkaban.metric.MetricReportManager)
    */
   public void updateMetricManager(final MetricReportManager manager) {
-    metricManager = manager;
+    _metricManager = manager;
   }
 
   /**
@@ -71,7 +71,7 @@ public abstract class AbstractMetric<T> implements IMetric<T>, Cloneable{
    * @see azkaban.metric.IMetric#getValue()
    */
   public T getValue() {
-    return value;
+    return _value;
   }
 
   /**
@@ -84,7 +84,7 @@ public abstract class AbstractMetric<T> implements IMetric<T>, Cloneable{
   public synchronized void notifyManager() {
     _logger.debug(String.format("Notifying Manager for %s", this.getClass().getName()));
     try {
-      metricManager.reportMetric( (IMetric<?>) this.clone());
+      _metricManager.reportMetric( (IMetric<?>) this.clone());
     } catch (NullPointerException ex) {
       _logger.error(String.format("Metric Manager is not set for %s metric %s", this.getClass().getName(), ex.toString()));
     } catch (CloneNotSupportedException ex) {

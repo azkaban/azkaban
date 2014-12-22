@@ -46,9 +46,9 @@ public class NumRunningJobMetric extends TimeBasedReportingMetric<Integer> imple
   @Override
   public synchronized void handleEvent(Event event) {
     if (event.getType() == Type.JOB_STARTED) {
-      value = value + 1;
+      _value = _value + 1;
     } else if (event.getType() == Type.JOB_FINISHED) {
-      value = value - 1;
+      _value = _value - 1;
     }
   }
 

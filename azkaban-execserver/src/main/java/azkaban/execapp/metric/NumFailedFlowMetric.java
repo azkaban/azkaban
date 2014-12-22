@@ -44,7 +44,7 @@ public class NumFailedFlowMetric extends TimeBasedReportingMetric<Integer> imple
     if (event.getType() == Type.FLOW_FINISHED) {
       FlowRunner runner = (FlowRunner) event.getRunner();
       if (runner != null && runner.getExecutableFlow().getStatus().equals(Status.FAILED)) {
-        value = value + 1;
+        _value = _value + 1;
       }
     }
   }
@@ -56,7 +56,7 @@ public class NumFailedFlowMetric extends TimeBasedReportingMetric<Integer> imple
 
   @Override
   protected synchronized void postTrackingEventMethod() {
-    value = 0;
+    _value = 0;
   }
 
 }

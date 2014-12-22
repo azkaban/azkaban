@@ -27,7 +27,7 @@ public class NumRunningFlowMetric extends TimeBasedReportingMetric<Integer> {
   public static final String NUM_RUNNING_FLOW_METRIC_NAME = "NumRunningFlowMetric";
   private static final String NUM_RUNNING_FLOW_METRIC_TYPE = "uint16";
 
-  private FlowRunnerManager flowManager;
+  private FlowRunnerManager _flowManager;
 
   /**
    * @param flowRunnerManager Flow runner manager
@@ -37,7 +37,7 @@ public class NumRunningFlowMetric extends TimeBasedReportingMetric<Integer> {
   public NumRunningFlowMetric(FlowRunnerManager flowRunnerManager, MetricReportManager manager, long interval) {
     super(NUM_RUNNING_FLOW_METRIC_NAME, NUM_RUNNING_FLOW_METRIC_TYPE, 0, manager, interval);
     _logger.debug("Instantiated NumRunningFlowMetric");
-    flowManager = flowRunnerManager;
+    _flowManager = flowRunnerManager;
   }
 
   /**
@@ -47,7 +47,7 @@ public class NumRunningFlowMetric extends TimeBasedReportingMetric<Integer> {
    */
   @Override
   protected synchronized void preTrackingEventMethod() {
-    value = flowManager.getNumRunningFlows();
+    _value = _flowManager.getNumRunningFlows();
   }
 
   @Override
