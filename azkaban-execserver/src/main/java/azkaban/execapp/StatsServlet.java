@@ -44,6 +44,7 @@ import azkaban.server.HttpRequestUtils;
 import azkaban.server.ServerConstants;
 import azkaban.utils.JSONUtils;
 
+
 /**
  * Servlet to communicate with Azkaban exec server
  * This servlet get requests from stats servlet in Azkaban Web server
@@ -108,18 +109,21 @@ public class StatsServlet extends HttpServlet implements ConnectorParams {
    * enable or disable metric Manager
    * A disable will also purge all data from all metric emitters
    */
-  private void handleChangeManagerStatusRequest(HttpServletRequest req, Map<String, Object> ret, boolean enableMetricManager) {
+  private void handleChangeManagerStatusRequest(HttpServletRequest req, Map<String, Object> ret,
+      boolean enableMetricManager) {
     try {
       _logger.info("Updating metric manager status");
-      if (MetricReportManager.isInstantiated()) {
+      if (MetricReportManager.isAvailable()) {
         MetricReportManager metricManager = MetricReportManager.getInstance();
         if (enableMetricManager) {
           metricManager.enableManager();
         } else {
           metricManager.disableManager();
         }
+        ret.put(STATUS_PARAM, RESPONSE_SUCCESS);
+      } else {
+        ret.put(RESPONSE_ERROR, "MetricManager is not available");
       }
-      ret.put(STATUS_PARAM, RESPONSE_SUCCESS);
     } catch (Exception e) {
       _logger.error(e);
       ret.put(RESPONSE_ERROR, e.getMessage());
@@ -132,12 +136,14 @@ public class StatsServlet extends HttpServlet implements ConnectorParams {
   private void handleChangeEmitterPoints(HttpServletRequest req, Map<String, Object> ret) {
     try {
       long numInstance = getLongParam(req, STATS_MAP_EMITTERNUMINSTANCES);
-      if (MetricReportManager.isInstantiated()) {
+      if (MetricReportManager.isAvailable()) {
         MetricReportManager metricManager = MetricReportManager.getInstance();
         InMemoryMetricEmitter memoryEmitter = extractInMemoryMetricEmitter(metricManager);
         memoryEmitter.setReportingInstances(numInstance);
+        ret.put(STATUS_PARAM, RESPONSE_SUCCESS);
+      } else {
+        ret.put(RESPONSE_ERROR, "MetricManager is not available");
       }
-      ret.put(STATUS_PARAM, RESPONSE_SUCCESS);
     } catch (Exception e) {
       _logger.error(e);
       ret.put(RESPONSE_ERROR, e.getMessage());
@@ -150,12 +156,14 @@ public class StatsServlet extends HttpServlet implements ConnectorParams {
   private void handleChangeCleaningInterval(HttpServletRequest req, Map<String, Object> ret) {
     try {
       long newInterval = getLongParam(req, STATS_MAP_CLEANINGINTERVAL);
-      if (MetricReportManager.isInstantiated()) {
+      if (MetricReportManager.isAvailable()) {
         MetricReportManager metricManager = MetricReportManager.getInstance();
         InMemoryMetricEmitter memoryEmitter = extractInMemoryMetricEmitter(metricManager);
         memoryEmitter.setReportingInterval(newInterval);
+        ret.put(STATUS_PARAM, RESPONSE_SUCCESS);
+      } else {
+        ret.put(RESPONSE_ERROR, "MetricManager is not available");
       }
-      ret.put(STATUS_PARAM, RESPONSE_SUCCESS);
     } catch (Exception e) {
       _logger.error(e);
       ret.put(RESPONSE_ERROR, e.getMessage());
@@ -167,7 +175,7 @@ public class StatsServlet extends HttpServlet implements ConnectorParams {
    * @throws ServletException
    */
   private void handleGetMetricHistory(HttpServletRequest req, Map<String, Object> ret) throws ServletException {
-    if (MetricReportManager.isInstantiated()) {
+    if (MetricReportManager.isAvailable()) {
       MetricReportManager metricManager = MetricReportManager.getInstance();
       InMemoryMetricEmitter memoryEmitter = extractInMemoryMetricEmitter(metricManager);
 
@@ -192,7 +200,7 @@ public class StatsServlet extends HttpServlet implements ConnectorParams {
         ret.put(RESPONSE_ERROR, "InMemoryMetricEmitter not instantiated");
       }
     } else {
-      ret.put(RESPONSE_ERROR, "MetricReportManager not instantiated");
+      ret.put(RESPONSE_ERROR, "MetricReportManager is not available");
     }
   }
 
@@ -214,7 +222,7 @@ public class StatsServlet extends HttpServlet implements ConnectorParams {
    * Get all the metrics tracked by metric manager
    */
   private void handleGetAllMMetricsName(HttpServletRequest req, Map<String, Object> ret) {
-    if (MetricReportManager.isInstantiated()) {
+    if (MetricReportManager.isAvailable()) {
       MetricReportManager metricManager = MetricReportManager.getInstance();
       List<IMetric<?>> result = metricManager.getAllMetrics();
       if (result.size() == 0) {
@@ -223,7 +231,7 @@ public class StatsServlet extends HttpServlet implements ConnectorParams {
         ret.put("data", result);
       }
     } else {
-      ret.put(RESPONSE_ERROR, "MetricReportManager not instantiated");
+      ret.put(RESPONSE_ERROR, "MetricReportManager is not available");
     }
   }
 
@@ -235,12 +243,14 @@ public class StatsServlet extends HttpServlet implements ConnectorParams {
     try {
       String metricName = getParam(req, STATS_MAP_METRICNAMEPARAM);
       long newInterval = getLongParam(req, STATS_MAP_REPORTINGINTERVAL);
-      if (MetricReportManager.isInstantiated()) {
+      if (MetricReportManager.isAvailable()) {
         MetricReportManager metricManager = MetricReportManager.getInstance();
         TimeBasedReportingMetric<?> metric = (TimeBasedReportingMetric<?>) metricManager.getMetricFromName(metricName);
         metric.updateInterval(newInterval);
+        ret.put(STATUS_PARAM, RESPONSE_SUCCESS);
+      } else {
+        ret.put(RESPONSE_ERROR, "MetricManager is not available");
       }
-      ret.put(STATUS_PARAM, RESPONSE_SUCCESS);
     } catch (Exception e) {
       _logger.error(e);
       ret.put(RESPONSE_ERROR, e.getMessage());

@@ -55,7 +55,7 @@ public class MetricReportManager {
   private ExecutorService _executorService;
   // Singleton variable
   private static volatile MetricReportManager _instance = null;
-  boolean _isManagerEnabled;
+  private static boolean _isManagerEnabled;
 
   private MetricReportManager() {
     _logger.debug("Instantiating Metric Manager");
@@ -68,8 +68,8 @@ public class MetricReportManager {
   /**
    * @return true, if we have enabled metric manager from Azkaban exec server
    */
-  public static boolean isInstantiated() {
-    return _instance != null;
+  public static boolean isAvailable() {
+    return _instance != null && _isManagerEnabled;
   }
 
   /**
@@ -89,7 +89,7 @@ public class MetricReportManager {
 
   // each element of metrics List is responsible to call this method and report metrics
   public void reportMetric(final IMetric<?> metric) {
-    if (metric != null && _isManagerEnabled) {
+    if (metric != null && isAvailable()) {
 
       // Report metric to all the emitters
       synchronized (metric) {

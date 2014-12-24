@@ -520,7 +520,7 @@ public class FlowRunnerManager implements EventListener,
   private void configureFlowLevelMetrics(FlowRunner flowRunner) {
     logger.info("Configuring Azkaban metrics tracking for flow runner object");
 
-    if (MetricReportManager.isInstantiated()) {
+    if (MetricReportManager.isAvailable()) {
       MetricReportManager metricManager = MetricReportManager.getInstance();
       //Adding NumFailedFlow Metric listener
       flowRunner.addListener((NumFailedFlowMetric) metricManager

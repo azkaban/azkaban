@@ -42,7 +42,7 @@ public class InMemoryMetricEmitter implements IMetricEmitter {
   /**
    * Data structure to keep track of snapshots
    */
-  Map<String, LinkedList<InMemoryHistoryNode>> _historyListMapping;
+  protected Map<String, LinkedList<InMemoryHistoryNode>> _historyListMapping;
   private static final String INMEMORY_METRIC_REPORTER_WINDOW = "azkaban.metric.inmemory.interval";
   private static final String INMEMORY_METRIC_NUM_INSTANCES = "azkaban.metric.inmemory.maxinstances";
   private static final String INMEMORY_METRIC_STANDARDDEVIATION_FACTOR =
