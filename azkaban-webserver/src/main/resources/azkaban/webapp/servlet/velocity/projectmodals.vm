@@ -43,7 +43,8 @@
                       </label>
                       <div class="col-sm-3">
                         <div class="checkbox">
-                          <input type="checkbox" id="fix" name="fix" checked="checked">
+                          <input type="hidden" name="fix" value="off">
+                          <input type="checkbox" id="fix" name="fix" value="on" checked="checked">
                         </div>
                       </div>
                     </div>
