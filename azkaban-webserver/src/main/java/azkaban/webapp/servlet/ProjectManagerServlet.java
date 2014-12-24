@@ -1536,10 +1536,10 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
     Project project = projectManager.getProject(projectName);
     String autoFix = (String) multipart.get("fix");
     Props props = new Props();
-    if (autoFix != null && autoFix.equals("on")) {
-      props.put(ValidatorConfigs.CUSTOM_AUTO_FIX_FLAG_PARAM, "true");
-    } else {
+    if (autoFix != null && autoFix.equals("off")) {
       props.put(ValidatorConfigs.CUSTOM_AUTO_FIX_FLAG_PARAM, "false");
+    } else {
+      props.put(ValidatorConfigs.CUSTOM_AUTO_FIX_FLAG_PARAM, "true");
     }
 
     if (projectName == null || projectName.isEmpty()) {
