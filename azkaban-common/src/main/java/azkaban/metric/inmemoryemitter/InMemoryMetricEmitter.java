@@ -203,17 +203,17 @@ public class InMemoryMetricEmitter implements IMetricEmitter {
       synchronized (_historyListMapping.get(metricName)) {
 
         InMemoryHistoryNode firstNode = _historyListMapping.get(metricName).peekFirst();
-        long localCopyOfInterval = 0;
+        long localCopyOfTimeWindow = 0;
 
         // go ahead for clean up using latest possible value of interval
         // any interval change will not affect on going clean up
         synchronized (this) {
-          localCopyOfInterval = _timeWindow;
+          localCopyOfTimeWindow = _timeWindow;
         }
 
         // removing objects older than Interval time from firstAllowedDate
         while (firstNode != null
-            && TimeUnit.MILLISECONDS.toMillis(firstAllowedDate.getTime() - firstNode.getTimestamp().getTime()) > localCopyOfInterval) {
+            && TimeUnit.MILLISECONDS.toMillis(firstAllowedDate.getTime() - firstNode.getTimestamp().getTime()) > localCopyOfTimeWindow) {
           _historyListMapping.get(metricName).removeFirst();
           firstNode = _historyListMapping.get(metricName).peekFirst();
         }

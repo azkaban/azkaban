@@ -24,6 +24,7 @@ import java.util.concurrent.Executors;
 
 import org.apache.log4j.Logger;
 
+
 /**
  * Manager for access or updating metric related functionality of Azkaban
  * MetricManager is responsible all handling all action requests from statsServlet in Exec server
@@ -87,25 +88,36 @@ public class MetricReportManager {
     return _instance;
   }
 
-  // each element of metrics List is responsible to call this method and report metrics
+  /***
+   * each element of metrics List is responsible to call this method and report metrics
+   * @param metric
+   */
   public void reportMetric(final IMetric<?> metric) {
     if (metric != null && isAvailable()) {
-
-      // Report metric to all the emitters
-      synchronized (metric) {
-        _logger.debug(String.format("Submitting %s metric for metric emission pool", metric.getName()));
+      try {
+        final IMetric<?> metricSnapshot;
+        // take snapshot
+        synchronized (metric) {
+          metricSnapshot = metric.getSnapshot();
+        }
+        _logger.debug(String.format("Submitting %s metric for metric emission pool", metricSnapshot.getName()));
+        // report to all emitters
         for (final IMetricEmitter metricEmitter : _metricEmitters) {
           _executorService.submit(new Runnable() {
             @Override
             public void run() {
               try {
-                metricEmitter.reportMetric(metric);
+                metricEmitter.reportMetric(metricSnapshot);
               } catch (Exception ex) {
-                _logger.error(String.format("Failed to report %s metric due to %s", metric.getName(), ex.toString()));
+                _logger.error(String.format("Failed to report %s metric due to %s", metricSnapshot.getName(),
+                    ex.toString()));
               }
             }
           });
         }
+      } catch (CloneNotSupportedException ex) {
+        _logger.error(String.format("Failed to take snapshot for %s metric %s", metric.getClass().getName(),
+            ex.toString()));
       }
     }
   }
@@ -185,13 +197,13 @@ public class MetricReportManager {
    */
   public void disableManager() {
     _logger.info("Disabling Metric Manager");
-    if(_isManagerEnabled) {
+    if (_isManagerEnabled) {
       _isManagerEnabled = false;
-      for(IMetricEmitter emitter: _metricEmitters) {
+      for (IMetricEmitter emitter : _metricEmitters) {
         try {
           emitter.purgeAllData();
         } catch (Exception ex) {
-          _logger.error("Failed to purge data "  + ex.toString());
+          _logger.error("Failed to purge data " + ex.toString());
         }
       }
     }

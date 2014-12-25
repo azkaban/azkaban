@@ -71,9 +71,9 @@ public class MetricManagerTest {
   @Test
   public void managerEmitterHandlingTest() throws Exception {
     emitter.purgeAllData();
+    Date from = new Date();
     metric.notifyManager();
 
-    Date from = new Date();
     synchronized (this) {
       try {
         wait(2000);

@@ -53,10 +53,6 @@ public class StatsServlet extends HttpServlet implements ConnectorParams {
   private static final long serialVersionUID = 2L;
   private static final Logger _logger = Logger.getLogger(StatsServlet.class);
 
-  public void init(ServletConfig config) throws ServletException {
-    // Nothing to initialize
-  }
-
   public boolean hasParam(HttpServletRequest request, String param) {
     return HttpRequestUtils.hasParam(request, param);
   }

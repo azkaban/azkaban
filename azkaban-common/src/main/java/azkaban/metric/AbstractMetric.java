@@ -68,6 +68,15 @@ public abstract class AbstractMetric<T> implements IMetric<T>, Cloneable{
 
   /**
    * {@inheritDoc}
+   * @throws CloneNotSupportedException
+   * @see azkaban.metric.IMetric#getSnapshot()
+   */
+  public IMetric<T> getSnapshot() throws CloneNotSupportedException{
+    return (IMetric<T>) this.clone();
+  }
+
+  /**
+   * {@inheritDoc}
    * @see azkaban.metric.IMetric#getValue()
    */
   public T getValue() {
@@ -81,14 +90,12 @@ public abstract class AbstractMetric<T> implements IMetric<T>, Cloneable{
    * {@inheritDoc}
    * @see azkaban.metric.IMetric#notifyManager()
    */
-  public synchronized void notifyManager() {
+  public void notifyManager() {
     _logger.debug(String.format("Notifying Manager for %s", this.getClass().getName()));
     try {
-      _metricManager.reportMetric( (IMetric<?>) this.clone());
+      _metricManager.reportMetric(this);
     } catch (NullPointerException ex) {
       _logger.error(String.format("Metric Manager is not set for %s metric %s", this.getClass().getName(), ex.toString()));
-    } catch (CloneNotSupportedException ex) {
-      _logger.error(String.format("Failed to take snapshot for %s metric %s", this.getClass().getName(), ex.toString()));
     }
   }
 }

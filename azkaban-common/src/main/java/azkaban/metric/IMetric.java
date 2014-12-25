@@ -26,4 +26,5 @@ public interface IMetric<T> {
   void updateMetricManager(final MetricReportManager manager);
   void notifyManager();
   T getValue();
+  IMetric<T> getSnapshot() throws CloneNotSupportedException;
 }
