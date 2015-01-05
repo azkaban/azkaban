@@ -32,7 +32,7 @@
          function refreshMetricChart() {
                var requestURL = '/stats';
                var requestData = {
-                 'action': 'metricHistory',
+                 'action': 'getMetricHistory',
                  'from': new Date($('#datetimebegin').val()).toUTCString(),
                  'to'  : new Date($('#datetimeend').val()).toUTCString(),
                  'metricName': $('#metricName').val(),

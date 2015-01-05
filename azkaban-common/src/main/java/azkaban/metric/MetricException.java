@@ -14,31 +14,24 @@
  * the License.
  */
 
-package azkaban.metric.inmemoryemitter;
-
-import java.util.Date;
+package azkaban.metric;
 
 /**
- * A snapshot of metric's value
+ * Exception for Azkaban's Metric Component
  */
-public class InMemoryHistoryNode {
-  private Object value;
-  private Date date;
+public class MetricException extends Exception {
+  private static final long serialVersionUID = 1L;
 
-  /**
-   * Takes snapshot of the metric with a given value
-   * @param val
-   */
-  public InMemoryHistoryNode(final Object val) {
-    value = val;
-    date = new Date();
+  public MetricException(String message) {
+    super(message);
   }
 
-  public Object getValue() {
-    return value;
+  public MetricException(Throwable cause) {
+    super(cause);
   }
 
-  public Date getTimestamp() {
-    return date;
+  public MetricException(String message, Throwable cause) {
+    super(message, cause);
   }
+
 }

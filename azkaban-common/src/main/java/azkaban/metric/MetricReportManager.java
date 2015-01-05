@@ -39,30 +39,30 @@ public class MetricReportManager {
    * Maximum number of metrics reporting threads
    */
   private static final int MAX_EMITTER_THREADS = 4;
-  private static final Logger _logger = Logger.getLogger(MetricReportManager.class);
+  private static final Logger logger = Logger.getLogger(MetricReportManager.class);
 
   /**
    * List of all the metrics that Azkaban is tracking
    * Manager is not concerned with type of metric as long as it honors IMetric contracts
    */
-  private List<IMetric<?>> _metrics;
+  private List<IMetric<?>> metrics;
 
   /**
    * List of all the emitter listening all the metrics
    * Manager is not concerned with how emitter is reporting value.
    * Manager is only responsible to notify all emitters whenever an IMetric wants to be notified
    */
-  private List<IMetricEmitter> _metricEmitters;
-  private ExecutorService _executorService;
+  private List<IMetricEmitter> metricEmitters;
+  private ExecutorService executorService;
   // Singleton variable
-  private static volatile MetricReportManager _instance = null;
-  private static boolean _isManagerEnabled;
+  private static volatile MetricReportManager instance = null;
+  private static volatile boolean isManagerEnabled;
 
   private MetricReportManager() {
-    _logger.debug("Instantiating Metric Manager");
-    _executorService = Executors.newFixedThreadPool(MAX_EMITTER_THREADS);
-    _metrics = new ArrayList<IMetric<?>>();
-    _metricEmitters = new LinkedList<IMetricEmitter>();
+    logger.debug("Instantiating Metric Manager");
+    executorService = Executors.newFixedThreadPool(MAX_EMITTER_THREADS);
+    metrics = new ArrayList<IMetric<?>>();
+    metricEmitters = new LinkedList<IMetricEmitter>();
     enableManager();
   }
 
@@ -70,22 +70,22 @@ public class MetricReportManager {
    * @return true, if we have enabled metric manager from Azkaban exec server
    */
   public static boolean isAvailable() {
-    return _instance != null && _isManagerEnabled;
+    return instance != null && isManagerEnabled;
   }
 
   /**
    * Get a singleton object for Metric Manager
    */
   public static MetricReportManager getInstance() {
-    if (_instance == null) {
+    if (instance == null) {
       synchronized (MetricReportManager.class) {
-        if (_instance == null) {
-          _logger.info("Instantiating MetricReportManager");
-          _instance = new MetricReportManager();
+        if (instance == null) {
+          logger.info("Instantiating MetricReportManager");
+          instance = new MetricReportManager();
         }
       }
     }
-    return _instance;
+    return instance;
   }
 
   /***
@@ -100,24 +100,22 @@ public class MetricReportManager {
         synchronized (metric) {
           metricSnapshot = metric.getSnapshot();
         }
-        _logger.debug(String.format("Submitting %s metric for metric emission pool", metricSnapshot.getName()));
+        logger.debug(String.format("Submitting %s metric for metric emission pool", metricSnapshot.getName()));
         // report to all emitters
-        for (final IMetricEmitter metricEmitter : _metricEmitters) {
-          _executorService.submit(new Runnable() {
+        for (final IMetricEmitter metricEmitter : metricEmitters) {
+          executorService.submit(new Runnable() {
             @Override
             public void run() {
               try {
                 metricEmitter.reportMetric(metricSnapshot);
               } catch (Exception ex) {
-                _logger.error(String.format("Failed to report %s metric due to %s", metricSnapshot.getName(),
-                    ex.toString()));
+                logger.error(String.format("Failed to report %s metric due to ", metricSnapshot.getName()), ex);
               }
             }
           });
         }
       } catch (CloneNotSupportedException ex) {
-        _logger.error(String.format("Failed to take snapshot for %s metric %s", metric.getClass().getName(),
-            ex.toString()));
+        logger.error(String.format("Failed to take snapshot for %s metric", metric.getClass().getName()), ex);
       }
     }
   }
@@ -127,7 +125,7 @@ public class MetricReportManager {
    * @param emitter
    */
   public void addMetricEmitter(final IMetricEmitter emitter) {
-    _metricEmitters.add(emitter);
+    metricEmitters.add(emitter);
   }
 
   /**
@@ -135,7 +133,7 @@ public class MetricReportManager {
    * @param emitter
    */
   public void removeMetricEmitter(final IMetricEmitter emitter) {
-    _metricEmitters.remove(emitter);
+    metricEmitters.remove(emitter);
   }
 
   /**
@@ -143,7 +141,7 @@ public class MetricReportManager {
    * @return
    */
   public List<IMetricEmitter> getMetricEmitters() {
-    return _metricEmitters;
+    return metricEmitters;
   }
 
   /**
@@ -152,12 +150,15 @@ public class MetricReportManager {
    */
   public void addMetric(final IMetric<?> metric) {
     // metric null or already present
-    if (metric != null && getMetricFromName(metric.getName()) == null) {
-      _logger.debug(String.format("Adding %s metric in Metric Manager", metric.getName()));
-      _metrics.add(metric);
+    if(metric == null)
+      throw new IllegalArgumentException("Cannot add a null metric");
+
+    if (getMetricFromName(metric.getName()) == null) {
+      logger.debug(String.format("Adding %s metric in Metric Manager", metric.getName()));
+      metrics.add(metric);
       metric.updateMetricManager(this);
     } else {
-      _logger.error("Failed to add metric");
+      logger.error("Failed to add metric");
     }
   }
 
@@ -169,7 +170,7 @@ public class MetricReportManager {
   public IMetric<?> getMetricFromName(final String name) {
     IMetric<?> metric = null;
     if (name != null) {
-      for (IMetric<?> currentMetric : _metrics) {
+      for (IMetric<?> currentMetric : metrics) {
         if (currentMetric.getName().equals(name)) {
           metric = currentMetric;
           break;
@@ -184,26 +185,26 @@ public class MetricReportManager {
    * @return
    */
   public List<IMetric<?>> getAllMetrics() {
-    return _metrics;
+    return metrics;
   }
 
   public void enableManager() {
-    _logger.info("Enabling Metric Manager");
-    _isManagerEnabled = true;
+    logger.info("Enabling Metric Manager");
+    isManagerEnabled = true;
   }
 
   /**
    * Disable Metric Manager and ask all emitters to purge all available data.
    */
   public void disableManager() {
-    _logger.info("Disabling Metric Manager");
-    if (_isManagerEnabled) {
-      _isManagerEnabled = false;
-      for (IMetricEmitter emitter : _metricEmitters) {
+    logger.info("Disabling Metric Manager");
+    if (isManagerEnabled) {
+      isManagerEnabled = false;
+      for (IMetricEmitter emitter : metricEmitters) {
         try {
           emitter.purgeAllData();
-        } catch (Exception ex) {
-          _logger.error("Failed to purge data " + ex.toString());
+        } catch (MetricException ex) {
+          logger.error("Failed to purge data ", ex);
         }
       }
     }
@@ -215,6 +216,6 @@ public class MetricReportManager {
    * @see java.lang.Object#finalize()
    */
   protected void finalize() {
-    _executorService.shutdown();
+    executorService.shutdown();
   }
 }

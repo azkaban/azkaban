@@ -26,13 +26,13 @@ import azkaban.utils.Props;
  */
 public class GangliaMetricEmitter implements IMetricEmitter {
   private static final String GANGLIA_METRIC_REPORTER_PATH = "azkaban.metric.ganglia.path";
-  private String _gmetricPath;
+  private String gmetricPath;
 
   /**
    * @param azkProps Azkaban Properties
    */
   public GangliaMetricEmitter(Props azkProps) {
-    _gmetricPath = azkProps.get(GANGLIA_METRIC_REPORTER_PATH);
+    gmetricPath = azkProps.get(GANGLIA_METRIC_REPORTER_PATH);
   }
 
   private String buildCommand(IMetric<?> metric) {
@@ -40,7 +40,7 @@ public class GangliaMetricEmitter implements IMetricEmitter {
 
     synchronized (metric) {
       cmd =
-          String.format("%s -t %s -n %s -v %s", _gmetricPath, metric.getValueType(), metric.getName(), metric.getValue()
+          String.format("%s -t %s -n %s -v %s", gmetricPath, metric.getValueType(), metric.getName(), metric.getValue()
               .toString());
     }
 
@@ -53,23 +53,28 @@ public class GangliaMetricEmitter implements IMetricEmitter {
    * @see azkaban.metric.IMetricEmitter#reportMetric(azkaban.metric.IMetric)
    */
   @Override
-  public void reportMetric(final IMetric<?> metric) throws Exception {
+  public void reportMetric(final IMetric<?> metric) throws MetricException {
     String gangliaCommand = buildCommand(metric);
 
     if (gangliaCommand != null) {
       // executes shell command to report metric to ganglia dashboard
-      Process emission = Runtime.getRuntime().exec(gangliaCommand);
-      int exitCode = emission.waitFor();
-      if (exitCode != 0) {
-        throw new RuntimeException("Failed to report metric using gmetric");
+      try {
+        Process emission = Runtime.getRuntime().exec(gangliaCommand);
+        int exitCode;
+        exitCode = emission.waitFor();
+        if (exitCode != 0) {
+          throw new MetricException("Failed to report metric using gmetric");
+        }
+      } catch (Exception e) {
+        throw new MetricException("Failed to report metric using gmetric");
       }
     } else {
-      throw new Exception("Failed to build ganglia Command");
+      throw new MetricException("Failed to build ganglia Command");
     }
   }
 
   @Override
-  public void purgeAllData() throws Exception {
+  public void purgeAllData() throws MetricException {
 
   }
 }

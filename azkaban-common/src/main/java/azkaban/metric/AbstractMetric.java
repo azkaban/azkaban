@@ -23,11 +23,11 @@ import org.apache.log4j.Logger;
  * @param <T> Type of Value of a given metric
  */
 public abstract class AbstractMetric<T> implements IMetric<T>, Cloneable{
-  protected static final Logger _logger = Logger.getLogger(MetricReportManager.class);
-  protected String _name;
-  protected T _value;
-  protected String _type;
-  protected MetricReportManager _metricManager;
+  protected static final Logger logger = Logger.getLogger(MetricReportManager.class);
+  protected String name;
+  protected T value;
+  protected String type;
+  protected MetricReportManager metricManager;
 
   /**
    * @param metricName Name of metric
@@ -36,10 +36,10 @@ public abstract class AbstractMetric<T> implements IMetric<T>, Cloneable{
    * @param manager Metric Manager whom a metric will report to
    */
   protected AbstractMetric(String metricName, String metricType, T initialValue, MetricReportManager manager) {
-    _name = metricName;
-    _type = metricType;
-    _value = initialValue;
-    _metricManager = manager;
+    name = metricName;
+    type = metricType;
+    value = initialValue;
+    metricManager = manager;
   }
 
   /**
@@ -47,7 +47,7 @@ public abstract class AbstractMetric<T> implements IMetric<T>, Cloneable{
    * @see azkaban.metric.IMetric#getName()
    */
   public String getName() {
-    return _name;
+    return name;
   }
 
   /**
@@ -55,7 +55,7 @@ public abstract class AbstractMetric<T> implements IMetric<T>, Cloneable{
    * @see azkaban.metric.IMetric#getValueType()
    */
   public String getValueType() {
-    return _type;
+    return type;
   }
 
   /**
@@ -63,7 +63,7 @@ public abstract class AbstractMetric<T> implements IMetric<T>, Cloneable{
    * @see azkaban.metric.IMetric#updateMetricManager(azkaban.metric.MetricReportManager)
    */
   public void updateMetricManager(final MetricReportManager manager) {
-    _metricManager = manager;
+    metricManager = manager;
   }
 
   /**
@@ -80,7 +80,7 @@ public abstract class AbstractMetric<T> implements IMetric<T>, Cloneable{
    * @see azkaban.metric.IMetric#getValue()
    */
   public T getValue() {
-    return _value;
+    return value;
   }
 
   /**
@@ -91,11 +91,11 @@ public abstract class AbstractMetric<T> implements IMetric<T>, Cloneable{
    * @see azkaban.metric.IMetric#notifyManager()
    */
   public void notifyManager() {
-    _logger.debug(String.format("Notifying Manager for %s", this.getClass().getName()));
+    logger.debug(String.format("Notifying Manager for %s", this.getClass().getName()));
     try {
-      _metricManager.reportMetric(this);
-    } catch (NullPointerException ex) {
-      _logger.error(String.format("Metric Manager is not set for %s metric %s", this.getClass().getName(), ex.toString()));
+      metricManager.reportMetric(this);
+    } catch (Throwable ex) {
+      logger.error(String.format("Metric Manager is not set for %s metric", this.getClass().getName()), ex);
     }
   }
 }

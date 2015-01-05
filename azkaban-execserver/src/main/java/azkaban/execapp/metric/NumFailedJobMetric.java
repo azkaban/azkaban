@@ -33,7 +33,7 @@ public class NumFailedJobMetric extends TimeBasedReportingMetric<Integer> implem
 
   public NumFailedJobMetric(MetricReportManager manager, long interval) {
     super(NUM_FAILED_JOB_METRIC_NAME, NUM_FAILED_JOB_METRIC_TYPE, 0, manager, interval);
-    _logger.debug("Instantiated NumFailedJobMetric");
+    logger.debug("Instantiated NumFailedJobMetric");
   }
 
   /**
@@ -45,7 +45,7 @@ public class NumFailedJobMetric extends TimeBasedReportingMetric<Integer> implem
   public synchronized void handleEvent(Event event) {
     JobRunner runner = (JobRunner) event.getRunner();
     if (event.getType() == Type.JOB_FINISHED && runner.getStatus().equals(Status.FAILED)) {
-      _value = _value + 1;
+      value = value + 1;
     }
   }
 
@@ -56,7 +56,7 @@ public class NumFailedJobMetric extends TimeBasedReportingMetric<Integer> implem
 
   @Override
   protected synchronized void postTrackingEventMethod() {
-    _value = 0;
+    value = 0;
   }
 
 }

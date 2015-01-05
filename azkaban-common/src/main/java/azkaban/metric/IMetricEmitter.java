@@ -20,6 +20,6 @@ package azkaban.metric;
  * Interface for metric emitters
  */
 public interface IMetricEmitter {
-  void reportMetric(final IMetric<?> metric) throws Exception;
-  void purgeAllData() throws Exception;
+  void reportMetric(final IMetric<?> metric) throws MetricException;
+  void purgeAllData() throws MetricException;
 }

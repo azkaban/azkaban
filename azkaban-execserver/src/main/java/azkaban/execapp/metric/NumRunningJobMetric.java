@@ -35,7 +35,7 @@ public class NumRunningJobMetric extends TimeBasedReportingMetric<Integer> imple
    */
   public NumRunningJobMetric(MetricReportManager manager, long interval) {
     super(NUM_RUNNING_JOB_METRIC_NAME, NUM_RUNNING_JOB_METRIC_TYPE, 0, manager, interval);
-    _logger.debug("Instantiated NumRunningJobMetric");
+    logger.debug("Instantiated NumRunningJobMetric");
   }
 
   /**
@@ -46,9 +46,9 @@ public class NumRunningJobMetric extends TimeBasedReportingMetric<Integer> imple
   @Override
   public synchronized void handleEvent(Event event) {
     if (event.getType() == Type.JOB_STARTED) {
-      _value = _value + 1;
+      value = value + 1;
     } else if (event.getType() == Type.JOB_FINISHED) {
-      _value = _value - 1;
+      value = value - 1;
     }
   }
 

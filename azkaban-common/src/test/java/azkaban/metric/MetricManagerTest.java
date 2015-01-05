@@ -82,7 +82,7 @@ public class MetricManagerTest {
       }
     }
     Date to = new Date();
-    List<InMemoryHistoryNode> nodes = emitter.getDrawMetric("FakeMetric", from, to, false);
+    List<InMemoryHistoryNode> nodes = emitter.getMetrics("FakeMetric", from, to, false);
 
     assertEquals("Failed to report metric", 1, nodes.size());
     assertEquals("Failed to report metric", nodes.get(0).getValue(), 4);

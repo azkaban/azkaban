@@ -24,14 +24,16 @@ import azkaban.executor.Status;
 import azkaban.metric.MetricReportManager;
 import azkaban.metric.TimeBasedReportingMetric;
 
-
+/**
+ * Metric to keep track of number of failed flows in between the tracking events
+ */
 public class NumFailedFlowMetric extends TimeBasedReportingMetric<Integer> implements EventListener {
   public static final String NUM_FAILED_FLOW_METRIC_NAME = "NumFailedFlowMetric";
   private static final String NUM_FAILED_FLOW_METRIC_TYPE = "uint16";
 
   public NumFailedFlowMetric(MetricReportManager manager, long interval) {
     super(NUM_FAILED_FLOW_METRIC_NAME, NUM_FAILED_FLOW_METRIC_TYPE, 0, manager, interval);
-    _logger.debug("Instantiated NumFailedJobMetric");
+    logger.debug("Instantiated NumFailedJobMetric");
   }
 
   /**
@@ -44,7 +46,7 @@ public class NumFailedFlowMetric extends TimeBasedReportingMetric<Integer> imple
     if (event.getType() == Type.FLOW_FINISHED) {
       FlowRunner runner = (FlowRunner) event.getRunner();
       if (runner != null && runner.getExecutableFlow().getStatus().equals(Status.FAILED)) {
-        _value = _value + 1;
+        value = value + 1;
       }
     }
   }
@@ -56,7 +58,7 @@ public class NumFailedFlowMetric extends TimeBasedReportingMetric<Integer> imple
 
   @Override
   protected synchronized void postTrackingEventMethod() {
-    _value = 0;
+    value = 0;
   }
 
 }

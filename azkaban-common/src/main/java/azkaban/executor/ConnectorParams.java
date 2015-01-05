@@ -87,7 +87,7 @@ public interface ConnectorParams {
   public static final String JMX_HOSTPORT = "hostPort";
 
   public static final String STATS_GET_ALLMETRICSNAME = "getAllMetricNames";
-  public static final String STATS_GET_METRICHISTORY = "metricHistory";
+  public static final String STATS_GET_METRICHISTORY = "getMetricHistory";
   public static final String STATS_SET_REPORTINGINTERVAL = "changeMetricInterval";
   public static final String STATS_SET_CLEANINGINTERVAL = "changeCleaningInterval";
   public static final String STATS_SET_MAXREPORTERPOINTS = "changeEmitterPoints";

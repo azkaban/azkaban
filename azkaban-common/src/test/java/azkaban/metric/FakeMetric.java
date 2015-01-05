@@ -13,10 +13,10 @@ public class FakeMetric extends AbstractMetric<Integer>{
   public int hashCode() {
     final int prime = 31;
     int result = 1;
-    result = prime * result + ((_metricManager == null) ? 0 : _metricManager.hashCode());
-    result = prime * result + ((_name == null) ? 0 : _name.hashCode());
-    result = prime * result + ((_type == null) ? 0 : _type.hashCode());
-    result = prime * result + ((_value == null) ? 0 : _value.hashCode());
+    result = prime * result + ((metricManager == null) ? 0 : metricManager.hashCode());
+    result = prime * result + ((name == null) ? 0 : name.hashCode());
+    result = prime * result + ((type == null) ? 0 : type.hashCode());
+    result = prime * result + ((value == null) ? 0 : value.hashCode());
     return result;
   }
 
@@ -29,25 +29,25 @@ public class FakeMetric extends AbstractMetric<Integer>{
     if (!(obj instanceof FakeMetric))
       return false;
     FakeMetric other = (FakeMetric) obj;
-    if (_metricManager == null) {
-      if (other._metricManager != null)
+    if (metricManager == null) {
+      if (other.metricManager != null)
         return false;
-    } else if (!_metricManager.equals(other._metricManager))
+    } else if (!metricManager.equals(other.metricManager))
       return false;
-    if (_name == null) {
-      if (other._name != null)
+    if (name == null) {
+      if (other.name != null)
         return false;
-    } else if (!_name.equals(other._name))
+    } else if (!name.equals(other.name))
       return false;
-    if (_type == null) {
-      if (other._type != null)
+    if (type == null) {
+      if (other.type != null)
         return false;
-    } else if (!_type.equals(other._type))
+    } else if (!type.equals(other.type))
       return false;
-    if (_value == null) {
-      if (other._value != null)
+    if (value == null) {
+      if (other.value != null)
         return false;
-    } else if (!_value.equals(other._value))
+    } else if (!value.equals(other.value))
       return false;
     return true;
   }

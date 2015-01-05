@@ -51,7 +51,7 @@ import azkaban.utils.JSONUtils;
  */
 public class StatsServlet extends HttpServlet implements ConnectorParams {
   private static final long serialVersionUID = 2L;
-  private static final Logger _logger = Logger.getLogger(StatsServlet.class);
+  private static final Logger logger = Logger.getLogger(StatsServlet.class);
 
   public boolean hasParam(HttpServletRequest request, String param) {
     return HttpRequestUtils.hasParam(request, param);
@@ -108,7 +108,7 @@ public class StatsServlet extends HttpServlet implements ConnectorParams {
   private void handleChangeManagerStatusRequest(HttpServletRequest req, Map<String, Object> ret,
       boolean enableMetricManager) {
     try {
-      _logger.info("Updating metric manager status");
+      logger.info("Updating metric manager status");
       if (MetricReportManager.isAvailable()) {
         MetricReportManager metricManager = MetricReportManager.getInstance();
         if (enableMetricManager) {
@@ -121,7 +121,7 @@ public class StatsServlet extends HttpServlet implements ConnectorParams {
         ret.put(RESPONSE_ERROR, "MetricManager is not available");
       }
     } catch (Exception e) {
-      _logger.error(e);
+      logger.error(e);
       ret.put(RESPONSE_ERROR, e.getMessage());
     }
   }
@@ -141,7 +141,7 @@ public class StatsServlet extends HttpServlet implements ConnectorParams {
         ret.put(RESPONSE_ERROR, "MetricManager is not available");
       }
     } catch (Exception e) {
-      _logger.error(e);
+      logger.error(e);
       ret.put(RESPONSE_ERROR, e.getMessage());
     }
   }
@@ -161,7 +161,7 @@ public class StatsServlet extends HttpServlet implements ConnectorParams {
         ret.put(RESPONSE_ERROR, "MetricManager is not available");
       }
     } catch (Exception e) {
-      _logger.error(e);
+      logger.error(e);
       ret.put(RESPONSE_ERROR, e.getMessage());
     }
   }
@@ -179,7 +179,7 @@ public class StatsServlet extends HttpServlet implements ConnectorParams {
       if (memoryEmitter != null) {
         try {
           List<InMemoryHistoryNode> result =
-              memoryEmitter.getDrawMetric(getParam(req, STATS_MAP_METRICNAMEPARAM),
+              memoryEmitter.getMetrics(getParam(req, STATS_MAP_METRICNAMEPARAM),
                   parseDate(getParam(req, STATS_MAP_STARTDATE)), parseDate(getParam(req, STATS_MAP_ENDDATE)),
                   getBooleanParam(req, STATS_MAP_METRICRETRIEVALMODE));
 
@@ -248,7 +248,7 @@ public class StatsServlet extends HttpServlet implements ConnectorParams {
         ret.put(RESPONSE_ERROR, "MetricManager is not available");
       }
     } catch (Exception e) {
-      _logger.error(e);
+      logger.error(e);
       ret.put(RESPONSE_ERROR, e.getMessage());
     }
   }
