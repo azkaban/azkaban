@@ -90,7 +90,7 @@
                      #if (!$metricList.isEmpty())
                      <select id="metricName"  name="metricName" style="width:200px">
                         #foreach ($metric in $metricList)
-                        <option value="${metric.name}" style="width:200px">${metric.name}</option>
+                        <option value="${metric}" style="width:200px">${metric}</option>
                         #end
                      </select>
                      #end

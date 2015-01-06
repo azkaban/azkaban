@@ -22,6 +22,7 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
@@ -109,7 +110,7 @@ public class StatsServlet extends HttpServlet implements ConnectorParams {
       boolean enableMetricManager) {
     try {
       logger.info("Updating metric manager status");
-      if (MetricReportManager.isAvailable()) {
+      if (enableMetricManager || MetricReportManager.isAvailable()) {
         MetricReportManager metricManager = MetricReportManager.getInstance();
         if (enableMetricManager) {
           metricManager.enableManager();
@@ -224,7 +225,11 @@ public class StatsServlet extends HttpServlet implements ConnectorParams {
       if (result.size() == 0) {
         ret.put(RESPONSE_ERROR, "No Metric being tracked");
       } else {
-        ret.put("data", result);
+        List<String> metricNames = new LinkedList<String>();
+        for(IMetric<?> metric: result) {
+          metricNames.add(metric.getName());
+        }
+        ret.put("data", metricNames);
       }
     } else {
       ret.put(RESPONSE_ERROR, "MetricReportManager is not available");
