@@ -67,10 +67,17 @@ public class MetricReportManager {
   }
 
   /**
-   * @return true, if we have enabled metric manager from Azkaban exec server
+   * @return true, if we have Instantiated and enabled metric manager from Azkaban exec server
    */
   public static boolean isAvailable() {
-    return instance != null && isManagerEnabled;
+    return isInstantiated() && isManagerEnabled;
+  }
+
+  /**
+   * @return true, if we have Instantiated metric manager from Azkaban exec server
+   */
+  public static boolean isInstantiated() {
+    return instance != null;
   }
 
   /**

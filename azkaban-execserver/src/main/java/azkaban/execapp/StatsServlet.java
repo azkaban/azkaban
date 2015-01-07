@@ -110,7 +110,7 @@ public class StatsServlet extends HttpServlet implements ConnectorParams {
       boolean enableMetricManager) {
     try {
       logger.info("Updating metric manager status");
-      if (enableMetricManager || MetricReportManager.isAvailable()) {
+      if ((enableMetricManager && MetricReportManager.isInstantiated()) || MetricReportManager.isAvailable()) {
         MetricReportManager metricManager = MetricReportManager.getInstance();
         if (enableMetricManager) {
           metricManager.enableManager();

@@ -41,7 +41,7 @@ public abstract class TimeBasedReportingMetric<T> extends AbstractMetric<T> {
   }
 
   /**
-   * Get a TimerTask
+   * Get a TimerTask to reschedule Timer
    * @return An anonymous TimerTask class
    */
   private TimerTask getTimerTask() {
