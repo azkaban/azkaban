@@ -21,6 +21,7 @@ import azkaban.event.Event.Type;
 import azkaban.event.EventListener;
 import azkaban.execapp.JobRunner;
 import azkaban.executor.Status;
+import azkaban.metric.MetricException;
 import azkaban.metric.MetricReportManager;
 import azkaban.metric.TimeBasedReportingMetric;
 
@@ -31,7 +32,7 @@ public class NumFailedJobMetric extends TimeBasedReportingMetric<Integer> implem
   public static final String NUM_FAILED_JOB_METRIC_NAME = "NumFailedJobMetric";
   private static final String NUM_FAILED_JOB_METRIC_TYPE = "uint16";
 
-  public NumFailedJobMetric(MetricReportManager manager, long interval) {
+  public NumFailedJobMetric(MetricReportManager manager, long interval) throws MetricException {
     super(NUM_FAILED_JOB_METRIC_NAME, NUM_FAILED_JOB_METRIC_TYPE, 0, manager, interval);
     logger.debug("Instantiated NumFailedJobMetric");
   }

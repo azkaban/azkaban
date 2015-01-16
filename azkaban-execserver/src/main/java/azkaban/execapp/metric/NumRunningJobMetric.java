@@ -19,6 +19,7 @@ package azkaban.execapp.metric;
 import azkaban.event.Event;
 import azkaban.event.Event.Type;
 import azkaban.event.EventListener;
+import azkaban.metric.MetricException;
 import azkaban.metric.MetricReportManager;
 import azkaban.metric.TimeBasedReportingMetric;
 
@@ -32,8 +33,9 @@ public class NumRunningJobMetric extends TimeBasedReportingMetric<Integer> imple
   /**
    * @param manager metric manager
    * @param interval reporting interval
+   * @throws MetricException
    */
-  public NumRunningJobMetric(MetricReportManager manager, long interval) {
+  public NumRunningJobMetric(MetricReportManager manager, long interval) throws MetricException {
     super(NUM_RUNNING_JOB_METRIC_NAME, NUM_RUNNING_JOB_METRIC_TYPE, 0, manager, interval);
     logger.debug("Instantiated NumRunningJobMetric");
   }

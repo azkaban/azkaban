@@ -17,6 +17,7 @@
 package azkaban.execapp.metric;
 
 import azkaban.execapp.FlowRunnerManager;
+import azkaban.metric.MetricException;
 import azkaban.metric.MetricReportManager;
 import azkaban.metric.TimeBasedReportingMetric;
 
@@ -33,8 +34,9 @@ public class NumRunningFlowMetric extends TimeBasedReportingMetric<Integer> {
    * @param flowRunnerManager Flow runner manager
    * @param manager metric report manager
    * @param interval reporting interval
+   * @throws MetricException
    */
-  public NumRunningFlowMetric(FlowRunnerManager flowRunnerManager, MetricReportManager manager, long interval) {
+  public NumRunningFlowMetric(FlowRunnerManager flowRunnerManager, MetricReportManager manager, long interval) throws MetricException {
     super(NUM_RUNNING_FLOW_METRIC_NAME, NUM_RUNNING_FLOW_METRIC_TYPE, 0, manager, interval);
     logger.debug("Instantiated NumRunningFlowMetric");
     flowManager = flowRunnerManager;
