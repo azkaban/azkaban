@@ -66,6 +66,7 @@ public class AzkabanExecutorServer {
   public static final String AZKABAN_PROPERTIES_FILE = "azkaban.properties";
   public static final String AZKABAN_PRIVATE_PROPERTIES_FILE = "azkaban.private.properties";
   public static final String JOBTYPE_PLUGIN_DIR = "azkaban.jobtype.plugin.dir";
+  public static final String METRIC_INTERVAL = "executor.metric.milisecinterval.";
   public static final int DEFAULT_PORT_NUMBER = 12321;
 
   private static final String DEFAULT_TIMEZONE_ID = "default.timezone.id";
@@ -144,26 +145,26 @@ public class AzkabanExecutorServer {
       metricManager.addMetricEmitter(metricEmitter);
 
       logger.info("Adding number of failed flow metric");
-      metricManager.addMetric(new NumFailedFlowMetric(metricManager, props.getInt("executor.metric.milisecinterval."
-          + NumFailedFlowMetric.NUM_FAILED_FLOW_METRIC_NAME, props.getInt("executor.metric.milisecinterval.default"))));
+      metricManager.addMetric(new NumFailedFlowMetric(metricManager, props.getInt(METRIC_INTERVAL
+          + NumFailedFlowMetric.NUM_FAILED_FLOW_METRIC_NAME, props.getInt(METRIC_INTERVAL + "default"))));
 
       logger.info("Adding number of failed jobs metric");
-      metricManager.addMetric(new NumFailedJobMetric(metricManager, props.getInt("executor.metric.milisecinterval."
-          + NumFailedJobMetric.NUM_FAILED_JOB_METRIC_NAME, props.getInt("executor.metric.milisecinterval.default"))));
+      metricManager.addMetric(new NumFailedJobMetric(metricManager, props.getInt(METRIC_INTERVAL
+          + NumFailedJobMetric.NUM_FAILED_JOB_METRIC_NAME, props.getInt(METRIC_INTERVAL + "default"))));
 
       logger.info("Adding number of running Jobs metric");
-      metricManager.addMetric(new NumRunningJobMetric(metricManager, props.getInt("executor.metric.milisecinterval."
-          + NumRunningJobMetric.NUM_RUNNING_JOB_METRIC_NAME, props.getInt("executor.metric.milisecinterval.default"))));
+      metricManager.addMetric(new NumRunningJobMetric(metricManager, props.getInt(METRIC_INTERVAL
+          + NumRunningJobMetric.NUM_RUNNING_JOB_METRIC_NAME, props.getInt(METRIC_INTERVAL + "default"))));
 
       logger.info("Adding number of running flows metric");
       metricManager.addMetric(new NumRunningFlowMetric(runnerManager, metricManager, props.getInt(
-          "executor.metric.milisecinterval." + NumRunningFlowMetric.NUM_RUNNING_FLOW_METRIC_NAME,
-          props.getInt("executor.metric.milisecinterval.default"))));
+          METRIC_INTERVAL  + NumRunningFlowMetric.NUM_RUNNING_FLOW_METRIC_NAME,
+          props.getInt(METRIC_INTERVAL + "default"))));
 
       logger.info("Adding number of queued flows metric");
       metricManager.addMetric(new NumQueuedFlowMetric(runnerManager, metricManager, props.getInt(
-          "executor.metric.milisecinterval." + NumQueuedFlowMetric.NUM_QUEUED_FLOW_METRIC_NAME,
-          props.getInt("executor.metric.milisecinterval.default"))));
+          METRIC_INTERVAL + NumQueuedFlowMetric.NUM_QUEUED_FLOW_METRIC_NAME,
+          props.getInt(METRIC_INTERVAL + "default"))));
 
       logger.info("Completed configuring Metric Reports");
     }

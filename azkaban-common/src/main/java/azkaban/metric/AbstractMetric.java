@@ -71,6 +71,7 @@ public abstract class AbstractMetric<T> implements IMetric<T>, Cloneable{
    * @throws CloneNotSupportedException
    * @see azkaban.metric.IMetric#getSnapshot()
    */
+  @SuppressWarnings("unchecked")
   public IMetric<T> getSnapshot() throws CloneNotSupportedException{
     return (IMetric<T>) this.clone();
   }
