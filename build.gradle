@@ -101,6 +101,7 @@ project(':azkaban-common') {
     compile('net.sf.jopt-simple:jopt-simple:4.3')
     compile('org.apache.commons:commons-email:1.2')
     compile('org.apache.commons:commons-jexl:2.1.1')
+    compile('org.apache.commons:commons-math3:3.0')
     compile('org.apache.httpcomponents:httpclient:4.2.1')
     compile('org.apache.httpcomponents:httpcore:4.2.1')
     compile('org.apache.velocity:velocity:1.7')
