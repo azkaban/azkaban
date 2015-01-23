@@ -80,6 +80,7 @@ public class ProjectManager {
     // itself.
     Props prop = new Props(props);
     prop.put(ValidatorConfigs.PROJECT_ARCHIVE_FILE_PATH, "initialize");
+    new XmlValidatorManager(prop);
     loadAllProjects();
   }
 
