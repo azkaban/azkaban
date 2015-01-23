@@ -39,7 +39,7 @@ public abstract class TimeBasedReportingMetric<T> extends AbstractMetric<T> {
   public TimeBasedReportingMetric(String metricName, String metricType, T initialValue, MetricReportManager manager,
       long interval) throws MetricException {
     super(metricName, metricType, initialValue, manager);
-    if(validateInterval(interval)) {
+    if(!isValidInterval(interval)) {
       throw new MetricException("Invalid interval: Cannot instantiate timer");
     }
     timer = new Timer();
@@ -71,7 +71,7 @@ public abstract class TimeBasedReportingMetric<T> extends AbstractMetric<T> {
    * @throws MetricException
    */
   public void updateInterval(final long interval) throws MetricException {
-    if(validateInterval(interval)) {
+    if(!isValidInterval(interval)) {
       throw new MetricException("Invalid interval: Cannot update timer");
     }
     logger.debug(String.format("Updating tracking interval to %d milisecond for %s metric", interval, getName()));
@@ -80,7 +80,7 @@ public abstract class TimeBasedReportingMetric<T> extends AbstractMetric<T> {
     timer.schedule(getTimerTask(), interval, interval);
   }
 
-  private boolean validateInterval(final long interval) {
+  private boolean isValidInterval(final long interval) {
     return interval >= MIN_MILISEC_INTERVAL && interval <= MAX_MILISEC_INTERVAL;
   }
 
