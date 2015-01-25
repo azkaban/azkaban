@@ -7,7 +7,7 @@ Azkaban assumes the following request header in servlet's <code>isAjaxCall(HttpS
 <pre>
   Content-Type:     application/x-www-form-urlencoded
   X-Requested-With: XMLHttpRequest
-</pre> 
+</pre>
 However, currently for most of APIs in this version, it is not checking the request header. Many APIs still treat a request as an ajax call if <code>request</code> simply contains the parameter <code>ajax</code>. Or even, several APIs is implicitly assuming it is an ajax call even without this keyword. For ease of use though, it is recommended to always keep the correct request header.
 </p>
 
@@ -22,7 +22,7 @@ However, currently for most of APIs in this version, it is not checking the requ
   <li>
     <strong>Parameter Location:</strong> Request Query String
   </li>
-</ul> 
+</ul>
 
 <p>This API helps authenticate a user and provides a <code>session.id</code> in response.</p>
 
@@ -257,7 +257,7 @@ curl -k --get --data "session.id=bca1d75d-6bae-4163-a5b0-378a7d7b5a91&delete=tru
 
 <h3 id="api-upload-a-project-zip">Upload a Project Zip</h3>
 <p>
-The ajax call to upload a project zip file. The zip file structure should follows the requirements described in 
+The ajax call to upload a project zip file. The zip file structure should follows the requirements described in
 <a href="/docs/2.5/#upload-projects"> Upload Projects </a>.
 <br/>
 <strong>Notice: </strong> This API should be called after a project is successfully created.
@@ -275,7 +275,7 @@ The ajax call to upload a project zip file. The zip file structure should follow
   <li>
     <strong>Parameter Location:</strong> Request Body
   </li>
-</ul> 
+</ul>
 
 <h5><strong> Request Parameters </strong></h5>
 <table class="table table-striped table-condensed table-bordered">
@@ -359,7 +359,7 @@ Given a project name, this API call fetches all flow ids of that project.
   <li>
     <strong>Parameter Location:</strong> Request Query String
   </li>
-</ul> 
+</ul>
 
 <h5><strong> Request Parameters </strong></h5>
 <table class="table table-striped table-condensed table-bordered">
@@ -449,7 +449,7 @@ For a given project and a flow id, this API call fetches all the jobs that belon
   <li>
     <strong>Parameter Location:</strong> Request Query String
   </li>
-</ul> 
+</ul>
 
 <h5><strong> Request Parameters </strong></h5>
 <table class="table table-striped table-condensed table-bordered">
@@ -567,7 +567,7 @@ Given a project name, and a certain flow, this API call provides a list of corre
   <li>
     <strong>Parameter Location:</strong> Request Query String
   </li>
-</ul> 
+</ul>
 
 <h5><strong> Request Parameters </strong></h5>
 <table class="table table-striped table-condensed table-bordered">
@@ -704,7 +704,7 @@ Given a project name and a flow id, this API call fetches only executions that a
   <li>
     <strong>Parameter Location:</strong> Request Query String
   </li>
-</ul> 
+</ul>
 
 <h5><strong> Request Parameters </strong></h5>
 <table class="table table-striped table-condensed table-bordered">
@@ -782,7 +782,7 @@ by disabling all other jobs in the same flow.
   <li>
     <strong>Parameter Location:</strong> Request Query String
   </li>
-</ul> 
+</ul>
 
 <h5><strong> Request Parameters </strong></h5>
 
@@ -996,6 +996,87 @@ A response sample if fails:
 }
 </pre>
 
+
+<h3 id="api-schedule-a-flow">Schedule a Flow</h3>
+
+<p>
+This API call schedules a flow.
+</p>
+<ul class="list-unstyled">
+  <li>
+    <strong>Method:</strong> GET
+  </li>
+  <li>
+    <strong>Request URL:</strong> /executor?ajax=scheduleFlow
+  </li>
+  <li>
+    <strong>Parameter Location:</strong> Request Query String
+  </li>
+</ul>
+
+<h5><strong>Request Parameters</strong></h5>
+
+<table class="table table-striped table-condensed table-bordered">
+  <thead>
+    <tr>
+      <th>Parameter</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>session.id</td>
+      <td>The user session id.</td>
+    </tr>
+    <tr>
+      <td>ajax=scheduleFlow</td>
+      <td>The fixed parameter indicating the action is to schedule a flow.</td>
+    </tr>
+    <tr>
+      <td>projectName</td>
+      <td>The name of the project.</td>
+    </tr>
+    <tr>
+      <td>projectId</td>
+      <td>The id of the project. You can find this by looking for "projectId" in the source code on a project's home page.</td>
+    </tr>
+    <tr>
+      <td>flowName</td>
+      <td>The name of the flow.</td>
+    </tr>
+    <tr>
+      <td>scheduleTime</td>
+      <td>The time to schedule the flow. Example: 12,00,pm,PDT</td>
+    </tr>
+    <tr>
+      <td>scheduleDate</td>
+      <td>The date to schedule the flow. Example: 07/22/2014</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>Here's a curl command sample:</p>
+
+<pre class="code">
+curl -k https://HOST:PORT/schedule -d "ajax=scheduleFlow&projectName=PROJECT_NAME&flow=FLOW_NAME&projectId=PROJECT_ID&scheduleTime=12,00,pm,PDT&scheduleDate=07/22/2014" -b azkaban.browser.session.id=SESSION_ID
+</pre>
+
+An example success response:
+<pre class="code">
+{
+  "message" : "PROJECT_NAME.FLOW_NAME scheduled.",
+  "status" : "success"
+}
+</pre>
+An example failure response:
+<pre class="code">
+{
+  "message" : "Permission denied. Cannot execute FLOW_NAME",
+  "status" : "error"
+}
+</pre>
+
+
 <h3 id="api-pause-a-flow-execution"> Pause a Flow Execution</h3>
 <p>
 Given an execution id, this API pauses a running flow. If an execution has already been paused, it will not return any error; if an execution is not running, it will return an error message.
@@ -1141,7 +1222,7 @@ Given an execution id, this API call fetches all the detailed information of tha
   <li>
     <strong>Parameter Location:</strong> Request Query String
   </li>
-</ul> 
+</ul>
 
 <h5><strong> Request Parameters </strong></h5>
 <table class="table table-striped table-condensed table-bordered">
@@ -1169,7 +1250,7 @@ Given an execution id, this API call fetches all the detailed information of tha
 
 <h5><strong> Response Object </strong></h5>
 <p>
-  It returns a detailed information about the execution (check the example below). One thing to 
+  It returns a detailed information about the execution (check the example below). One thing to
   notice is that the field <code>nodes[i].in</code> actually indicates what are the dependencies of this node.
 </p>
 
@@ -1255,7 +1336,7 @@ Given an execution id and a job id, this API call fetches the correponding job l
   <li>
     <strong>Parameter Location:</strong> Request Query String
   </li>
-</ul> 
+</ul>
 
 <h5><strong> Request Parameters </strong></h5>
 
@@ -1348,7 +1429,7 @@ This API call fetches the updated information for an execution. It filters by <c
   <li>
     <strong>Parameter Location:</strong> Request Query String
   </li>
-</ul> 
+</ul>
 
 <h5><strong> Request Parameters </strong></h5>
 
