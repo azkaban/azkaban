@@ -8,7 +8,7 @@ import java.util.Set;
 import org.junit.Test;
 
 /**
- * Test
+ * Test adding messages to {@link ValidationReport}
  */
 public class ValidationReportTest {
 

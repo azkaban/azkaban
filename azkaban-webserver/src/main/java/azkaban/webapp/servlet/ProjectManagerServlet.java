@@ -1596,7 +1596,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
                   warnMsgs.append(ValidationReport.getInfoMsg(msg) + "<br/>");
                   break;
                 default:
-                    break;
+                  break;
               }
             }
           }
