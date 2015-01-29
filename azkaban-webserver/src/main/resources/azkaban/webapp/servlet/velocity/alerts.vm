@@ -21,6 +21,11 @@
         <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
         $error_message
       </div>
+#elseif ($warn_message != "null")
+      <div class="alert alert-warning alert-dismissable">
+        <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
+        $warn_message
+      </div>
 #elseif ($success_message != "null")
       <div class="alert alert-success">
         <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
