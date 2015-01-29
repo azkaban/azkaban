@@ -4,5 +4,5 @@ executions/
 plugins/
 projects/
 temp/
-validators/
+validator_jars/
 *.log
