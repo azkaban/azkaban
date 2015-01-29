@@ -85,7 +85,7 @@ public class ValidationReport {
   }
 
   /**
-   * Retrieve the list of information messages associated with status level {@link ValidationStatus#PASS}
+   * Retrieve the list of information messages.
    *
    * @return
    */
