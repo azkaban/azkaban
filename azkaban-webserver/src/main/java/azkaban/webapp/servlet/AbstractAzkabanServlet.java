@@ -52,6 +52,8 @@ public abstract class AbstractAzkabanServlet extends HttpServlet {
       .forPattern("z");
   private static final String AZKABAN_SUCCESS_MESSAGE =
       "azkaban.success.message";
+  private static final String AZKABAN_WARN_MESSAGE =
+      "azkaban.warn.message";
   private static final String AZKABAN_FAILURE_MESSAGE =
       "azkaban.failure.message";
 
@@ -222,6 +224,20 @@ public abstract class AbstractAzkabanServlet extends HttpServlet {
   }
 
   /**
+   * Sets a warning message in azkaban.warn.message in the cookie. This will
+   * be used by the web client javascript to somehow display the message
+   *
+   * @param response
+   * @param warnMsg
+   */
+  protected void setWarnMessageInCookie(HttpServletResponse response,
+      String errorMsg) {
+    Cookie cookie = new Cookie(AZKABAN_WARN_MESSAGE, errorMsg);
+    cookie.setPath("/");
+    response.addCookie(cookie);
+  }
+
+  /**
    * Sets a message in azkaban.success.message in the cookie. This will be used
    * by the web client javascript to somehow display the message
    *
@@ -243,6 +259,21 @@ public abstract class AbstractAzkabanServlet extends HttpServlet {
    */
   protected String getSuccessMessageFromCookie(HttpServletRequest request) {
     Cookie cookie = getCookieByName(request, AZKABAN_SUCCESS_MESSAGE);
+
+    if (cookie == null) {
+      return null;
+    }
+    return cookie.getValue();
+  }
+
+  /**
+   * Retrieves a warn message from a cookie. azkaban.warn.message
+   *
+   * @param request
+   * @return
+   */
+  protected String getWarnMessageFromCookie(HttpServletRequest request) {
+    Cookie cookie = getCookieByName(request, AZKABAN_WARN_MESSAGE);
 
     if (cookie == null) {
       return null;
@@ -311,6 +342,11 @@ public abstract class AbstractAzkabanServlet extends HttpServlet {
     page.add("error_message", errorMsg == null || errorMsg.isEmpty() ? "null"
         : errorMsg);
     setErrorMessageInCookie(resp, null);
+
+    String warnMsg = getWarnMessageFromCookie(req);
+    page.add("warn_message", warnMsg == null || warnMsg.isEmpty() ? "null"
+        : warnMsg);
+    setWarnMessageInCookie(resp, null);
 
     String successMsg = getSuccessMessageFromCookie(req);
     page.add("success_message",

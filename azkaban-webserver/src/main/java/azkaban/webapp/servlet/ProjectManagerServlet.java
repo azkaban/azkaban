@@ -426,9 +426,9 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 
   /**
    * Download project zip file from DB and send it back client.
-   * 
+   *
    * This method requires a project name and an optional project version.
-   * 
+   *
    * @param req
    * @param resp
    * @param session
@@ -1582,34 +1582,45 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
         Map<String, ValidationReport> reports =
             projectManager.uploadProject(project, archiveFile, type, user,
                 props);
-        StringBuffer message = new StringBuffer();
+        StringBuffer errorMsgs = new StringBuffer();
+        StringBuffer warnMsgs = new StringBuffer();
         for (Entry<String, ValidationReport> reportEntry : reports.entrySet()) {
           ValidationReport report = reportEntry.getValue();
           if (!report.getPassMsgs().isEmpty()) {
             for (String msg : report.getPassMsgs()) {
-              message.append(msg + "<br/>");
+              if (msg.startsWith("ERROR")) {
+                errorMsgs.append(msg.replaceFirst("ERROR", "") + "<br/>");
+              } else if (msg.startsWith("WARN")) {
+                warnMsgs.append(msg.replaceFirst("WARN", "") + "<br/>");
+              }
             }
-            message.append("<br/>");
           }
           if (!report.getErrorMsgs().isEmpty()) {
-            message.append("Validator " + reportEntry.getKey()
+            errorMsgs.append("Validator " + reportEntry.getKey()
                 + " reports errors:<ul>");
             for (String msg : report.getErrorMsgs()) {
-              message.append("<li>" + msg + "</li>");
+              errorMsgs.append("<li>" + msg + "</li>");
             }
-            message.append("</ul>");
+            errorMsgs.append("</ul>");
           }
           if (!report.getWarningMsgs().isEmpty()) {
-            message.append("Validator " + reportEntry.getKey()
+            warnMsgs.append("Validator " + reportEntry.getKey()
                 + " reports warnings:<ul>");
             for (String msg : report.getWarningMsgs()) {
-              message.append("<li>" + msg + "</li>");
+              warnMsgs.append("<li>" + msg + "</li>");
             }
-            message.append("</ul>");
+            warnMsgs.append("</ul>");
           }
         }
-        if (message.length() > 0) {
-          ret.put("error", message.toString());
+        if (errorMsgs.length() > 0) {
+          // If putting more than 4000 characters in the cookie, the entire message
+          // will somehow get discarded.
+          ret.put("error", errorMsgs.length() > 4000 ?
+              errorMsgs.substring(0, 4000) : errorMsgs.toString());
+        }
+        if (warnMsgs.length() > 0) {
+          ret.put("warn", warnMsgs.length() > 4000 ?
+              warnMsgs.substring(0, 4000) : warnMsgs.toString());
         }
       } catch (Exception e) {
         logger.info("Installation Failed.", e);
@@ -1641,6 +1652,10 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 
     if (ret.containsKey("error")) {
       setErrorMessageInCookie(resp, ret.get("error"));
+    }
+
+    if (ret.containsKey("warn")) {
+      setWarnMessageInCookie(resp, ret.get("warn"));
     }
 
     resp.sendRedirect(req.getRequestURI() + "?project=" + projectName);

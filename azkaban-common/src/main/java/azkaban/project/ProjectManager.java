@@ -80,6 +80,8 @@ public class ProjectManager {
     // initialize itself.
     Props prop = new Props(props);
     prop.put(ValidatorConfigs.PROJECT_ARCHIVE_FILE_PATH, "initialize");
+    // By instantiating an object of XmlValidatorManager, this will verify the
+    // config files for the validators.
     new XmlValidatorManager(prop);
     loadAllProjects();
   }
@@ -361,7 +363,7 @@ public class ProjectManager {
    * caller of this method should call method
    * {@ProjectFileHandler.deleteLocalFile}
    * to delete the temporary file.
-   * 
+   *
    * @param project
    * @param version - latest version is used if value is -1
    * @return ProjectFileHandler - null if can't find project zip file based on
