@@ -1586,12 +1586,17 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
         StringBuffer warnMsgs = new StringBuffer();
         for (Entry<String, ValidationReport> reportEntry : reports.entrySet()) {
           ValidationReport report = reportEntry.getValue();
-          if (!report.getPassMsgs().isEmpty()) {
-            for (String msg : report.getPassMsgs()) {
-              if (msg.startsWith("ERROR")) {
-                errorMsgs.append(msg.replaceFirst("ERROR", "") + "<br/>");
-              } else if (msg.startsWith("WARN")) {
-                warnMsgs.append(msg.replaceFirst("WARN", "") + "<br/>");
+          if (!report.getInfoMsgs().isEmpty()) {
+            for (String msg : report.getInfoMsgs()) {
+              switch (ValidationReport.getInfoMsgLevel(msg)) {
+                case ERROR:
+                  errorMsgs.append(ValidationReport.getInfoMsg(msg) + "<br/>");
+                  break;
+                case WARN:
+                  warnMsgs.append(ValidationReport.getInfoMsg(msg) + "<br/>");
+                  break;
+                default:
+                    break;
               }
             }
           }
