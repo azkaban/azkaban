@@ -16,13 +16,6 @@
 
 package azkaban.utils;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import javax.mail.MessagingException;
-
-import org.apache.log4j.Logger;
-
 import azkaban.alert.Alerter;
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutableNode;
@@ -31,6 +24,11 @@ import azkaban.executor.Status;
 import azkaban.executor.mail.DefaultMailCreator;
 import azkaban.executor.mail.MailCreator;
 import azkaban.sla.SlaOption;
+import org.apache.log4j.Logger;
+
+import javax.mail.MessagingException;
+import java.util.ArrayList;
+import java.util.List;
 
 public class Emailer extends AbstractMailer implements Alerter {
   private static Logger logger = Logger.getLogger(Emailer.class);
@@ -39,6 +37,8 @@ public class Emailer extends AbstractMailer implements Alerter {
 
   private static final String HTTP = "http";
 
+  public static final String DEFAULT_SMTP_PORT = "25";
+
   private boolean testMode = false;
 
   private String scheme;
@@ -46,6 +46,7 @@ public class Emailer extends AbstractMailer implements Alerter {
   private String clientPortNumber;
 
   private String mailHost;
+  private String mailPort;
   private String mailUser;
   private String mailPassword;
   private String mailSender;
@@ -56,6 +57,7 @@ public class Emailer extends AbstractMailer implements Alerter {
     super(props);
     this.azkabanName = props.getString("azkaban.name", "azkaban");
     this.mailHost = props.getString("mail.host", "localhost");
+    this.mailPort = props.getString("mail.port", DEFAULT_SMTP_PORT);
     this.mailUser = props.getString("mail.user", "");
     this.mailPassword = props.getString("mail.password", "");
     this.mailSender = props.getString("mail.sender", "");
@@ -105,7 +107,7 @@ public class Emailer extends AbstractMailer implements Alerter {
   }
 
   public void sendFirstErrorMessage(ExecutableFlow flow) {
-    EmailMessage message = new EmailMessage(mailHost, mailUser, mailPassword);
+    EmailMessage message = new EmailMessage(mailHost, mailPort, mailUser, mailPassword);
     message.setFromAddress(mailSender);
     message.setTLS(tls);
     message.setAuth(super.hasMailAuth());
@@ -132,7 +134,7 @@ public class Emailer extends AbstractMailer implements Alerter {
   }
 
   public void sendErrorEmail(ExecutableFlow flow, String... extraReasons) {
-    EmailMessage message = new EmailMessage(mailHost, mailUser, mailPassword);
+    EmailMessage message = new EmailMessage(mailHost, mailPort, mailUser, mailPassword);
     message.setFromAddress(mailSender);
     message.setTLS(tls);
     message.setAuth(super.hasMailAuth());
@@ -158,7 +160,7 @@ public class Emailer extends AbstractMailer implements Alerter {
   }
 
   public void sendSuccessEmail(ExecutableFlow flow) {
-    EmailMessage message = new EmailMessage(mailHost, mailUser, mailPassword);
+    EmailMessage message = new EmailMessage(mailHost, mailPort, mailUser, mailPassword);
     message.setFromAddress(mailSender);
     message.setTLS(tls);
     message.setAuth(super.hasMailAuth());

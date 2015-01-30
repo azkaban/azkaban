@@ -16,18 +16,18 @@
 
 package azkaban.utils;
 
-import java.io.IOException;
-
-import javax.mail.MessagingException;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 
+import javax.mail.MessagingException;
+import java.io.IOException;
+
 public class EmailMessageTest {
 
   String host = "";
+  String port = "";
   String sender = "";
   String user = "";
   String password = "";
@@ -38,7 +38,7 @@ public class EmailMessageTest {
 
   @Before
   public void setUp() throws Exception {
-    em = new EmailMessage(host, user, password);
+    em = new EmailMessage(host, port, user, password);
     em.setFromAddress(sender);
   }
 
