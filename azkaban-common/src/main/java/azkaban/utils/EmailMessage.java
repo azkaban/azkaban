@@ -41,7 +41,7 @@ public class EmailMessage {
   private static String protocol = "smtp";
   private List<String> _toAddress = new ArrayList<String>();
   private String _mailHost;
-  private String _mailPort;
+  private int _mailPort;
   private String _mailUser;
   private String _mailPassword;
   private String _subject;
@@ -62,7 +62,7 @@ public class EmailMessage {
     this("localhost", Emailer.DEFAULT_SMTP_PORT, "", "");
   }
 
-  public EmailMessage(String host, String port, String user, String password) {
+  public EmailMessage(String host, int port, String user, String password) {
     _mailUser = user;
     _mailHost = host;
     _mailPort = port;
@@ -251,7 +251,7 @@ public class EmailMessage {
 
   private void connectToSMTPServer(SMTPTransport t) throws MessagingException {
     if (_usesAuth) {
-      t.connect(_mailHost, Integer.parseInt(_mailPort), _mailUser, _mailPassword);
+      t.connect(_mailHost, _mailPort, _mailUser, _mailPassword);
     } else {
       t.connect();
     }

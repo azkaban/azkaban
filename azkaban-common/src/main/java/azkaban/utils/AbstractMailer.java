@@ -26,7 +26,7 @@ public class AbstractMailer {
   private boolean usesAuth;
 
   private String mailHost;
-  private String mailPort;
+  private int mailPort;
   private String mailUser;
   private String mailPassword;
   private String mailSender;
@@ -39,7 +39,7 @@ public class AbstractMailer {
   public AbstractMailer(Props props) {
     this.azkabanName = props.getString("azkaban.name", "azkaban");
     this.mailHost = props.getString("mail.host", "localhost");
-    this.mailPort = props.getString("mail.port", Emailer.DEFAULT_SMTP_PORT);
+    this.mailPort = props.getInt("mail.port", Emailer.DEFAULT_SMTP_PORT);
     this.mailUser = props.getString("mail.user", "");
     this.mailPassword = props.getString("mail.password", "");
     long maxAttachmentSizeInMB =

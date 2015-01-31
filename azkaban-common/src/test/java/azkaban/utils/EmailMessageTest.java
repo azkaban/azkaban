@@ -27,7 +27,7 @@ import java.io.IOException;
 public class EmailMessageTest {
 
   String host = "";
-  String port = "";
+  int port = 25;
   String sender = "";
   String user = "";
   String password = "";
