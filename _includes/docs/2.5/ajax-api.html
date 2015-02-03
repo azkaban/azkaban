@@ -1077,6 +1077,70 @@ An example failure response:
 </pre>
 
 
+<h3 id="api-unschedule-a-flow">Unschedule a Flow</h3>
+
+<p>
+This API call unschedules a flow.
+</p>
+<ul class="list-unstyled">
+  <li>
+    <strong>Method:</strong> GET
+  </li>
+  <li>
+    <strong>Request URL:</strong> /schedule?action=removeSched
+  </li>
+  <li>
+    <strong>Parameter Location:</strong> Request Query String
+  </li>
+</ul>
+
+<h5><strong>Request Parameters</strong></h5>
+
+<table class="table table-striped table-condensed table-bordered">
+  <thead>
+    <tr>
+      <th>Parameter</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>session.id</td>
+      <td>The user session id.</td>
+    </tr>
+    <tr>
+      <td>action=removeSched</td>
+      <td>The fixed parameter indicating the action is to unschedule a flow.</td>
+    </tr>
+    <tr>
+      <td>scheduleId</td>
+      <td>The id of the schedule. You can find this in the Azkaban UI on the /schedule page.</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>Here's a curl command sample:</p>
+
+<pre class="code">
+curl -k https://HOST:PORT/schedule -d "action=removeSched&scheduleId=SCHEDULE_ID" -b azkaban.browser.session.id=SESSION_ID
+</pre>
+
+An example success response:
+<pre class="code">
+{
+  "message" : "flow FLOW_NAME removed from Schedules.",
+  "status" : "success"
+}
+</pre>
+An example failure response:
+<pre class="code">
+{
+  "message" : "Schedule with ID SCHEDULE_ID does not exist",
+  "status" : "error"
+}
+</pre>
+
+
 <h3 id="api-pause-a-flow-execution"> Pause a Flow Execution</h3>
 <p>
 Given an execution id, this API pauses a running flow. If an execution has already been paused, it will not return any error; if an execution is not running, it will return an error message.
