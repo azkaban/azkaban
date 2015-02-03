@@ -37,8 +37,6 @@ public class Emailer extends AbstractMailer implements Alerter {
 
   private static final String HTTP = "http";
 
-  public static final int DEFAULT_SMTP_PORT = 25;
-
   private boolean testMode = false;
 
   private String scheme;

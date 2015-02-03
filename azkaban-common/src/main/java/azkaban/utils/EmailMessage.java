@@ -59,7 +59,7 @@ public class EmailMessage {
   private ArrayList<BodyPart> _attachments = new ArrayList<BodyPart>();
 
   public EmailMessage() {
-    this("localhost", Emailer.DEFAULT_SMTP_PORT, "", "");
+    this("localhost", AbstractMailer.DEFAULT_SMTP_PORT, "", "");
   }
 
   public EmailMessage(String host, int port, String user, String password) {

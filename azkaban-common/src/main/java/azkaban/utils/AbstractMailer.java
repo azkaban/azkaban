@@ -20,6 +20,8 @@ import java.util.Collection;
 
 public class AbstractMailer {
   private static int MB_IN_BYTES = 1048576;
+  public static final int DEFAULT_SMTP_PORT = 25;
+
   private String clientHostname;
   private int clientPort;
   private boolean usesSSL;
@@ -39,7 +41,7 @@ public class AbstractMailer {
   public AbstractMailer(Props props) {
     this.azkabanName = props.getString("azkaban.name", "azkaban");
     this.mailHost = props.getString("mail.host", "localhost");
-    this.mailPort = props.getInt("mail.port", Emailer.DEFAULT_SMTP_PORT);
+    this.mailPort = props.getInt("mail.port", DEFAULT_SMTP_PORT);
     this.mailUser = props.getString("mail.user", "");
     this.mailPassword = props.getString("mail.password", "");
     long maxAttachmentSizeInMB =
