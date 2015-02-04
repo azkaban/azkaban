@@ -19,6 +19,6 @@ The above command builds all Azkaban packages and packages them into GZipped Tar
 Documentation
 -------------
 
-For Azkaban documentation, please go to [Azkaban Project Site](http://azkaban.github.io)
+For Azkaban documentation, please go to [Azkaban Project Site](http://azkaban.github.io). The source code for the documentation is in the [gh-pages branch](https://github.com/azkaban/azkaban/tree/gh-pages).
 
 For help, please visit the Azkaban Google Group: [Azkaban Group](https://groups.google.com/forum/?fromgroups#!forum/azkaban-dev)
