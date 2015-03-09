@@ -1052,14 +1052,60 @@ This API call schedules a flow.
       <td>scheduleDate</td>
       <td>The date to schedule the flow. Example: 07/22/2014</td>
     </tr>
+    <tr>
+      <td>is_recurring=on (optional)</td>
+      <td>Flags the schedule as a recurring schedule.</td>
+    </tr>
+    <tr>
+      <td>period  (optional)</td>
+      <td>Specifies the recursion period. Depends on the "is_recurring" flag being set. Example: 5w
+        <p> <strong> Possible Values: </strong>
+        <table>
+          <tbody>
+            <tr>
+              <td>M</td>
+              <td>Months</td>
+            </tr>
+            <tr>
+              <td>w</td>
+              <td>Weeks</td>
+            </tr>
+            <tr>
+              <td>d</td>
+              <td>Days</td>
+            </tr>
+            <tr>
+              <td>h</td>
+              <td>Hours</td>
+            </tr>
+            <tr>
+              <td>m</td>
+              <td>Minutes</td>
+            </tr>
+            <tr>
+              <td>s</td>
+              <td>Seconds</td>
+            </tr>
+          </tbody>
+        </table>
+      </td>
+    </tr>
   </tbody>
 </table>
 
 <p>Here's a curl command sample:</p>
 
 <pre class="code">
-curl -k https://HOST:PORT/schedule -d "ajax=scheduleFlow&projectName=PROJECT_NAME&flow=FLOW_NAME&projectId=PROJECT_ID&scheduleTime=12,00,pm,PDT&scheduleDate=07/22/2014" -b azkaban.browser.session.id=SESSION_ID
+
+  # a) One time schedule
+  curl -k https://HOST:PORT/schedule -d "ajax=scheduleFlow&projectName=PROJECT_NAME&flow=FLOW_NAME&projectId=PROJECT_ID&scheduleTime=12,00,pm,PDT&scheduleDate=07/22/2014" -b azkaban.browser.session.id=SESSION_ID
+
+  # b) Recurring schedule
+  curl -k https://HOST:PORT/schedule -d "ajax=scheduleFlow&is_recurring=on&period=5w&projectName=PROJECT_NAME&flow=FLOW_NAME&projectId=PROJECT_ID&scheduleTime=12,00,pm,PDT&scheduleDate=07/22/2014" -b azkaban.browser.session.id=SESSION_ID
+
 </pre>
+
+
 
 An example success response:
 <pre class="code">
@@ -1075,7 +1121,14 @@ An example failure response:
   "status" : "error"
 }
 </pre>
-
+An example failure response for invalid schedule period:
+<pre class="code">
+{
+  "message" : "PROJECT_NAME.FLOW_NAME scheduled.",
+  "error" : "Invalid schedule period unit 'A",
+  "status" : "success"
+}
+</pre>
 
 <h3 id="api-unschedule-a-flow">Unschedule a Flow</h3>
 
