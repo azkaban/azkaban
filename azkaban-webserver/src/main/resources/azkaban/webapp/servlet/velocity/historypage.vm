@@ -31,7 +31,7 @@
       var contextURL = "${context}";
       var currentTime = ${currentTime};
       var timezone = "${timezone}";
-      
+
       $(document).ready(function () {
         var jobTable = $("#executingJobs");
         jobTable.tablesorter();
@@ -193,7 +193,7 @@
                     <select id="status" class="form-control">
                       <option value=0>All Status</option>
                       <option value=10>Ready</option>
-                      <option value=20>Preapring</option>
+                      <option value=20>Preparing</option>
                       <option value=30>Running</option>
                       <option value=40>Paused</option>
                       <option value=50>Succeed</option>
