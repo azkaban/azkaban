@@ -19,6 +19,8 @@ package azkaban.webapp;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.lang.management.ManagementFactory;
 import java.lang.reflect.Constructor;
 import java.net.MalformedURLException;
@@ -802,6 +804,12 @@ public class AzkabanWebServer extends AzkabanServer {
     Runtime.getRuntime().addShutdownHook(new Thread() {
 
       public void run() {
+        try {
+          logTopMemoryConsumers();
+        } catch (Exception e) {
+          logger.info(("Exception when logging top memory consumers"), e);
+        }
+
         logger.info("Shutting down http server...");
         try {
           app.close();
@@ -812,6 +820,26 @@ public class AzkabanWebServer extends AzkabanServer {
         }
         logger.info("kk thx bye.");
       }
+
+      public void logTopMemoryConsumers() throws Exception, IOException {
+        if (new File("/bin/bash").exists() && new File("/bin/ps").exists()
+                && new File("/usr/bin/head").exists()) {
+          logger.info("logging top memeory consumer");
+
+          java.lang.ProcessBuilder processBuilder =
+                  new java.lang.ProcessBuilder("/bin/bash", "-c", "/bin/ps aux --sort -rss | /usr/bin/head");
+          Process p = processBuilder.start();
+          p.waitFor();
+  
+          InputStream is = p.getInputStream();
+          java.io.BufferedReader reader = new java.io.BufferedReader(new InputStreamReader(is));
+          String line = null;
+          while ((line = reader.readLine()) != null) {
+            logger.info(line);
+          }
+          is.close();
+        }
+      }      
     });
     logger.info("Server running on " + (ssl ? "ssl" : "") + " port " + port
         + ".");

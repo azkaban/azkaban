@@ -29,7 +29,7 @@ public class DirectoryFlowLoaderTest {
   @Ignore @Test
   public void testDirectoryLoad() {
     Logger logger = Logger.getLogger(this.getClass());
-    DirectoryFlowLoader loader = new DirectoryFlowLoader(logger);
+    DirectoryFlowLoader loader = new DirectoryFlowLoader(new Props(), logger);
 
     loader.loadProjectFlow(new File("unit/executions/exectest1"));
     logger.info(loader.getFlowMap().size());
@@ -38,7 +38,7 @@ public class DirectoryFlowLoaderTest {
   @Ignore @Test
   public void testLoadEmbeddedFlow() {
     Logger logger = Logger.getLogger(this.getClass());
-    DirectoryFlowLoader loader = new DirectoryFlowLoader(logger);
+    DirectoryFlowLoader loader = new DirectoryFlowLoader(new Props(), logger);
 
     loader.loadProjectFlow(new File("unit/executions/embedded"));
     Assert.assertEquals(0, loader.getErrors().size());
@@ -47,7 +47,7 @@ public class DirectoryFlowLoaderTest {
   @Ignore @Test
   public void testRecursiveLoadEmbeddedFlow() {
     Logger logger = Logger.getLogger(this.getClass());
-    DirectoryFlowLoader loader = new DirectoryFlowLoader(logger);
+    DirectoryFlowLoader loader = new DirectoryFlowLoader(new Props(), logger);
 
     loader.loadProjectFlow(new File("unit/executions/embeddedBad"));
     for (String error : loader.getErrors()) {
