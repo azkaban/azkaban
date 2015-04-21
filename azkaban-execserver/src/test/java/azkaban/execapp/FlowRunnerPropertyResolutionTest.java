@@ -209,7 +209,7 @@ public class FlowRunnerPropertyResolutionTest {
 
   private void prepareProject(File directory) throws ProjectManagerException,
       IOException {
-    DirectoryFlowLoader loader = new DirectoryFlowLoader(logger);
+    DirectoryFlowLoader loader = new DirectoryFlowLoader(new Props(), logger);
     loader.loadProjectFlow(directory);
     if (!loader.getErrors().isEmpty()) {
       for (String error : loader.getErrors()) {

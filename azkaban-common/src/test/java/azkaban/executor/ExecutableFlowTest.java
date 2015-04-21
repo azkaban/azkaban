@@ -25,7 +25,6 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.log4j.Logger;
-
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -37,6 +36,7 @@ import azkaban.flow.Flow;
 import azkaban.project.Project;
 import azkaban.utils.DirectoryFlowLoader;
 import azkaban.utils.JSONUtils;
+import azkaban.utils.Props;
 
 public class ExecutableFlowTest {
   private Project project;
@@ -44,7 +44,7 @@ public class ExecutableFlowTest {
   @Before
   public void setUp() throws Exception {
     Logger logger = Logger.getLogger(this.getClass());
-    DirectoryFlowLoader loader = new DirectoryFlowLoader(logger);
+    DirectoryFlowLoader loader = new DirectoryFlowLoader(new Props(), logger);
     loader.loadProjectFlow(new File("unit/executions/embedded"));
     Assert.assertEquals(0, loader.getErrors().size());
 

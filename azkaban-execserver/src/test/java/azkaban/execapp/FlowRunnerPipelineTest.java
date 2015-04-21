@@ -23,7 +23,6 @@ import java.util.Map;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.log4j.Logger;
-
 import org.junit.Assert;
 import org.junit.After;
 import org.junit.Before;
@@ -49,6 +48,7 @@ import azkaban.project.ProjectLoader;
 import azkaban.project.ProjectManagerException;
 import azkaban.project.MockProjectLoader;
 import azkaban.utils.DirectoryFlowLoader;
+import azkaban.utils.Props;
 
 /**
  * Flows in this test:
@@ -649,7 +649,7 @@ public class FlowRunnerPipelineTest {
 
   private void prepareProject(File directory) throws ProjectManagerException,
       IOException {
-    DirectoryFlowLoader loader = new DirectoryFlowLoader(logger);
+    DirectoryFlowLoader loader = new DirectoryFlowLoader(new Props(), logger);
     loader.loadProjectFlow(directory);
     if (!loader.getErrors().isEmpty()) {
       for (String error : loader.getErrors()) {

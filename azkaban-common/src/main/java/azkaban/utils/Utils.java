@@ -35,7 +35,6 @@ import java.util.zip.ZipFile;
 import java.util.zip.ZipOutputStream;
 
 import org.apache.commons.io.IOUtils;
-
 import org.joda.time.Days;
 import org.joda.time.DurationFieldType;
 import org.joda.time.Hours;
@@ -408,5 +407,28 @@ public class Utils {
     }
 
     return periodStr;
+  }
+
+  public static long parseMemString2KB(String strMemSize) {
+    if (strMemSize == null) {
+      return 0L;
+    }
+
+    long size = 0L;
+    if (strMemSize.endsWith("g") || strMemSize.endsWith("G")
+        || strMemSize.endsWith("m") || strMemSize.endsWith("M")
+        || strMemSize.endsWith("k") || strMemSize.endsWith("K")) {
+      String strSize = strMemSize.substring(0, strMemSize.length() - 1);
+      size = Long.parseLong(strSize);     
+    }
+
+    long sizeInKb = 0L;
+    if (strMemSize.endsWith("g") || strMemSize.endsWith("G")) {
+      sizeInKb = size * 1024L * 1024L;
+    } else if (strMemSize.endsWith("m") || strMemSize.endsWith("M")) {
+      sizeInKb = size * 1024L;
+    }
+
+    return sizeInKb;
   }
 }
