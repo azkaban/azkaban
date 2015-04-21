@@ -117,9 +117,9 @@ public class SystemMemoryInfo {
             sizeMemFree = Long.parseLong(strSize);
           } else if (line.startsWith("Buffers:")) {
             sizeBuffers = Long.parseLong(strSize);
-          } else if (line.startsWith("Cached")) {
+          } else if (line.startsWith("Cached:")) {
             sizeCached = Long.parseLong(strSize);
-          } else if (line.startsWith("SwapCached")) {
+          } else if (line.startsWith("SwapCached:")) {
             sizeSwapCached = Long.parseLong(strSize);
           }
 
@@ -130,14 +130,14 @@ public class SystemMemoryInfo {
         }
         line = br.readLine();
       }
-      
+
       if (count < 4) {
-        logger.error("Error: less than 5 rows read for free memory infor");
+        logger.error("Error: less than 4 rows read from /proc/meminfo for free memory information");
       }
 
       long sizeTotal = sizeMemFree + sizeBuffers + sizeCached + sizeSwapCached;
 
-      logger.info(String.format("Current system free memory is %d (MemFree %d, Buffers %d, Cached %d, SwapCached %d)",
+      logger.info(String.format("Current system free memory is %d kb (MemFree %d, Buffers %d, Cached %d, SwapCached %d)",
               sizeTotal, sizeMemFree, sizeBuffers, sizeCached, sizeSwapCached));
 
       if (sizeTotal > 0) {
