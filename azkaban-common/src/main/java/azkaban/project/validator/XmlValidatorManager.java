@@ -132,7 +132,7 @@ public class XmlValidatorManager implements ValidatorManager {
   public void loadValidators(Props props, Logger log) {
     validators = new LinkedHashMap<String, ProjectValidator>();
     // Add the default validator
-    DirectoryFlowLoader flowLoader = new DirectoryFlowLoader(log);
+    DirectoryFlowLoader flowLoader = new DirectoryFlowLoader(props, log);
     validators.put(flowLoader.getValidatorName(), flowLoader);
 
     if (!props.containsKey(ValidatorConfigs.XML_FILE_PARAM)) {

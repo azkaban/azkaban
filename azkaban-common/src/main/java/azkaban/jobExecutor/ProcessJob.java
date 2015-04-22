@@ -26,7 +26,9 @@ import org.apache.log4j.Logger;
 
 import azkaban.jobExecutor.utils.process.AzkabanProcess;
 import azkaban.jobExecutor.utils.process.AzkabanProcessBuilder;
+import azkaban.utils.Pair;
 import azkaban.utils.Props;
+import azkaban.utils.SystemMemoryInfo;
 
 /**
  * A job that runs a simple unix command
@@ -48,6 +50,13 @@ public class ProcessJob extends AbstractProcessJob {
       resolveProps();
     } catch (Exception e) {
       handleError("Bad property definition! " + e.getMessage(), e);
+    }
+
+    Pair<Long, Long> memPair = getProcMemoryRequirement();
+    boolean memGranted = SystemMemoryInfo.requestMemory(memPair.getFirst(), memPair.getSecond());
+    if (!memGranted) {
+      throw new Exception(String.format("Cannot request memory (Xms %d kb, Xmx %d kb) from system for job %s",
+              memPair.getFirst(), memPair.getSecond(), getId()));
     }
 
     List<String> commands = null;
@@ -99,6 +108,10 @@ public class ProcessJob extends AbstractProcessJob {
 
     // Get the output properties from this job.
     generateProperties(propFiles[1]);
+  }
+
+  protected Pair<Long, Long> getProcMemoryRequirement() {
+    return new Pair<Long, Long>(0L, 0L);
   }
 
   protected void handleError(String errorMsg, Exception e) throws Exception {
