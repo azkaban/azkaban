@@ -49,7 +49,15 @@ public class SystemMemoryInfo {
     }
   }
 
-  public synchronized static boolean requestMemory(long xms, long xmx) {
+  /**
+   * @param xms
+   * @param xmx
+   * @return System can satisfy the memory request or not
+   * 
+   * Given Xms/Xmx values (in kb) used by java process, determine if system can
+   * satisfy the memory request
+   */
+  public synchronized static boolean canSystemGrantMemory(long xms, long xmx) {
     if (!memCheckEnabled) {
       return true;
     }
@@ -159,7 +167,11 @@ public class SystemMemoryInfo {
   static class MemoryInfoReader implements Runnable {
     @Override
     public void run() {
-      readMemoryInfoFile();
+      try {
+        readMemoryInfoFile();
+      } catch (Throwable t) {
+        logger.error("error calling readMemoryInfoFile", t);
+      }
     }
   }
 }

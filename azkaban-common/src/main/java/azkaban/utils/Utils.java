@@ -409,7 +409,11 @@ public class Utils {
     return periodStr;
   }
 
-  public static long parseMemString2KB(String strMemSize) {
+  /**
+   * @param strMemSize : memory string in the format such as 1G, 500M, 3000K, 5000 
+   * @return : long value of memory amount in kb
+   */
+  public static long parseMemString(String strMemSize) {
     if (strMemSize == null) {
       return 0L;
     }
@@ -419,7 +423,9 @@ public class Utils {
         || strMemSize.endsWith("m") || strMemSize.endsWith("M")
         || strMemSize.endsWith("k") || strMemSize.endsWith("K")) {
       String strSize = strMemSize.substring(0, strMemSize.length() - 1);
-      size = Long.parseLong(strSize);     
+      size = Long.parseLong(strSize);
+    } else {
+      size = Long.parseLong(strMemSize);
     }
 
     long sizeInKb = 0L;
@@ -427,6 +433,8 @@ public class Utils {
       sizeInKb = size * 1024L * 1024L;
     } else if (strMemSize.endsWith("m") || strMemSize.endsWith("M")) {
       sizeInKb = size * 1024L;
+    } else {
+      sizeInKb = size / 1024L;
     }
 
     return sizeInKb;

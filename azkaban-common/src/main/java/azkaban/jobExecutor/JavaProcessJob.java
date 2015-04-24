@@ -152,8 +152,8 @@ public class JavaProcessJob extends ProcessJob {
   protected Pair<Long, Long> getProcMemoryRequirement() {
     String strInitMemSize = getInitialMemorySize();
     String strMaxMemSize = getMaxMemorySize();
-    long initMemSize = azkaban.utils.Utils.parseMemString2KB(strInitMemSize);
-    long maxMemSize = azkaban.utils.Utils.parseMemString2KB(strMaxMemSize);
+    long initMemSize = azkaban.utils.Utils.parseMemString(strInitMemSize);
+    long maxMemSize = azkaban.utils.Utils.parseMemString(strMaxMemSize);
 
     return new Pair<Long, Long>(initMemSize, maxMemSize);
   }

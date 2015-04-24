@@ -53,8 +53,8 @@ public class ProcessJob extends AbstractProcessJob {
     }
 
     Pair<Long, Long> memPair = getProcMemoryRequirement();
-    boolean memGranted = SystemMemoryInfo.requestMemory(memPair.getFirst(), memPair.getSecond());
-    if (!memGranted) {
+    boolean isMemGranted = SystemMemoryInfo.canSystemGrantMemory(memPair.getFirst(), memPair.getSecond());
+    if (!isMemGranted) {
       throw new Exception(String.format("Cannot request memory (Xms %d kb, Xmx %d kb) from system for job %s",
               memPair.getFirst(), memPair.getSecond(), getId()));
     }
