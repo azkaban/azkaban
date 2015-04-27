@@ -125,8 +125,7 @@ public class AzkabanExecutorServer {
     configureMBeanServer();
     configureMetricReports();
 
-    SystemMemoryInfo.init(props.getBoolean("executor.memCheck.enabled", true),
-            props.getLong("executor.memCheck.freeMemDecrAmt", 0));
+    SystemMemoryInfo.init();
 
     try {
       server.start();

@@ -38,6 +38,8 @@ public class ProcessJob extends AbstractProcessJob {
   public static final String COMMAND = "command";
   private static final long KILL_TIME_MS = 5000;
   private volatile AzkabanProcess process;
+  private static final String MEMCHECK_ENABLED = "memCheck.enabled";
+  private static final String MEMCHECK_FREEMEMDECRAMT = "memCheck.freeMemDecrAmt";
 
   public ProcessJob(final String jobId, final Props sysProps,
       final Props jobProps, final Logger log) {
@@ -52,11 +54,14 @@ public class ProcessJob extends AbstractProcessJob {
       handleError("Bad property definition! " + e.getMessage(), e);
     }
 
-    Pair<Long, Long> memPair = getProcMemoryRequirement();
-    boolean isMemGranted = SystemMemoryInfo.canSystemGrantMemory(memPair.getFirst(), memPair.getSecond());
-    if (!isMemGranted) {
-      throw new Exception(String.format("Cannot request memory (Xms %d kb, Xmx %d kb) from system for job %s",
-              memPair.getFirst(), memPair.getSecond(), getId()));
+    if (sysProps.getBoolean(MEMCHECK_ENABLED, true)) {
+      long freeMemDecrAmt = sysProps.getLong(MEMCHECK_FREEMEMDECRAMT, 0);
+      Pair<Long, Long> memPair = getProcMemoryRequirement();
+      boolean isMemGranted = SystemMemoryInfo.canSystemGrantMemory(memPair.getFirst(), memPair.getSecond(), freeMemDecrAmt);
+      if (!isMemGranted) {
+        throw new Exception(String.format("Cannot request memory (Xms %d kb, Xmx %d kb) from system for job %s",
+                memPair.getFirst(), memPair.getSecond(), getId()));
+      }
     }
 
     List<String> commands = null;

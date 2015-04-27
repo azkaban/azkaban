@@ -433,6 +433,8 @@ public class Utils {
       sizeInKb = size * 1024L * 1024L;
     } else if (strMemSize.endsWith("m") || strMemSize.endsWith("M")) {
       sizeInKb = size * 1024L;
+    } else if (strMemSize.endsWith("k") || strMemSize.endsWith("K")) {
+      sizeInKb = size;
     } else {
       sizeInKb = size / 1024L;
     }

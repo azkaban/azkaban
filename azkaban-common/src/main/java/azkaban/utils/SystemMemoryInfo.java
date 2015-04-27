@@ -26,21 +26,17 @@ public class SystemMemoryInfo {
 
   private static String MEMINFO_FILE = "/proc/meminfo"; 
   private static boolean memCheckEnabled;
-  private static boolean memInfoExists;
   private static long freeMemAmount = 0;
-  private static long freeMemDecrAmt = 0;
   private static final long LOW_MEM_THRESHOLD = 3L*1024L*1024L; //3 GB
 
   private static ScheduledExecutorService scheduledExecutorService;
 
-  public static void init(boolean memChkEnabled, long memDecrAmt) {
+  public static void init() {
     File f = new File(MEMINFO_FILE);
-    memInfoExists = f.exists() && !f.isDirectory();
-    memCheckEnabled = memChkEnabled && memInfoExists;
+    memCheckEnabled = f.exists() && !f.isDirectory();
     if (memCheckEnabled) {
       //initial reading of the mem info
       readMemoryInfoFile();
-      freeMemDecrAmt = memDecrAmt;
 
       //schedule a thread to read it
       logger.info("Scheduled thread to read /proc/meminfo every 30 seconds");
@@ -57,7 +53,7 @@ public class SystemMemoryInfo {
    * Given Xms/Xmx values (in kb) used by java process, determine if system can
    * satisfy the memory request
    */
-  public synchronized static boolean canSystemGrantMemory(long xms, long xmx) {
+  public synchronized static boolean canSystemGrantMemory(long xms, long xmx, long freeMemDecrAmt) {
     if (!memCheckEnabled) {
       return true;
     }
@@ -91,11 +87,12 @@ public class SystemMemoryInfo {
 
     if (freeMemDecrAmt > 0) {
       freeMemAmount -= freeMemDecrAmt;
+      logger.info(String.format("Memory (%d kb) granted. Current free memory amount is %d kb", freeMemDecrAmt, freeMemAmount));
     } else {
       freeMemAmount -= xms;
+      logger.info(String.format("Memory (%d kb) granted. Current free memory amount is %d kb", xms, freeMemAmount));
     }
     
-    logger.info("Current free memory amount is " + freeMemAmount);
     return true;
   }
 
