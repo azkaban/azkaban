@@ -31,7 +31,7 @@ public class SystemMemoryInfo {
 
   private static ScheduledExecutorService scheduledExecutorService;
 
-  public static void init() {
+  public static void init(int memCheckInterval) {
     File f = new File(MEMINFO_FILE);
     memCheckEnabled = f.exists() && !f.isDirectory();
     if (memCheckEnabled) {
@@ -39,9 +39,9 @@ public class SystemMemoryInfo {
       readMemoryInfoFile();
 
       //schedule a thread to read it
-      logger.info("Scheduled thread to read /proc/meminfo every 30 seconds");
+      logger.info(String.format("Scheduled thread to read /proc/meminfo every %d seconds", memCheckInterval));
       scheduledExecutorService = Executors.newSingleThreadScheduledExecutor();
-      scheduledExecutorService.scheduleAtFixedRate(new MemoryInfoReader(), 0, 30, TimeUnit.SECONDS);
+      scheduledExecutorService.scheduleAtFixedRate(new MemoryInfoReader(), 0, memCheckInterval, TimeUnit.SECONDS);
     }
   }
 

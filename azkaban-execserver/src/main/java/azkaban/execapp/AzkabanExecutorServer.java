@@ -125,7 +125,7 @@ public class AzkabanExecutorServer {
     configureMBeanServer();
     configureMetricReports();
 
-    SystemMemoryInfo.init();
+    SystemMemoryInfo.init(props.getInt("executor.memCheck.interval", 30));
 
     try {
       server.start();
