@@ -124,7 +124,7 @@ public class BlockingStatusTest {
 
     System.out.println("Diff thread 1 " + thread1.getDiff());
     System.out.println("Diff thread 2 " + thread2.getDiff());
-    Assert.assertTrue(thread1.getDiff() >= 4000 && thread1.getDiff() < 4100);
-    Assert.assertTrue(thread2.getDiff() >= 2000 && thread2.getDiff() < 2100);
+    Assert.assertTrue(thread1.getDiff() >= 4000 && thread1.getDiff() < 4200);
+    Assert.assertTrue(thread2.getDiff() >= 2000 && thread2.getDiff() < 2200);
   }
 }
