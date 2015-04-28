@@ -42,6 +42,8 @@ public class SystemMemoryInfo {
       logger.info(String.format("Scheduled thread to read /proc/meminfo every %d seconds", memCheckInterval));
       scheduledExecutorService = Executors.newSingleThreadScheduledExecutor();
       scheduledExecutorService.scheduleAtFixedRate(new MemoryInfoReader(), 0, memCheckInterval, TimeUnit.SECONDS);
+    } else {
+      logger.info("Cannot find /proc/meminfo, memory check will be disabled");
     }
   }
 
