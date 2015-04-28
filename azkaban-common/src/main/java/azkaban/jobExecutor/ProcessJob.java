@@ -115,6 +115,13 @@ public class ProcessJob extends AbstractProcessJob {
     generateProperties(propFiles[1]);
   }
 
+  /**
+   * This is used to get the min/max memory size requirement by processes.
+   * SystemMemoryInfo can use the info to determine if the memory request
+   * can be fulfilled. For Java process, this should be Xms/Xmx setting.
+   *  
+   * @return pair of min/max memory size
+   */
   protected Pair<Long, Long> getProcMemoryRequirement() {
     return new Pair<Long, Long>(0L, 0L);
   }
