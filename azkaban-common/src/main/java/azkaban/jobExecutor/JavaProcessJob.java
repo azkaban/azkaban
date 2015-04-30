@@ -22,6 +22,7 @@ import java.util.List;
 
 import org.apache.log4j.Logger;
 
+import azkaban.utils.Pair;
 import azkaban.utils.Props;
 
 public class JavaProcessJob extends ProcessJob {
@@ -146,5 +147,14 @@ public class JavaProcessJob extends ProcessJob {
     }
 
     return "";
+  }
+
+  protected Pair<Long, Long> getProcMemoryRequirement() {
+    String strInitMemSize = getInitialMemorySize();
+    String strMaxMemSize = getMaxMemorySize();
+    long initMemSize = azkaban.utils.Utils.parseMemString(strInitMemSize);
+    long maxMemSize = azkaban.utils.Utils.parseMemString(strMaxMemSize);
+
+    return new Pair<Long, Long>(initMemSize, maxMemSize);
   }
 }

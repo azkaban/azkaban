@@ -35,7 +35,6 @@ import java.util.zip.ZipFile;
 import java.util.zip.ZipOutputStream;
 
 import org.apache.commons.io.IOUtils;
-
 import org.joda.time.Days;
 import org.joda.time.DurationFieldType;
 import org.joda.time.Hours;
@@ -408,5 +407,38 @@ public class Utils {
     }
 
     return periodStr;
+  }
+
+  /**
+   * @param strMemSize : memory string in the format such as 1G, 500M, 3000K, 5000 
+   * @return : long value of memory amount in kb
+   */
+  public static long parseMemString(String strMemSize) {
+    if (strMemSize == null) {
+      return 0L;
+    }
+
+    long size = 0L;
+    if (strMemSize.endsWith("g") || strMemSize.endsWith("G")
+        || strMemSize.endsWith("m") || strMemSize.endsWith("M")
+        || strMemSize.endsWith("k") || strMemSize.endsWith("K")) {
+      String strSize = strMemSize.substring(0, strMemSize.length() - 1);
+      size = Long.parseLong(strSize);
+    } else {
+      size = Long.parseLong(strMemSize);
+    }
+
+    long sizeInKb = 0L;
+    if (strMemSize.endsWith("g") || strMemSize.endsWith("G")) {
+      sizeInKb = size * 1024L * 1024L;
+    } else if (strMemSize.endsWith("m") || strMemSize.endsWith("M")) {
+      sizeInKb = size * 1024L;
+    } else if (strMemSize.endsWith("k") || strMemSize.endsWith("K")) {
+      sizeInKb = size;
+    } else {
+      sizeInKb = size / 1024L;
+    }
+
+    return sizeInKb;
   }
 }

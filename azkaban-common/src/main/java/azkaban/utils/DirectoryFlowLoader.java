@@ -44,8 +44,15 @@ public class DirectoryFlowLoader implements ProjectValidator {
   private static final DirFilter DIR_FILTER = new DirFilter();
   private static final String PROPERTY_SUFFIX = ".properties";
   private static final String JOB_SUFFIX = ".job";
+  private static final String JOB_MAX_XMS = "job.max.Xms";
+  private static final String MAX_XMS_DEFAULT = "1G";
+  private static final String JOB_MAX_XMX = "job.max.Xmx";
+  private static final String MAX_XMX_DEFAULT = "2G";
+  private static final String XMS = "Xms";
+  private static final String XMX = "Xmx";
 
   private final Logger logger;
+  private Props props;
   private HashSet<String> rootNodes;
   private HashMap<String, Flow> flowMap;
   private HashMap<String, Node> nodeMap;
@@ -60,8 +67,9 @@ public class DirectoryFlowLoader implements ProjectValidator {
   private Set<String> errors;
   private Set<String> duplicateJobs;
 
-  public DirectoryFlowLoader(Logger logger) {
+  public DirectoryFlowLoader(Props props, Logger logger) {
     this.logger = logger;
+    this.props = props;
   }
 
   public Map<String, Flow> getFlowMap() {
@@ -94,6 +102,8 @@ public class DirectoryFlowLoader implements ProjectValidator {
 
     // Load all the props files and create the Node objects
     loadProjectFromDir(baseDirectory.getPath(), baseDirectory, null);
+
+    jobPropertiesCheck();
 
     // Create edges and find missing dependencies
     resolveDependencies();
@@ -364,6 +374,27 @@ public class DirectoryFlowLoader implements ProjectValidator {
     }
 
     visited.remove(node.getId());
+  }
+
+  private void jobPropertiesCheck() {
+    String maxXms = props.getString(JOB_MAX_XMS, MAX_XMS_DEFAULT);
+    String maxXmx = props.getString(JOB_MAX_XMX, MAX_XMX_DEFAULT);
+    long sizeMaxXms = azkaban.utils.Utils.parseMemString(maxXms);
+    long sizeMaxXmx = azkaban.utils.Utils.parseMemString(maxXmx);
+
+    for (String jobName : jobPropsMap.keySet()) {
+      Props resolvedJobProps = PropsUtils.resolveProps(jobPropsMap.get(jobName));
+      String xms = resolvedJobProps.getString(XMS, null);
+      if (xms != null && azkaban.utils.Utils.parseMemString(xms) > sizeMaxXms) {
+        errors.add(String.format("%s: Xms value has exceeded the allowed limit (max Xms = %s)",
+                jobName, maxXms));
+      }
+      String xmx = resolvedJobProps.getString(XMX, null);
+      if (xmx != null && azkaban.utils.Utils.parseMemString(xmx) > sizeMaxXmx) {
+        errors.add(String.format("%s: Xmx value has exceeded the allowed limit (max Xmx = %s)",
+                jobName, maxXmx));
+      }
+    }
   }
 
   private String getNameWithoutExtension(File file) {

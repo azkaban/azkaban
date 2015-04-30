@@ -26,7 +26,9 @@ import org.apache.log4j.Logger;
 
 import azkaban.jobExecutor.utils.process.AzkabanProcess;
 import azkaban.jobExecutor.utils.process.AzkabanProcessBuilder;
+import azkaban.utils.Pair;
 import azkaban.utils.Props;
+import azkaban.utils.SystemMemoryInfo;
 
 /**
  * A job that runs a simple unix command
@@ -36,6 +38,8 @@ public class ProcessJob extends AbstractProcessJob {
   public static final String COMMAND = "command";
   private static final long KILL_TIME_MS = 5000;
   private volatile AzkabanProcess process;
+  private static final String MEMCHECK_ENABLED = "memCheck.enabled";
+  private static final String MEMCHECK_FREEMEMDECRAMT = "memCheck.freeMemDecrAmt";
 
   public ProcessJob(final String jobId, final Props sysProps,
       final Props jobProps, final Logger log) {
@@ -48,6 +52,16 @@ public class ProcessJob extends AbstractProcessJob {
       resolveProps();
     } catch (Exception e) {
       handleError("Bad property definition! " + e.getMessage(), e);
+    }
+
+    if (sysProps.getBoolean(MEMCHECK_ENABLED, true)) {
+      long freeMemDecrAmt = sysProps.getLong(MEMCHECK_FREEMEMDECRAMT, 0);
+      Pair<Long, Long> memPair = getProcMemoryRequirement();
+      boolean isMemGranted = SystemMemoryInfo.canSystemGrantMemory(memPair.getFirst(), memPair.getSecond(), freeMemDecrAmt);
+      if (!isMemGranted) {
+        throw new Exception(String.format("Cannot request memory (Xms %d kb, Xmx %d kb) from system for job %s",
+                memPair.getFirst(), memPair.getSecond(), getId()));
+      }
     }
 
     List<String> commands = null;
@@ -99,6 +113,17 @@ public class ProcessJob extends AbstractProcessJob {
 
     // Get the output properties from this job.
     generateProperties(propFiles[1]);
+  }
+
+  /**
+   * This is used to get the min/max memory size requirement by processes.
+   * SystemMemoryInfo can use the info to determine if the memory request
+   * can be fulfilled. For Java process, this should be Xms/Xmx setting.
+   *  
+   * @return pair of min/max memory size
+   */
+  protected Pair<Long, Long> getProcMemoryRequirement() {
+    return new Pair<Long, Long>(0L, 0L);
   }
 
   protected void handleError(String errorMsg, Exception e) throws Exception {
