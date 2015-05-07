@@ -22,6 +22,8 @@ import java.util.List;
 
 import org.apache.log4j.Logger;
 
+import azkaban.server.AzkabanServer;
+import azkaban.utils.DirectoryFlowLoader;
 import azkaban.utils.Pair;
 import azkaban.utils.Props;
 
@@ -149,12 +151,28 @@ public class JavaProcessJob extends ProcessJob {
     return "";
   }
 
-  protected Pair<Long, Long> getProcMemoryRequirement() {
-    String strInitMemSize = getInitialMemorySize();
-    String strMaxMemSize = getMaxMemorySize();
-    long initMemSize = azkaban.utils.Utils.parseMemString(strInitMemSize);
-    long maxMemSize = azkaban.utils.Utils.parseMemString(strMaxMemSize);
+  protected Pair<Long, Long> getProcMemoryRequirement() throws Exception {
+    Props azkabanProperties = AzkabanServer.getAzkabanProperties();
+    String maxXms = azkabanProperties.getString(DirectoryFlowLoader.JOB_MAX_XMS, DirectoryFlowLoader.MAX_XMS_DEFAULT);
+    String maxXmx = azkabanProperties.getString(DirectoryFlowLoader.JOB_MAX_XMX, DirectoryFlowLoader.MAX_XMX_DEFAULT);
+    long sizeMaxXms = azkaban.utils.Utils.parseMemString(maxXms);
+    long sizeMaxXmx = azkaban.utils.Utils.parseMemString(maxXmx);
 
-    return new Pair<Long, Long>(initMemSize, maxMemSize);
+    String strXms = getInitialMemorySize();
+    String strXmx = getMaxMemorySize();
+    long xms = azkaban.utils.Utils.parseMemString(strXms);
+    long xmx = azkaban.utils.Utils.parseMemString(strXmx);
+
+    if (xms > sizeMaxXms) {
+      throw new Exception(String.format("%s: Xms value has exceeded the allowed limit (max Xms = %s)",
+              getId(), maxXms));
+    }
+
+    if (xmx > sizeMaxXmx) {
+      throw new Exception(String.format("%s: Xmx value has exceeded the allowed limit (max Xmx = %s)",
+              getId(), maxXms));
+    }
+
+    return new Pair<Long, Long>(xms, xmx);
   }
 }

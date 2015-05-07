@@ -122,7 +122,7 @@ public class ProcessJob extends AbstractProcessJob {
    *  
    * @return pair of min/max memory size
    */
-  protected Pair<Long, Long> getProcMemoryRequirement() {
+  protected Pair<Long, Long> getProcMemoryRequirement() throws Exception {
     return new Pair<Long, Long>(0L, 0L);
   }
 
