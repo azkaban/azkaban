@@ -26,6 +26,7 @@ import azkaban.server.AzkabanServer;
 import azkaban.utils.DirectoryFlowLoader;
 import azkaban.utils.Pair;
 import azkaban.utils.Props;
+import azkaban.utils.Utils;
 
 public class JavaProcessJob extends ProcessJob {
   public static final String CLASSPATH = "classpath";
@@ -154,15 +155,15 @@ public class JavaProcessJob extends ProcessJob {
   protected Pair<Long, Long> getProcMemoryRequirement() throws Exception {
     String strXms = getInitialMemorySize();
     String strXmx = getMaxMemorySize();
-    long xms = azkaban.utils.Utils.parseMemString(strXms);
-    long xmx = azkaban.utils.Utils.parseMemString(strXmx);
+    long xms = Utils.parseMemString(strXms);
+    long xmx = Utils.parseMemString(strXmx);
 
     Props azkabanProperties = AzkabanServer.getAzkabanProperties();
     if (azkabanProperties != null) {
       String maxXms = azkabanProperties.getString(DirectoryFlowLoader.JOB_MAX_XMS, DirectoryFlowLoader.MAX_XMS_DEFAULT);
       String maxXmx = azkabanProperties.getString(DirectoryFlowLoader.JOB_MAX_XMX, DirectoryFlowLoader.MAX_XMX_DEFAULT);
-      long sizeMaxXms = azkaban.utils.Utils.parseMemString(maxXms);
-      long sizeMaxXmx = azkaban.utils.Utils.parseMemString(maxXmx);
+      long sizeMaxXms = Utils.parseMemString(maxXms);
+      long sizeMaxXmx = Utils.parseMemString(maxXmx);
 
       if (xms > sizeMaxXms) {
         throw new Exception(String.format("%s: Xms value has exceeded the allowed limit (max Xms = %s)",

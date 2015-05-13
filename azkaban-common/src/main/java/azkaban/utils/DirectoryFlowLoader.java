@@ -379,20 +379,20 @@ public class DirectoryFlowLoader implements ProjectValidator {
   private void jobPropertiesCheck() {
     String maxXms = props.getString(JOB_MAX_XMS, MAX_XMS_DEFAULT);
     String maxXmx = props.getString(JOB_MAX_XMX, MAX_XMX_DEFAULT);
-    long sizeMaxXms = azkaban.utils.Utils.parseMemString(maxXms);
-    long sizeMaxXmx = azkaban.utils.Utils.parseMemString(maxXmx);
+    long sizeMaxXms = Utils.parseMemString(maxXms);
+    long sizeMaxXmx = Utils.parseMemString(maxXmx);
 
     for (String jobName : jobPropsMap.keySet()) {
       Props jobProps = jobPropsMap.get(jobName);
       String xms = jobProps.getString(XMS, null);
       if (xms != null && !PropsUtils.isVarialbeReplacementPattern(xms) 
-              && azkaban.utils.Utils.parseMemString(xms) > sizeMaxXms) {
+              && Utils.parseMemString(xms) > sizeMaxXms) {
         errors.add(String.format("%s: Xms value has exceeded the allowed limit (max Xms = %s)",
                 jobName, maxXms));
       }
       String xmx = jobProps.getString(XMX, null);
       if (xmx != null && !PropsUtils.isVarialbeReplacementPattern(xmx)
-              && azkaban.utils.Utils.parseMemString(xmx) > sizeMaxXmx) {
+              && Utils.parseMemString(xmx) > sizeMaxXmx) {
         errors.add(String.format("%s: Xmx value has exceeded the allowed limit (max Xmx = %s)",
                 jobName, maxXmx));
       }
