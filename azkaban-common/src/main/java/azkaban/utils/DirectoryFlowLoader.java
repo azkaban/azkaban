@@ -44,10 +44,10 @@ public class DirectoryFlowLoader implements ProjectValidator {
   private static final DirFilter DIR_FILTER = new DirFilter();
   private static final String PROPERTY_SUFFIX = ".properties";
   private static final String JOB_SUFFIX = ".job";
-  private static final String JOB_MAX_XMS = "job.max.Xms";
-  private static final String MAX_XMS_DEFAULT = "1G";
-  private static final String JOB_MAX_XMX = "job.max.Xmx";
-  private static final String MAX_XMX_DEFAULT = "2G";
+  public static final String JOB_MAX_XMS = "job.max.Xms";
+  public static final String MAX_XMS_DEFAULT = "1G";
+  public static final String JOB_MAX_XMX = "job.max.Xmx";
+  public static final String MAX_XMX_DEFAULT = "2G";
   private static final String XMS = "Xms";
   private static final String XMX = "Xmx";
 
@@ -379,18 +379,20 @@ public class DirectoryFlowLoader implements ProjectValidator {
   private void jobPropertiesCheck() {
     String maxXms = props.getString(JOB_MAX_XMS, MAX_XMS_DEFAULT);
     String maxXmx = props.getString(JOB_MAX_XMX, MAX_XMX_DEFAULT);
-    long sizeMaxXms = azkaban.utils.Utils.parseMemString(maxXms);
-    long sizeMaxXmx = azkaban.utils.Utils.parseMemString(maxXmx);
+    long sizeMaxXms = Utils.parseMemString(maxXms);
+    long sizeMaxXmx = Utils.parseMemString(maxXmx);
 
     for (String jobName : jobPropsMap.keySet()) {
-      Props resolvedJobProps = PropsUtils.resolveProps(jobPropsMap.get(jobName));
-      String xms = resolvedJobProps.getString(XMS, null);
-      if (xms != null && azkaban.utils.Utils.parseMemString(xms) > sizeMaxXms) {
+      Props jobProps = jobPropsMap.get(jobName);
+      String xms = jobProps.getString(XMS, null);
+      if (xms != null && !PropsUtils.isVarialbeReplacementPattern(xms) 
+              && Utils.parseMemString(xms) > sizeMaxXms) {
         errors.add(String.format("%s: Xms value has exceeded the allowed limit (max Xms = %s)",
                 jobName, maxXms));
       }
-      String xmx = resolvedJobProps.getString(XMX, null);
-      if (xmx != null && azkaban.utils.Utils.parseMemString(xmx) > sizeMaxXmx) {
+      String xmx = jobProps.getString(XMX, null);
+      if (xmx != null && !PropsUtils.isVarialbeReplacementPattern(xmx)
+              && Utils.parseMemString(xmx) > sizeMaxXmx) {
         errors.add(String.format("%s: Xmx value has exceeded the allowed limit (max Xmx = %s)",
                 jobName, maxXmx));
       }
