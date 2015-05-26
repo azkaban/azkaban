@@ -102,7 +102,7 @@ public class FlowRunnerPipelineTest {
     project = new Project(1, "testProject");
 
     File dir = new File("unit/executions/embedded2");
-    prepareProject(dir);
+    prepareProject(project, dir);
 
     InteractiveTestJob.clearTestJobs();
   }
@@ -647,10 +647,10 @@ public class FlowRunnerPipelineTest {
     }
   }
 
-  private void prepareProject(File directory) throws ProjectManagerException,
+  private void prepareProject(Project project, File directory) throws ProjectManagerException,
       IOException {
     DirectoryFlowLoader loader = new DirectoryFlowLoader(new Props(), logger);
-    loader.loadProjectFlow(directory);
+    loader.loadProjectFlow(project, directory);
     if (!loader.getErrors().isEmpty()) {
       for (String error : loader.getErrors()) {
         System.out.println(error);

@@ -153,6 +153,8 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
         handleProjectPage(req, resp, session);
       }
       return;
+    } else if (hasParam(req, "reloadProjectWhitelist")) {
+      handleReloadProjectWhitelist(req, resp, session);
     }
 
     Page page =
@@ -1732,6 +1734,25 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
       Permission perm = role.getPermission();
       if (perm.isPermissionSet(Permission.Type.ADMIN)
           || perm.isPermissionSet(Permission.Type.CREATEPROJECTS)) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  private void handleReloadProjectWhitelist(HttpServletRequest req,
+  HttpServletResponse resp, Session session) throws ServletException {
+    if (hasPermission(session.getUser(), Permission.Type.ADMIN)) {
+      projectManager.loadProjectWhiteList();
+    }
+  }
+
+  protected boolean hasPermission(User user, Permission.Type type) {
+    for (String roleName : user.getRoles()) {
+      Role role = userManager.getRole(roleName);
+      if (role.getPermission().isPermissionSet(type)
+          || role.getPermission().isPermissionSet(Permission.Type.ADMIN)) {
         return true;
       }
     }

@@ -53,6 +53,7 @@ import azkaban.executor.ExecutorLoader;
 import azkaban.executor.ExecutorManagerException;
 import azkaban.executor.Status;
 import azkaban.flow.FlowProps;
+import azkaban.jobExecutor.ProcessJob;
 import azkaban.jobtype.JobTypeManager;
 import azkaban.metric.MetricReportManager;
 import azkaban.project.ProjectLoader;
@@ -651,6 +652,11 @@ public class FlowRunner extends EventHandler implements Runnable {
     node.setInputProps(props);
   }
 
+  private void customizeJobProperties(Props props) {
+    boolean memoryCheck = flow.getExecutionOptions().getMemoryCheck();
+    props.put(ProcessJob.AZKABAN_MEMORY_CHECK, Boolean.toString(memoryCheck));
+  }
+
   private Props loadJobProps(ExecutableNode node) throws IOException {
     Props props = null;
     String source = node.getJobSource();
@@ -681,6 +687,9 @@ public class FlowRunner extends EventHandler implements Runnable {
     if (path.getPath() != null) {
       props.setSource(path.getPath());
     }
+
+    customizeJobProperties(props);
+
     return props;
   }
 
