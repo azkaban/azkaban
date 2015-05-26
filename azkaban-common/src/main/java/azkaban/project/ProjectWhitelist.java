@@ -30,17 +30,17 @@ import azkaban.utils.Props;
  * The xml config file should in the following format. Please note
  * the tag <MemoryCheck> is same as the defined enum MemoryCheck
  * 
- * <ProjectWhitelists>
+ * <ProjectWhitelist>
  *  <MemoryCheck>
  *      <project projectname="project1" />
  *      <project projectname="project2" />
  *  </MemoryCheck>
- * <ProjectWhitelists>
+ * <ProjectWhitelist>
  *
  */
 public class ProjectWhitelist {
-  private static final String XML_FILE_PARAM = "project.whitelists.xml.file";
-  private static final String PROJECT_WHITELISTS_TAG = "ProjectWhitelists";
+  private static final String XML_FILE_PARAM = "project.whitelist.xml.file";
+  private static final String PROJECT_WHITELIST_TAG = "ProjectWhitelist";
   private static final String PROJECT_TAG = "project";
   private static final String PROJECTNAME_ATTR = "projectname";
 
@@ -83,20 +83,20 @@ public class ProjectWhitelist {
 
     Map<WhitelistType, Set<String>> projsWhitelisted = new HashMap<WhitelistType, Set<String>>();
     NodeList tagList = doc.getChildNodes();
-    if (!tagList.item(0).getNodeName().equals(PROJECT_WHITELISTS_TAG)) {
-      throw new RuntimeException("Cannot find tag '" +  PROJECT_WHITELISTS_TAG + "' in " + xmlFile);      
+    if (!tagList.item(0).getNodeName().equals(PROJECT_WHITELIST_TAG)) {
+      throw new RuntimeException("Cannot find tag '" +  PROJECT_WHITELIST_TAG + "' in " + xmlFile);      
     }
 
-    NodeList whitelists = tagList.item(0).getChildNodes();
-    for (int n = 0; n < whitelists.getLength(); ++n) {
-      if (whitelists.item(n).getNodeType() != Node.ELEMENT_NODE) {
+    NodeList whitelist = tagList.item(0).getChildNodes();
+    for (int n = 0; n < whitelist.getLength(); ++n) {
+      if (whitelist.item(n).getNodeType() != Node.ELEMENT_NODE) {
         continue;
       }
 
-      String whitelistType = whitelists.item(n).getNodeName();
+      String whitelistType = whitelist.item(n).getNodeName();
       Set<String> projs = new HashSet<String>();
 
-      NodeList projectsList = whitelists.item(n).getChildNodes();
+      NodeList projectsList = whitelist.item(n).getChildNodes();
       for (int i = 0; i < projectsList.getLength(); ++i) {
         Node node = projectsList.item(i);
         if (node.getNodeType() == Node.ELEMENT_NODE) {
