@@ -1742,10 +1742,26 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
   }
 
   private void handleReloadProjectWhitelist(HttpServletRequest req,
-  HttpServletResponse resp, Session session) throws ServletException {
+  HttpServletResponse resp, Session session) throws IOException {
+    boolean error = false;
+    HashMap<String, Object> ret = new HashMap<String, Object>();
+
     if (hasPermission(session.getUser(), Permission.Type.ADMIN)) {
-      projectManager.loadProjectWhiteList();
+      try {
+        projectManager.loadProjectWhiteList();
+      } catch(Exception e) {
+        error = true;
+        ret.put("error", "Exception occurred while trying to re-load project whitelist: " + e);
+      }
+    } else {
+      error = true;
+      ret.put("error", "Provided session doesn't have admin privilege.");
     }
+
+    if (!error) {
+      ret.put("success", "Project whitelist re-loaded!");
+    }
+    this.writeJSON(resp, ret);
   }
 
   protected boolean hasPermission(User user, Permission.Type type) {
