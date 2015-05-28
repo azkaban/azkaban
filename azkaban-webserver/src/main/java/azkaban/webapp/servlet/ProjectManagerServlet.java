@@ -59,6 +59,7 @@ import azkaban.project.ProjectFileHandler;
 import azkaban.project.ProjectLogEvent;
 import azkaban.project.ProjectManager;
 import azkaban.project.ProjectManagerException;
+import azkaban.project.ProjectWhitelist;
 import azkaban.project.validator.ValidationReport;
 import azkaban.project.validator.ValidatorConfigs;
 import azkaban.scheduler.Schedule;
@@ -1743,24 +1744,22 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 
   private void handleReloadProjectWhitelist(HttpServletRequest req,
   HttpServletResponse resp, Session session) throws IOException {
-    boolean error = false;
     HashMap<String, Object> ret = new HashMap<String, Object>();
 
     if (hasPermission(session.getUser(), Permission.Type.ADMIN)) {
       try {
-        projectManager.loadProjectWhiteList();
+        if (projectManager.loadProjectWhiteList()) {
+          ret.put("success", "Project whitelist re-loaded!");
+        } else {
+          ret.put("error", "azkaban.properties doesn't contain property " + ProjectWhitelist.XML_FILE_PARAM);
+        }
       } catch(Exception e) {
-        error = true;
         ret.put("error", "Exception occurred while trying to re-load project whitelist: " + e);
       }
     } else {
-      error = true;
       ret.put("error", "Provided session doesn't have admin privilege.");
     }
 
-    if (!error) {
-      ret.put("success", "Project whitelist re-loaded!");
-    }
     this.writeJSON(resp, ret);
   }
 

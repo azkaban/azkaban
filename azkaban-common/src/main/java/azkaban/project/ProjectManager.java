@@ -517,9 +517,11 @@ public class ProjectManager {
     projectLoader.postEvent(project, type, user, message);
   }
 
-  public void loadProjectWhiteList() {
+  public boolean loadProjectWhiteList() {
     if (props.containsKey(ProjectWhitelist.XML_FILE_PARAM)) {
       ProjectWhitelist.load(props);
+      return true;
     }
+    return false;
   }
 }
