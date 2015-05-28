@@ -518,6 +518,8 @@ public class ProjectManager {
   }
 
   public void loadProjectWhiteList() {
-    ProjectWhitelist.load(props);
+    if (props.containsKey(ProjectWhitelist.XML_FILE_PARAM)) {
+      ProjectWhitelist.load(props);
+    }
   }
 }

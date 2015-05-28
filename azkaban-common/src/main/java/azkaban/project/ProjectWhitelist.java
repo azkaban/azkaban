@@ -39,7 +39,7 @@ import azkaban.utils.Props;
  *
  */
 public class ProjectWhitelist {
-  private static final String XML_FILE_PARAM = "project.whitelist.xml.file";
+  static final String XML_FILE_PARAM = "project.whitelist.xml.file";
   private static final String PROJECT_WHITELIST_TAG = "ProjectWhitelist";
   private static final String PROJECT_TAG = "project";
   private static final String PROJECTNAME_ATTR = "projectname";
