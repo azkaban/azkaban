@@ -652,6 +652,11 @@ public class FlowRunner extends EventHandler implements Runnable {
     node.setInputProps(props);
   }
 
+  /**
+   * @param props
+   * This method is to put in any job properties customization before feeding
+   * to the job.
+   */
   private void customizeJobProperties(Props props) {
     boolean memoryCheck = flow.getExecutionOptions().getMemoryCheck();
     props.put(ProcessJob.AZKABAN_MEMORY_CHECK, Boolean.toString(memoryCheck));
