@@ -42,10 +42,10 @@ public class ProjectWhitelist {
   public static final String XML_FILE_PARAM = "project.whitelist.xml.file";
   private static final String PROJECT_WHITELIST_TAG = "ProjectWhitelist";
   private static final String PROJECT_TAG = "project";
-  private static final String PROJECTNAME_ATTR = "projectname";
+  private static final String PROJECTID_ATTR = "projectid";
 
-  private static AtomicReference<Map<WhitelistType, Set<String>>> projectsWhitelisted =
-          new AtomicReference<Map<WhitelistType, Set<String>>>();
+  private static AtomicReference<Map<WhitelistType, Set<Integer>>> projectsWhitelisted =
+          new AtomicReference<Map<WhitelistType, Set<Integer>>>();
 
   static void load(Props props) {
     String xmlFile = props.getString(XML_FILE_PARAM);
@@ -81,7 +81,7 @@ public class ProjectWhitelist {
           + ". Error reading file.", e);
     }
 
-    Map<WhitelistType, Set<String>> projsWhitelisted = new HashMap<WhitelistType, Set<String>>();
+    Map<WhitelistType, Set<Integer>> projsWhitelisted = new HashMap<WhitelistType, Set<Integer>>();
     NodeList tagList = doc.getChildNodes();
     if (!tagList.item(0).getNodeName().equals(PROJECT_WHITELIST_TAG)) {
       throw new RuntimeException("Cannot find tag '" +  PROJECT_WHITELIST_TAG + "' in " + xmlFile);      
@@ -94,7 +94,7 @@ public class ProjectWhitelist {
       }
 
       String whitelistType = whitelist.item(n).getNodeName();
-      Set<String> projs = new HashSet<String>();
+      Set<Integer> projs = new HashSet<Integer>();
 
       NodeList projectsList = whitelist.item(n).getChildNodes();
       for (int i = 0; i < projectsList.getLength(); ++i) {
@@ -110,22 +110,22 @@ public class ProjectWhitelist {
     projectsWhitelisted.set(projsWhitelisted);
   }
 
-  private static void parseProjectTag(Node node, Set<String> projects) {
+  private static void parseProjectTag(Node node, Set<Integer> projects) {
     NamedNodeMap projectAttrMap = node.getAttributes();
-    Node projectNameAttr = projectAttrMap.getNamedItem(PROJECTNAME_ATTR);
-    if (projectNameAttr == null) {
-      throw new RuntimeException("Error loading project. The '" + PROJECTNAME_ATTR 
+    Node projectIdAttr = projectAttrMap.getNamedItem(PROJECTID_ATTR);
+    if (projectIdAttr == null) {
+      throw new RuntimeException("Error loading project. The '" + PROJECTID_ATTR 
               + "' attribute doesn't exist");
     }
 
-    String projectName = projectNameAttr.getNodeValue();
-    projects.add(projectName);
+    String projectId = projectIdAttr.getNodeValue();
+    projects.add(Integer.parseInt(projectId));
   }
 
-  public static boolean isProjectWhitelisted(String project, WhitelistType whitelistType) {
-    Map<WhitelistType, Set<String>> projsWhitelisted = projectsWhitelisted.get();
+  public static boolean isProjectWhitelisted(int project, WhitelistType whitelistType) {
+    Map<WhitelistType, Set<Integer>> projsWhitelisted = projectsWhitelisted.get();
     if (projsWhitelisted != null) {
-      Set<String> projs = projsWhitelisted.get(whitelistType);
+      Set<Integer> projs = projsWhitelisted.get(whitelistType);
       if (projs != null) {
         return projs.contains(project); 
       }

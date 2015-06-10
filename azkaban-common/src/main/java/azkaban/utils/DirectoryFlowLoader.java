@@ -380,7 +380,7 @@ public class DirectoryFlowLoader implements ProjectValidator {
 
   private void jobPropertiesCheck(Project project) {
     //if project is in the memory check whitelist, then we don't need to check its memory settings
-    if (ProjectWhitelist.isProjectWhitelisted(project.getName(),
+    if (ProjectWhitelist.isProjectWhitelisted(project.getId(),
             ProjectWhitelist.WhitelistType.MemoryCheck)) {
       return;
     }

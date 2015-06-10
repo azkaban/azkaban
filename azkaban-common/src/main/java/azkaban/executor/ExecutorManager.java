@@ -586,7 +586,7 @@ public class ExecutorManager extends EventHandler implements
         }
       }
 
-      boolean memoryCheck = !ProjectWhitelist.isProjectWhitelisted(exflow.getProjectName(),
+      boolean memoryCheck = !ProjectWhitelist.isProjectWhitelisted(exflow.getProjectId(),
               ProjectWhitelist.WhitelistType.MemoryCheck);
       options.setMemoryCheck(memoryCheck);
 
