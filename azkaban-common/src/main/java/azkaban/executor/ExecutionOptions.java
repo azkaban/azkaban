@@ -48,6 +48,7 @@ public class ExecutionOptions {
   private static final String FAILURE_EMAILS_OVERRIDE = "failureEmailsOverride";
   private static final String SUCCESS_EMAILS_OVERRIDE = "successEmailsOverride";
   private static final String MAIL_CREATOR = "mailCreator";
+  private static final String MEMORY_CHECK = "memoryCheck";
 
   private boolean notifyOnFirstFailure = true;
   private boolean notifyOnLastFailure = false;
@@ -61,6 +62,7 @@ public class ExecutionOptions {
   private Integer queueLevel = 0;
   private String concurrentOption = CONCURRENT_OPTION_IGNORE;
   private String mailCreator = DefaultMailCreator.DEFAULT_MAIL_CREATOR;
+  private boolean memoryCheck = true;
   private Map<String, String> flowParameters = new HashMap<String, String>();
 
   public enum FailureAction {
@@ -179,6 +181,14 @@ public class ExecutionOptions {
     initiallyDisabledJobs = disabledJobs;
   }
 
+  public boolean getMemoryCheck() {
+    return memoryCheck;
+  }
+
+  public void setMemoryCheck(boolean memoryCheck) {
+    this.memoryCheck = memoryCheck;
+  }
+
   public Map<String, Object> toObject() {
     HashMap<String, Object> flowOptionObj = new HashMap<String, Object>();
 
@@ -196,6 +206,7 @@ public class ExecutionOptions {
     flowOptionObj.put(FAILURE_EMAILS_OVERRIDE, failureEmailsOverride);
     flowOptionObj.put(SUCCESS_EMAILS_OVERRIDE, successEmailsOverride);
     flowOptionObj.put(MAIL_CREATOR, mailCreator);
+    flowOptionObj.put(MEMORY_CHECK, memoryCheck);
     return flowOptionObj;
   }
 
@@ -251,6 +262,8 @@ public class ExecutionOptions {
         false));
     options.setFailureEmailsOverridden(wrapper.getBool(FAILURE_EMAILS_OVERRIDE,
         false));
+
+    options.setMemoryCheck(wrapper.getBool(MEMORY_CHECK, true));
 
     return options;
   }

@@ -36,6 +36,8 @@ import azkaban.flow.Flow;
 import azkaban.flow.FlowProps;
 import azkaban.flow.Node;
 import azkaban.flow.SpecialJobTypes;
+import azkaban.project.Project;
+import azkaban.project.ProjectWhitelist;
 import azkaban.project.validator.ProjectValidator;
 import azkaban.project.validator.ValidationReport;
 import azkaban.project.validator.XmlValidatorManager;
@@ -88,7 +90,7 @@ public class DirectoryFlowLoader implements ProjectValidator {
     return propsList;
   }
 
-  public void loadProjectFlow(File baseDirectory) {
+  public void loadProjectFlow(Project project, File baseDirectory) {
     propsList = new ArrayList<Props>();
     flowPropsList = new ArrayList<FlowProps>();
     jobPropsMap = new HashMap<String, Props>();
@@ -103,7 +105,7 @@ public class DirectoryFlowLoader implements ProjectValidator {
     // Load all the props files and create the Node objects
     loadProjectFromDir(baseDirectory.getPath(), baseDirectory, null);
 
-    jobPropertiesCheck();
+    jobPropertiesCheck(project);
 
     // Create edges and find missing dependencies
     resolveDependencies();
@@ -376,7 +378,13 @@ public class DirectoryFlowLoader implements ProjectValidator {
     visited.remove(node.getId());
   }
 
-  private void jobPropertiesCheck() {
+  private void jobPropertiesCheck(Project project) {
+    //if project is in the memory check whitelist, then we don't need to check its memory settings
+    if (ProjectWhitelist.isProjectWhitelisted(project.getId(),
+            ProjectWhitelist.WhitelistType.MemoryCheck)) {
+      return;
+    }
+
     String maxXms = props.getString(JOB_MAX_XMS, MAX_XMS_DEFAULT);
     String maxXmx = props.getString(JOB_MAX_XMX, MAX_XMX_DEFAULT);
     long sizeMaxXms = Utils.parseMemString(maxXms);
@@ -444,8 +452,8 @@ public class DirectoryFlowLoader implements ProjectValidator {
   }
 
   @Override
-  public ValidationReport validateProject(File projectDir) {
-    loadProjectFlow(projectDir);
+  public ValidationReport validateProject(Project project, File projectDir) {
+    loadProjectFlow(project, projectDir);
     ValidationReport report = new ValidationReport();
     report.addErrorMsgs(errors);
     return report;

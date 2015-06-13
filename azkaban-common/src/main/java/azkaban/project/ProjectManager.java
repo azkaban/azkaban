@@ -33,6 +33,7 @@ import org.apache.log4j.Logger;
 
 import azkaban.flow.Flow;
 import azkaban.project.ProjectLogEvent.EventType;
+import azkaban.project.ProjectWhitelist.WhitelistType;
 import azkaban.project.validator.ValidationReport;
 import azkaban.project.validator.ValidationStatus;
 import azkaban.project.validator.ValidatorConfigs;
@@ -84,6 +85,7 @@ public class ProjectManager {
     // config files for the validators.
     new XmlValidatorManager(prop);
     loadAllProjects();
+    loadProjectWhiteList();
   }
 
   private void loadAllProjects() {
@@ -429,7 +431,7 @@ public class ProjectManager {
     logger.info("Validating project " + archive.getName()
         + " using the registered validators "
         + validatorManager.getValidatorsInfo().toString());
-    Map<String, ValidationReport> reports = validatorManager.validate(file);
+    Map<String, ValidationReport> reports = validatorManager.validate(project, file);
     ValidationStatus status = ValidationStatus.PASS;
     for (Entry<String, ValidationReport> report : reports.entrySet()) {
       if (report.getValue().getStatus().compareTo(status) > 0) {
@@ -515,4 +517,11 @@ public class ProjectManager {
     projectLoader.postEvent(project, type, user, message);
   }
 
+  public boolean loadProjectWhiteList() {
+    if (props.containsKey(ProjectWhitelist.XML_FILE_PARAM)) {
+      ProjectWhitelist.load(props);
+      return true;
+    }
+    return false;
+  }
 }
