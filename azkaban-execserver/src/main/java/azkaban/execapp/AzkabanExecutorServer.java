@@ -69,7 +69,13 @@ public class AzkabanExecutorServer {
   public static final String AZKABAN_PROPERTIES_FILE = "azkaban.properties";
   public static final String AZKABAN_PRIVATE_PROPERTIES_FILE = "azkaban.private.properties";
   public static final String JOBTYPE_PLUGIN_DIR = "azkaban.jobtype.plugin.dir";
+
   public static final String METRIC_INTERVAL = "executor.metric.milisecinterval.";
+
+  public static final int HEADER_BUFFER_SIZE = 4 * 1024;
+  public static final int RESPONSE_BUFFER_SIZE = 24 * 1024;
+  public static final int REQUEST_BUFFER_SIZE = 8 * 1024;
+
   public static final int DEFAULT_PORT_NUMBER = 12321;
 
   private static final String DEFAULT_TIMEZONE_ID = "default.timezone.id";
@@ -103,10 +109,16 @@ public class AzkabanExecutorServer {
     server.setThreadPool(httpThreadPool);
 
     boolean isStatsOn = props.getBoolean("executor.connector.stats", true);
-    logger.info("Setting up connector with stats on: " + isStatsOn);
+    int headerBufferSize = props.getInt("headerBufferSize", HEADER_BUFFER_SIZE);
+    int requestBufferSize = props.getInt("requestBufferSize", REQUEST_BUFFER_SIZE);
+    int responseBufferSize = props.getInt("responseBufferSize", RESPONSE_BUFFER_SIZE);
+    logger.info("Setting up connector with stats on: " + isStatsOn + " headerBufferSize : " + headerBufferSize + " requestBufferSize : " + requestBufferSize + " responseBufferSize : " + responseBufferSize );
 
     for (Connector connector : server.getConnectors()) {
       connector.setStatsOn(isStatsOn);
+      connector.setHeaderBufferSize(headerBufferSize);
+      connector.setResponseBufferSize(responseBufferSize);
+      connector.setRequestBufferSize(requestBufferSize);
     }
 
     Context root = new Context(server, "/", Context.SESSIONS);

@@ -16,6 +16,7 @@
 
 package azkaban.webapp;
 
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -74,15 +75,10 @@ import azkaban.trigger.JdbcTriggerLoader;
 import azkaban.trigger.TriggerLoader;
 import azkaban.trigger.TriggerManager;
 import azkaban.trigger.TriggerManagerException;
-import azkaban.trigger.builtin.BasicTimeChecker;
-import azkaban.trigger.builtin.CreateTriggerAction;
-import azkaban.trigger.builtin.ExecuteFlowAction;
-import azkaban.trigger.builtin.ExecutionChecker;
-import azkaban.trigger.builtin.KillExecutionAction;
-import azkaban.trigger.builtin.SlaAlertAction;
-import azkaban.trigger.builtin.SlaChecker;
+import azkaban.trigger.builtin.*;
 import azkaban.user.UserManager;
 import azkaban.user.XmlUserManager;
+
 import azkaban.utils.Emailer;
 import azkaban.utils.FileIOUtils;
 import azkaban.utils.Props;
@@ -98,9 +94,12 @@ import azkaban.webapp.servlet.ProjectServlet;
 import azkaban.webapp.servlet.ProjectManagerServlet;
 import azkaban.webapp.servlet.StatsServlet;
 import azkaban.webapp.servlet.TriggerManagerServlet;
+
+import azkaban.utils.*;
+import azkaban.webapp.plugin.PluginRegistry;
+
 import azkaban.webapp.plugin.TriggerPlugin;
 import azkaban.webapp.plugin.ViewerPlugin;
-import azkaban.webapp.plugin.PluginRegistry;
 
 /**
  * The Azkaban Jetty server class
@@ -132,7 +131,9 @@ public class AzkabanWebServer extends AzkabanServer {
       "azkaban.private.properties";
 
   private static final int MAX_FORM_CONTENT_SIZE = 10 * 1024 * 1024;
-  private static final int MAX_HEADER_BUFFER_SIZE = 10 * 1024 * 1024;
+  private static final int HEADER_BUFFER_SIZE = 4 * 1024;
+  private static final int RESPONSE_BUFFER_SIZE = 24 * 1024;
+  private static final int REQUEST_BUFFER_SIZE = 8 * 1024;
   private static AzkabanWebServer app;
 
   private static final String DEFAULT_TIMEZONE_ID = "default.timezone.id";
@@ -678,9 +679,12 @@ public class AzkabanWebServer extends AzkabanServer {
 
     int maxThreads =
         azkabanSettings.getInt("jetty.maxThreads", DEFAULT_THREAD_NUMBER);
-    boolean isStatsOn =
-        azkabanSettings.getBoolean("jetty.connector.stats", true);
-    logger.info("Setting up connector with stats on: " + isStatsOn);
+
+    boolean isStatsOn = azkabanSettings.getBoolean("jetty.connector.stats", true);
+    int headerBufferSize = azkabanSettings.getInt("headerBufferSize", HEADER_BUFFER_SIZE);
+    int requestBufferSize = azkabanSettings.getInt("requestBufferSize", REQUEST_BUFFER_SIZE);
+    int responseBufferSize = azkabanSettings.getInt("responseBufferSize", RESPONSE_BUFFER_SIZE);
+    logger.info("Setting up connector with stats on: " + isStatsOn + " headerBufferSize : " + headerBufferSize + " requestBufferSize : " + requestBufferSize + " responseBufferSize : " + responseBufferSize);
 
     boolean ssl;
     int port;
@@ -703,7 +707,9 @@ public class AzkabanWebServer extends AzkabanServer {
           .getString("jetty.truststore"));
       secureConnector.setTrustPassword(azkabanSettings
           .getString("jetty.trustpassword"));
-      secureConnector.setHeaderBufferSize(MAX_HEADER_BUFFER_SIZE);
+      secureConnector.setHeaderBufferSize(headerBufferSize);
+      secureConnector.setResponseBufferSize(responseBufferSize);
+      secureConnector.setRequestBufferSize(requestBufferSize);
 
       server.addConnector(secureConnector);
     } else {
@@ -711,7 +717,10 @@ public class AzkabanWebServer extends AzkabanServer {
       port = azkabanSettings.getInt("jetty.port", DEFAULT_PORT_NUMBER);
       SocketConnector connector = new SocketConnector();
       connector.setPort(port);
-      connector.setHeaderBufferSize(MAX_HEADER_BUFFER_SIZE);
+      connector.setHeaderBufferSize(headerBufferSize);
+      connector.setResponseBufferSize(responseBufferSize);
+      connector.setRequestBufferSize(requestBufferSize);
+
       server.addConnector(connector);
     }
 
