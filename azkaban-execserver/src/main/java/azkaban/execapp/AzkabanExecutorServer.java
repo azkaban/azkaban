@@ -36,6 +36,7 @@ import org.mortbay.jetty.Connector;
 import org.mortbay.jetty.Server;
 import org.mortbay.jetty.servlet.Context;
 import org.mortbay.jetty.servlet.ServletHolder;
+import org.mortbay.log.Log;
 import org.mortbay.thread.QueuedThreadPool;
 
 import azkaban.executor.ExecutorLoader;
@@ -106,9 +107,13 @@ public class AzkabanExecutorServer {
     boolean isStatsOn = props.getBoolean("executor.connector.stats", true);
     logger.info("Setting up connector with stats on: " + isStatsOn);
     
-    for (Connector connector : server.getConnectors()) {
-      connector.setStatsOn(isStatsOn);      
+    for (Connector connector : server.getConnectors()) {      
+      connector.setStatsOn(isStatsOn);
+      logger.info(String.format("Jetty connector name: %s, default header buffer size: %d",
+              connector.getName(), connector.getHeaderBufferSize()));     
       connector.setHeaderBufferSize(props.getInt("jetty.headerBufferSize", DEFAULT_HEADER_BUFFER_SIZE));
+      logger.info(String.format("Jetty connector name: %s, (if) new header buffer size: %d",
+              connector.getName(), connector.getHeaderBufferSize()));
     }
 
     Context root = new Context(server, "/", Context.SESSIONS);
