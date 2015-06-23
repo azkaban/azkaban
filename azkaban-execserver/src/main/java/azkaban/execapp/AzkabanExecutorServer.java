@@ -71,6 +71,7 @@ public class AzkabanExecutorServer {
   public static final String JOBTYPE_PLUGIN_DIR = "azkaban.jobtype.plugin.dir";
   public static final String METRIC_INTERVAL = "executor.metric.milisecinterval.";
   public static final int DEFAULT_PORT_NUMBER = 12321;
+  public static final int DEFAULT_HEADER_BUFFER_SIZE = 4096;  
 
   private static final String DEFAULT_TIMEZONE_ID = "default.timezone.id";
   private static final int DEFAULT_THREAD_NUMBER = 50;
@@ -104,9 +105,10 @@ public class AzkabanExecutorServer {
 
     boolean isStatsOn = props.getBoolean("executor.connector.stats", true);
     logger.info("Setting up connector with stats on: " + isStatsOn);
-
+    
     for (Connector connector : server.getConnectors()) {
-      connector.setStatsOn(isStatsOn);
+      connector.setStatsOn(isStatsOn);      
+      connector.setHeaderBufferSize(props.getInt("jetty.headerBufferSize", DEFAULT_HEADER_BUFFER_SIZE));
     }
 
     Context root = new Context(server, "/", Context.SESSIONS);
