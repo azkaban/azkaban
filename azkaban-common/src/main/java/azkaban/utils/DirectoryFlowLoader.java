@@ -36,6 +36,7 @@ import azkaban.flow.Flow;
 import azkaban.flow.FlowProps;
 import azkaban.flow.Node;
 import azkaban.flow.SpecialJobTypes;
+import azkaban.jobcallback.JobCallbackValidator;
 import azkaban.project.validator.ProjectValidator;
 import azkaban.project.validator.ValidationReport;
 import azkaban.project.validator.XmlValidatorManager;
@@ -113,6 +114,7 @@ public class DirectoryFlowLoader implements ProjectValidator {
 
     // Resolve embedded flows
     resolveEmbeddedFlows();
+
   }
 
   private void loadProjectFromDir(String base, File dir, Props parent) {
@@ -383,17 +385,23 @@ public class DirectoryFlowLoader implements ProjectValidator {
     long sizeMaxXmx = azkaban.utils.Utils.parseMemString(maxXmx);
 
     for (String jobName : jobPropsMap.keySet()) {
-      Props resolvedJobProps = PropsUtils.resolveProps(jobPropsMap.get(jobName));
+      Props resolvedJobProps =
+          PropsUtils.resolveProps(jobPropsMap.get(jobName));
       String xms = resolvedJobProps.getString(XMS, null);
       if (xms != null && azkaban.utils.Utils.parseMemString(xms) > sizeMaxXms) {
-        errors.add(String.format("%s: Xms value has exceeded the allowed limit (max Xms = %s)",
-                jobName, maxXms));
+        errors.add(String.format(
+            "%s: Xms value has exceeded the allowed limit (max Xms = %s)",
+            jobName, maxXms));
       }
       String xmx = resolvedJobProps.getString(XMX, null);
       if (xmx != null && azkaban.utils.Utils.parseMemString(xmx) > sizeMaxXmx) {
-        errors.add(String.format("%s: Xmx value has exceeded the allowed limit (max Xmx = %s)",
-                jobName, maxXmx));
+        errors.add(String.format(
+            "%s: Xmx value has exceeded the allowed limit (max Xmx = %s)",
+            jobName, maxXmx));
       }
+
+      // job callback properties check
+      JobCallbackValidator.validate(jobName, props, resolvedJobProps, errors);
     }
   }
 

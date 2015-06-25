@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.lang.management.ManagementFactory;
+import java.lang.reflect.Constructor;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.TimeZone;
@@ -38,14 +39,16 @@ import org.mortbay.jetty.servlet.Context;
 import org.mortbay.jetty.servlet.ServletHolder;
 import org.mortbay.thread.QueuedThreadPool;
 
-import azkaban.executor.ExecutorLoader;
-import azkaban.executor.JdbcExecutorLoader;
+import azkaban.execapp.event.JobCallbackManager;
 import azkaban.execapp.jmx.JmxFlowRunnerManager;
+import azkaban.execapp.jmx.JmxJobMBeanManager;
 import azkaban.execapp.metric.NumFailedFlowMetric;
 import azkaban.execapp.metric.NumFailedJobMetric;
 import azkaban.execapp.metric.NumQueuedFlowMetric;
 import azkaban.execapp.metric.NumRunningFlowMetric;
 import azkaban.execapp.metric.NumRunningJobMetric;
+import azkaban.executor.ExecutorLoader;
+import azkaban.executor.JdbcExecutorLoader;
 import azkaban.jmx.JmxJettyServer;
 import azkaban.metric.IMetricEmitter;
 import azkaban.metric.MetricException;
@@ -59,17 +62,21 @@ import azkaban.utils.Props;
 import azkaban.utils.SystemMemoryInfo;
 import azkaban.utils.Utils;
 
-
 public class AzkabanExecutorServer {
-  private static final Logger logger = Logger.getLogger(AzkabanExecutorServer.class);
+  private static final String CUSTOM_JMX_ATTRIBUTE_PROCESSOR_PROPERTY =
+      "jmx.attribute.processor.class";
+  private static final Logger logger = Logger
+      .getLogger(AzkabanExecutorServer.class);
   private static final int MAX_FORM_CONTENT_SIZE = 10 * 1024 * 1024;
 
   public static final String AZKABAN_HOME = "AZKABAN_HOME";
   public static final String DEFAULT_CONF_PATH = "conf";
   public static final String AZKABAN_PROPERTIES_FILE = "azkaban.properties";
-  public static final String AZKABAN_PRIVATE_PROPERTIES_FILE = "azkaban.private.properties";
+  public static final String AZKABAN_PRIVATE_PROPERTIES_FILE =
+      "azkaban.private.properties";
   public static final String JOBTYPE_PLUGIN_DIR = "azkaban.jobtype.plugin.dir";
-  public static final String METRIC_INTERVAL = "executor.metric.milisecinterval.";
+  public static final String METRIC_INTERVAL =
+      "executor.metric.milisecinterval.";
   public static final int DEFAULT_PORT_NUMBER = 12321;
 
   private static final String DEFAULT_TIMEZONE_ID = "default.timezone.id";
@@ -120,12 +127,21 @@ public class AzkabanExecutorServer {
 
     executionLoader = createExecLoader(props);
     projectLoader = createProjectLoader(props);
-    runnerManager = new FlowRunnerManager(props, executionLoader, projectLoader, this.getClass().getClassLoader());
+    runnerManager =
+        new FlowRunnerManager(props, executionLoader, projectLoader, this
+            .getClass().getClassLoader());
+
+    JmxJobMBeanManager.getInstance().initialize(props);
+
+    // make sure this happens before
+    configureJobCallback(props);
 
     configureMBeanServer();
     configureMetricReports();
 
     SystemMemoryInfo.init(props.getInt("executor.memCheck.interval", 30));
+
+    loadCustomJMXAttributeProcessor(props);
 
     try {
       server.start();
@@ -137,8 +153,20 @@ public class AzkabanExecutorServer {
     logger.info("Azkaban Executor Server started on port " + portNumber);
   }
 
+  private void configureJobCallback(Props props) {
+    boolean jobCallbackEnabled =
+        props.getBoolean("azkaban.executor.jobcallback.enabled", true);
+
+    logger.info("Job callback enabled? " + jobCallbackEnabled);
+
+    if (jobCallbackEnabled) {
+      JobCallbackManager.initialize(props);
+    }
+  }
+
   /**
    * Configure Metric Reporting as per azkaban.properties settings
+   * 
    * @throws MetricException
    */
   private void configureMetricReports() throws MetricException {
@@ -150,28 +178,64 @@ public class AzkabanExecutorServer {
       metricManager.addMetricEmitter(metricEmitter);
 
       logger.info("Adding number of failed flow metric");
-      metricManager.addMetric(new NumFailedFlowMetric(metricManager, props.getInt(METRIC_INTERVAL
-          + NumFailedFlowMetric.NUM_FAILED_FLOW_METRIC_NAME, props.getInt(METRIC_INTERVAL + "default"))));
+      metricManager.addMetric(new NumFailedFlowMetric(metricManager, props
+          .getInt(METRIC_INTERVAL
+              + NumFailedFlowMetric.NUM_FAILED_FLOW_METRIC_NAME,
+              props.getInt(METRIC_INTERVAL + "default"))));
 
       logger.info("Adding number of failed jobs metric");
-      metricManager.addMetric(new NumFailedJobMetric(metricManager, props.getInt(METRIC_INTERVAL
-          + NumFailedJobMetric.NUM_FAILED_JOB_METRIC_NAME, props.getInt(METRIC_INTERVAL + "default"))));
+      metricManager.addMetric(new NumFailedJobMetric(metricManager, props
+          .getInt(METRIC_INTERVAL
+              + NumFailedJobMetric.NUM_FAILED_JOB_METRIC_NAME,
+              props.getInt(METRIC_INTERVAL + "default"))));
 
       logger.info("Adding number of running Jobs metric");
-      metricManager.addMetric(new NumRunningJobMetric(metricManager, props.getInt(METRIC_INTERVAL
-          + NumRunningJobMetric.NUM_RUNNING_JOB_METRIC_NAME, props.getInt(METRIC_INTERVAL + "default"))));
+      metricManager.addMetric(new NumRunningJobMetric(metricManager, props
+          .getInt(METRIC_INTERVAL
+              + NumRunningJobMetric.NUM_RUNNING_JOB_METRIC_NAME,
+              props.getInt(METRIC_INTERVAL + "default"))));
 
       logger.info("Adding number of running flows metric");
-      metricManager.addMetric(new NumRunningFlowMetric(runnerManager, metricManager, props.getInt(
-          METRIC_INTERVAL  + NumRunningFlowMetric.NUM_RUNNING_FLOW_METRIC_NAME,
-          props.getInt(METRIC_INTERVAL + "default"))));
+      metricManager.addMetric(new NumRunningFlowMetric(runnerManager,
+          metricManager, props.getInt(METRIC_INTERVAL
+              + NumRunningFlowMetric.NUM_RUNNING_FLOW_METRIC_NAME,
+              props.getInt(METRIC_INTERVAL + "default"))));
 
       logger.info("Adding number of queued flows metric");
-      metricManager.addMetric(new NumQueuedFlowMetric(runnerManager, metricManager, props.getInt(
-          METRIC_INTERVAL + NumQueuedFlowMetric.NUM_QUEUED_FLOW_METRIC_NAME,
-          props.getInt(METRIC_INTERVAL + "default"))));
+      metricManager.addMetric(new NumQueuedFlowMetric(runnerManager,
+          metricManager, props.getInt(METRIC_INTERVAL
+              + NumQueuedFlowMetric.NUM_QUEUED_FLOW_METRIC_NAME,
+              props.getInt(METRIC_INTERVAL + "default"))));
 
       logger.info("Completed configuring Metric Reports");
+    }
+
+    // initialize event emitter
+    // AsyncEventEmitterFactory.getInstance().initialize(props);
+
+  }
+
+  private void loadCustomJMXAttributeProcessor(Props props) {
+    String jmxAttributeEmitter =
+        props.get(CUSTOM_JMX_ATTRIBUTE_PROCESSOR_PROPERTY);
+    if (jmxAttributeEmitter != null) {
+      try {
+        logger.info("jmxAttributeEmitter: " + jmxAttributeEmitter);
+        Constructor<Props>[] constructors =
+            (Constructor<Props>[]) Class.forName(jmxAttributeEmitter)
+                .getConstructors();
+
+        constructors[0].newInstance(props.toProperties());
+      } catch (Exception e) {
+        logger.error("Encountered error while loading and instantiating "
+            + jmxAttributeEmitter, e);
+        throw new IllegalStateException(
+            "Encountered error while loading and instantiating "
+                + jmxAttributeEmitter, e);
+      }
+    } else {
+      logger.info("No value for property: "
+          + CUSTOM_JMX_ATTRIBUTE_PROCESSOR_PROPERTY + " was found");
     }
   }
 
@@ -267,23 +331,25 @@ public class AzkabanExecutorServer {
 
       public void logTopMemoryConsumers() throws Exception, IOException {
         if (new File("/bin/bash").exists() && new File("/bin/ps").exists()
-                && new File("/usr/bin/head").exists()) {
+            && new File("/usr/bin/head").exists()) {
           logger.info("logging top memeory consumer");
 
           java.lang.ProcessBuilder processBuilder =
-                  new java.lang.ProcessBuilder("/bin/bash", "-c", "/bin/ps aux --sort -rss | /usr/bin/head");
+              new java.lang.ProcessBuilder("/bin/bash", "-c",
+                  "/bin/ps aux --sort -rss | /usr/bin/head");
           Process p = processBuilder.start();
           p.waitFor();
-  
+
           InputStream is = p.getInputStream();
-          java.io.BufferedReader reader = new java.io.BufferedReader(new InputStreamReader(is));
+          java.io.BufferedReader reader =
+              new java.io.BufferedReader(new InputStreamReader(is));
           String line = null;
           while ((line = reader.readLine()) != null) {
             logger.info(line);
           }
           is.close();
         }
-      }      
+      }
     });
   }
 
@@ -300,14 +366,16 @@ public class AzkabanExecutorServer {
       return null;
     }
 
-    if (!new File(azkabanHome).isDirectory() || !new File(azkabanHome).canRead()) {
+    if (!new File(azkabanHome).isDirectory()
+        || !new File(azkabanHome).canRead()) {
       logger.error(azkabanHome + " is not a readable directory.");
       return null;
     }
 
     File confPath = new File(azkabanHome, DEFAULT_CONF_PATH);
     if (!confPath.exists() || !confPath.isDirectory() || !confPath.canRead()) {
-      logger.error(azkabanHome + " does not contain a readable conf directory.");
+      logger
+          .error(azkabanHome + " does not contain a readable conf directory.");
       return null;
     }
 
@@ -325,7 +393,8 @@ public class AzkabanExecutorServer {
    * @return
    */
   private static Props loadAzkabanConfigurationFromDirectory(File dir) {
-    File azkabanPrivatePropsFile = new File(dir, AZKABAN_PRIVATE_PROPERTIES_FILE);
+    File azkabanPrivatePropsFile =
+        new File(dir, AZKABAN_PRIVATE_PROPERTIES_FILE);
     File azkabanPropsFile = new File(dir, AZKABAN_PROPERTIES_FILE);
 
     Props props = null;
@@ -343,7 +412,9 @@ public class AzkabanExecutorServer {
     } catch (FileNotFoundException e) {
       logger.error("File not found. Could not load azkaban config file", e);
     } catch (IOException e) {
-      logger.error("File found, but error reading. Could not load azkaban config file", e);
+      logger.error(
+          "File found, but error reading. Could not load azkaban config file",
+          e);
     }
 
     return props;
@@ -355,6 +426,13 @@ public class AzkabanExecutorServer {
 
     registerMbean("executorJetty", new JmxJettyServer(server));
     registerMbean("flowRunnerManager", new JmxFlowRunnerManager(runnerManager));
+    registerMbean("jobJMXMBean", JmxJobMBeanManager.getInstance());
+
+    if (JobCallbackManager.isInitialized()) {
+      JobCallbackManager jobCallbackMgr = JobCallbackManager.getInstance();
+      registerMbean("jobCallbackJMXMBean",
+          jobCallbackMgr.getJmxJobCallbackMBean());
+    }
   }
 
   public void close() {
@@ -377,7 +455,8 @@ public class AzkabanExecutorServer {
       logger.info("Bean " + mbeanClass.getCanonicalName() + " registered.");
       registeredMBeans.add(mbeanName);
     } catch (Exception e) {
-      logger.error("Error registering mbean " + mbeanClass.getCanonicalName(), e);
+      logger.error("Error registering mbean " + mbeanClass.getCanonicalName(),
+          e);
     }
 
   }
