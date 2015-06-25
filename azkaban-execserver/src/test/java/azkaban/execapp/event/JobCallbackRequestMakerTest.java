@@ -57,31 +57,38 @@ public class JobCallbackRequestMakerTest {
 
   @BeforeClass
   public static void setup() throws Exception {
-    JobCallbackRequestMaker.initialize(new Props());
-    jobCBMaker = JobCallbackRequestMaker.getInstance();
+    try {
+      JobCallbackRequestMaker.initialize(new Props());
+      jobCBMaker = JobCallbackRequestMaker.getInstance();
 
-    contextInfo = new HashMap<String, String>();
-    contextInfo.put(SERVER_TOKEN, SERVER_NAME);
-    contextInfo.put(PROJECT_TOKEN, PROJECT_NANE);
-    contextInfo.put(FLOW_TOKEN, FLOW_NANE);
-    contextInfo.put(EXECUTION_ID_TOKEN, EXECUTION_ID);
-    contextInfo.put(JOB_TOKEN, JOB_NANE);
-    contextInfo.put(JOB_STATUS_TOKEN, JobCallbackStatusEnum.STARTED.name());
+      contextInfo = new HashMap<String, String>();
+      contextInfo.put(SERVER_TOKEN, SERVER_NAME);
+      contextInfo.put(PROJECT_TOKEN, PROJECT_NANE);
+      contextInfo.put(FLOW_TOKEN, FLOW_NANE);
+      contextInfo.put(EXECUTION_ID_TOKEN, EXECUTION_ID);
+      contextInfo.put(JOB_TOKEN, JOB_NANE);
+      contextInfo.put(JOB_STATUS_TOKEN, JobCallbackStatusEnum.STARTED.name());
 
-    embeddedJettyServer = new Server(PORT_NUMBER);
+      embeddedJettyServer = new Server(PORT_NUMBER);
 
-    Context context = new Context(embeddedJettyServer, "/", Context.SESSIONS);
-    context.addServlet(new ServletHolder(new DelayServlet()), "/delay");
+      Context context = new Context(embeddedJettyServer, "/", Context.SESSIONS);
+      context.addServlet(new ServletHolder(new DelayServlet()), "/delay");
 
-    System.out.println("Start server");
-    embeddedJettyServer.start();
+      System.out.println("Start server");
+      embeddedJettyServer.start();
+    } catch (Exception e) {
+      e.printStackTrace();
+      throw e;
+    }
   }
 
   @AfterClass
   public static void cleanUp() throws Exception {
     System.out.println("Shutting down server");
-    embeddedJettyServer.stop();
-    embeddedJettyServer.destroy();
+    if (embeddedJettyServer != null) {
+      embeddedJettyServer.stop();
+      embeddedJettyServer.destroy();
+    }
   }
 
   private static class DelayServlet extends HttpServlet {
