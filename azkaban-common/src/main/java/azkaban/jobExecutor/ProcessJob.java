@@ -40,6 +40,7 @@ public class ProcessJob extends AbstractProcessJob {
   private volatile AzkabanProcess process;
   private static final String MEMCHECK_ENABLED = "memCheck.enabled";
   private static final String MEMCHECK_FREEMEMDECRAMT = "memCheck.freeMemDecrAmt";
+  public static final String AZKABAN_MEMORY_CHECK = "azkaban.memory.check";
 
   public ProcessJob(final String jobId, final Props sysProps,
       final Props jobProps, final Logger log) {
@@ -54,7 +55,7 @@ public class ProcessJob extends AbstractProcessJob {
       handleError("Bad property definition! " + e.getMessage(), e);
     }
 
-    if (sysProps.getBoolean(MEMCHECK_ENABLED, true)) {
+    if (sysProps.getBoolean(MEMCHECK_ENABLED, true) && jobProps.getBoolean(AZKABAN_MEMORY_CHECK, true)) {
       long freeMemDecrAmt = sysProps.getLong(MEMCHECK_FREEMEMDECRAMT, 0);
       Pair<Long, Long> memPair = getProcMemoryRequirement();
       boolean isMemGranted = SystemMemoryInfo.canSystemGrantMemory(memPair.getFirst(), memPair.getSecond(), freeMemDecrAmt);
@@ -122,7 +123,7 @@ public class ProcessJob extends AbstractProcessJob {
    *  
    * @return pair of min/max memory size
    */
-  protected Pair<Long, Long> getProcMemoryRequirement() {
+  protected Pair<Long, Long> getProcMemoryRequirement() throws Exception {
     return new Pair<Long, Long>(0L, 0L);
   }
 

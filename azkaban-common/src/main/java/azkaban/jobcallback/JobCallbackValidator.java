@@ -77,7 +77,6 @@ public class JobCallbackValidator {
       String callbackUrlValue = jobProps.get(callbackUrlKey);
 
       if (callbackUrlValue == null || callbackUrlValue.length() == 0) {
-        // no more needs to done
         break;
       } else {
         String requestMethodKey =

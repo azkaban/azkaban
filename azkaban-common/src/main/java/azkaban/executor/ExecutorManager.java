@@ -45,6 +45,7 @@ import azkaban.event.Event;
 import azkaban.event.Event.Type;
 import azkaban.event.EventHandler;
 import azkaban.project.Project;
+import azkaban.project.ProjectWhitelist;
 import azkaban.scheduler.ScheduleStatisticManager;
 import azkaban.utils.FileIOUtils.JobMetaData;
 import azkaban.utils.FileIOUtils.LogData;
@@ -584,6 +585,10 @@ public class ExecutorManager extends EventHandler implements
                   + ". Will execute concurrently. \n";
         }
       }
+
+      boolean memoryCheck = !ProjectWhitelist.isProjectWhitelisted(exflow.getProjectId(),
+              ProjectWhitelist.WhitelistType.MemoryCheck);
+      options.setMemoryCheck(memoryCheck);
 
       // The exflow id is set by the loader. So it's unavailable until after
       // this call.

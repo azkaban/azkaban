@@ -2,6 +2,7 @@ package azkaban.project.validator;
 
 import java.io.File;
 
+import azkaban.project.Project;
 import azkaban.utils.Props;
 
 /**
@@ -33,5 +34,5 @@ public interface ProjectValidator {
    * @param projectDir
    * @return
    */
-  ValidationReport validateProject(File projectDir);
+  ValidationReport validateProject(Project project, File projectDir);
 }

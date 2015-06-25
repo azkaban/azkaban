@@ -107,7 +107,7 @@ public class JobCallbackValidatorTest {
   }
 
   @Test
-  public void oneBadPostJobCallback() {
+  public void noPostBodyJobCallback() {
     Props jobProps = new Props();
     jobProps.put("job.notification."
         + JobCallbackStatusEnum.FAILURE.name().toLowerCase() + ".1.url",
