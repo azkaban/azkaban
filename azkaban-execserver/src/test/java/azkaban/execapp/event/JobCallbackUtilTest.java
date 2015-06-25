@@ -7,6 +7,7 @@ import static azkaban.jobcallback.JobCallbackConstants.HTTP_POST;
 import static azkaban.jobcallback.JobCallbackConstants.JOB_STATUS_TOKEN;
 import static azkaban.jobcallback.JobCallbackConstants.JOB_TOKEN;
 import static azkaban.jobcallback.JobCallbackConstants.PROJECT_TOKEN;
+import static azkaban.jobcallback.JobCallbackConstants.SERVER_TOKEN;
 
 import java.util.HashMap;
 import java.util.List;
@@ -26,6 +27,7 @@ import azkaban.utils.Props;
 public class JobCallbackUtilTest {
   private static Map<String, String> contextInfo;
 
+  private static final String SERVER_NAME = "localhost:9999";
   private static final String PROJECT_NANE = "PROJECTX";
   private static final String FLOW_NANE = "FLOWX";
   private static final String JOB_NANE = "JOBX";
@@ -34,6 +36,7 @@ public class JobCallbackUtilTest {
   @BeforeClass
   public static void setup() {
     contextInfo = new HashMap<String, String>();
+    contextInfo.put(SERVER_TOKEN, SERVER_NAME);
     contextInfo.put(PROJECT_TOKEN, PROJECT_NANE);
     contextInfo.put(FLOW_TOKEN, FLOW_NANE);
     contextInfo.put(EXECUTION_ID_TOKEN, EXECUTION_ID);
