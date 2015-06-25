@@ -5,6 +5,7 @@ import static azkaban.jobcallback.JobCallbackConstants.FLOW_TOKEN;
 import static azkaban.jobcallback.JobCallbackConstants.JOB_STATUS_TOKEN;
 import static azkaban.jobcallback.JobCallbackConstants.JOB_TOKEN;
 import static azkaban.jobcallback.JobCallbackConstants.PROJECT_TOKEN;
+import static azkaban.jobcallback.JobCallbackConstants.SERVER_TOKEN;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -40,6 +41,7 @@ public class JobCallbackRequestMakerTest {
   private static final String SLEEP_DURATION_PARAM = "sleepDuration";
   private static final String STATUS_CODE_PARAM = "returnedStatusCode";
 
+  private static final String SERVER_NAME = "localhost:9999";
   private static final String PROJECT_NANE = "PROJECTX";
   private static final String FLOW_NANE = "FLOWX";
   private static final String JOB_NANE = "JOBX";
@@ -59,6 +61,7 @@ public class JobCallbackRequestMakerTest {
     jobCBMaker = JobCallbackRequestMaker.getInstance();
 
     contextInfo = new HashMap<String, String>();
+    contextInfo.put(SERVER_TOKEN, SERVER_NAME);
     contextInfo.put(PROJECT_TOKEN, PROJECT_NANE);
     contextInfo.put(FLOW_TOKEN, FLOW_NANE);
     contextInfo.put(EXECUTION_ID_TOKEN, EXECUTION_ID);
