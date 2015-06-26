@@ -19,6 +19,7 @@ import static azkaban.jobcallback.JobCallbackConstants.SERVER_TOKEN;
 import static azkaban.jobcallback.JobCallbackConstants.STATUS_TOKEN;
 
 import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -143,7 +144,7 @@ public class JobCallbackUtil {
         break;
       } else {
         String callbackUrlWithTokenReplaced =
-            replaceToken(callbackUrl, contextInfo);
+            replaceTokens(callbackUrl, contextInfo, true);
 
         String requestMethodKey =
             requestMethod.replace(SEQUENCE_TOKEN, sequenceStr);
@@ -162,7 +163,8 @@ public class JobCallbackUtil {
           } else {
             // put together an URL
             HttpPost httpPost = new HttpPost(callbackUrlWithTokenReplaced);
-            String postActualBody = replaceToken(httpBodyValue, contextInfo);
+            String postActualBody =
+                replaceTokens(httpBodyValue, contextInfo, false);
             privateLogger.info("postActualBody: " + postActualBody);
             httpPost.setEntity(createStringEntity(postActualBody));
             httpRequest = httpPost;
@@ -270,25 +272,52 @@ public class JobCallbackUtil {
   }
 
   /**
-   * Replace the supported tokens in the URL with values in the contextInfo
+   * Replace the supported tokens in the URL with values in the contextInfo.
+   * This will also make sure the values are HTTP encoded.
    * 
-   * @param url
+   * @param value
    * @param contextInfo
-   * @return String - url with tokens replaced with values
+   * @param withEncoding - whether the token values will be HTTP encoded
+   * @return String - value with tokens replaced with values
    */
-  public static String replaceToken(String url, Map<String, String> contextInfo) {
+  public static String replaceTokens(String value,
+      Map<String, String> contextInfo, boolean withEncoding) {
 
-    String result = url;
+    String result = value;
+    String tokenValue =
+        encodeQueryParam(contextInfo.get(SERVER_TOKEN), withEncoding);
+    result = result.replace(SERVER_TOKEN, tokenValue);
 
-    result = result.replace(SERVER_TOKEN, contextInfo.get(SERVER_TOKEN));
-    result = result.replace(PROJECT_TOKEN, contextInfo.get(PROJECT_TOKEN));
-    result = result.replace(FLOW_TOKEN, contextInfo.get(FLOW_TOKEN));
-    result = result.replace(JOB_TOKEN, contextInfo.get(JOB_TOKEN));
-    result =
-        result.replace(EXECUTION_ID_TOKEN, contextInfo.get(EXECUTION_ID_TOKEN));
-    result =
-        result.replace(JOB_STATUS_TOKEN, contextInfo.get(JOB_STATUS_TOKEN));
+    tokenValue = encodeQueryParam(contextInfo.get(PROJECT_TOKEN), withEncoding);
+    result = result.replace(PROJECT_TOKEN, tokenValue);
+
+    tokenValue = encodeQueryParam(contextInfo.get(FLOW_TOKEN), withEncoding);
+    result = result.replace(FLOW_TOKEN, tokenValue);
+
+    tokenValue = encodeQueryParam(contextInfo.get(JOB_TOKEN), withEncoding);
+    result = result.replace(JOB_TOKEN, tokenValue);
+
+    tokenValue =
+        encodeQueryParam(contextInfo.get(EXECUTION_ID_TOKEN), withEncoding);
+    result = result.replace(EXECUTION_ID_TOKEN, tokenValue);
+
+    tokenValue =
+        encodeQueryParam(contextInfo.get(JOB_STATUS_TOKEN), withEncoding);
+
+    result = result.replace(JOB_STATUS_TOKEN, tokenValue);
 
     return result;
+  }
+
+  private static String encodeQueryParam(String str, boolean withEncoding) {
+    if (!withEncoding) {
+      return str;
+    }
+    try {
+      return URLEncoder.encode(str, "UTF-8");
+    } catch (UnsupportedEncodingException e) {
+      throw new IllegalArgumentException(
+          "Encountered problem during encoding:", e);
+    }
   }
 }

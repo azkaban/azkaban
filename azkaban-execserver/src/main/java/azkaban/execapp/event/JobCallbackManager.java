@@ -136,7 +136,7 @@ public class JobCallbackManager implements EventListener {
       return;
     }
 
-    // don't want to waste time resolving properties if there are
+    // don't want to waste time resolving properties if there are no
     // callback properties to parse
     Props props = PropsUtils.resolveProps(jobRunner.getProps());
 

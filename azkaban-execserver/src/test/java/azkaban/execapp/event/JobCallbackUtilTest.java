@@ -9,6 +9,7 @@ import static azkaban.jobcallback.JobCallbackConstants.JOB_TOKEN;
 import static azkaban.jobcallback.JobCallbackConstants.PROJECT_TOKEN;
 import static azkaban.jobcallback.JobCallbackConstants.SERVER_TOKEN;
 
+import java.net.URLEncoder;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -28,20 +29,22 @@ public class JobCallbackUtilTest {
   private static Map<String, String> contextInfo;
 
   private static final String SERVER_NAME = "localhost:9999";
-  private static final String PROJECT_NANE = "PROJECTX";
-  private static final String FLOW_NANE = "FLOWX";
-  private static final String JOB_NANE = "JOBX";
+  private static final String PROJECT_NAME = "PROJECTX";
+  private static final String FLOW_NAME = "FLOWX";
+  private static final String JOB_NAME = "JOBX";
   private static final String EXECUTION_ID = "1234";
+  private static final String JOB_STATUS_NAME = JobCallbackStatusEnum.STARTED
+      .name();
 
   @BeforeClass
   public static void setup() {
     contextInfo = new HashMap<String, String>();
     contextInfo.put(SERVER_TOKEN, SERVER_NAME);
-    contextInfo.put(PROJECT_TOKEN, PROJECT_NANE);
-    contextInfo.put(FLOW_TOKEN, FLOW_NANE);
+    contextInfo.put(PROJECT_TOKEN, PROJECT_NAME);
+    contextInfo.put(FLOW_TOKEN, FLOW_NAME);
     contextInfo.put(EXECUTION_ID_TOKEN, EXECUTION_ID);
-    contextInfo.put(JOB_TOKEN, JOB_NANE);
-    contextInfo.put(JOB_STATUS_TOKEN, JobCallbackStatusEnum.STARTED.name());
+    contextInfo.put(JOB_TOKEN, JOB_NAME);
+    contextInfo.put(JOB_STATUS_TOKEN, JOB_STATUS_NAME);
   }
 
   @Test
@@ -157,18 +160,21 @@ public class JobCallbackUtilTest {
   @Test
   public void noTokenTest() {
     String urlWithNoToken = "http://www.linkedin.com";
-    String result = JobCallbackUtil.replaceToken(urlWithNoToken, contextInfo);
+    String result =
+        JobCallbackUtil.replaceTokens(urlWithNoToken, contextInfo, true);
     Assert.assertEquals(urlWithNoToken, result);
   }
 
   @Test
   public void oneTokenTest() {
 
-    String urlWithOneToken = "http://www.linkedin.com?project=" + PROJECT_TOKEN;
+    String urlWithOneToken =
+        "http://www.linkedin.com?project=" + PROJECT_TOKEN + "&another=yes";
 
-    String result = JobCallbackUtil.replaceToken(urlWithOneToken, contextInfo);
-    Assert.assertEquals("http://www.linkedin.com?project=" + PROJECT_NANE,
-        result);
+    String result =
+        JobCallbackUtil.replaceTokens(urlWithOneToken, contextInfo, true);
+    Assert.assertEquals("http://www.linkedin.com?project=" + PROJECT_NAME
+        + "&another=yes", result);
   }
 
   @Test
@@ -178,9 +184,53 @@ public class JobCallbackUtilTest {
         "http://www.linkedin.com?project=" + PROJECT_TOKEN + "&flow="
             + FLOW_TOKEN;
 
-    String result = JobCallbackUtil.replaceToken(urlWithOneToken, contextInfo);
-    Assert.assertEquals("http://www.linkedin.com?project=" + PROJECT_NANE
-        + "&flow=" + FLOW_NANE, result);
+    String result =
+        JobCallbackUtil.replaceTokens(urlWithOneToken, contextInfo, true);
+    Assert.assertEquals("http://www.linkedin.com?project=" + PROJECT_NAME
+        + "&flow=" + FLOW_NAME, result);
+  }
+
+  @Test
+  public void allTokensTest() {
+
+    String urlWithOneToken =
+        "http://www.linkedin.com?server=" + SERVER_NAME + "&project="
+            + PROJECT_TOKEN + "&flow=" + FLOW_TOKEN + "&executionId="
+            + EXECUTION_ID_TOKEN + "&job=" + JOB_TOKEN + "&status="
+            + JOB_STATUS_TOKEN;
+
+    String result =
+        JobCallbackUtil.replaceTokens(urlWithOneToken, contextInfo, true);
+
+    String expectedResult =
+        "http://www.linkedin.com?server=" + SERVER_NAME + "&project="
+            + PROJECT_NAME + "&flow=" + FLOW_NAME + "&executionId="
+            + EXECUTION_ID + "&job=" + JOB_NAME + "&status=" + JOB_STATUS_NAME;
+
+    Assert.assertEquals(expectedResult, result);
+  }
+
+  @Test
+  public void tokenWithEncoding() throws Exception {
+    String jobNameWithSpaces = "my job";
+    String encodedJobName = URLEncoder.encode(jobNameWithSpaces, "UTF-8");
+
+    Map<String, String> customContextInfo = new HashMap<String, String>();
+    customContextInfo = new HashMap<String, String>();
+    customContextInfo.put(SERVER_TOKEN, SERVER_NAME);
+    customContextInfo.put(PROJECT_TOKEN, PROJECT_NAME);
+    customContextInfo.put(FLOW_TOKEN, FLOW_NAME);
+    customContextInfo.put(EXECUTION_ID_TOKEN, EXECUTION_ID);
+    customContextInfo.put(JOB_TOKEN, jobNameWithSpaces);
+    customContextInfo.put(JOB_STATUS_TOKEN, JOB_STATUS_NAME);
+
+    String urlWithOneToken =
+        "http://www.linkedin.com?job=" + JOB_TOKEN + "&flow=" + FLOW_TOKEN;
+
+    String result =
+        JobCallbackUtil.replaceTokens(urlWithOneToken, customContextInfo, true);
+    Assert.assertEquals("http://www.linkedin.com?job=" + encodedJobName
+        + "&flow=" + FLOW_NAME, result);
   }
 
   @Test
