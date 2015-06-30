@@ -2,6 +2,7 @@ package azkaban.jobcallback;
 
 import static azkaban.jobcallback.JobCallbackConstants.DEFAULT_MAX_CALLBACK_COUNT;
 import static azkaban.jobcallback.JobCallbackConstants.MAX_CALLBACK_COUNT_PROPERTY_KEY;
+import static azkaban.jobcallback.JobCallbackConstants.MAX_POST_BODY_LENGTH_PROPERTY_KEY;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -166,5 +167,38 @@ public class JobCallbackValidatorTest {
         serverProps, jobProps, errors));
 
     Assert.assertEquals(0, errors.size());
+  }
+
+  @Test
+  public void postBodyLengthTooLargeTest() {
+
+    Props jobProps = new Props();
+    jobProps.put("job.notification."
+        + JobCallbackStatusEnum.FAILURE.name().toLowerCase() + ".1.url",
+        "http://www.linkedin.com");
+
+    jobProps.put("job.notification."
+        + JobCallbackStatusEnum.FAILURE.name().toLowerCase() + ".1.method",
+        JobCallbackConstants.HTTP_POST);
+
+    String postBodyValue = "abcdefghijklmnopqrstuvwxyz";
+
+    int postBodyLength = 20;
+    Assert.assertTrue(postBodyValue.length() > postBodyLength);
+    jobProps.put("job.notification."
+        + JobCallbackStatusEnum.FAILURE.name().toLowerCase() + ".1.body",
+        postBodyValue);
+
+    Props localServerProps = new Props();
+    localServerProps.put(MAX_POST_BODY_LENGTH_PROPERTY_KEY, postBodyLength);
+
+    Set<String> errors = new HashSet<String>();
+
+    Assert.assertEquals(0, JobCallbackValidator.validate("bogusJob",
+        localServerProps, jobProps, errors));
+
+    System.out.println(errors);
+    Assert.assertEquals(1, errors.size());
+
   }
 }

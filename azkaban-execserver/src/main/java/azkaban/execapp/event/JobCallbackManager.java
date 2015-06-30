@@ -1,6 +1,6 @@
 package azkaban.execapp.event;
 
-import static azkaban.jobcallback.JobCallbackConstants.JOB_TOKEN;
+import static azkaban.jobcallback.JobCallbackConstants.CONTEXT_JOB_TOKEN;
 import static azkaban.jobcallback.JobCallbackStatusEnum.COMPLETED;
 import static azkaban.jobcallback.JobCallbackStatusEnum.FAILURE;
 import static azkaban.jobcallback.JobCallbackStatusEnum.STARTED;
@@ -162,7 +162,7 @@ public class JobCallbackManager implements EventListener {
       jobCallBackStatusEnum = null; // to be explicit
     }
 
-    String jobId = contextInfo.get(JOB_TOKEN);
+    String jobId = contextInfo.get(CONTEXT_JOB_TOKEN);
 
     if (jobCallBackStatusEnum != null) {
       List<HttpRequestBase> jobCallbackHttpRequests =
@@ -219,7 +219,7 @@ public class JobCallbackManager implements EventListener {
           JobCallbackUtil.parseJobCallbackProperties(props, STARTED,
               contextInfo, maxNumCallBack, jobRunner.getLogger());
 
-      String jobId = contextInfo.get(JOB_TOKEN);
+      String jobId = contextInfo.get(CONTEXT_JOB_TOKEN);
       String msg =
           String.format("Making %d job callbacks for job %s for jobStatus: %s",
               jobCallbackHttpRequests.size(), jobId, STARTED.name());

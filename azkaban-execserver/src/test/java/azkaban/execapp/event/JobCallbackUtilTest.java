@@ -1,13 +1,13 @@
 package azkaban.execapp.event;
 
-import static azkaban.jobcallback.JobCallbackConstants.EXECUTION_ID_TOKEN;
-import static azkaban.jobcallback.JobCallbackConstants.FLOW_TOKEN;
+import static azkaban.jobcallback.JobCallbackConstants.CONTEXT_EXECUTION_ID_TOKEN;
+import static azkaban.jobcallback.JobCallbackConstants.CONTEXT_FLOW_TOKEN;
 import static azkaban.jobcallback.JobCallbackConstants.HTTP_GET;
 import static azkaban.jobcallback.JobCallbackConstants.HTTP_POST;
-import static azkaban.jobcallback.JobCallbackConstants.JOB_STATUS_TOKEN;
-import static azkaban.jobcallback.JobCallbackConstants.JOB_TOKEN;
-import static azkaban.jobcallback.JobCallbackConstants.PROJECT_TOKEN;
-import static azkaban.jobcallback.JobCallbackConstants.SERVER_TOKEN;
+import static azkaban.jobcallback.JobCallbackConstants.CONTEXT_JOB_STATUS_TOKEN;
+import static azkaban.jobcallback.JobCallbackConstants.CONTEXT_JOB_TOKEN;
+import static azkaban.jobcallback.JobCallbackConstants.CONTEXT_PROJECT_TOKEN;
+import static azkaban.jobcallback.JobCallbackConstants.CONTEXT_SERVER_TOKEN;
 
 import java.net.URLEncoder;
 import java.util.HashMap;
@@ -39,12 +39,12 @@ public class JobCallbackUtilTest {
   @BeforeClass
   public static void setup() {
     contextInfo = new HashMap<String, String>();
-    contextInfo.put(SERVER_TOKEN, SERVER_NAME);
-    contextInfo.put(PROJECT_TOKEN, PROJECT_NAME);
-    contextInfo.put(FLOW_TOKEN, FLOW_NAME);
-    contextInfo.put(EXECUTION_ID_TOKEN, EXECUTION_ID);
-    contextInfo.put(JOB_TOKEN, JOB_NAME);
-    contextInfo.put(JOB_STATUS_TOKEN, JOB_STATUS_NAME);
+    contextInfo.put(CONTEXT_SERVER_TOKEN, SERVER_NAME);
+    contextInfo.put(CONTEXT_PROJECT_TOKEN, PROJECT_NAME);
+    contextInfo.put(CONTEXT_FLOW_TOKEN, FLOW_NAME);
+    contextInfo.put(CONTEXT_EXECUTION_ID_TOKEN, EXECUTION_ID);
+    contextInfo.put(CONTEXT_JOB_TOKEN, JOB_NAME);
+    contextInfo.put(CONTEXT_JOB_STATUS_TOKEN, JOB_STATUS_NAME);
   }
 
   @Test
@@ -169,7 +169,7 @@ public class JobCallbackUtilTest {
   public void oneTokenTest() {
 
     String urlWithOneToken =
-        "http://www.linkedin.com?project=" + PROJECT_TOKEN + "&another=yes";
+        "http://www.linkedin.com?project=" + CONTEXT_PROJECT_TOKEN + "&another=yes";
 
     String result =
         JobCallbackUtil.replaceTokens(urlWithOneToken, contextInfo, true);
@@ -181,8 +181,8 @@ public class JobCallbackUtilTest {
   public void twoTokensTest() {
 
     String urlWithOneToken =
-        "http://www.linkedin.com?project=" + PROJECT_TOKEN + "&flow="
-            + FLOW_TOKEN;
+        "http://www.linkedin.com?project=" + CONTEXT_PROJECT_TOKEN + "&flow="
+            + CONTEXT_FLOW_TOKEN;
 
     String result =
         JobCallbackUtil.replaceTokens(urlWithOneToken, contextInfo, true);
@@ -195,9 +195,9 @@ public class JobCallbackUtilTest {
 
     String urlWithOneToken =
         "http://www.linkedin.com?server=" + SERVER_NAME + "&project="
-            + PROJECT_TOKEN + "&flow=" + FLOW_TOKEN + "&executionId="
-            + EXECUTION_ID_TOKEN + "&job=" + JOB_TOKEN + "&status="
-            + JOB_STATUS_TOKEN;
+            + CONTEXT_PROJECT_TOKEN + "&flow=" + CONTEXT_FLOW_TOKEN + "&executionId="
+            + CONTEXT_EXECUTION_ID_TOKEN + "&job=" + CONTEXT_JOB_TOKEN + "&status="
+            + CONTEXT_JOB_STATUS_TOKEN;
 
     String result =
         JobCallbackUtil.replaceTokens(urlWithOneToken, contextInfo, true);
@@ -217,15 +217,15 @@ public class JobCallbackUtilTest {
 
     Map<String, String> customContextInfo = new HashMap<String, String>();
     customContextInfo = new HashMap<String, String>();
-    customContextInfo.put(SERVER_TOKEN, SERVER_NAME);
-    customContextInfo.put(PROJECT_TOKEN, PROJECT_NAME);
-    customContextInfo.put(FLOW_TOKEN, FLOW_NAME);
-    customContextInfo.put(EXECUTION_ID_TOKEN, EXECUTION_ID);
-    customContextInfo.put(JOB_TOKEN, jobNameWithSpaces);
-    customContextInfo.put(JOB_STATUS_TOKEN, JOB_STATUS_NAME);
+    customContextInfo.put(CONTEXT_SERVER_TOKEN, SERVER_NAME);
+    customContextInfo.put(CONTEXT_PROJECT_TOKEN, PROJECT_NAME);
+    customContextInfo.put(CONTEXT_FLOW_TOKEN, FLOW_NAME);
+    customContextInfo.put(CONTEXT_EXECUTION_ID_TOKEN, EXECUTION_ID);
+    customContextInfo.put(CONTEXT_JOB_TOKEN, jobNameWithSpaces);
+    customContextInfo.put(CONTEXT_JOB_STATUS_TOKEN, JOB_STATUS_NAME);
 
     String urlWithOneToken =
-        "http://www.linkedin.com?job=" + JOB_TOKEN + "&flow=" + FLOW_TOKEN;
+        "http://www.linkedin.com?job=" + CONTEXT_JOB_TOKEN + "&flow=" + CONTEXT_FLOW_TOKEN;
 
     String result =
         JobCallbackUtil.replaceTokens(urlWithOneToken, customContextInfo, true);

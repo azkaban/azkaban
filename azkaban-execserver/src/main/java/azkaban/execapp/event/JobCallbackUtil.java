@@ -1,8 +1,8 @@
 package azkaban.execapp.event;
 
-import static azkaban.jobcallback.JobCallbackConstants.EXECUTION_ID_TOKEN;
+import static azkaban.jobcallback.JobCallbackConstants.CONTEXT_EXECUTION_ID_TOKEN;
 import static azkaban.jobcallback.JobCallbackConstants.FIRST_JOB_CALLBACK_URL_TEMPLATE;
-import static azkaban.jobcallback.JobCallbackConstants.FLOW_TOKEN;
+import static azkaban.jobcallback.JobCallbackConstants.CONTEXT_FLOW_TOKEN;
 import static azkaban.jobcallback.JobCallbackConstants.HEADER_ELEMENT_DELIMITER;
 import static azkaban.jobcallback.JobCallbackConstants.HEADER_NAME_VALUE_DELIMITER;
 import static azkaban.jobcallback.JobCallbackConstants.HTTP_GET;
@@ -11,11 +11,11 @@ import static azkaban.jobcallback.JobCallbackConstants.JOB_CALLBACK_BODY_TEMPLAT
 import static azkaban.jobcallback.JobCallbackConstants.JOB_CALLBACK_REQUEST_HEADERS_TEMPLATE;
 import static azkaban.jobcallback.JobCallbackConstants.JOB_CALLBACK_REQUEST_METHOD_TEMPLATE;
 import static azkaban.jobcallback.JobCallbackConstants.JOB_CALLBACK_URL_TEMPLATE;
-import static azkaban.jobcallback.JobCallbackConstants.JOB_STATUS_TOKEN;
-import static azkaban.jobcallback.JobCallbackConstants.JOB_TOKEN;
-import static azkaban.jobcallback.JobCallbackConstants.PROJECT_TOKEN;
+import static azkaban.jobcallback.JobCallbackConstants.CONTEXT_JOB_STATUS_TOKEN;
+import static azkaban.jobcallback.JobCallbackConstants.CONTEXT_JOB_TOKEN;
+import static azkaban.jobcallback.JobCallbackConstants.CONTEXT_PROJECT_TOKEN;
 import static azkaban.jobcallback.JobCallbackConstants.SEQUENCE_TOKEN;
-import static azkaban.jobcallback.JobCallbackConstants.SERVER_TOKEN;
+import static azkaban.jobcallback.JobCallbackConstants.CONTEXT_SERVER_TOKEN;
 import static azkaban.jobcallback.JobCallbackConstants.STATUS_TOKEN;
 
 import java.io.UnsupportedEncodingException;
@@ -25,6 +25,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 import org.apache.http.Header;
 import org.apache.http.client.methods.HttpGet;
@@ -159,7 +160,7 @@ public class JobCallbackUtil {
             // update the wiki about skipping callback url if body is missing
             privateLogger.warn("Missing value for key: " + postBodyKey
                 + " skipping job callback '" + callbackUrl + " for job "
-                + contextInfo.get(JOB_TOKEN));
+                + contextInfo.get(CONTEXT_JOB_TOKEN));
           } else {
             // put together an URL
             HttpPost httpPost = new HttpPost(callbackUrlWithTokenReplaced);
@@ -219,7 +220,7 @@ public class JobCallbackUtil {
 
   private static String replaceStatusToken(String template,
       JobCallbackStatusEnum status) {
-    return template.replace(STATUS_TOKEN, status.name().toLowerCase());
+    return template.replaceFirst(STATUS_TOKEN, status.name().toLowerCase());
   }
 
   private static StringEntity createStringEntity(String str) {
@@ -250,12 +251,12 @@ public class JobCallbackUtil {
       String jobId = node.getId();
 
       Map<String, String> result = new HashMap<String, String>();
-      result.put(SERVER_TOKEN, server);
-      result.put(PROJECT_TOKEN, projectName);
-      result.put(FLOW_TOKEN, flowName);
-      result.put(EXECUTION_ID_TOKEN, executionId);
-      result.put(JOB_TOKEN, jobId);
-      result.put(JOB_STATUS_TOKEN, node.getStatus().name().toLowerCase());
+      result.put(CONTEXT_SERVER_TOKEN, server);
+      result.put(CONTEXT_PROJECT_TOKEN, projectName);
+      result.put(CONTEXT_FLOW_TOKEN, flowName);
+      result.put(CONTEXT_EXECUTION_ID_TOKEN, executionId);
+      result.put(CONTEXT_JOB_TOKEN, jobId);
+      result.put(CONTEXT_JOB_STATUS_TOKEN, node.getStatus().name().toLowerCase());
 
       /*
        * if (node.getStatus() == Status.SUCCEEDED || node.getStatus() ==
@@ -285,26 +286,26 @@ public class JobCallbackUtil {
 
     String result = value;
     String tokenValue =
-        encodeQueryParam(contextInfo.get(SERVER_TOKEN), withEncoding);
-    result = result.replace(SERVER_TOKEN, tokenValue);
+        encodeQueryParam(contextInfo.get(CONTEXT_SERVER_TOKEN), withEncoding);
+    result = result.replaceFirst(Pattern.quote(CONTEXT_SERVER_TOKEN), tokenValue);
 
-    tokenValue = encodeQueryParam(contextInfo.get(PROJECT_TOKEN), withEncoding);
-    result = result.replace(PROJECT_TOKEN, tokenValue);
+    tokenValue = encodeQueryParam(contextInfo.get(CONTEXT_PROJECT_TOKEN), withEncoding);
+    result = result.replaceFirst(Pattern.quote(CONTEXT_PROJECT_TOKEN), tokenValue);
 
-    tokenValue = encodeQueryParam(contextInfo.get(FLOW_TOKEN), withEncoding);
-    result = result.replace(FLOW_TOKEN, tokenValue);
+    tokenValue = encodeQueryParam(contextInfo.get(CONTEXT_FLOW_TOKEN), withEncoding);
+    result = result.replaceFirst(Pattern.quote(CONTEXT_FLOW_TOKEN), tokenValue);
 
-    tokenValue = encodeQueryParam(contextInfo.get(JOB_TOKEN), withEncoding);
-    result = result.replace(JOB_TOKEN, tokenValue);
-
-    tokenValue =
-        encodeQueryParam(contextInfo.get(EXECUTION_ID_TOKEN), withEncoding);
-    result = result.replace(EXECUTION_ID_TOKEN, tokenValue);
+    tokenValue = encodeQueryParam(contextInfo.get(CONTEXT_JOB_TOKEN), withEncoding);
+    result = result.replaceFirst(Pattern.quote(CONTEXT_JOB_TOKEN), tokenValue);
 
     tokenValue =
-        encodeQueryParam(contextInfo.get(JOB_STATUS_TOKEN), withEncoding);
+        encodeQueryParam(contextInfo.get(CONTEXT_EXECUTION_ID_TOKEN), withEncoding);
+    result = result.replaceFirst(Pattern.quote(CONTEXT_EXECUTION_ID_TOKEN), tokenValue);
 
-    result = result.replace(JOB_STATUS_TOKEN, tokenValue);
+    tokenValue =
+        encodeQueryParam(contextInfo.get(CONTEXT_JOB_STATUS_TOKEN), withEncoding);
+
+    result = result.replaceFirst(Pattern.quote(CONTEXT_JOB_STATUS_TOKEN), tokenValue);
 
     return result;
   }

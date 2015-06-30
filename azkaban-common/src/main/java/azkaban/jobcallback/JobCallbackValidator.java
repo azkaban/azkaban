@@ -1,10 +1,12 @@
 package azkaban.jobcallback;
 
+import static azkaban.jobcallback.JobCallbackConstants.DEFAULT_POST_BODY_LENGTH;
 import static azkaban.jobcallback.JobCallbackConstants.HTTP_GET;
 import static azkaban.jobcallback.JobCallbackConstants.HTTP_POST;
 import static azkaban.jobcallback.JobCallbackConstants.JOB_CALLBACK_BODY_TEMPLATE;
 import static azkaban.jobcallback.JobCallbackConstants.JOB_CALLBACK_REQUEST_METHOD_TEMPLATE;
 import static azkaban.jobcallback.JobCallbackConstants.JOB_CALLBACK_URL_TEMPLATE;
+import static azkaban.jobcallback.JobCallbackConstants.MAX_POST_BODY_LENGTH_PROPERTY_KEY;
 import static azkaban.jobcallback.JobCallbackConstants.SEQUENCE_TOKEN;
 import static azkaban.jobcallback.JobCallbackConstants.STATUS_TOKEN;
 
@@ -41,10 +43,15 @@ public class JobCallbackValidator {
             JobCallbackConstants.MAX_CALLBACK_COUNT_PROPERTY_KEY,
             JobCallbackConstants.DEFAULT_MAX_CALLBACK_COUNT);
 
+    int maxPostBodyLength =
+        serverProps.getInt(MAX_POST_BODY_LENGTH_PROPERTY_KEY,
+            DEFAULT_POST_BODY_LENGTH);
+
     int totalCallbackCount = 0;
     for (JobCallbackStatusEnum jobStatus : JobCallbackStatusEnum.values()) {
       totalCallbackCount +=
-          validateBasedOnStatus(jobProps, errors, jobStatus, maxNumCallback);
+          validateBasedOnStatus(jobProps, errors, jobStatus, maxNumCallback,
+              maxPostBodyLength);
     }
 
     logger.info("Found " + totalCallbackCount + " job callbacks for job "
@@ -54,44 +61,48 @@ public class JobCallbackValidator {
 
   private static int validateBasedOnStatus(Props jobProps,
       Collection<String> errors, JobCallbackStatusEnum jobStatus,
-      int maxNumCallback) {
+      int maxNumCallback, int maxPostBodyLength) {
 
     int callbackCount = 0;
     // replace property templates with status
     String jobCallBackUrl =
-        JOB_CALLBACK_URL_TEMPLATE.replace(STATUS_TOKEN, jobStatus.name()
+        JOB_CALLBACK_URL_TEMPLATE.replaceFirst(STATUS_TOKEN, jobStatus.name()
             .toLowerCase());
 
     String requestMethod =
-        JOB_CALLBACK_REQUEST_METHOD_TEMPLATE.replace(STATUS_TOKEN, jobStatus
-            .name().toLowerCase());
+        JOB_CALLBACK_REQUEST_METHOD_TEMPLATE.replaceFirst(STATUS_TOKEN,
+            jobStatus.name().toLowerCase());
 
     String httpBody =
-        JOB_CALLBACK_BODY_TEMPLATE.replace(STATUS_TOKEN, jobStatus.name()
+        JOB_CALLBACK_BODY_TEMPLATE.replaceFirst(STATUS_TOKEN, jobStatus.name()
             .toLowerCase());
 
     for (int i = 1; i <= maxNumCallback; i++) {
       // callback url
       String callbackUrlKey =
-          jobCallBackUrl.replace(SEQUENCE_TOKEN, Integer.toString(i));
+          jobCallBackUrl.replaceFirst(SEQUENCE_TOKEN, Integer.toString(i));
       String callbackUrlValue = jobProps.get(callbackUrlKey);
 
       if (callbackUrlValue == null || callbackUrlValue.length() == 0) {
         break;
       } else {
         String requestMethodKey =
-            requestMethod.replace(SEQUENCE_TOKEN, Integer.toString(i));
+            requestMethod.replaceFirst(SEQUENCE_TOKEN, Integer.toString(i));
 
         String methodValue = jobProps.getString(requestMethodKey, HTTP_GET);
 
         if (HTTP_POST.equals(methodValue)) {
           // now try to get the post body
           String postBodyKey =
-              httpBody.replace(SEQUENCE_TOKEN, Integer.toString(i));
+              httpBody.replaceFirst(SEQUENCE_TOKEN, Integer.toString(i));
           String postBodyValue = jobProps.get(postBodyKey);
           if (postBodyValue == null || postBodyValue.length() == 0) {
             errors.add("No POST body was specified for job callback '"
                 + callbackUrlValue + "'");
+          } else if (postBodyValue.length() > maxPostBodyLength) {
+            errors.add("POST body length is : " + postBodyValue.length()
+                + " which is larger than supported length of "
+                + maxPostBodyLength);
           } else {
             callbackCount++;
           }

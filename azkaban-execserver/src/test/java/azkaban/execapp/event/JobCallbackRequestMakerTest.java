@@ -1,11 +1,11 @@
 package azkaban.execapp.event;
 
-import static azkaban.jobcallback.JobCallbackConstants.EXECUTION_ID_TOKEN;
-import static azkaban.jobcallback.JobCallbackConstants.FLOW_TOKEN;
-import static azkaban.jobcallback.JobCallbackConstants.JOB_STATUS_TOKEN;
-import static azkaban.jobcallback.JobCallbackConstants.JOB_TOKEN;
-import static azkaban.jobcallback.JobCallbackConstants.PROJECT_TOKEN;
-import static azkaban.jobcallback.JobCallbackConstants.SERVER_TOKEN;
+import static azkaban.jobcallback.JobCallbackConstants.CONTEXT_EXECUTION_ID_TOKEN;
+import static azkaban.jobcallback.JobCallbackConstants.CONTEXT_FLOW_TOKEN;
+import static azkaban.jobcallback.JobCallbackConstants.CONTEXT_JOB_STATUS_TOKEN;
+import static azkaban.jobcallback.JobCallbackConstants.CONTEXT_JOB_TOKEN;
+import static azkaban.jobcallback.JobCallbackConstants.CONTEXT_PROJECT_TOKEN;
+import static azkaban.jobcallback.JobCallbackConstants.CONTEXT_SERVER_TOKEN;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -62,12 +62,12 @@ public class JobCallbackRequestMakerTest {
       jobCBMaker = JobCallbackRequestMaker.getInstance();
 
       contextInfo = new HashMap<String, String>();
-      contextInfo.put(SERVER_TOKEN, SERVER_NAME);
-      contextInfo.put(PROJECT_TOKEN, PROJECT_NANE);
-      contextInfo.put(FLOW_TOKEN, FLOW_NANE);
-      contextInfo.put(EXECUTION_ID_TOKEN, EXECUTION_ID);
-      contextInfo.put(JOB_TOKEN, JOB_NANE);
-      contextInfo.put(JOB_STATUS_TOKEN, JobCallbackStatusEnum.STARTED.name());
+      contextInfo.put(CONTEXT_SERVER_TOKEN, SERVER_NAME);
+      contextInfo.put(CONTEXT_PROJECT_TOKEN, PROJECT_NANE);
+      contextInfo.put(CONTEXT_FLOW_TOKEN, FLOW_NANE);
+      contextInfo.put(CONTEXT_EXECUTION_ID_TOKEN, EXECUTION_ID);
+      contextInfo.put(CONTEXT_JOB_TOKEN, JOB_NANE);
+      contextInfo.put(CONTEXT_JOB_STATUS_TOKEN, JobCallbackStatusEnum.STARTED.name());
 
       embeddedJettyServer = new Server(PORT_NUMBER);
 
