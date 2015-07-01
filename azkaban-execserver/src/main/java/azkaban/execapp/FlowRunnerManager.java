@@ -43,7 +43,6 @@ import azkaban.execapp.event.FlowWatcher;
 import azkaban.execapp.event.LocalFlowWatcher;
 import azkaban.execapp.event.RemoteFlowWatcher;
 import azkaban.execapp.metric.NumFailedFlowMetric;
-import azkaban.execapp.metric.NumFailedJobMetric;
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutionOptions;
 import azkaban.executor.ExecutorLoader;
@@ -316,8 +315,9 @@ public class FlowRunnerManager implements EventListener,
             wait(RECENTLY_FINISHED_TIME_TO_LIVE);
           } catch (InterruptedException e) {
             logger.info("Interrupted. Probably to shut down.");
-          } catch (Throwable t){
-            logger.warn("Uncaught throwable, please look into why it is not caught", t);
+          } catch (Throwable t) {
+            logger.warn(
+                "Uncaught throwable, please look into why it is not caught", t);
           }
         }
       }
@@ -517,6 +517,7 @@ public class FlowRunnerManager implements EventListener,
 
   /**
    * Configure Azkaban metrics tracking for a new flowRunner instance
+   * 
    * @param flowRunner
    */
   private void configureFlowLevelMetrics(FlowRunner flowRunner) {
@@ -524,10 +525,11 @@ public class FlowRunnerManager implements EventListener,
 
     if (MetricReportManager.isAvailable()) {
       MetricReportManager metricManager = MetricReportManager.getInstance();
-      //Adding NumFailedFlow Metric listener
+      // Adding NumFailedFlow Metric listener
       flowRunner.addListener((NumFailedFlowMetric) metricManager
           .getMetricFromName(NumFailedFlowMetric.NUM_FAILED_FLOW_METRIC_NAME));
     }
+
   }
 
   private void setupFlow(ExecutableFlow flow) throws ExecutorManagerException {

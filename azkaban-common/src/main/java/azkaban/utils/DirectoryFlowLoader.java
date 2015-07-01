@@ -36,6 +36,7 @@ import azkaban.flow.Flow;
 import azkaban.flow.FlowProps;
 import azkaban.flow.Node;
 import azkaban.flow.SpecialJobTypes;
+import azkaban.jobcallback.JobCallbackValidator;
 import azkaban.project.Project;
 import azkaban.project.ProjectWhitelist;
 import azkaban.project.validator.ProjectValidator;
@@ -115,6 +116,7 @@ public class DirectoryFlowLoader implements ProjectValidator {
 
     // Resolve embedded flows
     resolveEmbeddedFlows();
+
   }
 
   private void loadProjectFromDir(String base, File dir, Props parent) {
@@ -379,9 +381,10 @@ public class DirectoryFlowLoader implements ProjectValidator {
   }
 
   private void jobPropertiesCheck(Project project) {
-    //if project is in the memory check whitelist, then we don't need to check its memory settings
+    // if project is in the memory check whitelist, then we don't need to check
+    // its memory settings
     if (ProjectWhitelist.isProjectWhitelisted(project.getId(),
-            ProjectWhitelist.WhitelistType.MemoryCheck)) {
+        ProjectWhitelist.WhitelistType.MemoryCheck)) {
       return;
     }
 
@@ -391,19 +394,25 @@ public class DirectoryFlowLoader implements ProjectValidator {
     long sizeMaxXmx = Utils.parseMemString(maxXmx);
 
     for (String jobName : jobPropsMap.keySet()) {
+
       Props jobProps = jobPropsMap.get(jobName);
       String xms = jobProps.getString(XMS, null);
-      if (xms != null && !PropsUtils.isVarialbeReplacementPattern(xms) 
-              && Utils.parseMemString(xms) > sizeMaxXms) {
-        errors.add(String.format("%s: Xms value has exceeded the allowed limit (max Xms = %s)",
-                jobName, maxXms));
+      if (xms != null && !PropsUtils.isVarialbeReplacementPattern(xms)
+          && Utils.parseMemString(xms) > sizeMaxXms) {
+        errors.add(String.format(
+            "%s: Xms value has exceeded the allowed limit (max Xms = %s)",
+            jobName, maxXms));
       }
       String xmx = jobProps.getString(XMX, null);
       if (xmx != null && !PropsUtils.isVarialbeReplacementPattern(xmx)
-              && Utils.parseMemString(xmx) > sizeMaxXmx) {
-        errors.add(String.format("%s: Xmx value has exceeded the allowed limit (max Xmx = %s)",
-                jobName, maxXmx));
+          && Utils.parseMemString(xmx) > sizeMaxXmx) {
+        errors.add(String.format(
+            "%s: Xmx value has exceeded the allowed limit (max Xmx = %s)",
+            jobName, maxXmx));
       }
+
+      // job callback properties check
+      JobCallbackValidator.validate(jobName, props, jobProps, errors);
     }
   }
 
