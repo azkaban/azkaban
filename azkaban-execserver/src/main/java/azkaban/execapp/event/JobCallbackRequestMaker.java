@@ -145,7 +145,7 @@ public class JobCallbackRequestMaker {
 
       HttpRequestFutureTask<Integer> task =
           futureRequestExecutionService.execute(httpRequest,
-              HttpClientContext.create(), new LoggingResonseHandler(logger));
+              HttpClientContext.create(), new LoggingResponseHandler(logger));
 
       try {
         // get with timeout
@@ -181,11 +181,12 @@ public class JobCallbackRequestMaker {
    * @author hluu
    *
    */
-  private final class LoggingResonseHandler implements ResponseHandler<Integer> {
+  private final class LoggingResponseHandler implements
+      ResponseHandler<Integer> {
 
     private Logger logger;
 
-    public LoggingResonseHandler(Logger logger) {
+    public LoggingResponseHandler(Logger logger) {
       if (logger == null) {
         throw new NullPointerException("Argument logger can't be null");
       }
