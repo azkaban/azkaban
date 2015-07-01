@@ -58,6 +58,11 @@ public class JobCallbackRequestMaker {
     if (props == null) {
       throw new NullPointerException("props argument can't be null");
     }
+
+    if (isInitialized) {
+      return;
+    }
+
     instance = new JobCallbackRequestMaker(props);
     isInitialized = true;
     logger.info("Initialization for " + JobCallbackRequestMaker.class.getName()

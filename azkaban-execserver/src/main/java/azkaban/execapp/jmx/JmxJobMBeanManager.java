@@ -104,7 +104,7 @@ public class JmxJobMBeanManager implements JmxJobMXBean, EventListener {
       ExecutableNode node = jobRunner.getNode();
 
       if (logger.isDebugEnabled()) {
-        logger.info("*** got " + event.getType() + " " + node.getId() + " "
+        logger.debug("*** got " + event.getType() + " " + node.getId() + " "
             + event.getRunner().getClass().getName() + " status: "
             + node.getStatus());
       }

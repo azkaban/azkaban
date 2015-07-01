@@ -77,11 +77,20 @@ public class JobCallbackValidator {
         JOB_CALLBACK_BODY_TEMPLATE.replaceFirst(STATUS_TOKEN, jobStatus.name()
             .toLowerCase());
 
-    for (int i = 1; i <= maxNumCallback; i++) {
+    for (int i = 0; i <= maxNumCallback; i++) {
       // callback url
       String callbackUrlKey =
           jobCallBackUrl.replaceFirst(SEQUENCE_TOKEN, Integer.toString(i));
       String callbackUrlValue = jobProps.get(callbackUrlKey);
+
+      // sequence number should start at 1, this is to check for sequence
+      // number that starts a 0
+      if (i == 0) {
+        if (callbackUrlValue != null) {
+          errors.add("Sequence number starts at 1, not 0");
+        }
+        continue;
+      }
 
       if (callbackUrlValue == null || callbackUrlValue.length() == 0) {
         break;

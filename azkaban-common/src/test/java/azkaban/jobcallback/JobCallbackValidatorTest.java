@@ -35,6 +35,25 @@ public class JobCallbackValidatorTest {
   }
 
   @Test
+  public void sequenceStartWithZeroProps() {
+    Props jobProps = new Props();
+    Set<String> errors = new HashSet<String>();
+
+    jobProps.put("job.notification."
+        + JobCallbackStatusEnum.FAILURE.name().toLowerCase() + ".0.url",
+        "http://www.linkedin.com");
+
+    jobProps.put("job.notification."
+        + JobCallbackStatusEnum.COMPLETED.name().toLowerCase() + ".1.url",
+        "http://www.linkedin.com");
+
+    Assert.assertEquals(1, JobCallbackValidator.validate("bogusJob",
+        serverProps, jobProps, errors));
+
+    Assert.assertEquals(1, errors.size());
+  }
+
+  @Test
   public void oneGetJobCallback() {
     Props jobProps = new Props();
     jobProps.put("job.notification."

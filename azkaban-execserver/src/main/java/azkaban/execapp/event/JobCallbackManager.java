@@ -61,6 +61,11 @@ public class JobCallbackManager implements EventListener {
       { SUCCESS, FAILURE, COMPLETED };
 
   public static void initialize(Props props) {
+    if (isInitialized) {
+      logger.info("Already initialized");
+      return;
+    }
+
     logger.info("Initializing");
     instance = new JobCallbackManager(props);
 
