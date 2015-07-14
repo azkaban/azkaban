@@ -295,6 +295,7 @@ public class TriggerManager extends EventHandler implements
             t.updateNextCheckTime();
           }
         } catch (Throwable th) {
+          //skip this trigger, moving on to the next one
           logger.error("Failed to process trigger with id : " + t.getTriggerId(), th);
         }
       }
