@@ -667,7 +667,7 @@ public class AzkabanWebServer extends AzkabanServer {
    * @param args
    */
   public static void main(String[] args) throws Exception {
-    logger.error("Starting Jetty Azkaban Executor...");
+    logger.info("Starting Jetty Azkaban Web Server...");
     Props azkabanSettings = AzkabanServer.loadProps(args);
 
     if (azkabanSettings == null) {
