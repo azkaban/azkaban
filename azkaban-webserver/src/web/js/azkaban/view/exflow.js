@@ -441,11 +441,12 @@ var updaterFunction = function() {
 		if (data.status == "UNKNOWN" ||
 			data.status == "WAITING" ||
 			data.status == "PREPARING") {
-			setTimeout(function() {updaterFunction();}, 1000);
+			// 2 min updates
+			setTimeout(function() {updaterFunction();}, 2*60*1000);
 		}
 		else if (data.status != "SUCCEEDED" && data.status != "FAILED") {
-			// 5 sec updates
-			setTimeout(function() {updaterFunction();}, 5000);
+			// 2 min updates
+			setTimeout(function() {updaterFunction();}, 2*60*1000);
 		}
 		else {
 			console.log("Flow finished, so no more updates");
@@ -464,9 +465,9 @@ var logUpdaterFunction = function() {
 			oldData.status != "FAILED" &&
 			oldData.status != "KILLED";
 	if (keepRunning) {
-		// update every 30 seconds for the logs until finished
+		// update every 2 min for the logs until finished
 		flowLogView.handleUpdate();
-		setTimeout(function() {logUpdaterFunction();}, 30000);
+		setTimeout(function() {logUpdaterFunction();}, 2*60*1000);
 	}
 	else {
 		flowLogView.handleUpdate();
