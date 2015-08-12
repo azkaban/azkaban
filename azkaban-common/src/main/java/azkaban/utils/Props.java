@@ -809,6 +809,24 @@ public class Props {
 
     p.store(out, null);
   }
+  
+  /**
+   * Returns a map of all the flattened properties 
+   *
+   * @Return
+   */
+  public Map<String,String> getFlattened(){
+    Map<String,String> returnVal = new HashMap<String,String>();
+    // to keep the logic in sync with the rest piece of code,
+    // when there is a conflict, value from the child takes the priority.
+    for (Props curr = this; curr != null; curr = curr.getParent()) {
+      for (String key : curr.localKeySet()) {
+          returnVal.putIfAbsent(key, curr.get(key));
+        }
+      }
+
+    return returnVal;    
+  }
 
   /**
    * Get a map of all properties by string prefix

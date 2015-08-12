@@ -69,6 +69,9 @@ public abstract class LongArgJob extends AbstractProcessJob {
 
     File[] propFiles = initPropsFiles();
 
+    // print out the Job properties to the job log.
+    info("Job properties:" + this.jobProps.getFlattened());
+
     boolean success = false;
     this.process = builder.build();
     try {
