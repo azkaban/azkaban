@@ -34,6 +34,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
+import java.util.TreeMap;
 
 import org.apache.log4j.Logger;
 
@@ -816,7 +817,11 @@ public class Props {
    * @Return
    */
   public Map<String,String> getFlattened(){
-    Map<String,String> returnVal = new HashMap<String,String>();
+
+    // creating a treeMap here so that the flattened list can be sorted
+    // alphabetically by the key value.
+    Map<String,String> returnVal = new TreeMap<String,String>();
+
     // to keep the logic in sync with the rest piece of code,
     // when there is a conflict, value from the child takes the priority.
     for (Props curr = this; curr != null; curr = curr.getParent()) {

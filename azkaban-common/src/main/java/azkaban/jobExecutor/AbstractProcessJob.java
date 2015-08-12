@@ -43,6 +43,8 @@ public abstract class AbstractProcessJob extends AbstractJob {
   public static final String JOB_PROP_ENV = "JOB_PROP_FILE";
   public static final String JOB_NAME_ENV = "JOB_NAME";
   public static final String JOB_OUTPUT_PROP_FILE = "JOB_OUTPUT_PROP_FILE";
+  private static final String SENSITIVE_JOB_PROP_NAME_SURFFIX = "_X";
+  private static final String SENSITIVE_JOB_PROP_VALUE_PLACEHOLDER = "[MASKED]";
 
   protected final String _jobPath;
 
@@ -81,6 +83,24 @@ public abstract class AbstractProcessJob extends AbstractJob {
     jobProps = PropsUtils.resolveProps(jobProps);
   }
 
+  /**
+   * prints the current Job props to the Job log.
+   */
+  protected void logJobProperties() {
+    Map<String,String> flattenedProps = this.jobProps.getFlattened();
+    this.info("******   Job properties   ******");
+    this.info(String.format("- Note : value is masked if property name ends with '%s'.",
+                SENSITIVE_JOB_PROP_NAME_SURFFIX ));
+    for(Map.Entry<String, String> entry : flattenedProps.entrySet()){
+      String key = entry.getKey();
+      String value = key.endsWith(SENSITIVE_JOB_PROP_NAME_SURFFIX)?
+                                  SENSITIVE_JOB_PROP_VALUE_PLACEHOLDER :
+                                  entry.getValue();
+      this.info(String.format("%s=%s",key,value));
+    }
+    this.info("****** End Job properties  ******");
+  }
+
   @Override
   public Props getJobGeneratedProperties() {
     return generatedProperties;
@@ -101,7 +121,6 @@ public abstract class AbstractProcessJob extends AbstractJob {
 
     files[1] = createOutputPropsFile(getId(), _cwd);
     jobProps.put(ENV_PREFIX + JOB_OUTPUT_PROP_FILE, files[1].getAbsolutePath());
-
     return files;
   }
 

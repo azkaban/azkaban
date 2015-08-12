@@ -159,6 +159,18 @@ public class PropsUtilsTest {
     Assert.assertEquals(5,set.size());
     Assert.assertEquals("value5", set.get("test5"));
     Assert.assertEquals("value1.1", set.get("test1"));
+
+    // verify when iterating the elements are sorted by the key value.
+    Props props2 = new Props();
+    props2.put("2","2");
+    props2.put("0","0");
+    props2.put("1","1");
+    set = props2.getFlattened();
+    int index = 0 ;
+    for (Map.Entry<String, String> item : set.entrySet())
+    {
+      Assert.assertEquals(item.getKey(),Integer.toString(index++));
+    }
   }
 
   @Test
