@@ -148,6 +148,8 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
         handleFlowPage(req, resp, session);
       } else if (hasParam(req, "delete")) {
         handleRemoveProject(req, resp, session);
+      } else if (hasParam(req, "purge")) {
+        handlePurgeProject(req, resp, session);
       } else if (hasParam(req, "download")) {
         handleDownloadProject(req, resp, session);
       } else {
@@ -517,6 +519,50 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
     }
 
   }
+
+    /**
+     * validate readiness of a project and user permission and use
+     * projectManager to purge the project if things looks good
+     **/
+    private void handlePurgeProject(HttpServletRequest req,
+        HttpServletResponse resp, Session session) throws ServletException,
+        IOException {
+        User user = session.getUser();
+        String projectName = getParam(req, "project");
+        HashMap<String, Object> ret = new HashMap<String, Object>();
+        boolean valid = true;
+
+        Project project = projectManager.getProject(projectName);
+        if (project != null) {
+            ret.put("error", "Project " + projectName
+                + " should be deleted before purging");
+            valid = false;
+        }
+
+        // project is already deleted
+        if (valid) {
+            project = projectManager.getInactiveProject(projectName);
+            // only eligible users can purge a project
+            if (!hasPermission(project, user, Type.ADMIN)) {
+                ret.put("error", "Cannot purge. User '" + user.getUserId()
+                    + "' is not an ADMIN.");
+                valid = false;
+                ;
+            }
+        }
+
+        if (valid) {
+            try {
+                projectManager.purgeProject(project, user);
+            } catch (ProjectManagerException e) {
+                ret.put("error", e.getMessage());
+                valid = false;
+            }
+        }
+
+        ret.put("success", valid);
+        this.writeJSON(resp, ret);
+    }
 
   private void handleRemoveProject(HttpServletRequest req,
       HttpServletResponse resp, Session session) throws ServletException,

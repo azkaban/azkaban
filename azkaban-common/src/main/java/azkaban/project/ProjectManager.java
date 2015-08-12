@@ -204,6 +204,34 @@ public class ProjectManager {
     return projectsById.get(id);
   }
 
+    /**
+     * fetch inactive project from db by project_id
+     *
+     * @param name
+     * @return
+     */
+    public Project getInactiveProject(String name) {
+        try {
+            return projectLoader.fetchProjectByName(name);
+        } catch (ProjectManagerException e) {
+            throw new RuntimeException("Could not load project from store.", e);
+        }
+    }
+
+    /**
+     * fetch inactive project from db by project_name
+     *
+     * @param name
+     * @return
+     */
+    public Project getInactiveProject(int id) {
+        try {
+            return projectLoader.fetchProjectById(id);
+        } catch (ProjectManagerException e) {
+            throw new RuntimeException("Could not load project from store.", e);
+        }
+    }
+
   public Project createProject(String projectName, String description,
       User creator) throws ProjectManagerException {
     if (projectName == null || projectName.trim().isEmpty()) {
@@ -248,6 +276,25 @@ public class ProjectManager {
 
     return newProject;
   }
+
+    /**
+     * Permanently delete all project files and properties data for all versions
+     * of a project and log event in project_events table
+     *
+     * @param project
+     * @param deleter
+     * @return
+     * @throws ProjectManagerException
+     */
+    public synchronized Project purgeProject(Project project, User deleter)
+        throws ProjectManagerException {
+        projectLoader.cleanOlderProjectVersion(project.getId(),
+            project.getVersion() + 1);
+        projectLoader
+            .postEvent(project, EventType.PURGE, deleter.getUserId(), String
+                .format("Purged versions before %d", project.getVersion() + 1));
+        return project;
+    }
 
   public synchronized Project removeProject(Project project, User deleter)
       throws ProjectManagerException {
