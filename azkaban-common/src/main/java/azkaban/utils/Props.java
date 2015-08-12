@@ -809,9 +809,9 @@ public class Props {
 
     p.store(out, null);
   }
-  
+
   /**
-   * Returns a map of all the flattened properties 
+   * Returns a map of all the flattened properties
    *
    * @Return
    */
@@ -821,11 +821,13 @@ public class Props {
     // when there is a conflict, value from the child takes the priority.
     for (Props curr = this; curr != null; curr = curr.getParent()) {
       for (String key : curr.localKeySet()) {
-          returnVal.putIfAbsent(key, curr.get(key));
+          if (!returnVal.containsKey(key)){
+            returnVal.put(key, curr.get(key));
+          }
         }
       }
 
-    return returnVal;    
+    return returnVal;
   }
 
   /**
