@@ -172,7 +172,7 @@ public class JavaProcessJob extends ProcessJob {
 
       if (xmx > sizeMaxXmx) {
         throw new Exception(String.format("%s: Xmx value has exceeded the allowed limit (max Xmx = %s)",
-                getId(), maxXms));
+                getId(), maxXmx));
       }
     }
 
