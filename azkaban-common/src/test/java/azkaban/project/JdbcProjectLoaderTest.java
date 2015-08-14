@@ -244,7 +244,7 @@ public class JdbcProjectLoaderTest {
 
     /** Default Test case for fetchProjectByName **/
     @Test
-    public void testProjectRetrivalByFetchProjectByName()
+    public void testProjectRetrievalByFetchProjectByName()
         throws ProjectManagerException {
         if (!isTestSetup()) {
             return;
@@ -300,7 +300,7 @@ public class JdbcProjectLoaderTest {
         } catch (ProjectManagerException ex) {
             System.out.println("Test true");
         }
-        Assert.fail("No exception");
+        Assert.fail("Expecting exception, but didn't get one");
     }
 
   @Test

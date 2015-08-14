@@ -196,40 +196,66 @@ public class ProjectManager {
     return allProjects;
   }
 
-  public Project getProject(String name) {
-    return projectsByName.get(name);
-  }
-
-  public Project getProject(int id) {
-    return projectsById.get(id);
-  }
-
     /**
-     * fetch inactive project from db by project_id
+     * Checks if a project is active using project_name
      *
      * @param name
-     * @return
      */
-    public Project getInactiveProject(String name) {
-        try {
-            return projectLoader.fetchProjectByName(name);
-        } catch (ProjectManagerException e) {
-            throw new RuntimeException("Could not load project from store.", e);
-        }
+    public Boolean isActiveProject(String name) {
+        return projectsByName.containsKey(name);
     }
 
     /**
-     * fetch inactive project from db by project_name
+     * Checks if a project is active using project_id
+     *
+     * @param name
+     */
+    public Boolean isActiveProject(int id) {
+        return projectsById.containsKey(id);
+    }
+
+    /**
+     * fetch active project from cache and inactive projects from db by
+     * project_name
      *
      * @param name
      * @return
      */
-    public Project getInactiveProject(int id) {
-        try {
-            return projectLoader.fetchProjectById(id);
-        } catch (ProjectManagerException e) {
-            throw new RuntimeException("Could not load project from store.", e);
+    public Project getProject(String name) {
+        Project fetchedProject = null;
+        if (isActiveProject(name)) {
+            fetchedProject = projectsByName.get(name);
+        } else {
+            try {
+                fetchedProject = projectLoader.fetchProjectByName(name);
+            } catch (ProjectManagerException e) {
+                throw new RuntimeException(
+                    "Could not load project from store.", e);
+            }
         }
+        return fetchedProject;
+    }
+
+    /**
+     * fetch active project from cache and inactive projects from db by
+     * project_id
+     *
+     * @param id
+     * @return
+     */
+    public Project getProject(int id) {
+        Project fetchedProject = null;
+        if (isActiveProject(id)) {
+            fetchedProject = projectsById.get(id);
+        } else {
+            try {
+                fetchedProject = projectLoader.fetchProjectById(id);
+            } catch (ProjectManagerException e) {
+                throw new RuntimeException(
+                    "Could not load project from store.", e);
+            }
+        }
+        return fetchedProject;
     }
 
   public Project createProject(String projectName, String description,
