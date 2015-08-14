@@ -532,32 +532,33 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
         HashMap<String, Object> ret = new HashMap<String, Object>();
         boolean valid = true;
 
-        Project project = projectManager.getProject(projectName);
-        if (project != null) {
+        if (projectManager.isActiveProject(projectName)) {
             ret.put("error", "Project " + projectName
                 + " should be deleted before purging");
             valid = false;
         }
 
-        // project is already deleted
-        if (valid) {
-            project = projectManager.getInactiveProject(projectName);
-            // only eligible users can purge a project
-            if (!hasPermission(project, user, Type.ADMIN)) {
-                ret.put("error", "Cannot purge. User '" + user.getUserId()
-                    + "' is not an ADMIN.");
-                valid = false;
-                ;
-            }
-        }
+        try {
+            Project project = null;
 
-        if (valid) {
-            try {
-                projectManager.purgeProject(project, user);
-            } catch (ProjectManagerException e) {
-                ret.put("error", e.getMessage());
-                valid = false;
+            // project is already deleted
+            if (valid) {
+                project = projectManager.getProject(projectName);
+                // only eligible users can purge a project
+                if (project == null
+                    || !hasPermission(project, user, Type.ADMIN)) {
+                    ret.put("error", "Cannot purge. User '" + user.getUserId()
+                        + "' is not an ADMIN.");
+                    valid = false;
+                }
             }
+
+            if (valid) {
+                projectManager.purgeProject(project, user);
+            }
+        } catch (Exception e) {
+            ret.put("error", e.getMessage());
+            valid = false;
         }
 
         ret.put("success", valid);
