@@ -1,0 +1,115 @@
+
+<h2 id="azkaban-execserver">Azkaban Executor Server Configuration</h2>
+
+<h3>Executor Server Properties</h3>
+
+<table class="table table-striped table-condensed table-bordered">
+	<thead>
+		<tr>
+			<th>Parameter</th>
+			<th>Description</th>
+			<th>Default</th>
+		</tr>
+	</thead>
+	<tbody>
+		<tr>
+			<td><code>executor.port</code></td>
+			<td>The port for azkaban executor server</td>
+			<td>12321</td>
+		</tr>
+		<tr>
+			<td><code>executor.global.properties</code></td>
+			<td>A path to the properties that will be the parent for all jobs.</td>
+			<td><code>none</code></td>
+		</tr>
+		<tr>
+			<td><code>azkaban.execution.dir</code></td>
+			<td>The folder for executing working directories</td>
+			<td>executions</td>
+		</tr>
+		<tr>
+			<td><code>azkaban.project.dir</code></td>
+			<td>The folder for storing temporary copies of project files used for executions</td>
+			<td>projects</td>
+		</tr>
+		<tr>
+			<td><code>executor.flow.threads</code></td>
+			<td>The number of simulateous flows that can be run. These threads are mostly idle.</td>
+			<td>30</td>
+		</tr>
+		<tr>
+			<td><code>job.log.chunk.size</code></td>
+			<td>For rolling job logs. The chuck size for each roll over</td>
+			<td>5MB</td>
+		</tr>
+		<tr>
+			<td><code>job.log.backup.index</code></td>
+			<td>The number of log chunks. The max size of each logs is then the index * chunksize</td>
+			<td>4</td>
+		</tr>
+		<tr>
+			<td><code>flow.num.job.threads</code></td>
+			<td>The number of concurrent running jobs in each flow. These threads are mostly idle.</td>
+			<td>10</td>
+		</tr>
+		<tr>
+			<td><code>job.max.Xms</code></td>
+			<td>The maximum initial amount of memory each job can request.  If a job requests more than this, then Azkaban server will not launch this job</td>
+			<td>1GB</td>
+		</tr>
+		<tr>
+			<td><code>job.max.Xmx</code></td>
+			<td>The maximum amount of memory each job can request.  If a job requests more than this, then Azkaban server will not launch this job</td>
+			<td>2GB</td>
+		</tr>
+	</tbody>
+</table>
+
+<h3>MySQL Connection Parameter</h3>
+
+<table class="table table-striped table-condensed table-bordered">
+	<thead>
+		<tr>
+			<th>Parameter</th>
+			<th>Description</th>
+			<th>Default</th>
+		</tr>
+	</thead>
+	<tbody>
+		<tr>
+			<td><code>database.type</code></td>
+			<td>The database type. Currently, the only database supported is mysql.</td>
+			<td>mysql</td>
+		</tr>
+		<tr>
+			<td><code>mysql.port</code></td>
+			<td>The port to the mysql db</td>
+			<td>3306</td>
+		</tr>
+		<tr>
+			<td><code>mysql.host</code></td>
+			<td>The mysql host</td>
+			<td>localhost</td>
+		</tr>
+		<tr>
+			<td><code>mysql.database</code></td>
+			<td>The mysql database</td>
+			<td></td>
+		</tr>
+		<tr>
+			<td><code>mysql.user</code></td>
+			<td>The mysql user</td>
+			<td></td>
+		</tr>
+		<tr>
+			<td><code>mysql.password</code></td>
+			<td>The mysql password</td>
+			<td></td>
+		</tr>
+		<tr>
+			<td><code>mysql.numconnections</code></td>
+			<td>The number of connections that Azkaban web client can open to the database</td>
+			<td>100</td>
+		</tr>
+	</tbody>
+</table>

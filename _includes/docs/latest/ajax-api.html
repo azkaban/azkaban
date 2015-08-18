@@ -1,0 +1,116 @@
+<h2 id="ajax-api">AJAX API</h2>
+
+<p>Often there's a desire to interact with Azkaban without having to use the web ui. Azkaban has some exposed ajax calls you can make to the web server through curl or some other Http get or post methods. However, you must have a secure session to call these services. The following are some of the useful calls you can make. All ajax responses will be in json format.</p>
+
+<h3>Authenticated Session</h3>
+
+<p>To get a secure session, make a POST request to Azkaban's base url. The parameters should be:</p>
+
+<pre>
+action=login
+username=&lt;username&gt;
+password=&lt;password&gt;
+</pre>
+
+<p>The response will be json with the following parameters set:</p>
+
+<table class="table table-striped table-condensed table-bordered">
+	<thead>
+		<tr>
+			<th>Parameter</th>
+			<th> Description</th>
+		</tr>
+	</thead>
+	<tbody>
+		<tr>
+			<td>error</td>
+			<td>Error message if authentication has failed</td>
+		</tr>
+		<tr>
+			<td>session.id</td>
+			<td>If login has occurred successfully, this is the session id that will be returned</td>
+		</tr>
+	</tbody>
+</table>
+
+<p>This session id must be submitted with all subsequent requests into Azkaban.</p>
+
+<p>Once a session id has been returned, until the session has expired, this id can be used to do further requests into Azkaban. A session can expire if you log out, change machines or location, Azkaban is restarted or if the session timed out. By default session timeout is a day. You can re-login if the session expires.</p>
+
+<pre class="code">
+curl -k --data "action=login&amp;username=azkaban&amp;password=azkaban" https://localhost:8443
+</pre>
+
+<h3>Upload Project Zip</h3>
+
+<p>Uploads are multipart POST messages to __/manager__. The following parameters must be set do to the file upload. The content type should be _application/zip_ or _application/x-zip-compressed_</p>
+
+<pre class="code">
+session.id=&lt;session.id&gt;
+ajax=upload
+project=&lt;projectName&gt;
+file=$lt;file&gt;
+</pre> 
+
+<p>The response will be json with the following parameters set:</p>
+
+<table class="table table-striped table-condensed table-bordered">
+	<thead>
+		<tr>
+			<th>Parameter</th>
+			<th> Description</th>
+		</tr>
+	</thead>
+	<tbody>
+		<tr>
+			<td>error</td>
+			<td>Error message if the call has failed</td>
+		</tr>
+		<tr>
+			<td>projectId</td>
+			<td>The numerical id of the project</td>
+		</tr>
+		<tr>
+			<td>version</td>
+			<td>The version # of the upload</td>
+		</tr>
+	</tbody>
+</table>
+
+<p>Here's sample a curl command.</p>
+
+<pre class="code">
+curl -k -i -H "Content-Type: multipart/mixed" -X POST --form 'session.id=e7a29776-5783-49d7-afa0-b0e688096b5e' --form 'ajax=upload' --form 'file=@myproject.zip;type=application/zip' --form 'project=MyProject;type/plain' https://localhost:8443/manager
+</pre>
+
+<h3>Executing Flow</h3>
+
+<pre class="code">
+session.id=&lt;session.id&gt;
+ajax=executeFlow
+project=&lt;projectName&gt;
+flow=&lt;flowName&gt;
+</pre>
+
+<table class="table table-striped table-condensed table-bordered">
+	<thead>
+		<tr>
+			<th>Parameter</th>
+			<th>Description</th>
+		</tr>
+	</thead>
+	<tbody>
+		<tr>
+			<td>error</td>
+			<td>Error message if the call has failed</td>
+		</tr>
+		<tr>
+			<td>flow</td>
+			<td>The executed flow id</td>
+		</tr>
+		<tr>
+			<td>execid</td>
+			<td>The execution id</td>
+		</tr>
+	</tbody>
+</table>

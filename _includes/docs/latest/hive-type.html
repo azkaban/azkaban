@@ -1,0 +1,212 @@
+<h2 id="hive-type">Hive Type</h2>
+
+<p>The <code>hive</code> type is for running Hive jobs. In the <a href="https://github.com/{{ site.plugins_repo }}" target="blank">azkaban-plugins</a> repo, we have included hive type based on hive-0.8.1. It should work for higher version Hive versions as well. It is up to the admin to alias one of them as the <code>hive</code> type for Azkaban users.</p>
+
+<p>The <code>hive</code> type is built using Hadoop tokens to talk to secure Hadoop clusters. Therefore, individual Azkaban Hive jobs are restricted to run within the token's lifetime, which is set by Hadoop admin. It is also important that individual MR step inside a single Pig script doesn't cancel the tokens upon its completion. Otherwise, all following steps will fail on authentication with the JobTracker or NameNode.</p>
+
+<h3>How to Use</h3>
+
+<p>The Hive job runs user Hive queries. The Hive job type talks to a secure cluster via Hadoop tokens. The admin should specify <code>obtain.binary.token=true</code> if the Hadoop cluster security is turned on. Before executing a job, Azkaban will obtain NameNode and JobTracker tokens for this job. These tokens will be written to a token file, which will be picked up by user job process during its execution. After the job finishes, Azkaban takes care of canceling these tokens from NameNode and JobTracker.</p>
+
+<p>Since Azkaban only obtains the tokens at the beginning of the job run, and does not request new tokens or renew old tokens during the execution, it is important that the job does not run longer than configured token life. It is also important that individual MR step inside a single Pig script doesn't cancel the tokens upon its completion. Otherwise, all following steps will fail on authentication with Hadoop services.</p>
+
+<p>Here are the common configurations that make a <code>hive</code> job for single line Hive query:</p>
+
+<table class="table table-striped table-condensed table-bordered">
+  <thead>
+    <tr>
+      <th class="parameter">Parameter</th>
+      <th class="description"> Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>type</td>
+      <td>The type name as set by the admin, e.g. <code>hive</code></td>
+    </tr>
+    <tr>
+      <td>azk.hive.action</td>
+      <td>use <code>execute.query</code></td>
+    </tr>
+    <tr>
+      <td>hive.query</td>
+      <td>Used for single line hive query.</td>
+    </tr>
+    <tr>
+      <td>user.to.proxy</td>
+      <td>The hadoop user this job should run under.</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>Specify these for a multi-line Hive query:</p>
+
+<table class="table table-striped table-condensed table-bordered">
+  <thead>
+    <tr>
+      <th class="parameter">Parameter</th>
+      <th class="description">Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>type</td>
+      <td>The type name as set by the admin, e.g. <code>hive</code></td>
+    </tr>
+    <tr>
+      <td>azk.hive.action</td>
+      <td>use <code>execute.query</code></td>
+    </tr>
+    <tr>
+      <td>hive.query.01</td>
+      <td>fill in the individual hive queries, starting from 01</td>
+    </tr>
+    <tr>
+      <td>user.to.proxy</td>
+      <td>The Hadoop user this job should run under.</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>Specify these for query from a file:</p>
+
+<table class="table table-striped table-condensed table-bordered">
+  <thead>
+    <tr>
+      <th class='parameter'>Parameter</th>
+      <th class='description'> Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>type</td>
+      <td>The type name as set by the admin, e.g. <code>hive</code></td>
+    </tr>
+    <tr>
+      <td>azk.hive.action</td>
+      <td>use <code>execute.query</code></td>
+    </tr>
+    <tr>
+      <td>hive.query.file</td>
+      <td>location of the query file</td>
+    </tr>
+    <tr>
+      <td>user.to.proxy</td>
+      <td>The Hadoop user this job should run under.</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>Here are what's needed and normally configured by the admin. The following properties go into private.properties:</p>
+
+<table class="table table-striped table-bordered table-condensed">
+  <thead>
+    <tr>
+      <th class='parameter'>Parameter</th>
+      <th class='description'>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>hadoop.security.manager.class</td>
+      <td>The class that handles talking to hadoop clusters.</td>
+    </tr>
+    <tr>
+      <td>azkaban.should.proxy</td>
+      <td>Whether Azkaban should proxy as individual user hadoop accounts.</td>
+    </tr>
+    <tr>
+      <td>proxy.user</td>
+      <td>The Azkaban user configured with kerberos and hadoop, for secure clusters.</td>
+    </tr>
+    <tr>
+      <td>proxy.keytab.location</td>
+      <td>The location of the keytab file with which Azkaban can authenticate with Kerberos for the specified proxy.user</td>
+    </tr>
+    <tr>
+      <td>hadoop.home</td>
+      <td>The hadoop home where the jars and conf resources are installed.</td>
+    </tr>
+    <tr>
+      <td>jobtype.classpath</td>
+      <td>The items that every such job should have on its classpath.</td>
+    </tr>
+    <tr>
+      <td>jobtype.class</td>
+      <td>Should be set to <code>azkaban.jobtype.HadoopJavaJob</code></td>
+    </tr>
+    <tr>
+      <td>obtain.binary.token</td>
+      <td>Whether Azkaban should request tokens. Set this to true for secure clusters.</td>
+    </tr>
+    <tr>
+      <td>hive.aux.jars.path</td>
+      <td>Where to find auxiliary library jars</td>
+    </tr>
+    <tr>
+      <td>env.HADOOP_HOME</td>
+      <td><code>$HADOOP_HOME</code></td>
+    </tr>
+    <tr>
+      <td>env.HIVE_HOME</td>
+      <td><code>$HIVE_HOME</code></td>
+    </tr>
+    <tr>
+      <td>env.HIVE_AUX_JARS_PATH</td>
+      <td><code>${hive.aux.jars.path}</code></td>
+    </tr>
+    <tr>
+      <td>hive.home</td>
+      <td><code>$HIVE_HOME</code></td>
+    </tr>
+    <tr>
+      <td>hive.classpath.items</td>
+      <td>Those that needs to be on hive classpath, include the conf directory</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>These go into plugin.properties</p>
+
+<table class="table table-bordered table-striped table-condensed">
+  <thead>
+    <tr>
+      <th class='parameter'>Parameter</th>
+      <th class='description'>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style='text-align: left;'>job.class</td>
+      <td style='text-align: left;'><code>azkaban.jobtype.hiveutils.azkaban.HiveViaAzkaban</code></td>
+    </tr>
+    <tr>
+      <td style='text-align: left;'>hive.aux.jars.path</td>
+      <td style='text-align: left;'>Where to find auxiliary library jars</td>
+    </tr>
+    <tr>
+      <td style='text-align: left;'>env.HIVE_HOME</td>
+      <td style='text-align: left;'><code>$HIVE_HOME</code></td>
+    </tr>
+    <tr>
+      <td style='text-align: left;'>env.HIVE_AUX_JARS_PATH</td>
+      <td style='text-align: left;'><code>${hive.aux.jars.path}</code></td>
+    </tr>
+    <tr>
+      <td style='text-align: left;'>hive.home</td>
+      <td style='text-align: left;'><code>$HIVE_HOME</code></td>
+    </tr>
+    <tr>
+      <td style='text-align: left;'>hive.jvm.args</td>
+      <td style='text-align: left;'><code>-Dhive.querylog.location=.</code> <code>-Dhive.exec.scratchdir=YOUR_HIVE_SCRATCH_DIR</code> <code>-Dhive.aux.jars.path=${hive.aux.jars.path}</code></td>
+    </tr>
+  </tbody>
+</table>
+
+<p>Since hive jobs are essentially java programs, the configurations for Java jobs could also be set.</p>
+
+<div class="bs-callout bs-callout-info">
+  <h4>Sample Job Package</h4>
+  <p>Here is a sample job package. It assumes you have hadoop installed and gets some dependency jars from <code>$HADOOP_HOME</code>. It also assumes you have Hive installed and configured correctly, including setting up a MySQL instance for Hive Metastore.</p>
+  <a class="btn btn-primary" href="https://s3.amazonaws.com/azkaban2/azkaban2/samplejobs/hive.zip"><span class="glyphicon glyphicon-download-alt"></span>Download hive.zip</a> (Uploaded May 13, 2013)</p>
+</div>
