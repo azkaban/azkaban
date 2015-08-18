@@ -141,7 +141,7 @@ public class JdbcProjectLoader extends AbstractJdbcLoader implements
           runner.query(connection, ProjectResultHandler.SELECT_PROJECT_BY_ID,
               handler, id);
       if (projects.isEmpty()) {
-        throw new ProjectManagerException("No active project with id " + id
+        throw new ProjectManagerException("No project with id " + id
             + " exists in db.");
       }
 
@@ -201,7 +201,7 @@ public class JdbcProjectLoader extends AbstractJdbcLoader implements
                     ProjectResultHandler.SELECT_PROJECT_BY_NAME, handler, name);
             if (projects.isEmpty()) {
                 throw new ProjectManagerException(
-                    "No active project with name " + name + " exists in db.");
+                    "No project with name " + name + " exists in db.");
             }
 
             project = projects.get(0);
