@@ -229,8 +229,7 @@ public class ProjectManager {
             try {
                 fetchedProject = projectLoader.fetchProjectByName(name);
             } catch (ProjectManagerException e) {
-                throw new RuntimeException(
-                    "Could not load project from store.", e);
+                logger.error("Could not load project from store.", e);
             }
         }
         return fetchedProject;
@@ -251,8 +250,7 @@ public class ProjectManager {
             try {
                 fetchedProject = projectLoader.fetchProjectById(id);
             } catch (ProjectManagerException e) {
-                throw new RuntimeException(
-                    "Could not load project from store.", e);
+                logger.error("Could not load project from store.", e);
             }
         }
         return fetchedProject;
