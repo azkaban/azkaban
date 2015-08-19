@@ -1,0 +1,48 @@
+<h2 id="system-stats">System Statistics</h2>
+
+<p>Azkaban server maintains certain system statistics and they be seen http:&lt;host&gt;:&lt;port&gt;/stats</p>
+
+<p>To enable this feature, add the following property "executor.metric.reports=true" to azkaban.properties</p>
+<p>Property "executor.metric.milisecinterval.default" controls the interval at which the metrics are collected at</p>
+
+<h3>Statistic Types</h3>
+<table class="table table-striped table-bordered table-condensed">
+  <thead>
+    <tr>
+      <th class='parameter'>Metric Name</th>
+      <th class='description'>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>NumFailedFlowMetric</td>
+      <td>Number of failed flows</td>
+    </tr>
+    <tr>
+      <td>NumRunningFlowMetric</td>
+      <td>Number of flows in the queue</td>
+    </tr>
+    <tr>
+      <td>NumQueuedFlowMetric</td>
+      <td>Number of flows in the queue</td>
+    </tr>
+    <tr>
+      <td>NumRunningJobMetric</td>
+      <td>Number of running jobs</td>
+    </tr>
+    <tr>
+      <td>NumFailedJobMetric</td>
+      <td>Number of failed jobs</td>
+    </tr>
+  </tbody>
+</table>
+
+
+<p>To change the statistic collection at run time, the following options are available</p>
+<ul>
+<li>To change the time interval at which the specific type of statistics are collected - /stats?action=changeMetricInterval&metricName=NumRunningJobMetric&interval=60000
+<li>To change the duration at which the statistics are maintained -/stats?action=changeCleaningInterval&interval=604800000
+<li>To change the number of data points to display - /stats?action=changeEmitterPoints&numInstances=50
+<li>To enable the statistic collection - /stats?action=enableMetrics
+<li>To disable the statistic collection - /stats?action=disableMetrics
+</ul>

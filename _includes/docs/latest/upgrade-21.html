@@ -1,0 +1,27 @@
+<h2 id="upgrade-21">Upgrading DB from 2.1</h2>
+
+<p class="lead">If installing Azkaban from scratch, you can ignore this document. This is only for those who are upgrading from 2.1 to 2.5.</p>
+
+<p>The <code>update_2.1_to_3.0.sql</code> needs to be run to alter all the tables. This includes several table alterations and a new table.</p>
+
+<p>Here are the changes:</p>
+
+<ul>
+	<li>
+		Alter project_properties table'
+		<ul>
+			<li>Modify 'name' column to be 255 characters</li>
+		</ul>
+	</li>
+	<li>Create new table triggers</li>
+</ul>
+
+<h3>Importing Existing Schedules from 2.1</h3>
+
+<p>In 3.0, the scheduling system is merged into the new triggering system. The information will be persisted in <code>triggers</code> table in DB. We have a simple tool to import your existing schedules into this new table.</p>
+
+<p>After you download and install web server, please run this command <strong>once</strong> from web server install directory:</p>
+
+<pre>
+$ bash bin/schedule2trigger.sh
+</pre>

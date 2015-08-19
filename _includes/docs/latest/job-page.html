@@ -1,0 +1,39 @@
+<h2 id="job-page">Job Page</h2>
+
+<p>Jobs make up individual tasks of a flow. To get to the jobs page, you can right click on a job in the Flow View, the Executing Flow view or the Project Page.</p>
+
+<div class="row">
+  <div class="col-md-6 col-md-offset-3">
+    <a href="./images/jobpage.png" data-lightbox="job-page" title="Job page.">
+      <img class="img-thumbnail img-figure" title="Jobs Page" src="./images/jobpage.png" ALT="Jobs Page" width="450" />
+    </a>
+  </div>
+</div>
+
+<p>From this page you can see the dependencies and dependents for a job as well as the global properties that the job will use.</p>
+
+<h3>Job Edit</h3>
+
+<p>Clicking on Job Edit will allow you to edit all the job properties except for certain reserved parameters, such as <code>type</code>, and <code>dependencies</code>. The changes to the parameters will affect an executing flow only if the job hasn't started to run yet. These overwrites of job properties will be overwritten by the next project upload.</p>
+
+<div class="row">
+  <div class="col-md-6 col-md-offset-3">
+    <a href="./images/jobedit.png" data-lightbox="job-page" title="Job edit.">
+      <img class="img-thumbnail img-figure" title="Jobs Page" src="./images/jobedit.png" ALT="Jobs Edit" width="450" />
+    </a>
+  </div>
+</div>
+
+<h3>Job History</h3>
+
+<p.The Job history page will show a history of executions for a job in a flow as well as access to their logs. The logs have a retention policy and is by default purged after a month, although the execution information persists. The graph shows the runtimes for the jobs that appear on that page.</p>
+
+<p>Any retries of a job will show as <code>executionid.attempt</code> number.</p>
+
+<div class="row">
+  <div class="col-md-6 col-md-offset-3">
+    <a href="./images/jobhistorypage.png" data-lightbox="job-page" title="Job history page.">
+      <img class="img-thumbnail img-figure" title="Job History" src="./images/jobhistorypage.png" ALT="Job History" width="450" />
+    </a>
+  </div>
+</div>

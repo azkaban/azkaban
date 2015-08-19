@@ -1,0 +1,19 @@
+<div class="page-header">
+  <h1 id="getting-started">Getting Started</h1>
+</div>
+
+<p class="lead">In version 2.5 we provide two modes: the stand alone "solo-server" mode and the heavier weight two server mode. The following describes the differences between the two modes.</p>
+
+<p>In <strong>solo server mode</strong>, the DB is embedded H2 and both web server and executor server run in the same process. This should be useful if one just wants to try things out. It can also be used on small scale use cases.</p>
+<ol>
+	<li><a href="#solo-setup">Download and Install Solo Server Package</a></li>
+	<li><a href="#plugin-setup">Install Azkaban Plugins</a></li>
+</ol>
+<p>The <strong>two server mode</strong> is for more serious production environment. Its DB should be backed by MySQL instances with master-slave set up. The web server and executor server should run in different processes so that upgrading and maintenance shouldn't affect users.</p>
+<ol>
+	<li><a href="#database-setup">Set up the database</a></li>
+	<li><a href="#webserver-setup">Download and install the Web Server</a></li>
+	<li><a href="#executor-setup">Download and install the Executor Server</a></li>
+	<li><a href="#plugin-setup">Install Azkaban Plugins</a></li>
+</ol>
+<p>Below are instructions on how to set Azkaban up.</p>

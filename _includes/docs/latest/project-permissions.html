@@ -1,0 +1,54 @@
+<h2 id="project-permissions">Project Permissions</h2>
+
+<p>When a project is created, the creator is automatically given an ADMIN status on the project. This allows the creator to view, upload, change jobs, run flows, delete and add user permissions to the project. An admin can remove other admins, but cannot remove themselves. This prevents projects from being admin-less except when admins are deleted by a user with an admin role.</p>
+
+<p>The permission page is accessible from the project page. On the permissions page, admins can add other users, groups or proxy users to the project.</p>
+
+<div class="row">
+  <div class="col-md-6 col-md-offset-3">
+    <a href="./images/permission.png" data-lightbox="permission" title="Project permissions.">
+      <img class="img-thumbnail img-figure" title="Permissions Page" src="./images/permission.png" alt="Permission" width="500" />
+    </a>
+  </div>
+</div>
+
+<ul>
+	<li>Adding user permissions gives those users those specified permissions on the project. Remove user permissions by unchecking all of the permissions.</li>
+	<li>Group permissions allow everyone in a particular group the specified permissions. Remove group permissions by unchecking all the group permissions.</li>
+	<li>If proxy users are turned on, proxy users allows the project workflows to run as those users. This is useful for locking down which headless accounts jobs can proxy to. They are removed by clicking on the 'Remove' button once added.</li>
+</ul>
+
+<p>Every user is validated through the UserManager to prevent invalid users from being added. Groups and Proxy users are also check to make sure they are valid and to see if the admin is allowed to add them to the project.</p>
+
+<p>The following permissions can be set for users and groups:</p>
+
+<table class="table table-striped table-condensed table-bordered">
+	<thead>
+		<tr>
+			<th>Permission</th>
+			<th>Description</th>
+		</tr>
+	</thead>
+	<tbody>
+		<tr>
+			<td>ADMIN</td>
+			<td>Allows the user to do anything with this project, as well as add permissions and delete the project</td>
+		</tr>
+		<tr>
+			<td>READ</td>
+			<td>The user can view the job, the flows, the execution logs.</td>
+		</tr>
+		<tr>
+			<td>WRITE</td>
+			<td>Project files can be uploaded, and the job files can be modified.</td>
+		</tr>
+		<tr>
+			<td>EXECUTE</td>
+			<td>The user is allowed to execute, pause, cancel jobs.</td>
+		</tr>
+		<tr>
+			<td>SCHEDULE</td>
+			<td>The user is allowed to add, modify and remove a flow from the schedule.</td>
+		</tr.
+	</tbody>
+</table>

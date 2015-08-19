@@ -1,0 +1,299 @@
+<h2 id="azkaban-webserver">Azkaban Web Server Configurations</h2>
+
+<p>These are properties to configure the web server. They can be set in <code>azkaban.properties</code>.</p>
+
+<h3>General Properties</h3>
+
+<table class="table table-striped table-condensed table-bordered">
+	<thead>
+		<tr>
+			<th>Parameter</th>
+			<th>Description</th>
+			<th>Default</th>
+		</tr>
+	</thead>
+	<tbody>
+		<tr>
+			<td><code>azkaban.name</code></td>
+			<td>The name of the azkaban instance that will show up in the UI. Useful if you run more than one Azkaban instance.</td>
+			<td>Local</td>
+		</tr>
+		<tr>
+			<td><code>azkaban.label</code></td>
+			<td>A label to describe the Azkaban instance.</td>
+			<td>My Local Azkaban</td>
+		</tr>
+		<tr>
+			<td><code>azkaban.color</code></td>
+			<td>Hex value that allows you to set a style color for the Azkaban UI.</td>
+			<td>#FF3601</td>
+		</tr>
+		<tr>
+			<td><code>web.resource.dir</code></td>
+			<td>Sets the directory for the ui’s css and javascript files.</td>
+			<td>web/</td>
+		</tr>
+		<tr>
+			<td><code>default.timezone</code></td>
+			<td>The timezone that will be displayed by Azkaban.</td>
+			<td>America/Los_Angeles</td>
+		</tr>
+		<tr>
+			<td><code>viewer.plugin.dir</code></td>
+			<td>Directory where viewer plugins are installed.</td>
+			<td>plugins/viewer</td>
+		</tr><tr>
+			<td><code>job.max.Xms</code></td>
+			<td>The maximum initial amount of memory each job can request.  This validation is performed at project upload time</td>
+			<td>1GB</td>
+		</tr>
+		<tr>
+			<td><code>job.max.Xmx</code></td>
+			<td>The maximum amount of memory each job can request.  This validation is performed at project upload time</td>
+			<td>2GB</td>
+		</tr>
+	</tbody>
+</table>
+
+<h3>Jetty Parameters</h3>
+
+<table class="table table-striped table-condensed table-bordered">
+	<thead>
+		<tr>
+			<th>Parameter</th>
+			<th>Description</th>
+			<th>Default</th>
+		</tr>
+	</thead>
+	<tbody>
+		<tr>
+			<td>jetty.maxThreads</td>
+			<td>Max request threads</td>
+			<td>25</td>
+		</tr>
+		<tr>
+			<td>jetty.ssl.port</td>
+			<td>The ssl port</td>
+			<td>8443</td>
+		</tr>
+		<tr>
+			<td>jetty.keystore</td>
+			<td>The keystore file</td>
+			<td></td>
+		</tr>
+		<tr>
+			<td>jetty.password</td>
+			<td>The jetty password</td>
+			<td></td>
+		</tr>
+		<tr>
+			<td>jetty.keypassword</td>
+			<td>The keypassword</td>
+			<td></td>
+		</tr>
+		<tr>
+			<td>jetty.truststore</td>
+			<td>The trust store</td>
+			<td></td>
+		</tr>
+		<tr>
+			<td>jetty.trustpassword</td>
+			<td>The trust password</td>
+			<td></td>
+		</tr>
+	</tbody>
+</table>
+
+<h3>Project Manager Settings</h3>
+
+<table class="table table-striped table-condensed table-bordered">
+	<thead>
+		<tr>
+			<th>Parameter</th>
+			<th>Description</th>
+			<th>Default</th>
+		</tr>
+	</thead>
+	<tbody>
+		<tr>
+			<td>project.temp.dir</td>
+			<td>The temporary directory used when uploading projects</td>
+			<td>temp</td>
+		</tr>
+		<tr>
+			<td>project.version.retention</td>
+			<td>The number of unused project versions retained before cleaning</td>
+			<td>3</td>
+		</tr>
+		<tr>
+			<td>creator.default.proxy</td>
+			<td>Auto add the creator of the projects as a proxy user to the project.</td>
+			<td>true</td>
+		</tr>
+		<tr>
+			<td>lockdown.create.projects</td>
+			<td>Prevents anyone except those with Admin roles to create new projects.</td>
+			<td>false</td>
+		</tr>
+	</tbody>
+</table>
+
+<h3>MySQL Connection Parameter</h3>
+
+<table class="table table-striped table-condensed table-bordered">
+	<thead>
+		<tr>
+			<th>Parameter</th>
+			<th> Description</th>
+			<th>Default</th>
+		</tr>
+	</thead>
+	<tbody>
+		<tr>
+			<td>database.type</td>
+			<td>The database type. Currently, the only database supported is mysql.</td>
+			<td>mysql</td>
+		</tr>
+		<tr>
+			<td>mysql.port</td>
+			<td>The port to the mysql db</td>
+			<td>3306</td>
+		</tr>
+		<tr>
+			<td>mysql.host</td>
+			<td>The mysql host</td>
+			<td>localhost</td>
+		</tr>
+		<tr>
+			<td>mysql.database</td>
+			<td>The mysql database</td>
+			<td></td>
+		</tr>
+		<tr>
+			<td>mysql.user</td>
+			<td>The mysql user</td>
+			<td></td>
+		</tr>
+		<tr>
+			<td>mysql.password</td>
+			<td>The mysql password</td>
+			<td></td>
+		</tr>
+		<tr>
+			<td>mysql.numconnections</td>
+			<td>The number of connections that Azkaban web client can open to the database</td>
+			<td>100</td>
+		</tr>
+	</tbody>
+</table>
+
+<h3>Executor Manager Properties</h3>
+
+<table class="table table-striped table-bordered table-condensed">
+	<thead>
+		<tr>
+			<th>Parameter</th>
+			<th>Description</th>
+			<th>Default</th>
+		</tr>
+	</thead>
+	<tbody>
+		<tr>
+			<td>executor.port</td>
+			<td>The port for the azkaban executor server</td>
+			<td>12321</td>
+		</tr>
+		<tr>
+			<td>executor.host</td>
+			<td>The host for azkaban executor server</td>
+			<td>localhost</td>
+		</tr>
+		<tr>
+			<td>execution.logs.retention.ms</td>
+			<td>Time in milliseconds that execution logs are retained</td>
+			<td>7257600000L (12 weeks)</td>
+		</tr>
+	</tbody>
+</table>
+
+<h3>Notification Email Properties</h3>
+
+<table class="table table-striped table-bordered table-condensed">
+	<thead>
+		<tr>
+			<th>Parameter</th>
+			<th> Description</th>
+			<th>Default</th>
+		</tr>
+	</thead>
+	<tbody>
+		<tr>
+			<td>mail.sender</td>
+			<td>The email address that azkaban uses to send emails.</td>
+			<td></td>
+		</tr>
+		<tr>
+			<td>mail.host</td>
+			<td>The email server host machine.</td>
+			<td></td>
+		</tr>
+		<tr>
+			<td>mail.user</td>
+			<td>The email server user name.</td>
+			<td></td>
+		</tr>
+		<tr>
+			<td>mail.password</td>
+			<td>The email password user name.</td>
+			<td></td>
+		</tr>
+	</tbody>
+</table>
+
+<h3>User Manager Properties</h3>
+
+<table class="table table-striped table-bordered table-condensed">
+	<thead>
+		<tr>
+			<th>Parameter</th>
+			<th>Description</th>
+			<th>Default</th>
+		</tr>
+	</thead>
+	<tbody>
+		<tr>
+			<td>user.manager.class</td>
+			<td>The user manager that is used to authenticate a user. The default is an XML user manager, but it can be overwritten to support other authentication methods, such as JDNI.</td>
+			<td>azkaban.user.XmlUserManager</td>
+		</tr>
+		<tr>
+			<td>user.manager.xml.file</td>
+			<td>Xml file for the XmlUserManager</td>
+			<td>conf/azkaban-users.xml</td>
+		</tr>
+	</tbody>
+</table>
+
+<h3>User Session Properties</h3>
+
+<table class="table table-striped table-bordered table-condensed">
+	<thead>
+		<tr>
+			<th>Parameter</th>
+			<th>Description</th>
+			<th>Default</th>
+		</tr>
+	</thead>
+	<tbody>
+		<tr>
+			<td>session.time.to.live</td>
+			<td>The session time to live in ms seconds</td>
+			<td>86400000</td>
+		</tr>
+		<tr>
+			<td>max.num.sessions</td>
+			<td>The maximum number of sessions before people are evicted.</td>
+			<td>10000</td>
+		</tr>
+	</tbody>
+</table>
