@@ -8,9 +8,9 @@
 
 <h3>How to Use</h3>
 
-<p>The Pig job runs user Pig scripts. It is important to remember, however, that running any Pig script might require a number of dependency libraries that need to be placed on local Azkaban job classpath, or be registered with Pig and carried remotely, or both. By using classpath settings, as well as <code>pig_additional_jars</code> and <code>udf_import_list</code>, the admin can create a Pig job type that has very different default behavior than the most basic "pig" type. Pig jobs talk to a secure cluster via hadoop tokens. The admin should specify <code>obtain.binary.token=true</code> if the hadoop cluster security is turned on. Before executing a job, Azkaban will obtain name node and job tracker tokens for this job. These tokens will be written to a token file, which will be picked up by user job process during its execution. After the job finishes, Azkaban takes care of canceling these tokens from name node and job tracker. </p>
+<p>The Pig job runs user Pig scripts. It is important to remember, however, that running any Pig script might require a number of dependency libraries that need to be placed on local Azkaban job classpath, or be registered with Pig and carried remotely, or both. By using classpath settings, as well as <code>pig.additional.jars</code> and <code>udf.import.list</code>, the admin can create a Pig job type that has very different default behavior than the most basic "pig" type. Pig jobs talk to a secure cluster via hadoop tokens. The admin should specify <code>obtain.binary.token=true</code> if the hadoop cluster security is turned on. Before executing a job, Azkaban will obtain name node and job tracker tokens for this job. These tokens will be written to a token file, which will be picked up by user job process during its execution. For Hadoop 1 (<code>HadoopSecurityManager_H_1_0</code>), after the job finishes, Azkaban takes care of canceling these tokens from name node and job tracker. In Hadoop 2 (<code>HadoopSecurityManager_H_2_0</code>), due to issues with tokens being canceled prematurely, Azkaban does not cancel the tokens.</p>
 
-<p>Since Azkaban only obtains the tokens at the beginning of the job run, and does not request new tokens or renew old tokens during the execution, it is important that the job does not run longer than configured token life. It is also important that individual MR step inside a single Pig script doesn't cancel the tokens upon its completion. Otherwise, all following steps will fail on authentication with hadoop services.</p>
+<p>Since Azkaban only obtains the tokens at the beginning of the job run, and does not request new tokens or renew old tokens during the execution, it is important that the job does not run longer than configured token life. It is also important that individual MR step inside a single Pig script doesn't cancel the tokens upon its completion. Otherwise, all following steps will fail on authentication with hadoop services. In Hadoop 2, you may need to set <code>-Dmapreduce.job.complete.cancel.delegation.tokens=false</code> to prevent tokens from being canceled prematurely.</p>
 
 <p>Here are the common configurations that make a Pig job for a <em>user</em>:</p>
 
@@ -43,8 +43,20 @@
       <td>The hadoop user this job should run under.</td>
     </tr>
     <tr>
+      <td>pig.home</td>
+      <td>The Pig installation directory. Can be used to override the default set by Azkaban.</td>
+    </tr>
+    <tr>
       <td>param.SOME_PARAM</td>
       <td>Equivalent to Pig's <code>-param</code></td>
+    </tr>
+    <tr>
+      <td>use.user.pig.jar</td>
+      <td>If true, will use the user-provided Pig jar to launch the job. If false, the Pig jar provided by Azkaban will be used. Defaults to false.</td>
+    </tr>
+    <tr>
+      <td>hadoop-inject.FOO</td>
+      <td>FOO is automatically added to the Configuration of any Hadoop job launched.</td>
     </tr>
   </tbody>
 </table>
