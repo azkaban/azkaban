@@ -9,6 +9,14 @@ buildscript {
 }
 
 apply plugin: 'distribution'
+apply plugin: 'idea'
+
+idea {
+  module {
+    downloadJavadoc = true
+    downloadSources = true
+  }
+}
 
 allprojects {
   repositories {
@@ -32,6 +40,7 @@ def cmdCaller = { commandln ->
 subprojects {
   apply plugin: 'java'
   apply plugin: 'eclipse'
+  apply plugin: 'idea'
 
   /**
    * Gets the version name from the latest Git tag
@@ -69,6 +78,13 @@ subprojects {
               "${result.failedTestCount} failed, " +
               "${result.skippedTestCount} skipped)"
       }
+    }
+  }
+
+  idea {
+    module {
+      downloadJavadoc = true
+      downloadSources = true
     }
   }
 }
