@@ -20,6 +20,7 @@ import java.io.File;
 import java.util.List;
 import java.util.Map;
 
+import azkaban.executor.ExecutorLogEvent.EventType;
 import azkaban.utils.FileIOUtils.LogData;
 import azkaban.utils.Pair;
 import azkaban.utils.Props;
@@ -46,6 +47,82 @@ public interface ExecutorLoader {
   public List<ExecutableFlow> fetchFlowHistory(String projContain,
       String flowContains, String userNameContains, int status, long startData,
       long endData, int skip, int num) throws ExecutorManagerException;
+
+  /**
+   * Fetch all executors from executors table with active = true
+   *
+   * @return List<Executor>
+   * @throws ExecutorManagerException
+   */
+  public List<Executor> fetchActiveExecutors() throws ExecutorManagerException;
+
+  /**
+   * Fetch executor from executors with a given (host, port)
+   *
+   * @return Executor
+   * @throws ExecutorManagerException
+   */
+  public Executor fetchExecutor(String host, int port)
+    throws ExecutorManagerException;
+
+  /**
+   * Fetch executor from executors with a given executorId
+   *
+   * @return Executor
+   * @throws ExecutorManagerException
+   */
+  public Executor fetchExecutor(int executorId) throws ExecutorManagerException;
+
+  /**
+   * create an executor and insert in executors table. Fails, if a executor with
+   * (host, port) already exist
+   *
+   * @return Executor
+   * @throws ExecutorManagerException
+   */
+  public Executor addExecutor(String host, int port)
+    throws ExecutorManagerException;
+
+  /**
+   * inactivate an executor in executors table
+   *
+   * @param executorId
+   * @throws ExecutorManagerException
+   */
+  public void inactivateExecutor(int executorId)
+    throws ExecutorManagerException;
+
+  /**
+   * Re-activate an executor in executors table
+   *
+   * @param executorId
+   * @throws ExecutorManagerException
+   */
+  void activateExecutor(int executorId) throws ExecutorManagerException;
+
+  /**
+   * Log an event in executor_event audit table
+   *
+   * @param executor
+   * @param type
+   * @param user
+   * @param message
+   * @return isSuccess
+   */
+  boolean postEvent(Executor executor, EventType type, String user,
+    String message);
+
+  /**
+   * Fetch num events associated with a given executor, starting from skip
+   *
+   * @param executor
+   * @param num
+   * @param skip
+   * @return List<ExecutorLogEvent>
+   * @throws ExecutorManagerException
+   */
+  List<ExecutorLogEvent> getExecutorEvents(Executor executor, int num, int skip)
+    throws ExecutorManagerException;
 
   public void addActiveExecutableReference(ExecutionReference ref)
       throws ExecutorManagerException;
@@ -105,5 +182,4 @@ public interface ExecutorLoader {
 
   public int removeExecutionLogsByTime(long millis)
       throws ExecutorManagerException;
-
 }
