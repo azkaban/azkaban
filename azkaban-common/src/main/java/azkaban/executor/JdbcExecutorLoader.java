@@ -819,7 +819,8 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements
         return executors.get(0);
       }
     } catch (SQLException e) {
-      throw new ExecutorManagerException("Error fetching active executors", e);
+      throw new ExecutorManagerException(String.format(
+        "Error fetching executor %s:%d", host, port), e);
     }
   }
 
@@ -843,7 +844,8 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements
         return executors.get(0);
       }
     } catch (SQLException e) {
-      throw new ExecutorManagerException("Error fetching active executors", e);
+      throw new ExecutorManagerException(String.format(
+        "Error fetching executor with id: %d", executorId), e);
     }
   }
 
@@ -880,7 +882,7 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements
     try {
       runner.update(ACTIVATE, executorId);
     } catch (SQLException e) {
-      throw new ExecutorManagerException("Error inactivating executor "
+      throw new ExecutorManagerException("Error activating executor "
         + executorId, e);
     }
   }
