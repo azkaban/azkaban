@@ -43,13 +43,24 @@ public abstract class CandidateComparator<T> implements Comparator<T> {
    * */
   public abstract String getName();
 
+  /** differentiate method which will kick in when the comparator list generated an equality result for
+   *  both sides. the differentiate method will try best to make sure a stable result is returned.
+   * */
+  protected boolean differentiate(T object1, T object2){
+    if (object2 == null) return true;
+    if (object1 == null) return false;
+
+    return object1.hashCode() >= object2.hashCode();
+  }
+
   /** function to register a factorComparator to the internal Map for future reference.
    * @param factorComparator : the comparator object to be registered.
    * */
   protected void registerFactorComparator(FactorComparator<T> comparator){
       if (null == comparator ||
           Integer.MAX_VALUE - this.getTotalWeight() < comparator.getWeight() ) {
-        logger.info("skipping registerFactorComparator as the comaractor is null or has an invalid weight value.");
+        logger.info(
+            "skipping registerFactorComparator as the comaractor is null or has an invalid weight value.");
         return;
       }
 
@@ -58,7 +69,6 @@ public abstract class CandidateComparator<T> implements Comparator<T> {
       logger.info(String.format("Factor comparator added for '%s'. Weight = '%s'",
           comparator.getFactorName(), comparator.getWeight()));
   }
-
 
   /** function update the weight of a specific registered factorCompartor.
    * @param factorName : the name of the registered factorComparator to adjust.
@@ -72,7 +82,8 @@ public abstract class CandidateComparator<T> implements Comparator<T> {
         factorName == "" ||
         weight < 0 ||
         Integer.MAX_VALUE - this.getTotalWeight() < weight){
-      logger.info("skipping adjustFactorWeight as one or more of the input parameters are invalid");
+      logger.info(
+          "skipping adjustFactorWeight as one or more of the input parameters are invalid");
       return -1;
     }
 
@@ -80,7 +91,9 @@ public abstract class CandidateComparator<T> implements Comparator<T> {
 
     // shortcut if the key doesn't exist.
     if (null == value){
-      logger.info(String.format("unable to udpate weight as the specified factorName %s doesn't exist",factorName));
+      logger.info(String.format(
+          "unable to udpate weight as the specified factorName %s doesn't exist",
+          factorName));
       return -1;
     }
 
@@ -153,6 +166,14 @@ public abstract class CandidateComparator<T> implements Comparator<T> {
       logger.info(String.format("[Factor: %s] compare result : %s (current score %s vs %s)",
           comparator.getFactorName(), result, result1, result2));
     }
+
+    // in case of same score, user differentiator to stabilize the result.
+    if (result1 == result2){
+      boolean result = this.differentiate(object1, object2);
+      logger.info("[Differentiator] differentiator chose " + (result?  object1.toString(): object2.toString()));
+      if (result) result1++; else result2++;
+    }
+
     logger.info(String.format("Result : %s vs %s ",result1,result2));
     return new Pair<Integer,Integer>(result1,result2);
   }
