@@ -784,6 +784,26 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements
    * @see azkaban.executor.ExecutorLoader#fetchActiveExecutors()
    */
   @Override
+  public List<Executor> fetchAllExecutors() throws ExecutorManagerException {
+    QueryRunner runner = createQueryRunner();
+    FetchExecutorHandler executorHandler = new FetchExecutorHandler();
+
+    try {
+      List<Executor> executors =
+        runner.query(FetchExecutorHandler.FETCH_ALL_EXECUTORS, executorHandler);
+      return executors;
+    } catch (Exception e) {
+      throw new ExecutorManagerException("Error fetching executors", e);
+    }
+  }
+
+  /**
+   *
+   * {@inheritDoc}
+   *
+   * @see azkaban.executor.ExecutorLoader#fetchActiveExecutors()
+   */
+  @Override
   public List<Executor> fetchActiveExecutors() throws ExecutorManagerException {
     QueryRunner runner = createQueryRunner();
     FetchExecutorHandler executorHandler = new FetchExecutorHandler();
@@ -793,7 +813,7 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements
         runner.query(FetchExecutorHandler.FETCH_ACTIVE_EXECUTORS,
           executorHandler);
       return executors;
-    } catch (SQLException e) {
+    } catch (Exception e) {
       throw new ExecutorManagerException("Error fetching active executors", e);
     }
   }
@@ -818,7 +838,7 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements
       } else {
         return executors.get(0);
       }
-    } catch (SQLException e) {
+    } catch (Exception e) {
       throw new ExecutorManagerException(String.format(
         "Error fetching executor %s:%d", host, port), e);
     }
@@ -843,7 +863,7 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements
       } else {
         return executors.get(0);
       }
-    } catch (SQLException e) {
+    } catch (Exception e) {
       throw new ExecutorManagerException(String.format(
         "Error fetching executor with id: %d", executorId), e);
     }
@@ -852,38 +872,25 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements
   /**
    * {@inheritDoc}
    *
-   * @see azkaban.executor.ExecutorLoader#inactivateExecutor(int)
+   * @see azkaban.executor.ExecutorLoader#updateExecutor(int)
    */
   @Override
-  public void inactivateExecutor(int executorId)
-    throws ExecutorManagerException {
-    final String INACTIVATE = "UPDATE executors SET active=false where id=?";
+  public void updateExecutor(Executor executor) throws ExecutorManagerException {
+    final String UPDATE =
+      "UPDATE executors SET host=?, port=?, active=? where id=?";
 
     QueryRunner runner = createQueryRunner();
     try {
-      runner.update(INACTIVATE, executorId);
+      int rows =
+        runner.update(UPDATE, executor.getHost(), executor.getPort(),
+          executor.isActive(), executor.getId());
+      if (rows == 0) {
+        throw new ExecutorManagerException("No executor with id :"
+          + executor.getId());
+      }
     } catch (SQLException e) {
       throw new ExecutorManagerException("Error inactivating executor "
-        + executorId, e);
-    }
-  }
-
-  /**
-   * {@inheritDoc}
-   *
-   * @see azkaban.executor.ExecutorLoader#activateExecutor(int)
-   */
-  @Override
-  public void activateExecutor(int executorId)
-    throws ExecutorManagerException {
-    final String ACTIVATE = "UPDATE executors SET active=true where id=?";
-
-    QueryRunner runner = createQueryRunner();
-    try {
-      runner.update(ACTIVATE, executorId);
-    } catch (SQLException e) {
-      throw new ExecutorManagerException("Error activating executor "
-        + executorId, e);
+        + executor.getId(), e);
     }
   }
 
@@ -911,30 +918,26 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements
 
   private void addExecutorHelper(String host, int port)
     throws ExecutorManagerException {
-    final String INSERT =
-      "INSERT INTO executors " + "(host, port) values (?,?)";
+    final String INSERT = "INSERT INTO executors (host, port) values (?,?)";
     QueryRunner runner = createQueryRunner();
-    String errString = String.format("Error adding %s:%d ", host, port);
     try {
-      int rows = runner.update(INSERT, host, port);
-      if (rows == 0) {
-        throw new ExecutorManagerException(errString);
-      }
+      runner.update(INSERT, host, port);
     } catch (SQLException e) {
-      throw new ExecutorManagerException(errString, e);
+      throw new ExecutorManagerException(String.format("Error adding %s:%d ",
+        host, port), e);
     }
   }
 
   /**
    * {@inheritDoc}
    *
-   * @see azkaban.executor.ExecutorLoader#postEvent(azkaban.executor.Executor,
+   * @see azkaban.executor.ExecutorLoader#postExecutorEvent(azkaban.executor.Executor,
    *      azkaban.executor.ExecutorLogEvent.EventType, java.lang.String,
    *      java.lang.String)
    */
   @Override
-  public boolean postEvent(Executor executor, EventType type, String user,
-    String message) {
+  public void postExecutorEvent(Executor executor, EventType type, String user,
+    String message) throws ExecutorManagerException{
     QueryRunner runner = createQueryRunner();
 
     final String INSERT_PROJECT_EVENTS =
@@ -944,11 +947,8 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements
       runner.update(INSERT_PROJECT_EVENTS, executor.getId(), type.getNumVal(),
         updateDate, user, message);
     } catch (SQLException e) {
-      e.printStackTrace();
-      return false;
+      throw new ExecutorManagerException("Failed to post executor event", e);
     }
-
-    return true;
   }
 
   /**
@@ -959,7 +959,7 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements
    */
   @Override
   public List<ExecutorLogEvent> getExecutorEvents(Executor executor, int num,
-    int skip) throws ExecutorManagerException {
+    int offset) throws ExecutorManagerException {
     QueryRunner runner = createQueryRunner();
 
     ExecutorLogsResultHandler logHandler = new ExecutorLogsResultHandler();
@@ -967,9 +967,10 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements
     try {
       events =
         runner.query(ExecutorLogsResultHandler.SELECT_EXECUTOR_EVENTS_ORDER,
-          logHandler, executor.getId(), num, skip);
+          logHandler, executor.getId(), num, offset);
     } catch (SQLException e) {
-      logger.error(e);
+      throw new ExecutorManagerException(
+        "Failed to fetch events for executor id : " + executor.getId(), e);
     }
 
     return events;
@@ -1342,6 +1343,8 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements
    */
   private static class FetchExecutorHandler implements
     ResultSetHandler<List<Executor>> {
+    private static String FETCH_ALL_EXECUTORS =
+      "SELECT id, host, port, active FROM executors";
     private static String FETCH_ACTIVE_EXECUTORS =
       "SELECT id, host, port, active FROM executors where active=true";
     private static String FETCH_EXECUTOR_BY_ID =
@@ -1361,8 +1364,7 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements
         String host = rs.getString(2);
         int port = rs.getInt(3);
         boolean active = rs.getBoolean(4);
-        Executor executor = new Executor(id, host, port);
-        executor.setActive(active);
+        Executor executor = new Executor(id, host, port, active);
         executors.add(executor);
       } while (rs.next());
 
