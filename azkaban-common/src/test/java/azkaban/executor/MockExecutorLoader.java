@@ -297,33 +297,21 @@ public class MockExecutorLoader implements ExecutorLoader {
 
     }
     executorIdCounter++;
-    Executor executor = new Executor(executorIdCounter, host, port);
-    executors.indexOf(executor);
+    Executor executor = new Executor(executorIdCounter, host, port, true);
     return executor;
   }
 
   @Override
-  public void inactivateExecutor(int executorId)
-    throws ExecutorManagerException {
-    Executor executor = fetchExecutor(executorId);
-    if (executor != null) {
-      executor.setActive(false);
-    }
-  }
-
-  @Override
-  public boolean postEvent(Executor executor, EventType type, String user,
-    String message) {
+  public void postExecutorEvent(Executor executor, EventType type, String user,
+    String message) throws ExecutorManagerException {
     ExecutorLogEvent event =
-      new ExecutorLogEvent(executor.getId(), user,
-        new Date(), type, message);
+      new ExecutorLogEvent(executor.getId(), user, new Date(), type, message);
 
     if (!executorEvents.containsKey(executor.getId())) {
       executorEvents.put(executor.getId(), new ArrayList<ExecutorLogEvent>());
     }
 
     executorEvents.get(executor.getId()).add(event);
-    return true;
   }
 
   @Override
@@ -337,11 +325,15 @@ public class MockExecutorLoader implements ExecutorLoader {
   }
 
   @Override
-  public void activateExecutor(int executorId) throws ExecutorManagerException {
-    Executor executor = fetchExecutor(executorId);
-    if (executor != null) {
-      executor.setActive(true);
-    }
+  public void updateExecutor(Executor executor) throws ExecutorManagerException {
+    Executor oldExecutor = fetchExecutor(executor.getId());
+    executors.remove(oldExecutor);
+    executors.add(executor);
+  }
+
+  @Override
+  public List<Executor> fetchAllExecutors() throws ExecutorManagerException {
+    return executors;
   }
 
   @Override

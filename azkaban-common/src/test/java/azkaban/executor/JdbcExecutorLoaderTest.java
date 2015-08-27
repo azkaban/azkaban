@@ -334,9 +334,21 @@ public class JdbcExecutorLoaderTest {
 
   }
 
-  /* Test active executors fetch from empty executors */
+
+  /* Test all executors fetch from empty executors */
   @Test
   public void testFetchEmptyExecutors() throws Exception {
+    if (!isTestSetup()) {
+      return;
+    }
+    ExecutorLoader loader = createLoader();
+    List<Executor> executors = loader.fetchAllExecutors();
+    Assert.assertEquals(executors.size(), 0);
+  }
+
+  /* Test active executors fetch from empty executors */
+  @Test
+  public void testFetchEmptyActiveExecutors() throws Exception {
     if (!isTestSetup()) {
       return;
     }
@@ -374,7 +386,7 @@ public class JdbcExecutorLoaderTest {
       return;
     }
     ExecutorLoader loader = createLoader();
-    Executor executor = new Executor(1, "localhost", 12345);
+    Executor executor = new Executor(1, "localhost", 12345, true);
     List<ExecutorLogEvent> executorEvents =
       loader.getExecutorEvents(executor, 5, 0);
     Assert.assertEquals(executorEvents.size(), 0);
@@ -389,13 +401,13 @@ public class JdbcExecutorLoaderTest {
     ExecutorLoader loader = createLoader();
     int skip = 1;
     User user = new User("testUser");
-    Executor executor = new Executor(1, "localhost", 12345);
+    Executor executor = new Executor(1, "localhost", 12345, true);
     String message = "My message ";
     EventType[] events =
       { EventType.CREATED, EventType.HOST_UPDATE, EventType.INACTIVATION };
 
     for (EventType event : events) {
-      loader.postEvent(executor, event, user.getUserId(),
+      loader.postExecutorEvent(executor, event, user.getUserId(),
         message + event.getNumVal());
     }
 
@@ -433,6 +445,23 @@ public class JdbcExecutorLoaderTest {
     clearDB();
   }
 
+  /* Test to try update a non-existent executor */
+  @Test
+  public void testMissingExecutorUpdate() throws Exception {
+    if (!isTestSetup()) {
+      return;
+    }
+    ExecutorLoader loader = createLoader();
+    try {
+      Executor executor = new Executor(1, "localhost", 1234, true);
+      loader.updateExecutor(executor);
+      Assert.fail("Expecting exception, but didn't get one");
+    } catch (ExecutorManagerException ex) {
+      System.out.println("Test true");
+    }
+    clearDB();
+  }
+
   /* Test add & fetch by Id Executors */
   @Test
   public void testSingleExecutorFetchById() throws Exception {
@@ -448,6 +477,25 @@ public class JdbcExecutorLoaderTest {
     clearDB();
   }
 
+  /* Test fetch all executors */
+  @Test
+  public void testFetchAllExecutors() throws Exception {
+    if (!isTestSetup()) {
+      return;
+    }
+    ExecutorLoader loader = createLoader();
+    List<Executor> executors = addTestExecutors(loader);
+
+    executors.get(0).setActive(false);
+    loader.updateExecutor(executors.get(0));
+
+    List<Executor> fetchedExecutors = loader.fetchAllExecutors();
+    Assert.assertEquals(executors.size(), fetchedExecutors.size());
+
+    Assert.assertArrayEquals(executors.toArray(), fetchedExecutors.toArray());
+    clearDB();
+  }
+
   /* Test fetch only active executors */
   @Test
   public void testFetchActiveExecutors() throws Exception {
@@ -457,7 +505,8 @@ public class JdbcExecutorLoaderTest {
     ExecutorLoader loader = createLoader();
     List<Executor> executors = addTestExecutors(loader);
 
-    loader.inactivateExecutor(executors.get(0).getId());
+    executors.get(0).setActive(false);
+    loader.updateExecutor(executors.get(0));
 
     List<Executor> fetchedExecutors = loader.fetchActiveExecutors();
     Assert.assertEquals(executors.size(), fetchedExecutors.size() + 1);
@@ -504,7 +553,9 @@ public class JdbcExecutorLoaderTest {
     Executor executor = loader.addExecutor("localhost1", 12345);
     Assert.assertTrue(executor.isActive());
 
-    loader.inactivateExecutor(executor.getId());
+    executor.setActive(false);
+    loader.updateExecutor(executor);
+
     Executor fetchedExecutor = loader.fetchExecutor(executor.getId());
 
     Assert.assertEquals(executor.getHost(), fetchedExecutor.getHost());
@@ -525,11 +576,13 @@ public class JdbcExecutorLoaderTest {
     Executor executor = loader.addExecutor("localhost1", 12345);
     Assert.assertTrue(executor.isActive());
 
-    loader.inactivateExecutor(executor.getId());
+    executor.setActive(false);
+    loader.updateExecutor(executor);
     Executor fetchedExecutor = loader.fetchExecutor(executor.getId());
     Assert.assertFalse(fetchedExecutor.isActive());
 
-    loader.activateExecutor(executor.getId());
+    executor.setActive(true);
+    loader.updateExecutor(executor);
     fetchedExecutor = loader.fetchExecutor(executor.getId());
 
     Assert.assertEquals(executor, fetchedExecutor);

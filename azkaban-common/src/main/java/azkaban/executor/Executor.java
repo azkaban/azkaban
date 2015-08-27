@@ -16,6 +16,8 @@
 
 package azkaban.executor;
 
+import azkaban.utils.Utils;
+
 /**
  * Class to represent an AzkabanExecutorServer details for ExecutorManager
  *
@@ -23,27 +25,40 @@ package azkaban.executor;
  */
 public class Executor {
   private final int id;
-  private String host;
-  private int port;
-  private boolean active = true;
+  private final String host;
+  private final int port;
+  private boolean isActive;
 
   // TODO: ExecutorStats to be added
 
-  public Executor(int id) {
-    this.id = id;
-  }
+  /**
+   * <pre>
+   * Construct an Executor Object
+   * Note: port should be a within unsigned 2 byte
+   * integer range
+   * </pre>
+   *
+   * @param executor_id
+   * @param executor_host
+   * @param executor_port
+   */
+  public Executor(int id, String host, int port, boolean isActive) {
+    if (!Utils.isValidPort(port)) {
+      throw new IllegalArgumentException(String.format(
+        "Invalid port number %d for host %s, executor_id %d", port, host, id));
+    }
 
-  public Executor(int id, String host, int port) {
     this.id = id;
     this.host = host;
     this.port = port;
+    this.isActive = isActive;
   }
 
   @Override
   public int hashCode() {
     final int prime = 31;
     int result = 1;
-    result = prime * result + (active ? 1231 : 1237);
+    result = prime * result + (isActive ? 1231 : 1237);
     result = prime * result + ((host == null) ? 0 : host.hashCode());
     result = prime * result + id;
     result = prime * result + port;
@@ -59,7 +74,7 @@ public class Executor {
     if (!(obj instanceof Executor))
       return false;
     Executor other = (Executor) obj;
-    if (active != other.active)
+    if (isActive != other.isActive)
       return false;
     if (host == null) {
       if (other.host != null)
@@ -77,28 +92,19 @@ public class Executor {
     return host;
   }
 
-  public void setHost(String host) {
-    this.host = host;
-  }
-
   public int getPort() {
     return port;
   }
 
-  public void setPort(int port) {
-    this.port = port;
-  }
-
   public boolean isActive() {
-    return active;
-  }
-
-  public void setActive(boolean active) {
-    this.active = active;
+    return isActive;
   }
 
   public int getId() {
     return id;
   }
 
+  public void setActive(boolean isActive) {
+    this.isActive = isActive;
+  }
 }

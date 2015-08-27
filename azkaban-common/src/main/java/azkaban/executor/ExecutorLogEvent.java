@@ -42,7 +42,8 @@ public class ExecutorLogEvent {
       return numVal;
     }
 
-    public static EventType fromInteger(int x) {
+    public static EventType fromInteger(int x)
+        throws IllegalArgumentException {
       switch (x) {
       case 1:
         return HOST_UPDATE;
@@ -57,7 +58,8 @@ public class ExecutorLogEvent {
       case 128:
         return ERROR;
       default:
-        return ERROR;
+        throw new IllegalArgumentException(String.format(
+          "inalid status code %d", x));
       }
     }
   }
