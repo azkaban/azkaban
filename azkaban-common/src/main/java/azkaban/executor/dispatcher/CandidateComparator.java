@@ -46,6 +46,8 @@ public abstract class CandidateComparator<T> implements Comparator<T> {
    *  both sides. the tieBreak method will try best to make sure a stable result is returned.
    * */
   protected boolean tieBreak(T object1, T object2){
+    if (null == object2) return true;
+    if (null == object1) return false;
     return object1.hashCode() >= object2.hashCode();
   }
 
@@ -128,43 +130,40 @@ public abstract class CandidateComparator<T> implements Comparator<T> {
         object2 == null ? "(null)" : object2.toString(),
         this.getTotalWeight()));
 
-    // short cut if object equals.
-    // Note if:  objects are reference equals, there is no need to call
-    //           TieBreaker as returning either side actually doesn't matter,
-    //           because they are the same.
-    if (object1 ==  object2){
-      logger.info("Result : 0 vs 0 (equal)");
-      return new Pair<Integer,Integer>(0,0);
-    }
-
-    // left side is null.
-    if (object1 == null){
-      logger.info(String.format("Result : 0 vs %s (left is null)",this.getTotalWeight()));
-      return new Pair<Integer, Integer>(0,this.getTotalWeight());
-    }
-
-    // right side is null.
-    if (object2 == null){
-      logger.info(String.format("Result : %s vs 0 (right is null)",this.getTotalWeight()));
-      return new Pair<Integer, Integer>(this.getTotalWeight(),0);
-    }
-
-    // both side is not null,put them thru the full loop
     int result1 = 0 ;
     int result2 = 0 ;
-    Collection<FactorComparator<T>> comparatorList = this.factorComparatorList.values();
-    for (FactorComparator<T> comparator :comparatorList){
-      int result = comparator.compare(object1, object2);
-      result1  = result1 + (result > 0 ? comparator.getWeight() : 0);
-      result2  = result2 + (result < 0 ? comparator.getWeight() : 0);
-      logger.info(String.format("[Factor: %s] compare result : %s (current score %s vs %s)",
-          comparator.getFactorName(), result, result1, result2));
-    }
 
+    // short cut if object equals.
+    if (object1 ==  object2){
+      logger.info("[Comparator] same object.");
+    } else
+    // left side is null.
+    if (object1 == null){
+      logger.info("[Comparator] left side is null, right side gets total weight.");
+      result2 = this.getTotalWeight();
+    } else
+    // right side is null.
+    if (object2 == null){
+      logger.info("[Comparator] right side is null, left side gets total weight");
+      result1 = this.getTotalWeight();
+    } else
+    // both side is not null,put them thru the full loop
+    {
+      Collection<FactorComparator<T>> comparatorList = this.factorComparatorList.values();
+      for (FactorComparator<T> comparator :comparatorList){
+        int result = comparator.compare(object1, object2);
+        result1  = result1 + (result > 0 ? comparator.getWeight() : 0);
+        result2  = result2 + (result < 0 ? comparator.getWeight() : 0);
+        logger.info(String.format("[Factor: %s] compare result : %s (current score %s vs %s)",
+            comparator.getFactorName(), result, result1, result2));
+      }
+    }
     // in case of same score, use tie-breaker to stabilize the result.
     if (result1 == result2){
       boolean result = this.tieBreak(object1, object2);
-      logger.info("[TieBreaker] TieBreaker chose " + (result?  object1.toString(): object2.toString()));
+      logger.info("[TieBreaker] TieBreaker chose " +
+      (result? String.format("left side (%s)",  null== object1 ? "null": object1.toString()) :
+               String.format("right side (%s)", null== object2 ? "null": object2.toString()) ));
       if (result) result1++; else result2++;
     }
 

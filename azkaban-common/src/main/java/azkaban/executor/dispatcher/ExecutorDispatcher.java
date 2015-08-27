@@ -67,7 +67,7 @@ public class ExecutorDispatcher<K,V> implements Dispatcher<K, V> {
   }
 
   @Override
-  public K getNext(List<K> candidateList, V dispatchingObject) {
+  public K getBest(List<K> candidateList, V dispatchingObject) {
 
      // shortcut if the candidateList is empty.
      if ( null == candidateList || candidateList.size() == 0){
@@ -83,7 +83,7 @@ public class ExecutorDispatcher<K,V> implements Dispatcher<K, V> {
 
      if (null != this.filter){
        for (K candidateInfo : candidateList){
-         if (filter.analyzeTarget(candidateInfo,dispatchingObject)){
+         if (filter.filterTarget(candidateInfo,dispatchingObject)){
            filteredList.add(candidateInfo);
          }
        }
@@ -100,8 +100,8 @@ public class ExecutorDispatcher<K,V> implements Dispatcher<K, V> {
 
      // final work - find the best candidate from the filtered list.
      K executor = Collections.max(filteredList,comparator);
-     logger.info(String.format("candidate selected %s", executor.toString()));
-
+     logger.info(String.format("candidate selected %s",
+         null == executor ? "(null)" : executor.toString()));
      return executor;
   }
 

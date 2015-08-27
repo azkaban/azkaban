@@ -17,7 +17,6 @@
 package azkaban.executor.dispatcher;
 
 import java.util.Collection;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -62,24 +61,22 @@ public abstract class CandidateFilter<T,V>  {
    *                      the object being checked need to be filtered or not.
    * @return true if the check passed, false if check failed, which means the item need to be filtered.
    * */
-  public boolean analyzeTarget(T filteringTarget, V referencingObject){
-    logger.info(String.format("start checking '%s' with factor filter for '%s'",
+  public boolean filterTarget(T filteringTarget, V referencingObject){
+    logger.info(String.format("start filtering '%s' with factor filter for '%s'",
         filteringTarget == null ? "(null)" : filteringTarget.toString(),
         this.getName()));
 
     Collection<FactorFilter<T,V>> filterList = this.factorFilterList.values();
-    Iterator<FactorFilter<T,V>> mapItr = filterList.iterator();
     boolean result = true;
-    while (mapItr.hasNext()){
-      FactorFilter<T,V> filter = (FactorFilter<T,V>) mapItr.next();
-      result &= filter.check(filteringTarget,referencingObject);
+    for (FactorFilter<T,V> filter : filterList){
+      result &= filter.filterTarget(filteringTarget,referencingObject);
       logger.info(String.format("[Factor: %s] filter result : %s ",
           filter.getFactorName(), result));
       if (!result){
         break;
       }
     }
-    logger.info(String.format("Final checking result : %s ",result));
+    logger.info(String.format("Final filtering result : %s ",result));
     return result;
   }
 }

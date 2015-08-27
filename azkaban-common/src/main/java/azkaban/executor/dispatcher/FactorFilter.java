@@ -57,12 +57,12 @@ public final class FactorFilter<T,V>{
   }
 
   // the actual check function, which will leverage the logic defined by user.
-  public boolean check(T itemToCheck, V sourceObject){
-    return this.filter.analyzeTarget(itemToCheck, sourceObject);
+  public boolean filterTarget(T filteringTarget, V referencingObject){
+    return this.filter.filterTarget(filteringTarget, referencingObject);
   }
 
   // interface of the filter.
-  public interface Filter<K,V>{
+  public interface Filter<T,V>{
 
     /**function to analyze the target item according to the reference object to decide whether the item should be filtered.
      * @param filteringTarget:   object to be checked.
@@ -70,7 +70,7 @@ public final class FactorFilter<T,V>{
      *                      the object being checked need to be filtered or not.
      * @return true if the check passed, false if check failed, which means the item need to be filtered.
      * */
-    public boolean analyzeTarget(K filteringTarget, V referencingObject);
+    public boolean filterTarget(T filteringTarget, V referencingObject);
   }
 
 

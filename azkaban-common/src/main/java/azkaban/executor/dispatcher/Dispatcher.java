@@ -32,7 +32,7 @@ public interface Dispatcher <K,V> {
    *  @param  dispatchingObject : the object to be dispatched .
    *  @return candidate from the candidate list that suits best for the dispatching object.
    * */
-  public K getNext(List<K> candidateList, V dispatchingObject);
+  public K getBest(List<K> candidateList, V dispatchingObject);
 
   /** Function returns the name of the current Dispatcher
    *  @return name of the dispatcher.
