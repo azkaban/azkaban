@@ -27,7 +27,6 @@ import org.apache.log4j.Logger;
 /** Abstract class for a candidate filter.
  *  this class contains implementation of most of the core logics. Implementing classes is expected only to
  *  register filters using the provided register function.
- *
  */
 public abstract class CandidateFilter<T,V>  {
   private static Logger logger = Logger.getLogger(CandidateFilter.class);
@@ -43,11 +42,12 @@ public abstract class CandidateFilter<T,V>  {
 
   /** function to register a factorFilter to the internal Map for future reference.
    * @param factorfilter : the Filter object to be registered.
+   * @throws IllegalArgumentException
    * */
   protected void registerFactorFilter(FactorFilter<T,V> filter){
       if (null == filter ) {
-        logger.info("skipping registerFactorFilter as the comaractor is null or has an invalid weight value.");
-        return;
+        throw new IllegalArgumentException("unable to register factor filter. " +
+                  "The passed comaractor is null or has an invalid weight value.");
       }
 
       // add or replace the filter.
@@ -56,11 +56,15 @@ public abstract class CandidateFilter<T,V>  {
           filter.getFactorName()));
   }
 
-  /** function to get the filtering result.
+  /** function to analyze the target item according to the reference object to decide whether the item should be filtered.
+   * @param filteringTarget:   object to be checked.
+   * @param referencingObject: object which contains statistics based on which a decision is made whether
+   *                      the object being checked need to be filtered or not.
+   * @return true if the check passed, false if check failed, which means the item need to be filtered.
    * */
-  public boolean check(T item, V object){
+  public boolean analyzeTarget(T filteringTarget, V referencingObject){
     logger.info(String.format("start checking '%s' with factor filter for '%s'",
-        item == null ? "(null)" : item.toString(),
+        filteringTarget == null ? "(null)" : filteringTarget.toString(),
         this.getName()));
 
     Collection<FactorFilter<T,V>> filterList = this.factorFilterList.values();
@@ -68,7 +72,7 @@ public abstract class CandidateFilter<T,V>  {
     boolean result = true;
     while (mapItr.hasNext()){
       FactorFilter<T,V> filter = (FactorFilter<T,V>) mapItr.next();
-      result &= filter.check(item,object);
+      result &= filter.check(filteringTarget,referencingObject);
       logger.info(String.format("[Factor: %s] filter result : %s ",
           filter.getFactorName(), result));
       if (!result){

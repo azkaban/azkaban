@@ -103,7 +103,7 @@ public class RestfulApiClientTest {
   public void testHttpGet() throws Exception {
     MockRestfulApiClient mockClient = new MockRestfulApiClient();
     @SuppressWarnings("unchecked")
-    URI uri = MockRestfulApiClient.BuildUri("test.com", 80, "test", true,
+    URI uri = MockRestfulApiClient.buildUri("test.com", 80, "test", true,
         new Pair <String,String>("Entry1","Value1"));
 
     String result = mockClient.httpGet(uri, null);
@@ -115,7 +115,7 @@ public class RestfulApiClientTest {
   public void testHttpGetWithHeaderItems() throws Exception {
     MockRestfulApiClient mockClient = new MockRestfulApiClient();
     @SuppressWarnings("unchecked")
-    URI uri = MockRestfulApiClient.BuildUri("test.com", 80, "test", true,
+    URI uri = MockRestfulApiClient.buildUri("test.com", 80, "test", true,
         new Pair <String,String>("Entry1","Value1"));
 
     ArrayList<NameValuePair> headerItems = new ArrayList<NameValuePair>();
@@ -133,7 +133,7 @@ public class RestfulApiClientTest {
   public void testHttpPost() throws Exception {
     MockRestfulApiClient mockClient = new MockRestfulApiClient();
     @SuppressWarnings("unchecked")
-    URI uri = MockRestfulApiClient.BuildUri("test.com", 80, "test", true,
+    URI uri = MockRestfulApiClient.buildUri("test.com", 80, "test", true,
         new Pair <String,String>("Entry1","Value1"));
 
     ArrayList<NameValuePair> headerItems = new ArrayList<NameValuePair>();
@@ -154,7 +154,7 @@ public class RestfulApiClientTest {
   public void testHttpPostWOBody() throws Exception {
     MockRestfulApiClient mockClient = new MockRestfulApiClient();
     @SuppressWarnings("unchecked")
-    URI uri = MockRestfulApiClient.BuildUri("test.com", 80, "test", true,
+    URI uri = MockRestfulApiClient.buildUri("test.com", 80, "test", true,
         new Pair <String,String>("Entry1","Value1"));
 
     String result = mockClient.httpPost(uri, null,null);
@@ -168,7 +168,7 @@ public class RestfulApiClientTest {
   public void testHttpPut() throws Exception {
     MockRestfulApiClient mockClient = new MockRestfulApiClient();
     @SuppressWarnings("unchecked")
-    URI uri = MockRestfulApiClient.BuildUri("test.com", 80, "test", true,
+    URI uri = MockRestfulApiClient.buildUri("test.com", 80, "test", true,
         new Pair <String,String>("Entry1","Value1"));
 
     ArrayList<NameValuePair> headerItems = new ArrayList<NameValuePair>();
@@ -189,7 +189,7 @@ public class RestfulApiClientTest {
   public void testContentLength() throws Exception {
     MockRestfulApiClient mockClient = new MockRestfulApiClient();
     @SuppressWarnings("unchecked")
-    URI uri = MockRestfulApiClient.BuildUri("test.com", 80, "test", true,
+    URI uri = MockRestfulApiClient.buildUri("test.com", 80, "test", true,
         new Pair <String,String>("Entry1","Value1"));
 
     String content = "123456789";
@@ -203,7 +203,7 @@ public class RestfulApiClientTest {
   public void testContentLengthOverride() throws Exception {
     MockRestfulApiClient mockClient = new MockRestfulApiClient();
     @SuppressWarnings("unchecked")
-    URI uri = MockRestfulApiClient.BuildUri("test.com", 80, "test", true,
+    URI uri = MockRestfulApiClient.buildUri("test.com", 80, "test", true,
         new Pair <String,String>("Entry1","Value1"));
 
     ArrayList<NameValuePair> headerItems = new ArrayList<NameValuePair>();
@@ -221,7 +221,7 @@ public class RestfulApiClientTest {
   public void testHttpDelete() throws Exception {
     MockRestfulApiClient mockClient = new MockRestfulApiClient();
     @SuppressWarnings("unchecked")
-    URI uri = MockRestfulApiClient.BuildUri("test.com", 80, "test", true,
+    URI uri = MockRestfulApiClient.buildUri("test.com", 80, "test", true,
         new Pair <String,String>("Entry1","Value1"));
 
     ArrayList<NameValuePair> headerItems = new ArrayList<NameValuePair>();

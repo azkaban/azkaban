@@ -18,7 +18,6 @@ package azkaban.executor.dispatcher;
 
 import java.util.Collection;
 import java.util.Comparator;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -43,25 +42,22 @@ public abstract class CandidateComparator<T> implements Comparator<T> {
    * */
   public abstract String getName();
 
-  /** differentiate method which will kick in when the comparator list generated an equality result for
-   *  both sides. the differentiate method will try best to make sure a stable result is returned.
+  /** tieBreak method which will kick in when the comparator list generated an equality result for
+   *  both sides. the tieBreak method will try best to make sure a stable result is returned.
    * */
-  protected boolean differentiate(T object1, T object2){
-    if (object2 == null) return true;
-    if (object1 == null) return false;
-
+  protected boolean tieBreak(T object1, T object2){
     return object1.hashCode() >= object2.hashCode();
   }
 
   /** function to register a factorComparator to the internal Map for future reference.
    * @param factorComparator : the comparator object to be registered.
+   * @throws IllegalArgumentException
    * */
   protected void registerFactorComparator(FactorComparator<T> comparator){
       if (null == comparator ||
           Integer.MAX_VALUE - this.getTotalWeight() < comparator.getWeight() ) {
-        logger.info(
-            "skipping registerFactorComparator as the comaractor is null or has an invalid weight value.");
-        return;
+        throw new IllegalArgumentException("unable to register comparator."+
+          " The passed comparator is null or has an invalid weight value.");
       }
 
       // add or replace the Comparator.
@@ -73,28 +69,25 @@ public abstract class CandidateComparator<T> implements Comparator<T> {
   /** function update the weight of a specific registered factorCompartor.
    * @param factorName : the name of the registered factorComparator to adjust.
    * @param weight:      the new weight value to be adjusted to.
-   * @return -1 if the factor doesn't exist or the weight value specified is invalid,
-   *          the original value before update otherwise.
+   * @return  the original value before update.
+   * @throws IllegalArgumentException
    * */
   public int adjustFactorWeight(String factorName, int weight){
     // shortcut if the input is invalid.
     if (factorName == null ||
-        factorName == "" ||
+        factorName.length() == 0||
         weight < 0 ||
         Integer.MAX_VALUE - this.getTotalWeight() < weight){
-      logger.info(
-          "skipping adjustFactorWeight as one or more of the input parameters are invalid");
-      return -1;
+      throw new IllegalArgumentException("unable to adjust factor weight as one or more of the input parameters are invalid");
     }
 
     FactorComparator<T> value = this.factorComparatorList.get(factorName);
 
     // shortcut if the key doesn't exist.
     if (null == value){
-      logger.info(String.format(
+      throw new IllegalArgumentException(String.format(
           "unable to udpate weight as the specified factorName %s doesn't exist",
           factorName));
-      return -1;
     }
 
     int returnVal = value.getWeight();
@@ -129,13 +122,16 @@ public abstract class CandidateComparator<T> implements Comparator<T> {
    *  4. final result will be returned in a Pair container.
    *
    * */
-  public Pair<Integer,Integer> getReult(T object1, T object2){
+  public Pair<Integer,Integer> getComparisonScore(T object1, T object2){
     logger.info(String.format("start comparing '%s' with '%s',  total weight = %s ",
         object1 == null ? "(null)" : object1.toString(),
         object2 == null ? "(null)" : object2.toString(),
         this.getTotalWeight()));
 
     // short cut if object equals.
+    // Note if:  objects are reference equals, there is no need to call
+    //           TieBreaker as returning either side actually doesn't matter,
+    //           because they are the same.
     if (object1 ==  object2){
       logger.info("Result : 0 vs 0 (equal)");
       return new Pair<Integer,Integer>(0,0);
@@ -157,9 +153,7 @@ public abstract class CandidateComparator<T> implements Comparator<T> {
     int result1 = 0 ;
     int result2 = 0 ;
     Collection<FactorComparator<T>> comparatorList = this.factorComparatorList.values();
-    Iterator<FactorComparator<T>> mapItr = comparatorList.iterator();
-    while (mapItr.hasNext()){
-      FactorComparator<T> comparator = (FactorComparator<T>) mapItr.next();
+    for (FactorComparator<T> comparator :comparatorList){
       int result = comparator.compare(object1, object2);
       result1  = result1 + (result > 0 ? comparator.getWeight() : 0);
       result2  = result2 + (result < 0 ? comparator.getWeight() : 0);
@@ -167,10 +161,10 @@ public abstract class CandidateComparator<T> implements Comparator<T> {
           comparator.getFactorName(), result, result1, result2));
     }
 
-    // in case of same score, user differentiator to stabilize the result.
+    // in case of same score, use tie-breaker to stabilize the result.
     if (result1 == result2){
-      boolean result = this.differentiate(object1, object2);
-      logger.info("[Differentiator] differentiator chose " + (result?  object1.toString(): object2.toString()));
+      boolean result = this.tieBreak(object1, object2);
+      logger.info("[TieBreaker] TieBreaker chose " + (result?  object1.toString(): object2.toString()));
       if (result) result1++; else result2++;
     }
 
@@ -180,7 +174,7 @@ public abstract class CandidateComparator<T> implements Comparator<T> {
 
   @Override
   public int compare(T o1, T o2) {
-    Pair<Integer,Integer> result = this.getReult(o1,o2);
+    Pair<Integer,Integer> result = this.getComparisonScore(o1,o2);
     return result.getFirst() == result.getSecond() ? 0 :
                                 result.getFirst() > result.getSecond() ? 1 : -1;
   }

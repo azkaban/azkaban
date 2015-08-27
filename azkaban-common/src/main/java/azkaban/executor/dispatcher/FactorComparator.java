@@ -46,7 +46,7 @@ public final class FactorComparator<T>{
    * */
   public static <T> FactorComparator<T> create(String factorName, int weight, Comparator<T> comparator){
 
-    if (null == factorName || factorName == "" || weight < 0 || null == comparator){
+    if (null == factorName || factorName.length() == 0 || weight < 0 || null == comparator){
       logger.error("failed to create instance of FactorComparator, at least one of the input paramters are invalid");
       return null;
     }

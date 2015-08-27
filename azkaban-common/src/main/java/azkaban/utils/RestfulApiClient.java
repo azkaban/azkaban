@@ -153,7 +153,7 @@ public abstract class RestfulApiClient<T> {
    *  @return the URI built from the inputs.
    *  @throws IOException
    * */
-  public static URI BuildUri(String host, int port, String path,
+  public static URI buildUri(String host, int port, String path,
       boolean isHttp, Pair<String, String>... params) throws IOException{
     URIBuilder builder = new URIBuilder();
     builder.setScheme(isHttp? "http" : "https").setHost(host).setPort(port);

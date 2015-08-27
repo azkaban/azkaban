@@ -17,7 +17,7 @@
 package azkaban.executor;
 
 import java.io.IOException;
-import java.net.URI;
+import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.http.HttpEntity;
@@ -27,47 +27,38 @@ import org.apache.http.client.HttpResponseException;
 import org.apache.http.util.EntityUtils;
 
 import azkaban.utils.JSONUtils;
-import azkaban.utils.Pair;
 import azkaban.utils.RestfulApiClient;
 
 /** Client class that will be used to handle all Restful API calls between Executor and the host application.
  * */
 public class ExecutorApiClient extends RestfulApiClient<Map<String, Object>> {
-
-  // hide the constructor. we what this class to be in singleton.
   private ExecutorApiClient(){}
+  private static ExecutorApiClient instance = new ExecutorApiClient();
 
-  // international cache for the object instance.
-  private static ExecutorApiClient instance = null;
-
-  /**Singleton creator of the class.
+  /** Function to return the instance of the ExecutorApiClient class.
    * */
   public static ExecutorApiClient getInstance() {
-    if (null == instance) {
-      synchronized (ExecutorApiClient.class) {
-        if (null == instance) {
-          instance = new ExecutorApiClient();
-        }
-      }
-    }
     return instance;
   }
 
   /**Implementing the parseResponse function to return de-serialized Json object.
    * @param response  the returned response from the HttpClient.
+   * @return de-serialized object from Json or empty object if the response doesn't have a body.
    * */
   @SuppressWarnings("unchecked")
   @Override
   protected Map<String, Object> parseResponse(HttpResponse response)
       throws HttpResponseException, IOException {
     final StatusLine statusLine = response.getStatusLine();
+    String responseBody = response.getEntity() != null ?
+        EntityUtils.toString(response.getEntity()) : "";
+
     if (statusLine.getStatusCode() >= 300) {
 
         logger.error(String.format("unable to parse response as the response status is %s",
             statusLine.getStatusCode()));
 
-        throw new HttpResponseException(statusLine.getStatusCode(),
-                statusLine.getReasonPhrase());
+        throw new HttpResponseException(statusLine.getStatusCode(),responseBody);
     }
 
     final HttpEntity entity = response.getEntity();
@@ -77,25 +68,7 @@ public class ExecutorApiClient extends RestfulApiClient<Map<String, Object>> {
         return (Map<String, Object>) returnVal;
       }
     }
-    return null;
+
+    return new HashMap<String, Object>() ;
   }
-
-  /**function to get executor status .
-   * @param executorHost    Host name of the executor.
-   * @param executorPort    Host port.
-   * @param action          query action.
-   * @param param           extra query parameters
-   * @return  the de-serialized JSON object in Map<String, Object> format.
-   * */
-  @SuppressWarnings("unchecked")
-  public Map<String, Object> callExecutorStats(String executorHost, int executorPort,
-      String action, Pair<String, String>... params) throws IOException {
-
-    // form up the URI.
-    URI uri = ExecutorApiClient.BuildUri(executorHost, executorPort, "/stats", true,params);
-    uri =  ExecutorApiClient.BuildUri(uri, new Pair<String, String>(ConnectorParams.ACTION_PARAM, action));
-    return this.httpGet(uri, null);
-    }
-
-  // TO-DO  reflector other API call functions out from the ExecutorManager.
 }

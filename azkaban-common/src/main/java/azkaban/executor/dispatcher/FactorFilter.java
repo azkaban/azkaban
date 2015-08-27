@@ -43,7 +43,7 @@ public final class FactorFilter<T,V>{
    * */
   public static <T,V> FactorFilter<T,V> create(String factorName, Filter<T,V> filter){
 
-    if (null == factorName || factorName == "" || null == filter){
+    if (null == factorName || factorName.length() == 0 || null == filter){
       logger.error("failed to create instance of FactorFilter, at least one of the input paramters are invalid");
       return null;
     }
@@ -58,19 +58,19 @@ public final class FactorFilter<T,V>{
 
   // the actual check function, which will leverage the logic defined by user.
   public boolean check(T itemToCheck, V sourceObject){
-    return this.filter.check(itemToCheck, sourceObject);
+    return this.filter.analyzeTarget(itemToCheck, sourceObject);
   }
 
   // interface of the filter.
   public interface Filter<K,V>{
 
-    /**check function for the filter.
-     * @param itemToCheck:  object to be checked.
-     * @param sourceObject: object which contains statistics based on which a decision is made whether
+    /**function to analyze the target item according to the reference object to decide whether the item should be filtered.
+     * @param filteringTarget:   object to be checked.
+     * @param referencingObject: object which contains statistics based on which a decision is made whether
      *                      the object being checked need to be filtered or not.
      * @return true if the check passed, false if check failed, which means the item need to be filtered.
      * */
-    public boolean check(K itemToCheck, V sourceObject);
+    public boolean analyzeTarget(K filteringTarget, V referencingObject);
   }
 
 

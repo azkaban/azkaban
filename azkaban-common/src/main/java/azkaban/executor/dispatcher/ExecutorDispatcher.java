@@ -83,7 +83,7 @@ public class ExecutorDispatcher<K,V> implements Dispatcher<K, V> {
 
      if (null != this.filter){
        for (K candidateInfo : candidateList){
-         if (filter.check(candidateInfo,dispatchingObject)){
+         if (filter.analyzeTarget(candidateInfo,dispatchingObject)){
            filteredList.add(candidateInfo);
          }
        }
