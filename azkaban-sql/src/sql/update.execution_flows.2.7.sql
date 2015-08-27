@@ -1,0 +1,1 @@
+ALTER TABLE execution_flows ADD COLUMN executor_id INT DEFAULT NULL;

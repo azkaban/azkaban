@@ -18,16 +18,22 @@ package azkaban.executor;
 
 public class ExecutionReference {
   private final int execId;
-  private final String host;
-  private final int port;
+  private Executor executor;
   private long updateTime;
   private long nextCheckTime = -1;
   private int numErrors = 0;
 
-  public ExecutionReference(int execId, String host, int port) {
+  public ExecutionReference(int execId) {
     this.execId = execId;
-    this.host = host;
-    this.port = port;
+  }
+
+  public ExecutionReference(int execId, Executor executor) {
+    this.execId = execId;
+    this.executor = executor;
+  }
+
+  public Executor getExecutor() {
+    return executor;
   }
 
   public void setUpdateTime(long updateTime) {
@@ -51,11 +57,11 @@ public class ExecutionReference {
   }
 
   public String getHost() {
-    return host;
+    return executor.getHost();
   }
 
   public int getPort() {
-    return port;
+    return executor.getPort();
   }
 
   public int getNumErrors() {
@@ -64,5 +70,9 @@ public class ExecutionReference {
 
   public void setNumErrors(int numErrors) {
     this.numErrors = numErrors;
+  }
+
+  public void setExecutor(Executor executor) {
+    this.executor = executor;
   }
 }

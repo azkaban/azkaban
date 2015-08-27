@@ -30,6 +30,8 @@ import azkaban.utils.Props;
 
 public class MockExecutorLoader implements ExecutorLoader {
 
+  HashMap<Integer, Integer> executionExecutorMapping =
+      new HashMap<Integer, Integer>();
   HashMap<Integer, ExecutableFlow> flows =
       new HashMap<Integer, ExecutableFlow>();
   HashMap<String, ExecutableNode> nodes = new HashMap<String, ExecutableNode>();
@@ -342,4 +344,35 @@ public class MockExecutorLoader implements ExecutorLoader {
     }
   }
 
+  @Override
+  public void assignExecutor(int executorId, int execId)
+    throws ExecutorManagerException {
+    ExecutionReference ref = refs.get(execId);
+    ref.setExecutor(fetchExecutor(executorId));
+    executionExecutorMapping.put(execId, executorId);
+  }
+
+  @Override
+  public int fetchExecutorId(int execId) throws ExecutorManagerException {
+    if (executionExecutorMapping.containsKey(execId)) {
+      return executionExecutorMapping.get(execId);
+    } else {
+      throw new ExecutorManagerException(
+        "Failed to find executor with execution : " + execId);
+    }
+  }
+
+  @Override
+  public List<Pair<ExecutionReference, ExecutableFlow>> fetchQueuedFlows()
+    throws ExecutorManagerException {
+    List<Pair<ExecutionReference, ExecutableFlow>> queuedFlows =
+      new ArrayList<Pair<ExecutionReference, ExecutableFlow>>();
+    for (int execId : refs.keySet()) {
+      if (executionExecutorMapping.containsKey(execId)) {
+        queuedFlows.add(new Pair<ExecutionReference, ExecutableFlow>(refs
+          .get(execId), flows.get(execId)));
+      }
+    }
+    return queuedFlows;
+  }
 }

@@ -130,6 +130,25 @@ public interface ExecutorLoader {
   public void removeActiveExecutableReference(int execId)
       throws ExecutorManagerException;
 
+  /**
+   * Set executorId for a flow execution
+   *
+   * @param executorId
+   * @param execId
+   * @throws ExecutorManagerException
+   */
+  public void assignExecutor(int executorId, int execId)
+    throws ExecutorManagerException;
+
+  /**
+   * Fetch executorId for a given flow execution
+   *
+   * @param execId
+   * @return
+   * @throws ExecutorManagerException
+   */
+  public int fetchExecutorId(int execId) throws ExecutorManagerException;
+
   public boolean updateExecutableReference(int execId, long updateTime)
       throws ExecutorManagerException;
 
@@ -182,4 +201,12 @@ public interface ExecutorLoader {
 
   public int removeExecutionLogsByTime(long millis)
       throws ExecutorManagerException;
+
+  /**
+   * Fetch queued flows which have not yet dispatched
+   * @return List of queued flows and corresponding execution reference
+   * @throws ExecutorManagerException
+   */
+  public List<Pair<ExecutionReference, ExecutableFlow>> fetchQueuedFlows()
+    throws ExecutorManagerException;
 }

@@ -546,14 +546,15 @@ public class JdbcExecutorLoaderTest {
     ExecutorLoader loader = createLoader();
     ExecutableFlow flow1 = createExecutableFlow("exec1");
     loader.uploadExecutableFlow(flow1);
+    Executor executor = new Executor(2, "test", 1);
     ExecutionReference ref1 =
-        new ExecutionReference(flow1.getExecutionId(), "test", 1);
+        new ExecutionReference(flow1.getExecutionId(), executor);
     loader.addActiveExecutableReference(ref1);
 
     ExecutableFlow flow2 = createExecutableFlow("exec1");
     loader.uploadExecutableFlow(flow2);
     ExecutionReference ref2 =
-        new ExecutionReference(flow2.getExecutionId(), "test", 1);
+        new ExecutionReference(flow2.getExecutionId(), executor);
     loader.addActiveExecutableReference(ref2);
 
     ExecutableFlow flow3 = createExecutableFlow("exec1");
