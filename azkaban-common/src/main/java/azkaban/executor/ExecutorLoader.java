@@ -20,6 +20,7 @@ import java.io.File;
 import java.util.List;
 import java.util.Map;
 
+import azkaban.executor.ExecutorLogEvent.EventType;
 import azkaban.utils.FileIOUtils.LogData;
 import azkaban.utils.Pair;
 import azkaban.utils.Props;
@@ -46,6 +47,123 @@ public interface ExecutorLoader {
   public List<ExecutableFlow> fetchFlowHistory(String projContain,
       String flowContains, String userNameContains, int status, long startData,
       long endData, int skip, int num) throws ExecutorManagerException;
+
+  /**
+   * <pre>
+   * Fetch all executors from executors table
+   * Note:-
+   * 1 throws an Exception in case of a SQL issue
+   * 2 returns an empty list in case of no executor
+   * </pre>
+   *
+   * @return List<Executor>
+   * @throws ExecutorManagerException
+   */
+  public List<Executor> fetchAllExecutors() throws ExecutorManagerException;
+
+  /**
+   * <pre>
+   * Fetch all executors from executors table with active = true
+   * Note:-
+   * 1 throws an Exception in case of a SQL issue
+   * 2 returns an empty list in case of no active executor
+   * </pre>
+   *
+   * @return List<Executor>
+   * @throws ExecutorManagerException
+   */
+  public List<Executor> fetchActiveExecutors() throws ExecutorManagerException;
+
+  /**
+   * <pre>
+   * Fetch executor from executors with a given (host, port)
+   * Note:
+   * 1. throws an Exception in case of a SQL issue
+   * 2. return null when no executor is found
+   * with the given (host,port)
+   * </pre>
+   *
+   * @return Executor
+   * @throws ExecutorManagerException
+   */
+  public Executor fetchExecutor(String host, int port)
+    throws ExecutorManagerException;
+
+  /**
+   * <pre>
+   * Fetch executor from executors with a given executorId
+   * Note:
+   * 1. throws an Exception in case of a SQL issue
+   * 2. return null when no executor is found with the given executorId
+   * </pre>
+   *
+   * @return Executor
+   * @throws ExecutorManagerException
+   */
+  public Executor fetchExecutor(int executorId) throws ExecutorManagerException;
+
+  /**
+   * <pre>
+   * create an executor and insert in executors table.
+   * Note:-
+   * 1. throws an Exception in case of a SQL issue
+   * 2. throws an Exception if a executor with (host, port) already exist
+   * 3. return null when no executor is found with the given executorId
+   * </pre>
+   *
+   * @return Executor
+   * @throws ExecutorManagerException
+   */
+  public Executor addExecutor(String host, int port)
+    throws ExecutorManagerException;
+
+  /**
+   * <pre>
+   * create an executor and insert in executors table.
+   * Note:-
+   * 1. throws an Exception in case of a SQL issue
+   * 2. throws an Exception if there is no executor with the given id
+   * 3. return null when no executor is found with the given executorId
+   * </pre>
+   *
+   * @param executorId
+   * @throws ExecutorManagerException
+   */
+  public void updateExecutor(Executor executor) throws ExecutorManagerException;
+
+  /**
+   * <pre>
+   * Log an event in executor_event audit table Note:- throws an Exception in
+   * case of a SQL issue
+   * Note: throws an Exception in case of a SQL issue
+   * </pre>
+   *
+   * @param executor
+   * @param type
+   * @param user
+   * @param message
+   * @return isSuccess
+   */
+  public void postExecutorEvent(Executor executor, EventType type, String user,
+    String message) throws ExecutorManagerException;
+
+  /**
+   * <pre>
+   * This method is to fetch events recorded in executor audit table, inserted
+   * by postExecutorEvents with a given executor, starting from skip
+   * Note:-
+   * 1. throws an Exception in case of a SQL issue
+   * 2. Returns an empty list in case of no events
+   * </pre>
+   *
+   * @param executor
+   * @param num
+   * @param skip
+   * @return List<ExecutorLogEvent>
+   * @throws ExecutorManagerException
+   */
+  List<ExecutorLogEvent> getExecutorEvents(Executor executor, int num,
+    int offset) throws ExecutorManagerException;
 
   public void addActiveExecutableReference(ExecutionReference ref)
       throws ExecutorManagerException;
@@ -105,5 +223,4 @@ public interface ExecutorLoader {
 
   public int removeExecutionLogsByTime(long millis)
       throws ExecutorManagerException;
-
 }

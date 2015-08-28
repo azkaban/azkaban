@@ -21,12 +21,14 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.lang.annotation.Inherited;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -40,6 +42,7 @@ import org.apache.log4j.Logger;
 import org.joda.time.DateTime;
 
 import azkaban.database.AbstractJdbcLoader;
+import azkaban.executor.ExecutorLogEvent.EventType;
 import azkaban.utils.FileIOUtils;
 import azkaban.utils.FileIOUtils.LogData;
 import azkaban.utils.GZIPUtils;
@@ -773,6 +776,206 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements
     return connection;
   }
 
+
+  /**
+   *
+   * {@inheritDoc}
+   *
+   * @see azkaban.executor.ExecutorLoader#fetchActiveExecutors()
+   */
+  @Override
+  public List<Executor> fetchAllExecutors() throws ExecutorManagerException {
+    QueryRunner runner = createQueryRunner();
+    FetchExecutorHandler executorHandler = new FetchExecutorHandler();
+
+    try {
+      List<Executor> executors =
+        runner.query(FetchExecutorHandler.FETCH_ALL_EXECUTORS, executorHandler);
+      return executors;
+    } catch (Exception e) {
+      throw new ExecutorManagerException("Error fetching executors", e);
+    }
+  }
+
+  /**
+   *
+   * {@inheritDoc}
+   *
+   * @see azkaban.executor.ExecutorLoader#fetchActiveExecutors()
+   */
+  @Override
+  public List<Executor> fetchActiveExecutors() throws ExecutorManagerException {
+    QueryRunner runner = createQueryRunner();
+    FetchExecutorHandler executorHandler = new FetchExecutorHandler();
+
+    try {
+      List<Executor> executors =
+        runner.query(FetchExecutorHandler.FETCH_ACTIVE_EXECUTORS,
+          executorHandler);
+      return executors;
+    } catch (Exception e) {
+      throw new ExecutorManagerException("Error fetching active executors", e);
+    }
+  }
+
+  /**
+   * {@inheritDoc}
+   *
+   * @see azkaban.executor.ExecutorLoader#fetchExecutor(java.lang.String, int)
+   */
+  @Override
+  public Executor fetchExecutor(String host, int port)
+    throws ExecutorManagerException {
+    QueryRunner runner = createQueryRunner();
+    FetchExecutorHandler executorHandler = new FetchExecutorHandler();
+
+    try {
+      List<Executor> executors =
+        runner.query(FetchExecutorHandler.FETCH_EXECUTOR_BY_HOST_PORT,
+          executorHandler, host, port);
+      if (executors.isEmpty()) {
+        return null;
+      } else {
+        return executors.get(0);
+      }
+    } catch (Exception e) {
+      throw new ExecutorManagerException(String.format(
+        "Error fetching executor %s:%d", host, port), e);
+    }
+  }
+
+  /**
+   * {@inheritDoc}
+   *
+   * @see azkaban.executor.ExecutorLoader#fetchExecutor(int)
+   */
+  @Override
+  public Executor fetchExecutor(int executorId) throws ExecutorManagerException {
+    QueryRunner runner = createQueryRunner();
+    FetchExecutorHandler executorHandler = new FetchExecutorHandler();
+
+    try {
+      List<Executor> executors =
+        runner.query(FetchExecutorHandler.FETCH_EXECUTOR_BY_ID,
+          executorHandler, executorId);
+      if (executors.isEmpty()) {
+        return null;
+      } else {
+        return executors.get(0);
+      }
+    } catch (Exception e) {
+      throw new ExecutorManagerException(String.format(
+        "Error fetching executor with id: %d", executorId), e);
+    }
+  }
+
+  /**
+   * {@inheritDoc}
+   *
+   * @see azkaban.executor.ExecutorLoader#updateExecutor(int)
+   */
+  @Override
+  public void updateExecutor(Executor executor) throws ExecutorManagerException {
+    final String UPDATE =
+      "UPDATE executors SET host=?, port=?, active=? where id=?";
+
+    QueryRunner runner = createQueryRunner();
+    try {
+      int rows =
+        runner.update(UPDATE, executor.getHost(), executor.getPort(),
+          executor.isActive(), executor.getId());
+      if (rows == 0) {
+        throw new ExecutorManagerException("No executor with id :"
+          + executor.getId());
+      }
+    } catch (SQLException e) {
+      throw new ExecutorManagerException("Error inactivating executor "
+        + executor.getId(), e);
+    }
+  }
+
+  /**
+   * {@inheritDoc}
+   *
+   * @see azkaban.executor.ExecutorLoader#addExecutor(java.lang.String, int)
+   */
+  @Override
+  public Executor addExecutor(String host, int port)
+    throws ExecutorManagerException {
+    // verify, if executor already exists
+    Executor executor = fetchExecutor(host, port);
+    if (executor != null) {
+      throw new ExecutorManagerException(String.format(
+        "Executor %s:%d already exist", host, port));
+    }
+    // add new executor
+    addExecutorHelper(host, port);
+    // fetch newly added executor
+    executor = fetchExecutor(host, port);
+
+    return executor;
+  }
+
+  private void addExecutorHelper(String host, int port)
+    throws ExecutorManagerException {
+    final String INSERT = "INSERT INTO executors (host, port) values (?,?)";
+    QueryRunner runner = createQueryRunner();
+    try {
+      runner.update(INSERT, host, port);
+    } catch (SQLException e) {
+      throw new ExecutorManagerException(String.format("Error adding %s:%d ",
+        host, port), e);
+    }
+  }
+
+  /**
+   * {@inheritDoc}
+   *
+   * @see azkaban.executor.ExecutorLoader#postExecutorEvent(azkaban.executor.Executor,
+   *      azkaban.executor.ExecutorLogEvent.EventType, java.lang.String,
+   *      java.lang.String)
+   */
+  @Override
+  public void postExecutorEvent(Executor executor, EventType type, String user,
+    String message) throws ExecutorManagerException{
+    QueryRunner runner = createQueryRunner();
+
+    final String INSERT_PROJECT_EVENTS =
+      "INSERT INTO executor_events (executor_id, event_type, event_time, username, message) values (?,?,?,?,?)";
+    Date updateDate = new Date();
+    try {
+      runner.update(INSERT_PROJECT_EVENTS, executor.getId(), type.getNumVal(),
+        updateDate, user, message);
+    } catch (SQLException e) {
+      throw new ExecutorManagerException("Failed to post executor event", e);
+    }
+  }
+
+  /**
+   * {@inheritDoc}
+   *
+   * @see azkaban.executor.ExecutorLoader#getExecutorEvents(azkaban.executor.Executor,
+   *      int, int)
+   */
+  @Override
+  public List<ExecutorLogEvent> getExecutorEvents(Executor executor, int num,
+    int offset) throws ExecutorManagerException {
+    QueryRunner runner = createQueryRunner();
+
+    ExecutorLogsResultHandler logHandler = new ExecutorLogsResultHandler();
+    List<ExecutorLogEvent> events = null;
+    try {
+      events =
+        runner.query(ExecutorLogsResultHandler.SELECT_EXECUTOR_EVENTS_ORDER,
+          logHandler, executor.getId(), num, offset);
+    } catch (SQLException e) {
+      throw new ExecutorManagerException(
+        "Failed to fetch events for executor id : " + executor.getId(), e);
+    }
+
+    return events;
+  }
+
   private static class LastInsertID implements ResultSetHandler<Long> {
     private static String LAST_INSERT_ID = "SELECT LAST_INSERT_ID()";
 
@@ -1133,5 +1336,72 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements
     }
 
     return updateNum;
+  }
+
+  /**
+   * JDBC ResultSetHandler to fetch records from executors table
+   */
+  private static class FetchExecutorHandler implements
+    ResultSetHandler<List<Executor>> {
+    private static String FETCH_ALL_EXECUTORS =
+      "SELECT id, host, port, active FROM executors";
+    private static String FETCH_ACTIVE_EXECUTORS =
+      "SELECT id, host, port, active FROM executors where active=true";
+    private static String FETCH_EXECUTOR_BY_ID =
+      "SELECT id, host, port, active FROM executors where id=?";
+    private static String FETCH_EXECUTOR_BY_HOST_PORT =
+      "SELECT id, host, port, active FROM executors where host=? AND port=?";
+
+    @Override
+    public List<Executor> handle(ResultSet rs) throws SQLException {
+      if (!rs.next()) {
+        return Collections.<Executor> emptyList();
+      }
+
+      List<Executor> executors = new ArrayList<Executor>();
+      do {
+        int id = rs.getInt(1);
+        String host = rs.getString(2);
+        int port = rs.getInt(3);
+        boolean active = rs.getBoolean(4);
+        Executor executor = new Executor(id, host, port, active);
+        executors.add(executor);
+      } while (rs.next());
+
+      return executors;
+    }
+  }
+
+  /**
+   * JDBC ResultSetHandler to fetch records from executor_events table
+   */
+  private static class ExecutorLogsResultHandler implements
+    ResultSetHandler<List<ExecutorLogEvent>> {
+    private static String SELECT_EXECUTOR_EVENTS_ORDER =
+      "SELECT executor_id, event_type, event_time, username, message FROM executor_events "
+        + " WHERE executor_id=? ORDER BY event_time LIMIT ? OFFSET ?";
+
+    @Override
+    public List<ExecutorLogEvent> handle(ResultSet rs) throws SQLException {
+      if (!rs.next()) {
+        return Collections.<ExecutorLogEvent> emptyList();
+      }
+
+      ArrayList<ExecutorLogEvent> events = new ArrayList<ExecutorLogEvent>();
+      do {
+        int executorId = rs.getInt(1);
+        int eventType = rs.getInt(2);
+        Date eventTime = rs.getDate(3);
+        String username = rs.getString(4);
+        String message = rs.getString(5);
+
+        ExecutorLogEvent event =
+          new ExecutorLogEvent(executorId, username, eventTime,
+            EventType.fromInteger(eventType), message);
+        events.add(event);
+      } while (rs.next());
+
+      return events;
+    }
   }
 }
