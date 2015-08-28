@@ -144,7 +144,7 @@ public class JdbcExecutorLoaderTest {
   }
 
   @After
-  public static void clearDB() {
+  public void clearDB() {
     if (!testDBExists) {
       return;
     }
