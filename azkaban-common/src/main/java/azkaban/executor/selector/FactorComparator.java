@@ -14,7 +14,7 @@
  * the License.
  */
 
-package azkaban.executor.dispatcher;
+package azkaban.executor.selector;
 
 import java.util.Comparator;
 import org.apache.log4j.Logger;
@@ -73,6 +73,4 @@ public final class FactorComparator<T>{
   public int compare(T object1, T object2){
     return this.comparator.compare(object1, object2);
   }
-
-
 }

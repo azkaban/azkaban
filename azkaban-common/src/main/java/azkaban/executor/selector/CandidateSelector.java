@@ -14,7 +14,7 @@
  * the License.
  */
 
-package azkaban.executor.dispatcher;
+package azkaban.executor.selector;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -22,45 +22,21 @@ import java.util.List;
 
 import org.apache.log4j.Logger;
 
-/** Implementation of the ExecutorDispatcher.
+/** Implementation of the CandidateSelector.
  *  @param K executor object type.
  *  @param V dispatching object type.
  * */
-public class ExecutorDispatcher<K,V> implements Dispatcher<K, V> {
+public class CandidateSelector<K,V> implements Selector<K, V> {
   private static Logger logger = Logger.getLogger(CandidateComparator.class);
 
   private CandidateFilter<K,V> filter;
   private CandidateComparator<K> comparator;
 
-  // getter of the filter.
-  public CandidateFilter<K,V> getFilter(){
-    return this.filter;
-  }
-
-  // setter of the filer.
-  public CandidateFilter<K,V> setFilter(CandidateFilter<K,V> value){
-    CandidateFilter<K,V> returnVal = this.filter;
-    this.filter = value;
-    return returnVal;
-  }
-
-  // getter of the comparator.
-  public CandidateComparator<K> getComparator(){
-    return this.comparator;
-  }
-
-  // setter of the comparator.
-  public CandidateComparator<K> setComparator(CandidateComparator<K>  value){
-    CandidateComparator<K> returnVal = this.comparator;
-    this.comparator = value;
-    return returnVal;
-  }
-
   /**constructor of the class.
    * @param filter CandidateFilter object to be used to perform the candidate filtering.
    * @param comparator CandidateComparator object to be used to find the best suit candidate from the filtered list.
    * */
-  public ExecutorDispatcher(CandidateFilter<K,V> filter,
+  public CandidateSelector(CandidateFilter<K,V> filter,
       CandidateComparator<K> comparator){
     this.filter = filter;
     this.comparator = comparator;
@@ -107,7 +83,6 @@ public class ExecutorDispatcher<K,V> implements Dispatcher<K, V> {
 
   @Override
   public String getName() {
-    return "ExecutorDispatcher";
+    return "CandidateSelector";
   }
-
 }

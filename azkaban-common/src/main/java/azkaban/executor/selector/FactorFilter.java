@@ -14,7 +14,7 @@
  * the License.
  */
 
-package azkaban.executor.dispatcher;
+package azkaban.executor.selector;
 
 import org.apache.log4j.Logger;
 

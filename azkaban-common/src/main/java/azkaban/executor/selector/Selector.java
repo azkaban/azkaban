@@ -14,18 +14,18 @@
  * the License.
  */
 
-package azkaban.executor.dispatcher;
+package azkaban.executor.selector;
 
 import java.util.List;
 
 
-/** Definition of the dispatcher interface.
- *  an implementation of the dispatcher interface provides the functionality
+/** Definition of the selector interface.
+ *  an implementation of the selector interface provides the functionality
  *  to return a candidate from the candidateList that suits best for the dispatchingObject.
  *  @param K : type of the candidate.
  *  @param V : type of the dispatching object.
  */
-public interface Dispatcher <K,V> {
+public interface Selector <K,V> {
 
   /** Function returns the next best suit candidate from the candidateList for the dispatching object.
    *  @param  candidateList : List of the candidates to select from .

@@ -28,9 +28,9 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import azkaban.executor.dispatcher.*;
+import azkaban.executor.selector.*;
 
-public class DispatcherTest {
+public class SelectorTest {
   // mock executor object.
   protected class MockExecutorObject{
     public String name;
@@ -293,9 +293,9 @@ public class DispatcherTest {
       //expect true.
       result = mFilter.filterTarget(this.getExecutorByName("Executor3"), dispatchingObj);
       /*
-      1 [main] INFO azkaban.executor.dispatcher.CandidateFilter  - start checking 'Executor3' with factor filter for 'Mockfilter'
-      2 [main] INFO azkaban.executor.dispatcher.CandidateFilter  - [Factor: requiredRemainingMemory] filter result : true
-      2 [main] INFO azkaban.executor.dispatcher.CandidateFilter  - Final checking result : true
+      1 [main] INFO azkaban.executor.Selector.CandidateFilter  - start checking 'Executor3' with factor filter for 'Mockfilter'
+      2 [main] INFO azkaban.executor.Selector.CandidateFilter  - [Factor: requiredRemainingMemory] filter result : true
+      2 [main] INFO azkaban.executor.Selector.CandidateFilter  - Final checking result : true
       */
       Assert.assertTrue(result);
 
@@ -304,10 +304,10 @@ public class DispatcherTest {
       result = mFilter.filterTarget(this.getExecutorByName("Executor3"), dispatchingObj);
       // expect false, for priority.
       /*
-      2 [main] INFO azkaban.executor.dispatcher.CandidateFilter  - start checking 'Executor3' with factor filter for 'Mockfilter'
-      2 [main] INFO azkaban.executor.dispatcher.CandidateFilter  - [Factor: requiredRemainingMemory] filter result : true
-      2 [main] INFO azkaban.executor.dispatcher.CandidateFilter  - [Factor: requiredProprity] filter result : false
-      2 [main] INFO azkaban.executor.dispatcher.CandidateFilter  - Final checking result : false
+      2 [main] INFO azkaban.executor.Selector.CandidateFilter  - start checking 'Executor3' with factor filter for 'Mockfilter'
+      2 [main] INFO azkaban.executor.Selector.CandidateFilter  - [Factor: requiredRemainingMemory] filter result : true
+      2 [main] INFO azkaban.executor.Selector.CandidateFilter  - [Factor: requiredProprity] filter result : false
+      2 [main] INFO azkaban.executor.Selector.CandidateFilter  - Final checking result : false
       */
       Assert.assertFalse(result);
 
@@ -317,21 +317,21 @@ public class DispatcherTest {
       // expect pass.
       result = mFilter.filterTarget(this.getExecutorByName("Executor2"), dispatchingObj);
       /*
-      3 [main] INFO azkaban.executor.dispatcher.CandidateFilter  - start checking 'Executor2' with factor filter for 'Mockfilter'
-      3 [main] INFO azkaban.executor.dispatcher.CandidateFilter  - [Factor: requiredRemainingMemory] filter result : true
-      3 [main] INFO azkaban.executor.dispatcher.CandidateFilter  - [Factor: requiredRemainingTmpSpace] filter result : true
-      3 [main] INFO azkaban.executor.dispatcher.CandidateFilter  - [Factor: requiredProprity] filter result : true
-      3 [main] INFO azkaban.executor.dispatcher.CandidateFilter  - Final checking result : true
+      3 [main] INFO azkaban.executor.Selector.CandidateFilter  - start checking 'Executor2' with factor filter for 'Mockfilter'
+      3 [main] INFO azkaban.executor.Selector.CandidateFilter  - [Factor: requiredRemainingMemory] filter result : true
+      3 [main] INFO azkaban.executor.Selector.CandidateFilter  - [Factor: requiredRemainingTmpSpace] filter result : true
+      3 [main] INFO azkaban.executor.Selector.CandidateFilter  - [Factor: requiredProprity] filter result : true
+      3 [main] INFO azkaban.executor.Selector.CandidateFilter  - Final checking result : true
       */
       Assert.assertTrue(result);
 
       // expect false, remaining tmp, priority will also fail but the logic shortcuts when the Tmp size check Fails.
       result = mFilter.filterTarget(this.getExecutorByName("Executor8"), dispatchingObj);
       /*
-      4 [main] INFO azkaban.executor.dispatcher.CandidateFilter  - start checking 'Executor8' with factor filter for 'Mockfilter'
-      4 [main] INFO azkaban.executor.dispatcher.CandidateFilter  - [Factor: requiredRemainingMemory] filter result : true
-      4 [main] INFO azkaban.executor.dispatcher.CandidateFilter  - [Factor: requiredRemainingTmpSpace] filter result : false
-      4 [main] INFO azkaban.executor.dispatcher.CandidateFilter  - Final checking result : false
+      4 [main] INFO azkaban.executor.Selector.CandidateFilter  - start checking 'Executor8' with factor filter for 'Mockfilter'
+      4 [main] INFO azkaban.executor.Selector.CandidateFilter  - [Factor: requiredRemainingMemory] filter result : true
+      4 [main] INFO azkaban.executor.Selector.CandidateFilter  - [Factor: requiredRemainingTmpSpace] filter result : false
+      4 [main] INFO azkaban.executor.Selector.CandidateFilter  - Final checking result : false
       */
       Assert.assertFalse(result);
 
@@ -394,7 +394,7 @@ public class DispatcherTest {
   }
 
   @Test
-  public void testDispatcher() throws Exception {
+  public void testSelector() throws Exception {
     MockFilter filter = new MockFilter();
     MockComparator comparator = new MockComparator();
 
@@ -407,58 +407,25 @@ public class DispatcherTest {
     comparator.registerComparerForPriority(5);
     comparator.registerComparerForRemainingSpace(3);
 
-    ExecutorDispatcher<MockExecutorObject,MockFlowObject> morkDispatcher =
-        new ExecutorDispatcher<MockExecutorObject,MockFlowObject>(filter,comparator);
+    CandidateSelector<MockExecutorObject,MockFlowObject> morkSelector =
+        new CandidateSelector<MockExecutorObject,MockFlowObject>(filter,comparator);
 
     // mock object, remaining memory 11500, total memory 3095, remainingTmpSpace 4200, priority 2.
     MockFlowObject  dispatchingObj = new MockFlowObject("flow1",3096, 1500,4200,2);
 
     // expected selection = #12
-    MockExecutorObject nextExecutor = morkDispatcher.getBest(this.executorList, dispatchingObj);
+    MockExecutorObject nextExecutor = morkSelector.getBest(this.executorList, dispatchingObj);
     Assert.assertEquals(this.getExecutorByName("Executor1"),nextExecutor);
 
    // remaining memory 11500, total memory 3095, remainingTmpSpace 14200, priority 2.
    dispatchingObj = new MockFlowObject("flow1",3096, 1500,14200,2);
    // all candidates should be filtered by the remaining memory.
-   nextExecutor = morkDispatcher.getBest(this.executorList, dispatchingObj);
+   nextExecutor = morkSelector.getBest(this.executorList, dispatchingObj);
    Assert.assertEquals(null,nextExecutor);
   }
 
   @Test
-  public void testDispatcherChangingFactorWeight() throws Exception {
-    MockFilter filter = new MockFilter();
-    MockComparator comparator = new MockComparator();
-
-    filter.registerFilterforPriority();
-    filter.registerFilterforRemainingMemory();
-    filter.registerFilterforRemainingTmpSpace();
-    filter.registerFilterforTotalMemory();
-
-    comparator.registerComparerForMemory(1);
-    comparator.registerComparerForPriority(1);
-    comparator.registerComparerForRemainingSpace(1);
-
-    ExecutorDispatcher<MockExecutorObject,MockFlowObject> morkDispatcher =
-        new ExecutorDispatcher<MockExecutorObject,MockFlowObject>(filter,comparator);
-
-    MockFlowObject  dispatchingObj = new MockFlowObject("flow1",100, 100,100,3);
-    MockExecutorObject executor = morkDispatcher.getBest(this.executorList, dispatchingObj);
-    Assert.assertEquals(this.getExecutorByName("Executor9"), executor);
-
-    // adjusted the weight for memory to 10, therefore item #11 should be returned.
-    morkDispatcher.getComparator().adjustFactorWeight("Memory", 10);
-    executor = morkDispatcher.getBest(this.executorList, dispatchingObj);
-    Assert.assertEquals(this.getExecutorByName("Executor11"), executor);
-
-    // adjusted the weight for memory back to 1, therefore item #12 should be returned.
-    morkDispatcher.getComparator().adjustFactorWeight("Memory", 1);
-    executor = morkDispatcher.getBest(this.executorList, dispatchingObj);
-    Assert.assertEquals(this.getExecutorByName("Executor9"), executor);
-
-  }
-
-  @Test
-  public void testDispatchersignleCandidate() throws Exception {
+  public void testSelectorsignleCandidate() throws Exception {
     MockFilter filter = new MockFilter();
     MockComparator comparator = new MockComparator();
 
@@ -471,26 +438,26 @@ public class DispatcherTest {
     comparator.registerComparerForPriority(4);
     comparator.registerComparerForRemainingSpace(1);
 
-    ExecutorDispatcher<MockExecutorObject,MockFlowObject> morkDispatcher =
-        new ExecutorDispatcher<MockExecutorObject,MockFlowObject>(filter,comparator);
+    CandidateSelector<MockExecutorObject,MockFlowObject> morkSelector =
+        new CandidateSelector<MockExecutorObject,MockFlowObject>(filter,comparator);
 
     ArrayList<MockExecutorObject> signleExecutorList = new ArrayList<MockExecutorObject>();
     MockExecutorObject signleExecutor = new MockExecutorObject("ExecutorX",8080,50.0,2048,3,new Date(), 20, 6400);
     signleExecutorList.add(signleExecutor);
 
     MockFlowObject  dispatchingObj = new MockFlowObject("flow1",100, 100,100,5);
-    MockExecutorObject executor = morkDispatcher.getBest(signleExecutorList, dispatchingObj);
+    MockExecutorObject executor = morkSelector.getBest(signleExecutorList, dispatchingObj);
     // expected to see null result, as the only executor is filtered out .
     Assert.assertTrue(null == executor);
 
     // adjust the priority to let the executor pass the filter.
     dispatchingObj.priority = 3;
-    executor = morkDispatcher.getBest(signleExecutorList, dispatchingObj);
+    executor = morkSelector.getBest(signleExecutorList, dispatchingObj);
     Assert.assertEquals(signleExecutor, executor);
   }
 
   @Test
-  public void testDispatcherListWithItemsThatAreReferenceEqual() throws Exception {
+  public void testSelectorListWithItemsThatAreReferenceEqual() throws Exception {
     MockFilter filter = new MockFilter();
     MockComparator comparator = new MockComparator();
 
@@ -503,20 +470,20 @@ public class DispatcherTest {
     comparator.registerComparerForPriority(4);
     comparator.registerComparerForRemainingSpace(1);
 
-    ExecutorDispatcher<MockExecutorObject,MockFlowObject> morkDispatcher =
-        new ExecutorDispatcher<MockExecutorObject,MockFlowObject>(filter,comparator);
+    CandidateSelector<MockExecutorObject,MockFlowObject> morkSelector =
+        new CandidateSelector<MockExecutorObject,MockFlowObject>(filter,comparator);
 
     ArrayList<MockExecutorObject> list = new ArrayList<MockExecutorObject>();
     MockExecutorObject signleExecutor = new MockExecutorObject("ExecutorX",8080,50.0,2048,3,new Date(), 20, 6400);
     list.add(signleExecutor);
     list.add(signleExecutor);
     MockFlowObject  dispatchingObj = new MockFlowObject("flow1",100, 100,100,3);
-    MockExecutorObject executor = morkDispatcher.getBest(list, dispatchingObj);
+    MockExecutorObject executor = morkSelector.getBest(list, dispatchingObj);
     Assert.assertTrue(signleExecutor == executor);
   }
 
   @Test
-  public void testDispatcherListWithItemsThatAreEqualInValue() throws Exception {
+  public void testSelectorListWithItemsThatAreEqualInValue() throws Exception {
     MockFilter filter = new MockFilter();
     MockComparator comparator = new MockComparator();
 
@@ -529,8 +496,8 @@ public class DispatcherTest {
     comparator.registerComparerForPriority(4);
     comparator.registerComparerForRemainingSpace(1);
 
-    ExecutorDispatcher<MockExecutorObject,MockFlowObject> morkDispatcher =
-        new ExecutorDispatcher<MockExecutorObject,MockFlowObject>(filter,comparator);
+    CandidateSelector<MockExecutorObject,MockFlowObject> morkSelector =
+        new CandidateSelector<MockExecutorObject,MockFlowObject>(filter,comparator);
 
     // note - as the tieBreaker set in the MockComparator uses the name value of the executor to do the
     //        final diff therefore we need to set the name differently to make a meaningful test, in real
@@ -543,18 +510,18 @@ public class DispatcherTest {
     list.add(executor1);
     list.add(executor2);
     MockFlowObject  dispatchingObj = new MockFlowObject("flow1",100, 100,100,3);
-    MockExecutorObject executor = morkDispatcher.getBest(list, dispatchingObj);
+    MockExecutorObject executor = morkSelector.getBest(list, dispatchingObj);
     Assert.assertTrue(executor2 == executor);
 
     // shuffle and test again.
     list.remove(0);
     list.add(executor1);
-    executor = morkDispatcher.getBest(list, dispatchingObj);
+    executor = morkSelector.getBest(list, dispatchingObj);
     Assert.assertTrue(executor2 == executor);
   }
 
   @Test
-  public void testDispatcherEmptyList() throws Exception {
+  public void testSelectorEmptyList() throws Exception {
     MockFilter filter = new MockFilter();
     MockComparator comparator = new MockComparator();
 
@@ -567,8 +534,8 @@ public class DispatcherTest {
     comparator.registerComparerForPriority(4);
     comparator.registerComparerForRemainingSpace(1);
 
-    ExecutorDispatcher<MockExecutorObject,MockFlowObject> morkDispatcher =
-        new ExecutorDispatcher<MockExecutorObject,MockFlowObject>(filter,comparator);
+    CandidateSelector<MockExecutorObject,MockFlowObject> morkSelector =
+        new CandidateSelector<MockExecutorObject,MockFlowObject>(filter,comparator);
 
     ArrayList<MockExecutorObject> list = new ArrayList<MockExecutorObject>();
 
@@ -577,18 +544,18 @@ public class DispatcherTest {
     MockExecutorObject executor  = null;
 
     try {
-      executor = morkDispatcher.getBest(list, dispatchingObj);
+      executor = morkSelector.getBest(list, dispatchingObj);
       } catch (Exception ex){
-        Assert.fail("no exception should be thrown when an empty list is passed to the dispatcher.");
+        Assert.fail("no exception should be thrown when an empty list is passed to the Selector.");
       }
 
     // expected to see null result.
     Assert.assertTrue(null == executor);
 
     try {
-      executor = morkDispatcher.getBest(list, dispatchingObj);
+      executor = morkSelector.getBest(list, dispatchingObj);
       } catch (Exception ex){
-        Assert.fail("no exception should be thrown when null is passed to the dispatcher as the candidate list.");
+        Assert.fail("no exception should be thrown when null is passed to the Selector as the candidate list.");
       }
 
       // expected to see null result, as the only executor is filtered out .
@@ -597,15 +564,15 @@ public class DispatcherTest {
   }
 
   @Test
-  public void testDispatcherListWithNullValue() throws Exception {
+  public void testSelectorListWithNullValue() throws Exception {
     MockComparator comparator = new MockComparator();
 
     comparator.registerComparerForMemory(3);
     comparator.registerComparerForPriority(4);
     comparator.registerComparerForRemainingSpace(1);
 
-    ExecutorDispatcher<MockExecutorObject,MockFlowObject> morkDispatcher =
-        new ExecutorDispatcher<MockExecutorObject,MockFlowObject>(null,comparator);
+    CandidateSelector<MockExecutorObject,MockFlowObject> morkSelector =
+        new CandidateSelector<MockExecutorObject,MockFlowObject>(null,comparator);
 
     ArrayList<MockExecutorObject> list = new ArrayList<MockExecutorObject>();
     MockExecutorObject executor1 = new MockExecutorObject("ExecutorX", 8080,50.0,2048,3,new Date(), 20, 6400);
@@ -617,7 +584,7 @@ public class DispatcherTest {
     MockFlowObject  dispatchingObj = new MockFlowObject("flow1",100, 100,100,3);
     MockExecutorObject executor  = null;
     try {
-      executor = morkDispatcher.getBest(list, dispatchingObj);
+      executor = morkSelector.getBest(list, dispatchingObj);
       } catch (Exception ex){
         Assert.fail("no exception should be thrown when an List contains null value.");
       }
@@ -628,7 +595,7 @@ public class DispatcherTest {
     list.add(null);
     list.add(null);
     try {
-      executor = morkDispatcher.getBest(list, dispatchingObj);
+      executor = morkSelector.getBest(list, dispatchingObj);
       } catch (Exception ex){
         Assert.fail("no exception should be thrown when an List contains multiple null values.");
       }
