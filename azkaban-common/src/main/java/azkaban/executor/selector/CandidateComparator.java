@@ -14,7 +14,7 @@
  * the License.
  */
 
-package azkaban.executor.dispatcher;
+package azkaban.executor.selector;
 
 import java.util.Collection;
 import java.util.Comparator;
@@ -68,35 +68,6 @@ public abstract class CandidateComparator<T> implements Comparator<T> {
           comparator.getFactorName(), comparator.getWeight()));
   }
 
-  /** function update the weight of a specific registered factorCompartor.
-   * @param factorName : the name of the registered factorComparator to adjust.
-   * @param weight:      the new weight value to be adjusted to.
-   * @return  the original value before update.
-   * @throws IllegalArgumentException
-   * */
-  public int adjustFactorWeight(String factorName, int weight){
-    // shortcut if the input is invalid.
-    if (factorName == null ||
-        factorName.length() == 0||
-        weight < 0 ||
-        Integer.MAX_VALUE - this.getTotalWeight() < weight){
-      throw new IllegalArgumentException("unable to adjust factor weight as one or more of the input parameters are invalid");
-    }
-
-    FactorComparator<T> value = this.factorComparatorList.get(factorName);
-
-    // shortcut if the key doesn't exist.
-    if (null == value){
-      throw new IllegalArgumentException(String.format(
-          "unable to udpate weight as the specified factorName %s doesn't exist",
-          factorName));
-    }
-
-    int returnVal = value.getWeight();
-    value.updateWeight(weight);
-    return returnVal;
-  }
-
   /** function returns the total weight of the registered comparators.
    * @return the value of total weight.
    * */
@@ -144,7 +115,7 @@ public abstract class CandidateComparator<T> implements Comparator<T> {
     } else
     // right side is null.
     if (object2 == null){
-      logger.info("[Comparator] right side is null, left side gets total weight");
+      logger.info("[Comparator] right side is null, left side gets total weight.");
       result1 = this.getTotalWeight();
     } else
     // both side is not null,put them thru the full loop
