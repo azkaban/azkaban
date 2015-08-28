@@ -33,7 +33,7 @@ import org.apache.commons.dbutils.DbUtils;
 import org.apache.commons.dbutils.QueryRunner;
 import org.apache.commons.dbutils.ResultSetHandler;
 import org.joda.time.DateTime;
-import org.junit.AfterClass;
+import org.junit.After;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
@@ -143,7 +143,7 @@ public class JdbcExecutorLoaderTest {
     DbUtils.closeQuietly(connection);
   }
 
-  @AfterClass
+  @After
   public static void clearDB() {
     if (!testDBExists) {
       return;
@@ -423,7 +423,6 @@ public class JdbcExecutorLoaderTest {
       Assert.assertEquals(eventLog.getMessage(),
         message + events[index + skip].getNumVal());
     }
-    clearDB();
   }
 
   /* Test to add duplicate executors */
@@ -442,7 +441,6 @@ public class JdbcExecutorLoaderTest {
     } catch (ExecutorManagerException ex) {
       System.out.println("Test true");
     }
-    clearDB();
   }
 
   /* Test to try update a non-existent executor */
@@ -459,7 +457,6 @@ public class JdbcExecutorLoaderTest {
     } catch (ExecutorManagerException ex) {
       System.out.println("Test true");
     }
-    clearDB();
   }
 
   /* Test add & fetch by Id Executors */
@@ -474,7 +471,6 @@ public class JdbcExecutorLoaderTest {
       Executor fetchedExecutor = loader.fetchExecutor(executor.getId());
       Assert.assertEquals(executor, fetchedExecutor);
     }
-    clearDB();
   }
 
   /* Test fetch all executors */
@@ -493,7 +489,6 @@ public class JdbcExecutorLoaderTest {
     Assert.assertEquals(executors.size(), fetchedExecutors.size());
 
     Assert.assertArrayEquals(executors.toArray(), fetchedExecutors.toArray());
-    clearDB();
   }
 
   /* Test fetch only active executors */
@@ -513,7 +508,6 @@ public class JdbcExecutorLoaderTest {
     executors.remove(0);
 
     Assert.assertArrayEquals(executors.toArray(), fetchedExecutors.toArray());
-    clearDB();
   }
 
   /* Test add & fetch by host:port Executors */
@@ -529,7 +523,6 @@ public class JdbcExecutorLoaderTest {
         loader.fetchExecutor(executor.getHost(), executor.getPort());
       Assert.assertEquals(executor, fetchedExecutor);
     }
-    clearDB();
   }
 
   /* Helper method used in methods testing jdbc interface for executors table */
@@ -562,7 +555,6 @@ public class JdbcExecutorLoaderTest {
     Assert.assertEquals(executor.getId(), fetchedExecutor.getId());
     Assert.assertEquals(executor.getPort(), fetchedExecutor.getPort());
     Assert.assertFalse(fetchedExecutor.isActive());
-    clearDB();
   }
 
   /* Test Executor reactivation */
@@ -586,8 +578,6 @@ public class JdbcExecutorLoaderTest {
     fetchedExecutor = loader.fetchExecutor(executor.getId());
 
     Assert.assertEquals(executor, fetchedExecutor);
-
-    clearDB();
   }
 
   @Test
