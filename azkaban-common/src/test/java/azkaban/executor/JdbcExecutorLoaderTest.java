@@ -24,6 +24,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
@@ -33,6 +34,7 @@ import org.apache.commons.dbutils.DbUtils;
 import org.apache.commons.dbutils.QueryRunner;
 import org.apache.commons.dbutils.ResultSetHandler;
 import org.joda.time.DateTime;
+import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -52,14 +54,16 @@ import azkaban.utils.Props;
 public class JdbcExecutorLoaderTest {
   private static boolean testDBExists;
   // @TODO remove this and turn into local host.
-  private static final String host = "cyu-ld.linkedin.biz";
+  private static final String host = "localhost";
   private static final int port = 3306;
   private static final String database = "azkaban2";
   private static final String user = "azkaban";
   private static final String password = "azkaban";
   private static final int numConnections = 10;
+  private static final String UNIT_BASE_DIR =
+    "../azkaban-test/src/test/resources/executions/";
 
-  private File flowDir = new File("unit/executions/exectest1");
+  private File flowDir = new File(UNIT_BASE_DIR + "/exectest1");
 
   @BeforeClass
   public static void setupDB() {
@@ -143,8 +147,8 @@ public class JdbcExecutorLoaderTest {
     DbUtils.closeQuietly(connection);
   }
 
-  @AfterClass
-  public static void clearDB() {
+  @After
+  public void clearDB() {
     if (!testDBExists) {
       return;
     }
@@ -226,8 +230,6 @@ public class JdbcExecutorLoaderTest {
     if (!isTestSetup()) {
       return;
     }
-    Assert.assertEquals(1, 0);
-
     ExecutorLoader loader = createLoader();
     ExecutableFlow flow = createExecutableFlow("exec1");
 
@@ -334,6 +336,149 @@ public class JdbcExecutorLoaderTest {
 
   }
 
+  /* Test exception when assigning a non-existent executor to a flow */
+  @Test
+  public void testAssignExecutorInvalidExecutor()
+    throws ExecutorManagerException, IOException {
+    if (!isTestSetup()) {
+      return;
+    }
+    ExecutorLoader loader = createLoader();
+    ExecutableFlow flow = createExecutableFlow("exec1");
+    loader.uploadExecutableFlow(flow);
+    try {
+      loader.assignExecutor(flow.getExecutionId(), 1);
+      Assert.fail("Expecting exception, but didn't get one");
+    } catch (ExecutorManagerException ex) {
+      System.out.println("Test true");
+    }
+  }
+
+  /* Test exception when assigning an executor to a non-existent flow execution */
+  @Test
+  public void testAssignExecutorInvalidExecution()
+    throws ExecutorManagerException, IOException {
+    if (!isTestSetup()) {
+      return;
+    }
+    ExecutorLoader loader = createLoader();
+    String host = "localhost";
+    int port = 12345;
+    Executor executor = loader.addExecutor(host, port);
+    try {
+      loader.assignExecutor(2, executor.getId());
+      Assert.fail("Expecting exception, but didn't get one");
+    } catch (ExecutorManagerException ex) {
+      System.out.println("Test true");
+    }
+  }
+
+  /* Test null return when an invalid execution flows */
+  @Test
+  public void testFetchMissingExecutorByExecution()
+    throws ExecutorManagerException, IOException {
+    if (!isTestSetup()) {
+      return;
+    }
+    ExecutorLoader loader = createLoader();
+    Assert.assertEquals(loader.fetchExecutorByExecution(1), null);
+  }
+
+  /* Test null return when for a non-dispatched execution */
+  @Test
+  public void testFetchExecutorByQueuedExecution()
+    throws ExecutorManagerException, IOException {
+    if (!isTestSetup()) {
+      return;
+    }
+    ExecutorLoader loader = createLoader();
+    ExecutableFlow flow = createExecutableFlow("exec1");
+    loader.uploadExecutableFlow(flow);
+    Assert.assertEquals(loader.fetchExecutorByExecution(flow.getExecutionId()),
+      null);
+  }
+
+  /* Test happy case when assigning and fetching an executor to a flow execution */
+  @Test
+  public void testAssignAndFetchExecutor() throws ExecutorManagerException,
+    IOException {
+    if (!isTestSetup()) {
+      return;
+    }
+    ExecutorLoader loader = createLoader();
+    String host = "localhost";
+    int port = 12345;
+    Executor executor = loader.addExecutor(host, port);
+    ExecutableFlow flow = createExecutableFlow("exec1");
+    loader.uploadExecutableFlow(flow);
+    loader.assignExecutor(executor.getId(), flow.getExecutionId());
+    Assert.assertEquals(loader.fetchExecutorByExecution(flow.getExecutionId()),
+      executor);
+  }
+
+  /* Test fetchQueuedFlows when there are no queued flows */
+  @Test
+  public void testFetchNoQueuedFlows() throws ExecutorManagerException,
+    IOException {
+    if (!isTestSetup()) {
+      return;
+    }
+
+    ExecutorLoader loader = createLoader();
+    List<Pair<ExecutionReference, ExecutableFlow>> queuedFlows =
+      loader.fetchQueuedFlows();
+
+    // no execution flows at all i.e. no running, completed or queued flows
+    Assert.assertTrue(queuedFlows.isEmpty());
+
+    String host = "lcoalhost";
+    int port = 12345;
+    Executor executor = loader.addExecutor(host, port);
+
+    ExecutableFlow flow = createExecutableFlow("exec1");
+    loader.uploadExecutableFlow(flow);
+    loader.assignExecutor(executor.getId(), flow.getExecutionId());
+    // only completed flows
+    Assert.assertTrue(queuedFlows.isEmpty());
+
+    ExecutableFlow flow2 = createExecutableFlow("exec2");
+    loader.uploadExecutableFlow(flow);
+    loader.assignExecutor(executor.getId(), flow.getExecutionId());
+    ExecutionReference ref = new ExecutionReference(flow2.getExecutionId());
+    loader.addActiveExecutableReference(ref);
+    // only running and completed flows
+    Assert.assertTrue(queuedFlows.isEmpty());
+  }
+
+  /* Test fetchQueuedFlows happy case */
+  @Test
+  public void testFetchQueuedFlows() throws ExecutorManagerException,
+    IOException {
+    if (!isTestSetup()) {
+      return;
+    }
+
+    ExecutorLoader loader = createLoader();
+    List<Pair<ExecutionReference, ExecutableFlow>> queuedFlows =
+      new LinkedList<Pair<ExecutionReference, ExecutableFlow>>();
+
+    ExecutableFlow flow = createExecutableFlow("exec1");
+    loader.uploadExecutableFlow(flow);
+    ExecutableFlow flow2 = createExecutableFlow("exec2");
+    loader.uploadExecutableFlow(flow);
+
+    ExecutionReference ref2 = new ExecutionReference(flow2.getExecutionId());
+    loader.addActiveExecutableReference(ref2);
+    ExecutionReference ref = new ExecutionReference(flow.getExecutionId());
+    loader.addActiveExecutableReference(ref);
+
+    queuedFlows.add(new Pair<ExecutionReference, ExecutableFlow>(ref, flow));
+    queuedFlows.add(new Pair<ExecutionReference, ExecutableFlow>(ref2, flow2));
+
+    // only running and completed flows
+    Assert.assertArrayEquals(loader.fetchQueuedFlows().toArray(),
+      queuedFlows.toArray());
+  }
 
   /* Test all executors fetch from empty executors */
   @Test
@@ -435,7 +580,7 @@ public class JdbcExecutorLoaderTest {
     ExecutorLoader loader = createLoader();
     try {
       String host = "localhost";
-      int port = 123456;
+      int port = 12345;
       loader.addExecutor(host, port);
       loader.addExecutor(host, port);
       Assert.fail("Expecting exception, but didn't get one");
@@ -599,7 +744,7 @@ public class JdbcExecutorLoaderTest {
     ExecutorLoader loader = createLoader();
     ExecutableFlow flow1 = createExecutableFlow("exec1");
     loader.uploadExecutableFlow(flow1);
-    Executor executor = new Executor(2, "test", 1);
+    Executor executor = new Executor(2, "test", 1, true);
     ExecutionReference ref1 =
         new ExecutionReference(flow1.getExecutionId(), executor);
     loader.addActiveExecutableReference(ref1);
@@ -654,7 +799,7 @@ public class JdbcExecutorLoaderTest {
 
   @Ignore @Test
   public void testSmallUploadLog() throws ExecutorManagerException {
-    File logDir = new File("unit/executions/logtest");
+    File logDir = new File(UNIT_BASE_DIR + "logtest");
     File[] smalllog =
         { new File(logDir, "log1.log"), new File(logDir, "log2.log"),
             new File(logDir, "log3.log") };
@@ -679,7 +824,7 @@ public class JdbcExecutorLoaderTest {
 
   @Ignore @Test
   public void testLargeUploadLog() throws ExecutorManagerException {
-    File logDir = new File("unit/executions/logtest");
+    File logDir = new File(UNIT_BASE_DIR + "logtest");
 
     // Multiple of 255 for Henry the Eigth
     File[] largelog =
@@ -725,7 +870,7 @@ public class JdbcExecutorLoaderTest {
 
     ExecutorLoader loader = createLoader();
 
-    File logDir = new File("unit/executions/logtest");
+    File logDir = new File(UNIT_BASE_DIR + "logtest");
 
     // Multiple of 255 for Henry the Eigth
     File[] largelog =

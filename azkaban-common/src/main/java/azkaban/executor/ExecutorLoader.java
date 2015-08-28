@@ -172,7 +172,12 @@ public interface ExecutorLoader {
       throws ExecutorManagerException;
 
   /**
-   * Set executorId for a flow execution
+   * <pre>
+   * Set an executor Id to an execution
+   * Note:-
+   * 1. throws an Exception in case of a SQL issue
+   * 2. throws an Exception in case executionId or executorId do not exist
+   * </pre>
    *
    * @param executorId
    * @param execId
@@ -182,13 +187,33 @@ public interface ExecutorLoader {
     throws ExecutorManagerException;
 
   /**
-   * Fetch executorId for a given flow execution
+   * <pre>
+   * Fetches an executor corresponding to a given execution
+   * Note:-
+   * 1. throws an Exception in case of a SQL issue
+   * 2. return null when no executor is found with the given executionId
+   * </pre>
    *
-   * @param execId
-   * @return
+   * @param executionId
+   * @return fetched Executor
    * @throws ExecutorManagerException
    */
-  public int fetchExecutorId(int execId) throws ExecutorManagerException;
+  public Executor fetchExecutorByExecution(int executionId)
+    throws ExecutorManagerException;
+
+  /**
+   * <pre>
+   * Fetch queued flows which have not yet dispatched
+   * Note:
+   * 1. throws an Exception in case of a SQL issue
+   * 2. return empty list when no queued execution is found
+   * </pre>
+   *
+   * @return List of queued flows and corresponding execution reference
+   * @throws ExecutorManagerException
+   */
+  public List<Pair<ExecutionReference, ExecutableFlow>> fetchQueuedFlows()
+    throws ExecutorManagerException;
 
   public boolean updateExecutableReference(int execId, long updateTime)
       throws ExecutorManagerException;
@@ -242,12 +267,4 @@ public interface ExecutorLoader {
 
   public int removeExecutionLogsByTime(long millis)
       throws ExecutorManagerException;
-
-  /**
-   * Fetch queued flows which have not yet dispatched
-   * @return List of queued flows and corresponding execution reference
-   * @throws ExecutorManagerException
-   */
-  public List<Pair<ExecutionReference, ExecutableFlow>> fetchQueuedFlows()
-    throws ExecutorManagerException;
 }

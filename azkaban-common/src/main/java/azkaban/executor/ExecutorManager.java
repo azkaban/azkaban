@@ -95,10 +95,9 @@ public class ExecutorManager extends EventHandler implements
   public ExecutorManager(Props props, ExecutorLoader loader,
     Map<String, Alerter> alters) throws ExecutorManagerException {
     this.executorLoader = loader;
+    this.setupExecutors(props);
     this.loadRunningFlows();
     this.loadQueuedFlows();
-
-    setupExecutors(props);
 
     alerters = alters;
 
@@ -129,10 +128,11 @@ public class ExecutorManager extends EventHandler implements
       if (executor == null) {
         executor = executorLoader.addExecutor(executorHost, executorPort);
       } else if (!executor.isActive()) {
-        executorLoader.activateExecutor(executor.getId());
+        executor.setActive(true);
+        executorLoader.updateExecutor(executor);
       }
       activeExecutors.add(new Executor(executor.getId(), executorHost,
-        executorPort));
+        executorPort, true));
     }
 
     if (props.getBoolean("azkaban.multiple.executors", false)) {
@@ -190,6 +190,13 @@ public class ExecutorManager extends EventHandler implements
 
   private void loadRunningFlows() throws ExecutorManagerException {
     runningFlows.putAll(executorLoader.fetchActiveFlows());
+    // Finalize all flows which were running on an executor which is now
+    // inactive
+    for (Pair<ExecutionReference, ExecutableFlow> pair : runningFlows.values()) {
+      if (!activeExecutors.contains(pair.getFirst().getExecutor())) {
+        finalizeFlows(pair.getSecond());
+      }
+    }
   }
 
   /*
@@ -941,169 +948,6 @@ public class ExecutorManager extends EventHandler implements
     executingManager.shutdown();
   }
 
-  private class ExecutingManagerUpdaterThread extends Thread {
-    private boolean shutdown = false;
-
-    public ExecutingManagerUpdaterThread() {
-      this.setName("ExecutorManagerUpdaterThread");
-    }
-
-    // 10 mins recently finished threshold.
-    private long recentlyFinishedLifetimeMs = 600000;
-    private int waitTimeIdleMs = 2000;
-    private int waitTimeMs = 500;
-
-    // When we have an http error, for that flow, we'll check every 10 secs, 6
-    // times (1 mins) before we evict.
-    private int numErrors = 6;
-    private long errorThreshold = 10000;
-
-    private void shutdown() {
-      shutdown = true;
-    }
-
-    @SuppressWarnings("unchecked")
-    public void run() {
-      while (!shutdown) {
-        try {
-          lastThreadCheckTime = System.currentTimeMillis();
-          updaterStage = "Starting update all flows.";
-
-          Map<Executor, List<ExecutableFlow>> exFlowMap =
-            getFlowToExecutorMap();
-          ArrayList<ExecutableFlow> finishedFlows =
-            new ArrayList<ExecutableFlow>();
-          ArrayList<ExecutableFlow> finalizeFlows =
-            new ArrayList<ExecutableFlow>();
-
-          if (exFlowMap.size() > 0) {
-            for (Map.Entry<Executor, List<ExecutableFlow>> entry : exFlowMap
-              .entrySet()) {
-              List<Long> updateTimesList = new ArrayList<Long>();
-              List<Integer> executionIdsList = new ArrayList<Integer>();
-
-              Executor executor = entry.getKey();
-
-              updaterStage =
-                "Starting update flows on " + executor.getHost() + ":"
-                  + executor.getPort();
-
-              // We pack the parameters of the same host together before we
-              // query.
-              fillUpdateTimeAndExecId(entry.getValue(), executionIdsList,
-                updateTimesList);
-
-              Pair<String, String> updateTimes =
-                new Pair<String, String>(
-                  ConnectorParams.UPDATE_TIME_LIST_PARAM,
-                  JSONUtils.toJSON(updateTimesList));
-              Pair<String, String> executionIds =
-                new Pair<String, String>(ConnectorParams.EXEC_ID_LIST_PARAM,
-                  JSONUtils.toJSON(executionIdsList));
-
-              Map<String, Object> results = null;
-              try {
-                results =
-                  callExecutorServer(executor.getHost(), executor.getPort(),
-                    ConnectorParams.UPDATE_ACTION, null, null, executionIds,
-                    updateTimes);
-              } catch (IOException e) {
-                logger.error(e);
-                for (ExecutableFlow flow : entry.getValue()) {
-                  Pair<ExecutionReference, ExecutableFlow> pair =
-                    runningFlows.get(flow.getExecutionId());
-
-                  updaterStage =
-                    "Failed to get update. Doing some clean up for flow "
-                      + pair.getSecond().getExecutionId();
-
-                  if (pair != null) {
-                    ExecutionReference ref = pair.getFirst();
-                    int numErrors = ref.getNumErrors();
-                    if (ref.getNumErrors() < this.numErrors) {
-                      ref.setNextCheckTime(System.currentTimeMillis()
-                        + errorThreshold);
-                      ref.setNumErrors(++numErrors);
-                    } else {
-                      logger.error("Evicting flow " + flow.getExecutionId()
-                        + ". The executor is unresponsive.");
-                      // TODO should send out an unresponsive email here.
-                      finalizeFlows.add(pair.getSecond());
-                    }
-                  }
-                }
-              }
-
-              // We gets results
-              if (results != null) {
-                List<Map<String, Object>> executionUpdates =
-                  (List<Map<String, Object>>) results
-                    .get(ConnectorParams.RESPONSE_UPDATED_FLOWS);
-                for (Map<String, Object> updateMap : executionUpdates) {
-                  try {
-                    ExecutableFlow flow = updateExecution(updateMap);
-
-                    updaterStage = "Updated flow " + flow.getExecutionId();
-
-                    if (isFinished(flow)) {
-                      finishedFlows.add(flow);
-                      finalizeFlows.add(flow);
-                    }
-                  } catch (ExecutorManagerException e) {
-                    ExecutableFlow flow = e.getExecutableFlow();
-                    logger.error(e);
-
-                    if (flow != null) {
-                      logger.error("Finalizing flow " + flow.getExecutionId());
-                      finalizeFlows.add(flow);
-                    }
-                  }
-                }
-              }
-            }
-
-            updaterStage = "Evicting old recently finished flows.";
-
-            evictOldRecentlyFinished(recentlyFinishedLifetimeMs);
-            // Add new finished
-            for (ExecutableFlow flow : finishedFlows) {
-              if (flow.getScheduleId() >= 0
-                && flow.getStatus() == Status.SUCCEEDED) {
-                ScheduleStatisticManager.invalidateCache(flow.getScheduleId(),
-                  cacheDir);
-              }
-              fireEventListeners(Event.create(flow, Type.FLOW_FINISHED));
-              recentlyFinished.put(flow.getExecutionId(), flow);
-            }
-
-            updaterStage =
-              "Finalizing " + finalizeFlows.size() + " error flows.";
-
-            // Kill error flows
-            for (ExecutableFlow flow : finalizeFlows) {
-              finalizeFlows(flow);
-            }
-          }
-
-          updaterStage = "Updated all active flows. Waiting for next round.";
-
-          synchronized (this) {
-            try {
-              if (runningFlows.size() > 0) {
-                this.wait(waitTimeMs);
-              } else {
-                this.wait(waitTimeIdleMs);
-              }
-            } catch (InterruptedException e) {
-            }
-          }
-        } catch (Exception e) {
-          logger.error(e);
-        }
-      }
-    }
-  }
-
   private void finalizeFlows(ExecutableFlow flow) {
 
     int execId = flow.getExecutionId();
@@ -1389,6 +1233,169 @@ public class ExecutorManager extends EventHandler implements
     int from, int length, Status status) throws ExecutorManagerException {
     return executorLoader.fetchFlowHistory(projectId, flowId, from, length,
       status);
+  }
+
+  private class ExecutingManagerUpdaterThread extends Thread {
+    private boolean shutdown = false;
+
+    public ExecutingManagerUpdaterThread() {
+      this.setName("ExecutorManagerUpdaterThread");
+    }
+
+    // 10 mins recently finished threshold.
+    private long recentlyFinishedLifetimeMs = 600000;
+    private int waitTimeIdleMs = 2000;
+    private int waitTimeMs = 500;
+
+    // When we have an http error, for that flow, we'll check every 10 secs, 6
+    // times (1 mins) before we evict.
+    private int numErrors = 6;
+    private long errorThreshold = 10000;
+
+    private void shutdown() {
+      shutdown = true;
+    }
+
+    @SuppressWarnings("unchecked")
+    public void run() {
+      while (!shutdown) {
+        try {
+          lastThreadCheckTime = System.currentTimeMillis();
+          updaterStage = "Starting update all flows.";
+
+          Map<Executor, List<ExecutableFlow>> exFlowMap =
+            getFlowToExecutorMap();
+          ArrayList<ExecutableFlow> finishedFlows =
+            new ArrayList<ExecutableFlow>();
+          ArrayList<ExecutableFlow> finalizeFlows =
+            new ArrayList<ExecutableFlow>();
+
+          if (exFlowMap.size() > 0) {
+            for (Map.Entry<Executor, List<ExecutableFlow>> entry : exFlowMap
+              .entrySet()) {
+              List<Long> updateTimesList = new ArrayList<Long>();
+              List<Integer> executionIdsList = new ArrayList<Integer>();
+
+              Executor executor = entry.getKey();
+
+              updaterStage =
+                "Starting update flows on " + executor.getHost() + ":"
+                  + executor.getPort();
+
+              // We pack the parameters of the same host together before we
+              // query.
+              fillUpdateTimeAndExecId(entry.getValue(), executionIdsList,
+                updateTimesList);
+
+              Pair<String, String> updateTimes =
+                new Pair<String, String>(
+                  ConnectorParams.UPDATE_TIME_LIST_PARAM,
+                  JSONUtils.toJSON(updateTimesList));
+              Pair<String, String> executionIds =
+                new Pair<String, String>(ConnectorParams.EXEC_ID_LIST_PARAM,
+                  JSONUtils.toJSON(executionIdsList));
+
+              Map<String, Object> results = null;
+              try {
+                results =
+                  callExecutorServer(executor.getHost(), executor.getPort(),
+                    ConnectorParams.UPDATE_ACTION, null, null, executionIds,
+                    updateTimes);
+              } catch (IOException e) {
+                logger.error(e);
+                for (ExecutableFlow flow : entry.getValue()) {
+                  Pair<ExecutionReference, ExecutableFlow> pair =
+                    runningFlows.get(flow.getExecutionId());
+
+                  updaterStage =
+                    "Failed to get update. Doing some clean up for flow "
+                      + pair.getSecond().getExecutionId();
+
+                  if (pair != null) {
+                    ExecutionReference ref = pair.getFirst();
+                    int numErrors = ref.getNumErrors();
+                    if (ref.getNumErrors() < this.numErrors) {
+                      ref.setNextCheckTime(System.currentTimeMillis()
+                        + errorThreshold);
+                      ref.setNumErrors(++numErrors);
+                    } else {
+                      logger.error("Evicting flow " + flow.getExecutionId()
+                        + ". The executor is unresponsive.");
+                      // TODO should send out an unresponsive email here.
+                      finalizeFlows.add(pair.getSecond());
+                    }
+                  }
+                }
+              }
+
+              // We gets results
+              if (results != null) {
+                List<Map<String, Object>> executionUpdates =
+                  (List<Map<String, Object>>) results
+                    .get(ConnectorParams.RESPONSE_UPDATED_FLOWS);
+                for (Map<String, Object> updateMap : executionUpdates) {
+                  try {
+                    ExecutableFlow flow = updateExecution(updateMap);
+
+                    updaterStage = "Updated flow " + flow.getExecutionId();
+
+                    if (isFinished(flow)) {
+                      finishedFlows.add(flow);
+                      finalizeFlows.add(flow);
+                    }
+                  } catch (ExecutorManagerException e) {
+                    ExecutableFlow flow = e.getExecutableFlow();
+                    logger.error(e);
+
+                    if (flow != null) {
+                      logger.error("Finalizing flow " + flow.getExecutionId());
+                      finalizeFlows.add(flow);
+                    }
+                  }
+                }
+              }
+            }
+
+            updaterStage = "Evicting old recently finished flows.";
+
+            evictOldRecentlyFinished(recentlyFinishedLifetimeMs);
+            // Add new finished
+            for (ExecutableFlow flow : finishedFlows) {
+              if (flow.getScheduleId() >= 0
+                && flow.getStatus() == Status.SUCCEEDED) {
+                ScheduleStatisticManager.invalidateCache(flow.getScheduleId(),
+                  cacheDir);
+              }
+              fireEventListeners(Event.create(flow, Type.FLOW_FINISHED));
+              recentlyFinished.put(flow.getExecutionId(), flow);
+            }
+
+            updaterStage =
+              "Finalizing " + finalizeFlows.size() + " error flows.";
+
+            // Kill error flows
+            for (ExecutableFlow flow : finalizeFlows) {
+              finalizeFlows(flow);
+            }
+          }
+
+          updaterStage = "Updated all active flows. Waiting for next round.";
+
+          synchronized (this) {
+            try {
+              if (runningFlows.size() > 0) {
+                this.wait(waitTimeMs);
+              } else {
+                this.wait(waitTimeIdleMs);
+              }
+            } catch (InterruptedException e) {
+            }
+          }
+        } catch (Exception e) {
+          logger.error(e);
+        }
+      }
+    }
   }
 
   /*

@@ -996,6 +996,65 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements
     return events;
   }
 
+  /**
+   *
+   * {@inheritDoc}
+   *
+   * @see azkaban.executor.ExecutorLoader#assignExecutor(int, int)
+   */
+  @Override
+  public void assignExecutor(int executorId, int executionId)
+    throws ExecutorManagerException {
+    final String UPDATE =
+      "UPDATE execution_flows SET executor_id=? where exec_id=?";
+
+    QueryRunner runner = createQueryRunner();
+    try {
+      Executor executor = fetchExecutor(executorId);
+      if (executor == null) {
+        throw new ExecutorManagerException(String.format(
+          "Failed to assign non-existent executor Id: %d to execution : %d  ",
+          executorId, executionId));
+      }
+
+      int rows = runner.update(UPDATE, executorId, executionId);
+      if (rows == 0) {
+        throw new ExecutorManagerException(String.format(
+          "Failed to assign executor Id: %d to non-existent execution : %d  ",
+          executorId, executionId));
+      }
+    } catch (SQLException e) {
+      throw new ExecutorManagerException("Error updating executor id "
+        + executorId, e);
+    }
+  }
+
+  /**
+   *
+   * {@inheritDoc}
+   *
+   * @see azkaban.executor.ExecutorLoader#fetchExecutorByExecution(int)
+   */
+  @Override
+  public Executor fetchExecutorByExecution(int executionId)
+    throws ExecutorManagerException {
+    QueryRunner runner = createQueryRunner();
+    FetchExecutorHandler executorHandler = new FetchExecutorHandler();
+    Executor executor = null;
+    try {
+      List<Executor> executors =
+        runner.query(FetchExecutorHandler.FETCH_EXECUTION_EXECUTOR,
+          executorHandler, executionId);
+      if (executors.size() > 0) {
+        executor = executors.get(0);
+      }
+    } catch (SQLException e) {
+      throw new ExecutorManagerException(
+        "Error fetching executor for exec_id : " + executionId, e);
+    }
+    return executor;
+  }
+
   private static class LastInsertID implements ResultSetHandler<Long> {
     private static String LAST_INSERT_ID = "SELECT LAST_INSERT_ID()";
 
@@ -1198,6 +1257,9 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements
     }
   }
 
+  /**
+   * JDBC ResultSetHandler to fetch queued executions
+   */
   private static class FetchQueuedExecutableFlows implements
     ResultSetHandler<List<Pair<ExecutionReference, ExecutableFlow>>> {
     // Select queued unassigned flows
@@ -1262,8 +1324,8 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements
       ResultSetHandler<Map<Integer, Pair<ExecutionReference, ExecutableFlow>>> {
     // Select running and executor assigned flows
     private static String FETCH_ACTIVE_EXECUTABLE_FLOW =
-      "SELECT ex.exec_id exec_id, ex.enc_type enc_type, ex.flow_data flow_data, "
-        + "et.host host, et.port port, ax.update_time axUpdateTime, et.id executorId"
+      "SELECT ex.exec_id exec_id, ex.enc_type enc_type, ex.flow_data flow_data, et.host host, "
+        + "et.port port, ax.update_time axUpdateTime, et.id executorId, et.active executorStatus"
         + " FROM execution_flows ex"
         + " INNER JOIN "
         + " active_executing_flows ax ON ex.exec_id = ax.exec_id"
@@ -1288,6 +1350,7 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements
         int port = rs.getInt(5);
         long updateTime = rs.getLong(6);
         int executorId = rs.getInt(7);
+        boolean executorStatus = rs.getBoolean(8);
 
         if (data == null) {
           execFlows.put(id, null);
@@ -1308,7 +1371,7 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements
 
             ExecutableFlow exFlow =
                 ExecutableFlow.createExecutableFlowFromObject(flowObj);
-            Executor executor = new Executor(executorId, host, port);
+            Executor executor = new Executor(executorId, host, port, executorStatus);
             ExecutionReference ref = new ExecutionReference(id, executor);
             ref.setUpdateTime(updateTime);
 
@@ -1439,6 +1502,10 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements
       "SELECT id, host, port, active FROM executors where id=?";
     private static String FETCH_EXECUTOR_BY_HOST_PORT =
       "SELECT id, host, port, active FROM executors where host=? AND port=?";
+    private static String FETCH_EXECUTION_EXECUTOR =
+      "SELECT ex.id, ex.host, ex.port, ex.active FROM "
+        + " executors ex INNER JOIN execution_flows ef "
+        + "on ex.id = ef.executor_id  where exec_id=?";
 
     @Override
     public List<Executor> handle(ResultSet rs) throws SQLException {
@@ -1490,40 +1557,6 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements
       } while (rs.next());
 
       return events;
-    }
-  }
-
-  @Override
-  public void assignExecutor(int executorId, int execId)
-    throws ExecutorManagerException {
-    final String UPDATE =
-      "UPDATE execution_flows SET executor_id=? where exec_id=?";
-
-    QueryRunner runner = createQueryRunner();
-    try {
-      int rows = runner.update(UPDATE, executorId, execId);
-      if (rows == 0) {
-        throw new ExecutorManagerException(String.format(
-          "Failed to update executor Id: %d to execution : %d  ", executorId,
-          execId));
-      }
-    } catch (SQLException e) {
-      throw new ExecutorManagerException("Error updating executor id "
-        + executorId, e);
-    }
-  }
-
-  @Override
-  public int fetchExecutorId(int executionId) throws ExecutorManagerException {
-    QueryRunner runner = createQueryRunner();
-    IntHandler intHandler = new IntHandler();
-    try {
-      int executorId =
-        runner.query(IntHandler.FETCH_EXECUTOR_ID, intHandler, executionId);
-      return executorId;
-    } catch (SQLException e) {
-      throw new ExecutorManagerException(
-        "Error fetching executorId for exec_id : " + executionId, e);
     }
   }
 }
