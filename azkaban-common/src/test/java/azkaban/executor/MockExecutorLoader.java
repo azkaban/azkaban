@@ -17,10 +17,13 @@
 package azkaban.executor;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import azkaban.executor.ExecutorLogEvent.EventType;
 import azkaban.utils.FileIOUtils.LogData;
 import azkaban.utils.Pair;
 import azkaban.utils.Props;
@@ -36,6 +39,10 @@ public class MockExecutorLoader implements ExecutorLoader {
   HashMap<String, Integer> jobUpdateCount = new HashMap<String, Integer>();
   Map<Integer, Pair<ExecutionReference, ExecutableFlow>> activeFlows =
       new HashMap<Integer, Pair<ExecutionReference, ExecutableFlow>>();
+  List<Executor> executors = new ArrayList<Executor>();
+  int executorIdCounter = 0;
+  Map<Integer, ArrayList<ExecutorLogEvent>> executorEvents =
+    new HashMap<Integer, ArrayList<ExecutorLogEvent>>();
 
   @Override
   public void uploadExecutableFlow(ExecutableFlow flow)
@@ -247,6 +254,84 @@ public class MockExecutorLoader implements ExecutorLoader {
       throws ExecutorManagerException {
     // TODO Auto-generated method stub
 
+  }
+
+  @Override
+  public List<Executor> fetchActiveExecutors() throws ExecutorManagerException {
+    List<Executor> activeExecutors = new ArrayList<Executor>();
+    for (Executor executor : executors) {
+      if (executor.isActive()) {
+        activeExecutors.add(executor);
+      }
+    }
+    return activeExecutors;
+  }
+
+  @Override
+  public Executor fetchExecutor(String host, int port)
+    throws ExecutorManagerException {
+    for (Executor executor : executors) {
+      if (executor.getHost().equals(host) && executor.getPort() == port) {
+        return executor;
+      }
+    }
+    return null;
+  }
+
+  @Override
+  public Executor fetchExecutor(int executorId) throws ExecutorManagerException {
+    for (Executor executor : executors) {
+      if (executor.getId() == executorId) {
+        return executor;
+      }
+    }
+    return null;
+  }
+
+  @Override
+  public Executor addExecutor(String host, int port)
+    throws ExecutorManagerException {
+    if (fetchExecutor(host, port) != null) {
+
+    }
+    executorIdCounter++;
+    Executor executor = new Executor(executorIdCounter, host, port, true);
+    return executor;
+  }
+
+  @Override
+  public void postExecutorEvent(Executor executor, EventType type, String user,
+    String message) throws ExecutorManagerException {
+    ExecutorLogEvent event =
+      new ExecutorLogEvent(executor.getId(), user, new Date(), type, message);
+
+    if (!executorEvents.containsKey(executor.getId())) {
+      executorEvents.put(executor.getId(), new ArrayList<ExecutorLogEvent>());
+    }
+
+    executorEvents.get(executor.getId()).add(event);
+  }
+
+  @Override
+  public List<ExecutorLogEvent> getExecutorEvents(Executor executor, int num,
+    int skip) throws ExecutorManagerException {
+    if (!executorEvents.containsKey(executor.getId())) {
+      List<ExecutorLogEvent> events = executorEvents.get(executor.getId());
+      return events.subList(skip, Math.min(num + skip - 1, events.size() - 1));
+    }
+    return null;
+  }
+
+  @Override
+  public void updateExecutor(Executor executor) throws ExecutorManagerException {
+    Executor oldExecutor = fetchExecutor(executor.getId());
+    executors.remove(oldExecutor);
+    executors.add(executor);
+  }
+
+  @Override
+  public List<Executor> fetchAllExecutors() throws ExecutorManagerException {
+    return executors;
   }
 
 }

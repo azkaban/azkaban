@@ -111,6 +111,19 @@ public class Utils {
     System.exit(exitCode);
   }
 
+  /**
+   * Tests whether a port is valid or not
+   *
+   * @param port
+   * @return true, if port is valid
+   */
+  public static boolean isValidPort(int port) {
+    if (port >= 1 && port <= 65535) {
+      return true;
+    }
+    return false;
+  }
+
   public static File createTempDir() {
     return createTempDir(new File(System.getProperty("java.io.tmpdir")));
   }
@@ -410,7 +423,7 @@ public class Utils {
   }
 
   /**
-   * @param strMemSize : memory string in the format such as 1G, 500M, 3000K, 5000 
+   * @param strMemSize : memory string in the format such as 1G, 500M, 3000K, 5000
    * @return : long value of memory amount in kb
    */
   public static long parseMemString(String strMemSize) {

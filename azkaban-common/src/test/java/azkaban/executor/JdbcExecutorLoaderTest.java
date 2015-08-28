@@ -21,8 +21,10 @@ import java.io.IOException;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 
 import javax.sql.DataSource;
@@ -30,17 +32,18 @@ import javax.sql.DataSource;
 import org.apache.commons.dbutils.DbUtils;
 import org.apache.commons.dbutils.QueryRunner;
 import org.apache.commons.dbutils.ResultSetHandler;
-
 import org.joda.time.DateTime;
-
+import org.junit.After;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 
 import azkaban.database.DataSourceUtils;
+import azkaban.executor.ExecutorLogEvent.EventType;
 import azkaban.flow.Flow;
 import azkaban.project.Project;
+import azkaban.user.User;
 import azkaban.utils.FileIOUtils.LogData;
 import azkaban.utils.JSONUtils;
 import azkaban.utils.Pair;
@@ -117,12 +120,31 @@ public class JdbcExecutorLoaderTest {
       return;
     }
 
-    DbUtils.closeQuietly(connection);
+    try {
+      runner.query(connection, "SELECT COUNT(1) FROM executors",
+          countHandler);
+    } catch (SQLException e) {
+      e.printStackTrace();
+      testDBExists = false;
+      DbUtils.closeQuietly(connection);
+      return;
+    }
 
-    clearDB();
+    try {
+      runner.query(connection, "SELECT COUNT(1) FROM executor_events",
+          countHandler);
+    } catch (SQLException e) {
+      e.printStackTrace();
+      testDBExists = false;
+      DbUtils.closeQuietly(connection);
+      return;
+    }
+
+    DbUtils.closeQuietly(connection);
   }
 
-  private static void clearDB() {
+  @After
+  public void clearDB() {
     if (!testDBExists) {
       return;
     }
@@ -178,6 +200,24 @@ public class JdbcExecutorLoaderTest {
       return;
     }
 
+    try {
+      runner.update(connection, "DELETE FROM executors");
+    } catch (SQLException e) {
+      e.printStackTrace();
+      testDBExists = false;
+      DbUtils.closeQuietly(connection);
+      return;
+    }
+
+    try {
+      runner.update(connection, "DELETE FROM executor_events");
+    } catch (SQLException e) {
+      e.printStackTrace();
+      testDBExists = false;
+      DbUtils.closeQuietly(connection);
+      return;
+    }
+
     DbUtils.closeQuietly(connection);
   }
 
@@ -186,6 +226,7 @@ public class JdbcExecutorLoaderTest {
     if (!isTestSetup()) {
       return;
     }
+    Assert.assertEquals(1, 0);
 
     ExecutorLoader loader = createLoader();
     ExecutableFlow flow = createExecutableFlow("exec1");
@@ -291,6 +332,252 @@ public class JdbcExecutorLoaderTest {
     Assert.assertEquals(inOutProps.getFirst().get("test"), "test2");
     Assert.assertEquals(inOutProps.getSecond().get("hello"), "output");
 
+  }
+
+
+  /* Test all executors fetch from empty executors */
+  @Test
+  public void testFetchEmptyExecutors() throws Exception {
+    if (!isTestSetup()) {
+      return;
+    }
+    ExecutorLoader loader = createLoader();
+    List<Executor> executors = loader.fetchAllExecutors();
+    Assert.assertEquals(executors.size(), 0);
+  }
+
+  /* Test active executors fetch from empty executors */
+  @Test
+  public void testFetchEmptyActiveExecutors() throws Exception {
+    if (!isTestSetup()) {
+      return;
+    }
+    ExecutorLoader loader = createLoader();
+    List<Executor> executors = loader.fetchActiveExecutors();
+    Assert.assertEquals(executors.size(), 0);
+  }
+
+  /* Test missing executor fetch with search by executor id */
+  @Test
+  public void testFetchMissingExecutorId() throws Exception {
+    if (!isTestSetup()) {
+      return;
+    }
+    ExecutorLoader loader = createLoader();
+    Executor executor = loader.fetchExecutor(0);
+    Assert.assertEquals(executor, null);
+  }
+
+  /* Test missing executor fetch with search by host:port */
+  @Test
+  public void testFetchMissingExecutorHostPort() throws Exception {
+    if (!isTestSetup()) {
+      return;
+    }
+    ExecutorLoader loader = createLoader();
+    Executor executor = loader.fetchExecutor("localhost", 12345);
+    Assert.assertEquals(executor, null);
+  }
+
+  /* Test executor events fetch from with no logged executor */
+  @Test
+  public void testFetchEmptyExecutorEvents() throws Exception {
+    if (!isTestSetup()) {
+      return;
+    }
+    ExecutorLoader loader = createLoader();
+    Executor executor = new Executor(1, "localhost", 12345, true);
+    List<ExecutorLogEvent> executorEvents =
+      loader.getExecutorEvents(executor, 5, 0);
+    Assert.assertEquals(executorEvents.size(), 0);
+  }
+
+  /* Test logging ExecutorEvents */
+  @Test
+  public void testExecutorEvents() throws Exception {
+    if (!isTestSetup()) {
+      return;
+    }
+    ExecutorLoader loader = createLoader();
+    int skip = 1;
+    User user = new User("testUser");
+    Executor executor = new Executor(1, "localhost", 12345, true);
+    String message = "My message ";
+    EventType[] events =
+      { EventType.CREATED, EventType.HOST_UPDATE, EventType.INACTIVATION };
+
+    for (EventType event : events) {
+      loader.postExecutorEvent(executor, event, user.getUserId(),
+        message + event.getNumVal());
+    }
+
+    List<ExecutorLogEvent> eventLogs =
+      loader.getExecutorEvents(executor, 10, skip);
+    Assert.assertTrue(eventLogs.size() == 2);
+
+    for (int index = 0; index < eventLogs.size(); ++index) {
+      ExecutorLogEvent eventLog = eventLogs.get(index);
+      Assert.assertEquals(eventLog.getExecutorId(), executor.getId());
+      Assert.assertEquals(eventLog.getUser(), user.getUserId());
+      Assert.assertEquals(eventLog.getType(), events[index + skip]);
+      Assert.assertEquals(eventLog.getMessage(),
+        message + events[index + skip].getNumVal());
+    }
+  }
+
+  /* Test to add duplicate executors */
+  @Test
+  public void testDuplicateAddExecutor() throws Exception {
+    if (!isTestSetup()) {
+      return;
+    }
+    ExecutorLoader loader = createLoader();
+    try {
+      String host = "localhost";
+      int port = 123456;
+      loader.addExecutor(host, port);
+      loader.addExecutor(host, port);
+      Assert.fail("Expecting exception, but didn't get one");
+    } catch (ExecutorManagerException ex) {
+      System.out.println("Test true");
+    }
+  }
+
+  /* Test to try update a non-existent executor */
+  @Test
+  public void testMissingExecutorUpdate() throws Exception {
+    if (!isTestSetup()) {
+      return;
+    }
+    ExecutorLoader loader = createLoader();
+    try {
+      Executor executor = new Executor(1, "localhost", 1234, true);
+      loader.updateExecutor(executor);
+      Assert.fail("Expecting exception, but didn't get one");
+    } catch (ExecutorManagerException ex) {
+      System.out.println("Test true");
+    }
+  }
+
+  /* Test add & fetch by Id Executors */
+  @Test
+  public void testSingleExecutorFetchById() throws Exception {
+    if (!isTestSetup()) {
+      return;
+    }
+    ExecutorLoader loader = createLoader();
+    List<Executor> executors = addTestExecutors(loader);
+    for (Executor executor : executors) {
+      Executor fetchedExecutor = loader.fetchExecutor(executor.getId());
+      Assert.assertEquals(executor, fetchedExecutor);
+    }
+  }
+
+  /* Test fetch all executors */
+  @Test
+  public void testFetchAllExecutors() throws Exception {
+    if (!isTestSetup()) {
+      return;
+    }
+    ExecutorLoader loader = createLoader();
+    List<Executor> executors = addTestExecutors(loader);
+
+    executors.get(0).setActive(false);
+    loader.updateExecutor(executors.get(0));
+
+    List<Executor> fetchedExecutors = loader.fetchAllExecutors();
+    Assert.assertEquals(executors.size(), fetchedExecutors.size());
+
+    Assert.assertArrayEquals(executors.toArray(), fetchedExecutors.toArray());
+  }
+
+  /* Test fetch only active executors */
+  @Test
+  public void testFetchActiveExecutors() throws Exception {
+    if (!isTestSetup()) {
+      return;
+    }
+    ExecutorLoader loader = createLoader();
+    List<Executor> executors = addTestExecutors(loader);
+
+    executors.get(0).setActive(false);
+    loader.updateExecutor(executors.get(0));
+
+    List<Executor> fetchedExecutors = loader.fetchActiveExecutors();
+    Assert.assertEquals(executors.size(), fetchedExecutors.size() + 1);
+    executors.remove(0);
+
+    Assert.assertArrayEquals(executors.toArray(), fetchedExecutors.toArray());
+  }
+
+  /* Test add & fetch by host:port Executors */
+  @Test
+  public void testSingleExecutorFetchHostPort() throws Exception {
+    if (!isTestSetup()) {
+      return;
+    }
+    ExecutorLoader loader = createLoader();
+    List<Executor> executors = addTestExecutors(loader);
+    for (Executor executor : executors) {
+      Executor fetchedExecutor =
+        loader.fetchExecutor(executor.getHost(), executor.getPort());
+      Assert.assertEquals(executor, fetchedExecutor);
+    }
+  }
+
+  /* Helper method used in methods testing jdbc interface for executors table */
+  private List<Executor> addTestExecutors(ExecutorLoader loader)
+    throws ExecutorManagerException {
+    List<Executor> executors = new ArrayList<Executor>();
+    executors.add(loader.addExecutor("localhost1", 12345));
+    executors.add(loader.addExecutor("localhost2", 12346));
+    executors.add(loader.addExecutor("localhost1", 12347));
+    return executors;
+  }
+
+  /* Test Executor Inactivation */
+  @Test
+  public void testExecutorInactivation() throws Exception {
+    if (!isTestSetup()) {
+      return;
+    }
+
+    ExecutorLoader loader = createLoader();
+    Executor executor = loader.addExecutor("localhost1", 12345);
+    Assert.assertTrue(executor.isActive());
+
+    executor.setActive(false);
+    loader.updateExecutor(executor);
+
+    Executor fetchedExecutor = loader.fetchExecutor(executor.getId());
+
+    Assert.assertEquals(executor.getHost(), fetchedExecutor.getHost());
+    Assert.assertEquals(executor.getId(), fetchedExecutor.getId());
+    Assert.assertEquals(executor.getPort(), fetchedExecutor.getPort());
+    Assert.assertFalse(fetchedExecutor.isActive());
+  }
+
+  /* Test Executor reactivation */
+  @Test
+  public void testExecutorActivation() throws Exception {
+    if (!isTestSetup()) {
+      return;
+    }
+
+    ExecutorLoader loader = createLoader();
+    Executor executor = loader.addExecutor("localhost1", 12345);
+    Assert.assertTrue(executor.isActive());
+
+    executor.setActive(false);
+    loader.updateExecutor(executor);
+    Executor fetchedExecutor = loader.fetchExecutor(executor.getId());
+    Assert.assertFalse(fetchedExecutor.isActive());
+
+    executor.setActive(true);
+    loader.updateExecutor(executor);
+    fetchedExecutor = loader.fetchExecutor(executor.getId());
+
+    Assert.assertEquals(executor, fetchedExecutor);
   }
 
   @Test
