@@ -28,14 +28,14 @@ import org.apache.log4j.Logger;
  *  register filters using the provided register function.
  */
 public abstract class CandidateFilter<T,V>  {
-  private static Logger logger = Logger.getLogger(CandidateFilter.class);
+  protected static Logger logger = Logger.getLogger(CandidateFilter.class);
 
   // internal repository of the registered filters .
   private Map<String,FactorFilter<T,V>> factorFilterList =
       new ConcurrentHashMap<String,FactorFilter<T,V>>();
 
   /** gets the name of the current implementation of the candidate filter.
-   * @returns : name of the filter.
+   * @return : name of the filter.
    * */
   public abstract String getName();
 

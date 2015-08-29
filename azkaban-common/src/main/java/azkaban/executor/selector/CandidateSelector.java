@@ -74,6 +74,10 @@ public class CandidateSelector<K,V> implements Selector<K, V> {
        return null;
      }
 
+     if (null == comparator){
+       logger.info("candidate comparator is not specified, default comparator from 'Collections' class will be used");
+     }
+
      // final work - find the best candidate from the filtered list.
      K executor = Collections.max(filteredList,comparator);
      logger.info(String.format("candidate selected %s",

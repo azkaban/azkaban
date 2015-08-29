@@ -31,7 +31,7 @@ import azkaban.utils.Pair;
  *
  */
 public abstract class CandidateComparator<T> implements Comparator<T> {
-  private static Logger logger = Logger.getLogger(CandidateComparator.class);
+  protected static Logger logger = Logger.getLogger(CandidateComparator.class);
 
   // internal repository of the registered comparators .
   private Map<String,FactorComparator<T>> factorComparatorList =

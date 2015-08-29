@@ -20,12 +20,16 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import org.apache.log4j.BasicConfigurator;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import azkaban.executor.selector.*;
@@ -602,4 +606,101 @@ public class SelectorTest {
     Assert.assertTrue(null == executor);
 
   }
+
+  @Test
+  public void testCreatingExectorfilterObject() throws Exception{
+    List<String> validList = new ArrayList<String>(ExecutorFilter.getAvailableFilterNames());
+    try {
+      new ExecutorFilter(validList);
+    }catch (Exception ex){
+      Assert.fail("creating ExecutorFilter with valid list throws exception . ex -" + ex.getMessage());
+    }
+  }
+
+  @Test
+  public void testCreatingExectorfilterObjectWInvalidList() throws Exception{
+    List<String> invalidList = new ArrayList<String>();
+    invalidList.add("notExistingFilter");
+    Exception result = null;
+    try {
+      new ExecutorFilter(invalidList);
+    }catch (Exception ex){
+      if (ex instanceof IllegalArgumentException)
+      result = ex;
+    }
+    Assert.assertNotNull(result);
+  }
+
+  @Test
+  public void testCreatingExectorComparatorObject() throws Exception{
+   Map<String,Integer> comparatorMap = new HashMap<String,Integer>();
+   for (String name : ExecutorComparator.getAvailableComparatorNames()){
+     comparatorMap.put(name, 1);
+   }
+   try {
+      new ExecutorComparator(comparatorMap);
+    }catch (Exception ex){
+      Assert.fail("creating ExecutorComparator with valid list throws exception . ex -" + ex.getMessage());
+    }
+  }
+
+  @Test
+  public void testCreatingExectorComparatorObjectWInvalidName() throws Exception{
+    Map<String,Integer> comparatorMap = new HashMap<String,Integer>();
+    comparatorMap.put("invalidName", 0);
+    Exception result = null;
+    try {
+      new ExecutorComparator(comparatorMap);
+    }catch (Exception ex){
+      if (ex instanceof IllegalArgumentException)
+      result = ex;
+    }
+    Assert.assertNotNull(result);
+  }
+
+  @Test
+  public void testCreatingExectorComparatorObjectWInvalidWeight() throws Exception{
+    Map<String,Integer> comparatorMap = new HashMap<String,Integer>();
+    for (String name : ExecutorComparator.getAvailableComparatorNames()){
+      comparatorMap.put(name, -1);
+    }
+    Exception result = null;
+    try {
+      new ExecutorComparator(comparatorMap);
+    }catch (Exception ex){
+      if (ex instanceof IllegalArgumentException)
+      result = ex;
+    }
+    Assert.assertNotNull(result);
+  }
+
+  @Test
+  public void testExecutorSelectorE2E() throws Exception{
+    List<String> filterList = new ArrayList<String>(ExecutorFilter.getAvailableFilterNames());
+    Map<String,Integer> comparatorMap = new HashMap<String,Integer>();
+    List<Executor> executorList = new ArrayList<Executor>();
+    executorList.add(new Executor(1, "host1", 80, true));
+    executorList.add(new Executor(2, "host2", 80, true));
+    executorList.add(new Executor(3, "host3", 80, true));
+
+    executorList.get(0).setExecutorStats(new Statistics(99.9, 4095, 50, new Date(), 4095, 0));
+    executorList.get(1).setExecutorStats(new Statistics(50, 4095, 50, new Date(), 4095, 0));
+    executorList.get(2).setExecutorStats(new Statistics(99.9, 4095, 50, new Date(), 2048, 0));
+
+    ExecutableFlow flow = new ExecutableFlow();
+
+    for (String name : ExecutorComparator.getAvailableComparatorNames()){
+      comparatorMap.put(name, 1);
+    }
+    ExecutorSelector selector = new ExecutorSelector(filterList,comparatorMap);
+    Executor executor = selector.getBest(executorList, flow);
+    Assert.assertEquals(executorList.get(0), executor);
+    
+    // simulate that once the flow is assigned, executor1's remaining TMP storage dropped to 2048
+    // now we do the getBest again executor3 is expected to be selected as it has a earlier last dispatched time.
+    executorList.get(0).setExecutorStats(new Statistics(99.9, 4095, 50, new Date(), 2048, 0));
+    executor = selector.getBest(executorList, flow);
+    Assert.assertEquals(executorList.get(2), executor);
+  }
+
 }

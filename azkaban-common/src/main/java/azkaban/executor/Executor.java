@@ -16,6 +16,10 @@
 
 package azkaban.executor;
 
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
+
 import azkaban.utils.Utils;
 
 /**
@@ -28,8 +32,9 @@ public class Executor {
   private final String host;
   private final int port;
   private boolean isActive;
-
-  // TODO: ExecutorStats to be added
+  // cached copy of the latest statistics from  the executor.
+  private Statistics cachedExecutorStats;
+  private Date lastUpdated;
 
   /**
    * <pre>
@@ -88,6 +93,13 @@ public class Executor {
     return true;
   }
 
+  @Override
+  public String toString(){
+    return String.format("%s (id: %s)",
+        null == this.host || this.host.length() == 0 ? "(empty)" : this.host,
+        this.id);
+  }
+
   public String getHost() {
     return host;
   }
@@ -102,6 +114,24 @@ public class Executor {
 
   public int getId() {
     return id;
+  }
+
+  public Statistics getExecutorStats() {
+    return this.cachedExecutorStats;
+  }
+
+  public void setExecutorStats(Statistics stats) {
+    this.cachedExecutorStats = stats;
+    this.lastUpdated = new Date();
+  }
+
+  /**
+   * Gets the timestamp when the stats are last updated.
+   * @return date object represents the timestamp, null if the stats of this
+   *         specific object is never refreshed.
+   * */
+  public Date getLastStatsUpdatedTime(){
+    return this.lastUpdated;
   }
 
   public void setActive(boolean isActive) {
