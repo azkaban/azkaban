@@ -88,6 +88,18 @@ public interface ExecutorManagerAdapter {
 
   public List<ExecutableFlow> getRunningFlows() throws IOException;
 
+  /**
+   * <pre>
+   * Returns All running with executors and queued flows
+   * Note, returns empty list if there isn't any running or queued flows
+   * </pre>
+   *
+   * @return
+   * @throws IOException
+   */
+  public List<Pair<ExecutableFlow, Executor>> getActiveFlowsWithExecutor()
+    throws IOException;
+
   public List<ExecutableFlow> getRecentlyFinishedFlows();
 
   public List<ExecutableFlow> getExecutableFlows(Project project,
@@ -177,9 +189,10 @@ public interface ExecutorManagerAdapter {
    * <li>{@link azkaban.executor.ConnectorParams#STATS_SET_ENABLEMETRICS}<li>
    * <li>{@link azkaban.executor.ConnectorParams#STATS_SET_DISABLEMETRICS}<li>
    * </ul>
+   * @throws ExecutorManagerException
    */
-  public Map<String, Object> callExecutorStats(String action,
-      Pair<String, String>... params) throws IOException;
+  public Map<String, Object> callExecutorStats(int executorId, String action,
+    Pair<String, String>... param) throws IOException, ExecutorManagerException;
 
   public Map<String, Object> callExecutorJMX(String hostPort, String action,
       String mBean) throws IOException;
@@ -195,5 +208,25 @@ public interface ExecutorManagerAdapter {
   public long getLastExecutorManagerThreadCheckTime();
 
   public Set<? extends String> getPrimaryServerHosts();
+
+  /**
+   * Returns a set of all the active executors maintained by active executors
+   *
+   * @return
+   */
+  public Set<Executor> getAllActiveExecutors();
+
+  /**
+   * <pre>
+   * Fetch executor from executors with a given executorId
+   * Note:
+   * 1. throws an Exception in case of a SQL issue
+   * 2. return null when no executor is found with the given executorId
+   * </pre>
+   *
+   * @throws ExecutorManagerException
+   *
+   */
+  public Executor fetchExecutor(int executorId) throws ExecutorManagerException;
 
 }

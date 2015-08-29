@@ -168,6 +168,21 @@ public class ExecutorManager extends EventHandler implements
   }
 
   @Override
+  public Set<Executor> getAllActiveExecutors() {
+    return activeExecutors;
+  }
+
+  @Override
+  public Executor fetchExecutor(int executorId) throws ExecutorManagerException {
+    for (Executor executor : activeExecutors) {
+      if (executor.getId() == executorId) {
+        return executor;
+      }
+    }
+    return executorLoader.fetchExecutor(executorId);
+  }
+
+  @Override
   public Set<String> getPrimaryServerHosts() {
     // TODO: do we want to have a primary
     HashSet<String> ports = new HashSet<String>();
@@ -233,6 +248,27 @@ public class ExecutorManager extends EventHandler implements
       }
     }
     return executionIds;
+  }
+
+  /**
+   *
+   * {@inheritDoc}
+   * @see azkaban.executor.ExecutorManagerAdapter#getActiveFlowsWithExecutor()
+   */
+  @Override
+  public List<Pair<ExecutableFlow, Executor>> getActiveFlowsWithExecutor()
+    throws IOException {
+    List<Pair<ExecutableFlow, Executor>> flows =
+      new ArrayList<Pair<ExecutableFlow, Executor>>();
+    for (Pair<ExecutionReference, ExecutableFlow> ref : queuedFlowMap.values()) {
+      flows.add(new Pair<ExecutableFlow, Executor>(ref.getSecond(), ref
+        .getFirst().getExecutor()));
+    }
+    for (Pair<ExecutionReference, ExecutableFlow> ref : runningFlows.values()) {
+      flows.add(new Pair<ExecutableFlow, Executor>(ref.getSecond(), ref
+        .getFirst().getExecutor()));
+    }
+    return flows;
   }
 
   /**
@@ -851,17 +887,18 @@ public class ExecutorManager extends EventHandler implements
   /**
    * Manage servlet call for stats servlet in Azkaban execution server
    * {@inheritDoc}
+   * @throws ExecutorManagerException
    *
    * @see azkaban.executor.ExecutorManagerAdapter#callExecutorStats(java.lang.String,
    *      azkaban.utils.Pair[])
    */
   @Override
-  public Map<String, Object> callExecutorStats(String action,
-    Pair<String, String>... params) throws IOException {
+  public Map<String, Object> callExecutorStats(int executorId, String action,
+    Pair<String, String>... params) throws IOException, ExecutorManagerException {
 
     URIBuilder builder = new URIBuilder();
-    // TODO: fix to take host and port form user
-    // builder.setScheme("http").setHost(executorHost).setPort(executorPort).setPath("/stats");
+    Executor executor = fetchExecutor(executorId);
+    builder.setScheme("http").setHost(executor.getHost()).setPort(executor.getPort()).setPath("/stats");
 
     builder.setParameter(ConnectorParams.ACTION_PARAM, action);
 
@@ -1438,7 +1475,9 @@ public class ExecutorManager extends EventHandler implements
   }
 
   private void refreshExecutors() {
-    // TODO: rest api call to refresh executor stats
+    synchronized (activeExecutors) {
+      // TODO: rest api call to refresh executor stats
+    }
   }
 
   private void processQueuedFlows(long maxContinousSubmission) {
