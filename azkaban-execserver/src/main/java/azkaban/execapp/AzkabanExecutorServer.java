@@ -307,7 +307,7 @@ public class AzkabanExecutorServer {
    * @throws IOException
    */
   public static void main(String[] args) throws Exception {
-    logger.error("Starting Jetty Azkaban Executor...");
+    logger.info("Starting Jetty Azkaban Executor...");
     Props azkabanSettings = AzkabanServer.loadProps(args);
 
     if (azkabanSettings == null) {

@@ -43,6 +43,9 @@ public abstract class AbstractProcessJob extends AbstractJob {
   public static final String JOB_PROP_ENV = "JOB_PROP_FILE";
   public static final String JOB_NAME_ENV = "JOB_NAME";
   public static final String JOB_OUTPUT_PROP_FILE = "JOB_OUTPUT_PROP_FILE";
+  private static final String SENSITIVE_JOB_PROP_NAME_SUFFIX = "_X";
+  private static final String SENSITIVE_JOB_PROP_VALUE_PLACEHOLDER = "[MASKED]";
+  private static final String JOB_DUMP_PROPERTIES_IN_LOG = "job.dump.properties";
 
   protected final String _jobPath;
 
@@ -81,6 +84,31 @@ public abstract class AbstractProcessJob extends AbstractJob {
     jobProps = PropsUtils.resolveProps(jobProps);
   }
 
+  /**
+   * prints the current Job props to the Job log.
+   */
+  protected void logJobProperties() {
+    if (this.jobProps != null &&
+        this.jobProps.getBoolean(JOB_DUMP_PROPERTIES_IN_LOG, false)){
+      try {
+        Map<String,String> flattenedProps = this.jobProps.getFlattened();
+        this.info("******   Job properties   ******");
+        this.info(String.format("- Note : value is masked if property name ends with '%s'.",
+            SENSITIVE_JOB_PROP_NAME_SUFFIX ));
+        for(Map.Entry<String, String> entry : flattenedProps.entrySet()){
+          String key = entry.getKey();
+          String value = key.endsWith(SENSITIVE_JOB_PROP_NAME_SUFFIX)?
+                                      SENSITIVE_JOB_PROP_VALUE_PLACEHOLDER :
+                                      entry.getValue();
+          this.info(String.format("%s=%s",key,value));
+        }
+        this.info("****** End Job properties  ******");
+      } catch (Exception ex){
+        log.error("failed to log job properties ", ex);
+      }
+    }
+  }
+
   @Override
   public Props getJobGeneratedProperties() {
     return generatedProperties;
@@ -101,7 +129,6 @@ public abstract class AbstractProcessJob extends AbstractJob {
 
     files[1] = createOutputPropsFile(getId(), _cwd);
     jobProps.put(ENV_PREFIX + JOB_OUTPUT_PROP_FILE, files[1].getAbsolutePath());
-
     return files;
   }
 
