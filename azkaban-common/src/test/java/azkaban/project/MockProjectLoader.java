@@ -243,4 +243,10 @@ public class MockProjectLoader implements ProjectLoader {
     // TODO Auto-generated method stub
 
   }
+
+@Override
+public Project fetchProjectByName(String name) throws ProjectManagerException {
+    // TODO Auto-generated method stub
+    return null;
+}
 }
