@@ -293,11 +293,12 @@ public class MockExecutorLoader implements ExecutorLoader {
   @Override
   public Executor addExecutor(String host, int port)
     throws ExecutorManagerException {
-    if (fetchExecutor(host, port) != null) {
-
+    Executor executor = null;
+    if (fetchExecutor(host, port) == null) {
+      executorIdCounter++;
+      executor = new Executor(executorIdCounter, host, port, true);
+      executors.add(executor);
     }
-    executorIdCounter++;
-    Executor executor = new Executor(executorIdCounter, host, port, true);
     return executor;
   }
 
@@ -360,7 +361,7 @@ public class MockExecutorLoader implements ExecutorLoader {
     List<Pair<ExecutionReference, ExecutableFlow>> queuedFlows =
       new ArrayList<Pair<ExecutionReference, ExecutableFlow>>();
     for (int execId : refs.keySet()) {
-      if (executionExecutorMapping.containsKey(execId)) {
+      if (!executionExecutorMapping.containsKey(execId)) {
         queuedFlows.add(new Pair<ExecutionReference, ExecutableFlow>(refs
           .get(execId), flows.get(execId)));
       }

@@ -61,6 +61,8 @@ import azkaban.utils.Props;
  */
 public class ExecutorManager extends EventHandler implements
   ExecutorManagerAdapter {
+  static final String AZKABAN_USE_MULTIPLE_EXECUTORS =
+    "azkaban.use.multiple.executors";
   private static Logger logger = Logger.getLogger(ExecutorManager.class);
   final private ExecutorLoader executorLoader;
 
@@ -121,7 +123,6 @@ public class ExecutorManager extends EventHandler implements
         DEFAULT_EXECUTION_LOGS_RETENTION_MS);
     cleanerThread = new CleanerThread(executionLogsRetentionMs);
     cleanerThread.start();
-    disableQueueProcessorThread();
   }
 
   /**
@@ -158,7 +159,7 @@ public class ExecutorManager extends EventHandler implements
         executorPort, true));
     }
 
-    if (azkProps.getBoolean("azkaban.use.multiple.executors", false)) {
+    if (azkProps.getBoolean(AZKABAN_USE_MULTIPLE_EXECUTORS, false)) {
       activeExecutors.addAll(executorLoader.fetchActiveExecutors());
     }
 
@@ -167,10 +168,16 @@ public class ExecutorManager extends EventHandler implements
     }
   }
 
+  /**
+   * Disable flow dispatching in QueueProcessor
+   */
   public void disableQueueProcessorThread() {
     queueProcessor.setActive(false);
   }
 
+  /**
+   * Enable flow dispatching in QueueProcessor
+   */
   public void enableQueueProcessorThread() {
     queueProcessor.setActive(true);
   }
@@ -179,6 +186,12 @@ public class ExecutorManager extends EventHandler implements
     return queueProcessor.getState();
   }
 
+  /**
+   * Returns state of QueueProcessor False, no flow is being dispatched True ,
+   * flows are being dispatched as expected
+   *
+   * @return
+   */
   public boolean isQueueProcessorThreadActive() {
     return queueProcessor.isActive();
   }
