@@ -784,7 +784,6 @@ public class JdbcProjectLoader extends AbstractJdbcLoader implements
       byte[] stringData = json.getBytes("UTF-8");
       byte[] data = stringData;
 
-      logger.info("UTF-8 size:" + data.length);
       if (defaultEncodingType == EncodingType.GZIP) {
         data = GZIPUtils.gzipBytes(stringData);
       }
@@ -827,7 +826,6 @@ public class JdbcProjectLoader extends AbstractJdbcLoader implements
     byte[] stringData = json.getBytes("UTF-8");
     byte[] data = stringData;
 
-    logger.info("UTF-8 size:" + data.length);
     if (encType == EncodingType.GZIP) {
       data = GZIPUtils.gzipBytes(stringData);
     }
@@ -948,7 +946,6 @@ public class JdbcProjectLoader extends AbstractJdbcLoader implements
 
     String propertyJSON = PropsUtils.toJSONString(props, true);
     byte[] data = propertyJSON.getBytes("UTF-8");
-    logger.info("UTF-8 size:" + data.length);
     if (defaultEncodingType == EncodingType.GZIP) {
       data = GZIPUtils.gzipBytes(data);
     }
@@ -971,7 +968,6 @@ public class JdbcProjectLoader extends AbstractJdbcLoader implements
 
     String propertyJSON = PropsUtils.toJSONString(props, true);
     byte[] data = propertyJSON.getBytes("UTF-8");
-    logger.info("UTF-8 size:" + data.length);
     if (defaultEncodingType == EncodingType.GZIP) {
       data = GZIPUtils.gzipBytes(data);
     }
