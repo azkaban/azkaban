@@ -39,4 +39,14 @@ public interface JmxExecutorManagerMBean {
 
   @DisplayName("OPERATION: getPrimaryExecutorHostPorts")
   public List<String> getPrimaryExecutorHostPorts();
+
+  @DisplayName("OPERATION: isQueueProcessorActive")
+  public boolean isQueueProcessorActive();
+
+  @DisplayName("OPERATION: getUndispatchedFlows")
+  public String getUndispatchedFlows();
+
+  @DisplayName("OPERATION: getQueueProcessorThreadState")
+  public String getQueueProcessorThreadState();
+
 }

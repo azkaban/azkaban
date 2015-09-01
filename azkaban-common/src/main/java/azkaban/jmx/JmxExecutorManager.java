@@ -62,4 +62,20 @@ public class JmxExecutorManager implements JmxExecutorManagerMBean {
   public String getRunningFlows() {
     return manager.getRunningFlowIds();
   }
+
+  @Override
+  public boolean isQueueProcessorActive() {
+    return manager.isQueueProcessorThreadActive();
+  }
+
+  @Override
+  public String getUndispatchedFlows() {
+    return manager.getQueuedFlowIds();
+  }
+
+  @Override
+  public String getQueueProcessorThreadState() {
+    return manager.getQueueProcessorThreadState().toString();
+  }
+
 }

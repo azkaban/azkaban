@@ -56,14 +56,6 @@ public class ExecutionReference {
     return execId;
   }
 
-  public String getHost() {
-    return executor.getHost();
-  }
-
-  public int getPort() {
-    return executor.getPort();
-  }
-
   public int getNumErrors() {
     return numErrors;
   }
