@@ -36,6 +36,7 @@ public final class FactorFilter<T,V>{
   private FactorFilter(String factorName, Filter<T,V> filter){
     this.factorName = factorName;
     this.filter = filter;
+    logger.info("filter created for " + this.factorName);
   }
 
   /** static function to generate an instance of the class.
@@ -72,6 +73,4 @@ public final class FactorFilter<T,V>{
      * */
     public boolean filterTarget(T filteringTarget, V referencingObject);
   }
-
-
 }

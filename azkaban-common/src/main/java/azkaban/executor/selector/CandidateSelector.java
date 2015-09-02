@@ -75,7 +75,7 @@ public class CandidateSelector<K,V> implements Selector<K, V> {
      }
 
      if (null == comparator){
-       logger.info("candidate comparator is not specified, default comparator from 'Collections' class will be used");
+       logger.info("candidate comparator is not specified, default comparator from 'Collections' class will be used.");
      }
 
      // final work - find the best candidate from the filtered list.

@@ -39,6 +39,7 @@ public final class FactorComparator<T>{
     this.factorName = factorName;
     this.weight = weight;
     this.comparator = comparator;
+    logger.info("comparator created for " + this.factorName);
   }
 
   /** static function to generate an instance of the class.

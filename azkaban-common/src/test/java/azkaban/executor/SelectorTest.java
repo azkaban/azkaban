@@ -29,7 +29,6 @@ import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import azkaban.executor.selector.*;
@@ -683,9 +682,9 @@ public class SelectorTest {
     executorList.add(new Executor(2, "host2", 80, true));
     executorList.add(new Executor(3, "host3", 80, true));
 
-    executorList.get(0).setExecutorStats(new Statistics(99.9, 4095, 50, new Date(), 4095, 0));
-    executorList.get(1).setExecutorStats(new Statistics(50, 4095, 50, new Date(), 4095, 0));
-    executorList.get(2).setExecutorStats(new Statistics(99.9, 4095, 50, new Date(), 2048, 0));
+    executorList.get(0).setExecutorStats(new Statistics(99.9, 4095, 50, new Date(), 4095,99, 0));
+    executorList.get(1).setExecutorStats(new Statistics(50, 4095, 50, new Date(), 4095,99, 0));
+    executorList.get(2).setExecutorStats(new Statistics(99.9, 4095, 50, new Date(), 2048,99, 0));
 
     ExecutableFlow flow = new ExecutableFlow();
 
@@ -695,10 +694,10 @@ public class SelectorTest {
     ExecutorSelector selector = new ExecutorSelector(filterList,comparatorMap);
     Executor executor = selector.getBest(executorList, flow);
     Assert.assertEquals(executorList.get(0), executor);
-    
+
     // simulate that once the flow is assigned, executor1's remaining TMP storage dropped to 2048
     // now we do the getBest again executor3 is expected to be selected as it has a earlier last dispatched time.
-    executorList.get(0).setExecutorStats(new Statistics(99.9, 4095, 50, new Date(), 2048, 0));
+    executorList.get(0).setExecutorStats(new Statistics(99.9, 4095, 50, new Date(), 2048,99, 0));
     executor = selector.getBest(executorList, flow);
     Assert.assertEquals(executorList.get(2), executor);
   }

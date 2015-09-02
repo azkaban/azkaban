@@ -17,9 +17,6 @@
 package azkaban.executor;
 
 import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
-
 import azkaban.utils.Utils;
 
 /**
