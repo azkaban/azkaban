@@ -17,12 +17,13 @@
 package azkaban.executor;
 
 import java.util.Date;
+import java.util.Map;
 
   public class Statistics {
     private double remainingMemoryPercent;
     private long   remainingMemory;
     private int    remainingFlowCapacity;
-    private Date   lastDispatched;
+    private Date   lastDispatchedTime;
     private long   remainingStorage;
     private double cpuUsage;
     private int    priority;
@@ -60,11 +61,11 @@ import java.util.Date;
     }
 
     public Date getLastDispatchedTime(){
-      return this.lastDispatched;
+      return this.lastDispatchedTime;
     }
 
     public void setLastDispatchedTime(Date value){
-      this.lastDispatched = value;
+      this.lastDispatchedTime = value;
     }
 
     public long getRemainingStorage() {
@@ -77,6 +78,10 @@ import java.util.Date;
 
     public int getPriority () {
       return this.priority;
+    }
+
+    public void setPriority (int value) {
+      this.priority = value;
     }
 
     public Statistics(){}
@@ -94,6 +99,71 @@ import java.util.Date;
       this.priority = priority;
       this.remainingMemoryPercent = remainingMemoryPercent;
       this.remainingStorage = remainingStorage;
-      this.lastDispatched = lastDispatched;
+      this.lastDispatchedTime = lastDispatched;
+    }
+
+    @Override
+    public boolean equals(Object obj)
+    {
+        if (obj instanceof Statistics)
+        {
+          boolean result = true;
+          Statistics stat = (Statistics) obj;
+
+          result &=this.remainingMemory == stat.remainingMemory;
+          result &=this.cpuUsage == stat.cpuUsage;
+          result &=this.remainingFlowCapacity == stat.remainingFlowCapacity;
+          result &=this.priority == stat.priority;
+          result &=this.remainingMemoryPercent == stat.remainingMemoryPercent;
+          result &=this.remainingStorage == stat.remainingStorage;
+          result &= null == this.lastDispatchedTime ? stat.lastDispatchedTime == null :
+                            this.lastDispatchedTime.equals(stat.lastDispatchedTime);
+          return result;
+        }
+        return false;
+    }
+
+    
+    // really ugly to have it home-made here for object-binding as base on the
+    // current code base there is no any better ways to do that.
+    public static Statistics fromJsonObject(Map<String,Object> mapObj){
+      if (null == mapObj) return null ;
+      Statistics stats = new Statistics ();
+
+      final String remainingMemory = "remainingMemory";
+      if (mapObj.containsKey(remainingMemory) && null != mapObj.get(remainingMemory)){
+        stats.setRemainingMemory(Long.parseLong(mapObj.get(remainingMemory).toString()));
+      }
+
+      final String cpuUsage = "cpuUsage";
+      if (mapObj.containsKey(cpuUsage) && null != mapObj.get(cpuUsage)){
+        stats.setCpuUpsage(Double.parseDouble(mapObj.get(cpuUsage).toString()));
+      }
+
+      final String remainingFlowCapacity = "remainingFlowCapacity";
+      if (mapObj.containsKey(remainingFlowCapacity) && null != mapObj.get(remainingFlowCapacity)){
+        stats.setRemainingFlowCapacity(Integer.parseInt(mapObj.get(remainingFlowCapacity).toString()));
+      }
+
+      final String priority = "priority";
+      if (mapObj.containsKey(priority) && null != mapObj.get(priority)){
+        stats.setPriority(Integer.parseInt(mapObj.get(priority).toString()));
+      }
+
+      final String remainingMemoryPercent = "remainingMemoryPercent";
+      if (mapObj.containsKey(remainingMemoryPercent) && null != mapObj.get(remainingMemoryPercent)){
+        stats.setRemainingMemoryPercent(Double.parseDouble(mapObj.get(remainingMemoryPercent).toString()));
+      }
+
+      final String remainingStorage = "remainingStorage";
+      if (mapObj.containsKey(remainingStorage) && null != mapObj.get(remainingStorage)){
+        stats.setRemainingStorage(Long.parseLong(mapObj.get(remainingStorage).toString()));
+      }
+
+      final String lastDispatched = "lastDispatchedTime";
+      if (mapObj.containsKey(lastDispatched) && null != mapObj.get(lastDispatched)){
+        stats.setLastDispatchedTime(new Date(Long.parseLong(mapObj.get(lastDispatched).toString())));
+      }
+      return stats;
     }
 }
