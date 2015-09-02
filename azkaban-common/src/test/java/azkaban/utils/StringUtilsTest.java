@@ -19,8 +19,8 @@ public class StringUtilsTest {
   private static final String[] browserVariants = { chromeOnMac, fireFoxOnMac,
       safariOnMac, chromeOnLinux, fireFoxOnLinux };
 
-  private static final String[] BROWSER_NAMES =
-      { "Chrome", "Firefox", "Safari" };
+  private static final String[] BROWSER_NAMES = { "AppleWebKit", "Gecko",
+      "Chrome" };
 
   @Test
   public void isBrowser() throws Exception {

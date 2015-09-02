@@ -91,7 +91,7 @@ public class StringUtils {
   }
 
   private static final Pattern BROWSWER_PATTERN = Pattern
-      .compile(".*Chrome.*|.*Firefox.*|.*Safari.*");
+      .compile(".*Gecko.*|.*AppleWebKit.*|.*Trident.*|.*Chrome.*");
 
   public static boolean isFromBrowser(String userAgent) {
     if (userAgent == null) {

@@ -25,7 +25,6 @@ import java.io.Writer;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
-import java.util.regex.Pattern;
 
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
@@ -59,9 +58,6 @@ public abstract class LoginAbstractAzkabanServlet extends
       .getLogger(LoginAbstractAzkabanServlet.class.getName());
   private static final String SESSION_ID_NAME = "azkaban.browser.session.id";
   private static final int DEFAULT_UPLOAD_DISK_SPOOL_SIZE = 20 * 1024 * 1024;
-
-  private static final Pattern BROWSWER_PATTERN = Pattern
-      .compile("[*Chrome*|*Firefox*|*Safari*]");
 
   private static HashMap<String, String> contextType =
       new HashMap<String, String>();
