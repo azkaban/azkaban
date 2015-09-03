@@ -48,7 +48,9 @@ import azkaban.server.HttpRequestUtils;
 import azkaban.server.session.Session;
 import azkaban.user.Permission;
 import azkaban.user.Permission.Type;
+import azkaban.user.Role;
 import azkaban.user.User;
+import azkaban.user.UserManager;
 import azkaban.utils.FileIOUtils.LogData;
 import azkaban.utils.Pair;
 import azkaban.webapp.AzkabanWebServer;
@@ -61,11 +63,13 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
   private ExecutorManagerAdapter executorManager;
   private ScheduleManager scheduleManager;
   private ExecutorVelocityHelper velocityHelper;
+  private UserManager userManager;
 
   @Override
   public void init(ServletConfig config) throws ServletException {
     super.init(config);
     AzkabanWebServer server = (AzkabanWebServer) getApplication();
+    userManager = server.getUserManager();
     projectManager = server.getProjectManager();
     executorManager = server.getExecutorManager();
     scheduleManager = server.getScheduleManager();
@@ -809,6 +813,7 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
     if (!options.isSuccessEmailsOverridden()) {
       options.setSuccessEmails(flow.getSuccessEmails());
     }
+    fixFlowPriorityByPermission(options, user);
     options.setMailCreator(flow.getMailCreator());
 
     try {
@@ -824,6 +829,15 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
     ret.put("execid", exflow.getExecutionId());
   }
 
+  /* Reset flow priority if submitting user is not a Azkaban admin */
+  private void fixFlowPriorityByPermission(ExecutionOptions options, User user) {
+    if (!(options.getFlowParameters().containsKey(
+      ExecutionOptions.FLOW_PRIORITY) && hasPermission(user, Type.ADMIN))) {
+      options.getFlowParameters().put(ExecutionOptions.FLOW_PRIORITY,
+        String.valueOf(ExecutionOptions.DEFAULT_FLOW_PRIORITY));
+    }
+  }
+
   public class ExecutorVelocityHelper {
     public String getProjectName(int id) {
       Project project = projectManager.getProject(id);
@@ -833,5 +847,17 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 
       return project.getName();
     }
+  }
+
+  /* returns true if user has access of type */
+  protected boolean hasPermission(User user, Permission.Type type) {
+    for (String roleName : user.getRoles()) {
+      Role role = userManager.getRole(roleName);
+      if (role.getPermission().isPermissionSet(type)
+        || role.getPermission().isPermissionSet(Permission.Type.ADMIN)) {
+        return true;
+      }
+    }
+    return false;
   }
 }
