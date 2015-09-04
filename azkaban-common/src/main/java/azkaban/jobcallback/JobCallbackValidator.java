@@ -54,8 +54,10 @@ public class JobCallbackValidator {
               maxPostBodyLength);
     }
 
-    logger.info("Found " + totalCallbackCount + " job callbacks for job "
-        + jobName);
+    if (logger.isDebugEnabled()) {
+      logger.debug("Found " + totalCallbackCount + " job callbacks for job "
+          + jobName);
+    }
     return totalCallbackCount;
   }
 

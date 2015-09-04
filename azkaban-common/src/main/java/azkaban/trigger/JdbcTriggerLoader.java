@@ -194,7 +194,9 @@ public class JdbcTriggerLoader extends AbstractJdbcLoader implements
 
   @Override
   public void updateTrigger(Trigger t) throws TriggerLoaderException {
-    logger.info("Updating trigger " + t.getTriggerId() + " into db.");
+    if (logger.isDebugEnabled()) {
+      logger.debug("Updating trigger " + t.getTriggerId() + " into db.");
+    }
     t.setLastModifyTime(System.currentTimeMillis());
     Connection connection = getConnection();
     try {
@@ -238,7 +240,9 @@ public class JdbcTriggerLoader extends AbstractJdbcLoader implements
       if (updates == 0) {
         throw new TriggerLoaderException("No trigger has been updated.");
       } else {
-        logger.info("Updated " + updates + " records.");
+        if (logger.isDebugEnabled()) {
+          logger.debug("Updated " + updates + " records.");
+        }
       }
     } catch (SQLException e) {
       logger.error(UPDATE_TRIGGER + " failed.");
