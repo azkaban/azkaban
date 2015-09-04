@@ -23,6 +23,7 @@ import java.util.Map;
     private double remainingMemoryPercent;
     private long   remainingMemory;
     private int    remainingFlowCapacity;
+    private int    numberOfAssignedFlows;
     private Date   lastDispatchedTime;
     private long   remainingStorage;
     private double cpuUsage;
@@ -84,6 +85,14 @@ import java.util.Map;
       this.priority = value;
     }
 
+    public int getNumberOfAssignedFlows () {
+      return this.numberOfAssignedFlows;
+    }
+
+    public void setNumberOfAssignedFlows (int value) {
+      this.numberOfAssignedFlows = value;
+    }
+
     public Statistics(){}
 
     public Statistics (double remainingMemoryPercent,
@@ -92,7 +101,8 @@ import java.util.Map;
         Date lastDispatched,
         long remainingStorage,
         double cpuUsage,
-        int  priority ){
+        int  priority,
+        int numberOfAssignedFlows){
       this.remainingMemory = remainingMemory;
       this.cpuUsage = cpuUsage;
       this.remainingFlowCapacity = remainingFlowCapacity;
@@ -100,6 +110,7 @@ import java.util.Map;
       this.remainingMemoryPercent = remainingMemoryPercent;
       this.remainingStorage = remainingStorage;
       this.lastDispatchedTime = lastDispatched;
+      this.numberOfAssignedFlows = numberOfAssignedFlows;
     }
 
     @Override
@@ -116,6 +127,7 @@ import java.util.Map;
           result &=this.priority == stat.priority;
           result &=this.remainingMemoryPercent == stat.remainingMemoryPercent;
           result &=this.remainingStorage == stat.remainingStorage;
+          result &=this.numberOfAssignedFlows == stat.numberOfAssignedFlows;
           result &= null == this.lastDispatchedTime ? stat.lastDispatchedTime == null :
                             this.lastDispatchedTime.equals(stat.lastDispatchedTime);
           return result;
@@ -123,7 +135,7 @@ import java.util.Map;
         return false;
     }
 
-    
+
     // really ugly to have it home-made here for object-binding as base on the
     // current code base there is no any better ways to do that.
     public static Statistics fromJsonObject(Map<String,Object> mapObj){
@@ -148,6 +160,11 @@ import java.util.Map;
       final String priority = "priority";
       if (mapObj.containsKey(priority) && null != mapObj.get(priority)){
         stats.setPriority(Integer.parseInt(mapObj.get(priority).toString()));
+      }
+
+      final String numberOfAssignedFlows = "numberOfAssignedFlows";
+      if (mapObj.containsKey(numberOfAssignedFlows) && null != mapObj.get(numberOfAssignedFlows)){
+        stats.setNumberOfAssignedFlows(Integer.parseInt(mapObj.get(numberOfAssignedFlows).toString()));
       }
 
       final String remainingMemoryPercent = "remainingMemoryPercent";

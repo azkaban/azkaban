@@ -38,6 +38,7 @@ public class StatisticsServlet extends HttpServlet  {
   private static final long serialVersionUID = 1L;
   private static final int  cacheTimeInMilliseconds = 1000;
   private static final Logger logger = Logger.getLogger(StatisticsServlet.class);
+  private static final String noCacheParamName = "nocache";
 
   protected static Date lastRefreshedTime = null;
   protected static Statistics cachedstats = null;
@@ -51,9 +52,11 @@ public class StatisticsServlet extends HttpServlet  {
   protected void doGet(HttpServletRequest req, HttpServletResponse resp)
       throws ServletException, IOException {
 
-    if (null == lastRefreshedTime ||
+    boolean noCache = null!= req && Boolean.getBoolean(req.getParameter(noCacheParamName));
+
+    if (noCache || null == lastRefreshedTime ||
         new Date().getTime() - lastRefreshedTime.getTime() > cacheTimeInMilliseconds){
-      this.populateStatistics();
+      this.populateStatistics(noCache);
     }
 
     JSONUtils.toJSON(cachedstats, resp.getOutputStream(), true);
@@ -144,9 +147,9 @@ public class StatisticsServlet extends HttpServlet  {
    * call the data providers to fill the returning data container for statistics data.
    * This function refreshes the static cached copy of data in case if necessary.
    * */
-  protected synchronized void populateStatistics(){
+  protected synchronized void populateStatistics(boolean noCache){
     //check again before starting the work.
-    if (null == lastRefreshedTime ||
+    if (noCache || null == lastRefreshedTime ||
         new Date().getTime() - lastRefreshedTime.getTime() > cacheTimeInMilliseconds){
       final Statistics stats = new Statistics();
 
@@ -191,9 +194,9 @@ public class StatisticsServlet extends HttpServlet  {
     AzkabanExecutorServer server = AzkabanExecutorServer.getApp();
     if (server != null){
       FlowRunnerManager runnerMgr =  AzkabanExecutorServer.getApp().getFlowRunnerManager();
-      stats.setRemainingFlowCapacity(runnerMgr.getMaxNumRunningFlows() -
-                                     runnerMgr.getNumRunningFlows() -
-                                     runnerMgr.getNumQueuedFlows());
+      int assignedFlows = runnerMgr.getNumRunningFlows() + runnerMgr.getNumQueuedFlows();
+      stats.setRemainingFlowCapacity(runnerMgr.getMaxNumRunningFlows() - assignedFlows);
+      stats.setNumberOfAssignedFlows(assignedFlows);
       stats.setLastDispatchedTime(runnerMgr.getLastFlowSubmittedTime());
     }else {
       logger.error("failed to get data for remaining flow capacity or LastDispatchedTime" +

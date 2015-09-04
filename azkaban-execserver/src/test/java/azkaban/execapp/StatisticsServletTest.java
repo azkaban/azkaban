@@ -24,7 +24,7 @@ public class StatisticsServletTest {
     }
 
     public void callPopulateStatistics(){
-       this.populateStatistics();
+       this.populateStatistics(false);
     }
 
     public void callFillCpuUsage(Statistics stats){
@@ -81,7 +81,17 @@ public class StatisticsServletTest {
 
   @Test
   public void testStatisticsJsonParser() throws IOException  {
-    Statistics stat = new Statistics(0.1,1,2,new Date(),3,4,5);
+    Statistics stat = new Statistics(0.1,1,2,new Date(),3,4,5,5);
+    String jSonStr = JSONUtils.toJSON(stat);
+    @SuppressWarnings("unchecked")
+    Map<String,Object> jSonObj = (Map<String,Object>)JSONUtils.parseJSONFromString(jSonStr);
+    Statistics stat2 = Statistics.fromJsonObject(jSonObj);
+    Assert.assertTrue(stat.equals(stat2));
+    }
+
+  @Test
+  public void testStatisticsJsonParserWNullDateValue() throws IOException  {
+    Statistics stat = new Statistics(0.1,1,2,null,3,4,5,5);
     String jSonStr = JSONUtils.toJSON(stat);
     @SuppressWarnings("unchecked")
     Map<String,Object> jSonObj = (Map<String,Object>)JSONUtils.parseJSONFromString(jSonStr);

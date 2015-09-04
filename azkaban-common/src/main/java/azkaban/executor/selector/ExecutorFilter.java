@@ -40,6 +40,8 @@ public final class ExecutorFilter extends CandidateFilter<Executor, ExecutableFl
 
   // factor filter names.
   private static final String STATICREMAININGFLOWSIZE_FILTER_NAME = "StaticRemainingFlowSize";
+  private static final String MINIMUMFREEMEMORY_FILTER_NAME = "MinimunFreeMemory";
+  private static final String CPUSTATUS_FILTER_NAME = "CpuStatus";
 
   /**
    * static initializer of the class.
@@ -49,6 +51,8 @@ public final class ExecutorFilter extends CandidateFilter<Executor, ExecutableFl
   static {
     filterRepository = new HashMap<String, FactorFilter<Executor, ExecutableFlow>>();
     filterRepository.put(STATICREMAININGFLOWSIZE_FILTER_NAME, getStaticRemainingFlowSizeFilter());
+    filterRepository.put(MINIMUMFREEMEMORY_FILTER_NAME, getMinimumReservedMemoryFilter());
+    filterRepository.put(CPUSTATUS_FILTER_NAME, getCpuStatusFilter());
   }
 
   /**
@@ -67,8 +71,9 @@ public final class ExecutorFilter extends CandidateFilter<Executor, ExecutableFl
       if (filterRepository.containsKey(filterName)){
         this.registerFactorFilter(filterRepository.get(filterName));
       } else {
-        logger.error(String.format("failed to initialize executor filter as the filter implementation for requested factor '%s' doesn't exist.",
-            filterName));
+        logger.error(String.format("failed to initialize executor filter "+
+                                   "as the filter implementation for requested factor '%s' doesn't exist.",
+                                   filterName));
         throw new IllegalArgumentException("filterList");
       }
     }
@@ -83,12 +88,10 @@ public final class ExecutorFilter extends CandidateFilter<Executor, ExecutableFl
    * function to register the static remaining flow size filter.
    * NOTE : this is a static filter which means the filter will be filtering based on the system standard which is not
    *        Coming for the passed flow.
-   *        Ideally this filter will make sure only the executor has remaining
+   *        Ideally this filter will make sure only the executor hasn't reached the Max allowed # of executing flows.
    * */
   private static FactorFilter<Executor, ExecutableFlow> getStaticRemainingFlowSizeFilter(){
     return FactorFilter.create(STATICREMAININGFLOWSIZE_FILTER_NAME, new FactorFilter.Filter<Executor, ExecutableFlow>() {
-
-      @Override
       public boolean filterTarget(Executor filteringTarget, ExecutableFlow referencingObject) {
         if (null == filteringTarget){
           logger.info(String.format("%s : filtering out the target as it is null.", STATICREMAININGFLOWSIZE_FILTER_NAME));
@@ -107,6 +110,58 @@ public final class ExecutorFilter extends CandidateFilter<Executor, ExecutableFl
     });
   }
 
-  // TO-DO
-  // Add more Filter definitions .
+  /**
+   * function to register the static Minimum Reserved Memory filter.
+   * NOTE : this is a static filter which means the filter will be filtering based on the system standard which is not
+   *        Coming for the passed flow.
+   *        This filter will filter out any executors that has the remaining  memory below 6G
+   * */
+  private static FactorFilter<Executor, ExecutableFlow> getMinimumReservedMemoryFilter(){
+    return FactorFilter.create(MINIMUMFREEMEMORY_FILTER_NAME, new FactorFilter.Filter<Executor, ExecutableFlow>() {
+      private static final int MINIMUM_FREE_MEMORY = 6 * 1024;
+      public boolean filterTarget(Executor filteringTarget, ExecutableFlow referencingObject) {
+        if (null == filteringTarget){
+          logger.info(String.format("%s : filtering out the target as it is null.", MINIMUMFREEMEMORY_FILTER_NAME));
+          return false;
+        }
+
+        Statistics stats = filteringTarget.getExecutorStats();
+        if (null == stats) {
+          logger.info(String.format("%s : filtering out %s as it's stats is unavailable.",
+              MINIMUMFREEMEMORY_FILTER_NAME,
+              filteringTarget.toString()));
+          return false;
+        }
+        return stats.getRemainingMemory() > MINIMUM_FREE_MEMORY ;
+       }
+    });
+  }
+
+
+  /**
+   * function to register the static Minimum Reserved Memory filter.
+   * NOTE : this is a static filter which means the filter will be filtering based on the system standard which is not
+   *        Coming for the passed flow.
+   *        This filter will filter out any executors that the current CPU usage exceed 95%
+   * */
+  private static FactorFilter<Executor, ExecutableFlow> getCpuStatusFilter(){
+    return FactorFilter.create(CPUSTATUS_FILTER_NAME, new FactorFilter.Filter<Executor, ExecutableFlow>() {
+      private static final int MAX_CPU_CURRENT_USAGE = 95;
+      public boolean filterTarget(Executor filteringTarget, ExecutableFlow referencingObject) {
+        if (null == filteringTarget){
+          logger.info(String.format("%s : filtering out the target as it is null.", CPUSTATUS_FILTER_NAME));
+          return false;
+        }
+
+        Statistics stats = filteringTarget.getExecutorStats();
+        if (null == stats) {
+          logger.info(String.format("%s : filtering out %s as it's stats is unavailable.",
+              MINIMUMFREEMEMORY_FILTER_NAME,
+              filteringTarget.toString()));
+          return false;
+        }
+        return stats.getCpuUsage() < MAX_CPU_CURRENT_USAGE ;
+       }
+    });
+  }
 }
