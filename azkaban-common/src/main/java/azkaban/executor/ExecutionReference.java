@@ -23,6 +23,7 @@ public class ExecutionReference {
   private long nextCheckTime = -1;
   private int numErrors = 0;
 
+
   public ExecutionReference(int execId) {
     this.execId = execId;
   }
@@ -30,10 +31,6 @@ public class ExecutionReference {
   public ExecutionReference(int execId, Executor executor) {
     this.execId = execId;
     this.executor = executor;
-  }
-
-  public Executor getExecutor() {
-    return executor;
   }
 
   public void setUpdateTime(long updateTime) {
@@ -56,6 +53,14 @@ public class ExecutionReference {
     return execId;
   }
 
+  public String getHost() {
+    return executor.getHost();
+  }
+
+  public int getPort() {
+    return executor.getPort();
+  }
+
   public int getNumErrors() {
     return numErrors;
   }
@@ -66,5 +71,9 @@ public class ExecutionReference {
 
   public void setExecutor(Executor executor) {
     this.executor = executor;
+  }
+
+  public Executor getExecutor() {
+    return executor;
   }
 }

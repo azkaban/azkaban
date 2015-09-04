@@ -346,7 +346,7 @@ public class MockExecutorLoader implements ExecutorLoader {
   }
 
   @Override
-  public Executor fetchExecutorByExecution(int execId) throws ExecutorManagerException {
+  public Executor fetchExecutorByExecutionId(int execId) throws ExecutorManagerException {
     if (executionExecutorMapping.containsKey(execId)) {
       return fetchExecutor(executionExecutorMapping.get(execId));
     } else {

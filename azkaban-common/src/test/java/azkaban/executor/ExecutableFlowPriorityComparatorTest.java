@@ -50,8 +50,8 @@ public class ExecutableFlowPriorityComparatorTest {
   }
 
   /* Helper method to create an ExecutableFlow from serialized description */
-  private ExecutableFlow createExecutableFlow(String flowName, int execId,
-    int priority) throws IOException {
+  private ExecutableFlow createExecutableFlow(String flowName, int priority,
+    long updateTime) throws IOException {
     File jsonFlowFile = getFlowDir(flowName);
     @SuppressWarnings("unchecked")
     HashMap<String, Object> flowObj =
@@ -64,7 +64,7 @@ public class ExecutableFlowPriorityComparatorTest {
     project.setFlows(flowMap);
     ExecutableFlow execFlow = new ExecutableFlow(project, flow);
 
-    execFlow.setExecutionId(execId);
+    execFlow.setUpdateTime(updateTime);
     if (priority > 0) {
       execFlow.getExecutionOptions().getFlowParameters()
         .put(ExecutionOptions.FLOW_PRIORITY, String.valueOf(priority));
@@ -76,9 +76,9 @@ public class ExecutableFlowPriorityComparatorTest {
   @Test
   public void testExplicitlySpecifiedPriorities() throws IOException,
     InterruptedException {
-    ExecutableFlow flow1 = createExecutableFlow("exec1", 1, 5);
-    ExecutableFlow flow2 = createExecutableFlow("exec2", 2, 6);
-    ExecutableFlow flow3 = createExecutableFlow("exec3", 3, 2);
+    ExecutableFlow flow1 = createExecutableFlow("exec1", 5, 3);
+    ExecutableFlow flow2 = createExecutableFlow("exec2", 6, 3);
+    ExecutableFlow flow3 = createExecutableFlow("exec3", 2, 3);
     ExecutionReference dummyRef = new ExecutionReference(0);
 
     BlockingQueue<Pair<ExecutionReference, ExecutableFlow>> queue =
@@ -97,9 +97,9 @@ public class ExecutableFlowPriorityComparatorTest {
   @Test
   public void testMixedSpecifiedPriorities() throws IOException,
     InterruptedException {
-    ExecutableFlow flow1 = createExecutableFlow("exec1", 1, 3);
-    ExecutableFlow flow2 = createExecutableFlow("exec2", 2, 2);
-    ExecutableFlow flow3 = createExecutableFlow("exec3", 3, -2);
+    ExecutableFlow flow1 = createExecutableFlow("exec1", 3, 3);
+    ExecutableFlow flow2 = createExecutableFlow("exec2", 2, 3);
+    ExecutableFlow flow3 = createExecutableFlow("exec3", -2, 3);
     ExecutionReference dummyRef = new ExecutionReference(0);
 
     BlockingQueue<Pair<ExecutionReference, ExecutableFlow>> queue =
@@ -120,10 +120,10 @@ public class ExecutableFlowPriorityComparatorTest {
    */
   @Test
   public void testEqualPriorities() throws IOException, InterruptedException {
-    ExecutableFlow flow1 = createExecutableFlow("exec1", 1, 3);
+    ExecutableFlow flow1 = createExecutableFlow("exec1", 3, 1);
     ExecutableFlow flow2 = createExecutableFlow("exec2", 2, 2);
-    ExecutableFlow flow3 = createExecutableFlow("exec3", 3, -2);
-    ExecutableFlow flow4 = createExecutableFlow("exec3", 4, 3);
+    ExecutableFlow flow3 = createExecutableFlow("exec3", -2, 3);
+    ExecutableFlow flow4 = createExecutableFlow("exec3", 3, 4);
     ExecutionReference dummyRef = new ExecutionReference(0);
 
     BlockingQueue<Pair<ExecutionReference, ExecutableFlow>> queue =

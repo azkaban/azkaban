@@ -198,7 +198,7 @@ public interface ExecutorLoader {
    * @return fetched Executor
    * @throws ExecutorManagerException
    */
-  public Executor fetchExecutorByExecution(int executionId)
+  public Executor fetchExecutorByExecutionId(int executionId)
     throws ExecutorManagerException;
 
   /**

@@ -380,7 +380,7 @@ public class JdbcExecutorLoaderTest {
       return;
     }
     ExecutorLoader loader = createLoader();
-    Assert.assertEquals(loader.fetchExecutorByExecution(1), null);
+    Assert.assertEquals(loader.fetchExecutorByExecutionId(1), null);
   }
 
   /* Test null return when for a non-dispatched execution */
@@ -393,7 +393,7 @@ public class JdbcExecutorLoaderTest {
     ExecutorLoader loader = createLoader();
     ExecutableFlow flow = createExecutableFlow("exec1");
     loader.uploadExecutableFlow(flow);
-    Assert.assertEquals(loader.fetchExecutorByExecution(flow.getExecutionId()),
+    Assert.assertEquals(loader.fetchExecutorByExecutionId(flow.getExecutionId()),
       null);
   }
 
@@ -411,7 +411,7 @@ public class JdbcExecutorLoaderTest {
     ExecutableFlow flow = createExecutableFlow("exec1");
     loader.uploadExecutableFlow(flow);
     loader.assignExecutor(executor.getId(), flow.getExecutionId());
-    Assert.assertEquals(loader.fetchExecutorByExecution(flow.getExecutionId()),
+    Assert.assertEquals(loader.fetchExecutorByExecutionId(flow.getExecutionId()),
       executor);
   }
 

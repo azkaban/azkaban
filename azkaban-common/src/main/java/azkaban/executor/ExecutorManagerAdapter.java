@@ -18,6 +18,7 @@ package azkaban.executor;
 
 import java.io.IOException;
 import java.lang.Thread.State;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -210,11 +211,12 @@ public interface ExecutorManagerAdapter {
   public Set<? extends String> getPrimaryServerHosts();
 
   /**
-   * Returns a set of all the active executors maintained by active executors
+   * Returns a collection of all the active executors maintained by active
+   * executors
    *
    * @return
    */
-  public Set<Executor> getAllActiveExecutors();
+  public Collection<Executor> getAllActiveExecutors();
 
   /**
    * <pre>

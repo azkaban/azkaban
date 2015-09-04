@@ -1033,10 +1033,10 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements
    *
    * {@inheritDoc}
    *
-   * @see azkaban.executor.ExecutorLoader#fetchExecutorByExecution(int)
+   * @see azkaban.executor.ExecutorLoader#fetchExecutorByExecutionId(int)
    */
   @Override
-  public Executor fetchExecutorByExecution(int executionId)
+  public Executor fetchExecutorByExecutionId(int executionId)
     throws ExecutorManagerException {
     QueryRunner runner = createQueryRunner();
     FetchExecutorHandler executorHandler = new FetchExecutorHandler();

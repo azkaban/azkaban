@@ -19,6 +19,7 @@ package azkaban.executor;
 import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
@@ -64,6 +65,8 @@ public class ExecutorManagerTest {
     ExecutorLoader loader) throws ExecutorManagerException {
     Props props = new Props();
     props.put(ExecutorManager.AZKABAN_USE_MULTIPLE_EXECUTORS, "true");
+    props.put(ExecutorManager.AZKABAN_QUEUEPROCESSING_ENABLED, "false");
+
     loader.addExecutor("localhost", 12345);
     loader.addExecutor("localhost", 12346);
     return new ExecutorManager(props, loader, new HashMap<String, Alerter>());
@@ -117,7 +120,8 @@ public class ExecutorManagerTest {
     ExecutorLoader loader = new MockExecutorLoader();
     ExecutorManager manager =
       new ExecutorManager(props, loader, new HashMap<String, Alerter>());
-    Set<Executor> activeExecutors = manager.getAllActiveExecutors();
+    Set<Executor> activeExecutors =
+      new HashSet(manager.getAllActiveExecutors());
 
     Assert.assertEquals(activeExecutors.size(), 1);
     Executor executor = activeExecutors.iterator().next();
@@ -140,7 +144,8 @@ public class ExecutorManagerTest {
 
     ExecutorManager manager =
       new ExecutorManager(props, loader, new HashMap<String, Alerter>());
-    Set<Executor> activeExecutors = manager.getAllActiveExecutors();
+    Set<Executor> activeExecutors =
+      new HashSet(manager.getAllActiveExecutors());
     Assert.assertArrayEquals(activeExecutors.toArray(), new Executor[] {
       executor1, executor2 });
   }
@@ -157,8 +162,7 @@ public class ExecutorManagerTest {
 
     ExecutorManager manager =
       new ExecutorManager(props, loader, new HashMap<String, Alerter>());
-    Set<Executor> activeExecutors = manager.getAllActiveExecutors();
-    Assert.assertArrayEquals(activeExecutors.toArray(),
+    Assert.assertArrayEquals(manager.getAllActiveExecutors().toArray(),
       new Executor[] { executor1 });
 
     // mark older executor as inactive
@@ -168,8 +172,8 @@ public class ExecutorManagerTest {
     Executor executor3 = loader.addExecutor("localhost", 12347);
     manager.setupExecutors();
 
-    Assert.assertArrayEquals(activeExecutors.toArray(), new Executor[] {
-      executor2, executor3 });
+    Assert.assertArrayEquals(manager.getAllActiveExecutors().toArray(),
+      new Executor[] { executor2, executor3 });
   }
 
   /*
@@ -186,7 +190,8 @@ public class ExecutorManagerTest {
 
       ExecutorManager manager =
         new ExecutorManager(props, loader, new HashMap<String, Alerter>());
-      Set<Executor> activeExecutors = manager.getAllActiveExecutors();
+      Set<Executor> activeExecutors =
+        new HashSet(manager.getAllActiveExecutors());
       Assert.assertArrayEquals(activeExecutors.toArray(),
         new Executor[] { executor1 });
 
@@ -204,6 +209,8 @@ public class ExecutorManagerTest {
   @Test
   public void testDisablingQueueProcessThread() throws ExecutorManagerException {
     ExecutorManager manager = createMultiExecutorManagerInstance();
+    manager.enableQueueProcessorThread();
+    Assert.assertEquals(manager.isQueueProcessorThreadActive(), true);
     manager.disableQueueProcessorThread();
     Assert.assertEquals(manager.isQueueProcessorThreadActive(), false);
   }
@@ -212,9 +219,6 @@ public class ExecutorManagerTest {
   @Test
   public void testEnablingQueueProcessThread() throws ExecutorManagerException {
     ExecutorManager manager = createMultiExecutorManagerInstance();
-
-    Assert.assertEquals(manager.isQueueProcessorThreadActive(), true);
-    manager.disableQueueProcessorThread();
     Assert.assertEquals(manager.isQueueProcessorThreadActive(), false);
     manager.enableQueueProcessorThread();
     Assert.assertEquals(manager.isQueueProcessorThreadActive(), true);
@@ -229,7 +233,6 @@ public class ExecutorManagerTest {
     flow1.setExecutionId(1);
     ExecutableFlow flow2 = createExecutableFlow("exec2");
     flow2.setExecutionId(2);
-    manager.disableQueueProcessorThread();
 
     User testUser = getTestUser();
     manager.submitExecutableFlow(flow1, testUser.getUserId());
@@ -266,10 +269,11 @@ public class ExecutorManagerTest {
       ExecutableFlow flow1 = createExecutableFlow("exec1");
       flow1.getExecutionOptions().setConcurrentOption(
         ExecutionOptions.CONCURRENT_OPTION_SKIP);
-      manager.disableQueueProcessorThread();
 
       User testUser = getTestUser();
       manager.submitExecutableFlow(flow1, testUser.getUserId());
+      manager.submitExecutableFlow(flow1, testUser.getUserId());
+      manager.enableQueueProcessorThread();
       manager.submitExecutableFlow(flow1, testUser.getUserId());
       Assert.fail("Expecting exception, but didn't get one");
     } catch (ExecutorManagerException ex) {
@@ -286,7 +290,6 @@ public class ExecutorManagerTest {
     ExecutorLoader loader = new MockExecutorLoader();
     ExecutorManager manager = createMultiExecutorManagerInstance(loader);
     ExecutableFlow flow1 = createExecutableFlow("exec1");
-    manager.disableQueueProcessorThread();
     User testUser = getTestUser();
     manager.submitExecutableFlow(flow1, testUser.getUserId());
 
