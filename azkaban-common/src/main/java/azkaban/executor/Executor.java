@@ -108,7 +108,8 @@ public class Executor {
     this.isActive = isActive;
   }
 
+  @Override
   public String toString() {
-    return String.format("%s:%d", host, port);
+    return String.format("[%d]%s:%d", id, host, port);
   }
 }

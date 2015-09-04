@@ -34,22 +34,12 @@ import azkaban.user.User;
 import azkaban.utils.JSONUtils;
 import azkaban.utils.Pair;
 import azkaban.utils.Props;
+import azkaban.utils.TestUtils;
 
 /**
  * Test class for executor manager
  */
 public class ExecutorManagerTest {
-  /* Directory with serialized description of test flows */
-  private static final String UNIT_BASE_DIR =
-    "../azkaban-test/src/test/resources/executions/exectest1/";
-
-  private File getFlowDir(String flow) {
-    return new File(UNIT_BASE_DIR + flow + ".flow");
-  }
-
-  private User getTestUser() {
-    return new User("testUser");
-  }
 
   /* Helper method to create a ExecutorManager Instance */
   private ExecutorManager createMultiExecutorManagerInstance()
@@ -72,41 +62,18 @@ public class ExecutorManagerTest {
     return new ExecutorManager(props, loader, new HashMap<String, Alerter>());
   }
 
-  /* Helper method to create an ExecutableFlow from serialized description */
-  private ExecutableFlow createExecutableFlow(String flowName)
-    throws IOException {
-    File jsonFlowFile = getFlowDir(flowName);
-    @SuppressWarnings("unchecked")
-    HashMap<String, Object> flowObj =
-      (HashMap<String, Object>) JSONUtils.parseJSONFromFile(jsonFlowFile);
-
-    Flow flow = Flow.flowFromObject(flowObj);
-    Project project = new Project(1, "flow");
-    HashMap<String, Flow> flowMap = new HashMap<String, Flow>();
-    flowMap.put(flow.getId(), flow);
-    project.setFlows(flowMap);
-    ExecutableFlow execFlow = new ExecutableFlow(project, flow);
-
-    return execFlow;
-  }
-
   /*
    * Test create an executor manager instance without any executor local or
    * remote
    */
-  @Test
-  public void testNoExecutorScenario() {
-    try {
-      Props props = new Props();
-      props.put(ExecutorManager.AZKABAN_USE_MULTIPLE_EXECUTORS, "true");
-      ExecutorLoader loader = new MockExecutorLoader();
-      @SuppressWarnings("unused")
-      ExecutorManager manager =
-        new ExecutorManager(props, loader, new HashMap<String, Alerter>());
-      Assert.fail("Expecting exception, but didn't get one");
-    } catch (ExecutorManagerException ex) {
-      System.out.println("Test true");
-    }
+  @Test(expected = ExecutorManagerException.class)
+  public void testNoExecutorScenario() throws ExecutorManagerException {
+    Props props = new Props();
+    props.put(ExecutorManager.AZKABAN_USE_MULTIPLE_EXECUTORS, "true");
+    ExecutorLoader loader = new MockExecutorLoader();
+    @SuppressWarnings("unused")
+    ExecutorManager manager =
+      new ExecutorManager(props, loader, new HashMap<String, Alerter>());
   }
 
   /*
@@ -180,29 +147,24 @@ public class ExecutorManagerTest {
    * Test executor manager active executor reload and resulting in no active
    * executors
    */
-  @Test
-  public void testSetupExecutorsException() {
-    try {
-      Props props = new Props();
-      props.put(ExecutorManager.AZKABAN_USE_MULTIPLE_EXECUTORS, "true");
-      ExecutorLoader loader = new MockExecutorLoader();
-      Executor executor1 = loader.addExecutor("localhost", 12345);
+  @Test(expected = ExecutorManagerException.class)
+  public void testSetupExecutorsException() throws ExecutorManagerException {
+    Props props = new Props();
+    props.put(ExecutorManager.AZKABAN_USE_MULTIPLE_EXECUTORS, "true");
+    ExecutorLoader loader = new MockExecutorLoader();
+    Executor executor1 = loader.addExecutor("localhost", 12345);
 
-      ExecutorManager manager =
-        new ExecutorManager(props, loader, new HashMap<String, Alerter>());
-      Set<Executor> activeExecutors =
-        new HashSet(manager.getAllActiveExecutors());
-      Assert.assertArrayEquals(activeExecutors.toArray(),
-        new Executor[] { executor1 });
+    ExecutorManager manager =
+      new ExecutorManager(props, loader, new HashMap<String, Alerter>());
+    Set<Executor> activeExecutors =
+      new HashSet(manager.getAllActiveExecutors());
+    Assert.assertArrayEquals(activeExecutors.toArray(),
+      new Executor[] { executor1 });
 
-      // mark older executor as inactive
-      executor1.setActive(false);
-      loader.updateExecutor(executor1);
-      manager.setupExecutors();
-      Assert.fail("Expecting exception, but didn't get one");
-    } catch (ExecutorManagerException ex) {
-      System.out.println("Test true");
-    }
+    // mark older executor as inactive
+    executor1.setActive(false);
+    loader.updateExecutor(executor1);
+    manager.setupExecutors();
   }
 
   /* Test disabling queue process thread to pause dispatching */
@@ -229,12 +191,12 @@ public class ExecutorManagerTest {
   public void testQueuedFlows() throws ExecutorManagerException, IOException {
     ExecutorLoader loader = new MockExecutorLoader();
     ExecutorManager manager = createMultiExecutorManagerInstance(loader);
-    ExecutableFlow flow1 = createExecutableFlow("exec1");
+    ExecutableFlow flow1 = TestUtils.createExecutableFlow("exectest1", "exec1");
     flow1.setExecutionId(1);
-    ExecutableFlow flow2 = createExecutableFlow("exec2");
+    ExecutableFlow flow2 = TestUtils.createExecutableFlow("exectest1", "exec2");
     flow2.setExecutionId(2);
 
-    User testUser = getTestUser();
+    User testUser = TestUtils.getTestUser();
     manager.submitExecutableFlow(flow1, testUser.getUserId());
     manager.submitExecutableFlow(flow2, testUser.getUserId());
 
@@ -261,24 +223,17 @@ public class ExecutorManagerTest {
   }
 
   /* Test submit duplicate flow when previous instance is not dispatched */
-  @Test
+  @Test(expected = ExecutorManagerException.class)
   public void testDuplicateQueuedFlows() throws ExecutorManagerException,
     IOException {
-    try {
-      ExecutorManager manager = createMultiExecutorManagerInstance();
-      ExecutableFlow flow1 = createExecutableFlow("exec1");
-      flow1.getExecutionOptions().setConcurrentOption(
-        ExecutionOptions.CONCURRENT_OPTION_SKIP);
+    ExecutorManager manager = createMultiExecutorManagerInstance();
+    ExecutableFlow flow1 = TestUtils.createExecutableFlow("exectest1", "exec1");
+    flow1.getExecutionOptions().setConcurrentOption(
+      ExecutionOptions.CONCURRENT_OPTION_SKIP);
 
-      User testUser = getTestUser();
-      manager.submitExecutableFlow(flow1, testUser.getUserId());
-      manager.submitExecutableFlow(flow1, testUser.getUserId());
-      manager.enableQueueProcessorThread();
-      manager.submitExecutableFlow(flow1, testUser.getUserId());
-      Assert.fail("Expecting exception, but didn't get one");
-    } catch (ExecutorManagerException ex) {
-      System.out.println("Test true");
-    }
+    User testUser = TestUtils.getTestUser();
+    manager.submitExecutableFlow(flow1, testUser.getUserId());
+    manager.submitExecutableFlow(flow1, testUser.getUserId());
   }
 
   /*
@@ -289,8 +244,8 @@ public class ExecutorManagerTest {
   public void testKillQueuedFlow() throws ExecutorManagerException, IOException {
     ExecutorLoader loader = new MockExecutorLoader();
     ExecutorManager manager = createMultiExecutorManagerInstance(loader);
-    ExecutableFlow flow1 = createExecutableFlow("exec1");
-    User testUser = getTestUser();
+    ExecutableFlow flow1 = TestUtils.createExecutableFlow("exectest1", "exec1");
+    User testUser = TestUtils.getTestUser();
     manager.submitExecutableFlow(flow1, testUser.getUserId());
 
     manager.cancelFlow(flow1, testUser.getUserId());

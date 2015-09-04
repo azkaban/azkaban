@@ -35,34 +35,19 @@ import azkaban.user.User;
 import azkaban.utils.JSONUtils;
 import azkaban.utils.Pair;
 import azkaban.utils.Props;
+import azkaban.utils.TestUtils;
 
 /**
  * Test class for ExecutableFlowPriorityComparator
  * */
 
 public class ExecutableFlowPriorityComparatorTest {
-  /* Directory with serialized description of test flows */
-  private static final String UNIT_BASE_DIR =
-    "../azkaban-test/src/test/resources/executions/exectest1/";
-
-  private File getFlowDir(String flow) {
-    return new File(UNIT_BASE_DIR + flow + ".flow");
-  }
 
   /* Helper method to create an ExecutableFlow from serialized description */
   private ExecutableFlow createExecutableFlow(String flowName, int priority,
     long updateTime) throws IOException {
-    File jsonFlowFile = getFlowDir(flowName);
-    @SuppressWarnings("unchecked")
-    HashMap<String, Object> flowObj =
-      (HashMap<String, Object>) JSONUtils.parseJSONFromFile(jsonFlowFile);
-
-    Flow flow = Flow.flowFromObject(flowObj);
-    Project project = new Project(1, "flow");
-    HashMap<String, Flow> flowMap = new HashMap<String, Flow>();
-    flowMap.put(flow.getId(), flow);
-    project.setFlows(flowMap);
-    ExecutableFlow execFlow = new ExecutableFlow(project, flow);
+    ExecutableFlow execFlow =
+      TestUtils.createExecutableFlow("exectest1", flowName);
 
     execFlow.setUpdateTime(updateTime);
     if (priority > 0) {

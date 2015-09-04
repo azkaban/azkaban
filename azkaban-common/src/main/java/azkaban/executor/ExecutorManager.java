@@ -69,6 +69,10 @@ public class ExecutorManager extends EventHandler implements
     "azkaban.use.multiple.executors";
   private static final String AZKABAN_WEBSERVER_QUEUE_SIZE =
     "azkaban.webserver.queue.size";
+  private static final String AZKABAN_ACTIVE_EXECUTOR_REFRESHINTERVAL_IN_MS =
+    "azkaban.activeexecutor.refresh.milisecinterval";
+  private static final String AZKABAN_ACTIVE_EXECUTOR_REFRESHINTERVAL_IN_FLOW =
+    "azkaban.activeexecutor.refresh.flowinterval";
 
   private static Logger logger = Logger.getLogger(ExecutorManager.class);
   private ExecutorLoader executorLoader;
@@ -80,16 +84,9 @@ public class ExecutorManager extends EventHandler implements
   private ConcurrentHashMap<Integer, ExecutableFlow> recentlyFinished =
       new ConcurrentHashMap<Integer, ExecutableFlow>();
 
-  /* map to easily access queued flows */
-  final private ConcurrentHashMap<Integer, Pair<ExecutionReference, ExecutableFlow>> queuedFlowMap =
-    new ConcurrentHashMap<Integer, Pair<ExecutionReference, ExecutableFlow>>();
-  /* web server side queue */
-  final private BlockingQueue<Pair<ExecutionReference, ExecutableFlow>> queuedFlowList =
-    new PriorityBlockingQueue<Pair<ExecutionReference, ExecutableFlow>>(10,
-      new ExecutableFlowPriorityComparator());
+  QueuedExecutions queuedFlows;
 
   final private Set<Executor> activeExecutors = new HashSet<Executor>();
-  final private long webserverQueueCapacity;
   private QueueProcessorThread queueProcessor;
 
   private ExecutingManagerUpdaterThread executingManager;
@@ -126,15 +123,19 @@ public class ExecutorManager extends EventHandler implements
     if(isMultiExecutorMode()) {
       queueProcessor =
         new QueueProcessorThread(azkProps.getBoolean(
-          AZKABAN_QUEUEPROCESSING_ENABLED, true));
+          AZKABAN_QUEUEPROCESSING_ENABLED, true), azkProps.getLong(
+          AZKABAN_ACTIVE_EXECUTOR_REFRESHINTERVAL_IN_MS, 1000),
+          azkProps
+            .getInt(AZKABAN_ACTIVE_EXECUTOR_REFRESHINTERVAL_IN_FLOW, 1000));
       queueProcessor.start();
     }
 
     long executionLogsRetentionMs =
-        props.getLong("execution.logs.retention.ms",
-            DEFAULT_EXECUTION_LOGS_RETENTION_MS);
-    webserverQueueCapacity =
-        props.getLong(AZKABAN_WEBSERVER_QUEUE_SIZE, 100000);
+      props.getLong("execution.logs.retention.ms",
+        DEFAULT_EXECUTION_LOGS_RETENTION_MS);
+
+    queuedFlows =
+      new QueuedExecutions(props.getLong(AZKABAN_WEBSERVER_QUEUE_SIZE, 100000));
 
     cleanerThread = new CleanerThread(executionLogsRetentionMs);
     cleanerThread.start();
@@ -335,7 +336,7 @@ public class ExecutorManager extends EventHandler implements
   private void loadQueuedFlows() throws ExecutorManagerException {
     for (Pair<ExecutionReference, ExecutableFlow> pair : executorLoader
       .fetchQueuedFlows()) {
-      enqueueFlow(pair.getSecond(), pair.getFirst());
+      queuedFlows.enqueue(pair.getSecond(), pair.getFirst());
     }
   }
 
@@ -350,7 +351,7 @@ public class ExecutorManager extends EventHandler implements
   public List<Integer> getRunningFlows(int projectId, String flowId) {
     List<Integer> executionIds = new ArrayList<Integer>();
     executionIds.addAll(getRunningFlowsHelper(projectId, flowId,
-      queuedFlowMap.values()));
+      queuedFlows.getAllEntries()));
     executionIds.addAll(getRunningFlowsHelper(projectId, flowId,
       runningFlows.values()));
     return executionIds;
@@ -380,7 +381,7 @@ public class ExecutorManager extends EventHandler implements
     throws IOException {
     List<Pair<ExecutableFlow, Executor>> flows =
       new ArrayList<Pair<ExecutableFlow, Executor>>();
-    getActiveFlowsWithExecutorHelper(flows, queuedFlowMap.values());
+    getActiveFlowsWithExecutorHelper(flows, queuedFlows.getAllEntries());
     getActiveFlowsWithExecutorHelper(flows, runningFlows.values());
     return flows;
   }
@@ -407,11 +408,11 @@ public class ExecutorManager extends EventHandler implements
     boolean isRunning = false;
     isRunning =
       isRunning
-        || isFlowRunningHelper(projectId, flowId, queuedFlowMap.values());
+        || isFlowRunningHelper(projectId, flowId, queuedFlows.getAllEntries());
     isRunning =
       isRunning
         || isFlowRunningHelper(projectId, flowId, runningFlows.values());
-    return false;
+    return isRunning;
   }
 
   /* Search a running flow in a collection */
@@ -437,8 +438,8 @@ public class ExecutorManager extends EventHandler implements
     throws ExecutorManagerException {
     if (runningFlows.containsKey(execId)) {
       return runningFlows.get(execId).getSecond();
-    } else if (queuedFlowMap.containsKey(execId)) {
-      return queuedFlowMap.get(execId).getSecond();
+    } else if (queuedFlows.hasExecution(execId)) {
+      return queuedFlows.getFlow(execId);
     } else {
       return executorLoader.fetchExecutableFlow(execId);
     }
@@ -454,7 +455,7 @@ public class ExecutorManager extends EventHandler implements
   @Override
   public List<ExecutableFlow> getRunningFlows() {
     ArrayList<ExecutableFlow> flows = new ArrayList<ExecutableFlow>();
-    getActiveFlowHelper(flows, queuedFlowMap.values());
+    getActiveFlowHelper(flows, queuedFlows.getAllEntries());
     getActiveFlowHelper(flows, runningFlows.values());
     return flows;
   }
@@ -479,7 +480,7 @@ public class ExecutorManager extends EventHandler implements
    */
   public String getRunningFlowIds() {
     List<Integer> allIds = new ArrayList<Integer>();
-    getRunningFlowsIdsHelper(allIds, queuedFlowMap.values());
+    getRunningFlowsIdsHelper(allIds, queuedFlows.getAllEntries());
     getRunningFlowsIdsHelper(allIds, runningFlows.values());
     Collections.sort(allIds);
     return allIds.toString();
@@ -494,7 +495,7 @@ public class ExecutorManager extends EventHandler implements
    */
   public String getQueuedFlowIds() {
     List<Integer> allIds = new ArrayList<Integer>();
-    getRunningFlowsIdsHelper(allIds, queuedFlowMap.values());
+    getRunningFlowsIdsHelper(allIds, queuedFlows.getAllEntries());
     Collections.sort(allIds);
     return allIds.toString();
   }
@@ -688,13 +689,9 @@ public class ExecutorManager extends EventHandler implements
           runningFlows.get(exFlow.getExecutionId());
         callExecutorServer(pair.getFirst(), ConnectorParams.CANCEL_ACTION,
           userId);
-      } else if (queuedFlowMap.containsKey(exFlow.getExecutionId())) {
-        Pair<ExecutionReference, ExecutableFlow> pair =
-          queuedFlowMap.get(exFlow.getExecutionId());
-        synchronized (pair) {
-          dequeueFlow(exFlow.getExecutionId());
-          finalizeFlows(exFlow);
-        }
+      } else if (queuedFlows.hasExecution(exFlow.getExecutionId())) {
+        queuedFlows.dequeue(exFlow.getExecutionId());
+        finalizeFlows(exFlow);
       } else {
         throw new ExecutorManagerException("Execution "
           + exFlow.getExecutionId() + " of flow " + exFlow.getFlowId()
@@ -863,7 +860,7 @@ public class ExecutorManager extends EventHandler implements
       logger.info("Submitting execution flow " + flowId + " by " + userId);
 
       String message = "";
-      if (queuedFlowList.size() >= webserverQueueCapacity) {
+      if (queuedFlows.isFull()) {
         message =
           String
             .format(
@@ -928,7 +925,7 @@ public class ExecutorManager extends EventHandler implements
         if (isMultiExecutorMode()) {
           //Take MultiExecutor route
           executorLoader.addActiveExecutableReference(reference);
-          enqueueFlow(exflow, reference);
+          queuedFlows.enqueue(exflow, reference);
         } else {
           // assign only local executor we have
           reference.setExecutor(activeExecutors.iterator().next());
@@ -948,47 +945,6 @@ public class ExecutorManager extends EventHandler implements
             + exflow.getExecutionId();
       }
       return message;
-    }
-  }
-
-
-  /**
-   * Wraps BoundedQueue Take method to have a corresponding update in
-   * queuedFlowMap lookup table
-   *
-   * @return
-   * @throws InterruptedException
-   */
-  private Pair<ExecutionReference, ExecutableFlow> waitAndFetchQueueHead()
-    throws InterruptedException {
-    Pair<ExecutionReference, ExecutableFlow> pair = queuedFlowList.take();
-    if (pair != null && pair.getFirst() != null) {
-      queuedFlowMap.remove(pair.getFirst().getExecId());
-    }
-    return pair;
-  }
-
-  /* Helper method to have a single point of deletion in the queued flows */
-  private void dequeueFlow(int executionId) {
-    if (queuedFlowMap.containsKey(executionId)) {
-      queuedFlowList.remove(queuedFlowMap.get(executionId));
-      queuedFlowMap.remove(executionId);
-    }
-  }
-
-  /* Helper method to have a single point of insertion in the queued flows */
-  private void enqueueFlow(ExecutableFlow exflow, ExecutionReference ref)
-    throws ExecutorManagerException {
-    Pair<ExecutionReference, ExecutableFlow> pair =
-      new Pair<ExecutionReference, ExecutableFlow>(ref, exflow);
-    try {
-      queuedFlowMap.put(exflow.getExecutionId(), pair);
-      queuedFlowList.put(pair);
-    } catch (InterruptedException e) {
-      String errMsg = "Failed to queue flow " + exflow.getExecutionId();
-      logger.error(errMsg, e);
-      finalizeFlows(exflow);
-      throw new ExecutorManagerException(errMsg);
     }
   }
 
@@ -1710,21 +1666,26 @@ public class ExecutorManager extends EventHandler implements
     }
   }
 
-
   /*
    * This thread is responsible for processing queued flows.
    */
   private class QueueProcessorThread extends Thread {
     private static final long QUEUE_PROCESSOR_WAIT_IN_MS = 1000;
-    private static final long ACTIVE_EXECUTOR_REFRESH_WINDOW_IN_MS = 1000;
     private static final int MAX_DISPATCHING_ERRORS_PERMITTED = 5;
-    private static final int MAX_CONTINUOUS_FLOW_PROCESSED = 10;
+    private final long activeExecutorRefreshWindowInMilisec;
+    private final int activeExecutorRefreshWindowInFlows;
 
     private boolean shutdown = false;
     private boolean isActive = true;
 
-    public QueueProcessorThread(boolean isActive) {
+    public QueueProcessorThread(boolean isActive,
+      long activeExecutorRefreshWindowInTime,
+      int activeExecutorRefreshWindowInFlows) {
       setActive(isActive);
+      this.activeExecutorRefreshWindowInFlows =
+        activeExecutorRefreshWindowInFlows;
+      this.activeExecutorRefreshWindowInMilisec =
+        activeExecutorRefreshWindowInTime;
       this.setName("AzkabanWebServer-QueueProcessor-Thread");
     }
 
@@ -1748,8 +1709,8 @@ public class ExecutorManager extends EventHandler implements
           try {
             // start processing queue if active, other wait for sometime
             if (isActive) {
-              processQueuedFlows(ACTIVE_EXECUTOR_REFRESH_WINDOW_IN_MS,
-                MAX_CONTINUOUS_FLOW_PROCESSED);
+              processQueuedFlows(activeExecutorRefreshWindowInMilisec,
+                activeExecutorRefreshWindowInFlows);
             }
             wait(QUEUE_PROCESSOR_WAIT_IN_MS);
           } catch (Exception e) {
@@ -1764,19 +1725,19 @@ public class ExecutorManager extends EventHandler implements
     private void processQueuedFlows(long activeExecutorsRefreshWindow,
       int maxContinuousFlowProcessed) throws InterruptedException,
       ExecutorManagerException {
-      long lastProcessingTime = System.currentTimeMillis();
+      long lastExecutorRefreshTime = System.currentTimeMillis();
       Pair<ExecutionReference, ExecutableFlow> runningCandidate;
       int currentContinuousFlowProcessed = 0;
 
-      while (isActive() && (runningCandidate = waitAndFetchQueueHead()) != null) {
+      while (isActive() && (runningCandidate = queuedFlows.fetchHead()) != null) {
         ExecutionReference reference = runningCandidate.getFirst();
         ExecutableFlow exflow = runningCandidate.getSecond();
 
         long currentTime = System.currentTimeMillis();
-        if (currentTime - lastProcessingTime > activeExecutorsRefreshWindow
-              || currentContinuousFlowProcessed >= maxContinuousFlowProcessed) {
+        if (currentTime - lastExecutorRefreshTime > activeExecutorsRefreshWindow
+          || currentContinuousFlowProcessed >= maxContinuousFlowProcessed) {
           refreshExecutors(); // Refresh executor stats to be used by selector
-          lastProcessingTime = currentTime;
+          lastExecutorRefreshTime = currentTime;
           currentContinuousFlowProcessed = 0;
         }
 
@@ -1841,7 +1802,7 @@ public class ExecutorManager extends EventHandler implements
         finalizeFlows(exflow);
       } else {
         // again queue this flow
-        enqueueFlow(exflow, reference);
+        queuedFlows.enqueue(exflow, reference);
       }
     }
 

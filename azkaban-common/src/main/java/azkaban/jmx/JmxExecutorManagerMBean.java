@@ -43,8 +43,8 @@ public interface JmxExecutorManagerMBean {
   @DisplayName("OPERATION: isQueueProcessorActive")
   public boolean isQueueProcessorActive();
 
-  @DisplayName("OPERATION: getUndispatchedFlows")
-  public String getUndispatchedFlows();
+  @DisplayName("OPERATION: getQueuedFlows")
+  public String getQueuedFlows();
 
   @DisplayName("OPERATION: getQueueProcessorThreadState")
   public String getQueueProcessorThreadState();

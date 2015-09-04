@@ -49,9 +49,13 @@ import azkaban.utils.FileIOUtils.LogData;
 import azkaban.utils.JSONUtils;
 import azkaban.utils.Pair;
 import azkaban.utils.Props;
+import azkaban.utils.TestUtils;
 
 public class JdbcExecutorLoaderTest {
   private static boolean testDBExists;
+  /* Directory with serialized description of test flows */
+  private static final String UNIT_BASE_DIR =
+    "../azkaban-test/src/test/resources/executions";
   // @TODO remove this and turn into local host.
   private static final String host = "localhost";
   private static final int port = 3306;
@@ -59,10 +63,6 @@ public class JdbcExecutorLoaderTest {
   private static final String user = "azkaban";
   private static final String password = "azkaban";
   private static final int numConnections = 10;
-  private static final String UNIT_BASE_DIR =
-    "../azkaban-test/src/test/resources/executions/";
-
-  private File flowDir = new File(UNIT_BASE_DIR + "/exectest1");
 
   @BeforeClass
   public static void setupDB() {
@@ -230,7 +230,7 @@ public class JdbcExecutorLoaderTest {
       return;
     }
     ExecutorLoader loader = createLoader();
-    ExecutableFlow flow = createExecutableFlow("exec1");
+    ExecutableFlow flow = TestUtils.createExecutableFlow("exectest1", "exec1");
 
     loader.uploadExecutableFlow(flow);
 
@@ -259,7 +259,7 @@ public class JdbcExecutorLoaderTest {
     }
 
     ExecutorLoader loader = createLoader();
-    ExecutableFlow flow = createExecutableFlow("exec1");
+    ExecutableFlow flow = TestUtils.createExecutableFlow("exectest1", "exec1");
 
     loader.uploadExecutableFlow(flow);
 
@@ -298,7 +298,7 @@ public class JdbcExecutorLoaderTest {
     ExecutableFlow flow = createExecutableFlow(10, "exec1");
     flow.setExecutionId(10);
 
-    File jobFile = new File(flowDir, "job10.job");
+    File jobFile = new File(UNIT_BASE_DIR + "/exectest1", "job10.job");
     Props props = new Props(null, jobFile);
     props.put("test", "test2");
     ExecutableNode oldNode = flow.getExecutableNode("job10");
@@ -343,7 +343,7 @@ public class JdbcExecutorLoaderTest {
       return;
     }
     ExecutorLoader loader = createLoader();
-    ExecutableFlow flow = createExecutableFlow("exec1");
+    ExecutableFlow flow = TestUtils.createExecutableFlow("exectest1", "exec1");
     loader.uploadExecutableFlow(flow);
     try {
       loader.assignExecutor(flow.getExecutionId(), 1);
@@ -391,7 +391,7 @@ public class JdbcExecutorLoaderTest {
       return;
     }
     ExecutorLoader loader = createLoader();
-    ExecutableFlow flow = createExecutableFlow("exec1");
+    ExecutableFlow flow = TestUtils.createExecutableFlow("exectest1", "exec1");
     loader.uploadExecutableFlow(flow);
     Assert.assertEquals(loader.fetchExecutorByExecutionId(flow.getExecutionId()),
       null);
@@ -408,7 +408,7 @@ public class JdbcExecutorLoaderTest {
     String host = "localhost";
     int port = 12345;
     Executor executor = loader.addExecutor(host, port);
-    ExecutableFlow flow = createExecutableFlow("exec1");
+    ExecutableFlow flow = TestUtils.createExecutableFlow("exectest1", "exec1");
     loader.uploadExecutableFlow(flow);
     loader.assignExecutor(executor.getId(), flow.getExecutionId());
     Assert.assertEquals(loader.fetchExecutorByExecutionId(flow.getExecutionId()),
@@ -434,13 +434,13 @@ public class JdbcExecutorLoaderTest {
     int port = 12345;
     Executor executor = loader.addExecutor(host, port);
 
-    ExecutableFlow flow = createExecutableFlow("exec1");
+    ExecutableFlow flow = TestUtils.createExecutableFlow("exectest1", "exec1");
     loader.uploadExecutableFlow(flow);
     loader.assignExecutor(executor.getId(), flow.getExecutionId());
     // only completed flows
     Assert.assertTrue(queuedFlows.isEmpty());
 
-    ExecutableFlow flow2 = createExecutableFlow("exec2");
+    ExecutableFlow flow2 = TestUtils.createExecutableFlow("exectest1", "exec2");
     loader.uploadExecutableFlow(flow);
     loader.assignExecutor(executor.getId(), flow.getExecutionId());
     ExecutionReference ref = new ExecutionReference(flow2.getExecutionId());
@@ -461,9 +461,9 @@ public class JdbcExecutorLoaderTest {
     List<Pair<ExecutionReference, ExecutableFlow>> queuedFlows =
       new LinkedList<Pair<ExecutionReference, ExecutableFlow>>();
 
-    ExecutableFlow flow = createExecutableFlow("exec1");
+    ExecutableFlow flow = TestUtils.createExecutableFlow("exectest1", "exec1");
     loader.uploadExecutableFlow(flow);
-    ExecutableFlow flow2 = createExecutableFlow("exec2");
+    ExecutableFlow flow2 = TestUtils.createExecutableFlow("exectest1", "exec2");
     loader.uploadExecutableFlow(flow);
 
     ExecutionReference ref2 = new ExecutionReference(flow2.getExecutionId());
@@ -732,20 +732,20 @@ public class JdbcExecutorLoaderTest {
     }
 
     ExecutorLoader loader = createLoader();
-    ExecutableFlow flow1 = createExecutableFlow("exec1");
+    ExecutableFlow flow1 = TestUtils.createExecutableFlow("exectest1", "exec1");
     loader.uploadExecutableFlow(flow1);
     Executor executor = new Executor(2, "test", 1, true);
     ExecutionReference ref1 =
         new ExecutionReference(flow1.getExecutionId(), executor);
     loader.addActiveExecutableReference(ref1);
 
-    ExecutableFlow flow2 = createExecutableFlow("exec1");
+    ExecutableFlow flow2 = TestUtils.createExecutableFlow("exectest1", "exec1");
     loader.uploadExecutableFlow(flow2);
     ExecutionReference ref2 =
         new ExecutionReference(flow2.getExecutionId(), executor);
     loader.addActiveExecutableReference(ref2);
 
-    ExecutableFlow flow3 = createExecutableFlow("exec1");
+    ExecutableFlow flow3 = TestUtils.createExecutableFlow("exectest1", "exec1");
     loader.uploadExecutableFlow(flow3);
 
     Map<Integer, Pair<ExecutionReference, ExecutableFlow>> activeFlows1 =
@@ -884,37 +884,10 @@ public class JdbcExecutorLoaderTest {
   }
 
   private ExecutableFlow createExecutableFlow(int executionId, String flowName)
-      throws IOException {
-    File jsonFlowFile = new File(flowDir, flowName + ".flow");
-    @SuppressWarnings("unchecked")
-    HashMap<String, Object> flowObj =
-        (HashMap<String, Object>) JSONUtils.parseJSONFromFile(jsonFlowFile);
-
-    Flow flow = Flow.flowFromObject(flowObj);
-    Project project = new Project(1, "flow");
-    HashMap<String, Flow> flowMap = new HashMap<String, Flow>();
-    flowMap.put(flow.getId(), flow);
-    project.setFlows(flowMap);
-    ExecutableFlow execFlow = new ExecutableFlow(project, flow);
+    throws IOException {
+    ExecutableFlow execFlow =
+      TestUtils.createExecutableFlow("exectest1", flowName);
     execFlow.setExecutionId(executionId);
-
-    return execFlow;
-  }
-
-  private ExecutableFlow createExecutableFlow(String flowName)
-      throws IOException {
-    File jsonFlowFile = new File(flowDir, flowName + ".flow");
-    @SuppressWarnings("unchecked")
-    HashMap<String, Object> flowObj =
-        (HashMap<String, Object>) JSONUtils.parseJSONFromFile(jsonFlowFile);
-
-    Flow flow = Flow.flowFromObject(flowObj);
-    Project project = new Project(1, "flow");
-    HashMap<String, Flow> flowMap = new HashMap<String, Flow>();
-    flowMap.put(flow.getId(), flow);
-    project.setFlows(flowMap);
-    ExecutableFlow execFlow = new ExecutableFlow(project, flow);
-
     return execFlow;
   }
 

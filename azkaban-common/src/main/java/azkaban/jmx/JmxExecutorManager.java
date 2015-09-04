@@ -69,7 +69,7 @@ public class JmxExecutorManager implements JmxExecutorManagerMBean {
   }
 
   @Override
-  public String getUndispatchedFlows() {
+  public String getQueuedFlows() {
     return manager.getQueuedFlowIds();
   }
 
