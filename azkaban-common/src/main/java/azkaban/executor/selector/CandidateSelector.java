@@ -26,7 +26,7 @@ import org.apache.log4j.Logger;
  *  @param K executor object type.
  *  @param V dispatching object type.
  * */
-public class CandidateSelector<K,V> implements Selector<K, V> {
+public class CandidateSelector<K extends Comparable<K>, V> implements Selector<K, V> {
   private static Logger logger = Logger.getLogger(CandidateComparator.class);
 
   private CandidateFilter<K,V> filter;
@@ -70,16 +70,16 @@ public class CandidateSelector<K,V> implements Selector<K, V> {
 
      logger.info(String.format("candidate count after filtering: %s", filteredList.size()));
      if (filteredList.size() == 0){
-       logger.info("failed to select candidate as the filted candidate list is empty.");
+       logger.info("failed to select candidate as the filtered candidate list is empty.");
        return null;
      }
 
      if (null == comparator){
-       logger.info("candidate comparator is not specified, default comparator from 'Collections' class will be used.");
+       logger.info("candidate comparator is not specified, default hash code comparator class will be used.");
      }
 
      // final work - find the best candidate from the filtered list.
-     K executor = Collections.max(filteredList,comparator);
+     K executor = Collections.max(filteredList, comparator);
      logger.info(String.format("candidate selected %s",
          null == executor ? "(null)" : executor.toString()));
      return executor;

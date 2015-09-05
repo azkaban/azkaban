@@ -35,7 +35,7 @@ import azkaban.executor.selector.*;
 
 public class SelectorTest {
   // mock executor object.
-  protected class MockExecutorObject{
+  protected class MockExecutorObject implements Comparable <MockExecutorObject>{
     public String name;
     public int    port;
     public double percentOfRemainingMemory;
@@ -68,6 +68,11 @@ public class SelectorTest {
     public String toString()
     {
       return this.name;
+    }
+
+    @Override
+    public int compareTo(MockExecutorObject o) {
+      return null == o ? 1 : this.hashCode() - o.hashCode();
     }
   }
 
@@ -674,6 +679,25 @@ public class SelectorTest {
   }
 
   @Test
+  public void testCreatingExecutorSelectorWithEmptyFilterComparatorList() throws Exception{
+    List<Executor> executorList = new ArrayList<Executor>();
+    executorList.add(new Executor(1, "host1", 80, true));
+    executorList.add(new Executor(2, "host2", 80, true));
+    executorList.add(new Executor(3, "host3", 80, true));
+
+    executorList.get(0).setExecutorStats(new ServerStatistics(99.9, 14095, 50, new Date(), 89, 0));
+    executorList.get(1).setExecutorStats(new ServerStatistics(50, 14095, 50, new Date(), 90,  0));
+    executorList.get(2).setExecutorStats(new ServerStatistics(99.9, 14095, 50, new Date(), 90,  0));
+
+    ExecutableFlow flow = new ExecutableFlow();
+
+    ExecutorSelector selector = new ExecutorSelector(null , null);
+    Executor executor = selector.getBest(executorList, flow);
+    Assert.assertEquals(executorList.get(2), executor);
+  }
+
+
+  @Test
   public void testExecutorSelectorE2E() throws Exception{
     List<String> filterList = new ArrayList<String>(ExecutorFilter.getAvailableFilterNames());
     Map<String,Integer> comparatorMap = new HashMap<String,Integer>();
@@ -682,9 +706,9 @@ public class SelectorTest {
     executorList.add(new Executor(2, "host2", 80, true));
     executorList.add(new Executor(3, "host3", 80, true));
 
-    executorList.get(0).setExecutorStats(new Statistics(99.9, 14095, 50, new Date(), 4095,89, 0, 0));
-    executorList.get(1).setExecutorStats(new Statistics(50, 14095, 50, new Date(), 4095,90, 0, 0));
-    executorList.get(2).setExecutorStats(new Statistics(99.9, 14095, 50, new Date(), 2048,90, 0, 0));
+    executorList.get(0).setExecutorStats(new ServerStatistics(99.9, 14095, 50, new Date(), 89, 0));
+    executorList.get(1).setExecutorStats(new ServerStatistics(50, 14095, 50, new Date(), 90,  0));
+    executorList.get(2).setExecutorStats(new ServerStatistics(99.9, 14095, 50, new Date(), 90,  0));
 
     ExecutableFlow flow = new ExecutableFlow();
 
@@ -697,7 +721,7 @@ public class SelectorTest {
 
     // simulate that once the flow is assigned, executor1's remaining TMP storage dropped to 2048
     // now we do the getBest again executor3 is expected to be selected as it has a earlier last dispatched time.
-    executorList.get(0).setExecutorStats(new Statistics(99.9, 4095, 50, new Date(), 2048,90, 0, 1));
+    executorList.get(0).setExecutorStats(new ServerStatistics(99.9, 4095, 50, new Date(), 90, 1));
     executor = selector.getBest(executorList, flow);
     Assert.assertEquals(executorList.get(2), executor);
   }

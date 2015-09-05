@@ -19,15 +19,24 @@ package azkaban.executor;
 import java.util.Date;
 import java.util.Map;
 
-  public class Statistics {
+
+ /** Class that exposes the statistics from the executor server.
+  *  List of the statistics -
+  *  remainingMemoryPercent;
+  *  remainingMemory;
+  *  remainingFlowCapacity;
+  *  numberOfAssignedFlows;
+  *  lastDispatchedTime;
+  *  cpuUsage;
+  *
+  * */
+  public class ServerStatistics {
     private double remainingMemoryPercent;
     private long   remainingMemory;
     private int    remainingFlowCapacity;
     private int    numberOfAssignedFlows;
     private Date   lastDispatchedTime;
-    private long   remainingStorage;
     private double cpuUsage;
-    private int    priority;
 
     public double getCpuUsage() {
       return this.cpuUsage;
@@ -69,22 +78,6 @@ import java.util.Map;
       this.lastDispatchedTime = value;
     }
 
-    public long getRemainingStorage() {
-      return this.remainingStorage;
-    }
-
-    public void setRemainingStorage(long value){
-      this.remainingStorage = value;
-    }
-
-    public int getPriority () {
-      return this.priority;
-    }
-
-    public void setPriority (int value) {
-      this.priority = value;
-    }
-
     public int getNumberOfAssignedFlows () {
       return this.numberOfAssignedFlows;
     }
@@ -93,22 +86,18 @@ import java.util.Map;
       this.numberOfAssignedFlows = value;
     }
 
-    public Statistics(){}
+    public ServerStatistics(){}
 
-    public Statistics (double remainingMemoryPercent,
+    public ServerStatistics (double remainingMemoryPercent,
         long remainingMemory,
         int remainingFlowCapacity,
         Date lastDispatched,
-        long remainingStorage,
         double cpuUsage,
-        int  priority,
         int numberOfAssignedFlows){
       this.remainingMemory = remainingMemory;
       this.cpuUsage = cpuUsage;
       this.remainingFlowCapacity = remainingFlowCapacity;
-      this.priority = priority;
       this.remainingMemoryPercent = remainingMemoryPercent;
-      this.remainingStorage = remainingStorage;
       this.lastDispatchedTime = lastDispatched;
       this.numberOfAssignedFlows = numberOfAssignedFlows;
     }
@@ -116,17 +105,15 @@ import java.util.Map;
     @Override
     public boolean equals(Object obj)
     {
-        if (obj instanceof Statistics)
+        if (obj instanceof ServerStatistics)
         {
           boolean result = true;
-          Statistics stat = (Statistics) obj;
+          ServerStatistics stat = (ServerStatistics) obj;
 
           result &=this.remainingMemory == stat.remainingMemory;
           result &=this.cpuUsage == stat.cpuUsage;
           result &=this.remainingFlowCapacity == stat.remainingFlowCapacity;
-          result &=this.priority == stat.priority;
           result &=this.remainingMemoryPercent == stat.remainingMemoryPercent;
-          result &=this.remainingStorage == stat.remainingStorage;
           result &=this.numberOfAssignedFlows == stat.numberOfAssignedFlows;
           result &= null == this.lastDispatchedTime ? stat.lastDispatchedTime == null :
                             this.lastDispatchedTime.equals(stat.lastDispatchedTime);
@@ -138,9 +125,9 @@ import java.util.Map;
 
     // really ugly to have it home-made here for object-binding as base on the
     // current code base there is no any better ways to do that.
-    public static Statistics fromJsonObject(Map<String,Object> mapObj){
+    public static ServerStatistics fromJsonObject(Map<String,Object> mapObj){
       if (null == mapObj) return null ;
-      Statistics stats = new Statistics ();
+      ServerStatistics stats = new ServerStatistics ();
 
       final String remainingMemory = "remainingMemory";
       if (mapObj.containsKey(remainingMemory) && null != mapObj.get(remainingMemory)){
@@ -157,11 +144,6 @@ import java.util.Map;
         stats.setRemainingFlowCapacity(Integer.parseInt(mapObj.get(remainingFlowCapacity).toString()));
       }
 
-      final String priority = "priority";
-      if (mapObj.containsKey(priority) && null != mapObj.get(priority)){
-        stats.setPriority(Integer.parseInt(mapObj.get(priority).toString()));
-      }
-
       final String numberOfAssignedFlows = "numberOfAssignedFlows";
       if (mapObj.containsKey(numberOfAssignedFlows) && null != mapObj.get(numberOfAssignedFlows)){
         stats.setNumberOfAssignedFlows(Integer.parseInt(mapObj.get(numberOfAssignedFlows).toString()));
@@ -170,11 +152,6 @@ import java.util.Map;
       final String remainingMemoryPercent = "remainingMemoryPercent";
       if (mapObj.containsKey(remainingMemoryPercent) && null != mapObj.get(remainingMemoryPercent)){
         stats.setRemainingMemoryPercent(Double.parseDouble(mapObj.get(remainingMemoryPercent).toString()));
-      }
-
-      final String remainingStorage = "remainingStorage";
-      if (mapObj.containsKey(remainingStorage) && null != mapObj.get(remainingStorage)){
-        stats.setRemainingStorage(Long.parseLong(mapObj.get(remainingStorage).toString()));
       }
 
       final String lastDispatched = "lastDispatchedTime";

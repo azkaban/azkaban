@@ -24,14 +24,14 @@ import azkaban.utils.Utils;
  *
  * @author gaggarwa
  */
-public class Executor {
+public class Executor implements Comparable<Executor> {
   private final int id;
   private final String host;
   private final int port;
   private boolean isActive;
   // cached copy of the latest statistics from  the executor.
-  private Statistics cachedExecutorStats;
-  private Date lastUpdated;
+  private ServerStatistics cachedExecutorStats;
+  private Date lastStatsUpdatedTime;
 
   /**
    * <pre>
@@ -113,13 +113,13 @@ public class Executor {
     return id;
   }
 
-  public Statistics getExecutorStats() {
+  public ServerStatistics getExecutorStats() {
     return this.cachedExecutorStats;
   }
 
-  public void setExecutorStats(Statistics stats) {
+  public void setExecutorStats(ServerStatistics stats) {
     this.cachedExecutorStats = stats;
-    this.lastUpdated = new Date();
+    this.lastStatsUpdatedTime = new Date();
   }
 
   /**
@@ -128,10 +128,15 @@ public class Executor {
    *         specific object is never refreshed.
    * */
   public Date getLastStatsUpdatedTime(){
-    return this.lastUpdated;
+    return this.lastStatsUpdatedTime;
   }
 
   public void setActive(boolean isActive) {
     this.isActive = isActive;
+  }
+
+  @Override
+  public int compareTo(Executor o) {
+    return null == o ? 1 : this.hashCode() - o.hashCode();
   }
 }

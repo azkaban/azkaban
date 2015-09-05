@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 
 import javax.servlet.ServletException;
@@ -31,17 +30,19 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.apache.log4j.Logger;
 
-import azkaban.executor.Statistics;
+import azkaban.executor.ServerStatistics;
 import azkaban.utils.JSONUtils;
 
-public class StatisticsServlet extends HttpServlet  {
+public class ServerStatisticsServlet extends HttpServlet  {
   private static final long serialVersionUID = 1L;
   private static final int  cacheTimeInMilliseconds = 1000;
-  private static final Logger logger = Logger.getLogger(StatisticsServlet.class);
+  private static final int  samplesToTakeForMemory = 1;
+  private static final int  samplesToTakeForCpuUsage = 1;
+  private static final Logger logger = Logger.getLogger(ServerStatisticsServlet.class);
   private static final String noCacheParamName = "nocache";
 
-  protected static Date lastRefreshedTime = null;
-  protected static Statistics cachedstats = null;
+  protected static long lastRefreshedTime = 0;
+  protected static ServerStatistics cachedstats = null;
 
   /**
    * Handle all get request to Statistics Servlet {@inheritDoc}
@@ -52,10 +53,9 @@ public class StatisticsServlet extends HttpServlet  {
   protected void doGet(HttpServletRequest req, HttpServletResponse resp)
       throws ServletException, IOException {
 
-    boolean noCache = null!= req && Boolean.getBoolean(req.getParameter(noCacheParamName));
+    boolean noCache = null!= req && Boolean.valueOf(req.getParameter(noCacheParamName));
 
-    if (noCache || null == lastRefreshedTime ||
-        new Date().getTime() - lastRefreshedTime.getTime() > cacheTimeInMilliseconds){
+    if (noCache || System.currentTimeMillis() - lastRefreshedTime > cacheTimeInMilliseconds){
       this.populateStatistics(noCache);
     }
 
@@ -71,12 +71,13 @@ public class StatisticsServlet extends HttpServlet  {
    * a double value will be used to present the remaining memory,
    *         a returning value of '55.6' means 55.6%
    */
-  protected void fillRemainingMemoryPercent(Statistics stats){
+  protected void fillRemainingMemoryPercent(ServerStatistics stats){
     if (new File("/bin/bash").exists() &&  new File("/usr/bin/free").exists()) {
       java.lang.ProcessBuilder processBuilder =
-          new java.lang.ProcessBuilder("/bin/bash", "-c", "/usr/bin/free -m -s 0.1 -c 5 | grep Mem:");
+          new java.lang.ProcessBuilder("/bin/bash", "-c", String.format("/usr/bin/free -m -s 0.1 -c %s | grep Mem:",
+              samplesToTakeForMemory));
       try {
-        ArrayList<String> output = new ArrayList<String>();
+        List<String> output = new ArrayList<String>();
         Process process = processBuilder.start();
         process.waitFor();
         InputStream inputStream = process.getInputStream();
@@ -96,7 +97,6 @@ public class StatisticsServlet extends HttpServlet  {
           long freeMemory  = 0 ;
           int  sampleCount = 0 ;
 
-          // process all the output, we will do 5 samples.
           for(String line : output){
             String[] splitedresult = line.split("\\s+");
             // expected return format -
@@ -129,13 +129,13 @@ public class StatisticsServlet extends HttpServlet  {
             logger.info(String.format("total memory - %s , free memory - %s", totalMemory, freeMemory));
             stats.setRemainingMemory(freeMemory);
             stats.setRemainingMemoryPercent(totalMemory == 0? 0 :
-              ((double)freeMemory/(double)totalMemory));
+              ((double)freeMemory/(double)totalMemory) * 100);
           }
         }
       }
       catch (Exception ex){
         logger.error("failed fetch system memory info " +
-                     "as exception is captured when fetching result from bash call.");
+                     "as exception is captured when fetching result from bash call. ex -" + ex.getMessage());
       }
     } else {
         logger.error("failed fetch system memory info " +
@@ -149,9 +149,8 @@ public class StatisticsServlet extends HttpServlet  {
    * */
   protected synchronized void populateStatistics(boolean noCache){
     //check again before starting the work.
-    if (noCache || null == lastRefreshedTime ||
-        new Date().getTime() - lastRefreshedTime.getTime() > cacheTimeInMilliseconds){
-      final Statistics stats = new Statistics();
+    if (noCache || System.currentTimeMillis() - lastRefreshedTime  > cacheTimeInMilliseconds){
+      final ServerStatistics stats = new ServerStatistics();
 
       List<Thread> workerPool = new ArrayList<Thread>();
       workerPool.add(new Thread(new Runnable(){ public void run() {
@@ -175,12 +174,12 @@ public class StatisticsServlet extends HttpServlet  {
           // we gave maxim 5 seconds to let the thread finish work.
           thread.join(5000);;
         } catch (InterruptedException e) {
-          logger.error(String.format("failed to collect information for %s as the working thread is interrupted.",
-              thread.getName()));
+          logger.error(String.format("failed to collect information for %s as the working thread is interrupted. Ex - ",
+              thread.getName(), e.getMessage()));
         }}
 
       cachedstats = stats;
-      lastRefreshedTime =  new Date();
+      lastRefreshedTime =  System.currentTimeMillis();
     }
   }
 
@@ -189,7 +188,7 @@ public class StatisticsServlet extends HttpServlet  {
    * @param stats reference to the result container which contains all the results, this specific method
    *              will only work on the property "remainingFlowCapacity".
    */
-  protected void fillRemainingFlowCapacityAndLastDispatchedTime(Statistics stats){
+  protected void fillRemainingFlowCapacityAndLastDispatchedTime(ServerStatistics stats){
 
     AzkabanExecutorServer server = AzkabanExecutorServer.getApp();
     if (server != null){
@@ -210,10 +209,11 @@ public class StatisticsServlet extends HttpServlet  {
    * @param stats reference to the result container which contains all the results, this specific method
    *              will only work on the property "cpuUdage".
    */
-  protected void fillCpuUsage(Statistics stats){
+  protected void fillCpuUsage(ServerStatistics stats){
     if (new File("/bin/bash").exists() &&  new File("/usr/bin/top").exists()) {
       java.lang.ProcessBuilder processBuilder =
-          new java.lang.ProcessBuilder("/bin/bash", "-c", "/usr/bin/top -bn5 -d 0.1 | grep \"Cpu(s)\"");
+          new java.lang.ProcessBuilder("/bin/bash", "-c", String.format("/usr/bin/top -bn%s -d 0.1 | grep \"Cpu(s)\"",
+                                       samplesToTakeForCpuUsage));
       try {
         ArrayList<String> output = new ArrayList<String>();
         Process process = processBuilder.start();
@@ -237,7 +237,6 @@ public class StatisticsServlet extends HttpServlet  {
           double wi = 0 ; // waiting.
           int   sampleCount = 0;
 
-          // process all the output, we will do 5 samples for the cpu and calculate the avarage.
           for(String line : output){
             String[] splitedresult = line.split("\\s+");
             // expected returning format -
@@ -275,13 +274,11 @@ public class StatisticsServlet extends HttpServlet  {
       }
       catch (Exception ex){
         logger.error("failed fetch system memory info " +
-                     "as exception is captured when fetching result from bash call.");
+                     "as exception is captured when fetching result from bash call. Ex -" + ex.getMessage());
       }
     } else {
         logger.error("failed fetch system memory info " +
                      "as 'bash' or 'top' command can't be found on the current system.");
     }
   }
-
-  // TO-DO - decide if we need to populate the remaining Storage space and priority info.
 }

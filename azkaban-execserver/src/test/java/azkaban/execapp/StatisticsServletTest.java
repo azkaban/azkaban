@@ -7,19 +7,19 @@ import java.util.Map;
 import org.junit.Assert;
 import org.junit.Test;
 
-import azkaban.executor.Statistics;
+import azkaban.executor.ServerStatistics;
 import azkaban.utils.JSONUtils;
 
 public class StatisticsServletTest {
-  private class MockStatisticsServlet extends StatisticsServlet{
+  private class MockStatisticsServlet extends ServerStatisticsServlet{
     /** */
     private static final long serialVersionUID = 1L;
 
-    public  Statistics getStastics(){
+    public  ServerStatistics getStastics(){
       return cachedstats;
     }
 
-    public  Date getUpdatedTime(){
+    public  long getUpdatedTime(){
       return lastRefreshedTime;
     }
 
@@ -27,17 +27,17 @@ public class StatisticsServletTest {
        this.populateStatistics(false);
     }
 
-    public void callFillCpuUsage(Statistics stats){
+    public void callFillCpuUsage(ServerStatistics stats){
       this.fillCpuUsage(stats);}
 
-    public void callFillRemainingMemoryPercent(Statistics stats){
+    public void callFillRemainingMemoryPercent(ServerStatistics stats){
         this.fillRemainingMemoryPercent(stats);}
   }
   private MockStatisticsServlet statServlet = new MockStatisticsServlet();
 
   @Test
   public void testFillMemory()  {
-    Statistics stats = new Statistics();
+    ServerStatistics stats = new ServerStatistics();
     this.statServlet.callFillRemainingMemoryPercent(stats);
     // assume any machine that runs this test should
     // have bash and top available and at least got some remaining memory.
@@ -47,7 +47,7 @@ public class StatisticsServletTest {
 
   @Test
   public void testFillCpu()  {
-    Statistics stats = new Statistics();
+    ServerStatistics stats = new ServerStatistics();
     this.statServlet.callFillCpuUsage(stats);
     Assert.assertTrue(stats.getCpuUsage() > 0);
   }
@@ -64,8 +64,8 @@ public class StatisticsServletTest {
   @Test
   public void testPopulateStatisticsCache()  {
     this.statServlet.callPopulateStatistics();
-    final Date updatedTime = this.statServlet.getUpdatedTime();
-    while (new Date().getTime() - updatedTime.getTime() < 1000){
+    final long updatedTime = this.statServlet.getUpdatedTime();
+    while (System.currentTimeMillis() - updatedTime < 1000){
       this.statServlet.callPopulateStatistics();
       Assert.assertEquals(updatedTime, this.statServlet.getUpdatedTime());
     }
@@ -81,21 +81,21 @@ public class StatisticsServletTest {
 
   @Test
   public void testStatisticsJsonParser() throws IOException  {
-    Statistics stat = new Statistics(0.1,1,2,new Date(),3,4,5,5);
+    ServerStatistics stat = new ServerStatistics(0.1,1,2,new Date(),3,5);
     String jSonStr = JSONUtils.toJSON(stat);
     @SuppressWarnings("unchecked")
     Map<String,Object> jSonObj = (Map<String,Object>)JSONUtils.parseJSONFromString(jSonStr);
-    Statistics stat2 = Statistics.fromJsonObject(jSonObj);
+    ServerStatistics stat2 = ServerStatistics.fromJsonObject(jSonObj);
     Assert.assertTrue(stat.equals(stat2));
     }
 
   @Test
   public void testStatisticsJsonParserWNullDateValue() throws IOException  {
-    Statistics stat = new Statistics(0.1,1,2,null,3,4,5,5);
+    ServerStatistics stat = new ServerStatistics(0.1,1,2,null,3,5);
     String jSonStr = JSONUtils.toJSON(stat);
     @SuppressWarnings("unchecked")
     Map<String,Object> jSonObj = (Map<String,Object>)JSONUtils.parseJSONFromString(jSonStr);
-    Statistics stat2 = Statistics.fromJsonObject(jSonObj);
+    ServerStatistics stat2 = ServerStatistics.fromJsonObject(jSonObj);
     Assert.assertTrue(stat.equals(stat2));
     }
 }

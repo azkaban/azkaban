@@ -36,7 +36,6 @@ public final class FactorFilter<T,V>{
   private FactorFilter(String factorName, Filter<T,V> filter){
     this.factorName = factorName;
     this.filter = filter;
-    logger.info("filter created for " + this.factorName);
   }
 
   /** static function to generate an instance of the class.
@@ -66,8 +65,8 @@ public final class FactorFilter<T,V>{
   public interface Filter<T,V>{
 
     /**function to analyze the target item according to the reference object to decide whether the item should be filtered.
-     * @param filteringTarget:   object to be checked.
-     * @param referencingObject: object which contains statistics based on which a decision is made whether
+     * @param filteringTarget   object to be checked.
+     * @param referencingObject object which contains statistics based on which a decision is made whether
      *                      the object being checked need to be filtered or not.
      * @return true if the check passed, false if check failed, which means the item need to be filtered.
      * */

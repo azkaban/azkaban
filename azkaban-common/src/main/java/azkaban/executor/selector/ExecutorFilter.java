@@ -23,9 +23,11 @@ import java.util.Set;
 
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.Executor;
-import azkaban.executor.Statistics;
+import azkaban.executor.ServerStatistics;
 
-
+/**
+ * De-normalized version of the candidateFilter, which also contains the implementation of the factor filters.
+ * */
 public final class ExecutorFilter extends CandidateFilter<Executor, ExecutableFlow> {
   private static Map<String, FactorFilter<Executor, ExecutableFlow>> filterRepository = null;
 
@@ -84,11 +86,12 @@ public final class ExecutorFilter extends CandidateFilter<Executor, ExecutableFl
     return "ExecutorFilter";
   }
 
-  /**
+  /**<pre>
    * function to register the static remaining flow size filter.
    * NOTE : this is a static filter which means the filter will be filtering based on the system standard which is not
    *        Coming for the passed flow.
    *        Ideally this filter will make sure only the executor hasn't reached the Max allowed # of executing flows.
+   *</pre>
    * */
   private static FactorFilter<Executor, ExecutableFlow> getStaticRemainingFlowSizeFilter(){
     return FactorFilter.create(STATICREMAININGFLOWSIZE_FILTER_NAME, new FactorFilter.Filter<Executor, ExecutableFlow>() {
@@ -98,7 +101,7 @@ public final class ExecutorFilter extends CandidateFilter<Executor, ExecutableFl
           return false;
         }
 
-        Statistics stats = filteringTarget.getExecutorStats();
+        ServerStatistics stats = filteringTarget.getExecutorStats();
         if (null == stats) {
           logger.info(String.format("%s : filtering out %s as it's stats is unavailable.",
               STATICREMAININGFLOWSIZE_FILTER_NAME,
@@ -125,7 +128,7 @@ public final class ExecutorFilter extends CandidateFilter<Executor, ExecutableFl
           return false;
         }
 
-        Statistics stats = filteringTarget.getExecutorStats();
+        ServerStatistics stats = filteringTarget.getExecutorStats();
         if (null == stats) {
           logger.info(String.format("%s : filtering out %s as it's stats is unavailable.",
               MINIMUMFREEMEMORY_FILTER_NAME,
@@ -140,9 +143,10 @@ public final class ExecutorFilter extends CandidateFilter<Executor, ExecutableFl
 
   /**
    * function to register the static Minimum Reserved Memory filter.
-   * NOTE : this is a static filter which means the filter will be filtering based on the system standard which is not
-   *        Coming for the passed flow.
+   * NOTE : <pre> this is a static filter which means the filter will be filtering based on the system standard which
+   *        is not Coming for the passed flow.
    *        This filter will filter out any executors that the current CPU usage exceed 95%
+   *        </pre>
    * */
   private static FactorFilter<Executor, ExecutableFlow> getCpuStatusFilter(){
     return FactorFilter.create(CPUSTATUS_FILTER_NAME, new FactorFilter.Filter<Executor, ExecutableFlow>() {
@@ -153,7 +157,7 @@ public final class ExecutorFilter extends CandidateFilter<Executor, ExecutableFl
           return false;
         }
 
-        Statistics stats = filteringTarget.getExecutorStats();
+        ServerStatistics stats = filteringTarget.getExecutorStats();
         if (null == stats) {
           logger.info(String.format("%s : filtering out %s as it's stats is unavailable.",
               MINIMUMFREEMEMORY_FILTER_NAME,

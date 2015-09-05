@@ -22,11 +22,12 @@ import java.util.Map;
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.Executor;
 
-/**
+/**<pre>
  * Executor selector class implementation.
  * NOTE: This class is a de-generalized version of the CandidateSelector, which provides a
  *       clean and convenient constructor to take in filter and comparator name list and build
  *       the instance from that.
+ *</pre>
  * */
 public class ExecutorSelector extends CandidateSelector<Executor, ExecutableFlow> {
 
@@ -38,7 +39,7 @@ public class ExecutorSelector extends CandidateSelector<Executor, ExecutableFlow
    *                        again comparator feature is disabled if a null value is passed.
    * */
   public ExecutorSelector(List<String> filterList, Map<String,Integer> comparatorList) {
-    super(null == filterList || filterList.size() == 0 ?         null : new ExecutorFilter(filterList),
-          null == comparatorList || comparatorList.size() == 0 ? null : new ExecutorComparator(comparatorList));
+    super(null == filterList || filterList.isEmpty() ?         null : new ExecutorFilter(filterList),
+          null == comparatorList || comparatorList.isEmpty() ? null : new ExecutorComparator(comparatorList));
   }
 }

@@ -144,7 +144,7 @@ public class FlowRunnerManager implements EventListener,
   private Object executionDirDeletionSync = new Object();
 
   // date time of the the last flow submitted.
-  private Date lastFlowSubmitted = null;
+  private Date lastFlowSubmittedDate = null;
 
   public FlowRunnerManager(Props props, ExecutorLoader executorLoader,
       ProjectLoader projectLoader, ClassLoader parentClassLoader)
@@ -262,7 +262,7 @@ public class FlowRunnerManager implements EventListener,
     // Note: this is not thread safe and may result in providing dirty data.
     //       we will provide this data as is for now and will revisit if there
     //       is a string justification for change.
-    return lastFlowSubmitted;
+    return lastFlowSubmittedDate;
   }
 
   public Props getGlobalProps() {
@@ -519,7 +519,7 @@ public class FlowRunnerManager implements EventListener,
       // keep track of this future
       submittedFlows.put(future, runner.getExecutionId());
       // update the last submitted time.
-      this.lastFlowSubmitted = new Date();
+      this.lastFlowSubmittedDate = new Date();
     } catch (RejectedExecutionException re) {
       throw new ExecutorManagerException(
           "Azkaban server can't execute any more flows. "

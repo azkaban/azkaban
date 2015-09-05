@@ -24,8 +24,12 @@ import java.util.Map.Entry;
 import java.util.Set;
 
 import azkaban.executor.Executor;
-import azkaban.executor.Statistics;
+import azkaban.executor.ServerStatistics;
 
+
+/**
+ * De-normalized version of the CandidateComparator, which also contains the implementation of the factor comparators.
+ * */
 public class ExecutorComparator extends CandidateComparator<Executor> {
   private static Map<String, ComparatorCreator> comparatorCreatorRepository = null;
 
@@ -40,7 +44,6 @@ public class ExecutorComparator extends CandidateComparator<Executor> {
   // factor comparator names
   private static final String NUMOFASSIGNEDFLOW_COMPARATOR_NAME = "NumberOfAssignedFlowComparator";
   private static final String MEMORY_COMPARATOR_NAME = "Memory";
-  private static final String PRIORITY_COMPARATOR_NAME = "Priority";
   private static final String LSTDISPATCHED_COMPARATOR_NAME = "LastDispatched";
   private static final String CPUUSAGE_COMPARATOR_NAME = "CpuUsage";
 
@@ -60,10 +63,6 @@ public class ExecutorComparator extends CandidateComparator<Executor> {
     comparatorCreatorRepository.put(MEMORY_COMPARATOR_NAME, new ComparatorCreator(){
       public FactorComparator<Executor> create(int weight) { return getMemoryComparator(weight); }});
 
-    // register the creator for priority comparator.
-    comparatorCreatorRepository.put(PRIORITY_COMPARATOR_NAME, new ComparatorCreator(){
-      public FactorComparator<Executor> create(int weight) { return getPriorityComparator(weight); }});
-
     // register the creator for last dispatched time comparator.
     comparatorCreatorRepository.put(LSTDISPATCHED_COMPARATOR_NAME, new ComparatorCreator(){
       public FactorComparator<Executor> create(int weight) { return getLstDispatchedTimeComparator(weight); }});
@@ -81,8 +80,8 @@ public class ExecutorComparator extends CandidateComparator<Executor> {
    * */
   public ExecutorComparator(Map<String,Integer> comparatorList) {
     if (null == comparatorList|| comparatorList.size() == 0){
-      logger.error("failed to initialize executor comparator as the passed comparator list is invalid or empty.");
-      throw new IllegalArgumentException("filterList");
+      throw new IllegalArgumentException("failed to initialize executor comparator" +
+                                         "as the passed comparator list is invalid or empty.");
     }
 
     // register the comparators, we will now throw here if the weight is invalid, it is handled in the super.
@@ -92,10 +91,9 @@ public class ExecutorComparator extends CandidateComparator<Executor> {
             get(entry.getKey()).
             create(entry.getValue()));
       } else {
-        logger.error(String.format("failed to initialize executor comparator "+
-                                   "as the comparator implementation for requested factor '%s' doesn't exist.",
-                                   entry.getKey()));
-        throw new IllegalArgumentException("comparatorList");
+        throw new IllegalArgumentException(String.format("failed to initialize executor comparator " +
+                                        "as the comparator implementation for requested factor '%s' doesn't exist.",
+                                        entry.getKey()));
       }
     }
   }
@@ -109,9 +107,10 @@ public class ExecutorComparator extends CandidateComparator<Executor> {
     FactorComparator<Executor> create(int weight);
   }
 
-  /**
+  /**<pre>
    * helper function that does the object  on two statistics, comparator can leverage this function to provide
    * shortcuts if   the statistics object is missing from one or both sides of the executors.
+   * </pre>
    * @param stat1   the first statistics  object to be checked .
    * @param stat2   the second statistics object to be checked.
    * @param caller  the name of the calling function, for logging purpose.
@@ -119,8 +118,8 @@ public class ExecutorComparator extends CandidateComparator<Executor> {
    * @return true if the passed statistics are NOT both valid, a shortcut can be made (caller can consume the result),
    *         false otherwise.
    * */
-  private static boolean statisticsObjectCheck(Statistics statisticsObj1,
-                                               Statistics statisticsObj2, String caller, Integer result){
+  private static boolean statisticsObjectCheck(ServerStatistics statisticsObj1,
+                                               ServerStatistics statisticsObj2, String caller, Integer result){
     result = 0 ;
     // both doesn't expose the info
     if (null == statisticsObj1 && null == statisticsObj2){
@@ -158,35 +157,14 @@ public class ExecutorComparator extends CandidateComparator<Executor> {
 
       @Override
       public int compare(Executor o1, Executor o2) {
-        Statistics stat1 = o1.getExecutorStats();
-        Statistics stat2 = o2.getExecutorStats();
+        ServerStatistics stat1 = o1.getExecutorStats();
+        ServerStatistics stat2 = o2.getExecutorStats();
 
         Integer result = 0;
         if (statisticsObjectCheck(stat1,stat2,NUMOFASSIGNEDFLOW_COMPARATOR_NAME,result)){
           return result;
         }
         return ((Integer)stat1.getRemainingFlowCapacity()).compareTo(stat2.getRemainingFlowCapacity());
-      }});
-  }
-
-  /**
-   * function defines the priority comparator.
-   * @param weight weight of the comparator.
-   * @return
-   * */
-  private static FactorComparator<Executor> getPriorityComparator(int weight){
-    return FactorComparator.create(PRIORITY_COMPARATOR_NAME, weight, new Comparator<Executor>(){
-
-      @Override
-      public int compare(Executor o1, Executor o2) {
-        Statistics stat1 = o1.getExecutorStats();
-        Statistics stat2 = o2.getExecutorStats();
-
-        Integer result = 0;
-        if (statisticsObjectCheck(stat1,stat2,PRIORITY_COMPARATOR_NAME,result)){
-          return result;
-        }
-        return ((Integer)stat1.getPriority()).compareTo(stat2.getPriority());
       }});
   }
 
@@ -200,10 +178,10 @@ public class ExecutorComparator extends CandidateComparator<Executor> {
 
       @Override
       public int compare(Executor o1, Executor o2) {
-        Statistics stat1 = o1.getExecutorStats();
-        Statistics stat2 = o2.getExecutorStats();
+        ServerStatistics stat1 = o1.getExecutorStats();
+        ServerStatistics stat2 = o2.getExecutorStats();
 
-        Integer result = 0;
+        int result = 0;
         if (statisticsObjectCheck(stat1,stat2,CPUUSAGE_COMPARATOR_NAME,result)){
           return result;
         }
@@ -224,10 +202,10 @@ public class ExecutorComparator extends CandidateComparator<Executor> {
 
       @Override
       public int compare(Executor o1, Executor o2) {
-        Statistics stat1 = o1.getExecutorStats();
-        Statistics stat2 = o2.getExecutorStats();
+        ServerStatistics stat1 = o1.getExecutorStats();
+        ServerStatistics stat2 = o2.getExecutorStats();
 
-        Integer result = 0;
+        int result = 0;
         if (statisticsObjectCheck(stat1,stat2,LSTDISPATCHED_COMPARATOR_NAME,result)){
           return result;
         }
@@ -256,11 +234,13 @@ public class ExecutorComparator extends CandidateComparator<Executor> {
   }
 
 
-  /**
+  /**<pre>
    * function defines the Memory comparator.
-   * @param weight weight of the comparator.
    * Note: comparator firstly take the absolute value of the remaining memory, if both sides have the same value,
    *       it go further to check the percent of the remaining memory.
+   * </pre>
+   * @param weight weight of the comparator.
+
    * @return
    * */
   private static FactorComparator<Executor> getMemoryComparator(int weight){
@@ -268,10 +248,10 @@ public class ExecutorComparator extends CandidateComparator<Executor> {
 
       @Override
       public int compare(Executor o1, Executor o2) {
-       Statistics stat1 = o1.getExecutorStats();
-       Statistics stat2 = o2.getExecutorStats();
+       ServerStatistics stat1 = o1.getExecutorStats();
+       ServerStatistics stat2 = o2.getExecutorStats();
 
-       Integer result = 0;
+       int result = 0;
        if (statisticsObjectCheck(stat1,stat2,MEMORY_COMPARATOR_NAME,result)){
          return result;
        }

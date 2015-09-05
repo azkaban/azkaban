@@ -33,13 +33,12 @@ public final class FactorComparator<T>{
    *  method provided below.
    * @param factorName : the factor name .
    * @param weight : the weight of the comparator.
-   * @ comparator : function to be provided by user on how the comparison should be made.
+   * @param comparator : function to be provided by user on how the comparison should be made.
    * */
   private FactorComparator(String factorName, int weight, Comparator<T> comparator){
     this.factorName = factorName;
     this.weight = weight;
     this.comparator = comparator;
-    logger.info("comparator created for " + this.factorName);
   }
 
   /** static function to generate an instance of the class.
