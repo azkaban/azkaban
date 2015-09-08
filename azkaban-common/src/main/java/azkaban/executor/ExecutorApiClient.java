@@ -17,29 +17,27 @@
 package azkaban.executor;
 
 import java.io.IOException;
-import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.StatusLine;
 import org.apache.http.client.HttpResponseException;
 import org.apache.http.util.EntityUtils;
-import org.codehaus.jackson.map.ObjectMapper;
-
 import azkaban.utils.RestfulApiClient;
 
 /** Client class that will be used to handle all Restful API calls between Executor and the host application.
  * */
-public class ExecutorApiClient<T extends java.io.Serializable> extends RestfulApiClient<T> {
-  private final Class<T> typeOfclass;
+public class ExecutorApiClient extends RestfulApiClient<String> {
+  private static ExecutorApiClient instance = null;
+  private ExecutorApiClient(){}
 
   /**
-   * Constructor of the class.
-   * @param typeOfclass the type of class that the T represents. Must provide.
+   * Singleton method to return the instance of the current object.
    * */
-  public ExecutorApiClient(Class<T> typeOfclass){
-    if (null == typeOfclass){
-      throw new IllegalArgumentException("Class type of the returning object must be specified.");
+  public static ExecutorApiClient getInstance(){
+    if (null == instance){
+      instance = new ExecutorApiClient();
     }
-    this.typeOfclass = typeOfclass;
+
+    return instance;
   }
 
   /**Implementing the parseResponse function to return de-serialized Json object.
@@ -47,7 +45,7 @@ public class ExecutorApiClient<T extends java.io.Serializable> extends RestfulAp
    * @return de-serialized object from Json or null if the response doesn't have a body.
    * */
   @Override
-  protected T parseResponse(HttpResponse response)
+  protected String parseResponse(HttpResponse response)
       throws HttpResponseException, IOException {
     final StatusLine statusLine = response.getStatusLine();
     String responseBody = response.getEntity() != null ?
@@ -61,11 +59,6 @@ public class ExecutorApiClient<T extends java.io.Serializable> extends RestfulAp
         throw new HttpResponseException(statusLine.getStatusCode(),responseBody);
     }
 
-    final HttpEntity entity = response.getEntity();
-    if (null == entity || entity.getContentLength() >= Integer.MAX_VALUE){
-      logger.error("unable to parse the response as the response is null or with an invlaid length");
-      return null;
-    }
-    return new ObjectMapper().readValue(EntityUtils.toString(entity), this.typeOfclass);
+    return responseBody;
   }
 }

@@ -156,8 +156,8 @@ public class ExecutorComparator extends CandidateComparator<Executor> {
 
       @Override
       public int compare(Executor o1, Executor o2) {
-        ExecutorInfo stat1 = o1.getExecutorStats();
-        ExecutorInfo stat2 = o2.getExecutorStats();
+        ExecutorInfo stat1 = o1.getExecutorInfo();
+        ExecutorInfo stat2 = o2.getExecutorInfo();
 
         Integer result = 0;
         if (statisticsObjectCheck(stat1,stat2,NUMOFASSIGNEDFLOW_COMPARATOR_NAME,result)){
@@ -177,8 +177,8 @@ public class ExecutorComparator extends CandidateComparator<Executor> {
 
       @Override
       public int compare(Executor o1, Executor o2) {
-        ExecutorInfo stat1 = o1.getExecutorStats();
-        ExecutorInfo stat2 = o2.getExecutorStats();
+        ExecutorInfo stat1 = o1.getExecutorInfo();
+        ExecutorInfo stat2 = o2.getExecutorInfo();
 
         int result = 0;
         if (statisticsObjectCheck(stat1,stat2,CPUUSAGE_COMPARATOR_NAME,result)){
@@ -201,8 +201,8 @@ public class ExecutorComparator extends CandidateComparator<Executor> {
 
       @Override
       public int compare(Executor o1, Executor o2) {
-        ExecutorInfo stat1 = o1.getExecutorStats();
-        ExecutorInfo stat2 = o2.getExecutorStats();
+        ExecutorInfo stat1 = o1.getExecutorInfo();
+        ExecutorInfo stat2 = o2.getExecutorInfo();
 
         int result = 0;
         if (statisticsObjectCheck(stat1,stat2,LSTDISPATCHED_COMPARATOR_NAME,result)){
@@ -228,8 +228,8 @@ public class ExecutorComparator extends CandidateComparator<Executor> {
 
       @Override
       public int compare(Executor o1, Executor o2) {
-       ExecutorInfo stat1 = o1.getExecutorStats();
-       ExecutorInfo stat2 = o2.getExecutorStats();
+       ExecutorInfo stat1 = o1.getExecutorInfo();
+       ExecutorInfo stat2 = o2.getExecutorInfo();
 
        int result = 0;
        if (statisticsObjectCheck(stat1,stat2,MEMORY_COMPARATOR_NAME,result)){

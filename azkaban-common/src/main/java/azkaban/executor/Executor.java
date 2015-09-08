@@ -113,19 +113,19 @@ public class Executor implements Comparable<Executor> {
     return id;
   }
 
-  public ExecutorInfo getExecutorStats() {
+  public ExecutorInfo getExecutorInfo() {
     return this.cachedExecutorStats;
   }
 
-  public void setExecutorStats(ExecutorInfo stats) {
-    this.cachedExecutorStats = stats;
+  public void setExecutorInfo(ExecutorInfo info) {
+    this.cachedExecutorStats = info;
     this.lastStatsUpdatedTime = new Date();
   }
 
   /**
-   * Gets the timestamp when the stats are last updated.
-   * @return date object represents the timestamp, null if the stats of this
-   *         specific object is never refreshed.
+   * Gets the timestamp when the executor info is last updated.
+   * @return date object represents the timestamp, null if the executor info of this
+   *         specific executor is never refreshed.
    * */
   public Date getLastStatsUpdatedTime(){
     return this.lastStatsUpdatedTime;

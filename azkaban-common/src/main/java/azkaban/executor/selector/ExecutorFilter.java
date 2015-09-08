@@ -101,7 +101,7 @@ public final class ExecutorFilter extends CandidateFilter<Executor, ExecutableFl
           return false;
         }
 
-        ExecutorInfo stats = filteringTarget.getExecutorStats();
+        ExecutorInfo stats = filteringTarget.getExecutorInfo();
         if (null == stats) {
           logger.info(String.format("%s : filtering out %s as it's stats is unavailable.",
               STATICREMAININGFLOWSIZE_FILTER_NAME,
@@ -128,7 +128,7 @@ public final class ExecutorFilter extends CandidateFilter<Executor, ExecutableFl
           return false;
         }
 
-        ExecutorInfo stats = filteringTarget.getExecutorStats();
+        ExecutorInfo stats = filteringTarget.getExecutorInfo();
         if (null == stats) {
           logger.info(String.format("%s : filtering out %s as it's stats is unavailable.",
               MINIMUMFREEMEMORY_FILTER_NAME,
@@ -157,7 +157,7 @@ public final class ExecutorFilter extends CandidateFilter<Executor, ExecutableFl
           return false;
         }
 
-        ExecutorInfo stats = filteringTarget.getExecutorStats();
+        ExecutorInfo stats = filteringTarget.getExecutorInfo();
         if (null == stats) {
           logger.info(String.format("%s : filtering out %s as it's stats is unavailable.",
               MINIMUMFREEMEMORY_FILTER_NAME,

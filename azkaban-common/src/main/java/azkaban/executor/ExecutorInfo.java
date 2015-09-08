@@ -16,6 +16,12 @@
 
 package azkaban.executor;
 
+import java.io.IOException;
+
+import org.codehaus.jackson.JsonParseException;
+import org.codehaus.jackson.map.JsonMappingException;
+import org.codehaus.jackson.map.ObjectMapper;
+
  /** Class that exposes the statistics from the executor server.
   *  List of the statistics -
   *  remainingMemoryPercent;
@@ -116,5 +122,19 @@ package azkaban.executor;
           return result;
         }
         return false;
+    }
+
+    /**
+     * Helper function to get an ExecutorInfo instance from the JSon String serialized from another object.
+     * @param  jsonString the string that will be de-serialized from.
+     * @return instance of the object if the parsing is successful, null other wise.
+     * @throws JsonParseException,JsonMappingException,IOException
+     * */
+    public static ExecutorInfo fromJSONString(String jsonString) throws
+    JsonParseException,
+    JsonMappingException,
+    IOException{
+      if (null == jsonString || jsonString.length() == 0) return null;
+      return new ObjectMapper().readValue(jsonString, ExecutorInfo.class);
     }
 }
