@@ -16,10 +16,6 @@
 
 package azkaban.executor;
 
-import java.util.Date;
-import java.util.Map;
-
-
  /** Class that exposes the statistics from the executor server.
   *  List of the statistics -
   *  remainingMemoryPercent;
@@ -30,12 +26,13 @@ import java.util.Map;
   *  cpuUsage;
   *
   * */
-  public class ServerStatistics {
+  public class ExecutorInfo implements java.io.Serializable{
+    private static final long serialVersionUID = 3009746603773371263L;
     private double remainingMemoryPercent;
     private long   remainingMemory;
     private int    remainingFlowCapacity;
     private int    numberOfAssignedFlows;
-    private Date   lastDispatchedTime;
+    private long   lastDispatchedTime;
     private double cpuUsage;
 
     public double getCpuUsage() {
@@ -70,11 +67,11 @@ import java.util.Map;
       this.remainingFlowCapacity = value;
     }
 
-    public Date getLastDispatchedTime(){
+    public long getLastDispatchedTime(){
       return this.lastDispatchedTime;
     }
 
-    public void setLastDispatchedTime(Date value){
+    public void setLastDispatchedTime(long value){
       this.lastDispatchedTime = value;
     }
 
@@ -86,12 +83,12 @@ import java.util.Map;
       this.numberOfAssignedFlows = value;
     }
 
-    public ServerStatistics(){}
+    public ExecutorInfo(){}
 
-    public ServerStatistics (double remainingMemoryPercent,
+    public ExecutorInfo (double remainingMemoryPercent,
         long remainingMemory,
         int remainingFlowCapacity,
-        Date lastDispatched,
+        long lastDispatched,
         double cpuUsage,
         int numberOfAssignedFlows){
       this.remainingMemory = remainingMemory;
@@ -105,59 +102,19 @@ import java.util.Map;
     @Override
     public boolean equals(Object obj)
     {
-        if (obj instanceof ServerStatistics)
+        if (obj instanceof ExecutorInfo)
         {
           boolean result = true;
-          ServerStatistics stat = (ServerStatistics) obj;
+          ExecutorInfo stat = (ExecutorInfo) obj;
 
           result &=this.remainingMemory == stat.remainingMemory;
           result &=this.cpuUsage == stat.cpuUsage;
           result &=this.remainingFlowCapacity == stat.remainingFlowCapacity;
           result &=this.remainingMemoryPercent == stat.remainingMemoryPercent;
           result &=this.numberOfAssignedFlows == stat.numberOfAssignedFlows;
-          result &= null == this.lastDispatchedTime ? stat.lastDispatchedTime == null :
-                            this.lastDispatchedTime.equals(stat.lastDispatchedTime);
+          result &= this.lastDispatchedTime == stat.lastDispatchedTime;
           return result;
         }
         return false;
-    }
-
-
-    // really ugly to have it home-made here for object-binding as base on the
-    // current code base there is no any better ways to do that.
-    public static ServerStatistics fromJsonObject(Map<String,Object> mapObj){
-      if (null == mapObj) return null ;
-      ServerStatistics stats = new ServerStatistics ();
-
-      final String remainingMemory = "remainingMemory";
-      if (mapObj.containsKey(remainingMemory) && null != mapObj.get(remainingMemory)){
-        stats.setRemainingMemory(Long.parseLong(mapObj.get(remainingMemory).toString()));
-      }
-
-      final String cpuUsage = "cpuUsage";
-      if (mapObj.containsKey(cpuUsage) && null != mapObj.get(cpuUsage)){
-        stats.setCpuUpsage(Double.parseDouble(mapObj.get(cpuUsage).toString()));
-      }
-
-      final String remainingFlowCapacity = "remainingFlowCapacity";
-      if (mapObj.containsKey(remainingFlowCapacity) && null != mapObj.get(remainingFlowCapacity)){
-        stats.setRemainingFlowCapacity(Integer.parseInt(mapObj.get(remainingFlowCapacity).toString()));
-      }
-
-      final String numberOfAssignedFlows = "numberOfAssignedFlows";
-      if (mapObj.containsKey(numberOfAssignedFlows) && null != mapObj.get(numberOfAssignedFlows)){
-        stats.setNumberOfAssignedFlows(Integer.parseInt(mapObj.get(numberOfAssignedFlows).toString()));
-      }
-
-      final String remainingMemoryPercent = "remainingMemoryPercent";
-      if (mapObj.containsKey(remainingMemoryPercent) && null != mapObj.get(remainingMemoryPercent)){
-        stats.setRemainingMemoryPercent(Double.parseDouble(mapObj.get(remainingMemoryPercent).toString()));
-      }
-
-      final String lastDispatched = "lastDispatchedTime";
-      if (mapObj.containsKey(lastDispatched) && null != mapObj.get(lastDispatched)){
-        stats.setLastDispatchedTime(new Date(Long.parseLong(mapObj.get(lastDispatched).toString())));
-      }
-      return stats;
     }
 }

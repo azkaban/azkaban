@@ -17,14 +17,13 @@
 package azkaban.executor.selector;
 
 import java.util.Comparator;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
 import azkaban.executor.Executor;
-import azkaban.executor.ServerStatistics;
+import azkaban.executor.ExecutorInfo;
 
 
 /**
@@ -118,8 +117,8 @@ public class ExecutorComparator extends CandidateComparator<Executor> {
    * @return true if the passed statistics are NOT both valid, a shortcut can be made (caller can consume the result),
    *         false otherwise.
    * */
-  private static boolean statisticsObjectCheck(ServerStatistics statisticsObj1,
-                                               ServerStatistics statisticsObj2, String caller, Integer result){
+  private static boolean statisticsObjectCheck(ExecutorInfo statisticsObj1,
+                                               ExecutorInfo statisticsObj2, String caller, Integer result){
     result = 0 ;
     // both doesn't expose the info
     if (null == statisticsObj1 && null == statisticsObj2){
@@ -157,8 +156,8 @@ public class ExecutorComparator extends CandidateComparator<Executor> {
 
       @Override
       public int compare(Executor o1, Executor o2) {
-        ServerStatistics stat1 = o1.getExecutorStats();
-        ServerStatistics stat2 = o2.getExecutorStats();
+        ExecutorInfo stat1 = o1.getExecutorStats();
+        ExecutorInfo stat2 = o2.getExecutorStats();
 
         Integer result = 0;
         if (statisticsObjectCheck(stat1,stat2,NUMOFASSIGNEDFLOW_COMPARATOR_NAME,result)){
@@ -178,8 +177,8 @@ public class ExecutorComparator extends CandidateComparator<Executor> {
 
       @Override
       public int compare(Executor o1, Executor o2) {
-        ServerStatistics stat1 = o1.getExecutorStats();
-        ServerStatistics stat2 = o2.getExecutorStats();
+        ExecutorInfo stat1 = o1.getExecutorStats();
+        ExecutorInfo stat2 = o2.getExecutorStats();
 
         int result = 0;
         if (statisticsObjectCheck(stat1,stat2,CPUUSAGE_COMPARATOR_NAME,result)){
@@ -202,34 +201,15 @@ public class ExecutorComparator extends CandidateComparator<Executor> {
 
       @Override
       public int compare(Executor o1, Executor o2) {
-        ServerStatistics stat1 = o1.getExecutorStats();
-        ServerStatistics stat2 = o2.getExecutorStats();
+        ExecutorInfo stat1 = o1.getExecutorStats();
+        ExecutorInfo stat2 = o2.getExecutorStats();
 
         int result = 0;
         if (statisticsObjectCheck(stat1,stat2,LSTDISPATCHED_COMPARATOR_NAME,result)){
           return result;
         }
-
-        if (null == stat1.getLastDispatchedTime() && null == stat1.getLastDispatchedTime()){
-          logger.info(String.format("%s : stats from both side doesn't contain last dispatched time info.",
-              LSTDISPATCHED_COMPARATOR_NAME));
-          return 0;
-        }
-
-        if (null == stat2.getLastDispatchedTime()){
-          logger.info(String.format("%s : choosing left side as right doesn't contain last dispatched time info.",
-              LSTDISPATCHED_COMPARATOR_NAME));
-          return 1;
-        }
-
-        if (null == stat1.getLastDispatchedTime()){
-          logger.info(String.format("%s : choosing right side as left doesn't contain last dispatched time info.",
-              LSTDISPATCHED_COMPARATOR_NAME));
-          return -1;
-        }
-
         // Note: an earlier date time indicates higher weight.
-        return ((Date)stat2.getLastDispatchedTime()).compareTo(stat1.getLastDispatchedTime());
+        return ((Long)stat2.getLastDispatchedTime()).compareTo(stat1.getLastDispatchedTime());
       }});
   }
 
@@ -248,8 +228,8 @@ public class ExecutorComparator extends CandidateComparator<Executor> {
 
       @Override
       public int compare(Executor o1, Executor o2) {
-       ServerStatistics stat1 = o1.getExecutorStats();
-       ServerStatistics stat2 = o2.getExecutorStats();
+       ExecutorInfo stat1 = o1.getExecutorStats();
+       ExecutorInfo stat2 = o2.getExecutorStats();
 
        int result = 0;
        if (statisticsObjectCheck(stat1,stat2,MEMORY_COMPARATOR_NAME,result)){

@@ -17,37 +17,37 @@
 package azkaban.executor;
 
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
-
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.StatusLine;
 import org.apache.http.client.HttpResponseException;
 import org.apache.http.util.EntityUtils;
+import org.codehaus.jackson.map.ObjectMapper;
 
-import azkaban.utils.JSONUtils;
 import azkaban.utils.RestfulApiClient;
 
 /** Client class that will be used to handle all Restful API calls between Executor and the host application.
  * */
-public class ExecutorApiClient extends RestfulApiClient<Map<String, Object>> {
-  private ExecutorApiClient(){}
-  private static ExecutorApiClient instance = new ExecutorApiClient();
+public class ExecutorApiClient<T extends java.io.Serializable> extends RestfulApiClient<T> {
+  private final Class<T> typeOfclass;
 
-  /** Function to return the instance of the ExecutorApiClient class.
+  /**
+   * Constructor of the class.
+   * @param typeOfclass the type of class that the T represents. Must provide.
    * */
-  public static ExecutorApiClient getInstance() {
-    return instance;
+  public ExecutorApiClient(Class<T> typeOfclass){
+    if (null == typeOfclass){
+      throw new IllegalArgumentException("Class type of the returning object must be specified.");
+    }
+    this.typeOfclass = typeOfclass;
   }
 
   /**Implementing the parseResponse function to return de-serialized Json object.
    * @param response  the returned response from the HttpClient.
-   * @return de-serialized object from Json or empty object if the response doesn't have a body.
+   * @return de-serialized object from Json or null if the response doesn't have a body.
    * */
-  @SuppressWarnings("unchecked")
   @Override
-  protected Map<String, Object> parseResponse(HttpResponse response)
+  protected T parseResponse(HttpResponse response)
       throws HttpResponseException, IOException {
     final StatusLine statusLine = response.getStatusLine();
     String responseBody = response.getEntity() != null ?
@@ -62,13 +62,10 @@ public class ExecutorApiClient extends RestfulApiClient<Map<String, Object>> {
     }
 
     final HttpEntity entity = response.getEntity();
-    if (null != entity){
-      Object returnVal = JSONUtils.parseJSONFromString(EntityUtils.toString(entity));
-      if (null!= returnVal){
-        return (Map<String, Object>) returnVal;
-      }
+    if (null == entity || entity.getContentLength() >= Integer.MAX_VALUE){
+      logger.error("unable to parse the response as the response is null or with an invlaid length");
+      return null;
     }
-
-    return new HashMap<String, Object>() ;
+    return new ObjectMapper().readValue(EntityUtils.toString(entity), this.typeOfclass);
   }
 }

@@ -1,21 +1,16 @@
 package azkaban.execapp;
 
-import java.io.IOException;
-import java.util.Date;
-import java.util.Map;
-
 import org.junit.Assert;
 import org.junit.Test;
 
-import azkaban.executor.ServerStatistics;
-import azkaban.utils.JSONUtils;
+import azkaban.executor.ExecutorInfo;
 
 public class StatisticsServletTest {
   private class MockStatisticsServlet extends ServerStatisticsServlet{
     /** */
     private static final long serialVersionUID = 1L;
 
-    public  ServerStatistics getStastics(){
+    public  ExecutorInfo getStastics(){
       return cachedstats;
     }
 
@@ -27,17 +22,17 @@ public class StatisticsServletTest {
        this.populateStatistics(false);
     }
 
-    public void callFillCpuUsage(ServerStatistics stats){
+    public void callFillCpuUsage(ExecutorInfo stats){
       this.fillCpuUsage(stats);}
 
-    public void callFillRemainingMemoryPercent(ServerStatistics stats){
+    public void callFillRemainingMemoryPercent(ExecutorInfo stats){
         this.fillRemainingMemoryPercent(stats);}
   }
   private MockStatisticsServlet statServlet = new MockStatisticsServlet();
 
   @Test
   public void testFillMemory()  {
-    ServerStatistics stats = new ServerStatistics();
+    ExecutorInfo stats = new ExecutorInfo();
     this.statServlet.callFillRemainingMemoryPercent(stats);
     // assume any machine that runs this test should
     // have bash and top available and at least got some remaining memory.
@@ -47,7 +42,7 @@ public class StatisticsServletTest {
 
   @Test
   public void testFillCpu()  {
-    ServerStatistics stats = new ServerStatistics();
+    ExecutorInfo stats = new ExecutorInfo();
     this.statServlet.callFillCpuUsage(stats);
     Assert.assertTrue(stats.getCpuUsage() > 0);
   }
@@ -78,24 +73,4 @@ public class StatisticsServletTest {
     this.statServlet.callPopulateStatistics();
     Assert.assertNotEquals(updatedTime, this.statServlet.getUpdatedTime());
   }
-
-  @Test
-  public void testStatisticsJsonParser() throws IOException  {
-    ServerStatistics stat = new ServerStatistics(0.1,1,2,new Date(),3,5);
-    String jSonStr = JSONUtils.toJSON(stat);
-    @SuppressWarnings("unchecked")
-    Map<String,Object> jSonObj = (Map<String,Object>)JSONUtils.parseJSONFromString(jSonStr);
-    ServerStatistics stat2 = ServerStatistics.fromJsonObject(jSonObj);
-    Assert.assertTrue(stat.equals(stat2));
-    }
-
-  @Test
-  public void testStatisticsJsonParserWNullDateValue() throws IOException  {
-    ServerStatistics stat = new ServerStatistics(0.1,1,2,null,3,5);
-    String jSonStr = JSONUtils.toJSON(stat);
-    @SuppressWarnings("unchecked")
-    Map<String,Object> jSonObj = (Map<String,Object>)JSONUtils.parseJSONFromString(jSonStr);
-    ServerStatistics stat2 = ServerStatistics.fromJsonObject(jSonObj);
-    Assert.assertTrue(stat.equals(stat2));
-    }
 }

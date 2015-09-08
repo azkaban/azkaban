@@ -30,7 +30,7 @@ public class Executor implements Comparable<Executor> {
   private final int port;
   private boolean isActive;
   // cached copy of the latest statistics from  the executor.
-  private ServerStatistics cachedExecutorStats;
+  private ExecutorInfo cachedExecutorStats;
   private Date lastStatsUpdatedTime;
 
   /**
@@ -113,11 +113,11 @@ public class Executor implements Comparable<Executor> {
     return id;
   }
 
-  public ServerStatistics getExecutorStats() {
+  public ExecutorInfo getExecutorStats() {
     return this.cachedExecutorStats;
   }
 
-  public void setExecutorStats(ServerStatistics stats) {
+  public void setExecutorStats(ExecutorInfo stats) {
     this.cachedExecutorStats = stats;
     this.lastStatsUpdatedTime = new Date();
   }

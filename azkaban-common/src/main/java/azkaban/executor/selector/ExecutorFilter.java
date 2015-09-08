@@ -23,7 +23,7 @@ import java.util.Set;
 
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.Executor;
-import azkaban.executor.ServerStatistics;
+import azkaban.executor.ExecutorInfo;
 
 /**
  * De-normalized version of the candidateFilter, which also contains the implementation of the factor filters.
@@ -101,7 +101,7 @@ public final class ExecutorFilter extends CandidateFilter<Executor, ExecutableFl
           return false;
         }
 
-        ServerStatistics stats = filteringTarget.getExecutorStats();
+        ExecutorInfo stats = filteringTarget.getExecutorStats();
         if (null == stats) {
           logger.info(String.format("%s : filtering out %s as it's stats is unavailable.",
               STATICREMAININGFLOWSIZE_FILTER_NAME,
@@ -128,7 +128,7 @@ public final class ExecutorFilter extends CandidateFilter<Executor, ExecutableFl
           return false;
         }
 
-        ServerStatistics stats = filteringTarget.getExecutorStats();
+        ExecutorInfo stats = filteringTarget.getExecutorStats();
         if (null == stats) {
           logger.info(String.format("%s : filtering out %s as it's stats is unavailable.",
               MINIMUMFREEMEMORY_FILTER_NAME,
@@ -157,7 +157,7 @@ public final class ExecutorFilter extends CandidateFilter<Executor, ExecutableFl
           return false;
         }
 
-        ServerStatistics stats = filteringTarget.getExecutorStats();
+        ExecutorInfo stats = filteringTarget.getExecutorStats();
         if (null == stats) {
           logger.info(String.format("%s : filtering out %s as it's stats is unavailable.",
               MINIMUMFREEMEMORY_FILTER_NAME,

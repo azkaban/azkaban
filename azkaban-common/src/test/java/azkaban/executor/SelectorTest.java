@@ -685,9 +685,9 @@ public class SelectorTest {
     executorList.add(new Executor(2, "host2", 80, true));
     executorList.add(new Executor(3, "host3", 80, true));
 
-    executorList.get(0).setExecutorStats(new ServerStatistics(99.9, 14095, 50, new Date(), 89, 0));
-    executorList.get(1).setExecutorStats(new ServerStatistics(50, 14095, 50, new Date(), 90,  0));
-    executorList.get(2).setExecutorStats(new ServerStatistics(99.9, 14095, 50, new Date(), 90,  0));
+    executorList.get(0).setExecutorStats(new ExecutorInfo(99.9, 14095, 50, System.currentTimeMillis(), 89, 0));
+    executorList.get(1).setExecutorStats(new ExecutorInfo(50, 14095, 50, System.currentTimeMillis(), 90,  0));
+    executorList.get(2).setExecutorStats(new ExecutorInfo(99.9, 14095, 50, System.currentTimeMillis(), 90,  0));
 
     ExecutableFlow flow = new ExecutableFlow();
 
@@ -706,9 +706,9 @@ public class SelectorTest {
     executorList.add(new Executor(2, "host2", 80, true));
     executorList.add(new Executor(3, "host3", 80, true));
 
-    executorList.get(0).setExecutorStats(new ServerStatistics(99.9, 14095, 50, new Date(), 89, 0));
-    executorList.get(1).setExecutorStats(new ServerStatistics(50, 14095, 50, new Date(), 90,  0));
-    executorList.get(2).setExecutorStats(new ServerStatistics(99.9, 14095, 50, new Date(), 90,  0));
+    executorList.get(0).setExecutorStats(new ExecutorInfo(99.9, 14095, 50, System.currentTimeMillis(), 89, 0));
+    executorList.get(1).setExecutorStats(new ExecutorInfo(50, 14095, 50, System.currentTimeMillis(), 90,  0));
+    executorList.get(2).setExecutorStats(new ExecutorInfo(99.9, 14095, 50, System.currentTimeMillis(), 90,  0));
 
     ExecutableFlow flow = new ExecutableFlow();
 
@@ -721,7 +721,7 @@ public class SelectorTest {
 
     // simulate that once the flow is assigned, executor1's remaining TMP storage dropped to 2048
     // now we do the getBest again executor3 is expected to be selected as it has a earlier last dispatched time.
-    executorList.get(0).setExecutorStats(new ServerStatistics(99.9, 4095, 50, new Date(), 90, 1));
+    executorList.get(0).setExecutorStats(new ExecutorInfo(99.9, 4095, 50, System.currentTimeMillis(), 90, 1));
     executor = selector.getBest(executorList, flow);
     Assert.assertEquals(executorList.get(2), executor);
   }

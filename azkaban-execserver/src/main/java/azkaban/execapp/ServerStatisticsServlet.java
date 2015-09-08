@@ -30,7 +30,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.apache.log4j.Logger;
 
-import azkaban.executor.ServerStatistics;
+import azkaban.executor.ExecutorInfo;
 import azkaban.utils.JSONUtils;
 
 public class ServerStatisticsServlet extends HttpServlet  {
@@ -42,7 +42,7 @@ public class ServerStatisticsServlet extends HttpServlet  {
   private static final String noCacheParamName = "nocache";
 
   protected static long lastRefreshedTime = 0;
-  protected static ServerStatistics cachedstats = null;
+  protected static ExecutorInfo cachedstats = null;
 
   /**
    * Handle all get request to Statistics Servlet {@inheritDoc}
@@ -71,7 +71,7 @@ public class ServerStatisticsServlet extends HttpServlet  {
    * a double value will be used to present the remaining memory,
    *         a returning value of '55.6' means 55.6%
    */
-  protected void fillRemainingMemoryPercent(ServerStatistics stats){
+  protected void fillRemainingMemoryPercent(ExecutorInfo stats){
     if (new File("/bin/bash").exists() &&  new File("/usr/bin/free").exists()) {
       java.lang.ProcessBuilder processBuilder =
           new java.lang.ProcessBuilder("/bin/bash", "-c", String.format("/usr/bin/free -m -s 0.1 -c %s | grep Mem:",
@@ -96,7 +96,6 @@ public class ServerStatisticsServlet extends HttpServlet  {
           long totalMemory = 0 ;
           long freeMemory  = 0 ;
           int  sampleCount = 0 ;
-
           for(String line : output){
             String[] splitedresult = line.split("\\s+");
             // expected return format -
@@ -150,7 +149,7 @@ public class ServerStatisticsServlet extends HttpServlet  {
   protected synchronized void populateStatistics(boolean noCache){
     //check again before starting the work.
     if (noCache || System.currentTimeMillis() - lastRefreshedTime  > cacheTimeInMilliseconds){
-      final ServerStatistics stats = new ServerStatistics();
+      final ExecutorInfo stats = new ExecutorInfo();
 
       List<Thread> workerPool = new ArrayList<Thread>();
       workerPool.add(new Thread(new Runnable(){ public void run() {
@@ -188,7 +187,7 @@ public class ServerStatisticsServlet extends HttpServlet  {
    * @param stats reference to the result container which contains all the results, this specific method
    *              will only work on the property "remainingFlowCapacity".
    */
-  protected void fillRemainingFlowCapacityAndLastDispatchedTime(ServerStatistics stats){
+  protected void fillRemainingFlowCapacityAndLastDispatchedTime(ExecutorInfo stats){
 
     AzkabanExecutorServer server = AzkabanExecutorServer.getApp();
     if (server != null){
@@ -209,7 +208,7 @@ public class ServerStatisticsServlet extends HttpServlet  {
    * @param stats reference to the result container which contains all the results, this specific method
    *              will only work on the property "cpuUdage".
    */
-  protected void fillCpuUsage(ServerStatistics stats){
+  protected void fillCpuUsage(ExecutorInfo stats){
     if (new File("/bin/bash").exists() &&  new File("/usr/bin/top").exists()) {
       java.lang.ProcessBuilder processBuilder =
           new java.lang.ProcessBuilder("/bin/bash", "-c", String.format("/usr/bin/top -bn%s -d 0.1 | grep \"Cpu(s)\"",
