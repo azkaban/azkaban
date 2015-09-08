@@ -37,7 +37,6 @@ public class ServerStatisticsServlet extends HttpServlet  {
   private static final long serialVersionUID = 1L;
   private static final int  cacheTimeInMilliseconds = 1000;
   private static final int  samplesToTakeForMemory = 1;
-  private static final int  samplesToTakeForCpuUsage = 1;
   private static final Logger logger = Logger.getLogger(ServerStatisticsServlet.class);
   private static final String noCacheParamName = "nocache";
 
@@ -203,16 +202,19 @@ public class ServerStatisticsServlet extends HttpServlet  {
   }
 
 
-  /**
+  /**<pre>
    * fill the result set with the Remaining temp Storage .
+   * Note : As the Top bash call doesn't yield accurate result for the system load,
+   *        the implementation has been changed to load from the "proc/loadavg" which keeps
+   *        the moving average of the system load, we are pulling the average for the recent 1 min.
+   *</pre>
    * @param stats reference to the result container which contains all the results, this specific method
    *              will only work on the property "cpuUdage".
    */
   protected void fillCpuUsage(ExecutorInfo stats){
-    if (new File("/bin/bash").exists() &&  new File("/usr/bin/top").exists()) {
+    if (new File("/bin/bash").exists() && new File("/bin/cat").exists() &&  new File("/proc/loadavg").exists()) {
       java.lang.ProcessBuilder processBuilder =
-          new java.lang.ProcessBuilder("/bin/bash", "-c", String.format("/usr/bin/top -bn%s -d 0.1 | grep \"Cpu(s)\"",
-                                       samplesToTakeForCpuUsage));
+          new java.lang.ProcessBuilder("/bin/bash", "-c", "/bin/cat /proc/loadavg");
       try {
         ArrayList<String> output = new ArrayList<String>();
         Process process = processBuilder.start();
@@ -231,53 +233,24 @@ public class ServerStatisticsServlet extends HttpServlet  {
 
         // process the output from bash call.
         if (output.size() > 0) {
-          double us = 0 ; // user
-          double sy = 0 ; // system
-          double wi = 0 ; // waiting.
-          int   sampleCount = 0;
+          String[] splitedresult = output.get(0).split("\\s+");
+          double cpuUsage = 0.0;
 
-          for(String line : output){
-            String[] splitedresult = line.split("\\s+");
-            // expected returning format -
-            // Cpu(s):  1.4%us,  0.1%sy,  0.0%ni, 98.5%id,  0.0%wa,  0.0%hi,  0.0%si,  0.0%st
-            if (splitedresult.length == 9){
-              // create a temp copy of all the readings, if anything goes wrong, we drop the
-              // temp reading and move on.
-              double tmp_us = 0 ; // user
-              double tmp_sy = 0 ; // system
-              double tmp_wi = 0 ; // waiting.
-              try {
-              tmp_us = Double.parseDouble(splitedresult[1].split("%")[0]);
-              tmp_sy = Double.parseDouble(splitedresult[2].split("%")[0]);
-              tmp_wi = Double.parseDouble(splitedresult[5].split("%")[0]);
-              } catch(NumberFormatException e){
-                logger.error("skipping the unprocessable line from the output -" + line);
-                continue;
-              }
-
-              // add up the result.
-              ++sampleCount;
-              us += tmp_us;
-              sy += tmp_sy;
-              wi += tmp_wi;
-            }
+          try {
+            cpuUsage = Double.parseDouble(splitedresult[1].split("%")[0]);
+          }catch(NumberFormatException e){
+            logger.error("yielding 0.0 for CPU usage as output is invalid -" + output.get(0));
           }
-
-          // set the value.
-          if (sampleCount > 0){
-            double finalResult = (us + sy + wi)/sampleCount;
-            logger.info("Cpu usage result  - " + finalResult );
-            stats.setCpuUpsage(finalResult);
-          }
+          stats.setCpuUpsage(cpuUsage);
         }
       }
       catch (Exception ex){
-        logger.error("failed fetch system memory info " +
+        logger.error("failed fetch system load info " +
                      "as exception is captured when fetching result from bash call. Ex -" + ex.getMessage());
       }
     } else {
-        logger.error("failed fetch system memory info " +
-                     "as 'bash' or 'top' command can't be found on the current system.");
+        logger.error("failed fetch system load info, one or more files from the following list are missing -  " +
+                     "'/bin/bash'," + "'/bin/cat'," +"'/proc/loadavg'");
     }
   }
 }
