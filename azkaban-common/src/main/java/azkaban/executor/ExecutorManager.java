@@ -1667,7 +1667,8 @@ public class ExecutorManager extends EventHandler implements
   }
 
   /*
-   * This thread is responsible for processing queued flows.
+   * This thread is responsible for processing queued flows using dispatcher and
+   * making rest api calls to executor server
    */
   private class QueueProcessorThread extends Thread {
     private static final long QUEUE_PROCESSOR_WAIT_IN_MS = 1000;
@@ -1675,8 +1676,8 @@ public class ExecutorManager extends EventHandler implements
     private final long activeExecutorRefreshWindowInMilisec;
     private final int activeExecutorRefreshWindowInFlows;
 
-    private boolean shutdown = false;
-    private boolean isActive = true;
+    private volatile boolean shutdown = false;
+    private volatile boolean isActive = true;
 
     public QueueProcessorThread(boolean isActive,
       long activeExecutorRefreshWindowInTime,
@@ -1691,6 +1692,7 @@ public class ExecutorManager extends EventHandler implements
 
     public void setActive(boolean isActive) {
       this.isActive = isActive;
+      logger.info("QueueProcessorThread active turned " + this.isActive);
     }
 
     public boolean isActive() {
@@ -1714,7 +1716,7 @@ public class ExecutorManager extends EventHandler implements
             }
             wait(QUEUE_PROCESSOR_WAIT_IN_MS);
           } catch (Exception e) {
-            logger.info(
+            logger.error(
               "QueueProcessorThread Interrupted. Probably to shut down.", e);
           }
         }
@@ -1734,9 +1736,14 @@ public class ExecutorManager extends EventHandler implements
         ExecutableFlow exflow = runningCandidate.getSecond();
 
         long currentTime = System.currentTimeMillis();
+
+        // if we have dispatched more than maxContinuousFlowProcessed or
+        // It has been more then activeExecutorsRefreshWindow millisec since we
+        // refreshed
         if (currentTime - lastExecutorRefreshTime > activeExecutorsRefreshWindow
           || currentContinuousFlowProcessed >= maxContinuousFlowProcessed) {
-          refreshExecutors(); // Refresh executor stats to be used by selector
+          // Refresh executorInfo for all activeExecutors
+          refreshExecutors();
           lastExecutorRefreshTime = currentTime;
           currentContinuousFlowProcessed = 0;
         }
@@ -1757,7 +1764,7 @@ public class ExecutorManager extends EventHandler implements
           try {
             dispatch(reference, exflow, selectedExecutor);
           } catch (ExecutorManagerException e) {
-            logger.debug(String.format(
+            logger.warn(String.format(
               "Executor %s responded with exception for exec: %d",
               selectedExecutor, exflow.getExecutionId()), e);
             handleDispatchExceptionCase(reference, exflow, selectedExecutor,
@@ -1781,6 +1788,11 @@ public class ExecutorManager extends EventHandler implements
     private void handleDispatchExceptionCase(ExecutionReference reference,
       ExecutableFlow exflow, Executor lastSelectedExecutor,
       Set<Executor> remainingExecutors) throws ExecutorManagerException {
+      logger
+        .info(String
+          .format(
+            "Reached handleDispatchExceptionCase stage for exec %d with error count %d",
+            exflow.getExecutionId(), reference.getNumErrors()));
       reference.setNumErrors(reference.getNumErrors() + 1);
       reference.setExecutor(null);
       if (reference.getNumErrors() >= MAX_DISPATCHING_ERRORS_PERMITTED
@@ -1796,6 +1808,11 @@ public class ExecutorManager extends EventHandler implements
 
     private void handleNoExecutorSelectedCase(ExecutionReference reference,
       ExecutableFlow exflow) throws ExecutorManagerException {
+      logger
+      .info(String
+        .format(
+          "Reached handleNoExecutorSelectedCase stage for exec %d with error count %d",
+          exflow.getExecutionId(), reference.getNumErrors()));
       reference.setNumErrors(reference.getNumErrors() + 1);
       // Scenario: when dispatcher didn't assigned any executor
       if (reference.getNumErrors() >= MAX_DISPATCHING_ERRORS_PERMITTED) {
@@ -1820,6 +1837,10 @@ public class ExecutorManager extends EventHandler implements
       // move from flow to running flows
       runningFlows.put(exflow.getExecutionId(),
         new Pair<ExecutionReference, ExecutableFlow>(reference, exflow));
+
+      logger.info(String.format(
+        "Successfully dispatched exec %d with error count %d",
+        exflow.getExecutionId(), reference.getNumErrors()));
     }
   }
 }

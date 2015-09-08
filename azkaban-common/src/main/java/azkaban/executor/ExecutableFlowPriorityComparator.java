@@ -22,11 +22,26 @@ import org.apache.log4j.Logger;
 
 import azkaban.utils.Pair;
 
+/**
+ * Comparator implicitly used in priority queue for QueuedExecutions.
+ */
 public final class ExecutableFlowPriorityComparator implements
   Comparator<Pair<ExecutionReference, ExecutableFlow>> {
   private static Logger logger = Logger
     .getLogger(ExecutableFlowPriorityComparator.class);
 
+  /**
+   * <pre>
+   * Sorting order is determined by:-
+   * 1. descending order of priority
+   * 2. if same priority, ascending order of update time
+   * 3. if same priority and updateTime, ascending order of execution id
+   * </pre>
+   *
+   * {@inheritDoc}
+   *
+   * @see java.util.Comparator#compare(java.lang.Object, java.lang.Object)
+   */
   @Override
   public int compare(Pair<ExecutionReference, ExecutableFlow> pair1,
     Pair<ExecutionReference, ExecutableFlow> pair2) {
@@ -47,11 +62,11 @@ public final class ExecutableFlowPriorityComparator implements
       // descending order of priority
       int diff = getPriority(exflow2) - getPriority(exflow1);
       if (diff == 0) {
-        // increasing order of update time, if same priority
+        // ascending order of update time, if same priority
         diff = (int) (exflow1.getUpdateTime() - exflow2.getUpdateTime());
       }
       if (diff == 0) {
-        // increasing order of execution id, if same priority and updateTime
+        // ascending order of execution id, if same priority and updateTime
         diff = exflow1.getExecutionId() - exflow2.getExecutionId();
       }
       return diff;
@@ -72,8 +87,9 @@ public final class ExecutableFlowPriorityComparator implements
             ExecutionOptions.FLOW_PRIORITY));
       } catch (NumberFormatException ex) {
         priority = ExecutionOptions.DEFAULT_FLOW_PRIORITY;
-        logger.error("Failed to parse flow priority for exec_id = "
-          + exflow.getExecutionId());
+        logger.error(
+          "Failed to parse flow priority for exec_id = "
+            + exflow.getExecutionId(), ex);
       }
     }
     return priority;

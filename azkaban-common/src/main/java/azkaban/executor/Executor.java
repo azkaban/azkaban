@@ -107,9 +107,4 @@ public class Executor {
   public void setActive(boolean isActive) {
     this.isActive = isActive;
   }
-
-  @Override
-  public String toString() {
-    return String.format("[%d]%s:%d", id, host, port);
-  }
 }

@@ -29,6 +29,10 @@ public class ExecutionReference {
   }
 
   public ExecutionReference(int execId, Executor executor) {
+    if (executor == null) {
+      throw new IllegalArgumentException(String.format(
+        "Executor cannot be null for exec id: %d ExecutionReference", execId));
+    }
     this.execId = execId;
     this.executor = executor;
   }
