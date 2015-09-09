@@ -25,10 +25,12 @@ import org.apache.log4j.Logger;
 
 import azkaban.utils.Pair;
 
-/** Abstract class for a candidate comparator.
+/**
+ * <pre>
+ *  Abstract class for a candidate comparator.
  *  this class contains implementation of most of the core logics. Implementing classes is expected only to
  *  register factor comparators using the provided register function.
- *
+ * <pre>
  */
 public abstract class CandidateComparator<T> implements Comparator<T> {
   protected static Logger logger = Logger.getLogger(CandidateComparator.class);
@@ -85,7 +87,9 @@ public abstract class CandidateComparator<T> implements Comparator<T> {
     return totalWeight;
   }
 
-  /** function to actually calculate the scores for the two objects that are being compared.
+  /**
+   * <pre>
+   * function to actually calculate the scores for the two objects that are being compared.
    *  the comparison follows the following logic -
    *  1. if both objects are equal return 0 score for both.
    *  2. if one side is null, the other side gets all the score.
@@ -94,6 +98,10 @@ public abstract class CandidateComparator<T> implements Comparator<T> {
    *     added to the wining side, if equal, no value will be added to either side.
    *  4. final result will be returned in a Pair container.
    *
+   * </pre>
+   * @param object1  the first  object (left side)  to be compared.
+   * @param object2  the second object (right side) to be compared.
+   * @return a pair structure contains the score for both sides.
    * */
   public Pair<Integer,Integer> getComparisonScore(T object1, T object2){
     logger.info(String.format("start comparing '%s' with '%s',  total weight = %s ",
