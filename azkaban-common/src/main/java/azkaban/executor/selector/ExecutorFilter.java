@@ -135,7 +135,7 @@ public final class ExecutorFilter extends CandidateFilter<Executor, ExecutableFl
               filteringTarget.toString()));
           return false;
         }
-        return stats.getRemainingMemory() > MINIMUM_FREE_MEMORY ;
+        return stats.getRemainingMemoryInMB() > MINIMUM_FREE_MEMORY ;
        }
     });
   }

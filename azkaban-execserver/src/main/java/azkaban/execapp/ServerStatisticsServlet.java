@@ -71,74 +71,72 @@ public class ServerStatisticsServlet extends HttpServlet  {
    *         a returning value of '55.6' means 55.6%
    */
   protected void fillRemainingMemoryPercent(ExecutorInfo stats){
-    if (new File("/bin/bash").exists() &&  new File("/usr/bin/free").exists()) {
-      java.lang.ProcessBuilder processBuilder =
-          new java.lang.ProcessBuilder("/bin/bash", "-c", String.format("/usr/bin/free -m -s 0.1 -c %s | grep Mem:",
-              samplesToTakeForMemory));
+    if (new File("/bin/bash").exists()
+        && new File("/bin/cat").exists()
+        && new File("/bin/grep").exists()
+        &&  new File("/proc/meminfo").exists()) {
+    java.lang.ProcessBuilder processBuilder =
+        new java.lang.ProcessBuilder("/bin/bash", "-c", "/bin/cat /proc/meminfo | grep -E \"MemTotal|MemFree\"");
+    try {
+      ArrayList<String> output = new ArrayList<String>();
+      Process process = processBuilder.start();
+      process.waitFor();
+      InputStream inputStream = process.getInputStream();
       try {
-        List<String> output = new ArrayList<String>();
-        Process process = processBuilder.start();
-        process.waitFor();
-        InputStream inputStream = process.getInputStream();
-        try {
-          java.io.BufferedReader reader =
-              new java.io.BufferedReader(new InputStreamReader(inputStream));
-          String line = null;
-          while ((line = reader.readLine()) != null) {
-            output.add(line);
-          }
-        }finally {
-          inputStream.close();
+        java.io.BufferedReader reader =
+            new java.io.BufferedReader(new InputStreamReader(inputStream));
+        String line = null;
+        while ((line = reader.readLine()) != null) {
+          output.add(line);
         }
-        // process the output from bash call.
-        if (output.size() > 0) {
-          long totalMemory = 0 ;
-          long freeMemory  = 0 ;
-          int  sampleCount = 0 ;
-          for(String line : output){
-            String[] splitedresult = line.split("\\s+");
-            // expected return format -
-            // "Mem:" | total | used | free | shared | buffers | cached
-            if (splitedresult.length == 7){
-              // create a temp copy of all the readings, if anything goes wrong, we drop the
-              // temp reading and move on.
-              long tmp_totalMemory = 0 ;
-              long tmp_freeMemory  = 0 ;
-              try {
-                tmp_totalMemory = Long.parseLong(splitedresult[1]);
-                tmp_freeMemory = Long.parseLong(splitedresult[3]);
+      }finally {
+        inputStream.close();
+      }
 
-              } catch(NumberFormatException e){
-                logger.error("skipping the unprocessable line from the output -" + line);
-                continue;
-              }
+      long totalMemory = 0;
+      long  freeMemory = 0;
 
-              // add up the result.
-              ++sampleCount;
-              totalMemory += tmp_totalMemory ;
-              freeMemory  += tmp_freeMemory;
+      // process the output from bash call.
+      // we expect the result from the bash call to be something like following -
+      // MemTotal:       65894264 kB
+      // MemFree:        61104076 kB
+      if (output.size() == 2) {
+        for (String result : output){
+          // find the total memory and value the variable.
+          if (result.contains("MemTotal") && result.split("\\s+").length > 2){
+            try {
+              totalMemory = Long.parseLong(result.split("\\s+")[1]);
+              logger.info("Total memory : " + totalMemory);
+            }catch(NumberFormatException e){
+              logger.error("yielding 0 for total memory as output is invalid -" + result);
             }
           }
-
-          // set the value.
-          if (sampleCount > 0){
-            freeMemory  = freeMemory  / sampleCount;
-            totalMemory = totalMemory / sampleCount;
-            logger.info(String.format("total memory - %s , free memory - %s", totalMemory, freeMemory));
-            stats.setRemainingMemory(freeMemory);
-            stats.setRemainingMemoryPercent(totalMemory == 0? 0 :
-              ((double)freeMemory/(double)totalMemory) * 100);
+          // find the free memory and value the variable.
+          if (result.contains("MemFree") && result.split("\\s+").length > 2){
+            try {
+              freeMemory = Long.parseLong(result.split("\\s+")[1]);
+              logger.info("Free memory : " + freeMemory);
+            }catch(NumberFormatException e){
+              logger.error("yielding 0 for total memory as output is invalid -" + result);
+            }
           }
         }
+      }else {
+        logger.error("failed to get total/free memory info as the bash call returned invalid result.");
       }
-      catch (Exception ex){
-        logger.error("failed fetch system memory info " +
-                     "as exception is captured when fetching result from bash call. ex -" + ex.getMessage());
-      }
-    } else {
-        logger.error("failed fetch system memory info " +
-                     "as 'bash' or 'free' command can't be found on the current system.");
+
+      // the number got from the proc file is in KBs we want to see the number in MBs so we are deviding it by 1024.
+      stats.setRemainingMemoryInMB(freeMemory/1024);
+      stats.setRemainingMemoryPercent(totalMemory == 0 ? 0 : ((double)freeMemory / (double)totalMemory)*100);
     }
+    catch (Exception ex){
+      logger.error("failed fetch system memory info " +
+                   "as exception is captured when fetching result from bash call. Ex -" + ex.getMessage());
+    }
+  } else {
+      logger.error("failed fetch system memory info, one or more files from the following list are missing -  " +
+                   "'/bin/bash'," + "'/bin/cat'," +"'/proc/loadavg'");
+  }
   }
 
   /**
@@ -237,10 +235,11 @@ public class ServerStatisticsServlet extends HttpServlet  {
           double cpuUsage = 0.0;
 
           try {
-            cpuUsage = Double.parseDouble(splitedresult[1].split("%")[0]);
+            cpuUsage = Double.parseDouble(splitedresult[0]);
           }catch(NumberFormatException e){
             logger.error("yielding 0.0 for CPU usage as output is invalid -" + output.get(0));
           }
+          logger.info("System load : " + cpuUsage);
           stats.setCpuUpsage(cpuUsage);
         }
       }

@@ -36,7 +36,7 @@ public class StatisticsServletTest {
     this.statServlet.callFillRemainingMemoryPercent(stats);
     // assume any machine that runs this test should
     // have bash and top available and at least got some remaining memory.
-    Assert.assertTrue(stats.getRemainingMemory() > 0);
+    Assert.assertTrue(stats.getRemainingMemoryInMB() > 0);
     Assert.assertTrue(stats.getRemainingMemoryPercent() > 0);
   }
 
@@ -51,7 +51,7 @@ public class StatisticsServletTest {
   public void testPopulateStatistics()  {
     this.statServlet.callPopulateStatistics();
     Assert.assertNotNull(this.statServlet.getStastics());
-    Assert.assertTrue(this.statServlet.getStastics().getRemainingMemory() > 0);
+    Assert.assertTrue(this.statServlet.getStastics().getRemainingMemoryInMB() > 0);
     Assert.assertTrue(this.statServlet.getStastics().getRemainingMemoryPercent() > 0);
     Assert.assertTrue(this.statServlet.getStastics().getCpuUsage() > 0);
   }

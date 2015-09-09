@@ -236,8 +236,8 @@ public class ExecutorComparator extends CandidateComparator<Executor> {
          return result;
        }
 
-       if (stat1.getRemainingMemory() != stat2.getRemainingMemory()){
-         return stat1.getRemainingMemory() > stat2.getRemainingMemory() ? 1:-1;
+       if (stat1.getRemainingMemoryInMB() != stat2.getRemainingMemoryInMB()){
+         return stat1.getRemainingMemoryInMB() > stat2.getRemainingMemoryInMB() ? 1:-1;
        }
 
        return Double.compare(stat1.getRemainingMemoryPercent(), stat2.getRemainingMemoryPercent());

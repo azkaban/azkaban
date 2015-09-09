@@ -35,7 +35,7 @@ import org.codehaus.jackson.map.ObjectMapper;
   public class ExecutorInfo implements java.io.Serializable{
     private static final long serialVersionUID = 3009746603773371263L;
     private double remainingMemoryPercent;
-    private long   remainingMemory;
+    private long   remainingMemoryInMB;
     private int    remainingFlowCapacity;
     private int    numberOfAssignedFlows;
     private long   lastDispatchedTime;
@@ -57,12 +57,12 @@ import org.codehaus.jackson.map.ObjectMapper;
       this.remainingMemoryPercent = value;
     }
 
-    public long getRemainingMemory(){
-      return this.remainingMemory;
+    public long getRemainingMemoryInMB(){
+      return this.remainingMemoryInMB;
     }
 
-    public void setRemainingMemory(long value){
-      this.remainingMemory = value;
+    public void setRemainingMemoryInMB(long value){
+      this.remainingMemoryInMB = value;
     }
 
     public int getRemainingFlowCapacity(){
@@ -97,7 +97,7 @@ import org.codehaus.jackson.map.ObjectMapper;
         long lastDispatched,
         double cpuUsage,
         int numberOfAssignedFlows){
-      this.remainingMemory = remainingMemory;
+      this.remainingMemoryInMB = remainingMemory;
       this.cpuUsage = cpuUsage;
       this.remainingFlowCapacity = remainingFlowCapacity;
       this.remainingMemoryPercent = remainingMemoryPercent;
@@ -113,7 +113,7 @@ import org.codehaus.jackson.map.ObjectMapper;
           boolean result = true;
           ExecutorInfo stat = (ExecutorInfo) obj;
 
-          result &=this.remainingMemory == stat.remainingMemory;
+          result &=this.remainingMemoryInMB == stat.remainingMemoryInMB;
           result &=this.cpuUsage == stat.cpuUsage;
           result &=this.remainingFlowCapacity == stat.remainingFlowCapacity;
           result &=this.remainingMemoryPercent == stat.remainingMemoryPercent;
