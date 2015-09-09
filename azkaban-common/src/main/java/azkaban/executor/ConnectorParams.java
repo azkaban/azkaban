@@ -17,6 +17,7 @@
 package azkaban.executor;
 
 public interface ConnectorParams {
+  public static final String EXECUTOR_ID_PARAM = "executorId";
   public static final String ACTION_PARAM = "action";
   public static final String EXECID_PARAM = "execid";
   public static final String SHAREDTOKEN_PARAM = "token";

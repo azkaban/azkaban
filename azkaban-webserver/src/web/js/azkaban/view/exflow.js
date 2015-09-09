@@ -178,8 +178,11 @@ azkaban.FlowTabView = Backbone.View.extend({
 		$("#retrybtn").hide();
 
 		if (data.status == "SUCCEEDED") {
-      $("#executebtn").show();
+                        $("#executebtn").show();
 		}
+                else if (data.status == "PREPARING") {
+                        $("#cancelbtn").show();
+                }
 		else if (data.status == "FAILED") {
 			$("#executebtn").show();
 		}
