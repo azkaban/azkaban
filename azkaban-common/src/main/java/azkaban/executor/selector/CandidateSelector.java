@@ -17,9 +17,8 @@
 package azkaban.executor.selector;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
-import java.util.List;
-
 import org.apache.log4j.Logger;
 
 /** Implementation of the CandidateSelector.
@@ -43,7 +42,7 @@ public class CandidateSelector<K extends Comparable<K>, V> implements Selector<K
   }
 
   @Override
-  public K getBest(List<K> candidateList, V dispatchingObject) {
+  public K getBest(Collection<K> candidateList, V dispatchingObject) {
 
      // shortcut if the candidateList is empty.
      if ( null == candidateList || candidateList.size() == 0){
@@ -55,7 +54,7 @@ public class CandidateSelector<K extends Comparable<K>, V> implements Selector<K
      logger.info(String.format("candidate count before filtering: %s", candidateList.size()));
 
      // to keep the input untouched, we will form up a new list based off the filtering result.
-     List<K> filteredList = new ArrayList<K>();
+     Collection<K> filteredList = new ArrayList<K>();
 
      if (null != this.filter){
        for (K candidateInfo : candidateList){
