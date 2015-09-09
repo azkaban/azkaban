@@ -16,6 +16,7 @@
 
 package azkaban.executor;
 
+import java.util.Date;
 import azkaban.utils.Utils;
 
 /**
@@ -23,13 +24,14 @@ import azkaban.utils.Utils;
  *
  * @author gaggarwa
  */
-public class Executor {
+public class Executor implements Comparable<Executor> {
   private final int id;
   private final String host;
   private final int port;
   private boolean isActive;
-
-  // TODO: ExecutorStats to be added
+  // cached copy of the latest statistics from  the executor.
+  private ExecutorInfo cachedExecutorStats;
+  private Date lastStatsUpdatedTime;
 
   /**
    * <pre>
@@ -88,6 +90,13 @@ public class Executor {
     return true;
   }
 
+  @Override
+  public String toString(){
+    return String.format("%s (id: %s)",
+        null == this.host || this.host.length() == 0 ? "(empty)" : this.host,
+        this.id);
+  }
+
   public String getHost() {
     return host;
   }
@@ -104,7 +113,30 @@ public class Executor {
     return id;
   }
 
+  public ExecutorInfo getExecutorInfo() {
+    return this.cachedExecutorStats;
+  }
+
+  public void setExecutorInfo(ExecutorInfo info) {
+    this.cachedExecutorStats = info;
+    this.lastStatsUpdatedTime = new Date();
+  }
+
+  /**
+   * Gets the timestamp when the executor info is last updated.
+   * @return date object represents the timestamp, null if the executor info of this
+   *         specific executor is never refreshed.
+   * */
+  public Date getLastStatsUpdatedTime(){
+    return this.lastStatsUpdatedTime;
+  }
+
   public void setActive(boolean isActive) {
     this.isActive = isActive;
+  }
+
+  @Override
+  public int compareTo(Executor o) {
+    return null == o ? 1 : this.hashCode() - o.hashCode();
   }
 }

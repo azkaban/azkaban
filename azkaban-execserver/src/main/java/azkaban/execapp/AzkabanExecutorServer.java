@@ -131,6 +131,7 @@ public class AzkabanExecutorServer {
     root.addServlet(new ServletHolder(new ExecutorServlet()), "/executor");
     root.addServlet(new ServletHolder(new JMXHttpServlet()), "/jmx");
     root.addServlet(new ServletHolder(new StatsServlet()), "/stats");
+    root.addServlet(new ServletHolder(new ServerStatisticsServlet()), "/serverstastics");
 
     root.setAttribute(ServerConstants.AZKABAN_SERVLET_CONTEXT_KEY, this);
 
@@ -175,7 +176,7 @@ public class AzkabanExecutorServer {
 
   /**
    * Configure Metric Reporting as per azkaban.properties settings
-   * 
+   *
    * @throws MetricException
    */
   private void configureMetricReports() throws MetricException {
@@ -224,13 +225,13 @@ public class AzkabanExecutorServer {
   /**
    * Load a custom class, which is provided by a configuration
    * CUSTOM_JMX_ATTRIBUTE_PROCESSOR_PROPERTY.
-   * 
+   *
    * This method will try to instantiate an instance of this custom class and
    * with given properties as the argument in the constructor.
-   * 
+   *
    * Basically the custom class must have a constructor that takes an argument
    * with type Properties.
-   * 
+   *
    * @param props
    */
   private void loadCustomJMXAttributeProcessor(Props props) {

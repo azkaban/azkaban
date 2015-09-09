@@ -17,37 +17,35 @@
 package azkaban.executor;
 
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
-
-import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.StatusLine;
 import org.apache.http.client.HttpResponseException;
 import org.apache.http.util.EntityUtils;
-
-import azkaban.utils.JSONUtils;
 import azkaban.utils.RestfulApiClient;
 
 /** Client class that will be used to handle all Restful API calls between Executor and the host application.
  * */
-public class ExecutorApiClient extends RestfulApiClient<Map<String, Object>> {
+public class ExecutorApiClient extends RestfulApiClient<String> {
+  private static ExecutorApiClient instance = null;
   private ExecutorApiClient(){}
-  private static ExecutorApiClient instance = new ExecutorApiClient();
 
-  /** Function to return the instance of the ExecutorApiClient class.
+  /**
+   * Singleton method to return the instance of the current object.
    * */
-  public static ExecutorApiClient getInstance() {
+  public static ExecutorApiClient getInstance(){
+    if (null == instance){
+      instance = new ExecutorApiClient();
+    }
+
     return instance;
   }
 
   /**Implementing the parseResponse function to return de-serialized Json object.
    * @param response  the returned response from the HttpClient.
-   * @return de-serialized object from Json or empty object if the response doesn't have a body.
+   * @return de-serialized object from Json or null if the response doesn't have a body.
    * */
-  @SuppressWarnings("unchecked")
   @Override
-  protected Map<String, Object> parseResponse(HttpResponse response)
+  protected String parseResponse(HttpResponse response)
       throws HttpResponseException, IOException {
     final StatusLine statusLine = response.getStatusLine();
     String responseBody = response.getEntity() != null ?
@@ -61,14 +59,6 @@ public class ExecutorApiClient extends RestfulApiClient<Map<String, Object>> {
         throw new HttpResponseException(statusLine.getStatusCode(),responseBody);
     }
 
-    final HttpEntity entity = response.getEntity();
-    if (null != entity){
-      Object returnVal = JSONUtils.parseJSONFromString(EntityUtils.toString(entity));
-      if (null!= returnVal){
-        return (Map<String, Object>) returnVal;
-      }
-    }
-
-    return new HashMap<String, Object>() ;
+    return responseBody;
   }
 }

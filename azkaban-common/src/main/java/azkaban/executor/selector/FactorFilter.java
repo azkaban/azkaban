@@ -65,13 +65,11 @@ public final class FactorFilter<T,V>{
   public interface Filter<T,V>{
 
     /**function to analyze the target item according to the reference object to decide whether the item should be filtered.
-     * @param filteringTarget:   object to be checked.
-     * @param referencingObject: object which contains statistics based on which a decision is made whether
+     * @param filteringTarget   object to be checked.
+     * @param referencingObject object which contains statistics based on which a decision is made whether
      *                      the object being checked need to be filtered or not.
      * @return true if the check passed, false if check failed, which means the item need to be filtered.
      * */
     public boolean filterTarget(T filteringTarget, V referencingObject);
   }
-
-
 }
