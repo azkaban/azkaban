@@ -36,7 +36,6 @@ import azkaban.utils.JSONUtils;
 public class ServerStatisticsServlet extends HttpServlet  {
   private static final long serialVersionUID = 1L;
   private static final int  cacheTimeInMilliseconds = 1000;
-  private static final int  samplesToTakeForMemory = 1;
   private static final Logger logger = Logger.getLogger(ServerStatisticsServlet.class);
   private static final String noCacheParamName = "nocache";
 
@@ -148,31 +147,9 @@ public class ServerStatisticsServlet extends HttpServlet  {
     if (noCache || System.currentTimeMillis() - lastRefreshedTime  > cacheTimeInMilliseconds){
       final ExecutorInfo stats = new ExecutorInfo();
 
-      List<Thread> workerPool = new ArrayList<Thread>();
-      workerPool.add(new Thread(new Runnable(){ public void run() {
-        fillRemainingMemoryPercent(stats); }},"RemainingMemoryPercent"));
-
-      workerPool.add(new Thread(new Runnable(){ public void run() {
-        fillRemainingFlowCapacityAndLastDispatchedTime(stats); }},"RemainingFlowCapacityAndLastDispatchedTime"));
-
-      workerPool.add(new Thread(new Runnable(){ public void run() {
-        fillCpuUsage(stats); }},"CpuUsage"));
-
-      // start all the working threads.
-      for (Thread thread : workerPool){thread.start();}
-
-      // wait for all the threads to finish their work.
-      // NOTE: the result container itself is not thread safe, we are good as for now no
-      //       working thread will modify the same property, nor have any of them
-      //       need to compute values based on value(s) of other properties.
-      for (Thread thread : workerPool){
-        try {
-          // we gave maxim 5 seconds to let the thread finish work.
-          thread.join(5000);;
-        } catch (InterruptedException e) {
-          logger.error(String.format("failed to collect information for %s as the working thread is interrupted. Ex - ",
-              thread.getName(), e.getMessage()));
-        }}
+      fillRemainingMemoryPercent(stats);
+      fillRemainingFlowCapacityAndLastDispatchedTime(stats);
+      fillCpuUsage(stats);
 
       cachedstats = stats;
       lastRefreshedTime =  System.currentTimeMillis();
