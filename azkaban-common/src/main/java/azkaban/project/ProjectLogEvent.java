@@ -32,7 +32,8 @@ public class ProjectLogEvent {
     UPLOADED(6),
     SCHEDULE(7),
     SLA(8),
-    PROXY_USER(9);
+    PROXY_USER(9),
+    PURGE(10);
 
     private int numVal;
 
@@ -64,6 +65,8 @@ public class ProjectLogEvent {
         return SLA;
       case 9:
         return PROXY_USER;
+      case 10:
+        return PURGE;
       case 128:
         return ERROR;
       default:

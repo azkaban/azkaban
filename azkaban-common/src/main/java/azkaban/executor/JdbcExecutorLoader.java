@@ -180,6 +180,27 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements
     }
   }
 
+  /**
+   *
+   * {@inheritDoc}
+   * @see azkaban.executor.ExecutorLoader#fetchQueuedFlows()
+   */
+  @Override
+  public List<Pair<ExecutionReference, ExecutableFlow>> fetchQueuedFlows()
+    throws ExecutorManagerException {
+    QueryRunner runner = createQueryRunner();
+    FetchQueuedExecutableFlows flowHandler = new FetchQueuedExecutableFlows();
+
+    try {
+      List<Pair<ExecutionReference, ExecutableFlow>> flows =
+        runner.query(FetchQueuedExecutableFlows.FETCH_QUEUED_EXECUTABLE_FLOW,
+          flowHandler);
+      return flows;
+    } catch (SQLException e) {
+      throw new ExecutorManagerException("Error fetching active flows", e);
+    }
+  }
+
   @Override
   public Map<Integer, Pair<ExecutionReference, ExecutableFlow>> fetchActiveFlows()
       throws ExecutorManagerException {
@@ -383,12 +404,11 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements
       throws ExecutorManagerException {
     final String INSERT =
         "INSERT INTO active_executing_flows "
-            + "(exec_id, host, port, update_time) values (?,?,?,?)";
+            + "(exec_id, update_time) values (?,?)";
     QueryRunner runner = createQueryRunner();
 
     try {
-      runner.update(INSERT, reference.getExecId(), reference.getHost(),
-          reference.getPort(), reference.getUpdateTime());
+      runner.update(INSERT, reference.getExecId(), reference.getUpdateTime());
     } catch (SQLException e) {
       throw new ExecutorManagerException(
           "Error updating active flow reference " + reference.getExecId(), e);
@@ -976,6 +996,65 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements
     return events;
   }
 
+  /**
+   *
+   * {@inheritDoc}
+   *
+   * @see azkaban.executor.ExecutorLoader#assignExecutor(int, int)
+   */
+  @Override
+  public void assignExecutor(int executorId, int executionId)
+    throws ExecutorManagerException {
+    final String UPDATE =
+      "UPDATE execution_flows SET executor_id=? where exec_id=?";
+
+    QueryRunner runner = createQueryRunner();
+    try {
+      Executor executor = fetchExecutor(executorId);
+      if (executor == null) {
+        throw new ExecutorManagerException(String.format(
+          "Failed to assign non-existent executor Id: %d to execution : %d  ",
+          executorId, executionId));
+      }
+
+      int rows = runner.update(UPDATE, executorId, executionId);
+      if (rows == 0) {
+        throw new ExecutorManagerException(String.format(
+          "Failed to assign executor Id: %d to non-existent execution : %d  ",
+          executorId, executionId));
+      }
+    } catch (SQLException e) {
+      throw new ExecutorManagerException("Error updating executor id "
+        + executorId, e);
+    }
+  }
+
+  /**
+   *
+   * {@inheritDoc}
+   *
+   * @see azkaban.executor.ExecutorLoader#fetchExecutorByExecutionId(int)
+   */
+  @Override
+  public Executor fetchExecutorByExecutionId(int executionId)
+    throws ExecutorManagerException {
+    QueryRunner runner = createQueryRunner();
+    FetchExecutorHandler executorHandler = new FetchExecutorHandler();
+    Executor executor = null;
+    try {
+      List<Executor> executors =
+        runner.query(FetchExecutorHandler.FETCH_EXECUTION_EXECUTOR,
+          executorHandler, executionId);
+      if (executors.size() > 0) {
+        executor = executors.get(0);
+      }
+    } catch (SQLException e) {
+      throw new ExecutorManagerException(
+        "Error fetching executor for exec_id : " + executionId, e);
+    }
+    return executor;
+  }
+
   private static class LastInsertID implements ResultSetHandler<Long> {
     private static String LAST_INSERT_ID = "SELECT LAST_INSERT_ID()";
 
@@ -1178,13 +1257,80 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements
     }
   }
 
+  /**
+   * JDBC ResultSetHandler to fetch queued executions
+   */
+  private static class FetchQueuedExecutableFlows implements
+    ResultSetHandler<List<Pair<ExecutionReference, ExecutableFlow>>> {
+    // Select queued unassigned flows
+    private static String FETCH_QUEUED_EXECUTABLE_FLOW =
+      "SELECT ex.exec_id exec_id, ex.enc_type enc_type, ex.flow_data flow_data, "
+        + " ax.update_time axUpdateTime FROM execution_flows ex"
+        + " INNER JOIN"
+        + " active_executing_flows ax ON ex.exec_id = ax.exec_id"
+        + " Where ex.executor_id is NULL";
+
+    @Override
+    public List<Pair<ExecutionReference, ExecutableFlow>> handle(ResultSet rs)
+      throws SQLException {
+      if (!rs.next()) {
+        return Collections
+          .<Pair<ExecutionReference, ExecutableFlow>> emptyList();
+      }
+
+      List<Pair<ExecutionReference, ExecutableFlow>> execFlows =
+        new ArrayList<Pair<ExecutionReference, ExecutableFlow>>();
+      do {
+        int id = rs.getInt(1);
+        int encodingType = rs.getInt(2);
+        byte[] data = rs.getBytes(3);
+        long updateTime = rs.getLong(4);
+
+        if (data == null) {
+          logger.error("Found a flow with empty data blob exec_id: " + id);
+        } else {
+          EncodingType encType = EncodingType.fromInteger(encodingType);
+          Object flowObj;
+          try {
+            // Convoluted way to inflate strings. Should find common package or
+            // helper function.
+            if (encType == EncodingType.GZIP) {
+              // Decompress the sucker.
+              String jsonString = GZIPUtils.unGzipString(data, "UTF-8");
+              flowObj = JSONUtils.parseJSONFromString(jsonString);
+            } else {
+              String jsonString = new String(data, "UTF-8");
+              flowObj = JSONUtils.parseJSONFromString(jsonString);
+            }
+
+            ExecutableFlow exFlow =
+              ExecutableFlow.createExecutableFlowFromObject(flowObj);
+            ExecutionReference ref = new ExecutionReference(id);
+            ref.setUpdateTime(updateTime);
+
+            execFlows.add(new Pair<ExecutionReference, ExecutableFlow>(ref,
+              exFlow));
+          } catch (IOException e) {
+            throw new SQLException("Error retrieving flow data " + id, e);
+          }
+        }
+      } while (rs.next());
+
+      return execFlows;
+    }
+  }
+
   private static class FetchActiveExecutableFlows implements
       ResultSetHandler<Map<Integer, Pair<ExecutionReference, ExecutableFlow>>> {
+    // Select running and executor assigned flows
     private static String FETCH_ACTIVE_EXECUTABLE_FLOW =
-        "SELECT ex.exec_id exec_id, ex.enc_type enc_type, ex.flow_data "
-            + "flow_data, ax.host host, ax.port port, ax.update_time "
-            + "axUpdateTime " + "FROM execution_flows ex "
-            + "INNER JOIN active_executing_flows ax ON ex.exec_id = ax.exec_id";
+      "SELECT ex.exec_id exec_id, ex.enc_type enc_type, ex.flow_data flow_data, et.host host, "
+        + "et.port port, ax.update_time axUpdateTime, et.id executorId, et.active executorStatus"
+        + " FROM execution_flows ex"
+        + " INNER JOIN "
+        + " active_executing_flows ax ON ex.exec_id = ax.exec_id"
+        + " INNER JOIN "
+        + " executors et ON ex.executor_id = et.id";
 
     @Override
     public Map<Integer, Pair<ExecutionReference, ExecutableFlow>> handle(
@@ -1203,6 +1349,8 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements
         String host = rs.getString(4);
         int port = rs.getInt(5);
         long updateTime = rs.getLong(6);
+        int executorId = rs.getInt(7);
+        boolean executorStatus = rs.getBoolean(8);
 
         if (data == null) {
           execFlows.put(id, null);
@@ -1223,7 +1371,8 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements
 
             ExecutableFlow exFlow =
                 ExecutableFlow.createExecutableFlowFromObject(flowObj);
-            ExecutionReference ref = new ExecutionReference(id, host, port);
+            Executor executor = new Executor(executorId, host, port, executorStatus);
+            ExecutionReference ref = new ExecutionReference(id, executor);
             ref.setUpdateTime(updateTime);
 
             execFlows.put(id, new Pair<ExecutionReference, ExecutableFlow>(ref,
@@ -1309,6 +1458,8 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements
         "SELECT COUNT(1) FROM execution_flows WHERE project_id=? AND flow_id=?";
     private static String NUM_JOB_EXECUTIONS =
         "SELECT COUNT(1) FROM execution_jobs WHERE project_id=? AND job_id=?";
+    private static String FETCH_EXECUTOR_ID =
+        "SELECT executor_id FROM execution_flows WHERE exec_id=?";
 
     @Override
     public Integer handle(ResultSet rs) throws SQLException {
@@ -1351,6 +1502,10 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements
       "SELECT id, host, port, active FROM executors where id=?";
     private static String FETCH_EXECUTOR_BY_HOST_PORT =
       "SELECT id, host, port, active FROM executors where host=? AND port=?";
+    private static String FETCH_EXECUTION_EXECUTOR =
+      "SELECT ex.id, ex.host, ex.port, ex.active FROM "
+        + " executors ex INNER JOIN execution_flows ef "
+        + "on ex.id = ef.executor_id  where exec_id=?";
 
     @Override
     public List<Executor> handle(ResultSet rs) throws SQLException {

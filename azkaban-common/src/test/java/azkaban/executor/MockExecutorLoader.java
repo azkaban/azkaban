@@ -30,6 +30,8 @@ import azkaban.utils.Props;
 
 public class MockExecutorLoader implements ExecutorLoader {
 
+  HashMap<Integer, Integer> executionExecutorMapping =
+      new HashMap<Integer, Integer>();
   HashMap<Integer, ExecutableFlow> flows =
       new HashMap<Integer, ExecutableFlow>();
   HashMap<String, ExecutableNode> nodes = new HashMap<String, ExecutableNode>();
@@ -291,11 +293,12 @@ public class MockExecutorLoader implements ExecutorLoader {
   @Override
   public Executor addExecutor(String host, int port)
     throws ExecutorManagerException {
-    if (fetchExecutor(host, port) != null) {
-
+    Executor executor = null;
+    if (fetchExecutor(host, port) == null) {
+      executorIdCounter++;
+      executor = new Executor(executorIdCounter, host, port, true);
+      executors.add(executor);
     }
-    executorIdCounter++;
-    Executor executor = new Executor(executorIdCounter, host, port, true);
     return executor;
   }
 
@@ -334,4 +337,35 @@ public class MockExecutorLoader implements ExecutorLoader {
     return executors;
   }
 
+  @Override
+  public void assignExecutor(int executorId, int execId)
+    throws ExecutorManagerException {
+    ExecutionReference ref = refs.get(execId);
+    ref.setExecutor(fetchExecutor(executorId));
+    executionExecutorMapping.put(execId, executorId);
+  }
+
+  @Override
+  public Executor fetchExecutorByExecutionId(int execId) throws ExecutorManagerException {
+    if (executionExecutorMapping.containsKey(execId)) {
+      return fetchExecutor(executionExecutorMapping.get(execId));
+    } else {
+      throw new ExecutorManagerException(
+        "Failed to find executor with execution : " + execId);
+    }
+  }
+
+  @Override
+  public List<Pair<ExecutionReference, ExecutableFlow>> fetchQueuedFlows()
+    throws ExecutorManagerException {
+    List<Pair<ExecutionReference, ExecutableFlow>> queuedFlows =
+      new ArrayList<Pair<ExecutionReference, ExecutableFlow>>();
+    for (int execId : refs.keySet()) {
+      if (!executionExecutorMapping.containsKey(execId)) {
+        queuedFlows.add(new Pair<ExecutionReference, ExecutableFlow>(refs
+          .get(execId), flows.get(execId)));
+      }
+    }
+    return queuedFlows;
+  }
 }

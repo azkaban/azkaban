@@ -171,6 +171,50 @@ public interface ExecutorLoader {
   public void removeActiveExecutableReference(int execId)
       throws ExecutorManagerException;
 
+  /**
+   * <pre>
+   * Set an executor Id to an execution
+   * Note:-
+   * 1. throws an Exception in case of a SQL issue
+   * 2. throws an Exception in case executionId or executorId do not exist
+   * </pre>
+   *
+   * @param executorId
+   * @param execId
+   * @throws ExecutorManagerException
+   */
+  public void assignExecutor(int executorId, int execId)
+    throws ExecutorManagerException;
+
+  /**
+   * <pre>
+   * Fetches an executor corresponding to a given execution
+   * Note:-
+   * 1. throws an Exception in case of a SQL issue
+   * 2. return null when no executor is found with the given executionId
+   * </pre>
+   *
+   * @param executionId
+   * @return fetched Executor
+   * @throws ExecutorManagerException
+   */
+  public Executor fetchExecutorByExecutionId(int executionId)
+    throws ExecutorManagerException;
+
+  /**
+   * <pre>
+   * Fetch queued flows which have not yet dispatched
+   * Note:
+   * 1. throws an Exception in case of a SQL issue
+   * 2. return empty list when no queued execution is found
+   * </pre>
+   *
+   * @return List of queued flows and corresponding execution reference
+   * @throws ExecutorManagerException
+   */
+  public List<Pair<ExecutionReference, ExecutableFlow>> fetchQueuedFlows()
+    throws ExecutorManagerException;
+
   public boolean updateExecutableReference(int execId, long updateTime)
       throws ExecutorManagerException;
 
