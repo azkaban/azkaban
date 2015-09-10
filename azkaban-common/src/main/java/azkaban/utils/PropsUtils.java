@@ -151,6 +151,9 @@ public class PropsUtils {
     LinkedHashSet<String> visitedVariables = new LinkedHashSet<String>();
     for (String key : props.getKeySet()) {
       String value = props.get(key);
+      if (value == null) {
+        continue;
+      }
 
       visitedVariables.add(key);
       String replacedValue =
