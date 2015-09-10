@@ -16,8 +16,8 @@
 
 package azkaban.executor.selector;
 
+import java.util.Collection;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -45,10 +45,11 @@ public final class ExecutorFilter extends CandidateFilter<Executor, ExecutableFl
   private static final String MINIMUMFREEMEMORY_FILTER_NAME = "MinimunFreeMemory";
   private static final String CPUSTATUS_FILTER_NAME = "CpuStatus";
 
-  /**
+  /**<pre>
    * static initializer of the class.
    * We will build the filter repository here.
    * when a new filter is added, please do remember to register it here.
+   * </pre>
    * */
   static {
     filterRepository = new HashMap<String, FactorFilter<Executor, ExecutableFlow>>();
@@ -61,7 +62,7 @@ public final class ExecutorFilter extends CandidateFilter<Executor, ExecutableFl
    * constructor of the ExecutorFilter.
    * @param filterList   the list of filter to be registered, the parameter must be a not-empty and valid list object.
    * */
-  public ExecutorFilter(List<String> filterList) {
+  public ExecutorFilter(Collection<String> filterList) {
     // shortcut if the filter list is invalid. A little bit ugly to have to throw in constructor.
     if (null == filterList || filterList.size() == 0){
       logger.error("failed to initialize executor filter as the passed filter list is invalid or empty.");
@@ -113,11 +114,12 @@ public final class ExecutorFilter extends CandidateFilter<Executor, ExecutableFl
     });
   }
 
-  /**
+  /**<pre>
    * function to register the static Minimum Reserved Memory filter.
    * NOTE : this is a static filter which means the filter will be filtering based on the system standard which is not
    *        Coming for the passed flow.
    *        This filter will filter out any executors that has the remaining  memory below 6G
+   *</pre>
    * */
   private static FactorFilter<Executor, ExecutableFlow> getMinimumReservedMemoryFilter(){
     return FactorFilter.create(MINIMUMFREEMEMORY_FILTER_NAME, new FactorFilter.Filter<Executor, ExecutableFlow>() {
@@ -142,11 +144,12 @@ public final class ExecutorFilter extends CandidateFilter<Executor, ExecutableFl
 
 
   /**
+   * <pre>
    * function to register the static Minimum Reserved Memory filter.
-   * NOTE : <pre> this is a static filter which means the filter will be filtering based on the system standard which
+   * NOTE :  this is a static filter which means the filter will be filtering based on the system standard which
    *        is not Coming for the passed flow.
    *        This filter will filter out any executors that the current CPU usage exceed 95%
-   *        </pre>
+   * </pre>
    * */
   private static FactorFilter<Executor, ExecutableFlow> getCpuStatusFilter(){
     return FactorFilter.create(CPUSTATUS_FILTER_NAME, new FactorFilter.Filter<Executor, ExecutableFlow>() {
