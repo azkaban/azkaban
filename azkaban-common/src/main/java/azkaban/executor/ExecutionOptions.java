@@ -34,6 +34,8 @@ public class ExecutionOptions {
   public static final String CONCURRENT_OPTION_PIPELINE = "pipeline";
   public static final String CONCURRENT_OPTION_IGNORE = "ignore";
   public static final String FLOW_PRIORITY = "flowPriority";
+  /* override dispatcher selection and use executor id specified */
+  public static final String USE_EXECUTOR = "useExecutor";
   public static final int DEFAULT_FLOW_PRIORITY = 5;
 
   private static final String FLOW_PARAMETERS = "flowParameters";
