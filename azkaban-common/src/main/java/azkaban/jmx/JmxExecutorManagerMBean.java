@@ -49,4 +49,13 @@ public interface JmxExecutorManagerMBean {
   @DisplayName("OPERATION: getQueueProcessorThreadState")
   public String getQueueProcessorThreadState();
 
+  @DisplayName("OPERATION: getAvailableExecutorComparatorNames")
+  List<String> getAvailableExecutorComparatorNames();
+
+  @DisplayName("OPERATION: getAvailableExecutorFilterNames")
+  List<String> getAvailableExecutorFilterNames();
+
+  @DisplayName("OPERATION: getLastSuccessfulExecutorInfoRefresh")
+  long getLastSuccessfulExecutorInfoRefresh();
+
 }

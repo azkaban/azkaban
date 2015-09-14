@@ -166,16 +166,18 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
   }
 
   /**
-   * Enables queueProcessor if @param status is true and disables queueProcessor
-   * is @param status is false.
+   * <pre>
+   * Enables queueProcessor if @param status is true
+   * disables queueProcessor if @param status is false.
+   * </pre>
    */
   private void ajaxUpdateQueueProcessor(HttpServletRequest req,
     HttpServletResponse resp, HashMap<String, Object> returnMap, User user,
-    boolean status) {
+    boolean enableQueue) {
     boolean wasSuccess = false;
     if (HttpRequestUtils.hasPermission(userManager, user, Type.ADMIN)) {
       try {
-        if (status) {
+        if (enableQueue) {
           executorManager.enableQueueProcessorThread();
         } else {
           executorManager.disableQueueProcessorThread();

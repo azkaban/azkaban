@@ -30,10 +30,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.log4j.Logger;
@@ -43,6 +47,8 @@ import azkaban.alert.Alerter;
 import azkaban.event.Event;
 import azkaban.event.Event.Type;
 import azkaban.event.EventHandler;
+import azkaban.executor.selector.ExecutorComparator;
+import azkaban.executor.selector.ExecutorFilter;
 import azkaban.executor.selector.ExecutorSelector;
 import azkaban.project.Project;
 import azkaban.project.ProjectWhitelist;
@@ -71,8 +77,10 @@ public class ExecutorManager extends EventHandler implements
     "azkaban.webserver.queue.size";
   private static final String AZKABAN_ACTIVE_EXECUTOR_REFRESHINTERVAL_IN_MS =
     "azkaban.activeexecutor.refresh.milisecinterval";
-  private static final String AZKABAN_ACTIVE_EXECUTOR_REFRESHINTERVAL_IN_FLOW =
+  private static final String AZKABAN_ACTIVE_EXECUTOR_REFRESHINTERVAL_IN_NUM_FLOW =
     "azkaban.activeexecutor.refresh.flowinterval";
+  private static final String AZKABAN_EXECUTORINFO_REFRESH_MAX_THREADS =
+      "azkaban.executorinfo.refresh.maxThreads";
 
   private static Logger logger = Logger.getLogger(ExecutorManager.class);
   private ExecutorLoader executorLoader;
@@ -102,9 +110,11 @@ public class ExecutorManager extends EventHandler implements
 
   File cacheDir;
 
-  final Props azkProps;
-  List<String> filterList;
-  Map<String, Integer> comparatorWeightsMap;
+  private final Props azkProps;
+  private List<String> filterList;
+  private Map<String, Integer> comparatorWeightsMap;
+  private long lastSuccessfulExecutorInfoRefresh;
+  private ExecutorService executorInforRefresherService;
 
   public ExecutorManager(Props props, ExecutorLoader loader,
       Map<String, Alerter> alters) throws ExecutorManagerException {
@@ -155,12 +165,16 @@ public class ExecutorManager extends EventHandler implements
       }
     }
 
+    executorInforRefresherService =
+        Executors.newFixedThreadPool(azkProps.getInt(
+          AZKABAN_EXECUTORINFO_REFRESH_MAX_THREADS, 5));
+
     // configure queue processor
     queueProcessor =
       new QueueProcessorThread(azkProps.getBoolean(
         AZKABAN_QUEUEPROCESSING_ENABLED, true), azkProps.getLong(
         AZKABAN_ACTIVE_EXECUTOR_REFRESHINTERVAL_IN_MS, 1000), azkProps.getInt(
-        AZKABAN_ACTIVE_EXECUTOR_REFRESHINTERVAL_IN_FLOW, 1000));
+        AZKABAN_ACTIVE_EXECUTOR_REFRESHINTERVAL_IN_NUM_FLOW, 1000));
     queueProcessor.start();
   }
 
@@ -195,8 +209,10 @@ public class ExecutorManager extends EventHandler implements
     }
 
     if (newExecutors.isEmpty()) {
+      logger.error("No active executor found");
       throw new ExecutorManagerException("No active executor found");
     } else if(newExecutors.size() > 1 && !isMultiExecutorMode()) {
+      logger.error("Multiple local executors specified");
       throw new ExecutorManagerException("Multiple local executors specified");
     } else {
       // clear all active executors, only if we have at least one new active
@@ -215,34 +231,46 @@ public class ExecutorManager extends EventHandler implements
    */
   private void refreshExecutors() {
     synchronized (activeExecutors) {
-      ExecutorService taskExecutors =
-        Executors.newFixedThreadPool(activeExecutors.size());
-      for (final Executor executor : activeExecutors) {
 
-        // execute each executorInfo refresh task
-        taskExecutors.execute(new Runnable() {
-          @Override
-          public void run() {
-            try {
-              String jsonResponse =
-                callExecutorForJsonString(executor.getHost(),
-                  executor.getPort(), "/serverstastics", null);
-              executor.setExecutorInfo(ExecutorInfo
-                .fromJSONString(jsonResponse));
-            } catch (Exception e) {
-              logger.error("Failed to update ExecutorInfo executorId :"
-                + executor, e);
+      List<Pair<Executor, Future<String>>> futures =
+        new ArrayList<Pair<Executor, Future<String>>>();
+      for (final Executor executor : activeExecutors) {
+        // execute each executorInfo refresh task to fetch
+        Future<String> fetchExecutionInfo =
+          executorInforRefresherService.submit(new Callable<String>() {
+            @Override
+            public String call() throws Exception {
+              return callExecutorForJsonString(executor.getHost(),
+                executor.getPort(), "/serverstastics", null);
             }
-          }
-        });
+          });
+        futures.add(new Pair<Executor, Future<String>>(executor,
+          fetchExecutionInfo));
       }
 
-      taskExecutors.shutdown();
-      try {
-        // wait 5 seconds for all executors to be refreshed
-        taskExecutors.awaitTermination(5, TimeUnit.SECONDS);
-      } catch (InterruptedException e) {
-        logger.error("Timed out while waiting for executorInfo refresh", e);
+      boolean wasSuccess = true;
+      for (Pair<Executor, Future<String>> refreshPair : futures) {
+        Executor executor = refreshPair.getFirst();
+        try {
+          // max 5 secs
+          String jsonString = refreshPair.getSecond().get(5, TimeUnit.SECONDS);
+          executor.setExecutorInfo(ExecutorInfo.fromJSONString(jsonString));
+          logger.info("Successfully refreshed ExecutorInfo for executor: "
+            + executor);
+        } catch (TimeoutException e) {
+          wasSuccess = false;
+          logger.error("Timed out while waiting for ExecutorInfo refresh"
+            + executor, e);
+        } catch (Exception e) {
+          wasSuccess = false;
+          logger.error("Failed to update ExecutorInfo for executor : "
+            + executor, e);
+        }
+      }
+
+      // update is successful for all executors
+      if (wasSuccess) {
+        lastSuccessfulExecutorInfoRefresh = System.currentTimeMillis();
       }
     }
   }
@@ -295,6 +323,34 @@ public class ExecutorManager extends EventHandler implements
       return queueProcessor.isActive();
     else
       return false;
+  }
+
+  /**
+   * Return last Successful ExecutorInfo Refresh for all active executors
+   *
+   * @return
+   */
+  public long getLastSuccessfulExecutorInfoRefresh() {
+    return this.lastSuccessfulExecutorInfoRefresh;
+  }
+
+  /**
+   * Get currently supported Comparators available to use via azkaban.properties
+   *
+   * @return
+   */
+  public Set<String> getAvailableExecutorComparatorNames() {
+    return ExecutorComparator.getAvailableComparatorNames();
+
+  }
+
+  /**
+   * Get currently supported filters available to use via azkaban.properties
+   *
+   * @return
+   */
+  public Set<String> getAvailableExecutorFilterNames() {
+    return ExecutorFilter.getAvailableFilterNames();
   }
 
   @Override
@@ -1143,7 +1199,10 @@ public class ExecutorManager extends EventHandler implements
     List<Pair<String, String>> paramList =
       new ArrayList<Pair<String, String>>();
 
-    paramList.add(new Pair<String, String>(ConnectorParams.JMX_MBEAN, mBean));
+    paramList.add(new Pair<String, String>(action, ""));
+    if(mBean != null) {
+      paramList.add(new Pair<String, String>(ConnectorParams.JMX_MBEAN, mBean));
+    }
 
     String[] hostPortSplit = hostPort.split(":");
     return callExecutorForJsonObject(hostPortSplit[0],
@@ -1777,9 +1836,9 @@ public class ExecutorManager extends EventHandler implements
     }
 
     /* Helper method to fetch  overriding Executor, if a valid user has specifed otherwise return null */
-    private Executor getUserSpecifiedExecutor(ExecutableFlow exflow) {
+    private Executor getUserSpecifiedExecutor(ExecutionOptions options,
+      int executionId) {
       Executor executor = null;
-      ExecutionOptions options = exflow.getExecutionOptions();
       if (options != null
         && options.getFlowParameters() != null
         && options.getFlowParameters().containsKey(
@@ -1795,13 +1854,19 @@ public class ExecutorManager extends EventHandler implements
               .warn(String
                 .format(
                   "User specified executor id: %d for execution id: %d is not active, Looking up db.",
-                  executorId, exflow.getExecutionId()));
+                  executorId, executionId));
             executor = executorLoader.fetchExecutor(executorId);
+            if (executor == null) {
+              logger
+                .warn(String
+                  .format(
+                    "User specified executor id: %d for execution id: %d is missing from db. Defaulting to availableExecutors",
+                    executorId, executionId));
+            }
           }
-
-        } catch (Exception ex) {
+        } catch (ExecutorManagerException ex) {
           logger.error("Failed to fetch user specified executor for exec_id = "
-            + exflow.getExecutionId(), ex);
+            + executionId, ex);
         }
       }
       return executor;
@@ -1810,7 +1875,9 @@ public class ExecutorManager extends EventHandler implements
     /* Choose Executor for exflow among the available executors */
     private Executor selectExecutor(ExecutableFlow exflow,
       Set<Executor> availableExecutors) {
-      Executor choosenExecutor = getUserSpecifiedExecutor(exflow);
+      Executor choosenExecutor =
+        getUserSpecifiedExecutor(exflow.getExecutionOptions(),
+          exflow.getExecutionId());
 
       // If no executor was specified by admin
       if (choosenExecutor == null) {
