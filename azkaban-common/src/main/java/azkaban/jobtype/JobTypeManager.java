@@ -340,6 +340,7 @@ public class JobTypeManager {
             jobProps, jobType));
       }
 
+      // TODO: should the logic below mirror the logic for PluginLoadProps?
       Props pluginJobProps = pluginSet.getPluginJobProps(jobType);
       if (pluginJobProps != null) {
         for (String k : pluginJobProps.getKeySet()) {
@@ -354,7 +355,7 @@ public class JobTypeManager {
       if (pluginLoadProps != null) {
         pluginLoadProps = PropsUtils.resolveProps(pluginLoadProps);
       } else {
-        pluginLoadProps = new Props();
+        pluginLoadProps = pluginSet.getCommonPluginLoadProps();
       }
 
       job =

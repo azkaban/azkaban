@@ -41,6 +41,7 @@ public class ProcessJob extends AbstractProcessJob {
   private static final String MEMCHECK_ENABLED = "memCheck.enabled";
   private static final String MEMCHECK_FREEMEMDECRAMT = "memCheck.freeMemDecrAmt";
   public static final String AZKABAN_MEMORY_CHECK = "azkaban.memory.check";
+  public static final String NATIVE_LIB_FOLDER = "azkaban.native.lib";
 
   public ProcessJob(final String jobId, final Props sysProps,
       final Props jobProps, final Logger log) {
@@ -81,8 +82,18 @@ public class ProcessJob extends AbstractProcessJob {
     info(commands.size() + " commands to execute.");
     File[] propFiles = initPropsFiles();
     Map<String, String> envVars = getEnvironmentVariables();
-
+    
+    info("printing sysProps to see what's there: ");
+    for(String k: sysProps.getKeySet()){
+    	info(String.format("key %s, value: %s", k, sysProps.getString(k)));
+    }
+    String nativeLibFolder = sysProps.getString(NATIVE_LIB_FOLDER);
+    String executeAsUserBinary = String.format("%s/%s", nativeLibFolder, "execute-as-user");
+    String userToProxy = jobProps.getString("user.to.proxy");
+        
     for (String command : commands) {
+      command = String.format("%s %s %s", executeAsUserBinary, userToProxy, command);
+      
       info("Command: " + command);
       AzkabanProcessBuilder builder =
           new AzkabanProcessBuilder(partitionCommandLine(command))

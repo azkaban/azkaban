@@ -101,13 +101,16 @@ public class AzkabanProcess {
       }
 
       completeLatch.countDown();
+      
+      // try to wait for everything to get logged out before exiting
+      outputGobbler.awaitCompletion(5000);
+      errorGobbler.awaitCompletion(5000);
+      
       if (exitCode != 0) {
         throw new ProcessFailureException(exitCode, errorGobbler.getRecentLog());
       }
 
-      // try to wait for everything to get logged out before exiting
-      outputGobbler.awaitCompletion(5000);
-      errorGobbler.awaitCompletion(5000);
+
     } finally {
       IOUtils.closeQuietly(process.getInputStream());
       IOUtils.closeQuietly(process.getOutputStream());
