@@ -38,11 +38,13 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import org.apache.commons.lang.StringUtils;
 import org.apache.log4j.Logger;
 import org.joda.time.DateTime;
-
 import azkaban.alert.Alerter;
 import azkaban.event.Event;
 import azkaban.event.Event.Type;
@@ -175,6 +177,7 @@ public class ExecutorManager extends EventHandler implements
         AZKABAN_QUEUEPROCESSING_ENABLED, true), azkProps.getLong(
         AZKABAN_ACTIVE_EXECUTOR_REFRESHINTERVAL_IN_MS, 1000), azkProps.getInt(
         AZKABAN_ACTIVE_EXECUTOR_REFRESHINTERVAL_IN_NUM_FLOW, 1000));
+
     queueProcessor.start();
   }
 
