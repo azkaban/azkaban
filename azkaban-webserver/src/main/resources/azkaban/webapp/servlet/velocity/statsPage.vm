@@ -41,7 +41,7 @@
                  } else {
                     $('#metricName').empty();
                     for(var index = 0; index < responseData.metricList.length; index++) {
-                      $('#metricName').append($('<option value="1">' + responseData.metricList[index] + '</option>'));
+                      $('#metricName').append($('<option value="' + responseData.metricList[index] +'">' + responseData.metricList[index] + '</option>'));
                     }
                   }
                };

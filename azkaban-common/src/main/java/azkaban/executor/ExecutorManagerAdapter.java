@@ -231,4 +231,33 @@ public interface ExecutorManagerAdapter {
    */
   public Executor fetchExecutor(int executorId) throws ExecutorManagerException;
 
+  /**
+   * <pre>
+   * Setup activeExecutors using azkaban.properties and database executors
+   * Note:
+   * 1. If azkaban.use.multiple.executors is set true, this method will
+   *    load all active executors
+   * 2. In local mode, If a local executor is specified and it is missing from db,
+   *    this method add local executor as active in DB
+   * 3. In local mode, If a local executor is specified and it is marked inactive in db,
+   *    this method will convert local executor as active in DB
+   * </pre>
+   *
+   * @throws ExecutorManagerException
+   */
+   public void setupExecutors() throws ExecutorManagerException;
+
+   /**
+    * Enable flow dispatching in QueueProcessor
+    *
+    * @throws ExecutorManagerException
+    */
+   public void enableQueueProcessorThread() throws ExecutorManagerException;
+
+   /**
+    * Disable flow dispatching in QueueProcessor
+    *
+    * @throws ExecutorManagerException
+    */
+   public void disableQueueProcessorThread() throws ExecutorManagerException;
 }

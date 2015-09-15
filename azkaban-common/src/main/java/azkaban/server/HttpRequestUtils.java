@@ -25,9 +25,17 @@ import java.util.Map;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 
+import org.apache.commons.lang.StringUtils;
+
 import azkaban.executor.ExecutionOptions;
 import azkaban.executor.ExecutionOptions.FailureAction;
+import azkaban.executor.ExecutorManagerException;
 import azkaban.executor.mail.DefaultMailCreator;
+import azkaban.user.Permission;
+import azkaban.user.Permission.Type;
+import azkaban.user.Role;
+import azkaban.user.User;
+import azkaban.user.UserManager;
 import azkaban.utils.JSONUtils;
 
 public class HttpRequestUtils {
@@ -110,6 +118,68 @@ public class HttpRequestUtils {
       }
     }
     return execOptions;
+  }
+
+  /**
+   * <pre>
+   * Remove following flow param if submitting user is not an Azkaban admin
+   * FLOW_PRIORITY
+   * USE_EXECUTOR
+   * @param userManager
+   * @param options
+   * @param user
+   * </pre>
+   */
+  public static void filterAdminOnlyFlowParams(UserManager userManager,
+    ExecutionOptions options, User user)  throws ExecutorManagerException {
+    if (options == null || options.getFlowParameters() == null)
+      return;
+
+    Map<String, String> params = options.getFlowParameters();
+    // is azkaban Admin
+    if (!hasPermission(userManager, user, Type.ADMIN)) {
+      params.remove(ExecutionOptions.FLOW_PRIORITY);
+      params.remove(ExecutionOptions.USE_EXECUTOR);
+    } else {
+      validateIntegerParam(params, ExecutionOptions.FLOW_PRIORITY);
+      validateIntegerParam(params, ExecutionOptions.USE_EXECUTOR);
+    }
+  }
+
+  /**
+   * parse a string as number and throws exception if parsed value is not a
+   * valid integer
+   * @param params
+   * @param paramName
+   * @throws ExecutorManagerException if paramName is not a valid integer
+   */
+  public static boolean validateIntegerParam(Map<String, String> params,
+    String paramName) throws ExecutorManagerException {
+    if (params != null && params.containsKey(paramName)
+      && !StringUtils.isNumeric(params.get(paramName))) {
+      throw new ExecutorManagerException(paramName + " should be an integer");
+    }
+    return true;
+  }
+
+  /**
+   * returns true if user has access of type
+   *
+   * @param userManager
+   * @param user
+   * @param type
+   * @return
+   */
+  public static boolean hasPermission(UserManager userManager, User user,
+    Permission.Type type) {
+    for (String roleName : user.getRoles()) {
+      Role role = userManager.getRole(roleName);
+      if (role.getPermission().isPermissionSet(type)
+        || role.getPermission().isPermissionSet(Permission.Type.ADMIN)) {
+        return true;
+      }
+    }
+    return false;
   }
 
   /**
