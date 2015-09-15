@@ -42,7 +42,8 @@ public class ProcessJob extends AbstractProcessJob {
   private static final String MEMCHECK_FREEMEMDECRAMT = "memCheck.freeMemDecrAmt";
   public static final String AZKABAN_MEMORY_CHECK = "azkaban.memory.check";
   public static final String NATIVE_LIB_FOLDER = "azkaban.native.lib";
-
+  public static final String EXECUTE_AS_USER = "execute.as.user";
+  
   public ProcessJob(final String jobId, final Props sysProps,
       final Props jobProps, final Logger log) {
     super(jobId, sysProps, jobProps, log);
@@ -65,7 +66,7 @@ public class ProcessJob extends AbstractProcessJob {
                 memPair.getFirst(), memPair.getSecond(), getId()));
       }
     }
-
+    
     List<String> commands = null;
     try {
       commands = getCommandList();
@@ -82,17 +83,22 @@ public class ProcessJob extends AbstractProcessJob {
     info(commands.size() + " commands to execute.");
     File[] propFiles = initPropsFiles();
     Map<String, String> envVars = getEnvironmentVariables();
+  
+    String nativeLibFolder = null;
+    String executeAsUserBinary = null;
+    String userToProxy = null;
+    boolean isExecuteAsUser = sysProps.getBoolean(EXECUTE_AS_USER, false);
     
-    info("printing sysProps to see what's there: ");
-    for(String k: sysProps.getKeySet()){
-    	info(String.format("key %s, value: %s", k, sysProps.getString(k)));
+    if(isExecuteAsUser){
+    	nativeLibFolder = sysProps.getString(NATIVE_LIB_FOLDER);
+    	executeAsUserBinary = String.format("%s/%s", nativeLibFolder, "execute-as-user");
+    	userToProxy = jobProps.getString("user.to.proxy");
     }
-    String nativeLibFolder = sysProps.getString(NATIVE_LIB_FOLDER);
-    String executeAsUserBinary = String.format("%s/%s", nativeLibFolder, "execute-as-user");
-    String userToProxy = jobProps.getString("user.to.proxy");
         
     for (String command : commands) {
-      command = String.format("%s %s %s", executeAsUserBinary, userToProxy, command);
+    	if(isExecuteAsUser){
+    	  command = String.format("%s %s %s", executeAsUserBinary, userToProxy, command);
+    	}
       
       info("Command: " + command);
       AzkabanProcessBuilder builder =
