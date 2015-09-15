@@ -97,7 +97,7 @@ int main(int argc, char **argv){
         cur+=len+1;
     }
 
-    printf("executing command: %s\n", cmd);
+    printf("executing as user command: %s\n", cmd);
     retval = system(cmd);
     fprintf(LOGFILE, "system call return value: %d", retval);
 
