@@ -149,7 +149,7 @@ public class AzkabanExecutorServer {
 
     SystemMemoryInfo.init(props.getInt("executor.memCheck.interval", 30));
 
-//    loadCustomJMXAttributeProcessor(props);
+    loadCustomJMXAttributeProcessor(props);
 
     try {
       server.start();
@@ -167,9 +167,9 @@ public class AzkabanExecutorServer {
 
     logger.info("Job callback enabled? " + jobCallbackEnabled);
 
-//    if (jobCallbackEnabled) {
-//      JobCallbackManager.initialize(props);
-//    }
+    if (jobCallbackEnabled) {
+      JobCallbackManager.initialize(props);
+    }
   }
 
   /**
@@ -445,11 +445,11 @@ public class AzkabanExecutorServer {
     registerMbean("flowRunnerManager", new JmxFlowRunnerManager(runnerManager));
     registerMbean("jobJMXMBean", JmxJobMBeanManager.getInstance());
 
-//    if (JobCallbackManager.isInitialized()) {
-//      JobCallbackManager jobCallbackMgr = JobCallbackManager.getInstance();
-//      registerMbean("jobCallbackJMXMBean",
-//          jobCallbackMgr.getJmxJobCallbackMBean());
-//    }
+    if (JobCallbackManager.isInitialized()) {
+      JobCallbackManager jobCallbackMgr = JobCallbackManager.getInstance();
+      registerMbean("jobCallbackJMXMBean",
+          jobCallbackMgr.getJmxJobCallbackMBean());
+    }
   }
 
   public void close() {

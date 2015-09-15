@@ -95,9 +95,9 @@ int main(int argc, char **argv){
         len = strlen(argv[i]);
         memcpy(cur, argv[i], len);
         cur+=len+1;
-        printf("%s\n", cmd);
     }
 
+    printf("executing command: %s\n", cmd);
     retval = system(cmd);
     fprintf(LOGFILE, "system call return value: %d", retval);
 
