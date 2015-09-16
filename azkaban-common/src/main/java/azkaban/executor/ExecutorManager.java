@@ -414,7 +414,12 @@ public class ExecutorManager extends EventHandler implements
     for (Executor executor : activeExecutors) {
       ports.add(executor.getHost() + ":" + executor.getPort());
     }
-
+    // include executor which were initially active and still has flows running
+    for (Pair<ExecutionReference, ExecutableFlow> running : runningFlows
+      .values()) {
+      ExecutionReference ref = running.getFirst();
+      ports.add(ref.getHost() + ":" + ref.getPort());
+    }
     return ports;
   }
 
