@@ -1,3 +1,19 @@
+/*
+ * Copyright 2015 LinkedIn Corp.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not
+ * use this file except in compliance with the License. You may obtain a copy of
+ * the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations under
+ * the License.
+ */
+
 #include <dirent.h>
 #include <fcntl.h>
 #include <fts.h>
@@ -15,14 +31,18 @@
 #include <sys/types.h>
 #include <pwd.h>
 
-  FILE *LOGFILE = NULL;
-  FILE *ERRORFILE = NULL;
-  int SETUID_OPER_FAILED=10;
+FILE *LOGFILE = NULL;
+FILE *ERRORFILE = NULL;
+int SETUID_OPER_FAILED=10;
 
-/**
- *  * Change the real and effective user and group to abandon the super user
- *   * priviledges.
- *    */
+/*
+ *  Change the real and effective user and group from super user to the specified user
+ *  
+ *  Adopted from:
+ *  ./hadoop-yarn-project/hadoop-yarn/hadoop-yarn-server/hadoop-yarn-server-nodemanager/src/main/native/container-executor/impl/container-executor.c
+ *  
+ */
+
 int change_user(uid_t user, gid_t group) {
     if (user == getuid() && user == geteuid() &&
             group == getgid() && group == getegid()) {
@@ -62,8 +82,6 @@ int main(int argc, char **argv){
     if(!ERRORFILE)
         ERRORFILE=stderr;
 
-
-
     char *uid = argv[1];
 
     // for loop to calculate the length to malloc
@@ -72,17 +90,21 @@ int main(int argc, char **argv){
     for(i=2;i<argc;i++){
         total_len += strlen(argv[i])+1;
     }
-    printf("total_len: %d\n", total_len);
+    fprintf(LOGFILE, "total_len: %d\n", total_len);
 
     // allocate memory and clear memory
     char *cmd = malloc(total_len+2);
-    memset(cmd, ' ', total_len+2);
+    if(cmd == NULL){
+        fprintf(LOGFILE, "unable to malloc memory in execute-as-user.c");
+        return 10;
+    }
+    memset(cmd, 0, total_len+2);
 
     // change user 
     struct passwd *userInfo = getpwnam(uid);
     fprintf(LOGFILE, "Changing user: user: %s, uid: %d, gid: %d\n", uid, userInfo->pw_uid, userInfo->pw_gid);
     int retval = change_user(userInfo->pw_uid, userInfo->pw_gid);
-    printf("retval: %d\n", retval);
+    fprintf(LOGFILE, "change user function return value: %d\n", retval);
     if( retval != 0){
         fprintf(LOGFILE, "Error changing user to %s\n", uid);
         return SETUID_OPER_FAILED;
@@ -97,7 +119,7 @@ int main(int argc, char **argv){
         cur+=len+1;
     }
 
-    printf("executing as user command: %s\n", cmd);
+    fprintf(LOGFILE, "executing as user command: %s\n", cmd);
     retval = system(cmd);
     fprintf(LOGFILE, "system call return value: %d", retval);
 
