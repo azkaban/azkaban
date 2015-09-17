@@ -1,9 +1,11 @@
 package azkaban.utils;
 
 import com.google.common.collect.Lists;
+import org.joda.time.DateTime;
+import org.joda.time.Period;
+import org.joda.time.format.PeriodFormatter;
+import org.joda.time.format.PeriodFormatterBuilder;
 
-import java.text.SimpleDateFormat;
-import java.util.Date;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -40,9 +42,17 @@ public class ParamReplacement {
   }
 
   private static List<Param> params = Lists.<Param> newArrayList(
-      // time param, "${time:yyy-MM-dd hh:mm:ss}" will be replaced into like
-      // "2015-09-16 11:23:45"
+  // time param, format: "${time:<plus period>,<time format>}", like
+  // "${time:-1day,yyyy-MM-dd HH:mm:ss}" will be replaced into like
+  // "2015-09-16 11:23:45", if current time is "2015-09-17 11:23:45"
       new Param() {
+        PeriodFormatter periodFormatter = new PeriodFormatterBuilder()
+            .appendYears().appendSuffix("year").appendMonths()
+            .appendSuffix("month").appendDays().appendSuffix("day")
+            .appendHours().appendSuffix("hour").appendMinutes()
+            .appendSuffix("minute").appendSeconds().appendSuffix("second")
+            .toFormatter();
+
         public String name() {
           return "time";
         }
@@ -51,8 +61,21 @@ public class ParamReplacement {
           if (param == null) {
             param = "yyyy-MM-dd'T'HH:mm:ss.SSSXXX";
           }
-          SimpleDateFormat format = new SimpleDateFormat(param);
-          return format.format(new Date());
+          String[] ps = param.split(",", 2);
+          if (ps.length != 2) {
+            throw new RuntimeException(
+                String
+                    .format(
+                        "illegal time param format: %s, should be like: ${time:-1day,yyyy-MM-dd HH:mm:ss}",
+                        param));
+          }
+          Period p;
+          if (ps[0].trim().equals("")) {
+            p = new Period();
+          } else {
+            p = periodFormatter.parsePeriod(ps[0]);
+          }
+          return DateTime.now().plus(p).toString(ps[1]);
         }
       });
 
@@ -62,5 +85,4 @@ public class ParamReplacement {
     }
     return content;
   }
-
 }
