@@ -196,13 +196,65 @@ public class ProjectManager {
     return allProjects;
   }
 
-  public Project getProject(String name) {
-    return projectsByName.get(name);
-  }
+    /**
+     * Checks if a project is active using project_name
+     *
+     * @param name
+     */
+    public Boolean isActiveProject(String name) {
+        return projectsByName.containsKey(name);
+    }
 
-  public Project getProject(int id) {
-    return projectsById.get(id);
-  }
+    /**
+     * Checks if a project is active using project_id
+     *
+     * @param name
+     */
+    public Boolean isActiveProject(int id) {
+        return projectsById.containsKey(id);
+    }
+
+    /**
+     * fetch active project from cache and inactive projects from db by
+     * project_name
+     *
+     * @param name
+     * @return
+     */
+    public Project getProject(String name) {
+        Project fetchedProject = null;
+        if (isActiveProject(name)) {
+            fetchedProject = projectsByName.get(name);
+        } else {
+            try {
+                fetchedProject = projectLoader.fetchProjectByName(name);
+            } catch (ProjectManagerException e) {
+                logger.error("Could not load project from store.", e);
+            }
+        }
+        return fetchedProject;
+    }
+
+    /**
+     * fetch active project from cache and inactive projects from db by
+     * project_id
+     *
+     * @param id
+     * @return
+     */
+    public Project getProject(int id) {
+        Project fetchedProject = null;
+        if (isActiveProject(id)) {
+            fetchedProject = projectsById.get(id);
+        } else {
+            try {
+                fetchedProject = projectLoader.fetchProjectById(id);
+            } catch (ProjectManagerException e) {
+                logger.error("Could not load project from store.", e);
+            }
+        }
+        return fetchedProject;
+    }
 
   public Project createProject(String projectName, String description,
       User creator) throws ProjectManagerException {
@@ -248,6 +300,25 @@ public class ProjectManager {
 
     return newProject;
   }
+
+    /**
+     * Permanently delete all project files and properties data for all versions
+     * of a project and log event in project_events table
+     *
+     * @param project
+     * @param deleter
+     * @return
+     * @throws ProjectManagerException
+     */
+    public synchronized Project purgeProject(Project project, User deleter)
+        throws ProjectManagerException {
+        projectLoader.cleanOlderProjectVersion(project.getId(),
+            project.getVersion() + 1);
+        projectLoader
+            .postEvent(project, EventType.PURGE, deleter.getUserId(), String
+                .format("Purged versions before %d", project.getVersion() + 1));
+        return project;
+    }
 
   public synchronized Project removeProject(Project project, User deleter)
       throws ProjectManagerException {

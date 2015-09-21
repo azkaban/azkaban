@@ -29,11 +29,13 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.apache.commons.lang.StringEscapeUtils;
 
+import azkaban.executor.ConnectorParams;
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutableFlowBase;
 import azkaban.executor.ExecutableNode;
 import azkaban.executor.ExecutionOptions;
 import azkaban.executor.ExecutionOptions.FailureAction;
+import azkaban.executor.Executor;
 import azkaban.executor.ExecutorManagerAdapter;
 import azkaban.executor.ExecutorManagerException;
 import azkaban.executor.Status;
@@ -47,8 +49,11 @@ import azkaban.server.HttpRequestUtils;
 import azkaban.server.session.Session;
 import azkaban.user.Permission;
 import azkaban.user.Permission.Type;
+import azkaban.user.Role;
 import azkaban.user.User;
+import azkaban.user.UserManager;
 import azkaban.utils.FileIOUtils.LogData;
+import azkaban.utils.Pair;
 import azkaban.webapp.AzkabanWebServer;
 import azkaban.webapp.plugin.PluginRegistry;
 import azkaban.webapp.plugin.ViewerPlugin;
@@ -59,11 +64,13 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
   private ExecutorManagerAdapter executorManager;
   private ScheduleManager scheduleManager;
   private ExecutorVelocityHelper velocityHelper;
+  private UserManager userManager;
 
   @Override
   public void init(ServletConfig config) throws ServletException {
     super.init(config);
     AzkabanWebServer server = (AzkabanWebServer) getApplication();
+    userManager = server.getUserManager();
     projectManager = server.getProjectManager();
     executorManager = server.getExecutorManager();
     scheduleManager = server.getScheduleManager();
@@ -129,6 +136,12 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
           ajaxFetchExecutableFlowInfo(req, resp, ret, session.getUser(), exFlow);
         }
       }
+    } else if (ajaxName.equals("reloadExecutors")) {
+      ajaxReloadExecutors(req, resp, ret, session.getUser());
+    } else if (ajaxName.equals("enableQueueProcessor")) {
+      ajaxUpdateQueueProcessor(req, resp, ret, session.getUser(), true);
+    } else if (ajaxName.equals("disableQueueProcessor")) {
+      ajaxUpdateQueueProcessor(req, resp, ret, session.getUser(), false);
     } else if (ajaxName.equals("getRunning")) {
       String projectName = getParam(req, "project");
       String flowName = getParam(req, "flow");
@@ -149,6 +162,63 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
     }
     if (ret != null) {
       this.writeJSON(resp, ret);
+    }
+  }
+
+  /**
+   * <pre>
+   * Enables queueProcessor if @param status is true
+   * disables queueProcessor if @param status is false.
+   * </pre>
+   */
+  private void ajaxUpdateQueueProcessor(HttpServletRequest req,
+    HttpServletResponse resp, HashMap<String, Object> returnMap, User user,
+    boolean enableQueue) {
+    boolean wasSuccess = false;
+    if (HttpRequestUtils.hasPermission(userManager, user, Type.ADMIN)) {
+      try {
+        if (enableQueue) {
+          executorManager.enableQueueProcessorThread();
+        } else {
+          executorManager.disableQueueProcessorThread();
+        }
+        returnMap.put(ConnectorParams.STATUS_PARAM,
+          ConnectorParams.RESPONSE_SUCCESS);
+        wasSuccess = true;
+      } catch (ExecutorManagerException e) {
+        returnMap.put(ConnectorParams.RESPONSE_ERROR, e.getMessage());
+      }
+    } else {
+      returnMap.put(ConnectorParams.RESPONSE_ERROR,
+        "Only Admins are allowed to update queue processor");
+    }
+    if (!wasSuccess) {
+      returnMap.put(ConnectorParams.STATUS_PARAM,
+        ConnectorParams.RESPONSE_ERROR);
+    }
+  }
+
+  /* Reloads executors from DB and azkaban.properties via executorManager */
+  private void ajaxReloadExecutors(HttpServletRequest req,
+    HttpServletResponse resp, HashMap<String, Object> returnMap, User user) {
+    boolean wasSuccess = false;
+    if (HttpRequestUtils.hasPermission(userManager, user, Type.ADMIN)) {
+      try {
+        executorManager.setupExecutors();
+        returnMap.put(ConnectorParams.STATUS_PARAM,
+          ConnectorParams.RESPONSE_SUCCESS);
+        wasSuccess = true;
+      } catch (ExecutorManagerException e) {
+        returnMap.put(ConnectorParams.RESPONSE_ERROR,
+          "Failed to refresh the executors " + e.getMessage());
+      }
+    } else {
+      returnMap.put(ConnectorParams.RESPONSE_ERROR,
+        "Only Admins are allowed to refresh the executors");
+    }
+    if (!wasSuccess) {
+      returnMap.put(ConnectorParams.STATUS_PARAM,
+        ConnectorParams.RESPONSE_ERROR);
     }
   }
 
@@ -225,7 +295,8 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
         newPage(req, resp, session,
             "azkaban/webapp/servlet/velocity/executionspage.vm");
 
-    List<ExecutableFlow> runningFlows = executorManager.getRunningFlows();
+    List<Pair<ExecutableFlow, Executor>> runningFlows =
+      executorManager.getActiveFlowsWithExecutor();
     page.add("runningFlows", runningFlows.isEmpty() ? null : runningFlows);
 
     List<ExecutableFlow> finishedFlows =
@@ -809,10 +880,11 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
     options.setMailCreator(flow.getMailCreator());
 
     try {
+      HttpRequestUtils.filterAdminOnlyFlowParams(userManager, options, user);
       String message =
           executorManager.submitExecutableFlow(exflow, user.getUserId());
       ret.put("message", message);
-    } catch (ExecutorManagerException e) {
+    } catch (Exception e) {
       e.printStackTrace();
       ret.put("error",
           "Error submitting flow " + exflow.getFlowId() + ". " + e.getMessage());

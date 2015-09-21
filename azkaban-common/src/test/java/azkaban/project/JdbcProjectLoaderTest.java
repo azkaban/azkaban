@@ -28,7 +28,6 @@ import javax.sql.DataSource;
 import org.apache.commons.dbutils.DbUtils;
 import org.apache.commons.dbutils.QueryRunner;
 import org.apache.commons.dbutils.ResultSetHandler;
-
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
@@ -213,6 +212,96 @@ public class JdbcProjectLoaderTest {
 
     DbUtils.closeQuietly(connection);
   }
+
+    /** Test case to validated permissions for fetchProjectByName **/
+    @Test
+    public void testPermissionRetrivalByFetchProjectByName()
+        throws ProjectManagerException {
+        if (!isTestSetup()) {
+            return;
+        }
+
+        ProjectLoader loader = createLoader();
+        String projectName = "mytestProject";
+        String projectDescription = "This is my new project";
+        User user = new User("testUser");
+
+        Project project =
+            loader.createNewProject(projectName, projectDescription, user);
+
+        Permission perm = new Permission(0x2);
+        loader.updatePermission(project, user.getUserId(), perm, false);
+        loader.updatePermission(project, "group", perm, true);
+
+        Permission permOverride = new Permission(0x6);
+        loader.updatePermission(project, user.getUserId(), permOverride, false);
+
+        Project fetchedProject = loader.fetchProjectByName(project.getName());
+        assertProjectMemberEquals(project, fetchedProject);
+        Assert.assertEquals(permOverride,
+            fetchedProject.getUserPermission(user.getUserId()));
+    }
+
+    /** Default Test case for fetchProjectByName **/
+    @Test
+    public void testProjectRetrievalByFetchProjectByName()
+        throws ProjectManagerException {
+        if (!isTestSetup()) {
+            return;
+        }
+
+        ProjectLoader loader = createLoader();
+        String projectName = "mytestProject";
+        String projectDescription = "This is my new project";
+        User user = new User("testUser");
+
+        Project project =
+            loader.createNewProject(projectName, projectDescription, user);
+
+        Project fetchedProject = loader.fetchProjectByName(project.getName());
+        assertProjectMemberEquals(project, fetchedProject);
+    }
+
+    /** Default Test case for fetchProjectByName **/
+    @Test
+    public void testDuplicateRetrivalByFetchProjectByName()
+        throws ProjectManagerException {
+        if (!isTestSetup()) {
+            return;
+        }
+
+        ProjectLoader loader = createLoader();
+        String projectName = "mytestProject";
+        String projectDescription = "This is my new project";
+        User user = new User("testUser");
+
+        Project project =
+            loader.createNewProject(projectName, projectDescription, user);
+
+        loader.removeProject(project, user.getUserId());
+
+        Project newProject =
+            loader.createNewProject(projectName, projectDescription, user);
+
+        Project fetchedProject = loader.fetchProjectByName(project.getName());
+        Assert.assertEquals(newProject.getId(), fetchedProject.getId());
+
+    }
+
+    /** Test case for NonExistantProject project fetch **/
+    @Test
+    public void testInvalidProjectByFetchProjectByName() {
+        if (!isTestSetup()) {
+            return;
+        }
+        ProjectLoader loader = createLoader();
+        try {
+            loader.fetchProjectByName("NonExistantProject");
+        } catch (ProjectManagerException ex) {
+            System.out.println("Test true");
+        }
+        Assert.fail("Expecting exception, but didn't get one");
+    }
 
   @Test
   public void testCreateProject() throws ProjectManagerException {
