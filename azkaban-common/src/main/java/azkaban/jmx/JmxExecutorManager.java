@@ -78,4 +78,19 @@ public class JmxExecutorManager implements JmxExecutorManagerMBean {
     return manager.getQueueProcessorThreadState().toString();
   }
 
+  @Override
+  public List<String> getAvailableExecutorComparatorNames() {
+    return new ArrayList<String>(manager.getAvailableExecutorComparatorNames());
+  }
+
+  @Override
+  public List<String> getAvailableExecutorFilterNames() {
+    return new ArrayList<String>(manager.getAvailableExecutorFilterNames());
+  }
+
+  @Override
+  public long getLastSuccessfulExecutorInfoRefresh() {
+    return manager.getLastSuccessfulExecutorInfoRefresh();
+  }
+
 }

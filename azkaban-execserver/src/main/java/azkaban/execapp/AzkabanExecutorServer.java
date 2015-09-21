@@ -23,6 +23,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.lang.management.ManagementFactory;
 import java.lang.reflect.Constructor;
+import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.TimeZone;
@@ -500,5 +501,19 @@ public class AzkabanExecutorServer {
       logger.error(e);
       return null;
     }
+  }
+
+  /**
+   * Returns host:port combination for currently running executor
+   * @return
+   */
+  public String getExecutorHostPort() {
+    String host = "unkownHost";
+    try {
+      host = InetAddress.getLocalHost().getCanonicalHostName();
+    } catch (Exception e) {
+      logger.error("Failed to fetch LocalHostName");
+    }
+    return host + ":" + props.getInt("executor.port", DEFAULT_PORT_NUMBER);
   }
 }

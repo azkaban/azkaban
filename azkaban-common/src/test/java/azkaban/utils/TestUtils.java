@@ -24,17 +24,22 @@ import azkaban.executor.ExecutableFlow;
 import azkaban.flow.Flow;
 import azkaban.project.Project;
 import azkaban.user.User;
+import azkaban.user.UserManager;
+import azkaban.user.XmlUserManager;
 
 /**
  * Commonly used utils method for unit/integration tests
  */
 public class TestUtils {
+  /* Base  resource direcotyr for unit tests */
+  private static final String UNIT_RESOURCE_DIR =
+      "../azkaban-test/src/test/resources";
   /* Directory with serialized description of test flows */
-  private static final String UNIT_BASE_DIR =
-    "../azkaban-test/src/test/resources/executions";
+  private static final String UNIT_EXECUTION_DIR =
+      UNIT_RESOURCE_DIR + "/executions";
 
   public static File getFlowDir(String projectName, String flow) {
-    return new File(String.format("%s/%s/%s.flow", UNIT_BASE_DIR, projectName,
+    return new File(String.format("%s/%s/%s.flow", UNIT_EXECUTION_DIR, projectName,
       flow));
   }
 
@@ -43,8 +48,8 @@ public class TestUtils {
   }
 
   /* Helper method to create an ExecutableFlow from serialized description */
-  public static ExecutableFlow createExecutableFlow(String projectName, String flowName)
-    throws IOException {
+  public static ExecutableFlow createExecutableFlow(String projectName,
+    String flowName) throws IOException {
     File jsonFlowFile = getFlowDir(projectName, flowName);
     @SuppressWarnings("unchecked")
     HashMap<String, Object> flowObj =
@@ -58,5 +63,14 @@ public class TestUtils {
     ExecutableFlow execFlow = new ExecutableFlow(project, flow);
 
     return execFlow;
+  }
+
+  /* Helper method to create an XmlUserManager from XML_FILE_PARAM file */
+  public static UserManager createTestXmlUserManager() {
+    Props props = new Props();
+    props.put(XmlUserManager.XML_FILE_PARAM, UNIT_RESOURCE_DIR
+      + "/azkaban-users.xml");
+    UserManager manager = new XmlUserManager(props);
+    return manager;
   }
 }

@@ -92,9 +92,9 @@ public class Executor implements Comparable<Executor> {
 
   @Override
   public String toString(){
-    return String.format("%s (id: %s)",
-        null == this.host || this.host.length() == 0 ? "(empty)" : this.host,
-        this.id);
+    return String.format("%s:%s (id: %s)",
+      null == this.host || this.host.length() == 0 ? "(empty)" : this.host,
+      this.port, this.id);
   }
 
   public String getHost() {

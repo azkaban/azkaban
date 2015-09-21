@@ -62,6 +62,7 @@ import azkaban.sla.SlaOption;
 import azkaban.user.Permission;
 import azkaban.user.Permission.Type;
 import azkaban.user.User;
+import azkaban.user.UserManager;
 import azkaban.utils.JSONUtils;
 import azkaban.utils.SplitterOutputStream;
 import azkaban.utils.Utils;
@@ -73,11 +74,13 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
   private static final Logger logger = Logger.getLogger(ScheduleServlet.class);
   private ProjectManager projectManager;
   private ScheduleManager scheduleManager;
+  private UserManager userManager;
 
   @Override
   public void init(ServletConfig config) throws ServletException {
     super.init(config);
     AzkabanWebServer server = (AzkabanWebServer) getApplication();
+    userManager = server.getUserManager();
     projectManager = server.getProjectManager();
     scheduleManager = server.getScheduleManager();
   }
@@ -656,6 +659,7 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
     ExecutionOptions flowOptions = null;
     try {
       flowOptions = HttpRequestUtils.parseFlowOptions(req);
+      HttpRequestUtils.filterAdminOnlyFlowParams(userManager, flowOptions, user);
     } catch (Exception e) {
       ret.put("error", e.getMessage());
     }
