@@ -44,7 +44,8 @@ public class ProcessJob extends AbstractProcessJob {
 
   private static final String MEMCHECK_ENABLED = "memCheck.enabled";
 
-  private static final String MEMCHECK_FREEMEMDECRAMT = "memCheck.freeMemDecrAmt";
+  private static final String MEMCHECK_FREEMEMDECRAMT =
+      "memCheck.freeMemDecrAmt";
 
   public static final String AZKABAN_MEMORY_CHECK = "azkaban.memory.check";
 
@@ -52,10 +53,12 @@ public class ProcessJob extends AbstractProcessJob {
 
   public static final String KRB5CCNAME = "KRB5CCNAME";
 
-  public ProcessJob(final String jobId, final Props sysProps, final Props jobProps, final Logger log) {
+  public ProcessJob(final String jobId, final Props sysProps,
+      final Props jobProps, final Logger log) {
     super(jobId, sysProps, jobProps, log);
 
-    // this is in line with what other job types (hadoopJava, spark, pig, hive) is doing
+    // this is in line with what other job types (hadoopJava, spark, pig, hive)
+    // is doing
     jobProps.put(CommonJobProperties.JOB_ID, jobId);
   }
 
@@ -68,15 +71,18 @@ public class ProcessJob extends AbstractProcessJob {
     }
 
     if (sysProps.getBoolean(MEMCHECK_ENABLED, true)
-            && jobProps.getBoolean(AZKABAN_MEMORY_CHECK, true)) {
+        && jobProps.getBoolean(AZKABAN_MEMORY_CHECK, true)) {
       long freeMemDecrAmt = sysProps.getLong(MEMCHECK_FREEMEMDECRAMT, 0);
       Pair<Long, Long> memPair = getProcMemoryRequirement();
-      boolean isMemGranted = SystemMemoryInfo.canSystemGrantMemory(memPair.getFirst(),
+      boolean isMemGranted =
+          SystemMemoryInfo.canSystemGrantMemory(memPair.getFirst(),
               memPair.getSecond(), freeMemDecrAmt);
       if (!isMemGranted) {
-        throw new Exception(String.format(
-                "Cannot request memory (Xms %d kb, Xmx %d kb) from system for job %s",
-                memPair.getFirst(), memPair.getSecond(), getId()));
+        throw new Exception(
+            String
+                .format(
+                    "Cannot request memory (Xms %d kb, Xmx %d kb) from system for job %s",
+                    memPair.getFirst(), memPair.getSecond(), getId()));
       }
     }
 
@@ -102,7 +108,8 @@ public class ProcessJob extends AbstractProcessJob {
 
     for (String command : commands) {
       info("Command: " + command);
-      AzkabanProcessBuilder builder = new AzkabanProcessBuilder(partitionCommandLine(command))
+      AzkabanProcessBuilder builder =
+          new AzkabanProcessBuilder(partitionCommandLine(command))
               .setEnv(envVars).setWorkingDir(getCwd()).setLogger(getLog());
 
       if (builder.getEnv().size() > 0) {
@@ -126,8 +133,9 @@ public class ProcessJob extends AbstractProcessJob {
         throw new RuntimeException(e);
       } finally {
         this.process = null;
-        info("Process completed " + (success ? "successfully" : "unsuccessfully") + " in "
-                + ((System.currentTimeMillis() - startMs) / 1000) + " seconds.");
+        info("Process completed "
+            + (success ? "successfully" : "unsuccessfully") + " in "
+            + ((System.currentTimeMillis() - startMs) / 1000) + " seconds.");
       }
     }
 
@@ -148,12 +156,16 @@ public class ProcessJob extends AbstractProcessJob {
    */
   private String getKrb5ccname(Props jobProps) {
     String effectiveUser = getEffectiveUser(jobProps);
-    String projectName = jobProps.getString(CommonJobProperties.PROJECT_NAME).replace(" ", "_");
-    String flowId = jobProps.getString(CommonJobProperties.FLOW_ID).replace(" ", "_");
-    String jobId = jobProps.getString(CommonJobProperties.JOB_ID).replace(" ", "_");
+    String projectName =
+        jobProps.getString(CommonJobProperties.PROJECT_NAME).replace(" ", "_");
+    String flowId =
+        jobProps.getString(CommonJobProperties.FLOW_ID).replace(" ", "_");
+    String jobId =
+        jobProps.getString(CommonJobProperties.JOB_ID).replace(" ", "_");
     // execId should be an int and should not have space in it, ever
     String execId = jobProps.getString(CommonJobProperties.EXEC_ID);
-    String krb5ccname = String.format("/tmp/krb5cc__%s__%s__%s__%s__%s", projectName, flowId,
+    String krb5ccname =
+        String.format("/tmp/krb5cc__%s__%s__%s__%s__%s", projectName, flowId,
             jobId, execId, effectiveUser);
 
     return krb5ccname;
@@ -176,16 +188,17 @@ public class ProcessJob extends AbstractProcessJob {
     } else if (jobProps.containsKey(CommonJobProperties.SUBMIT_USER)) {
       effectiveUser = jobProps.getString(CommonJobProperties.SUBMIT_USER);
     } else {
-      throw new RuntimeException("Internal Error: No user.to.proxy or submit.user in the jobProps");
+      throw new RuntimeException(
+          "Internal Error: No user.to.proxy or submit.user in the jobProps");
     }
     info("effective user is: " + effectiveUser);
     return effectiveUser;
   }
 
   /**
-   * This is used to get the min/max memory size requirement by processes. SystemMemoryInfo can use
-   * the info to determine if the memory request can be fulfilled. For Java process, this should be
-   * Xms/Xmx setting.
+   * This is used to get the min/max memory size requirement by processes.
+   * SystemMemoryInfo can use the info to determine if the memory request can be
+   * fulfilled. For Java process, this should be Xms/Xmx setting.
    *
    * @return pair of min/max memory size
    */
@@ -237,8 +250,8 @@ public class ProcessJob extends AbstractProcessJob {
   }
 
   /**
-   * Splits the command into a unix like command line structure. Quotes and single quotes are
-   * treated as nested strings.
+   * Splits the command into a unix like command line structure. Quotes and
+   * single quotes are treated as nested strings.
    *
    * @param command
    * @return
@@ -256,33 +269,33 @@ public class ProcessJob extends AbstractProcessJob {
       char c = command.charAt(index);
 
       switch (c) {
-        case ' ':
-          if (!isQuote && !isApos) {
-            String arg = buffer.toString();
-            buffer = new StringBuffer(command.length() - index);
-            if (arg.length() > 0) {
-              commands.add(arg);
-            }
-          } else {
-            buffer.append(c);
+      case ' ':
+        if (!isQuote && !isApos) {
+          String arg = buffer.toString();
+          buffer = new StringBuffer(command.length() - index);
+          if (arg.length() > 0) {
+            commands.add(arg);
           }
-          break;
-        case '\'':
-          if (!isQuote) {
-            isApos = !isApos;
-          } else {
-            buffer.append(c);
-          }
-          break;
-        case '"':
-          if (!isApos) {
-            isQuote = !isQuote;
-          } else {
-            buffer.append(c);
-          }
-          break;
-        default:
+        } else {
           buffer.append(c);
+        }
+        break;
+      case '\'':
+        if (!isQuote) {
+          isApos = !isApos;
+        } else {
+          buffer.append(c);
+        }
+        break;
+      case '"':
+        if (!isApos) {
+          isQuote = !isQuote;
+        } else {
+          buffer.append(c);
+        }
+        break;
+      default:
+        buffer.append(c);
       }
 
       index++;
