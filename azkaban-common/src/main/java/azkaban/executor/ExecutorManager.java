@@ -117,7 +117,6 @@ public class ExecutorManager extends EventHandler implements
 
   public ExecutorManager(Props props, ExecutorLoader loader,
       Map<String, Alerter> alters) throws ExecutorManagerException {
-    alerters = alters;
     azkProps = props;
     this.executorLoader = loader;
     this.setupExecutors();
@@ -242,7 +241,7 @@ public class ExecutorManager extends EventHandler implements
             @Override
             public String call() throws Exception {
               return callExecutorForJsonString(executor.getHost(),
-                executor.getPort(), "/serverstatistics", null);
+                executor.getPort(), "/serverStatistics", null);
             }
           });
         futures.add(new Pair<Executor, Future<String>>(executor,
@@ -1039,7 +1038,6 @@ public class ExecutorManager extends EventHandler implements
           Executor executor = activeExecutors.iterator().next();
           // assign only local executor we have
           reference.setExecutor(executor);
-          executorLoader.assignExecutor(executor.getId(), exflow.getExecutionId());
           executorLoader.addActiveExecutableReference(reference);
           try {
             callExecutorServer(exflow, executor, ConnectorParams.EXECUTE_ACTION);
