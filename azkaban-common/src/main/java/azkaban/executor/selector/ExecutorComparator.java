@@ -122,14 +122,14 @@ public class ExecutorComparator extends CandidateComparator<Executor> {
     result = 0 ;
     // both doesn't expose the info
     if (null == statisticsObj1 && null == statisticsObj2){
-      logger.info(String.format("%s : neither of the executors exposed statistics info.",
+      logger.debug(String.format("%s : neither of the executors exposed statistics info.",
           caller));
       return true;
     }
 
     //right side doesn't expose the info.
     if (null == statisticsObj2 ){
-        logger.info(String.format("%s : choosing left side and the right side executor doesn't expose statistics info",
+        logger.debug(String.format("%s : choosing left side and the right side executor doesn't expose statistics info",
             caller));
         result = 1;
         return true;
@@ -137,7 +137,7 @@ public class ExecutorComparator extends CandidateComparator<Executor> {
 
     //left side doesn't expose the info.
     if (null == statisticsObj1 ){
-      logger.info(String.format("%s : choosing right side and the left side executor doesn't expose statistics info",
+      logger.debug(String.format("%s : choosing right side and the left side executor doesn't expose statistics info",
           caller));
       result = -1;
       return true;

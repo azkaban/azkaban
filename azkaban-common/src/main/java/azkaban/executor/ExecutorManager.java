@@ -117,6 +117,7 @@ public class ExecutorManager extends EventHandler implements
 
   public ExecutorManager(Props props, ExecutorLoader loader,
       Map<String, Alerter> alters) throws ExecutorManagerException {
+    alerters = alters;
     azkProps = props;
     this.executorLoader = loader;
     this.setupExecutors();
@@ -126,7 +127,7 @@ public class ExecutorManager extends EventHandler implements
         new QueuedExecutions(props.getLong(AZKABAN_WEBSERVER_QUEUE_SIZE, 100000));
     this.loadQueuedFlows();
 
-    alerters = alters;
+
 
     cacheDir = new File(props.getString("cache.directory", "cache"));
 
@@ -241,7 +242,7 @@ public class ExecutorManager extends EventHandler implements
             @Override
             public String call() throws Exception {
               return callExecutorForJsonString(executor.getHost(),
-                executor.getPort(), "/serverstastics", null);
+                executor.getPort(), "/serverstatistics", null);
             }
           });
         futures.add(new Pair<Executor, Future<String>>(executor,
@@ -1038,6 +1039,7 @@ public class ExecutorManager extends EventHandler implements
           Executor executor = activeExecutors.iterator().next();
           // assign only local executor we have
           reference.setExecutor(executor);
+          executorLoader.assignExecutor(executor.getId(), exflow.getExecutionId());
           executorLoader.addActiveExecutableReference(reference);
           try {
             callExecutorServer(exflow, executor, ConnectorParams.EXECUTE_ACTION);

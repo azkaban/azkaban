@@ -21,8 +21,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
-import java.util.List;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -178,13 +176,13 @@ public class ServerStatisticsServlet extends HttpServlet  {
 
 
   /**<pre>
-   * fill the result set with the Remaining temp Storage .
-   * Note : As the Top bash call doesn't yield accurate result for the system load,
+   * fill the result set with the CPU usage .
+   * Note : As the 'Top' bash call doesn't yield accurate result for the system load,
    *        the implementation has been changed to load from the "proc/loadavg" which keeps
    *        the moving average of the system load, we are pulling the average for the recent 1 min.
    *</pre>
    * @param stats reference to the result container which contains all the results, this specific method
-   *              will only work on the property "cpuUdage".
+   *              will only work on the property "cpuUsage".
    */
   protected void fillCpuUsage(ExecutorInfo stats){
     if (new File("/bin/bash").exists() && new File("/bin/cat").exists() &&  new File("/proc/loadavg").exists()) {
