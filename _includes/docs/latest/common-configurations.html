@@ -2,6 +2,11 @@
 
 <p>This section lists out the configurations that are common to all job types</p>
 
+<h3>other_namenodes</h3>
+<p>This job property is useful for jobs that need to read data from or write data to more than one Hadoop NameNode. By default Azkaban requests a HDFS_DELEGATION_TOKEN on behalf of the job for the cluster that Azkaban is configured to run on.  When this property is present, Azkaban will try request a HDFS_DELEGATION_TOKEN for each of the specified HDFS NameNodes.</p>
+<p>The value of this propety is in the form of comma separated list of NameNode URLs.</p>
+<p>For example: <b>other_namenodes=webhdfs://host1:50070,webhdfs:host2:50070</b></p>
+
 <h3>HTTP Job Callback</h3>
 
 <p>The purpose of this feature to allow Azkaban to notify external systems via an HTTP upon the completion of a job. The new properties are in the following format:</p>
