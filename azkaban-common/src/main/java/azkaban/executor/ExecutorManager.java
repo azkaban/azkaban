@@ -126,7 +126,7 @@ public class ExecutorManager extends EventHandler implements
         new QueuedExecutions(props.getLong(AZKABAN_WEBSERVER_QUEUE_SIZE, 100000));
     this.loadQueuedFlows();
 
-
+    alerters = alters;
 
     cacheDir = new File(props.getString("cache.directory", "cache"));
 
@@ -1790,7 +1790,7 @@ public class ExecutorManager extends EventHandler implements
     private void processQueuedFlows(long activeExecutorsRefreshWindow,
       int maxContinuousFlowProcessed) throws InterruptedException,
       ExecutorManagerException {
-      long lastExecutorRefreshTime = System.currentTimeMillis();
+      long lastExecutorRefreshTime = 0;
       Pair<ExecutionReference, ExecutableFlow> runningCandidate;
       int currentContinuousFlowProcessed = 0;
 
