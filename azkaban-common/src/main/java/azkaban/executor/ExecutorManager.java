@@ -74,9 +74,9 @@ public class ExecutorManager extends EventHandler implements
     "azkaban.use.multiple.executors";
   private static final String AZKABAN_WEBSERVER_QUEUE_SIZE =
     "azkaban.webserver.queue.size";
-  private static final String AZKABAN_ACTIVE_EXECUTOR_REFRESHINTERVAL_IN_MS =
+  private static final String AZKABAN_ACTIVE_EXECUTOR_REFRESH_IN_MS =
     "azkaban.activeexecutor.refresh.milisecinterval";
-  private static final String AZKABAN_ACTIVE_EXECUTOR_REFRESHINTERVAL_IN_NUM_FLOW =
+  private static final String AZKABAN_ACTIVE_EXECUTOR_REFRESH_IN_NUM_FLOW =
     "azkaban.activeexecutor.refresh.flowinterval";
   private static final String AZKABAN_EXECUTORINFO_REFRESH_MAX_THREADS =
       "azkaban.executorinfo.refresh.maxThreads";
@@ -115,20 +115,19 @@ public class ExecutorManager extends EventHandler implements
   private long lastSuccessfulExecutorInfoRefresh;
   private ExecutorService executorInforRefresherService;
 
-  public ExecutorManager(Props props, ExecutorLoader loader,
-      Map<String, Alerter> alters) throws ExecutorManagerException {
-    alerters = alters;
-    azkProps = props;
+  public ExecutorManager(Props azkProps, ExecutorLoader loader,
+      Map<String, Alerter> alerters) throws ExecutorManagerException {
+    this.alerters = alerters;
+    this.azkProps = azkProps;
     this.executorLoader = loader;
-
     this.setupExecutors();
     this.loadRunningFlows();
 
     queuedFlows =
-        new QueuedExecutions(props.getLong(AZKABAN_WEBSERVER_QUEUE_SIZE, 100000));
+        new QueuedExecutions(azkProps.getLong(AZKABAN_WEBSERVER_QUEUE_SIZE, 100000));
     this.loadQueuedFlows();
 
-    cacheDir = new File(props.getString("cache.directory", "cache"));
+    cacheDir = new File(azkProps.getString("cache.directory", "cache"));
 
     executingManager = new ExecutingManagerUpdaterThread();
     executingManager.start();
@@ -138,7 +137,7 @@ public class ExecutorManager extends EventHandler implements
     }
 
     long executionLogsRetentionMs =
-      props.getLong("execution.logs.retention.ms",
+        azkProps.getLong("execution.logs.retention.ms",
         DEFAULT_EXECUTION_LOGS_RETENTION_MS);
 
     cleanerThread = new CleanerThread(executionLogsRetentionMs);
@@ -172,8 +171,8 @@ public class ExecutorManager extends EventHandler implements
     queueProcessor =
       new QueueProcessorThread(azkProps.getBoolean(
         AZKABAN_QUEUEPROCESSING_ENABLED, true), azkProps.getLong(
-        AZKABAN_ACTIVE_EXECUTOR_REFRESHINTERVAL_IN_MS, 1000), azkProps.getInt(
-        AZKABAN_ACTIVE_EXECUTOR_REFRESHINTERVAL_IN_NUM_FLOW, 10));
+        AZKABAN_ACTIVE_EXECUTOR_REFRESH_IN_MS, 1000), azkProps.getInt(
+        AZKABAN_ACTIVE_EXECUTOR_REFRESH_IN_NUM_FLOW, 10));
 
     queueProcessor.start();
   }
@@ -1734,10 +1733,18 @@ public class ExecutorManager extends EventHandler implements
   private void dispatch(ExecutionReference reference, ExecutableFlow exflow,
     Executor choosenExecutor) throws ExecutorManagerException {
     exflow.setUpdateTime(System.currentTimeMillis());
-    callExecutorServer(exflow, choosenExecutor,
-      ConnectorParams.EXECUTE_ACTION);
+
     executorLoader.assignExecutor(choosenExecutor.getId(),
       exflow.getExecutionId());
+    try {
+      callExecutorServer(exflow, choosenExecutor,
+        ConnectorParams.EXECUTE_ACTION);
+    } catch (ExecutorManagerException ex) {
+      logger.error("Rolling back executor assignment for execution id:"
+        + exflow.getExecutionId(), ex);
+      executorLoader.unassignExecutor(exflow.getExecutionId());
+      throw new ExecutorManagerException(ex);
+    }
     reference.setExecutor(choosenExecutor);
 
     // move from flow to running flows
@@ -1855,14 +1862,14 @@ public class ExecutorManager extends EventHandler implements
         } else {
           exflow.setUpdateTime(currentTime);
           // process flow with current snapshot of activeExecutors
-          processFlow(reference, exflow, new HashSet<Executor>(activeExecutors));
+          selectExecutorAndDispatchFlow(reference, exflow, new HashSet<Executor>(activeExecutors));
         }
         currentContinuousFlowProcessed++;
       }
     }
 
     /* process flow with a snapshot of available Executors */
-    private void processFlow(ExecutionReference reference,
+    private void selectExecutorAndDispatchFlow(ExecutionReference reference,
       ExecutableFlow exflow, Set<Executor> availableExecutors)
       throws ExecutorManagerException {
       synchronized (exflow) {
@@ -1953,7 +1960,7 @@ public class ExecutorManager extends EventHandler implements
       } else {
         remainingExecutors.remove(lastSelectedExecutor);
         // try other executors except chosenExecutor
-        processFlow(reference, exflow, remainingExecutors);
+        selectExecutorAndDispatchFlow(reference, exflow, remainingExecutors);
       }
     }
 

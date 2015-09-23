@@ -335,6 +335,43 @@ public class JdbcExecutorLoaderTest {
 
   }
 
+  /* Test exception when unassigning an missing execution */
+  @Test
+  public void testUnassignExecutorException() throws ExecutorManagerException,
+    IOException {
+    if (!isTestSetup()) {
+      return;
+    }
+    ExecutorLoader loader = createLoader();
+    try {
+      loader.unassignExecutor(2);
+      Assert.fail("Expecting exception, but didn't get one");
+    } catch (ExecutorManagerException ex) {
+      System.out.println("Test true");
+    }
+  }
+
+  /* Test happy case when unassigning executor for a flow execution */
+  @Test
+  public void testUnassignExecutor() throws ExecutorManagerException,
+    IOException {
+    if (!isTestSetup()) {
+      return;
+    }
+    ExecutorLoader loader = createLoader();
+    String host = "localhost";
+    int port = 12345;
+    Executor executor = loader.addExecutor(host, port);
+    ExecutableFlow flow = TestUtils.createExecutableFlow("exectest1", "exec1");
+    loader.uploadExecutableFlow(flow);
+    loader.assignExecutor(executor.getId(), flow.getExecutionId());
+    Assert.assertEquals(
+      loader.fetchExecutorByExecutionId(flow.getExecutionId()), executor);
+    loader.unassignExecutor(flow.getExecutionId());
+    Assert.assertEquals(
+      loader.fetchExecutorByExecutionId(flow.getExecutionId()), null);
+  }
+
   /* Test exception when assigning a non-existent executor to a flow */
   @Test
   public void testAssignExecutorInvalidExecutor()
