@@ -240,7 +240,7 @@ public class ExecutorManager extends EventHandler implements
             @Override
             public String call() throws Exception {
               return callExecutorForJsonString(executor.getHost(),
-                executor.getPort(), "/serverstastics", null);
+                executor.getPort(), "/serverStatistics", null);
             }
           });
         futures.add(new Pair<Executor, Future<String>>(executor,
