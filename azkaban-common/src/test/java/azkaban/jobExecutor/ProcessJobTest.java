@@ -20,7 +20,6 @@ import java.io.File;
 import java.io.IOException;
 
 import org.apache.log4j.Logger;
-
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -28,6 +27,7 @@ import org.junit.Test;
 import org.junit.Rule;
 import org.junit.rules.TemporaryFolder;
 
+import azkaban.flow.CommonJobProperties;
 import azkaban.utils.Props;
 
 public class ProcessJobTest {
@@ -46,6 +46,12 @@ public class ProcessJobTest {
     props.put(AbstractProcessJob.WORKING_DIR, workingDir.getCanonicalPath());
     props.put("type", "command");
     props.put("fullPath", ".");
+    
+    props.put(CommonJobProperties.PROJECT_NAME, "test_project");
+    props.put(CommonJobProperties.FLOW_ID, "test_flow");
+    props.put(CommonJobProperties.JOB_ID, "test_job");
+    props.put(CommonJobProperties.EXEC_ID, "123");
+    props.put(CommonJobProperties.SUBMIT_USER, "test_user");
 
     job = new ProcessJob("TestProcess", props, props, log);
   }
@@ -59,6 +65,37 @@ public class ProcessJobTest {
   public void testOneUnixCommand() throws Exception {
     // Initialize the Props
     props.put(ProcessJob.COMMAND, "ls -al");
+    job.run();
+
+  }
+  
+  /**
+   * this job should run fine if the props contain user.to.proxy
+   * @throws Exception
+   */
+  @Test
+  public void testOneUnixCommandWithProxyUserInsteadOfSubmitUser() throws Exception {
+    
+    // Initialize the Props
+    props.removeLocal(CommonJobProperties.SUBMIT_USER);
+    props.put("user.to.proxy", "test_user");
+    props.put(ProcessJob.COMMAND, "ls -al");
+    
+    job.run();
+
+  }
+  
+  /**
+   * this job should fail because there is no user.to.proxy and no CommonJobProperties.SUBMIT_USER
+   * @throws Exception
+   */
+  @Test (expected=RuntimeException.class)
+  public void testOneUnixCommandWithNoUser() throws Exception {
+    
+    // Initialize the Props
+    props.removeLocal(CommonJobProperties.SUBMIT_USER);    
+    props.put(ProcessJob.COMMAND, "ls -al");
+    
     job.run();
 
   }

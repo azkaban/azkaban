@@ -503,7 +503,7 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
       } else {
         ret.put("length", data.getLength());
         ret.put("offset", data.getOffset());
-        ret.put("data", data.getData());
+        ret.put("data", StringEscapeUtils.escapeHtml(data.getData()));
       }
     } catch (ExecutorManagerException e) {
       throw new ServletException(e);

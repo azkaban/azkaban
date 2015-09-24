@@ -52,6 +52,8 @@ import azkaban.jobtype.JobTypeManager;
 import azkaban.jobtype.JobTypeManagerException;
 import azkaban.metric.MetricReportManager;
 import azkaban.project.ProjectLoader;
+import azkaban.project.ProjectWhitelist;
+import azkaban.project.ProjectWhitelist.WhitelistType;
 import azkaban.utils.FileIOUtils;
 import azkaban.utils.FileIOUtils.JobMetaData;
 import azkaban.utils.FileIOUtils.LogData;
@@ -481,7 +483,9 @@ public class FlowRunnerManager implements EventListener,
         int numJobs =
             Integer.valueOf(options.getFlowParameters().get(
                 FLOW_NUM_JOB_THREADS));
-        if (numJobs > 0 && numJobs <= numJobThreads) {
+        if (numJobs > 0 && (numJobs <= numJobThreads || ProjectWhitelist
+                .isProjectWhitelisted(flow.getProjectId(),
+                    WhitelistType.NumJobPerFlow))) {
           numJobThreads = numJobs;
         }
       } catch (Exception e) {

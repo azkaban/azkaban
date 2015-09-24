@@ -18,6 +18,7 @@ package azkaban.utils;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.regex.Pattern;
 
 public class StringUtils {
   public static final char SINGLE_QUOTE = '\'';
@@ -87,5 +88,20 @@ public class StringUtils {
     }
 
     return buffer.toString();
+  }
+
+  private static final Pattern BROWSWER_PATTERN = Pattern
+      .compile(".*Gecko.*|.*AppleWebKit.*|.*Trident.*|.*Chrome.*");
+
+  public static boolean isFromBrowser(String userAgent) {
+    if (userAgent == null) {
+      return false;
+    }
+
+    if (BROWSWER_PATTERN.matcher(userAgent).matches()) {
+      return true;
+    } else {
+      return false;
+    }
   }
 }
