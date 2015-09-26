@@ -101,7 +101,7 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements
           runner.query(connection, LastInsertID.LAST_INSERT_ID,
               new LastInsertID());
 
-      if (id == -1l) {
+      if (id == -1L) {
         throw new ExecutorManagerException(
             "Execution id is not properly created.");
       }
@@ -779,7 +779,7 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements
     @Override
     public Long handle(ResultSet rs) throws SQLException {
       if (!rs.next()) {
-        return -1l;
+        return -1L;
       }
       long id = rs.getLong(1);
       return id;
