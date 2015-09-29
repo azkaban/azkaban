@@ -171,7 +171,7 @@ public class ExecutorManager extends EventHandler implements
     queueProcessor =
       new QueueProcessorThread(azkProps.getBoolean(
         AZKABAN_QUEUEPROCESSING_ENABLED, true), azkProps.getLong(
-        AZKABAN_ACTIVE_EXECUTOR_REFRESH_IN_MS, 1000), azkProps.getInt(
+        AZKABAN_ACTIVE_EXECUTOR_REFRESH_IN_MS, 10000), azkProps.getInt(
         AZKABAN_ACTIVE_EXECUTOR_REFRESH_IN_NUM_FLOW, 10));
 
     queueProcessor.start();
@@ -1939,7 +1939,7 @@ public class ExecutorManager extends EventHandler implements
         logger.info("Using dispatcher for execution id :"
           + exflow.getExecutionId());
         ExecutorSelector selector = new ExecutorSelector(filterList, comparatorWeightsMap);
-        choosenExecutor = selector.getBest(activeExecutors, exflow);
+        choosenExecutor = selector.getBest(availableExecutors, exflow);
       }
       return choosenExecutor;
     }
