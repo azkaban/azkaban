@@ -42,7 +42,7 @@ public final class ExecutorFilter extends CandidateFilter<Executor, ExecutableFl
 
   // factor filter names.
   private static final String STATICREMAININGFLOWSIZE_FILTER_NAME = "StaticRemainingFlowSize";
-  private static final String MINIMUMFREEMEMORY_FILTER_NAME = "MinimunFreeMemory";
+  private static final String MINIMUMFREEMEMORY_FILTER_NAME = "MinimumFreeMemory";
   private static final String CPUSTATUS_FILTER_NAME = "CpuStatus";
 
   /**<pre>
