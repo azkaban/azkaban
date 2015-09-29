@@ -26,7 +26,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
-import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -42,13 +41,11 @@ import azkaban.metric.TimeBasedReportingMetric;
 import azkaban.metric.inmemoryemitter.InMemoryHistoryNode;
 import azkaban.metric.inmemoryemitter.InMemoryMetricEmitter;
 import azkaban.server.HttpRequestUtils;
-import azkaban.server.ServerConstants;
 import azkaban.utils.JSONUtils;
 
-
 /**
- * Servlet to communicate with Azkaban exec server
- * This servlet get requests from stats servlet in Azkaban Web server
+ * Servlet to communicate with Azkaban exec server This servlet get requests
+ * from stats servlet in Azkaban Web server
  */
 public class StatsServlet extends HttpServlet implements ConnectorParams {
   private static final long serialVersionUID = 2L;
@@ -58,24 +55,29 @@ public class StatsServlet extends HttpServlet implements ConnectorParams {
     return HttpRequestUtils.hasParam(request, param);
   }
 
-  public String getParam(HttpServletRequest request, String name) throws ServletException {
+  public String getParam(HttpServletRequest request, String name)
+      throws ServletException {
     return HttpRequestUtils.getParam(request, name);
   }
 
-  public Boolean getBooleanParam(HttpServletRequest request, String name) throws ServletException {
+  public Boolean getBooleanParam(HttpServletRequest request, String name)
+      throws ServletException {
     return HttpRequestUtils.getBooleanParam(request, name);
   }
 
-  public long getLongParam(HttpServletRequest request, String name) throws ServletException {
+  public long getLongParam(HttpServletRequest request, String name)
+      throws ServletException {
     return HttpRequestUtils.getLongParam(request, name);
   }
 
   /**
-   * Handle all get request to Stats Servlet
-   * {@inheritDoc}
-   * @see javax.servlet.http.HttpServlet#doGet(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse)
+   * Handle all get request to Stats Servlet {@inheritDoc}
+   * 
+   * @see javax.servlet.http.HttpServlet#doGet(javax.servlet.http.HttpServletRequest,
+   *      javax.servlet.http.HttpServletResponse)
    */
-  protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+  protected void doGet(HttpServletRequest req, HttpServletResponse resp)
+      throws ServletException, IOException {
     Map<String, Object> ret = new HashMap<String, Object>();
 
     if (hasParam(req, ACTION_PARAM)) {
@@ -103,14 +105,15 @@ public class StatsServlet extends HttpServlet implements ConnectorParams {
   }
 
   /**
-   * enable or disable metric Manager
-   * A disable will also purge all data from all metric emitters
+   * enable or disable metric Manager A disable will also purge all data from
+   * all metric emitters
    */
-  private void handleChangeManagerStatusRequest(HttpServletRequest req, Map<String, Object> ret,
-      boolean enableMetricManager) {
+  private void handleChangeManagerStatusRequest(HttpServletRequest req,
+      Map<String, Object> ret, boolean enableMetricManager) {
     try {
       logger.info("Updating metric manager status");
-      if ((enableMetricManager && MetricReportManager.isInstantiated()) || MetricReportManager.isAvailable()) {
+      if ((enableMetricManager && MetricReportManager.isInstantiated())
+          || MetricReportManager.isAvailable()) {
         MetricReportManager metricManager = MetricReportManager.getInstance();
         if (enableMetricManager) {
           metricManager.enableManager();
@@ -130,12 +133,14 @@ public class StatsServlet extends HttpServlet implements ConnectorParams {
   /**
    * Update number of display snapshots for /stats graphs
    */
-  private void handleChangeEmitterPoints(HttpServletRequest req, Map<String, Object> ret) {
+  private void handleChangeEmitterPoints(HttpServletRequest req,
+      Map<String, Object> ret) {
     try {
       long numInstance = getLongParam(req, STATS_MAP_EMITTERNUMINSTANCES);
       if (MetricReportManager.isAvailable()) {
         MetricReportManager metricManager = MetricReportManager.getInstance();
-        InMemoryMetricEmitter memoryEmitter = extractInMemoryMetricEmitter(metricManager);
+        InMemoryMetricEmitter memoryEmitter =
+            extractInMemoryMetricEmitter(metricManager);
         memoryEmitter.setReportingInstances(numInstance);
         ret.put(STATUS_PARAM, RESPONSE_SUCCESS);
       } else {
@@ -150,12 +155,14 @@ public class StatsServlet extends HttpServlet implements ConnectorParams {
   /**
    * Update InMemoryMetricEmitter interval to maintain metric snapshots
    */
-  private void handleChangeCleaningInterval(HttpServletRequest req, Map<String, Object> ret) {
+  private void handleChangeCleaningInterval(HttpServletRequest req,
+      Map<String, Object> ret) {
     try {
       long newInterval = getLongParam(req, STATS_MAP_CLEANINGINTERVAL);
       if (MetricReportManager.isAvailable()) {
         MetricReportManager metricManager = MetricReportManager.getInstance();
-        InMemoryMetricEmitter memoryEmitter = extractInMemoryMetricEmitter(metricManager);
+        InMemoryMetricEmitter memoryEmitter =
+            extractInMemoryMetricEmitter(metricManager);
         memoryEmitter.setReportingInterval(newInterval);
         ret.put(STATUS_PARAM, RESPONSE_SUCCESS);
       } else {
@@ -169,19 +176,24 @@ public class StatsServlet extends HttpServlet implements ConnectorParams {
 
   /**
    * Get metric snapshots for a metric and date specification
+   * 
    * @throws ServletException
    */
-  private void handleGetMetricHistory(HttpServletRequest req, Map<String, Object> ret) throws ServletException {
+  private void handleGetMetricHistory(HttpServletRequest req,
+      Map<String, Object> ret) throws ServletException {
     if (MetricReportManager.isAvailable()) {
       MetricReportManager metricManager = MetricReportManager.getInstance();
-      InMemoryMetricEmitter memoryEmitter = extractInMemoryMetricEmitter(metricManager);
+      InMemoryMetricEmitter memoryEmitter =
+          extractInMemoryMetricEmitter(metricManager);
 
       // if we have a memory emitter
       if (memoryEmitter != null) {
         try {
           List<InMemoryHistoryNode> result =
-              memoryEmitter.getMetrics(getParam(req, STATS_MAP_METRICNAMEPARAM),
-                  parseDate(getParam(req, STATS_MAP_STARTDATE)), parseDate(getParam(req, STATS_MAP_ENDDATE)),
+              memoryEmitter.getMetrics(
+                  getParam(req, STATS_MAP_METRICNAMEPARAM),
+                  parseDate(getParam(req, STATS_MAP_STARTDATE)),
+                  parseDate(getParam(req, STATS_MAP_ENDDATE)),
                   getBooleanParam(req, STATS_MAP_METRICRETRIEVALMODE));
 
           if (result != null && result.size() > 0) {
@@ -204,7 +216,8 @@ public class StatsServlet extends HttpServlet implements ConnectorParams {
   /**
    * Get InMemoryMetricEmitter, if available else null
    */
-  private InMemoryMetricEmitter extractInMemoryMetricEmitter(MetricReportManager metricManager) {
+  private InMemoryMetricEmitter extractInMemoryMetricEmitter(
+      MetricReportManager metricManager) {
     InMemoryMetricEmitter memoryEmitter = null;
     for (IMetricEmitter emitter : metricManager.getMetricEmitters()) {
       if (emitter instanceof InMemoryMetricEmitter) {
@@ -218,7 +231,8 @@ public class StatsServlet extends HttpServlet implements ConnectorParams {
   /**
    * Get all the metrics tracked by metric manager
    */
-  private void handleGetAllMMetricsName(HttpServletRequest req, Map<String, Object> ret) {
+  private void handleGetAllMMetricsName(HttpServletRequest req,
+      Map<String, Object> ret) {
     if (MetricReportManager.isAvailable()) {
       MetricReportManager metricManager = MetricReportManager.getInstance();
       List<IMetric<?>> result = metricManager.getAllMetrics();
@@ -226,7 +240,7 @@ public class StatsServlet extends HttpServlet implements ConnectorParams {
         ret.put(RESPONSE_ERROR, "No Metric being tracked");
       } else {
         List<String> metricNames = new LinkedList<String>();
-        for(IMetric<?> metric: result) {
+        for (IMetric<?> metric : result) {
           metricNames.add(metric.getName());
         }
         ret.put("data", metricNames);
@@ -238,15 +252,19 @@ public class StatsServlet extends HttpServlet implements ConnectorParams {
 
   /**
    * Update tracking interval for a given metrics
+   * 
    * @throws ServletException
    */
-  private void handleChangeMetricInterval(HttpServletRequest req, Map<String, Object> ret) throws ServletException {
+  private void handleChangeMetricInterval(HttpServletRequest req,
+      Map<String, Object> ret) throws ServletException {
     try {
       String metricName = getParam(req, STATS_MAP_METRICNAMEPARAM);
       long newInterval = getLongParam(req, STATS_MAP_REPORTINGINTERVAL);
       if (MetricReportManager.isAvailable()) {
         MetricReportManager metricManager = MetricReportManager.getInstance();
-        TimeBasedReportingMetric<?> metric = (TimeBasedReportingMetric<?>) metricManager.getMetricFromName(metricName);
+        TimeBasedReportingMetric<?> metric =
+            (TimeBasedReportingMetric<?>) metricManager
+                .getMetricFromName(metricName);
         metric.updateInterval(newInterval);
         ret.put(STATUS_PARAM, RESPONSE_SUCCESS);
       } else {

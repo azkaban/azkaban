@@ -34,6 +34,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
+import java.util.TreeMap;
 
 import org.apache.log4j.Logger;
 
@@ -811,20 +812,28 @@ public class Props {
   }
 
   /**
+   * Returns a map of all the flattened properties, the item in the returned map is sorted alphabetically
+   * by the key value.
+   *
+   *
+   * @Return
+   */
+  public Map<String,String> getFlattened(){
+    TreeMap<String,String> returnVal = new TreeMap<String,String>(); 
+    returnVal.putAll(getMapByPrefix(""));
+    return returnVal; 
+  }
+
+  /**
    * Get a map of all properties by string prefix
    *
    * @param prefix The string prefix
    */
   public Map<String, String> getMapByPrefix(String prefix) {
-    Map<String, String> values = new HashMap<String, String>();
+    Map<String, String> values = _parent == null ? new HashMap<String, String>():
+                                                   _parent.getMapByPrefix(prefix);
 
-    if (_parent != null) {
-      for (Map.Entry<String, String> entry : _parent.getMapByPrefix(prefix)
-          .entrySet()) {
-        values.put(entry.getKey(), entry.getValue());
-      }
-    }
-
+    // when there is a conflict, value from the child takes the priority.
     for (String key : this.localKeySet()) {
       if (key.startsWith(prefix)) {
         values.put(key.substring(prefix.length()), get(key));

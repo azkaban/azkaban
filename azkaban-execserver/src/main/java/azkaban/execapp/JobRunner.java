@@ -51,7 +51,7 @@ import azkaban.utils.Props;
 import azkaban.utils.StringUtils;
 
 public class JobRunner extends EventHandler implements Runnable {
-  private static final String AZKABAN_WEBSERVER_URL = "azkaban.webserver.url";
+  public static final String AZKABAN_WEBSERVER_URL = "azkaban.webserver.url";
 
   private final Layout DEFAULT_LAYOUT = new EnhancedPatternLayout(
       "%d{dd-MM-yyyy HH:mm:ss z} %c{1} %p - %m\n");
@@ -693,6 +693,10 @@ public class JobRunner extends EventHandler implements Runnable {
 
   public File getLogFile() {
     return logFile;
+  }
+
+  public Logger getLogger() {
+    return logger;
   }
 
   public static String createLogFileName(ExecutableNode node, int attempt) {

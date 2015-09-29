@@ -19,19 +19,22 @@ package azkaban.utils;
 import java.io.File;
 
 import org.apache.log4j.Logger;
-
 import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
 
+import azkaban.project.Project;
+
 public class DirectoryFlowLoaderTest {
+
+  Project project = new Project(11, "myTestProject");
 
   @Ignore @Test
   public void testDirectoryLoad() {
     Logger logger = Logger.getLogger(this.getClass());
     DirectoryFlowLoader loader = new DirectoryFlowLoader(new Props(), logger);
 
-    loader.loadProjectFlow(new File("unit/executions/exectest1"));
+    loader.loadProjectFlow(project, new File("unit/executions/exectest1"));
     logger.info(loader.getFlowMap().size());
   }
 
@@ -40,7 +43,7 @@ public class DirectoryFlowLoaderTest {
     Logger logger = Logger.getLogger(this.getClass());
     DirectoryFlowLoader loader = new DirectoryFlowLoader(new Props(), logger);
 
-    loader.loadProjectFlow(new File("unit/executions/embedded"));
+    loader.loadProjectFlow(project, new File("unit/executions/embedded"));
     Assert.assertEquals(0, loader.getErrors().size());
   }
 
@@ -49,7 +52,7 @@ public class DirectoryFlowLoaderTest {
     Logger logger = Logger.getLogger(this.getClass());
     DirectoryFlowLoader loader = new DirectoryFlowLoader(new Props(), logger);
 
-    loader.loadProjectFlow(new File("unit/executions/embeddedBad"));
+    loader.loadProjectFlow(project, new File("unit/executions/embeddedBad"));
     for (String error : loader.getErrors()) {
       System.out.println(error);
     }

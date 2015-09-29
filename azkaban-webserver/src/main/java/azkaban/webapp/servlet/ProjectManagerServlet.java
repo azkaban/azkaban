@@ -59,6 +59,7 @@ import azkaban.project.ProjectFileHandler;
 import azkaban.project.ProjectLogEvent;
 import azkaban.project.ProjectManager;
 import azkaban.project.ProjectManagerException;
+import azkaban.project.ProjectWhitelist;
 import azkaban.project.validator.ValidationReport;
 import azkaban.project.validator.ValidatorConfigs;
 import azkaban.scheduler.Schedule;
@@ -147,12 +148,16 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
         handleFlowPage(req, resp, session);
       } else if (hasParam(req, "delete")) {
         handleRemoveProject(req, resp, session);
+      } else if (hasParam(req, "purge")) {
+        handlePurgeProject(req, resp, session);
       } else if (hasParam(req, "download")) {
         handleDownloadProject(req, resp, session);
       } else {
         handleProjectPage(req, resp, session);
       }
       return;
+    } else if (hasParam(req, "reloadProjectWhitelist")) {
+      handleReloadProjectWhitelist(req, resp, session);
     }
 
     Page page =
@@ -514,6 +519,56 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
     }
 
   }
+
+    /**
+     * validate readiness of a project and user permission and use
+     * projectManager to purge the project if things looks good
+     **/
+    private void handlePurgeProject(HttpServletRequest req,
+        HttpServletResponse resp, Session session) throws ServletException,
+        IOException {
+        User user = session.getUser();
+        String projectName = getParam(req, "project");
+        HashMap<String, Object> ret = new HashMap<String, Object>();
+        boolean isOperationSuccessful = true;
+
+        if (projectManager.isActiveProject(projectName)) {
+            ret.put("error", "Project " + projectName
+                + " should be deleted before purging");
+            isOperationSuccessful = false;
+        }
+
+        try {
+            Project project = null;
+
+            // project is already deleted
+            if (isOperationSuccessful) {
+                project = projectManager.getProject(projectName);
+                if (project == null) {
+                    ret.put("error", "no project with name : " + projectName);
+                    isOperationSuccessful = false;
+                }
+            }
+
+            // only eligible users can purge a project
+            if (isOperationSuccessful
+                && !hasPermission(project, user, Type.ADMIN)) {
+                ret.put("error", "Cannot purge. User '" + user.getUserId()
+                    + "' is not an ADMIN.");
+                isOperationSuccessful = false;
+            }
+
+            if (isOperationSuccessful) {
+                projectManager.purgeProject(project, user);
+            }
+        } catch (Exception e) {
+            ret.put("error", e.getMessage());
+            isOperationSuccessful = false;
+        }
+
+        ret.put("success", isOperationSuccessful);
+        this.writeJSON(resp, ret);
+    }
 
   private void handleRemoveProject(HttpServletRequest req,
       HttpServletResponse resp, Session session) throws ServletException,
@@ -1732,6 +1787,39 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
       Permission perm = role.getPermission();
       if (perm.isPermissionSet(Permission.Type.ADMIN)
           || perm.isPermissionSet(Permission.Type.CREATEPROJECTS)) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  private void handleReloadProjectWhitelist(HttpServletRequest req,
+  HttpServletResponse resp, Session session) throws IOException {
+    HashMap<String, Object> ret = new HashMap<String, Object>();
+
+    if (hasPermission(session.getUser(), Permission.Type.ADMIN)) {
+      try {
+        if (projectManager.loadProjectWhiteList()) {
+          ret.put("success", "Project whitelist re-loaded!");
+        } else {
+          ret.put("error", "azkaban.properties doesn't contain property " + ProjectWhitelist.XML_FILE_PARAM);
+        }
+      } catch(Exception e) {
+        ret.put("error", "Exception occurred while trying to re-load project whitelist: " + e);
+      }
+    } else {
+      ret.put("error", "Provided session doesn't have admin privilege.");
+    }
+
+    this.writeJSON(resp, ret);
+  }
+
+  protected boolean hasPermission(User user, Permission.Type type) {
+    for (String roleName : user.getRoles()) {
+      Role role = userManager.getRole(roleName);
+      if (role.getPermission().isPermissionSet(type)
+          || role.getPermission().isPermissionSet(Permission.Type.ADMIN)) {
         return true;
       }
     }

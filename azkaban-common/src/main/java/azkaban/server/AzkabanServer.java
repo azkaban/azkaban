@@ -38,9 +38,15 @@ public abstract class AzkabanServer {
   public static final String AZKABAN_PRIVATE_PROPERTIES_FILE =
       "azkaban.private.properties";
   public static final String DEFAULT_CONF_PATH = "conf";
+  private static Props azkabanProperties = null;
 
   public static Props loadProps(String[] args) {
-    return loadProps(args, new OptionParser());
+    azkabanProperties = loadProps(args, new OptionParser());
+    return azkabanProperties;
+  }
+
+  public static Props getAzkabanProperties() {
+    return azkabanProperties;
   }
 
   public static Props loadProps(String[] args, OptionParser parser) {

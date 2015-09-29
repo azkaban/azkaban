@@ -48,6 +48,14 @@ public interface ProjectLoader {
   public Project fetchProjectById(int id) throws ProjectManagerException;
 
   /**
+   * Loads whole project, including permissions, by the project name.
+   * @param name
+   * @return
+   * @throws ProjectManagerException
+   */
+  public Project fetchProjectByName(String name) throws ProjectManagerException;
+
+  /**
    * Should create an empty project with the given name and user and adds it to
    * the data store. It will auto assign a unique id for this project if
    * successful.
@@ -269,5 +277,4 @@ public interface ProjectLoader {
       throws ProjectManagerException;
 
   void updateProjectSettings(Project project) throws ProjectManagerException;
-
 }

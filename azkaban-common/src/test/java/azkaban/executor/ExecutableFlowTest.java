@@ -43,12 +43,13 @@ public class ExecutableFlowTest {
 
   @Before
   public void setUp() throws Exception {
+    project = new Project(11, "myTestProject");
+
     Logger logger = Logger.getLogger(this.getClass());
     DirectoryFlowLoader loader = new DirectoryFlowLoader(new Props(), logger);
-    loader.loadProjectFlow(new File("unit/executions/embedded"));
+    loader.loadProjectFlow(project, new File("unit/executions/embedded"));
     Assert.assertEquals(0, loader.getErrors().size());
 
-    project = new Project(11, "myTestProject");
     project.setFlows(loader.getFlowMap());
     project.setVersion(123);
   }

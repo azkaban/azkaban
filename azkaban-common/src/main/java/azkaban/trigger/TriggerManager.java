@@ -262,43 +262,43 @@ public class TriggerManager extends EventHandler implements
 
       // sweep through the rest of them
       for (Trigger t : triggers) {
-        scannerStage = "Checking for trigger " + t.getTriggerId();
+        try {
+          scannerStage = "Checking for trigger " + t.getTriggerId();
 
-        boolean shouldSkip = true;
-        if (shouldSkip && t.getInfo() != null
-            && t.getInfo().containsKey("monitored.finished.execution")) {
-          int execId =
-              Integer.valueOf((String) t.getInfo().get(
-                  "monitored.finished.execution"));
-          if (justFinishedFlows.containsKey(execId)) {
-            logger
-                .info("Monitored execution has finished. Checking trigger earlier "
-                    + t.getTriggerId());
+          boolean shouldSkip = true;
+          if (shouldSkip && t.getInfo() != null && t.getInfo().containsKey("monitored.finished.execution")) {
+            int execId = Integer.valueOf((String) t.getInfo().get("monitored.finished.execution"));
+            if (justFinishedFlows.containsKey(execId)) {
+              logger.info("Monitored execution has finished. Checking trigger earlier " + t.getTriggerId());
+              shouldSkip = false;
+            }
+          }
+          if (shouldSkip && t.getNextCheckTime() > now) {
             shouldSkip = false;
           }
-        }
-        if (shouldSkip && t.getNextCheckTime() > now) {
-          shouldSkip = false;
-        }
 
-        if (shouldSkip) {
-          logger.info("Skipping trigger" + t.getTriggerId() + " until "
-              + t.getNextCheckTime());
-        }
-
-        logger.info("Checking trigger " + t.getTriggerId());
-        if (t.getStatus().equals(TriggerStatus.READY)) {
-          if (t.triggerConditionMet()) {
-            onTriggerTrigger(t);
-          } else if (t.expireConditionMet()) {
-            onTriggerExpire(t);
+          if (shouldSkip) {
+            logger.info("Skipping trigger" + t.getTriggerId() + " until " + t.getNextCheckTime());
           }
-        }
-        if (t.getStatus().equals(TriggerStatus.EXPIRED)
-            && t.getSource().equals("azkaban")) {
-          removeTrigger(t);
-        } else {
-          t.updateNextCheckTime();
+
+          if (logger.isDebugEnabled()) {
+            logger.info("Checking trigger " + t.getTriggerId());
+          }
+          if (t.getStatus().equals(TriggerStatus.READY)) {
+            if (t.triggerConditionMet()) {
+              onTriggerTrigger(t);
+            } else if (t.expireConditionMet()) {
+              onTriggerExpire(t);
+            }
+          }
+          if (t.getStatus().equals(TriggerStatus.EXPIRED) && t.getSource().equals("azkaban")) {
+            removeTrigger(t);
+          } else {
+            t.updateNextCheckTime();
+          }
+        } catch (Throwable th) {
+          //skip this trigger, moving on to the next one
+          logger.error("Failed to process trigger with id : " + t.getTriggerId(), th);
         }
       }
     }
