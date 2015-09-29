@@ -73,7 +73,7 @@ public class ServerStatisticsServlet extends HttpServlet  {
         && new File("/bin/grep").exists()
         &&  new File("/proc/meminfo").exists()) {
     java.lang.ProcessBuilder processBuilder =
-        new java.lang.ProcessBuilder("/bin/bash", "-c", "/bin/cat /proc/meminfo | grep -E \"MemTotal|MemFree\"");
+        new java.lang.ProcessBuilder("/bin/bash", "-c", "/bin/cat /proc/meminfo | grep -E \"MemTotal|MemFree|Buffers|Cached|SwapCached\"");
     try {
       ArrayList<String> output = new ArrayList<String>();
       Process process = processBuilder.start();
@@ -91,30 +91,70 @@ public class ServerStatisticsServlet extends HttpServlet  {
       }
 
       long totalMemory = 0;
-      long  freeMemory = 0;
+      long totalFreeMemory = 0;
+      long parsedResult = 0;
 
       // process the output from bash call.
       // we expect the result from the bash call to be something like following -
       // MemTotal:       65894264 kB
-      // MemFree:        61104076 kB
-      if (output.size() == 2) {
+      // MemFree:        57753844 kB
+      // Buffers:          305552 kB
+      // Cached:          3802432 kB
+      // SwapCached:            0 kB
+      // Note : total free memory = freeMemory + cached + buffers + swapCached
+      if (output.size() == 5) {
         for (String result : output){
           // find the total memory and value the variable.
           if (result.contains("MemTotal") && result.split("\\s+").length > 2){
             try {
               totalMemory = Long.parseLong(result.split("\\s+")[1]);
-              logger.info("Total memory : " + totalMemory);
+              logger.debug("Total memory : " + totalMemory);
             }catch(NumberFormatException e){
               logger.error("yielding 0 for total memory as output is invalid -" + result);
             }
           }
-          // find the free memory and value the variable.
+
+          // find the free memory.
           if (result.contains("MemFree") && result.split("\\s+").length > 2){
             try {
-              freeMemory = Long.parseLong(result.split("\\s+")[1]);
-              logger.info("Free memory : " + freeMemory);
+              parsedResult = Long.parseLong(result.split("\\s+")[1]);
+              logger.debug("Free memory : " + parsedResult);
+              totalFreeMemory += parsedResult;
             }catch(NumberFormatException e){
-              logger.error("yielding 0 for total memory as output is invalid -" + result);
+              logger.error("yielding 0 for free memory as output is invalid -" + result);
+            }
+          }
+
+          // find the Buffers.
+          if (result.contains("Buffers") && result.split("\\s+").length > 2){
+            try {
+              parsedResult = Long.parseLong(result.split("\\s+")[1]);
+              logger.debug("Buffers : " + parsedResult);
+              totalFreeMemory += parsedResult;
+            }catch(NumberFormatException e){
+              logger.error("yielding 0 for Buffers as output is invalid -" + result);
+            }
+          }
+
+          // find the Cached.
+          if (result.contains("Cached") && result.split("\\s+").length > 2){
+            try {
+              parsedResult = Long.parseLong(result.split("\\s+")[1]);
+              logger.debug("Cached : " + parsedResult);
+              totalFreeMemory += parsedResult;
+            }catch(NumberFormatException e){
+              logger.error("yielding 0 for Cached as output is invalid -" + result);
+            }
+          }
+
+          // find the SwapCached.
+          if (result.contains("SwapCached") && result.split("\\s+").length > 2){
+            try {
+              parsedResult = Long.parseLong(result.split("\\s+")[1]);
+              logger.debug("SwapCached : " + parsedResult);
+              totalFreeMemory += parsedResult;
+            }catch(NumberFormatException e){
+              logger.error("yielding 0 for SwapCached as output is invalid -" + result);
             }
           }
         }
@@ -122,9 +162,9 @@ public class ServerStatisticsServlet extends HttpServlet  {
         logger.error("failed to get total/free memory info as the bash call returned invalid result.");
       }
 
-      // the number got from the proc file is in KBs we want to see the number in MBs so we are deviding it by 1024.
-      stats.setRemainingMemoryInMB(freeMemory/1024);
-      stats.setRemainingMemoryPercent(totalMemory == 0 ? 0 : ((double)freeMemory / (double)totalMemory)*100);
+      // the number got from the proc file is in KBs we want to see the number in MBs so we are dividing it by 1024.
+      stats.setRemainingMemoryInMB(totalFreeMemory/1024);
+      stats.setRemainingMemoryPercent(totalMemory == 0 ? 0 : ((double)totalFreeMemory / (double)totalMemory)*100);
     }
     catch (Exception ex){
       logger.error("failed fetch system memory info " +
