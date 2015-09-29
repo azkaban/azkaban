@@ -102,7 +102,7 @@ public class ServerStatisticsServlet extends HttpServlet  {
       // Cached:          3802432 kB
       // SwapCached:            0 kB
       // Note : total free memory = freeMemory + cached + buffers + swapCached
-      if (output.size() == 5) {
+      if (output.size() > 0) {
         for (String result : output){
           // find the total memory and value the variable.
           if (result.contains("MemTotal") && result.split("\\s+").length > 2){
