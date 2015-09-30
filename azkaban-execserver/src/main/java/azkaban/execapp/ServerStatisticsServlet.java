@@ -144,7 +144,7 @@ public class ServerStatisticsServlet extends HttpServlet {
           }
         } else {
           logger.error("failed to get total/free memory info as the bash call returned invalid result."
-              + String.format(" Expected lines of output = 5, actual = %s ", output.size()));
+              + String.format(" Output from the bash call - %s ", output.toString()));
         }
 
         // the number got from the proc file is in KBs we want to see the number in MBs so we are dividing it by 1024.
