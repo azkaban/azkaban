@@ -37,6 +37,11 @@ public class ServerStatisticsServlet extends HttpServlet {
   private static final int cacheTimeInMilliseconds = 1000;
   private static final Logger logger = Logger.getLogger(ServerStatisticsServlet.class);
   private static final String noCacheParamName = "nocache";
+  private static final boolean exists_Bash = new File("/bin/bash").exists();
+  private static final boolean exists_Cat = new File("/bin/cat").exists();
+  private static final boolean exists_Grep = new File("/bin/grep").exists();
+  private static final boolean exists_Meminfo = new File("/proc/meminfo").exists();
+  private static final boolean exists_LoadAvg = new File("/proc/loadavg").exists();
 
   protected static long lastRefreshedTime = 0;
   protected static ExecutorInfo cachedstats = null;
@@ -68,8 +73,7 @@ public class ServerStatisticsServlet extends HttpServlet {
    *         a returning value of '55.6' means 55.6%
    */
   protected void fillRemainingMemoryPercent(ExecutorInfo stats) {
-    if (new File("/bin/bash").exists() && new File("/bin/cat").exists() && new File("/bin/grep").exists()
-        && new File("/proc/meminfo").exists()) {
+    if (exists_Bash && exists_Cat && exists_Grep && exists_Meminfo) {
       java.lang.ProcessBuilder processBuilder =
           new java.lang.ProcessBuilder("/bin/bash", "-c",
               "/bin/cat /proc/meminfo | grep -E \"^MemTotal:|^MemFree:|^Buffers:|^Cached:|^SwapCached:\"");
@@ -91,6 +95,7 @@ public class ServerStatisticsServlet extends HttpServlet {
         long totalMemory = 0;
         long totalFreeMemory = 0;
         Long parsedResult = (long) 0;
+
         // process the output from bash call.
         // we expect the result from the bash call to be something like following -
         // MemTotal:       65894264 kB
@@ -99,6 +104,7 @@ public class ServerStatisticsServlet extends HttpServlet {
         // Cached:          3802432 kB
         // SwapCached:            0 kB
         // Note : total free memory = freeMemory + cached + buffers + swapCached
+        // TODO : think about merging the logic in systemMemoryInfo as the logic is similar
         if (output.size() == 5) {
           for (String result : output) {
             // find the total memory and value the variable.
@@ -137,7 +143,8 @@ public class ServerStatisticsServlet extends HttpServlet {
             }
           }
         } else {
-          logger.error("failed to get total/free memory info as the bash call returned invalid result.");
+          logger.error("failed to get total/free memory info as the bash call returned invalid result."
+              + String.format(" Expected lines of output = 5, actual = %s ", output.size()));
         }
 
         // the number got from the proc file is in KBs we want to see the number in MBs so we are dividing it by 1024.
@@ -216,7 +223,7 @@ public class ServerStatisticsServlet extends HttpServlet {
    *              will only work on the property "cpuUsage".
    */
   protected void fillCpuUsage(ExecutorInfo stats) {
-    if (new File("/bin/bash").exists() && new File("/bin/cat").exists() && new File("/proc/loadavg").exists()) {
+    if (exists_Bash && exists_Cat && exists_LoadAvg) {
       java.lang.ProcessBuilder processBuilder =
           new java.lang.ProcessBuilder("/bin/bash", "-c", "/bin/cat /proc/loadavg");
       try {
