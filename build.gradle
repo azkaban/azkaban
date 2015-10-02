@@ -478,11 +478,11 @@ project(':azkaban-test') {
     }
   }
 
-  distZip.dependsOn build, animalDistZip, embeddedDistZip, embedded2DistZip,
+  distZip.dependsOn animalDistZip, embeddedDistZip, embedded2DistZip,
       embedded3DistZip, embeddedBadDistZip, execpropstestDistZip,
       exectest1DistZip, exectest2DistZip, logtestDistZip
 
-  distTar.dependsOn build, animalDistTar, embeddedDistTar, embedded2DistTar,
+  distTar.dependsOn animalDistTar, embeddedDistTar, embedded2DistTar,
       embedded3DistTar, embeddedBadDistTar, execpropstestDistTar,
       exectest1DistTar, exectest2DistTar, logtestDistTar
 }
@@ -570,5 +570,5 @@ distZip.dependsOn migrationDistZip, webserverDistZip, execserverDistZip, soloser
  * Gradle wrapper task.
  */
 task wrapper(type: Wrapper) {
-  gradleVersion = '1.12'
+  gradleVersion = '2.7'
 }
