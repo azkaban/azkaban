@@ -48,9 +48,10 @@ public class ProcessJob extends AbstractProcessJob {
       "memCheck.freeMemDecrAmt";
 
   public static final String AZKABAN_MEMORY_CHECK = "azkaban.memory.check";
-
+  
+  public static final String NATIVE_LIB_FOLDER = "azkaban.native.lib";
+  public static final String EXECUTE_AS_USER = "execute.as.user";
   public static final String USER_TO_PROXY = "user.to.proxy";
-
   public static final String KRB5CCNAME = "KRB5CCNAME";
 
   public ProcessJob(final String jobId, final Props sysProps,
@@ -85,7 +86,7 @@ public class ProcessJob extends AbstractProcessJob {
                     memPair.getFirst(), memPair.getSecond(), getId()));
       }
     }
-
+    
     List<String> commands = null;
     try {
       commands = getCommandList();
@@ -101,12 +102,28 @@ public class ProcessJob extends AbstractProcessJob {
 
     info(commands.size() + " commands to execute.");
     File[] propFiles = initPropsFiles();
-    Map<String, String> envVars = getEnvironmentVariables();
-
+    
     // change krb5ccname env var so that each job execution gets its own cache
+    Map<String, String> envVars = getEnvironmentVariables();
     envVars.put(KRB5CCNAME, getKrb5ccname(jobProps));
 
+  
+    String nativeLibFolder = null;
+    String executeAsUserBinary = null;
+    String userToProxy = null;
+    boolean isExecuteAsUser = sysProps.getBoolean(EXECUTE_AS_USER, false);
+    
+    if(isExecuteAsUser){
+    	nativeLibFolder = sysProps.getString(NATIVE_LIB_FOLDER);
+    	executeAsUserBinary = String.format("%s/%s", nativeLibFolder, "execute-as-user");
+    	userToProxy = jobProps.getString("user.to.proxy");
+    }
+        
     for (String command : commands) {
+    	if(isExecuteAsUser){
+    	  command = String.format("%s %s %s", executeAsUserBinary, userToProxy, command);
+    	}
+      
       info("Command: " + command);
       AzkabanProcessBuilder builder =
           new AzkabanProcessBuilder(partitionCommandLine(command))
