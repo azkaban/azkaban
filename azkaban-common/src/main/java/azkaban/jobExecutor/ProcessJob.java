@@ -106,22 +106,19 @@ public class ProcessJob extends AbstractProcessJob {
     // change krb5ccname env var so that each job execution gets its own cache
     Map<String, String> envVars = getEnvironmentVariables();
     envVars.put(KRB5CCNAME, getKrb5ccname(jobProps));
-
   
-    String nativeLibFolder = null;
-    String executeAsUserBinary = null;
-    String userToProxy = null;
-    boolean isExecuteAsUser = sysProps.getBoolean(EXECUTE_AS_USER, false);
-    
+    // determine whether users should be running their jobs as proxyUser/submit user or 
+    // if everybody will run as Azkaban
+    String executeAsUserBinary = null;    
+    boolean isExecuteAsUser = sysProps.getBoolean(EXECUTE_AS_USER, false);    
     if(isExecuteAsUser){
-    	nativeLibFolder = sysProps.getString(NATIVE_LIB_FOLDER);
-    	executeAsUserBinary = String.format("%s/%s", nativeLibFolder, "execute-as-user");
-    	userToProxy = jobProps.getString("user.to.proxy");
+    	String nativeLibFolder = sysProps.getString(NATIVE_LIB_FOLDER);
+    	executeAsUserBinary = String.format("%s/%s", nativeLibFolder, "execute-as-user");    	
     }
         
     for (String command : commands) {
     	if(isExecuteAsUser){
-    	  command = String.format("%s %s %s", executeAsUserBinary, userToProxy, command);
+    	  command = String.format("%s %s %s", executeAsUserBinary, getEffectiveUser(jobProps), command);
     	}
       
       info("Command: " + command);
