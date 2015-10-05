@@ -34,19 +34,19 @@ public class CacheTest {
     cache.insertElement("key3", "val3");
     cache.insertElement("key4", "val4");
 
-    Assert.assertEquals(cache.get(String.class, "key2"), "val2");
-    Assert.assertEquals(cache.get(String.class, "key3"), "val3");
-    Assert.assertEquals(cache.get(String.class, "key4"), "val4");
-    Assert.assertEquals(cache.get(String.class, "key1"), "val1");
+    Assert.assertEquals(cache.get("key2"), "val2");
+    Assert.assertEquals(cache.get("key3"), "val3");
+    Assert.assertEquals(cache.get("key4"), "val4");
+    Assert.assertEquals(cache.get("key1"), "val1");
     Assert.assertEquals(4, cache.getSize());
 
     cache.insertElement("key5", "val5");
     Assert.assertEquals(4, cache.getSize());
-    Assert.assertEquals(cache.get(String.class, "key3"), "val3");
-    Assert.assertEquals(cache.get(String.class, "key4"), "val4");
-    Assert.assertEquals(cache.get(String.class, "key1"), "val1");
-    Assert.assertEquals(cache.get(String.class, "key5"), "val5");
-    Assert.assertNull(cache.get(String.class, "key2"));
+    Assert.assertEquals(cache.get("key3"), "val3");
+    Assert.assertEquals(cache.get("key4"), "val4");
+    Assert.assertEquals(cache.get("key1"), "val1");
+    Assert.assertEquals(cache.get("key5"), "val5");
+    Assert.assertNull(cache.get("key2"));
   }
 
   @Test
@@ -67,19 +67,19 @@ public class CacheTest {
     cache.insertElement("key3", "val3");
     cache.insertElement("key4", "val4");
 
-    Assert.assertEquals(cache.get(String.class, "key2"), "val2");
-    Assert.assertEquals(cache.get(String.class, "key3"), "val3");
-    Assert.assertEquals(cache.get(String.class, "key4"), "val4");
-    Assert.assertEquals(cache.get(String.class, "key1"), "val1");
+    Assert.assertEquals(cache.get("key2"), "val2");
+    Assert.assertEquals(cache.get("key3"), "val3");
+    Assert.assertEquals(cache.get("key4"), "val4");
+    Assert.assertEquals(cache.get("key1"), "val1");
     Assert.assertEquals(4, cache.getSize());
 
     cache.insertElement("key5", "val5");
     Assert.assertEquals(4, cache.getSize());
-    Assert.assertEquals(cache.get(String.class, "key3"), "val3");
-    Assert.assertEquals(cache.get(String.class, "key4"), "val4");
-    Assert.assertEquals(cache.get(String.class, "key2"), "val2");
-    Assert.assertEquals(cache.get(String.class, "key5"), "val5");
-    Assert.assertNull(cache.get(String.class, "key1"));
+    Assert.assertEquals(cache.get("key3"), "val3");
+    Assert.assertEquals(cache.get("key4"), "val4");
+    Assert.assertEquals(cache.get("key2"), "val2");
+    Assert.assertEquals(cache.get("key5"), "val5");
+    Assert.assertNull(cache.get("key1"));
   }
 
   @Test
@@ -99,7 +99,7 @@ public class CacheTest {
       } catch (InterruptedException e) {
       }
     }
-    Assert.assertEquals(cache.get(String.class, "key1"), "val1");
+    Assert.assertEquals(cache.get("key1"), "val1");
     cache.insertElement("key2", "val2");
     synchronized (this) {
       try {
@@ -107,8 +107,8 @@ public class CacheTest {
       } catch (InterruptedException e) {
       }
     }
-    Assert.assertNull(cache.get(String.class, "key1"));
-    Assert.assertEquals("val2", cache.get(String.class, "key2"));
+    Assert.assertNull(cache.get("key1"));
+    Assert.assertEquals("val2", cache.get("key2"));
 
     synchronized (this) {
       try {
@@ -117,7 +117,7 @@ public class CacheTest {
       }
     }
 
-    Assert.assertNull(cache.get(String.class, "key2"));
+    Assert.assertNull(cache.get("key2"));
   }
 
   @Test
@@ -137,7 +137,7 @@ public class CacheTest {
       } catch (InterruptedException e) {
       }
     }
-    Assert.assertEquals(cache.get(String.class, "key1"), "val1");
+    Assert.assertEquals(cache.get("key1"), "val1");
     cache.insertElement("key2", "val2");
     synchronized (this) {
       try {
@@ -145,8 +145,8 @@ public class CacheTest {
       } catch (InterruptedException e) {
       }
     }
-    Assert.assertEquals("val1", cache.get(String.class, "key1"));
-    Assert.assertNull(cache.get(String.class, "key3"));
+    Assert.assertEquals("val1", cache.get("key1"));
+    Assert.assertNull(cache.get("key3"));
     synchronized (this) {
       try {
         wait(1000);
@@ -154,6 +154,6 @@ public class CacheTest {
       }
     }
 
-    Assert.assertNull(cache.get(String.class, "key2"));
+    Assert.assertNull(cache.get("key2"));
   }
 }

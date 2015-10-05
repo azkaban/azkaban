@@ -71,7 +71,7 @@ public class TypedMapWrapper<K, V> {
   }
 
   public Long getLong(K key) {
-    return getLong(key, -1L);
+    return getLong(key, -1l);
   }
 
   public Long getLong(K key, Long defaultVal) {

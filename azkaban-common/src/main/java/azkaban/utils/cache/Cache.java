@@ -38,16 +38,17 @@ public class Cache {
     LRU, FIFO
   }
 
-  /* package */ Cache(CacheManager manager) {
+  /* package */Cache(CacheManager manager) {
     this.manager = manager;
   }
 
-  public <T> T get(Class<T> clazz, Object key) {
+  @SuppressWarnings("unchecked")
+  public <T> T get(Object key) {
     Element<?> element = elementMap.get(key);
     if (element == null) {
       return null;
     }
-    return clazz.cast(element.getElement());
+    return (T) element.getElement();
   }
 
   public <T> void put(Object key, T item) {

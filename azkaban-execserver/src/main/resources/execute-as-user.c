@@ -33,7 +33,9 @@
 
 FILE *LOGFILE = NULL;
 FILE *ERRORFILE = NULL;
-int SETUID_OPER_FAILED=10;
+int SETUID_OPER_FAILED = 10;
+int USER_NOT_FOUND = 20;
+int INVALID_INPUT = 30;
 
 /*
  *  Change the real and effective user and group from super user to the specified user
@@ -73,55 +75,41 @@ int change_user(uid_t user, gid_t group) {
 }
 
 int main(int argc, char **argv){
-    if (argc < 3) {
-        fprintf(ERRORFILE, "Requires at least 3 variables: ./execute-as-user uid command [args]");
-    }
 
+// set up the logging stream
     if(!LOGFILE)
         LOGFILE=stdout;
     if(!ERRORFILE)
         ERRORFILE=stderr;
 
+    if (argc < 3) {
+        fprintf(ERRORFILE, "Requires at least 3 variables: ./execute-as-user uid command [args]");
+        return INVALID_INPUT;
+    }
+
     char *uid = argv[1];
 
-    // for loop to calculate the length to malloc
-    int i;
-    int total_len = 0;
-    for(i=2;i<argc;i++){
-        total_len += strlen(argv[i])+1;
+    // gather information about user
+    struct passwd *user_info = getpwnam(uid);
+    if ( user_info == NULL ){
+        fprintf(LOGFILE, "user does not exist: %s", uid);
+        return USER_NOT_FOUND;
     }
-    fprintf(LOGFILE, "total_len: %d\n", total_len);
 
-    // allocate memory and clear memory
-    char *cmd = malloc(total_len+2);
-    if(cmd == NULL){
-        fprintf(LOGFILE, "unable to malloc memory in execute-as-user.c");
-        return 10;
-    }
-    memset(cmd, 0, total_len+2);
-
-    // change user 
-    struct passwd *userInfo = getpwnam(uid);
-    fprintf(LOGFILE, "Changing user: user: %s, uid: %d, gid: %d\n", uid, userInfo->pw_uid, userInfo->pw_gid);
-    int retval = change_user(userInfo->pw_uid, userInfo->pw_gid);
-    fprintf(LOGFILE, "change user function return value: %d\n", retval);
+    // try to change user
+    fprintf(LOGFILE, "Changing user: user: %s, uid: %d, gid: %d\n", uid, user_info->pw_uid, user_info->pw_gid);
+    int retval = change_user(user_info->pw_uid, user_info->pw_gid);
     if( retval != 0){
         fprintf(LOGFILE, "Error changing user to %s\n", uid);
         return SETUID_OPER_FAILED;
     }
 
-    // create the command
-    char *cur = cmd;
-    int len;
-    for(i=2;i<argc;i++){
-        len = strlen(argv[i]);
-        memcpy(cur, argv[i], len);
-        cur+=len+1;
-    }
-
-    fprintf(LOGFILE, "executing as user command: %s\n", cmd);
-    retval = system(cmd);
-    fprintf(LOGFILE, "system call return value: %d", retval);
+    // execute the command
+    char **user_argv = &argv[2];
+    fprintf(LOGFILE, "user command starting from: %s\n", user_argv[0]);
+    fflush(LOGFILE);
+    retval = execvp(*user_argv, user_argv);
+    fprintf(LOGFILE, "system call return value: %d\n", retval);
 
     // sometimes system(cmd) returns 256, which is interpreted to 0, making a failed job a successful job
     // hence this goofy piece of if statement.

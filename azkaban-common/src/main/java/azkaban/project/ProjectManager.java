@@ -269,7 +269,7 @@ public class ProjectManager {
           "Project names must start with a letter, followed by any number of letters, digits, '-' or '_'.");
     }
 
-    if (projectsByName.containsKey(projectName)) {
+    if (projectsByName.contains(projectName)) {
       throw new ProjectManagerException("Project already exists.");
     }
 

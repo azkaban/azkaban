@@ -101,7 +101,7 @@ public class ExecutorManager extends EventHandler implements
   private ExecutingManagerUpdaterThread executingManager;
   // 12 weeks
   private static final long DEFAULT_EXECUTION_LOGS_RETENTION_MS = 3 * 4 * 7
-      * 24 * 60 * 60 * 1000L;
+      * 24 * 60 * 60 * 1000l;
   private long lastCleanerThreadCheckTime = -1;
 
   private long lastThreadCheckTime = -1;

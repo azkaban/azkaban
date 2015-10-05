@@ -58,7 +58,7 @@ public class SessionCache {
    * @return
    */
   public Session getSession(String sessionId) {
-    Session elem = cache.get(Session.class, sessionId);
+    Session elem = cache.<Session> get(sessionId);
 
     return elem;
   }

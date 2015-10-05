@@ -28,8 +28,8 @@ public class ProjectTest {
   @Test
   public void testToAndFromObject() throws Exception {
     Project project = new Project(1, "tesTing");
-    project.setCreateTimestamp(1L);
-    project.setLastModifiedTimestamp(2L);
+    project.setCreateTimestamp(1l);
+    project.setLastModifiedTimestamp(2l);
     project.setDescription("I am a test");
     project.setUserPermission("user1", new Permission(new Type[] { Type.ADMIN,
         Type.EXECUTE }));
