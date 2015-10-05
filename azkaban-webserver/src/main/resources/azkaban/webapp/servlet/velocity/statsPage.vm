@@ -29,6 +29,25 @@
          var currentTime = ${currentTime};
          var timezone = "${timezone}";
 
+         function refreshMetricList() {
+               var requestURL = '/stats';
+               var requestData = {
+                 'action': 'getAllMetricNames',
+                 'executorId':  $('#executorName').val()
+               };
+               var successHandler = function(responseData) {
+                 if(responseData.error != null) {
+                   $('#reportedMetric').html(responseData.error);
+                 } else {
+                    $('#metricName').empty();
+                    for(var index = 0; index < responseData.metricList.length; index++) {
+                      $('#metricName').append($('<option value="' + responseData.metricList[index] +'">' + responseData.metricList[index] + '</option>'));
+                    }
+                  }
+               };
+               $.get(requestURL, requestData, successHandler, 'json');
+         }
+
          function refreshMetricChart() {
                var requestURL = '/stats';
                var requestData = {
@@ -36,7 +55,8 @@
                  'from': new Date($('#datetimebegin').val()).toUTCString(),
                  'to'  : new Date($('#datetimeend').val()).toUTCString(),
                  'metricName': $('#metricName').val(),
-                 'useStats': $("#useStats").is(':checked')
+                 'useStats': $("#useStats").is(':checked'),
+                 'executorId':  $('#executorName').val()
                };
                var successHandler = function(responseData) {
                  if(responseData.error != null) {
@@ -67,6 +87,7 @@
                  $('#datetimebegin').data('DateTimePicker').setEndDate(e.date);
                });
              $('#retrieve').click(refreshMetricChart);
+             $('#executorName').click(refreshMetricList);
          });
 
       </script>
@@ -84,8 +105,16 @@
                <div class="header-title" style="width: 17%;">
                   <h1><a href="${context}/stats">Statistics</a></h1>
                </div>
-               <div class="header-control" style="width: 900px; padding-top: 5px;">
+               <div class="header-control" style="width: 1300px; padding-top: 5px;">
                   <form id="metric-form" method="get">
+                     <label for="executorLabel" >Executor</label>
+                     #if (!$executorList.isEmpty())
+                     <select id="executorName"  name="executorName" style="width:200px">
+                        #foreach ($executor in $executorList)
+                        <option value="${executor.getId()}" style="width:200px">${executor.getHost()}:${executor.getPort()}</option>
+                        #end
+                     </select>
+                     #end
                      <label for="metricLabel" >Metric</label>
                      #if (!$metricList.isEmpty())
                      <select id="metricName"  name="metricName" style="width:200px">
