@@ -15,5 +15,5 @@
 *#
 
 #macro(appname)
-  Azkaban Web Client
+  Inovia batch server
 #end
