@@ -1,0 +1,5 @@
+<azkaban-users>
+	<user username="testAdmin" password="testAdmin" roles="admin" groups="azkaban" />
+	<user username="testUser" password="testUser" />
+	<role name="admin" permissions="ADMIN" />
+</azkaban-users>

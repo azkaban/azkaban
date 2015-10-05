@@ -23,6 +23,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.lang.management.ManagementFactory;
 import java.lang.reflect.Constructor;
+import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.TimeZone;
@@ -131,6 +132,7 @@ public class AzkabanExecutorServer {
     root.addServlet(new ServletHolder(new ExecutorServlet()), "/executor");
     root.addServlet(new ServletHolder(new JMXHttpServlet()), "/jmx");
     root.addServlet(new ServletHolder(new StatsServlet()), "/stats");
+    root.addServlet(new ServletHolder(new ServerStatisticsServlet()), "/serverStatistics");
 
     root.setAttribute(ServerConstants.AZKABAN_SERVLET_CONTEXT_KEY, this);
 
@@ -175,7 +177,7 @@ public class AzkabanExecutorServer {
 
   /**
    * Configure Metric Reporting as per azkaban.properties settings
-   * 
+   *
    * @throws MetricException
    */
   private void configureMetricReports() throws MetricException {
@@ -224,13 +226,13 @@ public class AzkabanExecutorServer {
   /**
    * Load a custom class, which is provided by a configuration
    * CUSTOM_JMX_ATTRIBUTE_PROCESSOR_PROPERTY.
-   * 
+   *
    * This method will try to instantiate an instance of this custom class and
    * with given properties as the argument in the constructor.
-   * 
+   *
    * Basically the custom class must have a constructor that takes an argument
    * with type Properties.
-   * 
+   *
    * @param props
    */
   private void loadCustomJMXAttributeProcessor(Props props) {
@@ -499,5 +501,19 @@ public class AzkabanExecutorServer {
       logger.error(e);
       return null;
     }
+  }
+
+  /**
+   * Returns host:port combination for currently running executor
+   * @return
+   */
+  public String getExecutorHostPort() {
+    String host = "unkownHost";
+    try {
+      host = InetAddress.getLocalHost().getCanonicalHostName();
+    } catch (Exception e) {
+      logger.error("Failed to fetch LocalHostName");
+    }
+    return host + ":" + props.getInt("executor.port", DEFAULT_PORT_NUMBER);
   }
 }
