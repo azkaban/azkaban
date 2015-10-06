@@ -108,6 +108,11 @@ public class LdapUserManager implements UserManager {
     	logger.debug(e.getLocalizedMessage()); 
 		throw new UserManagerException("LDAP Authentication : Invalid Credentials",e);
 	}
+    catch (Exception e)
+    {
+    	logger.debug(e.getLocalizedMessage()); 
+		throw new UserManagerException("Error occurred while connecting to the LDAP server. Check the log for more details",e);
+    }
     finally {
     	if(dirContext!=null)
     	{
