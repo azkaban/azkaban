@@ -454,7 +454,8 @@ public class ExecutorManager extends EventHandler implements
 
   /**
    * Gets a list of all the active (running flows and non-dispatched flows)
-   * executions for a given project and flow {@inheritDoc}
+   * executions for a given project and flow {@inheritDoc}. Results should
+   * be sorted as we assume this while setting up pipelined execution Id.
    *
    * @see azkaban.executor.ExecutorManagerAdapter#getRunningFlows(int,
    *      java.lang.String)
@@ -466,6 +467,7 @@ public class ExecutorManager extends EventHandler implements
       queuedFlows.getAllEntries()));
     executionIds.addAll(getRunningFlowsHelper(projectId, flowId,
       runningFlows.values()));
+    Collections.sort(executionIds);
     return executionIds;
   }
 
