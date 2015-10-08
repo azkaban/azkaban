@@ -17,12 +17,13 @@
 package azkaban.utils.cache;
 
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import azkaban.utils.cache.Cache.EjectionPolicy;
 
 public class CacheTest {
-  @Test
+  @Ignore @Test
   public void testLRU() {
     CacheManager manager = CacheManager.getInstance();
     Cache cache = manager.createCache();

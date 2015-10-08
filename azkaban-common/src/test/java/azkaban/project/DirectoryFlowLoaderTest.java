@@ -14,16 +14,16 @@
  * the License.
  */
 
-package azkaban.utils;
+package azkaban.project;
 
 import java.io.File;
+
+import azkaban.utils.Props;
 
 import org.apache.log4j.Logger;
 import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
-
-import azkaban.project.Project;
 
 public class DirectoryFlowLoaderTest {
 

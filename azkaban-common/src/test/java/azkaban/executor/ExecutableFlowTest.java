@@ -33,8 +33,8 @@ import org.junit.Test;
 
 import azkaban.executor.ExecutionOptions.FailureAction;
 import azkaban.flow.Flow;
+import azkaban.project.DirectoryFlowLoader;
 import azkaban.project.Project;
-import azkaban.utils.DirectoryFlowLoader;
 import azkaban.utils.JSONUtils;
 import azkaban.utils.Props;
 
