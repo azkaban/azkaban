@@ -49,8 +49,11 @@ public class ProcessJob extends AbstractProcessJob {
 
   public static final String AZKABAN_MEMORY_CHECK = "azkaban.memory.check";
 
+  public static final String NATIVE_LIB_FOLDER = "azkaban.native.lib";
+  public static final String EXECUTE_AS_USER = "execute.as.user";
+  public static final String EXECUTE_AS_USER_OVERRIDE =
+      "execute.as.user.override";
   public static final String USER_TO_PROXY = "user.to.proxy";
-
   public static final String KRB5CCNAME = "KRB5CCNAME";
 
   public ProcessJob(final String jobId, final Props sysProps,
@@ -101,16 +104,45 @@ public class ProcessJob extends AbstractProcessJob {
 
     info(commands.size() + " commands to execute.");
     File[] propFiles = initPropsFiles();
-    Map<String, String> envVars = getEnvironmentVariables();
 
     // change krb5ccname env var so that each job execution gets its own cache
+    Map<String, String> envVars = getEnvironmentVariables();
     envVars.put(KRB5CCNAME, getKrb5ccname(jobProps));
 
+    // determine whether to run as Azkaban or run as effectiveUser
+    String executeAsUserBinary = null;
+    String effectiveUser = null;
+    boolean isExecuteAsUser = determineExecuteAsUser(sysProps, jobProps);
+
+    if (isExecuteAsUser) {
+      String nativeLibFolder = sysProps.getString(NATIVE_LIB_FOLDER);
+      executeAsUserBinary =
+          String.format("%s/%s", nativeLibFolder, "execute-as-user");
+      effectiveUser = getEffectiveUser(jobProps);
+      if ("root".equals(effectiveUser)) {
+        throw new RuntimeException(
+            "Not permitted to proxy as root through Azkaban");
+      }
+    }
+
     for (String command : commands) {
-      info("Command: " + command);
-      AzkabanProcessBuilder builder =
-          new AzkabanProcessBuilder(partitionCommandLine(command))
-              .setEnv(envVars).setWorkingDir(getCwd()).setLogger(getLog());
+      AzkabanProcessBuilder builder = null;
+      if (isExecuteAsUser) {
+        command =
+            String.format("%s %s %s", executeAsUserBinary, effectiveUser,
+                command);
+        info("Command: " + command);
+        builder =
+            new AzkabanProcessBuilder(partitionCommandLine(command))
+                .setEnv(envVars).setWorkingDir(getCwd()).setLogger(getLog())
+                .setExecuteAsUser().setExecuteAsUserBinary(executeAsUserBinary)
+                .setEffectiveUser(effectiveUser);
+      } else {
+        info("Command: " + command);
+        builder =
+            new AzkabanProcessBuilder(partitionCommandLine(command))
+                .setEnv(envVars).setWorkingDir(getCwd()).setLogger(getLog());
+      }
 
       if (builder.getEnv().size() > 0) {
         info("Environment variables: " + builder.getEnv());
@@ -141,6 +173,15 @@ public class ProcessJob extends AbstractProcessJob {
 
     // Get the output properties from this job.
     generateProperties(propFiles[1]);
+  }
+
+  private boolean determineExecuteAsUser(Props sysProps, Props jobProps) {
+    boolean isExecuteAsUser = sysProps.getBoolean(EXECUTE_AS_USER, false);
+    // putting an override in case user needs to override. A temporary opening
+    if (jobProps.containsKey(EXECUTE_AS_USER_OVERRIDE))
+      isExecuteAsUser = jobProps.getBoolean(EXECUTE_AS_USER_OVERRIDE, false);
+
+    return isExecuteAsUser;
   }
 
   /**
