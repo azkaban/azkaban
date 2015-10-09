@@ -22,8 +22,8 @@ import java.util.List;
 
 import org.apache.log4j.Logger;
 
+import azkaban.project.DirectoryFlowLoader;
 import azkaban.server.AzkabanServer;
-import azkaban.utils.DirectoryFlowLoader;
 import azkaban.utils.Pair;
 import azkaban.utils.Props;
 import azkaban.utils.Utils;
