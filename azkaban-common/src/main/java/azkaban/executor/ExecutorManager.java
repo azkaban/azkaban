@@ -1872,7 +1872,11 @@ public class ExecutorManager extends EventHandler implements
           // process flow with current snapshot of activeExecutors
           selectExecutorAndDispatchFlow(reference, exflow, new HashSet<Executor>(activeExecutors));
         }
-        currentContinuousFlowProcessed++;
+
+        // do not count failed flow processsing (flows still in queue)
+        if(queuedFlows.getFlow(exflow.getExecutionId()) == null) {
+          currentContinuousFlowProcessed++;
+        }
       }
     }
 
