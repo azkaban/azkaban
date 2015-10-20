@@ -110,13 +110,13 @@ public class ProcessJob extends AbstractProcessJob {
     envVars.put(KRB5CCNAME, getKrb5ccname(jobProps));
 
     // determine whether to run as Azkaban or run as effectiveUser
-    String executeAsUserBinary = null;
+    String executeAsUserBinaryPath = null;
     String effectiveUser = null;
     boolean isExecuteAsUser = determineExecuteAsUser(sysProps, jobProps);
 
     if (isExecuteAsUser) {
       String nativeLibFolder = sysProps.getString(NATIVE_LIB_FOLDER);
-      executeAsUserBinary =
+      executeAsUserBinaryPath =
           String.format("%s/%s", nativeLibFolder, "execute-as-user");
       effectiveUser = getEffectiveUser(jobProps);
       if ("root".equals(effectiveUser)) {
@@ -129,13 +129,13 @@ public class ProcessJob extends AbstractProcessJob {
       AzkabanProcessBuilder builder = null;
       if (isExecuteAsUser) {
         command =
-            String.format("%s %s %s", executeAsUserBinary, effectiveUser,
+            String.format("%s %s %s", executeAsUserBinaryPath, effectiveUser,
                 command);
         info("Command: " + command);
         builder =
             new AzkabanProcessBuilder(partitionCommandLine(command))
                 .setEnv(envVars).setWorkingDir(getCwd()).setLogger(getLog())
-                .setExecuteAsUser().setExecuteAsUserBinary(executeAsUserBinary)
+                .setExecuteAsUser().setExecuteAsUserBinaryPath(executeAsUserBinaryPath)
                 .setEffectiveUser(effectiveUser);
       } else {
         info("Command: " + command);

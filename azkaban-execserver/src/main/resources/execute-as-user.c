@@ -77,10 +77,12 @@ int change_user(uid_t user, gid_t group) {
 int main(int argc, char **argv){
 
 // set up the logging stream
-    if(!LOGFILE)
+    if (!LOGFILE){
         LOGFILE=stdout;
-    if(!ERRORFILE)
+    }
+    if (!ERRORFILE){
         ERRORFILE=stderr;
+    }
 
     if (argc < 3) {
         fprintf(ERRORFILE, "Requires at least 3 variables: ./execute-as-user uid command [args]");
@@ -91,7 +93,7 @@ int main(int argc, char **argv){
 
     // gather information about user
     struct passwd *user_info = getpwnam(uid);
-    if ( user_info == NULL ){
+    if (user_info == NULL){
         fprintf(LOGFILE, "user does not exist: %s", uid);
         return USER_NOT_FOUND;
     }
@@ -99,7 +101,7 @@ int main(int argc, char **argv){
     // try to change user
     fprintf(LOGFILE, "Changing user: user: %s, uid: %d, gid: %d\n", uid, user_info->pw_uid, user_info->pw_gid);
     int retval = change_user(user_info->pw_uid, user_info->pw_gid);
-    if( retval != 0){
+    if (retval != 0){
         fprintf(LOGFILE, "Error changing user to %s\n", uid);
         return SETUID_OPER_FAILED;
     }
@@ -113,9 +115,11 @@ int main(int argc, char **argv){
 
     // sometimes system(cmd) returns 256, which is interpreted to 0, making a failed job a successful job
     // hence this goofy piece of if statement.
-    if(retval != 0)
+    if (retval != 0){
         return 1;
-    else
+    }
+    else{
         return 0;
+    }
 
 }

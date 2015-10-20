@@ -36,7 +36,7 @@ public class AzkabanProcessBuilder {
   private String workingDir = System.getProperty("user.dir");
   private Logger logger = Logger.getLogger(AzkabanProcess.class);
   private boolean isExecuteAsUser = false;
-  private String executeAsUserBinary = null;
+  private String executeAsUserBinaryPath = null;
   private String effectiveUser = null;
 
   private int stdErrSnippetSize = 30;
@@ -103,11 +103,12 @@ public class AzkabanProcessBuilder {
   }
 
   public AzkabanProcess build() {
-    if (isExecuteAsUser)
+    if (isExecuteAsUser) {
       return new AzkabanProcess(cmd, env, workingDir, logger,
-          executeAsUserBinary, effectiveUser);
-    else
+          executeAsUserBinaryPath, effectiveUser);
+    } else {
       return new AzkabanProcess(cmd, env, workingDir, logger);
+    }
   }
 
   public List<String> getCommand() {
@@ -129,8 +130,8 @@ public class AzkabanProcessBuilder {
     return this;
   }
 
-  public AzkabanProcessBuilder setExecuteAsUserBinary(String executeAsUserBinary) {
-    this.executeAsUserBinary = executeAsUserBinary;
+  public AzkabanProcessBuilder setExecuteAsUserBinaryPath(String executeAsUserBinaryPath) {
+    this.executeAsUserBinaryPath = executeAsUserBinaryPath;
     return this;
   }
 
