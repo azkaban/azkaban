@@ -43,6 +43,7 @@ import azkaban.user.Role;
 import azkaban.user.User;
 import azkaban.user.UserManager;
 import azkaban.user.UserManagerException;
+import azkaban.utils.StringUtils;
 
 /**
  * Abstract Servlet that handles auto login when the session hasn't been
@@ -77,11 +78,17 @@ public abstract class LoginAbstractAzkabanServlet extends
 
   private MultipartParser multipartParser;
 
+  private boolean shouldLogRawUserAgent = false;
+
   @Override
   public void init(ServletConfig config) throws ServletException {
     super.init(config);
 
     multipartParser = new MultipartParser(DEFAULT_UPLOAD_DISK_SPOOL_SIZE);
+
+    shouldLogRawUserAgent =
+        getApplication().getServerProps().getBoolean("accesslog.raw.useragent",
+            false);
   }
 
   public void setResourceDirectory(File file) {
@@ -93,6 +100,7 @@ public abstract class LoginAbstractAzkabanServlet extends
       throws ServletException, IOException {
     // Set session id
     Session session = getSessionFromRequest(req);
+    logRequest(req, session);
     if (hasParam(req, "logout")) {
       resp.sendRedirect(req.getContextPath());
       if (session != null) {
@@ -103,7 +111,9 @@ public abstract class LoginAbstractAzkabanServlet extends
     }
 
     if (session != null) {
-      logger.info("Found session " + session.getUser());
+      if (logger.isDebugEnabled()) {
+        logger.debug("Found session " + session.getUser());
+      }
       if (handleFileGet(req, resp)) {
         return;
       }
@@ -118,6 +128,46 @@ public abstract class LoginAbstractAzkabanServlet extends
         handleLogin(req, resp);
       }
     }
+  }
+
+  /**
+   * Log out request - the format should be close to Apache access log format
+   * 
+   * @param req
+   * @param session
+   */
+  private void logRequest(HttpServletRequest req, Session session) {
+    StringBuilder buf = new StringBuilder();
+    buf.append(req.getRemoteAddr()).append(" ");
+    if (session != null && session.getUser() != null) {
+      buf.append(session.getUser().getUserId()).append(" ");
+    } else {
+      buf.append(" - ").append(" ");
+    }
+
+    buf.append("\"");
+    buf.append(req.getMethod()).append(" ");
+    buf.append(req.getRequestURI()).append(" ");
+    if (req.getQueryString() != null) {
+      buf.append(req.getQueryString()).append(" ");
+    } else {
+      buf.append("-").append(" ");
+    }
+    buf.append(req.getProtocol()).append("\" ");
+
+    String userAgent = req.getHeader("User-Agent");
+    if (shouldLogRawUserAgent) {
+      buf.append(userAgent);
+    } else {
+      // simply log a short string to indicate browser or not
+      if (StringUtils.isFromBrowser(userAgent)) {
+        buf.append("browser");
+      } else {
+        buf.append("not-browser");
+      }
+    }
+
+    logger.info(buf.toString());
   }
 
   private boolean handleFileGet(HttpServletRequest req, HttpServletResponse resp)
@@ -168,7 +218,6 @@ public abstract class LoginAbstractAzkabanServlet extends
 
     if (cookie != null) {
       sessionId = cookie.getValue();
-      logger.info("Session id " + sessionId);
     }
 
     if (sessionId == null && hasParam(req, "session.id")) {
@@ -210,6 +259,8 @@ public abstract class LoginAbstractAzkabanServlet extends
   protected void doPost(HttpServletRequest req, HttpServletResponse resp)
       throws ServletException, IOException {
     Session session = getSessionFromRequest(req);
+
+    logRequest(req, session);
 
     // Handle Multipart differently from other post messages
     if (ServletFileUpload.isMultipartContent(req)) {

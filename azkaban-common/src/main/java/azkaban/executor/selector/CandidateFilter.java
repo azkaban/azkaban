@@ -51,7 +51,7 @@ public abstract class CandidateFilter<T,V>  {
 
       // add or replace the filter.
       this.factorFilterList.put(filter.getFactorName(),filter);
-      logger.info(String.format("Factor filter added for '%s'.",
+      logger.debug(String.format("Factor filter added for '%s'.",
           filter.getFactorName()));
   }
 
@@ -62,7 +62,7 @@ public abstract class CandidateFilter<T,V>  {
    * @return true if the check passed, false if check failed, which means the item need to be filtered.
    * */
   public boolean filterTarget(T filteringTarget, V referencingObject){
-    logger.info(String.format("start filtering '%s' with factor filter for '%s'",
+    logger.debug(String.format("start filtering '%s' with factor filter for '%s'",
         filteringTarget == null ? "(null)" : filteringTarget.toString(),
         this.getName()));
 
@@ -70,13 +70,13 @@ public abstract class CandidateFilter<T,V>  {
     boolean result = true;
     for (FactorFilter<T,V> filter : filterList){
       result &= filter.filterTarget(filteringTarget,referencingObject);
-      logger.info(String.format("[Factor: %s] filter result : %s ",
+      logger.debug(String.format("[Factor: %s] filter result : %s ",
           filter.getFactorName(), result));
       if (!result){
         break;
       }
     }
-    logger.info(String.format("Final filtering result : %s ",result));
+    logger.debug(String.format("Final filtering result : %s ",result));
     return result;
   }
 }

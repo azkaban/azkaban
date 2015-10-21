@@ -132,7 +132,7 @@ public class AzkabanExecutorServer {
     root.addServlet(new ServletHolder(new ExecutorServlet()), "/executor");
     root.addServlet(new ServletHolder(new JMXHttpServlet()), "/jmx");
     root.addServlet(new ServletHolder(new StatsServlet()), "/stats");
-    root.addServlet(new ServletHolder(new ServerStatisticsServlet()), "/serverstastics");
+    root.addServlet(new ServletHolder(new ServerStatisticsServlet()), "/serverStatistics");
 
     root.setAttribute(ServerConstants.AZKABAN_SERVLET_CONTEXT_KEY, this);
 

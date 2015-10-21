@@ -22,14 +22,14 @@ import azkaban.utils.Props;
 
 /**
  * @author wkang
- * 
+ *
  * This class manages project whitelist defined in xml config file.
  * An single xml config file contains different types of whitelisted
  * projects. For additional type of whitelist, modify WhitelistType enum.
- * 
+ *
  * The xml config file should in the following format. Please note
  * the tag <MemoryCheck> is same as the defined enum MemoryCheck
- * 
+ *
  * <ProjectWhitelist>
  *  <MemoryCheck>
  *      <project projectname="project1" />
@@ -84,7 +84,7 @@ public class ProjectWhitelist {
     Map<WhitelistType, Set<Integer>> projsWhitelisted = new HashMap<WhitelistType, Set<Integer>>();
     NodeList tagList = doc.getChildNodes();
     if (!tagList.item(0).getNodeName().equals(PROJECT_WHITELIST_TAG)) {
-      throw new RuntimeException("Cannot find tag '" +  PROJECT_WHITELIST_TAG + "' in " + xmlFile);      
+      throw new RuntimeException("Cannot find tag '" +  PROJECT_WHITELIST_TAG + "' in " + xmlFile);
     }
 
     NodeList whitelist = tagList.item(0).getChildNodes();
@@ -114,7 +114,7 @@ public class ProjectWhitelist {
     NamedNodeMap projectAttrMap = node.getAttributes();
     Node projectIdAttr = projectAttrMap.getNamedItem(PROJECTID_ATTR);
     if (projectIdAttr == null) {
-      throw new RuntimeException("Error loading project. The '" + PROJECTID_ATTR 
+      throw new RuntimeException("Error loading project. The '" + PROJECTID_ATTR
               + "' attribute doesn't exist");
     }
 
@@ -127,7 +127,7 @@ public class ProjectWhitelist {
     if (projsWhitelisted != null) {
       Set<Integer> projs = projsWhitelisted.get(whitelistType);
       if (projs != null) {
-        return projs.contains(project); 
+        return projs.contains(project);
       }
     }
     return false;
@@ -138,6 +138,7 @@ public class ProjectWhitelist {
    * the defined enums.
    */
   public static enum WhitelistType {
-    MemoryCheck
+    MemoryCheck,
+    NumJobPerFlow
   }
 }

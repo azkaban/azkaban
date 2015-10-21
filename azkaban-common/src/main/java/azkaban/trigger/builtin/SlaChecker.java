@@ -20,7 +20,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.log4j.Logger;
-
 import org.joda.time.DateTime;
 import org.joda.time.ReadablePeriod;
 
@@ -57,7 +56,6 @@ public class SlaChecker implements ConditionChecker {
 
   private Boolean isSlaMissed(ExecutableFlow flow) {
     String type = slaOption.getType();
-    logger.info("flow is " + flow.getStatus());
     if (flow.getStartTime() < 0) {
       return Boolean.FALSE;
     }
@@ -136,7 +134,6 @@ public class SlaChecker implements ConditionChecker {
 
   private Boolean isSlaGood(ExecutableFlow flow) {
     String type = slaOption.getType();
-    logger.info("flow is " + flow.getStatus());
     if (flow.getStartTime() < 0) {
       return Boolean.FALSE;
     }
@@ -218,13 +215,11 @@ public class SlaChecker implements ConditionChecker {
   }
 
   public Object isSlaFailed() {
-    logger.info("Testing if sla failed for execution " + execId);
     ExecutableFlow flow;
     try {
       flow = executorManager.getExecutableFlow(execId);
     } catch (ExecutorManagerException e) {
       logger.error("Can't get executable flow.", e);
-      e.printStackTrace();
       // something wrong, send out alerts
       return Boolean.TRUE;
     }
@@ -232,13 +227,11 @@ public class SlaChecker implements ConditionChecker {
   }
 
   public Object isSlaPassed() {
-    logger.info("Testing if sla is good for execution " + execId);
     ExecutableFlow flow;
     try {
       flow = executorManager.getExecutableFlow(execId);
     } catch (ExecutorManagerException e) {
       logger.error("Can't get executable flow.", e);
-      e.printStackTrace();
       // something wrong, send out alerts
       return Boolean.TRUE;
     }

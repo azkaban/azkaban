@@ -50,8 +50,8 @@ public class CandidateSelector<K extends Comparable<K>, V> implements Selector<K
        return null;
      }
 
-     logger.info("start candidate selection logic.");
-     logger.info(String.format("candidate count before filtering: %s", candidateList.size()));
+     logger.debug("start candidate selection logic.");
+     logger.debug(String.format("candidate count before filtering: %s", candidateList.size()));
 
      // to keep the input untouched, we will form up a new list based off the filtering result.
      Collection<K> filteredList = new ArrayList<K>();
@@ -64,22 +64,22 @@ public class CandidateSelector<K extends Comparable<K>, V> implements Selector<K
        }
      } else{
        filteredList = candidateList;
-       logger.info("skipping the candidate filtering as the filter object is not specifed.");
+       logger.debug("skipping the candidate filtering as the filter object is not specifed.");
      }
 
-     logger.info(String.format("candidate count after filtering: %s", filteredList.size()));
+     logger.debug(String.format("candidate count after filtering: %s", filteredList.size()));
      if (filteredList.size() == 0){
-       logger.info("failed to select candidate as the filtered candidate list is empty.");
+       logger.debug("failed to select candidate as the filtered candidate list is empty.");
        return null;
      }
 
      if (null == comparator){
-       logger.info("candidate comparator is not specified, default hash code comparator class will be used.");
+       logger.debug("candidate comparator is not specified, default hash code comparator class will be used.");
      }
 
      // final work - find the best candidate from the filtered list.
      K executor = Collections.max(filteredList, comparator);
-     logger.info(String.format("candidate selected %s",
+     logger.debug(String.format("candidate selected %s",
          null == executor ? "(null)" : executor.toString()));
      return executor;
   }

@@ -368,4 +368,9 @@ public class MockExecutorLoader implements ExecutorLoader {
     }
     return queuedFlows;
   }
+
+  @Override
+  public void unassignExecutor(int executionId) throws ExecutorManagerException {
+    executionExecutorMapping.remove(executionId);
+  }
 }

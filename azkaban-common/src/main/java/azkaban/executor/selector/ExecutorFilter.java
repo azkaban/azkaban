@@ -42,7 +42,7 @@ public final class ExecutorFilter extends CandidateFilter<Executor, ExecutableFl
 
   // factor filter names.
   private static final String STATICREMAININGFLOWSIZE_FILTER_NAME = "StaticRemainingFlowSize";
-  private static final String MINIMUMFREEMEMORY_FILTER_NAME = "MinimunFreeMemory";
+  private static final String MINIMUMFREEMEMORY_FILTER_NAME = "MinimumFreeMemory";
   private static final String CPUSTATUS_FILTER_NAME = "CpuStatus";
 
   /**<pre>
@@ -98,13 +98,13 @@ public final class ExecutorFilter extends CandidateFilter<Executor, ExecutableFl
     return FactorFilter.create(STATICREMAININGFLOWSIZE_FILTER_NAME, new FactorFilter.Filter<Executor, ExecutableFlow>() {
       public boolean filterTarget(Executor filteringTarget, ExecutableFlow referencingObject) {
         if (null == filteringTarget){
-          logger.info(String.format("%s : filtering out the target as it is null.", STATICREMAININGFLOWSIZE_FILTER_NAME));
+          logger.debug(String.format("%s : filtering out the target as it is null.", STATICREMAININGFLOWSIZE_FILTER_NAME));
           return false;
         }
 
         ExecutorInfo stats = filteringTarget.getExecutorInfo();
         if (null == stats) {
-          logger.info(String.format("%s : filtering out %s as it's stats is unavailable.",
+          logger.debug(String.format("%s : filtering out %s as it's stats is unavailable.",
               STATICREMAININGFLOWSIZE_FILTER_NAME,
               filteringTarget.toString()));
           return false;
@@ -126,13 +126,13 @@ public final class ExecutorFilter extends CandidateFilter<Executor, ExecutableFl
       private static final int MINIMUM_FREE_MEMORY = 6 * 1024;
       public boolean filterTarget(Executor filteringTarget, ExecutableFlow referencingObject) {
         if (null == filteringTarget){
-          logger.info(String.format("%s : filtering out the target as it is null.", MINIMUMFREEMEMORY_FILTER_NAME));
+          logger.debug(String.format("%s : filtering out the target as it is null.", MINIMUMFREEMEMORY_FILTER_NAME));
           return false;
         }
 
         ExecutorInfo stats = filteringTarget.getExecutorInfo();
         if (null == stats) {
-          logger.info(String.format("%s : filtering out %s as it's stats is unavailable.",
+          logger.debug(String.format("%s : filtering out %s as it's stats is unavailable.",
               MINIMUMFREEMEMORY_FILTER_NAME,
               filteringTarget.toString()));
           return false;
@@ -156,13 +156,13 @@ public final class ExecutorFilter extends CandidateFilter<Executor, ExecutableFl
       private static final int MAX_CPU_CURRENT_USAGE = 95;
       public boolean filterTarget(Executor filteringTarget, ExecutableFlow referencingObject) {
         if (null == filteringTarget){
-          logger.info(String.format("%s : filtering out the target as it is null.", CPUSTATUS_FILTER_NAME));
+          logger.debug(String.format("%s : filtering out the target as it is null.", CPUSTATUS_FILTER_NAME));
           return false;
         }
 
         ExecutorInfo stats = filteringTarget.getExecutorInfo();
         if (null == stats) {
-          logger.info(String.format("%s : filtering out %s as it's stats is unavailable.",
+          logger.debug(String.format("%s : filtering out %s as it's stats is unavailable.",
               MINIMUMFREEMEMORY_FILTER_NAME,
               filteringTarget.toString()));
           return false;
