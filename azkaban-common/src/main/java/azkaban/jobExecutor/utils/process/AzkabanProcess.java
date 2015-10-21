@@ -50,6 +50,10 @@ public class AzkabanProcess {
   private volatile int processId;
   private volatile Process process;
 
+  private boolean isExecuteAsUser = false;
+  private String executeAsUserBinary = null;
+  private String effectiveUser = null;
+
   public AzkabanProcess(final List<String> cmd, final Map<String, String> env,
       final String workingDir, final Logger logger) {
     this.cmd = cmd;
@@ -59,6 +63,15 @@ public class AzkabanProcess {
     this.startupLatch = new CountDownLatch(1);
     this.completeLatch = new CountDownLatch(1);
     this.logger = logger;
+  }
+
+  public AzkabanProcess(List<String> cmd, Map<String, String> env,
+      String workingDir, Logger logger, String executeAsUserBinary,
+      String effectiveUser) {
+    this(cmd, env, workingDir, logger);
+    this.isExecuteAsUser = true;
+    this.executeAsUserBinary = executeAsUserBinary;
+    this.effectiveUser = effectiveUser;
   }
 
   /**
@@ -101,13 +114,15 @@ public class AzkabanProcess {
       }
 
       completeLatch.countDown();
-      if (exitCode != 0) {
-        throw new ProcessFailureException(exitCode, errorGobbler.getRecentLog());
-      }
 
       // try to wait for everything to get logged out before exiting
       outputGobbler.awaitCompletion(5000);
       errorGobbler.awaitCompletion(5000);
+
+      if (exitCode != 0) {
+        throw new ProcessFailureException(exitCode, errorGobbler.getRecentLog());
+      }
+
     } finally {
       IOUtils.closeQuietly(process.getInputStream());
       IOUtils.closeQuietly(process.getOutputStream());
@@ -155,7 +170,14 @@ public class AzkabanProcess {
     checkStarted();
     if (processId != 0 && isStarted()) {
       try {
-        Runtime.getRuntime().exec("kill " + processId);
+        if (isExecuteAsUser) {
+          String cmd =
+              String.format("%s %s kill %d", executeAsUserBinary,
+                  effectiveUser, processId);
+          Runtime.getRuntime().exec(cmd);
+        } else {
+          Runtime.getRuntime().exec("kill " + processId);
+        }
         return completeLatch.await(time, unit);
       } catch (IOException e) {
         logger.error("Kill attempt failed.", e);
@@ -173,7 +195,14 @@ public class AzkabanProcess {
     if (isRunning()) {
       if (processId != 0) {
         try {
-          Runtime.getRuntime().exec("kill -9 " + processId);
+          if (isExecuteAsUser) {
+            String cmd =
+                String.format("%s %s kill -9 %d", executeAsUserBinary,
+                    effectiveUser, processId);
+            Runtime.getRuntime().exec(cmd);
+          } else {
+            Runtime.getRuntime().exec("kill -9 " + processId);
+          }
         } catch (IOException e) {
           logger.error("Kill attempt failed.", e);
         }
@@ -233,5 +262,13 @@ public class AzkabanProcess {
   public String toString() {
     return "Process(cmd = " + Joiner.on(" ").join(cmd) + ", env = " + env
         + ", cwd = " + workingDir + ")";
+  }
+
+  public boolean isExecuteAsUser() {
+    return isExecuteAsUser;
+  }
+
+  public String getEffectiveUser() {
+    return effectiveUser;
   }
 }
