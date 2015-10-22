@@ -1,2 +1,8 @@
 languages: java
+# TODO(dzc): Add openjdk8 once it is available in Travis.
+jdk:
+  - openjdk7
+  - oraclejdk7
+  - oraclejdk8
+sudo: false
 script: ./gradlew distTar
