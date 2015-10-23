@@ -38,6 +38,7 @@
             <!--<li#if($current_page == 'triggers') class="active"#end onClick="navMenuClick('$!context/triggers')"><a href="$!context/triggers">Triggers</a></li>-->
             <li#if($current_page == 'executing') class="active"#end onClick="navMenuClick('$!context/executor')"><a href="$!context/executor">Executing</a></li>
             <li#if($current_page == 'history') class="active"#end onClick="navMenuClick('$!context/history')"><a href="$!context/history">History</a></li>
+            <li#if($current_page == 'about') class="active"#end onClick="navMenuClick('$!context/about')"><a href="$!context/about">About</a></li>
   #foreach ($viewer in $viewers)
     #if (!$viewer.hidden)
             <li#if($current_page == $viewer.pluginName) class="active"#end onClick="navMenuClick('$!context/$viewer.pluginPath')"><a href="$!context/$viewer.pluginPath">$viewer.pluginName</a></li>
