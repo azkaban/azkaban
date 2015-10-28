@@ -1,0 +1,9 @@
+<groups>
+	<group name="readgroup" permissions="READ"/>
+	<group name="writegroup" permissions="WRITE"/>
+	<group name="executegroup" permissions="EXECUTE"/>
+	<group name="schedulegroup" permissions="SCHEDULE"/>
+	<group name="metricsgroup" permissions="METRICS"/>
+	<group name="createprojectsgroup" permissions="CREATEPROJECTS"/>
+	<group name="admingroup" permissions="ADMIN" />
+</groups>

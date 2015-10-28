@@ -1,4 +1,0 @@
-<azkaban-users>
-	<role name="admin" permissions="ADMIN" />
-	<role name="metrics" permissions="METRICS"/>
-</azkaban-users>
