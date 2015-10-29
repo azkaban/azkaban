@@ -27,6 +27,7 @@ import java.util.Map;
 import javax.naming.AuthenticationException;
 import javax.naming.Context;
 import javax.naming.NamingEnumeration;
+import javax.naming.NamingException;
 import javax.naming.directory.Attribute;
 import javax.naming.directory.Attributes;
 import javax.naming.directory.DirContext;
@@ -78,8 +79,6 @@ public class LdapUserManager implements UserManager {
 	private static String attributeGroup;
 	private static String groupsFile;
 
-	private Map<String, DirContext> userContext;
-
 	private static final String GROUP_ELE_TAG = "group";
 	private static final String GROUP_NAME_ATTR_TAG = "name";
 	private static final String PERMISSIONS_ATTR_TAG = "permissions";
@@ -93,21 +92,23 @@ public class LdapUserManager implements UserManager {
 	 * @param props
 	 */
 	public LdapUserManager(Props props) {
-		userContext = new HashMap<String, DirContext>();
 		groupToPermissions = new HashMap<String, String>();
 		permissionsToRole = new HashMap<String, Role>();
 
-		initialContextFactory = props.getString(INITIAL_CONTEXT_FACTORY_KEY);
-		providerURL = props.getString(PROVIDER_URL_KEY);
-		securityAuthentication = props.getString(SECURITY_AUTHENTICATION_KEY);
-		securityPrincipal = props.getString(SECURITY_PRINCIPAL_KEY);
-		attributeGroup = props.getString(LDAP_ATTRIBUTE_GROUP_KEY);
+		initialContextFactory = nonNullify(props.getString(INITIAL_CONTEXT_FACTORY_KEY));
+		providerURL = nonNullify(props.getString(PROVIDER_URL_KEY));
+		securityAuthentication = nonNullify(props.getString(SECURITY_AUTHENTICATION_KEY));
+		securityPrincipal = nonNullify(props.getString(SECURITY_PRINCIPAL_KEY));
+		attributeGroup = nonNullify(props.getString(LDAP_ATTRIBUTE_GROUP_KEY));
 		groupsFile = props.getString(GROUP_FILE_KEY);
 
 		parseGroupsFile();
 	}
 
 	private void parseGroupsFile() {
+		if (!isValid(groupsFile)) {
+			throw new IllegalArgumentException("LDAP to Azkaban groups file is not valid.");
+		}
 		File file = new File(groupsFile);
 		if (!file.exists()) {
 			throw new IllegalArgumentException("LDAP to Azkaban groups file " + groupsFile + " doesn't exist.");
@@ -122,7 +123,7 @@ public class LdapUserManager implements UserManager {
 		try {
 			builder = docBuilderFactory.newDocumentBuilder();
 		} catch (ParserConfigurationException e) {
-			throw new IllegalArgumentException("Exception while parsing groups file. Document builder not created.", e);
+			throw new IllegalArgumentException("Exception while parsing " + groupsFile + ". Document builder not created.", e);
 		}
 
 		Document doc = null;
@@ -134,11 +135,11 @@ public class LdapUserManager implements UserManager {
 			throw new IllegalArgumentException("Exception while parsing " + groupsFile + ". Error reading file.", e);
 		}
 
-		// The first tag should be role-mapping tag.
-		NodeList tagList = doc.getChildNodes();
-		Node roleMapping = tagList.item(0);
+		// The first Node should be groups.
+		NodeList groupsNodeList = doc.getChildNodes();
+		Node groupsNode = groupsNodeList.item(0);
 
-		NodeList mapping = roleMapping.getChildNodes();
+		NodeList mapping = groupsNode.getChildNodes();
 		for (int i = 0; i < mapping.getLength(); ++i) {
 			Node node = mapping.item(i);
 			if (node.getNodeType() == Node.ELEMENT_NODE) {
@@ -148,7 +149,7 @@ public class LdapUserManager implements UserManager {
 			}
 		}
 
-		// Synchronize the swap. Similarly, the gets are synchronized to this.
+		// Synchronize the swap
 		synchronized (this) {
 			this.groupToPermissions = groupPermission;
 			this.permissionsToRole = permissionRole;
@@ -159,30 +160,48 @@ public class LdapUserManager implements UserManager {
 		NamedNodeMap groupAttrMap = node.getAttributes();
 		Node groupNameAttr = groupAttrMap.getNamedItem(GROUP_NAME_ATTR_TAG);
 		if (groupNameAttr == null) {
-			throw new RuntimeException("Error loading role. The group 'name' attribute doesn't exist");
+			logger.error("Error loading role. The group 'name' attribute doesn't exist");
+			return;
 		}
 		Node permissionsAttr = groupAttrMap.getNamedItem(PERMISSIONS_ATTR_TAG);
 		if (permissionsAttr == null) {
-			throw new RuntimeException("Error loading group. The group 'permissions' attribute doesn't exist");
+			logger.error("Error loading group. The group 'permissions' attribute doesn't exist");
+			return;
 		}
 
 		String groupName = groupNameAttr.getNodeValue();
-		String permissions = permissionsAttr.getNodeValue();
-		String[] permissionSplit = permissions.split("\\s*,\\s*");
-		Arrays.sort(permissionSplit);
+		if(!isValid(groupName))
+		{
+			logger.error("Error loading group. The group 'name' is invalid");
+			return;
+		}
+		String permissionsString = permissionsAttr.getNodeValue();
+		if(!isValid(permissionsString))
+		{
+			logger.error("Error loading permissions for group "+groupName+". The group 'permissions' is invalid");
+			return;
+		}
+		
+		String[] permissions = permissionsString.split("\\s*,\\s*");
+		Arrays.sort(permissions);
 
-		Permission perm = new Permission();
-		for (String permString : permissionSplit) {
+		Permission permission = new Permission();
+		for (String permissionString : permissions) {
 			try {
-				Permission.Type type = Permission.Type.valueOf(permString);
-				perm.addPermission(type);
+				Permission.Type type = Permission.Type.valueOf(nonNullify(permissionString).toUpperCase());
+				permission.addPermission(type);
 			} catch (IllegalArgumentException e) {
-				logger.error("Error adding type " + permString + ". Permission doesn't exist.", e);
+				logger.error("Error adding type " + permissionString + ". Permission doesn't exist.", e);
 			}
 		}
-
-		Role role = new Role(perm.toString(), perm);
-		permissionsToRole.put(perm.toString(), role);
+		
+		Role role = new Role(permission.toString(), permission);
+		permissionsToRole.put(permission.toString(), role);
+		
+		if(groupToPermissions.get(groupName)!=null)
+		{
+			throw new RuntimeException("Error adding group "+groupName+". The group 'permissions' has been defined more than once");
+		}
 		groupToPermissions.put(groupName, role.getName());
 	}
 
@@ -219,8 +238,6 @@ public class LdapUserManager implements UserManager {
 				}
 			});
 
-			userContext.put(username, dirContext);
-
 		} catch (AuthenticationException e) {
 			logger.debug(e.getLocalizedMessage());
 			throw new UserManagerException("LDAP Authentication : Invalid Credentials", e);
@@ -228,6 +245,13 @@ public class LdapUserManager implements UserManager {
 			logger.debug(e.getLocalizedMessage());
 			throw new UserManagerException(
 					"Error occurred while connecting to the LDAP server. Check the log for more details", e);
+		}
+		finally{
+			try {
+				dirContext.close();
+			} catch (NamingException e) {
+				logger.error("Error while closing the LDAP connection for the user "+username,e);
+			}
 		}
 		return user;
 	}
@@ -297,5 +321,15 @@ public class LdapUserManager implements UserManager {
 				}
 			}
 		}
+	}
+	
+	private String nonNullify(String string)
+	{
+		return (string+"").trim();
+	}
+	
+	private boolean isValid(String string)
+	{
+		return string!=null && !"".equals(string.trim());
 	}
 }
