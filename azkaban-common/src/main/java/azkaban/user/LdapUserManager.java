@@ -32,8 +32,6 @@ import javax.naming.directory.Attribute;
 import javax.naming.directory.Attributes;
 import javax.naming.directory.DirContext;
 import javax.naming.directory.InitialDirContext;
-import javax.naming.directory.SearchControls;
-import javax.naming.directory.SearchResult;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
@@ -83,8 +81,8 @@ public class LdapUserManager implements UserManager {
 	private static final String GROUP_NAME_ATTR_TAG = "name";
 	private static final String PERMISSIONS_ATTR_TAG = "permissions";
 
-	private Map<String, String> groupToPermissions;
-	private Map<String, Role> permissionsToRole;
+	private static Map<String, String> groupToPermissions;
+	private static Map<String, Role> permissionsToRole;
 
 	/**
 	 * The constructor.
@@ -92,17 +90,19 @@ public class LdapUserManager implements UserManager {
 	 * @param props
 	 */
 	public LdapUserManager(Props props) {
-		groupToPermissions = new HashMap<String, String>();
-		permissionsToRole = new HashMap<String, Role>();
+		synchronized (this) {
+			groupToPermissions = new HashMap<String, String>();
+			permissionsToRole = new HashMap<String, Role>();
 
-		initialContextFactory = nonNullify(props.getString(INITIAL_CONTEXT_FACTORY_KEY));
-		providerURL = nonNullify(props.getString(PROVIDER_URL_KEY));
-		securityAuthentication = nonNullify(props.getString(SECURITY_AUTHENTICATION_KEY));
-		securityPrincipal = nonNullify(props.getString(SECURITY_PRINCIPAL_KEY));
-		attributeGroup = nonNullify(props.getString(LDAP_ATTRIBUTE_GROUP_KEY));
-		groupsFile = props.getString(GROUP_FILE_KEY);
+			initialContextFactory = nonNullify(props.getString(INITIAL_CONTEXT_FACTORY_KEY));
+			providerURL = nonNullify(props.getString(PROVIDER_URL_KEY));
+			securityAuthentication = nonNullify(props.getString(SECURITY_AUTHENTICATION_KEY));
+			securityPrincipal = nonNullify(props.getString(SECURITY_PRINCIPAL_KEY));
+			attributeGroup = nonNullify(props.getString(LDAP_ATTRIBUTE_GROUP_KEY));
+			groupsFile = props.getString(GROUP_FILE_KEY);
 
-		parseGroupsFile();
+			parseGroupsFile();
+		}
 	}
 
 	private void parseGroupsFile() {
@@ -123,7 +123,8 @@ public class LdapUserManager implements UserManager {
 		try {
 			builder = docBuilderFactory.newDocumentBuilder();
 		} catch (ParserConfigurationException e) {
-			throw new IllegalArgumentException("Exception while parsing " + groupsFile + ". Document builder not created.", e);
+			throw new IllegalArgumentException(
+					"Exception while parsing " + groupsFile + ". Document builder not created.", e);
 		}
 
 		Document doc = null;
@@ -149,11 +150,8 @@ public class LdapUserManager implements UserManager {
 			}
 		}
 
-		// Synchronize the swap
-		synchronized (this) {
-			this.groupToPermissions = groupPermission;
-			this.permissionsToRole = permissionRole;
-		}
+		groupToPermissions = groupPermission;
+		permissionsToRole = permissionRole;
 	}
 
 	private void parseGroup(Node node, Map<String, String> groupToPermissions, Map<String, Role> permissionsToRole) {
@@ -170,18 +168,16 @@ public class LdapUserManager implements UserManager {
 		}
 
 		String groupName = groupNameAttr.getNodeValue();
-		if(!isValid(groupName))
-		{
+		if (!isValid(groupName)) {
 			logger.error("Error loading group. The group 'name' is invalid");
 			return;
 		}
 		String permissionsString = permissionsAttr.getNodeValue();
-		if(!isValid(permissionsString))
-		{
-			logger.error("Error loading permissions for group "+groupName+". The group 'permissions' is invalid");
+		if (!isValid(permissionsString)) {
+			logger.error("Error loading permissions for group " + groupName + ". The group 'permissions' is invalid");
 			return;
 		}
-		
+
 		String[] permissions = permissionsString.split("\\s*,\\s*");
 		Arrays.sort(permissions);
 
@@ -194,13 +190,13 @@ public class LdapUserManager implements UserManager {
 				logger.error("Error adding type " + permissionString + ". Permission doesn't exist.", e);
 			}
 		}
-		
+
 		Role role = new Role(permission.toString(), permission);
 		permissionsToRole.put(permission.toString(), role);
-		
-		if(groupToPermissions.get(groupName)!=null)
-		{
-			throw new RuntimeException("Error adding group "+groupName+". The group 'permissions' has been defined more than once");
+
+		if (groupToPermissions.get(groupName) != null) {
+			throw new RuntimeException(
+					"Error adding group " + groupName + ". The group 'permissions' has been defined more than once");
 		}
 		groupToPermissions.put(groupName, role.getName());
 	}
@@ -225,7 +221,7 @@ public class LdapUserManager implements UserManager {
 			dirContext = new InitialDirContext(environment);
 			user = new User(username);
 
-			populateUserObject(dirContext, user);
+			addGroupsAndPermissionsToUser(dirContext, user);
 
 			user.setPermissions(new UserPermissions() {
 				@Override
@@ -245,12 +241,11 @@ public class LdapUserManager implements UserManager {
 			logger.debug(e.getLocalizedMessage());
 			throw new UserManagerException(
 					"Error occurred while connecting to the LDAP server. Check the log for more details", e);
-		}
-		finally{
+		} finally {
 			try {
 				dirContext.close();
 			} catch (NamingException e) {
-				logger.error("Error while closing the LDAP connection for the user "+username,e);
+				logger.error("Error while closing the LDAP connection for the user " + username, e);
 			}
 		}
 		return user;
@@ -258,7 +253,7 @@ public class LdapUserManager implements UserManager {
 
 	@Override
 	public boolean validateUser(String username) {
-		return true;
+		return false;
 	}
 
 	@Override
@@ -268,7 +263,6 @@ public class LdapUserManager implements UserManager {
 
 	@Override
 	public boolean validateGroup(String group) {
-		logger.info("validateGroup(" + group + ")");
 		return groupToPermissions.containsKey(group);
 	}
 
@@ -277,59 +271,69 @@ public class LdapUserManager implements UserManager {
 		return false;
 	}
 
-	private void populateUserObject(DirContext dirContext, User user) throws Exception {
-		NamingEnumeration<SearchResult> results = null;
-		SearchControls controls = new SearchControls();
-		controls.setSearchScope(SearchControls.SUBTREE_SCOPE);
-		results = dirContext.search("", "(&(cn=" + user.getUserId() + ")(objectClass=user))", controls);
-		String groupName;
-		String roleName;
-		while (results.hasMore()) {
-			SearchResult searchResult = (SearchResult) results.next();
-			Attributes attributes = searchResult.getAttributes();
-			NamingEnumeration<? extends Attribute> ne = attributes.getAll();
-			while (ne.hasMore()) {
-				Attribute attribute = ne.next();
-				if (attributeGroup != null && attributeGroup.equals(attribute.getID())) {
-					NamingEnumeration<?> neInner = attribute.getAll();
-					while (neInner.hasMore()) {
-						Object neObject = neInner.next();
-						if (neObject != null) {
-							String neValue = neObject.toString();
-							if (neValue != null) {
-								String[] commaSplitValues = neValue.split(",");
-								if (commaSplitValues != null) {
-									for (String commaSplitValue : commaSplitValues) {
-										if (commaSplitValue != null) {
-											String[] equalsSplitValues = commaSplitValue.split("=");
-											if (equalsSplitValues != null && equalsSplitValues.length == 2
-													&& "CN".equalsIgnoreCase((equalsSplitValues[0] + "").trim())
-													&& !"".equals((equalsSplitValues[1] + "").trim())) {
-												groupName = equalsSplitValues[1].trim();
-												user.addGroup(groupName);
-												roleName = this.groupToPermissions.get(groupName);
-												if (roleName != null) {
-													user.addRole(roleName);
-												}
-											}
-										}
-									}
-								}
-							}
+	private void addGroupsAndPermissionsToUser(DirContext dirContext, User user) throws Exception {
+		String groupName, roleName, retriveAttributes[] = { attributeGroup };
+		Attributes attributes = dirContext.getAttributes(MessageFormat.format(securityPrincipal, user.getUserId()),
+				retriveAttributes);
+		NamingEnumeration<? extends Attribute> ne = attributes.getAll();
+		if (ne == null) {
+			logger.error("Error while fetching LDAP group for the user " + user.getUserId());
+			return;
+		}
+		while (ne.hasMore()) {
+			Attribute attribute = ne.next();
+			if (attribute == null) {
+				logger.error("Error while fetching LDAP group for the user " + user.getUserId());
+				return;
+			}
+			NamingEnumeration<?> neInner = attribute.getAll();
+			if (neInner == null) {
+				logger.error("Error while fetching LDAP group for the user " + user.getUserId());
+				return;
+			}
+			while (neInner.hasMore()) {
+				Object neObject = neInner.next();
+				if (neObject != null) {
+					String neValue = neObject.toString();
+					groupName = fetchGroupCNfromDN(neValue);
+					if (isValid(groupName)) {
+						user.addGroup(groupName);
+						roleName = groupToPermissions.get(groupName);
+						if (isValid(roleName)) {
+							user.addRole(roleName);
 						}
 					}
 				}
 			}
 		}
 	}
-	
-	private String nonNullify(String string)
-	{
-		return (string+"").trim();
+
+	private String fetchGroupCNfromDN(String groupDN) {
+		String comma = ",", equals = "=", groupCN = null;
+		if (isValid(groupDN)) {
+			String[] commaSplitValues = groupDN.split(comma);
+			if (commaSplitValues != null && commaSplitValues.length > 0) {
+				for (String commaSplitValue : commaSplitValues) {
+					if (isValid(commaSplitValue)) {
+						String[] equalsSplitValues = commaSplitValue.split(equals);
+						if (equalsSplitValues != null && equalsSplitValues.length == 2
+								&& "CN".equalsIgnoreCase(nonNullify(equalsSplitValues[0]))
+								&& isValid(equalsSplitValues[1])) {
+							groupCN = equalsSplitValues[1];
+
+						}
+					}
+				}
+			}
+		}
+		return groupCN;
 	}
-	
-	private boolean isValid(String string)
-	{
+
+	private String nonNullify(String string) {
+		return (string + "").trim();
+	}
+
+	private boolean isValid(String string) {
 		return string!=null && !"".equals(string.trim());
 	}
 }
