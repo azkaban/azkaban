@@ -182,11 +182,11 @@ public class JobCallbackUtil {
             headersKey.replace(SEQUENCE_TOKEN, sequenceStr);
         String headersValue = props.get(headersKeyPerSequence);
 		
-		// replace all the tokens in the header
-		if(headersValue != null)
-		{
-			headersValue = replaceTokens(headersValue, contextInfo, false);
-		}
+	// replace all the tokens in the header
+	if(headersValue != null)
+	{
+		headersValue = replaceTokens(headersValue, contextInfo, false);
+	}
 		
         privateLogger.info("headers: " + headersValue);
         Header[] headers = parseHttpHeaders(headersValue);
