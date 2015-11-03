@@ -223,6 +223,7 @@ public class JobCallbackUtilTest {
 		+ CONTEXT_JOB_STATUS_TOKEN;
 
 	String result =
+		JobCallbackUtil.replaceTokens(urlWithMultipleTokens, contextInfo, true);
 
 	String expectedResult =
 		"http://www.linkedin.com?server=" + SERVER_NAME + "&project="
@@ -232,6 +233,7 @@ public class JobCallbackUtilTest {
 		+ EXECUTION_ID + "&job=" + JOB_NAME + "&status=" + JOB_STATUS_NAME;
 
 	Assert.assertEquals(expectedResult, result);
+  }
 
   @Test
   public void tokenWithEncoding() throws Exception {
