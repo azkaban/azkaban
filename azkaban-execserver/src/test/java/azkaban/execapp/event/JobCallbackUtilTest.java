@@ -211,6 +211,29 @@ public class JobCallbackUtilTest {
   }
 
   @Test
+  public void multipleTokensTest() {
+
+	String urlWithMultipleTokens =
+		"http://www.linkedin.com?server=" + SERVER_NAME + "&project="
+		+ CONTEXT_PROJECT_TOKEN + "&flow=" + CONTEXT_FLOW_TOKEN + "&executionId="
+		+ CONTEXT_EXECUTION_ID_TOKEN + "&job=" + CONTEXT_JOB_TOKEN + "&status="
+		+ CONTEXT_JOB_STATUS_TOKEN + "&project="
+		+ CONTEXT_PROJECT_TOKEN + "&flow=" + CONTEXT_FLOW_TOKEN + "&executionId="
+		+ CONTEXT_EXECUTION_ID_TOKEN + "&job=" + CONTEXT_JOB_TOKEN + "&status="
+		+ CONTEXT_JOB_STATUS_TOKEN;
+
+	String result =
+
+	String expectedResult =
+		"http://www.linkedin.com?server=" + SERVER_NAME + "&project="
+		+ PROJECT_NAME + "&flow=" + FLOW_NAME + "&executionId="
+		+ EXECUTION_ID + "&job=" + JOB_NAME + "&status=" + JOB_STATUS_NAME
+		+ "&project=" + PROJECT_NAME + "&flow=" + FLOW_NAME + "&executionId="
+		+ EXECUTION_ID + "&job=" + JOB_NAME + "&status=" + JOB_STATUS_NAME;
+
+	Assert.assertEquals(expectedResult, result);
+
+  @Test
   public void tokenWithEncoding() throws Exception {
     String jobNameWithSpaces = "my job";
     String encodedJobName = URLEncoder.encode(jobNameWithSpaces, "UTF-8");
