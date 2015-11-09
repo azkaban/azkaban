@@ -54,7 +54,7 @@ import azkaban.utils.Props;
  * user.manager.ldap.initial.context.factory=com.sun.jndi.ldap.LdapCtxFactory
  * user.manager.ldap.provider.url=ldap://hostname:port
  * user.manager.ldap.security.authentication=simple
- * user.manager.ldap.security.principal=userDN
+ * user.manager.ldap.security.principal={0}
  * 
  * user.manager.ldap.attribute.group=group
  * user.manager.ldap.groups.mapping.file=conf/groups.xml

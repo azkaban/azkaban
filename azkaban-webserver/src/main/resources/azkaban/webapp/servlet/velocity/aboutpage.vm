@@ -18,50 +18,37 @@
 <html>
 	<head>
 #parse( "azkaban/webapp/servlet/velocity/style.vm" )
-		<script type="text/javascript" src="${context}/js/jquery/jquery-1.9.1.js"></script>    
-		<script type="text/javascript" src="${context}/js/jqueryui/jquery-ui-1.10.1.custom.js"></script>
 		<script type="text/javascript" src="${context}/js/underscore-1.4.4-min.js"></script>
 		<script type="text/javascript" src="${context}/js/namespace.js"></script>
 		<script type="text/javascript" src="${context}/js/backbone-0.9.10-min.js"></script>
-		<script type="text/javascript" src="${context}/js/jquery.simplemodal-1.4.4.js"></script>
-		<script type="text/javascript" src="${context}/js/jqueryui/jquery-ui-timepicker-addon.js"></script> 
-		<script type="text/javascript" src="${context}/js/jqueryui/jquery-ui-sliderAccess.js"></script>
 		<script type="text/javascript" src="${context}/js/azkaban.nav.js"></script>		
-		<script type="text/javascript" src="${context}/js/azkaban.history.view.js"></script>
 		<script type="text/javascript">
 			var contextURL = "${context}";
-	
-		
 		</script>
-	
 	</head>
+	
 	<body>
-		#set($current_page="about")
+
+#set($current_page="about")
 #parse( "azkaban/webapp/servlet/velocity/nav.vm" )
-		<div class="messaging"><p id="messageClose">X</p><p id="message"></p></div>  
 
-		#if($errorMsg)
-					<div class="box-error-message">$errorMsg</div>
-		#else
-			#if($error_message != "null")
-	                <div class="box-error-message">$error_message</div>
-			#elseif($success_message != "null")
-        	        <div class="box-success-message">$success_message</div>
-			#end
-		#end	
+		<div class="az-page-header">
+	      <div class="container-full">
+	        <div class="row">
+	          <div class="header-title">
+	            <h1><a href="${context}/about">Inovia batch server</a></h1>
+	          </div>
+	        </div>
+	      </div>
+	    </div>
 		
-
-		
-		<div class="section-hd"><h2>Inovia batch server </h2></br></div>
-			<!-- end .section-hd -->
-			
-		<div class="content"></br>
-			This product is part of the Inovia software package and support. This is version 2.2 of Inovia batch server.</br>
-The Inovia batch server is based on LinkedIn Azkaban within Apache 2.0 License.</br>
-Inovia is contributing to the Azkaban project and all general bug fixes and enhancements will be publish to the Azkaban project. </br>
-Please use the normal Inovia support channels to get help with the Inovia batch server. </br>
-			
+		<div class="container-full">	
+			<div class="content"></br>
+				This product Inovia Batch Server Version 1.0 is a part of Inovia software package and support.</br>
+				The Inovia Batch Server is based on LinkedIn Azkaban within Apache 2.0 License.</br>
+				Inovia is contributing to the Azkaban project and all general bug fixes and enhancements will be published to the Azkaban project. </br>
+				Please use the normal Inovia support channels to get help with the Inovia batch server. </br>
+			</div>
 		</div>
-		
 	</body>
 </html>
