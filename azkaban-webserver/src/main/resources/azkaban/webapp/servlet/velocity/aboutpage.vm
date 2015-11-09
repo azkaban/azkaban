@@ -18,20 +18,12 @@
 <html>
 	<head>
 #parse( "azkaban/webapp/servlet/velocity/style.vm" )
-		<script type="text/javascript" src="${context}/js/underscore-1.4.4-min.js"></script>
-		<script type="text/javascript" src="${context}/js/namespace.js"></script>
-		<script type="text/javascript" src="${context}/js/backbone-0.9.10-min.js"></script>
-		<script type="text/javascript" src="${context}/js/azkaban.nav.js"></script>		
-		<script type="text/javascript">
-			var contextURL = "${context}";
-		</script>
+#parse ("azkaban/webapp/servlet/velocity/javascript.vm")
 	</head>
 	
 	<body>
-
 #set($current_page="about")
 #parse( "azkaban/webapp/servlet/velocity/nav.vm" )
-
 		<div class="az-page-header">
 	      <div class="container-full">
 	        <div class="row">
