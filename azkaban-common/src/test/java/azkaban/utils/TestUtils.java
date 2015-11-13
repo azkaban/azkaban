@@ -33,7 +33,7 @@ import azkaban.user.XmlUserManager;
 public class TestUtils {
   /* Base  resource direcotyr for unit tests */
   private static final String UNIT_RESOURCE_DIR =
-      "../azkaban-test/src/test/resources";
+      "../azkaban-test/src/test/resources/azkaban/test";
   /* Directory with serialized description of test flows */
   private static final String UNIT_EXECUTION_DIR =
       UNIT_RESOURCE_DIR + "/executions";

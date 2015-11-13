@@ -168,7 +168,7 @@ public class ServerStatisticsServlet extends HttpServlet {
         returnResult = Long.parseLong(result.split("\\s+")[1]);
         logger.debug(field + ":" + returnResult);
       } catch (NumberFormatException e) {
-        returnResult = 0l;
+        returnResult = 0L;
         logger.error(String.format("yielding 0 for %s as output is invalid - %s", field, result));
       }
     }

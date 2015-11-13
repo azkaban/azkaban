@@ -127,6 +127,7 @@ project(':azkaban-common') {
     compile('org.mortbay.jetty:jetty-util:6.1.26')
     compile('org.slf4j:slf4j-api:1.6.1')
 
+    testCompile(project(':azkaban-test').sourceSets.test.output)
     testCompile('junit:junit:4.11')
     testCompile('org.hamcrest:hamcrest-all:1.3')
   }
@@ -428,6 +429,10 @@ project(':azkaban-sql') {
 
 project(':azkaban-test') {
   apply plugin: 'distribution'
+
+  dependencies {
+    testCompile('junit:junit:4.11')
+  }
 
   distributions {
     animal {

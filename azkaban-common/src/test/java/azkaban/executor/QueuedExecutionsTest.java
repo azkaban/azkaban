@@ -13,14 +13,12 @@ import azkaban.flow.Flow;
 import azkaban.project.Project;
 import azkaban.utils.JSONUtils;
 import azkaban.utils.Pair;
+import azkaban.utils.TestUtils;
 
 public class QueuedExecutionsTest {
-  /* Directory with serialized description of test flows */
-  private static final String UNIT_BASE_DIR =
-    "../azkaban-test/src/test/resources/executions/exectest1/";
 
   private File getFlowDir(String flow) {
-    return new File(UNIT_BASE_DIR + flow + ".flow");
+    return TestUtils.getFlowDir("exectest1", flow);
   }
 
   /*

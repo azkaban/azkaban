@@ -28,13 +28,13 @@ import org.apache.log4j.Logger;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import azkaban.executor.ExecutionOptions.FailureAction;
 import azkaban.flow.Flow;
+import azkaban.project.DirectoryFlowLoader;
 import azkaban.project.Project;
-import azkaban.utils.DirectoryFlowLoader;
+import azkaban.test.executions.TestExecutions;
 import azkaban.utils.JSONUtils;
 import azkaban.utils.Props;
 
@@ -47,7 +47,8 @@ public class ExecutableFlowTest {
 
     Logger logger = Logger.getLogger(this.getClass());
     DirectoryFlowLoader loader = new DirectoryFlowLoader(new Props(), logger);
-    loader.loadProjectFlow(project, new File("unit/executions/embedded"));
+
+    loader.loadProjectFlow(project, TestExecutions.getFlowDir("embedded"));
     Assert.assertEquals(0, loader.getErrors().size());
 
     project.setFlows(loader.getFlowMap());
@@ -58,7 +59,7 @@ public class ExecutableFlowTest {
   public void tearDown() throws Exception {
   }
 
-  @Ignore @Test
+  @Test
   public void testExecutorFlowCreation() throws Exception {
     Flow flow = project.getFlow("jobe");
     Assert.assertNotNull(flow);
@@ -96,7 +97,7 @@ public class ExecutableFlowTest {
     Assert.assertEquals(4, jobdFlow.getExecutableNodes().size());
   }
 
-  @Ignore @Test
+  @Test
   public void testExecutorFlowJson() throws Exception {
     Flow flow = project.getFlow("jobe");
     Assert.assertNotNull(flow);
@@ -114,7 +115,7 @@ public class ExecutableFlowTest {
     testEquals(exFlow, parsedExFlow);
   }
 
-  @Ignore @Test
+  @Test
   public void testExecutorFlowJson2() throws Exception {
     Flow flow = project.getFlow("jobe");
     Assert.assertNotNull(flow);
@@ -154,7 +155,7 @@ public class ExecutableFlowTest {
   }
 
   @SuppressWarnings("rawtypes")
-  @Ignore @Test
+  @Test
   public void testExecutorFlowUpdates() throws Exception {
     Flow flow = project.getFlow("jobe");
     ExecutableFlow exFlow = new ExecutableFlow(project, flow);
@@ -250,7 +251,7 @@ public class ExecutableFlowTest {
     }
   }
 
-  public static void testEquals(ExecutableNode a, ExecutableNode b) {
+  private static void testEquals(ExecutableNode a, ExecutableNode b) {
     if (a instanceof ExecutableFlow) {
       if (b instanceof ExecutableFlow) {
         ExecutableFlow exA = (ExecutableFlow) a;
@@ -304,7 +305,7 @@ public class ExecutableFlowTest {
     Assert.assertEquals(a.getOutNodes(), a.getOutNodes());
   }
 
-  public static void testEquals(ExecutionOptions optionsA,
+  private static void testEquals(ExecutionOptions optionsA,
       ExecutionOptions optionsB) {
     Assert.assertEquals(optionsA.getConcurrentOption(),
         optionsB.getConcurrentOption());
@@ -329,7 +330,7 @@ public class ExecutableFlowTest {
     testEquals(optionsA.getFlowParameters(), optionsB.getFlowParameters());
   }
 
-  public static void testEquals(Set<String> a, Set<String> b) {
+  private static void testEquals(Set<String> a, Set<String> b) {
     if (a == b) {
       return;
     }
@@ -348,7 +349,7 @@ public class ExecutableFlowTest {
     }
   }
 
-  public static void testEquals(List<String> a, List<String> b) {
+  private static void testEquals(List<String> a, List<String> b) {
     if (a == b) {
       return;
     }
@@ -370,7 +371,7 @@ public class ExecutableFlowTest {
   }
 
   @SuppressWarnings("unchecked")
-  public static void testDisabledEquals(List<Object> a, List<Object> b) {
+  private static void testDisabledEquals(List<Object> a, List<Object> b) {
     if (a == b) {
       return;
     }
@@ -401,7 +402,7 @@ public class ExecutableFlowTest {
     }
   }
 
-  public static void testEquals(Map<String, String> a, Map<String, String> b) {
+  private static void testEquals(Map<String, String> a, Map<String, String> b) {
     if (a == b) {
       return;
     }

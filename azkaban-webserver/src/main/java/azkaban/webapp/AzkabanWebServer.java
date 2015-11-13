@@ -709,6 +709,13 @@ public class AzkabanWebServer extends AzkabanServer {
           .getString("jetty.trustpassword"));
       secureConnector.setHeaderBufferSize(MAX_HEADER_BUFFER_SIZE);
 
+      // set up vulnerable cipher suites to exclude
+      List<String> cipherSuitesToExclude = azkabanSettings.getStringList("jetty.excludeCipherSuites");
+      logger.info("Excluded Cipher Suites: " + String.valueOf(cipherSuitesToExclude));
+      if (cipherSuitesToExclude != null && !cipherSuitesToExclude.isEmpty()) {
+        secureConnector.setExcludeCipherSuites(cipherSuitesToExclude.toArray(new String[0]));
+      }
+
       server.addConnector(secureConnector);
     } else {
       ssl = false;
