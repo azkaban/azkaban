@@ -80,6 +80,22 @@ project(':azkaban-common') {
     }
   }
 
+  apply plugin: 'c'
+  model {
+    components {
+      main(NativeExecutableSpec) {
+        sources {
+          c {
+            source {
+              srcDir "src/main"
+              include "**/*.c"
+            }
+          }
+        }
+      }
+    }
+  }
+
   dependencies {
     compile('com.google.guava:guava:13.0.1')
     compile('com.h2database:h2:1.3.170')
