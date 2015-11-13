@@ -271,6 +271,7 @@ public class FlowRunner extends EventHandler implements Runnable {
       this.watcher.setLogger(logger);
     }
 
+    logger.info("Assigned executor : " + AzkabanExecutorServer.getApp().getExecutorHostPort());
     logger.info("Running execid:" + execId + " flow:" + flowId + " project:"
         + projectId + " version:" + version);
     if (pipelineExecId != null) {
@@ -840,7 +841,7 @@ public class FlowRunner extends EventHandler implements Runnable {
 
   /**
    * Configure Azkaban metrics tracking for a new jobRunner instance
-   * 
+   *
    * @param jobRunner
    */
   private void configureJobLevelMetrics(JobRunner jobRunner) {

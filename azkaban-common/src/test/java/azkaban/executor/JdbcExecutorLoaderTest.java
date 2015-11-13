@@ -21,8 +21,11 @@ import java.io.IOException;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 
 import javax.sql.DataSource;
@@ -30,33 +33,36 @@ import javax.sql.DataSource;
 import org.apache.commons.dbutils.DbUtils;
 import org.apache.commons.dbutils.QueryRunner;
 import org.apache.commons.dbutils.ResultSetHandler;
-
 import org.joda.time.DateTime;
-
+import org.junit.After;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 
 import azkaban.database.DataSourceUtils;
+import azkaban.executor.ExecutorLogEvent.EventType;
 import azkaban.flow.Flow;
 import azkaban.project.Project;
+import azkaban.user.User;
 import azkaban.utils.FileIOUtils.LogData;
 import azkaban.utils.JSONUtils;
 import azkaban.utils.Pair;
 import azkaban.utils.Props;
+import azkaban.utils.TestUtils;
 
 public class JdbcExecutorLoaderTest {
   private static boolean testDBExists;
+  /* Directory with serialized description of test flows */
+  private static final String UNIT_BASE_DIR =
+    "../azkaban-test/src/test/resources/executions";
   // @TODO remove this and turn into local host.
-  private static final String host = "cyu-ld.linkedin.biz";
+  private static final String host = "localhost";
   private static final int port = 3306;
   private static final String database = "azkaban2";
   private static final String user = "azkaban";
   private static final String password = "azkaban";
   private static final int numConnections = 10;
-
-  private File flowDir = new File("unit/executions/exectest1");
 
   @BeforeClass
   public static void setupDB() {
@@ -117,12 +123,31 @@ public class JdbcExecutorLoaderTest {
       return;
     }
 
-    DbUtils.closeQuietly(connection);
+    try {
+      runner.query(connection, "SELECT COUNT(1) FROM executors",
+          countHandler);
+    } catch (SQLException e) {
+      e.printStackTrace();
+      testDBExists = false;
+      DbUtils.closeQuietly(connection);
+      return;
+    }
 
-    clearDB();
+    try {
+      runner.query(connection, "SELECT COUNT(1) FROM executor_events",
+          countHandler);
+    } catch (SQLException e) {
+      e.printStackTrace();
+      testDBExists = false;
+      DbUtils.closeQuietly(connection);
+      return;
+    }
+
+    DbUtils.closeQuietly(connection);
   }
 
-  private static void clearDB() {
+  @After
+  public void clearDB() {
     if (!testDBExists) {
       return;
     }
@@ -178,6 +203,24 @@ public class JdbcExecutorLoaderTest {
       return;
     }
 
+    try {
+      runner.update(connection, "DELETE FROM executors");
+    } catch (SQLException e) {
+      e.printStackTrace();
+      testDBExists = false;
+      DbUtils.closeQuietly(connection);
+      return;
+    }
+
+    try {
+      runner.update(connection, "DELETE FROM executor_events");
+    } catch (SQLException e) {
+      e.printStackTrace();
+      testDBExists = false;
+      DbUtils.closeQuietly(connection);
+      return;
+    }
+
     DbUtils.closeQuietly(connection);
   }
 
@@ -186,9 +229,8 @@ public class JdbcExecutorLoaderTest {
     if (!isTestSetup()) {
       return;
     }
-
     ExecutorLoader loader = createLoader();
-    ExecutableFlow flow = createExecutableFlow("exec1");
+    ExecutableFlow flow = TestUtils.createExecutableFlow("exectest1", "exec1");
 
     loader.uploadExecutableFlow(flow);
 
@@ -217,7 +259,7 @@ public class JdbcExecutorLoaderTest {
     }
 
     ExecutorLoader loader = createLoader();
-    ExecutableFlow flow = createExecutableFlow("exec1");
+    ExecutableFlow flow = TestUtils.createExecutableFlow("exectest1", "exec1");
 
     loader.uploadExecutableFlow(flow);
 
@@ -256,7 +298,7 @@ public class JdbcExecutorLoaderTest {
     ExecutableFlow flow = createExecutableFlow(10, "exec1");
     flow.setExecutionId(10);
 
-    File jobFile = new File(flowDir, "job10.job");
+    File jobFile = new File(UNIT_BASE_DIR + "/exectest1", "job10.job");
     Props props = new Props(null, jobFile);
     props.put("test", "test2");
     ExecutableNode oldNode = flow.getExecutableNode("job10");
@@ -293,6 +335,433 @@ public class JdbcExecutorLoaderTest {
 
   }
 
+  /* Test exception when unassigning an missing execution */
+  @Test
+  public void testUnassignExecutorException() throws ExecutorManagerException,
+    IOException {
+    if (!isTestSetup()) {
+      return;
+    }
+    ExecutorLoader loader = createLoader();
+    try {
+      loader.unassignExecutor(2);
+      Assert.fail("Expecting exception, but didn't get one");
+    } catch (ExecutorManagerException ex) {
+      System.out.println("Test true");
+    }
+  }
+
+  /* Test happy case when unassigning executor for a flow execution */
+  @Test
+  public void testUnassignExecutor() throws ExecutorManagerException,
+    IOException {
+    if (!isTestSetup()) {
+      return;
+    }
+    ExecutorLoader loader = createLoader();
+    String host = "localhost";
+    int port = 12345;
+    Executor executor = loader.addExecutor(host, port);
+    ExecutableFlow flow = TestUtils.createExecutableFlow("exectest1", "exec1");
+    loader.uploadExecutableFlow(flow);
+    loader.assignExecutor(executor.getId(), flow.getExecutionId());
+    Assert.assertEquals(
+      loader.fetchExecutorByExecutionId(flow.getExecutionId()), executor);
+    loader.unassignExecutor(flow.getExecutionId());
+    Assert.assertEquals(
+      loader.fetchExecutorByExecutionId(flow.getExecutionId()), null);
+  }
+
+  /* Test exception when assigning a non-existent executor to a flow */
+  @Test
+  public void testAssignExecutorInvalidExecutor()
+    throws ExecutorManagerException, IOException {
+    if (!isTestSetup()) {
+      return;
+    }
+    ExecutorLoader loader = createLoader();
+    ExecutableFlow flow = TestUtils.createExecutableFlow("exectest1", "exec1");
+    loader.uploadExecutableFlow(flow);
+    try {
+      loader.assignExecutor(flow.getExecutionId(), 1);
+      Assert.fail("Expecting exception, but didn't get one");
+    } catch (ExecutorManagerException ex) {
+      System.out.println("Test true");
+    }
+  }
+
+  /* Test exception when assigning an executor to a non-existent flow execution */
+  @Test
+  public void testAssignExecutorInvalidExecution()
+    throws ExecutorManagerException, IOException {
+    if (!isTestSetup()) {
+      return;
+    }
+    ExecutorLoader loader = createLoader();
+    String host = "localhost";
+    int port = 12345;
+    Executor executor = loader.addExecutor(host, port);
+    try {
+      loader.assignExecutor(2, executor.getId());
+      Assert.fail("Expecting exception, but didn't get one");
+    } catch (ExecutorManagerException ex) {
+      System.out.println("Test true");
+    }
+  }
+
+  /* Test null return when an invalid execution flows */
+  @Test
+  public void testFetchMissingExecutorByExecution()
+    throws ExecutorManagerException, IOException {
+    if (!isTestSetup()) {
+      return;
+    }
+    ExecutorLoader loader = createLoader();
+    Assert.assertEquals(loader.fetchExecutorByExecutionId(1), null);
+  }
+
+  /* Test null return when for a non-dispatched execution */
+  @Test
+  public void testFetchExecutorByQueuedExecution()
+    throws ExecutorManagerException, IOException {
+    if (!isTestSetup()) {
+      return;
+    }
+    ExecutorLoader loader = createLoader();
+    ExecutableFlow flow = TestUtils.createExecutableFlow("exectest1", "exec1");
+    loader.uploadExecutableFlow(flow);
+    Assert.assertEquals(loader.fetchExecutorByExecutionId(flow.getExecutionId()),
+      null);
+  }
+
+  /* Test happy case when assigning and fetching an executor to a flow execution */
+  @Test
+  public void testAssignAndFetchExecutor() throws ExecutorManagerException,
+    IOException {
+    if (!isTestSetup()) {
+      return;
+    }
+    ExecutorLoader loader = createLoader();
+    String host = "localhost";
+    int port = 12345;
+    Executor executor = loader.addExecutor(host, port);
+    ExecutableFlow flow = TestUtils.createExecutableFlow("exectest1", "exec1");
+    loader.uploadExecutableFlow(flow);
+    loader.assignExecutor(executor.getId(), flow.getExecutionId());
+    Assert.assertEquals(loader.fetchExecutorByExecutionId(flow.getExecutionId()),
+      executor);
+  }
+
+  /* Test fetchQueuedFlows when there are no queued flows */
+  @Test
+  public void testFetchNoQueuedFlows() throws ExecutorManagerException,
+    IOException {
+    if (!isTestSetup()) {
+      return;
+    }
+
+    ExecutorLoader loader = createLoader();
+    List<Pair<ExecutionReference, ExecutableFlow>> queuedFlows =
+      loader.fetchQueuedFlows();
+
+    // no execution flows at all i.e. no running, completed or queued flows
+    Assert.assertTrue(queuedFlows.isEmpty());
+
+    String host = "lcoalhost";
+    int port = 12345;
+    Executor executor = loader.addExecutor(host, port);
+
+    ExecutableFlow flow = TestUtils.createExecutableFlow("exectest1", "exec1");
+    loader.uploadExecutableFlow(flow);
+    loader.assignExecutor(executor.getId(), flow.getExecutionId());
+    // only completed flows
+    Assert.assertTrue(queuedFlows.isEmpty());
+
+    ExecutableFlow flow2 = TestUtils.createExecutableFlow("exectest1", "exec2");
+    loader.uploadExecutableFlow(flow);
+    loader.assignExecutor(executor.getId(), flow.getExecutionId());
+    ExecutionReference ref = new ExecutionReference(flow2.getExecutionId());
+    loader.addActiveExecutableReference(ref);
+    // only running and completed flows
+    Assert.assertTrue(queuedFlows.isEmpty());
+  }
+
+  /* Test fetchQueuedFlows happy case */
+  @Test
+  public void testFetchQueuedFlows() throws ExecutorManagerException,
+    IOException {
+    if (!isTestSetup()) {
+      return;
+    }
+
+    ExecutorLoader loader = createLoader();
+    List<Pair<ExecutionReference, ExecutableFlow>> queuedFlows =
+      new LinkedList<Pair<ExecutionReference, ExecutableFlow>>();
+
+    ExecutableFlow flow = TestUtils.createExecutableFlow("exectest1", "exec1");
+    loader.uploadExecutableFlow(flow);
+    ExecutableFlow flow2 = TestUtils.createExecutableFlow("exectest1", "exec2");
+    loader.uploadExecutableFlow(flow);
+
+    ExecutionReference ref2 = new ExecutionReference(flow2.getExecutionId());
+    loader.addActiveExecutableReference(ref2);
+    ExecutionReference ref = new ExecutionReference(flow.getExecutionId());
+    loader.addActiveExecutableReference(ref);
+
+    queuedFlows.add(new Pair<ExecutionReference, ExecutableFlow>(ref, flow));
+    queuedFlows.add(new Pair<ExecutionReference, ExecutableFlow>(ref2, flow2));
+
+    // only running and completed flows
+    Assert.assertArrayEquals(loader.fetchQueuedFlows().toArray(),
+      queuedFlows.toArray());
+  }
+
+  /* Test all executors fetch from empty executors */
+  @Test
+  public void testFetchEmptyExecutors() throws Exception {
+    if (!isTestSetup()) {
+      return;
+    }
+    ExecutorLoader loader = createLoader();
+    List<Executor> executors = loader.fetchAllExecutors();
+    Assert.assertEquals(executors.size(), 0);
+  }
+
+  /* Test active executors fetch from empty executors */
+  @Test
+  public void testFetchEmptyActiveExecutors() throws Exception {
+    if (!isTestSetup()) {
+      return;
+    }
+    ExecutorLoader loader = createLoader();
+    List<Executor> executors = loader.fetchActiveExecutors();
+    Assert.assertEquals(executors.size(), 0);
+  }
+
+  /* Test missing executor fetch with search by executor id */
+  @Test
+  public void testFetchMissingExecutorId() throws Exception {
+    if (!isTestSetup()) {
+      return;
+    }
+    ExecutorLoader loader = createLoader();
+    Executor executor = loader.fetchExecutor(0);
+    Assert.assertEquals(executor, null);
+  }
+
+  /* Test missing executor fetch with search by host:port */
+  @Test
+  public void testFetchMissingExecutorHostPort() throws Exception {
+    if (!isTestSetup()) {
+      return;
+    }
+    ExecutorLoader loader = createLoader();
+    Executor executor = loader.fetchExecutor("localhost", 12345);
+    Assert.assertEquals(executor, null);
+  }
+
+  /* Test executor events fetch from with no logged executor */
+  @Test
+  public void testFetchEmptyExecutorEvents() throws Exception {
+    if (!isTestSetup()) {
+      return;
+    }
+    ExecutorLoader loader = createLoader();
+    Executor executor = new Executor(1, "localhost", 12345, true);
+    List<ExecutorLogEvent> executorEvents =
+      loader.getExecutorEvents(executor, 5, 0);
+    Assert.assertEquals(executorEvents.size(), 0);
+  }
+
+  /* Test logging ExecutorEvents */
+  @Test
+  public void testExecutorEvents() throws Exception {
+    if (!isTestSetup()) {
+      return;
+    }
+    ExecutorLoader loader = createLoader();
+    int skip = 1;
+    User user = new User("testUser");
+    Executor executor = new Executor(1, "localhost", 12345, true);
+    String message = "My message ";
+    EventType[] events =
+      { EventType.CREATED, EventType.HOST_UPDATE, EventType.INACTIVATION };
+
+    for (EventType event : events) {
+      loader.postExecutorEvent(executor, event, user.getUserId(),
+        message + event.getNumVal());
+    }
+
+    List<ExecutorLogEvent> eventLogs =
+      loader.getExecutorEvents(executor, 10, skip);
+    Assert.assertTrue(eventLogs.size() == 2);
+
+    for (int index = 0; index < eventLogs.size(); ++index) {
+      ExecutorLogEvent eventLog = eventLogs.get(index);
+      Assert.assertEquals(eventLog.getExecutorId(), executor.getId());
+      Assert.assertEquals(eventLog.getUser(), user.getUserId());
+      Assert.assertEquals(eventLog.getType(), events[index + skip]);
+      Assert.assertEquals(eventLog.getMessage(),
+        message + events[index + skip].getNumVal());
+    }
+  }
+
+  /* Test to add duplicate executors */
+  @Test
+  public void testDuplicateAddExecutor() throws Exception {
+    if (!isTestSetup()) {
+      return;
+    }
+    ExecutorLoader loader = createLoader();
+    try {
+      String host = "localhost";
+      int port = 12345;
+      loader.addExecutor(host, port);
+      loader.addExecutor(host, port);
+      Assert.fail("Expecting exception, but didn't get one");
+    } catch (ExecutorManagerException ex) {
+      System.out.println("Test true");
+    }
+  }
+
+  /* Test to try update a non-existent executor */
+  @Test
+  public void testMissingExecutorUpdate() throws Exception {
+    if (!isTestSetup()) {
+      return;
+    }
+    ExecutorLoader loader = createLoader();
+    try {
+      Executor executor = new Executor(1, "localhost", 1234, true);
+      loader.updateExecutor(executor);
+      Assert.fail("Expecting exception, but didn't get one");
+    } catch (ExecutorManagerException ex) {
+      System.out.println("Test true");
+    }
+    clearDB();
+  }
+
+  /* Test add & fetch by Id Executors */
+  @Test
+  public void testSingleExecutorFetchById() throws Exception {
+    if (!isTestSetup()) {
+      return;
+    }
+    ExecutorLoader loader = createLoader();
+    List<Executor> executors = addTestExecutors(loader);
+    for (Executor executor : executors) {
+      Executor fetchedExecutor = loader.fetchExecutor(executor.getId());
+      Assert.assertEquals(executor, fetchedExecutor);
+    }
+  }
+
+  /* Test fetch all executors */
+  @Test
+  public void testFetchAllExecutors() throws Exception {
+    if (!isTestSetup()) {
+      return;
+    }
+    ExecutorLoader loader = createLoader();
+    List<Executor> executors = addTestExecutors(loader);
+
+    executors.get(0).setActive(false);
+    loader.updateExecutor(executors.get(0));
+
+    List<Executor> fetchedExecutors = loader.fetchAllExecutors();
+    Assert.assertEquals(executors.size(), fetchedExecutors.size());
+
+    Assert.assertArrayEquals(executors.toArray(), fetchedExecutors.toArray());
+  }
+
+  /* Test fetch only active executors */
+  @Test
+  public void testFetchActiveExecutors() throws Exception {
+    if (!isTestSetup()) {
+      return;
+    }
+    ExecutorLoader loader = createLoader();
+    List<Executor> executors = addTestExecutors(loader);
+
+    executors.get(0).setActive(false);
+    loader.updateExecutor(executors.get(0));
+
+    List<Executor> fetchedExecutors = loader.fetchActiveExecutors();
+    Assert.assertEquals(executors.size(), fetchedExecutors.size() + 1);
+    executors.remove(0);
+
+    Assert.assertArrayEquals(executors.toArray(), fetchedExecutors.toArray());
+  }
+
+  /* Test add & fetch by host:port Executors */
+  @Test
+  public void testSingleExecutorFetchHostPort() throws Exception {
+    if (!isTestSetup()) {
+      return;
+    }
+    ExecutorLoader loader = createLoader();
+    List<Executor> executors = addTestExecutors(loader);
+    for (Executor executor : executors) {
+      Executor fetchedExecutor =
+        loader.fetchExecutor(executor.getHost(), executor.getPort());
+      Assert.assertEquals(executor, fetchedExecutor);
+    }
+  }
+
+  /* Helper method used in methods testing jdbc interface for executors table */
+  private List<Executor> addTestExecutors(ExecutorLoader loader)
+    throws ExecutorManagerException {
+    List<Executor> executors = new ArrayList<Executor>();
+    executors.add(loader.addExecutor("localhost1", 12345));
+    executors.add(loader.addExecutor("localhost2", 12346));
+    executors.add(loader.addExecutor("localhost1", 12347));
+    return executors;
+  }
+
+  /* Test Executor Inactivation */
+  @Test
+  public void testExecutorInactivation() throws Exception {
+    if (!isTestSetup()) {
+      return;
+    }
+
+    ExecutorLoader loader = createLoader();
+    Executor executor = loader.addExecutor("localhost1", 12345);
+    Assert.assertTrue(executor.isActive());
+
+    executor.setActive(false);
+    loader.updateExecutor(executor);
+
+    Executor fetchedExecutor = loader.fetchExecutor(executor.getId());
+
+    Assert.assertEquals(executor.getHost(), fetchedExecutor.getHost());
+    Assert.assertEquals(executor.getId(), fetchedExecutor.getId());
+    Assert.assertEquals(executor.getPort(), fetchedExecutor.getPort());
+    Assert.assertFalse(fetchedExecutor.isActive());
+  }
+
+  /* Test Executor reactivation */
+  @Test
+  public void testExecutorActivation() throws Exception {
+    if (!isTestSetup()) {
+      return;
+    }
+
+    ExecutorLoader loader = createLoader();
+    Executor executor = loader.addExecutor("localhost1", 12345);
+    Assert.assertTrue(executor.isActive());
+
+    executor.setActive(false);
+    loader.updateExecutor(executor);
+    Executor fetchedExecutor = loader.fetchExecutor(executor.getId());
+    Assert.assertFalse(fetchedExecutor.isActive());
+
+    executor.setActive(true);
+    loader.updateExecutor(executor);
+    fetchedExecutor = loader.fetchExecutor(executor.getId());
+
+    Assert.assertEquals(executor, fetchedExecutor);
+  }
+
   @Test
   public void testActiveReference() throws Exception {
     if (!isTestSetup()) {
@@ -300,19 +769,20 @@ public class JdbcExecutorLoaderTest {
     }
 
     ExecutorLoader loader = createLoader();
-    ExecutableFlow flow1 = createExecutableFlow("exec1");
+    ExecutableFlow flow1 = TestUtils.createExecutableFlow("exectest1", "exec1");
     loader.uploadExecutableFlow(flow1);
+    Executor executor = new Executor(2, "test", 1, true);
     ExecutionReference ref1 =
-        new ExecutionReference(flow1.getExecutionId(), "test", 1);
+        new ExecutionReference(flow1.getExecutionId(), executor);
     loader.addActiveExecutableReference(ref1);
 
-    ExecutableFlow flow2 = createExecutableFlow("exec1");
+    ExecutableFlow flow2 = TestUtils.createExecutableFlow("exectest1", "exec1");
     loader.uploadExecutableFlow(flow2);
     ExecutionReference ref2 =
-        new ExecutionReference(flow2.getExecutionId(), "test", 1);
+        new ExecutionReference(flow2.getExecutionId(), executor);
     loader.addActiveExecutableReference(ref2);
 
-    ExecutableFlow flow3 = createExecutableFlow("exec1");
+    ExecutableFlow flow3 = TestUtils.createExecutableFlow("exectest1", "exec1");
     loader.uploadExecutableFlow(flow3);
 
     Map<Integer, Pair<ExecutionReference, ExecutableFlow>> activeFlows1 =
@@ -356,7 +826,7 @@ public class JdbcExecutorLoaderTest {
 
   @Ignore @Test
   public void testSmallUploadLog() throws ExecutorManagerException {
-    File logDir = new File("unit/executions/logtest");
+    File logDir = new File(UNIT_BASE_DIR + "logtest");
     File[] smalllog =
         { new File(logDir, "log1.log"), new File(logDir, "log2.log"),
             new File(logDir, "log3.log") };
@@ -381,7 +851,7 @@ public class JdbcExecutorLoaderTest {
 
   @Ignore @Test
   public void testLargeUploadLog() throws ExecutorManagerException {
-    File logDir = new File("unit/executions/logtest");
+    File logDir = new File(UNIT_BASE_DIR + "logtest");
 
     // Multiple of 255 for Henry the Eigth
     File[] largelog =
@@ -427,7 +897,7 @@ public class JdbcExecutorLoaderTest {
 
     ExecutorLoader loader = createLoader();
 
-    File logDir = new File("unit/executions/logtest");
+    File logDir = new File(UNIT_BASE_DIR + "logtest");
 
     // Multiple of 255 for Henry the Eigth
     File[] largelog =
@@ -451,37 +921,10 @@ public class JdbcExecutorLoaderTest {
   }
 
   private ExecutableFlow createExecutableFlow(int executionId, String flowName)
-      throws IOException {
-    File jsonFlowFile = new File(flowDir, flowName + ".flow");
-    @SuppressWarnings("unchecked")
-    HashMap<String, Object> flowObj =
-        (HashMap<String, Object>) JSONUtils.parseJSONFromFile(jsonFlowFile);
-
-    Flow flow = Flow.flowFromObject(flowObj);
-    Project project = new Project(1, "flow");
-    HashMap<String, Flow> flowMap = new HashMap<String, Flow>();
-    flowMap.put(flow.getId(), flow);
-    project.setFlows(flowMap);
-    ExecutableFlow execFlow = new ExecutableFlow(project, flow);
+    throws IOException {
+    ExecutableFlow execFlow =
+      TestUtils.createExecutableFlow("exectest1", flowName);
     execFlow.setExecutionId(executionId);
-
-    return execFlow;
-  }
-
-  private ExecutableFlow createExecutableFlow(String flowName)
-      throws IOException {
-    File jsonFlowFile = new File(flowDir, flowName + ".flow");
-    @SuppressWarnings("unchecked")
-    HashMap<String, Object> flowObj =
-        (HashMap<String, Object>) JSONUtils.parseJSONFromFile(jsonFlowFile);
-
-    Flow flow = Flow.flowFromObject(flowObj);
-    Project project = new Project(1, "flow");
-    HashMap<String, Flow> flowMap = new HashMap<String, Flow>();
-    flowMap.put(flow.getId(), flow);
-    project.setFlows(flowMap);
-    ExecutableFlow execFlow = new ExecutableFlow(project, flow);
-
     return execFlow;
   }
 
