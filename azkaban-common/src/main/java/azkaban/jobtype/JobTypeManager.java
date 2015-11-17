@@ -340,6 +340,7 @@ public class JobTypeManager {
             jobProps, jobType));
       }
 
+      // TODO: should the logic below mirror the logic for PluginLoadProps?
       Props pluginJobProps = pluginSet.getPluginJobProps(jobType);
       if (pluginJobProps != null) {
         for (String k : pluginJobProps.getKeySet()) {
@@ -354,7 +355,11 @@ public class JobTypeManager {
       if (pluginLoadProps != null) {
         pluginLoadProps = PropsUtils.resolveProps(pluginLoadProps);
       } else {
-        pluginLoadProps = new Props();
+        // pluginSet.getCommonPluginLoadProps() will return null if there is no plugins directory.
+        // hence assigning default Props() if that's the case
+        pluginLoadProps = pluginSet.getCommonPluginLoadProps();
+        if(pluginJobProps == null)
+          pluginJobProps = new Props();
       }
 
       job =
