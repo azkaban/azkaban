@@ -76,7 +76,7 @@ int change_user(uid_t user, gid_t group) {
 
 int main(int argc, char **argv){
 
-// set up the logging stream
+    // set up the logging stream
     if (!LOGFILE){
         LOGFILE=stdout;
     }

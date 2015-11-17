@@ -125,7 +125,7 @@ public class AzkabanProcessBuilder {
         + env + ", cwd = " + workingDir + ")";
   }
 
-  public AzkabanProcessBuilder setExecuteAsUser() {
+  public AzkabanProcessBuilder enableExecuteAsUser() {
     this.isExecuteAsUser = true;
     return this;
   }

@@ -40,6 +40,9 @@ import com.google.common.base.Joiner;
  * loggers.
  */
 public class AzkabanProcess {
+  
+  public static String KILL_COMMAND = "kill";
+  
   private final String workingDir;
   private final List<String> cmd;
   private final Map<String, String> env;
@@ -120,7 +123,12 @@ public class AzkabanProcess {
       errorGobbler.awaitCompletion(5000);
 
       if (exitCode != 0) {
-        throw new ProcessFailureException(exitCode, errorGobbler.getRecentLog());
+        String output =
+            new StringBuilder().append("Stdout:\n")
+                .append(outputGobbler.getRecentLog()).append("\n\n")
+                .append("Stderr:\n").append(errorGobbler.getRecentLog())
+                .append("\n").toString();
+        throw new ProcessFailureException(exitCode, output);
       }
 
     } finally {
@@ -172,11 +180,12 @@ public class AzkabanProcess {
       try {
         if (isExecuteAsUser) {
           String cmd =
-              String.format("%s %s kill %d", executeAsUserBinary,
-                  effectiveUser, processId);
+              String.format("%s %s %s %d", executeAsUserBinary,
+                  effectiveUser, KILL_COMMAND, processId);
           Runtime.getRuntime().exec(cmd);
         } else {
-          Runtime.getRuntime().exec("kill " + processId);
+          String cmd = String.format("%s %d", KILL_COMMAND, processId);
+          Runtime.getRuntime().exec(cmd);
         }
         return completeLatch.await(time, unit);
       } catch (IOException e) {
@@ -197,11 +206,12 @@ public class AzkabanProcess {
         try {
           if (isExecuteAsUser) {
             String cmd =
-                String.format("%s %s kill -9 %d", executeAsUserBinary,
-                    effectiveUser, processId);
+                String.format("%s %s %s -9 %d", executeAsUserBinary,
+                    effectiveUser, KILL_COMMAND, processId);
             Runtime.getRuntime().exec(cmd);
           } else {
-            Runtime.getRuntime().exec("kill -9 " + processId);
+            String cmd = String.format("%s -9 %d", KILL_COMMAND, processId);
+            Runtime.getRuntime().exec(cmd);
           }
         } catch (IOException e) {
           logger.error("Kill attempt failed.", e);

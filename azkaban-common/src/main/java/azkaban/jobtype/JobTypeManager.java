@@ -355,7 +355,11 @@ public class JobTypeManager {
       if (pluginLoadProps != null) {
         pluginLoadProps = PropsUtils.resolveProps(pluginLoadProps);
       } else {
+        // pluginSet.getCommonPluginLoadProps() will return null if there is no plugins directory.
+        // hence assigning default Props() if that's the case
         pluginLoadProps = pluginSet.getCommonPluginLoadProps();
+        if(pluginJobProps == null)
+          pluginJobProps = new Props();
       }
 
       job =

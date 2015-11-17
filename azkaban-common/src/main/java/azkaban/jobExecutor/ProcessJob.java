@@ -135,7 +135,7 @@ public class ProcessJob extends AbstractProcessJob {
         builder =
             new AzkabanProcessBuilder(partitionCommandLine(command))
                 .setEnv(envVars).setWorkingDir(getCwd()).setLogger(getLog())
-                .setExecuteAsUser().setExecuteAsUserBinaryPath(executeAsUserBinaryPath)
+                .enableExecuteAsUser().setExecuteAsUserBinaryPath(executeAsUserBinaryPath)
                 .setEffectiveUser(effectiveUser);
       } else {
         info("Command: " + command);
