@@ -39,6 +39,7 @@ import javax.management.ObjectName;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.log4j.Logger;
+import org.apache.log4j.jmx.HierarchyDynamicMBean;
 import org.apache.velocity.app.VelocityEngine;
 import org.apache.velocity.runtime.log.Log4JLogChute;
 import org.apache.velocity.runtime.resource.loader.ClasspathResourceLoader;
@@ -52,8 +53,6 @@ import org.mortbay.jetty.servlet.Context;
 import org.mortbay.jetty.servlet.DefaultServlet;
 import org.mortbay.jetty.servlet.ServletHolder;
 import org.mortbay.thread.QueuedThreadPool;
-
-import com.linkedin.restli.server.RestliServlet;
 
 import azkaban.alert.Alerter;
 import azkaban.database.AzkabanDatabaseSetup;
@@ -88,19 +87,21 @@ import azkaban.utils.FileIOUtils;
 import azkaban.utils.Props;
 import azkaban.utils.PropsUtils;
 import azkaban.utils.Utils;
-import azkaban.webapp.servlet.AbstractAzkabanServlet;
-import azkaban.webapp.servlet.ExecutorServlet;
-import azkaban.webapp.servlet.IndexRedirectServlet;
-import azkaban.webapp.servlet.JMXHttpServlet;
-import azkaban.webapp.servlet.ScheduleServlet;
-import azkaban.webapp.servlet.HistoryServlet;
-import azkaban.webapp.servlet.ProjectServlet;
-import azkaban.webapp.servlet.ProjectManagerServlet;
-import azkaban.webapp.servlet.StatsServlet;
-import azkaban.webapp.servlet.TriggerManagerServlet;
+import azkaban.webapp.plugin.PluginRegistry;
 import azkaban.webapp.plugin.TriggerPlugin;
 import azkaban.webapp.plugin.ViewerPlugin;
-import azkaban.webapp.plugin.PluginRegistry;
+import azkaban.webapp.servlet.AbstractAzkabanServlet;
+import azkaban.webapp.servlet.ExecutorServlet;
+import azkaban.webapp.servlet.HistoryServlet;
+import azkaban.webapp.servlet.IndexRedirectServlet;
+import azkaban.webapp.servlet.JMXHttpServlet;
+import azkaban.webapp.servlet.ProjectManagerServlet;
+import azkaban.webapp.servlet.ProjectServlet;
+import azkaban.webapp.servlet.ScheduleServlet;
+import azkaban.webapp.servlet.StatsServlet;
+import azkaban.webapp.servlet.TriggerManagerServlet;
+
+import com.linkedin.restli.server.RestliServlet;
 
 /**
  * The Azkaban Jetty server class
@@ -123,6 +124,9 @@ import azkaban.webapp.plugin.PluginRegistry;
  * Jetty truststore password
  */
 public class AzkabanWebServer extends AzkabanServer {
+  private static final String AZKABAN_ACCESS_LOGGER_NAME =
+      "azkaban.webapp.servlet.LoginAbstractAzkabanServlet";
+
   private static final Logger logger = Logger.getLogger(AzkabanWebServer.class);
 
   public static final String AZKABAN_HOME = "AZKABAN_HOME";
@@ -705,6 +709,13 @@ public class AzkabanWebServer extends AzkabanServer {
           .getString("jetty.trustpassword"));
       secureConnector.setHeaderBufferSize(MAX_HEADER_BUFFER_SIZE);
 
+      // set up vulnerable cipher suites to exclude
+      List<String> cipherSuitesToExclude = azkabanSettings.getStringList("jetty.excludeCipherSuites");
+      logger.info("Excluded Cipher Suites: " + String.valueOf(cipherSuitesToExclude));
+      if (cipherSuitesToExclude != null && !cipherSuitesToExclude.isEmpty()) {
+        secureConnector.setExcludeCipherSuites(cipherSuitesToExclude.toArray(new String[0]));
+      }
+
       server.addConnector(secureConnector);
     } else {
       ssl = false;
@@ -823,23 +834,25 @@ public class AzkabanWebServer extends AzkabanServer {
 
       public void logTopMemoryConsumers() throws Exception, IOException {
         if (new File("/bin/bash").exists() && new File("/bin/ps").exists()
-                && new File("/usr/bin/head").exists()) {
+            && new File("/usr/bin/head").exists()) {
           logger.info("logging top memeory consumer");
 
           java.lang.ProcessBuilder processBuilder =
-                  new java.lang.ProcessBuilder("/bin/bash", "-c", "/bin/ps aux --sort -rss | /usr/bin/head");
+              new java.lang.ProcessBuilder("/bin/bash", "-c",
+                  "/bin/ps aux --sort -rss | /usr/bin/head");
           Process p = processBuilder.start();
           p.waitFor();
-  
+
           InputStream is = p.getInputStream();
-          java.io.BufferedReader reader = new java.io.BufferedReader(new InputStreamReader(is));
+          java.io.BufferedReader reader =
+              new java.io.BufferedReader(new InputStreamReader(is));
           String line = null;
           while ((line = reader.readLine()) != null) {
             logger.info(line);
           }
           is.close();
         }
-      }      
+      }
     });
     logger.info("Server running on " + (ssl ? "ssl" : "") + " port " + port
         + ".");
@@ -1232,6 +1245,22 @@ public class AzkabanWebServer extends AzkabanServer {
     if (executorManager instanceof ExecutorManager) {
       registerMbean("executorManager", new JmxExecutorManager(
           (ExecutorManager) executorManager));
+    }
+
+    // Register Log4J loggers as JMX beans so the log level can be
+    // updated via JConsole or Java VisualVM
+    HierarchyDynamicMBean log4jMBean = new HierarchyDynamicMBean();
+    registerMbean("log4jmxbean", log4jMBean);
+    ObjectName accessLogLoggerObjName =
+        log4jMBean.addLoggerMBean(AZKABAN_ACCESS_LOGGER_NAME);
+
+    if (accessLogLoggerObjName == null) {
+      System.out
+          .println("************* loginLoggerObjName is null, make sure there is a logger with name "
+              + AZKABAN_ACCESS_LOGGER_NAME);
+    } else {
+      System.out.println("******** loginLoggerObjName: "
+          + accessLogLoggerObjName.getCanonicalName());
     }
   }
 

@@ -25,7 +25,6 @@ import org.apache.commons.jexl2.Expression;
 import org.apache.commons.jexl2.JexlEngine;
 import org.apache.commons.jexl2.MapContext;
 import org.apache.log4j.Logger;
-
 import org.joda.time.DateTime;
 
 public class Condition {
@@ -119,7 +118,9 @@ public class Condition {
   }
 
   public boolean isMet() {
-    logger.info("Testing condition " + expression);
+    if (logger.isDebugEnabled()) {
+      logger.debug("Testing condition " + expression);
+    }
     return expression.evaluate(context).equals(Boolean.TRUE);
   }
 

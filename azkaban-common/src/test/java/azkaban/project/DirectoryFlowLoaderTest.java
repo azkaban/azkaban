@@ -14,45 +14,52 @@
  * the License.
  */
 
-package azkaban.utils;
+package azkaban.project;
 
 import java.io.File;
+import java.net.URL;
+import java.net.URISyntaxException;
+
+import azkaban.test.executions.TestExecutions;
+import azkaban.utils.Props;
 
 import org.apache.log4j.Logger;
 import org.junit.Assert;
-import org.junit.Ignore;
+import org.junit.Before;
 import org.junit.Test;
 
-import azkaban.project.Project;
-
 public class DirectoryFlowLoaderTest {
+  private Project project;
 
-  Project project = new Project(11, "myTestProject");
+  @Before
+  public void setUp() {
+    project = new Project(11, "myTestProject");
+  }
 
-  @Ignore @Test
-  public void testDirectoryLoad() {
+  @Test
+  public void testDirectoryLoad() throws URISyntaxException {
     Logger logger = Logger.getLogger(this.getClass());
     DirectoryFlowLoader loader = new DirectoryFlowLoader(new Props(), logger);
 
-    loader.loadProjectFlow(project, new File("unit/executions/exectest1"));
+    loader.loadProjectFlow(project, TestExecutions.getFlowDir("exectest1"));
     logger.info(loader.getFlowMap().size());
   }
 
-  @Ignore @Test
-  public void testLoadEmbeddedFlow() {
+  @Test
+  public void testLoadEmbeddedFlow() throws URISyntaxException {
     Logger logger = Logger.getLogger(this.getClass());
     DirectoryFlowLoader loader = new DirectoryFlowLoader(new Props(), logger);
 
-    loader.loadProjectFlow(project, new File("unit/executions/embedded"));
+    loader.loadProjectFlow(project, TestExecutions.getFlowDir("embedded"));
     Assert.assertEquals(0, loader.getErrors().size());
   }
 
-  @Ignore @Test
-  public void testRecursiveLoadEmbeddedFlow() {
+  @Test
+  public void testRecursiveLoadEmbeddedFlow() throws URISyntaxException {
     Logger logger = Logger.getLogger(this.getClass());
     DirectoryFlowLoader loader = new DirectoryFlowLoader(new Props(), logger);
 
-    loader.loadProjectFlow(project, new File("unit/executions/embeddedBad"));
+    loader.loadProjectFlow(project, TestExecutions.getFlowDir("embedded_bad"));
     for (String error : loader.getErrors()) {
       System.out.println(error);
     }

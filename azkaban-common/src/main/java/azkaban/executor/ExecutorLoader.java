@@ -171,6 +171,20 @@ public interface ExecutorLoader {
   public void removeActiveExecutableReference(int execId)
       throws ExecutorManagerException;
 
+
+  /**
+   * <pre>
+   * Unset executor Id for an execution
+   * Note:-
+   * throws an Exception in case of a SQL issue
+   * </pre>
+   *
+   * @param executorId
+   * @param execId
+   * @throws ExecutorManagerException
+   */
+  public void unassignExecutor(int executionId) throws ExecutorManagerException;
+
   /**
    * <pre>
    * Set an executor Id to an execution

@@ -14,7 +14,7 @@
  * the License.
  */
 
-package azkaban.utils;
+package azkaban.project;
 
 import java.io.File;
 import java.io.FileFilter;
@@ -37,11 +37,12 @@ import azkaban.flow.FlowProps;
 import azkaban.flow.Node;
 import azkaban.flow.SpecialJobTypes;
 import azkaban.jobcallback.JobCallbackValidator;
-import azkaban.project.Project;
-import azkaban.project.ProjectWhitelist;
 import azkaban.project.validator.ProjectValidator;
 import azkaban.project.validator.ValidationReport;
 import azkaban.project.validator.XmlValidatorManager;
+import azkaban.utils.Props;
+import azkaban.utils.PropsUtils;
+import azkaban.utils.Utils;
 
 public class DirectoryFlowLoader implements ProjectValidator {
   private static final DirFilter DIR_FILTER = new DirFilter();
@@ -70,27 +71,59 @@ public class DirectoryFlowLoader implements ProjectValidator {
   private Set<String> errors;
   private Set<String> duplicateJobs;
 
+  /**
+   * Creates a new DirectoryFlowLoader.
+   *
+   * @param props Properties to add.
+   * @param logger The Logger to use.
+   */
   public DirectoryFlowLoader(Props props, Logger logger) {
     this.logger = logger;
     this.props = props;
   }
 
+  /**
+   * Returns the flow map constructed from the loaded flows.
+   *
+   * @return Map of flow name to Flow.
+   */
   public Map<String, Flow> getFlowMap() {
     return flowMap;
   }
 
+  /**
+   * Returns errors caught when loading flows.
+   *
+   * @return Set of error strings.
+   */
   public Set<String> getErrors() {
     return errors;
   }
 
+  /**
+   * Returns job properties.
+   *
+   * @return Map of job name to properties.
+   */
   public Map<String, Props> getJobProps() {
     return jobPropsMap;
   }
 
+  /**
+   * Returns list of properties.
+   *
+   * @return List of Props.
+   */
   public List<Props> getProps() {
     return propsList;
   }
 
+  /**
+   * Loads all flows from the directory into the project.
+   *
+   * @param project The project to load flows to.
+   * @param baseDirectory The directory to load flows from.
+   */
   public void loadProjectFlow(Project project, File baseDirectory) {
     propsList = new ArrayList<Props>();
     flowPropsList = new ArrayList<FlowProps>();

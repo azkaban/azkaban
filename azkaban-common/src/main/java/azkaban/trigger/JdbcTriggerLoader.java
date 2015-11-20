@@ -178,7 +178,7 @@ public class JdbcTriggerLoader extends AbstractJdbcLoader implements
           runner.query(connection, LastInsertID.LAST_INSERT_ID,
               new LastInsertID());
 
-      if (id == -1l) {
+      if (id == -1L) {
         logger.error("trigger id is not properly created.");
         throw new TriggerLoaderException("trigger id is not properly created.");
       }
@@ -194,7 +194,9 @@ public class JdbcTriggerLoader extends AbstractJdbcLoader implements
 
   @Override
   public void updateTrigger(Trigger t) throws TriggerLoaderException {
-    logger.info("Updating trigger " + t.getTriggerId() + " into db.");
+    if (logger.isDebugEnabled()) {
+      logger.debug("Updating trigger " + t.getTriggerId() + " into db.");
+    }
     t.setLastModifyTime(System.currentTimeMillis());
     Connection connection = getConnection();
     try {
@@ -238,7 +240,9 @@ public class JdbcTriggerLoader extends AbstractJdbcLoader implements
       if (updates == 0) {
         throw new TriggerLoaderException("No trigger has been updated.");
       } else {
-        logger.info("Updated " + updates + " records.");
+        if (logger.isDebugEnabled()) {
+          logger.debug("Updated " + updates + " records.");
+        }
       }
     } catch (SQLException e) {
       logger.error(UPDATE_TRIGGER + " failed.");
@@ -253,7 +257,7 @@ public class JdbcTriggerLoader extends AbstractJdbcLoader implements
     @Override
     public Long handle(ResultSet rs) throws SQLException {
       if (!rs.next()) {
-        return -1l;
+        return -1L;
       }
 
       long id = rs.getLong(1);

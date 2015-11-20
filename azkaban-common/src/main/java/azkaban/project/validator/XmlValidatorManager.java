@@ -24,7 +24,7 @@ import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
 import azkaban.project.Project;
-import azkaban.utils.DirectoryFlowLoader;
+import azkaban.project.DirectoryFlowLoader;
 import azkaban.utils.Props;
 
 /**
