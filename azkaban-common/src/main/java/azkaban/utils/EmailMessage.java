@@ -55,6 +55,7 @@ public class EmailMessage {
   private String _tls;
   private long _totalAttachmentSizeSoFar;
   private boolean _usesAuth = true;
+  private boolean _enableAttachementEmbedment = true;
   private StringBuffer _body = new StringBuffer();
   private static int _mailTimeout = 10000;
   private static int _connectionTimeout = 10000;
@@ -96,6 +97,11 @@ public class EmailMessage {
 
   public EmailMessage setMailUser(String user) {
     _mailUser = user;
+    return this;
+  }
+
+  public EmailMessage enableAttachementEmbedment(boolean toEnable) {
+    _enableAttachementEmbedment = toEnable;
     return this;
   }
 
@@ -211,7 +217,9 @@ public class EmailMessage {
     message.setSentDate(new Date());
 
     if (_attachments.size() > 0) {
-      MimeMultipart multipart = new MimeMultipart("related");
+      MimeMultipart multipart =
+          this._enableAttachementEmbedment ? new MimeMultipart("related")
+              : new MimeMultipart();
 
       BodyPart messageBodyPart = new MimeBodyPart();
       messageBodyPart.setContent(_body.toString(), _mimeType);
