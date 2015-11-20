@@ -429,13 +429,6 @@ public class ExecutorManager extends EventHandler implements
 
   private void loadRunningFlows() throws ExecutorManagerException {
     runningFlows.putAll(executorLoader.fetchActiveFlows());
-    // Finalize all flows which were running on an executor which is now
-    // inactive
-    for (Pair<ExecutionReference, ExecutableFlow> pair : runningFlows.values()) {
-      if (!activeExecutors.contains(pair.getFirst().getExecutor())) {
-        finalizeFlows(pair.getSecond());
-      }
-    }
   }
 
   /*
