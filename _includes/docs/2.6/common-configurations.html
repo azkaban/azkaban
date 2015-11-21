@@ -1,0 +1,72 @@
+<h2 id="common-configurations">Common Configurations</h2>
+
+<p>This section lists out the configurations that are common to all job types</p>
+
+<h3>other_namenodes</h3>
+<p>This job property is useful for jobs that need to read data from or write data to more than one Hadoop NameNode. By default Azkaban requests a HDFS_DELEGATION_TOKEN on behalf of the job for the cluster that Azkaban is configured to run on.  When this property is present, Azkaban will try request a HDFS_DELEGATION_TOKEN for each of the specified HDFS NameNodes.</p>
+<p>The value of this propety is in the form of comma separated list of NameNode URLs.</p>
+<p>For example: <b>other_namenodes=webhdfs://host1:50070,hdfs://host2:9000</b></p>
+
+<h3>HTTP Job Callback</h3>
+
+<p>The purpose of this feature to allow Azkaban to notify external systems via an HTTP upon the completion of a job. The new properties are in the following format:</p>
+
+<ul>
+<li><b>job.notification.&lt;status&gt;.&lt;sequence number&gt;.url</b></li>
+<li><b>job.notification.&lt;status&gt;.&lt;sequence number&gt;.method</b></li>
+<li><b>job.notification.&lt;status&gt;.&lt;sequence number&gt;.body</b></li>
+<li><b>job.notification.&lt;status&gt;.&lt;sequence number&gt;.headers</b></li>
+</ul>
+
+<h4>Supported values for <b>status</b></h4>
+<ul>
+  <li><b>started</b>: when a job is started</li>
+  <li><b>success</b>: when a job is completed successfully</li>
+  <li><b>failure</b>: when a job failed</li>
+  <li><b>completed</b>: when a job is either successfully completed or failed</li>
+</ul>
+
+<h4>Number of callback URLs</h4>
+<p>The maximum # of callback URLs per job is 3. So the &lt;sequence number&gt; can go up from 1 to 3.
+   If a gap is detected, only the ones before the gap is used.</p>
+
+<h4>HTTP Method</h4>
+<p>The supported method are <b>GET</b> and <b>POST</b>.  The default method is <b>GET</b></p>
+
+<h4>Headers</h4>
+<p>Each job callback URL can optional specify headers in the following format</p>
+<b>job.notification.&lt;status&gt;.&lt;sequence number&gt;.headers</b>=&lt;name&gt;:&lt;value&gt;\r\n&lt;name&gt;:&lt;value&gt;
+<p>The delimiter for each header is '\r\n' and delimiter between header name and value is ':'</p>
+<p>The headers are applicable for both GET and POST job callback URLs.</p>
+
+<h4>Job Context Information</h4>
+
+<p>It is often desirable to include some dynamic context information about the job in the URL or POST request body, such as status, job name, flow name, execution id and project name.
+If the URL or POST request body contains any of the following tokens, they will be replaced with the actual values by Azkabn before making the HTTP callback is made. The value of each token will be HTTP encoded.</p>
+<ul>
+<li><b>?{server}</b> - Azkaban host name and port
+<li><b>?{project}</b>
+<li><b>?{flow}</b>
+<li><b>?{executionId}</b>
+<li><b>?{job}</b>
+<li><b>?{status}</b> - possible values are started, failed, succeeded
+</ul>
+
+The value of these tokens will be HTTP encoded if they are on the URL, but will not be encoded when they are in the HTTP body.
+
+<h4>Examples</h4>
+<p>GET HTTP Method<p>
+<ul>
+  <li>job.notification.started.1.url=http://abc.com/api/v2/message?text=wow!!&job=?{job}&status=?{status}
+  <li>job.notification.completed.1.url=http://abc.com/api/v2/message?text=wow!!&job=?{job}&status=?{status}
+  <li>job.notification.completed.2.url=http://abc.com/api/v2/message?text=yeah!!
+</ul>
+
+<p>POST HTTP Method</p>
+<ul>
+  <li>job.notification.started.1.url=http://abc.com/api/v1/resource
+  <li>job.notification.started.1.method=POST
+  <li>job.notification.started.1.body={"type":"workflow", "source":"Azkaban", "content":"{server}:?{project}:?{flow}:?{executionId}:?{job}:?{status}"}
+    <li>job.notification.started.1.headers=Content-type:application/json
+</ul>
+

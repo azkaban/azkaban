@@ -1,0 +1,200 @@
+<h2 id="xml-usermanager">XmlUserManager</h2>
+
+<p>The XmlUserManager is the default UserManager that is built into Azkaban. To explicitly set the parameters that configure the XmlUserManager, the following parameters can be set in the <code>azkaban.properties</code> file.</p>
+
+<table class="table table-bordered table-condensed table-striped">
+	<thead>
+		<tr>
+			<th>Parameter</th>
+			<th>Default</th>
+		</tr>
+	</thead>
+	<tbody>
+		<tr>
+			<td>user.manager.class</td>
+			<td>azkaban.user.XmlUserManager</td>
+		</tr>
+		<tr>
+			<td>user.manager.xml.file</td>
+			<td>azkaban-users.xml</td>
+		</tr>
+	</tbody>
+</table>
+
+<p>The other file that needs to be modified is the <code>azkaban-users.xml</code> file. The XmlUserManager will parse the user xml file once during startup to set up the users.</p>
+
+<p>Everything must be enclosed in a <code>&lt;azkaban-users&gt;</code> tag.</p>
+
+<pre class="code">
+&lt;azkaban-users&gt;
+	...
+&lt;/azkaban-users&gt;
+</pre>
+
+<h3>Users</h3>
+
+<p>To add users, add the <code>&lt;user&gt;</code> tag.</p>
+
+<pre class="code">
+&lt;azkaban-users&gt;
+  &lt;user username="myusername" password="mypassword" roles="a" groups="mygroup" / &gt;
+  &lt;user username="myusername2" password="mypassword2" roles="a, b" groups="ga, gb" / &gt;
+  ...
+&lt;/azkaban-users&gt;
+</pre>
+
+<table class="table table-striped table-bordered table-condensed">
+	<thead>
+		<tr>
+			<th>Attributes</th>
+			<th>Values</th>
+			<th>Required?</th>
+		</tr>
+	</thead>
+	<tbody>
+		<tr>
+			<td>username</td>
+			<td>The login username.</td>
+			<td>yes</td>
+		</tr>
+		<tr>
+			<td>password</td>
+			<td>The login password.</td>
+			<td>yes</td>
+		</tr>
+		<tr>
+			<td>roles</td>
+			<td>Comma delimited list of roles that this user has.</td>
+			<td>no</td>
+		</tr>
+		<tr>
+			<td>groups</td>
+			<td>Comma delimited list of groups that the users belongs to.</td>
+			<td>no</td>
+		</tr>
+		<tr>
+			<td>proxy</td>
+			<td>Comma delimited list of proxy users that this users can give to a project</td>
+			<td>no</td>
+		</tr>
+	</tbody>
+</table>
+
+<h3>Groups</h3>
+
+<p>To define each group, you can add the <code>&lt;group&gt;</code> tag.</p>
+
+<pre class="code">
+&lt;azkaban-users&gt;
+  &lt;user username="a" ... groups="groupa" / &gt;
+  ...
+  &lt;group name="groupa" roles="myrole" / &gt;
+  ...
+&lt;/azkaban-users&gt;
+</pre>
+
+<p>In the previous example, user 'a' is in the group 'groupa'. User 'a' would also have the 'myrole' role. A regular user cannot add group permissions to a project unless they are members of that group.</p>
+
+<p>The following are some group attributes that you can assign.</p>
+
+<table class="table table-condensed table-striped table-bordered">
+	<thead>
+		<tr>
+			<th>Attributes</th>
+			<th>Values</th>
+			<th>Required?</th>
+		</tr>
+	</thead>
+	<tbody>
+		<tr>
+			<td>name</td>
+			<td>The group name</td>
+			<td>yes</td>
+		</tr>
+		<tr>
+			<td>roles</td>
+			<td>Comma delimited list of roles that this user has.</td>
+			<td>no</td>
+		</tr>
+	</tbody>
+</table>
+
+<h3>Roles</h3>
+
+<p>Roles are different in that it assigns global permissions to users in Azkaban. You can set up roles with the <code>&lt;roles&gt;</code> tag.</p>
+
+<pre class="code">
+&lt;azkaban-users&gt;
+  &lt;user username="a" ... groups="groupa" roles="readall" / &gt;
+  &lt;user username="b" ... / &gt;
+  ...
+  &lt;group name="groupa" roles="admin" / &gt
+  ...
+  &lt;role name="admin" permissions="ADMIN" / &gt;
+  &lt;role name="readall" permissions="READ" / &gt;
+&lt;/azkaban-users&gt;
+</pre>
+
+<p>In the above example, user 'a' has the role 'readall', which is defined as having the READ permission. This means that user 'a' has global READ access on all the projects and executions.</p>
+<p>User 'a' also is in 'groupa', which has the role ADMIN. It's certainly redundant, but user 'a' is also granted the ADMIN role on all projects.</p>
+
+<p>The following are some group attributes that you can assign.</p>
+
+<table class="table table-condensed table-bordered table-striped">
+	<thead>
+		<tr>
+			<th>Attributes</th>
+			<th>Values</th>
+			<th>Required?</th>
+		</tr>
+	</thead>
+	<tbody>
+		<tr>
+			<td>name</td>
+			<td>The group name</td>
+			<td>yes</td>
+		</tr>
+		<tr>
+			<td>permissions</td>
+			<td>Comma delimited list global permissions for the role</td>
+			<td>yes</td>
+		</tr>
+	</tbody>
+</table>
+
+<p>The possible role permissions are the following:</p>
+
+<table class="table table-condensed table-bordered table-striped">
+	<thead>
+		<tr>
+			<th>Permissions</th>
+			<th>Values</th>
+		</tr>
+	</thead>
+	<tbody>
+		<tr>
+			<td>ADMIN</td>
+			<td>Grants all access to everything in Azkaban.</td>
+		</tr>
+		<tr>
+			<td>READ</td>
+			<td>Gives users read only access to every project and their logs</td>
+		</tr>
+		<tr>
+			<td>WRITE</td>
+			<td>Allows users to upload files, change job properties or remove any project</td>
+		</tr>
+		<tr>
+			<td>EXECUTE</td>
+			<td>Allows users to trigger the execution of any flow</td>
+		</tr>
+		<tr>
+			<td>SCHEDULE</td>
+			<td>Users can add or remove schedules for any flows</td>
+		</tr>
+		<tr>
+			<td>CREATEPROJECTS</td>
+			<td>Allows users to create new projects if project creation is locked down</td>
+		</tr>
+	</tbody>
+</table>

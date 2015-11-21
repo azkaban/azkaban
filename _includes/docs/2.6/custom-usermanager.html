@@ -1,0 +1,37 @@
+<h2 id="custom-usermanager">Custom User Manager</h2>
+
+<p>Although the XmlUserManager is easy enough to get started with, you may want to integrate with an already established directory system, such as LDAP.</p>
+
+<p>It should be fairly straight forward to implement a custom UserManager. The UserManager is a java interface. There are only a few methods needed to implement.</p>
+
+<pre class="code">
+public interface UserManager {
+	public User getUser(String username, String password) throws UserManagerException;
+	public boolean validateUser(String username);
+	public boolean validateGroup(String group);
+	public Role getRole(String roleName);
+	public boolean validateProxyUser(String proxyUser, User realUser);
+}
+</pre>
+
+<p>The constructor should take an <code>azkaban.utils.Props</code> object. The contents of <code>azkaban.properties</code> will be available for the UserManager for configuration.</p>
+
+<p>Package your new custom UserManager into a jar and drop it into the <code>./extlib</code> directory or alternatively into the plugins directory (i.e. <code>./plugins/ldap/linkedin-ldap.jar</code>).</p>
+
+<p>Change the <code>azkaban.properties</code> configuration to point to the custom UserManager. Add additional parameters into <code>azkaban.properties</code> if needed by your custom user manager.</p>
+
+<table class="table table-striped table-condensed table-bordered">
+	<thead>
+		<tr>
+			<th>Parameter</th>
+			<th>Default</th>
+		</tr>
+	</thead>
+	<tbody>
+		<tr>
+			<td><code>user.manager.class</code></td>
+			<td><code>azkaban.user.CustomUserManager</code></td>
+		</tr>
+	</tbody>
+</table>
+

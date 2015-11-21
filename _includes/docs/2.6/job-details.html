@@ -1,0 +1,34 @@
+<h2 id="job-details">Job Details</h2>
+
+<p>From an execution page, after clicking "Job List" and then "Details" for one of the jobs, you will arrive at the job details page. This page contains tabs for the "Job Logs" and a "Summary".</p>
+
+<h3>Job Logs</h3>
+
+<p>The job logs are stored in the database. They contain all the stdout and stderr output of the job.</p>
+
+<div class="row">
+  <div class="col-md-6 col-md-offset-3">
+    <a href="./images/joblogs.png" data-lightbox="job-details" title="Job logs">
+      <img class="img-thumbnail img-figure" src="./images/joblogs.png" alt="Job Logs" width="450" />
+    </a>
+  </div>
+</div>
+
+<h3>Job Summary</h3>
+
+The <strong>Job Summary</strong> tab contains a summary of the information in the job logs. This includes:
+
+<ul>
+  <li><strong>Job Type</strong> - the jobtype of the job</li>
+  <li><strong>Command Summary</strong> - the command that launched the job process, with fields such as the classpath and memory settings shown separately as well</li>
+  <li><strong>Pig/Hive Job Summary</strong> - custom stats specific to Pig and Hive jobs</li>
+  <li><strong>Map Reduce Jobs</strong> - a list of job ids of Map-Reduce jobs that were launched, linked to their job tracker pages</li>
+</ul>
+
+<div class="row">
+  <div class="col-md-6 col-md-offset-3">
+    <a href="./images/jobsummary.png" data-lightbox="job-details" title="Job summary">
+      <img class="img-thumbnail img-figure" src="./images/jobsummary.png" alt="Job Logs" width="450" />
+    </a>
+  </div>
+</div>

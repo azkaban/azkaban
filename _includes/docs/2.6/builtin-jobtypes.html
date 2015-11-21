@@ -1,0 +1,80 @@
+<h2 id="builtin-jobtypes">Built-in Job types</h2>
+
+<p>Azkaban allows custom job types to be added as <a href="#plugins">plugins</a>. However it also supplies several built-in job types. On top of the job parameters that can be set, each job type has additional properties that can be used.</p>
+
+<h3>Command</h3>
+
+<p>Command type of job can be set with <code>type=command</code>. It is a barebones command line executor. Many of the other job types wrap the _command_ job type but constructs their own command lines.</p>
+
+<table class="table table-condensed table-striped table-bordered">
+	<thead>
+		<tr>
+			<th>Parameter</th>
+			<th>Description</th>
+			<th>Required?</th>
+		</tr>
+	</thead>
+	<tbody>
+		<tr>
+			<td>command</td>
+			<td>The command line string to execute. i.e. <code>ls -lh</code></td>
+			<td>yes</td>
+		</tr>
+		<tr>
+			<td>command. <em>n</em></td>
+			<td>Where <em>n</em> is a sequence of integers (i.e 1,2,3&#8230;). Defines additional commands that run in sequential order after the initial command.</td>
+			<td>no</td>
+		</tr>
+	</tbody>
+</table>
+
+<h3>Java Process</h3>
+
+<p>Java process jobs are a convenient wrapper for kicking off Java-based programs. It is equivalent to running a class with a main method from the command line. The following properties are available in javaprocess jobs: </p>
+
+<table class="table table-condensed table-striped table-bordered">
+	<thead>
+		<tr>
+			<th>Parameter</th>
+			<th>Description</th>
+			<th>Required?</th>
+		</tr>
+	</thead>
+	<tbody>
+		<tr>
+			<td>java.class</td>
+			<td>The class that contains the main function. i.e <code>azkaban.example.text.HelloWorld</code></td>
+			<td>yes</td>
+		</tr>
+		<tr>
+			<td>classpath</td>
+			<td>Comma delimited list of jars and directories to be added to the classpath. Default is all jars in the current working directory.</td>
+			<td>no</td>
+		</tr>
+		<tr>
+			<td>Xms</td>
+			<td>The initial memory pool start size. The default is 64M</td>
+			<td>no</td>
+		</tr>
+		<tr>
+			<td>Xmx</td>
+			<td>The initial maximum memory pool size. The default is 256M</td>
+			<td>no</td>
+		</tr>
+		<tr>
+			<td>main.args</td>
+			<td>A list of comma delimited arguments to pass to the java main function</td>
+			<td>no</td>
+		</tr>
+		<tr>
+			<td>jvm.args</td>
+			<td>JVM args. This entire string is passed intact as a VM argument. <code>-Dmyprop=test -Dhello=world</code></td>
+			<td>no</td>
+		</tr>
+	</tbody>
+</table>
+
+<h3>Noop</h3>
+
+<p>A job that takes no parameters and is essentially a null operation. Used for organizing your graph.</p>
+

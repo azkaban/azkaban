@@ -1,0 +1,61 @@
+<h2 id="executions">Executions</h2>
+
+<h3>Flow Execution Page</h3>
+
+<p>After <a href="#executing-flows">executing a flow</a> you will be presented the Executing Flow page.  Alternatively, you can access these flows from the <a href="#flow-view">Flow View</a> page under the Executions tab, the History page, or the Executing page.</p>
+
+<p>This page is similar to the Flow View page, except it shows status of running jobs. </p>
+
+<div class="row">
+  <div class="col-md-6 col-md-offset-3">
+    <a href="./images/executingflowpage.png" data-lightbox="executing-flow-page" title="Executing flow page">
+      <img class="img-thumbnail img-figure" title="Executing Flow" src="./images/executingflowpage.png" ALT="Executing Flow Page" width="450" />
+    </a>
+  </div>
+</div>
+
+<p>Selecting the Job List will give a timeline of job executions. You can access the jobs and job logs directly from this list.</p>
+
+<div class="row">
+  <div class="col-md-6 col-md-offset-3">
+    <a href="./images/executingflowpagejobslist.png" data-lightbox="executing-flow-page-jobs-list" title="Executing flow page jobs list">
+      <img class="img-thumbnail img-figure" title="Executing Flow" src="./images/executingflowpagejobslist.png" ALT="Executing Flow Page" width="450" />
+    </a>
+  </div>
+</div>
+
+<p>This page will auto update as long as the execution is not finished.</p>
+
+<p>Some options that you are able to do on execution flows include the following:</p>
+
+<ul>
+	<li><strong>Cancel</strong> - kills all running jobs and fails the flow immediately. The flow state will be KILLED.</li>
+	<li><strong>Pause</strong> - prevents new jobs from running. Currently running jobs proceed as usual.</li>
+	<li><strong>Resume</strong> - resume a paused execution.</li>
+	<li><strong>Retry Failed</strong> - only available when the flow is in a FAILED FINISHING state. Retry will restart all FAILED jobs while the flow is still active. Attempts will appear in the Jobs List page.</li>
+	<li><strong>Prepare Execution</strong> - only available on a finished flow, regardless of success or failures. This will auto disable successfully completed jobs.</li>
+</ul>
+
+<h3>Executing Page</h3>
+
+<p>Clicking on the Executing Tab in the header will show the Execution page. This page will show currently running executions as well as recently finished flows.</p>
+
+<div class="row">
+  <div class="col-md-6 col-md-offset-3">
+    <a href="./images/executingflowspage.png" data-lightbox="executing-flows-page" title="Executions page">
+      <img class="img-thumbnail img-figure" title="Executions" src="./images/executingflowspage.png" ALT="Executions" width="450" />
+    </a>
+  </div>
+</div>
+
+<h3>History Page</h3>
+
+<p>Currently executing flows as well as completed executions will appear in the History page. Searching options are provided to find the execution you're looking for. Alternatively, you can view previous executions for a flow on the <a href="#flow-view">Flow View</a> execution tab.</p>
+
+<div class="row">
+  <div class="col-md-6 col-md-offset-3">
+    <a href="./images/historypage.png" data-lightbox="history-page" title="Execution history">
+      <img class="img-thumbnail img-figure" title="Executions" src="./images/historypage.png" ALT="Executions" width="450" />
+    </a>
+  </div>
+</div>

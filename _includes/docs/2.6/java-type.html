@@ -1,0 +1,21 @@
+<h2 id="java-type">Java Job Type</h2>
+
+<p>The <code>java</code> job type was widely used in the original Azkaban as a built-in type. It is no longer a built-in type in Azkaban2. The <code>javaprocess</code> is still built-in in Azkaban2. The main difference between <code>java</code> and <code>javaprocess</code> job types are: </p>
+
+<ol>
+  <li><code>javaprocess</code> runs user program that has a "main" method, <code>java</code> runs Azkaban provided main method which invokes user program "run" method.</li>
+  <li>Azkaban can do the setup, such as getting Kerberos ticket or requesting Hadoop tokens in the provided main in <code>java</code> type, whereas in <code>javaprocess</code> user is responsible for everything.</li>
+</ol>
+
+<p>As a result, most users use <code>java</code> type for running anything that talks to Hadoop clusters. That usage should be replaced by <code>hadoopJava</code> type now, which is secure. But we still keep <code>java</code> type in the plugins for backwards compatibility.</p>
+
+<h3>How to Use</h3>
+
+<p>Azkaban spawns a local process for the java job type that runs user programs. It is different from the "javaprocess" job type in that Azkaban already provides a <code>main</code> method, called <code>JavaJobRunnerMain</code>. Inside <code>JavaJobRunnerMain</code>, it looks for the <code>run</code> method which can be specified by <code>method.run</code> (default is <code>run</code>). User can also specify a <code>cancel</code> method in the case the user wants to gracefully terminate the job in the middle of the run.</p>
+
+<p>For the most part, using <code>java</code> type should be no different from <code>hadoopJava</code>. </p>
+
+<div class="bs-callout bs-callout-info">
+  <h4>Sample Job</h4>
+  <p>Please refer to the <a href="#hadoopjava-type"><code>hadoopJava</code> type</a>.</p>
+</div>

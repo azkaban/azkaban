@@ -1,0 +1,110 @@
+<h2 id="webserver-setup">Set up Azkaban Web Server</h2>
+
+<p class="lead">Azkaban Web Server handles project management, authentication, scheduling and trigger of executions.</p>
+
+<h3>Installing the Web Server</h3>
+
+<p>Grab the azkaban-web-server package from the <a href="{{ site.home }}/downloads.html">download page</a></p>
+
+<p>Alternatively, you can clone the <a href="https://github.com/azkaban/azkaban2" target="_blank">GitHub repo</a>, you can build the latest version from the master branch. <a href="#building-from-source">See here</a> for instructions on building from source.</p>
+
+<p>Extract the package into a directory. The install path should be different from the AzkabanExecutorServer. After extraction, there should be the following directories:</p>
+
+<table class="table table-striped table-bordered table-condensed">
+  <thead>
+    <th>Folder</th>
+    <th>Description</th>
+  </thead>
+  <tbody>
+    <tr>
+      <td>bin</td>
+      <td>The scripts to start Azkaban jetty server</td>
+    </tr>
+    <tr>
+      <td>conf</td>
+      <td>The configurations for Azkaban solo server</td>
+    </tr>
+    <tr>
+      <td>lib</td>
+      <td>The jar dependencies for Azkaban</td>
+    </tr>
+    <tr>
+      <td>extlib</td>
+      <td>Additional jars that are added to extlib will be added to Azkaban's classpath</td>
+    </tr>
+    <tr>
+      <td>plugins</td>
+      <td>the directory where plugins can be installed</td>
+    </tr>
+    <tr>
+      <td>web</td>
+      <td>The web (css, javascript, image) files for Azkaban web server.</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>In the <code>conf</code> directory, there should be three files</p>
+
+<ul>
+	<li><code>azkaban.properties</code> - Used by Azkaban for runtime parameters</li>
+	<li><code>global.properties</code> - Global static properties that are passed as shared properties to every workflow and job.
+	<li><code>azkaban-users.xml</code> - Used to add users and roles for authentication. This file is not used if the <code>XmLUserManager</code> is not set up to use it.
+</ul>
+
+<p>The <code>azkaban.properties</code> file will be the main configuration file that is necessary to setup Azkaban.</p>
+
+<h3>Getting KeyStore for SSL</h3>
+
+<p>Azkaban uses SSL socket connectors, which means a keystore will have to be available. You call follow the steps provided at <a href="http://docs.codehaus.org/display/JETTY/How+to+configure+SSL" target="_blank">this link</a> to create one.</p>
+<p>Once a keystore file has been created, Azkaban must be given its location and password. Within <code>azkaban.properties</code>, the following properties should be overridden.</p>
+
+<pre class="code">
+jetty.keystore=keystore
+jetty.password=password
+jetty.keypassword=password
+jetty.truststore=keystore
+jetty.trustpassword=password
+</pre>
+
+<h3>Setting up the DB</h3>
+
+<p>If you haven't gotten the MySQL JDBC driver, you can get it from <a href="http://www.mysql.com/downloads/connector/j/" target="_blank">this link</a>. </p>
+<p>Drop this jar into the <code>extlib</code> directory. All external dependencies should be added to the extlib directory.</p>
+
+<p>To point Azkaban web client to the MySQL instance, you will need to add the connection parameters to <code>azkaban.properties</code>.</p>
+
+<pre class="code">
+database.type=mysql
+mysql.port=3306
+mysql.host=localhost
+mysql.database=azkaban
+mysql.user=azkaban
+mysql.password=azkaban
+mysql.numconnections=100
+</pre>
+
+<p>Currently MySQL is the only data store type supported in Azkaban. So <code>database.type</code> should always be <code>mysql</code>.</p>
+
+<h3>Setting up the UserManager</h3>
+
+<p>Azkaban uses the <code>UserManager</code> to provide authentication and user roles.</p>
+<p>By default, Azkaban includes and uses the <code>XmlUserManager</code> which gets username/passwords and roles from the <code>azkaban-users.xml</code> as can be seen in the <code>azkaban.properties</code> file.</p>
+
+<pre class="code">
+user.manager.class=azkaban.user.XmlUserManager
+user.manager.xml.file=conf/azkaban-users.xml
+</pre>
+
+<h3>Running Web Server</h3>
+
+<p>The following properties in <code>azkaban.properties</code> are used to configure jetty.</p>
+
+<pre class="code">
+jetty.maxThreads=25
+jetty.ssl.port=8443
+</pre>
+
+<p>Execute <code>bin/azkaban-web-start.sh</code> to start AzkabanWebServer.</p>
+<p>To shutdown the AzkabanWebServer, run <code>bin/azkaban-web-shutdown.sh</code>.</p>
+
+<p>You can test access by accessing the web server through a browser.</p>
