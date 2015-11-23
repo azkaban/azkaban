@@ -200,6 +200,7 @@ public class JobTypeManager {
       }
 
       pluginLoadProps = new Props(commonPluginLoadProps, pluginLoadPropsFile);
+      pluginLoadProps.put("plugin.dir", pluginDir.getAbsolutePath());
       pluginLoadProps = PropsUtils.resolveProps(pluginLoadProps);
     } catch (Exception e) {
       logger.error("pluginLoadProps to help with debugging: " + pluginLoadProps);
@@ -207,7 +208,6 @@ public class JobTypeManager {
           + e.getMessage(), e);
     }
     // Add properties into the plugin set
-    pluginLoadProps.put("plugin.dir", pluginDir.getAbsolutePath());
     plugins.addPluginLoadProps(jobTypeName, pluginLoadProps);
     if (pluginJobProps != null) {
       plugins.addPluginJobProps(jobTypeName, pluginJobProps);
