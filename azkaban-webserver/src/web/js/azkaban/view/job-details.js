@@ -60,5 +60,12 @@ $(function() {
     el: $('#jobLogView'),
     model: jobLogModel
   });
-  jobLogModel.refresh();
+
+  //refresh immediately
+  jobLogView.refresh();
+
+  //and then refresh every 5 seconds
+  setInterval(function(){
+    jobLogView.refresh();
+  }, 5000);
 });
