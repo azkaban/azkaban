@@ -759,6 +759,10 @@ public class AzkabanWebServer extends AzkabanServer {
     String staticDir =
         azkabanSettings.getString("web.resource.dir", DEFAULT_STATIC_DIR);
     logger.info("Setting up web resource dir " + staticDir);
+
+    String contextDir =
+        azkabanSettings.getString("web.context", "/");
+        
     Context root = new Context(server, "/", Context.SESSIONS);
     root.setMaxFormContentSize(MAX_FORM_CONTENT_SIZE);
 
