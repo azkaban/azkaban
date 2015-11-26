@@ -10,10 +10,10 @@
 	<li>configure azkaban.native.lib= to the place where you are going to put the compiled execute-as-user.c file (see below)</li>
 	<li>Generate an executable on the Azkaban box for azkaban-common/src/main/c/execute-as-user.c. <b> it should be named execute-as-user </b> Below is a sample approach</li>
 		<ul> 
-			<li>scp <code>./azkaban-common/src/main/c/execute-as-user.c</code> onto the Azkaban box</li>
-			<li>run: gcc execute-as-user.c -o execute-as-user</li>
-			<li>run: chown root execute-as-user (you might need root privilege)</li>
-			<li>run: chmod 6050 execute-as-user (you might need root privilege)</li>
+			<li><code>scp ./azkaban-common/src/main/c/execute-as-user.c</code> onto the Azkaban box</li>
+			<li>run: <code>gcc execute-as-user.c -o execute-as-user</code></li>
+			<li>run: <code>chown root execute-as-user (you might need root privilege)</code></li>
+			<li>run: <code>chmod 6050 execute-as-user (you might need root privilege)</code></li>
 		</ul>
 	</li>
 </ol>

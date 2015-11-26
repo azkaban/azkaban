@@ -73,12 +73,12 @@
 		</tr>
 		<tr>
 			<td>azkaban.executorselector.filters</td>
-			<td>Hard filters to be used while dispatching. To be choosen from StaticRemaining, FlowSize, MinimumFreeMemory and CpuStatus.</td>
+			<td>A common separated list of hard filters to be used while dispatching. To be choosen from StaticRemaining, FlowSize, MinimumFreeMemory and CpuStatus. Order of filter do not matter.</td>
 			<td> </td>
 		</tr>
 		<tr>
 			<td>azkaban.executorselector.comparator.{ComparatorName}</td>
-			<td>Weights to be used to rank available executors for a given flow. Currently we have NumberOfAssignedFlowComparator, Memory, LastDispatched and CpuUsage as ComparatorName</td>
+			<td>Integer weight to be used to rank available executors for a given flow. Currently, {ComparatorName} can be NumberOfAssignedFlowComparator, Memory, LastDispatched and CpuUsage as ComparatorName. For example:- azkaban.executorselector.comparator.Memory=2</td>
 			<td> </td>
 		</tr>
 		<tr>
