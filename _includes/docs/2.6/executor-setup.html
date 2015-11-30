@@ -73,24 +73,10 @@ executor.port=12321
 executor.flow.threads=30
 </pre>
 
-<h4>Single Executor Mode</h4>
 <p>By default the <code>executor.port</code> is set to <code>12321</code>. The AzkabanWebServer will have to point to this port as well.</p>
 <p>This is done by setting the following property in AzkabanWebServer's <code>azkaban.properties</code>.</p>
 <pre class="code">
 executor.port=12321
-</pre>
-
-<h4>Multiple Executor Mode</h4>
-<p>We need to enable multiple executor mode in webserver configuration if we want to run in multiple executor mode. Please verify that you have following properties in azkaban.properties.
-azkaban.use.multiple.executors and azkaban.executorselector.comparator.* are required properties. Please note that <code>azkaban.use.multiple.executors</code> is not honoured in multiple exeutor mode.</p>
-
-<pre class="code">
-azkaban.use.multiple.executors=true
-azkaban.executorselector.filters=StaticRemainingFlowSize,MinimumFreeMemory,CpuStatus
-azkaban.executorselector.comparator.NumberOfAssignedFlowComparator=1
-azkaban.executorselector.comparator.Memory=1
-azkaban.executorselector.comparator.LastDispatched=1
-azkaban.executorselector.comparator.CpuUsage=1
 </pre>
 
 <p>These changes are only picked up after restarting the servers.</p>

@@ -1,0 +1,134 @@
+<h2 id="pig-type">Pig Type</h2>
+
+<p>Pig type is for running Pig jobs. In the <code>azkaban-plugins</code> repo, we have included Pig types from pig-0.9.2 to pig-0.11.0. It is up to the admin to alias one of them as the <code>pig</code> type for Azkaban users.</p>
+
+<p>Pig type is built on using hadoop tokens to talk to secure Hadoop clusters. Therefore, individual Azkaban Pig jobs are restricted to run within the token's lifetime, which is set by Hadoop admins. It is also important that individual MR step inside a single Pig script doesn't cancel the tokens upon its completion. Otherwise, all following steps will fail on authentication with job tracker or name node.</p>
+
+<p>Vanilla Pig types don't provide all udf jars. It is often up to the admin who sets up Azkaban to provide a pre-configured Pig job type with company specific udfs registered and name space imported, so that the users don't need to provide all the jars and do the configurations in their specific Pig job conf files.</p>
+
+<h3>How to Use</h3>
+
+<p>The Pig job runs user Pig scripts. It is important to remember, however, that running any Pig script might require a number of dependency libraries that need to be placed on local Azkaban job classpath, or be registered with Pig and carried remotely, or both. By using classpath settings, as well as <code>pig.additional.jars</code> and <code>udf.import.list</code>, the admin can create a Pig job type that has very different default behavior than the most basic "pig" type. Pig jobs talk to a secure cluster via hadoop tokens. The admin should specify <code>obtain.binary.token=true</code> if the hadoop cluster security is turned on. Before executing a job, Azkaban will obtain name node and job tracker tokens for this job. These tokens will be written to a token file, which will be picked up by user job process during its execution. For Hadoop 1 (<code>HadoopSecurityManager_H_1_0</code>), after the job finishes, Azkaban takes care of canceling these tokens from name node and job tracker. In Hadoop 2 (<code>HadoopSecurityManager_H_2_0</code>), due to issues with tokens being canceled prematurely, Azkaban does not cancel the tokens.</p>
+
+<p>Since Azkaban only obtains the tokens at the beginning of the job run, and does not request new tokens or renew old tokens during the execution, it is important that the job does not run longer than configured token life. It is also important that individual MR step inside a single Pig script doesn't cancel the tokens upon its completion. Otherwise, all following steps will fail on authentication with hadoop services. In Hadoop 2, you may need to set <code>-Dmapreduce.job.complete.cancel.delegation.tokens=false</code> to prevent tokens from being canceled prematurely.</p>
+
+<p>Here are the common configurations that make a Pig job for a <em>user</em>:</p>
+
+<table class="table table-striped table-bordered table-condensed">
+  <thead>
+    <tr>
+      <th>Parameter</th>
+      <th> Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>type</td>
+      <td>The type name as set by the admin, e.g. <code>pig</code></td>
+    </tr>
+    <tr>
+      <td>pig.script</td>
+      <td>The Pig script location. e.g. <code>src/wordcountpig.pig</code></td>
+    </tr>
+    <tr>
+      <td>classpath</td>
+      <td>The resources that should be on the execution classpath, accessible to the local filesystem.</td>
+    </tr>
+    <tr>
+      <td>dependencies</td>
+      <td>The other jobs in the flow this job is dependent upon.</td>
+    </tr>
+    <tr>
+      <td>user.to.proxy</td>
+      <td>The hadoop user this job should run under.</td>
+    </tr>
+    <tr>
+      <td>pig.home</td>
+      <td>The Pig installation directory. Can be used to override the default set by Azkaban.</td>
+    </tr>
+    <tr>
+      <td>param.SOME_PARAM</td>
+      <td>Equivalent to Pig's <code>-param</code></td>
+    </tr>
+    <tr>
+      <td>use.user.pig.jar</td>
+      <td>If true, will use the user-provided Pig jar to launch the job. If false, the Pig jar provided by Azkaban will be used. Defaults to false.</td>
+    </tr>
+    <tr>
+      <td>hadoop-inject.FOO</td>
+      <td>FOO is automatically added to the Configuration of any Hadoop job launched.</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>Here are what's needed and normally configured by the admin:</p>
+
+<table class="table table-condensed table-bordered table-striped">
+  <thead>
+    <tr>
+      <th>Parameter</th>
+      <th> Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>hadoop.security.manager.class</td>
+      <td>The class that handles talking to hadoop clusters.</td>
+    </tr>
+    <tr>
+      <td>azkaban.should.proxy</td>
+      <td>Whether Azkaban should proxy as individual user hadoop accounts.</td>
+    </tr>
+    <tr>
+      <td>proxy.user</td>
+      <td>The Azkaban user configured with kerberos and hadoop, for secure clusters.</td>
+    </tr>
+    <tr>
+      <td>proxy.keytab.location</td>
+      <td>The location of the keytab file with which Azkaban can authenticate with Kerberos for the specified proxy.user</td>
+    </tr>
+    <tr>
+      <td>hadoop.home</td>
+      <td>The hadoop home where the jars and conf resources are installed.</td>
+    </tr>
+    <tr>
+      <td>jobtype.classpath</td>
+      <td>The items that every such job should have on its classpath.</td>
+    </tr>
+    <tr>
+      <td>jobtype.class</td>
+      <td>Should be set to <code>azkaban.jobtype.HadoopJavaJob</code></td>
+    </tr>
+    <tr>
+      <td>obtain.binary.token</td>
+      <td>Whether Azkaban should request tokens. Set this to true for secure clusters.</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>Dumping MapReduce Counters: this is useful in the case where a Pig script uses UDFs, which may add a few custom MapReduce counters</p>
+
+<table class="table table-condensed table-bordered table-striped">
+  <thead>
+    <tr>
+      <th>Parameter</th>
+      <th> Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>pig.dump.hadoopCounter</td>
+      <td>Setting the value of this parameter to true will trigger the dumping of MapReduce counters for each of the generated MapReduce job generated by the Pig script.</td>
+    </tr>
+    </tbody>
+</table>
+
+<p>Since Pig jobs are essentially Java programs, the configurations for Java jobs could also be set.</p>
+
+<p>Since Azkaban job types are named by their directory names, the admin should also make those naming public and consistent. For example, while there are multiple versions of Pig job types, the admin can link one of them as <code>pig</code> for default Pig type. Experimental Pig versions can be tested in parallel with a different name and can be promoted to default Pig type if it is proven stable. In LinkedIn, we also provide Pig job types that have a number of useful udf libraries, including datafu and LinkedIn specific ones, pre-registered and imported, so that users in most cases will only need Pig scripts in their Azkaban job packages.</p>
+
+<div class="bs-callout bs-callout-info">
+  <h4>Sample Job Package</h4>
+  <p>Here is a sample job package that does word count. It assumes you have hadoop installed and gets some dependency jars from <code>$HADOOP_HOME</code>:</p>
+  <a class="btn btn-primary" href="https://s3.amazonaws.com/azkaban2/azkaban2/samplejobs/pig-wc.zip" target="_blank"><span class="glyphicon glyphicon-download-alt"></span> Download pig-wc.zip</a> (Uploaded May 13, 2013)
+</div>

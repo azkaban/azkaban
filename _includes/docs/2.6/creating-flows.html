@@ -1,0 +1,64 @@
+<div class="page-header">
+	<h1 id="creating-flows">Creating Flows</h1>
+</div>
+
+<p>A job is a process you want to run in Azkaban. Jobs can be set up to be dependent on other jobs. The graph created by a set of jobs and their dependencies are what make up a flow. </p>
+
+<h3>Creating Jobs</h3>
+
+<p>Creating a job is very easy. We create a properties file with <code>.job</code> extension. This job file defines the type of job to be run, the dependencies and any parameters needed to set up your job correctly.</p>
+
+<pre class="code">
+# foo.job
+type=command
+command=echo "Hello World"
+</pre>
+
+<p>In the example, the <code>type</code> of job is <code>command</code>. The <code>command</code> parameter is a parameter that the <code>command</code> job type understands. In this case, it will run the command to print "Hello World". Standard output and the standard error of the job are written to logs which are viewable in the Azkaban Web UI.</p>
+
+<P>For more information about jobs, see the <a href="#job-configuration">jobs configuration</a> page.</p>
+
+<h3>Creating Flows</h3>
+
+<p>A flow is a set of jobs that depends on one another. The dependencies of a job always run before the job itself can run. To add dependencies to a job, add the <code>dependencies</code> property as shown in the following example.</p>
+
+<pre class="code">
+# foo.job
+type=command
+command=echo foo
+</pre>
+
+<pre class="code">
+# bar.job
+type=command
+dependencies=foo
+command=echo bar
+</pre>
+
+<p>The <code>dependencies</code> parameter takes a comma separated list of job names. Make sure that the job names exist and that there are no cyclical dependencies.</p>
+
+<p>A flow is created for every job that has no job dependent on it, and the flow is given the same name as the job. For instance, in the above example, <code>bar</code> depends on <code>foo</code>, but nothing depends on <code>bar</code>. So a flow will be created with the name <code>bar</code>.</p>
+
+<h3>Embedded Flows</h3>
+
+<div class="row">
+  <div class="col-md-6 col-md-offset-3">
+    <a href="./images/embedded-flow.png" data-lightbox="embedded-flow" title="Embedded flows">
+      <img src="./images/embedded-flow.png" class="img-thumbnail img-figure" alt="Embedded flow" width="400" />
+    </a>
+  </div>
+</div>
+
+<p>A flow can also be included as a node in other flow as an <strong>embedded flow</strong>. To create an embedded flow, simply create a <code>.job</code> file with <code>type=flow</code> and <code>flow.name</code> set to the name of the name of the flow. For example:</p>
+
+<pre class="code">
+# baz.job
+type=flow
+flow.name=bar
+</pre>
+
+<p>This also allows one to include the same flow multiple times but with different settings for each by adding parameters to each embedded flow's <code>.job</code> file.</p>
+
+<h3>Uploading Flows</h3>
+
+<p>To upload the flow, all that is required is that all of your <code>.job</code> and any binaries that need to be executed are archived in a <code>.zip</code> file. Through the Azkaban UI, you can then deploy your workflow. The flow will be validated for missing or cyclical dependencies. See <a href="#project-uploads">project uploads</a>.</p>

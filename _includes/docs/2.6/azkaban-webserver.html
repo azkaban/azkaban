@@ -55,60 +55,6 @@
 	</tbody>
 </table>
 
-<h3>Multiple Executor Mode Parameters</h3>
-
-<table class="table table-striped table-bordered table-condensed">
-	<thead>
-		<tr>
-			<th>Parameter</th>
-			<th>Description</th>
-			<th>Default</th>
-		</tr>
-	</thead>
-	<tbody>
-		<tr>
-			<td>azkaban.use.multiple.executors</td>
-			<td>Should azkaban run in multi-executor mode. Required for multiple executor mode.</td>
-			<td>false</td>
-		</tr>
-		<tr>
-			<td>azkaban.executorselector.filters</td>
-			<td>A common separated list of hard filters to be used while dispatching. To be choosen from StaticRemaining, FlowSize, MinimumFreeMemory and CpuStatus. Order of filter do not matter.</td>
-			<td> </td>
-		</tr>
-		<tr>
-			<td>azkaban.executorselector.comparator.{ComparatorName}</td>
-			<td>Integer weight to be used to rank available executors for a given flow. Currently, {ComparatorName} can be NumberOfAssignedFlowComparator, Memory, LastDispatched and CpuUsage as ComparatorName. For example:- azkaban.executorselector.comparator.Memory=2</td>
-			<td> </td>
-		</tr>
-		<tr>
-			<td>azkaban.queueprocessing.enabled</td>
-			<td>Hhould queue processor be enabled from webserver initialization</td>
-			<td>true</td>
-		</tr>
-		<tr>
-			<td>azkaban.webserver.queue.size</td>
-			<td>Maximum flows that can be queued at webserver</td>
-			<td>100000</td>
-		</tr>
-		<tr>
-			<td>azkaban.activeexecutor.refresh.milisecinterval</td>
-			<td>Maximum time in milliseconds that can be processed without executor statistics refresh</td>
-			<td>50000</td>
-		</tr>
-		<tr>
-			<td>azkaban.activeexecutor.refresh.flowinterval</td>
-			<td>Maximum number of queued flows that can be processed without executor statistics refresh</td>
-			<td>5</td>
-		</tr>
-		<tr>
-			<td>azkaban.executorinfo.refresh.maxThreads</td>
-			<td>Maximum number of threads to refresh executor statistics</td>
-			<td>5</td>
-		</tr>
-	</tbody>
-</table>
-
 <h3>Jetty Parameters</h3>
 
 <table class="table table-striped table-condensed table-bordered">

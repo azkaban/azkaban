@@ -1,0 +1,25 @@
+<h2 id="upgrade-27">Upgrading DB from 2.7.0</h2>
+
+<p class="lead">If installing Azkaban from scratch, you can ignore this document. This is only for those who are upgrading from 2.7 to 3.0.</p>
+
+<p>The <code>create.executors.sql</code>, <code>update.active_executing_flows.3.0.sql</code>, <code>update.execution_flows.3.0.sql</code>, and <code>create.executor_events.sql</code> needs to be run to alter all the tables. This includes several table alterations and two new table.</p>
+
+<p>Here are the changes:</p>
+
+<ul>
+	<li>
+		Alter active_executing_flows table'
+		<ul>
+			<li>Deleting 'port' column</li>
+			<li>Deleting 'host' column</li>
+		</ul>
+	</li>
+	<li>
+		Alter execution_flows table'
+		<ul>
+			<li>Adding an 'executor_id' column</li>
+		</ul>
+	</li>
+	<li>Create new executors table</li>
+	<li>Create new executor events table</li>
+</ul>

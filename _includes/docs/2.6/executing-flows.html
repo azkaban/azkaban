@@ -1,0 +1,94 @@
+<h2 id="executing-flows">Executing Flow</h2>
+
+From the <a href="#flow-view">Flow View</a> or the Project Page, you can trigger a job to be executed.
+You will see an executing panel pop-up.
+
+<h3>Executing Flow View</h3>
+
+From the Flow View panel, you can right click on the graph and disable or enable jobs. Disabled jobs will be skipped during execution
+as if their dependencies have been met. Disabled jobs will appear translucent.
+
+<div class="row">
+  <div class="col-md-6 col-md-offset-3">
+    <a href="./images/executeflowpanel.png" data-lightbox="execute-flow" title="Executing flow view">
+      <img class="img-thumbnail img-figure" title="Executing Flow View" src="./images/executeflowpanel.png" alt="Executing Flow View" width="450" />
+    </a>
+  </div>
+</div>
+
+<h3>Notification Options</h3>
+
+<p>The notification options allow users to change the flow's success or failure notification behavior.</p>
+
+<h4>Notify on Failure</h4>
+
+<ul>
+	<li><strong>First Failure</strong> - Send failure emails after the first failure is detected.</li>
+	<li><strong>Flow Finished</strong> - If the flow has a job that has failed, it will send failure emails after all jobs in the flow have finished.</li>
+</ul>
+
+<h4>Email overrides</h4>
+
+<p>Azkaban will use the default notification emails set in the final job in the flow. If overridden, a user can change the email addresses where failure or success emails are sent. The list can be delimited by commas, whitespace or a semi-colon.</p>
+
+<div class="row">
+  <div class="col-md-6 col-md-offset-3">
+    <a href="./images/executeflownotify.png" data-lightbox="execute-flow" title="Notification Options">
+      <img class="img-thumbnail img-figure" title="Notification Options" src="./images/executeflownotify.png" ALT="Notification Options" width="450" />
+    </a>
+  </div>
+</div>
+
+<h3>Failure Options</h3>
+
+<p>When a job in a flow fails, you are able to control how the rest of the flow will succeed.</p>
+
+<ul>
+  <li><strong>Finish Current Running</strong> will finish the jobs that are currently running, but it will not start new jobs. The flow will be put in the <code>FAILED FINISHING</code> state and be set to FAILED once everything completes.</li>
+	<li><strong>Cancel All</strong> will immediately kill all running jobs and set the state of the executing flow to FAILED.</li>
+  <li><strong>Finish All Possible</strong> will keep executing jobs in the flow as long as its dependencies are met. The flow will be put in the <code>FAILED FINISHING</code> state and be set to FAILED once everything completes.</li>
+</ul>
+
+<div class="row">
+  <div class="col-md-6 col-md-offset-3">
+    <a href="./images/executeflowfailure.png" data-lightbox="execute-flow" title="Failure options">
+      <img class="img-thumbnail img-figure" title="Failure Options" src="./images/executeflowfailure.png" ALT="Failure Options" width="450" />
+    </a>
+  </div>
+</div>
+
+<h3>Concurrent Options</h3>
+
+<p>If the flow execution is invoked while the flow is concurrently executing, several options can be set.</p>
+
+<ul>
+	<li><strong>Skip Execution</strong> option will not run the flow if its already running.</li>
+	<li><strong>Run Concurrently</strong> option will run the flow regardless of if its running. Executions are given different working directories.</li>
+	<li>
+		<strong>Pipeline</strong> runs the the flow in a manner that the new execution will not overrun the concurrent execution.
+		<ul>
+      <li>Level 1: blocks executing <strong>job A</strong> until the the previous flow's <strong>job A</strong> has completed.</li>
+      <li>Level 2: blocks executing <strong>job A</strong> until the the children of the previous flow's <strong>job A</strong> has completed. This is useful if you need to run your flows a few steps behind an already executin flow.</li>
+		</ul>
+	</li>
+</ul>
+
+<div class="row">
+  <div class="col-md-6 col-md-offset-3">
+    <a href="./images/executeflowconcurrent.png" data-lightbox="execute-flow" title="Concurrent options">
+      <img class="img-thumbnail img-figure" title="Concurrent Options" src="./images/executeflowconcurrent.png" ALT="Concurrent Options" width="450" />
+    </a>
+  </div>
+</div>
+
+<h3>Flow Parameters</h3>
+
+<p>Allows users to override flow parameters. The flow parameters override the global properties for a job, but not the properties of the job itself.</p>
+
+<div class="row">
+  <div class="col-md-6 col-md-offset-3">
+    <a href="./images/executeflowparameters.png" data-lightbox="execute-flow-panel" title="Flow parameters">
+      <img class="img-thumbnail img-figure" title="Flow Parameters Options" src="./images/executeflowparameters.png" ALT="Flow Parameters" width="450" />
+    </a>
+  </div>
+</div>

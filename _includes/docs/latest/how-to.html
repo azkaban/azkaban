@@ -1,0 +1,22 @@
+
+<h2 id="how-to">How Tos</h2>
+
+<h4>Force execution to an executor</h4>
+<p>Only users with admin privileges can use this override. In flow params: set <code>"useExecutor" = EXECUTOR_ID </code>.</p>
+
+
+<h4>Setting flow priority in multiple executor mode</h4>
+<p>Only users with admin privileges can use this property. In flow params: set <code>"flowPriority" = PRIORITY </code>. Higher numbers get executed first.</p>
+
+<h4>Enabling and Disabling Queue in multiple executor mode</h4>
+<p>Only users with admin privileges can use this action. Use curl or simply visit following URL:- 
+	<ul>
+		<li>Enable: <code>WEBSERVER_URL/executor?ajax=disableQueueProcessor</code></li>
+		<li>Disable: <code>WEBSERVER_URL/executor?ajax=enableQueueProcessor</code></li>
+	</ul>
+</p>
+
+<h4>Reloading executors in multiple executor mode</h4>
+<p>Only users with admin privileges can use this action. This action need at least one active executor to be successful. Use curl or simply visit following URL:-
+	<code>WEBSERVER_URL/executor?ajax=reloadExecutors</code>
+</p>	
