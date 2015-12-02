@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.lang.Thread.State;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -144,6 +145,9 @@ public class FlowRunnerManager implements EventListener,
 
   private Object executionDirDeletionSync = new Object();
 
+  // date time of the the last flow submitted.
+  private long lastFlowSubmittedDate = 0;
+
   public FlowRunnerManager(Props props, ExecutorLoader executorLoader,
       ProjectLoader projectLoader, ClassLoader parentClassLoader)
       throws IOException {
@@ -254,6 +258,13 @@ public class FlowRunnerManager implements EventListener,
       }
     }
     return allProjects;
+  }
+
+  public long getLastFlowSubmittedTime(){
+    // Note: this is not thread safe and may result in providing dirty data.
+    //       we will provide this data as is for now and will revisit if there
+    //       is a string justification for change.
+    return lastFlowSubmittedDate;
   }
 
   public Props getGlobalProps() {
@@ -511,6 +522,8 @@ public class FlowRunnerManager implements EventListener,
       Future<?> future = executorService.submit(runner);
       // keep track of this future
       submittedFlows.put(future, runner.getExecutionId());
+      // update the last submitted time.
+      this.lastFlowSubmittedDate = System.currentTimeMillis();
     } catch (RejectedExecutionException re) {
       throw new ExecutorManagerException(
           "Azkaban server can't execute any more flows. "

@@ -35,6 +35,9 @@ public class AzkabanProcessBuilder {
   private Map<String, String> env = new HashMap<String, String>();
   private String workingDir = System.getProperty("user.dir");
   private Logger logger = Logger.getLogger(AzkabanProcess.class);
+  private boolean isExecuteAsUser = false;
+  private String executeAsUserBinaryPath = null;
+  private String effectiveUser = null;
 
   private int stdErrSnippetSize = 30;
   private int stdOutSnippetSize = 30;
@@ -100,7 +103,12 @@ public class AzkabanProcessBuilder {
   }
 
   public AzkabanProcess build() {
-    return new AzkabanProcess(cmd, env, workingDir, logger);
+    if (isExecuteAsUser) {
+      return new AzkabanProcess(cmd, env, workingDir, logger,
+          executeAsUserBinaryPath, effectiveUser);
+    } else {
+      return new AzkabanProcess(cmd, env, workingDir, logger);
+    }
   }
 
   public List<String> getCommand() {
@@ -115,5 +123,20 @@ public class AzkabanProcessBuilder {
   public String toString() {
     return "ProcessBuilder(cmd = " + Joiner.on(" ").join(cmd) + ", env = "
         + env + ", cwd = " + workingDir + ")";
+  }
+
+  public AzkabanProcessBuilder enableExecuteAsUser() {
+    this.isExecuteAsUser = true;
+    return this;
+  }
+
+  public AzkabanProcessBuilder setExecuteAsUserBinaryPath(String executeAsUserBinaryPath) {
+    this.executeAsUserBinaryPath = executeAsUserBinaryPath;
+    return this;
+  }
+
+  public AzkabanProcessBuilder setEffectiveUser(String effectiveUser) {
+    this.effectiveUser = effectiveUser;
+    return this;
   }
 }

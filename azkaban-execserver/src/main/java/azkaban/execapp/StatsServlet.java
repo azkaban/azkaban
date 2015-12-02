@@ -72,7 +72,7 @@ public class StatsServlet extends HttpServlet implements ConnectorParams {
 
   /**
    * Handle all get request to Stats Servlet {@inheritDoc}
-   * 
+   *
    * @see javax.servlet.http.HttpServlet#doGet(javax.servlet.http.HttpServletRequest,
    *      javax.servlet.http.HttpServletResponse)
    */
@@ -176,7 +176,7 @@ public class StatsServlet extends HttpServlet implements ConnectorParams {
 
   /**
    * Get metric snapshots for a metric and date specification
-   * 
+   *
    * @throws ServletException
    */
   private void handleGetMetricHistory(HttpServletRequest req,
@@ -252,7 +252,7 @@ public class StatsServlet extends HttpServlet implements ConnectorParams {
 
   /**
    * Update tracking interval for a given metrics
-   * 
+   *
    * @throws ServletException
    */
   private void handleChangeMetricInterval(HttpServletRequest req,

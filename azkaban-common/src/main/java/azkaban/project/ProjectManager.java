@@ -32,6 +32,7 @@ import org.apache.commons.io.FileUtils;
 import org.apache.log4j.Logger;
 
 import azkaban.flow.Flow;
+import azkaban.project.DirectoryFlowLoader;
 import azkaban.project.ProjectLogEvent.EventType;
 import azkaban.project.ProjectWhitelist.WhitelistType;
 import azkaban.project.validator.ValidationReport;
@@ -42,7 +43,6 @@ import azkaban.project.validator.XmlValidatorManager;
 import azkaban.user.Permission;
 import azkaban.user.Permission.Type;
 import azkaban.user.User;
-import azkaban.utils.DirectoryFlowLoader;
 import azkaban.utils.Props;
 import azkaban.utils.Utils;
 
@@ -269,7 +269,7 @@ public class ProjectManager {
           "Project names must start with a letter, followed by any number of letters, digits, '-' or '_'.");
     }
 
-    if (projectsByName.contains(projectName)) {
+    if (projectsByName.containsKey(projectName)) {
       throw new ProjectManagerException("Project already exists.");
     }
 
