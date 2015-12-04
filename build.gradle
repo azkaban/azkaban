@@ -42,6 +42,11 @@ subprojects {
     resolutionStrategy.force 'com.google.errorprone:error_prone_core:2.0.5'
   }
 
+    jar {
+        if (! (project.name == "azkaban-soloserver")) exclude 'log4j.properties'
+    }
+
+
   /**
    * Gets the version name from the latest Git tag
    */
