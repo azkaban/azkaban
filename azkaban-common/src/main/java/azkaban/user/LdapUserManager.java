@@ -243,7 +243,9 @@ public class LdapUserManager implements UserManager {
 					"Error occurred while connecting to the LDAP server. Check the log for more details", e);
 		} finally {
 			try {
-				dirContext.close();
+				if(dirContext!=null) {
+					dirContext.close();
+				}
 			} catch (NamingException e) {
 				logger.error("Error while closing the LDAP connection for the user " + username, e);
 			}
