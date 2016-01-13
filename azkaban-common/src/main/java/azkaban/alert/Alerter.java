@@ -21,9 +21,10 @@ import azkaban.sla.SlaOption;
 
 public interface Alerter {
   void alertOnSuccess(ExecutableFlow exflow) throws Exception;
+
   void alertOnError(ExecutableFlow exflow, String ... extraReasons) throws Exception;
 
   void alertOnFirstError(ExecutableFlow exflow) throws Exception;
 
-  void alertOnSla(SlaOption slaOption, String slaMessage) throws Exception;
+  void alertOnSla(SlaOption slaOption, ExecutableFlow exFlow) throws Exception;
 }

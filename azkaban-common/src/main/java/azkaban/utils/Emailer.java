@@ -64,7 +64,7 @@ public class Emailer extends AbstractMailer implements Alerter {
     int mailTimeout = props.getInt("mail.timeout.millis", 10000);
     EmailMessage.setTimeout(mailTimeout);
     int connectionTimeout =
-        props.getInt("mail.connection.timeout.millis", 10000);
+            props.getInt("mail.connection.timeout.millis", 10000);
     EmailMessage.setConnectionTimeout(connectionTimeout);
 
     EmailMessage.setTotalAttachmentMaxSize(getAttachmentMaxSize());
@@ -82,29 +82,12 @@ public class Emailer extends AbstractMailer implements Alerter {
     testMode = props.getBoolean("test.mode", false);
   }
 
-  @SuppressWarnings("unchecked")
-  private void sendSlaAlertEmail(SlaOption slaOption, String slaMessage) {
-    String subject = "Sla Violation Alert on " + getAzkabanName();
-    String body = slaMessage;
+  private void sendSlaAlertEmail(SlaOption slaOption, ExecutableFlow flow) {
+    String subject = "Sla Violation Alert on " + flow.getFlowId();
+    String body = SlaOption.createSlaMessage(slaOption, flow);
     List<String> emailList =
-        (List<String>) slaOption.getInfo().get(SlaOption.INFO_EMAIL_LIST);
-    if (emailList != null && !emailList.isEmpty()) {
-      EmailMessage message =
-          super.createEmailMessage(subject, "text/html", emailList);
+            (List<String>) slaOption.getInfo().get(SlaOption.INFO_EMAIL_LIST);
 
-      message.setBody(body);
-
-      if (!testMode) {
-        try {
-          message.sendEmail();
-        } catch (MessagingException e) {
-          logger.error("Email message send failed", e);
-        }
-      }
-    }
-  }
-
-  public void sendFirstErrorMessage(ExecutableFlow flow) {
     EmailMessage message = new EmailMessage(mailHost, mailUser, mailPassword);
     message.setFromAddress(mailSender);
     message.setTLS(tls);
@@ -113,14 +96,13 @@ public class Emailer extends AbstractMailer implements Alerter {
     ExecutionOptions option = flow.getExecutionOptions();
 
     MailCreator mailCreator =
-        DefaultMailCreator.getCreator(option.getMailCreator());
-
+            DefaultMailCreator.getCreator(option.getMailCreator());
     logger.debug("ExecutorMailer using mail creator:"
-        + mailCreator.getClass().getCanonicalName());
+            + mailCreator.getClass().getCanonicalName());
 
     boolean mailCreated =
-        mailCreator.createFirstErrorMessage(flow, message, azkabanName, scheme,
-            clientHostname, clientPortNumber);
+            mailCreator.createSlaAlertEmail(flow, message, azkabanName, scheme,
+                    clientHostname, clientPortNumber, emailList, subject, body);
 
     if (mailCreated && !testMode) {
       try {
@@ -131,7 +113,7 @@ public class Emailer extends AbstractMailer implements Alerter {
     }
   }
 
-  public void sendErrorEmail(ExecutableFlow flow, String... extraReasons) {
+  private void sendFirstErrorMessage(ExecutableFlow flow) {
     EmailMessage message = new EmailMessage(mailHost, mailUser, mailPassword);
     message.setFromAddress(mailSender);
     message.setTLS(tls);
@@ -140,13 +122,14 @@ public class Emailer extends AbstractMailer implements Alerter {
     ExecutionOptions option = flow.getExecutionOptions();
 
     MailCreator mailCreator =
-        DefaultMailCreator.getCreator(option.getMailCreator());
+            DefaultMailCreator.getCreator(option.getMailCreator());
+
     logger.debug("ExecutorMailer using mail creator:"
-        + mailCreator.getClass().getCanonicalName());
+            + mailCreator.getClass().getCanonicalName());
 
     boolean mailCreated =
-        mailCreator.createErrorEmail(flow, message, azkabanName, scheme,
-            clientHostname, clientPortNumber, extraReasons);
+            mailCreator.createFirstErrorMessage(flow, message, azkabanName, scheme,
+                    clientHostname, clientPortNumber);
 
     if (mailCreated && !testMode) {
       try {
@@ -157,7 +140,7 @@ public class Emailer extends AbstractMailer implements Alerter {
     }
   }
 
-  public void sendSuccessEmail(ExecutableFlow flow) {
+  private void sendErrorEmail(ExecutableFlow flow, String... extraReasons) {
     EmailMessage message = new EmailMessage(mailHost, mailUser, mailPassword);
     message.setFromAddress(mailSender);
     message.setTLS(tls);
@@ -166,13 +149,39 @@ public class Emailer extends AbstractMailer implements Alerter {
     ExecutionOptions option = flow.getExecutionOptions();
 
     MailCreator mailCreator =
-        DefaultMailCreator.getCreator(option.getMailCreator());
+            DefaultMailCreator.getCreator(option.getMailCreator());
     logger.debug("ExecutorMailer using mail creator:"
-        + mailCreator.getClass().getCanonicalName());
+            + mailCreator.getClass().getCanonicalName());
 
     boolean mailCreated =
-        mailCreator.createSuccessEmail(flow, message, azkabanName, scheme,
-            clientHostname, clientPortNumber);
+            mailCreator.createErrorEmail(flow, message, azkabanName, scheme,
+                    clientHostname, clientPortNumber, extraReasons);
+
+    if (mailCreated && !testMode) {
+      try {
+        message.sendEmail();
+      } catch (MessagingException e) {
+        logger.error("Email message send failed", e);
+      }
+    }
+  }
+
+  private void sendSuccessEmail(ExecutableFlow flow) {
+    EmailMessage message = new EmailMessage(mailHost, mailUser, mailPassword);
+    message.setFromAddress(mailSender);
+    message.setTLS(tls);
+    message.setAuth(super.hasMailAuth());
+
+    ExecutionOptions option = flow.getExecutionOptions();
+
+    MailCreator mailCreator =
+            DefaultMailCreator.getCreator(option.getMailCreator());
+    logger.debug("ExecutorMailer using mail creator:"
+            + mailCreator.getClass().getCanonicalName());
+
+    boolean mailCreated =
+            mailCreator.createSuccessEmail(flow, message, azkabanName, scheme,
+                    clientHostname, clientPortNumber);
 
     if (mailCreated && !testMode) {
       try {
@@ -200,7 +209,7 @@ public class Emailer extends AbstractMailer implements Alerter {
 
   @Override
   public void alertOnError(ExecutableFlow exflow, String... extraReasons)
-      throws Exception {
+          throws Exception {
     sendErrorEmail(exflow, extraReasons);
   }
 
@@ -210,8 +219,8 @@ public class Emailer extends AbstractMailer implements Alerter {
   }
 
   @Override
-  public void alertOnSla(SlaOption slaOption, String slaMessage)
-      throws Exception {
-    sendSlaAlertEmail(slaOption, slaMessage);
+  public void alertOnSla(SlaOption slaOption, ExecutableFlow exFlow)
+          throws Exception {
+    sendSlaAlertEmail(slaOption, exFlow);
   }
 }

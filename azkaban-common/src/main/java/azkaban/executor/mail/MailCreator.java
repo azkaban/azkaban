@@ -19,6 +19,8 @@ package azkaban.executor.mail;
 import azkaban.executor.ExecutableFlow;
 import azkaban.utils.EmailMessage;
 
+import java.util.List;
+
 public interface MailCreator {
   public boolean createFirstErrorMessage(ExecutableFlow flow,
       EmailMessage message, String azkabanName, String scheme,
@@ -31,4 +33,8 @@ public interface MailCreator {
   public boolean createSuccessEmail(ExecutableFlow flow, EmailMessage message,
       String azkabanName, String scheme, String clientHostname,
       String clientPortNumber, String... vars);
+
+  public boolean createSlaAlertEmail(ExecutableFlow flow, EmailMessage message,
+                                     String azkabanName, String scheme, String clientHostname,
+                                     String clientPortNumber, List<String> emailList, String... vars);
 }
