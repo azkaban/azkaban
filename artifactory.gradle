@@ -1,0 +1,80 @@
+
+
+if (hasProperty('teamcity')) {
+    teamcity.each { key, val ->
+        println "##tc-property name='${key}' value='${val}'"
+    }
+}
+println "Artifactory user = ${artifactory_user}"
+println "Artifactory contextUrl = ${artifactory_contextUrl}"
+
+def artifactoryCredentials = {
+    username "${artifactory_user}"
+    password "${artifactory_password}"
+}
+
+
+
+artifactory {
+    contextUrl = 'https://relateiq.artifactoryonline.com/relateiq'
+    publish {
+        repository {
+            username = "${artifactory_user}"
+            password = "${artifactory_password}"
+            println "Project version: " + project.version
+            repoKey = "libs-${project.version.endsWith('-SNAPSHOT') ? 'snapshots' : 'releases' }-local"
+        }
+        defaults {
+            publications('mavenJava')
+            properties = ['dev.team' : 'azkaban']
+            publishBuildInfo = true   //Publish build-info to Artifactory (true by default)
+            publishArtifacts = true   //Publish artifacts to Artifactory (true by default)
+            publishPom = true   //Publish generated POM files to Artifactory (true by default).
+            publishIvy = false   //Publish generated Ivy descriptor files to Artifactory (true by default).
+        }
+    }
+
+
+    resolve {
+        contextUrl = 'https://relateiq.artifactoryonline.com/relateiq'
+        repository {
+            repoKey = 'libs-releases'
+            username = "${artifactory_user}"
+            password = "${artifactory_password}"
+            maven = true                //Resolve Maven-style artifacts and descriptors (true by default)
+        }
+    }
+    // Redefine basic properties of the build info object
+    clientConfig.setIncludeEnvVars(true)
+    clientConfig.info.addEnvironmentProperty('built.on',new java.util.Date().toString())
+    if (hasProperty('teamcity')) {
+        clientConfig.info.setBuildName(teamcity.get("teamcity.buildType.id"))
+        clientConfig.info.setBuildNumber(teamcity.get("build.number"))
+    } else {
+        clientConfig.info.setBuildName(project.name)
+        clientConfig.info.setBuildNumber('' + new java.util.Random(System.currentTimeMillis()).nextInt(20000))
+    }
+}
+
+allprojects {
+
+    repositories {
+        mavenLocal()
+        maven {
+            url "${artifactory_contextUrl}/libs-releases"
+            credentials artifactoryCredentials
+        }
+        maven {
+            url "${artifactory_contextUrl}/libs-snapshots"
+            credentials artifactoryCredentials
+        }
+        maven {
+            url "${artifactory_contextUrl}/plugins-releases"
+            credentials artifactoryCredentials
+        }
+        maven {
+            url "${artifactory_contextUrl}/plugins-snapshots"
+            credentials artifactoryCredentials
+        }
+    }
+}
