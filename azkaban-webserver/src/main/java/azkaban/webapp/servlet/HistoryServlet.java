@@ -37,7 +37,7 @@ import azkaban.webapp.AzkabanWebServer;
 
 public class HistoryServlet extends LoginAbstractAzkabanServlet {
 
-  private static final String FILTER_BY_DATE_PATTERN = "MM/dd/yyyy hh:mm aa";
+  private static final String FILTER_BY_DATE_PATTERN = "MM/dd/yyyy HH:mm";
   private static final long serialVersionUID = 1L;
   private ExecutorManagerAdapter executorManager;
   private ProjectManager projectManager;
