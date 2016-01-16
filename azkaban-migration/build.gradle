@@ -33,7 +33,7 @@ task copyPackage(type: Copy) {
 }
 
 task copy(dependsOn: [
-        'createVersionFile',
+//        'createVersionFile',
         'copyLibs',
         'copyDeps',
         'copyPackage']) {

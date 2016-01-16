@@ -121,7 +121,7 @@ task copyPackage(type: Copy) {
 }
 
 task copy(dependsOn: [
-        'createVersionFile',
+//        'createVersionFile',
         'createDirs',
         'copyLess',
         'copyDust',
