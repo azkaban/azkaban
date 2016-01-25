@@ -43,6 +43,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.apache.commons.fileupload.FileItem;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang.StringUtils;
 import org.apache.log4j.Logger;
 
 import azkaban.executor.ExecutableFlow;
@@ -520,55 +521,56 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 
   }
 
-    /**
-     * validate readiness of a project and user permission and use
-     * projectManager to purge the project if things looks good
-     **/
-    private void handlePurgeProject(HttpServletRequest req,
-        HttpServletResponse resp, Session session) throws ServletException,
-        IOException {
-        User user = session.getUser();
-        String projectName = getParam(req, "project");
-        HashMap<String, Object> ret = new HashMap<String, Object>();
-        boolean isOperationSuccessful = true;
+  /**
+   * validate readiness of a project and user permission and use projectManager to purge the project
+   * if things looks good
+   **/
+  private void handlePurgeProject(HttpServletRequest req, HttpServletResponse resp, Session session)
+          throws ServletException, IOException {
+    User user = session.getUser();
+    HashMap<String, Object> ret = new HashMap<String, Object>();
+    boolean isOperationSuccessful = true;
 
-        if (projectManager.isActiveProject(projectName)) {
-            ret.put("error", "Project " + projectName
-                + " should be deleted before purging");
-            isOperationSuccessful = false;
-        }
+    try {
+      Project project = null;
+      String projectParam = getParam(req, "project");
 
-        try {
-            Project project = null;
+      if (StringUtils.isNumeric(projectParam)) {
+        project = projectManager.getProject(Integer.parseInt(projectParam)); // get project by Id
+      } else {
+        project = projectManager.getProject(projectParam); // get project by name (name cannot start
+                                                           // from ints)
+      }
 
-            // project is already deleted
-            if (isOperationSuccessful) {
-                project = projectManager.getProject(projectName);
-                if (project == null) {
-                    ret.put("error", "no project with name : " + projectName);
-                    isOperationSuccessful = false;
-                }
-            }
+      // invalid project
+      if (project == null) {
+        ret.put("error", "invalid project");
+        isOperationSuccessful = false;
+      }
 
-            // only eligible users can purge a project
-            if (isOperationSuccessful
-                && !hasPermission(project, user, Type.ADMIN)) {
-                ret.put("error", "Cannot purge. User '" + user.getUserId()
-                    + "' is not an ADMIN.");
-                isOperationSuccessful = false;
-            }
+      // project is already deleted
+      if (isOperationSuccessful && projectManager.isActiveProject(project.getId())) {
+        ret.put("error", "Project " + project.getName() + " should be deleted before purging");
+        isOperationSuccessful = false;
+      }
 
-            if (isOperationSuccessful) {
-                projectManager.purgeProject(project, user);
-            }
-        } catch (Exception e) {
-            ret.put("error", e.getMessage());
-            isOperationSuccessful = false;
-        }
+      // only eligible users can purge a project
+      if (isOperationSuccessful && !hasPermission(project, user, Type.ADMIN)) {
+        ret.put("error", "Cannot purge. User '" + user.getUserId() + "' is not an ADMIN.");
+        isOperationSuccessful = false;
+      }
 
-        ret.put("success", isOperationSuccessful);
-        this.writeJSON(resp, ret);
+      if (isOperationSuccessful) {
+        projectManager.purgeProject(project, user);
+      }
+    } catch (Exception e) {
+      ret.put("error", e.getMessage());
+      isOperationSuccessful = false;
     }
+
+    ret.put("success", isOperationSuccessful);
+    this.writeJSON(resp, ret);
+  }
 
   private void handleRemoveProject(HttpServletRequest req,
       HttpServletResponse resp, Session session) throws ServletException,
