@@ -24,10 +24,12 @@
 	<body>
 #set($current_page="fileeditor")
 #parse( "azkaban/webapp/servlet/velocity/nav.vm" )
-		<div class="container-full">	
+		<div class="container-full">
 			<br>
-			<input type="file" id="fileopener"> 
-			<br>
+			<b>Browser : <label id="directorypath"></label></b>
+			<div id="filebrowser" >
+			</div>
+			<b>Editor : <label id="filepath"></label></b>
 			<textarea id="editor" style="height: 100%; width: 100%; display: none;" name="fileeditor"></textarea>
 		</div>
 	</body>
@@ -38,6 +40,9 @@
 <script type="text/javascript" src="${context}/js/editarea/en.js"></script>
 
 <script type="text/javascript">
+
+    var fileLoaded=null;
+
   	editAreaLoader.init({
 		id: "editor"	// id of the textarea to transform	
 		,start_highlight: false	
@@ -45,47 +50,52 @@
 		,font_family: "verdana, monospace"
 		,allow_resize: "y"
 		,allow_toggle: false
+		,word_wrap: true
 		,language: "en"
-		,toolbar: " save, |, search, go_to_line, |, undo, redo, |, select_font, |, help"
+		,toolbar: " save, fullscreen, search, go_to_line, undo, redo, select_font, help"
 		,save_callback: "savefile"
 		,height: "100%"
 	});
 	
+	browseDirectory('/');
+
 	function savefile(id, content){
-		alert("Here is the content of the EditArea '"+ id +"' as received by the save callback function:\n"+content);
-		if (window.File && window.FileReader && window.FileList && evt.target.files) {
-			   var file = evt.target.files[0]; 
-			   if (file) {
-			      var fileReader = new FileReader();
-			      fileReader.onload = function(e) { 
-			    	 editAreaLoader.setValue(id, e.target.result);
-			      }
-			      fileReader.readAsText(file);
-			   }
-		  }
-		  else {
-			   alert("Could not save the contents to the file");
-		  }
+		$.ajax({
+			url: '/fileeditor?resource='+fileLoaded,
+			type: 'POST',
+			data: { content: content },
+			success: function(data) {
+				alert('Saved file '+fileLoaded+' with new content');
+			}
+		});
 	}
 	
-	$(document).ready(function() {
-		$('#fileopener').change(function (evt) {
-			  editAreaLoader.setValue('editor', '');
-			  if (window.File && window.FileReader && window.FileList && evt.target.files) {
-				   var file = evt.target.files[0]; 
-				   if (file) {
-				      var fileReader = new FileReader();
-				      fileReader.onload = function(e) { 
-				    	 editAreaLoader.setValue('editor', e.target.result);
-				      }
-				      fileReader.readAsText(file);
-				   }
-			  }
-			  else {
-				   alert("File could not be opened");
-			  }  
-		 });
-	});
+	function browseDirectory(path) {
+		$.ajax({
+	    type: 'GET',
+	    url: '/fileeditor?resource='+path,
+		success: function(response){
+			$('#filebrowser').empty(); 
+		     $('#filebrowser').append(response);
+		     $('#directorypath').text(path);
+		  },
+	    async: true
+		});
+	}
+
+	function fetchFileContent(file) {
+		fileLoaded=file;
+		$.ajax({
+	    type: 'GET',
+	    url: '/fileeditor?resource='+fileLoaded,
+		success: function(response){
+			  editAreaLoader.setValue("editor", null);
+			  editAreaLoader.setValue("editor", response);
+		      $('#filepath').text(file);
+		  },
+	    async: true
+		});
+	}
 			
 </script>
 

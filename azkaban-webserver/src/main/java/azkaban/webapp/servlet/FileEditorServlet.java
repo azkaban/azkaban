@@ -27,17 +27,26 @@ import azkaban.server.session.Session;
 public class FileEditorServlet extends LoginAbstractAzkabanServlet {
 
 	private static final long serialVersionUID = 1L;
+	private static FileSystemService fileSystemService = new FileSystemService();
 
 	@Override
 	protected void handleGet(HttpServletRequest req, HttpServletResponse resp, Session session)
 			throws ServletException, IOException {
-		Page page = newPage(req, resp, session, "azkaban/webapp/servlet/velocity/fileeditor.vm");
-		page.render();
+		if (hasParam(req, "resource")) {
+			String target = getParam(req, "resource");
+			fileSystemService.fetchResource(target, req, resp);
+		} else {
+			Page page = newPage(req, resp, session, "azkaban/webapp/servlet/velocity/fileeditor.vm");
+			page.render();
+		}
 	}
 
 	@Override
 	protected void handlePost(HttpServletRequest req, HttpServletResponse resp, Session session)
 			throws ServletException, IOException {
+		if (hasParam(req, "resource")) {
+			String target = getParam(req, "resource");
+			fileSystemService.saveResource(target, req, resp);
+		}
 	}
-
 }
