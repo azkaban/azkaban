@@ -34,7 +34,7 @@ public class FileEditorServlet extends LoginAbstractAzkabanServlet {
 			throws ServletException, IOException {
 		if (hasParam(req, "resource")) {
 			String target = getParam(req, "resource");
-			fileSystemService.fetchResource(target, req, resp);
+			fileSystemService.streamResource(target, resp);
 		} else {
 			Page page = newPage(req, resp, session, "azkaban/webapp/servlet/velocity/fileeditor.vm");
 			page.render();
@@ -46,7 +46,8 @@ public class FileEditorServlet extends LoginAbstractAzkabanServlet {
 			throws ServletException, IOException {
 		if (hasParam(req, "resource")) {
 			String target = getParam(req, "resource");
-			fileSystemService.saveResource(target, req, resp);
+			String content = req.getParameter("content");
+			fileSystemService.saveResource(target, content);
 		}
 	}
 }

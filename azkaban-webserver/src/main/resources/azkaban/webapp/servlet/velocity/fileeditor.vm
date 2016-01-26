@@ -60,14 +60,16 @@
 	browseDirectory('/');
 
 	function savefile(id, content){
-		$.ajax({
-			url: '/fileeditor?resource='+fileLoaded,
-			type: 'POST',
-			data: { content: content },
-			success: function(data) {
-				alert('Saved file '+fileLoaded+' with new content');
-			}
-		});
+		if(fileLoaded !== null) {
+			$.ajax({
+				url: '/fileeditor?resource='+fileLoaded,
+				type: 'POST',
+				data: { content: content },
+				success: function(data) {
+					alert('Saved file '+fileLoaded+' with new content');
+				}
+			});
+		}
 	}
 	
 	function browseDirectory(path) {
