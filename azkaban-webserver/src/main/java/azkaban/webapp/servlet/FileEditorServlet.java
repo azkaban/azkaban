@@ -18,10 +18,14 @@ package azkaban.webapp.servlet;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
+import java.util.Scanner;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -31,8 +35,11 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.filefilter.TrueFileFilter;
 import org.mortbay.io.WriterOutputStream;
 
+import azkaban.project.Project;
 import azkaban.server.AzkabanServer;
 import azkaban.server.session.Session;
+import azkaban.user.User;
+import azkaban.webapp.AzkabanWebServer;
 
 public class FileEditorServlet extends LoginAbstractAzkabanServlet {
 
@@ -44,7 +51,7 @@ public class FileEditorServlet extends LoginAbstractAzkabanServlet {
 			throws ServletException, IOException {
 		if (hasParam(req, "resource")) {
 			String resourcePath = getParam(req, "resource");
-			streamResource(resourcePath, resp);
+			streamResource(resourcePath, resp, session.getUser());
 		} else {
 			Page page = newPage(req, resp, session, "azkaban/webapp/servlet/velocity/fileeditor.vm");
 			page.render();
@@ -61,7 +68,7 @@ public class FileEditorServlet extends LoginAbstractAzkabanServlet {
 		}
 	}
 
-	private void streamResource(String resourcePath, HttpServletResponse response)
+	private void streamResource(String resourcePath, HttpServletResponse response, User user)
 			throws IOException, ServletException {
 
 		File resource = new File(basePath + resourcePath);
@@ -74,7 +81,7 @@ public class FileEditorServlet extends LoginAbstractAzkabanServlet {
 
 		if (resource.exists()) {
 			if (resource.isDirectory()) {
-				String directoryContent = getDirectoryContent(resourcePath);
+				String directoryContent = getDirectoryContent(resourcePath, user);
 				response.setContentType("text/html");
 				response.setContentLength(directoryContent.length());
 				response.setStatus(HttpServletResponse.SC_OK);
@@ -88,26 +95,83 @@ public class FileEditorServlet extends LoginAbstractAzkabanServlet {
 		}
 	}
 
-	private String getDirectoryContent(String resourcePath) {
+	private String getDirectoryContent(String resourcePath, User user) {
 		StringBuffer directoryContent = new StringBuffer();
+
+		// Fetches all sub folders and files recursively
 		Collection<File> files = FileUtils.listFilesAndDirs(new File(basePath + resourcePath), TrueFileFilter.INSTANCE,
 				TrueFileFilter.INSTANCE);
+
 		directoryContent.append("<table border=0>");
 
+		// Insert a link to the parent folder only, if the resource is not the
+		// webserver's context root
 		if (!"/".equals(resourcePath) && resourcePath != null && resourcePath.length() > 0) {
 			File parent = new File(basePath + resourcePath).getParentFile();
 			directoryContent.append("<tr><td><a href=\"#\" onclick=\"browseDirectory('"
 					+ parent.getAbsolutePath().substring(basePath.length()) + "/')\">[Parent Folder]</td></tr>");
 		}
 
+		// Fetch all projects accessible to the current session user
+		List<Project> projects = ((AzkabanWebServer) getApplication()).getProjectManager().getUserProjects(user);
+		List<String> projectNames = new ArrayList<String>();
+		for (Project project : projects) {
+			projectNames.add(project.getName());
+		}
+
 		for (File file : files) {
+			// Filter out only those folders/files which are immediate children
+			// of the queried resource
 			if (file.getParent().equals(new File(basePath + resourcePath).getPath())) {
-				if (file.isDirectory()) {
-					directoryContent.append("<tr><td>&nbsp;&nbsp;&nbsp;&nbsp;<a href=\"#\" onclick=\"browseDirectory('"
-							+ resourcePath + file.getName() + "/')\">" + file.getName() + "/</td></tr>");
-				} else {
-					directoryContent.append("<tr><td>&nbsp;&nbsp;&nbsp;&nbsp;<a href=\"#\" onclick=\"fetchFileContent('"
-							+ resourcePath + file.getName() + "')\">" + file.getName() + "</td></tr>");
+				// If the folder is at the first level under context root, then
+				// it should be an azkaban project
+				if (file.getParent().equals(new File(basePath).getPath())) {
+					// The first level should contain only azkaban project
+					// folders
+					if (file.isDirectory()) {
+						String displayName = file.getName();
+						// The project name of this folder is in a special text
+						// file named "projectname", one level under this folder
+						Scanner in = null;
+						try {
+							in = new Scanner(new File(file.getAbsolutePath() + File.separator + "projectname"));
+							displayName = in.nextLine();
+						} catch (FileNotFoundException e) {
+							// The default displayName is used in case of an
+							// Exception
+						} finally {
+							if (in != null) {
+								in.close();
+							}
+						}
+						// The access to this folder is filtered out
+						// based on the currently session user
+						if (projectNames.contains(displayName)) {
+							directoryContent
+									.append("<tr><td>&nbsp;&nbsp;&nbsp;&nbsp;<a href=\"#\" onclick=\"browseDirectory('"
+											+ resourcePath + file.getName() + "/')\">" + displayName + "/</td></tr>");
+						}
+					}
+				}
+				// The folder is NOT at the first level under context root, then
+				// hence is a deeper sub folder under one of the azkaban project
+				else {
+					// All folders at this deeper level should be accessible
+					if (file.isDirectory()) {
+						String displayName = file.getName();
+						directoryContent
+								.append("<tr><td>&nbsp;&nbsp;&nbsp;&nbsp;<a href=\"#\" onclick=\"browseDirectory('"
+										+ resourcePath + file.getName() + "/')\">" + displayName + "/</td></tr>");
+					}
+					// All files at this deeper level should be accessible,
+					// except the special ones namd "projectname"
+					else {
+						if (!"projectname".equals(file.getName())) {
+							directoryContent
+									.append("<tr><td>&nbsp;&nbsp;&nbsp;&nbsp;<a href=\"#\" onclick=\"fetchFileContent('"
+											+ resourcePath + file.getName() + "')\">" + file.getName() + "</td></tr>");
+						}
+					}
 				}
 			}
 		}
