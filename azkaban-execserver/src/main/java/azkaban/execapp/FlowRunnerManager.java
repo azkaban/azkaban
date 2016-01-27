@@ -574,7 +574,7 @@ public class FlowRunnerManager implements EventListener,
     }
 
     try {
-      projectVersion.setupProjectFiles(projectLoader, projectDirectory, logger);
+      projectVersion.setupProjectFiles(projectLoader, projectDirectory, logger, flow);
       projectVersion.copyCreateSymlinkDirectory(execPath);
     } catch (Exception e) {
       e.printStackTrace();

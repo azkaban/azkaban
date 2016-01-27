@@ -1134,7 +1134,7 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements
         "SELECT exec_id, project_id, version, flow_id, job_id, "
             + "start_time, end_time, status, attempt "
             + "FROM execution_jobs WHERE exec_id=? "
-            + "AND job_id=? AND attempt_id=?";
+            + "AND job_id=? AND attempt=?";
     private static String FETCH_EXECUTABLE_NODE_ATTEMPTS =
         "SELECT exec_id, project_id, version, flow_id, job_id, "
             + "start_time, end_time, status, attempt FROM execution_jobs "

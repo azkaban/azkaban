@@ -687,7 +687,8 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
     String[] parts = scheduleTime.split(",", -1);
     int hour = Integer.parseInt(parts[0]);
     int minutes = Integer.parseInt(parts[1]);
-    boolean isPm = parts[2].equalsIgnoreCase("pm");
+		// Inovia 24 hour clock mod
+		// boolean isPm = parts[2].equalsIgnoreCase("pm");
 
     DateTimeZone timezone =
         parts[3].equals("UTC") ? DateTimeZone.UTC : DateTimeZone.getDefault();
@@ -701,10 +702,11 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
           .withZone(timezone).parseDateTime(scheduleDate);
     }
 
-    hour %= 12;
+		// Inovia mod 24 hour clock
+		// hour %= 12;
 
-    if (isPm)
-      hour += 12;
+		// if(isPm)
+		// hour += 12;
 
     DateTime firstSchedTime =
         day.withHourOfDay(hour).withMinuteOfHour(minutes).withSecondOfMinute(0);

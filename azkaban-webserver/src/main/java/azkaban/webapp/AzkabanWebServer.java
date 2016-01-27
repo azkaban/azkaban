@@ -90,6 +90,7 @@ import azkaban.utils.Utils;
 import azkaban.webapp.plugin.PluginRegistry;
 import azkaban.webapp.plugin.TriggerPlugin;
 import azkaban.webapp.plugin.ViewerPlugin;
+import azkaban.webapp.servlet.AboutServlet;
 import azkaban.webapp.servlet.AbstractAzkabanServlet;
 import azkaban.webapp.servlet.ExecutorServlet;
 import azkaban.webapp.servlet.HistoryServlet;
@@ -99,6 +100,7 @@ import azkaban.webapp.servlet.ProjectManagerServlet;
 import azkaban.webapp.servlet.ProjectServlet;
 import azkaban.webapp.servlet.ScheduleServlet;
 import azkaban.webapp.servlet.StatsServlet;
+import azkaban.webapp.servlet.FileEditorServlet;
 import azkaban.webapp.servlet.TriggerManagerServlet;
 
 import com.linkedin.restli.server.RestliServlet;
@@ -785,6 +787,8 @@ public class AzkabanWebServer extends AzkabanServer {
     root.addServlet(new ServletHolder(new JMXHttpServlet()), "/jmx");
     root.addServlet(new ServletHolder(new TriggerManagerServlet()), "/triggers");
     root.addServlet(new ServletHolder(new StatsServlet()), "/stats");
+    root.addServlet(new ServletHolder(new AboutServlet()), "/about");
+    root.addServlet(new ServletHolder(new FileEditorServlet()), "/fileeditor");
 
     ServletHolder restliHolder = new ServletHolder(new RestliServlet());
     restliHolder.setInitParameter("resourcePackages", "azkaban.restli");

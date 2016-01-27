@@ -23,8 +23,8 @@ azkaban.AdvFilterView = Backbone.View.extend({
   },
 
   initialize: function(settings) {
-    $('#datetimebegin').datetimepicker();
-    $('#datetimeend').datetimepicker();
+    $('#datetimebegin').datetimepicker({use24hours: true});
+    $('#datetimeend').datetimepicker({use24hours: true});
     $('#datetimebegin').on('change.dp', function(e) {
       $('#datetimeend').data('DateTimePicker').setStartDate(e.date);
     });

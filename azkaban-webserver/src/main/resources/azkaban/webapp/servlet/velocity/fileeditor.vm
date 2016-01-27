@@ -1,0 +1,148 @@
+#*
+ * Copyright 2012 LinkedIn Corp.
+ * 
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not
+ * use this file except in compliance with the License. You may obtain a copy of
+ * the License at
+ * 
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations under
+ * the License.
+*#
+
+<!DOCTYPE html> 
+<html>
+	<head>
+#parse( "azkaban/webapp/servlet/velocity/style.vm" )
+#parse ("azkaban/webapp/servlet/velocity/javascript.vm")
+	</head>
+	
+	<body>
+#set($current_page="fileeditor")
+#parse( "azkaban/webapp/servlet/velocity/nav.vm" )
+		<div class="container-full">
+			<br>
+			<b>Project Browser : <label id="projectdirectorypath"></label></b>
+			<div id="projectbrowser" >
+			</div>
+			<b>Configuration Browser : <label id="configdirectorypath"></label></b>
+			<div id="configbrowser" >
+			</div>
+			<b>Editor : <label id="filepath"></label></b>
+			<textarea id="editor" style="height: 100%; width: 100%; display: none;" name="fileeditor"></textarea>
+		</div>
+	</body>
+</html>
+
+<script type="text/javascript" src="${context}/js/jquery/jquery.js"></script>
+<script type="text/javascript" src="${context}/js/editarea/edit_area_full.js"></script>
+<script type="text/javascript" src="${context}/js/editarea/en.js"></script>
+
+<script type="text/javascript">
+
+    var projectFileLoaded=null;
+    var configFileLoaded=null;
+
+  	editAreaLoader.init({
+		id: "editor"	// id of the textarea to transform	
+		,start_highlight: false	
+		,font_size: "10"
+		,font_family: "verdana, monospace"
+		,allow_resize: "y"
+		,allow_toggle: false
+		,word_wrap: true
+		,language: "en"
+		,toolbar: " save, fullscreen, search, go_to_line, undo, redo, select_font, help"
+		,save_callback: "savefile"
+		,height: "100%"
+	});
+	
+	browseProjectDirectory('/');
+	browseConfigDirectory('/');
+
+	function savefile(id, content){
+		if(projectFileLoaded !== null) {
+			$.ajax({
+				url: '/fileeditor?resource='+projectFileLoaded,
+				type: 'POST',
+				data: { content: content },
+				success: function(data) {
+					alert('Saved file '+projectFileLoaded+' with new content');
+				}
+			});
+		}
+		else if(configFileLoaded !== null) {
+			$.ajax({
+				url: '/fileeditor?externalresource='+configFileLoaded,
+				type: 'POST',
+				data: { content: content },
+				success: function(data) {
+					alert('Saved file '+configFileLoaded+' with new content');
+				}
+			});
+		}
+	}
+	
+	function browseProjectDirectory(path) {
+		$.ajax({
+	    type: 'GET',
+	    url: '/fileeditor?resource='+path,
+		success: function(response){
+			$('#projectbrowser').empty(); 
+		     $('#projectbrowser').append(response);
+		     $('#projectdirectorypath').text(path);
+		  },
+	    async: true
+		});
+	}
+
+	function fetchProjectFileContent(file) {
+		projectFileLoaded=file;
+		configFileLoaded=null;
+		$.ajax({
+	    type: 'GET',
+	    url: '/fileeditor?resource='+projectFileLoaded,
+		success: function(response){
+			  editAreaLoader.setValue("editor", null);
+			  editAreaLoader.setValue("editor", response);
+		      $('#filepath').text(file);
+		  },
+	    async: true
+		});
+	}
+	
+	function browseConfigDirectory(path) {
+		$.ajax({
+	    type: 'GET',
+	    url: '/fileeditor?externalresource='+path,
+		success: function(response){
+			$('#configbrowser').empty(); 
+		     $('#configbrowser').append(response);
+		     $('#configdirectorypath').text(path);
+		  },
+	    async: true
+		});
+	}
+
+	function fetchConfigFileContent(file) {
+		configFileLoaded=file;
+		projectFileLoaded=null;
+		$.ajax({
+	    type: 'GET',
+	    url: '/fileeditor?externalresource='+configFileLoaded,
+		success: function(response){
+			  editAreaLoader.setValue("editor", null);
+			  editAreaLoader.setValue("editor", response);
+		      $('#filepath').text(file);
+		  },
+	    async: true
+		});
+	}
+			
+</script>
+
+

@@ -17,12 +17,14 @@
 package azkaban.execapp;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.zip.ZipFile;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.log4j.Logger;
 
+import azkaban.executor.ExecutableFlow;
 import azkaban.project.ProjectFileHandler;
 import azkaban.project.ProjectLoader;
 import azkaban.project.ProjectManagerException;
@@ -54,7 +56,7 @@ public class ProjectVersion implements Comparable<ProjectVersion> {
   }
 
   public synchronized void setupProjectFiles(ProjectLoader projectLoader,
-      File projectDir, Logger logger) throws ProjectManagerException,
+      File projectDir, Logger logger, ExecutableFlow flow) throws ProjectManagerException,
       IOException {
     String projectVersion =
         String.valueOf(projectId) + "." + String.valueOf(version);
@@ -72,13 +74,15 @@ public class ProjectVersion implements Comparable<ProjectVersion> {
               + System.currentTimeMillis());
       tempDir.mkdirs();
       ProjectFileHandler projectFileHandler = null;
+      FileOutputStream fos = null;
       try {
         projectFileHandler = projectLoader.getUploadedFile(projectId, version);
         if ("zip".equals(projectFileHandler.getFileType())) {
           logger.info("Downloading zip file.");
           ZipFile zip = new ZipFile(projectFileHandler.getLocalFile());
           Utils.unzip(zip, tempDir);
-
+          fos = new FileOutputStream(new File(tempDir.getAbsolutePath()+File.separator+"projectname"));
+          fos.write(flow.getProjectName().getBytes());
           tempDir.renameTo(installedDir);
         } else {
           throw new IOException("The file type hasn't been decided yet.");
@@ -86,6 +90,9 @@ public class ProjectVersion implements Comparable<ProjectVersion> {
       } finally {
         if (projectFileHandler != null) {
           projectFileHandler.deleteLocalFile();
+        }
+        if(fos!=null) {
+        	fos.close();
         }
       }
     }
