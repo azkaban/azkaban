@@ -23,7 +23,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.Scanner;
 
@@ -31,8 +30,7 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.filefilter.TrueFileFilter;
+import org.apache.log4j.Logger;
 import org.mortbay.io.WriterOutputStream;
 
 import azkaban.project.Project;
@@ -44,18 +42,89 @@ import azkaban.webapp.AzkabanWebServer;
 public class FileEditorServlet extends LoginAbstractAzkabanServlet {
 
 	private static final long serialVersionUID = 1L;
-	private static final String basePath = AzkabanServer.getAzkabanProperties().get("azkaban.project.dir");
+	private static final String projectsBaseDirectory = AzkabanServer.getAzkabanProperties().get("azkaban.project.dir");
+	private static final String externalDirectory = AzkabanServer.getAzkabanProperties().get("external.dir");
+	private static final Logger logger = Logger.getLogger(FileEditorServlet.class.getName());
 
 	@Override
 	protected void handleGet(HttpServletRequest req, HttpServletResponse resp, Session session)
 			throws ServletException, IOException {
 		if (hasParam(req, "resource")) {
 			String resourcePath = getParam(req, "resource");
-			streamResource(resourcePath, resp, session.getUser());
+			logger.info("Fetching : " + resourcePath);
+			streamProjectResource(resourcePath, resp, session.getUser());
+		} else if (hasParam(req, "externalresource")) {
+			String resourcePath = getParam(req, "externalresource");
+			logger.info("Fetching : " + resourcePath);
+			streamExternalResource(resourcePath, resp);
 		} else {
 			Page page = newPage(req, resp, session, "azkaban/webapp/servlet/velocity/fileeditor.vm");
 			page.render();
 		}
+	}
+
+	private void streamExternalResource(String resourcePath, HttpServletResponse response)
+			throws IOException, ServletException {
+		File resource = new File(externalDirectory + resourcePath);
+		if (resource.exists()) {
+			response.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");// HTTP
+																						// 1.1.
+			response.setHeader("Pragma", "no-cache"); // HTTP 1.0.
+			response.setDateHeader("Expires", 0); // Proxies
+			response.setStatus(HttpServletResponse.SC_OK);
+			if (resource.isDirectory()) {
+				OutputStream out = fetchOutputStream(response);
+				String directoryContent = getExternalDirectoryContent(resourcePath);
+				logger.debug("DirectoryContent " + directoryContent);
+				response.setContentType("text/html");
+				response.setContentLength(directoryContent.length());
+				out.write(directoryContent.toString().getBytes());
+			} else {
+				streamFileContent(resourcePath, externalDirectory, response);
+			}
+		}
+	}
+
+	private String getExternalDirectoryContent(String resourcePath) {
+		StringBuffer directoryContent = new StringBuffer();
+
+		File queryFolder = new File(externalDirectory + resourcePath);
+
+		String[] queryFolderContent = queryFolder.list();
+
+		directoryContent.append("<table border=0>");
+
+		// Insert a link to the parent folder only if the resource is not the
+		// webserver's context root
+		if (!"/".equals(resourcePath) && resourcePath != null && resourcePath.length() > 0) {
+			File parent = queryFolder.getParentFile();
+			directoryContent.append("<tr><td><a href=\"#\" onclick=\"browseConfigDirectory('"
+					+ parent.getAbsolutePath().substring(externalDirectory.length())
+					+ "/')\">[Parent Folder]</td></tr>");
+		}
+
+		for (String resourceName : queryFolderContent) {
+			File resourceFile = new File(externalDirectory + resourcePath + resourceName);
+			if (resourceFile.isDirectory()) {
+				directoryContent.append("<tr><td>&nbsp;&nbsp;&nbsp;&nbsp;<a href=\"#\" onclick=\"browseConfigDirectory('"
+						+ resourcePath + resourceName + "/')\">" + resourceName + "/</td></tr>");
+			} else {
+				directoryContent.append("<tr><td>&nbsp;&nbsp;&nbsp;&nbsp;<a href=\"#\" onclick=\"fetchConfigFileContent('"
+						+ resourcePath + resourceName + "')\">" + resourceName + "</td></tr>");
+			}
+		}
+		directoryContent.append("</table><br>");
+		return directoryContent.toString();
+	}
+
+	private OutputStream fetchOutputStream(HttpServletResponse response) throws IOException {
+		OutputStream out = null;
+		try {
+			out = response.getOutputStream();
+		} catch (IllegalStateException e) {
+			out = new WriterOutputStream(response.getWriter());
+		}
+		return out;
 	}
 
 	@Override
@@ -64,52 +133,57 @@ public class FileEditorServlet extends LoginAbstractAzkabanServlet {
 		if (hasParam(req, "resource")) {
 			String resourcePath = getParam(req, "resource");
 			String content = req.getParameter("content");
-			saveResource(resourcePath, content);
+			logger.info("Saving to : " + resourcePath);
+			saveResource(resourcePath, projectsBaseDirectory,content);
+		} else if (hasParam(req, "externalresource")) {
+			String resourcePath = getParam(req, "externalresource");
+			String content = req.getParameter("content");
+			logger.info("Saving to : " + resourcePath);
+			saveResource(resourcePath,externalDirectory, content);
 		}
 	}
 
-	private void streamResource(String resourcePath, HttpServletResponse response, User user)
+	private void streamProjectResource(String resourcePath, HttpServletResponse response, User user)
 			throws IOException, ServletException {
 
-		File resource = new File(basePath + resourcePath);
-		OutputStream out = null;
-		try {
-			out = response.getOutputStream();
-		} catch (IllegalStateException e) {
-			out = new WriterOutputStream(response.getWriter());
-		}
+		File resource = new File(projectsBaseDirectory + resourcePath);
 
 		if (resource.exists()) {
+			response.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");// HTTP
+																						// 1.1.
+			response.setHeader("Pragma", "no-cache"); // HTTP 1.0.
+			response.setDateHeader("Expires", 0); // Proxies
+			response.setStatus(HttpServletResponse.SC_OK);
 			if (resource.isDirectory()) {
-				String directoryContent = getDirectoryContent(resourcePath, user);
+				OutputStream out = fetchOutputStream(response);
+				String directoryContent = getProjectDirectoryContent(resourcePath, user);
+				logger.debug("DirectoryContent " + directoryContent);
 				response.setContentType("text/html");
 				response.setContentLength(directoryContent.length());
-				response.setStatus(HttpServletResponse.SC_OK);
 				out.write(directoryContent.toString().getBytes());
 			} else {
-				response.setContentType("text/plain");
-				response.setStatus(HttpServletResponse.SC_OK);
-				int length = streamFileContent(resourcePath, out);
-				response.setContentLength(length);
+				streamFileContent(resourcePath, projectsBaseDirectory, response);
 			}
 		}
 	}
 
-	private String getDirectoryContent(String resourcePath, User user) {
+	private String getProjectDirectoryContent(String resourcePath, User user) {
 		StringBuffer directoryContent = new StringBuffer();
 
-		// Fetches all sub folders and files recursively
-		Collection<File> files = FileUtils.listFilesAndDirs(new File(basePath + resourcePath), TrueFileFilter.INSTANCE,
-				TrueFileFilter.INSTANCE);
+		File baseFolder = new File(projectsBaseDirectory);
+		File queryFolder = new File(projectsBaseDirectory + resourcePath);
+
+		String[] queryFolderContent = queryFolder.list();
 
 		directoryContent.append("<table border=0>");
 
-		// Insert a link to the parent folder only, if the resource is not the
+		// Insert a link to the parent folder only if the resource is not the
 		// webserver's context root
 		if (!"/".equals(resourcePath) && resourcePath != null && resourcePath.length() > 0) {
-			File parent = new File(basePath + resourcePath).getParentFile();
-			directoryContent.append("<tr><td><a href=\"#\" onclick=\"browseDirectory('"
-					+ parent.getAbsolutePath().substring(basePath.length()) + "/')\">[Parent Folder]</td></tr>");
+			File parent = queryFolder.getParentFile();
+			directoryContent.append("<tr><td><a href=\"#\" onclick=\"browseProjectDirectory('"
+					+ parent.getAbsolutePath().substring(projectsBaseDirectory.length())
+					+ "/')\">[Parent Folder]</td></tr>");
 		}
 
 		// Fetch all projects accessible to the current session user
@@ -119,58 +193,43 @@ public class FileEditorServlet extends LoginAbstractAzkabanServlet {
 			projectNames.add(project.getName());
 		}
 
-		for (File file : files) {
-			// Filter out only those folders/files which are immediate children
-			// of the queried resource
-			if (file.getParent().equals(new File(basePath + resourcePath).getPath())) {
-				// If the folder is at the first level under context root, then
-				// it should be an azkaban project
-				if (file.getParent().equals(new File(basePath).getPath())) {
-					// The first level should contain only azkaban project
-					// folders
-					if (file.isDirectory()) {
-						String displayName = file.getName();
-						// The project name of this folder is in a special text
-						// file named "projectname", one level under this folder
-						Scanner in = null;
-						try {
-							in = new Scanner(new File(file.getAbsolutePath() + File.separator + "projectname"));
-							displayName = in.nextLine();
-						} catch (FileNotFoundException e) {
-							// The default displayName is used in case of an
-							// Exception
-						} finally {
-							if (in != null) {
-								in.close();
-							}
-						}
-						// The access to this folder is filtered out
-						// based on the currently session user
-						if (projectNames.contains(displayName)) {
-							directoryContent
-									.append("<tr><td>&nbsp;&nbsp;&nbsp;&nbsp;<a href=\"#\" onclick=\"browseDirectory('"
-											+ resourcePath + file.getName() + "/')\">" + displayName + "/</td></tr>");
-						}
+		for (String resourceName : queryFolderContent) {
+			File resourceFile = new File(projectsBaseDirectory + resourcePath + resourceName);
+			// If the folder is at the first level under context root, then
+			// it should be an azkaban project
+			if (resourceFile.getParent().equals(baseFolder.getPath())) {
+				// The first level should contain only azkaban project
+				// folders
+				if (resourceFile.isDirectory()) {
+					// The project name of this folder is in a special text
+					// file named "projectname", one level under this folder
+					String displayName = getDisplayName(
+							resourceFile.getAbsolutePath() + File.separator + "projectname");
+					// The access to this folder is filtered out
+					// based on the currently session user
+					if (projectNames.contains(displayName)) {
+						directoryContent
+								.append("<tr><td>&nbsp;&nbsp;&nbsp;&nbsp;<a href=\"#\" onclick=\"browseProjectDirectory('"
+										+ resourcePath + resourceName + "/')\">"
+										+ (displayName == null ? resourceName : displayName) + "/</td></tr>");
 					}
 				}
-				// The folder is NOT at the first level under context root, then
-				// hence is a deeper sub folder under one of the azkaban project
+			}
+			// The folder is NOT at the first level under context root, then
+			// hence is a deeper sub folder under one of the azkaban project
+			else {
+				// All folders at this deeper level should be accessible
+				if (resourceFile.isDirectory()) {
+					directoryContent.append("<tr><td>&nbsp;&nbsp;&nbsp;&nbsp;<a href=\"#\" onclick=\"browseProjectDirectory('"
+							+ resourcePath + resourceName + "/')\">" + resourceName + "/</td></tr>");
+				}
+				// All files at this deeper level should be accessible,
+				// except the special ones namd "projectname"
 				else {
-					// All folders at this deeper level should be accessible
-					if (file.isDirectory()) {
-						String displayName = file.getName();
+					if (!"projectname".equals(resourceName)) {
 						directoryContent
-								.append("<tr><td>&nbsp;&nbsp;&nbsp;&nbsp;<a href=\"#\" onclick=\"browseDirectory('"
-										+ resourcePath + file.getName() + "/')\">" + displayName + "/</td></tr>");
-					}
-					// All files at this deeper level should be accessible,
-					// except the special ones namd "projectname"
-					else {
-						if (!"projectname".equals(file.getName())) {
-							directoryContent
-									.append("<tr><td>&nbsp;&nbsp;&nbsp;&nbsp;<a href=\"#\" onclick=\"fetchFileContent('"
-											+ resourcePath + file.getName() + "')\">" + file.getName() + "</td></tr>");
-						}
+								.append("<tr><td>&nbsp;&nbsp;&nbsp;&nbsp;<a href=\"#\" onclick=\"fetchProjectFileContent('"
+										+ resourcePath + resourceName + "')\">" + resourceName + "</td></tr>");
 					}
 				}
 			}
@@ -179,11 +238,34 @@ public class FileEditorServlet extends LoginAbstractAzkabanServlet {
 		return directoryContent.toString();
 	}
 
-	private int streamFileContent(String resourcePath, OutputStream out) throws IOException {
+	private String getDisplayName(String projectNameFile) {
+		String displayName = null;
+		Scanner in = null;
+		try {
+			in = new Scanner(new File(projectNameFile));
+			displayName = in.nextLine();
+		} catch (FileNotFoundException e) {
+			// The default displayName is used in case of an
+			// Exception
+		} finally {
+			if (in != null) {
+				in.close();
+			}
+		}
+		return displayName;
+	}
+
+	private void streamFileContent(String resourcePath, String baseDirectory, HttpServletResponse response)
+			throws IOException {
+		response.setContentType("text/plain");
+		response.setStatus(HttpServletResponse.SC_OK);
+
+		OutputStream out = fetchOutputStream(response);
+
 		int len, totalLength = 0;
 		FileInputStream in = null;
 		try {
-			in = new FileInputStream(basePath + resourcePath);
+			in = new FileInputStream(baseDirectory + resourcePath);
 			int bufferSize = 2 * 8192;
 			byte buffer[] = new byte[bufferSize];
 
@@ -199,13 +281,13 @@ public class FileEditorServlet extends LoginAbstractAzkabanServlet {
 				in.close();
 			}
 		}
-		return totalLength + 1;
+		response.setContentLength(totalLength + 1);
 	}
 
-	private void saveResource(String resourcePath, String content) throws IOException, ServletException {
+	private void saveResource(String resourcePath,String baseDirectory, String content) throws IOException, ServletException {
 		OutputStream out = null;
 		try {
-			File resource = new File(basePath + resourcePath);
+			File resource = new File(baseDirectory + resourcePath);
 			if (resource.exists() && resource.isFile()) {
 				out = new FileOutputStream(resource);
 				out.write((content + "").getBytes());

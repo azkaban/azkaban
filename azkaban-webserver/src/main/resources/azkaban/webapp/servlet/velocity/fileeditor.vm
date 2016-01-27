@@ -26,8 +26,11 @@
 #parse( "azkaban/webapp/servlet/velocity/nav.vm" )
 		<div class="container-full">
 			<br>
-			<b>Browser : <label id="directorypath"></label></b>
-			<div id="filebrowser" >
+			<b>Project Browser : <label id="projectdirectorypath"></label></b>
+			<div id="projectbrowser" >
+			</div>
+			<b>Configuration Browser : <label id="configdirectorypath"></label></b>
+			<div id="configbrowser" >
 			</div>
 			<b>Editor : <label id="filepath"></label></b>
 			<textarea id="editor" style="height: 100%; width: 100%; display: none;" name="fileeditor"></textarea>
@@ -41,7 +44,8 @@
 
 <script type="text/javascript">
 
-    var fileLoaded=null;
+    var projectFileLoaded=null;
+    var configFileLoaded=null;
 
   	editAreaLoader.init({
 		id: "editor"	// id of the textarea to transform	
@@ -57,39 +61,79 @@
 		,height: "100%"
 	});
 	
-	browseDirectory('/');
+	browseProjectDirectory('/');
+	browseConfigDirectory('/');
 
 	function savefile(id, content){
-		if(fileLoaded !== null) {
+		if(projectFileLoaded !== null) {
 			$.ajax({
-				url: '/fileeditor?resource='+fileLoaded,
+				url: '/fileeditor?resource='+projectFileLoaded,
 				type: 'POST',
 				data: { content: content },
 				success: function(data) {
-					alert('Saved file '+fileLoaded+' with new content');
+					alert('Saved file '+projectFileLoaded+' with new content');
+				}
+			});
+		}
+		else if(configFileLoaded !== null) {
+			$.ajax({
+				url: '/fileeditor?externalresource='+configFileLoaded,
+				type: 'POST',
+				data: { content: content },
+				success: function(data) {
+					alert('Saved file '+configFileLoaded+' with new content');
 				}
 			});
 		}
 	}
 	
-	function browseDirectory(path) {
+	function browseProjectDirectory(path) {
 		$.ajax({
 	    type: 'GET',
 	    url: '/fileeditor?resource='+path,
 		success: function(response){
-			$('#filebrowser').empty(); 
-		     $('#filebrowser').append(response);
-		     $('#directorypath').text(path);
+			$('#projectbrowser').empty(); 
+		     $('#projectbrowser').append(response);
+		     $('#projectdirectorypath').text(path);
 		  },
 	    async: true
 		});
 	}
 
-	function fetchFileContent(file) {
-		fileLoaded=file;
+	function fetchProjectFileContent(file) {
+		projectFileLoaded=file;
+		configFileLoaded=null;
 		$.ajax({
 	    type: 'GET',
-	    url: '/fileeditor?resource='+fileLoaded,
+	    url: '/fileeditor?resource='+projectFileLoaded,
+		success: function(response){
+			  editAreaLoader.setValue("editor", null);
+			  editAreaLoader.setValue("editor", response);
+		      $('#filepath').text(file);
+		  },
+	    async: true
+		});
+	}
+	
+	function browseConfigDirectory(path) {
+		$.ajax({
+	    type: 'GET',
+	    url: '/fileeditor?externalresource='+path,
+		success: function(response){
+			$('#configbrowser').empty(); 
+		     $('#configbrowser').append(response);
+		     $('#configdirectorypath').text(path);
+		  },
+	    async: true
+		});
+	}
+
+	function fetchConfigFileContent(file) {
+		configFileLoaded=file;
+		projectFileLoaded=null;
+		$.ajax({
+	    type: 'GET',
+	    url: '/fileeditor?externalresource='+configFileLoaded,
 		success: function(response){
 			  editAreaLoader.setValue("editor", null);
 			  editAreaLoader.setValue("editor", response);
