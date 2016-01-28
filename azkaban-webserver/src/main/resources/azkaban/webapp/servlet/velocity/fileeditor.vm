@@ -26,12 +26,12 @@
 #parse( "azkaban/webapp/servlet/velocity/nav.vm" )
 		<div class="container-full">
 			<br>
-			<b>Project Browser : <label id="projectdirectorypath"></label></b>
+			<b>Deployed Projects : <label id="projectdirectorypath"></label></b>
 			<div id="projectbrowser" >
 			</div>
-			<b>Configuration Browser : <label id="configdirectorypath"></label></b>
+			<b>External Configuration Files : <label id="configdirectorypath"></label></b>
 			<div id="configbrowser" >
-			</div>
+			</div><br>
 			<b>Editor : <label id="filepath"></label></b>
 			<textarea id="editor" style="height: 100%; width: 100%; display: none;" name="fileeditor"></textarea>
 		</div>
@@ -144,5 +144,3 @@
 	}
 			
 </script>
-
-
