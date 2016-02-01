@@ -16,50 +16,12 @@
 
 package azkaban.webapp.servlet;
 
-import java.io.BufferedOutputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.io.Writer;
-import java.security.AccessControlException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
-
-import javax.servlet.ServletConfig;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
-import org.apache.commons.fileupload.FileItem;
-import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.IOUtils;
-import org.apache.log4j.Logger;
-
-import azkaban.executor.ExecutableFlow;
-import azkaban.executor.ExecutableJobInfo;
-import azkaban.executor.ExecutorManagerAdapter;
-import azkaban.executor.ExecutorManagerException;
-import azkaban.executor.Status;
+import azkaban.executor.*;
 import azkaban.flow.Edge;
 import azkaban.flow.Flow;
 import azkaban.flow.FlowProps;
 import azkaban.flow.Node;
-import azkaban.project.Project;
-import azkaban.project.ProjectFileHandler;
-import azkaban.project.ProjectLogEvent;
-import azkaban.project.ProjectManager;
-import azkaban.project.ProjectManagerException;
-import azkaban.project.ProjectWhitelist;
+import azkaban.project.*;
 import azkaban.project.validator.ValidationReport;
 import azkaban.project.validator.ValidatorConfigs;
 import azkaban.scheduler.Schedule;
@@ -71,12 +33,21 @@ import azkaban.user.Permission.Type;
 import azkaban.user.Role;
 import azkaban.user.User;
 import azkaban.user.UserManager;
-import azkaban.utils.JSONUtils;
-import azkaban.utils.Pair;
-import azkaban.utils.Props;
-import azkaban.utils.PropsUtils;
-import azkaban.utils.Utils;
+import azkaban.utils.*;
 import azkaban.webapp.AzkabanWebServer;
+import org.apache.commons.fileupload.FileItem;
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
+import org.apache.log4j.Logger;
+
+import javax.servlet.ServletConfig;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.*;
+import java.security.AccessControlException;
+import java.util.*;
+import java.util.Map.Entry;
 
 public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
   private static final String APPLICATION_ZIP_MIME_TYPE = "application/zip";
@@ -649,6 +620,8 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 
     try {
       projectManager.updateProjectDescription(project, description, user);
+        projectManager.updateTagsFromDescription(project);
+        projectManager.updateProjectSetting(project);
     } catch (ProjectManagerException e) {
       ret.put("error", e.getMessage());
     }

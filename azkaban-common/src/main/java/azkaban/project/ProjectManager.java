@@ -16,6 +16,17 @@
 
 package azkaban.project;
 
+import azkaban.flow.Flow;
+import azkaban.project.ProjectLogEvent.EventType;
+import azkaban.project.validator.*;
+import azkaban.user.Permission;
+import azkaban.user.Permission.Type;
+import azkaban.user.User;
+import azkaban.utils.Props;
+import azkaban.utils.Utils;
+import org.apache.commons.io.FileUtils;
+import org.apache.log4j.Logger;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -24,27 +35,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 import java.util.zip.ZipFile;
-
-import org.apache.commons.io.FileUtils;
-import org.apache.log4j.Logger;
-
-import azkaban.flow.Flow;
-import azkaban.project.DirectoryFlowLoader;
-import azkaban.project.ProjectLogEvent.EventType;
-import azkaban.project.ProjectWhitelist.WhitelistType;
-import azkaban.project.validator.ValidationReport;
-import azkaban.project.validator.ValidationStatus;
-import azkaban.project.validator.ValidatorConfigs;
-import azkaban.project.validator.ValidatorManager;
-import azkaban.project.validator.XmlValidatorManager;
-import azkaban.user.Permission;
-import azkaban.user.Permission.Type;
-import azkaban.user.User;
-import azkaban.utils.Props;
-import azkaban.utils.Utils;
 
 public class ProjectManager {
   private static final Logger logger = Logger.getLogger(ProjectManager.class);
@@ -280,7 +274,11 @@ public class ProjectManager {
     projectsByName.put(newProject.getName(), newProject);
     projectsById.put(newProject.getId(), newProject);
 
-    if (creatorDefaultPermissions) {
+
+      updateTagsFromDescription(newProject);
+
+
+      if (creatorDefaultPermissions) {
       // Add permission to project
       projectLoader.updatePermission(newProject, creator.getUserId(),
           new Permission(Permission.Type.ADMIN), false);
@@ -338,6 +336,17 @@ public class ProjectManager {
     projectLoader.postEvent(project, EventType.DESCRIPTION,
         modifier.getUserId(), "Description changed to " + description);
   }
+
+    public void updateTagsFromDescription(Project newProject) {
+        String description = newProject.getDescription();
+        Pattern TAG_REGEX = Pattern.compile("\\S*#([a-zA-Z0-9\\-]+)");
+        ArrayList<Object> tagValues = new ArrayList<>();
+        Matcher matcher = TAG_REGEX.matcher(description);
+        while (matcher.find()) {
+            tagValues.add(matcher.group(1));
+        }
+        newProject.getMetadata().put("tags", tagValues);
+    }
 
   public List<ProjectLogEvent> getProjectEventLogs(Project project,
       int results, int skip) throws ProjectManagerException {

@@ -16,16 +16,6 @@
 
 package azkaban.webapp.servlet;
 
-import java.io.IOException;
-import java.util.List;
-
-import javax.servlet.ServletConfig;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
-import org.apache.log4j.Logger;
-
 import azkaban.project.Project;
 import azkaban.project.ProjectManager;
 import azkaban.server.session.Session;
@@ -34,6 +24,17 @@ import azkaban.user.Role;
 import azkaban.user.User;
 import azkaban.user.UserManager;
 import azkaban.webapp.AzkabanWebServer;
+import org.apache.log4j.Logger;
+
+import javax.servlet.ServletConfig;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * The main page
@@ -86,10 +87,35 @@ public class ProjectServlet extends LoginAbstractAzkabanServlet {
       page.add("hideCreateProject", true);
     }
 
+      {
+          /**
+           * Get project tags
+           */
+          List<Project> projects = manager.getProjects();
+          Set<String> projectTags = new HashSet<>();
+          projects.stream()
+                  .map(Project::getMetadata)
+                  .filter(m -> !m.isEmpty())
+                  .map(m -> m.get("tags"))
+                  .filter(tags -> tags != null)
+                  .forEach(tags -> projectTags.addAll((List<String>) tags));
+          page.add("projectTags", projectTags.stream().toArray(String[]::new));
+      }
+
+
     if (hasParam(req, "all")) {
-      List<Project> projects = manager.getProjects();
-      page.add("viewProjects", "all");
-      page.add("projects", projects);
+        List<Project> projects = manager.getProjects();
+        page.add("viewProjects", "all");
+        page.add("projects", projects);
+    } else if (hasParam(req, "tag")) {
+        List<Project> projects = manager.getProjects();
+        String tag = getParam(req, "tag");
+        List<Project> tagMatchProjects = projects.stream().filter(p -> {
+            List<String> tags = (List<String>) p.getMetadata().get("tags");
+            return tags != null && tags.contains(tag);
+        }).collect(Collectors.toList());
+        page.add("viewProjects", "tag-" + tag);
+        page.add("projects", tagMatchProjects);
     } else if (hasParam(req, "group")) {
       List<Project> projects = manager.getGroupProjects(user);
       page.add("viewProjects", "group");

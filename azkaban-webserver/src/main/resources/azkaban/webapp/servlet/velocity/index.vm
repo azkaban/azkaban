@@ -81,11 +81,19 @@
 
       <div class="row row-offcanvas row-offcanvas-left">
         <div class="col-xs-6 col-sm-3 sidebar-offcanvas">
-          <ul class="nav nav-pills nav-stacked">
-            <li#if ($viewProjects == 'personal') class="active"#end><a href="${context}/index">Personal</a></li>
-            <li#if ($viewProjects == 'group') class="active"#end><a href="${context}/index?group">Group</a></li>
-            <li#if ($viewProjects == 'all') class="active"#end><a href="${context}/index?all">All</a></li>
-          </ul>
+            <ul class="nav nav-pills nav-stacked">
+                <li#if ($viewProjects == 'personal') class="active"#end><a href="${context}/index">Personal</a></li>
+                <li#if ($viewProjects == 'group') class="active"#end><a href="${context}/index?group">Group</a></li>
+                <li#if ($viewProjects == 'all') class="active"#end><a href="${context}/index?all">All</a></li>
+            </ul>
+            <BR>
+            <ul class="nav nav-pills nav-stacked">
+                <li>Tags:</li>
+                #foreach ($tag in $projectTags)
+                    <li#if ($viewProjects == ('tag-' + $tag)) class="active"#end><a
+                            href="${context}/index?tag=${tag}">${tag}</a></li>
+                #end
+            </ul>
         </div>
         <div class="col-xs-12 col-sm-9 col-content">
 #if (!$projects.isEmpty())
