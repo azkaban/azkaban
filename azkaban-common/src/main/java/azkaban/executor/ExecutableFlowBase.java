@@ -103,6 +103,9 @@ public class ExecutableFlowBase extends ExecutableNode {
     return -1;
   }
 
+    public void addFlowProps(String source, FlowProps props) {
+        flowProps.put(source, props);
+    }
   public Collection<FlowProps> getFlowProps() {
     return flowProps.values();
   }

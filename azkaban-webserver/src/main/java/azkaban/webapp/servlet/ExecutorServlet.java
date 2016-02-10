@@ -16,29 +16,8 @@
 
 package azkaban.webapp.servlet;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import javax.servlet.ServletConfig;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
-import org.apache.commons.lang.StringEscapeUtils;
-
-import azkaban.executor.ConnectorParams;
-import azkaban.executor.ExecutableFlow;
-import azkaban.executor.ExecutableFlowBase;
-import azkaban.executor.ExecutableNode;
-import azkaban.executor.ExecutionOptions;
+import azkaban.executor.*;
 import azkaban.executor.ExecutionOptions.FailureAction;
-import azkaban.executor.Executor;
-import azkaban.executor.ExecutorManagerAdapter;
-import azkaban.executor.ExecutorManagerException;
-import azkaban.executor.Status;
 import azkaban.flow.Flow;
 import azkaban.project.Project;
 import azkaban.project.ProjectManager;
@@ -49,7 +28,6 @@ import azkaban.server.HttpRequestUtils;
 import azkaban.server.session.Session;
 import azkaban.user.Permission;
 import azkaban.user.Permission.Type;
-import azkaban.user.Role;
 import azkaban.user.User;
 import azkaban.user.UserManager;
 import azkaban.utils.FileIOUtils.LogData;
@@ -57,6 +35,17 @@ import azkaban.utils.Pair;
 import azkaban.webapp.AzkabanWebServer;
 import azkaban.webapp.plugin.PluginRegistry;
 import azkaban.webapp.plugin.ViewerPlugin;
+import org.apache.commons.lang.StringEscapeUtils;
+
+import javax.servlet.ServletConfig;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public class ExecutorServlet extends LoginAbstractAzkabanServlet {
   private static final long serialVersionUID = 1L;
@@ -878,6 +867,12 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
       options.setSuccessEmails(flow.getSuccessEmails());
     }
     options.setMailCreator(flow.getMailCreator());
+
+      // Maybe replace cluster properties
+      HashMap<String, Object> flowClusterProperties = flow.getClusterProperties();
+      HashMap<String, Object> optionsClusterProperties = options.getClusterProperties();
+      for (String key : flowClusterProperties.keySet()) optionsClusterProperties.putIfAbsent(key, flowClusterProperties.get(key));
+
 
     try {
       HttpRequestUtils.filterAdminOnlyFlowParams(userManager, options, user);

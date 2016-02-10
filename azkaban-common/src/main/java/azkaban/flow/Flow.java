@@ -16,15 +16,9 @@
 
 package azkaban.flow;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
 import azkaban.executor.mail.DefaultMailCreator;
+
+import java.util.*;
 
 public class Flow {
   private final String id;
@@ -41,6 +35,8 @@ public class Flow {
   private HashMap<String, Set<Edge>> inEdges = new HashMap<String, Set<Edge>>();
   private HashMap<String, FlowProps> flowProps =
       new HashMap<String, FlowProps>();
+
+    private HashMap<String, Object> clusterProperties = new HashMap<>();
 
   private List<String> failureEmail = new ArrayList<String>();
   private List<String> successEmail = new ArrayList<String>();
@@ -131,6 +127,13 @@ public class Flow {
   public void addFailureEmails(Collection<String> emails) {
     failureEmail.addAll(emails);
   }
+
+    public void addClusterProperty(String key, Object value) {
+        clusterProperties.put(key, value);
+    }
+    public HashMap<String, Object> getClusterProperties() {
+        return clusterProperties;
+    }
 
   public int getNumLevels() {
     return numLevels;
@@ -242,6 +245,7 @@ public class Flow {
     flowObj.put("success.email", successEmail);
     flowObj.put("mailCreator", mailCreator);
     flowObj.put("layedout", isLayedOut);
+    flowObj.put("clusterProperties", clusterProperties);
     if (errors != null) {
       flowObj.put("errors", errors);
     }
@@ -314,6 +318,11 @@ public class Flow {
     List<Object> edgeList = (List<Object>) flowObject.get("edges");
     List<Edge> edges = loadEdgeFromObjects(edgeList, nodes);
     flow.addAllEdges(edges);
+
+      HashMap<String, Object> clusterProps = (HashMap<String, Object>) flowObject.get("clusterProperties");
+      if (clusterProps != null) {
+          for (String key : clusterProps.keySet()) flow.clusterProperties.put(key, clusterProps.get(key));
+      }
 
     Map<String, Object> metadata =
         (Map<String, Object>) flowObject.get("metadata");

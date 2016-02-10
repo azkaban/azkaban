@@ -16,26 +16,7 @@
 
 package azkaban.project;
 
-import java.io.File;
-import java.io.FileFilter;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
-import org.apache.log4j.Logger;
-
-import azkaban.flow.CommonJobProperties;
-import azkaban.flow.Edge;
-import azkaban.flow.Flow;
-import azkaban.flow.FlowProps;
-import azkaban.flow.Node;
-import azkaban.flow.SpecialJobTypes;
+import azkaban.flow.*;
 import azkaban.jobcallback.JobCallbackValidator;
 import azkaban.project.validator.ProjectValidator;
 import azkaban.project.validator.ValidationReport;
@@ -43,9 +24,17 @@ import azkaban.project.validator.XmlValidatorManager;
 import azkaban.utils.Props;
 import azkaban.utils.PropsUtils;
 import azkaban.utils.Utils;
+import org.apache.log4j.Logger;
+
+import java.io.File;
+import java.io.FileFilter;
+import java.io.IOException;
+import java.util.*;
 
 public class DirectoryFlowLoader implements ProjectValidator {
   private static final DirFilter DIR_FILTER = new DirFilter();
+
+  private static final String CLUSTER_KEY_PREFIX = "cluster.";
   private static final String PROPERTY_SUFFIX = ".properties";
   private static final String JOB_SUFFIX = ".job";
   public static final String JOB_MAX_XMS = "job.max.Xms";
@@ -359,6 +348,12 @@ public class DirectoryFlowLoader implements ProjectValidator {
           email = email.toLowerCase();
           successEmail.add(email);
           failureEmail.add(email);
+        }
+
+        for (String key : jobProp.getKeySet()) {
+          if (key.startsWith(CLUSTER_KEY_PREFIX)) {
+            flow.addClusterProperty(key, jobProp.get(key));
+          }
         }
 
         flow.addFailureEmails(failureEmail);
