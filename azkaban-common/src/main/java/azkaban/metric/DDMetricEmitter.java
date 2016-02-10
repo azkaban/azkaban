@@ -23,7 +23,7 @@ import com.relateiq.statsd.impl.DatadogClient;
 import java.time.Instant;
 
 
-public class DatadogMetricEmitter implements IMetricEmitter {
+public class DDMetricEmitter implements IMetricEmitter {
     private static final String DATADOG_PREFIX = "azkaban.metric.datadog.prefix";
     private static final String DATADOG_ENVIRONMENT = "azkaban.metric.datadog.environment";
     private static final String DATADOG_API_KEY = "azkaban.metric.datadog.api.key";
@@ -35,7 +35,7 @@ public class DatadogMetricEmitter implements IMetricEmitter {
     private static DatadogClient datadogClient;
 
 
-    public DatadogMetricEmitter(Props azkProps) {
+    public DDMetricEmitter(Props azkProps) {
         statsPrefix = azkProps.getString(DATADOG_PREFIX, "azkaban.metrics");
         statsApiKey = azkProps.getString(DATADOG_API_KEY);
         statsEnvironment = azkProps.getString(DATADOG_ENVIRONMENT, "dev");
