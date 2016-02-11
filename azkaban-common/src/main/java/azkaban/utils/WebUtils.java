@@ -16,14 +16,13 @@
 
 package azkaban.utils;
 
-import java.text.NumberFormat;
-
+import azkaban.executor.Status;
 import org.joda.time.DateTime;
 import org.joda.time.DurationFieldType;
 import org.joda.time.ReadablePeriod;
 import org.joda.time.format.DateTimeFormat;
 
-import azkaban.executor.Status;
+import java.text.NumberFormat;
 
 public class WebUtils {
   public static final String DATE_TIME_STRING = "YYYY-MM-dd HH:mm:ss";
@@ -91,6 +90,8 @@ public class WebUtils {
       return "Running w/Failure";
     case PREPARING:
       return "Preparing";
+    case CREATING_CLUSTER:
+      return "Creating Cluster";
     case READY:
       return "Ready";
     case PAUSED:

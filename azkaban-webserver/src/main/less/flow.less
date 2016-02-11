@@ -53,6 +53,10 @@
     }
   }
 
+  &.CREATING_CLUSTER {
+    background-color: @flow-creating-cluster-color;
+  }
+
   &.SUCCEEDED {
     background-color: @flow-succeeded-color;
   }
@@ -115,6 +119,10 @@ td {
       background-color: @flow-killed-color;
     }
 
+    &.CREATING_CLUSTER {
+      background-color: @flow-creating-cluster-color;
+    }
+
     &.PAUSED {
       background-color: @flow-paused-color;
     }
@@ -151,6 +159,10 @@ td {
 
   &.SUCCEEDED {
     color: @flow-succeeded-color;
+  }
+
+  &.CREATING_CLUSTER {
+    background-color: @flow-creating-cluster-color;
   }
 
   &.RUNNING {
