@@ -157,23 +157,6 @@ public class FlowRunner extends EventHandler implements Runnable {
         this.executorService = executorService;
         this.finishedNodes = new SwapQueue<ExecutableNode>();
 
-
-        // Try to load Cluster Manager
-        Props azkabanProps = AzkabanExecutorServer.getApp().getAzkabanProps();
-        HashMap<String, Object> flowClusterProps = options.getClusterProperties();
-        String overridenClusterManagerClass = (String) flowClusterProps.get(CLUSTER_MANAGER_CLASS);
-        String clusterManagerClass = overridenClusterManagerClass == null ? azkabanProps.getString(CLUSTER_MANAGER_CLASS) : overridenClusterManagerClass;
-
-        if (clusterManagerClass != null) {
-            try {
-                Constructor<ClusterManager>[] constructors = (Constructor<ClusterManager>[]) Class.forName(clusterManagerClass).getConstructors();
-                clusterManager = constructors[0].newInstance(flow);
-            } catch (Exception e) {
-                throw new IllegalStateException("Encountered error while loading and instantiating " + clusterManagerClass, e);
-            }
-        } else {
-            clusterManager = new NoopClusterManager();
-        }
     }
 
     public FlowRunner setFlowWatcher(FlowWatcher watcher) {
@@ -202,6 +185,31 @@ public class FlowRunner extends EventHandler implements Runnable {
         return execDir;
     }
 
+
+    private ClusterManager loadClusterManager() {
+        // Try to load Cluster Manager
+        Props azkabanProps = AzkabanExecutorServer.getApp().getAzkabanProps();
+        String clusterManagerClass = azkabanProps.getString(CLUSTER_MANAGER_CLASS);
+
+        if (clusterManagerClass != null) {
+            try {
+                Constructor<ClusterManager>[] constructors = (Constructor<ClusterManager>[]) Class.forName(clusterManagerClass).getConstructors();
+                for (Constructor<ClusterManager> constructor : constructors) {
+                    Class<?>[] paramTypes  = constructor.getParameterTypes();
+                    if (paramTypes.length == 2
+                            && paramTypes[0].equals(ExecutableFlow.class)
+                            && paramTypes[1].equals(Logger.class)) return constructor.newInstance(flow, logger);
+                }
+                logger.info("Could not find a valid constructor for ClusterManager class.");
+            } catch (Exception e) {
+                throw new IllegalStateException("Encountered error while loading and instantiating " + clusterManagerClass, e);
+            }
+        }
+        logger.info("No ClusterManager class specified in azkaban settings.");
+        return new NoopClusterManager();
+    }
+
+
     public void run() {
         try {
             if (this.executorService == null) {
@@ -217,12 +225,15 @@ public class FlowRunner extends EventHandler implements Runnable {
             logger.info("Fetching job and shared properties.");
             loadAllProperties();
 
+
+            clusterManager = loadClusterManager();
+
             if (clusterManager.shouldCreateCluster()) {
                 flow.setStatus(Status.CREATING_CLUSTER);
                 updateFlow();
-                boolean clusterCreationStatus = clusterManager.createClusterBlocking(15);
+                boolean clusterCreationStatus = clusterManager.ensureClusterIsReady();
                 if (!clusterCreationStatus) throw new RuntimeException("Unable to create cluster.");
-                clusterManager.updateJobFlow();
+                clusterManager.updateJobFlowProperties();
             }
 
             this.fireEventListeners(Event.create(this, Type.FLOW_STARTED));
@@ -243,6 +254,8 @@ public class FlowRunner extends EventHandler implements Runnable {
                         .info("Watcher cancelled status is " + watcher.isWatchCancelled());
             }
 
+            clusterManager.maybeTerminateCluster();
+
             flow.setEndTime(System.currentTimeMillis());
             logger.info("Setting end time for flow " + execId + " to "
                     + System.currentTimeMillis());
@@ -252,6 +265,7 @@ public class FlowRunner extends EventHandler implements Runnable {
             this.fireEventListeners(Event.create(this, Type.FLOW_FINISHED));
         }
     }
+
 
     @SuppressWarnings("unchecked")
     private void setupFlowExecution() {

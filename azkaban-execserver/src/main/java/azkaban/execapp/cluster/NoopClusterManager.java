@@ -11,12 +11,18 @@ public class NoopClusterManager implements ClusterManager {
     }
 
     @Override
-    public boolean createClusterBlocking(int timeoutInMinutes) {
+    public boolean ensureClusterIsReady() {
         return true;
     }
 
     @Override
-    public void updateJobFlow() {
+    public void updateJobFlowProperties() {
+
+    }
+
+
+    @Override
+    public void maybeTerminateCluster() {
 
     }
 

@@ -20,6 +20,7 @@ dependencies {
     compile('org.mortbay.jetty:jetty-util:6.1.26')
     compile('org.codehaus.jackson:jackson-core-asl:1.9.5')
     compile('org.codehaus.jackson:jackson-mapper-asl:1.9.5')
+    compile('com.google.code.gson:gson:2.2.4')
 
     compile('com.amazonaws:aws-java-sdk-core:1.10.27')
     compile('com.amazonaws:aws-java-sdk-emr:1.10.27')

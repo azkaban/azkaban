@@ -3,16 +3,20 @@ package azkaban.execapp.cluster.emr;
 import azkaban.utils.Props;
 import com.amazonaws.services.elasticmapreduce.AmazonElasticMapReduceClient;
 import com.amazonaws.services.elasticmapreduce.model.*;
-import org.apache.commons.io.FileUtils;
+import com.amazonaws.services.s3.AmazonS3Client;
+import com.amazonaws.services.s3.AmazonS3URI;
+import com.amazonaws.services.s3.model.GetObjectRequest;
+import com.amazonaws.services.s3.model.S3Object;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import org.codehaus.jackson.map.ObjectMapper;
 
-import java.io.File;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Set;
+import java.io.*;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -20,31 +24,75 @@ import java.util.stream.Collectors;
  */
 public class EmrUtils {
 
+    private static final List<String> allowedInstanceTypes = Arrays.asList("m3.xlarge", "m3.2xlarge", "c3.xlarge", "c3.2xlarge",
+            "c3.4xlarge", "c3.8xlarge", "g2.2xlarge", "r3.xlarge", "r3.2xlarge", "r3.4xlarge", "r3.8xlarge", "i2.xlarge",
+            "i2.2xlarge", "i2.4xlarge", "i2.8xlarge");
+
+    public static final String EMR_CONF_CLUSTER_INSTANCE_TASK_TYPE = "cluster.emr.cluster.instance.task.type";
+    public static final String EMR_CONF_CLUSTER_INSTANCE_TASK_COUNT = "cluster.emr.cluster.instance.task.count";
+    public static final String EMR_CONF_CLUSTER_INSTANCE_TASK_SPOT_PRICE = "cluster.emr.cluster.instance.task.spot.price";
+
+    public static final String EMR_CONF_CLUSTER_INSTANCE_CORE_TYPE = "cluster.emr.cluster.instance.core.type";
+    public static final String EMR_CONF_CLUSTER_INSTANCE_CORE_COUNT = "cluster.emr.cluster.instance.core.count";
+    public static final String EMR_CONF_CLUSTER_INSTANCE_CORE_SPOT_PRICE = "cluster.emr.cluster.instance.core.spot.price";
+
+    public static final String EMR_CONF_CLUSTER_INSTANCE_MASTER_TYPE = "cluster.emr.cluster.instance.master.type";
+    public static final String EMR_CONF_CLUSTER_INSTANCE_MASTER_SPOT_PRICE = "cluster.emr.cluster.instance.master.spot.price";
+
+    public static final String EMR_CONF_CLUSTER_TAGS = "cluster.emr.cluster.tags";
+    public static final String EMR_CONF_BOOTSTRAP_ACTIONS = "cluster.emr.cluster.bootstrap";
+
+    public static final String EMR_CONF_CLUSTER_SUBNET = "cluster.emr.cluster.subnet";
+    public static final String EMR_CONF_CLUSTER_SECURITYGROUP = "cluster.emr.cluster.securitygroup";
+
+    public static final String EMR_CONF_EC2_SSH_KEY_NAME = "cluster.emr.ec2.key";
+
+    public static final String EMR_CONF_LOG_PATH = "cluster.emr.log.path";
+    private static final String EMR_DEFAULT_LOG_PATH = "s3://usw2-hadoop-logs/logs/";
+
+    // 3.x
+    public static final String EMR_CONF_AMI_VERSION = "cluster.emr.ami.version";
+
+    // 4.1.0
+    public static final String EMR_CONF_RELEASE_LABEL = "cluster.emr.release.label";
+    private static final String EMR_DEFAULT_RELEASE_LABEL = "emr-4.1.0";
+    public static final String EMR_CONF_APPLICATIONS = "cluster.emr.applications";
+    private static final String EMR_DEFAULT_APPLICATONS = "Hadoop;Pig;Spark";
+
+    public static final String EMR_CONF_JOB_FLOW_ROLE = "cluster.emr.jobflow.role";
+    public static final String EMR_CONF_SERVICE_ROLE = "cluster.emr.service.role";
 
 
-    private Cluster findClusterById(AmazonElasticMapReduceClient emrClient, String clusterId) {
-        DescribeClusterRequest descRequest = new DescribeClusterRequest().withClusterId(clusterId);
-        try {
-            DescribeClusterResult clusterDescription = emrClient.describeCluster(descRequest);
-            return clusterDescription.getCluster();
-        } catch (InvalidRequestException e) {
-            throw new RuntimeException("Error looking for cluster " + clusterId, e);
-        }
+
+    private static final int MAX_CORE_INSTANCES = 15;
+    private static final int MAX_TASK_INSTANCES = 150;
+
+    private static final String EC2_SPOT_PRICE_HISTORY_URL = "http://spot-price.s3.amazonaws.com/spot.js";
+
+
+    public static final Set<ClusterState> RUNNING_STATES = new HashSet<>(
+            Arrays.asList(new ClusterState[]{ClusterState.STARTING, ClusterState.BOOTSTRAPPING, ClusterState.RUNNING, ClusterState.WAITING}));
+
+    public static final Set<ClusterState> READY_STATES = new HashSet<>(Arrays.asList(new ClusterState[]{ClusterState.RUNNING, ClusterState.WAITING}));
+
+
+    public static Cluster findClusterById(AmazonElasticMapReduceClient emrClient, String clusterId) {
+        return emrClient.describeCluster(new DescribeClusterRequest().withClusterId(clusterId)).getCluster();
     }
 
-    private ClusterSummary findClusterByName(AmazonElasticMapReduceClient emrClient, String clusterName) {
+    public static ClusterSummary findClusterByName(AmazonElasticMapReduceClient emrClient, String clusterName) {
         return findClusterByName(emrClient, clusterName, null, null);
     }
 
-    private ClusterSummary findClusterByName(AmazonElasticMapReduceClient emrClient, String clusterName, Collection<String> clusterStates) {
+    public static ClusterSummary findClusterByName(AmazonElasticMapReduceClient emrClient, String clusterName, Collection<String> clusterStates) {
         return findClusterByName(emrClient, clusterName, clusterStates, null);
     }
 
-    private ClusterSummary findClusterByName(AmazonElasticMapReduceClient emrClient, String clusterName, Set<ClusterState> clusterStates) {
+    public static ClusterSummary findClusterByName(AmazonElasticMapReduceClient emrClient, String clusterName, Set<ClusterState> clusterStates) {
         return findClusterByName(emrClient, clusterName, clusterStates.stream().map(ClusterState::toString).collect(Collectors.toList()));
     }
 
-    private ClusterSummary findClusterByName(AmazonElasticMapReduceClient emrClient, String clusterName, Collection<String> clusterStates, String marker) {
+    public static ClusterSummary findClusterByName(AmazonElasticMapReduceClient emrClient, String clusterName, Collection<String> clusterStates, String marker) {
         ListClustersRequest req = new ListClustersRequest();
         if (marker != null) req.setMarker(marker);
         if (clusterStates != null) req.setClusterStates(clusterStates);
@@ -62,204 +110,246 @@ public class EmrUtils {
         return null;
     }
 
-    private Cluster describeCluster(AmazonElasticMapReduceClient emrClient, String clusterId) {
-        return emrClient.describeCluster(new DescribeClusterRequest().withClusterId(clusterId)).getCluster();
-    }
-
-
-    public void blockUntilClusterIsReady() throws InterruptedException, IOException {
-        int waitMinutes = CLUSTER_READINESS_TIMEOUT;
-        while (--waitMinutes > 0) {
-            if (isClusterReady()) {
-                // cluster is ready.. update config files if necessary
-                log.info("Cluster is ready!");
-                updateConfigFilesWithMasterIp();
-                return;
-            }
-            log.info("Waiting for cluster " + clusterId + " to be ready...");
-            Thread.sleep(60000);
-        }
-        throw new RuntimeException("Failed to connect to cluster " + clusterId + " after " + CLUSTER_READINESS_TIMEOUT + " minutes.");
-    }
-
-    public String getNewHadoopConfigurationDir() {
-        if (newConfigurationDir == null) throw new RuntimeException("Tried to get hadoop conf dir but cluster was not initialized.");
-        return newConfigurationDir;
-    }
-    public String getNewClassPath() {
-        if (newClassPath == null) throw new RuntimeException("Tried to get class path but cluster was not initialized.");
-        return newClassPath;
-    }
-
-
-    public void initialize(Props configProps, String oldGlobalClasspath) throws IOException, InterruptedException {
-        String originalConfigurationDir = configProps.getString("hadoop.conf.dir");
-        newConfigurationDir = configProps.getString("working.dir") + "/conf";
-        newClassPath = appendToClassPathString(oldGlobalClasspath, newConfigurationDir);
-        log.info("Emr configuration initialization");
-        // Cluster naming convention
-        clusterName = computeClusterNameFromProps(configProps);
-
-        if ((new File(newConfigurationDir)).exists()) { // another job in the flow already set-up the configuration
-            log.info("Configuration folder already initialized by another job. Will skip EMR cluster management.");
-            return ;
-        }
-
-        synchronized (EmrClusterController.class) { // lock to prevent race condition
-            if (configProps.containsKey(EMR_CLUSTER_NEW_PROP) && configProps.getBoolean(EMR_CLUSTER_NEW_PROP, false)) {
-                log.info("Creating a new EMR cluster...");
-                createNewCluster(configProps, clusterName);
-                createConfigFiles(originalConfigurationDir);
-                return;
-            }
-
-            if (configProps.containsKey(EMR_CLUSTER_ID_PROP)) {
-                String clusterId = configProps.getString(EMR_CLUSTER_ID_PROP);
-                log.info("Specific EMR cluster requested: " + clusterId);
-                configureByClusterId(clusterId);
-                if (isClusterActive()) {
-                    log.info("Found cluster " + clusterId);
-                } else {
-                    throw new RuntimeException("Could not find cluster " + clusterId);
-                }
-                createConfigFiles(originalConfigurationDir);
-                return ;
-            }
-
-            if (configProps.containsKey(EMR_CLUSTER_DEFAULT_PROP)) {
-                this.log.info("Will run on default persistent EMR cluster");
-                //TODO: find clusterId for current long-running cluster.
-                //TODO: this could mean we dont have to restart the azk docker when using a new cluster
-                //TODO: but need to think about this feature first
-                //TODO: for now just return the old conf path
-                //createConfigFiles(originalConfigurationDir, newConfigurationDir, getMasterIP());
-                //return newClassPath;
-                newClassPath = oldGlobalClasspath;
-                return;
-            }
-        }
-        return;
-    }
-
-
-    public String getMasterIP() {
+    public static Optional<String> getMasterIP(AmazonElasticMapReduceClient emrClient, String clusterId) {
         if (clusterId != null) {
-            ListInstancesRequest req = new ListInstancesRequest().withClusterId(clusterId)
-                    .withInstanceGroupTypes(InstanceGroupType.MASTER);
-            ListInstancesResult res = client.listInstances(req);
+            ListInstancesRequest req = new ListInstancesRequest().withClusterId(clusterId).withInstanceGroupTypes(InstanceGroupType.MASTER);
+            ListInstancesResult res = emrClient.listInstances(req);
             if (res.getInstances().size() > 0) {
-                return res.getInstances().get(0).getPrivateIpAddress();
+                return Optional.of(res.getInstances().get(0).getPrivateIpAddress());
             }
-        } else {
-            throw new RuntimeException("Called getMasterIP but did not provide clusterId");
         }
-        throw new RuntimeException("Called getMasterIP but could not find that cluster. ClusterId=" + clusterId);
+        return Optional.empty();
     }
 
-    public void terminateCluster() {
+    public static boolean terminateCluster(AmazonElasticMapReduceClient emrClient, String clusterId) {
         if (clusterId != null) {
-            log.info("Terminating cluster " + clusterId);
-            client.terminateJobFlows(new TerminateJobFlowsRequest(Collections.singletonList(clusterId)));
-        } else {
-            throw new RuntimeException("Attempted to terminate cluster before initializing.");
+            emrClient.terminateJobFlows(new TerminateJobFlowsRequest(Collections.singletonList(clusterId)));
+            return true;
         }
-    }
-
-
-    public void maybeTerminateCluster(Props jobProps, boolean jobErrored) {
-        if (jobErrored && jobProps.getBoolean(EMR_CONF_CLUSTER_TERMINATE_ON_ERROR, EMR_DEFAULT_CLUSTER_TERMINATE_ON_ERROR)) {
-            log.info("Terminating cluster due to job errors.");
-            terminateCluster();
-        } else if (jobProps.getBoolean(EMR_CONF_CLUSTER_TERMINATE_ON_COMPLETION, EMR_DEFAULT_CLUSTER_TERMINATE_ON_COMPLETION)) {
-            terminateCluster();
-        } else {
-            log.info("Not terminating cluster");
-        }
+        return false;
     }
 
     /**
      * Call EMR api to find out if cluster is in running state
      */
-    public boolean isClusterActive() {
+    public static boolean isClusterActive(AmazonElasticMapReduceClient emrClient, String clusterId) {
         if (clusterId != null) {
-            Cluster cluster = findClusterById(this.clusterId);
-            if (RUNNING_STATES.contains(ClusterState.fromValue(cluster.getStatus().getState()))) {
-                return true;
-            }
-        } else {
-            throw new RuntimeException("Called isClusterActive but clusterId was null.");
+            Cluster cluster = findClusterById(emrClient, clusterId);
+            return RUNNING_STATES.contains(ClusterState.fromValue(cluster.getStatus().getState()));
         }
         return false;
     }
 
-    public boolean isClusterReady() {
-        synchronized (EmrClusterController.class) {
-            try {
-                // sleep for random amount of time. max 5 seconds. To avoid hitting the EMR api too frequently
-                Thread.sleep((long)(Math.random() * 5000));
-            } catch (InterruptedException e) {
-                // ignore
-            }
+    public static boolean isClusterReady(AmazonElasticMapReduceClient emrClient, String clusterId) {
+        if (clusterId != null) {
+            Cluster cluster = findClusterById(emrClient, clusterId);
+            return READY_STATES.contains(ClusterState.fromValue(cluster.getStatus().getState()));
+        }
+        return false;
+    }
 
-            if (clusterId == null) try {
-                configureFromClusterName(clusterName);
-            } catch (InterruptedException e) {
-                throw new RuntimeException("Could not find cluster.");
+
+
+    private static boolean validateInstanceTypes(String... instanceTypes) {
+        for (String instanceType : instanceTypes) {
+            if (!allowedInstanceTypes.contains(instanceType)) {
+                return false;
             }
-            if (clusterId != null) {
-                Cluster cluster = findClusterById(this.clusterId);
-                if (READY_STATES.contains(ClusterState.fromValue(cluster.getStatus().getState()))) {
-                    return true;
-                } else if (!RUNNING_STATES.contains(ClusterState.fromValue(cluster.getStatus().getState()))) {
-                    throw new RuntimeException("Called isClusterReady but cluster was terminated.");
+        }
+        return true;
+    }
+
+    private static InstanceGroupConfig createInstanceGroupConfig(InstanceRoleType role, String instanceType,
+                                                                 int count, boolean useSpot, Double spotPrice) throws InvalidEmrConfigurationException {
+        if (!validateInstanceTypes(instanceType)) {
+            throw new InvalidEmrConfigurationException("An invalid instance type(s) was selected: " + instanceType);
+        }
+        if (useSpot && spotPrice == null) {
+            // (160% of default spot price)
+            spotPrice = getBidPrice(instanceType).orElseThrow(() -> new InvalidEmrConfigurationException("Could not obtain spot price for " + instanceType)) * 1.6;
+        }
+
+        switch (role) {
+            case MASTER:
+                count = 1;
+                break;
+            case TASK:
+                if (count <= 0 || count >= MAX_TASK_INSTANCES) {
+                    throw new InvalidEmrConfigurationException("Invalid task instance count: " + count);
                 }
-            } else {
-                throw new RuntimeException("Called isClusterReady but clusterId was null.");
-            }
-            return false;
+                break;
+            case CORE:
+                if (count <= 0 || count >= MAX_CORE_INSTANCES) {
+                    throw new InvalidEmrConfigurationException("Invalid core instance count: " + count);
+                }
+                break;
+            default:
+                throw new InvalidEmrConfigurationException("Invalid instance type");
         }
+        String name = role.toString() + " nodes";
+        InstanceGroupConfig instanceGroup = new InstanceGroupConfig(role, instanceType, count).withName(name);
+        if (useSpot) {
+            instanceGroup.setMarket(MarketType.SPOT);
+            instanceGroup.setBidPrice(String.format("%.3f", spotPrice));
+        }
+        return instanceGroup;
+    }
+
+    public static JobFlowInstancesConfig createEMRClusterInstanceConfig(Props props) throws InvalidEmrConfigurationException {
+
+        List<InstanceGroupConfig> instanceGroups = new ArrayList<>();
+        instanceGroups.add(createInstanceGroupConfig(InstanceRoleType.MASTER,
+                props.getString(EMR_CONF_CLUSTER_INSTANCE_MASTER_TYPE, "m3.xlarge"),
+                1, true, Double.valueOf(props.get(EMR_CONF_CLUSTER_INSTANCE_MASTER_SPOT_PRICE))));
+        instanceGroups.add(createInstanceGroupConfig(InstanceRoleType.CORE,
+                props.getString(EMR_CONF_CLUSTER_INSTANCE_CORE_TYPE, "i2.xlarge"),
+                props.getInt(EMR_CONF_CLUSTER_INSTANCE_CORE_COUNT, 1), true, Double.valueOf(props.get(EMR_CONF_CLUSTER_INSTANCE_CORE_SPOT_PRICE))));
+
+        instanceGroups.add(createInstanceGroupConfig(InstanceRoleType.TASK,
+                props.getString(EMR_CONF_CLUSTER_INSTANCE_TASK_TYPE, "r3.xlarge"),
+                props.getInt(EMR_CONF_CLUSTER_INSTANCE_TASK_COUNT, 1), true, Double.valueOf(props.get(EMR_CONF_CLUSTER_INSTANCE_TASK_SPOT_PRICE))));
+
+
+        String securityGroup = props.get(EMR_CONF_CLUSTER_SECURITYGROUP);
+        if (securityGroup == null) throw new InvalidEmrConfigurationException("EMR security group not specified");
+        String ec2SubnetId = props.get(EMR_CONF_CLUSTER_SUBNET);
+        if (ec2SubnetId == null) throw new InvalidEmrConfigurationException("EMR subnet not specified");
+
+
+        JobFlowInstancesConfig instancesConfig = new JobFlowInstancesConfig();
+        instancesConfig.setEc2KeyName(props.getString(EMR_CONF_EC2_SSH_KEY_NAME, "SparkEMR"));
+        instancesConfig.setInstanceGroups(instanceGroups);
+        instancesConfig.setKeepJobFlowAliveWhenNoSteps(true);
+        instancesConfig.setEc2SubnetId(ec2SubnetId);
+        instancesConfig.setEmrManagedMasterSecurityGroup(securityGroup);
+        instancesConfig.setEmrManagedSlaveSecurityGroup(securityGroup);
+        return instancesConfig;
+    }
+
+    private static BootstrapActionConfig createBootstrapAction(String name, String path, List<String> args) {
+        return new BootstrapActionConfig(name, new ScriptBootstrapActionConfig(path, args));
+    }
+
+    public static RunJobFlowRequest createRunJobFlowRequest(Props jobProps, String clusterName, JobFlowInstancesConfig instancesConfig,
+                                                             Collection<Configuration> clusterJSONConfiguration) {
+        RunJobFlowRequest request = new RunJobFlowRequest(clusterName, instancesConfig);
+        request.setLogUri(jobProps.getString(EMR_CONF_LOG_PATH, EMR_DEFAULT_LOG_PATH));
+        request.setServiceRole(jobProps.getString(EMR_CONF_SERVICE_ROLE, "EMR_DefaultRole"));
+        request.setJobFlowRole(jobProps.getString(EMR_CONF_JOB_FLOW_ROLE, "EMR_EC2_DefaultRole"));
+        request.setVisibleToAllUsers(true);
+
+        if (jobProps.containsKey(EMR_CONF_CLUSTER_TAGS)) {
+            request.setTags(Arrays.stream(jobProps.getString(EMR_CONF_CLUSTER_TAGS).split(";"))
+                    .map(p -> p.split(","))
+                    .filter(r -> r.length == 2)
+                    .map(r -> new Tag(r[0], r[1]))
+                    .collect(Collectors.toList()));
+        }
+
+        // 4.1 vs AMI 3.8
+        if (jobProps.containsKey(EMR_CONF_RELEASE_LABEL) || !jobProps.containsKey(EMR_CONF_AMI_VERSION)) { //default to new AMI
+            request.setReleaseLabel(jobProps.getString(EMR_CONF_RELEASE_LABEL, EMR_DEFAULT_RELEASE_LABEL));
+            request.setSteps(new ArrayList<StepConfig>() {{
+                add(new StepConfig("Change hadoop /tmp folder permissions",
+                        new HadoopJarStepConfig("s3://usw2-relateiq-emr-scripts/jars/hadoop-common-2.6.0.jar")
+                                .withMainClass("org.apache.hadoop.fs.FsShell").withArgs("-chmod", "777", "/tmp")));
+            }});
+            request.setApplications(Arrays.stream(jobProps.getString(EMR_CONF_APPLICATIONS, EMR_DEFAULT_APPLICATONS).split(";"))
+                    .map(a -> a.split(","))
+                    .filter(r -> r.length >= 1)
+                    .map(r -> new Application().withName(r[0]).withVersion(r.length == 2 ? r[1] : null))
+                    .collect(Collectors.toList()));
+
+            request.setConfigurations(clusterJSONConfiguration);
+
+        } else { // requested AMI 3.8
+            request.setAmiVersion(jobProps.getString(EMR_CONF_AMI_VERSION));
+            request.setSteps(new ArrayList<StepConfig>() {{
+                add(new StepConfig("Change hadoop /tmp folder permissions",
+                        new HadoopJarStepConfig("s3://usw2-relateiq-emr-scripts/jars/hadoop-common-2.4.0.jar")
+                                .withMainClass("org.apache.hadoop.fs.FsShell").withArgs("-chmod", "777", "/tmp")));
+                add(new StepConfig("Setup pig",
+                        new HadoopJarStepConfig("s3://us-west-2.elasticmapreduce/libs/script-runner/script-runner.jar")
+                                .withArgs("s3://us-west-2.elasticmapreduce/libs/pig/pig-script", "--base-path",
+                                        "s3://us-west-2.elasticmapreduce/libs/pig/", "--install-pig", "--pig-versions", "0.12.0")));
+                add(new StepConfig("Setup hadoop debugging",
+                        new HadoopJarStepConfig("s3://us-west-2.elasticmapreduce/libs/script-runner/script-runner.jar")
+                                .withArgs("s3://us-west-2.elasticmapreduce/libs/state-pusher/0.1/fetch")));
+
+            }});
+        }
+
+        if (jobProps.containsKey(EMR_CONF_BOOTSTRAP_ACTIONS)) {
+            request.setBootstrapActions(Arrays.stream(jobProps.getString(EMR_CONF_BOOTSTRAP_ACTIONS).split(";"))
+                    .map(p -> Arrays.asList(p.split(",")))
+                    .filter(r -> r.size() >= 2)
+                    .map(r -> createBootstrapAction(r.get(0), r.get(1), r.subList(Math.min(2, r.size()), r.size())))
+                    .collect(Collectors.toList()));
+        }
+        return request;
+    }
+
+    /**
+     * Get configuration from s3 url
+     */
+    public static List<Configuration> getClusterJSONConfiguration(AmazonS3Client s3Client, String s3Url) throws IOException {
+        AmazonS3URI appConfS3URL = new AmazonS3URI(s3Url);
+        S3Object object = s3Client.getObject(new GetObjectRequest(appConfS3URL.getBucket(), appConfS3URL.getKey()));
+        InputStream objectData = object.getObjectContent();
+        ObjectMapper objectMapper = new ObjectMapper();
+        Configuration[] conf = objectMapper.readValue(objectData, Configuration[].class);
+        return Arrays.asList(conf);
     }
 
 
     /**
-     * Create executions/xx/conf folder so that Yarn can pick up the new cluster
-     * Synchronized so 2 instances dont try to create the folder at the same time
+     * Get spot instance pricing
      */
-    private void createConfigFiles(String oldConfPath) {
+    public static Optional<Double> getBidPrice(String instanceType) {
         try {
-            log.info("Creating config files in " + newConfigurationDir);
-            FileUtils.copyDirectory(new File(oldConfPath), new File(newConfigurationDir));
-        } catch (IOException e) {
-            throw new RuntimeException("Failed to create configuration folder.", e);
+            String sURL = EC2_SPOT_PRICE_HISTORY_URL;
+
+            URL url = new URL(sURL);
+            HttpURLConnection request = (HttpURLConnection) url.openConnection();
+            request.connect();
+
+            JsonParser jp = new JsonParser(); //from gson
+            String content = readAll(new BufferedReader(new InputStreamReader((InputStream) request.getContent())));
+            content = content.substring(content.indexOf("(") + 1, content.lastIndexOf(")")); // remote jsonP
+            JsonElement root = jp.parse(content);
+
+            JsonObject rootObj = root.getAsJsonObject();
+            JsonArray regions = rootObj.getAsJsonObject("config").getAsJsonArray("regions");
+
+            for (JsonElement region : regions) {
+                if (region.getAsJsonObject().get("region").getAsString().equals("us-west-2")) {
+                    for (JsonElement type : region.getAsJsonObject().getAsJsonArray("instanceTypes")) {
+                        for (JsonElement size : type.getAsJsonObject().getAsJsonArray("sizes")) {
+                            if (size.getAsJsonObject().get("size").getAsString().equals(instanceType)) {
+                                for (JsonElement osType : size.getAsJsonObject().getAsJsonArray("valueColumns")) {
+                                    if (osType.getAsJsonObject().get("name").getAsString().equals("linux")) {
+                                        return Optional.of(osType.getAsJsonObject().getAsJsonObject("prices").get("USD").getAsDouble());
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            return Optional.empty();
+        } catch (Exception e) {
+            return Optional.empty();
         }
     }
 
-    /**
-     * Called when cluster is available. will modify once
-     */
-    private void updateConfigFilesWithMasterIp() throws IOException {
-        // replace old ip with new one
-        Configuration configuration = AmazonUtils.loadHadoopConfig(newConfigurationDir);
-        String oldMasterIp = configuration.get("hadoop.master.ip");
-        String newMasterIp = getMasterIP(); // from EMR
-
-        if (!oldMasterIp.equals(newMasterIp)) { // maybe we already changed it
-            String coreSiteXml = new String(Files.readAllBytes(Paths.get(newConfigurationDir, "core-site.xml")), StandardCharsets.UTF_8);
-            coreSiteXml = coreSiteXml.replaceAll(oldMasterIp, newMasterIp);
-            Files.write(Paths.get(newConfigurationDir, "core-site.xml"), coreSiteXml.getBytes(StandardCharsets.UTF_8));
-            log.info("core-site.xml updated with Master IP: " + newMasterIp);
-        }
-    }
-
-    private String appendToClassPathString(String oldGlobalClasspath, String newConfPath) {
-        StringBuilder sb = new StringBuilder(oldGlobalClasspath);
-        int ndx = oldGlobalClasspath.lastIndexOf(',');
-        if (!newConfPath.endsWith("/")) newConfPath += "/";
-        if (ndx < 0) {
-            sb.insert(0, newConfPath + ",");
-        } else {
-            sb.insert(ndx, "," + newConfPath);
+    private static String readAll(Reader rd) throws IOException {
+        StringBuilder sb = new StringBuilder();
+        int cp;
+        while ((cp = rd.read()) != -1) {
+            sb.append((char) cp);
         }
         return sb.toString();
     }
+
+
 }
