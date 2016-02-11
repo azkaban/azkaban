@@ -19,6 +19,7 @@ package azkaban.executor;
 public enum Status {
   READY(10),
   PREPARING(20),
+  CREATING_CLUSTER(21),
   RUNNING(30),
   PAUSED(40),
   SUCCEEDED(50),
@@ -47,6 +48,8 @@ public enum Status {
       return READY;
     case 20:
       return PREPARING;
+    case 21:
+      return CREATING_CLUSTER;
     case 30:
       return RUNNING;
     case 40:

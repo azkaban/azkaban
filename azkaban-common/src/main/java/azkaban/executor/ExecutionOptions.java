@@ -16,15 +16,10 @@
 
 package azkaban.executor;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
 import azkaban.executor.mail.DefaultMailCreator;
 import azkaban.utils.TypedMapWrapper;
+
+import java.util.*;
 
 /**
  * Execution options for submitted flows and scheduled flows
@@ -53,6 +48,7 @@ public class ExecutionOptions {
   private static final String SUCCESS_EMAILS_OVERRIDE = "successEmailsOverride";
   private static final String MAIL_CREATOR = "mailCreator";
   private static final String MEMORY_CHECK = "memoryCheck";
+  private static final String CLUSTER_PROPERTIES = "clusterProperties";
 
   private boolean notifyOnFirstFailure = true;
   private boolean notifyOnLastFailure = false;
@@ -60,6 +56,7 @@ public class ExecutionOptions {
   private boolean successEmailsOverride = false;
   private ArrayList<String> failureEmails = new ArrayList<String>();
   private ArrayList<String> successEmails = new ArrayList<String>();
+    private HashMap<String, Object> clusterProperties = new HashMap<>();
 
   private Integer pipelineLevel = null;
   private Integer pipelineExecId = null;
@@ -69,7 +66,8 @@ public class ExecutionOptions {
   private boolean memoryCheck = true;
   private Map<String, String> flowParameters = new HashMap<String, String>();
 
-  public enum FailureAction {
+
+    public enum FailureAction {
     FINISH_CURRENTLY_RUNNING, CANCEL_ALL, FINISH_ALL_POSSIBLE
   }
 
@@ -84,6 +82,13 @@ public class ExecutionOptions {
   public Map<String, String> getFlowParameters() {
     return flowParameters;
   }
+
+    public HashMap<String, Object> getClusterProperties() {
+        return clusterProperties;
+    }
+    public void setClusterProperties(HashMap<String, Object> clusterProperties) {
+        this.clusterProperties = clusterProperties;
+    }
 
   public void setFailureEmails(Collection<String> emails) {
     failureEmails = new ArrayList<String>(emails);
@@ -211,6 +216,7 @@ public class ExecutionOptions {
     flowOptionObj.put(SUCCESS_EMAILS_OVERRIDE, successEmailsOverride);
     flowOptionObj.put(MAIL_CREATOR, mailCreator);
     flowOptionObj.put(MEMORY_CHECK, memoryCheck);
+    flowOptionObj.put(CLUSTER_PROPERTIES, clusterProperties);
     return flowOptionObj;
   }
 
@@ -269,6 +275,7 @@ public class ExecutionOptions {
 
     options.setMemoryCheck(wrapper.getBool(MEMORY_CHECK, true));
 
+    options.setClusterProperties((HashMap<String, Object>) wrapper.<String, Object>getMap(CLUSTER_PROPERTIES));
     return options;
   }
 }
