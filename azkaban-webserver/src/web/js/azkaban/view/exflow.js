@@ -180,9 +180,12 @@ azkaban.FlowTabView = Backbone.View.extend({
 		if (data.status == "SUCCEEDED") {
                         $("#executebtn").show();
 		}
-                else if (data.status == "PREPARING") {
-                        $("#cancelbtn").show();
-                }
+        else if (data.status == "CREATING_CLUSTER") {
+            $("#cancelbtn").show();
+        }
+        else if (data.status == "PREPARING") {
+                $("#cancelbtn").show();
+        }
 		else if (data.status == "FAILED") {
 			$("#executebtn").show();
 		}
@@ -443,7 +446,9 @@ var updaterFunction = function() {
 		var data = graphModel.get("data");
 		if (data.status == "UNKNOWN" ||
 			data.status == "WAITING" ||
-			data.status == "PREPARING") {
+			data.status == "PREPARING" ||
+            data.status == "CREATING_CLUSTER"
+        ) {
 			// 2 min updates
 			setTimeout(function() {updaterFunction();}, 2*60*1000);
 		}

@@ -19,6 +19,7 @@ var statusStringMap = {
   "QUEUED": "Queued",
   "SKIPPED": "Skipped",
   "PREPARING": "Preparing",
+  "CREATING_CLUSTER": "Creating Cluster",
   "FAILED": "Failed",
   "SUCCEEDED": "Success",
   "FAILED_FINISHING": "Running w/Failure",
