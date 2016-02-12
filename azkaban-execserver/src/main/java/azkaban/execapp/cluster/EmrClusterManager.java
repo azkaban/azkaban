@@ -59,6 +59,7 @@ public class EmrClusterManager implements ClusterManager {
 
         ExecutionOptions executionOptions = flow.getExecutionOptions();
         HashMap<String, Object> clusterProperties = executionOptions.getClusterProperties();
+        if (clusterProperties == null) clusterProperties = new HashMap<String, Object>();
         combinedProps = new Props(propsFromMap(clusterProperties), AzkabanExecutorServer.getApp().getFlowRunnerManager().getGlobalProps());
         flow.getInputProps().getMapByPrefix("cluster.").forEach((key,val) -> combinedProps.put("cluster." + key, val));
 
