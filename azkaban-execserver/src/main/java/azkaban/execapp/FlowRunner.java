@@ -202,6 +202,7 @@ public class FlowRunner extends EventHandler implements Runnable {
                 }
                 logger.info("Could not find a valid constructor for ClusterManager class.");
             } catch (Exception e) {
+                logger.error("Encountered error while loading and instantiating " + clusterManagerClass, e);
                 throw new IllegalStateException("Encountered error while loading and instantiating " + clusterManagerClass, e);
             }
         }
