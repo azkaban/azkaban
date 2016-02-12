@@ -16,6 +16,8 @@
 
 package azkaban.execapp;
 
+import azkaban.execapp.cluster.IClusterManager;
+import azkaban.execapp.cluster.NoopClusterManager;
 import azkaban.execapp.event.JobCallbackManager;
 import azkaban.execapp.jmx.JmxFlowRunnerManager;
 import azkaban.execapp.jmx.JmxJobMBeanManager;
@@ -55,7 +57,9 @@ import java.util.TimeZone;
 
 public class AzkabanExecutorServer {
     private static final String CUSTOM_METRIC_EMITTER_CLASS = "metric.emitter.class";
-  private static final String CUSTOM_JMX_ATTRIBUTE_PROCESSOR_PROPERTY =
+    private static final String CUSTOM_CLUSTER_MANAGER_CLASS = "cluster.manager.class";
+
+    private static final String CUSTOM_JMX_ATTRIBUTE_PROCESSOR_PROPERTY =
       "jmx.attribute.processor.class";
   private static final Logger logger = Logger
       .getLogger(AzkabanExecutorServer.class);
@@ -80,6 +84,7 @@ public class AzkabanExecutorServer {
   private ExecutorLoader executionLoader;
   private ProjectLoader projectLoader;
   private FlowRunnerManager runnerManager;
+  private IClusterManager clusterManager;
   private Props props;
   private Props executorGlobalProps;
   private Server server;
@@ -128,10 +133,13 @@ public class AzkabanExecutorServer {
     root.setAttribute(ServerConstants.AZKABAN_SERVLET_CONTEXT_KEY, this);
 
     executionLoader = createExecLoader(props);
+
     projectLoader = createProjectLoader(props);
     runnerManager =
         new FlowRunnerManager(props, executionLoader, projectLoader, this
             .getClass().getClassLoader());
+
+    clusterManager = createClusterManager(props);
 
     JmxJobMBeanManager.getInstance().initialize(props);
 
@@ -155,7 +163,8 @@ public class AzkabanExecutorServer {
     logger.info("Azkaban Executor Server started on port " + portNumber);
   }
 
-  private void configureJobCallback(Props props) {
+
+    private void configureJobCallback(Props props) {
     boolean jobCallbackEnabled =
         props.getBoolean("azkaban.executor.jobcallback.enabled", true);
 
@@ -269,7 +278,32 @@ public class AzkabanExecutorServer {
     }
 
 
-  private ExecutorLoader createExecLoader(Props props) {
+
+  private IClusterManager createClusterManager(Props props) {
+      // Instantiate Cluster Manager
+      String customClusterManagerClass = props.getString(CUSTOM_CLUSTER_MANAGER_CLASS);
+
+      if (customClusterManagerClass != null) {
+          try {
+              @SuppressWarnings("unchecked")
+              Constructor<IClusterManager>[] constructors = (Constructor<IClusterManager>[]) Class.forName(customClusterManagerClass).getConstructors();
+              for (Constructor<IClusterManager> constructor : constructors) {
+                  Class<?>[] paramTypes  = constructor.getParameterTypes();
+                  if (paramTypes.length == 1 && paramTypes[0].equals(Props.class)) return constructor.newInstance(props);
+              }
+          } catch (Exception e) {
+              logger.error("Encountered error while loading and instantiating " + customClusterManagerClass, e);
+              throw new IllegalStateException("Encountered error while loading and instantiating " + customClusterManagerClass, e);
+          }
+      } else {
+          logger.info("No ClusterManager class specified in azkaban settings.");
+      }
+      return new NoopClusterManager();
+  }
+
+
+
+    private ExecutorLoader createExecLoader(Props props) {
     return new JdbcExecutorLoader(props);
   }
 
@@ -281,6 +315,8 @@ public class AzkabanExecutorServer {
     server.stop();
     server.destroy();
   }
+
+  public IClusterManager getClusterManager() { return clusterManager; }
 
   public ProjectLoader getProjectLoader() {
     return projectLoader;

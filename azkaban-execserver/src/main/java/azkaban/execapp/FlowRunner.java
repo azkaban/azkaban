@@ -20,8 +20,6 @@ import azkaban.event.Event;
 import azkaban.event.Event.Type;
 import azkaban.event.EventHandler;
 import azkaban.event.EventListener;
-import azkaban.execapp.cluster.ClusterManager;
-import azkaban.execapp.cluster.NoopClusterManager;
 import azkaban.execapp.event.FlowWatcher;
 import azkaban.execapp.event.JobCallbackManager;
 import azkaban.execapp.jmx.JmxJobMBeanManager;
@@ -42,7 +40,6 @@ import org.apache.log4j.*;
 
 import java.io.File;
 import java.io.IOException;
-import java.lang.reflect.Constructor;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
@@ -58,7 +55,6 @@ public class FlowRunner extends EventHandler implements Runnable {
     // We check update every 5 minutes, just in case things get stuck. But for the
     // most part, we'll be idling.
     private static final long CHECK_WAIT_MS = 5 * 60 * 1000;
-    private static final String CLUSTER_MANAGER_CLASS = "cluster.manager.class";
 
     private Logger logger;
 
@@ -69,7 +65,6 @@ public class FlowRunner extends EventHandler implements Runnable {
     private ExecutorService executorService;
     private ExecutorLoader executorLoader;
     private ProjectLoader projectLoader;
-    private ClusterManager clusterManager;
 
     private int execId;
     private File execDir;
@@ -157,6 +152,8 @@ public class FlowRunner extends EventHandler implements Runnable {
         this.executorService = executorService;
         this.finishedNodes = new SwapQueue<ExecutableNode>();
 
+        this.addListener(AzkabanExecutorServer.getApp().getClusterManager());
+
     }
 
     public FlowRunner setFlowWatcher(FlowWatcher watcher) {
@@ -186,30 +183,6 @@ public class FlowRunner extends EventHandler implements Runnable {
     }
 
 
-    private ClusterManager loadClusterManager() {
-        // Try to load Cluster Manager
-        Props azkabanProps = AzkabanExecutorServer.getApp().getAzkabanProps();
-        String clusterManagerClass = azkabanProps.getString(CLUSTER_MANAGER_CLASS);
-
-        if (clusterManagerClass != null) {
-            try {
-                Constructor<ClusterManager>[] constructors = (Constructor<ClusterManager>[]) Class.forName(clusterManagerClass).getConstructors();
-                for (Constructor<ClusterManager> constructor : constructors) {
-                    Class<?>[] paramTypes  = constructor.getParameterTypes();
-                    if (paramTypes.length == 2
-                            && paramTypes[0].equals(ExecutableFlow.class)
-                            && paramTypes[1].equals(Logger.class)) return constructor.newInstance(flow, logger);
-                }
-                logger.info("Could not find a valid constructor for ClusterManager class.");
-            } catch (Exception e) {
-                logger.error("Encountered error while loading and instantiating " + clusterManagerClass, e);
-                throw new IllegalStateException("Encountered error while loading and instantiating " + clusterManagerClass, e);
-            }
-        }
-        logger.info("No ClusterManager class specified in azkaban settings.");
-        return new NoopClusterManager();
-    }
-
 
     public void run() {
         try {
@@ -227,24 +200,12 @@ public class FlowRunner extends EventHandler implements Runnable {
             loadAllProperties();
 
 
-            clusterManager = loadClusterManager();
-
-            if (clusterManager.shouldCreateCluster()) {
-                flow.setStatus(Status.CREATING_CLUSTER);
-                updateFlow();
-                boolean clusterCreationStatus = clusterManager.ensureClusterIsReady();
-                if (!clusterCreationStatus) throw new RuntimeException("Unable to create cluster.");
-                clusterManager.updateJobFlowProperties();
-            }
-
             this.fireEventListeners(Event.create(this, Type.FLOW_STARTED));
             runFlow();
+
         } catch (Throwable t) {
             if (logger != null) {
-                logger
-                        .error(
-                                "An error has occurred during the running of the flow. Quiting.",
-                                t);
+                logger.error("An error has occurred during the running of the flow. Quiting.", t);
             }
             flow.setStatus(Status.FAILED);
         } finally {
@@ -255,15 +216,14 @@ public class FlowRunner extends EventHandler implements Runnable {
                         .info("Watcher cancelled status is " + watcher.isWatchCancelled());
             }
 
-            clusterManager.maybeTerminateCluster();
-
             flow.setEndTime(System.currentTimeMillis());
             logger.info("Setting end time for flow " + execId + " to "
                     + System.currentTimeMillis());
-            closeLogger();
+
 
             updateFlow();
             this.fireEventListeners(Event.create(this, Type.FLOW_FINISHED));
+            closeLogger();
         }
     }
 
