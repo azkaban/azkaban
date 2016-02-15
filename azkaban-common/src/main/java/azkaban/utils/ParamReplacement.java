@@ -14,9 +14,9 @@ public class ParamReplacement {
   private static abstract class Param {
     abstract String name();
 
-    abstract String replacement(String param);
+    abstract String replacement(String param, Props props);
 
-    String replace(String content) {
+    String replace(String content, Props props) {
       Pattern p = Pattern.compile("\\$\\{" + name() + "(?:|:.*?)}");
       Matcher m = p.matcher(content);
       String filledContent = "";
@@ -25,13 +25,13 @@ public class ParamReplacement {
         String g = m.group();
         String replacement;
         if (("${" + name() + "}").equals(g)) {
-          replacement = replacement(null);
+          replacement = replacement(null, props);
         } else {
           String pstr =
               org.apache.commons.lang.StringUtils.removeStart(g, "${" + name()
                   + ":");
           pstr = org.apache.commons.lang.StringUtils.removeEnd(pstr, "}");
-          replacement = replacement(pstr);
+          replacement = replacement(pstr, props);
         }
         filledContent += content.substring(lastIndex, m.start()) + replacement;
         lastIndex = m.end();
@@ -57,31 +57,39 @@ public class ParamReplacement {
           return "time";
         }
 
-        public String replacement(String param) {
+        public String replacement(String param, Props props) {
+          String timeDelta;
+          String timeFormat = props.getString("time.replacement.default.format", "yyyy-MM-dd'T'HH:mm:ss.SSSXXX");
           if (param == null) {
-            param = "yyyy-MM-dd'T'HH:mm:ss.SSSXXX";
+            // Default current time if param omitted.
+            timeDelta = "";
+          } else {
+            String[] ps = param.split(",", 2);
+            if(ps.length == 0){
+              throw new RuntimeException(String.format(
+                  "illegal time param format: %s, should be like: ${time:-1day,yyyy-MM-dd'T'HH:mm:ss.SSSXXX}",
+                  param));
+            }
+            timeDelta = ps[0];
+            if (ps.length >= 2) {
+              timeFormat = ps[1];
+            }
           }
-          String[] ps = param.split(",", 2);
-          if (ps.length != 2) {
-            throw new RuntimeException(
-                String
-                    .format(
-                        "illegal time param format: %s, should be like: ${time:-1day,yyyy-MM-dd HH:mm:ss}",
-                        param));
-          }
+          timeDelta = timeDelta.trim();
+          timeFormat = timeFormat.trim();
           Period p;
-          if (ps[0].trim().equals("")) {
+          if (timeDelta.isEmpty()) {
             p = new Period();
           } else {
-            p = periodFormatter.parsePeriod(ps[0]);
+            p = periodFormatter.parsePeriod(timeDelta);
           }
-          return DateTime.now().plus(p).toString(ps[1]);
+          return DateTime.now().plus(p).toString(timeFormat);
         }
       });
 
-  public static String replaceParams(String content) {
+  public static String replaceParams(String content, Props props) {
     for (Param param : params) {
-      content = param.replace(content);
+      content = param.replace(content, props);
     }
     return content;
   }

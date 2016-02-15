@@ -167,7 +167,7 @@ public class PropsUtils {
 
     for (String key : resolvedProps.getKeySet()) {
       String value = resolvedProps.get(key);
-      String replacedValue = ParamReplacement.replaceParams(value);
+      String replacedValue = ParamReplacement.replaceParams(value, resolvedProps);
       resolvedProps.put(key, replacedValue);
     }
 
