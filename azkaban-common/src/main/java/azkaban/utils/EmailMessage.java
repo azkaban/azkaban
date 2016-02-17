@@ -252,6 +252,7 @@ public class EmailMessage {
       }
     }
       try {
+          
           t.sendMessage(message, message.getRecipients(Message.RecipientType.TO));
           t.close();
       } catch (SMTPAddressFailedException e) {
