@@ -16,17 +16,13 @@
 
 package azkaban.utils;
 
-import com.sun.mail.smtp.SMTPAddressFailedException;
 import com.sun.mail.smtp.SMTPTransport;
 import org.apache.log4j.Logger;
 
 import javax.activation.DataHandler;
 import javax.activation.DataSource;
 import javax.activation.FileDataSource;
-import javax.mail.BodyPart;
-import javax.mail.Message;
-import javax.mail.MessagingException;
-import javax.mail.Session;
+import javax.mail.*;
 import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeBodyPart;
 import javax.mail.internet.MimeMessage;
@@ -252,10 +248,10 @@ public class EmailMessage {
       }
     }
       try {
-          
+
           t.sendMessage(message, message.getRecipients(Message.RecipientType.TO));
           t.close();
-      } catch (SMTPAddressFailedException e) {
+      } catch (SendFailedException e) {
           logger.error("Error sending message " + message);
           Arrays.asList(message.getRecipients(Message.RecipientType.TO)).forEach(address -> logger.error("Email: " + address));
           logger.error(e);
