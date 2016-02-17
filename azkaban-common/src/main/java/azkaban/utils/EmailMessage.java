@@ -16,14 +16,9 @@
 
 package azkaban.utils;
 
-import java.io.File;
-import java.io.InputStream;
-import java.net.SocketTimeoutException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Date;
-import java.util.List;
-import java.util.Properties;
+import com.sun.mail.smtp.SMTPAddressFailedException;
+import com.sun.mail.smtp.SMTPTransport;
+import org.apache.log4j.Logger;
 
 import javax.activation.DataHandler;
 import javax.activation.DataSource;
@@ -36,10 +31,10 @@ import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeBodyPart;
 import javax.mail.internet.MimeMessage;
 import javax.mail.internet.MimeMultipart;
-
-import org.apache.log4j.Logger;
-
-import com.sun.mail.smtp.SMTPTransport;
+import java.io.File;
+import java.io.InputStream;
+import java.net.SocketTimeoutException;
+import java.util.*;
 
 public class EmailMessage {
   private final Logger logger = Logger.getLogger(EmailMessage.class);
@@ -256,8 +251,16 @@ public class EmailMessage {
         throw ste;
       }
     }
-    t.sendMessage(message, message.getRecipients(Message.RecipientType.TO));
-    t.close();
+      try {
+          t.sendMessage(message, message.getRecipients(Message.RecipientType.TO));
+          t.close();
+      } catch (SMTPAddressFailedException e) {
+          logger.error("Error sending message " + message);
+          Arrays.asList(message.getRecipients(Message.RecipientType.TO)).forEach(address -> logger.error("Email: " + address));
+          logger.error(e);
+          //pass
+      }
+
   }
 
   private void connectToSMTPServer(SMTPTransport t) throws MessagingException {
