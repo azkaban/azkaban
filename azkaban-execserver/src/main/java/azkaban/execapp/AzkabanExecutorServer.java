@@ -269,7 +269,7 @@ public class AzkabanExecutorServer {
                 return constructors[0].newInstance(props);
             } catch (Exception e) {
                 logger.error("Encountered error while loading and instantiating " + metricEmitterClass, e);
-                throw new IllegalStateException("Encountered error while loading and instantiating " + metricEmitterClass, e);
+                return new InMemoryMetricEmitter(props);
             }
         } else {
             logger.info("No value for property: " + CUSTOM_METRIC_EMITTER_CLASS + " was found. Using InMemoryMetricEmitter instead.");
