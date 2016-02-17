@@ -22,6 +22,7 @@ import org.joda.time.DurationFieldType;
 import org.joda.time.ReadablePeriod;
 import org.joda.time.format.DateTimeFormat;
 
+import java.lang.management.ManagementFactory;
 import java.text.NumberFormat;
 
 public class WebUtils {
@@ -31,6 +32,8 @@ public class WebUtils {
   private static final long ONE_MB = 1024 * ONE_KB;
   private static final long ONE_GB = 1024 * ONE_MB;
   private static final long ONE_TB = 1024 * ONE_GB;
+
+  private static long applicationStartTime = ManagementFactory.getRuntimeMXBean().getStartTime();
 
   public String formatDate(long timeMS) {
     if (timeMS == -1) {
@@ -164,5 +167,19 @@ public class WebUtils {
       return nf.format(sizeBytes / (double) ONE_KB) + " kb";
     else
       return sizeBytes + " B";
+  }
+
+  public String getUpTime() {
+    return formatDuration(applicationStartTime, System.currentTimeMillis());
+  }
+
+  public String getVersion() {
+      Package azkaban = Package.getPackage("azkaban.utils");
+      if (azkaban != null) return azkaban.getImplementationVersion();
+      return "N/A";
+  }
+  public String getFooter() {
+
+      return "Azkaban version: " + getVersion() + " uptime: " + getUpTime();
   }
 }

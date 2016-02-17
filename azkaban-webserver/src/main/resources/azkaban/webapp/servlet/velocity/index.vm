@@ -163,7 +163,12 @@
       </div>
 
 #parse ("azkaban/webapp/servlet/velocity/invalidsessionmodal.vm")
+
+
     </div><!-- /container -->
+  <div class="footer">
+      $utils.getFooter()
+  </div>
   </body>
 </html>
 

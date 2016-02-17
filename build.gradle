@@ -73,6 +73,9 @@ subprojects {
     }
 
     jar {
+        manifest {
+            attributes("Implementation-Title": "Azkaban", "Implementation-Version": version)
+        }
         if (!(project.name == "azkaban-soloserver")) exclude 'log4j.properties'
     }
 
