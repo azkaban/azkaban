@@ -84,20 +84,22 @@ public class EmrClusterManager implements IClusterManager, EventListener {
 
     @Override
     public void handleEvent(Event event) {
-        FlowRunner runner = (FlowRunner) event.getRunner();
-        ExecutableFlow flow = runner.getExecutableFlow();
-        Logger logger = Logger.getLogger(flow.getExecutionId() + "." + flow.getFlowId());
-        logger.info(this.getClass().getName() + " handling " + event.getType() + " " + event.getTime());
+        if (event.getRunner() instanceof FlowRunner) {
+            FlowRunner runner = (FlowRunner) event.getRunner();
+            ExecutableFlow flow = runner.getExecutableFlow();
+            Logger logger = Logger.getLogger(flow.getExecutionId() + "." + flow.getFlowId());
+            logger.info(this.getClass().getName() + " handling " + event.getType() + " " + event.getTime());
 
-        switch (event.getType()) {
-            case FLOW_STARTED:
-                boolean runStatus = createClusterAndConfigureJob(flow, logger);
-                if (!runStatus) runner.kill(this.getClass().getName());
-                break;
+            switch (event.getType()) {
+                case FLOW_STARTED:
+                    boolean runStatus = createClusterAndConfigureJob(flow, logger);
+                    if (!runStatus) runner.kill(this.getClass().getName());
+                    break;
 
-            case FLOW_FINISHED:
-                maybeTerminateCluster(flow, logger);
-                break;
+                case FLOW_FINISHED:
+                    maybeTerminateCluster(flow, logger);
+                    break;
+            }
         }
     }
 
