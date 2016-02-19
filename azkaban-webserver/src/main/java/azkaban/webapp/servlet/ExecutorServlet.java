@@ -545,6 +545,7 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
       return;
     }
 
+    ret.put("clusterProperties", flow.getClusterProperties());
     ret.put("successEmails", flow.getSuccessEmails());
     ret.put("failureEmails", flow.getFailureEmails());
 

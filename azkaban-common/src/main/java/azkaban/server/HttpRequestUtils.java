@@ -108,6 +108,11 @@ public class HttpRequestUtils {
     Map<String, String> flowParamGroup = getParamGroup(req, "flowOverride");
     execOptions.addAllFlowParameters(flowParamGroup);
 
+    Map<String, String> clusterProperties = getParamGroup(req, "clusterProperties");
+      HashMap<String, Object> newClusterProps = new HashMap<>();
+      newClusterProps.putAll(clusterProperties);
+    execOptions.setClusterProperties(newClusterProps);
+
     if (hasParam(req, "disabled")) {
       String disabled = getParam(req, "disabled");
       if (!disabled.isEmpty()) {

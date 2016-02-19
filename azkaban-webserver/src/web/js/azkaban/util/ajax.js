@@ -75,6 +75,7 @@ function fetchFlowInfo(model, projectName, flowId, execId) {
     }
     else {
       model.set({
+        "clusterProperties": data.clusterProperties,
         "successEmails": data.successEmails,
         "failureEmails": data.failureEmails,
         "failureAction": data.failureAction,

@@ -28,22 +28,22 @@ public class EmrUtils {
             "c3.4xlarge", "c3.8xlarge", "g2.2xlarge", "r3.xlarge", "r3.2xlarge", "r3.4xlarge", "r3.8xlarge", "i2.xlarge",
             "i2.2xlarge", "i2.4xlarge", "i2.8xlarge");
 
-    public static final String EMR_CONF_CLUSTER_INSTANCE_TASK_TYPE = "cluster.emr.cluster.instance.task.type";
-    public static final String EMR_CONF_CLUSTER_INSTANCE_TASK_COUNT = "cluster.emr.cluster.instance.task.count";
-    public static final String EMR_CONF_CLUSTER_INSTANCE_TASK_SPOT_PRICE = "cluster.emr.cluster.instance.task.spot.price";
+    public static final String EMR_CONF_CLUSTER_INSTANCE_TASK_TYPE = "cluster.emr.instance.task.type";
+    public static final String EMR_CONF_CLUSTER_INSTANCE_TASK_COUNT = "cluster.emr.instance.task.count";
+    public static final String EMR_CONF_CLUSTER_INSTANCE_TASK_SPOT_PRICE = "cluster.emr.instance.task.spot.price";
 
-    public static final String EMR_CONF_CLUSTER_INSTANCE_CORE_TYPE = "cluster.emr.cluster.instance.core.type";
-    public static final String EMR_CONF_CLUSTER_INSTANCE_CORE_COUNT = "cluster.emr.cluster.instance.core.count";
-    public static final String EMR_CONF_CLUSTER_INSTANCE_CORE_SPOT_PRICE = "cluster.emr.cluster.instance.core.spot.price";
+    public static final String EMR_CONF_CLUSTER_INSTANCE_CORE_TYPE = "cluster.emr.instance.core.type";
+    public static final String EMR_CONF_CLUSTER_INSTANCE_CORE_COUNT = "cluster.emr.instance.core.count";
+    public static final String EMR_CONF_CLUSTER_INSTANCE_CORE_SPOT_PRICE = "cluster.emr.instance.core.spot.price";
 
-    public static final String EMR_CONF_CLUSTER_INSTANCE_MASTER_TYPE = "cluster.emr.cluster.instance.master.type";
-    public static final String EMR_CONF_CLUSTER_INSTANCE_MASTER_SPOT_PRICE = "cluster.emr.cluster.instance.master.spot.price";
+    public static final String EMR_CONF_CLUSTER_INSTANCE_MASTER_TYPE = "cluster.emr.instance.master.type";
+    public static final String EMR_CONF_CLUSTER_INSTANCE_MASTER_SPOT_PRICE = "cluster.emr.instance.master.spot.price";
 
-    public static final String EMR_CONF_CLUSTER_TAGS = "cluster.emr.cluster.tags";
-    public static final String EMR_CONF_BOOTSTRAP_ACTIONS = "cluster.emr.cluster.bootstrap";
+    public static final String EMR_CONF_CLUSTER_TAGS = "cluster.emr.tags";
+    public static final String EMR_CONF_BOOTSTRAP_ACTIONS = "cluster.emr.bootstrap";
 
-    public static final String EMR_CONF_CLUSTER_SUBNET = "cluster.emr.cluster.subnet";
-    public static final String EMR_CONF_CLUSTER_SECURITYGROUP = "cluster.emr.cluster.securitygroup";
+    public static final String EMR_CONF_CLUSTER_SUBNET = "cluster.emr.subnet";
+    public static final String EMR_CONF_CLUSTER_SECURITYGROUP = "cluster.emr.securitygroup";
 
     public static final String EMR_CONF_EC2_SSH_KEY_NAME = "cluster.emr.ec2.key";
 
@@ -164,7 +164,7 @@ public class EmrUtils {
         if (!validateInstanceTypes(instanceType)) {
             throw new InvalidEmrConfigurationException("An invalid instance type(s) was selected: " + instanceType);
         }
-        if (useSpot && spotPrice == null) {
+        if (useSpot && spotPrice <= 0) {
             // (160% of default spot price)
             spotPrice = getBidPrice(instanceType).orElseThrow(() -> new InvalidEmrConfigurationException("Could not obtain spot price for " + instanceType)) * 1.6;
         }
@@ -200,14 +200,14 @@ public class EmrUtils {
         List<InstanceGroupConfig> instanceGroups = new ArrayList<>();
         instanceGroups.add(createInstanceGroupConfig(InstanceRoleType.MASTER,
                 props.getString(EMR_CONF_CLUSTER_INSTANCE_MASTER_TYPE, "m3.xlarge"),
-                1, true, Double.valueOf(props.get(EMR_CONF_CLUSTER_INSTANCE_MASTER_SPOT_PRICE))));
+                1, true, props.getDouble(EMR_CONF_CLUSTER_INSTANCE_MASTER_SPOT_PRICE, 0)));
         instanceGroups.add(createInstanceGroupConfig(InstanceRoleType.CORE,
                 props.getString(EMR_CONF_CLUSTER_INSTANCE_CORE_TYPE, "i2.xlarge"),
-                props.getInt(EMR_CONF_CLUSTER_INSTANCE_CORE_COUNT, 1), true, Double.valueOf(props.get(EMR_CONF_CLUSTER_INSTANCE_CORE_SPOT_PRICE))));
+                props.getInt(EMR_CONF_CLUSTER_INSTANCE_CORE_COUNT, 1), true, props.getDouble(EMR_CONF_CLUSTER_INSTANCE_CORE_SPOT_PRICE, 0)));
 
         instanceGroups.add(createInstanceGroupConfig(InstanceRoleType.TASK,
                 props.getString(EMR_CONF_CLUSTER_INSTANCE_TASK_TYPE, "r3.xlarge"),
-                props.getInt(EMR_CONF_CLUSTER_INSTANCE_TASK_COUNT, 1), true, Double.valueOf(props.get(EMR_CONF_CLUSTER_INSTANCE_TASK_SPOT_PRICE))));
+                props.getInt(EMR_CONF_CLUSTER_INSTANCE_TASK_COUNT, 1), true, props.getDouble(EMR_CONF_CLUSTER_INSTANCE_TASK_SPOT_PRICE, 0)));
 
 
         String securityGroup = props.get(EMR_CONF_CLUSTER_SECURITYGROUP);

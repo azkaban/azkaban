@@ -44,6 +44,10 @@
                     <a href="#">Flow Parameters</a>
                     <div class="menu-caption">Add temporary flow parameters that are used to override global settings for each job.</div>
                   </li>
+                  <li viewpanel="cluster-management-panel">
+                    <a href="#">Cluster Manager</a>
+                    <div class="menu-caption">Override Cluster management parameters.</div>
+                  </li>
                 </ul>
               </div><!-- /col-xs-4 -->
               <div class="col-xs-8">
@@ -153,27 +157,100 @@
 
 ## Flow parameters panel
 
-                  <div id="flow-parameters-panel" class="side-panel">
+                <div id="flow-parameters-panel" class="side-panel">
                     <h4>Flow Property Override</h4>
                     <hr>
                     <div id="editTable">
-                      <table class="table table-striped">
-                        <thead>
-                          <tr>
-                            <th class="property-key">Name</th>
-                            <th>Value</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          <tr id="addRow" class="addRow">
-                            <td id="addRow-col" colspan="2">
-                              <button type="button" class="btn btn-success btn-xs" id="add-btn">Add Row</button>
-                            </td>
-                          </tr>
-                        </tbody>
-                      </table>
+                        <table class="table table-striped">
+                            <thead>
+                            <tr>
+                                <th class="property-key">Name</th>
+                                <th>Value</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <tr id="addRow" class="addRow">
+                                <td id="addRow-col" colspan="2">
+                                    <button type="button" class="btn btn-success btn-xs" id="add-btn">Add Row</button>
+                                </td>
+                            </tr>
+                            </tbody>
+                        </table>
                     </div>
-                  </div>
+                </div>
+## Cluster Management panel
+
+                <div id="cluster-management-panel" class="side-panel">
+                    <h4>Cluster Management</h4>
+                    <hr>
+                    <div class="checkbox">
+                        <label>
+                            <input type="checkbox" id="cluster-emr-enabled" name="clusterEmrEnabled" value="clusterEmrEnabled">
+                            Enable cluster management for this run.
+                        </label>
+                    </div>
+                    <div id="cluster-management-settings">
+
+
+                        <div class="checkbox">
+                            <label>
+                                <input type="checkbox" id="cluster-emr-terminate-completion" name="clusterEmrTerminateCompletion" value="clusterEmrTerminateCompletion">
+                                Terminate the cluster on flow completion (Default true).
+                            </label>
+                        </div>
+                        <div class="checkbox">
+                            <label>
+                                <input type="checkbox" id="cluster-emr-terminate-error" name="clusterEmrTerminateError" value="clusterEmrTerminateError">
+                                Terminate the cluster on flow error (Default true). Killing a flow is not considered error.
+                            </label>
+                        </div>
+
+                        <div id="cluster-instance-properties">
+                            Cluster instance properties
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Instance group</th><th>Instance type</th><th>Instance count</th><th>Spot price</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>MASTER</td>
+                                        <td><input id="cluster-emr-instance-master-type"></td>
+                                        <td>1</td>
+                                        <td><input id="cluster-emr-instance-master-spot-price"></td>
+                                    </tr>
+                                    <tr>
+                                        <td>CORE</td>
+                                        <td><input id="cluster-emr-instance-core-type"></td>
+                                        <td><input id="cluster-emr-instance-core-count"></td>
+                                        <td><input id="cluster-emr-instance-core-spot-price"></td>
+                                    </tr>
+                                    <tr>
+                                        <td>TASK</td>
+                                        <td><input id="cluster-emr-instance-task-type"></td>
+                                        <td><input id="cluster-emr-instance-task-count"></td>
+                                        <td><input id="cluster-emr-instance-task-spot-price"></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+
+
+
+                        <HR>
+                        <strong>or</strong><BR>
+                        <label>
+                            Specify a cluster id for this job (This will ignore all other parameters)
+                            <input type="text" class="form-control" id="cluster-emr-select-id"></input>
+                        </label>
+                    </div>
+                </div>
+
+
+
+
 
                 </div><!-- /execution-graph-options-panel -->
               </div><!-- /col-xs-8 -->

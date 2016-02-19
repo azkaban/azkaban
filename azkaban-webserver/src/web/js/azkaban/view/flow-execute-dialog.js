@@ -43,6 +43,15 @@ azkaban.FlowExecuteDialogView = Backbone.View.extend({
         $('#failure-emails').attr('disabled', "disabled");
       }
     });
+      $("#cluster-emr-enabled").click(function(evt) {
+          if ($(this).is(':checked')) {
+              $('#cluster-management-settings').attr('hidden', null);
+          }
+          else {
+              $('#cluster-management-settings').attr('hidden', true);
+          }
+      });
+      console.log(this.model);
   },
 
   render: function() {
@@ -56,6 +65,39 @@ azkaban.FlowExecuteDialogView = Backbone.View.extend({
     var notifyFailureLast = $('#notify-failure-last').is(':checked');
     var failureEmailsOverride = $("#override-failure-emails").is(':checked');
     var successEmailsOverride = $("#override-success-emails").is(':checked');
+
+
+      var clusterProperties = {};
+      var clusterEmrEnabled = $("#cluster-emr-enabled").is(':checked');
+      if (clusterEmrEnabled) {
+          var clusterEmrSelectId = $("#cluster-emr-select-id").val();
+          if (clusterEmrSelectId != "") {
+              clusterProperties["cluster.emr.select.id"] = clusterEmrSelectId;
+          } else {
+              clusterProperties["cluster.emr.enabled"] = "true";
+              clusterProperties["cluster.emr.terminate.completion"] = $("#cluster-emr-terminate-completion").is(':checked');
+              clusterProperties["cluster.emr.terminate.error"] = $("#cluster-emr-terminate-error").is(':checked');
+              var masterType = $("#cluster-emr-instance-master-type").val();
+              if (masterType != "") clusterProperties["cluster.emr.instance.master.type"] = masterType;
+              var masterSpotPrice = $("#cluster-emr-instance-master-spot-price").val();
+              if (!isNaN(parseFloat(masterSpotPrice))) clusterProperties["cluster.emr.instance.master.spot.price"] = parseFloat(masterSpotPrice);
+
+              var taskType = $("#cluster-emr-instance-task-type").val();
+              if (taskType != "") clusterProperties["cluster.emr.instance.task.type"] = taskType;
+              var taskSpotPrice = $("#cluster-emr-instance-task-spot-price").val();
+              if (!isNaN(parseFloat(taskSpotPrice))) clusterProperties["cluster.emr.instance.task.spot.price"] = parseFloat(taskSpotPrice);
+              var taskCount = $("#cluster-emr-instance-task-count").val();
+              if (!isNaN(parseInt(taskCount))) clusterProperties["cluster.emr.instance.task.count"] = parseInt(taskCount);
+
+              var coreType = $("#cluster-emr-instance-core-type").val();
+              if (coreType != "") clusterProperties["cluster.emr.instance.core.type"] = coreType;
+              var coreSpotPrice = $("#cluster-emr-instance-core-spot-price").val();
+              if (!isNaN(parseFloat(coreSpotPrice))) clusterProperties["cluster.emr.instance.core.spot.price"] = parseFloat(coreSpotPrice);
+              var coreCount = $("#cluster-emr-instance-core-count").val();
+              if (!isNaN(parseInt(coreCount))) clusterProperties["cluster.emr.instance.core.count"] = parseInt(coreCount);
+          }
+      }
+
 
     var flowOverride = {};
     var editRows = $(".editRow");
@@ -86,7 +128,8 @@ azkaban.FlowExecuteDialogView = Backbone.View.extend({
       successEmails: successEmails,
       notifyFailureFirst: notifyFailureFirst,
       notifyFailureLast: notifyFailureLast,
-      flowOverride: flowOverride
+      flowOverride: flowOverride,
+      clusterProperties: clusterProperties
     };
 
     // Set concurrency option, default is skip
@@ -118,6 +161,7 @@ azkaban.FlowExecuteDialogView = Backbone.View.extend({
     var nodeStatus = this.model.get("nodeStatus");
     var overrideSuccessEmails = this.model.get("failureEmailsOverride");
     var overrideFailureEmails = this.model.get("successEmailsOverride");
+    var clusterProperties = this.model.get("clusterProperties");
 
     if (overrideSuccessEmails) {
       $('#override-success-emails').attr('checked', true);
@@ -160,6 +204,70 @@ azkaban.FlowExecuteDialogView = Backbone.View.extend({
     if (queueLevel) {
       $('#queueLevel').val(queueLevel);
     }
+
+    if (clusterProperties) {
+        if (clusterProperties["cluster.emr.enabled"] == "true") {
+            $('#cluster-management-settings').attr('hidden', null);
+            $("#cluster-emr-enabled").attr("checked", true);
+        } else {
+            $('#cluster-management-settings').attr('hidden', true);
+            $("#cluster-emr-enabled").attr("checked", false);
+        }
+
+        if ("cluster.emr.select.id" in clusterProperties) $("#cluster-emr-select-id").val(clusterProperties["cluster.emr.select.id"]);
+
+        if (clusterProperties["cluster.emr.terminate.completion"] == "false") {
+            $("#cluster-emr-terminate-completion").attr("checked", false);
+        } else {
+            $("#cluster-emr-terminate-completion").attr("checked", true);
+        }
+        if (clusterProperties["cluster.emr.terminate.error"] == "false") {
+            $("#cluster-emr-terminate-error").attr("checked", false);
+        } else {
+            $("#cluster-emr-terminate-error").attr("checked", true);
+        }
+        //cluster properties
+        if (!("cluster.emr.instance.master.type" in clusterProperties)) {
+            $("#cluster-emr-instance-master-type").val("m3.xlarge");
+        } else {
+            $("#cluster-emr-instance-master-type").val(clusterProperties["cluster.emr.instance.master.type"]);
+        }
+        if ("cluster.emr.instance.master.spot.price" in clusterProperties) {
+            $("#cluster-emr-instance-master-spot-price").val(clusterProperties["cluster.emr.instance.master.spot.price"]);
+        }
+
+        //task
+        if (!("cluster.emr.instance.task.type" in clusterProperties)) {
+            $("#cluster-emr-instance-task-type").val("r3.xlarge");
+        } else {
+            $("#cluster-emr-instance-task-type").val(clusterProperties["cluster.emr.instance.task.type"]);
+        }
+        if (!("cluster.emr.instance.task.count" in clusterProperties)) {
+            $("#cluster-emr-instance-task-count").val("1");
+        } else {
+            $("#cluster-emr-instance-task-count").val(clusterProperties["cluster.emr.instance.task.count"]);
+        }
+        if ("cluster.emr.instance.task.spot.price" in clusterProperties) {
+            $("#cluster-emr-instance-task-spot-price").val(clusterProperties["cluster.emr.instance.task.spot.price"]);
+        }
+
+        //core
+        if (!("cluster.emr.instance.core.type" in clusterProperties)) {
+            $("#cluster-emr-instance-core-type").val("i2.xlarge");
+        } else {
+            $("#cluster-emr-instance-core-type").val(clusterProperties["cluster.emr.instance.core.type"]);
+        }
+        if (!("cluster.emr.instance.core.count" in clusterProperties)) {
+            $("#cluster-emr-instance-core-count").val("1");
+        } else {
+            $("#cluster-emr-instance-core-count").val(clusterProperties["cluster.emr.instance.core.count"]);
+        }
+        if ("cluster.emr.instance.core.spot.price" in clusterProperties) {
+            $("#cluster-emr-instance-core-spot-price").val(clusterProperties["cluster.emr.instance.core.spot.price"]);
+        }
+    }
+
+
 
     if (flowParams) {
       for (var key in flowParams) {
