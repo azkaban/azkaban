@@ -92,8 +92,13 @@ public class EmrClusterManager implements IClusterManager, EventListener {
 
             switch (event.getType()) {
                 case FLOW_STARTED:
-                    boolean runStatus = createClusterAndConfigureJob(flow, logger);
-                    if (!runStatus) runner.kill(this.getClass().getName());
+                    try {
+                        boolean runStatus = createClusterAndConfigureJob(flow, logger);
+                        if (!runStatus) runner.kill(this.getClass().getName());
+                    } catch (Exception e) {
+                        logger.error(e);
+                        runner.kill(this.getClass().getName());
+                    }
                     break;
 
                 case FLOW_FINISHED:
