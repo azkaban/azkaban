@@ -74,7 +74,7 @@ public class FlowRunner extends EventHandler implements Runnable {
     private ExecutionOptions.FailureAction failureAction;
 
     // Sync object for queuing
-    private Object mainSyncObj = new Object();
+    private final Object mainSyncObj = new Object();
 
     // Properties map
     private Map<String, Props> sharedProps = new HashMap<String, Props>();

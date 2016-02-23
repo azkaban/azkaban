@@ -16,26 +16,19 @@
 
 package azkaban.trigger;
 
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.PriorityBlockingQueue;
-
-import org.apache.log4j.Logger;
-
 import azkaban.event.Event;
+import azkaban.event.Event.Type;
 import azkaban.event.EventHandler;
 import azkaban.event.EventListener;
-import azkaban.event.Event.Type;
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutorManager;
 import azkaban.utils.Props;
+import org.apache.log4j.Logger;
+
+import java.util.*;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.PriorityBlockingQueue;
 
 public class TriggerManager extends EventHandler implements
     TriggerManagerAdapter {
@@ -279,6 +272,7 @@ public class TriggerManager extends EventHandler implements
 
           if (shouldSkip) {
             logger.info("Skipping trigger" + t.getTriggerId() + " until " + t.getNextCheckTime());
+            return;
           }
 
           if (logger.isDebugEnabled()) {

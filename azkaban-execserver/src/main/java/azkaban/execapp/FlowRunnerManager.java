@@ -104,6 +104,7 @@ public class FlowRunnerManager implements EventListener,
   private static final int DEFAULT_NUM_EXECUTING_FLOWS = 30;
   private static final int DEFAULT_FLOW_NUM_JOB_TREADS = 10;
 
+  private final Object installedProjectsSyncObj = new Object();
   private Map<Pair<Integer, Integer>, ProjectVersion> installedProjects =
       new ConcurrentHashMap<Pair<Integer, Integer>, ProjectVersion>();
   // this map is used to store the flows that have been submitted to
@@ -143,7 +144,7 @@ public class FlowRunnerManager implements EventListener,
   // If true, jobs will validate proxy user against a list of valid proxy users.
   private boolean validateProxyUser = false;
 
-  private Object executionDirDeletionSync = new Object();
+  private final Object executionDirDeletionSync = new Object();
 
   // date time of the the last flow submitted.
   private long lastFlowSubmittedDate = 0;
@@ -564,7 +565,7 @@ public class FlowRunnerManager implements EventListener,
 
     // We set up project versions this way
     ProjectVersion projectVersion = null;
-    synchronized (installedProjects) {
+    synchronized (installedProjectsSyncObj) {
       projectVersion = installedProjects.get(projectVersionKey);
       if (projectVersion == null) {
         projectVersion =
