@@ -25,6 +25,7 @@ import java.io.OutputStream;
 import java.io.Writer;
 import java.security.AccessControlException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
@@ -249,6 +250,14 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
     } else if (ajaxName.equals("getPermissions")) {
       if (handleAjaxPermission(project, user, Type.READ, ret)) {
         ajaxGetPermissions(project, ret);
+      }
+    } else if (ajaxName.equals("getGroupPermissions")) {
+      if (handleAjaxPermission(project, user, Type.READ, ret)) {
+        ajaxGetGroupPermissions(project, ret);
+      }
+    } else if (ajaxName.equals("getProxyUsers")) {
+      if (handleAjaxPermission(project, user, Type.READ, ret)) {
+        ajaxGetProxyUsers(project, ret);
       }
     } else if (ajaxName.equals("changePermission")) {
       if (handleAjaxPermission(project, user, Type.ADMIN, ret)) {
@@ -495,6 +504,10 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
           String.format("attachment; filename=\"%s\"",
               projectFileHandler.getFileName());
       resp.setHeader(headerKey, headerValue);
+      resp.setHeader("version",
+          Integer.toString(projectFileHandler.getVersion()));
+      resp.setHeader("projectId",
+          Integer.toString(projectFileHandler.getProjectId()));
 
       outStream = resp.getOutputStream();
 
@@ -522,11 +535,12 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
   }
 
   /**
-   * validate readiness of a project and user permission and use projectManager to purge the project
-   * if things looks good
+   * validate readiness of a project and user permission and use projectManager
+   * to purge the project if things looks good
    **/
-  private void handlePurgeProject(HttpServletRequest req, HttpServletResponse resp, Session session)
-          throws ServletException, IOException {
+  private void handlePurgeProject(HttpServletRequest req,
+      HttpServletResponse resp, Session session) throws ServletException,
+      IOException {
     User user = session.getUser();
     HashMap<String, Object> ret = new HashMap<String, Object>();
     boolean isOperationSuccessful = true;
@@ -536,9 +550,14 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
       String projectParam = getParam(req, "project");
 
       if (StringUtils.isNumeric(projectParam)) {
-        project = projectManager.getProject(Integer.parseInt(projectParam)); // get project by Id
+        project = projectManager.getProject(Integer.parseInt(projectParam)); // get
+                                                                             // project
+                                                                             // by
+                                                                             // Id
       } else {
-        project = projectManager.getProject(projectParam); // get project by name (name cannot start
+        project = projectManager.getProject(projectParam); // get project by
+                                                           // name (name cannot
+                                                           // start
                                                            // from ints)
       }
 
@@ -549,14 +568,17 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
       }
 
       // project is already deleted
-      if (isOperationSuccessful && projectManager.isActiveProject(project.getId())) {
-        ret.put("error", "Project " + project.getName() + " should be deleted before purging");
+      if (isOperationSuccessful
+          && projectManager.isActiveProject(project.getId())) {
+        ret.put("error", "Project " + project.getName()
+            + " should be deleted before purging");
         isOperationSuccessful = false;
       }
 
       // only eligible users can purge a project
       if (isOperationSuccessful && !hasPermission(project, user, Type.ADMIN)) {
-        ret.put("error", "Cannot purge. User '" + user.getUserId() + "' is not an ADMIN.");
+        ret.put("error", "Cannot purge. User '" + user.getUserId()
+            + "' is not an ADMIN.");
         isOperationSuccessful = false;
       }
 
@@ -1017,6 +1039,13 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
     }
   }
 
+  /**
+   * this only returns user permissions, but not group permissions and proxy
+   * users
+   * 
+   * @param project
+   * @param ret
+   */
   private void ajaxGetPermissions(Project project, HashMap<String, Object> ret) {
     ArrayList<HashMap<String, Object>> permissions =
         new ArrayList<HashMap<String, Object>>();
@@ -1030,6 +1059,27 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
     }
 
     ret.put("permissions", permissions);
+  }
+
+  private void ajaxGetGroupPermissions(Project project,
+      HashMap<String, Object> ret) {
+    ArrayList<HashMap<String, Object>> permissions =
+        new ArrayList<HashMap<String, Object>>();
+    for (Pair<String, Permission> perm : project.getGroupPermissions()) {
+      HashMap<String, Object> permObj = new HashMap<String, Object>();
+      String userId = perm.getFirst();
+      permObj.put("username", userId);
+      permObj.put("permission", perm.getSecond().toStringArray());
+
+      permissions.add(permObj);
+    }
+
+    ret.put("permissions", permissions);
+  }
+
+  private void ajaxGetProxyUsers(Project project, HashMap<String, Object> ret) {
+    String[] proxyUsers = project.getProxyUsers().toArray(new String[0]);
+    ret.put("proxyUsers", proxyUsers);
   }
 
   private void handleProjectLogsPage(HttpServletRequest req,
@@ -1646,14 +1696,14 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
           if (!report.getInfoMsgs().isEmpty()) {
             for (String msg : report.getInfoMsgs()) {
               switch (ValidationReport.getInfoMsgLevel(msg)) {
-                case ERROR:
-                  errorMsgs.append(ValidationReport.getInfoMsg(msg) + "<br/>");
-                  break;
-                case WARN:
-                  warnMsgs.append(ValidationReport.getInfoMsg(msg) + "<br/>");
-                  break;
-                default:
-                  break;
+              case ERROR:
+                errorMsgs.append(ValidationReport.getInfoMsg(msg) + "<br/>");
+                break;
+              case WARN:
+                warnMsgs.append(ValidationReport.getInfoMsg(msg) + "<br/>");
+                break;
+              default:
+                break;
               }
             }
           }
@@ -1675,14 +1725,18 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
           }
         }
         if (errorMsgs.length() > 0) {
-          // If putting more than 4000 characters in the cookie, the entire message
+          // If putting more than 4000 characters in the cookie, the entire
+          // message
           // will somehow get discarded.
-          ret.put("error", errorMsgs.length() > 4000 ?
-              errorMsgs.substring(0, 4000) : errorMsgs.toString());
+          ret.put("error",
+              errorMsgs.length() > 4000 ? errorMsgs.substring(0, 4000)
+                  : errorMsgs.toString());
         }
         if (warnMsgs.length() > 0) {
-          ret.put("warn", warnMsgs.length() > 4000 ?
-              warnMsgs.substring(0, 4000) : warnMsgs.toString());
+          ret.put(
+              "warn",
+              warnMsgs.length() > 4000 ? warnMsgs.substring(0, 4000) : warnMsgs
+                  .toString());
         }
       } catch (Exception e) {
         logger.info("Installation Failed.", e);
@@ -1797,7 +1851,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
   }
 
   private void handleReloadProjectWhitelist(HttpServletRequest req,
-  HttpServletResponse resp, Session session) throws IOException {
+      HttpServletResponse resp, Session session) throws IOException {
     HashMap<String, Object> ret = new HashMap<String, Object>();
 
     if (hasPermission(session.getUser(), Permission.Type.ADMIN)) {
@@ -1805,10 +1859,13 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
         if (projectManager.loadProjectWhiteList()) {
           ret.put("success", "Project whitelist re-loaded!");
         } else {
-          ret.put("error", "azkaban.properties doesn't contain property " + ProjectWhitelist.XML_FILE_PARAM);
+          ret.put("error", "azkaban.properties doesn't contain property "
+              + ProjectWhitelist.XML_FILE_PARAM);
         }
-      } catch(Exception e) {
-        ret.put("error", "Exception occurred while trying to re-load project whitelist: " + e);
+      } catch (Exception e) {
+        ret.put("error",
+            "Exception occurred while trying to re-load project whitelist: "
+                + e);
       }
     } else {
       ret.put("error", "Provided session doesn't have admin privilege.");
