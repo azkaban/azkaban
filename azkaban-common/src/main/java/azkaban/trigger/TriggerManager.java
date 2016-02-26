@@ -272,7 +272,6 @@ public class TriggerManager extends EventHandler implements
 
           if (shouldSkip) {
             logger.info("Skipping trigger" + t.getTriggerId() + " until " + t.getNextCheckTime());
-            return;
           }
 
           if (logger.isDebugEnabled()) {
