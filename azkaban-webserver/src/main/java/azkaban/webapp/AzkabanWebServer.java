@@ -518,7 +518,7 @@ public class AzkabanWebServer extends AzkabanServer {
 
       try {
         Utils.invokeStaticMethod(urlClassLoader, pluginClass,
-            "initiateCheckerTypes", pluginProps, app);
+            "initiateCheckerTypes", pluginProps, this);
       } catch (Exception e) {
         logger.error("Unable to initiate checker types for " + pluginClass);
         continue;
@@ -526,7 +526,7 @@ public class AzkabanWebServer extends AzkabanServer {
 
       try {
         Utils.invokeStaticMethod(urlClassLoader, pluginClass,
-            "initiateActionTypes", pluginProps, app);
+            "initiateActionTypes", pluginProps, this);
       } catch (Exception e) {
         logger.error("Unable to initiate action types for " + pluginClass);
         continue;
