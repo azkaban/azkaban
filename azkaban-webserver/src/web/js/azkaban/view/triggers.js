@@ -33,6 +33,21 @@ function expireTrigger(triggerId) {
   $.post(triggerURL, requestData, successHandler, "json");
 }
 
+function removeTrigger(triggerId) {
+  var scheduleURL = contextURL + "/triggers";
+  var redirectURL = contextURL + "/triggers";
+  var requestData = { "action": "removeTrigger", "triggerId": triggerId };
+  var successHandler = function (data) {
+    if (data.error) {
+      $('#errorMsg').text(data.error);
+    }
+    else {
+      window.location = redirectURL;
+    }
+  };
+  $.post(scheduleURL, requestData, successHandler, "json");
+}
+
 function removeSched(scheduleId) {
   var scheduleURL = contextURL + "/schedule"
   var redirectURL = contextURL + "/schedule"

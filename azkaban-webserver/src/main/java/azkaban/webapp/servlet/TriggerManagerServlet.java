@@ -16,24 +16,22 @@
 
 package azkaban.webapp.servlet;
 
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import javax.servlet.ServletConfig;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
-import org.apache.log4j.Logger;
-
 import azkaban.server.session.Session;
 import azkaban.trigger.Trigger;
 import azkaban.trigger.TriggerManager;
 import azkaban.trigger.TriggerManagerException;
 import azkaban.user.User;
 import azkaban.webapp.AzkabanWebServer;
+import org.apache.log4j.Logger;
+
+import javax.servlet.ServletConfig;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public class TriggerManagerServlet extends LoginAbstractAzkabanServlet {
   private static final long serialVersionUID = 1L;
@@ -54,7 +52,7 @@ public class TriggerManagerServlet extends LoginAbstractAzkabanServlet {
     if (hasParam(req, "ajax")) {
       handleAJAXAction(req, resp, session);
     } else {
-      handleGetAllSchedules(req, resp, session);
+      handleGetAllTriggers(req, resp, session);
     }
   }
 
@@ -77,8 +75,8 @@ public class TriggerManagerServlet extends LoginAbstractAzkabanServlet {
     }
   }
 
-  private void handleGetAllSchedules(HttpServletRequest req,
-      HttpServletResponse resp, Session session) throws ServletException,
+  private void handleGetAllTriggers(HttpServletRequest req,
+                                    HttpServletResponse resp, Session session) throws ServletException,
       IOException {
 
     Page page =
@@ -95,6 +93,35 @@ public class TriggerManagerServlet extends LoginAbstractAzkabanServlet {
       Session session) throws ServletException, IOException {
     if (hasParam(req, "ajax")) {
       handleAJAXAction(req, resp, session);
+    } else {
+      HashMap<String, Object> ret = new HashMap<String, Object>();
+      if (hasParam(req, "action")) {
+        String action = getParam(req, "action");
+
+        switch (action) {
+          case "removeTrigger":
+            if (hasParam(req, "triggerId")) {
+              int triggerId = getIntParam(req, "triggerId");
+              try {
+                triggerManager.removeTrigger(triggerId);
+                ret.put("status", "success");
+              } catch (TriggerManagerException e) {
+                ret.put("status", "error");
+                ret.put("message", e.getMessage());
+              }
+            }
+            break;
+          default:
+            break;
+        }
+      }
+
+      if (ret.get("status") == ("success"))
+        setSuccessMessageInCookie(resp, (String) ret.get("message"));
+      else
+        setErrorMessageInCookie(resp, (String) ret.get("message"));
+
+      this.writeJSON(resp, ret);
     }
   }
 
@@ -114,7 +141,7 @@ public class TriggerManagerServlet extends LoginAbstractAzkabanServlet {
         + t.getDescription());
 
     ret.put("status", "success");
-    ret.put("message", "trigger " + triggerId + " removed from Schedules.");
+    ret.put("message", "trigger " + triggerId + " removed from Triggers.");
     return;
   }
 
