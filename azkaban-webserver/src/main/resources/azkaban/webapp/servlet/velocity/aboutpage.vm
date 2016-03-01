@@ -36,10 +36,10 @@
 		
 		<div class="container-full">	
 			<div class="content"></br>
-				This product Inovia Batch Server Version 1.0 is a part of Inovia software package and support.</br>
+				This product Inovia Batch Server Version 3.0 is a part of Inovia software package and support.</br>
 				The Inovia Batch Server is based on LinkedIn Azkaban within Apache 2.0 License.</br>
-				Inovia is contributing to the Azkaban project and all general bug fixes and enhancements will be published to the Azkaban project. </br>
-				Please use the normal Inovia support channels to get help with the Inovia batch server. </br>
+				Inovia is contributing to the Azkaban project and all general bug fixes and enhancements will be published to the Azkaban project.</br>
+				For any support/service on Inovia batch server, please contact Inovia through regular support channels.</br>
 			</div>
 		</div>
 	</body>
