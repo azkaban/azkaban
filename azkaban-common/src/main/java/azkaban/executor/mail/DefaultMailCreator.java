@@ -25,6 +25,7 @@ import java.util.List;
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutionOptions;
 import azkaban.executor.ExecutionOptions.FailureAction;
+import azkaban.server.AzkabanServer;
 import azkaban.utils.EmailMessage;
 import azkaban.utils.Emailer;
 import azkaban.utils.Utils;
@@ -34,6 +35,7 @@ public class DefaultMailCreator implements MailCreator {
   private static HashMap<String, MailCreator> registeredCreators =
       new HashMap<String, MailCreator>();
   private static MailCreator defaultCreator;
+  private static String mailMessageUrl = AzkabanServer.getAzkabanProperties().get("mail.message.url");
 
   private static final DateFormat DATE_FORMATTER = new SimpleDateFormat(
       "yyyy/MM/dd HH:mm:ss z");
@@ -95,8 +97,12 @@ public class DefaultMailCreator implements MailCreator {
           + "</td></tr>");
       message.println("</table>");
       message.println("");
+      mailMessageUrl = 
+    		  (mailMessageUrl==null || ("".equals(mailMessageUrl)))?
+    				  (scheme + "://" + clientHostname + ":" + clientPortNumber)
+    				  :mailMessageUrl; 
       String executionUrl =
-          scheme + "://" + clientHostname + ":" + clientPortNumber + "/"
+          mailMessageUrl + "/"
               + "executor?" + "execid=" + execId;
       message.println("<a href=\"" + executionUrl + "\">" + flow.getFlowId()
           + " Execution Link</a>");
@@ -146,8 +152,12 @@ public class DefaultMailCreator implements MailCreator {
           + "</td></tr>");
       message.println("</table>");
       message.println("");
+      mailMessageUrl = 
+    		  (mailMessageUrl==null || ("".equals(mailMessageUrl)))?
+    				  (scheme + "://" + clientHostname + ":" + clientPortNumber)
+    				  :mailMessageUrl; 
       String executionUrl =
-          scheme + "://" + clientHostname + ":" + clientPortNumber + "/"
+    		  mailMessageUrl + "/"
               + "executor?" + "execid=" + execId;
       message.println("<a href=\"" + executionUrl + "\">" + flow.getFlowId()
           + " Execution Link</a>");
@@ -199,8 +209,12 @@ public class DefaultMailCreator implements MailCreator {
           + "</td></tr>");
       message.println("</table>");
       message.println("");
+      mailMessageUrl = 
+    		  (mailMessageUrl==null || ("".equals(mailMessageUrl)))?
+    				  (scheme + "://" + clientHostname + ":" + clientPortNumber)
+    				  :mailMessageUrl; 
       String executionUrl =
-          scheme + "://" + clientHostname + ":" + clientPortNumber + "/"
+    		  mailMessageUrl + "/"
               + "executor?" + "execid=" + execId;
       message.println("<a href=\"" + executionUrl + "\">" + flow.getFlowId()
           + " Execution Link</a>");
