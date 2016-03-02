@@ -16,17 +16,6 @@
 
 package azkaban.webapp.servlet;
 
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.List;
-
-import javax.servlet.ServletConfig;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
-import org.joda.time.format.DateTimeFormat;
-
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutorManagerAdapter;
 import azkaban.executor.ExecutorManagerException;
@@ -34,6 +23,15 @@ import azkaban.project.Project;
 import azkaban.project.ProjectManager;
 import azkaban.server.session.Session;
 import azkaban.webapp.AzkabanWebServer;
+import org.joda.time.format.DateTimeFormat;
+
+import javax.servlet.ServletConfig;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.List;
 
 public class HistoryServlet extends LoginAbstractAzkabanServlet {
 
@@ -108,12 +106,12 @@ public class HistoryServlet extends LoginAbstractAzkabanServlet {
       String begin = getParam(req, "begin");
 
       long beginTime =
-          begin == "" ? -1 : DateTimeFormat.forPattern(FILTER_BY_DATE_PATTERN)
+              begin.equals("") ? -1 : DateTimeFormat.forPattern(FILTER_BY_DATE_PATTERN)
               .parseDateTime(begin).getMillis();
       String end = getParam(req, "end");
 
       long endTime =
-          end == "" ? -1 : DateTimeFormat.forPattern(FILTER_BY_DATE_PATTERN)
+          end.equals("") ? -1 : DateTimeFormat.forPattern(FILTER_BY_DATE_PATTERN)
               .parseDateTime(end).getMillis();
       try {
         history =
