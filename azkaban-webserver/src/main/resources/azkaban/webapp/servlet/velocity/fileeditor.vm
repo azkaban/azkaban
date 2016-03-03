@@ -61,7 +61,7 @@
 		,height: "100%"
 	});
 	
-	browseProjectDirectory('/');
+	browseProjectDirectory('/','/');
 	browseConfigDirectory('/');
 
 	function savefile(id, content){
@@ -87,14 +87,14 @@
 		}
 	}
 	
-	function browseProjectDirectory(path) {
+	function browseProjectDirectory(path,displayName) {
 		$.ajax({
 	    type: 'GET',
 	    url: '/fileeditor?resource='+path,
 		success: function(response){
 			$('#projectbrowser').empty(); 
 		     $('#projectbrowser').append(response);
-		     $('#projectdirectorypath').text(path);
+		     $('#projectdirectorypath').text(displayName);
 		  },
 	    async: true
 		});

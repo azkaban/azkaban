@@ -106,11 +106,13 @@ public class FileEditorServlet extends LoginAbstractAzkabanServlet {
 		for (String resourceName : queryFolderContent) {
 			File resourceFile = new File(externalDirectory + resourcePath + resourceName);
 			if (resourceFile.isDirectory()) {
-				directoryContent.append("<tr><td>&nbsp;&nbsp;&nbsp;&nbsp;<a href=\"#\" onclick=\"browseConfigDirectory('"
-						+ resourcePath + resourceName + "/')\">" + resourceName + "/</td></tr>");
+				directoryContent
+						.append("<tr><td>&nbsp;&nbsp;&nbsp;&nbsp;<a href=\"#\" onclick=\"browseConfigDirectory('"
+								+ resourcePath + resourceName + "/')\">" + resourceName + "/</td></tr>");
 			} else {
-				directoryContent.append("<tr><td>&nbsp;&nbsp;&nbsp;&nbsp;<a href=\"#\" onclick=\"fetchConfigFileContent('"
-						+ resourcePath + resourceName + "')\">" + resourceName + "</td></tr>");
+				directoryContent
+						.append("<tr><td>&nbsp;&nbsp;&nbsp;&nbsp;<a href=\"#\" onclick=\"fetchConfigFileContent('"
+								+ resourcePath + resourceName + "')\">" + resourceName + "</td></tr>");
 			}
 		}
 		directoryContent.append("</table><br>");
@@ -134,12 +136,12 @@ public class FileEditorServlet extends LoginAbstractAzkabanServlet {
 			String resourcePath = getParam(req, "resource");
 			String content = req.getParameter("content");
 			logger.info("Saving to : " + resourcePath);
-			saveResource(resourcePath, projectsBaseDirectory,content);
+			saveResource(resourcePath, projectsBaseDirectory, content);
 		} else if (hasParam(req, "externalresource")) {
 			String resourcePath = getParam(req, "externalresource");
 			String content = req.getParameter("content");
 			logger.info("Saving to : " + resourcePath);
-			saveResource(resourcePath,externalDirectory, content);
+			saveResource(resourcePath, externalDirectory, content);
 		}
 	}
 
@@ -179,11 +181,12 @@ public class FileEditorServlet extends LoginAbstractAzkabanServlet {
 
 		// Insert a link to the parent folder only if the resource is not the
 		// webserver's context root
-		if (!"/".equals(resourcePath) && resourcePath != null && resourcePath.length() > 0) {
+		if (!File.separator.equals(resourcePath) && resourcePath != null && resourcePath.length() > 0) {
 			File parent = queryFolder.getParentFile();
 			directoryContent.append("<tr><td><a href=\"#\" onclick=\"browseProjectDirectory('"
-					+ parent.getAbsolutePath().substring(projectsBaseDirectory.length())
-					+ "/')\">[Parent Folder]</td></tr>");
+					+ parent.getAbsolutePath().substring(projectsBaseDirectory.length()) + "/','"
+					+ getResourceDisplayPath(parent.getAbsolutePath())
+					+ "')\">[Parent Folder]</td></tr>");
 		}
 
 		// Fetch all projects accessible to the current session user
@@ -195,23 +198,25 @@ public class FileEditorServlet extends LoginAbstractAzkabanServlet {
 
 		for (String resourceName : queryFolderContent) {
 			File resourceFile = new File(projectsBaseDirectory + resourcePath + resourceName);
+
+			// The project name of this folder is in a special text
+			// file named "projectname", one level under this folder
+			String resourceDisplayName = getResourceDisplayName(projectsBaseDirectory + resourcePath + resourceName);
+			String resourceDisplayPath = getResourceDisplayPath(projectsBaseDirectory+resourcePath+resourceName);
+
 			// If the folder is at the first level under context root, then
 			// it should be an azkaban project
 			if (resourceFile.getParent().equals(baseFolder.getPath())) {
 				// The first level should contain only azkaban project
 				// folders
 				if (resourceFile.isDirectory()) {
-					// The project name of this folder is in a special text
-					// file named "projectname", one level under this folder
-					String displayName = getDisplayName(
-							resourceFile.getAbsolutePath() + File.separator + "projectname");
 					// The access to this folder is filtered out
 					// based on the currently session user
-					if (projectNames.contains(displayName)) {
+					if (projectNames.contains(resourceDisplayName)) {
 						directoryContent
 								.append("<tr><td>&nbsp;&nbsp;&nbsp;&nbsp;<a href=\"#\" onclick=\"browseProjectDirectory('"
-										+ resourcePath + resourceName + "/')\">"
-										+ (displayName == null ? resourceName : displayName) + "/</td></tr>");
+										+ resourcePath + resourceName + "/','" + resourceDisplayPath + "')\">"
+										+ resourceDisplayName + "/</td></tr>");
 					}
 				}
 			}
@@ -220,8 +225,11 @@ public class FileEditorServlet extends LoginAbstractAzkabanServlet {
 			else {
 				// All folders at this deeper level should be accessible
 				if (resourceFile.isDirectory()) {
-					directoryContent.append("<tr><td>&nbsp;&nbsp;&nbsp;&nbsp;<a href=\"#\" onclick=\"browseProjectDirectory('"
-							+ resourcePath + resourceName + "/')\">" + resourceName + "/</td></tr>");
+					directoryContent
+							.append("<tr><td>&nbsp;&nbsp;&nbsp;&nbsp;<a href=\"#\" onclick=\"browseProjectDirectory('"
+									+ resourcePath + resourceName + "/','" + resourceDisplayPath
+									+ "')\">" + resourceName
+									+ "/</td></tr>");
 				}
 				// All files at this deeper level should be accessible,
 				// except the special ones namd "projectname"
@@ -238,11 +246,36 @@ public class FileEditorServlet extends LoginAbstractAzkabanServlet {
 		return directoryContent.toString();
 	}
 
-	private String getDisplayName(String projectNameFile) {
-		String displayName = null;
+	private String getResourceDisplayPath(String fullResourcePath) {
+		String resourceDisplayName = getResourceDisplayName(fullResourcePath);
+		if (File.separator.equals(resourceDisplayName)) {
+			return File.separator;
+		}
+		String[] foldersInResourcePath = fullResourcePath.substring(projectsBaseDirectory.length())
+				.split(File.separator);
+		foldersInResourcePath[1] = resourceDisplayName;
+		StringBuffer resourcePathBuffer = new StringBuffer();
+		for (int i = 1; i < foldersInResourcePath.length; i++) {
+			resourcePathBuffer.append(File.separator + foldersInResourcePath[i]);
+		}
+		if (new File(fullResourcePath).isDirectory()) {
+			resourcePathBuffer.append(File.separator);
+		}
+		return resourcePathBuffer.toString();
+	}
+
+	private String getResourceDisplayName(String fullResourcePath) {
+		String relativeResourcePath = fullResourcePath.substring(projectsBaseDirectory.length());
+		if ("".equals(relativeResourcePath) || File.separator.equals(relativeResourcePath)) {
+			return File.separator;
+		}
+
+		String[] foldersInResourcePath = relativeResourcePath.split(File.separator);
+		String displayName = foldersInResourcePath[1];
 		Scanner in = null;
 		try {
-			in = new Scanner(new File(projectNameFile));
+			in = new Scanner(new File(projectsBaseDirectory + File.separator + foldersInResourcePath[1] + File.separator
+					+ "projectname"));
 			displayName = in.nextLine();
 		} catch (FileNotFoundException e) {
 			// The default displayName is used in case of an
@@ -284,7 +317,8 @@ public class FileEditorServlet extends LoginAbstractAzkabanServlet {
 		response.setContentLength(totalLength + 1);
 	}
 
-	private void saveResource(String resourcePath,String baseDirectory, String content) throws IOException, ServletException {
+	private void saveResource(String resourcePath, String baseDirectory, String content)
+			throws IOException, ServletException {
 		OutputStream out = null;
 		try {
 			File resource = new File(baseDirectory + resourcePath);
