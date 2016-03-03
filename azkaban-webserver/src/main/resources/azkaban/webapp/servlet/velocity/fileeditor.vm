@@ -109,7 +109,8 @@
 		success: function(response){
 			  editAreaLoader.setValue("editor", null);
 			  editAreaLoader.setValue("editor", response);
-		      $('#filepath').text(file);
+			  var filePathSplit = projectFileLoaded.split($('#projectdirectorypath').text().charAt(0));
+		      $('#filepath').text($('#projectdirectorypath').text()+filePathSplit[filePathSplit.length-1]);
 		  },
 	    async: true
 		});
