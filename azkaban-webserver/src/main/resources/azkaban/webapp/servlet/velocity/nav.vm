@@ -23,7 +23,7 @@
       <div class="container-full">
         <div class="navbar-header">
           <div class="navbar-logo">
-            <a href="${context}/">Azkaban</a>
+            <a href="${context}/">Inovia</a>
           </div>
         </div>
         <div class="navbar-left navbar-enviro">
