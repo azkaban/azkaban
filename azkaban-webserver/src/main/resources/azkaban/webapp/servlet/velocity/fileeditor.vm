@@ -71,7 +71,7 @@
 				type: 'POST',
 				data: { content: content },
 				success: function(data) {
-					alert('Saved file '+projectFileLoaded+' with new content');
+					alert('Saved file '+$('#filepath').text()+' with new content');
 				}
 			});
 		}
@@ -81,7 +81,7 @@
 				type: 'POST',
 				data: { content: content },
 				success: function(data) {
-					alert('Saved file '+configFileLoaded+' with new content');
+					alert('Saved file '+$('#filepath').text()+' with new content');
 				}
 			});
 		}
