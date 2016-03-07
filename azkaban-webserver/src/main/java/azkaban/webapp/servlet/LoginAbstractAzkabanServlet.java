@@ -16,34 +16,23 @@
 
 package azkaban.webapp.servlet;
 
-import java.io.BufferedInputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.io.Writer;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
+import azkaban.project.Project;
+import azkaban.server.session.Session;
+import azkaban.user.*;
+import azkaban.utils.StringUtils;
+import org.apache.commons.fileupload.servlet.ServletFileUpload;
+import org.apache.commons.io.IOUtils;
+import org.apache.log4j.Logger;
 
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-
-import org.apache.commons.fileupload.servlet.ServletFileUpload;
-import org.apache.commons.io.IOUtils;
-import org.apache.log4j.Logger;
-
-import azkaban.project.Project;
-import azkaban.server.session.Session;
-import azkaban.user.Permission;
-import azkaban.user.Role;
-import azkaban.user.User;
-import azkaban.user.UserManager;
-import azkaban.user.UserManagerException;
-import azkaban.utils.StringUtils;
+import java.io.*;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
 
 /**
  * Abstract Servlet that handles auto login when the session hasn't been
@@ -232,10 +221,8 @@ public abstract class LoginAbstractAzkabanServlet extends
     }
 
     Session session = getApplication().getSessionCache().getSession(sessionId);
-    // Check if the IP's are equal. If not, we invalidate the sesson.
-    if (session == null || !remoteIp.equals(session.getIp())) {
-      return null;
-    }
+
+    // Removed IP session check to prevent issues with ELB
 
     return session;
   }
