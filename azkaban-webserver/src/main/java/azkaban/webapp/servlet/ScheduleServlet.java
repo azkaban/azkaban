@@ -241,7 +241,7 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
       Schedule schedule = scheduleManager.getSchedule(projectId, flowId);
 
       if (schedule != null) {
-        Map<String, String> jsonObj = new HashMap<String, String>();
+        Map<String, Object> jsonObj = new HashMap<String, Object>();
         jsonObj.put("scheduleId", Integer.toString(schedule.getScheduleId()));
         jsonObj.put("submitUser", schedule.getSubmitUser());
         jsonObj.put("firstSchedTime",
@@ -249,6 +249,7 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
         jsonObj.put("nextExecTime",
             utils.formatDateTime(schedule.getNextExecTime()));
         jsonObj.put("period", utils.formatPeriod(schedule.getPeriod()));
+        jsonObj.put("executionOptions", schedule.getExecutionOptions());
         ret.put("schedule", jsonObj);
       }
     } catch (ScheduleManagerException e) {
@@ -679,6 +680,7 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
             + " has been added.");
 
     ret.put("status", "success");
+    ret.put("scheduleId", schedule.getScheduleId());
     ret.put("message", projectName + "." + flowName + " scheduled.");
   }
 
