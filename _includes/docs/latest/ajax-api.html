@@ -1004,10 +1004,10 @@ This API call schedules a flow.
 </p>
 <ul class="list-unstyled">
   <li>
-    <strong>Method:</strong> GET
+    <strong>Method:</strong> POST
   </li>
   <li>
-    <strong>Request URL:</strong> /executor?ajax=scheduleFlow
+    <strong>Request URL:</strong> /schedule?ajax=scheduleFlow
   </li>
   <li>
     <strong>Parameter Location:</strong> Request Query String
@@ -1038,7 +1038,7 @@ This API call schedules a flow.
     </tr>
     <tr>
       <td>projectId</td>
-      <td>The id of the project. You can find this by looking for "projectId" in the source code on a project's home page (e.g.: https://HOST:PORT/manager?project=PROJECT_NAME -> view page's HTML source code).</td>
+      <td>The id of the project. You can find this with <a href="#api-fetch-flows-of-a-project">Fetch Flows of a Project</a>.</td>
     </tr>
     <tr>
       <td>flowName</td>
@@ -1137,7 +1137,7 @@ This API call unschedules a flow.
 </p>
 <ul class="list-unstyled">
   <li>
-    <strong>Method:</strong> GET
+    <strong>Method:</strong> POST
   </li>
   <li>
     <strong>Request URL:</strong> /schedule?action=removeSched
