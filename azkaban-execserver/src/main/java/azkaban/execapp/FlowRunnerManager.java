@@ -62,6 +62,7 @@ import azkaban.utils.Pair;
 import azkaban.utils.Props;
 import azkaban.utils.ThreadPoolExecutingListener;
 import azkaban.utils.TrackingThreadPool;
+import azkaban.utils.Utils;
 
 /**
  * Execution manager for the server side execution.
@@ -94,6 +95,8 @@ public class FlowRunnerManager implements EventListener,
       "executor.threadpool.workqueue.size";
   private static final String EXECUTOR_FLOW_THREADS = "executor.flow.threads";
   private static final String FLOW_NUM_JOB_THREADS = "flow.num.job.threads";
+  private static final String DEFAULT_TIMEZONE_ID = "default.timezone.id";
+  
   private static Logger logger = Logger.getLogger(FlowRunnerManager.class);
   private File executionDirectory;
   private File projectDirectory;
@@ -147,7 +150,9 @@ public class FlowRunnerManager implements EventListener,
 
   // date time of the the last flow submitted.
   private long lastFlowSubmittedDate = 0;
-
+  private String timezone;
+  private boolean isDayLightSaving;
+  
   public FlowRunnerManager(Props props, ExecutorLoader executorLoader,
       ProjectLoader projectLoader, ClassLoader parentClassLoader)
       throws IOException {
@@ -157,6 +162,12 @@ public class FlowRunnerManager implements EventListener,
         new File(props.getString("azkaban.project.dir", "projects"));
 
     azkabanProps = props;
+    
+    if (props.containsKey(DEFAULT_TIMEZONE_ID)) {
+      this.timezone = props.getString(DEFAULT_TIMEZONE_ID);
+      logger.info("Setting timezone to " + timezone);
+      isDayLightSaving =  Utils.isCurrentlyDaylightSaving(timezone);
+    }
 
     // JobWrappingFactory.init(props, getClass().getClassLoader());
     executionDirRetention =
@@ -447,6 +458,12 @@ public class FlowRunnerManager implements EventListener,
   }
 
   public void submitFlow(int execId) throws ExecutorManagerException {
+    if (timezone != null
+            && isDayLightSaving != Utils.isCurrentlyDaylightSaving(timezone)) {
+      Utils.setTimeZone(timezone);
+      isDayLightSaving =  Utils.isCurrentlyDaylightSaving(timezone);
+    }
+    
     // Load file and submit
     if (runningFlows.containsKey(execId)) {
       throw new ExecutorManagerException("Execution " + execId

@@ -18,30 +18,36 @@ package azkaban.trigger;
 
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TimeZone;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.PriorityBlockingQueue;
 
 import org.apache.log4j.Logger;
 
+import com.mysql.jdbc.Util;
+
 import azkaban.event.Event;
+import azkaban.event.Event.Type;
 import azkaban.event.EventHandler;
 import azkaban.event.EventListener;
-import azkaban.event.Event.Type;
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutorManager;
 import azkaban.utils.Props;
+import azkaban.utils.Utils;
 
 public class TriggerManager extends EventHandler implements
     TriggerManagerAdapter {
   private static Logger logger = Logger.getLogger(TriggerManager.class);
   public static final long DEFAULT_SCANNER_INTERVAL_MS = 60000;
-
+  private static final String DEFAULT_TIMEZONE_ID = "default.timezone.id";
+  
   private static Map<Integer, Trigger> triggerIdMap =
       new ConcurrentHashMap<Integer, Trigger>();
 
@@ -58,9 +64,10 @@ public class TriggerManager extends EventHandler implements
       new ExecutorManagerEventListener();
 
   private final Object syncObj = new Object();
-
+  private String timezone;
   private String scannerStage = "";
-
+  private boolean isDayLightSaving;
+  
   public TriggerManager(Props props, TriggerLoader triggerLoader,
       ExecutorManager executorManager) throws TriggerManagerException {
 
@@ -70,6 +77,12 @@ public class TriggerManager extends EventHandler implements
         props.getLong("trigger.scan.interval", DEFAULT_SCANNER_INTERVAL_MS);
     runnerThread = new TriggerScannerThread(scannerInterval);
 
+    if (props.containsKey(DEFAULT_TIMEZONE_ID)) {
+      this.timezone = props.getString(DEFAULT_TIMEZONE_ID);
+      logger.info("Setting timezone to " + timezone);
+      isDayLightSaving =  Utils.isCurrentlyDaylightSaving(timezone);
+    }
+    
     checkerTypeLoader = new CheckerTypeLoader();
     actionTypeLoader = new ActionTypeLoader();
 
@@ -228,6 +241,11 @@ public class TriggerManager extends EventHandler implements
                     + lastRunnerThreadCheckTime;
 
             try {
+              if (timezone != null
+                      && isDayLightSaving != Utils.isCurrentlyDaylightSaving(timezone)) {
+                Utils.setTimeZone(timezone);
+                isDayLightSaving =  Utils.isCurrentlyDaylightSaving(timezone);
+              }
               checkAllTriggers();
               justFinishedFlows.clear();
             } catch (Exception e) {
