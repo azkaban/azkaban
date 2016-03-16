@@ -263,13 +263,15 @@
               </div>
 #end
 
-#*
 #if ($triggerPlugins.size() > 0)
-  #foreach ($triggerPlugin in $triggerPlugins)
-              <button type="button" class="btn btn-default" id=set-$triggerPlugin.pluginName>$triggerPlugin.pluginName</button>
-  #end
+    <div class="pull-left">
+        &nbsp;
+        #foreach ($triggerPlugin in $triggerPlugins)
+            <button type="button" class="btn btn-info" id=set-$triggerPlugin.pluginName>$triggerPlugin.pluginName</button>
+        #end
+    </div>
 #end
-*#
+
               <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
               <button type="button" class="btn btn-primary" id="execute-btn">Execute</button>
             </div><!-- /modal-footer -->
@@ -281,7 +283,7 @@
   #parse ("azkaban/webapp/servlet/velocity/schedulepanel.vm")
 #end
 
-#*
+
 #if ($triggerPlugins.size() > 0)
   #foreach ($triggerPlugin in $triggerPlugins)
     #set ($prefix = $triggerPlugin.pluginName)
@@ -289,6 +291,6 @@
     #parse ($triggerPlugin.inputPanelVM)
   #end
 #end
-*#
+
 
       <div id="contextMenu"></div>
