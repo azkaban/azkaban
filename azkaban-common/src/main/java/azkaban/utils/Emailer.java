@@ -16,6 +16,8 @@
 
 package azkaban.utils;
 
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -69,7 +71,14 @@ public class Emailer extends AbstractMailer implements Alerter {
 
     EmailMessage.setTotalAttachmentMaxSize(getAttachmentMaxSize());
 
-    this.clientHostname = props.getString("jetty.hostname", "localhost");
+    String hostAdress;
+    try {
+      hostAdress = InetAddress.getLocalHost().getHostAddress();
+    } catch (UnknownHostException e) {
+      logger.warn("Failed to retrieve Master IP, assume 'localhost'", e);
+      hostAdress = "localhost";
+    }
+    this.clientHostname = props.getString("jetty.hostname", hostAdress);
 
     if (props.getBoolean("jetty.use.ssl", true)) {
       this.scheme = HTTPS;
