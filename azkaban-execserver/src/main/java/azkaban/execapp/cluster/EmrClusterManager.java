@@ -122,7 +122,7 @@ public class EmrClusterManager implements IClusterManager, EventListener {
         ExecutionMode executionMode = getFlowExecutionMode(combinedProps, jobLogger);
         setClusterProperty(flow, EMR_INTERNAL_EXECUTION_MODE, executionMode.toString());
 
-        int spoolUpTimeoutInMinutes = combinedProps.getInt(EMR_CONF_SPOOLUP_TIMEOUT, 15);
+        int spoolUpTimeoutInMinutes = combinedProps.getInt(EMR_CONF_SPOOLUP_TIMEOUT, 25);
         String clusterId = null;
 
         switch (executionMode) {
@@ -153,9 +153,11 @@ public class EmrClusterManager implements IClusterManager, EventListener {
                     Optional<String> masterIp = blockUntilReadyAndReturnMasterIp(clusterId, spoolUpTimeoutInMinutes, jobLogger);
                     if (masterIp.isPresent()) {
                         setFlowMasterIp(flow, masterIp.get(), jobLogger);
+                        updateFlow(flow);
                     } else {
                         jobLogger.error("Timed out waiting " + spoolUpTimeoutInMinutes + " minutes for cluster to start. Shutting down cluster " + clusterId);
                         terminateCluster(getEmrClient(), clusterId);
+                        updateFlow(flow);
                         return false;
                     }
                 } catch (IOException | InvalidEmrConfigurationException e) {
