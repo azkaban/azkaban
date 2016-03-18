@@ -55,6 +55,11 @@ public class DefaultMailCreator implements MailCreator {
     registerCreator(DEFAULT_MAIL_CREATOR, defaultCreator);
   }
 
+  private static String getBaseUrl(String scheme, String hostname, String port) {
+    return scheme + "://" + hostname +
+            (port.isEmpty() ? "" : ":" + port);
+  }
+
   @Override
   public boolean createFirstErrorMessage(ExecutableFlow flow,
       EmailMessage message, String azkabanName, String scheme,
@@ -95,9 +100,8 @@ public class DefaultMailCreator implements MailCreator {
           + "</td></tr>");
       message.println("</table>");
       message.println("");
-      String executionUrl =
-          scheme + "://" + clientHostname + ":" + clientPortNumber + "/"
-              + "executor?" + "execid=" + execId;
+      String executionUrl = getBaseUrl(scheme, clientHostname, clientPortNumber) +
+              "/executor?execid=" + execId;
       message.println("<a href=\"" + executionUrl + "\">" + flow.getFlowId()
           + " Execution Link</a>");
 
@@ -146,9 +150,8 @@ public class DefaultMailCreator implements MailCreator {
           + "</td></tr>");
       message.println("</table>");
       message.println("");
-      String executionUrl =
-          scheme + "://" + clientHostname + ":" + clientPortNumber + "/"
-              + "executor?" + "execid=" + execId;
+      String executionUrl = getBaseUrl(scheme, clientHostname, clientPortNumber) +
+              "/executor?execid=" + execId;
       message.println("<a href=\"" + executionUrl + "\">" + flow.getFlowId()
           + " Execution Link</a>");
 
@@ -199,9 +202,8 @@ public class DefaultMailCreator implements MailCreator {
           + "</td></tr>");
       message.println("</table>");
       message.println("");
-      String executionUrl =
-          scheme + "://" + clientHostname + ":" + clientPortNumber + "/"
-              + "executor?" + "execid=" + execId;
+      String executionUrl = getBaseUrl(scheme, clientHostname, clientPortNumber) +
+              "/executor?execid=" + execId;
       message.println("<a href=\"" + executionUrl + "\">" + flow.getFlowId()
           + " Execution Link</a>");
       return true;
