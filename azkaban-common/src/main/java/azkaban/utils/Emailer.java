@@ -34,9 +34,9 @@ import azkaban.sla.SlaOption;
 
 public class Emailer extends AbstractMailer implements Alerter {
   private static Logger logger = Logger.getLogger(Emailer.class);
-
+  public static final String AZKABAN_WEBSERVER_URL = "azkaban.webserver.url";
+  private static final String DEFAULT_HTTPS_PORT_NUMBER = "443";
   private static final String HTTPS = "https";
-
   private static final String HTTP = "http";
 
   private boolean testMode = false;
@@ -69,17 +69,25 @@ public class Emailer extends AbstractMailer implements Alerter {
 
     EmailMessage.setTotalAttachmentMaxSize(getAttachmentMaxSize());
 
-    this.clientHostname = props.getString("azkaban.webserver.url", "localhost");
+    this.clientHostname = getClientHostName(props);
 
     if (props.getBoolean("jetty.use.ssl", true)) {
       this.scheme = HTTPS;
-      this.clientPortNumber = props.getString("jetty.ssl.port");
+      this.clientPortNumber = props.getString("jetty.ssl.port", DEFAULT_HTTPS_PORT_NUMBER);
     } else {
       this.scheme = HTTP;
-      this.clientPortNumber = props.getString("jetty.port");
+      this.clientPortNumber = props.getString("jetty.port", "");
     }
 
     testMode = props.getBoolean("test.mode", false);
+  }
+
+  private String getClientHostName(Props props) {
+    String azkabanUrl = props.getString(AZKABAN_WEBSERVER_URL, "localhost");
+    if (azkabanUrl.startsWith("http")) {
+      azkabanUrl = azkabanUrl.replaceAll("https?://", "");
+    }
+    return azkabanUrl;
   }
 
   @SuppressWarnings("unchecked")
