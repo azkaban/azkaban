@@ -35,6 +35,7 @@ import azkaban.sla.SlaOption;
 public class Emailer extends AbstractMailer implements Alerter {
   private static Logger logger = Logger.getLogger(Emailer.class);
   public static final String AZKABAN_WEBSERVER_URL = "azkaban.webserver.url";
+  public static final String AZKABAN_WEBSERVER_SSL_EXTERNAL = "azkaban.webserver.ssl.external";
   private static final String DEFAULT_HTTPS_PORT_NUMBER = "443";
   private static final String HTTPS = "https";
   private static final String HTTP = "http";
@@ -71,7 +72,8 @@ public class Emailer extends AbstractMailer implements Alerter {
 
     this.clientHostname = getClientHostName(props);
 
-    if (props.getBoolean("jetty.use.ssl", true)) {
+    // If either azkaban webserver running in SSL or an external SSL service used (e.g. ELB)
+    if (props.getBoolean("jetty.use.ssl", true) || props.getBoolean("AZKABAN_WEBSERVER_SSL_EXTERNAL", false)) {
       this.scheme = HTTPS;
       this.clientPortNumber = props.getString("jetty.ssl.port", DEFAULT_HTTPS_PORT_NUMBER);
     } else {
@@ -85,7 +87,7 @@ public class Emailer extends AbstractMailer implements Alerter {
   private String getClientHostName(Props props) {
     String azkabanUrl = props.getString(AZKABAN_WEBSERVER_URL, "localhost");
     if (azkabanUrl.startsWith("http")) {
-      azkabanUrl = azkabanUrl.replaceAll("https?://", "");
+      azkabanUrl = azkabanUrl.replaceFirst("https?://", "");
     }
     return azkabanUrl;
   }
