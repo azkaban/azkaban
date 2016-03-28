@@ -64,7 +64,7 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
   private ExecutorManagerAdapter executorManager;
   private ScheduleManager scheduleManager;
   private ExecutorVelocityHelper velocityHelper;
-  private UserManager userManager;
+  private List<UserManager> userManager;
 
   @Override
   public void init(ServletConfig config) throws ServletException {
@@ -175,6 +175,7 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
     HttpServletResponse resp, HashMap<String, Object> returnMap, User user,
     boolean enableQueue) {
     boolean wasSuccess = false;
+    boolean permitted = false;
     if (HttpRequestUtils.hasPermission(userManager, user, Type.ADMIN)) {
       try {
         if (enableQueue) {

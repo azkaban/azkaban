@@ -17,6 +17,7 @@
 package azkaban.restli;
 
 import java.util.UUID;
+import java.util.List;
 import javax.servlet.ServletException;
 import org.apache.log4j.Logger;
 
@@ -74,9 +75,16 @@ public class UserManagerResource extends ResourceContextHolder {
 
   private Session createSession(String username, String password, String ip)
       throws UserManagerException, ServletException {
-    UserManager manager = getAzkaban().getUserManager();
-    azkaban.user.User user = manager.getUser(username, password);
-
+    azkaban.user.User user = null;
+    for (UserManager manager : getAzkaban().getUserManager()) {
+	try {
+	    user = manager.getUser(username, password);
+	} catch (Exception e) { ; };
+      
+	if (user != null) {
+	    break;
+	}
+      }
     String randomUID = UUID.randomUUID().toString();
     Session session = new Session(randomUID, user, ip);
     getAzkaban().getSessionCache().addSession(session);

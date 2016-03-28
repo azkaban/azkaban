@@ -150,7 +150,7 @@ public class AzkabanWebServer extends AzkabanServer {
   private final VelocityEngine velocityEngine;
 
   private final Server server;
-  private UserManager userManager;
+  private List<UserManager> userManager;
   private ProjectManager projectManager;
   // private ExecutorManagerAdapter executorManager;
   private ExecutorManager executorManager;
@@ -228,25 +228,27 @@ public class AzkabanWebServer extends AzkabanServer {
     this.triggerPlugins = triggerPlugins;
   }
 
-  private UserManager loadUserManager(Props props) {
-    Class<?> userManagerClass = props.getClass(USER_MANAGER_CLASS_PARAM, null);
-    logger.info("Loading user manager class " + userManagerClass.getName());
-    UserManager manager = null;
-    if (userManagerClass != null
-        && userManagerClass.getConstructors().length > 0) {
-      try {
-        Constructor<?> userManagerConstructor =
-            userManagerClass.getConstructor(Props.class);
-        manager = (UserManager) userManagerConstructor.newInstance(props);
-      } catch (Exception e) {
-        logger.error("Could not instantiate UserManager "
-            + userManagerClass.getName());
-        throw new RuntimeException(e);
-      }
-    } else {
-      manager = new XmlUserManager(props);
+  private List<UserManager> loadUserManager(Props props) {
+    List<Class> userManagerClasses = props.getClasses(USER_MANAGER_CLASS_PARAM);
+    logger.info("Loading user manager classes " + userManagerClasses.toString());
+    List<UserManager> retval = new ArrayList<UserManager>();
+    for (Class<?> userManagerClass : userManagerClasses) {
+	if (userManagerClass.getConstructors().length > 0) {
+	    try {
+		Constructor<?> userManagerConstructor =
+		    userManagerClass.getConstructor(Props.class);
+		retval.add( (UserManager) userManagerConstructor.newInstance(props));
+	    } catch (Exception e) {
+		logger.error("Could not instantiate UserManager "
+			     + userManagerClass.getName());
+		throw new RuntimeException(e);
+	    }
+	}
     }
-    return manager;
+    if (retval.size() == 0) {
+	retval.add(new XmlUserManager(props));
+    }
+    return retval;
   }
 
   private ProjectManager loadProjectManager(Props props) {
@@ -588,7 +590,7 @@ public class AzkabanWebServer extends AzkabanServer {
    *
    * @return
    */
-  public UserManager getUserManager() {
+  public List<UserManager> getUserManager() {
     return userManager;
   }
 
