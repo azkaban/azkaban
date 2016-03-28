@@ -25,6 +25,7 @@ import java.io.Writer;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import java.util.List;
 
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
@@ -357,8 +358,19 @@ public abstract class LoginAbstractAzkabanServlet extends
 
   private Session createSession(String username, String password, String ip)
       throws UserManagerException, ServletException {
-    UserManager manager = getApplication().getUserManager();
-    User user = manager.getUser(username, password);
+    List<UserManager> userManagers = getApplication().getUserManager();
+    User user = null;
+    for ( UserManager manager : userManagers) {
+	try {
+	    user = manager.getUser(username, password);
+	    break;
+	} catch (UserManagerException e) {
+	    logger.debug("User lookup failure");
+	}
+    }
+    if (user == null) {
+	throw new UserManagerException("User auth failure");
+    }
 
     String randomUID = UUID.randomUUID().toString();
     Session session = new Session(randomUID, user, ip);
@@ -368,15 +380,22 @@ public abstract class LoginAbstractAzkabanServlet extends
 
   protected boolean hasPermission(Project project, User user,
       Permission.Type type) {
-    UserManager userManager = getApplication().getUserManager();
     if (project.hasPermission(user, type)) {
       return true;
     }
 
+    List<UserManager> userManagers = getApplication().getUserManager();
+
     for (String roleName : user.getRoles()) {
-      Role role = userManager.getRole(roleName);
-      if (role.getPermission().isPermissionSet(type)
-          || role.getPermission().isPermissionSet(Permission.Type.ADMIN)) {
+	Role role = null;
+	for ( UserManager manager : userManagers) {
+	    role = manager.getRole(roleName);
+	    if (role != null) {
+		break;
+	    }
+	}
+	if (role != null && (role.getPermission().isPermissionSet(type)
+			     || role.getPermission().isPermissionSet(Permission.Type.ADMIN))) {
         return true;
       }
     }

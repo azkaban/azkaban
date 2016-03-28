@@ -46,7 +46,7 @@ import azkaban.webapp.AzkabanWebServer;
  */
 public class StatsServlet extends LoginAbstractAzkabanServlet {
   private static final long serialVersionUID = 1L;
-  private UserManager userManager;
+  private List<UserManager> userManager;
   private ExecutorManager execManager;
 
   @Override
@@ -208,9 +208,16 @@ public class StatsServlet extends LoginAbstractAzkabanServlet {
 
   protected boolean hasPermission(User user, Permission.Type type) {
     for (String roleName : user.getRoles()) {
-      Role role = userManager.getRole(roleName);
-      if (role.getPermission().isPermissionSet(type) || role.getPermission().isPermissionSet(Permission.Type.ADMIN)) {
-        return true;
+      Role role = null;
+      for ( UserManager manager: userManager ) {
+	role = manager.getRole(roleName);
+	if (role != null) {
+	    Permission perm = role.getPermission();
+	    perm.addPermissions(role.getPermission());
+	    if (role.getPermission().isPermissionSet(type) || role.getPermission().isPermissionSet(Permission.Type.ADMIN)) {
+		return true;
+	    }
+	}
       }
     }
     return false;

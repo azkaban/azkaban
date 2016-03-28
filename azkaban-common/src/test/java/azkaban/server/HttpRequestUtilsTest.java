@@ -19,6 +19,8 @@ package azkaban.server;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.List;
+import java.util.ArrayList;
 
 import org.junit.Assert;
 import org.junit.Test;
@@ -54,7 +56,10 @@ public final class HttpRequestUtilsTest {
     UserManager manager = TestUtils.createTestXmlUserManager();
     User user = manager.getUser("testUser", "testUser");
 
-    HttpRequestUtils.filterAdminOnlyFlowParams(manager,
+    List<UserManager> managerList = new ArrayList<UserManager>();
+    managerList.add(manager);
+
+    HttpRequestUtils.filterAdminOnlyFlowParams(managerList,
       flow.getExecutionOptions(), user);
 
     Assert.assertFalse(flow.getExecutionOptions().getFlowParameters()
@@ -71,7 +76,10 @@ public final class HttpRequestUtilsTest {
     UserManager manager = TestUtils.createTestXmlUserManager();
     User user = manager.getUser("testAdmin", "testAdmin");
 
-    HttpRequestUtils.filterAdminOnlyFlowParams(manager,
+    List<UserManager> managerList = new ArrayList<UserManager>();
+    managerList.add(manager);
+
+    HttpRequestUtils.filterAdminOnlyFlowParams(managerList,
       flow.getExecutionOptions(), user);
 
     Assert.assertTrue(flow.getExecutionOptions().getFlowParameters()
@@ -101,7 +109,11 @@ public final class HttpRequestUtilsTest {
   public void testHasAdminPermission() throws UserManagerException {
     UserManager manager = TestUtils.createTestXmlUserManager();
     User adminUser = manager.getUser("testAdmin", "testAdmin");
-    Assert.assertTrue(HttpRequestUtils.hasPermission(manager, adminUser,
+
+    List<UserManager> managerList = new ArrayList<UserManager>();
+    managerList.add(manager);
+
+    Assert.assertTrue(HttpRequestUtils.hasPermission(managerList, adminUser,
       Type.ADMIN));
   }
 
@@ -110,7 +122,11 @@ public final class HttpRequestUtilsTest {
   public void testHasOrdinaryPermission() throws UserManagerException {
     UserManager manager = TestUtils.createTestXmlUserManager();
     User testUser = manager.getUser("testUser", "testUser");
-    Assert.assertFalse(HttpRequestUtils.hasPermission(manager, testUser,
+
+    List<UserManager> managerList = new ArrayList<UserManager>();
+    managerList.add(manager);
+    
+    Assert.assertFalse(HttpRequestUtils.hasPermission(managerList, testUser,
       Type.ADMIN));
   }
 }

@@ -20,6 +20,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.List;
 
 import joptsimple.OptionParser;
 import joptsimple.OptionSet;
@@ -140,6 +141,6 @@ public abstract class AzkabanServer {
 
   public abstract VelocityEngine getVelocityEngine();
 
-  public abstract UserManager getUserManager();
+  public abstract List<UserManager> getUserManager();
 
 }
