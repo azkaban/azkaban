@@ -74,7 +74,7 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
   private static final Logger logger = Logger.getLogger(ScheduleServlet.class);
   private ProjectManager projectManager;
   private ScheduleManager scheduleManager;
-  private UserManager userManager;
+  private List<UserManager> userManager;
 
   @Override
   public void init(ServletConfig config) throws ServletException {

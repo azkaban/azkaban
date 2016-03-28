@@ -48,7 +48,7 @@ public class ProjectServlet extends LoginAbstractAzkabanServlet {
       "lockdown.create.projects";
   private static final long serialVersionUID = -1;
 
-  private UserManager userManager;
+  private List<UserManager> userManager;
 
   private boolean lockdownCreateProjects = false;
 
@@ -244,11 +244,17 @@ public class ProjectServlet extends LoginAbstractAzkabanServlet {
 
   private boolean hasPermissionToCreateProject(User user) {
     for (String roleName : user.getRoles()) {
-      Role role = userManager.getRole(roleName);
-      Permission perm = role.getPermission();
-      if (perm.isPermissionSet(Permission.Type.ADMIN)
-          || perm.isPermissionSet(Permission.Type.CREATEPROJECTS)) {
-        return true;
+      Role role = null;
+      for ( UserManager manager: userManager ) {
+	role = manager.getRole(roleName);
+	if (role != null) {
+	    Permission perm = role.getPermission();
+	    perm.addPermissions(role.getPermission());
+	    if (perm.isPermissionSet(Permission.Type.ADMIN)
+		|| perm.isPermissionSet(Permission.Type.CREATEPROJECTS)) {
+		return true;
+	    }
+	}
       }
     }
 

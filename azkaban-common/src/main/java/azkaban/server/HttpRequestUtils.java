@@ -130,14 +130,20 @@ public class HttpRequestUtils {
    * @param user
    * </pre>
    */
-  public static void filterAdminOnlyFlowParams(UserManager userManager,
+  public static void filterAdminOnlyFlowParams(List<UserManager> userManager,
     ExecutionOptions options, User user)  throws ExecutorManagerException {
     if (options == null || options.getFlowParameters() == null)
       return;
 
     Map<String, String> params = options.getFlowParameters();
     // is azkaban Admin
-    if (!hasPermission(userManager, user, Type.ADMIN)) {
+    boolean permitted = false;
+    for ( UserManager manager: userManager ) {
+	permitted = hasPermission(userManager, user, Type.ADMIN);
+	if (permitted) {break;}
+    }
+				  
+    if (!permitted) {
       params.remove(ExecutionOptions.FLOW_PRIORITY);
       params.remove(ExecutionOptions.USE_EXECUTOR);
     } else {
@@ -170,10 +176,15 @@ public class HttpRequestUtils {
    * @param type
    * @return
    */
-  public static boolean hasPermission(UserManager userManager, User user,
+  public static boolean hasPermission(List<UserManager> userManager, User user,
     Permission.Type type) {
-    for (String roleName : user.getRoles()) {
-      Role role = userManager.getRole(roleName);
+    for ( String roleName : user.getRoles()) {
+      Role role = null;
+      for ( UserManager manager: userManager ) {
+	role = manager.getRole(roleName);
+	if (role != null) {break;}
+      }
+
       if (role.getPermission().isPermissionSet(type)
         || role.getPermission().isPermissionSet(Permission.Type.ADMIN)) {
         return true;

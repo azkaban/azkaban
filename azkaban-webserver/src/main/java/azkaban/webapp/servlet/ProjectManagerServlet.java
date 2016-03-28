@@ -98,7 +98,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
   private ProjectManager projectManager;
   private ExecutorManagerAdapter executorManager;
   private ScheduleManager scheduleManager;
-  private UserManager userManager;
+  private List<UserManager> userManager;
   private int downloadBufferSize;
 
   private boolean lockdownCreateProjects = false;
@@ -908,7 +908,14 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
     String name = getParam(req, "name");
 
     logger.info("Adding proxy user " + name + " by " + user.getUserId());
-    if (userManager.validateProxyUser(name, user)) {
+    boolean valid = false;
+    for ( UserManager manager : userManager) {
+	valid = manager.validateProxyUser(name, user);
+	if (valid) {
+	    break;
+	}
+    }
+    if (valid) {
       try {
         projectManager.addProjectProxyUser(project, name, user);
       } catch (ProjectManagerException e) {
@@ -945,7 +952,14 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
         ret.put("error", "Group permission already exists.");
         return;
       }
-      if (!userManager.validateGroup(name)) {
+      boolean valid = false;
+      for ( UserManager manager : userManager) {
+	  valid = manager.validateGroup(name);
+	  if (valid) {
+	      break;
+	  }
+      }
+      if (!valid) {
         ret.put("error", "Group is invalid.");
         return;
       }
@@ -954,7 +968,14 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
         ret.put("error", "User permission already exists.");
         return;
       }
-      if (!userManager.validateUser(name)) {
+      boolean valid = false;
+      for ( UserManager manager : userManager) {
+	  valid = manager.validateUser(name);
+	  if (valid) {
+	      break;
+	  }
+      }
+      if (!valid) {
         ret.put("error", "User is invalid.");
         return;
       }
@@ -1834,8 +1855,16 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
     Permission perm = project.getCollectivePermission(user);
 
     for (String roleName : user.getRoles()) {
-      Role role = userManager.getRole(roleName);
-      perm.addPermissions(role.getPermission());
+      Role role = null;
+      for ( UserManager manager: userManager ) {
+	role = manager.getRole(roleName);
+	if (role != null) {
+	    perm.addPermissions(role.getPermission());
+	    break;
+	}
+      }
+
+      
     }
 
     return perm;
@@ -1843,11 +1872,17 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 
   private boolean hasPermissionToCreateProject(User user) {
     for (String roleName : user.getRoles()) {
-      Role role = userManager.getRole(roleName);
-      Permission perm = role.getPermission();
-      if (perm.isPermissionSet(Permission.Type.ADMIN)
-          || perm.isPermissionSet(Permission.Type.CREATEPROJECTS)) {
-        return true;
+      Role role = null;
+      for ( UserManager manager: userManager ) {
+	role = manager.getRole(roleName);
+	if (role != null) {
+	    Permission perm = role.getPermission();
+	    perm.addPermissions(role.getPermission());
+	    if (perm.isPermissionSet(Permission.Type.ADMIN)
+		|| perm.isPermissionSet(Permission.Type.CREATEPROJECTS)) {
+		return true;
+	    }
+	}
       }
     }
 
@@ -1880,10 +1915,15 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 
   protected boolean hasPermission(User user, Permission.Type type) {
     for (String roleName : user.getRoles()) {
-      Role role = userManager.getRole(roleName);
-      if (role.getPermission().isPermissionSet(type)
-          || role.getPermission().isPermissionSet(Permission.Type.ADMIN)) {
-        return true;
+      Role role = null;
+      for ( UserManager manager: userManager ) {
+	role = manager.getRole(roleName);
+	if (role != null) {
+	    if (role.getPermission().isPermissionSet(type)
+		|| role.getPermission().isPermissionSet(Permission.Type.ADMIN)) {
+		return true;
+	    }
+	}
       }
     }
 

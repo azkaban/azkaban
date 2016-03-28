@@ -35,6 +35,7 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.ArrayList;
 
 import org.apache.log4j.Logger;
 
@@ -396,6 +397,31 @@ public class Props {
    */
   public int localSize() {
     return _current.size();
+  }
+
+  /**
+   * Attempts to return the Class that corresponds to the Props value. If the
+   * class doesn't exit, an IllegalArgumentException will be thrown.
+   *
+   * @param key
+   * @return
+   */
+  public List<Class> getClasses(String key) {
+    try {
+      if (containsKey(key)) {
+	  List<Class> retval = new ArrayList<Class>();
+	  String[] classnames = get(key).split(",");
+	  for (String temp : classnames) {
+	      retval.add(Class.forName(temp));
+	  }
+	  return retval;
+      } else {
+        throw new UndefinedPropertyException("Missing required property '"
+            + key + "'");
+      }
+    } catch (ClassNotFoundException e) {
+      throw new IllegalArgumentException(e);
+    }
   }
 
   /**

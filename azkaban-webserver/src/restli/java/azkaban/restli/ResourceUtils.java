@@ -15,6 +15,8 @@
  */
 package azkaban.restli;
 
+import java.util.List;
+
 import azkaban.project.Project;
 import azkaban.user.Permission;
 import azkaban.user.Role;
@@ -28,19 +30,23 @@ public class ResourceUtils {
 
   public static boolean hasPermission(Project project, User user,
       Permission.Type type) {
-    UserManager userManager = AzkabanWebServer.getInstance().getUserManager();
     if (project.hasPermission(user, type)) {
       return true;
     }
 
+    List<UserManager> userManager = AzkabanWebServer.getInstance().getUserManager();
     for (String roleName : user.getRoles()) {
-      Role role = userManager.getRole(roleName);
-      if (role.getPermission().isPermissionSet(type)
-          || role.getPermission().isPermissionSet(Permission.Type.ADMIN)) {
-        return true;
-      }
+	Role role = null;
+	for ( UserManager manager: userManager ) {
+	    role = manager.getRole(roleName);
+	    if (role != null) {
+		if (role.getPermission().isPermissionSet(type)
+		    || role.getPermission().isPermissionSet(Permission.Type.ADMIN)) {
+		    return true;
+		}
+	    }
+	}
     }
-
     return false;
   }
 

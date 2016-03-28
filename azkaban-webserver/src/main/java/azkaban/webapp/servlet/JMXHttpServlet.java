@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.List;
 
 import javax.management.MBeanAttributeInfo;
 import javax.management.MBeanInfo;
@@ -54,7 +55,7 @@ public class JMXHttpServlet extends LoginAbstractAzkabanServlet implements
   private static final Logger logger = Logger.getLogger(JMXHttpServlet.class
       .getName());
 
-  private UserManager userManager;
+  private List<UserManager> userManager;
   private AzkabanWebServer server;
   private ExecutorManagerAdapter executorManager;
   private TriggerManager triggerManager;
@@ -220,9 +221,15 @@ public class JMXHttpServlet extends LoginAbstractAzkabanServlet implements
 
   protected boolean hasPermission(User user, Permission.Type type) {
     for (String roleName : user.getRoles()) {
-      Role role = userManager.getRole(roleName);
-      if (role.getPermission().isPermissionSet(type)
-          || role.getPermission().isPermissionSet(Permission.Type.ADMIN)) {
+	Role role = null;
+	for ( UserManager manager : userManager) {
+	    role = manager.getRole(roleName);
+	    if (role != null) {
+		break;
+	    }
+	}
+	if (role != null && (role.getPermission().isPermissionSet(type)
+			     || role.getPermission().isPermissionSet(Permission.Type.ADMIN))) {
         return true;
       }
     }
