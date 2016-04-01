@@ -37,8 +37,6 @@ public class ExecutionOptions {
   /* override dispatcher selection and use executor id specified */
   public static final String USE_EXECUTOR = "useExecutor";
   public static final int DEFAULT_FLOW_PRIORITY = 5;
-  public static final String TRIGGER_SPEC = "triggerSpec";
-  public static final String TRIGGER_FILE = "triggerFile";
 
   private static final String FLOW_PARAMETERS = "flowParameters";
   private static final String NOTIFY_ON_FIRST_FAILURE = "notifyOnFirstFailure";

@@ -60,7 +60,6 @@ public class TriggerManager extends EventHandler implements
   private final Object syncObj = new Object();
 
   private String scannerStage = "";
-  private static Props azprops = null;
   
   public TriggerManager(Props props, TriggerLoader triggerLoader,
       ExecutorManager executorManager) throws TriggerManagerException {
@@ -73,8 +72,7 @@ public class TriggerManager extends EventHandler implements
 
     checkerTypeLoader = new CheckerTypeLoader();
     actionTypeLoader = new ActionTypeLoader();
-    setAzprops(props);
-    
+
     try {
       checkerTypeLoader.init(props);
       actionTypeLoader.init(props);
@@ -510,14 +508,6 @@ public class TriggerManager extends EventHandler implements
   public void registerActionType(String name,
       Class<? extends TriggerAction> action) {
     actionTypeLoader.registerActionType(name, action);
-  }
-
-  public static Props getAzprops() {
-    return azprops;
-  }
-
-  public static void setAzprops(Props azprops) {
-    TriggerManager.azprops = azprops;
   }
 
   private class ExecutorManagerEventListener implements EventListener {
