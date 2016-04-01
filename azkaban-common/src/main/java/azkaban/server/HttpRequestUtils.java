@@ -31,6 +31,8 @@ import azkaban.executor.ExecutionOptions;
 import azkaban.executor.ExecutionOptions.FailureAction;
 import azkaban.executor.ExecutorManagerException;
 import azkaban.executor.mail.DefaultMailCreator;
+import azkaban.project.Project;
+import azkaban.project.ProjectManager;
 import azkaban.user.Permission;
 import azkaban.user.Permission.Type;
 import azkaban.user.Role;
@@ -313,6 +315,38 @@ public class HttpRequestUtils {
 
     }
     return groupParam;
+  }
+
+  /**
+   * Set correct trigger spec using runtime-config or .json file
+   * 
+   * @param flowOptions
+   * @param project
+   * @throws Exception
+   */
+  public static void setTriggerSpecification(ExecutionOptions flowOptions,
+      Project project) throws Exception {
+    Map<String, String> flowParams = flowOptions.getFlowParameters();
+    Map<String, Object> metaData = project.getMetadata();
+    // User specific TRIGGER_SPEC takes higher priority
+    if (flowParams != null
+        && !flowParams.containsKey(ExecutionOptions.TRIGGER_SPEC)
+        && metaData != null
+        && metaData.containsKey(ProjectManager.TRIGGER_DATA)) {
+      String triggerName = flowParams.get(ExecutionOptions.TRIGGER_FILE);
+      @SuppressWarnings("unchecked")
+      Map<String, String> triggers =
+          (Map<String, String>) metaData.get(ProjectManager.TRIGGER_DATA);
+      if (triggers.containsKey(triggerName)) {
+        flowParams.put(ExecutionOptions.TRIGGER_SPEC,
+            triggers.get(triggerName));
+      } else if (triggers.containsKey(triggerName + ".json")) {
+        flowParams.put(ExecutionOptions.TRIGGER_SPEC,
+            triggers.get(triggerName + ".json"));
+      } else {
+        throw new Exception("Unknown trigger file " + triggerName);
+      }
+    }
   }
 
 }

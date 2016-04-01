@@ -661,6 +661,7 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
     try {
       flowOptions = HttpRequestUtils.parseFlowOptions(req);
       HttpRequestUtils.filterAdminOnlyFlowParams(userManager, flowOptions, user);
+      HttpRequestUtils.setTriggerSpecification(flowOptions, project);
     } catch (Exception e) {
       ret.put("error", e.getMessage());
     }
