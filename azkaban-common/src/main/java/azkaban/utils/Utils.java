@@ -28,16 +28,13 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Collection;
-import java.util.Date;
 import java.util.Enumeration;
 import java.util.Random;
-import java.util.TimeZone;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipOutputStream;
 
 import org.apache.commons.io.IOUtils;
-import org.joda.time.DateTimeZone;
 import org.joda.time.Days;
 import org.joda.time.DurationFieldType;
 import org.joda.time.Hours;
@@ -272,16 +269,6 @@ public class Utils {
   }
 
   /**
-   * Sets global timezone
-   * @param timezone
-   */
-  public static void setTimeZone(String timezone) {
-    System.setProperty("user.timezone", timezone);
-    TimeZone.setDefault(TimeZone.getTimeZone(timezone));
-    DateTimeZone.setDefault(DateTimeZone.forID(timezone));
-  }
-  
-  /**
    * Call the class constructor with the given arguments
    *
    * @param c The class
@@ -363,15 +350,6 @@ public class Utils {
     }
   }
 
-  /**
-   * True, if it is Daylight saving time in @timezone
-   * @param timezone
-   * @return
-   */
-  public static boolean isCurrentlyDaylightSaving(String timezone) {
-    return TimeZone.getTimeZone(timezone).inDaylightTime(new Date());
-  }
-  
   public static ReadablePeriod parsePeriodString(String periodStr) {
     ReadablePeriod period;
     char periodUnit = periodStr.charAt(periodStr.length() - 1);

@@ -31,6 +31,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TimeZone;
 
 import javax.management.MBeanInfo;
 import javax.management.MBeanServer;
@@ -43,6 +44,7 @@ import org.apache.velocity.app.VelocityEngine;
 import org.apache.velocity.runtime.log.Log4JLogChute;
 import org.apache.velocity.runtime.resource.loader.ClasspathResourceLoader;
 import org.apache.velocity.runtime.resource.loader.JarResourceLoader;
+import org.joda.time.DateTimeZone;
 import org.mortbay.jetty.Connector;
 import org.mortbay.jetty.Server;
 import org.mortbay.jetty.bio.SocketConnector;
@@ -51,8 +53,6 @@ import org.mortbay.jetty.servlet.Context;
 import org.mortbay.jetty.servlet.DefaultServlet;
 import org.mortbay.jetty.servlet.ServletHolder;
 import org.mortbay.thread.QueuedThreadPool;
-
-import com.linkedin.restli.server.RestliServlet;
 
 import azkaban.alert.Alerter;
 import azkaban.database.AzkabanDatabaseSetup;
@@ -100,6 +100,8 @@ import azkaban.webapp.servlet.ProjectServlet;
 import azkaban.webapp.servlet.ScheduleServlet;
 import azkaban.webapp.servlet.StatsServlet;
 import azkaban.webapp.servlet.TriggerManagerServlet;
+
+import com.linkedin.restli.server.RestliServlet;
 
 /**
  * The Azkaban Jetty server class
@@ -155,7 +157,7 @@ public class AzkabanWebServer extends AzkabanServer {
   private ScheduleManager scheduleManager;
   private TriggerManager triggerManager;
   private Map<String, Alerter> alerters;
-  
+
   private final ClassLoader baseClassLoader;
 
   private Props props;
@@ -213,7 +215,10 @@ public class AzkabanWebServer extends AzkabanServer {
     // Setup time zone
     if (props.containsKey(DEFAULT_TIMEZONE_ID)) {
       String timezone = props.getString(DEFAULT_TIMEZONE_ID);
-      Utils.setTimeZone(timezone);
+      System.setProperty("user.timezone", timezone);
+      TimeZone.setDefault(TimeZone.getTimeZone(timezone));
+      DateTimeZone.setDefault(DateTimeZone.forID(timezone));
+      logger.info("Setting timezone to " + timezone);
     }
 
     configureMBeanServer();

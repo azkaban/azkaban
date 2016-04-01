@@ -321,7 +321,9 @@ public class AzkabanExecutorServer {
     // Setup time zone
     if (azkabanSettings.containsKey(DEFAULT_TIMEZONE_ID)) {
       String timezone = azkabanSettings.getString(DEFAULT_TIMEZONE_ID);
-      Utils.setTimeZone(timezone);
+      System.setProperty("user.timezone", timezone);
+      TimeZone.setDefault(TimeZone.getTimeZone(timezone));
+      DateTimeZone.setDefault(DateTimeZone.forID(timezone));
 
       logger.info("Setting timezone to " + timezone);
     }
