@@ -656,33 +656,34 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
     } catch (Exception e) {
       ret.put("error", e.getMessage());
     }
-
+    
+    List<SlaOption> slaOptions = null;
+    Schedule schedule = null;
     ExecutionOptions flowOptions = null;
     try {
       flowOptions = HttpRequestUtils.parseFlowOptions(req);
-      HttpRequestUtils.filterAdminOnlyFlowParams(userManager, flowOptions, user);
-      HttpRequestUtils.setTriggerSpecification(flowOptions, project);
+      HttpRequestUtils.filterAdminOnlyFlowParams(userManager, flowOptions,
+          user);
+      HttpRequestUtils.setTriggerSpecification(flowOptions.getFlowParameters(),
+          project.getMetadata());
+
+      schedule = scheduleManager.scheduleFlow(-1, projectId, projectName,
+          flowName, "ready", firstSchedTime.getMillis(),
+          firstSchedTime.getZone(), thePeriod, DateTime.now().getMillis(),
+          firstSchedTime.getMillis(), firstSchedTime.getMillis(),
+          user.getUserId(), flowOptions, slaOptions);
+
+      logger.info("User '" + user.getUserId() + "' has scheduled " + "["
+          + projectName + flowName + " (" + projectId + ")" + "].");
+      projectManager.postProjectEvent(project, EventType.SCHEDULE,
+          user.getUserId(),
+          "Schedule " + schedule.toString() + " has been added.");
+      ret.put("status", "success");
+      ret.put("scheduleId", schedule.getScheduleId());
+      ret.put("message", projectName + "." + flowName + " scheduled.");
     } catch (Exception e) {
       ret.put("error", e.getMessage());
     }
-
-    List<SlaOption> slaOptions = null;
-
-    Schedule schedule =
-        scheduleManager.scheduleFlow(-1, projectId, projectName, flowName,
-            "ready", firstSchedTime.getMillis(), firstSchedTime.getZone(),
-            thePeriod, DateTime.now().getMillis(), firstSchedTime.getMillis(),
-            firstSchedTime.getMillis(), user.getUserId(), flowOptions,
-            slaOptions);
-    logger.info("User '" + user.getUserId() + "' has scheduled " + "["
-        + projectName + flowName + " (" + projectId + ")" + "].");
-    projectManager.postProjectEvent(project, EventType.SCHEDULE,
-        user.getUserId(), "Schedule " + schedule.toString()
-            + " has been added.");
-
-    ret.put("status", "success");
-    ret.put("scheduleId", schedule.getScheduleId());
-    ret.put("message", projectName + "." + flowName + " scheduled.");
   }
 
   private DateTime parseDateTime(String scheduleDate, String scheduleTime) {

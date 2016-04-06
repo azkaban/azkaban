@@ -1,8 +1,27 @@
+/* Copyright 2016 LinkedIn Corp.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not
+ * use this file except in compliance with the License. You may obtain a copy of
+ * the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations under
+ * the License.
+ */
+
 package azkaban.utils;
 
 import java.net.URI;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
+import org.apache.http.NameValuePair;
+import org.apache.http.message.BasicNameValuePair;
 import org.apache.log4j.Logger;
 import org.mortbay.util.ajax.JSON;
 
@@ -21,7 +40,7 @@ public class NyxUtils {
   public static final String NYX_SERVER_PORT = "nyx.service.port";
   public static final String NYX_SERVER_HOST = "nyx.service.host";
 
-  private static String nyxServiceHost = "loclahost";
+  private static String nyxServiceHost = "localhost";
   private static final boolean isHttp = true;
   private static int port = 8080;
 
@@ -43,8 +62,11 @@ public class NyxUtils {
       throws TriggerManagerException {
     try {
       ExecutorApiClient client = ExecutorApiClient.getInstance();
-      URI uri = client.buildUri(nyxServiceHost, port, "/register", isHttp);
-      String rawResponse = client.httpPost(uri, null, specificationJson);
+      URI uri =
+          ExecutorApiClient.buildUri(nyxServiceHost, port, "/register", isHttp);
+      List<NameValuePair> headers = new ArrayList<>();
+      headers.add(new BasicNameValuePair("Content-Type", "application/json"));
+      String rawResponse = client.httpPost(uri, headers, specificationJson);
       Map<String, Object> parsedResponse =
           (Map<String, Object>) JSON.parse(rawResponse);
 
@@ -54,9 +76,10 @@ public class NyxUtils {
         throw new IllegalArgumentException(
             (String) parsedResponse.get("error"));
       } else if (parsedResponse.containsKey("id")) {
-        return Long.parseLong((String) parsedResponse.get("id"));
+        return (Long) parsedResponse.get("id");
       } else {
-        throw new Exception("Failed to parse Nyx response " + rawResponse);
+        throw new TriggerManagerException(
+            "Failed to parse Nyx response " + rawResponse);
       }
     } catch (Exception ex) {
       logger.error(
@@ -78,7 +101,7 @@ public class NyxUtils {
 
     try {
       ExecutorApiClient client = ExecutorApiClient.getInstance();
-      URI uri = client.buildUri(nyxServiceHost, port,
+      URI uri = ExecutorApiClient.buildUri(nyxServiceHost, port,
           "/unregister/" + triggerId, isHttp);
       String response = client.httpGet(uri, null);
       Map<String, Object> parsedResponse =
@@ -110,8 +133,8 @@ public class NyxUtils {
 
     try {
       ExecutorApiClient client = ExecutorApiClient.getInstance();
-      URI uri =
-          client.buildUri(nyxServiceHost, port, "/status/" + triggerId, isHttp);
+      URI uri = ExecutorApiClient.buildUri(nyxServiceHost, port,
+          "/status/" + triggerId, isHttp);
       String response = client.httpGet(uri, null);
       Map<String, Object> parsedResponse =
           (Map<String, Object>) JSON.parse(response);

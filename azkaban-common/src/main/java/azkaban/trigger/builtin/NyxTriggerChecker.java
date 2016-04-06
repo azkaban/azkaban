@@ -1,3 +1,18 @@
+/* Copyright 2016 LinkedIn Corp.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not
+ * use this file except in compliance with the License. You may obtain a copy of
+ * the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations under
+ * the License.
+ */
+
 package azkaban.trigger.builtin;
 
 import java.util.HashMap;
@@ -24,20 +39,28 @@ public class NyxTriggerChecker implements ConditionChecker {
   private String id;
   private long triggerId = -1L;
 
-  public NyxTriggerChecker(String specification, String id)
-      throws TriggerManagerException {
+  public NyxTriggerChecker(String specification, String id) {
     this(specification, id, -1);
-    // TODO: register a trigger
   }
 
-  public NyxTriggerChecker(String specification, String id, long triggerId)
-      throws TriggerManagerException {
+  public NyxTriggerChecker(String specification, String id, long triggerId) {
     this.specification = specification;
     this.id = id;
-    this.triggerId = (triggerId == -1
-        ? NyxUtils.registerNyxTrigger(specification) : triggerId);
+    try {
+      // register a trigger
+      this.triggerId = (triggerId == -1
+          ? NyxUtils.registerNyxTrigger(specification) : triggerId);
+    } catch (TriggerManagerException e) {
+      throw new IllegalArgumentException(
+          " Failed to register Trigger with the given spec." + e.getMessage(),
+          e);
+    }
   }
 
+  public long getTriggerId() {
+    return triggerId;
+  }
+  
   @Override
   public Object eval() {
     try {
@@ -130,4 +153,40 @@ public class NyxTriggerChecker implements ConditionChecker {
     return checker;
   }
 
+  @Override
+  public int hashCode() {
+    final int prime = 31;
+    int result = 1;
+    result = prime * result + ((id == null) ? 0 : id.hashCode());
+    result = prime * result
+        + ((specification == null) ? 0 : specification.hashCode());
+    result = prime * result + (int) (triggerId ^ (triggerId >>> 32));
+    return result;
+  }
+
+  @Override
+  public boolean equals(Object obj) {
+    if (this == obj)
+      return true;
+    if (obj == null)
+      return false;
+    if (getClass() != obj.getClass())
+      return false;
+    NyxTriggerChecker other = (NyxTriggerChecker) obj;
+    if (id == null) {
+      if (other.id != null)
+        return false;
+    } else if (!id.equals(other.id))
+      return false;
+    if (specification == null) {
+      if (other.specification != null)
+        return false;
+    } else if (!specification.equals(other.specification))
+      return false;
+    if (triggerId != other.triggerId)
+      return false;
+    return true;
+  }
+
+  
 }

@@ -96,7 +96,7 @@ public class TriggerBasedScheduleLoader implements ScheduleLoader {
       ConditionChecker nyxChecker = new NyxTriggerChecker(
           flowParams.get(ExecutionOptions.TRIGGER_SPEC), "NyxTriggerChecker_1");
       checkers.put(nyxChecker.getId(), nyxChecker);
-      expr = " && " + nyxChecker.getId() + ".eval() ";
+      expr = expr + " && " + nyxChecker.getId() + ".eval() ";
     }
 
     Condition cond = new Condition(checkers, expr);
@@ -113,6 +113,17 @@ public class TriggerBasedScheduleLoader implements ScheduleLoader {
             s.getPeriod());
     checkers.put(checker.getId(), checker);
     String expr = checker.getId() + ".eval()";
+    
+    Map<String, String> flowParams =
+        s.getExecutionOptions().getFlowParameters();
+    if (flowParams != null
+        && flowParams.containsKey(ExecutionOptions.TRIGGER_SPEC)) {
+      ConditionChecker nyxChecker = new NyxTriggerChecker(
+          flowParams.get(ExecutionOptions.TRIGGER_SPEC), "NyxTriggerChecker_2");
+      checkers.put(nyxChecker.getId(), nyxChecker);
+      expr = expr + " && " + nyxChecker.getId() + ".eval() ";
+    }
+    
     Condition cond = new Condition(checkers, expr);
     return cond;
   }

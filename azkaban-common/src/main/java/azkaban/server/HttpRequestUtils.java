@@ -31,6 +31,7 @@ import azkaban.executor.ExecutionOptions;
 import azkaban.executor.ExecutionOptions.FailureAction;
 import azkaban.executor.ExecutorManagerException;
 import azkaban.executor.mail.DefaultMailCreator;
+import azkaban.project.DirectoryFlowLoader;
 import azkaban.project.Project;
 import azkaban.project.ProjectManager;
 import azkaban.user.Permission;
@@ -320,19 +321,22 @@ public class HttpRequestUtils {
   /**
    * Set correct trigger spec using runtime-config or .json file
    * 
-   * @param flowOptions
-   * @param project
-   * @throws Exception
+   * @param flowParams
+   * @param metaData
+   * @throws IllegalArgumentException
    */
-  public static void setTriggerSpecification(ExecutionOptions flowOptions,
-      Project project) throws Exception {
-    Map<String, String> flowParams = flowOptions.getFlowParameters();
-    Map<String, Object> metaData = project.getMetadata();
+  public static void setTriggerSpecification(Map<String, String> flowParams,
+      Map<String, Object> metaData) {
     // User specific TRIGGER_SPEC takes higher priority
     if (flowParams != null
         && !flowParams.containsKey(ExecutionOptions.TRIGGER_SPEC)
-        && metaData != null
-        && metaData.containsKey(ProjectManager.TRIGGER_DATA)) {
+        && flowParams.containsKey(ExecutionOptions.TRIGGER_FILE)
+        && metaData != null) {
+
+      if (!metaData.containsKey(ProjectManager.TRIGGER_DATA)) {
+        throw new IllegalArgumentException("No trigger file in project zip");
+      }
+
       String triggerName = flowParams.get(ExecutionOptions.TRIGGER_FILE);
       @SuppressWarnings("unchecked")
       Map<String, String> triggers =
@@ -340,11 +344,12 @@ public class HttpRequestUtils {
       if (triggers.containsKey(triggerName)) {
         flowParams.put(ExecutionOptions.TRIGGER_SPEC,
             triggers.get(triggerName));
-      } else if (triggers.containsKey(triggerName + ".json")) {
+      } else if (triggers
+          .containsKey(triggerName + DirectoryFlowLoader.TRIGGER_SUFFIX)) {
         flowParams.put(ExecutionOptions.TRIGGER_SPEC,
-            triggers.get(triggerName + ".json"));
+            triggers.get(triggerName + DirectoryFlowLoader.TRIGGER_SUFFIX));
       } else {
-        throw new Exception("Unknown trigger file " + triggerName);
+        throw new IllegalArgumentException("Unknown trigger file " + triggerName);
       }
     }
   }

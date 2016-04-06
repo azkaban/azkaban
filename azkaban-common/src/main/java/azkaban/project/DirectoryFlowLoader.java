@@ -49,7 +49,7 @@ import azkaban.utils.Utils;
 public class DirectoryFlowLoader implements ProjectValidator {
   private static final DirFilter DIR_FILTER = new DirFilter();
   private static final String PROPERTY_SUFFIX = ".properties";
-  private static final String TRIGGER_SUFFIX = ".trigger";
+  public static final String TRIGGER_SUFFIX = ".trigger";
   private static final String JOB_SUFFIX = ".job";
   public static final String JOB_MAX_XMS = "job.max.Xms";
   public static final String MAX_XMS_DEFAULT = "1G";

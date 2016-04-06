@@ -186,38 +186,6 @@ public class RestfulApiClientTest {
   }
 
   @Test
-  public void testContentLength() throws Exception {
-    MockRestfulApiClient mockClient = new MockRestfulApiClient();
-    @SuppressWarnings("unchecked")
-    URI uri = MockRestfulApiClient.buildUri("test.com", 80, "test", true,
-        new Pair <String,String>("Entry1","Value1"));
-
-    String content = "123456789";
-
-    String result = mockClient.httpPut(uri, null,content);
-    Assert.assertTrue(result!= null && result.contains(uri.toString()));
-    Assert.assertTrue(result.contains("Content-Length = " + Integer.toString(content.length())));
-  }
-
-  @Test
-  public void testContentLengthOverride() throws Exception {
-    MockRestfulApiClient mockClient = new MockRestfulApiClient();
-    @SuppressWarnings("unchecked")
-    URI uri = MockRestfulApiClient.buildUri("test.com", 80, "test", true,
-        new Pair <String,String>("Entry1","Value1"));
-
-    ArrayList<NameValuePair> headerItems = new ArrayList<NameValuePair>();
-    headerItems.add(new BasicNameValuePair("Content-Length","0"));
-
-    String content = "123456789";
-
-    String result = mockClient.httpPut(uri, headerItems,content);
-    Assert.assertTrue(result!= null && result.contains(uri.toString()));
-    Assert.assertEquals(result.lastIndexOf("Content-Length"),result.indexOf("Content-Length"));
-    Assert.assertTrue(result.contains("Content-Length = " + Integer.toString(content.length())));
-  }
-
-  @Test
   public void testHttpDelete() throws Exception {
     MockRestfulApiClient mockClient = new MockRestfulApiClient();
     @SuppressWarnings("unchecked")

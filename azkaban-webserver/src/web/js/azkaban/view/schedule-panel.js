@@ -72,7 +72,7 @@ azkaban.SchedulePanelView = Backbone.View.extend({
     var successHandler = function(data) {
       if (data.error) {
         schedulePanelView.hideSchedulePanel();
-        messageDialogView.show("Error Scheduling Flow", data.message);
+        messageDialogView.show("Error Scheduling Flow", data.error);
       }
       else {
         schedulePanelView.hideSchedulePanel();
