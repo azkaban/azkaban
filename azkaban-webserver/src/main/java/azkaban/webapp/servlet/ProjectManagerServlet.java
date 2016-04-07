@@ -1042,7 +1042,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
   /**
    * this only returns user permissions, but not group permissions and proxy
    * users
-   * 
+   *
    * @param project
    * @param ret
    */
@@ -1747,11 +1747,11 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
         }
         ret.put("error", "Installation Failed.<br>" + error);
       } finally {
-        if (tempDir.exists()) {
-          FileUtils.deleteDirectory(tempDir);
-        }
         if (out != null) {
           out.close();
+        }
+        if (tempDir.exists()) {
+          FileUtils.deleteDirectory(tempDir);
         }
       }
 
