@@ -16,6 +16,8 @@
 
 package azkaban.utils;
 
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.File;
@@ -84,7 +86,7 @@ public class FileIOUtils {
   }
 
   /**
-   * Run a unix command that will symlink files, and recurse into directories.
+   * Use NIO to create symlink files, and recurse into directories.
    */
   public static void createDeepSymlink(File sourceDir, File destDir)
       throws IOException {
@@ -101,47 +103,22 @@ public class FileIOUtils {
     Set<String> paths = new HashSet<String>();
     createDirsFindFiles(sourceDir, sourceDir, destDir, paths);
 
-    StringBuffer buffer = new StringBuffer();
     for (String path : paths) {
       File sourceLink = new File(sourceDir, path);
-      path = "." + path;
+      path = destDir + path;
 
-      buffer.append("ln -s ").append(sourceLink.getAbsolutePath()).append("/*")
-          .append(" ").append(path).append(";");
-    }
+      File[] targetFiles = sourceLink.listFiles();
+      for (File targetFile : targetFiles) {
+        if (targetFile.isFile()) {
+          File symlinkFile = new File(path, targetFile.getName());
 
-    String command = buffer.toString();
-    ProcessBuilder builder = new ProcessBuilder().command("sh", "-c", command);
-    builder.directory(destDir);
-
-    // XXX what about stopping threads ??
-    Process process = builder.start();
-    try {
-      NullLogger errorLogger = new NullLogger(process.getErrorStream());
-      NullLogger inputLogger = new NullLogger(process.getInputStream());
-      errorLogger.start();
-      inputLogger.start();
-
-      try {
-        if (process.waitFor() < 0) {
-          // Assume that the error will be in standard out. Otherwise it'll be
-          // in standard in.
-          String errorMessage = errorLogger.getLastMessages();
-          if (errorMessage.isEmpty()) {
-            errorMessage = inputLogger.getLastMessages();
+          try {
+            Files.createSymbolicLink(symlinkFile.toPath(), Paths.get(targetFile.getAbsolutePath()));
+          } catch (IOException e) {
+            e.printStackTrace();
           }
-
-          throw new IOException(errorMessage);
-        }
-
-        // System.out.println(errorLogger.getLastMessages());
-      } catch (InterruptedException e) {
-        e.printStackTrace();
+	    }
       }
-    } finally {
-      IOUtils.closeQuietly(process.getInputStream());
-      IOUtils.closeQuietly(process.getOutputStream());
-      IOUtils.closeQuietly(process.getErrorStream());
     }
   }
 
