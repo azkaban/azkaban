@@ -44,10 +44,16 @@
 
 #macro( renderChecker $trigger $checker )
     #set ($divId = $trigger.triggerId + "-" + ${checker.id})
-    <a class="btn" data-toggle="collapse" data-target="#$divId">$checker.getType()</a>
+    <a style="cursor: pointer;" data-toggle="collapse" data-target="#$divId"><b>$checker.getType()</b></a>
     <div id="$divId" class="collapse">
       #if(${checker.class.simpleName} == "BasicTimeChecker")
-          $checker.getTimeZone() - $checker.isRecurring() - $checker.getPeriod() - $utils.formatDateTime($checker.getNextCheckTime())
+          Timezone: <b>$checker.getTimeZone()</b> <BR>
+          Recurring: <b>$checker.isRecurring()</b> <BR>
+          Period: <b>$checker.getPeriod()</b> <BR>
+          Next check: <b>$utils.formatDateTime($checker.getNextCheckTime())</b><BR><BR>
+      #else
+          $checker.toString()
+          <BR>
       #end
     </div>
 #end
@@ -55,9 +61,11 @@
 
 #macro( renderAction $trigger $action )
     #set ($divId = $trigger.triggerId + "-" + $action.getProjectId() + $action.getFlowName())
-    <a class="btn" data-toggle="collapse" data-target="#$divId">$action.getProjectName()-$action.getFlowName()</a>
+    <a style="cursor: pointer;" data-toggle="collapse" data-target="#$divId"><b>Run Flow (${action.getFlowName()})</b></a>
     <div id="$divId" class="collapse">
-      $action.getProjectId() - $action.getFlowName() - $action.getProjectName()
+        Project Id: <b>$action.getProjectId()</b> <BR>
+        Project: <b>$action.getProjectName()</b> <BR>
+        Flow: <b>$action.getFlowName()</b> <BR>
     </div>
 #end
 
@@ -88,13 +96,11 @@
                   <th>Source</th>
                   <th>User</th>
                   <th>Status</th>
-                  <th class="date">Submit Time</th>
-                  <th class="date">Last Modify Time</th>
-                  <th class="date">Next Check Time</th>
-                  <th>Reset On Trigger</th>
-                  <th>Reset On Expire</th>
-                  <th>Checkers</th>
+                  <th style="min-width: 450px;">Checkers</th>
                   <th>Actions</th>
+                  <th class="date">Created</th>
+                  <th class="date">Last Modified</th>
+                  <th class="date">Next Check</th>
                   <th colspan="2" class="action ignoresort">Action</th>
               </tr>
             </thead>
@@ -106,14 +112,10 @@
                   <td>${trigger.source}</td>
                   <td class="tb-name">${trigger.submitUser}</td>
                   <td>${trigger.status}</td>
-                  <td>$utils.formatDateTime(${trigger.submitTime})</td>
-                  <td>$utils.formatDateTime(${trigger.lastModifyTime})</td>
-                  <td>$utils.formatDateTime(${trigger.nextCheckTime})</td>
-                  <td>${trigger.resetOnTrigger}</td>
-                  <td>${trigger.resetOnExpire}</td>
+
                   <td>
                       #foreach($checker in $trigger.triggerCondition.checkers.entrySet())
-                          #renderChecker($trigger, ${checker.value})<BR>
+                          #renderChecker($trigger, ${checker.value})
                       #end
                   </td>
                   <td>
@@ -121,16 +123,12 @@
                           #renderAction($trigger, $action)<BR>
                       #end
                   </td>
+
+                  <td>$utils.formatDateTime(${trigger.submitTime})</td>
+                  <td>$utils.formatDateTime(${trigger.lastModifyTime})</td>
+                  <td>$utils.formatDateTime(${trigger.nextCheckTime})</td>
                   <td><button type="button" id="removeTriggerBtn" class="btn btn-sm btn-danger" onclick="removeTrigger(${trigger.triggerId})" >Remove Trigger</button></td>
                   <td></td>
-
-
-##                  <td>${trigger.triggerId}</td>
-##                <td>${trigger.source}</td>
-##                <td>${trigger.submitUser}</td>
-##                <td>${trigger.getDescription()}</td>
-##                <td>${trigger.getStatus()}</td>
-                <!--td><button id="expireTriggerBtn" onclick="expireTrigger(${trigger.triggerId})" >Expire Trigger</button></td-->
               </tr>
     #end
   #else
