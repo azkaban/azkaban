@@ -267,7 +267,7 @@
     <div class="pull-left">
         &nbsp;
         #foreach ($triggerPlugin in $triggerPlugins)
-            <button type="button" class="btn btn-info" id=set-$triggerPlugin.pluginName>$triggerPlugin.pluginName</button>
+            <button type="button" class="btn btn-info" id=set-$triggerPlugin.pluginPath>$triggerPlugin.pluginName</button>
         #end
     </div>
 #end
