@@ -23,6 +23,7 @@ import java.util.Map;
 
 import org.apache.log4j.Logger;
 
+import azkaban.executor.ExecutionOptions;
 import azkaban.trigger.Condition;
 import azkaban.trigger.ConditionChecker;
 import azkaban.trigger.Trigger;
@@ -32,6 +33,7 @@ import azkaban.trigger.TriggerManagerAdapter;
 import azkaban.trigger.TriggerManagerException;
 import azkaban.trigger.builtin.BasicTimeChecker;
 import azkaban.trigger.builtin.ExecuteFlowAction;
+import azkaban.trigger.builtin.NyxTriggerChecker;
 
 public class TriggerBasedScheduleLoader implements ScheduleLoader {
 
@@ -86,6 +88,17 @@ public class TriggerBasedScheduleLoader implements ScheduleLoader {
             s.getPeriod());
     checkers.put(checker.getId(), checker);
     String expr = checker.getId() + ".eval()";
+    
+    Map<String, String> flowParams =
+        s.getExecutionOptions().getFlowParameters();
+    if (flowParams != null
+        && flowParams.containsKey(ExecutionOptions.TRIGGER_SPEC)) {
+      ConditionChecker nyxChecker = new NyxTriggerChecker(
+          flowParams.get(ExecutionOptions.TRIGGER_SPEC), "NyxTriggerChecker_1");
+      checkers.put(nyxChecker.getId(), nyxChecker);
+      expr = expr + " && " + nyxChecker.getId() + ".eval() ";
+    }
+
     Condition cond = new Condition(checkers, expr);
     return cond;
   }
@@ -100,6 +113,17 @@ public class TriggerBasedScheduleLoader implements ScheduleLoader {
             s.getPeriod());
     checkers.put(checker.getId(), checker);
     String expr = checker.getId() + ".eval()";
+    
+    Map<String, String> flowParams =
+        s.getExecutionOptions().getFlowParameters();
+    if (flowParams != null
+        && flowParams.containsKey(ExecutionOptions.TRIGGER_SPEC)) {
+      ConditionChecker nyxChecker = new NyxTriggerChecker(
+          flowParams.get(ExecutionOptions.TRIGGER_SPEC), "NyxTriggerChecker_2");
+      checkers.put(nyxChecker.getId(), nyxChecker);
+      expr = expr + " && " + nyxChecker.getId() + ".eval() ";
+    }
+    
     Condition cond = new Condition(checkers, expr);
     return cond;
   }

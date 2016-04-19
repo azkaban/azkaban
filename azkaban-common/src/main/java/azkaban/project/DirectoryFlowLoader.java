@@ -18,6 +18,7 @@ package azkaban.project;
 
 import java.io.File;
 import java.io.FileFilter;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -28,6 +29,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.commons.io.IOUtils;
 import org.apache.log4j.Logger;
 
 import azkaban.flow.CommonJobProperties;
@@ -47,6 +49,7 @@ import azkaban.utils.Utils;
 public class DirectoryFlowLoader implements ProjectValidator {
   private static final DirFilter DIR_FILTER = new DirFilter();
   private static final String PROPERTY_SUFFIX = ".properties";
+  public static final String TRIGGER_SUFFIX = ".trigger";
   private static final String JOB_SUFFIX = ".job";
   public static final String JOB_MAX_XMS = "job.max.Xms";
   public static final String MAX_XMS_DEFAULT = "1G";
@@ -60,6 +63,7 @@ public class DirectoryFlowLoader implements ProjectValidator {
   private HashSet<String> rootNodes;
   private HashMap<String, Flow> flowMap;
   private HashMap<String, Node> nodeMap;
+  private HashMap<String, String> triggerMap;
   private HashMap<String, Map<String, Edge>> nodeDependencies;
   private HashMap<String, Props> jobPropsMap;
 
@@ -108,6 +112,16 @@ public class DirectoryFlowLoader implements ProjectValidator {
   public Map<String, Props> getJobProps() {
     return jobPropsMap;
   }
+  
+  /**
+   * Returns triggers
+   *
+   * @return Map of trigger file name to trigger json
+   */
+  public Map<String, String> getTriggerMap() {
+    return triggerMap;
+  }
+
 
   /**
    * Returns list of properties.
@@ -130,6 +144,7 @@ public class DirectoryFlowLoader implements ProjectValidator {
     jobPropsMap = new HashMap<String, Props>();
     nodeMap = new HashMap<String, Node>();
     flowMap = new HashMap<String, Flow>();
+    triggerMap = new HashMap<String, String>();
     errors = new HashSet<String>();
     duplicateJobs = new HashSet<String>();
     nodeDependencies = new HashMap<String, Map<String, Edge>>();
@@ -173,6 +188,28 @@ public class DirectoryFlowLoader implements ProjectValidator {
       propsList.add(parent);
     }
 
+    //Loading all trigger files
+    File[] triggerFiles = dir.listFiles(new SuffixFilter(TRIGGER_SUFFIX));
+    for (File file : triggerFiles) {
+      FileInputStream fIStream = null;
+      try {
+        if(!triggerMap.containsKey(file.getName())) {
+          fIStream = new FileInputStream(file);
+          String triggerJSON = IOUtils.toString(fIStream);
+          //TODO: validate trigger JSON
+          triggerMap.put(file.getName(), triggerJSON);
+        }
+      } catch (IOException e) {
+        errors.add("Error loading trigger " + file.getName() + ":"
+            + e.getMessage());
+      } finally {
+        if(fIStream != null) {
+          IOUtils.closeQuietly(fIStream);
+        }
+      }
+      logger.info("Adding " + file.getName());
+    }
+    
     // Load all Job files. If there's a duplicate name, then we don't load
     File[] jobFiles = dir.listFiles(new SuffixFilter(JOB_SUFFIX));
     for (File file : jobFiles) {

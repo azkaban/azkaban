@@ -30,6 +30,9 @@ import java.util.zip.ZipFile;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.log4j.Logger;
+import org.codehaus.jackson.JsonGenerationException;
+import org.codehaus.jackson.map.JsonMappingException;
+import org.codehaus.jackson.map.ObjectMapper;
 
 import azkaban.flow.Flow;
 import azkaban.project.DirectoryFlowLoader;
@@ -49,6 +52,7 @@ import azkaban.utils.Utils;
 public class ProjectManager {
   private static final Logger logger = Logger.getLogger(ProjectManager.class);
 
+  public static final String TRIGGER_DATA = "triggers";
   private ConcurrentHashMap<Integer, Project> projectsById =
       new ConcurrentHashMap<Integer, Project>();
   private ConcurrentHashMap<String, Project> projectsByName =
@@ -527,6 +531,7 @@ public class ProjectManager {
         (DirectoryFlowLoader) validatorManager.getDefaultValidator();
     Map<String, Props> jobProps = loader.getJobProps();
     List<Props> propProps = loader.getProps();
+    Map<String, String> triggerMap = loader.getTriggerMap();
 
     synchronized (project) {
       int newVersion = projectLoader.getLatestProjectVersion(project) + 1;
@@ -550,6 +555,10 @@ public class ProjectManager {
           jobProps.values()));
       logger.info("Uploading Props properties");
       projectLoader.uploadProjectProperties(project, propProps);
+      
+      logger.info("Uploading trigger files");
+      project.getMetadata().put(TRIGGER_DATA, triggerMap);
+      projectLoader.updateProjectSettings(project);
     }
 
     logger.info("Uploaded project files. Cleaning up temp files.");

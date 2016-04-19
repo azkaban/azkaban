@@ -31,6 +31,9 @@ import azkaban.executor.ExecutionOptions;
 import azkaban.executor.ExecutionOptions.FailureAction;
 import azkaban.executor.ExecutorManagerException;
 import azkaban.executor.mail.DefaultMailCreator;
+import azkaban.project.DirectoryFlowLoader;
+import azkaban.project.Project;
+import azkaban.project.ProjectManager;
 import azkaban.user.Permission;
 import azkaban.user.Permission.Type;
 import azkaban.user.Role;
@@ -313,6 +316,42 @@ public class HttpRequestUtils {
 
     }
     return groupParam;
+  }
+
+  /**
+   * Set correct trigger spec using runtime-config or .json file
+   * 
+   * @param flowParams
+   * @param metaData
+   * @throws IllegalArgumentException
+   */
+  public static void setTriggerSpecification(Map<String, String> flowParams,
+      Map<String, Object> metaData) {
+    // User specific TRIGGER_SPEC takes higher priority
+    if (flowParams != null
+        && !flowParams.containsKey(ExecutionOptions.TRIGGER_SPEC)
+        && flowParams.containsKey(ExecutionOptions.TRIGGER_FILE)
+        && metaData != null) {
+
+      if (!metaData.containsKey(ProjectManager.TRIGGER_DATA)) {
+        throw new IllegalArgumentException("No trigger file in project zip");
+      }
+
+      String triggerName = flowParams.get(ExecutionOptions.TRIGGER_FILE);
+      @SuppressWarnings("unchecked")
+      Map<String, String> triggers =
+          (Map<String, String>) metaData.get(ProjectManager.TRIGGER_DATA);
+      if (triggers.containsKey(triggerName)) {
+        flowParams.put(ExecutionOptions.TRIGGER_SPEC,
+            triggers.get(triggerName));
+      } else if (triggers
+          .containsKey(triggerName + DirectoryFlowLoader.TRIGGER_SUFFIX)) {
+        flowParams.put(ExecutionOptions.TRIGGER_SPEC,
+            triggers.get(triggerName + DirectoryFlowLoader.TRIGGER_SUFFIX));
+      } else {
+        throw new IllegalArgumentException("Unknown trigger file " + triggerName);
+      }
+    }
   }
 
 }

@@ -78,6 +78,7 @@ import azkaban.trigger.builtin.CreateTriggerAction;
 import azkaban.trigger.builtin.ExecuteFlowAction;
 import azkaban.trigger.builtin.ExecutionChecker;
 import azkaban.trigger.builtin.KillExecutionAction;
+import azkaban.trigger.builtin.NyxTriggerChecker;
 import azkaban.trigger.builtin.SlaAlertAction;
 import azkaban.trigger.builtin.SlaChecker;
 import azkaban.user.UserManager;
@@ -290,6 +291,8 @@ public class AzkabanWebServer extends AzkabanServer {
       CreateTriggerAction.setTriggerManager(triggerManager);
       ExecutionChecker.setExecutorManager(executorManager);
     }
+    triggerManager.registerCheckerType(NyxTriggerChecker.type,
+        NyxTriggerChecker.class);
     triggerManager.registerCheckerType(BasicTimeChecker.type,
         BasicTimeChecker.class);
     triggerManager.registerCheckerType(SlaChecker.type, SlaChecker.class);

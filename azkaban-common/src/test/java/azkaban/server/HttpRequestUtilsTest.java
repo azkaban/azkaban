@@ -26,6 +26,7 @@ import org.junit.Test;
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutionOptions;
 import azkaban.executor.ExecutorManagerException;
+import azkaban.project.ProjectManager;
 import azkaban.user.Permission.Type;
 import azkaban.user.User;
 import azkaban.user.UserManager;
@@ -112,5 +113,81 @@ public final class HttpRequestUtilsTest {
     User testUser = manager.getUser("testUser", "testUser");
     Assert.assertFalse(HttpRequestUtils.hasPermission(manager, testUser,
       Type.ADMIN));
+  }
+  
+  @Test
+  public void testInvalidParamSetTriggerSpecification() throws Exception {
+    HttpRequestUtils.setTriggerSpecification(null, null);
+    HttpRequestUtils.setTriggerSpecification(null,
+        new HashMap<String, Object>());
+    HttpRequestUtils.setTriggerSpecification(new HashMap<String, String>(),
+        null);
+  }
+
+  @Test
+  public void testFlowParamPrecedenceSetTriggerSpecification()
+      throws Exception {
+    Map<String, String> flowParams = new HashMap<String, String>();
+    Map<String, Object> metaData = new HashMap<String, Object>();
+    Map<String, String> triggerFiles = new HashMap<String, String>();
+    triggerFiles.put("t1", "spec1");
+    metaData.put(ProjectManager.TRIGGER_DATA, triggerFiles);
+    flowParams.put(ExecutionOptions.TRIGGER_SPEC, "spec2");
+    flowParams.put(ExecutionOptions.TRIGGER_FILE, "t1");
+
+    HttpRequestUtils.setTriggerSpecification(flowParams, metaData);
+    Assert.assertEquals(
+        "TriggerSpec should have higher precendence over TriggerFile", "spec2",
+        flowParams.get(ExecutionOptions.TRIGGER_SPEC));
+  }
+
+  @Test
+  public void testMissingTriggerFileParamSetTriggerSpecification()
+      throws Exception {
+    Map<String, String> flowParams = new HashMap<String, String>();
+    Map<String, Object> metaData = new HashMap<String, Object>();
+    Map<String, String> triggerFiles = new HashMap<String, String>();
+    triggerFiles.put("t1", "spec1");
+    metaData.put(ProjectManager.TRIGGER_DATA, triggerFiles);
+
+    HttpRequestUtils.setTriggerSpecification(flowParams, metaData);
+    Assert.assertFalse(flowParams.containsKey(ExecutionOptions.TRIGGER_SPEC));
+  }
+
+  @Test(expected=IllegalArgumentException.class)
+  public void testMissingMetaDataSetTriggerSpecification() throws Exception {
+    Map<String, String> flowParams = new HashMap<String, String>();
+    Map<String, Object> metaData = new HashMap<String, Object>();
+
+    flowParams.put(ExecutionOptions.TRIGGER_FILE, "t1");
+
+    HttpRequestUtils.setTriggerSpecification(flowParams, metaData);
+  }
+  
+  
+  @Test(expected=IllegalArgumentException.class)
+  public void testInvalidTriggerFileSetTriggerSpecification() throws Exception {
+    Map<String, String> flowParams = new HashMap<String, String>();
+    Map<String, Object> metaData = new HashMap<String, Object>();
+    Map<String, String> triggerFiles = new HashMap<String, String>();
+    triggerFiles.put("t1", "spec1");
+    metaData.put(ProjectManager.TRIGGER_DATA, triggerFiles);
+    flowParams.put(ExecutionOptions.TRIGGER_FILE, "t2");
+
+    HttpRequestUtils.setTriggerSpecification(flowParams, metaData);
+  }
+  
+  
+  @Test
+  public void testHappyCaseSetTriggerSpecification() throws Exception {
+    Map<String, String> flowParams = new HashMap<String, String>();
+    Map<String, Object> metaData = new HashMap<String, Object>();
+    Map<String, String> triggerFiles = new HashMap<String, String>();
+    triggerFiles.put("t1", "spec1");
+    metaData.put(ProjectManager.TRIGGER_DATA, triggerFiles);
+    flowParams.put(ExecutionOptions.TRIGGER_FILE, "t1");
+
+    HttpRequestUtils.setTriggerSpecification(flowParams, metaData);
+    Assert.assertEquals("spec1", flowParams.get(ExecutionOptions.TRIGGER_SPEC));
   }
 }

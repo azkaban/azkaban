@@ -112,7 +112,7 @@ project(':azkaban-common') {
     compile('com.google.guava:guava:13.0.1')
     compile('com.h2database:h2:1.3.170')
     compile('commons-codec:commons-codec:1.9')
-    compile('commons-collections:commons-collections:3.2.1')
+    compile('commons-collections:commons-collections:3.2.2')
     compile('commons-configuration:commons-configuration:1.8')
     compile('commons-dbcp:commons-dbcp:1.4')
     compile('commons-dbutils:commons-dbutils:1.5')
@@ -141,6 +141,14 @@ project(':azkaban-common') {
 
     testCompile(project(':azkaban-test').sourceSets.test.output)
     testCompile('junit:junit:4.11')
+    testCompile('org.mockito:mockito-all:1.9.5')
+    testCompile('org.powermock:powermock-core:1.5.6')
+    testCompile('org.powermock:powermock-api-mockito:1.5.6')
+    testCompile('org.powermock:powermock-module-junit4:1.5.6')
+    testCompile('org.powermock:powermock-module-junit4-common:1.5.6')
+    testCompile('org.powermock:powermock-api-support:1.5.6')
+    testCompile('org.powermock:powermock-reflect:1.5.6')
+    testCompile('org.javassist:javassist:3.20.0-GA')
     testCompile('org.hamcrest:hamcrest-all:1.3')
   }
 

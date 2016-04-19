@@ -228,9 +228,9 @@ public abstract class RestfulApiClient<T> {
       String postingBody) throws UnsupportedEncodingException{
      if (null != completeRequest(request, headerEntries)){
       // dump the post body UTF-8 will be used as the default encoding type.
-      if (null != postingBody && postingBody.length() > 0){
+      
+       if (null != postingBody && postingBody.length() > 0){
         HttpEntity entity = new ByteArrayEntity(postingBody.getBytes("UTF-8"));
-        request.setHeader("Content-Length",  Long.toString(entity.getContentLength()));
         request.setEntity(entity);
       }
     }
