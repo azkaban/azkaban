@@ -27,6 +27,7 @@
     <script type="text/javascript" src="${context}/js/bootstrap-datetimepicker.min.js"></script>
     <script type="text/javascript" src="${context}/js/azkaban/view/table-sort.js"></script>
     <script type="text/javascript" src="${context}/js/azkaban/view/schedule-sla.js"></script>
+    <script type="text/javascript" src="${context}/js/azkaban/view/schedule-trigger.js"></script>
     <script type="text/javascript" src="${context}/js/azkaban/view/scheduled.js"></script>
     <script type="text/javascript" src="${context}/js/azkaban/util/schedule.js"></script>
     <script type="text/javascript" src="${context}/js/jquery/jquery.tablesorter.js"></script>
@@ -36,7 +37,7 @@
       var timezone = "${timezone}";
       var errorMessage = null;
       var successMessage = null;
-      
+
       $(document).ready(function () {
         var flowTable = $("#scheduledFlowsTbl");
         flowTable.tablesorter();
@@ -81,7 +82,7 @@
                 <th class="date">Next Execution Time</th>
                 <th class="date">Repeats Every</th>
                 <th>Has SLA</th>
-                <th colspan="2" class="action ignoresort">Action</th>
+                <th colspan="3" class="action ignoresort">Action</th>
               </tr>
             </thead>
             <tbody>
@@ -104,6 +105,7 @@
                 <td>$utils.formatPeriod(${sched.period})</td>
                 <td>#if(${sched.slaOptions}) true #else false #end</td>
                 <td><button type="button" id="removeSchedBtn" class="btn btn-sm btn-danger" onclick="removeSched(${sched.scheduleId})" >Remove Schedule</button></td>
+                <td><button type="button" id="viewTgBtn" class="btn btn-sm btn-success" onclick="triggerView.initFromSched(${sched.scheduleId})" >Trigger Status</button></td>
                 <td><button type="button" id="addSlaBtn" class="btn btn-sm btn-primary" onclick="slaView.initFromSched(${sched.scheduleId}, '${sched.flowName}')" >Set SLA</button></td>
               </tr>
     #end
@@ -120,8 +122,26 @@
   ## Set SLA modal.
 
   #parse ("azkaban/webapp/servlet/velocity/slapanel.vm")
-
+  #parse ("azkaban/webapp/servlet/velocity/triggerpanel.vm")
     </div>
 #end
+
+      <div class="container-full">
+      <div class="modal" id="messageDialog">
+        <div class="modal-dialog">
+          <div class="modal-content">
+            <div class="modal-header" id="messageTitle">
+              <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+              <h4 class="modal-title">Error</h4>
+            </div>
+            <div class="modal-body" id="messageDiv">
+              <p id="messageBox"></p>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-primary" data-dismiss="modal">Dismiss</button>
+            </div>
+          </div>
+        </div>
+      </div>
   </body>
 </html>

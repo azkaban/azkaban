@@ -19,12 +19,19 @@ $.namespace('azkaban');
 var slaView;
 var tableSorterView;
 $(function() {
-  slaView = new azkaban.ChangeSlaView({el:$('#sla-options')});
-  tableSorterView = new azkaban.TableSorter({el:$('#scheduledFlowsTbl')});
-  //var requestURL = contextURL + "/manager";
+  slaView = new azkaban.ChangeSlaView({
+    el : $('#sla-options')
+  });
+  tableSorterView = new azkaban.TableSorter({
+    el : $('#scheduledFlowsTbl')
+  });
+  triggerView = new azkaban.ViewTriggerStatusView({
+    el : $("#trigger-view")
+  });
+  // var requestURL = contextURL + "/manager";
 
   // Set up the Flow options view. Create a new one every time :p
-  //$('#addSlaBtn').click( function() {
-  //  slaView.show();
-  //});
+  // $('#addSlaBtn').click( function() {
+  // slaView.show();
+  // });
 });

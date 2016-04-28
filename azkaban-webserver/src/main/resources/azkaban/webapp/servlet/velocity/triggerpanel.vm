@@ -1,0 +1,61 @@
+#*
+ * Copyright 2012 LinkedIn Corp.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not
+ * use this file except in compliance with the License. You may obtain a copy of
+ * the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations under
+ * the License.
+*#
+      <div class="modal modal-wide" id="trigger-status">
+        <div class="modal-dialog">
+          <div class="modal-content">
+            <div class="modal-header">
+              <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+              <h4 class="modal-title">Trigger Status - <span id="triggerName"></span></h4>
+            </div>
+            <div class="modal-body">
+              <H4> Meta Info </H4>
+              <div style="padding: 20px; margin: 20px 0; border: 1px solid #eee; border-left-width: 5px; border-radius: 3px; border-left-color: #333333;">
+              <p> Trigger Owner : <strong id="triggerOwner"></strong> </p>
+              <p> Trigger IsActive : <span id="triggerActive"></strong> </p>
+              <p> Trigger Status : <span id="triggerReady"></strong> </p>
+              <p> Trigger Created Time : <strong id="triggerCreatedTM"></strong> </p>
+              <p> Trigger Updated Time : <strong id="triggerUpdatedTM"></strong> </p>
+              </div>
+              <hr>
+              <h4>Rules</h4>
+              <label id="ruleLbl" >Data details about the rules defined in the trigger</label>
+              <div style="padding: 20px; margin: 20px 0; border: 1px solid #eee; border-left-width: 5px; border-radius: 3px; border-left-color: #333333;">
+              <p> Rule relationship : <strong id="ruleRel"></strong> </p>
+              <table class="table table-striped" id="triggerStatusTbl">
+                <thead>
+                  <tr>
+                    <th>RuleName</th>
+                    <th>Type</th>
+                    <th>Status</th>
+                    <th>Updated Time</th>
+                  </tr>
+                </thead>
+                <tbody>
+                </tbody>
+              </table>
+              </div>
+              <hr>
+              <h4>Raw data</h4>
+              <fieldset>
+                <div class="form-group">
+                  <label id="rawDataLbl" >Raw status data from triggering service </label>
+                  <textarea id="rawData" class="form-control" style="min-height:200px" readOnly></textarea>
+                </div>
+              </fieldset>
+            </div>
+          </div>
+        </div>
+      </div>
