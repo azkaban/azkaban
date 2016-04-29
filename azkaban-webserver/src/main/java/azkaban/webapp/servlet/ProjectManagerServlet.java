@@ -89,7 +89,9 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
       new NodeLevelComparator();
   private static final String LOCKDOWN_CREATE_PROJECTS_KEY =
       "lockdown.create.projects";
-
+  private static final String LOCKDOWN_UPLOAD_PROJECTS_KEY =
+      "lockdown.upload.projects";
+  
   private static final String PROJECT_DOWNLOAD_BUFFER_SIZE_IN_BYTES =
       "project.download.buffer.size";
 
@@ -100,6 +102,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
   private int downloadBufferSize;
 
   private boolean lockdownCreateProjects = false;
+  private boolean lockdownUploadProjects = false;
 
   private static Comparator<Flow> FLOW_ID_COMPARATOR = new Comparator<Flow>() {
     @Override
@@ -122,7 +125,13 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
     if (lockdownCreateProjects) {
       logger.info("Creation of projects is locked down");
     }
-
+    
+    lockdownUploadProjects =
+        server.getServerProps().getBoolean(LOCKDOWN_UPLOAD_PROJECTS_KEY, false);
+    if (lockdownUploadProjects) {
+      logger.info("Uploading of projects is locked down");
+    }
+    
     downloadBufferSize =
         server.getServerProps().getInt(PROJECT_DOWNLOAD_BUFFER_SIZE_IN_BYTES,
             8192);
@@ -1606,7 +1615,10 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
     String message = null;
     HashMap<String, Object> params = null;
 
-    if (lockdownCreateProjects && !hasPermissionToCreateProject(user)) {
+    if (lockdownCreateProjects) {
+      message = "Project creation is locked out";
+      status = "error";
+    } else if (!hasPermissionToCreateProject(user)) {
       message =
           "User " + user.getUserId()
               + " doesn't have permission to create projects.";
@@ -1649,7 +1661,9 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
       props.put(ValidatorConfigs.CUSTOM_AUTO_FIX_FLAG_PARAM, "true");
     }
 
-    if (projectName == null || projectName.isEmpty()) {
+    if (lockdownUploadProjects) {
+      ret.put("error", "project uploading is locked out");
+    } else if (projectName == null || projectName.isEmpty()) {
       ret.put("error", "No project name found.");
     } else if (project == null) {
       ret.put("error", "Installation Failed. Project '" + projectName
