@@ -60,7 +60,7 @@ public class TriggerManager extends EventHandler implements
   private final Object syncObj = new Object();
 
   private String scannerStage = "";
-
+  
   public TriggerManager(Props props, TriggerLoader triggerLoader,
       ExecutorManager executorManager) throws TriggerManagerException {
 
