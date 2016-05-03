@@ -111,7 +111,7 @@
                 <select id="scheduleFailureAction" name="failureAction">
                   <option value="finishCurrent">Finish Current Running</option>
                   <option value="cancelImmediately">Cancel All</option>
-                  <option value="finishPossible">Finish All Possible</option>
+                  <option value="finishPossible" selected="selected">Finish All Possible</option>
                 </select>
                       </dd>
               <dt>Failure Email</dt>
