@@ -42,12 +42,12 @@ public class IndexRedirectServlet extends LoginAbstractAzkabanServlet {
   @Override
   protected void handleGet(HttpServletRequest req, HttpServletResponse resp,
       Session session) throws ServletException, IOException {
-    resp.sendRedirect(defaultServletPath);
+    resp.sendRedirect(req.getContextPath() + defaultServletPath);
   }
 
   @Override
   protected void handlePost(HttpServletRequest req, HttpServletResponse resp,
       Session session) throws ServletException, IOException {
-    resp.sendRedirect(defaultServletPath);
+    resp.sendRedirect(req.getContextPath() + defaultServletPath);
   }
 }
