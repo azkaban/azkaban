@@ -258,11 +258,13 @@ public class EmrUtils {
         // 4.1 vs AMI 3.8
         if (jobProps.containsKey(EMR_CONF_RELEASE_LABEL) || !jobProps.containsKey(EMR_CONF_AMI_VERSION)) { //default to new AMI
             request.setReleaseLabel(jobProps.getString(EMR_CONF_RELEASE_LABEL, EMR_DEFAULT_RELEASE_LABEL));
+            /* Commenting this out because of issues on Lead Score Azkaban
             request.setSteps(new ArrayList<StepConfig>() {{
                 add(new StepConfig("Change hadoop /tmp folder permissions",
                         new HadoopJarStepConfig("s3://usw2-relateiq-emr-scripts/jars/hadoop-common-2.6.0.jar")
                                 .withMainClass("org.apache.hadoop.fs.FsShell").withArgs("-chmod", "777", "/tmp")));
             }});
+            */
             request.setApplications(Arrays.stream(jobProps.getString(EMR_CONF_APPLICATIONS, EMR_DEFAULT_APPLICATONS).split(";"))
                     .map(a -> a.split(","))
                     .filter(r -> r.length >= 1)
