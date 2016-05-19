@@ -24,9 +24,10 @@ import azkaban.trigger.ConditionChecker;
 import azkaban.trigger.TriggerManagerException;
 import azkaban.utils.NyxUtils;
 
+
 /***
  * Trigger checker leveraging upcoming Nyx service
- * 
+ *
  * @author gaggarwa
  *
  */
@@ -48,19 +49,29 @@ public class NyxTriggerChecker implements ConditionChecker {
     this.id = id;
     try {
       // register a trigger
-      this.triggerId = (triggerId == -1
-          ? NyxUtils.registerNyxTrigger(specification) : triggerId);
+      this.triggerId = (triggerId == -1 ? NyxUtils.registerNyxTrigger(specification) : triggerId);
     } catch (TriggerManagerException e) {
-      throw new IllegalArgumentException(
-          " Failed to register Trigger with the given spec." + e.getMessage(),
-          e);
+      throw new IllegalArgumentException(" Failed to register Trigger with the given spec." + e.getMessage(), e);
     }
   }
 
   public long getTriggerId() {
     return triggerId;
   }
-  
+
+  public Map<String, Object> getDetailedStatus() {
+    try {
+      if (triggerId == -1) {
+        // if trigger is not registered then first register
+        triggerId = NyxUtils.registerNyxTrigger(specification);
+      }
+      return NyxUtils.getNyxTriggerStatus(triggerId);
+    } catch (TriggerManagerException ex) {
+      logger.error("Error while getting the detailed status for the trigger " + id, ex);
+      return null;
+    }
+  }
+
   @Override
   public Object eval() {
     try {
@@ -137,19 +148,16 @@ public class NyxTriggerChecker implements ConditionChecker {
     return Long.MAX_VALUE;
   }
 
-  public static NyxTriggerChecker createFromJson(HashMap<String, Object> obj)
-      throws Exception {
+  public static NyxTriggerChecker createFromJson(HashMap<String, Object> obj) throws Exception {
     Map<String, Object> jsonObj = (HashMap<String, Object>) obj;
     if (!jsonObj.get("type").equals(type)) {
-      throw new Exception(
-          "Cannot create checker of " + type + " from " + jsonObj.get("type"));
+      throw new Exception("Cannot create checker of " + type + " from " + jsonObj.get("type"));
     }
     Long triggerId = Long.valueOf((String) jsonObj.get("triggerId"));
     String id = (String) jsonObj.get("id");
     String specification = (String) jsonObj.get("specification");
 
-    NyxTriggerChecker checker =
-        new NyxTriggerChecker(specification, id, triggerId);
+    NyxTriggerChecker checker = new NyxTriggerChecker(specification, id, triggerId);
     return checker;
   }
 
@@ -158,8 +166,7 @@ public class NyxTriggerChecker implements ConditionChecker {
     final int prime = 31;
     int result = 1;
     result = prime * result + ((id == null) ? 0 : id.hashCode());
-    result = prime * result
-        + ((specification == null) ? 0 : specification.hashCode());
+    result = prime * result + ((specification == null) ? 0 : specification.hashCode());
     result = prime * result + (int) (triggerId ^ (triggerId >>> 32));
     return result;
   }
@@ -188,5 +195,4 @@ public class NyxTriggerChecker implements ConditionChecker {
     return true;
   }
 
-  
 }
