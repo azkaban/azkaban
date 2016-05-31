@@ -30,7 +30,7 @@ public class ProjectSideBarViewTest {
     Project project = MockProject.getMockProject();
 
     // Intentionally tries to inject a Javascript.
-    project.setDescription("<script>window.echo(\"hacked\")</script>");
+    project.setDescription("<script>window.alert(\"hacked\")</script>");
 
     context.put("project", project);
     context.put("admins", "admin_name");
