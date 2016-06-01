@@ -26,9 +26,6 @@ azkaban.JobLogModel = Backbone.Model.extend({
     var requestURL = contextURL + "/executor";
     var finished = false;
 
-    var date = new Date();
-    var startTime = date.getTime();
-
     while (!finished) {
       var requestData = {
         "execid": execId,
@@ -51,13 +48,6 @@ azkaban.JobLogModel = Backbone.Model.extend({
           finished = true;
         }
         else {
-          var date = new Date();
-          var endTime = date.getTime();
-          if ((endTime - startTime) > 10000) {
-            finished = true;
-            showDialog("Alert", "The log is taking a long time to finish loading. Azkaban has stopped loading them. Please click Refresh to restart the load.");
-          }
-
           self.set("offset", data.offset + data.length);
           self.set("logData", self.get("logData") + data.data);
         }
