@@ -223,90 +223,89 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
     Project project = projectManager.getProject(projectName);
     if (project == null) {
       ret.put("error", "Project " + projectName + " doesn't exist.");
-      return;
-    }
-
-    ret.put("projectId", project.getId());
-    String ajaxName = getParam(req, "ajax");
-    if (ajaxName.equals("fetchProjectLogs")) {
-      if (handleAjaxPermission(project, user, Type.READ, ret)) {
-        ajaxFetchProjectLogEvents(project, req, resp, ret, user);
-      }
-    } else if (ajaxName.equals("fetchflowjobs")) {
-      if (handleAjaxPermission(project, user, Type.READ, ret)) {
-        ajaxFetchFlow(project, ret, req, resp);
-      }
-    } else if (ajaxName.equals("fetchflowdetails")) {
-      if (handleAjaxPermission(project, user, Type.READ, ret)) {
-        ajaxFetchFlowDetails(project, ret, req);
-      }
-    } else if (ajaxName.equals("fetchflowgraph")) {
-      if (handleAjaxPermission(project, user, Type.READ, ret)) {
-        ajaxFetchFlowGraph(project, ret, req);
-      }
-    } else if (ajaxName.equals("fetchflownodedata")) {
-      if (handleAjaxPermission(project, user, Type.READ, ret)) {
-        ajaxFetchFlowNodeData(project, ret, req);
-      }
-    } else if (ajaxName.equals("fetchprojectflows")) {
-      if (handleAjaxPermission(project, user, Type.READ, ret)) {
-        ajaxFetchProjectFlows(project, ret, req);
-      }
-    } else if (ajaxName.equals("changeDescription")) {
-      if (handleAjaxPermission(project, user, Type.WRITE, ret)) {
-        ajaxChangeDescription(project, ret, req, user);
-      }
-    } else if (ajaxName.equals("getPermissions")) {
-      if (handleAjaxPermission(project, user, Type.READ, ret)) {
-        ajaxGetPermissions(project, ret);
-      }
-    } else if (ajaxName.equals("getGroupPermissions")) {
-      if (handleAjaxPermission(project, user, Type.READ, ret)) {
-        ajaxGetGroupPermissions(project, ret);
-      }
-    } else if (ajaxName.equals("getProxyUsers")) {
-      if (handleAjaxPermission(project, user, Type.READ, ret)) {
-        ajaxGetProxyUsers(project, ret);
-      }
-    } else if (ajaxName.equals("changePermission")) {
-      if (handleAjaxPermission(project, user, Type.ADMIN, ret)) {
-        ajaxChangePermissions(project, ret, req, user);
-      }
-    } else if (ajaxName.equals("addPermission")) {
-      if (handleAjaxPermission(project, user, Type.ADMIN, ret)) {
-        ajaxAddPermission(project, ret, req, user);
-      }
-    } else if (ajaxName.equals("addProxyUser")) {
-      if (handleAjaxPermission(project, user, Type.ADMIN, ret)) {
-        ajaxAddProxyUser(project, ret, req, user);
-      }
-    } else if (ajaxName.equals("removeProxyUser")) {
-      if (handleAjaxPermission(project, user, Type.ADMIN, ret)) {
-        ajaxRemoveProxyUser(project, ret, req, user);
-      }
-    } else if (ajaxName.equals("fetchFlowExecutions")) {
-      if (handleAjaxPermission(project, user, Type.READ, ret)) {
-        ajaxFetchFlowExecutions(project, ret, req);
-      }
-    } else if (ajaxName.equals("fetchLastSuccessfulFlowExecution")) {
-      if (handleAjaxPermission(project, user, Type.READ, ret)) {
-        ajaxFetchLastSuccessfulFlowExecution(project, ret, req);
-      }
-    } else if (ajaxName.equals("fetchJobInfo")) {
-      if (handleAjaxPermission(project, user, Type.READ, ret)) {
-        ajaxFetchJobInfo(project, ret, req);
-      }
-    } else if (ajaxName.equals("setJobOverrideProperty")) {
-      if (handleAjaxPermission(project, user, Type.WRITE, ret)) {
-        ajaxSetJobOverrideProperty(project, ret, req);
-      }
     } else {
-      ret.put("error", "Cannot execute command " + ajaxName);
+      ret.put("projectId", project.getId());
+      String ajaxName = getParam(req, "ajax");
+      if (ajaxName.equals("getProjectId")) {
+        // Do nothing, since projectId is added to all AJAX requests.
+      } else if (ajaxName.equals("fetchProjectLogs")) {
+        if (handleAjaxPermission(project, user, Type.READ, ret)) {
+          ajaxFetchProjectLogEvents(project, req, resp, ret, user);
+        }
+      } else if (ajaxName.equals("fetchflowjobs")) {
+        if (handleAjaxPermission(project, user, Type.READ, ret)) {
+          ajaxFetchFlow(project, ret, req, resp);
+        }
+      } else if (ajaxName.equals("fetchflowdetails")) {
+        if (handleAjaxPermission(project, user, Type.READ, ret)) {
+          ajaxFetchFlowDetails(project, ret, req);
+        }
+      } else if (ajaxName.equals("fetchflowgraph")) {
+        if (handleAjaxPermission(project, user, Type.READ, ret)) {
+          ajaxFetchFlowGraph(project, ret, req);
+        }
+      } else if (ajaxName.equals("fetchflownodedata")) {
+        if (handleAjaxPermission(project, user, Type.READ, ret)) {
+          ajaxFetchFlowNodeData(project, ret, req);
+        }
+      } else if (ajaxName.equals("fetchprojectflows")) {
+        if (handleAjaxPermission(project, user, Type.READ, ret)) {
+          ajaxFetchProjectFlows(project, ret, req);
+        }
+      } else if (ajaxName.equals("changeDescription")) {
+        if (handleAjaxPermission(project, user, Type.WRITE, ret)) {
+          ajaxChangeDescription(project, ret, req, user);
+        }
+      } else if (ajaxName.equals("getPermissions")) {
+        if (handleAjaxPermission(project, user, Type.READ, ret)) {
+          ajaxGetPermissions(project, ret);
+        }
+      } else if (ajaxName.equals("getGroupPermissions")) {
+        if (handleAjaxPermission(project, user, Type.READ, ret)) {
+          ajaxGetGroupPermissions(project, ret);
+        }
+      } else if (ajaxName.equals("getProxyUsers")) {
+        if (handleAjaxPermission(project, user, Type.READ, ret)) {
+          ajaxGetProxyUsers(project, ret);
+        }
+      } else if (ajaxName.equals("changePermission")) {
+        if (handleAjaxPermission(project, user, Type.ADMIN, ret)) {
+          ajaxChangePermissions(project, ret, req, user);
+        }
+      } else if (ajaxName.equals("addPermission")) {
+        if (handleAjaxPermission(project, user, Type.ADMIN, ret)) {
+          ajaxAddPermission(project, ret, req, user);
+        }
+      } else if (ajaxName.equals("addProxyUser")) {
+        if (handleAjaxPermission(project, user, Type.ADMIN, ret)) {
+          ajaxAddProxyUser(project, ret, req, user);
+        }
+      } else if (ajaxName.equals("removeProxyUser")) {
+        if (handleAjaxPermission(project, user, Type.ADMIN, ret)) {
+          ajaxRemoveProxyUser(project, ret, req, user);
+        }
+      } else if (ajaxName.equals("fetchFlowExecutions")) {
+        if (handleAjaxPermission(project, user, Type.READ, ret)) {
+          ajaxFetchFlowExecutions(project, ret, req);
+        }
+      } else if (ajaxName.equals("fetchLastSuccessfulFlowExecution")) {
+        if (handleAjaxPermission(project, user, Type.READ, ret)) {
+          ajaxFetchLastSuccessfulFlowExecution(project, ret, req);
+        }
+      } else if (ajaxName.equals("fetchJobInfo")) {
+        if (handleAjaxPermission(project, user, Type.READ, ret)) {
+          ajaxFetchJobInfo(project, ret, req);
+        }
+      } else if (ajaxName.equals("setJobOverrideProperty")) {
+        if (handleAjaxPermission(project, user, Type.WRITE, ret)) {
+          ajaxSetJobOverrideProperty(project, ret, req);
+        }
+      } else {
+        ret.put("error", "Cannot execute command " + ajaxName);
+      }
     }
 
-    if (ret != null) {
-      this.writeJSON(resp, ret);
-    }
+    this.writeJSON(resp, ret);
   }
 
   private boolean handleAjaxPermission(Project project, User user, Type type,
