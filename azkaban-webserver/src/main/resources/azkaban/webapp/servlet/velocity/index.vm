@@ -93,8 +93,11 @@
   #foreach ($project in $projects)
             <li>
               <div class="project-info">
-                <h4><a href="${context}/manager?project=${project.name}">$project.name</a></h4>
-                <p class="project-description">$project.description</p>
+                ## The UI logic elsewhere enforces that $project.name must start with a letter, followed by any number
+                ## of letters, digits, '-' or '_'. Escape it just to play it safe.
+                ## todo: make escaping the default.
+                <h4><a href="${context}/manager?project=${project.name}">$esc.html($project.name)</a></h4>
+                <p class="project-description">$esc.html($project.description)</p>
                 <p class="project-last-modified">Last modified on <strong>$utils.formatDate($project.lastModifiedTimestamp)</strong> by <strong>$project.lastModifiedUser</strong>.</p>
               </div>
               <div class="project-expander" id="${project.name}">
