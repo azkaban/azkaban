@@ -251,7 +251,7 @@ public class EmrClusterManager implements IClusterManager, EventListener {
 
         switch (executionMode) {
             case CREATE_CLUSTER:
-                maybeTerminateEphemoralCluster(flow, combinedProps, jobLogger);
+                maybeTerminateEphemeralCluster(flow, combinedProps, jobLogger);
                 break;
 
             default:
@@ -268,7 +268,7 @@ public class EmrClusterManager implements IClusterManager, EventListener {
      * @param combinedProps
      * @param jobLogger
      */
-    private synchronized void maybeTerminateEphemoralCluster(ExecutableFlow flow, Props combinedProps, Logger jobLogger) {
+    private synchronized void maybeTerminateEphemeralCluster(ExecutableFlow flow, Props combinedProps, Logger jobLogger) {
         // Is this flow only ok to shutdown the cluster?
         boolean okThisFlowToShutdown = shouldShutdown(combinedProps, flow.getStatus(), jobLogger);
 
@@ -431,18 +431,7 @@ public class EmrClusterManager implements IClusterManager, EventListener {
     }
 
     private enum ClusterNameStrategy {
-        EXECUTION_ID(false),
-        PROJECT_NAME(true);
-
-        private boolean supportClusterWithMultipleFlows;
-
-        private ClusterNameStrategy(boolean c) {
-            supportClusterWithMultipleFlows = c;
-        }
-
-        public boolean doesSupportClusterWithMultipleFlows() {
-            return supportClusterWithMultipleFlows;
-        }
-
+        EXECUTION_ID,
+        PROJECT_NAME;
     }
 }
