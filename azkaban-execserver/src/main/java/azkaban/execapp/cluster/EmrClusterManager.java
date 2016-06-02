@@ -270,7 +270,7 @@ public class EmrClusterManager implements IClusterManager, EventListener {
      */
     private synchronized void maybeTerminateEphemeralCluster(ExecutableFlow flow, Props combinedProps, Logger jobLogger) {
         // Is this flow only ok to shutdown the cluster?
-        boolean okThisFlowToShutdown = shouldShutdown(combinedProps, flow.getStatus(), jobLogger);
+        boolean okForThisFlowToShutdownCluster = shouldShutdown(combinedProps, flow.getStatus(), jobLogger);
 
         // Flow Properties
         Status flowStatus = flow.getStatus();
@@ -293,18 +293,18 @@ public class EmrClusterManager implements IClusterManager, EventListener {
         Boolean otherFlowsOkToShutdown = !clustersKeepAlive.contains(clusterName);
 
         // Log Debug
-        jobLogger.info("Maybe Shutdown - Flow Status: " + flowStatus);
-        jobLogger.info("Maybe Shutdown - Cluster Id: " + clusterId);
-        jobLogger.info("Maybe Shutdown - Cluster Name: " + clusterName);
-        jobLogger.info("Maybe Shutdown - Latch Count: " + count);
-        jobLogger.info("Maybe Shutdown - Is ok with this flow to shutdown cluster: " + okThisFlowToShutdown);
+        jobLogger.info("Shutdown Process - Flow Status: " + flowStatus);
+        jobLogger.info("Shutdown Process - Cluster Id: " + clusterId);
+        jobLogger.info("Shutdown Process - Cluster Name: " + clusterName);
+        jobLogger.info("Shutdown Process - Latch Count: " + count);
+        jobLogger.info("Shutdown Process - Is ok with this flow to shutdown cluster: " + okForThisFlowToShutdownCluster);
 
         // If this is the last flow using the cluster
         if (count == 0 || count == null) {
-            jobLogger.info("Maybe Shutdown - Is ok with the other flows sharing this cluster to shutdown the cluster: " + otherFlowsOkToShutdown);
+            jobLogger.info("Shutdown Process - Is ok with the other flows sharing this cluster to shutdown the cluster: " + otherFlowsOkToShutdown);
 
             try {
-                if (okThisFlowToShutdown && otherFlowsOkToShutdown) {
+                if (okForThisFlowToShutdownCluster && otherFlowsOkToShutdown) {
                     if (clusterId != null) {
                         jobLogger.info("Terminating cluster " + clusterId);
                         terminateCluster(getEmrClient(), clusterId);
@@ -320,7 +320,7 @@ public class EmrClusterManager implements IClusterManager, EventListener {
                 clusterFlows.remove(clusterName);
             }
 
-        } else if (!okThisFlowToShutdown) {
+        } else if (!okForThisFlowToShutdownCluster) {
             // If we are not shutting down the cluster now and it's not ok for the cluster to be shutdown from this specific flow's prespective, add note to that
             clustersKeepAlive.add(clusterName);
         }
