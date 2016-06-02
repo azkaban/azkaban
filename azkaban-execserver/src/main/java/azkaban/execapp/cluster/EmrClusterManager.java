@@ -20,6 +20,7 @@ import org.apache.log4j.Logger;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 import static azkaban.execapp.cluster.emr.EmrUtils.*;
 
@@ -28,20 +29,7 @@ import static azkaban.execapp.cluster.emr.EmrUtils.*;
  */
 public class EmrClusterManager implements IClusterManager, EventListener {
 
-
-    private enum ExecutionMode {
-        DEFAULT_CLUSTER,
-        CREATE_CLUSTER,
-        SPECIFIC_CLUSTER
-    }
-
-    private enum ClusterNameStrategy {
-        EXECUTION_ID,
-        PROJECT_NAME;
-    }
-
     private Logger classLogger = Logger.getLogger(EmrClusterManager.class);
-
 
     private static final String EMR_CONF_ENABLED = "cluster.emr.enabled";
     private static final String EMR_CONF_TERMINATE_ERROR = "cluster.emr.terminate.error";
@@ -49,10 +37,8 @@ public class EmrClusterManager implements IClusterManager, EventListener {
     private static final String EMR_CONF_SELECT_ID = "cluster.emr.select.id";
     private static final String EMR_CONF_NAME_STRATEGY = "cluster.emr.name.strategy"; // see ClusterNameStrategy enum for possible values
     private static final String EMR_CONF_SPOOLUP_TIMEOUT = "cluster.emr.spoolup.timeout";
-
     private static final String EMR_CONF_APP_CONFIGURATION_S3_PATH = "cluster.emr.app.configuration.s3.path";
     private static final String EMR_DEFAULT_APP_CONFIGURATION_S3_PATH = "s3://usw2-relateiq-emr-scripts/scripts/hadoo-emr-settings.json";
-
 
     // internal flow props
     private static final String EMR_INTERNAL_CLUSTERID = "cluster.emr.internal.clusterid";
@@ -61,6 +47,12 @@ public class EmrClusterManager implements IClusterManager, EventListener {
 
     private Props globalProps = null;
     private ExecutorLoader executorLoader = null;
+
+    // Cluster Name -> Integer (Count of flows using cluster) - only going into shutdown process for emr clusters when all executions that use the cluster are done
+    private Map<String, Integer> clusterFlows = new ConcurrentHashMap<String, Integer>();
+
+    // (Item is Cluster Name) - List of clusters to keep alive - when multiple flows share the same cluster, if any of the flows indicate that the cluster should not be shutdown (because of an error or any other reason), the cluster should not be terminated even if it's ok to be terminated by the other flows using it.
+    private List<String> clustersKeepAlive = Collections.synchronizedList(new ArrayList<String>());
 
     public EmrClusterManager(Props serverProps) {
         classLogger.info("Initialized " + this.getClass().getName());
@@ -71,7 +63,6 @@ public class EmrClusterManager implements IClusterManager, EventListener {
      *
      * @param combinedProps
      * @param logger
-     *
      * @return the strategy to be used
      */
     ClusterNameStrategy getClusterNameStrategy(Props combinedProps, Logger logger) {
@@ -152,8 +143,6 @@ public class EmrClusterManager implements IClusterManager, EventListener {
         }
     }
 
-
-
     @Override
     public boolean createClusterAndConfigureJob(ExecutableFlow flow, Logger logger) {
         Logger jobLogger = logger != null ? logger : classLogger;
@@ -183,6 +172,11 @@ public class EmrClusterManager implements IClusterManager, EventListener {
                     flow.setStatus(Status.CREATING_CLUSTER);
                     updateFlow(flow);
                     String clusterName = getClusterName(flow, combinedProps, logger);
+
+                    // This is to keep track the number of flows that's attached to an EMR cluster
+                    clusterFlows.computeIfPresent(clusterName, (key, value) -> value + 1);
+                    clusterFlows.putIfAbsent(clusterName, 1);
+
                     setClusterProperty(flow, EMR_INTERNAL_CLUSTERNAME, clusterName);
                     jobLogger.info("Preparing new EMR cluster request to run this flow. Cluster name will be " + clusterName + ".");
                     JobFlowInstancesConfig instancesConfig = createEMRClusterInstanceConfig(combinedProps);
@@ -257,26 +251,80 @@ public class EmrClusterManager implements IClusterManager, EventListener {
 
         switch (executionMode) {
             case CREATE_CLUSTER:
-                if (shouldShutdown(combinedProps, flow.getStatus(), jobLogger)) {
-                    String clusterId = combinedProps.get(EMR_INTERNAL_CLUSTERID);
-                    if (clusterId != null) {
-                        jobLogger.info("Terminating cluster " + clusterId);
-                        terminateCluster(getEmrClient(), clusterId);
-                    } else {
-                        jobLogger.info("ClusterId was null. Not terminating cluster.");
-                    }
-                } else {
-                    jobLogger.info("Not terminating cluster based on execution properties.");
-                }
+                maybeTerminateEphemoralCluster(flow, combinedProps, jobLogger);
                 break;
+
             default:
                 jobLogger.info("Execution mode was " + executionMode + ", so cluster will not be terminated.");
                 break;
         }
     }
 
+    /**
+     * This is the method that's called that will maybe terminate ephemoral emr clusters
+     * If more than one flow shares a cluster, we will only shutdown the cluster if all of the flows are ok for that to happen (shouldShutdown() returning true for each flow instance)
+     *
+     * @param flow
+     * @param combinedProps
+     * @param jobLogger
+     */
+    private synchronized void maybeTerminateEphemoralCluster(ExecutableFlow flow, Props combinedProps, Logger jobLogger) {
+        // Is this flow only ok to shutdown the cluster?
+        boolean okThisFlowToShutdown = shouldShutdown(combinedProps, flow.getStatus(), jobLogger);
 
+        // Flow Properties
+        Status flowStatus = flow.getStatus();
 
+        // Cluster Properties
+        String clusterId = combinedProps.get(EMR_INTERNAL_CLUSTERID);
+        String clusterName = combinedProps.get(EMR_INTERNAL_CLUSTERNAME);
+
+        // Count down all the flows are using the cluster so shutdown only happens when all flows are done
+        Integer count = clusterFlows.computeIfPresent(clusterName, (key, value) -> {
+            Integer current = value - 1;
+            if (current <= 0) {
+                return null;
+            } else {
+                return current;
+            }
+        });
+
+        // Are the other flows sharing the cluster ok to shutdown the cluster?
+        Boolean otherFlowsOkToShutdown = !clustersKeepAlive.contains(clusterName);
+
+        // Log Debug
+        jobLogger.info("Maybe Shutdown - Flow Status: " + flowStatus);
+        jobLogger.info("Maybe Shutdown - Cluster Id: " + clusterId);
+        jobLogger.info("Maybe Shutdown - Cluster Name: " + clusterName);
+        jobLogger.info("Maybe Shutdown - Latch Count: " + count);
+        jobLogger.info("Maybe Shutdown - Is ok with this flow to shutdown cluster: " + okThisFlowToShutdown);
+
+        // If this is the last flow using the cluster
+        if (count == 0 || count == null) {
+            jobLogger.info("Maybe Shutdown - Is ok with the other flows sharing this cluster to shutdown the cluster: " + otherFlowsOkToShutdown);
+
+            try {
+                if (okThisFlowToShutdown && otherFlowsOkToShutdown) {
+                    if (clusterId != null) {
+                        jobLogger.info("Terminating cluster " + clusterId);
+                        terminateCluster(getEmrClient(), clusterId);
+                    } else {
+                        jobLogger.info("ClusterId was null. Not terminating cluster.");
+                    }
+
+                } else {
+                    jobLogger.info("Not terminating cluster based on execution properties.");
+                }
+            } finally {
+                clustersKeepAlive.remove(clusterName);
+                clusterFlows.remove(clusterName);
+            }
+
+        } else if (!okThisFlowToShutdown) {
+            // If we are not shutting down the cluster now and it's not ok for the cluster to be shutdown from this specific flow's prespective, add note to that
+            clustersKeepAlive.add(clusterName);
+        }
+    }
 
     public Optional<String> blockUntilReadyAndReturnMasterIp(String clusterId, int timeoutInMinutes, Logger jobLogger) {
         if (clusterId == null) return Optional.empty();
@@ -305,16 +353,11 @@ public class EmrClusterManager implements IClusterManager, EventListener {
         return Optional.empty();
     }
 
-
-
-
     private void updateFlow(ExecutableFlow flow) throws ExecutorManagerException {
         flow.setUpdateTime(System.currentTimeMillis());
         if (executorLoader == null) executorLoader = AzkabanExecutorServer.getApp().getExecutorLoader();
         executorLoader.updateExecutableFlow(flow);
     }
-
-
 
     Props getCombinedProps(ExecutableFlow flow) {
         ExecutionOptions executionOptions = flow.getExecutionOptions();
@@ -327,10 +370,9 @@ public class EmrClusterManager implements IClusterManager, EventListener {
             globalProps = AzkabanExecutorServer.getApp().getFlowRunnerManager().getGlobalProps();
         }
         Props combinedProps = new Props(propsFromMap(clusterProperties), globalProps);
-        flow.getInputProps().getMapByPrefix("cluster.").forEach((key,val) -> combinedProps.put("cluster." + key, val));
+        flow.getInputProps().getMapByPrefix("cluster.").forEach((key, val) -> combinedProps.put("cluster." + key, val));
         return combinedProps;
     }
-
 
     private void setClusterProperty(ExecutableFlow flow, String key, Object value) {
         ExecutionOptions executionOptions = flow.getExecutionOptions();
@@ -341,7 +383,6 @@ public class EmrClusterManager implements IClusterManager, EventListener {
         }
         clusterProperties.put(key, value);
     }
-
 
     public void setFlowMasterIp(ExecutableFlow flow, String masterIp, Logger jobLogger) {
         jobLogger.info("Updating hadoop master ip with " + masterIp);
@@ -360,7 +401,6 @@ public class EmrClusterManager implements IClusterManager, EventListener {
         return newProps;
     }
 
-
     private void printClusterProperties(Props combinedProps, Logger jobLogger) {
         {
             jobLogger.info("Execution options:");
@@ -371,15 +411,38 @@ public class EmrClusterManager implements IClusterManager, EventListener {
         }
     }
 
-
     private AWSCredentials getAWSCredentials() {
         DefaultAWSCredentialsProviderChain providerChain = new DefaultAWSCredentialsProviderChain();
         return providerChain.getCredentials();
     }
+
     private AmazonS3Client getS3Client() {
         return new AmazonS3Client(getAWSCredentials()).withRegion(Regions.US_WEST_2);
     }
+
     private AmazonElasticMapReduceClient getEmrClient() {
         return new AmazonElasticMapReduceClient(getAWSCredentials()).withRegion(Regions.US_WEST_2);
+    }
+
+    private enum ExecutionMode {
+        DEFAULT_CLUSTER,
+        CREATE_CLUSTER,
+        SPECIFIC_CLUSTER
+    }
+
+    private enum ClusterNameStrategy {
+        EXECUTION_ID(false),
+        PROJECT_NAME(true);
+
+        private boolean supportClusterWithMultipleFlows;
+
+        private ClusterNameStrategy(boolean c) {
+            supportClusterWithMultipleFlows = c;
+        }
+
+        public boolean doesSupportClusterWithMultipleFlows() {
+            return supportClusterWithMultipleFlows;
+        }
+
     }
 }
