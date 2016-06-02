@@ -19,10 +19,7 @@ import com.amazonaws.services.s3.AmazonS3Client;
 import org.apache.log4j.Logger;
 
 import java.io.IOException;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 import static azkaban.execapp.cluster.emr.EmrUtils.*;
 
@@ -38,6 +35,11 @@ public class EmrClusterManager implements IClusterManager, EventListener {
         SPECIFIC_CLUSTER
     }
 
+    private enum ClusterNameStrategy {
+        EXECUTION_ID,
+        PROJECT_NAME;
+    }
+
     private Logger classLogger = Logger.getLogger(EmrClusterManager.class);
 
 
@@ -45,6 +47,7 @@ public class EmrClusterManager implements IClusterManager, EventListener {
     private static final String EMR_CONF_TERMINATE_ERROR = "cluster.emr.terminate.error";
     private static final String EMR_CONF_TERMINATE_COMPLETION = "cluster.emr.terminate.completion";
     private static final String EMR_CONF_SELECT_ID = "cluster.emr.select.id";
+    private static final String EMR_CONF_NAME_STRATEGY = "cluster.emr.name.strategy"; // see ClusterNameStrategy enum for possible values
     private static final String EMR_CONF_SPOOLUP_TIMEOUT = "cluster.emr.spoolup.timeout";
 
     private static final String EMR_CONF_APP_CONFIGURATION_S3_PATH = "cluster.emr.app.configuration.s3.path";
@@ -63,6 +66,34 @@ public class EmrClusterManager implements IClusterManager, EventListener {
         classLogger.info("Initialized " + this.getClass().getName());
     }
 
+    /**
+     * If we are creating a cluster, define how we are gonna name the cluster (the name is important because that's how we reuse the cluster between jobs)
+     *
+     * @param combinedProps
+     * @param logger
+     *
+     * @return the strategy to be used
+     */
+    ClusterNameStrategy getClusterNameStrategy(Props combinedProps, Logger logger) {
+        ClusterNameStrategy defaultValue = ClusterNameStrategy.EXECUTION_ID;
+        String defaultProperty = null;
+        String value = combinedProps.getString(EMR_CONF_NAME_STRATEGY, defaultProperty);
+
+        if (value == null) {
+            logger.info(EMR_CONF_NAME_STRATEGY + " is not set so defaulting to " + defaultValue);
+            return defaultValue;
+        }
+
+        try {
+            ClusterNameStrategy s = ClusterNameStrategy.valueOf(value.toUpperCase());
+            logger.info(EMR_CONF_NAME_STRATEGY + " is set to: " + s);
+            return s;
+
+        } catch (Throwable error) {
+            logger.warn(EMR_CONF_NAME_STRATEGY + " is set to " + value + " but that's not valid, returning default value: " + defaultValue + ". The possible values are: " + Arrays.toString(ClusterNameStrategy.values()));
+            return defaultValue;
+        }
+    }
 
     ExecutionMode getFlowExecutionMode(Props combinedProps, Logger logger) {
         if (combinedProps.get(EMR_CONF_SELECT_ID) != null) {
@@ -80,6 +111,18 @@ public class EmrClusterManager implements IClusterManager, EventListener {
 
         logger.info(EMR_CONF_ENABLED + " was false or not set, and " + EMR_CONF_SELECT_ID + " was not specified. Will run on default cluster.");
         return ExecutionMode.DEFAULT_CLUSTER;
+    }
+
+    String getClusterName(ExecutableFlow flow, Props props, Logger logger) {
+        ClusterNameStrategy strategy = getClusterNameStrategy(props, logger);
+
+        if (strategy.equals(ClusterNameStrategy.EXECUTION_ID)) {
+            return "Azkaban - Transient Cluster - [" + flow.getFlowId() + ":" + flow.getExecutionId() + "]";
+        } else if (strategy.equals(ClusterNameStrategy.PROJECT_NAME)) {
+            return "Azkaban - Transient Cluster - [" + flow.getProjectName() + "]";
+        } else {
+            throw new RuntimeException("Don't know how to handle cluster name strategy: " + strategy);
+        }
     }
 
     @Override
@@ -139,7 +182,7 @@ public class EmrClusterManager implements IClusterManager, EventListener {
                 try {
                     flow.setStatus(Status.CREATING_CLUSTER);
                     updateFlow(flow);
-                    String clusterName = "Azkaban - Transient Cluster - [" + flow.getFlowId() + ":" + flow.getExecutionId() + "]";
+                    String clusterName = getClusterName(flow, combinedProps, logger);
                     setClusterProperty(flow, EMR_INTERNAL_CLUSTERNAME, clusterName);
                     jobLogger.info("Preparing new EMR cluster request to run this flow. Cluster name will be " + clusterName + ".");
                     JobFlowInstancesConfig instancesConfig = createEMRClusterInstanceConfig(combinedProps);
