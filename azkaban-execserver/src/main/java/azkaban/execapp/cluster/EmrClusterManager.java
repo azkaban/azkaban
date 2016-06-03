@@ -46,7 +46,7 @@ public class EmrClusterManager implements IClusterManager, EventListener {
     // Cluster Name -> Integer (Count of flows using cluster) - only going into shutdown process for emr clusters when all executions that use the cluster are done
     private Map<String, Integer> clusterFlows = new ConcurrentHashMap<String, Integer>();
 
-    // (Item is Cluster Name) - List of clusters to keep alive - when multiple flows share the same cluster, if any of the flows indicate that the cluster should not be shutdown (because of an error or any other reason), the cluster should not be terminated even if it's ok to be terminated by the other flows using it.
+    // (Item is Cluster Id) - List of clusters to keep alive - when multiple flows share the same cluster, if any of the flows indicate that the cluster should not be shutdown (because of an error or any other reason), the cluster should not be terminated even if it's ok to be terminated by the other flows using it.
     private List<String> clustersKeepAlive = Collections.synchronizedList(new ArrayList<String>());
 
     public EmrClusterManager(Props serverProps) {
