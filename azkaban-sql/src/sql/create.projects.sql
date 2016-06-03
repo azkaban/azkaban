@@ -10,6 +10,6 @@ CREATE TABLE projects (
 	enc_type TINYINT,
 	settings_blob LONGBLOB,
 	UNIQUE INDEX project_id (id)
-);
+)charset utf8;
 
 CREATE INDEX project_name ON projects(name);
