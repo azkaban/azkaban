@@ -27,6 +27,7 @@ import static azkaban.execapp.cluster.emr.EmrUtils.*;
  */
 public class EmrClusterManager implements IClusterManager, EventListener {
 
+    private static final String EMR_CONF_ENV_NAME = "emr.env.name";
     private static final String EMR_CONF_ENABLED = "cluster.emr.enabled";
     private static final String EMR_CONF_TERMINATE_ERROR = "cluster.emr.terminate.error";
     private static final String EMR_CONF_TERMINATE_COMPLETION = "cluster.emr.terminate.completion";
@@ -103,9 +104,9 @@ public class EmrClusterManager implements IClusterManager, EventListener {
         ClusterNameStrategy strategy = getClusterNameStrategy(props, logger);
 
         if (strategy.equals(ClusterNameStrategy.EXECUTION_ID)) {
-            return "Azkaban - Transient Cluster - [" + flow.getFlowId() + ":" + flow.getExecutionId() + "]";
+            return "Azkaban - Transient Cluster - [" + props.get(EMR_CONF_ENV_NAME) + "-" + flow.getFlowId() + ":" + flow.getExecutionId() + "]";
         } else if (strategy.equals(ClusterNameStrategy.PROJECT_NAME)) {
-            return "Azkaban - Transient Cluster - [" + flow.getProjectName() + "]";
+            return "Azkaban - Transient Cluster - [" + props.get(EMR_CONF_ENV_NAME) + "-" + flow.getProjectName() + "]";
         } else {
             throw new RuntimeException("Don't know how to handle cluster name strategy: " + strategy);
         }
