@@ -1,6 +1,3 @@
-Azkaban2 [![Build Status](http://img.shields.io/travis/azkaban/azkaban.svg?style=flat)](https://travis-ci.org/azkaban/azkaban)
-========
-
 Building from Source
 --------------------
 
@@ -15,6 +12,19 @@ The above command builds all Azkaban packages and packages them into GZipped Tar
 ```
 ./gradlew distZip
 ```
+
+Release Process
+---------------
+
+* Versions are manually created through Team City once it's merged to  (https://teamcity.amz.relateiq.com/viewType.html?buildTypeId=RIQ2014_Services_AzkabanCore&tab=artifactory).
+* Then update Azkaban version on our Docker Azkaban repository (https://github.com/relateiq/docker-azkaban-solo/blob/master/build.gradle#L56)
+* Manually release Azkaban to our different environments (https://teamcity.amz.relateiq.com/project.html?projectId=RIQ2014_Services_Azkaban&tab=projectOverview)
+
+
+EMR Bootstrap Process
+---------------------
+
+To learn more about our custom EMR bootstrap process, click [here](https://github.com/relateiq/MarketingCloud/wiki/Runbook#emr).
 
 Documentation
 -------------
