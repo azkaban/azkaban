@@ -10,7 +10,7 @@ import org.apache.velocity.app.VelocityEngine;
  */
 public class VelocityTemplateTestUtil {
 
-  private static final String TEMPLATE_BASE_DIR = "src/main/resources/azkaban/webapp/servlet/velocity/";
+  private static final String TEMPLATE_BASE_DIR = "azkaban/webapp/servlet/velocity/";
 
   /**
    * Render a template and return the result
@@ -22,6 +22,7 @@ public class VelocityTemplateTestUtil {
   public static String renderTemplate(String templateName, VelocityContext context) {
     StringWriter stringWriter = new StringWriter();
     VelocityEngine engine = new VelocityEngine();
+    engine.init("src/test/resources/velocity.properties");
 
     engine.mergeTemplate(TEMPLATE_BASE_DIR + templateName + ".vm", "UTF-8", context, stringWriter);
     return stringWriter.getBuffer().toString();

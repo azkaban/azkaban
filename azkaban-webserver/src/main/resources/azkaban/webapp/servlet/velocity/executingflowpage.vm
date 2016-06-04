@@ -107,6 +107,9 @@
         <li id="jobslistViewLink"><a href="#jobslist">Job List</a></li>
         <li id="flowLogViewLink"><a href="#log">Flow Log</a></li>
         <li id="statsViewLink"><a href="#stats">Stats</a></li>
+        #if ($executionExternalLinkURL)
+          <li><a id="analyzerButton" href="${executionExternalLinkURL}" class="btn btn-info btn-sm" type="button" target="_blank" title="Analyze job in ${executionExternalLinkLabel}">${executionExternalLinkLabel}</a></li>
+        #end                                        
         <li class="nav-button pull-right"><button type="button" id="pausebtn" class="btn btn-primary btn-sm">Pause</button></li>
         <li class="nav-button pull-right"><button type="button" id="resumebtn" class="btn btn-primary btn-sm">Resume</button></li>
         <li class="nav-button pull-right"><button type="button" id="cancelbtn" class="btn btn-danger btn-sm">Kill</button></li>

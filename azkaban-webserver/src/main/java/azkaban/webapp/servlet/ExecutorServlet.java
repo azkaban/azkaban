@@ -28,6 +28,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.apache.commons.lang.StringEscapeUtils;
+import org.apache.log4j.Logger;
 
 import azkaban.executor.ConnectorParams;
 import azkaban.executor.ExecutableFlow;
@@ -49,17 +50,19 @@ import azkaban.server.HttpRequestUtils;
 import azkaban.server.session.Session;
 import azkaban.user.Permission;
 import azkaban.user.Permission.Type;
-import azkaban.user.Role;
 import azkaban.user.User;
 import azkaban.user.UserManager;
 import azkaban.utils.FileIOUtils.LogData;
 import azkaban.utils.Pair;
+import azkaban.utils.Props;
 import azkaban.webapp.AzkabanWebServer;
 import azkaban.webapp.plugin.PluginRegistry;
 import azkaban.webapp.plugin.ViewerPlugin;
 
 public class ExecutorServlet extends LoginAbstractAzkabanServlet {
-  private static final long serialVersionUID = 1L;
+  private static final Logger LOGGER = 
+      Logger.getLogger(ExecutorServlet.class.getName());
+  private static final long serialVersionUID = 1L;  
   private ProjectManager projectManager;
   private ExecutorManagerAdapter executorManager;
   private ScheduleManager scheduleManager;
@@ -338,7 +341,23 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
       page.render();
       return;
     }
+    
+    Props props = getApplication().getServerProps();
+    String execExternalLinkURL = 
+        ExternalAnalyzerUtils.getExternalAnalyzer(props, req);
 
+    if(execExternalLinkURL.length() > 0) {
+      page.add("executionExternalLinkURL", execExternalLinkURL);
+      LOGGER.debug("Added an External analyzer to the page");
+      LOGGER.debug("External analyzer url: " + execExternalLinkURL);
+      
+      String execExternalLinkLabel = 
+          props.getString(ExternalAnalyzerUtils.EXECUTION_EXTERNAL_LINK_LABEL, 
+              "External Analyzer");
+      page.add("executionExternalLinkLabel", execExternalLinkLabel);
+      LOGGER.debug("External analyzer label set to : " + execExternalLinkLabel);
+    }
+    
     page.add("projectId", project.getId());
     page.add("projectName", project.getName());
     page.add("flowid", flow.getFlowId());
