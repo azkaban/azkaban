@@ -5,8 +5,8 @@ import azkaban.event.EventListener;
 import azkaban.execapp.AzkabanExecutorServer;
 import azkaban.execapp.FlowRunner;
 import azkaban.execapp.cluster.emr.EmrUtils;
-import azkaban.execapp.cluster.emr.InvalidEmrConfigurationException;
 import azkaban.executor.*;
+import azkaban.utils.Pair;
 import azkaban.utils.Props;
 import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
@@ -14,11 +14,17 @@ import com.amazonaws.regions.Regions;
 import com.amazonaws.services.elasticmapreduce.AmazonElasticMapReduceClient;
 import com.amazonaws.services.elasticmapreduce.model.*;
 import com.amazonaws.services.s3.AmazonS3Client;
+import com.github.rholder.retry.Retryer;
+import com.github.rholder.retry.RetryerBuilder;
+import com.github.rholder.retry.StopStrategies;
+import com.github.rholder.retry.WaitStrategies;
+import com.google.common.base.Predicates;
 import org.apache.log4j.Logger;
 
-import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 
 import static azkaban.execapp.cluster.emr.EmrUtils.*;
 
@@ -187,26 +193,23 @@ public class EmrClusterManager implements IClusterManager, EventListener {
 
                     // If by now we haven't found a cluster to run this in, let's create a new one
                     if (clusterId == null) {
-                        jobLogger.info("Preparing new EMR cluster request to run this flow. Cluster name will be " + clusterName + ".");
-                        JobFlowInstancesConfig instancesConfig = createEMRClusterInstanceConfig(combinedProps);
-                        String jsonConfigUrl = combinedProps.getString(EMR_CONF_APP_CONFIGURATION_S3_PATH, EMR_DEFAULT_APP_CONFIGURATION_S3_PATH);
-                        Collection<Configuration> clusterConfigurations = getClusterJSONConfiguration(getS3Client(), jsonConfigUrl);
-                        RunJobFlowRequest emrClusterRequest = createRunJobFlowRequest(combinedProps, clusterName, instancesConfig, clusterConfigurations);
-                        jobLogger.info("Cluster configuration for " + clusterName + " passed validation.");
-                        jobLogger.info("Initiating new cluster request on EMR.");
-                        RunJobFlowResult result = getEmrClient().runJobFlow(emrClusterRequest);
-                        clusterId = result.getJobFlowId();
-                        jobLogger.info("New cluster created with id: " + clusterId);
+                        Retryer<Pair<String, String>> retryer = RetryerBuilder.<Pair<String, String>>newBuilder()
+                                .retryIfResult(Predicates.isNull())
+                                .retryIfException()
+                                .withWaitStrategy(WaitStrategies.exponentialWait(spoolUpTimeoutInMinutes, TimeUnit.MINUTES))
+                                .withStopStrategy(StopStrategies.stopAfterAttempt(2))
+                                .build();
+
+
+                        CreateCluster callable = new CreateCluster(flow, combinedProps, clusterName, jobLogger, spoolUpTimeoutInMinutes);
+                        Pair<String, String> pair = retryer.call(callable);
+                        clusterId = pair.getFirst();
+                        masterIp = Optional.of(pair.getSecond());
                     }
+
 
                     // By now if we don't have a cluster id, I give up my friend
-                    if (clusterId == null) {
-                        throw new RuntimeException("We couldn't find/create a cluster for this job to run on -- please contact your favorite production engineer <:");
-                    }
-
-                    masterIp = blockUntilReadyAndReturnMasterIp(clusterId, spoolUpTimeoutInMinutes, jobLogger);
-
-                    if (masterIp.isPresent()) {
+                    if (clusterId != null && masterIp.isPresent()) {
                         setFlowMasterIp(flow, masterIp.get(), jobLogger);
                         updateFlow(flow);
 
@@ -217,12 +220,7 @@ public class EmrClusterManager implements IClusterManager, EventListener {
                         return false;
                     }
 
-
-                } catch (IOException | InvalidEmrConfigurationException e) {
-                    jobLogger.error("Failed to resolve emr cluster configuration from properties: " + e);
-                    jobLogger.error("Will run job without modifying configuration.");
-
-                } catch (ExecutorManagerException e) {
+                } catch (Throwable e) {
                     jobLogger.error(e);
                     e.printStackTrace();
                 }
@@ -492,5 +490,45 @@ public class EmrClusterManager implements IClusterManager, EventListener {
     private enum ClusterNameStrategy {
         EXECUTION_ID,
         PROJECT_NAME;
+    }
+
+    class CreateCluster implements Callable<Pair<String, String>> {
+
+        private final ExecutableFlow flow;
+        private final Props combinedProps;
+        private final String clusterName;
+        private final Logger jobLogger;
+        private final Integer spoolUpTimeoutInMinutes;
+
+        public CreateCluster(ExecutableFlow flow, Props combinedProps, String clusterName, Logger jobLogger, Integer spoolUpTimeoutInMinutes) {
+            this.flow = flow;
+            this.combinedProps = combinedProps;
+            this.clusterName = clusterName;
+            this.jobLogger = jobLogger;
+            this.spoolUpTimeoutInMinutes = spoolUpTimeoutInMinutes;
+        }
+
+        public Pair<String, String> call() throws Exception {
+            jobLogger.info("Preparing new EMR cluster request to run this flow. Cluster name will be " + clusterName + ".");
+            JobFlowInstancesConfig instancesConfig = createEMRClusterInstanceConfig(combinedProps);
+            String jsonConfigUrl = combinedProps.getString(EMR_CONF_APP_CONFIGURATION_S3_PATH, EMR_DEFAULT_APP_CONFIGURATION_S3_PATH);
+            Collection<Configuration> clusterConfigurations = getClusterJSONConfiguration(getS3Client(), jsonConfigUrl);
+            RunJobFlowRequest emrClusterRequest = createRunJobFlowRequest(combinedProps, clusterName, instancesConfig, clusterConfigurations);
+            jobLogger.info("Cluster configuration for " + clusterName + " passed validation.");
+            jobLogger.info("Initiating new cluster request on EMR.");
+            RunJobFlowResult result = getEmrClient().runJobFlow(emrClusterRequest);
+            String clusterId = result.getJobFlowId();
+            jobLogger.info("New cluster created with id: " + clusterId);
+
+            Optional<String> masterIp = blockUntilReadyAndReturnMasterIp(clusterId, spoolUpTimeoutInMinutes, jobLogger);
+
+            if (masterIp.isPresent()) {
+                return new Pair(clusterId, masterIp.get());
+
+            } else {
+                throw new Exception("Couldn't get ip for cluster: " + clusterId);
+            }
+        }
+
     }
 }
