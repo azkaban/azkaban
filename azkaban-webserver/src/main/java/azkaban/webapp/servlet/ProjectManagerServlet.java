@@ -217,7 +217,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
     String projectName = getParam(req, "project");
     User user = session.getUser();
 
-    HashMap<String, Object> ret = new HashMap<String, Object>();
+    HashMap<String, Object> ret = new HashMap<>();
     ret.put("project", projectName);
 
     Project project = projectManager.getProject(projectName);
@@ -230,11 +230,11 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
         // Do nothing, since projectId is added to all AJAX requests.
       } else if (ajaxName.equals("fetchProjectLogs")) {
         if (handleAjaxPermission(project, user, Type.READ, ret)) {
-          ajaxFetchProjectLogEvents(project, req, resp, ret, user);
+          ajaxFetchProjectLogEvents(project, req, ret);
         }
       } else if (ajaxName.equals("fetchflowjobs")) {
         if (handleAjaxPermission(project, user, Type.READ, ret)) {
-          ajaxFetchFlow(project, ret, req, resp);
+          ajaxFetchFlow(project, ret, req);
         }
       } else if (ajaxName.equals("fetchflowdetails")) {
         if (handleAjaxPermission(project, user, Type.READ, ret)) {
@@ -319,17 +319,11 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
   }
 
   private void ajaxFetchProjectLogEvents(Project project,
-      HttpServletRequest req, HttpServletResponse resp,
-      HashMap<String, Object> ret, User user) throws ServletException {
-    if (!hasPermission(project, user, Type.READ)) {
-      ret.put("error", "Permission denied. Need READ access.");
-      return;
-    }
-
+      HttpServletRequest req, HashMap<String, Object> ret) throws ServletException {
     int num = this.getIntParam(req, "size", 1000);
     int skip = this.getIntParam(req, "skip", 0);
 
-    List<ProjectLogEvent> logEvents = null;
+    List<ProjectLogEvent> logEvents;
     try {
       logEvents = projectManager.getProjectEventLogs(project, num, skip);
     } catch (ProjectManagerException e) {
@@ -339,7 +333,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
     String[] columns = new String[] { "user", "time", "type", "message" };
     ret.put("columns", columns);
 
-    List<Object[]> eventData = new ArrayList<Object[]>();
+    List<Object[]> eventData = new ArrayList<>();
     for (ProjectLogEvent events : logEvents) {
       Object[] entry = new Object[4];
       entry[0] = events.getUser();
@@ -871,7 +865,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
   }
 
   private void ajaxFetchFlow(Project project, HashMap<String, Object> ret,
-      HttpServletRequest req, HttpServletResponse resp) throws ServletException {
+      HttpServletRequest req) throws ServletException {
     String flowId = getParam(req, "flow");
     Flow flow = project.getFlow(flowId);
 
