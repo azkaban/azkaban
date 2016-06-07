@@ -216,6 +216,7 @@ public class EmrClusterManager implements IClusterManager, EventListener {
                         while (createAttempt++ < createTotalAttempts) {
                             try {
                                 clusterId = createCluster(flow, clusterName, spoolUpTimeoutInMinutes, combinedProps, jobLogger);jobLogger.info("Couldn't create cluster (Attempt " + createAttempt + "/" + createTotalAttempts + ")");
+                                break;
 
                             } catch (Throwable error) {
                                 jobLogger.info("Couldn't create cluster (Attempt " + createAttempt + "/" + createTotalAttempts + "): " + clusterName + " - Error: " + error);
