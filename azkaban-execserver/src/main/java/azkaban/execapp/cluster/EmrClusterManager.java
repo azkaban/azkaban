@@ -181,45 +181,48 @@ public class EmrClusterManager implements IClusterManager, EventListener {
                     // Try to find an existing running cluster with the same name
                     Integer lookupAttempt = 0;
                     Integer lookupTotalAttempts = 5;
-                    while (lookupAttempt++ < lookupTotalAttempts) {
-                        try {
-                            jobLogger.info("Trying to find running cluster: " + clusterName + " (Attempt " + lookupAttempt + "/" + lookupTotalAttempts + ")");
-
-                            ClusterSummary runningCluster = EmrUtils.findClusterByName(getEmrClient(), clusterName, EmrUtils.RUNNING_STATES);
-
-                            if (runningCluster != null) {
-                                jobLogger.info("Found cluster " + clusterName + " - Id: " + runningCluster.getId() + ", Status: " + runningCluster.getStatus());
-                                clusterId = runningCluster.getId();
-                                break;
-                            } else {
-                                jobLogger.info("Couldn't find running cluster " + clusterName + " (Attempt " + lookupAttempt + "/" + lookupTotalAttempts + ")");
-                            }
-
-                            // If this is not the first flow attached to the cluster we should really be able to find it, so we are gonna sleep to give the first flow attached to the cluster the chance to call AWS and everything
-                            if (count > 1 && lookupAttempt < lookupTotalAttempts - 1) {
-                                jobLogger.info("Sleeping for a minute....");
-                                Thread.sleep(60000);
-                                jobLogger.info("Awake!");
-                            }
-
-                        } catch (Throwable error) {
-                            jobLogger.info("Couldn't find running cluster " + clusterName + " (Attempt " + lookupAttempt + "/" + lookupTotalAttempts + ") - Error: " + error);
-                        }
-                    }
-
-                    // If by now we haven't found a cluster to run this in, let's create a new one
-                    if (clusterId == null) {
-                        jobLogger.info("Since we couldn't find a running cluster " + clusterName + ", we are going to create a new one!");
-
-                        Integer createAttempt = 0;
-                        Integer createTotalAttempts = 2;
-                        while (createAttempt++ < createTotalAttempts) {
+                    synchronized (clusterFlows) {
+                        while (lookupAttempt++ < lookupTotalAttempts) {
                             try {
-                                clusterId = createCluster(flow, clusterName, spoolUpTimeoutInMinutes, combinedProps, jobLogger);jobLogger.info("Couldn't create cluster (Attempt " + createAttempt + "/" + createTotalAttempts + ")");
-                                break;
+                                jobLogger.info("Trying to find running cluster: " + clusterName + " (Attempt " + lookupAttempt + "/" + lookupTotalAttempts + ")");
+
+                                ClusterSummary runningCluster = EmrUtils.findClusterByName(getEmrClient(), clusterName, EmrUtils.RUNNING_STATES);
+
+                                if (runningCluster != null) {
+                                    jobLogger.info("Found cluster " + clusterName + " - Id: " + runningCluster.getId() + ", Status: " + runningCluster.getStatus());
+                                    clusterId = runningCluster.getId();
+                                    break;
+                                } else {
+                                    jobLogger.info("Couldn't find running cluster " + clusterName + " (Attempt " + lookupAttempt + "/" + lookupTotalAttempts + ")");
+                                }
+
+                                // If this is not the first flow attached to the cluster we should really be able to find it, so we are gonna sleep to give the first flow attached to the cluster the chance to call AWS and everything
+                                if (count > 1 && lookupAttempt < lookupTotalAttempts - 1) {
+                                    jobLogger.info("Sleeping for 30 secs....");
+                                    Thread.sleep(30000);
+                                    jobLogger.info("Awake!");
+                                }
 
                             } catch (Throwable error) {
-                                jobLogger.info("Couldn't create cluster (Attempt " + createAttempt + "/" + createTotalAttempts + "): " + clusterName + " - Error: " + error);
+                                jobLogger.info("Couldn't find running cluster " + clusterName + " (Attempt " + lookupAttempt + "/" + lookupTotalAttempts + ") - Error: " + error);
+                            }
+                        }
+
+                        // If by now we haven't found a cluster to run this in, let's create a new one
+                        if (clusterId == null) {
+                            jobLogger.info("Since we couldn't find a running cluster " + clusterName + ", we are going to create a new one!");
+
+                            Integer createAttempt = 0;
+                            Integer createTotalAttempts = 2;
+                            while (createAttempt++ < createTotalAttempts) {
+                                try {
+                                    clusterId = createCluster(flow, clusterName, spoolUpTimeoutInMinutes, combinedProps, jobLogger);
+                                    jobLogger.info("Couldn't create cluster (Attempt " + createAttempt + "/" + createTotalAttempts + ")");
+                                    break;
+
+                                } catch (Throwable error) {
+                                    jobLogger.info("Couldn't create cluster (Attempt " + createAttempt + "/" + createTotalAttempts + "): " + clusterName + " - Error: " + error);
+                                }
                             }
                         }
                     }
