@@ -216,7 +216,7 @@ public class EmrClusterManager implements IClusterManager, EventListener {
                             Integer createTotalAttempts = 2;
                             while (createAttempt++ < createTotalAttempts) {
                                 try {
-                                    clusterId = createCluster(flow, clusterName, spoolUpTimeoutInMinutes, combinedProps, jobLogger);
+                                    clusterId = createCluster(clusterName, combinedProps, jobLogger);
                                     jobLogger.info("Couldn't create cluster (Attempt " + createAttempt + "/" + createTotalAttempts + ")");
                                     break;
 
@@ -404,7 +404,7 @@ public class EmrClusterManager implements IClusterManager, EventListener {
         }
     }
 
-    private String createCluster(ExecutableFlow flow, String clusterName, Integer spoolUpTimeoutInMinutes, Props combinedProps, Logger jobLogger) throws InvalidEmrConfigurationException, IOException {
+    private String createCluster(String clusterName, Props combinedProps, Logger jobLogger) throws InvalidEmrConfigurationException, IOException {
         jobLogger.info("Preparing new EMR cluster request to run this flow. Cluster name will be " + clusterName + ".");
 
         JobFlowInstancesConfig instancesConfig = createEMRClusterInstanceConfig(combinedProps);
