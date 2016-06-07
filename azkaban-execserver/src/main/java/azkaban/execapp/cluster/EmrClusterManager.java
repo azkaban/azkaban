@@ -183,7 +183,7 @@ public class EmrClusterManager implements IClusterManager, EventListener {
                     // Try to find an existing running cluster with the same name
                     int retryLookup = 2;
                     if (count > 1) {
-                        retryLookup = spoolUpTimeoutInMinutes + 5;
+                        retryLookup = 5;
                     }
 
                     try {
@@ -193,7 +193,7 @@ public class EmrClusterManager implements IClusterManager, EventListener {
                                 .retryIfRuntimeException()
                                 .withBlockStrategy(BlockStrategies.threadSleepStrategy())
                                 .withWaitStrategy(WaitStrategies.fixedWait(1, TimeUnit.MINUTES))
-                                .withStopStrategy(StopStrategies.stopAfterAttempt(2))
+                                .withStopStrategy(StopStrategies.stopAfterAttempt(retryLookup))
                                 .build();
 
                         LookupCluster lookupCallable = new LookupCluster(clusterName, jobLogger);
@@ -206,7 +206,7 @@ public class EmrClusterManager implements IClusterManager, EventListener {
                     // If by now we haven't found a cluster to run this in, let's create a new one
                     if (clusterId == null) {
                         jobLogger.info("Since we couldn't find a running cluster " + clusterName + ", we are going to create a new one!");
-                        
+
                         Retryer<Pair<String, String>> retryer = RetryerBuilder.<Pair<String, String>>newBuilder()
                                 .retryIfResult(Predicates.isNull())
                                 .retryIfException()
