@@ -22,6 +22,7 @@ dependencies {
     compile('org.codehaus.jackson:jackson-mapper-asl:1.9.5')
     compile('com.google.code.gson:gson:2.2.4')
     compile('com.github.rholder:guava-retrying:2.0.0')
+    compile('com.google.guava:guava:[10.+,)')
 
     compile('com.amazonaws:aws-java-sdk-core:1.10.27')
     compile('com.amazonaws:aws-java-sdk-emr:1.10.27')
