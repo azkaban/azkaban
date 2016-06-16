@@ -93,7 +93,7 @@ public class Emailer extends AbstractMailer implements Alerter {
           super.createEmailMessage(subject, "text/html", emailList);
 
       message.setBody(body);
-
+      message.setTLS(tls);
       if (!testMode) {
         try {
           message.sendEmail();
