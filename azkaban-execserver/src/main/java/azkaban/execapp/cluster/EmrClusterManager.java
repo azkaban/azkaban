@@ -45,10 +45,13 @@ public class EmrClusterManager implements IClusterManager, EventListener {
     private ExecutorLoader executorLoader = null;
 
     // Cluster Name -> Integer (Count of flows using cluster) - only going into shutdown process for emr clusters when all executions that use the cluster are done
-    private Map<String, Integer> clusterFlows = new ConcurrentHashMap<String, Integer>();
+    private final Map<String, Integer> clusterFlows = new ConcurrentHashMap<String, Integer>();
+
+    // Cluster Name -> Cluster Id - this is used so we can keep the list of running cluster ids to be looked up by cluster name to avoid calls on EMR api (rate limit)
+    private final Map<String, String> runningClusters = new ConcurrentHashMap<String, String>();
 
     // (Item is Cluster Id) - List of clusters to keep alive - when multiple flows share the same cluster, if any of the flows indicate that the cluster should not be shutdown (because of an error or any other reason), the cluster should not be terminated even if it's ok to be terminated by the other flows using it.
-    private List<String> clustersKeepAlive = Collections.synchronizedList(new ArrayList<String>());
+    private final List<String> clustersKeepAlive = Collections.synchronizedList(new ArrayList<String>());
 
     public EmrClusterManager(Props serverProps) {
         classLogger.info("Initialized " + this.getClass().getName());
@@ -114,28 +117,34 @@ public class EmrClusterManager implements IClusterManager, EventListener {
 
     @Override
     public void handleEvent(Event event) {
-        if (event.getRunner() instanceof FlowRunner) {
-            FlowRunner runner = (FlowRunner) event.getRunner();
-            ExecutableFlow flow = runner.getExecutableFlow();
-            Logger logger = Logger.getLogger(flow.getExecutionId() + "." + flow.getFlowId());
-            logger.info(this.getClass().getName() + " handling " + event.getType() + " " + event.getTime());
+        Logger logger = null;
+        try {
+            if (event.getRunner() instanceof FlowRunner) {
+                FlowRunner runner = (FlowRunner) event.getRunner();
+                ExecutableFlow flow = runner.getExecutableFlow();
+                logger = Logger.getLogger(flow.getExecutionId() + "." + flow.getFlowId());
+                logger.info(this.getClass().getName() + " handling " + event.getType() + " " + event.getTime());
 
-            switch (event.getType()) {
-                case FLOW_STARTED:
-                    try {
-                        boolean runStatus = createClusterAndConfigureJob(flow, logger);
-                        updateFlow(flow);
-                        if (!runStatus) runner.kill(this.getClass().getName());
-                    } catch (Exception e) {
-                        logger.error(e);
-                        runner.kill(this.getClass().getName());
-                    }
-                    break;
+                switch (event.getType()) {
+                    case FLOW_STARTED:
+                        try {
+                            boolean runStatus = createClusterAndConfigureJob(flow, logger);
+                            updateFlow(flow);
+                            if (!runStatus) runner.kill(this.getClass().getName());
+                        } catch (Exception e) {
+                            logger.error(e);
+                            runner.kill(this.getClass().getName());
+                        }
+                        break;
 
-                case FLOW_FINISHED:
-                    maybeTerminateCluster(flow, logger);
-                    break;
+                    case FLOW_FINISHED:
+                        maybeTerminateCluster(flow, logger);
+                        break;
+                }
             }
+        } catch (Throwable error) {
+            error.printStackTrace();
+            if (logger != null) logger.error(error);
         }
     }
 
@@ -186,11 +195,19 @@ public class EmrClusterManager implements IClusterManager, EventListener {
                             try {
                                 jobLogger.info("Trying to find running cluster: " + clusterName + " (Attempt " + lookupAttempt + "/" + lookupTotalAttempts + ")");
 
+                                // Try to find an existing running cluster that's cached
+                                clusterId = runningClusters.get(clusterName);
+                                if (clusterId != null) {
+                                    jobLogger.info("Found existing cached running cluster (" + clusterName + "): " + clusterId);
+                                    break;
+                                }
+
                                 ClusterSummary runningCluster = EmrUtils.findClusterByName(getEmrClient(), clusterName, EmrUtils.RUNNING_STATES);
 
                                 if (runningCluster != null) {
                                     jobLogger.info("Found cluster " + clusterName + " - Id: " + runningCluster.getId() + ", Status: " + runningCluster.getStatus());
                                     clusterId = runningCluster.getId();
+                                    runningClusters.put(clusterName, clusterId);
                                     break;
                                 } else {
                                     jobLogger.info("Couldn't find running cluster " + clusterName + " (Attempt " + lookupAttempt + "/" + lookupTotalAttempts + ")");
@@ -240,7 +257,7 @@ public class EmrClusterManager implements IClusterManager, EventListener {
 
                     } else {
                         jobLogger.error("Timed out waiting " + spoolUpTimeoutInMinutes + " minutes for cluster to start. Shutting down cluster " + clusterId);
-                        terminateCluster(getEmrClient(), clusterId);
+                        shutdownCluster(clusterName, clusterId, jobLogger);
                         updateFlow(flow);
                         return false;
                     }
@@ -283,6 +300,21 @@ public class EmrClusterManager implements IClusterManager, EventListener {
         jobLogger.info("Cluster configuration complete.");
 
         return true;
+    }
+
+    boolean shutdownCluster(String clusterName, String clusterId, Logger logger) {
+        logger.info("Terminating Cluster - Id: " + clusterId + ", Name: " + clusterName);
+
+        try {
+            return EmrUtils.terminateCluster(getEmrClient(), clusterId);
+
+        } catch (Throwable error) {
+            logger.error("Error terminating cluster (id: " + clusterId + ", name: " + clusterName + "): " + error);
+            return false;
+
+        } finally {
+            terminateCleanup(clusterId, clusterName);
+        }
     }
 
     boolean shouldShutdown(Props combinedProps, Status flowStatus, Logger logger) {
@@ -340,6 +372,11 @@ public class EmrClusterManager implements IClusterManager, EventListener {
 
         jobLogger.info("Starting shutdown process for cluster (" + clusterId + "): " + clusterName);
 
+        if (clusterId == null) {
+            jobLogger.warn("Cluster id was null, not terminating cluster!");
+            return;
+        }
+
         try {
             // Is this flow only ok to shutdown the cluster?
             boolean okForThisFlowToShutdownCluster = shouldShutdown(combinedProps, flow.getStatus(), jobLogger);
@@ -355,6 +392,7 @@ public class EmrClusterManager implements IClusterManager, EventListener {
             });
 
             if (count == null) count = 0;
+            boolean lastFlowUsingCluster = count <= 0;
 
             // Are the other flows sharing the cluster ok to shutdown the cluster?
             Boolean otherFlowsOkToShutdown = !clustersKeepAlive.contains(clusterId);
@@ -366,42 +404,45 @@ public class EmrClusterManager implements IClusterManager, EventListener {
             jobLogger.info("Shutdown Process - Latch Count: " + count);
             jobLogger.info("Shutdown Process - Is ok with this flow to shutdown cluster: " + okForThisFlowToShutdownCluster);
 
-            // If this is the last flow using the cluster
-            if (count <= 0) {
+            if (lastFlowUsingCluster) {
                 jobLogger.info("Shutdown Process - Is ok with the other flows sharing this cluster to shutdown the cluster: " + otherFlowsOkToShutdown);
-
-                if (okForThisFlowToShutdownCluster && otherFlowsOkToShutdown) {
-                    if (clusterId != null) {
-                        jobLogger.info("Terminating cluster " + clusterId);
-                        terminateCluster(getEmrClient(), clusterId);
-                    } else {
-                        jobLogger.warn("Cluster id was null, not terminating cluster!");
-                    }
-
-                } else if (!okForThisFlowToShutdownCluster) {
-                    // If we are not shutting down the cluster now and it's not ok for the cluster to be shutdown from this specific flow's prespective, add note to that
-                    clustersKeepAlive.add(clusterId);
-
-                } else if (!otherFlowsOkToShutdown) {
-                    // Not ok to shutdown with some other flow that used this cluster
-                    jobLogger.warn("We are not shutting down cluster " + clusterId + " because it's not ok with one of the flows that used the same cluster");
-
-                } else {
-                    jobLogger.warn("Not terminating cluster based on execution properties.");
-                }
-
             } else {
                 jobLogger.info("Looks there are still other flows using cluster " + clusterId + " so we are not gonna shut it down");
+                return;
+            }
+
+            if (okForThisFlowToShutdownCluster && otherFlowsOkToShutdown) {
+                shutdownCluster(clusterName, clusterId, jobLogger);
+
+            } else if (!okForThisFlowToShutdownCluster) {
+                // If we are not shutting down the cluster now and it's not ok for the cluster to be shutdown from this specific flow's prespective, add note to that
+                jobLogger.info("Not ok for with this flow for this cluster to be shutdown, keeping track in case this cluster gets reused by another flow...");
+                clustersKeepAlive.add(clusterId);
+
+            } else if (!otherFlowsOkToShutdown) {
+                // Not ok to shutdown with some other flow that used this cluster
+                jobLogger.warn("We are not shutting down cluster " + clusterId + " because it's not ok with one of the flows that used the same cluster");
+
             }
 
         } catch (Throwable error) {
             jobLogger.error("Error during shutdown process - Cluster Id: " + clusterId + ", Cluster Name: " + clusterName + ", Error: " + error.getMessage());
             error.printStackTrace();
-
-        } finally {
-            clustersKeepAlive.remove(clusterId);
-            clusterFlows.remove(clusterName);
         }
+    }
+
+    public void terminateCleanup(String clusterId, String clusterName) {
+        // If we don't remove this, there wouldn't be any problems, maybe some memory leak
+        // If we remove this too early, we might miss the fact an earlier workflow requested this cluster to not be shutdown
+        clustersKeepAlive.remove(clusterId);
+
+        // If we don't remove this, the cluster by this name would never shutdown (when flows share cluster name)
+        // If we remove this too early, we wouldn't know there are other workflows currently using this cluster
+        clusterFlows.remove(clusterName);
+
+        // If we don't remove this, cached entry would point to potentially an invalid cluster id, but retry would fix the issue
+        // This is just a cache for EMR
+        runningClusters.remove(clusterName);
     }
 
     private String createCluster(String clusterName, Props combinedProps, Logger jobLogger) throws InvalidEmrConfigurationException, IOException {
@@ -419,6 +460,8 @@ public class EmrClusterManager implements IClusterManager, EventListener {
 
         String clusterId = result.getJobFlowId();
         jobLogger.info("New cluster created with id: " + clusterId);
+
+        runningClusters.put(clusterName, clusterId);
 
         return clusterId;
     }
