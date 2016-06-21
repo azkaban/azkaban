@@ -47,6 +47,9 @@ public class EmrClusterManager implements IClusterManager, EventListener {
     // Cluster Name -> Integer (Count of flows using cluster) - only going into shutdown process for emr clusters when all executions that use the cluster are done
     private Map<String, Integer> clusterFlows = new ConcurrentHashMap<String, Integer>();
 
+    // Cluster Name -> Cluster Id - this is used so we can keep the list of running cluster ids to be looked up by cluster name to avoid calls on EMR api (rate limit)
+    private Map<String, String> runningClusters = new ConcurrentHashMap<String, String>();
+
     // (Item is Cluster Id) - List of clusters to keep alive - when multiple flows share the same cluster, if any of the flows indicate that the cluster should not be shutdown (because of an error or any other reason), the cluster should not be terminated even if it's ok to be terminated by the other flows using it.
     private List<String> clustersKeepAlive = Collections.synchronizedList(new ArrayList<String>());
 
@@ -114,28 +117,34 @@ public class EmrClusterManager implements IClusterManager, EventListener {
 
     @Override
     public void handleEvent(Event event) {
-        if (event.getRunner() instanceof FlowRunner) {
-            FlowRunner runner = (FlowRunner) event.getRunner();
-            ExecutableFlow flow = runner.getExecutableFlow();
-            Logger logger = Logger.getLogger(flow.getExecutionId() + "." + flow.getFlowId());
-            logger.info(this.getClass().getName() + " handling " + event.getType() + " " + event.getTime());
+        Logger logger = null;
+        try {
+            if (event.getRunner() instanceof FlowRunner) {
+                FlowRunner runner = (FlowRunner) event.getRunner();
+                ExecutableFlow flow = runner.getExecutableFlow();
+                logger = Logger.getLogger(flow.getExecutionId() + "." + flow.getFlowId());
+                logger.info(this.getClass().getName() + " handling " + event.getType() + " " + event.getTime());
 
-            switch (event.getType()) {
-                case FLOW_STARTED:
-                    try {
-                        boolean runStatus = createClusterAndConfigureJob(flow, logger);
-                        updateFlow(flow);
-                        if (!runStatus) runner.kill(this.getClass().getName());
-                    } catch (Exception e) {
-                        logger.error(e);
-                        runner.kill(this.getClass().getName());
-                    }
-                    break;
+                switch (event.getType()) {
+                    case FLOW_STARTED:
+                        try {
+                            boolean runStatus = createClusterAndConfigureJob(flow, logger);
+                            updateFlow(flow);
+                            if (!runStatus) runner.kill(this.getClass().getName());
+                        } catch (Exception e) {
+                            logger.error(e);
+                            runner.kill(this.getClass().getName());
+                        }
+                        break;
 
-                case FLOW_FINISHED:
-                    maybeTerminateCluster(flow, logger);
-                    break;
+                    case FLOW_FINISHED:
+                        maybeTerminateCluster(flow, logger);
+                        break;
+                }
             }
+        } catch (Throwable error) {
+            error.printStackTrace();
+            if (logger != null) logger.error(error);
         }
     }
 
@@ -186,11 +195,19 @@ public class EmrClusterManager implements IClusterManager, EventListener {
                             try {
                                 jobLogger.info("Trying to find running cluster: " + clusterName + " (Attempt " + lookupAttempt + "/" + lookupTotalAttempts + ")");
 
+                                // Try to find an existing running cluster that's cached
+                                clusterId = runningClusters.get(clusterName);
+                                if (clusterId != null) {
+                                    jobLogger.info("Found existing cached running cluster (" + clusterName + "): " + clusterId);
+                                    break;
+                                }
+
                                 ClusterSummary runningCluster = EmrUtils.findClusterByName(getEmrClient(), clusterName, EmrUtils.RUNNING_STATES);
 
                                 if (runningCluster != null) {
                                     jobLogger.info("Found cluster " + clusterName + " - Id: " + runningCluster.getId() + ", Status: " + runningCluster.getStatus());
                                     clusterId = runningCluster.getId();
+                                    runningClusters.put(clusterName, clusterId);
                                     break;
                                 } else {
                                     jobLogger.info("Couldn't find running cluster " + clusterName + " (Attempt " + lookupAttempt + "/" + lookupTotalAttempts + ")");
@@ -239,6 +256,7 @@ public class EmrClusterManager implements IClusterManager, EventListener {
                         updateFlow(flow);
 
                     } else {
+                        runningClusters.remove(clusterName);
                         jobLogger.error("Timed out waiting " + spoolUpTimeoutInMinutes + " minutes for cluster to start. Shutting down cluster " + clusterId);
                         terminateCluster(getEmrClient(), clusterId);
                         updateFlow(flow);
@@ -401,6 +419,7 @@ public class EmrClusterManager implements IClusterManager, EventListener {
         } finally {
             clustersKeepAlive.remove(clusterId);
             clusterFlows.remove(clusterName);
+            runningClusters.remove(clusterName);
         }
     }
 
@@ -419,6 +438,8 @@ public class EmrClusterManager implements IClusterManager, EventListener {
 
         String clusterId = result.getJobFlowId();
         jobLogger.info("New cluster created with id: " + clusterId);
+
+        runningClusters.put(clusterName, clusterId);
 
         return clusterId;
     }
