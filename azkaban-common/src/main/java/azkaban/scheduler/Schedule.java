@@ -38,51 +38,51 @@ import azkaban.utils.Pair;
 
 public class Schedule {
 
-	private int scheduleId;
-	private int projectId;
-	private String projectName;
-	private String flowName;
-	private long firstSchedTime;
-	private DateTimeZone timezone;
-	private long lastModifyTime;
-	private ReadablePeriod period;
-	private long nextExecTime;
-	private String submitUser;
-	private String status;
-	private long submitTime;
+  private int scheduleId;
+  private int projectId;
+  private String projectName;
+  private String flowName;
+  private long firstSchedTime;
+  private DateTimeZone timezone;
+  private long lastModifyTime;
+  private ReadablePeriod period;
+  private long nextExecTime;
+  private String submitUser;
+  private String status;
+  private long submitTime;
 
-	private boolean skipPastOccurrences = true;
+  private boolean skipPastOccurrences = true;
 
-	private ExecutionOptions executionOptions;
-	private List<SlaOption> slaOptions;
+  private ExecutionOptions executionOptions;
+  private List<SlaOption> slaOptions;
 
-	public Schedule(int scheduleId, int projectId, String projectName,
-			String flowName, String status, long firstSchedTime,
-			DateTimeZone timezone, ReadablePeriod period, long lastModifyTime,
-			long nextExecTime, long submitTime, String submitUser) {
+  public Schedule(int scheduleId, int projectId, String projectName,
+      String flowName, String status, long firstSchedTime,
+      DateTimeZone timezone, ReadablePeriod period, long lastModifyTime,
+      long nextExecTime, long submitTime, String submitUser) {
 
-		this(scheduleId, projectId, projectName, flowName, status,
-				firstSchedTime, timezone, period, lastModifyTime, nextExecTime,
-				submitTime, submitUser, null, null);
-	}
+    this(scheduleId, projectId, projectName, flowName, status, firstSchedTime,
+        timezone, period, lastModifyTime, nextExecTime, submitTime, submitUser,
+        null, null);
+  }
 
-	public Schedule(int scheduleId, int projectId, String projectName,
-			String flowName, String status, long firstSchedTime,
-			String timezoneId, String period, long lastModifyTime,
-			long nextExecTime, long submitTime, String submitUser,
-			ExecutionOptions executionOptions, List<SlaOption> slaOptions) {
-		this(scheduleId, projectId, projectName, flowName, status,
-				firstSchedTime, DateTimeZone.forID(timezoneId),
-				parsePeriodString(period), lastModifyTime, nextExecTime,
-				submitTime, submitUser, executionOptions, slaOptions);
-	}
+  public Schedule(int scheduleId, int projectId, String projectName,
+      String flowName, String status, long firstSchedTime, String timezoneId,
+      String period, long lastModifyTime, long nextExecTime, long submitTime,
+      String submitUser, ExecutionOptions executionOptions,
+      List<SlaOption> slaOptions) {
+    this(scheduleId, projectId, projectName, flowName, status, firstSchedTime,
+        DateTimeZone.forID(timezoneId), parsePeriodString(period),
+        lastModifyTime, nextExecTime, submitTime, submitUser, executionOptions,
+        slaOptions);
+  }
 
-	public Schedule(int scheduleId, int projectId, String projectName,
-			String flowName, String status, long firstSchedTime,
-			DateTimeZone timezone, ReadablePeriod period, long lastModifyTime,
-			long nextExecTime, long submitTime, String submitUser,
-			ExecutionOptions executionOptions, List<SlaOption> slaOptions) {
-		this.scheduleId = scheduleId;
+  public Schedule(int scheduleId, int projectId, String projectName,
+      String flowName, String status, long firstSchedTime,
+      DateTimeZone timezone, ReadablePeriod period, long lastModifyTime,
+      long nextExecTime, long submitTime, String submitUser,
+      ExecutionOptions executionOptions, List<SlaOption> slaOptions) {
+    this.scheduleId = scheduleId;
 		this.projectId = projectId;
 		this.projectName = projectName;
 		this.flowName = flowName;

@@ -31,183 +31,183 @@ import azkaban.utils.NyxUtils;
  *
  */
 public class NyxTriggerChecker implements ConditionChecker {
-	private static Logger logger = Logger.getLogger(NyxTriggerChecker.class);
+  private static Logger logger = Logger.getLogger(NyxTriggerChecker.class);
 
-	public static final String type = "NyxTriggerChecker";
+  public static final String type = "NyxTriggerChecker";
 
-	private String specification;
-	private String id;
-	private long triggerId = -1L;
+  private String specification;
+  private String id;
+  private long triggerId = -1L;
 
-	public NyxTriggerChecker(String specification, String id) {
-		this(specification, id, -1);
-	}
+  public NyxTriggerChecker(String specification, String id) {
+    this(specification, id, -1);
+  }
 
-	public NyxTriggerChecker(String specification, String id, long triggerId) {
-		this.specification = specification;
-		this.id = id;
+  public NyxTriggerChecker(String specification, String id, long triggerId) {
+    this.specification = specification;
+    this.id = id;
 
-		// note :
-		// when the checker is initialized we will take whatever that is passed
-		// as the triggerId and will NOT attempt to register the trigger even if
-		// id = -1, this is to make sure the trigger time is correctly populated
-		// when user specifies a dynamic trigger time such as yesterDay().
-		this.triggerId = triggerId;
-	}
+    // note :
+    // when the checker is initialized we will take whatever that is passed
+    // as the triggerId and will NOT attempt to register the trigger even if
+    // id = -1, this is to make sure the trigger time is correctly populated
+    // when user specifies a dynamic trigger time such as yesterDay().
+    this.triggerId = triggerId;
+  }
 
-	public long getTriggerId() {
-		return triggerId;
-	}
+  public long getTriggerId() {
+    return triggerId;
+  }
 
-	/**
-	 * Function to get the NYX trigger status
-	 *
-	 * @author evli
-	 *
-	 * @return the trigger status if the trigger is registered and status is
-	 *         successfully fetched from server.
-	 * */
-	public Map<String, Object> getDetailedStatus() {
-		Map<String, Object> returnVal = new HashMap<String, Object>();
-		if (triggerId != -1) {
-			try {
-				returnVal = NyxUtils.getNyxTriggerStatus(triggerId);
-			} catch (TriggerManagerException ex) {
-				logger.error(
-						"Error while getting the detailed status for the trigger "
-								+ id, ex);
-			}
-		} else {
-			logger.warn("attempted to retrieve staus for an ungistered trigger.");
-		}
-		return returnVal;
-	}
+  /**
+   * Function to get the NYX trigger status
+   *
+   * @author evli
+   *
+   * @return the trigger status if the trigger is registered and status is
+   *         successfully fetched from server.
+   * */
+  public Map<String, Object> getDetailedStatus() {
+    Map<String, Object> returnVal = new HashMap<String, Object>();
+    if (triggerId != -1) {
+      try {
+        returnVal = NyxUtils.getNyxTriggerStatus(triggerId);
+      } catch (TriggerManagerException ex) {
+        logger.error("Error while getting the detailed status for the trigger "
+            + id, ex);
+      }
+    } else {
+      logger.warn("attempted to retrieve staus for an ungistered trigger.");
+    }
+    return returnVal;
+  }
 
-	@Override
-	public Object eval() {
-		try {
-			if (triggerId == -1) {
-				// if trigger is not registered then first register
-				triggerId = NyxUtils.registerNyxTrigger(specification);
-			}
-			return NyxUtils.isNyxTriggerReady(triggerId);
-		} catch (TriggerManagerException ex) {
-			logger.error("Error while evaluating checker " + id, ex);
-			return false;
-		}
-	}
+  @Override
+  public Object eval() {
+    try {
+      if (triggerId == -1) {
+        // if trigger is not registered then first register
+        triggerId = NyxUtils.registerNyxTrigger(specification);
+      }
+      return NyxUtils.isNyxTriggerReady(triggerId);
+    } catch (TriggerManagerException ex) {
+      logger.error("Error while evaluating checker " + id, ex);
+      return false;
+    }
+  }
 
-	@Override
-	public Object getNum() {
-		return null;
-	}
+  @Override
+  public Object getNum() {
+    return null;
+  }
 
-	@Override
-	public void reset() {
-		try {
-			NyxUtils.unregisterNyxTrigger(triggerId);
-			triggerId = NyxUtils.registerNyxTrigger(specification);
-		} catch (TriggerManagerException ex) {
-			logger.error("Error while resetting checker " + id, ex);
-		}
-	}
+  @Override
+  public void reset() {
+    try {
+      NyxUtils.unregisterNyxTrigger(triggerId);
+      triggerId = NyxUtils.registerNyxTrigger(specification);
+    } catch (TriggerManagerException ex) {
+      logger.error("Error while resetting checker " + id, ex);
+    }
+  }
 
-	@Override
-	public String getId() {
-		return id;
-	}
+  @Override
+  public String getId() {
+    return id;
+  }
 
-	@Override
-	public String getType() {
-		return type;
-	}
+  @Override
+  public String getType() {
+    return type;
+  }
 
-	@SuppressWarnings("unchecked")
-	@Override
-	public ConditionChecker fromJson(Object obj) throws Exception {
-		return createFromJson((HashMap<String, Object>) obj);
-	}
+  @SuppressWarnings("unchecked")
+  @Override
+  public ConditionChecker fromJson(Object obj) throws Exception {
+    return createFromJson((HashMap<String, Object>) obj);
+  }
 
-	@Override
-	public Object toJson() {
-		Map<String, Object> jsonObj = new HashMap<String, Object>();
-		jsonObj.put("type", type);
-		jsonObj.put("specification", specification);
-		jsonObj.put("triggerId", String.valueOf(triggerId));
-		jsonObj.put("id", id);
+  @Override
+  public Object toJson() {
+    Map<String, Object> jsonObj = new HashMap<String, Object>();
+    jsonObj.put("type", type);
+    jsonObj.put("specification", specification);
+    jsonObj.put("triggerId", String.valueOf(triggerId));
+    jsonObj.put("id", id);
 
-		return jsonObj;
-	}
+    return jsonObj;
+  }
 
-	@Override
-	public void stopChecker() {
-		try {
-			NyxUtils.unregisterNyxTrigger(triggerId);
-		} catch (TriggerManagerException ex) {
-			logger.error("Error while stopping checker " + id, ex);
-		}
-	}
+  @Override
+  public void stopChecker() {
+    try {
+      NyxUtils.unregisterNyxTrigger(triggerId);
+    } catch (TriggerManagerException ex) {
+      logger.error("Error while stopping checker " + id, ex);
+    }
+  }
 
-	@Override
-	public void setContext(Map<String, Object> context) {
-		// Not applicable for Nyx trigger
-	}
+  @Override
+  public void setContext(Map<String, Object> context) {
+    // Not applicable for Nyx trigger
+  }
 
-	@Override
-	public long getNextCheckTime() {
-		// Not applicable for Nyx trigger
-		return Long.MAX_VALUE;
-	}
+  @Override
+  public long getNextCheckTime() {
+    // Not applicable for Nyx trigger
+    return Long.MAX_VALUE;
+  }
 
-	public static NyxTriggerChecker createFromJson(HashMap<String, Object> obj)
-			throws Exception {
-		Map<String, Object> jsonObj = (HashMap<String, Object>) obj;
-		if (!jsonObj.get("type").equals(type)) {
-			throw new Exception("Cannot create checker of " + type + " from "
-					+ jsonObj.get("type"));
-		}
-		Long triggerId = Long.valueOf((String) jsonObj.get("triggerId"));
-		String id = (String) jsonObj.get("id");
-		String specification = (String) jsonObj.get("specification");
+  public static NyxTriggerChecker createFromJson(HashMap<String, Object> obj)
+      throws Exception {
+    Map<String, Object> jsonObj = (HashMap<String, Object>) obj;
+    if (!jsonObj.get("type").equals(type)) {
+      throw new Exception("Cannot create checker of " + type + " from "
+          + jsonObj.get("type"));
+    }
+    Long triggerId = Long.valueOf((String) jsonObj.get("triggerId"));
+    String id = (String) jsonObj.get("id");
+    String specification = (String) jsonObj.get("specification");
 
-		NyxTriggerChecker checker = new NyxTriggerChecker(specification, id,
-				triggerId);
-		return checker;
-	}
+    NyxTriggerChecker checker =
+        new NyxTriggerChecker(specification, id, triggerId);
+    return checker;
+  }
 
-	@Override
-	public int hashCode() {
-		final int prime = 31;
-		int result = 1;
-		result = prime * result + ((id == null) ? 0 : id.hashCode());
-		result = prime * result
-				+ ((specification == null) ? 0 : specification.hashCode());
-		result = prime * result + (int) (triggerId ^ (triggerId >>> 32));
-		return result;
-	}
+  @Override
+  public int hashCode() {
+    final int prime = 31;
+    int result = 1;
+    result = prime * result + ((id == null) ? 0 : id.hashCode());
+    result =
+        prime * result
+            + ((specification == null) ? 0 : specification.hashCode());
+    result = prime * result + (int) (triggerId ^ (triggerId >>> 32));
+    return result;
+  }
 
-	@Override
-	public boolean equals(Object obj) {
-		if (this == obj)
-			return true;
-		if (obj == null)
-			return false;
-		if (getClass() != obj.getClass())
-			return false;
-		NyxTriggerChecker other = (NyxTriggerChecker) obj;
-		if (id == null) {
-			if (other.id != null)
-				return false;
-		} else if (!id.equals(other.id))
-			return false;
-		if (specification == null) {
-			if (other.specification != null)
-				return false;
-		} else if (!specification.equals(other.specification))
-			return false;
-		if (triggerId != other.triggerId)
-			return false;
-		return true;
-	}
+  @Override
+  public boolean equals(Object obj) {
+    if (this == obj)
+      return true;
+    if (obj == null)
+      return false;
+    if (getClass() != obj.getClass())
+      return false;
+    NyxTriggerChecker other = (NyxTriggerChecker) obj;
+    if (id == null) {
+      if (other.id != null)
+        return false;
+    } else if (!id.equals(other.id))
+      return false;
+    if (specification == null) {
+      if (other.specification != null)
+        return false;
+    } else if (!specification.equals(other.specification))
+      return false;
+    if (triggerId != other.triggerId)
+      return false;
+    return true;
+  }
 
 }
