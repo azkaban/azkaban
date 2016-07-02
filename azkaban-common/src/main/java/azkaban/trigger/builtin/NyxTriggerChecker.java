@@ -24,7 +24,6 @@ import azkaban.trigger.ConditionChecker;
 import azkaban.trigger.TriggerManagerException;
 import azkaban.utils.NyxUtils;
 
-
 /***
  * Trigger checker leveraging upcoming Nyx service
  *
@@ -47,29 +46,40 @@ public class NyxTriggerChecker implements ConditionChecker {
   public NyxTriggerChecker(String specification, String id, long triggerId) {
     this.specification = specification;
     this.id = id;
-    try {
-      // register a trigger
-      this.triggerId = (triggerId == -1 ? NyxUtils.registerNyxTrigger(specification) : triggerId);
-    } catch (TriggerManagerException e) {
-      throw new IllegalArgumentException(" Failed to register Trigger with the given spec." + e.getMessage(), e);
-    }
+
+    // note :
+    // when the checker is initialized we will take whatever that is passed
+    // as the triggerId and will NOT attempt to register the trigger even if
+    // id = -1, this is to make sure the trigger time is correctly populated
+    // when user specifies a dynamic trigger time such as yesterDay().
+    this.triggerId = triggerId;
   }
 
   public long getTriggerId() {
     return triggerId;
   }
 
+  /**
+   * Function to get the NYX trigger status
+   *
+   * @author evli
+   *
+   * @return the trigger status if the trigger is registered and status is
+   *         successfully fetched from server.
+   * */
   public Map<String, Object> getDetailedStatus() {
-    try {
-      if (triggerId == -1) {
-        // if trigger is not registered then first register
-        triggerId = NyxUtils.registerNyxTrigger(specification);
+    Map<String, Object> returnVal = new HashMap<String, Object>();
+    if (triggerId != -1) {
+      try {
+        returnVal = NyxUtils.getNyxTriggerStatus(triggerId);
+      } catch (TriggerManagerException ex) {
+        logger.error("Error while getting the detailed status for the trigger "
+            + id, ex);
       }
-      return NyxUtils.getNyxTriggerStatus(triggerId);
-    } catch (TriggerManagerException ex) {
-      logger.error("Error while getting the detailed status for the trigger " + id, ex);
-      return null;
+    } else {
+      logger.warn("attempted to retrieve staus for an ungistered trigger.");
     }
+    return returnVal;
   }
 
   @Override
@@ -148,16 +158,19 @@ public class NyxTriggerChecker implements ConditionChecker {
     return Long.MAX_VALUE;
   }
 
-  public static NyxTriggerChecker createFromJson(HashMap<String, Object> obj) throws Exception {
+  public static NyxTriggerChecker createFromJson(HashMap<String, Object> obj)
+      throws Exception {
     Map<String, Object> jsonObj = (HashMap<String, Object>) obj;
     if (!jsonObj.get("type").equals(type)) {
-      throw new Exception("Cannot create checker of " + type + " from " + jsonObj.get("type"));
+      throw new Exception("Cannot create checker of " + type + " from "
+          + jsonObj.get("type"));
     }
     Long triggerId = Long.valueOf((String) jsonObj.get("triggerId"));
     String id = (String) jsonObj.get("id");
     String specification = (String) jsonObj.get("specification");
 
-    NyxTriggerChecker checker = new NyxTriggerChecker(specification, id, triggerId);
+    NyxTriggerChecker checker =
+        new NyxTriggerChecker(specification, id, triggerId);
     return checker;
   }
 
@@ -166,7 +179,9 @@ public class NyxTriggerChecker implements ConditionChecker {
     final int prime = 31;
     int result = 1;
     result = prime * result + ((id == null) ? 0 : id.hashCode());
-    result = prime * result + ((specification == null) ? 0 : specification.hashCode());
+    result =
+        prime * result
+            + ((specification == null) ? 0 : specification.hashCode());
     result = prime * result + (int) (triggerId ^ (triggerId >>> 32));
     return result;
   }

@@ -105,7 +105,7 @@
                 <td>$utils.formatPeriod(${sched.period})</td>
                 <td>#if(${sched.slaOptions}) true #else false #end</td>
                 <td><button type="button" id="removeSchedBtn" class="btn btn-sm btn-danger" onclick="removeSched(${sched.scheduleId})" >Remove Schedule</button></td>
-                <td><button type="button" id="viewTgBtn" class="btn btn-sm btn-success" onclick="triggerView.initFromSched(${sched.scheduleId})" >Trigger Status</button></td>
+                <td><button type="button" id="viewTgBtn" class="btn btn-sm btn-success" onclick="triggerView.initFromSched(${sched.scheduleId})" #if (!$sched.containsNyxTrigger()) disabled #end>Trigger Status</button></td>
                 <td><button type="button" id="addSlaBtn" class="btn btn-sm btn-primary" onclick="slaView.initFromSched(${sched.scheduleId}, '${sched.flowName}')" >Set SLA</button></td>
               </tr>
     #end

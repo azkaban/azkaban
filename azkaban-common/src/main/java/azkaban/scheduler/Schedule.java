@@ -83,269 +83,284 @@ public class Schedule {
       long nextExecTime, long submitTime, String submitUser,
       ExecutionOptions executionOptions, List<SlaOption> slaOptions) {
     this.scheduleId = scheduleId;
-    this.projectId = projectId;
-    this.projectName = projectName;
-    this.flowName = flowName;
-    this.firstSchedTime = firstSchedTime;
-    this.timezone = timezone;
-    this.lastModifyTime = lastModifyTime;
-    this.period = period;
-    this.nextExecTime = nextExecTime;
-    this.submitUser = submitUser;
-    this.status = status;
-    this.submitTime = submitTime;
-    this.executionOptions = executionOptions;
-    this.slaOptions = slaOptions;
-  }
+		this.projectId = projectId;
+		this.projectName = projectName;
+		this.flowName = flowName;
+		this.firstSchedTime = firstSchedTime;
+		this.timezone = timezone;
+		this.lastModifyTime = lastModifyTime;
+		this.period = period;
+		this.nextExecTime = nextExecTime;
+		this.submitUser = submitUser;
+		this.status = status;
+		this.submitTime = submitTime;
+		this.executionOptions = executionOptions;
+		this.slaOptions = slaOptions;
+	}
 
-  public ExecutionOptions getExecutionOptions() {
-    return executionOptions;
-  }
+	public ExecutionOptions getExecutionOptions() {
+		return executionOptions;
+	}
 
-  public List<SlaOption> getSlaOptions() {
-    return slaOptions;
-  }
+	public List<SlaOption> getSlaOptions() {
+		return slaOptions;
+	}
 
-  public void setFlowOptions(ExecutionOptions executionOptions) {
-    this.executionOptions = executionOptions;
-  }
+	public void setFlowOptions(ExecutionOptions executionOptions) {
+		this.executionOptions = executionOptions;
+	}
 
-  public void setSlaOptions(List<SlaOption> slaOptions) {
-    this.slaOptions = slaOptions;
-  }
+	public void setSlaOptions(List<SlaOption> slaOptions) {
+		this.slaOptions = slaOptions;
+	}
 
-  public String getScheduleName() {
-    return projectName + "." + flowName + " (" + projectId + ")";
-  }
+	public String getScheduleName() {
+		return projectName + "." + flowName + " (" + projectId + ")";
+	}
 
-  public String toString() {
-    return projectName + "." + flowName + " (" + projectId + ")"
-        + " to be run at (starting) "
-        + new DateTime(firstSchedTime).toDateTimeISO()
-        + " with recurring period of "
-        + (period == null ? "non-recurring" : createPeriodString(period));
-  }
+	public String toString() {
+		return projectName
+				+ "."
+				+ flowName
+				+ " ("
+				+ projectId
+				+ ")"
+				+ " to be run at (starting) "
+				+ new DateTime(firstSchedTime).toDateTimeISO()
+				+ " with recurring period of "
+				+ (period == null ? "non-recurring"
+						: createPeriodString(period));
+	}
 
-  public Pair<Integer, String> getScheduleIdentityPair() {
-    return new Pair<Integer, String>(getProjectId(), getFlowName());
-  }
+	public Pair<Integer, String> getScheduleIdentityPair() {
+		return new Pair<Integer, String>(getProjectId(), getFlowName());
+	}
 
-  public void setScheduleId(int scheduleId) {
-    this.scheduleId = scheduleId;
-  }
+	public void setScheduleId(int scheduleId) {
+		this.scheduleId = scheduleId;
+	}
 
-  public int getScheduleId() {
-    return scheduleId;
-  }
+	public int getScheduleId() {
+		return scheduleId;
+	}
 
-  public int getProjectId() {
-    return projectId;
-  }
+	public int getProjectId() {
+		return projectId;
+	}
 
-  public String getProjectName() {
-    return projectName;
-  }
+	public String getProjectName() {
+		return projectName;
+	}
 
-  public String getFlowName() {
-    return flowName;
-  }
+	public String getFlowName() {
+		return flowName;
+	}
 
-  public long getFirstSchedTime() {
-    return firstSchedTime;
-  }
+	public long getFirstSchedTime() {
+		return firstSchedTime;
+	}
 
-  public DateTimeZone getTimezone() {
-    return timezone;
-  }
+	public DateTimeZone getTimezone() {
+		return timezone;
+	}
 
-  public long getLastModifyTime() {
-    return lastModifyTime;
-  }
+	public long getLastModifyTime() {
+		return lastModifyTime;
+	}
 
-  public ReadablePeriod getPeriod() {
-    return period;
-  }
+	public ReadablePeriod getPeriod() {
+		return period;
+	}
 
-  public long getNextExecTime() {
-    return nextExecTime;
-  }
+	public long getNextExecTime() {
+		return nextExecTime;
+	}
 
-  public String getSubmitUser() {
-    return submitUser;
-  }
+	public String getSubmitUser() {
+		return submitUser;
+	}
 
-  public String getStatus() {
-    return status;
-  }
+	public String getStatus() {
+		return status;
+	}
 
-  public long getSubmitTime() {
-    return submitTime;
-  }
+	public long getSubmitTime() {
+		return submitTime;
+	}
 
-  public boolean updateTime() {
-    if (new DateTime(nextExecTime).isAfterNow()) {
-      return true;
-    }
+	public boolean updateTime() {
+		if (new DateTime(nextExecTime).isAfterNow()) {
+			return true;
+		}
 
-    if (period != null) {
-      DateTime nextTime = getNextRuntime(nextExecTime, timezone, period);
+		if (period != null) {
+			DateTime nextTime = getNextRuntime(nextExecTime, timezone, period);
 
-      this.nextExecTime = nextTime.getMillis();
-      return true;
-    }
+			this.nextExecTime = nextTime.getMillis();
+			return true;
+		}
 
-    return false;
-  }
+		return false;
+	}
 
-  public void setNextExecTime(long nextExecTime) {
-    this.nextExecTime = nextExecTime;
-  }
+	public boolean containsNyxTrigger() {
+		return this.executionOptions != null
+				&& this.executionOptions.getFlowParameters() != null
+				&& this.executionOptions.getFlowParameters().containsKey(
+						ExecutionOptions.TRIGGER_SPEC);
+	}
 
-  private DateTime getNextRuntime(long scheduleTime, DateTimeZone timezone,
-      ReadablePeriod period) {
-    DateTime now = new DateTime();
-    DateTime date = new DateTime(scheduleTime).withZone(timezone);
-    int count = 0;
-    while (!now.isBefore(date)) {
-      if (count > 100000) {
-        throw new IllegalStateException(
-            "100000 increments of period did not get to present time.");
-      }
+	public void setNextExecTime(long nextExecTime) {
+		this.nextExecTime = nextExecTime;
+	}
 
-      if (period == null) {
-        break;
-      } else {
-        date = date.plus(period);
-      }
+	private DateTime getNextRuntime(long scheduleTime, DateTimeZone timezone,
+			ReadablePeriod period) {
+		DateTime now = new DateTime();
+		DateTime date = new DateTime(scheduleTime).withZone(timezone);
+		int count = 0;
+		while (!now.isBefore(date)) {
+			if (count > 100000) {
+				throw new IllegalStateException(
+						"100000 increments of period did not get to present time.");
+			}
 
-      count += 1;
-    }
+			if (period == null) {
+				break;
+			} else {
+				date = date.plus(period);
+			}
 
-    return date;
-  }
+			count += 1;
+		}
 
-  public static ReadablePeriod parsePeriodString(String periodStr) {
-    ReadablePeriod period;
-    char periodUnit = periodStr.charAt(periodStr.length() - 1);
-    if (periodUnit == 'n') {
-      return null;
-    }
+		return date;
+	}
 
-    int periodInt =
-        Integer.parseInt(periodStr.substring(0, periodStr.length() - 1));
-    switch (periodUnit) {
-    case 'M':
-      period = Months.months(periodInt);
-      break;
-    case 'w':
-      period = Weeks.weeks(periodInt);
-      break;
-    case 'd':
-      period = Days.days(periodInt);
-      break;
-    case 'h':
-      period = Hours.hours(periodInt);
-      break;
-    case 'm':
-      period = Minutes.minutes(periodInt);
-      break;
-    case 's':
-      period = Seconds.seconds(periodInt);
-      break;
-    default:
-      throw new IllegalArgumentException("Invalid schedule period unit '"
-          + periodUnit);
-    }
+	public static ReadablePeriod parsePeriodString(String periodStr) {
+		ReadablePeriod period;
+		char periodUnit = periodStr.charAt(periodStr.length() - 1);
+		if (periodUnit == 'n') {
+			return null;
+		}
 
-    return period;
-  }
+		int periodInt = Integer.parseInt(periodStr.substring(0,
+				periodStr.length() - 1));
+		switch (periodUnit) {
+		case 'M':
+			period = Months.months(periodInt);
+			break;
+		case 'w':
+			period = Weeks.weeks(periodInt);
+			break;
+		case 'd':
+			period = Days.days(periodInt);
+			break;
+		case 'h':
+			period = Hours.hours(periodInt);
+			break;
+		case 'm':
+			period = Minutes.minutes(periodInt);
+			break;
+		case 's':
+			period = Seconds.seconds(periodInt);
+			break;
+		default:
+			throw new IllegalArgumentException("Invalid schedule period unit '"
+					+ periodUnit);
+		}
 
-  public static String createPeriodString(ReadablePeriod period) {
-    String periodStr = "n";
+		return period;
+	}
 
-    if (period == null) {
-      return "n";
-    }
+	public static String createPeriodString(ReadablePeriod period) {
+		String periodStr = "n";
 
-    if (period.get(DurationFieldType.months()) > 0) {
-      int months = period.get(DurationFieldType.months());
-      periodStr = months + "M";
-    } else if (period.get(DurationFieldType.weeks()) > 0) {
-      int weeks = period.get(DurationFieldType.weeks());
-      periodStr = weeks + "w";
-    } else if (period.get(DurationFieldType.days()) > 0) {
-      int days = period.get(DurationFieldType.days());
-      periodStr = days + "d";
-    } else if (period.get(DurationFieldType.hours()) > 0) {
-      int hours = period.get(DurationFieldType.hours());
-      periodStr = hours + "h";
-    } else if (period.get(DurationFieldType.minutes()) > 0) {
-      int minutes = period.get(DurationFieldType.minutes());
-      periodStr = minutes + "m";
-    } else if (period.get(DurationFieldType.seconds()) > 0) {
-      int seconds = period.get(DurationFieldType.seconds());
-      periodStr = seconds + "s";
-    }
+		if (period == null) {
+			return "n";
+		}
 
-    return periodStr;
-  }
+		if (period.get(DurationFieldType.months()) > 0) {
+			int months = period.get(DurationFieldType.months());
+			periodStr = months + "M";
+		} else if (period.get(DurationFieldType.weeks()) > 0) {
+			int weeks = period.get(DurationFieldType.weeks());
+			periodStr = weeks + "w";
+		} else if (period.get(DurationFieldType.days()) > 0) {
+			int days = period.get(DurationFieldType.days());
+			periodStr = days + "d";
+		} else if (period.get(DurationFieldType.hours()) > 0) {
+			int hours = period.get(DurationFieldType.hours());
+			periodStr = hours + "h";
+		} else if (period.get(DurationFieldType.minutes()) > 0) {
+			int minutes = period.get(DurationFieldType.minutes());
+			periodStr = minutes + "m";
+		} else if (period.get(DurationFieldType.seconds()) > 0) {
+			int seconds = period.get(DurationFieldType.seconds());
+			periodStr = seconds + "s";
+		}
 
-  public Map<String, Object> optionsToObject() {
-    if (executionOptions != null) {
-      HashMap<String, Object> schedObj = new HashMap<String, Object>();
+		return periodStr;
+	}
 
-      if (executionOptions != null) {
-        schedObj.put("executionOptions", executionOptions.toObject());
-      }
+	public Map<String, Object> optionsToObject() {
+		if (executionOptions != null) {
+			HashMap<String, Object> schedObj = new HashMap<String, Object>();
 
-      if (slaOptions != null) {
-        List<Object> slaOptionsObject = new ArrayList<Object>();
-        for (SlaOption sla : slaOptions) {
-          slaOptionsObject.add(sla.toObject());
-        }
-        schedObj.put("slaOptions", slaOptionsObject);
-      }
+			if (executionOptions != null) {
+				schedObj.put("executionOptions", executionOptions.toObject());
+			}
 
-      return schedObj;
-    }
-    return null;
-  }
+			if (slaOptions != null) {
+				List<Object> slaOptionsObject = new ArrayList<Object>();
+				for (SlaOption sla : slaOptions) {
+					slaOptionsObject.add(sla.toObject());
+				}
+				schedObj.put("slaOptions", slaOptionsObject);
+			}
 
-  @SuppressWarnings("unchecked")
-  public void createAndSetScheduleOptions(Object obj) {
-    HashMap<String, Object> schedObj = (HashMap<String, Object>) obj;
-    if (schedObj.containsKey("executionOptions")) {
-      ExecutionOptions execOptions =
-          ExecutionOptions.createFromObject(schedObj.get("executionOptions"));
-      this.executionOptions = execOptions;
-    } else if (schedObj.containsKey("flowOptions")) {
-      ExecutionOptions execOptions =
-          ExecutionOptions.createFromObject(schedObj.get("flowOptions"));
-      this.executionOptions = execOptions;
-      execOptions.setConcurrentOption(ExecutionOptions.CONCURRENT_OPTION_SKIP);
-    } else {
-      this.executionOptions = new ExecutionOptions();
-      this.executionOptions
-          .setConcurrentOption(ExecutionOptions.CONCURRENT_OPTION_SKIP);
-    }
+			return schedObj;
+		}
+		return null;
+	}
 
-    if (schedObj.containsKey("slaOptions")) {
-      List<Object> slaOptionsObject = (List<Object>) schedObj.get("slaOptions");
-      List<SlaOption> slaOptions = new ArrayList<SlaOption>();
-      for (Object slaObj : slaOptionsObject) {
-        slaOptions.add(SlaOption.fromObject(slaObj));
-      }
-      this.slaOptions = slaOptions;
-    }
+	@SuppressWarnings("unchecked")
+	public void createAndSetScheduleOptions(Object obj) {
+		HashMap<String, Object> schedObj = (HashMap<String, Object>) obj;
+		if (schedObj.containsKey("executionOptions")) {
+			ExecutionOptions execOptions = ExecutionOptions
+					.createFromObject(schedObj.get("executionOptions"));
+			this.executionOptions = execOptions;
+		} else if (schedObj.containsKey("flowOptions")) {
+			ExecutionOptions execOptions = ExecutionOptions
+					.createFromObject(schedObj.get("flowOptions"));
+			this.executionOptions = execOptions;
+			execOptions
+					.setConcurrentOption(ExecutionOptions.CONCURRENT_OPTION_SKIP);
+		} else {
+			this.executionOptions = new ExecutionOptions();
+			this.executionOptions
+					.setConcurrentOption(ExecutionOptions.CONCURRENT_OPTION_SKIP);
+		}
 
-  }
+		if (schedObj.containsKey("slaOptions")) {
+			List<Object> slaOptionsObject = (List<Object>) schedObj
+					.get("slaOptions");
+			List<SlaOption> slaOptions = new ArrayList<SlaOption>();
+			for (Object slaObj : slaOptionsObject) {
+				slaOptions.add(SlaOption.fromObject(slaObj));
+			}
+			this.slaOptions = slaOptions;
+		}
 
-  public boolean isRecurring() {
-    return period == null ? false : true;
-  }
+	}
 
-  public boolean skipPastOccurrences() {
-    return skipPastOccurrences;
-  }
+	public boolean isRecurring() {
+		return period == null ? false : true;
+	}
+
+	public boolean skipPastOccurrences() {
+		return skipPastOccurrences;
+	}
 
 }
