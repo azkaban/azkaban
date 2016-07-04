@@ -1437,7 +1437,8 @@ public class ExecutorManager extends EventHandler implements
           mailAlerter
               .alertOnError(
                   flow,
-                  "Executor no longer seems to be running this execution.");
+                  "Flow status: " + flow.getStatus(),
+                  "Executor is no longer running this execution.");
         } catch (Exception e) {
           logger.error(e);
         }
@@ -1450,7 +1451,8 @@ public class ExecutorManager extends EventHandler implements
             alerter
                 .alertOnError(
                     flow,
-                    "Executor no longer seems to be running this execution.");
+                    "Flow status: " + flow.getStatus(),
+                    "Executor is no longer running this execution.");
           } catch (Exception e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
