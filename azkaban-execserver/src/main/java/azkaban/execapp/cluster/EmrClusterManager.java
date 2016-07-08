@@ -196,7 +196,7 @@ public class EmrClusterManager implements IClusterManager, EventListener {
                                 jobLogger.info("Trying to find running cluster: " + clusterName + " (Attempt " + lookupAttempt + "/" + lookupTotalAttempts + ")");
 
                                 // Try to find an existing running cluster that's cached (on the first flow, always make sure to actually call EMR's api to get the list of running clusters to minimize the chance of any problem)
-                                if (count > 0) {
+                                if (count > 1) {
                                     clusterId = runningClusters.get(clusterName);
                                     if (clusterId != null) {
                                         jobLogger.info("Found existing cached running cluster (" + clusterName + "): " + clusterId);
