@@ -195,11 +195,13 @@ public class EmrClusterManager implements IClusterManager, EventListener {
                             try {
                                 jobLogger.info("Trying to find running cluster: " + clusterName + " (Attempt " + lookupAttempt + "/" + lookupTotalAttempts + ")");
 
-                                // Try to find an existing running cluster that's cached
-                                clusterId = runningClusters.get(clusterName);
-                                if (clusterId != null) {
-                                    jobLogger.info("Found existing cached running cluster (" + clusterName + "): " + clusterId);
-                                    break;
+                                // Try to find an existing running cluster that's cached (on the first flow, always make sure to actually call EMR's api to get the list of running clusters to minimize the chance of any problem)
+                                if (count > 0) {
+                                    clusterId = runningClusters.get(clusterName);
+                                    if (clusterId != null) {
+                                        jobLogger.info("Found existing cached running cluster (" + clusterName + "): " + clusterId);
+                                        break;
+                                    }
                                 }
 
                                 ClusterSummary runningCluster = EmrUtils.findClusterByName(getEmrClient(), clusterName, EmrUtils.RUNNING_STATES);
@@ -313,7 +315,7 @@ public class EmrClusterManager implements IClusterManager, EventListener {
             return false;
 
         } finally {
-            terminateCleanup(clusterId, clusterName);
+            terminateCleanup(clusterId, clusterName, logger);
         }
     }
 
@@ -431,7 +433,9 @@ public class EmrClusterManager implements IClusterManager, EventListener {
         }
     }
 
-    public void terminateCleanup(String clusterId, String clusterName) {
+    public void terminateCleanup(String clusterId, String clusterName, Logger logger) {
+        logger.info("Cleaning up state and cache for  cluster " + clusterName + " (" + clusterId + ")");
+
         // If we don't remove this, there wouldn't be any problems, maybe some memory leak
         // If we remove this too early, we might miss the fact an earlier workflow requested this cluster to not be shutdown
         clustersKeepAlive.remove(clusterId);
