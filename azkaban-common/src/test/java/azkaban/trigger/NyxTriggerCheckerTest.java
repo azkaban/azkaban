@@ -16,7 +16,7 @@ import azkaban.utils.NyxUtils;
 
 /**
  * Test class for NyxTriggerChecker
- * 
+ *
  * @author gaggarwa
  *
  */
@@ -30,12 +30,12 @@ public class NyxTriggerCheckerTest {
   @Before
   public void initObjects() throws Exception {
     PowerMockito.mockStatic(NyxUtils.class);
-    PowerMockito.when(NyxUtils.registerNyxTrigger(dummySpec))
-        .thenReturn(dummyTriggerId);
+    PowerMockito.when(NyxUtils.registerNyxTrigger(dummySpec)).thenReturn(
+        dummyTriggerId);
     PowerMockito.doNothing().when(NyxUtils.class, "unregisterNyxTrigger",
         dummyTriggerId);
-    PowerMockito.when(NyxUtils.isNyxTriggerReady(dummyTriggerId))
-        .thenReturn(true);
+    PowerMockito.when(NyxUtils.isNyxTriggerReady(dummyTriggerId)).thenReturn(
+        true);
 
     checker = new NyxTriggerChecker(dummySpec, "NyxTriggerChecker_1");
   }
@@ -43,22 +43,21 @@ public class NyxTriggerCheckerTest {
   @Test
   public void testDefaultTriggerRegister() throws TriggerManagerException {
     Assert.assertEquals("NyxTriggerChecker_1", checker.getId());
-    Assert.assertEquals(123L, checker.getTriggerId());
-    PowerMockito.verifyStatic();
-    // verify register Trigger was called
-    NyxUtils.registerNyxTrigger(dummySpec);
+    Assert.assertEquals(-1, checker.getTriggerId());
   }
 
   @Test
   public void testJSONserialization() throws Exception {
     @SuppressWarnings("unchecked")
-    ConditionChecker retrievedChecker = NyxTriggerChecker
-        .createFromJson((HashMap<String, Object>) checker.toJson());
+    ConditionChecker retrievedChecker =
+        NyxTriggerChecker.createFromJson((HashMap<String, Object>) checker
+            .toJson());
     Assert.assertEquals(checker, retrievedChecker);
   }
 
   @Test
   public void testReset() throws TriggerManagerException {
+    checker.eval();
     checker.reset();
     PowerMockito.verifyStatic();
     NyxUtils.unregisterNyxTrigger(dummyTriggerId);
@@ -69,6 +68,7 @@ public class NyxTriggerCheckerTest {
 
   @Test
   public void testStop() throws TriggerManagerException {
+    checker.eval();
     checker.stopChecker();
     PowerMockito.verifyStatic();
     NyxUtils.unregisterNyxTrigger(dummyTriggerId);
