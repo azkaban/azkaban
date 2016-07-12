@@ -32,7 +32,6 @@ import azkaban.executor.ExecutionOptions.FailureAction;
 import azkaban.executor.ExecutorManagerException;
 import azkaban.executor.mail.DefaultMailCreator;
 import azkaban.project.DirectoryFlowLoader;
-import azkaban.project.Project;
 import azkaban.project.ProjectManager;
 import azkaban.user.Permission;
 import azkaban.user.Permission.Type;
@@ -134,7 +133,7 @@ public class HttpRequestUtils {
    * </pre>
    */
   public static void filterAdminOnlyFlowParams(UserManager userManager,
-    ExecutionOptions options, User user)  throws ExecutorManagerException {
+      ExecutionOptions options, User user) throws ExecutorManagerException {
     if (options == null || options.getFlowParameters() == null)
       return;
 
@@ -152,14 +151,15 @@ public class HttpRequestUtils {
   /**
    * parse a string as number and throws exception if parsed value is not a
    * valid integer
+   *
    * @param params
    * @param paramName
    * @throws ExecutorManagerException if paramName is not a valid integer
    */
   public static boolean validateIntegerParam(Map<String, String> params,
-    String paramName) throws ExecutorManagerException {
+      String paramName) throws ExecutorManagerException {
     if (params != null && params.containsKey(paramName)
-      && !StringUtils.isNumeric(params.get(paramName))) {
+        && !StringUtils.isNumeric(params.get(paramName))) {
       throw new ExecutorManagerException(paramName + " should be an integer");
     }
     return true;
@@ -174,11 +174,11 @@ public class HttpRequestUtils {
    * @return
    */
   public static boolean hasPermission(UserManager userManager, User user,
-    Permission.Type type) {
+      Permission.Type type) {
     for (String roleName : user.getRoles()) {
       Role role = userManager.getRole(roleName);
       if (role.getPermission().isPermissionSet(type)
-        || role.getPermission().isPermissionSet(Permission.Type.ADMIN)) {
+          || role.getPermission().isPermissionSet(Permission.Type.ADMIN)) {
         return true;
       }
     }
@@ -319,39 +319,70 @@ public class HttpRequestUtils {
   }
 
   /**
+   * <pre>
    * Set correct trigger spec using runtime-config or .json file
-   * 
+   * Note:
+   * Fetching trigger configuration will follow the following steps -
+   * 1. If ExecutionOptions.TRIGGER_SPEC is specified shortcut and do noting.
+   * 2. Else if ExecutionOptions.TRIGGER_FILE is specified use it as the trigger file name and
+   * pull the spec from it.
+   * 3. Else if a file with name "[FLOWNAME].trigger" is found at the root folder of the specified project package,
+   * pull the spec from it.
+   * </pre>
+   *
    * @param flowParams
    * @param metaData
+   * @param flowName
    * @throws IllegalArgumentException
    */
   public static void setTriggerSpecification(Map<String, String> flowParams,
-      Map<String, Object> metaData) {
+      Map<String, Object> metaData, String flowName) {
+
     // User specific TRIGGER_SPEC takes higher priority
     if (flowParams != null
         && !flowParams.containsKey(ExecutionOptions.TRIGGER_SPEC)
-        && flowParams.containsKey(ExecutionOptions.TRIGGER_FILE)
         && metaData != null) {
 
-      if (!metaData.containsKey(ProjectManager.TRIGGER_DATA)) {
-        throw new IllegalArgumentException("No trigger file in project zip");
-      }
-
-      String triggerName = flowParams.get(ExecutionOptions.TRIGGER_FILE);
       @SuppressWarnings("unchecked")
       Map<String, String> triggers =
           (Map<String, String>) metaData.get(ProjectManager.TRIGGER_DATA);
-      if (triggers.containsKey(triggerName)) {
-        flowParams.put(ExecutionOptions.TRIGGER_SPEC,
-            triggers.get(triggerName));
-      } else if (triggers
-          .containsKey(triggerName + DirectoryFlowLoader.TRIGGER_SUFFIX)) {
-        flowParams.put(ExecutionOptions.TRIGGER_SPEC,
-            triggers.get(triggerName + DirectoryFlowLoader.TRIGGER_SUFFIX));
-      } else {
-        throw new IllegalArgumentException("Unknown trigger file " + triggerName);
+
+      String triggerName = flowParams.get(ExecutionOptions.TRIGGER_FILE);
+
+      // if the trigger file is specified by user, do a further verification and
+      // make sure it is valid.
+      if (!StringUtils.isEmpty(triggerName)) {
+        boolean triggerFound = false;
+        if (triggers != null) {
+          if (triggers.containsKey(triggerName)) {
+            triggerFound = true;
+          } else if (triggers.containsKey(triggerName
+              + DirectoryFlowLoader.TRIGGER_SUFFIX)) {
+            triggerFound = true;
+            triggerName = triggerName + DirectoryFlowLoader.TRIGGER_SUFFIX;
+          }
+        }
+        // shortcut if trigger file is specified but the the file is not found.
+        if (!triggerFound) {
+          throw new IllegalArgumentException("Unknown trigger file "
+              + triggerName);
+        }
+      }
+      // give a second chance to use the flow name as the trigger file name.
+      // Note - here we just do a graceful attempt, if it is no go we just move
+      // on and no exception will be thrown.
+      else if (!StringUtils.isEmpty(flowName)
+          && triggers != null
+          && triggers
+              .containsKey(flowName + DirectoryFlowLoader.TRIGGER_SUFFIX)) {
+        triggerName = flowName + DirectoryFlowLoader.TRIGGER_SUFFIX;
+      }
+
+      // if we have an valid trigger file name, pull the spec from from it.
+      if (!StringUtils.isEmpty(triggerName)) {
+        flowParams
+            .put(ExecutionOptions.TRIGGER_SPEC, triggers.get(triggerName));
       }
     }
   }
-
 }
