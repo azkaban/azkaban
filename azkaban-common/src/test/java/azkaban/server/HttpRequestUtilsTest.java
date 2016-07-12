@@ -195,8 +195,8 @@ public final class HttpRequestUtilsTest {
     Map<String, String> flowParams = new HashMap<String, String>();
     Map<String, Object> metaData = new HashMap<String, Object>();
     Map<String, String> triggerFiles = new HashMap<String, String>();
-    triggerFiles.put("t1", "spec1");
-    triggerFiles.put("t2", "spec2");
+    triggerFiles.put("t1.trigger", "spec1");
+    triggerFiles.put("t2.trigger", "spec2");
     metaData.put(ProjectManager.TRIGGER_DATA, triggerFiles);
 
     HttpRequestUtils.setTriggerSpecification(flowParams, metaData, "t1");
@@ -210,7 +210,7 @@ public final class HttpRequestUtilsTest {
     Map<String, Object> metaData = new HashMap<String, Object>();
     Map<String, String> triggerFiles = new HashMap<String, String>();
     flowParams.put(ExecutionOptions.TRIGGER_SPEC, "spec2");
-    triggerFiles.put("t1", "spec1");
+    triggerFiles.put("t1.trigger", "spec1");
     metaData.put(ProjectManager.TRIGGER_DATA, triggerFiles);
     HttpRequestUtils.setTriggerSpecification(flowParams, metaData, "t1");
     Assert.assertEquals("spec2", flowParams.get(ExecutionOptions.TRIGGER_SPEC));
@@ -222,8 +222,8 @@ public final class HttpRequestUtilsTest {
     Map<String, String> flowParams = new HashMap<String, String>();
     Map<String, Object> metaData = new HashMap<String, Object>();
     Map<String, String> triggerFiles = new HashMap<String, String>();
-    triggerFiles.put("t1", "spec1");
-    triggerFiles.put("t2", "spec2");
+    triggerFiles.put("t1.trigger", "spec1");
+    triggerFiles.put("t2.trigger", "spec2");
     flowParams.put(ExecutionOptions.TRIGGER_FILE, "t2");
     metaData.put(ProjectManager.TRIGGER_DATA, triggerFiles);
     HttpRequestUtils.setTriggerSpecification(flowParams, metaData, "t1");
