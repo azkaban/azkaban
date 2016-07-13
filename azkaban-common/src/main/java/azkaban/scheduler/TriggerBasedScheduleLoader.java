@@ -21,6 +21,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.commons.lang.StringUtils;
 import org.apache.log4j.Logger;
 
 import azkaban.executor.ExecutionOptions;
@@ -95,7 +96,7 @@ public class TriggerBasedScheduleLoader implements ScheduleLoader {
     Map<String, String> flowParams =
         s.getExecutionOptions().getFlowParameters();
     if (flowParams != null
-        && flowParams.containsKey(ExecutionOptions.TRIGGER_SPEC)) {
+        && !StringUtils.isEmpty(flowParams.get(ExecutionOptions.TRIGGER_SPEC))) {
       ConditionChecker nyxChecker =
           new NyxTriggerChecker(flowParams.get(ExecutionOptions.TRIGGER_SPEC),
               checkerId);

@@ -41,44 +41,44 @@ public final class HttpRequestUtilsTest {
   public static ExecutableFlow createExecutableFlow() throws IOException {
     ExecutableFlow flow = TestUtils.createExecutableFlow("exectest1", "exec1");
     flow.getExecutionOptions().getFlowParameters()
-      .put(ExecutionOptions.FLOW_PRIORITY, "1");
+        .put(ExecutionOptions.FLOW_PRIORITY, "1");
     flow.getExecutionOptions().getFlowParameters()
-      .put(ExecutionOptions.USE_EXECUTOR, "2");
+        .put(ExecutionOptions.USE_EXECUTOR, "2");
     return flow;
   }
 
   /* Test that flow properties are removed for non-admin user */
   @Test
   public void TestFilterNonAdminOnlyFlowParams() throws IOException,
-    ExecutorManagerException, UserManagerException {
+      ExecutorManagerException, UserManagerException {
     ExecutableFlow flow = createExecutableFlow();
     UserManager manager = TestUtils.createTestXmlUserManager();
     User user = manager.getUser("testUser", "testUser");
 
     HttpRequestUtils.filterAdminOnlyFlowParams(manager,
-      flow.getExecutionOptions(), user);
+        flow.getExecutionOptions(), user);
 
     Assert.assertFalse(flow.getExecutionOptions().getFlowParameters()
-      .containsKey(ExecutionOptions.FLOW_PRIORITY));
+        .containsKey(ExecutionOptions.FLOW_PRIORITY));
     Assert.assertFalse(flow.getExecutionOptions().getFlowParameters()
-      .containsKey(ExecutionOptions.USE_EXECUTOR));
+        .containsKey(ExecutionOptions.USE_EXECUTOR));
   }
 
   /* Test that flow properties are retained for admin user */
   @Test
   public void TestFilterAdminOnlyFlowParams() throws IOException,
-    ExecutorManagerException, UserManagerException {
+      ExecutorManagerException, UserManagerException {
     ExecutableFlow flow = createExecutableFlow();
     UserManager manager = TestUtils.createTestXmlUserManager();
     User user = manager.getUser("testAdmin", "testAdmin");
 
     HttpRequestUtils.filterAdminOnlyFlowParams(manager,
-      flow.getExecutionOptions(), user);
+        flow.getExecutionOptions(), user);
 
     Assert.assertTrue(flow.getExecutionOptions().getFlowParameters()
-      .containsKey(ExecutionOptions.FLOW_PRIORITY));
+        .containsKey(ExecutionOptions.FLOW_PRIORITY));
     Assert.assertTrue(flow.getExecutionOptions().getFlowParameters()
-      .containsKey(ExecutionOptions.USE_EXECUTOR));
+        .containsKey(ExecutionOptions.USE_EXECUTOR));
   }
 
   /* Test exception, if param is a valid integer */
@@ -103,7 +103,7 @@ public final class HttpRequestUtilsTest {
     UserManager manager = TestUtils.createTestXmlUserManager();
     User adminUser = manager.getUser("testAdmin", "testAdmin");
     Assert.assertTrue(HttpRequestUtils.hasPermission(manager, adminUser,
-      Type.ADMIN));
+        Type.ADMIN));
   }
 
   /* verify permission for non-admin user */
@@ -112,21 +112,21 @@ public final class HttpRequestUtilsTest {
     UserManager manager = TestUtils.createTestXmlUserManager();
     User testUser = manager.getUser("testUser", "testUser");
     Assert.assertFalse(HttpRequestUtils.hasPermission(manager, testUser,
-      Type.ADMIN));
-  }
-  
-  @Test
-  public void testInvalidParamSetTriggerSpecification() throws Exception {
-    HttpRequestUtils.setTriggerSpecification(null, null);
-    HttpRequestUtils.setTriggerSpecification(null,
-        new HashMap<String, Object>());
-    HttpRequestUtils.setTriggerSpecification(new HashMap<String, String>(),
-        null);
+        Type.ADMIN));
   }
 
   @Test
-  public void testFlowParamPrecedenceSetTriggerSpecification()
-      throws Exception {
+  public void testInvalidParamSetTriggerSpecification() throws Exception {
+    HttpRequestUtils.setTriggerSpecification(null, null, null);
+    HttpRequestUtils.setTriggerSpecification(null,
+        new HashMap<String, Object>(), null);
+    HttpRequestUtils.setTriggerSpecification(new HashMap<String, String>(),
+        null, null);
+    HttpRequestUtils.setTriggerSpecification(null, null, "");
+  }
+
+  @Test
+  public void testFlowParamPrecedenceSetTriggerSpecification() throws Exception {
     Map<String, String> flowParams = new HashMap<String, String>();
     Map<String, Object> metaData = new HashMap<String, Object>();
     Map<String, String> triggerFiles = new HashMap<String, String>();
@@ -135,7 +135,7 @@ public final class HttpRequestUtilsTest {
     flowParams.put(ExecutionOptions.TRIGGER_SPEC, "spec2");
     flowParams.put(ExecutionOptions.TRIGGER_FILE, "t1");
 
-    HttpRequestUtils.setTriggerSpecification(flowParams, metaData);
+    HttpRequestUtils.setTriggerSpecification(flowParams, metaData, null);
     Assert.assertEquals(
         "TriggerSpec should have higher precendence over TriggerFile", "spec2",
         flowParams.get(ExecutionOptions.TRIGGER_SPEC));
@@ -150,22 +150,21 @@ public final class HttpRequestUtilsTest {
     triggerFiles.put("t1", "spec1");
     metaData.put(ProjectManager.TRIGGER_DATA, triggerFiles);
 
-    HttpRequestUtils.setTriggerSpecification(flowParams, metaData);
+    HttpRequestUtils.setTriggerSpecification(flowParams, metaData, null);
     Assert.assertFalse(flowParams.containsKey(ExecutionOptions.TRIGGER_SPEC));
   }
 
-  @Test(expected=IllegalArgumentException.class)
+  @Test(expected = IllegalArgumentException.class)
   public void testMissingMetaDataSetTriggerSpecification() throws Exception {
     Map<String, String> flowParams = new HashMap<String, String>();
     Map<String, Object> metaData = new HashMap<String, Object>();
 
     flowParams.put(ExecutionOptions.TRIGGER_FILE, "t1");
 
-    HttpRequestUtils.setTriggerSpecification(flowParams, metaData);
+    HttpRequestUtils.setTriggerSpecification(flowParams, metaData, null);
   }
-  
-  
-  @Test(expected=IllegalArgumentException.class)
+
+  @Test(expected = IllegalArgumentException.class)
   public void testInvalidTriggerFileSetTriggerSpecification() throws Exception {
     Map<String, String> flowParams = new HashMap<String, String>();
     Map<String, Object> metaData = new HashMap<String, Object>();
@@ -174,10 +173,9 @@ public final class HttpRequestUtilsTest {
     metaData.put(ProjectManager.TRIGGER_DATA, triggerFiles);
     flowParams.put(ExecutionOptions.TRIGGER_FILE, "t2");
 
-    HttpRequestUtils.setTriggerSpecification(flowParams, metaData);
+    HttpRequestUtils.setTriggerSpecification(flowParams, metaData, null);
   }
-  
-  
+
   @Test
   public void testHappyCaseSetTriggerSpecification() throws Exception {
     Map<String, String> flowParams = new HashMap<String, String>();
@@ -187,7 +185,49 @@ public final class HttpRequestUtilsTest {
     metaData.put(ProjectManager.TRIGGER_DATA, triggerFiles);
     flowParams.put(ExecutionOptions.TRIGGER_FILE, "t1");
 
-    HttpRequestUtils.setTriggerSpecification(flowParams, metaData);
+    HttpRequestUtils.setTriggerSpecification(flowParams, metaData, null);
     Assert.assertEquals("spec1", flowParams.get(ExecutionOptions.TRIGGER_SPEC));
   }
+
+  @Test
+  public void testUseFlowNameAsTriggerFileNameWhenTriggerFileIsNotSet()
+      throws Exception {
+    Map<String, String> flowParams = new HashMap<String, String>();
+    Map<String, Object> metaData = new HashMap<String, Object>();
+    Map<String, String> triggerFiles = new HashMap<String, String>();
+    triggerFiles.put("t1.trigger", "spec1");
+    triggerFiles.put("t2.trigger", "spec2");
+    metaData.put(ProjectManager.TRIGGER_DATA, triggerFiles);
+
+    HttpRequestUtils.setTriggerSpecification(flowParams, metaData, "t1");
+    Assert.assertEquals("spec1", flowParams.get(ExecutionOptions.TRIGGER_SPEC));
+  }
+
+  @Test
+  public void testFlowNameAsTriggerFileNameIsNotUsedWhenSpecSpecified()
+      throws Exception {
+    Map<String, String> flowParams = new HashMap<String, String>();
+    Map<String, Object> metaData = new HashMap<String, Object>();
+    Map<String, String> triggerFiles = new HashMap<String, String>();
+    flowParams.put(ExecutionOptions.TRIGGER_SPEC, "spec2");
+    triggerFiles.put("t1.trigger", "spec1");
+    metaData.put(ProjectManager.TRIGGER_DATA, triggerFiles);
+    HttpRequestUtils.setTriggerSpecification(flowParams, metaData, "t1");
+    Assert.assertEquals("spec2", flowParams.get(ExecutionOptions.TRIGGER_SPEC));
+  }
+
+  @Test
+  public void testFlowNameAsTriggerFileNameIsNotUsedWhenTriggerFileSpecified()
+      throws Exception {
+    Map<String, String> flowParams = new HashMap<String, String>();
+    Map<String, Object> metaData = new HashMap<String, Object>();
+    Map<String, String> triggerFiles = new HashMap<String, String>();
+    triggerFiles.put("t1.trigger", "spec1");
+    triggerFiles.put("t2.trigger", "spec2");
+    flowParams.put(ExecutionOptions.TRIGGER_FILE, "t2");
+    metaData.put(ProjectManager.TRIGGER_DATA, triggerFiles);
+    HttpRequestUtils.setTriggerSpecification(flowParams, metaData, "t1");
+    Assert.assertEquals("spec2", flowParams.get(ExecutionOptions.TRIGGER_SPEC));
+  }
+
 }
