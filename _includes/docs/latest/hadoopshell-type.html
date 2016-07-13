@@ -1,0 +1,92 @@
+<h2 id="hadoopshell-type">HadoopShell Job Type</h2>
+
+<p>In large part, this is the same <code>Command</code> type. The difference is its ability to talk to a Hadoop cluster securely, via Hadoop tokens.</p>
+
+<p>The HadoopShell job type is one of the basic built-in types. It runs multiple UNIX commands using java processbuilder.  Upon execution, Azkaban spawns off a process to run the command.</p>
+
+<h3>How To Use</h3>
+
+<p>The <code>HadoopShell</code> job type talks to a secure cluster via Hadoop tokens. The admin should specify <code>obtain.binary.token=true</code> if the Hadoop cluster security is turned on. Before executing a job, Azkaban will obtain name node token and job tracker tokens for this job. These tokens will be written to a token file, to be picked up by user job process during its execution. After the job finishes, Azkaban takes care of canceling these tokens from name node and job tracker. </p>
+
+<p>Since Azkaban only obtains the tokens at the beginning of the job run, and does not requesting new tokens or renew old tokens during the execution, it is important that the job does not run longer than configured token life.</p>
+
+<p>One can run one or multiple commands within one command job. Here is what is needed:</p>
+
+<table class="table table-bordered table-striped table-condensed">
+  <thead>
+    <tr>
+      <th>Type</th>
+      <th>Command</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>command</td>
+      <td>The full command to run</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>For multiple commands, do it like <code>command.1, command.2</code>, etc.</p>
+
+<p>Here are some common configurations that make a <code>hadoopShell</code> job for a user:</p>
+
+<table class="table table-striped table-condensed table-bordered">
+  <thead>
+    <tr>
+      <th>Parameter</th>
+      <th> Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>type</td>
+      <td>The type name as set by the admin, e.g. <code>hadoopShell</code></td>
+    </tr>
+    <tr>
+      <td>dependencies</td>
+      <td>The other jobs in the flow this job is dependent upon.</td>
+    </tr>
+    <tr>
+      <td>user.to.proxy</td>
+      <td>The Hadoop user this job should run under.</td>
+    </tr>
+    <tr>
+      <td>hadoop-inject.FOO</td>
+      <td>FOO is automatically added to the Configuration of any Hadoop job launched.</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>Here are what's needed and normally configured by the admin:</p>
+
+<table class="table table-striped table-bordered table-condensed">
+  <thead>
+    <tr>
+      <th>Parameter</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>hadoop.security.manager.class</td>
+      <td>The class that handles talking to Hadoop clusters.</td>
+    </tr>
+    <tr>
+      <td>azkaban.should.proxy</td>
+      <td>Whether Azkaban should proxy as individual user Hadoop accounts.</td>
+    </tr>
+    <tr>
+      <td>proxy.user</td>
+      <td>The Azkaban user configured with kerberos and Hadoop, for secure clusters.</td>
+    </tr>
+    <tr>
+      <td>proxy.keytab.location</td>
+      <td>The location of the keytab file with which Azkaban can authenticate with Kerberos for the specified proxy.user</td>
+    </tr>
+    <tr>
+      <td>obtain.binary.token</td>
+      <td>Whether Azkaban should request tokens. Set this to true for secure clusters.</td>
+    </tr>
+  </tbody>
+</table>

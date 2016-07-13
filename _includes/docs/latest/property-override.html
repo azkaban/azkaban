@@ -1,0 +1,77 @@
+<h2 id="property-override">Property Overrides</h2>
+
+<p> Azkaban job is specified with a set of key-value pairs we call properties. There are multiple sources for deciding which properties will finally be a part of job execution. Following table lists out all the sources of properties and their priorities. Please note that if a property occur in multiple sources, then its value from high property source will be used </p>
+
+<p>
+	Following properties are visible to the users. These are the same properties which are merged to form <code>jobProps</code> in <code>AbstractProcessJob.java</code>
+</p>
+<table class="table table-striped table-condensed table-bordered">
+	<thead>
+		<tr>
+			<th>PropertySource</th>
+			<th>Description</th>
+			<th>Priority</th>
+		</tr>
+	</thead>
+	<tbody>
+		<tr>
+			<td><code>global.properties</code> in <code>conf</code> directory</td>
+			<td>These are admin configured properties during Azkaban setup. Global to all jobtypes.</td>
+			<td>Lowest (0)</td>
+		</tr>
+		<tr>
+			<td><code>common.properties</code> in <code>jobtype</code> directory</td>
+			<td>These are admin configured properties during Azkaban setup. Global to all jobtypes.</td>
+			<td>1</td>
+		</tr>
+		<tr>
+			<td><code>plugin.properties</code> in <code>jobtype/{jobtype-name}</code> directory</td>
+			<td>These are admin configured properties during Azkaban setup. Restricted to a specific jobtype.</td>
+			<td>2</td>
+		</tr>
+		<tr>
+			<td><code>common.properties</code> in project zip</td>
+			<td>These are user specified property which apply to all jobs in sibling or descendent directories</td>
+			<td>3</td>
+		</tr>
+		<tr>
+			<td>Flow properties specified while triggering flow execution</td>
+			<td>These are user specified property. These can be specified from UI or Ajax call but cannot be saved in project zip.</td>
+			<td>4</td>
+		</tr>
+		<tr>
+			<td><code>{job-name}.job</code> job specification</td>
+			<td>These are user specified property in actual job file</td>
+			<td>Highest (5)</td>
+		</tr>
+	</tbody>
+</table>
+
+<p>
+	Following properties are not visible to the users. Depending on jobtype implementation these properties are used for constraining user jobs and properties. These are the same properties which are merged to form <code>sysProps</code> in <code>AbstractProcessJob.java</code>
+</p>
+<table class="table table-striped table-condensed table-bordered">
+	<thead>
+		<tr>
+			<th>PropertySource</th>
+			<th>Description</th>
+			<th>Priority</th>
+		</tr>
+	</thead>
+	<tbody>
+		<tr>
+			<td><code>commonprivate.properties</code> in <code>jobtype</code> directory</td>
+			<td>These are admin configured properties during Azkaban setup. Global to all jobtypes.</td>
+			<td>Lowest (0)</td>
+		</tr>
+		<tr>
+			<td><code>private.properties</code> in <code>jobtype/{jobtype-name}</code> directory</td>
+			<td>These are admin configured properties during Azkaban setup. Restricted to a specific jobtype.</td>
+			<td>Highest (1)</td>
+		</tr>
+	</tbody>
+</table>
+
+<p> 
+	<code>azkaban.properties</code> is another type of properties which are only used for controlling Azkaban webserver and execserver configuration. Please note that <code>jobProps</code>, <code>sysProps</code> and <code>azkaban.properties</code> are 3 different types of properties and are not merged in general (depends on jobtype implementation).
+</p>
