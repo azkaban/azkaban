@@ -83,7 +83,7 @@ public class TriggerBasedScheduleLoader implements ScheduleLoader {
     ConditionChecker checker =
         new BasicTimeChecker("BasicTimeChecker_1", s.getFirstSchedTime(),
             s.getTimezone(), s.isRecurring(), s.skipPastOccurrences(),
-            s.getPeriod());
+            s.getPeriod(), s.getCronExpression());
     checkers.put(checker.getId(), checker);
     String expr = checker.getId() + ".eval()";
     Condition cond = new Condition(checkers, expr);
@@ -97,7 +97,7 @@ public class TriggerBasedScheduleLoader implements ScheduleLoader {
     ConditionChecker checker =
         new BasicTimeChecker("BasicTimeChecker_2", s.getFirstSchedTime(),
             s.getTimezone(), s.isRecurring(), s.skipPastOccurrences(),
-            s.getPeriod());
+            s.getPeriod(), s.getCronExpression());
     checkers.put(checker.getId(), checker);
     String expr = checker.getId() + ".eval()";
     Condition cond = new Condition(checkers, expr);
@@ -167,7 +167,7 @@ public class TriggerBasedScheduleLoader implements ScheduleLoader {
               t.getStatus().toString(), ck.getFirstCheckTime(),
               ck.getTimeZone(), ck.getPeriod(), t.getLastModifyTime(),
               ck.getNextCheckTime(), t.getSubmitTime(), t.getSubmitUser(),
-              act.getExecutionOptions(), act.getSlaOptions());
+              act.getExecutionOptions(), act.getSlaOptions(), ck.getCronExpression());
       return s;
     } else {
       logger.error("Failed to parse schedule from trigger!");

@@ -33,6 +33,7 @@ import java.util.Random;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipOutputStream;
+import java.text.ParseException;
 
 import org.apache.commons.io.IOUtils;
 import org.joda.time.Days;
@@ -44,6 +45,8 @@ import org.joda.time.ReadablePeriod;
 import org.joda.time.Seconds;
 import org.joda.time.Weeks;
 import org.joda.time.Years;
+
+import org.quartz.CronExpression;
 
 /**
  * A util helper class full of static methods that are commonly used.
@@ -453,5 +456,24 @@ public class Utils {
     }
 
     return sizeInKb;
+  }
+
+  /**
+   * @param cronExpression: A cron expression is a string separated by white space, to provide a parser and evaluator for Quartz cron expressions.
+   * @return : org.quartz.CronExpression object.
+   */
+  public static CronExpression parseCronExpression(String cronExpression) {
+    if (cronExpression != null) {
+      try {
+        return new CronExpression(cronExpression);
+      } catch (ParseException pe) {
+        pe.printStackTrace();
+      }
+      return null;
+    } else return null;
+  }
+
+  public static boolean isCronExpressionValid(String cronExpression) {
+    return CronExpression.isValidExpression(cronExpression);
   }
 }
