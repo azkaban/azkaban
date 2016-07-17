@@ -71,7 +71,9 @@ public class DefaultMailCreatorTest {
 
   @After
   public void tearDown() throws Exception {
-    TimeZone.setDefault(defaultTz);
+    if (defaultTz != null) {
+      TimeZone.setDefault(defaultTz);
+    }
     Utils.setCurrentTimeMillisSystem();
   }
 
