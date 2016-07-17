@@ -287,4 +287,13 @@ public class EmailMessage {
 
     return this;
   }
+
+  public String getBody() {
+    return _body.toString();
+  }
+
+  public String getSubject() {
+    return _subject;
+  }
+
 }

@@ -51,6 +51,8 @@ import org.joda.time.Years;
 public class Utils {
   public static final Random RANDOM = new Random();
 
+  public static Long currentTimeMillisFixed;
+
   /**
    * Private constructor.
    */
@@ -298,7 +300,7 @@ public class Utils {
 
     long durationMS;
     if (endTime == -1) {
-      durationMS = System.currentTimeMillis() - startTime;
+      durationMS = currentTimeMillis() - startTime;
     } else {
       durationMS = endTime - startTime;
     }
@@ -323,6 +325,18 @@ public class Utils {
     long days = hours / 24;
     hours %= 24;
     return days + "d " + hours + "h " + minutes + "m";
+  }
+
+  public static void setCurrentTimeMillisFixed(long millis) {
+    currentTimeMillisFixed = millis;
+  }
+
+  public static void setCurrentTimeMillisSystem() {
+    currentTimeMillisFixed = null;
+  }
+
+  private static long currentTimeMillis() {
+    return currentTimeMillisFixed != null ? currentTimeMillisFixed : System.currentTimeMillis();
   }
 
   public static Object invokeStaticMethod(ClassLoader loader, String className,
