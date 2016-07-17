@@ -16,8 +16,10 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.io.InputStream;
+import java.util.TimeZone;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 public class DefaultMailCreatorTest {
@@ -33,9 +35,14 @@ public class DefaultMailCreatorTest {
   private String scheme;
   private String clientHostname;
   private String clientPortNumber;
+  private TimeZone defaultTz;
 
   @Before
   public void setUp() throws Exception {
+    defaultTz = TimeZone.getDefault();
+    assertNotNull(defaultTz);
+    // EEST
+    TimeZone.setDefault(TimeZone.getTimeZone("Europe/Helsinki"));
     Utils.setCurrentTimeMillisFixed(1468745661608L);
 
     mailCreator = new DefaultMailCreator();
@@ -64,6 +71,7 @@ public class DefaultMailCreatorTest {
 
   @After
   public void tearDown() throws Exception {
+    TimeZone.setDefault(defaultTz);
     Utils.setCurrentTimeMillisSystem();
   }
 
