@@ -1065,7 +1065,7 @@ public class AzkabanWebServer extends AzkabanServer {
       if (pluginClass == null) {
         logger.error("Viewer class is not set.");
       } else {
-        logger.error("Plugin class " + pluginClass);
+        logger.info("Plugin class " + pluginClass);
       }
 
       URLClassLoader urlClassLoader = null;
