@@ -16,6 +16,12 @@ The above command builds all Azkaban packages and packages them into GZipped Tar
 ./gradlew distZip
 ```
 
+If not building for the first time, it's good to clean first:
+
+```
+./gradlew clean
+```
+
 Documentation
 -------------
 
