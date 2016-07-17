@@ -1434,11 +1434,7 @@ public class ExecutorManager extends EventHandler implements
       if (options.getFailureEmails() != null
           && !options.getFailureEmails().isEmpty()) {
         try {
-          mailAlerter
-              .alertOnError(
-                  flow,
-                  "Flow status: " + flow.getStatus(),
-                  "Executor is no longer running this execution.");
+          mailAlerter.alertOnError(flow);
         } catch (Exception e) {
           logger.error(e);
         }
@@ -1448,11 +1444,7 @@ public class ExecutorManager extends EventHandler implements
         Alerter alerter = alerters.get(alertType);
         if (alerter != null) {
           try {
-            alerter
-                .alertOnError(
-                    flow,
-                    "Flow status: " + flow.getStatus(),
-                    "Executor is no longer running this execution.");
+            alerter.alertOnError(flow);
           } catch (Exception e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
