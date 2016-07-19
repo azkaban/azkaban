@@ -1608,10 +1608,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
     String message = null;
     HashMap<String, Object> params = null;
 
-    if (lockdownCreateProjects) {
-      message = "Project creation is locked out";
-      status = "error";
-    } else if (!hasPermissionToCreateProject(user)) {
+    if (lockdownCreateProjects && !hasPermissionToCreateProject(user)) {
       message =
           "User " + user.getUserId()
               + " doesn't have permission to create projects.";
