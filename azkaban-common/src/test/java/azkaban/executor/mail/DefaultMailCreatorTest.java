@@ -7,7 +7,6 @@ import azkaban.flow.Flow;
 import azkaban.flow.Node;
 import azkaban.project.Project;
 import azkaban.utils.EmailMessage;
-import azkaban.utils.Utils;
 import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableList;
 import org.apache.commons.io.IOUtils;
@@ -24,6 +23,13 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 public class DefaultMailCreatorTest {
+
+  // 2016/07/17 11:54:11 EEST
+  public static final long START_TIME_MILLIS = 1468745651608L;
+  // 2016/07/17 11:54:16 EEST (START_TIME_MILLIS + 5 seconds)
+  public static final long END_TIME_MILLIS = START_TIME_MILLIS + 5_000L;
+  // 2016/07/17 11:54:21 EEST (START_TIME_MILLIS + 10 seconds)
+  public static final long FIXED_CURRENT_TIME_MILLIS = START_TIME_MILLIS + 10_000L;
 
   private DefaultMailCreator mailCreator;
 
@@ -44,7 +50,7 @@ public class DefaultMailCreatorTest {
     assertNotNull(defaultTz);
     // EEST
     TimeZone.setDefault(TimeZone.getTimeZone("Europe/Helsinki"));
-    DateTimeUtils.setCurrentMillisFixed(1468745661608L);
+    DateTimeUtils.setCurrentMillisFixed(FIXED_CURRENT_TIME_MILLIS);
 
     mailCreator = new DefaultMailCreator();
 
@@ -64,7 +70,7 @@ public class DefaultMailCreatorTest {
 
     executableFlow = new ExecutableFlow(project, flow);
     executableFlow.setExecutionOptions(options);
-    executableFlow.setStartTime(1468745651608L);
+    executableFlow.setStartTime(START_TIME_MILLIS);
 
     options.setFailureEmails(ImmutableList.of("test@example.com"));
     options.setSuccessEmails(ImmutableList.of("test@example.com"));
@@ -85,7 +91,7 @@ public class DefaultMailCreatorTest {
   @Test
   public void createErrorEmail() throws Exception {
     setJobStatus(Status.FAILED);
-    executableFlow.setEndTime(1468745656608L);
+    executableFlow.setEndTime(END_TIME_MILLIS);
     executableFlow.setStatus(Status.FAILED);
     assertTrue(mailCreator.createErrorEmail(
         executableFlow, message, azkabanName, scheme, clientHostname, clientPortNumber));
@@ -106,7 +112,7 @@ public class DefaultMailCreatorTest {
   @Test
   public void createSuccessEmail() throws Exception {
     setJobStatus(Status.SUCCEEDED);
-    executableFlow.setEndTime(1468745656608L);
+    executableFlow.setEndTime(END_TIME_MILLIS);
     executableFlow.setStatus(Status.SUCCEEDED);
     assertTrue(mailCreator.createSuccessEmail(
         executableFlow, message, azkabanName, scheme, clientHostname, clientPortNumber));
