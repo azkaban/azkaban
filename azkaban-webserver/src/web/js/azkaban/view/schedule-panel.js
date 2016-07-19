@@ -179,9 +179,10 @@ $(function() {
     }
     resetLabelColor();
     $("#dow_label").css("color", "red");
+
     $('#instructions tbody').append($("#instructions tbody tr:first").clone());
-    $('#instructions tbody tr:last th').html("1-7 ");
-    $('#instructions tbody tr:last td').html("allowed values");
+    $('#instructions tbody tr:last th').html("1-7");
+    $('#instructions tbody tr:last td').html("SUN MON TUE WED THU FRI SAT");
 
     $('#instructions tbody').append($("#instructions tbody tr:first").clone());
     $('#instructions tbody tr:last th').html("?");
@@ -206,17 +207,23 @@ var cron_output_id  = "#cron-output";
 var cron_translate_id  = "#cronTranslate";
 var cron_translate_warning_id  = "#translationWarning";
 
+// Cron use 0-6 as Sun--Sat, but Quartz use 1-7. Therefore, a translation is necessary.
+function transformFromCronToQuartz(str){
+  var res = str.split(" ");
+  res[res.length -1] = res[res.length -1].replace(/[0-7]/g, function upperToHyphenLower(match) {
+    return (parseInt(match)+6)%7;
+  });
+  return res.join(" ");
+}
+
 function updateOutput() {
   $(cron_output_id).val( $(cron_minutes_id).val() + " " +  $(cron_hours_id).val() + " " +
       $(cron_dom_id).val() + " " + $(cron_months_id).val() + " " + $(cron_dow_id).val()
   );
-  $(cron_translate_id).text( "\"" + prettyCron.toString($(cron_output_id).val()) + "\"");
-  $(cron_translate_warning_id).html( " <small>***The execution plan translation has limitations. Please check the <a href=\"http://www.quartz-scheduler.org/documentation/quartz-2.x/tutorials/crontrigger.html\">Quartz-Cron syntax</a> when in doubt.***</small>" );
+  updateExpression();
 }
 
-
 function updateExpression() {
-  $(cron_translate_id).text( "\"" + prettyCron.toString($(cron_output_id).val()) + "\"");
+  $(cron_translate_id).text( "\"" + prettyCron.toString( transformFromCronToQuartz($(cron_output_id).val())) + "\"");
   $(cron_translate_warning_id).html( " <small>***The execution plan translation has limitations. Please check the <a href=\"http://www.quartz-scheduler.org/documentation/quartz-2.x/tutorials/crontrigger.html\">Quartz-Cron syntax</a> when in doubt.***</small>" );
-
 }

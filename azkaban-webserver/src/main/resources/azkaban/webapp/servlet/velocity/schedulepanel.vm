@@ -19,7 +19,11 @@
 <script type="text/javascript" src="${context}/js/moment.min.js" ></script>
 <script type="text/javascript" src="${context}/js/later.min.js"></script>
 <script type="text/javascript" src="${context}/js/prettycron.js"></script>
-
+<style type="text/css">
+.input-box { position: relative; }
+.input-box input { display: block; border: 1px solid #d7d6d6; background: #fff; padding: 10px 10px 10px 20px; width: 195px; }
+.unit { position: absolute; display: block; left: 5px; top: 7px; z-index: 9; }
+</style>
 <div class="modal" id="schedule-modal">
   <div class="modal-dialog">
     <div class="modal-content">
@@ -85,8 +89,7 @@
                         <option value="w">Weeks</option>
                       </select>
                     </div>
-                    <div class="col-xs-12" style="height:80px;"></div>
-
+                    <br/> <br/> <br/> <br/> <br/>
                     <div class="col-sm-9 col-sm-offset-3">
                       <p class="text-right"><small>***Fixed Gap will have DST change issue.***</small></p>
                     </div>
@@ -98,8 +101,11 @@
                       <div class="col-xs-12" style="height:20px;"></div>
 
                       <div class="col-sm-7">
-                        <input type="text" id="cron-output" value="* * * * ?" oninput = "updateExpression()"
-                               class="form-control">
+
+                      <div class="input-box">
+                        <input type="text" id="cron-output" value="0 5,7-10 ? * 4-6" oninput = "updateExpression()" class="form-control">
+                        <span class="unit">0</span>
+                      </div>
                       </div>
                       <button type="button" class="btn btn-warning" id="clearCron">Reset</button>
                       <br/>
