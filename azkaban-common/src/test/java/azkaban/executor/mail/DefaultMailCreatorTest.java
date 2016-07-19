@@ -11,6 +11,7 @@ import azkaban.utils.Utils;
 import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableList;
 import org.apache.commons.io.IOUtils;
+import org.joda.time.DateTimeUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -43,7 +44,7 @@ public class DefaultMailCreatorTest {
     assertNotNull(defaultTz);
     // EEST
     TimeZone.setDefault(TimeZone.getTimeZone("Europe/Helsinki"));
-    Utils.setCurrentTimeMillisFixed(1468745661608L);
+    DateTimeUtils.setCurrentMillisFixed(1468745661608L);
 
     mailCreator = new DefaultMailCreator();
 
@@ -74,7 +75,7 @@ public class DefaultMailCreatorTest {
     if (defaultTz != null) {
       TimeZone.setDefault(defaultTz);
     }
-    Utils.setCurrentTimeMillisSystem();
+    DateTimeUtils.setCurrentMillisSystem();
   }
 
   private void setJobStatus(Status status) {

@@ -35,6 +35,7 @@ import java.util.zip.ZipFile;
 import java.util.zip.ZipOutputStream;
 
 import org.apache.commons.io.IOUtils;
+import org.joda.time.DateTime;
 import org.joda.time.Days;
 import org.joda.time.DurationFieldType;
 import org.joda.time.Hours;
@@ -50,8 +51,6 @@ import org.joda.time.Years;
  */
 public class Utils {
   public static final Random RANDOM = new Random();
-
-  public static Long currentTimeMillisFixed;
 
   /**
    * Private constructor.
@@ -300,7 +299,7 @@ public class Utils {
 
     long durationMS;
     if (endTime == -1) {
-      durationMS = currentTimeMillis() - startTime;
+      durationMS = DateTime.now().getMillis() - startTime;
     } else {
       durationMS = endTime - startTime;
     }
@@ -325,18 +324,6 @@ public class Utils {
     long days = hours / 24;
     hours %= 24;
     return days + "d " + hours + "h " + minutes + "m";
-  }
-
-  public static void setCurrentTimeMillisFixed(long millis) {
-    currentTimeMillisFixed = millis;
-  }
-
-  public static void setCurrentTimeMillisSystem() {
-    currentTimeMillisFixed = null;
-  }
-
-  private static long currentTimeMillis() {
-    return currentTimeMillisFixed != null ? currentTimeMillisFixed : System.currentTimeMillis();
   }
 
   public static Object invokeStaticMethod(ClassLoader loader, String className,
