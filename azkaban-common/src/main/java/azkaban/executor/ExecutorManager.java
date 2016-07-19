@@ -1058,7 +1058,7 @@ public class ExecutorManager extends EventHandler implements
       int count = executorLoader.removeExecutionLogsByTime(millis);
       logger.info("Cleaned up " + count + " log entries.");
     } catch (ExecutorManagerException e) {
-      e.printStackTrace();
+      logger.error(e);
     }
   }
 
@@ -1446,9 +1446,7 @@ public class ExecutorManager extends EventHandler implements
           try {
             alerter.alertOnError(flow);
           } catch (Exception e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-            logger.error("Failed to alert by " + alertType);
+            logger.error("Failed to alert by " + alertType, e);
           }
         } else {
           logger.error("Alerter type " + alertType
@@ -1472,9 +1470,7 @@ public class ExecutorManager extends EventHandler implements
           try {
             alerter.alertOnSuccess(flow);
           } catch (Exception e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-            logger.error("Failed to alert by " + alertType);
+            logger.error("Failed to alert by " + alertType, e);
           }
         } else {
           logger.error("Alerter type " + alertType
@@ -1572,8 +1568,7 @@ public class ExecutorManager extends EventHandler implements
         try {
           mailAlerter.alertOnFirstError(flow);
         } catch (Exception e) {
-          e.printStackTrace();
-          logger.error("Failed to send first error email." + e.getMessage());
+          logger.error("Failed to send first error email.", e);
         }
       }
       if (options.getFlowParameters().containsKey("alert.type")) {
@@ -1583,9 +1578,7 @@ public class ExecutorManager extends EventHandler implements
           try {
             alerter.alertOnFirstError(flow);
           } catch (Exception e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-            logger.error("Failed to alert by " + alertType);
+            logger.error("Failed to alert by " + alertType, e);
           }
         } else {
           logger.error("Alerter type " + alertType
