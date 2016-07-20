@@ -1434,10 +1434,7 @@ public class ExecutorManager extends EventHandler implements
       if (options.getFailureEmails() != null
           && !options.getFailureEmails().isEmpty()) {
         try {
-          mailAlerter
-              .alertOnError(
-                  flow,
-                  "Executor no longer seems to be running this execution. Most likely due to executor bounce.");
+          mailAlerter.alertOnError(flow);
         } catch (Exception e) {
           logger.error(e);
         }
@@ -1447,10 +1444,7 @@ public class ExecutorManager extends EventHandler implements
         Alerter alerter = alerters.get(alertType);
         if (alerter != null) {
           try {
-            alerter
-                .alertOnError(
-                    flow,
-                    "Executor no longer seems to be running this execution. Most likely due to executor bounce.");
+            alerter.alertOnError(flow);
           } catch (Exception e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
