@@ -20,6 +20,7 @@ import java.text.ParseException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Date;
+import java.util.TimeZone;
 
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
@@ -91,9 +92,10 @@ public class BasicTimeChecker implements ConditionChecker {
   }
 
   private void parseCronExpression() {
-    if (cronExpression != null) {
+    if (cronExpression != null && timezone != null) {
       try {
         cronExecutionTime = new CronExpression(cronExpression);
+        cronExecutionTime.setTimeZone(TimeZone.getTimeZone(timezone.getID()));
       } catch (ParseException pe) {
         logger.error("This expression " + cronExpression + " can not be parsed to quartz cron.");
       }
