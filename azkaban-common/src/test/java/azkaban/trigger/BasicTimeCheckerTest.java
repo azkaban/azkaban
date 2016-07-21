@@ -97,7 +97,9 @@ public class BasicTimeCheckerTest {
     String expr = timeChecker.getId() + ".eval()";
     Condition cond = new Condition(checkers, expr);
     // 2556086400000L represent for "2050-12-31T00:00:00.000-08:00"
-    assertTrue(cond.getNextCheckTime()== 2556086400000L);
+
+    DateTime year2050 = new DateTime(2050, 12, 31, 0 ,0 ,0 ,now.getZone());
+    assertTrue(cond.getNextCheckTime() == year2050.getMillis());
   }
 
 }
