@@ -108,6 +108,31 @@ public class AzkabanDatabaseSetupTest {
     assertFalse(setup.needsUpdating());
   }
 
+  @Ignore @Test
+  public void testPostgreSQLQuery() throws Exception {
+    clearPostgreSQLTestDB();
+    Props dbProps = getPostgreSQLProps(sqlScriptsDir);
+    AzkabanDatabaseSetup setup = new AzkabanDatabaseSetup(dbProps);
+
+    // First time will create the tables
+    setup.loadTableInfo();
+    setup.printUpgradePlan();
+    setup.updateDatabase(true, true);
+    assertTrue(setup.needsUpdating());
+
+    // Second time will update some tables. This is only for testing purpose
+    // and obviously we wouldn't set things up this way.
+    setup.loadTableInfo();
+    setup.printUpgradePlan();
+    setup.updateDatabase(true, true);
+    assertTrue(setup.needsUpdating());
+
+    // Nothing to be done
+    setup.loadTableInfo();
+    setup.printUpgradePlan();
+    assertFalse(setup.needsUpdating());
+  }
+  
   private static Props getH2Props(String dbDir, String sqlScriptsDir) {
     Props props = new Props();
     props.put("database.type", "h2");
@@ -130,6 +155,21 @@ public class AzkabanDatabaseSetupTest {
 
     return props;
   }
+  
+  private static Props getPostgreSQLProps(String sqlScriptsDir) {
+	    Props props = new Props();
+
+	    props.put("database.type", "postgresql");
+	    props.put("database.port", "5432");
+	    props.put("database.host", "localhost");
+	    props.put("database.database", "azkabanunittest");
+	    props.put("database.user", "postgres");
+	    props.put("database.sql.scripts.dir", sqlScriptsDir);
+	    props.put("database.password", "");
+	    props.put("database.numconnections", 10);
+
+	    return props;
+	  }
 
   private static void clearMySQLTestDB() throws SQLException {
     Props props = new Props();
@@ -140,6 +180,26 @@ public class AzkabanDatabaseSetupTest {
     props.put("mysql.user", "root");
     props.put("mysql.password", "");
     props.put("mysql.numconnections", 10);
+
+    DataSource datasource = DataSourceUtils.getDataSource(props);
+    QueryRunner runner = new QueryRunner(datasource);
+    try {
+      runner.update("drop database azkabanunittest");
+    } catch (SQLException e) {
+    }
+    runner.update("create database azkabanunittest");
+  }
+  
+
+  private static void clearPostgreSQLTestDB() throws SQLException {
+    Props props = new Props();
+    props.put("database.type", "postgresql");
+    props.put("database.host", "localhost");
+    props.put("database.port", "5432");
+    props.put("database.database", "");
+    props.put("database.user", "postgres");
+    props.put("database.password", "");
+    props.put("database.numconnections", 10);
 
     DataSource datasource = DataSourceUtils.getDataSource(props);
     QueryRunner runner = new QueryRunner(datasource);

@@ -70,17 +70,28 @@ public class DataSourceUtils {
 
     AzkabanDataSource dataSource = null;
     if (databaseType.equals("mysql")) {
-      int port = props.getInt("mysql.port");
-      String host = props.getString("mysql.host");
-      String database = props.getString("mysql.database");
-      String user = props.getString("mysql.user");
-      String password = props.getString("mysql.password");
-      int numConnections = props.getInt("mysql.numconnections");
+      int port = props.getInt("database.port",props.getInt("mysql.port"));
+      String host = props.getString("database.host",props.getString("mysql.host"));
+      String database = props.getString("database.database",props.getString("mysql.database"));
+      String user = props.getString("database.user",props.getString("mysql.user"));
+      String password = props.getString("database.password",props.getString("mysql.password"));
+      int numConnections = props.getInt("database.numconnections",props.getInt("mysql.numconnections"));
 
       dataSource =
           getMySQLDataSource(host, port, database, user, password,
               numConnections);
-    } else if (databaseType.equals("h2")) {
+    } else if (databaseType.equals("postgresql")) {
+        int port = props.getInt("database.port");
+        String host = props.getString("database.host");
+        String database = props.getString("database.database");
+        String user = props.getString("database.user");
+        String password = props.getString("database.password");
+        int numConnections = props.getInt("database.numconnections");
+
+        dataSource =
+            getPostgreSQLDataSource(host, port, database, user, password,
+                numConnections);
+      } else if (databaseType.equals("h2")) {
       String path = props.getString("h2.path");
       dataSource = getH2DataSource(path);
     }
@@ -105,6 +116,22 @@ public class DataSourceUtils {
         numConnections);
   }
 
+  /**
+   * Create a PostgreSQL DataSource
+   *
+   * @param host
+   * @param port
+   * @param dbName
+   * @param user
+   * @param password
+   * @param numConnections
+   * @return
+   */
+  public static AzkabanDataSource getPostgreSQLDataSource(String host, Integer port,
+      String dbName, String user, String password, Integer numConnections) {
+    return new PostgreSQLBasicDataSource(host, port, dbName, user, password,
+        numConnections);
+  }
   /**
    * Create H2 DataSource
    *
@@ -231,6 +258,93 @@ public class DataSourceUtils {
     }
   }
 
+  /**
+   * PostgreSQL data source based on AzkabanDataSource
+   *
+   */
+  public static class PostgreSQLBasicDataSource extends AzkabanDataSource {
+
+    private static MonitorThread monitorThread = null;
+
+    private PostgreSQLBasicDataSource(String host, int port, String dbName,
+        String user, String password, int numConnections) {
+      super();
+
+      String url = "jdbc:postgresql://" + (host + ":" + port + "/" + dbName);
+      addConnectionProperty("useUnicode", "yes");
+      addConnectionProperty("characterEncoding", "UTF-8");
+      setDriverClassName("org.postgresql.Driver");
+      setUsername(user);
+      setPassword(password);
+      setUrl(url);
+      setMaxActive(numConnections);
+      setValidationQuery("/* ping */ select 1");
+      setTestOnBorrow(true);
+
+      if (monitorThread == null) {
+        monitorThread = new MonitorThread(this);
+        monitorThread.start();
+      }
+    }
+
+    @Override
+    public boolean allowsOnDuplicateKey() {
+      return true;
+    }
+
+    @Override
+    public String getDBType() {
+      return "postgresql";
+    }
+
+    private class MonitorThread extends Thread {
+      private static final long MONITOR_THREAD_WAIT_INTERVAL_MS = 30 * 1000;
+      private boolean shutdown = false;
+      PostgreSQLBasicDataSource dataSource;
+
+      public MonitorThread(PostgreSQLBasicDataSource postgresqlSource) {
+        this.setName("PostgreSQL-DB-Monitor-Thread");
+        dataSource = postgresqlSource;
+      }
+
+      @SuppressWarnings("unused")
+      public void shutdown() {
+        shutdown = true;
+        this.interrupt();
+      }
+
+      public void run() {
+        while (!shutdown) {
+          synchronized (this) {
+            try {
+              pingDB();
+              wait(MONITOR_THREAD_WAIT_INTERVAL_MS);
+            } catch (InterruptedException e) {
+              logger.info("Interrupted. Probably to shut down.");
+            }
+          }
+        }
+      }
+
+      private void pingDB() {
+        Connection connection = null;
+        try {
+          connection = dataSource.getConnection();
+          PreparedStatement query = connection.prepareStatement("SELECT 1");
+          query.execute();
+        } catch (SQLException e) {
+          // TODO Auto-generated catch block
+          e.printStackTrace();
+          logger
+              .error("PostgreSQL connection test failed. Please check PostgreSQL connection health!");
+        } finally {
+          DbUtils.closeQuietly(connection);
+        }
+      }
+    }
+
+  }
+  
   public static void testConnection(DataSource ds) throws SQLException {
     QueryRunner runner = new QueryRunner(ds);
     runner.update("SHOW TABLES");

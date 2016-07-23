@@ -59,6 +59,31 @@ public class AzkabanDatabaseUpdaterTest {
     AzkabanDatabaseUpdater.main(new String[] { "-c", confDir });
   }
 
+  @Ignore @Test
+  public void testPostgreSQLAutoCreate() throws Exception {
+    clearPostgreSQLTestDB();
+
+    URL resourceUrl = Resources.getResource("conf/dbtestpostgresql");
+    assertNotNull(resourceUrl);
+    File resource = new File(resourceUrl.toURI());
+    String confDir = resource.getParent();
+
+    System.out.println("1.***Now testing check");
+    AzkabanDatabaseUpdater.main(new String[] { "-c", confDir });
+
+    System.out.println("2.***Now testing update");
+    AzkabanDatabaseUpdater.main(new String[] { "-u", "-c", confDir });
+
+    System.out.println("3.***Now testing check again");
+    AzkabanDatabaseUpdater.main(new String[] { "-c", confDir });
+
+    System.out.println("4.***Now testing update again");
+    AzkabanDatabaseUpdater.main(new String[] { "-c", confDir, "-u" });
+
+    System.out.println("5.***Now testing check again");
+    AzkabanDatabaseUpdater.main(new String[] { "-c", confDir });
+  }
+  
   @Test
   public void testH2AutoCreate() throws Exception {
     URL resourceUrl = Resources.getResource("conf/dbtesth2");
@@ -92,6 +117,25 @@ public class AzkabanDatabaseUpdaterTest {
     props.put("mysql.user", "root");
     props.put("mysql.password", "");
     props.put("mysql.numconnections", 10);
+
+    DataSource datasource = DataSourceUtils.getDataSource(props);
+    QueryRunner runner = new QueryRunner(datasource);
+    try {
+      runner.update("drop database azkabanunittest");
+    } catch (SQLException e) {
+    }
+    runner.update("create database azkabanunittest");
+  }
+  
+  private static void clearPostgreSQLTestDB() throws SQLException {
+    Props props = new Props();
+    props.put("database.type", "postgresql");
+    props.put("database.host", "localhost");
+    props.put("database.port", "5432");
+    props.put("database.database", "");
+    props.put("database.user", "postgres");
+    props.put("database.password", "");
+    props.put("database.numconnections", 10);
 
     DataSource datasource = DataSourceUtils.getDataSource(props);
     QueryRunner runner = new QueryRunner(datasource);
