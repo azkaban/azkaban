@@ -37,7 +37,9 @@ import java.util.zip.ZipOutputStream;
 import java.text.ParseException;
 
 import org.apache.commons.io.IOUtils;
+
 import org.joda.time.DateTimeZone;
+import org.joda.time.DateTime;
 import org.joda.time.Days;
 import org.joda.time.DurationFieldType;
 import org.joda.time.Hours;
@@ -303,7 +305,7 @@ public class Utils {
 
     long durationMS;
     if (endTime == -1) {
-      durationMS = System.currentTimeMillis() - startTime;
+      durationMS = DateTime.now().getMillis() - startTime;
     } else {
       durationMS = endTime - startTime;
     }

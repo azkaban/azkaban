@@ -1044,7 +1044,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
   /**
    * this only returns user permissions, but not group permissions and proxy
    * users
-   * 
+   *
    * @param project
    * @param ret
    */
@@ -1608,10 +1608,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
     String message = null;
     HashMap<String, Object> params = null;
 
-    if (lockdownCreateProjects) {
-      message = "Project creation is locked out";
-      status = "error";
-    } else if (!hasPermissionToCreateProject(user)) {
+    if (lockdownCreateProjects && !hasPermissionToCreateProject(user)) {
       message =
           "User " + user.getUserId()
               + " doesn't have permission to create projects.";
@@ -1754,11 +1751,11 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
         }
         ret.put("error", "Installation Failed.<br>" + error);
       } finally {
-        if (tempDir.exists()) {
-          FileUtils.deleteDirectory(tempDir);
-        }
         if (out != null) {
           out.close();
+        }
+        if (tempDir.exists()) {
+          FileUtils.deleteDirectory(tempDir);
         }
       }
 
