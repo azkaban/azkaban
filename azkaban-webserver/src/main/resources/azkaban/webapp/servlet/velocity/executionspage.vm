@@ -140,7 +140,7 @@
               </tr>
             </thead>
             <tbody>
-#if ($recentlyFinished.isEmpty())
+#if ( !$null.isNull(${recentlyFinished}))
   #foreach ($flow in $recentlyFinished)
               <tr>
                 <td class="tb-name">
