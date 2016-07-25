@@ -30,12 +30,14 @@ import java.lang.reflect.Method;
 import java.util.Collection;
 import java.util.Enumeration;
 import java.util.Random;
+import java.util.TimeZone;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipOutputStream;
 import java.text.ParseException;
 
 import org.apache.commons.io.IOUtils;
+import org.joda.time.DateTimeZone;
 import org.joda.time.Days;
 import org.joda.time.DurationFieldType;
 import org.joda.time.Hours;
@@ -462,10 +464,12 @@ public class Utils {
    * @param cronExpression: A cron expression is a string separated by white space, to provide a parser and evaluator for Quartz cron expressions.
    * @return : org.quartz.CronExpression object.
    */
-  public static CronExpression parseCronExpression(String cronExpression) {
+  public static CronExpression parseCronExpression(String cronExpression, DateTimeZone timezone) {
     if (cronExpression != null) {
       try {
-        return new CronExpression(cronExpression);
+        CronExpression ce =  new CronExpression(cronExpression);
+        ce.setTimeZone(TimeZone.getTimeZone(timezone.getID()));
+        return ce;
       } catch (ParseException pe) {
         pe.printStackTrace();
       }

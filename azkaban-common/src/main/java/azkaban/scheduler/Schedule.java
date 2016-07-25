@@ -224,7 +224,7 @@ public class Schedule {
     }
 
     if (cronExpression != null) {
-      DateTime nextTime = getNextCronRuntime(nextExecTime, timezone, Utils.parseCronExpression(cronExpression));
+      DateTime nextTime = getNextCronRuntime(nextExecTime, timezone, Utils.parseCronExpression(cronExpression, timezone));
       this.nextExecTime = nextTime.getMillis();
       return true;
     }

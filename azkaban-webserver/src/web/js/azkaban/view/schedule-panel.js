@@ -72,7 +72,7 @@ azkaban.SchedulePanelView = Backbone.View.extend({
       scheduleData.period = period;
     }
     else{
-      scheduleData.cronExpression = $('#cron-output').val();
+      scheduleData.cronExpression = "0 " + $('#cron-output').val();
     }
 
     var successHandler = function(data) {
