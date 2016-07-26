@@ -660,6 +660,14 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
     try {
       flowOptions = HttpRequestUtils.parseFlowOptions(req);
       HttpRequestUtils.filterAdminOnlyFlowParams(userManager, flowOptions, user);
+
+      // Combine cluster props from flow with requested
+      HashMap<String, Object> flowClusterProperties = flow.getClusterProperties();
+      HashMap<String, Object> optionsClusterProperties = flowOptions.getClusterProperties();
+      for (String key : flowClusterProperties.keySet()) {
+        optionsClusterProperties.putIfAbsent(key, flowClusterProperties.get(key));
+      }
+
     } catch (Exception e) {
       ret.put("error", e.getMessage());
     }
