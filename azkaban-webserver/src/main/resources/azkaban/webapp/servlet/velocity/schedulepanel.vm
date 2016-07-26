@@ -113,37 +113,37 @@
 
                       <div class="form-group">
                         <div class="col-sm-6">
+                          <label class="col-sm-3 control-label" id="min_label">Min</label>
                           <div class="col-sm-9">
                             <input type="text" id="minute_input" value="0" class="form-control" oninput="updateOutput()">
                           </div>
-                          <label class="col-sm-3 control-label" id="min_label">Minutes</label>
                           <br/> <br/> <br/>
+                          <label class="col-sm-3 control-label" id="hour_label">Hours</label>
                           <div class="col-sm-9">
                             <input type="text" id="hour_input" value="5,7-10" class="form-control"
                                    oninput="updateOutput()">
                           </div>
-                          <label class="col-sm-3 control-label" id="hour_label">Hours</label>
                           <br/> <br/> <br/>
+                          <label class="col-sm-3 control-label" id="dom_label">DOM</label>
                           <div class="col-sm-9">
                             <input type="text" id="dom_input" value="?" class="form-control"
                                    oninput="updateOutput()">
                           </div>
-                          <label class="col-sm-3 control-label" id="dom_label">DOM</label>
                           <br/> <br/> <br/>
+                          <label class="col-sm-3 control-label" id="mon_label">Month</label>
                           <div class="col-sm-9">
                             <input type="text" id="month_input" value="*" class="form-control"
                                    oninput="updateOutput()">
                           </div>
-                          <label class="col-sm-3 control-label" id="mon_label">Month</label>
                           <br/> <br/> <br/>
+                          <label class="col-sm-3 control-label" id="dow_label">DOW</label>
                           <div class="col-sm-9">
                             <input type="text" id="dow_input" value="4-6" class="form-control"
                                    oninput="updateOutput()">
                           </div>
-                          <label class="col-sm-3 control-label" id="dow_label">DOW</label>
                         </div>
 
-                        <div class="col-sm-6">
+                        <div class="col-sm-6" style="background-color:#f5f5f5; border:1px solid #e3e3e3">
                           <h4 style="color:orange">Special Characters:</h4>
                           <table class="table table-striped" data-row-style="rowColors" id="instructions">
                             <tbody>
