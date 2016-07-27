@@ -1,0 +1,10 @@
+task concat() << {
+  ext.destFile = 'build/sql/create-all-sql-' + version + '.sql';
+  ant.concat(destfile: destFile, fixlastline: 'yes') {
+    logger.info('Concating create scripts to ' + destFile)
+    fileset(dir: 'src/sql') {
+      exclude(name: 'update.*.sql')
+      exclude(name: 'database.properties')
+    }
+  }
+}

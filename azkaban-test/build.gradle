@@ -1,0 +1,78 @@
+apply plugin: 'distribution'
+
+dependencies {
+  testCompile('junit:junit:4.11')
+}
+
+distributions {
+  animal {
+    baseName = 'test-animal'
+    contents {
+      from { 'src/test/resources/executions/animal' }
+    }
+  }
+
+  embedded {
+    baseName = 'test-embedded'
+    contents {
+      from { 'src/test/resources/executions/embedded' }
+    }
+  }
+
+  embedded2 {
+    baseName = 'test-embedded2'
+    contents {
+      from { 'src/test/resources/executions/embedded2' }
+    }
+  }
+
+  embedded3 {
+    baseName = 'test-embedded3'
+    contents {
+      from { 'src/test/resources/executions/embedded3' }
+    }
+  }
+
+  embeddedBad {
+    baseName = 'test-embedded-bad'
+    contents {
+      from { 'src/test/resources/executions/embeddedBad' }
+    }
+  }
+
+  execpropstest {
+    baseName = 'test-execpropstest'
+    contents {
+      from { 'src/test/resources/executions/execpropstest' }
+    }
+  }
+
+  exectest1 {
+    baseName = 'test-exectest1'
+    contents {
+      from { 'src/test/resources/executions/exectest1' }
+    }
+  }
+
+  exectest2 {
+    baseName = 'test-exectest2'
+    contents {
+      from { 'src/test/resources/executions/exectest2' }
+    }
+  }
+
+  logtest {
+    baseName = 'test-logtest'
+    contents {
+      from { 'src/test/resources/executions/logtest' }
+    }
+  }
+}
+
+distZip.dependsOn animalDistZip, embeddedDistZip, embedded2DistZip,
+        embedded3DistZip, embeddedBadDistZip, execpropstestDistZip,
+        exectest1DistZip, exectest2DistZip, logtestDistZip
+
+distTar.dependsOn animalDistTar, embeddedDistTar, embedded2DistTar,
+        embedded3DistTar, embeddedBadDistTar, execpropstestDistTar,
+        exectest1DistTar, exectest2DistTar, logtestDistTar
