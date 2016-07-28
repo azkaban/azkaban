@@ -36,6 +36,7 @@ def cmdCaller = { commandln ->
 subprojects {
   apply plugin: 'java'
   apply plugin: 'eclipse'
+  apply plugin: 'idea'
   apply plugin: 'net.ltgt.errorprone'
 
   configurations.errorprone {
@@ -138,6 +139,7 @@ project(':azkaban-common') {
     compile('org.mortbay.jetty:jetty:6.1.26')
     compile('org.mortbay.jetty:jetty-util:6.1.26')
     compile('org.slf4j:slf4j-api:1.6.1')
+    compile('org.quartz-scheduler:quartz:2.2.1')
 
     testCompile(project(':azkaban-test').sourceSets.test.output)
     testCompile('junit:junit:4.11')

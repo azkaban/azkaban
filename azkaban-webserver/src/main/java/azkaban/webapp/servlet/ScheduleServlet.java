@@ -249,6 +249,7 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
         jsonObj.put("nextExecTime",
             utils.formatDateTime(schedule.getNextExecTime()));
         jsonObj.put("period", utils.formatPeriod(schedule.getPeriod()));
+        jsonObj.put("cronExpression", schedule.getCronExpression());
         jsonObj.put("executionOptions", schedule.getExecutionOptions());
         ret.put("schedule", jsonObj);
       }
@@ -648,10 +649,25 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
     }
 
     ReadablePeriod thePeriod = null;
+    String cronExpression = null;
+
     try {
       if (hasParam(req, "is_recurring")
           && getParam(req, "is_recurring").equals("on")) {
-        thePeriod = Schedule.parsePeriodString(getParam(req, "period"));
+        if (hasParam(req, "period")) {
+          thePeriod = Schedule.parsePeriodString(getParam(req, "period"));
+        }
+        if (hasParam(req, "cronExpression")) {
+          // everything in Azkaban functions is at the minute granularity, so we add 0 here
+          // to let the expression to be complete.
+          cronExpression = getParam(req, "cronExpression");
+          if(azkaban.utils.Utils.isCronExpressionValid(cronExpression) == false) {
+            ret.put("error", "This expression <" + cronExpression + "> can not be parsed to quartz cron.");
+            return;
+          }
+        }
+        if(thePeriod != null && cronExpression !=null)
+          throw new Exception("Period and Cron expression can not exist simultaneously.");
       }
     } catch (Exception e) {
       ret.put("error", e.getMessage());
@@ -667,12 +683,18 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
 
     List<SlaOption> slaOptions = null;
 
-    Schedule schedule =
+    // Because either cronExpression or recurrence exists, we build schedule in the below way.
+    Schedule schedule = cronExpression == null ?
         scheduleManager.scheduleFlow(-1, projectId, projectName, flowName,
             "ready", firstSchedTime.getMillis(), firstSchedTime.getZone(),
             thePeriod, DateTime.now().getMillis(), firstSchedTime.getMillis(),
             firstSchedTime.getMillis(), user.getUserId(), flowOptions,
-            slaOptions);
+            slaOptions)
+        : scheduleManager.cronScheduleFlow(-1, projectId, projectName, flowName,
+            "ready", firstSchedTime.getMillis(), firstSchedTime.getZone(),
+            DateTime.now().getMillis(), firstSchedTime.getMillis(),
+            firstSchedTime.getMillis(), user.getUserId(), flowOptions,
+            slaOptions, cronExpression);
     logger.info("User '" + user.getUserId() + "' has scheduled " + "["
         + projectName + flowName + " (" + projectId + ")" + "].");
     projectManager.postProjectEvent(project, EventType.SCHEDULE,
