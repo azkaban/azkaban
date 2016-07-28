@@ -102,7 +102,7 @@
                 <td>${sched.submitUser}</td>
                 <td>$utils.formatDateTime(${sched.firstSchedTime})</td>
                 <td>$utils.formatDateTime(${sched.nextExecTime})</td>
-                #if ($utils.formatPeriod(${sched.period}))
+                #if (${sched.period})
                   <td> $utils.formatPeriod(${sched.period}) </td>
                 #else
                   <td>Not Applicable</td>
