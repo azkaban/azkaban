@@ -1,11 +1,16 @@
-*.iml
+
 *.log
 *.swp
 .classpath
 .gradle/
-.idea/
 .project
 .settings/
 /bin
 bin/
 build/
+
+# Intellij files
+.idea
+*.iml
+*.ipr
+*.iws

@@ -1,0 +1,141 @@
+apply plugin: 'lesscss'
+apply plugin: 'dustjs'
+
+ext.pegasusVersion = '1.15.7'
+
+configurations {
+  all {
+    transitive = false
+  }
+  generateRestli {
+    transitive = true
+  }
+  errorprone {
+    transitive = true
+  }
+}
+
+dependencies {
+  compile(project(':azkaban-common'))
+  compile('com.linkedin.parseq:parseq:1.3.7')
+  compile('com.linkedin.pegasus:data:' + pegasusVersion)
+  compile('com.linkedin.pegasus:gradle-plugins:' + pegasusVersion)
+  compile('com.linkedin.pegasus:li-jersey-uri:' + pegasusVersion)
+  compile('com.linkedin.pegasus:pegasus-common:' + pegasusVersion)
+  compile('com.linkedin.pegasus:restli-common:' + pegasusVersion)
+  compile('com.linkedin.pegasus:restli-server:' + pegasusVersion)
+  compile('com.linkedin.pegasus:r2:' + pegasusVersion)
+  compile('com.fasterxml.jackson.core:jackson-core:2.3.2')
+  compile('commons-lang:commons-lang:2.6')
+  compile('commons-io:commons-io:2.4')
+  compile('commons-fileupload:commons-fileupload:1.2.1')
+  compile('javax.servlet:servlet-api:2.5')
+  compile('joda-time:joda-time:2.0')
+  compile('log4j:log4j:1.2.16')
+  compile('net.sf.jopt-simple:jopt-simple:4.3')
+  compile('org.apache.velocity:velocity:1.7')
+  compile('org.apache.velocity:velocity-tools:2.0')
+  compile('org.mortbay.jetty:jetty:6.1.26')
+  compile('org.mortbay.jetty:jetty-util:6.1.26')
+
+  testCompile('commons-collections:commons-collections:3.2.2')
+  testCompile('junit:junit:4.11')
+  testCompile('org.hamcrest:hamcrest-all:1.3')
+  testCompile('org.mockito:mockito-all:1.10.19')
+
+  generateRestli('com.linkedin.pegasus:generator:' + pegasusVersion)
+  generateRestli('com.linkedin.pegasus:restli-tools:' + pegasusVersion)
+
+  // Needed by Velocity at runtime
+  testRuntime('commons-collections:commons-collections:3.2.2')
+  testCompile('junit:junit:4.11')
+  testCompile('org.hamcrest:hamcrest-all:1.3')
+}
+
+sourceSets {
+  main {
+    java {
+      srcDirs 'src/main/java', 'src/restli/generatedJava', 'src/restli/java'
+    }
+  }
+}
+
+task restliTemplateGenerator(type: JavaExec) {
+  mkdir 'src/restli/generatedJava'
+
+  main = 'com.linkedin.pegasus.generator.PegasusDataTemplateGenerator'
+  args = ['src/restli/generatedJava','src/restli/schemas']
+  classpath = configurations.generateRestli
+}
+
+task restliRestSpecGenerator(dependsOn: [restliTemplateGenerator], type: JavaExec) << {
+  mkdir 'src/restli/generatedRestSpec'
+
+  main = 'com.linkedin.restli.tools.idlgen.RestLiResourceModelExporterCmdLineApp'
+  args = ['-outdir', 'src/restli/generatedRestSpec', '-sourcepath', 'src/restli/java']
+  classpath = configurations.generateRestli
+}
+
+task restli(dependsOn: restliTemplateGenerator) << {
+}
+
+compileJava.dependsOn.add('restli')
+
+lesscss {
+  source = fileTree('src/main/less') {
+    include 'azkaban.less'
+    include 'azkaban-graph.less'
+  }
+  dest = 'build/less'
+}
+
+dustjs {
+  source = fileTree('src/main/tl')
+  dest = 'build/dust'
+}
+
+task createDirs() << {
+  file('build/package/extlib').mkdirs()
+  file('build/package/plugins').mkdirs()
+}
+
+task copyWeb(type: Copy) {
+  from('src/web')
+  into('build/package/web')
+}
+
+task copyLess(type: Copy, dependsOn: ['lesscss', 'copyWeb']) {
+  from('build/less')
+  into('build/package/web/css')
+}
+
+task copyDust(type: Copy, dependsOn: ['dustjs', 'copyWeb']) {
+  from('build/dust')
+  into('build/package/web/js')
+}
+
+task copyDeps(type: Copy, dependsOn: 'build') {
+  from(project(':azkaban-common').configurations.compile)
+  from(configurations.compile)
+  into('build/package/lib')
+}
+
+task copyLibs(type: Copy, dependsOn: 'build') {
+  from('build/libs')
+  into('build/package/lib')
+}
+
+task copyPackage(type: Copy) {
+  from('src/package')
+  into('build/package')
+}
+
+task copy(dependsOn: [
+        'createVersionFile',
+        'createDirs',
+        'copyLess',
+        'copyDust',
+        'copyDeps',
+        'copyLibs',
+        'copyPackage']) {
+}

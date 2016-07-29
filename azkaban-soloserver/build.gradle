@@ -1,0 +1,45 @@
+dependencies {
+  compile(project(':azkaban-common'))
+  compile(project(':azkaban-webserver'))
+  compile(project(':azkaban-execserver'))
+}
+
+task createDirs() << {
+  file('build/package/extlib').mkdirs()
+  file('build/package/plugins').mkdirs()
+}
+
+task copyDeps(type: Copy, dependsOn: 'build') {
+  from(configurations.compile)
+  into('build/package/lib')
+}
+
+task copyLibs(type: Copy, dependsOn: 'build') {
+  from('build/libs')
+  into('build/package/lib')
+}
+
+task copyPackage(type: Copy) {
+  from('src/package')
+  into('build/package')
+}
+
+task copyWeb(type: Copy, dependsOn: ':azkaban-webserver:copy') {
+  from(project(':azkaban-webserver').files('build/package/web'))
+  into('build/package/web')
+}
+
+task copySql(type: Copy) {
+  from(project(':azkaban-sql').files('src/sql'))
+  into('build/package/sql')
+}
+
+task copy(dependsOn: [
+        'createVersionFile',
+        'createDirs',
+        'copyDeps',
+        'copyLibs',
+        'copyPackage',
+        'copyWeb',
+        'copySql']) {
+}
