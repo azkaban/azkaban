@@ -7,8 +7,7 @@
 .settings/
 /bin
 bin/
-build
-
+build/
 
 # Intellij files
 .idea

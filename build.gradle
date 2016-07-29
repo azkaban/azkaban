@@ -6,7 +6,7 @@ buildscript {
     }
   }
   dependencies {
-    classpath group: 'com.cinnober.gradle', name: 'semver-git', version: '2.2.0'
+    classpath 'com.cinnober.gradle:semver-git:2.2.1'
     classpath 'com.linkedin:gradle-dustjs-plugin:1.0.0'
     classpath 'de.obqo.gradle:gradle-lesscss-plugin:1.0-1.3.3'
     classpath 'net.ltgt.gradle:gradle-errorprone-plugin:0.0.8'
