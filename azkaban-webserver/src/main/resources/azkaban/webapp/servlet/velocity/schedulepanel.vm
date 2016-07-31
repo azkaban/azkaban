@@ -34,11 +34,7 @@
       <div class="modal-body">
         <fieldset class="form-horizontal">
           <div class="form-group">
-            <label class="col-sm-2 control-label">Time</label>
-            <div class="col-sm-7">
-              <input type="text" id="timepicker" class="form-control">
-            </div>
-            <div class="col-sm-3">
+            <div class="col-sm-offset-9 col-sm-3">
               <select id="timezone" class="form-control">
                 <option>${timezone}</option>
                 <option>UTC</option>
@@ -46,66 +42,18 @@
             </div>
           </div>
           <div class="form-group">
-            <label class="col-sm-2 control-label">Date</label>
-            <div class="col-sm-10">
-              <input type="text" id="datepicker" class="form-control">
-            </div>
-          </div>
 
-          <div class="form-group">
-            <label class="col-sm-2 control-label">Recurrence</label>
-            <div class="col-sm-10">
+              <div class="col-xs-12" style="height:25px;"></div>
 
-              <label class="radio-inline">
-                <input type="radio" name="inlineRadioOptions" id="inlineRadio1" value="option1" checked> no
-              </label>
-              <label class="radio-inline">
-                <input type="radio" name="inlineRadioOptions" id="inlineRadio2" value="option2"> yes
-              </label>
-
-              <div class="col-xs-12" style="height:20px;"></div>
-              <div class="nave-bar-inline">
-                <ul id="myTab" class="nav nav-tabs">
-                  <li class="active"><a href="#cronTab" data-toggle="tab">CronTab</a></li>
-                  <li><a href="#simpleTab" data-toggle="tab">Fixed Gap</a></li>
-                </ul>
-                <div id="myTabContent" class="tab-content">
-                  <div class="tab-pane fade" id="simpleTab">
-
-                    <div class="col-sm-5">
-                      <div class="checkbox">
-                        <label>repeat every</label>
-                      </div>
-                    </div>
-                    <div class="col-sm-3">
-                      <input id="period" type="text" size="2" value="1" class="form-control">
-                    </div>
-                    <div class="col-sm-3">
-                      <select id="period_units" class="form-control">
-                        <option value="d">Days</option>
-                        <option value="h">Hours</option>
-                        <option value="m">Minutes</option>
-                        <option value="M">Months</option>
-                        <option value="w">Weeks</option>
-                      </select>
-                    </div>
-                    <br/> <br/> <br/> <br/> <br/>
-                    <div class="col-sm-9 col-sm-offset-3">
-                      <p class="text-right"><small>***Fixed Gap will have DST change issue.***</small></p>
-                    </div>
-
-                  </div>
-                  <div class="tab-pane fade in active" id="cronTab">
                     <div class="myDiv">
 
-                      <div class="col-xs-12" style="height:20px;"></div>
 
-                      <div class="col-sm-7">
+                      <div class="col-sm-offset-2 col-sm-5">
 
-                      <div class="input-box">
-                        <input type="text" id="cron-output" value="0 5,7-10 ? * 4-6" oninput = "updateExpression()" class="form-control">
-                        <span class="unit">0</span>
-                      </div>
+                        <div class="input-box">
+                          <input type="text" id="cron-output" value="0 5,7-10 ? * 4-6" oninput = "updateExpression()" class="form-control">
+                          <span class="unit">0</span>
+                        </div>
                       </div>
                       <button type="button" class="btn btn-warning" id="clearCron">Reset</button>
                       <br/>
@@ -143,7 +91,7 @@
                           </div>
                         </div>
 
-                        <div class="col-sm-6" style="background-color:#f5f5f5; border:1px solid #e3e3e3">
+                        <div class="col-sm-5" style="background-color:#f5f5f5; border:1px solid #e3e3e3">
                           <h4 style="color:orange">Special Characters:</h4>
                           <table class="table table-striped" data-row-style="rowColors" id="instructions">
                             <tbody>
@@ -174,11 +122,6 @@
                       </div>
 
                     </div>
-                  </div>
-                </div>
-
-              </div>
-            </div>
 
         </fieldset>
       </div>

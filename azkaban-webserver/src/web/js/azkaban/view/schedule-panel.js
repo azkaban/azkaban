@@ -23,8 +23,6 @@ azkaban.SchedulePanelView = Backbone.View.extend({
   },
 
   initialize: function(settings) {
-    $("#timepicker").datetimepicker({pickDate: false});
-    $("#datepicker").datetimepicker({pickTime: false});
   },
 
   render: function() {
@@ -51,29 +49,20 @@ azkaban.SchedulePanelView = Backbone.View.extend({
     var scheduleURL = contextURL + "/schedule"
     var scheduleData = flowExecuteDialogView.getExecutionOptionData();
 
-    console.log("Creating schedule for " + projectName + "." +
-        scheduleData.flow);
+    console.log("Creating schedule for " + projectName + "." + scheduleData.flow);
 
-    var scheduleTime = moment(timeVal, 'h/mm A').format('h,mm,A,') + timezoneVal;
-    console.log(scheduleTime);
+    var currentMomentTime = moment();
 
-    var scheduleDate = $('#datepicker').val();
-    var is_recurring = document.getElementById('inlineRadio2').checked
-        ? 'on' : 'off';
-    var period = $('#period').val() + $('#period_units').val();
+    var scheduleTime = timezoneVal=="UTC"? currentMomentTime.utc().format('h,mm,A,')+timezoneVal : currentMomentTime.format('h,mm,A,') + timezoneVal;
+    var scheduleDate = timezoneVal=="UTC"? currentMomentTime.utc().format('MM/DD/YYYY') : currentMomentTime.format('MM/DD/YYYY')
+    var is_recurring = 'on';
 
     scheduleData.ajax = "scheduleFlow";
     scheduleData.projectName = projectName;
     scheduleData.scheduleTime = scheduleTime;
     scheduleData.scheduleDate = scheduleDate;
     scheduleData.is_recurring = is_recurring;
-
-    if ( $('#simpleTab').hasClass('active') ) {
-      scheduleData.period = period;
-    }
-    else{
-      scheduleData.cronExpression = "0 " + $('#cron-output').val();
-    }
+    scheduleData.cronExpression = "0 " + $('#cron-output').val();
 
     var successHandler = function(data) {
       if (data.error) {
@@ -96,8 +85,6 @@ $(function() {
   schedulePanelView =  new azkaban.SchedulePanelView({
     el: $('#schedule-modal')
   });
-  var checkRadio = ".nave-bar-inline";
-  $(checkRadio).hide();
 
   updateOutput();
   $("#clearCron").click(function () {
@@ -114,14 +101,6 @@ $(function() {
     while ($("#instructions tbody tr:last").index() >= 4) {
       $("#instructions tbody tr:last").remove();
     }
-  });
-
-  $("#inlineRadio2").click(function () {
-    $(checkRadio).show();
-  });
-
-  $("#inlineRadio1").click(function () {
-    $(checkRadio).hide();
   });
 
   $("#minute_input").click(function () {
