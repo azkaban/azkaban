@@ -1045,8 +1045,8 @@ This API call schedules a flow.
       <td>The name of the flow.</td>
     </tr>
     <tr>
-      <td>scheduleTime</td>
-      <td>The time to schedule the flow. Example: 12,00,pm,PDT</td>
+      <td>scheduleTime(with timezone)</td>
+      <td>The time to schedule the flow. Example: 12,00,pm,PDT (Unless UTC is specified, Azkaban will take current server's default timezone instead)</td>
     </tr>
     <tr>
       <td>scheduleDate</td>
