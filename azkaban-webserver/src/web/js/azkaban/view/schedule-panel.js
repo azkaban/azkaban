@@ -37,15 +37,7 @@ azkaban.SchedulePanelView = Backbone.View.extend({
   },
 
   scheduleFlow: function() {
-    var timeVal = $('#timepicker').val();
     var timezoneVal = $('#timezone').val();
-
-    var dateVal = $('#datepicker').val();
-
-    var is_recurringVal = $('#is_recurring').val();
-    var periodVal = $('#period').val();
-    var periodUnits = $('#period_units').val();
-
     var scheduleURL = contextURL + "/schedule"
     var scheduleData = flowExecuteDialogView.getExecutionOptionData();
 
@@ -63,6 +55,9 @@ azkaban.SchedulePanelView = Backbone.View.extend({
     scheduleData.scheduleDate = scheduleDate;
     scheduleData.is_recurring = is_recurring;
     scheduleData.cronExpression = "0 " + $('#cron-output').val();
+
+    console.log("current Time = " + scheduleDate + "  " + scheduleTime );
+    console.log("cronExpression = " +  scheduleData.cronExpression);
 
     var successHandler = function(data) {
       if (data.error) {

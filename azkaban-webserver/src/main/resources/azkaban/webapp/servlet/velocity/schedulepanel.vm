@@ -42,87 +42,78 @@
             </div>
           </div>
           <div class="form-group">
+            <div class="col-xs-12" style="height:25px;"></div>
+              <div class="col-sm-offset-2 col-sm-5">
+                <div class="input-box">
+                  <input type="text" id="cron-output" value="0 5,7-10 ? * 4-6" oninput = "updateExpression()" class="form-control">
+                  <span class="unit">0</span>
+                </div>
+              </div>
+              <button type="button" class="btn btn-warning" id="clearCron">Reset</button>
+              <br/>
+              <div class="col-xs-12" style="height:20px;"></div>
 
-              <div class="col-xs-12" style="height:25px;"></div>
+              <div class="form-group">
+                <div class="col-sm-6">
+                  <label class="col-sm-3 control-label" id="min_label">Min</label>
+                  <div class="col-sm-9">
+                    <input type="text" id="minute_input" value="0" class="form-control" oninput="updateOutput()">
+                  </div>
+                  <br/> <br/> <br/>
+                  <label class="col-sm-3 control-label" id="hour_label">Hours</label>
+                  <div class="col-sm-9">
+                    <input type="text" id="hour_input" value="5,7-10" class="form-control"
+                           oninput="updateOutput()">
+                  </div>
+                  <br/> <br/> <br/>
+                  <label class="col-sm-3 control-label" id="dom_label">DOM</label>
+                  <div class="col-sm-9">
+                    <input type="text" id="dom_input" value="?" class="form-control"
+                           oninput="updateOutput()">
+                  </div>
+                  <br/> <br/> <br/>
+                  <label class="col-sm-3 control-label" id="mon_label">Month</label>
+                  <div class="col-sm-9">
+                    <input type="text" id="month_input" value="*" class="form-control"
+                           oninput="updateOutput()">
+                  </div>
+                  <br/> <br/> <br/>
+                  <label class="col-sm-3 control-label" id="dow_label">DOW</label>
+                  <div class="col-sm-9">
+                    <input type="text" id="dow_input" value="4-6" class="form-control"
+                           oninput="updateOutput()">
+                  </div>
+                </div>
 
-                    <div class="myDiv">
-
-
-                      <div class="col-sm-offset-2 col-sm-5">
-
-                        <div class="input-box">
-                          <input type="text" id="cron-output" value="0 5,7-10 ? * 4-6" oninput = "updateExpression()" class="form-control">
-                          <span class="unit">0</span>
-                        </div>
-                      </div>
-                      <button type="button" class="btn btn-warning" id="clearCron">Reset</button>
-                      <br/>
-                      <div class="col-xs-12" style="height:20px;"></div>
-
-                      <div class="form-group">
-                        <div class="col-sm-6">
-                          <label class="col-sm-3 control-label" id="min_label">Min</label>
-                          <div class="col-sm-9">
-                            <input type="text" id="minute_input" value="0" class="form-control" oninput="updateOutput()">
-                          </div>
-                          <br/> <br/> <br/>
-                          <label class="col-sm-3 control-label" id="hour_label">Hours</label>
-                          <div class="col-sm-9">
-                            <input type="text" id="hour_input" value="5,7-10" class="form-control"
-                                   oninput="updateOutput()">
-                          </div>
-                          <br/> <br/> <br/>
-                          <label class="col-sm-3 control-label" id="dom_label">DOM</label>
-                          <div class="col-sm-9">
-                            <input type="text" id="dom_input" value="?" class="form-control"
-                                   oninput="updateOutput()">
-                          </div>
-                          <br/> <br/> <br/>
-                          <label class="col-sm-3 control-label" id="mon_label">Month</label>
-                          <div class="col-sm-9">
-                            <input type="text" id="month_input" value="*" class="form-control"
-                                   oninput="updateOutput()">
-                          </div>
-                          <br/> <br/> <br/>
-                          <label class="col-sm-3 control-label" id="dow_label">DOW</label>
-                          <div class="col-sm-9">
-                            <input type="text" id="dow_input" value="4-6" class="form-control"
-                                   oninput="updateOutput()">
-                          </div>
-                        </div>
-
-                        <div class="col-sm-5" style="background-color:#f5f5f5; border:1px solid #e3e3e3">
-                          <h4 style="color:orange">Special Characters:</h4>
-                          <table class="table table-striped" data-row-style="rowColors" id="instructions">
-                            <tbody>
-                            <tr class="success">
-                              <th scope="row">*</th>
-                              <td>any value</td>
-                            </tr>
-                            <tr class="primary">
-                              <th scope="row">,</th>
-                              <td>value list separators</td>
-                            </tr>
-                            <tr class="warning">
-                              <th scope="row">-</th>
-                              <td>range of values</td>
-                            </tr>
-                            <tr class="danger">
-                              <th scope="row">/</th>
-                              <td>step values</td>
-                            </tr>
-                            </tbody>
-                          </table>
-                          <p><u>Detailed instructions could be checked out <span style="color:Indigo"><a href="http://www.quartz-scheduler.org/documentation/quartz-2.x/tutorials/crontrigger.html">here</a></span>.</u></p>
-                        </div>
-                      </div>
-                      <h3 id="cronTranslate" style="color:DeepSkyBlue; font-style:italic;"></h3>
-                      <div class="col-sm-9 col-sm-offset-3">
-                        <p class="text-right" id="translationWarning"> </p>
-                      </div>
-
-                    </div>
-
+                <div class="col-sm-5" style="background-color:#f5f5f5; border:1px solid #e3e3e3">
+                  <h4 style="color:orange">Special Characters:</h4>
+                  <table class="table table-striped" data-row-style="rowColors" id="instructions">
+                    <tbody>
+                    <tr class="success">
+                      <th scope="row">*</th>
+                      <td>any value</td>
+                    </tr>
+                    <tr class="primary">
+                      <th scope="row">,</th>
+                      <td>value list separators</td>
+                    </tr>
+                    <tr class="warning">
+                      <th scope="row">-</th>
+                      <td>range of values</td>
+                    </tr>
+                    <tr class="danger">
+                      <th scope="row">/</th>
+                      <td>step values</td>
+                    </tr>
+                    </tbody>
+                  </table>
+                  <p><u>Detailed instructions could be checked out <span style="color:Indigo"><a href="http://www.quartz-scheduler.org/documentation/quartz-2.x/tutorials/crontrigger.html">here</a></span>.</u></p>
+                </div>
+              </div>
+              <h3 id="cronTranslate" style="color:DeepSkyBlue; font-style:italic;"></h3>
+              <div class="col-sm-9 col-sm-offset-3">
+                <p class="text-right" id="translationWarning"> </p>
+              </div>
         </fieldset>
       </div>
       <div class="modal-footer">
