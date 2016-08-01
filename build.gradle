@@ -6,14 +6,12 @@ buildscript {
     }
   }
   dependencies {
-    classpath 'com.cinnober.gradle:semver-git:2.2.1'
     classpath 'com.linkedin:gradle-dustjs-plugin:1.0.0'
     classpath 'de.obqo.gradle:gradle-lesscss-plugin:1.0-1.3.3'
     classpath 'net.ltgt.gradle:gradle-errorprone-plugin:0.0.8'
   }
 }
 
-apply plugin: 'com.cinnober.gradle.semver-git'
 apply plugin: 'idea'
 apply plugin: 'distribution'
 
@@ -90,6 +88,10 @@ subprojects {
 }
 
 distributions {
+
+  project.version = cmdCaller(['git', 'describe', '--tags']) + "-" + 
+                    cmdCaller(['git', 'rev-parse', 'HEAD'])
+
   migration {
     baseName = 'azkaban-migration'
     contents {
