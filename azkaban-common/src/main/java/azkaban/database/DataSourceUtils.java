@@ -116,7 +116,7 @@ public class DataSourceUtils {
         numConnections);
   }
   /**
-   * Create a MySQL DataSource
+   * Create a Postgresql DataSource
    *
    * @param host
    * @param port
@@ -234,6 +234,10 @@ public class DataSourceUtils {
 
   }
 
+ /**
+   * PostgresqlL data source based on AzkabanDataSource
+   *
+   */
   public static class PostgresqlBasicDataSource extends AzkabanDataSource {
 
 	    private static MonitorThread monitorThread = null;
