@@ -21,10 +21,10 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.lang.annotation.Inherited;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -86,8 +86,7 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements
   private synchronized void uploadExecutableFlow(Connection connection,
       ExecutableFlow flow, EncodingType encType)
       throws ExecutorManagerException, IOException {
-    final String INSERT_EXECUTABLE_FLOW =
-        "INSERT INTO execution_flows "
+    final String INSERT_EXECUTABLE_FLOW = "INSERT INTO execution_flows "
             + "(project_id, flow_id, version, status, submit_time, submit_user, update_time) "
             + "values (?,?,?,?,?,?,?)";
     QueryRunner runner = new QueryRunner();
@@ -96,21 +95,28 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements
     long id;
     try {
       flow.setStatus(Status.PREPARING);
-      runner.update(connection, INSERT_EXECUTABLE_FLOW, flow.getProjectId(),
-          flow.getFlowId(), flow.getVersion(), Status.PREPARING.getNumVal(),
-          submitTime, flow.getSubmitUser(), submitTime);
-      connection.commit();
-      id =
-          runner.query(connection, LastInsertID.LAST_INSERT_ID,
-              new LastInsertID());
-
+      id = runner.insert(connection, INSERT_EXECUTABLE_FLOW, new ResultSetHandler<Long>() {
+			@Override
+			public Long handle(ResultSet rs) throws SQLException {
+				if(rs.next()){
+					return rs.getLong(1);
+				}
+				return -1L;
+			}
+  		  
+		},flow.getProjectId(),
+  	  flow.getFlowId(), flow.getVersion(), Status.PREPARING.getNumVal(),
+  	  submitTime, flow.getSubmitUser(), submitTime);
       if (id == -1L) {
         throw new ExecutorManagerException(
             "Execution id is not properly created.");
       }
+      if(!connection.getAutoCommit()){
+    	  connection.commit();
+      }
       logger.info("Flow given " + flow.getFlowId() + " given id " + id);
       flow.setExecutionId((int) id);
-
+      
       updateExecutableFlow(connection, flow, encType);
     } catch (SQLException e) {
       throw new ExecutorManagerException("Error creating execution.", e);
@@ -382,9 +388,10 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements
     }
 
     if (skip > -1 && num > 0) {
-      query += "  ORDER BY exec_id DESC LIMIT ?, ?";
-      params.add(skip);
-      params.add(num);
+    	query += "  ORDER BY exec_id DESC OFFSET ? LIMIT ? ";
+    	params.add(skip);
+	    params.add(num);
+      
     }
 
     QueryRunner runner = createQueryRunner();
@@ -965,7 +972,7 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements
     Date updateDate = new Date();
     try {
       runner.update(INSERT_PROJECT_EVENTS, executor.getId(), type.getNumVal(),
-        updateDate, user, message);
+        new Timestamp(updateDate.getTime()), user, message);
     } catch (SQLException e) {
       throw new ExecutorManagerException("Failed to post executor event", e);
     }
@@ -1134,16 +1141,16 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements
         "SELECT exec_id, project_id, version, flow_id, job_id, "
             + "start_time, end_time, status, attempt "
             + "FROM execution_jobs WHERE exec_id=? "
-            + "AND job_id=? AND attempt_id=?";
+            + "AND job_id=? AND attempt=?";
     private static String FETCH_EXECUTABLE_NODE_ATTEMPTS =
         "SELECT exec_id, project_id, version, flow_id, job_id, "
             + "start_time, end_time, status, attempt FROM execution_jobs "
             + "WHERE exec_id=? AND job_id=?";
     private static String FETCH_PROJECT_EXECUTABLE_NODE =
-        "SELECT exec_id, project_id, version, flow_id, job_id, "
-            + "start_time, end_time, status, attempt FROM execution_jobs "
-            + "WHERE project_id=? AND job_id=? "
-            + "ORDER BY exec_id DESC LIMIT ?, ? ";
+            "SELECT exec_id, project_id, version, flow_id, job_id, "
+                + "start_time, end_time, status, attempt FROM execution_jobs "
+                + "WHERE project_id=? AND job_id=? "
+                + "ORDER BY exec_id DESC OFFSET ? LIMIT ? ";
 
     @Override
     public List<ExecutableJobInfo> handle(ResultSet rs) throws SQLException {
@@ -1399,18 +1406,20 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements
     // +
     // "FROM execution_flows ex " +
     // "INNER JOIN active_executing_flows ax ON ex.exec_id = ax.exec_id";
-    private static String FETCH_ALL_EXECUTABLE_FLOW_HISTORY =
-        "SELECT exec_id, enc_type, flow_data FROM execution_flows "
-            + "ORDER BY exec_id DESC LIMIT ?, ?";
-    private static String FETCH_EXECUTABLE_FLOW_HISTORY =
-        "SELECT exec_id, enc_type, flow_data FROM execution_flows "
-            + "WHERE project_id=? AND flow_id=? "
-            + "ORDER BY exec_id DESC LIMIT ?, ?";
-    private static String FETCH_EXECUTABLE_FLOW_BY_STATUS =
-        "SELECT exec_id, enc_type, flow_data FROM execution_flows "
-            + "WHERE project_id=? AND flow_id=? AND status=? "
-            + "ORDER BY exec_id DESC LIMIT ?, ?";
 
+    private static String FETCH_ALL_EXECUTABLE_FLOW_HISTORY =
+            "SELECT exec_id, enc_type, flow_data FROM execution_flows "
+                + "ORDER BY exec_id DESC OFFSET ? LIMIT ? ";
+
+    private static String FETCH_EXECUTABLE_FLOW_HISTORY =
+            "SELECT exec_id, enc_type, flow_data FROM execution_flows "
+                + "WHERE project_id=? AND flow_id=? "
+                + "ORDER BY exec_id DESC OFFSET ? LIMIT ? ";
+
+    private static String FETCH_EXECUTABLE_FLOW_BY_STATUS =
+            "SELECT exec_id, enc_type, flow_data FROM execution_flows "
+                + "WHERE project_id=? AND flow_id=? AND status=? "
+                + "ORDER BY exec_id DESC OFFSET ? LIMIT ? ";
     @Override
     public List<ExecutableFlow> handle(ResultSet rs) throws SQLException {
       if (!rs.next()) {

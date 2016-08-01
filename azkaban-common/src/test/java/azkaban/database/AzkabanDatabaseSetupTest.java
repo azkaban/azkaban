@@ -16,28 +16,27 @@
 
 package azkaban.database;
 
-import com.google.common.io.Resources;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.URL;
 import java.net.URISyntaxException;
+import java.net.URL;
 import java.sql.SQLException;
 
 import javax.sql.DataSource;
 
 import org.apache.commons.dbutils.QueryRunner;
-
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
-import org.junit.Test;
 import org.junit.Rule;
+import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import com.google.common.io.Resources;
 
 import azkaban.utils.Props;
 
@@ -107,6 +106,31 @@ public class AzkabanDatabaseSetupTest {
     setup.printUpgradePlan();
     assertFalse(setup.needsUpdating());
   }
+  
+  @Ignore  @Test
+  public void testPostgresqlQuery() throws Exception {
+	clearPostgresqlTestDB();
+    Props postgresqlProps = getPostgresqlProps(sqlScriptsDir);
+    AzkabanDatabaseSetup setup = new AzkabanDatabaseSetup(postgresqlProps);
+
+    // First time will create the tables
+    setup.loadTableInfo();
+    setup.printUpgradePlan();
+    setup.updateDatabase(true, true);
+    assertTrue(setup.needsUpdating());
+
+    
+    // once table loaded, it wont't update again
+    setup.loadTableInfo();
+    setup.printUpgradePlan();
+    setup.updateDatabase(true, true);
+    assertFalse(setup.needsUpdating());
+
+    // Nothing to be done
+    setup.loadTableInfo();
+    setup.printUpgradePlan();
+    assertFalse(setup.needsUpdating());
+  }
 
   private static Props getH2Props(String dbDir, String sqlScriptsDir) {
     Props props = new Props();
@@ -130,6 +154,21 @@ public class AzkabanDatabaseSetupTest {
 
     return props;
   }
+  
+  private static Props getPostgresqlProps(String sqlScriptsDir) {
+	    Props props = new Props();
+
+	    props.put("database.type", "postgresql");
+	    props.put("postgresql.port", "5432");
+	    props.put("postgresql.host", "localhost");
+	    props.put("postgresql.database", "azkabanunittest");
+	    props.put("postgresql.user", "postgres");
+	    props.put("database.sql.scripts.dir", sqlScriptsDir);
+	    props.put("postgresql.password", "postgres");
+	    props.put("postgresql.numconnections", 10);
+
+	    return props;
+	  }
 
   private static void clearMySQLTestDB() throws SQLException {
     Props props = new Props();
@@ -149,4 +188,23 @@ public class AzkabanDatabaseSetupTest {
     }
     runner.update("create database azkabanunittest");
   }
+  
+  private static void clearPostgresqlTestDB() throws SQLException {
+	    Props props = new Props();
+	    props.put("database.type", "postgresql");
+	    props.put("postgresql.host", "localhost");
+	    props.put("postgresql.port", "5432");
+	    props.put("postgresql.database", "");
+	    props.put("postgresql.user", "postgres");
+	    props.put("postgresql.password", "postgres");
+	    props.put("postgresql.numconnections", 10);
+
+	    DataSource datasource = DataSourceUtils.getDataSource(props);
+	    QueryRunner runner = new QueryRunner(datasource);
+	    try {
+	      runner.update("drop database azkabanunittest");
+	    } catch (SQLException e) {
+	    }
+	    runner.update("create database azkabanunittest");
+	  }
 }

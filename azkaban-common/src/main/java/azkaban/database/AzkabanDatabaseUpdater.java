@@ -69,6 +69,7 @@ public class AzkabanDatabaseUpdater {
     }
 
     runDatabaseUpdater(props, scriptDir, updateDB);
+    System.exit(0);
   }
 
   public static void runDatabaseUpdater(Props props, String sqlDir,

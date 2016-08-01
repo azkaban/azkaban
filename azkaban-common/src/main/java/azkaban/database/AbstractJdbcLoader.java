@@ -57,7 +57,7 @@ public abstract class AbstractJdbcLoader {
     }
   }
 
-  private AzkabanDataSource dataSource;
+  protected AzkabanDataSource dataSource;
 
   public AbstractJdbcLoader(Props props) {
     dataSource = DataSourceUtils.getDataSource(props);

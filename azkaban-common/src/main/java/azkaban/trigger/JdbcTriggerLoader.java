@@ -172,17 +172,22 @@ public class JdbcTriggerLoader extends AbstractJdbcLoader implements
     long id;
 
     try {
-      runner.update(connection, ADD_TRIGGER, DateTime.now().getMillis());
-      connection.commit();
-      id =
-          runner.query(connection, LastInsertID.LAST_INSERT_ID,
-              new LastInsertID());
-
+    	id = runner.insert(connection,ADD_TRIGGER, new ResultSetHandler<Long>() {
+			@Override
+			public Long handle(ResultSet rs) throws SQLException {
+				if(rs.next()){
+					return rs.getLong(1);
+				}
+				return -1L;
+			}
+		},DateTime.now().getMillis());
       if (id == -1L) {
         logger.error("trigger id is not properly created.");
         throw new TriggerLoaderException("trigger id is not properly created.");
       }
-
+      if(!connection.getAutoCommit()){
+    	  connection.commit();
+      }
       t.setTriggerId((int) id);
       updateTrigger(t);
       logger.info("uploaded trigger " + t.getDescription());

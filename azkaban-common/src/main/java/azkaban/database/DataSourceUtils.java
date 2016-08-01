@@ -83,6 +83,17 @@ public class DataSourceUtils {
     } else if (databaseType.equals("h2")) {
       String path = props.getString("h2.path");
       dataSource = getH2DataSource(path);
+    } else if (databaseType.equals("postgresql")) {
+    	 int port = props.getInt("postgresql.port");
+         String host = props.getString("postgresql.host");
+         String database = props.getString("postgresql.database");
+         String user = props.getString("postgresql.user");
+         String password = props.getString("postgresql.password");
+         int numConnections = props.getInt("postgresql.numconnections");
+
+         dataSource =
+        		 getPostgresqlDataSource(host, port, database, user, password,
+                 numConnections);
     }
 
     return dataSource;
@@ -104,7 +115,22 @@ public class DataSourceUtils {
     return new MySQLBasicDataSource(host, port, dbName, user, password,
         numConnections);
   }
-
+  /**
+   * Create a MySQL DataSource
+   *
+   * @param host
+   * @param port
+   * @param dbName
+   * @param user
+   * @param password
+   * @param numConnections
+   * @return
+   */
+  public static AzkabanDataSource getPostgresqlDataSource(String host, Integer port,
+      String dbName, String user, String password, Integer numConnections) {
+    return new PostgresqlBasicDataSource(host, port, dbName, user, password,
+        numConnections);
+  }
   /**
    * Create H2 DataSource
    *
@@ -208,6 +234,85 @@ public class DataSourceUtils {
 
   }
 
+  public static class PostgresqlBasicDataSource extends AzkabanDataSource {
+
+	    private static MonitorThread monitorThread = null;
+
+	    private PostgresqlBasicDataSource(String host, int port, String dbName,
+	        String user, String password, int numConnections) {
+	      super();
+
+	      String url = "jdbc:postgresql://" + (host + ":" + port + "/" + dbName);
+	      setUsername(user);
+	      setPassword(password);
+	      setUrl(url);
+	      setMaxActive(numConnections);
+	      setValidationQuery("select 1");
+	      setTestOnBorrow(true);
+
+	      if (monitorThread == null) {
+	        monitorThread = new MonitorThread(this);
+	        monitorThread.start();
+	      }
+	    }
+	    
+
+	    @Override
+	    public boolean allowsOnDuplicateKey() {
+	      return true;
+	    }
+
+	    @Override
+	    public String getDBType() {
+	      return "postgresql";
+	    }
+
+	    private class MonitorThread extends Thread {
+	      private static final long MONITOR_THREAD_WAIT_INTERVAL_MS = 30 * 1000;
+	      private boolean shutdown = false;
+	      PostgresqlBasicDataSource dataSource;
+	      public MonitorThread(PostgresqlBasicDataSource postgresqlSource) {
+	        this.setName("POSTGRESQL-DB-Monitor-Thread");
+	        dataSource = postgresqlSource;
+	      }
+
+	      @SuppressWarnings("unused")
+	      public void shutdown() {
+	        shutdown = true;
+	        this.interrupt();
+	      }
+
+	      public void run() {
+	        while (!shutdown) {
+	          synchronized (this) {
+	            try {
+	              pingDB();
+	              wait(MONITOR_THREAD_WAIT_INTERVAL_MS);
+	            } catch (InterruptedException e) {
+	              logger.info("Interrupted. Probably to shut down.");
+	            }
+	          }
+	        }
+	      }
+
+	      private void pingDB() {
+	        Connection connection = null;
+	        try {
+	          connection = dataSource.getConnection();
+	          PreparedStatement query = connection.prepareStatement("SELECT 1");
+	          query.execute();
+	        } catch (SQLException e) {
+	          // TODO Auto-generated catch block
+	          e.printStackTrace();
+	          logger
+	              .error("MySQL connection test failed. Please check MySQL connection health!");
+	        } finally {
+	          DbUtils.closeQuietly(connection);
+	        }
+	      }
+	    }
+
+	  }
   /**
    * H2 Datasource
    *
