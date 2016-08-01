@@ -160,10 +160,10 @@ soloserverDistTar.compression = Compression.GZIP
 soloserverDistTar.extension = 'tar.gz'
 soloserverDistZip.dependsOn ':azkaban-common:build', ':azkaban-soloserver:copy'
 
-sqlDistTar.dependsOn ':azkaban-sql:concat'
+sqlDistTar.dependsOn ':azkaban-sql:concat', ':azkaban-sql:genPgSql'
 sqlDistTar.compression = Compression.GZIP
 sqlDistTar.extension = 'tar.gz'
-sqlDistZip.dependsOn ':azkaban-sql:concat'
+sqlDistZip.dependsOn ':azkaban-sql:concat', ':azkaban-sql:genPgSql'
 
 distTar.dependsOn migrationDistTar, webserverDistTar, execserverDistTar, soloserverDistTar, sqlDistTar
 distZip.dependsOn migrationDistZip, webserverDistZip, execserverDistZip, soloserverDistZip, sqlDistZip
