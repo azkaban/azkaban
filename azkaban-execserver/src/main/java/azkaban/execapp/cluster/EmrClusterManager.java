@@ -8,9 +8,15 @@ import azkaban.execapp.cluster.emr.EmrUtils;
 import azkaban.execapp.cluster.emr.InvalidEmrConfigurationException;
 import azkaban.executor.*;
 import azkaban.utils.Props;
+import com.amazonaws.AmazonClientException;
+import com.amazonaws.AmazonServiceException;
+import com.amazonaws.AmazonWebServiceRequest;
+import com.amazonaws.PredefinedClientConfigurations;
 import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
 import com.amazonaws.regions.Regions;
+import com.amazonaws.retry.RetryPolicy;
+import com.amazonaws.retry.RetryUtils;
 import com.amazonaws.services.elasticmapreduce.AmazonElasticMapReduceClient;
 import com.amazonaws.services.elasticmapreduce.model.*;
 import com.amazonaws.services.s3.AmazonS3Client;
@@ -21,6 +27,7 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 import static azkaban.execapp.cluster.emr.EmrUtils.*;
+import static com.amazonaws.retry.PredefinedRetryPolicies.DEFAULT_RETRY_CONDITION;
 
 /**
  * Created by jsoumet on 2/7/16 for azkaban.
@@ -44,6 +51,8 @@ public class EmrClusterManager implements IClusterManager, EventListener {
     private Props globalProps = null;
     private ExecutorLoader executorLoader = null;
 
+    private AmazonElasticMapReduceClient emrClient = null;
+
     // Cluster Name -> Integer (Count of flows using cluster) - only going into shutdown process for emr clusters when all executions that use the cluster are done
     private final Map<String, Integer> clusterFlows = new ConcurrentHashMap<String, Integer>();
 
@@ -52,6 +61,8 @@ public class EmrClusterManager implements IClusterManager, EventListener {
 
     // (Item is Cluster Id) - List of clusters to keep alive - when multiple flows share the same cluster, if any of the flows indicate that the cluster should not be shutdown (because of an error or any other reason), the cluster should not be terminated even if it's ok to be terminated by the other flows using it.
     private final List<String> clustersKeepAlive = Collections.synchronizedList(new ArrayList<String>());
+
+    private static final int MAX_CLIENT_RETRIES = 8;
 
     public EmrClusterManager(Props serverProps) {
         classLogger.info("Initialized " + this.getClass().getName());
@@ -566,7 +577,15 @@ public class EmrClusterManager implements IClusterManager, EventListener {
     }
 
     private AmazonElasticMapReduceClient getEmrClient() {
-        return new AmazonElasticMapReduceClient(getAWSCredentials()).withRegion(Regions.US_WEST_2);
+        if (emrClient == null) {
+            RetryPolicy retryPolicy = new RetryPolicy(DEFAULT_RETRY_CONDITION,
+                    new IncreasedThrottleBackoffStrategy(), MAX_CLIENT_RETRIES, true);
+            emrClient = new AmazonElasticMapReduceClient(getAWSCredentials(),
+                    PredefinedClientConfigurations.defaultConfig().withRetryPolicy(retryPolicy))
+                    .withRegion(Regions.US_WEST_2);
+        }
+
+        return emrClient;
     }
 
     private enum ExecutionMode {
@@ -578,5 +597,51 @@ public class EmrClusterManager implements IClusterManager, EventListener {
     private enum ClusterNameStrategy {
         EXECUTION_ID,
         PROJECT_NAME;
+    }
+
+    private static class IncreasedThrottleBackoffStrategy implements RetryPolicy.BackoffStrategy {
+
+        /** Base sleep time (milliseconds) for general exceptions. **/
+        private static final int SCALE_FACTOR = 300;
+
+        /** Base sleep time (milliseconds) for throttling exceptions. **/
+        private static final int THROTTLING_SCALE_FACTOR = 3 * 1000;
+
+        private static final int THROTTLING_SCALE_FACTOR_RANDOM_RANGE = THROTTLING_SCALE_FACTOR / 4;
+
+        /** Maximum exponential back-off time before retrying a request */
+        private static final int MAX_BACKOFF_IN_MILLISECONDS = 120 * 1000;
+
+        /**
+         * Maximum number of retries before the max backoff will be hit. This is
+         * calculated via log_2(MAX_BACKOFF_IN_MILLISECONDS / SCALE_FACTOR)
+         * based on the code below.
+         */
+        private static final int MAX_RETRIES_BEFORE_MAX_BACKOFF = 6;
+
+        /** For generating a random scale factor **/
+        private final Random random = new Random();
+
+        /** {@inheritDoc} */
+        @Override
+        public final long delayBeforeNextRetry(AmazonWebServiceRequest originalRequest,
+                                               AmazonClientException exception,
+                                               int retriesAttempted) {
+            if (retriesAttempted < 0) return 0;
+            if (retriesAttempted > MAX_RETRIES_BEFORE_MAX_BACKOFF) return MAX_BACKOFF_IN_MILLISECONDS;
+
+            int scaleFactor;
+            if (exception instanceof AmazonServiceException
+                    && RetryUtils.isThrottlingException((AmazonServiceException)exception)) {
+                scaleFactor = THROTTLING_SCALE_FACTOR + random.nextInt(THROTTLING_SCALE_FACTOR_RANDOM_RANGE);
+            } else {
+                scaleFactor = SCALE_FACTOR;
+            }
+
+            long delay = (1L << retriesAttempted) * scaleFactor;
+            delay = Math.min(delay, MAX_BACKOFF_IN_MILLISECONDS);
+
+            return delay;
+        }
     }
 }
