@@ -53,6 +53,9 @@ public class EmrClusterManager implements IClusterManager, EventListener {
 
     private AmazonElasticMapReduceClient emrClient = null;
 
+    private static final long EMR_CLIENT_LIFETIME = 15 * 60 * 1000; // 15 minutes
+    private long emrClientTimestamp = 0;
+
     // Cluster Name -> Integer (Count of flows using cluster) - only going into shutdown process for emr clusters when all executions that use the cluster are done
     private final Map<String, Integer> clusterFlows = new ConcurrentHashMap<String, Integer>();
 
@@ -597,12 +600,13 @@ public class EmrClusterManager implements IClusterManager, EventListener {
     }
 
     private AmazonElasticMapReduceClient getEmrClient() {
-        if (emrClient == null) {
+        if (emrClient == null || System.currentTimeMillis() - emrClientTimestamp > EMR_CLIENT_LIFETIME) {
             RetryPolicy retryPolicy = new RetryPolicy(DEFAULT_RETRY_CONDITION,
                     new IncreasedThrottleBackoffStrategy(), MAX_CLIENT_RETRIES, true);
             emrClient = new AmazonElasticMapReduceClient(getAWSCredentials(),
                     PredefinedClientConfigurations.defaultConfig().withRetryPolicy(retryPolicy))
                     .withRegion(Regions.US_WEST_2);
+            emrClientTimestamp = System.currentTimeMillis();
         }
 
         return emrClient;
@@ -625,7 +629,7 @@ public class EmrClusterManager implements IClusterManager, EventListener {
         private static final int SCALE_FACTOR = 300;
 
         /** Base sleep time (milliseconds) for throttling exceptions. **/
-        private static final int THROTTLING_SCALE_FACTOR = 3 * 1000;
+        private static final int THROTTLING_SCALE_FACTOR = 500;
 
         private static final int THROTTLING_SCALE_FACTOR_RANDOM_RANGE = THROTTLING_SCALE_FACTOR / 4;
 
@@ -637,7 +641,7 @@ public class EmrClusterManager implements IClusterManager, EventListener {
          * calculated via log_2(MAX_BACKOFF_IN_MILLISECONDS / SCALE_FACTOR)
          * based on the code below.
          */
-        private static final int MAX_RETRIES_BEFORE_MAX_BACKOFF = 6;
+        private static final int MAX_RETRIES_BEFORE_MAX_BACKOFF = 8;
 
         /** For generating a random scale factor **/
         private final Random random = new Random();
