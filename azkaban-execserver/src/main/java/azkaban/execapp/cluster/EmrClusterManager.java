@@ -462,7 +462,7 @@ public class EmrClusterManager implements IClusterManager, EventListener {
         // This is just a cache for EMR
         runningClusters.remove(clusterName);
 
-        if (clusterId != null && clusterMasterIps.containsKey(clusterId)) {
+        if (clusterId != null) {
             clusterMasterIps.remove(clusterId);
         }
     }
