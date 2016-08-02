@@ -59,6 +59,9 @@ public class EmrClusterManager implements IClusterManager, EventListener {
     // Cluster Name -> Cluster Id - this is used so we can keep the list of running cluster ids to be looked up by cluster name to avoid calls on EMR api (rate limit)
     private final Map<String, String> runningClusters = new ConcurrentHashMap<String, String>();
 
+    // Cluster Id -> Cluster Master Node Ip - track IP address of each cluster's master node to avoid calls to EMR api (rate limit)
+    private final Map<String, String> clusterMasterIps = new ConcurrentHashMap<String, String>();
+
     // (Item is Cluster Id) - List of clusters to keep alive - when multiple flows share the same cluster, if any of the flows indicate that the cluster should not be shutdown (because of an error or any other reason), the cluster should not be terminated even if it's ok to be terminated by the other flows using it.
     private final List<String> clustersKeepAlive = Collections.synchronizedList(new ArrayList<String>());
 
@@ -179,9 +182,9 @@ public class EmrClusterManager implements IClusterManager, EventListener {
         switch (executionMode) {
             case SPECIFIC_CLUSTER:
                 clusterId = combinedProps.getString(EMR_CONF_SELECT_ID);
-                Optional<String> specificMasterIp = getMasterIP(getEmrClient(), clusterId);
-                if (specificMasterIp.isPresent()) {
-                    setFlowMasterIp(flow, specificMasterIp.get(), jobLogger);
+                masterIp = getMasterIPCached(clusterId);
+                if (masterIp.isPresent()) {
+                    setFlowMasterIp(flow, masterIp.get(), jobLogger);
                 }
                 break;
 
@@ -458,6 +461,10 @@ public class EmrClusterManager implements IClusterManager, EventListener {
         // If we don't remove this, cached entry would point to potentially an invalid cluster id, but retry would fix the issue
         // This is just a cache for EMR
         runningClusters.remove(clusterName);
+
+        if (clusterId != null && clusterMasterIps.containsKey(clusterId)) {
+            clusterMasterIps.remove(clusterId);
+        }
     }
 
     private String createCluster(String clusterName, Props combinedProps, Logger jobLogger) throws InvalidEmrConfigurationException, IOException {
@@ -490,7 +497,7 @@ public class EmrClusterManager implements IClusterManager, EventListener {
             int tempTimeoutInMinutes = timeoutInMinutes;
             while (--tempTimeoutInMinutes > 0) {
                 if (isClusterReady(getEmrClient(), clusterId)) {
-                    Optional<String> masterIp = getMasterIP(getEmrClient(), clusterId);
+                    Optional<String> masterIp = getMasterIPCached(clusterId);
                     if (masterIp.isPresent()) {
                         jobLogger.info("Cluster " + clusterId + " is ready! Spinup time was " + (timeoutInMinutes - tempTimeoutInMinutes) + " minutes.");
                         return masterIp;
@@ -507,6 +514,19 @@ public class EmrClusterManager implements IClusterManager, EventListener {
         }
         jobLogger.error("Cluster failed to spool up after waiting for " + timeoutInMinutes + " mins.");
         return Optional.empty();
+    }
+
+    public Optional<String> getMasterIPCached(String clusterId) {
+        if (clusterMasterIps.containsKey(clusterId)) {
+            return Optional.of(clusterMasterIps.get(clusterId));
+        }
+
+        Optional<String> masterIp = getMasterIP(getEmrClient(), clusterId);
+        if (masterIp.isPresent()) {
+            clusterMasterIps.put(clusterId, masterIp.get());
+        }
+
+        return masterIp;
     }
 
     private void updateFlow(ExecutableFlow flow) throws ExecutorManagerException {
