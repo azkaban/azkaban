@@ -302,15 +302,15 @@ public class ProjectManager {
   }
 
     /**
-     * Permanently delete all project files and properties data for all versions
-     * of a project and log event in project_events table
+     * Permanently delete all inactive project files (already deleted by the user) and properties data
+     * for all version of a project and log event in project_events table
      *
      * @param project
      * @param deleter
      * @return
      * @throws ProjectManagerException
      */
-    public synchronized Project purgeProject(Project project, User deleter)
+    public synchronized Project purgeInactiveProject(Project project, User deleter)
         throws ProjectManagerException {
         projectLoader.cleanOlderProjectVersion(project.getId(),
             project.getVersion() + 1);
@@ -319,6 +319,38 @@ public class ProjectManager {
                 .format("Purged versions before %d", project.getVersion() + 1));
         return project;
     }
+
+  /**
+   * Permanently delete project files with old versions (file with highest version not purged)
+   * and properties data for all except the current version of a project and log event
+   * in project_events table.
+   *
+   * @param project
+   * @param deleter
+   * @return
+   * @throws ProjectManagerException
+   */
+  public synchronized Project purgeActiveProject(Project project, User deleter)
+      throws ProjectManagerException {
+
+    /*
+     * Check if max version matches. If the project version is equal to max of
+     * version in table project_versions, we do the purging; Otherwise, exception
+     * is thrown.
+     */
+    if (projectLoader.getLatestProjectVersion(project) == project.getVersion()) {
+
+      projectLoader.cleanOlderProjectVersion(project.getId(), project.getVersion());
+      projectLoader.postEvent(project, EventType.PURGE, deleter.getUserId(),
+          String.format("Purged versions before %d", project.getVersion()));
+      return project;
+    } else {
+      projectLoader.postEvent(project, EventType.PURGE, deleter.getUserId(),
+          String.format("failed to purge versions before %d", project.getVersion()));
+      throw new ProjectManagerException("The project doesn't match max version in database, "
+          + "can not be purged.");
+    }
+  }
 
   public synchronized Project removeProject(Project project, User deleter)
       throws ProjectManagerException {
