@@ -60,7 +60,7 @@ public class TriggerManager extends EventHandler implements
   private final Object syncObj = new Object();
 
   private String scannerStage = "";
-  
+
   public TriggerManager(Props props, TriggerLoader triggerLoader,
       ExecutorManager executorManager) throws TriggerManagerException {
 
@@ -156,6 +156,12 @@ public class TriggerManager extends EventHandler implements
     synchronized (syncObj) {
       runnerThread.deleteTrigger(triggerIdMap.get(t.getTriggerId()));
       runnerThread.addTrigger(t);
+
+      try {
+        triggerLoader.updateTrigger(t);
+      } catch (TriggerLoaderException e) {
+        throw new TriggerManagerException(e);
+      }
       triggerIdMap.put(t.getTriggerId(), t);
     }
   }
