@@ -30,11 +30,17 @@ import java.lang.reflect.Method;
 import java.util.Collection;
 import java.util.Enumeration;
 import java.util.Random;
+import java.util.TimeZone;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipOutputStream;
+import java.text.ParseException;
 
 import org.apache.commons.io.IOUtils;
+
+import org.apache.log4j.Logger;
+
+import org.joda.time.DateTimeZone;
 import org.joda.time.DateTime;
 import org.joda.time.Days;
 import org.joda.time.DurationFieldType;
@@ -46,10 +52,15 @@ import org.joda.time.Seconds;
 import org.joda.time.Weeks;
 import org.joda.time.Years;
 
+import org.quartz.CronExpression;
+
 /**
  * A util helper class full of static methods that are commonly used.
  */
 public class Utils {
+
+  private static Logger logger = Logger
+      .getLogger(Utils.class);
   public static final Random RANDOM = new Random();
 
   /**
@@ -454,5 +465,27 @@ public class Utils {
     }
 
     return sizeInKb;
+  }
+
+  /**
+   * @param cronExpression: A cron expression is a string separated by white space, to provide a parser and evaluator for Quartz cron expressions.
+   * @return : org.quartz.CronExpression object.
+   */
+  public static CronExpression parseCronExpression(String cronExpression, DateTimeZone timezone) {
+    if (cronExpression != null) {
+      try {
+        CronExpression ce =  new CronExpression(cronExpression);
+        ce.setTimeZone(TimeZone.getTimeZone(timezone.getID()));
+        return ce;
+      } catch (ParseException pe) {
+        logger.error("this cron expression {" + cronExpression + "} can not be parsed. "
+            + "Please Check Quartz Cron Syntax.");
+      }
+      return null;
+    } else return null;
+  }
+
+  public static boolean isCronExpressionValid(String cronExpression) {
+    return CronExpression.isValidExpression(cronExpression);
   }
 }

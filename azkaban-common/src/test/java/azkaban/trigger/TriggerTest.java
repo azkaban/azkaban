@@ -57,7 +57,7 @@ public class TriggerTest {
     DateTime now = DateTime.now();
     ConditionChecker checker1 =
         new BasicTimeChecker("timeChecker1", now.getMillis(), now.getZone(),
-            true, true, Utils.parsePeriodString("1h"));
+            true, true, Utils.parsePeriodString("1h"), null);
     Map<String, ConditionChecker> checkers1 =
         new HashMap<String, ConditionChecker>();
     checkers1.put(checker1.getId(), checker1);

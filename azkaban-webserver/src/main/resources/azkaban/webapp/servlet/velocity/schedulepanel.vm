@@ -14,63 +14,105 @@
  * the License.
 *#
 
-      <script type="text/javascript" src="${context}/js/azkaban/util/date.js"></script>
-      <script type="text/javascript" src="${context}/js/azkaban/view/schedule-panel.js"></script>
+<script type="text/javascript" src="${context}/js/azkaban/util/date.js"></script>
+<script type="text/javascript" src="${context}/js/azkaban/view/schedule-panel.js"></script>
+<script type="text/javascript" src="${context}/js/moment.min.js" ></script>
+<script type="text/javascript" src="${context}/js/later.min.js"></script>
+<script type="text/javascript" src="${context}/js/prettycron.js"></script>
+<script type="text/javascript" src="${context}/js/moment-timezone-with-data-2010-2020.js"></script>
+<style type="text/css">
+.input-box { position: relative; }
+.input-box input { display: block; border: 1px solid #d7d6d6; background: #fff; padding: 10px 10px 10px 20px; width: 195px; }
+.unit { position: absolute; display: block; left: 5px; top: 7px; z-index: 9; }
+</style>
+<div class="modal" id="schedule-modal">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+        <h4 class="modal-title">Schedule Flow Options</h4>
+      </div><!-- /modal-header -->
+      <div class="modal-body">
+        <fieldset class="form-horizontal">
+          <div class="form-group">
+            <div class="col-xs-12" style="height:25px;"></div>
+              <div class="col-sm-offset-2 col-sm-5">
+                <div class="input-box">
+                  <input type="text" id="cron-output" value="0 5,7-10 ? * 4-6" oninput = "updateExpression()" class="form-control">
+                  <span class="unit">0</span>
+                </div>
+              </div>
+              <button type="button" class="btn btn-warning" id="clearCron">Reset</button>
+              <br/>
+              <div class="col-xs-12" style="height:20px;"></div>
 
-      <div class="modal" id="schedule-modal">
-        <div class="modal-dialog">
-          <div class="modal-content">
-            <div class="modal-header">
-              <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
-              <h4 class="modal-title">Schedule Flow Options</h4>
-            </div><!-- /modal-header -->
-            <div class="modal-body">
-              <fieldset class="form-horizontal">
-                <div class="form-group">
-                  <label class="col-sm-2 control-label">Time</label>
-                  <div class="col-sm-7">
-                    <input type="text" id="timepicker" class="form-control">
+              <div class="form-group">
+                <div class="col-sm-6">
+                  <label class="col-sm-3 control-label" id="min_label">Min</label>
+                  <div class="col-sm-9">
+                    <input type="text" id="minute_input" value="0" class="form-control" oninput="updateOutput()">
                   </div>
-                  <div class="col-sm-3">
-                    <select id="timezone" class="form-control">
-                      <option>${timezone}</option>
-                      <option>UTC</option>
-                    </select>
+                  <br/> <br/> <br/>
+                  <label class="col-sm-3 control-label" id="hour_label">Hours</label>
+                  <div class="col-sm-9">
+                    <input type="text" id="hour_input" value="5,7-10" class="form-control"
+                           oninput="updateOutput()">
                   </div>
-                </div>
-                <div class="form-group">
-                  <label class="col-sm-2 control-label">Date</label>
-                  <div class="col-sm-10">
-                    <input type="text" id="datepicker" class="form-control">
+                  <br/> <br/> <br/>
+                  <label class="col-sm-3 control-label" id="dom_label">DOM</label>
+                  <div class="col-sm-9">
+                    <input type="text" id="dom_input" value="?" class="form-control"
+                           oninput="updateOutput()">
                   </div>
-                </div>
-                <div class="form-group">
-                  <label class="col-sm-2">Recurrence</label>
-                  <div class="col-sm-3">
-                    <div class="checkbox">
-                      <input id="is_recurring" type="checkbox" checked="checked">
-                      <label>repeat every</label>
-                    </div>
+                  <br/> <br/> <br/>
+                  <label class="col-sm-3 control-label" id="mon_label">Month</label>
+                  <div class="col-sm-9">
+                    <input type="text" id="month_input" value="*" class="form-control"
+                           oninput="updateOutput()">
                   </div>
-                  <div class="col-sm-2">
-                    <input id="period" type="text" size="2" value="1" class="form-control">
-                  </div>
-                  <div class="col-sm-3">
-                    <select id="period_units" class="form-control">
-                      <option value="d">Days</option>
-                      <option value="h">Hours</option>
-                      <option value="m">Minutes</option>
-                      <option value="M">Months</option>
-                      <option value="w">Weeks</option>
-                    </select>
+                  <br/> <br/> <br/>
+                  <label class="col-sm-3 control-label" id="dow_label">DOW</label>
+                  <div class="col-sm-9">
+                    <input type="text" id="dow_input" value="4-6" class="form-control"
+                           oninput="updateOutput()">
                   </div>
                 </div>
-              </fieldset>
-            </div>
-            <div class="modal-footer">
-              <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
-              <button type="button" class="btn btn-success" id="schedule-button">Schedule</button>
-            </div>
-          </div>
-        </div>
+
+                <div class="col-sm-5" style="background-color:#f5f5f5; border:1px solid #e3e3e3">
+                  <h4 style="color:orange">Special Characters:</h4>
+                  <table class="table table-striped" data-row-style="rowColors" id="instructions">
+                    <tbody>
+                    <tr class="success">
+                      <th scope="row">*</th>
+                      <td>any value</td>
+                    </tr>
+                    <tr class="primary">
+                      <th scope="row">,</th>
+                      <td>value list separators</td>
+                    </tr>
+                    <tr class="warning">
+                      <th scope="row">-</th>
+                      <td>range of values</td>
+                    </tr>
+                    <tr class="danger">
+                      <th scope="row">/</th>
+                      <td>step values</td>
+                    </tr>
+                    </tbody>
+                  </table>
+                  <p><u>Detailed instructions could be checked out <span style="color:Indigo"><a href="http://www.quartz-scheduler.org/documentation/quartz-2.x/tutorials/crontrigger.html">here</a></span>.</u></p>
+                </div>
+              </div>
+              <h3 id="cronTranslate" style="color:DeepSkyBlue; font-style:italic;"></h3>
+              <div class="col-sm-9 col-sm-offset-3">
+                <p class="text-right" id="translationWarning"> </p>
+              </div>
+        </fieldset>
       </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-success" id="schedule-button">Schedule</button>
+      </div>
+    </div>
+  </div>
+</div>

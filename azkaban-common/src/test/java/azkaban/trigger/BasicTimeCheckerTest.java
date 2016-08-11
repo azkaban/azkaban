@@ -33,7 +33,7 @@ import azkaban.trigger.builtin.BasicTimeChecker;
 public class BasicTimeCheckerTest {
 
   @Test
-  public void basicTimerTest() {
+  public void periodTimerTest() {
 
     Map<String, ConditionChecker> checkers =
         new HashMap<String, ConditionChecker>();
@@ -45,7 +45,7 @@ public class BasicTimeCheckerTest {
 
     BasicTimeChecker timeChecker =
         new BasicTimeChecker("BasicTimeChecket_1", now.getMillis(),
-            now.getZone(), true, true, period);
+            now.getZone(), true, true, period, null);
     checkers.put(timeChecker.getId(), timeChecker);
     String expr = timeChecker.getId() + ".eval()";
 
@@ -77,6 +77,29 @@ public class BasicTimeCheckerTest {
     }
 
     assertTrue(cond.isMet());
-
   }
+
+  @Test
+  public void cronTimerTest1() {
+
+    Map<String, ConditionChecker> checkers =
+        new HashMap<String, ConditionChecker>();
+
+    DateTime now = DateTime.now();
+    String cronExpression = "0 0 0 31 12 ? 2050";
+
+    BasicTimeChecker timeChecker =
+        new BasicTimeChecker("BasicTimeChecket_1", now.getMillis(),
+            now.getZone(), true, true, null, cronExpression);
+    System.out.println("getNextCheckTime = " + timeChecker.getNextCheckTime());
+
+    checkers.put(timeChecker.getId(), timeChecker);
+    String expr = timeChecker.getId() + ".eval()";
+    Condition cond = new Condition(checkers, expr);
+    // 2556086400000L represent for "2050-12-31T00:00:00.000-08:00"
+
+    DateTime year2050 = new DateTime(2050, 12, 31, 0 ,0 ,0 ,now.getZone());
+    assertTrue(cond.getNextCheckTime() == year2050.getMillis());
+  }
+
 }

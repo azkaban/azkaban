@@ -210,6 +210,7 @@ public class Schedule2Trigger {
         DateTimeZone timezone = DateTimeZone.forID(timezoneId);
         ReadablePeriod period =
             Utils.parsePeriodString(schedProps.getString("period"));
+        String cronExpression = schedProps.getString("cronExpression");
         // DateTime lastModifyTime = DateTime.now();
         long nextExecTimeLong = schedProps.getLong("nextExecTimeLong");
         // DateTime nextExecTime = new DateTime(nextExecTimeLong);
@@ -246,7 +247,7 @@ public class Schedule2Trigger {
             new azkaban.scheduler.Schedule(-1, projectId, projectName,
                 flowName, "ready", firstSchedTimeLong, timezone, period,
                 DateTime.now().getMillis(), nextExecTimeLong, submitTimeLong,
-                submitUser, executionOptions, slaOptions);
+                submitUser, executionOptions, slaOptions, cronExpression);
         Trigger t = scheduleToTrigger(schedule);
         logger.info("Ready to insert trigger " + t.getDescription());
         triggerLoader.addTrigger(t);
@@ -290,7 +291,7 @@ public class Schedule2Trigger {
     ConditionChecker checker =
         new BasicTimeChecker("BasicTimeChecker_1", s.getFirstSchedTime(),
             s.getTimezone(), s.isRecurring(), s.skipPastOccurrences(),
-            s.getPeriod());
+            s.getPeriod(), s.getCronExpression());
     checkers.put(checker.getId(), checker);
     String expr = checker.getId() + ".eval()";
     Condition cond = new Condition(checkers, expr);
@@ -305,7 +306,7 @@ public class Schedule2Trigger {
     ConditionChecker checker =
         new BasicTimeChecker("BasicTimeChecker_2", s.getFirstSchedTime(),
             s.getTimezone(), s.isRecurring(), s.skipPastOccurrences(),
-            s.getPeriod());
+            s.getPeriod(),s.getCronExpression());
     checkers.put(checker.getId(), checker);
     String expr = checker.getId() + ".eval()";
     Condition cond = new Condition(checkers, expr);

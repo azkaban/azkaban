@@ -204,7 +204,7 @@ public class ScheduleManager implements TriggerAgent {
     Schedule sched =
         new Schedule(scheduleId, projectId, projectName, flowName, status,
             firstSchedTime, timezone, period, lastModifyTime, nextExecTime,
-            submitTime, submitUser, execOptions, slaOptions);
+            submitTime, submitUser, execOptions, slaOptions, null);
     logger
         .info("Scheduling flow '" + sched.getScheduleName() + "' for "
             + _dateFormat.print(firstSchedTime) + " with a period of " + period == null ? "(non-recurring)"
@@ -214,6 +214,23 @@ public class ScheduleManager implements TriggerAgent {
     return sched;
   }
 
+  public Schedule cronScheduleFlow(final int scheduleId, final int projectId,
+      final String projectName, final String flowName, final String status,
+      final long firstSchedTime, final DateTimeZone timezone,
+      final long lastModifyTime,
+      final long nextExecTime, final long submitTime, final String submitUser,
+      ExecutionOptions execOptions, List<SlaOption> slaOptions, String cronExpression) {
+    Schedule sched =
+        new Schedule(scheduleId, projectId, projectName, flowName, status,
+            firstSchedTime, timezone, lastModifyTime, nextExecTime,
+            submitTime, submitUser, execOptions, slaOptions, cronExpression);
+    logger
+        .info("Scheduling flow '" + sched.getScheduleName() + "' for "
+            + _dateFormat.print(firstSchedTime) + " cron Expression = " + cronExpression);
+
+    insertSchedule(sched);
+    return sched;
+  }
   /**
    * Schedules the flow, but doesn't save the schedule afterwards.
    *
