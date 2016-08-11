@@ -114,6 +114,8 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
       ret = null;
     } else if (ajaxName.equals("scheduleFlow")) {
       ajaxScheduleFlow(req, ret, session.getUser());
+    } else if (ajaxName.equals("scheduleCronFlow")) {
+      ajaxScheduleCronFlow(req, ret, session.getUser());
     } else if (ajaxName.equals("fetchSchedule")) {
       ajaxFetchSchedule(req, ret, session.getUser());
     }
@@ -249,6 +251,7 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
         jsonObj.put("nextExecTime",
             utils.formatDateTime(schedule.getNextExecTime()));
         jsonObj.put("period", utils.formatPeriod(schedule.getPeriod()));
+        jsonObj.put("cronExpression", schedule.getCronExpression());
         jsonObj.put("executionOptions", schedule.getExecutionOptions());
         ret.put("schedule", jsonObj);
       }
@@ -384,6 +387,8 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
         String action = getParam(req, "action");
         if (action.equals("scheduleFlow")) {
           ajaxScheduleFlow(req, ret, session.getUser());
+        } else if (action.equals("scheduleCronFlow")) {
+          ajaxScheduleCronFlow(req, ret, session.getUser());
         } else if (action.equals("removeSched")) {
           ajaxRemoveSched(req, ret, session.getUser());
         }
@@ -684,6 +689,89 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
     ret.put("message", projectName + "." + flowName + " scheduled.");
   }
 
+  /**
+   *
+   * This method is in charge of doing cron scheduling.
+   * @throws ServletException
+   */
+  private void ajaxScheduleCronFlow(HttpServletRequest req,
+      HashMap<String, Object> ret, User user) throws ServletException {
+    String projectName = getParam(req, "projectName");
+    String flowName = getParam(req, "flow");
+
+    Project project = projectManager.getProject(projectName);
+
+    if (project == null) {
+      ret.put("message", "Project " + projectName + " does not exist");
+      ret.put("status", "error");
+      return;
+    }
+    int projectId = project.getId();
+
+    if (!hasPermission(project, user, Type.SCHEDULE)) {
+      ret.put("status", "error");
+      ret.put("message", "Permission denied. Cannot execute " + flowName);
+      return;
+    }
+
+    Flow flow = project.getFlow(flowName);
+    if (flow == null) {
+      ret.put("status", "error");
+      ret.put("message", "Flow " + flowName + " cannot be found in project "
+          + project);
+      return;
+    }
+
+    String cronTimezone = getParam(req, "cronTimezone");
+    DateTimeZone timezone = parseTimeZone(cronTimezone);
+
+    DateTime firstSchedTime = getPresentTimeByTimezone(timezone);
+    String cronExpression = null;
+
+    try {
+      if (hasParam(req, "cronExpression")) {
+        // everything in Azkaban functions is at the minute granularity, so we add 0 here
+        // to let the expression to be complete.
+        cronExpression = getParam(req, "cronExpression");
+        if(azkaban.utils.Utils.isCronExpressionValid(cronExpression) == false) {
+          ret.put("error", "This expression <" + cronExpression + "> can not be parsed to quartz cron.");
+          return;
+        }
+      }
+      if(cronExpression == null)
+        throw new Exception("Cron expression must exist.");
+    } catch (Exception e) {
+      ret.put("error", e.getMessage());
+    }
+
+    ExecutionOptions flowOptions = null;
+    try {
+      flowOptions = HttpRequestUtils.parseFlowOptions(req);
+      HttpRequestUtils.filterAdminOnlyFlowParams(userManager, flowOptions, user);
+    } catch (Exception e) {
+      ret.put("error", e.getMessage());
+    }
+
+    List<SlaOption> slaOptions = null;
+
+    // Because either cronExpression or recurrence exists, we build schedule in the below way.
+    Schedule schedule = scheduleManager.cronScheduleFlow(-1, projectId, projectName, flowName,
+            "ready", firstSchedTime.getMillis(), firstSchedTime.getZone(),
+            DateTime.now().getMillis(), firstSchedTime.getMillis(),
+            firstSchedTime.getMillis(), user.getUserId(), flowOptions,
+            slaOptions, cronExpression);
+
+    logger.info("User '" + user.getUserId() + "' has scheduled " + "["
+        + projectName + flowName + " (" + projectId + ")" + "].");
+    projectManager.postProjectEvent(project, EventType.SCHEDULE,
+        user.getUserId(), "Schedule " + schedule.toString()
+            + " has been added.");
+
+    ret.put("status", "success");
+    ret.put("scheduleId", schedule.getScheduleId());
+    ret.put("message", projectName + "." + flowName + " scheduled.");
+  }
+
   private DateTime parseDateTime(String scheduleDate, String scheduleTime) {
     // scheduleTime: 12,00,pm,PDT
     String[] parts = scheduleTime.split(",", -1);
@@ -712,5 +800,20 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
         day.withHourOfDay(hour).withMinuteOfHour(minutes).withSecondOfMinute(0);
 
     return firstSchedTime;
+  }
+
+  /**
+   * @param cronTimezone represents the timezone from remote API call
+   * @return if the string is equal to UTC, we return UTC; otherwise, we always return default timezone.
+   */
+  private DateTimeZone parseTimeZone(String cronTimezone) {
+    if(cronTimezone != null && cronTimezone.equals("UTC"))
+      return DateTimeZone.UTC;
+
+    return DateTimeZone.getDefault();
+  }
+
+  private DateTime getPresentTimeByTimezone(DateTimeZone timezone) {
+    return new DateTime(timezone);
   }
 }
