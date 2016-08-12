@@ -1330,7 +1330,7 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements
         + " INNER JOIN "
         + " active_executing_flows ax ON ex.exec_id = ax.exec_id"
         + " INNER JOIN "
-        + " executors et ON ex.executor_id = et.id";
+        + " executors et ON ex.exec_id = et.id";
 
     @Override
     public Map<Integer, Pair<ExecutionReference, ExecutableFlow>> handle(
