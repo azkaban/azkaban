@@ -5,3 +5,6 @@ CREATE TABLE active_executing_flows (
 	update_time BIGINT,
 	PRIMARY KEY (exec_id)
 );
+
+ALTER TABLE active_executing_flows DROP COLUMN host;
+ALTER TABLE active_executing_flows DROP COLUMN port;
