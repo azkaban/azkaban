@@ -56,6 +56,14 @@ azkaban.SchedulePanelView = Backbone.View.extend({
     scheduleData.is_recurring = is_recurring;
     scheduleData.cronExpression = "0 " + $('#cron-output').val();
 
+    var cron1 = later.parse.cron('15 2 ? * *');
+    var d = new Date("3/9/2017 1:15:47");
+    var occurrences = later.schedule(cron1).next(10, d);
+
+    for(var i = 0; i < 10; i++) {
+      console.log(occurrences[i]);
+    }
+
     console.log("current Time = " + scheduleDate + "  " + scheduleTime );
     console.log("cronExpression = " +  scheduleData.cronExpression);
 
@@ -198,6 +206,19 @@ function updateOutput() {
 }
 
 function updateExpression() {
-  $(cron_translate_id).text( "\"" + prettyCron.toString( transformFromCronToQuartz($(cron_output_id).val())) + "\"");
+  $(cron_translate_id).text( "\"" + prettyCron.toString( transformFromCronToQuartz($(cron_output_id).val())) + " (UTC)\"");
   $(cron_translate_warning_id).html( " <small>***The execution plan translation has limitations. Please check the <a href=\"http://www.quartz-scheduler.org/documentation/quartz-2.x/tutorials/crontrigger.html\">Quartz-Cron syntax</a> when in doubt.***</small>" );
+
+  var newLi = $('<li>' + 'newTask' + '</li>');
+  $('#nextRecurId').html("");
+
+  console.log("current cron = " + $(cron_output_id).val());
+  var cron1 = later.parse.cron($(cron_output_id).val());
+  var occurrences = later.schedule(cron1).next(10);
+
+  for(var i = 9; i >= 0; i--) {
+    var nextTime = $('<li style="color:DarkGreen">' + occurrences[i] + '</li>');
+    $('#nextRecurId').prepend(nextTime);
+  }
+
 }
