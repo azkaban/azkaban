@@ -335,7 +335,6 @@ public abstract class AbstractAzkabanServlet extends HttpServlet {
     page.add("switchToPanelPage", switchToPanelPage);
     page.add("utils", utils);
     page.add("timezone", ZONE_FORMATTER.print(System.currentTimeMillis()));
-    System.out.println("{{{{{{timezone = " + ZONE_FORMATTER.print(System.currentTimeMillis()));;
     page.add("currentTime", (new DateTime()).getMillis());
     if (session != null && session.getUser() != null) {
       page.add("user_id", session.getUser().getUserId());
@@ -386,8 +385,6 @@ public abstract class AbstractAzkabanServlet extends HttpServlet {
     page.add("azkaban_color", color);
     page.add("switchToPanelPage", switchToPanelPage);
     page.add("timezone", ZONE_FORMATTER.print(System.currentTimeMillis()));
-    System.out.println("{{{{{{timezone = " + ZONE_FORMATTER.print(System.currentTimeMillis()));;
-
     page.add("currentTime", (new DateTime()).getMillis());
     page.add("context", req.getContextPath());
 

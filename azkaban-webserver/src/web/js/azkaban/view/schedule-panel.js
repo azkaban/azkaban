@@ -81,6 +81,10 @@ $(function() {
     el: $('#schedule-modal')
   });
 
+
+  var TimeZoneOffset = new Date().toString().match(/([-\+][0-9]+)\s/)[1];
+  $('#timeZoneOffset').html(TimeZoneOffset);
+
   updateOutput();
   $("#clearCron").click(function () {
     $('#cron-output').val("* * * * ?");
@@ -208,12 +212,13 @@ function updateExpression() {
   var cron1 = later.parse.cron($(cron_output_id).val());
   var occurrences = later.schedule(cron1).next(10);
 
+  //The following component below displays a list of next 10 triggering timestamp.
   for(var i = 9; i >= 0; i--) {
     var strTime = JSON.stringify(occurrences[i]);
     var momentObj = moment.parseZone(strTime.substring(1, strTime.length-6) + "z");
-    var finalMomentObj = momentObj.tz("PDT").format("LLLL");
-    var nextTime = '<li style="color:DarkGreen">' + finalMomentObj + '  <b style="color:Indigo">(PDT)</b>' + '</li>';
+    var currentTimezone = new Date().toString().match(/\(([A-Za-z\s].*)\)/)[1];
+    var finalMomentObj = momentObj.tz(currentTimezone).format("LLLL");
+    var nextTime = '<li style="color:DarkGreen">' + finalMomentObj + '   <b style="color:Indigo">  (' + currentTimezone + ')</b>' + '</li>';
     $('#nextRecurId').prepend(nextTime);
   }
-
 }
