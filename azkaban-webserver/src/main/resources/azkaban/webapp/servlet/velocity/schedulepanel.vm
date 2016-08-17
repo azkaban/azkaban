@@ -30,19 +30,19 @@
     <div class="modal-content">
       <div class="modal-header">
         <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
-        <h4 class="modal-title">Schedule Flow Options</h4>
+        <h4 class="modal-title">Schedule Flow Options (Only UTC is supported)</h4>
       </div><!-- /modal-header -->
       <div class="modal-body">
         <fieldset class="form-horizontal">
           <div class="form-group">
             <div class="col-xs-12" style="height:25px;"></div>
-            <div class="col-sm-offset-2 col-sm-5">
+            <div class="col-sm-offset-1 col-sm-4">
               <div class="input-box">
                 <input type="text" id="cron-output" value="0 5,7-10 ? * 4-6" oninput = "updateExpression()" class="form-control">
                 <span class="unit">0</span>
               </div>
             </div>
-            <button type="button" class="btn btn-warning" id="clearCron">Reset</button>
+            <button type="button" class="col-sm-offset-1 btn btn-warning" id="clearCron">Reset</button>
             <br/>
             <div class="col-xs-12" style="height:20px;"></div>
 
@@ -105,6 +105,9 @@
             </div>
 
             <div class="col-sm-12" style="background-color:#f5f5f5; border:1px solid #e3e3e3">
+              <h4>
+                next 10 triggering timestamp:
+              </h4>
               <ul id="nextRecurId">
               </ul>
             </div>

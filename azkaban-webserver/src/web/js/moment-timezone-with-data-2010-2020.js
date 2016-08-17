@@ -22,12 +22,12 @@
 	if (moment.tz !== undefined) { return moment; }
 
 	var VERSION = "0.1.0",
-		zones = {},
-		links = {};
+			zones = {},
+			links = {};
 
 	/************************************
-		Unpacking
-	************************************/
+	 Unpacking
+	 ************************************/
 
 	function charCodeToInt(charCode) {
 		if (charCode > 96) {
@@ -40,13 +40,13 @@
 
 	function unpackBase60(string) {
 		var i = 0,
-			parts = string.split('.'),
-			whole = parts[0],
-			fractional = parts[1] || '',
-			multiplier = 1,
-			num,
-			out = 0,
-			sign = 1;
+				parts = string.split('.'),
+				whole = parts[0],
+				fractional = parts[1] || '',
+				multiplier = 1,
+				num,
+				out = 0,
+				sign = 1;
 
 		// handle negative numbers
 		if (string.charCodeAt(0) === 45) {
@@ -96,9 +96,9 @@
 
 	function unpack (string) {
 		var data = string.split('|'),
-			offsets = data[2].split(' '),
-			indices = data[3].split(''),
-			untils  = data[4].split(' ');
+				offsets = data[2].split(' '),
+				indices = data[3].split(''),
+				untils  = data[4].split(' ');
 
 		arrayToInt(offsets);
 		arrayToInt(indices);
@@ -115,8 +115,8 @@
 	}
 
 	/************************************
-		Zone object
-	************************************/
+	 Zone object
+	 ************************************/
 
 	function Zone (packedString) {
 		var unpacked = unpack(packedString);
@@ -129,8 +129,8 @@
 	Zone.prototype = {
 		_index : function (timestamp) {
 			var target = +timestamp,
-				untils = this.untils,
-				i;
+					untils = this.untils,
+					i;
 
 			for (i = 0; i < untils.length; i++) {
 				if (target < untils[i]) {
@@ -141,9 +141,9 @@
 
 		parse : function (timestamp) {
 			var target  = +timestamp,
-				offsets = this.offsets,
-				untils  = this.untils,
-				i;
+					offsets = this.offsets,
+					untils  = this.untils,
+					i;
 
 			for (i = 0; i < untils.length; i++) {
 				if (target < untils[i] - (offsets[i] * 60000)) {
@@ -162,8 +162,8 @@
 	};
 
 	/************************************
-		Global Methods
-	************************************/
+	 Global Methods
+	 ************************************/
 
 	function normalizeName (name) {
 		return (name || '').toLowerCase().replace(/\//g, '_');
@@ -240,14 +240,14 @@
 	}
 
 	/************************************
-		moment.tz namespace
-	************************************/
+	 moment.tz namespace
+	 ************************************/
 
 	function tz () {
 		var args = Array.prototype.slice.call(arguments, 0, -1),
-			name = arguments[arguments.length - 1],
-			zone = getZone(name),
-			out  = moment.utc.apply(null, args);
+				name = arguments[arguments.length - 1],
+				zone = getZone(name),
+				out  = moment.utc.apply(null, args);
 
 		if (zone && needsOffset(out)) {
 			out.add('minutes', zone.parse(out));
@@ -274,8 +274,8 @@
 	tz.needsOffset  = needsOffset;
 
 	/************************************
-		Interface with Moment.js
-	************************************/
+	 Interface with Moment.js
+	 ************************************/
 
 	var fn = moment.fn;
 
@@ -693,6 +693,7 @@
 			"America/Atikokan|America/Jamaica",
 			"America/Atikokan|America/Panama",
 			"America/Atikokan|EST",
+			"America/Atikokan|EDT",
 			"America/Atikokan|Jamaica",
 			"America/Belem|America/Fortaleza",
 			"America/Belem|America/Maceio",
@@ -719,6 +720,8 @@
 			"America/Boise|America/Yellowknife",
 			"America/Boise|Canada/Mountain",
 			"America/Boise|MST7MDT",
+			"America/Boise|MDT",
+			"America/Boise|MST",
 			"America/Boise|Navajo",
 			"America/Boise|US/Mountain",
 			"America/Campo_Grande|America/Cuiaba",
@@ -741,6 +744,8 @@
 			"America/Chicago|Canada/Central",
 			"America/Chicago|US/Central",
 			"America/Chicago|US/Indiana-Starke",
+			"America/Chicago|CDT",
+			"America/Chicago|CST",
 			"America/Chihuahua|America/Mazatlan",
 			"America/Chihuahua|Mexico/BajaSur",
 			"America/Creston|America/Dawson_Creek",
@@ -750,6 +755,8 @@
 			"America/Creston|US/Arizona",
 			"America/Dawson|America/Ensenada",
 			"America/Dawson|America/Los_Angeles",
+			"America/Dawson|PDT",
+			"America/Dawson|PST",
 			"America/Dawson|America/Tijuana",
 			"America/Dawson|America/Vancouver",
 			"America/Dawson|America/Whitehorse",

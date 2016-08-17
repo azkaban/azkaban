@@ -37,7 +37,6 @@ azkaban.SchedulePanelView = Backbone.View.extend({
   },
 
   scheduleFlow: function() {
-    var timezoneVal = timezone;
     var scheduleURL = contextURL + "/schedule"
     var scheduleData = flowExecuteDialogView.getExecutionOptionData();
 
@@ -45,7 +44,7 @@ azkaban.SchedulePanelView = Backbone.View.extend({
 
     var currentMomentTime = moment();
 
-    var scheduleTime = currentMomentTime.tz(timezoneVal).format('h,mm,A,')+timezoneVal;
+    var scheduleTime = currentMomentTime.utc().format('h,mm,A,')+"UTC";
     var scheduleDate = currentMomentTime.format('MM/DD/YYYY');
     var is_recurring = 'on';
 
@@ -56,13 +55,6 @@ azkaban.SchedulePanelView = Backbone.View.extend({
     scheduleData.is_recurring = is_recurring;
     scheduleData.cronExpression = "0 " + $('#cron-output').val();
 
-    var cron1 = later.parse.cron('15 2 ? * *');
-    var d = new Date("3/9/2017 1:15:47");
-    var occurrences = later.schedule(cron1).next(10, d);
-
-    for(var i = 0; i < 10; i++) {
-      console.log(occurrences[i]);
-    }
 
     console.log("current Time = " + scheduleDate + "  " + scheduleTime );
     console.log("cronExpression = " +  scheduleData.cronExpression);
@@ -217,7 +209,10 @@ function updateExpression() {
   var occurrences = later.schedule(cron1).next(10);
 
   for(var i = 9; i >= 0; i--) {
-    var nextTime = $('<li style="color:DarkGreen">' + occurrences[i] + '</li>');
+    var strTime = JSON.stringify(occurrences[i]);
+    var momentObj = moment.parseZone(strTime.substring(1, strTime.length-6) + "z");
+    var finalMomentObj = momentObj.tz("PDT").format("LLLL");
+    var nextTime = '<li style="color:DarkGreen">' + finalMomentObj + '  <b style="color:Indigo">(PDT)</b>' + '</li>';
     $('#nextRecurId').prepend(nextTime);
   }
 
