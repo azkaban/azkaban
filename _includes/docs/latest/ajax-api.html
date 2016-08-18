@@ -1105,8 +1105,6 @@ This API call schedules a flow.
 
 </pre>
 
-
-
 An example success response:
 <pre class="code">
 {
@@ -1127,6 +1125,90 @@ An example failure response for invalid schedule period:
   "message" : "PROJECT_NAME.FLOW_NAME scheduled.",
   "error" : "Invalid schedule period unit 'A",
   "status" : "success"
+}
+</pre>
+
+<h3 id="api-schedule-a-flow">Flexible scheduling using cron (will be live soon)</h3>
+
+<p>
+This API call schedules a flow by a cron Expression. cron is a UNIX tool that has been around for a long time, and we use <a href="http://www.quartz-scheduler.org/">Quartz library</a> to parse cron Expression.
+</p>
+<ul class="list-unstyled">
+  <li>
+    <strong>Method:</strong> POST
+  </li>
+  <li>
+    <strong>Request URL:</strong> /schedule?ajax=scheduleCronFlow
+  </li>
+  <li>
+    <strong>Parameter Location:</strong> Request Query String
+  </li>
+</ul>
+
+<h5><strong>Request Parameters</strong></h5>
+
+<table class="table table-striped table-condensed table-bordered">
+  <thead>
+    <tr>
+      <th>Parameter</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>session.id</td>
+      <td>The user session id.</td>
+    </tr>
+    <tr>
+      <td>ajax=scheduleFlow</td>
+      <td>The fixed parameter indicating the action is to use cron to schedule a flow.</td>
+    </tr>
+    <tr>
+      <td>projectName</td>
+      <td>The name of the project.</td>
+    </tr>
+    <tr>
+      <td>flowName</td>
+      <td>The name of the flow.</td>
+    </tr>
+    <tr>
+      <td>cronExpression</td>
+      <td>A CRON expression is a string comprising five or six fields separated by white space[8] that represents a set of times. In azkaban, we use <a href="http://www.quartz-scheduler.org/documentation/quartz-2.x/tutorials/crontrigger.html"> Quartz Cron Format</a>.</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>Here's a curl command sample:</p>
+
+<pre class="code">
+curl -k https://HOST:PORT/schedule -d "ajax=scheduleFlow&projectName=PROJECT_NAME&flow=FLOW_NAME&cronExpression=0 * 5,7-10 ? * 4-6" -b azkaban.browser.session.id=SESSION_ID
+</pre>
+
+An example success response:
+<pre class="code">
+{
+  "message" : "PROJECT_NAME.FLOW_NAME scheduled.",
+  "status" : "success"
+}
+</pre>
+An example failure response:
+<pre class="code">
+{
+  "message" : "Cron expression must exist.",
+  "status" : "error"
+}
+</pre>
+<pre class="code">
+{
+  "message" : "Permission denied. Cannot execute FLOW_NAME",
+  "status" : "error"
+}
+</pre>
+An example failure response for invalid cron expression:
+<pre class="code">
+{
+  "message" : "This expression <*****> can not be parsed to quartz cron.",
+  "status" : "error"
 }
 </pre>
 
