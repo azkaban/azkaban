@@ -114,6 +114,8 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
       ret = null;
     } else if (ajaxName.equals("scheduleFlow")) {
       ajaxScheduleFlow(req, ret, session.getUser());
+    } else if (ajaxName.equals("scheduleCronFlow")) {
+      ajaxScheduleCronFlow(req, ret, session.getUser());
     } else if (ajaxName.equals("fetchSchedule")) {
       ajaxFetchSchedule(req, ret, session.getUser());
     }
@@ -385,6 +387,8 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
         String action = getParam(req, "action");
         if (action.equals("scheduleFlow")) {
           ajaxScheduleFlow(req, ret, session.getUser());
+        } else if (action.equals("scheduleCronFlow")) {
+          ajaxScheduleCronFlow(req, ret, session.getUser());
         } else if (action.equals("removeSched")) {
           ajaxRemoveSched(req, ret, session.getUser());
         }
@@ -649,25 +653,10 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
     }
 
     ReadablePeriod thePeriod = null;
-    String cronExpression = null;
-
     try {
       if (hasParam(req, "is_recurring")
           && getParam(req, "is_recurring").equals("on")) {
-        if (hasParam(req, "period")) {
-          thePeriod = Schedule.parsePeriodString(getParam(req, "period"));
-        }
-        if (hasParam(req, "cronExpression")) {
-          // everything in Azkaban functions is at the minute granularity, so we add 0 here
-          // to let the expression to be complete.
-          cronExpression = getParam(req, "cronExpression");
-          if(azkaban.utils.Utils.isCronExpressionValid(cronExpression) == false) {
-            ret.put("error", "This expression <" + cronExpression + "> can not be parsed to quartz cron.");
-            return;
-          }
-        }
-        if(thePeriod != null && cronExpression !=null)
-          throw new Exception("Period and Cron expression can not exist simultaneously.");
+        thePeriod = Schedule.parsePeriodString(getParam(req, "period"));
       }
     } catch (Exception e) {
       ret.put("error", e.getMessage());
@@ -683,18 +672,92 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
 
     List<SlaOption> slaOptions = null;
 
-    // Because either cronExpression or recurrence exists, we build schedule in the below way.
-    Schedule schedule = cronExpression == null ?
+    Schedule schedule =
         scheduleManager.scheduleFlow(-1, projectId, projectName, flowName,
             "ready", firstSchedTime.getMillis(), firstSchedTime.getZone(),
             thePeriod, DateTime.now().getMillis(), firstSchedTime.getMillis(),
             firstSchedTime.getMillis(), user.getUserId(), flowOptions,
-            slaOptions)
-        : scheduleManager.cronScheduleFlow(-1, projectId, projectName, flowName,
+            slaOptions);
+    logger.info("User '" + user.getUserId() + "' has scheduled " + "["
+        + projectName + flowName + " (" + projectId + ")" + "].");
+    projectManager.postProjectEvent(project, EventType.SCHEDULE,
+        user.getUserId(), "Schedule " + schedule.toString()
+            + " has been added.");
+
+    ret.put("status", "success");
+    ret.put("scheduleId", schedule.getScheduleId());
+    ret.put("message", projectName + "." + flowName + " scheduled.");
+  }
+
+  /**
+   *
+   * This method is in charge of doing cron scheduling.
+   * @throws ServletException
+   */
+  private void ajaxScheduleCronFlow(HttpServletRequest req,
+      HashMap<String, Object> ret, User user) throws ServletException {
+    String projectName = getParam(req, "projectName");
+    String flowName = getParam(req, "flow");
+
+    Project project = projectManager.getProject(projectName);
+
+    if (project == null) {
+      ret.put("message", "Project " + projectName + " does not exist");
+      ret.put("status", "error");
+      return;
+    }
+    int projectId = project.getId();
+
+    if (!hasPermission(project, user, Type.SCHEDULE)) {
+      ret.put("status", "error");
+      ret.put("message", "Permission denied. Cannot execute " + flowName);
+      return;
+    }
+
+    Flow flow = project.getFlow(flowName);
+    if (flow == null) {
+      ret.put("status", "error");
+      ret.put("message", "Flow " + flowName + " cannot be found in project "
+          + project);
+      return;
+    }
+
+    DateTime firstSchedTime = getPresentUTCTime();
+    String cronExpression = null;
+
+    try {
+      if (hasParam(req, "cronExpression")) {
+        // everything in Azkaban functions is at the minute granularity, so we add 0 here
+        // to let the expression to be complete.
+        cronExpression = getParam(req, "cronExpression");
+        if(azkaban.utils.Utils.isCronExpressionValid(cronExpression) == false) {
+          ret.put("error", "This expression <" + cronExpression + "> can not be parsed to quartz cron.");
+          return;
+        }
+      }
+      if(cronExpression == null)
+        throw new Exception("Cron expression must exist.");
+    } catch (Exception e) {
+      ret.put("error", e.getMessage());
+    }
+
+    ExecutionOptions flowOptions = null;
+    try {
+      flowOptions = HttpRequestUtils.parseFlowOptions(req);
+      HttpRequestUtils.filterAdminOnlyFlowParams(userManager, flowOptions, user);
+    } catch (Exception e) {
+      ret.put("error", e.getMessage());
+    }
+
+    List<SlaOption> slaOptions = null;
+
+    // Because either cronExpression or recurrence exists, we build schedule in the below way.
+    Schedule schedule = scheduleManager.cronScheduleFlow(-1, projectId, projectName, flowName,
             "ready", firstSchedTime.getMillis(), firstSchedTime.getZone(),
             DateTime.now().getMillis(), firstSchedTime.getMillis(),
             firstSchedTime.getMillis(), user.getUserId(), flowOptions,
             slaOptions, cronExpression);
+
     logger.info("User '" + user.getUserId() + "' has scheduled " + "["
         + projectName + flowName + " (" + projectId + ")" + "].");
     projectManager.postProjectEvent(project, EventType.SCHEDULE,
@@ -734,5 +797,9 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
         day.withHourOfDay(hour).withMinuteOfHour(minutes).withSecondOfMinute(0);
 
     return firstSchedTime;
+  }
+
+  private DateTime getPresentUTCTime() {
+    return new DateTime(DateTimeZone.UTC);
   }
 }

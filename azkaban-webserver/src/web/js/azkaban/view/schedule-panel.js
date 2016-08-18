@@ -43,18 +43,12 @@ azkaban.SchedulePanelView = Backbone.View.extend({
     console.log("Creating schedule for " + projectName + "." + scheduleData.flow);
 
     var currentMomentTime = moment();
-
     var scheduleTime = currentMomentTime.utc().format('h,mm,A,')+"UTC";
     var scheduleDate = currentMomentTime.format('MM/DD/YYYY');
-    var is_recurring = 'on';
 
-    scheduleData.ajax = "scheduleFlow";
+    scheduleData.ajax = "scheduleCronFlow";
     scheduleData.projectName = projectName;
-    scheduleData.scheduleTime = scheduleTime;
-    scheduleData.scheduleDate = scheduleDate;
-    scheduleData.is_recurring = is_recurring;
     scheduleData.cronExpression = "0 " + $('#cron-output').val();
-
 
     console.log("current Time = " + scheduleDate + "  " + scheduleTime );
     console.log("cronExpression = " +  scheduleData.cronExpression);
@@ -96,6 +90,7 @@ $(function() {
     $("#dow_input").val("?");
     $(cron_translate_id).text("")
     $(cron_translate_warning_id).text("")
+    $('#nextRecurId').html("");
 
     while ($("#instructions tbody tr:last").index() >= 4) {
       $("#instructions tbody tr:last").remove();
