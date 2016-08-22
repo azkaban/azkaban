@@ -222,7 +222,7 @@ public class ScheduleManager implements TriggerAgent {
       ExecutionOptions execOptions, List<SlaOption> slaOptions, String cronExpression) {
     Schedule sched =
         new Schedule(scheduleId, projectId, projectName, flowName, status,
-            firstSchedTime, timezone, lastModifyTime, nextExecTime,
+            firstSchedTime, timezone, null, lastModifyTime, nextExecTime,
             submitTime, submitUser, execOptions, slaOptions, cronExpression);
     logger
         .info("Scheduling flow '" + sched.getScheduleName() + "' for "

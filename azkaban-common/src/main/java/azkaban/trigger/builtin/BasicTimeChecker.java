@@ -16,11 +16,9 @@
 
 package azkaban.trigger.builtin;
 
-import java.text.ParseException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Date;
-import java.util.TimeZone;
 
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
@@ -60,7 +58,7 @@ public class BasicTimeChecker implements ConditionChecker {
     this.period = period;
     this.nextCheckTime = firstCheckTime;
     this.cronExpression = cronExpression;
-    parseCronExpression();
+    cronExecutionTime = Utils.parseCronExpression(cronExpression, timezone);
     this.nextCheckTime = calculateNextCheckTime();
   }
 
@@ -87,19 +85,9 @@ public class BasicTimeChecker implements ConditionChecker {
   public long getNextCheckTime() {
     return nextCheckTime;
   }
+
   public String getCronExpression() {
     return cronExpression;
-  }
-
-  private void parseCronExpression() {
-    if (cronExpression != null && timezone != null) {
-      try {
-        cronExecutionTime = new CronExpression(cronExpression);
-        cronExecutionTime.setTimeZone(TimeZone.getTimeZone(timezone.getID()));
-      } catch (ParseException pe) {
-        logger.error("This expression " + cronExpression + " can not be parsed to quartz cron.");
-      }
-    }
   }
 
   public BasicTimeChecker(String id, long firstCheckTime,
@@ -113,7 +101,7 @@ public class BasicTimeChecker implements ConditionChecker {
     this.skipPastChecks = skipPastChecks;
     this.period = period;
     this.cronExpression = cronExpression;
-    parseCronExpression();
+    cronExecutionTime = Utils.parseCronExpression(cronExpression, timezone);
   }
 
   @Override

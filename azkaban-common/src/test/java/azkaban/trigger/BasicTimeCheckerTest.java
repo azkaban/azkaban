@@ -20,6 +20,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
 import org.joda.time.ReadablePeriod;
 
 import org.junit.Test;
@@ -79,6 +80,9 @@ public class BasicTimeCheckerTest {
     assertTrue(cond.isMet());
   }
 
+  /**
+   * Test Base Cron Functionality.
+   */
   @Test
   public void cronTimerTest1() {
 
@@ -102,4 +106,55 @@ public class BasicTimeCheckerTest {
     assertTrue(cond.getNextCheckTime() == year2050.getMillis());
   }
 
+  /**
+   * Test when PST-->PDT happens in 2020.
+   */
+  @Test
+  public void cronTimerTest2() {
+
+    Map<String, ConditionChecker> checkers =
+        new HashMap<String, ConditionChecker>();
+
+    DateTime now = DateTime.now();
+    String cronExpression = "0 30 2 8 3 ? 2020";
+
+    BasicTimeChecker timeChecker =
+        new BasicTimeChecker("BasicTimeChecket_1", now.getMillis(),
+            DateTimeZone.UTC, true, true, null, cronExpression);
+    System.out.println("getNextCheckTime = " + timeChecker.getNextCheckTime());
+
+    checkers.put(timeChecker.getId(), timeChecker);
+    String expr = timeChecker.getId() + ".eval()";
+    Condition cond = new Condition(checkers, expr);
+
+    DateTime spring2020 = new DateTime(2020, 3, 8, 2, 30 ,0 , DateTimeZone.UTC);
+    assertTrue(cond.getNextCheckTime() == spring2020.getMillis());
+  }
+
+
+
+  /**
+   * Test when PDT-->PST happens in 2020.
+   */
+  @Test
+  public void cronTimerTest3() {
+
+    Map<String, ConditionChecker> checkers =
+        new HashMap<String, ConditionChecker>();
+
+    DateTime now = DateTime.now();
+    String cronExpression = "0 30 1 1 11 ? 2020";
+
+    BasicTimeChecker timeChecker =
+        new BasicTimeChecker("BasicTimeChecket_1", now.getMillis(),
+            DateTimeZone.UTC, true, true, null, cronExpression);
+    System.out.println("getNextCheckTime = " + timeChecker.getNextCheckTime());
+
+    checkers.put(timeChecker.getId(), timeChecker);
+    String expr = timeChecker.getId() + ".eval()";
+    Condition cond = new Condition(checkers, expr);
+
+    DateTime winter2020 = new DateTime(2020, 11, 1, 1, 30, 0, DateTimeZone.UTC);
+    assertTrue(cond.getNextCheckTime() == winter2020.getMillis());
+  }
 }

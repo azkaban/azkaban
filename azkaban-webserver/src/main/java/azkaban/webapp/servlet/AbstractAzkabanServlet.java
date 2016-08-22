@@ -71,6 +71,11 @@ public abstract class AbstractAzkabanServlet extends HttpServlet {
   private String name;
   private String label;
   private String color;
+
+  /*
+   * The variable switchToPanelPage is in charge of switching on retired schedulePanelDeprecated.vm (old UI)
+   * or the new schedulePanel.vm (new UI). We can configure it in conf for this binary change.
+   */
   private String switchToPanelPage;
 
   private List<ViewerPlugin> viewerPlugins;

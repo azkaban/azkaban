@@ -16,12 +16,16 @@
 
 package azkaban.scheduler;
 
+import azkaban.executor.ExecutionOptions;
+import azkaban.sla.SlaOption;
+import azkaban.utils.Pair;
 import azkaban.utils.Utils;
+
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Date;
 
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
@@ -33,11 +37,6 @@ import org.joda.time.Months;
 import org.joda.time.ReadablePeriod;
 import org.joda.time.Seconds;
 import org.joda.time.Weeks;
-
-import azkaban.executor.ExecutionOptions;
-import azkaban.sla.SlaOption;
-import azkaban.utils.Pair;
-
 import org.quartz.CronExpression;
 
 public class Schedule {
@@ -95,30 +94,6 @@ public class Schedule {
     this.timezone = timezone;
     this.lastModifyTime = lastModifyTime;
     this.period = period;
-    this.nextExecTime = nextExecTime;
-    this.submitUser = submitUser;
-    this.status = status;
-    this.submitTime = submitTime;
-    this.executionOptions = executionOptions;
-    this.slaOptions = slaOptions;
-    this.cronExpression = cronExpression;
-  }
-
-  /**
-   * Constructor for Cron Scheduler
-   */
-  public Schedule(int scheduleId, int projectId, String projectName,
-      String flowName, String status, long firstSchedTime,
-      DateTimeZone timezone, long lastModifyTime,
-      long nextExecTime, long submitTime, String submitUser,
-      ExecutionOptions executionOptions, List<SlaOption> slaOptions, String cronExpression) {
-    this.scheduleId = scheduleId;
-    this.projectId = projectId;
-    this.projectName = projectName;
-    this.flowName = flowName;
-    this.firstSchedTime = firstSchedTime;
-    this.timezone = timezone;
-    this.lastModifyTime = lastModifyTime;
     this.nextExecTime = nextExecTime;
     this.submitUser = submitUser;
     this.status = status;
@@ -221,10 +196,6 @@ public class Schedule {
     return cronExpression;
   }
 
-  public void setCronExpression(String cronExpression) {
-    this.cronExpression = cronExpression;
-  }
-
   public boolean updateTime() {
     if (new DateTime(nextExecTime).isAfterNow()) {
       return true;
@@ -273,26 +244,20 @@ public class Schedule {
     return date;
   }
 
+  /**
+   *
+   * @param scheduleTime represents the time when Schedule Servlet receives the Cron Schedule API calling.
+   * @param timezone is always UTC (after 3.1.0)
+   * @param ce
+   * @return the First Scheduled DateTime to run this flow.
+   */
   private DateTime getNextCronRuntime(long scheduleTime, DateTimeZone timezone,
       CronExpression ce) {
-    Date now = new DateTime().toDate();
+
     Date date = new DateTime(scheduleTime).withZone(timezone).toDate();
-    int count = 0;
-    while (now.compareTo(date) >= 0) {
-      if (count > 100000) {
-        throw new IllegalStateException(
-            "100000 increments of period did not get to present time.");
-      }
-
-      if (ce == null) {
-        break;
-      } else {
-        date = ce.getNextValidTimeAfter(date);
-      }
-
-      count += 1;
+    if (ce != null) {
+      date = ce.getNextValidTimeAfter(date);
     }
-
     return new DateTime(date);
   }
 

@@ -470,6 +470,10 @@ public class Utils {
   /**
    * @param cronExpression: A cron expression is a string separated by white space, to provide a parser and evaluator for Quartz cron expressions.
    * @return : org.quartz.CronExpression object.
+   *
+   * TODO: Currently, we have to transform Joda Timezone to Java Timezone due to CronExpression.
+   *       Since Java8 enhanced Time functionalities, We consider transform all Jodatime to Java Time in future.
+   *
    */
   public static CronExpression parseCronExpression(String cronExpression, DateTimeZone timezone) {
     if (cronExpression != null) {
