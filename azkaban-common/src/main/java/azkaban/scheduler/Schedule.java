@@ -246,7 +246,7 @@ public class Schedule {
 
   /**
    *
-   * @param scheduleTime represents the time when Schedule Servlet receives the Cron Schedule API calling.
+   * @param scheduleTime represents the time when Schedule Servlet receives the Cron Schedule API call.
    * @param timezone is always UTC (after 3.1.0)
    * @param ce
    * @return the First Scheduled DateTime to run this flow.

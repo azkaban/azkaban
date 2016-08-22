@@ -107,16 +107,18 @@ public class BasicTimeCheckerTest {
   }
 
   /**
-   * Test when PST-->PDT happens in 2020.
+   * Test when PST-->PDT happens in 2020. -8:00 -> -7:00
+   * See details why confusion happens during this change: https://en.wikipedia.org/wiki/Pacific_Time_Zone
    */
   @Test
-  public void cronTimerTest2() {
+  public void cronDayLightChangeTestSucceed() {
 
     Map<String, ConditionChecker> checkers =
         new HashMap<String, ConditionChecker>();
 
     DateTime now = DateTime.now();
-    String cronExpression = "0 30 2 8 3 ? 2020";
+    // 10:30 UTC == 2:30 PST
+    String cronExpression = "0 30 10 8 3 ? 2020";
 
     BasicTimeChecker timeChecker =
         new BasicTimeChecker("BasicTimeChecket_1", now.getMillis(),
@@ -127,23 +129,46 @@ public class BasicTimeCheckerTest {
     String expr = timeChecker.getId() + ".eval()";
     Condition cond = new Condition(checkers, expr);
 
-    DateTime spring2020 = new DateTime(2020, 3, 8, 2, 30 ,0 , DateTimeZone.UTC);
+    DateTime spring2020 = new DateTime(2020, 3, 8, 10, 30, 0, DateTimeZone.UTC);
     assertTrue(cond.getNextCheckTime() == spring2020.getMillis());
   }
 
-
-
   /**
-   * Test when PDT-->PST happens in 2020.
+   * Test when PST-->PDT happens in 2020. -8:00 -> -7:00
+   * See details why confusion happens during this change: https://en.wikipedia.org/wiki/Pacific_Time_Zone
+   *
+   * This test demonstrates that 2:30 AM will not happen on Cron settings under PDT/PST.
    */
-  @Test
-  public void cronTimerTest3() {
+  @Test(expected=IllegalStateException.class)
+  public void cronDayLightChangeTestFailure() {
 
     Map<String, ConditionChecker> checkers =
         new HashMap<String, ConditionChecker>();
 
     DateTime now = DateTime.now();
-    String cronExpression = "0 30 1 1 11 ? 2020";
+
+    String cronExpression = "0 30 2 8 3 ? 2020";
+
+    // Since no 2:30 PST in March 8th in that day, IllegalStateException will always throw.
+    BasicTimeChecker timeChecker =
+        new BasicTimeChecker("BasicTimeChecket_1", now.getMillis(),
+            now.getZone(), true, true, null, cronExpression);
+  }
+
+  /**
+   * Test when PDT-->PST happens in 2020. -7:00 -> -8:00
+   * See details why confusion happens during this change: https://en.wikipedia.org/wiki/Pacific_Time_Zone
+   */
+  @Test
+  public void cronDayLightChangeSucceed2() {
+
+    Map<String, ConditionChecker> checkers =
+        new HashMap<String, ConditionChecker>();
+
+    DateTime now = DateTime.now();
+
+    // 8:30 UTC == 1:30 PDT
+    String cronExpression = "0 30 8 1 11 ? 2020";
 
     BasicTimeChecker timeChecker =
         new BasicTimeChecker("BasicTimeChecket_1", now.getMillis(),
@@ -154,7 +179,7 @@ public class BasicTimeCheckerTest {
     String expr = timeChecker.getId() + ".eval()";
     Condition cond = new Condition(checkers, expr);
 
-    DateTime winter2020 = new DateTime(2020, 11, 1, 1, 30, 0, DateTimeZone.UTC);
+    DateTime winter2020 = new DateTime(2020, 11, 1, 8, 30, 0, DateTimeZone.UTC);
     assertTrue(cond.getNextCheckTime() == winter2020.getMillis());
   }
 }
