@@ -152,7 +152,7 @@ public class BasicTimeCheckerTest {
     // Since no 2:30 PST in March 8th in that day, IllegalStateException will always throw.
     BasicTimeChecker timeChecker =
         new BasicTimeChecker("BasicTimeChecket_1", now.getMillis(),
-            now.getZone(), true, true, null, cronExpression);
+            DateTimeZone.forID("America/Los_Angeles"), true, true, null, cronExpression);
   }
 
   /**
