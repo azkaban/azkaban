@@ -80,12 +80,12 @@
 
     // Trackball/trackpad vs wheel. Need to accommodate
     var delta = 0;
-    if (evt.wheelDelta) {
-      if (evt.wheelDelta > 0) {
-        delta = Math.ceil(evt.wheelDelta / 120);
+    if (evt.deltaY) {
+      if (evt.deltaY > 0) {
+        delta = Math.ceil(evt.deltaY / 120);
       }
       else {
-        delta = Math.floor(evt.wheelDelta / 120);
+        delta = Math.floor(evt.deltaY / 120);
       }
     }
     else if (evt.detail) {
@@ -307,7 +307,7 @@
         this.marker = true;
 
         if (window.addEventListener) {
-          this.addEventListener('DOMMouseScroll', mouseScrolled,false);
+          this.addEventListener('wheel', mouseScrolled,false);
         }
         this.onmousewheel = mouseScrolled;
         this.onmousedown = mouseDown;
