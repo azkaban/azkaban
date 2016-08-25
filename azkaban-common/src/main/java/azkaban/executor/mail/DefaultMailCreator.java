@@ -19,7 +19,10 @@ package azkaban.executor.mail;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.io.*;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 
 import azkaban.executor.ExecutableFlow;
@@ -28,12 +31,16 @@ import azkaban.executor.ExecutionOptions.FailureAction;
 import azkaban.utils.EmailMessage;
 import azkaban.utils.Emailer;
 import azkaban.utils.Utils;
+import org.apache.commons.io.FilenameUtils;
+import org.apache.log4j.Logger;
 
 public class DefaultMailCreator implements MailCreator {
   public static final String DEFAULT_MAIL_CREATOR = "default";
   private static HashMap<String, MailCreator> registeredCreators =
       new HashMap<String, MailCreator>();
   private static MailCreator defaultCreator;
+  private File attachFile;
+  private static Logger logger = Logger.getLogger(Emailer.class);
 
   private static final DateFormat DATE_FORMATTER = new SimpleDateFormat(
       "yyyy/MM/dd HH:mm:ss z");
@@ -218,5 +225,71 @@ public class DefaultMailCreator implements MailCreator {
     } else {
       return DATE_FORMATTER.format(new Date(timeInMS));
     }
+  }
+
+  @Override
+  public boolean createAttachmentEmail(EmailMessage message, String nameRegex) {
+    Boolean flag=false;
+    try {
+      attachFile = new File(Emailer._flow_path);
+      for (File f : attachFile.listFiles()) {
+        if (f != null && f.getName().matches(nameRegex)) {
+          flag=true;
+          message.addAttachment(f);
+        }
+      }
+    }
+    catch(Exception i){
+      logger.error("Email attachment not loaded",i);
+      return false;
+    }
+
+    if(flag)
+      return true;
+
+    return false;
+  }
+
+  @Override
+  public boolean createInlineMessageEmail(EmailMessage message, Integer maxInlineErrors) {
+    Boolean flag=false;
+    try {
+      attachFile = new File(Emailer._flow_path);
+      ArrayList<String> allErrors = new ArrayList<String>();
+      for(File f : attachFile.listFiles()) {
+        if( f != null && FilenameUtils.getExtension(f.getAbsolutePath()).equals("log") &&
+            f.getName().contains("_job")) {
+          flag=true;
+          LineNumberReader reader = new LineNumberReader(new FileReader(f));
+          String line;
+          while ((line = reader.readLine()) != null) {
+            if(line.contains("ERROR"))
+              allErrors.add(line);
+          }
+        }
+      }
+
+      // Only take the last five errors
+      List<String> finalList = new ArrayList<String>();
+      final int listSize = allErrors.size();
+      if ( listSize > maxInlineErrors) {
+        finalList = allErrors.subList(listSize - maxInlineErrors, listSize - 1);
+      } else {
+        finalList = allErrors;
+      }
+
+      Iterator<String> errorIterator = finalList.iterator();
+      while (errorIterator.hasNext()) {
+        message.println("<p>" + errorIterator.next() + "</p>");
+      }
+    }
+    catch(Exception e) {
+      logger.error("Writing contents to message body failed");
+      return false;
+    }
+
+    if(flag) { return true; }
+
+    return false;
   }
 }
