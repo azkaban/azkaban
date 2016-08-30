@@ -18,15 +18,21 @@ package azkaban.trigger.builtin;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Date;
 
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.joda.time.ReadablePeriod;
+import org.apache.log4j.Logger;
+
+import org.quartz.CronExpression;
 
 import azkaban.trigger.ConditionChecker;
 import azkaban.utils.Utils;
 
 public class BasicTimeChecker implements ConditionChecker {
+
+  private static Logger logger = Logger.getLogger(BasicTimeChecker.class);
 
   public static final String type = "BasicTimeChecker";
 
@@ -37,11 +43,13 @@ public class BasicTimeChecker implements ConditionChecker {
   private boolean skipPastChecks = true;
   private ReadablePeriod period;
 
+  private String cronExpression;
+  private CronExpression cronExecutionTime;
   private final String id;
 
   public BasicTimeChecker(String id, long firstCheckTime,
       DateTimeZone timezone, boolean isRecurring, boolean skipPastChecks,
-      ReadablePeriod period) {
+      ReadablePeriod period, String cronExpression) {
     this.id = id;
     this.firstCheckTime = firstCheckTime;
     this.timezone = timezone;
@@ -49,6 +57,8 @@ public class BasicTimeChecker implements ConditionChecker {
     this.skipPastChecks = skipPastChecks;
     this.period = period;
     this.nextCheckTime = firstCheckTime;
+    this.cronExpression = cronExpression;
+    cronExecutionTime = Utils.parseCronExpression(cronExpression, timezone);
     this.nextCheckTime = calculateNextCheckTime();
   }
 
@@ -76,9 +86,13 @@ public class BasicTimeChecker implements ConditionChecker {
     return nextCheckTime;
   }
 
+  public String getCronExpression() {
+    return cronExpression;
+  }
+
   public BasicTimeChecker(String id, long firstCheckTime,
       DateTimeZone timezone, long nextCheckTime, boolean isRecurring,
-      boolean skipPastChecks, ReadablePeriod period) {
+      boolean skipPastChecks, ReadablePeriod period, String cronExpression) {
     this.id = id;
     this.firstCheckTime = firstCheckTime;
     this.timezone = timezone;
@@ -86,6 +100,8 @@ public class BasicTimeChecker implements ConditionChecker {
     this.isRecurring = isRecurring;
     this.skipPastChecks = skipPastChecks;
     this.period = period;
+    this.cronExpression = cronExpression;
+    cronExecutionTime = Utils.parseCronExpression(cronExpression, timezone);
   }
 
   @Override
@@ -130,10 +146,11 @@ public class BasicTimeChecker implements ConditionChecker {
     ReadablePeriod period =
         Utils.parsePeriodString((String) jsonObj.get("period"));
     String id = (String) jsonObj.get("id");
+    String cronExpression = (String) jsonObj.get("cronExpression");
 
     BasicTimeChecker checker =
         new BasicTimeChecker(id, firstCheckTime, timezone, nextCheckTime,
-            isRecurring, skipPastChecks, period);
+            isRecurring, skipPastChecks, period, cronExpression);
     if (skipPastChecks) {
       checker.updateNextCheckTime();
     }
@@ -157,8 +174,11 @@ public class BasicTimeChecker implements ConditionChecker {
         throw new IllegalStateException(
             "100000 increments of period did not get to present time.");
       }
-      if (period == null) {
+      if (period == null && cronExpression == null) {
         break;
+      } else if (cronExecutionTime != null) {
+        Date nextDate = cronExecutionTime.getNextValidTimeAfter(date.toDate());
+        date = new DateTime(nextDate);
       } else {
         date = date.plus(period);
       }
@@ -186,6 +206,7 @@ public class BasicTimeChecker implements ConditionChecker {
     jsonObj.put("skipPastChecks", String.valueOf(skipPastChecks));
     jsonObj.put("period", Utils.createPeriodString(period));
     jsonObj.put("id", id);
+    jsonObj.put("cronExpression", cronExpression);
 
     return jsonObj;
   }
