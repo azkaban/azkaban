@@ -79,7 +79,6 @@ $(function() {
   // To compute the current timezone's time offset against UTC.
   // Currently not useful.
   // var TimeZoneOffset = new Date().toString().match(/([-\+][0-9]+)\s/)[1];
-  timezone = "US/Pacific";
 
   $('#timeZoneID').html(timezone);
 

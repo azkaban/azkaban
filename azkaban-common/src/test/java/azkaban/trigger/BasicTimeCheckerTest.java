@@ -108,8 +108,8 @@ public class BasicTimeCheckerTest {
    * Test when PST-->PDT happens in 2020. -8:00 -> -7:00
    * See details why confusion happens during this change: https://en.wikipedia.org/wiki/Pacific_Time_Zone
    *
-   * This test demonstrates that
-   * When daylight saving change occurs, 2:30AM will be skipped, but it will be executed continually at 3:30.
+   * This test demonstrates that if the cron is under UTC settings,
+   * When daylight saving change occurs, 2:30 will be changed to 3:30 at that day.
    */
   @Test
   public void cronDayLightPacificSpring() {
@@ -238,6 +238,7 @@ public class BasicTimeCheckerTest {
     String expr = timeChecker.getId() + ".eval()";
     Condition cond = new Condition(checkers, expr);
 
+    // 7:59 UTC == 0:59 PDT (difference is 7 hours)
     DateTime winter2020 = new DateTime(2020, 11, 1, 7, 59, 0, DateTimeZone.UTC);
     DateTime winter2020_2 = new DateTime(2020, 11, 1, 0, 59, 0, DateTimeZone.forID("America/Los_Angeles"));
     assertTrue(cond.getNextCheckTime() == winter2020.getMillis());
@@ -275,6 +276,7 @@ public class BasicTimeCheckerTest {
     String expr = timeChecker.getId() + ".eval()";
     Condition cond = new Condition(checkers, expr);
 
+    // 9:30 UTC == 1:30 PST (difference is 8 hours)
     DateTime winter2020 = new DateTime(2020, 11, 1, 9, 30, 0, DateTimeZone.UTC);
 
     DateTime winter2020_2 = new DateTime(2020, 11, 1, 1, 30, 0, DateTimeZone.forID("America/Los_Angeles"));
