@@ -49,6 +49,7 @@ azkaban.SchedulePanelView = Backbone.View.extend({
     scheduleData.ajax = "scheduleCronFlow";
     scheduleData.projectName = projectName;
     scheduleData.cronExpression = "0 " + $('#cron-output').val();
+    scheduleData.cronTimezone = timezone;
 
     console.log("current Time = " + scheduleDate + "  " + scheduleTime );
     console.log("cronExpression = " +  scheduleData.cronExpression);
@@ -75,9 +76,12 @@ $(function() {
     el: $('#schedule-modal')
   });
 
+  // To compute the current timezone's time offset against UTC.
+  // Currently not useful.
+  // var TimeZoneOffset = new Date().toString().match(/([-\+][0-9]+)\s/)[1];
+  timezone = "US/Pacific";
 
-  var TimeZoneOffset = new Date().toString().match(/([-\+][0-9]+)\s/)[1];
-  $('#timeZoneOffset').html(TimeZoneOffset);
+  $('#timeZoneID').html(timezone);
 
   updateOutput();
   $("#clearCron").click(function () {
@@ -197,23 +201,46 @@ function updateOutput() {
 }
 
 function updateExpression() {
-  $(cron_translate_id).text( "\"" + prettyCron.toString( transformFromCronToQuartz($(cron_output_id).val())) + " (UTC)\"");
-  $(cron_translate_warning_id).html( " <small>***The execution plan translation has limitations. Please check the <a href=\"http://www.quartz-scheduler.org/documentation/quartz-2.x/tutorials/crontrigger.html\">Quartz-Cron syntax</a> when in doubt.***</small>" );
-
   var newLi = $('<li>' + 'newTask' + '</li>');
   $('#nextRecurId').html("");
 
-  console.log("current cron = " + $(cron_output_id).val());
-  var cron1 = later.parse.cron($(cron_output_id).val());
-  var occurrences = later.schedule(cron1).next(10);
+  console.log("cron Input = " + $(cron_output_id).val());
+  var laterCron = later.parse.cron($(cron_output_id).val());
+
+  //Get the current time given the server timezone.
+  var now1 = moment().tz(timezone);
+  console.log("now1 = " + now1.format());
+  var now1Str = now1.format();
+
+  //Get the server Timezone offset against UTC (e.g. if timezone is PDT, it should be -07:00)
+  var timeZoneOffset = now1Str.substring(now1Str.length-6, now1Str.length);
+  console.log("offset = " + timeZoneOffset);
+
+  //Transform the moment time to Date time (required by later.js)
+  var now2 = new Date(now1.get('year'), now1.get('month'), now1.get('date'), now1.get('hour'), now1.get('minute'), 0, 0);
+
+  //Calculate the following 10 occurences based on the current server time.
+  // The logic is a bit tricky here. since later.js only support raw Date (javascript raw library).
+  // We transform from current brownser-timezone-time to Server timezone.
+  // Then we let now2 is equal to the server time.
+  var occurrences = later.schedule(laterCron).next(10, now2);
 
   //The following component below displays a list of next 10 triggering timestamp.
   for(var i = 9; i >= 0; i--) {
     var strTime = JSON.stringify(occurrences[i]);
-    var momentObj = moment.parseZone(strTime.substring(1, strTime.length-6) + "z");
-    var currentTimezone = new Date().toString().match(/\(([A-Za-z\s].*)\)/)[1];
-    var finalMomentObj = momentObj.tz(currentTimezone).format("LLLL");
-    var nextTime = '<li style="color:DarkGreen">' + finalMomentObj + '   <b style="color:Indigo">  (' + currentTimezone + ')</b>' + '</li>';
+    console.log("strTime = " + strTime);
+
+    // Get the time (based on server time zone)
+    var serverTime = strTime.substring(1, strTime.length-2);
+    serverTime = serverTime + timeZoneOffset;
+
+    // Transfer server time (with server timezone) to browser Timezone.
+    var momentObj = moment(serverTime);
+
+    // Guess the browser's timezone
+    var currentTimezone = moment.tz.guess();
+
+    var nextTime = '<li style="color:DarkGreen">' + momentObj.format() + '   <b style="color:Indigo">  (' + currentTimezone + ')</b>' + '</li>';
     $('#nextRecurId').prepend(nextTime);
   }
 }

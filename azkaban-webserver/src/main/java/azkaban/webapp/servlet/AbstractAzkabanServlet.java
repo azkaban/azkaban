@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TimeZone;
 
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
@@ -30,8 +31,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.joda.time.DateTime;
-import org.joda.time.format.DateTimeFormat;
-import org.joda.time.format.DateTimeFormatter;
 
 import azkaban.server.AzkabanServer;
 import azkaban.server.HttpRequestUtils;
@@ -48,8 +47,6 @@ import azkaban.webapp.plugin.TriggerPlugin;
  * Base Servlet for pages
  */
 public abstract class AbstractAzkabanServlet extends HttpServlet {
-  private static final DateTimeFormatter ZONE_FORMATTER = DateTimeFormat
-      .forPattern("z");
   private static final String AZKABAN_SUCCESS_MESSAGE =
       "azkaban.success.message";
   private static final String AZKABAN_WARN_MESSAGE =
@@ -73,10 +70,10 @@ public abstract class AbstractAzkabanServlet extends HttpServlet {
   private String color;
 
   /*
-   * The variable switchToPanelPage is in charge of switching on retired schedulePanelDeprecated.vm (old UI)
+   * The variable schedulePanelPageName is in charge of switching on retired schedulePanelDeprecated.vm (old UI)
    * or the new schedulePanel.vm (new UI). We can configure it in conf for this binary change.
    */
-  private String switchToPanelPage;
+  private String schedulePanelPageName;
 
   private List<ViewerPlugin> viewerPlugins;
   private List<TriggerPlugin> triggerPlugins;
@@ -105,7 +102,7 @@ public abstract class AbstractAzkabanServlet extends HttpServlet {
     name = props.getString("azkaban.name", "");
     label = props.getString("azkaban.label", "");
     color = props.getString("azkaban.color", "#FF0000");
-    switchToPanelPage = props.getString("azkaban.switchToPanelPage", "schedulepanel.vm");
+    schedulePanelPageName = props.getString("azkaban.schedulePanelPageName", "schedulepanel.vm");
 
     if (application instanceof AzkabanWebServer) {
       AzkabanWebServer server = (AzkabanWebServer) application;
@@ -337,9 +334,9 @@ public abstract class AbstractAzkabanServlet extends HttpServlet {
     page.add("azkaban_name", name);
     page.add("azkaban_label", label);
     page.add("azkaban_color", color);
-    page.add("switchToPanelPage", switchToPanelPage);
+    page.add("switchToPanelPage", schedulePanelPageName);
     page.add("utils", utils);
-    page.add("timezone", ZONE_FORMATTER.print(System.currentTimeMillis()));
+    page.add("timezone", TimeZone.getDefault().getID());
     page.add("currentTime", (new DateTime()).getMillis());
     if (session != null && session.getUser() != null) {
       page.add("user_id", session.getUser().getUserId());
@@ -388,8 +385,8 @@ public abstract class AbstractAzkabanServlet extends HttpServlet {
     page.add("azkaban_name", name);
     page.add("azkaban_label", label);
     page.add("azkaban_color", color);
-    page.add("switchToPanelPage", switchToPanelPage);
-    page.add("timezone", ZONE_FORMATTER.print(System.currentTimeMillis()));
+    page.add("switchToPanelPage", schedulePanelPageName);
+    page.add("timezone", TimeZone.getDefault().getID());
     page.add("currentTime", (new DateTime()).getMillis());
     page.add("context", req.getContextPath());
 

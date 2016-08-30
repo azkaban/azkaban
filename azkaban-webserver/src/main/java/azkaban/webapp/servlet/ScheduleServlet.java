@@ -722,7 +722,10 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
       return;
     }
 
-    DateTime firstSchedTime = getPresentUTCTime();
+    String cronTimezone = getParam(req, "cronTimezone");
+    DateTimeZone timezone = parseTimeZone(cronTimezone);
+
+    DateTime firstSchedTime = getPresentTimeByTimezone(timezone);
     String cronExpression = null;
 
     try {
@@ -799,7 +802,18 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
     return firstSchedTime;
   }
 
-  private DateTime getPresentUTCTime() {
-    return new DateTime(DateTimeZone.UTC);
+  /**
+   * @param cronTimezone represents the timezone from remote API call
+   * @return if the string is equal to UTC, we return UTC; otherwise, we always return default timezone.
+   */
+  private DateTimeZone parseTimeZone(String cronTimezone) {
+    if(cronTimezone != null && cronTimezone.equals("UTC"))
+      return DateTimeZone.UTC;
+
+    return DateTimeZone.getDefault();
+  }
+
+  private DateTime getPresentTimeByTimezone(DateTimeZone timezone) {
+    return new DateTime(timezone);
   }
 }
