@@ -23,8 +23,8 @@ azkaban.SchedulePanelView = Backbone.View.extend({
   },
 
   initialize: function(settings) {
-    $("#timepicker").datetimepicker({pickDate: false});
-    $("#datepicker").datetimepicker({pickTime: false});
+    $("#timepicker").datetimepicker({format: 'LT'});
+    $("#datepicker").datetimepicker({format: 'L'});
   },
 
   render: function() {
