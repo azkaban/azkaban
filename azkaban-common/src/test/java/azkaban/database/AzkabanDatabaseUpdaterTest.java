@@ -16,7 +16,7 @@
 
 package azkaban.database;
 
-import com.google.common.io.Resources;
+import static org.junit.Assert.assertNotNull;
 
 import java.io.File;
 import java.net.URL;
@@ -29,7 +29,7 @@ import org.apache.commons.dbutils.QueryRunner;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import static org.junit.Assert.assertNotNull;
+import com.google.common.io.Resources;
 
 import azkaban.utils.Props;
 
@@ -39,6 +39,31 @@ public class AzkabanDatabaseUpdaterTest {
     clearMySQLTestDb();
 
     URL resourceUrl = Resources.getResource("conf/dbtestmysql");
+    assertNotNull(resourceUrl);
+    File resource = new File(resourceUrl.toURI());
+    String confDir = resource.getParent();
+
+    System.out.println("1.***Now testing check");
+    AzkabanDatabaseUpdater.main(new String[] { "-c", confDir });
+
+    System.out.println("2.***Now testing update");
+    AzkabanDatabaseUpdater.main(new String[] { "-u", "-c", confDir });
+
+    System.out.println("3.***Now testing check again");
+    AzkabanDatabaseUpdater.main(new String[] { "-c", confDir });
+
+    System.out.println("4.***Now testing update again");
+    AzkabanDatabaseUpdater.main(new String[] { "-c", confDir, "-u" });
+
+    System.out.println("5.***Now testing check again");
+    AzkabanDatabaseUpdater.main(new String[] { "-c", confDir });
+  }
+  
+  @Ignore  @Test
+  public void testPostgresqlAutoCreate() throws Exception {
+	  clearPostgresqlTestDB();
+
+    URL resourceUrl = Resources.getResource("conf/dbtestpostgresql");
     assertNotNull(resourceUrl);
     File resource = new File(resourceUrl.toURI());
     String confDir = resource.getParent();
@@ -101,4 +126,23 @@ public class AzkabanDatabaseUpdaterTest {
     }
     runner.update("create database azkabanunittest");
   }
+  
+  private static void clearPostgresqlTestDB() throws SQLException {
+	    Props props = new Props();
+	    props.put("database.type", "postgresql");
+	    props.put("postgresql.host", "localhost");
+	    props.put("postgresql.port", "5432");
+	    props.put("postgresql.database", "");
+	    props.put("postgresql.user", "postgres");
+	    props.put("postgresql.password", "postgres");
+	    props.put("postgresql.numconnections", 10);
+
+	    DataSource datasource = DataSourceUtils.getDataSource(props);
+	    QueryRunner runner = new QueryRunner(datasource);
+	    try {
+	      runner.update("drop database azkabanunittest");
+	    } catch (SQLException e) {
+	    }
+	    runner.update("create database azkabanunittest");
+	  }
 }

@@ -575,7 +575,12 @@ public class JdbcProjectLoader extends AbstractJdbcLoader implements
 
     if (this.allowsOnDuplicateKey()) {
       long updateTime = System.currentTimeMillis();
-      final String INSERT_PROJECT_PERMISSION =
+      
+      final String INSERT_PROJECT_PERMISSION = "postgresql".equals(dataSource.getDBType())?
+    		  "INSERT INTO project_permissions (project_id, modified_time, name, permissions, isgroup) values (?,?,?,?,?)"
+    		  + " ON CONFLICT ON CONSTRAINT project_permission_project_id DO UPDATE SET name = EXCLUDED.name,isgroup = EXCLUDED.isgroup,"
+    		  + " modified_time = EXCLUDED.modified_time,permissions=EXCLUDED.permissions" :
+
           "INSERT INTO project_permissions (project_id, modified_time, name, permissions, isGroup) values (?,?,?,?,?)"
               + "ON DUPLICATE KEY UPDATE modified_time = VALUES(modified_time), permissions = VALUES(permissions)";
 
@@ -587,7 +592,7 @@ public class JdbcProjectLoader extends AbstractJdbcLoader implements
         throw new ProjectManagerException("Error updating project "
             + project.getName() + " permissions for " + name, e);
       }
-    } else {
+    } else {// only supported by H2
       long updateTime = System.currentTimeMillis();
       final String MERGE_PROJECT_PERMISSION =
           "MERGE INTO project_permissions (project_id, modified_time, name, permissions, isGroup) KEY (project_id, name) values (?,?,?,?,?)";

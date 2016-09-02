@@ -8,3 +8,11 @@ task concat() << {
     }
   }
 }
+task genPgSql() << {
+  ext.destFile = 'build/sql/create-all-sql-' + version + '-postgresql.sql';
+  ant.concat(destfile: destFile, fixlastline: 'yes') {
+    logger.info('Concating create scripts to ' + destFile)
+    fileset(dir: 'src/sql/postgresql') {
+	}
+  }
+}
