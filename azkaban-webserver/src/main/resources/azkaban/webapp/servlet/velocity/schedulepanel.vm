@@ -36,7 +36,7 @@
           <div class="form-group">
 
             <div class="col-sm-12" style="height:55px;">
-              <h4 style="color:Coral; font-style:italic;">Note: All schedules are basead on <b id="timeZoneID"></b>.</h4>
+              <h4 style="color:Coral; font-style:italic;">All schedules are basead on the server timezone: <b id="timeZoneID"></b>.</h4>
 
             </div>
             <div class="form-group">
@@ -93,7 +93,7 @@
                   </tr>
                   </tbody>
                 </table>
-                <p><u>Detailed instructions could be checked out <span style="color:Indigo"><a href="http://www.quartz-scheduler.org/documentation/quartz-2.x/tutorials/crontrigger.html">here</a></span>.</u></p>
+                <p><u><span style="color:Indigo"><a href="http://www.quartz-scheduler.org/documentation/quartz-2.x/tutorials/crontrigger.html">Detailed instructions</a></span>.</u></p>
               </div>
             </div>
 
@@ -108,7 +108,7 @@
 
             <div class="col-sm-12" style="background-color:#f5f5f5; border:1px solid #e3e3e3">
               <h4>
-                next 10 scheduled executions in your timezone:
+                Next 10 scheduled executions:
               </h4>
               <ul id="nextRecurId">
               </ul>

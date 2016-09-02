@@ -239,7 +239,7 @@ function updateExpression() {
     // Guess the browser's timezone
     var currentTimezone = moment.tz.guess();
 
-    var nextTime = '<li style="color:DarkGreen">' + momentObj.format() + '   <b style="color:Indigo">  (' + currentTimezone + ')</b>' + '</li>';
+    var nextTime = '<li style="color:DarkGreen">' + momentObj.format() + '</li>';
     $('#nextRecurId').prepend(nextTime);
   }
 }
