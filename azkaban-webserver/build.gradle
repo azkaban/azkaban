@@ -114,6 +114,11 @@ task copyDust(type: Copy, dependsOn: ['dustjs', 'copyWeb']) {
   into('build/package/web/js')
 }
 
+task copyJSLibs(type: Copy, dependsOn: ['dustjs', 'copyWeb']) {
+  from('../bower/')
+  into('build/package/web/js')
+}
+
 task copyDeps(type: Copy, dependsOn: 'build') {
   from(project(':azkaban-common').configurations.compile)
   from(configurations.compile)
@@ -136,6 +141,7 @@ task copy(dependsOn: [
         'copyLess',
         'copyDust',
         'copyDeps',
+        'copyJSLibs',
         'copyLibs',
         'copyPackage']) {
 }

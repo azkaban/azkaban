@@ -141,14 +141,12 @@ azkaban.ChangeSlaView = Backbone.View.extend({
           }
           cKill.appendChild(killCheck);
           $('.durationpick').datetimepicker({
-            pickDate: false,
-            use24hours: true
+            format: 'HH:mm'
           });
         }
       }
       $('.durationpick').datetimepicker({
-        pickDate: false,
-        use24hours: true
+        format: 'HH:mm'
       });
     };
 
@@ -255,8 +253,7 @@ azkaban.ChangeSlaView = Backbone.View.extend({
     cKill.appendChild(killCheck);
 
     $('.durationpick').datetimepicker({
-      pickDate: false,
-      use24hours: true
+      format: 'HH:mm'
     });
     return rFlowRule;
   },

@@ -76,9 +76,14 @@ public class JdbcTriggerLoaderTest {
     loader = new JdbcTriggerLoader(props);
     checkerLoader = new CheckerTypeLoader();
     checkerLoader.init(new Props());
+    checkerLoader.registerCheckerType(BasicTimeChecker.type,
+        BasicTimeChecker.class);
     Condition.setCheckerLoader(checkerLoader);
     actionLoader = new ActionTypeLoader();
     actionLoader.init(new Props());
+
+    actionLoader.registerActionType(ExecuteFlowAction.type,
+        ExecuteFlowAction.class);
     Trigger.setActionTypeLoader(actionLoader);
     setupDB();
   }
