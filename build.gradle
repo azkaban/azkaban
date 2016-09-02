@@ -32,6 +32,10 @@ bower {
       source 'build/js/*.min.js'  >> '/'
       excludes 'jquery'
     }
+
+    'later'('1.2.0'){
+      source '*.min.js' >> '/'
+    }
 }
 
 apply plugin: 'com.cinnober.gradle.semver-git'

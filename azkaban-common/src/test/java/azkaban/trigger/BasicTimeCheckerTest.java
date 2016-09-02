@@ -154,7 +154,6 @@ public class BasicTimeCheckerTest {
 
     String cronExpression = "0 30 2 8,9 3 ? 2020";
 
-    // Since no 2:30 PST in March 8th in that day, IllegalStateException will always throw.
     BasicTimeChecker timeChecker =
         new BasicTimeChecker("BasicTimeChecker_1", now.getMillis(),
             DateTimeZone.forID("America/Los_Angeles"), true, true, null, cronExpression);
@@ -175,7 +174,8 @@ public class BasicTimeCheckerTest {
    * This test cronDayLightPacificWinter1 is in order to compare against the cronDayLightPacificWinter2.
    *
    * In this Test, we let job run at 1:00 at Nov.1st, 2020. We know that we will have two 1:00 at that day.
-   * The test shows the 1:00 at that day will be based on PST, not PDT. It means that the first 1:00 is skipped at that day.
+   * The test shows that the first 1:00 is skipped at that day.
+   * Schedule will still be executed once on that day.
    */
   @Test
   public void cronDayLightPacificWinter1() {
@@ -203,7 +203,11 @@ public class BasicTimeCheckerTest {
     DateTime winter2020_3 = new DateTime(2020, 11, 1, 2, 0, 0, DateTimeZone.forID("America/Los_Angeles"));
     assertTrue(cond.getNextCheckTime() == winter2020.getMillis());
 
-    // Both 1 and 2 o'clock can not pass the test.
+
+    // Both 1 and 2 o'clock can not pass the test. Based on milliseconds we got,
+    // winter2020_2.getMillis() == 11/1/2020, 1:00:00 AM GMT-7:00 DST
+    // winter2020_3.getMillis() == 11/1/2020, 2:00:00 AM GMT-8:00
+    // Both time doesn't match the second 1:00 AM
     assertFalse(cond.getNextCheckTime() == winter2020_2.getMillis());
     assertFalse(cond.getNextCheckTime() == winter2020_3.getMillis());
   }
@@ -241,6 +245,8 @@ public class BasicTimeCheckerTest {
     // 7:59 UTC == 0:59 PDT (difference is 7 hours)
     DateTime winter2020 = new DateTime(2020, 11, 1, 7, 59, 0, DateTimeZone.UTC);
     DateTime winter2020_2 = new DateTime(2020, 11, 1, 0, 59, 0, DateTimeZone.forID("America/Los_Angeles"));
+
+    // Local time remains the same.
     assertTrue(cond.getNextCheckTime() == winter2020.getMillis());
     assertTrue(cond.getNextCheckTime() == winter2020_2.getMillis());
   }

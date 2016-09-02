@@ -49,7 +49,10 @@ azkaban.SchedulePanelView = Backbone.View.extend({
     scheduleData.ajax = "scheduleCronFlow";
     scheduleData.projectName = projectName;
     scheduleData.cronExpression = "0 " + $('#cron-output').val();
-    scheduleData.cronTimezone = timezone;
+
+    // Currently, All cron expression will be based on server timezone.
+    // Later we might implement a feature support cron under various timezones, depending on the future use cases.
+    // scheduleData.cronTimezone = timezone;
 
     console.log("current Time = " + scheduleDate + "  " + scheduleTime );
     console.log("cronExpression = " +  scheduleData.cronExpression);
@@ -200,46 +203,35 @@ function updateOutput() {
 }
 
 function updateExpression() {
-  var newLi = $('<li>' + 'newTask' + '</li>');
   $('#nextRecurId').html("");
 
   console.log("cron Input = " + $(cron_output_id).val());
   var laterCron = later.parse.cron($(cron_output_id).val());
 
   //Get the current time given the server timezone.
-  var now1 = moment().tz(timezone);
-  console.log("now1 = " + now1.format());
-  var now1Str = now1.format();
+  var serverTime = moment().tz(timezone);
+  console.log("serverTime = " + serverTime.format());
+  var now1Str = serverTime.format();
 
   //Get the server Timezone offset against UTC (e.g. if timezone is PDT, it should be -07:00)
-  var timeZoneOffset = now1Str.substring(now1Str.length-6, now1Str.length);
-  console.log("offset = " + timeZoneOffset);
+  // var timeZoneOffset = now1Str.substring(now1Str.length-6, now1Str.length);
+  // console.log("offset = " + timeZoneOffset);
 
   //Transform the moment time to Date time (required by later.js)
-  var now2 = new Date(now1.get('year'), now1.get('month'), now1.get('date'), now1.get('hour'), now1.get('minute'), 0, 0);
+  var serverTimeInJsDateFormat = new Date(serverTime.get('year'), serverTime.get('month'), serverTime.get('date'), serverTime.get('hour'), serverTime.get('minute'), 0, 0);
 
-  //Calculate the following 10 occurences based on the current server time.
+  // Calculate the following 10 occurences based on the current server time.
   // The logic is a bit tricky here. since later.js only support raw Date (javascript raw library).
-  // We transform from current brownser-timezone-time to Server timezone.
-  // Then we let now2 is equal to the server time.
-  var occurrences = later.schedule(laterCron).next(10, now2);
+  // We transform from current browser-timezone-time to Server timezone.
+  // Then we let serverTimeInJsDateFormat is equal to the server time.
+  var occurrences = later.schedule(laterCron).next(10, serverTimeInJsDateFormat);
 
   //The following component below displays a list of next 10 triggering timestamp.
   for(var i = 9; i >= 0; i--) {
     var strTime = JSON.stringify(occurrences[i]);
-    console.log("strTime = " + strTime);
 
     // Get the time (based on server time zone)
-    var serverTime = strTime.substring(1, strTime.length-2);
-    serverTime = serverTime + timeZoneOffset;
-
-    // Transfer server time (with server timezone) to browser Timezone.
-    var momentObj = moment(serverTime);
-
-    // Guess the browser's timezone
-    var currentTimezone = moment.tz.guess();
-
-    var nextTime = '<li style="color:DarkGreen">' + momentObj.format() + '</li>';
+    var nextTime = '<li style="color:DarkGreen">' + strTime.substring(1, strTime.length-2) + '</li>';
     $('#nextRecurId').prepend(nextTime);
   }
 }

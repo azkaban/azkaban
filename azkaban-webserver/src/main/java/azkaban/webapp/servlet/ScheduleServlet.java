@@ -722,12 +722,10 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
       return;
     }
 
-    String cronTimezone = getParam(req, "cronTimezone");
-    DateTimeZone timezone = parseTimeZone(cronTimezone);
-
+    DateTimeZone timezone = DateTimeZone.getDefault();
     DateTime firstSchedTime = getPresentTimeByTimezone(timezone);
-    String cronExpression = null;
 
+    String cronExpression = null;
     try {
       if (hasParam(req, "cronExpression")) {
         // everything in Azkaban functions is at the minute granularity, so we add 0 here
