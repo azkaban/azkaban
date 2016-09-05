@@ -81,6 +81,7 @@ public class FlowRunner extends EventHandler implements Runnable {
   private File logFile;
 
   private ExecutorService executorService;
+  private ExecutorService sharedExecutorService;
   private ExecutorLoader executorLoader;
   private ProjectLoader projectLoader;
 
@@ -180,6 +181,11 @@ public class FlowRunner extends EventHandler implements Runnable {
     numJobThreads = jobs;
     return this;
   }
+  
+  public FlowRunner setSharedJobThreadPool(ExecutorService executorService) {
+	    sharedExecutorService = executorService;
+	    return this;
+	  }
 
   public FlowRunner setJobLogSettings(String jobLogFileSize, int jobLogNumFiles) {
     this.jobLogFileSize = jobLogFileSize;
@@ -199,7 +205,7 @@ public class FlowRunner extends EventHandler implements Runnable {
 
   public void run() {
     try {
-      if (this.executorService == null) {
+      if (this.sharedExecutorService == null && this.executorService == null) {
         this.executorService = Executors.newFixedThreadPool(numJobThreads);
       }
       setupFlowExecution();
@@ -394,7 +400,9 @@ public class FlowRunner extends EventHandler implements Runnable {
     }
 
     logger.info("Finishing up flow. Awaiting Termination");
-    executorService.shutdown();
+    if (executorService != null) {
+    	executorService.shutdown();
+    }
 
     updateFlow();
     logger.info("Finished Flow");
@@ -1137,7 +1145,7 @@ public class FlowRunner extends EventHandler implements Runnable {
   }
 
   public boolean isThreadPoolShutdown() {
-    return executorService.isShutdown();
+    return executorService != null ? executorService.isShutdown() : true;
   }
 
   public int getNumRunningJobs() {

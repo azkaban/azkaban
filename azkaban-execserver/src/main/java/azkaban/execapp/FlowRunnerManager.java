@@ -30,6 +30,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.RejectedExecutionException;
@@ -94,6 +96,8 @@ public class FlowRunnerManager implements EventListener,
       "executor.threadpool.workqueue.size";
   private static final String EXECUTOR_FLOW_THREADS = "executor.flow.threads";
   private static final String FLOW_NUM_JOB_THREADS = "flow.num.job.threads";
+  private static final String FLOW_JOB_USE_GLOBAL_THREADPOOL = "flow.job.use.global.threadpool";
+  
   private static Logger logger = Logger.getLogger(FlowRunnerManager.class);
   private File executionDirectory;
   private File projectDirectory;
@@ -123,9 +127,11 @@ public class FlowRunnerManager implements EventListener,
 
   private CleanerThread cleanerThread;
   private int numJobThreadPerFlow = DEFAULT_FLOW_NUM_JOB_TREADS;
+  private boolean jobUseGlobalThreadPool = false;
 
   private ExecutorLoader executorLoader;
   private ProjectLoader projectLoader;
+  private ExecutorService jobExecutorService;
 
   private JobTypeManager jobtypeManager;
 
@@ -178,6 +184,8 @@ public class FlowRunnerManager implements EventListener,
         props.getInt(EXECUTOR_FLOW_THREADS, DEFAULT_NUM_EXECUTING_FLOWS);
     numJobThreadPerFlow =
         props.getInt(FLOW_NUM_JOB_THREADS, DEFAULT_FLOW_NUM_JOB_TREADS);
+    jobUseGlobalThreadPool  =
+            props.getBoolean(FLOW_JOB_USE_GLOBAL_THREADPOOL, false);
     executorService = createExecutorService(numThreads);
 
     this.executorLoader = executorLoader;
@@ -502,6 +510,13 @@ public class FlowRunnerManager implements EventListener,
         .setJobLogSettings(jobLogChunkSize, jobLogNumFiles)
         .setValidateProxyUser(validateProxyUser)
         .setNumJobThreads(numJobThreads).addListener(this);
+    
+    if (jobUseGlobalThreadPool) {
+    	if (jobExecutorService == null) {
+    		jobExecutorService = Executors.newFixedThreadPool(numJobThreads);
+    	}
+    	runner.setSharedJobThreadPool(jobExecutorService);
+    }
 
     configureFlowLevelMetrics(runner);
 
