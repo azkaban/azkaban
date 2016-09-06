@@ -34,7 +34,7 @@ bower {
     }
 
     'later'('1.2.0'){
-      source '*.min.js' >> '/'
+      source 'later.min.js' >> '/'
     }
 }
 
@@ -170,7 +170,7 @@ migrationDistTar.compression = Compression.GZIP
 migrationDistTar.extension = 'tar.gz'
 migrationDistZip.dependsOn ':azkaban-common:build', ':azkaban-migration:copy'
 
-webserverDistTar.dependsOn ':azkaban-common:build', 'bowerInstall', ':azkaban-webserver:copy'
+webserverDistTar.dependsOn ':azkaban-common:build', ':azkaban-webserver:copy'
 webserverDistTar.compression = Compression.GZIP
 webserverDistTar.extension = 'tar.gz'
 webserverDistZip.dependsOn ':azkaban-common:build', ':azkaban-webserver:copy'
@@ -190,8 +190,8 @@ sqlDistTar.compression = Compression.GZIP
 sqlDistTar.extension = 'tar.gz'
 sqlDistZip.dependsOn ':azkaban-sql:concat'
 
-distTar.dependsOn migrationDistTar, webserverDistTar, execserverDistTar, soloserverDistTar, sqlDistTar
-distZip.dependsOn migrationDistZip, webserverDistZip, execserverDistZip, soloserverDistZip, sqlDistZip
+distTar.dependsOn 'bowerInstall', migrationDistTar, webserverDistTar, execserverDistTar, soloserverDistTar, sqlDistTar
+distZip.dependsOn 'bowerInstall', migrationDistZip, webserverDistZip, execserverDistZip, soloserverDistZip, sqlDistZip
 
 /**
  * Gradle wrapper task.

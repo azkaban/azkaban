@@ -114,7 +114,7 @@ task copyDust(type: Copy, dependsOn: ['dustjs', 'copyWeb']) {
   into('build/package/web/js')
 }
 
-task copyJSLibs(type: Copy, dependsOn: ['dustjs', 'copyWeb']) {
+task copyJSLibs(type: Copy, dependsOn: ['build', 'dustjs', 'copyWeb']) {
   from('../bower/')
   into('build/package/web/js')
 }

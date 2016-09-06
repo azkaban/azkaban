@@ -18,7 +18,7 @@
 <script type="text/javascript" src="${context}/js/azkaban/view/schedule-panel.js"></script>
 <script type="text/javascript" src="${context}/js/moment.min.js" ></script>
 <script type="text/javascript" src="${context}/js/later.min.js"></script>
-<script type="text/javascript" src="${context}/js/moment-timezone-with-data-2010-2020.js"></script>
+<script type="text/javascript" src="${context}/js/moment-timezone-with-data-2010-2020.min.js"></script>
 <style type="text/css">
   .input-box { position: relative; }
   .input-box input { display: block; border: 1px solid #d7d6d6; background: #fff; padding: 10px 10px 10px 20px; width: 195px; }

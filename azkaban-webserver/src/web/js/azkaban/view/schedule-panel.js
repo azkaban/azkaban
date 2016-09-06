@@ -217,11 +217,13 @@ function updateExpression() {
   // var timeZoneOffset = now1Str.substring(now1Str.length-6, now1Str.length);
   // console.log("offset = " + timeZoneOffset);
 
-  //Transform the moment time to Date time (required by later.js)
-  var serverTimeInJsDateFormat = new Date(serverTime.get('year'), serverTime.get('month'), serverTime.get('date'), serverTime.get('hour'), serverTime.get('minute'), 0, 0);
+  //Transform the moment time to UTC Date time (required by later.js)
+  var serverTimeInJsDateFormat = new Date();
+  serverTimeInJsDateFormat.setUTCHours(serverTime.get('hour'), serverTime.get('minute'), 0, 0);
+  serverTimeInJsDateFormat.setUTCMonth(serverTime.get('month'), serverTime.get('date'));
 
   // Calculate the following 10 occurences based on the current server time.
-  // The logic is a bit tricky here. since later.js only support raw Date (javascript raw library).
+  // The logic is a bit tricky here. since later.js only support UTC Date (javascript raw library).
   // We transform from current browser-timezone-time to Server timezone.
   // Then we let serverTimeInJsDateFormat is equal to the server time.
   var occurrences = later.schedule(laterCron).next(10, serverTimeInJsDateFormat);
