@@ -13,31 +13,6 @@ buildscript {
   }
 }
 
-plugins {
-    id 'com.craigburke.bower-installer' version '2.5.1'
-}
-
-bower {
-    installBase = 'bower' // <1>
-
-    'moment'('2.14.1'){
-      source 'min/moment.min.js' >> '/'
-    }
-
-    'moment-timezone'('0.5.5') {
-      source 'builds/moment-timezone-with-data-2010-2020.min.js'  >> '/'
-    }
-
-    'eonasdan-bootstrap-datetimepicker'('4.0.0') {
-      source 'build/js/*.min.js'  >> '/'
-      excludes 'jquery'
-    }
-
-    'later'('1.2.0'){
-      source 'later.min.js' >> '/'
-    }
-}
-
 apply plugin: 'com.cinnober.gradle.semver-git'
 apply plugin: 'idea'
 apply plugin: 'distribution'
@@ -190,8 +165,8 @@ sqlDistTar.compression = Compression.GZIP
 sqlDistTar.extension = 'tar.gz'
 sqlDistZip.dependsOn ':azkaban-sql:concat'
 
-distTar.dependsOn 'bowerInstall', migrationDistTar, webserverDistTar, execserverDistTar, soloserverDistTar, sqlDistTar
-distZip.dependsOn 'bowerInstall', migrationDistZip, webserverDistZip, execserverDistZip, soloserverDistZip, sqlDistZip
+distTar.dependsOn migrationDistTar, webserverDistTar, execserverDistTar, soloserverDistTar, sqlDistTar
+distZip.dependsOn migrationDistZip, webserverDistZip, execserverDistZip, soloserverDistZip, sqlDistZip
 
 /**
  * Gradle wrapper task.
