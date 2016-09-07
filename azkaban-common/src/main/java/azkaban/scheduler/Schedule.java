@@ -378,7 +378,7 @@ public class Schedule {
   }
 
   public boolean isRecurring() {
-    return period == null && cronExpression == null ? false : true;
+    return period != null || cronExpression != null;
   }
 
   public boolean skipPastOccurrences() {
