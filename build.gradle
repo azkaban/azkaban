@@ -13,27 +13,6 @@ buildscript {
   }
 }
 
-plugins {
-    id 'com.craigburke.bower-installer' version '2.5.1'
-}
-
-bower {
-    installBase = 'bower' // <1>
-
-    'moment'('2.14.1'){
-      source 'min/moment.min.js' >> '/'
-    }
-
-    'moment-timezone'('0.5.5') {
-      source 'builds/moment-timezone-with-data-2010-2020.min.js'  >> '/'
-    }
-
-    'eonasdan-bootstrap-datetimepicker'('4.0.0') {
-      source 'build/js/*.min.js'  >> '/'
-      excludes 'jquery'
-    }
-}
-
 apply plugin: 'com.cinnober.gradle.semver-git'
 apply plugin: 'idea'
 apply plugin: 'distribution'
@@ -166,7 +145,7 @@ migrationDistTar.compression = Compression.GZIP
 migrationDistTar.extension = 'tar.gz'
 migrationDistZip.dependsOn ':azkaban-common:build', ':azkaban-migration:copy'
 
-webserverDistTar.dependsOn ':azkaban-common:build', 'bowerInstall', ':azkaban-webserver:copy'
+webserverDistTar.dependsOn ':azkaban-common:build', ':azkaban-webserver:copy'
 webserverDistTar.compression = Compression.GZIP
 webserverDistTar.extension = 'tar.gz'
 webserverDistZip.dependsOn ':azkaban-common:build', ':azkaban-webserver:copy'
