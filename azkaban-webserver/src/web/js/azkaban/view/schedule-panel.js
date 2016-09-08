@@ -233,7 +233,7 @@ function updateExpression() {
     var strTime = JSON.stringify(occurrences[i]);
 
     // Get the time (based on server time zone)
-    var nextTime = '<li style="color:DarkGreen">' + strTime.substring(1, strTime.length-2) + '</li>';
+    var nextTime = '<li style="color:DarkGreen">' + strTime.substring(1, strTime.length-6) + '</li>';
     $('#nextRecurId').prepend(nextTime);
   }
 }
