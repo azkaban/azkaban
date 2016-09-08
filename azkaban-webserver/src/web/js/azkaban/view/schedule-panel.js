@@ -23,8 +23,6 @@ azkaban.SchedulePanelView = Backbone.View.extend({
   },
 
   initialize: function(settings) {
-    $("#timepicker").datetimepicker({format: 'LT'});
-    $("#datepicker").datetimepicker({format: 'L'});
   },
 
   render: function() {
@@ -39,40 +37,30 @@ azkaban.SchedulePanelView = Backbone.View.extend({
   },
 
   scheduleFlow: function() {
-    var timeVal = $('#timepicker').val();
-    var timezoneVal = $('#timezone').val();
-
-    var dateVal = $('#datepicker').val();
-
-    var is_recurringVal = $('#is_recurring').val();
-    var periodVal = $('#period').val();
-    var periodUnits = $('#period_units').val();
-
     var scheduleURL = contextURL + "/schedule"
     var scheduleData = flowExecuteDialogView.getExecutionOptionData();
 
-    console.log("Creating schedule for " + projectName + "." +
-        scheduleData.flow);
+    console.log("Creating schedule for " + projectName + "." + scheduleData.flow);
 
-    var scheduleTime = moment(timeVal, 'h/mm A').format('h,mm,A,') + timezoneVal;
-    console.log(scheduleTime);
+    var currentMomentTime = moment();
+    var scheduleTime = currentMomentTime.utc().format('h,mm,A,')+"UTC";
+    var scheduleDate = currentMomentTime.format('MM/DD/YYYY');
 
-    var scheduleDate = $('#datepicker').val();
-    var is_recurring = document.getElementById('is_recurring').checked
-        ? 'on' : 'off';
-    var period = $('#period').val() + $('#period_units').val();
-
-    scheduleData.ajax = "scheduleFlow";
+    scheduleData.ajax = "scheduleCronFlow";
     scheduleData.projectName = projectName;
-    scheduleData.scheduleTime = scheduleTime;
-    scheduleData.scheduleDate = scheduleDate;
-    scheduleData.is_recurring = is_recurring;
-    scheduleData.period = period;
+    scheduleData.cronExpression = "0 " + $('#cron-output').val();
+
+    // Currently, All cron expression will be based on server timezone.
+    // Later we might implement a feature support cron under various timezones, depending on the future use cases.
+    // scheduleData.cronTimezone = timezone;
+
+    console.log("current Time = " + scheduleDate + "  " + scheduleTime );
+    console.log("cronExpression = " +  scheduleData.cronExpression);
 
     var successHandler = function(data) {
       if (data.error) {
         schedulePanelView.hideSchedulePanel();
-        messageDialogView.show("Error Scheduling Flow", data.message);
+        messageDialogView.show("Error Scheduling Flow", data.error);
       }
       else {
         schedulePanelView.hideSchedulePanel();
@@ -90,4 +78,162 @@ $(function() {
   schedulePanelView =  new azkaban.SchedulePanelView({
     el: $('#schedule-modal')
   });
+
+  // To compute the current timezone's time offset against UTC.
+  // Currently not useful.
+  // var TimeZoneOffset = new Date().toString().match(/([-\+][0-9]+)\s/)[1];
+
+  $('#timeZoneID').html(timezone);
+
+  updateOutput();
+  $("#clearCron").click(function () {
+    $('#cron-output').val("* * * * ?");
+    resetLabelColor();
+    $("#minute_input").val("*");
+    $("#hour_input").val("*");
+    $("#dom_input").val("*");
+    $("#month_input").val("*");
+    $("#dow_input").val("?");
+    $(cron_translate_id).text("")
+    $(cron_translate_warning_id).text("")
+    $('#nextRecurId').html("");
+
+    while ($("#instructions tbody tr:last").index() >= 4) {
+      $("#instructions tbody tr:last").remove();
+    }
+  });
+
+  $("#minute_input").click(function () {
+    while ($("#instructions tbody tr:last").index() >= 4) {
+      $("#instructions tbody tr:last").remove();
+    }
+    resetLabelColor();
+    $("#min_label").css("color", "red");
+    $('#instructions tbody').append($("#instructions tbody tr:first").clone());
+    $('#instructions tbody tr:last th').html("0-59");
+    $('#instructions tbody tr:last td').html("allowed values");
+  });
+
+  $("#hour_input").click(function () {
+    while ($("#instructions tbody tr:last").index() >= 4) {
+      $("#instructions tbody tr:last").remove();
+    }
+    resetLabelColor();
+    $("#hour_label").css("color", "red");
+    $('#instructions tbody').append($("#instructions tbody tr:first").clone());
+    $('#instructions tbody tr:last th').html("0-23");
+    $('#instructions tbody tr:last td').html("allowed values");
+  });
+
+  $("#dom_input").click(function () {
+    while ($("#instructions tbody tr:last").index() >= 4) {
+      $("#instructions tbody tr:last").remove();
+    }
+    resetLabelColor();
+    $("#dom_label").css("color", "red");
+    $('#instructions tbody').append($("#instructions tbody tr:first").clone());
+    $('#instructions tbody tr:last th').html("1-31");
+    $('#instructions tbody tr:last td').html("allowed values");
+
+    $('#instructions tbody').append($("#instructions tbody tr:first").clone());
+    $('#instructions tbody tr:last').find('td').css({'class': 'danger'});
+    $('#instructions tbody tr:last th').html("?");
+    $('#instructions tbody tr:last td').html("Blank");
+  });
+
+  $("#month_input").click(function () {
+    while ($("#instructions tbody tr:last").index() >= 4) {
+      $("#instructions tbody tr:last").remove();
+    }
+    resetLabelColor();
+    $("#mon_label").css("color", "red");
+    $('#instructions tbody').append($("#instructions tbody tr:first").clone());
+    $('#instructions tbody tr:last th').html("1-12");
+    $('#instructions tbody tr:last td').html("allowed values");
+  });
+
+  $("#dow_input").click(function () {
+    while ($("#instructions tbody tr:last").index() >= 4) {
+      $("#instructions tbody tr:last").remove();
+    }
+    resetLabelColor();
+    $("#dow_label").css("color", "red");
+
+    $('#instructions tbody').append($("#instructions tbody tr:first").clone());
+    $('#instructions tbody tr:last th').html("1-7");
+    $('#instructions tbody tr:last td').html("SUN MON TUE WED THU FRI SAT");
+
+    $('#instructions tbody').append($("#instructions tbody tr:first").clone());
+    $('#instructions tbody tr:last th').html("?");
+    $('#instructions tbody tr:last td').html("Blank");
+  });
 });
+
+function resetLabelColor(){
+  $("#min_label").css("color", "black");
+  $("#hour_label").css("color", "black");
+  $("#dom_label").css("color", "black");
+  $("#mon_label").css("color", "black");
+  $("#dow_label").css("color", "black");
+}
+
+var cron_minutes_id = "#minute_input";
+var cron_hours_id   = "#hour_input";
+var cron_dom_id     = "#dom_input";
+var cron_months_id  = "#month_input";
+var cron_dow_id     = "#dow_input";
+var cron_output_id  = "#cron-output";
+var cron_translate_id  = "#cronTranslate";
+var cron_translate_warning_id  = "#translationWarning";
+
+// Cron use 0-6 as Sun--Sat, but Quartz use 1-7. Therefore, a translation is necessary.
+function transformFromCronToQuartz(str){
+  var res = str.split(" ");
+  res[res.length -1] = res[res.length -1].replace(/[0-7]/g, function upperToHyphenLower(match) {
+    return (parseInt(match)+6)%7;
+  });
+  return res.join(" ");
+}
+
+function updateOutput() {
+  $(cron_output_id).val( $(cron_minutes_id).val() + " " +  $(cron_hours_id).val() + " " +
+      $(cron_dom_id).val() + " " + $(cron_months_id).val() + " " + $(cron_dow_id).val()
+  );
+  updateExpression();
+}
+
+function updateExpression() {
+  $('#nextRecurId').html("");
+
+  console.log("cron Input = " + $(cron_output_id).val());
+  var laterCron = later.parse.cron($(cron_output_id).val());
+
+  //Get the current time given the server timezone.
+  var serverTime = moment().tz(timezone);
+  console.log("serverTime = " + serverTime.format());
+  var now1Str = serverTime.format();
+
+  //Get the server Timezone offset against UTC (e.g. if timezone is PDT, it should be -07:00)
+  // var timeZoneOffset = now1Str.substring(now1Str.length-6, now1Str.length);
+  // console.log("offset = " + timeZoneOffset);
+
+  //Transform the moment time to UTC Date time (required by later.js)
+  var serverTimeInJsDateFormat = new Date();
+  serverTimeInJsDateFormat.setUTCHours(serverTime.get('hour'), serverTime.get('minute'), 0, 0);
+  serverTimeInJsDateFormat.setUTCMonth(serverTime.get('month'), serverTime.get('date'));
+
+  // Calculate the following 10 occurences based on the current server time.
+  // The logic is a bit tricky here. since later.js only support UTC Date (javascript raw library).
+  // We transform from current browser-timezone-time to Server timezone.
+  // Then we let serverTimeInJsDateFormat is equal to the server time.
+  var occurrences = later.schedule(laterCron).next(10, serverTimeInJsDateFormat);
+
+  //The following component below displays a list of next 10 triggering timestamp.
+  for(var i = 9; i >= 0; i--) {
+    var strTime = JSON.stringify(occurrences[i]);
+
+    // Get the time (based on server time zone)
+    var nextTime = '<li style="color:DarkGreen">' + strTime.substring(1, strTime.length-6) + '</li>';
+    $('#nextRecurId').prepend(nextTime);
+  }
+}
