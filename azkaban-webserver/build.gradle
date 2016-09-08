@@ -17,6 +17,10 @@ bower {
       source 'build/js/*.min.js'  >> '/'
       excludes 'jquery'
     }
+
+    'later'('1.2.0'){
+      source 'later.min.js' >> '/'
+    }
 }
 
 apply plugin: 'lesscss'

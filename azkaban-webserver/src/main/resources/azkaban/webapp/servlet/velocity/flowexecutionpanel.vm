@@ -201,7 +201,7 @@
       </div><!-- /modal -->
 
 #if (!$show_schedule || $show_schedule == 'true')
-  #parse ("azkaban/webapp/servlet/velocity/schedulepanel.vm")
+  #parse ("azkaban/webapp/servlet/velocity/${switchToPanelPage}")
 #end
 
 #*

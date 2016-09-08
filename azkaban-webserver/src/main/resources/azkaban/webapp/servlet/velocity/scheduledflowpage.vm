@@ -36,7 +36,7 @@
       var timezone = "${timezone}";
       var errorMessage = null;
       var successMessage = null;
-      
+
       $(document).ready(function () {
         var flowTable = $("#scheduledFlowsTbl");
         flowTable.tablesorter();
@@ -80,6 +80,7 @@
                 <th class="date">First Scheduled to Run</th>
                 <th class="date">Next Execution Time</th>
                 <th class="date">Repeats Every</th>
+                <th class="date">Cron Expression</th>
                 <th>Has SLA</th>
                 <th colspan="2" class="action ignoresort">Action</th>
               </tr>
@@ -101,7 +102,16 @@
                 <td>${sched.submitUser}</td>
                 <td>$utils.formatDateTime(${sched.firstSchedTime})</td>
                 <td>$utils.formatDateTime(${sched.nextExecTime})</td>
-                <td>$utils.formatPeriod(${sched.period})</td>
+                #if (${sched.period})
+                  <td> $utils.formatPeriod(${sched.period}) </td>
+                #else
+                  <td>Not Applicable</td>
+                #end
+                #if (${sched.cronExpression})
+                  <td> ${sched.cronExpression} </td>
+                #else
+                  <td>Not Applicable</td>
+                #end
                 <td>#if(${sched.slaOptions}) true #else false #end</td>
                 <td><button type="button" id="removeSchedBtn" class="btn btn-sm btn-danger" onclick="removeSched(${sched.scheduleId})" >Remove Schedule</button></td>
                 <td><button type="button" id="addSlaBtn" class="btn btn-sm btn-primary" onclick="slaView.initFromSched(${sched.scheduleId}, '${sched.flowName}')" >Set SLA</button></td>
@@ -109,7 +119,7 @@
     #end
   #else
               <tr>
-                <td colspan="10">No scheduled flow found.</td>
+                <td colspan="11">No scheduled flow found.</td>
               </tr>
   #end
             </tbody>
