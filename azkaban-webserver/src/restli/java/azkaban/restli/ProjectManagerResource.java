@@ -19,6 +19,7 @@ import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.Map;
 
 import javax.servlet.ServletException;
 
@@ -28,6 +29,7 @@ import org.apache.log4j.Logger;
 import azkaban.project.Project;
 import azkaban.project.ProjectManager;
 import azkaban.project.ProjectManagerException;
+import azkaban.project.validator.ValidationReport;
 import azkaban.user.Permission;
 import azkaban.user.User;
 import azkaban.user.UserManagerException;
@@ -100,7 +102,23 @@ public class ProjectManagerResource extends ResourceContextHolder {
       Props props = new Props();
 
       logger.info("Downloaded to " + archiveFile.toString());
-      projectManager.uploadProject(project, archiveFile, "zip", user, props);
+      // Check if project upload runs into any errors, such as the file
+      // having blacklisted jars
+      Map<String, ValidationReport> reports = projectManager.uploadProject(project, archiveFile, "zip", user, props);
+      StringBuffer errorMsgs = new StringBuffer();
+      for (Map.Entry<String, ValidationReport> reportEntry : reports.entrySet()) {
+        ValidationReport report = reportEntry.getValue();
+        if (!report.getErrorMsgs().isEmpty()) {
+          errorMsgs.append("Validator " + reportEntry.getKey()
+                            + " reports errors: ");
+          for (String msg : report.getErrorMsgs()) {
+            errorMsgs.append(msg);
+          }
+        }
+      }
+      if(errorMsgs.length() > 0) {
+        throw new ProjectManagerException(errorMsgs.toString());
+      }
     } catch (IOException e) {
       String errorMsg =
           "Download of URL " + packageUrl + " to " + archiveFile.toString()
