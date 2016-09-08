@@ -232,7 +232,8 @@ function updateExpression() {
   for(var i = 9; i >= 0; i--) {
     var strTime = JSON.stringify(occurrences[i]);
 
-    // Get the time (based on server time zone)
+    // Get the time. The original occurance time string is like: "2016-09-09T05:00:00.999",
+    // We trim the string to ignore milliseconds.
     var nextTime = '<li style="color:DarkGreen">' + strTime.substring(1, strTime.length-6) + '</li>';
     $('#nextRecurId').prepend(nextTime);
   }
