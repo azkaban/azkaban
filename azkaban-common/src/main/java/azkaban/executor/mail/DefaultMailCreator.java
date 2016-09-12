@@ -212,6 +212,58 @@ public class DefaultMailCreator implements MailCreator {
     return false;
   }
 
+  @Override
+  public boolean createSlaAlertEmail(ExecutableFlow flow, EmailMessage message,
+                                  String azkabanName, String scheme, String clientHostname,
+                                  String clientPortNumber, List<String> emailList, String... vars) {
+
+    ExecutionOptions option = flow.getExecutionOptions();
+
+    int execId = flow.getExecutionId();
+
+    if (emailList != null && !emailList.isEmpty()) {
+      message.addAllToAddress(emailList);
+      message.setMimeType("text/html");
+      message.setSubject("Flow '" + flow.getFlowId() + "' didn't meet its SLA on "
+              + azkabanName);
+
+      message.println("<h2 style=\"color:#FF0000\"> Execution '" + execId
+              + "' of flow '" + flow.getFlowId() + "' has violated its SLA on " + azkabanName
+              + "</h2>");
+      message.println("<table>");
+      message.println("<tr><td>Start Time</td><td>"
+              + convertMSToString(flow.getStartTime()) + "</td></tr>");
+      message.println("<tr><td>End Time</td><td>"
+              + convertMSToString(flow.getEndTime()) + "</td></tr>");
+      message.println("<tr><td>Duration</td><td>"
+              + Utils.formatDuration(flow.getStartTime(), flow.getEndTime())
+              + "</td></tr>");
+      message.println("</table>");
+      message.println("");
+      String executionUrl =
+              scheme + "://" + clientHostname + ":" + clientPortNumber + "/"
+                      + "executor?" + "execid=" + execId;
+      message.println("<a href=\"" + executionUrl + "\">" + flow.getFlowId()
+              + " Execution Link</a>");
+
+      message.println("");
+      message.println("<h3>Reason</h3>");
+      List<String> failedJobs = Emailer.findFailedJobs(flow);
+      message.println("<ul>");
+      for (String jobId : failedJobs) {
+        message.println("<li><a href=\"" + executionUrl + "&job=" + jobId
+                + "\">Failed job '" + jobId + "' Link</a></li>");
+      }
+      for (String reasons : vars) {
+        message.println("<li>" + reasons + "</li>");
+      }
+
+      message.println("</ul>");
+      return true;
+    }
+    return false;
+  }
+
   private static String convertMSToString(long timeInMS) {
     if (timeInMS < 0) {
       return "N/A";

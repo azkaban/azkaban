@@ -151,7 +151,7 @@ public class SlaOption {
           "SLA Alert: Your flow " + flowName + " failed to FINISH within "
               + duration + "</br>";
       String expected =
-          "Here is details : </br>" + "Flow " + flowName + " in execution "
+          "Here are the details : </br>" + "Flow " + flowName + " in execution "
               + execId + " is expected to FINISH within " + duration + " from "
               + fmt.print(new DateTime(flow.getStartTime())) + "</br>";
       String actual = "Actual flow status is " + flow.getStatus();
@@ -165,7 +165,7 @@ public class SlaOption {
           "SLA Alert: Your flow " + flowName + " failed to SUCCEED within "
               + duration + "</br>";
       String expected =
-          "Here is details : </br>" + "Flow " + flowName + " in execution "
+          "Here are the details : </br>" + "Flow " + flowName + " in execution "
               + execId + " expected to FINISH within " + duration + " from "
               + fmt.print(new DateTime(flow.getStartTime())) + "</br>";
       String actual = "Actual flow status is " + flow.getStatus();
