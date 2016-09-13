@@ -1,3 +1,10 @@
+apply plugin: 'distribution'
+
+/**
+ * concat task
+ * Concatenate all the sql queries / files (except update.*.sql) and collect it into a single
+ * SQL file.
+ */
 task concat() << {
   ext.destFile = 'build/sql/create-all-sql-' + version + '.sql';
   ant.concat(destfile: destFile, fixlastline: 'yes') {
@@ -5,6 +12,18 @@ task concat() << {
     fileset(dir: 'src/sql') {
       exclude(name: 'update.*.sql')
       exclude(name: 'database.properties')
+    }
+  }
+}
+
+distTar.dependsOn concat
+distZip.dependsOn concat
+
+distributions {
+  main {
+    contents {
+      from('src/sql')
+      from("$buildDir/sql")
     }
   }
 }
