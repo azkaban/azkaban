@@ -91,7 +91,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
       "lockdown.create.projects";
   private static final String LOCKDOWN_UPLOAD_PROJECTS_KEY =
       "lockdown.upload.projects";
-  
+
   private static final String PROJECT_DOWNLOAD_BUFFER_SIZE_IN_BYTES =
       "project.download.buffer.size";
 
@@ -125,13 +125,13 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
     if (lockdownCreateProjects) {
       logger.info("Creation of projects is locked down");
     }
-    
+
     lockdownUploadProjects =
         server.getServerProps().getBoolean(LOCKDOWN_UPLOAD_PROJECTS_KEY, false);
     if (lockdownUploadProjects) {
       logger.info("Uploading of projects is locked down");
     }
-    
+
     downloadBufferSize =
         server.getServerProps().getInt(PROJECT_DOWNLOAD_BUFFER_SIZE_IN_BYTES,
             8192);
@@ -549,7 +549,10 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 
     try {
       Project project = null;
+      boolean projectActive = false;
       String projectParam = getParam(req, "project");
+
+      projectActive = Boolean.parseBoolean(getParam(req, "active"));
 
       if (StringUtils.isNumeric(projectParam)) {
         project = projectManager.getProject(Integer.parseInt(projectParam)); // get
@@ -563,29 +566,38 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
                                                            // from ints)
       }
 
-      // invalid project
-      if (project == null) {
-        ret.put("error", "invalid project");
-        isOperationSuccessful = false;
-      }
+      if (!projectActive) {
+        // invalid project
+        if (project == null) {
+          ret.put("error", "invalid project");
+          isOperationSuccessful = false;
+        }
 
-      // project is already deleted
-      if (isOperationSuccessful
-          && projectManager.isActiveProject(project.getId())) {
-        ret.put("error", "Project " + project.getName()
-            + " should be deleted before purging");
-        isOperationSuccessful = false;
-      }
+        // project is already deleted
+        if (isOperationSuccessful && projectManager.isActiveProject(project.getId())) {
+          ret.put("error", "Project " + project.getName() + " should be deleted before purging");
+          isOperationSuccessful = false;
+        }
 
-      // only eligible users can purge a project
-      if (isOperationSuccessful && !hasPermission(project, user, Type.ADMIN)) {
-        ret.put("error", "Cannot purge. User '" + user.getUserId()
-            + "' is not an ADMIN.");
-        isOperationSuccessful = false;
-      }
+        // only eligible users can purge a project
+        if (isOperationSuccessful && !hasPermission(project, user, Type.ADMIN)) {
+          ret.put("error", "Cannot purge. User '" + user.getUserId() + "' is not an ADMIN.");
+          isOperationSuccessful = false;
+        }
 
-      if (isOperationSuccessful) {
-        projectManager.purgeProject(project, user);
+        if (isOperationSuccessful) {
+          projectManager.purgeInactiveProject(project, user);
+        }
+      } else {
+        // only eligible users can purge a project
+        if (!hasPermission(project, user, Type.ADMIN)) {
+          ret.put("error", "Cannot purge. User '" + user.getUserId() + "' is not an ADMIN.");
+          isOperationSuccessful = false;
+        }
+
+        if (isOperationSuccessful) {
+          projectManager.purgeActiveProject(project, user);
+        }
       }
     } catch (Exception e) {
       ret.put("error", e.getMessage());
