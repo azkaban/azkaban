@@ -759,7 +759,11 @@ public class AzkabanWebServer extends AzkabanServer {
     String staticDir =
         azkabanSettings.getString("web.resource.dir", DEFAULT_STATIC_DIR);
     logger.info("Setting up web resource dir " + staticDir);
-    Context root = new Context(server, "/", Context.SESSIONS);
+
+    String siteRoot =
+        azkabanSettings.getString("web.site_root", "/");
+        
+    Context root = new Context(server, siteRoot, Context.SESSIONS);
     root.setMaxFormContentSize(MAX_FORM_CONTENT_SIZE);
 
     String defaultServletPath =
