@@ -1,40 +1,23 @@
-configurations {
-  all {
-    transitive = false
-  }
-  errorprone {
-    transitive = true
-  }
-}
+apply plugin: 'distribution'
+
 
 dependencies {
   compile(project(':azkaban-common'))
-  compile('commons-io:commons-io:2.4')
-  compile('commons-dbcp:commons-dbcp:1.4')
-  compile('commons-dbutils:commons-dbutils:1.5')
-  compile('joda-time:joda-time:2.0')
-  compile('log4j:log4j:1.2.16')
 }
 
-task copyLibs(type: Copy, dependsOn: 'build') {
-  from('build/libs')
-  into('build/package/lib')
-}
-
-task copyDeps(type: Copy, dependsOn: 'build') {
-  from(project(':azkaban-common').configurations.compile)
-  from(configurations.compile)
-  into('build/package/lib')
-}
-
-task copyPackage(type: Copy) {
-  from('src/package')
-  into('build/package')
-}
-
-task copy(dependsOn: [
-        'createVersionFile',
-        'copyLibs',
-        'copyDeps',
-        'copyPackage']) {
+distributions {
+  main {
+    contents {
+      from('src/main/bash') {
+        into 'bin'
+        fileMode = 0755
+      }
+      from(configurations.runtime) {
+        into 'lib'
+      }
+      from(jar) {
+        into 'lib'
+      }
+    }
+  }
 }
