@@ -16,6 +16,7 @@ task concat() << {
   }
 }
 
+installDist.dependsOn concat
 distTar.dependsOn concat
 distZip.dependsOn concat
 
