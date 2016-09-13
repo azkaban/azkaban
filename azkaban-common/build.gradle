@@ -1,7 +1,3 @@
-configurations {
-  errorprone
-}
-
 apply plugin: 'c'
 model {
   components {
