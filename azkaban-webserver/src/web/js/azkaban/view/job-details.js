@@ -60,5 +60,9 @@ $(function() {
     el: $('#jobLogView'),
     model: jobLogModel
   });
-  jobLogModel.refresh();
+  jobLogView.refresh();
+
+  setInterval(function () {
+    jobLogView.refresh();
+  },5000);
 });
