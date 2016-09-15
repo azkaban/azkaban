@@ -22,6 +22,8 @@ import azkaban.project.ProjectManagerException;
 import azkaban.project.validator.ValidationReport;
 import azkaban.restli.ProjectManagerResource;
 
+import com.linkedin.restli.common.HttpStatus;
+import com.linkedin.restli.server.RestLiServiceException;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -31,8 +33,9 @@ import org.junit.Test;
 
 /**
  * Test response to deploy with either warn or error reports.
- * If a report has any errors, a ProjectManagerException should be thrown.
+ * If a report has any errors, a RestLiServiceException should be thrown.
  * Warnings should not elicit an exception.
+ * If an exception does get raised, it should carry an HTTP 400 status
  */
 
 public class DeployProjectTest {
@@ -40,7 +43,7 @@ public class DeployProjectTest {
   public void testWarnedDeploy() throws Exception {
     ProjectManagerResource resource = new ProjectManagerResource();
     Map<String, ValidationReport> reports = new LinkedHashMap<String, ValidationReport>();
-    for(int i = 0; i < 3; i++) {
+    for (int i = 0; i < 3; i++) {
       Set<String> warnMsgs = new HashSet<String>();
       ValidationReport warnRpt = new ValidationReport();
       warnMsgs.add("test warn level info message.");
@@ -52,7 +55,7 @@ public class DeployProjectTest {
     boolean pass = true;
     try {
       resource.checkReport(reports);
-    } catch (ProjectManagerException e) {
+    } catch (RestLiServiceException e) {
       pass = false;
     } catch (Exception e) {
       pass = false;
@@ -64,7 +67,7 @@ public class DeployProjectTest {
   public void testErrorDeploy() throws Exception {
     ProjectManagerResource resource = new ProjectManagerResource();
     Map<String, ValidationReport> reports = new LinkedHashMap<String, ValidationReport>();
-    for(int i = 0; i < 3; i++) {
+    for (int i = 0; i < 3; i++) {
       Set<String> errorMsgs = new HashSet<String>();
       ValidationReport errorRpt = new ValidationReport();
       errorMsgs.add("test error level info message.");
@@ -76,8 +79,12 @@ public class DeployProjectTest {
     boolean pass = false;
     try {
       resource.checkReport(reports);
-    } catch (ProjectManagerException e) {
-      pass = true;
+    } catch (RestLiServiceException e) {
+      if (e.getStatus() != HttpStatus.S_400_BAD_REQUEST) {
+        pass = false;
+      } else {
+        pass = true;
+      }
     } catch (Exception e) {
       pass = false;
     }
@@ -105,8 +112,12 @@ public class DeployProjectTest {
     boolean pass = false;
     try {
       resource.checkReport(reports);
-    } catch (ProjectManagerException e) {
-      pass = true;
+    } catch (RestLiServiceException e) {
+      if (e.getStatus() != HttpStatus.S_400_BAD_REQUEST) {
+        pass = false;
+      } else {
+        pass = true;
+      }
     } catch (Exception e) {
       pass = false;
     }

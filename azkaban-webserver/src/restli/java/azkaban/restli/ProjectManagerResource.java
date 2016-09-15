@@ -15,6 +15,9 @@
  */
 package azkaban.restli;
 
+import azkaban.project.ProjectManagerException;
+import com.linkedin.restli.common.HttpStatus;
+import com.linkedin.restli.server.RestLiServiceException;
 import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
@@ -28,7 +31,6 @@ import org.apache.log4j.Logger;
 
 import azkaban.project.Project;
 import azkaban.project.ProjectManager;
-import azkaban.project.ProjectManagerException;
 import azkaban.project.validator.ValidationReport;
 import azkaban.user.Permission;
 import azkaban.user.User;
@@ -55,8 +57,8 @@ public class ProjectManagerResource extends ResourceContextHolder {
   public String deploy(@ActionParam("sessionId") String sessionId,
       @ActionParam("projectName") String projectName,
       @ActionParam("packageUrl") String packageUrl)
-      throws ProjectManagerException, UserManagerException, ServletException,
-      IOException {
+      throws ProjectManagerException, RestLiServiceException, UserManagerException,
+      ServletException, IOException {
     logger.info("Deploy called. {sessionId: " + sessionId + ", projectName: "
         + projectName + ", packageUrl:" + packageUrl + "}");
 
@@ -67,8 +69,8 @@ public class ProjectManagerResource extends ResourceContextHolder {
     ProjectManager projectManager = getAzkaban().getProjectManager();
     Project project = projectManager.getProject(projectName);
     if (project == null) {
-      throw new ProjectManagerException("Project '" + projectName
-          + "' not found.");
+      String errorMsg = "Project '" + projectName + "' not found.";
+      throw new RestLiServiceException(HttpStatus.S_400_BAD_REQUEST, errorMsg);
     }
 
     if (!ResourceUtils.hasPermission(project, user, Permission.Type.WRITE)) {
@@ -76,7 +78,7 @@ public class ProjectManagerResource extends ResourceContextHolder {
           "User " + user.getUserId()
               + " has no permission to write to project " + project.getName();
       logger.error(errorMsg);
-      throw new ProjectManagerException(errorMsg);
+      throw new RestLiServiceException(HttpStatus.S_400_BAD_REQUEST, errorMsg);
     }
 
     logger.info("Target package URL is " + packageUrl);
@@ -86,7 +88,7 @@ public class ProjectManagerResource extends ResourceContextHolder {
     } catch (MalformedURLException e) {
       String errorMsg = "URL " + packageUrl + " is malformed.";
       logger.error(errorMsg, e);
-      throw new ProjectManagerException(errorMsg, e);
+      throw new RestLiServiceException(HttpStatus.S_400_BAD_REQUEST, errorMsg);
     }
 
     String filename = getFileName(url.getFile());
@@ -109,7 +111,7 @@ public class ProjectManagerResource extends ResourceContextHolder {
       if (tempDir.exists()) {
         FileUtils.deleteDirectory(tempDir);
       }
-      throw new ProjectManagerException(errorMsg, e);
+      throw new RestLiServiceException(HttpStatus.S_400_BAD_REQUEST, errorMsg, e);
     }
 
     try {
@@ -119,7 +121,11 @@ public class ProjectManagerResource extends ResourceContextHolder {
       Map<String, ValidationReport> reports = projectManager.uploadProject(project, archiveFile, "zip", user, props);
       checkReport(reports);
       return Integer.toString(project.getVersion());
-    } catch(ProjectManagerException e) {
+    } catch (RestLiServiceException e) {
+      String errorMsg = "Project files did not pass validation tests";
+      logger.error(errorMsg, e);
+      throw e;
+    } catch (ProjectManagerException e) {
       String errorMsg = "Upload of project " + project + " from " + archiveFile + " failed";
       logger.error(errorMsg, e);
       throw e;
@@ -130,7 +136,7 @@ public class ProjectManagerResource extends ResourceContextHolder {
     }
   }
 
-  public void checkReport(Map<String, ValidationReport> reports) throws ProjectManagerException {
+  public void checkReport(Map<String, ValidationReport> reports) throws RestLiServiceException {
     StringBuffer errorMsgs = new StringBuffer();
     for (Map.Entry<String, ValidationReport> reportEntry : reports.entrySet()) {
       ValidationReport report = reportEntry.getValue();
@@ -142,8 +148,8 @@ public class ProjectManagerResource extends ResourceContextHolder {
         }
       }
     }
-    if(errorMsgs.length() > 0) {
-      throw new ProjectManagerException(errorMsgs.toString());
+    if (errorMsgs.length() > 0) {
+      throw new RestLiServiceException(HttpStatus.S_400_BAD_REQUEST, errorMsgs.toString());
     }
   }
 
