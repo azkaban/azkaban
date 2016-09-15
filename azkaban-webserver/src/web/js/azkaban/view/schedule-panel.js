@@ -194,16 +194,18 @@ function transformFromQuartzToUnixCron(str){
 
   // If the cron doesn't include year field
   if(res.length == 5)
-    res[res.length -1] = res[res.length -1].replace(/[0-7]/g, function upperToHyphenLower(match) {
-      return (parseInt(match)+6)%7;
-    });
+    res[res.length -1] = modifyStrToUnixCronSyntax(res[res.length - 1]);
   // If the cron Str does include year field
   else if(res.length == 6)
-    res[res.length - 2] = res[res.length -1].replace(/[0-7]/g, function upperToHyphenLower(match) {
-      return (parseInt(match)+6)%7;
-    });
+    res[res.length - 2] = modifyStrToUnixCronSyntax(res[res.length - 2]);
 
   return res.join(" ");
+}
+
+function modifyStrToUnixCronSyntax(str){
+  return str.replace(/[0-7]/g, function upperToHyphenLower(match) {
+    return (parseInt(match)+6)%7;
+  });
 }
 
 function updateOutput() {
