@@ -15,9 +15,6 @@
  */
 package azkaban.restli;
 
-import azkaban.project.ProjectManagerException;
-import com.linkedin.restli.common.HttpStatus;
-import com.linkedin.restli.server.RestLiServiceException;
 import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
@@ -31,6 +28,7 @@ import org.apache.log4j.Logger;
 
 import azkaban.project.Project;
 import azkaban.project.ProjectManager;
+import azkaban.project.ProjectManagerException;
 import azkaban.project.validator.ValidationReport;
 import azkaban.user.Permission;
 import azkaban.user.User;
@@ -39,10 +37,12 @@ import azkaban.utils.Props;
 import azkaban.utils.Utils;
 import azkaban.webapp.AzkabanWebServer;
 
+import com.linkedin.restli.common.HttpStatus;
 import com.linkedin.restli.server.annotations.Action;
 import com.linkedin.restli.server.annotations.ActionParam;
 import com.linkedin.restli.server.annotations.RestLiActions;
 import com.linkedin.restli.server.resources.ResourceContextHolder;
+import com.linkedin.restli.server.RestLiServiceException;
 
 @RestLiActions(name = "project", namespace = "azkaban.restli")
 public class ProjectManagerResource extends ResourceContextHolder {
@@ -121,10 +121,6 @@ public class ProjectManagerResource extends ResourceContextHolder {
       Map<String, ValidationReport> reports = projectManager.uploadProject(project, archiveFile, "zip", user, props);
       checkReport(reports);
       return Integer.toString(project.getVersion());
-    } catch (RestLiServiceException e) {
-      String errorMsg = "Project files did not pass validation tests";
-      logger.error(errorMsg, e);
-      throw e;
     } catch (ProjectManagerException e) {
       String errorMsg = "Upload of project " + project + " from " + archiveFile + " failed";
       logger.error(errorMsg, e);
@@ -136,15 +132,14 @@ public class ProjectManagerResource extends ResourceContextHolder {
     }
   }
 
-  public void checkReport(Map<String, ValidationReport> reports) throws RestLiServiceException {
+  void checkReport(Map<String, ValidationReport> reports) throws RestLiServiceException {
     StringBuffer errorMsgs = new StringBuffer();
     for (Map.Entry<String, ValidationReport> reportEntry : reports.entrySet()) {
       ValidationReport report = reportEntry.getValue();
       if (!report.getErrorMsgs().isEmpty()) {
-        errorMsgs.append("Validator " + reportEntry.getKey()
-            + " reports errors: ");
+        errorMsgs.append("Validator " + reportEntry.getKey() + " reports errors: ");
         for (String msg : report.getErrorMsgs()) {
-          errorMsgs.append(msg);
+          errorMsgs.append(msg + System.getProperty("line.separator"));
         }
       }
     }
