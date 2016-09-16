@@ -119,7 +119,7 @@ public class ProjectManagerResource extends ResourceContextHolder {
       // having blacklisted jars
       Props props = new Props();
       Map<String, ValidationReport> reports = projectManager.uploadProject(project, archiveFile, "zip", user, props);
-      checkReport(reports);
+      checkReports(reports);
       return Integer.toString(project.getVersion());
     } catch (ProjectManagerException e) {
       String errorMsg = "Upload of project " + project + " from " + archiveFile + " failed";
@@ -132,7 +132,7 @@ public class ProjectManagerResource extends ResourceContextHolder {
     }
   }
 
-  void checkReport(Map<String, ValidationReport> reports) throws RestLiServiceException {
+  void checkReports(Map<String, ValidationReport> reports) throws RestLiServiceException {
     StringBuffer errorMsgs = new StringBuffer();
     for (Map.Entry<String, ValidationReport> reportEntry : reports.entrySet()) {
       ValidationReport report = reportEntry.getValue();

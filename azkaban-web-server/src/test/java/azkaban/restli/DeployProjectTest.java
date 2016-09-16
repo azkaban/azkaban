@@ -43,15 +43,11 @@ public class DeployProjectTest {
     ProjectManagerResource resource = new ProjectManagerResource();
     Map<String, ValidationReport> reports = new LinkedHashMap<String, ValidationReport>();
     for (int i = 0; i < 3; i++) {
-      Set<String> warnMsgs = new HashSet<String>();
-      ValidationReport warnRpt = new ValidationReport();
-      warnMsgs.add("test warn level info message.");
-      warnRpt.addWarningMsgs(warnMsgs);
-      reports.put("warn " + i, warnRpt);
+      addMockWarning(reports, "Test warn level info message.");
     }
     // We expect that no exceptions are thrown given a
     // report with warnings. Anything thrown will result in failure
-    resource.checkReport(reports);
+    resource.checkReports(reports);
   }
 
   @Test
@@ -59,16 +55,12 @@ public class DeployProjectTest {
     ProjectManagerResource resource = new ProjectManagerResource();
     Map<String, ValidationReport> reports = new LinkedHashMap<String, ValidationReport>();
     for (int i = 0; i < 3; i++) {
-      Set<String> errorMsgs = new HashSet<String>();
-      ValidationReport errorRpt = new ValidationReport();
-      errorMsgs.add("test error level info message.");
-      errorRpt.addErrorMsgs(errorMsgs);
-      reports.put("error " + i, errorRpt);
+      addMockError(reports, "Test error level info message.");
     }
     // We expect that a RestLiServiceException is thrown given a
     // report with errors. Uncaught exceptions will result in failure
     try {
-      resource.checkReport(reports);
+      resource.checkReports(reports);
     } catch (RestLiServiceException e) {
       //Ensure we have the right status code and exit
       assertEquals(e.getStatus(), HttpStatus.S_400_BAD_REQUEST);
@@ -80,23 +72,19 @@ public class DeployProjectTest {
     ProjectManagerResource resource = new ProjectManagerResource();
     Map<String, ValidationReport> reports = new LinkedHashMap<String, ValidationReport>();
     for (int i = 0; i < 7; i++) {
-      Set<String> msgs = new HashSet<String>();
-      ValidationReport report = new ValidationReport();
-      msgs.add("test message.");
       // If i is even, make an error report, otherwise make a warning report
       if (i % 2 == 0) {
-        report.addErrorMsgs(msgs);
+        addMockError(reports, "Test error level info message.");
       }
       else {
-        report.addWarningMsgs(msgs);
+        addMockWarning(reports, "Test warn level info message.");
       }
-      reports.put("test " + i, report);
     }
 
     // We expect that a RestLiServiceException is thrown given a
     // report with errors. Uncaught exceptions will result in failure
     try {
-      resource.checkReport(reports);
+      resource.checkReports(reports);
     } catch (RestLiServiceException e) {
       //Ensure we have the right status code and exit
       assertEquals(e.getStatus(), HttpStatus.S_400_BAD_REQUEST);
@@ -105,28 +93,39 @@ public class DeployProjectTest {
 
   /**
    * Test that an error message is attached to the exception on an error
-   * Note that there are two spaces between "error" and "reports"
    */
   @Test
   public void testErrorMessageDeploy() {
     ProjectManagerResource resource = new ProjectManagerResource();
     Map<String, ValidationReport> reports = new LinkedHashMap<String, ValidationReport>();
 
-    Set<String> errorMsgs = new HashSet<String>();
-    ValidationReport errorRpt = new ValidationReport();
-    errorMsgs.add("This should show up");
-    errorRpt.addErrorMsgs(errorMsgs);
-    reports.put("error ", errorRpt);
+    addMockError(reports, "This should show up.");
 
     // We expect that a RestLiServiceException is thrown given a
     // report with errors. Uncaught exceptions will result in failure
     try {
-      resource.checkReport(reports);
+      resource.checkReports(reports);
     } catch (RestLiServiceException e) {
       //Ensure we have the right status code and exit
       assertEquals(e.getStatus(), HttpStatus.S_400_BAD_REQUEST);
-      assertEquals(e.getMessage(), "Validator error  reports errors: This should show up"
+      assertEquals(e.getMessage(), "Validator Error reports errors: This should show up."
           + System.getProperty("line.separator"));
     }
+  }
+
+  private void addMockWarning(Map<String, ValidationReport> reports, String msg) {
+    Set<String> warnMsgs = new HashSet<String>();
+    ValidationReport warnRpt = new ValidationReport();
+    warnMsgs.add(msg);
+    warnRpt.addWarningMsgs(warnMsgs);
+    reports.put("Warn", warnRpt);
+  }
+
+  private void addMockError(Map<String, ValidationReport> reports, String msg) {
+    Set<String> errorMsgs = new HashSet<String>();
+    ValidationReport errorRpt = new ValidationReport();
+    errorMsgs.add(msg);
+    errorRpt.addErrorMsgs(errorMsgs);
+    reports.put("Error", errorRpt);
   }
 }
