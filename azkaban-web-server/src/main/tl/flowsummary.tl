@@ -37,8 +37,23 @@
               <tr>
                 <td class="property-key">First Scheduled to Run</td>
                 <td class="property-value-half">{schedule.firstSchedTime}</td>
-                <td class="property-key">Repeats Every</td>
-                <td class="property-value-half">{schedule.period}</td>
+
+                <td class="property-key">
+                  {?schedule.cronExpression}
+                  Cron Expression
+                  {:else}
+                  Repeats Every
+                  {/schedule.cronExpression}
+                </td>
+
+                <td class="property-value-half">
+                  {?schedule.cronExpression}
+                    {schedule.cronExpression}
+                  {:else}
+                    {schedule.period}
+                  {/schedule.cronExpression}
+                </td>
+
               </tr>
               <tr>
                 <td class="property-key">Next Execution Time</td>
