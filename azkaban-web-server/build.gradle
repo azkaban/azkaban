@@ -15,6 +15,10 @@ plugins {
     id 'com.craigburke.bower-installer' version '2.5.1'
 }
 
+plugins {
+  id "com.moowork.node" version "0.13"
+}
+
 apply plugin: 'lesscss'
 apply plugin: 'dustjs'
 apply plugin: 'distribution'
@@ -73,6 +77,27 @@ bower {
   }
 }
 clean.dependsOn 'bowerClean'
+
+task jsTest(dependsOn: ['npm_install'], type:Exec) {
+  workingDir '.'
+  ignoreExitValue = true
+
+  commandLine 'node', 'node_modules/mocha/bin/mocha', 'src/web/js/azkaban/test/'
+
+  standardOutput = new ByteArrayOutputStream()
+  doLast {
+    println standardOutput
+    if (execResult) {
+      if(execResult.exitValue == 0) {
+        println "All js Tests passed"
+      }
+      else{
+        throw new GradleException('Js Tests failed.')
+      }
+    }
+  }
+}
+test.dependsOn 'jsTest'
 
 task restliTemplateGenerator(type: JavaExec) {
   mkdir 'src/restli/generatedJava'
