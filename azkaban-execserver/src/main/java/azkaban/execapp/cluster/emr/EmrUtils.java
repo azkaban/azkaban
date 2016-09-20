@@ -17,6 +17,7 @@ import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 /**
@@ -46,6 +47,9 @@ public class EmrUtils {
     public static final String EMR_CONF_BOOTSTRAP_ACTIONS = "cluster.emr.bootstrap";
 
     public static final String EMR_CONF_CLUSTER_SUBNET = "cluster.emr.subnet";
+    public static final String EMR_CONF_CLUSTER_ZONETOSUBNET_PREFIX = "cluster.emr.zoneToSubnet.";
+    public static final String EMR_CONF_CLUSTER_ZONE = "cluster.emr.zone";
+
     public static final String EMR_CONF_CLUSTER_SECURITYGROUP = "cluster.emr.securitygroup";
 
     public static final String EMR_CONF_EC2_SSH_KEY_NAME = "cluster.emr.ec2.key";
@@ -77,6 +81,17 @@ public class EmrUtils {
             Arrays.asList(new ClusterState[]{ClusterState.STARTING, ClusterState.BOOTSTRAPPING, ClusterState.RUNNING, ClusterState.WAITING}));
 
     public static final Set<ClusterState> READY_STATES = new HashSet<>(Arrays.asList(new ClusterState[]{ClusterState.RUNNING, ClusterState.WAITING}));
+
+    private enum EC2Zone {
+        A, B, C;
+
+        private static EC2Zone[] vals = values();
+        public EC2Zone next() {
+            return vals[(ordinal() + 1) % vals.length];
+        }
+    }
+
+    private static final AtomicReference<EC2Zone> CURRENT_ZONE = new AtomicReference<>(EC2Zone.A);
 
 
     public static Cluster findClusterById(AmazonElasticMapReduceClient emrClient, String clusterId) {
@@ -221,9 +236,8 @@ public class EmrUtils {
 
         String securityGroup = props.get(EMR_CONF_CLUSTER_SECURITYGROUP);
         if (securityGroup == null) throw new InvalidEmrConfigurationException("EMR security group not specified");
-        String ec2SubnetId = props.get(EMR_CONF_CLUSTER_SUBNET);
-        if (ec2SubnetId == null) throw new InvalidEmrConfigurationException("EMR subnet not specified");
 
+        String ec2SubnetId = getSubnetFromProps(props);
 
         JobFlowInstancesConfig instancesConfig = new JobFlowInstancesConfig();
         instancesConfig.setEc2KeyName(props.getString(EMR_CONF_EC2_SSH_KEY_NAME, "SparkEMR"));
@@ -233,6 +247,26 @@ public class EmrUtils {
         instancesConfig.setEmrManagedMasterSecurityGroup(securityGroup);
         instancesConfig.setEmrManagedSlaveSecurityGroup(securityGroup);
         return instancesConfig;
+    }
+
+    private static String getSubnetFromProps(Props props) throws InvalidEmrConfigurationException {
+        Map<String, String> zoneToSubnet = props.getMapByPrefix(EMR_CONF_CLUSTER_ZONETOSUBNET_PREFIX);
+        String zone = props.get(EMR_CONF_CLUSTER_ZONE);
+        if (zone != null && zoneToSubnet.containsKey(zone.toUpperCase())) {
+            return zoneToSubnet.get(zone.toUpperCase());
+        }
+
+        String ec2SubnetId = props.get(EMR_CONF_CLUSTER_SUBNET);
+        if (ec2SubnetId != null) {
+            return ec2SubnetId;
+        }
+
+        zone = CURRENT_ZONE.getAndUpdate(z -> z.next()).name();
+        if (zoneToSubnet.containsKey(zone)) {
+            return zoneToSubnet.get(zone);
+        }
+
+        throw new InvalidEmrConfigurationException("EMR subnet not specified");
     }
 
     private static BootstrapActionConfig createBootstrapAction(String name, String path, List<String> args) {
