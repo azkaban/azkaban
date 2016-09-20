@@ -93,3 +93,25 @@ var getTwoDigitStr = function(value) {
 
   return value;
 }
+
+function modifyStrToUnixCronSyntax(str){
+  return str.replace(/[0-7]/g, function upperToHyphenLower(match) {
+    return (parseInt(match)+6)%7;
+  });
+}
+
+// Unix Cron use 0-6 as Sun--Sat, but Quartz use 1-7. Due to later.js only supporting Unix Cron, we have to make this transition.
+// The detailed Unix Cron Syntax: https://en.wikipedia.org/wiki/Cron
+// The input is a 5 field string (without year) or 6 field String (with year).
+function transformFromQuartzToUnixCron(str){
+  var res = str.split(" ");
+
+  // If the cron doesn't include year field
+  if(res.length == 5)
+    res[res.length -1] = modifyStrToUnixCronSyntax(res[res.length - 1]);
+  // If the cron Str does include year field
+  else if(res.length == 6)
+    res[res.length - 2] = modifyStrToUnixCronSyntax(res[res.length - 2]);
+
+  return res.join(" ");
+}
