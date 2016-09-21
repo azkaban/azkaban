@@ -40,7 +40,6 @@ dependencies {
   compile('org.quartz-scheduler:quartz:2.2.1')
 
   testCompile(project(':azkaban-test').sourceSets.test.output)
-  testCompile('junit:junit:4.11')
   testCompile('org.hamcrest:hamcrest-all:1.3')
 }
 

@@ -1,9 +1,5 @@
 apply plugin: 'distribution'
 
-dependencies {
-  testCompile('junit:junit:4.11')
-}
-
 distributions {
   animal {
     baseName = 'test-animal'

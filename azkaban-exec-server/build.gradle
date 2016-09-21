@@ -3,7 +3,6 @@ apply plugin: 'distribution'
 dependencies {
   compile(project(':azkaban-common'))
 
-  testCompile('junit:junit:4.11')
   testCompile('org.hamcrest:hamcrest-all:1.3')
   testCompile(project(':azkaban-common').sourceSets.test.output)
 }

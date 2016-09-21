@@ -28,21 +28,35 @@ import java.util.ArrayList;
  */
 public class ExecuteAsUser {
   private final static Logger log = Logger.getLogger(ExecuteAsUser.class);
+  private final static String EXECUTE_AS_USER = "execute-as-user";
 
-  private final String path;
+  private final File binaryExecutable;
 
-  public ExecuteAsUser(final String path) {
-    validate(path);
-    this.path = path;
+  /**
+   * Construct the object
+   *
+   * @param nativeLibDirectory Absolute path to the native Lib Directory
+   */
+  public ExecuteAsUser(final String nativeLibDirectory) {
+    this.binaryExecutable = new File(nativeLibDirectory, EXECUTE_AS_USER);
+    validate();
   }
 
-  private void validate(String path) {
-    File executeAsUserBinary = new File(path);
-    if (!executeAsUserBinary.canExecute()) {
-      throw new RuntimeException("Unable to execute execute-as-user binary. Invalid Path: " + path);
+  private void validate() {
+    if (!binaryExecutable.canExecute()) {
+      throw new RuntimeException("Unable to execute execute-as-user binary. Invalid Path: "
+          + binaryExecutable.getAbsolutePath());
     }
   }
 
+  /**
+   * API to execute a command on behalf of another user.
+   *
+   * @param user The proxy user
+   * @param command The shell command to be executed
+   * @return The return value of the shell command
+   * @throws IOException
+   */
   public int execute(final String user, final String command) throws IOException {
     log.info("Command: " + command);
     Process process = new ProcessBuilder()
@@ -54,14 +68,14 @@ public class ExecuteAsUser {
     try {
       exitCode = process.waitFor();
     } catch (InterruptedException e) {
-      e.printStackTrace();
+      log.error(e.getMessage(), e);
       exitCode = 1;
     }
     return exitCode;
   }
 
   private String constructExecuteAsCommand(String user, String command) {
-    return String.format("%s %s %s", path, user, command);
+    return String.format("%s %s %s", binaryExecutable.getAbsolutePath(), user, command);
   }
 
   /**
@@ -73,10 +87,14 @@ public class ExecuteAsUser {
    * Splits the command into a unix like command line structure. Quotes and
    * single quotes are treated as nested strings.
    *
+   * Example:
+   *    "command arg0" splits to "command", "arg0"
+   *    "command 'quoted arg0'" splits to "command", "quoted arg0"
+   *
    * @param command
    * @return
    */
-  public static String[] partitionCommandLine(final String command) {
+  static String[] partitionCommandLine(final String command) {
     ArrayList<String> commands = new ArrayList<String>();
 
     int index = 0;

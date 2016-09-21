@@ -139,8 +139,7 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
 
   private HadoopSecurityManager_H_2_0(Props props)
       throws HadoopSecurityManagerException, IOException {
-    String executeAsUserBinaryFilePath = String.format("%s/%s", props.getString(NATIVE_LIB_FOLDER), "execute-as-user");
-    executeAsUser = new ExecuteAsUser(executeAsUserBinaryFilePath);
+    executeAsUser = new ExecuteAsUser(props.getString(NATIVE_LIB_FOLDER));
 
     // for now, assume the same/compatible native library, the same/compatible
     // hadoop-core jar
@@ -773,14 +772,13 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
 
   /**
    * Prepare token file.
-   *  Writes credentials to a token file and sets permissions such that only the user being proxied has read access
-   *  to the file
+   *  Writes credentials to a token file and sets appropriate permissions to keep the file secure
    *
    * @param user user to be proxied
    * @param credentials Credentials to be written to file
    * @param tokenFile file to be written
    * @param logger logger to use
-   * @throws IOException
+   * @throws IOException If there are issues in reading / updating the token file
    */
   private void prepareTokenFile(final String user,
                                 final Credentials credentials,
