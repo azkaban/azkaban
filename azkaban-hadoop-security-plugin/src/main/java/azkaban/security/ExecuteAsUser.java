@@ -7,8 +7,9 @@ import java.io.IOException;
 import java.util.ArrayList;
 
 /**
+ * This is a wrapper over the binary executable execute-as-user. It provides a simple API to run commands as
+ * another user while abstracting away the process logic, commandline handling, etc.
  *
- * Created by spyne on 9/20/16.
  */
 public class ExecuteAsUser {
   private final static Logger log = Logger.getLogger(ExecuteAsUser.class);
