@@ -35,6 +35,8 @@ subprojects {
   }
 
   plugins.withType(JavaPlugin) {
+    sourceCompatibility = JavaVersion.VERSION_1_8
+
     // Set the Title and Version fields in the jar
     jar {
       manifest {
@@ -80,4 +82,11 @@ subprojects {
  */
 task wrapper(type: Wrapper) {
   gradleVersion = '2.7'
+}
+
+idea {
+  project {
+    languageLevel = '1.8'
+    vcs = 'Git'
+  }
 }
