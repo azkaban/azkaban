@@ -186,28 +186,6 @@ var cron_output_id  = "#cron-output";
 var cron_translate_id  = "#cronTranslate";
 var cron_translate_warning_id  = "#translationWarning";
 
-// Uni Cron use 0-6 as Sun--Sat, but Quartz use 1-7. Due to later.js only supporting Unix Cron, we have to make this transition.
-// The detailed Unix Cron Syntax: https://en.wikipedia.org/wiki/Cron
-// The input is a 5 field string (without year) or 6 field String (with year).
-function transformFromQuartzToUnixCron(str){
-  var res = str.split(" ");
-
-  // If the cron doesn't include year field
-  if(res.length == 5)
-    res[res.length -1] = modifyStrToUnixCronSyntax(res[res.length - 1]);
-  // If the cron Str does include year field
-  else if(res.length == 6)
-    res[res.length - 2] = modifyStrToUnixCronSyntax(res[res.length - 2]);
-
-  return res.join(" ");
-}
-
-function modifyStrToUnixCronSyntax(str){
-  return str.replace(/[0-7]/g, function upperToHyphenLower(match) {
-    return (parseInt(match)+6)%7;
-  });
-}
-
 function updateOutput() {
   $(cron_output_id).val( $(cron_minutes_id).val() + " " +  $(cron_hours_id).val() + " " +
       $(cron_dom_id).val() + " " + $(cron_months_id).val() + " " + $(cron_dow_id).val()
@@ -217,6 +195,8 @@ function updateOutput() {
 
 function updateExpression() {
   $('#nextRecurId').html("");
+
+  // transformFromQuartzToUnixCron is defined in util/date.js
   var unixCronStr = transformFromQuartzToUnixCron($(cron_output_id).val());
   console.log("Parsed Unix cron = " + unixCronStr);
   var laterCron = later.parse.cron(unixCronStr);
