@@ -821,7 +821,7 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
   /**
    * Uses execute-as-user binary to reassign file permissions to be readable only by that user.
    *
-   * Step 1. Set file permissions to 440. Readable only to self and azkaban group
+   * Step 1. Set file permissions to 460. Readable to self and readable / writable azkaban group
    * Step 2. Set user as owner of file.
    *
    * @param user user to be proxied
@@ -829,7 +829,7 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
    * @param logger logger to use
    */
   private void assignPermissions(String user, File tokenFile, Logger logger) throws IOException {
-    final String changePermissionsCommand = String.format("chmod 440 %s", tokenFile.getAbsolutePath());
+    final String changePermissionsCommand = String.format("chmod 460 %s", tokenFile.getAbsolutePath());
     int result = executeAsUser.execute(System.getProperty("user.name"), changePermissionsCommand);
     if (result != 0) {
       throw new IOException("Unable to modify permissions. User: " + user);
