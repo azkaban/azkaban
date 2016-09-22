@@ -16,10 +16,6 @@
 
 package azkaban.security;
 
-import azkaban.security.commons.HadoopSecurityManager;
-import azkaban.security.commons.HadoopSecurityManagerException;
-import azkaban.utils.Props;
-import azkaban.utils.UndefinedPropertyException;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.CommonConfigurationKeys;
 import org.apache.hadoop.fs.FileSystem;
@@ -70,7 +66,29 @@ import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
+import azkaban.security.commons.HadoopSecurityManager;
+import azkaban.security.commons.HadoopSecurityManagerException;
+import azkaban.utils.Props;
+import azkaban.utils.UndefinedPropertyException;
+
 public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
+
+  /**
+   * TODO Remove duplicated constants from plugins.
+   *
+   * Azkaban plugins don't depend on a common submodule from which they both can inherit code. Thus, constants are
+   * copied around and any changes to the constant values will break Azkaban. This needs to be fixed as part of a
+   * plugin infrastructure implementation.
+   */
+  public static final String NATIVE_LIB_FOLDER = "azkaban.native.lib";
+
+  /**
+   * TODO: This should be exposed as a configurable parameter
+   *
+   * The assumption is that an "azkaban" group exists which has access to data created by the azkaban process. For
+   * example, this may include delegation tokens created for other users to run their jobs.
+   */
+  public static final String GROUP_NAME = "azkaban";
 
   private static final String FS_HDFS_IMPL_DISABLE_CACHE =
       "fs.hdfs.impl.disable.cache";
@@ -109,6 +127,11 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
   private static final String AZKABAN_PRINCIPAL = "proxy.user";
   private static final String OBTAIN_JOBHISTORYSERVER_TOKEN =
       "obtain.jobhistoryserver.token";
+  public static final String CHOWN = "chown";
+  public static final String CHMOD = "chmod";
+
+  // The file permissions assigned to a Delegation token file on fetch
+  public static final String TOKEN_FILE_PERMISSIONS = "460";
 
   private UserGroupInformation loginUser = null;
   private final static Logger logger = Logger
@@ -125,11 +148,12 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
 
   private static URLClassLoader ucl;
 
-  private final RecordFactory recordFactory = RecordFactoryProvider
-      .getRecordFactory(null);
+  private final RecordFactory recordFactory = RecordFactoryProvider.getRecordFactory(null);
+  private final ExecuteAsUser executeAsUser;
 
   private HadoopSecurityManager_H_2_0(Props props)
       throws HadoopSecurityManagerException, IOException {
+    executeAsUser = new ExecuteAsUser(props.getString(NATIVE_LIB_FOLDER));
 
     // for now, assume the same/compatible native library, the same/compatible
     // hadoop-core jar
@@ -339,11 +363,11 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
   public synchronized void prefetchToken(final File tokenFile,
       final String userToProxy, final Logger logger)
       throws HadoopSecurityManagerException {
-
     logger.info("Getting hadoop tokens for " + userToProxy);
 
+    final UserGroupInformation proxiedUser = getProxiedUser(userToProxy);
     try {
-      getProxiedUser(userToProxy).doAs(new PrivilegedExceptionAction<Void>() {
+      proxiedUser.doAs(new PrivilegedExceptionAction<Void>() {
         @Override
         public Void run() throws Exception {
           getToken(userToProxy);
@@ -387,36 +411,13 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
           jc.getCredentials().addToken(mrdt.getService(), mrdt);
           jc.getCredentials().addToken(fsToken.getService(), fsToken);
 
-          FileOutputStream fos = null;
-          DataOutputStream dos = null;
-          try {
-            fos = new FileOutputStream(tokenFile);
-            dos = new DataOutputStream(fos);
-            jc.getCredentials().writeTokenStorageToStream(dos);
-          } finally {
-            if (dos != null) {
-              try {
-                dos.close();
-              } catch (Throwable t) {
-                // best effort
-                logger
-                    .error(
-                        "encountered exception while closing DataOutputStream of the tokenFile",
-                        t);
-              }
-            }
-            if (fos != null) {
-              fos.close();
-            }
-          }
+          prepareTokenFile(userToProxy, jc.getCredentials(), tokenFile, logger);
           // stash them to cancel after use.
           logger.info("Tokens loaded in " + tokenFile.getAbsolutePath());
         }
       });
     } catch (Exception e) {
-      throw new HadoopSecurityManagerException("Failed to get hadoop tokens! "
-          + e.getMessage() + e.getCause());
-
+      throw new HadoopSecurityManagerException("Failed to get hadoop tokens! " + e.getMessage() + e.getCause());
     }
   }
 
@@ -768,28 +769,7 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
         }
       });
 
-      FileOutputStream fos = null;
-      DataOutputStream dos = null;
-      try {
-        fos = new FileOutputStream(tokenFile);
-        dos = new DataOutputStream(fos);
-        cred.writeTokenStorageToStream(dos);
-      } finally {
-        if (dos != null) {
-          try {
-            dos.close();
-          } catch (Throwable t) {
-            // best effort
-            logger
-                .error(
-                    "encountered exception while closing DataOutputStream of the tokenFile",
-                    t);
-          }
-        }
-        if (fos != null) {
-          fos.close();
-        }
-      }
+      prepareTokenFile(userToProxy, cred, tokenFile, logger);
       // stash them to cancel after use.
 
       logger.info("Tokens loaded in " + tokenFile.getAbsolutePath());
@@ -802,6 +782,80 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
           + t.getMessage() + t.getCause(), t);
     }
 
+  }
+
+  /**
+   * Prepare token file.
+   *  Writes credentials to a token file and sets appropriate permissions to keep the file secure
+   *
+   * @param user user to be proxied
+   * @param credentials Credentials to be written to file
+   * @param tokenFile file to be written
+   * @param logger logger to use
+   * @throws IOException If there are issues in reading / updating the token file
+   */
+  private void prepareTokenFile(final String user,
+                                final Credentials credentials,
+                                final File tokenFile,
+                                final Logger logger) throws IOException {
+    writeCredentialsToFile(credentials, tokenFile, logger);
+    try {
+      assignPermissions(user, tokenFile, logger);
+    } catch (IOException e) {
+      // On any error managing token file. delete the file
+      tokenFile.delete();
+      throw e;
+    }
+  }
+
+  private void writeCredentialsToFile(Credentials credentials, File tokenFile, Logger logger) throws IOException {
+    FileOutputStream fos = null;
+    DataOutputStream dos = null;
+    try {
+      fos = new FileOutputStream(tokenFile);
+      dos = new DataOutputStream(fos);
+      credentials.writeTokenStorageToStream(dos);
+    } finally {
+      if (dos != null) {
+        try {
+          dos.close();
+        } catch (Throwable t) {
+          // best effort
+          logger.error("encountered exception while closing DataOutputStream of the tokenFile", t);
+        }
+      }
+      if (fos != null) {
+        fos.close();
+      }
+    }
+  }
+
+  /**
+   * Uses execute-as-user binary to reassign file permissions to be readable only by that user.
+   *
+   * Step 1. Set file permissions to 460. Readable to self and readable / writable azkaban group
+   * Step 2. Set user as owner of file.
+   *
+   * @param user user to be proxied
+   * @param tokenFile file to be written
+   * @param logger logger to use
+   */
+  private void assignPermissions(String user, File tokenFile, Logger logger) throws IOException {
+    final List<String> changePermissionsCommand = Arrays.asList(
+        CHMOD, TOKEN_FILE_PERMISSIONS, tokenFile.getAbsolutePath()
+    );
+    int result = executeAsUser.execute(System.getProperty("user.name"), changePermissionsCommand);
+    if (result != 0) {
+      throw new IOException("Unable to modify permissions. User: " + user);
+    }
+
+    final List<String> changeOwnershipCommand = Arrays.asList(
+        CHOWN, user + ":" + GROUP_NAME, tokenFile.getAbsolutePath()
+    );
+    result = executeAsUser.execute("root", changeOwnershipCommand);
+    if (result != 0) {
+      throw new IOException("Unable to set ownership. User: " + user);
+    }
   }
 
   private Text getMRTokenRenewerInternal(JobConf jobConf) throws IOException {
