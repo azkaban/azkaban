@@ -46,6 +46,10 @@ subprojects {
         )
       }
     }
+
+    dependencies {
+      testCompile('junit:junit:4.12')
+    }
   }
 
   // Common distribution plugin settings for sub-modules
