@@ -20,6 +20,7 @@ import org.apache.log4j.Logger;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.List;
 
 /**
  * This is a wrapper over the binary executable execute-as-user. It provides a simple API to run commands as
@@ -53,14 +54,14 @@ public class ExecuteAsUser {
    * API to execute a command on behalf of another user.
    *
    * @param user The proxy user
-   * @param command The shell command to be executed
+   * @param command the list containing the program and its arguments
    * @return The return value of the shell command
    * @throws IOException
    */
-  public int execute(final String user, final String command) throws IOException {
+  public int execute(final String user, final List<String> command) throws IOException {
     log.info("Command: " + command);
     Process process = new ProcessBuilder()
-        .command(partitionCommandLine(constructExecuteAsCommand(user, command)))
+        .command(constructExecuteAsCommand(user, command))
         .inheritIO()
         .start();
 
@@ -74,77 +75,11 @@ public class ExecuteAsUser {
     return exitCode;
   }
 
-  private String constructExecuteAsCommand(String user, String command) {
-    return String.format("%s %s %s", binaryExecutable.getAbsolutePath(), user, command);
+  private List<String> constructExecuteAsCommand(String user, List<String> command) {
+    List<String> commandList = new ArrayList<>();
+    commandList.add(binaryExecutable.getAbsolutePath());
+    commandList.add(user);
+    commandList.addAll(command);
+    return commandList;
   }
-
-  /**
-   * TODO Refactor: function copied from azkaban.jobExecutor.ProcessJob#partitionCommandLine(java.lang.String)
-   *
-   * Need to be refactored to use just one method. Copy was created to avoid introducing dependencies to
-   * azkaban-common
-   *
-   * Splits the command into a unix like command line structure. Quotes and
-   * single quotes are treated as nested strings.
-   *
-   * Example:
-   *    "command arg0" splits to "command", "arg0"
-   *    "command 'quoted arg0'" splits to "command", "quoted arg0"
-   *
-   * @param command
-   * @return
-   */
-  static String[] partitionCommandLine(final String command) {
-    ArrayList<String> commands = new ArrayList<String>();
-
-    int index = 0;
-
-    StringBuffer buffer = new StringBuffer(command.length());
-
-    boolean isApos = false;
-    boolean isQuote = false;
-    while (index < command.length()) {
-      char c = command.charAt(index);
-
-      switch (c) {
-        case ' ':
-          if (!isQuote && !isApos) {
-            String arg = buffer.toString();
-            buffer = new StringBuffer(command.length() - index);
-            if (arg.length() > 0) {
-              commands.add(arg);
-            }
-          } else {
-            buffer.append(c);
-          }
-          break;
-        case '\'':
-          if (!isQuote) {
-            isApos = !isApos;
-          } else {
-            buffer.append(c);
-          }
-          break;
-        case '"':
-          if (!isApos) {
-            isQuote = !isQuote;
-          } else {
-            buffer.append(c);
-          }
-          break;
-        default:
-          buffer.append(c);
-      }
-
-      index++;
-    }
-
-    if (buffer.length() > 0) {
-      String arg = buffer.toString();
-      commands.add(arg);
-    }
-
-    return commands.toArray(new String[commands.size()]);
-  }
-
 }

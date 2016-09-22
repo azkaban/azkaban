@@ -81,6 +81,15 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
    * plugin infrastructure implementation.
    */
   public static final String NATIVE_LIB_FOLDER = "azkaban.native.lib";
+
+  /**
+   * TODO: This should be exposed as a configurable parameter
+   *
+   * The assumption is that an "azkaban" group exists which has access to data created by the azkaban process. For
+   * example, this may include delegation tokens created for other users to run their jobs.
+   */
+  public static final String GROUP_NAME = "azkaban";
+
   private static final String FS_HDFS_IMPL_DISABLE_CACHE =
       "fs.hdfs.impl.disable.cache";
 
@@ -118,6 +127,11 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
   private static final String AZKABAN_PRINCIPAL = "proxy.user";
   private static final String OBTAIN_JOBHISTORYSERVER_TOKEN =
       "obtain.jobhistoryserver.token";
+  public static final String CHOWN = "chown";
+  public static final String CHMOD = "chmod";
+
+  // The file permissions assigned to a Delegation token file on fetch
+  public static final String TOKEN_FILE_PERMISSIONS = "460";
 
   private UserGroupInformation loginUser = null;
   private final static Logger logger = Logger
@@ -827,13 +841,17 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
    * @param logger logger to use
    */
   private void assignPermissions(String user, File tokenFile, Logger logger) throws IOException {
-    final String changePermissionsCommand = String.format("chmod 460 %s", tokenFile.getAbsolutePath());
+    final List<String> changePermissionsCommand = Arrays.asList(
+        CHMOD, TOKEN_FILE_PERMISSIONS, tokenFile.getAbsolutePath()
+    );
     int result = executeAsUser.execute(System.getProperty("user.name"), changePermissionsCommand);
     if (result != 0) {
       throw new IOException("Unable to modify permissions. User: " + user);
     }
 
-    final String changeOwnershipCommand = String.format("chown %s:azkaban %s", user, tokenFile.getAbsolutePath());
+    final List<String> changeOwnershipCommand = Arrays.asList(
+        CHOWN, user + ":" + GROUP_NAME, tokenFile.getAbsolutePath()
+    );
     result = executeAsUser.execute("root", changeOwnershipCommand);
     if (result != 0) {
       throw new IOException("Unable to set ownership. User: " + user);
