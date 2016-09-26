@@ -46,12 +46,12 @@
               <div class="col-sm-6">
                 <label class="col-sm-4 control-label" id="min_label">Min</label>
                 <div class="col-sm-8">
-                  <input type="text" id="minute_input" value="0" class="form-control" oninput="updateOutput()">
+                  <input type="text" id="minute_input" value="*" class="form-control" oninput="updateOutput()">
                 </div>
                 <br/> <br/> <br/>
                 <label class="col-sm-4 control-label" id="hour_label">Hours</label>
                 <div class="col-sm-8">
-                  <input type="text" id="hour_input" value="5,7-10" class="form-control"
+                  <input type="text" id="hour_input" value="*" class="form-control"
                          oninput="updateOutput()">
                 </div>
                 <br/> <br/> <br/>
@@ -69,7 +69,7 @@
                 <br/> <br/> <br/>
                 <label class="col-sm-4 control-label" id="dow_label" style="margin-top:-8px">Day of Week</label>
                 <div class="col-sm-8">
-                  <input type="text" id="dow_input" value="4-6" class="form-control"
+                  <input type="text" id="dow_input" value="*" class="form-control"
                          oninput="updateOutput()">
                 </div>
               </div>
