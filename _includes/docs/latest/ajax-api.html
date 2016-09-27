@@ -1181,7 +1181,7 @@ This API call schedules a flow by a cron Expression. Cron is a UNIX tool that ha
 <p>Here's a curl command sample:</p>
 
 <pre class="code">
-curl -k https://HOST:PORT/schedule -d "ajax=scheduleCronFlow&projectName=PROJECT_NAME&flow=FLOW_NAME&cronExpression=0 * 5,7-10 ? * 4-6" -b azkaban.browser.session.id=SESSION_ID
+curl -k -d ajax=scheduleCronFlow -d projectName=wtwt -d flow=azkaban-training --data-urlencode cronExpression="0 23/30 5,7-10 ? * 6#3" -b "azkaban.browser.session.id=XXXXXXXXXXXXXX" http://localhost:8081/schedule
 </pre>
 
 An example success response:
