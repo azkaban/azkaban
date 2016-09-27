@@ -12,7 +12,7 @@ Install bundler.
 
 	gem install bundler
 
-Create a `Gemfile`.
+Create a file named `Gemfile` with the below contents:
 
 	source 'https://rubygems.org'
 	gem 'github-pages'
