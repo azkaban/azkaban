@@ -1128,7 +1128,7 @@ An example failure response for invalid schedule period:
 }
 </pre>
 
-<h3 id="api-schedule-a-flow">Flexible scheduling using cron</h3>
+<h3 id="api-flexible-schedule">Flexible scheduling using Cron</h3>
 
 <p>
 This API call schedules a flow by a cron Expression. Cron is a UNIX tool that has been widely used for a long time, and we use <a href="http://www.quartz-scheduler.org/">Quartz library</a> to parse cron Expression. All cron schedules follow the timezone defined in azkaban web server (the timezone ID is obtained by <i>java.util.TimeZone.getDefault().getID()</i>).
@@ -1173,7 +1173,7 @@ This API call schedules a flow by a cron Expression. Cron is a UNIX tool that ha
     </tr>
     <tr>
       <td>cronExpression</td>
-      <td>A CRON expression is a string comprising 6 or 7 fields separated by white space[8] that represents a set of times. In azkaban, we use <a href="http://www.quartz-scheduler.org/documentation/quartz-2.x/tutorials/crontrigger.html"> Quartz Cron Format</a>.</td>
+      <td>A CRON expression is a string comprising 6 or 7 fields separated by white space that represents a set of times. In azkaban, we use <a href="http://www.quartz-scheduler.org/documentation/quartz-2.x/tutorials/crontrigger.html"> Quartz Cron Format</a>.</td>
     </tr>
   </tbody>
 </table>
