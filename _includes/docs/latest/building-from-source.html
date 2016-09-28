@@ -1,15 +1,14 @@
 <h2 id="building-from-source">Building from Source</h2>
 
-<p>Azkaban builds using <a href="http://ant.apache.org" target="_blank">Ant</a> and uses <a href="http://ant.apache.org/ivy/" target="_blank">Ivy</a> to resolve dependencies. Ivy does not need to be installed in order to build Azkaban.</p>
+<p>Azkaban builds use <a href="https://gradle.org/" target="_blank">Gradle</a>, and requires a Java JDK, version 8 or higher. Actually, users don't need to install gradle themselves, since we have a gradle wrapper in our repository.</p>
 
-<p>Azkaban's web server depends on <a href="http://lesscss.org/" target="_blank">LESS</a> and <a href="http://linkedin.github.io/dustjs/" target="_blank">Dust.js</a>. These <a href="https://www.npmjs.org/" target="_blank">NPM packages</a> must be installed to build Azkaban:</p>
 
+<p>on Unix-like platforms such as Linux and Mac OS X</p>
 <pre>
-$ npm install -g less dustjs-linkedin
+$ ./gradelw distTar
 </pre>
 
-<p>Simply invoke Ant to build Azkaban:</p>
-
+<p>on Windows using the gradlew.bat batch file</p>
 <pre>
-$ ant
+$ gradlew distTar
 </pre>
