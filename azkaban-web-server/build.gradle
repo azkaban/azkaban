@@ -12,7 +12,7 @@ buildscript {
 }
 
 plugins {
-    id 'com.craigburke.bower-installer' version '2.5.1'
+  id "com.moowork.node" version "0.13"
 }
 
 apply plugin: 'lesscss'
@@ -50,27 +50,57 @@ sourceSets {
   }
 }
 
-bower {
-  installBase = 'bower' // <1>
+task movingJsTojsToPackage(dependsOn: ['npm_install']) {
 
-  'moment'('2.14.1'){
-    source 'min/moment.min.js' >> '/'
-  }
-
-  'moment-timezone'('0.5.5') {
-    source 'builds/moment-timezone-with-data-2010-2020.min.js'  >> '/'
-  }
-
-  'eonasdan-bootstrap-datetimepicker'('4.0.0') {
-    source 'build/js/*.min.js'  >> '/'
-    excludes 'jquery'
-  }
-
-  'later'('1.2.0'){
-    source 'later.min.js' >> '/'
+  doLast {
+    copy {
+      from "node_modules/later/later.min.js"
+      into 'build/jsToPackage'
+    }
+    copy {
+      from "node_modules/moment/min/moment.min.js"
+      into 'build/jsToPackage'
+    }
+    copy {
+      from "node_modules/eonasdan-bootstrap-datetimepicker/build/js/bootstrap-datetimepicker.min.js"
+      into 'build/jsToPackage'
+    }
+    copy {
+      from "node_modules/moment-timezone/builds/moment-timezone-with-data-2010-2020.min.js"
+      into 'build/jsToPackage'
+    }
   }
 }
-clean.dependsOn 'bowerClean'
+
+task cleanAll {
+  delete '.gradle'
+  delete 'jsToPackage'
+  delete 'node_modules'
+  delete 'velocity.log'
+}
+
+clean.dependsOn cleanAll
+
+task jsTest(dependsOn: ['npm_install'], type:Exec) {
+  workingDir '.'
+  ignoreExitValue = true
+
+  commandLine 'node', 'node_modules/mocha/bin/mocha', 'src/web/js/azkaban/test/'
+
+  standardOutput = new ByteArrayOutputStream()
+  doLast {
+    println standardOutput
+    if (execResult) {
+      if(execResult.exitValue == 0) {
+        println "All js Tests passed"
+      }
+      else{
+        throw new GradleException('Js Tests failed.')
+      }
+    }
+  }
+}
+test.dependsOn jsTest
 
 task restliTemplateGenerator(type: JavaExec) {
   mkdir 'src/restli/generatedJava'
@@ -133,10 +163,10 @@ distributions {
       from (dustjs) {
         into 'web/js'
       }
-      from ('bower') {
+      from ('build/jsToPackage') {
         into 'web/js'
       }
-      from (bowerInstall) {
+      from (movingJsTojsToPackage) {
         into 'web/js'
       }
     }
