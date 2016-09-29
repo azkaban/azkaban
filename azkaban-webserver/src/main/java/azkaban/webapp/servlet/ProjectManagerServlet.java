@@ -39,6 +39,7 @@ import org.apache.commons.fileupload.FileItem;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.log4j.Logger;
+import org.mortbay.jetty.HttpStatus;
 
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
@@ -250,7 +251,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
       }
     } else if (ajaxName.equals("setJobOverrideProperty")) {
       if (handleAjaxPermission(project, user, Type.WRITE, ret)) {
-        ajaxSetJobOverrideProperty(project, ret, req);
+        ajaxSetJobOverrideProperty(project, ret, req, resp);
       }
     } else {
       ret.put("error", "Cannot execute command " + ajaxName);
@@ -681,7 +682,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
   }
 
   private void ajaxSetJobOverrideProperty(Project project,
-      HashMap<String, Object> ret, HttpServletRequest req)
+      HashMap<String, Object> ret, HttpServletRequest req, HttpServletResponse resp)
       throws ServletException {
     String flowName = getParam(req, "flowName");
     String jobName = getParam(req, "jobName");
@@ -690,12 +691,14 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
     if (flow == null) {
       ret.put("error",
           "Flow " + flowName + " not found in project " + project.getName());
+      resp.setStatus(HttpStatus.ORDINAL_400_Bad_Request);
       return;
     }
 
     Node node = flow.getNode(jobName);
     if (node == null) {
       ret.put("error", "Job " + jobName + " not found in flow " + flowName);
+      resp.setStatus(HttpStatus.ORDINAL_400_Bad_Request);
       return;
     }
 
@@ -706,6 +709,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
       projectManager.setJobOverrideProperty(project, overrideParams, jobName);
     } catch (ProjectManagerException e) {
       ret.put("error", "Failed to upload job override property");
+      resp.setStatus(HttpStatus.ORDINAL_500_Internal_Server_Error);
     }
 
   }
