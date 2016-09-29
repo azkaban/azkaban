@@ -87,13 +87,13 @@ $(function() {
 
   updateOutput();
   $("#clearCron").click(function () {
-    $('#cron-output').val("* * * * ?");
+    $('#cron-output').val("* * ? * *");
     resetLabelColor();
     $("#minute_input").val("*");
     $("#hour_input").val("*");
-    $("#dom_input").val("*");
+    $("#dom_input").val("?");
     $("#month_input").val("*");
-    $("#dow_input").val("?");
+    $("#dow_input").val("*");
     $(cron_translate_id).text("")
     $(cron_translate_warning_id).text("")
     $('#nextRecurId').html("");
