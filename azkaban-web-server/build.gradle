@@ -15,6 +15,27 @@ plugins {
   id "com.moowork.node" version "0.13"
 }
 
+node {
+  // Version of node to use.
+  version = '0.11.10'
+
+  // Version of npm to use.
+  npmVersion = '2.1.5'
+
+  // Base URL for fetching node distributions (change if you have a mirror).
+  distBaseUrl = 'https://nodejs.org/dist'
+
+  // If true, it will download node using above parameters.
+  // If false, it will try to use globally installed node.
+  download = true
+
+  // Set the work directory for unpacking node
+  workDir = file("${project.buildDir}/nodejs")
+
+  // Set the work directory where node_modules should be located
+  nodeModulesDir = file("${project.projectDir}")
+}
+
 apply plugin: 'lesscss'
 apply plugin: 'dustjs'
 apply plugin: 'distribution'
