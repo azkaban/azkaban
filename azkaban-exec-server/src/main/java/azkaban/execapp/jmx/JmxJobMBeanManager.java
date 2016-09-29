@@ -7,6 +7,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.log4j.Logger;
 
 import azkaban.event.Event;
+import azkaban.event.EventData;
 import azkaban.event.EventListener;
 import azkaban.execapp.JobRunner;
 import azkaban.executor.ExecutableNode;
@@ -101,12 +102,13 @@ public class JmxJobMBeanManager implements JmxJobMXBean, EventListener {
 
     if (event.getRunner() instanceof JobRunner) {
       JobRunner jobRunner = (JobRunner) event.getRunner();
+      EventData eventData = event.getData();
       ExecutableNode node = jobRunner.getNode();
 
       if (logger.isDebugEnabled()) {
         logger.debug("*** got " + event.getType() + " " + node.getId() + " "
             + event.getRunner().getClass().getName() + " status: "
-            + node.getStatus());
+            + eventData.getStatus());
       }
 
       if (event.getType() == Event.Type.JOB_STARTED) {
@@ -121,13 +123,13 @@ public class JmxJobMBeanManager implements JmxJobMXBean, EventListener {
               + Event.Type.JOB_FINISHED);
         }
 
-        if (node.getStatus() == Status.FAILED) {
+        if (eventData.getStatus() == Status.FAILED) {
           totalFailedJobCount.incrementAndGet();
-        } else if (node.getStatus() == Status.SUCCEEDED) {
+        } else if (eventData.getStatus() == Status.SUCCEEDED) {
           totalSucceededJobCount.incrementAndGet();
         }
 
-        handleJobFinishedCount(node.getStatus(), node.getType());
+        handleJobFinishedCount(eventData.getStatus(), node.getType());
       }
 
     } else {

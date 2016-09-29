@@ -62,9 +62,7 @@ public class ProjectManagerResource extends ResourceContextHolder {
     logger.info("Deploy called. {sessionId: " + sessionId + ", projectName: "
         + projectName + ", packageUrl:" + packageUrl + "}");
 
-    String ip =
-        (String) this.getContext().getRawRequestContext()
-            .getLocalAttr("REMOTE_ADDR");
+    String ip = ResourceUtils.getRealClientIpAddr(this.getContext());
     User user = ResourceUtils.getUserFromSessionId(sessionId, ip);
     ProjectManager projectManager = getAzkaban().getProjectManager();
     Project project = projectManager.getProject(projectName);

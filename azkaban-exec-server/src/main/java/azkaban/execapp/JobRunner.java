@@ -33,6 +33,7 @@ import org.apache.log4j.RollingFileAppender;
 
 import azkaban.event.Event;
 import azkaban.event.Event.Type;
+import azkaban.event.EventData;
 import azkaban.event.EventHandler;
 import azkaban.execapp.event.BlockingStatus;
 import azkaban.execapp.event.FlowWatcher;
@@ -268,18 +269,18 @@ public class JobRunner extends EventHandler implements Runnable {
     if (Status.isStatusFinished(nodeStatus)) {
       quickFinish = true;
     } else if (nodeStatus == Status.DISABLED) {
-      changeStatus(Status.SKIPPED, time);
+      nodeStatus = changeStatus(Status.SKIPPED, time);
       quickFinish = true;
     } else if (this.isKilled()) {
-      changeStatus(Status.KILLED, time);
+      nodeStatus = changeStatus(Status.KILLED, time);
       quickFinish = true;
     }
 
     if (quickFinish) {
       node.setStartTime(time);
-      fireEvent(Event.create(this, Type.JOB_STARTED, null, false));
+      fireEvent(Event.create(this, Type.JOB_STARTED, new EventData(nodeStatus)));
       node.setEndTime(time);
-      fireEvent(Event.create(this, Type.JOB_FINISHED));
+      fireEvent(Event.create(this, Type.JOB_FINISHED, new EventData(nodeStatus)));
       return true;
     }
 
@@ -428,21 +429,23 @@ public class JobRunner extends EventHandler implements Runnable {
 
     // Start the node.
     node.setStartTime(System.currentTimeMillis());
+    Status finalStatus = node.getStatus();
     if (!errorFound && !isKilled()) {
-      fireEvent(Event.create(this, Type.JOB_STARTED, null, false));
+      fireEvent(Event.create(this, Type.JOB_STARTED, new EventData(finalStatus)));
       try {
         loader.uploadExecutableNode(node, props);
       } catch (ExecutorManagerException e1) {
         logger.error("Error writing initial node properties");
       }
 
-      if (prepareJob()) {
+      Status prepareStatus = prepareJob();
+      if (prepareStatus != null) {
         // Writes status to the db
         writeStatus();
-        fireEvent(Event.create(this, Type.JOB_STATUS_CHANGED), false);
-        runJob();
+        fireEvent(Event.create(this, Type.JOB_STATUS_CHANGED, new EventData(prepareStatus)));
+        finalStatus = runJob();
       } else {
-        changeStatus(Status.FAILED);
+        finalStatus = changeStatus(Status.FAILED);
         logError("Job run failed preparing the job.");
       }
     }
@@ -454,29 +457,30 @@ public class JobRunner extends EventHandler implements Runnable {
       // So we set it to KILLED to make sure we know that we forced kill it
       // rather than
       // it being a legitimate failure.
-      changeStatus(Status.KILLED);
+      finalStatus = changeStatus(Status.KILLED);
     }
 
     int attemptNo = node.getAttempt();
     logInfo("Finishing job " + this.jobId + " attempt: " + attemptNo + " at "
         + node.getEndTime() + " with status " + node.getStatus());
 
-    fireEvent(Event.create(this, Type.JOB_FINISHED), false);
+    fireEvent(Event.create(this, Type.JOB_FINISHED, new EventData(finalStatus)), false);
     finalizeLogFile(attemptNo);
     finalizeAttachmentFile();
     writeStatus();
   }
 
-  private boolean prepareJob() throws RuntimeException {
+  private Status prepareJob() throws RuntimeException {
     // Check pre conditions
     if (props == null || this.isKilled()) {
       logError("Failing job. The job properties don't exist");
-      return false;
+      return null;
     }
 
+    Status finalStatus;
     synchronized (syncObject) {
       if (node.getStatus() == Status.FAILED || this.isKilled()) {
-        return false;
+        return null;
       }
 
       if (node.getAttempt() > 0) {
@@ -500,7 +504,7 @@ public class JobRunner extends EventHandler implements Runnable {
       props.put(CommonJobProperties.JOB_METADATA_FILE,
           createMetaDataFileName(node));
       props.put(CommonJobProperties.JOB_ATTACHMENT_FILE, attachmentFileName);
-      changeStatus(Status.RUNNING);
+      finalStatus = changeStatus(Status.RUNNING);
 
       // Ability to specify working directory
       if (!props.containsKey(AbstractProcessJob.WORKING_DIR)) {
@@ -512,7 +516,7 @@ public class JobRunner extends EventHandler implements Runnable {
         if (proxyUsers != null && !proxyUsers.contains(jobProxyUser)) {
           logger.error("User " + jobProxyUser
               + " has no permission to execute this job " + this.jobId + "!");
-          return false;
+          return null;
         }
       }
 
@@ -520,11 +524,11 @@ public class JobRunner extends EventHandler implements Runnable {
         job = jobtypeManager.buildJobExecutor(this.jobId, props, logger);
       } catch (JobTypeManagerException e) {
         logger.error("Failed to build job type", e);
-        return false;
+        return null;
       }
     }
 
-    return true;
+    return finalStatus;
   }
 
   /**
@@ -585,17 +589,18 @@ public class JobRunner extends EventHandler implements Runnable {
         StringUtils.join2(node.getInNodes(), ","));
   }
 
-  private void runJob() {
+  private Status runJob() {
+    Status finalStatus = node.getStatus();
     try {
       job.run();
     } catch (Throwable e) {
 
       if (props.getBoolean("job.succeed.on.failure", false)) {
-        changeStatus(Status.FAILED_SUCCEEDED);
+        finalStatus = changeStatus(Status.FAILED_SUCCEEDED);
         logError("Job run failed, but will treat it like success.");
         logError(e.getMessage() + " cause: " + e.getCause(), e);
       } else {
-        changeStatus(Status.FAILED);
+        finalStatus = changeStatus(Status.FAILED);
         logError("Job run failed!", e);
         logError(e.getMessage() + " cause: " + e.getCause());
       }
@@ -606,18 +611,21 @@ public class JobRunner extends EventHandler implements Runnable {
     }
 
     // If the job is still running, set the status to Success.
-    if (!Status.isStatusFinished(node.getStatus())) {
-      changeStatus(Status.SUCCEEDED);
+    if (!Status.isStatusFinished(finalStatus)) {
+      finalStatus = changeStatus(Status.SUCCEEDED);
     }
+    return finalStatus;
   }
 
-  private void changeStatus(Status status) {
+  private Status changeStatus(Status status) {
     changeStatus(status, System.currentTimeMillis());
+    return status;
   }
 
-  private void changeStatus(Status status, long time) {
+  private Status changeStatus(Status status, long time) {
     node.setStatus(status);
     node.setUpdateTime(time);
+    return status;
   }
 
   private void fireEvent(Event event) {

@@ -387,9 +387,8 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
             throw new HadoopSecurityManagerException(
                 "Failed to fetch DFS token for " + userToProxy);
           }
-          logger.info("Created DFS token: " + fsToken.toString());
+          logger.info("Created DFS token.");
           logger.info("Token kind: " + fsToken.getKind());
-          logger.info("Token id: " + Arrays.toString(fsToken.getIdentifier()));
           logger.info("Token service: " + fsToken.getService());
 
           JobConf jc = new JobConf(conf);
@@ -403,9 +402,8 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
             throw new HadoopSecurityManagerException(
                 "Failed to fetch JT token for " + userToProxy);
           }
-          logger.info("Created JT token: " + mrdt.toString());
+          logger.info("Created JT token.");
           logger.info("Token kind: " + mrdt.getKind());
-          logger.info("Token id: " + Arrays.toString(mrdt.getIdentifier()));
           logger.info("Token service: " + mrdt.getService());
 
           jc.getCredentials().addToken(mrdt.getService(), mrdt);
@@ -522,26 +520,21 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
           Credentials.readTokenStorageFile(new Path(tokenFile.toURI()),
               new Configuration());
       for (Token<? extends TokenIdentifier> t : cred.getAllTokens()) {
-
-        logger.info("Got token: " + t.toString());
+        logger.info("Got token.");
         logger.info("Token kind: " + t.getKind());
-        logger.info("Token id: " + new String(t.getIdentifier()));
         logger.info("Token service: " + t.getService());
 
         if (t.getKind().equals(new Text("HIVE_DELEGATION_TOKEN"))) {
-          logger.info("Cancelling hive token " + new String(t.getIdentifier()));
+          logger.info("Cancelling hive token.");
           cancelHiveToken(t, userToProxy);
         } else if (t.getKind().equals(new Text("RM_DELEGATION_TOKEN"))) {
-          logger.info("Cancelling mr job tracker token "
-              + new String(t.getIdentifier()));
+          logger.info("Cancelling mr job tracker token.");
           // cancelMRJobTrackerToken(t, userToProxy);
         } else if (t.getKind().equals(new Text("HDFS_DELEGATION_TOKEN"))) {
-          logger.info("Cancelling namenode token "
-              + new String(t.getIdentifier()));
+          logger.info("Cancelling namenode token.");
           // cancelNameNodeToken(t, userToProxy);
         } else if (t.getKind().equals(new Text("MR_DELEGATION_TOKEN"))) {
-          logger.info("Cancelling jobhistoryserver mr token "
-              + new String(t.getIdentifier()));
+          logger.info("Cancelling jobhistoryserver mr token.");
           // cancelJhsToken(t, userToProxy);
         } else {
           logger.info("unknown token type " + t.getKind());
@@ -602,9 +595,8 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
           + (tokenSignatureOverwrite == null ? "" : tokenSignatureOverwrite));
     }
 
-    logger.info("Created hive metastore token: " + hcatTokenStr);
+    logger.info("Created hive metastore token.");
     logger.info("Token kind: " + hcatToken.getKind());
-    logger.info("Token id: " + Arrays.toString(hcatToken.getIdentifier()));
     logger.info("Token service: " + hcatToken.getService());
     return hcatToken;
   }
@@ -689,9 +681,8 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
             "Unable to fetch JH token for " + userToProxy);
       }
 
-      logger.info("Created JH token: " + jhsdt.toString());
+      logger.info("Created JH token.");
       logger.info("Token kind: " + jhsdt.getKind());
-      logger.info("Token id: " + Arrays.toString(jhsdt.getIdentifier()));
       logger.info("Token service: " + jhsdt.getService());
 
       cred.addToken(jhsdt.getService(), jhsdt);
@@ -722,9 +713,8 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
               throw new HadoopSecurityManagerException(
                   "Failed to fetch DFS token for " + userToProxy);
             }
-            logger.info("Created DFS token: " + fsToken.toString());
+            logger.info("Created DFS token.");
             logger.info("Token kind: " + fsToken.getKind());
-            logger.info("Token id: " + Arrays.toString(fsToken.getIdentifier()));
             logger.info("Token service: " + fsToken.getService());
 
             cred.addToken(fsToken.getService(), fsToken);
@@ -759,9 +749,8 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
               throw new HadoopSecurityManagerException(
                   "Failed to fetch JT token for " + userToProxy);
             }
-            logger.info("Created JT token: " + mrdt.toString());
+            logger.info("Created JT token.");
             logger.info("Token kind: " + mrdt.getKind());
-            logger.info("Token id: " + Arrays.toString(mrdt.getIdentifier()));
             logger.info("Token service: " + mrdt.getService());
             cred.addToken(mrdt.getService(), mrdt);
           }

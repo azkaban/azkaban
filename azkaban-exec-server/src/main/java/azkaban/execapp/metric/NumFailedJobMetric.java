@@ -18,6 +18,7 @@ package azkaban.execapp.metric;
 
 import azkaban.event.Event;
 import azkaban.event.Event.Type;
+import azkaban.event.EventData;
 import azkaban.event.EventListener;
 import azkaban.execapp.JobRunner;
 import azkaban.executor.Status;
@@ -44,8 +45,7 @@ public class NumFailedJobMetric extends TimeBasedReportingMetric<Integer> implem
    */
   @Override
   public synchronized void handleEvent(Event event) {
-    JobRunner runner = (JobRunner) event.getRunner();
-    if (event.getType() == Type.JOB_FINISHED && runner.getStatus().equals(Status.FAILED)) {
+    if (event.getType() == Type.JOB_FINISHED && Status.FAILED.equals(event.getData().getStatus())) {
       value = value + 1;
     }
   }

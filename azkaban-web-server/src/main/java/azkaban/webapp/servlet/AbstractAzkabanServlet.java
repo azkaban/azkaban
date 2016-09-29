@@ -330,7 +330,7 @@ public abstract class AbstractAzkabanServlet extends HttpServlet {
    */
   protected Page newPage(HttpServletRequest req, HttpServletResponse resp,
       Session session, String template) {
-    Page page = new Page(req, resp, application.getVelocityEngine(), template);
+    Page page = new Page(req, resp, getApplication().getVelocityEngine(), template);
     page.add("azkaban_name", name);
     page.add("azkaban_label", label);
     page.add("azkaban_color", color);
@@ -381,7 +381,7 @@ public abstract class AbstractAzkabanServlet extends HttpServlet {
    */
   protected Page newPage(HttpServletRequest req, HttpServletResponse resp,
       String template) {
-    Page page = new Page(req, resp, application.getVelocityEngine(), template);
+    Page page = new Page(req, resp, getApplication().getVelocityEngine(), template);
     page.add("azkaban_name", name);
     page.add("azkaban_label", label);
     page.add("azkaban_color", color);
