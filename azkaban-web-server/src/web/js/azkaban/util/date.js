@@ -115,5 +115,3 @@ var transformFromQuartzToUnixCron = function (str){
 
   return res.join(" ");
 }
-
-exports.testStrFromCronToQuartz = transformFromQuartzToUnixCron;
