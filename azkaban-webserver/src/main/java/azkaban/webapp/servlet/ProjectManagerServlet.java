@@ -39,7 +39,6 @@ import org.apache.commons.fileupload.FileItem;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.log4j.Logger;
-import org.mortbay.jetty.HttpStatus;
 
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
@@ -251,7 +250,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
       }
     } else if (ajaxName.equals("setJobOverrideProperty")) {
       if (handleAjaxPermission(project, user, Type.WRITE, ret)) {
-        ajaxSetJobOverrideProperty(project, ret, req, resp);
+        ajaxSetJobOverrideProperty(project, ret, req);
       }
     } else {
       ret.put("error", "Cannot execute command " + ajaxName);
@@ -682,23 +681,23 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
   }
 
   private void ajaxSetJobOverrideProperty(Project project,
-      HashMap<String, Object> ret, HttpServletRequest req, HttpServletResponse resp)
+      HashMap<String, Object> ret, HttpServletRequest req)
       throws ServletException {
     String flowName = getParam(req, "flowName");
     String jobName = getParam(req, "jobName");
 
     Flow flow = project.getFlow(flowName);
     if (flow == null) {
+      ret.put("status", "error");
       ret.put("error",
           "Flow " + flowName + " not found in project " + project.getName());
-      resp.setStatus(HttpStatus.ORDINAL_400_Bad_Request);
       return;
     }
 
     Node node = flow.getNode(jobName);
     if (node == null) {
+      ret.put("status", "error");
       ret.put("error", "Job " + jobName + " not found in flow " + flowName);
-      resp.setStatus(HttpStatus.ORDINAL_400_Bad_Request);
       return;
     }
 
@@ -707,9 +706,10 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
     Props overrideParams = new Props(null, jobParamGroup);
     try {
       projectManager.setJobOverrideProperty(project, overrideParams, jobName);
+      ret.put("status", "success");
     } catch (ProjectManagerException e) {
+      ret.put("status", "error");
       ret.put("error", "Failed to upload job override property");
-      resp.setStatus(HttpStatus.ORDINAL_500_Internal_Server_Error);
     }
 
   }
