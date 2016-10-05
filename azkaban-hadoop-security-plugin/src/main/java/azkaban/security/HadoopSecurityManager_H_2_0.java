@@ -522,8 +522,6 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
           Credentials.readTokenStorageFile(new Path(tokenFile.toURI()),
               new Configuration());
       for (Token<? extends TokenIdentifier> t : cred.getAllTokens()) {
-
-        logger.info("Got token: " + t.toString());
         logger.info("Token kind: " + t.getKind());
         logger.info("Token id: " + new String(t.getIdentifier()));
         logger.info("Token service: " + t.getService());
