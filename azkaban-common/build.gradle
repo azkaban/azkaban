@@ -39,6 +39,8 @@ dependencies {
   compile('org.mortbay.jetty:jetty-util:6.1.26')
   compile('org.quartz-scheduler:quartz:2.2.1')
 
+  runtime('com.h2database:h2:1.4.192')
+
   testCompile(project(':azkaban-test').sourceSets.test.output)
   testCompile('org.hamcrest:hamcrest-all:1.3')
 }
