@@ -11,6 +11,9 @@ buildscript {
   }
 }
 
+// This node plugin enables users to run any NodeJS script.  The plugin will download and 
+// manage NodeJS distributions, use them from there.
+// ***npm install*** installs all dependencies in package.json. It will only run when changes are made to package.json
 plugins {
   id "com.moowork.node" version "0.13"
 }
@@ -76,48 +79,37 @@ task movingJsTojsToPackage(dependsOn: ['npm_install']) {
   doLast {
     copy {
       from "node_modules/later/later.min.js"
-      into 'build/jsToPackage'
+      into "${buildDir}/jsToPackage"
     }
     copy {
       from "node_modules/moment/min/moment.min.js"
-      into 'build/jsToPackage'
+      into "${buildDir}/jsToPackage"
     }
     copy {
       from "node_modules/eonasdan-bootstrap-datetimepicker/build/js/bootstrap-datetimepicker.min.js"
-      into 'build/jsToPackage'
+      into "${buildDir}/jsToPackage"
     }
     copy {
       from "node_modules/moment-timezone/builds/moment-timezone-with-data-2010-2020.min.js"
-      into 'build/jsToPackage'
+      into "${buildDir}/jsToPackage"
     }
   }
 }
 
 task cleanAll {
-  delete '.gradle'
   delete 'jsToPackage'
   delete 'node_modules'
   delete 'velocity.log'
 }
-
 clean.dependsOn cleanAll
 
-task jsTest(dependsOn: ['npm_install'], type:Exec) {
-  ignoreExitValue = true
+task jsTest(dependsOn: ['npm_install'], type: NodeTask) {
 
-  commandLine 'node', 'node_modules/mocha/bin/mocha', 'src/web/js/azkaban/test/'
+  // refer to mocha js script file.
+  script = file('node_modules/mocha/bin/mocha')
 
-  doLast {
-    if (execResult) {
-      if(execResult.exitValue == 0) {
-        logger.warn('All js Tests passed.')
-      }
-      else{
-        logger.warn('Javascript Tests failed.')
-        throw new GradleException('Js Tests failed.')
-      }
-    }
-  }
+  // args keep the test files' location
+  args = ['src/web/js/azkaban/test/']
 }
 test.dependsOn jsTest
 
