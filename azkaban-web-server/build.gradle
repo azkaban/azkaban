@@ -110,10 +110,10 @@ task jsTest(dependsOn: ['npm_install'], type:Exec) {
   doLast {
     if (execResult) {
       if(execResult.exitValue == 0) {
-        logger.info('All js Tests passed.')
-        // println "All js Tests passed"
+        logger.warn('All js Tests passed.')
       }
       else{
+        logger.warn('Javascript Tests failed.')
         throw new GradleException('Js Tests failed.')
       }
     }
