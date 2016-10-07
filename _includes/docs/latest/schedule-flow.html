@@ -4,15 +4,15 @@
 
 <div class="row">
   <div class="col-md-6 col-md-offset-3">
-    <a href="./images/scheduleflowoptions.png" data-lightbox="schedule-flow" title="Schedule flow">
-      <img class="img-thumbnail" title="Schedule Flow" src="./images/scheduleflowoptions.png" ALT="Schedule Flow" width="450" />
+    <a href="./images/flexible-scheduling.png" data-lightbox="schedule-flow" title="Schedule flow">
+      <img class="img-thumbnail" title="Schedule Flow" src="./images/flexible-scheduling.png" ALT="Schedule Flow" width="450" />
     </a>
   </div>
 </div>
 
 <p>Any flow options set will be preserved for the scheduled flow. For instance, if jobs are disabled, then the scheduled flow's jobs will also be disabled.<p>
 
-<p>Select the scheduled time and date. Recurrence allows jobs to repeated every <em>n</em> months, weeks, days, hours, minutes, seconds. Scheduling an already scheduled flow will overwrite the previous schedule.</p>
+<p>With new flexible scheduling feature in Azkaban 3.3, User are able to define a cron job following <a href="http://www.quartz-scheduler.org/documentation/quartz-2.x/tutorials/crontrigger.html">Quartz syntax</a>. One important change different from Quartz or cron is that Azkaban functions at the minute granularity at most. Therefore, second field in UI is labeled as a static "0".</p>
 
 <p>After scheduling, it should appear on the schedule page, where you can remove the scheduled job or set the SLA options.</p>
 
