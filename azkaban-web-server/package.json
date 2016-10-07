@@ -1,0 +1,25 @@
+{
+  "_comment": "This json is called by npm install",
+  "name": "azkaban",
+  "description": "Azkaban 3 [![Build Status](http://img.shields.io/travis/azkaban/azkaban.svg?style=flat)](https://travis-ci.org/azkaban/azkaban) ========",
+  "dependencies": {
+    "mocha": "^3.0.2",
+    "rewire": "^2.5.2",
+    "chai": "^3.5.0",
+    "later": "^1.2.0",
+    "eonasdan-bootstrap-datetimepicker": "^4.0.0",
+    "moment-timezone": "^0.5.5",
+    "moment": "^2.14.1"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/azkaban/azkaban.git"
+  },
+  "bugs": {
+    "url": "https://github.com/azkaban/azkaban/issues"
+  },
+  "homepage": "https://azkaban.github.io/"
+}
