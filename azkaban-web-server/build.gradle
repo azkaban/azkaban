@@ -11,8 +11,32 @@ buildscript {
   }
 }
 
+// This node plugin enables users to run any NodeJS script.  The plugin will download and 
+// manage NodeJS distributions, use them from there.
+// ***npm install*** installs all dependencies in package.json. It will only run when changes are made to package.json
 plugins {
-    id 'com.craigburke.bower-installer' version '2.5.1'
+  id "com.moowork.node" version "0.13"
+}
+
+node {
+  // Version of node to use.
+  version = '6.2.1'
+
+  // Version of npm to use.
+  npmVersion = '3.9.3'
+
+  // Base URL for fetching node distributions (change if you have a mirror).
+  distBaseUrl = 'https://nodejs.org/dist'
+
+  // If true, it will download node using above parameters.
+  // If false, it will try to use globally installed node.
+  download = true
+
+  // Set the work directory for unpacking node
+  workDir = file("${project.buildDir}/nodejs")
+
+  // Set the work directory where node_modules should be located
+  nodeModulesDir = file("${project.projectDir}")
 }
 
 apply plugin: 'lesscss'
@@ -50,27 +74,44 @@ sourceSets {
   }
 }
 
-bower {
-  installBase = 'bower' // <1>
+task movingJsTojsToPackage(dependsOn: ['npm_install']) {
 
-  'moment'('2.14.1'){
-    source 'min/moment.min.js' >> '/'
-  }
-
-  'moment-timezone'('0.5.5') {
-    source 'builds/moment-timezone-with-data-2010-2020.min.js'  >> '/'
-  }
-
-  'eonasdan-bootstrap-datetimepicker'('4.0.0') {
-    source 'build/js/*.min.js'  >> '/'
-    excludes 'jquery'
-  }
-
-  'later'('1.2.0'){
-    source 'later.min.js' >> '/'
+  doLast {
+    copy {
+      from "node_modules/later/later.min.js"
+      into "${buildDir}/jsToPackage"
+    }
+    copy {
+      from "node_modules/moment/min/moment.min.js"
+      into "${buildDir}/jsToPackage"
+    }
+    copy {
+      from "node_modules/eonasdan-bootstrap-datetimepicker/build/js/bootstrap-datetimepicker.min.js"
+      into "${buildDir}/jsToPackage"
+    }
+    copy {
+      from "node_modules/moment-timezone/builds/moment-timezone-with-data-2010-2020.min.js"
+      into "${buildDir}/jsToPackage"
+    }
   }
 }
-clean.dependsOn 'bowerClean'
+
+task cleanAll {
+  delete 'jsToPackage'
+  delete 'node_modules'
+  delete 'velocity.log'
+}
+clean.dependsOn cleanAll
+
+task jsTest(dependsOn: ['npm_install'], type: NodeTask) {
+
+  // refer to mocha js script file.
+  script = file('node_modules/mocha/bin/mocha')
+
+  // args keep the test files' location
+  args = ['src/web/js/azkaban/test/']
+}
+test.dependsOn jsTest
 
 task restliTemplateGenerator(type: JavaExec) {
   mkdir 'src/restli/generatedJava'
@@ -133,10 +174,10 @@ distributions {
       from (dustjs) {
         into 'web/js'
       }
-      from ('bower') {
+      from ('build/jsToPackage') {
         into 'web/js'
       }
-      from (bowerInstall) {
+      from (movingJsTojsToPackage) {
         into 'web/js'
       }
     }
