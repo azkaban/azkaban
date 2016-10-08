@@ -45,6 +45,7 @@ import org.joda.time.DateTime;
 import azkaban.alert.Alerter;
 import azkaban.event.Event;
 import azkaban.event.Event.Type;
+import azkaban.event.EventData;
 import azkaban.event.EventHandler;
 import azkaban.executor.selector.ExecutorComparator;
 import azkaban.executor.selector.ExecutorFilter;
@@ -1349,7 +1350,7 @@ public class ExecutorManager extends EventHandler implements
                 ScheduleStatisticManager.invalidateCache(flow.getScheduleId(),
                     cacheDir);
               }
-              fireEventListeners(Event.create(flow, Type.FLOW_FINISHED));
+              fireEventListeners(Event.create(flow, Type.FLOW_FINISHED, new EventData(flow.getStatus())));
               recentlyFinished.put(flow.getExecutionId(), flow);
             }
 
@@ -1415,7 +1416,7 @@ public class ExecutorManager extends EventHandler implements
 
       updaterStage = "finalizing flow " + execId + " cleaning from memory";
       runningFlows.remove(execId);
-      fireEventListeners(Event.create(dsFlow, Type.FLOW_FINISHED));
+      fireEventListeners(Event.create(dsFlow, Type.FLOW_FINISHED, new EventData(dsFlow.getStatus())));
       recentlyFinished.put(execId, dsFlow);
 
     } catch (ExecutorManagerException e) {

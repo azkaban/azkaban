@@ -36,6 +36,7 @@ import org.apache.http.message.BasicHeader;
 import org.apache.log4j.Logger;
 
 import azkaban.event.Event;
+import azkaban.event.EventData;
 import azkaban.execapp.JobRunner;
 import azkaban.executor.ExecutableNode;
 import azkaban.jobcallback.JobCallbackStatusEnum;
@@ -244,6 +245,7 @@ public class JobCallbackUtil {
     if (event.getRunner() instanceof JobRunner) {
       JobRunner jobRunner = (JobRunner) event.getRunner();
       ExecutableNode node = jobRunner.getNode();
+      EventData eventData = event.getData();
       String projectName = node.getParentFlow().getProjectName();
       String flowName = node.getParentFlow().getFlowId();
       String executionId =
@@ -256,7 +258,7 @@ public class JobCallbackUtil {
       result.put(CONTEXT_FLOW_TOKEN, flowName);
       result.put(CONTEXT_EXECUTION_ID_TOKEN, executionId);
       result.put(CONTEXT_JOB_TOKEN, jobId);
-      result.put(CONTEXT_JOB_STATUS_TOKEN, node.getStatus().name().toLowerCase());
+      result.put(CONTEXT_JOB_STATUS_TOKEN, eventData.getStatus().name().toLowerCase());
 
       /*
        * if (node.getStatus() == Status.SUCCEEDED || node.getStatus() ==

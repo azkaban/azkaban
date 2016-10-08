@@ -39,6 +39,7 @@ import org.apache.log4j.PatternLayout;
 
 import azkaban.event.Event;
 import azkaban.event.Event.Type;
+import azkaban.event.EventData;
 import azkaban.event.EventHandler;
 import azkaban.event.EventListener;
 import azkaban.execapp.event.FlowWatcher;
@@ -212,7 +213,7 @@ public class FlowRunner extends EventHandler implements Runnable {
       logger.info("Fetching job and shared properties.");
       loadAllProperties();
 
-      this.fireEventListeners(Event.create(this, Type.FLOW_STARTED));
+      this.fireEventListeners(Event.create(this, Type.FLOW_STARTED, new EventData(this.getExecutableFlow().getStatus())));
       runFlow();
     } catch (Throwable t) {
       if (logger != null) {
@@ -236,7 +237,7 @@ public class FlowRunner extends EventHandler implements Runnable {
       closeLogger();
 
       updateFlow();
-      this.fireEventListeners(Event.create(this, Type.FLOW_FINISHED));
+      this.fireEventListeners(Event.create(this, Type.FLOW_FINISHED, new EventData(flow.getStatus())));
     }
   }
 
@@ -572,7 +573,8 @@ public class FlowRunner extends EventHandler implements Runnable {
 
   private void finishExecutableNode(ExecutableNode node) {
     finishedNodes.add(node);
-    fireEventListeners(Event.create(this, Type.JOB_FINISHED, node));
+    EventData eventData = new EventData(node.getStatus(), node.getNestedId());
+    fireEventListeners(Event.create(this, Type.JOB_FINISHED, eventData));
   }
 
   private void finalizeFlow(ExecutableFlowBase flow) {
@@ -1054,15 +1056,16 @@ public class FlowRunner extends EventHandler implements Runnable {
         updateFlow();
       } else if (event.getType() == Type.JOB_FINISHED) {
         ExecutableNode node = runner.getNode();
+        EventData eventData = event.getData();
         long seconds = (node.getEndTime() - node.getStartTime()) / 1000;
         synchronized (mainSyncObj) {
-          logger.info("Job " + node.getNestedId() + " finished with status "
-              + node.getStatus() + " in " + seconds + " seconds");
+          logger.info("Job " + eventData.getNestedId() + " finished with status "
+              + eventData.getStatus() + " in " + seconds + " seconds");
 
           // Cancellation is handled in the main thread, but if the flow is
           // paused, the main thread is paused too.
           // This unpauses the flow for cancellation.
-          if (flowPaused && node.getStatus() == Status.FAILED
+          if (flowPaused && eventData.getStatus() == Status.FAILED
               && failureAction == FailureAction.CANCEL_ALL) {
             flowPaused = false;
           }

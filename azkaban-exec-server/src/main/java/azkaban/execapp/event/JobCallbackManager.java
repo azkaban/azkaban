@@ -19,6 +19,7 @@ import org.apache.http.message.BasicHeader;
 import org.apache.log4j.Logger;
 
 import azkaban.event.Event;
+import azkaban.event.EventData;
 import azkaban.event.EventListener;
 import azkaban.execapp.JobRunner;
 import azkaban.execapp.jmx.JmxJobCallback;
@@ -135,6 +136,7 @@ public class JobCallbackManager implements EventListener {
 
   private void processJobCallOnFinish(Event event) {
     JobRunner jobRunner = (JobRunner) event.getRunner();
+    EventData eventData = event.getData();
 
     if (!JobCallbackUtil.isThereJobCallbackProperty(jobRunner.getProps(),
         ON_COMPLETION_JOB_CALLBACK_STATUS)) {
@@ -151,7 +153,7 @@ public class JobCallbackManager implements EventListener {
     JobCallbackStatusEnum jobCallBackStatusEnum = null;
     Logger jobLogger = jobRunner.getLogger();
 
-    Status jobStatus = jobRunner.getNode().getStatus();
+    Status jobStatus = eventData.getStatus();
 
     if (jobStatus == Status.SUCCEEDED) {
 

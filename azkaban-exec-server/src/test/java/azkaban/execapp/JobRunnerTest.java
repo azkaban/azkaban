@@ -31,6 +31,7 @@ import org.junit.Test;
 
 import azkaban.event.Event;
 import azkaban.event.Event.Type;
+import azkaban.event.EventData;
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutableNode;
 import azkaban.executor.ExecutorLoader;
@@ -82,12 +83,12 @@ public class JobRunnerTest {
         createJobRunner(1, "testJob", 1, false, loader, eventCollector);
     ExecutableNode node = runner.getNode();
 
-    eventCollector.handleEvent(Event.create(null, Event.Type.JOB_STARTED));
+    eventCollector.handleEvent(Event.create(null, Event.Type.JOB_STARTED, new EventData(node.getStatus())));
     Assert.assertTrue(runner.getStatus() != Status.SUCCEEDED
         || runner.getStatus() != Status.FAILED);
 
     runner.run();
-    eventCollector.handleEvent(Event.create(null, Event.Type.JOB_FINISHED));
+    eventCollector.handleEvent(Event.create(null, Event.Type.JOB_FINISHED, new EventData(node.getStatus())));
 
     Assert.assertTrue(runner.getStatus() == node.getStatus());
     Assert.assertTrue("Node status is " + node.getStatus(),
@@ -281,12 +282,11 @@ public class JobRunnerTest {
     long startTime = System.currentTimeMillis();
     ExecutableNode node = runner.getNode();
 
-    eventCollector.handleEvent(Event.create(null, Event.Type.JOB_STARTED));
-    Assert.assertTrue(runner.getStatus() != Status.SUCCEEDED
-        || runner.getStatus() != Status.FAILED);
+    eventCollector.handleEvent(Event.create(null, Event.Type.JOB_STARTED, new EventData(node.getStatus())));
+    Assert.assertTrue(runner.getStatus() != Status.SUCCEEDED);
 
     runner.run();
-    eventCollector.handleEvent(Event.create(null, Event.Type.JOB_FINISHED));
+    eventCollector.handleEvent(Event.create(null, Event.Type.JOB_FINISHED, new EventData(node.getStatus())));
 
     Assert.assertTrue(runner.getStatus() == node.getStatus());
     Assert.assertTrue("Node status is " + node.getStatus(),
@@ -321,9 +321,8 @@ public class JobRunnerTest {
     long startTime = System.currentTimeMillis();
     ExecutableNode node = runner.getNode();
 
-    eventCollector.handleEvent(Event.create(null, Event.Type.JOB_STARTED));
-    Assert.assertTrue(runner.getStatus() != Status.SUCCEEDED
-        || runner.getStatus() != Status.FAILED);
+    eventCollector.handleEvent(Event.create(null, Event.Type.JOB_STARTED, new EventData(node.getStatus())));
+    Assert.assertTrue(runner.getStatus() != Status.SUCCEEDED);
 
     Thread thread = new Thread(runner);
     thread.start();
@@ -344,7 +343,7 @@ public class JobRunnerTest {
       }
     }
 
-    eventCollector.handleEvent(Event.create(null, Event.Type.JOB_FINISHED));
+    eventCollector.handleEvent(Event.create(null, Event.Type.JOB_FINISHED, new EventData(node.getStatus())));
 
     Assert.assertTrue(runner.getStatus() == node.getStatus());
     Assert.assertTrue("Node status is " + node.getStatus(),
