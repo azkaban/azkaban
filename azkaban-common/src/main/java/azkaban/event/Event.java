@@ -16,6 +16,8 @@
 
 package azkaban.event;
 
+import com.google.common.base.Preconditions;
+
 public class Event {
   public enum Type {
     FLOW_STARTED,
@@ -29,16 +31,14 @@ public class Event {
 
   private final Object runner;
   private final Type type;
-  private final Object eventData;
+  private final EventData eventData;
   private final long time;
-  private final boolean shouldUpdate;
 
-  private Event(Object runner, Type type, Object eventData, boolean shouldUpdate) {
+  private Event(Object runner, Type type, EventData eventData) {
     this.runner = runner;
     this.type = type;
     this.eventData = eventData;
     this.time = System.currentTimeMillis();
-    this.shouldUpdate = shouldUpdate;
   }
 
   public Object getRunner() {
@@ -53,24 +53,22 @@ public class Event {
     return time;
   }
 
-  public Object getData() {
+  public EventData getData() {
     return eventData;
   }
 
-  public static Event create(Object runner, Type type) {
-    return new Event(runner, type, null, true);
+  /**
+   * Creates a new event.
+   *
+   * @param runner runner.
+   * @param type type.
+   * @param eventData EventData, null is not allowed.
+   * @return New Event instance.
+   * @throws NullPointerException if EventData is null.
+   */
+  public static Event create(Object runner, Type type, EventData eventData) throws NullPointerException {
+    Preconditions.checkNotNull(eventData, "EventData was null");
+    return new Event(runner, type, eventData);
   }
 
-  public static Event create(Object runner, Type type, Object eventData) {
-    return new Event(runner, type, eventData, true);
-  }
-
-  public static Event create(Object runner, Type type, Object eventData,
-      boolean shouldUpdate) {
-    return new Event(runner, type, eventData, shouldUpdate);
-  }
-
-  public boolean isShouldUpdate() {
-    return shouldUpdate;
-  }
 }

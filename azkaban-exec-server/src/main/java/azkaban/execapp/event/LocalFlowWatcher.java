@@ -18,6 +18,7 @@ package azkaban.execapp.event;
 
 import azkaban.event.Event;
 import azkaban.event.Event.Type;
+import azkaban.event.EventData;
 import azkaban.event.EventListener;
 import azkaban.execapp.FlowRunner;
 import azkaban.execapp.JobRunner;
@@ -58,10 +59,9 @@ public class LocalFlowWatcher extends FlowWatcher {
       if (event.getType() == Type.JOB_FINISHED) {
         if (event.getRunner() instanceof FlowRunner) {
           // The flow runner will finish a job without it running
-          Object data = event.getData();
-          if (data instanceof ExecutableNode) {
-            ExecutableNode node = (ExecutableNode) data;
-            handleJobStatusChange(node.getNestedId(), node.getStatus());
+          EventData eventData = event.getData();
+          if (eventData.getNestedId() != null) {
+            handleJobStatusChange(eventData.getNestedId(), eventData.getStatus());
           }
         } else if (event.getRunner() instanceof JobRunner) {
           // A job runner is finished
