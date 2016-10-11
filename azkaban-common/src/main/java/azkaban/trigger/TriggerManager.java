@@ -277,6 +277,7 @@ public class TriggerManager extends EventHandler implements
             shouldSkip = false;
           }
 
+          logger.info("Get Next Check Time =" + t.getNextCheckTime() + "  now = " + now );
           if (shouldSkip) {
             logger.info("Skipping trigger" + t.getTriggerId() + " until " + t.getNextCheckTime());
           }

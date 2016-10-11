@@ -1,0 +1,185 @@
+buildscript {
+  repositories {
+    mavenCentral()
+    maven {
+      url 'https://plugins.gradle.org/m2/'
+    }
+  }
+  dependencies {
+    classpath 'com.linkedin:gradle-dustjs-plugin:1.0.0'
+    classpath 'de.obqo.gradle:gradle-lesscss-plugin:1.0-1.3.3'
+  }
+}
+
+// This node plugin enables users to run any NodeJS script.  The plugin will download and 
+// manage NodeJS distributions, use them from there.
+// ***npm install*** installs all dependencies in package.json. It will only run when changes are made to package.json
+plugins {
+  id "com.moowork.node" version "0.13"
+}
+
+node {
+  // Version of node to use.
+  version = '6.2.1'
+
+  // Version of npm to use.
+  npmVersion = '3.9.3'
+
+  // Base URL for fetching node distributions (change if you have a mirror).
+  distBaseUrl = 'https://nodejs.org/dist'
+
+  // If true, it will download node using above parameters.
+  // If false, it will try to use globally installed node.
+  download = true
+
+  // Set the work directory for unpacking node
+  workDir = file("${project.buildDir}/nodejs")
+
+  // Set the work directory where node_modules should be located
+  nodeModulesDir = file("${project.projectDir}")
+}
+
+apply plugin: 'lesscss'
+apply plugin: 'dustjs'
+apply plugin: 'distribution'
+
+ext.pegasusVersion = '1.15.7'
+
+configurations {
+  generateRestli
+}
+
+dependencies {
+  compile(project(':azkaban-common'))
+  compile('com.linkedin.pegasus:restli-server:' + pegasusVersion)
+  compile('org.apache.velocity:velocity-tools:2.0')
+
+  testCompile('commons-collections:commons-collections:3.2.2')
+  testCompile('org.hamcrest:hamcrest-all:1.3')
+  testCompile('org.mockito:mockito-all:1.10.19')
+
+  generateRestli('com.linkedin.pegasus:generator:' + pegasusVersion)
+  generateRestli('com.linkedin.pegasus:restli-tools:' + pegasusVersion)
+
+  // Needed by Velocity at runtime
+  testRuntime('commons-collections:commons-collections:3.2.2')
+  testCompile('org.hamcrest:hamcrest-all:1.3')
+}
+
+sourceSets {
+  main {
+    java {
+      srcDirs 'src/main/java', 'src/restli/generatedJava', 'src/restli/java'
+    }
+  }
+}
+
+task movingJsTojsToPackage(dependsOn: ['npm_install']) {
+
+  doLast {
+    copy {
+      from "node_modules/later/later.min.js"
+      into "${buildDir}/jsToPackage"
+    }
+    copy {
+      from "node_modules/moment/min/moment.min.js"
+      into "${buildDir}/jsToPackage"
+    }
+    copy {
+      from "node_modules/eonasdan-bootstrap-datetimepicker/build/js/bootstrap-datetimepicker.min.js"
+      into "${buildDir}/jsToPackage"
+    }
+    copy {
+      from "node_modules/moment-timezone/builds/moment-timezone-with-data-2010-2020.min.js"
+      into "${buildDir}/jsToPackage"
+    }
+  }
+}
+
+task cleanAll {
+  delete 'jsToPackage'
+  delete 'node_modules'
+  delete 'velocity.log'
+}
+clean.dependsOn cleanAll
+
+task jsTest(dependsOn: ['npm_install'], type: NodeTask) {
+
+  // refer to mocha js script file.
+  script = file('node_modules/mocha/bin/mocha')
+
+  // args keep the test files' location
+  args = ['src/web/js/azkaban/test/']
+}
+test.dependsOn jsTest
+
+task restliTemplateGenerator(type: JavaExec) {
+  mkdir 'src/restli/generatedJava'
+
+  main = 'com.linkedin.pegasus.generator.PegasusDataTemplateGenerator'
+  args = ['src/restli/generatedJava','src/restli/schemas']
+  classpath = configurations.generateRestli
+}
+
+task restliRestSpecGenerator(dependsOn: [restliTemplateGenerator], type: JavaExec) << {
+  mkdir 'src/restli/generatedRestSpec'
+
+  main = 'com.linkedin.restli.tools.idlgen.RestLiResourceModelExporterCmdLineApp'
+  args = ['-outdir', 'src/restli/generatedRestSpec', '-sourcepath', 'src/restli/java']
+  classpath = configurations.generateRestli
+}
+
+task restli(dependsOn: restliTemplateGenerator) << {
+}
+
+compileJava.dependsOn.add('restli')
+
+lesscss {
+  source = fileTree('src/main/less') {
+    include 'azkaban.less'
+    include 'azkaban-graph.less'
+  }
+  dest = 'build/less'
+}
+
+dustjs {
+  source = fileTree('src/main/tl')
+  dest = 'build/dust'
+}
+
+installDist.dependsOn 'lesscss'
+
+distributions {
+  main {
+    contents {
+      from('src/main/bash') {
+        into 'bin'
+        fileMode = 0755
+      }
+      from ('src/main/resources/conf') {
+        into 'conf'
+      }
+      from(configurations.runtime) {
+        into 'lib'
+      }
+      from(jar) {
+        into 'lib'
+      }
+      from ('src/web') {
+        into 'web'
+      }
+      from (lesscss.dest) {
+        into 'web/css'
+      }
+      from (dustjs) {
+        into 'web/js'
+      }
+      from ('build/jsToPackage') {
+        into 'web/js'
+      }
+      from (movingJsTojsToPackage) {
+        into 'web/js'
+      }
+    }
+  }
+}

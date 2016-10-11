@@ -16,7 +16,13 @@
 
 package azkaban.scheduler;
 
+import azkaban.executor.ExecutionOptions;
+import azkaban.sla.SlaOption;
+import azkaban.utils.Pair;
+import azkaban.utils.Utils;
+
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -31,10 +37,7 @@ import org.joda.time.Months;
 import org.joda.time.ReadablePeriod;
 import org.joda.time.Seconds;
 import org.joda.time.Weeks;
-
-import azkaban.executor.ExecutionOptions;
-import azkaban.sla.SlaOption;
-import azkaban.utils.Pair;
+import org.quartz.CronExpression;
 
 public class Schedule {
 
@@ -50,6 +53,7 @@ public class Schedule {
   private String submitUser;
   private String status;
   private long submitTime;
+  private String cronExpression;
 
   private boolean skipPastOccurrences = true;
 
@@ -63,7 +67,7 @@ public class Schedule {
 
     this(scheduleId, projectId, projectName, flowName, status, firstSchedTime,
         timezone, period, lastModifyTime, nextExecTime, submitTime, submitUser,
-        null, null);
+        null, null, null);
   }
 
   public Schedule(int scheduleId, int projectId, String projectName,
@@ -74,14 +78,14 @@ public class Schedule {
     this(scheduleId, projectId, projectName, flowName, status, firstSchedTime,
         DateTimeZone.forID(timezoneId), parsePeriodString(period),
         lastModifyTime, nextExecTime, submitTime, submitUser, executionOptions,
-        slaOptions);
+        slaOptions, null);
   }
 
   public Schedule(int scheduleId, int projectId, String projectName,
       String flowName, String status, long firstSchedTime,
       DateTimeZone timezone, ReadablePeriod period, long lastModifyTime,
       long nextExecTime, long submitTime, String submitUser,
-      ExecutionOptions executionOptions, List<SlaOption> slaOptions) {
+      ExecutionOptions executionOptions, List<SlaOption> slaOptions, String cronExpression) {
     this.scheduleId = scheduleId;
     this.projectId = projectId;
     this.projectName = projectName;
@@ -96,6 +100,7 @@ public class Schedule {
     this.submitTime = submitTime;
     this.executionOptions = executionOptions;
     this.slaOptions = slaOptions;
+    this.cronExpression = cronExpression;
   }
 
   public ExecutionOptions getExecutionOptions() {
@@ -119,11 +124,16 @@ public class Schedule {
   }
 
   public String toString() {
-    return projectName + "." + flowName + " (" + projectId + ")"
-        + " to be run at (starting) "
-        + new DateTime(firstSchedTime).toDateTimeISO()
-        + " with recurring period of "
-        + (period == null ? "non-recurring" : createPeriodString(period));
+
+    String underlying = projectName + "." + flowName + " (" + projectId + ")" + " to be run at (starting) " + new DateTime(
+        firstSchedTime).toDateTimeISO();
+    if (period == null && cronExpression == null) {
+      return underlying + " non-recurring";
+    } else if (cronExpression != null) {
+      return underlying + " with CronExpression {" + cronExpression + "}";
+    } else {
+      return underlying + " with precurring period of " + createPeriodString(period);
+    }
   }
 
   public Pair<Integer, String> getScheduleIdentityPair() {
@@ -182,8 +192,18 @@ public class Schedule {
     return submitTime;
   }
 
+  public String getCronExpression() {
+    return cronExpression;
+  }
+
   public boolean updateTime() {
     if (new DateTime(nextExecTime).isAfterNow()) {
+      return true;
+    }
+
+    if (cronExpression != null) {
+      DateTime nextTime = getNextCronRuntime(nextExecTime, timezone, Utils.parseCronExpression(cronExpression, timezone));
+      this.nextExecTime = nextTime.getMillis();
       return true;
     }
 
@@ -222,6 +242,23 @@ public class Schedule {
     }
 
     return date;
+  }
+
+  /**
+   *
+   * @param scheduleTime represents the time when Schedule Servlet receives the Cron Schedule API call.
+   * @param timezone is always UTC (after 3.1.0)
+   * @param ce
+   * @return the First Scheduled DateTime to run this flow.
+   */
+  private DateTime getNextCronRuntime(long scheduleTime, DateTimeZone timezone,
+      CronExpression ce) {
+
+    Date date = new DateTime(scheduleTime).withZone(timezone).toDate();
+    if (ce != null) {
+      date = ce.getNextValidTimeAfter(date);
+    }
+    return new DateTime(date);
   }
 
   public static ReadablePeriod parsePeriodString(String periodStr) {
@@ -341,7 +378,7 @@ public class Schedule {
   }
 
   public boolean isRecurring() {
-    return period == null ? false : true;
+    return period != null || cronExpression != null;
   }
 
   public boolean skipPastOccurrences() {

@@ -85,7 +85,7 @@ public class ConditionTest {
     // period);
     ConditionChecker timeChecker =
         new BasicTimeChecker("BasicTimeChecker_1", now.getMillis(),
-            now.getZone(), true, true, Utils.parsePeriodString(period));
+            now.getZone(), true, true, Utils.parsePeriodString(period), null);
     System.out.println("checker id is " + timeChecker.getId());
 
     checkers.put(timeChecker.getId(), timeChecker);

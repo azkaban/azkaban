@@ -579,6 +579,7 @@ public class ProjectManager {
     ZipFile zipfile = new ZipFile(archiveFile);
     File unzipped = Utils.createTempDir(tempDir);
     Utils.unzip(zipfile, unzipped);
+    zipfile.close();
 
     return unzipped;
   }

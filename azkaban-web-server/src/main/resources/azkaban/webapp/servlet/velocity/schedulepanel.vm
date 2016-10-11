@@ -1,0 +1,132 @@
+#*
+ * Copyright 2012 LinkedIn Corp.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not
+ * use this file except in compliance with the License. You may obtain a copy of
+ * the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations under
+ * the License.
+*#
+
+<script type="text/javascript" src="${context}/js/azkaban/util/date.js?version=20161003"></script>
+<script type="text/javascript" src="${context}/js/azkaban/view/schedule-panel.js?version=20161003"></script>
+<script type="text/javascript" src="${context}/js/moment.min.js" ></script>
+<script type="text/javascript" src="${context}/js/later.min.js"></script>
+<script type="text/javascript" src="${context}/js/moment-timezone-with-data-2010-2020.min.js"></script>
+<style type="text/css">
+  .input-box { position: relative; }
+  .input-box input { display: block; border: 1px solid #d7d6d6; background: #fff; padding: 10px 10px 10px 20px; width: 195px; }
+  .unit { position: absolute; display: block; left: 5px; top: 7px; z-index: 9; }
+</style>
+<div class="modal" id="schedule-modal">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+        <h4 class="modal-title">Schedule Flow Options</h4>
+      </div><!-- /modal-header -->
+      <div class="modal-body">
+        <fieldset class="form-horizontal">
+          <div class="form-group">
+
+            <div class="col-sm-12" style="height:55px;">
+              <h4 style="color:Coral; font-style:italic;">All schedules are basead on the server timezone: <b id="timeZoneID"></b>.</h4>
+              <h6 style="color:#0080ff;">Warning: the execution will be skipped if it is scheduled to run during the hour that is lost when DST starts in the Spring.
+                E.g. there is no 2 - 3 AM when PST switches to PDT.</h6>
+
+            </div>
+            <div class="col-xs-12" style="height:30px;"></div>
+            <div class="form-group">
+              <div class="col-sm-6">
+                <label class="col-sm-4 control-label" id="min_label">Min</label>
+                <div class="col-sm-8">
+                  <input type="text" id="minute_input" value="*" class="form-control" oninput="updateOutput()">
+                </div>
+                <br/> <br/> <br/>
+                <label class="col-sm-4 control-label" id="hour_label">Hours</label>
+                <div class="col-sm-8">
+                  <input type="text" id="hour_input" value="*" class="form-control"
+                         oninput="updateOutput()">
+                </div>
+                <br/> <br/> <br/>
+                <label class="col-sm-4 control-label" id="dom_label" style="margin-top:-8px">Day of Month</label>
+                <div class="col-sm-8">
+                  <input type="text" id="dom_input" value="?" class="form-control"
+                         oninput="updateOutput()">
+                </div>
+                <br/> <br/> <br/>
+                <label class="col-sm-4 control-label" id="mon_label">Month</label>
+                <div class="col-sm-8">
+                  <input type="text" id="month_input" value="*" class="form-control"
+                         oninput="updateOutput()">
+                </div>
+                <br/> <br/> <br/>
+                <label class="col-sm-4 control-label" id="dow_label" style="margin-top:-8px">Day of Week</label>
+                <div class="col-sm-8">
+                  <input type="text" id="dow_input" value="*" class="form-control"
+                         oninput="updateOutput()">
+                </div>
+              </div>
+
+              <div class="col-sm-5" style="background-color:#f5f5f5; border:1px solid #e3e3e3">
+                <h4 style="color:orange">Special Characters:</h4>
+                <table class="table table-striped" data-row-style="rowColors" id="instructions">
+                  <tbody>
+                  <tr class="success">
+                    <th scope="row">*</th>
+                    <td>any value</td>
+                  </tr>
+                  <tr class="primary">
+                    <th scope="row">,</th>
+                    <td>value list separators</td>
+                  </tr>
+                  <tr class="warning">
+                    <th scope="row">-</th>
+                    <td>range of values</td>
+                  </tr>
+                  <tr class="danger">
+                    <th scope="row">/</th>
+                    <td>step values</td>
+                  </tr>
+                  </tbody>
+                </table>
+                <p><u><span style="color:Indigo"><a href="http://www.quartz-scheduler.org/documentation/quartz-2.x/tutorials/crontrigger.html">Detailed instructions</a></span>.</u></p>
+              </div>
+            </div>
+
+            <div class="col-sm-offset-1 col-sm-4">
+              <div class="input-box">
+                <input type="text" id="cron-output" value="* * ? * *" oninput = "updateExpression()" class="form-control">
+                <span class="unit">0</span>
+              </div>
+            </div>
+            <button type="button" class="col-sm-offset-1 btn btn-warning" id="clearCron">Reset</button>
+            <div class="col-xs-12" style="height:20px;"></div>
+
+            <div class="col-sm-12" style="background-color:#f5f5f5; border:1px solid #e3e3e3">
+              <h4>
+                Next 10 scheduled executions:
+              </h4>
+              <ul id="nextRecurId">
+              </ul>
+            </div>
+
+            <h3 id="cronTranslate" style="color:DeepSkyBlue; font-style:italic;"></h3>
+            <div class="col-sm-9 col-sm-offset-3">
+              <p class="text-right" id="translationWarning"> </p>
+            </div>
+        </fieldset>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-success" id="schedule-button">Schedule</button>
+      </div>
+    </div>
+  </div>
+</div>
