@@ -1,7 +1,7 @@
 name: Azkaban
 safe: true
 lsi: false
-pygments: true
+highlighter: rouge
 
 tagline: "Open-source Workflow Manager"
 image: "img/app.png"
