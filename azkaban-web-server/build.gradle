@@ -174,7 +174,7 @@ distributions {
       from (dustjs) {
         into 'web/js'
       }
-      from ('build/jsToPackage') {
+      from ("${buildDir}/jsToPackage") {
         into 'web/js'
       }
       from (movingJsTojsToPackage) {
