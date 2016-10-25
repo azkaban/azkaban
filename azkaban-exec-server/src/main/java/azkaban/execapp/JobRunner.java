@@ -16,6 +16,7 @@
 
 package azkaban.execapp;
 
+import azkaban.utils.UndefinedPropertyException;
 import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
@@ -30,6 +31,8 @@ import org.apache.log4j.EnhancedPatternLayout;
 import org.apache.log4j.Layout;
 import org.apache.log4j.Logger;
 import org.apache.log4j.RollingFileAppender;
+
+import kafka.producer.KafkaLog4jAppender;
 
 import azkaban.event.Event;
 import azkaban.event.Event.Type;
@@ -67,6 +70,7 @@ public class JobRunner extends EventHandler implements Runnable {
   private Logger flowLogger = null;
 
   private Appender jobAppender;
+  private Appender kafkaAppender;
   private File logFile;
   private String attachmentFileName;
 
@@ -210,25 +214,61 @@ public class JobRunner extends EventHandler implements Runnable {
               + this.jobId;
       logger = Logger.getLogger(loggerName);
 
-      // Create file appender
-      String logName = createLogFileName(node);
-      logFile = new File(workingDir, logName);
+      // Attempt to create appenders as necessary
+      attachFileAppender();
 
-      String absolutePath = logFile.getAbsolutePath();
-
-      jobAppender = null;
-      try {
-        RollingFileAppender fileAppender =
-            new RollingFileAppender(loggerLayout, absolutePath, true);
-        fileAppender.setMaxBackupIndex(jobLogBackupIndex);
-        fileAppender.setMaxFileSize(jobLogChunkSize);
-        jobAppender = fileAppender;
-        logger.addAppender(jobAppender);
-        logger.setAdditivity(false);
-      } catch (IOException e) {
-        flowLogger.error("Could not open log file in " + workingDir
-            + " for job " + this.jobId, e);
+      if (props.getBoolean("azkaban.job.kafkalogging.enabled", false)) {
+        attachKafkaAppender();
       }
+    }
+  }
+
+  private void attachFileAppender() {
+    jobAppender = null;
+    String logName = createLogFileName(node);
+    logFile = new File(workingDir, logName);
+    String absolutePath = logFile.getAbsolutePath();
+
+    try {
+      RollingFileAppender fileAppender =
+          new RollingFileAppender(loggerLayout, absolutePath, true);
+      fileAppender.setMaxBackupIndex(jobLogBackupIndex);
+      fileAppender.setMaxFileSize(jobLogChunkSize);
+      jobAppender = fileAppender;
+      logger.addAppender(jobAppender);
+      logger.setAdditivity(false);
+      flowLogger.info("Created file appender for job " + this.jobId);
+    } catch (IOException e) {
+      flowLogger.error("Could not open log file in " + workingDir
+          + " for job " + this.jobId, e);
+    }
+  }
+
+  private void attachKafkaAppender() {
+    kafkaAppender = null;
+
+    try {
+      KafkaLog4jAppender kafkaProducer = new KafkaLog4jAppender();
+      kafkaProducer.setBrokerList(props.getString("azkaban.job.kafkalogging.brokerlist"));
+      kafkaProducer.setTopic(props.getString("azkaban.job.kafkalogging.topic"));
+      kafkaProducer.setLayout(new EnhancedPatternLayout(
+          "{\"category\": \"%c{1}\","
+              + "\"level\": \"%p\","
+              + "\"message\": \"%m\","
+              + "\"projectname\": \"" + props.getString("azkaban.flow.projectname") + "\","
+              + "\"projectid\": \"" + props.getString("azkaban.flow.projectid") + "\","
+              + "\"flowid\": \"" + props.getString("azkaban.flow.flowid") + "\","
+              + "\"submituser\": \"" + props.getString("azkaban.flow.submituser") + "\","
+              + "\"execid\": \"" + props.getString("azkaban.flow.execid") + "\","
+              + "\"projectversion\": \"" + props.getString("azkaban.flow.projectversion") + "\""
+              + "}"));
+      kafkaProducer.activateOptions();
+      kafkaAppender = kafkaProducer;
+      logger.addAppender(kafkaAppender);
+      logger.setAdditivity(false);
+      flowLogger.info("Created kafka appender for " + this.jobId);
+    } catch (Exception e) {
+      flowLogger.error("Could not create Kafka Appender for job " + this.jobId, e);
     }
   }
 
@@ -242,6 +282,10 @@ public class JobRunner extends EventHandler implements Runnable {
     if (jobAppender != null) {
       logger.removeAppender(jobAppender);
       jobAppender.close();
+    }
+    if (kafkaAppender != null) {
+      logger.removeAppender(kafkaAppender);
+      kafkaAppender.close();
     }
   }
 
