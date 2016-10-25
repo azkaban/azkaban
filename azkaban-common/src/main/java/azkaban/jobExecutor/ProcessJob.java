@@ -51,8 +51,7 @@ public class ProcessJob extends AbstractProcessJob {
 
   public static final String NATIVE_LIB_FOLDER = "azkaban.native.lib";
   public static final String EXECUTE_AS_USER = "execute.as.user";
-  public static final String EXECUTE_AS_USER_OVERRIDE =
-      "execute.as.user.override";
+
   public static final String USER_TO_PROXY = "user.to.proxy";
   public static final String KRB5CCNAME = "KRB5CCNAME";
 
