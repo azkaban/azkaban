@@ -536,21 +536,14 @@ public class ExecutorManager extends EventHandler implements
   }
 
   /**
-   * Fetch ExecutableFlow from an active (running, non-dispatched) or from
-   * database {@inheritDoc}
+   * Fetch ExecutableFlow from database {@inheritDoc}
    *
    * @see azkaban.executor.ExecutorManagerAdapter#getExecutableFlow(int)
    */
   @Override
   public ExecutableFlow getExecutableFlow(int execId)
     throws ExecutorManagerException {
-    if (runningFlows.containsKey(execId)) {
-      return runningFlows.get(execId).getSecond();
-    } else if (queuedFlows.hasExecution(execId)) {
-      return queuedFlows.getFlow(execId);
-    } else {
       return executorLoader.fetchExecutableFlow(execId);
-    }
   }
 
   /**
