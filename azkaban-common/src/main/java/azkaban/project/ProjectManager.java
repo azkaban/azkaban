@@ -473,6 +473,9 @@ public class ProjectManager {
       throw new ProjectManagerException("Error unzipping file.", e);
     }
 
+    // Set current Upload user
+    project.setCurrentUploaderID(uploader.getUserId());
+
     // Since props is an instance variable of ProjectManager, and each
     // invocation to the uploadProject manager needs to pass a different
     // value for the PROJECT_ARCHIVE_FILE_PATH key, it is necessary to

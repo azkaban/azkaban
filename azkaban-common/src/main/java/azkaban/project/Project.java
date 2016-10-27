@@ -39,6 +39,7 @@ public class Project {
   private int version = -1;
   private long createTimestamp;
   private long lastModifiedTimestamp;
+  private String currentUploaderID;
   private String lastModifiedUser;
   private String source;
   private LinkedHashMap<String, Permission> userPermissionMap =
@@ -331,6 +332,24 @@ public class Project {
 
   public void setLastModifiedUser(String lastModifiedUser) {
     this.lastModifiedUser = lastModifiedUser;
+  }
+
+  /**
+   * Getter method for current uploader userId
+   *
+   * @return currentUploaderId
+   */
+  public String getCurrentUploaderID() {
+    return currentUploaderID;
+  }
+
+  /**
+   * Setter method for current Uploader userId
+   *
+   * @param currentUploaderID
+   */
+  public void setCurrentUploaderID(String currentUploaderID) {
+    this.currentUploaderID = currentUploaderID;
   }
 
   @Override
