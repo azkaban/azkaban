@@ -94,6 +94,21 @@ var getTwoDigitStr = function(value) {
   return value;
 }
 
+// Verify if a cron String meets the requirement of Quartz Cron Expression.
+var validateQuartzStr = function (str){
+  var res = str.split(" "), len=res.length;
+
+  // A valid Quartz Cron Expression should have 6 or 7 fields.
+  if(len<6 || len>=8) return 1;
+
+  // Quartz currently doesn't support specifying both a day-of-week and a day-of-month value
+  // (you must currently use the ‘?’ character in one of these fields).
+  if(res[len-1] != '?' && res[len-3] != '?') return 2;
+
+  //valid string
+  return 0;
+}
+
 var modifyStrToUnixCronSyntax = function (str){
   return str.replace(/[0-7]/g, function upperToHyphenLower(match) {
     return (parseInt(match)+6)%7;

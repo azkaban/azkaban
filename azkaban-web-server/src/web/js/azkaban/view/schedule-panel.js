@@ -56,6 +56,16 @@ azkaban.SchedulePanelView = Backbone.View.extend({
 
     console.log("current Time = " + scheduleDate + "  " + scheduleTime );
     console.log("cronExpression = " +  scheduleData.cronExpression);
+    var retSignal = validateQuartzStr(scheduleData.cronExpression);
+
+    if(retSignal == 1) {
+      messageDialogView.show("Cron Syntax Error", "A valid Quartz Cron Expression should have 6 or 7 fields.");
+      return;
+    } else if (retSignal == 2) {
+      messageDialogView.show("Cron Syntax Error", "Currently Quartz doesn't support specifying both a day-of-week and a day-of-month value"
+          + "(you must use the ‘?’ character in one of these fields). <a href=\"http://www.quartz-scheduler.org/documentation/quartz-2.x/tutorials/crontrigger.html\">Detailed Explanation</a>");
+      return;
+    }
 
     var successHandler = function(data) {
       if (data.error) {
