@@ -28,6 +28,7 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Collection;
+import java.util.Date;
 import java.util.Enumeration;
 import java.util.Random;
 import java.util.TimeZone;
@@ -489,7 +490,16 @@ public class Utils {
     } else return null;
   }
 
-  public static boolean isCronExpressionValid(String cronExpression) {
-    return CronExpression.isValidExpression(cronExpression);
+  public static boolean isCronExpressionValid(String cronExpression, DateTimeZone timezone) {
+    if (!CronExpression.isValidExpression(cronExpression)) {
+      return false;
+    } else {
+      CronExpression cronExecutionTime = parseCronExpression(cronExpression, timezone);
+      if (cronExecutionTime == null || cronExecutionTime.getNextValidTimeAfter(new Date()) == null) {
+        return false;
+      }
+      return true;
+    }
+
   }
 }
