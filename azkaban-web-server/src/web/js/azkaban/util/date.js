@@ -103,7 +103,8 @@ var validateQuartzStr = function (str){
 
   // Quartz currently doesn't support specifying both a day-of-week and a day-of-month value
   // (you must currently use the ‘?’ character in one of these fields).
-  if(res[len-1] != '?' && res[len-3] != '?') return 2;
+  if(len==6 && res[len-1] != '?' && res[len-3] != '?') return 2;
+  if(len==7 && res[len-2] != '?' && res[len-4] != '?') return 2;
 
   //valid string
   return 0;
