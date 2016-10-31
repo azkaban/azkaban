@@ -104,13 +104,10 @@ var validateQuartzStr = function (str){
   // Quartz currently doesn't support specifying both a day-of-week and a day-of-month value
   // (you must currently use the ‘?’ character in one of these fields).
   // http://www.quartz-scheduler.org/documentation/quartz-2.x/tutorials/crontrigger.html#notes
-  if(len==6 && res[len-1] != '?' && res[len-3] != '?') return "DOW_DOM_STAR_ERROR";
-
-  // When year field exists,
-  if(len==7 && res[len-2] != '?' && res[len-4] != '?') return "DOW_DOM_STAR_ERROR";
+  if(res[3] != '?' && res[5] != '?') return "DOW_DOM_STAR_ERROR";
 
   //valid string
-  return "valid";
+  return "VALID";
 }
 
 var modifyStrToUnixCronSyntax = function (str){
