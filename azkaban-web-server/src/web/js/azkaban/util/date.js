@@ -99,15 +99,18 @@ var validateQuartzStr = function (str){
   var res = str.split(" "), len=res.length;
 
   // A valid Quartz Cron Expression should have 6 or 7 fields.
-  if(len<6 || len>=8) return 1;
+  if(len<6 || len>=8) return "NUM_FIELDS_ERROR";
 
   // Quartz currently doesn't support specifying both a day-of-week and a day-of-month value
   // (you must currently use the ‘?’ character in one of these fields).
-  if(len==6 && res[len-1] != '?' && res[len-3] != '?') return 2;
-  if(len==7 && res[len-2] != '?' && res[len-4] != '?') return 2;
+  // http://www.quartz-scheduler.org/documentation/quartz-2.x/tutorials/crontrigger.html#notes
+  if(len==6 && res[len-1] != '?' && res[len-3] != '?') return "DOW_DOM_STAR_ERROR";
+
+  // When year field exists,
+  if(len==7 && res[len-2] != '?' && res[len-4] != '?') return "DOW_DOM_STAR_ERROR";
 
   //valid string
-  return 0;
+  return "valid";
 }
 
 var modifyStrToUnixCronSyntax = function (str){
