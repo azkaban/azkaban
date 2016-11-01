@@ -14,8 +14,8 @@
  * the License.
 *#
 
-<script type="text/javascript" src="${context}/js/azkaban/util/date.js?version=20161003"></script>
-<script type="text/javascript" src="${context}/js/azkaban/view/schedule-panel.js?version=20161003"></script>
+<script type="text/javascript" src="${context}/js/azkaban/util/date.js?version=20161031"></script>
+<script type="text/javascript" src="${context}/js/azkaban/view/schedule-panel.js?version=20161031"></script>
 <script type="text/javascript" src="${context}/js/moment.min.js" ></script>
 <script type="text/javascript" src="${context}/js/later.min.js"></script>
 <script type="text/javascript" src="${context}/js/moment-timezone-with-data-2010-2020.min.js"></script>

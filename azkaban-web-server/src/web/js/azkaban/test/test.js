@@ -50,3 +50,23 @@ describe('CronTransformation', function() {
    assert.equal(testStrFromCronToQuartz('0 3 * * 1,3-5 2016'), '0 3 * * 0,2-4 2016');
   });
 });
+
+//Test the Validity of a Quartz Cron String
+describe('ValidateQuartzStr', function() {
+
+  var validateQuartzStr = dateJs.__get__('validateQuartzStr');
+
+  it('validate Quartz String corretly', function() {
+
+   assert.equal(validateQuartzStr('0 3 * * 5'), 'NUM_FIELDS_ERROR');
+   assert.equal(validateQuartzStr('0 3 * *'), 'NUM_FIELDS_ERROR');
+   assert.equal(validateQuartzStr('0 3 * * 5 23 3 2017'), 'NUM_FIELDS_ERROR');
+   assert.equal(validateQuartzStr('0 3 * * 5 *'), 'DOW_DOM_STAR_ERROR');
+   assert.equal(validateQuartzStr('0 3 * * 5 *'), 'DOW_DOM_STAR_ERROR');
+   assert.equal(validateQuartzStr('0 3 * 5 5 * 2019'), 'DOW_DOM_STAR_ERROR');
+   assert.equal(validateQuartzStr('0 3 * 5 5 ? 2018'), 'VALID');
+   assert.equal(validateQuartzStr('0 3 * ? 5 FRI'), 'VALID');
+   assert.equal(validateQuartzStr('0 3 * ? 5 3-6'), 'VALID');
+
+  });
+});
