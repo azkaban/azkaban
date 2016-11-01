@@ -490,6 +490,12 @@ public class Utils {
     } else return null;
   }
 
+  /**
+   *
+   * @param cronExpression
+   * @param timezone
+   * @return if the cronExpression is valid or not.
+   */
   public static boolean isCronExpressionValid(String cronExpression, DateTimeZone timezone) {
     if (!CronExpression.isValidExpression(cronExpression)) {
       return false;

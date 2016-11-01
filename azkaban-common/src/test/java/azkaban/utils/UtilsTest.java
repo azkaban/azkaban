@@ -16,6 +16,7 @@
 
 package azkaban.utils;
 
+import org.joda.time.DateTimeZone;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -51,5 +52,26 @@ public class UtilsTest {
     Assert.assertTrue(Utils.isValidPort(10000));
     Assert.assertTrue(Utils.isValidPort(3030));
     Assert.assertTrue(Utils.isValidPort(1045));
+  }
+
+
+  /* Test CronExpression case*/
+  @Test
+  public void testCronExpressionValid() {
+
+    DateTimeZone timezone = DateTimeZone.getDefault();
+    Assert.assertTrue(Utils.isCronExpressionValid("0 0 3 ? * *", timezone));
+    Assert.assertFalse(Utils.isCronExpressionValid("0 0 3 * * *", timezone));
+
+    Assert.assertTrue(Utils.isCronExpressionValid("0 0 3 ? * * 2017", timezone));
+
+    // This is a bug from Quartz Cron. It looks like Quartz will operate the preceding 6 fields of a String.
+    Assert.assertTrue(Utils.isCronExpressionValid("0 0 3 ? * * 2017 22", timezone));
+
+    Assert.assertTrue(Utils.isCronExpressionValid("0 0 * ? * *", timezone));
+    Assert.assertFalse(Utils.isCronExpressionValid("0 66 * ? * *", timezone));
+
+    Assert.assertFalse(Utils.isCronExpressionValid("0 * * ? * 8", timezone));
+
   }
 }
