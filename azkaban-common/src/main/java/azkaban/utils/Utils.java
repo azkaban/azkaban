@@ -499,13 +499,16 @@ public class Utils {
   public static boolean isCronExpressionValid(String cronExpression, DateTimeZone timezone) {
     if (!CronExpression.isValidExpression(cronExpression)) {
       return false;
-    } else {
-      CronExpression cronExecutionTime = parseCronExpression(cronExpression, timezone);
-      if (cronExecutionTime == null || cronExecutionTime.getNextValidTimeAfter(new Date()) == null) {
-        return false;
-      }
-      return true;
     }
 
+    /*
+     * The below code is aimed at checking some cases that the above code can not identify,
+     * e.g. <0 0 3 ? * * 22> OR <0 0 3 ? * 8>. Under these cases, the below code is able to tell.
+     */
+    CronExpression cronExecutionTime = parseCronExpression(cronExpression, timezone);
+    if (cronExecutionTime == null || cronExecutionTime.getNextValidTimeAfter(new Date()) == null) {
+      return false;
+    }
+    return true;
   }
 }
