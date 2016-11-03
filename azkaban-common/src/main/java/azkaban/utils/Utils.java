@@ -28,6 +28,7 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Collection;
+import java.util.Date;
 import java.util.Enumeration;
 import java.util.Random;
 import java.util.TimeZone;
@@ -489,7 +490,25 @@ public class Utils {
     } else return null;
   }
 
-  public static boolean isCronExpressionValid(String cronExpression) {
-    return CronExpression.isValidExpression(cronExpression);
+  /**
+   *
+   * @param cronExpression
+   * @param timezone
+   * @return if the cronExpression is valid or not.
+   */
+  public static boolean isCronExpressionValid(String cronExpression, DateTimeZone timezone) {
+    if (!CronExpression.isValidExpression(cronExpression)) {
+      return false;
+    }
+
+    /*
+     * The below code is aimed at checking some cases that the above code can not identify,
+     * e.g. <0 0 3 ? * * 22> OR <0 0 3 ? * 8>. Under these cases, the below code is able to tell.
+     */
+    CronExpression cronExecutionTime = parseCronExpression(cronExpression, timezone);
+    if (cronExecutionTime == null || cronExecutionTime.getNextValidTimeAfter(new Date()) == null) {
+      return false;
+    }
+    return true;
   }
 }
