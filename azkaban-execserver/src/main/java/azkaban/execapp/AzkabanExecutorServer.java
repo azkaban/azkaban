@@ -37,6 +37,7 @@ import azkaban.utils.Props;
 import azkaban.utils.SystemMemoryInfo;
 import azkaban.utils.Utils;
 import org.apache.log4j.Logger;
+import org.apache.log4j.pattern.IntegerPatternConverter;
 import org.joda.time.DateTimeZone;
 import org.mortbay.jetty.Connector;
 import org.mortbay.jetty.Server;
@@ -217,6 +218,15 @@ public class AzkabanExecutorServer {
           metricManager, props.getInt(METRIC_INTERVAL
               + NumQueuedFlowMetric.NUM_QUEUED_FLOW_METRIC_NAME,
               props.getInt(METRIC_INTERVAL + "default"))));
+
+      logger.info("Adding duration of flow execution metric");
+      metricManager.addMetric(new FlowDurationMetric(metricManager));
+
+      logger.info("Adding total number of jobs for flow metric");
+      metricManager.addMetric(new TotalNumFlowJobsMetric(metricManager));
+
+      logger.info("Adding duration of job metric");
+      metricManager.addMetric(new JobDurationMetric(metricManager));
 
       logger.info("Completed configuring Metric Reports");
     }

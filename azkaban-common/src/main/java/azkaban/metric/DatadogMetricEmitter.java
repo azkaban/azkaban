@@ -21,6 +21,10 @@ import com.google.common.collect.ImmutableList;
 import com.relateiq.statsd.impl.DatadogClient;
 
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 
 public class DatadogMetricEmitter implements IMetricEmitter {
@@ -44,6 +48,11 @@ public class DatadogMetricEmitter implements IMetricEmitter {
 
     @Override
     public void reportMetric(final IMetric<?> metric) throws MetricException {
+
+        // Create a list of tags using environment and tags for metric
+        List<String> metricTags = new ArrayList(metric.getMetaDataTags());
+        metricTags.add ("environment:" + statsEnvironment);
+
         datadogClient.report(DatadogClient.DDPayload.builder()
                 .series(ImmutableList.of(
                         DatadogClient.DDMetric.builder()
@@ -52,7 +61,7 @@ public class DatadogMetricEmitter implements IMetricEmitter {
                                         ImmutableList.of(Math.toIntExact(Instant.now().getEpochSecond()), (Integer) metric.getValue())
                                 ))
                                 .type(DatadogClient.DDMetricType.gauge)
-                                .tags(ImmutableList.of("environment:" + statsEnvironment))
+                                .tags(ImmutableList.copyOf(metricTags))
                                 .build()
                 ))
                 .build());

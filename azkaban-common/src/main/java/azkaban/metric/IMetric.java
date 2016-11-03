@@ -16,6 +16,7 @@
 
 package azkaban.metric;
 
+import java.util.List;
 /**
  * Interface of any Metric
  * @param <T> Type of Value of a given metric
@@ -26,5 +27,6 @@ public interface IMetric<T> {
   void updateMetricManager(final MetricReportManager manager);
   void notifyManager();
   T getValue();
+  List<String> getMetaDataTags();
   IMetric<T> getSnapshot() throws CloneNotSupportedException;
 }

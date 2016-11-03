@@ -18,6 +18,8 @@ package azkaban.metric;
 
 import org.apache.log4j.Logger;
 
+import java.util.ArrayList;
+import java.util.List;
 /**
  * Abstract class for Metric
  * @param <T> Type of Value of a given metric
@@ -27,6 +29,7 @@ public abstract class AbstractMetric<T> implements IMetric<T>, Cloneable{
   protected String name;
   protected T value;
   protected String type;
+  protected List<String> tags;
   protected MetricReportManager metricManager;
 
   /**
@@ -39,6 +42,7 @@ public abstract class AbstractMetric<T> implements IMetric<T>, Cloneable{
     name = metricName;
     type = metricType;
     value = initialValue;
+    tags = new ArrayList<>();
     metricManager = manager;
   }
 
@@ -83,6 +87,11 @@ public abstract class AbstractMetric<T> implements IMetric<T>, Cloneable{
   public T getValue() {
     return value;
   }
+
+  /**
+   * Method to return all metadata tags about the metric being reported
+   */
+  public List<String> getMetaDataTags() { return tags; }
 
   /**
    * Method used to notify manager for a tracking event.

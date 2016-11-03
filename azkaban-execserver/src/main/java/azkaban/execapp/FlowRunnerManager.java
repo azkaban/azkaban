@@ -44,6 +44,8 @@ import azkaban.execapp.event.FlowWatcher;
 import azkaban.execapp.event.LocalFlowWatcher;
 import azkaban.execapp.event.RemoteFlowWatcher;
 import azkaban.execapp.metric.NumFailedFlowMetric;
+import azkaban.execapp.metric.FlowDurationMetric;
+import azkaban.execapp.metric.TotalNumFlowJobsMetric;
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutionOptions;
 import azkaban.executor.ExecutorLoader;
@@ -546,8 +548,16 @@ public class FlowRunnerManager implements EventListener,
       // Adding NumFailedFlow Metric listener
       flowRunner.addListener((NumFailedFlowMetric) metricManager
           .getMetricFromName(NumFailedFlowMetric.NUM_FAILED_FLOW_METRIC_NAME));
-    }
 
+      // Adding FlowDuration Metric Listener
+      flowRunner.addListener((FlowDurationMetric) metricManager
+          .getMetricFromName(FlowDurationMetric.FLOW_EXECUTION_DURATION_METRIC_NAME));
+
+      // Adding TotalNumFlowJobs Metric listener
+      flowRunner.addListener((TotalNumFlowJobsMetric) metricManager
+          .getMetricFromName(TotalNumFlowJobsMetric.TOTAL_NUM_FLOW_JOBS_METRIC_NAME));
+
+    }
   }
 
   private void setupFlow(ExecutableFlow flow) throws ExecutorManagerException {
