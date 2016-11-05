@@ -91,7 +91,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
       "lockdown.create.projects";
   private static final String LOCKDOWN_UPLOAD_PROJECTS_KEY =
       "lockdown.upload.projects";
-  
+
   private static final String PROJECT_DOWNLOAD_BUFFER_SIZE_IN_BYTES =
       "project.download.buffer.size";
 
@@ -125,13 +125,13 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
     if (lockdownCreateProjects) {
       logger.info("Creation of projects is locked down");
     }
-    
+
     lockdownUploadProjects =
         server.getServerProps().getBoolean(LOCKDOWN_UPLOAD_PROJECTS_KEY, false);
     if (lockdownUploadProjects) {
       logger.info("Uploading of projects is locked down");
     }
-    
+
     downloadBufferSize =
         server.getServerProps().getInt(PROJECT_DOWNLOAD_BUFFER_SIZE_IN_BYTES,
             8192);
@@ -189,7 +189,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
       String action = (String) params.get("ajax");
       HashMap<String, String> ret = new HashMap<String, String>();
       if (action.equals("upload")) {
-        ajaxHandleUpload(req, ret, params, session);
+        ajaxHandleUpload(req, resp, ret, params, session);
       }
       this.writeJSON(resp, ret);
     } else if (params.containsKey("action")) {
@@ -1637,7 +1637,13 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
     }
   }
 
-  private void ajaxHandleUpload(HttpServletRequest req,
+  private void registerError(Map<String, String> ret, String error,
+      HttpServletResponse resp, int returnCode) {
+    ret.put("error", error);
+    resp.setStatus(returnCode);
+  }
+
+  private void ajaxHandleUpload(HttpServletRequest req, HttpServletResponse resp,
       Map<String, String> ret, Map<String, Object> multipart, Session session)
       throws ServletException, IOException {
     User user = session.getUser();
@@ -1652,15 +1658,15 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
     }
 
     if (lockdownUploadProjects) {
-      ret.put("error", "project uploading is locked out");
+      registerError(ret, "Project uploading is locked out", resp, 400);
     } else if (projectName == null || projectName.isEmpty()) {
-      ret.put("error", "No project name found.");
+      registerError(ret, "No project name found.", resp, 400);
     } else if (project == null) {
-      ret.put("error", "Installation Failed. Project '" + projectName
-          + "' doesn't exist.");
+      registerError(ret, "Installation Failed. Project '" + projectName
+          + "' doesn't exist.", resp, 400);
     } else if (!hasPermission(project, user, Type.WRITE)) {
-      ret.put("error", "Installation Failed. User '" + user.getUserId()
-          + "' does not have write access.");
+      registerError(ret, "Installation Failed. User '" + user.getUserId()
+          + "' does not have write access.", resp, 400);
     } else {
       ret.put("projectId", String.valueOf(project.getId()));
 
@@ -1676,7 +1682,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
         type = "zip";
       } else {
         item.delete();
-        ret.put("error", "File type " + contentType + " unrecognized.");
+        registerError(ret, "File type " + contentType + " unrecognized.", resp, 400);
 
         return;
       }
@@ -1732,9 +1738,8 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
           // If putting more than 4000 characters in the cookie, the entire
           // message
           // will somehow get discarded.
-          ret.put("error",
-              errorMsgs.length() > 4000 ? errorMsgs.substring(0, 4000)
-                  : errorMsgs.toString());
+          registerError(ret, errorMsgs.length() > 4000 ? errorMsgs.substring(0, 4000)
+                  : errorMsgs.toString(), resp, 500);
         }
         if (warnMsgs.length() > 0) {
           ret.put(
@@ -1749,7 +1754,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
           error =
               error.substring(0, 512) + "<br>Too many errors to display.<br>";
         }
-        ret.put("error", "Installation Failed.<br>" + error);
+        registerError(ret, "Installation Failed.<br>" + error, resp , 500);
       } finally {
         if (out != null) {
           out.close();
@@ -1768,7 +1773,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
       IOException {
     HashMap<String, String> ret = new HashMap<String, String>();
     String projectName = (String) multipart.get("project");
-    ajaxHandleUpload(req, ret, multipart, session);
+    ajaxHandleUpload(req, resp, ret, multipart, session);
 
     if (ret.containsKey("error")) {
       setErrorMessageInCookie(resp, ret.get("error"));
