@@ -731,7 +731,7 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
         // everything in Azkaban functions is at the minute granularity, so we add 0 here
         // to let the expression to be complete.
         cronExpression = getParam(req, "cronExpression");
-        if(azkaban.utils.Utils.isCronExpressionValid(cronExpression) == false) {
+        if(azkaban.utils.Utils.isCronExpressionValid(cronExpression, timezone) == false) {
           ret.put("error", "This expression <" + cronExpression + "> can not be parsed to quartz cron.");
           return;
         }
