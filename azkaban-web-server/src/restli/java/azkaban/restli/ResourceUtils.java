@@ -21,8 +21,12 @@ import azkaban.user.Role;
 import azkaban.user.User;
 import azkaban.user.UserManager;
 import azkaban.user.UserManagerException;
+import azkaban.utils.WebUtils;
 import azkaban.webapp.AzkabanWebServer;
 import azkaban.server.session.Session;
+import com.linkedin.restli.server.ResourceContext;
+
+import java.util.Map;
 
 public class ResourceUtils {
 
@@ -55,5 +59,20 @@ public class ResourceUtils {
     }
 
     return session.getUser();
+  }
+
+  public static String getRealClientIpAddr(ResourceContext context){
+
+    // If some upstream device added an X-Forwarded-For header
+    // use it for the client ip
+    // This will support scenarios where load balancers or gateways
+    // front the Azkaban web server and a changing Ip address invalidates
+    // the session
+    Map<String, String> headers = context.getRequestHeaders();
+
+    WebUtils utils = new WebUtils();
+
+    return utils.getRealClientIpAddr(headers,
+            (String) context.getRawRequestContext().getLocalAttr("REMOTE_ADDR"));
   }
 }
