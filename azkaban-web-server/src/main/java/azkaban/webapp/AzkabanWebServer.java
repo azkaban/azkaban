@@ -103,9 +103,6 @@ import azkaban.webapp.servlet.TriggerManagerServlet;
 
 import com.linkedin.restli.server.RestliServlet;
 
-import com.codahale.metrics.*;
-import java.util.concurrent.TimeUnit;
-
 /**
  * The Azkaban Jetty server class
  *
@@ -1238,7 +1235,6 @@ public class AzkabanWebServer extends AzkabanServer {
 
     return props;
   }
-  static final MetricRegistry metrics = new MetricRegistry();
 
   private void configureMBeanServer() {
     logger.info("Registering MBeans...");
@@ -1266,31 +1262,6 @@ public class AzkabanWebServer extends AzkabanServer {
       System.out.println("******** loginLoggerObjName: "
           + accessLogLoggerObjName.getCanonicalName());
     }
-  }
-
-  static void startReport() {
-
-    String serverUrl = "http://lva1-amf.corp.linkedin.com/api/v1/metrics";
-//    String serverUrl = "http://127.0.0.1:5000/";
-
-    try {
-      final AMFReporter amfReporter = new AMFReporter(metrics, serverUrl);
-      amfReporter.start(5, TimeUnit.SECONDS);
-
-//      ConsoleReporter reporter = ConsoleReporter.forRegistry(metrics)
-//          .convertRatesTo(TimeUnit.SECONDS)
-//          .convertDurationsTo(TimeUnit.MILLISECONDS)
-//          .build();
-//      reporter.start(1, TimeUnit.SECONDS);
-    } catch (Exception ex) {
-      ex.printStackTrace();
-    }
-  }
-
-  static void wait5Seconds() {
-    try {
-      Thread.sleep(5*1000);
-    } catch (InterruptedException e) {}
   }
 
   public void close() {
