@@ -54,6 +54,5 @@ public class AzkabanSingleServer {
     logger.info("Azkaban Web Server started...");
     AzkabanExecutorServer.main(args);
     logger.info("Azkaban Exec Server started...");
-//    TryMetrics.main(null);
   }
 }

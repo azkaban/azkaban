@@ -46,5 +46,4 @@ public enum MetricsManager {
 
     consoleReporter = null;
   }
-
 }

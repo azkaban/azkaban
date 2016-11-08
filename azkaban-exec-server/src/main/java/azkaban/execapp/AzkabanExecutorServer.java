@@ -16,7 +16,6 @@
 
 package azkaban.execapp;
 
-import com.codahale.metrics.jvm.MemoryUsageGaugeSet;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -176,11 +175,10 @@ public class AzkabanExecutorServer {
 
   private void startMetrics() throws Exception{
     MetricRegistry metrics = MetricsManager.INSTANCE.getRegistry();
-    metrics.register("LATANGJVM/memory", new MemoryUsageGaugeSet());
-//    MetricsExecWorker execWorker = new MetricsExecWorker.MetricsExecWorkerBuilder("a")
-//        .addFlowRunnerManager(getFlowRunnerManager())
-//        .build();
-//    execWorker.addExecutorManagerMetrics(metrics);
+    MetricsExecWorker execWorker = new MetricsExecWorker.MetricsExecWorkerBuilder("a")
+        .addFlowRunnerManager(getFlowRunnerManager())
+        .build();
+    execWorker.addExecutorManagerMetrics(metrics);
 
     String metricsReporterClassName = props.get(CUSTOM_METRICS_REPORTER_CLASS_NAME);
     if (metricsReporterClassName != null) {
