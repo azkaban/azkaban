@@ -16,7 +16,6 @@
 
 package azkaban.webapp;
 
-import azkaban.metrics.MetricsExecutorManager;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -1251,14 +1250,6 @@ public class AzkabanWebServer extends AzkabanServer {
       registerMbean("executorManager", new JmxExecutorManager(
           (ExecutorManager) executorManager));
     }
-
-    Meter requests = metrics.meter("requests");
-    MetricsExecutorManager mem = new MetricsExecutorManager(executorManager, "asdf");
-    mem.addMetrics(metrics);
-
-    requests.mark();
-    wait5Seconds();
-    startReport();
 
     // Register Log4J loggers as JMX beans so the log level can be
     // updated via JConsole or Java VisualVM

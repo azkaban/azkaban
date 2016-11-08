@@ -16,6 +16,7 @@
 
 package azkaban.execapp;
 
+import com.codahale.metrics.jvm.MemoryUsageGaugeSet;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -40,6 +41,8 @@ import org.mortbay.jetty.servlet.Context;
 import org.mortbay.jetty.servlet.ServletHolder;
 import org.mortbay.thread.QueuedThreadPool;
 
+import com.codahale.metrics.MetricRegistry;
+
 import azkaban.execapp.event.JobCallbackManager;
 import azkaban.execapp.jmx.JmxFlowRunnerManager;
 import azkaban.execapp.jmx.JmxJobMBeanManager;
@@ -63,9 +66,13 @@ import azkaban.utils.Props;
 import azkaban.utils.SystemMemoryInfo;
 import azkaban.utils.Utils;
 
+import azkaban.metrics.MetricsManager;
+
 public class AzkabanExecutorServer {
   private static final String CUSTOM_JMX_ATTRIBUTE_PROCESSOR_PROPERTY =
       "jmx.attribute.processor.class";
+  private static final String CUSTOM_METRICS_REPORTER_CLASS_NAME =
+      "metrics.reporter.name";
   private static final Logger logger = Logger
       .getLogger(AzkabanExecutorServer.class);
   private static final int MAX_FORM_CONTENT_SIZE = 10 * 1024 * 1024;
@@ -163,7 +170,39 @@ public class AzkabanExecutorServer {
 
     logger.info("Azkaban Executor Server started on port " + portNumber);
 
+    startMetrics();
+  }
 
+
+  private void startMetrics() throws Exception{
+    MetricRegistry metrics = MetricsManager.INSTANCE.getRegistry();
+    metrics.register("LATANGJVM/memory", new MemoryUsageGaugeSet());
+//    MetricsExecWorker execWorker = new MetricsExecWorker.MetricsExecWorkerBuilder("a")
+//        .addFlowRunnerManager(getFlowRunnerManager())
+//        .build();
+//    execWorker.addExecutorManagerMetrics(metrics);
+
+    String metricsReporterClassName = props.get(CUSTOM_METRICS_REPORTER_CLASS_NAME);
+    if (metricsReporterClassName != null) {
+      try {
+        logger.info("metricsReporterClassName: " + metricsReporterClassName);
+        Class metricsClass = Class.forName(metricsReporterClassName);
+        Constructor<MetricRegistry>[] constructors =
+            (Constructor<MetricRegistry>[]) metricsClass.getConstructors();
+
+        constructors[0].newInstance(metrics);
+
+      } catch (Exception e) {
+        logger.error("Encountered error while loading and instantiating "
+            + metricsReporterClassName, e);
+        throw new IllegalStateException(
+            "Encountered error while loading and instantiating "
+                + metricsReporterClassName, e);
+      }
+    } else {
+      logger.info("No value for property: "
+          + CUSTOM_METRICS_REPORTER_CLASS_NAME + " was found");
+    }
 
   }
 
