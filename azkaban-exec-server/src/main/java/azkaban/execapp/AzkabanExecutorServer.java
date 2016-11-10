@@ -175,7 +175,7 @@ public class AzkabanExecutorServer {
 
   private void startMetrics() throws Exception{
     MetricRegistry metrics = MetricsManager.INSTANCE.getRegistry();
-    MetricsExecWorker execWorker = new MetricsExecWorker.MetricsExecWorkerBuilder("a")
+    MetricsExecRegister execWorker = new MetricsExecRegister.MetricsExecRegisterBuilder("a")
         .addFlowRunnerManager(getFlowRunnerManager())
         .build();
     execWorker.addExecutorManagerMetrics(metrics);
@@ -185,10 +185,13 @@ public class AzkabanExecutorServer {
       try {
         logger.info("metricsReporterClassName: " + metricsReporterClassName);
         Class metricsClass = Class.forName(metricsReporterClassName);
-        Constructor<MetricRegistry>[] constructors =
-            (Constructor<MetricRegistry>[]) metricsClass.getConstructors();
 
-        constructors[0].newInstance(metrics);
+//        Class[] paraClass = new Class[] {metricsClass, String.class};
+
+        Constructor[] constructors =
+             metricsClass.getConstructors();
+        logger.info("constructor = " + constructors[0].toString());
+        constructors[0].newInstance(metrics, "lva1-amf.corp.linkedin.com");
 
       } catch (Exception e) {
         logger.error("Encountered error while loading and instantiating "

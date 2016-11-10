@@ -5,14 +5,14 @@ import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Gauge;
 
 import azkaban.execapp.FlowRunnerManager;
-import azkaban.metrics.MetricsWorker;
 
+public class MetricsExecRegister {
 
-public class MetricsExecWorker extends MetricsWorker {
+  private String endpointName;
   private FlowRunnerManager _flowRunnerManager;
 
-  public MetricsExecWorker(MetricsExecWorkerBuilder builder) {
-    super(builder.endpointName);
+  public MetricsExecRegister(MetricsExecRegisterBuilder builder) {
+    this.endpointName = builder.endpointName;
     this._flowRunnerManager = builder._flowRunnerManager;
   }
 
@@ -35,21 +35,21 @@ public class MetricsExecWorker extends MetricsWorker {
     });
   }
 
-  public static class MetricsExecWorkerBuilder {
+  public static class MetricsExecRegisterBuilder {
     private FlowRunnerManager _flowRunnerManager;
     private String endpointName;
 
-    public MetricsExecWorkerBuilder(String endpointName) {
+    public MetricsExecRegisterBuilder(String endpointName) {
       this.endpointName = endpointName;
     }
 
-    public MetricsExecWorkerBuilder addFlowRunnerManager(FlowRunnerManager flowRunnerManager) {
+    public MetricsExecRegisterBuilder addFlowRunnerManager(FlowRunnerManager flowRunnerManager) {
       this._flowRunnerManager = flowRunnerManager;
       return this;
     }
 
-    public MetricsExecWorker build() {
-      return new MetricsExecWorker(this);
+    public MetricsExecRegister build() {
+      return new MetricsExecRegister(this);
     }
   }
 
