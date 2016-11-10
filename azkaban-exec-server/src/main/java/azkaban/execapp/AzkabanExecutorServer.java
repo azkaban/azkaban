@@ -64,8 +64,7 @@ import azkaban.utils.SystemMemoryInfo;
 import azkaban.utils.Utils;
 
 public class AzkabanExecutorServer {
-  private static final String CUSTOM_JMX_ATTRIBUTE_PROCESSOR_PROPERTY =
-      "jmx.attribute.processor.class";
+
   private static final Logger logger = Logger
       .getLogger(AzkabanExecutorServer.class);
   private static final int MAX_FORM_CONTENT_SIZE = 10 * 1024 * 1024;
@@ -152,8 +151,6 @@ public class AzkabanExecutorServer {
 
     SystemMemoryInfo.init(props.getInt("executor.memCheck.interval", 30));
 
-    loadCustomJMXAttributeProcessor(props);
-
     try {
       server.start();
     } catch (Exception e) {
@@ -221,42 +218,6 @@ public class AzkabanExecutorServer {
       logger.info("Completed configuring Metric Reports");
     }
 
-  }
-
-  /**
-   * Load a custom class, which is provided by a configuration
-   * CUSTOM_JMX_ATTRIBUTE_PROCESSOR_PROPERTY.
-   *
-   * This method will try to instantiate an instance of this custom class and
-   * with given properties as the argument in the constructor.
-   *
-   * Basically the custom class must have a constructor that takes an argument
-   * with type Properties.
-   *
-   * @param props
-   */
-  private void loadCustomJMXAttributeProcessor(Props props) {
-    String jmxAttributeEmitter =
-        props.get(CUSTOM_JMX_ATTRIBUTE_PROCESSOR_PROPERTY);
-    if (jmxAttributeEmitter != null) {
-      try {
-        logger.info("jmxAttributeEmitter: " + jmxAttributeEmitter);
-        Constructor<Props>[] constructors =
-            (Constructor<Props>[]) Class.forName(jmxAttributeEmitter)
-                .getConstructors();
-
-        constructors[0].newInstance(props.toProperties());
-      } catch (Exception e) {
-        logger.error("Encountered error while loading and instantiating "
-            + jmxAttributeEmitter, e);
-        throw new IllegalStateException(
-            "Encountered error while loading and instantiating "
-                + jmxAttributeEmitter, e);
-      }
-    } else {
-      logger.info("No value for property: "
-          + CUSTOM_JMX_ATTRIBUTE_PROCESSOR_PROPERTY + " was found");
-    }
   }
 
   private ExecutorLoader createExecLoader(Props props) {
