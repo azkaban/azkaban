@@ -76,9 +76,14 @@ public class JdbcTriggerLoaderTest {
     loader = new JdbcTriggerLoader(props);
     checkerLoader = new CheckerTypeLoader();
     checkerLoader.init(new Props());
+    checkerLoader.registerCheckerType(BasicTimeChecker.type,
+        BasicTimeChecker.class);
     Condition.setCheckerLoader(checkerLoader);
     actionLoader = new ActionTypeLoader();
     actionLoader.init(new Props());
+
+    actionLoader.registerActionType(ExecuteFlowAction.type,
+        ExecuteFlowAction.class);
     Trigger.setActionTypeLoader(actionLoader);
     setupDB();
   }
@@ -201,7 +206,7 @@ public class JdbcTriggerLoaderTest {
     DateTime now = DateTime.now();
     ConditionChecker checker1 =
         new BasicTimeChecker("timeChecker1", now.getMillis(), now.getZone(),
-            true, true, Utils.parsePeriodString("1h"));
+            true, true, Utils.parsePeriodString("1h"), null);
     Map<String, ConditionChecker> checkers1 =
         new HashMap<String, ConditionChecker>();
     checkers1.put(checker1.getId(), checker1);

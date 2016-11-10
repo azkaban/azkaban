@@ -1,0 +1,151 @@
+#*
+ * Copyright 2012 LinkedIn Corp.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not
+ * use this file except in compliance with the License. You may obtain a copy of
+ * the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations under
+ * the License.
+*#
+
+<!DOCTYPE html>
+<html lang="en">
+   <head>
+      #parse("azkaban/webapp/servlet/velocity/style.vm")
+      #parse("azkaban/webapp/servlet/velocity/javascript.vm")
+      <link rel="stylesheet" type="text/css" href="${context}/css/bootstrap-datetimepicker.css" />
+      <script type="text/javascript" src="${context}/js/raphael.min.js"></script>
+      <script type="text/javascript" src="${context}/js/morris.min.js"></script>
+      <script type="text/javascript" src="${context}/js/moment.min.js"></script>
+      <script type="text/javascript" src="${context}/js/bootstrap-datetimepicker.min.js"></script>
+      <script type="text/javascript">
+         var contextURL = "${context}";
+         var currentTime = ${currentTime};
+         var timezone = "${timezone}";
+
+         function refreshMetricList() {
+               var requestURL = '/stats';
+               var requestData = {
+                 'action': 'getAllMetricNames',
+                 'executorId':  $('#executorName').val()
+               };
+               var successHandler = function(responseData) {
+                 if(responseData.error != null) {
+                   $('#reportedMetric').html(responseData.error);
+                 } else {
+                    $('#metricName').empty();
+                    for(var index = 0; index < responseData.metricList.length; index++) {
+                      $('#metricName').append($('<option value="' + responseData.metricList[index] +'">' + responseData.metricList[index] + '</option>'));
+                    }
+                  }
+               };
+               $.get(requestURL, requestData, successHandler, 'json');
+         }
+
+         function refreshMetricChart() {
+               var requestURL = '/stats';
+               var requestData = {
+                 'action': 'getMetricHistory',
+                 'from': new Date($('#datetimebegin').val()).toUTCString(),
+                 'to'  : new Date($('#datetimeend').val()).toUTCString(),
+                 'metricName': $('#metricName').val(),
+                 'useStats': $("#useStats").is(':checked'),
+                 'executorId':  $('#executorName').val()
+               };
+               var successHandler = function(responseData) {
+                 if(responseData.error != null) {
+                   $('#reportedMetric').html(responseData.error);
+                 } else {
+                   var graphDiv = document.createElement('div');
+                   $('#reportedMetric').html(graphDiv);
+
+                   Morris.Line({
+                                 element: graphDiv,
+                                 data: responseData.data,
+                                 xkey: 'timestamp',
+                                 ykeys: ['value'],
+                                 labels: [$('#metricName').val()]
+                               });
+                 }
+               };
+               $.get(requestURL, requestData, successHandler, 'json');
+         }
+
+         $(document).ready(function () {
+             $('#datetimebegin').datetimepicker();
+             $('#datetimeend').datetimepicker();
+             $('#datetimebegin').on('change.dp', function(e) {
+                 $('#datetimeend').data('DateTimePicker').setStartDate(e.date);
+               });
+             $('#datetimeend').on('change.dp', function(e) {
+                 $('#datetimebegin').data('DateTimePicker').setEndDate(e.date);
+               });
+             $('#retrieve').click(refreshMetricChart);
+             $('#executorName').click(refreshMetricList);
+         });
+
+      </script>
+   </head>
+   <body>
+      #set ($current_page="Statistics")
+      #parse ("azkaban/webapp/servlet/velocity/nav.vm")
+      #if ($errorMsg)
+      #parse ("azkaban/webapp/servlet/velocity/errormsg.vm")
+      #else
+      ## Page header.
+      <div class="az-page-header">
+         <div class="container-full">
+            <div class="row">
+               <div class="header-title" style="width: 17%;">
+                  <h1><a href="${context}/stats">Statistics</a></h1>
+               </div>
+               <div class="header-control" style="width: 1300px; padding-top: 5px;">
+                  <form id="metric-form" method="get">
+                     <label for="executorLabel" >Executor</label>
+                     #if (!$executorList.isEmpty())
+                     <select id="executorName"  name="executorName" style="width:200px">
+                        #foreach ($executor in $executorList)
+                        <option value="${executor.getId()}" style="width:200px">${executor.getHost()}:${executor.getPort()}</option>
+                        #end
+                     </select>
+                     #end
+                     <label for="metricLabel" >Metric</label>
+                     #if (!$metricList.isEmpty())
+                     <select id="metricName"  name="metricName" style="width:200px">
+                        #foreach ($metric in $metricList)
+                        <option value="${metric}" style="width:200px">${metric}</option>
+                        #end
+                     </select>
+                     #end
+                     <label for="datetimebegin" >Between</label>
+                     <input type="text" id="datetimebegin" value="" class="ui-datetime-container" style="width:150px">
+                     <label for="datetimeend" >and</label>
+                     <input type="text" id="datetimeend" value="" class="ui-datetime-container" style="width:150px">
+                     <input type="checkbox" name="useStats" id="useStats" value="true"> useStats
+                     <input type="button" id="retrieve" value="Retrieve" class="btn btn-success" >
+               </div>
+            </div>
+            </form>
+         </div>
+      </div>
+      </div>
+      </div>
+      <div class="container-full">
+         #parse ("azkaban/webapp/servlet/velocity/alerts.vm")
+         <div class="row">
+            <div id="reportedMetric" style="padding: 60px 10px 10px 10px;height: 750px;">
+            </div>
+         </div>
+         <!-- /row -->
+         #parse ("azkaban/webapp/servlet/velocity/invalidsessionmodal.vm")
+      </div>
+      <!-- /container-full -->
+      #end
+   </body>
+   <html>

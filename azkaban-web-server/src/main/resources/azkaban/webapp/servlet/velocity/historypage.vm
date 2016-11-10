@@ -1,0 +1,233 @@
+#*
+ * Copyright 2012 LinkedIn Corp.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not
+ * use this file except in compliance with the License. You may obtain a copy of
+ * the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations under
+ * the License.
+*#
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+
+#parse("azkaban/webapp/servlet/velocity/style.vm")
+#parse("azkaban/webapp/servlet/velocity/javascript.vm")
+
+    <link rel="stylesheet" type="text/css" href="${context}/css/bootstrap-datetimepicker.css" />
+
+    <script type="text/javascript" src="${context}/js/moment.min.js"></script>
+    <script type="text/javascript" src="${context}/js/bootstrap-datetimepicker.min.js"></script>
+    <script type="text/javascript" src="${context}/js/azkaban/view/history.js"></script>
+    <script type="text/javascript" src="${context}/js/jquery/jquery.tablesorter.js"></script>
+    <script type="text/javascript">
+      var contextURL = "${context}";
+      var currentTime = ${currentTime};
+      var timezone = "${timezone}";
+
+      $(document).ready(function () {
+        var jobTable = $("#executingJobs");
+        jobTable.tablesorter();
+      });
+    </script>
+  </head>
+  <body>
+
+#set ($current_page="history")
+#parse ("azkaban/webapp/servlet/velocity/nav.vm")
+
+#if ($errorMsg)
+  #parse ("azkaban/webapp/servlet/velocity/errormsg.vm")
+#else
+
+  ## Page header.
+
+    <div class="az-page-header">
+      <div class="container-full">
+        <div class="row">
+          <div class="header-title">
+            <h1><a href="${context}/history">History</a></h1>
+          </div>
+          <div class="header-control">
+            <form id="search-form" method="get" class="form-inline header-form" role="form">
+              <input type="hidden" name="search" value="true">
+              <div class="form-group">
+                <div class="input-group">
+                  <input type="text" id="searchtextbox" placeholder="flow name containing ..." value=#if($search_term) "$esc.html(${search_term})" #else "" #end class="form-control input-sm" name="searchterm">
+                  <span class="input-group-btn">
+                    <button class="btn btn-primary btn-sm">Quick Search</button>
+                    <button type="button" class="btn btn-success btn-sm" id="adv-filter-btn">Advanced Filter</button>
+                  </span>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="container-full">
+
+  #parse ("azkaban/webapp/servlet/velocity/alerts.vm")
+
+      <div class="row">
+        <div class="col-xs-12">
+          <table id="executingJobs" class="table table-striped table-bordered table-hover table-condensed executions-table">
+            <thead>
+              <tr>
+              	<th>#</th>
+                <th class="execid">Execution Id</th>
+                <th>Flow</th>
+                <th>Project</th>
+                <th>User</th>
+                <th class="date">Start Time</th>
+                <th class="date">End Time</th>
+                <th class="elapse">Elapsed</th>
+                <th class="status">Status</th>
+                <th class="action">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+  #if (!$flowHistory.isEmpty())
+    #foreach ($flow in $flowHistory)
+              <tr>
+                <td class="tb-name">
+                   $velocityCount
+                </td>
+                <td class="tb-name execId">
+                  <a href="${context}/executor?execid=${flow.executionId}">${flow.executionId}</a>
+                </td>
+                <td class="tb-name">
+                  <a href="${context}/executor?execid=${flow.executionId}">${flow.flowId}</a>
+                </td>
+                <td>
+                  <a href="${context}/manager?project=$vmutils.getProjectName(${flow.projectId})">$vmutils.getProjectName(${flow.projectId})</a>
+                </td>
+                <td>${flow.submitUser}</td>
+                <td>$utils.formatDate(${flow.startTime})</td>
+                <td>$utils.formatDate(${flow.endTime})</td>
+                <td>$utils.formatDuration(${flow.startTime}, ${flow.endTime})</td>
+                <td>
+                  <div class="status ${flow.status}">$utils.formatStatus(${flow.status})</div>
+                </td>
+                <td></td>
+              </tr>
+    #end
+  #else
+              <tr>
+                <td class="last" colspan="9">No History Results Found</td>
+              </tr>
+  #end
+            </tbody>
+          </table>
+          <ul class="pagination" id="pageSelection">
+  #if ($search)
+            <li id="previous" class="first"><a href="${context}/history?page=${previous.page}&size=${previous.size}&search=true&searchterm=$esc.html(${search_term})"><span class="arrow">&larr;</span>Previous</a></li>
+            <li id="page1" #if($page1.selected) class="selected" #end><a href="${context}/history?page=${page1.page}&size=${page1.size}&search=true&searchterm=$esc.html(${search_term})">${page1.page}</a></li>
+            <li id="page2" #if($page2.selected) class="selected" #end><a href="${context}/history?page=${page2.page}&size=${page2.size}&search=true&searchterm=$esc.html(${search_term})">${page2.page}</a></li>
+            <li id="page3" #if($page3.selected) class="selected" #end><a href="${context}/history?page=${page3.page}&size=${page3.size}&search=true&searchterm=$esc.html(${search_term})">${page3.page}</a></li>
+            <li id="page4" #if($page4.selected) class="selected" #end><a href="${context}/history?page=${page4.page}&size=${page4.size}&search=true&searchterm=$esc.html(${search_term})">${page4.page}</a></li>
+            <li id="page5" #if($page5.selected) class="selected" #end><a href="${context}/history?page=${page5.page}&size=${page5.size}&search=true&searchterm=$esc.html(${search_term})">${page5.page}</a></li>
+            <li id="next"><a href="${context}/history?page=${next.page}&size=${next.size}&search=true&searchterm=$esc.html(${search_term})">Next<span class="arrow">&rarr;</span></a></li>
+  #elseif($advfilter)
+            <li id="previous" class="first"><a href="${context}/history?page=${previous.page}&size=${previous.size}&advfilter=true&projcontain=${projcontain}&flowcontain=${flowcontain}&usercontain=${usercontain}&status=${status}&begin=${begin}&end=${end}"><span class="arrow">&larr;</span>Previous</a></li>
+            <li id="page1" #if($page1.selected) class="selected" #end><a href="${context}/history?page=${page1.page}&size=${page1.size}&advfilter=true&projcontain=${projcontain}&flowcontain=${flowcontain}&usercontain=${usercontain}&status=${status}&begin=${begin}&end=${end}">${page1.page}</a></li>
+            <li id="page2" #if($page2.selected) class="selected" #end><a href="${context}/history?page=${page2.page}&size=${page2.size}&advfilter=true&projcontain=${projcontain}&flowcontain=${flowcontain}&usercontain=${usercontain}&status=${status}&begin=${begin}&end=${end}">${page2.page}</a></li>
+            <li id="page3" #if($page3.selected) class="selected" #end><a href="${context}/history?page=${page3.page}&size=${page3.size}&advfilter=true&projcontain=${projcontain}&flowcontain=${flowcontain}&usercontain=${usercontain}&status=${status}&begin=${begin}&end=${end}">${page3.page}</a></li>
+            <li id="page4" #if($page4.selected) class="selected" #end><a href="${context}/history?page=${page4.page}&size=${page4.size}&advfilter=true&projcontain=${projcontain}&flowcontain=${flowcontain}&usercontain=${usercontain}&status=${status}&begin=${begin}&end=${end}">${page4.page}</a></li>
+            <li id="page5" #if($page5.selected) class="selected" #end><a href="${context}/history?page=${page5.page}&size=${page5.size}&advfilter=true&projcontain=${projcontain}&flowcontain=${flowcontain}&usercontain=${usercontain}&status=${status}&begin=${begin}&end=${end}">${page5.page}</a></li>
+            <li id="next"><a href="${context}/history?page=${next.page}&size=${next.size}&advfilter=true&projcontain=${projcontain}&flowcontain=${flowcontain}&usercontain=${usercontain}&status=${status}&begin=${begin}&end=${end}">Next<span class="arrow">&rarr;</span></a></li>
+  #else
+            <li id="previous" class="first"><a href="${context}/history?page=${previous.page}&size=${previous.size}"><span class="arrow">&larr;</span>Previous</a></li>
+            <li id="page1" #if($page1.selected) class="selected" #end><a href="${context}/history?page=${page1.page}&size=${page1.size}">${page1.page}</a></li>
+            <li id="page2" #if($page2.selected) class="selected" #end><a href="${context}/history?page=${page2.page}&size=${page2.size}">${page2.page}</a></li>
+            <li id="page3" #if($page3.selected) class="selected" #end><a href="${context}/history?page=${page3.page}&size=${page3.size}">${page3.page}</a></li>
+            <li id="page4" #if($page4.selected) class="selected" #end><a href="${context}/history?page=${page4.page}&size=${page4.size}">${page4.page}</a></li>
+            <li id="page5" #if($page5.selected) class="selected" #end><a href="${context}/history?page=${page5.page}&size=${page5.size}">${page5.page}</a></li>
+            <li id="next"><a href="${context}/history?page=${next.page}&size=${next.size}">Next<span class="arrow">&rarr;</span></a></li>
+  #end
+          </ul>
+        </div><!-- /col-xs-12 -->
+      </div><!-- /row -->
+
+  ## Advanced Filter Modal.
+
+      <div class="modal" id="adv-filter">
+        <div class="modal-dialog">
+          <div class="modal-content">
+            <div class="modal-header">
+              <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+              <h4 class="modal-title">Advanced Filter</h4>
+            </div>
+            <div class="modal-body">
+              <div class="alert alert-danger" id="adv-filter-error-msg">$error_msg</div>
+              <fieldset class="form-horizontal">
+                <div class="form-group">
+                  <label for="projcontain" class="col-sm-2 control-label">Project</label>
+                  <div class="col-sm-10">
+                    <input id="projcontain" type="text" placeholder="Project name containing ..." value="" class="form-control" name="projcontain">
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label for="flowcontain" class="col-sm-2 control-label">Flow</label>
+                  <div class="col-sm-10">
+                    <input id="flowcontain" type="text" placeholder="Flow name containing ..." value="" class="form-control" name="flowcontain">
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label for="usercontain" class="col-sm-2 control-label">User</label>
+                  <div class="col-sm-10">
+                    <input id="usercontain" type="text" placeholder="User name containing ..." value="" class="form-control" name="usercontain">
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label for="status" class="col-sm-2 control-label">Status</label>
+                  <div class="col-sm-10">
+                    <select id="status" class="form-control">
+                      <option value=0>All Status</option>
+                      <option value=10>Ready</option>
+                      <option value=20>Preparing</option>
+                      <option value=30>Running</option>
+                      <option value=40>Paused</option>
+                      <option value=50>Succeed</option>
+                      <option value=60>Killed</option>
+                      <option value=70>Failed</option>
+                      <option value=80>Failed Finishing</option>
+                      <option value=90>Skipped</option>
+                      <option value=100>Disabled</option>
+                      <option value=110>Queued</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label for="datetimebegin" class="col-sm-2 control-label">Between</label>
+                  <div class="col-sm-4">
+                    <input type="text" id="datetimebegin" value="" class="ui-datetime-container form-control">
+                  </div>
+                  <label for="datetimeend" class="col-sm-2 control-label control-label-center">and</label>
+                  <div class="col-sm-4">
+                    <input type="text" id="datetimeend" value="" class="ui-datetime-container form-control">
+                  </div>
+                </div>
+              </fieldset>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+              <button class="btn btn-success" id="filter-btn">Filter</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+  #parse ("azkaban/webapp/servlet/velocity/invalidsessionmodal.vm")
+    </div><!-- /container-full -->
+#end
+  </body>
+<html>

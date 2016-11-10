@@ -141,7 +141,7 @@ public class JdbcProjectLoader extends AbstractJdbcLoader implements
           runner.query(connection, ProjectResultHandler.SELECT_PROJECT_BY_ID,
               handler, id);
       if (projects.isEmpty()) {
-        throw new ProjectManagerException("No active project with id " + id
+        throw new ProjectManagerException("No project with id " + id
             + " exists in db.");
       }
 
@@ -168,6 +168,67 @@ public class JdbcProjectLoader extends AbstractJdbcLoader implements
 
     return project;
   }
+
+    /**
+     * Fetch first project with a given name {@inheritDoc}
+     *
+     * @see azkaban.project.ProjectLoader#fetchProjectByName(java.lang.String)
+     */
+    @Override
+    public Project fetchProjectByName(String name)
+        throws ProjectManagerException {
+        Connection connection = getConnection();
+
+        Project project = null;
+        try {
+            project = fetchProjectByName(connection, name);
+        } finally {
+            DbUtils.closeQuietly(connection);
+        }
+
+        return project;
+    }
+
+    private Project fetchProjectByName(Connection connection, String name)
+        throws ProjectManagerException {
+        QueryRunner runner = new QueryRunner();
+        // Fetch the project
+        Project project = null;
+        ProjectResultHandler handler = new ProjectResultHandler();
+        try {
+            List<Project> projects =
+                runner.query(connection,
+                    ProjectResultHandler.SELECT_PROJECT_BY_NAME, handler, name);
+            if (projects.isEmpty()) {
+                throw new ProjectManagerException(
+                    "No project with name " + name + " exists in db.");
+            }
+
+            project = projects.get(0);
+        } catch (SQLException e) {
+            logger.error(ProjectResultHandler.SELECT_PROJECT_BY_NAME
+                + " failed.");
+            throw new ProjectManagerException(
+                "Query for existing project failed. Project " + name, e);
+        }
+
+        // Fetch the user permissions
+        List<Triple<String, Boolean, Permission>> permissions =
+            fetchPermissionsForProject(connection, project);
+
+        for (Triple<String, Boolean, Permission> perm : permissions) {
+            if (perm.getThird().toFlags() != 0) {
+                if (perm.getSecond()) {
+                    project
+                        .setGroupPermission(perm.getFirst(), perm.getThird());
+                } else {
+                    project.setUserPermission(perm.getFirst(), perm.getThird());
+                }
+            }
+        }
+
+        return project;
+    }
 
   private List<Triple<String, Boolean, Permission>> fetchPermissionsForProject(
       Connection connection, Project project) throws ProjectManagerException {
@@ -784,7 +845,6 @@ public class JdbcProjectLoader extends AbstractJdbcLoader implements
       byte[] stringData = json.getBytes("UTF-8");
       byte[] data = stringData;
 
-      logger.info("UTF-8 size:" + data.length);
       if (defaultEncodingType == EncodingType.GZIP) {
         data = GZIPUtils.gzipBytes(stringData);
       }
@@ -827,7 +887,6 @@ public class JdbcProjectLoader extends AbstractJdbcLoader implements
     byte[] stringData = json.getBytes("UTF-8");
     byte[] data = stringData;
 
-    logger.info("UTF-8 size:" + data.length);
     if (encType == EncodingType.GZIP) {
       data = GZIPUtils.gzipBytes(stringData);
     }
@@ -948,7 +1007,6 @@ public class JdbcProjectLoader extends AbstractJdbcLoader implements
 
     String propertyJSON = PropsUtils.toJSONString(props, true);
     byte[] data = propertyJSON.getBytes("UTF-8");
-    logger.info("UTF-8 size:" + data.length);
     if (defaultEncodingType == EncodingType.GZIP) {
       data = GZIPUtils.gzipBytes(data);
     }
@@ -971,7 +1029,6 @@ public class JdbcProjectLoader extends AbstractJdbcLoader implements
 
     String propertyJSON = PropsUtils.toJSONString(props, true);
     byte[] data = propertyJSON.getBytes("UTF-8");
-    logger.info("UTF-8 size:" + data.length);
     if (defaultEncodingType == EncodingType.GZIP) {
       data = GZIPUtils.gzipBytes(data);
     }
@@ -1136,6 +1193,9 @@ public class JdbcProjectLoader extends AbstractJdbcLoader implements
 
   private static class ProjectResultHandler implements
       ResultSetHandler<List<Project>> {
+    private static String SELECT_PROJECT_BY_NAME =
+        "SELECT id, name, active, modified_time, create_time, version, last_modified_by, description, enc_type, settings_blob FROM projects WHERE name=?";
+
     private static String SELECT_PROJECT_BY_ID =
         "SELECT id, name, active, modified_time, create_time, version, last_modified_by, description, enc_type, settings_blob FROM projects WHERE id=?";
 

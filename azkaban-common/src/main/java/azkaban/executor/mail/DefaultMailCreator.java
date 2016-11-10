@@ -67,7 +67,7 @@ public class DefaultMailCreator implements MailCreator {
     if (emailList != null && !emailList.isEmpty()) {
       message.addAllToAddress(emailList);
       message.setMimeType("text/html");
-      message.setSubject("Flow '" + flow.getFlowId() + "' has failed on "
+      message.setSubject("Flow '" + flow.getFlowId() + "' has encountered a failure on "
           + azkabanName);
 
       message.println("<h2 style=\"color:#FF0000\"> Execution '"
@@ -93,6 +93,7 @@ public class DefaultMailCreator implements MailCreator {
       message.println("<tr><td>Duration</td><td>"
           + Utils.formatDuration(flow.getStartTime(), flow.getEndTime())
           + "</td></tr>");
+      message.println("<tr><td>Status</td><td>" + flow.getStatus() + "</td></tr>");
       message.println("</table>");
       message.println("");
       String executionUrl =
@@ -144,6 +145,7 @@ public class DefaultMailCreator implements MailCreator {
       message.println("<tr><td>Duration</td><td>"
           + Utils.formatDuration(flow.getStartTime(), flow.getEndTime())
           + "</td></tr>");
+      message.println("<tr><td>Status</td><td>" + flow.getStatus() + "</td></tr>");
       message.println("</table>");
       message.println("");
       String executionUrl =
@@ -197,6 +199,7 @@ public class DefaultMailCreator implements MailCreator {
       message.println("<tr><td>Duration</td><td>"
           + Utils.formatDuration(flow.getStartTime(), flow.getEndTime())
           + "</td></tr>");
+      message.println("<tr><td>Status</td><td>" + flow.getStatus() + "</td></tr>");
       message.println("</table>");
       message.println("");
       String executionUrl =

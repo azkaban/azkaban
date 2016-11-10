@@ -33,6 +33,7 @@ public class AbstractMailer {
   private String mailPassword;
   private String mailSender;
   private String azkabanName;
+  private String tls;
 
   private String referenceURL;
 
@@ -44,6 +45,7 @@ public class AbstractMailer {
     this.mailPort = props.getInt("mail.port", DEFAULT_SMTP_PORT);
     this.mailUser = props.getString("mail.user", "");
     this.mailPassword = props.getString("mail.password", "");
+    this.tls = props.getString("mail.tls", "false");
     long maxAttachmentSizeInMB =
         props.getInt("mail.max.attachment.size.mb", 100);
 
@@ -79,6 +81,7 @@ public class AbstractMailer {
     message.setMimeType(mimetype);
     message.setSubject(subject);
     message.setAuth(usesAuth);
+    message.setTLS(tls);
 
     return message;
   }

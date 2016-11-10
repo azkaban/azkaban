@@ -1,0 +1,38 @@
+apply plugin: 'distribution'
+
+dependencies {
+  compile(project(':azkaban-common'))
+  compile(project(':azkaban-web-server'))
+  compile(project(':azkaban-exec-server'))
+}
+
+installDist.dependsOn ':azkaban-web-server:installDist'
+distTar.dependsOn ':azkaban-web-server:installDist'
+distZip.dependsOn ':azkaban-web-server:installDist'
+
+distributions {
+  main {
+    contents {
+      from('src/main/bash') {
+        into 'bin'
+        fileMode = 0755
+      }
+      from ('src/main/resources/conf') {
+        into 'conf'
+      }
+      from(configurations.runtime) {
+        into 'lib'
+      }
+      from(jar) {
+        into 'lib'
+      }
+      from(project(':azkaban-sql').files('src/sql')) {
+        into('sql')
+      }
+      // Get the files from sub-dir of distribution of another sub-project
+      from(new File(tasks.getByPath(':azkaban-web-server:installDist').destinationDir, 'web')) {
+        into 'web'
+      }
+    }
+  }
+}

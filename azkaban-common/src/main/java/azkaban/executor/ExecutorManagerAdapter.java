@@ -18,6 +18,7 @@ package azkaban.executor;
 
 import java.io.IOException;
 import java.lang.Thread.State;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -87,6 +88,18 @@ public interface ExecutorManagerAdapter {
   public List<Integer> getRunningFlows(int projectId, String flowId);
 
   public List<ExecutableFlow> getRunningFlows() throws IOException;
+
+  /**
+   * <pre>
+   * Returns All running with executors and queued flows
+   * Note, returns empty list if there isn't any running or queued flows
+   * </pre>
+   *
+   * @return
+   * @throws IOException
+   */
+  public List<Pair<ExecutableFlow, Executor>> getActiveFlowsWithExecutor()
+    throws IOException;
 
   public List<ExecutableFlow> getRecentlyFinishedFlows();
 
@@ -177,9 +190,10 @@ public interface ExecutorManagerAdapter {
    * <li>{@link azkaban.executor.ConnectorParams#STATS_SET_ENABLEMETRICS}<li>
    * <li>{@link azkaban.executor.ConnectorParams#STATS_SET_DISABLEMETRICS}<li>
    * </ul>
+   * @throws ExecutorManagerException
    */
-  public Map<String, Object> callExecutorStats(String action,
-      Pair<String, String>... params) throws IOException;
+  public Map<String, Object> callExecutorStats(int executorId, String action,
+    Pair<String, String>... param) throws IOException, ExecutorManagerException;
 
   public Map<String, Object> callExecutorJMX(String hostPort, String action,
       String mBean) throws IOException;
@@ -196,4 +210,54 @@ public interface ExecutorManagerAdapter {
 
   public Set<? extends String> getPrimaryServerHosts();
 
+  /**
+   * Returns a collection of all the active executors maintained by active
+   * executors
+   *
+   * @return
+   */
+  public Collection<Executor> getAllActiveExecutors();
+
+  /**
+   * <pre>
+   * Fetch executor from executors with a given executorId
+   * Note:
+   * 1. throws an Exception in case of a SQL issue
+   * 2. return null when no executor is found with the given executorId
+   * </pre>
+   *
+   * @throws ExecutorManagerException
+   *
+   */
+  public Executor fetchExecutor(int executorId) throws ExecutorManagerException;
+
+  /**
+   * <pre>
+   * Setup activeExecutors using azkaban.properties and database executors
+   * Note:
+   * 1. If azkaban.use.multiple.executors is set true, this method will
+   *    load all active executors
+   * 2. In local mode, If a local executor is specified and it is missing from db,
+   *    this method add local executor as active in DB
+   * 3. In local mode, If a local executor is specified and it is marked inactive in db,
+   *    this method will convert local executor as active in DB
+   * </pre>
+   *
+   * @throws ExecutorManagerException
+   */
+   public void setupExecutors() throws ExecutorManagerException;
+
+   /**
+    * Enable flow dispatching in QueueProcessor
+    *
+    * @throws ExecutorManagerException
+    */
+   public void enableQueueProcessorThread() throws ExecutorManagerException;
+
+   /**
+    * Disable flow dispatching in QueueProcessor
+    *
+    * @throws ExecutorManagerException
+    */
+   public void disableQueueProcessorThread() throws ExecutorManagerException;
 }

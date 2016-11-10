@@ -1,0 +1,8 @@
+conf/
+data/
+executions/
+plugins/
+projects/
+temp/
+validator_jars/
+*.log

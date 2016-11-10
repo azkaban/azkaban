@@ -17,6 +17,7 @@
 package azkaban.utils;
 
 import java.io.IOException;
+import java.util.Map;
 
 import org.junit.Assert;
 import org.junit.Test;
@@ -124,6 +125,52 @@ public class PropsUtilsTest {
     // bad expression
     props = Props.of("key", "$(2 + #hello)");
     failIfNotException(props);
+  }
+
+  @Test
+  public void testGetFlattenedProps() throws Exception {
+
+    // for empty props empty flattened map is expected to be returned.
+    Props grandParentProps = new Props();
+    Assert.assertTrue(grandParentProps.getFlattened().isEmpty());
+
+    // single level
+    grandParentProps.put("test1","value1");
+    grandParentProps.put("test2","value2");
+    Map<String,String> set = grandParentProps.getFlattened();
+    Assert.assertEquals(2,set.size());
+    Assert.assertEquals("value1", set.get("test1"));
+    Assert.assertEquals("value2", set.get("test2"));
+
+    // multiple levels .
+    Props parentProps = new Props(grandParentProps);
+    parentProps.put("test3","value3");
+    parentProps.put("test4","value4");
+    set = parentProps.getFlattened();
+    Assert.assertEquals(4,set.size());
+    Assert.assertEquals("value3", set.get("test3"));
+    Assert.assertEquals("value1", set.get("test1"));
+
+    // multiple levels with same keys  .
+    Props props = new Props(parentProps);
+    props.put("test5","value5");
+    props.put("test1","value1.1");
+    set = props.getFlattened();
+    Assert.assertEquals(5,set.size());
+    Assert.assertEquals("value5", set.get("test5"));
+    Assert.assertEquals("value1.1", set.get("test1"));
+
+    // verify when iterating the elements are sorted by the key value.
+    Props props2 = new Props();
+    props2.put("2","2");
+    props2.put("0","0");
+    props2.put("1","1");
+    set = props2.getFlattened();
+    int index = 0 ;
+    for (Map.Entry<String, String> item : set.entrySet())
+    {
+      Assert.assertEquals(item.getKey(),Integer.toString(index++));
+    }
   }
 
   @Test

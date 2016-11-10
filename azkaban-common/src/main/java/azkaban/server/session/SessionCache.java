@@ -16,10 +16,12 @@
 
 package azkaban.server.session;
 
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.Cache;
+
+import java.util.concurrent.TimeUnit;
+
 import azkaban.utils.Props;
-import azkaban.utils.cache.Cache;
-import azkaban.utils.cache.CacheManager;
-import azkaban.utils.cache.Cache.EjectionPolicy;
 
 /**
  * Cache for web session.
@@ -34,7 +36,7 @@ public class SessionCache {
   private static final long SESSION_TIME_TO_LIVE = 24 * 60 * 60 * 1000L;
 
   // private CacheManager manager = CacheManager.create();
-  private Cache cache;
+  private Cache<String, Session> cache;
 
   /**
    * Constructor taking global props.
@@ -42,13 +44,12 @@ public class SessionCache {
    * @param props
    */
   public SessionCache(Props props) {
-    CacheManager manager = CacheManager.getInstance();
-
-    cache = manager.createCache();
-    cache.setEjectionPolicy(EjectionPolicy.LRU);
-    cache.setMaxCacheSize(props.getInt("max.num.sessions", MAX_NUM_SESSIONS));
-    cache.setExpiryTimeToLiveMs(props.getLong("session.time.to.live",
-        SESSION_TIME_TO_LIVE));
+    cache = CacheBuilder.newBuilder()
+        .maximumSize(props.getInt("max.num.sessions", MAX_NUM_SESSIONS))
+        .expireAfterAccess(
+            props.getLong("session.time.to.live", SESSION_TIME_TO_LIVE),
+            TimeUnit.MILLISECONDS)
+        .build();
   }
 
   /**
@@ -58,8 +59,7 @@ public class SessionCache {
    * @return
    */
   public Session getSession(String sessionId) {
-    Session elem = cache.<Session> get(sessionId);
-
+    Session elem = cache.getIfPresent(sessionId);
     return elem;
   }
 
@@ -79,7 +79,7 @@ public class SessionCache {
    * @param id
    * @return
    */
-  public boolean removeSession(String id) {
-    return cache.remove(id);
+  public void removeSession(String id) {
+    cache.invalidate(id);
   }
 }

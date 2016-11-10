@@ -23,7 +23,8 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
-import azkaban.utils.DirectoryFlowLoader;
+import azkaban.project.Project;
+import azkaban.project.DirectoryFlowLoader;
 import azkaban.utils.Props;
 
 /**
@@ -132,7 +133,7 @@ public class XmlValidatorManager implements ValidatorManager {
   public void loadValidators(Props props, Logger log) {
     validators = new LinkedHashMap<String, ProjectValidator>();
     // Add the default validator
-    DirectoryFlowLoader flowLoader = new DirectoryFlowLoader(log);
+    DirectoryFlowLoader flowLoader = new DirectoryFlowLoader(props, log);
     validators.put(flowLoader.getValidatorName(), flowLoader);
 
     if (!props.containsKey(ValidatorConfigs.XML_FILE_PARAM)) {
@@ -226,10 +227,10 @@ public class XmlValidatorManager implements ValidatorManager {
   }
 
   @Override
-  public Map<String, ValidationReport> validate(File projectDir) {
+  public Map<String, ValidationReport> validate(Project project, File projectDir) {
     Map<String, ValidationReport> reports = new LinkedHashMap<String, ValidationReport>();
     for (Entry<String, ProjectValidator> validator : validators.entrySet()) {
-      reports.put(validator.getKey(), validator.getValue().validateProject(projectDir));
+      reports.put(validator.getKey(), validator.getValue().validateProject(project, projectDir));
       logger.info("Validation status of validator " + validator.getKey() + " is "
           + reports.get(validator.getKey()).getStatus());
     }

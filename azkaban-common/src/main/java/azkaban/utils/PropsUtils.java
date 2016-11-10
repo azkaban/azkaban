@@ -142,6 +142,11 @@ public class PropsUtils {
   private static final Pattern VARIABLE_REPLACEMENT_PATTERN = Pattern
       .compile("\\$\\{([a-zA-Z_.0-9]+)\\}");
 
+  public static boolean isVarialbeReplacementPattern(String str) {
+    Matcher matcher = VARIABLE_REPLACEMENT_PATTERN.matcher(str);
+    return matcher.matches();
+  }
+
   public static Props resolveProps(Props props) {
     if (props == null)
       return null;
@@ -287,6 +292,7 @@ public class PropsUtils {
     props.put(CommonJobProperties.FLOW_UUID, UUID.randomUUID().toString());
     props.put(CommonJobProperties.PROJECT_LAST_CHANGED_BY, flow.getLastModifiedByUser());
     props.put(CommonJobProperties.PROJECT_LAST_CHANGED_DATE, flow.getLastModifiedTimestamp());
+    props.put(CommonJobProperties.SUBMIT_USER, flow.getExecutableFlow().getSubmitUser());  
 
     DateTime loadTime = new DateTime();
 

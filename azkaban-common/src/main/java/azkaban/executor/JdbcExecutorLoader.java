@@ -21,12 +21,14 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.lang.annotation.Inherited;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -40,6 +42,7 @@ import org.apache.log4j.Logger;
 import org.joda.time.DateTime;
 
 import azkaban.database.AbstractJdbcLoader;
+import azkaban.executor.ExecutorLogEvent.EventType;
 import azkaban.utils.FileIOUtils;
 import azkaban.utils.FileIOUtils.LogData;
 import azkaban.utils.GZIPUtils;
@@ -101,7 +104,7 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements
           runner.query(connection, LastInsertID.LAST_INSERT_ID,
               new LastInsertID());
 
-      if (id == -1l) {
+      if (id == -1L) {
         throw new ExecutorManagerException(
             "Execution id is not properly created.");
       }
@@ -174,6 +177,27 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements
       }
     } catch (SQLException e) {
       throw new ExecutorManagerException("Error fetching flow id " + id, e);
+    }
+  }
+
+  /**
+   *
+   * {@inheritDoc}
+   * @see azkaban.executor.ExecutorLoader#fetchQueuedFlows()
+   */
+  @Override
+  public List<Pair<ExecutionReference, ExecutableFlow>> fetchQueuedFlows()
+    throws ExecutorManagerException {
+    QueryRunner runner = createQueryRunner();
+    FetchQueuedExecutableFlows flowHandler = new FetchQueuedExecutableFlows();
+
+    try {
+      List<Pair<ExecutionReference, ExecutableFlow>> flows =
+        runner.query(FetchQueuedExecutableFlows.FETCH_QUEUED_EXECUTABLE_FLOW,
+          flowHandler);
+      return flows;
+    } catch (SQLException e) {
+      throw new ExecutorManagerException("Error fetching active flows", e);
     }
   }
 
@@ -380,12 +404,11 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements
       throws ExecutorManagerException {
     final String INSERT =
         "INSERT INTO active_executing_flows "
-            + "(exec_id, host, port, update_time) values (?,?,?,?)";
+            + "(exec_id, update_time) values (?,?)";
     QueryRunner runner = createQueryRunner();
 
     try {
-      runner.update(INSERT, reference.getExecId(), reference.getHost(),
-          reference.getPort(), reference.getUpdateTime());
+      runner.update(INSERT, reference.getExecId(), reference.getUpdateTime());
     } catch (SQLException e) {
       throw new ExecutorManagerException(
           "Error updating active flow reference " + reference.getExecId(), e);
@@ -773,13 +796,272 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements
     return connection;
   }
 
+
+  /**
+   *
+   * {@inheritDoc}
+   *
+   * @see azkaban.executor.ExecutorLoader#fetchActiveExecutors()
+   */
+  @Override
+  public List<Executor> fetchAllExecutors() throws ExecutorManagerException {
+    QueryRunner runner = createQueryRunner();
+    FetchExecutorHandler executorHandler = new FetchExecutorHandler();
+
+    try {
+      List<Executor> executors =
+        runner.query(FetchExecutorHandler.FETCH_ALL_EXECUTORS, executorHandler);
+      return executors;
+    } catch (Exception e) {
+      throw new ExecutorManagerException("Error fetching executors", e);
+    }
+  }
+
+  /**
+   *
+   * {@inheritDoc}
+   *
+   * @see azkaban.executor.ExecutorLoader#fetchActiveExecutors()
+   */
+  @Override
+  public List<Executor> fetchActiveExecutors() throws ExecutorManagerException {
+    QueryRunner runner = createQueryRunner();
+    FetchExecutorHandler executorHandler = new FetchExecutorHandler();
+
+    try {
+      List<Executor> executors =
+        runner.query(FetchExecutorHandler.FETCH_ACTIVE_EXECUTORS,
+          executorHandler);
+      return executors;
+    } catch (Exception e) {
+      throw new ExecutorManagerException("Error fetching active executors", e);
+    }
+  }
+
+  /**
+   * {@inheritDoc}
+   *
+   * @see azkaban.executor.ExecutorLoader#fetchExecutor(java.lang.String, int)
+   */
+  @Override
+  public Executor fetchExecutor(String host, int port)
+    throws ExecutorManagerException {
+    QueryRunner runner = createQueryRunner();
+    FetchExecutorHandler executorHandler = new FetchExecutorHandler();
+
+    try {
+      List<Executor> executors =
+        runner.query(FetchExecutorHandler.FETCH_EXECUTOR_BY_HOST_PORT,
+          executorHandler, host, port);
+      if (executors.isEmpty()) {
+        return null;
+      } else {
+        return executors.get(0);
+      }
+    } catch (Exception e) {
+      throw new ExecutorManagerException(String.format(
+        "Error fetching executor %s:%d", host, port), e);
+    }
+  }
+
+  /**
+   * {@inheritDoc}
+   *
+   * @see azkaban.executor.ExecutorLoader#fetchExecutor(int)
+   */
+  @Override
+  public Executor fetchExecutor(int executorId) throws ExecutorManagerException {
+    QueryRunner runner = createQueryRunner();
+    FetchExecutorHandler executorHandler = new FetchExecutorHandler();
+
+    try {
+      List<Executor> executors =
+        runner.query(FetchExecutorHandler.FETCH_EXECUTOR_BY_ID,
+          executorHandler, executorId);
+      if (executors.isEmpty()) {
+        return null;
+      } else {
+        return executors.get(0);
+      }
+    } catch (Exception e) {
+      throw new ExecutorManagerException(String.format(
+        "Error fetching executor with id: %d", executorId), e);
+    }
+  }
+
+  /**
+   * {@inheritDoc}
+   *
+   * @see azkaban.executor.ExecutorLoader#updateExecutor(int)
+   */
+  @Override
+  public void updateExecutor(Executor executor) throws ExecutorManagerException {
+    final String UPDATE =
+      "UPDATE executors SET host=?, port=?, active=? where id=?";
+
+    QueryRunner runner = createQueryRunner();
+    try {
+      int rows =
+        runner.update(UPDATE, executor.getHost(), executor.getPort(),
+          executor.isActive(), executor.getId());
+      if (rows == 0) {
+        throw new ExecutorManagerException("No executor with id :"
+          + executor.getId());
+      }
+    } catch (SQLException e) {
+      throw new ExecutorManagerException("Error inactivating executor "
+        + executor.getId(), e);
+    }
+  }
+
+  /**
+   * {@inheritDoc}
+   *
+   * @see azkaban.executor.ExecutorLoader#addExecutor(java.lang.String, int)
+   */
+  @Override
+  public Executor addExecutor(String host, int port)
+    throws ExecutorManagerException {
+    // verify, if executor already exists
+    Executor executor = fetchExecutor(host, port);
+    if (executor != null) {
+      throw new ExecutorManagerException(String.format(
+        "Executor %s:%d already exist", host, port));
+    }
+    // add new executor
+    addExecutorHelper(host, port);
+    // fetch newly added executor
+    executor = fetchExecutor(host, port);
+
+    return executor;
+  }
+
+  private void addExecutorHelper(String host, int port)
+    throws ExecutorManagerException {
+    final String INSERT = "INSERT INTO executors (host, port) values (?,?)";
+    QueryRunner runner = createQueryRunner();
+    try {
+      runner.update(INSERT, host, port);
+    } catch (SQLException e) {
+      throw new ExecutorManagerException(String.format("Error adding %s:%d ",
+        host, port), e);
+    }
+  }
+
+  /**
+   * {@inheritDoc}
+   *
+   * @see azkaban.executor.ExecutorLoader#postExecutorEvent(azkaban.executor.Executor,
+   *      azkaban.executor.ExecutorLogEvent.EventType, java.lang.String,
+   *      java.lang.String)
+   */
+  @Override
+  public void postExecutorEvent(Executor executor, EventType type, String user,
+    String message) throws ExecutorManagerException{
+    QueryRunner runner = createQueryRunner();
+
+    final String INSERT_PROJECT_EVENTS =
+      "INSERT INTO executor_events (executor_id, event_type, event_time, username, message) values (?,?,?,?,?)";
+    Date updateDate = new Date();
+    try {
+      runner.update(INSERT_PROJECT_EVENTS, executor.getId(), type.getNumVal(),
+        updateDate, user, message);
+    } catch (SQLException e) {
+      throw new ExecutorManagerException("Failed to post executor event", e);
+    }
+  }
+
+  /**
+   * {@inheritDoc}
+   *
+   * @see azkaban.executor.ExecutorLoader#getExecutorEvents(azkaban.executor.Executor,
+   *      int, int)
+   */
+  @Override
+  public List<ExecutorLogEvent> getExecutorEvents(Executor executor, int num,
+    int offset) throws ExecutorManagerException {
+    QueryRunner runner = createQueryRunner();
+
+    ExecutorLogsResultHandler logHandler = new ExecutorLogsResultHandler();
+    List<ExecutorLogEvent> events = null;
+    try {
+      events =
+        runner.query(ExecutorLogsResultHandler.SELECT_EXECUTOR_EVENTS_ORDER,
+          logHandler, executor.getId(), num, offset);
+    } catch (SQLException e) {
+      throw new ExecutorManagerException(
+        "Failed to fetch events for executor id : " + executor.getId(), e);
+    }
+
+    return events;
+  }
+
+  /**
+   *
+   * {@inheritDoc}
+   *
+   * @see azkaban.executor.ExecutorLoader#assignExecutor(int, int)
+   */
+  @Override
+  public void assignExecutor(int executorId, int executionId)
+    throws ExecutorManagerException {
+    final String UPDATE =
+      "UPDATE execution_flows SET executor_id=? where exec_id=?";
+
+    QueryRunner runner = createQueryRunner();
+    try {
+      Executor executor = fetchExecutor(executorId);
+      if (executor == null) {
+        throw new ExecutorManagerException(String.format(
+          "Failed to assign non-existent executor Id: %d to execution : %d  ",
+          executorId, executionId));
+      }
+
+      int rows = runner.update(UPDATE, executorId, executionId);
+      if (rows == 0) {
+        throw new ExecutorManagerException(String.format(
+          "Failed to assign executor Id: %d to non-existent execution : %d  ",
+          executorId, executionId));
+      }
+    } catch (SQLException e) {
+      throw new ExecutorManagerException("Error updating executor id "
+        + executorId, e);
+    }
+  }
+
+  /**
+   *
+   * {@inheritDoc}
+   *
+   * @see azkaban.executor.ExecutorLoader#fetchExecutorByExecutionId(int)
+   */
+  @Override
+  public Executor fetchExecutorByExecutionId(int executionId)
+    throws ExecutorManagerException {
+    QueryRunner runner = createQueryRunner();
+    FetchExecutorHandler executorHandler = new FetchExecutorHandler();
+    Executor executor = null;
+    try {
+      List<Executor> executors =
+        runner.query(FetchExecutorHandler.FETCH_EXECUTION_EXECUTOR,
+          executorHandler, executionId);
+      if (executors.size() > 0) {
+        executor = executors.get(0);
+      }
+    } catch (SQLException e) {
+      throw new ExecutorManagerException(
+        "Error fetching executor for exec_id : " + executionId, e);
+    }
+    return executor;
+  }
+
   private static class LastInsertID implements ResultSetHandler<Long> {
     private static String LAST_INSERT_ID = "SELECT LAST_INSERT_ID()";
 
     @Override
     public Long handle(ResultSet rs) throws SQLException {
       if (!rs.next()) {
-        return -1l;
+        return -1L;
       }
       long id = rs.getLong(1);
       return id;
@@ -975,13 +1257,80 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements
     }
   }
 
+  /**
+   * JDBC ResultSetHandler to fetch queued executions
+   */
+  private static class FetchQueuedExecutableFlows implements
+    ResultSetHandler<List<Pair<ExecutionReference, ExecutableFlow>>> {
+    // Select queued unassigned flows
+    private static String FETCH_QUEUED_EXECUTABLE_FLOW =
+      "SELECT ex.exec_id exec_id, ex.enc_type enc_type, ex.flow_data flow_data, "
+        + " ax.update_time axUpdateTime FROM execution_flows ex"
+        + " INNER JOIN"
+        + " active_executing_flows ax ON ex.exec_id = ax.exec_id"
+        + " Where ex.executor_id is NULL";
+
+    @Override
+    public List<Pair<ExecutionReference, ExecutableFlow>> handle(ResultSet rs)
+      throws SQLException {
+      if (!rs.next()) {
+        return Collections
+          .<Pair<ExecutionReference, ExecutableFlow>> emptyList();
+      }
+
+      List<Pair<ExecutionReference, ExecutableFlow>> execFlows =
+        new ArrayList<Pair<ExecutionReference, ExecutableFlow>>();
+      do {
+        int id = rs.getInt(1);
+        int encodingType = rs.getInt(2);
+        byte[] data = rs.getBytes(3);
+        long updateTime = rs.getLong(4);
+
+        if (data == null) {
+          logger.error("Found a flow with empty data blob exec_id: " + id);
+        } else {
+          EncodingType encType = EncodingType.fromInteger(encodingType);
+          Object flowObj;
+          try {
+            // Convoluted way to inflate strings. Should find common package or
+            // helper function.
+            if (encType == EncodingType.GZIP) {
+              // Decompress the sucker.
+              String jsonString = GZIPUtils.unGzipString(data, "UTF-8");
+              flowObj = JSONUtils.parseJSONFromString(jsonString);
+            } else {
+              String jsonString = new String(data, "UTF-8");
+              flowObj = JSONUtils.parseJSONFromString(jsonString);
+            }
+
+            ExecutableFlow exFlow =
+              ExecutableFlow.createExecutableFlowFromObject(flowObj);
+            ExecutionReference ref = new ExecutionReference(id);
+            ref.setUpdateTime(updateTime);
+
+            execFlows.add(new Pair<ExecutionReference, ExecutableFlow>(ref,
+              exFlow));
+          } catch (IOException e) {
+            throw new SQLException("Error retrieving flow data " + id, e);
+          }
+        }
+      } while (rs.next());
+
+      return execFlows;
+    }
+  }
+
   private static class FetchActiveExecutableFlows implements
       ResultSetHandler<Map<Integer, Pair<ExecutionReference, ExecutableFlow>>> {
+    // Select running and executor assigned flows
     private static String FETCH_ACTIVE_EXECUTABLE_FLOW =
-        "SELECT ex.exec_id exec_id, ex.enc_type enc_type, ex.flow_data "
-            + "flow_data, ax.host host, ax.port port, ax.update_time "
-            + "axUpdateTime " + "FROM execution_flows ex "
-            + "INNER JOIN active_executing_flows ax ON ex.exec_id = ax.exec_id";
+      "SELECT ex.exec_id exec_id, ex.enc_type enc_type, ex.flow_data flow_data, et.host host, "
+        + "et.port port, ax.update_time axUpdateTime, et.id executorId, et.active executorStatus"
+        + " FROM execution_flows ex"
+        + " INNER JOIN "
+        + " active_executing_flows ax ON ex.exec_id = ax.exec_id"
+        + " INNER JOIN "
+        + " executors et ON ex.executor_id = et.id";
 
     @Override
     public Map<Integer, Pair<ExecutionReference, ExecutableFlow>> handle(
@@ -1000,6 +1349,8 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements
         String host = rs.getString(4);
         int port = rs.getInt(5);
         long updateTime = rs.getLong(6);
+        int executorId = rs.getInt(7);
+        boolean executorStatus = rs.getBoolean(8);
 
         if (data == null) {
           execFlows.put(id, null);
@@ -1020,7 +1371,8 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements
 
             ExecutableFlow exFlow =
                 ExecutableFlow.createExecutableFlowFromObject(flowObj);
-            ExecutionReference ref = new ExecutionReference(id, host, port);
+            Executor executor = new Executor(executorId, host, port, executorStatus);
+            ExecutionReference ref = new ExecutionReference(id, executor);
             ref.setUpdateTime(updateTime);
 
             execFlows.put(id, new Pair<ExecutionReference, ExecutableFlow>(ref,
@@ -1106,6 +1458,8 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements
         "SELECT COUNT(1) FROM execution_flows WHERE project_id=? AND flow_id=?";
     private static String NUM_JOB_EXECUTIONS =
         "SELECT COUNT(1) FROM execution_jobs WHERE project_id=? AND job_id=?";
+    private static String FETCH_EXECUTOR_ID =
+        "SELECT executor_id FROM execution_flows WHERE exec_id=?";
 
     @Override
     public Integer handle(ResultSet rs) throws SQLException {
@@ -1133,5 +1487,99 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements
     }
 
     return updateNum;
+  }
+
+  /**
+   * JDBC ResultSetHandler to fetch records from executors table
+   */
+  private static class FetchExecutorHandler implements
+    ResultSetHandler<List<Executor>> {
+    private static String FETCH_ALL_EXECUTORS =
+      "SELECT id, host, port, active FROM executors";
+    private static String FETCH_ACTIVE_EXECUTORS =
+      "SELECT id, host, port, active FROM executors where active=true";
+    private static String FETCH_EXECUTOR_BY_ID =
+      "SELECT id, host, port, active FROM executors where id=?";
+    private static String FETCH_EXECUTOR_BY_HOST_PORT =
+      "SELECT id, host, port, active FROM executors where host=? AND port=?";
+    private static String FETCH_EXECUTION_EXECUTOR =
+      "SELECT ex.id, ex.host, ex.port, ex.active FROM "
+        + " executors ex INNER JOIN execution_flows ef "
+        + "on ex.id = ef.executor_id  where exec_id=?";
+
+    @Override
+    public List<Executor> handle(ResultSet rs) throws SQLException {
+      if (!rs.next()) {
+        return Collections.<Executor> emptyList();
+      }
+
+      List<Executor> executors = new ArrayList<Executor>();
+      do {
+        int id = rs.getInt(1);
+        String host = rs.getString(2);
+        int port = rs.getInt(3);
+        boolean active = rs.getBoolean(4);
+        Executor executor = new Executor(id, host, port, active);
+        executors.add(executor);
+      } while (rs.next());
+
+      return executors;
+    }
+  }
+
+  /**
+   * JDBC ResultSetHandler to fetch records from executor_events table
+   */
+  private static class ExecutorLogsResultHandler implements
+    ResultSetHandler<List<ExecutorLogEvent>> {
+    private static String SELECT_EXECUTOR_EVENTS_ORDER =
+      "SELECT executor_id, event_type, event_time, username, message FROM executor_events "
+        + " WHERE executor_id=? ORDER BY event_time LIMIT ? OFFSET ?";
+
+    @Override
+    public List<ExecutorLogEvent> handle(ResultSet rs) throws SQLException {
+      if (!rs.next()) {
+        return Collections.<ExecutorLogEvent> emptyList();
+      }
+
+      ArrayList<ExecutorLogEvent> events = new ArrayList<ExecutorLogEvent>();
+      do {
+        int executorId = rs.getInt(1);
+        int eventType = rs.getInt(2);
+        Date eventTime = rs.getDate(3);
+        String username = rs.getString(4);
+        String message = rs.getString(5);
+
+        ExecutorLogEvent event =
+          new ExecutorLogEvent(executorId, username, eventTime,
+            EventType.fromInteger(eventType), message);
+        events.add(event);
+      } while (rs.next());
+
+      return events;
+    }
+  }
+
+  /**
+   *
+   * {@inheritDoc}
+   * @see azkaban.executor.ExecutorLoader#unassignExecutor(int)
+   */
+  @Override
+  public void unassignExecutor(int executionId) throws ExecutorManagerException {
+    final String UPDATE =
+      "UPDATE execution_flows SET executor_id=NULL where exec_id=?";
+
+    QueryRunner runner = createQueryRunner();
+    try {
+      int rows = runner.update(UPDATE, executionId);
+      if (rows == 0) {
+        throw new ExecutorManagerException(String.format(
+          "Failed to unassign executor for execution : %d  ", executionId));
+      }
+    } catch (SQLException e) {
+      throw new ExecutorManagerException("Error updating execution id "
+        + executionId, e);
+    }
   }
 }

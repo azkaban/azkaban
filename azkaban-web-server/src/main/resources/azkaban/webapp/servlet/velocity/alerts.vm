@@ -1,0 +1,41 @@
+#*
+ * Copyright 2012 LinkedIn Corp.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not
+ * use this file except in compliance with the License. You may obtain a copy of
+ * the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations under
+ * the License.
+*#
+
+## Alert message set by servlet.
+
+#if ($error_message != "null")
+      <div class="alert alert-danger alert-dismissable">
+        <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
+        $error_message
+      </div>
+#elseif ($warn_message != "null")
+      <div class="alert alert-warning alert-dismissable">
+        <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
+        $warn_message
+      </div>
+#elseif ($success_message != "null")
+      <div class="alert alert-success">
+        <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
+        $success_message
+      </div>
+#end
+
+## Alert message triggered by JavaScript.
+
+      <div class="alert alert-dismissable alert-messaging" id="messaging">
+        <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
+        <p id="messaging-message"></p>
+      </div>

@@ -28,14 +28,21 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Collection;
+import java.util.Date;
 import java.util.Enumeration;
 import java.util.Random;
+import java.util.TimeZone;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipOutputStream;
+import java.text.ParseException;
 
 import org.apache.commons.io.IOUtils;
 
+import org.apache.log4j.Logger;
+
+import org.joda.time.DateTimeZone;
+import org.joda.time.DateTime;
 import org.joda.time.Days;
 import org.joda.time.DurationFieldType;
 import org.joda.time.Hours;
@@ -46,10 +53,15 @@ import org.joda.time.Seconds;
 import org.joda.time.Weeks;
 import org.joda.time.Years;
 
+import org.quartz.CronExpression;
+
 /**
  * A util helper class full of static methods that are commonly used.
  */
 public class Utils {
+
+  private static Logger logger = Logger
+      .getLogger(Utils.class);
   public static final Random RANDOM = new Random();
 
   /**
@@ -110,6 +122,19 @@ public class Utils {
   public static void croak(String message, int exitCode) {
     System.err.println(message);
     System.exit(exitCode);
+  }
+
+  /**
+   * Tests whether a port is valid or not
+   *
+   * @param port
+   * @return true, if port is valid
+   */
+  public static boolean isValidPort(int port) {
+    if (port >= 1 && port <= 65535) {
+      return true;
+    }
+    return false;
   }
 
   public static File createTempDir() {
@@ -286,7 +311,7 @@ public class Utils {
 
     long durationMS;
     if (endTime == -1) {
-      durationMS = System.currentTimeMillis() - startTime;
+      durationMS = DateTime.now().getMillis() - startTime;
     } else {
       durationMS = endTime - startTime;
     }
@@ -408,5 +433,82 @@ public class Utils {
     }
 
     return periodStr;
+  }
+
+  /**
+   * @param strMemSize : memory string in the format such as 1G, 500M, 3000K, 5000
+   * @return : long value of memory amount in kb
+   */
+  public static long parseMemString(String strMemSize) {
+    if (strMemSize == null) {
+      return 0L;
+    }
+
+    long size = 0L;
+    if (strMemSize.endsWith("g") || strMemSize.endsWith("G")
+        || strMemSize.endsWith("m") || strMemSize.endsWith("M")
+        || strMemSize.endsWith("k") || strMemSize.endsWith("K")) {
+      String strSize = strMemSize.substring(0, strMemSize.length() - 1);
+      size = Long.parseLong(strSize);
+    } else {
+      size = Long.parseLong(strMemSize);
+    }
+
+    long sizeInKb = 0L;
+    if (strMemSize.endsWith("g") || strMemSize.endsWith("G")) {
+      sizeInKb = size * 1024L * 1024L;
+    } else if (strMemSize.endsWith("m") || strMemSize.endsWith("M")) {
+      sizeInKb = size * 1024L;
+    } else if (strMemSize.endsWith("k") || strMemSize.endsWith("K")) {
+      sizeInKb = size;
+    } else {
+      sizeInKb = size / 1024L;
+    }
+
+    return sizeInKb;
+  }
+
+  /**
+   * @param cronExpression: A cron expression is a string separated by white space, to provide a parser and evaluator for Quartz cron expressions.
+   * @return : org.quartz.CronExpression object.
+   *
+   * TODO: Currently, we have to transform Joda Timezone to Java Timezone due to CronExpression.
+   *       Since Java8 enhanced Time functionalities, We consider transform all Jodatime to Java Time in future.
+   *
+   */
+  public static CronExpression parseCronExpression(String cronExpression, DateTimeZone timezone) {
+    if (cronExpression != null) {
+      try {
+        CronExpression ce =  new CronExpression(cronExpression);
+        ce.setTimeZone(TimeZone.getTimeZone(timezone.getID()));
+        return ce;
+      } catch (ParseException pe) {
+        logger.error("this cron expression {" + cronExpression + "} can not be parsed. "
+            + "Please Check Quartz Cron Syntax.");
+      }
+      return null;
+    } else return null;
+  }
+
+  /**
+   *
+   * @param cronExpression
+   * @param timezone
+   * @return if the cronExpression is valid or not.
+   */
+  public static boolean isCronExpressionValid(String cronExpression, DateTimeZone timezone) {
+    if (!CronExpression.isValidExpression(cronExpression)) {
+      return false;
+    }
+
+    /*
+     * The below code is aimed at checking some cases that the above code can not identify,
+     * e.g. <0 0 3 ? * * 22> OR <0 0 3 ? * 8>. Under these cases, the below code is able to tell.
+     */
+    CronExpression cronExecutionTime = parseCronExpression(cronExpression, timezone);
+    if (cronExecutionTime == null || cronExecutionTime.getNextValidTimeAfter(new Date()) == null) {
+      return false;
+    }
+    return true;
   }
 }
