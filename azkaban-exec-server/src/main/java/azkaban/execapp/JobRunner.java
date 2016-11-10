@@ -24,14 +24,18 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.Optional;
 
 import org.apache.log4j.Appender;
 import org.apache.log4j.EnhancedPatternLayout;
+import org.apache.log4j.FileAppender;
 import org.apache.log4j.Layout;
 import org.apache.log4j.Logger;
 import org.apache.log4j.RollingFileAppender;
 
 import org.apache.kafka.log4jappender.KafkaLog4jAppender;
+
+import org.json.simple.JSONObject;
 
 import azkaban.event.Event;
 import azkaban.event.Event.Type;
@@ -68,8 +72,8 @@ public class JobRunner extends EventHandler implements Runnable {
   private Layout loggerLayout = DEFAULT_LAYOUT;
   private Logger flowLogger = null;
 
-  private Appender jobAppender;
-  private Appender kafkaAppender;
+  private Appender jobAppender = null;
+  private Optional<Appender> kafkaAppender = Optional.empty();
   private File logFile;
   private String attachmentFileName;
 
@@ -214,61 +218,54 @@ public class JobRunner extends EventHandler implements Runnable {
       logger = Logger.getLogger(loggerName);
 
       // Attempt to create appenders as necessary
-      attachFileAppender();
+      try {
+        attachFileAppender(createFileAppender());
+      } catch (IOException e) {
+        removeAppender(jobAppender);
+        flowLogger.error("Could not open log file in " + workingDir
+            + " for job " + this.jobId, e);
+      }
 
-      if (props.getBoolean("azkaban.job.kafkalogging.enabled", false)) {
-        attachKafkaAppender();
+      AzkabanExecutorServer exec = AzkabanExecutorServer.getApp();
+      if (exec != null && !exec.getAzkabanProps().getBoolean("kafkaLogging.globalDisable", false)
+          && props.getBoolean("azkaban.job.kafkaLogging.enabled", false)) {
+        try {
+          attachKafkaAppender(createKafkaAppender());
+        } catch (Exception e) {
+          removeAppender(kafkaAppender);
+          flowLogger.error("Failed to create Kafka appender for job " + this.jobId, e);
+        }
       }
     }
   }
 
-  private void attachFileAppender() {
-    jobAppender = null;
+  private void attachFileAppender(FileAppender appender) {
+    // If present, remove the existing file appender
+    if (jobAppender != null) {
+      removeAppender(jobAppender);
+      flowLogger.info("Removed old file appender for job " + this.jobId);
+    }
+
+    jobAppender = appender;
+    logger.addAppender(jobAppender);
+    logger.setAdditivity(false);
+    flowLogger.info("Attached file appender for job " + this.jobId);
+  }
+
+  private FileAppender createFileAppender() throws IOException {
+    // Set up log files
     String logName = createLogFileName(node);
     logFile = new File(workingDir, logName);
     String absolutePath = logFile.getAbsolutePath();
 
-    try {
-      RollingFileAppender fileAppender =
-          new RollingFileAppender(loggerLayout, absolutePath, true);
-      fileAppender.setMaxBackupIndex(jobLogBackupIndex);
-      fileAppender.setMaxFileSize(jobLogChunkSize);
-      jobAppender = fileAppender;
-      logger.addAppender(jobAppender);
-      logger.setAdditivity(false);
-      flowLogger.info("Created file appender for job " + this.jobId);
-    } catch (IOException e) {
-      flowLogger.error("Could not open log file in " + workingDir
-          + " for job " + this.jobId, e);
-    }
-  }
+    // Attempt to create FileAppender
+    RollingFileAppender fileAppender =
+        new RollingFileAppender(loggerLayout, absolutePath, true);
+    fileAppender.setMaxBackupIndex(jobLogBackupIndex);
+    fileAppender.setMaxFileSize(jobLogChunkSize);
 
-  private void attachKafkaAppender() {
-    kafkaAppender = null;
-
-    try {
-      KafkaLog4jAppender kafkaProducer = new KafkaLog4jAppender();
-      kafkaProducer.setBrokerList(props.getString("azkaban.job.kafkalogging.brokerlist"));
-      kafkaProducer.setTopic(props.getString("azkaban.job.kafkalogging.topic"));
-      kafkaProducer.setLayout(new EnhancedPatternLayout(
-          "{\"category\": \"%c{1}\","
-              + "\"level\": \"%p\","
-              + "\"message\": \"%m\","
-              + "\"projectname\": \"" + props.getString("azkaban.flow.projectname") + "\","
-              + "\"projectid\": \"" + props.getString("azkaban.flow.projectid") + "\","
-              + "\"flowid\": \"" + props.getString("azkaban.flow.flowid") + "\","
-              + "\"submituser\": \"" + props.getString("azkaban.flow.submituser") + "\","
-              + "\"execid\": \"" + props.getString("azkaban.flow.execid") + "\","
-              + "\"projectversion\": \"" + props.getString("azkaban.flow.projectversion") + "\""
-              + "}"));
-      kafkaProducer.activateOptions();
-      kafkaAppender = kafkaProducer;
-      logger.addAppender(kafkaAppender);
-      logger.setAdditivity(false);
-      flowLogger.info("Created kafka appender for " + this.jobId);
-    } catch (Exception e) {
-      flowLogger.error("Could not create Kafka Appender for job " + this.jobId, e);
-    }
+    flowLogger.info("Created file appender for job " + this.jobId);
+    return fileAppender;
   }
 
   private void createAttachmentFile() {
@@ -277,14 +274,61 @@ public class JobRunner extends EventHandler implements Runnable {
     attachmentFileName = file.getAbsolutePath();
   }
 
+  private void attachKafkaAppender(KafkaLog4jAppender appender) {
+    // If present, remove the existing kafka appender
+    if (kafkaAppender.isPresent()) {
+      removeAppender(kafkaAppender);
+      flowLogger.info("Removed old Kafka appender for job " + this.jobId);
+    }
+
+    kafkaAppender = Optional.of(appender);
+    logger.addAppender(kafkaAppender.get());
+    logger.setAdditivity(false);
+    flowLogger.info("Attached new Kafka appender for job " + this.jobId);
+  }
+
+  private KafkaLog4jAppender createKafkaAppender() {
+    KafkaLog4jAppender kafkaProducer = new KafkaLog4jAppender();
+    Props azkProps = AzkabanExecutorServer.getApp().getAzkabanProps();
+    kafkaProducer.setSyncSend(false);
+    kafkaProducer.setBrokerList(azkProps.getString("kafkaLogging.brokerList"));
+    kafkaProducer.setTopic(azkProps.getString("kafkaLogging.topic"));
+
+    JSONObject layout = new JSONObject();
+    layout.put("category", "%c{1}");
+    layout.put("level", "%p");
+    layout.put("message", "%m");
+    layout.put("projectname", props.getString("azkaban.flow.projectname"));
+    layout.put("flowid", props.getString("azkaban.flow.flowid"));
+    layout.put("submituser", props.getString("azkaban.flow.submituser"));
+    layout.put("execid", props.getString("azkaban.flow.execid"));
+    layout.put("projectversion", props.getString("azkaban.flow.projectversion"));
+    layout.put("logsource", "userJob");
+
+    kafkaProducer.setLayout(new EnhancedPatternLayout(layout.toString()));
+    kafkaProducer.activateOptions();
+
+    flowLogger.info("Created kafka appender for " + this.jobId);
+    return kafkaProducer;
+  }
+
+  private void removeAppender(Optional<Appender> appender) {
+    removeAppender(appender.get());
+    appender = Optional.empty();
+  }
+
+  private void removeAppender(Appender appender) {
+    logger.removeAppender(appender);
+    appender.close();
+    appender = null;
+  }
+
   private void closeLogger() {
     if (jobAppender != null) {
-      logger.removeAppender(jobAppender);
-      jobAppender.close();
+      removeAppender(jobAppender);
     }
-    if (kafkaAppender != null) {
-      logger.removeAppender(kafkaAppender);
-      kafkaAppender.close();
+    if (kafkaAppender.isPresent()) {
+      removeAppender(kafkaAppender);
     }
   }
 
