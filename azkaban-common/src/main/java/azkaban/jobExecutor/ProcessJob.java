@@ -175,7 +175,7 @@ public class ProcessJob extends AbstractProcessJob {
   }
 
   private boolean determineExecuteAsUser(Props sysProps, Props jobProps) {
-    return sysProps.getBoolean(EXECUTE_AS_USER, false);
+    return sysProps.getBoolean(EXECUTE_AS_USER, true);
   }
 
   /**
