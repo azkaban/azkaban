@@ -20,7 +20,7 @@ package azkaban;
   * Collected Azkaban constants of general utility.
   * All members of this class are immutable.
   */
-public class AzkabanConstants {
+public final class AzkabanConstants {
 
   /**
    * Represent the class name of azkaban metrics reporter.

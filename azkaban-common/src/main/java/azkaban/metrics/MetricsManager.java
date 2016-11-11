@@ -57,9 +57,9 @@ public enum MetricsManager {
     return registry;
   }
 
-  public void startReporting(Props props) {
+  public synchronized void startReporting(Props props) {
     String metricsReporterClassName = props.get(AzkabanConstants.CUSTOM_METRICS_REPORTER_CLASS_NAME);
-    String metricsServerURL = props.get(AzkabanConstants.CUSTOM_METRICS_REPORTER_CLASS_NAME);
+    String metricsServerURL = props.get(AzkabanConstants.METRICS_SERVER_URL);
     if (metricsReporterClassName != null && metricsServerURL != null) {
       try {
         logger.info("metricsReporterClassName: " + metricsReporterClassName);
