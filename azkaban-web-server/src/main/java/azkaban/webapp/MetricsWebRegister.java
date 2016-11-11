@@ -14,57 +14,56 @@
  * the License.
  */
 
-package azkaban.execapp;
+package azkaban.webapp;
 
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Gauge;
 
-import azkaban.execapp.FlowRunnerManager;
+import azkaban.executor.ExecutorManager;
 
-public class MetricsExecRegister {
-
+public class MetricsWebRegister {
+  private ExecutorManager _executorManager;
   private String endpointName;
-  private FlowRunnerManager _flowRunnerManager;
 
-  public MetricsExecRegister(MetricsExecRegisterBuilder builder) {
+  public MetricsWebRegister(MetricsWebRegisterBuilder builder) {
     this.endpointName = builder.endpointName;
-    this._flowRunnerManager = builder._flowRunnerManager;
+    this._executorManager = builder._executorManager;
   }
 
   public void addExecutorManagerMetrics(MetricRegistry metrics) throws Exception {
-    if (_flowRunnerManager == null)
-      throw new Exception("TODO: ");
+    if (_executorManager == null)
+      throw new Exception("Can not find executorManager.");
 
-    metrics.register("EXEC-NumRunningFlows", new Gauge<Integer>() {
+    metrics.register("WEB-NumRunningFlows", new Gauge<Integer>() {
       @Override
       public Integer getValue() {
-        return _flowRunnerManager.getNumRunningFlows();
+        return _executorManager.getRunningFlows().size();
       }
     });
 
-    metrics.register("EXEC-NumQueuedFlows", new Gauge<Integer>() {
+    metrics.register("WEB-NumQueuedFlows", new Gauge<Long>() {
       @Override
-      public Integer getValue() {
-        return _flowRunnerManager.getNumQueuedFlows();
+      public Long getValue() {
+        return _executorManager.getQueuedFlowSize();
       }
     });
   }
 
-  public static class MetricsExecRegisterBuilder {
-    private FlowRunnerManager _flowRunnerManager;
+  public static class MetricsWebRegisterBuilder {
+    private ExecutorManager _executorManager;
     private String endpointName;
 
-    public MetricsExecRegisterBuilder(String endpointName) {
+    public MetricsWebRegisterBuilder(String endpointName) {
       this.endpointName = endpointName;
     }
 
-    public MetricsExecRegisterBuilder addFlowRunnerManager(FlowRunnerManager flowRunnerManager) {
-      this._flowRunnerManager = flowRunnerManager;
+    public MetricsWebRegisterBuilder addExecutorManager(ExecutorManager executorManager) {
+      this._executorManager = executorManager;
       return this;
     }
 
-    public MetricsExecRegister build() {
-      return new MetricsExecRegister(this);
+    public MetricsWebRegister build() {
+      return new MetricsWebRegister(this);
     }
   }
 

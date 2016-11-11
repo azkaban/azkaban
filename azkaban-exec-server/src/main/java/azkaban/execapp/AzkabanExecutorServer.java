@@ -70,8 +70,6 @@ import azkaban.metrics.MetricsManager;
 public class AzkabanExecutorServer {
   private static final String CUSTOM_JMX_ATTRIBUTE_PROCESSOR_PROPERTY =
       "jmx.attribute.processor.class";
-  private static final String CUSTOM_METRICS_REPORTER_CLASS_NAME =
-      "metrics.reporter.name";
   private static final Logger logger = Logger
       .getLogger(AzkabanExecutorServer.class);
   private static final int MAX_FORM_CONTENT_SIZE = 10 * 1024 * 1024;
@@ -175,36 +173,12 @@ public class AzkabanExecutorServer {
 
   private void startMetrics() throws Exception{
     MetricRegistry metrics = MetricsManager.INSTANCE.getRegistry();
-    MetricsExecRegister execWorker = new MetricsExecRegister.MetricsExecRegisterBuilder("a")
+    MetricsExecRegister execWorker = new MetricsExecRegister.MetricsExecRegisterBuilder("EXEC")
         .addFlowRunnerManager(getFlowRunnerManager())
         .build();
     execWorker.addExecutorManagerMetrics(metrics);
 
-    String metricsReporterClassName = props.get(CUSTOM_METRICS_REPORTER_CLASS_NAME);
-    if (metricsReporterClassName != null) {
-      try {
-        logger.info("metricsReporterClassName: " + metricsReporterClassName);
-        Class metricsClass = Class.forName(metricsReporterClassName);
-
-//        Class[] paraClass = new Class[] {metricsClass, String.class};
-
-        Constructor[] constructors =
-             metricsClass.getConstructors();
-        logger.info("constructor = " + constructors[0].toString());
-        constructors[0].newInstance(metrics, "lva1-amf.corp.linkedin.com");
-
-      } catch (Exception e) {
-        logger.error("Encountered error while loading and instantiating "
-            + metricsReporterClassName, e);
-        throw new IllegalStateException(
-            "Encountered error while loading and instantiating "
-                + metricsReporterClassName, e);
-      }
-    } else {
-      logger.info("No value for property: "
-          + CUSTOM_METRICS_REPORTER_CLASS_NAME + " was found");
-    }
-
+    MetricsManager.INSTANCE.startReporting(props);
   }
 
   private void configureJobCallback(Props props) {

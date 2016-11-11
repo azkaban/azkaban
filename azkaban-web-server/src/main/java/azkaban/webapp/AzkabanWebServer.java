@@ -16,6 +16,8 @@
 
 package azkaban.webapp;
 
+import azkaban.metrics.MetricsManager;
+import com.codahale.metrics.MetricRegistry;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -222,7 +224,20 @@ public class AzkabanWebServer extends AzkabanServer {
     }
 
     configureMBeanServer();
+    startMetrics();
   }
+
+  private void startMetrics() throws Exception{
+    MetricRegistry metrics = MetricsManager.INSTANCE.getRegistry();
+    MetricsWebRegister execWorker = new MetricsWebRegister.MetricsWebRegisterBuilder("WEB")
+        .addExecutorManager(getExecutorManager())
+        .build();
+    execWorker.addExecutorManagerMetrics(metrics);
+
+    MetricsManager.INSTANCE.startReporting(props);
+  }
+
+
 
   private void setTriggerPlugins(Map<String, TriggerPlugin> triggerPlugins) {
     this.triggerPlugins = triggerPlugins;
