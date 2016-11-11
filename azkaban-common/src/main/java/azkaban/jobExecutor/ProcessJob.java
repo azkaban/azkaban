@@ -108,11 +108,14 @@ public class ProcessJob extends AbstractProcessJob {
     Map<String, String> envVars = getEnvironmentVariables();
     envVars.put(KRB5CCNAME, getKrb5ccname(jobProps));
 
-    // determine whether to run as Azkaban or run as effectiveUser
+    // determine whether to run as Azkaban or run as effectiveUser,
+    // by default, run as effectiveUser
     String executeAsUserBinaryPath = null;
     String effectiveUser = null;
     boolean isExecuteAsUser = determineExecuteAsUser(sysProps, jobProps);
 
+    // nativeLibFolder specifies the path for execute-as-user file,
+    // which will change user from Azkaban to effectiveUser
     if (isExecuteAsUser) {
       String nativeLibFolder = sysProps.getString(NATIVE_LIB_FOLDER);
       executeAsUserBinaryPath =
@@ -175,7 +178,7 @@ public class ProcessJob extends AbstractProcessJob {
   }
 
   private boolean determineExecuteAsUser(Props sysProps, Props jobProps) {
-    return sysProps.getBoolean(EXECUTE_AS_USER, false);
+    return sysProps.getBoolean(EXECUTE_AS_USER, true);
   }
 
   /**
