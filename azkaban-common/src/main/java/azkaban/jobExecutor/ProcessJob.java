@@ -112,7 +112,7 @@ public class ProcessJob extends AbstractProcessJob {
     // by default, run as effectiveUser
     String executeAsUserBinaryPath = null;
     String effectiveUser = null;
-    boolean isExecuteAsUser = determineExecuteAsUser(sysProps, jobProps);
+    boolean isExecuteAsUser = sysProps.getBoolean(EXECUTE_AS_USER, true);
 
     // nativeLibFolder specifies the path for execute-as-user file,
     // which will change user from Azkaban to effectiveUser
@@ -175,10 +175,6 @@ public class ProcessJob extends AbstractProcessJob {
 
     // Get the output properties from this job.
     generateProperties(propFiles[1]);
-  }
-
-  private boolean determineExecuteAsUser(Props sysProps, Props jobProps) {
-    return sysProps.getBoolean(EXECUTE_AS_USER, true);
   }
 
   /**

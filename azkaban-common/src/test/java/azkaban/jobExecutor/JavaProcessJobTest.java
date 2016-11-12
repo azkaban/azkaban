@@ -114,7 +114,9 @@ public class JavaProcessJobTest {
     props.put(CommonJobProperties.JOB_ID, "test_job");
     props.put(CommonJobProperties.EXEC_ID, "123");
     props.put(CommonJobProperties.SUBMIT_USER, "test_user");
-    props.put("execute.as.user", "false");
+
+    //For local test case to pass, we need to execute the jobs as Azkaban instead of effectiveUser.
+    props.put(ProcessJob.EXECUTE_AS_USER, "false");
 
     job = new JavaProcessJob("testJavaProcess", props, props, log);
   }
