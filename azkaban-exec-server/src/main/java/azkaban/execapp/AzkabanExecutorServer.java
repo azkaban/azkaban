@@ -16,6 +16,7 @@
 
 package azkaban.execapp;
 
+import azkaban.AzkabanConstants;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -167,7 +168,9 @@ public class AzkabanExecutorServer {
 
     logger.info("Azkaban Executor Server started on port " + portNumber);
 
-    startMetrics();
+    if (props.getBoolean(AzkabanConstants.IS_METRICS_ENABLED, false)) {
+      startMetrics();
+    }
   }
 
 

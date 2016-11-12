@@ -21,6 +21,9 @@ import com.codahale.metrics.Gauge;
 
 import azkaban.executor.ExecutorManager;
 
+/**
+ * This class MetricsWebRegister is in charge of collecting metrics from web server.
+ */
 public class MetricsWebRegister {
   private ExecutorManager _executorManager;
   private String endpointName;

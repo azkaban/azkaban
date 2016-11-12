@@ -16,6 +16,7 @@
 
 package azkaban.webapp;
 
+import azkaban.AzkabanConstants;
 import azkaban.metrics.MetricsManager;
 import com.codahale.metrics.MetricRegistry;
 import java.io.File;
@@ -224,7 +225,9 @@ public class AzkabanWebServer extends AzkabanServer {
     }
 
     configureMBeanServer();
-    startMetrics();
+    if (props.getBoolean(AzkabanConstants.IS_METRICS_ENABLED, false)) {
+      startMetrics();
+    }
   }
 
   private void startMetrics() throws Exception{

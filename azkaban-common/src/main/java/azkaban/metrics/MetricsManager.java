@@ -31,7 +31,11 @@ import java.lang.reflect.Constructor;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 
-
+/**
+ * The singleton class, MetricsManager, is the place to have MetricRegistry and
+ * ConsoleReporter in this class. Also, web servers and executors can call {@link #startReporting(Props)}
+ * to start reporting AZ metrics to remote metrics server.
+ */
 public enum MetricsManager {
   INSTANCE;
 
@@ -57,6 +61,11 @@ public enum MetricsManager {
     return registry;
   }
 
+  /**
+   * reporting metrics to remote metrics collector.
+   * Note: this method must be synchronized, since both web server and executor
+   * will call it during initialization.
+   */
   public synchronized void startReporting(Props props) {
     String metricsReporterClassName = props.get(AzkabanConstants.CUSTOM_METRICS_REPORTER_CLASS_NAME);
     String metricsServerURL = props.get(AzkabanConstants.METRICS_SERVER_URL);

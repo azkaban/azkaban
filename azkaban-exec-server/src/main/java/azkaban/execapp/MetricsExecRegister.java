@@ -21,6 +21,9 @@ import com.codahale.metrics.Gauge;
 
 import azkaban.execapp.FlowRunnerManager;
 
+/**
+ * This class MetricsExecRegister is in charge of collecting metrics from executors.
+ */
 public class MetricsExecRegister {
 
   private String endpointName;
