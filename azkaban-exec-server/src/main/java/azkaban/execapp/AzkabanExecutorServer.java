@@ -16,6 +16,7 @@
 
 package azkaban.execapp;
 
+import azkaban.AzkabanConstants;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -40,6 +41,8 @@ import org.mortbay.jetty.servlet.Context;
 import org.mortbay.jetty.servlet.ServletHolder;
 import org.mortbay.thread.QueuedThreadPool;
 
+import com.codahale.metrics.MetricRegistry;
+
 import azkaban.execapp.event.JobCallbackManager;
 import azkaban.execapp.jmx.JmxFlowRunnerManager;
 import azkaban.execapp.jmx.JmxJobMBeanManager;
@@ -62,6 +65,8 @@ import azkaban.server.ServerConstants;
 import azkaban.utils.Props;
 import azkaban.utils.SystemMemoryInfo;
 import azkaban.utils.Utils;
+
+import azkaban.metrics.MetricsManager;
 
 public class AzkabanExecutorServer {
   private static final String CUSTOM_JMX_ATTRIBUTE_PROCESSOR_PROPERTY =
@@ -162,6 +167,21 @@ public class AzkabanExecutorServer {
     }
 
     logger.info("Azkaban Executor Server started on port " + portNumber);
+
+    if (props.getBoolean(AzkabanConstants.IS_METRICS_ENABLED, false)) {
+      startMetrics();
+    }
+  }
+
+
+  private void startMetrics() throws Exception{
+    MetricRegistry metrics = MetricsManager.INSTANCE.getRegistry();
+    MetricsExecRegister execWorker = new MetricsExecRegister.MetricsExecRegisterBuilder("EXEC")
+        .addFlowRunnerManager(getFlowRunnerManager())
+        .build();
+    execWorker.addExecutorManagerMetrics(metrics);
+
+    MetricsManager.INSTANCE.startReporting(props);
   }
 
   private void configureJobCallback(Props props) {
