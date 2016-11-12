@@ -114,7 +114,11 @@ public class JavaProcessJobTest {
     props.put(CommonJobProperties.JOB_ID, "test_job");
     props.put(CommonJobProperties.EXEC_ID, "123");
     props.put(CommonJobProperties.SUBMIT_USER, "test_user");
-    props.put("execute.as.user", "false");
+
+    //The execute-as-user binary requires special permission. It's not convenient to 
+    //set up in a unit test that is self contained. So EXECUTE_AS_USER is set to false 
+    //so that we don't have to rely on the binary file to change user in the test case.
+    props.put(ProcessJob.EXECUTE_AS_USER, "false");
 
     job = new JavaProcessJob("testJavaProcess", props, props, log);
   }
