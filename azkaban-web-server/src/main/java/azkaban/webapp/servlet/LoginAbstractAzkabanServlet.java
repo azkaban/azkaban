@@ -32,6 +32,7 @@ import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import azkaban.utils.WebUtils;
 import org.apache.commons.fileupload.servlet.ServletFileUpload;
 import org.apache.commons.io.IOUtils;
 import org.apache.log4j.Logger;
@@ -138,7 +139,7 @@ public abstract class LoginAbstractAzkabanServlet extends
    */
   private void logRequest(HttpServletRequest req, Session session) {
     StringBuilder buf = new StringBuilder();
-    buf.append(req.getRemoteAddr()).append(" ");
+    buf.append(getRealClientIpAddr(req)).append(" ");
     if (session != null && session.getUser() != null) {
       buf.append(session.getUser().getUserId()).append(" ");
     } else {
@@ -166,7 +167,7 @@ public abstract class LoginAbstractAzkabanServlet extends
         buf.append("not-browser");
       }
     }
-
+    
     logger.info(buf.toString());
   }
 
@@ -210,9 +211,25 @@ public abstract class LoginAbstractAzkabanServlet extends
     return false;
   }
 
+  private String getRealClientIpAddr(HttpServletRequest req){
+
+    // If some upstream device added an X-Forwarded-For header
+    // use it for the client ip
+    // This will support scenarios where load balancers or gateways
+    // front the Azkaban web server and a changing Ip address invalidates
+    // the session
+    HashMap<String, String> headers = new HashMap<>();
+    headers.put(WebUtils.X_FORWARDED_FOR_HEADER,
+            req.getHeader(WebUtils.X_FORWARDED_FOR_HEADER.toLowerCase()));
+
+    WebUtils utils = new WebUtils();
+
+    return utils.getRealClientIpAddr(headers, req.getRemoteAddr());
+  }
+
   private Session getSessionFromRequest(HttpServletRequest req)
       throws ServletException {
-    String remoteIp = req.getRemoteAddr();
+    String remoteIp = getRealClientIpAddr(req);
     Cookie cookie = getCookieByName(req, SESSION_ID_NAME);
     String sessionId = null;
 
@@ -269,7 +286,7 @@ public abstract class LoginAbstractAzkabanServlet extends
         // See if the session id is properly set.
         if (params.containsKey("session.id")) {
           String sessionId = (String) params.get("session.id");
-          String ip = req.getRemoteAddr();
+          String ip = getRealClientIpAddr(req);
 
           session = getSessionFromSessionId(sessionId, ip);
           if (session != null) {
@@ -286,7 +303,7 @@ public abstract class LoginAbstractAzkabanServlet extends
 
         String username = (String) params.get("username");
         String password = (String) params.get("password");
-        String ip = req.getRemoteAddr();
+        String ip = getRealClientIpAddr(req);
 
         try {
           session = createSession(username, password, ip);
@@ -333,7 +350,7 @@ public abstract class LoginAbstractAzkabanServlet extends
       throws UserManagerException, ServletException {
     String username = getParam(req, "username");
     String password = getParam(req, "password");
-    String ip = req.getRemoteAddr();
+    String ip = getRealClientIpAddr(req);
 
     return createSession(username, password, ip);
   }

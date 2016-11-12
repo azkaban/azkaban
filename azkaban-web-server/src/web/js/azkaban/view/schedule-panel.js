@@ -89,6 +89,13 @@ $(function() {
     el: $('#schedule-modal')
   });
 
+  $(document).keyup(function(e) {
+    // escape key maps to keycode `27`
+    if (e.keyCode == 27) {
+      schedulePanelView.hideSchedulePanel();
+    }
+  });
+  
   // To compute the current timezone's time offset against UTC.
   // Currently not useful.
   // var TimeZoneOffset = new Date().toString().match(/([-\+][0-9]+)\s/)[1];
