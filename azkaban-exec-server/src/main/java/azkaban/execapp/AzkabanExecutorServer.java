@@ -26,8 +26,10 @@ import org.mortbay.jetty.servlet.Context;
 import org.mortbay.jetty.servlet.ServletHolder;
 import org.mortbay.thread.QueuedThreadPool;
 
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -62,11 +64,12 @@ import azkaban.metric.inmemoryemitter.InMemoryMetricEmitter;
 import azkaban.project.JdbcProjectLoader;
 import azkaban.project.ProjectLoader;
 import azkaban.server.AzkabanServer;
-import azkaban.server.ServerConstants;
+import azkaban.server.Constants;
 import azkaban.utils.Props;
 import azkaban.utils.SystemMemoryInfo;
 import azkaban.utils.Utils;
 
+import static azkaban.server.Constants.AZKABAN_EXECUTOR_PORT_FILE;
 import static com.google.common.base.Preconditions.checkState;
 import static java.util.Objects.requireNonNull;
 
@@ -77,10 +80,6 @@ public class AzkabanExecutorServer {
       .getLogger(AzkabanExecutorServer.class);
   private static final int MAX_FORM_CONTENT_SIZE = 10 * 1024 * 1024;
 
-  public static final String DEFAULT_CONF_PATH = "conf";
-  public static final String AZKABAN_PROPERTIES_FILE = "azkaban.properties";
-  public static final String AZKABAN_PRIVATE_PROPERTIES_FILE =
-      "azkaban.private.properties";
   public static final String JOBTYPE_PLUGIN_DIR = "azkaban.jobtype.plugin.dir";
   public static final String METRIC_INTERVAL =
       "executor.metric.milisecinterval.";
@@ -107,7 +106,7 @@ public class AzkabanExecutorServer {
    */
   public AzkabanExecutorServer(Props props) throws Exception {
     this.props = props;
-    server = setupJettyServer(props);
+    server = createJettyServer(props);
 
     executionLoader = new JdbcExecutorLoader(props);
     projectLoader = new JdbcProjectLoader(props);
@@ -128,23 +127,24 @@ public class AzkabanExecutorServer {
     try {
       server.start();
     } catch (Exception e) {
-      logger.warn(e);
+      logger.error(e);
       Utils.croak(e.getMessage(), 1);
     }
 
     insertExecutorEntryIntoDB();
+    dumpPortToFile();
+    logger.info("Started Executor Server on " + getExecutorHostPort());
   }
 
-  private Server setupJettyServer(Props props) {
-  /*
-   * Default to a port number 0 (zero)
-   * The Jetty server automatically finds an unused port when the port number is set to zero
-   */
-    int portNumber = props.getInt("executor.port", 0);
+  private Server createJettyServer(Props props) {
     int maxThreads = props.getInt("executor.maxThreads", DEFAULT_THREAD_NUMBER);
 
-    // TODO: This is using a highly outdated version of jetty [year 2010]. needs to be updated.
-    Server server = new Server(portNumber);
+    /*
+     * Default to a port number 0 (zero)
+     * The Jetty server automatically finds an unused port when the port number is set to zero
+     * TODO: This is using a highly outdated version of jetty [year 2010]. needs to be updated.
+     */
+    Server server = new Server(props.getInt("executor.port", 0));
     QueuedThreadPool httpThreadPool = new QueuedThreadPool(maxThreads);
     server.setThreadPool(httpThreadPool);
 
@@ -171,9 +171,7 @@ public class AzkabanExecutorServer {
     root.addServlet(new ServletHolder(new StatsServlet()), "/stats");
     root.addServlet(new ServletHolder(new ServerStatisticsServlet()), "/serverStatistics");
 
-    root.setAttribute(ServerConstants.AZKABAN_SERVLET_CONTEXT_KEY, this);
-    logger.info("Azkaban Executor Server started on port " + portNumber);
-
+    root.setAttribute(Constants.AZKABAN_SERVLET_CONTEXT_KEY, this);
     return server;
   }
 
@@ -190,6 +188,17 @@ public class AzkabanExecutorServer {
     } catch (ExecutorManagerException e) {
       logger.error("Error inserting executor entry into DB", e);
       Throwables.propagate(e);
+    }
+  }
+
+  private void dumpPortToFile() {
+    // By default this should write to the working directory
+    String filename = props.getString(AZKABAN_EXECUTOR_PORT_FILE, "executor.port");
+    try (BufferedWriter writer = new BufferedWriter(new FileWriter(filename))) {
+      writer.write(String.valueOf(getPort()));
+      writer.write("\n");
+    } catch (IOException e) {
+      logger.error(e);
     }
   }
 
@@ -409,7 +418,7 @@ public class AzkabanExecutorServer {
       return null;
     }
 
-    File confPath = new File(azkabanHome, DEFAULT_CONF_PATH);
+    File confPath = new File(azkabanHome, Constants.DEFAULT_CONF_PATH);
     if (!confPath.exists() || !confPath.isDirectory() || !confPath.canRead()) {
       logger
           .error(azkabanHome + " does not contain a readable conf directory.");
@@ -430,8 +439,8 @@ public class AzkabanExecutorServer {
    */
   private static Props loadAzkabanConfigurationFromDirectory(File dir) {
     File azkabanPrivatePropsFile =
-        new File(dir, AZKABAN_PRIVATE_PROPERTIES_FILE);
-    File azkabanPropsFile = new File(dir, AZKABAN_PROPERTIES_FILE);
+        new File(dir, Constants.AZKABAN_PRIVATE_PROPERTIES_FILE);
+    File azkabanPropsFile = new File(dir, Constants.AZKABAN_PROPERTIES_FILE);
 
     Props props = null;
     try {
