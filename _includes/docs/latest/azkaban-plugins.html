@@ -3,11 +3,11 @@
 
 <h3>Execute-As-User</h3>
 
-<p>With a new security enhancement in Azkaban 3.0, Azkaban jobs can now run as the submit user or the user.to.proxy of the flow.  This ensures that Azkaban takes advantage of the Linux permission security mechanism, and operationally this simplifies resource monitoring and visibility.  Set up this behavior by doing the following:-</p>
+<p>With a new security enhancement in Azkaban 3.0, Azkaban jobs can now run as the submit user or the user.to.proxy of the flow by default.  This ensures that Azkaban takes advantage of the Linux permission security mechanism, and operationally this simplifies resource monitoring and visibility.  Set up this behavior by doing the following:-</p>
 
 <ol>
-	<li>add execute.as.user=true to azkaban-plugin’s commonprivate.properties (should be there by default)</li>
-	<li>configure azkaban.native.lib= to the place where you are going to put the compiled execute-as-user.c file (see below)</li>
+	<li>Execute.as.user is set to true by default. In case needed, it can also be configured to false in azkaban-plugin’s commonprivate.properties</li>
+	<li>Configure azkaban.native.lib= to the place where you are going to put the compiled execute-as-user.c file (see below)</li>
 	<li>Generate an executable on the Azkaban box for azkaban-common/src/main/c/execute-as-user.c. <b> it should be named execute-as-user </b> Below is a sample approach</li>
 		<ul> 
 			<li><code>scp ./azkaban-common/src/main/c/execute-as-user.c</code> onto the Azkaban box</li>
