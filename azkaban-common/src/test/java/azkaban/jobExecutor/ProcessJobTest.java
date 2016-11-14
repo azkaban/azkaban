@@ -37,6 +37,7 @@ public class ProcessJobTest {
   private ProcessJob job = null;
   private Props props = null;
   private Logger log = Logger.getLogger(ProcessJob.class);
+  private AllJobExecutorTests jobExecutorTests = null;
 
   @Before
   public void setUp() throws IOException {
@@ -46,17 +47,8 @@ public class ProcessJobTest {
     props.put(AbstractProcessJob.WORKING_DIR, workingDir.getCanonicalPath());
     props.put("type", "command");
     props.put("fullPath", ".");
-
-    props.put(CommonJobProperties.PROJECT_NAME, "test_project");
-    props.put(CommonJobProperties.FLOW_ID, "test_flow");
-    props.put(CommonJobProperties.JOB_ID, "test_job");
-    props.put(CommonJobProperties.EXEC_ID, "123");
-    props.put(CommonJobProperties.SUBMIT_USER, "test_user");
-
-    //The execute-as-user binary requires special permission. It's not convenient to 
-    //set up in a unit test that is self contained. So EXECUTE_AS_USER is set to false 
-    //so that we don't have to rely on the binary file to change user in the test case.
-    props.put(ProcessJob.EXECUTE_AS_USER, "false");
+    jobExecutorTests = new AllJobExecutorTests();
+    jobExecutorTests.setUpCommonProps(props);
 
     job = new ProcessJob("TestProcess", props, props, log);
   }
