@@ -69,7 +69,7 @@ import azkaban.utils.Props;
 import azkaban.utils.SystemMemoryInfo;
 import azkaban.utils.Utils;
 
-import static azkaban.server.Constants.AZKABAN_EXECUTOR_PORT_FILE;
+import static azkaban.server.Constants.AZKABAN_EXECUTOR_PORT_FILENAME;
 import static com.google.common.base.Preconditions.checkState;
 import static java.util.Objects.requireNonNull;
 
@@ -193,12 +193,12 @@ public class AzkabanExecutorServer {
 
   private void dumpPortToFile() {
     // By default this should write to the working directory
-    String filename = props.getString(AZKABAN_EXECUTOR_PORT_FILE, "executor.port");
-    try (BufferedWriter writer = new BufferedWriter(new FileWriter(filename))) {
+    try (BufferedWriter writer = new BufferedWriter(new FileWriter(AZKABAN_EXECUTOR_PORT_FILENAME))) {
       writer.write(String.valueOf(getPort()));
       writer.write("\n");
     } catch (IOException e) {
       logger.error(e);
+      Throwables.propagate(e);
     }
   }
 
