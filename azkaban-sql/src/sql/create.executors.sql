@@ -2,7 +2,7 @@ CREATE TABLE executors (
   id INT NOT NULL PRIMARY KEY AUTO_INCREMENT,
   host VARCHAR(64) NOT NULL,
   port INT NOT NULL,
-  active BOOLEAN DEFAULT true,
+  active BOOLEAN DEFAULT false,
   UNIQUE (host, port),
   UNIQUE INDEX executor_id (id)
 );

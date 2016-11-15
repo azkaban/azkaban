@@ -34,7 +34,7 @@ import org.apache.log4j.Logger;
 
 import azkaban.executor.ConnectorParams;
 import azkaban.server.HttpRequestUtils;
-import azkaban.server.ServerConstants;
+import azkaban.server.Constants;
 import azkaban.utils.JSONUtils;
 
 public class JMXHttpServlet extends HttpServlet implements ConnectorParams {
@@ -45,7 +45,7 @@ public class JMXHttpServlet extends HttpServlet implements ConnectorParams {
   public void init(ServletConfig config) throws ServletException {
     server =
         (AzkabanExecutorServer) config.getServletContext().getAttribute(
-            ServerConstants.AZKABAN_SERVLET_CONTEXT_KEY);
+            Constants.AZKABAN_SERVLET_CONTEXT_KEY);
   }
 
   public boolean hasParam(HttpServletRequest request, String param) {
