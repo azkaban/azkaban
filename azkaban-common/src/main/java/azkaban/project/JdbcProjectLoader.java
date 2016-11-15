@@ -402,9 +402,10 @@ public class JdbcProjectLoader extends AbstractJdbcLoader implements
           logger.info("Running update for " + filename + " chunk " + chunk);
           runner.update(connection, INSERT_PROJECT_FILES, project.getId(),
               version, chunk, size, buf);
+          connection.commit();
           logger.info("Finished update for " + filename + " chunk " + chunk);
         } catch (SQLException e) {
-          throw new ProjectManagerException("Error chunking", e);
+          throw new ProjectManagerException("Error Chunking during uploading files to db...");
         }
         ++chunk;
 
