@@ -104,17 +104,9 @@ public class JavaProcessJobTest {
     File workingDir = temp.newFolder("testJavaProcess");
 
     // Initialize job
-    props = new Props();
+    props = AllJobExecutorTests.setUpCommonProps();
     props.put(AbstractProcessJob.WORKING_DIR, workingDir.getCanonicalPath());
     props.put("type", "java");
-    props.put("fullPath", ".");
-
-    props.put(CommonJobProperties.PROJECT_NAME, "test_project");
-    props.put(CommonJobProperties.FLOW_ID, "test_flow");
-    props.put(CommonJobProperties.JOB_ID, "test_job");
-    props.put(CommonJobProperties.EXEC_ID, "123");
-    props.put(CommonJobProperties.SUBMIT_USER, "test_user");
-    props.put("execute.as.user", "false");
 
     job = new JavaProcessJob("testJavaProcess", props, props, log);
   }
