@@ -26,25 +26,25 @@ import azkaban.utils.Pair;
 import azkaban.utils.Props;
 
 public interface ExecutorLoader {
-  public void uploadExecutableFlow(ExecutableFlow flow)
+  void uploadExecutableFlow(ExecutableFlow flow)
       throws ExecutorManagerException;
 
-  public ExecutableFlow fetchExecutableFlow(int execId)
+  ExecutableFlow fetchExecutableFlow(int execId)
       throws ExecutorManagerException;
 
-  public Map<Integer, Pair<ExecutionReference, ExecutableFlow>> fetchActiveFlows()
+  Map<Integer, Pair<ExecutionReference, ExecutableFlow>> fetchActiveFlows()
       throws ExecutorManagerException;
 
-  public List<ExecutableFlow> fetchFlowHistory(int skip, int num)
+  List<ExecutableFlow> fetchFlowHistory(int skip, int num)
       throws ExecutorManagerException;
 
-  public List<ExecutableFlow> fetchFlowHistory(int projectId, String flowId,
+  List<ExecutableFlow> fetchFlowHistory(int projectId, String flowId,
       int skip, int num) throws ExecutorManagerException;
 
-  public List<ExecutableFlow> fetchFlowHistory(int projectId, String flowId,
+  List<ExecutableFlow> fetchFlowHistory(int projectId, String flowId,
       int skip, int num, Status status) throws ExecutorManagerException;
 
-  public List<ExecutableFlow> fetchFlowHistory(String projContain,
+  List<ExecutableFlow> fetchFlowHistory(String projContain,
       String flowContains, String userNameContains, int status, long startData,
       long endData, int skip, int num) throws ExecutorManagerException;
 
@@ -59,7 +59,7 @@ public interface ExecutorLoader {
    * @return List<Executor>
    * @throws ExecutorManagerException
    */
-  public List<Executor> fetchAllExecutors() throws ExecutorManagerException;
+  List<Executor> fetchAllExecutors() throws ExecutorManagerException;
 
   /**
    * <pre>
@@ -72,7 +72,7 @@ public interface ExecutorLoader {
    * @return List<Executor>
    * @throws ExecutorManagerException
    */
-  public List<Executor> fetchActiveExecutors() throws ExecutorManagerException;
+  List<Executor> fetchActiveExecutors() throws ExecutorManagerException;
 
   /**
    * <pre>
@@ -86,7 +86,7 @@ public interface ExecutorLoader {
    * @return Executor
    * @throws ExecutorManagerException
    */
-  public Executor fetchExecutor(String host, int port)
+  Executor fetchExecutor(String host, int port)
     throws ExecutorManagerException;
 
   /**
@@ -100,7 +100,7 @@ public interface ExecutorLoader {
    * @return Executor
    * @throws ExecutorManagerException
    */
-  public Executor fetchExecutor(int executorId) throws ExecutorManagerException;
+  Executor fetchExecutor(int executorId) throws ExecutorManagerException;
 
   /**
    * <pre>
@@ -114,7 +114,7 @@ public interface ExecutorLoader {
    * @return Executor
    * @throws ExecutorManagerException
    */
-  public Executor addExecutor(String host, int port)
+  Executor addExecutor(String host, int port)
     throws ExecutorManagerException;
 
   /**
@@ -129,7 +129,7 @@ public interface ExecutorLoader {
    * @param executorId
    * @throws ExecutorManagerException
    */
-  public void updateExecutor(Executor executor) throws ExecutorManagerException;
+  void updateExecutor(Executor executor) throws ExecutorManagerException;
 
   /**
    * <pre>
@@ -144,7 +144,7 @@ public interface ExecutorLoader {
    * @param message
    * @return isSuccess
    */
-  public void postExecutorEvent(Executor executor, EventType type, String user,
+  void postExecutorEvent(Executor executor, EventType type, String user,
     String message) throws ExecutorManagerException;
 
   /**
@@ -165,10 +165,10 @@ public interface ExecutorLoader {
   List<ExecutorLogEvent> getExecutorEvents(Executor executor, int num,
     int offset) throws ExecutorManagerException;
 
-  public void addActiveExecutableReference(ExecutionReference ref)
+  void addActiveExecutableReference(ExecutionReference ref)
       throws ExecutorManagerException;
 
-  public void removeActiveExecutableReference(int execId)
+  void removeActiveExecutableReference(int execId)
       throws ExecutorManagerException;
 
 
@@ -183,7 +183,7 @@ public interface ExecutorLoader {
    * @param execId
    * @throws ExecutorManagerException
    */
-  public void unassignExecutor(int executionId) throws ExecutorManagerException;
+  void unassignExecutor(int executionId) throws ExecutorManagerException;
 
   /**
    * <pre>
@@ -197,7 +197,7 @@ public interface ExecutorLoader {
    * @param execId
    * @throws ExecutorManagerException
    */
-  public void assignExecutor(int executorId, int execId)
+  void assignExecutor(int executorId, int execId)
     throws ExecutorManagerException;
 
   /**
@@ -212,7 +212,7 @@ public interface ExecutorLoader {
    * @return fetched Executor
    * @throws ExecutorManagerException
    */
-  public Executor fetchExecutorByExecutionId(int executionId)
+  Executor fetchExecutorByExecutionId(int executionId)
     throws ExecutorManagerException;
 
   /**
@@ -226,59 +226,59 @@ public interface ExecutorLoader {
    * @return List of queued flows and corresponding execution reference
    * @throws ExecutorManagerException
    */
-  public List<Pair<ExecutionReference, ExecutableFlow>> fetchQueuedFlows()
+  List<Pair<ExecutionReference, ExecutableFlow>> fetchQueuedFlows()
     throws ExecutorManagerException;
 
-  public boolean updateExecutableReference(int execId, long updateTime)
+  boolean updateExecutableReference(int execId, long updateTime)
       throws ExecutorManagerException;
 
-  public LogData fetchLogs(int execId, String name, int attempt, int startByte,
+  LogData fetchLogs(int execId, String name, int attempt, int startByte,
       int endByte) throws ExecutorManagerException;
 
-  public List<Object> fetchAttachments(int execId, String name, int attempt)
+  List<Object> fetchAttachments(int execId, String name, int attempt)
       throws ExecutorManagerException;
 
-  public void uploadLogFile(int execId, String name, int attempt, File... files)
+  void uploadLogFile(int execId, String name, int attempt, File... files)
       throws ExecutorManagerException;
 
-  public void uploadAttachmentFile(ExecutableNode node, File file)
+  void uploadAttachmentFile(ExecutableNode node, File file)
       throws ExecutorManagerException;
 
-  public void updateExecutableFlow(ExecutableFlow flow)
+  void updateExecutableFlow(ExecutableFlow flow)
       throws ExecutorManagerException;
 
-  public void uploadExecutableNode(ExecutableNode node, Props inputParams)
+  void uploadExecutableNode(ExecutableNode node, Props inputParams)
       throws ExecutorManagerException;
 
-  public List<ExecutableJobInfo> fetchJobInfoAttempts(int execId, String jobId)
+  List<ExecutableJobInfo> fetchJobInfoAttempts(int execId, String jobId)
       throws ExecutorManagerException;
 
-  public ExecutableJobInfo fetchJobInfo(int execId, String jobId, int attempt)
+  ExecutableJobInfo fetchJobInfo(int execId, String jobId, int attempt)
       throws ExecutorManagerException;
 
-  public List<ExecutableJobInfo> fetchJobHistory(int projectId, String jobId,
+  List<ExecutableJobInfo> fetchJobHistory(int projectId, String jobId,
       int skip, int size) throws ExecutorManagerException;
 
-  public void updateExecutableNode(ExecutableNode node)
+  void updateExecutableNode(ExecutableNode node)
       throws ExecutorManagerException;
 
-  public int fetchNumExecutableFlows(int projectId, String flowId)
+  int fetchNumExecutableFlows(int projectId, String flowId)
       throws ExecutorManagerException;
 
-  public int fetchNumExecutableFlows() throws ExecutorManagerException;
+  int fetchNumExecutableFlows() throws ExecutorManagerException;
 
-  public int fetchNumExecutableNodes(int projectId, String jobId)
+  int fetchNumExecutableNodes(int projectId, String jobId)
       throws ExecutorManagerException;
 
-  public Props fetchExecutionJobInputProps(int execId, String jobId)
+  Props fetchExecutionJobInputProps(int execId, String jobId)
       throws ExecutorManagerException;
 
-  public Props fetchExecutionJobOutputProps(int execId, String jobId)
+  Props fetchExecutionJobOutputProps(int execId, String jobId)
       throws ExecutorManagerException;
 
-  public Pair<Props, Props> fetchExecutionJobProps(int execId, String jobId)
+  Pair<Props, Props> fetchExecutionJobProps(int execId, String jobId)
       throws ExecutorManagerException;
 
-  public int removeExecutionLogsByTime(long millis)
+  int removeExecutionLogsByTime(long millis)
       throws ExecutorManagerException;
 }
