@@ -34,10 +34,6 @@ import azkaban.server.session.SessionCache;
 
 public abstract class AzkabanServer {
   private static final Logger logger = Logger.getLogger(AzkabanServer.class);
-  public static final String AZKABAN_PROPERTIES_FILE = "azkaban.properties";
-  public static final String AZKABAN_PRIVATE_PROPERTIES_FILE =
-      "azkaban.private.properties";
-  public static final String DEFAULT_CONF_PATH = "conf";
   private static Props azkabanProperties = null;
 
   public static Props loadProps(String[] args) {
@@ -83,8 +79,8 @@ public abstract class AzkabanServer {
 
   private static Props loadAzkabanConfigurationFromDirectory(File dir) {
     File azkabanPrivatePropsFile =
-        new File(dir, AZKABAN_PRIVATE_PROPERTIES_FILE);
-    File azkabanPropsFile = new File(dir, AZKABAN_PROPERTIES_FILE);
+        new File(dir, Constants.AZKABAN_PRIVATE_PROPERTIES_FILE);
+    File azkabanPropsFile = new File(dir, Constants.AZKABAN_PROPERTIES_FILE);
 
     Props props = null;
     try {
@@ -128,7 +124,7 @@ public abstract class AzkabanServer {
       return null;
     }
 
-    File confPath = new File(azkabanHome, DEFAULT_CONF_PATH);
+    File confPath = new File(azkabanHome, Constants.DEFAULT_CONF_PATH);
     if (!confPath.exists() || !confPath.isDirectory() || !confPath.canRead()) {
       logger
           .error(azkabanHome + " does not contain a readable conf directory.");
