@@ -402,6 +402,8 @@ public class JdbcProjectLoader extends AbstractJdbcLoader implements
           logger.info("Running update for " + filename + " chunk " + chunk);
           runner.update(connection, INSERT_PROJECT_FILES, project.getId(),
               version, chunk, size, buf);
+
+          // We enforce az committing to db when uploading every a single chunk.
           connection.commit();
           logger.info("Finished update for " + filename + " chunk " + chunk);
         } catch (SQLException e) {
