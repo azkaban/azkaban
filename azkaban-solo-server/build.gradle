@@ -4,6 +4,8 @@ dependencies {
   compile(project(':azkaban-common'))
   compile(project(':azkaban-web-server'))
   compile(project(':azkaban-exec-server'))
+
+  runtime('com.h2database:h2:1.4.193')
 }
 
 installDist.dependsOn ':azkaban-web-server:installDist'
