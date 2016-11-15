@@ -16,6 +16,8 @@
 
 package azkaban.execapp;
 
+import com.google.common.base.Preconditions;
+
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.ArrayList;
@@ -35,8 +37,10 @@ import org.codehaus.jackson.map.ObjectMapper;
 
 import azkaban.executor.ConnectorParams;
 import azkaban.executor.ExecutableFlowBase;
+import azkaban.executor.Executor;
+import azkaban.executor.ExecutorLoader;
 import azkaban.executor.ExecutorManagerException;
-import azkaban.server.ServerConstants;
+import azkaban.server.Constants;
 import azkaban.utils.FileIOUtils.JobMetaData;
 import azkaban.utils.FileIOUtils.LogData;
 import azkaban.utils.JSONUtils;
@@ -58,7 +62,7 @@ public class ExecutorServlet extends HttpServlet implements ConnectorParams {
   public void init(ServletConfig config) throws ServletException {
     application =
         (AzkabanExecutorServer) config.getServletContext().getAttribute(
-            ServerConstants.AZKABAN_SERVLET_CONTEXT_KEY);
+            Constants.AZKABAN_SERVLET_CONTEXT_KEY);
 
     if (application == null) {
       throw new IllegalStateException(
@@ -95,6 +99,12 @@ public class ExecutorServlet extends HttpServlet implements ConnectorParams {
         } else if (action.equals(RELOAD_JOBTYPE_PLUGINS_ACTION)) {
           logger.info("Reloading Jobtype plugins");
           handleReloadJobTypePlugins(respMap);
+        } else if (action.equals(ACTIVATE)) {
+          logger.warn("Setting ACTIVE flag to true");
+          setActive(true, respMap);
+        } else if (action.equals(DEACTIVATE)) {
+          logger.warn("Setting ACTIVE flag to false");
+          setActive(false, respMap);
         } else {
           int execid = Integer.parseInt(getParam(req, EXECID_PARAM));
           String user = getParam(req, USER_PARAM, null);
@@ -331,6 +341,25 @@ public class ExecutorServlet extends HttpServlet implements ConnectorParams {
       throws ServletException {
     try {
       flowRunnerManager.reloadJobTypePlugins();
+      respMap.put(STATUS_PARAM, RESPONSE_SUCCESS);
+    } catch (Exception e) {
+      logger.error(e);
+      respMap.put(RESPONSE_ERROR, e.getMessage());
+    }
+  }
+
+  private void setActive(boolean value, Map<String, Object> respMap)
+      throws ServletException {
+    try {
+      ExecutorLoader executorLoader = application.getExecutorLoader();
+      Executor executor = executorLoader.fetchExecutor(application.getHost(), application.getPort());
+      Preconditions.checkState(executor != null, "Unable to obtain self entry in DB");
+      if (executor.isActive() != value) {
+        executor.setActive(value);
+        executorLoader.updateExecutor(executor);
+      } else {
+        logger.warn("Set active action ignored. Executor is already " + (value? "active" : "inactive"));
+      }
       respMap.put(STATUS_PARAM, RESPONSE_SUCCESS);
     } catch (Exception e) {
       logger.error(e);
