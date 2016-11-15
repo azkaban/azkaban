@@ -37,18 +37,15 @@ public class ProcessJobTest {
   private ProcessJob job = null;
   private Props props = null;
   private Logger log = Logger.getLogger(ProcessJob.class);
-  private AllJobExecutorTests jobExecutorTests = null;
 
   @Before
   public void setUp() throws IOException {
     File workingDir = temp.newFolder("TestProcess");
 
-    props = new Props();
+    // Initialize job
+    props = AllJobExecutorTests.setUpCommonProps();
     props.put(AbstractProcessJob.WORKING_DIR, workingDir.getCanonicalPath());
     props.put("type", "command");
-    props.put("fullPath", ".");
-    jobExecutorTests = new AllJobExecutorTests();
-    jobExecutorTests.setUpCommonProps(props);
 
     job = new ProcessJob("TestProcess", props, props, log);
   }

@@ -45,7 +45,6 @@ public class JavaProcessJobTest {
   private JavaProcessJob job = null;
   private Props props = null;
   private Logger log = Logger.getLogger(JavaProcessJob.class);
-  private AllJobExecutorTests jobExecutorTests = null;
 
   private static String classPaths;
 
@@ -105,12 +104,9 @@ public class JavaProcessJobTest {
     File workingDir = temp.newFolder("testJavaProcess");
 
     // Initialize job
-    props = new Props();
+    props = AllJobExecutorTests.setUpCommonProps();
     props.put(AbstractProcessJob.WORKING_DIR, workingDir.getCanonicalPath());
     props.put("type", "java");
-    props.put("fullPath", ".");
-    jobExecutorTests = new AllJobExecutorTests();
-    jobExecutorTests.setUpCommonProps(props);
 
     job = new JavaProcessJob("testJavaProcess", props, props, log);
   }
