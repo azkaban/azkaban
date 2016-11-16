@@ -386,8 +386,8 @@ public class JdbcProjectLoader extends AbstractJdbcLoader implements
     /**
      * Insert a version row to table project_versions.
      * If something goes wrong during uploading project files to DB, the latest version number
-     * in project_versions refer to the destructive project_file. However, az always make the number+1
-     * when uploading files next time.
+     * in project_versions refers to the destructive project_file. Since AZ always let the number+1
+     * to be the new version, we are safe.
      */
     final String INSERT_PROJECT_VERSION =
         "INSERT INTO project_versions (project_id, version, upload_time, uploader, file_type, file_name, md5, num_chunks) values (?,?,?,?,?,?,?,?)";
