@@ -384,10 +384,21 @@ public class JdbcProjectLoader extends AbstractJdbcLoader implements
     logger.info("Md5 hash created");
 
     /**
-     * Insert a version row to table project_versions.
-     * If something goes wrong during uploading project files to DB, the latest version number
-     * in project_versions refers to the destructive project_file. Since AZ always let the number+1
-     * to be the new version, we are safe.
+     * Insert a new version record to TABLE project_versions before uploading files.
+     *
+     * The reason for this operation:
+     * When error chunking happens in remote mysql server, incomplete file data is remained
+     * in DB, and an SQL exception is thrown. If we don't have this operation before uploading file,
+     * the SQL exception prevents AZ from creating the new version record in Table project_versions.
+     * However, the Table project_files still reserve the incomplete files, which causes version inconsistency.
+     *
+     * Why this operation is safe:
+     * When AZ uploads a new zip file, it always fetches the latest version proj_v from TABLE project_version,
+     * proj_v+1 will be used as the new version for the uploading files.
+     *
+     * Assume error chunking happens on day 1. proj_v is created for this bad file (old file version + 1).
+     * When we upload a new project zip in day2, new file in day 2 will use the new version (proj_v + 1).
+     * When file uploading completes, AZ will clean all old chunks in DB afterward.
      */
     final String INSERT_PROJECT_VERSION =
         "INSERT INTO project_versions (project_id, version, upload_time, uploader, file_type, file_name, md5, num_chunks) values (?,?,?,?,?,?,?,?)";
@@ -422,7 +433,13 @@ public class JdbcProjectLoader extends AbstractJdbcLoader implements
           runner.update(connection, INSERT_PROJECT_FILES, project.getId(),
               version, chunk, size, buf);
 
-          // We enforce az committing to db when uploading every a single chunk.
+          /**
+           * We enforce az committing to db when uploading every single chunk,
+           * in order to reduce the transaction duration and conserve sql server resources.
+           *
+           * If the files to be uploaded is very large and we don't commit every single chunk,
+           * the remote mysql server will have troubles, e.g. memory starvation.
+           */
           connection.commit();
           logger.info("Finished update for " + filename + " chunk " + chunk);
         } catch (SQLException e) {
@@ -439,8 +456,10 @@ public class JdbcProjectLoader extends AbstractJdbcLoader implements
     }
 
     /**
-     * Since we initialized num_chunks to 0 before uploading files, we set it
-     * to right number here.
+     * Since num_chunks is initialized to 0 before uploading files, we update its
+     * actual number to db here.
+     *
+     * NOTE: When Error chunking happens, the following sql statements will be skipped.
      */
     final String UPDATE_PROJECT_NUM_CHUNKS =
         "UPDATE project_versions SET num_chunks=? WHERE project_id=? AND version=?";
@@ -450,7 +469,7 @@ public class JdbcProjectLoader extends AbstractJdbcLoader implements
       connection.commit();
     } catch (SQLException e) {
       throw new ProjectManagerException(
-          "Error updating project file chunk_num " + project.getId() + ":"
+          "Error updating project " + project.getId() + " : chunk_num "
               + chunk, e);
     }
   }
