@@ -464,8 +464,6 @@ public class JdbcProjectLoader extends AbstractJdbcLoader implements
 
     /**
      * we update num_chunks's actual number to db here.
-     *
-     * NOTE: When Error chunking happens, the following sql statements will be skipped.
      */
     final String UPDATE_PROJECT_NUM_CHUNKS =
         "UPDATE project_versions SET num_chunks=? WHERE project_id=? AND version=?";
