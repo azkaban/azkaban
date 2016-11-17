@@ -210,7 +210,11 @@ public class Project {
   }
 
   public Permission getUserPermission(User user) {
-    return userPermissionMap.get(user.getUserId());
+      try {
+	  return userPermissionMap.get(user.getUserId());
+      } catch (NullPointerException e) {
+	  return null;
+      }
   }
 
   public Permission getGroupPermission(String group) {
