@@ -11,7 +11,7 @@ buildscript {
   }
 }
 
-// This node plugin enables users to run any NodeJS script.  The plugin will download and 
+// This node plugin enables users to run any NodeJS script.  The plugin will download and
 // manage NodeJS distributions, use them from there.
 // ***npm install*** installs all dependencies in package.json. It will only run when changes are made to package.json
 plugins {
@@ -155,9 +155,6 @@ distributions {
       from('src/main/bash') {
         into 'bin'
         fileMode = 0755
-      }
-      from ('src/main/resources/conf') {
-        into 'conf'
       }
       from(configurations.runtime) {
         into 'lib'
