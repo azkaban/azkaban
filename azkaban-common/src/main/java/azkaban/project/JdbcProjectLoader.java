@@ -387,10 +387,12 @@ public class JdbcProjectLoader extends AbstractJdbcLoader implements
      * Insert a new version record to TABLE project_versions before uploading files.
      *
      * The reason for this operation:
-     * When error chunking happens in remote mysql server, incomplete file data is remained
+     * When error chunking happens in remote mysql server, incomplete file data remains
      * in DB, and an SQL exception is thrown. If we don't have this operation before uploading file,
      * the SQL exception prevents AZ from creating the new version record in Table project_versions.
-     * However, the Table project_files still reserve the incomplete files, which causes version inconsistency.
+     * However, the Table project_files still reserve the incomplete files, which causes troubles
+     * when uploading a new file: Since the version in TABLE project_versions is still old, mysql will stop
+     * inserting new files to db.
      *
      * Why this operation is safe:
      * When AZ uploads a new zip file, it always fetches the latest version proj_v from TABLE project_version,
@@ -404,6 +406,11 @@ public class JdbcProjectLoader extends AbstractJdbcLoader implements
         "INSERT INTO project_versions (project_id, version, upload_time, uploader, file_type, file_name, md5, num_chunks) values (?,?,?,?,?,?,?,?)";
 
     try {
+
+      /**
+       * As we don't know the num_chunks before uploading the file, we initialize it to 0,
+       * and will update it after uploading completes.
+       */
       runner.update(connection, INSERT_PROJECT_VERSION, project.getId(),
           version, updateTime, uploader, filetype, filename, md5, 0);
     } catch (SQLException e) {
@@ -438,7 +445,7 @@ public class JdbcProjectLoader extends AbstractJdbcLoader implements
            * in order to reduce the transaction duration and conserve sql server resources.
            *
            * If the files to be uploaded is very large and we don't commit every single chunk,
-           * the remote mysql server will have troubles, e.g. memory starvation.
+           * the remote mysql server will run into memory troubles.
            */
           connection.commit();
           logger.info("Finished update for " + filename + " chunk " + chunk);
@@ -456,8 +463,7 @@ public class JdbcProjectLoader extends AbstractJdbcLoader implements
     }
 
     /**
-     * Since num_chunks is initialized to 0 before uploading files, we update its
-     * actual number to db here.
+     * we update num_chunks's actual number to db here.
      *
      * NOTE: When Error chunking happens, the following sql statements will be skipped.
      */
