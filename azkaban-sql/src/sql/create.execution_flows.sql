@@ -11,6 +11,7 @@ CREATE TABLE execution_flows (
 	end_time BIGINT,
 	enc_type TINYINT,
 	flow_data LONGBLOB,
+	executor_id INT DEFAULT NULL,
 	PRIMARY KEY (exec_id)
 );
 
@@ -18,3 +19,4 @@ CREATE INDEX ex_flows_start_time ON execution_flows(start_time);
 CREATE INDEX ex_flows_end_time ON execution_flows(end_time);
 CREATE INDEX ex_flows_time_range ON execution_flows(start_time, end_time);
 CREATE INDEX ex_flows_flows ON execution_flows(project_id, flow_id);
+CREATE INDEX executor_id ON execution_flows(executor_id);
