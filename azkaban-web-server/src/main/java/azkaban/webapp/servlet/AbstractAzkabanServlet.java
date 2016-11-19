@@ -62,6 +62,7 @@ public abstract class AbstractAzkabanServlet extends HttpServlet {
   public static final String XML_MIME_TYPE = "application/xhtml+xml";
   public static final String JSON_MIME_TYPE = "application/json";
 
+  public static final String jarVersion = AbstractAzkabanServlet.class.getPackage().getImplementationVersion();
   protected static final WebUtils utils = new WebUtils();
 
   private AzkabanServer application;
@@ -331,6 +332,7 @@ public abstract class AbstractAzkabanServlet extends HttpServlet {
   protected Page newPage(HttpServletRequest req, HttpServletResponse resp,
       Session session, String template) {
     Page page = new Page(req, resp, getApplication().getVelocityEngine(), template);
+    page.add("version", jarVersion);
     page.add("azkaban_name", name);
     page.add("azkaban_label", label);
     page.add("azkaban_color", color);
@@ -382,6 +384,7 @@ public abstract class AbstractAzkabanServlet extends HttpServlet {
   protected Page newPage(HttpServletRequest req, HttpServletResponse resp,
       String template) {
     Page page = new Page(req, resp, getApplication().getVelocityEngine(), template);
+    page.add("version", jarVersion);
     page.add("azkaban_name", name);
     page.add("azkaban_label", label);
     page.add("azkaban_color", color);
