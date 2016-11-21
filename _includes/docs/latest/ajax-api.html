@@ -32,7 +32,7 @@ However, currently for most of APIs in this version, it is not checking the requ
 <strong> Importantly, </strong> <code>session.id</code> should be provided for almost all API calls (other than authentication). <code>session.id</code> can be simply appended as one of the request parameters, or set via the cookie: <code>azkaban.browser.session.id</code>. The two HTTP requests below are equivalent:
 <pre class="code">
 # a) Provide session.id parameter directly
-curl -k --get -data "session.id=bca1d75d-6bae-4163-a5b0-378a7d7b5a91&ajax=fetchflowgraph&project=azkaban-test-project&flow=test" https://localhost:8443/manager
+curl -k --get --data "session.id=bca1d75d-6bae-4163-a5b0-378a7d7b5a91&ajax=fetchflowgraph&project=azkaban-test-project&flow=test" https://localhost:8443/manager
 
 # b) Provide azkaban.browser.session.id cookie
 curl -k --get -b "azkaban.browser.session.id=bca1d75d-6bae-4163-a5b0-378a7d7b5a91" --data "ajax=fetchflowgraph&project=azkaban-test-project&flow=test" https://localhost:8443/manager
@@ -757,7 +757,7 @@ Given a project name and a flow id, this API call fetches only executions that a
 
 <p>Here's a curl command sample:</p>
 <pre class="code">
-curl -k -data "session.id=34ba08fd-5cfa-4b65-94c4-9117aee48dda&ajax=getRunning&project=azkaban-test-project&flow=test"' https://localhost:8443/executor
+curl -k --data "session.id=34ba08fd-5cfa-4b65-94c4-9117aee48dda&ajax=getRunning&project=azkaban-test-project&flow=test" https://localhost:8443/executor
 </pre>
 
 A response sample:
