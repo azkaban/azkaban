@@ -22,4 +22,19 @@ public class Constants {
 	public static final String AZKABAN_PRIVATE_PROPERTIES_FILE = "azkaban.private.properties";
 	public static final String DEFAULT_CONF_PATH = "conf";
 	public static final String AZKABAN_EXECUTOR_PORT_FILENAME = "executor.port";
+
+	/**
+	 * Represent the class name of azkaban metrics reporter.
+	 */
+	public static final String CUSTOM_METRICS_REPORTER_CLASS_NAME =
+			"azkaban.metrics.reporter.name";
+
+	/**
+	 * Represent the metrics server URL.
+	 */
+	public static final String METRICS_SERVER_URL =
+			"azkaban.metrics.server.url";
+
+	public static final String IS_METRICS_ENABLED =
+			"azkaban.is.metrics.enabled";
 }
