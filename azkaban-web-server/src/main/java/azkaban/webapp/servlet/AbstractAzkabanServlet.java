@@ -62,18 +62,13 @@ public abstract class AbstractAzkabanServlet extends HttpServlet {
   public static final String XML_MIME_TYPE = "application/xhtml+xml";
   public static final String JSON_MIME_TYPE = "application/json";
 
+  public static final String jarVersion = AbstractAzkabanServlet.class.getPackage().getImplementationVersion();
   protected static final WebUtils utils = new WebUtils();
 
   private AzkabanServer application;
   private String name;
   private String label;
   private String color;
-
-  /*
-   * The variable schedulePanelPageName is in charge of switching on retired schedulePanelDeprecated.vm (old UI)
-   * or the new schedulePanel.vm (new UI). We can configure it in conf for this binary change.
-   */
-  private String schedulePanelPageName;
 
   private List<ViewerPlugin> viewerPlugins;
   private List<TriggerPlugin> triggerPlugins;
@@ -102,7 +97,6 @@ public abstract class AbstractAzkabanServlet extends HttpServlet {
     name = props.getString("azkaban.name", "");
     label = props.getString("azkaban.label", "");
     color = props.getString("azkaban.color", "#FF0000");
-    schedulePanelPageName = props.getString("azkaban.schedulePanelPageName", "schedulepanelDeprecated.vm");
 
     if (application instanceof AzkabanWebServer) {
       AzkabanWebServer server = (AzkabanWebServer) application;
@@ -331,10 +325,10 @@ public abstract class AbstractAzkabanServlet extends HttpServlet {
   protected Page newPage(HttpServletRequest req, HttpServletResponse resp,
       Session session, String template) {
     Page page = new Page(req, resp, getApplication().getVelocityEngine(), template);
+    page.add("version", jarVersion);
     page.add("azkaban_name", name);
     page.add("azkaban_label", label);
     page.add("azkaban_color", color);
-    page.add("switchToPanelPage", schedulePanelPageName);
     page.add("utils", utils);
     page.add("timezone", TimeZone.getDefault().getID());
     page.add("currentTime", (new DateTime()).getMillis());
@@ -382,10 +376,10 @@ public abstract class AbstractAzkabanServlet extends HttpServlet {
   protected Page newPage(HttpServletRequest req, HttpServletResponse resp,
       String template) {
     Page page = new Page(req, resp, getApplication().getVelocityEngine(), template);
+    page.add("version", jarVersion);
     page.add("azkaban_name", name);
     page.add("azkaban_label", label);
     page.add("azkaban_color", color);
-    page.add("switchToPanelPage", schedulePanelPageName);
     page.add("timezone", TimeZone.getDefault().getID());
     page.add("currentTime", (new DateTime()).getMillis());
     page.add("context", req.getContextPath());
