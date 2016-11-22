@@ -87,7 +87,7 @@ public enum MetricsManager {
                 + metricsReporterClassName, e);
       }
     } else {
-      logger.info("No value for property: "
+      logger.error("No value for property: "
           + CUSTOM_METRICS_REPORTER_CLASS_NAME
           + "or" + METRICS_SERVER_URL + " was found");
     }

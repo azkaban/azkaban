@@ -186,6 +186,8 @@ public class AzkabanExecutorServer {
 
   private void startExecMetrics() throws Exception {
     MetricRegistry metrics = MetricsManager.INSTANCE.getRegistry();
+
+    logger.info("starting reporting Executor Metrics");
     MetricsExecRegister execWorker =
         new MetricsExecRegister.MetricsExecRegisterBuilder("EXEC").addFlowRunnerManager(getFlowRunnerManager()).build();
     execWorker.addExecutorManagerMetrics(metrics);

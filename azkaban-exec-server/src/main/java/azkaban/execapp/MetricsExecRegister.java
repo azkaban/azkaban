@@ -20,11 +20,14 @@ import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Gauge;
 
 import azkaban.execapp.FlowRunnerManager;
+import org.apache.log4j.Logger;
+
 
 /**
  * This class MetricsExecRegister is in charge of collecting metrics from executors.
  */
 public class MetricsExecRegister {
+  private static final Logger logger = Logger.getLogger(MetricsExecRegister.class);
 
   private String endpointName;
   private FlowRunnerManager _flowRunnerManager;
@@ -36,8 +39,9 @@ public class MetricsExecRegister {
 
   public void addExecutorManagerMetrics(MetricRegistry metrics) throws Exception {
     if (_flowRunnerManager == null)
-      throw new Exception("TODO: ");
+      throw new Exception("flowRunnerManager has not yet been initialized.");
 
+    logger.info("register executor metrics.");
     metrics.register("EXEC-NumRunningFlows", new Gauge<Integer>() {
       @Override
       public Integer getValue() {
