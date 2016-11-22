@@ -66,6 +66,7 @@ import azkaban.project.JdbcProjectLoader;
 import azkaban.project.ProjectLoader;
 import azkaban.server.AzkabanServer;
 import azkaban.utils.Props;
+import azkaban.utils.StdOutErrRedirect;
 import azkaban.utils.SystemMemoryInfo;
 import azkaban.utils.Utils;
 
@@ -335,6 +336,9 @@ public class AzkabanExecutorServer {
    * @throws IOException
    */
   public static void main(String[] args) throws Exception {
+    // Redirect all std out and err messages into log4j
+    StdOutErrRedirect.redirectOutAndErrToLog();
+
     logger.info("Starting Jetty Azkaban Executor...");
     Props azkabanSettings = AzkabanServer.loadProps(args);
 

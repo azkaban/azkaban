@@ -86,6 +86,7 @@ import azkaban.utils.Emailer;
 import azkaban.utils.FileIOUtils;
 import azkaban.utils.Props;
 import azkaban.utils.PropsUtils;
+import azkaban.utils.StdOutErrRedirect;
 import azkaban.utils.Utils;
 import azkaban.webapp.plugin.PluginRegistry;
 import azkaban.webapp.plugin.TriggerPlugin;
@@ -671,6 +672,9 @@ public class AzkabanWebServer extends AzkabanServer {
    * @param args
    */
   public static void main(String[] args) throws Exception {
+    // Redirect all std out and err messages into log4j
+    StdOutErrRedirect.redirectOutAndErrToLog();
+
     logger.info("Starting Jetty Azkaban Web Server...");
     Props azkabanSettings = AzkabanServer.loadProps(args);
 
