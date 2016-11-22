@@ -22,6 +22,9 @@ distributions {
       from ('src/main/resources/conf') {
         into 'conf'
       }
+      from ('src/main/resources/plugin') {
+        into 'plugin'
+      }
       from(configurations.runtime) {
         into 'lib'
       }
