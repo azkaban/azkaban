@@ -16,6 +16,7 @@
 
 package azkaban.execapp;
 
+import azkaban.executor.Executor;
 import java.io.File;
 import java.io.FileFilter;
 import java.io.FilenameFilter;
@@ -23,7 +24,6 @@ import java.io.IOException;
 import java.lang.Thread.State;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -156,6 +156,7 @@ public class FlowRunnerManager implements EventListener,
     projectDirectory =
         new File(props.getString("azkaban.project.dir", "projects"));
 
+    logger.info("projectDirectory:"+projectDirectory.getAbsolutePath());
     azkabanProps = props;
 
     // JobWrappingFactory.init(props, getClass().getClassLoader());
@@ -260,6 +261,13 @@ public class FlowRunnerManager implements EventListener,
     return allProjects;
   }
 
+  private boolean isActive() throws ExecutorManagerException {
+    String executorHost = AzkabanExecutorServer.getHost();
+    int executorPort = azkabanProps.getInt("executor.port");
+    Executor executor = executorLoader.fetchExecutor(executorHost, executorPort);
+    return executor != null ? executor.isActive() : false;
+  }
+
   public long getLastFlowSubmittedTime(){
     // Note: this is not thread safe and may result in providing dirty data.
     //       we will provide this data as is for now and will revisit if there
@@ -312,10 +320,9 @@ public class FlowRunnerManager implements EventListener,
               lastRecentlyFinishedCleanTime = currentTime;
             }
 
-            if (currentTime - OLD_PROJECT_DIR_INTERVAL_MS > lastOldProjectCleanTime) {
+            if (currentTime - OLD_PROJECT_DIR_INTERVAL_MS > lastOldProjectCleanTime && isActive()) {
               logger.info("Cleaning old projects");
               cleanOlderProjects();
-
               lastOldProjectCleanTime = currentTime;
             }
 
@@ -577,7 +584,7 @@ public class FlowRunnerManager implements EventListener,
       projectVersion.setupProjectFiles(projectLoader, projectDirectory, logger);
       projectVersion.copyCreateSymlinkDirectory(execPath);
     } catch (Exception e) {
-      e.printStackTrace();
+      logger.error("Error in setting up project directory "+projectDirectory+", "+e);
       if (execPath.exists()) {
         try {
           FileUtils.deleteDirectory(execPath);

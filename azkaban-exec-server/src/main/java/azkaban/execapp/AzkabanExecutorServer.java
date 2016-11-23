@@ -132,6 +132,7 @@ public class AzkabanExecutorServer {
     }
 
     insertExecutorEntryIntoDB();
+    updatePortInProps();
     dumpPortToFile();
     logger.info("Started Executor Server on " + getExecutorHostPort());
   }
@@ -188,6 +189,12 @@ public class AzkabanExecutorServer {
     } catch (ExecutorManagerException e) {
       logger.error("Error inserting executor entry into DB", e);
       Throwables.propagate(e);
+    }
+  }
+
+  private void updatePortInProps() {
+    if(!props.containsKey("executor.port")) {
+      props.put("executor.port", this.getPort());
     }
   }
 
@@ -534,7 +541,7 @@ public class AzkabanExecutorServer {
    *
    * @return hostname
    */
-  public String getHost() {
+  public static String getHost() {
     String host = "unkownHost";
     try {
       host = InetAddress.getLocalHost().getCanonicalHostName();
