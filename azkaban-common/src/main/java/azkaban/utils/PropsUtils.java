@@ -34,6 +34,7 @@ import org.apache.commons.jexl2.JexlException;
 import org.apache.commons.jexl2.MapContext;
 import org.apache.commons.lang.StringUtils;
 
+import org.apache.log4j.Logger;
 import org.joda.time.DateTime;
 
 import azkaban.executor.ExecutableFlowBase;
@@ -41,6 +42,7 @@ import azkaban.flow.CommonJobProperties;
 
 public class PropsUtils {
 
+  private static final Logger logger = Logger.getLogger(PropsUtils.class);
   /**
    * Load job schedules from the given directories ] * @param dir The directory
    * to look in
@@ -292,7 +294,7 @@ public class PropsUtils {
     props.put(CommonJobProperties.FLOW_UUID, UUID.randomUUID().toString());
     props.put(CommonJobProperties.PROJECT_LAST_CHANGED_BY, flow.getLastModifiedByUser());
     props.put(CommonJobProperties.PROJECT_LAST_CHANGED_DATE, flow.getLastModifiedTimestamp());
-    props.put(CommonJobProperties.SUBMIT_USER, flow.getExecutableFlow().getSubmitUser());  
+    props.put(CommonJobProperties.SUBMIT_USER, flow.getExecutableFlow().getSubmitUser());
 
     DateTime loadTime = new DateTime();
 
@@ -336,6 +338,8 @@ public class PropsUtils {
       Props props = new Props(null, obj);
       return props;
     } catch (IOException e) {
+      logger.error("Encountered error during parsing project properties json.");
+      e.printStackTrace();
       return null;
     }
   }
