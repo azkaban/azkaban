@@ -1053,10 +1053,9 @@ public class ExecutorManager extends EventHandler implements
       int count = executorLoader.removeExecutionLogsByTime(millis);
       logger.info("Cleaned up " + count + " log entries.");
     } catch (ExecutorManagerException e) {
-      logger.error("log clean up failed.");
-      e.printStackTrace();
+      logger.error("log clean up failed. ", e);
     }
-    logger.info("Log cleaning up cost "  + (System.currentTimeMillis() - beforeDeleteLogsTimestamp)/1000 + " seconds.");
+    logger.info("log clean up time: "  + (System.currentTimeMillis() - beforeDeleteLogsTimestamp)/1000 + " seconds.");
   }
 
   private Map<String, Object> callExecutorServer(ExecutableFlow exflow,

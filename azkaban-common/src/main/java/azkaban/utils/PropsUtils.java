@@ -338,8 +338,7 @@ public class PropsUtils {
       Props props = new Props(null, obj);
       return props;
     } catch (IOException e) {
-      logger.error("Encountered error during parsing project properties json.");
-      e.printStackTrace();
+      logger.error("Encountered error during parsing project properties json. ", e);
       return null;
     }
   }
