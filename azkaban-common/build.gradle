@@ -41,6 +41,9 @@ dependencies {
 
   testCompile(project(':azkaban-test').sourceSets.test.output)
   testCompile('org.hamcrest:hamcrest-all:1.3')
+
+  // Needed for KafkaAppender
+  runtime('org.apache.kafka:kafka_2.9.2:0.8.2.2')
 }
 
 tasks.withType(JavaCompile) {
