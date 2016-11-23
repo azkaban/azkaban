@@ -37,6 +37,9 @@ import org.apache.kafka.log4jappender.KafkaLog4jAppender;
 
 import org.json.simple.JSONObject;
 
+import azkaban.constants.FlowProperties;
+import azkaban.constants.JobProperties;
+import azkaban.constants.ServerProperties;
 import azkaban.event.Event;
 import azkaban.event.Event.Type;
 import azkaban.event.EventData;
@@ -54,7 +57,6 @@ import azkaban.jobExecutor.JavaProcessJob;
 import azkaban.jobExecutor.Job;
 import azkaban.jobtype.JobTypeManager;
 import azkaban.jobtype.JobTypeManagerException;
-import azkaban.server.Constants;
 import azkaban.utils.Props;
 import azkaban.utils.StringUtils;
 import azkaban.utils.UndefinedPropertyException;
@@ -221,7 +223,6 @@ public class JobRunner extends EventHandler implements Runnable {
               + this.jobId;
       logger = Logger.getLogger(loggerName);
 
-      // Attempt to create appenders as necessary
       try {
         attachFileAppender(createFileAppender());
       } catch (IOException e) {
@@ -230,13 +231,18 @@ public class JobRunner extends EventHandler implements Runnable {
             + " for job " + this.jobId, e);
       }
 
-      if (!azkabanProps.getBoolean(Constants.AZKABAN_SERVER_LOGGING_KAFKA_GLOBAL_DISABLE, false) &&
-          props.getBoolean(Constants.AZKABAN_JOB_LOGGING_KAFKA_ENABLE, false)) {
-        try {
-          attachKafkaAppender(createKafkaAppender());
-        } catch (Exception e) {
-          removeAppender(kafkaAppender);
-          flowLogger.error("Failed to create Kafka appender for job " + this.jobId, e);
+      if (props.getBoolean(JobProperties.AZKABAN_JOB_LOGGING_KAFKA_ENABLE, false)) {
+        // Only attempt appender construction if required properties are present
+        if (azkabanProps.containsKey(ServerProperties.AZKABAN_SERVER_LOGGING_KAFKA_BROKERLIST)
+            && azkabanProps.containsKey(ServerProperties.AZKABAN_SERVER_LOGGING_KAFKA_TOPIC)) {
+          try {
+            attachKafkaAppender(createKafkaAppender());
+          } catch (Exception e) {
+            removeAppender(kafkaAppender);
+            flowLogger.error("Failed to create Kafka appender for job " + this.jobId, e);
+          }
+        } else {
+          flowLogger.error("Kafka appender not created as brokerlist or topic not provided by executor server");
         }
       }
     }
@@ -287,18 +293,18 @@ public class JobRunner extends EventHandler implements Runnable {
   private KafkaLog4jAppender createKafkaAppender() throws UndefinedPropertyException {
     KafkaLog4jAppender kafkaProducer = new KafkaLog4jAppender();
     kafkaProducer.setSyncSend(false);
-    kafkaProducer.setBrokerList(azkabanProps.getString(Constants.AZKABAN_SERVER_LOGGING_KAFKA_BROKERLIST));
-    kafkaProducer.setTopic(azkabanProps.getString(Constants.AZKABAN_SERVER_LOGGING_KAFKA_TOPIC));
+    kafkaProducer.setBrokerList(azkabanProps.getString(ServerProperties.AZKABAN_SERVER_LOGGING_KAFKA_BROKERLIST));
+    kafkaProducer.setTopic(azkabanProps.getString(ServerProperties.AZKABAN_SERVER_LOGGING_KAFKA_TOPIC));
 
     JSONObject layout = new JSONObject();
     layout.put("category", "%c{1}");
     layout.put("level", "%p");
     layout.put("message", "%m");
-    layout.put("projectname", props.getString(Constants.AZKABAN_FLOW_PROJECT_NAME));
-    layout.put("flowid", props.getString(Constants.AZKABAN_FLOW_FLOW_ID));
-    layout.put("submituser", props.getString(Constants.AZKABAN_FLOW_SUBMIT_USER));
-    layout.put("execid", props.getString(Constants.AZKABAN_FLOW_EXEC_ID));
-    layout.put("projectversion", props.getString(Constants.AZKABAN_FLOW_PROJECT_VERSION));
+    layout.put("projectname", props.getString(FlowProperties.AZKABAN_FLOW_PROJECT_NAME));
+    layout.put("flowid", props.getString(FlowProperties.AZKABAN_FLOW_FLOW_ID));
+    layout.put("submituser", props.getString(FlowProperties.AZKABAN_FLOW_SUBMIT_USER));
+    layout.put("execid", props.getString(FlowProperties.AZKABAN_FLOW_EXEC_ID));
+    layout.put("projectversion", props.getString(FlowProperties.AZKABAN_FLOW_PROJECT_VERSION));
     layout.put("logsource", "userJob");
 
     kafkaProducer.setLayout(new EnhancedPatternLayout(layout.toString()));

@@ -138,9 +138,9 @@ public class FlowRunner extends EventHandler implements Runnable {
    * @throws ExecutorManagerException
    */
   public FlowRunner(ExecutableFlow flow, ExecutorLoader executorLoader,
-      ProjectLoader projectLoader, JobTypeManager jobtypeManager, Props serverProps)
+      ProjectLoader projectLoader, JobTypeManager jobtypeManager, Props azkabanProps)
       throws ExecutorManagerException {
-    this(flow, executorLoader, projectLoader, jobtypeManager, null, serverProps);
+    this(flow, executorLoader, projectLoader, jobtypeManager, null, azkabanProps);
   }
 
   /**
