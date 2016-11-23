@@ -22,4 +22,16 @@ public class Constants {
 	public static final String AZKABAN_PRIVATE_PROPERTIES_FILE = "azkaban.private.properties";
 	public static final String DEFAULT_CONF_PATH = "conf";
 	public static final String AZKABAN_EXECUTOR_PORT_FILENAME = "executor.port";
+
+  public static final String AZKABAN_SERVER_LOGGING_KAFKA_GLOBAL_DISABLE = "azkaban.logging.kafka.globalDisable";
+  public static final String AZKABAN_SERVER_LOGGING_KAFKA_BROKERLIST = "azkaban.logging.kafka.brokerList";
+  public static final String AZKABAN_SERVER_LOGGING_KAFKA_TOPIC = "azkaban.logging.kafka.topic";
+
+  public static final String AZKABAN_FLOW_PROJECT_NAME = "azkaban.flow.projectname";
+  public static final String AZKABAN_FLOW_FLOW_ID = "azkaban.flow.flowid";
+  public static final String AZKABAN_FLOW_SUBMIT_USER = "azkaban.flow.submituser";
+  public static final String AZKABAN_FLOW_EXEC_ID = "azkaban.flow.execid";
+  public static final String AZKABAN_FLOW_PROJECT_VERSION = "azkaban.flow.projectversion";
+
+  public static final String AZKABAN_JOB_LOGGING_KAFKA_ENABLE = "azkaban.job.logging.kafka.enable";
 }
