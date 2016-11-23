@@ -242,7 +242,7 @@ public class JobRunner extends EventHandler implements Runnable {
             flowLogger.error("Failed to create Kafka appender for job " + this.jobId, e);
           }
         } else {
-          flowLogger.error("Kafka appender not created as brokerlist or topic not provided by executor server");
+          flowLogger.info("Kafka appender not created as brokerlist or topic not provided by executor server");
         }
       }
     }
