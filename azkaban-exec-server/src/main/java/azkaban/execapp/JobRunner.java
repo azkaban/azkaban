@@ -54,8 +54,10 @@ import azkaban.jobExecutor.JavaProcessJob;
 import azkaban.jobExecutor.Job;
 import azkaban.jobtype.JobTypeManager;
 import azkaban.jobtype.JobTypeManagerException;
+import azkaban.server.Constants;
 import azkaban.utils.Props;
 import azkaban.utils.StringUtils;
+import azkaban.utils.UndefinedPropertyException;
 
 public class JobRunner extends EventHandler implements Runnable {
   public static final String AZKABAN_WEBSERVER_URL = "azkaban.webserver.url";
@@ -65,6 +67,7 @@ public class JobRunner extends EventHandler implements Runnable {
 
   private ExecutorLoader loader;
   private Props props;
+  private Props azkabanProps;
   private ExecutableNode node;
   private File workingDir;
 
@@ -101,7 +104,7 @@ public class JobRunner extends EventHandler implements Runnable {
   private BlockingStatus currentBlockStatus = null;
 
   public JobRunner(ExecutableNode node, File workingDir, ExecutorLoader loader,
-      JobTypeManager jobtypeManager) {
+      JobTypeManager jobtypeManager, Props azkabanProps) {
     this.props = node.getInputProps();
     this.node = node;
     this.workingDir = workingDir;
@@ -110,6 +113,7 @@ public class JobRunner extends EventHandler implements Runnable {
     this.jobId = node.getId();
     this.loader = loader;
     this.jobtypeManager = jobtypeManager;
+    this.azkabanProps = azkabanProps;
   }
 
   public void setValidatedProxyUsers(Set<String> proxyUsers) {
@@ -226,9 +230,8 @@ public class JobRunner extends EventHandler implements Runnable {
             + " for job " + this.jobId, e);
       }
 
-      AzkabanExecutorServer exec = AzkabanExecutorServer.getApp();
-      if (exec != null && !exec.getAzkabanProps().getBoolean("kafkaLogging.globalDisable", false)
-          && props.getBoolean("azkaban.job.kafkaLogging.enabled", false)) {
+      if (!azkabanProps.getBoolean(Constants.AZKABAN_SERVER_LOGGING_KAFKA_GLOBAL_DISABLE, false) &&
+          props.getBoolean(Constants.AZKABAN_JOB_LOGGING_KAFKA_ENABLE, false)) {
         try {
           attachKafkaAppender(createKafkaAppender());
         } catch (Exception e) {
@@ -241,10 +244,7 @@ public class JobRunner extends EventHandler implements Runnable {
 
   private void attachFileAppender(FileAppender appender) {
     // If present, remove the existing file appender
-    if (jobAppender != null) {
-      removeAppender(jobAppender);
-      flowLogger.info("Removed old file appender for job " + this.jobId);
-    }
+    assert(jobAppender == null);
 
     jobAppender = appender;
     logger.addAppender(jobAppender);
@@ -275,11 +275,8 @@ public class JobRunner extends EventHandler implements Runnable {
   }
 
   private void attachKafkaAppender(KafkaLog4jAppender appender) {
-    // If present, remove the existing kafka appender
-    if (kafkaAppender.isPresent()) {
-      removeAppender(kafkaAppender);
-      flowLogger.info("Removed old Kafka appender for job " + this.jobId);
-    }
+    // This should only be called once
+    assert(!kafkaAppender.isPresent());
 
     kafkaAppender = Optional.of(appender);
     logger.addAppender(kafkaAppender.get());
@@ -287,22 +284,21 @@ public class JobRunner extends EventHandler implements Runnable {
     flowLogger.info("Attached new Kafka appender for job " + this.jobId);
   }
 
-  private KafkaLog4jAppender createKafkaAppender() {
+  private KafkaLog4jAppender createKafkaAppender() throws UndefinedPropertyException {
     KafkaLog4jAppender kafkaProducer = new KafkaLog4jAppender();
-    Props azkProps = AzkabanExecutorServer.getApp().getAzkabanProps();
     kafkaProducer.setSyncSend(false);
-    kafkaProducer.setBrokerList(azkProps.getString("kafkaLogging.brokerList"));
-    kafkaProducer.setTopic(azkProps.getString("kafkaLogging.topic"));
+    kafkaProducer.setBrokerList(azkabanProps.getString(Constants.AZKABAN_SERVER_LOGGING_KAFKA_BROKERLIST));
+    kafkaProducer.setTopic(azkabanProps.getString(Constants.AZKABAN_SERVER_LOGGING_KAFKA_TOPIC));
 
     JSONObject layout = new JSONObject();
     layout.put("category", "%c{1}");
     layout.put("level", "%p");
     layout.put("message", "%m");
-    layout.put("projectname", props.getString("azkaban.flow.projectname"));
-    layout.put("flowid", props.getString("azkaban.flow.flowid"));
-    layout.put("submituser", props.getString("azkaban.flow.submituser"));
-    layout.put("execid", props.getString("azkaban.flow.execid"));
-    layout.put("projectversion", props.getString("azkaban.flow.projectversion"));
+    layout.put("projectname", props.getString(Constants.AZKABAN_FLOW_PROJECT_NAME));
+    layout.put("flowid", props.getString(Constants.AZKABAN_FLOW_FLOW_ID));
+    layout.put("submituser", props.getString(Constants.AZKABAN_FLOW_SUBMIT_USER));
+    layout.put("execid", props.getString(Constants.AZKABAN_FLOW_EXEC_ID));
+    layout.put("projectversion", props.getString(Constants.AZKABAN_FLOW_PROJECT_VERSION));
     layout.put("logsource", "userJob");
 
     kafkaProducer.setLayout(new EnhancedPatternLayout(layout.toString()));
@@ -313,14 +309,16 @@ public class JobRunner extends EventHandler implements Runnable {
   }
 
   private void removeAppender(Optional<Appender> appender) {
-    removeAppender(appender.get());
-    appender = Optional.empty();
+    if (appender.isPresent()) {
+      removeAppender(appender.get());
+    }
   }
 
   private void removeAppender(Appender appender) {
-    logger.removeAppender(appender);
-    appender.close();
-    appender = null;
+    if (appender != null) {
+      logger.removeAppender(appender);
+      appender.close();
+    }
   }
 
   private void closeLogger() {
@@ -643,8 +641,7 @@ public class JobRunner extends EventHandler implements Runnable {
    * know what executions initiated their execution.
    */
   private void insertJobMetadata() {
-    Props azkProps = AzkabanExecutorServer.getApp().getAzkabanProps();
-    String baseURL = azkProps.get(AZKABAN_WEBSERVER_URL);
+    String baseURL = azkabanProps.get(AZKABAN_WEBSERVER_URL);
     if (baseURL != null) {
       String flowName = node.getParentFlow().getFlowId();
       String projectName = node.getParentFlow().getProjectName();

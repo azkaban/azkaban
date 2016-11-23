@@ -1403,6 +1403,11 @@ public class FlowRunnerTest2 {
 
   private FlowRunner createFlowRunner(EventCollectorListener eventCollector,
       String flowName, FailureAction action) throws Exception {
+    return createFlowRunner(eventCollector, flowName, action, new Props());
+  }
+
+  private FlowRunner createFlowRunner(EventCollectorListener eventCollector,
+      String flowName, FailureAction action, Props azkabanProps) throws Exception {
     Flow flow = flowMap.get(flowName);
 
     int exId = id++;
@@ -1420,7 +1425,7 @@ public class FlowRunnerTest2 {
 
     FlowRunner runner = new FlowRunner(
         fakeExecutorLoader.fetchExecutableFlow(exId), fakeExecutorLoader,
-        fakeProjectLoader, jobtypeManager);
+        fakeProjectLoader, jobtypeManager, azkabanProps);
 
     runner.addListener(eventCollector);
 

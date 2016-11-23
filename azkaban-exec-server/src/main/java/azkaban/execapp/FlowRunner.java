@@ -96,6 +96,7 @@ public class FlowRunner extends EventHandler implements Runnable {
   private Object mainSyncObj = new Object();
 
   // Properties map
+  private Props azkabanProps;
   private Map<String, Props> sharedProps = new HashMap<String, Props>();
   private final JobTypeManager jobtypeManager;
 
@@ -137,9 +138,9 @@ public class FlowRunner extends EventHandler implements Runnable {
    * @throws ExecutorManagerException
    */
   public FlowRunner(ExecutableFlow flow, ExecutorLoader executorLoader,
-      ProjectLoader projectLoader, JobTypeManager jobtypeManager)
+      ProjectLoader projectLoader, JobTypeManager jobtypeManager, Props serverProps)
       throws ExecutorManagerException {
-    this(flow, executorLoader, projectLoader, jobtypeManager, null);
+    this(flow, executorLoader, projectLoader, jobtypeManager, null, serverProps);
   }
 
   /**
@@ -155,7 +156,7 @@ public class FlowRunner extends EventHandler implements Runnable {
    */
   public FlowRunner(ExecutableFlow flow, ExecutorLoader executorLoader,
       ProjectLoader projectLoader, JobTypeManager jobtypeManager,
-      ExecutorService executorService) throws ExecutorManagerException {
+      ExecutorService executorService, Props azkabanProps) throws ExecutorManagerException {
     this.execId = flow.getExecutionId();
     this.flow = flow;
     this.executorLoader = executorLoader;
@@ -170,6 +171,7 @@ public class FlowRunner extends EventHandler implements Runnable {
     this.proxyUsers = flow.getProxyUsers();
     this.executorService = executorService;
     this.finishedNodes = new SwapQueue<ExecutableNode>();
+    this.azkabanProps = azkabanProps;
   }
 
   public FlowRunner setFlowWatcher(FlowWatcher watcher) {
@@ -820,7 +822,7 @@ public class FlowRunner extends EventHandler implements Runnable {
 
     JobRunner jobRunner =
         new JobRunner(node, path.getParentFile(), executorLoader,
-            jobtypeManager);
+            jobtypeManager, azkabanProps);
     if (watcher != null) {
       jobRunner.setPipeline(watcher, pipelineLevel);
     }
