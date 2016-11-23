@@ -16,7 +16,7 @@
 
 package azkaban.server;
 
-import azkaban.constants.PropertyFilePaths;
+import azkaban.constants.ServerInternals;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -39,7 +39,7 @@ public class AbstractServiceServlet extends HttpServlet {
   @Override
   public void init(ServletConfig config) throws ServletException {
     application =
-        (AzkabanServer) config.getServletContext().getAttribute(PropertyFilePaths.AZKABAN_SERVLET_CONTEXT_KEY);
+        (AzkabanServer) config.getServletContext().getAttribute(ServerInternals.AZKABAN_SERVLET_CONTEXT_KEY);
 
     if (application == null) {
       throw new IllegalStateException(

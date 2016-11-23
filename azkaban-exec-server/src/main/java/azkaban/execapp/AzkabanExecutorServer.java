@@ -44,7 +44,7 @@ import javax.management.MBeanInfo;
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
 
-import azkaban.constants.PropertyFilePaths;
+import azkaban.constants.ServerInternals;
 import azkaban.execapp.event.JobCallbackManager;
 import azkaban.execapp.jmx.JmxFlowRunnerManager;
 import azkaban.execapp.jmx.JmxJobMBeanManager;
@@ -69,7 +69,7 @@ import azkaban.utils.Props;
 import azkaban.utils.SystemMemoryInfo;
 import azkaban.utils.Utils;
 
-import static azkaban.constants.PropertyFilePaths.AZKABAN_EXECUTOR_PORT_FILENAME;
+import static azkaban.constants.ServerInternals.AZKABAN_EXECUTOR_PORT_FILENAME;
 import static com.google.common.base.Preconditions.checkState;
 import static java.util.Objects.requireNonNull;
 
@@ -171,7 +171,7 @@ public class AzkabanExecutorServer {
     root.addServlet(new ServletHolder(new StatsServlet()), "/stats");
     root.addServlet(new ServletHolder(new ServerStatisticsServlet()), "/serverStatistics");
 
-    root.setAttribute(PropertyFilePaths.AZKABAN_SERVLET_CONTEXT_KEY, this);
+    root.setAttribute(ServerInternals.AZKABAN_SERVLET_CONTEXT_KEY, this);
     return server;
   }
 
@@ -418,7 +418,7 @@ public class AzkabanExecutorServer {
       return null;
     }
 
-    File confPath = new File(azkabanHome, PropertyFilePaths.DEFAULT_CONF_PATH);
+    File confPath = new File(azkabanHome, ServerInternals.DEFAULT_CONF_PATH);
     if (!confPath.exists() || !confPath.isDirectory() || !confPath.canRead()) {
       logger
           .error(azkabanHome + " does not contain a readable conf directory.");
@@ -439,8 +439,8 @@ public class AzkabanExecutorServer {
    */
   private static Props loadAzkabanConfigurationFromDirectory(File dir) {
     File azkabanPrivatePropsFile =
-        new File(dir, PropertyFilePaths.AZKABAN_PRIVATE_PROPERTIES_FILE);
-    File azkabanPropsFile = new File(dir, PropertyFilePaths.AZKABAN_PROPERTIES_FILE);
+        new File(dir, ServerInternals.AZKABAN_PRIVATE_PROPERTIES_FILE);
+    File azkabanPropsFile = new File(dir, ServerInternals.AZKABAN_PROPERTIES_FILE);
 
     Props props = null;
     try {

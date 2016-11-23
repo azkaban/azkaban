@@ -55,7 +55,7 @@ import org.mortbay.jetty.servlet.ServletHolder;
 import org.mortbay.thread.QueuedThreadPool;
 
 import azkaban.alert.Alerter;
-import azkaban.constants.PropertyFilePaths;
+import azkaban.constants.ServerInternals;
 import azkaban.database.AzkabanDatabaseSetup;
 import azkaban.executor.ExecutorManager;
 import azkaban.executor.JdbcExecutorLoader;
@@ -804,7 +804,7 @@ public class AzkabanWebServer extends AzkabanServer {
     // TODO: find something else to do the job
     app.getTriggerManager().start();
 
-    root.setAttribute(PropertyFilePaths.AZKABAN_SERVLET_CONTEXT_KEY, app);
+    root.setAttribute(ServerInternals.AZKABAN_SERVLET_CONTEXT_KEY, app);
     try {
       server.start();
     } catch (Exception e) {
