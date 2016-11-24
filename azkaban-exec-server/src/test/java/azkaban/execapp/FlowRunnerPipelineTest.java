@@ -677,11 +677,17 @@ public class FlowRunnerPipelineTest {
   private FlowRunner createFlowRunner(EventCollectorListener eventCollector,
       String flowName, String groupName) throws Exception {
     return createFlowRunner(eventCollector, flowName, groupName,
-        new ExecutionOptions());
+        new ExecutionOptions(), new Props());
   }
 
   private FlowRunner createFlowRunner(EventCollectorListener eventCollector,
-      String flowName, String groupName, ExecutionOptions options)
+      String flowName, String groupName, ExecutionOptions options) throws Exception {
+    return createFlowRunner(eventCollector, flowName, groupName,
+        options, new Props());
+  }
+
+  private FlowRunner createFlowRunner(EventCollectorListener eventCollector,
+      String flowName, String groupName, ExecutionOptions options, Props azkabanProps)
       throws Exception {
     Flow flow = flowMap.get(flowName);
 
@@ -698,7 +704,7 @@ public class FlowRunnerPipelineTest {
 
     FlowRunner runner =
         new FlowRunner(fakeExecutorLoader.fetchExecutableFlow(exId),
-            fakeExecutorLoader, fakeProjectLoader, jobtypeManager);
+            fakeExecutorLoader, fakeProjectLoader, jobtypeManager, azkabanProps);
 
     runner.addListener(eventCollector);
 

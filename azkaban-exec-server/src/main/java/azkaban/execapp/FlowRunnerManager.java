@@ -497,7 +497,7 @@ public class FlowRunnerManager implements EventListener,
     }
 
     FlowRunner runner =
-        new FlowRunner(flow, executorLoader, projectLoader, jobtypeManager);
+        new FlowRunner(flow, executorLoader, projectLoader, jobtypeManager, azkabanProps);
     runner.setFlowWatcher(watcher)
         .setJobLogSettings(jobLogChunkSize, jobLogNumFiles)
         .setValidateProxyUser(validateProxyUser)

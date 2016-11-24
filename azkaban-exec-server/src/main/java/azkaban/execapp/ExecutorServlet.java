@@ -35,12 +35,12 @@ import org.apache.log4j.Logger;
 
 import org.codehaus.jackson.map.ObjectMapper;
 
+import azkaban.constants.ServerInternals;
 import azkaban.executor.ConnectorParams;
 import azkaban.executor.ExecutableFlowBase;
 import azkaban.executor.Executor;
 import azkaban.executor.ExecutorLoader;
 import azkaban.executor.ExecutorManagerException;
-import azkaban.server.Constants;
 import azkaban.utils.FileIOUtils.JobMetaData;
 import azkaban.utils.FileIOUtils.LogData;
 import azkaban.utils.JSONUtils;
@@ -62,7 +62,7 @@ public class ExecutorServlet extends HttpServlet implements ConnectorParams {
   public void init(ServletConfig config) throws ServletException {
     application =
         (AzkabanExecutorServer) config.getServletContext().getAttribute(
-            Constants.AZKABAN_SERVLET_CONTEXT_KEY);
+            ServerInternals.AZKABAN_SERVLET_CONTEXT_KEY);
 
     if (application == null) {
       throw new IllegalStateException(
