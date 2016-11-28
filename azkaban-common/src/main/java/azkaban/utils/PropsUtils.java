@@ -330,17 +330,10 @@ public class PropsUtils {
     return map;
   }
 
-  @SuppressWarnings("unchecked")
-  public static Props fromJSONString(String json) {
-    try {
-      Map<String, String> obj =
-          (Map<String, String>) JSONUtils.parseJSONFromString(json);
-      Props props = new Props(null, obj);
-      return props;
-    } catch (IOException e) {
-      logger.error("Encountered error during parsing project properties json. ", e);
-      return null;
-    }
+  public static Props fromJSONString(String json) throws IOException {
+    Map<String, String> obj = (Map<String, String>) JSONUtils.parseJSONFromString(json);
+    Props props = new Props(null, obj);
+    return props;
   }
 
   @SuppressWarnings("unchecked")
