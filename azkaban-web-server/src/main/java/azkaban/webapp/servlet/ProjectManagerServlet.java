@@ -1425,6 +1425,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
       project = projectManager.getProject(projectName);
       if (project == null) {
         page.add("errorMsg", "Project " + projectName + " not found.");
+        logger.info("Display project property. Project " + projectName + " not found.");
         page.render();
         return;
       }
@@ -1438,6 +1439,8 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
       flow = project.getFlow(flowName);
       if (flow == null) {
         page.add("errorMsg", "Flow " + flowName + " not found.");
+        logger.info("Display project property. Project " + projectName +
+            " Flow " + flowName + " not found.");
         page.render();
         return;
       }
@@ -1446,11 +1449,22 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
       Node node = flow.getNode(jobName);
       if (node == null) {
         page.add("errorMsg", "Job " + jobName + " not found.");
+        logger.info("Display project property. Project " + projectName +
+            " Flow " + flowName + " Job " + jobName + " not found.");
         page.render();
         return;
       }
 
       Props prop = projectManager.getProperties(project, propSource);
+      if (prop == null) {
+        page.add("errorMsg", "Property " + propSource + " not found.");
+        logger.info("Display project property. Project " + projectName +
+            " Flow " + flowName + " Job " + jobName +
+            " Property " + propSource + " not found.");
+        page.render();
+        return;
+
+      }
       page.add("property", propSource);
       page.add("jobid", node.getId());
 
