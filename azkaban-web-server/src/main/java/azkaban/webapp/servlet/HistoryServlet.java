@@ -108,12 +108,12 @@ public class HistoryServlet extends LoginAbstractAzkabanServlet {
       String begin = getParam(req, "begin");
 
       long beginTime =
-          begin == "" ? -1 : DateTimeFormat.forPattern(FILTER_BY_DATE_PATTERN)
+          begin .equals("") ? -1 : DateTimeFormat.forPattern(FILTER_BY_DATE_PATTERN)
               .parseDateTime(begin).getMillis();
       String end = getParam(req, "end");
 
       long endTime =
-          end == "" ? -1 : DateTimeFormat.forPattern(FILTER_BY_DATE_PATTERN)
+          end .equals("") ? -1 : DateTimeFormat.forPattern(FILTER_BY_DATE_PATTERN)
               .parseDateTime(end).getMillis();
       try {
         history =
