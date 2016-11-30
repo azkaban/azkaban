@@ -23,7 +23,6 @@ import java.io.IOException;
 import java.lang.Thread.State;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -46,6 +45,7 @@ import azkaban.execapp.event.RemoteFlowWatcher;
 import azkaban.execapp.metric.NumFailedFlowMetric;
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutionOptions;
+import azkaban.executor.Executor;
 import azkaban.executor.ExecutorLoader;
 import azkaban.executor.ExecutorManagerException;
 import azkaban.jobtype.JobTypeManager;
@@ -148,6 +148,9 @@ public class FlowRunnerManager implements EventListener,
   // date time of the the last flow submitted.
   private long lastFlowSubmittedDate = 0;
 
+  // whether the current executor is active
+  private volatile boolean isActive = false;
+
   public FlowRunnerManager(Props props, ExecutorLoader executorLoader,
       ProjectLoader projectLoader, ClassLoader parentClassLoader)
       throws IOException {
@@ -188,6 +191,8 @@ public class FlowRunnerManager implements EventListener,
 
     this.validateProxyUser =
         azkabanProps.getBoolean("proxy.user.lock.down", false);
+
+    setActive(true);
 
     cleanerThread = new CleanerThread();
     cleanerThread.start();
@@ -260,6 +265,10 @@ public class FlowRunnerManager implements EventListener,
     return allProjects;
   }
 
+  public void setActive(boolean isActive) {
+    this.isActive = isActive;
+  }
+
   public long getLastFlowSubmittedTime(){
     // Note: this is not thread safe and may result in providing dirty data.
     //       we will provide this data as is for now and will revisit if there
@@ -312,10 +321,9 @@ public class FlowRunnerManager implements EventListener,
               lastRecentlyFinishedCleanTime = currentTime;
             }
 
-            if (currentTime - OLD_PROJECT_DIR_INTERVAL_MS > lastOldProjectCleanTime) {
+            if (currentTime - OLD_PROJECT_DIR_INTERVAL_MS > lastOldProjectCleanTime && isActive) {
               logger.info("Cleaning old projects");
               cleanOlderProjects();
-
               lastOldProjectCleanTime = currentTime;
             }
 
@@ -577,7 +585,7 @@ public class FlowRunnerManager implements EventListener,
       projectVersion.setupProjectFiles(projectLoader, projectDirectory, logger);
       projectVersion.copyCreateSymlinkDirectory(execPath);
     } catch (Exception e) {
-      e.printStackTrace();
+      logger.error("Error in setting up project directory "+projectDirectory+", "+e);
       if (execPath.exists()) {
         try {
           FileUtils.deleteDirectory(execPath);
