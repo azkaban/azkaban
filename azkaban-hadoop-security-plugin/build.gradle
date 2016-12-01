@@ -1,0 +1,27 @@
+apply plugin: 'distribution'
+
+ext.hadoopVersion = "2.6.1"
+
+dependencies {
+  compile project(":azkaban-common")
+
+  compile "org.apache.hadoop:hadoop-common:$hadoopVersion"
+  compile "org.apache.hadoop:hadoop-mapreduce-client-common:$hadoopVersion"
+  compile "org.apache.hadoop:hadoop-mapreduce-client-core:$hadoopVersion"
+  compile "org.apache.hive:hive-metastore:0.13.1"
+}
+
+/**
+ * Just package the jar.
+ * Since, rest of the dependencies are just hadoop and hive. They are not packaged inside the plugin.
+ * It is assumed that classpaths of hadoop, hive, pig, etc will be externally fed into the application.
+ */
+distributions {
+  main {
+    contents {
+      from(jar) {
+        into 'lib'
+      }
+    }
+  }
+}

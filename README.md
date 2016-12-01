@@ -1,4 +1,4 @@
-Azkaban2 [![Build Status](http://img.shields.io/travis/azkaban/azkaban.svg?style=flat)](https://travis-ci.org/azkaban/azkaban)
+Azkaban 3 [![Build Status](http://img.shields.io/travis/azkaban/azkaban.svg?style=flat)](https://travis-ci.org/azkaban/azkaban)
 ========
 
 Building from Source
@@ -14,6 +14,12 @@ The above command builds all Azkaban packages and packages them into GZipped Tar
 
 ```
 ./gradlew distZip
+```
+
+If not building for the first time, it's good to clean first:
+
+```
+./gradlew clean
 ```
 
 Documentation

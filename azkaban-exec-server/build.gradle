@@ -1,0 +1,28 @@
+apply plugin: 'distribution'
+
+dependencies {
+  compile(project(':azkaban-common'))
+  compile('org.apache.kafka:kafka-log4j-appender:0.10.0.0')
+  compile('com.googlecode.json-simple:json-simple:1.1.1')
+
+  testCompile('org.hamcrest:hamcrest-all:1.3')
+  testCompile(project(':azkaban-common').sourceSets.test.output)
+  testCompile('com.google.guava:guava:13.0.1')
+}
+
+distributions {
+  main {
+    contents {
+      from('src/main/bash') {
+        into 'bin'
+        fileMode = 0755
+      }
+      from(configurations.runtime) {
+        into 'lib'
+      }
+      from(jar) {
+        into 'lib'
+      }
+    }
+  }
+}

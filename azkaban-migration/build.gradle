@@ -1,0 +1,23 @@
+apply plugin: 'distribution'
+
+
+dependencies {
+  compile(project(':azkaban-common'))
+}
+
+distributions {
+  main {
+    contents {
+      from('src/main/bash') {
+        into 'bin'
+        fileMode = 0755
+      }
+      from(configurations.runtime) {
+        into 'lib'
+      }
+      from(jar) {
+        into 'lib'
+      }
+    }
+  }
+}
