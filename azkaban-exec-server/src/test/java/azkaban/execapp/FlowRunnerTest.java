@@ -45,6 +45,7 @@ import azkaban.project.Project;
 import azkaban.project.ProjectLoader;
 import azkaban.project.MockProjectLoader;
 import azkaban.utils.JSONUtils;
+import azkaban.utils.Props;
 
 public class FlowRunnerTest {
   private File workingDir;
@@ -455,7 +456,12 @@ public class FlowRunnerTest {
   }
 
   private FlowRunner createFlowRunner(ExecutableFlow flow,
-      ExecutorLoader loader, EventCollectorListener eventCollector)
+      ExecutorLoader loader, EventCollectorListener eventCollector) throws Exception {
+    return createFlowRunner(flow, loader, eventCollector, new Props());
+  }
+
+  private FlowRunner createFlowRunner(ExecutableFlow flow,
+      ExecutorLoader loader, EventCollectorListener eventCollector, Props azkabanProps)
       throws Exception {
     // File testDir = new File("unit/executions/exectest1");
     // MockProjectLoader projectLoader = new MockProjectLoader(new
@@ -463,7 +469,7 @@ public class FlowRunnerTest {
 
     loader.uploadExecutableFlow(flow);
     FlowRunner runner =
-        new FlowRunner(flow, loader, fakeProjectLoader, jobtypeManager);
+        new FlowRunner(flow, loader, fakeProjectLoader, jobtypeManager, azkabanProps);
 
     runner.addListener(eventCollector);
 
@@ -472,6 +478,11 @@ public class FlowRunnerTest {
 
   private FlowRunner createFlowRunner(ExecutorLoader loader,
       EventCollectorListener eventCollector, String flowName) throws Exception {
+    return createFlowRunner(loader, eventCollector, flowName, new Props());
+  }
+
+  private FlowRunner createFlowRunner(ExecutorLoader loader,
+      EventCollectorListener eventCollector, String flowName, Props azkabanProps) throws Exception {
     File testDir = new File("unit/executions/exectest1");
     ExecutableFlow exFlow = prepareExecDir(testDir, flowName, 1);
     // MockProjectLoader projectLoader = new MockProjectLoader(new
@@ -480,7 +491,7 @@ public class FlowRunnerTest {
     loader.uploadExecutableFlow(exFlow);
 
     FlowRunner runner =
-        new FlowRunner(exFlow, loader, fakeProjectLoader, jobtypeManager);
+        new FlowRunner(exFlow, loader, fakeProjectLoader, jobtypeManager, azkabanProps);
 
     runner.addListener(eventCollector);
 

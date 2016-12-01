@@ -226,6 +226,11 @@ public class FlowRunnerPropertyResolutionTest {
 
   private FlowRunner createFlowRunner(String flowName,
       HashMap<String, String> flowParams) throws Exception {
+    return createFlowRunner(flowName, flowParams, new Props());
+  }
+
+  private FlowRunner createFlowRunner(String flowName,
+      HashMap<String, String> flowParams, Props azkabanProps) throws Exception {
     Flow flow = flowMap.get(flowName);
 
     int exId = id++;
@@ -238,7 +243,7 @@ public class FlowRunnerPropertyResolutionTest {
 
     FlowRunner runner =
         new FlowRunner(fakeExecutorLoader.fetchExecutableFlow(exId),
-            fakeExecutorLoader, fakeProjectLoader, jobtypeManager);
+            fakeExecutorLoader, fakeProjectLoader, jobtypeManager, azkabanProps);
     return runner;
   }
 

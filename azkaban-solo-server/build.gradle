@@ -22,6 +22,9 @@ distributions {
       from ('src/main/resources/conf') {
         into 'conf'
       }
+      from ('src/main/resources/commonprivate.properties') {
+        into 'plugins/jobtypes'
+      }
       from(configurations.runtime) {
         into 'lib'
       }

@@ -57,6 +57,7 @@ import org.mortbay.jetty.servlet.ServletHolder;
 import org.mortbay.thread.QueuedThreadPool;
 
 import azkaban.alert.Alerter;
+import azkaban.constants.ServerInternals;
 import azkaban.database.AzkabanDatabaseSetup;
 import azkaban.executor.ExecutorManager;
 import azkaban.executor.JdbcExecutorLoader;
@@ -69,7 +70,6 @@ import azkaban.scheduler.ScheduleLoader;
 import azkaban.scheduler.ScheduleManager;
 import azkaban.scheduler.TriggerBasedScheduleLoader;
 import azkaban.server.AzkabanServer;
-import azkaban.server.Constants;
 import azkaban.server.session.SessionCache;
 import azkaban.trigger.JdbcTriggerLoader;
 import azkaban.trigger.TriggerLoader;
@@ -103,8 +103,6 @@ import azkaban.webapp.servlet.ScheduleServlet;
 import azkaban.webapp.servlet.StatsServlet;
 import azkaban.webapp.servlet.TriggerManagerServlet;
 import azkaban.metrics.MetricsManager;
-
-import static azkaban.server.Constants.IS_METRICS_ENABLED;
 
 import com.linkedin.restli.server.RestliServlet;
 
@@ -227,7 +225,7 @@ public class AzkabanWebServer extends AzkabanServer {
     }
 
     configureMBeanServer();
-    if (props.getBoolean(IS_METRICS_ENABLED, false)) {
+    if (props.getBoolean(ServerInternals.IS_METRICS_ENABLED, false)) {
       startWebMetrics();
     }
   }
@@ -824,7 +822,7 @@ public class AzkabanWebServer extends AzkabanServer {
     // TODO: find something else to do the job
     app.getTriggerManager().start();
 
-    root.setAttribute(Constants.AZKABAN_SERVLET_CONTEXT_KEY, app);
+    root.setAttribute(ServerInternals.AZKABAN_SERVLET_CONTEXT_KEY, app);
     try {
       server.start();
     } catch (Exception e) {

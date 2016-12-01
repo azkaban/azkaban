@@ -17,8 +17,8 @@
 package azkaban.metrics;
 
 import azkaban.utils.Props;
-import static azkaban.server.Constants.METRICS_SERVER_URL;
-import static azkaban.server.Constants.CUSTOM_METRICS_REPORTER_CLASS_NAME;
+import static azkaban.constants.ServerInternals.METRICS_SERVER_URL;
+import static azkaban.constants.ServerInternals.CUSTOM_METRICS_REPORTER_CLASS_NAME;
 
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.ConsoleReporter;
