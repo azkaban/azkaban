@@ -601,6 +601,11 @@ public class ExecutorManager extends EventHandler implements
     return allIds.toString();
   }
 
+
+  public long getQueuedFlowSize() {
+    return queuedFlows.size();
+  }
+
   /* Helper method to flow ids of all running flows */
   private void getRunningFlowsIdsHelper(List<Integer> allIds,
     Collection<Pair<ExecutionReference, ExecutableFlow>> collection) {

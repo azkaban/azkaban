@@ -44,7 +44,11 @@ import javax.management.MBeanInfo;
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
 
+import com.codahale.metrics.MetricRegistry;
+
 import azkaban.constants.ServerInternals;
+import azkaban.constants.ServerProperties;
+
 import azkaban.execapp.event.JobCallbackManager;
 import azkaban.execapp.jmx.JmxFlowRunnerManager;
 import azkaban.execapp.jmx.JmxJobMBeanManager;
@@ -68,6 +72,7 @@ import azkaban.server.AzkabanServer;
 import azkaban.utils.Props;
 import azkaban.utils.SystemMemoryInfo;
 import azkaban.utils.Utils;
+import azkaban.metrics.MetricsManager;
 
 import static azkaban.constants.ServerInternals.AZKABAN_EXECUTOR_PORT_FILENAME;
 import static com.google.common.base.Preconditions.checkState;
@@ -133,7 +138,12 @@ public class AzkabanExecutorServer {
 
     insertExecutorEntryIntoDB();
     dumpPortToFile();
+
     logger.info("Started Executor Server on " + getExecutorHostPort());
+
+    if (props.getBoolean(ServerProperties.IS_METRICS_ENABLED, false)) {
+      startExecMetrics();
+    }
   }
 
   private Server createJettyServer(Props props) {
@@ -173,6 +183,17 @@ public class AzkabanExecutorServer {
 
     root.setAttribute(ServerInternals.AZKABAN_SERVLET_CONTEXT_KEY, this);
     return server;
+  }
+
+  private void startExecMetrics() throws Exception {
+    MetricRegistry metrics = MetricsManager.INSTANCE.getRegistry();
+
+    logger.info("starting reporting Executor Metrics");
+    MetricsExecRegister execWorker =
+        new MetricsExecRegister.MetricsExecRegisterBuilder("EXEC").addFlowRunnerManager(getFlowRunnerManager()).build();
+    execWorker.addExecutorManagerMetrics(metrics);
+
+    MetricsManager.INSTANCE.startReporting("AZ-EXEC", props);
   }
 
   private void insertExecutorEntryIntoDB() {

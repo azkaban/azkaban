@@ -16,6 +16,8 @@
 
 package azkaban.webapp;
 
+import com.codahale.metrics.MetricRegistry;
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -56,6 +58,7 @@ import org.mortbay.thread.QueuedThreadPool;
 
 import azkaban.alert.Alerter;
 import azkaban.constants.ServerInternals;
+import azkaban.constants.ServerProperties;
 import azkaban.database.AzkabanDatabaseSetup;
 import azkaban.executor.ExecutorManager;
 import azkaban.executor.JdbcExecutorLoader;
@@ -100,6 +103,7 @@ import azkaban.webapp.servlet.ProjectServlet;
 import azkaban.webapp.servlet.ScheduleServlet;
 import azkaban.webapp.servlet.StatsServlet;
 import azkaban.webapp.servlet.TriggerManagerServlet;
+import azkaban.metrics.MetricsManager;
 
 import com.linkedin.restli.server.RestliServlet;
 
@@ -222,7 +226,22 @@ public class AzkabanWebServer extends AzkabanServer {
     }
 
     configureMBeanServer();
+    if (props.getBoolean(ServerProperties.IS_METRICS_ENABLED, false)) {
+      startWebMetrics();
+    }
   }
+
+  private void startWebMetrics() throws Exception{
+    MetricRegistry metrics = MetricsManager.INSTANCE.getRegistry();
+    MetricsWebRegister execWorker = new MetricsWebRegister.MetricsWebRegisterBuilder("WEB")
+        .addExecutorManager(getExecutorManager())
+        .build();
+    execWorker.addExecutorManagerMetrics(metrics);
+
+    MetricsManager.INSTANCE.startReporting("AZ-WEB", props);
+  }
+
+
 
   private void setTriggerPlugins(Map<String, TriggerPlugin> triggerPlugins) {
     this.triggerPlugins = triggerPlugins;
