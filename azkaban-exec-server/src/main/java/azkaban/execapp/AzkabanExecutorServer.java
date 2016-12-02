@@ -47,6 +47,8 @@ import javax.management.ObjectName;
 import com.codahale.metrics.MetricRegistry;
 
 import azkaban.constants.ServerInternals;
+import azkaban.constants.ServerProperties;
+
 import azkaban.execapp.event.JobCallbackManager;
 import azkaban.execapp.jmx.JmxFlowRunnerManager;
 import azkaban.execapp.jmx.JmxJobMBeanManager;
@@ -139,7 +141,7 @@ public class AzkabanExecutorServer {
 
     logger.info("Started Executor Server on " + getExecutorHostPort());
 
-    if (props.getBoolean(ServerInternals.IS_METRICS_ENABLED, false)) {
+    if (props.getBoolean(ServerProperties.IS_METRICS_ENABLED, false)) {
       startExecMetrics();
     }
   }

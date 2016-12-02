@@ -17,6 +17,6 @@
 package azkaban.constants;
 
 public class JobProperties {
-	// Job property that enables/disables using Kafka logging of user job logs
-	public static final String AZKABAN_JOB_LOGGING_KAFKA_ENABLE = "azkaban.job.logging.kafka.enable";
+  // Job property that enables/disables using Kafka logging of user job logs
+  public static final String AZKABAN_JOB_LOGGING_KAFKA_ENABLE = "azkaban.job.logging.kafka.enable";
 }

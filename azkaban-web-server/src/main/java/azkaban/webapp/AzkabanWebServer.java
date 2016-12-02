@@ -58,6 +58,7 @@ import org.mortbay.thread.QueuedThreadPool;
 
 import azkaban.alert.Alerter;
 import azkaban.constants.ServerInternals;
+import azkaban.constants.ServerProperties;
 import azkaban.database.AzkabanDatabaseSetup;
 import azkaban.executor.ExecutorManager;
 import azkaban.executor.JdbcExecutorLoader;
@@ -225,7 +226,7 @@ public class AzkabanWebServer extends AzkabanServer {
     }
 
     configureMBeanServer();
-    if (props.getBoolean(ServerInternals.IS_METRICS_ENABLED, false)) {
+    if (props.getBoolean(ServerProperties.IS_METRICS_ENABLED, false)) {
       startWebMetrics();
     }
   }

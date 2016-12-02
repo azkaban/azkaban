@@ -22,4 +22,19 @@ public class ServerProperties {
   // Configures the Kafka appender for logging user jobs, specified for the exec server
   public static final String AZKABAN_SERVER_LOGGING_KAFKA_BROKERLIST = "azkaban.server.logging.kafka.brokerList";
   public static final String AZKABAN_SERVER_LOGGING_KAFKA_TOPIC = "azkaban.server.logging.kafka.topic";
+
+  /**
+   * Represent the class name of azkaban metrics reporter.
+   */
+  public static final String CUSTOM_METRICS_REPORTER_CLASS_NAME =
+      "azkaban.metrics.reporter.name";
+
+  /**
+   * Represent the metrics server URL.
+   */
+  public static final String METRICS_SERVER_URL =
+      "azkaban.metrics.server.url";
+
+  public static final String IS_METRICS_ENABLED =
+      "azkaban.is.metrics.enabled";
 }
