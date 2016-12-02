@@ -237,7 +237,7 @@ public class AzkabanWebServer extends AzkabanServer {
         .build();
     execWorker.addExecutorManagerMetrics(metrics);
 
-    MetricsManager.INSTANCE.startReporting(props);
+    MetricsManager.INSTANCE.startReporting("AZ-WEB", props);
   }
 
 

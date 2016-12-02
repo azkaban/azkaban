@@ -34,7 +34,7 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * The singleton class, MetricsManager, is the place to have MetricRegistry and
- * ConsoleReporter in this class. Also, web servers and executors can call {@link #startReporting(Props)}
+ * ConsoleReporter in this class. Also, web servers and executors can call {@link #startReporting(String, Props)}
  * to start reporting AZ metrics to remote metrics server.
  */
 public enum MetricsManager {
@@ -67,7 +67,7 @@ public enum MetricsManager {
    * Note: this method must be synchronized, since both web server and executor
    * will call it during initialization.
    */
-  public synchronized void startReporting(Props props) {
+  public synchronized void startReporting(String reporterName, Props props) {
     String metricsReporterClassName = props.get(CUSTOM_METRICS_REPORTER_CLASS_NAME);
     String metricsServerURL = props.get(METRICS_SERVER_URL);
     if (metricsReporterClassName != null && metricsServerURL != null) {
@@ -77,7 +77,7 @@ public enum MetricsManager {
 
         Constructor[] constructors =
             metricsClass.getConstructors();
-        constructors[0].newInstance(registry, metricsServerURL);
+        constructors[0].newInstance(reporterName, registry, metricsServerURL);
 
       } catch (Exception e) {
         logger.error("Encountered error while loading and instantiating "

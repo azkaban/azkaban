@@ -191,7 +191,7 @@ public class AzkabanExecutorServer {
         new MetricsExecRegister.MetricsExecRegisterBuilder("EXEC").addFlowRunnerManager(getFlowRunnerManager()).build();
     execWorker.addExecutorManagerMetrics(metrics);
 
-    MetricsManager.INSTANCE.startReporting(props);
+    MetricsManager.INSTANCE.startReporting("AZ-EXEC", props);
   }
 
   private void insertExecutorEntryIntoDB() {
