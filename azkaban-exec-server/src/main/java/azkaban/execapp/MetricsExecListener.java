@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 LinkedIn Corp.
+ * Copyright 2017 LinkedIn Corp.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -16,32 +16,33 @@
 
 package azkaban.execapp;
 
+import azkaban.event.Event;
+import azkaban.event.EventListener;
+import azkaban.execapp.FlowRunnerManager;
+
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Gauge;
 
-import azkaban.execapp.FlowRunnerManager;
 import org.apache.log4j.Logger;
 
 
 /**
  * This class MetricsExecRegister is in charge of collecting metrics from executors.
  */
-public class MetricsExecRegister {
-  private static final Logger logger = Logger.getLogger(MetricsExecRegister.class);
+public enum MetricsExecListener implements EventListener {
+  INSTANCE;
 
-  private String endpointName;
+  private static final Logger logger = Logger.getLogger(MetricsExecListener.class);
+
   private FlowRunnerManager _flowRunnerManager;
 
-  public MetricsExecRegister(MetricsExecRegisterBuilder builder) {
-    this.endpointName = builder.endpointName;
-    this._flowRunnerManager = builder._flowRunnerManager;
-  }
+  public void registerFlowRunnerManagerMetrics(MetricRegistry metrics, FlowRunnerManager flowRunnerManager) throws Exception {
+    this._flowRunnerManager = flowRunnerManager;
 
-  public void addExecutorManagerMetrics(MetricRegistry metrics) throws Exception {
     if (_flowRunnerManager == null)
       throw new Exception("flowRunnerManager has not yet been initialized.");
 
-    logger.info("register executor metrics.");
+    logger.info("Registering executor specific metrics.");
     metrics.register("EXEC-NumRunningFlows", new Gauge<Integer>() {
       @Override
       public Integer getValue() {
@@ -58,22 +59,10 @@ public class MetricsExecRegister {
     });
   }
 
-  public static class MetricsExecRegisterBuilder {
-    private FlowRunnerManager _flowRunnerManager;
-    private String endpointName;
-
-    public MetricsExecRegisterBuilder(String endpointName) {
-      this.endpointName = endpointName;
-    }
-
-    public MetricsExecRegisterBuilder addFlowRunnerManager(FlowRunnerManager flowRunnerManager) {
-      this._flowRunnerManager = flowRunnerManager;
-      return this;
-    }
-
-    public MetricsExecRegister build() {
-      return new MetricsExecRegister(this);
-    }
+  @Override
+  public synchronized void handleEvent(Event event) {
+    /**
+     * TODO: Adding Web Server Specific metrics here.
+     */
   }
-
 }
