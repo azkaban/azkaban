@@ -26,7 +26,10 @@ public class Event {
     JOB_FINISHED,
     JOB_STATUS_CHANGED,
     EXTERNAL_FLOW_UPDATED,
-    EXTERNAL_JOB_UPDATED
+    EXTERNAL_JOB_UPDATED,
+    UPLOAD_FILE_CHUNK,
+    USER_DOWNLOAD_FILE,
+    AZ_DOWNLOAD_FILE
   }
 
   private final Object runner;
@@ -38,6 +41,13 @@ public class Event {
     this.runner = runner;
     this.type = type;
     this.eventData = eventData;
+    this.time = System.currentTimeMillis();
+  }
+
+  private Event(Object runner, Type type) {
+    this.runner = runner;
+    this.type = type;
+    this.eventData = null;
     this.time = System.currentTimeMillis();
   }
 
@@ -71,4 +81,15 @@ public class Event {
     return new Event(runner, type, eventData);
   }
 
+  /**
+   * Creates a new event.
+   *
+   * @param runner runner.
+   * @param type type.
+   * @return New Event instance.
+   * @throws NullPointerException if EventData is null.
+   */
+  public static Event create(Object runner, Type type) {
+    return new Event(runner, type);
+  }
 }

@@ -37,7 +37,7 @@ import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutorManager;
 import azkaban.utils.Props;
 
-public class TriggerManager extends EventHandler implements
+public class TriggerManager implements EventHandler,
     TriggerManagerAdapter {
   private static Logger logger = Logger.getLogger(TriggerManager.class);
   public static final long DEFAULT_SCANNER_INTERVAL_MS = 60000;
@@ -53,6 +53,8 @@ public class TriggerManager extends EventHandler implements
   private long lastRunnerThreadCheckTime = -1;
   private long runnerThreadIdleTime = -1;
   private LocalTriggerJMX jmxStats = new LocalTriggerJMX();
+
+  private static HashSet<EventListener> triggerManagerListeners = new HashSet<>();
 
   private ExecutorManagerEventListener listener =
       new ExecutorManagerEventListener();
@@ -104,6 +106,10 @@ public class TriggerManager extends EventHandler implements
     }
 
     runnerThread.start();
+  }
+
+  public HashSet<EventListener> getListeners() {
+    return triggerManagerListeners;
   }
 
   protected CheckerTypeLoader getCheckerLoader() {

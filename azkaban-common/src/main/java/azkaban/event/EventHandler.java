@@ -19,25 +19,23 @@ package azkaban.event;
 import java.util.ArrayList;
 import java.util.HashSet;
 
-public class EventHandler {
-  private HashSet<EventListener> listeners = new HashSet<EventListener>();
+public interface EventHandler {
 
-  public EventHandler() {
+  public HashSet<EventListener> getListeners();
+
+  default public void addListener(EventListener listener) {
+    getListeners().add(listener);
   }
 
-  public void addListener(EventListener listener) {
-    listeners.add(listener);
-  }
-
-  public void fireEventListeners(Event event) {
+  default public void fireEventListeners(Event event) {
     ArrayList<EventListener> listeners =
-        new ArrayList<EventListener>(this.listeners);
+        new ArrayList<EventListener>(getListeners());
     for (EventListener listener : listeners) {
       listener.handleEvent(event);
     }
   }
 
-  public void removeListener(EventListener listener) {
-    listeners.remove(listener);
+  default public void removeListener(EventListener listener) {
+    getListeners().remove(listener);
   }
 }

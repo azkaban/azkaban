@@ -16,6 +16,7 @@
 
 package azkaban.executor;
 
+import azkaban.event.EventListener;
 import java.io.File;
 import java.io.IOException;
 import java.lang.Thread.State;
@@ -63,7 +64,7 @@ import azkaban.utils.Props;
  * Executor manager used to manage the client side job.
  *
  */
-public class ExecutorManager extends EventHandler implements
+public class ExecutorManager implements EventHandler,
     ExecutorManagerAdapter {
   static final String AZKABAN_EXECUTOR_SELECTOR_FILTERS =
       "azkaban.executorselector.filters";
@@ -107,6 +108,7 @@ public class ExecutorManager extends EventHandler implements
 
   private long lastThreadCheckTime = -1;
   private String updaterStage = "not started";
+  private static HashSet<EventListener> listeners = new HashSet<>();
 
   private Map<String, Alerter> alerters;
 
@@ -146,6 +148,10 @@ public class ExecutorManager extends EventHandler implements
     cleanerThread = new CleanerThread(executionLogsRetentionMs);
     cleanerThread.start();
 
+  }
+
+  public HashSet<EventListener> getListeners() {
+    return listeners;
   }
 
   private void setupMultiExecutorMode() {
