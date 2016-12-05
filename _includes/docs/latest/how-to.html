@@ -20,3 +20,38 @@
 <p>Only users with admin privileges can use this action. This action need at least one active executor to be successful. Use curl or simply visit following URL:-
 	<code>WEBSERVER_URL/executor?ajax=reloadExecutors</code>
 </p>	
+
+<h4>Logging job logs to a Kafka cluster</h4>
+<p>Azkaban supports sending job logs to a log ingestion (such as ELK) cluster via a Kafka appender. In order to enable this in Azkaban, you will need to set two exec server properties (shown here with sample values):
+</p>
+
+<pre class="code">
+azkaban.server.logging.kafka.brokerList=localhost:9092
+azkaban.server.logging.kafka.topic=azkaban-logging
+</pre>
+
+<p>These configure where Azkaban can find your Kafka cluster, and also which topic to put the logs under. Failure to provide these parameters will result in
+Azkaban refusing to create a Kafka appender upon requesting one.</p>
+<p>In order to configure a job to send its logs to Kafka, the following job property needs to be set to true:
+</p>
+
+<pre class="code">
+azkaban.job.logging.kafka.enable=true
+</pre>
+
+<p>Jobs with this setting enabled will broadcast its log messages in JSON form to the Kafka cluster. It has the following structure:
+</p>
+
+<pre class="code">
+{
+  "projectname": "Project name",
+  "level": "INFO or ERROR",
+  "submituser": "Someone",
+  "projectversion": "Project version",
+  "category": "Class name",
+  "message": "Some log message",
+  "logsource": "userJob",
+  "flowid": "ID of flow",
+  "execid": "ID of execution"
+}
+</pre>
