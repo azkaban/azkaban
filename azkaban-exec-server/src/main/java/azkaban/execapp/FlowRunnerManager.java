@@ -88,53 +88,47 @@ import azkaban.utils.TrackingThreadPool;
  */
 public class FlowRunnerManager implements EventListener,
     ThreadPoolExecutingListener {
-  private static final String EXECUTOR_USE_BOUNDED_THREADPOOL_QUEUE =
-      "executor.use.bounded.threadpool.queue";
-  private static final String EXECUTOR_THREADPOOL_WORKQUEUE_SIZE =
-      "executor.threadpool.workqueue.size";
+  private static final Logger logger = Logger.getLogger(FlowRunnerManager.class);
+
+  private static final String EXECUTOR_USE_BOUNDED_THREADPOOL_QUEUE = "executor.use.bounded.threadpool.queue";
+  private static final String EXECUTOR_THREADPOOL_WORKQUEUE_SIZE = "executor.threadpool.workqueue.size";
   private static final String EXECUTOR_FLOW_THREADS = "executor.flow.threads";
   private static final String FLOW_NUM_JOB_THREADS = "flow.num.job.threads";
-  private static Logger logger = Logger.getLogger(FlowRunnerManager.class);
-  private File executionDirectory;
-  private File projectDirectory;
 
   // recently finished secs to clean up. 1 minute
-  private static final long RECENTLY_FINISHED_TIME_TO_LIVE = 60 * 1000;
+  private static final int RECENTLY_FINISHED_TIME_TO_LIVE = 60 * 1000;
 
   private static final int DEFAULT_NUM_EXECUTING_FLOWS = 30;
   private static final int DEFAULT_FLOW_NUM_JOB_TREADS = 10;
 
-  private Map<Pair<Integer, Integer>, ProjectVersion> installedProjects =
-      new ConcurrentHashMap<Pair<Integer, Integer>, ProjectVersion>();
   // this map is used to store the flows that have been submitted to
   // the executor service. Once a flow has been submitted, it is either
   // in the queue waiting to be executed or in executing state.
-  private Map<Future<?>, Integer> submittedFlows =
-      new ConcurrentHashMap<Future<?>, Integer>();
-  private Map<Integer, FlowRunner> runningFlows =
-      new ConcurrentHashMap<Integer, FlowRunner>();
-  private Map<Integer, ExecutableFlow> recentlyFinishedFlows =
-      new ConcurrentHashMap<Integer, ExecutableFlow>();
+  private final Map<Future<?>, Integer> submittedFlows = new ConcurrentHashMap<>();
+  private final Map<Integer, FlowRunner> runningFlows = new ConcurrentHashMap<>();
+  private final Map<Integer, ExecutableFlow> recentlyFinishedFlows = new ConcurrentHashMap<>();
+  private final Map<Pair<Integer, Integer>, ProjectVersion> installedProjects;
+
+  private final TrackingThreadPool executorService;
+  private final CleanerThread cleanerThread;
+  private final ExecutorLoader executorLoader;
+  private final ProjectLoader projectLoader;
+  private final JobTypeManager jobtypeManager;
+
+  private final Props azkabanProps;
+  private final File executionDirectory;
+  private final File projectDirectory;
+
+  private final Object executionDirDeletionSync = new Object();
 
   private int numThreads = DEFAULT_NUM_EXECUTING_FLOWS;
   private int threadPoolQueueSize = -1;
-
-  private TrackingThreadPool executorService;
-
-  private CleanerThread cleanerThread;
   private int numJobThreadPerFlow = DEFAULT_FLOW_NUM_JOB_TREADS;
 
-  private ExecutorLoader executorLoader;
-  private ProjectLoader projectLoader;
-
-  private JobTypeManager jobtypeManager;
-
-  private Props globalProps = null;
-
-  private final Props azkabanProps;
+  private Props globalProps;
 
   private long lastCleanerThreadCheckTime = -1;
-  private long executionDirRetention = 1 * 24 * 60 * 60 * 1000;
+  private long executionDirRetention = 1 * 24 * 60 * 60 * 1000; // 1 Day
 
   // We want to limit the log sizes to about 20 megs
   private String jobLogChunkSize = "5MB";
@@ -143,8 +137,6 @@ public class FlowRunnerManager implements EventListener,
   // If true, jobs will validate proxy user against a list of valid proxy users.
   private boolean validateProxyUser = false;
 
-  private Object executionDirDeletionSync = new Object();
-
   // date time of the the last flow submitted.
   private long lastFlowSubmittedDate = 0;
 
@@ -152,24 +144,18 @@ public class FlowRunnerManager implements EventListener,
   private volatile boolean isActive = false;
 
   public FlowRunnerManager(Props props, ExecutorLoader executorLoader,
-      ProjectLoader projectLoader, ClassLoader parentClassLoader)
-      throws IOException {
-    executionDirectory =
-        new File(props.getString("azkaban.execution.dir", "executions"));
-    projectDirectory =
-        new File(props.getString("azkaban.project.dir", "projects"));
-
+      ProjectLoader projectLoader, ClassLoader parentClassLoader) throws IOException {
     azkabanProps = props;
 
     // JobWrappingFactory.init(props, getClass().getClassLoader());
-    executionDirRetention =
-        props.getLong("execution.dir.retention", executionDirRetention);
-    logger.info("Execution dir retention set to " + executionDirRetention
-        + " ms");
+    executionDirRetention = props.getLong("execution.dir.retention", executionDirRetention);
+    logger.info("Execution dir retention set to " + executionDirRetention + " ms");
 
+    executionDirectory = new File(props.getString("azkaban.execution.dir", "executions"));
     if (!executionDirectory.exists()) {
       executionDirectory.mkdirs();
     }
+    projectDirectory = new File(props.getString("azkaban.project.dir", "projects"));
     if (!projectDirectory.exists()) {
       projectDirectory.mkdirs();
     }
@@ -177,10 +163,8 @@ public class FlowRunnerManager implements EventListener,
     installedProjects = loadExistingProjects();
 
     // azkaban.temp.dir
-    numThreads =
-        props.getInt(EXECUTOR_FLOW_THREADS, DEFAULT_NUM_EXECUTING_FLOWS);
-    numJobThreadPerFlow =
-        props.getInt(FLOW_NUM_JOB_THREADS, DEFAULT_FLOW_NUM_JOB_TREADS);
+    numThreads = props.getInt(EXECUTOR_FLOW_THREADS, DEFAULT_NUM_EXECUTING_FLOWS);
+    numJobThreadPerFlow = props.getInt(FLOW_NUM_JOB_THREADS, DEFAULT_FLOW_NUM_JOB_TREADS);
     executorService = createExecutorService(numThreads);
 
     this.executorLoader = executorLoader;
@@ -189,16 +173,14 @@ public class FlowRunnerManager implements EventListener,
     this.jobLogChunkSize = azkabanProps.getString("job.log.chunk.size", "5MB");
     this.jobLogNumFiles = azkabanProps.getInt("job.log.backup.index", 4);
 
-    this.validateProxyUser =
-        azkabanProps.getBoolean("proxy.user.lock.down", false);
+    this.validateProxyUser = azkabanProps.getBoolean("proxy.user.lock.down", false);
 
     setActive(true);
 
     cleanerThread = new CleanerThread();
     cleanerThread.start();
 
-    String globalPropsPath =
-        props.getString("executor.global.properties", null);
+    String globalPropsPath = props.getString("executor.global.properties", null);
     if (globalPropsPath != null) {
       globalProps = new Props(null, globalPropsPath);
     }
