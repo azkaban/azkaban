@@ -45,7 +45,6 @@ import azkaban.execapp.event.RemoteFlowWatcher;
 import azkaban.execapp.metric.NumFailedFlowMetric;
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutionOptions;
-import azkaban.executor.Executor;
 import azkaban.executor.ExecutorLoader;
 import azkaban.executor.ExecutorManagerException;
 import azkaban.jobtype.JobTypeManager;
@@ -281,6 +280,7 @@ public class FlowRunnerManager implements EventListener,
 
     public CleanerThread() {
       this.setName("FlowRunnerManager-Cleaner-Thread");
+      setDaemon(true);
     }
 
     @SuppressWarnings("unused")
@@ -294,6 +294,7 @@ public class FlowRunnerManager implements EventListener,
         synchronized (this) {
           try {
             lastCleanerThreadCheckTime = System.currentTimeMillis();
+            logger.info("# of executing flows: " + getNumRunningFlows());
 
             // Cleanup old stuff.
             long currentTime = System.currentTimeMillis();
@@ -331,15 +332,7 @@ public class FlowRunnerManager implements EventListener,
 
       final long pastTimeThreshold =
           System.currentTimeMillis() - executionDirRetention;
-      File[] executionDirs = dir.listFiles(new FileFilter() {
-        @Override
-        public boolean accept(File path) {
-          if (path.isDirectory() && path.lastModified() < pastTimeThreshold) {
-            return true;
-          }
-          return false;
-        }
-      });
+      File[] executionDirs = dir.listFiles(path -> path.isDirectory() && path.lastModified() < pastTimeThreshold);
 
       for (File exDir : executionDirs) {
         try {
@@ -870,6 +863,33 @@ public class FlowRunnerManager implements EventListener,
   @Override
   public void afterExecute(Runnable r) {
     submittedFlows.remove(r);
+  }
+
+  /**
+   * This shuts down the flow runner. The call is blocking and awaits execution of all jobs.
+   */
+  public void shutdown() {
+    logger.warn("Shutting down FlowRunnerManager...");
+    executorService.shutdown();
+    boolean result = false;
+    while (!result) {
+      logger.info("Awaiting Shutdown. # of executing flows: " + getNumRunningFlows());
+      try {
+        result = executorService.awaitTermination(1, TimeUnit.MINUTES);
+      } catch (InterruptedException e) {
+        logger.error(e);
+      }
+    }
+    logger.warn("Shutdown FlowRunnerManager complete.");
+  }
+
+  /**
+   * This attempts shuts down the flow runner immediately (unsafe).
+   * This doesn't wait for jobs to finish but interrupts all threads.
+   */
+  public void shutdownNow() {
+    logger.warn("Shutting down FlowRunnerManager now...");
+    executorService.shutdownNow();
   }
 
 }
