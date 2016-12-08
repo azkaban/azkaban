@@ -176,6 +176,8 @@ public class SystemMemoryInfo {
 
   public static void shutdown() {
     logger.warn("Shutting down SystemMemoryInfo...");
-    scheduledExecutorService.shutdown();
+    if (scheduledExecutorService != null) {
+      scheduledExecutorService.shutdown();
+    }
   }
 }
