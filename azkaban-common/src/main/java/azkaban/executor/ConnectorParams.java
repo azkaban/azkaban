@@ -36,6 +36,7 @@ public interface ConnectorParams {
   public static final String RELOAD_JOBTYPE_PLUGINS_ACTION = "reloadJobTypePlugins";
   public static final String ACTIVATE = "activate";
   public static final String DEACTIVATE = "deactivate";
+  public static final String GET_STATUS = "getStatus";
 
   public static final String MODIFY_EXECUTION_ACTION = "modifyExecution";
   public static final String MODIFY_EXECUTION_ACTION_TYPE = "modifyType";
