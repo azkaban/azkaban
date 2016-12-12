@@ -74,6 +74,74 @@
 	</tbody>
 </table>
 
+<h3>Script</h3>
+
+<p>Script jobs are a convenient wrapper for kicking off arbitrary scripts. It is a barebones script executor.  Azkaban will pass the job configuration to the script in "long" format e.g. <code>--key1 value1 --key2 value2.</code></p>
+
+<table class="table table-condensed table-striped table-bordered">
+	<thead>
+		<tr>
+			<th>Parameter</th>
+			<th>Description</th>
+			<th>Required?</th>
+		</tr>
+	</thead>
+	<tbody>
+		<tr>
+			<td>script</td>
+			<td>The script to run. i.e. <code>myScript.sh</code></td>
+			<td>yes</td>
+		</tr>
+		<tr>
+			<td>executable</td>
+			<td>The command to use to run the script i.e. <code>bash</code> or <code>node</code></td>
+			<td>yes</td>
+		</tr>
+	</tbody>
+</table>
+
+<h3>Python</h3>
+
+<p>Python jobs are a convenient wrapper for kicking off python scripts. It is the equivalent of running <code>python myscript.py</code>. Azkaban will pass the job configuration to the script in "long" format e.g. <code>--key1 value1 --key2 value2.</code></p>
+
+<table class="table table-condensed table-striped table-bordered">
+	<thead>
+		<tr>
+			<th>Parameter</th>
+			<th>Description</th>
+			<th>Required?</th>
+		</tr>
+	</thead>
+	<tbody>
+		<tr>
+			<td>script</td>
+			<td>The script to run. i.e. <code>myScript.py</code></td>
+			<td>yes</td>
+		</tr>
+	</tbody>
+</table>
+
+<h3>Ruby</h3>
+
+<p>Ruby jobs are a convenient wrapper for kicking off ruby scripts. It is the equivalent of running <code>ruby myscript.rb</code>. Azkaban will pass the job configuration to the script in "long" format e.g. <code>--key1 value1 --key2 value2.</code></p>
+
+<table class="table table-condensed table-striped table-bordered">
+	<thead>
+		<tr>
+			<th>Parameter</th>
+			<th>Description</th>
+			<th>Required?</th>
+		</tr>
+	</thead>
+	<tbody>
+		<tr>
+			<td>script</td>
+			<td>The script to run. i.e. <code>myScript.rb</code></td>
+			<td>yes</td>
+		</tr>
+	</tbody>
+</table>
+
 <h3>Noop</h3>
 
 <p>A job that takes no parameters and is essentially a null operation. Used for organizing your graph.</p>
