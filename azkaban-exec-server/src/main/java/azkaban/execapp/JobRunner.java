@@ -57,9 +57,11 @@ import azkaban.jobExecutor.JavaProcessJob;
 import azkaban.jobExecutor.Job;
 import azkaban.jobtype.JobTypeManager;
 import azkaban.jobtype.JobTypeManagerException;
+import azkaban.utils.ExternalLinkUtils;
 import azkaban.utils.Props;
 import azkaban.utils.StringUtils;
 import azkaban.utils.UndefinedPropertyException;
+import azkaban.utils.PatternLayoutEscaped;
 
 public class JobRunner extends EventHandler implements Runnable {
   public static final String AZKABAN_WEBSERVER_URL = "azkaban.webserver.url";
@@ -246,6 +248,11 @@ public class JobRunner extends EventHandler implements Runnable {
         }
       }
     }
+
+    String externalViewer = ExternalLinkUtils.getExternalLogViewer(azkabanProps, this.jobId, props);
+    if (!externalViewer.isEmpty()) {
+      logger.info("See logs at: " + externalViewer);
+    }
   }
 
   private void attachFileAppender(FileAppender appender) {
@@ -292,7 +299,7 @@ public class JobRunner extends EventHandler implements Runnable {
 
   private KafkaLog4jAppender createKafkaAppender() throws UndefinedPropertyException {
     KafkaLog4jAppender kafkaProducer = new KafkaLog4jAppender();
-    kafkaProducer.setSyncSend(false);
+    kafkaProducer.setSyncSend(true);
     kafkaProducer.setBrokerList(azkabanProps.getString(ServerProperties.AZKABAN_SERVER_LOGGING_KAFKA_BROKERLIST));
     kafkaProducer.setTopic(azkabanProps.getString(ServerProperties.AZKABAN_SERVER_LOGGING_KAFKA_TOPIC));
 
@@ -302,12 +309,13 @@ public class JobRunner extends EventHandler implements Runnable {
     layout.put("message", "%m");
     layout.put("projectname", props.getString(FlowProperties.AZKABAN_FLOW_PROJECT_NAME));
     layout.put("flowid", props.getString(FlowProperties.AZKABAN_FLOW_FLOW_ID));
+    layout.put("jobid", this.jobId);
     layout.put("submituser", props.getString(FlowProperties.AZKABAN_FLOW_SUBMIT_USER));
     layout.put("execid", props.getString(FlowProperties.AZKABAN_FLOW_EXEC_ID));
     layout.put("projectversion", props.getString(FlowProperties.AZKABAN_FLOW_PROJECT_VERSION));
     layout.put("logsource", "userJob");
 
-    kafkaProducer.setLayout(new EnhancedPatternLayout(layout.toString()));
+    kafkaProducer.setLayout(new PatternLayoutEscaped(layout.toString()));
     kafkaProducer.activateOptions();
 
     flowLogger.info("Created kafka appender for " + this.jobId);
