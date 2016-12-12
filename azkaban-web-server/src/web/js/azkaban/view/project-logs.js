@@ -29,7 +29,8 @@ var typeMapping = {
   "GROUP_PERMISSION" : "Group Permission",
   "DESCRIPTION" : "Description Set",
   "SCHEDULE": "Schedule",
-  "UPLOADED": "Uploaded"
+  "UPLOADED": "Uploaded",
+  "PROPERTY_OVERRIDE": "Property Override"
 };
 
 var projectLogView;
@@ -88,13 +89,20 @@ azkaban.ProjectLogView = Backbone.View.extend({
         $(containerUser).text(user);
 
         var containerType = document.createElement("td");
+        var containerMessage = document.createElement("td");
+
+        // If the event is a property override change, highlight by red color.
+        if(type == "PROPERTY_OVERRIDE"){
+          $(containerMessage).css("color", "red");
+          $(containerMessage).css("white-space", "pre-wrap");
+          $(containerType).css("color", "red");
+        }
+
         $(containerType).addClass("type");
         $(containerType).addClass(type);
         $(containerType).text(typeMapping[type] ? typeMapping[type] : type);
 
-        var containerMessage = document.createElement("td");
-        $(containerMessage).addClass("message");
-        $(containerMessage).text(message);
+        $(containerMessage).html(message);
 
         $(containerEvent).append(containerTime);
         $(containerEvent).append(containerUser);
