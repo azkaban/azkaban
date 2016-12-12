@@ -37,6 +37,9 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.log4j.Logger;
 import org.joda.time.DateTime;
 
+import com.google.common.collect.Maps;
+import com.google.common.collect.MapDifference;
+
 import azkaban.executor.ExecutableFlowBase;
 import azkaban.flow.CommonJobProperties;
 
@@ -364,5 +367,45 @@ public class PropsUtils {
     }
 
     return propsMap;
+  }
+
+  /**
+   * @param oldProps
+   * @param newProps
+   * @return the difference between oldProps and newProps.
+   */
+  public static String getPropertyDiff(Props oldProps, Props newProps) {
+
+    StringBuilder builder = new StringBuilder("");
+
+    MapDifference<String, String> md =
+        Maps.difference(toStringMap(oldProps, false), toStringMap(newProps, false));
+
+    Map<String, String> newlyCreatedProperty = md.entriesOnlyOnRight();
+    if (newlyCreatedProperty != null && newlyCreatedProperty.size() > 0) {
+      builder.append("Newly created Properties: ");
+      newlyCreatedProperty.forEach((k, v) -> {
+        builder.append("[ " + k + ", " + v + "], ");
+      });
+      builder.append("\n");
+    }
+
+    Map<String, String> deletedProperty = md.entriesOnlyOnLeft();
+    if (deletedProperty != null && deletedProperty.size() > 0) {
+      builder.append("Deleted Properties: ");
+      deletedProperty.forEach((k, v) -> {
+        builder.append("[ " + k + ", " + v + "], ");
+      });
+      builder.append("\n");
+    }
+
+    Map<String, MapDifference.ValueDifference<String>> diffProperties = md.entriesDiffering();
+    if (diffProperties != null && diffProperties.size() > 0) {
+      builder.append("Modified Properties: ");
+      diffProperties.forEach((k, v) -> {
+        builder.append("[ " + k + ", " + v.leftValue() + "-->" + v.rightValue() + "], ");
+      });
+    }
+    return builder.toString();
   }
 }

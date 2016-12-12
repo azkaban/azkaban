@@ -25,7 +25,6 @@ import java.io.OutputStream;
 import java.io.Writer;
 import java.security.AccessControlException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
@@ -298,7 +297,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
         }
       } else if (ajaxName.equals("setJobOverrideProperty")) {
         if (handleAjaxPermission(project, user, Type.WRITE, ret)) {
-          ajaxSetJobOverrideProperty(project, ret, req);
+          ajaxSetJobOverrideProperty(project, ret, req, user);
         }
       } else {
         ret.put("error", "Cannot execute command " + ajaxName);
@@ -734,7 +733,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
   }
 
   private void ajaxSetJobOverrideProperty(Project project,
-      HashMap<String, Object> ret, HttpServletRequest req)
+      HashMap<String, Object> ret, HttpServletRequest req, User user)
       throws ServletException {
     String flowName = getParam(req, "flowName");
     String jobName = getParam(req, "jobName");
@@ -756,7 +755,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
     @SuppressWarnings("unchecked")
     Props overrideParams = new Props(null, jobParamGroup);
     try {
-      projectManager.setJobOverrideProperty(project, overrideParams, jobName);
+      projectManager.setJobOverrideProperty(project, overrideParams, jobName, user);
     } catch (ProjectManagerException e) {
       ret.put("error", "Failed to upload job override property");
     }
