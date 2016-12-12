@@ -218,7 +218,7 @@ public class PropsUtilsTest {
 
     newProps1.put("b", "b_value2");
 
-    String message1= PropsUtils.getPropertyDiff(oldProps, newProps1);
+    String message1 = PropsUtils.getPropertyDiff(oldProps, newProps1);
     Assert.assertEquals(message1, "Deleted Properties: [ a, a_value1], \nModified Properties: [ b, b_value1-->b_value2], ");
 
     Props newProps2 = new Props();
@@ -227,9 +227,16 @@ public class PropsUtilsTest {
     newProps2.put("b", "b_value1");
     newProps2.put("c", "c_value1");
 
-    String message2= PropsUtils.getPropertyDiff(oldProps, newProps2);
-
+    String message2 = PropsUtils.getPropertyDiff(oldProps, newProps2);
     Assert.assertEquals(message2, "Newly created Properties: [ c, c_value1], \n");
+
+    Props newProps3 = new Props();
+
+    newProps3.put("b", "b_value1");
+    newProps3.put("c", "a_value1");
+
+    String message3 = PropsUtils.getPropertyDiff(oldProps, newProps3);
+    Assert.assertEquals(message3, "Newly created Properties: [ c, a_value1], \nDeleted Properties: [ a, a_value1], \n");
   }
 
   private void failIfNotException(Props props) {
