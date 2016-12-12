@@ -37,13 +37,24 @@ subprojects {
   plugins.withType(JavaPlugin) {
     sourceCompatibility = JavaVersion.VERSION_1_8
 
-    // Set the Title and Version fields in the jar
-    jar {
-      manifest {
-        attributes (
-                'Implementation-Title': project.name,
-                'Implementation-Version': project.version,
-        )
+    /*
+     TODO remove afterEvaluate block
+     After Evaluate block was added to do a lazy evaluation. This piece of code gets executed by gradle in the
+     configuration phase. However, for some reason the version field was not updated by the LinkedIn build
+     infrastructure. Thus, using afterEvaluate to do a lazy evaluation of this code block.
+     More specifically afterEvaluate kicks in after the rest of the project is configured
+
+     See: http://stackoverflow.com/questions/16218888/can-gradle-extensions-handle-lazy-evaluation-of-a-property
+     See: http://stackoverflow.com/questions/16070567/difference-between-gradles-terms-evaluation-and-execution
+     */
+    project.afterEvaluate {
+      // Set the Title and Version fields in the jar
+      jar {
+        manifest {
+          attributes(
+              'Implementation-Title': project.name,
+              'Implementation-Version': project.version)
+        }
       }
     }
 

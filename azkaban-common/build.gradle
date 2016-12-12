@@ -38,6 +38,8 @@ dependencies {
   compile('org.mortbay.jetty:jetty:6.1.26')
   compile('org.mortbay.jetty:jetty-util:6.1.26')
   compile('org.quartz-scheduler:quartz:2.2.1')
+  compile('io.dropwizard.metrics:metrics-core:3.1.0')
+  compile('io.dropwizard.metrics:metrics-jvm:3.1.0')
 
   testCompile(project(':azkaban-test').sourceSets.test.output)
   testCompile('org.hamcrest:hamcrest-all:1.3')
