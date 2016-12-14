@@ -28,7 +28,7 @@ import static org.junit.Assert.assertTrue;
 
 /**
  * Test output of PatternLayoutEscapedTest
- * It should be escaping new lines, quotes, tabs and backslashes
+ * It should be appending stack traces, escaping new lines, quotes, tabs and backslashes
  * This is necessary when we are logging these messages out as JSON objects
  */
 public class PatternLayoutEscapedTest {
@@ -38,6 +38,17 @@ public class PatternLayoutEscapedTest {
   @Before
   public void beforeTest() {
     layout.setConversionPattern("%m");
+  }
+
+  @Test
+  public void testWithException() {
+    try {
+      throw new Exception("This is an exception");
+    } catch (Exception e) {
+      LoggingEvent event = createEventWithException("There was an exception", e);
+      // Stack trace might change if the codebase changes, but this prefix should always remain the same
+      assertTrue(layout.format(event).startsWith("There was an exception\\njava.lang.Exception: This is an exception"));
+    }
   }
 
   @Test
@@ -65,11 +76,15 @@ public class PatternLayoutEscapedTest {
   }
 
   private LoggingEvent createMessageEvent(String message) {
+    return createEventWithException(message, null);
+  }
+
+  private LoggingEvent createEventWithException(String message, Exception e) {
     return new LoggingEvent(this.getClass().getCanonicalName(),
         logger,
         0,
         Level.toLevel("INFO"),
         message,
-        new Exception());
+        e);
   }
 }
