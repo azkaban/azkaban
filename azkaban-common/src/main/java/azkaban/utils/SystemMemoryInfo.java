@@ -15,16 +15,16 @@ import org.apache.log4j.Logger;
  * This class is used to maintain system memory information. Processes utilizing
  * large amount of memory should consult this class to see if the system has enough
  * memory to proceed the operation.
- * 
+ *
  * Memory information is obtained from /proc/meminfo, so only Unix/Linux like system
  * will support this class.
- * 
+ *
  * All the memory size used in this function is in KB
  */
 public class SystemMemoryInfo {
   private static final Logger logger = Logger.getLogger(SystemMemoryInfo.class);
 
-  private static String MEMINFO_FILE = "/proc/meminfo"; 
+  private static String MEMINFO_FILE = "/proc/meminfo";
   private static boolean memCheckEnabled;
   private static long freeMemAmount = 0;
   private static final long LOW_MEM_THRESHOLD = 3L*1024L*1024L; //3 GB
@@ -51,7 +51,7 @@ public class SystemMemoryInfo {
    * @param xms
    * @param xmx
    * @return System can satisfy the memory request or not
-   * 
+   *
    * Given Xms/Xmx values (in kb) used by java process, determine if system can
    * satisfy the memory request
    */
@@ -94,7 +94,7 @@ public class SystemMemoryInfo {
       freeMemAmount -= xms;
       logger.info(String.format("Memory (%d kb) granted. Current free memory amount is %d kb", xms, freeMemAmount));
     }
-    
+
     return true;
   }
 
@@ -119,7 +119,7 @@ public class SystemMemoryInfo {
           int idx1 = line.indexOf(":");
           int idx2 = line.lastIndexOf("kB");
           String strSize = line.substring(idx1+1, idx2-1).trim();
-          
+
           if (line.startsWith("MemFree:")) {
             sizeMemFree = Long.parseLong(strSize);
           } else if (line.startsWith("Buffers:")) {
@@ -143,9 +143,6 @@ public class SystemMemoryInfo {
       }
 
       long sizeTotal = sizeMemFree + sizeBuffers + sizeCached + sizeSwapCached;
-
-      logger.info(String.format("Current system free memory is %d kb (MemFree %d, Buffers %d, Cached %d, SwapCached %d)",
-              sizeTotal, sizeMemFree, sizeBuffers, sizeCached, sizeSwapCached));
 
       if (sizeTotal > 0) {
         updateFreeMemAmount(sizeTotal);
