@@ -41,6 +41,8 @@ dependencies {
   compile('io.dropwizard.metrics:metrics-core:3.1.0')
   compile('io.dropwizard.metrics:metrics-jvm:3.1.0')
 
+  runtime('com.h2database:h2:1.4.192')
+
   testCompile(project(':azkaban-test').sourceSets.test.output)
   testCompile('org.hamcrest:hamcrest-all:1.3')
 }
