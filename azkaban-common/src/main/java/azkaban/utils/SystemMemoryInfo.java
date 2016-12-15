@@ -144,9 +144,6 @@ public class SystemMemoryInfo {
 
       long sizeTotal = sizeMemFree + sizeBuffers + sizeCached + sizeSwapCached;
 
-      logger.info(String.format("Current system free memory is %d kb (MemFree %d, Buffers %d, Cached %d, SwapCached %d)",
-              sizeTotal, sizeMemFree, sizeBuffers, sizeCached, sizeSwapCached));
-
       if (sizeTotal > 0) {
         updateFreeMemAmount(sizeTotal);
       }
