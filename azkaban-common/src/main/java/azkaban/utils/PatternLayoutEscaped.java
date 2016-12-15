@@ -10,6 +10,14 @@ import org.apache.log4j.spi.LoggingEvent;
  * can be found one in place.
  */
 public class PatternLayoutEscaped extends PatternLayout {
+  public PatternLayoutEscaped(String s) {
+    super(s);
+  }
+
+  public PatternLayoutEscaped() {
+    super();
+  }
+
   @Override
   public String format(final LoggingEvent event) {
     if (event.getMessage() instanceof String) {
