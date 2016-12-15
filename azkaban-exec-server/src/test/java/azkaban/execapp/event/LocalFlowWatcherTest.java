@@ -43,6 +43,7 @@ import azkaban.project.Project;
 import azkaban.project.ProjectLoader;
 import azkaban.project.MockProjectLoader;
 import azkaban.utils.JSONUtils;
+import azkaban.utils.Props;
 
 public class LocalFlowWatcherTest {
   private File workingDir;
@@ -237,6 +238,12 @@ public class LocalFlowWatcherTest {
   private FlowRunner createFlowRunner(File workingDir, ExecutorLoader loader,
       EventCollectorListener eventCollector, String flowName, int execId,
       FlowWatcher watcher, Integer pipeline) throws Exception {
+    return createFlowRunner(workingDir, loader, eventCollector, flowName, execId, watcher, pipeline, new Props());
+  }
+
+  private FlowRunner createFlowRunner(File workingDir, ExecutorLoader loader,
+      EventCollectorListener eventCollector, String flowName, int execId,
+      FlowWatcher watcher, Integer pipeline, Props azkabanProps) throws Exception {
     File testDir = new File("unit/executions/exectest1");
     ExecutableFlow exFlow =
         prepareExecDir(workingDir, testDir, flowName, execId);
@@ -250,7 +257,7 @@ public class LocalFlowWatcherTest {
 
     loader.uploadExecutableFlow(exFlow);
     FlowRunner runner =
-        new FlowRunner(exFlow, loader, fakeProjectLoader, jobtypeManager);
+        new FlowRunner(exFlow, loader, fakeProjectLoader, jobtypeManager, azkabanProps);
     runner.setFlowWatcher(watcher);
     runner.addListener(eventCollector);
 

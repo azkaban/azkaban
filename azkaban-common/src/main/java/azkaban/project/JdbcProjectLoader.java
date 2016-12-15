@@ -1112,6 +1112,8 @@ public class JdbcProjectLoader extends AbstractJdbcLoader implements
 
       return properties.get(0).getSecond();
     } catch (SQLException e) {
+      logger.error("Error fetching property " + propsName
+          + " Project " + projectId + " version " + projectVer, e);
       throw new ProjectManagerException("Error fetching property " + propsName,
           e);
     }
@@ -1120,6 +1122,7 @@ public class JdbcProjectLoader extends AbstractJdbcLoader implements
   @Override
   public Props fetchProjectProperty(Project project, String propsName)
       throws ProjectManagerException {
+    // TODO: 11/23/16 call the other overloaded method fetchProjectProperty internally.
     QueryRunner runner = createQueryRunner();
 
     ProjectPropertiesResultsHandler handler =
@@ -1130,13 +1133,17 @@ public class JdbcProjectLoader extends AbstractJdbcLoader implements
               handler, project.getId(), project.getVersion(), propsName);
 
       if (properties == null || properties.isEmpty()) {
+        logger.warn("Project " + project.getId() + " version " + project.getVersion()
+          + " property " + propsName + " is empty.");
         return null;
       }
 
       return properties.get(0).getSecond();
     } catch (SQLException e) {
-      throw new ProjectManagerException("Error fetching property " + propsName,
-          e);
+      logger.error("Error fetching property " + propsName
+          + "Project " + project.getId() + " version " + project.getVersion(), e);
+      throw new ProjectManagerException("Error fetching property " + propsName
+          + "Project " + project.getId() + " version " + project.getVersion(), e);
     }
   }
 
@@ -1236,6 +1243,7 @@ public class JdbcProjectLoader extends AbstractJdbcLoader implements
       }
       return props;
     } catch (SQLException e) {
+      logger.error("Error fetching properties, project id" + projectId + " version " + version, e);
       throw new ProjectManagerException("Error fetching properties", e);
     }
   }

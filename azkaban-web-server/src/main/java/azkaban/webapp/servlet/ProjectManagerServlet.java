@@ -25,7 +25,6 @@ import java.io.OutputStream;
 import java.io.Writer;
 import java.security.AccessControlException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
@@ -298,7 +297,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
         }
       } else if (ajaxName.equals("setJobOverrideProperty")) {
         if (handleAjaxPermission(project, user, Type.WRITE, ret)) {
-          ajaxSetJobOverrideProperty(project, ret, req);
+          ajaxSetJobOverrideProperty(project, ret, req, user);
         }
       } else {
         ret.put("error", "Cannot execute command " + ajaxName);
@@ -734,7 +733,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
   }
 
   private void ajaxSetJobOverrideProperty(Project project,
-      HashMap<String, Object> ret, HttpServletRequest req)
+      HashMap<String, Object> ret, HttpServletRequest req, User user)
       throws ServletException {
     String flowName = getParam(req, "flowName");
     String jobName = getParam(req, "jobName");
@@ -756,7 +755,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
     @SuppressWarnings("unchecked")
     Props overrideParams = new Props(null, jobParamGroup);
     try {
-      projectManager.setJobOverrideProperty(project, overrideParams, jobName);
+      projectManager.setJobOverrideProperty(project, overrideParams, jobName, user);
     } catch (ProjectManagerException e) {
       ret.put("error", "Failed to upload job override property");
     }
@@ -1446,6 +1445,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
       project = projectManager.getProject(projectName);
       if (project == null) {
         page.add("errorMsg", "Project " + projectName + " not found.");
+        logger.info("Display project property. Project " + projectName + " not found.");
         page.render();
         return;
       }
@@ -1459,6 +1459,8 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
       flow = project.getFlow(flowName);
       if (flow == null) {
         page.add("errorMsg", "Flow " + flowName + " not found.");
+        logger.info("Display project property. Project " + projectName +
+            " Flow " + flowName + " not found.");
         page.render();
         return;
       }
@@ -1467,11 +1469,22 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
       Node node = flow.getNode(jobName);
       if (node == null) {
         page.add("errorMsg", "Job " + jobName + " not found.");
+        logger.info("Display project property. Project " + projectName +
+            " Flow " + flowName + " Job " + jobName + " not found.");
         page.render();
         return;
       }
 
       Props prop = projectManager.getProperties(project, propSource);
+      if (prop == null) {
+        page.add("errorMsg", "Property " + propSource + " not found.");
+        logger.info("Display project property. Project " + projectName +
+            " Flow " + flowName + " Job " + jobName +
+            " Property " + propSource + " not found.");
+        page.render();
+        return;
+
+      }
       page.add("property", propSource);
       page.add("jobid", node.getId());
 

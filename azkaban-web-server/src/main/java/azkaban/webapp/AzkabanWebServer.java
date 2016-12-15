@@ -16,6 +16,8 @@
 
 package azkaban.webapp;
 
+import com.codahale.metrics.MetricRegistry;
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -55,6 +57,8 @@ import org.mortbay.jetty.servlet.ServletHolder;
 import org.mortbay.thread.QueuedThreadPool;
 
 import azkaban.alert.Alerter;
+import azkaban.constants.ServerInternals;
+import azkaban.constants.ServerProperties;
 import azkaban.database.AzkabanDatabaseSetup;
 import azkaban.executor.ExecutorManager;
 import azkaban.executor.JdbcExecutorLoader;
@@ -67,7 +71,6 @@ import azkaban.scheduler.ScheduleLoader;
 import azkaban.scheduler.ScheduleManager;
 import azkaban.scheduler.TriggerBasedScheduleLoader;
 import azkaban.server.AzkabanServer;
-import azkaban.server.Constants;
 import azkaban.server.session.SessionCache;
 import azkaban.trigger.JdbcTriggerLoader;
 import azkaban.trigger.TriggerLoader;
@@ -86,6 +89,7 @@ import azkaban.utils.Emailer;
 import azkaban.utils.FileIOUtils;
 import azkaban.utils.Props;
 import azkaban.utils.PropsUtils;
+import azkaban.utils.StdOutErrRedirect;
 import azkaban.utils.Utils;
 import azkaban.webapp.plugin.PluginRegistry;
 import azkaban.webapp.plugin.TriggerPlugin;
@@ -100,6 +104,7 @@ import azkaban.webapp.servlet.ProjectServlet;
 import azkaban.webapp.servlet.ScheduleServlet;
 import azkaban.webapp.servlet.StatsServlet;
 import azkaban.webapp.servlet.TriggerManagerServlet;
+import azkaban.metrics.MetricsManager;
 
 import com.linkedin.restli.server.RestliServlet;
 
@@ -222,7 +227,22 @@ public class AzkabanWebServer extends AzkabanServer {
     }
 
     configureMBeanServer();
+    if (props.getBoolean(ServerProperties.IS_METRICS_ENABLED, false)) {
+      startWebMetrics();
+    }
   }
+
+  private void startWebMetrics() throws Exception{
+    MetricRegistry metrics = MetricsManager.INSTANCE.getRegistry();
+    MetricsWebRegister execWorker = new MetricsWebRegister.MetricsWebRegisterBuilder("WEB")
+        .addExecutorManager(getExecutorManager())
+        .build();
+    execWorker.addExecutorManagerMetrics(metrics);
+
+    MetricsManager.INSTANCE.startReporting("AZ-WEB", props);
+  }
+
+
 
   private void setTriggerPlugins(Map<String, TriggerPlugin> triggerPlugins) {
     this.triggerPlugins = triggerPlugins;
@@ -673,6 +693,9 @@ public class AzkabanWebServer extends AzkabanServer {
    * @param args
    */
   public static void main(String[] args) throws Exception {
+    // Redirect all std out and err messages into log4j
+    StdOutErrRedirect.redirectOutAndErrToLog();
+
     logger.info("Starting Jetty Azkaban Web Server...");
     Props azkabanSettings = AzkabanServer.loadProps(args);
 
@@ -806,7 +829,7 @@ public class AzkabanWebServer extends AzkabanServer {
     // TODO: find something else to do the job
     app.getTriggerManager().start();
 
-    root.setAttribute(Constants.AZKABAN_SERVLET_CONTEXT_KEY, app);
+    root.setAttribute(ServerInternals.AZKABAN_SERVLET_CONTEXT_KEY, app);
     try {
       server.start();
     } catch (Exception e) {

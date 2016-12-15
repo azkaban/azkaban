@@ -29,6 +29,7 @@ import joptsimple.OptionSpec;
 import org.apache.log4j.Logger;
 import org.apache.velocity.app.VelocityEngine;
 
+import azkaban.constants.ServerInternals;
 import azkaban.user.UserManager;
 import azkaban.utils.Props;
 import azkaban.server.session.SessionCache;
@@ -80,8 +81,8 @@ public abstract class AzkabanServer {
 
   private static Props loadAzkabanConfigurationFromDirectory(File dir) {
     File azkabanPrivatePropsFile =
-        new File(dir, Constants.AZKABAN_PRIVATE_PROPERTIES_FILE);
-    File azkabanPropsFile = new File(dir, Constants.AZKABAN_PROPERTIES_FILE);
+        new File(dir, ServerInternals.AZKABAN_PRIVATE_PROPERTIES_FILE);
+    File azkabanPropsFile = new File(dir, ServerInternals.AZKABAN_PROPERTIES_FILE);
 
     Props props = null;
     try {
@@ -125,7 +126,7 @@ public abstract class AzkabanServer {
       return null;
     }
 
-    File confPath = new File(azkabanHome, Constants.DEFAULT_CONF_PATH);
+    File confPath = new File(azkabanHome, ServerInternals.DEFAULT_CONF_PATH);
     if (!confPath.exists() || !confPath.isDirectory() || !confPath.canRead()) {
       logger
           .error(azkabanHome + " does not contain a readable conf directory.");
