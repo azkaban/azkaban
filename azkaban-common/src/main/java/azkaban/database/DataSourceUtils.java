@@ -169,6 +169,7 @@ public class DataSourceUtils {
 
       public MonitorThread(MySQLBasicDataSource mysqlSource) {
         this.setName("MySQL-DB-Monitor-Thread");
+        setDaemon(true);
         dataSource = mysqlSource;
       }
 

@@ -80,15 +80,12 @@ import static com.google.common.base.Preconditions.checkState;
 import static java.util.Objects.requireNonNull;
 
 public class AzkabanExecutorServer {
-  private static final String CUSTOM_JMX_ATTRIBUTE_PROCESSOR_PROPERTY =
-      "jmx.attribute.processor.class";
-  private static final Logger logger = Logger
-      .getLogger(AzkabanExecutorServer.class);
+  private static final String CUSTOM_JMX_ATTRIBUTE_PROCESSOR_PROPERTY = "jmx.attribute.processor.class";
+  private static final Logger logger = Logger.getLogger(AzkabanExecutorServer.class);
   private static final int MAX_FORM_CONTENT_SIZE = 10 * 1024 * 1024;
 
   public static final String JOBTYPE_PLUGIN_DIR = "azkaban.jobtype.plugin.dir";
-  public static final String METRIC_INTERVAL =
-      "executor.metric.milisecinterval.";
+  public static final String METRIC_INTERVAL = "executor.metric.milisecinterval.";
   public static final int DEFAULT_HEADER_BUFFER_SIZE = 4096;
 
   private static final String DEFAULT_TIMEZONE_ID = "default.timezone.id";
@@ -319,10 +316,6 @@ public class AzkabanExecutorServer {
     }
   }
 
-  public void stopServer() throws Exception {
-    server.stop();
-    server.destroy();
-  }
 
   public ProjectLoader getProjectLoader() {
     return projectLoader;
@@ -391,13 +384,12 @@ public class AzkabanExecutorServer {
           logger.info(("Exception when logging top memory consumers"), e);
         }
 
-        logger.info("Shutting down http server...");
+        logger.info("Shutting down...");
         try {
-          app.stopServer();
+          app.shutdownNow();
         } catch (Exception e) {
           logger.error("Error while shutting down http server.", e);
         }
-        logger.info("kk thx bye.");
       }
 
       public void logTopMemoryConsumers() throws Exception, IOException {
@@ -587,5 +579,52 @@ public class AzkabanExecutorServer {
    */
   public String getExecutorHostPort() {
     return getHost() + ":" + getPort();
+  }
+
+  /**
+   * Shutdown the server.
+   *  - performs a safe shutdown. Waits for completion of current tasks
+   *  - spawns a shutdown thread and returns immediately.
+   */
+  public void shutdown() {
+    logger.warn("Shutting down AzkabanExecutorServer...");
+    new Thread(() -> {
+      try {
+        // Hack: Sleep for a little time to allow API calls to complete
+        Thread.sleep(2000);
+      } catch (InterruptedException e) {
+        logger.error(e);
+      }
+      shutdownInternal();
+    }, "shutdown").start();
+  }
+
+  /**
+   * (internal API)
+   * Note: This should be run in a separate thread.
+   *
+   * Shutdown the server. (blocking call)
+   *  - waits for jobs to finish
+   *  - doesn't accept any new jobs
+   */
+  private void shutdownInternal() {
+    getFlowRunnerManager().shutdown();
+    try {
+      shutdownNow();
+      logger.warn("Shutdown AzkabanExecutorServer complete");
+    } catch (Exception e) {
+      logger.error(e);
+    }
+  }
+
+  /**
+   * Shutdown the server now! (unsafe)
+   * @throws Exception
+   */
+  public void shutdownNow() throws Exception {
+    server.stop();
+    server.destroy();
+    SystemMemoryInfo.shutdown();
+    getFlowRunnerManager().shutdownNow();
   }
 }
