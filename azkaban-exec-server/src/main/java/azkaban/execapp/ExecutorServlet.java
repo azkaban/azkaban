@@ -111,6 +111,8 @@ public class ExecutorServlet extends HttpServlet implements ConnectorParams {
         } else if (action.equals(DEACTIVATE)) {
           logger.warn("Setting ACTIVE flag to false");
           setActive(false, respMap);
+        } else if (action.equals(SHUTDOWN)) {
+          shutdown(respMap);
         } else {
           int execid = Integer.parseInt(getParam(req, EXECID_PARAM));
           String user = getParam(req, USER_PARAM, null);
@@ -357,16 +359,42 @@ public class ExecutorServlet extends HttpServlet implements ConnectorParams {
   private void setActive(boolean value, Map<String, Object> respMap)
       throws ServletException {
     try {
-      ExecutorLoader executorLoader = application.getExecutorLoader();
-      Executor executor = executorLoader.fetchExecutor(application.getHost(), application.getPort());
-      Preconditions.checkState(executor != null, "Unable to obtain self entry in DB");
-      if (executor.isActive() != value) {
-        executor.setActive(value);
-        executorLoader.updateExecutor(executor);
-        flowRunnerManager.setActive(value);
-      } else {
-        logger.warn("Set active action ignored. Executor is already " + (value? "active" : "inactive"));
-      }
+      setActiveInternal(value);
+      respMap.put(STATUS_PARAM, RESPONSE_SUCCESS);
+    } catch (Exception e) {
+      logger.error(e);
+      respMap.put(RESPONSE_ERROR, e.getMessage());
+    }
+  }
+
+  private void setActiveInternal(boolean value)
+      throws ExecutorManagerException {
+    ExecutorLoader executorLoader = application.getExecutorLoader();
+    Executor executor = executorLoader.fetchExecutor(application.getHost(), application.getPort());
+    Preconditions.checkState(executor != null, "Unable to obtain self entry in DB");
+    if (executor.isActive() != value) {
+      executor.setActive(value);
+      executorLoader.updateExecutor(executor);
+      flowRunnerManager.setActive(value);
+    } else {
+      logger.warn("Set active action ignored. Executor is already " + (value? "active" : "inactive"));
+    }
+  }
+
+  /**
+   * Prepare the executor for shutdown.
+   *
+   * @param respMap json response object
+   * @throws ServletException
+   */
+  private void shutdown(Map<String, Object> respMap)
+      throws ServletException {
+    try {
+      logger.warn("Shutting down executor...");
+
+      // Set the executor to inactive. Will receive no new flows.
+      setActiveInternal(false);
+      application.shutdown();
       respMap.put(STATUS_PARAM, RESPONSE_SUCCESS);
     } catch (Exception e) {
       logger.error(e);
