@@ -22,21 +22,18 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.log4j.Logger;
+import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.mortbay.jetty.Server;
-import org.mortbay.jetty.servlet.Context;
-import org.mortbay.jetty.servlet.ServletHolder;
 
 import azkaban.jobcallback.JobCallbackConstants;
 import azkaban.jobcallback.JobCallbackStatusEnum;
 import azkaban.utils.Props;
 
 public class JobCallbackRequestMakerTest {
-
-  private static final Logger logger = Logger
-      .getLogger(JobCallbackRequestMakerTest.class);
+  private static final Logger logger = Logger.getLogger(JobCallbackRequestMakerTest.class);
 
   private static final String SLEEP_DURATION_PARAM = "sleepDuration";
   private static final String STATUS_CODE_PARAM = "returnedStatusCode";
@@ -71,8 +68,8 @@ public class JobCallbackRequestMakerTest {
 
       embeddedJettyServer = new Server(PORT_NUMBER);
 
-      Context context = new Context(embeddedJettyServer, "/", Context.SESSIONS);
-      context.addServlet(new ServletHolder(new DelayServlet()), "/delay");
+      ServletContextHandler context = new ServletContextHandler(embeddedJettyServer, "/", ServletContextHandler.SESSIONS);
+      context.addServlet(DelayServlet.class, "/delay");
 
       System.out.println("Start server");
       embeddedJettyServer.start();
