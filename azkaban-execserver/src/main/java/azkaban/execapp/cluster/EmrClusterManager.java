@@ -198,75 +198,26 @@ public class EmrClusterManager implements IClusterManager, EventListener {
 
                     clusterName = getClusterName(flow, combinedProps, logger);
 
-                    // This is to keep track the number of flows that's attached to an EMR cluster
-                    Integer count = clusterFlows.compute(clusterName, (k, v) -> (v == null) ? 1 : v + 1);
-                    jobLogger.info("Number of flow(s) currently using cluster " + clusterName + ": " + count);
+                    // If blockUntilReadyAndReturnMasterIp times out, we should retry with a new cluster.
+                    Integer clusterAttempt = 0;
+                    Integer totalClusterAttempts = 3;
+                    while (clusterAttempt++ < totalClusterAttempts && (clusterId == null || !masterIp.isPresent())){
+                        jobLogger.info("Creating or getting cluster with name: " + clusterName + " and obtaining ip (attempt " + clusterAttempt + "/" + totalClusterAttempts + ")");
 
-                    setClusterProperty(flow, EMR_INTERNAL_CLUSTERNAME, clusterName);
+                        clusterId = getOrCreateClusterByName(flow, jobLogger, combinedProps, clusterName);
 
-                    // Try to find an existing running cluster with the same name
-                    Integer lookupAttempt = 0;
-                    Integer lookupTotalAttempts = 5;
-                    synchronized (clusterFlows) {
-                        while (lookupAttempt++ < lookupTotalAttempts) {
-                            try {
-                                jobLogger.info("Trying to find running cluster: " + clusterName + " (Attempt " + lookupAttempt + "/" + lookupTotalAttempts + ")");
+                        if (clusterId != null) {
+                            jobLogger.info("Getting ip for cluster with id: " + clusterId);
+                            masterIp = blockUntilReadyAndReturnMasterIp(clusterId, spoolUpTimeoutInMinutes, jobLogger);
 
-                                // Try to find an existing running cluster that's cached (on the first flow, always make sure to actually call EMR's api to get the list of running clusters to minimize the chance of any problem)
-                                if (count > 1) {
-                                    clusterId = runningClusters.get(clusterName);
-                                    if (clusterId != null) {
-                                        jobLogger.info("Found existing cached running cluster (" + clusterName + "): " + clusterId);
-                                        break;
-                                    }
-                                }
-
-                                ClusterSummary runningCluster = EmrUtils.findClusterByName(getEmrClient(), clusterName, EmrUtils.RUNNING_STATES);
-
-                                if (runningCluster != null) {
-                                    jobLogger.info("Found cluster " + clusterName + " - Id: " + runningCluster.getId() + ", Status: " + runningCluster.getStatus());
-                                    clusterId = runningCluster.getId();
-                                    runningClusters.put(clusterName, clusterId);
-                                    break;
-                                } else {
-                                    jobLogger.info("Couldn't find running cluster " + clusterName + " (Attempt " + lookupAttempt + "/" + lookupTotalAttempts + ")");
-                                }
-
-                                // If this is not the first flow attached to the cluster we should really be able to find it, so we are gonna sleep to give the first flow attached to the cluster the chance to call AWS and everything
-                                if (count > 1 && lookupAttempt < lookupTotalAttempts - 1) {
-                                    jobLogger.info("Sleeping for 30 secs....");
-                                    Thread.sleep(30000);
-                                    jobLogger.info("Awake!");
-                                }
-
-                            } catch (Throwable error) {
-                                jobLogger.info("Couldn't find running cluster " + clusterName + " (Attempt " + lookupAttempt + "/" + lookupTotalAttempts + ") - Error: " + error);
+                            if(!masterIp.isPresent()) {
+                                jobLogger.error("Timed out waiting " + spoolUpTimeoutInMinutes + " minutes for cluster to start. Shutting down cluster " + clusterId);
+                                shutdownCluster(clusterName, clusterId, jobLogger);
+                            } else {
+                                jobLogger.info("Obtained ip for cluster " + clusterId);
+                                break;
                             }
                         }
-
-                        // If by now we haven't found a cluster to run this in, let's create a new one
-                        if (clusterId == null) {
-                            jobLogger.info("Since we couldn't find a running cluster " + clusterName + ", we are going to create a new one!");
-
-                            Integer createAttempt = 0;
-                            Integer createTotalAttempts = 2;
-                            while (createAttempt++ < createTotalAttempts) {
-                                try {
-                                    clusterId = createCluster(clusterName, combinedProps, jobLogger);
-                                    jobLogger.info("Couldn't create cluster (Attempt " + createAttempt + "/" + createTotalAttempts + ")");
-                                    break;
-
-                                } catch (Throwable error) {
-                                    jobLogger.info("Couldn't create cluster (Attempt " + createAttempt + "/" + createTotalAttempts + "): " + clusterName + " - Error: " + error);
-                                }
-                            }
-                        }
-                    }
-
-                    // Get the ip for cluster
-                    if (clusterId != null && !masterIp.isPresent()) {
-                        jobLogger.info("Getting ip for cluster: " + clusterId);
-                        masterIp = blockUntilReadyAndReturnMasterIp(clusterId, spoolUpTimeoutInMinutes, jobLogger);
                     }
 
                     // By now if we don't have a cluster id, I give up my friend
@@ -275,7 +226,8 @@ public class EmrClusterManager implements IClusterManager, EventListener {
                         updateFlow(flow);
 
                     } else {
-                        jobLogger.error("Timed out waiting " + spoolUpTimeoutInMinutes + " minutes for cluster to start. Shutting down cluster " + clusterId);
+                        jobLogger.error("Failed all attempts to find and/or start cluster: " + clusterName);
+
                         shutdownCluster(clusterName, clusterId, jobLogger);
                         updateFlow(flow);
                         return false;
@@ -319,6 +271,75 @@ public class EmrClusterManager implements IClusterManager, EventListener {
         jobLogger.info("Cluster configuration complete.");
 
         return true;
+    }
+
+    private String getOrCreateClusterByName(ExecutableFlow flow, Logger jobLogger, Props combinedProps, String clusterName) {
+        String clusterId = null;
+        // This is to keep track the number of flows that's attached to an EMR cluster
+        Integer count = clusterFlows.compute(clusterName, (k, v) -> (v == null) ? 1 : v + 1);
+        jobLogger.info("Number of flow(s) currently using cluster " + clusterName + ": " + count);
+
+        setClusterProperty(flow, EMR_INTERNAL_CLUSTERNAME, clusterName);
+
+        // Try to find an existing running cluster with the same name
+        Integer lookupAttempt = 0;
+        Integer lookupTotalAttempts = 5;
+        synchronized (clusterFlows) {
+            while (lookupAttempt++ < lookupTotalAttempts) {
+                try {
+                    jobLogger.info("Trying to find running cluster: " + clusterName + " (Attempt " + lookupAttempt + "/" + lookupTotalAttempts + ")");
+
+                    // Try to find an existing running cluster that's cached (on the first flow, always make sure to actually call EMR's api to get the list of running clusters to minimize the chance of any problem)
+                    if (count > 1) {
+                        clusterId = runningClusters.get(clusterName);
+                        if (clusterId != null) {
+                            jobLogger.info("Found existing cached running cluster (" + clusterName + "): " + clusterId);
+                            break;
+                        }
+                    }
+
+                    ClusterSummary runningCluster = EmrUtils.findClusterByName(getEmrClient(), clusterName, EmrUtils.RUNNING_STATES);
+
+                    if (runningCluster != null) {
+                        jobLogger.info("Found cluster " + clusterName + " - Id: " + runningCluster.getId() + ", Status: " + runningCluster.getStatus());
+                        clusterId = runningCluster.getId();
+                        runningClusters.put(clusterName, clusterId);
+                        break;
+                    } else {
+                        jobLogger.info("Couldn't find running cluster " + clusterName + " (Attempt " + lookupAttempt + "/" + lookupTotalAttempts + ")");
+                    }
+
+                    // If this is not the first flow attached to the cluster we should really be able to find it, so we are gonna sleep to give the first flow attached to the cluster the chance to call AWS and everything
+                    if (count > 1 && lookupAttempt < lookupTotalAttempts - 1) {
+                        jobLogger.info("Sleeping for 30 secs....");
+                        Thread.sleep(30000);
+                        jobLogger.info("Awake!");
+                    }
+
+                } catch (Throwable error) {
+                    jobLogger.info("Couldn't find running cluster " + clusterName + " (Attempt " + lookupAttempt + "/" + lookupTotalAttempts + ") - Error: " + error);
+                }
+            }
+
+            // If by now we haven't found a cluster to run this in, let's create a new one
+            if (clusterId == null) {
+                jobLogger.info("Since we couldn't find a running cluster " + clusterName + ", we are going to create a new one!");
+
+                Integer createAttempt = 0;
+                Integer createTotalAttempts = 2;
+                while (createAttempt++ < createTotalAttempts) {
+                    try {
+                        clusterId = createCluster(clusterName, combinedProps, jobLogger);
+                        jobLogger.info("Created cluster (Attempt " + createAttempt + "/" + createTotalAttempts + ")");
+                        break;
+
+                    } catch (Throwable error) {
+                        jobLogger.info("Couldn't create cluster (Attempt " + createAttempt + "/" + createTotalAttempts + "): " + clusterName + " - Error: " + error);
+                    }
+                }
+            }
+        }
+        return clusterId;
     }
 
     boolean shutdownCluster(String clusterName, String clusterId, Logger logger) {
