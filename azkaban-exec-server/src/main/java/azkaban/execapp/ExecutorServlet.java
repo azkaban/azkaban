@@ -35,15 +35,18 @@ import org.apache.log4j.Logger;
 
 import org.codehaus.jackson.map.ObjectMapper;
 
+import azkaban.constants.ServerInternals;
 import azkaban.executor.ConnectorParams;
 import azkaban.executor.ExecutableFlowBase;
 import azkaban.executor.Executor;
 import azkaban.executor.ExecutorLoader;
 import azkaban.executor.ExecutorManagerException;
-import azkaban.server.Constants;
 import azkaban.utils.FileIOUtils.JobMetaData;
 import azkaban.utils.FileIOUtils.LogData;
 import azkaban.utils.JSONUtils;
+
+import static java.util.Objects.requireNonNull;
+
 
 public class ExecutorServlet extends HttpServlet implements ConnectorParams {
   private static final long serialVersionUID = 1L;
@@ -62,7 +65,7 @@ public class ExecutorServlet extends HttpServlet implements ConnectorParams {
   public void init(ServletConfig config) throws ServletException {
     application =
         (AzkabanExecutorServer) config.getServletContext().getAttribute(
-            Constants.AZKABAN_SERVLET_CONTEXT_KEY);
+            ServerInternals.AZKABAN_SERVLET_CONTEXT_KEY);
 
     if (application == null) {
       throw new IllegalStateException(
@@ -102,9 +105,14 @@ public class ExecutorServlet extends HttpServlet implements ConnectorParams {
         } else if (action.equals(ACTIVATE)) {
           logger.warn("Setting ACTIVE flag to true");
           setActive(true, respMap);
+        } else if (action.equals(GET_STATUS)) {
+          logger.debug("Get Executor Status: ");
+          getStatus(respMap);
         } else if (action.equals(DEACTIVATE)) {
           logger.warn("Setting ACTIVE flag to false");
           setActive(false, respMap);
+        } else if (action.equals(SHUTDOWN)) {
+          shutdown(respMap);
         } else {
           int execid = Integer.parseInt(getParam(req, EXECID_PARAM));
           String user = getParam(req, USER_PARAM, null);
@@ -351,15 +359,58 @@ public class ExecutorServlet extends HttpServlet implements ConnectorParams {
   private void setActive(boolean value, Map<String, Object> respMap)
       throws ServletException {
     try {
+      setActiveInternal(value);
+      respMap.put(STATUS_PARAM, RESPONSE_SUCCESS);
+    } catch (Exception e) {
+      logger.error(e);
+      respMap.put(RESPONSE_ERROR, e.getMessage());
+    }
+  }
+
+  private void setActiveInternal(boolean value)
+      throws ExecutorManagerException {
+    ExecutorLoader executorLoader = application.getExecutorLoader();
+    Executor executor = executorLoader.fetchExecutor(application.getHost(), application.getPort());
+    Preconditions.checkState(executor != null, "Unable to obtain self entry in DB");
+    if (executor.isActive() != value) {
+      executor.setActive(value);
+      executorLoader.updateExecutor(executor);
+      flowRunnerManager.setActive(value);
+    } else {
+      logger.warn("Set active action ignored. Executor is already " + (value? "active" : "inactive"));
+    }
+  }
+
+  /**
+   * Prepare the executor for shutdown.
+   *
+   * @param respMap json response object
+   * @throws ServletException
+   */
+  private void shutdown(Map<String, Object> respMap)
+      throws ServletException {
+    try {
+      logger.warn("Shutting down executor...");
+
+      // Set the executor to inactive. Will receive no new flows.
+      setActiveInternal(false);
+      application.shutdown();
+      respMap.put(STATUS_PARAM, RESPONSE_SUCCESS);
+    } catch (Exception e) {
+      logger.error(e);
+      respMap.put(RESPONSE_ERROR, e.getMessage());
+    }
+  }
+
+  private void getStatus(Map<String, Object> respMap)
+      throws ServletException {
+    try {
       ExecutorLoader executorLoader = application.getExecutorLoader();
-      Executor executor = executorLoader.fetchExecutor(application.getHost(), application.getPort());
-      Preconditions.checkState(executor != null, "Unable to obtain self entry in DB");
-      if (executor.isActive() != value) {
-        executor.setActive(value);
-        executorLoader.updateExecutor(executor);
-      } else {
-        logger.warn("Set active action ignored. Executor is already " + (value? "active" : "inactive"));
-      }
+      final Executor executor = requireNonNull(executorLoader.fetchExecutor(application.getHost(), application.getPort()),
+          "The executor can not be null");
+
+      respMap.put("executor_id", Integer.toString(executor.getId()));
+      respMap.put("isActive", String.valueOf(executor.isActive()));
       respMap.put(STATUS_PARAM, RESPONSE_SUCCESS);
     } catch (Exception e) {
       logger.error(e);
