@@ -19,12 +19,15 @@ package azkaban.execapp;
 import com.google.common.base.Throwables;
 
 import org.apache.log4j.Logger;
+import org.eclipse.jetty.server.Connector;
+import org.eclipse.jetty.server.HttpConfiguration;
+import org.eclipse.jetty.server.HttpConnectionFactory;
+import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.ServerConnectionStatistics;
+import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.servlet.ServletContextHandler;
+import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.joda.time.DateTimeZone;
-import org.mortbay.jetty.Connector;
-import org.mortbay.jetty.Server;
-import org.mortbay.jetty.servlet.Context;
-import org.mortbay.jetty.servlet.ServletHolder;
-import org.mortbay.thread.QueuedThreadPool;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -61,7 +64,6 @@ import azkaban.executor.Executor;
 import azkaban.executor.ExecutorLoader;
 import azkaban.executor.ExecutorManagerException;
 import azkaban.executor.JdbcExecutorLoader;
-import azkaban.jmx.JmxJettyServer;
 import azkaban.metric.IMetricEmitter;
 import azkaban.metric.MetricException;
 import azkaban.metric.MetricReportManager;
@@ -79,6 +81,14 @@ import static azkaban.constants.ServerInternals.AZKABAN_EXECUTOR_PORT_FILENAME;
 import static com.google.common.base.Preconditions.checkState;
 import static java.util.Objects.requireNonNull;
 
+
+/**
+ * This class is the entry point for Azkaban Executor
+ *
+ * TODO This class needs to be refactored and made smaller.
+ * TODO Investigate if some components can be extracted into separate classes
+ * TODO remove config variables out of this class
+ */
 public class AzkabanExecutorServer {
   private static final String CUSTOM_JMX_ATTRIBUTE_PROCESSOR_PROPERTY = "jmx.attribute.processor.class";
   private static final Logger logger = Logger.getLogger(AzkabanExecutorServer.class);
@@ -147,39 +157,40 @@ public class AzkabanExecutorServer {
   private Server createJettyServer(Props props) {
     int maxThreads = props.getInt("executor.maxThreads", DEFAULT_THREAD_NUMBER);
 
+    // HttpConfiguration object is used to configure the HTTP connector
+    final HttpConfiguration httpConfig = new HttpConfiguration();
+    httpConfig.setRequestHeaderSize(props.getInt("jetty.headerBufferSize", DEFAULT_HEADER_BUFFER_SIZE));
+
+    Server server = new Server(new QueuedThreadPool(maxThreads));
+
+    // Creating a connector for HTTP traffic
+    final ServerConnector http = new ServerConnector(server, new HttpConnectionFactory(httpConfig));
+
     /*
      * Default to a port number 0 (zero)
      * The Jetty server automatically finds an unused port when the port number is set to zero
-     * TODO: This is using a highly outdated version of jetty [year 2010]. needs to be updated.
      */
-    Server server = new Server(props.getInt("executor.port", 0));
-    QueuedThreadPool httpThreadPool = new QueuedThreadPool(maxThreads);
-    server.setThreadPool(httpThreadPool);
+    http.setPort(props.getInt("executor.port", 0));
 
-    boolean isStatsOn = props.getBoolean("executor.connector.stats", true);
-    logger.info("Setting up connector with stats on: " + isStatsOn);
+    // Add the HTTP connector
+    server.addConnector(http);
 
-    for (Connector connector : server.getConnectors()) {
-      connector.setStatsOn(isStatsOn);
-      logger.info(String.format(
-          "Jetty connector name: %s, default header buffer size: %d",
-          connector.getName(), connector.getHeaderBufferSize()));
-      connector.setHeaderBufferSize(props.getInt("jetty.headerBufferSize",
-          DEFAULT_HEADER_BUFFER_SIZE));
-      logger.info(String.format(
-          "Jetty connector name: %s, (if) new header buffer size: %d",
-          connector.getName(), connector.getHeaderBufferSize()));
-    }
-
-    Context root = new Context(server, "/", Context.SESSIONS);
+    ServletContextHandler root = new ServletContextHandler(server, "/", ServletContextHandler.SESSIONS);
     root.setMaxFormContentSize(MAX_FORM_CONTENT_SIZE);
 
-    root.addServlet(new ServletHolder(new ExecutorServlet()), "/executor");
-    root.addServlet(new ServletHolder(new JMXHttpServlet()), "/jmx");
-    root.addServlet(new ServletHolder(new StatsServlet()), "/stats");
-    root.addServlet(new ServletHolder(new ServerStatisticsServlet()), "/serverStatistics");
+    root.addServlet(ExecutorServlet.class, "/executor");
+    root.addServlet(JMXHttpServlet.class, "/jmx");
+    root.addServlet(StatsServlet.class, "/stats");
+    root.addServlet(ServerStatisticsServlet.class, "/serverStatistics");
 
     root.setAttribute(ServerInternals.AZKABAN_SERVLET_CONTEXT_KEY, this);
+
+    final boolean isStatsOn = props.getBoolean("executor.connector.stats", true);
+    logger.info("Setting up connector with stats on: " + isStatsOn);
+    if (isStatsOn) {
+      ServerConnectionStatistics.addToAllConnectors(server);
+    }
+
     return server;
   }
 
@@ -486,7 +497,6 @@ public class AzkabanExecutorServer {
     logger.info("Registering MBeans...");
     mbeanServer = ManagementFactory.getPlatformMBeanServer();
 
-    registerMbean("executorJetty", new JmxJettyServer(server));
     registerMbean("flowRunnerManager", new JmxFlowRunnerManager(runnerManager));
     registerMbean("jobJMXMBean", JmxJobMBeanManager.getInstance());
 
@@ -570,7 +580,11 @@ public class AzkabanExecutorServer {
     checkState(connectors.length >= 1, "Server must have at least 1 connector");
 
     // The first connector is created upon initializing the server. That's the one that has the port.
-    return connectors[0].getLocalPort();
+    final Connector connector = connectors[0];
+
+    checkState(connector instanceof ServerConnector,
+        "Unexpected Connector instance: " + connector.getClass());
+    return ((ServerConnector) connector).getLocalPort();
   }
 
   /**
