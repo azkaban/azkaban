@@ -107,6 +107,14 @@ public class SlaChecker implements ConditionChecker {
     return null;
   }
 
+  /**
+   * Initialize the instance.
+   *
+   * Initializing the derived members depends on ExecutorManager to be set.
+   * Also, initializing the start time is possible when the job has already started.
+   *
+   * @return false on caught exceptions else true.
+   */
   private boolean init() {
     try {
       requireNonNull(executorManager);
