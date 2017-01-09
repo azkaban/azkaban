@@ -48,6 +48,9 @@ describe('CronTransformation', function() {
    assert.equal(testStrFromCronToQuartz('0 3 * * 5'), '0 3 * * 4');
    assert.equal(testStrFromCronToQuartz('0 3 * * 5-7'), '0 3 * * 4-6');
    assert.equal(testStrFromCronToQuartz('0 3 * * 1,3-5 2016'), '0 3 * * 0,2-4 2016');
+   assert.equal(testStrFromCronToQuartz('0 3 * * 5#3'), '0 3 * * 4#3');
+   assert.equal(testStrFromCronToQuartz('0 3 * * 5-7#3'), '0 3 * * 4-6#3');
+   assert.equal(testStrFromCronToQuartz('0 3 * * 1,3-5#3 2016'), '0 3 * * 0,2-4#3 2016'); 
   });
 });
 
