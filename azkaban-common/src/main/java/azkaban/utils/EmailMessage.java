@@ -293,4 +293,8 @@ public class EmailMessage {
     return _subject;
   }
 
+  public int getMailPort(){
+    return _mailPort;
+  }
+
 }
