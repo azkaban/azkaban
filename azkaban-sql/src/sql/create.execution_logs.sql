@@ -12,3 +12,4 @@ CREATE TABLE execution_logs (
 
 CREATE INDEX ex_log_attempt ON execution_logs(exec_id, name, attempt);
 CREATE INDEX ex_log_index ON execution_logs(exec_id, name);
+CREATE INDEX ex_log_upload_time ON execution_logs(upload_time);
