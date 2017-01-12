@@ -1,5 +1,5 @@
 /*
- * Copyright 2012 LinkedIn Corp.
+ * Copyright 2016 LinkedIn Corp.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -14,8 +14,9 @@
  * the License.
  */
 
-package azkaban.server;
+package azkaban.constants;
 
-public class ServerConstants {
-	public static final String AZKABAN_SERVLET_CONTEXT_KEY = "azkaban_app";
+public class JobProperties {
+  // Job property that enables/disables using Kafka logging of user job logs
+  public static final String AZKABAN_JOB_LOGGING_KAFKA_ENABLE = "azkaban.job.logging.kafka.enable";
 }

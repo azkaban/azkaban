@@ -381,6 +381,11 @@ public class JobRunnerTest {
 
   private JobRunner createJobRunner(int execId, String name, int time,
       boolean fail, ExecutorLoader loader, EventCollectorListener listener) {
+    return createJobRunner(execId, name, time, fail, loader, listener, new Props());
+  }
+
+  private JobRunner createJobRunner(int execId, String name, int time,
+      boolean fail, ExecutorLoader loader, EventCollectorListener listener, Props azkabanProps) {
     ExecutableFlow flow = new ExecutableFlow();
     flow.setExecutionId(execId);
     ExecutableNode node = new ExecutableNode();
@@ -391,7 +396,7 @@ public class JobRunnerTest {
     node.setInputProps(props);
     HashSet<String> proxyUsers = new HashSet<String>();
     proxyUsers.add(flow.getSubmitUser());
-    JobRunner runner = new JobRunner(node, workingDir, loader, jobtypeManager);
+    JobRunner runner = new JobRunner(node, workingDir, loader, jobtypeManager, azkabanProps);
     runner.setLogSettings(logger, "5MB", 4);
 
     runner.addListener(listener);

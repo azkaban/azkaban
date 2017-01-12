@@ -129,11 +129,13 @@ public class DataSourceUtils {
 
     private static MonitorThread monitorThread = null;
 
+    private final String url;
+
     private MySQLBasicDataSource(String host, int port, String dbName,
         String user, String password, int numConnections) {
       super();
 
-      String url = "jdbc:mysql://" + (host + ":" + port + "/" + dbName);
+      url = "jdbc:mysql://" + (host + ":" + port + "/" + dbName);
       addConnectionProperty("useUnicode", "yes");
       addConnectionProperty("characterEncoding", "UTF-8");
       setDriverClassName("com.mysql.jdbc.Driver");
@@ -167,6 +169,7 @@ public class DataSourceUtils {
 
       public MonitorThread(MySQLBasicDataSource mysqlSource) {
         this.setName("MySQL-DB-Monitor-Thread");
+        setDaemon(true);
         dataSource = mysqlSource;
       }
 
@@ -196,10 +199,7 @@ public class DataSourceUtils {
           PreparedStatement query = connection.prepareStatement("SELECT 1");
           query.execute();
         } catch (SQLException e) {
-          // TODO Auto-generated catch block
-          e.printStackTrace();
-          logger
-              .error("MySQL connection test failed. Please check MySQL connection health!");
+          logger.error("Unable to reach MySQL server on " + url);
         } finally {
           DbUtils.closeQuietly(connection);
         }

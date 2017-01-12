@@ -34,13 +34,18 @@ import org.apache.commons.jexl2.JexlException;
 import org.apache.commons.jexl2.MapContext;
 import org.apache.commons.lang.StringUtils;
 
+import org.apache.log4j.Logger;
 import org.joda.time.DateTime;
+
+import com.google.common.collect.Maps;
+import com.google.common.collect.MapDifference;
 
 import azkaban.executor.ExecutableFlowBase;
 import azkaban.flow.CommonJobProperties;
 
 public class PropsUtils {
 
+  private static final Logger logger = Logger.getLogger(PropsUtils.class);
   /**
    * Load job schedules from the given directories ] * @param dir The directory
    * to look in
@@ -292,7 +297,7 @@ public class PropsUtils {
     props.put(CommonJobProperties.FLOW_UUID, UUID.randomUUID().toString());
     props.put(CommonJobProperties.PROJECT_LAST_CHANGED_BY, flow.getLastModifiedByUser());
     props.put(CommonJobProperties.PROJECT_LAST_CHANGED_DATE, flow.getLastModifiedTimestamp());
-    props.put(CommonJobProperties.SUBMIT_USER, flow.getExecutableFlow().getSubmitUser());  
+    props.put(CommonJobProperties.SUBMIT_USER, flow.getExecutableFlow().getSubmitUser());
 
     DateTime loadTime = new DateTime();
 
@@ -328,16 +333,10 @@ public class PropsUtils {
     return map;
   }
 
-  @SuppressWarnings("unchecked")
-  public static Props fromJSONString(String json) {
-    try {
-      Map<String, String> obj =
-          (Map<String, String>) JSONUtils.parseJSONFromString(json);
-      Props props = new Props(null, obj);
-      return props;
-    } catch (IOException e) {
-      return null;
-    }
+  public static Props fromJSONString(String json) throws IOException {
+    Map<String, String> obj = (Map<String, String>) JSONUtils.parseJSONFromString(json);
+    Props props = new Props(null, obj);
+    return props;
   }
 
   @SuppressWarnings("unchecked")
@@ -368,5 +367,45 @@ public class PropsUtils {
     }
 
     return propsMap;
+  }
+
+  /**
+   * @param oldProps
+   * @param newProps
+   * @return the difference between oldProps and newProps.
+   */
+  public static String getPropertyDiff(Props oldProps, Props newProps) {
+
+    StringBuilder builder = new StringBuilder("");
+
+    MapDifference<String, String> md =
+        Maps.difference(toStringMap(oldProps, false), toStringMap(newProps, false));
+
+    Map<String, String> newlyCreatedProperty = md.entriesOnlyOnRight();
+    if (newlyCreatedProperty != null && newlyCreatedProperty.size() > 0) {
+      builder.append("Newly created Properties: ");
+      newlyCreatedProperty.forEach((k, v) -> {
+        builder.append("[ " + k + ", " + v + "], ");
+      });
+      builder.append("\n");
+    }
+
+    Map<String, String> deletedProperty = md.entriesOnlyOnLeft();
+    if (deletedProperty != null && deletedProperty.size() > 0) {
+      builder.append("Deleted Properties: ");
+      deletedProperty.forEach((k, v) -> {
+        builder.append("[ " + k + ", " + v + "], ");
+      });
+      builder.append("\n");
+    }
+
+    Map<String, MapDifference.ValueDifference<String>> diffProperties = md.entriesDiffering();
+    if (diffProperties != null && diffProperties.size() > 0) {
+      builder.append("Modified Properties: ");
+      diffProperties.forEach((k, v) -> {
+        builder.append("[ " + k + ", " + v.leftValue() + "-->" + v.rightValue() + "], ");
+      });
+    }
+    return builder.toString();
   }
 }

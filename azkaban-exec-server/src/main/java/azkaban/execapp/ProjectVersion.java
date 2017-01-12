@@ -18,6 +18,8 @@ package azkaban.execapp;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 import java.util.zip.ZipFile;
 
 import org.apache.commons.io.FileUtils;
@@ -78,8 +80,7 @@ public class ProjectVersion implements Comparable<ProjectVersion> {
           logger.info("Downloading zip file.");
           ZipFile zip = new ZipFile(projectFileHandler.getLocalFile());
           Utils.unzip(zip, tempDir);
-
-          tempDir.renameTo(installedDir);
+          Files.move(tempDir.toPath(), installedDir.toPath(), StandardCopyOption.ATOMIC_MOVE);
         } else {
           throw new IOException("The file type hasn't been decided yet.");
         }

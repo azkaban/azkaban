@@ -601,6 +601,11 @@ public class ExecutorManager extends EventHandler implements
     return allIds.toString();
   }
 
+
+  public long getQueuedFlowSize() {
+    return queuedFlows.size();
+  }
+
   /* Helper method to flow ids of all running flows */
   private void getRunningFlowsIdsHelper(List<Integer> allIds,
     Collection<Pair<ExecutionReference, ExecutableFlow>> collection) {
@@ -1048,12 +1053,14 @@ public class ExecutorManager extends EventHandler implements
   }
 
   private void cleanOldExecutionLogs(long millis) {
+    long beforeDeleteLogsTimestamp = System.currentTimeMillis();
     try {
       int count = executorLoader.removeExecutionLogsByTime(millis);
       logger.info("Cleaned up " + count + " log entries.");
     } catch (ExecutorManagerException e) {
-      e.printStackTrace();
+      logger.error("log clean up failed. ", e);
     }
+    logger.info("log clean up time: "  + (System.currentTimeMillis() - beforeDeleteLogsTimestamp)/1000 + " seconds.");
   }
 
   private Map<String, Object> callExecutorServer(ExecutableFlow exflow,
@@ -1378,7 +1385,7 @@ public class ExecutorManager extends EventHandler implements
   private void finalizeFlows(ExecutableFlow flow) {
 
     int execId = flow.getExecutionId();
-
+    boolean alertUser = true;
     updaterStage = "finalizing flow " + execId;
     // First we check if the execution in the datastore is complete
     try {
@@ -1413,6 +1420,7 @@ public class ExecutorManager extends EventHandler implements
       recentlyFinished.put(execId, dsFlow);
 
     } catch (ExecutorManagerException e) {
+      alertUser = false; // failed due to azkaban internal error, not to alert user
       logger.error(e);
     }
 
@@ -1421,58 +1429,56 @@ public class ExecutorManager extends EventHandler implements
     // the reference.
 
     updaterStage = "finalizing flow " + execId + " alerting and emailing";
-    ExecutionOptions options = flow.getExecutionOptions();
-    // But we can definitely email them.
-    Alerter mailAlerter = alerters.get("email");
-    if (flow.getStatus() == Status.FAILED || flow.getStatus() == Status.KILLED) {
-      if (options.getFailureEmails() != null
-          && !options.getFailureEmails().isEmpty()) {
-        try {
-          mailAlerter.alertOnError(flow);
-        } catch (Exception e) {
-          logger.error(e);
-        }
-      }
-      if (options.getFlowParameters().containsKey("alert.type")) {
-        String alertType = options.getFlowParameters().get("alert.type");
-        Alerter alerter = alerters.get(alertType);
-        if (alerter != null) {
+    if(alertUser) {
+      ExecutionOptions options = flow.getExecutionOptions();
+      // But we can definitely email them.
+      Alerter mailAlerter = alerters.get("email");
+      if (flow.getStatus() == Status.FAILED || flow.getStatus() == Status.KILLED) {
+        if (options.getFailureEmails() != null && !options.getFailureEmails().isEmpty()) {
           try {
-            alerter.alertOnError(flow);
+            mailAlerter.alertOnError(flow);
           } catch (Exception e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-            logger.error("Failed to alert by " + alertType);
+            logger.error(e);
           }
-        } else {
-          logger.error("Alerter type " + alertType
-              + " doesn't exist. Failed to alert.");
         }
-      }
-    } else {
-      if (options.getSuccessEmails() != null
-          && !options.getSuccessEmails().isEmpty()) {
-        try {
+        if (options.getFlowParameters().containsKey("alert.type")) {
+          String alertType = options.getFlowParameters().get("alert.type");
+          Alerter alerter = alerters.get(alertType);
+          if (alerter != null) {
+            try {
+              alerter.alertOnError(flow);
+            } catch (Exception e) {
+              // TODO Auto-generated catch block
+              e.printStackTrace();
+              logger.error("Failed to alert by " + alertType);
+            }
+          } else {
+            logger.error("Alerter type " + alertType + " doesn't exist. Failed to alert.");
+          }
+        }
+      } else {
+        if (options.getSuccessEmails() != null && !options.getSuccessEmails().isEmpty()) {
+          try {
 
-          mailAlerter.alertOnSuccess(flow);
-        } catch (Exception e) {
-          logger.error(e);
-        }
-      }
-      if (options.getFlowParameters().containsKey("alert.type")) {
-        String alertType = options.getFlowParameters().get("alert.type");
-        Alerter alerter = alerters.get(alertType);
-        if (alerter != null) {
-          try {
-            alerter.alertOnSuccess(flow);
+            mailAlerter.alertOnSuccess(flow);
           } catch (Exception e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-            logger.error("Failed to alert by " + alertType);
+            logger.error(e);
           }
-        } else {
-          logger.error("Alerter type " + alertType
-              + " doesn't exist. Failed to alert.");
+        }
+        if (options.getFlowParameters().containsKey("alert.type")) {
+          String alertType = options.getFlowParameters().get("alert.type");
+          Alerter alerter = alerters.get(alertType);
+          if (alerter != null) {
+            try {
+              alerter.alertOnSuccess(flow);
+            } catch (Exception e) {
+              // TODO Auto-generated catch block
+              e.printStackTrace();
+              logger.error("Failed to alert by " + alertType);
+            }
+          } else {
+            logger.error("Alerter type " + alertType + " doesn't exist. Failed to alert.");
+          }
         }
       }
     }

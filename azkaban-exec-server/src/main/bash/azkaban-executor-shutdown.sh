@@ -1,11 +1,19 @@
-#!/bin/bash
-azkaban_dir=$(dirname $0)/..
+#!/usr/bin/env bash
+# Shutdown script for azkaban executor server
+installdir="$(dirname $0)/.."
 
-executorport=`cat $azkaban_dir/conf/azkaban.properties | grep executor.port | cut -d = -f 2`
-echo "Shutting down current running AzkabanExecutorServer at port $executorport"
+pid=`cat ${installdir}/currentpid`
+port=`cat ${installdir}/executor.port`
 
-proc=`cat $azkaban_dir/currentpid`
+echo "Killing Executor. [pid: $pid, port: $port]"
 
-kill $proc
+kill ${pid}
+if [ $? -ne 0 ]; then
+    echo "Error: Shutdown failed"
+    exit 1;
+fi
 
-cat /dev/null > $azkaban_dir/currentpid
+rm  ${installdir}/currentpid
+rm  ${installdir}/executor.port
+
+echo "done."

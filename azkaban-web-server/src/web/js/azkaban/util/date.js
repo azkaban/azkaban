@@ -110,10 +110,15 @@ var validateQuartzStr = function (str){
   return "VALID";
 }
 
+// Users enter values 1-7 for day of week, but UnixCronSyntax requires
+// day of week to be values 0-6. However, when using "#" syntax, we
+// do not want to apply the modulo operation to the number following "#" 
 var modifyStrToUnixCronSyntax = function (str){
-  return str.replace(/[0-7]/g, function upperToHyphenLower(match) {
+  var res = str.split("#");
+  res[0] = res[0].replace(/[0-7]/g, function upperToHyphenLower(match) {
     return (parseInt(match)+6)%7;
   });
+  return res.join("#");
 }
 
 // Unix Cron use 0-6 as Sun--Sat, but Quartz use 1-7. Due to later.js only supporting Unix Cron, we have to make this transition.

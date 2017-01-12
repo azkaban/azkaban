@@ -300,6 +300,9 @@ azkaban.FlowExecuteDialogView = Backbone.View.extend({
         if (node.type == "flow" && statusNode.type == "flow") {
           this.assignInitialStatus(node, statusNode);
         }
+      } else {
+        // job wasn't present in this flow during the original execution
+        node.noInitialStatus = true;
       }
     }
   },
@@ -496,18 +499,14 @@ var disableFinishedJobs = function(data) {
       node.status = "READY";
       node.disabled = true;
     }
-    else if (node.status == "SUCCEEDED" || node.status=="RUNNING") {
+    else if (node.status == "SUCCEEDED" || node.noInitialStatus) {
       node.disabled = true;
-    }
-    else if (node.status == "CANCELLED") {
-      node.disabled = false;
-      node.status="READY";
     }
     else {
       node.disabled = false;
-      if (node.type == "flow") {
-        disableFinishedJobs(node);
-      }
+    }
+    if (node.type == "flow") {
+      disableFinishedJobs(node);
     }
   }
 }

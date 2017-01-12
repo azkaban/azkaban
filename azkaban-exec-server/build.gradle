@@ -2,6 +2,8 @@ apply plugin: 'distribution'
 
 dependencies {
   compile(project(':azkaban-common'))
+  compile('org.apache.kafka:kafka-log4j-appender:0.10.0.0')
+  compile('com.googlecode.json-simple:json-simple:1.1.1')
 
   testCompile('org.hamcrest:hamcrest-all:1.3')
   testCompile(project(':azkaban-common').sourceSets.test.output)
@@ -14,9 +16,6 @@ distributions {
       from('src/main/bash') {
         into 'bin'
         fileMode = 0755
-      }
-      from('src/main/resources/conf') {
-        into 'conf'
       }
       from(configurations.runtime) {
         into 'lib'

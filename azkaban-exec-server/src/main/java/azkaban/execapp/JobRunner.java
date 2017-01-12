@@ -24,13 +24,22 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.Optional;
 
 import org.apache.log4j.Appender;
 import org.apache.log4j.EnhancedPatternLayout;
+import org.apache.log4j.FileAppender;
 import org.apache.log4j.Layout;
 import org.apache.log4j.Logger;
 import org.apache.log4j.RollingFileAppender;
 
+import org.apache.kafka.log4jappender.KafkaLog4jAppender;
+
+import org.json.simple.JSONObject;
+
+import azkaban.constants.FlowProperties;
+import azkaban.constants.JobProperties;
+import azkaban.constants.ServerProperties;
 import azkaban.event.Event;
 import azkaban.event.Event.Type;
 import azkaban.event.EventData;
@@ -48,8 +57,11 @@ import azkaban.jobExecutor.JavaProcessJob;
 import azkaban.jobExecutor.Job;
 import azkaban.jobtype.JobTypeManager;
 import azkaban.jobtype.JobTypeManagerException;
+import azkaban.utils.ExternalLinkUtils;
 import azkaban.utils.Props;
 import azkaban.utils.StringUtils;
+import azkaban.utils.UndefinedPropertyException;
+import azkaban.utils.PatternLayoutEscaped;
 
 public class JobRunner extends EventHandler implements Runnable {
   public static final String AZKABAN_WEBSERVER_URL = "azkaban.webserver.url";
@@ -59,6 +71,7 @@ public class JobRunner extends EventHandler implements Runnable {
 
   private ExecutorLoader loader;
   private Props props;
+  private Props azkabanProps;
   private ExecutableNode node;
   private File workingDir;
 
@@ -66,7 +79,8 @@ public class JobRunner extends EventHandler implements Runnable {
   private Layout loggerLayout = DEFAULT_LAYOUT;
   private Logger flowLogger = null;
 
-  private Appender jobAppender;
+  private Appender jobAppender = null;
+  private Optional<Appender> kafkaAppender = Optional.empty();
   private File logFile;
   private String attachmentFileName;
 
@@ -94,7 +108,7 @@ public class JobRunner extends EventHandler implements Runnable {
   private BlockingStatus currentBlockStatus = null;
 
   public JobRunner(ExecutableNode node, File workingDir, ExecutorLoader loader,
-      JobTypeManager jobtypeManager) {
+      JobTypeManager jobtypeManager, Props azkabanProps) {
     this.props = node.getInputProps();
     this.node = node;
     this.workingDir = workingDir;
@@ -103,6 +117,7 @@ public class JobRunner extends EventHandler implements Runnable {
     this.jobId = node.getId();
     this.loader = loader;
     this.jobtypeManager = jobtypeManager;
+    this.azkabanProps = azkabanProps;
   }
 
   public void setValidatedProxyUsers(Set<String> proxyUsers) {
@@ -210,26 +225,60 @@ public class JobRunner extends EventHandler implements Runnable {
               + this.jobId;
       logger = Logger.getLogger(loggerName);
 
-      // Create file appender
-      String logName = createLogFileName(node);
-      logFile = new File(workingDir, logName);
-
-      String absolutePath = logFile.getAbsolutePath();
-
-      jobAppender = null;
       try {
-        RollingFileAppender fileAppender =
-            new RollingFileAppender(loggerLayout, absolutePath, true);
-        fileAppender.setMaxBackupIndex(jobLogBackupIndex);
-        fileAppender.setMaxFileSize(jobLogChunkSize);
-        jobAppender = fileAppender;
-        logger.addAppender(jobAppender);
-        logger.setAdditivity(false);
+        attachFileAppender(createFileAppender());
       } catch (IOException e) {
+        removeAppender(jobAppender);
         flowLogger.error("Could not open log file in " + workingDir
             + " for job " + this.jobId, e);
       }
+
+      if (props.getBoolean(JobProperties.AZKABAN_JOB_LOGGING_KAFKA_ENABLE, false)) {
+        // Only attempt appender construction if required properties are present
+        if (azkabanProps.containsKey(ServerProperties.AZKABAN_SERVER_LOGGING_KAFKA_BROKERLIST)
+            && azkabanProps.containsKey(ServerProperties.AZKABAN_SERVER_LOGGING_KAFKA_TOPIC)) {
+          try {
+            attachKafkaAppender(createKafkaAppender());
+          } catch (Exception e) {
+            removeAppender(kafkaAppender);
+            flowLogger.error("Failed to create Kafka appender for job " + this.jobId, e);
+          }
+        } else {
+          flowLogger.info("Kafka appender not created as brokerlist or topic not provided by executor server");
+        }
+      }
     }
+
+    String externalViewer = ExternalLinkUtils.getExternalLogViewer(azkabanProps, this.jobId, props);
+    if (!externalViewer.isEmpty()) {
+      logger.info("See logs at: " + externalViewer);
+    }
+  }
+
+  private void attachFileAppender(FileAppender appender) {
+    // If present, remove the existing file appender
+    assert(jobAppender == null);
+
+    jobAppender = appender;
+    logger.addAppender(jobAppender);
+    logger.setAdditivity(false);
+    flowLogger.info("Attached file appender for job " + this.jobId);
+  }
+
+  private FileAppender createFileAppender() throws IOException {
+    // Set up log files
+    String logName = createLogFileName(node);
+    logFile = new File(workingDir, logName);
+    String absolutePath = logFile.getAbsolutePath();
+
+    // Attempt to create FileAppender
+    RollingFileAppender fileAppender =
+        new RollingFileAppender(loggerLayout, absolutePath, true);
+    fileAppender.setMaxBackupIndex(jobLogBackupIndex);
+    fileAppender.setMaxFileSize(jobLogChunkSize);
+
+    flowLogger.info("Created file appender for job " + this.jobId);
+    return fileAppender;
   }
 
   private void createAttachmentFile() {
@@ -238,10 +287,60 @@ public class JobRunner extends EventHandler implements Runnable {
     attachmentFileName = file.getAbsolutePath();
   }
 
+  private void attachKafkaAppender(KafkaLog4jAppender appender) {
+    // This should only be called once
+    assert(!kafkaAppender.isPresent());
+
+    kafkaAppender = Optional.of(appender);
+    logger.addAppender(kafkaAppender.get());
+    logger.setAdditivity(false);
+    flowLogger.info("Attached new Kafka appender for job " + this.jobId);
+  }
+
+  private KafkaLog4jAppender createKafkaAppender() throws UndefinedPropertyException {
+    KafkaLog4jAppender kafkaProducer = new KafkaLog4jAppender();
+    kafkaProducer.setSyncSend(true);
+    kafkaProducer.setBrokerList(azkabanProps.getString(ServerProperties.AZKABAN_SERVER_LOGGING_KAFKA_BROKERLIST));
+    kafkaProducer.setTopic(azkabanProps.getString(ServerProperties.AZKABAN_SERVER_LOGGING_KAFKA_TOPIC));
+
+    JSONObject layout = new JSONObject();
+    layout.put("category", "%c{1}");
+    layout.put("level", "%p");
+    layout.put("message", "%m");
+    layout.put("projectname", props.getString(FlowProperties.AZKABAN_FLOW_PROJECT_NAME));
+    layout.put("flowid", props.getString(FlowProperties.AZKABAN_FLOW_FLOW_ID));
+    layout.put("jobid", this.jobId);
+    layout.put("submituser", props.getString(FlowProperties.AZKABAN_FLOW_SUBMIT_USER));
+    layout.put("execid", props.getString(FlowProperties.AZKABAN_FLOW_EXEC_ID));
+    layout.put("projectversion", props.getString(FlowProperties.AZKABAN_FLOW_PROJECT_VERSION));
+    layout.put("logsource", "userJob");
+
+    kafkaProducer.setLayout(new PatternLayoutEscaped(layout.toString()));
+    kafkaProducer.activateOptions();
+
+    flowLogger.info("Created kafka appender for " + this.jobId);
+    return kafkaProducer;
+  }
+
+  private void removeAppender(Optional<Appender> appender) {
+    if (appender.isPresent()) {
+      removeAppender(appender.get());
+    }
+  }
+
+  private void removeAppender(Appender appender) {
+    if (appender != null) {
+      logger.removeAppender(appender);
+      appender.close();
+    }
+  }
+
   private void closeLogger() {
     if (jobAppender != null) {
-      logger.removeAppender(jobAppender);
-      jobAppender.close();
+      removeAppender(jobAppender);
+    }
+    if (kafkaAppender.isPresent()) {
+      removeAppender(kafkaAppender);
     }
   }
 
@@ -556,8 +655,7 @@ public class JobRunner extends EventHandler implements Runnable {
    * know what executions initiated their execution.
    */
   private void insertJobMetadata() {
-    Props azkProps = AzkabanExecutorServer.getApp().getAzkabanProps();
-    String baseURL = azkProps.get(AZKABAN_WEBSERVER_URL);
+    String baseURL = azkabanProps.get(AZKABAN_WEBSERVER_URL);
     if (baseURL != null) {
       String flowName = node.getParentFlow().getFlowId();
       String projectName = node.getParentFlow().getProjectName();

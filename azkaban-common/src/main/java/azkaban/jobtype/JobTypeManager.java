@@ -340,8 +340,13 @@ public class JobTypeManager {
             jobProps, jobType));
       }
 
-      // TODO: should the logic below mirror the logic for PluginLoadProps?
       Props pluginJobProps = pluginSet.getPluginJobProps(jobType);
+      // For default jobtypes, even though they don't have pluginJobProps configured,
+      // they still need to load properties from common.properties file if it's present
+      // because common.properties file is global to all jobtypes.
+      if(pluginJobProps == null) {
+        pluginJobProps = pluginSet.getCommonPluginJobProps();
+      }
       if (pluginJobProps != null) {
         for (String k : pluginJobProps.getKeySet()) {
           if (!jobProps.containsKey(k)) {
