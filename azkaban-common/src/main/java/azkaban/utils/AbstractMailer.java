@@ -111,6 +111,10 @@ public class AbstractMailer {
     return mailSender;
   }
 
+  public int getMailPort() {
+    return mailPort;
+  }
+
   /**
    * Attachment maximum size in bytes
    * 
