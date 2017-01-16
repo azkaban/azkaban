@@ -23,7 +23,6 @@ dependencies {
   compile('commons-io:commons-io:2.4')
   compile('commons-lang:commons-lang:2.6')
   compile('javax.mail:mail:1.4.5')
-  compile('javax.servlet:servlet-api:2.5')
   compile('joda-time:joda-time:2.0')
   compile('log4j:log4j:1.2.16')
   compile('mysql:mysql-connector-java:5.1.28')
