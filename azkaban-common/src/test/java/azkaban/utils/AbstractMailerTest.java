@@ -56,7 +56,7 @@ public class AbstractMailerTest {
 
     }
 
-    public Props  createMailProperties(){
+    public static  Props  createMailProperties(){
         Props props = new Props();
         props.put("mail.user","somebody");
         props.put("mail.password","pwd");
