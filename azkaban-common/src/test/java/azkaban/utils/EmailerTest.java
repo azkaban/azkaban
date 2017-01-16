@@ -85,7 +85,6 @@ public class EmailerTest {
         emailer.sendErrorEmail(exFlow);
 
     }
-
     @Test
     public void testCreateEmailMessage(){
         Emailer emailer = new Emailer(props);

@@ -299,8 +299,7 @@ public class HttpRequestUtils {
   public static Map<String, String> getParamGroup(HttpServletRequest request,
       String groupName) throws ServletException {
     @SuppressWarnings("unchecked")
-    Enumeration<Object> enumerate =
-        (Enumeration<Object>) request.getParameterNames();
+    Enumeration<String> enumerate = request.getParameterNames();
     String matchString = groupName + "[";
 
     HashMap<String, String> groupParam = new HashMap<String, String>();
