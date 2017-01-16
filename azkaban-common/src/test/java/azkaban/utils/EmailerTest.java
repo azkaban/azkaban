@@ -15,8 +15,16 @@
  */
 package azkaban.utils;
 
+import azkaban.executor.ExecutableFlow;
+import azkaban.flow.Flow;
+import azkaban.project.DirectoryFlowLoader;
+import azkaban.project.Project;
+import azkaban.test.executions.TestExecutions;
 import com.google.common.io.Resources;
+import org.apache.log4j.Logger;
+import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.FileInputStream;
@@ -29,44 +37,80 @@ import java.util.Properties;
 
 public class EmailerTest {
 
-    List<String> senderList = new ArrayList<String>();
+    String host = "smtp.domain.com";
+    int mailPort = 25;
+    String sender = "somebody@domain.com";
+    String user = "somebody@domain.com";
+    String password = "pwd";
+
+    String failAddr = "receive@domain.com";
+    List<String> failAddrList = new ArrayList<String>();
+
+    private Project project;
+    private Props props;
+
+
 
 
     @Before
     public void setUp() throws Exception {
-        senderList.add("sender@domain.com");
+        failAddrList.add(failAddr);
+        project = new Project(11, "myTestProject");
+        Logger logger = Logger.getLogger(this.getClass());
+
+        props =  createMailProperties();
+        DirectoryFlowLoader loader = new DirectoryFlowLoader(props, logger);
+        loader.loadProjectFlow(project, TestExecutions.getFlowDir("embedded"));
+        Assert.assertEquals(0, loader.getErrors().size());
+        project.setFlows(loader.getFlowMap());
+        project.setVersion(123);
     }
 
+
+
+
     /**
-     * test emailMessage properties
+     * test send email
      */
+    @Ignore
     @Test
-    public void testCreateEmailMessage() throws Exception{
+    public void testSendEmail() throws Exception{
 
-        URL url = Resources.getResource("conf/emailtest/azkaban.properties");
-        InputStream inputStream = new FileInputStream(url.getFile());
+        Flow flow = project.getFlow("jobe");
+        flow.addFailureEmails(failAddrList);
+        Assert.assertNotNull(flow);
 
-        Properties properties = new Properties();
-        properties.load(inputStream);
+        ExecutableFlow exFlow = new ExecutableFlow(project, flow);
+        Emailer emailer = new Emailer(props);
+        emailer.sendErrorEmail(exFlow);
 
+    }
+
+    @Test
+    public void testCreateEmailMessage(){
+        Emailer emailer = new Emailer(props);
+        EmailMessage em = emailer.createEmailMessage("subject","text/html",failAddrList);
+        assert  em.getMailPort() == mailPort;
+
+    }
+
+
+
+
+    public   Props  createMailProperties(){
         Props props = new Props();
-        props.put(properties);
+        props.put("mail.user",user);
+        props.put("mail.password",password);
+        props.put("mail.sender",sender);
+        props.put("mail.host",host);
+        props.put("mail.port",mailPort);
+        props.put("job.failure.email",failAddr);
         props.put("server.port","114");
         props.put("jetty.use.ssl","false");
         props.put("server.useSSL","false");
         props.put("jetty.port","8786");
-
-        Emailer emailer = new Emailer(props);
-        EmailMessage emailMessage = emailer.createEmailMessage("subject","text/html",senderList);
-
-
-        assert(properties.getProperty("mail.user").equals(emailer.getMailUser()));
-
-        int mailport =  Integer.parseInt((String)properties.getOrDefault("mail.port","25"));
-        assert emailer.getMailPort()== mailport;
-        assert emailMessage.getMailPort() == mailport;
+        return props;
     }
-
 
 
 
