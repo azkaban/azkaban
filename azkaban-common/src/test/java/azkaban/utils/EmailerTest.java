@@ -72,7 +72,6 @@ public class EmailerTest {
     /**
      * test send email
      */
-    @Ignore
     @Test
     public void testSendEmail() throws Exception{
 
