@@ -73,7 +73,7 @@ public class Emailer extends AbstractMailer implements Alerter {
     this.clientHostname = getClientHostName(props);
 
     // If either azkaban webserver running in SSL or an external SSL service used (e.g. ELB)
-    if (props.getBoolean("jetty.use.ssl", true) || props.getBoolean("AZKABAN_WEBSERVER_SSL_EXTERNAL", false)) {
+    if (props.getBoolean("jetty.use.ssl", true) || props.getBoolean(AZKABAN_WEBSERVER_SSL_EXTERNAL, false)) {
       this.scheme = HTTPS;
       this.clientPortNumber = props.getString("jetty.ssl.port", DEFAULT_HTTPS_PORT_NUMBER);
     } else {
