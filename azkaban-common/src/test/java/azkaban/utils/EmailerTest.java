@@ -43,8 +43,8 @@ public class EmailerTest {
     String user = "somebody@domain.com";
     String password = "pwd";
 
-    String failAddr = "receive@domain.com";
-    List<String> failAddrList = new ArrayList<String>();
+    String receiveAddr = "receive@domain.com";
+    List<String> receiveAddrList = new ArrayList<String>();
 
     private Project project;
     private Props props;
@@ -54,7 +54,7 @@ public class EmailerTest {
 
     @Before
     public void setUp() throws Exception {
-        failAddrList.add(failAddr);
+        receiveAddrList.add(receiveAddr);
         project = new Project(11, "myTestProject");
         Logger logger = Logger.getLogger(this.getClass());
 
@@ -67,16 +67,18 @@ public class EmailerTest {
     }
 
 
-
-
     /**
-     * test send email
+     * (test send email)
+     * if you want to run this case,
+     * please make sure these variable{host,mailPort,password,receiveAddr} effective.
+     *
      */
+    @Ignore
     @Test
     public void testSendEmail() throws Exception{
 
         Flow flow = project.getFlow("jobe");
-        flow.addFailureEmails(failAddrList);
+        flow.addFailureEmails(receiveAddrList);
         Assert.assertNotNull(flow);
 
         ExecutableFlow exFlow = new ExecutableFlow(project, flow);
@@ -87,7 +89,7 @@ public class EmailerTest {
     @Test
     public void testCreateEmailMessage(){
         Emailer emailer = new Emailer(props);
-        EmailMessage em = emailer.createEmailMessage("subject","text/html",failAddrList);
+        EmailMessage em = emailer.createEmailMessage("subject","text/html",receiveAddrList);
         assert  em.getMailPort() == mailPort;
 
     }
@@ -102,7 +104,7 @@ public class EmailerTest {
         props.put("mail.sender",sender);
         props.put("mail.host",host);
         props.put("mail.port",mailPort);
-        props.put("job.failure.email",failAddr);
+        props.put("job.failure.email",receiveAddr);
         props.put("server.port","114");
         props.put("jetty.use.ssl","false");
         props.put("server.useSSL","false");
