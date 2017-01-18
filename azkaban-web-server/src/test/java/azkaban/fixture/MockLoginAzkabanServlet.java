@@ -16,20 +16,29 @@
 
 package azkaban.fixture;
 
+
+import azkaban.server.AzkabanServer;
 import azkaban.server.session.Session;
 import azkaban.server.session.SessionCache;
+import azkaban.user.UserManager;
 import azkaban.utils.Props;
 import azkaban.webapp.AzkabanWebServer;
 import azkaban.webapp.servlet.LoginAbstractAzkabanServlet;
-import java.io.IOException;
+import azkaban.user.User;
+import org.apache.velocity.app.VelocityEngine;
+import org.mockito.Spy;
+import org.mortbay.jetty.Server;
+
+import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
+import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import org.apache.velocity.app.VelocityEngine;
 
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.when;
+import java.io.IOException;
+import java.util.UUID;
+
+import static org.mockito.Mockito.*;
 
 public class MockLoginAzkabanServlet extends LoginAbstractAzkabanServlet {
 
@@ -85,7 +94,10 @@ public class MockLoginAzkabanServlet extends LoginAbstractAzkabanServlet {
             throws Exception{
 
         MockLoginAzkabanServlet servlet = new MockLoginAzkabanServlet();
+
+        Server server = mock(Server.class);
         Props props = new Props();
+        UserManager userManager = mock(UserManager.class);
 
         // Need to mock and inject an application instance into the servlet
         AzkabanWebServer app = mock(AzkabanWebServer.class);
