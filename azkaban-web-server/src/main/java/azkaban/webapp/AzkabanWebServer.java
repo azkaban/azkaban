@@ -18,7 +18,6 @@ package azkaban.webapp;
 
 import com.codahale.metrics.MetricRegistry;
 
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -47,19 +46,15 @@ import org.apache.velocity.app.VelocityEngine;
 import org.apache.velocity.runtime.log.Log4JLogChute;
 import org.apache.velocity.runtime.resource.loader.ClasspathResourceLoader;
 import org.apache.velocity.runtime.resource.loader.JarResourceLoader;
-import org.eclipse.jetty.server.HttpConfiguration;
-import org.eclipse.jetty.server.HttpConnectionFactory;
-import org.eclipse.jetty.server.SecureRequestCustomizer;
-import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.ServerConnectionStatistics;
-import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.server.SslConnectionFactory;
-import org.eclipse.jetty.servlet.DefaultServlet;
-import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.eclipse.jetty.servlet.ServletHolder;
-import org.eclipse.jetty.util.ssl.SslContextFactory;
-import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.joda.time.DateTimeZone;
+import org.mortbay.jetty.Connector;
+import org.mortbay.jetty.Server;
+import org.mortbay.jetty.bio.SocketConnector;
+import org.mortbay.jetty.security.SslSocketConnector;
+import org.mortbay.jetty.servlet.Context;
+import org.mortbay.jetty.servlet.DefaultServlet;
+import org.mortbay.jetty.servlet.ServletHolder;
+import org.mortbay.thread.QueuedThreadPool;
 
 import azkaban.alert.Alerter;
 import azkaban.constants.ServerInternals;
@@ -68,6 +63,7 @@ import azkaban.database.AzkabanDatabaseSetup;
 import azkaban.executor.ExecutorManager;
 import azkaban.executor.JdbcExecutorLoader;
 import azkaban.jmx.JmxExecutorManager;
+import azkaban.jmx.JmxJettyServer;
 import azkaban.jmx.JmxTriggerManager;
 import azkaban.project.JdbcProjectLoader;
 import azkaban.project.ProjectManager;
@@ -131,11 +127,6 @@ import com.linkedin.restli.server.RestliServlet;
  * for sessionizing. jetty.keystore - Jetty keystore . jetty.keypassword - Jetty
  * keystore password jetty.truststore - Jetty truststore jetty.trustpassword -
  * Jetty truststore password
- *
- * TODO This class needs to be refactored and made smaller.
- * TODO Investigate if some components can be extracted into separate classes
- * TODO extract server creation into separate methods
- * TODO remove config variables out of this class
  */
 public class AzkabanWebServer extends AzkabanServer {
   private static final String AZKABAN_ACCESS_LOGGER_NAME =
@@ -150,6 +141,7 @@ public class AzkabanWebServer extends AzkabanServer {
       "azkaban.private.properties";
 
   private static final int MAX_FORM_CONTENT_SIZE = 10 * 1024 * 1024;
+  private static final int MAX_HEADER_BUFFER_SIZE = 10 * 1024 * 1024;
   private static AzkabanWebServer app;
 
   private static final String DEFAULT_TIMEZONE_ID = "default.timezone.id";
@@ -652,10 +644,13 @@ public class AzkabanWebServer extends AzkabanServer {
   private VelocityEngine configureVelocityEngine(final boolean devMode) {
     VelocityEngine engine = new VelocityEngine();
     engine.setProperty("resource.loader", "classpath, jar");
-    engine.setProperty("classpath.resource.loader.class", ClasspathResourceLoader.class.getName());
+    engine.setProperty("classpath.resource.loader.class",
+        ClasspathResourceLoader.class.getName());
     engine.setProperty("classpath.resource.loader.cache", !devMode);
-    engine.setProperty("classpath.resource.loader.modificationCheckInterval", 5L);
-    engine.setProperty("jar.resource.loader.class", JarResourceLoader.class.getName());
+    engine.setProperty("classpath.resource.loader.modificationCheckInterval",
+        5L);
+    engine.setProperty("jar.resource.loader.class",
+        JarResourceLoader.class.getName());
     engine.setProperty("jar.resource.loader.cache", !devMode);
     engine.setProperty("resource.manager.logwhenfound", false);
     engine.setProperty("input.encoding", "UTF-8");
@@ -664,12 +659,15 @@ public class AzkabanWebServer extends AzkabanServer {
     engine.setProperty("resource.manager.logwhenfound", false);
     engine.setProperty("velocimacro.permissions.allow.inline", true);
     engine.setProperty("velocimacro.library.autoreload", devMode);
-    engine.setProperty("velocimacro.library", "/azkaban/webapp/servlet/velocity/macros.vm");
-    engine.setProperty("velocimacro.permissions.allow.inline.to.replace.global", true);
+    engine.setProperty("velocimacro.library",
+        "/azkaban/webapp/servlet/velocity/macros.vm");
+    engine.setProperty(
+        "velocimacro.permissions.allow.inline.to.replace.global", true);
     engine.setProperty("velocimacro.arguments.strict", true);
     engine.setProperty("runtime.log.invalid.references", devMode);
     engine.setProperty("runtime.log.logsystem.class", Log4JLogChute.class);
-    engine.setProperty("runtime.log.logsystem.log4j.logger", Logger.getLogger("org.apache.velocity.Logger"));
+    engine.setProperty("runtime.log.logsystem.log4j.logger",
+        Logger.getLogger("org.apache.velocity.Logger"));
     engine.setProperty("parser.pool.size", 3);
     return engine;
   }
@@ -705,89 +703,67 @@ public class AzkabanWebServer extends AzkabanServer {
       return;
     }
 
-    // Create a Jetty server with custom Thread pool
-    final int maxThreads = azkabanSettings.getInt("jetty.maxThreads", DEFAULT_THREAD_NUMBER);
-    final Server server = new Server(new QueuedThreadPool(maxThreads));
+    int maxThreads =
+        azkabanSettings.getInt("jetty.maxThreads", DEFAULT_THREAD_NUMBER);
+    boolean isStatsOn =
+        azkabanSettings.getBoolean("jetty.connector.stats", true);
+    logger.info("Setting up connector with stats on: " + isStatsOn);
 
-    final int port = azkabanSettings.getInt("jetty.port", DEFAULT_PORT_NUMBER);
-    final int sslPort = azkabanSettings.getInt("jetty.ssl.port", DEFAULT_SSL_PORT_NUMBER);
-    final boolean useSsl = azkabanSettings.getBoolean("jetty.use.ssl", true);
+    boolean ssl;
+    int port;
+    final Server server = new Server();
+    if (azkabanSettings.getBoolean("jetty.use.ssl", true)) {
+      int sslPortNumber =
+          azkabanSettings.getInt("jetty.ssl.port", DEFAULT_SSL_PORT_NUMBER);
+      port = sslPortNumber;
+      ssl = true;
+      logger.info("Setting up Jetty Https Server with port:" + sslPortNumber
+          + " and numThreads:" + maxThreads);
 
-    /*
-     * Configuring HTTP
-     * HttpConfiguration is a configuration holder for http and https.
-     *  - default scheme for http is <code>http</code>,
-     *  - default for secured http is <code>https</code>
-     *
-     * The port for secured communication is set here.
-     */
-    final HttpConfiguration httpConfig = new HttpConfiguration();
-    httpConfig.setSecureScheme("https");
-    httpConfig.setSecurePort(sslPort);
-
-    /*
-     * A Jetty server can have multiple connectors that listens on different ports.
-     * Creating a connector for HTTP traffic
-     */
-    final ServerConnector http = new ServerConnector(server, new HttpConnectionFactory(httpConfig));
-    http.setPort(port);
-    server.addConnector(http);
-
-    if (useSsl) {
-      logger.info("Setting up Jetty Https Server with port:" + sslPort + " and numThreads:" + maxThreads);
-
-      // SslContextFactory is responsible for holding SSL configuration
-      final SslContextFactory sslContextFactory = new SslContextFactory();
-      sslContextFactory.setKeyStorePath(azkabanSettings.getString("jetty.keystore"));
-      sslContextFactory.setKeyStorePassword(azkabanSettings.getString("jetty.password"));
-      sslContextFactory.setKeyManagerPassword(azkabanSettings.getString("jetty.keypassword"));
-      sslContextFactory.setTrustStorePath(azkabanSettings.getString("jetty.truststore"));
-      sslContextFactory.setTrustStorePassword(azkabanSettings.getString("jetty.trustpassword"));
+      SslSocketConnector secureConnector = new SslSocketConnector();
+      secureConnector.setPort(sslPortNumber);
+      secureConnector.setKeystore(azkabanSettings.getString("jetty.keystore"));
+      secureConnector.setPassword(azkabanSettings.getString("jetty.password"));
+      secureConnector.setKeyPassword(azkabanSettings
+          .getString("jetty.keypassword"));
+      secureConnector.setTruststore(azkabanSettings
+          .getString("jetty.truststore"));
+      secureConnector.setTrustPassword(azkabanSettings
+          .getString("jetty.trustpassword"));
+      secureConnector.setHeaderBufferSize(MAX_HEADER_BUFFER_SIZE);
 
       // set up vulnerable cipher suites to exclude
       List<String> cipherSuitesToExclude = azkabanSettings.getStringList("jetty.excludeCipherSuites");
       logger.info("Excluded Cipher Suites: " + String.valueOf(cipherSuitesToExclude));
       if (cipherSuitesToExclude != null && !cipherSuitesToExclude.isEmpty()) {
-        sslContextFactory.setExcludeCipherSuites(cipherSuitesToExclude.toArray(new String[0]));
+        secureConnector.setExcludeCipherSuites(cipherSuitesToExclude.toArray(new String[0]));
       }
 
-      /*
-       * Configuring HTTPS
-       * A new HttpConfiguration object is required for each connector. Cloning previous configuration here.
-       */
-      final HttpConfiguration httpsConfig = new HttpConfiguration(httpConfig);
-      /*
-       * SecureRequestCustomizer which is how a new connector is able to resolve the https connection before
-       * handing control over to the Jetty Server.
-       */
-      httpsConfig.addCustomizer(new SecureRequestCustomizer());
-
-      // Creating a connector for HTTPS. The SslConnectionFactory is responsible for SSL configuration.
-      final ServerConnector https = new ServerConnector(server,
-          new SslConnectionFactory(sslContextFactory,"http/1.1"),
-          new HttpConnectionFactory(httpsConfig));
-      https.setPort(sslPort);
-      https.setIdleTimeout(500000);
-
-      // Add the HTTPS connector
-      server.addConnector(https);
+      server.addConnector(secureConnector);
+    } else {
+      ssl = false;
+      port = azkabanSettings.getInt("jetty.port", DEFAULT_PORT_NUMBER);
+      SocketConnector connector = new SocketConnector();
+      connector.setPort(port);
+      connector.setHeaderBufferSize(MAX_HEADER_BUFFER_SIZE);
+      server.addConnector(connector);
     }
 
-    final boolean statsEnabled = azkabanSettings.getBoolean("jetty.connector.stats", true);
-    logger.info("Setting up connector with stats on: " + statsEnabled);
-
-    if (statsEnabled) {
-      ServerConnectionStatistics.addToAllConnectors(server);
+    // setting stats configuration for connectors
+    for (Connector connector : server.getConnectors()) {
+      connector.setStatsOn(isStatsOn);
     }
 
     String hostname = azkabanSettings.getString("jetty.hostname", "localhost");
     azkabanSettings.put("server.hostname", hostname);
     azkabanSettings.put("server.port", port);
-    azkabanSettings.put("server.useSSL", String.valueOf(useSsl));
+    azkabanSettings.put("server.useSSL", String.valueOf(ssl));
 
     app = new AzkabanWebServer(server, azkabanSettings);
 
-    final boolean checkDB = azkabanSettings.getBoolean(AzkabanDatabaseSetup.DATABASE_CHECK_VERSION, false);
+    boolean checkDB =
+        azkabanSettings.getBoolean(AzkabanDatabaseSetup.DATABASE_CHECK_VERSION,
+            false);
     if (checkDB) {
       AzkabanDatabaseSetup setup = new AzkabanDatabaseSetup(azkabanSettings);
       setup.loadTableInfo();
@@ -800,34 +776,38 @@ public class AzkabanWebServer extends AzkabanServer {
       }
     }
 
-    String staticDir = azkabanSettings.getString("web.resource.dir", DEFAULT_STATIC_DIR);
+    QueuedThreadPool httpThreadPool = new QueuedThreadPool(maxThreads);
+    server.setThreadPool(httpThreadPool);
+
+    String staticDir =
+        azkabanSettings.getString("web.resource.dir", DEFAULT_STATIC_DIR);
     logger.info("Setting up web resource dir " + staticDir);
-
-    ServletContextHandler root = new ServletContextHandler(server, "/", ServletContextHandler.SESSIONS);
-
-    root.setContextPath("/");
+    Context root = new Context(server, "/", Context.SESSIONS);
     root.setMaxFormContentSize(MAX_FORM_CONTENT_SIZE);
 
+    String defaultServletPath =
+        azkabanSettings.getString("azkaban.default.servlet.path", "/index");
     root.setResourceBase(staticDir);
+    ServletHolder indexRedirect =
+        new ServletHolder(new IndexRedirectServlet(defaultServletPath));
+    root.addServlet(indexRedirect, "/");
+    ServletHolder index = new ServletHolder(new ProjectServlet());
+    root.addServlet(index, "/index");
 
-    final String defaultServletPath = azkabanSettings.getString("azkaban.default.servlet.path", "/index");
-    root.addServlet(new ServletHolder(new IndexRedirectServlet(defaultServletPath)), "/");
-    root.addServlet(new ServletHolder(new ProjectServlet()), "/index");
+    ServletHolder staticServlet = new ServletHolder(new DefaultServlet());
+    root.addServlet(staticServlet, "/css/*");
+    root.addServlet(staticServlet, "/js/*");
+    root.addServlet(staticServlet, "/images/*");
+    root.addServlet(staticServlet, "/fonts/*");
+    root.addServlet(staticServlet, "/favicon.ico");
 
-    // TODO static content should be provided by a separate single servlet
-    root.addServlet(DefaultServlet.class, "/css/*");
-    root.addServlet(DefaultServlet.class, "/js/*");
-    root.addServlet(DefaultServlet.class, "/images/*");
-    root.addServlet(DefaultServlet.class, "/fonts/*");
-    root.addServlet(DefaultServlet.class, "/favicon.ico");
-
-    root.addServlet(ProjectManagerServlet.class, "/manager");
-    root.addServlet(ExecutorServlet.class, "/executor");
-    root.addServlet(HistoryServlet.class, "/history");
-    root.addServlet(ScheduleServlet.class, "/schedule");
-    root.addServlet(JMXHttpServlet.class, "/jmx");
-    root.addServlet(TriggerManagerServlet.class, "/triggers");
-    root.addServlet(StatsServlet.class, "/stats");
+    root.addServlet(new ServletHolder(new ProjectManagerServlet()), "/manager");
+    root.addServlet(new ServletHolder(new ExecutorServlet()), "/executor");
+    root.addServlet(new ServletHolder(new HistoryServlet()), "/history");
+    root.addServlet(new ServletHolder(new ScheduleServlet()), "/schedule");
+    root.addServlet(new ServletHolder(new JMXHttpServlet()), "/jmx");
+    root.addServlet(new ServletHolder(new TriggerManagerServlet()), "/triggers");
+    root.addServlet(new ServletHolder(new StatsServlet()), "/stats");
 
     ServletHolder restliHolder = new ServletHolder(new RestliServlet());
     restliHolder.setInitParameter("resourcePackages", "azkaban.restli");
@@ -838,8 +818,10 @@ public class AzkabanWebServer extends AzkabanServer {
     loadViewerPlugins(root, viewerPluginDir, app.getVelocityEngine());
 
     // triggerplugin
-    String triggerPluginDir = azkabanSettings.getString("trigger.plugin.dir", "plugins/triggers");
-    Map<String, TriggerPlugin> triggerPlugins = loadTriggerPlugins(root, triggerPluginDir, app);
+    String triggerPluginDir =
+        azkabanSettings.getString("trigger.plugin.dir", "plugins/triggers");
+    Map<String, TriggerPlugin> triggerPlugins =
+        loadTriggerPlugins(root, triggerPluginDir, app);
     app.setTriggerPlugins(triggerPlugins);
     // always have basic time trigger
     // TODO: find something else to do the job
@@ -878,13 +860,15 @@ public class AzkabanWebServer extends AzkabanServer {
             && new File("/usr/bin/head").exists()) {
           logger.info("logging top memeory consumer");
 
-          ProcessBuilder processBuilder =
-              new ProcessBuilder("/bin/bash", "-c", "/bin/ps aux --sort -rss | /usr/bin/head");
+          java.lang.ProcessBuilder processBuilder =
+              new java.lang.ProcessBuilder("/bin/bash", "-c",
+                  "/bin/ps aux --sort -rss | /usr/bin/head");
           Process p = processBuilder.start();
           p.waitFor();
 
           InputStream is = p.getInputStream();
-          BufferedReader reader = new BufferedReader(new InputStreamReader(is));
+          java.io.BufferedReader reader =
+              new java.io.BufferedReader(new InputStreamReader(is));
           String line = null;
           while ((line = reader.readLine()) != null) {
             logger.info(line);
@@ -893,10 +877,11 @@ public class AzkabanWebServer extends AzkabanServer {
         }
       }
     });
-    logger.info("Server started. HTTP: " + port + (!useSsl? "": " HTTPS: " + sslPort));
+    logger.info("Server running on " + (ssl ? "ssl" : "") + " port " + port
+        + ".");
   }
 
-  private static Map<String, TriggerPlugin> loadTriggerPlugins(ServletContextHandler root,
+  private static Map<String, TriggerPlugin> loadTriggerPlugins(Context root,
       String pluginPath, AzkabanWebServer azkabanWebApp) {
     File triggerPluginPath = new File(pluginPath);
     if (!triggerPluginPath.exists()) {
@@ -1006,7 +991,7 @@ public class AzkabanWebServer extends AzkabanServer {
       try {
         constructor =
             triggerClass.getConstructor(String.class, Props.class,
-                ServletContextHandler.class, AzkabanWebServer.class);
+                Context.class, AzkabanWebServer.class);
       } catch (NoSuchMethodException e) {
         logger.error("Constructor not found in " + pluginClass);
         continue;
@@ -1043,7 +1028,7 @@ public class AzkabanWebServer extends AzkabanServer {
     return triggerPlugins;
   }
 
-  private static void loadViewerPlugins(ServletContextHandler root, String pluginPath,
+  private static void loadViewerPlugins(Context root, String pluginPath,
       VelocityEngine ve) {
     File viewerPluginPath = new File(pluginPath);
     if (!viewerPluginPath.exists()) {
@@ -1278,6 +1263,7 @@ public class AzkabanWebServer extends AzkabanServer {
     logger.info("Registering MBeans...");
     mbeanServer = ManagementFactory.getPlatformMBeanServer();
 
+    registerMbean("jetty", new JmxJettyServer(server));
     registerMbean("triggerManager", new JmxTriggerManager(triggerManager));
     if (executorManager instanceof ExecutorManager) {
       registerMbean("executorManager", new JmxExecutorManager(
