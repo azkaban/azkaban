@@ -90,7 +90,7 @@ import java.util.*;
  * jetty.maxThreads - # of threads for jetty jetty.ssl.port - The ssl port used
  * for sessionizing. jetty.keystore - Jetty keystore . jetty.keypassword - Jetty
  * keystore password jetty.truststore - Jetty truststore jetty.trustpassword -
- * Jetty truststore password
+ * Jetty truststore password jetty.maxFormContentSize - Jetty max form content size
  */
 public class AzkabanWebServer extends AzkabanServer {
   private static final String AZKABAN_ACCESS_LOGGER_NAME =
@@ -729,7 +729,7 @@ public class AzkabanWebServer extends AzkabanServer {
         azkabanSettings.getString("web.resource.dir", DEFAULT_STATIC_DIR);
     logger.info("Setting up web resource dir " + staticDir);
     Context root = new Context(server, "/", Context.SESSIONS);
-    root.setMaxFormContentSize(MAX_FORM_CONTENT_SIZE);
+    root.setMaxFormContentSize(azkabanSettings.getInt("jetty.maxFormContentSize", MAX_FORM_CONTENT_SIZE));
 
     String defaultServletPath =
         azkabanSettings.getString("azkaban.default.servlet.path", "/index");
