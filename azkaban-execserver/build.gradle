@@ -21,7 +21,7 @@ dependencies {
     compile('org.codehaus.jackson:jackson-core-asl:1.9.5')
     compile('org.codehaus.jackson:jackson-mapper-asl:1.9.5')
     compile('com.google.code.gson:gson:2.2.4')
-    compile('com.google.guava:guava:13.0.1')
+    compile('net.jodah:expiringmap:0.5.7')
 
     compile('com.amazonaws:aws-java-sdk-core:1.10.27')
     compile('com.amazonaws:aws-java-sdk-emr:1.10.27')

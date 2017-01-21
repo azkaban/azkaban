@@ -20,9 +20,7 @@ import com.amazonaws.retry.RetryUtils;
 import com.amazonaws.services.elasticmapreduce.AmazonElasticMapReduceClient;
 import com.amazonaws.services.elasticmapreduce.model.*;
 import com.amazonaws.services.s3.AmazonS3Client;
-import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.CacheLoader;
-import com.google.common.cache.LoadingCache;
+import net.jodah.expiringmap.ExpiringMap;
 import org.apache.log4j.Logger;
 
 import java.io.IOException;
@@ -73,17 +71,10 @@ public class EmrClusterManager implements IClusterManager, EventListener {
     // (Item is Cluster Id) - List of clusters to keep alive - when multiple flows share the same cluster, if any of the flows indicate that the cluster should not be shutdown (because of an error or any other reason), the cluster should not be terminated even if it's ok to be terminated by the other flows using it.
     private final List<String> clustersKeepAlive = Collections.synchronizedList(new ArrayList<String>());
 
-    private final LoadingCache<String, Boolean> clusterStatusCache = CacheBuilder.newBuilder()
-            .maximumSize(100)
-            .expireAfterWrite(30, TimeUnit.SECONDS)
-            .build(
-                    new CacheLoader<String, Boolean>() {
-                        @Override
-                        public Boolean load(String id) throws Exception {
-                            return isClusterReady(getEmrClient(), id);
-                        }
-                    }
-            );
+    private final Map<String, Boolean> clusterStatusCache = ExpiringMap.builder()
+            .expiration(30, TimeUnit.SECONDS)
+            .entryLoader((String clusterId) -> isClusterReady(getEmrClient(), clusterId))
+            .build();
 
     private static final int MAX_CLIENT_RETRIES = 8;
 
