@@ -75,7 +75,7 @@ public class AzkabanExecutorServer {
   public static final String METRIC_INTERVAL =
       "executor.metric.milisecinterval.";
   public static final int DEFAULT_PORT_NUMBER = 12321;
-  public static final int DEFAULT_HEADER_BUFFER_SIZE = 4096;
+  public static final int DEFAULT_HEADER_BUFFER_SIZE = 10 * 1024 * 1024;
 
   private static final String DEFAULT_TIMEZONE_ID = "default.timezone.id";
   private static final int DEFAULT_THREAD_NUMBER = 50;

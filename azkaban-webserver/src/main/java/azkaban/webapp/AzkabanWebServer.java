@@ -676,7 +676,8 @@ public class AzkabanWebServer extends AzkabanServer {
           .getString("jetty.truststore"));
       secureConnector.setTrustPassword(azkabanSettings
           .getString("jetty.trustpassword"));
-      secureConnector.setHeaderBufferSize(MAX_HEADER_BUFFER_SIZE);
+      secureConnector.setHeaderBufferSize(azkabanSettings
+              .getInt("jetty.headerBufferSize", MAX_HEADER_BUFFER_SIZE));
 
       // set up vulnerable cipher suites to exclude
       List<String> cipherSuitesToExclude = azkabanSettings.getStringList("jetty.excludeCipherSuites");
@@ -691,7 +692,8 @@ public class AzkabanWebServer extends AzkabanServer {
       port = azkabanSettings.getInt("jetty.port", DEFAULT_PORT_NUMBER);
       SocketConnector connector = new SocketConnector();
       connector.setPort(port);
-      connector.setHeaderBufferSize(MAX_HEADER_BUFFER_SIZE);
+      connector.setHeaderBufferSize(azkabanSettings
+              .getInt("jetty.headerBufferSize", MAX_HEADER_BUFFER_SIZE));
       server.addConnector(connector);
     }
 
