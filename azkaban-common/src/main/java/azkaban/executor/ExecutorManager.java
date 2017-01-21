@@ -1280,6 +1280,9 @@ public class ExecutorManager extends EventHandler implements
               List<List<Integer>> executionIdsPartitions =
                       Lists.partition(executionIdsList, AZKABAN_HTTP_REQUEST_EXECID_LIMIT);
 
+              logger.info(String.format("Updating %d executions, partitioned into %d calls",
+                      executionIdsList.size(), executionIdsPartitions.size()));
+
               List<Pair<String, String>> updateTimes =
                   updateTimesPartitions.stream()
                     .map(timesList ->
