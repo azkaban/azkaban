@@ -20,11 +20,14 @@ import com.amazonaws.retry.RetryUtils;
 import com.amazonaws.services.elasticmapreduce.AmazonElasticMapReduceClient;
 import com.amazonaws.services.elasticmapreduce.model.*;
 import com.amazonaws.services.s3.AmazonS3Client;
+import net.jodah.expiringmap.ExpiringMap;
 import org.apache.log4j.Logger;
 
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 
 import static azkaban.execapp.cluster.emr.EmrUtils.*;
 import static com.amazonaws.retry.PredefinedRetryPolicies.DEFAULT_RETRY_CONDITION;
@@ -67,6 +70,11 @@ public class EmrClusterManager implements IClusterManager, EventListener {
 
     // (Item is Cluster Id) - List of clusters to keep alive - when multiple flows share the same cluster, if any of the flows indicate that the cluster should not be shutdown (because of an error or any other reason), the cluster should not be terminated even if it's ok to be terminated by the other flows using it.
     private final List<String> clustersKeepAlive = Collections.synchronizedList(new ArrayList<String>());
+
+    private final Map<String, Boolean> clusterStatusCache = ExpiringMap.builder()
+            .expiration(30, TimeUnit.SECONDS)
+            .entryLoader((String clusterId) -> isClusterReady(getEmrClient(), clusterId))
+            .build();
 
     private static final int MAX_CLIENT_RETRIES = 8;
 
@@ -520,7 +528,7 @@ public class EmrClusterManager implements IClusterManager, EventListener {
         try {
             int tempTimeoutInMinutes = timeoutInMinutes;
             while (--tempTimeoutInMinutes > 0) {
-                if (isClusterReady(getEmrClient(), clusterId)) {
+                if (clusterStatusCache.get(clusterId)) {
                     Optional<String> masterIp = getMasterIPCached(clusterId);
                     if (masterIp.isPresent()) {
                         jobLogger.info("Cluster " + clusterId + " is ready! Spinup time was " + (timeoutInMinutes - tempTimeoutInMinutes) + " minutes.");
