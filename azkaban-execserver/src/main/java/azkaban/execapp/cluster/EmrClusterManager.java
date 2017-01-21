@@ -521,7 +521,7 @@ public class EmrClusterManager implements IClusterManager, EventListener {
     }
 
     public Optional<String> blockUntilReadyAndReturnMasterIp(String clusterId, int timeoutInMinutes, Logger
-            jobLogger) throws ExecutionException {
+            jobLogger) {
         if (clusterId == null) return Optional.empty();
 
         jobLogger.info("Will wait for cluster to be ready for " + timeoutInMinutes + " minutes (" + EMR_CONF_SPOOLUP_TIMEOUT + ")");
