@@ -124,7 +124,7 @@ public class AzkabanExecutorServer {
     }
 
     Context root = new Context(server, "/", Context.SESSIONS);
-    root.setMaxFormContentSize(MAX_FORM_CONTENT_SIZE);
+    root.setMaxFormContentSize(props.getInt("jetty.maxFormContentSize", MAX_FORM_CONTENT_SIZE));
 
     root.addServlet(new ServletHolder(new ExecutorServlet()), "/executor");
     root.addServlet(new ServletHolder(new JMXHttpServlet()), "/jmx");
