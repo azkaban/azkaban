@@ -37,13 +37,13 @@ import java.util.Properties;
 
 public class EmailerTest {
 
-    String host = "smtp.domain.com";
-    int mailPort = 25;
-    String sender = "somebody@domain.com";
-    String user = "somebody@domain.com";
-    String password = "pwd";
+    String host = "smtp.domain.com";//smtp server address
+    int mailPort = 25;//smtp server port
+    String sender = "somebody@domain.com";//sender email address
+    String user = "somebody@domain.com";// the sender username
+    String password = "pwd"; //the sender password
 
-    String receiveAddr = "receive@domain.com";
+    String receiveAddr = "receive@domain.com";//receiver email address
     List<String> receiveAddrList = new ArrayList<String>();
 
     private Project project;
@@ -68,10 +68,11 @@ public class EmailerTest {
 
 
     /**
-     * (test send email)
-     * if you want to run this case,
-     * please make sure these variable{host,mailPort,password,receiveAddr} effective.
-     *
+     * this is an integration test for Emailer sending  email.
+     * if you want to run this case and send email successfully,
+     * please remove @Ignore and make sure these variable{host,mailPort,password,receiveAddr} are set to real values.
+     * the test will currently succeed because email sending errors are caught,
+     * you need to manually verify that a real email is sent and received.
      */
     @Ignore
     @Test
