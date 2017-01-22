@@ -360,6 +360,7 @@ public class ProjectManager {
         projectLoader.fetchProjectProperty(project, prop.getSource());
 
     if (oldProps == null) {
+      oldProps = new Props();
       projectLoader.uploadProjectProperty(project, prop);
     } else {
       projectLoader.updateProjectProperty(project, prop);
