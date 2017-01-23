@@ -37,11 +37,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
-import java.util.stream.Stream;
 
-import com.google.common.collect.Lists;
 import org.apache.commons.lang.StringUtils;
 import org.apache.log4j.Logger;
 import org.joda.time.DateTime;
@@ -86,7 +82,6 @@ public class ExecutorManager extends EventHandler implements
       "azkaban.executorinfo.refresh.maxThreads";
   private static final String AZKABAN_MAX_DISPATCHING_ERRORS_PERMITTED =
     "azkaban.maxDispatchingErrors";
-  private static final int AZKABAN_HTTP_REQUEST_EXECID_LIMIT = 100;
 
   private static Logger logger = Logger.getLogger(ExecutorManager.class);
   private ExecutorLoader executorLoader;
@@ -1275,58 +1270,42 @@ public class ExecutorManager extends EventHandler implements
               fillUpdateTimeAndExecId(entry.getValue(), executionIdsList,
                   updateTimesList);
 
-              List<List<Long>> updateTimesPartitions =
-                      Lists.partition(updateTimesList, AZKABAN_HTTP_REQUEST_EXECID_LIMIT);
-              List<List<Integer>> executionIdsPartitions =
-                      Lists.partition(executionIdsList, AZKABAN_HTTP_REQUEST_EXECID_LIMIT);
+              Pair<String, String> updateTimes =
+                  new Pair<String, String>(
+                      ConnectorParams.UPDATE_TIME_LIST_PARAM,
+                      JSONUtils.toJSON(updateTimesList));
+              Pair<String, String> executionIds =
+                  new Pair<String, String>(ConnectorParams.EXEC_ID_LIST_PARAM,
+                      JSONUtils.toJSON(executionIdsList));
 
-              logger.info(String.format("Updating %d executions, partitioned into %d calls",
-                      executionIdsList.size(), executionIdsPartitions.size()));
+              Map<String, Object> results = null;
+              try {
+                results =
+                    callExecutorServer(executor.getHost(),
+                      executor.getPort(), ConnectorParams.UPDATE_ACTION,
+                        null, null, executionIds, updateTimes);
+              } catch (IOException e) {
+                logger.error(e);
+                for (ExecutableFlow flow : entry.getValue()) {
+                  Pair<ExecutionReference, ExecutableFlow> pair =
+                      runningFlows.get(flow.getExecutionId());
 
-              List<Pair<String, String>> updateTimes =
-                  updateTimesPartitions.stream()
-                    .map(timesList ->
-                      new Pair<String, String>(ConnectorParams.UPDATE_TIME_LIST_PARAM,
-                          JSONUtils.toJSON(timesList)))
-                    .collect(Collectors.toList());
-              List<Pair<String, String>> executionIds =
-                  executionIdsPartitions.stream()
-                    .map(idList ->
-                      new Pair<String, String>(ConnectorParams.EXEC_ID_LIST_PARAM,
-                          JSONUtils.toJSON(idList)))
-                    .collect(Collectors.toList());
+                  updaterStage =
+                      "Failed to get update. Doing some clean up for flow "
+                          + pair.getSecond().getExecutionId();
 
-              List<Map<String, Object>> results = new ArrayList<Map<String, Object>>();
-              for (int i = 0; i < updateTimes.size(); i++) {
-                try {
-                  results.add(callExecutorServer(executor.getHost(),
-                          executor.getPort(), ConnectorParams.UPDATE_ACTION,
-                          null, null, executionIds.get(i), updateTimes.get(i)));
-                } catch (IOException e) {
-                  logger.error(e);
-                  for (ExecutableFlow flow : entry.getValue()) {
-                    if (executionIdsPartitions.get(i).contains(flow.getExecutionId())) {
-                      Pair<ExecutionReference, ExecutableFlow> pair =
-                              runningFlows.get(flow.getExecutionId());
-
-                      updaterStage =
-                              "Failed to get update. Doing some clean up for flow "
-                                      + pair.getSecond().getExecutionId();
-
-                      if (pair != null) {
-                        ExecutionReference ref = pair.getFirst();
-                        int numErrors = ref.getNumErrors();
-                        if (ref.getNumErrors() < this.numErrors) {
-                          ref.setNextCheckTime(System.currentTimeMillis()
-                                  + errorThreshold);
-                          ref.setNumErrors(++numErrors);
-                        } else {
-                          logger.error("Evicting flow " + flow.getExecutionId()
-                                  + ". The executor is unresponsive.");
-                          // TODO should send out an unresponsive email here.
-                          finalizeFlows.add(pair.getSecond());
-                        }
-                      }
+                  if (pair != null) {
+                    ExecutionReference ref = pair.getFirst();
+                    int numErrors = ref.getNumErrors();
+                    if (ref.getNumErrors() < this.numErrors) {
+                      ref.setNextCheckTime(System.currentTimeMillis()
+                          + errorThreshold);
+                      ref.setNumErrors(++numErrors);
+                    } else {
+                      logger.error("Evicting flow " + flow.getExecutionId()
+                          + ". The executor is unresponsive.");
+                      // TODO should send out an unresponsive email here.
+                      finalizeFlows.add(pair.getSecond());
                     }
                   }
                 }
@@ -1335,12 +1314,8 @@ public class ExecutorManager extends EventHandler implements
               // We gets results
               if (results != null) {
                 List<Map<String, Object>> executionUpdates =
-                    results.stream().flatMap(respMap -> {
-                    List<Map<String, Object>> updated =
-                        (List<Map<String, Object>>) respMap.get(ConnectorParams.RESPONSE_UPDATED_FLOWS);
-                    return updated.stream();
-                    })
-                    .collect(Collectors.toList());
+                    (List<Map<String, Object>>) results
+                        .get(ConnectorParams.RESPONSE_UPDATED_FLOWS);
                 for (Map<String, Object> updateMap : executionUpdates) {
                   try {
                     ExecutableFlow flow = updateExecution(updateMap);
