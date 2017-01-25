@@ -76,7 +76,7 @@ public class EmrClusterManager implements IClusterManager, EventListener {
             .entryLoader((String clusterId) -> isClusterReady(getEmrClient(), clusterId))
             .build();
 
-    private static final int MAX_CLIENT_RETRIES = 8;
+    private static final int MAX_CLIENT_RETRIES = 16;
 
     public EmrClusterManager(Props serverProps) {
         classLogger.info("Initialized " + this.getClass().getName());
@@ -260,9 +260,7 @@ public class EmrClusterManager implements IClusterManager, EventListener {
         if (clusterId != null) {
             setClusterProperty(flow, EMR_INTERNAL_CLUSTERID, clusterId);
 
-            Cluster c = EmrUtils.findClusterById(getEmrClient(), clusterId);
-            jobLogger.info("Cluster Summary - Id: " + c.getId());
-            jobLogger.info("Cluster Summary - Status: " + c.getStatus());
+            jobLogger.info("Cluster Summary - Id: " + clusterId);
 
             if (masterIp.isPresent()) {
                 jobLogger.info("Cluster Summary - IP: " + masterIp.get());
@@ -658,7 +656,7 @@ public class EmrClusterManager implements IClusterManager, EventListener {
         private static final int SCALE_FACTOR = 300;
 
         /** Base sleep time (milliseconds) for throttling exceptions. **/
-        private static final int THROTTLING_SCALE_FACTOR = 500;
+        private static final int THROTTLING_SCALE_FACTOR = 1000;
 
         private static final int THROTTLING_SCALE_FACTOR_RANDOM_RANGE = THROTTLING_SCALE_FACTOR / 4;
 
