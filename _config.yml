@@ -2,6 +2,7 @@ name: Azkaban
 safe: true
 lsi: false
 highlighter: rouge
+port: 8080
 
 tagline: "Open-source Workflow Manager"
 image: "img/app.png"
