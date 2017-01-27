@@ -11,12 +11,12 @@ Run this from shell
 gem install bundler
 ```
 This will use the system default version of `gem` and you will need sudo permissions for this. A possible alternative is to install using `rvm` which creates sort of a virtual environment for `ruby`.
-1. Follow instructions to install `rvm` from [rvm.io](http://rvm.io)
-2. Reload bash profile using `source ~/.profile`
-3. Run `rvm list known` to get the list of packages installed
-4. Mac users might need to install `xcode`. You can do so using `sudo xcode-select --install`
+1. Follow instructions to install `rvm` from [rvm.io](http://rvm.io).
+2. Reload bash profile using `source ~/.profile`.
+3. Run `rvm list known` to get the list of installable Ruby interpreters.
+4. Mac users might need to install `xcode`. You can do so using `sudo xcode-select --install`.
 5. Install your preferred version of Ruby from the list. Example: `rvm install ruby-2.3.3`
-6. Check your Ruby version using `ruby --version`
+6. Check your Ruby version using `ruby --version`.
 7. You are all set! Now your `ruby` and `gem` should point to your local versions instead of system versions. Run the `gem install` command mentioned above.
 
 ### Start the gh-pages server
