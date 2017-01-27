@@ -1,9 +1,6 @@
-<h2 id="solo-setup">Setup Azkaban Solo Server</h2>
+<h2 id="solo-setup">Getting started with the Solo Server</h2>
 
-<p class="lead">In Azkaban 2.5 there is a solo server mode for one to try out Azkaban or use in small scale and less security environment.</p>
-
-<p>Its features are:</p>
-
+<p>The solo server is a standalone instance of Azkaban and the simplest to get started with. The solo server has the following advantages.</p>
 <ul>
   <li><strong>Easy to install</strong> - No MySQL instance is needed. It packages H2 as its main persistence storage.</li>
   <li><strong>Easy to start up</strong> - Both web server and executor server run in the same process.</li>
@@ -11,12 +8,17 @@
 </ul>
 
 <h3>Installing the Solo Server</h3>
+Follow these steps to get started.
+<ol>
+  <li><strong>Clone the repo:</strong> run <code>git clone https://github.com/azkaban/azkaban.git</code></li>
+  <li><strong>Build Azkaban and create an installation:</strong> run <code>cd azkaban; ./gradlew build installDist</code></li>
+  <li><strong>Start the server:</strong> run <code>cd azkaban-solo-server/build/install/azkaban-solo-server; bin/azkaban-solo-start.sh</code></li>
+  <li><strong>Stop server:</strong> run <code>bin/azkaban-solo-shutdown.sh</code> from within the azkaban-solo-server installation directory</li>
+</ol>
 
-<p>Grab the azkaban-exec-server package from the <a href="{{ site.home }}/downloads.html">downloads page</a>.</p>
+<p>Also see <a href="#building-from-source">building from source</a>.</p>
 
-<p>Alternatively, you can clone the <a href="https://github.com/azkaban/azkaban2" target="_blank">GitHub repo</a>, you can build the latest version from the master branch. <a href="#building-from-source">See here</a> for instructions on building from source.</p>
-
-<p>Extract the package into a directory. After extraction, there should be the following directories.</p>
+<p>The solo-server installation should contain the following directories.</p>
 
 <table class="table table-striped table-bordered table-condensed">
   <thead>
@@ -26,11 +28,11 @@
   <tbody>
     <tr>
       <td>bin</td>
-      <td>The scripts to start Azkaban jetty server</td>
+      <td>The scripts to start/stop Azkaban jetty server</td>
     </tr>
     <tr>
       <td>conf</td>
-      <td>The configurations for Azkaban solo server</td>
+      <td>The configuration files for Azkaban solo server</td>
     </tr>
     <tr>
       <td>lib</td>
