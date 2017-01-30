@@ -21,6 +21,7 @@ import java.io.FileFilter;
 import java.io.FilenameFilter;
 import java.io.IOException;
 import java.lang.Thread.State;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
@@ -137,7 +138,8 @@ public class FlowRunnerManager implements EventListener,
   private final Props azkabanProps;
 
   private long lastCleanerThreadCheckTime = -1;
-  private long executionDirRetention = 1 * 24 * 60 * 60 * 1000;
+  private long shortExecutionDirRetention = 2 * 60 * 60 * 1000;
+  private long longExecutionDirRetention = 24 * 60 * 60 * 1000;
 
   // We want to limit the log sizes to about 20 megs
   private String jobLogChunkSize = "5MB";
@@ -162,10 +164,12 @@ public class FlowRunnerManager implements EventListener,
     azkabanProps = props;
 
     // JobWrappingFactory.init(props, getClass().getClassLoader());
-    executionDirRetention =
-        props.getLong("execution.dir.retention", executionDirRetention);
-    logger.info("Execution dir retention set to " + executionDirRetention
-        + " ms");
+    shortExecutionDirRetention =
+        props.getLong("execution.dir.short.retention", shortExecutionDirRetention);
+    longExecutionDirRetention =
+        props.getLong("execution.dir.long.retention", longExecutionDirRetention);
+    logger.info(String.format("Execution dir cleanup period set to %d ms for symbolic links and " +
+            "%d ms for entire directory", shortExecutionDirRetention, longExecutionDirRetention));
 
     if (!executionDirectory.exists()) {
       executionDirectory.mkdirs();
@@ -342,8 +346,11 @@ public class FlowRunnerManager implements EventListener,
     private void cleanOlderExecutionDirs() {
       File dir = executionDirectory;
 
+      final long current = System.currentTimeMillis();
       final long pastTimeThreshold =
-          System.currentTimeMillis() - executionDirRetention;
+        current - shortExecutionDirRetention;
+      final long fullCleanupThreshold =
+        current - longExecutionDirRetention;
       File[] executionDirs = dir.listFiles(new FileFilter() {
         @Override
         public boolean accept(File path) {
@@ -370,6 +377,16 @@ public class FlowRunnerManager implements EventListener,
         synchronized (executionDirDeletionSync) {
           try {
             FileUtils.deleteDirectory(exDir);
+            if (exDir.lastModified() < fullCleanupThreshold) {
+              FileUtils.deleteDirectory(exDir);
+            } else {
+              for (File file : exDir.listFiles()) {
+                if (Files.isSymbolicLink(file.toPath())) {
+                  FileUtils.deleteDirectory(file);
+                }
+              }
+            }
+            logger.debug("Successfully deleted directory " + exDir.getPath());
           } catch (IOException e) {
             logger.error("Error cleaning execution dir " + exDir.getPath(), e);
           }
