@@ -249,13 +249,13 @@ azkaban.FlowExecuteDialogView = Backbone.View.extend({
 
   loadGraph: function(projectName, flowId, exgraph, callback) {
     console.log("Loading flow " + flowId);
-    var requestURL = contextURL + "/manager";
+    var requestURL = contextURL + "/executor";
 
     var graphModel = executableGraphModel;
     // fetchFlow(this.model, projectName, flowId, true);
     var requestData = {
         "project": projectName,
-        "ajax": "fetchflowgraph",
+        "ajax": "fetchscheduledflowgraph",
         "flow": flowId
       };
     var self = this;
