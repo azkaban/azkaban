@@ -378,7 +378,6 @@ public class FlowRunnerManager implements EventListener,
 
         executionDirDeletionLock.writeLock().lock();
         try {
-          FileUtils.deleteDirectory(exDir);
           if (exDir.lastModified() < fullCleanupThreshold) {
             FileUtils.deleteDirectory(exDir);
           } else {
