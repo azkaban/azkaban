@@ -35,6 +35,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.log4j.Logger;
@@ -148,7 +149,7 @@ public class FlowRunnerManager implements EventListener,
   // If true, jobs will validate proxy user against a list of valid proxy users.
   private boolean validateProxyUser = false;
 
-  private final Object executionDirDeletionSync = new Object();
+  private final ReentrantReadWriteLock executionDirDeletionLock = new ReentrantReadWriteLock();
 
   // date time of the the last flow submitted.
   private long lastFlowSubmittedDate = 0;
@@ -168,8 +169,6 @@ public class FlowRunnerManager implements EventListener,
         props.getLong("execution.dir.short.retention", shortExecutionDirRetention);
     longExecutionDirRetention =
         props.getLong("execution.dir.long.retention", longExecutionDirRetention);
-    logger.info(String.format("Execution dir cleanup period set to %d ms for symbolic links and " +
-            "%d ms for entire directory", shortExecutionDirRetention, longExecutionDirRetention));
 
     if (!executionDirectory.exists()) {
       executionDirectory.mkdirs();
@@ -361,6 +360,9 @@ public class FlowRunnerManager implements EventListener,
         }
       });
 
+      logger.info(String.format("Clean up execution directories older than %d ms and symbolic links older than %d ms",
+        shortExecutionDirRetention, longExecutionDirRetention));
+
       for (File exDir : executionDirs) {
         try {
           int execId = Integer.valueOf(exDir.getName());
@@ -374,22 +376,22 @@ public class FlowRunnerManager implements EventListener,
           continue;
         }
 
-        synchronized (executionDirDeletionSync) {
-          try {
+        executionDirDeletionLock.writeLock().lock();
+        try {
+          FileUtils.deleteDirectory(exDir);
+          if (exDir.lastModified() < fullCleanupThreshold) {
             FileUtils.deleteDirectory(exDir);
-            if (exDir.lastModified() < fullCleanupThreshold) {
-              FileUtils.deleteDirectory(exDir);
-            } else {
-              for (File file : exDir.listFiles()) {
-                if (Files.isSymbolicLink(file.toPath())) {
-                  FileUtils.deleteDirectory(file);
-                }
+          } else {
+            for (File file : exDir.listFiles()) {
+              if (Files.isSymbolicLink(file.toPath())) {
+                FileUtils.deleteDirectory(file);
               }
             }
-            logger.debug("Successfully deleted directory " + exDir.getPath());
-          } catch (IOException e) {
-            logger.error("Error cleaning execution dir " + exDir.getPath(), e);
           }
+        } catch (IOException e) {
+          logger.error("Error cleaning execution dir " + exDir.getPath(), e);
+        } finally {
+          executionDirDeletionLock.writeLock().unlock();
         }
       }
     }
@@ -697,22 +699,23 @@ public class FlowRunnerManager implements EventListener,
 
     File dir = runner.getExecutionDir();
     if (dir != null && dir.exists()) {
+      executionDirDeletionLock.readLock().lock();
       try {
-        synchronized (executionDirDeletionSync) {
-          if (!dir.exists()) {
-            throw new ExecutorManagerException(
-                "Execution dir file doesn't exist. Probably has beend deleted");
-          }
+        if (!dir.exists()) {
+          throw new ExecutorManagerException(
+              "Execution dir file doesn't exist. Probably has beend deleted");
+        }
 
-          File logFile = runner.getFlowLogFile();
-          if (logFile != null && logFile.exists()) {
-            return FileIOUtils.readUtf8File(logFile, startByte, length);
-          } else {
-            throw new ExecutorManagerException("Flow log file doesn't exist.");
-          }
+        File logFile = runner.getFlowLogFile();
+        if (logFile != null && logFile.exists()) {
+          return FileIOUtils.readUtf8File(logFile, startByte, length);
+        } else {
+          throw new ExecutorManagerException("Flow log file doesn't exist.");
         }
       } catch (IOException e) {
         throw new ExecutorManagerException(e);
+      } finally {
+        executionDirDeletionLock.readLock().unlock();
       }
     }
 
@@ -730,21 +733,22 @@ public class FlowRunnerManager implements EventListener,
 
     File dir = runner.getExecutionDir();
     if (dir != null && dir.exists()) {
+      executionDirDeletionLock.readLock().lock();
       try {
-        synchronized (executionDirDeletionSync) {
-          if (!dir.exists()) {
-            throw new ExecutorManagerException(
-                "Execution dir file doesn't exist. Probably has beend deleted");
-          }
-          File logFile = runner.getJobLogFile(jobId, attempt);
-          if (logFile != null && logFile.exists()) {
-            return FileIOUtils.readUtf8File(logFile, startByte, length);
-          } else {
-            throw new ExecutorManagerException("Job log file doesn't exist.");
-          }
+        if (!dir.exists()) {
+          throw new ExecutorManagerException(
+              "Execution dir file doesn't exist. Probably has beend deleted");
+        }
+        File logFile = runner.getJobLogFile(jobId, attempt);
+        if (logFile != null && logFile.exists()) {
+          return FileIOUtils.readUtf8File(logFile, startByte, length);
+        } else {
+          throw new ExecutorManagerException("Job log file doesn't exist.");
         }
       } catch (IOException e) {
         throw new ExecutorManagerException(e);
+      } finally {
+        executionDirDeletionLock.readLock().unlock();
       }
     }
 
@@ -766,26 +770,27 @@ public class FlowRunnerManager implements EventListener,
           "Error reading file. Log directory doesn't exist.");
     }
 
+    executionDirDeletionLock.readLock().lock();
     try {
-      synchronized (executionDirDeletionSync) {
-        if (!dir.exists()) {
-          throw new ExecutorManagerException(
-              "Execution dir file doesn't exist. Probably has beend deleted");
-        }
-
-        File attachmentFile = runner.getJobAttachmentFile(jobId, attempt);
-        if (attachmentFile == null || !attachmentFile.exists()) {
-          return null;
-        }
-
-        @SuppressWarnings("unchecked")
-        List<Object> jobAttachments =
-            (ArrayList<Object>) JSONUtils.parseJSONFromFile(attachmentFile);
-
-        return jobAttachments;
+      if (!dir.exists()) {
+        throw new ExecutorManagerException(
+            "Execution dir file doesn't exist. Probably has beend deleted");
       }
+
+      File attachmentFile = runner.getJobAttachmentFile(jobId, attempt);
+      if (attachmentFile == null || !attachmentFile.exists()) {
+        return null;
+      }
+
+      @SuppressWarnings("unchecked")
+      List<Object> jobAttachments =
+          (ArrayList<Object>) JSONUtils.parseJSONFromFile(attachmentFile);
+
+      return jobAttachments;
     } catch (IOException e) {
       throw new ExecutorManagerException(e);
+    } finally {
+      executionDirDeletionLock.readLock().unlock();
     }
   }
 
@@ -799,22 +804,23 @@ public class FlowRunnerManager implements EventListener,
 
     File dir = runner.getExecutionDir();
     if (dir != null && dir.exists()) {
+      executionDirDeletionLock.readLock().lock();
       try {
-        synchronized (executionDirDeletionSync) {
-          if (!dir.exists()) {
-            throw new ExecutorManagerException(
-                "Execution dir file doesn't exist. Probably has beend deleted");
-          }
-          File metaDataFile = runner.getJobMetaDataFile(jobId, attempt);
-          if (metaDataFile != null && metaDataFile.exists()) {
-            return FileIOUtils.readUtf8MetaDataFile(metaDataFile, startByte,
-                length);
-          } else {
-            throw new ExecutorManagerException("Job log file doesn't exist.");
-          }
+        if (!dir.exists()) {
+          throw new ExecutorManagerException(
+              "Execution dir file doesn't exist. Probably has beend deleted");
+        }
+        File metaDataFile = runner.getJobMetaDataFile(jobId, attempt);
+        if (metaDataFile != null && metaDataFile.exists()) {
+          return FileIOUtils.readUtf8MetaDataFile(metaDataFile, startByte,
+              length);
+        } else {
+          throw new ExecutorManagerException("Job log file doesn't exist.");
         }
       } catch (IOException e) {
         throw new ExecutorManagerException(e);
+      } finally {
+        executionDirDeletionLock.readLock().unlock();
       }
     }
 
