@@ -118,7 +118,7 @@ public class StatsServlet extends LoginAbstractAzkabanServlet {
         ret.put("metricList", result.get("data"));
       }
     } catch (ExecutorManagerException e) {
-      logger.error(e);
+      logger.error(e.getMessage(), e);
       ret.put("error", "Failed to fetch metric names for executor : "
         + executorId);
     }
@@ -144,7 +144,7 @@ public class StatsServlet extends LoginAbstractAzkabanServlet {
           result.get(ConnectorParams.STATUS_PARAM));
       }
     } catch (ExecutorManagerException ex) {
-      logger.error(ex);
+      logger.error(ex.getMessage(), ex);
       ret.put("error", "Failed to change config change");
     }
   }
@@ -169,7 +169,7 @@ public class StatsServlet extends LoginAbstractAzkabanServlet {
         ret.put("data", result.get("data"));
       }
     } catch (ExecutorManagerException ex) {
-      logger.error(ex);
+      logger.error(ex.getMessage(), ex);
       ret.put("error", "Failed to fetch metric history");
     }
   }
@@ -202,7 +202,7 @@ public class StatsServlet extends LoginAbstractAzkabanServlet {
         page.add("metricList", result.get("data"));
       }
     } catch (Exception e) {
-      logger.error(e);
+      logger.error(e.getMessage(), e);
       page.add("errorMsg", "Failed to get a response from Azkaban exec server");
     }
 
