@@ -174,7 +174,6 @@ public class FlowRunnerManager implements EventListener,
 
     this.validateProxyUser = azkabanProps.getBoolean("proxy.user.lock.down", false);
 
-    setActive(true);
 
     cleanerThread = new CleanerThread();
     cleanerThread.start();
