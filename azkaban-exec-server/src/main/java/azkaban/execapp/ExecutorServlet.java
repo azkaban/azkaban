@@ -375,7 +375,7 @@ public class ExecutorServlet extends HttpServlet implements ConnectorParams {
     if (executor.isActive() != value) {
       executor.setActive(value);
       executorLoader.updateExecutor(executor);
-      flowRunnerManager.setActive(value);
+      flowRunnerManager.setExecutorActive(value);
     } else {
       logger.warn("Set active action ignored. Executor is already " + (value? "active" : "inactive"));
     }
