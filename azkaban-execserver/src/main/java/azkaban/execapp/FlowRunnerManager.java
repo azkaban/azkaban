@@ -381,7 +381,7 @@ public class FlowRunnerManager implements EventListener,
           if (exDir.lastModified() < fullCleanupThreshold) {
             FileUtils.deleteDirectory(exDir);
           } else {
-            for (File file : exDir.listFiles()) {
+            for (File file : FileUtils.listFiles(exDir, null, true)) {
               if (Files.isSymbolicLink(file.toPath())) {
                 FileUtils.deleteDirectory(file);
               }
