@@ -66,6 +66,7 @@ import azkaban.metric.IMetricEmitter;
 import azkaban.metric.MetricException;
 import azkaban.metric.MetricReportManager;
 import azkaban.metric.inmemoryemitter.InMemoryMetricEmitter;
+import azkaban.metrics.CommonMetrics;
 import azkaban.project.JdbcProjectLoader;
 import azkaban.project.ProjectLoader;
 import azkaban.server.AzkabanServer;
@@ -191,6 +192,7 @@ public class AzkabanExecutorServer {
         new MetricsExecRegister.MetricsExecRegisterBuilder("EXEC").addFlowRunnerManager(getFlowRunnerManager()).build();
     execWorker.addExecutorManagerMetrics(metrics);
 
+    CommonMetrics.INSTANCE.addExecDBStateMetrics(metrics);
     MetricsManager.INSTANCE.startReporting("AZ-EXEC", props);
   }
 

@@ -69,7 +69,7 @@ import azkaban.utils.SwapQueue;
  * Class that handles the running of a ExecutableFlow DAG
  *
  */
-public class FlowRunner extends EventHandler implements Runnable {
+public class FlowRunner implements EventHandler, Runnable {
   private static final Layout DEFAULT_LAYOUT = new PatternLayout(
       "%d{dd-MM-yyyy HH:mm:ss z} %c{1} %p - %m\n");
   // We check update every 5 minutes, just in case things get stuck. But for the
@@ -127,6 +127,8 @@ public class FlowRunner extends EventHandler implements Runnable {
 
   // The following is state that will trigger a retry of all failed jobs
   private boolean retryFailedJobs = false;
+
+  private static HashSet<EventListener> listeners = new HashSet<>();
 
   /**
    * Constructor. This will create its own ExecutorService for thread pools
@@ -194,6 +196,10 @@ public class FlowRunner extends EventHandler implements Runnable {
   public FlowRunner setValidateProxyUser(boolean validateUserProxy) {
     this.validateUserProxy = validateUserProxy;
     return this;
+  }
+
+  public HashSet<EventListener> getListeners() {
+    return listeners;
   }
 
   public File getExecutionDir() {

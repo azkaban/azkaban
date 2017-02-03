@@ -16,6 +16,7 @@
 
 package azkaban.execapp;
 
+import azkaban.event.EventListener;
 import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
@@ -63,7 +64,7 @@ import azkaban.utils.StringUtils;
 import azkaban.utils.UndefinedPropertyException;
 import azkaban.utils.PatternLayoutEscaped;
 
-public class JobRunner extends EventHandler implements Runnable {
+public class JobRunner implements EventHandler, Runnable {
   public static final String AZKABAN_WEBSERVER_URL = "azkaban.webserver.url";
 
   private final Layout DEFAULT_LAYOUT = new EnhancedPatternLayout(
@@ -106,6 +107,7 @@ public class JobRunner extends EventHandler implements Runnable {
   private long delayStartMs = 0;
   private boolean killed = false;
   private BlockingStatus currentBlockStatus = null;
+  private static HashSet<EventListener> listeners = new HashSet<>();
 
   public JobRunner(ExecutableNode node, File workingDir, ExecutorLoader loader,
       JobTypeManager jobtypeManager, Props azkabanProps) {
@@ -133,6 +135,10 @@ public class JobRunner extends EventHandler implements Runnable {
 
   public Props getProps() {
     return props;
+  }
+
+  public HashSet<EventListener> getListeners() {
+    return listeners;
   }
 
   public void setPipeline(FlowWatcher watcher, int pipelineLevel) {

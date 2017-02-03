@@ -65,6 +65,8 @@ import azkaban.executor.JdbcExecutorLoader;
 import azkaban.jmx.JmxExecutorManager;
 import azkaban.jmx.JmxJettyServer;
 import azkaban.jmx.JmxTriggerManager;
+import azkaban.metrics.MetricsManager;
+import azkaban.metrics.CommonMetrics;
 import azkaban.project.JdbcProjectLoader;
 import azkaban.project.ProjectManager;
 import azkaban.scheduler.ScheduleLoader;
@@ -104,7 +106,6 @@ import azkaban.webapp.servlet.ProjectServlet;
 import azkaban.webapp.servlet.ScheduleServlet;
 import azkaban.webapp.servlet.StatsServlet;
 import azkaban.webapp.servlet.TriggerManagerServlet;
-import azkaban.metrics.MetricsManager;
 
 import com.linkedin.restli.server.RestliServlet;
 
@@ -232,13 +233,15 @@ public class AzkabanWebServer extends AzkabanServer {
     }
   }
 
-  private void startWebMetrics() throws Exception{
+  private void startWebMetrics() throws Exception {
     MetricRegistry metrics = MetricsManager.INSTANCE.getRegistry();
-    MetricsWebRegister execWorker = new MetricsWebRegister.MetricsWebRegisterBuilder("WEB")
+
+    MetricsWebRegister webWorker = new MetricsWebRegister.MetricsWebRegisterBuilder("WEB")
         .addExecutorManager(getExecutorManager())
         .build();
-    execWorker.addExecutorManagerMetrics(metrics);
+    webWorker.addExecutorManagerMetrics(metrics);
 
+    CommonMetrics.INSTANCE.addWebDBStateMetrics(metrics);
     MetricsManager.INSTANCE.startReporting("AZ-WEB", props);
   }
 
