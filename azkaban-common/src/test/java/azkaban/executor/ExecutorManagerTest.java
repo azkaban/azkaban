@@ -192,8 +192,12 @@ public class ExecutorManagerTest {
     ExecutorLoader loader = new MockExecutorLoader();
     ExecutorManager manager = createMultiExecutorManagerInstance(loader);
     ExecutableFlow flow1 = TestUtils.createExecutableFlow("exectest1", "exec1");
+    flow1.getExecutionOptions().setConcurrentOption(
+            ExecutionOptions.CONCURRENT_OPTION_IGNORE);
     flow1.setExecutionId(1);
     ExecutableFlow flow2 = TestUtils.createExecutableFlow("exectest1", "exec2");
+    flow2.getExecutionOptions().setConcurrentOption(
+            ExecutionOptions.CONCURRENT_OPTION_IGNORE);
     flow2.setExecutionId(2);
 
     User testUser = TestUtils.getTestUser();
