@@ -122,6 +122,11 @@ public class ExecutorManager extends EventHandler implements
   private long lastSuccessfulExecutorInfoRefresh;
   private ExecutorService executorInforRefresherService;
 
+  private static final String DATADOG_ENABLED = "azkaban.alerter.datadog.enabled";
+  private static final String POLARIS_DATADOG_ALERTER_NAME = "polaris-datadog-metrics";
+
+  boolean polarisDatadogAlerterEnabled;
+
   public ExecutorManager(Props azkProps, ExecutorLoader loader,
       Map<String, Alerter> alerters) throws ExecutorManagerException {
     this.alerters = alerters;
@@ -142,6 +147,9 @@ public class ExecutorManager extends EventHandler implements
     if(isMultiExecutorMode()) {
       setupMultiExecutorMode();
     }
+
+    polarisDatadogAlerterEnabled = azkProps.getBoolean(DATADOG_ENABLED, false);
+    logger.info("Polaris Datadog Alerter - Enabled: " + polarisDatadogAlerterEnabled);
 
     long executionLogsRetentionMs =
         azkProps.getLong("execution.logs.retention.ms",
@@ -1467,8 +1475,8 @@ public class ExecutorManager extends EventHandler implements
           logger.error(e);
         }
       }
-      if (options.getFlowParameters().containsKey("alert.type")) {
-        String alertType = options.getFlowParameters().get("alert.type");
+      if (isAlerterEnabled(options)) {
+        String alertType = getAlerter(options);
         Alerter alerter = alerters.get(alertType);
         if (alerter != null) {
           try {
@@ -1496,8 +1504,8 @@ public class ExecutorManager extends EventHandler implements
           logger.error(e);
         }
       }
-      if (options.getFlowParameters().containsKey("alert.type")) {
-        String alertType = options.getFlowParameters().get("alert.type");
+      if (isAlerterEnabled(options)) {
+        String alertType = getAlerter(options);
         Alerter alerter = alerters.get(alertType);
         if (alerter != null) {
           try {
@@ -1607,8 +1615,8 @@ public class ExecutorManager extends EventHandler implements
           logger.error("Failed to send first error email." + e.getMessage());
         }
       }
-      if (options.getFlowParameters().containsKey("alert.type")) {
-        String alertType = options.getFlowParameters().get("alert.type");
+      if (isAlerterEnabled(options)) {
+        String alertType = getAlerter(options);
         Alerter alerter = alerters.get(alertType);
         if (alerter != null) {
           try {
@@ -2005,5 +2013,19 @@ public class ExecutorManager extends EventHandler implements
       // schedule can starve all others
       queuedFlows.enqueue(exflow, reference);
     }
+  }
+
+  private boolean isAlerterEnabled(ExecutionOptions options) {
+    return options.getFlowParameters().containsKey("alert.type") || polarisDatadogAlerterEnabled;
+  }
+
+  private String getAlerter(ExecutionOptions options) {
+    // If the server has the polaris datadog alerter enabled, we should use it if no other alerter is specified
+    // If there's one specified (flow param "alert.type") we want to respect it
+    if (polarisDatadogAlerterEnabled && !options.getFlowParameters().containsKey("alert.type")) {
+      return POLARIS_DATADOG_ALERTER_NAME;
+    }
+
+    return options.getFlowParameters().get("alert.type");
   }
 }
