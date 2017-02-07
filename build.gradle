@@ -68,7 +68,7 @@ subprojects {
     artifactoryPublish {
         doLast {
             println "Overriding repository based on project version (snapshot/release)"
-            clientConfig.publisher.repoKey = "libs-${project.version.endsWith('-SNAPSHOT') ? 'snapshots' : 'releases'}-local"
+            clientConfig.publisher.repoKey = "libs-${project.version.endsWith('-SNAPSHOT') ? 'snapshot' : 'release'}-local"
         }
     }
 

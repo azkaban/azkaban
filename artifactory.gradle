@@ -16,13 +16,13 @@ def artifactoryCredentials = {
 
 
 artifactory {
-    contextUrl = 'https://relateiq.artifactoryonline.com/relateiq'
+    contextUrl = 'https://repo.sfiqautomation.com/artifactory'
     publish {
         repository {
             username = "${artifactory_user}"
             password = "${artifactory_password}"
             println "Project version: " + project.version
-            repoKey = "libs-${project.version.endsWith('-SNAPSHOT') ? 'snapshots' : 'releases' }-local"
+            repoKey = "libs-${project.version.endsWith('-SNAPSHOT') ? 'snapshot' : 'release' }-local"
         }
         defaults {
             publications('mavenJava')
@@ -61,19 +61,19 @@ allprojects {
     repositories {
         mavenLocal()
         maven {
-            url "${artifactory_contextUrl}/libs-releases"
+            url "${artifactory_contextUrl}/libs-release"
             credentials artifactoryCredentials
         }
         maven {
-            url "${artifactory_contextUrl}/libs-snapshots"
+            url "${artifactory_contextUrl}/libs-snapshot"
             credentials artifactoryCredentials
         }
         maven {
-            url "${artifactory_contextUrl}/plugins-releases"
+            url "${artifactory_contextUrl}/plugins-release"
             credentials artifactoryCredentials
         }
         maven {
-            url "${artifactory_contextUrl}/plugins-snapshots"
+            url "${artifactory_contextUrl}/plugins-snapshot"
             credentials artifactoryCredentials
         }
     }
