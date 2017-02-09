@@ -556,7 +556,7 @@ public class FlowRunnerManager implements EventListener,
 
     try {
       projectVersion.setupProjectFiles(projectLoader, projectDirectory, logger);
-      projectVersion.copyCreateSymlinkDirectory(execPath);
+      projectVersion.copyCreateHardlinkDirectory(execPath);
     } catch (Exception e) {
       logger.error("Error in setting up project directory "+projectDirectory+", "+e);
       if (execPath.exists()) {
