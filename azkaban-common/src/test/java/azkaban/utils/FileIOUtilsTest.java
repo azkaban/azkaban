@@ -16,16 +16,15 @@
 
 package azkaban.utils;
 
-import com.google.common.io.Resources;
-
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
-import java.net.URL;
-
+import java.util.Arrays;
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.comparator.NameFileComparator;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.Rule;
 import org.junit.rules.TemporaryFolder;
@@ -35,40 +34,60 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.assertNotNull;
 
 public class FileIOUtilsTest {
+  private File sourceDir, destDir, baseDir;
   @Rule
   public TemporaryFolder temp = new TemporaryFolder();
 
-  private static File sourceDir;
-
-  private File destDir;
-
-  @BeforeClass
-  public static void createSourceDir() throws Exception {
-    URL resourceUrl = Resources.getResource("project/testjob");
-    assertNotNull(resourceUrl);
-    sourceDir = new File(resourceUrl.toURI());
-  }
-
   @Before
   public void setUp() throws Exception {
-    destDir = temp.newFolder("unixsymlink");
+    // setup base dir
+    baseDir = temp.newFolder("base");
+    File file1 = new File(baseDir.getAbsolutePath()+"/a.out");
+    File file2 = new File(baseDir.getAbsolutePath()+"/testdir");
+    File file3 = new File(file2.getAbsolutePath()+"/b.out");
+    file1.createNewFile();
+    file2.mkdir();
+    file3.createNewFile();
+
+
+    byte[] fileData = new byte[]{1,2,3};
+    FileOutputStream out = new FileOutputStream(file1);
+    out.write(fileData);
+    out.close();
+
+    fileData = new byte[]{2,3,4};
+    out = new FileOutputStream(file3);
+    out.write(fileData);
+    out.close();
+
+    sourceDir = temp.newFolder("src");
+    FileUtils.copyDirectory(baseDir, sourceDir);
+
+    // setup target dir
+    destDir = temp.newFolder("dest");
   }
 
   @After
   public void tearDown() throws Exception {
     temp.delete();
+    FileUtils.deleteDirectory(baseDir);
+    FileUtils.deleteDirectory(sourceDir);
+    FileUtils.deleteDirectory(destDir);
   }
 
   @Test
-  public void testSymlinkCopy() throws IOException {
-    FileIOUtils.createDeepSymlink(sourceDir, destDir);
+  public void testHardlinkCopy() throws IOException {
+    FileIOUtils.createDeepHardlink(sourceDir, destDir);
+    assertTrue(areDirsEqual(sourceDir, destDir, true));
+    FileUtils.deleteDirectory(destDir);
+    assertTrue(areDirsEqual(baseDir, sourceDir, true));
   }
 
   @Test
-  public void testSymlinkCopyNonSource() {
+  public void testHardlinkCopyNonSource() {
     boolean exception = false;
     try {
-      FileIOUtils.createDeepSymlink(new File(sourceDir, "idonotexist"), destDir);
+      FileIOUtils.createDeepHardlink(new File(sourceDir, "idonotexist"), destDir);
     } catch (IOException e) {
       System.out.println(e.getMessage());
       System.out.println("Handled this case nicely.");
@@ -76,6 +95,37 @@ public class FileIOUtilsTest {
     }
 
     assertTrue(exception);
+  }
+
+  private boolean areDirsEqualUtil(File file1, File file2, boolean isRoot, boolean ignoreRoot) throws IOException {
+    if(!file1.getName().equals(file2.getName())) {
+      if(!isRoot && ignoreRoot) return false;
+    }
+    if(file1.isDirectory() && file2.isDirectory()) {
+      if(file1.listFiles().length != file2.listFiles().length) {
+        return false;
+      }
+      File[] fileList1 = file1.listFiles(), fileList2 = file2.listFiles();
+      Arrays.sort(fileList1, NameFileComparator.NAME_COMPARATOR);
+      Arrays.sort(fileList2, NameFileComparator.NAME_COMPARATOR);
+
+      for(int i = 0; i < fileList1.length; i++) {
+        if(!areDirsEqualUtil(fileList1[i], fileList2[i], false, ignoreRoot)) {
+          return false;
+        }
+      }
+      return true;
+    }
+    else if(file1.isFile() && file2.isFile()) {
+      return file1.getName().equals(file2.getName()) && FileUtils.contentEquals(file1, file2);
+    }
+    else return false;
+  }
+
+
+  // check if two dirs are structurally same and contains files of same content
+  private boolean areDirsEqual(File file1, File file2, boolean ignoreRoot) throws IOException {
+    return areDirsEqualUtil(file1, file2, true, ignoreRoot);
   }
 
   @Test
