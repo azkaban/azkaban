@@ -32,12 +32,15 @@ import java.util.Set;
 import java.util.StringTokenizer;
 
 import org.apache.commons.io.IOUtils;
+import org.apache.log4j.Logger;
+
 
 /**
  * Runs a few unix commands. Created this so that I can move to JNI in the
  * future.
  */
 public class FileIOUtils {
+  private final static Logger logger = Logger.getLogger(EmailMessage.class);
 
   public static class PrefixSuffixFileFilter implements FileFilter {
     private String prefix;
@@ -84,9 +87,10 @@ public class FileIOUtils {
   }
 
   /**
-   * Run a unix command that will symlink files, and recurse into directories.
+   * Run a unix command that will hard link files and recurse into directories.
    */
-  public static void createDeepSymlink(File sourceDir, File destDir)
+
+  public static void createDeepHardlink(File sourceDir, File destDir)
       throws IOException {
     if (!sourceDir.exists()) {
       throw new IOException("Source directory " + sourceDir.getPath()
@@ -106,13 +110,17 @@ public class FileIOUtils {
       File sourceLink = new File(sourceDir, path);
       path = "." + path;
 
-      buffer.append("ln -s ").append(sourceLink.getAbsolutePath()).append("/*")
+      buffer.append("ln ").append(sourceLink.getAbsolutePath()).append("/*")
           .append(" ").append(path).append(";");
     }
 
-    String command = buffer.toString();
+    runShellCommand(buffer.toString(), destDir);
+  }
+
+  private static void runShellCommand(String command, File workingDir)
+      throws IOException {
     ProcessBuilder builder = new ProcessBuilder().command("sh", "-c", command);
-    builder.directory(destDir);
+    builder.directory(workingDir);
 
     // XXX what about stopping threads ??
     Process process = builder.start();
@@ -133,16 +141,15 @@ public class FileIOUtils {
 
           throw new IOException(errorMessage);
         }
-
-        // System.out.println(errorLogger.getLastMessages());
       } catch (InterruptedException e) {
-        e.printStackTrace();
+        logger.error(e);
       }
     } finally {
       IOUtils.closeQuietly(process.getInputStream());
       IOUtils.closeQuietly(process.getOutputStream());
       IOUtils.closeQuietly(process.getErrorStream());
     }
+
   }
 
   private static void createDirsFindFiles(File baseDir, File sourceDir,
