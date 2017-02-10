@@ -16,8 +16,13 @@
 
 package azkaban.execapp;
 
+import azkaban.utils.FileIOUtils;
 import com.google.common.base.Throwables;
 
+import com.google.common.io.Resources;
+import java.net.URISyntaxException;
+import java.net.URL;
+import org.apache.commons.lang.StringUtils;
 import org.apache.log4j.Logger;
 import org.joda.time.DateTimeZone;
 import org.mortbay.jetty.Connector;
@@ -79,6 +84,7 @@ import static azkaban.constants.ServerInternals.AZKABAN_EXECUTOR_PORT_FILENAME;
 import static com.google.common.base.Preconditions.checkState;
 import static java.util.Objects.requireNonNull;
 
+
 public class AzkabanExecutorServer {
   private static final String CUSTOM_JMX_ATTRIBUTE_PROCESSOR_PROPERTY = "jmx.attribute.processor.class";
   private static final Logger logger = Logger.getLogger(AzkabanExecutorServer.class);
@@ -91,6 +97,7 @@ public class AzkabanExecutorServer {
   private static final String DEFAULT_TIMEZONE_ID = "default.timezone.id";
   private static final int DEFAULT_THREAD_NUMBER = 50;
 
+  private static String hostAlias = null;
   private static AzkabanExecutorServer app;
 
   private final ExecutorLoader executionLoader;
@@ -351,6 +358,7 @@ public class AzkabanExecutorServer {
    */
   public static void main(String[] args) throws Exception {
     // Redirect all std out and err messages into log4j
+
     StdOutErrRedirect.redirectOutAndErrToLog();
 
     logger.info("Starting Jetty Azkaban Executor...");
@@ -551,12 +559,29 @@ public class AzkabanExecutorServer {
    *
    * @return hostname
    */
-  public String getHost() {
-    String host = "unkownHost";
+  public static String getHost() {
+    if(StringUtils.isEmpty(hostAlias)) {
+      URL scriptUrl = Resources.getResource(ServerInternals.HOST_NAME_ALIAS_SCRIPT);
+      if (scriptUrl != null) {
+        try {
+          File aliasFile = new File(scriptUrl.toURI());
+          hostAlias = FileIOUtils.runShellCommand("perl " + aliasFile, new File(".")).trim();
+        } catch (Exception e) {
+          logger.error("Failed to get alias", e);
+        }
+      }
+      if(StringUtils.isEmpty(hostAlias) || scriptUrl == null) {
+        hostAlias = "unknownAlias";
+      }
+    }
+
+    String host = "unknownHost";
     try {
-      host = InetAddress.getLocalHost().getCanonicalHostName();
+      if(hostAlias.equals("unknownAlias")) {
+        host = InetAddress.getLocalHost().getCanonicalHostName();
+      }
     } catch (Exception e) {
-      logger.error("Failed to fetch LocalHostName");
+      logger.error("Failed to fetch LocalHostName", e);
     }
     return host;
   }
