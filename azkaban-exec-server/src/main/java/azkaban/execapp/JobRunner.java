@@ -57,11 +57,11 @@ import azkaban.jobExecutor.JavaProcessJob;
 import azkaban.jobExecutor.Job;
 import azkaban.jobtype.JobTypeManager;
 import azkaban.jobtype.JobTypeManagerException;
+import azkaban.utils.AzkabanPatternLayout;
 import azkaban.utils.ExternalLinkUtils;
 import azkaban.utils.Props;
 import azkaban.utils.StringUtils;
 import azkaban.utils.UndefinedPropertyException;
-import azkaban.utils.PatternLayoutEscaped;
 
 public class JobRunner extends EventHandler implements Runnable {
   public static final String AZKABAN_WEBSERVER_URL = "azkaban.webserver.url";
@@ -315,7 +315,7 @@ public class JobRunner extends EventHandler implements Runnable {
     layout.put("projectversion", props.getString(FlowProperties.AZKABAN_FLOW_PROJECT_VERSION));
     layout.put("logsource", "userJob");
 
-    kafkaProducer.setLayout(new PatternLayoutEscaped(layout.toString()));
+    kafkaProducer.setLayout(new AzkabanPatternLayout(layout.toString()));
     kafkaProducer.activateOptions();
 
     flowLogger.info("Created kafka appender for " + this.jobId);
