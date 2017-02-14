@@ -148,7 +148,7 @@ public class ExecutorServlet extends HttpServlet implements ConnectorParams {
         }
       }
     } catch (Exception e) {
-      logger.error(e);
+      logger.error(e.getMessage(), e);
       respMap.put(RESPONSE_ERROR, e.getMessage());
     }
     writeJSON(resp, respMap);
@@ -167,7 +167,7 @@ public class ExecutorServlet extends HttpServlet implements ConnectorParams {
         flowRunnerManager.retryFailures(execId, user);
       }
     } catch (ExecutorManagerException e) {
-      logger.error(e);
+      logger.error(e.getMessage(), e);
       respMap.put("error", e.getMessage());
     }
   }
@@ -188,7 +188,7 @@ public class ExecutorServlet extends HttpServlet implements ConnectorParams {
         result = flowRunnerManager.readFlowLogs(execId, startByte, length);
         respMap.putAll(result.toObject());
       } catch (Exception e) {
-        logger.error(e);
+        logger.error(e.getMessage(), e);
         respMap.put(RESPONSE_ERROR, e.getMessage());
       }
     } else {
@@ -200,7 +200,7 @@ public class ExecutorServlet extends HttpServlet implements ConnectorParams {
                 length);
         respMap.putAll(result.toObject());
       } catch (Exception e) {
-        logger.error(e);
+        logger.error(e.getMessage(), e);
         respMap.put("error", e.getMessage());
       }
     }
@@ -217,7 +217,7 @@ public class ExecutorServlet extends HttpServlet implements ConnectorParams {
           flowRunnerManager.readJobAttachments(execId, jobId, attempt);
       respMap.put("attachments", result);
     } catch (Exception e) {
-      logger.error(e);
+      logger.error(e.getMessage(), e);
       respMap.put("error", e.getMessage());
     }
   }
@@ -239,7 +239,7 @@ public class ExecutorServlet extends HttpServlet implements ConnectorParams {
               length);
       respMap.putAll(result.toObject());
     } catch (Exception e) {
-      logger.error(e);
+      logger.error(e.getMessage(), e);
       respMap.put("error", e.getMessage());
     }
   }
@@ -282,7 +282,7 @@ public class ExecutorServlet extends HttpServlet implements ConnectorParams {
       flowRunnerManager.submitFlow(execId);
     } catch (ExecutorManagerException e) {
       e.printStackTrace();
-      logger.error(e);
+      logger.error(e.getMessage(), e);
       respMap.put(RESPONSE_ERROR, e.getMessage());
     }
   }
@@ -308,7 +308,7 @@ public class ExecutorServlet extends HttpServlet implements ConnectorParams {
       flowRunnerManager.pauseFlow(execid, user);
       respMap.put(STATUS_PARAM, RESPONSE_SUCCESS);
     } catch (ExecutorManagerException e) {
-      logger.error(e);
+      logger.error(e.getMessage(), e);
       respMap.put(RESPONSE_ERROR, e.getMessage());
     }
   }
@@ -340,7 +340,7 @@ public class ExecutorServlet extends HttpServlet implements ConnectorParams {
       flowRunnerManager.cancelFlow(execid, user);
       respMap.put(STATUS_PARAM, RESPONSE_SUCCESS);
     } catch (ExecutorManagerException e) {
-      logger.error(e);
+      logger.error(e.getMessage(), e);
       respMap.put(RESPONSE_ERROR, e.getMessage());
     }
   }
@@ -351,7 +351,7 @@ public class ExecutorServlet extends HttpServlet implements ConnectorParams {
       flowRunnerManager.reloadJobTypePlugins();
       respMap.put(STATUS_PARAM, RESPONSE_SUCCESS);
     } catch (Exception e) {
-      logger.error(e);
+      logger.error(e.getMessage(), e);
       respMap.put(RESPONSE_ERROR, e.getMessage());
     }
   }
@@ -362,7 +362,7 @@ public class ExecutorServlet extends HttpServlet implements ConnectorParams {
       setActiveInternal(value);
       respMap.put(STATUS_PARAM, RESPONSE_SUCCESS);
     } catch (Exception e) {
-      logger.error(e);
+      logger.error(e.getMessage(), e);
       respMap.put(RESPONSE_ERROR, e.getMessage());
     }
   }
@@ -397,7 +397,7 @@ public class ExecutorServlet extends HttpServlet implements ConnectorParams {
       application.shutdown();
       respMap.put(STATUS_PARAM, RESPONSE_SUCCESS);
     } catch (Exception e) {
-      logger.error(e);
+      logger.error(e.getMessage(), e);
       respMap.put(RESPONSE_ERROR, e.getMessage());
     }
   }
@@ -413,7 +413,7 @@ public class ExecutorServlet extends HttpServlet implements ConnectorParams {
       respMap.put("isActive", String.valueOf(executor.isActive()));
       respMap.put(STATUS_PARAM, RESPONSE_SUCCESS);
     } catch (Exception e) {
-      logger.error(e);
+      logger.error(e.getMessage(), e);
       respMap.put(RESPONSE_ERROR, e.getMessage());
     }
   }
