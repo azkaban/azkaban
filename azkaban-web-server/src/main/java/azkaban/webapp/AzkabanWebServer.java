@@ -65,6 +65,8 @@ import azkaban.executor.JdbcExecutorLoader;
 import azkaban.jmx.JmxExecutorManager;
 import azkaban.jmx.JmxJettyServer;
 import azkaban.jmx.JmxTriggerManager;
+import azkaban.metrics.MetricsManager;
+import azkaban.metrics.CommonMetrics;
 import azkaban.project.JdbcProjectLoader;
 import azkaban.project.ProjectManager;
 import azkaban.scheduler.ScheduleLoader;
@@ -104,7 +106,6 @@ import azkaban.webapp.servlet.ProjectServlet;
 import azkaban.webapp.servlet.ScheduleServlet;
 import azkaban.webapp.servlet.StatsServlet;
 import azkaban.webapp.servlet.TriggerManagerServlet;
-import azkaban.metrics.MetricsManager;
 
 import com.linkedin.restli.server.RestliServlet;
 
@@ -227,18 +228,22 @@ public class AzkabanWebServer extends AzkabanServer {
     }
 
     configureMBeanServer();
+
+    // TODO: Currently we start collecting metrics after server is all up.
+    // We might consider putting the metrics launch process in the main function, to
+    // collect other metrics on demand.
     if (props.getBoolean(ServerProperties.IS_METRICS_ENABLED, false)) {
       startWebMetrics();
     }
   }
 
-  private void startWebMetrics() throws Exception{
+  private void startWebMetrics() throws Exception {
     MetricRegistry metrics = MetricsManager.INSTANCE.getRegistry();
-    MetricsWebRegister execWorker = new MetricsWebRegister.MetricsWebRegisterBuilder("WEB")
-        .addExecutorManager(getExecutorManager())
-        .build();
-    execWorker.addExecutorManagerMetrics(metrics);
 
+    MetricsWebListener.INSTANCE.registerExecutorManagerMetrics(metrics, executorManager);
+    MetricsWebListener.INSTANCE.addAPIMetrics(metrics);
+    CommonMetrics.INSTANCE.addWebDBStateMetrics(metrics);
+    CommonMetrics.INSTANCE.registerCommonMetrics(metrics);
     MetricsManager.INSTANCE.startReporting("AZ-WEB", props);
   }
 

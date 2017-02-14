@@ -36,7 +36,8 @@ import org.apache.log4j.RollingFileAppender;
 import org.apache.kafka.log4jappender.KafkaLog4jAppender;
 
 import org.json.simple.JSONObject;
-
+import azkaban.event.EventListener;
+import azkaban.event.MultitonListenerSet;
 import azkaban.constants.FlowProperties;
 import azkaban.constants.JobProperties;
 import azkaban.constants.ServerProperties;
@@ -63,7 +64,7 @@ import azkaban.utils.StringUtils;
 import azkaban.utils.UndefinedPropertyException;
 import azkaban.utils.PatternLayoutEscaped;
 
-public class JobRunner extends EventHandler implements Runnable {
+public class JobRunner implements EventHandler, Runnable {
   public static final String AZKABAN_WEBSERVER_URL = "azkaban.webserver.url";
 
   private final Layout DEFAULT_LAYOUT = new EnhancedPatternLayout(
@@ -133,6 +134,10 @@ public class JobRunner extends EventHandler implements Runnable {
 
   public Props getProps() {
     return props;
+  }
+
+  public HashSet<EventListener> getListeners() {
+    return MultitonListenerSet.getInstance(MultitonListenerSet.ListenerType.EXEC, MetricsExecListener.INSTANCE).getListeners();
   }
 
   public void setPipeline(FlowWatcher watcher, int pipelineLevel) {

@@ -16,19 +16,27 @@
 
 package azkaban.database;
 
+import azkaban.event.Event;
+import azkaban.event.EventHandler;
+import azkaban.event.EventListener;
+import azkaban.event.MultitonListenerSet;
+import azkaban.metrics.CommonMetrics;
+import azkaban.utils.Props;
+
 import java.io.IOException;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.HashSet;
 
 import org.apache.commons.dbutils.DbUtils;
 import org.apache.commons.dbutils.QueryRunner;
 import org.apache.commons.dbutils.ResultSetHandler;
 
-import azkaban.utils.Props;
 
-public abstract class AbstractJdbcLoader {
+public abstract class AbstractJdbcLoader implements EventHandler {
+
   /**
    * Used for when we store text data. Plain uses UTF8 encoding.
    */
@@ -63,8 +71,14 @@ public abstract class AbstractJdbcLoader {
     dataSource = DataSourceUtils.getDataSource(props);
   }
 
+  @Override
+  public synchronized HashSet<EventListener> getListeners() {
+    return MultitonListenerSet.getInstance(MultitonListenerSet.ListenerType.COMMON, CommonMetrics.INSTANCE).getListeners();
+  }
+
   protected Connection getDBConnection(boolean autoCommit) throws IOException {
     Connection connection = null;
+    fireEventListeners(Event.create(this, Event.Type.DB_CONNECTION));
     try {
       connection = dataSource.getConnection();
       connection.setAutoCommit(autoCommit);

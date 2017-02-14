@@ -16,28 +16,33 @@
 
 package azkaban.event;
 
-import java.util.ArrayList;
 import java.util.HashSet;
 
-public class EventHandler {
-  private HashSet<EventListener> listeners = new HashSet<EventListener>();
+/**
+ * Due to History legacy, this interface is being used by many other modules, and we can not
+ * entirely refactor this interface.
+ * Having default interface methods helps implementation classes easily write necessary logics.
+ *
+ * TODO: Refactor return type in getListeners method.
+ */
+public interface EventHandler {
 
-  public EventHandler() {
+  HashSet<EventListener> getListeners();
+
+  default void addListener(EventListener listener) {
+    getListeners().add(listener);
   }
 
-  public void addListener(EventListener listener) {
-    listeners.add(listener);
-  }
+  default void fireEventListeners(Event event) {
 
-  public void fireEventListeners(Event event) {
-    ArrayList<EventListener> listeners =
-        new ArrayList<EventListener>(this.listeners);
-    for (EventListener listener : listeners) {
-      listener.handleEvent(event);
+    synchronized (this) {
+      for (EventListener listener : getListeners()) {
+        listener.handleEvent(event);
+      }
     }
   }
 
-  public void removeListener(EventListener listener) {
-    listeners.remove(listener);
+  default void removeListener(EventListener listener) {
+    getListeners().remove(listener);
   }
 }

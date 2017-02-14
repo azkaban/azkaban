@@ -16,6 +16,9 @@
 
 package azkaban.project;
 
+import azkaban.event.Event;
+import azkaban.event.EventListener;
+import azkaban.event.MultitonListenerSet;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.File;
@@ -30,6 +33,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 
@@ -40,7 +44,9 @@ import org.apache.commons.io.IOUtils;
 import org.apache.log4j.Logger;
 
 import azkaban.database.AbstractJdbcLoader;
+import azkaban.event.EventHandler;
 import azkaban.flow.Flow;
+import azkaban.metrics.CommonMetrics;
 import azkaban.project.ProjectLogEvent.EventType;
 import azkaban.user.Permission;
 import azkaban.user.User;
@@ -52,8 +58,7 @@ import azkaban.utils.Props;
 import azkaban.utils.PropsUtils;
 import azkaban.utils.Triple;
 
-public class JdbcProjectLoader extends AbstractJdbcLoader implements
-    ProjectLoader {
+public class JdbcProjectLoader extends AbstractJdbcLoader implements EventHandler, ProjectLoader {
   private static final Logger logger = Logger
       .getLogger(JdbcProjectLoader.class);
 
@@ -68,6 +73,10 @@ public class JdbcProjectLoader extends AbstractJdbcLoader implements
     if (!tempDir.exists()) {
       tempDir.mkdirs();
     }
+  }
+
+  public HashSet<EventListener> getListeners() {
+    return MultitonListenerSet.getInstance(MultitonListenerSet.ListenerType.COMMON, CommonMetrics.INSTANCE).getListeners();
   }
 
   @Override
@@ -449,6 +458,7 @@ public class JdbcProjectLoader extends AbstractJdbcLoader implements
            */
           connection.commit();
           logger.info("Finished update for " + filename + " chunk " + chunk);
+          fireEventListeners(Event.create(this, Event.Type.UPLOAD_FILE_CHUNK));
         } catch (SQLException e) {
           throw new ProjectManagerException("Error Chunking during uploading files to db...");
         }
@@ -489,6 +499,7 @@ public class JdbcProjectLoader extends AbstractJdbcLoader implements
     } finally {
       DbUtils.closeQuietly(connection);
     }
+    fireEventListeners(Event.create(this, Event.Type.USER_DOWNLOAD_FILE));
 
     return handler;
   }
@@ -504,6 +515,7 @@ public class JdbcProjectLoader extends AbstractJdbcLoader implements
     } finally {
       DbUtils.closeQuietly(connection);
     }
+    fireEventListeners(Event.create(this, Event.Type.AZ_DOWNLOAD_FILE));
 
     return handler;
   }

@@ -16,6 +16,11 @@
 
 package azkaban.webapp.servlet;
 
+import azkaban.event.Event;
+import azkaban.event.EventHandler;
+import azkaban.event.EventListener;
+import azkaban.event.MultitonListenerSet;
+import azkaban.webapp.MetricsWebListener;
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -23,6 +28,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.Writer;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.UUID;
 
@@ -51,7 +57,7 @@ import azkaban.utils.StringUtils;
  * verified.
  */
 public abstract class LoginAbstractAzkabanServlet extends
-    AbstractAzkabanServlet {
+    AbstractAzkabanServlet implements EventHandler {
 
   private static final long serialVersionUID = 1L;
 
@@ -97,8 +103,16 @@ public abstract class LoginAbstractAzkabanServlet extends
   }
 
   @Override
+  public synchronized HashSet<EventListener> getListeners() {
+    return MultitonListenerSet.getInstance(MultitonListenerSet.ListenerType.WEB, MetricsWebListener.INSTANCE).getListeners();
+  }
+
+  @Override
   protected void doGet(HttpServletRequest req, HttpServletResponse resp)
       throws ServletException, IOException {
+
+    fireEventListeners(Event.create(this, Event.Type.GET_CALL));
+
     // Set session id
     Session session = getSessionFromRequest(req);
     logRequest(req, session);
@@ -133,7 +147,7 @@ public abstract class LoginAbstractAzkabanServlet extends
 
   /**
    * Log out request - the format should be close to Apache access log format
-   * 
+   *
    * @param req
    * @param session
    */
@@ -167,7 +181,7 @@ public abstract class LoginAbstractAzkabanServlet extends
         buf.append("not-browser");
       }
     }
-    
+
     logger.info(buf.toString());
   }
 
@@ -275,6 +289,8 @@ public abstract class LoginAbstractAzkabanServlet extends
   @Override
   protected void doPost(HttpServletRequest req, HttpServletResponse resp)
       throws ServletException, IOException {
+
+    fireEventListeners(Event.create(this, Event.Type.POST_CALL));
     Session session = getSessionFromRequest(req);
 
     logRequest(req, session);
