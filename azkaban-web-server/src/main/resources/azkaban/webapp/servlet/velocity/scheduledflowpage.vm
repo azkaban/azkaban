@@ -82,6 +82,7 @@
             <th class="date">Next Execution Time</th>
             <th class="date">Repeats Every</th>
             <th class="date">Cron Expression</th>
+            <th>Execution Options</th>
             <th>Has SLA</th>
             <th colspan="2" class="action ignoresort">Action</th>
           </tr>
@@ -113,6 +114,24 @@
                 #else
                   <td>Not Applicable</td>
                 #end
+                <td><button type="button" data-toggle="modal" data-target="#executionOptions">show</button></td>
+
+                  <div class="modal fade" id="executionOptions" tabindex="-1" role="dialog" aria-labelledby="executionOptionsLabel">
+                      <div class="modal-dialog" role="document">
+                          <div class="modal-content">
+                              <div class="modal-header">
+                                  <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                                  <h4 class="modal-title" id="executionOptionsLabel">Execution Options</h4>
+                              </div>
+                              <div class="modal-body">
+                                  ${sched.executionOptions.toObject()}
+                              </div>
+                              <div class="modal-footer">
+                                  <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                              </div>
+                          </div>
+                      </div>
+                  </div>
                 <td>#if(${sched.slaOptions}) true #else false #end</td>
                 <td>
                   <button type="button" id="removeSchedBtn" class="btn btn-sm btn-danger"
