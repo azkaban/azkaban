@@ -18,6 +18,7 @@ package azkaban.webapp.servlet;
 
 import azkaban.executor.ExecutorManager;
 import azkaban.utils.FlowUtils;
+import azkaban.webapp.WebMetrics;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -489,6 +490,7 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
   private void ajaxFetchExecFlowLogs(HttpServletRequest req,
       HttpServletResponse resp, HashMap<String, Object> ret, User user,
       ExecutableFlow exFlow) throws ServletException {
+    long startMs = System.currentTimeMillis();
     Project project =
         getProjectAjaxByPermission(ret, exFlow.getProjectId(), user, Type.READ);
     if (project == null) {
@@ -515,6 +517,7 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
     } catch (ExecutorManagerException e) {
       throw new ServletException(e);
     }
+    WebMetrics.INSTANCE.setFetchLogLatency(System.currentTimeMillis() - startMs);
   }
 
   /**
