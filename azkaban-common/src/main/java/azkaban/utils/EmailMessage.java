@@ -16,14 +16,8 @@
 
 package azkaban.utils;
 
-import java.io.File;
-import java.io.InputStream;
-import java.net.SocketTimeoutException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Date;
-import java.util.List;
-import java.util.Properties;
+import com.sun.mail.smtp.SMTPTransport;
+import org.apache.log4j.Logger;
 
 import javax.activation.DataHandler;
 import javax.activation.DataSource;
@@ -36,10 +30,10 @@ import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeBodyPart;
 import javax.mail.internet.MimeMessage;
 import javax.mail.internet.MimeMultipart;
-
-import org.apache.log4j.Logger;
-
-import com.sun.mail.smtp.SMTPTransport;
+import java.io.File;
+import java.io.InputStream;
+import java.net.SocketTimeoutException;
+import java.util.*;
 
 public class EmailMessage {
   private final Logger logger = Logger.getLogger(EmailMessage.class);
@@ -47,6 +41,7 @@ public class EmailMessage {
   private static String protocol = "smtp";
   private List<String> _toAddress = new ArrayList<String>();
   private String _mailHost;
+  private int _mailPort;
   private String _mailUser;
   private String _mailPassword;
   private String _subject;
@@ -65,12 +60,13 @@ public class EmailMessage {
   private ArrayList<BodyPart> _attachments = new ArrayList<BodyPart>();
 
   public EmailMessage() {
-    this("localhost", "", "");
+    this("localhost", AbstractMailer.DEFAULT_SMTP_PORT, "", "");
   }
 
-  public EmailMessage(String host, String user, String password) {
+  public EmailMessage(String host, int port, String user, String password) {
     _mailUser = user;
     _mailHost = host;
+    _mailPort = port;
     _mailPassword = password;
   }
 
@@ -201,6 +197,7 @@ public class EmailMessage {
       props.put("mail." + protocol + ".auth", "false");
     }
     props.put("mail." + protocol + ".host", _mailHost);
+    props.put("mail." + protocol + ".port", _mailPort);
     props.put("mail." + protocol + ".timeout", _mailTimeout);
     props.put("mail." + protocol + ".connectiontimeout", _connectionTimeout);
     props.put("mail.smtp.starttls.enable", _tls);
@@ -262,7 +259,7 @@ public class EmailMessage {
 
   private void connectToSMTPServer(SMTPTransport t) throws MessagingException {
     if (_usesAuth) {
-      t.connect(_mailHost, _mailUser, _mailPassword);
+      t.connect(_mailHost, _mailPort, _mailUser, _mailPassword);
     } else {
       t.connect();
     }
@@ -294,6 +291,10 @@ public class EmailMessage {
 
   public String getSubject() {
     return _subject;
+  }
+
+  public int getMailPort(){
+    return _mailPort;
   }
 
 }

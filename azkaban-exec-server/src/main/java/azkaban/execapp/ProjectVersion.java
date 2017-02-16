@@ -92,7 +92,7 @@ public class ProjectVersion implements Comparable<ProjectVersion> {
     }
   }
 
-  public synchronized void copyCreateSymlinkDirectory(File executionDir)
+  public synchronized void copyCreateHardlinkDirectory(File executionDir)
       throws IOException {
     if (installedDir == null || !installedDir.exists()) {
       throw new IOException("Installed dir doesn't exist: "
@@ -101,7 +101,7 @@ public class ProjectVersion implements Comparable<ProjectVersion> {
       throw new IOException("Execution dir doesn't exist: "
           + ((executionDir == null) ? null : executionDir.getAbsolutePath()));
     }
-    FileIOUtils.createDeepSymlink(installedDir, executionDir);
+    FileIOUtils.createDeepHardlink(installedDir, executionDir);
   }
 
   public synchronized void deleteDirectory() throws IOException {
