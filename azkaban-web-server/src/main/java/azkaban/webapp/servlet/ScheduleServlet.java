@@ -138,27 +138,7 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
         return;
       }
 
-      String emailStr = getParam(req, "slaEmails");
-      String[] emailSplit = emailStr.split("\\s*,\\s*|\\s*;\\s*|\\s+");
-      List<String> slaEmails = Arrays.asList(emailSplit);
-
-      Map<String, String> settings = getParamGroup(req, "settings");
-
-      List<SlaOption> slaOptions = new ArrayList<SlaOption>();
-      for (String set : settings.keySet()) {
-        SlaOption sla;
-        try {
-          sla = parseSlaSetting(settings.get(set));
-        } catch (Exception e) {
-          throw new ServletException(e);
-        }
-        if (sla != null) {
-          sla.getInfo().put(SlaOption.INFO_FLOW_NAME, sched.getFlowName());
-          sla.getInfo().put(SlaOption.INFO_EMAIL_LIST, slaEmails);
-          slaOptions.add(sla);
-        }
-      }
-
+      List<SlaOption> slaOptions = getSlaOptionList(req, sched.getFlowName());
       sched.setSlaOptions(slaOptions);
       scheduleManager.insertSchedule(sched);
 
@@ -175,6 +155,31 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
     }
 
   }
+
+  private List<SlaOption> getSlaOptionList(HttpServletRequest req, String flowName) throws ServletException {
+    String emailStr = getParam(req, "slaEmails");
+    String[] emailSplit = emailStr.split("\\s*,\\s*|\\s*;\\s*|\\s+");
+    List<String> slaEmails = Arrays.asList(emailSplit);
+
+    Map<String, String> settings = getParamGroup(req, "settings");
+
+    List<SlaOption> slaOptions = new ArrayList<SlaOption>();
+    for (String set : settings.keySet()) {
+      SlaOption sla;
+      try {
+        sla = parseSlaSetting(settings.get(set));
+      } catch (Exception e) {
+        throw new ServletException(e);
+      }
+      if (sla != null) {
+        sla.getInfo().put(SlaOption.INFO_FLOW_NAME, flowName);
+        sla.getInfo().put(SlaOption.INFO_EMAIL_LIST, slaEmails);
+        slaOptions.add(sla);
+      }
+    }
+    return slaOptions;
+  }
+
 
   private SlaOption parseSlaSetting(String set) throws ScheduleManagerException {
     logger.info("Tryint to set sla with the following set: " + set);
@@ -671,6 +676,11 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
     }
 
     List<SlaOption> slaOptions = null;
+    try {
+      slaOptions = getSlaOptionList(req, flowName);
+    } catch (Exception e) {
+      ret.put("error", e.getMessage());
+    }
 
     Schedule schedule =
         scheduleManager.scheduleFlow(-1, projectId, projectName, flowName,
@@ -751,6 +761,11 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
     }
 
     List<SlaOption> slaOptions = null;
+    try {
+      slaOptions = getSlaOptionList(req, flowName);
+    } catch (Exception e) {
+      ret.put("error", e.getMessage());
+    }
 
     // Because either cronExpression or recurrence exists, we build schedule in the below way.
     Schedule schedule = scheduleManager.cronScheduleFlow(-1, projectId, projectName, flowName,
