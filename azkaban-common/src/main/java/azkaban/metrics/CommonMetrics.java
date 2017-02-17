@@ -16,42 +16,40 @@
 
 package azkaban.metrics;
 
-import com.codahale.metrics.Gauge;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.MetricRegistry;
 
 /**
  * This singleton class CommonMetrics is in charge of collecting varieties of metrics
- * from azkaban-common modules.
+ * which are accessed in both web and exec modules. That said, these metrics will be
+ * exposed in both Web server and executor.
  */
 public enum CommonMetrics {
   INSTANCE;
 
-  private Meter _dbConnectionMeter;
-  private MetricRegistry _metrics;
+  private Meter dbConnectionMeter;
+  private MetricRegistry registry;
 
   CommonMetrics() {
-    _metrics = MetricsManager.INSTANCE.getRegistry();
+    registry = MetricsManager.INSTANCE.getRegistry();
     setupAllMetrics();
   }
 
   private void setupAllMetrics() {
-    _dbConnectionMeter = addMeter("DB-Connection-meter");
+    dbConnectionMeter = MetricsUtility.addMeter("DB-Connection-meter", registry);
   }
 
-  public Meter addMeter(String name) {
-    Meter curr = _metrics.meter(name);
-    _metrics.register(name + "-gauge", (Gauge<Double>) curr::getOneMinuteRate);
-    return curr;
-  }
-
+  /**
+   * Mark the occurrence of an DB query event.
+   */
   public void markDBConnection() {
 
     /*
+     * This method should be Thread Safe.
      * Two reasons that we don't make this function call synchronized:
-     * 1). code hale metrics deals with concurrency internally;
+     * 1). drop wizard metrics deals with concurrency internally;
      * 2). mark is basically a math addition operation, which should not cause race condition issue.
      */
-    _dbConnectionMeter.mark();
+    dbConnectionMeter.mark();
   }
 }

@@ -17,12 +17,12 @@
 package azkaban.webapp;
 
 import azkaban.metrics.MetricsManager;
-import azkaban.metrics.CommonMetricsTest.DummyReporter;
+import azkaban.metrics.MetricsTestUtility.DummyReporter;
+import azkaban.metrics.MetricsTestUtility;
 
-import java.util.concurrent.TimeUnit;
 import java.time.Duration;
+import java.util.concurrent.TimeUnit;
 
-import org.junit.Assert;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -48,54 +48,16 @@ public class WebMetricsTest{
 
   @Test
   public void testLogFetchLatencyMetrics() {
-    WebMetrics.INSTANCE.setFetchLogLatency(1L);
-    sleep20Millis();
-    Assert.assertEquals(dr.getGuage("fetchLogLatency"), "1");
-
-    WebMetrics.INSTANCE.setFetchLogLatency(99L);
-    sleep20Millis();
-    Assert.assertEquals(dr.getGuage("fetchLogLatency"), "99");
+    MetricsTestUtility.testGauge("fetchLogLatency", dr, WebMetrics.INSTANCE::setFetchLogLatency);
   }
 
   @Test
   public void testWebPostCallMeter() {
-
-    sleep20Millis();
-    long currMeterNum = dr.getMeter("Web-Post-Call-Meter");
-    WebMetrics.INSTANCE.markWebPostCall();
-    sleep20Millis();
-    Assert.assertEquals(dr.getMeter("Web-Post-Call-Meter"), currMeterNum + 1);
-
-    WebMetrics.INSTANCE.markWebPostCall();
-    WebMetrics.INSTANCE.markWebPostCall();
-    sleep20Millis();
-    Assert.assertEquals(dr.getMeter("Web-Post-Call-Meter"), currMeterNum + 3);
+    MetricsTestUtility.testMeter("Web-Post-Call-Meter", dr, WebMetrics.INSTANCE::markWebPostCall);
   }
 
   @Test
   public void testWebGetCallMeter() {
-
-    sleep20Millis();
-    long currMeterNum = dr.getMeter("Web-Get-Call-Meter");
-    WebMetrics.INSTANCE.markWebGetCall();
-    sleep20Millis();
-    Assert.assertEquals(dr.getMeter("Web-Get-Call-Meter"), currMeterNum + 1);
-
-    WebMetrics.INSTANCE.markWebGetCall();
-    WebMetrics.INSTANCE.markWebGetCall();
-    sleep20Millis();
-    Assert.assertEquals(dr.getMeter("Web-Get-Call-Meter"), currMeterNum + 3);
+    MetricsTestUtility.testMeter("Web-Get-Call-Meter", dr, WebMetrics.INSTANCE::markWebGetCall);
   }
-
-  /**
-   * Helper method to sleep 20 milli seconds.
-   */
-  private void sleep20Millis() {
-    try {
-      Thread.sleep(20);
-    } catch (InterruptedException e) {
-      e.printStackTrace();
-    }
-  }
-
 }

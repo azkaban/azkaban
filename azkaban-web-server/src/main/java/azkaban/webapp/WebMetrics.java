@@ -17,8 +17,8 @@
 package azkaban.webapp;
 
 import azkaban.metrics.MetricsManager;
+import azkaban.metrics.MetricsUtility;
 
-import com.codahale.metrics.Gauge;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.MetricRegistry;
 
@@ -32,47 +32,39 @@ import java.util.concurrent.atomic.AtomicLong;
 public enum WebMetrics {
   INSTANCE;
 
-  private MetricRegistry _metrics;
-  private Meter _webGetCall;
-  private Meter _webPostCall;
+  private MetricRegistry registry;
+
+  private Meter webGetCall;
+  private Meter webPostCall;
 
   // How long does user log fetch take when user call fetch-log api.
   private AtomicLong _logFetchLatency = new AtomicLong(0L);
 
   WebMetrics() {
-    _metrics = MetricsManager.INSTANCE.getRegistry();
+    registry = MetricsManager.INSTANCE.getRegistry();
     setupAllMetrics();
   }
 
   private void setupAllMetrics() {
-    _webGetCall = addMeter("Web-Get-Call-Meter");
-    _webPostCall = addMeter("Web-Post-Call-Meter");
-    addLongGauge("fetchLogLatency", _logFetchLatency);
-  }
-
-  public Meter addMeter(String name) {
-    Meter curr = _metrics.meter(name);
-    _metrics.register(name + "-gauge", (Gauge<Double>) curr::getOneMinuteRate);
-    return curr;
-  }
-
-  public void addLongGauge(String name, AtomicLong ai) {
-    _metrics.register(name, (Gauge<Long>) ai::get);
+    webGetCall = MetricsUtility.addMeter("Web-Get-Call-Meter", registry);
+    webPostCall = MetricsUtility.addMeter("Web-Post-Call-Meter", registry);
+    MetricsUtility.addLongGauge("fetchLogLatency", _logFetchLatency, registry);
   }
 
   public void markWebGetCall() {
 
     /*
+     * This method should be Thread Safe.
      * Two reasons that we don't make this function call synchronized:
-     * 1). code hale metrics deals with concurrency internally;
+     * 1). drop wizard metrics deals with concurrency internally;
      * 2). mark is basically a math addition operation, which should not cause race condition issue.
      */
-    _webGetCall.mark();
+    webGetCall.mark();
   }
 
   public void markWebPostCall() {
 
-    _webPostCall.mark();
+    webPostCall.mark();
   }
 
   public void setFetchLogLatency(long milliseconds) {
