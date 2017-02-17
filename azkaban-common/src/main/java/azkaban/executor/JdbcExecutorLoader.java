@@ -320,7 +320,7 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements
 
     boolean first = true;
     if (projContain != null && !projContain.isEmpty()) {
-      query += " ef JOIN projects p ON ef.project_id = p.id WHERE name LIKE ?";
+      query += " JOIN projects p ON ef.project_id = p.id WHERE name LIKE ?";
       params.add('%' + projContain + '%');
       first = false;
     }
@@ -1390,7 +1390,7 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements
   private static class FetchExecutableFlows implements
       ResultSetHandler<List<ExecutableFlow>> {
     private static String FETCH_BASE_EXECUTABLE_FLOW_QUERY =
-        "SELECT exec_id, enc_type, flow_data FROM execution_flows ";
+        "SELECT exec_id, ef.enc_type, flow_data FROM execution_flows ef";
     private static String FETCH_EXECUTABLE_FLOW =
         "SELECT exec_id, enc_type, flow_data FROM execution_flows "
             + "WHERE exec_id=?";
