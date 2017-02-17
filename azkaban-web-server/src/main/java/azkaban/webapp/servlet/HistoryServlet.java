@@ -25,6 +25,7 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.apache.log4j.Logger;
 import org.joda.time.format.DateTimeFormat;
 
 import azkaban.executor.ExecutableFlow;
@@ -36,7 +37,7 @@ import azkaban.server.session.Session;
 import azkaban.webapp.AzkabanWebServer;
 
 public class HistoryServlet extends LoginAbstractAzkabanServlet {
-
+  private static final Logger LOGGER = Logger.getLogger(HistoryServlet.class.getName());
   private static final String FILTER_BY_DATE_PATTERN = "MM/dd/yyyy hh:mm aa";
   private static final long serialVersionUID = 1L;
   private ExecutorManagerAdapter executorManager;
@@ -121,6 +122,7 @@ public class HistoryServlet extends LoginAbstractAzkabanServlet {
                 userContain, status, beginTime, endTime, (pageNum - 1)
                     * pageSize, pageSize);
       } catch (ExecutorManagerException e) {
+        LOGGER.error(e.getMessage(),e);
         page.add("error", e.getMessage());
       }
     } else if (hasParam(req, "search")) {
@@ -130,6 +132,7 @@ public class HistoryServlet extends LoginAbstractAzkabanServlet {
             executorManager.getExecutableFlows(searchTerm, (pageNum - 1)
                 * pageSize, pageSize);
       } catch (ExecutorManagerException e) {
+        LOGGER.error(e.getMessage(),e);
         page.add("error", e.getMessage());
       }
     } else {
@@ -138,7 +141,8 @@ public class HistoryServlet extends LoginAbstractAzkabanServlet {
             executorManager.getExecutableFlows((pageNum - 1) * pageSize,
                 pageSize);
       } catch (ExecutorManagerException e) {
-        e.printStackTrace();
+        LOGGER.error(e.getMessage(),e);
+        page.add("error", e.getMessage());
       }
     }
     page.add("flowHistory", history);
