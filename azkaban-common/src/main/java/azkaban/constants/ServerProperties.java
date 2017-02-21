@@ -47,4 +47,7 @@ public class ServerProperties {
 
   public static final String IS_METRICS_ENABLED =
       "azkaban.is.metrics.enabled";
+
+  public static final String EXECUTOR_HOST = "executor.host";
+
 }

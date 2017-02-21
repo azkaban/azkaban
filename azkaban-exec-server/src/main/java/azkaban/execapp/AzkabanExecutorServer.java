@@ -18,6 +18,7 @@ package azkaban.execapp;
 
 import com.google.common.base.Throwables;
 
+import org.apache.commons.lang.StringUtils;
 import org.apache.log4j.Logger;
 import org.joda.time.DateTimeZone;
 import org.mortbay.jetty.Connector;
@@ -552,6 +553,13 @@ public class AzkabanExecutorServer {
    * @return hostname
    */
   public String getHost() {
+    if(props.containsKey(ServerProperties.EXECUTOR_HOST)) {
+      String hostName = props.getString(ServerProperties.EXECUTOR_HOST);
+      if(!StringUtils.isEmpty(hostName)) {
+        return hostName;
+      }
+    }
+
     String host = "unkownHost";
     try {
       host = InetAddress.getLocalHost().getCanonicalHostName();
