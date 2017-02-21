@@ -17,7 +17,6 @@
 package azkaban.execapp;
 
 import java.io.File;
-import java.io.FileFilter;
 import java.io.FilenameFilter;
 import java.io.IOException;
 import java.lang.Thread.State;
@@ -140,7 +139,7 @@ public class FlowRunnerManager implements EventListener,
   private long lastFlowSubmittedDate = 0;
 
   // whether the current executor is active
-  private volatile boolean isActive = false;
+  private volatile boolean isExecutorActive = false;
 
   public FlowRunnerManager(Props props, ExecutorLoader executorLoader,
       ProjectLoader projectLoader, ClassLoader parentClassLoader) throws IOException {
@@ -174,7 +173,6 @@ public class FlowRunnerManager implements EventListener,
 
     this.validateProxyUser = azkabanProps.getBoolean("proxy.user.lock.down", false);
 
-    setActive(true);
 
     cleanerThread = new CleanerThread();
     cleanerThread.start();
@@ -246,8 +244,8 @@ public class FlowRunnerManager implements EventListener,
     return allProjects;
   }
 
-  public void setActive(boolean isActive) {
-    this.isActive = isActive;
+  public void setExecutorActive(boolean isActive) {
+    this.isExecutorActive = isActive;
   }
 
   public long getLastFlowSubmittedTime(){
@@ -304,7 +302,7 @@ public class FlowRunnerManager implements EventListener,
               lastRecentlyFinishedCleanTime = currentTime;
             }
 
-            if (currentTime - OLD_PROJECT_DIR_INTERVAL_MS > lastOldProjectCleanTime && isActive) {
+            if (currentTime - OLD_PROJECT_DIR_INTERVAL_MS > lastOldProjectCleanTime && isExecutorActive) {
               logger.info("Cleaning old projects");
               cleanOlderProjects();
               lastOldProjectCleanTime = currentTime;
@@ -558,7 +556,7 @@ public class FlowRunnerManager implements EventListener,
 
     try {
       projectVersion.setupProjectFiles(projectLoader, projectDirectory, logger);
-      projectVersion.copyCreateSymlinkDirectory(execPath);
+      projectVersion.copyCreateHardlinkDirectory(execPath);
     } catch (Exception e) {
       logger.error("Error in setting up project directory "+projectDirectory+", "+e);
       if (execPath.exists()) {

@@ -299,7 +299,7 @@ public class JobRunner extends EventHandler implements Runnable {
 
   private KafkaLog4jAppender createKafkaAppender() throws UndefinedPropertyException {
     KafkaLog4jAppender kafkaProducer = new KafkaLog4jAppender();
-    kafkaProducer.setSyncSend(true);
+    kafkaProducer.setSyncSend(false);
     kafkaProducer.setBrokerList(azkabanProps.getString(ServerProperties.AZKABAN_SERVER_LOGGING_KAFKA_BROKERLIST));
     kafkaProducer.setTopic(azkabanProps.getString(ServerProperties.AZKABAN_SERVER_LOGGING_KAFKA_TOPIC));
 
