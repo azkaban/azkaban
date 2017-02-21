@@ -241,6 +241,35 @@ public class JobTypeManager {
     logger.info("Loaded jobtype " + jobTypeName + " " + jobtypeClass);
   }
 
+
+  /**
+   * add lib,resources file into resources list
+   * @param path
+   * @param resources
+   * @throws MalformedURLException
+     */
+  private void addToResources(String path,List<URL> resources) throws  MalformedURLException{
+      if (path.endsWith("/*")) {
+        File pFile = new File(path.substring(0, path.length() - 1));
+        File files[] = pFile.listFiles();
+        for (File file : files) {
+          if (file.getName().endsWith(".jar")) {
+            URL cpItem = file.toURI().toURL();
+            if (!resources.contains(cpItem)) {
+              logger.info("adding to classpath " + cpItem);
+              resources.add(cpItem);
+            }
+          }
+        }
+      } else {
+        URL cpItem = new File(path).toURI().toURL();
+        if (!resources.contains(cpItem)) {
+          logger.info("adding to classpath " + cpItem);
+          resources.add(cpItem);
+        }
+      }
+
+  }
   /**
    * Creates and loads all plugin resources (jars) into a ClassLoader
    *
@@ -262,12 +291,9 @@ public class JobTypeManager {
           pluginLoadProps.getStringList("jobtype.global.classpath", null, ",");
       if (typeGlobalClassPath != null) {
         for (String jar : typeGlobalClassPath) {
-          URL cpItem = new File(jar).toURI().toURL();
-          if (!resources.contains(cpItem)) {
-            logger.info("adding to classpath " + cpItem);
-            resources.add(cpItem);
-          }
+           addToResources(jar,resources);
         }
+
       }
 
       // type specific classpath
@@ -276,11 +302,7 @@ public class JobTypeManager {
           pluginLoadProps.getStringList("jobtype.classpath", null, ",");
       if (typeClassPath != null) {
         for (String jar : typeClassPath) {
-          URL cpItem = new File(jar).toURI().toURL();
-          if (!resources.contains(cpItem)) {
-            logger.info("adding to classpath " + cpItem);
-            resources.add(cpItem);
-          }
+          addToResources(jar,resources);
         }
       }
       List<String> jobtypeLibDirs =
