@@ -16,6 +16,8 @@
 
 package azkaban.webapp.servlet;
 
+import azkaban.executor.ExecutorManager;
+import azkaban.utils.FlowUtils;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -141,6 +143,10 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
           ajaxFetchExecutableFlowInfo(req, resp, ret, session.getUser(), exFlow);
         }
       }
+    } else if (ajaxName.equals("fetchscheduledflowgraph")) {
+      String projectName = getParam(req, "project");
+      String flowName = getParam(req, "flow");
+      ajaxFetchScheduledFlowGraph(projectName, flowName, ret, session.getUser());
     } else if (ajaxName.equals("reloadExecutors")) {
       ajaxReloadExecutors(req, resp, ret, session.getUser());
     } else if (ajaxName.equals("enableQueueProcessor")) {
@@ -200,6 +206,37 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
     if (!wasSuccess) {
       returnMap.put(ConnectorParams.STATUS_PARAM,
         ConnectorParams.RESPONSE_ERROR);
+    }
+  }
+
+  private void ajaxFetchScheduledFlowGraph(String projectName, String flowName,
+      HashMap<String, Object> ret, User user) throws ServletException {
+    Project project =
+        getProjectAjaxByPermission(ret, projectName, user, Type.EXECUTE);
+    if (project == null) {
+      ret.put("error", "Project '" + projectName + "' doesn't exist.");
+      return;
+    }
+    try {
+      Schedule schedule = scheduleManager.getSchedule(project.getId(), flowName);
+      ExecutionOptions executionOptions = schedule != null ? schedule.getExecutionOptions() : new ExecutionOptions();
+      Flow flow = project.getFlow(flowName);
+      if (flow == null) {
+        ret.put("error", "Flow '" + flowName + "' cannot be found in project " + project);
+        return;
+      }
+      ExecutableFlow exFlow = new ExecutableFlow(project, flow);
+      exFlow.setExecutionOptions(executionOptions);
+      ret.put("submitTime", exFlow.getSubmitTime());
+      ret.put("submitUser", exFlow.getSubmitUser());
+      ret.put("execid", exFlow.getExecutionId());
+      ret.put("projectId", exFlow.getProjectId());
+      ret.put("project", project.getName());
+      FlowUtils.applyDisabledJobs(executionOptions.getDisabledJobs(), exFlow);
+      Map<String, Object> flowObj = getExecutableNodeInfo(exFlow);
+      ret.putAll(flowObj);
+    } catch(ScheduleManagerException ex) {
+      throw new ServletException(ex);
     }
   }
 
