@@ -20,12 +20,15 @@ import java.util.Collection;
 
 public class AbstractMailer {
   private static int MB_IN_BYTES = 1048576;
+  public static final int DEFAULT_SMTP_PORT = 25;
+
   private String clientHostname;
   private int clientPort;
   private boolean usesSSL;
   private boolean usesAuth;
 
   private String mailHost;
+  private int mailPort;
   private String mailUser;
   private String mailPassword;
   private String mailSender;
@@ -39,6 +42,7 @@ public class AbstractMailer {
   public AbstractMailer(Props props) {
     this.azkabanName = props.getString("azkaban.name", "azkaban");
     this.mailHost = props.getString("mail.host", "localhost");
+    this.mailPort = props.getInt("mail.port", DEFAULT_SMTP_PORT);
     this.mailUser = props.getString("mail.user", "");
     this.mailPassword = props.getString("mail.password", "");
     this.tls = props.getString("mail.tls", "false");
@@ -71,7 +75,7 @@ public class AbstractMailer {
 
   protected EmailMessage createEmailMessage(String subject, String mimetype,
       Collection<String> emailList) {
-    EmailMessage message = new EmailMessage(mailHost, mailUser, mailPassword);
+    EmailMessage message = new EmailMessage(mailHost, mailPort, mailUser, mailPassword);
     message.setFromAddress(mailSender);
     message.addAllToAddress(emailList);
     message.setMimeType(mimetype);
@@ -105,6 +109,10 @@ public class AbstractMailer {
 
   public String getMailSender() {
     return mailSender;
+  }
+
+  public int getMailPort() {
+    return mailPort;
   }
 
   /**
