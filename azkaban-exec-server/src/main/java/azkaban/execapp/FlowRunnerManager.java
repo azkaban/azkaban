@@ -33,6 +33,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 
+import azkaban.el.ElManager;
 import org.apache.commons.io.FileUtils;
 import org.apache.log4j.Logger;
 
@@ -182,6 +183,7 @@ public class FlowRunnerManager implements EventListener,
       globalProps = new Props(null, globalPropsPath);
     }
 
+    ElManager.loadElFunctions(azkabanProps,parentClassLoader);
     jobtypeManager =
         new JobTypeManager(props.getString(
             AzkabanExecutorServer.JOBTYPE_PLUGIN_DIR,
