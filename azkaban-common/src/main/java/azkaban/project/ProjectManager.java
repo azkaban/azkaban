@@ -359,13 +359,7 @@ public class ProjectManager {
     Props oldProps =
         projectLoader.fetchProjectProperty(project, prop.getSource());
 
-    if (oldProps == null) {
-      oldProps = new Props();
-      projectLoader.uploadProjectProperty(project, prop);
-    } else {
-      projectLoader.updateProjectProperty(project, prop);
-    }
-
+    projectLoader.updateProjectProperty(project, prop);
     String diffMessage = PropsUtils.getPropertyDiff(oldProps, prop);
 
     projectLoader.postEvent(project, EventType.PROPERTY_OVERRIDE,
