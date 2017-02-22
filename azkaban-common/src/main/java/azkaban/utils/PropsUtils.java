@@ -28,6 +28,7 @@ import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import azkaban.el.ElManager;
 import org.apache.commons.jexl2.Expression;
 import org.apache.commons.jexl2.JexlEngine;
 import org.apache.commons.jexl2.JexlException;
@@ -225,6 +226,7 @@ public class PropsUtils {
 
   private static String resolveVariableExpression(String value) {
     JexlEngine jexl = new JexlEngine();
+    jexl.setFunctions(ElManager.getFunctionMap());
     return resolveVariableExpression(value, value.length(), jexl);
   }
 
