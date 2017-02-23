@@ -1,4 +1,4 @@
-CREATE TABLE execution_jobs (
+CREATE TABLE if NOT EXISTS execution_jobs (
 	exec_id INT NOT NULL,
 	project_id INT NOT NULL,
 	version INT NOT NULL,
@@ -12,7 +12,8 @@ CREATE TABLE execution_jobs (
 	output_params LONGBLOB,
 	attachments LONGBLOB,
 	PRIMARY KEY (exec_id, job_id, attempt)
-);
+)
+ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 CREATE INDEX exec_job ON execution_jobs(exec_id, job_id);
 CREATE INDEX exec_id ON execution_jobs(exec_id);
