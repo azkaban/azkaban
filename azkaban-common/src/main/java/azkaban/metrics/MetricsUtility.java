@@ -30,7 +30,7 @@ public final class MetricsUtility {
    * A {@link Gauge} is an instantaneous reading of a particular value.
    * This method adds an AtomicLong number/metric to registry.
    */
-  public static void addLongGauge(String name, AtomicLong atomicLong, MetricRegistry registry) {
-    registry.register(name, (Gauge<Long>) atomicLong::get);
+  public static void addLongGauge(String name, AtomicLong value, MetricRegistry registry) {
+    registry.register(name, (Gauge<Long>) value::get);
   }
 }

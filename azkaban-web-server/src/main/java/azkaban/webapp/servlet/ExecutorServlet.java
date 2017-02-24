@@ -517,6 +517,13 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
     } catch (ExecutorManagerException e) {
       throw new ServletException(e);
     }
+
+    /*
+     * We originally consider leverage Drop Wizard's Timer API {@link com.codahale.metrics.Timer}
+     * to measure the duration time.
+     * However, Timer will result in too many accompanying metrics (e.g., min, max, 99th quantile)
+     * regarding one metrics. We decided to use gauge to do that and monitor how it behaves.
+     */
     WebMetrics.INSTANCE.setFetchLogLatency(System.currentTimeMillis() - startMs);
   }
 

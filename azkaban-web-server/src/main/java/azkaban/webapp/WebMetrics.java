@@ -38,7 +38,7 @@ public enum WebMetrics {
   private Meter webPostCall;
 
   // How long does user log fetch take when user call fetch-log api.
-  private AtomicLong _logFetchLatency = new AtomicLong(0L);
+  private AtomicLong logFetchLatency = new AtomicLong(0L);
 
   WebMetrics() {
     registry = MetricsManager.INSTANCE.getRegistry();
@@ -48,7 +48,7 @@ public enum WebMetrics {
   private void setupAllMetrics() {
     webGetCall = MetricsUtility.addMeter("Web-Get-Call-Meter", registry);
     webPostCall = MetricsUtility.addMeter("Web-Post-Call-Meter", registry);
-    MetricsUtility.addLongGauge("fetchLogLatency", _logFetchLatency, registry);
+    MetricsUtility.addLongGauge("fetchLogLatency", logFetchLatency, registry);
   }
 
   public void markWebGetCall() {
@@ -68,6 +68,6 @@ public enum WebMetrics {
   }
 
   public void setFetchLogLatency(long milliseconds) {
-    _logFetchLatency.set(milliseconds);
+    logFetchLatency.set(milliseconds);
   }
 }
