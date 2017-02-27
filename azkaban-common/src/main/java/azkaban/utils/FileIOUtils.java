@@ -117,16 +117,17 @@ public class FileIOUtils {
     runShellCommand(buffer.toString(), destDir);
   }
 
-  private static void runShellCommand(String command, File workingDir)
+  public static String runShellCommand(String command, File workingDir)
       throws IOException {
     ProcessBuilder builder = new ProcessBuilder().command("sh", "-c", command);
     builder.directory(workingDir);
 
     // XXX what about stopping threads ??
     Process process = builder.start();
+    NullLogger errorLogger = new NullLogger(process.getErrorStream());
+    NullLogger inputLogger = new NullLogger(process.getInputStream());
+
     try {
-      NullLogger errorLogger = new NullLogger(process.getErrorStream());
-      NullLogger inputLogger = new NullLogger(process.getInputStream());
       errorLogger.start();
       inputLogger.start();
 
@@ -148,8 +149,8 @@ public class FileIOUtils {
       IOUtils.closeQuietly(process.getInputStream());
       IOUtils.closeQuietly(process.getOutputStream());
       IOUtils.closeQuietly(process.getErrorStream());
+      return inputLogger.getLastMessages();
     }
-
   }
 
   private static void createDirsFindFiles(File baseDir, File sourceDir,
