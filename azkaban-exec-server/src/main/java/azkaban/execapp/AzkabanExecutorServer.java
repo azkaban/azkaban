@@ -553,8 +553,8 @@ public class AzkabanExecutorServer {
    * @return hostname
    */
   public String getHost() {
-    if(props.containsKey(ServerProperties.EXECUTOR_HOST)) {
-      String hostName = props.getString(ServerProperties.EXECUTOR_HOST);
+    if(props.containsKey(ServerProperties.AZKABAN_SERVER_HOST_NAME)) {
+      String hostName = props.getString(ServerProperties.AZKABAN_SERVER_HOST_NAME);
       if(!StringUtils.isEmpty(hostName)) {
         return hostName;
       }

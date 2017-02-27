@@ -26,5 +26,4 @@ public class ServerInternals {
   public static final String AZKABAN_EXECUTOR_PORT_FILENAME = "executor.port";
 
   public static final String AZKABAN_SERVLET_CONTEXT_KEY = "azkaban_app";
-
 }
