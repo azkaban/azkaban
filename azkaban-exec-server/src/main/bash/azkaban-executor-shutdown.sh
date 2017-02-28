@@ -5,15 +5,30 @@ installdir="$(dirname $0)/.."
 pid=`cat ${installdir}/currentpid`
 port=`cat ${installdir}/executor.port`
 
-echo "Killing Executor. [pid: $pid, port: $port]"
-
-kill ${pid}
-if [ $? -ne 0 ]; then
-    echo "Error: Shutdown failed"
-    exit 1;
+maxtry=5
+if [ -z $pid ]; then
+  echo "currentpid file doesn't exist in ${installdir}, shutdown completed"
+  exit 0
 fi
 
-rm  ${installdir}/currentpid
-rm  ${installdir}/executor.port
+for try in $(seq 1 $maxtry); do
+  if [ ! -z $pid ]; then
+    echo "Killing Exec Server. [pid: $pid, port: $port], $try th try"
+    kill ${pid}
+    if [ -n "$(ps -p $pid -o pid=)" ]; then
+      echo "Exec Server is not dead [pid: $pid, port: $port]"
+      if [ $try -lt $maxtry ]; then
+        echo "sleeping for a few seconds before retry"
+        sleep 10 
+      fi
+    else 
+      rm  ${installdir}/currentpid
+      rm  ${installdir}/executor.port
+      echo "shutdown succeeded"
+      exit 0
+    fi
+  fi
+done
 
-echo "done."
+echo "Error: Shutdown failed"
+exit 1
