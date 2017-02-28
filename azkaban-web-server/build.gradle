@@ -58,6 +58,9 @@ dependencies {
   testCompile('org.hamcrest:hamcrest-all:1.3')
   testCompile('org.mockito:mockito-all:1.10.19')
 
+  //AZ web module tests need to access classes defined in azkaban-common test module
+  testCompile project(':azkaban-common').sourceSets.test.output
+
   generateRestli('com.linkedin.pegasus:generator:' + pegasusVersion)
   generateRestli('com.linkedin.pegasus:restli-tools:' + pegasusVersion)
 

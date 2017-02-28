@@ -16,20 +16,7 @@
 
 package azkaban.webapp.servlet;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import javax.servlet.ServletConfig;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
-import org.apache.commons.lang.StringEscapeUtils;
-import org.apache.log4j.Logger;
-
+import azkaban.constants.ServerProperties;
 import azkaban.executor.ConnectorParams;
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutableFlowBase;
@@ -52,17 +39,35 @@ import azkaban.user.Permission;
 import azkaban.user.Permission.Type;
 import azkaban.user.User;
 import azkaban.user.UserManager;
+import azkaban.utils.ExternalLinkUtils;
 import azkaban.utils.FileIOUtils.LogData;
+import azkaban.utils.FlowUtils;
 import azkaban.utils.Pair;
 import azkaban.utils.Props;
 import azkaban.webapp.AzkabanWebServer;
 import azkaban.webapp.plugin.PluginRegistry;
 import azkaban.webapp.plugin.ViewerPlugin;
+import azkaban.webapp.WebMetrics;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import javax.servlet.ServletConfig;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import org.apache.commons.lang.StringEscapeUtils;
+import org.apache.log4j.Logger;
+
 
 public class ExecutorServlet extends LoginAbstractAzkabanServlet {
-  private static final Logger LOGGER = 
+  private static final Logger LOGGER =
       Logger.getLogger(ExecutorServlet.class.getName());
-  private static final long serialVersionUID = 1L;  
+  private static final long serialVersionUID = 1L;
   private ProjectManager projectManager;
   private ExecutorManagerAdapter executorManager;
   private ScheduleManager scheduleManager;
@@ -139,6 +144,10 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
           ajaxFetchExecutableFlowInfo(req, resp, ret, session.getUser(), exFlow);
         }
       }
+    } else if (ajaxName.equals("fetchscheduledflowgraph")) {
+      String projectName = getParam(req, "project");
+      String flowName = getParam(req, "flow");
+      ajaxFetchScheduledFlowGraph(projectName, flowName, ret, session.getUser());
     } else if (ajaxName.equals("reloadExecutors")) {
       ajaxReloadExecutors(req, resp, ret, session.getUser());
     } else if (ajaxName.equals("enableQueueProcessor")) {
@@ -198,6 +207,37 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
     if (!wasSuccess) {
       returnMap.put(ConnectorParams.STATUS_PARAM,
         ConnectorParams.RESPONSE_ERROR);
+    }
+  }
+
+  private void ajaxFetchScheduledFlowGraph(String projectName, String flowName,
+      HashMap<String, Object> ret, User user) throws ServletException {
+    Project project =
+        getProjectAjaxByPermission(ret, projectName, user, Type.EXECUTE);
+    if (project == null) {
+      ret.put("error", "Project '" + projectName + "' doesn't exist.");
+      return;
+    }
+    try {
+      Schedule schedule = scheduleManager.getSchedule(project.getId(), flowName);
+      ExecutionOptions executionOptions = schedule != null ? schedule.getExecutionOptions() : new ExecutionOptions();
+      Flow flow = project.getFlow(flowName);
+      if (flow == null) {
+        ret.put("error", "Flow '" + flowName + "' cannot be found in project " + project);
+        return;
+      }
+      ExecutableFlow exFlow = new ExecutableFlow(project, flow);
+      exFlow.setExecutionOptions(executionOptions);
+      ret.put("submitTime", exFlow.getSubmitTime());
+      ret.put("submitUser", exFlow.getSubmitUser());
+      ret.put("execid", exFlow.getExecutionId());
+      ret.put("projectId", exFlow.getProjectId());
+      ret.put("project", project.getName());
+      FlowUtils.applyDisabledJobs(executionOptions.getDisabledJobs(), exFlow);
+      Map<String, Object> flowObj = getExecutableNodeInfo(exFlow);
+      ret.putAll(flowObj);
+    } catch(ScheduleManagerException ex) {
+      throw new ServletException(ex);
     }
   }
 
@@ -341,23 +381,22 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
       page.render();
       return;
     }
-    
+
     Props props = getApplication().getServerProps();
-    String execExternalLinkURL = 
-        ExternalAnalyzerUtils.getExternalAnalyzer(props, req);
+    String execExternalLinkURL = ExternalLinkUtils.getExternalAnalyzerOnReq(props, req);
 
     if(execExternalLinkURL.length() > 0) {
       page.add("executionExternalLinkURL", execExternalLinkURL);
       LOGGER.debug("Added an External analyzer to the page");
       LOGGER.debug("External analyzer url: " + execExternalLinkURL);
-      
-      String execExternalLinkLabel = 
-          props.getString(ExternalAnalyzerUtils.EXECUTION_EXTERNAL_LINK_LABEL, 
+
+      String execExternalLinkLabel =
+          props.getString(ServerProperties.AZKABAN_SERVER_EXTERNAL_ANALYZER_LABEL,
               "External Analyzer");
       page.add("executionExternalLinkLabel", execExternalLinkLabel);
       LOGGER.debug("External analyzer label set to : " + execExternalLinkLabel);
     }
-    
+
     page.add("projectId", project.getId());
     page.add("projectName", project.getName());
     page.add("flowid", flow.getFlowId());
@@ -451,6 +490,7 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
   private void ajaxFetchExecFlowLogs(HttpServletRequest req,
       HttpServletResponse resp, HashMap<String, Object> ret, User user,
       ExecutableFlow exFlow) throws ServletException {
+    long startMs = System.currentTimeMillis();
     Project project =
         getProjectAjaxByPermission(ret, exFlow.getProjectId(), user, Type.READ);
     if (project == null) {
@@ -477,6 +517,14 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
     } catch (ExecutorManagerException e) {
       throw new ServletException(e);
     }
+
+    /*
+     * We originally consider leverage Drop Wizard's Timer API {@link com.codahale.metrics.Timer}
+     * to measure the duration time.
+     * However, Timer will result in too many accompanying metrics (e.g., min, max, 99th quantile)
+     * regarding one metrics. We decided to use gauge to do that and monitor how it behaves.
+     */
+    WebMetrics.INSTANCE.setFetchLogLatency(System.currentTimeMillis() - startMs);
   }
 
   /**

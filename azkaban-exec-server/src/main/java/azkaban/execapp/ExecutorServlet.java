@@ -45,6 +45,9 @@ import azkaban.utils.FileIOUtils.JobMetaData;
 import azkaban.utils.FileIOUtils.LogData;
 import azkaban.utils.JSONUtils;
 
+import static java.util.Objects.requireNonNull;
+
+
 public class ExecutorServlet extends HttpServlet implements ConnectorParams {
   private static final long serialVersionUID = 1L;
   private static final Logger logger = Logger.getLogger(ExecutorServlet.class
@@ -102,9 +105,14 @@ public class ExecutorServlet extends HttpServlet implements ConnectorParams {
         } else if (action.equals(ACTIVATE)) {
           logger.warn("Setting ACTIVE flag to true");
           setActive(true, respMap);
+        } else if (action.equals(GET_STATUS)) {
+          logger.debug("Get Executor Status: ");
+          getStatus(respMap);
         } else if (action.equals(DEACTIVATE)) {
           logger.warn("Setting ACTIVE flag to false");
           setActive(false, respMap);
+        } else if (action.equals(SHUTDOWN)) {
+          shutdown(respMap);
         } else {
           int execid = Integer.parseInt(getParam(req, EXECID_PARAM));
           String user = getParam(req, USER_PARAM, null);
@@ -140,7 +148,7 @@ public class ExecutorServlet extends HttpServlet implements ConnectorParams {
         }
       }
     } catch (Exception e) {
-      logger.error(e);
+      logger.error(e.getMessage(), e);
       respMap.put(RESPONSE_ERROR, e.getMessage());
     }
     writeJSON(resp, respMap);
@@ -159,7 +167,7 @@ public class ExecutorServlet extends HttpServlet implements ConnectorParams {
         flowRunnerManager.retryFailures(execId, user);
       }
     } catch (ExecutorManagerException e) {
-      logger.error(e);
+      logger.error(e.getMessage(), e);
       respMap.put("error", e.getMessage());
     }
   }
@@ -180,7 +188,7 @@ public class ExecutorServlet extends HttpServlet implements ConnectorParams {
         result = flowRunnerManager.readFlowLogs(execId, startByte, length);
         respMap.putAll(result.toObject());
       } catch (Exception e) {
-        logger.error(e);
+        logger.error(e.getMessage(), e);
         respMap.put(RESPONSE_ERROR, e.getMessage());
       }
     } else {
@@ -192,7 +200,7 @@ public class ExecutorServlet extends HttpServlet implements ConnectorParams {
                 length);
         respMap.putAll(result.toObject());
       } catch (Exception e) {
-        logger.error(e);
+        logger.error(e.getMessage(), e);
         respMap.put("error", e.getMessage());
       }
     }
@@ -209,7 +217,7 @@ public class ExecutorServlet extends HttpServlet implements ConnectorParams {
           flowRunnerManager.readJobAttachments(execId, jobId, attempt);
       respMap.put("attachments", result);
     } catch (Exception e) {
-      logger.error(e);
+      logger.error(e.getMessage(), e);
       respMap.put("error", e.getMessage());
     }
   }
@@ -231,7 +239,7 @@ public class ExecutorServlet extends HttpServlet implements ConnectorParams {
               length);
       respMap.putAll(result.toObject());
     } catch (Exception e) {
-      logger.error(e);
+      logger.error(e.getMessage(), e);
       respMap.put("error", e.getMessage());
     }
   }
@@ -274,7 +282,7 @@ public class ExecutorServlet extends HttpServlet implements ConnectorParams {
       flowRunnerManager.submitFlow(execId);
     } catch (ExecutorManagerException e) {
       e.printStackTrace();
-      logger.error(e);
+      logger.error(e.getMessage(), e);
       respMap.put(RESPONSE_ERROR, e.getMessage());
     }
   }
@@ -300,7 +308,7 @@ public class ExecutorServlet extends HttpServlet implements ConnectorParams {
       flowRunnerManager.pauseFlow(execid, user);
       respMap.put(STATUS_PARAM, RESPONSE_SUCCESS);
     } catch (ExecutorManagerException e) {
-      logger.error(e);
+      logger.error(e.getMessage(), e);
       respMap.put(RESPONSE_ERROR, e.getMessage());
     }
   }
@@ -332,7 +340,7 @@ public class ExecutorServlet extends HttpServlet implements ConnectorParams {
       flowRunnerManager.cancelFlow(execid, user);
       respMap.put(STATUS_PARAM, RESPONSE_SUCCESS);
     } catch (ExecutorManagerException e) {
-      logger.error(e);
+      logger.error(e.getMessage(), e);
       respMap.put(RESPONSE_ERROR, e.getMessage());
     }
   }
@@ -343,7 +351,7 @@ public class ExecutorServlet extends HttpServlet implements ConnectorParams {
       flowRunnerManager.reloadJobTypePlugins();
       respMap.put(STATUS_PARAM, RESPONSE_SUCCESS);
     } catch (Exception e) {
-      logger.error(e);
+      logger.error(e.getMessage(), e);
       respMap.put(RESPONSE_ERROR, e.getMessage());
     }
   }
@@ -351,19 +359,61 @@ public class ExecutorServlet extends HttpServlet implements ConnectorParams {
   private void setActive(boolean value, Map<String, Object> respMap)
       throws ServletException {
     try {
-      ExecutorLoader executorLoader = application.getExecutorLoader();
-      Executor executor = executorLoader.fetchExecutor(application.getHost(), application.getPort());
-      Preconditions.checkState(executor != null, "Unable to obtain self entry in DB");
-      if (executor.isActive() != value) {
-        executor.setActive(value);
-        executorLoader.updateExecutor(executor);
-        flowRunnerManager.setActive(value);
-      } else {
-        logger.warn("Set active action ignored. Executor is already " + (value? "active" : "inactive"));
-      }
+      setActiveInternal(value);
       respMap.put(STATUS_PARAM, RESPONSE_SUCCESS);
     } catch (Exception e) {
-      logger.error(e);
+      logger.error(e.getMessage(), e);
+      respMap.put(RESPONSE_ERROR, e.getMessage());
+    }
+  }
+
+  private void setActiveInternal(boolean value)
+      throws ExecutorManagerException {
+    ExecutorLoader executorLoader = application.getExecutorLoader();
+    Executor executor = executorLoader.fetchExecutor(application.getHost(), application.getPort());
+    Preconditions.checkState(executor != null, "Unable to obtain self entry in DB");
+    if (executor.isActive() != value) {
+      executor.setActive(value);
+      executorLoader.updateExecutor(executor);
+      flowRunnerManager.setExecutorActive(value);
+    } else {
+      logger.warn("Set active action ignored. Executor is already " + (value? "active" : "inactive"));
+    }
+  }
+
+  /**
+   * Prepare the executor for shutdown.
+   *
+   * @param respMap json response object
+   * @throws ServletException
+   */
+  private void shutdown(Map<String, Object> respMap)
+      throws ServletException {
+    try {
+      logger.warn("Shutting down executor...");
+
+      // Set the executor to inactive. Will receive no new flows.
+      setActiveInternal(false);
+      application.shutdown();
+      respMap.put(STATUS_PARAM, RESPONSE_SUCCESS);
+    } catch (Exception e) {
+      logger.error(e.getMessage(), e);
+      respMap.put(RESPONSE_ERROR, e.getMessage());
+    }
+  }
+
+  private void getStatus(Map<String, Object> respMap)
+      throws ServletException {
+    try {
+      ExecutorLoader executorLoader = application.getExecutorLoader();
+      final Executor executor = requireNonNull(executorLoader.fetchExecutor(application.getHost(), application.getPort()),
+          "The executor can not be null");
+
+      respMap.put("executor_id", Integer.toString(executor.getId()));
+      respMap.put("isActive", String.valueOf(executor.isActive()));
+      respMap.put(STATUS_PARAM, RESPONSE_SUCCESS);
+    } catch (Exception e) {
+      logger.error(e.getMessage(), e);
       respMap.put(RESPONSE_ERROR, e.getMessage());
     }
   }

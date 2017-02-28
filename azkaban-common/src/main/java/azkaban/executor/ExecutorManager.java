@@ -16,6 +16,7 @@
 
 package azkaban.executor;
 
+import azkaban.utils.FlowUtils;
 import java.io.File;
 import java.io.IOException;
 import java.lang.Thread.State;
@@ -601,6 +602,11 @@ public class ExecutorManager extends EventHandler implements
     return allIds.toString();
   }
 
+
+  public long getQueuedFlowSize() {
+    return queuedFlows.size();
+  }
+
   /* Helper method to flow ids of all running flows */
   private void getRunningFlowsIdsHelper(List<Integer> allIds,
     Collection<Pair<ExecutionReference, ExecutableFlow>> collection) {
@@ -923,35 +929,6 @@ public class ExecutorManager extends EventHandler implements
     }
   }
 
-  private void applyDisabledJobs(List<Object> disabledJobs,
-      ExecutableFlowBase exflow) {
-    for (Object disabled : disabledJobs) {
-      if (disabled instanceof String) {
-        String nodeName = (String) disabled;
-        ExecutableNode node = exflow.getExecutableNode(nodeName);
-        if (node != null) {
-          node.setStatus(Status.DISABLED);
-        }
-      } else if (disabled instanceof Map) {
-        @SuppressWarnings("unchecked")
-        Map<String, Object> nestedDisabled = (Map<String, Object>) disabled;
-        String nodeName = (String) nestedDisabled.get("id");
-        @SuppressWarnings("unchecked")
-        List<Object> subDisabledJobs =
-            (List<Object>) nestedDisabled.get("children");
-
-        if (nodeName == null || subDisabledJobs == null) {
-          return;
-        }
-
-        ExecutableNode node = exflow.getExecutableNode(nodeName);
-        if (node != null && node instanceof ExecutableFlowBase) {
-          applyDisabledJobs(subDisabledJobs, (ExecutableFlowBase) node);
-        }
-      }
-    }
-  }
-
   @Override
   public String submitExecutableFlow(ExecutableFlow exflow, String userId)
     throws ExecutorManagerException {
@@ -981,7 +958,7 @@ public class ExecutorManager extends EventHandler implements
         }
 
         if (options.getDisabledJobs() != null) {
-          applyDisabledJobs(options.getDisabledJobs(), exflow);
+          FlowUtils.applyDisabledJobs(options.getDisabledJobs(), exflow);
         }
 
         if (!running.isEmpty()) {
