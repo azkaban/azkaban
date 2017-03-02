@@ -28,6 +28,8 @@ public enum CommonMetrics {
   INSTANCE;
 
   private Meter dbConnectionMeter;
+  private Meter flowFailMeter;
+
   private MetricRegistry registry;
 
   CommonMetrics() {
@@ -37,6 +39,7 @@ public enum CommonMetrics {
 
   private void setupAllMetrics() {
     dbConnectionMeter = MetricsUtility.addMeter("DB-Connection-meter", registry);
+    flowFailMeter = MetricsUtility.addMeter("flow-fail-meter", registry);
   }
 
   /**
@@ -51,5 +54,13 @@ public enum CommonMetrics {
      * 2). mark is basically a math addition operation, which should not cause race condition issue.
      */
     dbConnectionMeter.mark();
+  }
+
+  /**
+   * Mark flowFailMeter when a flow is considered as FAILED.
+   * This method could be called by Web Server or Executor, as they both detect flow failure.
+   */
+  public void markFlowFail() {
+    flowFailMeter.mark();
   }
 }

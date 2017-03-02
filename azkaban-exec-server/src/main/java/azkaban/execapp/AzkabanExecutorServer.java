@@ -44,8 +44,6 @@ import javax.management.MBeanInfo;
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
 
-import com.codahale.metrics.MetricRegistry;
-
 import azkaban.constants.ServerInternals;
 import azkaban.constants.ServerProperties;
 
@@ -184,13 +182,9 @@ public class AzkabanExecutorServer {
   }
 
   private void startExecMetrics() throws Exception {
-    MetricRegistry metrics = MetricsManager.INSTANCE.getRegistry();
+    ExecMetrics.INSTANCE.addFlowRunnerManagerMetrics(getFlowRunnerManager());
 
     logger.info("starting reporting Executor Metrics");
-    MetricsExecRegister execWorker =
-        new MetricsExecRegister.MetricsExecRegisterBuilder("EXEC").addFlowRunnerManager(getFlowRunnerManager()).build();
-    execWorker.addExecutorManagerMetrics(metrics);
-
     MetricsManager.INSTANCE.startReporting("AZ-EXEC", props);
   }
 

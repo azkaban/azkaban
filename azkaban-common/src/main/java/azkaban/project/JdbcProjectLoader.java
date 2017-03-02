@@ -350,6 +350,7 @@ public class JdbcProjectLoader extends AbstractJdbcLoader implements
   public void uploadProjectFile(Project project, int version, String filetype,
       String filename, File localFile, String uploader)
       throws ProjectManagerException {
+    long startMs = System.currentTimeMillis();
     logger.info("Uploading to " + project.getName() + " version:" + version
         + " file:" + filename);
     Connection connection = getConnection();
@@ -358,7 +359,8 @@ public class JdbcProjectLoader extends AbstractJdbcLoader implements
       uploadProjectFile(connection, project, version, filetype, filename,
           localFile, uploader);
       connection.commit();
-      logger.info("Commiting upload " + localFile.getName());
+      logger.info("project " + project.getName() + " commiting upload " + localFile.getName()
+              + " takes " + ((System.currentTimeMillis() - startMs) / 1000) + " seconds.");
     } catch (SQLException e) {
       logger.error(e);
       throw new ProjectManagerException("Error getting DB connection.", e);

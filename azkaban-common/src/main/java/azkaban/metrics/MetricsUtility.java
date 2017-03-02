@@ -5,6 +5,7 @@ import com.codahale.metrics.Meter;
 import com.codahale.metrics.MetricRegistry;
 
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Supplier;
 
 /**
  * Creating an utility class to facilitate metrics class like {@link azkaban.metrics.CommonMetrics}
@@ -28,9 +29,9 @@ public final class MetricsUtility {
 
   /**
    * A {@link Gauge} is an instantaneous reading of a particular value.
-   * This method adds an AtomicLong number/metric to registry.
+   * This method adds a general supplier function to the metrics registry.
    */
-  public static void addLongGauge(String name, AtomicLong value, MetricRegistry registry) {
-    registry.register(name, (Gauge<Long>) value::get);
+  public static <T> void addGauge(String name, MetricRegistry registry, Supplier<T> gaugeFunc) {
+    registry.register(name, (Gauge<T>) gaugeFunc::get);
   }
 }
