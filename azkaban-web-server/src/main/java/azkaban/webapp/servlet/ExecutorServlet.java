@@ -16,22 +16,6 @@
 
 package azkaban.webapp.servlet;
 
-import azkaban.executor.ExecutorManager;
-import azkaban.utils.FlowUtils;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import javax.servlet.ServletConfig;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
-import org.apache.commons.lang.StringEscapeUtils;
-import org.apache.log4j.Logger;
-
 import azkaban.constants.ServerProperties;
 import azkaban.executor.ConnectorParams;
 import azkaban.executor.ExecutableFlow;
@@ -57,11 +41,28 @@ import azkaban.user.User;
 import azkaban.user.UserManager;
 import azkaban.utils.ExternalLinkUtils;
 import azkaban.utils.FileIOUtils.LogData;
+import azkaban.utils.FlowUtils;
 import azkaban.utils.Pair;
 import azkaban.utils.Props;
 import azkaban.webapp.AzkabanWebServer;
 import azkaban.webapp.plugin.PluginRegistry;
 import azkaban.webapp.plugin.ViewerPlugin;
+import azkaban.webapp.WebMetrics;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import javax.servlet.ServletConfig;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import org.apache.commons.lang.StringEscapeUtils;
+import org.apache.log4j.Logger;
+
 
 public class ExecutorServlet extends LoginAbstractAzkabanServlet {
   private static final Logger LOGGER =
@@ -489,6 +490,7 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
   private void ajaxFetchExecFlowLogs(HttpServletRequest req,
       HttpServletResponse resp, HashMap<String, Object> ret, User user,
       ExecutableFlow exFlow) throws ServletException {
+    long startMs = System.currentTimeMillis();
     Project project =
         getProjectAjaxByPermission(ret, exFlow.getProjectId(), user, Type.READ);
     if (project == null) {
@@ -515,6 +517,14 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
     } catch (ExecutorManagerException e) {
       throw new ServletException(e);
     }
+
+    /*
+     * We originally consider leverage Drop Wizard's Timer API {@link com.codahale.metrics.Timer}
+     * to measure the duration time.
+     * However, Timer will result in too many accompanying metrics (e.g., min, max, 99th quantile)
+     * regarding one metrics. We decided to use gauge to do that and monitor how it behaves.
+     */
+    WebMetrics.INSTANCE.setFetchLogLatency(System.currentTimeMillis() - startMs);
   }
 
   /**

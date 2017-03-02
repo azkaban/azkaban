@@ -16,6 +16,7 @@
 
 package azkaban.webapp.servlet;
 
+import azkaban.webapp.WebMetrics;
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -99,6 +100,8 @@ public abstract class LoginAbstractAzkabanServlet extends
   @Override
   protected void doGet(HttpServletRequest req, HttpServletResponse resp)
       throws ServletException, IOException {
+
+    WebMetrics.INSTANCE.markWebGetCall();
     // Set session id
     Session session = getSessionFromRequest(req);
     logRequest(req, session);
@@ -133,7 +136,7 @@ public abstract class LoginAbstractAzkabanServlet extends
 
   /**
    * Log out request - the format should be close to Apache access log format
-   * 
+   *
    * @param req
    * @param session
    */
@@ -167,7 +170,7 @@ public abstract class LoginAbstractAzkabanServlet extends
         buf.append("not-browser");
       }
     }
-    
+
     logger.info(buf.toString());
   }
 
@@ -276,7 +279,7 @@ public abstract class LoginAbstractAzkabanServlet extends
   protected void doPost(HttpServletRequest req, HttpServletResponse resp)
       throws ServletException, IOException {
     Session session = getSessionFromRequest(req);
-
+    WebMetrics.INSTANCE.markWebPostCall();
     logRequest(req, session);
 
     // Handle Multipart differently from other post messages
