@@ -47,4 +47,9 @@ public class CommonMetricsTest {
   public void testMarkDBConnectionMetrics() {
     MetricsTestUtility.testMeter("DB-Connection-meter", dr, CommonMetrics.INSTANCE::markDBConnection);
   }
+
+  @Test
+  public void testDBConnectionTimeMetrics() {
+    MetricsTestUtility.testGauge("dbConnectionTime", dr, CommonMetrics.INSTANCE::setDBConnectionTime);
+  }
 }

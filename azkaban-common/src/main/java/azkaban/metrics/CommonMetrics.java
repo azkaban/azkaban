@@ -19,6 +19,8 @@ package azkaban.metrics;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.MetricRegistry;
 
+import java.util.concurrent.atomic.AtomicLong;
+
 /**
  * This singleton class CommonMetrics is in charge of collecting varieties of metrics
  * which are accessed in both web and exec modules. That said, these metrics will be
@@ -29,6 +31,7 @@ public enum CommonMetrics {
 
   private Meter dbConnectionMeter;
   private Meter flowFailMeter;
+  private AtomicLong dbConnectionTime = new AtomicLong(0L);
 
   private MetricRegistry registry;
 
@@ -40,6 +43,7 @@ public enum CommonMetrics {
   private void setupAllMetrics() {
     dbConnectionMeter = MetricsUtility.addMeter("DB-Connection-meter", registry);
     flowFailMeter = MetricsUtility.addMeter("flow-fail-meter", registry);
+    MetricsUtility.addGauge("dbConnectionTime", registry, dbConnectionTime::get);
   }
 
   /**
@@ -62,5 +66,9 @@ public enum CommonMetrics {
    */
   public void markFlowFail() {
     flowFailMeter.mark();
+  }
+
+  public void setDBConnectionTime(long milliseconds) {
+    dbConnectionTime.set(milliseconds);
   }
 }

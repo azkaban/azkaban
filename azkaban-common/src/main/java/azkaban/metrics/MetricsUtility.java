@@ -3,8 +3,8 @@ package azkaban.metrics;
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.MetricRegistry;
+import com.codahale.metrics.Timer;
 
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Supplier;
 
 /**
@@ -25,6 +25,14 @@ public final class MetricsUtility {
     Meter curr = registry.meter(name);
     registry.register(name + "-gauge", (Gauge<Double>) curr::getOneMinuteRate);
     return curr;
+  }
+
+  /**
+   * A {@link Timer} aggregates timing durations and provides duration statistics, plus throughput statistics
+   * TODO: experimented timer but finally removed. but leave the API here to be used in future.
+   */
+  public static Timer addTimer(String name, MetricRegistry registry) {
+    return registry.timer(name);
   }
 
   /**
