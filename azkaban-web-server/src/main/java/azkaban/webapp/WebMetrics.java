@@ -64,6 +64,14 @@ public enum WebMetrics {
     MetricsUtility.addGauge("WEB-NumRunningFlows", registry, supplier);
   }
 
+  public void addJettyMetrics(AzkabanWebServer app) {
+    MetricsUtility.addGauge("JETTY-NumIdleThreads", registry, app::getJettyIdleThreadsNum);
+    MetricsUtility.addGauge("JETTY-NumTotalThreads", registry, app::getJettyTotalThreadsNum);
+    MetricsUtility.addGauge("JETTY-NumUsedThreads", registry, app::getJettyUsedThreadsNum);
+    MetricsUtility.addGauge("JETTY-NumQueuedThreads", registry, app::getJettyQueuedThreadsNum);
+  }
+
+
   public void markWebGetCall() {
 
     /*

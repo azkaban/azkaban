@@ -153,6 +153,10 @@ public class AzkabanWebServer extends AzkabanServer {
   private final VelocityEngine velocityEngine;
 
   private final Server server;
+
+  //queuedThreadPool is mainly used to monitor jetty threadpool.
+  private QueuedThreadPool queuedThreadPool;
+
   private UserManager userManager;
   private ProjectManager projectManager;
   // private ExecutorManagerAdapter executorManager;
@@ -232,6 +236,7 @@ public class AzkabanWebServer extends AzkabanServer {
 
   private void startWebMetrics() throws Exception {
     WebMetrics.INSTANCE.addExecutorManagerMetrics(getExecutorManager());
+    WebMetrics.INSTANCE.addJettyMetrics(this);
 
     logger.info("starting reporting Web Server Metrics");
     MetricsManager.INSTANCE.startReporting("AZ-WEB", props);
@@ -770,6 +775,7 @@ public class AzkabanWebServer extends AzkabanServer {
     }
 
     QueuedThreadPool httpThreadPool = new QueuedThreadPool(maxThreads);
+    app.setQueuedThreadPool(httpThreadPool);
     server.setThreadPool(httpThreadPool);
 
     String staticDir =
@@ -1327,5 +1333,25 @@ public class AzkabanWebServer extends AzkabanServer {
       logger.error(e);
       return null;
     }
+  }
+
+  public void setQueuedThreadPool(QueuedThreadPool queuedThreadPool) {
+    this.queuedThreadPool = queuedThreadPool;
+  }
+
+  public int getJettyIdleThreadsNum() {
+    return queuedThreadPool.getIdleThreads();
+  }
+
+  public int getJettyTotalThreadsNum() {
+    return queuedThreadPool.getThreads();
+  }
+
+  public int getJettyUsedThreadsNum() {
+    return getJettyTotalThreadsNum() - getJettyIdleThreadsNum();
+  }
+
+  public int getJettyQueuedThreadsNum() {
+    return queuedThreadPool.getQueueSize();
   }
 }
