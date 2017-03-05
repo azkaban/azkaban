@@ -16,6 +16,8 @@
 
 package azkaban.webapp;
 
+import com.codahale.metrics.MetricRegistry;
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -63,6 +65,7 @@ import azkaban.executor.JdbcExecutorLoader;
 import azkaban.jmx.JmxExecutorManager;
 import azkaban.jmx.JmxJettyServer;
 import azkaban.jmx.JmxTriggerManager;
+import azkaban.metrics.MetricsUtility;
 import azkaban.project.JdbcProjectLoader;
 import azkaban.project.ProjectManager;
 import azkaban.scheduler.ScheduleLoader;
@@ -229,14 +232,15 @@ public class AzkabanWebServer extends AzkabanServer {
     }
 
     configureMBeanServer();
-    if (props.getBoolean(ServerProperties.IS_METRICS_ENABLED, false)) {
-      startWebMetrics();
-    }
   }
 
   private void startWebMetrics() throws Exception {
     WebMetrics.INSTANCE.addExecutorManagerMetrics(getExecutorManager());
-    WebMetrics.INSTANCE.addJettyMetrics(this);
+
+    MetricRegistry registry = MetricsManager.INSTANCE.getRegistry();
+    MetricsUtility.addGauge("JETTY-NumIdleThreads", registry, queuedThreadPool::getIdleThreads);
+    MetricsUtility.addGauge("JETTY-NumTotalThreads", registry, queuedThreadPool::getThreads);
+    MetricsUtility.addGauge("JETTY-NumQueuedThreads", registry, queuedThreadPool::getQueueSize);
 
     logger.info("starting reporting Web Server Metrics");
     MetricsManager.INSTANCE.startReporting("AZ-WEB", props);
@@ -775,7 +779,7 @@ public class AzkabanWebServer extends AzkabanServer {
     }
 
     QueuedThreadPool httpThreadPool = new QueuedThreadPool(maxThreads);
-    app.setQueuedThreadPool(httpThreadPool);
+    app.setThreadPool(httpThreadPool);
     server.setThreadPool(httpThreadPool);
 
     String staticDir =
@@ -827,6 +831,11 @@ public class AzkabanWebServer extends AzkabanServer {
     app.getTriggerManager().start();
 
     root.setAttribute(ServerInternals.AZKABAN_SERVLET_CONTEXT_KEY, app);
+
+
+    if (azkabanSettings.getBoolean(ServerProperties.IS_METRICS_ENABLED, false)) {
+      app.startWebMetrics();
+    }
     try {
       server.start();
     } catch (Exception e) {
@@ -1335,23 +1344,7 @@ public class AzkabanWebServer extends AzkabanServer {
     }
   }
 
-  public void setQueuedThreadPool(QueuedThreadPool queuedThreadPool) {
+  private void setThreadPool(QueuedThreadPool queuedThreadPool) {
     this.queuedThreadPool = queuedThreadPool;
-  }
-
-  public int getJettyIdleThreadsNum() {
-    return queuedThreadPool.getIdleThreads();
-  }
-
-  public int getJettyTotalThreadsNum() {
-    return queuedThreadPool.getThreads();
-  }
-
-  public int getJettyUsedThreadsNum() {
-    return getJettyTotalThreadsNum() - getJettyIdleThreadsNum();
-  }
-
-  public int getJettyQueuedThreadsNum() {
-    return queuedThreadPool.getQueueSize();
   }
 }

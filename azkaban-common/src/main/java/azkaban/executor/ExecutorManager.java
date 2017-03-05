@@ -1537,7 +1537,7 @@ public class ExecutorManager extends EventHandler implements
     flow.applyUpdateObject(updateData);
     Status newStatus = flow.getStatus();
 
-    if(oldStatus != newStatus && Status.isStatusFailed(newStatus)) {
+    if(oldStatus != newStatus && newStatus == Status.FAILED) {
       CommonMetrics.INSTANCE.markFlowFail();
     }
 

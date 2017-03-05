@@ -23,21 +23,18 @@ public final class MetricsUtility {
    */
   public static Meter addMeter(String name, MetricRegistry registry) {
     Meter curr = registry.meter(name);
-    registry.register(name + "-gauge", (Gauge<Double>) curr::getOneMinuteRate);
+    registry.register(name + "-gauge", (Gauge<Double>) curr::getFifteenMinuteRate);
     return curr;
   }
 
   /**
-   * A {@link Timer} aggregates timing durations and provides duration statistics, plus throughput statistics
-   * TODO: experimented timer but finally removed. but leave the API here to be used in future.
-   */
-  public static Timer addTimer(String name, MetricRegistry registry) {
-    return registry.timer(name);
-  }
-
-  /**
    * A {@link Gauge} is an instantaneous reading of a particular value.
-   * This method adds a general supplier function to the metrics registry.
+   * This method leverages Supplier, a Functional Interface, to get Generics metrics values.
+   * That said, no matter what our interesting metrics is a Double or a Long, we could pass it
+   * to Metrics Parser.
+   *
+   * E.g., in {@link CommonMetrics#setupAllMetrics()}, we construct a supplier lambda by having
+   * a AtomicLong object and its get method, in order to collect dbConnection metric.
    */
   public static <T> void addGauge(String name, MetricRegistry registry, Supplier<T> gaugeFunc) {
     registry.register(name, (Gauge<T>) gaugeFunc::get);

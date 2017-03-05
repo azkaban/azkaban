@@ -98,16 +98,4 @@ public enum Status {
       return false;
     }
   }
-
-  public static boolean isStatusFailed(Status status) {
-    switch (status) {
-      case FAILED:
-      case KILLED:
-      case CANCELLED:
-      case FAILED_FINISHING:
-        return true;
-      default:
-        return false;
-    }
-  }
 }
