@@ -17,6 +17,7 @@
 package azkaban.executor;
 
 import azkaban.metrics.CommonMetrics;
+import azkaban.constants.ServerProperties;
 import azkaban.utils.FlowUtils;
 import java.io.File;
 import java.io.IOException;
@@ -197,7 +198,7 @@ public class ExecutorManager extends EventHandler implements
       newExecutors.addAll(executorLoader.fetchActiveExecutors());
     } else if (azkProps.containsKey("executor.port")) {
       // Add local executor, if specified as per properties
-      String executorHost = azkProps.getString("executor.host", "localhost");
+      String executorHost = azkProps.getString(ServerProperties.EXECUTOR_HOST, "localhost");
       int executorPort = azkProps.getInt("executor.port");
       logger.info(String.format("Initializing local executor %s:%d",
         executorHost, executorPort));
