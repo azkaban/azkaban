@@ -240,7 +240,7 @@ public class AzkabanWebServer extends AzkabanServer {
     MetricRegistry registry = MetricsManager.INSTANCE.getRegistry();
     MetricsUtility.addGauge("JETTY-NumIdleThreads", registry, queuedThreadPool::getIdleThreads);
     MetricsUtility.addGauge("JETTY-NumTotalThreads", registry, queuedThreadPool::getThreads);
-    MetricsUtility.addGauge("JETTY-NumQueuedThreads", registry, queuedThreadPool::getQueueSize);
+    MetricsUtility.addGauge("JETTY-NumQueueSize", registry, queuedThreadPool::getQueueSize);
 
     logger.info("starting reporting Web Server Metrics");
     MetricsManager.INSTANCE.startReporting("AZ-WEB", props);

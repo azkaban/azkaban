@@ -30,7 +30,7 @@ public final class MetricsUtility {
   /**
    * A {@link Gauge} is an instantaneous reading of a particular value.
    * This method leverages Supplier, a Functional Interface, to get Generics metrics values.
-   * That said, no matter what our interesting metrics is a Double or a Long, we could pass it
+   * With this support, no matter what our interesting metrics is a Double or a Long, we could pass it
    * to Metrics Parser.
    *
    * E.g., in {@link CommonMetrics#setupAllMetrics()}, we construct a supplier lambda by having

@@ -57,8 +57,9 @@ public enum WebMetrics {
     MetricsUtility.addGauge("WEB-NumQueuedFlows", registry, executorManager::getQueuedFlowSize);
 
     /**
-     * TODO: Currently {@link ExecutorManager#getRunningFlows()} includes both running and queueing jobs.
-     * We need to differentiate it in future.
+     * TODO: Currently {@link ExecutorManager#getRunningFlows()} includes both running and non-dispatched flows.
+     * However, code readers usually think getRunningFlows() just returns running flows. That probably
+     * makes sense to refactor the function contents to match its name.
      */
     Supplier<Long> supplier = () -> executorManager.getRunningFlows().size() - executorManager.getQueuedFlowSize();
     MetricsUtility.addGauge("WEB-NumRunningFlows", registry, supplier);
