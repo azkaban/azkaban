@@ -13,15 +13,15 @@ fi
 
 for try in $(seq 1 $maxtry); do
   if [ ! -z $pid ]; then
-    echo "Killing Exec Server. [pid: $pid, port: $port], $try th try"
+    echo "Killing Exec Server. [pid: $pid, port: $port], attempt: $try"
     kill ${pid}
     if [ -n "$(ps -p $pid -o pid=)" ]; then
       echo "Exec Server is not dead [pid: $pid, port: $port]"
       if [ $try -lt $maxtry ]; then
         echo "sleeping for a few seconds before retry"
-        sleep 10 
+        sleep 10
       fi
-    else 
+    else
       rm  ${installdir}/currentpid
       rm  ${installdir}/executor.port
       echo "shutdown succeeded"
