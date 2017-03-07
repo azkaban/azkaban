@@ -16,6 +16,7 @@ for try in $(seq 1 $maxtry); do
   if [[ ! -z $pid ]]; then
     echo "Killing Web Server. [pid: $pid], attempt: $try"
     kill ${pid}
+    sleep 5
     if [[ -n "$(ps -p $pid -o pid=)" ]]; then
       echo "web server is not dead [pid: $pid]"
       if [[ $try -lt $maxtry ]]; then
@@ -30,7 +31,5 @@ for try in $(seq 1 $maxtry); do
   fi
 done
 
-echo "Error: unable to kill process for $maxtry attempt(s), killing the process with -9"
-kill -9 ${pid}
-echo "shutdown succeeded"
-exit 0
+echo "Error: unable to kill process for $maxtry attempt(s), shutdown failed"
+exit 1
