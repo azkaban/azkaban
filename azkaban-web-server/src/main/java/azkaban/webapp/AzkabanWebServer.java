@@ -34,6 +34,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TimeZone;
+import java.util.function.Supplier;
 
 import javax.management.MBeanInfo;
 import javax.management.MBeanServer;
@@ -235,12 +236,21 @@ public class AzkabanWebServer extends AzkabanServer {
   }
 
   private void startWebMetrics() throws Exception {
-    WebMetrics.INSTANCE.addExecutorManagerMetrics(getExecutorManager());
 
     MetricRegistry registry = MetricsManager.INSTANCE.getRegistry();
     MetricsUtility.addGauge("JETTY-NumIdleThreads", registry, queuedThreadPool::getIdleThreads);
     MetricsUtility.addGauge("JETTY-NumTotalThreads", registry, queuedThreadPool::getThreads);
     MetricsUtility.addGauge("JETTY-NumQueueSize", registry, queuedThreadPool::getQueueSize);
+
+    MetricsUtility.addGauge("WEB-NumQueuedFlows", registry, executorManager::getQueuedFlowSize);
+    /**
+     * TODO: Currently {@link ExecutorManager#getRunningFlows()} includes both running and non-dispatched flows.
+     * Originally we would like to do a subtraction between getRunningFlows and {@link ExecutorManager#getQueuedFlowSize()},
+     * in order to have the correct runnable flows.
+     * However, both getRunningFlows and getQueuedFlowSize are not synchronized, such that we can not make
+     * a thread safe subtraction. We need to fix this in the future.
+     */
+    MetricsUtility.addGauge("WEB-NumRunningFlows", registry, () -> executorManager.getRunningFlows().size());
 
     logger.info("starting reporting Web Server Metrics");
     MetricsManager.INSTANCE.startReporting("AZ-WEB", props);

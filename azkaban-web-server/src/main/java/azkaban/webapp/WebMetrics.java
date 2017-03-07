@@ -53,18 +53,6 @@ public enum WebMetrics {
     MetricsUtility.addGauge("fetchLogLatency", registry, logFetchLatency::get);
   }
 
-  public void addExecutorManagerMetrics(ExecutorManager executorManager) {
-    MetricsUtility.addGauge("WEB-NumQueuedFlows", registry, executorManager::getQueuedFlowSize);
-
-    /**
-     * TODO: Currently {@link ExecutorManager#getRunningFlows()} includes both running and non-dispatched flows.
-     * However, code readers usually think getRunningFlows() just returns running flows. That probably
-     * makes sense to refactor the function contents to match its name.
-     */
-    Supplier<Long> supplier = () -> executorManager.getRunningFlows().size() - executorManager.getQueuedFlowSize();
-    MetricsUtility.addGauge("WEB-NumRunningFlows", registry, supplier);
-  }
-
   public void markWebGetCall() {
 
     /*
