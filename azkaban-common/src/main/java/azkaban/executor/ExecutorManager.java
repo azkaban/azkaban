@@ -16,6 +16,7 @@
 
 package azkaban.executor;
 
+import azkaban.metrics.CommonMetrics;
 import azkaban.constants.ServerProperties;
 import azkaban.utils.FlowUtils;
 import java.io.File;
@@ -1537,6 +1538,10 @@ public class ExecutorManager extends EventHandler implements
     flow.applyUpdateObject(updateData);
     Status newStatus = flow.getStatus();
 
+    if(oldStatus != newStatus && newStatus == Status.FAILED) {
+      CommonMetrics.INSTANCE.markFlowFail();
+    }
+
     ExecutionOptions options = flow.getExecutionOptions();
     if (oldStatus != newStatus && newStatus.equals(Status.FAILED_FINISHING)) {
       // We want to see if we should give an email status on first failure.
@@ -1572,12 +1577,12 @@ public class ExecutorManager extends EventHandler implements
 
   public boolean isFinished(ExecutableFlow flow) {
     switch (flow.getStatus()) {
-    case SUCCEEDED:
-    case FAILED:
-    case KILLED:
-      return true;
-    default:
-      return false;
+      case SUCCEEDED:
+      case FAILED:
+      case KILLED:
+        return true;
+      default:
+        return false;
     }
   }
 
