@@ -30,5 +30,7 @@ for try in $(seq 1 $maxtry); do
   fi
 done
 
-echo "Error: Shutdown failed"
-exit 1
+echo "Error: unable to kill process for $maxtry attempt(s), killing the process with -9"
+kill -9 ${pid}
+echo "shutdown succeeded"
+exit 0
