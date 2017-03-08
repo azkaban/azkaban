@@ -4,8 +4,8 @@ set -o nounset
 set -o errexit
 
 # kill the process with retry
-# return 0 if kill succeeds or no processs to kill,
-#    1 kill fails
+# return 0 if kill succeeds or no process to kill,
+#        1 if kill fails
 
 function kill_process_with_retry {
    pid=$1
@@ -22,7 +22,7 @@ function kill_process_with_retry {
       kill ${pid}
       sleep 5
       if [[ -n "$(ps -p $pid -o pid=)" ]]; then
-        echo "web server is not dead [pid: $pid]"
+        echo "$pname is not dead [pid: $pid]"
         if [[ $try -lt $maxattempt ]]; then
           echo "sleeping for a few seconds before retry"
           sleep 10
@@ -34,6 +34,6 @@ function kill_process_with_retry {
      fi
     done
 
-   echo "Error: unable to kill process for $maxtry attempt(s), shutdown failed"
+   echo "Error: unable to kill process for $maxattempt attempt(s), shutdown failed"
    return 1
 }
