@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 # Shutdown script for azkaban executor server
 set -o nounset
-set -o errexit
 source "$(dirname $0)/util.sh"
 
 installdir="$(dirname $0)/.."
@@ -9,7 +8,7 @@ maxattempt=5
 pid=`cat ${installdir}/currentpid`
 pname="exec server"
 
-kill_process $pid $pname $maxattempt
+kill_process_with_retry "${pid}" "${pname}" "${maxattempt}"
 
 if [[ $? == 0 ]]; then
   rm -f ${installdir}/currentpid

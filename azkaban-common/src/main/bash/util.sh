@@ -1,16 +1,16 @@
 #!/usr/bin/env bash
 # Common utils
 set -o nounset
-set -o errexit
 
 # kill the process with retry
 # return 0 if kill succeeds or no process to kill,
 #        1 if kill fails
 
 function kill_process_with_retry {
-   pid=$1
-   pname=$2
-   maxattempt=$3
+   pid="$1"
+   pname="$2"
+   maxattempt="$3"
+
    if [[ -z $pid ]]; then
      echo "pid doesn't exist, shutdown completed"
      return 0

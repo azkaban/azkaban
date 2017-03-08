@@ -17,6 +17,10 @@ distributions {
         into 'bin'
         fileMode = 0755
       }
+      from('../azkaban-common/src/main/bash') {
+        into 'bin'
+        fileMode = 0755
+      }
       from(configurations.runtime) {
         into 'lib'
       }
