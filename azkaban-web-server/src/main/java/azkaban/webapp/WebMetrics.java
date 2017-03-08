@@ -16,6 +16,7 @@
 
 package azkaban.webapp;
 
+import azkaban.executor.ExecutorManager;
 import azkaban.metrics.MetricsManager;
 import azkaban.metrics.MetricsUtility;
 
@@ -23,6 +24,7 @@ import com.codahale.metrics.Meter;
 import com.codahale.metrics.MetricRegistry;
 
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Supplier;
 
 
 /**
@@ -42,13 +44,13 @@ public enum WebMetrics {
 
   WebMetrics() {
     registry = MetricsManager.INSTANCE.getRegistry();
-    setupAllMetrics();
+    setupStaticMetrics();
   }
 
-  private void setupAllMetrics() {
+  private void setupStaticMetrics() {
     webGetCall = MetricsUtility.addMeter("Web-Get-Call-Meter", registry);
     webPostCall = MetricsUtility.addMeter("Web-Post-Call-Meter", registry);
-    MetricsUtility.addLongGauge("fetchLogLatency", logFetchLatency, registry);
+    MetricsUtility.addGauge("fetchLogLatency", registry, logFetchLatency::get);
   }
 
   public void markWebGetCall() {

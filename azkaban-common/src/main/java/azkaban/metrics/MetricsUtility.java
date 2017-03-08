@@ -3,8 +3,9 @@ package azkaban.metrics;
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.MetricRegistry;
+import com.codahale.metrics.Timer;
 
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Supplier;
 
 /**
  * Creating an utility class to facilitate metrics class like {@link azkaban.metrics.CommonMetrics}
@@ -22,15 +23,20 @@ public final class MetricsUtility {
    */
   public static Meter addMeter(String name, MetricRegistry registry) {
     Meter curr = registry.meter(name);
-    registry.register(name + "-gauge", (Gauge<Double>) curr::getOneMinuteRate);
+    registry.register(name + "-gauge", (Gauge<Double>) curr::getFifteenMinuteRate);
     return curr;
   }
 
   /**
    * A {@link Gauge} is an instantaneous reading of a particular value.
-   * This method adds an AtomicLong number/metric to registry.
+   * This method leverages Supplier, a Functional Interface, to get Generics metrics values.
+   * With this support, no matter what our interesting metrics is a Double or a Long, we could pass it
+   * to Metrics Parser.
+   *
+   * E.g., in {@link CommonMetrics#setupAllMetrics()}, we construct a supplier lambda by having
+   * a AtomicLong object and its get method, in order to collect dbConnection metric.
    */
-  public static void addLongGauge(String name, AtomicLong value, MetricRegistry registry) {
-    registry.register(name, (Gauge<Long>) value::get);
+  public static <T> void addGauge(String name, MetricRegistry registry, Supplier<T> gaugeFunc) {
+    registry.register(name, (Gauge<T>) gaugeFunc::get);
   }
 }

@@ -34,6 +34,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TimeZone;
+import java.util.function.Supplier;
 
 import javax.management.MBeanInfo;
 import javax.management.MBeanServer;
@@ -65,6 +66,7 @@ import azkaban.executor.JdbcExecutorLoader;
 import azkaban.jmx.JmxExecutorManager;
 import azkaban.jmx.JmxJettyServer;
 import azkaban.jmx.JmxTriggerManager;
+import azkaban.metrics.MetricsUtility;
 import azkaban.project.JdbcProjectLoader;
 import azkaban.project.ProjectManager;
 import azkaban.scheduler.ScheduleLoader;
@@ -155,6 +157,10 @@ public class AzkabanWebServer extends AzkabanServer {
   private final VelocityEngine velocityEngine;
 
   private final Server server;
+
+  //queuedThreadPool is mainly used to monitor jetty threadpool.
+  private QueuedThreadPool queuedThreadPool;
+
   private UserManager userManager;
   private ProjectManager projectManager;
   // private ExecutorManagerAdapter executorManager;
@@ -227,22 +233,28 @@ public class AzkabanWebServer extends AzkabanServer {
     }
 
     configureMBeanServer();
-    if (props.getBoolean(ServerProperties.IS_METRICS_ENABLED, false)) {
-      startWebMetrics();
-    }
   }
 
-  private void startWebMetrics() throws Exception{
-    MetricRegistry metrics = MetricsManager.INSTANCE.getRegistry();
-    MetricsWebRegister execWorker = new MetricsWebRegister.MetricsWebRegisterBuilder("WEB")
-        .addExecutorManager(getExecutorManager())
-        .build();
-    execWorker.addExecutorManagerMetrics(metrics);
+  private void startWebMetrics() throws Exception {
 
+    MetricRegistry registry = MetricsManager.INSTANCE.getRegistry();
+    MetricsUtility.addGauge("JETTY-NumIdleThreads", registry, queuedThreadPool::getIdleThreads);
+    MetricsUtility.addGauge("JETTY-NumTotalThreads", registry, queuedThreadPool::getThreads);
+    MetricsUtility.addGauge("JETTY-NumQueueSize", registry, queuedThreadPool::getQueueSize);
+
+    MetricsUtility.addGauge("WEB-NumQueuedFlows", registry, executorManager::getQueuedFlowSize);
+    /**
+     * TODO: Currently {@link ExecutorManager#getRunningFlows()} includes both running and non-dispatched flows.
+     * Originally we would like to do a subtraction between getRunningFlows and {@link ExecutorManager#getQueuedFlowSize()},
+     * in order to have the correct runnable flows.
+     * However, both getRunningFlows and getQueuedFlowSize are not synchronized, such that we can not make
+     * a thread safe subtraction. We need to fix this in the future.
+     */
+    MetricsUtility.addGauge("WEB-NumRunningFlows", registry, () -> executorManager.getRunningFlows().size());
+
+    logger.info("starting reporting Web Server Metrics");
     MetricsManager.INSTANCE.startReporting("AZ-WEB", props);
   }
-
-
 
   private void setTriggerPlugins(Map<String, TriggerPlugin> triggerPlugins) {
     this.triggerPlugins = triggerPlugins;
@@ -777,6 +789,7 @@ public class AzkabanWebServer extends AzkabanServer {
     }
 
     QueuedThreadPool httpThreadPool = new QueuedThreadPool(maxThreads);
+    app.setThreadPool(httpThreadPool);
     server.setThreadPool(httpThreadPool);
 
     String staticDir =
@@ -828,6 +841,11 @@ public class AzkabanWebServer extends AzkabanServer {
     app.getTriggerManager().start();
 
     root.setAttribute(ServerInternals.AZKABAN_SERVLET_CONTEXT_KEY, app);
+
+
+    if (azkabanSettings.getBoolean(ServerProperties.IS_METRICS_ENABLED, false)) {
+      app.startWebMetrics();
+    }
     try {
       server.start();
     } catch (Exception e) {
@@ -1334,5 +1352,9 @@ public class AzkabanWebServer extends AzkabanServer {
       logger.error(e);
       return null;
     }
+  }
+
+  private void setThreadPool(QueuedThreadPool queuedThreadPool) {
+    this.queuedThreadPool = queuedThreadPool;
   }
 }
