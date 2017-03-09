@@ -1,15 +1,18 @@
 #!/usr/bin/env bash
 # Shutdown script for azkaban web server
+set -o nounset
+source "$(dirname $0)/util.sh"
+
 installdir="$(dirname $0)/.."
-
+maxattempt=3
 pid=`cat ${installdir}/currentpid`
-echo "Killing Web Server. [pid: $pid]"
+pname="web server"
 
-kill ${pid}
-if [ $? -ne 0 ]; then
-    echo "Error: Shutdown failed"
-    exit 1;
+kill_process_with_retry "${pid}" "${pname}" "${maxattempt}"
+
+if [[ $? == 0 ]]; then
+  rm -f ${installdir}/currentpid
+  exit 0
+else
+  exit 1
 fi
-
-rm  ${installdir}/currentpid
-echo "done."

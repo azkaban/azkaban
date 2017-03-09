@@ -1,19 +1,19 @@
 #!/usr/bin/env bash
 # Shutdown script for azkaban executor server
+set -o nounset
+source "$(dirname $0)/util.sh"
+
 installdir="$(dirname $0)/.."
-
+maxattempt=3
 pid=`cat ${installdir}/currentpid`
-port=`cat ${installdir}/executor.port`
+pname="exec server"
 
-echo "Killing Executor. [pid: $pid, port: $port]"
+kill_process_with_retry "${pid}" "${pname}" "${maxattempt}"
 
-kill ${pid}
-if [ $? -ne 0 ]; then
-    echo "Error: Shutdown failed"
-    exit 1;
+if [[ $? == 0 ]]; then
+  rm -f ${installdir}/currentpid
+  rm -f ${installdir}/executor.port
+  exit 0
+else
+  exit 1
 fi
-
-rm  ${installdir}/currentpid
-rm  ${installdir}/executor.port
-
-echo "done."
