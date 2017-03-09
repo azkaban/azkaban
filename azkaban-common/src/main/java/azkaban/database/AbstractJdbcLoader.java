@@ -68,6 +68,7 @@ public abstract class AbstractJdbcLoader {
   protected Connection getDBConnection(boolean autoCommit) throws IOException {
     Connection connection = null;
     CommonMetrics.INSTANCE.markDBConnection();
+    long startMs = System.currentTimeMillis();
     try {
       connection = dataSource.getConnection();
       connection.setAutoCommit(autoCommit);
@@ -75,7 +76,7 @@ public abstract class AbstractJdbcLoader {
       DbUtils.closeQuietly(connection);
       throw new IOException("Error getting DB connection.", e);
     }
-
+    CommonMetrics.INSTANCE.setDBConnectionTime(System.currentTimeMillis() - startMs);
     return connection;
   }
 

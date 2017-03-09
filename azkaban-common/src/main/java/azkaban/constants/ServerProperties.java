@@ -47,4 +47,12 @@ public class ServerProperties {
 
   public static final String IS_METRICS_ENABLED =
       "azkaban.is.metrics.enabled";
+
+  // Hostname for the host, if not specified, canonical hostname will be used
+  public static final String AZKABAN_SERVER_HOST_NAME = "azkaban.server.hostname";
+
+  // Legacy configs section, new configs should follow the naming convention of azkaban.server.<rest of the name> for server configs.
+
+  // The property is used for the web server to get the host name of the executor when running in SOLO mode.
+  public static final String EXECUTOR_HOST = "executor.host";
 }

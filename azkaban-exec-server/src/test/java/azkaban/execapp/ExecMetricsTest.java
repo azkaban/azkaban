@@ -14,18 +14,20 @@
  * the License.
  */
 
-package azkaban.metrics;
+package azkaban.execapp;
 
+import azkaban.metrics.MetricsManager;
+import azkaban.metrics.MetricsTestUtility;
 import azkaban.metrics.MetricsTestUtility.DummyReporter;
-
-import java.util.concurrent.TimeUnit;
-import java.time.Duration;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-public class CommonMetricsTest {
+import java.time.Duration;
+import java.util.concurrent.TimeUnit;
+
+
+public class ExecMetricsTest {
 
   private DummyReporter dr;
 
@@ -41,15 +43,5 @@ public class CommonMetricsTest {
       dr.stop();
 
     dr = null;
-  }
-
-  @Test
-  public void testMarkDBConnectionMetrics() {
-    MetricsTestUtility.testMeter("DB-Connection-meter", dr, CommonMetrics.INSTANCE::markDBConnection);
-  }
-
-  @Test
-  public void testDBConnectionTimeMetrics() {
-    MetricsTestUtility.testGauge("dbConnectionTime", dr, CommonMetrics.INSTANCE::setDBConnectionTime);
   }
 }

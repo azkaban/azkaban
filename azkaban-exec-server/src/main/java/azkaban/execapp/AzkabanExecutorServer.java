@@ -18,6 +18,7 @@ package azkaban.execapp;
 
 import com.google.common.base.Throwables;
 
+import org.apache.commons.lang.StringUtils;
 import org.apache.log4j.Logger;
 import org.joda.time.DateTimeZone;
 import org.mortbay.jetty.Connector;
@@ -43,8 +44,6 @@ import java.util.TimeZone;
 import javax.management.MBeanInfo;
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
-
-import com.codahale.metrics.MetricRegistry;
 
 import azkaban.constants.ServerInternals;
 import azkaban.constants.ServerProperties;
@@ -184,13 +183,9 @@ public class AzkabanExecutorServer {
   }
 
   private void startExecMetrics() throws Exception {
-    MetricRegistry metrics = MetricsManager.INSTANCE.getRegistry();
+    ExecMetrics.INSTANCE.addFlowRunnerManagerMetrics(getFlowRunnerManager());
 
     logger.info("starting reporting Executor Metrics");
-    MetricsExecRegister execWorker =
-        new MetricsExecRegister.MetricsExecRegisterBuilder("EXEC").addFlowRunnerManager(getFlowRunnerManager()).build();
-    execWorker.addExecutorManagerMetrics(metrics);
-
     MetricsManager.INSTANCE.startReporting("AZ-EXEC", props);
   }
 
@@ -552,6 +547,13 @@ public class AzkabanExecutorServer {
    * @return hostname
    */
   public String getHost() {
+    if(props.containsKey(ServerProperties.AZKABAN_SERVER_HOST_NAME)) {
+      String hostName = props.getString(ServerProperties.AZKABAN_SERVER_HOST_NAME);
+      if(!StringUtils.isEmpty(hostName)) {
+        return hostName;
+      }
+    }
+
     String host = "unkownHost";
     try {
       host = InetAddress.getLocalHost().getCanonicalHostName();

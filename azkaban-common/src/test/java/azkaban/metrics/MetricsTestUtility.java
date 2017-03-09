@@ -95,10 +95,12 @@ public class MetricsTestUtility {
 
   public static void testGauge(String GaugeName, DummyReporter dr, Consumer<Long> func) {
     func.accept(1L);
-    sleepMillis(20);
+
+    // needs time to let metrics reporter receive the updated value.
+    sleepMillis(50);
     Assert.assertEquals(dr.getGauge(GaugeName), "1");
     func.accept(99L);
-    sleepMillis(20);
+    sleepMillis(50);
     Assert.assertEquals(dr.getGauge(GaugeName), "99");
   }
 
