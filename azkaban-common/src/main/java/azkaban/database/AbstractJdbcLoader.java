@@ -16,6 +16,9 @@
 
 package azkaban.database;
 
+import azkaban.metrics.CommonMetrics;
+import azkaban.utils.Props;
+
 import java.io.IOException;
 import java.sql.Connection;
 import java.sql.ResultSet;
@@ -26,7 +29,6 @@ import org.apache.commons.dbutils.DbUtils;
 import org.apache.commons.dbutils.QueryRunner;
 import org.apache.commons.dbutils.ResultSetHandler;
 
-import azkaban.utils.Props;
 
 public abstract class AbstractJdbcLoader {
   /**
@@ -65,6 +67,8 @@ public abstract class AbstractJdbcLoader {
 
   protected Connection getDBConnection(boolean autoCommit) throws IOException {
     Connection connection = null;
+    CommonMetrics.INSTANCE.markDBConnection();
+    long startMs = System.currentTimeMillis();
     try {
       connection = dataSource.getConnection();
       connection.setAutoCommit(autoCommit);
@@ -72,7 +76,7 @@ public abstract class AbstractJdbcLoader {
       DbUtils.closeQuietly(connection);
       throw new IOException("Error getting DB connection.", e);
     }
-
+    CommonMetrics.INSTANCE.setDBConnectionTime(System.currentTimeMillis() - startMs);
     return connection;
   }
 
