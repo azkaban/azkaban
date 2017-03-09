@@ -4,7 +4,7 @@ set -o nounset
 source "$(dirname $0)/util.sh"
 
 installdir="$(dirname $0)/.."
-maxattempt=5
+maxattempt=3
 pid=`cat ${installdir}/currentpid`
 pname="web server"
 
