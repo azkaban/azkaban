@@ -21,7 +21,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.lang.annotation.Inherited;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -88,28 +87,31 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements
       throws ExecutorManagerException, IOException {
     final String INSERT_EXECUTABLE_FLOW =
         "INSERT INTO execution_flows "
-            + "(project_id, flow_id, version, status, submit_time, submit_user, update_time) "
-            + "values (?,?,?,?,?,?,?)";
+            + "(exec_id, project_id, flow_id, version, status, submit_time, submit_user, update_time) "
+            + "values (?,?,?,?,?,?,?,?)";
     QueryRunner runner = new QueryRunner();
     long submitTime = System.currentTimeMillis();
 
-    long id;
     try {
       flow.setStatus(Status.PREPARING);
-      runner.update(connection, INSERT_EXECUTABLE_FLOW, flow.getProjectId(),
+
+      FetchLastIdfromTable fetchLastId = new FetchLastIdfromTable("exec_id", "execution_flows");
+
+      long lastExecutionId = runner.query(connection, fetchLastId.getSelectString(),
+              fetchLastId);
+      if (lastExecutionId < 0L) {
+        logger.error("Last trigger id is not properly fetched.");
+        throw new ExecutorManagerException("Last trigger id is not properly fetched.");
+      }
+      int insertExecutionId = (int) lastExecutionId + 1;
+
+      runner.update(connection, INSERT_EXECUTABLE_FLOW, insertExecutionId, flow.getProjectId(),
           flow.getFlowId(), flow.getVersion(), Status.PREPARING.getNumVal(),
           submitTime, flow.getSubmitUser(), submitTime);
       connection.commit();
-      id =
-          runner.query(connection, LastInsertID.LAST_INSERT_ID,
-              new LastInsertID());
 
-      if (id == -1L) {
-        throw new ExecutorManagerException(
-            "Execution id is not properly created.");
-      }
-      logger.info("Flow given " + flow.getFlowId() + " given id " + id);
-      flow.setExecutionId((int) id);
+      logger.info("Flow given " + flow.getFlowId() + " given id " + insertExecutionId);
+      flow.setExecutionId((int) insertExecutionId);
 
       updateExecutableFlow(connection, flow, encType);
     } catch (SQLException e) {
@@ -920,7 +922,7 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements
    * @see azkaban.executor.ExecutorLoader#addExecutor(java.lang.String, int)
    */
   @Override
-  public Executor addExecutor(String host, int port)
+  public synchronized Executor addExecutor(String host, int port)
     throws ExecutorManagerException {
     // verify, if executor already exists
     Executor executor = fetchExecutor(host, port);
@@ -938,10 +940,20 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements
 
   private void addExecutorHelper(String host, int port)
     throws ExecutorManagerException {
-    final String INSERT = "INSERT INTO executors (host, port) values (?,?)";
+    final String INSERT = "INSERT INTO executors (id, host, port) values (?,?,?)";
     QueryRunner runner = createQueryRunner();
     try {
-      runner.update(INSERT, host, port);
+
+      FetchLastIdfromTable fetchLastId = new FetchLastIdfromTable("id", "executors");
+      long lastExecutorId = runner.query(fetchLastId.getSelectString(), fetchLastId);
+
+      if (lastExecutorId < 0L) {
+        logger.error("Last executor id is not properly fetched.");
+        throw new ExecutorManagerException("Last executor id is not properly fetched.");
+      }
+      int insertExecutorId = (int) lastExecutorId + 1;
+
+      runner.update(INSERT, insertExecutorId, host, port);
     } catch (SQLException e) {
       throw new ExecutorManagerException(String.format("Error adding %s:%d ",
         host, port), e);
@@ -1053,19 +1065,6 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements
         "Error fetching executor for exec_id : " + executionId, e);
     }
     return executor;
-  }
-
-  private static class LastInsertID implements ResultSetHandler<Long> {
-    private static String LAST_INSERT_ID = "SELECT LAST_INSERT_ID()";
-
-    @Override
-    public Long handle(ResultSet rs) throws SQLException {
-      if (!rs.next()) {
-        return -1L;
-      }
-      long id = rs.getLong(1);
-      return id;
-    }
   }
 
   private static class FetchLogsHandler implements ResultSetHandler<LogData> {

@@ -296,12 +296,17 @@ public class JdbcProjectLoader extends AbstractJdbcLoader implements
     }
 
     final String INSERT_PROJECT =
-        "INSERT INTO projects ( name, active, modified_time, create_time, version, last_modified_by, description, enc_type, settings_blob) values (?,?,?,?,?,?,?,?,?)";
+        "INSERT INTO projects (id, name, active, modified_time, create_time, version, last_modified_by, description, enc_type, settings_blob) values (?,?,?,?,?,?,?,?,?,?)";
+
     // Insert project
     try {
+      FetchLastIdfromTable fetchLastId = new FetchLastIdfromTable("id", "projects");
+      long lastProjectId = runner.query(connection, fetchLastId.getSelectString(), fetchLastId);
+      int insertProjectId = (int) lastProjectId + 1;
+
       long time = System.currentTimeMillis();
       int i =
-          runner.update(connection, INSERT_PROJECT, name, true, time, time,
+          runner.update(connection, INSERT_PROJECT, insertProjectId, name, true, time, time,
               null, creator.getUserId(), description,
               defaultEncodingType.getNumVal(), null);
       if (i == 0) {

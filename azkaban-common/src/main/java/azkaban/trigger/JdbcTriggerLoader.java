@@ -57,7 +57,7 @@ public class JdbcTriggerLoader extends AbstractJdbcLoader implements
           + triggerTblName + " WHERE trigger_id=?";
 
   private static String ADD_TRIGGER = "INSERT INTO " + triggerTblName
-      + " ( modify_time) values (?)";
+      + " (trigger_id,  modify_time) values (?, ?)";
 
   private static String REMOVE_TRIGGER = "DELETE FROM " + triggerTblName
       + " WHERE trigger_id=?";
@@ -168,28 +168,25 @@ public class JdbcTriggerLoader extends AbstractJdbcLoader implements
       EncodingType encType) throws TriggerLoaderException {
 
     QueryRunner runner = new QueryRunner();
-
-    long id;
-
     try {
-      runner.update(connection, ADD_TRIGGER, DateTime.now().getMillis());
-      connection.commit();
-      id =
-          runner.query(connection, LastInsertID.LAST_INSERT_ID,
-              new LastInsertID());
-
-      if (id == -1L) {
-        logger.error("trigger id is not properly created.");
-        throw new TriggerLoaderException("trigger id is not properly created.");
+      FetchLastIdfromTable fetchLastId = new FetchLastIdfromTable("trigger_id", "triggers");
+      long lastTriggerId = runner.query(connection, fetchLastId.getSelectString(),
+              fetchLastId);
+      if (lastTriggerId < 0L) {
+        logger.error("Last trigger id is not properly fetched.");
+        throw new TriggerLoaderException("Last trigger id is not properly fetched.");
       }
 
-      t.setTriggerId((int) id);
+      int insertTriggerId = (int) lastTriggerId + 1;
+      runner.update(connection, ADD_TRIGGER, insertTriggerId, DateTime.now().getMillis());
+      connection.commit();
+
+      t.setTriggerId(insertTriggerId);
       updateTrigger(t);
       logger.info("uploaded trigger " + t.getDescription());
     } catch (SQLException e) {
       throw new TriggerLoaderException("Error creating trigger.", e);
     }
-
   }
 
   @Override
@@ -251,20 +248,6 @@ public class JdbcTriggerLoader extends AbstractJdbcLoader implements
     }
   }
 
-  private static class LastInsertID implements ResultSetHandler<Long> {
-    private static String LAST_INSERT_ID = "SELECT LAST_INSERT_ID()";
-
-    @Override
-    public Long handle(ResultSet rs) throws SQLException {
-      if (!rs.next()) {
-        return -1L;
-      }
-
-      long id = rs.getLong(1);
-      return id;
-    }
-
-  }
 
   public class TriggerResultHandler implements ResultSetHandler<List<Trigger>> {
 
