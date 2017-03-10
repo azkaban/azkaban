@@ -238,8 +238,15 @@ public class AzkabanWebServer extends AzkabanServer {
   private void startWebMetrics() throws Exception {
 
     MetricRegistry registry = MetricsManager.INSTANCE.getRegistry();
+
+    // the number of idle threads in Jetty thread pool
     MetricsUtility.addGauge("JETTY-NumIdleThreads", registry, queuedThreadPool::getIdleThreads);
+
+    // number of threads in Jetty thread pool. The formula is:
+    // threads = idleThreads + busyThreads
     MetricsUtility.addGauge("JETTY-NumTotalThreads", registry, queuedThreadPool::getThreads);
+
+    // number of requests queued in the Jetty thread pool.
     MetricsUtility.addGauge("JETTY-NumQueueSize", registry, queuedThreadPool::getQueueSize);
 
     MetricsUtility.addGauge("WEB-NumQueuedFlows", registry, executorManager::getQueuedFlowSize);
