@@ -96,7 +96,7 @@ subprojects {
  * Gradle wrapper task.
  */
 task wrapper(type: Wrapper) {
-  gradleVersion = '2.7'
+  gradleVersion = '3.3'
 }
 
 idea {
