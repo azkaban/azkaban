@@ -16,6 +16,7 @@
 
 package azkaban.jobExecutor;
 
+import azkaban.utils.exceptions.OutOfMemoryException;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
@@ -80,7 +81,7 @@ public class ProcessJob extends AbstractProcessJob {
           SystemMemoryInfo.canSystemGrantMemory(memPair.getFirst(),
               memPair.getSecond(), freeMemDecrAmt);
       if (!isMemGranted) {
-        throw new Exception(
+        throw new OutOfMemoryException(
             String
                 .format(
                     "Cannot request memory (Xms %d kb, Xmx %d kb) from system for job %s",
