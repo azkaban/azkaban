@@ -26,5 +26,12 @@ public class ServerInternals {
   public static final String AZKABAN_EXECUTOR_PORT_FILENAME = "executor.port";
 
   public static final String AZKABAN_SERVLET_CONTEXT_KEY = "azkaban_app";
-  
+
+
+  // Memory check retry interval when OOM in ms
+  public static final long MEMORY_CHECK_INTERVAL = 1000*60*10;
+
+  // Max number of memory check retry
+  public static final int MEMORY_CHECK_RETRY_LIMIT = 100;
+
 }

@@ -49,14 +49,6 @@ public class ExecutableNode {
   private String id;
   private String type = null;
   private Status status = Status.READY;
-  private FailureCause failureCause = FailureCause.NONE;
-
-  public enum FailureCause {
-    NON_SPECIFIED, // non-specified cause
-    OOM, // out of memory
-    NONE // no failure
-  }
-
   private long startTime = -1;
   private long endTime = -1;
   private long updateTime = -1;
@@ -77,7 +69,6 @@ public class ExecutableNode {
   private int attempt = 0;
   private long delayExecution = 0;
   private ArrayList<ExecutionAttempt> pastAttempts = null;
-
 
   // Transient. These values aren't saved, but rediscovered.
   private ExecutableFlowBase parentFlow;
@@ -141,18 +132,8 @@ public class ExecutableNode {
     this.type = type;
   }
 
-  public void setFailureStatusWithCause(FailureCause failureCause) {
-    this.status = Status.FAILED;
-    this.failureCause = failureCause;
-  }
-
   public void setStatus(Status status) {
     this.status = status;
-    this.failureCause = (this.status == Status.FAILED) ? FailureCause.NON_SPECIFIED : FailureCause.NONE;
-  }
-
-  public FailureCause getFailureCause() {
-    return this.failureCause;
   }
 
   public long getStartTime() {
@@ -471,13 +452,5 @@ public class ExecutableNode {
 
   public long getRetryBackoff() {
     return inputProps.getLong("retry.backoff", 0);
-  }
-
-  public int getOOMRetries() {
-    return inputProps.getInt("oom.retry.backoff", 5);
-  }
-
-  public long getOOMRetryBackoff() {
-    return inputProps.getLong("oom.retry.backoff", 10*1000*60);
   }
 }

@@ -16,7 +16,6 @@
 
 package azkaban.execapp;
 
-import azkaban.utils.exceptions.OutOfMemoryException;
 import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
@@ -698,7 +697,7 @@ public class JobRunner extends EventHandler implements Runnable {
         logError("Job run failed, but will treat it like success.");
         logError(e.getMessage() + " cause: " + e.getCause(), e);
       } else {
-        finalStatus = (e instanceof OutOfMemoryException) ? changeToFailureStatusWithCause(ExecutableNode.FailureCause.OOM) : changeStatus(Status.FAILED);
+        finalStatus = changeStatus(Status.FAILED);
         logError("Job run failed!", e);
         logError(e.getMessage() + " cause: " + e.getCause());
       }
@@ -713,13 +712,6 @@ public class JobRunner extends EventHandler implements Runnable {
       finalStatus = changeStatus(Status.SUCCEEDED);
     }
     return finalStatus;
-  }
-
-  private Status changeToFailureStatusWithCause(ExecutableNode.FailureCause cause) {
-    node.setStatus(Status.FAILED);
-    node.setFailureStatusWithCause(cause);
-    node.setUpdateTime(System.currentTimeMillis());
-    return Status.FAILED;
   }
 
   private Status changeStatus(Status status) {

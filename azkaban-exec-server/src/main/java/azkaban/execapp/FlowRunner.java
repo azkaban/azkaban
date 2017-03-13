@@ -545,25 +545,15 @@ public class FlowRunner extends EventHandler implements Runnable {
     if (node instanceof ExecutableFlowBase) {
       return false;
     }
-    int retry;
-    long backoff;
-    if(node.getFailureCause() == ExecutableNode.FailureCause.OOM) {
-      retry = Math.max(node.getRetries(), node.getOOMRetries());
-      backoff = node.getAttempt() < node.getOOMRetries() ? node.getOOMRetryBackoff() : node.getRetryBackoff();
-    }
-    else {
-      retry = node.getRetries();
-      backoff = node.getRetryBackoff();
-    }
 
-    if (retry > node.getAttempt()) {
+    if (node.getRetries() > node.getAttempt()) {
       logger.info("Job '" + node.getId() + "' will be retried. Attempt "
-          + node.getAttempt() + " of " + retry);
-      node.setDelayedExecution(backoff);
+          + node.getAttempt() + " of " + node.getRetries());
+      node.setDelayedExecution(node.getRetryBackoff());
       node.resetForRetry();
       return true;
     } else {
-      if (retry > 0) {
+      if (node.getRetries() > 0) {
         logger.info("Job '" + node.getId() + "' has run out of retry attempts");
         // Setting delayed execution to 0 in case this is manually re-tried.
         node.setDelayedExecution(0);
@@ -753,6 +743,7 @@ public class FlowRunner extends EventHandler implements Runnable {
     } catch (RejectedExecutionException e) {
       logger.error(e);
     }
+    ;
   }
 
   /**
