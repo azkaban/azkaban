@@ -33,13 +33,21 @@ import java.net.URI;
 public interface Storage {
 
   /**
-   * Get an InputStream object by providing a key.
+   * Check if key exists in storage.
+   *
+   * @param key The key is a URI pointing to the blob in Storage.
+   * @return true if key exists. false otherwise.
+   */
+  boolean containsKey(URI key);
+
+  /**
+   * Get an InputStream object by providing a key. Throws {@link KeyDoesNotExistException} if key is not present.
    *
    * @param key The key is a URI pointing to the blob in Storage.
    * @return InputStream for fetching the blob.
-   *         Returns null if the object doesn't exist.
+   *
    */
-  InputStream get(URI key);
+  InputStream get(URI key) throws KeyDoesNotExistException;
 
   /**
    * Put an object into Storage against a key. If the key already exists, then it throws
@@ -51,9 +59,9 @@ public interface Storage {
   void put(URI key, InputStream is) throws KeyAlreadyExistsException;
 
   /**
-   * Delete an object from Storage
+   * Delete an object from Storage. Throws {@link KeyDoesNotExistException} if key is not present.
    *
    * @param key The key is a URI pointing to the blob in Storage.
    */
-  void delete(URI key);
+  void delete(URI key) throws KeyDoesNotExistException;
 }
