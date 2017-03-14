@@ -20,10 +20,7 @@ public class ProjectSpecTest {
   public void testSpecLoad() throws Exception {
     ClassLoader classLoader = getClass().getClassLoader();
     File file = new File(classLoader.getResource("spec.yml").getFile());
-    System.out.println(file.getAbsolutePath());
-
-    Yaml yaml = new Yaml();
-    ProjectSpec spec = yaml.loadAs(new FileInputStream(file), ProjectSpec.class);
+    ProjectSpec spec = new ProjectSpecLoader().load(file);
 
     assertEquals("1.0", spec.getVersion());
 
