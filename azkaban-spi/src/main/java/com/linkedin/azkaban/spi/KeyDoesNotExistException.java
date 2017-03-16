@@ -15,12 +15,18 @@
  *
  */
 
-include 'azkaban-spi'
-include 'azkaban-common'
-include 'azkaban-exec-server'
-include 'azkaban-hadoop-security-plugin'
-include 'azkaban-migration'
-include 'azkaban-solo-server'
-include 'azkaban-sql'
-include 'azkaban-web-server'
-include 'azkaban-test'
+package com.linkedin.azkaban.spi;
+
+import java.net.URI;
+
+
+/**
+ * This exception is thrown when there is an attempt to create a duplicate storage key via the {@link Storage}
+ * interface.
+ */
+public class KeyDoesNotExistException extends StorageException {
+  public KeyDoesNotExistException(URI key) {
+    super("Storage key not present: " + key);
+  }
+
+}

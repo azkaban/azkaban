@@ -1,3 +1,4 @@
+
 /*
  * Copyright 2017 LinkedIn Corp.
  *
@@ -15,12 +16,8 @@
  *
  */
 
-include 'azkaban-spi'
-include 'azkaban-common'
-include 'azkaban-exec-server'
-include 'azkaban-hadoop-security-plugin'
-include 'azkaban-migration'
-include 'azkaban-solo-server'
-include 'azkaban-sql'
-include 'azkaban-web-server'
-include 'azkaban-test'
+dependencies {
+  /**
+   * The dependency list of the spi package should be NONE or VERY MINIMAL!! See @README.md of this package.
+   **/
+}
