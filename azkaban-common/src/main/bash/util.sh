@@ -38,10 +38,11 @@ function kill_process_with_retry {
    kill -9 $pid
    sleep 5
    if [[ -n "$(ps -p $pid -o pid=)" ]]; then
-      echo "$pname is not dead ever after kill -9 [pid: $pid]"
+      echo "$pname is not dead even after kill -9 [pid: $pid]"
       return 1
    else
     echo "shutdown succeeded"
     return 0
    fi
 }
+
