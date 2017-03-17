@@ -58,10 +58,6 @@ public class ProcessJob extends AbstractProcessJob {
   public ProcessJob(final String jobId, final Props sysProps,
       final Props jobProps, final Logger log) {
     super(jobId, sysProps, jobProps, log);
-
-    // this is in line with what other job types (hadoopJava, spark, pig, hive)
-    // is doing
-    jobProps.put(CommonJobProperties.JOB_ID, jobId);
   }
 
   @Override
