@@ -29,7 +29,7 @@ public class ServerInternals {
 
 
   // Memory check retry interval when OOM in ms
-  public static final long MEMORY_CHECK_INTERVAL = 1000*60*10;
+  public static final long MEMORY_CHECK_INTERVAL = 1000*60*1;
 
   // Max number of memory check retry
   public static final int MEMORY_CHECK_RETRY_LIMIT = 100;

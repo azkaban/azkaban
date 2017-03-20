@@ -85,12 +85,7 @@ public class ProcessJob extends AbstractProcessJob {
       int attempt;
       boolean isMemGranted = true;
       for(attempt = 1; attempt <= ServerInternals.MEMORY_CHECK_RETRY_LIMIT; attempt++) {
-        try {
-          isMemGranted = SystemMemoryInfo.canSystemGrantMemory(memPair.getFirst(), memPair.getSecond(), freeMemDecrAmt);
-        } catch(Exception ex) {
-          info(ex.getMessage());
-          break;
-        }
+        isMemGranted = SystemMemoryInfo.canSystemGrantMemory(memPair.getFirst(), memPair.getSecond(), freeMemDecrAmt);
         if (isMemGranted) {
           info(String.format("Memory granted (Xms %d kb, Xmx %d kb) from system for job %s", memPair.getFirst(), memPair.getSecond(), getId()));
           break;
@@ -301,8 +296,8 @@ public class ProcessJob extends AbstractProcessJob {
 
     if (process == null)
       throw new IllegalStateException("Not started.");
-    boolean killed = process.softKill(KILL_TIME_MS, TimeUnit.MILLISECONDS);
-    if (!killed) {
+    boolean processkilled = process.softKill(KILL_TIME_MS, TimeUnit.MILLISECONDS);
+    if (!processkilled) {
       warn("Kill with signal TERM failed. Killing with KILL signal.");
       process.hardKill();
     }

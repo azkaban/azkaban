@@ -55,9 +55,9 @@ public class SystemMemoryInfo {
    * Given Xms/Xmx values (in kb) used by java process, determine if system can
    * satisfy the memory request
    */
-  public synchronized static boolean canSystemGrantMemory(long xms, long xmx, long freeMemDecrAmt) throws Exception {
+  public synchronized static boolean canSystemGrantMemory(long xms, long xmx, long freeMemDecrAmt) {
     if (!memCheckEnabled) {
-      throw new Exception("memory check is disabled");
+      return true;
     }
 
     //too small amount of memory left, reject
