@@ -34,6 +34,15 @@ function kill_process_with_retry {
      fi
     done
 
-   echo "Error: unable to kill process for $maxattempt attempt(s), shutdown failed"
-   return 1
+   echo "Error: unable to kill process for $maxattempt attempt(s), killing the process with -9"
+   kill -9 $pid
+   sleep 5
+   if [[ -n "$(ps -p $pid -o pid=)" ]]; then
+      echo "$pname is not dead even after kill -9 [pid: $pid]"
+      return 1
+   else
+    echo "shutdown succeeded"
+    return 0
+   fi
 }
+
