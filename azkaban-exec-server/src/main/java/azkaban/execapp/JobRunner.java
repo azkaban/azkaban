@@ -599,6 +599,7 @@ public class JobRunner extends EventHandler implements Runnable {
       insertJobMetadata();
       insertJVMAargs();
 
+      props.put(CommonJobProperties.JOB_ID, this.jobId);
       props.put(CommonJobProperties.JOB_ATTEMPT, node.getAttempt());
       props.put(CommonJobProperties.JOB_METADATA_FILE,
           createMetaDataFileName(node));
