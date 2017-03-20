@@ -693,7 +693,6 @@ public class JobRunner extends EventHandler implements Runnable {
     try {
       job.run();
     } catch (Throwable e) {
-
       if (props.getBoolean("job.succeed.on.failure", false)) {
         finalStatus = changeStatus(Status.FAILED_SUCCEEDED);
         logError("Job run failed, but will treat it like success.");
