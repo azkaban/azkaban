@@ -303,6 +303,15 @@ public class MockExecutorLoader implements ExecutorLoader {
   }
 
   @Override
+  public void removeExecutor(String host, int port) throws ExecutorManagerException {
+    Executor executor = fetchExecutor(host, port);
+    if (executor != null) {
+        executorIdCounter--;
+        executors.remove(executor);
+    }
+  }
+
+  @Override
   public void postExecutorEvent(Executor executor, EventType type, String user,
     String message) throws ExecutorManagerException {
     ExecutorLogEvent event =

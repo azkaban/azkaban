@@ -948,6 +948,28 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements
     }
   }
 
+
+  /**
+   * {@inheritDoc}
+   *
+   * @see azkaban.executor.ExecutorLoader#removeExecutor(String, int)
+   */
+  @Override
+  public void removeExecutor(String host, int port) throws ExecutorManagerException {
+    final String DELETE = "DELETE FROM executors WHERE host=? AND port=?";
+    QueryRunner runner = createQueryRunner();
+    try {
+      int rows = runner.update(DELETE, host, port);
+      if (rows == 0) {
+        throw new ExecutorManagerException("No executor with host, port :"
+            + "(" + host + "," + port + ")");
+      }
+    } catch (SQLException e) {
+      throw new ExecutorManagerException("Error removing executor with host, port : "
+          + "(" + host + "," + port + ")", e);
+    }
+  }
+
   /**
    * {@inheritDoc}
    *

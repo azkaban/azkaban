@@ -379,7 +379,16 @@ public class AzkabanExecutorServer {
           logger.info(("Exception when logging top memory consumers"), e);
         }
 
-        logger.info("Shutting down...");
+        String host = app.getHost();
+        int port = app.getPort();
+        try {
+          logger.info(String.format("Removing executor(host: %s, port: %s) entry from database...", host, port));
+          app.getExecutorLoader().removeExecutor(host, port);
+        } catch (ExecutorManagerException ex) {
+          logger.error(String.format("Exception when removing executor(host: %s, port: %s)", host, port), ex);
+        }
+
+        logger.info("Shutting down executor...");
         try {
           app.shutdownNow();
         } catch (Exception e) {
@@ -611,12 +620,8 @@ public class AzkabanExecutorServer {
    */
   private void shutdownInternal() {
     getFlowRunnerManager().shutdown();
-    try {
-      shutdownNow();
-      logger.warn("Shutdown AzkabanExecutorServer complete");
-    } catch (Exception e) {
-      logger.error(e);
-    }
+    // trigger shutdown hook
+    System.exit(0);
   }
 
   /**
