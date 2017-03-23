@@ -1,8 +1,11 @@
-#!/bin/bash
-azkaban_dir=$(dirname $0)/..
+#!/usr/bin/env bash
+# Shutdown script for azkaban solo server
+set -o nounset
+source "$(dirname $0)/util.sh"
 
-proc=`cat $azkaban_dir/currentpid`
-echo "killing AzkabanSingleServer"
-kill $proc
+installdir="$(dirname $0)/.."
+maxattempt=3
+pid=`cat ${installdir}/currentpid`
+pname="solo server"
 
-cat /dev/null > $azkaban_dir/currentpid
+kill_process_with_retry "${pid}" "${pname}" "${maxattempt}" && rm -f ${installdir}/currentpid
