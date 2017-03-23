@@ -19,6 +19,10 @@ distributions {
         into 'bin'
         fileMode = 0755
       }
+      from(project(':azkaban-common').files('src/main/bash')) {
+        into 'bin'
+        fileMode = 0755
+      }
       from ('src/main/resources/conf') {
         into 'conf'
       }

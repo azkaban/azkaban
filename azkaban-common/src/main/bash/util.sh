@@ -2,10 +2,20 @@
 # Common utils
 set -o nounset
 
+
+# If process is still running then abort start up
+function abort_if_process_already_running {
+  installdir="$1"
+  pidfile="${installdir}/currentpid"
+  if [ -f ${pidfile} ]; then
+    pid=`cat ${pidfile}`
+    ps -p ${pid} 2>&1 1>nul && echo "Process already running [pid: ${pid}]. Aborting." && exit 1
+  fi
+}
+
 # kill the process with retry
 # return 0 if kill succeeds or no process to kill,
 #        1 if kill fails
-
 function kill_process_with_retry {
    pid="$1"
    pname="$2"
@@ -45,4 +55,3 @@ function kill_process_with_retry {
     return 0
    fi
 }
-
