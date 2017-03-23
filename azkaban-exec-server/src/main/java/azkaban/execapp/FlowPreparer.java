@@ -24,7 +24,7 @@ import azkaban.project.ProjectManagerException;
 import azkaban.utils.FileIOUtils;
 import azkaban.utils.Pair;
 import azkaban.utils.Utils;
-import com.google.common.base.Preconditions;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Throwables;
 import java.io.File;
 import java.io.IOException;
@@ -35,14 +35,20 @@ import java.util.zip.ZipFile;
 import org.apache.commons.io.FileUtils;
 import org.apache.log4j.Logger;
 
+import static com.google.common.base.Preconditions.*;
+import static java.util.Objects.*;
+
 
 public class FlowPreparer {
-  private static final Logger logger = Logger.getLogger(FlowPreparer.class);
+  private static final Logger log = Logger.getLogger(FlowPreparer.class);
 
-  private final ProjectLoader projectLoader;
+  // TODO move to config class
   private final File executionsDir;
+  // TODO move to config class
   private final File projectsDir;
+
   private final Map<Pair<Integer, Integer>, ProjectVersion> installedProjects;
+  private final ProjectLoader projectLoader;
 
   public FlowPreparer(ProjectLoader projectLoader,
       File executionsDir,
@@ -54,6 +60,11 @@ public class FlowPreparer {
     this.installedProjects = installedProjects;
   }
 
+  /**
+   * Prepare the flow directory for execution.
+   *
+   * @param flow Executable Flow instance.
+   */
   void setup(ExecutableFlow flow) {
     File execDir = null;
     try {
@@ -61,23 +72,32 @@ public class FlowPreparer {
       final ProjectVersion projectVersion = getProjectVersion(flow);
 
       // Setup the project
-      setupProjectFiles(projectVersion);
+      setupProject(projectVersion);
 
       // Create the execution directory
       execDir = createExecDir(flow);
 
       // Create the symlinks from the project
       copyCreateHardlinkDirectory(projectVersion.getInstalledDir(), execDir);
+
+      log.info(String.format("Flow Preparation complete. [execid: %d, path: %s]",
+          flow.getExecutionId(), execDir.getPath()));
     } catch (Exception e) {
-      logger.error("Error in setting up project directory: " + projectsDir + ", Exception: " + e);
-      if (execDir != null) {
-        cleanup(execDir);
-      }
+      log.error("Error in setting up project directory: " + projectsDir + ", Exception: " + e);
+      cleanup(execDir);
       Throwables.propagate(e);
     }
   }
 
-  public synchronized void setupProjectFiles(final ProjectVersion pv)
+  /**
+   * Prepare the project directory.
+   *
+   * @param pv ProjectVersion object
+   * @throws ProjectManagerException
+   * @throws IOException
+   */
+  @VisibleForTesting
+  void setupProject(final ProjectVersion pv)
       throws ProjectManagerException, IOException {
     final int projectId = pv.getProjectId();
     final int version = pv.getVersion();
@@ -89,24 +109,30 @@ public class FlowPreparer {
 
     // If directory exists. Assume its prepared and skip.
     if (pv.getInstalledDir().exists()) {
+      log.info("Project already cached. Skipping download. " + pv);
       return;
     }
 
-    logger.info("Preparing Project: " + pv);
+    log.info("Preparing Project: " + pv);
 
     File tempDir = new File(projectsDir, "_temp." + projectDir + "." + System.currentTimeMillis());
+
+    // TODO Why mkdirs? This path should be already set up.
     tempDir.mkdirs();
 
     ProjectFileHandler projectFileHandler = null;
     try {
-      projectFileHandler = projectLoader.getUploadedFile(projectId, version);
-      Preconditions.checkState("zip".equals(projectFileHandler.getFileType()));
+      projectFileHandler = requireNonNull(projectLoader.getUploadedFile(projectId, version));
+      checkState("zip".equals(projectFileHandler.getFileType()));
 
-      logger.info("Downloading zip file.");
-      ZipFile zip = new ZipFile(projectFileHandler.getLocalFile());
+      log.info("Downloading zip file.");
+      final File zipFile = requireNonNull(projectFileHandler.getLocalFile());
+      final ZipFile zip = new ZipFile(zipFile);
       Utils.unzip(zip, tempDir);
 
       Files.move(tempDir.toPath(), pv.getInstalledDir().toPath(), StandardCopyOption.ATOMIC_MOVE);
+
+      log.warn(String.format("Project Preparation complete. [%s]", pv));
     } finally {
 
       if (projectFileHandler != null) {
@@ -114,9 +140,7 @@ public class FlowPreparer {
       }
 
       // Clean up: Remove tempDir if exists
-      if (tempDir.exists()) {
-        FileUtils.deleteDirectory(tempDir);
-      }
+      FileUtils.deleteDirectory(tempDir);
     }
   }
 
@@ -129,7 +153,7 @@ public class FlowPreparer {
     File execDir = new File(executionsDir, String.valueOf(execId));
     flow.setExecutionPath(execDir.getPath());
 
-    logger.info("Flow " + execId + " submitted with path " + execDir.getPath());
+    // TODO Why mkdirs? This path should be already set up.
     execDir.mkdirs();
     return execDir;
   }
@@ -146,7 +170,7 @@ public class FlowPreparer {
   }
 
   private void cleanup(File execDir) {
-    if (execDir.exists()) {
+    if (execDir != null) {
       try {
         FileUtils.deleteDirectory(execDir);
       } catch (IOException e) {

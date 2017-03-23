@@ -16,8 +16,11 @@
 
 package azkaban.execapp;
 
+import com.google.common.base.Preconditions;
 import java.io.File;
 import org.apache.log4j.Logger;
+
+import static com.google.common.base.Preconditions.*;
 
 
 public class ProjectVersion implements Comparable<ProjectVersion> {
@@ -27,13 +30,15 @@ public class ProjectVersion implements Comparable<ProjectVersion> {
   private File installedDir;
 
   public ProjectVersion(int projectId, int version) {
+    checkArgument(projectId > 0);
+    checkArgument(version > 0);
+
     this.projectId = projectId;
     this.version = version;
   }
 
   public ProjectVersion(int projectId, int version, File installedDir) {
-    this.projectId = projectId;
-    this.version = version;
+    this(projectId, version);
     this.installedDir = installedDir;
   }
 
