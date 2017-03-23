@@ -739,6 +739,21 @@ public class JdbcExecutorLoaderTest {
     Assert.assertFalse(fetchedExecutor.isActive());
   }
 
+  /* Test Removing Executor */
+  @Test
+  public void testRemovingExecutor() throws Exception {
+    if (!isTestSetup()) {
+      return;
+    }
+
+    ExecutorLoader loader = createLoader();
+    Executor executor = loader.addExecutor("localhost1", 12345);
+    loader.removeExecutor("localhost1", 12345);
+
+    Executor fetchedExecutor = loader.fetchExecutor("localhost1", 12345);
+    Assert.assertNull(fetchedExecutor);
+  }
+
   /* Test Executor reactivation */
   @Test
   public void testExecutorActivation() throws Exception {

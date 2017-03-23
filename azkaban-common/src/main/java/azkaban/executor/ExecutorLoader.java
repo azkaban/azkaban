@@ -133,15 +133,15 @@ public interface ExecutorLoader {
 
   /**
    * <pre>
-   +   * Remove the executor from executors table.
-   +   * Note:-
-   +   * 1. throws an Exception in case of a SQL issue
-   +   * 2. throws an Exception if there is no executor in the table* </pre>
-   +   *
-   +   * @param host
-   +   * @param port
-   +   * @throws ExecutorManagerException
-   +   */
+   * Remove the executor from executors table.
+   * Note:-
+   * 1. throws an Exception in case of a SQL issue
+   * 2. throws an Exception if there is no executor in the table* </pre>
+   * </pre>
+   * @param host
+   * @param port
+   * @throws ExecutorManagerException
+   */
   void removeExecutor(String host, int port) throws ExecutorManagerException;
 
   /**
