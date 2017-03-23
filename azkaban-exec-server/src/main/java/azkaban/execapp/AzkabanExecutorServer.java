@@ -388,7 +388,7 @@ public class AzkabanExecutorServer {
           logger.error(String.format("Exception when removing executor(host: %s, port: %s)", host, port), ex);
         }
 
-        logger.info("Shutting down executor...");
+        logger.warn("Shutting down executor...");
         try {
           app.shutdownNow();
         } catch (Exception e) {

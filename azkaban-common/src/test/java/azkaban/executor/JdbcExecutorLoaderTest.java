@@ -748,8 +748,8 @@ public class JdbcExecutorLoaderTest {
 
     ExecutorLoader loader = createLoader();
     Executor executor = loader.addExecutor("localhost1", 12345);
+    Assert.assertNotNull(executor);
     loader.removeExecutor("localhost1", 12345);
-
     Executor fetchedExecutor = loader.fetchExecutor("localhost1", 12345);
     Assert.assertNull(fetchedExecutor);
   }
