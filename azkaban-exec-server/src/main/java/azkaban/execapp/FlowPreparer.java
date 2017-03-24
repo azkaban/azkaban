@@ -25,7 +25,6 @@ import azkaban.utils.FileIOUtils;
 import azkaban.utils.Pair;
 import azkaban.utils.Utils;
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Throwables;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -85,7 +84,7 @@ public class FlowPreparer {
     } catch (Exception e) {
       log.error("Error in setting up project directory: " + projectsDir + ", Exception: " + e);
       cleanup(execDir);
-      Throwables.propagate(e);
+      throw new RuntimeException(e);
     }
   }
 
@@ -174,7 +173,7 @@ public class FlowPreparer {
       try {
         FileUtils.deleteDirectory(execDir);
       } catch (IOException e) {
-        Throwables.propagate(e);
+        throw new RuntimeException(e);
       }
     }
   }
