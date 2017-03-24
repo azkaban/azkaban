@@ -16,6 +16,8 @@
 
 package azkaban.execapp;
 
+import azkaban.constants.ServerProperties;
+import azkaban.executor.Status;
 import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
@@ -271,10 +273,15 @@ public class FlowRunnerManager implements EventListener,
     // Every 2 mins clean the recently finished list
     private static final long RECENTLY_FINISHED_INTERVAL_MS = 2 * 60 * 1000;
 
+    // Every 5 mins kill flows running longer than allowed max running time
+    private static final long LONG_RUNNING_FLOW_KILLING_INTERVAL_MS = 5 * 60 * 1000;
+
     private boolean shutdown = false;
     private long lastExecutionDirCleanTime = -1;
     private long lastOldProjectCleanTime = -1;
     private long lastRecentlyFinishedCleanTime = -1;
+    private long lastLongRunningFlowCleanTime = -1;
+    private final long flowMaxRunningTimeInMins = azkabanProps.getInt(ServerProperties.AZKABAN_MAX_FLOW_RUNNING_MINS, 60*24*10);
 
     public CleanerThread() {
       this.setName("FlowRunnerManager-Cleaner-Thread");
@@ -312,6 +319,20 @@ public class FlowRunnerManager implements EventListener,
               logger.info("Cleaning old execution dirs");
               cleanOlderExecutionDirs();
               lastExecutionDirCleanTime = currentTime;
+            }
+
+            if (flowMaxRunningTimeInMins > 0 && currentTime - LONG_RUNNING_FLOW_KILLING_INTERVAL_MS > lastLongRunningFlowCleanTime) {
+              long now = System.currentTimeMillis();
+              logger.info(String.format("Killing long jobs running longer than %s mins", flowMaxRunningTimeInMins));
+              for(FlowRunner flowRunner : runningFlows.values()) {
+                logger.info("flowRunner: "+flowRunner.getExecutableFlow().getId()+": status: "+flowRunner.getExecutableFlow().getStatus());
+                if(!Status.isStatusFinished(flowRunner.getExecutableFlow().getStatus()) && flowRunner.getExecutableFlow().getStartTime() > 0
+                    && TimeUnit.MILLISECONDS.toMinutes(now-flowRunner.getExecutableFlow().getStartTime()) >= flowMaxRunningTimeInMins) {
+                  logger.info(String.format("Killing job id: %s, it has been running for %s mins", flowRunner.getExecutableFlow().getId(), TimeUnit.MILLISECONDS.toMinutes(now-flowRunner.getExecutableFlow().getStartTime())));
+                  flowRunner.kill();
+                }
+              }
+              lastLongRunningFlowCleanTime = currentTime;
             }
 
             wait(RECENTLY_FINISHED_TIME_TO_LIVE);

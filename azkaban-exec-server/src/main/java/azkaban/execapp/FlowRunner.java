@@ -172,6 +172,10 @@ public class FlowRunner extends EventHandler implements Runnable {
     this.executorService = executorService;
     this.finishedNodes = new SwapQueue<ExecutableNode>();
     this.azkabanProps = azkabanProps;
+
+    // Create logger and execution dir in flowRunner initialization instead of flow runtime to avoid NPE
+    // where the uninitialized logger is used in flow preparing state
+    createLogger(this.flow.getFlowId());
   }
 
   public FlowRunner setFlowWatcher(FlowWatcher watcher) {
@@ -267,9 +271,6 @@ public class FlowRunner extends EventHandler implements Runnable {
     }
     flow.setInputProps(commonFlowProps);
 
-    // Create execution dir
-    createLogger(flowId);
-
     if (this.watcher != null) {
       this.watcher.setLogger(logger);
     }
@@ -309,6 +310,11 @@ public class FlowRunner extends EventHandler implements Runnable {
     }
   }
 
+
+  /**
+   * setup logger and execution dir for the flowId
+   * @param flowId
+   */
   private void createLogger(String flowId) {
     // Create logger
     String loggerName = execId + "." + flowId;
@@ -905,19 +911,15 @@ public class FlowRunner extends EventHandler implements Runnable {
   }
 
   public void kill(String user) {
-    synchronized (mainSyncObj) {
-      logger.info("Flow killed by " + user);
-      flow.setStatus(Status.KILLED);
-      kill();
-      updateFlow();
-    }
-    interrupt();
+    logger.info("Flow killed by " + user);
+    kill();
   }
 
-  private void kill() {
+  public void kill() {
     synchronized (mainSyncObj) {
+      if(flowKilled) return;
       logger.info("Kill has been called on flow " + execId);
-
+      flow.setStatus(Status.KILLED);
       // If the flow is paused, then we'll also unpause
       flowPaused = false;
       flowKilled = true;
@@ -933,7 +935,9 @@ public class FlowRunner extends EventHandler implements Runnable {
       for (JobRunner runner : activeJobRunners) {
         runner.kill();
       }
+      updateFlow();
     }
+    interrupt();
   }
 
   public void retryFailures(String user) {
