@@ -421,7 +421,7 @@ public class FlowRunnerManager implements EventListener,
               installedProjects.remove(new Pair<Integer, Integer>(version
                   .getProjectId(), version.getVersion()));
             } catch (IOException e) {
-              e.printStackTrace();
+              logger.error(e);
             }
 
             installedVersions.remove(versionKey);
