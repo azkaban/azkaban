@@ -112,6 +112,7 @@ public class FlowRunnerManager implements EventListener,
   private final ExecutorLoader executorLoader;
   private final ProjectLoader projectLoader;
   private final JobTypeManager jobtypeManager;
+  private final FlowPreparer flowPreparer;
 
   private final Props azkabanProps;
   private final File executionDirectory;
@@ -164,6 +165,9 @@ public class FlowRunnerManager implements EventListener,
     numThreads = props.getInt(EXECUTOR_FLOW_THREADS, DEFAULT_NUM_EXECUTING_FLOWS);
     numJobThreadPerFlow = props.getInt(FLOW_NUM_JOB_THREADS, DEFAULT_FLOW_NUM_JOB_TREADS);
     executorService = createExecutorService(numThreads);
+
+    // Create a flow preparer
+    flowPreparer = new FlowPreparer(projectLoader, executionDirectory, projectDirectory, installedProjects);
 
     this.executorLoader = executorLoader;
     this.projectLoader = projectLoader;
@@ -413,7 +417,7 @@ public class FlowRunnerManager implements EventListener,
             try {
               logger.info("Removing old unused installed project "
                   + version.getProjectId() + ":" + version.getVersion());
-              version.deleteDirectory();
+              deleteDirectory(version);
               installedProjects.remove(new Pair<Integer, Integer>(version
                   .getProjectId(), version.getVersion()));
             } catch (IOException e) {
@@ -423,6 +427,16 @@ public class FlowRunnerManager implements EventListener,
             installedVersions.remove(versionKey);
           }
         }
+      }
+    }
+  }
+
+  public void deleteDirectory(ProjectVersion pv) throws IOException {
+    synchronized (pv) {
+      logger.warn("Deleting project: " + pv);
+      final File installedDir = pv.getInstalledDir();
+      if (installedDir != null && installedDir.exists()) {
+        FileUtils.deleteDirectory(installedDir);
       }
     }
   }
@@ -442,7 +456,7 @@ public class FlowRunnerManager implements EventListener,
     }
 
     // Sets up the project files and execution directory.
-    setupFlow(flow);
+    flowPreparer.setup(flow);
 
     // Setup flow runner
     FlowWatcher watcher = null;
@@ -528,46 +542,6 @@ public class FlowRunnerManager implements EventListener,
           .getMetricFromName(NumFailedFlowMetric.NUM_FAILED_FLOW_METRIC_NAME));
     }
 
-  }
-
-  private void setupFlow(ExecutableFlow flow) throws ExecutorManagerException {
-    int execId = flow.getExecutionId();
-    File execPath = new File(executionDirectory, String.valueOf(execId));
-    flow.setExecutionPath(execPath.getPath());
-    logger
-        .info("Flow " + execId + " submitted with path " + execPath.getPath());
-    execPath.mkdirs();
-
-    // We're setting up the installed projects. First time, it may take a while
-    // to set up.
-    Pair<Integer, Integer> projectVersionKey =
-        new Pair<Integer, Integer>(flow.getProjectId(), flow.getVersion());
-
-    // We set up project versions this way
-    ProjectVersion projectVersion = null;
-    synchronized (installedProjects) {
-      projectVersion = installedProjects.get(projectVersionKey);
-      if (projectVersion == null) {
-        projectVersion =
-            new ProjectVersion(flow.getProjectId(), flow.getVersion());
-        installedProjects.put(projectVersionKey, projectVersion);
-      }
-    }
-
-    try {
-      projectVersion.setupProjectFiles(projectLoader, projectDirectory, logger);
-      projectVersion.copyCreateHardlinkDirectory(execPath);
-    } catch (Exception e) {
-      logger.error("Error in setting up project directory "+projectDirectory+", "+e);
-      if (execPath.exists()) {
-        try {
-          FileUtils.deleteDirectory(execPath);
-        } catch (IOException e1) {
-          e1.printStackTrace();
-        }
-      }
-      throw new ExecutorManagerException(e);
-    }
   }
 
   public void cancelFlow(int execId, String user)

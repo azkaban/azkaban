@@ -40,7 +40,7 @@ import org.apache.log4j.Logger;
  * future.
  */
 public class FileIOUtils {
-  private final static Logger logger = Logger.getLogger(EmailMessage.class);
+  private final static Logger logger = Logger.getLogger(FileIOUtils.class);
 
   public static class PrefixSuffixFileFilter implements FileFilter {
     private String prefix;
