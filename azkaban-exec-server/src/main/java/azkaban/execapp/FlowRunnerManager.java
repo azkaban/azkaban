@@ -281,7 +281,7 @@ public class FlowRunnerManager implements EventListener,
     private long lastOldProjectCleanTime = -1;
     private long lastRecentlyFinishedCleanTime = -1;
     private long lastLongRunningFlowCleanTime = -1;
-    private final long flowMaxRunningTimeInMins = azkabanProps.getInt(ServerProperties.AZKABAN_MAX_FLOW_RUNNING_MINS, 60*24*10);
+    private final long flowMaxRunningTimeInMins = azkabanProps.getInt(ServerProperties.AZKABAN_MAX_FLOW_RUNNING_MINS, 60 * 24 * 10);
 
     public CleanerThread() {
       this.setName("FlowRunnerManager-Cleaner-Thread");
@@ -324,9 +324,9 @@ public class FlowRunnerManager implements EventListener,
             if (flowMaxRunningTimeInMins > 0 && currentTime - LONG_RUNNING_FLOW_KILLING_INTERVAL_MS > lastLongRunningFlowCleanTime) {
               long now = System.currentTimeMillis();
               logger.info(String.format("Killing long jobs running longer than %s mins", flowMaxRunningTimeInMins));
-              for(FlowRunner flowRunner : runningFlows.values()) {
-                logger.info("flowRunner: "+flowRunner.getExecutableFlow().getId()+": status: "+flowRunner.getExecutableFlow().getStatus());
-                if(!Status.isStatusFinished(flowRunner.getExecutableFlow().getStatus()) && flowRunner.getExecutableFlow().getStartTime() > 0
+              for (FlowRunner flowRunner : runningFlows.values()) {
+                logger.info("flowRunner: " + flowRunner.getExecutableFlow().getId() + ": status: " + flowRunner.getExecutableFlow().getStatus());
+                if (!Status.isStatusFinished(flowRunner.getExecutableFlow().getStatus()) && flowRunner.getExecutableFlow().getStartTime() > 0
                     && TimeUnit.MILLISECONDS.toMinutes(now-flowRunner.getExecutableFlow().getStartTime()) >= flowMaxRunningTimeInMins) {
                   logger.info(String.format("Killing job id: %s, it has been running for %s mins", flowRunner.getExecutableFlow().getId(), TimeUnit.MILLISECONDS.toMinutes(now-flowRunner.getExecutableFlow().getStartTime())));
                   flowRunner.kill();
