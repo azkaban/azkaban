@@ -718,7 +718,7 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
     if (flow == null) {
       ret.put("status", "error");
       ret.put("message", "Flow " + flowName + " cannot be found in project "
-          + project);
+          + projectName);
       return;
     }
 
