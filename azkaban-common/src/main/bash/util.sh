@@ -1,53 +1,50 @@
 #!/usr/bin/env bash
 # Common utils
-set -o nounset
+set -o nounset   # exit the script if you try to use an uninitialised variable
+set -o errexit   # exit the script if any statement returns a non-true return value
 
-
-# If process is still running then abort start up
-function abort_if_process_already_running {
-  installdir="$1"
-  pidfile="${installdir}/currentpid"
-  if [ -f ${pidfile} ]; then
-    pid=`cat ${pidfile}`
-    ps -p ${pid} 2>&1 1>nul && echo "Process already running [pid: ${pid}]. Aborting." && exit 1
-  fi
+#---
+# is_process_running: Checks if a process is running
+# args:               Process ID of running proccess
+# returns:            returns 0 if process is running, 1 if not found
+#---
+function is_process_running {
+  local  pid=$1
+  kill -0 $pid > /dev/null 2>&1 #exit code ($?) is 0 if pid is running, 1 if not running
+  local  status=$?              #because we are returning exit code, can use with if & no [ bracket 
+  return $status
 }
 
-# kill the process with retry
-# return 0 if kill succeeds or no process to kill,
-#        1 if kill fails
+#---
+# kill_process_with_retry: Reads pid file and attempts to kill the running process
+# args:                    None
+# returns:                 returns 0 if kill succeds or nothing to kill, 1 if kill fails
+#---
 function kill_process_with_retry {
-   pid="$1"
-   pname="$2"
-   maxattempt="$3"
-
-   if [[ -z $pid ]]; then
-     echo "pid doesn't exist, shutdown completed"
-     return 0
-   fi
+   local pid="$1"
+   local pname="$2"
+   local maxattempt="$3"
+   local sleeptime=5
 
    for try in $(seq 1 $maxattempt); do
-     if [[ ! -z $pid ]]; then
       echo "Killing $pname. [pid: $pid], attempt: $try"
       kill ${pid}
       sleep 5
-      if [[ -n "$(ps -p $pid -o pid=)" ]]; then
+      if is_process_running $pid; then
         echo "$pname is not dead [pid: $pid]"
-        if [[ $try -lt $maxattempt ]]; then
-          echo "sleeping for a few seconds before retry"
-          sleep 10
-        fi
+        echo "sleeping for $sleeptime seconds before retry"
+        sleep $sleeptime
       else
         echo "shutdown succeeded"
         return 0
       fi
-     fi
-    done
+   done
 
    echo "Error: unable to kill process for $maxattempt attempt(s), killing the process with -9"
    kill -9 $pid
-   sleep 5
-   if [[ -n "$(ps -p $pid -o pid=)" ]]; then
+   sleep $sleeptime
+
+   if is_process_running $pid; then
       echo "$pname is not dead even after kill -9 [pid: $pid]"
       return 1
    else
@@ -55,3 +52,4 @@ function kill_process_with_retry {
     return 0
    fi
 }
+
