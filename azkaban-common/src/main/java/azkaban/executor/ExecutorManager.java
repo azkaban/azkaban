@@ -934,7 +934,9 @@ public class ExecutorManager extends EventHandler implements
   @Override
   public String submitExecutableFlow(ExecutableFlow exflow, String userId)
     throws ExecutorManagerException {
-    synchronized (exflow) {
+
+    String exFlowKey = exflow.getProjectName() + "." + exflow.getId() + ".submitFlow";
+    synchronized (exFlowKey.intern()) {
       String flowId = exflow.getFlowId();
 
       logger.info("Submitting execution flow " + flowId + " by " + userId);
