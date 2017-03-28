@@ -294,6 +294,15 @@ public class FlowRunnerManager implements EventListener,
       this.interrupt();
     }
 
+    private boolean isFlowRunningLongerThan(ExecutableFlow flow, long flowMaxRunningTimeInMins) {
+      Set<Status> nonFinishingStatusAfterFlowStarts = new HashSet<>();
+      nonFinishingStatusAfterFlowStarts.add(Status.RUNNING);
+      nonFinishingStatusAfterFlowStarts.add(Status.QUEUED);
+      nonFinishingStatusAfterFlowStarts.add(Status.PAUSED);
+      nonFinishingStatusAfterFlowStarts.add(Status.FAILED_FINISHING);
+      return nonFinishingStatusAfterFlowStarts.contains(flow.getStatus()) && flow.getStartTime() > 0 && TimeUnit.MILLISECONDS.toMinutes(System.currentTimeMillis()-flow.getStartTime()) >= flowMaxRunningTimeInMins;
+    }
+
     public void run() {
       while (!shutdown) {
         synchronized (this) {
@@ -322,13 +331,10 @@ public class FlowRunnerManager implements EventListener,
             }
 
             if (flowMaxRunningTimeInMins > 0 && currentTime - LONG_RUNNING_FLOW_KILLING_INTERVAL_MS > lastLongRunningFlowCleanTime) {
-              long now = System.currentTimeMillis();
               logger.info(String.format("Killing long jobs running longer than %s mins", flowMaxRunningTimeInMins));
               for (FlowRunner flowRunner : runningFlows.values()) {
-                logger.info("flowRunner: " + flowRunner.getExecutableFlow().getId() + ": status: " + flowRunner.getExecutableFlow().getStatus());
-                if (!Status.isStatusFinished(flowRunner.getExecutableFlow().getStatus()) && flowRunner.getExecutableFlow().getStartTime() > 0
-                    && TimeUnit.MILLISECONDS.toMinutes(now-flowRunner.getExecutableFlow().getStartTime()) >= flowMaxRunningTimeInMins) {
-                  logger.info(String.format("Killing job id: %s, it has been running for %s mins", flowRunner.getExecutableFlow().getId(), TimeUnit.MILLISECONDS.toMinutes(now-flowRunner.getExecutableFlow().getStartTime())));
+                if (isFlowRunningLongerThan(flowRunner.getExecutableFlow(), flowMaxRunningTimeInMins)) {
+                  logger.info(String.format("Killing job [id: %s, status: %s]. It has been running for %s mins", flowRunner.getExecutableFlow().getId(), flowRunner.getExecutableFlow().getStatus(), TimeUnit.MILLISECONDS.toMinutes(System.currentTimeMillis()-flowRunner.getExecutableFlow().getStartTime())));
                   flowRunner.kill();
                 }
               }
