@@ -169,8 +169,10 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
       }
 
     } catch (ServletException e) {
+      logger.error(e.getMessage(), e);
       ret.put("error", e.getMessage());
     } catch (ScheduleManagerException e) {
+      logger.error(e.getMessage(), e);
       ret.put("error", e.getMessage());
     }
 
@@ -256,6 +258,7 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
         ret.put("schedule", jsonObj);
       }
     } catch (ScheduleManagerException e) {
+      logger.error(e.getMessage(), e);
       ret.put("error", e);
     }
   }
@@ -317,8 +320,10 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
 
       ret.put("allJobNames", allJobs);
     } catch (ServletException e) {
+      logger.error(e.getMessage(), e);
       ret.put("error", e);
     } catch (ScheduleManagerException e) {
+      logger.error(e.getMessage(), e);
       ret.put("error", e);
     }
   }
@@ -508,7 +513,7 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
           executorManager.getExecutableFlows(null, null, null, 0, startTime,
               endTime, -1, -1);
     } catch (ExecutorManagerException e) {
-      logger.error(e);
+      logger.error(e.getMessage(), e);
     }
 
     HashMap<String, Object> ret = new HashMap<String, Object>();
@@ -647,6 +652,7 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
     try {
       firstSchedTime = parseDateTime(scheduleDate, scheduleTime);
     } catch (Exception e) {
+      logger.error(e.getMessage(), e);
       ret.put("error", "Invalid date and/or time '" + scheduleDate + " "
           + scheduleTime);
       return;
@@ -659,6 +665,7 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
         thePeriod = Schedule.parsePeriodString(getParam(req, "period"));
       }
     } catch (Exception e) {
+      logger.error(e.getMessage(), e);
       ret.put("error", e.getMessage());
     }
 
@@ -667,6 +674,7 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
       flowOptions = HttpRequestUtils.parseFlowOptions(req);
       HttpRequestUtils.filterAdminOnlyFlowParams(userManager, flowOptions, user);
     } catch (Exception e) {
+      logger.error(e.getMessage(), e);
       ret.put("error", e.getMessage());
     }
 
@@ -739,6 +747,7 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
       if(cronExpression == null)
         throw new Exception("Cron expression must exist.");
     } catch (Exception e) {
+      logger.error(e.getMessage(), e);
       ret.put("error", e.getMessage());
     }
 
@@ -747,6 +756,7 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
       flowOptions = HttpRequestUtils.parseFlowOptions(req);
       HttpRequestUtils.filterAdminOnlyFlowParams(userManager, flowOptions, user);
     } catch (Exception e) {
+      logger.error(e.getMessage(), e);
       ret.put("error", e.getMessage());
     }
 
