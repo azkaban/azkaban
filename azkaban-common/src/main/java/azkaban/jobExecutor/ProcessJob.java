@@ -87,10 +87,10 @@ public class ProcessJob extends AbstractProcessJob {
           break;
         }
         if (attempt < ServerInternals.MEMORY_CHECK_RETRY_LIMIT) {
-          info(String.format(oomMsg + ", sleep for %s secs and retry, attempt %s of %s", TimeUnit.MILLISECONDS.toSeconds(ServerInternals.MEMORY_CHECK_INTERVAL), attempt, ServerInternals.MEMORY_CHECK_RETRY_LIMIT));
+          info(String.format(oomMsg + ", sleep for %s secs and retry, attempt %s of %s", TimeUnit.MILLISECONDS.toSeconds(ServerInternals.MEMORY_CHECK_INTERVAL_MS), attempt, ServerInternals.MEMORY_CHECK_RETRY_LIMIT));
           synchronized (this) {
             try {
-              this.wait(ServerInternals.MEMORY_CHECK_INTERVAL);
+              this.wait(ServerInternals.MEMORY_CHECK_INTERVAL_MS);
             } catch (InterruptedException e) {
               info(String.format("Job %s interrupted while waiting for memory check retry", getId()));
             }
