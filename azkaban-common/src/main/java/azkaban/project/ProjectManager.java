@@ -100,53 +100,50 @@ public class ProjectManager {
   }
 
   public List<Project> getUserProjects(User user) {
-    ArrayList<Project> array = new ArrayList<Project>();
-    List<Project> projects = getProjects();
-    for (Project project : projects) {
+    ArrayList<Project> userProjects = new ArrayList<>();
+    for (Project project : getProjects()) {
       Permission perm = project.getUserPermission(user);
 
       if (perm != null
           && (perm.isPermissionSet(Type.ADMIN) || perm
               .isPermissionSet(Type.READ))) {
-        array.add(project);
+        userProjects.add(project);
       }
     }
-    return array;
+    return userProjects;
   }
 
   public List<Project> getGroupProjects(User user) {
-    List<Project> array = new ArrayList<Project>();
-    List<Project> projects = getProjects();
-    for (Project project : projects) {
+    List<Project> groupProjects = new ArrayList<>();
+    for (Project project : getProjects()) {
       if (project.hasGroupPermission(user, Type.READ)) {
-        array.add(project);
+        groupProjects.add(project);
       }
     }
-    return array;
+    return groupProjects;
   }
 
   public List<Project> getUserProjectsByRegex(User user, String regexPattern) {
-    List<Project> array = new ArrayList<Project>();
+    List<Project> userProjects = new ArrayList<>();
     Pattern pattern;
     try {
       pattern = Pattern.compile(regexPattern, Pattern.CASE_INSENSITIVE);
     } catch (PatternSyntaxException e) {
       logger.error("Bad regex pattern " + regexPattern);
-      return array;
+      return userProjects;
     }
-    List<Project> projects = getProjects();
-    for (Project project : projects) {
+    for (Project project : getProjects()) {
       Permission perm = project.getUserPermission(user);
 
       if (perm != null
           && (perm.isPermissionSet(Type.ADMIN) || perm
               .isPermissionSet(Type.READ))) {
         if (pattern.matcher(project.getName()).find()) {
-          array.add(project);
+          userProjects.add(project);
         }
       }
     }
-    return array;
+    return userProjects;
   }
 
   public List<Project> getProjects() {
@@ -171,8 +168,7 @@ public class ProjectManager {
       logger.error("Bad regex pattern " + regexPattern);
       return allProjects;
     }
-    List<Project> projects = getProjects();
-    for (Project project : projects) {
+    for (Project project : getProjects()) {
       if (pattern.matcher(project.getName()).find()) {
         allProjects.add(project);
       }
@@ -183,16 +179,14 @@ public class ProjectManager {
     /**
      * Checks if a project is active using project_id
      *
-     * @param name
+     * @param id
      */
     public Boolean isActiveProject(int id) {
-      Project project = getProject(id);
-      return project != null;
+      return getProject(id) != null;
     }
 
     /**
-     * fetch active project from cache and inactive projects from db by
-     * project_name
+     * fetch active project (boolean active = true) from DB by project_name
      *
      * @param name
      * @return
@@ -203,14 +197,13 @@ public class ProjectManager {
             fetchedProject = projectLoader.fetchProjectByName(name);
             loadAllProjectFlows(fetchedProject);
         } catch (ProjectManagerException e) {
-            logger.error("Could not load project from store.", e);
+            logger.error("Could not load project" + name + " from store.", e);
         }
         return fetchedProject;
     }
 
     /**
-     * fetch active project from cache and inactive projects from db by
-     * project_id
+     * fetch active project (boolean active = true) from DB by project_id
      *
      * @param id
      * @return
