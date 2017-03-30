@@ -16,15 +16,21 @@ function is_process_running {
 }
 
 #---
-# kill_process_with_retry: Reads pid file and attempts to kill the running process
-# args:                    None
+# kill_process_with_retry: Checks and attempts to kill the running process
+# args:                    PID, process name, number of kill attempts
 # returns:                 returns 0 if kill succeds or nothing to kill, 1 if kill fails
+# exception:               If passed a non-existant pid, function will forcefully exit 
 #---
 function kill_process_with_retry {
    local pid="$1"
    local pname="$2"
    local maxattempt="$3"
    local sleeptime=5
+
+   if ! is_process_running $pid ; then 
+     echo "ERROR: process name ${pname} with pid: ${pid} not found"
+     exit 1
+   fi
 
    for try in $(seq 1 $maxattempt); do
       echo "Killing $pname. [pid: $pid], attempt: $try"

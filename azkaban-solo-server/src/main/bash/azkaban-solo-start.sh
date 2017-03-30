@@ -25,6 +25,8 @@ fi
 
 CLASSPATH="${CLASSPATH:-}:${installdir}/lib/*:${installdir}/extlib/*"
 
+HADOOP_HOME=${HADOOP_HOME:""}  # needed for set -o nounset aove
+
 if [ "$HADOOP_HOME" != "" ]; then
   echo "Using Hadoop from $HADOOP_HOME"
   CLASSPATH="${CLASSPATH}:${HADOOP_HOME}/conf:${HADOOP_HOME}/*"
@@ -33,21 +35,26 @@ else
   echo "Error: HADOOP_HOME is not set. Hadoop job types will not run properly."
 fi
 
+HIVE_HOME=${HIVE_HOME:""}  # Needed for set -o nounset above
 if [ "$HIVE_HOME" != "" ]; then
   echo "Using Hive from $HIVE_HOME"
   CLASSPATH="${CLASSPATH}:${HIVE_HOME}/conf:${HIVE_HOME}/lib/*"
 fi
 
+CLASSPATH=${CLASSPATH:""}  # Needed for set -o nounset above
 echo "CLASSPATH: ${CLASSPATH}";
 
-executorport=$(cat "${conf}/azkaban.properties" | grep executor.port | cut -d = -f 2)
+executorport=$(grep executor.port "${conf}/azkaban.properties" | cut -d = -f 2)
 serverpath=$(pwd)
 
-# Set the log4j configuration file
+AZKABAN_OPTS=" -Xmx512M -server -Djava.io.tmpdir=$tmpdir -Dexecutorport=${executorport} \
+    -Dserverpath=${serverpath} -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005"
+
 if [[ -f "${conf}/log4j.properties" ]]; then
-  AZKABAN_OPTS="${AZKABAN_OPTS:- } -Dlog4j.configuration=file:${conf}/log4j.properties"
+  # Set the log4j configuration file
+  AZKABAN_OPTS="${AZKABAN_OPTS:- } -Dlog4j.configuration=file:${conf}/log4j.properties \
+      -Dlog4j.log.dir=${installdir}/logs"
 fi
-AZKABAN_OPTS="${AZKABAN_OPTS:- } -Xmx3G -server -Djava.io.tmpdir=$tmpdir -Dexecutorport=${executorport} -Dserverpath=${serverpath} -Dlog4j.log.dir=${installdir}/logs"
 
 java ${AZKABAN_OPTS} -cp ${CLASSPATH} azkaban.soloserver.AzkabanSingleServer -conf ${conf} $@ &
 
