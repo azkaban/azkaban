@@ -23,6 +23,7 @@ import java.io.FilenameFilter;
 import java.io.IOException;
 import java.lang.Thread.State;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -295,11 +296,7 @@ public class FlowRunnerManager implements EventListener,
     }
 
     private boolean isFlowRunningLongerThan(ExecutableFlow flow, long flowMaxRunningTimeInMins) {
-      Set<Status> nonFinishingStatusAfterFlowStarts = new HashSet<>();
-      nonFinishingStatusAfterFlowStarts.add(Status.RUNNING);
-      nonFinishingStatusAfterFlowStarts.add(Status.QUEUED);
-      nonFinishingStatusAfterFlowStarts.add(Status.PAUSED);
-      nonFinishingStatusAfterFlowStarts.add(Status.FAILED_FINISHING);
+      Set<Status> nonFinishingStatusAfterFlowStarts = new HashSet<>(Arrays.asList(Status.RUNNING, Status.QUEUED, Status.PAUSED, Status.FAILED_FINISHING));
       return nonFinishingStatusAfterFlowStarts.contains(flow.getStatus()) && flow.getStartTime() > 0 && TimeUnit.MILLISECONDS.toMinutes(System.currentTimeMillis()-flow.getStartTime()) >= flowMaxRunningTimeInMins;
     }
 

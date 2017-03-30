@@ -58,5 +58,5 @@ public class ServerProperties {
 
   // Max flow running time in mins, server will kill flows running longer than this setting.
   // if not set or <= 0, then there's no restriction on running time.
-  public static final String AZKABAN_MAX_FLOW_RUNNING_MINS = "azkaban.server.max.flow.running.mins";
+  public static final String AZKABAN_MAX_FLOW_RUNNING_MINS = "azkaban.server.flow.max.running.mins";
 }
