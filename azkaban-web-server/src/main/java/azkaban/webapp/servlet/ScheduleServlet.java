@@ -171,6 +171,7 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
     } catch (ServletException e) {
       ret.put("error", e.getMessage());
     } catch (ScheduleManagerException e) {
+      logger.error(e.getMessage(), e);
       ret.put("error", e.getMessage());
     }
 
@@ -256,6 +257,7 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
         ret.put("schedule", jsonObj);
       }
     } catch (ScheduleManagerException e) {
+      logger.error(e.getMessage(), e);
       ret.put("error", e);
     }
   }
@@ -319,6 +321,7 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
     } catch (ServletException e) {
       ret.put("error", e);
     } catch (ScheduleManagerException e) {
+      logger.error(e.getMessage(), e);
       ret.put("error", e);
     }
   }
@@ -508,7 +511,7 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
           executorManager.getExecutableFlows(null, null, null, 0, startTime,
               endTime, -1, -1);
     } catch (ExecutorManagerException e) {
-      logger.error(e);
+      logger.error(e.getMessage(), e);
     }
 
     HashMap<String, Object> ret = new HashMap<String, Object>();
