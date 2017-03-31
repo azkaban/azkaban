@@ -1212,6 +1212,94 @@ An example failure response for invalid cron expression:
 }
 </pre>
 
+<h3 id="api-fetch-schedule">Fetch a Schedule</h3>
+
+<p>
+Given a project id and a flow id, this API call fetches the schedule.
+</p>
+<ul class="list-unstyled">
+  <li>
+    <strong>Method:</strong> GET
+  </li>
+  <li>
+    <strong>Request URL:</strong> /schedule?ajax=fetchSchedule
+  </li>
+  <li>
+    <strong>Parameter Location:</strong> Request Query String
+  </li>
+</ul>
+
+<h5><strong>Request Parameters</strong></h5>
+
+<table class="table table-striped table-condensed table-bordered">
+  <thead>
+    <tr>
+      <th>Parameter</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>session.id</td>
+      <td>The user session id.</td>
+    </tr>
+    <tr>
+      <td>ajax=fetchSchedule</td>
+      <td>The fixed parameter indicating the schedule.</td>
+    </tr>
+    <tr>
+      <td>projectId</td>
+      <td>The id of the project.</td>
+    </tr>
+    <tr>
+      <td>flowId</td>
+      <td>The name of the flow.</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>Here's a curl command sample:</p>
+
+<pre class="code">
+curl -k --get --data "session.id=XXXXXXXXXXXXXX&ajax=fetchSchedule&projectId=1&flowId=test" http://localhost:8081/schedule
+</pre>
+
+An example success response:
+<pre class="code">
+{
+  "schedule" : {
+    "cronExpression" : "0 * 9 ? * *",
+    "nextExecTime" : "2017-04-01 09:00:00",
+    "period" : "null",
+    "submitUser" : "azkaban",
+    "executionOptions" : {
+      "notifyOnFirstFailure" : false,
+      "notifyOnLastFailure" : false,
+      "failureEmails" : [ ],
+      "successEmails" : [ ],
+      "pipelineLevel" : null,
+      "queueLevel" : 0,
+      "concurrentOption" : "skip",
+      "mailCreator" : "default",
+      "memoryCheck" : true,
+      "flowParameters" : {
+      },
+      "failureAction" : "FINISH_CURRENTLY_RUNNING",
+      "failureEmailsOverridden" : false,
+      "successEmailsOverridden" : false,
+      "pipelineExecutionId" : null,
+      "disabledJobs" : [ ]
+    },
+    "scheduleId" : "3",
+    "firstSchedTime" : "2017-03-31 11:45:21"
+  }
+}
+</pre>
+If there is no schedule, empty response returns.
+<pre class="code">
+{}
+</pre>
+
 <h3 id="api-unschedule-a-flow">Unschedule a Flow</h3>
 
 <p>
