@@ -1363,6 +1363,147 @@ An example failure response:
 }
 </pre>
 
+<h3 id="api-set-sla">Set a SLA</h3>
+
+<p>
+This API call sets a SLA.
+</p>
+<ul class="list-unstyled">
+  <li>
+    <strong>Method:</strong> POST
+  </li>
+  <li>
+    <strong>Request URL:</strong> /schedule?ajax=setSla
+  </li>
+  <li>
+    <strong>Parameter Location:</strong> Request Query String
+  </li>
+</ul>
+
+<h5><strong>Request Parameters</strong></h5>
+
+<table class="table table-striped table-condensed table-bordered">
+  <thead>
+    <tr>
+      <th>Parameter</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>session.id</td>
+      <td>The user session id.</td>
+    </tr>
+    <tr>
+      <td>ajax=setSla</td>
+      <td>The fixed parameter indicating the action is to set a SLA.</td>
+    </tr>
+    <tr>
+      <td>scheduleId</td>
+      <td>The id of the shchedule. You can find this with <a href="#api-fetch-schedule">Fetch a Schedule</a>.</td>
+    </tr>
+    <tr>
+      <td>slaEmails</td>
+      <td>A list of SLA alert emails.
+        <p>
+        <strong> Example:</strong>
+        slaEmails=a@example.com;b@example.com
+      </td>
+    </tr>
+    <tr>
+      <td>settings[...]</td>
+      <td>Rules of SLA. Format is settings[...]=[id],[rule],[duration],[emailAction],[killAction].
+        <p>
+        <strong> Example:</strong>
+        settings[0]=aaa,SUCCESS,5:00,true,false
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+<p>Here's a curl command sample:</p>
+
+<pre class="code">
+curl -k -d "ajax=setSla&scheduleId=1&slaEmails=a@example.com;b@example.com&settings[0]=aaa,SUCCESS,5:00,true,false&settings[1]=bbb,SUCCESS,10:00,false,true" -b "azkaban.browser.session.id=XXXXXXXXXXXXXX" "http://localhost:8081/schedule"
+</pre>
+
+An example success response:
+<pre class="code">
+{}
+</pre>
+An example failure response:
+<pre class="code">
+{
+  "error" : "azkaban.scheduler.ScheduleManagerException: Unable to parse duration for a SLA that needs to take actions!"
+}
+</pre>
+
+<h3 id="api-fetch-sla">Fetch a SLA</h3>
+
+<p>
+Given a schedule id, this API call fetches the SLA.
+</p>
+<ul class="list-unstyled">
+  <li>
+    <strong>Method:</strong> GET
+  </li>
+  <li>
+    <strong>Request URL:</strong> /schedule?ajax=slaInfo
+  </li>
+  <li>
+    <strong>Parameter Location:</strong> Request Query String
+  </li>
+</ul>
+
+<h5><strong>Request Parameters</strong></h5>
+
+<table class="table table-striped table-condensed table-bordered">
+  <thead>
+    <tr>
+      <th>Parameter</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>session.id</td>
+      <td>The user session id.</td>
+    </tr>
+    <tr>
+      <td>ajax=slaInfo</td>
+      <td>The fixed parameter indicating the SLA.</td>
+    </tr>
+    <tr>
+      <td>scheduleId</td>
+      <td>The id of the shchedule. You can find this with <a href="#api-fetch-schedule">Fetch a Schedule</a>.</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>Here's a curl command sample:</p>
+
+<pre class="code">
+curl -k --get --data "session.id=XXXXXXXXXXXXXX&ajax=slaInfo&scheduleId=1" http://localhost:8081/schedule"
+</pre>
+
+An example success response:
+<pre class="code">
+{
+  "settings" : [ {
+    "duration" : "300m",
+    "rule" : "SUCCESS",
+    "id" : "aaa",
+    "actions" : [ "EMAIL" ]
+  }, {
+    "duration" : "600m",
+    "rule" : "SUCCESS",
+    "id" : "bbb",
+    "actions" : [ "KILL" ]
+  } ],
+  "slaEmails" : [ "a@example.com", "b@example.com" ],
+  "allJobNames" : [ "aaa", "ccc", "bbb", "start", "end" ]
+}
+</pre>
 
 <h3 id="api-pause-a-flow-execution"> Pause a Flow Execution</h3>
 <p>
