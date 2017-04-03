@@ -19,6 +19,7 @@ package azkaban.executor;
 import azkaban.metrics.CommonMetrics;
 import azkaban.constants.ServerProperties;
 import azkaban.utils.FlowUtils;
+import com.google.common.collect.Lists;
 import java.io.File;
 import java.io.IOException;
 import java.lang.Thread.State;
@@ -101,6 +102,7 @@ public class ExecutorManager extends EventHandler implements
 
   final private Set<Executor> activeExecutors = new HashSet<Executor>();
   private QueueProcessorThread queueProcessor;
+  private volatile Pair<ExecutionReference, ExecutableFlow> runningCandidate = null;
 
   private ExecutingManagerUpdaterThread executingManager;
   // 12 weeks
@@ -462,6 +464,9 @@ public class ExecutorManager extends EventHandler implements
     List<Integer> executionIds = new ArrayList<Integer>();
     executionIds.addAll(getRunningFlowsHelper(projectId, flowId,
       queuedFlows.getAllEntries()));
+    if(runningCandidate != null) {
+      executionIds.addAll(getRunningFlowsHelper(projectId, flowId, Lists.newArrayList(runningCandidate)));
+    }
     executionIds.addAll(getRunningFlowsHelper(projectId, flowId,
       runningFlows.values()));
     Collections.sort(executionIds);
@@ -1793,18 +1798,17 @@ public class ExecutorManager extends EventHandler implements
       int maxContinuousFlowProcessed) throws InterruptedException,
       ExecutorManagerException {
       long lastExecutorRefreshTime = 0;
-      Pair<ExecutionReference, ExecutableFlow> runningCandidate;
       int currentContinuousFlowProcessed = 0;
 
       while (isActive() && (runningCandidate = queuedFlows.fetchHead()) != null) {
         ExecutionReference reference = runningCandidate.getFirst();
         ExecutableFlow exflow = runningCandidate.getSecond();
-
         long currentTime = System.currentTimeMillis();
 
         // if we have dispatched more than maxContinuousFlowProcessed or
         // It has been more then activeExecutorsRefreshWindow millisec since we
         // refreshed
+
         if (currentTime - lastExecutorRefreshTime > activeExecutorsRefreshWindow
           || currentContinuousFlowProcessed >= maxContinuousFlowProcessed) {
           // Refresh executorInfo for all activeExecutors
