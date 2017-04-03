@@ -1817,6 +1817,7 @@ public class ExecutorManager extends EventHandler implements
           currentContinuousFlowProcessed = 0;
         }
 
+
         /**
          * <pre>
          *  TODO: Work around till we improve Filters to have a notion of GlobalSystemState.
@@ -1833,6 +1834,7 @@ public class ExecutorManager extends EventHandler implements
         if(exflow.getUpdateTime() > lastExecutorRefreshTime) {
           // put back in the queue
           queuedFlows.enqueue(exflow, reference);
+          runningCandidate = null;
           long sleepInterval =
             activeExecutorsRefreshWindow
               - (currentTime - lastExecutorRefreshTime);
@@ -1842,6 +1844,7 @@ public class ExecutorManager extends EventHandler implements
           exflow.setUpdateTime(currentTime);
           // process flow with current snapshot of activeExecutors
           selectExecutorAndDispatchFlow(reference, exflow, new HashSet<Executor>(activeExecutors));
+          runningCandidate = null;
         }
 
         // do not count failed flow processsing (flows still in queue)
