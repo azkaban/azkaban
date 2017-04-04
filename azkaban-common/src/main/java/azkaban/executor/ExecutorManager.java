@@ -464,7 +464,9 @@ public class ExecutorManager extends EventHandler implements
     List<Integer> executionIds = new ArrayList<Integer>();
     executionIds.addAll(getRunningFlowsHelper(projectId, flowId,
       queuedFlows.getAllEntries()));
-    if(runningCandidate != null) {
+    // it's possible an execution is runningCandidate, meaning it's in dispatching state neither in queuedFlows nor runningFlows,
+    // so checks the runningCandidate as well.
+    if (runningCandidate != null) {
       executionIds.addAll(getRunningFlowsHelper(projectId, flowId, Lists.newArrayList(runningCandidate)));
     }
     executionIds.addAll(getRunningFlowsHelper(projectId, flowId,
@@ -941,6 +943,8 @@ public class ExecutorManager extends EventHandler implements
     throws ExecutorManagerException {
 
     String exFlowKey = exflow.getProjectName() + "." + exflow.getId() + ".submitFlow";
+    // using project and flow name to prevent race condition when same flow is submitted by API and schedule at the same time
+    // causing two same flow submission entering this piece.
     synchronized (exFlowKey.intern()) {
       String flowId = exflow.getFlowId();
 
