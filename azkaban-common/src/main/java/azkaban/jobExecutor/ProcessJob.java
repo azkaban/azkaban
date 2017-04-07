@@ -90,7 +90,7 @@ public class ProcessJob extends AbstractProcessJob {
         if (attempt < ServerInternals.MEMORY_CHECK_RETRY_LIMIT) {
           info(String.format(oomMsg + ", sleep for %s secs and retry, attempt %s of %s", TimeUnit.MILLISECONDS.toSeconds(ServerInternals.MEMORY_CHECK_INTERVAL_MS), attempt, ServerInternals.MEMORY_CHECK_RETRY_LIMIT));
           if (attempt == 1) {
-            CommonMetrics.INSTANCE.markJobWait();
+            CommonMetrics.INSTANCE.markOOMJobWait();
           }
           synchronized (this) {
             try {

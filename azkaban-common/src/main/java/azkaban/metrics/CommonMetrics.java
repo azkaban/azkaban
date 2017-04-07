@@ -77,7 +77,7 @@ public enum CommonMetrics {
   /**
    * Mark the occurrence of an job waiting event due to OOM
    */
-  public void markJobWait() {
+  public void markOOMJobWait() {
     OOMwaitingJobMeter.mark();
   }
 
