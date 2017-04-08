@@ -8,9 +8,14 @@
 /bin
 bin/
 build/
+.DS_Store
+.bundle/
+Gemfile.lock
+vendor/
 
 # Intellij files
 .idea
 *.iml
 *.ipr
 *.iws
+.ideaDataSources/
