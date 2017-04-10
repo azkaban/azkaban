@@ -1,6 +1,6 @@
 CREATE TABLE execution_logs (
 	exec_id INT NOT NULL,
-	name VARCHAR(128),
+	name VARCHAR(255),
 	attempt INT,
 	enc_type TINYINT,
 	start_byte INT,
