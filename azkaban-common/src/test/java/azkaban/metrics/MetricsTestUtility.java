@@ -93,6 +93,19 @@ public class MetricsTestUtility {
     Assert.assertEquals(dr.getMeter(meterName), currMeter + 3);
   }
 
+  public static void testGauge(String meterName, DummyReporter dr, Runnable runnable) {
+    sleepMillis(20);
+    long currMeter = Long.valueOf(dr.getGauge(meterName));
+    runnable.run();
+    sleepMillis(20);
+    Assert.assertEquals(Long.valueOf(dr.getGauge(meterName)).longValue(), currMeter + 1);
+
+    runnable.run();
+    runnable.run();
+    sleepMillis(20);
+    Assert.assertEquals(Long.valueOf(dr.getGauge(meterName)).longValue(), currMeter + 3);
+  }
+
   public static void testGauge(String GaugeName, DummyReporter dr, Consumer<Long> func) {
     func.accept(1L);
 

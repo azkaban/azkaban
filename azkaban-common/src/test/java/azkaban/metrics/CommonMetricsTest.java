@@ -55,6 +55,6 @@ public class CommonMetricsTest {
 
   @Test
   public void testOOMWaitingJobMetrics() {
-    MetricsTestUtility.testMeter("OOM-waiting-job-meter", dr, CommonMetrics.INSTANCE::markOOMJobWait);
+    MetricsTestUtility.testGauge("OOM-waiting-job-meter", dr, CommonMetrics.INSTANCE::markOOMJobWait);
   }
 }

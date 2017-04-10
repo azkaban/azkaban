@@ -85,6 +85,9 @@ public class ProcessJob extends AbstractProcessJob {
         isMemGranted = SystemMemoryInfo.canSystemGrantMemory(memPair.getFirst(), memPair.getSecond(), freeMemDecrAmt);
         if (isMemGranted) {
           info(String.format("Memory granted (Xms %d kb, Xmx %d kb) from system for job %s", memPair.getFirst(), memPair.getSecond(), getId()));
+          if(attempt > 1) {
+            CommonMetrics.INSTANCE.unmarkOOMJobWait();
+          }
           break;
         }
         if (attempt < ServerInternals.MEMORY_CHECK_RETRY_LIMIT) {
@@ -100,6 +103,7 @@ public class ProcessJob extends AbstractProcessJob {
             }
           }
           if(killed) {
+            CommonMetrics.INSTANCE.unmarkOOMJobWait();
             info(String.format("Job %s was killed while waiting for memory check retry", getId()));
             return;
           }
@@ -107,6 +111,7 @@ public class ProcessJob extends AbstractProcessJob {
       }
 
       if (!isMemGranted) {
+        CommonMetrics.INSTANCE.unmarkOOMJobWait();
         throw new Exception(
             String.format("Cannot request memory (Xms %d kb, Xmx %d kb) from system for job %s", memPair.getFirst(),
                 memPair.getSecond(), getId()));

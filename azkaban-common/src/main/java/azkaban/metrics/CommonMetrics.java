@@ -31,9 +31,8 @@ public enum CommonMetrics {
 
   private Meter dbConnectionMeter;
   private Meter flowFailMeter;
-  private Meter OOMwaitingJobMeter;
   private AtomicLong dbConnectionTime = new AtomicLong(0L);
-
+  private AtomicLong OOMWaitingJobCount = new AtomicLong(0L);
   private MetricRegistry registry;
 
   CommonMetrics() {
@@ -44,7 +43,7 @@ public enum CommonMetrics {
   private void setupAllMetrics() {
     dbConnectionMeter = MetricsUtility.addMeter("DB-Connection-meter", registry);
     flowFailMeter = MetricsUtility.addMeter("flow-fail-meter", registry);
-    OOMwaitingJobMeter = MetricsUtility.addMeter("OOM-waiting-job-meter", registry);
+    MetricsUtility.addGauge("OOM-waiting-job-meter", registry, OOMWaitingJobCount::get);
     MetricsUtility.addGauge("dbConnectionTime", registry, dbConnectionTime::get);
   }
 
@@ -78,7 +77,15 @@ public enum CommonMetrics {
    * Mark the occurrence of an job waiting event due to OOM
    */
   public void markOOMJobWait() {
-    OOMwaitingJobMeter.mark();
+    OOMWaitingJobCount.incrementAndGet();
   }
+
+  /**
+   * Unmark the occurrence of an job waiting event due to OOM
+   */
+  public void unmarkOOMJobWait() {
+    OOMWaitingJobCount.decrementAndGet();
+  }
+
 
 }
