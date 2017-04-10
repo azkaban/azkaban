@@ -18,10 +18,7 @@ package azkaban.database;
 
 import java.sql.SQLException;
 
-import javax.sql.DataSource;
-
 import org.apache.commons.dbutils.DbUtils;
-import org.apache.commons.dbutils.QueryRunner;
 import org.apache.log4j.Logger;
 
 import java.sql.PreparedStatement;
@@ -127,8 +124,6 @@ public class DataSourceUtils {
    */
   public static class MySQLBasicDataSource extends AzkabanDataSource {
 
-    private static MonitorThread monitorThread = null;
-
     private final String url;
 
     private MySQLBasicDataSource(String host, int port, String dbName,
@@ -145,11 +140,6 @@ public class DataSourceUtils {
       setMaxActive(numConnections);
       setValidationQuery("/* ping */ select 1");
       setTestOnBorrow(true);
-
-      if (monitorThread == null) {
-        monitorThread = new MonitorThread(this);
-        monitorThread.start();
-      }
     }
 
     @Override
@@ -161,51 +151,6 @@ public class DataSourceUtils {
     public String getDBType() {
       return "mysql";
     }
-
-    private class MonitorThread extends Thread {
-      private static final long MONITOR_THREAD_WAIT_INTERVAL_MS = 30 * 1000;
-      private boolean shutdown = false;
-      MySQLBasicDataSource dataSource;
-
-      public MonitorThread(MySQLBasicDataSource mysqlSource) {
-        this.setName("MySQL-DB-Monitor-Thread");
-        setDaemon(true);
-        dataSource = mysqlSource;
-      }
-
-      @SuppressWarnings("unused")
-      public void shutdown() {
-        shutdown = true;
-        this.interrupt();
-      }
-
-      public void run() {
-        while (!shutdown) {
-          synchronized (this) {
-            try {
-              pingDB();
-              wait(MONITOR_THREAD_WAIT_INTERVAL_MS);
-            } catch (InterruptedException e) {
-              logger.info("Interrupted. Probably to shut down.");
-            }
-          }
-        }
-      }
-
-      private void pingDB() {
-        Connection connection = null;
-        try {
-          connection = dataSource.getConnection();
-          PreparedStatement query = connection.prepareStatement("SELECT 1");
-          query.execute();
-        } catch (SQLException e) {
-          logger.error("Unable to reach MySQL server on " + url);
-        } finally {
-          DbUtils.closeQuietly(connection);
-        }
-      }
-    }
-
   }
 
   /**
@@ -229,19 +174,5 @@ public class DataSourceUtils {
     public String getDBType() {
       return "h2";
     }
-  }
-
-  public static void testConnection(DataSource ds) throws SQLException {
-    QueryRunner runner = new QueryRunner(ds);
-    runner.update("SHOW TABLES");
-  }
-
-  public static void testMySQLConnection(String host, Integer port,
-      String dbName, String user, String password, Integer numConnections)
-      throws SQLException {
-    DataSource ds =
-        new MySQLBasicDataSource(host, port, dbName, user, password,
-            numConnections);
-    testConnection(ds);
   }
 }
