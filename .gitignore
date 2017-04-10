@@ -1,5 +1,4 @@
 
-*.log
 *.swp
 .classpath
 .gradle/
