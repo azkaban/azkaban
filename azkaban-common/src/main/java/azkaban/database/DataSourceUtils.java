@@ -18,10 +18,7 @@ package azkaban.database;
 
 import java.sql.SQLException;
 
-import javax.sql.DataSource;
-
 import org.apache.commons.dbutils.DbUtils;
-import org.apache.commons.dbutils.QueryRunner;
 import org.apache.log4j.Logger;
 
 import java.sql.PreparedStatement;
@@ -229,19 +226,5 @@ public class DataSourceUtils {
     public String getDBType() {
       return "h2";
     }
-  }
-
-  public static void testConnection(DataSource ds) throws SQLException {
-    QueryRunner runner = new QueryRunner(ds);
-    runner.update("SHOW TABLES");
-  }
-
-  public static void testMySQLConnection(String host, Integer port,
-      String dbName, String user, String password, Integer numConnections)
-      throws SQLException {
-    DataSource ds =
-        new MySQLBasicDataSource(host, port, dbName, user, password,
-            numConnections);
-    testConnection(ds);
   }
 }
