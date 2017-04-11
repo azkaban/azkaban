@@ -170,7 +170,7 @@ public class JdbcProjectLoader extends AbstractJdbcLoader implements
   }
 
     /**
-     * Fetch first project with a given name {@inheritDoc}
+     * Fetch first project with a given name, select active one if exists {@inheritDoc}
      *
      * @see azkaban.project.ProjectLoader#fetchProjectByName(java.lang.String)
      */
@@ -193,17 +193,23 @@ public class JdbcProjectLoader extends AbstractJdbcLoader implements
         throws ProjectManagerException {
         QueryRunner runner = new QueryRunner();
         // Fetch the project
-        Project project = null;
+        Project project;
         ProjectResultHandler handler = new ProjectResultHandler();
+        // select active project from db first, if not exist, select inactive one.
+        // At most one active project with the same name exists in db.
         try {
             List<Project> projects =
                 runner.query(connection,
-                    ProjectResultHandler.SELECT_PROJECT_BY_NAME, handler, name);
+                      ProjectResultHandler.SELECT_ACTIVE_PROJECT_BY_NAME, handler, name);
             if (projects.isEmpty()) {
-                throw new ProjectManagerException(
-                    "No project with name " + name + " exists in db.");
+                projects =
+                    runner.query(connection,
+                        ProjectResultHandler.SELECT_PROJECT_BY_NAME, handler, name);
+                if (projects.isEmpty()) {
+                    throw new ProjectManagerException(
+                        "No project with name " + name + " exists in db.");
+                }
             }
-
             project = projects.get(0);
         } catch (SQLException e) {
             logger.error(ProjectResultHandler.SELECT_PROJECT_BY_NAME

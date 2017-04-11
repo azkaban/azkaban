@@ -150,9 +150,6 @@ public class ProjectManager {
     List<Project> projects;
     try {
       projects = projectLoader.fetchAllActiveProjects();
-      for (Project proj : projects) {
-        loadAllProjectFlows(proj);
-      }
     } catch (ProjectManagerException e) {
       throw new RuntimeException("Could not load projects from store.", e);
     }
@@ -214,7 +211,7 @@ public class ProjectManager {
             fetchedProject = projectLoader.fetchProjectById(id);
             loadAllProjectFlows(fetchedProject);
         } catch (ProjectManagerException e) {
-            logger.error("Could not load project from store.", e);
+            logger.error("Could not load project" + id + " from store.", e);
         }
         return fetchedProject;
     }
