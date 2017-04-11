@@ -112,9 +112,7 @@ public class ProcessJob extends AbstractProcessJob {
 
       if (!isMemGranted) {
         CommonMetrics.INSTANCE.unmarkOOMJobWait();
-        throw new Exception(
-            String.format("Cannot request memory (Xms %d kb, Xmx %d kb) from system for job %s", memPair.getFirst(),
-                memPair.getSecond(), getId()));
+        handleError(oomMsg, null);
       }
     }
 
