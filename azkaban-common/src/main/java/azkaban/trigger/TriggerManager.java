@@ -99,7 +99,7 @@ public class TriggerManager extends EventHandler implements
         triggerIdMap.put(t.getTriggerId(), t);
       }
     } catch (Exception e) {
-      e.printStackTrace();
+      logger.error(e);
       throw new TriggerManagerException(e);
     }
 
@@ -115,6 +115,7 @@ public class TriggerManager extends EventHandler implements
   }
 
   public void insertTrigger(Trigger t) throws TriggerManagerException {
+    logger.info("Inserting trigger " + t + " in TriggerManager");
     synchronized (syncObj) {
       try {
         triggerLoader.addTrigger(t);
@@ -127,6 +128,7 @@ public class TriggerManager extends EventHandler implements
   }
 
   public void removeTrigger(int id) throws TriggerManagerException {
+    logger.info("Removing trigger with id: " + id + " from TriggerManager");
     synchronized (syncObj) {
       Trigger t = triggerIdMap.get(id);
       if (t != null) {
@@ -135,24 +137,8 @@ public class TriggerManager extends EventHandler implements
     }
   }
 
-  public void updateTrigger(int id) throws TriggerManagerException {
-    synchronized (syncObj) {
-      if (!triggerIdMap.containsKey(id)) {
-        throw new TriggerManagerException("The trigger to update " + id
-            + " doesn't exist!");
-      }
-
-      Trigger t;
-      try {
-        t = triggerLoader.loadTrigger(id);
-      } catch (TriggerLoaderException e) {
-        throw new TriggerManagerException(e);
-      }
-      updateTrigger(t);
-    }
-  }
-
   public void updateTrigger(Trigger t) throws TriggerManagerException {
+    logger.info("Updating trigger " + t + " in TriggerManager");
     synchronized (syncObj) {
       runnerThread.deleteTrigger(triggerIdMap.get(t.getTriggerId()));
       runnerThread.addTrigger(t);
@@ -161,6 +147,7 @@ public class TriggerManager extends EventHandler implements
   }
 
   public void removeTrigger(Trigger t) throws TriggerManagerException {
+    logger.info("Removing trigger " + t + " from TriggerManager");
     synchronized (syncObj) {
       runnerThread.deleteTrigger(t);
       triggerIdMap.remove(t.getTriggerId());
@@ -258,33 +245,16 @@ public class TriggerManager extends EventHandler implements
     }
 
     private void checkAllTriggers() throws TriggerManagerException {
-      long now = System.currentTimeMillis();
-
       // sweep through the rest of them
       for (Trigger t : triggers) {
         try {
           scannerStage = "Checking for trigger " + t.getTriggerId();
-
-          boolean shouldSkip = true;
-          if (shouldSkip && t.getInfo() != null && t.getInfo().containsKey("monitored.finished.execution")) {
-            int execId = Integer.valueOf((String) t.getInfo().get("monitored.finished.execution"));
-            if (justFinishedFlows.containsKey(execId)) {
-              logger.info("Monitored execution has finished. Checking trigger earlier " + t.getTriggerId());
-              shouldSkip = false;
-            }
-          }
-          if (shouldSkip && t.getNextCheckTime() > now) {
-            shouldSkip = false;
-          }
-
-          if (shouldSkip) {
-            logger.debug("Skipping trigger" + t.getTriggerId() + " until " + t.getNextCheckTime());
-          }
-
           if (t.getStatus().equals(TriggerStatus.READY)) {
             if (t.triggerConditionMet()) {
+              logger.info("Trigger " + t + " trigger condition met");
               onTriggerTrigger(t);
             } else if (t.expireConditionMet()) {
+              logger.info("Trigger " + t + " expire condition met");
               onTriggerExpire(t);
             }
           }
@@ -295,7 +265,7 @@ public class TriggerManager extends EventHandler implements
           }
         } catch (Throwable th) {
           //skip this trigger, moving on to the next one
-          logger.error("Failed to process trigger with id : " + t.getTriggerId(), th);
+          logger.error("Failed to process trigger with id : " + t, th);
         }
       }
     }
@@ -304,12 +274,12 @@ public class TriggerManager extends EventHandler implements
       List<TriggerAction> actions = t.getTriggerActions();
       for (TriggerAction action : actions) {
         try {
-          logger.info("Doing trigger actions");
+          logger.info("Doing trigger actions " + action.getDescription() + " for " + t);
           action.doAction();
         } catch (Exception e) {
-          logger.error("Failed to do action " + action.getDescription(), e);
+          logger.error("Failed to do action " + action.getDescription() + " for " + t, e);
         } catch (Throwable th) {
-          logger.error("Failed to do action " + action.getDescription(), th);
+          logger.error("Failed to do action " + action.getDescription() + " for " + t, th);
         }
       }
       if (t.isResetOnTrigger()) {
@@ -329,13 +299,13 @@ public class TriggerManager extends EventHandler implements
       List<TriggerAction> expireActions = t.getExpireActions();
       for (TriggerAction action : expireActions) {
         try {
-          logger.info("Doing expire actions");
+          logger.info("Doing expire actions for "+ action.getDescription() + " for " + t);
           action.doAction();
         } catch (Exception e) {
-          logger.error("Failed to do expire action " + action.getDescription(),
+          logger.error("Failed to do expire action " + action.getDescription() + " for " + t,
               e);
         } catch (Throwable th) {
-          logger.error("Failed to do expire action " + action.getDescription(),
+          logger.error("Failed to do expire action " + action.getDescription() + " for " + t,
               th);
         }
       }

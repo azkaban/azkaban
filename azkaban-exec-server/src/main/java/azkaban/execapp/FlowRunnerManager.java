@@ -116,6 +116,7 @@ public class FlowRunnerManager implements EventListener,
   private final ProjectLoader projectLoader;
   private final JobTypeManager jobtypeManager;
   private final FlowPreparer flowPreparer;
+  private final FlowExecutionMonitorManager executionMonitorManager;
 
   private final Props azkabanProps;
   private final File executionDirectory;
@@ -194,6 +195,10 @@ public class FlowRunnerManager implements EventListener,
             AzkabanExecutorServer.JOBTYPE_PLUGIN_DIR,
             JobTypeManager.DEFAULT_JOBTYPEPLUGINDIR), globalProps,
             parentClassLoader);
+
+    executionMonitorManager = new FlowExecutionMonitorManager();
+    executionMonitorManager.start();
+
   }
 
   private TrackingThreadPool createExecutorService(int nThreads) {
@@ -488,7 +493,6 @@ public class FlowRunnerManager implements EventListener,
     if (options.getPipelineExecutionId() != null) {
       Integer pipelineExecId = options.getPipelineExecutionId();
       FlowRunner runner = runningFlows.get(pipelineExecId);
-
       if (runner != null) {
         watcher = new LocalFlowWatcher(runner);
       } else {
@@ -543,6 +547,10 @@ public class FlowRunnerManager implements EventListener,
       submittedFlows.put(future, runner.getExecutionId());
       // update the last submitted time.
       this.lastFlowSubmittedDate = System.currentTimeMillis();
+      // add associated monitor for this execution
+      if(flow.getSlaOptions() != null && !flow.getSlaOptions().isEmpty()) {
+        executionMonitorManager.addMonitor(execId, flow.getSlaOptions());
+      }
     } catch (RejectedExecutionException re) {
       throw new ExecutorManagerException(
           "Azkaban server can't execute any more flows. "
