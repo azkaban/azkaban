@@ -7,8 +7,11 @@ function addClass(el, newClass) {
 var rewire = require('rewire'),
     dateJs = rewire('../util/date.js');
 
-var chai = require('chai');
-var assert = chai.assert;
+var moment = require('moment-timezone');
+
+var chai = require('chai'),
+    assert = chai.assert;
+
 
 //Some Test instances
 describe('addClass', function() {
@@ -50,7 +53,7 @@ describe('CronTransformation', function() {
    assert.equal(testStrFromCronToQuartz('0 3 * * 1,3-5 2016'), '0 3 * * 0,2-4 2016');
    assert.equal(testStrFromCronToQuartz('0 3 * * 5#3'), '0 3 * * 4#3');
    assert.equal(testStrFromCronToQuartz('0 3 * * 5-7#3'), '0 3 * * 4-6#3');
-   assert.equal(testStrFromCronToQuartz('0 3 * * 1,3-5#3 2016'), '0 3 * * 0,2-4#3 2016'); 
+   assert.equal(testStrFromCronToQuartz('0 3 * * 1,3-5#3 2016'), '0 3 * * 0,2-4#3 2016');
   });
 });
 
@@ -71,5 +74,23 @@ describe('ValidateQuartzStr', function() {
    assert.equal(validateQuartzStr('0 3 * ? 5 FRI'), 'VALID');
    assert.equal(validateQuartzStr('0 3 * ? 5 3-6'), 'VALID');
 
+  });
+});
+
+//Test moment js and moment timezone js
+describe('momentJSTest', function() {
+
+  var momentObj= moment();
+
+  it('momentJSTest', function() {
+    assert.equal(moment('20170411', 'YYYYMMDD').format('MM-YYYY'), '04-2017');
+  });
+
+  it('momentTimezoneTest', function() {
+
+    // Refer to https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/UTC
+    // month: 3 represents April
+    var dateTime = Date.UTC(2017, 3, 11, 11, 17, 0);
+    assert.equal(moment(dateTime).tz('America/Los_Angeles').format("LLL"), 'April 11, 2017 4:17 AM');
   });
 });

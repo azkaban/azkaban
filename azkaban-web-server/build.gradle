@@ -93,7 +93,7 @@ task movingJsTojsToPackage(dependsOn: ['npm_install']) {
       into "${buildDir}/jsToPackage"
     }
     copy {
-      from "node_modules/moment-timezone/builds/moment-timezone-with-data-2010-2020.min.js"
+      from "node_modules/moment-timezone/builds/moment-timezone-with-data.min.js"
       into "${buildDir}/jsToPackage"
     }
   }
