@@ -55,4 +55,8 @@ public class ServerProperties {
 
   // The property is used for the web server to get the host name of the executor when running in SOLO mode.
   public static final String EXECUTOR_HOST = "executor.host";
+
+  // Max flow running time in mins, server will kill flows running longer than this setting.
+  // if not set or <= 0, then there's no restriction on running time.
+  public static final String AZKABAN_MAX_FLOW_RUNNING_MINS = "azkaban.server.flow.max.running.minutes";
 }

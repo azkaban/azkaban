@@ -16,11 +16,14 @@
 
 package azkaban.execapp;
 
+import azkaban.constants.ServerProperties;
+import azkaban.executor.Status;
 import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
 import java.lang.Thread.State;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -112,6 +115,7 @@ public class FlowRunnerManager implements EventListener,
   private final ExecutorLoader executorLoader;
   private final ProjectLoader projectLoader;
   private final JobTypeManager jobtypeManager;
+  private final FlowPreparer flowPreparer;
 
   private final Props azkabanProps;
   private final File executionDirectory;
@@ -164,6 +168,9 @@ public class FlowRunnerManager implements EventListener,
     numThreads = props.getInt(EXECUTOR_FLOW_THREADS, DEFAULT_NUM_EXECUTING_FLOWS);
     numJobThreadPerFlow = props.getInt(FLOW_NUM_JOB_THREADS, DEFAULT_FLOW_NUM_JOB_TREADS);
     executorService = createExecutorService(numThreads);
+
+    // Create a flow preparer
+    flowPreparer = new FlowPreparer(projectLoader, executionDirectory, projectDirectory, installedProjects);
 
     this.executorLoader = executorLoader;
     this.projectLoader = projectLoader;
@@ -271,10 +278,15 @@ public class FlowRunnerManager implements EventListener,
     // Every 2 mins clean the recently finished list
     private static final long RECENTLY_FINISHED_INTERVAL_MS = 2 * 60 * 1000;
 
+    // Every 5 mins kill flows running longer than allowed max running time
+    private static final long LONG_RUNNING_FLOW_KILLING_INTERVAL_MS = 5 * 60 * 1000;
+
     private boolean shutdown = false;
     private long lastExecutionDirCleanTime = -1;
     private long lastOldProjectCleanTime = -1;
     private long lastRecentlyFinishedCleanTime = -1;
+    private long lastLongRunningFlowCleanTime = -1;
+    private final long flowMaxRunningTimeInMins = azkabanProps.getInt(ServerProperties.AZKABAN_MAX_FLOW_RUNNING_MINS, 60 * 24 * 10);
 
     public CleanerThread() {
       this.setName("FlowRunnerManager-Cleaner-Thread");
@@ -285,6 +297,11 @@ public class FlowRunnerManager implements EventListener,
     public void shutdown() {
       shutdown = true;
       this.interrupt();
+    }
+
+    private boolean isFlowRunningLongerThan(ExecutableFlow flow, long flowMaxRunningTimeInMins) {
+      Set<Status> nonFinishingStatusAfterFlowStarts = new HashSet<>(Arrays.asList(Status.RUNNING, Status.QUEUED, Status.PAUSED, Status.FAILED_FINISHING));
+      return nonFinishingStatusAfterFlowStarts.contains(flow.getStatus()) && flow.getStartTime() > 0 && TimeUnit.MILLISECONDS.toMinutes(System.currentTimeMillis()-flow.getStartTime()) >= flowMaxRunningTimeInMins;
     }
 
     public void run() {
@@ -312,6 +329,17 @@ public class FlowRunnerManager implements EventListener,
               logger.info("Cleaning old execution dirs");
               cleanOlderExecutionDirs();
               lastExecutionDirCleanTime = currentTime;
+            }
+
+            if (flowMaxRunningTimeInMins > 0 && currentTime - LONG_RUNNING_FLOW_KILLING_INTERVAL_MS > lastLongRunningFlowCleanTime) {
+              logger.info(String.format("Killing long jobs running longer than %s mins", flowMaxRunningTimeInMins));
+              for (FlowRunner flowRunner : runningFlows.values()) {
+                if (isFlowRunningLongerThan(flowRunner.getExecutableFlow(), flowMaxRunningTimeInMins)) {
+                  logger.info(String.format("Killing job [id: %s, status: %s]. It has been running for %s mins", flowRunner.getExecutableFlow().getId(), flowRunner.getExecutableFlow().getStatus(), TimeUnit.MILLISECONDS.toMinutes(System.currentTimeMillis()-flowRunner.getExecutableFlow().getStartTime())));
+                  flowRunner.kill();
+                }
+              }
+              lastLongRunningFlowCleanTime = currentTime;
             }
 
             wait(RECENTLY_FINISHED_TIME_TO_LIVE);
@@ -413,16 +441,26 @@ public class FlowRunnerManager implements EventListener,
             try {
               logger.info("Removing old unused installed project "
                   + version.getProjectId() + ":" + version.getVersion());
-              version.deleteDirectory();
+              deleteDirectory(version);
               installedProjects.remove(new Pair<Integer, Integer>(version
                   .getProjectId(), version.getVersion()));
             } catch (IOException e) {
-              e.printStackTrace();
+              logger.error(e);
             }
 
             installedVersions.remove(versionKey);
           }
         }
+      }
+    }
+  }
+
+  public void deleteDirectory(ProjectVersion pv) throws IOException {
+    synchronized (pv) {
+      logger.warn("Deleting project: " + pv);
+      final File installedDir = pv.getInstalledDir();
+      if (installedDir != null && installedDir.exists()) {
+        FileUtils.deleteDirectory(installedDir);
       }
     }
   }
@@ -442,7 +480,7 @@ public class FlowRunnerManager implements EventListener,
     }
 
     // Sets up the project files and execution directory.
-    setupFlow(flow);
+    flowPreparer.setup(flow);
 
     // Setup flow runner
     FlowWatcher watcher = null;
@@ -528,46 +566,6 @@ public class FlowRunnerManager implements EventListener,
           .getMetricFromName(NumFailedFlowMetric.NUM_FAILED_FLOW_METRIC_NAME));
     }
 
-  }
-
-  private void setupFlow(ExecutableFlow flow) throws ExecutorManagerException {
-    int execId = flow.getExecutionId();
-    File execPath = new File(executionDirectory, String.valueOf(execId));
-    flow.setExecutionPath(execPath.getPath());
-    logger
-        .info("Flow " + execId + " submitted with path " + execPath.getPath());
-    execPath.mkdirs();
-
-    // We're setting up the installed projects. First time, it may take a while
-    // to set up.
-    Pair<Integer, Integer> projectVersionKey =
-        new Pair<Integer, Integer>(flow.getProjectId(), flow.getVersion());
-
-    // We set up project versions this way
-    ProjectVersion projectVersion = null;
-    synchronized (installedProjects) {
-      projectVersion = installedProjects.get(projectVersionKey);
-      if (projectVersion == null) {
-        projectVersion =
-            new ProjectVersion(flow.getProjectId(), flow.getVersion());
-        installedProjects.put(projectVersionKey, projectVersion);
-      }
-    }
-
-    try {
-      projectVersion.setupProjectFiles(projectLoader, projectDirectory, logger);
-      projectVersion.copyCreateHardlinkDirectory(execPath);
-    } catch (Exception e) {
-      logger.error("Error in setting up project directory "+projectDirectory+", "+e);
-      if (execPath.exists()) {
-        try {
-          FileUtils.deleteDirectory(execPath);
-        } catch (IOException e1) {
-          e1.printStackTrace();
-        }
-      }
-      throw new ExecutorManagerException(e);
-    }
   }
 
   public void cancelFlow(int execId, String user)

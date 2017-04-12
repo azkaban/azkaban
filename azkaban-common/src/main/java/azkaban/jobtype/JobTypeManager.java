@@ -309,6 +309,7 @@ public class JobTypeManager {
     }
 
     // each job type can have a different class loader
+    logger.info(String.format("Classpath for plugin[dir: %s, JobType: %s]: %s", pluginDir, jobTypeName, resources));
     ClassLoader jobTypeLoader =
         new URLClassLoader(resources.toArray(new URL[resources.size()]),
             parentLoader);
