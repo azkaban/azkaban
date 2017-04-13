@@ -1,5 +1,4 @@
 
-*.log
 *.swp
 .classpath
 .gradle/
@@ -8,9 +7,17 @@
 /bin
 bin/
 build/
+.DS_Store
+.bundle/
+Gemfile.lock
+vendor/
+
+# temp directory is ignored so that it can be used to store temporary files such as local testing configurations.
+temp/
 
 # Intellij files
 .idea
 *.iml
 *.ipr
 *.iws
+.ideaDataSources/

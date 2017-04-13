@@ -240,6 +240,7 @@ public class ExecuteFlowAction implements TriggerAction {
     exflow.setExecutionOptions(executionOptions);
 
     try {
+      logger.info("Invoking flow " + project.getName() + "." + flowName);
       executorManager.submitExecutableFlow(exflow, submitUser);
       logger.info("Invoked flow " + project.getName() + "." + flowName);
     } catch (ExecutorManagerException e) {
