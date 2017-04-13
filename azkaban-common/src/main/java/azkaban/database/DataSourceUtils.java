@@ -16,15 +16,19 @@
 
 package azkaban.database;
 
+
+import azkaban.constants.ServerInternals;
+import azkaban.utils.Props;
+
+import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.SQLException;
 
+import javax.sql.DataSource;
+
+import org.apache.commons.dbcp.BasicDataSource;
 import org.apache.commons.dbutils.DbUtils;
 import org.apache.log4j.Logger;
-
-import java.sql.PreparedStatement;
-import java.sql.Connection;
-
-import azkaban.utils.Props;
 
 public class DataSourceUtils {
 
@@ -142,6 +146,45 @@ public class DataSourceUtils {
       setTestOnBorrow(true);
     }
 
+    /**
+     * This method overrides {@link BasicDataSource#getConnection()}, in order to have retry logics.
+     *
+     */
+    @Override
+    public Connection getConnection() throws SQLException {
+
+      /*
+       * when az server process launches, if the connection isn't valid (e.g., network problem, wrong password, etc),
+       * we fail the connection immediately.
+       */
+      if (getDataSource() == null) {
+        return createDataSource().getConnection();
+      }
+
+      Connection connection = null;
+      int retryAttempt = 0;
+      this.dataSource = null;
+      while (connection == null && retryAttempt < ServerInternals.MAX_DB_RETRY_COUNT) {
+        try {
+          /*
+           * when DB connection could not be fetched here, dbcp library will keep searching until a timeout defined in
+           * its code hardly.
+           */
+          connection = createDataSource().getConnection();
+          if(connection != null)
+            return connection;
+        } catch (Exception ex) {
+          logger.error("Failed to find DB connection", ex);
+          this.dataSource = null;
+          logger.info("waits 10 seconds and retry. No.Attempt = " + retryAttempt);
+//          sleepMillis(1000L);
+        } finally {
+          retryAttempt ++;
+        }
+      }
+      return connection;
+    }
+
     @Override
     public boolean allowsOnDuplicateKey() {
       return true;
@@ -150,6 +193,21 @@ public class DataSourceUtils {
     @Override
     public String getDBType() {
       return "mysql";
+    }
+
+    private void sleepMillis(long numMilli) {
+      try {
+        Thread.sleep(numMilli);
+      } catch (InterruptedException e) {
+        e.printStackTrace();
+      }
+    }
+
+    /*
+     * get the parent class's dataSource
+     */
+    private DataSource getDataSource() {
+      return dataSource;
     }
   }
 

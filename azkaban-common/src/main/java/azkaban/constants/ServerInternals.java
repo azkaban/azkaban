@@ -34,4 +34,6 @@ public class ServerInternals {
   // Max number of memory check retry
   public static final int MEMORY_CHECK_RETRY_LIMIT = 720;
 
+  // The MAX number of Retries when looking for a DB connection. The whole waiting time will be 1 hour.
+  public static final int MAX_DB_RETRY_COUNT = 360;
 }
