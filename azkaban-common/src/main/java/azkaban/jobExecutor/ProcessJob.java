@@ -86,14 +86,14 @@ public class ProcessJob extends AbstractProcessJob {
         if (isMemGranted) {
           info(String.format("Memory granted (Xms %d kb, Xmx %d kb) from system for job %s", memPair.getFirst(), memPair.getSecond(), getId()));
           if(attempt > 1) {
-            CommonMetrics.INSTANCE.unmarkOOMJobWait();
+            CommonMetrics.INSTANCE.decrementOOMJobWaitCount();
           }
           break;
         }
         if (attempt < ServerInternals.MEMORY_CHECK_RETRY_LIMIT) {
           info(String.format(oomMsg + ", sleep for %s secs and retry, attempt %s of %s", TimeUnit.MILLISECONDS.toSeconds(ServerInternals.MEMORY_CHECK_INTERVAL_MS), attempt, ServerInternals.MEMORY_CHECK_RETRY_LIMIT));
           if (attempt == 1) {
-            CommonMetrics.INSTANCE.markOOMJobWait();
+            CommonMetrics.INSTANCE.incrementOOMJobWaitCount();
           }
           synchronized (this) {
             try {
@@ -103,7 +103,7 @@ public class ProcessJob extends AbstractProcessJob {
             }
           }
           if(killed) {
-            CommonMetrics.INSTANCE.unmarkOOMJobWait();
+            CommonMetrics.INSTANCE.decrementOOMJobWaitCount();
             info(String.format("Job %s was killed while waiting for memory check retry", getId()));
             return;
           }
@@ -111,7 +111,7 @@ public class ProcessJob extends AbstractProcessJob {
       }
 
       if (!isMemGranted) {
-        CommonMetrics.INSTANCE.unmarkOOMJobWait();
+        CommonMetrics.INSTANCE.decrementOOMJobWaitCount();
         handleError(oomMsg, null);
       }
     }

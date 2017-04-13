@@ -43,7 +43,7 @@ public enum CommonMetrics {
   private void setupAllMetrics() {
     dbConnectionMeter = MetricsUtility.addMeter("DB-Connection-meter", registry);
     flowFailMeter = MetricsUtility.addMeter("flow-fail-meter", registry);
-    MetricsUtility.addGauge("OOM-waiting-job-meter", registry, OOMWaitingJobCount::get);
+    MetricsUtility.addGauge("OOM-waiting-job-count", registry, OOMWaitingJobCount::get);
     MetricsUtility.addGauge("dbConnectionTime", registry, dbConnectionTime::get);
   }
 
@@ -76,14 +76,14 @@ public enum CommonMetrics {
   /**
    * Mark the occurrence of an job waiting event due to OOM
    */
-  public void markOOMJobWait() {
+  public void incrementOOMJobWaitCount() {
     OOMWaitingJobCount.incrementAndGet();
   }
 
   /**
    * Unmark the occurrence of an job waiting event due to OOM
    */
-  public void unmarkOOMJobWait() {
+  public void decrementOOMJobWaitCount() {
     OOMWaitingJobCount.decrementAndGet();
   }
 
