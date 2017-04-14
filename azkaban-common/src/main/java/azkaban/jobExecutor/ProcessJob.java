@@ -17,6 +17,7 @@
 package azkaban.jobExecutor;
 
 import azkaban.constants.ServerInternals;
+import azkaban.metrics.CommonMetrics;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
@@ -84,18 +85,25 @@ public class ProcessJob extends AbstractProcessJob {
         isMemGranted = SystemMemoryInfo.canSystemGrantMemory(memPair.getFirst(), memPair.getSecond(), freeMemDecrAmt);
         if (isMemGranted) {
           info(String.format("Memory granted (Xms %d kb, Xmx %d kb) from system for job %s", memPair.getFirst(), memPair.getSecond(), getId()));
+          if(attempt > 1) {
+            CommonMetrics.INSTANCE.decrementOOMJobWaitCount();
+          }
           break;
         }
         if (attempt < ServerInternals.MEMORY_CHECK_RETRY_LIMIT) {
-          info(String.format(oomMsg + ", sleep for %s secs and retry, attempt %s of %s", TimeUnit.MILLISECONDS.toSeconds(ServerInternals.MEMORY_CHECK_INTERVAL), attempt, ServerInternals.MEMORY_CHECK_RETRY_LIMIT));
+          info(String.format(oomMsg + ", sleep for %s secs and retry, attempt %s of %s", TimeUnit.MILLISECONDS.toSeconds(ServerInternals.MEMORY_CHECK_INTERVAL_MS), attempt, ServerInternals.MEMORY_CHECK_RETRY_LIMIT));
+          if (attempt == 1) {
+            CommonMetrics.INSTANCE.incrementOOMJobWaitCount();
+          }
           synchronized (this) {
             try {
-              this.wait(ServerInternals.MEMORY_CHECK_INTERVAL);
+              this.wait(ServerInternals.MEMORY_CHECK_INTERVAL_MS);
             } catch (InterruptedException e) {
               info(String.format("Job %s interrupted while waiting for memory check retry", getId()));
             }
           }
           if(killed) {
+            CommonMetrics.INSTANCE.decrementOOMJobWaitCount();
             info(String.format("Job %s was killed while waiting for memory check retry", getId()));
             return;
           }
@@ -103,9 +111,8 @@ public class ProcessJob extends AbstractProcessJob {
       }
 
       if (!isMemGranted) {
-        throw new Exception(
-            String.format("Cannot request memory (Xms %d kb, Xmx %d kb) from system for job %s", memPair.getFirst(),
-                memPair.getSecond(), getId()));
+        CommonMetrics.INSTANCE.decrementOOMJobWaitCount();
+        handleError(oomMsg, null);
       }
     }
 
