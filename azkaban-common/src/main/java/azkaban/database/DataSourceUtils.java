@@ -18,6 +18,7 @@ package azkaban.database;
 
 
 import azkaban.constants.ServerInternals;
+import azkaban.metric.MetricReportManager;
 import azkaban.utils.Props;
 
 import java.sql.Connection;
@@ -102,7 +103,7 @@ public class DataSourceUtils {
    */
   public static AzkabanDataSource getMySQLDataSource(String host, Integer port,
       String dbName, String user, String password, Integer numConnections) {
-    return new MySQLBasicDataSource(host, port, dbName, user, password,
+    return MySQLBasicDataSource.getInstance(host, port, dbName, user, password,
         numConnections);
   }
 
@@ -123,10 +124,12 @@ public class DataSourceUtils {
   }
 
   /**
-   * MySQL data source based on AzkabanDataSource
-   *
+   * Construct a Mysql BasicDataSource singleton object, in order to allow all sql connections rely on
+   * getConnection method in the same object.
    */
   public static class MySQLBasicDataSource extends AzkabanDataSource {
+
+    private static volatile MySQLBasicDataSource instance = null;
 
     private final String url;
 
@@ -147,11 +150,27 @@ public class DataSourceUtils {
     }
 
     /**
+     * Get a singleton object for MySQL BasicDataSource
+     */
+    public static MySQLBasicDataSource getInstance(String host, int port, String dbName,
+        String user, String password, int numConnections) {
+      if (instance == null) {
+        synchronized (MySQLBasicDataSource.class) {
+          if (instance == null) {
+            logger.info("Instantiating MetricReportManager");
+            instance = new MySQLBasicDataSource(host, port, dbName, user, password, numConnections);
+          }
+        }
+      }
+      return instance;
+    }
+
+    /**
      * This method overrides {@link BasicDataSource#getConnection()}, in order to have retry logics.
      *
      */
     @Override
-    public Connection getConnection() throws SQLException {
+    public synchronized Connection getConnection() throws SQLException {
 
       /*
        * when az server process launches, if the connection isn't valid (e.g., network problem, wrong password, etc),
@@ -163,7 +182,6 @@ public class DataSourceUtils {
 
       Connection connection = null;
       int retryAttempt = 0;
-      this.dataSource = null;
       while (connection == null && retryAttempt < ServerInternals.MAX_DB_RETRY_COUNT) {
         try {
           /*
@@ -173,11 +191,12 @@ public class DataSourceUtils {
           connection = createDataSource().getConnection();
           if(connection != null)
             return connection;
-        } catch (Exception ex) {
-          logger.error("Failed to find DB connection", ex);
+        } catch (SQLException ex) {
           this.dataSource = null;
-          logger.info("waits 10 seconds and retry. No.Attempt = " + retryAttempt);
-//          sleepMillis(1000L);
+          logger.error("Failed to find DB connection. waits 1 minutes and retry. No.Attempt = " + retryAttempt, ex);
+        } catch (Exception ex) {
+          logger.error("Exception other than SQLException is thrown", ex);
+          return null;
         } finally {
           retryAttempt ++;
         }
@@ -193,14 +212,6 @@ public class DataSourceUtils {
     @Override
     public String getDBType() {
       return "mysql";
-    }
-
-    private void sleepMillis(long numMilli) {
-      try {
-        Thread.sleep(numMilli);
-      } catch (InterruptedException e) {
-        e.printStackTrace();
-      }
     }
 
     /*
