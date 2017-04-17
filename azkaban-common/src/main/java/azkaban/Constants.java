@@ -17,9 +17,18 @@
 
 package azkaban;
 
+/**
+ * Constants
+ *
+ * Global place for storing constants.
+ * Conventions:
+ *  - All internal constants to be put in the root level ie. {@link Constants} class
+ *  - All Configuration keys to be put in {@link ConfigurationKeys} class
+ *  - Flow level Properties keys go to {@link FlowProperties}
+ *  - Job  level Properties keys go to {@link JobProperties}
+ *
+ */
 public class Constants {
-  // Constants pertaining to the internal running of the Azkaban server
-
   // Names and paths of various file names to configure Azkaban
   public static final String AZKABAN_PROPERTIES_FILE = "azkaban.properties";
   public static final String AZKABAN_PRIVATE_PROPERTIES_FILE = "azkaban.private.properties";
@@ -57,15 +66,12 @@ public class Constants {
     public static final String AZKABAN_SERVER_LOGGING_KAFKA_TOPIC = "azkaban.server.logging.kafka.topic";
 
     // Represent the class name of azkaban metrics reporter.
-    public static final String CUSTOM_METRICS_REPORTER_CLASS_NAME =
-        "azkaban.metrics.reporter.name";
+    public static final String CUSTOM_METRICS_REPORTER_CLASS_NAME = "azkaban.metrics.reporter.name";
 
     // Represent the metrics server URL.
-    public static final String METRICS_SERVER_URL =
-        "azkaban.metrics.server.url";
+    public static final String METRICS_SERVER_URL = "azkaban.metrics.server.url";
 
-    public static final String IS_METRICS_ENABLED =
-        "azkaban.is.metrics.enabled";
+    public static final String IS_METRICS_ENABLED = "azkaban.is.metrics.enabled";
 
     // Hostname for the host, if not specified, canonical hostname will be used
     public static final String AZKABAN_SERVER_HOST_NAME = "azkaban.server.hostname";
