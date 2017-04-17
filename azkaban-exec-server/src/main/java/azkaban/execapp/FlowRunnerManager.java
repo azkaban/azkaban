@@ -16,7 +16,7 @@
 
 package azkaban.execapp;
 
-import azkaban.constants.ServerProperties;
+import azkaban.Constants;
 import azkaban.executor.Status;
 import java.io.File;
 import java.io.FilenameFilter;
@@ -286,7 +286,7 @@ public class FlowRunnerManager implements EventListener,
     private long lastOldProjectCleanTime = -1;
     private long lastRecentlyFinishedCleanTime = -1;
     private long lastLongRunningFlowCleanTime = -1;
-    private final long flowMaxRunningTimeInMins = azkabanProps.getInt(ServerProperties.AZKABAN_MAX_FLOW_RUNNING_MINS, 60 * 24 * 10);
+    private final long flowMaxRunningTimeInMins = azkabanProps.getInt(Constants.ConfigurationKeys.AZKABAN_MAX_FLOW_RUNNING_MINS, 60 * 24 * 10);
 
     public CleanerThread() {
       this.setName("FlowRunnerManager-Cleaner-Thread");
