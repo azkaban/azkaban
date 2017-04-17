@@ -16,15 +16,20 @@
 
 package azkaban.database;
 
+
+import azkaban.constants.ServerInternals;
+import azkaban.metric.MetricReportManager;
+import azkaban.utils.Props;
+
+import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.SQLException;
 
+import javax.sql.DataSource;
+
+import org.apache.commons.dbcp.BasicDataSource;
 import org.apache.commons.dbutils.DbUtils;
 import org.apache.log4j.Logger;
-
-import java.sql.PreparedStatement;
-import java.sql.Connection;
-
-import azkaban.utils.Props;
 
 public class DataSourceUtils {
 
@@ -98,7 +103,7 @@ public class DataSourceUtils {
    */
   public static AzkabanDataSource getMySQLDataSource(String host, Integer port,
       String dbName, String user, String password, Integer numConnections) {
-    return new MySQLBasicDataSource(host, port, dbName, user, password,
+    return MySQLBasicDataSource.getInstance(host, port, dbName, user, password,
         numConnections);
   }
 
@@ -119,10 +124,12 @@ public class DataSourceUtils {
   }
 
   /**
-   * MySQL data source based on AzkabanDataSource
-   *
+   * Construct a Mysql BasicDataSource singleton object, in order to allow all sql connections rely on
+   * getConnection method in the same object.
    */
   public static class MySQLBasicDataSource extends AzkabanDataSource {
+
+    private static volatile MySQLBasicDataSource instance = null;
 
     private final String url;
 
@@ -142,6 +149,61 @@ public class DataSourceUtils {
       setTestOnBorrow(true);
     }
 
+    /**
+     * Get a singleton object for MySQL BasicDataSource
+     */
+    public static MySQLBasicDataSource getInstance(String host, int port, String dbName,
+        String user, String password, int numConnections) {
+      if (instance == null) {
+        synchronized (MySQLBasicDataSource.class) {
+          if (instance == null) {
+            logger.info("Instantiating MetricReportManager");
+            instance = new MySQLBasicDataSource(host, port, dbName, user, password, numConnections);
+          }
+        }
+      }
+      return instance;
+    }
+
+    /**
+     * This method overrides {@link BasicDataSource#getConnection()}, in order to have retry logics.
+     *
+     */
+    @Override
+    public synchronized Connection getConnection() throws SQLException {
+
+      /*
+       * when az server process launches, if the connection isn't valid (e.g., network problem, wrong password, etc),
+       * we fail the connection immediately.
+       */
+      if (getDataSource() == null) {
+        return createDataSource().getConnection();
+      }
+
+      Connection connection = null;
+      int retryAttempt = 0;
+      while (connection == null && retryAttempt < ServerInternals.MAX_DB_RETRY_COUNT) {
+        try {
+          /*
+           * when DB connection could not be fetched here, dbcp library will keep searching until a timeout defined in
+           * its code hardly.
+           */
+          connection = createDataSource().getConnection();
+          if(connection != null)
+            return connection;
+        } catch (SQLException ex) {
+          this.dataSource = null;
+          logger.error("Failed to find DB connection. waits 1 minutes and retry. No.Attempt = " + retryAttempt, ex);
+        } catch (Exception ex) {
+          logger.error("Exception other than SQLException is thrown", ex);
+          return null;
+        } finally {
+          retryAttempt ++;
+        }
+      }
+      return connection;
+    }
+
     @Override
     public boolean allowsOnDuplicateKey() {
       return true;
@@ -150,6 +212,13 @@ public class DataSourceUtils {
     @Override
     public String getDBType() {
       return "mysql";
+    }
+
+    /*
+     * get the parent class's dataSource
+     */
+    private DataSource getDataSource() {
+      return dataSource;
     }
   }
 
