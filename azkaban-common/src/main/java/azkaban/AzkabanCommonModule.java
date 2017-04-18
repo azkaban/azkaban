@@ -35,8 +35,6 @@ import static azkaban.storage.StorageImplementationType.*;
 
 
 public class AzkabanCommonModule extends AbstractModule {
-  public static final String AZKABAN_STORAGE_TYPE = "azkaban.storage.type";
-
   private final Props props;
   /**
    * Storage Implementation
@@ -51,7 +49,7 @@ public class AzkabanCommonModule extends AbstractModule {
 
   public AzkabanCommonModule(Props props) {
     this.props = props;
-    this.storageImplementation = props.getString(AZKABAN_STORAGE_TYPE, LOCAL.name());
+    this.storageImplementation = props.getString(Constants.ConfigurationKeys.AZKABAN_STORAGE_TYPE, LOCAL.name());
   }
 
   @Override

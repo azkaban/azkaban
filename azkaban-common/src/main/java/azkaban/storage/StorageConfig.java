@@ -17,13 +17,12 @@
 
 package azkaban.storage;
 
+import azkaban.Constants;
 import azkaban.utils.Props;
 import com.google.inject.Inject;
 
 
 public class StorageConfig {
-
-  public static final String AZKABAN_STORAGE_LOCAL_BASEDIRECTORY = "azkaban.storage.local.basedirectory";
 
   private final Props props;
   private String baseDirectoryPath = "AZKABAN_STORAGE";
@@ -32,7 +31,7 @@ public class StorageConfig {
   public StorageConfig(Props props) {
     this.props = props;
 
-    baseDirectoryPath = props.getString(AZKABAN_STORAGE_LOCAL_BASEDIRECTORY, baseDirectoryPath);
+    baseDirectoryPath = props.getString(Constants.ConfigurationKeys.AZKABAN_STORAGE_LOCAL_BASEDIRECTORY, baseDirectoryPath);
   }
 
   public String getBaseDirectoryPath() {
