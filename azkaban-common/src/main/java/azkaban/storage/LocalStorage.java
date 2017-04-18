@@ -17,38 +17,33 @@
 
 package azkaban.storage;
 
-import azkaban.spi.KeyDoesNotExistException;
 import azkaban.spi.Storage;
 import azkaban.spi.StorageException;
+import azkaban.spi.StorageMetadata;
+import azkaban.utils.FileIOUtils;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
-import java.util.Properties;
 import org.apache.commons.io.FileUtils;
 import org.apache.log4j.Logger;
 
 import static com.google.common.base.Preconditions.*;
-import static java.util.Objects.*;
 
 
 public class LocalStorage implements Storage {
   private static final Logger log = Logger.getLogger(LocalStorage.class);
 
-  public static final String PROJECT = "project";
-  public static final String VERSION = "version";
-  public static final String EXTENSION = "extension";
-
   final File baseDirectory;
 
   public LocalStorage(File baseDirectory) {
-    this.baseDirectory = validateBaseDirectory(baseDirectory);
+    this.baseDirectory = validateBaseDirectory(createIfDoesNotExist(baseDirectory));
   }
 
   @Override
-  public InputStream get(URI key) throws KeyDoesNotExistException {
+  public InputStream get(URI key) {
     try {
       return new FileInputStream(getFile(key));
     } catch (FileNotFoundException e) {
@@ -61,27 +56,24 @@ public class LocalStorage implements Storage {
   }
 
   @Override
-  public URI put(Properties metadata, InputStream is) {
-    checkArgument(metadata.containsKey(PROJECT), "Incorrect metadata. project not found");
-    checkArgument(metadata.containsKey(VERSION), "Incorrect metadata. version not found");
-    checkArgument(metadata.containsKey(EXTENSION), "Incorrect metadata. extension not found");
+  public URI put(StorageMetadata metadata, InputStream is) {
 
-    final String projectId = requireNonNull(metadata.getProperty(PROJECT), "project is null");
-    final String version = requireNonNull(metadata.getProperty(VERSION), "version is null");
-
-    final File projectDir = new File(baseDirectory, projectId);
+    final File projectDir = new File(baseDirectory, metadata.getProjectId());
     if (projectDir.mkdir()) {
       log.info("Created project dir: " + projectDir.getAbsolutePath());
     }
 
-    final File targetFile = new File(projectDir, version + "." + metadata.getProperty(EXTENSION));
+    final File targetFile = new File(projectDir, metadata.getVersion() + "." + metadata.getExtension());
 
     if (targetFile.exists()) {
-      throw new StorageException("Error in LocalStorage. Target file already exists. targetFile: " + targetFile);
+      throw new StorageException(String.format(
+          "Error in LocalStorage. Target file already exists. targetFile: %s, Metadata: %s",
+          targetFile, metadata));
     }
     try {
       FileUtils.copyInputStreamToFile(is, targetFile);
     } catch (IOException e) {
+      log.error("LocalStorage error in put(): Metadata: " + metadata);
       throw new StorageException(e);
     }
     return createRelativeURI(targetFile);
@@ -92,25 +84,21 @@ public class LocalStorage implements Storage {
   }
 
   @Override
-  public void delete(URI key) throws KeyDoesNotExistException {
+  public boolean delete(URI key) {
     throw new UnsupportedOperationException("delete has not been implemented.");
   }
 
-  private static File validateBaseDirectory(File baseDirectory) {
+  private static File createIfDoesNotExist(File baseDirectory) {
     if(!baseDirectory.exists()) {
       baseDirectory.mkdir();
       log.info("Creating dir: " + baseDirectory.getAbsolutePath());
     }
+    return baseDirectory;
+  }
+
+  private static File validateBaseDirectory(File baseDirectory) {
     checkArgument(baseDirectory.isDirectory());
-    try {
-      File testFile = new File(baseDirectory, "_tmp");
-      /*
-       * Create and delete a dummy file in order to check file permissions. Maybe
-       * there is a safer way for this check.
-       */
-      testFile.createNewFile();
-      testFile.delete();
-    } catch (IOException e) {
+    if (!FileIOUtils.isDirWritable(baseDirectory)) {
       throw new IllegalArgumentException("Directory not writable: " + baseDirectory);
     }
     return baseDirectory;

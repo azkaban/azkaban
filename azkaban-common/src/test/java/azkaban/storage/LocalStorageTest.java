@@ -17,15 +17,14 @@
 
 package azkaban.storage;
 
+import azkaban.spi.StorageMetadata;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
 import java.net.URI;
-import java.util.Properties;
 import org.apache.commons.io.FileUtils;
 import org.apache.log4j.Logger;
 import org.junit.After;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -59,13 +58,8 @@ public class LocalStorageTest {
 
     URI key;
     try (InputStream is = new FileInputStream(testFile)) {
-      Properties metadata = new Properties();
-      metadata.setProperty(LocalStorage.PROJECT, "testProjectId");
-      metadata.setProperty(LocalStorage.VERSION, "1");
-      metadata.setProperty(LocalStorage.EXTENSION, "zip");
-
       // test put
-      key = localStorage.put(metadata, is);
+      key = localStorage.put(new StorageMetadata("testProjectId", "1", "zip"), is);
     }
     assertNotNull(key);
     log.info("Key URI: " + key);

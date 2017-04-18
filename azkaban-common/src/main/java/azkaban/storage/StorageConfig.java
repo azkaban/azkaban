@@ -23,22 +23,14 @@ import com.google.inject.Inject;
 
 
 public class StorageConfig {
-
-  private final Props props;
   private String baseDirectoryPath = "AZKABAN_STORAGE";
 
   @Inject
   public StorageConfig(Props props) {
-    this.props = props;
-
     baseDirectoryPath = props.getString(Constants.ConfigurationKeys.AZKABAN_STORAGE_LOCAL_BASEDIRECTORY, baseDirectoryPath);
   }
 
   public String getBaseDirectoryPath() {
     return baseDirectoryPath;
-  }
-
-  public Props getProps() {
-    return props;
   }
 }

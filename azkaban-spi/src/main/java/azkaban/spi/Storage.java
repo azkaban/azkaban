@@ -19,7 +19,6 @@ package azkaban.spi;
 
 import java.io.InputStream;
 import java.net.URI;
-import java.util.Properties;
 
 
 /**
@@ -43,20 +42,20 @@ public interface Storage {
   InputStream get(URI key);
 
   /**
-   * Put an object into Storage against a key. If the key already exists, then it throws
-   * {@link KeyAlreadyExistsException;}.
+   * Put an object and return a key.
    *
    * @param metadata Metadata related to the input stream
    * @param is The input stream from which the value is read to the store. The value is read completely
    *
    * @return the URI of the data
    */
-  URI put(Properties metadata, InputStream is);
+  URI put(StorageMetadata metadata, InputStream is);
 
   /**
-   * Delete an object from Storage. Throws {@link KeyDoesNotExistException} if key is not present.
+   * Delete an object from Storage.
    *
    * @param key The key is a URI pointing to the blob in Storage.
+   * @return true if delete was successful. false if there was nothing to delete.
    */
-  void delete(URI key);
+  boolean delete(URI key);
 }

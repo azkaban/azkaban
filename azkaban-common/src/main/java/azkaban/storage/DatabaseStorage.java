@@ -19,9 +19,9 @@ package azkaban.storage;
 
 import azkaban.project.JdbcProjectLoader;
 import azkaban.spi.Storage;
+import azkaban.spi.StorageMetadata;
 import java.io.InputStream;
 import java.net.URI;
-import java.util.Properties;
 import javax.inject.Inject;
 
 
@@ -44,12 +44,12 @@ public class DatabaseStorage implements Storage {
   }
 
   @Override
-  public URI put(Properties metadata, InputStream is) {
+  public URI put(StorageMetadata metadata, InputStream is) {
     return null;
   }
 
   @Override
-  public void delete(URI key) {
-
+  public boolean delete(URI key) {
+    throw new UnsupportedOperationException("Delete is not supported");
   }
 }
