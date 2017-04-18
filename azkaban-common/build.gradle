@@ -33,6 +33,7 @@ model {
 
 dependencies {
   compile project(':azkaban-spi')
+  compile project(':azkaban-db')
 
   compile('com.google.inject:guice:4.1.0')
   compile('com.google.guava:guava:21.0')
