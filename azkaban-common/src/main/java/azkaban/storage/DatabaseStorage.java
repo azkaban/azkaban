@@ -25,6 +25,12 @@ import java.util.Properties;
 import javax.inject.Inject;
 
 
+/**
+ * DatabaseStorage
+ *
+ * This class helps in storing projects in the DB itself. This is intended to be the default since it is the current
+ * behavior of Azkaban.
+ */
 public class DatabaseStorage implements Storage {
 
   @Inject

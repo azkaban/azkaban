@@ -78,7 +78,6 @@ public class AzkabanCommonModule extends AbstractModule {
 
   @Inject
   public @Provides
-  @Singleton
   LocalStorage createLocalStorage(StorageConfig config) {
     return new LocalStorage(new File(config.getBaseDirectoryPath()));
   }
