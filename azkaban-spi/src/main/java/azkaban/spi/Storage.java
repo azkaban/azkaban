@@ -15,10 +15,11 @@
  *
  */
 
-package com.linkedin.azkaban.spi;
+package azkaban.spi;
 
 import java.io.InputStream;
 import java.net.URI;
+import java.util.Properties;
 
 
 /**
@@ -33,35 +34,29 @@ import java.net.URI;
 public interface Storage {
 
   /**
-   * Check if key exists in storage.
+   * Get an InputStream object by providing a key.
    *
    * @param key The key is a URI pointing to the blob in Storage.
-   * @return true if key exists. false otherwise.
-   */
-  boolean containsKey(URI key);
-
-  /**
-   * Get an InputStream object by providing a key. Throws {@link KeyDoesNotExistException} if key is not present.
-   *
-   * @param key The key is a URI pointing to the blob in Storage.
-   * @return InputStream for fetching the blob.
+   * @return InputStream for fetching the blob. null if the key is not found.
    *
    */
-  InputStream get(URI key) throws KeyDoesNotExistException;
+  InputStream get(URI key);
 
   /**
    * Put an object into Storage against a key. If the key already exists, then it throws
    * {@link KeyAlreadyExistsException;}.
    *
-   * @param key The key is a URI pointing to the blob in Storage.
+   * @param metadata Metadata related to the input stream
    * @param is The input stream from which the value is read to the store. The value is read completely
+   *
+   * @return the URI of the data
    */
-  void put(URI key, InputStream is) throws KeyAlreadyExistsException;
+  URI put(Properties metadata, InputStream is);
 
   /**
    * Delete an object from Storage. Throws {@link KeyDoesNotExistException} if key is not present.
    *
    * @param key The key is a URI pointing to the blob in Storage.
    */
-  void delete(URI key) throws KeyDoesNotExistException;
+  void delete(URI key);
 }

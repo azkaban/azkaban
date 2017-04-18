@@ -15,27 +15,31 @@
  *
  */
 
-package com.linkedin.azkaban.spi;
+package azkaban.storage;
 
-/**
- * Super class to capture any exceptions related to {@link Storage}
- */
-public class StorageException extends AzkabanException {
-  public StorageException(String message) {
-    this(message, null);
+import azkaban.utils.Props;
+import com.google.inject.Inject;
+
+
+public class StorageConfig {
+
+  public static final String AZKABAN_STORAGE_LOCAL_BASEDIRECTORY = "azkaban.storage.local.basedirectory";
+
+  private final Props props;
+  private String baseDirectoryPath = "AZKABAN_STORAGE";
+
+  @Inject
+  public StorageConfig(Props props) {
+    this.props = props;
+
+    baseDirectoryPath = props.getString(AZKABAN_STORAGE_LOCAL_BASEDIRECTORY, baseDirectoryPath);
   }
 
-  public StorageException(Throwable throwable) {
-    this(null, throwable);
+  public String getBaseDirectoryPath() {
+    return baseDirectoryPath;
   }
 
-  public StorageException(String message, Throwable cause) {
-    super(message, cause);
+  public Props getProps() {
+    return props;
   }
-
-  public StorageException(String message, Throwable cause,
-      boolean enableSuppression, boolean writableStackTrace) {
-    super(message, cause, enableSuppression, writableStackTrace);
-  }
-
 }

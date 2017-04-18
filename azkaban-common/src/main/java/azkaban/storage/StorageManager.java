@@ -15,18 +15,22 @@
  *
  */
 
-package com.linkedin.azkaban.spi;
+package azkaban.storage;
 
-import java.net.URI;
+import azkaban.spi.Storage;
+import com.google.inject.Inject;
 
 
-/**
- * This exception is thrown when there is an attempt to create a duplicate storage key via the {@link Storage}
- * interface.
- */
-public class KeyDoesNotExistException extends StorageException {
-  public KeyDoesNotExistException(URI key) {
-    super("Storage key not present: " + key);
+public class StorageManager {
+
+  private final Storage storage;
+
+  @Inject
+  public StorageManager(Storage storage) {
+    this.storage = storage;
   }
 
+  public void uploadProject(String projectId) {
+
+  }
 }

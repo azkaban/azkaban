@@ -34,6 +34,7 @@ model {
 dependencies {
   compile project(':azkaban-spi')
 
+  compile('com.google.inject:guice:4.1.0')
   compile('com.google.guava:guava:21.0')
   compile('commons-collections:commons-collections:3.2.2')
   compile('org.apache.commons:commons-dbcp2:2.1.1')
