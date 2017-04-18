@@ -60,7 +60,7 @@ dependencies {
   compile('io.dropwizard.metrics:metrics-core:3.1.0')
   compile('io.dropwizard.metrics:metrics-jvm:3.1.0')
 
-  testCompile('org.apache.derby:derby:10.13.1.1')
+  testCompile files(System.getenv("JAVA_HOME") + "/db/lib/derby.jar")
   testCompile('org.hamcrest:hamcrest-all:1.3')
   testCompile('org.mockito:mockito-all:1.10.19')
   testCompile(project(':azkaban-test').sourceSets.test.output)
@@ -69,3 +69,13 @@ dependencies {
 tasks.withType(JavaCompile) {
   options.encoding = "UTF-8"
 }
+
+// check if this machine's environment variable has JAVA_HOME. if not, this task fails immediately.
+task checkJavaHome{
+
+  def javaHome= System.getenv()['JAVA_HOME']
+  if (javaHome == null || javaHome.length()<=0)
+    ant.fail('can not find environment variable JAVA_HOME')
+}
+
+test.dependsOn checkJavaHome
