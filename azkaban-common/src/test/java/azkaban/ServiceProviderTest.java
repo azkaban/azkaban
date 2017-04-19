@@ -54,6 +54,7 @@ public class ServiceProviderTest {
     Injector injector = Guice.createInjector(
         new AzkabanCommonModule(props)
     );
+    SERVICE_PROVIDER.unsetInjector();
     SERVICE_PROVIDER.setInjector(injector);
 
     assertNotNull(SERVICE_PROVIDER.getInstance(JdbcProjectLoader.class));

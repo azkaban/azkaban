@@ -44,6 +44,10 @@ public enum ServiceProvider {
     this.injector = requireNonNull(injector, "arg injector is null");
   }
 
+  public synchronized void unsetInjector() {
+    this.injector = null;
+  }
+
   public <T> T getInstance(Class<T> clazz) {
     return requireNonNull(injector).getInstance(clazz);
   }
