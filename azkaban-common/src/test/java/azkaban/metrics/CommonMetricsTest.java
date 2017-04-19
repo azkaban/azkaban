@@ -52,4 +52,9 @@ public class CommonMetricsTest {
   public void testDBConnectionTimeMetrics() {
     MetricsTestUtility.testGauge("dbConnectionTime", dr, CommonMetrics.INSTANCE::setDBConnectionTime);
   }
+
+  @Test
+  public void testOOMWaitingJobMetrics() {
+    MetricsTestUtility.testGauge("OOM-waiting-job-count", dr, CommonMetrics.INSTANCE::incrementOOMJobWaitCount);
+  }
 }

@@ -1,0 +1,19 @@
+#!/usr/bin/env shunit2
+# Make sure to "brew install shunit2" or use your favorite package manager to install
+# before running tests
+
+function oneTimeSetUp() {
+  source ../../main/bash/util.sh
+}
+
+function test_is_process_running() {
+  is_process_running $PPID
+  assertEquals "$?" "0"
+}
+
+function test_kill_process_with_retry() {
+  sleep 600 &                                          #create test process to kill
+  kill_process_with_retry $! sleep 3  2>&1 >/dev/null  #$! is pid for sleep process, sleep name, 3 times to loop
+  assertEquals "$?" "0"                                #$? is exit code of function kill_process_with_retry
+}
+

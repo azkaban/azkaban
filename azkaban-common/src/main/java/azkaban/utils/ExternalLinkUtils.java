@@ -16,8 +16,7 @@
 
 package azkaban.utils;
 
-import azkaban.constants.FlowProperties;
-import azkaban.constants.ServerProperties;
+import azkaban.Constants;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
@@ -31,21 +30,21 @@ public class ExternalLinkUtils {
 
   public static String getExternalAnalyzerOnReq(Props azkProps, HttpServletRequest req) {
     // If no topic was configured to be an external analyzer, return empty
-    if (!azkProps.containsKey(ServerProperties.AZKABAN_SERVER_EXTERNAL_ANALYZER_TOPIC)) {
+    if (!azkProps.containsKey(Constants.ConfigurationKeys.AZKABAN_SERVER_EXTERNAL_ANALYZER_TOPIC)) {
       return "";
     }
     // Find out which external link we should use to lead to our analyzer
-    String topic = azkProps.getString(ServerProperties.AZKABAN_SERVER_EXTERNAL_ANALYZER_TOPIC);
+    String topic = azkProps.getString(Constants.ConfigurationKeys.AZKABAN_SERVER_EXTERNAL_ANALYZER_TOPIC);
     return getLinkFromRequest(topic, azkProps, req);
   }
 
   public static String getExternalLogViewer(Props azkProps, String jobId, Props jobProps) {
     // If no topic was configured to be an external analyzer, return empty
-    if (!azkProps.containsKey(ServerProperties.AZKABAN_SERVER_EXTERNAL_LOGVIEWER_TOPIC)) {
+    if (!azkProps.containsKey(Constants.ConfigurationKeys.AZKABAN_SERVER_EXTERNAL_LOGVIEWER_TOPIC)) {
       return "";
     }
     // Find out which external link we should use to lead to our log viewer
-    String topic = azkProps.getString(ServerProperties.AZKABAN_SERVER_EXTERNAL_LOGVIEWER_TOPIC);
+    String topic = azkProps.getString(Constants.ConfigurationKeys.AZKABAN_SERVER_EXTERNAL_LOGVIEWER_TOPIC);
     return getLinkFromJobAndExecId(topic, azkProps, jobId, jobProps);
   }
 
@@ -56,7 +55,7 @@ public class ExternalLinkUtils {
       return "";
     }
     String job = encodeToUTF8(jobId);
-    String execid = encodeToUTF8(jobProps.getString(FlowProperties.AZKABAN_FLOW_EXEC_ID));
+    String execid = encodeToUTF8(jobProps.getString(Constants.FlowProperties.AZKABAN_FLOW_EXEC_ID));
 
     urlTemplate = urlTemplate.replace("${jobid}", job).replace("${execid}", execid);
     logger.info("Creating link: " + urlTemplate);
@@ -81,7 +80,7 @@ public class ExternalLinkUtils {
   }
 
   static String getURLForTopic(String topic, Props azkProps) {
-    return azkProps.getString(ServerProperties.AZKABAN_SERVER_EXTERNAL_TOPIC_URL.replace("${topic}", topic), "");
+    return azkProps.getString(Constants.ConfigurationKeys.AZKABAN_SERVER_EXTERNAL_TOPIC_URL.replace("${topic}", topic), "");
   }
 
   static String encodeToUTF8(String url) {

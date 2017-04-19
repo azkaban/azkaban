@@ -34,7 +34,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TimeZone;
-import java.util.function.Supplier;
 
 import javax.management.MBeanInfo;
 import javax.management.MBeanServer;
@@ -58,8 +57,7 @@ import org.mortbay.jetty.servlet.ServletHolder;
 import org.mortbay.thread.QueuedThreadPool;
 
 import azkaban.alert.Alerter;
-import azkaban.constants.ServerInternals;
-import azkaban.constants.ServerProperties;
+import azkaban.Constants;
 import azkaban.database.AzkabanDatabaseSetup;
 import azkaban.executor.ExecutorManager;
 import azkaban.executor.JdbcExecutorLoader;
@@ -847,10 +845,10 @@ public class AzkabanWebServer extends AzkabanServer {
     // TODO: find something else to do the job
     app.getTriggerManager().start();
 
-    root.setAttribute(ServerInternals.AZKABAN_SERVLET_CONTEXT_KEY, app);
+    root.setAttribute(Constants.AZKABAN_SERVLET_CONTEXT_KEY, app);
 
 
-    if (azkabanSettings.getBoolean(ServerProperties.IS_METRICS_ENABLED, false)) {
+    if (azkabanSettings.getBoolean(Constants.ConfigurationKeys.IS_METRICS_ENABLED, false)) {
       app.startWebMetrics();
     }
     try {
