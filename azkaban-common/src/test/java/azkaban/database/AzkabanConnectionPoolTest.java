@@ -26,12 +26,12 @@ import org.junit.Test;
 
 public class AzkabanConnectionPoolTest{
 
-  public static class EmbeddedDerbyBasicDataSource extends AzkabanDataSource {
+  public static class EmbeddedH2BasicDataSource extends AzkabanDataSource {
 
-    private EmbeddedDerbyBasicDataSource() {
+    private EmbeddedH2BasicDataSource() {
       super();
-      String url = "jdbc:derby:memory:MyDatabase;create=true";
-      setDriverClassName("org.apache.derby.jdbc.EmbeddedDriver");
+      String url = "jdbc:h2:mem:test";
+      setDriverClassName("org.h2.Driver");
       setUrl(url);
     }
 
@@ -42,42 +42,57 @@ public class AzkabanConnectionPoolTest{
 
     @Override
     public String getDBType() {
-      return "Derby";
+      return "h2-in-memory";
     }
   }
 
-  AzkabanDataSource derbyDataSource;
+  AzkabanDataSource h2DataSource;
+  Connection connection;
 
   @Before
   public void setup() throws Exception{
-    derbyDataSource = new EmbeddedDerbyBasicDataSource();
+    h2DataSource = new EmbeddedH2BasicDataSource();
+    connection = h2DataSource.getConnection();
+  }
+
+
+  @Test
+  public void testConnectionDefaultAutoCommit() throws Exception {
+    Assert.assertEquals(connection.getAutoCommit(), true);
+    DbUtils.closeQuietly(connection);
   }
 
   @Test
-  public void testCoonectionPoolAutoCommitRest() throws Exception {
-    Connection connection = derbyDataSource.getConnection();
-    Assert.assertEquals(connection.getAutoCommit(), true);
-
+  public void testConnectionDisableAutoCommit() throws Exception {
     connection.setAutoCommit(false);
     Assert.assertEquals(connection.getAutoCommit(), false);
+    DbUtils.closeQuietly(connection);
+  }
+
+  @Test
+  public void testGetNewConnectionBeforeClose() throws Exception {
+    connection.setAutoCommit(false);
 
     /**
-     * {@link AzkabanDataSource#getConnection} fetches a different connection object other than one in the above.
+     * {@link AzkabanDataSource#getConnection} fetches a new connection object other than one in the above, if we don't close.
      */
-    Assert.assertEquals(derbyDataSource.getConnection().getAutoCommit(), true);
+    Assert.assertEquals(h2DataSource.getConnection().getAutoCommit(), true);
+    DbUtils.closeQuietly(connection);
+  }
+
+  @Test
+  public void testGetNewConnectionAfterClose() throws Exception {
+    connection.setAutoCommit(false);
 
     /**
      * See {@link org.apache.commons.dbcp2.PoolableConnectionFactory#passivateObject}.
-     * If the connection disabled auto commit, when we close it, connection will be reset back to enable auto commit,
+     * If the connection disables auto commit, when we close it, connection will be reset enabling auto commit,
      * and returned to connection pool.
      */
     DbUtils.closeQuietly(connection);
-
-    Connection newConnection = derbyDataSource.getConnection();
+    Connection newConnection = h2DataSource.getConnection();
     Assert.assertEquals(newConnection.getAutoCommit(), true);
 
-    // old connection object points to null.
-    Assert.assertNotEquals(newConnection, connection);
-    DbUtils.closeQuietly(connection);
+    DbUtils.closeQuietly(newConnection);
   }
 }
