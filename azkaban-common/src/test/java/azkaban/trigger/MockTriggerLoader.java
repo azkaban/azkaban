@@ -37,7 +37,7 @@ public class MockTriggerLoader implements TriggerLoader {
   @Override
   public synchronized void removeTrigger(Trigger s)
       throws TriggerLoaderException {
-    triggers.remove(s);
+    triggers.remove(s.getTriggerId());
   }
 
   @Override

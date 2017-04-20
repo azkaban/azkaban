@@ -447,8 +447,6 @@ public class FlowRunnerManager implements EventListener,
             } catch (IOException e) {
               logger.error(e);
             }
-
-            installedVersions.remove(versionKey);
           }
         }
       }

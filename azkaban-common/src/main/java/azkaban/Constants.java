@@ -84,6 +84,9 @@ public class Constants {
     // Max flow running time in mins, server will kill flows running longer than this setting.
     // if not set or <= 0, then there's no restriction on running time.
     public static final String AZKABAN_MAX_FLOW_RUNNING_MINS = "azkaban.server.flow.max.running.minutes";
+
+    public static final String AZKABAN_STORAGE_TYPE = "azkaban.storage.type";
+    public static final String AZKABAN_STORAGE_LOCAL_BASEDIRECTORY = "azkaban.storage.local.basedirectory";
   }
 
   public static class FlowProperties {
