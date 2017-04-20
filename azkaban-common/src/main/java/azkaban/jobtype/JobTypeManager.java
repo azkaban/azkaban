@@ -328,8 +328,7 @@ public class JobTypeManager {
       if (jobType == null || jobType.length() == 0) {
         /* throw an exception when job name is null or empty */
         throw new JobExecutionException(String.format(
-            "The 'type' parameter for job[%s] is null or empty", jobProps,
-            logger));
+            "The 'type' parameter for job[%s] is null or empty", jobProps));
       }
 
       logger.info("Building " + jobType + " job executor. ");

@@ -137,7 +137,7 @@ public class DataSourceUtils {
       setUsername(user);
       setPassword(password);
       setUrl(url);
-      setMaxActive(numConnections);
+      setMaxTotal(numConnections);
       setValidationQuery("/* ping */ select 1");
       setTestOnBorrow(true);
     }

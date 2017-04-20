@@ -16,7 +16,7 @@
 
 package azkaban.webapp.servlet;
 
-import azkaban.constants.ServerProperties;
+import azkaban.Constants;
 import azkaban.executor.ConnectorParams;
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutableFlowBase;
@@ -391,7 +391,7 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
       LOGGER.debug("External analyzer url: " + execExternalLinkURL);
 
       String execExternalLinkLabel =
-          props.getString(ServerProperties.AZKABAN_SERVER_EXTERNAL_ANALYZER_LABEL,
+          props.getString(Constants.ConfigurationKeys.AZKABAN_SERVER_EXTERNAL_ANALYZER_LABEL,
               "External Analyzer");
       page.add("executionExternalLinkLabel", execExternalLinkLabel);
       LOGGER.debug("External analyzer label set to : " + execExternalLinkLabel);

@@ -45,8 +45,7 @@ import javax.management.MBeanInfo;
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
 
-import azkaban.constants.ServerInternals;
-import azkaban.constants.ServerProperties;
+import azkaban.Constants;
 
 import azkaban.execapp.event.JobCallbackManager;
 import azkaban.execapp.jmx.JmxFlowRunnerManager;
@@ -74,7 +73,7 @@ import azkaban.utils.SystemMemoryInfo;
 import azkaban.utils.Utils;
 import azkaban.metrics.MetricsManager;
 
-import static azkaban.constants.ServerInternals.AZKABAN_EXECUTOR_PORT_FILENAME;
+import static azkaban.Constants.AZKABAN_EXECUTOR_PORT_FILENAME;
 import static com.google.common.base.Preconditions.checkState;
 import static java.util.Objects.requireNonNull;
 
@@ -138,7 +137,7 @@ public class AzkabanExecutorServer {
 
     logger.info("Started Executor Server on " + getExecutorHostPort());
 
-    if (props.getBoolean(ServerProperties.IS_METRICS_ENABLED, false)) {
+    if (props.getBoolean(Constants.ConfigurationKeys.IS_METRICS_ENABLED, false)) {
       startExecMetrics();
     }
   }
@@ -178,7 +177,7 @@ public class AzkabanExecutorServer {
     root.addServlet(new ServletHolder(new StatsServlet()), "/stats");
     root.addServlet(new ServletHolder(new ServerStatisticsServlet()), "/serverStatistics");
 
-    root.setAttribute(ServerInternals.AZKABAN_SERVLET_CONTEXT_KEY, this);
+    root.setAttribute(Constants.AZKABAN_SERVLET_CONTEXT_KEY, this);
     return server;
   }
 
@@ -439,7 +438,7 @@ public class AzkabanExecutorServer {
       return null;
     }
 
-    File confPath = new File(azkabanHome, ServerInternals.DEFAULT_CONF_PATH);
+    File confPath = new File(azkabanHome, Constants.DEFAULT_CONF_PATH);
     if (!confPath.exists() || !confPath.isDirectory() || !confPath.canRead()) {
       logger
           .error(azkabanHome + " does not contain a readable conf directory.");
@@ -460,8 +459,8 @@ public class AzkabanExecutorServer {
    */
   private static Props loadAzkabanConfigurationFromDirectory(File dir) {
     File azkabanPrivatePropsFile =
-        new File(dir, ServerInternals.AZKABAN_PRIVATE_PROPERTIES_FILE);
-    File azkabanPropsFile = new File(dir, ServerInternals.AZKABAN_PROPERTIES_FILE);
+        new File(dir, Constants.AZKABAN_PRIVATE_PROPERTIES_FILE);
+    File azkabanPropsFile = new File(dir, Constants.AZKABAN_PROPERTIES_FILE);
 
     Props props = null;
     try {
@@ -556,8 +555,8 @@ public class AzkabanExecutorServer {
    * @return hostname
    */
   public String getHost() {
-    if(props.containsKey(ServerProperties.AZKABAN_SERVER_HOST_NAME)) {
-      String hostName = props.getString(ServerProperties.AZKABAN_SERVER_HOST_NAME);
+    if(props.containsKey(Constants.ConfigurationKeys.AZKABAN_SERVER_HOST_NAME)) {
+      String hostName = props.getString(Constants.ConfigurationKeys.AZKABAN_SERVER_HOST_NAME);
       if(!StringUtils.isEmpty(hostName)) {
         return hostName;
       }

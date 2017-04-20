@@ -20,8 +20,7 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import azkaban.constants.FlowProperties;
-import azkaban.constants.ServerProperties;
+import azkaban.Constants;
 
 import javax.servlet.http.HttpServletRequest;
 
@@ -65,7 +64,7 @@ public class ExternalLinkUtilsTest {
 
     // Job configuration consisting of only an exec id and job id
     jobProps = new Props();
-    jobProps.put(FlowProperties.AZKABAN_FLOW_EXEC_ID, 1);
+    jobProps.put(Constants.FlowProperties.AZKABAN_FLOW_EXEC_ID, 1);
     jobId = "Some + job";
 
     mockRequest = mock(HttpServletRequest.class);
@@ -77,8 +76,9 @@ public class ExternalLinkUtilsTest {
    */
   @Test
   public void testGetExternalAnalyzerValidFormat() {
-    azkProps.put(ServerProperties.AZKABAN_SERVER_EXTERNAL_ANALYZER_TOPIC, EXTERNAL_ANALYZER_TOPIC);
-    azkProps.put(ServerProperties.AZKABAN_SERVER_EXTERNAL_TOPIC_URL.replace("${topic}", EXTERNAL_ANALYZER_TOPIC),
+    azkProps.put(Constants.ConfigurationKeys.AZKABAN_SERVER_EXTERNAL_ANALYZER_TOPIC, EXTERNAL_ANALYZER_TOPIC);
+    azkProps.put(
+        Constants.ConfigurationKeys.AZKABAN_SERVER_EXTERNAL_TOPIC_URL.replace("${topic}", EXTERNAL_ANALYZER_TOPIC),
         EXTERNAL_ANALYZER_URL_VALID_FORMAT);
 
     when(mockRequest.getRequestURL()).thenReturn(new StringBuffer(EXEC_URL));
@@ -95,8 +95,9 @@ public class ExternalLinkUtilsTest {
    */
   @Test
   public void testGetExternalLogViewerValidFormat() {
-    azkProps.put(ServerProperties.AZKABAN_SERVER_EXTERNAL_LOGVIEWER_TOPIC, EXTERNAL_LOGVIEWER_TOPIC);
-    azkProps.put(ServerProperties.AZKABAN_SERVER_EXTERNAL_TOPIC_URL.replace("${topic}", EXTERNAL_LOGVIEWER_TOPIC),
+    azkProps.put(Constants.ConfigurationKeys.AZKABAN_SERVER_EXTERNAL_LOGVIEWER_TOPIC, EXTERNAL_LOGVIEWER_TOPIC);
+    azkProps.put(
+        Constants.ConfigurationKeys.AZKABAN_SERVER_EXTERNAL_TOPIC_URL.replace("${topic}", EXTERNAL_LOGVIEWER_TOPIC),
         EXTERNAL_LOGVIEWER_URL_VALID_FORMAT);
 
     String externalURL =
@@ -144,7 +145,7 @@ public class ExternalLinkUtilsTest {
    */
   @Test
   public void testFetchURL() {
-    azkProps.put(ServerProperties.AZKABAN_SERVER_EXTERNAL_TOPIC_URL.replace("${topic}", "someTopic"), "This is a link");
+    azkProps.put(Constants.ConfigurationKeys.AZKABAN_SERVER_EXTERNAL_TOPIC_URL.replace("${topic}", "someTopic"), "This is a link");
     assertTrue(ExternalLinkUtils.getURLForTopic("someTopic", azkProps).equals("This is a link"));
   }
 }
