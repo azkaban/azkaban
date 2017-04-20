@@ -47,11 +47,6 @@ import azkaban.utils.Utils;
 
 public class ProjectManager {
   private static final Logger logger = Logger.getLogger(ProjectManager.class);
-
-  private ConcurrentHashMap<Integer, Project> projectsById =
-      new ConcurrentHashMap<Integer, Project>();
-  private ConcurrentHashMap<String, Project> projectsByName =
-      new ConcurrentHashMap<String, Project>();
   private final ProjectLoader projectLoader;
   private final Props props;
   private final File tempDir;
@@ -83,28 +78,10 @@ public class ProjectManager {
     // By instantiating an object of XmlValidatorManager, this will verify the
     // config files for the validators.
     new XmlValidatorManager(prop);
-    loadAllProjects();
     loadProjectWhiteList();
   }
 
-  private void loadAllProjects() {
-    List<Project> projects;
-    try {
-      projects = projectLoader.fetchAllActiveProjects();
-    } catch (ProjectManagerException e) {
-      throw new RuntimeException("Could not load projects from store.", e);
-    }
-    for (Project proj : projects) {
-      projectsByName.put(proj.getName(), proj);
-      projectsById.put(proj.getId(), proj);
-    }
-
-    for (Project proj : projects) {
-      loadAllProjectFlows(proj);
-    }
-  }
-
-  private void loadAllProjectFlows(Project project) {
+  public void loadAllProjectFlows(Project project) {
     try {
       List<Flow> flows = projectLoader.fetchAllProjectFlows(project);
       Map<String, Flow> flowMap = new HashMap<String, Flow>();
@@ -118,64 +95,65 @@ public class ProjectManager {
     }
   }
 
-  public List<String> getProjectNames() {
-    return new ArrayList<String>(projectsByName.keySet());
-  }
-
   public Props getProps() {
     return props;
   }
 
   public List<Project> getUserProjects(User user) {
-    ArrayList<Project> array = new ArrayList<Project>();
-    for (Project project : projectsById.values()) {
+    ArrayList<Project> userProjects = new ArrayList<>();
+    for (Project project : getProjects()) {
       Permission perm = project.getUserPermission(user);
 
       if (perm != null
           && (perm.isPermissionSet(Type.ADMIN) || perm
               .isPermissionSet(Type.READ))) {
-        array.add(project);
+        userProjects.add(project);
       }
     }
-    return array;
+    return userProjects;
   }
 
   public List<Project> getGroupProjects(User user) {
-    List<Project> array = new ArrayList<Project>();
-    for (Project project : projectsById.values()) {
+    List<Project> groupProjects = new ArrayList<>();
+    for (Project project : getProjects()) {
       if (project.hasGroupPermission(user, Type.READ)) {
-        array.add(project);
+        groupProjects.add(project);
       }
     }
-    return array;
+    return groupProjects;
   }
 
   public List<Project> getUserProjectsByRegex(User user, String regexPattern) {
-    List<Project> array = new ArrayList<Project>();
+    List<Project> userProjects = new ArrayList<>();
     Pattern pattern;
     try {
       pattern = Pattern.compile(regexPattern, Pattern.CASE_INSENSITIVE);
     } catch (PatternSyntaxException e) {
       logger.error("Bad regex pattern " + regexPattern);
-      return array;
+      return userProjects;
     }
-
-    for (Project project : projectsById.values()) {
+    for (Project project : getProjects()) {
       Permission perm = project.getUserPermission(user);
 
       if (perm != null
           && (perm.isPermissionSet(Type.ADMIN) || perm
               .isPermissionSet(Type.READ))) {
         if (pattern.matcher(project.getName()).find()) {
-          array.add(project);
+          userProjects.add(project);
         }
       }
     }
-    return array;
+    return userProjects;
   }
 
   public List<Project> getProjects() {
-    return new ArrayList<Project>(projectsById.values());
+    List<Project> projects;
+    try {
+      projects = projectLoader.fetchAllActiveProjects();
+    } catch (ProjectManagerException e) {
+      throw new RuntimeException("Could not load projects from store.", e);
+    }
+    return projects;
   }
 
   public List<Project> getProjectsByRegex(String regexPattern) {
@@ -196,61 +174,44 @@ public class ProjectManager {
   }
 
     /**
-     * Checks if a project is active using project_name
-     *
-     * @param name
-     */
-    public Boolean isActiveProject(String name) {
-        return projectsByName.containsKey(name);
-    }
-
-    /**
      * Checks if a project is active using project_id
      *
-     * @param name
+     * @param id
      */
     public Boolean isActiveProject(int id) {
-        return projectsById.containsKey(id);
+      return getProject(id) != null;
     }
 
     /**
-     * fetch active project from cache and inactive projects from db by
-     * project_name
+     * fetch active project (boolean active = true) from DB by project_name
      *
      * @param name
      * @return
      */
     public Project getProject(String name) {
         Project fetchedProject = null;
-        if (isActiveProject(name)) {
-            fetchedProject = projectsByName.get(name);
-        } else {
-            try {
-                fetchedProject = projectLoader.fetchProjectByName(name);
-            } catch (ProjectManagerException e) {
-                logger.error("Could not load project from store.", e);
-            }
+        try {
+            fetchedProject = projectLoader.fetchProjectByName(name);
+            loadAllProjectFlows(fetchedProject);
+        } catch (ProjectManagerException e) {
+            logger.error("Could not load project" + name + " from store.", e);
         }
         return fetchedProject;
     }
 
     /**
-     * fetch active project from cache and inactive projects from db by
-     * project_id
+     * fetch active project (boolean active = true) from DB by project_id
      *
      * @param id
      * @return
      */
     public Project getProject(int id) {
         Project fetchedProject = null;
-        if (isActiveProject(id)) {
-            fetchedProject = projectsById.get(id);
-        } else {
-            try {
-                fetchedProject = projectLoader.fetchProjectById(id);
-            } catch (ProjectManagerException e) {
-                logger.error("Could not load project from store.", e);
-            }
+        try {
+            fetchedProject = projectLoader.fetchProjectById(id);
+            loadAllProjectFlows(fetchedProject);
+        } catch (ProjectManagerException e) {
+            logger.error("Could not load project" + id + " from store.", e);
         }
         return fetchedProject;
     }
@@ -268,16 +229,10 @@ public class ProjectManager {
           "Project names must start with a letter, followed by any number of letters, digits, '-' or '_'.");
     }
 
-    if (projectsByName.containsKey(projectName)) {
-      throw new ProjectManagerException("Project already exists.");
-    }
-
     logger.info("Trying to create " + projectName + " by user "
         + creator.getUserId());
     Project newProject =
         projectLoader.createNewProject(projectName, description, creator);
-    projectsByName.put(newProject.getName(), newProject);
-    projectsById.put(newProject.getId(), newProject);
 
     if (creatorDefaultPermissions) {
       // Add permission to project
@@ -324,10 +279,6 @@ public class ProjectManager {
     projectLoader.removeProject(project, deleter.getUserId());
     projectLoader.postEvent(project, EventType.DELETED, deleter.getUserId(),
         null);
-
-    projectsByName.remove(project.getName());
-    projectsById.remove(project.getId());
-
     return project;
   }
 
