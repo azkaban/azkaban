@@ -84,7 +84,8 @@ public class StorageManager {
   }
 
   private String getLatestVersion(int id) {
-    return "version";
+    // TODO Implement
+    return "-1";
   }
 
   private void updateDatabase(StorageMetadata metadata, String filename, String uploader) {
