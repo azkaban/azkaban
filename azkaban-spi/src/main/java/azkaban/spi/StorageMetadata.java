@@ -26,16 +26,19 @@ public class StorageMetadata {
   private final String projectId;
   private final String version;
   private final String extension;
+  private final String hash;
 
-  public StorageMetadata(String projectId, String version, String extension) {
+  public StorageMetadata(String projectId, String version, String extension, String hash) {
     this.projectId = requireNonNull(projectId);
     this.version = requireNonNull(version);
     this.extension = requireNonNull(extension);
+    this.hash = requireNonNull(hash);
   }
 
   @Override
   public String toString() {
-    return "StorageMetadata{" + "projectId='" + projectId + '\'' + ", version='" + version + '\'' + '}';
+    return "StorageMetadata{" + "projectId='" + projectId + '\'' + ", version='" + version + '\'' + ", extension='"
+        + extension + '\'' + ", hash='" + hash + '\'' + '}';
   }
 
   public String getProjectId() {
@@ -50,6 +53,10 @@ public class StorageMetadata {
     return extension;
   }
 
+  public String getHash() {
+    return hash;
+  }
+
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -58,14 +65,13 @@ public class StorageMetadata {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    StorageMetadata that = (StorageMetadata) o;
-    return Objects.equals(projectId, that.projectId) &&
-        Objects.equals(version, that.version) &&
-        Objects.equals(extension, that.extension);
+    StorageMetadata metadata = (StorageMetadata) o;
+    return Objects.equals(projectId, metadata.projectId) && Objects.equals(version, metadata.version) && Objects.equals(
+        extension, metadata.extension) && Objects.equals(hash, metadata.hash);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(projectId, version, extension);
+    return Objects.hash(projectId, version, extension, hash);
   }
 }

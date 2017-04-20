@@ -21,10 +21,11 @@ import azkaban.project.Project;
 import azkaban.spi.Storage;
 import azkaban.spi.StorageException;
 import azkaban.spi.StorageMetadata;
+import azkaban.utils.Md5Hasher;
 import com.google.inject.Inject;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import org.apache.log4j.Logger;
@@ -59,29 +60,44 @@ public class StorageManager {
       String filename,
       File localFile,
       String uploader) {
-    final StorageMetadata metadata = new StorageMetadata(
-        String.valueOf(project.getId()),
-        String.valueOf(getLatestVersion(project)),
-        fileExtension
-    );
-    log.info(String.format(
-        "Uploading project. Uploader: %s, Metadata:%s, filename: %s[%d bytes]",
-        uploader, metadata, filename, localFile.length()
-    ));
+    StorageMetadata metadata = null;
     try {
-      uploadProject(metadata, new FileInputStream(localFile));
-    } catch (FileNotFoundException e) {
+      final String hash = computeHash(localFile);
+      metadata = new StorageMetadata(
+          String.valueOf(project.getId()),
+          getLatestVersion(project.getId()),
+          fileExtension,
+          hash);
+      log.info(String.format(
+          "Uploading project: Uploader: %s, Metadata:%s, filename: %s[%d bytes]",
+          uploader, metadata, filename, localFile.length()
+      ));
+      URI key = uploadProject(metadata, new FileInputStream(localFile));
+      updateDatabase(metadata, filename, uploader);
+    } catch (IOException e) {
+      log.info(String.format(
+          "Error! Uploading project: Uploader: %s, Metadata: %s, filename: %s[%d bytes]",
+          uploader, metadata, filename, localFile.length()
+      ));
       throw new StorageException(e);
     }
   }
 
-  private int getLatestVersion(Project project) {
-    // TODO Implement
-    return -1;
+  private String getLatestVersion(int id) {
+    return "version";
   }
 
-  public void uploadProject(StorageMetadata metadata, InputStream is) {
+  private void updateDatabase(StorageMetadata metadata, String filename, String uploader) {
+
+  }
+
+  public URI uploadProject(StorageMetadata metadata, InputStream is) {
     // TODO Implement
     URI key = storage.put(metadata, is);
+    return key;
+  }
+
+  private String computeHash(File localFile) throws IOException {
+    return new String(Md5Hasher.md5Hash(localFile));
   }
 }
