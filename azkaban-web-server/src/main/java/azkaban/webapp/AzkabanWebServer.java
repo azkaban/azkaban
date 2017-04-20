@@ -16,8 +16,10 @@
 
 package azkaban.webapp;
 
+import azkaban.AzkabanCommonModule;
 import com.codahale.metrics.MetricRegistry;
 
+import com.google.inject.Guice;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -65,7 +67,6 @@ import azkaban.jmx.JmxExecutorManager;
 import azkaban.jmx.JmxJettyServer;
 import azkaban.jmx.JmxTriggerManager;
 import azkaban.metrics.MetricsUtility;
-import azkaban.project.JdbcProjectLoader;
 import azkaban.project.ProjectManager;
 import azkaban.scheduler.ScheduleLoader;
 import azkaban.scheduler.ScheduleManager;
@@ -108,6 +109,10 @@ import azkaban.metrics.MetricsManager;
 
 import com.linkedin.restli.server.RestliServlet;
 
+import static azkaban.ServiceProvider.*;
+import static java.util.Objects.*;
+
+
 /**
  * The Azkaban Jetty server class
  *
@@ -134,7 +139,6 @@ public class AzkabanWebServer extends AzkabanServer {
 
   private static final Logger logger = Logger.getLogger(AzkabanWebServer.class);
 
-  public static final String AZKABAN_HOME = "AZKABAN_HOME";
   public static final String DEFAULT_CONF_PATH = "conf";
   public static final String AZKABAN_PROPERTIES_FILE = "azkaban.properties";
   public static final String AZKABAN_PRIVATE_PROPERTIES_FILE =
@@ -159,12 +163,11 @@ public class AzkabanWebServer extends AzkabanServer {
   //queuedThreadPool is mainly used to monitor jetty threadpool.
   private QueuedThreadPool queuedThreadPool;
 
-  private UserManager userManager;
-  private ProjectManager projectManager;
-  // private ExecutorManagerAdapter executorManager;
-  private ExecutorManager executorManager;
-  private ScheduleManager scheduleManager;
-  private TriggerManager triggerManager;
+  private final UserManager userManager;
+  private final ProjectManager projectManager;
+  private final ExecutorManager executorManager;
+  private final ScheduleManager scheduleManager;
+  private final TriggerManager triggerManager;
   private Map<String, Alerter> alerters;
 
   private final ClassLoader baseClassLoader;
@@ -175,7 +178,7 @@ public class AzkabanWebServer extends AzkabanServer {
   private Map<String, TriggerPlugin> triggerPlugins;
 
   private MBeanServer mbeanServer;
-  private ArrayList<ObjectName> registeredMBeans = new ArrayList<ObjectName>();
+  private ArrayList<ObjectName> registeredMBeans = new ArrayList<>();
 
   public static AzkabanWebServer getInstance() {
     return app;
@@ -193,18 +196,22 @@ public class AzkabanWebServer extends AzkabanServer {
    * Constructor
    */
   public AzkabanWebServer(Server server, Props props) throws Exception {
-    this.props = props;
+    this.props = requireNonNull(props);
     this.server = server;
-    velocityEngine =
-        configureVelocityEngine(props
-            .getBoolean(VELOCITY_DEV_MODE_PARAM, false));
+
+    /* Initialize Guice Injector */
+    // TODO move this to a common static context.
+    SERVICE_PROVIDER.setInjector(Guice.createInjector(new AzkabanCommonModule(props)));
+
+    velocityEngine = configureVelocityEngine(props.getBoolean(VELOCITY_DEV_MODE_PARAM, false));
     sessionCache = new SessionCache(props);
     userManager = loadUserManager(props);
 
     alerters = loadAlerters(props);
 
     executorManager = loadExecutorManager(props);
-    projectManager = loadProjectManager(props);
+    // TODO remove hack. Move injection to constructor
+    projectManager = SERVICE_PROVIDER.getInstance(ProjectManager.class);
 
     triggerManager = loadTriggerManager(props);
     loadBuiltinCheckersAndActions();
@@ -267,29 +274,19 @@ public class AzkabanWebServer extends AzkabanServer {
 
   private UserManager loadUserManager(Props props) {
     Class<?> userManagerClass = props.getClass(USER_MANAGER_CLASS_PARAM, null);
-    logger.info("Loading user manager class " + userManagerClass.getName());
-    UserManager manager = null;
-    if (userManagerClass != null
-        && userManagerClass.getConstructors().length > 0) {
+    UserManager manager;
+    if (userManagerClass != null && userManagerClass.getConstructors().length > 0) {
+      logger.info("Loading user manager class " + userManagerClass.getName());
       try {
-        Constructor<?> userManagerConstructor =
-            userManagerClass.getConstructor(Props.class);
+        Constructor<?> userManagerConstructor = userManagerClass.getConstructor(Props.class);
         manager = (UserManager) userManagerConstructor.newInstance(props);
       } catch (Exception e) {
-        logger.error("Could not instantiate UserManager "
-            + userManagerClass.getName());
+        logger.error("Could not instantiate UserManager " + userManagerClass.getName());
         throw new RuntimeException(e);
       }
     } else {
       manager = new XmlUserManager(props);
     }
-    return manager;
-  }
-
-  private ProjectManager loadProjectManager(Props props) {
-    logger.info("Loading JDBC for project management");
-    JdbcProjectLoader loader = new JdbcProjectLoader(props);
-    ProjectManager manager = new ProjectManager(loader, props);
     return manager;
   }
 

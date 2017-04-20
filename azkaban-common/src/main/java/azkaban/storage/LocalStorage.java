@@ -21,6 +21,7 @@ import azkaban.spi.Storage;
 import azkaban.spi.StorageException;
 import azkaban.spi.StorageMetadata;
 import azkaban.utils.FileIOUtils;
+import com.google.common.io.Files;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -56,14 +57,15 @@ public class LocalStorage implements Storage {
   }
 
   @Override
-  public URI put(StorageMetadata metadata, InputStream is) {
+  public URI put(StorageMetadata metadata, File localFile) {
 
-    final File projectDir = new File(baseDirectory, metadata.getProjectId());
+    final File projectDir = new File(baseDirectory, String.valueOf(metadata.getProjectId()));
     if (projectDir.mkdir()) {
       log.info("Created project dir: " + projectDir.getAbsolutePath());
     }
 
-    final File targetFile = new File(projectDir, metadata.getVersion() + "." + metadata.getExtension());
+    final File targetFile = new File(projectDir,
+        metadata.getVersion() + "." + Files.getFileExtension(localFile.getName()));
 
     if (targetFile.exists()) {
       throw new StorageException(String.format(
@@ -71,7 +73,7 @@ public class LocalStorage implements Storage {
           targetFile, metadata));
     }
     try {
-      FileUtils.copyInputStreamToFile(is, targetFile);
+      FileUtils.copyInputStreamToFile(new FileInputStream(localFile), targetFile);
     } catch (IOException e) {
       log.error("LocalStorage error in put(): Metadata: " + metadata);
       throw new StorageException(e);

@@ -19,7 +19,6 @@ package azkaban.storage;
 
 import azkaban.spi.StorageMetadata;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.InputStream;
 import java.net.URI;
 import org.apache.commons.io.FileUtils;
@@ -56,18 +55,16 @@ public class LocalStorageTest {
     ClassLoader classLoader = getClass().getClassLoader();
     File testFile = new File(classLoader.getResource(SAMPLE_FILE).getFile());
 
-    URI key;
-    try (InputStream is = new FileInputStream(testFile)) {
-      // test put
-      key = localStorage.put(new StorageMetadata("testProjectId", "1", "zip"), is);
-    }
+    final StorageMetadata metadata = new StorageMetadata(1, 1, "testuser");
+    final URI key = localStorage.put(metadata, testFile);
     assertNotNull(key);
     log.info("Key URI: " + key);
 
     File expectedTargetFile = new File(BASE_DIRECTORY, new StringBuilder()
-        .append("testProjectId")
+        .append(metadata.getProjectId())
         .append(File.separator)
-        .append("1.zip")
+        .append(metadata.getVersion())
+        .append(".zip")
         .toString()
     );
     assertTrue(expectedTargetFile.exists());
