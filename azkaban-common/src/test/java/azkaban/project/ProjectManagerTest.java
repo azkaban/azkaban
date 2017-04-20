@@ -3,160 +3,180 @@ package azkaban.project;
 import azkaban.user.User;
 import azkaban.utils.Props;
 import java.io.File;
-import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
-import org.apache.commons.io.FileUtils;
-import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
+import static org.mockito.Mockito.*;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
 
 public class ProjectManagerTest {
-
-  private File workingDir;
+  private ProjectManager manager;
+  private ProjectLoader loader;
+  private User user;
+  private static final String PROJECT_NAME = "myTest";
+  private static final String PROJECT_NAME_2 = "myTest_2";
+  private static final String PROJECT_DESCRIPTION = "This is to test project manager";
+  private static final String TEST_USER = "testUser";
+  private static final String FILE_TYPE = "zip";
+  private static final int PROJECT_ID = 1;
+  private static final int PROJECT_ID_2 = 2;
+  private static final int PROJECT_VERSION = 5;
+  private static final int PROJECT_VERSION_RETENTIION = 3;
 
   @Before
   public void setUp() throws Exception {
-    System.out.println("projectManagerTest: create temp dir");
-    synchronized (this) {
-      workingDir = new File("_AzkabanTestDir_" + System.currentTimeMillis());
-      if (workingDir.exists()) {
-        FileUtils.deleteDirectory(workingDir);
-      }
-      workingDir.mkdirs();
-    }
-  }
-
-  @After
-  public void tearDown() throws IOException {
-    System.out.println("Teardown temp dir");
-    synchronized (this) {
-      if (workingDir != null) {
-        FileUtils.deleteDirectory(workingDir);
-        workingDir = null;
-      }
-    }
-  }
-
-  @Test
-  public void testCreateProject() throws ProjectManagerException {
-    System.out.println("projectManagerTest: testCreateProject");
-    ProjectManager manager = createProjectManager();
-    String projectName = "myTestCreateProject";
-    String projectDescription = "This is to test creating a project";
-    User user = new User("testUser");
-    createProjectUtil(manager, projectName, projectDescription, user);
-    System.out.println("Created project successfully");
-  }
-
-  @Test
-  public void testRemoveProject() throws ProjectManagerException {
-    System.out.println("projectManagerTest: testRemoveProject");
-    ProjectManager manager = createProjectManager();
-    String projectName = "myTestRemoveProject";
-    String projectDescription = "This is to test removing a project";
-    User user = new User("testUser");
-    Project project = createProjectUtil(manager, projectName, projectDescription, user);
-
-    manager.removeProject(project, user);
-    Project fetchedProject = manager.getProject(project.getId());
-    Assert.assertFalse(fetchedProject.isActive());
-    System.out.println("Removed project successfully");
-  }
-
-  @Test
-  public void testUploadProject() throws ProjectManagerException {
-    System.out.println("projectManagerTest: testUploadProject");
-    ProjectManager manager = createProjectManager();
-    String projectName = "myTestUploadProject";
-    String projectDescription = "This is to test uploading a project";
-    User user = new User("testUser");
-    Project project = createProjectUtil(manager, projectName, projectDescription, user);
-
-    File testDir = new File("src/test/resources/project/testjob/testjob.zip");
-    System.out.println("Uploading zip file: " + testDir.getAbsolutePath());
     Props props = new Props();
-    manager.uploadProject(project, testDir, "zip", user, props);
-    System.out.println("Uploaded project successfully");
+    loader = mock(ProjectLoader.class);
+    manager = new ProjectManager(loader, props);
+    user = new User(TEST_USER);
+    Project project1 = new Project(PROJECT_ID, PROJECT_NAME);
+    project1.setDescription(PROJECT_DESCRIPTION);
+    project1.setActive(true);
+    project1.setVersion(PROJECT_VERSION);
+
+    when(loader.createNewProject(PROJECT_NAME, PROJECT_DESCRIPTION, user)).thenReturn(project1);
+    when(loader.fetchProjectById(PROJECT_ID)).thenReturn(project1);
+    when(loader.fetchProjectByName(PROJECT_NAME)).thenReturn(project1);
+    when(loader.fetchAllProjectFlows(project1)).thenReturn(new ArrayList<>());
+    when(loader.getLatestProjectVersion(project1)).thenReturn(PROJECT_VERSION);
+
+    doAnswer(new Answer<Void>() {
+      public Void answer(InvocationOnMock invocation) {
+        project1.setActive(false);
+        return null;
+      }
+    }).when(loader).removeProject(project1, user.getUserId());
+
+    doAnswer(new Answer<Void>() {
+      public Void answer(InvocationOnMock invocation) {
+        project1.setVersion(PROJECT_VERSION + 1);
+        return null;
+      }
+    }).when(loader).changeProjectVersion(project1, PROJECT_VERSION + 1, user.getUserId());
+
+    doThrow(ProjectManagerException.class).when(loader).fetchAllProjectFlows(null);
+
   }
 
   @Test
-  public void testFetchProjectByName() throws ProjectManagerException {
-    System.out.println("projectManagerTest: testFetchProjectByName");
-    ProjectManager manager = createProjectManager();
-    String projectName = "myTestFetchProjectByName";
-    String projectDescription = "This is to test fetching a project by name";
-    User user = new User("testUser");
-    Project project = createProjectUtil(manager, projectName, projectDescription, user);
-
-    Project fetchedProject = manager.getProject(project.getName());
-    assertProjectMemberEquals(project, fetchedProject);
-    System.out.println("Fetched project by name successfully");
-  }
-
-  @Test
-  public void testFetchProjectById() throws ProjectManagerException {
-    System.out.println("projectManagerTest: testFetchProjectById");
-    ProjectManager manager = createProjectManager();
-    String projectName = "myTestFetchProjectById";
-    String projectDescription = "This is to test fetching a project by id";
-    User user = new User("testUser");
-    Project project = createProjectUtil(manager, projectName, projectDescription, user);
-
-    Project fetchedProject = manager.getProject(project.getId());
-    assertProjectMemberEquals(project, fetchedProject);
-    System.out.println("Fetched project by id successfully");
-  }
-
-  @Test
-  public void testFetchAllProjects() throws ProjectManagerException {
-    System.out.println("projectManagerTest: testFetchAllProjects");
-    ProjectManager manager = createProjectManager();
-    String projectName1 = "myTestFetchAllProjects_1";
-    String projectDescription1 = "This is to test fetching all projects: project_1";
-    User user = new User("testUser");
-    Project project1 = createProjectUtil(manager, projectName1, projectDescription1, user);
-
-    String projectName2 = "myTestFetchAllProjects_2";
-    String projectDescription2 = "This is to test fetching all projects: project_2";
-    Project project2 = createProjectUtil(manager, projectName2, projectDescription2, user);
-
-    List<Project> fetchedProjects = manager.getProjects();
-    Assert.assertTrue("Fetched project_1", fetchedProjects.contains(project1));
-    Assert.assertTrue("Fetched project_2", fetchedProjects.contains(project2));
-    System.out.println("Fetched all projects successfully");
-  }
-
-  private ProjectManager createProjectManager() {
-    Props props = new Props();
-    ProjectLoader loader = new MockProjectLoader(workingDir);
-    return new ProjectManager(loader, props);
-  }
-
-  private Project createProjectUtil(ProjectManager manager, String projectName, String description,
-      User creator) throws ProjectManagerException {
-    Project project = null;
-    try {
-      project = manager.createProject(projectName, description, creator);
-    } catch (ProjectManagerException e) {
-      System.out.println("Creating project failed");
-      Assert.fail(e.getMessage());
-    }
-
-    Assert.assertTrue("Project Id set", project.getId() > -1);
-    Assert.assertEquals("Project name", projectName, project.getName());
-    Assert.assertEquals("Project description", description,
+  public void testCreateProject() throws Exception {
+    System.out.println("TestCreateProject");
+    Project project = manager.createProject(PROJECT_NAME, PROJECT_DESCRIPTION, user);
+    verify(loader).postEvent(project, ProjectLogEvent.EventType.CREATED, user.getUserId(), null);
+    Assert.assertEquals("Project Id", PROJECT_ID, project.getId());
+    Assert.assertEquals("Project name", PROJECT_NAME, project.getName());
+    Assert.assertEquals("Project description", PROJECT_DESCRIPTION,
         project.getDescription());
     Assert.assertTrue("Project is active", project.isActive());
-    return project;
   }
 
-  private void assertProjectMemberEquals(Project p1, Project p2) {
-    Assert.assertEquals(p1.getId(), p2.getId());
-    Assert.assertEquals(p1.getName(), p2.getName());
-    Assert.assertEquals(p1.getDescription(), p2.getDescription());
-    Assert.assertEquals(p1.isActive(), p2.isActive());
-    System.out.println("Project " + p1.getName() + " equals to project " + p2.getName());
+  @Test(expected = ProjectManagerException.class)
+  public void testCreateProjectWithEmptyName() throws Exception {
+    System.out.println("TestCreateProjectWithEmptyName");
+    manager.createProject(null, PROJECT_DESCRIPTION, user);
+  }
+
+  @Test(expected = ProjectManagerException.class)
+  public void testCreateProjectWithInvalidName() throws Exception {
+    System.out.println("TestCreateProjectWithInvalidName");
+    //Project name must start with a letter, test invalid project name "123", should throw exception
+    manager.createProject("123", PROJECT_DESCRIPTION, user);
+  }
+
+  @Test(expected = ProjectManagerException.class)
+  public void testCreateProjectWithEmptyDescription() throws Exception {
+    System.out.println("testCreateProjectWithEmptyDescription");
+    manager.createProject(PROJECT_NAME, null, user);
+  }
+
+  @Test(expected = ProjectManagerException.class)
+  public void testCreateProjectWithEmptyUser() throws Exception {
+    System.out.println("testCreateProjectWithEmptyUser");
+    manager.createProject(PROJECT_NAME, PROJECT_DESCRIPTION, null);
+  }
+
+  @Test
+  public void testRemoveProject() throws Exception {
+    System.out.println("TestRemoveProject");
+    Project project = manager.createProject(PROJECT_NAME, PROJECT_DESCRIPTION, user);
+    manager.removeProject(project, user);
+    verify(loader).removeProject(project, user.getUserId());
+    verify(loader).postEvent(project, ProjectLogEvent.EventType.DELETED, user.getUserId(),
+        null);
+    Project fetchedProject = manager.getProject(project.getId());
+    verify(loader).fetchProjectById(project.getId());
+    verify(loader).fetchAllProjectFlows(project);
+    Assert.assertFalse(fetchedProject.isActive());
+  }
+
+  @Test
+  public void testUploadProject() throws Exception {
+    System.out.println("TestUploadProject");
+    Project project = manager.createProject(PROJECT_NAME, PROJECT_DESCRIPTION, user);
+    File testDir = new File(this.getClass().getClassLoader().getResource("project/testjob/testjob.zip").getFile());
+    System.out.println("Uploading zip file: " + testDir.getAbsolutePath());
+    Props props = new Props();
+    manager.uploadProject(project, testDir, FILE_TYPE, user, props);
+    verify(loader).uploadProjectFile(project, PROJECT_VERSION + 1, FILE_TYPE, testDir.getName(),
+        testDir, user.getUserId());
+    verify(loader).uploadFlows(eq(project), eq(PROJECT_VERSION + 1), anyCollection());
+    verify(loader).changeProjectVersion(project, PROJECT_VERSION + 1, user.getUserId());
+    //uploadProjectProperties should be called twice, one for jobProps, the other for propProps
+    verify(loader, times(2)).uploadProjectProperties(eq(project), anyList());
+    verify(loader).postEvent(project, ProjectLogEvent.EventType.UPLOADED, user.getUserId(),
+        "Uploaded project files zip " + testDir.getName());
+    verify(loader).cleanOlderProjectVersion(project.getId(), PROJECT_VERSION + 1 - PROJECT_VERSION_RETENTIION);
+  }
+
+  @Test
+  public void testFetchProjectByName() throws Exception {
+    System.out.println("TestFetchProjectByName");
+    Project project = manager.createProject(PROJECT_NAME, PROJECT_DESCRIPTION, user);
+    Project fetchedProject = manager.getProject(project.getName());
+    Assert.assertEquals("Fetched project by name", project, fetchedProject);
+  }
+
+  @Test(expected = RuntimeException.class)
+  public void testFetchInvalidProjectByName() throws Exception {
+    System.out.println("TestFetchInvalidProjectByName");
+    manager.createProject(PROJECT_NAME, PROJECT_DESCRIPTION, user);
+    manager.getProject("Invalid_Project");
+  }
+
+  @Test
+  public void testFetchProjectById() throws Exception {
+    System.out.println("TestFetchProjectById");
+    Project project = manager.createProject(PROJECT_NAME, PROJECT_DESCRIPTION, user);
+    Project fetchedProject = manager.getProject(project.getId());
+    Assert.assertEquals("Fetched project by id", project, fetchedProject);
+  }
+
+  @Test(expected = RuntimeException.class)
+  public void testFetchInvalidProjectById() throws Exception {
+    System.out.println("TestFetchInvalidProjectById");
+    manager.createProject(PROJECT_NAME, PROJECT_DESCRIPTION, user);
+    manager.getProject(100);
+  }
+
+  @Test
+  public void testFetchAllProjects() throws Exception {
+    System.out.println("TestFetchAllProjects");
+    List<Project> projects = new ArrayList<>();
+    Project new_project1 = manager.createProject(PROJECT_NAME, PROJECT_DESCRIPTION, user);
+    Project project2 = new Project(PROJECT_ID_2, PROJECT_NAME_2);
+    project2.setDescription(PROJECT_DESCRIPTION);
+    project2.setActive(true);
+    project2.setVersion(PROJECT_VERSION);
+    when(loader.createNewProject(PROJECT_NAME_2, PROJECT_DESCRIPTION, user)).thenReturn(project2);
+    Project new_project2 = manager.createProject(PROJECT_NAME_2, PROJECT_DESCRIPTION, user);
+    projects.add(new_project1);
+    projects.add(new_project2);
+
+    when(loader.fetchAllActiveProjects()).thenReturn(projects);
+    List<Project> fetchedProjects = manager.getProjects();
+    Assert.assertEquals("Fetched projects: ", projects, fetchedProjects);
   }
 }
