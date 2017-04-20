@@ -1,5 +1,5 @@
 /*
- * Copyright 2012 LinkedIn, Inc
+ * Copyright 2017 LinkedIn Corp.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -12,23 +12,25 @@
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
  * License for the specific language governing permissions and limitations under
  * the License.
+ *
  */
 
-package azkaban.migration.scheduler;
+package azkaban.storage;
 
-import java.util.List;
+import azkaban.Constants;
+import azkaban.utils.Props;
+import com.google.inject.Inject;
 
-@Deprecated
-public interface ScheduleLoader {
 
-  public void insertSchedule(Schedule s) throws ScheduleManagerException;
+public class StorageConfig {
+  private String baseDirectoryPath = "AZKABAN_STORAGE";
 
-  public void updateSchedule(Schedule s) throws ScheduleManagerException;
+  @Inject
+  public StorageConfig(Props props) {
+    baseDirectoryPath = props.getString(Constants.ConfigurationKeys.AZKABAN_STORAGE_LOCAL_BASEDIRECTORY, baseDirectoryPath);
+  }
 
-  public List<Schedule> loadSchedules() throws ScheduleManagerException;
-
-  public void removeSchedule(Schedule s) throws ScheduleManagerException;
-
-  public void updateNextExecTime(Schedule s) throws ScheduleManagerException;
-
+  public String getBaseDirectoryPath() {
+    return baseDirectoryPath;
+  }
 }

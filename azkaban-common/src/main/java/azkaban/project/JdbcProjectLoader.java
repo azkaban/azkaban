@@ -16,6 +16,7 @@
 
 package azkaban.project;
 
+import com.google.inject.Inject;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.File;
@@ -62,6 +63,7 @@ public class JdbcProjectLoader extends AbstractJdbcLoader implements
 
   private EncodingType defaultEncodingType = EncodingType.GZIP;
 
+  @Inject
   public JdbcProjectLoader(Props props) {
     super(props);
     tempDir = new File(props.getString("project.temp.dir", "temp"));

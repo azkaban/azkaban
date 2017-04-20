@@ -7,7 +7,7 @@ buildscript {
   }
   dependencies {
     classpath 'com.cinnober.gradle:semver-git:2.2.1'
-    classpath 'net.ltgt.gradle:gradle-errorprone-plugin:0.0.8'
+    classpath 'net.ltgt.gradle:gradle-errorprone-plugin:0.0.10'
   }
 }
 
@@ -29,10 +29,6 @@ subprojects {
 
   // Set the same version for all sub-projects to root project version
   version = rootProject.version
-
-  configurations.errorprone {
-    resolutionStrategy.force 'com.google.errorprone:error_prone_core:2.0.5'
-  }
 
   plugins.withType(JavaPlugin) {
     sourceCompatibility = JavaVersion.VERSION_1_8

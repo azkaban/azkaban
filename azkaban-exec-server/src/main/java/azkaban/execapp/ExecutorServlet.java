@@ -35,7 +35,7 @@ import org.apache.log4j.Logger;
 
 import org.codehaus.jackson.map.ObjectMapper;
 
-import azkaban.constants.ServerInternals;
+import azkaban.Constants;
 import azkaban.executor.ConnectorParams;
 import azkaban.executor.ExecutableFlowBase;
 import azkaban.executor.Executor;
@@ -65,7 +65,7 @@ public class ExecutorServlet extends HttpServlet implements ConnectorParams {
   public void init(ServletConfig config) throws ServletException {
     application =
         (AzkabanExecutorServer) config.getServletContext().getAttribute(
-            ServerInternals.AZKABAN_SERVLET_CONTEXT_KEY);
+            Constants.AZKABAN_SERVLET_CONTEXT_KEY);
 
     if (application == null) {
       throw new IllegalStateException(

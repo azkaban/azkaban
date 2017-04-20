@@ -15,27 +15,32 @@
  *
  */
 
-package com.linkedin.azkaban.spi;
+package azkaban.spi;
 
-/**
- * Super class to capture any exceptions related to {@link Storage}
- */
-public class StorageException extends AzkabanException {
-  public StorageException(String message) {
+public class AzkabanException extends RuntimeException {
+  public AzkabanException(String message) {
     this(message, null);
   }
 
-  public StorageException(Throwable throwable) {
+  public AzkabanException(Throwable throwable) {
     this(null, throwable);
   }
 
-  public StorageException(String message, Throwable cause) {
+  public AzkabanException(String message, Throwable cause) {
     super(message, cause);
   }
 
-  public StorageException(String message, Throwable cause,
+  public AzkabanException(String message, Throwable cause,
       boolean enableSuppression, boolean writableStackTrace) {
     super(message, cause, enableSuppression, writableStackTrace);
   }
 
+  @Override
+  public String getMessage() {
+    String message = super.getMessage();
+    if (message == null && getCause() != null) {
+      message = getCause().getMessage();
+    }
+    return message;
+  }
 }
