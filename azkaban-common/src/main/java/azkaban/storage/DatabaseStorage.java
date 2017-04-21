@@ -44,7 +44,7 @@ public class DatabaseStorage implements Storage {
 
   @Override
   public InputStream get(URI key) {
-    return null;
+    throw new UnsupportedOperationException();
   }
 
   @Override
