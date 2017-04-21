@@ -488,7 +488,9 @@ public class JdbcProjectLoader extends AbstractJdbcLoader implements
         size = bufferedStream.read(buffer);
       }
     } catch (IOException e) {
-      throw new ProjectManagerException("Error chunking file " + localFile.getName());
+      throw new ProjectManagerException(String.format(
+          "Error chunking file. projectId: %d, version: %d, file:%s[%d bytes], chunk: %d",
+          projectId, version, localFile.getName(), localFile.length(), chunk));
     } finally {
       IOUtils.closeQuietly(bufferedStream);
     }

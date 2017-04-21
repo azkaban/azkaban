@@ -73,7 +73,7 @@ public class LocalStorage implements Storage {
           targetFile, metadata));
     }
     try {
-      FileUtils.copyInputStreamToFile(new FileInputStream(localFile), targetFile);
+      FileUtils.copyFile(localFile, targetFile);
     } catch (IOException e) {
       log.error("LocalStorage error in put(): Metadata: " + metadata);
       throw new StorageException(e);
