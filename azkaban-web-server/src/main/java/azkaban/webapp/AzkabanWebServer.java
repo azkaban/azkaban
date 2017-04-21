@@ -168,17 +168,17 @@ public class AzkabanWebServer extends AzkabanServer {
   private final ExecutorManager executorManager;
   private final ScheduleManager scheduleManager;
   private final TriggerManager triggerManager;
-  private Map<String, Alerter> alerters;
+  private final Map<String, Alerter> alerters;
 
   private final ClassLoader baseClassLoader;
 
-  private Props props;
-  private SessionCache sessionCache;
-  private File tempDir;
-  private Map<String, TriggerPlugin> triggerPlugins;
+  private final Props props;
+  private final SessionCache sessionCache;
+  private final File tempDir;
+  private final List<ObjectName> registeredMBeans = new ArrayList<>();
 
+  private Map<String, TriggerPlugin> triggerPlugins;
   private MBeanServer mbeanServer;
-  private ArrayList<ObjectName> registeredMBeans = new ArrayList<>();
 
   public static AzkabanWebServer getInstance() {
     return app;
