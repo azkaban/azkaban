@@ -72,6 +72,7 @@ subprojects {
    */
   test {
     testLogging {
+      exceptionFormat = 'full'
       afterSuite { desc, result ->
         if (desc.getParent()) {
           logger.info desc.getName()
