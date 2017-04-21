@@ -56,20 +56,25 @@ public class LocalStorageTest {
     ClassLoader classLoader = getClass().getClassLoader();
     File testFile = new File(classLoader.getResource(SAMPLE_FILE).getFile());
 
+    final String testProjectId = "testProjectId";
+    final String hash = "myhash";
+
     URI key;
     try (InputStream is = new FileInputStream(testFile)) {
       // test put
-      key = localStorage.put(new StorageMetadata("testProjectId", "1", "zip"), is);
+      key = localStorage.put(new StorageMetadata(testProjectId, "1", "zip", hash), is);
     }
     assertNotNull(key);
     log.info("Key URI: " + key);
 
     File expectedTargetFile = new File(BASE_DIRECTORY, new StringBuilder()
-        .append("testProjectId")
+        .append(testProjectId)
         .append(File.separator)
-        .append("1.zip")
-        .toString()
-    );
+        .append(testProjectId)
+        .append("_")
+        .append(hash)
+        .append(".zip")
+        .toString());
     assertTrue(expectedTargetFile.exists());
     assertTrue(FileUtils.contentEquals(testFile, expectedTargetFile));
 

@@ -63,7 +63,7 @@ public class LocalStorage implements Storage {
       log.info("Created project dir: " + projectDir.getAbsolutePath());
     }
 
-    final File targetFile = new File(projectDir, metadata.getVersion() + "." + metadata.getExtension());
+    final File targetFile = new File(projectDir, generateFilename(metadata));
 
     if (targetFile.exists()) {
       throw new StorageException(String.format(
@@ -77,6 +77,16 @@ public class LocalStorage implements Storage {
       throw new StorageException(e);
     }
     return createRelativeURI(targetFile);
+  }
+
+  private String generateFilename(StorageMetadata metadata) {
+    return new StringBuilder()
+        .append(metadata.getProjectId())
+        .append("_")
+        .append(metadata.getHash())
+        .append(".")
+        .append(metadata.getExtension())
+        .toString();
   }
 
   private URI createRelativeURI(File targetFile) {
@@ -98,7 +108,7 @@ public class LocalStorage implements Storage {
 
   private static File validateBaseDirectory(File baseDirectory) {
     checkArgument(baseDirectory.isDirectory());
-    if (!FileIOUtils.isDirWritable(baseDirectory)) {
+    if (!baseDirectory.canWrite()) {
       throw new IllegalArgumentException("Directory not writable: " + baseDirectory);
     }
     return baseDirectory;
