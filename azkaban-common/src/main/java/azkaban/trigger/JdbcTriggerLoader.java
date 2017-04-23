@@ -266,7 +266,7 @@ public class JdbcTriggerLoader extends AbstractJdbcLoader implements
 
   }
 
-  public class TriggerResultHandler implements ResultSetHandler<List<Trigger>> {
+  public static class TriggerResultHandler implements ResultSetHandler<List<Trigger>> {
 
     @Override
     public List<Trigger> handle(ResultSet rs) throws SQLException {

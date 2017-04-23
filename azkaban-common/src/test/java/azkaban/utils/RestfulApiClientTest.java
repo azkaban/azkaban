@@ -44,7 +44,7 @@ import org.junit.Test;
  */
 public class RestfulApiClientTest {
 
-  protected class MockRestfulApiClient extends RestfulApiClient<String> {
+  protected static class MockRestfulApiClient extends RestfulApiClient<String> {
     private int  status = HttpStatus.SC_OK;
 
     @Override
