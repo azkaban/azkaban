@@ -19,6 +19,7 @@ package azkaban.jobExecutor;
 import azkaban.Constants;
 import azkaban.metrics.CommonMetrics;
 import java.io.File;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -40,7 +41,7 @@ public class ProcessJob extends AbstractProcessJob {
 
   public static final String COMMAND = "command";
 
-  private static final long KILL_TIME_MS = 5000;
+  static final Duration KILL_TIME = Duration.ofSeconds(30);
 
   private volatile AzkabanProcess process;
 
@@ -300,7 +301,7 @@ public class ProcessJob extends AbstractProcessJob {
 
     if (process == null)
       throw new IllegalStateException("Not started.");
-    boolean processkilled = process.softKill(KILL_TIME_MS, TimeUnit.MILLISECONDS);
+    boolean processkilled = process.softKill(KILL_TIME.toMillis(), TimeUnit.MILLISECONDS);
     if (!processkilled) {
       warn("Kill with signal TERM failed. Killing with KILL signal.");
       process.hardKill();
