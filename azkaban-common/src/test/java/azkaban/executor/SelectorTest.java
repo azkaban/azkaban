@@ -36,7 +36,7 @@ import azkaban.utils.JSONUtils;
 
 public class SelectorTest {
   // mock executor object.
-  protected static class MockExecutorObject implements Comparable <MockExecutorObject>{
+  static class MockExecutorObject implements Comparable <MockExecutorObject>{
     public String name;
     public int    port;
     public double percentOfRemainingMemory;
@@ -78,7 +78,7 @@ public class SelectorTest {
   }
 
   // Mock flow object.
-  protected static class MockFlowObject{
+  static class MockFlowObject{
     public String name;
     public int    requiredRemainingMemory;
     public int    requiredTotalMemory;
@@ -106,7 +106,7 @@ public class SelectorTest {
   }
 
   // mock Filter class.
-  protected static class MockFilter
+  static class MockFilter
   extends CandidateFilter<MockExecutorObject,MockFlowObject>{
 
     @Override
@@ -182,7 +182,7 @@ public class SelectorTest {
   }
 
   // mock comparator class.
-  protected static class MockComparator
+  static class MockComparator
   extends CandidateComparator<MockExecutorObject>{
 
     @Override
