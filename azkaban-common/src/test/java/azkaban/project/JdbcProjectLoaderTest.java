@@ -541,7 +541,7 @@ public class JdbcProjectLoaderTest {
 
     loader.uploadProjectFile(project.getId(), 1, testFile, user.getUserId());
 
-    ProjectFileHandler handler = loader.getUploadedFile(project, 1);
+    ProjectFileHandler handler = loader.getUploadedFile(project.getId(), 1);
     Assert.assertEquals(handler.getProjectId(), project.getId());
     Assert.assertEquals(handler.getFileName(), "testjob.zip");
     Assert.assertEquals(handler.getVersion(), 1);

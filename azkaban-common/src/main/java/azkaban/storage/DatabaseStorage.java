@@ -19,11 +19,16 @@ package azkaban.storage;
 
 import azkaban.project.ProjectLoader;
 import azkaban.spi.Storage;
+import azkaban.spi.StorageException;
 import azkaban.spi.StorageMetadata;
+import com.google.common.base.Splitter;
 import java.io.File;
 import java.io.InputStream;
 import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.Map;
 import javax.inject.Inject;
+import org.apache.http.client.utils.URIBuilder;
 
 
 /**
@@ -33,6 +38,8 @@ import javax.inject.Inject;
  * behavior of Azkaban.
  */
 public class DatabaseStorage implements Storage {
+  public static final String PROJECT_ID = "projectId";
+  public static final String VERSION = "version";
 
   private final ProjectLoader projectLoader;
 
@@ -42,9 +49,34 @@ public class DatabaseStorage implements Storage {
     this.projectLoader = projectLoader;
   }
 
+  public static URI toURI(int projectId, int version) {
+    try {
+      return new URIBuilder()
+          .setScheme("database")
+          .setPath("/") // required. inserting dummy path "/". else query parsing does not work.
+          .setParameter(PROJECT_ID, String.valueOf(projectId))
+          .setParameter(VERSION, String.valueOf(version))
+          .build();
+    } catch (URISyntaxException e) {
+      throw new StorageException(e);
+    }
+  }
+
+  public static Map<String, String> getQueryMapFromUri(URI uri) {
+    return Splitter.on('&')
+          .trimResults()
+          .withKeyValueSeparator("=")
+          .split(uri.getQuery());
+  }
+
   @Override
   public InputStream get(URI key) {
-    throw new UnsupportedOperationException();
+    Map<String, String> queryMap = getQueryMapFromUri(key);
+    final int projectId = Integer.valueOf(queryMap.get(PROJECT_ID));
+    final int version = Integer.valueOf(queryMap.get(VERSION));
+
+    projectLoader.getUploadedFile(projectId, version);
+    return null;
   }
 
   @Override

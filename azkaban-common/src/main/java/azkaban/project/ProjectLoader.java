@@ -139,14 +139,6 @@ public interface ProjectLoader {
    *
    * @return
    */
-  ProjectFileHandler getUploadedFile(Project project, int version)
-      throws ProjectManagerException;
-
-  /**
-   * Get file that's uploaded.
-   *
-   * @return
-   */
   ProjectFileHandler getUploadedFile(int projectId, int version)
       throws ProjectManagerException;
 

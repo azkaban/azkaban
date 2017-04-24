@@ -413,7 +413,7 @@ public class ProjectManager {
     if (version == -1) {
       version = projectLoader.getLatestProjectVersion(project);
     }
-    return projectLoader.getUploadedFile(project, version);
+    return projectLoader.getUploadedFile(project.getId(), version);
   }
 
   public Map<String, ValidationReport> uploadProject(Project project,
