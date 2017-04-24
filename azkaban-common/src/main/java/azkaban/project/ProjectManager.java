@@ -16,6 +16,8 @@
 
 package azkaban.project;
 
+import azkaban.storage.StorageManager;
+import com.google.inject.Inject;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -23,7 +25,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 import java.util.zip.ZipFile;
@@ -45,17 +46,24 @@ import azkaban.utils.Props;
 import azkaban.utils.PropsUtils;
 import azkaban.utils.Utils;
 
+import static java.util.Objects.*;
+
+
 public class ProjectManager {
   private static final Logger logger = Logger.getLogger(ProjectManager.class);
   private final ProjectLoader projectLoader;
+  private final StorageManager storageManager;
   private final Props props;
   private final File tempDir;
   private final int projectVersionRetention;
   private final boolean creatorDefaultPermissions;
 
-  public ProjectManager(ProjectLoader loader, Props props) {
-    this.projectLoader = loader;
-    this.props = props;
+  @Inject
+  public ProjectManager(ProjectLoader loader, StorageManager storageManager, Props props) {
+    this.projectLoader = requireNonNull(loader);
+    this.storageManager = requireNonNull(storageManager);
+    this.props = requireNonNull(props);
+
     this.tempDir = new File(this.props.getString("project.temp.dir", "temp"));
     this.projectVersionRetention =
         (props.getInt("project.version.retention", 3));
@@ -492,9 +500,8 @@ public class ProjectManager {
         flow.setVersion(newVersion);
       }
 
-      logger.info("Uploading file to db " + archive.getName());
-      projectLoader.uploadProjectFile(project, newVersion, fileType,
-          archive.getName(), archive, uploader.getUserId());
+      storageManager.uploadProject(project, newVersion, archive, uploader);
+
       logger.info("Uploading flow to db " + archive.getName());
       projectLoader.uploadFlows(project, newVersion, flows.values());
       logger.info("Changing project versions " + archive.getName());

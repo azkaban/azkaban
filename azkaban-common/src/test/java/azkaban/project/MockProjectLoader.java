@@ -116,8 +116,7 @@ public class MockProjectLoader implements ProjectLoader {
   }
 
   @Override
-  public void uploadProjectFile(Project project, int version, String filetype,
-      String filename, File localFile, String user)
+  public void uploadProjectFile(int projectId, int version, File localFile, String user)
       throws ProjectManagerException {
     // TODO Auto-generated method stub
 

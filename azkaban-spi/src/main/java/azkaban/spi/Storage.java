@@ -17,6 +17,7 @@
 
 package azkaban.spi;
 
+import java.io.File;
 import java.io.InputStream;
 import java.net.URI;
 
@@ -45,11 +46,11 @@ public interface Storage {
    * Put an object and return a key.
    *
    * @param metadata Metadata related to the input stream
-   * @param is The input stream from which the value is read to the store. The value is read completely
+   * @param localFile Read data from a local file
    *
    * @return the URI of the data
    */
-  URI put(StorageMetadata metadata, InputStream is);
+  URI put(StorageMetadata metadata, File localFile);
 
   /**
    * Delete an object from Storage.
