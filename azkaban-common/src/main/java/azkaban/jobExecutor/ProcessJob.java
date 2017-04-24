@@ -41,7 +41,7 @@ public class ProcessJob extends AbstractProcessJob {
 
   public static final String COMMAND = "command";
 
-  static final Duration KILL_TIME = Duration.ofSeconds(30);
+  private static final Duration KILL_TIME = Duration.ofSeconds(30);
 
   private volatile AzkabanProcess process;
 
