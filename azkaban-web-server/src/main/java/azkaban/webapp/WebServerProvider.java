@@ -42,7 +42,7 @@ public class WebServerProvider implements Provider<Server> {
   public Server get() {
     requireNonNull(props);
 
-    final int maxThreads = props.getInt("jetty.maxThreads", Constants.DEFAULT_THREAD_NUMBER);
+    final int maxThreads = props.getInt("jetty.maxThreads", Constants.DEFAULT_JETTY_MAX_THREAD_COUNT);
     boolean isStatsOn = props.getBoolean("jetty.connector.stats", true);
     logger.info("Setting up connector with stats on: " + isStatsOn);
 

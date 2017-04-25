@@ -768,7 +768,7 @@ public class AzkabanWebServer extends AzkabanServer {
   }
 
   private static void configureRoutes(Server server, Props azkabanSettings) throws TriggerManagerException {
-    final int maxThreads = azkabanSettings.getInt("jetty.maxThreads", Constants.DEFAULT_THREAD_NUMBER);
+    final int maxThreads = azkabanSettings.getInt("jetty.maxThreads", Constants.DEFAULT_JETTY_MAX_THREAD_COUNT);
 
     QueuedThreadPool httpThreadPool = new QueuedThreadPool(maxThreads);
     app.setThreadPool(httpThreadPool);
