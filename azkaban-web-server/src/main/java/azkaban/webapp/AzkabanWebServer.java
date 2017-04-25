@@ -20,6 +20,7 @@ import azkaban.AzkabanCommonModule;
 import com.codahale.metrics.MetricRegistry;
 
 import com.google.inject.Guice;
+import com.google.inject.Inject;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -49,10 +50,7 @@ import org.apache.velocity.runtime.log.Log4JLogChute;
 import org.apache.velocity.runtime.resource.loader.ClasspathResourceLoader;
 import org.apache.velocity.runtime.resource.loader.JarResourceLoader;
 import org.joda.time.DateTimeZone;
-import org.mortbay.jetty.Connector;
 import org.mortbay.jetty.Server;
-import org.mortbay.jetty.bio.SocketConnector;
-import org.mortbay.jetty.security.SslSocketConnector;
 import org.mortbay.jetty.servlet.Context;
 import org.mortbay.jetty.servlet.DefaultServlet;
 import org.mortbay.jetty.servlet.ServletHolder;
@@ -141,11 +139,9 @@ public class AzkabanWebServer extends AzkabanServer {
 
   public static final String DEFAULT_CONF_PATH = "conf";
   private static final int MAX_FORM_CONTENT_SIZE = 10 * 1024 * 1024;
-  private static final int MAX_HEADER_BUFFER_SIZE = 10 * 1024 * 1024;
   private static AzkabanWebServer app;
 
   private static final String DEFAULT_TIMEZONE_ID = "default.timezone.id";
-  private static final int DEFAULT_THREAD_NUMBER = 20;
   private static final String VELOCITY_DEV_MODE_PARAM = "velocity.dev.mode";
   private static final String USER_MANAGER_CLASS_PARAM = "user.manager.class";
   private static final String DEFAULT_STATIC_DIR = "";
@@ -185,16 +181,10 @@ public class AzkabanWebServer extends AzkabanServer {
     this(null, loadConfigurationFromAzkabanHome());
   }
 
-  /**
-   * Constructor
-   */
+  @Inject
   public AzkabanWebServer(Server server, Props props) throws Exception {
     this.props = requireNonNull(props);
     this.server = server;
-
-    /* Initialize Guice Injector */
-    // TODO move this to a common static context.
-    SERVICE_PROVIDER.setInjector(Guice.createInjector(new AzkabanCommonModule(props)));
 
     velocityEngine = configureVelocityEngine(props.getBoolean(VELOCITY_DEV_MODE_PARAM, false));
     sessionCache = new SessionCache(props);
@@ -681,18 +671,28 @@ public class AzkabanWebServer extends AzkabanServer {
     StdOutErrRedirect.redirectOutAndErrToLog();
 
     logger.info("Starting Jetty Azkaban Web Server...");
-    Props azkabanSettings = AzkabanServer.loadProps(args);
+    Props props = AzkabanServer.loadProps(args);
 
-    if (azkabanSettings == null) {
+    if (props == null) {
       logger.error("Azkaban Properties not loaded. Exiting..");
       System.exit(1);
     }
 
-    final Server server = createServer(azkabanSettings);
+    /* Initialize Guice Injector */
+    SERVICE_PROVIDER.setInjector(Guice.createInjector(
+        new AzkabanCommonModule(props),
+        new AzkabanWebServerModule()
+    ));
 
-    app = new AzkabanWebServer(server, azkabanSettings);
+    launch(props);
+  }
 
-    prepareAndStartServer(azkabanSettings, server);
+  public static void launch(Props azkabanSettings) throws Exception {
+    /* This creates the Web Server instance */
+    app = SERVICE_PROVIDER.getInstance(AzkabanWebServer.class);
+
+    // TODO refactor code into ServerProvider
+    prepareAndStartServer(azkabanSettings, app.server);
 
     Runtime.getRuntime().addShutdownHook(new Thread() {
 
@@ -706,8 +706,6 @@ public class AzkabanWebServer extends AzkabanServer {
         logger.info("Shutting down http server...");
         try {
           app.close();
-          server.stop();
-          server.destroy();
         } catch (Exception e) {
           logger.error("Error while shutting down http server.", e);
         }
@@ -736,60 +734,6 @@ public class AzkabanWebServer extends AzkabanServer {
         }
       }
     });
-  }
-
-  private static Server createServer(Props azkabanSettings) {
-    final int maxThreads = azkabanSettings.getInt("jetty.maxThreads", DEFAULT_THREAD_NUMBER);
-    boolean isStatsOn = azkabanSettings.getBoolean("jetty.connector.stats", true);
-    logger.info("Setting up connector with stats on: " + isStatsOn);
-
-    boolean ssl;
-    int port;
-    final Server server = new Server();
-    if (azkabanSettings.getBoolean("jetty.use.ssl", true)) {
-      int sslPortNumber =
-          azkabanSettings.getInt("jetty.ssl.port", Constants.DEFAULT_SSL_PORT_NUMBER);
-      port = sslPortNumber;
-      ssl = true;
-      logger.info("Setting up Jetty Https Server with port:" + sslPortNumber
-          + " and numThreads:" + maxThreads);
-
-      SslSocketConnector secureConnector = new SslSocketConnector();
-      secureConnector.setPort(sslPortNumber);
-      secureConnector.setKeystore(azkabanSettings.getString("jetty.keystore"));
-      secureConnector.setPassword(azkabanSettings.getString("jetty.password"));
-      secureConnector.setKeyPassword(azkabanSettings
-          .getString("jetty.keypassword"));
-      secureConnector.setTruststore(azkabanSettings
-          .getString("jetty.truststore"));
-      secureConnector.setTrustPassword(azkabanSettings
-          .getString("jetty.trustpassword"));
-      secureConnector.setHeaderBufferSize(MAX_HEADER_BUFFER_SIZE);
-
-      // set up vulnerable cipher suites to exclude
-      List<String> cipherSuitesToExclude = azkabanSettings.getStringList("jetty.excludeCipherSuites");
-      logger.info("Excluded Cipher Suites: " + String.valueOf(cipherSuitesToExclude));
-      if (cipherSuitesToExclude != null && !cipherSuitesToExclude.isEmpty()) {
-        secureConnector.setExcludeCipherSuites(cipherSuitesToExclude.toArray(new String[0]));
-      }
-
-      server.addConnector(secureConnector);
-    } else {
-      ssl = false;
-      port = azkabanSettings.getInt("jetty.port", Constants.DEFAULT_PORT_NUMBER);
-      SocketConnector connector = new SocketConnector();
-      connector.setPort(port);
-      connector.setHeaderBufferSize(MAX_HEADER_BUFFER_SIZE);
-      server.addConnector(connector);
-    }
-
-    // setting stats configuration for connectors
-    for (Connector connector : server.getConnectors()) {
-      connector.setStatsOn(isStatsOn);
-    }
-
-    logger.info(String.format("Starting %sserver on port: %d", ssl ? "SSL " : "", port));
-    return server;
   }
 
   private static void prepareAndStartServer(Props azkabanSettings, Server server) throws Exception {
@@ -824,7 +768,7 @@ public class AzkabanWebServer extends AzkabanServer {
   }
 
   private static void configureRoutes(Server server, Props azkabanSettings) throws TriggerManagerException {
-    final int maxThreads = azkabanSettings.getInt("jetty.maxThreads", DEFAULT_THREAD_NUMBER);
+    final int maxThreads = azkabanSettings.getInt("jetty.maxThreads", Constants.DEFAULT_THREAD_NUMBER);
 
     QueuedThreadPool httpThreadPool = new QueuedThreadPool(maxThreads);
     app.setThreadPool(httpThreadPool);
@@ -1261,6 +1205,13 @@ public class AzkabanWebServer extends AzkabanServer {
     }
     scheduleManager.shutdown();
     executorManager.shutdown();
+    try {
+      server.stop();
+    } catch (Throwable t) {
+      // Catch all while closing server
+      logger.error(t);
+    }
+    server.destroy();
   }
 
   private void registerMbean(String name, Object mbean) {

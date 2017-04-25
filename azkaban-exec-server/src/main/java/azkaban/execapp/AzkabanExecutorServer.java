@@ -16,8 +16,11 @@
 
 package azkaban.execapp;
 
+import azkaban.AzkabanCommonModule;
 import com.google.common.base.Throwables;
 
+import com.google.inject.Guice;
+import com.google.inject.Inject;
 import org.apache.commons.lang.StringUtils;
 import org.apache.log4j.Logger;
 import org.joda.time.DateTimeZone;
@@ -73,6 +76,7 @@ import azkaban.utils.Utils;
 import azkaban.metrics.MetricsManager;
 
 import static azkaban.Constants.AZKABAN_EXECUTOR_PORT_FILENAME;
+import static azkaban.ServiceProvider.*;
 import static com.google.common.base.Preconditions.checkState;
 import static java.util.Objects.requireNonNull;
 
@@ -104,6 +108,7 @@ public class AzkabanExecutorServer {
    *
    * @throws Exception
    */
+  @Inject
   public AzkabanExecutorServer(Props props) throws Exception {
     this.props = props;
     server = createJettyServer(props);
@@ -347,14 +352,25 @@ public class AzkabanExecutorServer {
     StdOutErrRedirect.redirectOutAndErrToLog();
 
     logger.info("Starting Jetty Azkaban Executor...");
-    Props azkabanSettings = AzkabanServer.loadProps(args);
+    Props props = AzkabanServer.loadProps(args);
 
-    if (azkabanSettings == null) {
+    if (props == null) {
       logger.error("Azkaban Properties not loaded.");
       logger.error("Exiting Azkaban Executor Server...");
       return;
     }
 
+
+    /* Initialize Guice Injector */
+    SERVICE_PROVIDER.setInjector(Guice.createInjector(
+        new AzkabanCommonModule(props),
+        new AzkabanExecServerModule()
+    ));
+
+    launch(props);
+  }
+
+  public static void launch(Props azkabanSettings) throws Exception {
     // Setup time zone
     if (azkabanSettings.containsKey(DEFAULT_TIMEZONE_ID)) {
       String timezone = azkabanSettings.getString(DEFAULT_TIMEZONE_ID);
@@ -365,7 +381,7 @@ public class AzkabanExecutorServer {
       logger.info("Setting timezone to " + timezone);
     }
 
-    app = new AzkabanExecutorServer(azkabanSettings);
+    app = SERVICE_PROVIDER.getInstance(AzkabanExecutorServer.class);
 
     Runtime.getRuntime().addShutdownHook(new Thread() {
 

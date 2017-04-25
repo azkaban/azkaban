@@ -16,6 +16,10 @@
 
 package azkaban.soloserver;
 
+import azkaban.AzkabanCommonModule;
+import azkaban.execapp.AzkabanExecServerModule;
+import azkaban.webapp.AzkabanWebServerModule;
+import com.google.inject.Guice;
 import org.apache.log4j.Logger;
 
 import azkaban.database.AzkabanDatabaseSetup;
@@ -24,6 +28,9 @@ import azkaban.execapp.AzkabanExecutorServer;
 import azkaban.server.AzkabanServer;
 import azkaban.webapp.AzkabanWebServer;
 import azkaban.utils.Props;
+
+import static azkaban.ServiceProvider.*;
+
 
 public class AzkabanSingleServer {
   private static final Logger logger = Logger.getLogger(AzkabanWebServer.class);
@@ -38,21 +45,23 @@ public class AzkabanSingleServer {
       return;
     }
 
-    boolean checkversion =
-        props.getBoolean(AzkabanDatabaseSetup.DATABASE_CHECK_VERSION, true);
-
-    if (checkversion) {
-      boolean updateDB =
-          props.getBoolean(AzkabanDatabaseSetup.DATABASE_AUTO_UPDATE_TABLES,
-              true);
-      String scriptDir =
-          props.getString(AzkabanDatabaseSetup.DATABASE_SQL_SCRIPT_DIR, "sql");
+    if (props.getBoolean(AzkabanDatabaseSetup.DATABASE_CHECK_VERSION, true)) {
+      boolean updateDB = props.getBoolean(AzkabanDatabaseSetup.DATABASE_AUTO_UPDATE_TABLES, true);
+      String scriptDir = props.getString(AzkabanDatabaseSetup.DATABASE_SQL_SCRIPT_DIR, "sql");
       AzkabanDatabaseUpdater.runDatabaseUpdater(props, scriptDir, updateDB);
     }
 
-    AzkabanWebServer.main(args);
+    /* Initialize Guice Injector */
+    SERVICE_PROVIDER.setInjector(Guice.createInjector(
+        new AzkabanCommonModule(props),
+        new AzkabanWebServerModule(),
+        new AzkabanExecServerModule()
+    ));
+
+    AzkabanWebServer.launch(props);
     logger.info("Azkaban Web Server started...");
-    AzkabanExecutorServer.main(args);
+
+    AzkabanExecutorServer.launch(props);
     logger.info("Azkaban Exec Server started...");
   }
 }
