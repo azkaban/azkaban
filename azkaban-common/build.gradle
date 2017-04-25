@@ -35,6 +35,8 @@ configurations {
   testCompileOnly.extendsFrom(compileOnly)
 }
 dependencies {
+  compileOnly "org.apache.hadoop:hadoop-common:$hadoopVersion"
+
   compile project(':azkaban-spi')
   compile project(':azkaban-db')
 
