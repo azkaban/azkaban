@@ -7,7 +7,8 @@ dependencies {
 
   testCompile(project(path: ':azkaban-common', configuration: 'testCompile'))
   testCompile(project(':azkaban-common').sourceSets.test.output)
-  testCompile('com.google.guava:guava:13.0.1')
+
+  runtime(project(':azkaban-hadoop-security-plugin'))
 }
 
 distributions {
