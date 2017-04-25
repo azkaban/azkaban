@@ -17,35 +17,60 @@
 
 package azkaban.storage;
 
+import azkaban.AzkabanCommonModuleConfig;
+import azkaban.spi.StorageMetadata;
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.net.URI;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.log4j.Logger;
+import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
+
+import static org.mockito.Mockito.*;
 
 
 public class HdfsStorageTest {
   private static final Logger log = Logger.getLogger(HdfsStorageTest.class);
 
-  public static void main(String[] args) throws IOException {
-    Configuration conf = new Configuration(false);
-    conf.addResource(new Path("file:///Users/spyne/hadoop/hadoop-2.6.1/etc/hadoop/core-site.xml"));
-    conf.addResource(new Path("file:///Users/spyne/hadoop/hadoop-2.6.1/etc/hadoop/hdfs-site.xml"));
+  private HdfsStorage hdfsStorage;
+  private FileSystem hdfs;
 
-    System.out.println(conf);
-    conf.set("fs.hdfs.impl", org.apache.hadoop.hdfs.DistributedFileSystem.class.getName());
-    Path pt=new Path("hdfs://localhost:9000/test.file");
-    FileSystem fs = FileSystem.get(conf);
-    BufferedReader br=new BufferedReader(new InputStreamReader(fs.open(pt)));
-    String line;
-    line=br.readLine();
-    while (line != null){
-      System.out.println(line);
-      line=br.readLine();
-    }
+  @Before
+  public void setUp() throws Exception {
+    hdfs = mock(FileSystem.class);
+    AzkabanCommonModuleConfig config = mock(AzkabanCommonModuleConfig.class);
+    when(config.getHdfsRootUri()).thenReturn(URI.create("hdfs://localhost:9000/path/to/foo"));
+
+    hdfsStorage = new HdfsStorage(hdfs, config);
+  }
+
+  @Test
+  public void testGet() throws Exception {
+    hdfsStorage.get("1/1-hash.zip");
+    verify(hdfs).open(new Path("hdfs://localhost:9000/path/to/foo/1/1-hash.zip"));
+  }
+
+  @Test
+  public void testPut() throws Exception {
+    File file = mock(File.class);
+    when(file.getName()).thenReturn("bar.zip");
+    String absolutePath = "/path/to/foo/bar.zip";
+    when(file.getAbsolutePath()).thenReturn(absolutePath);
+
+    when(hdfs.exists(any(Path.class))).thenReturn(false);
+
+    StorageMetadata metadata = new StorageMetadata(1, 2, "uploader", "hash".getBytes());
+    String key = hdfsStorage.put(metadata, file);
+
+    verify(hdfs).copyFromLocalFile(new Path(absolutePath), new Path("/path/to/foo/1/1-hash.zip"));
+
+    Assert.assertEquals("1/1-hash.zip", key);
   }
 }

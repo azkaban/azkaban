@@ -21,17 +21,27 @@ import azkaban.db.DatabaseOperatorImpl;
 
 import azkaban.project.JdbcProjectLoader;
 import azkaban.project.ProjectLoader;
+import azkaban.spi.AzkabanException;
 import azkaban.spi.Storage;
 import azkaban.spi.StorageException;
-import azkaban.storage.LocalStorage;
 import azkaban.storage.StorageImplementationType;
 import azkaban.utils.Props;
 import com.google.inject.AbstractModule;
 import com.google.inject.Inject;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
+import com.google.inject.Singleton;
 import java.io.File;
+import java.io.IOException;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
 import org.apache.commons.dbutils.QueryRunner;
+import org.apache.log4j.Logger;
+
+import static azkaban.Constants.ConfigurationKeys.*;
+import static com.google.common.base.Preconditions.*;
+import static java.util.Objects.*;
 
 
 /**
@@ -40,9 +50,13 @@ import org.apache.commons.dbutils.QueryRunner;
  * structuring of Guice components.
  */
 public class AzkabanCommonModule extends AbstractModule {
+  private static final Logger log = Logger.getLogger(AzkabanCommonModule.class);
+
+  private final Props props;
   private final AzkabanCommonModuleConfig config;
 
   public AzkabanCommonModule(Props props) {
+    this.props = props;
     this.config = new AzkabanCommonModuleConfig(props);
   }
 
@@ -75,8 +89,24 @@ public class AzkabanCommonModule extends AbstractModule {
   }
 
   @Inject
-  public @Provides
-  LocalStorage createLocalStorage(AzkabanCommonModuleConfig config) {
-    return new LocalStorage(new File(config.getLocalStorageBaseDirPath()));
+  @Provides
+  @Singleton
+  public FileSystem createHadoopFileSystem() {
+    final String hadoopConfDirPath = requireNonNull(props.get(HADOOP_CONF_DIR_PATH));
+
+    final File hadoopConfDir = new File(requireNonNull(hadoopConfDirPath));
+    checkArgument(hadoopConfDir.exists() && hadoopConfDir.isDirectory());
+
+    final Configuration hadoopConf = new Configuration(false);
+    hadoopConf.addResource(new Path(hadoopConfDirPath, "core-site.xml"));
+    hadoopConf.addResource(new Path(hadoopConfDirPath, "hdfs-site.xml"));
+    hadoopConf.set("fs.hdfs.impl", org.apache.hadoop.hdfs.DistributedFileSystem.class.getName());
+
+    try {
+      return FileSystem.get(hadoopConf);
+    } catch (IOException e) {
+      log.error(e);
+      throw new AzkabanException(e);
+    }
   }
 }

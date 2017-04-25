@@ -20,6 +20,7 @@ package azkaban;
 import azkaban.project.JdbcProjectLoader;
 import azkaban.spi.Storage;
 import azkaban.storage.DatabaseStorage;
+import azkaban.storage.HdfsStorage;
 import azkaban.storage.LocalStorage;
 import azkaban.storage.StorageManager;
 import azkaban.utils.Props;
@@ -48,19 +49,22 @@ public class ServiceProviderTest {
     Props props = new Props();
     props.put("database.type", "h2");
     props.put("h2.path", "h2");
+
+    props.put("hadoop.conf.dir.path", "/Users/spyne/hadoop/hadoop-2.6.1/etc/hadoop");
+    props.put("azkaban.storage.hdfs.root.uri", "hdfs://localhost:9000/");
+
     props.put(Constants.ConfigurationKeys.AZKABAN_STORAGE_LOCAL_BASEDIR, AZKABAN_LOCAL_TEST_STORAGE);
 
 
     Injector injector = Guice.createInjector(
         new AzkabanCommonModule(props)
     );
-    SERVICE_PROVIDER.unsetInjector();
-    SERVICE_PROVIDER.setInjector(injector);
 
-    assertNotNull(SERVICE_PROVIDER.getInstance(JdbcProjectLoader.class));
-    assertNotNull(SERVICE_PROVIDER.getInstance(StorageManager.class));
-    assertNotNull(SERVICE_PROVIDER.getInstance(DatabaseStorage.class));
-    assertNotNull(SERVICE_PROVIDER.getInstance(LocalStorage.class));
-    assertNotNull(SERVICE_PROVIDER.getInstance(Storage.class));
+    assertNotNull(injector.getInstance(JdbcProjectLoader.class));
+    assertNotNull(injector.getInstance(StorageManager.class));
+    assertNotNull(injector.getInstance(DatabaseStorage.class));
+    assertNotNull(injector.getInstance(LocalStorage.class));
+    assertNotNull(injector.getInstance(HdfsStorage.class));
+    assertNotNull(injector.getInstance(Storage.class));
   }
 }
