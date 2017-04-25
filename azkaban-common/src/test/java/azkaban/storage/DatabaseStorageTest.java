@@ -22,7 +22,6 @@ import azkaban.spi.StorageMetadata;
 import java.io.File;
 import org.junit.Test;
 
-import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
 
 
@@ -36,7 +35,7 @@ public class DatabaseStorageTest {
     int projectId = 1234;
     int version = 1;
     String uploader = "testuser";
-    final StorageMetadata metadata = new StorageMetadata(projectId, version, uploader);
+    final StorageMetadata metadata = new StorageMetadata(projectId, version, uploader, null);
     databaseStorage.put(metadata, file);
     verify(projectLoader).uploadProjectFile(projectId, version, file, uploader);
   }
