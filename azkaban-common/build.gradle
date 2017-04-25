@@ -31,7 +31,12 @@ model {
   }
 }
 
+configurations {
+  testCompileOnly.extendsFrom(compileOnly)
+}
 dependencies {
+  compileOnly "org.apache.hadoop:hadoop-common:$hadoopVersion"
+
   compile project(':azkaban-spi')
 
   compile('com.google.inject:guice:4.1.0')
