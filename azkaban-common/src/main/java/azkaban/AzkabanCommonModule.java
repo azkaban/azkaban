@@ -49,7 +49,7 @@ public class AzkabanCommonModule extends AbstractModule {
 
   public AzkabanCommonModule(Props props) {
     this.props = props;
-    this.storageImplementation = props.getString(Constants.ConfigurationKeys.AZKABAN_STORAGE_TYPE, LOCAL.name());
+    this.storageImplementation = props.getString(Constants.ConfigurationKeys.AZKABAN_STORAGE_TYPE, DATABASE.name());
   }
 
   @Override

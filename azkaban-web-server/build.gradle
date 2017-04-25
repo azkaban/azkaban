@@ -124,12 +124,14 @@ task restliTemplateGenerator(type: JavaExec) {
   classpath = configurations.generateRestli
 }
 
-task restliRestSpecGenerator(dependsOn: [restliTemplateGenerator], type: JavaExec) << {
-  mkdir 'src/restli/generatedRestSpec'
+task restliRestSpecGenerator(dependsOn: [restliTemplateGenerator], type: JavaExec) {
+  doLast {
+    mkdir 'src/restli/generatedRestSpec'
 
-  main = 'com.linkedin.restli.tools.idlgen.RestLiResourceModelExporterCmdLineApp'
-  args = ['-outdir', 'src/restli/generatedRestSpec', '-sourcepath', 'src/restli/java']
-  classpath = configurations.generateRestli
+    main = 'com.linkedin.restli.tools.idlgen.RestLiResourceModelExporterCmdLineApp'
+    args = ['-outdir', 'src/restli/generatedRestSpec', '-sourcepath', 'src/restli/java']
+    classpath = configurations.generateRestli
+  }
 }
 
 task restli(dependsOn: restliTemplateGenerator) << {

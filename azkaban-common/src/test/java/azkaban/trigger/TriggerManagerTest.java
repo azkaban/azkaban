@@ -122,7 +122,7 @@ public class TriggerManagerTest {
 
   }
 
-  public class MockTriggerLoader implements TriggerLoader {
+  public static class MockTriggerLoader implements TriggerLoader {
 
     private Map<Integer, Trigger> triggers = new HashMap<Integer, Trigger>();
     private int idIndex = 0;
