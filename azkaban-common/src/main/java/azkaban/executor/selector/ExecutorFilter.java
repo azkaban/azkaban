@@ -163,7 +163,7 @@ public final class ExecutorFilter extends CandidateFilter<Executor, ExecutableFl
         ExecutorInfo stats = filteringTarget.getExecutorInfo();
         if (null == stats) {
           logger.debug(String.format("%s : filtering out %s as it's stats is unavailable.",
-              MINIMUMFREEMEMORY_FILTER_NAME,
+              CPUSTATUS_FILTER_NAME,
               filteringTarget.toString()));
           return false;
         }
