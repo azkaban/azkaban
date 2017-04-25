@@ -283,8 +283,7 @@ public class AzkabanWebServer extends AzkabanServer {
 
   private ExecutorManager loadExecutorManager(Props props) throws Exception {
     JdbcExecutorLoader loader = new JdbcExecutorLoader(props);
-    ExecutorManager execManager = new ExecutorManager(props, loader, alerters);
-    return execManager;
+    return new ExecutorManager(props, loader, alerters);
   }
 
   private ScheduleManager loadScheduleManager(TriggerManager tm)
@@ -303,31 +302,24 @@ public class AzkabanWebServer extends AzkabanServer {
 
   private void loadBuiltinCheckersAndActions() {
     logger.info("Loading built-in checker and action types");
-    if (triggerManager instanceof TriggerManager) {
-      SlaChecker.setExecutorManager(executorManager);
-      ExecuteFlowAction.setExecutorManager(executorManager);
-      ExecuteFlowAction.setProjectManager(projectManager);
-      ExecuteFlowAction.setTriggerManager(triggerManager);
-      KillExecutionAction.setExecutorManager(executorManager);
-      SlaAlertAction.setExecutorManager(executorManager);
-      SlaAlertAction.setAlerters(alerters);
-      SlaAlertAction.setExecutorManager(executorManager);
-      CreateTriggerAction.setTriggerManager(triggerManager);
-      ExecutionChecker.setExecutorManager(executorManager);
-    }
-    triggerManager.registerCheckerType(BasicTimeChecker.type,
-        BasicTimeChecker.class);
+    SlaChecker.setExecutorManager(executorManager);
+    ExecuteFlowAction.setExecutorManager(executorManager);
+    ExecuteFlowAction.setProjectManager(projectManager);
+    ExecuteFlowAction.setTriggerManager(triggerManager);
+    KillExecutionAction.setExecutorManager(executorManager);
+    SlaAlertAction.setExecutorManager(executorManager);
+    SlaAlertAction.setAlerters(alerters);
+    SlaAlertAction.setExecutorManager(executorManager);
+    CreateTriggerAction.setTriggerManager(triggerManager);
+    ExecutionChecker.setExecutorManager(executorManager);
+
+    triggerManager.registerCheckerType(BasicTimeChecker.type, BasicTimeChecker.class);
     triggerManager.registerCheckerType(SlaChecker.type, SlaChecker.class);
-    triggerManager.registerCheckerType(ExecutionChecker.type,
-        ExecutionChecker.class);
-    triggerManager.registerActionType(ExecuteFlowAction.type,
-        ExecuteFlowAction.class);
-    triggerManager.registerActionType(KillExecutionAction.type,
-        KillExecutionAction.class);
-    triggerManager
-        .registerActionType(SlaAlertAction.type, SlaAlertAction.class);
-    triggerManager.registerActionType(CreateTriggerAction.type,
-        CreateTriggerAction.class);
+    triggerManager.registerCheckerType(ExecutionChecker.type, ExecutionChecker.class);
+    triggerManager.registerActionType(ExecuteFlowAction.type, ExecuteFlowAction.class);
+    triggerManager.registerActionType(KillExecutionAction.type, KillExecutionAction.class);
+    triggerManager.registerActionType(SlaAlertAction.type, SlaAlertAction.class);
+    triggerManager.registerActionType(CreateTriggerAction.type, CreateTriggerAction.class);
   }
 
   private Map<String, Alerter> loadAlerters(Props props) {
