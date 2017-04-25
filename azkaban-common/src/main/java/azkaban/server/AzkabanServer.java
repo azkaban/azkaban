@@ -33,6 +33,9 @@ import azkaban.user.UserManager;
 import azkaban.utils.Props;
 import azkaban.server.session.SessionCache;
 
+import static azkaban.Constants.*;
+
+
 public abstract class AzkabanServer {
   private static final Logger logger = Logger.getLogger(AzkabanServer.class);
   private static Props azkabanProperties = null;
@@ -47,12 +50,11 @@ public abstract class AzkabanServer {
   }
 
   public static Props loadProps(String[] args, OptionParser parser) {
-    ;
-    OptionSpec<String> configDirectory =
-        parser
-            .acceptsAll(Arrays.asList("c", "conf"),
-                "The conf directory for Azkaban.").withRequiredArg()
-            .describedAs("conf").ofType(String.class);
+    OptionSpec<String> configDirectory = parser.acceptsAll(
+        Arrays.asList("c", "conf"), "The conf directory for Azkaban.")
+        .withRequiredArg()
+        .describedAs("conf")
+        .ofType(String.class);
 
     // Grabbing the azkaban settings from the conf directory.
     Props azkabanSettings = null;
@@ -75,12 +77,27 @@ public abstract class AzkabanServer {
       azkabanSettings = loadConfigurationFromAzkabanHome();
     }
 
+    if (azkabanSettings != null) {
+      updateDerivedConfigs(azkabanSettings);
+    }
     return azkabanSettings;
   }
 
-  private static Props loadAzkabanConfigurationFromDirectory(File dir) {
-    File azkabanPrivatePropsFile =
-        new File(dir, Constants.AZKABAN_PRIVATE_PROPERTIES_FILE);
+  private static void updateDerivedConfigs(Props azkabanSettings) {
+    final boolean isSslEnabled = azkabanSettings.getBoolean("jetty.use.ssl", true);
+    final int port = isSslEnabled
+        ? azkabanSettings.getInt("jetty.ssl.port", DEFAULT_SSL_PORT_NUMBER)
+        : azkabanSettings.getInt("jetty.port", DEFAULT_PORT_NUMBER);
+
+    // setting stats configuration for connectors
+    final String hostname = azkabanSettings.getString("jetty.hostname", "localhost");
+    azkabanSettings.put("server.hostname", hostname);
+    azkabanSettings.put("server.port", port);
+    azkabanSettings.put("server.useSSL", String.valueOf(isSslEnabled));
+  }
+
+  public static Props loadAzkabanConfigurationFromDirectory(File dir) {
+    File azkabanPrivatePropsFile = new File(dir, Constants.AZKABAN_PRIVATE_PROPERTIES_FILE);
     File azkabanPropsFile = new File(dir, Constants.AZKABAN_PROPERTIES_FILE);
 
     Props props = null;
@@ -98,18 +115,15 @@ public abstract class AzkabanServer {
     } catch (FileNotFoundException e) {
       logger.error("File not found. Could not load azkaban config file", e);
     } catch (IOException e) {
-      logger.error(
-          "File found, but error reading. Could not load azkaban config file",
-          e);
+      logger.error("File found, but error reading. Could not load azkaban config file", e);
     }
-
     return props;
   }
 
   /**
    * Loads the Azkaban property file from the AZKABAN_HOME conf directory
    *
-   * @return
+   * @return Props instance
    */
   private static Props loadConfigurationFromAzkabanHome() {
     String azkabanHome = System.getenv("AZKABAN_HOME");
@@ -118,17 +132,14 @@ public abstract class AzkabanServer {
       logger.error("AZKABAN_HOME not set. Will try default.");
       return null;
     }
-
-    if (!new File(azkabanHome).isDirectory()
-        || !new File(azkabanHome).canRead()) {
+    if (!new File(azkabanHome).isDirectory() || !new File(azkabanHome).canRead()) {
       logger.error(azkabanHome + " is not a readable directory.");
       return null;
     }
 
     File confPath = new File(azkabanHome, Constants.DEFAULT_CONF_PATH);
     if (!confPath.exists() || !confPath.isDirectory() || !confPath.canRead()) {
-      logger
-          .error(azkabanHome + " does not contain a readable conf directory.");
+      logger.error(azkabanHome + " does not contain a readable conf directory.");
       return null;
     }
 
