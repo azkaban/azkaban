@@ -454,6 +454,7 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
     data.put("flowname", schedule.getFlowName());
     data.put("projectname", schedule.getProjectName());
     data.put("time", schedule.getFirstSchedTime());
+    data.put("cron", schedule.getCronExpression());
 
     DateTime time = DateTime.now();
     long period = 0;
