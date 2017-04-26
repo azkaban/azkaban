@@ -135,4 +135,30 @@ public abstract class AbstractJdbcLoader {
       return results;
     }
   }
+
+  protected static class FetchLastIdfromTable implements ResultSetHandler<Long> {
+
+    private String idName;
+    private String tableName;
+
+    public FetchLastIdfromTable(String idName, String tableName) {
+      this.idName = idName;
+      this.tableName = tableName;
+    }
+
+    public String getSelectString() {
+      return "SELECT MAX(" + idName + ") from " + tableName;
+    }
+
+    @Override
+    public Long handle(ResultSet rs) throws SQLException {
+      if (!rs.next()) {
+        return -1L;
+      }
+
+      long id = rs.getLong(1);
+      return id;
+    }
+  }
+
 }

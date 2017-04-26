@@ -1,5 +1,5 @@
 CREATE TABLE execution_flows (
-	exec_id INT NOT NULL AUTO_INCREMENT,
+	exec_id INT NOT NULL,
 	project_id INT NOT NULL,
 	version INT NOT NULL,
 	flow_id VARCHAR(128) NOT NULL,
