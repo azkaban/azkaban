@@ -12,15 +12,19 @@
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
  * License for the specific language governing permissions and limitations under
  * the License.
- *
  */
+package azkaban.db;
 
-include 'azkaban-spi'
-include 'azkaban-db'
-include 'azkaban-common'
-include 'azkaban-exec-server'
-include 'azkaban-hadoop-security-plugin'
-include 'azkaban-solo-server'
-include 'azkaban-sql'
-include 'azkaban-web-server'
-include 'azkaban-test'
+public class H2FileDataSource extends AzkabanDataSource {
+  public H2FileDataSource(String filePath) {
+    super();
+    String url = "jdbc:h2:file:" + filePath;
+    setDriverClassName("org.h2.Driver");
+    setUrl(url);
+  }
+
+  @Override
+  public String getDBType() {
+    return "h2";
+  }
+}

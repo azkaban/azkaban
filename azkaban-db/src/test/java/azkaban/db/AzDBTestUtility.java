@@ -14,13 +14,22 @@
  * the License.
  *
  */
+package azkaban.db;
 
-include 'azkaban-spi'
-include 'azkaban-db'
-include 'azkaban-common'
-include 'azkaban-exec-server'
-include 'azkaban-hadoop-security-plugin'
-include 'azkaban-solo-server'
-include 'azkaban-sql'
-include 'azkaban-web-server'
-include 'azkaban-test'
+class AzDBTestUtility {
+
+  public static class EmbeddedH2BasicDataSource extends AzkabanDataSource {
+
+    EmbeddedH2BasicDataSource() {
+      super();
+      String url = "jdbc:h2:mem:test";
+      setDriverClassName("org.h2.Driver");
+      setUrl(url);
+    }
+
+    @Override
+    public String getDBType() {
+      return "h2-in-memory";
+    }
+  }
+}
