@@ -18,6 +18,7 @@
 package azkaban.storage;
 
 import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
@@ -30,10 +31,15 @@ import org.junit.Test;
 public class HdfsStorageTest {
   private static final Logger log = Logger.getLogger(HdfsStorageTest.class);
 
-  @Test @Ignore
-  public void test1() throws Exception {
-    Path pt=new Path("hdfs://npvm11.np.wc1.yellowpages.com:9000/user/john/abc.txt");
-    FileSystem fs = FileSystem.get(new Configuration());
+  public static void main(String[] args) throws IOException {
+    Configuration conf = new Configuration(false);
+    conf.addResource(new Path("file:///Users/spyne/hadoop/hadoop-2.6.1/etc/hadoop/core-site.xml"));
+    conf.addResource(new Path("file:///Users/spyne/hadoop/hadoop-2.6.1/etc/hadoop/hdfs-site.xml"));
+
+    System.out.println(conf);
+    conf.set("fs.hdfs.impl", org.apache.hadoop.hdfs.DistributedFileSystem.class.getName());
+    Path pt=new Path("hdfs://localhost:9000/test.file");
+    FileSystem fs = FileSystem.get(conf);
     BufferedReader br=new BufferedReader(new InputStreamReader(fs.open(pt)));
     String line;
     line=br.readLine();
