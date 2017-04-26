@@ -16,45 +16,40 @@
 
 package azkaban.metrics;
 
-import azkaban.metrics.MetricsTestUtility.DummyReporter;
-
-import java.util.concurrent.TimeUnit;
-import java.time.Duration;
-
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-public class CommonMetricsTest {
+import static org.junit.Assert.*;
 
-  private DummyReporter dr;
+
+public class CommonMetricsTest {
+  private MetricsTestUtility testUtil;
+  private CommonMetrics metrics;
 
   @Before
-  public void setup() {
-    dr = new DummyReporter(MetricsManager.INSTANCE.getRegistry());
-    dr.start(Duration.ofMillis(2).toMillis(), TimeUnit.MILLISECONDS);
-  }
-
-  @After
-  public void shutdown() {
-    if (null != dr)
-      dr.stop();
-
-    dr = null;
-  }
-
-  @Test
-  public void testMarkDBConnectionMetrics() {
-    MetricsTestUtility.testMeter("DB-Connection-meter", dr, CommonMetrics.INSTANCE::markDBConnection);
+  public void setUp() {
+    // Use of global state can cause problems e.g.
+    // The state is shared among tests.
+    // e.g. we can't run a variant of the testOOMWaitingJobMetrics twice since it relies on the initial state of
+    // the registry.
+    // This can also cause problem when we run tests in parallel in the future.
+    // todo HappyRay: move MetricsManager, CommonMetrics to use Juice.
+    testUtil = new MetricsTestUtility(MetricsManager.INSTANCE.getRegistry());
+    metrics = CommonMetrics.INSTANCE;
   }
 
   @Test
   public void testDBConnectionTimeMetrics() {
-    MetricsTestUtility.testGauge("dbConnectionTime", dr, CommonMetrics.INSTANCE::setDBConnectionTime);
+    metrics.setDBConnectionTime(14);
+    assertEquals(14, testUtil.getGaugeValue("dbConnectionTime"));
   }
 
   @Test
   public void testOOMWaitingJobMetrics() {
-    MetricsTestUtility.testGauge("OOM-waiting-job-count", dr, CommonMetrics.INSTANCE::incrementOOMJobWaitCount);
+    final String metricName = "OOM-waiting-job-count";
+
+    assertEquals(0, testUtil.getGaugeValue(metricName));
+    metrics.incrementOOMJobWaitCount();
+    assertEquals(1, testUtil.getGaugeValue(metricName));
   }
 }

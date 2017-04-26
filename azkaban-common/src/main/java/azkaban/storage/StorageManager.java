@@ -18,9 +18,12 @@
 package azkaban.storage;
 
 import azkaban.project.Project;
+import azkaban.project.ProjectLoader;
+import azkaban.project.ProjectManagerException;
 import azkaban.spi.Storage;
 import azkaban.spi.StorageException;
 import azkaban.spi.StorageMetadata;
+import azkaban.user.User;
 import com.google.inject.Inject;
 import java.io.File;
 import java.io.FileInputStream;
@@ -47,41 +50,25 @@ public class StorageManager {
   /**
    * API to a project file into Azkaban Storage
    *
-   * @param project           project ID
-   * @param fileExtension     extension of the file
-   * @param filename          name of the file
+   * TODO clean up interface
+   *
+   * @param project           project
+   * @param version           The new version to be uploaded
    * @param localFile         local file
    * @param uploader          the user who uploaded
    */
   public void uploadProject(
       Project project,
-      String fileExtension,
-      String filename,
+      int version,
       File localFile,
-      String uploader) {
+      User uploader) {
     final StorageMetadata metadata = new StorageMetadata(
-        String.valueOf(project.getId()),
-        String.valueOf(getLatestVersion(project)),
-        fileExtension
+        project.getId(),
+        version,
+        uploader.getUserId()
     );
-    log.info(String.format(
-        "Uploading project. Uploader: %s, Metadata:%s, filename: %s[%d bytes]",
-        uploader, metadata, filename, localFile.length()
-    ));
-    try {
-      uploadProject(metadata, new FileInputStream(localFile));
-    } catch (FileNotFoundException e) {
-      throw new StorageException(e);
-    }
-  }
-
-  private int getLatestVersion(Project project) {
-    // TODO Implement
-    return -1;
-  }
-
-  public void uploadProject(StorageMetadata metadata, InputStream is) {
-    // TODO Implement
-    URI key = storage.put(metadata, is);
+    log.info(String.format("Adding archive to storage. Meta:%s File: %s[%d bytes]",
+        metadata, localFile.getName(), localFile.length()));
+    storage.put(metadata, localFile);
   }
 }

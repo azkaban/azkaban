@@ -43,6 +43,9 @@ public class Constants {
 
   // Max number of memory check retry
   public static final int MEMORY_CHECK_RETRY_LIMIT = 720;
+  public static final int DEFAULT_PORT_NUMBER = 8081;
+  public static final int DEFAULT_SSL_PORT_NUMBER = 8443;
+  public static final int DEFAULT_JETTY_MAX_THREAD_COUNT = 20;
 
   public static class ConfigurationKeys {
     // These properties are configurable through azkaban.properties

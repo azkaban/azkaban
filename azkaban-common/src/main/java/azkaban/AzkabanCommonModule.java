@@ -38,7 +38,11 @@ import java.io.File;
 
 import static azkaban.storage.StorageImplementationType.*;
 
-
+/**
+ * This Guice module is currently a one place container for all bindings in the current module. This is intended to
+ * help during the migration process to Guice. Once this class starts growing we can move towards more modular
+ * structuring of Guice components.
+ */
 public class AzkabanCommonModule extends AbstractModule {
   private final Props props;
   /**
@@ -56,8 +60,8 @@ public class AzkabanCommonModule extends AbstractModule {
 
   public AzkabanCommonModule(Props props) {
     this.props = props;
-    this.storageImplementation = props.getString(Constants.ConfigurationKeys.AZKABAN_STORAGE_TYPE, LOCAL.name());
     this.dataSource = getDataSource(props);
+    this.storageImplementation = props.getString(Constants.ConfigurationKeys.AZKABAN_STORAGE_TYPE, DATABASE.name());
   }
 
   @Override
@@ -79,6 +83,7 @@ public class AzkabanCommonModule extends AbstractModule {
     }
   }
 
+  @SuppressWarnings("unchecked")
   private Class<? extends Storage> loadCustomStorageClass(String storageImplementation) {
     try {
       return (Class<? extends Storage>) Class.forName(storageImplementation);

@@ -12,36 +12,23 @@
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
  * License for the specific language governing permissions and limitations under
  * the License.
+ *
  */
 
 package azkaban.execapp;
 
-import azkaban.metrics.MetricsManager;
-import azkaban.metrics.MetricsTestUtility;
-import azkaban.metrics.MetricsTestUtility.DummyReporter;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-
-import java.time.Duration;
-import java.util.concurrent.TimeUnit;
+import com.google.inject.AbstractModule;
+import com.google.inject.Scopes;
 
 
-public class ExecMetricsTest {
-
-  private DummyReporter dr;
-
-  @Before
-  public void setup() {
-    dr = new DummyReporter(MetricsManager.INSTANCE.getRegistry());
-    dr.start(Duration.ofMillis(2).toMillis(), TimeUnit.MILLISECONDS);
-  }
-
-  @After
-  public void shutdown() {
-    if (null != dr)
-      dr.stop();
-
-    dr = null;
+/**
+ * This Guice module is currently a one place container for all bindings in the current module. This is intended to
+ * help during the migration process to Guice. Once this class starts growing we can move towards more modular
+ * structuring of Guice components.
+ */
+public class AzkabanExecServerModule extends AbstractModule {
+  @Override
+  protected void configure() {
+    bind(AzkabanExecutorServer.class).in(Scopes.SINGLETON);
   }
 }

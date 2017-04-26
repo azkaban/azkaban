@@ -17,9 +17,10 @@
 
 package azkaban.storage;
 
-import azkaban.project.JdbcProjectLoader;
+import azkaban.project.ProjectLoader;
 import azkaban.spi.Storage;
 import azkaban.spi.StorageMetadata;
+import java.io.File;
 import java.io.InputStream;
 import java.net.URI;
 import javax.inject.Inject;
@@ -33,18 +34,26 @@ import javax.inject.Inject;
  */
 public class DatabaseStorage implements Storage {
 
-  @Inject
-  public DatabaseStorage(JdbcProjectLoader jdbcProjectLoader) {
+  private final ProjectLoader projectLoader;
 
+  @Inject
+  public DatabaseStorage(ProjectLoader projectLoader) {
+
+    this.projectLoader = projectLoader;
   }
 
   @Override
   public InputStream get(URI key) {
-    return null;
+    throw new UnsupportedOperationException();
   }
 
   @Override
-  public URI put(StorageMetadata metadata, InputStream is) {
+  public URI put(StorageMetadata metadata, File localFile) {
+    projectLoader.uploadProjectFile(
+        metadata.getProjectId(),
+        metadata.getVersion(),
+        localFile, metadata.getUploader());
+
     return null;
   }
 
