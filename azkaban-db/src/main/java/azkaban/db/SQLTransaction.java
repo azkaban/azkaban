@@ -16,18 +16,17 @@
  */
 package azkaban.db;
 
-import java.sql.Connection;
 import java.sql.SQLException;
 
 
 /**
  * This interface defines how a sequence of sql statements are organized and packed together. All transaction
  * implementations must follow this interface, and will be called in
- * {@link AzDBOperatorImpl#transaction(SQLTransaction)}
+ * {@link DatabaseOperatorImpl#transaction(SQLTransaction)}
  *
  * @param <T> The transaction return type
  */
 @FunctionalInterface
 public interface SQLTransaction<T> {
-  public T execute(AzDBTransOperator transOperator) throws SQLException;
+  public T execute(DatabaseTransOperator transOperator) throws SQLException;
 }

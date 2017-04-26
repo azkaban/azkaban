@@ -31,11 +31,11 @@ import org.junit.Test;
 import static org.mockito.Mockito.*;
 
 
-public class AzDBOperatorImplTest {
+public class DatabaseOperatorImplTest {
 
   private AzkabanDataSource datasource = new AzDBTestUtility.EmbeddedH2BasicDataSource();
 
-  private AzDBOperator dbOperator;
+  private DatabaseOperator dbOperator;
   private QueryRunner queryRunner;
   private Connection conn;
 
@@ -43,7 +43,6 @@ public class AzDBOperatorImplTest {
     if (!rs.next()) {
       return 0;
     }
-
     return rs.getInt(1);
   };
 
@@ -62,7 +61,7 @@ public class AzDBOperatorImplTest {
     when(queryRunner.getDataSource()).thenReturn(mockDataSource);
     when(mockDataSource.getConnection()).thenReturn(conn);
 
-    this.dbOperator = new AzDBOperatorImpl(queryRunner);
+    this.dbOperator = new DatabaseOperatorImpl(queryRunner);
 
     list.add(index_1);
     list.add(index_2);

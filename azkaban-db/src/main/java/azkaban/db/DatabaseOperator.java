@@ -26,7 +26,7 @@ import org.apache.commons.dbutils.ResultSetHandler;
  *
  * @see org.apache.commons.dbutils.QueryRunner
  */
-public interface AzDBOperator {
+public interface DatabaseOperator {
 
   /**
    * returns the last id from a previous insert statement.
@@ -37,7 +37,7 @@ public interface AzDBOperator {
   Long getLastInsertId();
 
   /**
-   * Executes the given AZ related SELECT SQL statements.
+   * Executes the given Azkaban related SELECT SQL operations.
    *
    * @param sqlQuery The SQL query statement to execute.
    * @param resultHandler The handler used to create the result object
@@ -46,9 +46,7 @@ public interface AzDBOperator {
    * @return The object returned by the handler.
    * @throws SQLException
    */
-  <T> T query(String sqlQuery,
-      ResultSetHandler<T> resultHandler,
-      Object...params) throws SQLException;
+  <T> T query(String sqlQuery, ResultSetHandler<T> resultHandler, Object...params) throws SQLException;
 
   /**
    * Provide a way to allow users define custom SQL operations without relying on fixed
@@ -70,6 +68,5 @@ public interface AzDBOperator {
    * @return The number of rows updated.
    * @throws SQLException
    */
-  int update(String updateClause,
-      Object...params) throws SQLException;
+  int update(String updateClause, Object...params) throws SQLException;
 }

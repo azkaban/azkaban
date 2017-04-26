@@ -22,13 +22,13 @@ import org.apache.commons.dbutils.ResultSetHandler;
 
 
 /**
- * This interface is designed as an supplement of {@link AzDBOperator}, which do commit at the end of every query. Given
+ * This interface is designed as an supplement of {@link DatabaseOperator}, which do commit at the end of every query. Given
  * this interface, users/callers (implementation code) should decide where to {@link Connection#commit()}
  * based on their requirements.
  *
  * @see org.apache.commons.dbutils.QueryRunner
  */
-public interface AzDBTransOperator {
+public interface DatabaseTransOperator {
 
   /**
    *
@@ -39,8 +39,7 @@ public interface AzDBTransOperator {
    * @return
    * @throws SQLException
    */
-  <T> T query(String querySql, ResultSetHandler<T> resultHandler,
-      Object... params) throws SQLException;
+  <T> T query(String querySql, ResultSetHandler<T> resultHandler, Object... params) throws SQLException;
 
   /**
    *

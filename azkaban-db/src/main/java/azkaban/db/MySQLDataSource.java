@@ -67,11 +67,11 @@ public class MySQLDataSource extends AzkabanDataSource {
   public synchronized Connection getConnection() throws SQLException {
 
       /*
-        getInitialSize() returns the initial size of the connection pool.
-
-        Note: The connection pool is only initialized the first time one of the
-        following methods is invoked: <code>getConnection, setLogwriter,
-        setLoginTimeout, getLoginTimeout, getLogWriter.</code>
+       * getInitialSize() returns the initial size of the connection pool.
+       *
+       * Note: The connection pool is only initialized the first time one of the
+       * following methods is invoked: <code>getConnection, setLogwriter,
+       * setLoginTimeout, getLoginTimeout, getLogWriter.</code>
        */
     if (getInitialSize() == 0) {
       return createDataSource().getConnection();

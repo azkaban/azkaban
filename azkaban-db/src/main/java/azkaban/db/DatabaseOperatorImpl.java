@@ -30,9 +30,9 @@ import static java.util.Objects.*;
 /**
  * Implement AZ DB related operations. This class is thread safe.
  */
-public class AzDBOperatorImpl implements AzDBOperator {
+public class DatabaseOperatorImpl implements DatabaseOperator {
 
-  private static final Logger logger = Logger.getLogger(AzDBOperatorImpl.class);
+  private static final Logger logger = Logger.getLogger(DatabaseOperatorImpl.class);
 
   private final QueryRunner queryRunner;
 
@@ -42,7 +42,7 @@ public class AzDBOperatorImpl implements AzDBOperator {
    * @param queryRunner
    */
   @Inject
-  public AzDBOperatorImpl(QueryRunner queryRunner){
+  public DatabaseOperatorImpl(QueryRunner queryRunner){
     this.queryRunner = queryRunner;
     requireNonNull(queryRunner.getDataSource(), "data source must not be null.");
   }
@@ -72,19 +72,9 @@ public class AzDBOperatorImpl implements AzDBOperator {
 
   /**
    * query method Implementation. it will call {@link AzkabanDataSource#getConnection()} inside queryrunner.query.
-   *
-   * @param baseQuery The SQL query statement to execute.
-   * @param resultHandler The handler used to create the result object
-   * @param params Initialize the PreparedStatement's IN parameters
-   * @param <T> query object type
-   * @return query result
-   * @throws SQLException
    */
   @Override
-  public <T> T query(String baseQuery,
-      ResultSetHandler<T> resultHandler,
-      Object...params) throws SQLException {
-
+  public <T> T query(String baseQuery, ResultSetHandler<T> resultHandler, Object...params) throws SQLException {
     try{
       return queryRunner.query(baseQuery, resultHandler, params);
     } catch (SQLException ex){
@@ -97,10 +87,6 @@ public class AzDBOperatorImpl implements AzDBOperator {
   /**
    * transaction method Implementation.
    *
-   * @param operations A sequence of DB operations
-   * @param <T> object type
-   * @return transaction result
-   * @throws SQLException
    */
   @Override
   public <T> T transaction(SQLTransaction<T> operations) throws SQLException {
@@ -108,7 +94,7 @@ public class AzDBOperatorImpl implements AzDBOperator {
     try{
       conn = queryRunner.getDataSource().getConnection();
       conn.setAutoCommit(false);
-      AzDBTransOperator transOperator = new AzDBTransOperatorImpl(queryRunner, conn);
+      DatabaseTransOperator transOperator = new DatabaseTransOperatorImpl(queryRunner, conn);
       T res = operations.execute(transOperator);
       conn.commit();
       return res;
@@ -130,8 +116,7 @@ public class AzDBOperatorImpl implements AzDBOperator {
    * @throws SQLException
    */
   @Override
-  public int update(String updateClause,
-      Object...params) throws SQLException {
+  public int update(String updateClause, Object...params) throws SQLException {
     try{
       return queryRunner.update(updateClause, params);
     } catch (SQLException ex){

@@ -22,14 +22,14 @@ import org.apache.commons.dbutils.ResultSetHandler;
 
 
 /**
- * This class should be only used inside {@link AzDBOperatorImpl}, then we remove public.
+ * This class should be only used inside {@link DatabaseOperatorImpl}, then we remove public.
  */
-class AzDBTransOperatorImpl implements AzDBTransOperator {
+class DatabaseTransOperatorImpl implements DatabaseTransOperator {
 
   private final Connection conn;
   private final QueryRunner queryRunner;
 
-  public AzDBTransOperatorImpl(QueryRunner queryRunner, Connection conn) {
+  public DatabaseTransOperatorImpl(QueryRunner queryRunner, Connection conn) {
     this.conn = conn;
     this.queryRunner= queryRunner;
   }

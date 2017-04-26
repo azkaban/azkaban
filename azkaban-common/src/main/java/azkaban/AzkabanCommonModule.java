@@ -19,8 +19,8 @@ package azkaban;
 import azkaban.db.AzkabanDataSource;
 import azkaban.db.H2FileDataSource;
 import azkaban.db.MySQLDataSource;
-import azkaban.db.AzDBOperator;
-import azkaban.db.AzDBOperatorImpl;
+import azkaban.db.DatabaseOperator;
+import azkaban.db.DatabaseOperatorImpl;
 
 import azkaban.project.JdbcProjectLoader;
 import azkaban.project.ProjectLoader;
@@ -35,6 +35,7 @@ import com.google.inject.Inject;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import java.io.File;
+import org.apache.commons.dbutils.QueryRunner;
 
 import static azkaban.storage.StorageImplementationType.*;
 
@@ -56,11 +57,11 @@ public class AzkabanCommonModule extends AbstractModule {
    */
   private final String storageImplementation;
 
-  private final AzkabanDataSource dataSource;
+  private final QueryRunner queryRunner;
 
   public AzkabanCommonModule(Props props) {
     this.props = props;
-    this.dataSource = getDataSource(props);
+    this.queryRunner = new QueryRunner(getDataSource(props));
     this.storageImplementation = props.getString(Constants.ConfigurationKeys.AZKABAN_STORAGE_TYPE, DATABASE.name());
   }
 
@@ -69,9 +70,9 @@ public class AzkabanCommonModule extends AbstractModule {
     bind(ProjectLoader.class).to(JdbcProjectLoader.class).in(Scopes.SINGLETON);
     bind(Props.class).toInstance(props);
     bind(Storage.class).to(resolveStorageClassType()).in(Scopes.SINGLETON);
-    bind(AzDBOperator.class).to(AzDBOperatorImpl.class).in(Scopes.SINGLETON);
+    bind(DatabaseOperator.class).to(DatabaseOperatorImpl.class).in(Scopes.SINGLETON);
     //todo kunkun-tang : Consider both H2 DataSource and MysqlDatasource case.
-    bind(AzkabanDataSource.class).toInstance(dataSource);
+    bind(QueryRunner.class).toInstance(queryRunner);
   }
 
   public Class<? extends Storage> resolveStorageClassType() {
@@ -100,7 +101,7 @@ public class AzkabanCommonModule extends AbstractModule {
 
   // todo kunkun-tang: the below method should moved out to azkaban-db module eventually.
   // Today azkaban-db can not rely on Props, so we can not do it.
-  private static AzkabanDataSource getDataSource(Props props) {
+  private AzkabanDataSource getDataSource(Props props) {
     String databaseType = props.getString("database.type");
 
     // todo kunkun-tang: temperaroy workaround to let service provider test work.
