@@ -31,6 +31,9 @@ model {
   }
 }
 
+configurations {
+  testCompileOnly.extendsFrom(compileOnly)
+}
 dependencies {
   compile project(':azkaban-spi')
 

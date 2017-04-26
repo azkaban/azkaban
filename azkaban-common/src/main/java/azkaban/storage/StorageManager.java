@@ -18,18 +18,12 @@
 package azkaban.storage;
 
 import azkaban.project.Project;
-import azkaban.project.ProjectLoader;
-import azkaban.project.ProjectManagerException;
+import azkaban.project.ProjectFileHandler;
 import azkaban.spi.Storage;
-import azkaban.spi.StorageException;
 import azkaban.spi.StorageMetadata;
 import azkaban.user.User;
 import com.google.inject.Inject;
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.InputStream;
-import java.net.URI;
 import org.apache.log4j.Logger;
 
 
@@ -70,5 +64,21 @@ public class StorageManager {
     log.info(String.format("Adding archive to storage. Meta:%s File: %s[%d bytes]",
         metadata, localFile.getName(), localFile.length()));
     storage.put(metadata, localFile);
+  }
+
+  /**
+   * Fetch project file from storage.
+   *
+   * @param projectId required project ID
+   * @param version version to be fetched
+   * @return Handler object containing hooks to fetched project file
+   */
+  public ProjectFileHandler getProjectFile(final int projectId, final int version) {
+    log.info(String.format("Fetching project file. project ID: %d version: %d", projectId, version));
+    // TODO spyne: remove huge hack ! There should not be any special handling for Database Storage.
+    if (storage instanceof DatabaseStorage) {
+      return ((DatabaseStorage) storage).get(projectId, version);
+    }
+    throw new UnsupportedOperationException("Operation currently unsupported for other types.");
   }
 }

@@ -123,13 +123,6 @@ public class MockProjectLoader implements ProjectLoader {
   }
 
   @Override
-  public ProjectFileHandler getUploadedFile(Project project, int version)
-      throws ProjectManagerException {
-    // TODO Auto-generated method stub
-    return null;
-  }
-
-  @Override
   public ProjectFileHandler getUploadedFile(int projectId, int version)
       throws ProjectManagerException {
     // TODO Auto-generated method stub

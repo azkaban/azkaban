@@ -89,7 +89,8 @@ public class Constants {
     public static final String AZKABAN_MAX_FLOW_RUNNING_MINS = "azkaban.server.flow.max.running.minutes";
 
     public static final String AZKABAN_STORAGE_TYPE = "azkaban.storage.type";
-    public static final String AZKABAN_STORAGE_LOCAL_BASEDIRECTORY = "azkaban.storage.local.basedirectory";
+    public static final String AZKABAN_STORAGE_LOCAL_BASEDIR = "azkaban.storage.local.basedir";
+    public static final String AZKABAN_STORAGE_HDFS_BASEURI = "azkaban.storage.hdfs.baseuri";
   }
 
   public static class FlowProperties {

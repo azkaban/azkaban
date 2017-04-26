@@ -515,22 +515,6 @@ public class JdbcProjectLoader extends AbstractJdbcLoader implements
     }
   }
 
-
-  @Override
-  public ProjectFileHandler getUploadedFile(Project project, int version)
-      throws ProjectManagerException {
-    logger.info("Retrieving to " + project.getName() + " version:" + version);
-    Connection connection = getConnection();
-    ProjectFileHandler handler = null;
-    try {
-      handler = getUploadedFile(connection, project.getId(), version);
-    } finally {
-      DbUtils.closeQuietly(connection);
-    }
-
-    return handler;
-  }
-
   @Override
   public ProjectFileHandler getUploadedFile(int projectId, int version)
       throws ProjectManagerException {

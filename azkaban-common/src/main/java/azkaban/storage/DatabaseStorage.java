@@ -17,6 +17,7 @@
 
 package azkaban.storage;
 
+import azkaban.project.ProjectFileHandler;
 import azkaban.project.ProjectLoader;
 import azkaban.spi.Storage;
 import azkaban.spi.StorageMetadata;
@@ -33,6 +34,8 @@ import javax.inject.Inject;
  * behavior of Azkaban.
  */
 public class DatabaseStorage implements Storage {
+  public static final String PROJECT_ID = "projectId";
+  public static final String VERSION = "version";
 
   private final ProjectLoader projectLoader;
 
@@ -44,7 +47,11 @@ public class DatabaseStorage implements Storage {
 
   @Override
   public InputStream get(URI key) {
-    throw new UnsupportedOperationException();
+    throw new UnsupportedOperationException("Not implemented yet. Use get(projectId, version) instead");
+  }
+
+  public ProjectFileHandler get(int projectId, int version) {
+    return projectLoader.getUploadedFile(projectId, version);
   }
 
   @Override
