@@ -130,7 +130,7 @@ public class FlowRunnerManager implements EventListener,
   private Props globalProps;
 
   private long lastCleanerThreadCheckTime = -1;
-  private long executionDirRetention = 1 * 24 * 60 * 60 * 1000; // 1 Day
+  private long executionDirRetention = 1 * 24 * 60 * 60 ; // 1 Day
 
   // We want to limit the log sizes to about 20 megs
   private String jobLogChunkSize = "5MB";
@@ -150,7 +150,7 @@ public class FlowRunnerManager implements EventListener,
     azkabanProps = props;
 
     // JobWrappingFactory.init(props, getClass().getClassLoader());
-    executionDirRetention = props.getLong("execution.dir.retention", executionDirRetention);
+    executionDirRetention = props.getLong("execution.dir.retention.second", executionDirRetention);
     logger.info("Execution dir retention set to " + executionDirRetention + " ms");
 
     executionDirectory = new File(props.getString("azkaban.execution.dir", "executions"));
