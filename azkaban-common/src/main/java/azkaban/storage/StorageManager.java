@@ -75,7 +75,7 @@ public class StorageManager {
    */
   public ProjectFileHandler getProjectFile(final int projectId, final int version) {
     log.info(String.format("Fetching project file. project ID: %d version: %d", projectId, version));
-    // TODO remove huge hack !
+    // TODO spyne: remove huge hack ! There should not be any special handling for Database Storage.
     if (storage instanceof DatabaseStorage) {
       return ((DatabaseStorage) storage).get(projectId, version);
     }

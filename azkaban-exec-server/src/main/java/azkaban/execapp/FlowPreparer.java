@@ -41,9 +41,9 @@ import static java.util.Objects.*;
 public class FlowPreparer {
   private static final Logger log = Logger.getLogger(FlowPreparer.class);
 
-  // TODO move to config class
+  // TODO spyne: move to config class
   private final File executionsDir;
-  // TODO move to config class
+  // TODO spyne: move to config class
   private final File projectsDir;
 
   private final Map<Pair<Integer, Integer>, ProjectVersion> installedProjects;
@@ -114,7 +114,7 @@ public class FlowPreparer {
 
     File tempDir = new File(projectsDir, "_temp." + projectDir + "." + System.currentTimeMillis());
 
-    // TODO Why mkdirs? This path should be already set up.
+    // TODO spyne: Why mkdirs? This path should be already set up.
     tempDir.mkdirs();
 
     ProjectFileHandler projectFileHandler = null;
@@ -150,7 +150,7 @@ public class FlowPreparer {
     File execDir = new File(executionsDir, String.valueOf(execId));
     flow.setExecutionPath(execDir.getPath());
 
-    // TODO Why mkdirs? This path should be already set up.
+    // TODO spyne: Why mkdirs? This path should be already set up.
     execDir.mkdirs();
     return execDir;
   }
