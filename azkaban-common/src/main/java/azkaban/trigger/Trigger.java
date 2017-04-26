@@ -120,47 +120,6 @@ public class Trigger {
     this.context = context;
   }
 
-  public Trigger(long lastModifyTime, long submitTime, String submitUser,
-      String source, Condition triggerCondition, Condition expireCondition,
-      List<TriggerAction> actions, List<TriggerAction> expireActions,
-      Map<String, Object> info, Map<String, Object> context) {
-    this.lastModifyTime = lastModifyTime;
-    this.submitTime = submitTime;
-    this.submitUser = submitUser;
-    this.source = source;
-    this.triggerCondition = triggerCondition;
-    this.expireCondition = expireCondition;
-    this.actions = actions;
-    this.expireActions = expireActions;
-    this.info = info;
-    this.context = context;
-  }
-
-  public Trigger(long lastModifyTime, long submitTime, String submitUser,
-      String source, Condition triggerCondition, Condition expireCondition,
-      List<TriggerAction> actions, List<TriggerAction> expireActions) {
-    this.lastModifyTime = lastModifyTime;
-    this.submitTime = submitTime;
-    this.submitUser = submitUser;
-    this.source = source;
-    this.triggerCondition = triggerCondition;
-    this.expireCondition = expireCondition;
-    this.actions = actions;
-    this.expireActions = expireActions;
-  }
-
-  public Trigger(String submitUser, String source, Condition triggerCondition,
-      Condition expireCondition, List<TriggerAction> actions,
-      List<TriggerAction> expireActions) {
-    this.lastModifyTime = DateTime.now().getMillis();
-    this.submitTime = DateTime.now().getMillis();
-    this.submitUser = submitUser;
-    this.source = source;
-    this.triggerCondition = triggerCondition;
-    this.expireCondition = expireCondition;
-    this.actions = actions;
-    this.expireActions = expireActions;
-  }
 
   public Trigger(String submitUser, String source, Condition triggerCondition,
       Condition expireCondition, List<TriggerAction> actions) {
@@ -177,14 +136,9 @@ public class Trigger {
   public Trigger(long lastModifyTime, long submitTime, String submitUser,
       String source, Condition triggerCondition, Condition expireCondition,
       List<TriggerAction> actions) {
+    this(submitUser, source, triggerCondition, expireCondition, actions);
     this.lastModifyTime = lastModifyTime;
     this.submitTime = submitTime;
-    this.submitUser = submitUser;
-    this.source = source;
-    this.triggerCondition = triggerCondition;
-    this.expireCondition = expireCondition;
-    this.actions = actions;
-    this.expireActions = new ArrayList<TriggerAction>();
   }
 
   public Trigger(int triggerId, long lastModifyTime, long submitTime,
@@ -192,32 +146,13 @@ public class Trigger {
       Condition expireCondition, List<TriggerAction> actions,
       List<TriggerAction> expireActions, Map<String, Object> info,
       Map<String, Object> context) {
+    this(submitUser, source, triggerCondition, expireCondition, actions);
     this.triggerId = triggerId;
     this.lastModifyTime = lastModifyTime;
     this.submitTime = submitTime;
-    this.submitUser = submitUser;
-    this.source = source;
-    this.triggerCondition = triggerCondition;
-    this.expireCondition = expireCondition;
-    this.actions = actions;
     this.expireActions = expireActions;
     this.info = info;
     this.context = context;
-  }
-
-  public Trigger(int triggerId, long lastModifyTime, long submitTime,
-      String submitUser, String source, Condition triggerCondition,
-      Condition expireCondition, List<TriggerAction> actions,
-      List<TriggerAction> expireActions) {
-    this.triggerId = triggerId;
-    this.lastModifyTime = lastModifyTime;
-    this.submitTime = submitTime;
-    this.submitUser = submitUser;
-    this.source = source;
-    this.triggerCondition = triggerCondition;
-    this.expireCondition = expireCondition;
-    this.actions = actions;
-    this.expireActions = expireActions;
   }
 
   public Trigger(int triggerId, long lastModifyTime, long submitTime,
@@ -436,7 +371,11 @@ public class Trigger {
     for (ConditionChecker checker : expireCondition.getCheckers().values()) {
       checker.stopChecker();
     }
+  }
 
+  @Override
+  public String toString() {
+    return "Trigger Id: " + getTriggerId() + ", Description: " + getDescription();
   }
 
 }
