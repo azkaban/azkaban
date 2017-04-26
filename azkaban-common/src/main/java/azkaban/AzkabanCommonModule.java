@@ -16,9 +16,6 @@
  */
 package azkaban;
 
-import azkaban.db.AzkabanDataSource;
-import azkaban.db.H2FileDataSource;
-import azkaban.db.MySQLDataSource;
 import azkaban.db.DatabaseOperator;
 import azkaban.db.DatabaseOperatorImpl;
 
@@ -27,7 +24,6 @@ import azkaban.project.ProjectLoader;
 import azkaban.spi.Storage;
 import azkaban.spi.StorageException;
 import azkaban.storage.LocalStorage;
-import azkaban.storage.StorageConfig;
 import azkaban.storage.StorageImplementationType;
 import azkaban.utils.Props;
 import com.google.inject.AbstractModule;
@@ -37,7 +33,6 @@ import com.google.inject.Scopes;
 import java.io.File;
 import org.apache.commons.dbutils.QueryRunner;
 
-import static azkaban.storage.StorageImplementationType.*;
 
 /**
  * This Guice module is currently a one place container for all bindings in the current module. This is intended to
@@ -45,42 +40,28 @@ import static azkaban.storage.StorageImplementationType.*;
  * structuring of Guice components.
  */
 public class AzkabanCommonModule extends AbstractModule {
-  private final Props props;
-  /**
-   * Storage Implementation
-   * This can be any of the {@link StorageImplementationType} values in which case {@link StorageFactory} will create
-   * the appropriate storage instance. Or one can feed in a custom implementation class using the full qualified
-   * path required by a classloader.
-   *
-   * examples: LOCAL, DATABASE, azkaban.storage.MyFavStorage
-   *
-   */
-  private final String storageImplementation;
-
-  private final QueryRunner queryRunner;
+  private final AzkabanCommonModuleConfig config;
 
   public AzkabanCommonModule(Props props) {
-    this.props = props;
-    this.queryRunner = new QueryRunner(getDataSource(props));
-    this.storageImplementation = props.getString(Constants.ConfigurationKeys.AZKABAN_STORAGE_TYPE, DATABASE.name());
+    this.config = new AzkabanCommonModuleConfig(props);
   }
 
   @Override
   protected void configure() {
     bind(ProjectLoader.class).to(JdbcProjectLoader.class).in(Scopes.SINGLETON);
-    bind(Props.class).toInstance(props);
+    bind(Props.class).toInstance(config.getProps());
     bind(Storage.class).to(resolveStorageClassType()).in(Scopes.SINGLETON);
     bind(DatabaseOperator.class).to(DatabaseOperatorImpl.class).in(Scopes.SINGLETON);
     //todo kunkun-tang : Consider both H2 DataSource and MysqlDatasource case.
-    bind(QueryRunner.class).toInstance(queryRunner);
+    bind(QueryRunner.class).toInstance(config.getQueryRunner());
   }
 
   public Class<? extends Storage> resolveStorageClassType() {
-    final StorageImplementationType type = StorageImplementationType.from(storageImplementation);
+    final StorageImplementationType type = StorageImplementationType.from(config.getStorageImplementation());
     if (type != null) {
       return type.getImplementationClass();
     } else {
-      return loadCustomStorageClass(storageImplementation);
+      return loadCustomStorageClass(config.getStorageImplementation());
     }
   }
 
@@ -95,29 +76,7 @@ public class AzkabanCommonModule extends AbstractModule {
 
   @Inject
   public @Provides
-  LocalStorage createLocalStorage(StorageConfig config) {
-    return new LocalStorage(new File(config.getBaseDirectoryPath()));
-  }
-
-  // todo kunkun-tang: the below method should moved out to azkaban-db module eventually.
-  // Today azkaban-db can not rely on Props, so we can not do it.
-  private AzkabanDataSource getDataSource(Props props) {
-    String databaseType = props.getString("database.type");
-
-    // todo kunkun-tang: temperaroy workaround to let service provider test work.
-    if(databaseType.equals("h2")) {
-      String path = props.getString("h2.path");
-      return new H2FileDataSource(path);
-    }
-    int port = props.getInt("mysql.port");
-    String host = props.getString("mysql.host");
-    String database = props.getString("mysql.database");
-    String user = props.getString("mysql.user");
-    String password = props.getString("mysql.password");
-    int numConnections = props.getInt("mysql.numconnections");
-
-    return MySQLDataSource.getInstance(host, port, database, user, password,
-            numConnections);
-
+  LocalStorage createLocalStorage(AzkabanCommonModuleConfig config) {
+    return new LocalStorage(new File(config.getLocalStorageBaseDirPath()));
   }
 }

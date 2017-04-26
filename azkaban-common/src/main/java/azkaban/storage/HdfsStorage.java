@@ -17,20 +17,33 @@
 
 package azkaban.storage;
 
-import azkaban.Constants;
-import azkaban.utils.Props;
+import azkaban.spi.Storage;
+import azkaban.spi.StorageMetadata;
 import com.google.inject.Inject;
+import java.io.File;
+import java.io.InputStream;
+import java.net.URI;
 
 
-public class StorageConfig {
-  private String baseDirectoryPath = "AZKABAN_STORAGE";
+public class HdfsStorage implements Storage {
 
   @Inject
-  public StorageConfig(Props props) {
-    baseDirectoryPath = props.getString(Constants.ConfigurationKeys.AZKABAN_STORAGE_LOCAL_BASEDIRECTORY, baseDirectoryPath);
+  public HdfsStorage() {
+
   }
 
-  public String getBaseDirectoryPath() {
-    return baseDirectoryPath;
+  @Override
+  public InputStream get(URI key) {
+    throw new UnsupportedOperationException("Method not implemented");
+  }
+
+  @Override
+  public URI put(StorageMetadata metadata, File localFile) {
+    throw new UnsupportedOperationException("Method not implemented");
+  }
+
+  @Override
+  public boolean delete(URI key) {
+    throw new UnsupportedOperationException("Method not implemented");
   }
 }

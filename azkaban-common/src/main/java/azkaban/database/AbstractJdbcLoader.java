@@ -21,20 +21,16 @@ import azkaban.utils.Props;
 
 import java.io.IOException;
 import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.util.ArrayList;
 
 import org.apache.commons.dbutils.DbUtils;
 import org.apache.commons.dbutils.QueryRunner;
-import org.apache.commons.dbutils.ResultSetHandler;
 
 
 public abstract class AbstractJdbcLoader {
   /**
    * Used for when we store text data. Plain uses UTF8 encoding.
    */
-  public static enum EncodingType {
+  public enum EncodingType {
     PLAIN(1), GZIP(2);
 
     private int numVal;
@@ -86,53 +82,5 @@ public abstract class AbstractJdbcLoader {
 
   protected boolean allowsOnDuplicateKey() {
     return dataSource.allowsOnDuplicateKey();
-  }
-
-  public static class IntHandler implements ResultSetHandler<Integer> {
-    @Override
-    public Integer handle(ResultSet rs) throws SQLException {
-      if (!rs.next()) {
-        return 0;
-      }
-
-      return rs.getInt(1);
-    }
-  }
-
-  public static class SingleStringHandler implements ResultSetHandler<String> {
-    @Override
-    public String handle(ResultSet rs) throws SQLException {
-      if (!rs.next()) {
-        return null;
-      }
-
-      return rs.getString(1);
-    }
-  }
-
-  public static class IntListHandler implements
-      ResultSetHandler<ArrayList<Integer>> {
-    @Override
-    public ArrayList<Integer> handle(ResultSet rs) throws SQLException {
-      ArrayList<Integer> results = new ArrayList<Integer>();
-      while (rs.next()) {
-        results.add(rs.getInt(1));
-      }
-
-      return results;
-    }
-  }
-
-  public static class StringListHandler implements
-      ResultSetHandler<ArrayList<String>> {
-    @Override
-    public ArrayList<String> handle(ResultSet rs) throws SQLException {
-      ArrayList<String> results = new ArrayList<String>();
-      while (rs.next()) {
-        results.add(rs.getString(1));
-      }
-
-      return results;
-    }
   }
 }

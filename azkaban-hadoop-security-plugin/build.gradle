@@ -1,12 +1,10 @@
 apply plugin: 'distribution'
 
-ext.hadoopVersion = "2.6.1"
-
 dependencies {
   compile project(":azkaban-common")
 
   compileOnly "org.apache.hadoop:hadoop-common:$hadoopVersion"
   compileOnly "org.apache.hadoop:hadoop-mapreduce-client-common:$hadoopVersion"
   compileOnly "org.apache.hadoop:hadoop-mapreduce-client-core:$hadoopVersion"
-  compileOnly "org.apache.hive:hive-metastore:0.13.1"
+  compileOnly "org.apache.hive:hive-metastore:$hiveVersion"
 }
