@@ -34,12 +34,12 @@ public class HdfsStorage implements Storage {
 
   @Override
   public InputStream get(URI key) {
-    return null;
+    throw new UnsupportedOperationException("Method not implemented");
   }
 
   @Override
   public URI put(StorageMetadata metadata, File localFile) {
-    return null;
+    throw new UnsupportedOperationException("Method not implemented");
   }
 
   @Override
