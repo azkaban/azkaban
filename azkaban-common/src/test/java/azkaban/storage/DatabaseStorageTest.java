@@ -20,8 +20,6 @@ package azkaban.storage;
 import azkaban.project.ProjectLoader;
 import azkaban.spi.StorageMetadata;
 import java.io.File;
-import java.net.URI;
-import java.util.Map;
 import org.junit.Test;
 
 import static org.junit.Assert.*;
@@ -31,22 +29,6 @@ import static org.mockito.Mockito.*;
 public class DatabaseStorageTest {
   private final ProjectLoader projectLoader = mock(ProjectLoader.class);
   private final DatabaseStorage databaseStorage = new DatabaseStorage(projectLoader);
-
-  @Test
-  public void testUriConversion() {
-    final int projectId = 1;
-    final int version = 12;
-    final URI uri = DatabaseStorage.toURI(projectId, version);
-    final Map<String, String> queryMap = DatabaseStorage.getQueryMapFromUri(uri);
-
-    assertEquals(String.valueOf(projectId), queryMap.get("projectId"));
-    assertEquals(String.valueOf(version), queryMap.get("version"));
-  }
-
-  @Test
-  public void testGet() throws Exception {
-
-  }
 
   @Test
   public void testPut() throws Exception {

@@ -19,8 +19,8 @@ package azkaban.execapp;
 
 import azkaban.executor.ExecutableFlow;
 import azkaban.project.ProjectFileHandler;
-import azkaban.project.ProjectLoader;
 import azkaban.project.ProjectManagerException;
+import azkaban.storage.StorageManager;
 import azkaban.utils.FileIOUtils;
 import azkaban.utils.Pair;
 import azkaban.utils.Utils;
@@ -47,13 +47,11 @@ public class FlowPreparer {
   private final File projectsDir;
 
   private final Map<Pair<Integer, Integer>, ProjectVersion> installedProjects;
-  private final ProjectLoader projectLoader;
+  private final StorageManager storageManager;
 
-  public FlowPreparer(ProjectLoader projectLoader,
-      File executionsDir,
-      File projectsDir,
+  public FlowPreparer(StorageManager storageManager, File executionsDir, File projectsDir,
       Map<Pair<Integer, Integer>, ProjectVersion> installedProjects) {
-    this.projectLoader = projectLoader;
+    this.storageManager = storageManager;
     this.executionsDir = executionsDir;
     this.projectsDir = projectsDir;
     this.installedProjects = installedProjects;
@@ -121,7 +119,7 @@ public class FlowPreparer {
 
     ProjectFileHandler projectFileHandler = null;
     try {
-      projectFileHandler = requireNonNull(projectLoader.getUploadedFile(projectId, version));
+      projectFileHandler = requireNonNull(storageManager.getProjectFile(projectId, version));
       checkState("zip".equals(projectFileHandler.getFileType()));
 
       log.info("Downloading zip file.");

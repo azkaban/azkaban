@@ -19,7 +19,6 @@ package azkaban.storage;
 
 import azkaban.project.Project;
 import azkaban.project.ProjectFileHandler;
-import azkaban.project.ProjectLoader;
 import azkaban.spi.Storage;
 import azkaban.spi.StorageMetadata;
 import azkaban.user.User;
@@ -36,12 +35,10 @@ public class StorageManager {
   private static final Logger log = Logger.getLogger(StorageManager.class);
 
   private final Storage storage;
-  private final ProjectLoader projectLoader;
 
   @Inject
-  public StorageManager(Storage storage, ProjectLoader projectLoader) {
+  public StorageManager(Storage storage) {
     this.storage = storage;
-    this.projectLoader = projectLoader;
   }
 
   /**
@@ -77,6 +74,10 @@ public class StorageManager {
    * @return Handler object containing hooks to fetched project file
    */
   public ProjectFileHandler getProjectFile(final int projectId, final int version) {
-    return projectLoader.getUploadedFile(projectId, version);
+    // TODO remove huge hack !
+    if (storage instanceof DatabaseStorage) {
+      return ((DatabaseStorage) storage).get(projectId, version);
+    }
+    throw new UnsupportedOperationException("Operation currently unsupported for other types.");
   }
 }

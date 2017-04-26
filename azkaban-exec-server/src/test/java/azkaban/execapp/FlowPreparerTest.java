@@ -19,7 +19,7 @@ package azkaban.execapp;
 
 import azkaban.executor.ExecutableFlow;
 import azkaban.project.ProjectFileHandler;
-import azkaban.project.ProjectLoader;
+import azkaban.storage.StorageManager;
 import azkaban.utils.Pair;
 import java.io.File;
 import java.util.HashMap;
@@ -49,7 +49,6 @@ public class FlowPreparerTest {
     executionsDir.mkdirs();
     projectsDir.mkdirs();
 
-
     ClassLoader classLoader = getClass().getClassLoader();
     File file = new File(classLoader.getResource(SAMPLE_FLOW_01 + ".zip").getFile());
 
@@ -57,10 +56,10 @@ public class FlowPreparerTest {
     when(projectFileHandler.getFileType()).thenReturn("zip");
     when(projectFileHandler.getLocalFile()).thenReturn(file);
 
-    ProjectLoader projectLoader = mock(ProjectLoader.class);
-    when(projectLoader.getUploadedFile(12, 34)).thenReturn(projectFileHandler);
+    StorageManager storageManager = mock(StorageManager.class);
+    when(storageManager.getProjectFile(12, 34)).thenReturn(projectFileHandler);
 
-    instance = new FlowPreparer(projectLoader, executionsDir, projectsDir, installedProjects);
+    instance = new FlowPreparer(storageManager, executionsDir, projectsDir, installedProjects);
   }
 
   @After
