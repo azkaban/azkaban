@@ -17,6 +17,8 @@
 
 package azkaban.execapp;
 
+import azkaban.executor.ExecutorLoader;
+import azkaban.executor.JdbcExecutorLoader;
 import com.google.inject.AbstractModule;
 import com.google.inject.Scopes;
 
@@ -29,6 +31,7 @@ import com.google.inject.Scopes;
 public class AzkabanExecServerModule extends AbstractModule {
   @Override
   protected void configure() {
+    bind(ExecutorLoader.class).to(JdbcExecutorLoader.class).in(Scopes.SINGLETON);
     bind(AzkabanExecutorServer.class).in(Scopes.SINGLETON);
   }
 }

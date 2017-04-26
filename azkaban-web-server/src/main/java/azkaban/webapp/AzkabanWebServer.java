@@ -1207,9 +1207,9 @@ public class AzkabanWebServer extends AzkabanServer {
     executorManager.shutdown();
     try {
       server.stop();
-    } catch (Throwable t) {
+    } catch (Exception e) {
       // Catch all while closing server
-      logger.error(t);
+      logger.error(e);
     }
     server.destroy();
   }
