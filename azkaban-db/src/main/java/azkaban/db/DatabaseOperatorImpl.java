@@ -43,8 +43,8 @@ public class DatabaseOperatorImpl implements DatabaseOperator {
    */
   @Inject
   public DatabaseOperatorImpl(QueryRunner queryRunner){
-    this.queryRunner = queryRunner;
     requireNonNull(queryRunner.getDataSource(), "data source must not be null.");
+    this.queryRunner = queryRunner;
   }
 
   /**
@@ -58,7 +58,7 @@ public class DatabaseOperatorImpl implements DatabaseOperator {
    *
    */
   @Override
-  public Long getLastInsertId() {
+  public long getLastInsertId() {
     // A default connection: autocommit = true.
     long num = -1;
     try {

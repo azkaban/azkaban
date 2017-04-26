@@ -34,7 +34,7 @@ public interface DatabaseOperator {
    *
    * @return the last inserted id in mysql per connection.
    */
-  Long getLastInsertId();
+  long  getLastInsertId();
 
   /**
    * Executes the given Azkaban related SELECT SQL operations.

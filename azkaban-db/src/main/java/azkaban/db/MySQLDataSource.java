@@ -27,6 +27,7 @@ public class MySQLDataSource extends AzkabanDataSource {
 
   private static volatile MySQLDataSource instance = null;
 
+  // TODO kunkun-tang: have guice inject working here
   private MySQLDataSource(String host, int port, String dbName,
       String user, String password, int numConnections) {
     super();
