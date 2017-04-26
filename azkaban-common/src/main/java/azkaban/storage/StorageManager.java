@@ -74,6 +74,7 @@ public class StorageManager {
    * @return Handler object containing hooks to fetched project file
    */
   public ProjectFileHandler getProjectFile(final int projectId, final int version) {
+    log.info(String.format("Fetching project file. project ID: %d version: %d", projectId, version));
     // TODO remove huge hack !
     if (storage instanceof DatabaseStorage) {
       return ((DatabaseStorage) storage).get(projectId, version);
