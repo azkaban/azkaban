@@ -17,23 +17,33 @@
 
 package azkaban.storage;
 
+import azkaban.AzkabanCommonModuleConfig;
 import azkaban.spi.Storage;
 import azkaban.spi.StorageMetadata;
 import com.google.inject.Inject;
 import java.io.File;
+import java.io.IOException;
 import java.io.InputStream;
+import java.net.URI;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
+
+import static azkaban.Constants.ConfigurationKeys.*;
 
 
 public class HdfsStorage implements Storage {
+  private final URI rootUri;
+  private final FileSystem fs;
 
   @Inject
-  public HdfsStorage() {
-
+  public HdfsStorage(FileSystem fs, AzkabanCommonModuleConfig config) {
+    this.rootUri = config.getHdfsRootUri();
+    this.fs = fs;
   }
 
   @Override
-  public InputStream get(String key) {
-    throw new UnsupportedOperationException("Method not implemented");
+  public InputStream get(String key) throws IOException {
+    return throw new UnsupportedOperationException("Method not implemented");
   }
 
   @Override

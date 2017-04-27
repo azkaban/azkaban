@@ -17,11 +17,13 @@
 
 package azkaban.storage;
 
+import azkaban.AzkabanCommonModuleConfig;
 import azkaban.spi.Storage;
 import azkaban.spi.StorageException;
 import azkaban.spi.StorageMetadata;
 import azkaban.utils.FileIOUtils;
 import com.google.common.io.Files;
+import com.google.inject.Inject;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -37,8 +39,9 @@ public class LocalStorage implements Storage {
 
   final File rootDirectory;
 
-  public LocalStorage(String rootDirectoryPath) {
-    this.rootDirectory = validateRootDirectory(createIfDoesNotExist(rootDirectoryPath));
+  @Inject
+  public LocalStorage(AzkabanCommonModuleConfig config) {
+    this.rootDirectory = validateRootDirectory(createIfDoesNotExist(config.getLocalStorageBaseDirPath()));
   }
 
   /**

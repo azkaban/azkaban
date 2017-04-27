@@ -37,7 +37,7 @@ public class LocalStorageTest {
   static final String LOCAL_STORAGE = "LOCAL_STORAGE";
   static final File BASE_DIRECTORY = new File(LOCAL_STORAGE);
 
-  private final LocalStorage localStorage = new LocalStorage(BASE_DIRECTORY);
+  private final LocalStorage localStorage = new LocalStorage(LOCAL_STORAGE);
 
   @Before
   public void setUp() throws Exception {

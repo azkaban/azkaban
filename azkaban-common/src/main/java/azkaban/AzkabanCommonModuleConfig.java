@@ -48,6 +48,7 @@ public class AzkabanCommonModuleConfig {
    */
   private String storageImplementation = DATABASE.name();
   private String localStorageBaseDirPath = "LOCAL_STORAGE";
+  private URI hdfsRootUri;
 
   @Inject
   public AzkabanCommonModuleConfig(Props props) {
@@ -56,6 +57,7 @@ public class AzkabanCommonModuleConfig {
     storageImplementation = props.getString(Constants.ConfigurationKeys.AZKABAN_STORAGE_TYPE,
         storageImplementation);
     localStorageBaseDirPath = props.getString(AZKABAN_STORAGE_LOCAL_BASEDIR, localStorageBaseDirPath);
+    hdfsRootUri = props.get(AZKABAN_STORAGE_HDFS_ROOT_URI) != null ? props.getUri(AZKABAN_STORAGE_HDFS_ROOT_URI) : null;
   }
 
   public Props getProps() {
@@ -68,6 +70,10 @@ public class AzkabanCommonModuleConfig {
 
   public String getLocalStorageBaseDirPath() {
     return localStorageBaseDirPath;
+  }
+
+  public URI getHdfsRootUri() {
+    return hdfsRootUri;
   }
 
   // todo kunkun-tang: the below method should moved out to azkaban-db module eventually.
@@ -94,14 +100,5 @@ public class AzkabanCommonModuleConfig {
 
   public QueryRunner getQueryRunner() {
     return new QueryRunner(getDataSource());
-  }
-
-  private static URI uri(String uri){
-    try {
-      return new URI(uri);
-    } catch (URISyntaxException e) {
-      log.error(e);
-    }
-    return null;
   }
 }
