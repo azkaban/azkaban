@@ -52,6 +52,7 @@ public class ServerStatisticsServlet extends HttpServlet {
    * @see javax.servlet.http.HttpServlet#doGet(javax.servlet.http.HttpServletRequest,
    *      javax.servlet.http.HttpServletResponse)
    */
+  @Override
   protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
 
     boolean noCache = null != req && Boolean.valueOf(req.getParameter(noCacheParamName));

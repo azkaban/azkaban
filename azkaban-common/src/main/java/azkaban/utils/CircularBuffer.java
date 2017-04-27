@@ -55,6 +55,7 @@ public class CircularBuffer<T> implements Iterable<T> {
     return "[" + Joiner.on(", ").join(lines) + "]";
   }
 
+  @Override
   public Iterator<T> iterator() {
     if (start == 0)
       return lines.iterator();

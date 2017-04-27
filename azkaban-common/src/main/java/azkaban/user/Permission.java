@@ -162,6 +162,7 @@ public class Permission {
     return list.toArray(new String[count]);
   }
 
+  @Override
   public String toString() {
     return Utils.flattenToString(permissions, ",");
   }

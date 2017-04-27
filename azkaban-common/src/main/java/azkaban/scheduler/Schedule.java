@@ -123,6 +123,7 @@ public class Schedule {
     return projectName + "." + flowName + " (" + projectId + ")";
   }
 
+  @Override
   public String toString() {
 
     String underlying = projectName + "." + flowName + " (" + projectId + ")" + " to be run at (starting) " + new DateTime(

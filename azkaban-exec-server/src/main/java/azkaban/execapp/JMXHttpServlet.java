@@ -57,6 +57,7 @@ public class JMXHttpServlet extends HttpServlet implements ConnectorParams {
     return HttpRequestUtils.getParam(request, name);
   }
 
+  @Override
   protected void doGet(HttpServletRequest req, HttpServletResponse resp)
       throws ServletException, IOException {
     Map<String, Object> ret = new HashMap<String, Object>();
