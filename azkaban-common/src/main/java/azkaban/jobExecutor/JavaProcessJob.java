@@ -152,6 +152,7 @@ public class JavaProcessJob extends ProcessJob {
     return "";
   }
 
+  @Override
   protected Pair<Long, Long> getProcMemoryRequirement() throws Exception {
     String strXms = getInitialMemorySize();
     String strXmx = getMaxMemorySize();

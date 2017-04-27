@@ -217,6 +217,7 @@ public class TriggerManager extends EventHandler implements
       triggers.remove(t);
     }
 
+    @Override
     public void run() {
       while (!shutdown) {
         synchronized (syncObj) {

@@ -657,6 +657,7 @@ public class AzkabanWebServer extends AzkabanServer {
    *
    * @return
    */
+  @Override
   public Props getServerProps() {
     return props;
   }
@@ -696,6 +697,7 @@ public class AzkabanWebServer extends AzkabanServer {
 
     Runtime.getRuntime().addShutdownHook(new Thread() {
 
+      @Override
       public void run() {
         try {
           logTopMemoryConsumers();
