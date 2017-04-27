@@ -14,13 +14,8 @@
  * the License.
  *
  */
+package azkaban.db;
 
-include 'azkaban-spi'
-include 'azkaban-db'
-include 'azkaban-common'
-include 'azkaban-exec-server'
-include 'azkaban-hadoop-security-plugin'
-include 'azkaban-solo-server'
-include 'azkaban-sql'
-include 'azkaban-web-server'
-include 'azkaban-test'
+public class AzDBUtil {
+  static final int MAX_DB_RETRY_COUNT = 5;
+}

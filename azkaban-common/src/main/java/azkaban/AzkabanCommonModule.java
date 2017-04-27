@@ -16,6 +16,9 @@
  */
 package azkaban;
 
+import azkaban.db.DatabaseOperator;
+import azkaban.db.DatabaseOperatorImpl;
+
 import azkaban.project.JdbcProjectLoader;
 import azkaban.project.ProjectLoader;
 import azkaban.spi.Storage;
@@ -28,6 +31,7 @@ import com.google.inject.Inject;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import java.io.File;
+import org.apache.commons.dbutils.QueryRunner;
 
 
 /**
@@ -47,6 +51,9 @@ public class AzkabanCommonModule extends AbstractModule {
     bind(ProjectLoader.class).to(JdbcProjectLoader.class).in(Scopes.SINGLETON);
     bind(Props.class).toInstance(config.getProps());
     bind(Storage.class).to(resolveStorageClassType()).in(Scopes.SINGLETON);
+    bind(DatabaseOperator.class).to(DatabaseOperatorImpl.class).in(Scopes.SINGLETON);
+    //todo kunkun-tang : Consider both H2 DataSource and MysqlDatasource case.
+    bind(QueryRunner.class).toInstance(config.getQueryRunner());
   }
 
   public Class<? extends Storage> resolveStorageClassType() {
