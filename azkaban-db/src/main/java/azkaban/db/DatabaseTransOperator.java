@@ -30,6 +30,15 @@ import org.apache.commons.dbutils.ResultSetHandler;
  */
 public interface DatabaseTransOperator {
 
+
+  /**
+   * returns the last id from a previous insert statement.
+   * Note that last insert and this operation should use the same connection.
+   *
+   * @return the last inserted id in mysql per connection.
+   */
+  long  getLastInsertId();
+
   /**
    *
    * @param querySql

@@ -29,14 +29,6 @@ import org.apache.commons.dbutils.ResultSetHandler;
 public interface DatabaseOperator {
 
   /**
-   * returns the last id from a previous insert statement.
-   * Note: The implementation must catch SQL Exception itself.
-   *
-   * @return the last inserted id in mysql per connection.
-   */
-  long  getLastInsertId();
-
-  /**
    * Executes the given Azkaban related SELECT SQL operations.
    *
    * @param sqlQuery The SQL query statement to execute.

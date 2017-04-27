@@ -82,13 +82,6 @@ public class DatabaseOperatorImplTest {
   }
 
   @Test
-  public void testGetLastInsertId() throws Exception {
-    when(queryRunner.query(any(String.class), any(ScalarHandler.class))).thenReturn(2L);
-    long res = dbOperator.getLastInsertId();
-    Assert.assertEquals(2L, res);
-  }
-
-  @Test
   public void testValidQuery() throws Exception {
     int res = dbOperator.query("select * from blah where ? = ?", handler, "id", 2);
     Assert.assertEquals(15, res);

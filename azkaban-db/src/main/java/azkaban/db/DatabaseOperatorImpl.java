@@ -22,7 +22,6 @@ import org.apache.log4j.Logger;
 import java.sql.SQLException;
 import org.apache.commons.dbutils.QueryRunner;
 import org.apache.commons.dbutils.ResultSetHandler;
-import org.apache.commons.dbutils.handlers.ScalarHandler;
 import com.google.inject.Inject;
 
 import static java.util.Objects.*;
@@ -45,29 +44,6 @@ public class DatabaseOperatorImpl implements DatabaseOperator {
   public DatabaseOperatorImpl(QueryRunner queryRunner){
     requireNonNull(queryRunner.getDataSource(), "data source must not be null.");
     this.queryRunner = queryRunner;
-  }
-
-  /**
-   * The ID that was generated is maintained in Mysql server on a per-connection basis.
-   * This means that the value returned by the function to a given client is
-   * the first AUTO_INCREMENT value generated for most recent statement
-   *
-   * This value cannot be affected by other callers, even if they generate
-   * AUTO_INCREMENT values of their own.
-   * @return last insertion ID
-   *
-   */
-  @Override
-  public long getLastInsertId() {
-    // A default connection: autocommit = true.
-    long num = -1;
-    try {
-      num = ((Number) queryRunner.query("SELECT LAST_INSERT_ID();", new ScalarHandler<>(1))).longValue();
-    } catch (SQLException ex) {
-      logger.error("can not get last insertion ID", ex);
-    }
-    // QeuryRunner closes SQL connection in default.
-    return num;
   }
 
   /**
