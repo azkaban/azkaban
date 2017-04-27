@@ -30,8 +30,19 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Inject;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
+import com.google.inject.Singleton;
+import com.google.inject.name.Named;
+import com.google.inject.name.Names;
 import java.io.File;
+import java.io.IOException;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
 import org.apache.commons.dbutils.QueryRunner;
+
+import static azkaban.Constants.ConfigurationKeys.*;
+import static com.google.common.base.Preconditions.*;
+import static java.util.Objects.*;
 
 
 /**
@@ -40,14 +51,19 @@ import org.apache.commons.dbutils.QueryRunner;
  * structuring of Guice components.
  */
 public class AzkabanCommonModule extends AbstractModule {
+  private final Props props;
   private final AzkabanCommonModuleConfig config;
 
   public AzkabanCommonModule(Props props) {
+    this.props = props;
     this.config = new AzkabanCommonModuleConfig(props);
   }
 
   @Override
   protected void configure() {
+    bindConstant(AZKABAN_STORAGE_HDFS_ROOT_URI);
+    bindConstant(HADOOP_CONF_DIR_PATH);
+
     bind(ProjectLoader.class).to(JdbcProjectLoader.class).in(Scopes.SINGLETON);
     bind(Props.class).toInstance(config.getProps());
     bind(Storage.class).to(resolveStorageClassType()).in(Scopes.SINGLETON);
@@ -75,8 +91,32 @@ public class AzkabanCommonModule extends AbstractModule {
   }
 
   @Inject
-  public @Provides
-  LocalStorage createLocalStorage(AzkabanCommonModuleConfig config) {
-    return new LocalStorage(new File(config.getLocalStorageBaseDirPath()));
+  @Provides
+  public LocalStorage createLocalStorage(AzkabanCommonModuleConfig config) {
+    return new LocalStorage(config.getLocalStorageBaseDirPath());
   }
+
+  @Inject
+  @Provides
+  @Singleton
+  public FileSystem createHadoopFileSystem(@Named(HADOOP_CONF_DIR_PATH) String hadoopConfDirPath) throws IOException {
+    final File hadoopConfDir = new File(requireNonNull(hadoopConfDirPath));
+    checkArgument(hadoopConfDir.exists() && hadoopConfDir.isDirectory());
+
+    final Configuration hadoopConf = new Configuration(false);
+    hadoopConf.addResource(new Path(hadoopConfDirPath, "core-site.xml"));
+    hadoopConf.addResource(new Path(hadoopConfDirPath, "hdfs-site.xml"));
+    hadoopConf.set("fs.hdfs.impl", org.apache.hadoop.hdfs.DistributedFileSystem.class.getName());
+
+    return FileSystem.get(hadoopConf);
+  }
+
+  /**
+   * Combine Guice named annotation with Configuration key
+   * @param name Configuration key / Annotation name
+   */
+  private void bindConstant(String name) {
+    bindConstant().annotatedWith(Names.named(name)).to(props.get(AZKABAN_STORAGE_HDFS_ROOT_URI));
+  }
+
 }

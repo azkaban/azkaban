@@ -47,8 +47,7 @@ public class AzkabanCommonModuleConfig {
    *
    */
   private String storageImplementation = DATABASE.name();
-  private String localStorageBaseDirPath = "AZKABAN_STORAGE";
-  private URI hdfsBaseUri = uri("hdfs://localhost:50070/path/to/base/");
+  private String localStorageBaseDirPath = "LOCAL_STORAGE";
 
   @Inject
   public AzkabanCommonModuleConfig(Props props) {
@@ -57,7 +56,6 @@ public class AzkabanCommonModuleConfig {
     storageImplementation = props.getString(Constants.ConfigurationKeys.AZKABAN_STORAGE_TYPE,
         storageImplementation);
     localStorageBaseDirPath = props.getString(AZKABAN_STORAGE_LOCAL_BASEDIR, localStorageBaseDirPath);
-    hdfsBaseUri = props.getUri(AZKABAN_STORAGE_HDFS_BASEURI, hdfsBaseUri);
   }
 
   public Props getProps() {
@@ -96,10 +94,6 @@ public class AzkabanCommonModuleConfig {
 
   public QueryRunner getQueryRunner() {
     return new QueryRunner(getDataSource());
-  }
-
-  public URI getHdfsBaseUri() {
-    return hdfsBaseUri;
   }
 
   private static URI uri(String uri){
