@@ -420,8 +420,12 @@ public class JdbcProjectLoader extends AbstractJdbcLoader implements
    * When we upload a new project zip in day2, new file in day 2 will use the new version (proj_v + 1).
    * When file uploading completes, AZ will clean all old chunks in DB afterward.
    */
-  private void addProjectToProjectVersions(Connection connection, int projectId, int version, File localFile,
-      String uploader, String uri) throws ProjectManagerException {
+  private void addProjectToProjectVersions(Connection connection,
+      int projectId,
+      int version,
+      File localFile,
+      String uploader,
+      String uri) throws ProjectManagerException {
     final long updateTime = System.currentTimeMillis();
     QueryRunner runner = new QueryRunner();
     logger.info("Creating message digest for upload " + localFile.getName());
