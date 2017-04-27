@@ -135,6 +135,20 @@ public interface ProjectLoader {
       throws ProjectManagerException;
 
   /**
+   * Add project and version info to the project_versions table. This current maintains the metadata for each uploaded
+   * version of the project
+   *
+   * @param projectId
+   * @param version
+   * @param localFile
+   * @param uploader
+   * @param uri
+   * @throws ProjectManagerException
+   */
+  void addProjectVersion(int projectId, int version, File localFile, String uploader, String uri)
+      throws ProjectManagerException;
+
+  /**
    * Fetch project metadata from project_versions table
    *
    * @param projectId project ID

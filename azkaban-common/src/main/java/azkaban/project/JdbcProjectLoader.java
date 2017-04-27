@@ -360,7 +360,7 @@ public class JdbcProjectLoader extends AbstractJdbcLoader implements
 
     try {
       /* Update DB with new project info */
-      addProjectToProjectVersions(connection, projectId, version, localFile, uploader);
+      addProjectToProjectVersions(connection, projectId, version, localFile, uploader, null);
 
       uploadProjectFile(connection, projectId, version, localFile);
 
@@ -385,6 +385,21 @@ public class JdbcProjectLoader extends AbstractJdbcLoader implements
     updateChunksInProjectVersions(connection, projectId, version, chunks);
   }
 
+  public void addProjectVersion(
+      int projectId,
+      int version,
+      File localFile,
+      String uploader,
+      String uri) throws ProjectManagerException {
+    try (Connection connection = getConnection()) {
+      addProjectToProjectVersions(connection, projectId, version, localFile, uploader, uri);
+    } catch (SQLException e) {
+      logger.error(e);
+      throw new ProjectManagerException(String.format("Add ProjectVersion failed. project id: %d version: %d",
+          projectId, version), e);
+    }
+  }
+
   /**
    * Insert a new version record to TABLE project_versions before uploading files.
    *
@@ -404,11 +419,8 @@ public class JdbcProjectLoader extends AbstractJdbcLoader implements
    * When we upload a new project zip in day2, new file in day 2 will use the new version (proj_v + 1).
    * When file uploading completes, AZ will clean all old chunks in DB afterward.
    */
-  private void addProjectToProjectVersions(Connection connection,
-      int projectId,
-      int version,
-      File localFile,
-      String uploader) throws ProjectManagerException {
+  private void addProjectToProjectVersions(Connection connection, int projectId, int version, File localFile,
+      String uploader, String uri) throws ProjectManagerException {
     final long updateTime = System.currentTimeMillis();
     QueryRunner runner = new QueryRunner();
     logger.info("Creating message digest for upload " + localFile.getName());
@@ -422,11 +434,11 @@ public class JdbcProjectLoader extends AbstractJdbcLoader implements
     logger.info("Md5 hash created");
 
     final String INSERT_PROJECT_VERSION = "INSERT INTO project_versions "
-        + "(project_id, version, upload_time, uploader, file_type, file_name, md5, num_chunks) values "
-        + "(?,?,?,?,?,?,?,?)";
+        + "(project_id, version, upload_time, uploader, file_type, file_name, md5, num_chunks, uri) values "
+        + "(?,?,?,?,?,?,?,?,?)";
 
     try {
-      /**
+      /*
        * As we don't know the num_chunks before uploading the file, we initialize it to 0,
        * and will update it after uploading completes.
        */
@@ -439,7 +451,8 @@ public class JdbcProjectLoader extends AbstractJdbcLoader implements
           Files.getFileExtension(localFile.getName()),
           localFile.getName(),
           md5,
-          0);
+          0,
+          uri);
     } catch (SQLException e) {
       String msg = String.format("Error initializing project id: %d version: %d ", projectId, version);
       logger.error(msg, e);

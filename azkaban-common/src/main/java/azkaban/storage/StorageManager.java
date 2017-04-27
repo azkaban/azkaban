@@ -90,7 +90,23 @@ public class StorageManager {
     );
     log.info(String.format("Adding archive to storage. Meta:%s File: %s[%d bytes]",
         metadata, localFile.getName(), localFile.length()));
-    storage.put(metadata, localFile);
+
+    /* upload to storage */
+    URI uri = storage.put(metadata, localFile);
+
+    /* Add metadata to db */
+    // TODO spyne: remove hack. Database storage should go through the same flow
+    if (!(storage instanceof DatabaseStorage)) {
+      projectLoader.addProjectVersion(
+          project.getId(),
+          version,
+          localFile,
+          uploader.getUserId(),
+          uri.toString()
+      );
+      log.info(String.format("Added project metadata to DB. Meta:%s File: %s[%d bytes] URI: %s",
+          metadata, localFile.getName(), localFile.length(), uri));
+    }
   }
 
   /**
