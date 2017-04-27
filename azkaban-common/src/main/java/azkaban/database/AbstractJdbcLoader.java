@@ -33,7 +33,7 @@ public abstract class AbstractJdbcLoader {
   public enum EncodingType {
     PLAIN(1), GZIP(2);
 
-    private int numVal;
+    private final int numVal;
 
     EncodingType(int numVal) {
       this.numVal = numVal;
