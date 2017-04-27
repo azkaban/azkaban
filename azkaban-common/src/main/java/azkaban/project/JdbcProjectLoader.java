@@ -393,6 +393,7 @@ public class JdbcProjectLoader extends AbstractJdbcLoader implements
       String uri) throws ProjectManagerException {
     try (Connection connection = getConnection()) {
       addProjectToProjectVersions(connection, projectId, version, localFile, uploader, uri);
+      connection.commit();
     } catch (SQLException e) {
       logger.error(e);
       throw new ProjectManagerException(String.format("Add ProjectVersion failed. project id: %d version: %d",
