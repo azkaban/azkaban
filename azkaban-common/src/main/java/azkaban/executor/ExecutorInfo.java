@@ -130,10 +130,7 @@ import org.codehaus.jackson.map.ObjectMapper;
      * @return instance of the object if the parsing is successful, null other wise.
      * @throws JsonParseException,JsonMappingException,IOException
      * */
-    public static ExecutorInfo fromJSONString(String jsonString) throws
-    JsonParseException,
-    JsonMappingException,
-    IOException{
+    public static ExecutorInfo fromJSONString(String jsonString) throws IOException{
       if (null == jsonString || jsonString.length() == 0) return null;
       return new ObjectMapper().readValue(jsonString, ExecutorInfo.class);
     }
