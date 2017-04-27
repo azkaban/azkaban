@@ -34,14 +34,10 @@ import javax.inject.Inject;
  * behavior of Azkaban.
  */
 public class DatabaseStorage implements Storage {
-  public static final String PROJECT_ID = "projectId";
-  public static final String VERSION = "version";
-
   private final ProjectLoader projectLoader;
 
   @Inject
   public DatabaseStorage(ProjectLoader projectLoader) {
-
     this.projectLoader = projectLoader;
   }
 
