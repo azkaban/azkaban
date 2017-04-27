@@ -62,6 +62,11 @@
 			<td>The maximum amount of memory each job can request.  If a job requests more than this, then Azkaban server will not launch this job</td>
 			<td>2GB</td>
 		</tr>
+		<tr>
+			<td><code>azkaban.server.flow.max.running.minutes</code></td>
+			<td>The maximum time in minutes a flow will be living inside azkaban after being executed.  If a flow runs longer than this, it will be killed</td>
+			<td>14400</td>
+		</tr>
 	</tbody>
 </table>
 
