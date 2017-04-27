@@ -39,5 +39,4 @@ public interface ConditionChecker {
   void setContext(Map<String, Object> context);
 
   long getNextCheckTime();
-
 }
