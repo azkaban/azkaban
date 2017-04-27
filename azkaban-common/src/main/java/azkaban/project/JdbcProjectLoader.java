@@ -16,6 +16,8 @@
 
 package azkaban.project;
 
+import com.google.common.io.Files;
+import com.google.inject.Inject;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.File;
@@ -62,6 +64,7 @@ public class JdbcProjectLoader extends AbstractJdbcLoader implements
 
   private EncodingType defaultEncodingType = EncodingType.GZIP;
 
+  @Inject
   public JdbcProjectLoader(Props props) {
     super(props);
     tempDir = new File(props.getString("project.temp.dir", "temp"));
@@ -169,66 +172,67 @@ public class JdbcProjectLoader extends AbstractJdbcLoader implements
     return project;
   }
 
-    /**
-     * Fetch first project with a given name {@inheritDoc}
-     *
-     * @see azkaban.project.ProjectLoader#fetchProjectByName(java.lang.String)
-     */
-    @Override
-    public Project fetchProjectByName(String name)
-        throws ProjectManagerException {
-        Connection connection = getConnection();
+  @Override
+  public Project fetchProjectByName(String name)
+      throws ProjectManagerException {
+    Connection connection = getConnection();
 
-        Project project = null;
-        try {
-            project = fetchProjectByName(connection, name);
-        } finally {
-            DbUtils.closeQuietly(connection);
-        }
-
-        return project;
+    Project project = null;
+    try {
+        project = fetchProjectByName(connection, name);
+    } finally {
+        DbUtils.closeQuietly(connection);
     }
 
-    private Project fetchProjectByName(Connection connection, String name)
-        throws ProjectManagerException {
-        QueryRunner runner = new QueryRunner();
-        // Fetch the project
-        Project project = null;
-        ProjectResultHandler handler = new ProjectResultHandler();
-        try {
-            List<Project> projects =
+    return project;
+  }
+
+  private Project fetchProjectByName(Connection connection, String name)
+      throws ProjectManagerException {
+    QueryRunner runner = new QueryRunner();
+    // Fetch the project
+    Project project;
+    ProjectResultHandler handler = new ProjectResultHandler();
+    // select active project from db first, if not exist, select inactive one.
+    // At most one active project with the same name exists in db.
+    try {
+        List<Project> projects =
+            runner.query(connection,
+                  ProjectResultHandler.SELECT_ACTIVE_PROJECT_BY_NAME, handler, name);
+        if (projects.isEmpty()) {
+            projects =
                 runner.query(connection,
                     ProjectResultHandler.SELECT_PROJECT_BY_NAME, handler, name);
             if (projects.isEmpty()) {
                 throw new ProjectManagerException(
                     "No project with name " + name + " exists in db.");
             }
-
-            project = projects.get(0);
-        } catch (SQLException e) {
-            logger.error(ProjectResultHandler.SELECT_PROJECT_BY_NAME
-                + " failed.");
-            throw new ProjectManagerException(
-                "Query for existing project failed. Project " + name, e);
         }
+        project = projects.get(0);
+    } catch (SQLException e) {
+        logger.error(ProjectResultHandler.SELECT_PROJECT_BY_NAME
+            + " failed.");
+        throw new ProjectManagerException(
+            "Query for existing project failed. Project " + name, e);
+    }
 
-        // Fetch the user permissions
-        List<Triple<String, Boolean, Permission>> permissions =
-            fetchPermissionsForProject(connection, project);
+    // Fetch the user permissions
+    List<Triple<String, Boolean, Permission>> permissions =
+        fetchPermissionsForProject(connection, project);
 
-        for (Triple<String, Boolean, Permission> perm : permissions) {
-            if (perm.getThird().toFlags() != 0) {
-                if (perm.getSecond()) {
-                    project
-                        .setGroupPermission(perm.getFirst(), perm.getThird());
-                } else {
-                    project.setUserPermission(perm.getFirst(), perm.getThird());
-                }
+    for (Triple<String, Boolean, Permission> perm : permissions) {
+        if (perm.getThird().toFlags() != 0) {
+            if (perm.getSecond()) {
+                project
+                    .setGroupPermission(perm.getFirst(), perm.getThird());
+            } else {
+                project.setUserPermission(perm.getFirst(), perm.getThird());
             }
         }
-
-        return project;
     }
+
+    return project;
+  }
 
   private List<Triple<String, Boolean, Permission>> fetchPermissionsForProject(
       Connection connection, Project project) throws ProjectManagerException {
@@ -347,20 +351,23 @@ public class JdbcProjectLoader extends AbstractJdbcLoader implements
   }
 
   @Override
-  public void uploadProjectFile(Project project, int version, String filetype,
-      String filename, File localFile, String uploader)
+  public void uploadProjectFile(int projectId, int version, File localFile, String uploader)
       throws ProjectManagerException {
     long startMs = System.currentTimeMillis();
-    logger.info("Uploading to " + project.getName() + " version:" + version
-        + " file:" + filename);
+    logger.info(String.format("Uploading Project ID: %d file: %s [%d bytes]",
+        projectId, localFile.getName(), localFile.length()));
     Connection connection = getConnection();
 
     try {
-      uploadProjectFile(connection, project, version, filetype, filename,
-          localFile, uploader);
+      /* Update DB with new project info */
+      addProjectToProjectVersions(connection, projectId, version, localFile, uploader, null);
+
+      uploadProjectFile(connection, projectId, version, localFile);
+
       connection.commit();
-      logger.info("project " + project.getName() + " commiting upload " + localFile.getName()
-              + " took " + ((System.currentTimeMillis() - startMs) / 1000) + " seconds.");
+      long duration = (System.currentTimeMillis() - startMs) / 1000;
+      logger.info(String.format("Uploaded Project ID: %d file: %s [%d bytes] in %d sec",
+          projectId, localFile.getName(), localFile.length(), duration));
     } catch (SQLException e) {
       logger.error(e);
       throw new ProjectManagerException("Error getting DB connection.", e);
@@ -369,14 +376,60 @@ public class JdbcProjectLoader extends AbstractJdbcLoader implements
     }
   }
 
-  private void uploadProjectFile(Connection connection, Project project,
-      int version, String filetype, String filename, File localFile,
-      String uploader) throws ProjectManagerException {
-    QueryRunner runner = new QueryRunner();
-    long updateTime = System.currentTimeMillis();
+  private void uploadProjectFile(Connection connection, int projectId, int version, File localFile)
+      throws ProjectManagerException {
+    /* Step 1: Upload File in chunks to DB */
+    int chunks = uploadFileInChunks(connection, projectId, version, localFile);
 
+    /* Step 2: Update number of chunks in DB */
+    updateChunksInProjectVersions(connection, projectId, version, chunks);
+  }
+
+  public void addProjectVersion(
+      int projectId,
+      int version,
+      File localFile,
+      String uploader,
+      String uri) throws ProjectManagerException {
+    try (Connection connection = getConnection()) {
+      addProjectToProjectVersions(connection, projectId, version, localFile, uploader, uri);
+      connection.commit();
+    } catch (SQLException e) {
+      logger.error(e);
+      throw new ProjectManagerException(String.format("Add ProjectVersion failed. project id: %d version: %d",
+          projectId, version), e);
+    }
+  }
+
+  /**
+   * Insert a new version record to TABLE project_versions before uploading files.
+   *
+   * The reason for this operation:
+   * When error chunking happens in remote mysql server, incomplete file data remains
+   * in DB, and an SQL exception is thrown. If we don't have this operation before uploading file,
+   * the SQL exception prevents AZ from creating the new version record in Table project_versions.
+   * However, the Table project_files still reserve the incomplete files, which causes troubles
+   * when uploading a new file: Since the version in TABLE project_versions is still old, mysql will stop
+   * inserting new files to db.
+   *
+   * Why this operation is safe:
+   * When AZ uploads a new zip file, it always fetches the latest version proj_v from TABLE project_version,
+   * proj_v+1 will be used as the new version for the uploading files.
+   *
+   * Assume error chunking happens on day 1. proj_v is created for this bad file (old file version + 1).
+   * When we upload a new project zip in day2, new file in day 2 will use the new version (proj_v + 1).
+   * When file uploading completes, AZ will clean all old chunks in DB afterward.
+   */
+  private void addProjectToProjectVersions(Connection connection,
+      int projectId,
+      int version,
+      File localFile,
+      String uploader,
+      String uri) throws ProjectManagerException {
+    final long updateTime = System.currentTimeMillis();
+    QueryRunner runner = new QueryRunner();
     logger.info("Creating message digest for upload " + localFile.getName());
-    byte[] md5 = null;
+    byte[] md5;
     try {
       md5 = Md5Hasher.md5Hash(localFile);
     } catch (IOException e) {
@@ -385,41 +438,36 @@ public class JdbcProjectLoader extends AbstractJdbcLoader implements
 
     logger.info("Md5 hash created");
 
-    /**
-     * Insert a new version record to TABLE project_versions before uploading files.
-     *
-     * The reason for this operation:
-     * When error chunking happens in remote mysql server, incomplete file data remains
-     * in DB, and an SQL exception is thrown. If we don't have this operation before uploading file,
-     * the SQL exception prevents AZ from creating the new version record in Table project_versions.
-     * However, the Table project_files still reserve the incomplete files, which causes troubles
-     * when uploading a new file: Since the version in TABLE project_versions is still old, mysql will stop
-     * inserting new files to db.
-     *
-     * Why this operation is safe:
-     * When AZ uploads a new zip file, it always fetches the latest version proj_v from TABLE project_version,
-     * proj_v+1 will be used as the new version for the uploading files.
-     *
-     * Assume error chunking happens on day 1. proj_v is created for this bad file (old file version + 1).
-     * When we upload a new project zip in day2, new file in day 2 will use the new version (proj_v + 1).
-     * When file uploading completes, AZ will clean all old chunks in DB afterward.
-     */
-    final String INSERT_PROJECT_VERSION =
-        "INSERT INTO project_versions (project_id, version, upload_time, uploader, file_type, file_name, md5, num_chunks) values (?,?,?,?,?,?,?,?)";
+    final String INSERT_PROJECT_VERSION = "INSERT INTO project_versions "
+        + "(project_id, version, upload_time, uploader, file_type, file_name, md5, num_chunks, uri) values "
+        + "(?,?,?,?,?,?,?,?,?)";
 
     try {
-
-      /**
+      /*
        * As we don't know the num_chunks before uploading the file, we initialize it to 0,
        * and will update it after uploading completes.
        */
-      runner.update(connection, INSERT_PROJECT_VERSION, project.getId(),
-          version, updateTime, uploader, filetype, filename, md5, 0);
+      runner.update(connection,
+          INSERT_PROJECT_VERSION,
+          projectId,
+          version,
+          updateTime,
+          uploader,
+          Files.getFileExtension(localFile.getName()),
+          localFile.getName(),
+          md5,
+          0,
+          uri);
     } catch (SQLException e) {
-      logger.error(e);
-      throw new ProjectManagerException("Error initializing project version "
-          + project.getName(), e);
+      String msg = String.format("Error initializing project id: %d version: %d ", projectId, version);
+      logger.error(msg, e);
+      throw new ProjectManagerException(msg, e);
     }
+  }
+
+  private int uploadFileInChunks(Connection connection, int projectId, int version, File localFile)
+      throws ProjectManagerException {
+    QueryRunner runner = new QueryRunner();
 
     // Really... I doubt we'll get a > 2gig file. So int casting it is!
     byte[] buffer = new byte[CHUCK_SIZE];
@@ -432,15 +480,14 @@ public class JdbcProjectLoader extends AbstractJdbcLoader implements
       bufferedStream = new BufferedInputStream(new FileInputStream(localFile));
       int size = bufferedStream.read(buffer);
       while (size >= 0) {
-        logger.info("Read bytes for " + filename + " size:" + size);
+        logger.info("Read bytes for " + localFile.getName() + " size:" + size);
         byte[] buf = buffer;
         if (size < buffer.length) {
           buf = Arrays.copyOfRange(buffer, 0, size);
         }
         try {
-          logger.info("Running update for " + filename + " chunk " + chunk);
-          runner.update(connection, INSERT_PROJECT_FILES, project.getId(),
-              version, chunk, size, buf);
+          logger.info("Running update for " + localFile.getName() + " chunk " + chunk);
+          runner.update(connection, INSERT_PROJECT_FILES, projectId, version, chunk, size, buf);
 
           /**
            * We enforce az committing to db when uploading every single chunk,
@@ -450,7 +497,7 @@ public class JdbcProjectLoader extends AbstractJdbcLoader implements
            * the remote mysql server will run into memory troubles.
            */
           connection.commit();
-          logger.info("Finished update for " + filename + " chunk " + chunk);
+          logger.info("Finished update for " + localFile.getName() + " chunk " + chunk);
         } catch (SQLException e) {
           throw new ProjectManagerException("Error Chunking during uploading files to db...");
         }
@@ -459,40 +506,31 @@ public class JdbcProjectLoader extends AbstractJdbcLoader implements
         size = bufferedStream.read(buffer);
       }
     } catch (IOException e) {
-      throw new ProjectManagerException("Error chunking file " + filename);
+      throw new ProjectManagerException(String.format(
+          "Error chunking file. projectId: %d, version: %d, file:%s[%d bytes], chunk: %d",
+          projectId, version, localFile.getName(), localFile.length(), chunk));
     } finally {
       IOUtils.closeQuietly(bufferedStream);
     }
+    return chunk;
+  }
 
-    /**
-     * we update num_chunks's actual number to db here.
-     */
+  /**
+   * we update num_chunks's actual number to db here.
+   */
+  private void updateChunksInProjectVersions(Connection connection, int projectId, int version, int chunk)
+      throws ProjectManagerException {
+
     final String UPDATE_PROJECT_NUM_CHUNKS =
         "UPDATE project_versions SET num_chunks=? WHERE project_id=? AND version=?";
 
+    QueryRunner runner = new QueryRunner();
     try {
-      runner.update(connection, UPDATE_PROJECT_NUM_CHUNKS, chunk, project.getId(), version);
+      runner.update(connection, UPDATE_PROJECT_NUM_CHUNKS, chunk, projectId, version);
       connection.commit();
     } catch (SQLException e) {
-      throw new ProjectManagerException(
-          "Error updating project " + project.getId() + " : chunk_num "
-              + chunk, e);
+      throw new ProjectManagerException("Error updating project " + projectId + " : chunk_num " + chunk, e);
     }
-  }
-
-  @Override
-  public ProjectFileHandler getUploadedFile(Project project, int version)
-      throws ProjectManagerException {
-    logger.info("Retrieving to " + project.getName() + " version:" + version);
-    Connection connection = getConnection();
-    ProjectFileHandler handler = null;
-    try {
-      handler = getUploadedFile(connection, project.getId(), version);
-    } finally {
-      DbUtils.closeQuietly(connection);
-    }
-
-    return handler;
   }
 
   @Override
@@ -510,42 +548,41 @@ public class JdbcProjectLoader extends AbstractJdbcLoader implements
     return handler;
   }
 
-  private ProjectFileHandler getUploadedFile(Connection connection,
-      int projectId, int version) throws ProjectManagerException {
-    QueryRunner runner = new QueryRunner();
+  public ProjectFileHandler fetchProjectMetaData(int projectId, int version) {
     ProjectVersionResultHandler pfHandler = new ProjectVersionResultHandler();
 
-    List<ProjectFileHandler> projectFiles = null;
-    try {
-      projectFiles =
-          runner.query(connection,
-              ProjectVersionResultHandler.SELECT_PROJECT_VERSION, pfHandler,
-              projectId, version);
+    try (Connection connection = getConnection()) {
+      List<ProjectFileHandler> projectFiles = new QueryRunner().query(connection,
+          ProjectVersionResultHandler.SELECT_PROJECT_VERSION, pfHandler, projectId, version);
+      if (projectFiles == null || projectFiles.isEmpty()) {
+        return null;
+      }
+      return projectFiles.get(0);
     } catch (SQLException e) {
       logger.error(e);
-      throw new ProjectManagerException(
-          "Query for uploaded file for project id " + projectId + " failed.", e);
+      throw new ProjectManagerException("Query for uploaded file for project id " + projectId + " failed.", e);
     }
-    if (projectFiles == null || projectFiles.isEmpty()) {
+  }
+
+  private ProjectFileHandler getUploadedFile(Connection connection,
+      int projectId, int version) throws ProjectManagerException {
+    ProjectFileHandler projHandler = fetchProjectMetaData(projectId, version);
+    if (projHandler == null) {
       return null;
     }
-
-    ProjectFileHandler projHandler = projectFiles.get(0);
     int numChunks = projHandler.getNumChunks();
     BufferedOutputStream bStream = null;
-    File file = null;
+    File file;
     try {
       try {
-        file =
-            File.createTempFile(projHandler.getFileName(),
-                String.valueOf(version), tempDir);
-
+        file = File.createTempFile(projHandler.getFileName(), String.valueOf(version), tempDir);
         bStream = new BufferedOutputStream(new FileOutputStream(file));
       } catch (IOException e) {
         throw new ProjectManagerException(
             "Error creating temp file for stream.");
       }
 
+      QueryRunner runner = new QueryRunner();
       int collect = 5;
       int fromChunk = 0;
       int toChunk = collect;
@@ -1497,10 +1534,10 @@ public class JdbcProjectLoader extends AbstractJdbcLoader implements
 
   }
 
-  private static class ProjectVersionResultHandler implements
-      ResultSetHandler<List<ProjectFileHandler>> {
+  private static class ProjectVersionResultHandler implements ResultSetHandler<List<ProjectFileHandler>> {
     private static String SELECT_PROJECT_VERSION =
-        "SELECT project_id, version, upload_time, uploader, file_type, file_name, md5, num_chunks FROM project_versions WHERE project_id=? AND version=?";
+        "SELECT project_id, version, upload_time, uploader, file_type, file_name, md5, num_chunks, uri "
+            + "FROM project_versions WHERE project_id=? AND version=?";
 
     @Override
     public List<ProjectFileHandler> handle(ResultSet rs) throws SQLException {
@@ -1518,10 +1555,10 @@ public class JdbcProjectLoader extends AbstractJdbcLoader implements
         String fileName = rs.getString(6);
         byte[] md5 = rs.getBytes(7);
         int numChunks = rs.getInt(8);
+        String uri = rs.getString(9);
 
         ProjectFileHandler handler =
-            new ProjectFileHandler(projectId, version, uploadTime, uploader,
-                fileType, fileName, numChunks, md5);
+            new ProjectFileHandler(projectId, version, uploadTime, uploader, fileType, fileName, numChunks, md5, uri);
 
         handlers.add(handler);
       } while (rs.next());

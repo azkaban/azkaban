@@ -12,36 +12,29 @@
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
  * License for the specific language governing permissions and limitations under
  * the License.
+ *
  */
+package azkaban.db;
 
-package azkaban.execapp;
-
-import azkaban.metrics.MetricsManager;
-import azkaban.metrics.MetricsTestUtility;
-import azkaban.metrics.MetricsTestUtility.DummyReporter;
-import org.junit.After;
+import org.apache.commons.dbutils.QueryRunner;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
-import java.time.Duration;
-import java.util.concurrent.TimeUnit;
-
-
-public class ExecMetricsTest {
-
-  private DummyReporter dr;
+// todo kunkun-tang: complete this test.
+public class DatabaseTransOperatorImplTest {
 
   @Before
-  public void setup() {
-    dr = new DummyReporter(MetricsManager.INSTANCE.getRegistry());
-    dr.start(Duration.ofMillis(2).toMillis(), TimeUnit.MILLISECONDS);
+  public void setUp() throws Exception {
+    AzkabanDataSource datasource = new AzDBTestUtility.EmbeddedH2BasicDataSource();
+    DatabaseTransOperator operator = new DatabaseTransOperatorImpl(new QueryRunner(), datasource.getConnection());
   }
 
-  @After
-  public void shutdown() {
-    if (null != dr)
-      dr.stop();
+  @Ignore @Test
+  public void testQuery() throws Exception {
+  }
 
-    dr = null;
+  @Ignore @Test
+  public void testUpdate() throws Exception {
   }
 }

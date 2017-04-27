@@ -130,6 +130,12 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
     try {
       int scheduleId = getIntParam(req, "scheduleId");
       Schedule sched = scheduleManager.getSchedule(scheduleId);
+      if (sched == null) {
+        ret.put("error",
+                "Error loading schedule. Schedule " + scheduleId
+                        + " doesn't exist");
+        return;
+      }
 
       Project project = projectManager.getProject(sched.getProjectId());
       if (!hasPermission(project, user, Permission.Type.SCHEDULE)) {
@@ -268,6 +274,13 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
     try {
       scheduleId = getIntParam(req, "scheduleId");
       Schedule sched = scheduleManager.getSchedule(scheduleId);
+      if (sched == null) {
+        ret.put("error",
+                "Error loading schedule. Schedule " + scheduleId
+                        + " doesn't exist");
+        return;
+      }
+
       Project project =
           getProjectAjaxByPermission(ret, sched.getProjectId(), user, Type.READ);
       if (project == null) {
@@ -441,6 +454,7 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
     data.put("flowname", schedule.getFlowName());
     data.put("projectname", schedule.getProjectName());
     data.put("time", schedule.getFirstSchedTime());
+    data.put("cron", schedule.getCronExpression());
 
     DateTime time = DateTime.now();
     long period = 0;

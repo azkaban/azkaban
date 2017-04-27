@@ -218,7 +218,9 @@ public class JobRunnerTest {
   }
 
   @Ignore @Test
-  public void testCancelRun() {
+  // todo: HappyRay investigate if it is worth fixing this test. If not, remove it.
+  // The change history doesn't mention why this test was ignored.
+  public void testCancelRun() throws InterruptedException {
     MockExecutorLoader loader = new MockExecutorLoader();
     EventCollectorListener eventCollector = new EventCollectorListener();
     JobRunner runner =
@@ -231,21 +233,9 @@ public class JobRunnerTest {
     Thread thread = new Thread(runner);
     thread.start();
 
-    synchronized (this) {
-      try {
-        wait(2000);
-      } catch (InterruptedException e) {
-        // TODO Auto-generated catch block
-        e.printStackTrace();
-      }
-      runner.kill();
-      try {
-        wait(500);
-      } catch (InterruptedException e) {
-        // TODO Auto-generated catch block
-        e.printStackTrace();
-      }
-    }
+    Thread.sleep(2000);
+    runner.kill();
+    Thread.sleep(500);
 
     Assert.assertTrue(runner.getStatus() == node.getStatus());
     Assert.assertTrue("Status is " + node.getStatus(),
@@ -312,7 +302,7 @@ public class JobRunnerTest {
   }
 
   @Test
-  public void testDelayedExecutionCancelledJob() {
+  public void testDelayedExecutionCancelledJob() throws InterruptedException {
     MockExecutorLoader loader = new MockExecutorLoader();
     EventCollectorListener eventCollector = new EventCollectorListener();
     JobRunner runner =
@@ -327,21 +317,9 @@ public class JobRunnerTest {
     Thread thread = new Thread(runner);
     thread.start();
 
-    synchronized (this) {
-      try {
-        wait(2000);
-      } catch (InterruptedException e) {
-        // TODO Auto-generated catch block
-        e.printStackTrace();
-      }
-      runner.kill();
-      try {
-        wait(500);
-      } catch (InterruptedException e) {
-        // TODO Auto-generated catch block
-        e.printStackTrace();
-      }
-    }
+    Thread.sleep(2000);
+    runner.kill();
+    Thread.sleep(500);
 
     eventCollector.handleEvent(Event.create(null, Event.Type.JOB_FINISHED, new EventData(node.getStatus())));
 

@@ -6,7 +6,7 @@ buildscript {
     }
   }
   dependencies {
-    classpath 'com.cinnober.gradle:semver-git:2.2.1'
+    classpath 'com.cinnober.gradle:semver-git:2.2.3'
     classpath 'net.ltgt.gradle:gradle-errorprone-plugin:0.0.10'
   }
 }
@@ -72,6 +72,7 @@ subprojects {
    */
   test {
     testLogging {
+      exceptionFormat = 'full'
       afterSuite { desc, result ->
         if (desc.getParent()) {
           logger.info desc.getName()

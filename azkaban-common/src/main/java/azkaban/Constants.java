@@ -43,6 +43,9 @@ public class Constants {
 
   // Max number of memory check retry
   public static final int MEMORY_CHECK_RETRY_LIMIT = 720;
+  public static final int DEFAULT_PORT_NUMBER = 8081;
+  public static final int DEFAULT_SSL_PORT_NUMBER = 8443;
+  public static final int DEFAULT_JETTY_MAX_THREAD_COUNT = 20;
 
   public static class ConfigurationKeys {
     // These properties are configurable through azkaban.properties
@@ -84,6 +87,10 @@ public class Constants {
     // Max flow running time in mins, server will kill flows running longer than this setting.
     // if not set or <= 0, then there's no restriction on running time.
     public static final String AZKABAN_MAX_FLOW_RUNNING_MINS = "azkaban.server.flow.max.running.minutes";
+
+    public static final String AZKABAN_STORAGE_TYPE = "azkaban.storage.type";
+    public static final String AZKABAN_STORAGE_LOCAL_BASEDIR = "azkaban.storage.local.basedir";
+    public static final String AZKABAN_STORAGE_HDFS_BASEURI = "azkaban.storage.hdfs.baseuri";
   }
 
   public static class FlowProperties {

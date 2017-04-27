@@ -16,116 +16,24 @@
 
 package azkaban.metrics;
 
-import com.codahale.metrics.Counter;
-import com.codahale.metrics.Gauge;
-import com.codahale.metrics.Histogram;
-import com.codahale.metrics.Meter;
-import com.codahale.metrics.MetricFilter;
 import com.codahale.metrics.MetricRegistry;
-import com.codahale.metrics.ScheduledReporter;
-import com.codahale.metrics.Timer;
 
-import org.junit.Assert;
-
-import java.util.HashMap;
-import java.util.Map;
-import java.util.SortedMap;
-import java.util.concurrent.TimeUnit;
-import java.util.function.Consumer;
 
 /**
  * This class is designed for a utility class to test drop wizard metrics
  */
 public class MetricsTestUtility {
 
-  /**
-   * One Dummy Reporter extending {@link ScheduledReporter} collects metrics in various maps,
-   * which test methods are able to access easily.
-   */
-  public static class DummyReporter extends ScheduledReporter{
+  // todo HappyRay: move singletons to Juice.
+  // This can cause problems when we run tests in parallel in the future.
+  private MetricRegistry registry;
 
-    private Map<String, String> gaugeMap;
-
-    private Map<String, Long> meterMap;
-
-    public DummyReporter(MetricRegistry registry) {
-      super(registry, "dummy-reporter", MetricFilter.ALL, TimeUnit.SECONDS, TimeUnit.MILLISECONDS);
-      this.gaugeMap = new HashMap<>();
-      this.meterMap = new HashMap<>();
-    }
-
-    @Override
-    public void report(SortedMap<String, Gauge> gauges,
-        SortedMap<String, Counter> counters,
-        SortedMap<String, Histogram> histograms,
-        SortedMap<String, Meter> meters,
-        SortedMap<String, Timer> timers) {
-
-      for (Map.Entry<String, Gauge> entry : gauges.entrySet()) {
-        gaugeMap.put(entry.getKey(), entry.getValue().getValue().toString());
-      }
-
-      for (Map.Entry<String, Meter> entry : meters.entrySet()) {
-        meterMap.put(entry.getKey(), entry.getValue().getCount());
-      }
-    }
-
-    private String getGauge(String key) {
-      return gaugeMap.get(key);
-    }
-
-    private long getMeter(String key) {
-      return meterMap.getOrDefault(key, 0L);
-    }
+  public MetricsTestUtility(MetricRegistry registry) {
+    this.registry = registry;
   }
 
-  public static void testMeter(String meterName, DummyReporter dr, Runnable runnable) {
-
-    sleepMillis(20);
-    long currMeter = dr.getMeter(meterName);
-    runnable.run();
-    sleepMillis(20);
-    Assert.assertEquals(dr.getMeter(meterName), currMeter + 1);
-
-    runnable.run();
-    runnable.run();
-    sleepMillis(20);
-    Assert.assertEquals(dr.getMeter(meterName), currMeter + 3);
-  }
-
-  public static void testGauge(String meterName, DummyReporter dr, Runnable runnable) {
-    sleepMillis(20);
-    long currMeter = Long.valueOf(dr.getGauge(meterName));
-    runnable.run();
-    sleepMillis(20);
-    Assert.assertEquals(Long.valueOf(dr.getGauge(meterName)).longValue(), currMeter + 1);
-
-    runnable.run();
-    runnable.run();
-    sleepMillis(20);
-    Assert.assertEquals(Long.valueOf(dr.getGauge(meterName)).longValue(), currMeter + 3);
-  }
-
-  public static void testGauge(String GaugeName, DummyReporter dr, Consumer<Long> func) {
-    func.accept(1L);
-
-    // needs time to let metrics reporter receive the updated value.
-    sleepMillis(50);
-    Assert.assertEquals(dr.getGauge(GaugeName), "1");
-    func.accept(99L);
-    sleepMillis(50);
-    Assert.assertEquals(dr.getGauge(GaugeName), "99");
-  }
-
-
-  /**
-   * Helper method to sleep milli seconds.
-   */
-  private static void sleepMillis(int numMilli) {
-    try {
-      Thread.sleep(numMilli);
-    } catch (InterruptedException e) {
-      e.printStackTrace();
-    }
+  public long getGaugeValue(String name) {
+    // Assume that the gauge value can be converted to type long.
+    return (long) registry.getGauges().get(name).getValue();
   }
 }

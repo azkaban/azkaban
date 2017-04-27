@@ -19,8 +19,8 @@ package azkaban.execapp;
 
 import azkaban.executor.ExecutableFlow;
 import azkaban.project.ProjectFileHandler;
-import azkaban.project.ProjectLoader;
 import azkaban.project.ProjectManagerException;
+import azkaban.storage.StorageManager;
 import azkaban.utils.FileIOUtils;
 import azkaban.utils.Pair;
 import azkaban.utils.Utils;
@@ -41,19 +41,17 @@ import static java.util.Objects.*;
 public class FlowPreparer {
   private static final Logger log = Logger.getLogger(FlowPreparer.class);
 
-  // TODO move to config class
+  // TODO spyne: move to config class
   private final File executionsDir;
-  // TODO move to config class
+  // TODO spyne: move to config class
   private final File projectsDir;
 
   private final Map<Pair<Integer, Integer>, ProjectVersion> installedProjects;
-  private final ProjectLoader projectLoader;
+  private final StorageManager storageManager;
 
-  public FlowPreparer(ProjectLoader projectLoader,
-      File executionsDir,
-      File projectsDir,
+  public FlowPreparer(StorageManager storageManager, File executionsDir, File projectsDir,
       Map<Pair<Integer, Integer>, ProjectVersion> installedProjects) {
-    this.projectLoader = projectLoader;
+    this.storageManager = storageManager;
     this.executionsDir = executionsDir;
     this.projectsDir = projectsDir;
     this.installedProjects = installedProjects;
@@ -116,12 +114,12 @@ public class FlowPreparer {
 
     File tempDir = new File(projectsDir, "_temp." + projectDir + "." + System.currentTimeMillis());
 
-    // TODO Why mkdirs? This path should be already set up.
+    // TODO spyne: Why mkdirs? This path should be already set up.
     tempDir.mkdirs();
 
     ProjectFileHandler projectFileHandler = null;
     try {
-      projectFileHandler = requireNonNull(projectLoader.getUploadedFile(projectId, version));
+      projectFileHandler = requireNonNull(storageManager.getProjectFile(projectId, version));
       checkState("zip".equals(projectFileHandler.getFileType()));
 
       log.info("Downloading zip file.");
@@ -152,7 +150,7 @@ public class FlowPreparer {
     File execDir = new File(executionsDir, String.valueOf(execId));
     flow.setExecutionPath(execDir.getPath());
 
-    // TODO Why mkdirs? This path should be already set up.
+    // TODO spyne: Why mkdirs? This path should be already set up.
     execDir.mkdirs();
     return execDir;
   }

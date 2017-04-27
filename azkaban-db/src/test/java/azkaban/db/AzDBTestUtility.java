@@ -14,28 +14,22 @@
  * the License.
  *
  */
+package azkaban.db;
 
-package com.linkedin.azkaban.spi;
+class AzDBTestUtility {
 
-/**
- * Super class to capture any exceptions related to {@link Storage}
- */
-public class StorageException extends AzkabanException {
-  public StorageException(String message) {
-    this(message, null);
+  public static class EmbeddedH2BasicDataSource extends AzkabanDataSource {
+
+    EmbeddedH2BasicDataSource() {
+      super();
+      String url = "jdbc:h2:mem:test";
+      setDriverClassName("org.h2.Driver");
+      setUrl(url);
+    }
+
+    @Override
+    public String getDBType() {
+      return "h2-in-memory";
+    }
   }
-
-  public StorageException(Throwable throwable) {
-    this(null, throwable);
-  }
-
-  public StorageException(String message, Throwable cause) {
-    super(message, cause);
-  }
-
-  public StorageException(String message, Throwable cause,
-      boolean enableSuppression, boolean writableStackTrace) {
-    super(message, cause, enableSuppression, writableStackTrace);
-  }
-
 }

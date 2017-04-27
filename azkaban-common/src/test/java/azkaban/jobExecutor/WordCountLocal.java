@@ -49,6 +49,7 @@ public class WordCountLocal extends AbstractJob {
     _output = prop.getString("output");
   }
 
+  @Override
   public void run() throws Exception {
 
     if (_input == null)

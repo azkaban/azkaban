@@ -15,7 +15,7 @@
  *
  */
 
-package com.linkedin.azkaban.spi;
+package azkaban.spi;
 
 public class AzkabanException extends RuntimeException {
   public AzkabanException(String message) {

@@ -33,6 +33,7 @@ public class Role {
     return name;
   }
 
+  @Override
   public String toString() {
     return "Role " + name;
   }

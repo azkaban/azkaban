@@ -75,7 +75,7 @@ public class TriggerManagerDeadlockTest {
     System.out.println("No dead lock.");
   }
 
-  public class AlwaysOnChecker implements ConditionChecker {
+  public static class AlwaysOnChecker implements ConditionChecker {
 
     public static final String type = "AlwaysOnChecker";
 

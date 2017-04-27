@@ -53,6 +53,7 @@ public abstract class LongArgJob extends AbstractProcessJob {
     appendProps(suppressedKeys);
   }
 
+  @Override
   public void run() throws Exception {
     try {
       resolveProps();

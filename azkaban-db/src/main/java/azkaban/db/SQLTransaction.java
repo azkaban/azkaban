@@ -14,19 +14,19 @@
  * the License.
  *
  */
+package azkaban.db;
 
-package com.linkedin.azkaban.spi;
-
-import java.net.URI;
+import java.sql.SQLException;
 
 
 /**
- * This exception is thrown when there is an attempt to create a duplicate storage key via the {@link Storage}
- * interface.
+ * This interface defines how a sequence of sql statements are organized and packed together. All transaction
+ * implementations must follow this interface, and will be called in
+ * {@link DatabaseOperatorImpl#transaction(SQLTransaction)}
+ *
+ * @param <T> The transaction return type
  */
-public class KeyDoesNotExistException extends StorageException {
-  public KeyDoesNotExistException(URI key) {
-    super("Storage key not present: " + key);
-  }
-
+@FunctionalInterface
+public interface SQLTransaction<T> {
+  public T execute(DatabaseTransOperator transOperator) throws SQLException;
 }

@@ -19,6 +19,7 @@ package azkaban.executor.selector;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.log4j.Logger;
@@ -153,7 +154,6 @@ public abstract class CandidateComparator<T> implements Comparator<T> {
   @Override
   public int compare(T o1, T o2) {
     Pair<Integer,Integer> result = this.getComparisonScore(o1,o2);
-    return result.getFirst() == result.getSecond() ? 0 :
-                                result.getFirst() > result.getSecond() ? 1 : -1;
+    return Objects.equals(result.getFirst(), result.getSecond()) ? 0 : result.getFirst() > result.getSecond() ? 1 : -1;
   }
 }

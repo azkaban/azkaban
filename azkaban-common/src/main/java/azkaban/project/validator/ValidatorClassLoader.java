@@ -28,6 +28,7 @@ public class ValidatorClassLoader extends URLClassLoader {
     super(urls);
   }
 
+  @Override
   public void close() throws ValidatorManagerException {
     setJarFileNames2Close.clear();
     closeClassLoader(this);

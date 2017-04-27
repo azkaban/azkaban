@@ -42,6 +42,31 @@ import org.apache.log4j.Logger;
 public class FileIOUtils {
   private final static Logger logger = Logger.getLogger(FileIOUtils.class);
 
+  /**
+   * Check if a directory is writable
+   *
+   * @param dir directory file object
+   * @return true if it is writable. false, otherwise
+   */
+  public static boolean isDirWritable(File dir) {
+    File testFile = null;
+    try {
+      testFile = new File(dir, "_tmp");
+      /*
+       * Create and delete a dummy file in order to check file permissions. Maybe
+       * there is a safer way for this check.
+       */
+      testFile.createNewFile();
+    } catch (IOException e) {
+      return false;
+    } finally {
+      if (testFile != null) {
+        testFile.delete();
+      }
+    }
+    return true;
+  }
+
   public static class PrefixSuffixFileFilter implements FileFilter {
     private String prefix;
     private String suffix;
