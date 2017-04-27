@@ -530,42 +530,41 @@ public class JdbcProjectLoader extends AbstractJdbcLoader implements
     return handler;
   }
 
-  private ProjectFileHandler getUploadedFile(Connection connection,
-      int projectId, int version) throws ProjectManagerException {
-    QueryRunner runner = new QueryRunner();
+  public ProjectFileHandler fetchProjectMetaData(int projectId, int version) {
     ProjectVersionResultHandler pfHandler = new ProjectVersionResultHandler();
 
-    List<ProjectFileHandler> projectFiles = null;
-    try {
-      projectFiles =
-          runner.query(connection,
-              ProjectVersionResultHandler.SELECT_PROJECT_VERSION, pfHandler,
-              projectId, version);
+    try (Connection connection = getConnection()) {
+      List<ProjectFileHandler> projectFiles = new QueryRunner().query(connection,
+          ProjectVersionResultHandler.SELECT_PROJECT_VERSION, pfHandler, projectId, version);
+      if (projectFiles == null || projectFiles.isEmpty()) {
+        return null;
+      }
+      return projectFiles.get(0);
     } catch (SQLException e) {
       logger.error(e);
-      throw new ProjectManagerException(
-          "Query for uploaded file for project id " + projectId + " failed.", e);
+      throw new ProjectManagerException("Query for uploaded file for project id " + projectId + " failed.", e);
     }
-    if (projectFiles == null || projectFiles.isEmpty()) {
+  }
+
+  private ProjectFileHandler getUploadedFile(Connection connection,
+      int projectId, int version) throws ProjectManagerException {
+    ProjectFileHandler projHandler = fetchProjectMetaData(projectId, version);
+    if (projHandler == null) {
       return null;
     }
-
-    ProjectFileHandler projHandler = projectFiles.get(0);
     int numChunks = projHandler.getNumChunks();
     BufferedOutputStream bStream = null;
-    File file = null;
+    File file;
     try {
       try {
-        file =
-            File.createTempFile(projHandler.getFileName(),
-                String.valueOf(version), tempDir);
-
+        file = File.createTempFile(projHandler.getFileName(), String.valueOf(version), tempDir);
         bStream = new BufferedOutputStream(new FileOutputStream(file));
       } catch (IOException e) {
         throw new ProjectManagerException(
             "Error creating temp file for stream.");
       }
 
+      QueryRunner runner = new QueryRunner();
       int collect = 5;
       int fromChunk = 0;
       int toChunk = collect;
@@ -1517,10 +1516,10 @@ public class JdbcProjectLoader extends AbstractJdbcLoader implements
 
   }
 
-  private static class ProjectVersionResultHandler implements
-      ResultSetHandler<List<ProjectFileHandler>> {
+  private static class ProjectVersionResultHandler implements ResultSetHandler<List<ProjectFileHandler>> {
     private static String SELECT_PROJECT_VERSION =
-        "SELECT project_id, version, upload_time, uploader, file_type, file_name, md5, num_chunks FROM project_versions WHERE project_id=? AND version=?";
+        "SELECT project_id, version, upload_time, uploader, file_type, file_name, md5, num_chunks, uri "
+            + "FROM project_versions WHERE project_id=? AND version=?";
 
     @Override
     public List<ProjectFileHandler> handle(ResultSet rs) throws SQLException {
@@ -1538,10 +1537,10 @@ public class JdbcProjectLoader extends AbstractJdbcLoader implements
         String fileName = rs.getString(6);
         byte[] md5 = rs.getBytes(7);
         int numChunks = rs.getInt(8);
+        String uri = rs.getString(9);
 
         ProjectFileHandler handler =
-            new ProjectFileHandler(projectId, version, uploadTime, uploader,
-                fileType, fileName, numChunks, md5);
+            new ProjectFileHandler(projectId, version, uploadTime, uploader, fileType, fileName, numChunks, md5, uri);
 
         handlers.add(handler);
       } while (rs.next());

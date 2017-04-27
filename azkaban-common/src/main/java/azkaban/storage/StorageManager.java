@@ -19,12 +19,26 @@ package azkaban.storage;
 
 import azkaban.project.Project;
 import azkaban.project.ProjectFileHandler;
+import azkaban.project.ProjectLoader;
 import azkaban.spi.Storage;
+import azkaban.spi.StorageException;
 import azkaban.spi.StorageMetadata;
 import azkaban.user.User;
+import azkaban.utils.Md5Hasher;
+import azkaban.utils.Props;
 import com.google.inject.Inject;
 import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.Arrays;
+import org.apache.commons.io.IOUtils;
 import org.apache.log4j.Logger;
+
+import static com.google.common.base.Preconditions.*;
+import static java.util.Objects.*;
 
 
 /**
@@ -35,10 +49,23 @@ public class StorageManager {
   private static final Logger log = Logger.getLogger(StorageManager.class);
 
   private final Storage storage;
+  private final ProjectLoader projectLoader;
+  private final File tempDir;
 
   @Inject
-  public StorageManager(Storage storage) {
+  public StorageManager(Props props, Storage storage, ProjectLoader projectLoader) {
+    this.tempDir = new File(props.getString("project.temp.dir", "temp"));
     this.storage = storage;
+    this.projectLoader = projectLoader;
+
+    prepareTempDir();
+  }
+
+  private void prepareTempDir() {
+    if (!tempDir.exists()) {
+      tempDir.mkdirs();
+    }
+    checkArgument(tempDir.isDirectory());
   }
 
   /**
@@ -79,6 +106,44 @@ public class StorageManager {
     if (storage instanceof DatabaseStorage) {
       return ((DatabaseStorage) storage).get(projectId, version);
     }
-    throw new UnsupportedOperationException("Operation currently unsupported for other types.");
+
+    /* Fetch meta data from db */
+    final ProjectFileHandler pfh = projectLoader.fetchProjectMetaData(projectId, version);
+
+    /* Fetch project file from storage and copy to local file */
+    final String uri = requireNonNull(pfh.getUri(), String.format("URI is null. project ID: %d version: %d",
+        pfh.getProjectId(), pfh.getVersion()));
+    try (InputStream is = storage.get(new URI(uri))){
+      final File file = createTempOutputFile(pfh);
+
+      /* Copy from storage to output stream */
+      try (FileOutputStream fos = new FileOutputStream(file)) {
+        IOUtils.copy(is, fos);
+      }
+
+      /* Validate checksum */
+      validateChecksum(file, pfh);
+
+      /* Attach file to handler */
+      pfh.setLocalFile(file);
+
+      return pfh;
+    } catch (URISyntaxException | IOException e) {
+      throw new StorageException(e);
+    }
+  }
+
+  private void validateChecksum(File file, ProjectFileHandler pfh) throws IOException {
+    final byte[] hash = Md5Hasher.md5Hash(file);
+    checkState(Arrays.equals(pfh.getMd5Hash(), hash),
+        String.format("MD5 HASH Failed. project ID: %d version: %d Expected: %s Actual: %s",
+            pfh.getProjectId(), pfh.getVersion(), new String(pfh.getMd5Hash()), new String(hash))
+    );
+  }
+
+  private File createTempOutputFile(ProjectFileHandler projectFileHandler) throws IOException {
+    return File.createTempFile(
+        projectFileHandler.getFileName(),
+        String.valueOf(projectFileHandler.getVersion()), tempDir);
   }
 }

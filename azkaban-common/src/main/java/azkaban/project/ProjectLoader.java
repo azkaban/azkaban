@@ -135,6 +135,15 @@ public interface ProjectLoader {
       throws ProjectManagerException;
 
   /**
+   * Fetch project metadata from project_versions table
+   *
+   * @param projectId project ID
+   * @param version version
+   * @return ProjectFileHandler object containing the metadata
+   */
+  ProjectFileHandler fetchProjectMetaData(int projectId, int version);
+
+  /**
    * Get file that's uploaded.
    *
    * @return
