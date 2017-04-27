@@ -14,13 +14,19 @@
  * the License.
  *
  */
+package azkaban.db;
 
-include 'azkaban-spi'
-include 'azkaban-db'
-include 'azkaban-common'
-include 'azkaban-exec-server'
-include 'azkaban-hadoop-security-plugin'
-include 'azkaban-solo-server'
-include 'azkaban-sql'
-include 'azkaban-web-server'
-include 'azkaban-test'
+import java.sql.SQLException;
+
+
+/**
+ * This interface defines how a sequence of sql statements are organized and packed together. All transaction
+ * implementations must follow this interface, and will be called in
+ * {@link DatabaseOperatorImpl#transaction(SQLTransaction)}
+ *
+ * @param <T> The transaction return type
+ */
+@FunctionalInterface
+public interface SQLTransaction<T> {
+  public T execute(DatabaseTransOperator transOperator) throws SQLException;
+}
