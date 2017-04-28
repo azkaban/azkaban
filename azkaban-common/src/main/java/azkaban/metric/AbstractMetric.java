@@ -64,6 +64,7 @@ public abstract class AbstractMetric<T> implements IMetric<T>, Cloneable{
    * {@inheritDoc}
    * @see azkaban.metric.IMetric#updateMetricManager(azkaban.metric.MetricReportManager)
    */
+  @Override
   public void updateMetricManager(final MetricReportManager manager) {
     metricManager = manager;
   }

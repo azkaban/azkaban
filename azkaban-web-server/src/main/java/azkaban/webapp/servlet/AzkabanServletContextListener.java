@@ -32,6 +32,7 @@ public class AzkabanServletContextListener implements ServletContextListener {
   /**
    * Delete the app
    */
+  @Override
   public void contextDestroyed(ServletContextEvent event) {
     this.app = null;
   }
@@ -39,6 +40,7 @@ public class AzkabanServletContextListener implements ServletContextListener {
   /**
    * Load the app for use in non jetty containers.
    */
+  @Override
   public void contextInitialized(ServletContextEvent event) {
     try {
       this.app = new AzkabanWebServer();
