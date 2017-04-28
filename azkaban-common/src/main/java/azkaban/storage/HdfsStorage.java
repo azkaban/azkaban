@@ -64,7 +64,7 @@ public class HdfsStorage implements Storage {
             targetPath, metadata));
       }
       hdfs.copyFromLocalFile(new Path(localFile.getAbsolutePath()), targetPath);
-      return rootUri.relativize(targetPath.toUri()).getPath();
+      return URI.create(rootUri.getPath()).relativize(targetPath.toUri()).getPath();
     } catch (IOException e) {
       log.error("error in put(): Metadata: " + metadata);
       throw new StorageException(e);
