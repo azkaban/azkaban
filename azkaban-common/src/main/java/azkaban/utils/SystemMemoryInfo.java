@@ -29,6 +29,10 @@ public class SystemMemoryInfo {
   //todo HappyRay: switch to Guice
   private static OsMemoryUtil util = new OsMemoryUtil();
 
+  @SuppressWarnings("FutureReturnValueIgnored")
+  // see http://errorprone.info/bugpattern/FutureReturnValueIgnored
+  // There is no need to check the returned future from scheduledExecutorService
+  // since we don't need to get a return value.
   public static void init(int memCheckInterval) {
     memCheckEnabled = util.doesMemInfoFileExist();
     if (memCheckEnabled) {
