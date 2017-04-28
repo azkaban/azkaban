@@ -578,6 +578,7 @@ public class AzkabanWebServer extends AzkabanServer {
    *
    * @return
    */
+  @Override
   public SessionCache getSessionCache() {
     return sessionCache;
   }
@@ -587,10 +588,12 @@ public class AzkabanWebServer extends AzkabanServer {
    *
    * @return
    */
+  @Override
   public VelocityEngine getVelocityEngine() {
     return velocityEngine;
   }
 
+  @Override
   public UserManager getUserManager() {
     return userManager;
   }
