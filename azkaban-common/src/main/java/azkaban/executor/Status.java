@@ -31,7 +31,7 @@ public enum Status {
   FAILED_SUCCEEDED(120),
   CANCELLED(130);
 
-  private int numVal;
+  private final int numVal;
 
   Status(int numVal) {
     this.numVal = numVal;

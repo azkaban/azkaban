@@ -94,6 +94,7 @@ public class User {
     return properties.get(name);
   }
 
+  @Override
   public String toString() {
     String groupStr = "[";
     for (String group : groups) {

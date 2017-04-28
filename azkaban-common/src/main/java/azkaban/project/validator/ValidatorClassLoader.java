@@ -11,6 +11,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Vector;
 import java.util.jar.JarFile;
+import sun.net.www.protocol.jar.JarURLConnection;
 
 /**
  * Workaround for jdk 6 disgrace with open jar files & native libs,
@@ -28,6 +29,7 @@ public class ValidatorClassLoader extends URLClassLoader {
     super(urls);
   }
 
+  @Override
   public void close() throws ValidatorManagerException {
     setJarFileNames2Close.clear();
     closeClassLoader(this);
@@ -41,33 +43,25 @@ public class ValidatorClassLoader extends URLClassLoader {
   @SuppressWarnings({ "nls", "rawtypes" })
   public boolean cleanupJarFileFactory() throws ValidatorManagerException {
     boolean res = false;
-    Class classJarURLConnection = null;
-    try {
-      classJarURLConnection = Class.forName("sun.net.www.protocol.jar.JarURLConnection");
-    } catch (ClassNotFoundException e) {
-      throw new ValidatorManagerException(e);
-    }
-    if (classJarURLConnection == null) {
-      return res;
-    }
-    Field f = null;
+    final Class classJarURLConnection = JarURLConnection.class;
+    Field f;
     try {
       f = classJarURLConnection.getDeclaredField("factory");
     } catch (NoSuchFieldException e) {
       throw new ValidatorManagerException(e);
     }
     if (f == null) {
-      return res;
+      return false;
     }
     f.setAccessible(true);
-    Object obj = null;
+    Object obj;
     try {
       obj = f.get(null);
     } catch (IllegalAccessException e) {
       throw new ValidatorManagerException(e);
     }
     if (obj == null) {
-      return res;
+      return false;
     }
     Class classJarFileFactory = obj.getClass();
 
@@ -79,9 +73,7 @@ public class ValidatorClassLoader extends URLClassLoader {
       if (obj instanceof HashMap) {
         fileCache = (HashMap) obj;
       }
-    } catch (NoSuchFieldException e) {
-      throw new ValidatorManagerException(e);
-    } catch (IllegalAccessException e) {
+    } catch (NoSuchFieldException | IllegalAccessException e) {
       throw new ValidatorManagerException(e);
     }
     HashMap urlCache = null;
@@ -92,9 +84,7 @@ public class ValidatorClassLoader extends URLClassLoader {
       if (obj instanceof HashMap) {
         urlCache = (HashMap) obj;
       }
-    } catch (NoSuchFieldException e) {
-      throw new ValidatorManagerException(e);
-    } catch (IllegalAccessException e) {
+    } catch (NoSuchFieldException | IllegalAccessException e) {
       throw new ValidatorManagerException(e);
     }
     if (urlCache != null) {

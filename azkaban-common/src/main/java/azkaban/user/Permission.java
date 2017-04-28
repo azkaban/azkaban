@@ -33,7 +33,7 @@ public class Permission {
     CREATEPROJECTS(0x40000000), // Only used for roles
     ADMIN(0x8000000);
 
-    private int numVal;
+    private final int numVal;
 
     Type(int numVal) {
       this.numVal = numVal;
@@ -162,6 +162,7 @@ public class Permission {
     return list.toArray(new String[count]);
   }
 
+  @Override
   public String toString() {
     return Utils.flattenToString(permissions, ",");
   }

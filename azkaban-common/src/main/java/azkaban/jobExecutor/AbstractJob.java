@@ -38,10 +38,12 @@ public abstract class AbstractJob implements Job {
     _progress = 0.0;
   }
 
+  @Override
   public String getId() {
     return _id;
   }
 
+  @Override
   public double getProgress() throws Exception {
     return _progress;
   }
@@ -50,6 +52,7 @@ public abstract class AbstractJob implements Job {
     this._progress = progress;
   }
 
+  @Override
   public void cancel() throws Exception {
     throw new RuntimeException("Job " + _id + " does not support cancellation!");
   }
@@ -90,12 +93,15 @@ public abstract class AbstractJob implements Job {
     this._log.error(message, t);
   }
 
+  @Override
   public Props getJobGeneratedProperties() {
     return new Props();
   }
 
+  @Override
   public abstract void run() throws Exception;
 
+  @Override
   public boolean isCanceled() {
     return false;
   }
