@@ -23,8 +23,8 @@ import azkaban.db.MySQLDataSource;
 import azkaban.storage.StorageImplementationType;
 import azkaban.utils.Props;
 import com.google.inject.Inject;
+import com.google.inject.Provides;
 import java.net.URI;
-import java.net.URISyntaxException;
 import org.apache.commons.dbutils.QueryRunner;
 import org.apache.log4j.Logger;
 
@@ -54,8 +54,7 @@ public class AzkabanCommonModuleConfig {
   public AzkabanCommonModuleConfig(Props props) {
     this.props = props;
 
-    storageImplementation = props.getString(Constants.ConfigurationKeys.AZKABAN_STORAGE_TYPE,
-        storageImplementation);
+    storageImplementation = props.getString(AZKABAN_STORAGE_TYPE, storageImplementation);
     localStorageBaseDirPath = props.getString(AZKABAN_STORAGE_LOCAL_BASEDIR, localStorageBaseDirPath);
     hdfsRootUri = props.get(AZKABAN_STORAGE_HDFS_ROOT_URI) != null ? props.getUri(AZKABAN_STORAGE_HDFS_ROOT_URI) : null;
   }

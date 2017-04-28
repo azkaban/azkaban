@@ -59,8 +59,10 @@ public class LocalStorage implements Storage {
       log.info("Created project dir: " + projectDir.getAbsolutePath());
     }
 
-    final File targetFile = new File(projectDir,
-        metadata.getVersion() + "." + Files.getFileExtension(localFile.getName()));
+    final File targetFile = new File(projectDir, String.format("%s-%s.%s",
+        String.valueOf(metadata.getProjectId()),
+        new String(metadata.getHash()),
+        Files.getFileExtension(localFile.getName())));
 
     if (targetFile.exists()) {
       throw new StorageException(String.format(

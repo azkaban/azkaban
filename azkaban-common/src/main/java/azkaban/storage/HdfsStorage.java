@@ -31,9 +31,13 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.log4j.Logger;
 
+import static com.google.common.base.Preconditions.*;
+import static java.util.Objects.*;
+
 
 public class HdfsStorage implements Storage {
   private static final Logger log = Logger.getLogger(HdfsStorage.class);
+  private static final String HDFS_SCHEME = "hdfs";
 
   private final URI rootUri;
   private final FileSystem hdfs;
@@ -41,6 +45,8 @@ public class HdfsStorage implements Storage {
   @Inject
   public HdfsStorage(FileSystem hdfs, AzkabanCommonModuleConfig config) {
     this.rootUri = config.getHdfsRootUri();
+    requireNonNull(rootUri.getAuthority(), "URI must have host:port mentioned.");
+    checkArgument(HDFS_SCHEME.equals(rootUri.getScheme()));
     this.hdfs = hdfs;
   }
 

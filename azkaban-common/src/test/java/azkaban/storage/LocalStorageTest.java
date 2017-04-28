@@ -56,7 +56,7 @@ public class LocalStorageTest {
   }
 
   @Test
-  public void testAll() throws Exception {
+  public void testPutGet() throws Exception {
     ClassLoader classLoader = getClass().getClassLoader();
     File testFile = new File(classLoader.getResource(SAMPLE_FILE).getFile());
 
@@ -69,7 +69,9 @@ public class LocalStorageTest {
     File expectedTargetFile = new File(BASE_DIRECTORY, new StringBuilder()
         .append(metadata.getProjectId())
         .append(File.separator)
-        .append(metadata.getVersion())
+        .append(metadata.getProjectId())
+        .append("-")
+        .append(new String(metadata.getHash()))
         .append(".zip")
         .toString()
     );
