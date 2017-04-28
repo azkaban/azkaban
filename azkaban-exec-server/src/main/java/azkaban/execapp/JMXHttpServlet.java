@@ -42,6 +42,7 @@ public class JMXHttpServlet extends HttpServlet implements ConnectorParams {
   private static final Logger logger = Logger.getLogger(JMXHttpServlet.class);
   private AzkabanExecutorServer server;
 
+  @Override
   public void init(ServletConfig config) throws ServletException {
     server =
         (AzkabanExecutorServer) config.getServletContext().getAttribute(

@@ -24,7 +24,7 @@ import azkaban.executor.Status;
 
 public class BlockingStatusTest {
 
-  public class WatchingThread extends Thread {
+  public static class WatchingThread extends Thread {
     private BlockingStatus status;
     private long diff = 0;
 
@@ -74,9 +74,7 @@ public class BlockingStatusTest {
     WatchingThread thread = new WatchingThread(status);
     thread.start();
 
-    synchronized (this) {
-      wait(3000);
-    }
+    Thread.sleep(3000);
 
     status.changeStatus(Status.SUCCEEDED);
     thread.join();
@@ -96,16 +94,10 @@ public class BlockingStatusTest {
     WatchingThread thread = new WatchingThread(status);
     thread.start();
 
-    synchronized (this) {
-      wait(3000);
-    }
-
+    Thread.sleep(3000);
     status.changeStatus(Status.PAUSED);
 
-    synchronized (this) {
-      wait(1000);
-    }
-
+    Thread.sleep(1000);
     status.changeStatus(Status.FAILED);
 
     thread.join(1000);
@@ -125,17 +117,12 @@ public class BlockingStatusTest {
     WatchingThread thread1 = new WatchingThread(status);
     thread1.start();
 
-    synchronized (this) {
-      wait(2000);
-    }
+    Thread.sleep(2000);
 
     WatchingThread thread2 = new WatchingThread(status);
     thread2.start();
 
-    synchronized (this) {
-      wait(2000);
-    }
-
+    Thread.sleep(2000);
     status.changeStatus(Status.FAILED);
     thread2.join(1000);
     thread1.join(1000);

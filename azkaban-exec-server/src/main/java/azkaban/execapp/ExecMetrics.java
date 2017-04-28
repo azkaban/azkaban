@@ -27,7 +27,7 @@ import com.codahale.metrics.MetricRegistry;
 public enum ExecMetrics {
   INSTANCE;
 
-  private MetricRegistry registry;
+  private final MetricRegistry registry;
 
   ExecMetrics() {
     registry = MetricsManager.INSTANCE.getRegistry();
