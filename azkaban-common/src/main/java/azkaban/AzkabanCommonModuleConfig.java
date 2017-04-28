@@ -72,25 +72,7 @@ public class AzkabanCommonModuleConfig {
     return localStorageBaseDirPath;
   }
 
-  // todo kunkun-tang: the below method should moved out to other package.
-  public AzkabanDataSource getDataSource() {
-    String databaseType = props.getString("database.type");
 
-    if(databaseType.equals("h2")) {
-      String path = props.getString("h2.path");
-      return new H2FileDataSource(path);
-    }
-    int port = props.getInt("mysql.port");
-    String host = props.getString("mysql.host");
-    String database = props.getString("mysql.database");
-    String user = props.getString("mysql.user");
-    String password = props.getString("mysql.password");
-    int numConnections = props.getInt("mysql.numconnections");
-
-    return MySQLDataSource.getInstance(host, port, database, user, password,
-        numConnections);
-
-  }
 
   public URI getHdfsBaseUri() {
     return hdfsBaseUri;

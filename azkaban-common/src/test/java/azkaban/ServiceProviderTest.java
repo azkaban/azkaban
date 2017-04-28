@@ -17,6 +17,7 @@
 
 package azkaban;
 
+import azkaban.db.DatabaseOperator;
 import azkaban.project.JdbcProjectLoader;
 import azkaban.spi.Storage;
 import azkaban.storage.DatabaseStorage;
@@ -62,5 +63,6 @@ public class ServiceProviderTest {
     assertNotNull(SERVICE_PROVIDER.getInstance(DatabaseStorage.class));
     assertNotNull(SERVICE_PROVIDER.getInstance(LocalStorage.class));
     assertNotNull(SERVICE_PROVIDER.getInstance(Storage.class));
+    assertNotNull(SERVICE_PROVIDER.getInstance(DatabaseOperator.class));
   }
 }

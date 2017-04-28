@@ -16,9 +16,12 @@
  */
 package azkaban;
 
+import azkaban.db.AzkabanDataSource;
 import azkaban.db.DatabaseOperator;
 import azkaban.db.DatabaseOperatorImpl;
 
+import azkaban.db.H2FileDataSource;
+import azkaban.db.MySQLDataSource;
 import azkaban.project.JdbcProjectLoader;
 import azkaban.project.ProjectLoader;
 import azkaban.spi.Storage;
@@ -32,7 +35,9 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Inject;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
+import com.google.inject.Singleton;
 import java.io.File;
+import javax.sql.DataSource;
 import org.apache.commons.dbutils.QueryRunner;
 
 
@@ -55,6 +60,7 @@ public class AzkabanCommonModule extends AbstractModule {
     bind(Storage.class).to(resolveStorageClassType()).in(Scopes.SINGLETON);
     bind(DatabaseOperator.class).to(DatabaseOperatorImpl.class).in(Scopes.SINGLETON);
     bind(TriggerLoader.class).to(JdbcTriggerImpl.class).in(Scopes.SINGLETON);
+    bind(DataSource.class).to(AzkabanDataSource.class);
   }
 
   public Class<? extends Storage> resolveStorageClassType() {
@@ -81,9 +87,31 @@ public class AzkabanCommonModule extends AbstractModule {
     return new LocalStorage(new File(config.getLocalStorageBaseDirPath()));
   }
 
+  // todo kunkun-tang: the below method should moved out to other package.
   @Inject
-  public @Provides
-  QueryRunner createQueryRunner(AzkabanCommonModuleConfig config) {
-    return new QueryRunner(config.getDataSource());
+  @Provides
+  @Singleton
+  public AzkabanDataSource getDataSource(Props props) {
+    String databaseType = props.getString("database.type");
+
+    if(databaseType.equals("h2")) {
+      String path = props.getString("h2.path");
+      return new H2FileDataSource(path);
+    }
+    int port = props.getInt("mysql.port");
+    String host = props.getString("mysql.host");
+    String database = props.getString("mysql.database");
+    String user = props.getString("mysql.user");
+    String password = props.getString("mysql.password");
+    int numConnections = props.getInt("mysql.numconnections");
+
+    return MySQLDataSource.getInstance(host, port, database, user, password,
+        numConnections);
+
+  }
+
+  @Provides
+  public QueryRunner createQueryRunner(AzkabanDataSource dataSource) {
+    return new QueryRunner(dataSource);
   }
 }
