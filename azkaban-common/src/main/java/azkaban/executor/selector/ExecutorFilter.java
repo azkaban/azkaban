@@ -52,7 +52,7 @@ public final class ExecutorFilter extends CandidateFilter<Executor, ExecutableFl
    * </pre>
    * */
   static {
-    filterRepository = new HashMap<String, FactorFilter<Executor, ExecutableFlow>>();
+    filterRepository = new HashMap<>();
     filterRepository.put(STATICREMAININGFLOWSIZE_FILTER_NAME, getStaticRemainingFlowSizeFilter());
     filterRepository.put(MINIMUMFREEMEMORY_FILTER_NAME, getMinimumReservedMemoryFilter());
     filterRepository.put(CPUSTATUS_FILTER_NAME, getCpuStatusFilter());
@@ -95,23 +95,21 @@ public final class ExecutorFilter extends CandidateFilter<Executor, ExecutableFl
    *</pre>
    * */
   private static FactorFilter<Executor, ExecutableFlow> getStaticRemainingFlowSizeFilter(){
-    return FactorFilter.create(STATICREMAININGFLOWSIZE_FILTER_NAME, new FactorFilter.Filter<Executor, ExecutableFlow>() {
-      public boolean filterTarget(Executor filteringTarget, ExecutableFlow referencingObject) {
-        if (null == filteringTarget){
-          logger.debug(String.format("%s : filtering out the target as it is null.", STATICREMAININGFLOWSIZE_FILTER_NAME));
-          return false;
-        }
+    return FactorFilter.create(STATICREMAININGFLOWSIZE_FILTER_NAME, (filteringTarget, referencingObject) -> {
+      if (null == filteringTarget){
+        logger.debug(String.format("%s : filtering out the target as it is null.", STATICREMAININGFLOWSIZE_FILTER_NAME));
+        return false;
+      }
 
-        ExecutorInfo stats = filteringTarget.getExecutorInfo();
-        if (null == stats) {
-          logger.debug(String.format("%s : filtering out %s as it's stats is unavailable.",
-              STATICREMAININGFLOWSIZE_FILTER_NAME,
-              filteringTarget.toString()));
-          return false;
-        }
-        return stats.getRemainingFlowCapacity() > 0 ;
-       }
-    });
+      ExecutorInfo stats = filteringTarget.getExecutorInfo();
+      if (null == stats) {
+        logger.debug(String.format("%s : filtering out %s as it's stats is unavailable.",
+            STATICREMAININGFLOWSIZE_FILTER_NAME,
+            filteringTarget.toString()));
+        return false;
+      }
+      return stats.getRemainingFlowCapacity() > 0 ;
+     });
   }
 
   /**<pre>
@@ -124,6 +122,8 @@ public final class ExecutorFilter extends CandidateFilter<Executor, ExecutableFl
   private static FactorFilter<Executor, ExecutableFlow> getMinimumReservedMemoryFilter(){
     return FactorFilter.create(MINIMUMFREEMEMORY_FILTER_NAME, new FactorFilter.Filter<Executor, ExecutableFlow>() {
       private static final int MINIMUM_FREE_MEMORY = 6 * 1024;
+
+      @Override
       public boolean filterTarget(Executor filteringTarget, ExecutableFlow referencingObject) {
         if (null == filteringTarget){
           logger.debug(String.format("%s : filtering out the target as it is null.", MINIMUMFREEMEMORY_FILTER_NAME));
@@ -154,6 +154,8 @@ public final class ExecutorFilter extends CandidateFilter<Executor, ExecutableFl
   private static FactorFilter<Executor, ExecutableFlow> getCpuStatusFilter(){
     return FactorFilter.create(CPUSTATUS_FILTER_NAME, new FactorFilter.Filter<Executor, ExecutableFlow>() {
       private static final int MAX_CPU_CURRENT_USAGE = 95;
+
+      @Override
       public boolean filterTarget(Executor filteringTarget, ExecutableFlow referencingObject) {
         if (null == filteringTarget){
           logger.debug(String.format("%s : filtering out the target as it is null.", CPUSTATUS_FILTER_NAME));
