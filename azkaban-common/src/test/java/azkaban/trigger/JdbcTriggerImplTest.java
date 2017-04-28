@@ -26,6 +26,9 @@ import azkaban.trigger.builtin.BasicTimeChecker;
 import azkaban.trigger.builtin.ExecuteFlowAction;
 import azkaban.utils.Props;
 import azkaban.utils.Utils;
+import com.google.common.io.Resources;
+import java.io.File;
+import java.net.URL;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -52,8 +55,11 @@ public class JdbcTriggerImplTest {
   @BeforeClass
   public static void prepare() throws Exception {
     Props props = new Props();
-    //TODO kunkun-tang: make this directory conf flexible
-    props.put("database.sql.scripts.dir", "/Users/latang/LNKDRepos/azkaban/azkaban-sql/src/sql");
+
+    URL resourceUrl = Resources.getResource("sql2");
+    assertNotNull(resourceUrl);
+    String sqlScriptsDir = new File(resourceUrl.toURI()).getCanonicalPath();
+    props.put("database.sql.scripts.dir", sqlScriptsDir);
 
     AzkabanDatabaseSetup setup = new AzkabanDatabaseSetup(dataSource, props);
     setup.loadTableInfo();

@@ -72,6 +72,13 @@ dependencies {
   testRuntime('com.h2database:h2:1.4.193')
 }
 
+task copySqlFiles(type: Copy) {
+  from project(':azkaban-sql').file('src/sql')
+  into file('src/test/resources/sql2')
+}
+
+test.dependsOn copySqlFiles
+
 tasks.withType(JavaCompile) {
   options.encoding = "UTF-8"
 }
