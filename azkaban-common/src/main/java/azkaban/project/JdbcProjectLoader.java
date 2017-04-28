@@ -385,6 +385,7 @@ public class JdbcProjectLoader extends AbstractJdbcLoader implements
     updateChunksInProjectVersions(connection, projectId, version, chunks);
   }
 
+  @Override
   public void addProjectVersion(
       int projectId,
       int version,
@@ -548,6 +549,7 @@ public class JdbcProjectLoader extends AbstractJdbcLoader implements
     return handler;
   }
 
+  @Override
   public ProjectFileHandler fetchProjectMetaData(int projectId, int version) {
     ProjectVersionResultHandler pfHandler = new ProjectVersionResultHandler();
 
@@ -827,6 +829,7 @@ public class JdbcProjectLoader extends AbstractJdbcLoader implements
    * @return
    * @throws ProjectManagerException
    */
+  @Override
   public List<ProjectLogEvent> getProjectEvents(Project project, int num,
       int skip) throws ProjectManagerException {
     QueryRunner runner = createQueryRunner();

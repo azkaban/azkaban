@@ -36,7 +36,7 @@ public class ProjectLogEvent {
     PURGE(10),
     PROPERTY_OVERRIDE(11);
 
-    private int numVal;
+    private final int numVal;
 
     EventType(int numVal) {
       this.numVal = numVal;

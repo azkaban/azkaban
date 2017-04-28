@@ -32,7 +32,6 @@ import azkaban.utils.Utils;
 
 public class BasicTimeChecker implements ConditionChecker {
 
-  private static Logger logger = Logger.getLogger(BasicTimeChecker.class);
 
   public static final String type = "BasicTimeChecker";
 
@@ -82,6 +81,7 @@ public class BasicTimeChecker implements ConditionChecker {
     return period;
   }
 
+  @Override
   public long getNextCheckTime() {
     return nextCheckTime;
   }
