@@ -200,7 +200,7 @@ public class HistoryServlet extends LoginAbstractAzkabanServlet {
       HttpServletResponse resp, Session session) {
   }
 
-  public class PageSelection {
+  public static class PageSelection {
     private int page;
     private int size;
     private boolean disabled;
