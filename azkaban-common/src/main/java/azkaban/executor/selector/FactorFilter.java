@@ -70,6 +70,6 @@ public final class FactorFilter<T,V>{
      *                      the object being checked need to be filtered or not.
      * @return true if the check passed, false if check failed, which means the item need to be filtered.
      * */
-    public boolean filterTarget(T filteringTarget, V referencingObject);
+    boolean filterTarget(T filteringTarget, V referencingObject);
   }
 }

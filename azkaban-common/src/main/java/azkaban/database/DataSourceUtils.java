@@ -36,7 +36,7 @@ public class DataSourceUtils {
   public static enum PropertyType {
     DB(1);
 
-    private int numVal;
+    private final int numVal;
 
     PropertyType(int numVal) {
       this.numVal = numVal;
