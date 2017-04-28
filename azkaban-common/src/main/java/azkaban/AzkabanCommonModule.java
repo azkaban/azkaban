@@ -25,6 +25,8 @@ import azkaban.spi.Storage;
 import azkaban.spi.StorageException;
 import azkaban.storage.LocalStorage;
 import azkaban.storage.StorageImplementationType;
+import azkaban.trigger.JdbcTriggerImpl;
+import azkaban.trigger.TriggerLoader;
 import azkaban.utils.Props;
 import com.google.inject.AbstractModule;
 import com.google.inject.Inject;
@@ -52,8 +54,7 @@ public class AzkabanCommonModule extends AbstractModule {
     bind(Props.class).toInstance(config.getProps());
     bind(Storage.class).to(resolveStorageClassType()).in(Scopes.SINGLETON);
     bind(DatabaseOperator.class).to(DatabaseOperatorImpl.class).in(Scopes.SINGLETON);
-    //todo kunkun-tang : Consider both H2 DataSource and MysqlDatasource case.
-    bind(QueryRunner.class).toInstance(config.getQueryRunner());
+    bind(TriggerLoader.class).to(JdbcTriggerImpl.class).in(Scopes.SINGLETON);
   }
 
   public Class<? extends Storage> resolveStorageClassType() {
@@ -78,5 +79,11 @@ public class AzkabanCommonModule extends AbstractModule {
   public @Provides
   LocalStorage createLocalStorage(AzkabanCommonModuleConfig config) {
     return new LocalStorage(new File(config.getLocalStorageBaseDirPath()));
+  }
+
+  @Inject
+  public @Provides
+  QueryRunner createQueryRunner(AzkabanCommonModuleConfig config) {
+    return new QueryRunner(config.getDataSource());
   }
 }

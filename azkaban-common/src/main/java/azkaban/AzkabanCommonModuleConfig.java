@@ -72,12 +72,10 @@ public class AzkabanCommonModuleConfig {
     return localStorageBaseDirPath;
   }
 
-  // todo kunkun-tang: the below method should moved out to azkaban-db module eventually.
-  // Today azkaban-db can not rely on Props, so we can not do it.
+  // todo kunkun-tang: the below method should moved out to other package.
   public AzkabanDataSource getDataSource() {
     String databaseType = props.getString("database.type");
 
-    // todo kunkun-tang: temperaroy workaround to let service provider test work.
     if(databaseType.equals("h2")) {
       String path = props.getString("h2.path");
       return new H2FileDataSource(path);
@@ -92,10 +90,6 @@ public class AzkabanCommonModuleConfig {
     return MySQLDataSource.getInstance(host, port, database, user, password,
         numConnections);
 
-  }
-
-  public QueryRunner getQueryRunner() {
-    return new QueryRunner(getDataSource());
   }
 
   public URI getHdfsBaseUri() {

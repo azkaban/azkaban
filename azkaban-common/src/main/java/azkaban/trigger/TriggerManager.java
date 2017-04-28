@@ -16,6 +16,8 @@
 
 package azkaban.trigger;
 
+import azkaban.ServiceProvider;
+import com.google.inject.Inject;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -61,10 +63,12 @@ public class TriggerManager extends EventHandler implements
 
   private String scannerStage = "";
 
+  // TODO kunkun-tang: Before apply guice to this class, we should make
+  // ExecutorManager guiceable.
   public TriggerManager(Props props, TriggerLoader triggerLoader,
       ExecutorManager executorManager) throws TriggerManagerException {
 
-    this.triggerLoader = triggerLoader;
+    this.triggerLoader = ServiceProvider.SERVICE_PROVIDER.getInstance(TriggerLoader.class);
 
     long scannerInterval =
         props.getLong("trigger.scan.interval", DEFAULT_SCANNER_INTERVAL_MS);

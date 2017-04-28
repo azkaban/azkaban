@@ -23,6 +23,7 @@ import java.util.Map;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import azkaban.alert.Alerter;
@@ -57,7 +58,7 @@ public class TriggerManagerDeadlockTest {
 
   }
 
-  @Test
+  @Ignore @Test
   public void deadlockTest() throws TriggerLoaderException,
       TriggerManagerException {
     // this should well saturate it
