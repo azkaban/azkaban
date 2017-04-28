@@ -19,7 +19,9 @@ package azkaban.storage;
 
 import azkaban.AzkabanCommonModuleConfig;
 import azkaban.spi.Storage;
+import azkaban.spi.StorageException;
 import azkaban.spi.StorageMetadata;
+import com.google.common.io.Files;
 import com.google.inject.Inject;
 import java.io.File;
 import java.io.IOException;
@@ -27,28 +29,54 @@ import java.io.InputStream;
 import java.net.URI;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-
-import static azkaban.Constants.ConfigurationKeys.*;
+import org.apache.log4j.Logger;
 
 
 public class HdfsStorage implements Storage {
+  private static final Logger log = Logger.getLogger(HdfsStorage.class);
+
   private final URI rootUri;
-  private final FileSystem fs;
+  private final FileSystem hdfs;
 
   @Inject
-  public HdfsStorage(FileSystem fs, AzkabanCommonModuleConfig config) {
+  public HdfsStorage(FileSystem hdfs, AzkabanCommonModuleConfig config) {
     this.rootUri = config.getHdfsRootUri();
-    this.fs = fs;
+    this.hdfs = hdfs;
   }
 
   @Override
   public InputStream get(String key) throws IOException {
-    return throw new UnsupportedOperationException("Method not implemented");
+    // TODO spyne: relative uri vs absolute uri
+    return hdfs.open(new Path(rootUri.toString(), key));
   }
 
   @Override
   public String put(StorageMetadata metadata, File localFile) {
-    throw new UnsupportedOperationException("Method not implemented");
+    final Path projectsPath = new Path(rootUri.getPath(), String.valueOf(metadata.getProjectId()));
+    try {
+      if (hdfs.mkdirs(projectsPath)) {
+        log.info("Created project dir: " + projectsPath);
+      }
+      final Path targetPath = createTargetPath(metadata, localFile, projectsPath);
+      if ( hdfs.exists( targetPath )) {
+        throw new StorageException(String.format(
+            "Error: Target file already exists. targetFile: %s, Metadata: %s",
+            targetPath, metadata));
+      }
+      hdfs.copyFromLocalFile(new Path(localFile.getAbsolutePath()), targetPath);
+      return rootUri.relativize(targetPath.toUri()).getPath();
+    } catch (IOException e) {
+      log.error("error in put(): Metadata: " + metadata);
+      throw new StorageException(e);
+    }
+  }
+
+  private Path createTargetPath(StorageMetadata metadata, File localFile, Path projectsPath) {
+    return new Path(projectsPath, String.format("%s-%s.%s",
+        String.valueOf(metadata.getProjectId()),
+        new String(metadata.getHash()),
+        Files.getFileExtension(localFile.getName())
+    ));
   }
 
   @Override
