@@ -28,12 +28,12 @@ import org.apache.log4j.Logger;
 /**
  * A simple subclass of {@link ThreadPoolExecutor} to keep track of in progress
  * tasks as well as other interesting statistics.
- * 
+ *
  * The content of this class is copied from article "Java theory and practice:
  * Instrumenting applications with JMX"
- * 
+ *
  * @author hluu
- * 
+ *
  */
 public class TrackingThreadPool extends ThreadPoolExecutor {
 
@@ -68,7 +68,7 @@ public class TrackingThreadPool extends ThreadPoolExecutor {
     }
     super.beforeExecute(t, r);
     inProgress.put(r, Boolean.TRUE);
-    startTime.set(new Long(System.currentTimeMillis()));
+    startTime.set(Long.valueOf(System.currentTimeMillis()));
   }
 
   @Override
