@@ -26,6 +26,10 @@ import org.apache.commons.dbutils.ResultSetHandler;
  * this interface, users/callers (implementation code) should decide where to {@link Connection#commit()}
  * based on their requirements.
  *
+ * The diff between DatabaseTransOperator and DatabaseOperator:
+ * * Auto commit and Auto close connection are enforced in DatabaseOperator, but not enabled in DatabaseTransOperator.
+ * * We usually group a couple of sql operations which need the same connection into DatabaseTransOperator.
+ *
  * @see org.apache.commons.dbutils.QueryRunner
  */
 public interface DatabaseTransOperator {

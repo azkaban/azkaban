@@ -88,8 +88,7 @@ public class AzkabanDatabaseSetup {
   // TODO kunkun-tang: Refactor this class. loadTableInfo method should sit inside constructor
   public AzkabanDatabaseSetup(AzkabanDataSource ds, Props props) {
     this.dataSource = ds;
-    this.scriptPath =
-        props.getString(DATABASE_SQL_SCRIPT_DIR, DEFAULT_SCRIPT_PATH);
+    this.scriptPath = props.getString(DATABASE_SQL_SCRIPT_DIR, DEFAULT_SCRIPT_PATH);
   }
 
   public void loadTableInfo() throws IOException, SQLException {

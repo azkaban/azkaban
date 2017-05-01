@@ -87,7 +87,7 @@ public class AzkabanCommonModule extends AbstractModule {
     return new LocalStorage(new File(config.getLocalStorageBaseDirPath()));
   }
 
-  // todo kunkun-tang: the below method should moved out to other package.
+  // todo kunkun-tang: the below method should moved out to azkaban-db module eventually.
   @Inject
   @Provides
   @Singleton
