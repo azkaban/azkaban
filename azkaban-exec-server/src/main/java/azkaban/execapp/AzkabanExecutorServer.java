@@ -326,7 +326,7 @@ public class AzkabanExecutorServer {
    * @param args
    * @throws IOException
    */
-  public static void main(String[] args) throws Exception {
+  public static void main(String[] args) {
     // Redirect all std out and err messages into log4j
     StdOutErrRedirect.redirectOutAndErrToLog();
 
@@ -346,7 +346,13 @@ public class AzkabanExecutorServer {
         new AzkabanExecServerModule()
     ));
 
-    launch(props);
+    try {
+      launch(props);
+      logger.info("Azkaban Exec Server started...");
+    } catch (Exception e) {
+      logger.error("Exec Server start failed. Exiting...", e);
+      System.exit(1);
+    }
   }
 
   public static void launch(Props azkabanSettings) throws Exception {

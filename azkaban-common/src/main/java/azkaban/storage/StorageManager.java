@@ -53,8 +53,8 @@ public class StorageManager {
   @Inject
   public StorageManager(Props props, Storage storage, ProjectLoader projectLoader) {
     this.tempDir = new File(props.getString("project.temp.dir", "temp"));
-    this.storage = storage;
-    this.projectLoader = projectLoader;
+    this.storage = requireNonNull(storage);
+    this.projectLoader = requireNonNull(projectLoader);
 
     prepareTempDir();
   }

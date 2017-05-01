@@ -670,7 +670,7 @@ public class AzkabanWebServer extends AzkabanServer {
    *
    * @param args
    */
-  public static void main(String[] args) throws Exception {
+  public static void main(String[] args) {
     // Redirect all std out and err messages into log4j
     StdOutErrRedirect.redirectOutAndErrToLog();
 
@@ -688,7 +688,13 @@ public class AzkabanWebServer extends AzkabanServer {
         new AzkabanWebServerModule()
     ));
 
-    launch(props);
+    try {
+      launch(props);
+      logger.info("Azkaban Web Server started...");
+    } catch (Exception e) {
+      logger.error("Web Server start failed. Exiting...", e);
+      System.exit(1);
+    }
   }
 
   public static void launch(Props azkabanSettings) throws Exception {

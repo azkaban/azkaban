@@ -20,6 +20,8 @@ import azkaban.AzkabanCommonModule;
 import azkaban.execapp.AzkabanExecServerModule;
 import azkaban.webapp.AzkabanWebServerModule;
 import com.google.inject.Guice;
+import java.io.IOException;
+import java.sql.SQLException;
 import org.apache.log4j.Logger;
 
 import azkaban.database.AzkabanDatabaseSetup;
@@ -33,22 +35,27 @@ import static azkaban.ServiceProvider.*;
 
 
 public class AzkabanSingleServer {
-  private static final Logger logger = Logger.getLogger(AzkabanWebServer.class);
+  private static final Logger log = Logger.getLogger(AzkabanWebServer.class);
 
-  public static void main(String[] args) throws Exception {
-    logger.info("Starting Azkaban Server");
+  public static void main(String[] args) {
+    log.info("Starting Azkaban Server");
 
     Props props = AzkabanServer.loadProps(args);
     if (props == null) {
-      logger.error("Properties not found. Need it to connect to the db.");
-      logger.error("Exiting...");
-      return;
+      log.error("Properties not found. Need it to connect to the db.");
+      log.error("Exiting...");
+      System.exit(1);
     }
 
     if (props.getBoolean(AzkabanDatabaseSetup.DATABASE_CHECK_VERSION, true)) {
       boolean updateDB = props.getBoolean(AzkabanDatabaseSetup.DATABASE_AUTO_UPDATE_TABLES, true);
       String scriptDir = props.getString(AzkabanDatabaseSetup.DATABASE_SQL_SCRIPT_DIR, "sql");
-      AzkabanDatabaseUpdater.runDatabaseUpdater(props, scriptDir, updateDB);
+      try {
+        AzkabanDatabaseUpdater.runDatabaseUpdater(props, scriptDir, updateDB);
+      } catch (IOException | SQLException e) {
+        log.error("Error setting up DB. Exiting..", e);
+        System.exit(1);
+      }
     }
 
     /* Initialize Guice Injector */
@@ -58,10 +65,25 @@ public class AzkabanSingleServer {
         new AzkabanExecServerModule()
     ));
 
-    AzkabanWebServer.launch(props);
-    logger.info("Azkaban Web Server started...");
+    try {
+      AzkabanWebServer.launch(props);
+      log.info("Azkaban Web Server started...");
+    } catch (Exception e) {
+      log.error("Web Server start failed. Exiting...", e);
+      try {
+        Thread.sleep(2000);
+      } catch (InterruptedException e1) {
+        e1.printStackTrace();
+      }
+      System.exit(1);
+    }
 
-    AzkabanExecutorServer.launch(props);
-    logger.info("Azkaban Exec Server started...");
+    try {
+      AzkabanExecutorServer.launch(props);
+      log.info("Azkaban Exec Server started...");
+    } catch (Exception e) {
+      log.error("Exec Server start failed. Exiting...", e);
+      System.exit(1);
+    }
   }
 }
