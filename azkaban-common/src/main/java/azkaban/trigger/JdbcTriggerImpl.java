@@ -37,17 +37,17 @@ import org.joda.time.DateTime;
 
 
 public class JdbcTriggerImpl implements TriggerLoader {
-  private static final String triggerTblName = "triggers";
+  private static final String TRIGGER_TABLE_NAME = "triggers";
   private static final String GET_UPDATED_TRIGGERS =
-      "SELECT trigger_id, trigger_source, modify_time, enc_type, data FROM " + triggerTblName + " WHERE modify_time>=?";
+      "SELECT trigger_id, trigger_source, modify_time, enc_type, data FROM " + TRIGGER_TABLE_NAME + " WHERE modify_time>=?";
   private static final String GET_ALL_TRIGGERS =
-      "SELECT trigger_id, trigger_source, modify_time, enc_type, data FROM " + triggerTblName;
+      "SELECT trigger_id, trigger_source, modify_time, enc_type, data FROM " + TRIGGER_TABLE_NAME;
   private static final String GET_TRIGGER =
-      "SELECT trigger_id, trigger_source, modify_time, enc_type, data FROM " + triggerTblName + " WHERE trigger_id=?";
-  private static final String ADD_TRIGGER = "INSERT INTO " + triggerTblName + " ( modify_time) values (?)";
-  private static final String REMOVE_TRIGGER = "DELETE FROM " + triggerTblName + " WHERE trigger_id=?";
+      "SELECT trigger_id, trigger_source, modify_time, enc_type, data FROM " + TRIGGER_TABLE_NAME + " WHERE trigger_id=?";
+  private static final String ADD_TRIGGER = "INSERT INTO " + TRIGGER_TABLE_NAME + " ( modify_time) values (?)";
+  private static final String REMOVE_TRIGGER = "DELETE FROM " + TRIGGER_TABLE_NAME + " WHERE trigger_id=?";
   private static final String UPDATE_TRIGGER =
-      "UPDATE " + triggerTblName + " SET trigger_source=?, modify_time=?, enc_type=?, data=? WHERE trigger_id=?";
+      "UPDATE " + TRIGGER_TABLE_NAME + " SET trigger_source=?, modify_time=?, enc_type=?, data=? WHERE trigger_id=?";
   private static Logger logger = Logger.getLogger(JdbcTriggerImpl.class);
   private final DatabaseOperator dbOperator;
   private EncodingType defaultEncodingType = EncodingType.GZIP;
@@ -120,7 +120,8 @@ public class JdbcTriggerImpl implements TriggerLoader {
       updateTrigger(t);
       logger.info("uploaded trigger " + t.getDescription());
     } catch (SQLException ex) {
-      throw new TriggerLoaderException("trigger id is not properly created.");
+      logger.error("Adding Trigger " + t.getTriggerId() + " failed." );
+      throw new TriggerLoaderException("trigger id is not properly created.",ex);
     }
   }
 
@@ -145,7 +146,7 @@ public class JdbcTriggerImpl implements TriggerLoader {
       logger.debug("NumChars: " + json.length() + " UTF-8:" + stringData.length + " Gzip:" + data.length);
     } catch (IOException e) {
       logger.error("Trigger encoding fails", e);
-      throw new TriggerLoaderException("Error encoding the trigger " + t.toString());
+      throw new TriggerLoaderException("Error encoding the trigger " + t.toString(), e);
     }
 
     try {
@@ -155,7 +156,8 @@ public class JdbcTriggerImpl implements TriggerLoader {
         throw new TriggerLoaderException("No trigger has been updated.");
       }
     } catch (SQLException ex) {
-      throw new TriggerLoaderException("DB Trigger update failed. ");
+      logger.error("Updating Trigger " + t.getTriggerId() + " failed." );
+      throw new TriggerLoaderException("DB Trigger update failed. ", ex);
     }
   }
 
@@ -173,7 +175,8 @@ public class JdbcTriggerImpl implements TriggerLoader {
       }
       return triggers.get(0);
     } catch (SQLException ex) {
-      throw new TriggerLoaderException("Load a specific trigger failed.");
+      logger.error("Failed to load trigger " + triggerId);
+      throw new TriggerLoaderException("Load a specific trigger failed.", ex);
     }
   }
 
@@ -198,14 +201,8 @@ public class JdbcTriggerImpl implements TriggerLoader {
           try {
             // Convoluted way to inflate strings. Should find common package or
             // helper function.
-            if (encType == EncodingType.GZIP) {
-              // Decompress the sucker.
-              String jsonString = GZIPUtils.unGzipString(data, "UTF-8");
-              jsonObj = JSONUtils.parseJSONFromString(jsonString);
-            } else {
-              String jsonString = new String(data, "UTF-8");
-              jsonObj = JSONUtils.parseJSONFromString(jsonString);
-            }
+            jsonObj = JSONUtils.parseJSONFromString(encType == EncodingType.GZIP ?
+                GZIPUtils.unGzipString(data, "UTF-8") : new String(data, "UTF-8"));
           } catch (IOException e) {
             throw new SQLException("Error reconstructing trigger data ");
           }
@@ -216,8 +213,7 @@ public class JdbcTriggerImpl implements TriggerLoader {
           t = Trigger.fromJson(jsonObj);
           triggers.add(t);
         } catch (Exception e) {
-          e.printStackTrace();
-          logger.error("Failed to load trigger " + triggerId);
+          logger.error("Failed to load trigger " + triggerId, e);
         }
       } while (rs.next());
 

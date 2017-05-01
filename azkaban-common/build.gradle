@@ -74,7 +74,7 @@ dependencies {
 
 task copySqlFiles(type: Copy) {
   from project(':azkaban-sql').file('src/sql')
-  into file('src/test/resources/sql2')
+  into file('build/resources/test/sql2')
 }
 
 test.dependsOn copySqlFiles
