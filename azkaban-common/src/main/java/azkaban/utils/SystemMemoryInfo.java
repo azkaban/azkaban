@@ -50,7 +50,7 @@ public class SystemMemoryInfo {
       scheduledExecutorService.scheduleAtFixedRate(SystemMemoryInfo::getFreeMemorySize, 0, memCheckInterval,
           TimeUnit.SECONDS);
     } else {
-      logger.info(String.format("Cannot find %s, memory check will be disabled", OsMemoryUtil.MEMINFO_FILE));
+      logger.info(String.format("Cannot find %s, memory check will be disabled", OsMemoryUtil.MEM_INFO_FILE));
     }
   }
 

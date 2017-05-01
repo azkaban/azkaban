@@ -12,20 +12,29 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Utility class for getting system memory information
+ *
+ * Note:
+ * This check is designed for Linux only.
+ * Make sure to call {@link #doesMemInfoFileExist()} first before attempting to get memory information.
  */
 class OsMemoryUtil {
   private static final Logger logger = LoggerFactory.getLogger(SystemMemoryInfo.class);
 
-  static final String MEMINFO_FILE = "/proc/meminfo";
+  // This file is used by Linux. It doesn't exist on Mac for example.
+  static final String MEM_INFO_FILE = "/proc/meminfo";
 
-  private enum MemKey {MemFree, Buffers, Cached, SwapFree}
+  private final String[] MEM_KEYS;
+
+  OsMemoryUtil() {
+    MEM_KEYS = new String[]{"MemFree", "Buffers", "Cached", "SwapFree"};
+  }
 
   /**
    *
    * @return true if the meminfo file exists.
    */
   boolean doesMemInfoFileExist() {
-    File f = new File(MEMINFO_FILE);
+    File f = new File(MEM_INFO_FILE);
     return f.exists() && !f.isDirectory();
   }
 
@@ -38,9 +47,9 @@ class OsMemoryUtil {
     // The file /proc/meminfo seems to contain only ASCII characters.
     // The assumption is that the file is not too big. So it is simpler to read the whole file into memory.
     try {
-      lines = Files.readAllLines(Paths.get(MEMINFO_FILE), StandardCharsets.UTF_8);
+      lines = Files.readAllLines(Paths.get(MEM_INFO_FILE), StandardCharsets.UTF_8);
     } catch (IOException e) {
-      String errMsg = "Failed to open mem info file: " + MEMINFO_FILE;
+      String errMsg = "Failed to open mem info file: " + MEM_INFO_FILE;
       logger.warn(errMsg, e);
       return 0;
     }
@@ -56,10 +65,8 @@ class OsMemoryUtil {
     long totalFree = 0;
     int count = 0;
 
-    MemKey[] keys = MemKey.values();
     for (String line : lines) {
-      for (MemKey key : keys) {
-        String keyName = key.name();
+      for (String keyName : MEM_KEYS) {
         if (line.startsWith(keyName)) {
           count++;
           long size = parseMemoryLine(line);
@@ -71,7 +78,7 @@ class OsMemoryUtil {
       }
     }
 
-    int length = keys.length;
+    int length = MEM_KEYS.length;
     if (count != length) {
       String errMsg = String.format("Expect %d keys in the meminfo file. Got %d. content: %s", length, count, lines);
       logger.warn(errMsg);
@@ -83,12 +90,12 @@ class OsMemoryUtil {
   /**
    * Example file:
    * $ cat /proc/meminfo
-   MemTotal:       65894008 kB
-   MemFree:        59400536 kB
-   Buffers:          409348 kB
-   Cached:          4290236 kB
-   SwapCached:            0 kB
-
+   *   MemTotal:       65894008 kB
+   *   MemFree:        59400536 kB
+   *   Buffers:          409348 kB
+   *   Cached:          4290236 kB
+   *   SwapCached:            0 kB
+   *
    * Make the method package private to make unit testing easier.
    * Otherwise it can be made private.
 
