@@ -68,6 +68,7 @@ public class TriggerManager extends EventHandler implements
   public TriggerManager(Props props, TriggerLoader triggerLoader,
       ExecutorManager executorManager) throws TriggerManagerException {
 
+    // TODO kunkun-tang: Doing hack here to allow calling new azkaban-db code. Should fix in future.
     this.triggerLoader = ServiceProvider.SERVICE_PROVIDER.getInstance(TriggerLoader.class);
 
     long scannerInterval =

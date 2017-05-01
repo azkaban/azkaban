@@ -58,6 +58,7 @@ public class TriggerManagerDeadlockTest {
 
   }
 
+  // TODO kunkun-tang: This test has problems. Will fix
   @Ignore @Test
   public void deadlockTest() throws TriggerLoaderException,
       TriggerManagerException {
