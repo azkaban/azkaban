@@ -71,10 +71,12 @@ public class MySQLDataSource extends AzkabanDataSource {
     int retryAttempt = 0;
     while (retryAttempt < AzDBUtil.MAX_DB_RETRY_COUNT) {
       try {
-          /*
-           * when DB connection could not be fetched here, dbcp library will keep searching until a timeout defined in
-           * its code hardly.
-           */
+        /**
+         * when DB connection could not be fetched (e.g., network issue), or connection can not be validated,
+         * {@link BasicDataSource} throws a SQL Exception. {@link BasicDataSource#dataSource} will be reset to null.
+         * createDataSource() will create a new dataSource.
+         * Every Attempt generates a thread-hanging-time, about 75 seconds, which is hard coded, and can not be changed.
+         */
         connection = createDataSource().getConnection();
         if(connection != null)
           return connection;
