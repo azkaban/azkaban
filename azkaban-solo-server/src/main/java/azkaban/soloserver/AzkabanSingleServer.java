@@ -70,11 +70,6 @@ public class AzkabanSingleServer {
       log.info("Azkaban Web Server started...");
     } catch (Exception e) {
       log.error("Web Server start failed. Exiting...", e);
-      try {
-        Thread.sleep(2000);
-      } catch (InterruptedException e1) {
-        e1.printStackTrace();
-      }
       System.exit(1);
     }
 
