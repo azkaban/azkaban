@@ -228,13 +228,11 @@ public class FlowRunnerTest {
         "Expected flow " + Status.FAILED + " instead " + exFlow.getStatus(),
         exFlow.getStatus() == Status.FAILED);
 
-    synchronized (this) {
-      try {
-        wait(500);
-      } catch (InterruptedException e) {
-
-      }
+    try {
+        Thread.sleep(500);
+    } catch (InterruptedException e) {
     }
+
 
     testStatus(exFlow, "job1", Status.SUCCEEDED);
     testStatus(exFlow, "job2d", Status.FAILED);
@@ -275,12 +273,11 @@ public class FlowRunnerTest {
         "Expected flow " + Status.FAILED + " instead " + exFlow.getStatus(),
         exFlow.getStatus() == Status.FAILED);
 
-    synchronized (this) {
-      try {
-        wait(500);
-      } catch (InterruptedException e) {
-      }
+    try {
+      Thread.sleep(500);
+    } catch (InterruptedException e) {
     }
+
 
     testStatus(exFlow, "job1", Status.SUCCEEDED);
     testStatus(exFlow, "job2d", Status.FAILED);
@@ -315,27 +312,23 @@ public class FlowRunnerTest {
     Thread thread = new Thread(runner);
     thread.start();
 
-    synchronized (this) {
-      try {
-        wait(5000);
-      } catch (InterruptedException e) {
-        // TODO Auto-generated catch block
-        e.printStackTrace();
-      }
-
-      runner.kill("me");
-      Assert.assertTrue(runner.isKilled());
+    try {
+      Thread.sleep(5000);
+    } catch (InterruptedException e) {
+      // TODO Auto-generated catch block
+      e.printStackTrace();
     }
 
-    synchronized (this) {
-      // Wait for cleanup.
-      try {
-        wait(2000);
-      } catch (InterruptedException e) {
-        // TODO Auto-generated catch block
-        e.printStackTrace();
-      }
+    runner.kill("me");
+    Assert.assertTrue(runner.isKilled());
+
+    try {
+      Thread.sleep(2000);
+    } catch (InterruptedException e) {
+      // TODO Auto-generated catch block
+      e.printStackTrace();
     }
+
     ExecutableFlow exFlow = runner.getExecutableFlow();
     testStatus(exFlow, "job1", Status.SUCCEEDED);
     testStatus(exFlow, "job2", Status.SUCCEEDED);

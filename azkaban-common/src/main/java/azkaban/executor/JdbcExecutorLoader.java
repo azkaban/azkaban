@@ -16,12 +16,12 @@
 
 package azkaban.executor;
 
+import com.google.inject.Inject;
 import java.io.BufferedInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.lang.annotation.Inherited;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -58,6 +58,7 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements
 
   private EncodingType defaultEncodingType = EncodingType.GZIP;
 
+  @Inject
   public JdbcExecutorLoader(Props props) {
     super(props);
   }

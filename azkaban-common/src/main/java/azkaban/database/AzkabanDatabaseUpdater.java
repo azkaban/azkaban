@@ -26,7 +26,6 @@ import joptsimple.OptionSpec;
 
 import org.apache.log4j.Logger;
 
-import azkaban.database.AzkabanDatabaseSetup;
 import azkaban.utils.Props;
 import azkaban.server.AzkabanServer;
 

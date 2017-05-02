@@ -87,7 +87,7 @@ public class JobRunner extends EventHandler implements Runnable {
   private String jobId;
 
   private static final Object logCreatorLock = new Object();
-  private Object syncObject = new Object();
+  private final Object syncObject = new Object();
 
   private final JobTypeManager jobtypeManager;
 

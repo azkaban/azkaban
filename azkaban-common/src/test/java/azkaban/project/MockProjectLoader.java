@@ -123,9 +123,13 @@ public class MockProjectLoader implements ProjectLoader {
   }
 
   @Override
-  public ProjectFileHandler getUploadedFile(Project project, int version)
+  public void addProjectVersion(int projectId, int version, File localFile, String uploader, String uri)
       throws ProjectManagerException {
-    // TODO Auto-generated method stub
+
+  }
+
+  @Override
+  public ProjectFileHandler fetchProjectMetaData(int projectId, int version) {
     return null;
   }
 

@@ -31,8 +31,7 @@ import azkaban.utils.Utils;
 
 public class DefaultMailCreator implements MailCreator {
   public static final String DEFAULT_MAIL_CREATOR = "default";
-  private static HashMap<String, MailCreator> registeredCreators =
-      new HashMap<String, MailCreator>();
+  private static HashMap<String, MailCreator> registeredCreators = new HashMap<>();
   private static MailCreator defaultCreator;
 
   private static final DateFormat DATE_FORMATTER = new SimpleDateFormat(

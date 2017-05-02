@@ -578,6 +578,7 @@ public class AzkabanWebServer extends AzkabanServer {
    *
    * @return
    */
+  @Override
   public SessionCache getSessionCache() {
     return sessionCache;
   }
@@ -587,10 +588,12 @@ public class AzkabanWebServer extends AzkabanServer {
    *
    * @return
    */
+  @Override
   public VelocityEngine getVelocityEngine() {
     return velocityEngine;
   }
 
+  @Override
   public UserManager getUserManager() {
     return userManager;
   }
@@ -657,6 +660,7 @@ public class AzkabanWebServer extends AzkabanServer {
    *
    * @return
    */
+  @Override
   public Props getServerProps() {
     return props;
   }
@@ -696,6 +700,7 @@ public class AzkabanWebServer extends AzkabanServer {
 
     Runtime.getRuntime().addShutdownHook(new Thread() {
 
+      @Override
       public void run() {
         try {
           logTopMemoryConsumers();
@@ -1207,9 +1212,9 @@ public class AzkabanWebServer extends AzkabanServer {
     executorManager.shutdown();
     try {
       server.stop();
-    } catch (Throwable t) {
+    } catch (Exception e) {
       // Catch all while closing server
-      logger.error(t);
+      logger.error(e);
     }
     server.destroy();
   }

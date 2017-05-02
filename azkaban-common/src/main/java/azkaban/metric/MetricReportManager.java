@@ -110,14 +110,11 @@ public class MetricReportManager {
         logger.debug(String.format("Submitting %s metric for metric emission pool", metricSnapshot.getName()));
         // report to all emitters
         for (final IMetricEmitter metricEmitter : metricEmitters) {
-          executorService.submit(new Runnable() {
-            @Override
-            public void run() {
-              try {
-                metricEmitter.reportMetric(metricSnapshot);
-              } catch (Exception ex) {
-                logger.error(String.format("Failed to report %s metric due to ", metricSnapshot.getName()), ex);
-              }
+          executorService.submit(() -> {
+            try {
+              metricEmitter.reportMetric(metricSnapshot);
+            } catch (Exception ex) {
+              logger.error(String.format("Failed to report %s metric due to ", metricSnapshot.getName()), ex);
             }
           });
         }
@@ -222,6 +219,7 @@ public class MetricReportManager {
    * {@inheritDoc}
    * @see java.lang.Object#finalize()
    */
+  @Override
   protected void finalize() {
     executorService.shutdown();
   }

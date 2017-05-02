@@ -95,7 +95,6 @@ public class AzkabanExecutorServer {
   private static AzkabanExecutorServer app;
 
   private final ExecutorLoader executionLoader;
-  private final ProjectLoader projectLoader;
   private final FlowRunnerManager runnerManager;
   private final Props props;
   private final Server server;
@@ -103,19 +102,15 @@ public class AzkabanExecutorServer {
   private final ArrayList<ObjectName> registeredMBeans = new ArrayList<ObjectName>();
   private MBeanServer mbeanServer;
 
-  /**
-   * Constructor
-   *
-   * @throws Exception
-   */
   @Inject
-  public AzkabanExecutorServer(Props props) throws Exception {
+  public AzkabanExecutorServer(Props props,
+      ExecutorLoader executionLoader,
+      FlowRunnerManager runnerManager) throws Exception {
     this.props = props;
-    server = createJettyServer(props);
+    this.executionLoader = executionLoader;
+    this.runnerManager = runnerManager;
 
-    executionLoader = new JdbcExecutorLoader(props);
-    projectLoader = new JdbcProjectLoader(props);
-    runnerManager = new FlowRunnerManager(props, executionLoader, projectLoader, getClass().getClassLoader());
+    server = createJettyServer(props);
 
     JmxJobMBeanManager.getInstance().initialize(props);
 
@@ -312,11 +307,6 @@ public class AzkabanExecutorServer {
       logger.info("No value for property: "
           + CUSTOM_JMX_ATTRIBUTE_PROCESSOR_PROPERTY + " was found");
     }
-  }
-
-
-  public ProjectLoader getProjectLoader() {
-    return projectLoader;
   }
 
   public ExecutorLoader getExecutorLoader() {

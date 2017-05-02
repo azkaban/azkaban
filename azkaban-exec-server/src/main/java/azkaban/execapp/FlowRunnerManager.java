@@ -18,6 +18,8 @@ package azkaban.execapp;
 
 import azkaban.Constants;
 import azkaban.executor.Status;
+import azkaban.storage.StorageManager;
+import com.google.inject.Inject;
 import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
@@ -145,11 +147,13 @@ public class FlowRunnerManager implements EventListener,
   // whether the current executor is active
   private volatile boolean isExecutorActive = false;
 
-  public FlowRunnerManager(Props props, ExecutorLoader executorLoader,
-      ProjectLoader projectLoader, ClassLoader parentClassLoader) throws IOException {
+  @Inject
+  public FlowRunnerManager(Props props,
+      ExecutorLoader executorLoader,
+      ProjectLoader projectLoader,
+      StorageManager storageManager) throws IOException {
     azkabanProps = props;
 
-    // JobWrappingFactory.init(props, getClass().getClassLoader());
     executionDirRetention = props.getLong("execution.dir.retention", executionDirRetention);
     logger.info("Execution dir retention set to " + executionDirRetention + " ms");
 
@@ -170,7 +174,7 @@ public class FlowRunnerManager implements EventListener,
     executorService = createExecutorService(numThreads);
 
     // Create a flow preparer
-    flowPreparer = new FlowPreparer(projectLoader, executionDirectory, projectDirectory, installedProjects);
+    flowPreparer = new FlowPreparer(storageManager, executionDirectory, projectDirectory, installedProjects);
 
     this.executorLoader = executorLoader;
     this.projectLoader = projectLoader;
@@ -193,7 +197,7 @@ public class FlowRunnerManager implements EventListener,
         new JobTypeManager(props.getString(
             AzkabanExecutorServer.JOBTYPE_PLUGIN_DIR,
             JobTypeManager.DEFAULT_JOBTYPEPLUGINDIR), globalProps,
-            parentClassLoader);
+            getClass().getClassLoader());
   }
 
   private TrackingThreadPool createExecutorService(int nThreads) {
@@ -304,6 +308,7 @@ public class FlowRunnerManager implements EventListener,
       return nonFinishingStatusAfterFlowStarts.contains(flow.getStatus()) && flow.getStartTime() > 0 && TimeUnit.MILLISECONDS.toMinutes(System.currentTimeMillis()-flow.getStartTime()) >= flowMaxRunningTimeInMins;
     }
 
+    @Override
     public void run() {
       while (!shutdown) {
         synchronized (this) {

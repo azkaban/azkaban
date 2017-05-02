@@ -52,23 +52,20 @@ public class ExecutorComparator extends CandidateComparator<Executor> {
    * when a new comparator is added, please do remember to register it here.
    * */
   static {
-    comparatorCreatorRepository = new HashMap<String, ComparatorCreator>();
+    comparatorCreatorRepository = new HashMap<>();
 
     // register the creator for number of assigned flow comparator.
-    comparatorCreatorRepository.put(NUMOFASSIGNEDFLOW_COMPARATOR_NAME, new ComparatorCreator(){
-      public FactorComparator<Executor> create(int weight) { return getNumberOfAssignedFlowComparator(weight); }});
+    comparatorCreatorRepository.put(NUMOFASSIGNEDFLOW_COMPARATOR_NAME,
+        ExecutorComparator::getNumberOfAssignedFlowComparator);
 
     // register the creator for memory comparator.
-    comparatorCreatorRepository.put(MEMORY_COMPARATOR_NAME, new ComparatorCreator(){
-      public FactorComparator<Executor> create(int weight) { return getMemoryComparator(weight); }});
+    comparatorCreatorRepository.put(MEMORY_COMPARATOR_NAME, ExecutorComparator::getMemoryComparator);
 
     // register the creator for last dispatched time comparator.
-    comparatorCreatorRepository.put(LSTDISPATCHED_COMPARATOR_NAME, new ComparatorCreator(){
-      public FactorComparator<Executor> create(int weight) { return getLstDispatchedTimeComparator(weight); }});
+    comparatorCreatorRepository.put(LSTDISPATCHED_COMPARATOR_NAME, ExecutorComparator::getLstDispatchedTimeComparator);
 
     // register the creator for CPU Usage comparator.
-    comparatorCreatorRepository.put(CPUUSAGE_COMPARATOR_NAME, new ComparatorCreator(){
-      public FactorComparator<Executor> create(int weight) { return getCpuUsageComparator(weight); }});
+    comparatorCreatorRepository.put(CPUUSAGE_COMPARATOR_NAME, ExecutorComparator::getCpuUsageComparator);
   }
 
 
@@ -113,13 +110,10 @@ public class ExecutorComparator extends CandidateComparator<Executor> {
    * @param stat1   the first statistics  object to be checked .
    * @param stat2   the second statistics object to be checked.
    * @param caller  the name of the calling function, for logging purpose.
-   * @param result  result Integer to pass out the result in case the statistics are not both valid.
    * @return true if the passed statistics are NOT both valid, a shortcut can be made (caller can consume the result),
    *         false otherwise.
    * */
-  private static boolean statisticsObjectCheck(ExecutorInfo statisticsObj1,
-                                               ExecutorInfo statisticsObj2, String caller, Integer result){
-    result = 0 ;
+  private static boolean statisticsObjectCheck(ExecutorInfo statisticsObj1, ExecutorInfo statisticsObj2, String caller){
     // both doesn't expose the info
     if (null == statisticsObj1 && null == statisticsObj2){
       logger.debug(String.format("%s : neither of the executors exposed statistics info.",
@@ -131,15 +125,13 @@ public class ExecutorComparator extends CandidateComparator<Executor> {
     if (null == statisticsObj2 ){
         logger.debug(String.format("%s : choosing left side and the right side executor doesn't expose statistics info",
             caller));
-        result = 1;
-        return true;
+      return true;
     }
 
     //left side doesn't expose the info.
     if (null == statisticsObj1 ){
       logger.debug(String.format("%s : choosing right side and the left side executor doesn't expose statistics info",
           caller));
-      result = -1;
       return true;
       }
 
@@ -160,7 +152,7 @@ public class ExecutorComparator extends CandidateComparator<Executor> {
         ExecutorInfo stat2 = o2.getExecutorInfo();
 
         Integer result = 0;
-        if (statisticsObjectCheck(stat1,stat2,NUMOFASSIGNEDFLOW_COMPARATOR_NAME,result)){
+        if (statisticsObjectCheck(stat1,stat2,NUMOFASSIGNEDFLOW_COMPARATOR_NAME)){
           return result;
         }
         return ((Integer)stat1.getRemainingFlowCapacity()).compareTo(stat2.getRemainingFlowCapacity());
@@ -181,7 +173,7 @@ public class ExecutorComparator extends CandidateComparator<Executor> {
         ExecutorInfo stat2 = o2.getExecutorInfo();
 
         int result = 0;
-        if (statisticsObjectCheck(stat1,stat2,CPUUSAGE_COMPARATOR_NAME,result)){
+        if (statisticsObjectCheck(stat1,stat2,CPUUSAGE_COMPARATOR_NAME)){
           return result;
         }
 
@@ -205,7 +197,7 @@ public class ExecutorComparator extends CandidateComparator<Executor> {
         ExecutorInfo stat2 = o2.getExecutorInfo();
 
         int result = 0;
-        if (statisticsObjectCheck(stat1,stat2,LSTDISPATCHED_COMPARATOR_NAME,result)){
+        if (statisticsObjectCheck(stat1,stat2,LSTDISPATCHED_COMPARATOR_NAME)){
           return result;
         }
         // Note: an earlier date time indicates higher weight.
@@ -232,7 +224,7 @@ public class ExecutorComparator extends CandidateComparator<Executor> {
        ExecutorInfo stat2 = o2.getExecutorInfo();
 
        int result = 0;
-       if (statisticsObjectCheck(stat1,stat2,MEMORY_COMPARATOR_NAME,result)){
+       if (statisticsObjectCheck(stat1,stat2,MEMORY_COMPARATOR_NAME)){
          return result;
        }
 

@@ -16,6 +16,7 @@
  */
 
 include 'azkaban-spi'
+include 'azkaban-db'
 include 'azkaban-common'
 include 'azkaban-exec-server'
 include 'azkaban-hadoop-security-plugin'

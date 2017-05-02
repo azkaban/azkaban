@@ -16,7 +16,6 @@
 
 package azkaban.webapp;
 
-import azkaban.executor.ExecutorManager;
 import azkaban.metrics.MetricsManager;
 import azkaban.metrics.MetricsUtility;
 
@@ -24,7 +23,6 @@ import com.codahale.metrics.Meter;
 import com.codahale.metrics.MetricRegistry;
 
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.Supplier;
 
 
 /**
@@ -34,20 +32,16 @@ import java.util.function.Supplier;
 public enum WebMetrics {
   INSTANCE;
 
-  private MetricRegistry registry;
+  private final MetricRegistry registry;
 
-  private Meter webGetCall;
-  private Meter webPostCall;
+  private final Meter webGetCall;
+  private final Meter webPostCall;
 
   // How long does user log fetch take when user call fetch-log api.
-  private AtomicLong logFetchLatency = new AtomicLong(0L);
+  private final AtomicLong logFetchLatency = new AtomicLong(0L);
 
   WebMetrics() {
     registry = MetricsManager.INSTANCE.getRegistry();
-    setupStaticMetrics();
-  }
-
-  private void setupStaticMetrics() {
     webGetCall = MetricsUtility.addMeter("Web-Get-Call-Meter", registry);
     webPostCall = MetricsUtility.addMeter("Web-Post-Call-Meter", registry);
     MetricsUtility.addGauge("fetchLogLatency", registry, logFetchLatency::get);

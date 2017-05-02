@@ -47,6 +47,7 @@ public class ProjectManagerTest {
     when(loader.getLatestProjectVersion(project1)).thenReturn(PROJECT_VERSION);
 
     doAnswer(new Answer<Void>() {
+      @Override
       public Void answer(InvocationOnMock invocation) {
         project1.setActive(false);
         return null;
@@ -54,6 +55,7 @@ public class ProjectManagerTest {
     }).when(loader).removeProject(project1, user.getUserId());
 
     doAnswer(new Answer<Void>() {
+      @Override
       public Void answer(InvocationOnMock invocation) {
         project1.setVersion(PROJECT_VERSION + 1);
         return null;

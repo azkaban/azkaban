@@ -16,18 +16,12 @@
 
 package azkaban.jobExecutor;
 
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
-import org.junit.runners.Suite.SuiteClasses;
 import azkaban.flow.CommonJobProperties;
 import azkaban.utils.Props;
 
-@RunWith(Suite.class)
-@SuiteClasses({ JavaProcessJobTest.class, ProcessJobTest.class,
-    PythonJobTest.class })
-public class AllJobExecutorTests {
+class AllJobExecutorTests {
 
-  public static Props setUpCommonProps(){
+  static Props setUpCommonProps(){
 
     Props props = new Props();
     props.put("fullPath", ".");
