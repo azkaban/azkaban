@@ -1,5 +1,7 @@
 package azkaban.utils;
 
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -13,8 +15,11 @@ public class OsMemoryUtilTest {
 
   @Test
   public void canReadMemInfoFileIfExists() {
-    if (util.doesMemInfoFileExist()) {
-      util.getOsTotalFreeMemorySize();
+    long size = util.getOsTotalFreeMemorySize();
+    if (Files.isRegularFile(Paths.get("/proc/meminfo"))) {
+      assertTrue(size > 0);
+    } else {
+      assertTrue(size == 0);
     }
   }
 

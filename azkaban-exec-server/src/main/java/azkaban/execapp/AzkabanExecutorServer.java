@@ -17,19 +17,31 @@
 package azkaban.execapp;
 
 import azkaban.AzkabanCommonModule;
+import azkaban.Constants;
+import azkaban.execapp.event.JobCallbackManager;
+import azkaban.execapp.jmx.JmxFlowRunnerManager;
+import azkaban.execapp.jmx.JmxJobMBeanManager;
+import azkaban.execapp.metric.NumFailedFlowMetric;
+import azkaban.execapp.metric.NumFailedJobMetric;
+import azkaban.execapp.metric.NumQueuedFlowMetric;
+import azkaban.execapp.metric.NumRunningFlowMetric;
+import azkaban.execapp.metric.NumRunningJobMetric;
+import azkaban.executor.Executor;
+import azkaban.executor.ExecutorLoader;
+import azkaban.executor.ExecutorManagerException;
+import azkaban.jmx.JmxJettyServer;
+import azkaban.metric.IMetricEmitter;
+import azkaban.metric.MetricException;
+import azkaban.metric.MetricReportManager;
+import azkaban.metric.inmemoryemitter.InMemoryMetricEmitter;
+import azkaban.metrics.MetricsManager;
+import azkaban.server.AzkabanServer;
+import azkaban.utils.Props;
+import azkaban.utils.StdOutErrRedirect;
+import azkaban.utils.Utils;
 import com.google.common.base.Throwables;
-
 import com.google.inject.Guice;
 import com.google.inject.Inject;
-import org.apache.commons.lang.StringUtils;
-import org.apache.log4j.Logger;
-import org.joda.time.DateTimeZone;
-import org.mortbay.jetty.Connector;
-import org.mortbay.jetty.Server;
-import org.mortbay.jetty.servlet.Context;
-import org.mortbay.jetty.servlet.ServletHolder;
-import org.mortbay.thread.QueuedThreadPool;
-
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
@@ -42,43 +54,22 @@ import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.TimeZone;
-
 import javax.management.MBeanInfo;
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
+import org.apache.commons.lang.StringUtils;
+import org.apache.log4j.Logger;
+import org.joda.time.DateTimeZone;
+import org.mortbay.jetty.Connector;
+import org.mortbay.jetty.Server;
+import org.mortbay.jetty.servlet.Context;
+import org.mortbay.jetty.servlet.ServletHolder;
+import org.mortbay.thread.QueuedThreadPool;
 
-import azkaban.Constants;
-
-import azkaban.execapp.event.JobCallbackManager;
-import azkaban.execapp.jmx.JmxFlowRunnerManager;
-import azkaban.execapp.jmx.JmxJobMBeanManager;
-import azkaban.execapp.metric.NumFailedFlowMetric;
-import azkaban.execapp.metric.NumFailedJobMetric;
-import azkaban.execapp.metric.NumQueuedFlowMetric;
-import azkaban.execapp.metric.NumRunningFlowMetric;
-import azkaban.execapp.metric.NumRunningJobMetric;
-import azkaban.executor.Executor;
-import azkaban.executor.ExecutorLoader;
-import azkaban.executor.ExecutorManagerException;
-import azkaban.executor.JdbcExecutorLoader;
-import azkaban.jmx.JmxJettyServer;
-import azkaban.metric.IMetricEmitter;
-import azkaban.metric.MetricException;
-import azkaban.metric.MetricReportManager;
-import azkaban.metric.inmemoryemitter.InMemoryMetricEmitter;
-import azkaban.project.JdbcProjectLoader;
-import azkaban.project.ProjectLoader;
-import azkaban.server.AzkabanServer;
-import azkaban.utils.Props;
-import azkaban.utils.StdOutErrRedirect;
-import azkaban.utils.SystemMemoryInfo;
-import azkaban.utils.Utils;
-import azkaban.metrics.MetricsManager;
-
-import static azkaban.Constants.AZKABAN_EXECUTOR_PORT_FILENAME;
+import static azkaban.Constants.*;
 import static azkaban.ServiceProvider.*;
-import static com.google.common.base.Preconditions.checkState;
-import static java.util.Objects.requireNonNull;
+import static com.google.common.base.Preconditions.*;
+import static java.util.Objects.*;
 
 public class AzkabanExecutorServer {
   private static final String CUSTOM_JMX_ATTRIBUTE_PROCESSOR_PROPERTY = "jmx.attribute.processor.class";
@@ -119,8 +110,6 @@ public class AzkabanExecutorServer {
 
     configureMBeanServer();
     configureMetricReports();
-
-    SystemMemoryInfo.init(props.getInt("executor.memCheck.interval", 30));
 
     loadCustomJMXAttributeProcessor(props);
 
@@ -573,7 +562,6 @@ public class AzkabanExecutorServer {
   public void shutdownNow() throws Exception {
     server.stop();
     server.destroy();
-    SystemMemoryInfo.shutdown();
     getFlowRunnerManager().shutdownNow();
     close();
   }
