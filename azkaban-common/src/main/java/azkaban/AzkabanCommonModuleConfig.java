@@ -23,7 +23,6 @@ import azkaban.db.MySQLDataSource;
 import azkaban.storage.StorageImplementationType;
 import azkaban.utils.Props;
 import com.google.inject.Inject;
-import com.google.inject.Provides;
 import java.net.URI;
 import org.apache.commons.dbutils.QueryRunner;
 import org.apache.log4j.Logger;

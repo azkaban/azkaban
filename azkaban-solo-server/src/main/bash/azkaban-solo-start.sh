@@ -48,7 +48,7 @@ executorport=$(grep executor.port "${conf}/azkaban.properties" | cut -d = -f 2)
 serverpath=$(pwd)
 
 AZKABAN_OPTS=" -Xmx512M -server -Djava.io.tmpdir=$tmpdir -Dexecutorport=${executorport} \
-    -Dserverpath=${serverpath} -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005"
+    -Dserverpath=${serverpath} -agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=5005"
 
 if [[ -f "${conf}/log4j.properties" ]]; then
   # Set the log4j configuration file

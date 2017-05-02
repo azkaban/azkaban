@@ -18,6 +18,7 @@ package azkaban.soloserver;
 
 import azkaban.AzkabanCommonModule;
 import azkaban.execapp.AzkabanExecServerModule;
+import azkaban.utils.StdOutErrRedirect;
 import azkaban.webapp.AzkabanWebServerModule;
 import com.google.inject.Guice;
 import java.io.IOException;
@@ -38,6 +39,9 @@ public class AzkabanSingleServer {
   private static final Logger log = Logger.getLogger(AzkabanWebServer.class);
 
   public static void main(String[] args) {
+    // Redirect all std out and err messages into log4j
+    StdOutErrRedirect.redirectOutAndErrToLog();
+
     log.info("Starting Azkaban Server");
 
     Props props = AzkabanServer.loadProps(args);

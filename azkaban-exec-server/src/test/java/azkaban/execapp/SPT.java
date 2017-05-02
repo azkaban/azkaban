@@ -15,8 +15,10 @@
  *
  */
 
-package azkaban;
+package azkaban.execapp;
 
+import azkaban.AzkabanCommonModule;
+import azkaban.Constants;
 import azkaban.project.JdbcProjectLoader;
 import azkaban.spi.Storage;
 import azkaban.storage.DatabaseStorage;
@@ -31,11 +33,10 @@ import org.apache.commons.io.FileUtils;
 import org.junit.After;
 import org.junit.Test;
 
-import static azkaban.ServiceProvider.*;
 import static org.junit.Assert.*;
 
 
-public class ServiceProviderTest {
+public class SPT {
 
   public static final String AZKABAN_LOCAL_TEST_STORAGE = "AZKABAN_LOCAL_TEST_STORAGE";
 
@@ -57,14 +58,10 @@ public class ServiceProviderTest {
 
 
     Injector injector = Guice.createInjector(
-        new AzkabanCommonModule(props)
+        new AzkabanCommonModule(props),
+        new AzkabanExecServerModule()
     );
 
-    assertNotNull(injector.getInstance(JdbcProjectLoader.class));
-    assertNotNull(injector.getInstance(StorageManager.class));
-    assertNotNull(injector.getInstance(DatabaseStorage.class));
-    assertNotNull(injector.getInstance(LocalStorage.class));
-    assertNotNull(injector.getInstance(HdfsStorage.class));
-    assertNotNull(injector.getInstance(Storage.class));
+    assertNotNull(injector.getInstance(AzkabanExecutorServer.class));
   }
 }

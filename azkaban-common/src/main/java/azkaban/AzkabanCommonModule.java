@@ -21,6 +21,7 @@ import azkaban.db.DatabaseOperatorImpl;
 
 import azkaban.project.JdbcProjectLoader;
 import azkaban.project.ProjectLoader;
+import azkaban.spi.AzkabanException;
 import azkaban.spi.Storage;
 import azkaban.spi.StorageException;
 import azkaban.storage.StorageImplementationType;
@@ -36,6 +37,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.commons.dbutils.QueryRunner;
+import org.apache.log4j.Logger;
 
 import static azkaban.Constants.ConfigurationKeys.*;
 import static com.google.common.base.Preconditions.*;
@@ -48,6 +50,8 @@ import static java.util.Objects.*;
  * structuring of Guice components.
  */
 public class AzkabanCommonModule extends AbstractModule {
+  private static final Logger log = Logger.getLogger(AzkabanCommonModule.class);
+
   private final Props props;
   private final AzkabanCommonModuleConfig config;
 
@@ -87,7 +91,7 @@ public class AzkabanCommonModule extends AbstractModule {
   @Inject
   @Provides
   @Singleton
-  public FileSystem createHadoopFileSystem() throws IOException {
+  public FileSystem createHadoopFileSystem() {
     final String hadoopConfDirPath = requireNonNull(props.get(HADOOP_CONF_DIR_PATH));
 
     final File hadoopConfDir = new File(requireNonNull(hadoopConfDirPath));
@@ -98,6 +102,11 @@ public class AzkabanCommonModule extends AbstractModule {
     hadoopConf.addResource(new Path(hadoopConfDirPath, "hdfs-site.xml"));
     hadoopConf.set("fs.hdfs.impl", org.apache.hadoop.hdfs.DistributedFileSystem.class.getName());
 
-    return FileSystem.get(hadoopConf);
+    try {
+      return FileSystem.get(hadoopConf);
+    } catch (IOException e) {
+      log.error(e);
+      throw new AzkabanException(e);
+    }
   }
 }
