@@ -1,4 +1,4 @@
-CREATE TABLE projects (
+CREATE TABLE if NOT EXISTS projects (
 	id INT NOT NULL PRIMARY KEY AUTO_INCREMENT,
 	name VARCHAR(64) NOT NULL,
 	active BOOLEAN,
@@ -10,6 +10,7 @@ CREATE TABLE projects (
 	enc_type TINYINT,
 	settings_blob LONGBLOB,
 	UNIQUE INDEX project_id (id)
-);
+)
+ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 CREATE INDEX project_name ON projects(name);

@@ -1,4 +1,4 @@
-CREATE TABLE project_versions (
+CREATE TABLE if NOT EXISTS project_versions (
 	project_id INT NOT NULL,
 	version INT not NULL,
 	upload_time BIGINT NOT NULL,
@@ -9,6 +9,7 @@ CREATE TABLE project_versions (
 	num_chunks INT,
 	uri VARCHAR(512) DEFAULT NULL,
 	PRIMARY KEY (project_id, version)
-);
+)
+ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 CREATE INDEX version_index ON project_versions(project_id);

@@ -1,4 +1,4 @@
-CREATE TABLE execution_flows (
+CREATE TABLE if NOT EXISTS execution_flows (
 	exec_id INT NOT NULL AUTO_INCREMENT,
 	project_id INT NOT NULL,
 	version INT NOT NULL,
@@ -13,7 +13,8 @@ CREATE TABLE execution_flows (
 	flow_data LONGBLOB,
 	executor_id INT DEFAULT NULL,
 	PRIMARY KEY (exec_id)
-);
+)
+ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 CREATE INDEX ex_flows_start_time ON execution_flows(start_time);
 CREATE INDEX ex_flows_end_time ON execution_flows(end_time);
