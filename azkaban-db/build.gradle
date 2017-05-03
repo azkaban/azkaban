@@ -14,6 +14,7 @@
  * the License.
  *
  */
+apply plugin: 'distribution'
 
 dependencies {
 
@@ -26,4 +27,33 @@ dependencies {
 
   testCompile('org.mockito:mockito-all:1.10.19')
   testRuntime('com.h2database:h2:1.4.193')
+}
+
+
+/**
+ * concat task
+ * Concatenate all the sql queries / files (except update.*.sql) and collect it into a single
+ * SQL file.
+ */
+task concat() << {
+  ext.destFile = 'build/sql/create-all-sql-' + version + '.sql';
+  ant.concat(destfile: destFile, fixlastline: 'yes') {
+    logger.info('Concating create scripts to ' + destFile)
+    fileset(dir: 'src/main/sql') {
+      exclude(name: 'database.properties')
+    }
+  }
+}
+
+installDist.dependsOn concat
+distTar.dependsOn concat
+distZip.dependsOn concat
+
+distributions {
+  main {
+    contents {
+      from('src/main/sql')
+      from("$buildDir/sql")
+    }
+  }
 }
