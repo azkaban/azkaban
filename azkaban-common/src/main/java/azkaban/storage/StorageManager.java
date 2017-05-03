@@ -92,7 +92,7 @@ public class StorageManager {
         metadata, localFile.getName(), localFile.length()));
 
     /* upload to storage */
-    URI uri = storage.put(metadata, localFile);
+    final String storage_key = storage.put(metadata, localFile);
 
     /* Add metadata to db */
     // TODO spyne: remove hack. Database storage should go through the same flow
@@ -102,10 +102,10 @@ public class StorageManager {
           version,
           localFile,
           uploader.getUserId(),
-          uri.toString()
+          storage_key
       );
       log.info(String.format("Added project metadata to DB. Meta:%s File: %s[%d bytes] URI: %s",
-          metadata, localFile.getName(), localFile.length(), uri));
+          metadata, localFile.getName(), localFile.length(), storage_key));
     }
   }
 
@@ -127,9 +127,9 @@ public class StorageManager {
     final ProjectFileHandler pfh = projectLoader.fetchProjectMetaData(projectId, version);
 
     /* Fetch project file from storage and copy to local file */
-    final String uri = requireNonNull(pfh.getUri(), String.format("URI is null. project ID: %d version: %d",
+    final String storage_key = requireNonNull(pfh.getUri(), String.format("URI is null. project ID: %d version: %d",
         pfh.getProjectId(), pfh.getVersion()));
-    try (InputStream is = storage.get(new URI(uri))){
+    try (InputStream is = storage.get(storage_key)){
       final File file = createTempOutputFile(pfh);
 
       /* Copy from storage to output stream */
@@ -144,7 +144,7 @@ public class StorageManager {
       pfh.setLocalFile(file);
 
       return pfh;
-    } catch (URISyntaxException | IOException e) {
+    } catch (IOException e) {
       throw new StorageException(e);
     }
   }

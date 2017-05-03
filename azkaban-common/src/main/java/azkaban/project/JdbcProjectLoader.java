@@ -391,9 +391,9 @@ public class JdbcProjectLoader extends AbstractJdbcLoader implements
       int version,
       File localFile,
       String uploader,
-      String uri) throws ProjectManagerException {
+      String storage_key) throws ProjectManagerException {
     try (Connection connection = getConnection()) {
-      addProjectToProjectVersions(connection, projectId, version, localFile, uploader, uri);
+      addProjectToProjectVersions(connection, projectId, version, localFile, uploader, storage_key);
       connection.commit();
     } catch (SQLException e) {
       logger.error(e);
@@ -426,7 +426,7 @@ public class JdbcProjectLoader extends AbstractJdbcLoader implements
       int version,
       File localFile,
       String uploader,
-      String uri) throws ProjectManagerException {
+      String storage_key) throws ProjectManagerException {
     final long updateTime = System.currentTimeMillis();
     QueryRunner runner = new QueryRunner();
     logger.info("Creating message digest for upload " + localFile.getName());
@@ -440,7 +440,7 @@ public class JdbcProjectLoader extends AbstractJdbcLoader implements
     logger.info("Md5 hash created");
 
     final String INSERT_PROJECT_VERSION = "INSERT INTO project_versions "
-        + "(project_id, version, upload_time, uploader, file_type, file_name, md5, num_chunks, uri) values "
+        + "(project_id, version, upload_time, uploader, file_type, file_name, md5, num_chunks, storage_key) values "
         + "(?,?,?,?,?,?,?,?,?)";
 
     try {
@@ -458,7 +458,7 @@ public class JdbcProjectLoader extends AbstractJdbcLoader implements
           localFile.getName(),
           md5,
           0,
-          uri);
+          storage_key);
     } catch (SQLException e) {
       String msg = String.format("Error initializing project id: %d version: %d ", projectId, version);
       logger.error(msg, e);

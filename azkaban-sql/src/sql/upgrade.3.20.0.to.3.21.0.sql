@@ -2,4 +2,4 @@
 --
 -- PR #1024 introduces a new column to 'project_versions' table.
 --
-ALTER TABLE project_versions ADD uri VARCHAR(512);
+ALTER TABLE project_versions ADD storage_key VARCHAR(512);

@@ -19,7 +19,6 @@ package azkaban.spi;
 
 import java.io.File;
 import java.io.InputStream;
-import java.net.URI;
 
 
 /**
@@ -36,11 +35,11 @@ public interface Storage {
   /**
    * Get an InputStream object by providing a key.
    *
-   * @param key The key is a URI pointing to the blob in Storage.
+   * @param key The key is a string pointing to the blob in Storage.
    * @return InputStream for fetching the blob. null if the key is not found.
    *
    */
-  InputStream get(URI key);
+  InputStream get(String key);
 
   /**
    * Put an object and return a key.
@@ -48,15 +47,15 @@ public interface Storage {
    * @param metadata Metadata related to the input stream
    * @param localFile Read data from a local file
    *
-   * @return the URI of the data
+   * @return Key associated with the current object on successful put
    */
-  URI put(StorageMetadata metadata, File localFile);
+  String put(StorageMetadata metadata, File localFile);
 
   /**
    * Delete an object from Storage.
    *
-   * @param key The key is a URI pointing to the blob in Storage.
+   * @param key The key is a string pointing to the blob in Storage.
    * @return true if delete was successful. false if there was nothing to delete.
    */
-  boolean delete(URI key);
+  boolean delete(String key);
 }

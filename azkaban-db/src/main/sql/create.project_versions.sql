@@ -7,7 +7,7 @@ CREATE TABLE project_versions (
 	file_name VARCHAR(128),
 	md5 BINARY(16),
 	num_chunks INT,
-	uri VARCHAR(512) DEFAULT NULL,
+	storage_key VARCHAR(512) DEFAULT NULL,
 	PRIMARY KEY (project_id, version)
 );
 

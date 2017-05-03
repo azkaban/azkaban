@@ -23,7 +23,6 @@ import azkaban.spi.Storage;
 import azkaban.spi.StorageMetadata;
 import java.io.File;
 import java.io.InputStream;
-import java.net.URI;
 import javax.inject.Inject;
 
 
@@ -42,7 +41,7 @@ public class DatabaseStorage implements Storage {
   }
 
   @Override
-  public InputStream get(URI key) {
+  public InputStream get(String key) {
     throw new UnsupportedOperationException("Not implemented yet. Use get(projectId, version) instead");
   }
 
@@ -51,7 +50,7 @@ public class DatabaseStorage implements Storage {
   }
 
   @Override
-  public URI put(StorageMetadata metadata, File localFile) {
+  public String put(StorageMetadata metadata, File localFile) {
     projectLoader.uploadProjectFile(
         metadata.getProjectId(),
         metadata.getVersion(),
@@ -61,7 +60,7 @@ public class DatabaseStorage implements Storage {
   }
 
   @Override
-  public boolean delete(URI key) {
+  public boolean delete(String key) {
     throw new UnsupportedOperationException("Delete is not supported");
   }
 }
