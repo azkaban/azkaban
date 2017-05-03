@@ -314,7 +314,7 @@ public class JdbcProjectLoader extends AbstractJdbcLoader implements
       connection.commit();
 
     } catch (SQLException e) {
-      logger.error(INSERT_PROJECT + " failed.");
+      logger.error(INSERT_PROJECT + " failed.", e);
       try {
         connection.rollback();
       } catch (SQLException e1) {
