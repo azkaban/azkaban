@@ -5,16 +5,17 @@ dependencies {
   compile('org.apache.kafka:kafka-log4j-appender:0.10.0.0')
   compile('com.googlecode.json-simple:json-simple:1.1.1')
 
+  runtime(project(':azkaban-hadoop-security-plugin'))
+  runtime('org.slf4j:slf4j-log4j12:1.7.18')
+
   testCompile(project(path: ':azkaban-common', configuration: 'testCompile'))
   testCompile(project(':azkaban-common').sourceSets.test.output)
-
   testCompile "org.apache.hadoop:hadoop-auth:$hadoopVersion"
   testCompile "org.apache.hadoop:hadoop-annotations:$hadoopVersion"
   testCompile "org.apache.hadoop:hadoop-common:$hadoopVersion"
   testCompile "org.apache.hadoop:hadoop-hdfs:$hadoopVersion"
 
-  runtime(project(':azkaban-hadoop-security-plugin'))
-  runtime('org.slf4j:slf4j-log4j12:1.7.18')
+  testRuntime "com.h2database:h2:1.4.193"
 }
 
 distributions {
