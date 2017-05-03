@@ -3,4 +3,4 @@
 -- Release 3.21.0 is broken
 -- PR #1024 introduces a new column to 'project_versions' table.
 --
-ALTER TABLE project_versions ADD storage_key VARCHAR(512);
+ALTER TABLE project_versions ADD resource_id VARCHAR(512);
