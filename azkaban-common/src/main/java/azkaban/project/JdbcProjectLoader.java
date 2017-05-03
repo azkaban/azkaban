@@ -391,9 +391,9 @@ public class JdbcProjectLoader extends AbstractJdbcLoader implements
       int version,
       File localFile,
       String uploader,
-      String uri) throws ProjectManagerException {
+      String resourceId) throws ProjectManagerException {
     try (Connection connection = getConnection()) {
-      addProjectToProjectVersions(connection, projectId, version, localFile, uploader, uri);
+      addProjectToProjectVersions(connection, projectId, version, localFile, uploader, resourceId);
       connection.commit();
     } catch (SQLException e) {
       logger.error(e);
@@ -426,7 +426,7 @@ public class JdbcProjectLoader extends AbstractJdbcLoader implements
       int version,
       File localFile,
       String uploader,
-      String uri) throws ProjectManagerException {
+      String resourceId) throws ProjectManagerException {
     final long updateTime = System.currentTimeMillis();
     QueryRunner runner = new QueryRunner();
     logger.info("Creating message digest for upload " + localFile.getName());
@@ -440,7 +440,7 @@ public class JdbcProjectLoader extends AbstractJdbcLoader implements
     logger.info("Md5 hash created");
 
     final String INSERT_PROJECT_VERSION = "INSERT INTO project_versions "
-        + "(project_id, version, upload_time, uploader, file_type, file_name, md5, num_chunks, uri) values "
+        + "(project_id, version, upload_time, uploader, file_type, file_name, md5, num_chunks, resource_id) values "
         + "(?,?,?,?,?,?,?,?,?)";
 
     try {
@@ -458,7 +458,7 @@ public class JdbcProjectLoader extends AbstractJdbcLoader implements
           localFile.getName(),
           md5,
           0,
-          uri);
+          resourceId);
     } catch (SQLException e) {
       String msg = String.format("Error initializing project id: %d version: %d ", projectId, version);
       logger.error(msg, e);
@@ -1539,7 +1539,7 @@ public class JdbcProjectLoader extends AbstractJdbcLoader implements
 
   private static class ProjectVersionResultHandler implements ResultSetHandler<List<ProjectFileHandler>> {
     private static String SELECT_PROJECT_VERSION =
-        "SELECT project_id, version, upload_time, uploader, file_type, file_name, md5, num_chunks, uri "
+        "SELECT project_id, version, upload_time, uploader, file_type, file_name, md5, num_chunks, resource_id "
             + "FROM project_versions WHERE project_id=? AND version=?";
 
     @Override
@@ -1558,10 +1558,10 @@ public class JdbcProjectLoader extends AbstractJdbcLoader implements
         String fileName = rs.getString(6);
         byte[] md5 = rs.getBytes(7);
         int numChunks = rs.getInt(8);
-        String uri = rs.getString(9);
+        String resourceId = rs.getString(9);
 
-        ProjectFileHandler handler =
-            new ProjectFileHandler(projectId, version, uploadTime, uploader, fileType, fileName, numChunks, md5, uri);
+        ProjectFileHandler handler = new ProjectFileHandler(
+            projectId, version, uploadTime, uploader, fileType, fileName, numChunks, md5, resourceId);
 
         handlers.add(handler);
       } while (rs.next());

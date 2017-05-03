@@ -22,7 +22,6 @@ import azkaban.spi.StorageMetadata;
 import com.google.inject.Inject;
 import java.io.File;
 import java.io.InputStream;
-import java.net.URI;
 
 
 public class HdfsStorage implements Storage {
@@ -33,17 +32,17 @@ public class HdfsStorage implements Storage {
   }
 
   @Override
-  public InputStream get(URI key) {
+  public InputStream get(String key) {
     throw new UnsupportedOperationException("Method not implemented");
   }
 
   @Override
-  public URI put(StorageMetadata metadata, File localFile) {
+  public String put(StorageMetadata metadata, File localFile) {
     throw new UnsupportedOperationException("Method not implemented");
   }
 
   @Override
-  public boolean delete(URI key) {
+  public boolean delete(String key) {
     throw new UnsupportedOperationException("Method not implemented");
   }
 }

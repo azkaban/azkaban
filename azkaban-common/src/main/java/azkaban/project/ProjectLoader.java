@@ -142,10 +142,10 @@ public interface ProjectLoader {
    * @param version
    * @param localFile
    * @param uploader
-   * @param uri
+   * @param resourceId
    * @throws ProjectManagerException
    */
-  void addProjectVersion(int projectId, int version, File localFile, String uploader, String uri)
+  void addProjectVersion(int projectId, int version, File localFile, String uploader, String resourceId)
       throws ProjectManagerException;
 
   /**

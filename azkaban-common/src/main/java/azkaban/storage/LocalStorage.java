@@ -27,7 +27,6 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.URI;
 import org.apache.commons.io.FileUtils;
 import org.apache.log4j.Logger;
 
@@ -43,21 +42,20 @@ public class LocalStorage implements Storage {
     this.baseDirectory = validateBaseDirectory(createIfDoesNotExist(baseDirectory));
   }
 
+  /**
+   * @param key Relative path of the file from the baseDirectory
+   */
   @Override
-  public InputStream get(URI key) {
+  public InputStream get(String key) {
     try {
-      return new FileInputStream(getFile(key));
+      return new FileInputStream(new File(baseDirectory, key));
     } catch (FileNotFoundException e) {
       return null;
     }
   }
 
-  private File getFile(URI key) {
-    return new File(baseDirectory, key.getPath());
-  }
-
   @Override
-  public URI put(StorageMetadata metadata, File localFile) {
+  public String put(StorageMetadata metadata, File localFile) {
 
     final File projectDir = new File(baseDirectory, String.valueOf(metadata.getProjectId()));
     if (projectDir.mkdir()) {
@@ -78,15 +76,15 @@ public class LocalStorage implements Storage {
       log.error("LocalStorage error in put(): Metadata: " + metadata);
       throw new StorageException(e);
     }
-    return createRelativeURI(targetFile);
+    return createRelativePath(targetFile);
   }
 
-  private URI createRelativeURI(File targetFile) {
-    return baseDirectory.toURI().relativize(targetFile.toURI());
+  private String createRelativePath(File targetFile) {
+    return baseDirectory.toURI().relativize(targetFile.toURI()).getPath();
   }
 
   @Override
-  public boolean delete(URI key) {
+  public boolean delete(String key) {
     throw new UnsupportedOperationException("delete has not been implemented.");
   }
 
