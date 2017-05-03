@@ -35,7 +35,7 @@ distributions {
       from(jar) {
         into 'lib'
       }
-      from(project(':azkaban-sql').files('src/sql')) {
+      from(project(':azkaban-db').files('src/main/sql')) {
         into('sql')
       }
       // Get the files from sub-dir of distribution of another sub-project
