@@ -54,6 +54,8 @@ dependencies {
   compile('com.linkedin.pegasus:restli-server:' + pegasusVersion)
   compile('org.apache.velocity:velocity-tools:2.0')
 
+  runtime('org.slf4j:slf4j-log4j12:1.7.18')
+
   testCompile(project(path: ':azkaban-common', configuration: 'testCompile'))
   testCompile('commons-collections:commons-collections:3.2.2')
   testCompile('org.hamcrest:hamcrest-all:1.3')
