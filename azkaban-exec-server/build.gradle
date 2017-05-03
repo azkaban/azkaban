@@ -9,6 +9,7 @@ dependencies {
   testCompile(project(':azkaban-common').sourceSets.test.output)
 
   runtime(project(':azkaban-hadoop-security-plugin'))
+  runtime('org.slf4j:slf4j-log4j12:1.7.18')
 }
 
 distributions {
