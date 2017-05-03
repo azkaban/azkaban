@@ -78,7 +78,7 @@ public class PythonJobTest {
   }
 
   @AfterClass
-  public static void cleanup() {
+  public static void cleanup() throws IOException {
     // remove the input file and error input file
     Utils.removeFile(scriptFile);
   }

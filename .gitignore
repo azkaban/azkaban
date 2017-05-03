@@ -22,3 +22,4 @@ temp/
 *.ipr
 *.iws
 .ideaDataSources/
+.shelf

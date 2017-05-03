@@ -8,3 +8,20 @@ dependencies {
   compileOnly "org.apache.hadoop:hadoop-mapreduce-client-core:$hadoopVersion"
   compileOnly "org.apache.hive:hive-metastore:$hiveVersion"
 }
+
+/**
+ * TODO spyne: remove after fixing internal build.
+ *
+ * Just package the jar.
+ * Since, rest of the dependencies are just hadoop and hive. They are not packaged inside the plugin.
+ * It is assumed that classpaths of hadoop, hive, pig, etc will be externally fed into the application.
+ */
+distributions {
+  main {
+    contents {
+      from(jar) {
+        into 'lib'
+      }
+    }
+  }
+}
