@@ -16,30 +16,36 @@
 
 package azkaban.executor;
 
-import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import org.junit.Assert;
 import org.junit.Test;
 
 import azkaban.alert.Alerter;
-import azkaban.flow.Flow;
-import azkaban.project.Project;
 import azkaban.user.User;
-import azkaban.utils.JSONUtils;
 import azkaban.utils.Pair;
 import azkaban.utils.Props;
 import azkaban.utils.TestUtils;
+import static org.mockito.Mockito.*;
 
 /**
  * Test class for executor manager
  */
 public class ExecutorManagerTest {
+  private ExecutorManager manager;
+  private ExecutorLoader loader;
+  private Props props;
+  private User user;
+  private Map<Integer, Pair<ExecutionReference, ExecutableFlow>> activeFlows = new HashMap<>();
+  private ExecutableFlow flow1;
+  private ExecutableFlow flow2;
 
   /* Helper method to create a ExecutorManager Instance */
   private ExecutorManager createMultiExecutorManagerInstance()
@@ -254,5 +260,91 @@ public class ExecutorManagerTest {
     Assert.assertEquals(fetchedFlow.getStatus(), Status.FAILED);
 
     Assert.assertFalse(manager.getRunningFlows().contains(flow1));
+  }
+
+  /*
+   * Added tests for runningFlows
+   * TODO: When removing queuedFlows cache, will refactor rest of the ExecutorManager test cases
+   */
+  @Test
+  public void testSubmitFlows() throws ExecutorManagerException, IOException {
+    testSetUpForRunningFlows();
+    ExecutableFlow flow1 = TestUtils.createExecutableFlow("exectest1", "exec1");
+    manager.submitExecutableFlow(flow1, user.getUserId());
+    verify(loader).uploadExecutableFlow(flow1);
+    verify(loader).addActiveExecutableReference(any());
+  }
+
+  @Test
+  public void testFetchAllActiveFlows() throws ExecutorManagerException, IOException {
+    testSetUpForRunningFlows();
+    List<ExecutableFlow> flows = manager.getRunningFlows();
+    for(Pair<ExecutionReference, ExecutableFlow> pair : activeFlows.values()) {
+      Assert.assertTrue(flows.contains(pair.getSecond()));
+    }
+  }
+
+  @Test
+  public void testFetchActiveFlowByProject() throws ExecutorManagerException, IOException {
+    testSetUpForRunningFlows();
+    List<Integer> executions = manager.getRunningFlows(flow1.getProjectId(), flow1.getFlowId());
+    Assert.assertTrue(executions.contains(flow1.getExecutionId()));
+    Assert.assertTrue(manager.isFlowRunning(flow1.getProjectId(), flow1.getFlowId()));
+  }
+
+  @Test
+  public void testFetchActiveFlowWithExecutor() throws ExecutorManagerException, IOException {
+    testSetUpForRunningFlows();
+    List<Pair<ExecutableFlow, Executor>> activeFlowsWithExecutor =
+        manager.getActiveFlowsWithExecutor();
+    Assert.assertTrue(activeFlowsWithExecutor.contains(new Pair<>(flow1,
+        manager.fetchExecutor(flow1.getExecutionId()))));
+    Assert.assertTrue(activeFlowsWithExecutor.contains(new Pair<>(flow2,
+        manager.fetchExecutor(flow2.getExecutionId()))));
+  }
+
+  @Test
+  public void testFetchAllActiveExecutorServerHosts() throws ExecutorManagerException, IOException {
+    testSetUpForRunningFlows();
+    Set<String> activeExecutorServerHosts = manager.getAllActiveExecutorServerHosts();
+    Executor executor1 = manager.fetchExecutor(flow1.getExecutionId());
+    Executor executor2 = manager.fetchExecutor(flow2.getExecutionId());
+    Assert.assertTrue(activeExecutorServerHosts.contains(executor1.getHost() + ":" + executor1.getPort()));
+    Assert.assertTrue(activeExecutorServerHosts.contains(executor2.getHost() + ":" + executor2.getPort()));
+  }
+
+  /*
+   * TODO: will move below method to setUp() and run before every test for both runningFlows and queuedFlows
+   */
+  private void testSetUpForRunningFlows()
+      throws ExecutorManagerException, IOException {
+    loader = mock(ExecutorLoader.class);
+    user = TestUtils.getTestUser();
+    props = new Props();
+    props.put(ExecutorManager.AZKABAN_USE_MULTIPLE_EXECUTORS, "true");
+    //To test runningFlows, AZKABAN_QUEUEPROCESSING_ENABLED should be set to true
+    //so that flows will be dispatched to executors.
+    props.put(ExecutorManager.AZKABAN_QUEUEPROCESSING_ENABLED, "true");
+
+    List<Executor> executors = new ArrayList<>();
+    Executor executor1 = new Executor(1, "localhost", 12345, true);
+    Executor executor2 = new Executor(2, "localhost", 12346, true);
+    executors.add(executor1);
+    executors.add(executor2);
+
+    when(loader.fetchActiveExecutors()).thenReturn(executors);
+    manager = new ExecutorManager(props, loader, new HashMap<>());
+
+    flow1 = TestUtils.createExecutableFlow("exectest1", "exec1");
+    flow2 = TestUtils.createExecutableFlow("exectest1", "exec2");
+    flow1.setExecutionId(1);
+    flow2.setExecutionId(2);
+    ExecutionReference ref1 =
+        new ExecutionReference(flow1.getExecutionId(), executor1);
+    ExecutionReference ref2 =
+        new ExecutionReference(flow2.getExecutionId(), executor2);
+    activeFlows.put(flow1.getExecutionId(), new Pair<>(ref1, flow1));
+    activeFlows.put(flow2.getExecutionId(), new Pair<>(ref2, flow2));
+    when(loader.fetchActiveFlows()).thenReturn(activeFlows);
   }
 }

@@ -219,6 +219,27 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements
   }
 
   @Override
+  public Pair<ExecutionReference, ExecutableFlow> fetchActiveFlowByExecId(int execId)
+      throws ExecutorManagerException {
+    QueryRunner runner = createQueryRunner();
+    FetchActiveExecutableFlowByExecId flowHandler = new FetchActiveExecutableFlowByExecId();
+
+    try {
+      List<Pair<ExecutionReference, ExecutableFlow>> flows =
+          runner.query(FetchActiveExecutableFlowByExecId.FETCH_ACTIVE_EXECUTABLE_FLOW_BY_EXECID,
+              flowHandler, execId);
+      if(flows.isEmpty()) {
+        return null;
+      }
+      else {
+        return flows.get(0);
+      }
+    } catch (SQLException e) {
+      throw new ExecutorManagerException("Error fetching active flows by exec id", e);
+    }
+  }
+
+  @Override
   public int fetchNumExecutableFlows() throws ExecutorManagerException {
     QueryRunner runner = createQueryRunner();
 
@@ -1157,7 +1178,7 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements
         "SELECT exec_id, project_id, version, flow_id, job_id, "
             + "start_time, end_time, status, attempt "
             + "FROM execution_jobs WHERE exec_id=? "
-            + "AND job_id=? AND attempt_id=?";
+            + "AND job_id=? AND attempt=?";
     private static String FETCH_EXECUTABLE_NODE_ATTEMPTS =
         "SELECT exec_id, project_id, version, flow_id, job_id, "
             + "start_time, end_time, status, attempt FROM execution_jobs "
@@ -1364,7 +1385,7 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements
       }
 
       Map<Integer, Pair<ExecutionReference, ExecutableFlow>> execFlows =
-          new HashMap<Integer, Pair<ExecutionReference, ExecutableFlow>>();
+          new HashMap<>();
       do {
         int id = rs.getInt(1);
         int encodingType = rs.getInt(2);
@@ -1400,6 +1421,68 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements
 
             execFlows.put(id, new Pair<ExecutionReference, ExecutableFlow>(ref,
                 exFlow));
+          } catch (IOException e) {
+            throw new SQLException("Error retrieving flow data " + id, e);
+          }
+        }
+      } while (rs.next());
+
+      return execFlows;
+    }
+  }
+
+  private static class FetchActiveExecutableFlowByExecId implements
+      ResultSetHandler<List<Pair<ExecutionReference, ExecutableFlow>>> {
+    private static String FETCH_ACTIVE_EXECUTABLE_FLOW_BY_EXECID =
+        "SELECT ex.exec_id exec_id, ex.enc_type enc_type, ex.flow_data flow_data, et.host host, "
+            + "et.port port, ax.update_time axUpdateTime, et.id executorId, et.active executorStatus"
+            + " FROM execution_flows ex"
+            + " INNER JOIN "
+            + " active_executing_flows ax ON ex.exec_id = ax.exec_id"
+            + " INNER JOIN "
+            + " executors et ON ex.executor_id = et.id"
+            + " WHERE ax.exec_id = ?";
+
+    @Override
+    public List<Pair<ExecutionReference, ExecutableFlow>> handle(ResultSet rs)
+        throws SQLException {
+      if (!rs.next()) {
+        return Collections.emptyList();
+      }
+
+      List<Pair<ExecutionReference, ExecutableFlow>> execFlows =
+          new ArrayList<>();
+      do {
+        int id = rs.getInt(1);
+        int encodingType = rs.getInt(2);
+        byte[] data = rs.getBytes(3);
+        String host = rs.getString(4);
+        int port = rs.getInt(5);
+        long updateTime = rs.getLong(6);
+        int executorId = rs.getInt(7);
+        boolean executorStatus = rs.getBoolean(8);
+
+        if (data == null) {
+          logger.error("Found a flow with empty data blob exec_id: " + id);
+        } else {
+          EncodingType encType = EncodingType.fromInteger(encodingType);
+          Object flowObj;
+          try {
+            if (encType == EncodingType.GZIP) {
+              String jsonString = GZIPUtils.unGzipString(data, "UTF-8");
+              flowObj = JSONUtils.parseJSONFromString(jsonString);
+            } else {
+              String jsonString = new String(data, "UTF-8");
+              flowObj = JSONUtils.parseJSONFromString(jsonString);
+            }
+
+            ExecutableFlow exFlow =
+                ExecutableFlow.createExecutableFlowFromObject(flowObj);
+            Executor executor = new Executor(executorId, host, port, executorStatus);
+            ExecutionReference ref = new ExecutionReference(id, executor);
+            ref.setUpdateTime(updateTime);
+
+            execFlows.add(new Pair<>(ref, exFlow));
           } catch (IOException e) {
             throw new SQLException("Error retrieving flow data " + id, e);
           }

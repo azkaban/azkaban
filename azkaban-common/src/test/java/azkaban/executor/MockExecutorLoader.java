@@ -67,6 +67,12 @@ public class MockExecutorLoader implements ExecutorLoader {
   }
 
   @Override
+  public Pair<ExecutionReference, ExecutableFlow> fetchActiveFlowByExecId(int execId)
+      throws ExecutorManagerException {
+    return activeFlows.get(execId);
+  }
+
+  @Override
   public List<ExecutableFlow> fetchFlowHistory(int projectId, String flowId,
       int skip, int num) throws ExecutorManagerException {
     return null;
