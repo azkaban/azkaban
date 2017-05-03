@@ -1539,7 +1539,7 @@ public class JdbcProjectLoader extends AbstractJdbcLoader implements
 
   private static class ProjectVersionResultHandler implements ResultSetHandler<List<ProjectFileHandler>> {
     private static String SELECT_PROJECT_VERSION =
-        "SELECT project_id, version, upload_time, uploader, file_type, file_name, md5, num_chunks, uri "
+        "SELECT project_id, version, upload_time, uploader, file_type, file_name, md5, num_chunks, resource_id "
             + "FROM project_versions WHERE project_id=? AND version=?";
 
     @Override
@@ -1558,10 +1558,10 @@ public class JdbcProjectLoader extends AbstractJdbcLoader implements
         String fileName = rs.getString(6);
         byte[] md5 = rs.getBytes(7);
         int numChunks = rs.getInt(8);
-        String uri = rs.getString(9);
+        String resourceId = rs.getString(9);
 
-        ProjectFileHandler handler =
-            new ProjectFileHandler(projectId, version, uploadTime, uploader, fileType, fileName, numChunks, md5, uri);
+        ProjectFileHandler handler = new ProjectFileHandler(
+            projectId, version, uploadTime, uploader, fileType, fileName, numChunks, md5, resourceId);
 
         handlers.add(handler);
       } while (rs.next());

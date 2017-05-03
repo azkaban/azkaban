@@ -27,7 +27,7 @@ public class ProjectFileHandler {
   private final String uploader;
   private final byte[] md5Hash;
   private final int numChunks;
-  private final String uri;
+  private final String resourceId;
 
   private File localFile = null;
 
@@ -40,7 +40,7 @@ public class ProjectFileHandler {
       String fileName,
       int numChunks,
       byte[] md5Hash,
-      String uri) {
+      String resourceId) {
     this.projectId = projectId;
     this.version = version;
     this.uploadTime = uploadTime;
@@ -49,7 +49,7 @@ public class ProjectFileHandler {
     this.fileName = fileName;
     this.md5Hash = md5Hash;
     this.numChunks = numChunks;
-    this.uri = uri;
+    this.resourceId = resourceId;
   }
 
   public int getProjectId() {
@@ -99,7 +99,7 @@ public class ProjectFileHandler {
     return numChunks;
   }
 
-  public String getUri() {
-    return uri;
+  public String getResourceId() {
+    return resourceId;
   }
 }
