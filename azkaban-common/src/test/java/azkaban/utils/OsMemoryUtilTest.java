@@ -1,5 +1,8 @@
 package azkaban.utils;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -13,9 +16,13 @@ public class OsMemoryUtilTest {
 
   @Test
   public void canReadMemInfoFileIfExists() {
-    if (util.doesMemInfoFileExist()) {
-      util.getOsTotalFreeMemorySize();
+    long size = util.getOsTotalFreeMemorySize();
+    Path memFile = Paths.get("/proc/meminfo");
+    if (!(Files.isRegularFile(memFile) && Files.isReadable(memFile))) {
+      assertTrue(size == 0);
     }
+    // todo HappyRay: investigate why size returned is 0 on Travis only but works on my Linux machine.
+    // I can't find a way to get to the Gradle test report on Travis which makes debugging difficult.
   }
 
   @Test

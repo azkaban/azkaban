@@ -1,11 +1,12 @@
 package azkaban.utils;
 
-import java.io.File;
+import com.google.common.collect.ImmutableSet;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.List;
+import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -15,42 +16,33 @@ import org.slf4j.LoggerFactory;
  *
  * Note:
  * This check is designed for Linux only.
- * Make sure to call {@link #doesMemInfoFileExist()} first before attempting to get memory information.
  */
 class OsMemoryUtil {
-  private static final Logger logger = LoggerFactory.getLogger(SystemMemoryInfo.class);
+  private static final Logger logger = LoggerFactory.getLogger(OsMemoryUtil.class);
 
   // This file is used by Linux. It doesn't exist on Mac for example.
-  static final String MEM_INFO_FILE = "/proc/meminfo";
+  private static final String MEM_INFO_FILE = "/proc/meminfo";
 
-  private final String[] MEM_KEYS;
-
-  OsMemoryUtil() {
-    MEM_KEYS = new String[]{"MemFree", "Buffers", "Cached", "SwapFree"};
-  }
-
-  /**
-   *
-   * @return true if the meminfo file exists.
-   */
-  boolean doesMemInfoFileExist() {
-    File f = new File(MEM_INFO_FILE);
-    return f.exists() && !f.isDirectory();
-  }
+  private static final Set<String> MEM_KEYS = ImmutableSet.of("MemFree", "Buffers", "Cached", "SwapFree");
 
   /**
    * Includes OS cache and free swap.
-   * @return the total free memory size of the OS. 0 if there is an error.
+   * @return the total free memory size of the OS. 0 if there is an error or the OS doesn't support this memory check.
    */
   long getOsTotalFreeMemorySize() {
+    if (!Files.isRegularFile(Paths.get(MEM_INFO_FILE))) {
+      // Mac doesn't support /proc/meminfo for example.
+      return 0;
+    }
+
     List<String> lines;
-    // The file /proc/meminfo seems to contain only ASCII characters.
+    // The file /proc/meminfo is assumed to contain only ASCII characters.
     // The assumption is that the file is not too big. So it is simpler to read the whole file into memory.
     try {
       lines = Files.readAllLines(Paths.get(MEM_INFO_FILE), StandardCharsets.UTF_8);
     } catch (IOException e) {
       String errMsg = "Failed to open mem info file: " + MEM_INFO_FILE;
-      logger.warn(errMsg, e);
+      logger.error(errMsg, e);
       return 0;
     }
     return getOsTotalFreeMemorySizeFromStrings(lines);
@@ -78,10 +70,10 @@ class OsMemoryUtil {
       }
     }
 
-    int length = MEM_KEYS.length;
+    int length = MEM_KEYS.size();
     if (count != length) {
       String errMsg = String.format("Expect %d keys in the meminfo file. Got %d. content: %s", length, count, lines);
-      logger.warn(errMsg);
+      logger.error(errMsg);
       totalFree = 0;
     }
     return totalFree;
@@ -110,7 +102,7 @@ class OsMemoryUtil {
       return Long.parseLong(sizeString);
     } catch (NumberFormatException e) {
       String err = "Failed to parse the meminfo file. Line: " + line;
-      logger.warn(err);
+      logger.error(err);
       return 0;
     }
   }
