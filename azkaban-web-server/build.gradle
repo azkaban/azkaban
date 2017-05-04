@@ -66,9 +66,7 @@ dependencies {
   generateRestli('com.linkedin.pegasus:generator:' + pegasusVersion)
   generateRestli('com.linkedin.pegasus:restli-tools:' + pegasusVersion)
 
-  // Needed by Velocity at runtime
-  testRuntime('commons-collections:commons-collections:3.2.2')
-  testCompile('org.hamcrest:hamcrest-all:1.3')
+  testRuntime "com.h2database:h2:1.4.193"
 }
 
 sourceSets {

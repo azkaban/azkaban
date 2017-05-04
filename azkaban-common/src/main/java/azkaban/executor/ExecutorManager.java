@@ -75,7 +75,7 @@ public class ExecutorManager extends EventHandler implements
       "azkaban.executorselector.comparator.";
   static final String AZKABAN_QUEUEPROCESSING_ENABLED =
     "azkaban.queueprocessing.enabled";
-  static final String AZKABAN_USE_MULTIPLE_EXECUTORS =
+  public static final String AZKABAN_USE_MULTIPLE_EXECUTORS =
     "azkaban.use.multiple.executors";
   private static final String AZKABAN_WEBSERVER_QUEUE_SIZE =
     "azkaban.webserver.queue.size";
