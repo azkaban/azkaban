@@ -42,6 +42,7 @@ import azkaban.utils.Utils;
 import com.google.common.base.Throwables;
 import com.google.inject.Guice;
 import com.google.inject.Inject;
+import com.google.inject.Injector;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
@@ -339,28 +340,16 @@ public class AzkabanExecutorServer {
       return;
     }
 
-
     /* Initialize Guice Injector */
-    SERVICE_PROVIDER.setInjector(Guice.createInjector(
-        new AzkabanCommonModule(props),
-        new AzkabanExecServerModule()
-    ));
+    final Injector injector = Guice.createInjector(new AzkabanCommonModule(props), new AzkabanExecServerModule());
+    SERVICE_PROVIDER.setInjector(injector);
 
-    launch(props);
+    launch(injector.getInstance(AzkabanExecutorServer.class));
   }
 
-  public static void launch(Props azkabanSettings) throws Exception {
-    // Setup time zone
-    if (azkabanSettings.containsKey(DEFAULT_TIMEZONE_ID)) {
-      String timezone = azkabanSettings.getString(DEFAULT_TIMEZONE_ID);
-      System.setProperty("user.timezone", timezone);
-      TimeZone.setDefault(TimeZone.getTimeZone(timezone));
-      DateTimeZone.setDefault(DateTimeZone.forID(timezone));
-
-      logger.info("Setting timezone to " + timezone);
-    }
-
-    app = SERVICE_PROVIDER.getInstance(AzkabanExecutorServer.class);
+  public static void launch(AzkabanExecutorServer azkabanExecutorServer) throws Exception {
+    setupTimeZone(azkabanExecutorServer.getAzkabanProps());
+    app = azkabanExecutorServer;
 
     Runtime.getRuntime().addShutdownHook(new Thread() {
 
@@ -411,6 +400,17 @@ public class AzkabanExecutorServer {
         }
       }
     });
+  }
+
+  private static void setupTimeZone(Props azkabanSettings) {
+    if (azkabanSettings.containsKey(DEFAULT_TIMEZONE_ID)) {
+      String timezone = azkabanSettings.getString(DEFAULT_TIMEZONE_ID);
+      System.setProperty("user.timezone", timezone);
+      TimeZone.setDefault(TimeZone.getTimeZone(timezone));
+      DateTimeZone.setDefault(DateTimeZone.forID(timezone));
+
+      logger.info("Setting timezone to " + timezone);
+    }
   }
 
   public FlowRunnerManager getFlowRunnerManager() {

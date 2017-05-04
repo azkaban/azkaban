@@ -1,5 +1,5 @@
 /*
- * Copyright 2012 LinkedIn Corp.
+ * Copyright 2017 LinkedIn Corp.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -12,57 +12,41 @@
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
  * License for the specific language governing permissions and limitations under
  * the License.
+ *
  */
 
 package azkaban.soloserver;
 
 import azkaban.AzkabanCommonModule;
-import azkaban.execapp.AzkabanExecServerModule;
-import azkaban.webapp.AzkabanWebServerModule;
-import com.google.inject.Guice;
-import com.google.inject.Inject;
-import com.google.inject.Injector;
-import org.apache.log4j.Logger;
-
 import azkaban.database.AzkabanDatabaseSetup;
 import azkaban.database.AzkabanDatabaseUpdater;
-import azkaban.execapp.AzkabanExecutorServer;
+import azkaban.execapp.AzkabanExecServerModule;
 import azkaban.server.AzkabanServer;
-import azkaban.webapp.AzkabanWebServer;
 import azkaban.utils.Props;
+import azkaban.webapp.AzkabanWebServerModule;
+import com.google.inject.Guice;
+import com.google.inject.Injector;
+import java.io.File;
+import java.net.URL;
+import org.apache.log4j.Logger;
+import org.junit.Test;
 
 import static azkaban.ServiceProvider.*;
+import static java.util.Objects.*;
+import static org.junit.Assert.*;
 
 
-public class AzkabanSingleServer {
-  private static final Logger log = Logger.getLogger(AzkabanWebServer.class);
+public class AzkabanSingleServerTest {
+  private static final Logger log = Logger.getLogger(AzkabanSingleServerTest.class);
 
-  private final AzkabanWebServer webServer;
-  private final AzkabanExecutorServer executor;
-
-  @Inject
-  public AzkabanSingleServer(AzkabanWebServer webServer, AzkabanExecutorServer executor) {
-    this.webServer = webServer;
-    this.executor = executor;
+  private String getConfPath() {
+    final URL resource = AzkabanSingleServerTest.class.getClassLoader().getResource("conf");
+    return requireNonNull(resource).getPath();
   }
-
-  private void launch() throws Exception {
-    AzkabanWebServer.launch(webServer);
-    log.info("Azkaban Web Server started...");
-
-    AzkabanExecutorServer.launch(executor);
-    log.info("Azkaban Exec Server started...");
-  }
-
-  public static void main(String[] args) throws Exception {
-    log.info("Starting Azkaban Server");
-
-    Props props = AzkabanServer.loadProps(args);
-    if (props == null) {
-      log.error("Properties not found. Need it to connect to the db.");
-      log.error("Exiting...");
-      return;
-    }
+  @Test
+  public void testInjection() throws Exception {
+    Props props = AzkabanServer.loadProps(new String[] {"-c", "conf", getConfPath() });
+    assertNotNull(props);
 
     if (props.getBoolean(AzkabanDatabaseSetup.DATABASE_CHECK_VERSION, true)) {
       boolean updateDB = props.getBoolean(AzkabanDatabaseSetup.DATABASE_AUTO_UPDATE_TABLES, true);
@@ -79,6 +63,6 @@ public class AzkabanSingleServer {
     SERVICE_PROVIDER.setInjector(injector);
 
     /* Launch server */
-    injector.getInstance(AzkabanSingleServer.class).launch();
+    assertNotNull(injector.getInstance(AzkabanSingleServer.class));
   }
 }
