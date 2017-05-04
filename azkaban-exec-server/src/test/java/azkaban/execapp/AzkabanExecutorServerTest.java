@@ -63,9 +63,6 @@ public class AzkabanExecutorServerTest {
     props.put("database.type", "h2");
     props.put("h2.path", "./h2");
 
-    props.put("hadoop.conf.dir.path", "/Users/spyne/hadoop/hadoop-2.6.1/etc/hadoop");
-    props.put("azkaban.storage.hdfs.root.uri", "hdfs://localhost:9000/");
-
     AzkabanDatabaseUpdater.runDatabaseUpdater(props, sqlScriptsDir, true);
   }
 
@@ -79,7 +76,7 @@ public class AzkabanExecutorServerTest {
   }
 
   @Test
-  public void testInjections() throws Exception {
+  public void testInjection() throws Exception {
     props.put(Constants.ConfigurationKeys.AZKABAN_STORAGE_LOCAL_BASEDIR, AZKABAN_LOCAL_TEST_STORAGE);
 
     Injector injector = Guice.createInjector(
