@@ -166,8 +166,7 @@ public class AzkabanDatabaseSetup {
     File dbPropsFile = new File(this.scriptPath, "database.properties");
 
     if (!dbPropsFile.exists()) {
-      throw new IOException("Cannot find 'database.properties' file in "
-          + dbPropsFile.getPath());
+      throw new IOException("Cannot find 'database.properties' file in " + dbPropsFile.getAbsolutePath());
     }
 
     return new Props(null, dbPropsFile);
