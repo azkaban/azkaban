@@ -19,6 +19,8 @@ package azkaban;
 import azkaban.db.DatabaseOperator;
 import azkaban.db.DatabaseOperatorImpl;
 
+import azkaban.executor.ExecutorLoader;
+import azkaban.executor.JdbcExecutorLoader;
 import azkaban.project.JdbcProjectLoader;
 import azkaban.project.ProjectLoader;
 import azkaban.spi.Storage;
@@ -48,6 +50,7 @@ public class AzkabanCommonModule extends AbstractModule {
 
   @Override
   protected void configure() {
+    bind(ExecutorLoader.class).to(JdbcExecutorLoader.class).in(Scopes.SINGLETON);
     bind(ProjectLoader.class).to(JdbcProjectLoader.class).in(Scopes.SINGLETON);
     bind(Props.class).toInstance(config.getProps());
     bind(Storage.class).to(resolveStorageClassType()).in(Scopes.SINGLETON);
