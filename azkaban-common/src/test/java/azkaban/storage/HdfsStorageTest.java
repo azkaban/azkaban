@@ -53,8 +53,7 @@ public class HdfsStorageTest {
 
   @Test
   public void testGet() throws Exception {
-    URI uri = URI.create("1/1-hash.zip");
-    hdfsStorage.get(uri);
+    hdfsStorage.get("1/1-hash.zip");
     verify(hdfs).open(new Path("hdfs://localhost:9000/path/to/foo/1/1-hash.zip"));
   }
 
@@ -68,10 +67,10 @@ public class HdfsStorageTest {
     when(hdfs.exists(any(Path.class))).thenReturn(false);
 
     StorageMetadata metadata = new StorageMetadata(1, 2, "uploader", "hash".getBytes());
-    URI uri = hdfsStorage.put(metadata, file);
+    String key = hdfsStorage.put(metadata, file);
 
     verify(hdfs).copyFromLocalFile(new Path(absolutePath), new Path("/path/to/foo/1/1-hash.zip"));
 
-    Assert.assertEquals(URI.create("1/1-hash.zip"), uri);
+    Assert.assertEquals("1/1-hash.zip", key);
   }
 }
