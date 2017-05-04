@@ -123,7 +123,7 @@ public class MockProjectLoader implements ProjectLoader {
   }
 
   @Override
-  public void addProjectVersion(int projectId, int version, File localFile, String uploader, String resourceId)
+  public void addProjectVersion(int projectId, int version, File localFile, String uploader, byte[] md5, String resourceId)
       throws ProjectManagerException {
 
   }
