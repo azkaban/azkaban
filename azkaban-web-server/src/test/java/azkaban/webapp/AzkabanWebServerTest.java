@@ -59,7 +59,7 @@ public class AzkabanWebServerTest {
     Path azkabanRoot = resources.getParent().getParent().getParent().getParent();
 
     File sqlScriptDir = Paths.get(azkabanRoot.toString(), AZKABAN_DB_SQL_PATH).toFile();
-    return props.getString(AzkabanDatabaseSetup.DATABASE_SQL_SCRIPT_DIR, sqlScriptDir.getCanonicalPath());
+    return sqlScriptDir.getCanonicalPath();
   }
 
   @BeforeClass
