@@ -28,7 +28,7 @@ public class AzkabanConnectionPoolTest{
 
   public static class EmbeddedH2BasicDataSource extends AzkabanDataSource {
 
-    private EmbeddedH2BasicDataSource() {
+    public EmbeddedH2BasicDataSource() {
       super();
       String url = "jdbc:h2:mem:test";
       setDriverClassName("org.h2.Driver");

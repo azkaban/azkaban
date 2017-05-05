@@ -26,18 +26,22 @@ import org.apache.commons.dbutils.ResultSetHandler;
  * this interface, users/callers (implementation code) should decide where to {@link Connection#commit()}
  * based on their requirements.
  *
+ * The diff between DatabaseTransOperator and DatabaseOperator:
+ * * Auto commit and Auto close connection are enforced in DatabaseOperator, but not enabled in DatabaseTransOperator.
+ * * We usually group a couple of sql operations which need the same connection into DatabaseTransOperator.
+ *
  * @see org.apache.commons.dbutils.QueryRunner
  */
 public interface DatabaseTransOperator {
-
 
   /**
    * returns the last id from a previous insert statement.
    * Note that last insert and this operation should use the same connection.
    *
    * @return the last inserted id in mysql per connection.
+   * @throws SQLException
    */
-  long  getLastInsertId();
+  long getLastInsertId() throws SQLException;
 
   /**
    *
@@ -58,4 +62,10 @@ public interface DatabaseTransOperator {
    * @throws SQLException
    */
   int update(String updateClause, Object... params) throws SQLException;
+
+  /**
+   *
+   * @return the JDBC connection associated with this operator.
+   */
+  Connection getConnection();
 }

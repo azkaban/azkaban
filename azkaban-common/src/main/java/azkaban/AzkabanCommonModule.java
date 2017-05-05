@@ -16,9 +16,12 @@
  */
 package azkaban;
 
+import azkaban.db.AzkabanDataSource;
 import azkaban.db.DatabaseOperator;
 import azkaban.db.DatabaseOperatorImpl;
 
+import azkaban.db.H2FileDataSource;
+import azkaban.db.MySQLDataSource;
 import azkaban.executor.ExecutorLoader;
 import azkaban.executor.JdbcExecutorLoader;
 import azkaban.project.JdbcProjectLoader;
@@ -27,12 +30,16 @@ import azkaban.spi.Storage;
 import azkaban.spi.StorageException;
 import azkaban.storage.LocalStorage;
 import azkaban.storage.StorageImplementationType;
+import azkaban.trigger.JdbcTriggerImpl;
+import azkaban.trigger.TriggerLoader;
 import azkaban.utils.Props;
 import com.google.inject.AbstractModule;
 import com.google.inject.Inject;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
+import com.google.inject.Singleton;
 import java.io.File;
+import javax.sql.DataSource;
 import org.apache.commons.dbutils.QueryRunner;
 
 
@@ -55,8 +62,8 @@ public class AzkabanCommonModule extends AbstractModule {
     bind(Props.class).toInstance(config.getProps());
     bind(Storage.class).to(resolveStorageClassType()).in(Scopes.SINGLETON);
     bind(DatabaseOperator.class).to(DatabaseOperatorImpl.class).in(Scopes.SINGLETON);
-    //todo kunkun-tang : Consider both H2 DataSource and MysqlDatasource case.
-    bind(QueryRunner.class).toInstance(config.getQueryRunner());
+    bind(TriggerLoader.class).to(JdbcTriggerImpl.class).in(Scopes.SINGLETON);
+    bind(DataSource.class).to(AzkabanDataSource.class);
   }
 
   public Class<? extends Storage> resolveStorageClassType() {
@@ -81,5 +88,33 @@ public class AzkabanCommonModule extends AbstractModule {
   public @Provides
   LocalStorage createLocalStorage(AzkabanCommonModuleConfig config) {
     return new LocalStorage(new File(config.getLocalStorageBaseDirPath()));
+  }
+
+  // todo kunkun-tang: the below method should moved out to azkaban-db module eventually.
+  @Inject
+  @Provides
+  @Singleton
+  public AzkabanDataSource getDataSource(Props props) {
+    String databaseType = props.getString("database.type");
+
+    if(databaseType.equals("h2")) {
+      String path = props.getString("h2.path");
+      return new H2FileDataSource(path);
+    }
+    int port = props.getInt("mysql.port");
+    String host = props.getString("mysql.host");
+    String database = props.getString("mysql.database");
+    String user = props.getString("mysql.user");
+    String password = props.getString("mysql.password");
+    int numConnections = props.getInt("mysql.numconnections");
+
+    return MySQLDataSource.getInstance(host, port, database, user, password,
+        numConnections);
+
+  }
+
+  @Provides
+  public QueryRunner createQueryRunner(AzkabanDataSource dataSource) {
+    return new QueryRunner(dataSource);
   }
 }

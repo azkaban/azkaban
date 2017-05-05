@@ -48,13 +48,14 @@ class DatabaseTransOperatorImpl implements DatabaseTransOperator {
    *
    */
   @Override
-  public long getLastInsertId() {
+  public long getLastInsertId() throws SQLException {
     // A default connection: autocommit = true.
     long num = -1;
     try {
       num = ((Number) queryRunner.query(conn,"SELECT LAST_INSERT_ID();", new ScalarHandler<>(1))).longValue();
     } catch (SQLException ex) {
-      logger.error("can not get last insertion ID", ex);
+      logger.error("can not get last insertion ID");
+      throw ex;
     }
     return num;
   }
@@ -84,6 +85,7 @@ class DatabaseTransOperatorImpl implements DatabaseTransOperator {
     }
   }
 
+  @Override
   public Connection getConnection() {
     return conn;
   }
