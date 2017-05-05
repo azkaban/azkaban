@@ -21,6 +21,7 @@ import com.codahale.metrics.MetricRegistry;
 
 import com.google.inject.Guice;
 import com.google.inject.Inject;
+import com.google.inject.Injector;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -683,20 +684,18 @@ public class AzkabanWebServer extends AzkabanServer {
     }
 
     /* Initialize Guice Injector */
-    SERVICE_PROVIDER.setInjector(Guice.createInjector(
-        new AzkabanCommonModule(props),
-        new AzkabanWebServerModule()
-    ));
+    final Injector injector = Guice.createInjector(new AzkabanCommonModule(props), new AzkabanWebServerModule());
+    SERVICE_PROVIDER.setInjector(injector);
 
-    launch(props);
+    launch(injector.getInstance(AzkabanWebServer.class));
   }
 
-  public static void launch(Props azkabanSettings) throws Exception {
+  public static void launch(AzkabanWebServer webServer) throws Exception {
     /* This creates the Web Server instance */
-    app = SERVICE_PROVIDER.getInstance(AzkabanWebServer.class);
+    app = webServer;
 
     // TODO refactor code into ServerProvider
-    prepareAndStartServer(azkabanSettings, app.server);
+    prepareAndStartServer(webServer.getServerProps(), app.server);
 
     Runtime.getRuntime().addShutdownHook(new Thread() {
 
