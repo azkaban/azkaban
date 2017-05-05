@@ -73,13 +73,6 @@ dependencies {
   testRuntime('org.slf4j:slf4j-log4j12:1.7.18')
 }
 
-task copySqlFiles(type: Copy) {
-  from project(':azkaban-db').file('src/main/sql')
-  into file("${buildDir}/resources/test/sql2")
-}
-
-test.dependsOn copySqlFiles
-
 tasks.withType(JavaCompile) {
   options.encoding = "UTF-8"
 }

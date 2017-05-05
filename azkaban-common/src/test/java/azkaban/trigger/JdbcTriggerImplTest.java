@@ -56,9 +56,7 @@ public class JdbcTriggerImplTest {
   public static void prepare() throws Exception {
     Props props = new Props();
 
-    URL resourceUrl = Resources.getResource("sql2");
-    assertNotNull(resourceUrl);
-    String sqlScriptsDir = new File(resourceUrl.toURI()).getCanonicalPath();
+    String sqlScriptsDir = new File("../azkaban-db/src/main/sql/").getCanonicalPath();
     props.put("database.sql.scripts.dir", sqlScriptsDir);
 
     AzkabanDatabaseSetup setup = new AzkabanDatabaseSetup(dataSource, props);
