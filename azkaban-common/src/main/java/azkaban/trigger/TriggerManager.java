@@ -156,6 +156,12 @@ public class TriggerManager extends EventHandler implements
     synchronized (syncObj) {
       runnerThread.deleteTrigger(triggerIdMap.get(t.getTriggerId()));
       runnerThread.addTrigger(t);
+
+      try {
+        triggerLoader.updateTrigger(t);
+      } catch (TriggerLoaderException e) {
+        throw new TriggerManagerException(e);
+      }
       triggerIdMap.put(t.getTriggerId(), t);
     }
   }
