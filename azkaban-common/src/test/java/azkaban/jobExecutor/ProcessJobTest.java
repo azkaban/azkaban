@@ -16,19 +16,19 @@
 
 package azkaban.jobExecutor;
 
+import azkaban.flow.CommonJobProperties;
+import azkaban.utils.Props;
 import java.io.File;
 import java.io.IOException;
-
 import org.apache.log4j.Logger;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Test;
+import org.junit.BeforeClass;
 import org.junit.Rule;
+import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
-import azkaban.flow.CommonJobProperties;
-import azkaban.utils.Props;
 
 public class ProcessJobTest {
   @Rule
@@ -37,6 +37,12 @@ public class ProcessJobTest {
   private ProcessJob job = null;
   private Props props = null;
   private Logger log = Logger.getLogger(ProcessJob.class);
+
+  @BeforeClass
+  public static void classInit() throws Exception {
+    azkaban.test.Utils.initServiceProvider();
+
+  }
 
   @Before
   public void setUp() throws IOException {

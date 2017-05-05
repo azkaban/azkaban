@@ -35,6 +35,9 @@ public interface ExecutorLoader {
   Map<Integer, Pair<ExecutionReference, ExecutableFlow>> fetchActiveFlows()
       throws ExecutorManagerException;
 
+  Pair<ExecutionReference, ExecutableFlow> fetchActiveFlowByExecId(int execId)
+      throws ExecutorManagerException;
+
   List<ExecutableFlow> fetchFlowHistory(int skip, int num)
       throws ExecutorManagerException;
 

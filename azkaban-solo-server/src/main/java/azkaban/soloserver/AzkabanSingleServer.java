@@ -20,6 +20,8 @@ import azkaban.AzkabanCommonModule;
 import azkaban.execapp.AzkabanExecServerModule;
 import azkaban.webapp.AzkabanWebServerModule;
 import com.google.inject.Guice;
+import com.google.inject.Inject;
+import com.google.inject.Injector;
 import org.apache.log4j.Logger;
 
 import azkaban.database.AzkabanDatabaseSetup;
@@ -33,15 +35,32 @@ import static azkaban.ServiceProvider.*;
 
 
 public class AzkabanSingleServer {
-  private static final Logger logger = Logger.getLogger(AzkabanWebServer.class);
+  private static final Logger log = Logger.getLogger(AzkabanWebServer.class);
+
+  private final AzkabanWebServer webServer;
+  private final AzkabanExecutorServer executor;
+
+  @Inject
+  public AzkabanSingleServer(AzkabanWebServer webServer, AzkabanExecutorServer executor) {
+    this.webServer = webServer;
+    this.executor = executor;
+  }
+
+  private void launch() throws Exception {
+    AzkabanWebServer.launch(webServer);
+    log.info("Azkaban Web Server started...");
+
+    AzkabanExecutorServer.launch(executor);
+    log.info("Azkaban Exec Server started...");
+  }
 
   public static void main(String[] args) throws Exception {
-    logger.info("Starting Azkaban Server");
+    log.info("Starting Azkaban Server");
 
     Props props = AzkabanServer.loadProps(args);
     if (props == null) {
-      logger.error("Properties not found. Need it to connect to the db.");
-      logger.error("Exiting...");
+      log.error("Properties not found. Need it to connect to the db.");
+      log.error("Exiting...");
       return;
     }
 
@@ -52,16 +71,14 @@ public class AzkabanSingleServer {
     }
 
     /* Initialize Guice Injector */
-    SERVICE_PROVIDER.setInjector(Guice.createInjector(
+    final Injector injector = Guice.createInjector(
         new AzkabanCommonModule(props),
         new AzkabanWebServerModule(),
         new AzkabanExecServerModule()
-    ));
+    );
+    SERVICE_PROVIDER.setInjector(injector);
 
-    AzkabanWebServer.launch(props);
-    logger.info("Azkaban Web Server started...");
-
-    AzkabanExecutorServer.launch(props);
-    logger.info("Azkaban Exec Server started...");
+    /* Launch server */
+    injector.getInstance(AzkabanSingleServer.class).launch();
   }
 }

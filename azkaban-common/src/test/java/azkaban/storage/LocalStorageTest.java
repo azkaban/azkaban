@@ -56,7 +56,7 @@ public class LocalStorageTest {
     File testFile = new File(classLoader.getResource(SAMPLE_FILE).getFile());
 
     final StorageMetadata metadata = new StorageMetadata(1, 1, "testuser");
-    final URI key = localStorage.put(metadata, testFile);
+    final String key = localStorage.put(metadata, testFile);
     assertNotNull(key);
     log.info("Key URI: " + key);
 

@@ -16,24 +16,23 @@
 
 package azkaban.jobExecutor;
 
-import java.io.BufferedReader;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.InputStreamReader;
+import azkaban.utils.Props;
 import java.io.PrintWriter;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.StringTokenizer;
-
 import org.apache.log4j.Logger;
 
-import azkaban.utils.Props;
 
 public class WordCountLocal extends AbstractJob {
 
-  private String _input = null;
-  private String _output = null;
-  private Map<String, Integer> _dic = new HashMap<String, Integer>();
+  private String input = null;
+  private String output = null;
+  private Map<String, Integer> dict = new HashMap<>();
 
   public static void main(String[] args) throws Exception {
     String propsFile = System.getenv(ProcessJob.JOB_PROP_ENV);
@@ -43,59 +42,47 @@ public class WordCountLocal extends AbstractJob {
     instance.run();
   }
 
-  public WordCountLocal(String id, Props prop) {
+  private WordCountLocal(String id, Props prop) {
     super(id, Logger.getLogger(WordCountLocal.class));
-    _input = prop.getString("input");
-    _output = prop.getString("output");
+    input = prop.getString("input");
+    output = prop.getString("output");
   }
 
   @Override
   public void run() throws Exception {
 
-    if (_input == null)
+    if (input == null) {
       throw new Exception("input file is null");
-    if (_output == null)
+    }
+    if (output == null) {
       throw new Exception("output file is null");
-    BufferedReader in =
-        new BufferedReader(new InputStreamReader(new FileInputStream(_input)));
-
-    String line = null;
-    while ((line = in.readLine()) != null) {
+    }
+    List<String> lines = Files.readAllLines(Paths.get(input), StandardCharsets.UTF_8);
+    for (String line : lines) {
       StringTokenizer tokenizer = new StringTokenizer(line);
       while (tokenizer.hasMoreTokens()) {
         String word = tokenizer.nextToken();
 
-        if (word.toString().equals("end_here")) { // expect an out-of-bound
-                                                  // exception
+        if (word.equals("end_here")) { // expect an out-of-bound
+          // exception
+          // todo HappyRay: investigate what the following statements are designed to do.
           String[] errArray = new String[1];
           System.out.println("string in possition 2 is " + errArray[1]);
         }
 
-        if (_dic.containsKey(word)) {
-          Integer num = _dic.get(word);
-          _dic.put(word, num + 1);
+        if (dict.containsKey(word)) {
+          Integer num = dict.get(word);
+          dict.put(word, num + 1);
         } else {
-          _dic.put(word, 1);
+          dict.put(word, 1);
         }
       }
     }
-    in.close();
 
-    PrintWriter out = new PrintWriter(new FileOutputStream(_output));
-    for (Map.Entry<String, Integer> entry : _dic.entrySet()) {
-      out.println(entry.getKey() + "\t" + entry.getValue());
+    try (PrintWriter out = new PrintWriter(output, StandardCharsets.UTF_8.toString())) {
+      for (Map.Entry<String, Integer> entry : dict.entrySet()) {
+        out.println(entry.getKey() + "\t" + entry.getValue());
+      }
     }
-    out.close();
   }
-
-  @Override
-  public Props getJobGeneratedProperties() {
-    return new Props();
-  }
-
-  @Override
-  public boolean isCanceled() {
-    return false;
-  }
-
 }

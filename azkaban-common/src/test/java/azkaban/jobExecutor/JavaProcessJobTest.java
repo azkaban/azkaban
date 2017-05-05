@@ -16,11 +16,11 @@
 
 package azkaban.jobExecutor;
 
-import java.io.IOException;
+import azkaban.utils.Props;
 import java.io.File;
+import java.io.IOException;
 import java.util.Date;
 import java.util.Properties;
-
 import org.apache.log4j.Logger;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -28,12 +28,10 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
-import org.junit.Test;
 import org.junit.Rule;
+import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
-import azkaban.flow.CommonJobProperties;
-import azkaban.utils.Props;
 
 public class JavaProcessJobTest {
   @ClassRule
@@ -73,6 +71,7 @@ public class JavaProcessJobTest {
 
   @BeforeClass
   public static void init() throws IOException {
+    azkaban.test.Utils.initServiceProvider();
     // Get the classpath
     Properties prop = System.getProperties();
     classPaths =
