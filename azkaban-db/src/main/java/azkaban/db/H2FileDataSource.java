@@ -15,8 +15,12 @@
  */
 package azkaban.db;
 
+import java.nio.file.Path;
+
+
 public class H2FileDataSource extends AzkabanDataSource {
-  public H2FileDataSource(String filePath) {
+
+  public H2FileDataSource(Path filePath) {
     super();
     String url = "jdbc:h2:file:" + filePath;
     setDriverClassName("org.h2.Driver");

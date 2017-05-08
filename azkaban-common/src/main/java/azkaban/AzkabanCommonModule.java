@@ -19,7 +19,6 @@ package azkaban;
 import azkaban.db.AzkabanDataSource;
 import azkaban.db.DatabaseOperator;
 import azkaban.db.DatabaseOperatorImpl;
-
 import azkaban.db.H2FileDataSource;
 import azkaban.db.MySQLDataSource;
 import azkaban.executor.ExecutorLoader;
@@ -37,8 +36,12 @@ import com.google.inject.Inject;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.Singleton;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import javax.sql.DataSource;
 import org.apache.commons.dbutils.QueryRunner;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 /**
@@ -47,6 +50,8 @@ import org.apache.commons.dbutils.QueryRunner;
  * structuring of Guice components.
  */
 public class AzkabanCommonModule extends AbstractModule {
+  private static final Logger logger = LoggerFactory.getLogger(AzkabanCommonModule.class);
+
   private final AzkabanCommonModuleConfig config;
 
   public AzkabanCommonModule(Props props) {
@@ -91,7 +96,9 @@ public class AzkabanCommonModule extends AbstractModule {
 
     if(databaseType.equals("h2")) {
       String path = props.getString("h2.path");
-      return new H2FileDataSource(path);
+      Path h2DbPath = Paths.get(path).toAbsolutePath();
+      logger.info("h2 DB path: " + h2DbPath);
+      return new H2FileDataSource(h2DbPath);
     }
     int port = props.getInt("mysql.port");
     String host = props.getString("mysql.host");
