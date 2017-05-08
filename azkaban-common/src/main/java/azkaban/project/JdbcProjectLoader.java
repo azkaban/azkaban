@@ -785,7 +785,7 @@ public class JdbcProjectLoader extends AbstractJdbcLoader implements
 
   @Override
   public List<Triple<String, Boolean, Permission>> getProjectPermissions(
-      final int projectId) throws ProjectManagerException {
+      final Project project) throws ProjectManagerException {
     final ProjectPermissionsResultHandler permHander =
         new ProjectPermissionsResultHandler();
     final QueryRunner runner = createQueryRunner();
@@ -794,10 +794,10 @@ public class JdbcProjectLoader extends AbstractJdbcLoader implements
       permissions =
           runner.query(
               ProjectPermissionsResultHandler.SELECT_PROJECT_PERMISSION,
-              permHander, projectId);
+              permHander, project.getId());
     } catch (final SQLException e) {
       throw new ProjectManagerException("Query for permissions for "
-          + projectId + " failed.", e);
+          + project.getId() + " failed.", e);
     }
 
     return permissions;
