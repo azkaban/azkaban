@@ -53,8 +53,8 @@ public class StorageManager {
   @Inject
   public StorageManager(Props props, Storage storage, ProjectLoader projectLoader) {
     this.tempDir = new File(props.getString("project.temp.dir", "temp"));
-    this.storage = storage;
-    this.projectLoader = projectLoader;
+    this.storage = requireNonNull(storage);
+    this.projectLoader = requireNonNull(projectLoader);
 
     prepareTempDir();
   }
@@ -81,11 +81,15 @@ public class StorageManager {
       int version,
       File localFile,
       User uploader) {
+    byte[] md5 = null;
+    if (!(storage instanceof DatabaseStorage)) {
+      md5 = computeHash(localFile);
+    }
     final StorageMetadata metadata = new StorageMetadata(
         project.getId(),
         version,
-        uploader.getUserId()
-    );
+        uploader.getUserId(),
+        md5);
     log.info(String.format("Adding archive to storage. Meta:%s File: %s[%d bytes]",
         metadata, localFile.getName(), localFile.length()));
 
@@ -100,11 +104,22 @@ public class StorageManager {
           version,
           localFile,
           uploader.getUserId(),
-          resourceId
+          requireNonNull(md5),
+          requireNonNull(resourceId)
       );
       log.info(String.format("Added project metadata to DB. Meta:%s File: %s[%d bytes] URI: %s",
           metadata, localFile.getName(), localFile.length(), resourceId));
     }
+  }
+
+  private byte[] computeHash(File localFile) {
+    final byte[] md5;
+    try {
+      md5 = Md5Hasher.md5Hash(localFile);
+    } catch (IOException e) {
+      throw new StorageException(e);
+    }
+    return md5;
   }
 
   /**
