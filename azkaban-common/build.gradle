@@ -32,9 +32,18 @@ model {
 }
 
 configurations {
-  testCompileOnly.extendsFrom(compileOnly)
+  /*
+   * We need to explicitly import compileOnly dependencies in test. Else, they are not available in the test compile
+   * and runtime classpaths.
+   */
+  testCompile.extendsFrom(compileOnly)
 }
 dependencies {
+  compileOnly "org.apache.hadoop:hadoop-auth:$hadoopVersion"
+  compileOnly "org.apache.hadoop:hadoop-annotations:$hadoopVersion"
+  compileOnly "org.apache.hadoop:hadoop-common:$hadoopVersion"
+  compileOnly "org.apache.hadoop:hadoop-hdfs:$hadoopVersion"
+
   compile project(':azkaban-spi')
   compile project(':azkaban-db')
 
