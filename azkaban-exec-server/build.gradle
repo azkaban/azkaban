@@ -3,7 +3,9 @@ apply plugin: 'distribution'
 dependencies {
   compile(project(':azkaban-common'))
   compile('org.apache.kafka:kafka-log4j-appender:0.10.0.0')
-  compile('com.googlecode.json-simple:json-simple:1.1.1')
+  compile('com.googlecode.json-simple:json-simple:1.1.1') {
+    exclude group: 'junit', module: 'junit'
+  }
 
   runtime(project(':azkaban-hadoop-security-plugin'))
   runtime('org.slf4j:slf4j-log4j12:1.7.18')
