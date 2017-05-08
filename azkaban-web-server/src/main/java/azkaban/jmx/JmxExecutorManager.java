@@ -19,7 +19,7 @@ package azkaban.jmx;
 import java.util.ArrayList;
 import java.util.List;
 
-import azkaban.executor.ExecutorManager;
+import azkaban.webapp.ExecutorManager;
 
 public class JmxExecutorManager implements JmxExecutorManagerMBean {
   private ExecutorManager manager;

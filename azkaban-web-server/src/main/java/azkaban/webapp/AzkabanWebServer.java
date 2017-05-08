@@ -60,7 +60,6 @@ import org.mortbay.thread.QueuedThreadPool;
 import azkaban.alert.Alerter;
 import azkaban.Constants;
 import azkaban.database.AzkabanDatabaseSetup;
-import azkaban.executor.ExecutorManager;
 import azkaban.executor.JdbcExecutorLoader;
 import azkaban.jmx.JmxExecutorManager;
 import azkaban.jmx.JmxJettyServer;
@@ -288,7 +287,9 @@ public class AzkabanWebServer extends AzkabanServer {
   private TriggerManager loadTriggerManager(Props props)
       throws TriggerManagerException {
     TriggerLoader loader = new JdbcTriggerLoader(props);
-    return new TriggerManager(props, loader, executorManager);
+    TriggerManager triggerManager = new TriggerManager(props, loader);
+    executorManager.addListener(triggerManager.getListener());
+    return triggerManager;
   }
 
   private void loadBuiltinCheckersAndActions() {
