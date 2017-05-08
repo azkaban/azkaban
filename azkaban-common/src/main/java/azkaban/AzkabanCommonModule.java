@@ -33,7 +33,11 @@ import azkaban.trigger.JdbcTriggerImpl;
 import azkaban.trigger.TriggerLoader;
 import azkaban.utils.Props;
 import com.google.inject.AbstractModule;
+import com.google.inject.Inject;
+import com.google.inject.Provides;
 import com.google.inject.Scopes;
+import com.google.inject.Singleton;
+import javax.sql.DataSource;
 import org.apache.commons.dbutils.QueryRunner;
 
 
