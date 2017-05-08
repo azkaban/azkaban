@@ -268,9 +268,12 @@ public class ExecutorServlet extends HttpServlet implements ConnectorParams {
         continue;
       }
 
-      // After removing runningFlows cache from web server, flow info will be fetched from DB directly,
-      // updateTime will be synced between web server and executor. So below if condition will always be true.
-      // TODO: will remove UpdaterThread in executorManager and deprecate handleAjaxUpdateRequest()
+      // In the previous design, web server sends update requests to executor periodically and checks
+      // updateTime to decide whether to update the flow cache on web server side and remove active flows
+      // from DB. After removing runningFlows cache from web server, flow info will be fetched from DB
+      // directly, so both web server and executor will have the same flow updateTime here.
+      // todo jamiesjc: will investigate whether the current update mechanism is still needed. Plan to
+      // remove UpdaterThread in executorManager and deprecate handleAjaxUpdateRequest()
       if (flow.getUpdateTime() >= updateTime) {
         updateList.add(flow.toUpdateObject(updateTime));
       }
