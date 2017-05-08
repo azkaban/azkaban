@@ -17,14 +17,15 @@
 
 package azkaban.storage;
 
+import azkaban.AzkabanCommonModuleConfig;
 import azkaban.spi.Storage;
 import azkaban.spi.StorageException;
 import azkaban.spi.StorageMetadata;
 import azkaban.utils.FileIOUtils;
 import com.google.common.io.Files;
+import com.google.inject.Inject;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import org.apache.commons.io.FileUtils;
@@ -36,34 +37,32 @@ import static com.google.common.base.Preconditions.*;
 public class LocalStorage implements Storage {
   private static final Logger log = Logger.getLogger(LocalStorage.class);
 
-  final File baseDirectory;
+  final File rootDirectory;
 
-  public LocalStorage(File baseDirectory) {
-    this.baseDirectory = validateBaseDirectory(createIfDoesNotExist(baseDirectory));
+  @Inject
+  public LocalStorage(AzkabanCommonModuleConfig config) {
+    this.rootDirectory = validateRootDirectory(createIfDoesNotExist(config.getLocalStorageBaseDirPath()));
   }
 
   /**
    * @param key Relative path of the file from the baseDirectory
    */
   @Override
-  public InputStream get(String key) {
-    try {
-      return new FileInputStream(new File(baseDirectory, key));
-    } catch (FileNotFoundException e) {
-      return null;
-    }
+  public InputStream get(String key) throws IOException {
+    return new FileInputStream(new File(rootDirectory, key));
   }
 
   @Override
   public String put(StorageMetadata metadata, File localFile) {
-
-    final File projectDir = new File(baseDirectory, String.valueOf(metadata.getProjectId()));
+    final File projectDir = new File(rootDirectory, String.valueOf(metadata.getProjectId()));
     if (projectDir.mkdir()) {
       log.info("Created project dir: " + projectDir.getAbsolutePath());
     }
 
-    final File targetFile = new File(projectDir,
-        metadata.getVersion() + "." + Files.getFileExtension(localFile.getName()));
+    final File targetFile = new File(projectDir, String.format("%s-%s.%s",
+        String.valueOf(metadata.getProjectId()),
+        new String(metadata.getHash()),
+        Files.getFileExtension(localFile.getName())));
 
     if (targetFile.exists()) {
       throw new StorageException(String.format(
@@ -80,7 +79,7 @@ public class LocalStorage implements Storage {
   }
 
   private String createRelativePath(File targetFile) {
-    return baseDirectory.toURI().relativize(targetFile.toURI()).getPath();
+    return rootDirectory.toURI().relativize(targetFile.toURI()).getPath();
   }
 
   @Override
@@ -88,7 +87,8 @@ public class LocalStorage implements Storage {
     throw new UnsupportedOperationException("delete has not been implemented.");
   }
 
-  private static File createIfDoesNotExist(File baseDirectory) {
+  private static File createIfDoesNotExist(String baseDirectoryPath) {
+    final File baseDirectory = new File(baseDirectoryPath);
     if(!baseDirectory.exists()) {
       baseDirectory.mkdir();
       log.info("Creating dir: " + baseDirectory.getAbsolutePath());
@@ -96,7 +96,7 @@ public class LocalStorage implements Storage {
     return baseDirectory;
   }
 
-  private static File validateBaseDirectory(File baseDirectory) {
+  private static File validateRootDirectory(File baseDirectory) {
     checkArgument(baseDirectory.isDirectory());
     if (!FileIOUtils.isDirWritable(baseDirectory)) {
       throw new IllegalArgumentException("Directory not writable: " + baseDirectory);
