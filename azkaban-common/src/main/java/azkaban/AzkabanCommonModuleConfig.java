@@ -24,7 +24,6 @@ import azkaban.storage.StorageImplementationType;
 import azkaban.utils.Props;
 import com.google.inject.Inject;
 import java.net.URI;
-import java.net.URISyntaxException;
 import org.apache.commons.dbutils.QueryRunner;
 import org.apache.log4j.Logger;
 
@@ -47,17 +46,16 @@ public class AzkabanCommonModuleConfig {
    *
    */
   private String storageImplementation = DATABASE.name();
-  private String localStorageBaseDirPath = "AZKABAN_STORAGE";
-  private URI hdfsBaseUri = uri("hdfs://localhost:50070/path/to/base/");
+  private String localStorageBaseDirPath = "LOCAL_STORAGE";
+  private URI hdfsRootUri;
 
   @Inject
   public AzkabanCommonModuleConfig(Props props) {
     this.props = props;
 
-    storageImplementation = props.getString(Constants.ConfigurationKeys.AZKABAN_STORAGE_TYPE,
-        storageImplementation);
+    storageImplementation = props.getString(AZKABAN_STORAGE_TYPE, storageImplementation);
     localStorageBaseDirPath = props.getString(AZKABAN_STORAGE_LOCAL_BASEDIR, localStorageBaseDirPath);
-    hdfsBaseUri = props.getUri(AZKABAN_STORAGE_HDFS_BASEURI, hdfsBaseUri);
+    hdfsRootUri = props.get(AZKABAN_STORAGE_HDFS_ROOT_URI) != null ? props.getUri(AZKABAN_STORAGE_HDFS_ROOT_URI) : null;
   }
 
   public Props getProps() {
@@ -72,18 +70,7 @@ public class AzkabanCommonModuleConfig {
     return localStorageBaseDirPath;
   }
 
-
-
-  public URI getHdfsBaseUri() {
-    return hdfsBaseUri;
-  }
-
-  private static URI uri(String uri){
-    try {
-      return new URI(uri);
-    } catch (URISyntaxException e) {
-      log.error(e);
-    }
-    return null;
+  public URI getHdfsRootUri() {
+    return hdfsRootUri;
   }
 }

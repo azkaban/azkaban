@@ -26,11 +26,13 @@ public class StorageMetadata {
   private final int projectId;
   private final int version;
   private final String uploader;
+  private byte[] hash;
 
-  public StorageMetadata(int projectId, int version, String uploader) {
+  public StorageMetadata(int projectId, int version, String uploader, byte[] hash) {
     this.projectId = projectId;
     this.version = version;
     this.uploader = requireNonNull(uploader);
+    this.hash = hash;
   }
 
   @Override
@@ -48,6 +50,10 @@ public class StorageMetadata {
 
   public String getUploader() {
     return uploader;
+  }
+
+  public byte[] getHash() {
+    return hash;
   }
 
   @Override

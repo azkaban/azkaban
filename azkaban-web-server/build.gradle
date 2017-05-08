@@ -134,7 +134,8 @@ task restliRestSpecGenerator(dependsOn: [restliTemplateGenerator], type: JavaExe
   }
 }
 
-task restli(dependsOn: restliTemplateGenerator) << {
+task restli(dependsOn: restliTemplateGenerator) {
+  doLast {}
 }
 
 compileJava.dependsOn.add('restli')
