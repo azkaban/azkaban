@@ -360,7 +360,8 @@ public class JdbcProjectLoader extends AbstractJdbcLoader implements
 
     try {
       /* Update DB with new project info */
-      addProjectToProjectVersions(connection, projectId, version, localFile, uploader, null);
+      addProjectToProjectVersions(
+          connection, projectId, version, localFile, uploader, computeHash(localFile), null);
 
       uploadProjectFile(connection, projectId, version, localFile);
 
@@ -391,9 +392,10 @@ public class JdbcProjectLoader extends AbstractJdbcLoader implements
       int version,
       File localFile,
       String uploader,
+      byte[] md5,
       String resourceId) throws ProjectManagerException {
     try (Connection connection = getConnection()) {
-      addProjectToProjectVersions(connection, projectId, version, localFile, uploader, resourceId);
+      addProjectToProjectVersions(connection, projectId, version, localFile, uploader, md5, resourceId);
       connection.commit();
     } catch (SQLException e) {
       logger.error(e);
@@ -426,18 +428,10 @@ public class JdbcProjectLoader extends AbstractJdbcLoader implements
       int version,
       File localFile,
       String uploader,
+      byte[] md5,
       String resourceId) throws ProjectManagerException {
     final long updateTime = System.currentTimeMillis();
     QueryRunner runner = new QueryRunner();
-    logger.info("Creating message digest for upload " + localFile.getName());
-    byte[] md5;
-    try {
-      md5 = Md5Hasher.md5Hash(localFile);
-    } catch (IOException e) {
-      throw new ProjectManagerException("Error getting md5 hash.", e);
-    }
-
-    logger.info("Md5 hash created");
 
     final String INSERT_PROJECT_VERSION = "INSERT INTO project_versions "
         + "(project_id, version, upload_time, uploader, file_type, file_name, md5, num_chunks, resource_id) values "
@@ -464,6 +458,19 @@ public class JdbcProjectLoader extends AbstractJdbcLoader implements
       logger.error(msg, e);
       throw new ProjectManagerException(msg, e);
     }
+  }
+
+  private byte[] computeHash(File localFile) {
+    logger.info("Creating message digest for upload " + localFile.getName());
+    byte[] md5;
+    try {
+      md5 = Md5Hasher.md5Hash(localFile);
+    } catch (IOException e) {
+      throw new ProjectManagerException("Error getting md5 hash.", e);
+    }
+
+    logger.info("Md5 hash created");
+    return md5;
   }
 
   private int uploadFileInChunks(Connection connection, int projectId, int version, File localFile)

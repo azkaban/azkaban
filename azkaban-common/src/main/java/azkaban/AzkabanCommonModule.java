@@ -19,7 +19,6 @@ package azkaban;
 import azkaban.db.AzkabanDataSource;
 import azkaban.db.DatabaseOperator;
 import azkaban.db.DatabaseOperatorImpl;
-
 import azkaban.db.H2FileDataSource;
 import azkaban.db.MySQLDataSource;
 import azkaban.executor.ExecutorLoader;
@@ -28,7 +27,6 @@ import azkaban.project.JdbcProjectLoader;
 import azkaban.project.ProjectLoader;
 import azkaban.spi.Storage;
 import azkaban.spi.StorageException;
-import azkaban.storage.LocalStorage;
 import azkaban.storage.StorageImplementationType;
 import azkaban.trigger.JdbcTriggerImpl;
 import azkaban.trigger.TriggerLoader;
@@ -38,7 +36,6 @@ import com.google.inject.Inject;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.Singleton;
-import java.io.File;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import javax.sql.DataSource;
@@ -88,12 +85,6 @@ public class AzkabanCommonModule extends AbstractModule {
     } catch (ClassNotFoundException e) {
       throw new StorageException(e);
     }
-  }
-
-  @Inject
-  public @Provides
-  LocalStorage createLocalStorage(AzkabanCommonModuleConfig config) {
-    return new LocalStorage(new File(config.getLocalStorageBaseDirPath()));
   }
 
   // todo kunkun-tang: the below method should moved out to azkaban-db module eventually.

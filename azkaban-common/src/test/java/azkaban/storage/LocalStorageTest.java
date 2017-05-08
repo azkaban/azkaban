@@ -17,10 +17,11 @@
 
 package azkaban.storage;
 
+import azkaban.AzkabanCommonModuleConfig;
 import azkaban.spi.StorageMetadata;
+import azkaban.utils.Md5Hasher;
 import java.io.File;
 import java.io.InputStream;
-import java.net.URI;
 import org.apache.commons.io.FileUtils;
 import org.apache.log4j.Logger;
 import org.junit.After;
@@ -28,6 +29,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import static org.junit.Assert.*;
+import static org.mockito.Mockito.*;
 
 
 public class LocalStorageTest {
@@ -37,12 +39,15 @@ public class LocalStorageTest {
   static final String LOCAL_STORAGE = "LOCAL_STORAGE";
   static final File BASE_DIRECTORY = new File(LOCAL_STORAGE);
 
-  private final LocalStorage localStorage = new LocalStorage(BASE_DIRECTORY);
+  private LocalStorage localStorage;
 
   @Before
   public void setUp() throws Exception {
     tearDown();
     BASE_DIRECTORY.mkdir();
+    AzkabanCommonModuleConfig config = mock(AzkabanCommonModuleConfig.class);
+    when(config.getLocalStorageBaseDirPath()).thenReturn(LOCAL_STORAGE);
+    localStorage = new LocalStorage(config);
   }
 
   @After
@@ -51,11 +56,12 @@ public class LocalStorageTest {
   }
 
   @Test
-  public void testAll() throws Exception {
+  public void testPutGet() throws Exception {
     ClassLoader classLoader = getClass().getClassLoader();
     File testFile = new File(classLoader.getResource(SAMPLE_FILE).getFile());
 
-    final StorageMetadata metadata = new StorageMetadata(1, 1, "testuser");
+    final StorageMetadata metadata = new StorageMetadata(
+        1, 1, "testuser", Md5Hasher.md5Hash(testFile));
     final String key = localStorage.put(metadata, testFile);
     assertNotNull(key);
     log.info("Key URI: " + key);
@@ -63,7 +69,9 @@ public class LocalStorageTest {
     File expectedTargetFile = new File(BASE_DIRECTORY, new StringBuilder()
         .append(metadata.getProjectId())
         .append(File.separator)
-        .append(metadata.getVersion())
+        .append(metadata.getProjectId())
+        .append("-")
+        .append(new String(metadata.getHash()))
         .append(".zip")
         .toString()
     );
