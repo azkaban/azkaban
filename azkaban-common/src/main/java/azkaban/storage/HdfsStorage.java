@@ -39,24 +39,29 @@ public class HdfsStorage implements Storage {
   private static final Logger log = Logger.getLogger(HdfsStorage.class);
   private static final String HDFS_SCHEME = "hdfs";
 
+  private final HdfsAuth hdfsAuth;
   private final URI rootUri;
   private final FileSystem hdfs;
 
   @Inject
-  public HdfsStorage(FileSystem hdfs, AzkabanCommonModuleConfig config) {
+  public HdfsStorage(HdfsAuth hdfsAuth, FileSystem hdfs, AzkabanCommonModuleConfig config) {
+    this.hdfsAuth = requireNonNull(hdfsAuth);
+    this.hdfs = requireNonNull(hdfs);
+
     this.rootUri = config.getHdfsRootUri();
     requireNonNull(rootUri.getAuthority(), "URI must have host:port mentioned.");
     checkArgument(HDFS_SCHEME.equals(rootUri.getScheme()));
-    this.hdfs = hdfs;
   }
 
   @Override
   public InputStream get(String key) throws IOException {
+    hdfsAuth.authorize();
     return hdfs.open(new Path(rootUri.toString(), key));
   }
 
   @Override
   public String put(StorageMetadata metadata, File localFile) {
+    hdfsAuth.authorize();
     final Path projectsPath = new Path(rootUri.getPath(), String.valueOf(metadata.getProjectId()));
     try {
       if (hdfs.mkdirs(projectsPath)) {

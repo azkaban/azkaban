@@ -25,6 +25,7 @@ import azkaban.executor.ExecutorLoader;
 import azkaban.executor.JdbcExecutorLoader;
 import azkaban.project.JdbcProjectLoader;
 import azkaban.project.ProjectLoader;
+import azkaban.spi.AzkabanException;
 import azkaban.spi.Storage;
 import azkaban.spi.StorageException;
 import azkaban.storage.StorageImplementationType;
@@ -36,12 +37,19 @@ import com.google.inject.Inject;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.Singleton;
-import java.nio.file.Path;
+import java.io.File;
+import java.io.IOException;
 import java.nio.file.Paths;
 import javax.sql.DataSource;
 import org.apache.commons.dbutils.QueryRunner;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
+import org.apache.log4j.Logger;
+
+import static azkaban.Constants.ConfigurationKeys.*;
+import static com.google.common.base.Preconditions.*;
+import static java.util.Objects.*;
 
 
 /**
@@ -50,11 +58,13 @@ import org.slf4j.LoggerFactory;
  * structuring of Guice components.
  */
 public class AzkabanCommonModule extends AbstractModule {
-  private static final Logger logger = LoggerFactory.getLogger(AzkabanCommonModule.class);
+  private static final Logger log = Logger.getLogger(AzkabanCommonModule.class);
 
+  private final Props props;
   private final AzkabanCommonModuleConfig config;
 
   public AzkabanCommonModule(Props props) {
+    this.props = props;
     this.config = new AzkabanCommonModuleConfig(props);
   }
 
@@ -97,7 +107,7 @@ public class AzkabanCommonModule extends AbstractModule {
     if(databaseType.equals("h2")) {
       String path = props.getString("h2.path");
       Path h2DbPath = Paths.get(path).toAbsolutePath();
-      logger.info("h2 DB path: " + h2DbPath);
+      log.info("h2 DB path: " + h2DbPath);
       return new H2FileDataSource(h2DbPath);
     }
     int port = props.getInt("mysql.port");
@@ -110,6 +120,34 @@ public class AzkabanCommonModule extends AbstractModule {
     return MySQLDataSource.getInstance(host, port, database, user, password,
         numConnections);
 
+  }
+
+  @Inject
+  @Provides
+  @Singleton
+  public Configuration createHadoopConfiguration() {
+    final String hadoopConfDirPath = requireNonNull(props.get(HADOOP_CONF_DIR_PATH));
+
+    final File hadoopConfDir = new File(requireNonNull(hadoopConfDirPath));
+    checkArgument(hadoopConfDir.exists() && hadoopConfDir.isDirectory());
+
+    final Configuration hadoopConf = new Configuration(false);
+    hadoopConf.addResource(new Path(hadoopConfDirPath, "core-site.xml"));
+    hadoopConf.addResource(new Path(hadoopConfDirPath, "hdfs-site.xml"));
+    hadoopConf.set("fs.hdfs.impl", org.apache.hadoop.hdfs.DistributedFileSystem.class.getName());
+    return hadoopConf;
+  }
+
+  @Inject
+  @Provides
+  @Singleton
+  public FileSystem createHadoopFileSystem(final Configuration hadoopConf) {
+    try {
+      return FileSystem.get(hadoopConf);
+    } catch (IOException e) {
+      log.error(e);
+      throw new AzkabanException(e);
+    }
   }
 
   @Provides

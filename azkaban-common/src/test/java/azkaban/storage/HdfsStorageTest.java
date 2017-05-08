@@ -31,16 +31,18 @@ import static org.mockito.Mockito.*;
 
 
 public class HdfsStorageTest {
+  private HdfsAuth hdfsAuth;
   private HdfsStorage hdfsStorage;
   private FileSystem hdfs;
 
   @Before
   public void setUp() throws Exception {
     hdfs = mock(FileSystem.class);
+    hdfsAuth = mock(HdfsAuth.class);
     AzkabanCommonModuleConfig config = mock(AzkabanCommonModuleConfig.class);
     when(config.getHdfsRootUri()).thenReturn(URI.create("hdfs://localhost:9000/path/to/foo"));
 
-    hdfsStorage = new HdfsStorage(hdfs, config);
+    hdfsStorage = new HdfsStorage(hdfsAuth, hdfs, config);
   }
 
   @Test
