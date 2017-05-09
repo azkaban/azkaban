@@ -36,7 +36,6 @@ import azkaban.event.EventHandler;
 import azkaban.event.EventListener;
 import azkaban.event.Event.Type;
 import azkaban.executor.ExecutableFlow;
-import azkaban.executor.ExecutorManager;
 import azkaban.utils.Props;
 
 public class TriggerManager extends EventHandler implements
@@ -65,8 +64,7 @@ public class TriggerManager extends EventHandler implements
 
   // TODO kunkun-tang: Before apply guice to this class, we should make
   // ExecutorManager guiceable.
-  public TriggerManager(Props props, TriggerLoader triggerLoader,
-      ExecutorManager executorManager) throws TriggerManagerException {
+  public TriggerManager(Props props, TriggerLoader triggerLoader) throws TriggerManagerException {
 
     // TODO kunkun-tang: Doing hack here to allow calling new azkaban-db code. Should fix in future.
     this.triggerLoader = ServiceProvider.SERVICE_PROVIDER.getInstance(TriggerLoader.class);
@@ -88,9 +86,11 @@ public class TriggerManager extends EventHandler implements
     Condition.setCheckerLoader(checkerTypeLoader);
     Trigger.setActionTypeLoader(actionTypeLoader);
 
-    executorManager.addListener(listener);
-
     logger.info("TriggerManager loaded.");
+  }
+
+  public ExecutorManagerEventListener getListener() {
+    return this.listener;
   }
 
   @Override

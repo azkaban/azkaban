@@ -36,7 +36,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import static azkaban.ServiceProvider.*;
-import static azkaban.executor.ExecutorManager.*;
+import static azkaban.webapp.ExecutorManager.*;
 import static java.util.Objects.*;
 import static org.apache.commons.io.FileUtils.*;
 import static org.junit.Assert.*;

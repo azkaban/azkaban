@@ -31,7 +31,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import azkaban.executor.ConnectorParams;
 import azkaban.executor.Executor;
-import azkaban.executor.ExecutorManager;
+import azkaban.webapp.ExecutorManager;
 import azkaban.executor.ExecutorManagerException;
 import azkaban.server.session.Session;
 import azkaban.user.Permission;
