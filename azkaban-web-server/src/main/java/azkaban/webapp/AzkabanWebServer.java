@@ -17,6 +17,7 @@
 package azkaban.webapp;
 
 import azkaban.AzkabanCommonModule;
+import azkaban.executor.AlerterHolder;
 import com.codahale.metrics.MetricRegistry;
 
 import com.google.inject.Guice;
@@ -159,7 +160,6 @@ public class AzkabanWebServer extends AzkabanServer {
   private final ExecutorManager executorManager;
   private final ScheduleManager scheduleManager;
   private final TriggerManager triggerManager;
-  private final Map<String, Alerter> alerters;
 
   private final ClassLoader baseClassLoader;
 
@@ -191,10 +191,8 @@ public class AzkabanWebServer extends AzkabanServer {
     sessionCache = new SessionCache(props);
     userManager = loadUserManager(props);
 
-    alerters = loadAlerters(props);
-
-    executorManager = loadExecutorManager(props);
     // TODO remove hack. Move injection to constructor
+    executorManager = SERVICE_PROVIDER.getInstance(ExecutorManager.class);
     projectManager = SERVICE_PROVIDER.getInstance(ProjectManager.class);
 
     triggerManager = loadTriggerManager(props);
@@ -272,11 +270,6 @@ public class AzkabanWebServer extends AzkabanServer {
     return manager;
   }
 
-  private ExecutorManager loadExecutorManager(Props props) throws Exception {
-    JdbcExecutorLoader loader = new JdbcExecutorLoader(props);
-    return new ExecutorManager(props, loader, alerters);
-  }
-
   private ScheduleManager loadScheduleManager(TriggerManager tm)
       throws Exception {
     logger.info("Loading trigger based scheduler");
@@ -299,7 +292,6 @@ public class AzkabanWebServer extends AzkabanServer {
     ExecuteFlowAction.setTriggerManager(triggerManager);
     KillExecutionAction.setExecutorManager(executorManager);
     SlaAlertAction.setExecutorManager(executorManager);
-    SlaAlertAction.setAlerters(alerters);
     SlaAlertAction.setExecutorManager(executorManager);
     CreateTriggerAction.setTriggerManager(triggerManager);
     ExecutionChecker.setExecutorManager(executorManager);
@@ -311,144 +303,6 @@ public class AzkabanWebServer extends AzkabanServer {
     triggerManager.registerActionType(KillExecutionAction.type, KillExecutionAction.class);
     triggerManager.registerActionType(SlaAlertAction.type, SlaAlertAction.class);
     triggerManager.registerActionType(CreateTriggerAction.type, CreateTriggerAction.class);
-  }
-
-  private Map<String, Alerter> loadAlerters(Props props) {
-    Map<String, Alerter> allAlerters = new HashMap<String, Alerter>();
-    // load built-in alerters
-    Emailer mailAlerter = new Emailer(props);
-    allAlerters.put("email", mailAlerter);
-    // load all plugin alerters
-    String pluginDir = props.getString("alerter.plugin.dir", "plugins/alerter");
-    allAlerters.putAll(loadPluginAlerters(pluginDir));
-    return allAlerters;
-  }
-
-  private Map<String, Alerter> loadPluginAlerters(String pluginPath) {
-    File alerterPluginPath = new File(pluginPath);
-    if (!alerterPluginPath.exists()) {
-      return Collections.<String, Alerter> emptyMap();
-    }
-
-    Map<String, Alerter> installedAlerterPlugins =
-        new HashMap<String, Alerter>();
-    ClassLoader parentLoader = getClass().getClassLoader();
-    File[] pluginDirs = alerterPluginPath.listFiles();
-    ArrayList<String> jarPaths = new ArrayList<String>();
-    for (File pluginDir : pluginDirs) {
-      if (!pluginDir.isDirectory()) {
-        logger.error("The plugin path " + pluginDir + " is not a directory.");
-        continue;
-      }
-
-      // Load the conf directory
-      File propertiesDir = new File(pluginDir, "conf");
-      Props pluginProps = null;
-      if (propertiesDir.exists() && propertiesDir.isDirectory()) {
-        File propertiesFile = new File(propertiesDir, "plugin.properties");
-        File propertiesOverrideFile =
-            new File(propertiesDir, "override.properties");
-
-        if (propertiesFile.exists()) {
-          if (propertiesOverrideFile.exists()) {
-            pluginProps =
-                PropsUtils.loadProps(null, propertiesFile,
-                    propertiesOverrideFile);
-          } else {
-            pluginProps = PropsUtils.loadProps(null, propertiesFile);
-          }
-        } else {
-          logger.error("Plugin conf file " + propertiesFile + " not found.");
-          continue;
-        }
-      } else {
-        logger.error("Plugin conf path " + propertiesDir + " not found.");
-        continue;
-      }
-
-      String pluginName = pluginProps.getString("alerter.name");
-      List<String> extLibClasspath =
-          pluginProps.getStringList("alerter.external.classpaths",
-              (List<String>) null);
-
-      String pluginClass = pluginProps.getString("alerter.class");
-      if (pluginClass == null) {
-        logger.error("Alerter class is not set.");
-      } else {
-        logger.info("Plugin class " + pluginClass);
-      }
-
-      URLClassLoader urlClassLoader = null;
-      File libDir = new File(pluginDir, "lib");
-      if (libDir.exists() && libDir.isDirectory()) {
-        File[] files = libDir.listFiles();
-
-        ArrayList<URL> urls = new ArrayList<URL>();
-        for (int i = 0; i < files.length; ++i) {
-          try {
-            URL url = files[i].toURI().toURL();
-            urls.add(url);
-          } catch (MalformedURLException e) {
-            logger.error(e);
-          }
-        }
-        if (extLibClasspath != null) {
-          for (String extLib : extLibClasspath) {
-            try {
-              File file = new File(pluginDir, extLib);
-              URL url = file.toURI().toURL();
-              urls.add(url);
-            } catch (MalformedURLException e) {
-              logger.error(e);
-            }
-          }
-        }
-
-        urlClassLoader =
-            new URLClassLoader(urls.toArray(new URL[urls.size()]), parentLoader);
-      } else {
-        logger.error("Library path " + propertiesDir + " not found.");
-        continue;
-      }
-
-      Class<?> alerterClass = null;
-      try {
-        alerterClass = urlClassLoader.loadClass(pluginClass);
-      } catch (ClassNotFoundException e) {
-        logger.error("Class " + pluginClass + " not found.");
-        continue;
-      }
-
-      String source = FileIOUtils.getSourcePathFromClass(alerterClass);
-      logger.info("Source jar " + source);
-      jarPaths.add("jar:file:" + source);
-
-      Constructor<?> constructor = null;
-      try {
-        constructor = alerterClass.getConstructor(Props.class);
-      } catch (NoSuchMethodException e) {
-        logger.error("Constructor not found in " + pluginClass);
-        continue;
-      }
-
-      Object obj = null;
-      try {
-        obj = constructor.newInstance(pluginProps);
-      } catch (Exception e) {
-        logger.error(e);
-      }
-
-      if (!(obj instanceof Alerter)) {
-        logger.error("The object is not an Alerter");
-        continue;
-      }
-
-      Alerter plugin = (Alerter) obj;
-      installedAlerterPlugins.put(pluginName, plugin);
-    }
-
-    return installedAlerterPlugins;
-
   }
 
   private void loadPluginCheckersAndActions(String pluginPath) {
