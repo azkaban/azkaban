@@ -16,6 +16,7 @@
 
 package azkaban.trigger.builtin;
 
+import azkaban.ServiceProvider;
 import azkaban.executor.AlerterHolder;
 import java.util.HashMap;
 import java.util.Map;
@@ -37,17 +38,14 @@ public class SlaAlertAction implements TriggerAction {
   private String actionId;
   private SlaOption slaOption;
   private int execId;
-  private static AlerterHolder alerters;
+  private AlerterHolder alerters;
   private static ExecutorManagerAdapter executorManager;
 
   public SlaAlertAction(String id, SlaOption slaOption, int execId) {
     this.actionId = id;
     this.slaOption = slaOption;
     this.execId = execId;
-  }
-
-  public static void setAlerters(AlerterHolder alts) {
-    alerters = alts;
+    this.alerters = ServiceProvider.SERVICE_PROVIDER.getInstance(AlerterHolder.class);
   }
 
   public static void setExecutorManager(ExecutorManagerAdapter em) {

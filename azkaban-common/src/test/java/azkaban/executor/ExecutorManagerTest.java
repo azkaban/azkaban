@@ -68,7 +68,7 @@ public class ExecutorManagerTest {
 
     loader.addExecutor("localhost", 12345);
     loader.addExecutor("localhost", 12346);
-    return new ExecutorManager(props, loader, new AlerterHolder());
+    return new ExecutorManager(props, loader, new AlerterHolder(props));
   }
 
   /*
@@ -82,7 +82,7 @@ public class ExecutorManagerTest {
     ExecutorLoader loader = new MockExecutorLoader();
     @SuppressWarnings("unused")
     ExecutorManager manager =
-      new ExecutorManager(props, loader, new AlerterHolder());
+      new ExecutorManager(props, loader, new AlerterHolder(props));
   }
 
   /*
@@ -95,7 +95,7 @@ public class ExecutorManagerTest {
 
     ExecutorLoader loader = new MockExecutorLoader();
     ExecutorManager manager =
-      new ExecutorManager(props, loader, new AlerterHolder());
+      new ExecutorManager(props, loader, new AlerterHolder(props));
     Set<Executor> activeExecutors =
       new HashSet(manager.getAllActiveExecutors());
 
@@ -119,7 +119,7 @@ public class ExecutorManagerTest {
     Executor executor2 = loader.addExecutor("localhost", 12346);
 
     ExecutorManager manager =
-      new ExecutorManager(props, loader, new AlerterHolder());
+      new ExecutorManager(props, loader, new AlerterHolder(props));
     Set<Executor> activeExecutors =
       new HashSet(manager.getAllActiveExecutors());
     Assert.assertArrayEquals(activeExecutors.toArray(), new Executor[] {
@@ -137,7 +137,7 @@ public class ExecutorManagerTest {
     Executor executor1 = loader.addExecutor("localhost", 12345);
 
     ExecutorManager manager =
-      new ExecutorManager(props, loader, new AlerterHolder());
+      new ExecutorManager(props, loader, new AlerterHolder(props));
     Assert.assertArrayEquals(manager.getAllActiveExecutors().toArray(),
       new Executor[] { executor1 });
 
@@ -164,7 +164,7 @@ public class ExecutorManagerTest {
     Executor executor1 = loader.addExecutor("localhost", 12345);
 
     ExecutorManager manager =
-      new ExecutorManager(props, loader, new AlerterHolder());
+      new ExecutorManager(props, loader, new AlerterHolder(props));
     Set<Executor> activeExecutors =
       new HashSet(manager.getAllActiveExecutors());
     Assert.assertArrayEquals(activeExecutors.toArray(),
@@ -336,7 +336,7 @@ public class ExecutorManagerTest {
     executors.add(executor2);
 
     when(loader.fetchActiveExecutors()).thenReturn(executors);
-    manager = new ExecutorManager(props, loader, new AlerterHolder());
+    manager = new ExecutorManager(props, loader, new AlerterHolder(props));
 
     flow1 = TestUtils.createExecutableFlow("exectest1", "exec1");
     flow2 = TestUtils.createExecutableFlow("exectest1", "exec2");

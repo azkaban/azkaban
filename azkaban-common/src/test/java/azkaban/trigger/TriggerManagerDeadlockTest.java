@@ -48,7 +48,7 @@ public class TriggerManagerDeadlockTest {
     props.put("trigger.scan.interval", 1000);
     props.put("executor.port", 12321);
     execLoader = new MockExecutorLoader();
-    ExecutorManager executorManager = new ExecutorManager(props, execLoader, new AlerterHolder());
+    ExecutorManager executorManager = new ExecutorManager(props, execLoader, new AlerterHolder(props));
     triggerManager = new TriggerManager(props, loader, executorManager);
   }
 
