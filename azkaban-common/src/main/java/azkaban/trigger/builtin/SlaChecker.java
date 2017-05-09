@@ -16,6 +16,8 @@
 
 package azkaban.trigger.builtin;
 
+import azkaban.ServiceProvider;
+import azkaban.executor.ExecutorManager;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -37,21 +39,18 @@ public class SlaChecker implements ConditionChecker {
   private static final Logger logger = Logger.getLogger(SlaChecker.class);
   public static final String type = "SlaChecker";
 
-  private String id;
-  private SlaOption slaOption;
-  private int execId;
+  private final String id;
+  private final SlaOption slaOption;
+  private final int execId;
   private long checkTime = -1;
 
-  private static ExecutorManagerAdapter executorManager;
+  private final ExecutorManagerAdapter executorManager;
 
   public SlaChecker(String id, SlaOption slaOption, int execId) {
     this.id = id;
     this.slaOption = slaOption;
     this.execId = execId;
-  }
-
-  public static void setExecutorManager(ExecutorManagerAdapter em) {
-    executorManager = em;
+    this.executorManager = ServiceProvider.SERVICE_PROVIDER.getInstance(ExecutorManager.class);
   }
 
   private Boolean isSlaMissed(ExecutableFlow flow) {

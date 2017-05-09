@@ -16,6 +16,8 @@
 
 package azkaban.trigger.builtin;
 
+import azkaban.ServiceProvider;
+import azkaban.executor.ExecutorManager;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -33,17 +35,14 @@ public class KillExecutionAction implements TriggerAction {
   private static final Logger logger = Logger
       .getLogger(KillExecutionAction.class);
 
-  private String actionId;
-  private int execId;
-  private static ExecutorManagerAdapter executorManager;
+  private final String actionId;
+  private final int execId;
+  private final ExecutorManagerAdapter executorManager;
 
   public KillExecutionAction(String actionId, int execId) {
     this.execId = execId;
     this.actionId = actionId;
-  }
-
-  public static void setExecutorManager(ExecutorManagerAdapter em) {
-    executorManager = em;
+    this.executorManager = ServiceProvider.SERVICE_PROVIDER.getInstance(ExecutorManager.class);
   }
 
   @Override

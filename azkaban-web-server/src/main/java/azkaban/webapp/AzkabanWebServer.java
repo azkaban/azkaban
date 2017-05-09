@@ -160,7 +160,6 @@ public class AzkabanWebServer extends AzkabanServer {
   private final ExecutorManager executorManager;
   private final ScheduleManager scheduleManager;
   private final TriggerManager triggerManager;
-  private final AlerterHolder alerters;
 
   private final ClassLoader baseClassLoader;
 
@@ -191,8 +190,6 @@ public class AzkabanWebServer extends AzkabanServer {
     velocityEngine = configureVelocityEngine(props.getBoolean(VELOCITY_DEV_MODE_PARAM, false));
     sessionCache = new SessionCache(props);
     userManager = loadUserManager(props);
-
-    alerters = new AlerterHolder(props);
 
     // TODO remove hack. Move injection to constructor
     executorManager = SERVICE_PROVIDER.getInstance(ExecutorManager.class);
@@ -289,16 +286,9 @@ public class AzkabanWebServer extends AzkabanServer {
 
   private void loadBuiltinCheckersAndActions() {
     logger.info("Loading built-in checker and action types");
-    SlaChecker.setExecutorManager(executorManager);
-    ExecuteFlowAction.setExecutorManager(executorManager);
     ExecuteFlowAction.setProjectManager(projectManager);
     ExecuteFlowAction.setTriggerManager(triggerManager);
-    KillExecutionAction.setExecutorManager(executorManager);
-    SlaAlertAction.setExecutorManager(executorManager);
-    SlaAlertAction.setAlerters(alerters);
-    SlaAlertAction.setExecutorManager(executorManager);
     CreateTriggerAction.setTriggerManager(triggerManager);
-    ExecutionChecker.setExecutorManager(executorManager);
 
     triggerManager.registerCheckerType(BasicTimeChecker.type, BasicTimeChecker.class);
     triggerManager.registerCheckerType(SlaChecker.type, SlaChecker.class);
