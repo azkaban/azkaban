@@ -70,17 +70,22 @@ public class HdfsStorage implements Storage {
       }
       final Path targetPath = createTargetPath(metadata, localFile, projectsPath);
       if ( hdfs.exists( targetPath )) {
-        throw new StorageException(String.format(
-            "Error: Target file already exists. targetFile: %s, Metadata: %s",
-            targetPath, metadata));
+        log.info(String.format("Duplicate upload: targetFile: %s, Metadata: %s", targetPath, metadata));
+        return getRelativePath(targetPath);
       }
+
+      // Copy file to HDFS
       log.info(String.format("Creating project artifact: meta: %s path: %s", metadata, targetPath));
       hdfs.copyFromLocalFile(new Path(localFile.getAbsolutePath()), targetPath);
-      return URI.create(rootUri.getPath()).relativize(targetPath.toUri()).getPath();
+      return getRelativePath(targetPath);
     } catch (IOException e) {
       log.error("error in put(): Metadata: " + metadata);
       throw new StorageException(e);
     }
+  }
+
+  private String getRelativePath(Path targetPath) {
+    return URI.create(rootUri.getPath()).relativize(targetPath.toUri()).getPath();
   }
 
   private Path createTargetPath(StorageMetadata metadata, File localFile, Path projectsPath) {

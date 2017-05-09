@@ -65,20 +65,21 @@ public class LocalStorage implements Storage {
         Files.getFileExtension(localFile.getName())));
 
     if (targetFile.exists()) {
-      throw new StorageException(String.format(
-          "Error in LocalStorage. Target file already exists. targetFile: %s, Metadata: %s",
-          targetFile, metadata));
+      log.info(String.format("Duplicate upload: targetFile: %s, Metadata: %s", targetFile.getAbsolutePath(), metadata));
+      return getRelativePath(targetFile);
     }
+
+    // Copy file to storage dir
     try {
       FileUtils.copyFile(localFile, targetFile);
     } catch (IOException e) {
       log.error("LocalStorage error in put(): Metadata: " + metadata);
       throw new StorageException(e);
     }
-    return createRelativePath(targetFile);
+    return getRelativePath(targetFile);
   }
 
-  private String createRelativePath(File targetFile) {
+  private String getRelativePath(File targetFile) {
     return rootDirectory.toURI().relativize(targetFile.toURI()).getPath();
   }
 
