@@ -17,6 +17,8 @@
 
 package azkaban;
 
+import static com.google.common.base.Preconditions.checkArgument;
+
 import azkaban.project.JdbcProjectLoader;
 import azkaban.project.ProjectFileHandler;
 import azkaban.spi.AzkabanException;
@@ -34,14 +36,15 @@ import org.apache.commons.codec.binary.Hex;
 
 
 public class MigrateSqlToLocal {
-  public static final String MIGRATE_PROPERTIES = "migrate.properties";
+
   final Props props;
   final JdbcProjectLoader jdbcProjectLoader;
   final DatabaseStorage databaseStorage;
   final LocalStorage localStorage;
 
   @Inject
-  public MigrateSqlToLocal(Props props, JdbcProjectLoader jdbcProjectLoader, DatabaseStorage databaseStorage,
+  public MigrateSqlToLocal(Props props, JdbcProjectLoader jdbcProjectLoader,
+      DatabaseStorage databaseStorage,
       LocalStorage localStorage) {
     this.props = props;
     this.jdbcProjectLoader = jdbcProjectLoader;
@@ -50,12 +53,15 @@ public class MigrateSqlToLocal {
   }
 
   private void migrate() {
-    List<JdbcProjectLoader.Result> allActiveProjects = jdbcProjectLoader.fetchProjectsForMigration();
-    System.out.println("fetched all migratable projects");
+    List<JdbcProjectLoader.Result> allActiveProjects = jdbcProjectLoader
+        .fetchProjectsForMigration();
+    System.out.println("fetched all migratable projects. #: " + allActiveProjects.size());
     for (JdbcProjectLoader.Result r : allActiveProjects) {
-      final String key = String.format("%s/%s-%s.zip", r.id, r.id, new String(Hex.encodeHex(r.md5)));
+      final String key = String
+          .format("%s/%s-%s.zip", r.id, r.id, new String(Hex.encodeHex(r.md5)));
+      System.out.println("--------------------------------------------------------------------");
+      System.out.println("Adding storage for " + r);
       if (!localStorage.contains(key)) {
-        System.out.println("Adding storage for " + r);
         final ProjectFileHandler pfh = jdbcProjectLoader.getUploadedFile(r.id, r.version);
         System.out.println("Received file: " + pfh.getLocalFile().getAbsolutePath());
 
@@ -66,15 +72,22 @@ public class MigrateSqlToLocal {
         jdbcProjectLoader.updateResourceId(r.id, r.version, resourceId);
         System.out.println("Migration complete for r: " + r);
       } else {
-        System.out.println("No key for: " + r);
+        System.out.println("Already present: " + r);
       }
     }
   }
 
   public static void main(String[] args) {
+    if (args.length != 1) {
+      System.err.println("Usage: java -jar <jar> <migrate.properties>");
+      System.exit(1);
+    }
+
+    final File propsFile = new File(args[0]);
+    checkArgument(propsFile.exists());
     try {
-      final File propsFile = new File(MigrateSqlToLocal.class.getClassLoader().getResource(MIGRATE_PROPERTIES).getFile());
-      final Injector injector = Guice.createInjector(new AzkabanCommonModule(new Props(null, propsFile)));
+      final Injector injector = Guice
+          .createInjector(new AzkabanCommonModule(new Props(null, propsFile)));
       injector.getInstance(MigrateSqlToLocal.class).migrate();
     } catch (IOException e) {
       e.printStackTrace();

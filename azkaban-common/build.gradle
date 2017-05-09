@@ -15,6 +15,10 @@
  *
  */
 
+plugins {
+  id "com.github.johnrengelman.shadow" version "1.2.4"
+}
+
 apply plugin: 'c'
 model {
   components {
@@ -76,4 +80,15 @@ dependencies {
 
 tasks.withType(JavaCompile) {
   options.encoding = "UTF-8"
+}
+
+shadowJar {
+  baseName = 'migrateSql2Local'
+  classifier = null
+  version = null
+  manifest {
+    attributes(
+            'Main-Class': 'azkaban.MigrateSqlToLocal'
+    )
+  }
 }
