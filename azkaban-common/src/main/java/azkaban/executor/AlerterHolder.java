@@ -37,19 +37,17 @@ import org.apache.log4j.Logger;
 
 
 public class AlerterHolder {
-  private Map<String, Alerter> alerters;
+  private final Map<String, Alerter> alerters;
 
   private static Logger logger = Logger.getLogger(AlerterHolder.class);
 
+  public AlerterHolder() {
+    this.alerters = new HashMap<>();
+  }
+
   @Inject
   public AlerterHolder(Props props) {
-    try {
-      alerters = loadAlerters(props);
-    }
-    catch (Exception ex) {
-      logger.error(ex);
-      this.alerters = new HashMap<>();
-    }
+    alerters = loadAlerters(props);
   }
 
   private Map<String, Alerter> loadAlerters(Props props) {

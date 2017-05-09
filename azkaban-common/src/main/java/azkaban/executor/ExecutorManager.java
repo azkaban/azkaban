@@ -112,7 +112,7 @@ public class ExecutorManager extends EventHandler implements
   private long lastThreadCheckTime = -1;
   private String updaterStage = "not started";
 
-  private final AlerterHolder alerterHolder;
+  private AlerterHolder alerterHolder;
 
   File cacheDir;
 

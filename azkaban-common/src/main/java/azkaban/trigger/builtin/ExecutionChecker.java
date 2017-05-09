@@ -16,8 +16,6 @@
 
 package azkaban.trigger.builtin;
 
-import azkaban.ServiceProvider;
-import azkaban.executor.ExecutorManager;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -31,7 +29,7 @@ import azkaban.trigger.ConditionChecker;
 public class ExecutionChecker implements ConditionChecker {
 
   public static final String type = "ExecutionChecker";
-  public final ExecutorManagerAdapter executorManager;
+  public static ExecutorManagerAdapter executorManager;
 
   private String checkerId;
   private int execId;
@@ -44,7 +42,10 @@ public class ExecutionChecker implements ConditionChecker {
     this.execId = execId;
     this.jobName = jobName;
     this.wantedStatus = wantedStatus;
-    this.executorManager = ServiceProvider.SERVICE_PROVIDER.getInstance(ExecutorManager.class);
+  }
+
+  public static void setExecutorManager(ExecutorManagerAdapter em) {
+    executorManager = em;
   }
 
   @Override

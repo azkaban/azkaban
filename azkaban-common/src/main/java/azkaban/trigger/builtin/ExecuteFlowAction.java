@@ -16,8 +16,6 @@
 
 package azkaban.trigger.builtin;
 
-import azkaban.ServiceProvider;
-import azkaban.executor.ExecutorManager;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -45,11 +43,11 @@ public class ExecuteFlowAction implements TriggerAction {
 
   public static final String EXEC_ID = "ExecuteFlowAction.execid";
 
-  private final ExecutorManagerAdapter executorManager;
+  private static ExecutorManagerAdapter executorManager;
   private static TriggerManager triggerManager;
-  private final String actionId;
+  private String actionId;
   private int projectId;
-  private final String projectName;
+  private String projectName;
   private String flowName;
   private String submitUser;
   private static ProjectManager projectManager;
@@ -68,7 +66,6 @@ public class ExecuteFlowAction implements TriggerAction {
     this.submitUser = submitUser;
     this.executionOptions = executionOptions;
     this.slaOptions = slaOptions;
-    this.executorManager = ServiceProvider.SERVICE_PROVIDER.getInstance(ExecutorManager.class);
   }
 
   public static void setLogger(Logger logger) {
@@ -117,6 +114,14 @@ public class ExecuteFlowAction implements TriggerAction {
 
   protected void setSlaOptions(List<SlaOption> slaOptions) {
     this.slaOptions = slaOptions;
+  }
+
+  public static ExecutorManagerAdapter getExecutorManager() {
+    return executorManager;
+  }
+
+  public static void setExecutorManager(ExecutorManagerAdapter executorManager) {
+    ExecuteFlowAction.executorManager = executorManager;
   }
 
   public static TriggerManager getTriggerManager() {
