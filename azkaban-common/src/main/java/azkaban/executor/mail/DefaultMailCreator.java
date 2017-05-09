@@ -66,12 +66,12 @@ public class DefaultMailCreator implements MailCreator {
     if (emailList != null && !emailList.isEmpty()) {
       message.addAllToAddress(emailList);
       message.setMimeType("text/html");
-      message.setSubject("Flow '" + flow.getFlowId() + "' has encountered a failure on "
-          + azkabanName);
+      message.setSubject("Flow '" + flow.getFlowId() + "' of project '"
+          + flow.getProjectName() + "' has encountered a failure on " + azkabanName);
 
       message.println("<h2 style=\"color:#FF0000\"> Execution '"
-          + flow.getExecutionId() + "' of flow '" + flow.getFlowId()
-          + "' has encountered a failure on " + azkabanName + "</h2>");
+          + flow.getExecutionId() + "' of flow '" + flow.getFlowId() + "' of project '"
+          + flow.getProjectName() + "' has encountered a failure on " + azkabanName + "</h2>");
 
       if (option.getFailureAction() == FailureAction.CANCEL_ALL) {
         message
@@ -130,12 +130,12 @@ public class DefaultMailCreator implements MailCreator {
     if (emailList != null && !emailList.isEmpty()) {
       message.addAllToAddress(emailList);
       message.setMimeType("text/html");
-      message.setSubject("Flow '" + flow.getFlowId() + "' has failed on "
-          + azkabanName);
+      message.setSubject("Flow '" + flow.getFlowId() + "' of project '"
+          + flow.getProjectName() + "' has failed on " + azkabanName);
 
       message.println("<h2 style=\"color:#FF0000\"> Execution '" + execId
-          + "' of flow '" + flow.getFlowId() + "' has failed on " + azkabanName
-          + "</h2>");
+          + "' of flow '" + flow.getFlowId() + "' of project '"
+          + flow.getProjectName() + "' has failed on " + azkabanName + "</h2>");
       message.println("<table>");
       message.println("<tr><td>Start Time</td><td>"
           + convertMSToString(flow.getStartTime()) + "</td></tr>");
@@ -184,12 +184,12 @@ public class DefaultMailCreator implements MailCreator {
     if (emailList != null && !emailList.isEmpty()) {
       message.addAllToAddress(emailList);
       message.setMimeType("text/html");
-      message.setSubject("Flow '" + flow.getFlowId() + "' has succeeded on "
-          + azkabanName);
+      message.setSubject("Flow '" + flow.getFlowId() + "' of project '"
+          + flow.getProjectName() + "' has succeeded on " + azkabanName);
 
       message.println("<h2> Execution '" + flow.getExecutionId()
-          + "' of flow '" + flow.getFlowId() + "' has succeeded on "
-          + azkabanName + "</h2>");
+          + "' of flow '" + flow.getFlowId() + "' of project '"
+          + flow.getProjectName() + "' has succeeded on " + azkabanName + "</h2>");
       message.println("<table>");
       message.println("<tr><td>Start Time</td><td>"
           + convertMSToString(flow.getStartTime()) + "</td></tr>");
