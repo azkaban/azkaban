@@ -65,7 +65,7 @@ public class LocalStorage implements Storage {
         Files.getFileExtension(localFile.getName())));
 
     if (targetFile.exists()) {
-      log.info(String.format("Duplicate upload: targetFile: %s, Metadata: %s", targetFile.getAbsolutePath(), metadata));
+      log.info(String.format("Duplicate found: targetFile: %s, Metadata: %s", targetFile.getAbsolutePath(), metadata));
       return getRelativePath(targetFile);
     }
 

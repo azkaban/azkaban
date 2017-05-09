@@ -37,7 +37,7 @@ public class HdfsAuth {
 
   private final boolean isSecurityEnabled;
 
-  private UserGroupInformation loggedInUser;
+  private UserGroupInformation loggedInUser = null;
   private String keytabPath = null;
   private String keytabPrincipal = null;
 
