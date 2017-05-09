@@ -26,9 +26,7 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import azkaban.alert.Alerter;
 import azkaban.executor.ExecutorLoader;
-import azkaban.executor.ExecutorManager;
 import azkaban.executor.ExecutorManagerException;
 import azkaban.executor.MockExecutorLoader;
 import azkaban.trigger.builtin.CreateTriggerAction;
@@ -47,10 +45,7 @@ public class TriggerManagerDeadlockTest {
     props.put("trigger.scan.interval", 1000);
     props.put("executor.port", 12321);
     execLoader = new MockExecutorLoader();
-    Map<String, Alerter> alerters = new HashMap<String, Alerter>();
-    ExecutorManager executorManager =
-        new ExecutorManager(props, execLoader, alerters);
-    triggerManager = new TriggerManager(props, loader, executorManager);
+    triggerManager = new TriggerManager(props, loader);
   }
 
   @After

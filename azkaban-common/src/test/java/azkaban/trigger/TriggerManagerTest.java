@@ -52,7 +52,7 @@ public class TriggerManagerTest {
     Props props = new Props();
     props.put("trigger.scan.interval", 4000);
     TriggerManager triggerManager =
-        new TriggerManager(props, triggerLoader, null);
+        new TriggerManager(props, triggerLoader);
 
     triggerManager.registerCheckerType(ThresholdChecker.type,
         ThresholdChecker.class);

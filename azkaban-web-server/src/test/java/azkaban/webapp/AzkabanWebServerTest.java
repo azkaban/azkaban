@@ -18,14 +18,15 @@
 package azkaban.webapp;
 
 import azkaban.AzkabanCommonModule;
-import azkaban.Constants;
 import azkaban.database.AzkabanDatabaseSetup;
 import azkaban.database.AzkabanDatabaseUpdater;
 import azkaban.executor.Executor;
 import azkaban.executor.ExecutorLoader;
 import azkaban.utils.Props;
+
 import com.google.inject.Guice;
 import com.google.inject.Injector;
+
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
@@ -36,7 +37,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import static azkaban.ServiceProvider.*;
-import static azkaban.executor.ExecutorManager.*;
+import static azkaban.webapp.ExecutorManager.*;
 import static java.util.Objects.*;
 import static org.apache.commons.io.FileUtils.*;
 import static org.junit.Assert.*;
