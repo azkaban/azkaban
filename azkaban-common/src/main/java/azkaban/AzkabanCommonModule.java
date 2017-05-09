@@ -45,7 +45,8 @@ import javax.sql.DataSource;
 import org.apache.commons.dbutils.QueryRunner;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static azkaban.Constants.ConfigurationKeys.*;
 import static com.google.common.base.Preconditions.*;
@@ -58,7 +59,7 @@ import static java.util.Objects.*;
  * structuring of Guice components.
  */
 public class AzkabanCommonModule extends AbstractModule {
-  private static final Logger log = Logger.getLogger(AzkabanCommonModule.class);
+  private static final Logger log = LoggerFactory.getLogger(AzkabanCommonModule.class);
 
   private final Props props;
   private final AzkabanCommonModuleConfig config;
@@ -117,9 +118,7 @@ public class AzkabanCommonModule extends AbstractModule {
     String password = props.getString("mysql.password");
     int numConnections = props.getInt("mysql.numconnections");
 
-    return MySQLDataSource.getInstance(host, port, database, user, password,
-        numConnections);
-
+    return MySQLDataSource.getInstance(host, port, database, user, password, numConnections);
   }
 
   @Inject
@@ -145,7 +144,7 @@ public class AzkabanCommonModule extends AbstractModule {
     try {
       return FileSystem.get(hadoopConf);
     } catch (IOException e) {
-      log.error(e);
+      log.error("Unable to initialize HDFS", e);
       throw new AzkabanException(e);
     }
   }
