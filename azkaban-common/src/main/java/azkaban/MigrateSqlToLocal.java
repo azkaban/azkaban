@@ -18,6 +18,7 @@
 package azkaban;
 
 import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkState;
 
 import azkaban.project.JdbcProjectLoader;
 import azkaban.project.ProjectFileHandler;
@@ -68,12 +69,14 @@ public class MigrateSqlToLocal {
         StorageMetadata metadata = new StorageMetadata(r.id, r.version, "", r.md5);
         System.out.println("Metadata: " + metadata);
         final String resourceId = localStorage.put(metadata, pfh.getLocalFile());
-        System.out.printf("ResourceId: %s\n", resourceId);
-        jdbcProjectLoader.updateResourceId(r.id, r.version, resourceId);
-        System.out.println("Migration complete for r: " + r);
+        checkState(key.equals(resourceId));
       } else {
-        System.out.println("Already present: " + r);
+        System.out.println("File already present: " + r);
       }
+
+      System.out.printf("ResourceId: %s\n", key);
+      jdbcProjectLoader.updateResourceId(r.id, r.version, key);
+      System.out.println("Migration complete for r: " + r);
     }
   }
 
