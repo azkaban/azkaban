@@ -72,7 +72,7 @@ public class HdfsStorage implements Storage {
       final Path targetPath = createTargetPath(metadata, localFile, projectsPath);
       if (hdfs.exists(targetPath)) {
         log.info(
-            String.format("Duplicate found: targetFile: %s, Metadata: %s", targetPath, metadata));
+            String.format("Duplicate Found: meta: %s path: %s", metadata, targetPath));
         return getRelativePath(targetPath);
       }
 
