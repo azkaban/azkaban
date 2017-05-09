@@ -273,12 +273,6 @@ public class AzkabanWebServer extends AzkabanServer {
     return manager;
   }
 
-  /*
-  private ExecutorManager loadExecutorManager(Props props) throws Exception {
-    JdbcExecutorLoader loader = new JdbcExecutorLoader(props);
-    return new ExecutorManager(props, loader, alerters);
-  }*/
-
   private ScheduleManager loadScheduleManager(TriggerManager tm)
       throws Exception {
     logger.info("Loading trigger based scheduler");
