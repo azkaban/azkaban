@@ -90,7 +90,10 @@ public class Constants {
 
     public static final String AZKABAN_STORAGE_TYPE = "azkaban.storage.type";
     public static final String AZKABAN_STORAGE_LOCAL_BASEDIR = "azkaban.storage.local.basedir";
+    public static final String HADOOP_CONF_DIR_PATH = "hadoop.conf.dir.path";
     public static final String AZKABAN_STORAGE_HDFS_ROOT_URI = "azkaban.storage.hdfs.root.uri";
+    public static final String AZKABAN_KERBEROS_PRINCIPAL = "azkaban.kerberos.principal";
+    public static final String AZKABAN_KEYTAB_PATH = "azkaban.keytab.path";
   }
 
   public static class FlowProperties {
