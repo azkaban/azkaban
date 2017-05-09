@@ -19,8 +19,10 @@ package azkaban.storage;
 
 import azkaban.AzkabanCommonModuleConfig;
 import azkaban.spi.StorageMetadata;
+import azkaban.utils.Md5Hasher;
 import java.io.File;
 import java.net.URI;
+import org.apache.commons.codec.binary.Hex;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.junit.Assert;
@@ -53,18 +55,18 @@ public class HdfsStorageTest {
 
   @Test
   public void testPut() throws Exception {
-    File file = mock(File.class);
-    when(file.getName()).thenReturn("bar.zip");
-    String absolutePath = "/path/to/foo/bar.zip";
-    when(file.getAbsolutePath()).thenReturn(absolutePath);
+    File file = new File(getClass().getClassLoader().getResource("sample_flow_01.zip").getFile());
+    final String hash = new String(Hex.encodeHex(Md5Hasher.md5Hash(file)));
 
     when(hdfs.exists(any(Path.class))).thenReturn(false);
 
-    StorageMetadata metadata = new StorageMetadata(1, 2, "uploader", "hash".getBytes());
+    StorageMetadata metadata = new StorageMetadata(1, 2, "uploader", Md5Hasher.md5Hash(file));
     String key = hdfsStorage.put(metadata, file);
 
-    verify(hdfs).copyFromLocalFile(new Path(absolutePath), new Path("/path/to/foo/1/1-hash.zip"));
+    final String expectedName = String.format("1/1-%s.zip", hash);
+    Assert.assertEquals(expectedName, key);
 
-    Assert.assertEquals("1/1-hash.zip", key);
+    final String expectedPath = "/path/to/foo/" + expectedName;
+    verify(hdfs).copyFromLocalFile(new Path(file.getAbsolutePath()), new Path(expectedPath));
   }
 }

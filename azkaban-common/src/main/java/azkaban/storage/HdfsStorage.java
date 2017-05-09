@@ -27,6 +27,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
+import org.apache.commons.codec.binary.Hex;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.log4j.Logger;
@@ -73,6 +74,7 @@ public class HdfsStorage implements Storage {
             "Error: Target file already exists. targetFile: %s, Metadata: %s",
             targetPath, metadata));
       }
+      log.info(String.format("Creating project artifact: meta: %s path: %s", metadata, targetPath));
       hdfs.copyFromLocalFile(new Path(localFile.getAbsolutePath()), targetPath);
       return URI.create(rootUri.getPath()).relativize(targetPath.toUri()).getPath();
     } catch (IOException e) {
@@ -84,7 +86,7 @@ public class HdfsStorage implements Storage {
   private Path createTargetPath(StorageMetadata metadata, File localFile, Path projectsPath) {
     return new Path(projectsPath, String.format("%s-%s.%s",
         String.valueOf(metadata.getProjectId()),
-        new String(metadata.getHash()),
+        new String(Hex.encodeHex(metadata.getHash())),
         Files.getFileExtension(localFile.getName())
     ));
   }
