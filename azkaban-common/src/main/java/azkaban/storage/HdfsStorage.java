@@ -17,6 +17,9 @@
 
 package azkaban.storage;
 
+import static com.google.common.base.Preconditions.checkArgument;
+import static java.util.Objects.requireNonNull;
+
 import azkaban.AzkabanCommonModuleConfig;
 import azkaban.spi.Storage;
 import azkaban.spi.StorageException;
@@ -32,11 +35,9 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.log4j.Logger;
 
-import static com.google.common.base.Preconditions.*;
-import static java.util.Objects.*;
-
 
 public class HdfsStorage implements Storage {
+
   private static final Logger log = Logger.getLogger(HdfsStorage.class);
   private static final String HDFS_SCHEME = "hdfs";
 
@@ -69,8 +70,9 @@ public class HdfsStorage implements Storage {
         log.info("Created project dir: " + projectsPath);
       }
       final Path targetPath = createTargetPath(metadata, localFile, projectsPath);
-      if ( hdfs.exists( targetPath )) {
-        log.info(String.format("Duplicate found: targetFile: %s, Metadata: %s", targetPath, metadata));
+      if (hdfs.exists(targetPath)) {
+        log.info(
+            String.format("Duplicate found: targetFile: %s, Metadata: %s", targetPath, metadata));
         return getRelativePath(targetPath);
       }
 
