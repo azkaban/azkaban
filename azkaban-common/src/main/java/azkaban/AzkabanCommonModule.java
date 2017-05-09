@@ -39,12 +39,12 @@ import com.google.inject.Scopes;
 import com.google.inject.Singleton;
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import javax.sql.DataSource;
 import org.apache.commons.dbutils.QueryRunner;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.Path;
 import org.apache.log4j.Logger;
 
 import static azkaban.Constants.ConfigurationKeys.*;
@@ -132,8 +132,8 @@ public class AzkabanCommonModule extends AbstractModule {
     checkArgument(hadoopConfDir.exists() && hadoopConfDir.isDirectory());
 
     final Configuration hadoopConf = new Configuration(false);
-    hadoopConf.addResource(new Path(hadoopConfDirPath, "core-site.xml"));
-    hadoopConf.addResource(new Path(hadoopConfDirPath, "hdfs-site.xml"));
+    hadoopConf.addResource(new org.apache.hadoop.fs.Path(hadoopConfDirPath, "core-site.xml"));
+    hadoopConf.addResource(new org.apache.hadoop.fs.Path(hadoopConfDirPath, "hdfs-site.xml"));
     hadoopConf.set("fs.hdfs.impl", org.apache.hadoop.hdfs.DistributedFileSystem.class.getName());
     return hadoopConf;
   }
