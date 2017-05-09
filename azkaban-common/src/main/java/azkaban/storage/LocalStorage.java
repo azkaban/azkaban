@@ -30,6 +30,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.io.FileUtils;
 import org.apache.log4j.Logger;
 
@@ -54,6 +55,10 @@ public class LocalStorage implements Storage {
     return new FileInputStream(new File(rootDirectory, key));
   }
 
+  public boolean contains(String key) {
+    return new File(rootDirectory, key).exists();
+  }
+
   @Override
   public String put(StorageMetadata metadata, File localFile) {
     final File projectDir = new File(rootDirectory, String.valueOf(metadata.getProjectId()));
@@ -63,8 +68,8 @@ public class LocalStorage implements Storage {
 
     final File targetFile = new File(projectDir, String.format("%s-%s.%s",
         String.valueOf(metadata.getProjectId()),
-        new String(metadata.getHash()),
-        Files.getFileExtension(localFile.getName())));
+        new String(Hex.encodeHex(metadata.getHash())),
+        "zip"));
 
     if (targetFile.exists()) {
       log.info(String.format("Duplicate found: meta: %s, targetFile: %s, ", metadata,
