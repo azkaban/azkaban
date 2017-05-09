@@ -95,7 +95,7 @@ public class DefaultMailCreatorTest {
     executableFlow.setStatus(Status.FAILED);
     assertTrue(mailCreator.createErrorEmail(
         executableFlow, message, azkabanName, scheme, clientHostname, clientPortNumber));
-    assertEquals("Flow 'mail-creator-test' of project 'test-project' has failed on unit-tests",
+    assertEquals("Flow 'mail-creator-test' has failed on unit-tests",
         message.getSubject());
     assertEquals(read("errorEmail.html"), message.getBody());
   }
@@ -106,7 +106,7 @@ public class DefaultMailCreatorTest {
     executableFlow.setStatus(Status.FAILED_FINISHING);
     assertTrue(mailCreator.createFirstErrorMessage(
         executableFlow, message, azkabanName, scheme, clientHostname, clientPortNumber));
-    assertEquals("Flow 'mail-creator-test' of project 'test-project' has encountered a failure on unit-tests",
+    assertEquals("Flow 'mail-creator-test' has encountered a failure on unit-tests",
         message.getSubject());
     assertEquals(read("firstErrorMessage.html"), message.getBody());
   }
@@ -118,7 +118,7 @@ public class DefaultMailCreatorTest {
     executableFlow.setStatus(Status.SUCCEEDED);
     assertTrue(mailCreator.createSuccessEmail(
         executableFlow, message, azkabanName, scheme, clientHostname, clientPortNumber));
-    assertEquals("Flow 'mail-creator-test' of project 'test-project' has succeeded on unit-tests", message.getSubject());
+    assertEquals("Flow 'mail-creator-test' has succeeded on unit-tests", message.getSubject());
     assertEquals(read("successEmail.html"), message.getBody());
   }
 

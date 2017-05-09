@@ -66,8 +66,8 @@ public class DefaultMailCreator implements MailCreator {
     if (emailList != null && !emailList.isEmpty()) {
       message.addAllToAddress(emailList);
       message.setMimeType("text/html");
-      message.setSubject("Flow '" + flow.getFlowId() + "' of project '"
-          + flow.getProjectName() + "' has encountered a failure on " + azkabanName);
+      message.setSubject("Flow '" + flow.getFlowId()
+          + "' has encountered a failure on " + azkabanName);
 
       message.println("<h2 style=\"color:#FF0000\"> Execution '"
           + flow.getExecutionId() + "' of flow '" + flow.getFlowId() + "' of project '"
@@ -130,8 +130,8 @@ public class DefaultMailCreator implements MailCreator {
     if (emailList != null && !emailList.isEmpty()) {
       message.addAllToAddress(emailList);
       message.setMimeType("text/html");
-      message.setSubject("Flow '" + flow.getFlowId() + "' of project '"
-          + flow.getProjectName() + "' has failed on " + azkabanName);
+      message.setSubject("Flow '" + flow.getFlowId()
+          + "' has failed on " + azkabanName);
 
       message.println("<h2 style=\"color:#FF0000\"> Execution '" + execId
           + "' of flow '" + flow.getFlowId() + "' of project '"
@@ -184,8 +184,8 @@ public class DefaultMailCreator implements MailCreator {
     if (emailList != null && !emailList.isEmpty()) {
       message.addAllToAddress(emailList);
       message.setMimeType("text/html");
-      message.setSubject("Flow '" + flow.getFlowId() + "' of project '"
-          + flow.getProjectName() + "' has succeeded on " + azkabanName);
+      message.setSubject("Flow '" + flow.getFlowId()
+          + "' has succeeded on " + azkabanName);
 
       message.println("<h2> Execution '" + flow.getExecutionId()
           + "' of flow '" + flow.getFlowId() + "' of project '"
