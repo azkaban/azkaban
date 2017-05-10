@@ -105,8 +105,7 @@ public class DefaultMailCreatorTest {
     executableFlow.setStatus(Status.FAILED_FINISHING);
     assertTrue(mailCreator.createFirstErrorMessage(
         executableFlow, message, azkabanName, scheme, clientHostname, clientPortNumber));
-    assertEquals("Flow 'mail-creator-test' has encountered a failure on unit-tests",
-        message.getSubject());
+    assertEquals("Flow 'mail-creator-test' has encountered a failure on unit-tests", message.getSubject());
     assertEquals(read("firstErrorMessage.html"), message.getBody());
   }
 
