@@ -524,6 +524,25 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements
     }
 
     QueryRunner runner = createQueryRunner();
+      if (node.getAttempt() != 0) {
+        List<ExecutionAttempt> past = node.getPastAttemptList();
+        for (ExecutionAttempt executionAttempt : past) {
+          try {
+             runner.update(
+             "UPDATE execution_jobs SET start_time=?, end_time=?, status=?  WHERE exec_id=? AND flow_id=? AND job_id=? AND attempt=?" , 
+             executionAttempt.getStartTime(), 
+             executionAttempt.getEndTime(), 
+             executionAttempt.getStatus().getNumVal(), 
+             node.getExecutableFlow().getExecutionId(),
+             node.getParentFlow().getFlowPath(),
+             node.getId(),
+             executionAttempt.getAttempt());
+           } catch (SQLException e) {
+             throw new ExecutorManagerException(
+             "Error updating job " + node.getId(), e);
+           }
+        }
+      }
     try {
       runner.update(UPSERT_EXECUTION_NODE, node.getStartTime(), node
           .getEndTime(), node.getStatus().getNumVal(), outputParam, node
