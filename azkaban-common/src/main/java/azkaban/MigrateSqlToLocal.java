@@ -79,6 +79,9 @@ public class MigrateSqlToLocal {
     }
 
     printFailed();
+    System.out.println("=====================================================");
+    System.out.println(" Migration complete.");
+    System.out.println("=====================================================");
   }
 
   private void printFailed() {
