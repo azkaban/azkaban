@@ -64,9 +64,10 @@ public class MigrateSqlToLocal {
     List<JdbcProjectLoader.Result> allActiveProjects = jdbcProjectLoader
         .fetchProjectsForMigration();
     System.out.println("fetched all migratable projects. #: " + allActiveProjects.size());
-    for (JdbcProjectLoader.Result r : allActiveProjects) {
+    for (int i = 0; i < allActiveProjects.size(); i++) {
+      Result r = allActiveProjects.get(i);
       System.out.println("--------------------------------------------------------------------");
-      System.out.println("Migrating :: " + r);
+      System.out.printf("Migrating (%d of %d) :: %s%n", i + 1, allActiveProjects.size(), r);
 
       try {
         migrateProject(r);
