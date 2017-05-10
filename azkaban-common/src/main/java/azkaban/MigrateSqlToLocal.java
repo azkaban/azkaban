@@ -121,8 +121,10 @@ public class MigrateSqlToLocal {
       System.out.println("File already present: " + r);
     }
 
-    System.out.printf("ResourceId: %s\n", key);
-    jdbcProjectLoader.updateResourceId(r.id, r.version, key);
+    if (!key.equals(r.resourceId)) {
+      System.out.printf("Updated ResourceId from: %s to %s%n", r.resourceId, key);
+      jdbcProjectLoader.updateResourceId(r.id, r.version, key);
+    }
     System.out.println("Migration complete for r: " + r);
   }
 
