@@ -16,15 +16,10 @@
 
 package azkaban.database;
 
-import java.sql.SQLException;
-
-import org.apache.commons.dbutils.DbUtils;
-import org.apache.log4j.Logger;
-
-import java.sql.PreparedStatement;
-import java.sql.Connection;
-
 import azkaban.utils.Props;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import org.apache.log4j.Logger;
 
 public class DataSourceUtils {
 
@@ -79,7 +74,9 @@ public class DataSourceUtils {
               numConnections);
     } else if (databaseType.equals("h2")) {
       String path = props.getString("h2.path");
-      dataSource = getH2DataSource(path);
+      Path h2DbPath = Paths.get(path).toAbsolutePath();
+      logger.info("h2 DB path: " + h2DbPath);
+      dataSource = getH2DataSource(h2DbPath);
     }
 
     return dataSource;
@@ -108,7 +105,7 @@ public class DataSourceUtils {
    * @param file
    * @return
    */
-  public static AzkabanDataSource getH2DataSource(String file) {
+  public static AzkabanDataSource getH2DataSource(Path file) {
     return new EmbeddedH2BasicDataSource(file);
   }
 
@@ -158,7 +155,7 @@ public class DataSourceUtils {
    *
    */
   public static class EmbeddedH2BasicDataSource extends AzkabanDataSource {
-    private EmbeddedH2BasicDataSource(String filePath) {
+    private EmbeddedH2BasicDataSource(Path filePath) {
       super();
       String url = "jdbc:h2:file:" + filePath;
       setDriverClassName("org.h2.Driver");

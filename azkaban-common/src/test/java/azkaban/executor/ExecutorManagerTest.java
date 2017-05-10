@@ -16,6 +16,10 @@
 
 package azkaban.executor;
 
+import azkaban.AzkabanCommonModule;
+import azkaban.ServiceProvider;
+import com.google.inject.Guice;
+import com.google.inject.Injector;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -28,7 +32,6 @@ import java.util.Set;
 import org.junit.Assert;
 import org.junit.Test;
 
-import azkaban.alert.Alerter;
 import azkaban.user.User;
 import azkaban.utils.Pair;
 import azkaban.utils.Props;
@@ -65,7 +68,7 @@ public class ExecutorManagerTest {
 
     loader.addExecutor("localhost", 12345);
     loader.addExecutor("localhost", 12346);
-    return new ExecutorManager(props, loader, new HashMap<String, Alerter>());
+    return new ExecutorManager(props, loader, new AlerterHolder(props));
   }
 
   /*
@@ -79,7 +82,7 @@ public class ExecutorManagerTest {
     ExecutorLoader loader = new MockExecutorLoader();
     @SuppressWarnings("unused")
     ExecutorManager manager =
-      new ExecutorManager(props, loader, new HashMap<String, Alerter>());
+      new ExecutorManager(props, loader, new AlerterHolder(props));
   }
 
   /*
@@ -92,7 +95,7 @@ public class ExecutorManagerTest {
 
     ExecutorLoader loader = new MockExecutorLoader();
     ExecutorManager manager =
-      new ExecutorManager(props, loader, new HashMap<String, Alerter>());
+      new ExecutorManager(props, loader, new AlerterHolder(props));
     Set<Executor> activeExecutors =
       new HashSet(manager.getAllActiveExecutors());
 
@@ -116,7 +119,7 @@ public class ExecutorManagerTest {
     Executor executor2 = loader.addExecutor("localhost", 12346);
 
     ExecutorManager manager =
-      new ExecutorManager(props, loader, new HashMap<String, Alerter>());
+      new ExecutorManager(props, loader, new AlerterHolder(props));
     Set<Executor> activeExecutors =
       new HashSet(manager.getAllActiveExecutors());
     Assert.assertArrayEquals(activeExecutors.toArray(), new Executor[] {
@@ -134,7 +137,7 @@ public class ExecutorManagerTest {
     Executor executor1 = loader.addExecutor("localhost", 12345);
 
     ExecutorManager manager =
-      new ExecutorManager(props, loader, new HashMap<String, Alerter>());
+      new ExecutorManager(props, loader, new AlerterHolder(props));
     Assert.assertArrayEquals(manager.getAllActiveExecutors().toArray(),
       new Executor[] { executor1 });
 
@@ -161,7 +164,7 @@ public class ExecutorManagerTest {
     Executor executor1 = loader.addExecutor("localhost", 12345);
 
     ExecutorManager manager =
-      new ExecutorManager(props, loader, new HashMap<String, Alerter>());
+      new ExecutorManager(props, loader, new AlerterHolder(props));
     Set<Executor> activeExecutors =
       new HashSet(manager.getAllActiveExecutors());
     Assert.assertArrayEquals(activeExecutors.toArray(),
@@ -333,7 +336,7 @@ public class ExecutorManagerTest {
     executors.add(executor2);
 
     when(loader.fetchActiveExecutors()).thenReturn(executors);
-    manager = new ExecutorManager(props, loader, new HashMap<>());
+    manager = new ExecutorManager(props, loader, new AlerterHolder(props));
 
     flow1 = TestUtils.createExecutableFlow("exectest1", "exec1");
     flow2 = TestUtils.createExecutableFlow("exectest1", "exec2");
