@@ -1342,7 +1342,7 @@ public class ExecutorManager extends EventHandler implements
                   } catch (ExecutorManagerException e) {
                     // Currently just ignore the update error. Will remove UpdaterThread and
                     // add separate clean up code to handle errors.
-                    logger.error(e + ". Update execution failed. Ignored.");
+                    logger.error("Update execution failed. Ignored. ", e);
                   }
                 }
               }
