@@ -15,7 +15,7 @@
  */
 package azkaban.db;
 
-import static java.util.Objects.*;
+import static java.util.Objects.requireNonNull;
 
 import com.google.inject.Inject;
 import java.sql.Connection;
@@ -100,5 +100,10 @@ public class DatabaseOperatorImpl implements DatabaseOperator {
       logger.error("update failed", ex);
       throw ex;
     }
+  }
+
+  @Override
+  public AzkabanDataSource getDataSource() {
+    return (AzkabanDataSource) this.queryRunner.getDataSource();
   }
 }

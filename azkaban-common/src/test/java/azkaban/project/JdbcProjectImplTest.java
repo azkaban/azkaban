@@ -23,9 +23,11 @@ import azkaban.db.DatabaseOperatorImpl;
 import azkaban.flow.Flow;
 import azkaban.user.Permission;
 import azkaban.user.User;
+import azkaban.utils.Md5Hasher;
 import azkaban.utils.Props;
 import azkaban.utils.Triple;
 import java.io.File;
+import java.io.IOException;
 import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.Collections;
@@ -142,13 +144,23 @@ public class JdbcProjectImplTest {
     loader.uploadProjectFile(project.getId(), newVersion, testFile, "uploadUser1");
   }
 
+  private byte[] computeHash(File localFile) {
+    byte[] md5;
+    try {
+      md5 = Md5Hasher.md5Hash(localFile);
+    } catch (IOException e) {
+      throw new ProjectManagerException("Error getting md5 hash.", e);
+    }
+    return md5;
+  }
+
   @Test
   public void testAddProjectVersion() throws Exception {
     createThreeProjects();
     Project project = loader.fetchProjectByName("mytestProject");
     File testFile = new File(getClass().getClassLoader().getResource(SAMPLE_FILE).getFile());
     int newVersion = loader.getLatestProjectVersion(project) + 1;
-    loader.addProjectVersion(project.getId(), newVersion, testFile, "uploadUser1", "resourceId1");
+    loader.addProjectVersion(project.getId(), newVersion, testFile, "uploadUser1", computeHash(testFile), "resourceId1");
     int currVersion = loader.getLatestProjectVersion(project);
     Assert.assertEquals(currVersion, newVersion);
   }
