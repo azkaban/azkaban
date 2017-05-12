@@ -73,9 +73,8 @@ public class TriggerTest {
     Trigger t = new Trigger.TriggerBuilder("azkaban",
         "test",
         triggerCond,
-        actions)
-        .setExpireCondition(expireCond)
-        .build();
+        expireCond,
+        actions).build();
 
     File temp = File.createTempFile("temptest", "temptest");
     temp.deleteOnExit();

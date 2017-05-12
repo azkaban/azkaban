@@ -27,7 +27,6 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import azkaban.alert.Alerter;
 import azkaban.executor.ExecutorLoader;
 import azkaban.executor.ExecutorManager;
 import azkaban.executor.ExecutorManagerException;
@@ -175,9 +174,8 @@ public class TriggerManagerDeadlockTest {
         new Trigger.TriggerBuilder("azkaban",
             "azkabanTest",
             triggerCond,
-            actions)
-            .setExpireCondition(expireCond)
-            .build();
+            expireCond,
+            actions).build();
 
     return t;
   }
@@ -207,9 +205,8 @@ public class TriggerManagerDeadlockTest {
         new Trigger.TriggerBuilder("azkaban",
                                    "azkabanTest",
                                    triggerCond,
-                                   actions)
-            .setExpireCondition(expireCond)
-            .build();
+                                   expireCond,
+                                   actions).build();
 
     return t;
   }

@@ -138,11 +138,16 @@ public class Trigger {
     private Map<String, Object> info = new HashMap<String, Object>();
     private Map<String, Object> context = new HashMap<String, Object>();
 
-    public TriggerBuilder(String submitUser, String source, Condition triggerCondition, List<TriggerAction> actions) {
+    public TriggerBuilder(String submitUser,
+                          String source,
+                          Condition triggerCondition,
+                          Condition expireCondition,
+                          List<TriggerAction> actions) {
       this.submitUser = submitUser;
       this.source = source;
       this.triggerCondition = triggerCondition;
       this.actions = actions;
+      this.expireCondition = expireCondition;
       long now = DateTime.now().getMillis();
       this.submitTime = now;
       this.lastModifyTime = now;
@@ -160,11 +165,6 @@ public class Trigger {
 
     public TriggerBuilder setLastModifyTime(long time) {
       this.lastModifyTime = time;
-      return this;
-    }
-
-    public TriggerBuilder setExpireCondition(Condition condition) {
-      this.expireCondition = condition;
       return this;
     }
 
@@ -387,11 +387,11 @@ public class Trigger {
       trigger = new Trigger.TriggerBuilder("azkaban",
           source,
           triggerCond,
+          expireCond,
           actions)
           .setId(triggerId)
           .setLastModifyTime(lastModifyTime)
           .setSubmitTime(submitTime)
-          .setExpireCondition(expireCond)
           .setExpireActions(expireActions)
           .setInfo(info)
           .setContext(context)
@@ -433,5 +433,5 @@ public class Trigger {
   public String toString() {
     return "Trigger Id: " + getTriggerId() + ", Description: " + getDescription();
   }
-  
+
 }

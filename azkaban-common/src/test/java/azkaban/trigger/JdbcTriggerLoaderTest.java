@@ -222,9 +222,8 @@ public class JdbcTriggerLoaderTest {
     Trigger t = new Trigger.TriggerBuilder("azkaban",
         source,
         triggerCond,
-        actions)
-        .setExpireCondition(expireCond)
-        .build();
+        expireCond,
+        actions).build();
 
     return t;
   }

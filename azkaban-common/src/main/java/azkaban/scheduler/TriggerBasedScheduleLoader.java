@@ -58,8 +58,8 @@ public class TriggerBasedScheduleLoader implements ScheduleLoader {
     Trigger t = new Trigger.TriggerBuilder(s.getSubmitUser(),
         triggerSource,
         triggerCondition,
+        expireCondition,
         actions)
-        .setExpireCondition(expireCondition)
         .setSubmitTime(s.getSubmitTime())
         .setLastModifyTime(s.getLastModifyTime())
         .setId(s.getScheduleId())

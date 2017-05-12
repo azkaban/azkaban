@@ -286,9 +286,8 @@ public class ExecuteFlowAction implements TriggerAction {
         Trigger slaTrigger = new Trigger.TriggerBuilder("azkaban_sla",
                                                         "azkaban",
                                                         triggerCond,
-                                                        actions)
-                                        .setExpireCondition(expireCond)
-                                        .build();
+                                                        expireCond,
+                                                        actions).build();
 
         slaTrigger.getInfo().put("monitored.finished.execution",
             String.valueOf(execId));
