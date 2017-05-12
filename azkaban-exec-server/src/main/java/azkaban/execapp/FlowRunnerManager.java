@@ -118,6 +118,8 @@ public class FlowRunnerManager implements EventListener,
   private final ProjectLoader projectLoader;
   private final JobTypeManager jobtypeManager;
   private final FlowPreparer flowPreparer;
+  private final TriggerManager triggerManager;
+
 
   private final Props azkabanProps;
   private final File executionDirectory;
@@ -151,7 +153,8 @@ public class FlowRunnerManager implements EventListener,
   public FlowRunnerManager(Props props,
       ExecutorLoader executorLoader,
       ProjectLoader projectLoader,
-      StorageManager storageManager) throws IOException {
+      StorageManager storageManager,
+      TriggerManager triggerManager) throws IOException {
     azkabanProps = props;
 
     executionDirRetention = props.getLong("execution.dir.retention", executionDirRetention);
@@ -178,6 +181,7 @@ public class FlowRunnerManager implements EventListener,
 
     this.executorLoader = executorLoader;
     this.projectLoader = projectLoader;
+    this.triggerManager = triggerManager;
 
     this.jobLogChunkSize = azkabanProps.getString("job.log.chunk.size", "5MB");
     this.jobLogNumFiles = azkabanProps.getInt("job.log.backup.index", 4);
