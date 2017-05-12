@@ -15,7 +15,9 @@
  */
 package azkaban.executor;
 
+import azkaban.sla.SlaOption;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -26,6 +28,8 @@ import java.util.Set;
 import azkaban.flow.Flow;
 import azkaban.project.Project;
 import azkaban.utils.TypedMapWrapper;
+import java.util.stream.Collectors;
+
 
 public class ExecutableFlow extends ExecutableFlowBase {
   public static final String EXECUTIONID_PARAM = "executionId";
@@ -40,6 +44,7 @@ public class ExecutableFlow extends ExecutableFlowBase {
   public static final String PROJECTNAME_PARAM = "projectName";
   public static final String LASTMODIFIEDTIME_PARAM = "lastModfiedTime";
   public static final String LASTMODIFIEDUSER_PARAM = "lastModifiedUser";
+  public static final String SLAOPTIONS_PARAM = "slaOptions";
 
 
   private int executionId = -1;
@@ -55,6 +60,7 @@ public class ExecutableFlow extends ExecutableFlowBase {
 
   private HashSet<String> proxyUsers = new HashSet<String>();
   private ExecutionOptions executionOptions;
+  private List<SlaOption> slaOptions = new ArrayList<>();
 
   public ExecutableFlow(Project project, Flow flow) {
     this.projectId = project.getId();
@@ -94,6 +100,11 @@ public class ExecutableFlow extends ExecutableFlowBase {
   public ExecutionOptions getExecutionOptions() {
     return executionOptions;
   }
+
+  public List<SlaOption> getSlaOptions() {
+    return slaOptions;
+  }
+
 
   @Override
   protected void setFlow(Project project, Flow flow) {
@@ -191,6 +202,10 @@ public class ExecutableFlow extends ExecutableFlowBase {
     this.submitTime = submitTime;
   }
 
+  public void setSlaOptions(List<SlaOption> slaOptions) {
+    this.slaOptions = slaOptions;
+  }
+
   @Override
   public Map<String, Object> toObject() {
     HashMap<String, Object> flowObj = new HashMap<String, Object>();
@@ -217,6 +232,11 @@ public class ExecutableFlow extends ExecutableFlowBase {
     flowObj.put(PROXYUSERS_PARAM, proxyUserList);
 
     flowObj.put(SUBMITTIME_PARAM, submitTime);
+
+    List<Map<String, Object>> slaOptions = new ArrayList<>();
+    this.getSlaOptions().stream().forEach((slaOption) -> slaOptions.add(slaOption.toObject()));
+
+    flowObj.put(SLAOPTIONS_PARAM, slaOptions);
 
     return flowObj;
   }
@@ -259,7 +279,12 @@ public class ExecutableFlow extends ExecutableFlowBase {
     if (flowObj.containsKey(PROXYUSERS_PARAM)) {
       List<String> proxyUserList = flowObj.<String> getList(PROXYUSERS_PARAM);
       this.addAllProxyUsers(proxyUserList);
+    }
 
+    if (flowObj.containsKey(SLAOPTIONS_PARAM)) {
+      List<SlaOption> slaOptions =
+          flowObj.getList(SLAOPTIONS_PARAM).stream().map(SlaOption::fromObject).collect(Collectors.toList());
+      this.setSlaOptions(slaOptions);
     }
   }
 
