@@ -182,9 +182,13 @@ public class TriggerManagerTest {
     Condition triggerCond = new Condition(checkers, expr);
     Condition expireCond = new Condition(checkers, expr);
 
-    Trigger fakeTrigger =
-        new Trigger(DateTime.now().getMillis(), DateTime.now().getMillis(),
-            "azkaban", source, triggerCond, expireCond, actions);
+    Trigger fakeTrigger = new Trigger.TriggerBuilder("azkaban",
+        source,
+        triggerCond,
+        actions)
+        .setExpireCondition(expireCond)
+        .build();
+
     fakeTrigger.setResetOnTrigger(true);
     fakeTrigger.setResetOnExpire(true);
 

@@ -172,7 +172,13 @@ public class TriggerManagerDeadlockTest {
     Condition expireCond = new Condition(expireCheckers, expireExpr);
 
     Trigger t =
-        new Trigger("azkaban", "azkabanTest", triggerCond, expireCond, actions);
+        new Trigger.TriggerBuilder("azkaban",
+            "azkabanTest",
+            triggerCond,
+            actions)
+            .setExpireCondition(expireCond)
+            .build();
+
     return t;
   }
 
@@ -198,7 +204,13 @@ public class TriggerManagerDeadlockTest {
     Condition expireCond = new Condition(expireCheckers, expireExpr);
 
     Trigger t =
-        new Trigger("azkaban", "azkabanTest", triggerCond, expireCond, actions);
+        new Trigger.TriggerBuilder("azkaban",
+                                   "azkabanTest",
+                                   triggerCond,
+                                   actions)
+            .setExpireCondition(expireCond)
+            .build();
+
     return t;
   }
 
