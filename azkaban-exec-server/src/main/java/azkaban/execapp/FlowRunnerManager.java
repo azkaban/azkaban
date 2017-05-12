@@ -18,6 +18,7 @@ package azkaban.execapp;
 
 import azkaban.Constants;
 import azkaban.executor.Status;
+import azkaban.sla.SlaOption;
 import azkaban.storage.StorageManager;
 import com.google.inject.Inject;
 import java.io.File;
@@ -38,6 +39,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 
+import java.util.stream.Collectors;
 import org.apache.commons.io.FileUtils;
 import org.apache.log4j.Logger;
 
@@ -629,6 +631,18 @@ public class FlowRunnerManager implements EventListener,
       return recentlyFinishedFlows.get(execId);
     }
     return runner.getExecutableFlow();
+  }
+
+  public List<SlaOption> getJobLevelSLAOptions(ExecutableFlow flow) {
+    Set<String> jobLevelSLAs = new HashSet<>(Arrays.asList(SlaOption.TYPE_JOB_FINISH, SlaOption.TYPE_JOB_SUCCEED));
+    return flow.getSlaOptions().stream().filter(slaOption -> jobLevelSLAs.contains(slaOption.getType()))
+        .collect(Collectors.toList());
+  }
+
+  private List<SlaOption> getFlowLevelSLAOptions(ExecutableFlow flow) {
+    Set<String> flowLevelSLAs = new HashSet<>(Arrays.asList(SlaOption.TYPE_FLOW_FINISH, SlaOption.TYPE_FLOW_SUCCEED));
+    return flow.getSlaOptions().stream().filter(slaOption -> flowLevelSLAs.contains(slaOption.getType()))
+        .collect(Collectors.toList());
   }
 
   @Override
