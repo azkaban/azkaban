@@ -639,6 +639,7 @@ public class FlowRunnerManager implements EventListener,
           + " is finished. Adding it to recently finished flows list.");
       runningFlows.remove(flow.getExecutionId());
     }
+
   }
 
   public LogData readFlowLogs(int execId, int startByte, int length)

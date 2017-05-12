@@ -59,7 +59,7 @@ public class TriggerManager {
     return actions;
   }
 
-  public void addMonitor(int execId, List<SlaOption> slaOptions) {
+  public void addTrigger(int execId, List<SlaOption> slaOptions) {
     for (SlaOption sla : slaOptions) {
       Condition triggerCond = createCondition(sla, execId, "slaFailChecker", "isSlaFailed()");
 
