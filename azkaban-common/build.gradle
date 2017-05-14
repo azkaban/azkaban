@@ -31,13 +31,14 @@ model {
   }
 }
 
-configurations {
-  testCompileOnly.extendsFrom(compileOnly)
-}
 dependencies {
   compile project(':azkaban-spi')
   compile project(':azkaban-db')
 
+  compile "org.apache.hadoop:hadoop-auth:$hadoopVersion"
+  compile "org.apache.hadoop:hadoop-annotations:$hadoopVersion"
+  compile "org.apache.hadoop:hadoop-common:$hadoopVersion"
+  compile "org.apache.hadoop:hadoop-hdfs:$hadoopVersion"
   compile('com.google.inject:guice:4.1.0')
   compile('com.google.guava:guava:21.0')
   compile('commons-collections:commons-collections:3.2.2')

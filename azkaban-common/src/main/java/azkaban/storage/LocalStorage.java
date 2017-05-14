@@ -17,6 +17,8 @@
 
 package azkaban.storage;
 
+import static com.google.common.base.Preconditions.checkArgument;
+
 import azkaban.AzkabanCommonModuleConfig;
 import azkaban.spi.Storage;
 import azkaban.spi.StorageException;
@@ -31,17 +33,17 @@ import java.io.InputStream;
 import org.apache.commons.io.FileUtils;
 import org.apache.log4j.Logger;
 
-import static com.google.common.base.Preconditions.*;
-
 
 public class LocalStorage implements Storage {
+
   private static final Logger log = Logger.getLogger(LocalStorage.class);
 
   final File rootDirectory;
 
   @Inject
   public LocalStorage(AzkabanCommonModuleConfig config) {
-    this.rootDirectory = validateRootDirectory(createIfDoesNotExist(config.getLocalStorageBaseDirPath()));
+    this.rootDirectory = validateRootDirectory(
+        createIfDoesNotExist(config.getLocalStorageBaseDirPath()));
   }
 
   /**
@@ -65,20 +67,22 @@ public class LocalStorage implements Storage {
         Files.getFileExtension(localFile.getName())));
 
     if (targetFile.exists()) {
-      throw new StorageException(String.format(
-          "Error in LocalStorage. Target file already exists. targetFile: %s, Metadata: %s",
-          targetFile, metadata));
+      log.info(String.format("Duplicate found: meta: %s, targetFile: %s, ", metadata,
+          targetFile.getAbsolutePath()));
+      return getRelativePath(targetFile);
     }
+
+    // Copy file to storage dir
     try {
       FileUtils.copyFile(localFile, targetFile);
     } catch (IOException e) {
-      log.error("LocalStorage error in put(): Metadata: " + metadata);
+      log.error("LocalStorage error in put(): meta: " + metadata);
       throw new StorageException(e);
     }
-    return createRelativePath(targetFile);
+    return getRelativePath(targetFile);
   }
 
-  private String createRelativePath(File targetFile) {
+  private String getRelativePath(File targetFile) {
     return rootDirectory.toURI().relativize(targetFile.toURI()).getPath();
   }
 
@@ -89,7 +93,7 @@ public class LocalStorage implements Storage {
 
   private static File createIfDoesNotExist(String baseDirectoryPath) {
     final File baseDirectory = new File(baseDirectoryPath);
-    if(!baseDirectory.exists()) {
+    if (!baseDirectory.exists()) {
       baseDirectory.mkdir();
       log.info("Creating dir: " + baseDirectory.getAbsolutePath());
     }

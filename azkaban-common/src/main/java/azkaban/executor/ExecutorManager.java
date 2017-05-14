@@ -20,6 +20,7 @@ import azkaban.Constants;
 import azkaban.metrics.CommonMetrics;
 import azkaban.utils.FlowUtils;
 import com.google.common.collect.Lists;
+import com.google.inject.Inject;
 import java.io.File;
 import java.io.IOException;
 import java.lang.Thread.State;
@@ -111,7 +112,7 @@ public class ExecutorManager extends EventHandler implements
   private long lastThreadCheckTime = -1;
   private String updaterStage = "not started";
 
-  private Map<String, Alerter> alerters;
+  private final AlerterHolder alerterHolder;
 
   File cacheDir;
 
@@ -121,15 +122,14 @@ public class ExecutorManager extends EventHandler implements
   private long lastSuccessfulExecutorInfoRefresh;
   private ExecutorService executorInforRefresherService;
 
-  public ExecutorManager(Props azkProps, ExecutorLoader loader,
-      Map<String, Alerter> alerters) throws ExecutorManagerException {
-    this.alerters = alerters;
+  @Inject
+  public ExecutorManager(Props azkProps, ExecutorLoader loader, AlerterHolder alerterHolder) throws ExecutorManagerException {
+    this.alerterHolder = alerterHolder;
     this.azkProps = azkProps;
     this.executorLoader = loader;
     this.setupExecutors();
 
-    queuedFlows =
-        new QueuedExecutions(azkProps.getLong(AZKABAN_WEBSERVER_QUEUE_SIZE, 100000));
+    queuedFlows = new QueuedExecutions(azkProps.getLong(AZKABAN_WEBSERVER_QUEUE_SIZE, 100000));
     this.loadQueuedFlows();
 
     cacheDir = new File(azkProps.getString("cache.directory", "cache"));
@@ -1300,6 +1300,13 @@ public class ExecutorManager extends EventHandler implements
                       "Failed to get update. Doing some clean up for flow "
                           + flow.getExecutionId();
 
+                  // The failure retry logic below won't work after removing the runningFlow
+                  // cache. numErrors and nextCheckTime are not stored in DB. So whenever we
+                  // fetch active flows from DB, numErrors will be initialized to default 0
+                  // and nexCheckTime will be -1. numErrors will never reach threshold and
+                  // flows will never be finalized in below case.
+                  // todo: jamiesjc will remove updaterThread and add separate clean up code
+                  // to handle errors.
                   if (activeFlow != null) {
                     ExecutionReference ref = activeFlow.getFirst();
                     int numErrors = ref.getNumErrors();
@@ -1333,13 +1340,9 @@ public class ExecutorManager extends EventHandler implements
                       finalizeFlows.add(flow);
                     }
                   } catch (ExecutorManagerException e) {
-                    ExecutableFlow flow = e.getExecutableFlow();
-                    logger.error(e);
-
-                    if (flow != null) {
-                      logger.error("Finalizing flow " + flow.getExecutionId());
-                      finalizeFlows.add(flow);
-                    }
+                    // Currently just ignore the update error. Will remove UpdaterThread and
+                    // add separate clean up code to handle errors.
+                    logger.error("Update execution failed. Ignored. ", e);
                   }
                 }
               }
@@ -1436,7 +1439,7 @@ public class ExecutorManager extends EventHandler implements
     if(alertUser) {
       ExecutionOptions options = flow.getExecutionOptions();
       // But we can definitely email them.
-      Alerter mailAlerter = alerters.get("email");
+      Alerter mailAlerter = alerterHolder.get("email");
       if (flow.getStatus() == Status.FAILED || flow.getStatus() == Status.KILLED) {
         if (options.getFailureEmails() != null && !options.getFailureEmails().isEmpty()) {
           try {
@@ -1447,7 +1450,7 @@ public class ExecutorManager extends EventHandler implements
         }
         if (options.getFlowParameters().containsKey("alert.type")) {
           String alertType = options.getFlowParameters().get("alert.type");
-          Alerter alerter = alerters.get(alertType);
+          Alerter alerter = alerterHolder.get(alertType);
           if (alerter != null) {
             try {
               alerter.alertOnError(flow);
@@ -1471,7 +1474,7 @@ public class ExecutorManager extends EventHandler implements
         }
         if (options.getFlowParameters().containsKey("alert.type")) {
           String alertType = options.getFlowParameters().get("alert.type");
-          Alerter alerter = alerters.get(alertType);
+          Alerter alerter = alerterHolder.get(alertType);
           if (alerter != null) {
             try {
               alerter.alertOnSuccess(flow);
@@ -1576,7 +1579,7 @@ public class ExecutorManager extends EventHandler implements
     if (oldStatus != newStatus && newStatus.equals(Status.FAILED_FINISHING)) {
       // We want to see if we should give an email status on first failure.
       if (options.getNotifyOnFirstFailure()) {
-        Alerter mailAlerter = alerters.get("email");
+        Alerter mailAlerter = alerterHolder.get("email");
         try {
           mailAlerter.alertOnFirstError(flow);
         } catch (Exception e) {
@@ -1586,7 +1589,7 @@ public class ExecutorManager extends EventHandler implements
       }
       if (options.getFlowParameters().containsKey("alert.type")) {
         String alertType = options.getFlowParameters().get("alert.type");
-        Alerter alerter = alerters.get(alertType);
+        Alerter alerter = alerterHolder.get(alertType);
         if (alerter != null) {
           try {
             alerter.alertOnFirstError(flow);

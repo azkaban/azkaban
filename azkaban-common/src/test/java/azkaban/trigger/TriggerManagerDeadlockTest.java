@@ -16,6 +16,7 @@
 
 package azkaban.trigger;
 
+import azkaban.executor.AlerterHolder;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -47,9 +48,7 @@ public class TriggerManagerDeadlockTest {
     props.put("trigger.scan.interval", 1000);
     props.put("executor.port", 12321);
     execLoader = new MockExecutorLoader();
-    Map<String, Alerter> alerters = new HashMap<String, Alerter>();
-    ExecutorManager executorManager =
-        new ExecutorManager(props, execLoader, alerters);
+    ExecutorManager executorManager = new ExecutorManager(props, execLoader, new AlerterHolder(props));
     triggerManager = new TriggerManager(props, loader, executorManager);
   }
 
