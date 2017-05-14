@@ -16,11 +16,16 @@
 
 package azkaban.sla;
 
+import com.google.common.collect.ImmutableSet;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 
+import java.util.Set;
+import java.util.stream.Collectors;
 import org.joda.time.DateTime;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
@@ -31,16 +36,13 @@ public class SlaOption {
 
   public static final String TYPE_FLOW_FINISH = "FlowFinish";
   public static final String TYPE_FLOW_SUCCEED = "FlowSucceed";
-  public static final String TYPE_FLOW_PROGRESS = "FlowProgress";
 
   public static final String TYPE_JOB_FINISH = "JobFinish";
   public static final String TYPE_JOB_SUCCEED = "JobSucceed";
-  public static final String TYPE_JOB_PROGRESS = "JobProgress";
 
   public static final String INFO_DURATION = "Duration";
   public static final String INFO_FLOW_NAME = "FlowName";
   public static final String INFO_JOB_NAME = "JobName";
-  public static final String INFO_PROGRESS_PERCENT = "ProgressPercent";
   public static final String INFO_EMAIL_LIST = "EmailList";
 
   // always alert
@@ -59,6 +61,18 @@ public class SlaOption {
     this.type = type;
     this.info = info;
     this.actions = actions;
+  }
+
+  public static List<SlaOption> getJobLevelSLAOptions(ExecutableFlow flow) {
+    Set<String> jobLevelSLAs = new HashSet<>(Arrays.asList(SlaOption.TYPE_JOB_FINISH, SlaOption.TYPE_JOB_SUCCEED));
+    return flow.getSlaOptions().stream().filter(slaOption -> jobLevelSLAs.contains(slaOption.getType()))
+        .collect(Collectors.toList());
+  }
+
+  public static List<SlaOption> getFlowLevelSLAOptions(ExecutableFlow flow) {
+    Set<String> flowLevelSLAs = new HashSet<>(Arrays.asList(SlaOption.TYPE_FLOW_FINISH, SlaOption.TYPE_FLOW_SUCCEED));
+    return flow.getSlaOptions().stream().filter(slaOption -> flowLevelSLAs.contains(slaOption.getType()))
+        .collect(Collectors.toList());
   }
 
   public String getType() {

@@ -633,18 +633,6 @@ public class FlowRunnerManager implements EventListener,
     return runner.getExecutableFlow();
   }
 
-  public List<SlaOption> getJobLevelSLAOptions(ExecutableFlow flow) {
-    Set<String> jobLevelSLAs = new HashSet<>(Arrays.asList(SlaOption.TYPE_JOB_FINISH, SlaOption.TYPE_JOB_SUCCEED));
-    return flow.getSlaOptions().stream().filter(slaOption -> jobLevelSLAs.contains(slaOption.getType()))
-        .collect(Collectors.toList());
-  }
-
-  private List<SlaOption> getFlowLevelSLAOptions(ExecutableFlow flow) {
-    Set<String> flowLevelSLAs = new HashSet<>(Arrays.asList(SlaOption.TYPE_FLOW_FINISH, SlaOption.TYPE_FLOW_SUCCEED));
-    return flow.getSlaOptions().stream().filter(slaOption -> flowLevelSLAs.contains(slaOption.getType()))
-        .collect(Collectors.toList());
-  }
-
   @Override
   public void handleEvent(Event event) {
     FlowRunner flowRunner = (FlowRunner) event.getRunner();
@@ -658,14 +646,8 @@ public class FlowRunnerManager implements EventListener,
     }
     else if (event.getType() == Event.Type.FLOW_STARTED) {
       // add flow level checker
-      triggerManager.addTrigger(flow.getExecutionId(), getFlowLevelSLAOptions(flow));
+      triggerManager.addTrigger(flow.getExecutionId(), SlaOption.getFlowLevelSLAOptions(flow));
     }
-    else if (event.getType() == Event.Type.JOB_STARTED) {
-      // add job level checker
-      triggerManager.addTrigger(flow.getExecutionId(), getJobLevelSLAOptions(flow));
-    }
-
-
   }
 
   public LogData readFlowLogs(int execId, int startByte, int length)

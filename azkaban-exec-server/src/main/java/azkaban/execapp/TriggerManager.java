@@ -7,6 +7,7 @@ import azkaban.trigger.TriggerAction;
 import azkaban.trigger.builtin.KillExecutionAction;
 import azkaban.trigger.builtin.SlaAlertAction;
 import azkaban.trigger.builtin.SlaChecker;
+import azkaban.utils.Utils;
 import com.google.inject.Inject;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -18,6 +19,8 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import org.apache.log4j.Logger;
+import org.joda.time.Period;
+import org.joda.time.ReadablePeriod;
 
 
 public class TriggerManager {
@@ -34,7 +37,7 @@ public class TriggerManager {
     SlaChecker slaFailChecker = new SlaChecker(checkerName, sla, execId);
     Map<String, ConditionChecker> slaCheckers = new HashMap<>();
     slaCheckers.put(slaFailChecker.getId(), slaFailChecker);
-    return new Condition(slaCheckers, slaFailChecker.getId() + "."+checkerMethod);
+    return new Condition(slaCheckers, slaFailChecker.getId() + "." + checkerMethod);
   }
 
   private List<TriggerAction> createActions(SlaOption sla, int execId) {
@@ -68,9 +71,13 @@ public class TriggerManager {
 
       List<TriggerAction> actions = createActions(sla, execId);
       Trigger trigger = new Trigger(execId, triggerCond, expireCond, actions);
-      long delay = trigger.getNextCheckTime() - System.currentTimeMillis();
-      logger.info("Adding sla trigger " + sla.toString() + " to execution " + execId + ", schedule to check in " + delay/1000 + " seconds");
-      scheduledService.schedule(trigger, delay, TimeUnit.MILLISECONDS);
+
+      ReadablePeriod duration = Utils.parsePeriodString((String) sla.getInfo().get(SlaOption.INFO_DURATION));
+      long durationInMillis = duration.toPeriod().toStandardDuration().getMillis();
+
+      logger.info("Adding sla trigger " + sla.toString() + " to execution " + execId + ", scheduled to trigger in " + durationInMillis/1000 + " seconds");
+      scheduledService.schedule(trigger, durationInMillis, TimeUnit.MILLISECONDS);
+
     }
   }
 

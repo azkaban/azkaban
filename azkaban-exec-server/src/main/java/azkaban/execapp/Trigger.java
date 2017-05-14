@@ -17,9 +17,12 @@
 
 package azkaban.execapp;
 
+import java.util.List;
+
+import azkaban.ServiceProvider;
+import azkaban.executor.ExecutorManager;
 import azkaban.trigger.Condition;
 import azkaban.trigger.TriggerAction;
-import java.util.List;
 import org.apache.log4j.Logger;
 
 
@@ -32,26 +35,18 @@ public class Trigger implements Runnable {
   // condition to expire this trigger(ex. flow finishes before violating SLA)
   private final Condition expireCondition;
   private boolean isExpired;
-  private long nextCheckTime;
   private final List<TriggerAction> actions;
 
-  public Trigger(int execId, Condition triggerCondition, Condition expireCondition, List<TriggerAction> actions) {
+  public Trigger(int execId,
+                 Condition triggerCondition,
+                 Condition expireCondition,
+                 List<TriggerAction> actions)
+  {
     this.execId = execId;
     this.triggerCondition = triggerCondition;
     this.expireCondition = expireCondition;
     this.actions = actions;
     this.isExpired = false;
-    this.updateNextCheckTime();
-  }
-
-  public void updateNextCheckTime() {
-    this.nextCheckTime =
-        Math.min(triggerCondition.getNextCheckTime(),
-            expireCondition.getNextCheckTime());
-  }
-
-  public long getNextCheckTime() {
-    return nextCheckTime;
   }
 
 
@@ -79,9 +74,6 @@ public class Trigger implements Runnable {
 
       // the trigger has been triggered, make it expired.
       this.isExpired = true;
-    }
-    else {
-      updateNextCheckTime();
     }
   }
 
