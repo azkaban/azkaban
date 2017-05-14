@@ -898,6 +898,7 @@ public class FlowRunnerManager implements EventListener,
   public void shutdownNow() {
     logger.warn("Shutting down FlowRunnerManager now...");
     executorService.shutdownNow();
+    triggerManager.shutdown();
   }
 
 }
