@@ -35,7 +35,7 @@
                   <tr>
                     <th>Flow/Job</th>
                     <th>Sla Rule</th>
-                    <th>Duration</th>
+                    <th>Duration(In HH:MM eg. kill in 10 minutes is 00:10)</th>
                     <th>Email Action</th>
                     <th>Kill Action</th>
                   </tr>
