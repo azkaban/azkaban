@@ -16,6 +16,8 @@
 
 package azkaban.trigger.builtin;
 
+import azkaban.ServiceProvider;
+import azkaban.executor.ExecutorLoader;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -25,7 +27,6 @@ import org.joda.time.ReadablePeriod;
 
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutableNode;
-import azkaban.executor.ExecutorManagerAdapter;
 import azkaban.executor.ExecutorManagerException;
 import azkaban.executor.Status;
 import azkaban.sla.SlaOption;
@@ -36,22 +37,20 @@ public class SlaChecker implements ConditionChecker {
 
   private static final Logger logger = Logger.getLogger(SlaChecker.class);
   public static final String type = "SlaChecker";
+  public static final String USER = "azkaban_sla";
 
   private String id;
   private SlaOption slaOption;
   private int execId;
   private long checkTime = -1;
+  private ExecutorLoader executorLoader;
 
-  private static ExecutorManagerAdapter executorManager;
-
+  //todo chengren311: move this class to executor module when all existing triggers in db are expired
   public SlaChecker(String id, SlaOption slaOption, int execId) {
     this.id = id;
     this.slaOption = slaOption;
     this.execId = execId;
-  }
-
-  public static void setExecutorManager(ExecutorManagerAdapter em) {
-    executorManager = em;
+    this.executorLoader = ServiceProvider.SERVICE_PROVIDER.getInstance(ExecutorLoader.class);
   }
 
   private Boolean isSlaMissed(ExecutableFlow flow) {
@@ -204,7 +203,7 @@ public class SlaChecker implements ConditionChecker {
     logger.info("Checking sla for execution " + execId);
     ExecutableFlow flow;
     try {
-      flow = executorManager.getExecutableFlow(execId);
+      flow = executorLoader.fetchExecutableFlow(execId);
     } catch (ExecutorManagerException e) {
       logger.error("Can't get executable flow.", e);
       e.printStackTrace();
@@ -217,7 +216,7 @@ public class SlaChecker implements ConditionChecker {
   public Object isSlaFailed() {
     ExecutableFlow flow;
     try {
-      flow = executorManager.getExecutableFlow(execId);
+      flow = executorLoader.fetchExecutableFlow(execId);
     } catch (ExecutorManagerException e) {
       logger.error("Can't get executable flow.", e);
       // something wrong, send out alerts
@@ -229,7 +228,7 @@ public class SlaChecker implements ConditionChecker {
   public Object isSlaPassed() {
     ExecutableFlow flow;
     try {
-      flow = executorManager.getExecutableFlow(execId);
+      flow = executorLoader.fetchExecutableFlow(execId);
     } catch (ExecutorManagerException e) {
       logger.error("Can't get executable flow.", e);
       // something wrong, send out alerts

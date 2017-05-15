@@ -4,22 +4,19 @@ import azkaban.sla.SlaOption;
 import azkaban.trigger.Condition;
 import azkaban.trigger.ConditionChecker;
 import azkaban.trigger.TriggerAction;
-import azkaban.trigger.builtin.KillExecutionAction;
 import azkaban.trigger.builtin.SlaAlertAction;
 import azkaban.trigger.builtin.SlaChecker;
 import azkaban.utils.Utils;
+import azkaban.execapp.action.KillExecutionAction;
 import com.google.inject.Inject;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import org.apache.log4j.Logger;
-import org.joda.time.Period;
 import org.joda.time.ReadablePeriod;
 
 
@@ -77,7 +74,6 @@ public class TriggerManager {
 
       logger.info("Adding sla trigger " + sla.toString() + " to execution " + execId + ", scheduled to trigger in " + durationInMillis/1000 + " seconds");
       scheduledService.schedule(trigger, durationInMillis, TimeUnit.MILLISECONDS);
-
     }
   }
 

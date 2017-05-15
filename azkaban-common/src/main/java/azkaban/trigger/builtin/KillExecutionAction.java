@@ -37,6 +37,7 @@ public class KillExecutionAction implements TriggerAction {
   private int execId;
   private static ExecutorManagerAdapter executorManager;
 
+  //todo chengren311: delete this class to executor module when all existing triggers in db are expired
   public KillExecutionAction(String actionId, int execId) {
     this.execId = execId;
     this.actionId = actionId;
