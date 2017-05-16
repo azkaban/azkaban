@@ -203,6 +203,24 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements
   }
 
   @Override
+  public List<ExecutableFlow> fetchRecentlyFinishedFlows(long lifeTimeMs)
+      throws ExecutorManagerException {
+    QueryRunner runner = createQueryRunner();
+    FetchRecentlyFinishedFlows flowHandler = new FetchRecentlyFinishedFlows();
+
+    try {
+      List<ExecutableFlow> flows =
+          runner.query(FetchRecentlyFinishedFlows.FETCH_RECENTLY_FINISHED_FLOW,
+              flowHandler, System.currentTimeMillis() - lifeTimeMs,
+              Status.SUCCEEDED.getNumVal(), Status.KILLED.getNumVal(),
+              Status.FAILED.getNumVal());
+      return flows;
+    } catch (SQLException e) {
+      throw new ExecutorManagerException("Error fetching recently finished flows", e);
+    }
+  }
+
+  @Override
   public Map<Integer, Pair<ExecutionReference, ExecutableFlow>> fetchActiveFlows()
       throws ExecutorManagerException {
     QueryRunner runner = createQueryRunner();
@@ -1354,6 +1372,52 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements
 
             execFlows.add(new Pair<ExecutionReference, ExecutableFlow>(ref,
               exFlow));
+          } catch (IOException e) {
+            throw new SQLException("Error retrieving flow data " + id, e);
+          }
+        }
+      } while (rs.next());
+
+      return execFlows;
+    }
+  }
+
+  private static class FetchRecentlyFinishedFlows implements
+    ResultSetHandler<List<ExecutableFlow>> {
+    // Execution_flows table is already indexed by end_time
+    private static String FETCH_RECENTLY_FINISHED_FLOW =
+        "SELECT exec_id, enc_type, flow_data FROM execution_flows "
+            + "WHERE end_time > ? AND status IN (?, ?, ?)";
+
+    @Override
+    public List<ExecutableFlow> handle(
+        ResultSet rs) throws SQLException {
+      if (!rs.next()) {
+        return Collections.emptyList();
+      }
+
+      List<ExecutableFlow> execFlows = new ArrayList<>();
+      do {
+        int id = rs.getInt(1);
+        int encodingType = rs.getInt(2);
+        byte[] data = rs.getBytes(3);
+
+        if (data != null) {
+          EncodingType encType = EncodingType.fromInteger(encodingType);
+          Object flowObj;
+          try {
+            if (encType == EncodingType.GZIP) {
+              String jsonString = GZIPUtils.unGzipString(data, "UTF-8");
+              flowObj = JSONUtils.parseJSONFromString(jsonString);
+            } else {
+              String jsonString = new String(data, "UTF-8");
+              flowObj = JSONUtils.parseJSONFromString(jsonString);
+            }
+
+            ExecutableFlow exFlow =
+                ExecutableFlow.createExecutableFlowFromObject(flowObj);
+
+            execFlows.add(exFlow);
           } catch (IOException e) {
             throw new SQLException("Error retrieving flow data " + id, e);
           }

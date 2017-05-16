@@ -32,6 +32,9 @@ public interface ExecutorLoader {
   ExecutableFlow fetchExecutableFlow(int execId)
       throws ExecutorManagerException;
 
+  List<ExecutableFlow> fetchRecentlyFinishedFlows(long lifeTimeMs)
+      throws ExecutorManagerException;
+
   Map<Integer, Pair<ExecutionReference, ExecutableFlow>> fetchActiveFlows()
       throws ExecutorManagerException;
 
