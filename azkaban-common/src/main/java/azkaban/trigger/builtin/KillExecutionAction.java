@@ -16,6 +16,7 @@
 
 package azkaban.trigger.builtin;
 
+import azkaban.Constants;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -95,7 +96,7 @@ public class KillExecutionAction implements TriggerAction {
     logger.info("ready to kill execution " + execId);
     if (!Status.isStatusFinished(exFlow.getStatus())) {
       logger.info("Killing execution " + execId);
-      executorManager.cancelFlow(exFlow, "azkaban_sla");
+      executorManager.cancelFlow(exFlow, Constants.AZKABAN_SLA_CHECKER_USERNAME);
     }
   }
 

@@ -16,6 +16,7 @@
 
 package azkaban.execapp.action;
 
+import azkaban.Constants;
 import azkaban.ServiceProvider;
 import azkaban.execapp.FlowRunnerManager;
 import azkaban.trigger.builtin.SlaChecker;
@@ -86,7 +87,7 @@ public class KillExecutionAction implements TriggerAction {
   @Override
   public void doAction() throws Exception {
     logger.info("ready to kill execution " + execId);
-    ServiceProvider.SERVICE_PROVIDER.getInstance(FlowRunnerManager.class).cancelFlow(execId, SlaChecker.USER);
+    ServiceProvider.SERVICE_PROVIDER.getInstance(FlowRunnerManager.class).cancelFlow(execId, Constants.AZKABAN_SLA_CHECKER_USERNAME);
   }
 
   @Override

@@ -37,7 +37,6 @@ public class SlaChecker implements ConditionChecker {
 
   private static final Logger logger = Logger.getLogger(SlaChecker.class);
   public static final String type = "SlaChecker";
-  public static final String USER = "azkaban_sla";
 
   private String id;
   private SlaOption slaOption;
