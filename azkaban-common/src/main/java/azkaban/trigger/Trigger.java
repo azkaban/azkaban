@@ -27,6 +27,8 @@ import org.joda.time.DateTime;
 
 import azkaban.utils.JSONUtils;
 
+import static java.util.Objects.*;
+
 
 public class Trigger {
 
@@ -34,15 +36,15 @@ public class Trigger {
 
   private int triggerId = -1;
   private long lastModifyTime;
-  private long submitTime;
-  private String submitUser;
-  private String source;
+  private final long submitTime;
+  private final String submitUser;
+  private final String source;
   private TriggerStatus status = TriggerStatus.READY;
 
-  private Condition triggerCondition;
-  private Condition expireCondition;
-  private List<TriggerAction> actions;
-  private List<TriggerAction> expireActions;
+  private final Condition triggerCondition;
+  private final Condition expireCondition;
+  private final List<TriggerAction> actions;
+  private final List<TriggerAction> expireActions;
 
   private Map<String, Object> info = new HashMap<String, Object>();
   private Map<String, Object> context = new HashMap<String, Object>();
@@ -132,7 +134,7 @@ public class Trigger {
 
     private final Condition triggerCondition;
     private final List<TriggerAction> actions;
-    private Condition expireCondition;
+    private final Condition expireCondition;
     private List<TriggerAction> expireActions = new ArrayList<>();
 
     private Map<String, Object> info = new HashMap<String, Object>();
@@ -203,6 +205,13 @@ public class Trigger {
       Condition expireCondition, List<TriggerAction> actions,
       List<TriggerAction> expireActions, Map<String, Object> info,
       Map<String, Object> context) {
+    requireNonNull(submitUser);
+    requireNonNull(source);
+    requireNonNull(triggerCondition);
+    requireNonNull(expireActions);
+    requireNonNull(info);
+    requireNonNull(context);
+
     this.lastModifyTime = lastModifyTime;
     this.submitTime = submitTime;
     this.submitUser = submitUser;
