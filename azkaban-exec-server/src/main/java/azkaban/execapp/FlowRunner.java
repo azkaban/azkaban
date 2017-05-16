@@ -16,8 +16,6 @@
 
 package azkaban.execapp;
 
-import azkaban.ServiceProvider;
-import azkaban.sla.SlaOption;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -39,6 +37,9 @@ import org.apache.log4j.Layout;
 import org.apache.log4j.Logger;
 import org.apache.log4j.PatternLayout;
 
+import azkaban.ServiceProvider;
+import azkaban.sla.SlaOption;
+import azkaban.Constants;
 import azkaban.event.Event;
 import azkaban.event.Event.Type;
 import azkaban.event.EventData;
@@ -66,6 +67,9 @@ import azkaban.project.ProjectManagerException;
 import azkaban.utils.Props;
 import azkaban.utils.PropsUtils;
 import azkaban.utils.SwapQueue;
+
+import static azkaban.Constants.*;
+
 
 /**
  * Class that handles the running of a ExecutableFlow DAG
@@ -450,9 +454,9 @@ public class FlowRunner extends EventHandler implements Runnable {
       Set<String> outNodeIds = node.getOutNodes();
       ExecutableFlowBase parentFlow = node.getParentFlow();
 
-      // If a job is seen as failed, then we set the parent flow to
+      // If a job is seen as failed or killed due to failing SLA, then we set the parent flow to
       // FAILED_FINISHING
-      if (node.getStatus() == Status.FAILED) {
+      if (node.getStatus() == Status.FAILED || (node.getStatus() == Status.KILLED && node.isKilledBySLA())) {
         // The job cannot be retried or has run out of retry attempts. We will
         // fail the job and its flow now.
         if (!retryJobIfPossible(node)) {
@@ -941,6 +945,19 @@ public class FlowRunner extends EventHandler implements Runnable {
       updateFlow();
     }
     interrupt();
+  }
+
+  public void killJob(String jobId, String user) {
+    for (JobRunner runner : activeJobRunners) {
+      if (runner.getJobId().equals(jobId)) {
+        logger.info("Killing job " + jobId + " in execution " + execId + " by " + user);
+        runner.kill();
+        if (Constants.AZKABAN_SLA_CHECKER_USERNAME.equals(user)) {
+          runner.getNode().setKilledBySLA();
+        }
+        break;
+      }
+    }
   }
 
   public void retryFailures(String user) {

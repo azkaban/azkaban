@@ -17,6 +17,7 @@
 package azkaban.execapp;
 
 import azkaban.Constants;
+import azkaban.executor.ExecutableNode;
 import azkaban.executor.Status;
 import azkaban.sla.SlaOption;
 import azkaban.storage.StorageManager;
@@ -575,6 +576,18 @@ public class FlowRunnerManager implements EventListener,
           .getMetricFromName(NumFailedFlowMetric.NUM_FAILED_FLOW_METRIC_NAME));
     }
 
+  }
+
+
+  public void cancelJob(int execId, String jobId, String user)
+      throws ExecutorManagerException {
+    FlowRunner runner = runningFlows.get(execId);
+
+    if (runner == null) {
+      throw new ExecutorManagerException("Execution " + execId
+          + " is not running.");
+    }
+    runner.killJob(jobId, user);
   }
 
   public void cancelFlow(int execId, String user)

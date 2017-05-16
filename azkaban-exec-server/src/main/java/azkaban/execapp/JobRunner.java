@@ -211,6 +211,10 @@ public class JobRunner extends EventHandler implements Runnable {
     return node;
   }
 
+  public String getJobId() {
+    return node.getId();
+  }
+
   public String getLogFilePath() {
     return logFile == null ? null : logFile.getPath();
   }

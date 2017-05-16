@@ -52,6 +52,7 @@ public class ExecutableNode {
   private long startTime = -1;
   private long endTime = -1;
   private long updateTime = -1;
+  private boolean killedBySLA = false;
 
   // Path to Job File
   private String jobSource;
@@ -158,6 +159,14 @@ public class ExecutableNode {
 
   public void setUpdateTime(long updateTime) {
     this.updateTime = updateTime;
+  }
+
+  public void setKilledBySLA() {
+    this.killedBySLA = true;
+  }
+
+  public boolean isKilledBySLA() {
+    return this.killedBySLA;
   }
 
   public void addOutNode(String exNode) {

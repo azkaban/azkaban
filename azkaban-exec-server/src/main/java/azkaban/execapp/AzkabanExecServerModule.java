@@ -35,6 +35,5 @@ public class AzkabanExecServerModule extends AbstractModule {
     bind(AzkabanExecutorServer.class).in(Scopes.SINGLETON);
     bind(TriggerManager.class).in(Scopes.SINGLETON);
     bind(FlowRunnerManager.class).in(Scopes.SINGLETON);
-
   }
 }
