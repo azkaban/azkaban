@@ -59,6 +59,7 @@ public class JdbcExecutorLoaderTest {
   private static final String user = "azkaban";
   private static final String password = "azkaban";
   private static final int numConnections = 10;
+  private static final long recentlyFinishedLifetimeMs = 5000;
 
   @BeforeClass
   public static void setupDB() {
@@ -871,6 +872,29 @@ public class JdbcExecutorLoaderTest {
     Assert.assertEquals(flow1.getFlowId(), execFlow1.getFlowId());
     Assert.assertEquals(flow1.getProjectId(), execFlow1.getProjectId());
     Assert.assertEquals(flow1.getVersion(), execFlow1.getVersion());
+  }
+
+  @Test
+  public void testFetchRecentlyFinishedFlows() throws Exception {
+    if (!isTestSetup()) {
+      return;
+    }
+
+    ExecutorLoader loader = createLoader();
+    ExecutableFlow flow1 = TestUtils.createExecutableFlow("exectest1", "exec1");
+    loader.uploadExecutableFlow(flow1);
+    flow1.setStatus(Status.SUCCEEDED);
+    flow1.setEndTime(System.currentTimeMillis());
+    loader.updateExecutableFlow(flow1);
+    List<ExecutableFlow> flows = loader.fetchRecentlyFinishedFlows(recentlyFinishedLifetimeMs);
+    Assert.assertEquals(1, flows.size());
+    Assert.assertEquals(flow1.getExecutionId(), flows.get(0).getExecutionId());
+    Assert.assertEquals(flow1.getProjectName(), flows.get(0).getProjectName());
+    Assert.assertEquals(flow1.getFlowId(), flows.get(0).getFlowId());
+    Assert.assertEquals(flow1.getVersion(), flows.get(0).getVersion());
+    Thread.currentThread().sleep(recentlyFinishedLifetimeMs);
+    flows = loader.fetchRecentlyFinishedFlows(recentlyFinishedLifetimeMs);
+    Assert.assertTrue(flows.isEmpty());
   }
 
   @Ignore @Test
