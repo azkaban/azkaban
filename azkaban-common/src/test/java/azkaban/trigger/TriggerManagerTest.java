@@ -21,8 +21,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.joda.time.DateTime;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -182,9 +180,12 @@ public class TriggerManagerTest {
     Condition triggerCond = new Condition(checkers, expr);
     Condition expireCond = new Condition(checkers, expr);
 
-    Trigger fakeTrigger =
-        new Trigger(DateTime.now().getMillis(), DateTime.now().getMillis(),
-            "azkaban", source, triggerCond, expireCond, actions);
+    Trigger fakeTrigger = new Trigger.TriggerBuilder("azkaban",
+        source,
+        triggerCond,
+        expireCond,
+        actions).build();
+
     fakeTrigger.setResetOnTrigger(true);
     fakeTrigger.setResetOnExpire(true);
 

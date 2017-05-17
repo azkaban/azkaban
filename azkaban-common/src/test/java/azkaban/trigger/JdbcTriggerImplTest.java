@@ -26,9 +26,7 @@ import azkaban.trigger.builtin.BasicTimeChecker;
 import azkaban.trigger.builtin.ExecuteFlowAction;
 import azkaban.utils.Props;
 import azkaban.utils.Utils;
-import com.google.common.io.Resources;
 import java.io.File;
-import java.net.URL;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -37,10 +35,8 @@ import java.util.Map;
 import org.apache.commons.dbutils.QueryRunner;
 import org.joda.time.DateTime;
 import org.junit.After;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.junit.Assert.*;
@@ -153,9 +149,14 @@ public class JdbcTriggerImplTest {
         new ExecuteFlowAction("executeAction", 1, projName, flowName,
             "azkaban", new ExecutionOptions(), null);
     actions.add(action);
-    Trigger t =
-        new Trigger(now.getMillis(), now.getMillis(), "azkaban", source,
-            triggerCond, expireCond, actions);
+
+    Trigger t = new Trigger.TriggerBuilder("azkaban",
+        source,
+        triggerCond,
+        expireCond,
+        actions)
+        .build();
+
     return t;
   }
 
