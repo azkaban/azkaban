@@ -56,6 +56,11 @@ public class HdfsStorage implements Storage {
   }
 
   @Override
+  public boolean contains(String key) throws IOException {
+    return hdfs.exists(new Path(rootUri.toString(), key));
+  }
+
+  @Override
   public InputStream get(String key) throws IOException {
     hdfsAuth.authorize();
     return hdfs.open(new Path(rootUri.toString(), key));

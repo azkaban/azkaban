@@ -83,12 +83,12 @@ tasks.withType(JavaCompile) {
 }
 
 shadowJar {
-  baseName = 'migrateSql2Local'
+  baseName = 'migrator'
   classifier = null
   version = null
   manifest {
     attributes(
-            'Main-Class': 'azkaban.MigrateSqlToLocal'
+            'Main-Class': 'azkaban.Migrator'
     )
   }
 }

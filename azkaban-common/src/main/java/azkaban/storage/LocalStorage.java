@@ -55,6 +55,7 @@ public class LocalStorage implements Storage {
     return new FileInputStream(new File(rootDirectory, key));
   }
 
+  @Override
   public boolean contains(String key) {
     return new File(rootDirectory, key).exists();
   }

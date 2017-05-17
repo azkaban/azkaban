@@ -22,6 +22,7 @@ import azkaban.project.ProjectLoader;
 import azkaban.spi.Storage;
 import azkaban.spi.StorageMetadata;
 import java.io.File;
+import java.io.IOException;
 import java.io.InputStream;
 import javax.inject.Inject;
 
@@ -38,6 +39,11 @@ public class DatabaseStorage implements Storage {
   @Inject
   public DatabaseStorage(ProjectLoader projectLoader) {
     this.projectLoader = projectLoader;
+  }
+
+  @Override
+  public boolean contains(String key) throws IOException {
+    throw new UnsupportedOperationException("contains not implemented");
   }
 
   @Override

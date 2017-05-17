@@ -24,9 +24,10 @@ import azkaban.project.JdbcProjectLoader;
 import azkaban.project.JdbcProjectLoader.Result;
 import azkaban.project.ProjectFileHandler;
 import azkaban.spi.AzkabanException;
+import azkaban.spi.Storage;
 import azkaban.spi.StorageMetadata;
 import azkaban.storage.DatabaseStorage;
-import azkaban.storage.LocalStorage;
+import azkaban.storage.StorageImplementationType;
 import azkaban.utils.Md5Hasher;
 import azkaban.utils.Props;
 import com.google.inject.Guice;
@@ -41,26 +42,30 @@ import java.util.List;
 import org.apache.commons.codec.binary.Hex;
 
 
-public class MigrateSqlToLocal {
+public class Migrator {
 
   final Props props;
   final JdbcProjectLoader jdbcProjectLoader;
   final DatabaseStorage databaseStorage;
-  final LocalStorage localStorage;
+  final Storage storage;
 
   final List<Result> failed = new ArrayList<>();
 
   @Inject
-  public MigrateSqlToLocal(Props props, JdbcProjectLoader jdbcProjectLoader,
+  public Migrator(Props props, JdbcProjectLoader jdbcProjectLoader,
       DatabaseStorage databaseStorage,
-      LocalStorage localStorage) {
+      Storage storage) {
     this.props = props;
     this.jdbcProjectLoader = jdbcProjectLoader;
     this.databaseStorage = databaseStorage;
-    this.localStorage = localStorage;
+    this.storage = storage;
   }
 
   private void migrate() {
+    System.out.println("=====================================================");
+    System.out.println(" Migration starting...");
+    System.out.println("=====================================================");
+
     List<JdbcProjectLoader.Result> allActiveProjects = jdbcProjectLoader
         .fetchProjectsForMigration();
     System.out.println("fetched all migratable projects. #: " + allActiveProjects.size());
@@ -96,7 +101,7 @@ public class MigrateSqlToLocal {
   private void migrateProject(Result r) throws IOException {
     final String key = String.format("%s/%s-%s.zip", r.id, r.id, string(r.md5));
 
-    if (!localStorage.contains(key)) {
+    if (!storage.contains(key)) {
       long start = System.currentTimeMillis();
       final ProjectFileHandler pfh = jdbcProjectLoader.getUploadedFile(r.id, r.version);
       System.out.printf("Received file: %s [ %d KB] in %d sec%n",
@@ -109,14 +114,14 @@ public class MigrateSqlToLocal {
       System.out.println("Metadata: " + metadata);
 
       start = System.currentTimeMillis();
-      final String resourceId = localStorage.put(metadata, pfh.getLocalFile());
+      final String resourceId = storage.put(metadata, pfh.getLocalFile());
       System.out.printf("Stored file in %d sec%n",
           (System.currentTimeMillis() - start) / 1000
       );
 
       checkState(key.equals(resourceId));
 
-      final InputStream inputStream = localStorage.get(key);
+      final InputStream inputStream = storage.get(key);
       final byte[] actual = Md5Hasher.md5Hash(inputStream);
       checkState(Arrays.equals(actual, r.md5), String
           .format("Hash Mismatch error for %s Found: %s, Expected: %s", r, string(actual),
@@ -145,9 +150,20 @@ public class MigrateSqlToLocal {
     final File propsFile = new File(args[0]);
     checkArgument(propsFile.exists());
     try {
-      final Injector injector = Guice
-          .createInjector(new AzkabanCommonModule(new Props(null, propsFile)));
-      injector.getInstance(MigrateSqlToLocal.class).migrate();
+      final Props props = new Props(null, propsFile);
+      final StorageImplementationType type = StorageImplementationType
+          .valueOf(props.getString("migration.type", "LOCAL"));
+      System.out.println("**********************************************");
+      System.out.println(" Migration to Storage type: " + type);
+      System.out.println("**********************************************");
+
+      final Injector injector = Guice.createInjector(new AzkabanCommonModule(props));
+      new Migrator(
+          props,
+          injector.getInstance(JdbcProjectLoader.class),
+          injector.getInstance(DatabaseStorage.class),
+          injector.getInstance(type.getImplementationClass())
+      ).migrate();
     } catch (IOException e) {
       e.printStackTrace();
       throw new AzkabanException(e);
