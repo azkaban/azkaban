@@ -392,6 +392,6 @@ public class MockExecutorLoader implements ExecutorLoader {
   @Override
   public List<ExecutableFlow> fetchRecentlyFinishedFlows(long lifeTimeMs)
       throws ExecutorManagerException {
-    return null;
+    return new ArrayList<>();
   }
 }

@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -59,7 +60,7 @@ public class JdbcExecutorLoaderTest {
   private static final String user = "azkaban";
   private static final String password = "azkaban";
   private static final int numConnections = 10;
-  private static final long recentlyFinishedLifetimeMs = 5000;
+  private static final Duration RECENTLY_FINISHED_LIFETIME = Duration.ofSeconds(1);
 
   @BeforeClass
   public static void setupDB() {
@@ -886,14 +887,15 @@ public class JdbcExecutorLoaderTest {
     flow1.setStatus(Status.SUCCEEDED);
     flow1.setEndTime(System.currentTimeMillis());
     loader.updateExecutableFlow(flow1);
-    List<ExecutableFlow> flows = loader.fetchRecentlyFinishedFlows(recentlyFinishedLifetimeMs);
+    List<ExecutableFlow> flows = loader.fetchRecentlyFinishedFlows(
+        RECENTLY_FINISHED_LIFETIME.toMillis());
     Assert.assertEquals(1, flows.size());
     Assert.assertEquals(flow1.getExecutionId(), flows.get(0).getExecutionId());
     Assert.assertEquals(flow1.getProjectName(), flows.get(0).getProjectName());
     Assert.assertEquals(flow1.getFlowId(), flows.get(0).getFlowId());
     Assert.assertEquals(flow1.getVersion(), flows.get(0).getVersion());
-    Thread.currentThread().sleep(recentlyFinishedLifetimeMs);
-    flows = loader.fetchRecentlyFinishedFlows(recentlyFinishedLifetimeMs);
+    Thread.currentThread().sleep(RECENTLY_FINISHED_LIFETIME.toMillis());
+    flows = loader.fetchRecentlyFinishedFlows(RECENTLY_FINISHED_LIFETIME.toMillis());
     Assert.assertTrue(flows.isEmpty());
   }
 

@@ -25,6 +25,7 @@ import java.io.File;
 import java.io.IOException;
 import java.lang.Thread.State;
 import java.net.URI;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -105,7 +106,7 @@ public class ExecutorManager extends EventHandler implements
   private static final long DEFAULT_EXECUTION_LOGS_RETENTION_MS = 3 * 4 * 7
       * 24 * 60 * 60 * 1000L;
   // 10 mins recently finished threshold.
-  private long recentlyFinishedLifetimeMs = 600000;
+  private static final Duration RECENTLY_FINISHED_LIFETIME = Duration.ofSeconds(600);
   private long lastCleanerThreadCheckTime = -1;
 
   private long lastThreadCheckTime = -1;
@@ -642,7 +643,8 @@ public class ExecutorManager extends EventHandler implements
   public List<ExecutableFlow> getRecentlyFinishedFlows() {
     List<ExecutableFlow> flows = new ArrayList<>();
     try {
-      flows = executorLoader.fetchRecentlyFinishedFlows(recentlyFinishedLifetimeMs);
+      flows = executorLoader.fetchRecentlyFinishedFlows(
+          RECENTLY_FINISHED_LIFETIME.toMillis());
     } catch(ExecutorManagerException e) {
       logger.error(e);
     }
@@ -1233,8 +1235,6 @@ public class ExecutorManager extends EventHandler implements
       this.setName("ExecutorManagerUpdaterThread");
     }
 
-    // 10 mins recently finished threshold.
-    private long recentlyFinishedLifetimeMs = 600000;
     private int waitTimeIdleMs = 2000;
     private int waitTimeMs = 500;
 
