@@ -18,44 +18,50 @@ package azkaban.trigger;
 
 import java.util.Map;
 
+import azkaban.trigger.ConditionChecker;
+
 public class ThresholdChecker implements ConditionChecker {
 
-  public static final String type = "ThresholdChecker";
-  private static int curVal = -1;
-  private final String id;
   private int threshold = -1;
+
+  private static int curVal = -1;
+
+  public static final String type = "ThresholdChecker";
+
+  private String id;
+
   private boolean checkerMet = false;
   private boolean checkerReset = false;
 
-  public ThresholdChecker(final String id, final int threshold) {
+  public ThresholdChecker(String id, int threshold) {
     this.id = id;
     this.threshold = threshold;
   }
 
-  public synchronized static void setVal(final int val) {
+  public synchronized static void setVal(int val) {
     curVal = val;
   }
 
   @Override
   public Boolean eval() {
-    if (curVal > this.threshold) {
-      this.checkerMet = true;
+    if (curVal > threshold) {
+      checkerMet = true;
     }
-    return this.checkerMet;
+    return checkerMet;
   }
 
   public boolean isCheckerMet() {
-    return this.checkerMet;
+    return checkerMet;
   }
 
   @Override
   public void reset() {
-    this.checkerMet = false;
-    this.checkerReset = true;
+    checkerMet = false;
+    checkerReset = true;
   }
 
   public boolean isCheckerReset() {
-    return this.checkerReset;
+    return checkerReset;
   }
 
   /*
@@ -65,7 +71,7 @@ public class ThresholdChecker implements ConditionChecker {
    */
   @Override
   public String getId() {
-    return this.id;
+    return id;
   }
 
   @Override
@@ -74,37 +80,31 @@ public class ThresholdChecker implements ConditionChecker {
   }
 
   @Override
-  public ConditionChecker fromJson(final Object obj) {
+  public ConditionChecker fromJson(Object obj) {
     return null;
   }
 
   @Override
   public Object getNum() {
-    // TODO Auto-generated method stub
     return null;
   }
 
   @Override
   public Object toJson() {
-    // TODO Auto-generated method stub
     return null;
   }
 
   @Override
   public void stopChecker() {
     return;
-
   }
 
   @Override
-  public void setContext(final Map<String, Object> context) {
-    // TODO Auto-generated method stub
-
+  public void setContext(Map<String, Object> context) {
   }
 
   @Override
   public long getNextCheckTime() {
-    // TODO Auto-generated method stub
     return 0;
   }
 
