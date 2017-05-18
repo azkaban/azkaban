@@ -257,10 +257,21 @@ public class TriggerManager extends EventHandler implements
           scannerStage = "Checking for trigger " + t.getTriggerId();
 
           if (t.getStatus().equals(TriggerStatus.READY)) {
-            if (t.expireConditionMet()) {
-              onTriggerPause(t);
-            } else if (t.triggerConditionMet()) {
+            if (t.triggerConditionMet()) {
               onTriggerTrigger(t);
+            }
+            /**
+             * TODO kunkun-tang: rewrite checking expiration logics here.
+             *
+             * Before this change, expiration condition should be never really leveraged though
+             * we have some related code here. Previously, expireCondition uses the same BasicTimeChecker
+             * as triggerCondition do, such that we can not expire it directly in this code.
+             * The workaround here is to check if we meet expire condition only when the trigger
+             * has {@link azkaban.trigger.builtin.EndTimeChecker}.
+             */
+            if (t.getExpireCondition().getExpression().contains("EndTimeChecker")
+                  && t.expireConditionMet()) {
+              onTriggerPause(t);
             }
           }
           if (t.getStatus().equals(TriggerStatus.EXPIRED) && t.getSource().equals("azkaban")) {
