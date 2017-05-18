@@ -16,21 +16,24 @@
 
 package azkaban.scheduler;
 
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.apache.log4j.Logger;
+
+import org.joda.time.DateTimeZone;
+import org.joda.time.ReadablePeriod;
+import org.joda.time.format.DateTimeFormat;
+import org.joda.time.format.DateTimeFormatter;
+
 import azkaban.executor.ExecutionOptions;
 import azkaban.sla.SlaOption;
 import azkaban.trigger.TriggerAgent;
 import azkaban.trigger.TriggerStatus;
 import azkaban.utils.Pair;
 import azkaban.utils.Props;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import org.apache.log4j.Logger;
-import org.joda.time.DateTimeZone;
-import org.joda.time.ReadablePeriod;
-import org.joda.time.format.DateTimeFormat;
-import org.joda.time.format.DateTimeFormatter;
 
 /**
  * The ScheduleManager stores and executes the schedule. It uses a single thread
@@ -41,23 +44,24 @@ import org.joda.time.format.DateTimeFormatter;
  * TODO kunkun-tang: When new AZ quartz Scheduler comes, we will remove this class.
  */
 public class ScheduleManager implements TriggerAgent {
+  private static Logger logger = Logger.getLogger(ScheduleManager.class);
 
   public static final String triggerSource = "SimpleTimeTrigger";
-  private static final Logger logger = Logger.getLogger(ScheduleManager.class);
   private final DateTimeFormatter _dateFormat = DateTimeFormat
       .forPattern("MM-dd-yyyy HH:mm:ss:SSS");
-  private final ScheduleLoader loader;
+  private ScheduleLoader loader;
 
-  private final Map<Integer, Schedule> scheduleIDMap =
+  private Map<Integer, Schedule> scheduleIDMap =
       new LinkedHashMap<>();
-  private final Map<Pair<Integer, String>, Schedule> scheduleIdentityPairMap =
+  private Map<Pair<Integer, String>, Schedule> scheduleIdentityPairMap =
       new LinkedHashMap<>();
 
   /**
    * Give the schedule manager a loader class that will properly load the
    * schedule.
+   *
    */
-  public ScheduleManager(final ScheduleLoader loader) {
+  public ScheduleManager(ScheduleLoader loader) {
     this.loader = loader;
   }
 
@@ -70,8 +74,8 @@ public class ScheduleManager implements TriggerAgent {
 
   // only do this when using external runner
   private synchronized void updateLocal() throws ScheduleManagerException {
-    final List<Schedule> updates = this.loader.loadUpdatedSchedules();
-    for (final Schedule s : updates) {
+    List<Schedule> updates = loader.loadUpdatedSchedules();
+    for (Schedule s : updates) {
       if (s.getStatus().equals(TriggerStatus.EXPIRED.toString())) {
         onScheduleExpire(s);
       } else {
@@ -80,7 +84,7 @@ public class ScheduleManager implements TriggerAgent {
     }
   }
 
-  private void onScheduleExpire(final Schedule s) {
+  private void onScheduleExpire(Schedule s) {
     removeSchedule(s);
   }
 
@@ -95,21 +99,23 @@ public class ScheduleManager implements TriggerAgent {
 
   /**
    * Retrieves a copy of the list of schedules.
+   *
    */
   public synchronized List<Schedule> getSchedules()
       throws ScheduleManagerException {
 
     updateLocal();
-    return new ArrayList<>(this.scheduleIDMap.values());
+    return new ArrayList<>(scheduleIDMap.values());
   }
 
   /**
    * Returns the scheduled flow for the flow name
+   *
    */
-  public Schedule getSchedule(final int projectId, final String flowId)
+  public Schedule getSchedule(int projectId, String flowId)
       throws ScheduleManagerException {
     updateLocal();
-    return this.scheduleIdentityPairMap.get(new Pair<>(projectId,
+    return scheduleIdentityPairMap.get(new Pair<>(projectId,
         flowId));
   }
 
@@ -118,103 +124,110 @@ public class ScheduleManager implements TriggerAgent {
    *
    * @param scheduleId Schedule ID
    */
-  public Schedule getSchedule(final int scheduleId) throws ScheduleManagerException {
+  public Schedule getSchedule(int scheduleId) throws ScheduleManagerException {
     updateLocal();
-    return this.scheduleIDMap.get(scheduleId);
+    return scheduleIDMap.get(scheduleId);
   }
 
 
   /**
    * Removes the flow from the schedule if it exists.
+   *
    */
-  public synchronized void removeSchedule(final Schedule sched) {
-    final Pair<Integer, String> identityPairMap = sched.getScheduleIdentityPair();
+  public synchronized void removeSchedule(Schedule sched) {
+    Pair<Integer, String> identityPairMap = sched.getScheduleIdentityPair();
 
-    final Schedule schedule = this.scheduleIdentityPairMap.get(identityPairMap);
+    Schedule schedule = scheduleIdentityPairMap.get(identityPairMap);
     if (schedule != null) {
-      this.scheduleIdentityPairMap.remove(identityPairMap);
+      scheduleIdentityPairMap.remove(identityPairMap);
     }
 
-    this.scheduleIDMap.remove(sched.getScheduleId());
+    scheduleIDMap.remove(sched.getScheduleId());
 
     try {
-      this.loader.removeSchedule(sched);
-    } catch (final ScheduleManagerException e) {
+      loader.removeSchedule(sched);
+    } catch (ScheduleManagerException e) {
       logger.error(e);
     }
   }
 
   public Schedule scheduleFlow(final int scheduleId,
-      final int projectId,
-      final String projectName,
-      final String flowName,
-      final String status,
-      final long firstSchedTime,
-      final DateTimeZone timezone,
-      final ReadablePeriod period,
-      final long lastModifyTime,
-      final long nextExecTime,
-      final long submitTime,
-      final String submitUser,
-      final ExecutionOptions execOptions,
-      final List<SlaOption> slaOptions) {
-    final Schedule sched =
-        new Schedule(scheduleId, projectId, projectName, flowName, status,
-            firstSchedTime, timezone, period, lastModifyTime, nextExecTime,
-            submitTime, submitUser, execOptions, slaOptions, null);
+                               final int projectId,
+                               final String projectName,
+                               final String flowName,
+                               final String status,
+                               final long firstSchedTime,
+                               final long endSchedTime,
+                               final DateTimeZone timezone,
+                               final ReadablePeriod period,
+                               final long lastModifyTime,
+                               final long nextExecTime,
+                               final long submitTime,
+                               final String submitUser,
+                               ExecutionOptions execOptions,
+                               List<SlaOption> slaOptions) {
+    Schedule sched = new Schedule(scheduleId, projectId, projectName, flowName, status,
+        firstSchedTime, endSchedTime, timezone, period, lastModifyTime, nextExecTime,
+        submitTime, submitUser, execOptions, slaOptions, null);
     logger
         .info("Scheduling flow '" + sched.getScheduleName() + "' for "
-            + this._dateFormat.print(firstSchedTime) + " with a period of " + (period == null
-            ? "(non-recurring)"
+            + _dateFormat.print(firstSchedTime) + " with a period of " + (period == null ? "(non-recurring)"
             : period));
 
     insertSchedule(sched);
     return sched;
   }
 
-  public Schedule cronScheduleFlow(final int scheduleId, final int projectId,
-      final String projectName, final String flowName, final String status,
-      final long firstSchedTime, final DateTimeZone timezone,
-      final long lastModifyTime,
-      final long nextExecTime, final long submitTime, final String submitUser,
-      final ExecutionOptions execOptions, final List<SlaOption> slaOptions,
-      final String cronExpression) {
-    final Schedule sched =
+  public Schedule cronScheduleFlow(final int scheduleId,
+                                   final int projectId,
+                                   final String projectName,
+                                   final String flowName,
+                                   final String status,
+                                   final long firstSchedTime,
+                                   final long endSchedTime,
+                                   final DateTimeZone timezone,
+                                   final long lastModifyTime,
+                                   final long nextExecTime,
+                                   final long submitTime,
+                                   final String submitUser,
+                                   ExecutionOptions execOptions,
+                                   List<SlaOption> slaOptions,
+                                   String cronExpression) {
+    Schedule sched =
         new Schedule(scheduleId, projectId, projectName, flowName, status,
-            firstSchedTime, timezone, null, lastModifyTime, nextExecTime,
+            firstSchedTime, endSchedTime, timezone, null, lastModifyTime, nextExecTime,
             submitTime, submitUser, execOptions, slaOptions, cronExpression);
     logger
         .info("Scheduling flow '" + sched.getScheduleName() + "' for "
-            + this._dateFormat.print(firstSchedTime) + " cron Expression = " + cronExpression);
+            + _dateFormat.print(firstSchedTime) + " cron Expression = " + cronExpression);
 
     insertSchedule(sched);
     return sched;
   }
-
   /**
    * Schedules the flow, but doesn't save the schedule afterwards.
    */
-  private synchronized void internalSchedule(final Schedule s) {
-    this.scheduleIDMap.put(s.getScheduleId(), s);
-    this.scheduleIdentityPairMap.put(s.getScheduleIdentityPair(), s);
+  private synchronized void internalSchedule(Schedule s) {
+    scheduleIDMap.put(s.getScheduleId(), s);
+    scheduleIdentityPairMap.put(s.getScheduleIdentityPair(), s);
   }
 
   /**
    * Adds a flow to the schedule.
    */
-  public synchronized void insertSchedule(final Schedule s) {
-    final Schedule exist = this.scheduleIdentityPairMap.get(s.getScheduleIdentityPair());
+  public synchronized void insertSchedule(Schedule s) {
+    Schedule exist = scheduleIdentityPairMap.get(s.getScheduleIdentityPair());
     if (s.updateTime()) {
       try {
         if (exist == null) {
-          this.loader.insertSchedule(s);
+          loader.insertSchedule(s);
           internalSchedule(s);
         } else {
           s.setScheduleId(exist.getScheduleId());
-          this.loader.updateSchedule(s);
+          loader.updateSchedule(s);
           internalSchedule(s);
         }
-      } catch (final ScheduleManagerException e) {
+      } catch (ScheduleManagerException e) {
         logger.error(e);
       }
     } else {
@@ -225,7 +238,7 @@ public class ScheduleManager implements TriggerAgent {
   }
 
   @Override
-  public void loadTriggerFromProps(final Props props) throws ScheduleManagerException {
+  public void loadTriggerFromProps(Props props) throws ScheduleManagerException {
     throw new ScheduleManagerException("create " + getTriggerSource()
         + " from json not supported yet");
   }

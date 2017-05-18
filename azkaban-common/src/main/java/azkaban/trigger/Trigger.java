@@ -182,8 +182,7 @@ public class Trigger {
   }
 
   public void updateNextCheckTime() {
-    this.nextCheckTime =
-        Math.min(triggerCondition.getNextCheckTime(),
+    this.nextCheckTime = Math.min(triggerCondition.getNextCheckTime(),
             expireCondition.getNextCheckTime());
   }
 
