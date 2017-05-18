@@ -46,6 +46,7 @@ public class Schedule {
   private String projectName;
   private String flowName;
   private long firstSchedTime;
+  private long endSchedTime;
   private DateTimeZone timezone;
   private long lastModifyTime;
   private ReadablePeriod period;
@@ -60,37 +61,28 @@ public class Schedule {
   private ExecutionOptions executionOptions;
   private List<SlaOption> slaOptions;
 
-  public Schedule(int scheduleId, int projectId, String projectName,
-      String flowName, String status, long firstSchedTime,
-      DateTimeZone timezone, ReadablePeriod period, long lastModifyTime,
-      long nextExecTime, long submitTime, String submitUser) {
-
-    this(scheduleId, projectId, projectName, flowName, status, firstSchedTime,
-        timezone, period, lastModifyTime, nextExecTime, submitTime, submitUser,
-        null, null, null);
-  }
-
-  public Schedule(int scheduleId, int projectId, String projectName,
-      String flowName, String status, long firstSchedTime, String timezoneId,
-      String period, long lastModifyTime, long nextExecTime, long submitTime,
-      String submitUser, ExecutionOptions executionOptions,
-      List<SlaOption> slaOptions) {
-    this(scheduleId, projectId, projectName, flowName, status, firstSchedTime,
-        DateTimeZone.forID(timezoneId), parsePeriodString(period),
-        lastModifyTime, nextExecTime, submitTime, submitUser, executionOptions,
-        slaOptions, null);
-  }
-
-  public Schedule(int scheduleId, int projectId, String projectName,
-      String flowName, String status, long firstSchedTime,
-      DateTimeZone timezone, ReadablePeriod period, long lastModifyTime,
-      long nextExecTime, long submitTime, String submitUser,
-      ExecutionOptions executionOptions, List<SlaOption> slaOptions, String cronExpression) {
+  public Schedule(int scheduleId,
+                  int projectId,
+                  String projectName,
+                  String flowName,
+                  String status,
+                  long firstSchedTime,
+                  long endSchedTime,
+                  DateTimeZone timezone,
+                  ReadablePeriod period,
+                  long lastModifyTime,
+                  long nextExecTime,
+                  long submitTime,
+                  String submitUser,
+                  ExecutionOptions executionOptions,
+                  List<SlaOption> slaOptions,
+                  String cronExpression) {
     this.scheduleId = scheduleId;
     this.projectId = projectId;
     this.projectName = projectName;
     this.flowName = flowName;
     this.firstSchedTime = firstSchedTime;
+    this.endSchedTime = endSchedTime;
     this.timezone = timezone;
     this.lastModifyTime = lastModifyTime;
     this.period = period;
@@ -386,4 +378,7 @@ public class Schedule {
     return skipPastOccurrences;
   }
 
+  public long getEndSchedTime() {
+    return endSchedTime;
+  }
 }

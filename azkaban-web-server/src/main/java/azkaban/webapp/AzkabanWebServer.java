@@ -18,6 +18,7 @@ package azkaban.webapp;
 
 import azkaban.AzkabanCommonModule;
 import azkaban.executor.AlerterHolder;
+import azkaban.trigger.builtin.EndTimeChecker;
 import com.codahale.metrics.MetricRegistry;
 
 import com.google.inject.Guice;
@@ -297,6 +298,7 @@ public class AzkabanWebServer extends AzkabanServer {
     ExecutionChecker.setExecutorManager(executorManager);
 
     triggerManager.registerCheckerType(BasicTimeChecker.type, BasicTimeChecker.class);
+    triggerManager.registerCheckerType(EndTimeChecker.type, EndTimeChecker.class);
     triggerManager.registerCheckerType(SlaChecker.type, SlaChecker.class);
     triggerManager.registerCheckerType(ExecutionChecker.type, ExecutionChecker.class);
     triggerManager.registerActionType(ExecuteFlowAction.type, ExecuteFlowAction.class);

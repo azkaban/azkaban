@@ -257,10 +257,10 @@ public class TriggerManager extends EventHandler implements
           scannerStage = "Checking for trigger " + t.getTriggerId();
 
           if (t.getStatus().equals(TriggerStatus.READY)) {
-            if (t.triggerConditionMet()) {
+            if (t.expireConditionMet()) {
+              onTriggerPause(t);
+            } else if (t.triggerConditionMet()) {
               onTriggerTrigger(t);
-            } else if (t.expireConditionMet()) {
-              onTriggerExpire(t);
             }
           }
           if (t.getStatus().equals(TriggerStatus.EXPIRED) && t.getSource().equals("azkaban")) {
@@ -300,7 +300,7 @@ public class TriggerManager extends EventHandler implements
       }
     }
 
-    private void onTriggerExpire(Trigger t) throws TriggerManagerException {
+    private void onTriggerPause(Trigger t) throws TriggerManagerException {
       List<TriggerAction> expireActions = t.getExpireActions();
       for (TriggerAction action : expireActions) {
         try {
@@ -312,12 +312,8 @@ public class TriggerManager extends EventHandler implements
           logger.error("Failed to do expire action " + action.getDescription() + " for " + t, th);
         }
       }
-      if (t.isResetOnExpire()) {
-        t.resetTriggerConditions();
-        t.resetExpireCondition();
-      } else {
-        t.setStatus(TriggerStatus.EXPIRED);
-      }
+      logger.info("Pausing Trigger " + t.getDescription());
+      t.setStatus(TriggerStatus.PAUSED);
       try {
         triggerLoader.updateTrigger(t);
       } catch (TriggerLoaderException e) {
