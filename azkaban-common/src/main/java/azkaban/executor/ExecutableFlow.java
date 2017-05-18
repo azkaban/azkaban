@@ -17,18 +17,17 @@ package azkaban.executor;
 
 import azkaban.sla.SlaOption;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import azkaban.flow.Flow;
 import azkaban.project.Project;
 import azkaban.utils.TypedMapWrapper;
-import java.util.stream.Collectors;
 
 
 public class ExecutableFlow extends ExecutableFlowBase {
@@ -242,7 +241,7 @@ public class ExecutableFlow extends ExecutableFlowBase {
   }
 
   @SuppressWarnings("unchecked")
-  public static ExecutableFlow createExecutableFlowFromObject(Object obj) {
+    public static ExecutableFlow createExecutableFlowFromObject(Object obj) {
     ExecutableFlow exFlow = new ExecutableFlow();
     HashMap<String, Object> flowObj = (HashMap<String, Object>) obj;
     exFlow.fillExecutableFromMapObject(flowObj);

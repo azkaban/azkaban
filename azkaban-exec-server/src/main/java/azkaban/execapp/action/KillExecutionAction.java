@@ -1,5 +1,5 @@
 /*
- * Copyright 2012 LinkedIn Corp.
+ * Copyright 2017 LinkedIn Corp.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -16,16 +16,16 @@
 
 package azkaban.execapp.action;
 
-import azkaban.Constants;
-import azkaban.ServiceProvider;
-import azkaban.execapp.FlowRunnerManager;
-import azkaban.trigger.builtin.SlaChecker;
 import java.util.HashMap;
 import java.util.Map;
 
+import azkaban.Constants;
+import azkaban.ServiceProvider;
+import azkaban.execapp.FlowRunnerManager;
+import azkaban.trigger.TriggerAction;
+
 import org.apache.log4j.Logger;
 
-import azkaban.trigger.TriggerAction;
 
 public class KillExecutionAction implements TriggerAction {
 

@@ -16,9 +16,6 @@
 
 package azkaban.trigger.builtin;
 
-import azkaban.ServiceProvider;
-import azkaban.executor.AlerterHolder;
-import azkaban.executor.ExecutorLoader;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -26,9 +23,11 @@ import org.apache.log4j.Logger;
 
 import azkaban.alert.Alerter;
 import azkaban.executor.ExecutableFlow;
-import azkaban.executor.ExecutorManagerAdapter;
 import azkaban.sla.SlaOption;
 import azkaban.trigger.TriggerAction;
+import azkaban.ServiceProvider;
+import azkaban.executor.AlerterHolder;
+import azkaban.executor.ExecutorLoader;
 
 public class SlaAlertAction implements TriggerAction {
 
@@ -36,11 +35,11 @@ public class SlaAlertAction implements TriggerAction {
 
   private static final Logger logger = Logger.getLogger(SlaAlertAction.class);
 
-  private String actionId;
-  private SlaOption slaOption;
-  private int execId;
-  private AlerterHolder alerters;
-  private ExecutorLoader executorLoader;
+  private final String actionId;
+  private final SlaOption slaOption;
+  private final int execId;
+  private final AlerterHolder alerters;
+  private final ExecutorLoader executorLoader;
 
   //todo chengren311: move this class to executor module when all existing triggers in db are expired
   public SlaAlertAction(String id, SlaOption slaOption, int execId) {

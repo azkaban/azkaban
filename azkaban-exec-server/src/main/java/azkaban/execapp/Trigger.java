@@ -19,8 +19,6 @@ package azkaban.execapp;
 
 import java.util.List;
 
-import azkaban.ServiceProvider;
-import azkaban.executor.ExecutorManager;
 import azkaban.trigger.Condition;
 import azkaban.trigger.TriggerAction;
 import org.apache.log4j.Logger;
@@ -52,11 +50,11 @@ public class Trigger implements Runnable {
 
   /**
    * Perform the action if trigger condition is met
-   *
    */
   @Override
   public void run() {
     if(isTriggerExpired()) {
+      logger.info(this + " expired");
       return ;
     }
 
@@ -68,7 +66,8 @@ public class Trigger implements Runnable {
         try {
           action.doAction();
         } catch (Exception e) {
-          logger.error("Failed to do action " + action.getDescription() + " for execution " + azkaban.execapp.Trigger.this.execId, e);
+          logger.error("Failed to do action " + action.getDescription()
+              + " for execution " + azkaban.execapp.Trigger.this.execId, e);
         }
       }
 

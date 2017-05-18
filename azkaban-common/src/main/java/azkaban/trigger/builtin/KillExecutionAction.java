@@ -27,6 +27,14 @@ import azkaban.executor.ExecutorManagerAdapter;
 import azkaban.executor.Status;
 import azkaban.trigger.TriggerAction;
 
+/**
+ * @deprecated Create a new KillExecutionAction using FlowRunnerManager
+ * instead of ExecutorManager to kill flow. Still keep the old one here
+ * for being compatible with existing SLA trigger in the database.
+ * Will remove the old one when all existing triggers expire.
+ */
+
+@Deprecated
 public class KillExecutionAction implements TriggerAction {
 
   public static final String type = "KillExecutionAction";

@@ -38,11 +38,11 @@ public class SlaChecker implements ConditionChecker {
   private static final Logger logger = Logger.getLogger(SlaChecker.class);
   public static final String type = "SlaChecker";
 
-  private String id;
-  private SlaOption slaOption;
-  private int execId;
+  private final String id;
+  private final SlaOption slaOption;
+  private final int execId;
   private long checkTime = -1;
-  private ExecutorLoader executorLoader;
+  private final ExecutorLoader executorLoader;
 
   //todo chengren311: move this class to executor module when all existing triggers in db are expired
   public SlaChecker(String id, SlaOption slaOption, int execId) {
