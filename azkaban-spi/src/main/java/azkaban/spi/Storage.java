@@ -33,6 +33,8 @@ import java.io.InputStream;
  */
 public interface Storage {
 
+  boolean contains(String key) throws IOException;
+
   /**
    * Get an InputStream object by providing a key.
    *

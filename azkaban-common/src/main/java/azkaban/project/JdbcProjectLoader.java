@@ -16,6 +16,18 @@
 
 package azkaban.project;
 
+import azkaban.database.AbstractJdbcLoader;
+import azkaban.flow.Flow;
+import azkaban.project.ProjectLogEvent.EventType;
+import azkaban.user.Permission;
+import azkaban.user.User;
+import azkaban.utils.GZIPUtils;
+import azkaban.utils.JSONUtils;
+import azkaban.utils.Md5Hasher;
+import azkaban.utils.Pair;
+import azkaban.utils.Props;
+import azkaban.utils.PropsUtils;
+import azkaban.utils.Triple;
 import com.google.common.io.Files;
 import com.google.inject.Inject;
 import java.io.BufferedInputStream;
@@ -34,25 +46,11 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 import org.apache.commons.dbutils.DbUtils;
 import org.apache.commons.dbutils.QueryRunner;
 import org.apache.commons.dbutils.ResultSetHandler;
 import org.apache.commons.io.IOUtils;
 import org.apache.log4j.Logger;
-
-import azkaban.database.AbstractJdbcLoader;
-import azkaban.flow.Flow;
-import azkaban.project.ProjectLogEvent.EventType;
-import azkaban.user.Permission;
-import azkaban.user.User;
-import azkaban.utils.GZIPUtils;
-import azkaban.utils.JSONUtils;
-import azkaban.utils.Md5Hasher;
-import azkaban.utils.Pair;
-import azkaban.utils.Props;
-import azkaban.utils.PropsUtils;
-import azkaban.utils.Triple;
 
 public class JdbcProjectLoader extends AbstractJdbcLoader implements
     ProjectLoader {
@@ -1588,6 +1586,63 @@ public class JdbcProjectLoader extends AbstractJdbcLoader implements
       }
 
       return rs.getInt(1);
+    }
+  }
+
+  public static class Result {
+    public final int id, version;
+    public final byte[] md5;
+    public final String resourceId;
+
+    public Result(int id, int version, byte[] md5, String resourceId) {
+      this.id = id;
+      this.version = version;
+      this.md5 = md5;
+      this.resourceId = resourceId;
+    }
+
+    @Override
+    public String toString() {
+      return "Result{" + "id=" + id + ", version=" + version + ", md5=" + Arrays.toString(md5) + ", resourceId='"
+          + resourceId + '\'' + '}';
+    }
+  }
+  public List<Result> fetchProjectsForMigration() {
+    final String QUERY = "SELECT p.id, p.version, pv.md5, pv.resource_id "
+        + "FROM projects as p "
+        + "INNER JOIN project_versions as pv "
+        + "INNER JOIN project_files as pf "
+        + "WHERE p.active = TRUE AND p.id = pv.project_id AND p.id = pf.project_id AND "
+        + "p.version = pv.version AND p.version = pf.version";
+    try (Connection connection = getConnection()) {
+      QueryRunner qr = new QueryRunner();
+      return qr.query(connection, QUERY, rs -> {
+        List<Result> results = new ArrayList<>();
+        while (rs.next()) {
+          results.add(new Result(
+              rs.getInt(1),
+              rs.getInt(2),
+              rs.getBytes(3),
+              rs.getString(4)
+          ));
+        }
+        return results;
+      });
+    } catch (SQLException e) {
+      e.printStackTrace();
+      throw new RuntimeException(e);
+    }
+  }
+
+  public void updateResourceId(int projectId, int version, String resourceId) throws ProjectManagerException {
+    final String QUERY = "UPDATE project_versions SET resource_id=? WHERE project_id=? AND version=?";
+
+    QueryRunner runner = new QueryRunner();
+    try (Connection connection = getConnection()){
+      runner.update(connection, QUERY, resourceId, projectId, version);
+      connection.commit();
+    } catch (SQLException e) {
+      throw new ProjectManagerException("Migrate Error", e);
     }
   }
 

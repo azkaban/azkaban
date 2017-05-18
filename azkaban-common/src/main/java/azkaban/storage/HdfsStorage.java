@@ -56,6 +56,11 @@ public class HdfsStorage implements Storage {
   }
 
   @Override
+  public boolean contains(String key) throws IOException {
+    return hdfs.exists(new Path(rootUri.toString(), key));
+  }
+
+  @Override
   public InputStream get(String key) throws IOException {
     hdfsAuth.authorize();
     return hdfs.open(new Path(rootUri.toString(), key));
@@ -94,7 +99,7 @@ public class HdfsStorage implements Storage {
     return new Path(projectsPath, String.format("%s-%s.%s",
         String.valueOf(metadata.getProjectId()),
         new String(Hex.encodeHex(metadata.getHash())),
-        Files.getFileExtension(localFile.getName())
+        "zip"
     ));
   }
 
