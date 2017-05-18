@@ -65,11 +65,11 @@ public class TriggerManager extends EventHandler implements
 
   // TODO kunkun-tang: Before apply guice to this class, we should make
   // ExecutorManager guiceable.
+  @Inject
   public TriggerManager(Props props, TriggerLoader triggerLoader,
       ExecutorManager executorManager) throws TriggerManagerException {
 
-    // TODO kunkun-tang: Doing hack here to allow calling new azkaban-db code. Should fix in future.
-    this.triggerLoader = ServiceProvider.SERVICE_PROVIDER.getInstance(TriggerLoader.class);
+    this.triggerLoader = triggerLoader;
 
     long scannerInterval =
         props.getLong("trigger.scan.interval", DEFAULT_SCANNER_INTERVAL_MS);

@@ -23,7 +23,6 @@ import java.util.Date;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.joda.time.ReadablePeriod;
-import org.apache.log4j.Logger;
 
 import org.quartz.CronExpression;
 
@@ -31,7 +30,6 @@ import azkaban.trigger.ConditionChecker;
 import azkaban.utils.Utils;
 
 public class BasicTimeChecker implements ConditionChecker {
-
 
   public static final String type = "BasicTimeChecker";
 
