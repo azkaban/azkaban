@@ -32,7 +32,6 @@ public class Trigger implements Runnable {
   private final Condition triggerCondition;
   // condition to expire this trigger(ex. flow finishes before violating SLA)
   private final Condition expireCondition;
-  private boolean isExpired;
   private final List<TriggerAction> actions;
 
   public Trigger(int execId,
@@ -44,7 +43,6 @@ public class Trigger implements Runnable {
     this.triggerCondition = triggerCondition;
     this.expireCondition = expireCondition;
     this.actions = actions;
-    this.isExpired = false;
   }
 
 
@@ -70,9 +68,6 @@ public class Trigger implements Runnable {
               + " for execution " + azkaban.execapp.Trigger.this.execId, e);
         }
       }
-
-      // the trigger has been triggered, make it expired.
-      this.isExpired = true;
     }
   }
 
@@ -81,8 +76,7 @@ public class Trigger implements Runnable {
    * @return true if trigger is expired
    */
   public boolean isTriggerExpired() {
-    isExpired = isExpired || expireCondition.isMet();
-    return isExpired;
+    return expireCondition.isMet();
   }
 
   public String toString() {
