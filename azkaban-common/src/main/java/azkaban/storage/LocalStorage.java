@@ -61,10 +61,9 @@ public class LocalStorage implements Storage {
       log.info("Created project dir: " + projectDir.getAbsolutePath());
     }
 
-    final File targetFile = new File(projectDir, String.format("%s-%s.%s",
+    final File targetFile = new File(projectDir, String.format("%s-%s.zip",
         String.valueOf(metadata.getProjectId()),
-        new String(metadata.getHash()),
-        Files.getFileExtension(localFile.getName())));
+        new String(metadata.getHash())));
 
     if (targetFile.exists()) {
       log.info(String.format("Duplicate found: meta: %s, targetFile: %s, ", metadata,

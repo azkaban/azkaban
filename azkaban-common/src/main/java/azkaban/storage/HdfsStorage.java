@@ -24,7 +24,6 @@ import azkaban.AzkabanCommonModuleConfig;
 import azkaban.spi.Storage;
 import azkaban.spi.StorageException;
 import azkaban.spi.StorageMetadata;
-import com.google.common.io.Files;
 import com.google.inject.Inject;
 import java.io.File;
 import java.io.IOException;
@@ -69,7 +68,7 @@ public class HdfsStorage implements Storage {
       if (hdfs.mkdirs(projectsPath)) {
         log.info("Created project dir: " + projectsPath);
       }
-      final Path targetPath = createTargetPath(metadata, localFile, projectsPath);
+      final Path targetPath = createTargetPath(metadata, projectsPath);
       if (hdfs.exists(targetPath)) {
         log.info(
             String.format("Duplicate Found: meta: %s path: %s", metadata, targetPath));
@@ -90,11 +89,10 @@ public class HdfsStorage implements Storage {
     return URI.create(rootUri.getPath()).relativize(targetPath.toUri()).getPath();
   }
 
-  private Path createTargetPath(StorageMetadata metadata, File localFile, Path projectsPath) {
-    return new Path(projectsPath, String.format("%s-%s.%s",
+  private Path createTargetPath(StorageMetadata metadata, Path projectsPath) {
+    return new Path(projectsPath, String.format("%s-%s.zip",
         String.valueOf(metadata.getProjectId()),
-        new String(Hex.encodeHex(metadata.getHash())),
-        Files.getFileExtension(localFile.getName())
+        new String(Hex.encodeHex(metadata.getHash()))
     ));
   }
 
