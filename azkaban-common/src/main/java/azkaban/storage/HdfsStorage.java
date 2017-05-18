@@ -99,7 +99,7 @@ public class HdfsStorage implements Storage {
     return new Path(projectsPath, String.format("%s-%s.%s",
         String.valueOf(metadata.getProjectId()),
         new String(Hex.encodeHex(metadata.getHash())),
-        Files.getFileExtension(localFile.getName())
+        "zip"
     ));
   }
 

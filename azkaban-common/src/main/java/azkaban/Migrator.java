@@ -119,7 +119,8 @@ public class Migrator {
           (System.currentTimeMillis() - start) / 1000
       );
 
-      checkState(key.equals(resourceId));
+      checkState(key.equals(resourceId),
+          String.format("Key [%s] doesn't match resourceId [%s]", key, resourceId));
 
       final InputStream inputStream = storage.get(key);
       final byte[] actual = Md5Hasher.md5Hash(inputStream);
