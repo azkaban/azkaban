@@ -108,5 +108,4 @@ public class HdfsAuth {
       loggedInUser.checkTGTAndReloginFromKeytab();
     }
   }
-
 }
