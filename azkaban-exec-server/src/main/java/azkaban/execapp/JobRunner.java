@@ -506,6 +506,15 @@ public class JobRunner extends EventHandler implements Runnable {
    */
   @Override
   public void run() {
+    try {
+      doRun();
+    } catch (Exception e) {
+      e.printStackTrace();
+      throw e;
+    }
+  }
+
+  private void doRun() {
     Thread.currentThread().setName(
         "JobRunner-" + this.jobId + "-" + executionId);
 
@@ -696,8 +705,13 @@ public class JobRunner extends EventHandler implements Runnable {
         logError("Job run failed, but will treat it like success.");
         logError(e.getMessage() + " cause: " + e.getCause(), e);
       } else {
-        finalStatus = changeStatus(Status.FAILED);
-        logError("Job run failed!", e);
+        if (node.getStatus() == Status.KILLED) {
+          finalStatus = Status.KILLED;
+          logError("Job run killed!", e);
+        } else {
+          finalStatus = changeStatus(Status.FAILED);
+          logError("Job run failed!", e);
+        }
         logError(e.getMessage() + " cause: " + e.getCause());
       }
     }

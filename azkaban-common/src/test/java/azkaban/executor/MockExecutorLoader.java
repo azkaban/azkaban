@@ -17,6 +17,7 @@
 package azkaban.executor;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
@@ -27,9 +28,13 @@ import azkaban.executor.ExecutorLogEvent.EventType;
 import azkaban.utils.FileIOUtils.LogData;
 import azkaban.utils.Pair;
 import azkaban.utils.Props;
+import org.apache.commons.io.FileUtils;
+import org.apache.log4j.Logger;
 
 public class MockExecutorLoader implements ExecutorLoader {
 
+  private static final Logger logger = Logger
+          .getLogger(MockExecutorLoader.class);
   HashMap<Integer, Integer> executionExecutorMapping =
       new HashMap<Integer, Integer>();
   HashMap<Integer, ExecutableFlow> flows =
@@ -97,7 +102,14 @@ public class MockExecutorLoader implements ExecutorLoader {
   @Override
   public void uploadLogFile(int execId, String name, int attempt, File... files)
       throws ExecutorManagerException {
-
+    for (File file : files) {
+      try {
+        String logs = FileUtils.readFileToString(file, "UTF-8");
+        logger.info("Uploaded log for [" + name + "]:[" + execId + "]:\n" + logs);
+      } catch (IOException e) {
+        throw new RuntimeException(e);
+      }
+    }
   }
 
   @Override

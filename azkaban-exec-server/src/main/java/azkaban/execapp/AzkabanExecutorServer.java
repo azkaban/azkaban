@@ -94,6 +94,19 @@ public class AzkabanExecutorServer {
   private final ArrayList<ObjectName> registeredMBeans = new ArrayList<ObjectName>();
   private MBeanServer mbeanServer;
 
+  public static boolean testing = false;
+
+  public AzkabanExecutorServer(ExecutorLoader executionLoader, FlowRunnerManager runnerManager, Props props,
+                               Server server) {
+    if (!testing) {
+      throw new IllegalStateException("This constructor is only for testing");
+    }
+    this.executionLoader = executionLoader;
+    this.runnerManager = runnerManager;
+    this.props = props;
+    this.server = server;
+  }
+
   @Inject
   public AzkabanExecutorServer(Props props,
       ExecutorLoader executionLoader,
@@ -319,6 +332,10 @@ public class AzkabanExecutorServer {
    */
   public static AzkabanExecutorServer getApp() {
     return app;
+  }
+
+  public static void setApp(AzkabanExecutorServer app) {
+    AzkabanExecutorServer.app = app;
   }
 
   /**
