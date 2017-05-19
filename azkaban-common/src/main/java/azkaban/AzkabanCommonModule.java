@@ -34,6 +34,7 @@ import azkaban.project.ProjectLoader;
 import azkaban.spi.AzkabanException;
 import azkaban.spi.Storage;
 import azkaban.spi.StorageException;
+import azkaban.storage.HdfsAuth;
 import azkaban.storage.StorageImplementationType;
 import azkaban.trigger.JdbcTriggerImpl;
 import azkaban.trigger.TriggerLoader;
@@ -48,6 +49,8 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.security.PrivilegedAction;
+import java.security.PrivilegedExceptionAction;
 import javax.sql.DataSource;
 import org.apache.commons.dbutils.QueryRunner;
 import org.apache.hadoop.conf.Configuration;
@@ -147,13 +150,8 @@ public class AzkabanCommonModule extends AbstractModule {
   @Inject
   @Provides
   @Singleton
-  public FileSystem createHadoopFileSystem(final Configuration hadoopConf) {
-    try {
-      return FileSystem.get(hadoopConf);
-    } catch (final IOException e) {
-      log.error("Unable to initialize HDFS", e);
-      throw new AzkabanException(e);
-    }
+  public FileSystem createHadoopFileSystem(final Configuration hadoopConf, HdfsAuth hdfsAuth) {
+    return hdfsAuth.doAs(() -> FileSystem.get(hadoopConf));
   }
 
   @Provides

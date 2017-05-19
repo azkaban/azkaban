@@ -42,36 +42,44 @@ public class HdfsStorage implements Storage {
 
   private final HdfsAuth hdfsAuth;
   private final URI rootUri;
+
+  /**
+   * NOTE!!! Any method calls using HDFS should be wrapped using a doAs call
+   *
+   * Possible alternative: Use AOP. create a Guice injected AOP to autowrap all calls using the
+   * auth code. However, all Hadoop objects need to be wrapped in that case.
+   * https://github.com/google/guice/wiki/AOP
+   */
   private final FileSystem hdfs;
 
   @Inject
-  public HdfsStorage(final HdfsAuth hdfsAuth, final FileSystem hdfs,
-      final AzkabanCommonModuleConfig config) {
+  public HdfsStorage(HdfsAuth hdfsAuth, FileSystem hdfs, AzkabanCommonModuleConfig config) {
     this.hdfsAuth = requireNonNull(hdfsAuth);
     this.hdfs = requireNonNull(hdfs);
 
     this.rootUri = config.getHdfsRootUri();
-    requireNonNull(this.rootUri.getAuthority(), "URI must have host:port mentioned.");
-    checkArgument(HDFS_SCHEME.equals(this.rootUri.getScheme()));
+    requireNonNull(rootUri.getAuthority(), "URI must have host:port mentioned.");
+    checkArgument(HDFS_SCHEME.equals(rootUri.getScheme()));
   }
 
   @Override
-  public InputStream get(final String key) throws IOException {
-    this.hdfsAuth.authorize();
-    return this.hdfs.open(new Path(this.rootUri.toString(), key));
+  public InputStream get(String key) throws IOException {
+    return hdfsAuth.doAs(() -> hdfs.open(new Path(rootUri.toString(), key)));
   }
 
   @Override
-  public String put(final StorageMetadata metadata, final File localFile) {
-    this.hdfsAuth.authorize();
-    final Path projectsPath = new Path(this.rootUri.getPath(),
-        String.valueOf(metadata.getProjectId()));
+  public String put(StorageMetadata metadata, File localFile) {
+    return hdfsAuth.doAs(() -> put0(metadata, localFile));
+  }
+
+  private String put0(StorageMetadata metadata, File localFile) {
+    final Path projectsPath = new Path(rootUri.getPath(), String.valueOf(metadata.getProjectId()));
     try {
-      if (this.hdfs.mkdirs(projectsPath)) {
+      if (hdfs.mkdirs(projectsPath)) {
         log.info("Created project dir: " + projectsPath);
       }
       final Path targetPath = createTargetPath(metadata, projectsPath);
-      if (this.hdfs.exists(targetPath)) {
+      if (hdfs.exists(targetPath)) {
         log.info(
             String.format("Duplicate Found: meta: %s path: %s", metadata, targetPath));
         return getRelativePath(targetPath);
@@ -79,19 +87,19 @@ public class HdfsStorage implements Storage {
 
       // Copy file to HDFS
       log.info(String.format("Creating project artifact: meta: %s path: %s", metadata, targetPath));
-      this.hdfs.copyFromLocalFile(new Path(localFile.getAbsolutePath()), targetPath);
+      hdfs.copyFromLocalFile(new Path(localFile.getAbsolutePath()), targetPath);
       return getRelativePath(targetPath);
-    } catch (final IOException e) {
+    } catch (IOException e) {
       log.error("error in put(): Metadata: " + metadata);
       throw new StorageException(e);
     }
   }
 
-  private String getRelativePath(final Path targetPath) {
-    return URI.create(this.rootUri.getPath()).relativize(targetPath.toUri()).getPath();
+  private String getRelativePath(Path targetPath) {
+    return URI.create(rootUri.getPath()).relativize(targetPath.toUri()).getPath();
   }
 
-  private Path createTargetPath(final StorageMetadata metadata, final Path projectsPath) {
+  private Path createTargetPath(StorageMetadata metadata, Path projectsPath) {
     return new Path(projectsPath, String.format("%s-%s.zip",
         String.valueOf(metadata.getProjectId()),
         new String(Hex.encodeHex(metadata.getHash()))
@@ -99,7 +107,7 @@ public class HdfsStorage implements Storage {
   }
 
   @Override
-  public boolean delete(final String key) {
+  public boolean delete(String key) {
     throw new UnsupportedOperationException("Method not implemented");
   }
 }
