@@ -24,12 +24,14 @@ import azkaban.AzkabanCommonModuleConfig;
 import azkaban.spi.Storage;
 import azkaban.spi.StorageException;
 import azkaban.spi.StorageMetadata;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.inject.Inject;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import org.apache.commons.codec.binary.Hex;
+import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.log4j.Logger;
@@ -46,7 +48,7 @@ public class HdfsStorage implements Storage {
   /**
    * NOTE!!! Any method calls using HDFS should be wrapped using a doAs call
    *
-   * Possible alternative: Use AOP. create a Guice injected AOP to autowrap all calls using the
+   * Possible alternative: AOP. Create a Guice injected AOP to autowrap all calls using the
    * auth code. However, all Hadoop objects need to be wrapped in that case.
    * https://github.com/google/guice/wiki/AOP
    */
@@ -64,7 +66,12 @@ public class HdfsStorage implements Storage {
 
   @Override
   public InputStream get(String key) throws IOException {
-    return hdfsAuth.doAs(() -> hdfs.open(new Path(rootUri.toString(), key)));
+    return hdfsAuth.doAs(() -> get0(key));
+  }
+
+  @VisibleForTesting
+  InputStream get0(String key) throws IOException {
+    return hdfs.open(new Path(rootUri.toString(), key));
   }
 
   @Override
@@ -72,7 +79,8 @@ public class HdfsStorage implements Storage {
     return hdfsAuth.doAs(() -> put0(metadata, localFile));
   }
 
-  private String put0(StorageMetadata metadata, File localFile) {
+  @VisibleForTesting
+  String put0(StorageMetadata metadata, File localFile) {
     final Path projectsPath = new Path(rootUri.getPath(), String.valueOf(metadata.getProjectId()));
     try {
       if (hdfs.mkdirs(projectsPath)) {

@@ -17,11 +17,6 @@
 
 package azkaban.storage;
 
-import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
 import azkaban.AzkabanCommonModuleConfig;
 import azkaban.spi.StorageMetadata;
 import azkaban.utils.Md5Hasher;
@@ -34,44 +29,44 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
+import static org.mockito.Mockito.*;
+
 
 public class HdfsStorageTest {
-
   private HdfsAuth hdfsAuth;
   private HdfsStorage hdfsStorage;
   private FileSystem hdfs;
 
   @Before
   public void setUp() throws Exception {
-    this.hdfs = mock(FileSystem.class);
-    this.hdfsAuth = mock(HdfsAuth.class);
-    final AzkabanCommonModuleConfig config = mock(AzkabanCommonModuleConfig.class);
+    hdfs = mock(FileSystem.class);
+    hdfsAuth = mock(HdfsAuth.class);
+    AzkabanCommonModuleConfig config = mock(AzkabanCommonModuleConfig.class);
     when(config.getHdfsRootUri()).thenReturn(URI.create("hdfs://localhost:9000/path/to/foo"));
 
-    this.hdfsStorage = new HdfsStorage(this.hdfsAuth, this.hdfs, config);
+    hdfsStorage = new HdfsStorage(hdfsAuth, hdfs, config);
   }
 
   @Test
-  public void testGet() throws Exception {
-    this.hdfsStorage.get("1/1-hash.zip");
-    verify(this.hdfs).open(new Path("hdfs://localhost:9000/path/to/foo/1/1-hash.zip"));
+  public void testGet0() throws Exception {
+    hdfsStorage.get0("1/1-hash.zip");
+    verify(hdfs).open(new Path("hdfs://localhost:9000/path/to/foo/1/1-hash.zip"));
   }
 
   @Test
-  public void testPut() throws Exception {
-    final File file = new File(
-        getClass().getClassLoader().getResource("sample_flow_01.zip").getFile());
+  public void testPut0() throws Exception {
+    File file = new File(getClass().getClassLoader().getResource("sample_flow_01.zip").getFile());
     final String hash = new String(Hex.encodeHex(Md5Hasher.md5Hash(file)));
 
-    when(this.hdfs.exists(any(Path.class))).thenReturn(false);
+    when(hdfs.exists(any(Path.class))).thenReturn(false);
 
-    final StorageMetadata metadata = new StorageMetadata(1, 2, "uploader", Md5Hasher.md5Hash(file));
-    final String key = this.hdfsStorage.put(metadata, file);
+    StorageMetadata metadata = new StorageMetadata(1, 2, "uploader", Md5Hasher.md5Hash(file));
+    String key = hdfsStorage.put0(metadata, file);
 
     final String expectedName = String.format("1/1-%s.zip", hash);
     Assert.assertEquals(expectedName, key);
 
     final String expectedPath = "/path/to/foo/" + expectedName;
-    verify(this.hdfs).copyFromLocalFile(new Path(file.getAbsolutePath()), new Path(expectedPath));
+    verify(hdfs).copyFromLocalFile(new Path(file.getAbsolutePath()), new Path(expectedPath));
   }
 }
