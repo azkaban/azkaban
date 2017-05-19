@@ -218,9 +218,13 @@ public class JdbcTriggerLoaderTest {
         new ExecuteFlowAction("executeAction", 1, projName, flowName,
             "azkaban", new ExecutionOptions(), null);
     actions.add(action);
-    Trigger t =
-        new Trigger(now.getMillis(), now.getMillis(), "azkaban", source,
-            triggerCond, expireCond, actions);
+
+    Trigger t = new Trigger.TriggerBuilder("azkaban",
+        source,
+        triggerCond,
+        expireCond,
+        actions).build();
+
     return t;
   }
 
