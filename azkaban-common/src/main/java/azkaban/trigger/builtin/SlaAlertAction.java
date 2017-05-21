@@ -16,8 +16,6 @@
 
 package azkaban.trigger.builtin;
 
-import azkaban.ServiceProvider;
-import azkaban.executor.AlerterHolder;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -25,9 +23,11 @@ import org.apache.log4j.Logger;
 
 import azkaban.alert.Alerter;
 import azkaban.executor.ExecutableFlow;
-import azkaban.executor.ExecutorManagerAdapter;
 import azkaban.sla.SlaOption;
 import azkaban.trigger.TriggerAction;
+import azkaban.ServiceProvider;
+import azkaban.executor.AlerterHolder;
+import azkaban.executor.ExecutorLoader;
 
 public class SlaAlertAction implements TriggerAction {
 
@@ -35,21 +35,19 @@ public class SlaAlertAction implements TriggerAction {
 
   private static final Logger logger = Logger.getLogger(SlaAlertAction.class);
 
-  private String actionId;
-  private SlaOption slaOption;
-  private int execId;
-  private AlerterHolder alerters;
-  private static ExecutorManagerAdapter executorManager;
+  private final String actionId;
+  private final SlaOption slaOption;
+  private final int execId;
+  private final AlerterHolder alerters;
+  private final ExecutorLoader executorLoader;
 
+  //todo chengren311: move this class to executor module when all existing triggers in db are expired
   public SlaAlertAction(String id, SlaOption slaOption, int execId) {
     this.actionId = id;
     this.slaOption = slaOption;
     this.execId = execId;
     this.alerters = ServiceProvider.SERVICE_PROVIDER.getInstance(AlerterHolder.class);
-  }
-
-  public static void setExecutorManager(ExecutorManagerAdapter em) {
-    executorManager = em;
+    this.executorLoader = ServiceProvider.SERVICE_PROVIDER.getInstance(ExecutorLoader.class);
   }
 
   @Override
@@ -105,9 +103,8 @@ public class SlaAlertAction implements TriggerAction {
       Alerter alerter = alerters.get(alertType);
       if (alerter != null) {
         try {
-          ExecutableFlow flow = executorManager.getExecutableFlow(execId);
-          alerter.alertOnSla(slaOption,
-              SlaOption.createSlaMessage(slaOption, flow));
+          ExecutableFlow flow = executorLoader.fetchExecutableFlow(execId);
+          alerter.alertOnSla(slaOption, SlaOption.createSlaMessage(slaOption, flow));
         } catch (Exception e) {
           e.printStackTrace();
           logger.error("Failed to alert by " + alertType);

@@ -18,6 +18,7 @@ package azkaban.execapp;
 
 import azkaban.Constants;
 import azkaban.executor.Status;
+import azkaban.sla.SlaOption;
 import azkaban.storage.StorageManager;
 import com.google.inject.Inject;
 import java.io.File;
@@ -38,6 +39,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 
+import java.util.stream.Collectors;
 import org.apache.commons.io.FileUtils;
 import org.apache.log4j.Logger;
 
@@ -118,6 +120,8 @@ public class FlowRunnerManager implements EventListener,
   private final ProjectLoader projectLoader;
   private final JobTypeManager jobtypeManager;
   private final FlowPreparer flowPreparer;
+  private final TriggerManager triggerManager;
+
 
   private final Props azkabanProps;
   private final File executionDirectory;
@@ -151,7 +155,8 @@ public class FlowRunnerManager implements EventListener,
   public FlowRunnerManager(Props props,
       ExecutorLoader executorLoader,
       ProjectLoader projectLoader,
-      StorageManager storageManager) throws IOException {
+      StorageManager storageManager,
+      TriggerManager triggerManager) throws IOException {
     azkabanProps = props;
 
     executionDirRetention = props.getLong("execution.dir.retention", executionDirRetention);
@@ -178,6 +183,7 @@ public class FlowRunnerManager implements EventListener,
 
     this.executorLoader = executorLoader;
     this.projectLoader = projectLoader;
+    this.triggerManager = triggerManager;
 
     this.jobLogChunkSize = azkabanProps.getString("job.log.chunk.size", "5MB");
     this.jobLogNumFiles = azkabanProps.getInt("job.log.backup.index", 4);
@@ -629,15 +635,18 @@ public class FlowRunnerManager implements EventListener,
 
   @Override
   public void handleEvent(Event event) {
+    FlowRunner flowRunner = (FlowRunner) event.getRunner();
+    ExecutableFlow flow = flowRunner.getExecutableFlow();
+
     if (event.getType() == Event.Type.FLOW_FINISHED) {
-
-      FlowRunner flowRunner = (FlowRunner) event.getRunner();
-      ExecutableFlow flow = flowRunner.getExecutableFlow();
-
       recentlyFinishedFlows.put(flow.getExecutionId(), flow);
       logger.info("Flow " + flow.getExecutionId()
           + " is finished. Adding it to recently finished flows list.");
       runningFlows.remove(flow.getExecutionId());
+    }
+    else if (event.getType() == Event.Type.FLOW_STARTED) {
+      // add flow level checker
+      triggerManager.addTrigger(flow.getExecutionId(), SlaOption.getFlowLevelSLAOptions(flow));
     }
   }
 
@@ -889,6 +898,7 @@ public class FlowRunnerManager implements EventListener,
   public void shutdownNow() {
     logger.warn("Shutting down FlowRunnerManager now...");
     executorService.shutdownNow();
+    triggerManager.shutdown();
   }
 
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2012 LinkedIn Corp.
+ * Copyright 2017 LinkedIn Corp.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -14,27 +14,19 @@
  * the License.
  */
 
-package azkaban.trigger.builtin;
+package azkaban.execapp.action;
 
-import azkaban.Constants;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.log4j.Logger;
-
-import azkaban.executor.ExecutableFlow;
-import azkaban.executor.ExecutorManagerAdapter;
-import azkaban.executor.Status;
+import azkaban.Constants;
+import azkaban.ServiceProvider;
+import azkaban.execapp.FlowRunnerManager;
 import azkaban.trigger.TriggerAction;
 
-/**
- * @deprecated Create a new KillExecutionAction using FlowRunnerManager
- * instead of ExecutorManager to kill flow. Still keep the old one here
- * for being compatible with existing SLA trigger in the database.
- * Will remove the old one when all existing triggers expire.
- */
+import org.apache.log4j.Logger;
 
-@Deprecated
+
 public class KillExecutionAction implements TriggerAction {
 
   public static final String type = "KillExecutionAction";
@@ -44,16 +36,10 @@ public class KillExecutionAction implements TriggerAction {
 
   private String actionId;
   private int execId;
-  private static ExecutorManagerAdapter executorManager;
 
-  //todo chengren311: delete this class to executor module when all existing triggers in db are expired
   public KillExecutionAction(String actionId, int execId) {
     this.execId = execId;
     this.actionId = actionId;
-  }
-
-  public static void setExecutorManager(ExecutorManagerAdapter em) {
-    executorManager = em;
   }
 
   @Override
@@ -100,12 +86,8 @@ public class KillExecutionAction implements TriggerAction {
 
   @Override
   public void doAction() throws Exception {
-    ExecutableFlow exFlow = executorManager.getExecutableFlow(execId);
     logger.info("ready to kill execution " + execId);
-    if (!Status.isStatusFinished(exFlow.getStatus())) {
-      logger.info("Killing execution " + execId);
-      executorManager.cancelFlow(exFlow, Constants.AZKABAN_SLA_CHECKER_USERNAME);
-    }
+    ServiceProvider.SERVICE_PROVIDER.getInstance(FlowRunnerManager.class).cancelFlow(execId, Constants.AZKABAN_SLA_CHECKER_USERNAME);
   }
 
   @Override

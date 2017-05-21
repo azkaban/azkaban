@@ -239,6 +239,10 @@ public class ExecuteFlowAction implements TriggerAction {
     }
     exflow.setExecutionOptions(executionOptions);
 
+    if (slaOptions != null && slaOptions.size() > 0) {
+      exflow.setSlaOptions(slaOptions);
+    }
+
     try {
       logger.info("Invoking flow " + project.getName() + "." + flowName);
       executorManager.submitExecutableFlow(exflow, submitUser);
@@ -246,59 +250,6 @@ public class ExecuteFlowAction implements TriggerAction {
     } catch (ExecutorManagerException e) {
       throw new RuntimeException(e);
     }
-
-    // deal with sla
-    if (slaOptions != null && slaOptions.size() > 0) {
-      int execId = exflow.getExecutionId();
-      for (SlaOption sla : slaOptions) {
-        logger.info("Adding sla trigger " + sla.toString() + " to execution "
-            + execId);
-        SlaChecker slaFailChecker =
-            new SlaChecker("slaFailChecker", sla, execId);
-        Map<String, ConditionChecker> slaCheckers =
-            new HashMap<String, ConditionChecker>();
-        slaCheckers.put(slaFailChecker.getId(), slaFailChecker);
-        Condition triggerCond =
-            new Condition(slaCheckers, slaFailChecker.getId()
-                + ".isSlaFailed()");
-        // if whole flow finish before violate sla, just expire
-        SlaChecker slaPassChecker =
-            new SlaChecker("slaPassChecker", sla, execId);
-        Map<String, ConditionChecker> expireCheckers =
-            new HashMap<String, ConditionChecker>();
-        expireCheckers.put(slaPassChecker.getId(), slaPassChecker);
-        Condition expireCond =
-            new Condition(expireCheckers, slaPassChecker.getId()
-                + ".isSlaPassed()");
-        List<TriggerAction> actions = new ArrayList<TriggerAction>();
-        List<String> slaActions = sla.getActions();
-        for (String act : slaActions) {
-          if (act.equals(SlaOption.ACTION_ALERT)) {
-            SlaAlertAction slaAlert =
-                new SlaAlertAction("slaAlert", sla, execId);
-            actions.add(slaAlert);
-          } else if (act.equals(SlaOption.ACTION_CANCEL_FLOW)) {
-            KillExecutionAction killAct =
-                new KillExecutionAction("killExecution", execId);
-            actions.add(killAct);
-          }
-        }
-        Trigger slaTrigger = new Trigger.TriggerBuilder("azkaban_sla",
-                                                        "azkaban",
-                                                        triggerCond,
-                                                        expireCond,
-                                                        actions).build();
-
-        slaTrigger.getInfo().put("monitored.finished.execution",
-            String.valueOf(execId));
-        slaTrigger.setResetOnTrigger(false);
-        slaTrigger.setResetOnExpire(false);
-        logger.info("Ready to put in the sla trigger");
-        triggerManager.insertTrigger(slaTrigger);
-        logger.info("Sla inserted.");
-      }
-    }
-
   }
 
   @Override
