@@ -42,9 +42,10 @@ public class HdfsAuth {
 
   private final boolean isSecurityEnabled;
 
-  private UserGroupInformation loggedInUser = null;
   private String keytabPath = null;
   private String keytabPrincipal = null;
+
+  private volatile UserGroupInformation loggedInUser = null;
 
   @Inject
   public HdfsAuth(Props props, Configuration conf) {
@@ -85,7 +86,7 @@ public class HdfsAuth {
   private void authorize() {
     if (isSecurityEnabled) {
       try {
-        login(keytabPrincipal, keytabPath);
+        login();
       } catch (IOException e) {
         log.error(e);
         throw new AzkabanException(String.format(
@@ -95,7 +96,7 @@ public class HdfsAuth {
     }
   }
 
-  private void login(String keytabPrincipal, String keytabPath) throws IOException {
+  private synchronized void login() throws IOException {
     if (loggedInUser == null) {
       log.info(
           String.format("Logging in using Principal: %s Keytab: %s", keytabPrincipal, keytabPath));
@@ -104,7 +105,8 @@ public class HdfsAuth {
       loggedInUser = UserGroupInformation.getLoginUser();
       log.info(String.format("User %s logged in.", loggedInUser));
     } else {
-      log.info(String.format("User %s already logged in. Refreshing TGT", loggedInUser));
+      log.info(
+          String.format("User %s already logged in. Refreshing TGT if required", loggedInUser));
       loggedInUser.checkTGTAndReloginFromKeytab();
     }
   }
