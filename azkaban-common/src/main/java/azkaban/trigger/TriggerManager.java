@@ -63,8 +63,6 @@ public class TriggerManager extends EventHandler implements
 
   private String scannerStage = "";
 
-  // TODO kunkun-tang: Before apply guice to this class, we should make
-  // ExecutorManager guiceable.
   @Inject
   public TriggerManager(Props props, TriggerLoader triggerLoader,
       ExecutorManager executorManager) throws TriggerManagerException {
@@ -263,10 +261,11 @@ public class TriggerManager extends EventHandler implements
             /**
              * TODO kunkun-tang: rewrite checking expiration logics here.
              *
-             * Before this change, expiration condition should be never really leveraged though
-             * we have some related code here. Previously, expireCondition uses the same BasicTimeChecker
-             * as triggerCondition do, such that we can not expire it directly in this code.
-             * The workaround here is to check if we meet expire condition only when the trigger
+             * Prior to this change, expiration condition should never be called though
+             * we have some related code here. ExpireCondition used the same BasicTimeChecker
+             * as triggerCondition do. As a consequence, we need to figure out a way to distinguish
+             * the previous ExpireCondition and this commit's ExpireCondition.
+             * The workaround here is to check if we expire a trigger only when the ExpireCondition
              * has {@link azkaban.trigger.builtin.EndTimeChecker}.
              */
             if (t.getExpireCondition().getExpression().contains("EndTimeChecker")
@@ -298,6 +297,8 @@ public class TriggerManager extends EventHandler implements
           logger.error("Failed to do action " + action.getDescription() + " for " + t, th);
         }
       }
+      // Todo kunkun-tang: Today, when one trigger is triggered, we reset expireCondition. This
+      // should be not right. Need to do evaluations and adjust the logics here.
       if (t.isResetOnTrigger()) {
         t.resetTriggerConditions();
         t.resetExpireCondition();
