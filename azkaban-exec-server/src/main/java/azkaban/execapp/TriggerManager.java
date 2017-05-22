@@ -16,6 +16,7 @@
 
 package azkaban.execapp;
 
+import azkaban.execapp.action.KillJobAction;
 import azkaban.sla.SlaOption;
 import azkaban.trigger.Condition;
 import azkaban.trigger.ConditionChecker;
@@ -60,10 +61,14 @@ public class TriggerManager {
       TriggerAction action = null;
       switch (act) {
         case SlaOption.ACTION_ALERT:
-          action = new SlaAlertAction("slaAlert", sla, execId);
+          action = new SlaAlertAction(SlaOption.ACTION_ALERT, sla, execId);
           break;
         case SlaOption.ACTION_CANCEL_FLOW:
-          action = new KillExecutionAction("killExecution", execId);
+          action = new KillExecutionAction(SlaOption.ACTION_CANCEL_FLOW, execId);
+          break;
+        case SlaOption.ACTION_KILL_JOB:
+          String jobId = (String)sla.getInfo().get(SlaOption.INFO_JOB_NAME);
+          action = new KillJobAction(SlaOption.ACTION_KILL_JOB, execId, jobId);
           break;
         default:
           logger.info("Unknown action type " + act);

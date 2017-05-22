@@ -68,8 +68,6 @@ import azkaban.utils.Props;
 import azkaban.utils.PropsUtils;
 import azkaban.utils.SwapQueue;
 
-import static azkaban.Constants.*;
-
 
 /**
  * Class that handles the running of a ExecutableFlow DAG

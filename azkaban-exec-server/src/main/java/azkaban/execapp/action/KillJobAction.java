@@ -29,7 +29,7 @@ import azkaban.trigger.TriggerAction;
 
 public class KillJobAction implements TriggerAction {
 
-  public static final String type = "KillExecutionAction";
+  public static final String type = "KillJobAction";
 
   private static final Logger logger = Logger
       .getLogger(KillJobAction.class);
@@ -93,7 +93,6 @@ public class KillJobAction implements TriggerAction {
     logger.info("ready to do action " + getDescription());
     FlowRunnerManager flowRunnerManager = ServiceProvider.SERVICE_PROVIDER.getInstance(FlowRunnerManager.class);
     flowRunnerManager.cancelJob(execId, jobId, Constants.AZKABAN_SLA_CHECKER_USERNAME);
-
   }
 
   @Override

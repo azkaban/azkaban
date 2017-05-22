@@ -49,6 +49,7 @@ public class SlaOption {
   public static final String ALERT_TYPE = "SlaAlertType";
   public static final String ACTION_CANCEL_FLOW = "SlaCancelFlow";
   public static final String ACTION_ALERT = "SlaAlert";
+  public static final String ACTION_KILL_JOB = "SlaKillJob";
 
   private String type;
   private Map<String, Object> info;

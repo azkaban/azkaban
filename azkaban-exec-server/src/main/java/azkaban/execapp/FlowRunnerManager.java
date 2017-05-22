@@ -17,7 +17,6 @@
 package azkaban.execapp;
 
 import azkaban.Constants;
-import azkaban.executor.ExecutableNode;
 import azkaban.executor.Status;
 import azkaban.sla.SlaOption;
 import azkaban.storage.StorageManager;
@@ -40,7 +39,6 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 
-import java.util.stream.Collectors;
 import org.apache.commons.io.FileUtils;
 import org.apache.log4j.Logger;
 
