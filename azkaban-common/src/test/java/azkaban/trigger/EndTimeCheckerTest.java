@@ -38,14 +38,14 @@ public class EndTimeCheckerTest {
   @Test
   public void expireTest() {
 
-    long nowPlus5seconds = System.currentTimeMillis() + 2000L;
+    long nowPlus5seconds = System.currentTimeMillis() + 200L;
     EndTimeChecker timeChecker = new EndTimeChecker("expire", nowPlus5seconds);
     Condition cond = getCondition(timeChecker);
 
     assertFalse(cond.isMet());
     // sleep for 4s
     try {
-      Thread.sleep(4000);
+      Thread.sleep(400);
     } catch (InterruptedException e) {
       e.printStackTrace();
     }
@@ -63,7 +63,7 @@ public class EndTimeCheckerTest {
     assertFalse(cond.isMet());
     // sleep for 1s
     try {
-      Thread.sleep(1000);
+      Thread.sleep(100);
     } catch (InterruptedException e) {
       e.printStackTrace();
     }
