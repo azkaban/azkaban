@@ -16,6 +16,7 @@
 
 package azkaban.webapp.servlet;
 
+import azkaban.Constants;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.File;
@@ -669,7 +670,7 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
       return;
     }
 
-    long endSchedTime = getLongParam(req, "endSchedTime", 2536871155000L);
+    long endSchedTime = getLongParam(req, "endSchedTime", Constants.DEFAULT_SCHEDULE_END_EPOCH_TIME);
     try {
       // Todo kunkun-tang: Need to verify if passed end time is valid.
     } catch (Exception e) {
@@ -767,7 +768,7 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
       ret.put("error", e.getMessage());
     }
 
-    long endSchedTime = getLongParam(req, "endSchedTime", 2536871155000L);
+    long endSchedTime = getLongParam(req, "endSchedTime", Constants.DEFAULT_SCHEDULE_END_EPOCH_TIME);
     try {
       // Todo kunkun-tang: Need to verify if passed end time is valid.
     } catch (Exception e) {

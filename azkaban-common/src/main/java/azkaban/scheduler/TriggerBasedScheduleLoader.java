@@ -16,6 +16,7 @@
 
 package azkaban.scheduler;
 
+import azkaban.Constants;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -168,7 +169,7 @@ public class TriggerBasedScheduleLoader implements ScheduleLoader {
           t.getStatus().toString(),
           triggerTimeChecker.getFirstCheckTime(),
           // End Schedule Time
-          endTimeChecker == null? 2536871155000L: endTimeChecker.getNextCheckTime(),
+          endTimeChecker == null? Constants.DEFAULT_SCHEDULE_END_EPOCH_TIME: endTimeChecker.getNextCheckTime(),
           triggerTimeChecker.getTimeZone(),
           triggerTimeChecker.getPeriod(),
           t.getLastModifyTime(),

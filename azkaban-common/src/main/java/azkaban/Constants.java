@@ -49,6 +49,9 @@ public class Constants {
   public static final int DEFAULT_SSL_PORT_NUMBER = 8443;
   public static final int DEFAULT_JETTY_MAX_THREAD_COUNT = 20;
 
+  // One Schedule's default End Time: 01/01/2050, 00:00:00, UTC
+  public static final long DEFAULT_SCHEDULE_END_EPOCH_TIME = 2524608000000L;
+
   public static class ConfigurationKeys {
     // These properties are configurable through azkaban.properties
 
