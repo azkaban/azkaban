@@ -953,6 +953,7 @@ public class FlowRunner extends EventHandler implements Runnable {
         if (Constants.AZKABAN_SLA_CHECKER_USERNAME.equals(user)) {
           runner.getNode().setKilledBySLA();
         }
+        fireEventListeners(Event.create(this, Type.JOB_FINISHED, new EventData(runner.getStatus())));
         break;
       }
     }

@@ -456,7 +456,7 @@ public class ExecutableNode {
   }
 
   public int getRetries() {
-    return inputProps.getInt("retries", 0);
+    return inputProps.getInt("retries", 2);
   }
 
   public long getRetryBackoff() {
