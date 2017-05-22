@@ -268,8 +268,7 @@ public class TriggerManager extends EventHandler implements
              * The workaround here is to check if we expire a trigger only when the ExpireCondition
              * has {@link azkaban.trigger.builtin.EndTimeChecker}.
              */
-            if (t.getExpireCondition().getExpression().contains("EndTimeChecker")
-                  && t.expireConditionMet()) {
+            if (t.expireConditionMet()) {
               onTriggerPause(t);
             }
           }
@@ -301,7 +300,7 @@ public class TriggerManager extends EventHandler implements
       // should be not right. Need to do evaluations and adjust the logics here.
       if (t.isResetOnTrigger()) {
         t.resetTriggerConditions();
-        t.resetExpireCondition();
+//        t.resetExpireCondition();
       } else {
         t.setStatus(TriggerStatus.EXPIRED);
       }

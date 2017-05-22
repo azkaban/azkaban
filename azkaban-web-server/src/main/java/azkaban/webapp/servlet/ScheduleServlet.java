@@ -669,7 +669,7 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
       return;
     }
 
-    long endSchedTime = getLongParam(req, "endSchedTime", -1L);
+    long endSchedTime = getLongParam(req, "endSchedTime", 2536871155000L);
     try {
       // Todo kunkun-tang: Need to verify if passed end time is valid.
     } catch (Exception e) {
@@ -767,7 +767,7 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
       ret.put("error", e.getMessage());
     }
 
-    long endSchedTime = getLongParam(req, "endSchedTime", -1L);
+    long endSchedTime = getLongParam(req, "endSchedTime", 2536871155000L);
     try {
       // Todo kunkun-tang: Need to verify if passed end time is valid.
     } catch (Exception e) {

@@ -98,10 +98,11 @@ public class TriggerBasedScheduleLoader implements ScheduleLoader {
     return cond;
   }
 
-  // if failed to trigger, auto expire?
   private Condition createExpireCondition(Schedule s) {
     Map<String, ConditionChecker> checkers = new HashMap<>();
-    ConditionChecker checker = new EndTimeChecker("EndTimeChecker_1", s.getEndSchedTime());
+    ConditionChecker checker = new BasicTimeChecker("EndTimeCheck_1", s.getFirstSchedTime(),
+        s.getTimezone(), s.getEndSchedTime(),false, false,
+        null, null);
     checkers.put(checker.getId(), checker);
     String expr = checker.getId() + ".eval()";
     return new Condition(checkers, expr);
@@ -138,14 +139,15 @@ public class TriggerBasedScheduleLoader implements ScheduleLoader {
   private Schedule triggerToSchedule(Trigger t) throws ScheduleManagerException {
     Condition triggerCond = t.getTriggerCondition();
     Map<String, ConditionChecker> checkers = triggerCond.getCheckers();
-    BasicTimeChecker basicTimeChecker = null;
-    EndTimeChecker endTimeChecker = null;
+    BasicTimeChecker triggerTimeChecker = null;
+    BasicTimeChecker endTimeChecker = null;
+
     for (ConditionChecker checker : checkers.values()) {
-      if (checker.getType().equals(BasicTimeChecker.type)) {
-        basicTimeChecker = (BasicTimeChecker) checker;
+      if (checker.getType().equals(BasicTimeChecker.type) && checker.getId().contains("BasicTimeCheck")) {
+        triggerTimeChecker = (BasicTimeChecker) checker;
       }
-      if (checker.getType().equals(EndTimeChecker.type)) {
-        endTimeChecker = (EndTimeChecker) checker;
+      if (checker.getType().equals(BasicTimeChecker.type) && checker.getId().contains("EndTimeCheck")) {
+        endTimeChecker = (BasicTimeChecker) checker;
       }
     }
     List<TriggerAction> actions = t.getActions();
@@ -156,22 +158,24 @@ public class TriggerBasedScheduleLoader implements ScheduleLoader {
         break;
       }
     }
-    if (basicTimeChecker != null && act != null) {
+    if (triggerTimeChecker != null && act != null) {
       return new Schedule(t.getTriggerId(),
           act.getProjectId(),
           act.getProjectName(),
           act.getFlowName(),
           t.getStatus().toString(),
-          basicTimeChecker.getFirstCheckTime(),
-          endTimeChecker == null?-1 : endTimeChecker.getEndCheckTime(),
-          basicTimeChecker.getTimeZone(),
-          basicTimeChecker.getPeriod(),
+          triggerTimeChecker.getFirstCheckTime(),
+          // getNextCheckTime
+          endTimeChecker == null? 2536871155000L: endTimeChecker.getNextCheckTime(),
+          triggerTimeChecker.getTimeZone(),
+          triggerTimeChecker.getPeriod(),
           t.getLastModifyTime(),
-          basicTimeChecker.getNextCheckTime(),
-          t.getSubmitTime(), t.getSubmitUser(),
+          triggerTimeChecker.getNextCheckTime(),
+          t.getSubmitTime(),
+          t.getSubmitUser(),
           act.getExecutionOptions(),
           act.getSlaOptions(),
-          basicTimeChecker.getCronExpression());
+          triggerTimeChecker.getCronExpression());
     } else {
       logger.error("Failed to parse schedule from trigger!");
       throw new ScheduleManagerException(
