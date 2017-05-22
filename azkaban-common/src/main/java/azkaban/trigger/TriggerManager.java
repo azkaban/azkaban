@@ -265,8 +265,6 @@ public class TriggerManager extends EventHandler implements
              * we have some related code here. ExpireCondition used the same BasicTimeChecker
              * as triggerCondition do. As a consequence, we need to figure out a way to distinguish
              * the previous ExpireCondition and this commit's ExpireCondition.
-             * The workaround here is to check if we expire a trigger only when the ExpireCondition
-             * has {@link azkaban.trigger.builtin.EndTimeChecker}.
              */
             if (t.expireConditionMet()) {
               onTriggerPause(t);

@@ -31,7 +31,6 @@ import azkaban.trigger.TriggerManager;
 import azkaban.trigger.TriggerManagerAdapter;
 import azkaban.trigger.TriggerManagerException;
 import azkaban.trigger.builtin.BasicTimeChecker;
-import azkaban.trigger.builtin.EndTimeChecker;
 import azkaban.trigger.builtin.ExecuteFlowAction;
 
 public class TriggerBasedScheduleLoader implements ScheduleLoader {
@@ -137,19 +136,22 @@ public class TriggerBasedScheduleLoader implements ScheduleLoader {
   }
 
   private Schedule triggerToSchedule(Trigger t) throws ScheduleManagerException {
-    Condition triggerCond = t.getTriggerCondition();
-    Map<String, ConditionChecker> checkers = triggerCond.getCheckers();
+    Map<String, ConditionChecker> checkers = t.getTriggerCondition().getCheckers();
     BasicTimeChecker triggerTimeChecker = null;
-    BasicTimeChecker endTimeChecker = null;
-
     for (ConditionChecker checker : checkers.values()) {
       if (checker.getType().equals(BasicTimeChecker.type) && checker.getId().contains("BasicTimeCheck")) {
         triggerTimeChecker = (BasicTimeChecker) checker;
       }
+    }
+
+    Map<String, ConditionChecker> expireCheckers = t.getExpireCondition().getCheckers();
+    BasicTimeChecker endTimeChecker = null;
+    for (ConditionChecker checker : expireCheckers.values()) {
       if (checker.getType().equals(BasicTimeChecker.type) && checker.getId().contains("EndTimeCheck")) {
         endTimeChecker = (BasicTimeChecker) checker;
       }
     }
+
     List<TriggerAction> actions = t.getActions();
     ExecuteFlowAction act = null;
     for (TriggerAction action : actions) {
@@ -165,7 +167,7 @@ public class TriggerBasedScheduleLoader implements ScheduleLoader {
           act.getFlowName(),
           t.getStatus().toString(),
           triggerTimeChecker.getFirstCheckTime(),
-          // getNextCheckTime
+          // End Schedule Time
           endTimeChecker == null? 2536871155000L: endTimeChecker.getNextCheckTime(),
           triggerTimeChecker.getTimeZone(),
           triggerTimeChecker.getPeriod(),
