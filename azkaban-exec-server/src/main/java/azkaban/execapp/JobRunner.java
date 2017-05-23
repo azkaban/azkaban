@@ -64,6 +64,9 @@ import azkaban.utils.PatternLayoutEscaped;
 public class JobRunner extends EventHandler implements Runnable {
   public static final String AZKABAN_WEBSERVER_URL = "azkaban.webserver.url";
 
+  private static final Logger serverLogger = Logger
+          .getLogger(JobRunner.class);
+
   private final Layout DEFAULT_LAYOUT = new EnhancedPatternLayout(
       "%d{dd-MM-yyyy HH:mm:ss z} %c{1} %p - %m\n");
 
@@ -509,7 +512,7 @@ public class JobRunner extends EventHandler implements Runnable {
     try {
       doRun();
     } catch (Exception e) {
-      e.printStackTrace();
+      serverLogger.error("Unexpected exception", e);
       throw e;
     }
   }
