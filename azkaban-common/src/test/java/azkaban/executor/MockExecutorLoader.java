@@ -34,7 +34,7 @@ import org.apache.log4j.Logger;
 public class MockExecutorLoader implements ExecutorLoader {
 
   private static final Logger logger = Logger
-          .getLogger(MockExecutorLoader.class);
+      .getLogger(MockExecutorLoader.class);
   HashMap<Integer, Integer> executionExecutorMapping =
       new HashMap<Integer, Integer>();
   HashMap<Integer, ExecutableFlow> flows =

@@ -6,9 +6,9 @@ import org.mortbay.jetty.bio.SocketConnector;
 
 public class FakeServer extends Server {
 
-    @Override
-    public Connector[] getConnectors() {
-        return new Connector[] {new SocketConnector()};
-    }
+  @Override
+  public Connector[] getConnectors() {
+    return new Connector[]{new SocketConnector()};
+  }
 
 }
