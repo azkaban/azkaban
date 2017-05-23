@@ -82,7 +82,6 @@ public class FlowRunnerTest {
     pluginSet.addPluginClass("test", InteractiveTestJob.class);
     fakeProjectLoader = new MockProjectLoader(workingDir);
     Utils.initServiceProvider();
-    AzkabanExecutorServer.testing = true;
     AzkabanExecutorServer.setApp(new FakeApp());
 
     InteractiveTestJob.clearTestJobs();

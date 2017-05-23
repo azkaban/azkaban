@@ -7,7 +7,7 @@ import azkaban.utils.Props;
 public class FakeApp extends AzkabanExecutorServer {
 
     public FakeApp() throws Exception {
-        super(null, null, new Props(), new FakeServer());
+        super(new Props(), null, null, new FakeServer(), null);
         JmxJobMBeanManager.getInstance().initialize(new Props());
     }
 
