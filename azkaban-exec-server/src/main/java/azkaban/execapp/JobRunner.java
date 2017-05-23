@@ -708,7 +708,7 @@ public class JobRunner extends EventHandler implements Runnable {
         logError("Job run failed, but will treat it like success.");
         logError(e.getMessage() + " cause: " + e.getCause(), e);
       } else {
-        if (node.getStatus() == Status.KILLED) {
+        if (isKilled() || node.getStatus() == Status.KILLED) {
           finalStatus = Status.KILLED;
           logError("Job run killed!", e);
         } else {
