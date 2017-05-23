@@ -3,5 +3,5 @@ seconds=1
 fail=true
 passRetry=3
 retries=2
-retry.backoff=2000
+retry.backoff=0
 
