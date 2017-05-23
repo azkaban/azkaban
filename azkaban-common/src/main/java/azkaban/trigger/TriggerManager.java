@@ -294,11 +294,9 @@ public class TriggerManager extends EventHandler implements
           logger.error("Failed to do action " + action.getDescription() + " for " + t, th);
         }
       }
-      // Todo kunkun-tang: Today, when one trigger is triggered, we reset expireCondition. This
-      // should be not right. Need to do evaluations and adjust the logics here.
+
       if (t.isResetOnTrigger()) {
         t.resetTriggerConditions();
-//        t.resetExpireCondition();
       } else {
         t.setStatus(TriggerStatus.EXPIRED);
       }

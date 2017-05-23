@@ -129,7 +129,6 @@ public class TriggerBasedScheduleLoader implements ScheduleLoader {
     }
   }
 
-  // Todo kunkun-tang: Never used method, should be completely removed later.
   @Override
   public synchronized List<Schedule> loadSchedules()
       throws ScheduleManagerException {
@@ -140,7 +139,7 @@ public class TriggerBasedScheduleLoader implements ScheduleLoader {
     Map<String, ConditionChecker> checkers = t.getTriggerCondition().getCheckers();
     BasicTimeChecker triggerTimeChecker = null;
     for (ConditionChecker checker : checkers.values()) {
-      if (checker.getType().equals(BasicTimeChecker.type) && checker.getId().contains("BasicTimeCheck")) {
+      if (checker.getType().equals(BasicTimeChecker.type)) {
         triggerTimeChecker = (BasicTimeChecker) checker;
       }
     }
@@ -148,7 +147,7 @@ public class TriggerBasedScheduleLoader implements ScheduleLoader {
     Map<String, ConditionChecker> expireCheckers = t.getExpireCondition().getCheckers();
     BasicTimeChecker endTimeChecker = null;
     for (ConditionChecker checker : expireCheckers.values()) {
-      if (checker.getType().equals(BasicTimeChecker.type) && checker.getId().contains("EndTimeCheck")) {
+      if (checker.getType().equals(BasicTimeChecker.type)) {
         endTimeChecker = (BasicTimeChecker) checker;
       }
     }
