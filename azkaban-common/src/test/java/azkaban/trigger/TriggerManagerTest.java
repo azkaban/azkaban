@@ -83,6 +83,7 @@ public class TriggerManagerTest {
 
     ThresholdChecker.setVal(15);
     sleep(300);
+    sleep(300);
     assertTrue(triggerChecker.isCheckerMet() == true);
     assertTrue(expireChecker.eval() == false);
 
@@ -169,30 +170,6 @@ public class TriggerManagerTest {
     }
   }
 
-  private Trigger createDummyTrigger(String source, int threshold) {
-
-    Map<String, ConditionChecker> checkers = new HashMap<>();
-    ConditionChecker checker = new ThresholdChecker(ThresholdChecker.type, threshold);
-    checkers.put(checker.getId(), checker);
-
-    String expr = checker.getId() + ".eval()";
-
-    Condition triggerCond = new Condition(checkers, expr);
-    Condition expireCond = new Condition(checkers, expr);
-
-    Trigger fakeTrigger = new Trigger.TriggerBuilder("azkaban",
-        source,
-        triggerCond,
-        expireCond,
-        getTriggerActions()).build();
-
-    fakeTrigger.setResetOnTrigger(true);
-    fakeTrigger.setResetOnExpire(true);
-
-    return fakeTrigger;
-  }
-
-
   private Trigger createNeverExpireTrigger(String source, int threshold) {
     Map<String, ConditionChecker> triggerCheckers = new HashMap<>();
     Map<String, ConditionChecker> expireCheckers = new HashMap<>();
@@ -231,7 +208,7 @@ public class TriggerManagerTest {
         Utils.parsePeriodString("1s"), null);
 
     // End time is 3 seconds past now.
-    ConditionChecker endTimeChecker = new BasicTimeChecker("EndTimeCheck_1", 111L,
+    ConditionChecker endTimeChecker = new BasicTimeChecker("EndTimeChecker_1", 111L,
         DateTimeZone.UTC, currMillis + 3000L,false, false,
         null, null);
     triggerCheckers.put(triggerChecker.getId(), triggerChecker);

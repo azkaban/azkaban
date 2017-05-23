@@ -87,7 +87,7 @@ public class TriggerBasedScheduleLoader implements ScheduleLoader {
 
   private Condition createTriggerCondition(Schedule s) {
     Map<String, ConditionChecker> checkers =
-        new HashMap<String, ConditionChecker>();
+        new HashMap<>();
     ConditionChecker checker =
         new BasicTimeChecker("BasicTimeChecker_1", s.getFirstSchedTime(),
             s.getTimezone(), s.isRecurring(), s.skipPastOccurrences(),
