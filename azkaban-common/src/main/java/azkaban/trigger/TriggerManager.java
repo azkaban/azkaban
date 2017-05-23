@@ -255,22 +255,20 @@ public class TriggerManager extends EventHandler implements
           scannerStage = "Checking for trigger " + t.getTriggerId();
 
           if (t.getStatus().equals(TriggerStatus.READY)) {
-            if (t.triggerConditionMet()) {
-              onTriggerTrigger(t);
-            }
+
             /**
-             * TODO kunkun-tang: rewrite checking expiration logics here.
-             *
              * Prior to this change, expiration condition should never be called though
              * we have some related code here. ExpireCondition used the same BasicTimeChecker
              * as triggerCondition do. As a consequence, we need to figure out a way to distinguish
              * the previous ExpireCondition and this commit's ExpireCondition.
              */
-            if (t.expireConditionMet() ) {
+            if (t.getExpireCondition().getExpression().contains("EndTimeChecker") && t.expireConditionMet()) {
               onTriggerPause(t);
+            } else if (t.triggerConditionMet()) {
+              onTriggerTrigger(t);
             }
           }
-          if (t.getExpireCondition().getExpression().contains("EndTimeChecker") && t.getStatus().equals(TriggerStatus.EXPIRED) && t.getSource().equals("azkaban")) {
+          if (t.getStatus().equals(TriggerStatus.EXPIRED) && t.getSource().equals("azkaban")) {
             removeTrigger(t);
           } else {
             t.updateNextCheckTime();

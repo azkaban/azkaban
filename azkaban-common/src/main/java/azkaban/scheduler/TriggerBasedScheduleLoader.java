@@ -100,7 +100,7 @@ public class TriggerBasedScheduleLoader implements ScheduleLoader {
 
   private Condition createExpireCondition(Schedule s) {
     Map<String, ConditionChecker> checkers = new HashMap<>();
-    ConditionChecker checker = new BasicTimeChecker("EndTimeCheck_1", s.getFirstSchedTime(),
+    ConditionChecker checker = new BasicTimeChecker("EndTimeChecker_1", s.getFirstSchedTime(),
         s.getTimezone(), s.getEndSchedTime(),false, false,
         null, null);
     checkers.put(checker.getId(), checker);
