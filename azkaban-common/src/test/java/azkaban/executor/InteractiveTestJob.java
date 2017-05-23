@@ -16,6 +16,8 @@
 
 package azkaban.executor;
 
+import static azkaban.flow.CommonJobProperties.JOB_ATTEMPT;
+
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.log4j.Logger;
@@ -55,11 +57,26 @@ public class InteractiveTestJob extends AbstractProcessJob {
     }
     testJobs.put(id, this);
 
+    if (jobProps.getBoolean("fail", false)) {
+      int passRetry = jobProps.getInt("passRetry", -1);
+      if (passRetry > 0 && passRetry < jobProps.getInt(JOB_ATTEMPT)) {
+        succeedJob();
+      } else {
+        failJob();
+      }
+    }
+    if (!succeed) {
+      throw new RuntimeException("Forced failure of " + getId());
+    }
+
     while (isWaiting) {
       synchronized (this) {
         try {
-          wait(30000);
+          wait(jobProps.getInt("seconds", 30) * 1000);
         } catch (InterruptedException e) {
+        }
+        if (jobProps.containsKey("seconds")) {
+          succeedJob();
         }
 
         if (!isWaiting) {

@@ -78,7 +78,6 @@ public class FlowRunnerTest {
         new JobTypeManager(null, null, this.getClass().getClassLoader());
     JobTypePluginSet pluginSet = jobtypeManager.getJobTypePluginSet();
     pluginSet.setCommonPluginLoadProps(AllJobExecutorTests.setUpCommonProps());
-    pluginSet.addPluginClass("java", JavaJob.class);
     pluginSet.addPluginClass("test", InteractiveTestJob.class);
     fakeProjectLoader = new MockProjectLoader(workingDir);
     Utils.initServiceProvider();
