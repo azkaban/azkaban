@@ -266,11 +266,11 @@ public class TriggerManager extends EventHandler implements
              * as triggerCondition do. As a consequence, we need to figure out a way to distinguish
              * the previous ExpireCondition and this commit's ExpireCondition.
              */
-            if (t.expireConditionMet()) {
+            if (t.expireConditionMet() ) {
               onTriggerPause(t);
             }
           }
-          if (t.getStatus().equals(TriggerStatus.EXPIRED) && t.getSource().equals("azkaban")) {
+          if (t.getExpireCondition().getExpression().contains("EndTimeChecker") && t.getStatus().equals(TriggerStatus.EXPIRED) && t.getSource().equals("azkaban")) {
             removeTrigger(t);
           } else {
             t.updateNextCheckTime();
