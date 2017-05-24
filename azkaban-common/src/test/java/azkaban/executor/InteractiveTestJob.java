@@ -71,11 +71,14 @@ public class InteractiveTestJob extends AbstractProcessJob {
 
     while (isWaiting) {
       synchronized (this) {
-        try {
-          wait(jobProps.getInt("seconds", 30) * 1000);
-        } catch (InterruptedException e) {
+        int waitMillis = jobProps.getInt("seconds", 5) * 1000;
+        if (waitMillis > 0) {
+          try {
+            wait(waitMillis);
+          } catch (InterruptedException e) {
+          }
         }
-        if (jobProps.containsKey("seconds")) {
+        if (jobProps.containsKey("fail")) {
           succeedJob();
         }
 

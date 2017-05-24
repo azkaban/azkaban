@@ -381,7 +381,7 @@ public class FlowRunnerTest {
 
   private void waitFlowFinished(FlowRunner runner) {
     for (int i = 0; i < 500; i++) {
-      if (runner.getExecutableFlow().isFlowFinished()) {
+      if (runner.getExecutableFlow().isFlowFinished() && !runner.isRunnerThreadAlive()) {
         return;
       }
       try {

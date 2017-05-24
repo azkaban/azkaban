@@ -1,4 +1,4 @@
 type=test
 dependencies=job2
-seconds=8
+seconds=1
 fail=false
