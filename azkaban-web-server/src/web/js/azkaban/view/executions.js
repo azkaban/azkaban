@@ -15,7 +15,26 @@
  */
 
 $.namespace('azkaban');
-
+function killFlow(execId) {
+	  var requestURL=document.location.href.replace("#currently-running","");	  
+	  var requestData = {"execid": execId, "ajax": "cancelFlow"};
+	  var successHandler = function(data) {
+		  console.log("cancel clicked");
+		  if (data.error) {
+			  showDialog("Error", data.error);
+		  }
+		  else {
+			  showDialog("Cancelled", "Flow has been cancelled.");
+			 
+		  }
+	  };
+	  ajaxCall(requestURL, requestData, successHandler);	 
+}
+var showDialog = function(title, message) {
+	$('#messageTitle').text(title);
+	$('#messageBox').text(message);
+	$('#messageDialog').modal();
+}
 var executionsTabView;
 azkaban.ExecutionsTabView = Backbone.View.extend({
   events: {
