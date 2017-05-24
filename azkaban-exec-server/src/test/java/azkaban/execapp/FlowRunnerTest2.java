@@ -1342,12 +1342,10 @@ public class FlowRunnerTest2 {
   }
 
   private void pause(long millisec) {
-    synchronized(this) {
-      try {
-        wait(millisec);
-      }
-      catch (InterruptedException e) {
-      }
+    try {
+      Thread.sleep(millisec);
+    }
+    catch (InterruptedException e) {
     }
   }
 

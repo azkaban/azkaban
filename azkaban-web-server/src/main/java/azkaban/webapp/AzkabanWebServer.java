@@ -16,10 +16,14 @@
 
 package azkaban.webapp;
 
+import azkaban.AzkabanCommonModule;
+import azkaban.executor.AlerterHolder;
 import com.codahale.metrics.MetricRegistry;
 
+import com.google.inject.Guice;
+import com.google.inject.Inject;
+import com.google.inject.Injector;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -28,6 +32,7 @@ import java.lang.reflect.Constructor;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -47,10 +52,7 @@ import org.apache.velocity.runtime.log.Log4JLogChute;
 import org.apache.velocity.runtime.resource.loader.ClasspathResourceLoader;
 import org.apache.velocity.runtime.resource.loader.JarResourceLoader;
 import org.joda.time.DateTimeZone;
-import org.mortbay.jetty.Connector;
 import org.mortbay.jetty.Server;
-import org.mortbay.jetty.bio.SocketConnector;
-import org.mortbay.jetty.security.SslSocketConnector;
 import org.mortbay.jetty.servlet.Context;
 import org.mortbay.jetty.servlet.DefaultServlet;
 import org.mortbay.jetty.servlet.ServletHolder;
@@ -65,7 +67,6 @@ import azkaban.jmx.JmxExecutorManager;
 import azkaban.jmx.JmxJettyServer;
 import azkaban.jmx.JmxTriggerManager;
 import azkaban.metrics.MetricsUtility;
-import azkaban.project.JdbcProjectLoader;
 import azkaban.project.ProjectManager;
 import azkaban.scheduler.ScheduleLoader;
 import azkaban.scheduler.ScheduleManager;
@@ -108,6 +109,10 @@ import azkaban.metrics.MetricsManager;
 
 import com.linkedin.restli.server.RestliServlet;
 
+import static azkaban.ServiceProvider.*;
+import static java.util.Objects.*;
+
+
 /**
  * The Azkaban Jetty server class
  *
@@ -134,20 +139,11 @@ public class AzkabanWebServer extends AzkabanServer {
 
   private static final Logger logger = Logger.getLogger(AzkabanWebServer.class);
 
-  public static final String AZKABAN_HOME = "AZKABAN_HOME";
   public static final String DEFAULT_CONF_PATH = "conf";
-  public static final String AZKABAN_PROPERTIES_FILE = "azkaban.properties";
-  public static final String AZKABAN_PRIVATE_PROPERTIES_FILE =
-      "azkaban.private.properties";
-
   private static final int MAX_FORM_CONTENT_SIZE = 10 * 1024 * 1024;
-  private static final int MAX_HEADER_BUFFER_SIZE = 10 * 1024 * 1024;
   private static AzkabanWebServer app;
 
   private static final String DEFAULT_TIMEZONE_ID = "default.timezone.id";
-  private static final int DEFAULT_PORT_NUMBER = 8081;
-  private static final int DEFAULT_SSL_PORT_NUMBER = 8443;
-  private static final int DEFAULT_THREAD_NUMBER = 20;
   private static final String VELOCITY_DEV_MODE_PARAM = "velocity.dev.mode";
   private static final String USER_MANAGER_CLASS_PARAM = "user.manager.class";
   private static final String DEFAULT_STATIC_DIR = "";
@@ -159,23 +155,20 @@ public class AzkabanWebServer extends AzkabanServer {
   //queuedThreadPool is mainly used to monitor jetty threadpool.
   private QueuedThreadPool queuedThreadPool;
 
-  private UserManager userManager;
-  private ProjectManager projectManager;
-  // private ExecutorManagerAdapter executorManager;
-  private ExecutorManager executorManager;
-  private ScheduleManager scheduleManager;
-  private TriggerManager triggerManager;
-  private Map<String, Alerter> alerters;
+  private final UserManager userManager;
+  private final ProjectManager projectManager;
+  private final ExecutorManager executorManager;
+  private final ScheduleManager scheduleManager;
+  private final TriggerManager triggerManager;
 
   private final ClassLoader baseClassLoader;
 
-  private Props props;
-  private SessionCache sessionCache;
-  private File tempDir;
-  private Map<String, TriggerPlugin> triggerPlugins;
+  private final Props props;
+  private final SessionCache sessionCache;
+  private final List<ObjectName> registeredMBeans = new ArrayList<>();
 
+  private Map<String, TriggerPlugin> triggerPlugins;
   private MBeanServer mbeanServer;
-  private ArrayList<ObjectName> registeredMBeans = new ArrayList<ObjectName>();
 
   public static AzkabanWebServer getInstance() {
     return app;
@@ -189,28 +182,24 @@ public class AzkabanWebServer extends AzkabanServer {
     this(null, loadConfigurationFromAzkabanHome());
   }
 
-  /**
-   * Constructor
-   */
+  @Inject
   public AzkabanWebServer(Server server, Props props) throws Exception {
-    this.props = props;
+    this.props = requireNonNull(props);
     this.server = server;
-    velocityEngine =
-        configureVelocityEngine(props
-            .getBoolean(VELOCITY_DEV_MODE_PARAM, false));
+
+    velocityEngine = configureVelocityEngine(props.getBoolean(VELOCITY_DEV_MODE_PARAM, false));
     sessionCache = new SessionCache(props);
     userManager = loadUserManager(props);
 
-    alerters = loadAlerters(props);
-
-    executorManager = loadExecutorManager(props);
-    projectManager = loadProjectManager(props);
+    // TODO remove hack. Move injection to constructor
+    executorManager = SERVICE_PROVIDER.getInstance(ExecutorManager.class);
+    projectManager = SERVICE_PROVIDER.getInstance(ProjectManager.class);
 
     triggerManager = loadTriggerManager(props);
     loadBuiltinCheckersAndActions();
 
     // load all trigger agents here
-    scheduleManager = loadScheduleManager(triggerManager, props);
+    scheduleManager = loadScheduleManager(triggerManager);
 
     String triggerPluginDir =
         props.getString("trigger.plugin.dir", "plugins/triggers");
@@ -218,8 +207,6 @@ public class AzkabanWebServer extends AzkabanServer {
     loadPluginCheckersAndActions(triggerPluginDir);
 
     baseClassLoader = this.getClassLoader();
-
-    tempDir = new File(props.getString("azkaban.temp.dir", "temp"));
 
     // Setup time zone
     if (props.containsKey(DEFAULT_TIMEZONE_ID)) {
@@ -267,17 +254,14 @@ public class AzkabanWebServer extends AzkabanServer {
 
   private UserManager loadUserManager(Props props) {
     Class<?> userManagerClass = props.getClass(USER_MANAGER_CLASS_PARAM, null);
-    logger.info("Loading user manager class " + userManagerClass.getName());
-    UserManager manager = null;
-    if (userManagerClass != null
-        && userManagerClass.getConstructors().length > 0) {
+    UserManager manager;
+    if (userManagerClass != null && userManagerClass.getConstructors().length > 0) {
+      logger.info("Loading user manager class " + userManagerClass.getName());
       try {
-        Constructor<?> userManagerConstructor =
-            userManagerClass.getConstructor(Props.class);
+        Constructor<?> userManagerConstructor = userManagerClass.getConstructor(Props.class);
         manager = (UserManager) userManagerConstructor.newInstance(props);
       } catch (Exception e) {
-        logger.error("Could not instantiate UserManager "
-            + userManagerClass.getName());
+        logger.error("Could not instantiate UserManager " + userManagerClass.getName());
         throw new RuntimeException(e);
       }
     } else {
@@ -286,20 +270,7 @@ public class AzkabanWebServer extends AzkabanServer {
     return manager;
   }
 
-  private ProjectManager loadProjectManager(Props props) {
-    logger.info("Loading JDBC for project management");
-    JdbcProjectLoader loader = new JdbcProjectLoader(props);
-    ProjectManager manager = new ProjectManager(loader, props);
-    return manager;
-  }
-
-  private ExecutorManager loadExecutorManager(Props props) throws Exception {
-    JdbcExecutorLoader loader = new JdbcExecutorLoader(props);
-    ExecutorManager execManager = new ExecutorManager(props, loader, alerters);
-    return execManager;
-  }
-
-  private ScheduleManager loadScheduleManager(TriggerManager tm, Props props)
+  private ScheduleManager loadScheduleManager(TriggerManager tm)
       throws Exception {
     logger.info("Loading trigger based scheduler");
     ScheduleLoader loader =
@@ -315,169 +286,20 @@ public class AzkabanWebServer extends AzkabanServer {
 
   private void loadBuiltinCheckersAndActions() {
     logger.info("Loading built-in checker and action types");
-    if (triggerManager instanceof TriggerManager) {
-      SlaChecker.setExecutorManager(executorManager);
-      ExecuteFlowAction.setExecutorManager(executorManager);
-      ExecuteFlowAction.setProjectManager(projectManager);
-      ExecuteFlowAction.setTriggerManager(triggerManager);
-      KillExecutionAction.setExecutorManager(executorManager);
-      SlaAlertAction.setExecutorManager(executorManager);
-      SlaAlertAction.setAlerters(alerters);
-      SlaAlertAction.setExecutorManager(executorManager);
-      CreateTriggerAction.setTriggerManager(triggerManager);
-      ExecutionChecker.setExecutorManager(executorManager);
-    }
-    triggerManager.registerCheckerType(BasicTimeChecker.type,
-        BasicTimeChecker.class);
+    ExecuteFlowAction.setExecutorManager(executorManager);
+    ExecuteFlowAction.setProjectManager(projectManager);
+    ExecuteFlowAction.setTriggerManager(triggerManager);
+    KillExecutionAction.setExecutorManager(executorManager);
+    CreateTriggerAction.setTriggerManager(triggerManager);
+    ExecutionChecker.setExecutorManager(executorManager);
+
+    triggerManager.registerCheckerType(BasicTimeChecker.type, BasicTimeChecker.class);
     triggerManager.registerCheckerType(SlaChecker.type, SlaChecker.class);
-    triggerManager.registerCheckerType(ExecutionChecker.type,
-        ExecutionChecker.class);
-    triggerManager.registerActionType(ExecuteFlowAction.type,
-        ExecuteFlowAction.class);
-    triggerManager.registerActionType(KillExecutionAction.type,
-        KillExecutionAction.class);
-    triggerManager
-        .registerActionType(SlaAlertAction.type, SlaAlertAction.class);
-    triggerManager.registerActionType(CreateTriggerAction.type,
-        CreateTriggerAction.class);
-  }
-
-  private Map<String, Alerter> loadAlerters(Props props) {
-    Map<String, Alerter> allAlerters = new HashMap<String, Alerter>();
-    // load built-in alerters
-    Emailer mailAlerter = new Emailer(props);
-    allAlerters.put("email", mailAlerter);
-    // load all plugin alerters
-    String pluginDir = props.getString("alerter.plugin.dir", "plugins/alerter");
-    allAlerters.putAll(loadPluginAlerters(pluginDir));
-    return allAlerters;
-  }
-
-  private Map<String, Alerter> loadPluginAlerters(String pluginPath) {
-    File alerterPluginPath = new File(pluginPath);
-    if (!alerterPluginPath.exists()) {
-      return Collections.<String, Alerter> emptyMap();
-    }
-
-    Map<String, Alerter> installedAlerterPlugins =
-        new HashMap<String, Alerter>();
-    ClassLoader parentLoader = getClass().getClassLoader();
-    File[] pluginDirs = alerterPluginPath.listFiles();
-    ArrayList<String> jarPaths = new ArrayList<String>();
-    for (File pluginDir : pluginDirs) {
-      if (!pluginDir.isDirectory()) {
-        logger.error("The plugin path " + pluginDir + " is not a directory.");
-        continue;
-      }
-
-      // Load the conf directory
-      File propertiesDir = new File(pluginDir, "conf");
-      Props pluginProps = null;
-      if (propertiesDir.exists() && propertiesDir.isDirectory()) {
-        File propertiesFile = new File(propertiesDir, "plugin.properties");
-        File propertiesOverrideFile =
-            new File(propertiesDir, "override.properties");
-
-        if (propertiesFile.exists()) {
-          if (propertiesOverrideFile.exists()) {
-            pluginProps =
-                PropsUtils.loadProps(null, propertiesFile,
-                    propertiesOverrideFile);
-          } else {
-            pluginProps = PropsUtils.loadProps(null, propertiesFile);
-          }
-        } else {
-          logger.error("Plugin conf file " + propertiesFile + " not found.");
-          continue;
-        }
-      } else {
-        logger.error("Plugin conf path " + propertiesDir + " not found.");
-        continue;
-      }
-
-      String pluginName = pluginProps.getString("alerter.name");
-      List<String> extLibClasspath =
-          pluginProps.getStringList("alerter.external.classpaths",
-              (List<String>) null);
-
-      String pluginClass = pluginProps.getString("alerter.class");
-      if (pluginClass == null) {
-        logger.error("Alerter class is not set.");
-      } else {
-        logger.info("Plugin class " + pluginClass);
-      }
-
-      URLClassLoader urlClassLoader = null;
-      File libDir = new File(pluginDir, "lib");
-      if (libDir.exists() && libDir.isDirectory()) {
-        File[] files = libDir.listFiles();
-
-        ArrayList<URL> urls = new ArrayList<URL>();
-        for (int i = 0; i < files.length; ++i) {
-          try {
-            URL url = files[i].toURI().toURL();
-            urls.add(url);
-          } catch (MalformedURLException e) {
-            logger.error(e);
-          }
-        }
-        if (extLibClasspath != null) {
-          for (String extLib : extLibClasspath) {
-            try {
-              File file = new File(pluginDir, extLib);
-              URL url = file.toURI().toURL();
-              urls.add(url);
-            } catch (MalformedURLException e) {
-              logger.error(e);
-            }
-          }
-        }
-
-        urlClassLoader =
-            new URLClassLoader(urls.toArray(new URL[urls.size()]), parentLoader);
-      } else {
-        logger.error("Library path " + propertiesDir + " not found.");
-        continue;
-      }
-
-      Class<?> alerterClass = null;
-      try {
-        alerterClass = urlClassLoader.loadClass(pluginClass);
-      } catch (ClassNotFoundException e) {
-        logger.error("Class " + pluginClass + " not found.");
-        continue;
-      }
-
-      String source = FileIOUtils.getSourcePathFromClass(alerterClass);
-      logger.info("Source jar " + source);
-      jarPaths.add("jar:file:" + source);
-
-      Constructor<?> constructor = null;
-      try {
-        constructor = alerterClass.getConstructor(Props.class);
-      } catch (NoSuchMethodException e) {
-        logger.error("Constructor not found in " + pluginClass);
-        continue;
-      }
-
-      Object obj = null;
-      try {
-        obj = constructor.newInstance(pluginProps);
-      } catch (Exception e) {
-        logger.error(e);
-      }
-
-      if (!(obj instanceof Alerter)) {
-        logger.error("The object is not an Alerter");
-        continue;
-      }
-
-      Alerter plugin = (Alerter) obj;
-      installedAlerterPlugins.put(pluginName, plugin);
-    }
-
-    return installedAlerterPlugins;
-
+    triggerManager.registerCheckerType(ExecutionChecker.type, ExecutionChecker.class);
+    triggerManager.registerActionType(ExecuteFlowAction.type, ExecuteFlowAction.class);
+    triggerManager.registerActionType(KillExecutionAction.type, KillExecutionAction.class);
+    triggerManager.registerActionType(SlaAlertAction.type, SlaAlertAction.class);
+    triggerManager.registerActionType(CreateTriggerAction.type, CreateTriggerAction.class);
   }
 
   private void loadPluginCheckersAndActions(String pluginPath) {
@@ -608,6 +430,7 @@ public class AzkabanWebServer extends AzkabanServer {
    *
    * @return
    */
+  @Override
   public SessionCache getSessionCache() {
     return sessionCache;
   }
@@ -617,29 +440,20 @@ public class AzkabanWebServer extends AzkabanServer {
    *
    * @return
    */
+  @Override
   public VelocityEngine getVelocityEngine() {
     return velocityEngine;
   }
 
-  /**
-   *
-   * @return
-   */
+  @Override
   public UserManager getUserManager() {
     return userManager;
   }
 
-  /**
-   *
-   * @return
-   */
   public ProjectManager getProjectManager() {
     return projectManager;
   }
 
-  /**
-   *
-   */
   public ExecutorManager getExecutorManager() {
     return executorManager;
   }
@@ -698,6 +512,7 @@ public class AzkabanWebServer extends AzkabanServer {
    *
    * @return
    */
+  @Override
   public Props getServerProps() {
     return props;
   }
@@ -712,75 +527,88 @@ public class AzkabanWebServer extends AzkabanServer {
     StdOutErrRedirect.redirectOutAndErrToLog();
 
     logger.info("Starting Jetty Azkaban Web Server...");
-    Props azkabanSettings = AzkabanServer.loadProps(args);
+    Props props = AzkabanServer.loadProps(args);
 
-    if (azkabanSettings == null) {
-      logger.error("Azkaban Properties not loaded.");
-      logger.error("Exiting Azkaban...");
-      return;
+    if (props == null) {
+      logger.error("Azkaban Properties not loaded. Exiting..");
+      System.exit(1);
     }
 
-    int maxThreads =
-        azkabanSettings.getInt("jetty.maxThreads", DEFAULT_THREAD_NUMBER);
-    boolean isStatsOn =
-        azkabanSettings.getBoolean("jetty.connector.stats", true);
-    logger.info("Setting up connector with stats on: " + isStatsOn);
+    /* Initialize Guice Injector */
+    final Injector injector = Guice.createInjector(new AzkabanCommonModule(props), new AzkabanWebServerModule());
+    SERVICE_PROVIDER.setInjector(injector);
 
-    boolean ssl;
-    int port;
-    final Server server = new Server();
-    if (azkabanSettings.getBoolean("jetty.use.ssl", true)) {
-      int sslPortNumber =
-          azkabanSettings.getInt("jetty.ssl.port", DEFAULT_SSL_PORT_NUMBER);
-      port = sslPortNumber;
-      ssl = true;
-      logger.info("Setting up Jetty Https Server with port:" + sslPortNumber
-          + " and numThreads:" + maxThreads);
+    launch(injector.getInstance(AzkabanWebServer.class));
+  }
 
-      SslSocketConnector secureConnector = new SslSocketConnector();
-      secureConnector.setPort(sslPortNumber);
-      secureConnector.setKeystore(azkabanSettings.getString("jetty.keystore"));
-      secureConnector.setPassword(azkabanSettings.getString("jetty.password"));
-      secureConnector.setKeyPassword(azkabanSettings
-          .getString("jetty.keypassword"));
-      secureConnector.setTruststore(azkabanSettings
-          .getString("jetty.truststore"));
-      secureConnector.setTrustPassword(azkabanSettings
-          .getString("jetty.trustpassword"));
-      secureConnector.setHeaderBufferSize(MAX_HEADER_BUFFER_SIZE);
+  public static void launch(AzkabanWebServer webServer) throws Exception {
+    /* This creates the Web Server instance */
+    app = webServer;
 
-      // set up vulnerable cipher suites to exclude
-      List<String> cipherSuitesToExclude = azkabanSettings.getStringList("jetty.excludeCipherSuites");
-      logger.info("Excluded Cipher Suites: " + String.valueOf(cipherSuitesToExclude));
-      if (cipherSuitesToExclude != null && !cipherSuitesToExclude.isEmpty()) {
-        secureConnector.setExcludeCipherSuites(cipherSuitesToExclude.toArray(new String[0]));
+    // TODO refactor code into ServerProvider
+    prepareAndStartServer(webServer.getServerProps(), app.server);
+
+    Runtime.getRuntime().addShutdownHook(new Thread() {
+
+      @Override
+      public void run() {
+        try {
+          logTopMemoryConsumers();
+        } catch (Exception e) {
+          logger.info(("Exception when logging top memory consumers"), e);
+        }
+
+        logger.info("Shutting down http server...");
+        try {
+          app.close();
+        } catch (Exception e) {
+          logger.error("Error while shutting down http server.", e);
+        }
+        logger.info("kk thx bye.");
       }
 
-      server.addConnector(secureConnector);
-    } else {
-      ssl = false;
-      port = azkabanSettings.getInt("jetty.port", DEFAULT_PORT_NUMBER);
-      SocketConnector connector = new SocketConnector();
-      connector.setPort(port);
-      connector.setHeaderBufferSize(MAX_HEADER_BUFFER_SIZE);
-      server.addConnector(connector);
+      public void logTopMemoryConsumers() throws Exception, IOException {
+        if (new File("/bin/bash").exists() && new File("/bin/ps").exists()
+            && new File("/usr/bin/head").exists()) {
+          logger.info("logging top memeory consumer");
+
+          java.lang.ProcessBuilder processBuilder =
+              new java.lang.ProcessBuilder("/bin/bash", "-c",
+                  "/bin/ps aux --sort -rss | /usr/bin/head");
+          Process p = processBuilder.start();
+          p.waitFor();
+
+          InputStream is = p.getInputStream();
+          java.io.BufferedReader reader =
+              new java.io.BufferedReader(new InputStreamReader(is));
+          String line = null;
+          while ((line = reader.readLine()) != null) {
+            logger.info(line);
+          }
+          is.close();
+        }
+      }
+    });
+  }
+
+  private static void prepareAndStartServer(Props azkabanSettings, Server server) throws Exception {
+    validateDatabaseVersion(azkabanSettings);
+    configureRoutes(server, azkabanSettings);
+
+    if (azkabanSettings.getBoolean(Constants.ConfigurationKeys.IS_METRICS_ENABLED, false)) {
+      app.startWebMetrics();
     }
-
-    // setting stats configuration for connectors
-    for (Connector connector : server.getConnectors()) {
-      connector.setStatsOn(isStatsOn);
+    try {
+      server.start();
+      logger.info("Server started");
+    } catch (Exception e) {
+      logger.warn(e);
+      Utils.croak(e.getMessage(), 1);
     }
+  }
 
-    String hostname = azkabanSettings.getString("jetty.hostname", "localhost");
-    azkabanSettings.put("server.hostname", hostname);
-    azkabanSettings.put("server.port", port);
-    azkabanSettings.put("server.useSSL", String.valueOf(ssl));
-
-    app = new AzkabanWebServer(server, azkabanSettings);
-
-    boolean checkDB =
-        azkabanSettings.getBoolean(AzkabanDatabaseSetup.DATABASE_CHECK_VERSION,
-            false);
+  private static void validateDatabaseVersion(Props azkabanSettings) throws IOException, SQLException {
+    boolean checkDB = azkabanSettings.getBoolean(AzkabanDatabaseSetup.DATABASE_CHECK_VERSION, false);
     if (checkDB) {
       AzkabanDatabaseSetup setup = new AzkabanDatabaseSetup(azkabanSettings);
       setup.loadTableInfo();
@@ -792,6 +620,10 @@ public class AzkabanWebServer extends AzkabanServer {
         System.exit(-1);
       }
     }
+  }
+
+  private static void configureRoutes(Server server, Props azkabanSettings) throws TriggerManagerException {
+    final int maxThreads = azkabanSettings.getInt("jetty.maxThreads", Constants.DEFAULT_JETTY_MAX_THREAD_COUNT);
 
     QueuedThreadPool httpThreadPool = new QueuedThreadPool(maxThreads);
     app.setThreadPool(httpThreadPool);
@@ -846,62 +678,6 @@ public class AzkabanWebServer extends AzkabanServer {
     app.getTriggerManager().start();
 
     root.setAttribute(Constants.AZKABAN_SERVLET_CONTEXT_KEY, app);
-
-
-    if (azkabanSettings.getBoolean(Constants.ConfigurationKeys.IS_METRICS_ENABLED, false)) {
-      app.startWebMetrics();
-    }
-    try {
-      server.start();
-    } catch (Exception e) {
-      logger.warn(e);
-      Utils.croak(e.getMessage(), 1);
-    }
-
-    Runtime.getRuntime().addShutdownHook(new Thread() {
-
-      public void run() {
-        try {
-          logTopMemoryConsumers();
-        } catch (Exception e) {
-          logger.info(("Exception when logging top memory consumers"), e);
-        }
-
-        logger.info("Shutting down http server...");
-        try {
-          app.close();
-          server.stop();
-          server.destroy();
-        } catch (Exception e) {
-          logger.error("Error while shutting down http server.", e);
-        }
-        logger.info("kk thx bye.");
-      }
-
-      public void logTopMemoryConsumers() throws Exception, IOException {
-        if (new File("/bin/bash").exists() && new File("/bin/ps").exists()
-            && new File("/usr/bin/head").exists()) {
-          logger.info("logging top memeory consumer");
-
-          java.lang.ProcessBuilder processBuilder =
-              new java.lang.ProcessBuilder("/bin/bash", "-c",
-                  "/bin/ps aux --sort -rss | /usr/bin/head");
-          Process p = processBuilder.start();
-          p.waitFor();
-
-          InputStream is = p.getInputStream();
-          java.io.BufferedReader reader =
-              new java.io.BufferedReader(new InputStreamReader(is));
-          String line = null;
-          while ((line = reader.readLine()) != null) {
-            logger.info(line);
-          }
-          is.close();
-        }
-      }
-    });
-    logger.info("Server running on " + (ssl ? "ssl" : "") + " port " + port
-        + ".");
   }
 
   private static Map<String, TriggerPlugin> loadTriggerPlugins(Context root,
@@ -1245,43 +1021,6 @@ public class AzkabanWebServer extends AzkabanServer {
     return loadAzkabanConfigurationFromDirectory(confPath);
   }
 
-  /**
-   * Returns the set temp dir
-   *
-   * @return
-   */
-  public File getTempDirectory() {
-    return tempDir;
-  }
-
-  private static Props loadAzkabanConfigurationFromDirectory(File dir) {
-    File azkabanPrivatePropsFile =
-        new File(dir, AZKABAN_PRIVATE_PROPERTIES_FILE);
-    File azkabanPropsFile = new File(dir, AZKABAN_PROPERTIES_FILE);
-
-    Props props = null;
-    try {
-      // This is purely optional
-      if (azkabanPrivatePropsFile.exists() && azkabanPrivatePropsFile.isFile()) {
-        logger.info("Loading azkaban private properties file");
-        props = new Props(null, azkabanPrivatePropsFile);
-      }
-
-      if (azkabanPropsFile.exists() && azkabanPropsFile.isFile()) {
-        logger.info("Loading azkaban properties file");
-        props = new Props(props, azkabanPropsFile);
-      }
-    } catch (FileNotFoundException e) {
-      logger.error("File not found. Could not load azkaban config file", e);
-    } catch (IOException e) {
-      logger.error(
-          "File found, but error reading. Could not load azkaban config file",
-          e);
-    }
-
-    return props;
-  }
-
   private void configureMBeanServer() {
     logger.info("Registering MBeans...");
     mbeanServer = ManagementFactory.getPlatformMBeanServer();
@@ -1321,6 +1060,13 @@ public class AzkabanWebServer extends AzkabanServer {
     }
     scheduleManager.shutdown();
     executorManager.shutdown();
+    try {
+      server.stop();
+    } catch (Exception e) {
+      // Catch all while closing server
+      logger.error(e);
+    }
+    server.destroy();
   }
 
   private void registerMbean(String name, Object mbean) {

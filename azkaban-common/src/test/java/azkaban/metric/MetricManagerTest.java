@@ -74,15 +74,9 @@ public class MetricManagerTest {
     Date from = new Date();
     metric.notifyManager();
 
-    synchronized (this) {
-      try {
-        wait(2000);
-      } catch (InterruptedException e) {
-        e.printStackTrace();
-      }
-    }
-    Date to = new Date();
-    List<InMemoryHistoryNode> nodes = emitter.getMetrics("FakeMetric", from, to, false);
+    Thread.sleep(2000);
+
+    List<InMemoryHistoryNode> nodes = emitter.getMetrics("FakeMetric", from, new Date(), false);
 
     assertEquals("Failed to report metric", 1, nodes.size());
     assertEquals("Failed to report metric", nodes.get(0).getValue(), 4);

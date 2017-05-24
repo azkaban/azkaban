@@ -6,7 +6,7 @@ buildscript {
     }
   }
   dependencies {
-    classpath 'com.cinnober.gradle:semver-git:2.2.1'
+    classpath 'com.cinnober.gradle:semver-git:2.2.3'
     classpath 'net.ltgt.gradle:gradle-errorprone-plugin:0.0.10'
   }
 }
@@ -93,7 +93,8 @@ subprojects {
  * Gradle wrapper task.
  */
 task wrapper(type: Wrapper) {
-  gradleVersion = '3.3'
+  gradleVersion = '3.5'
+  distributionType('ALL')
 }
 
 idea {

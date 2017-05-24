@@ -33,7 +33,12 @@ model {
 
 dependencies {
   compile project(':azkaban-spi')
+  compile project(':azkaban-db')
 
+  compile "org.apache.hadoop:hadoop-auth:$hadoopVersion"
+  compile "org.apache.hadoop:hadoop-annotations:$hadoopVersion"
+  compile "org.apache.hadoop:hadoop-common:$hadoopVersion"
+  compile "org.apache.hadoop:hadoop-hdfs:$hadoopVersion"
   compile('com.google.inject:guice:4.1.0')
   compile('com.google.guava:guava:21.0')
   compile('commons-collections:commons-collections:3.2.2')
@@ -66,6 +71,7 @@ dependencies {
   testCompile(project(':azkaban-test').sourceSets.test.output)
 
   testRuntime('com.h2database:h2:1.4.193')
+  testRuntime('org.slf4j:slf4j-log4j12:1.7.18')
 }
 
 tasks.withType(JavaCompile) {

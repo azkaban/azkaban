@@ -30,10 +30,10 @@ import azkaban.utils.Props;
 
 /**
  * Responsible for making the job callback HTTP requests.
- * 
+ *
  * One of the requirements is to log out the request information and response
  * using the given logger, which should be the job logger.
- * 
+ *
  * @author hluu
  *
  */
@@ -177,11 +177,11 @@ public class JobCallbackRequestMaker {
   /**
    * Response handler for logging job callback response using the given logger
    * instance
-   * 
+   *
    * @author hluu
    *
    */
-  private final class LoggingResponseHandler implements
+  private static final class LoggingResponseHandler implements
       ResponseHandler<Integer> {
 
     private Logger logger;
@@ -193,6 +193,7 @@ public class JobCallbackRequestMaker {
       this.logger = logger;
     }
 
+    @Override
     public Integer handleResponse(final HttpResponse response)
         throws ClientProtocolException, IOException {
 

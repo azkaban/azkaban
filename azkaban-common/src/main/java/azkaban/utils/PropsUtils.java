@@ -378,6 +378,15 @@ public class PropsUtils {
 
     StringBuilder builder = new StringBuilder("");
 
+    // oldProps can not be null during the below comparison process.
+    if (oldProps == null) {
+      oldProps = new Props();
+    }
+
+    if (newProps == null) {
+      newProps = new Props();
+    }
+
     MapDifference<String, String> md =
         Maps.difference(toStringMap(oldProps, false), toStringMap(newProps, false));
 

@@ -17,6 +17,7 @@
 
 package azkaban;
 
+import azkaban.db.DatabaseOperator;
 import azkaban.project.JdbcProjectLoader;
 import azkaban.spi.Storage;
 import azkaban.storage.DatabaseStorage;
@@ -48,7 +49,7 @@ public class ServiceProviderTest {
     Props props = new Props();
     props.put("database.type", "h2");
     props.put("h2.path", "h2");
-    props.put(Constants.ConfigurationKeys.AZKABAN_STORAGE_LOCAL_BASEDIRECTORY, AZKABAN_LOCAL_TEST_STORAGE);
+    props.put(Constants.ConfigurationKeys.AZKABAN_STORAGE_LOCAL_BASEDIR, AZKABAN_LOCAL_TEST_STORAGE);
 
 
     Injector injector = Guice.createInjector(
@@ -62,5 +63,6 @@ public class ServiceProviderTest {
     assertNotNull(SERVICE_PROVIDER.getInstance(DatabaseStorage.class));
     assertNotNull(SERVICE_PROVIDER.getInstance(LocalStorage.class));
     assertNotNull(SERVICE_PROVIDER.getInstance(Storage.class));
+    assertNotNull(SERVICE_PROVIDER.getInstance(DatabaseOperator.class));
   }
 }

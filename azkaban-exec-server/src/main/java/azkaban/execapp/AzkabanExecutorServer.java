@@ -16,37 +16,8 @@
 
 package azkaban.execapp;
 
-import com.google.common.base.Throwables;
-
-import org.apache.commons.lang.StringUtils;
-import org.apache.log4j.Logger;
-import org.joda.time.DateTimeZone;
-import org.mortbay.jetty.Connector;
-import org.mortbay.jetty.Server;
-import org.mortbay.jetty.servlet.Context;
-import org.mortbay.jetty.servlet.ServletHolder;
-import org.mortbay.thread.QueuedThreadPool;
-
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.lang.management.ManagementFactory;
-import java.lang.reflect.Constructor;
-import java.net.InetAddress;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.TimeZone;
-
-import javax.management.MBeanInfo;
-import javax.management.MBeanServer;
-import javax.management.ObjectName;
-
+import azkaban.AzkabanCommonModule;
 import azkaban.Constants;
-
 import azkaban.execapp.event.JobCallbackManager;
 import azkaban.execapp.jmx.JmxFlowRunnerManager;
 import azkaban.execapp.jmx.JmxJobMBeanManager;
@@ -58,24 +29,48 @@ import azkaban.execapp.metric.NumRunningJobMetric;
 import azkaban.executor.Executor;
 import azkaban.executor.ExecutorLoader;
 import azkaban.executor.ExecutorManagerException;
-import azkaban.executor.JdbcExecutorLoader;
 import azkaban.jmx.JmxJettyServer;
 import azkaban.metric.IMetricEmitter;
 import azkaban.metric.MetricException;
 import azkaban.metric.MetricReportManager;
 import azkaban.metric.inmemoryemitter.InMemoryMetricEmitter;
-import azkaban.project.JdbcProjectLoader;
-import azkaban.project.ProjectLoader;
+import azkaban.metrics.MetricsManager;
 import azkaban.server.AzkabanServer;
 import azkaban.utils.Props;
 import azkaban.utils.StdOutErrRedirect;
-import azkaban.utils.SystemMemoryInfo;
 import azkaban.utils.Utils;
-import azkaban.metrics.MetricsManager;
+import com.google.common.base.Throwables;
+import com.google.inject.Guice;
+import com.google.inject.Inject;
+import com.google.inject.Injector;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.lang.management.ManagementFactory;
+import java.lang.reflect.Constructor;
+import java.net.InetAddress;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.TimeZone;
+import javax.management.MBeanInfo;
+import javax.management.MBeanServer;
+import javax.management.ObjectName;
+import org.apache.commons.lang.StringUtils;
+import org.apache.log4j.Logger;
+import org.joda.time.DateTimeZone;
+import org.mortbay.jetty.Connector;
+import org.mortbay.jetty.Server;
+import org.mortbay.jetty.servlet.Context;
+import org.mortbay.jetty.servlet.ServletHolder;
+import org.mortbay.thread.QueuedThreadPool;
 
-import static azkaban.Constants.AZKABAN_EXECUTOR_PORT_FILENAME;
-import static com.google.common.base.Preconditions.checkState;
-import static java.util.Objects.requireNonNull;
+import static azkaban.Constants.*;
+import static azkaban.ServiceProvider.*;
+import static com.google.common.base.Preconditions.*;
+import static java.util.Objects.*;
 
 public class AzkabanExecutorServer {
   private static final String CUSTOM_JMX_ATTRIBUTE_PROCESSOR_PROPERTY = "jmx.attribute.processor.class";
@@ -92,7 +87,6 @@ public class AzkabanExecutorServer {
   private static AzkabanExecutorServer app;
 
   private final ExecutorLoader executionLoader;
-  private final ProjectLoader projectLoader;
   private final FlowRunnerManager runnerManager;
   private final Props props;
   private final Server server;
@@ -100,18 +94,15 @@ public class AzkabanExecutorServer {
   private final ArrayList<ObjectName> registeredMBeans = new ArrayList<ObjectName>();
   private MBeanServer mbeanServer;
 
-  /**
-   * Constructor
-   *
-   * @throws Exception
-   */
-  public AzkabanExecutorServer(Props props) throws Exception {
+  @Inject
+  public AzkabanExecutorServer(Props props,
+      ExecutorLoader executionLoader,
+      FlowRunnerManager runnerManager) throws Exception {
     this.props = props;
-    server = createJettyServer(props);
+    this.executionLoader = executionLoader;
+    this.runnerManager = runnerManager;
 
-    executionLoader = new JdbcExecutorLoader(props);
-    projectLoader = new JdbcProjectLoader(props);
-    runnerManager = new FlowRunnerManager(props, executionLoader, projectLoader, getClass().getClassLoader());
+    server = createJettyServer(props);
 
     JmxJobMBeanManager.getInstance().initialize(props);
 
@@ -120,8 +111,6 @@ public class AzkabanExecutorServer {
 
     configureMBeanServer();
     configureMetricReports();
-
-    SystemMemoryInfo.init(props.getInt("executor.memCheck.interval", 30));
 
     loadCustomJMXAttributeProcessor(props);
 
@@ -310,11 +299,6 @@ public class AzkabanExecutorServer {
     }
   }
 
-
-  public ProjectLoader getProjectLoader() {
-    return projectLoader;
-  }
-
   public ExecutorLoader getExecutorLoader() {
     return executionLoader;
   }
@@ -348,25 +332,24 @@ public class AzkabanExecutorServer {
     StdOutErrRedirect.redirectOutAndErrToLog();
 
     logger.info("Starting Jetty Azkaban Executor...");
-    Props azkabanSettings = AzkabanServer.loadProps(args);
+    Props props = AzkabanServer.loadProps(args);
 
-    if (azkabanSettings == null) {
+    if (props == null) {
       logger.error("Azkaban Properties not loaded.");
       logger.error("Exiting Azkaban Executor Server...");
       return;
     }
 
-    // Setup time zone
-    if (azkabanSettings.containsKey(DEFAULT_TIMEZONE_ID)) {
-      String timezone = azkabanSettings.getString(DEFAULT_TIMEZONE_ID);
-      System.setProperty("user.timezone", timezone);
-      TimeZone.setDefault(TimeZone.getTimeZone(timezone));
-      DateTimeZone.setDefault(DateTimeZone.forID(timezone));
+    /* Initialize Guice Injector */
+    final Injector injector = Guice.createInjector(new AzkabanCommonModule(props), new AzkabanExecServerModule());
+    SERVICE_PROVIDER.setInjector(injector);
 
-      logger.info("Setting timezone to " + timezone);
-    }
+    launch(injector.getInstance(AzkabanExecutorServer.class));
+  }
 
-    app = new AzkabanExecutorServer(azkabanSettings);
+  public static void launch(AzkabanExecutorServer azkabanExecutorServer) throws Exception {
+    setupTimeZone(azkabanExecutorServer.getAzkabanProps());
+    app = azkabanExecutorServer;
 
     Runtime.getRuntime().addShutdownHook(new Thread() {
 
@@ -419,70 +402,19 @@ public class AzkabanExecutorServer {
     });
   }
 
-  /**
-   * Loads the Azkaban property file from the AZKABAN_HOME conf directory
-   *
-   * @return
-   */
-  /* package */static Props loadConfigurationFromAzkabanHome() {
-    String azkabanHome = System.getenv("AZKABAN_HOME");
+  private static void setupTimeZone(Props azkabanSettings) {
+    if (azkabanSettings.containsKey(DEFAULT_TIMEZONE_ID)) {
+      String timezone = azkabanSettings.getString(DEFAULT_TIMEZONE_ID);
+      System.setProperty("user.timezone", timezone);
+      TimeZone.setDefault(TimeZone.getTimeZone(timezone));
+      DateTimeZone.setDefault(DateTimeZone.forID(timezone));
 
-    if (azkabanHome == null) {
-      logger.error("AZKABAN_HOME not set. Will try default.");
-      return null;
+      logger.info("Setting timezone to " + timezone);
     }
-
-    if (!new File(azkabanHome).isDirectory()
-        || !new File(azkabanHome).canRead()) {
-      logger.error(azkabanHome + " is not a readable directory.");
-      return null;
-    }
-
-    File confPath = new File(azkabanHome, Constants.DEFAULT_CONF_PATH);
-    if (!confPath.exists() || !confPath.isDirectory() || !confPath.canRead()) {
-      logger
-          .error(azkabanHome + " does not contain a readable conf directory.");
-      return null;
-    }
-
-    return loadAzkabanConfigurationFromDirectory(confPath);
   }
 
   public FlowRunnerManager getFlowRunnerManager() {
     return runnerManager;
-  }
-
-  /**
-   * Loads the Azkaban conf file int a Props object
-   *
-   * @return
-   */
-  private static Props loadAzkabanConfigurationFromDirectory(File dir) {
-    File azkabanPrivatePropsFile =
-        new File(dir, Constants.AZKABAN_PRIVATE_PROPERTIES_FILE);
-    File azkabanPropsFile = new File(dir, Constants.AZKABAN_PROPERTIES_FILE);
-
-    Props props = null;
-    try {
-      // This is purely optional
-      if (azkabanPrivatePropsFile.exists() && azkabanPrivatePropsFile.isFile()) {
-        logger.info("Loading azkaban private properties file");
-        props = new Props(null, azkabanPrivatePropsFile);
-      }
-
-      if (azkabanPropsFile.exists() && azkabanPropsFile.isFile()) {
-        logger.info("Loading azkaban properties file");
-        props = new Props(props, azkabanPropsFile);
-      }
-    } catch (FileNotFoundException e) {
-      logger.error("File not found. Could not load azkaban config file", e);
-    } catch (IOException e) {
-      logger.error(
-          "File found, but error reading. Could not load azkaban config file",
-          e);
-    }
-
-    return props;
   }
 
   private void configureMBeanServer() {
@@ -630,7 +562,7 @@ public class AzkabanExecutorServer {
   public void shutdownNow() throws Exception {
     server.stop();
     server.destroy();
-    SystemMemoryInfo.shutdown();
     getFlowRunnerManager().shutdownNow();
+    close();
   }
 }

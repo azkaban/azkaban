@@ -16,6 +16,8 @@
 
 package azkaban.execapp;
 
+import azkaban.ServiceProvider;
+import azkaban.sla.SlaOption;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -204,6 +206,7 @@ public class FlowRunner extends EventHandler implements Runnable {
     return execDir;
   }
 
+  @Override
   public void run() {
     try {
       if (this.executorService == null) {
@@ -1060,7 +1063,8 @@ public class FlowRunner extends EventHandler implements Runnable {
 
       if (event.getType() == Type.JOB_STATUS_CHANGED) {
         updateFlow();
-      } else if (event.getType() == Type.JOB_FINISHED) {
+      }
+      else if (event.getType() == Type.JOB_FINISHED) {
         ExecutableNode node = runner.getNode();
         EventData eventData = event.getData();
         long seconds = (node.getEndTime() - node.getStartTime()) / 1000;
@@ -1081,6 +1085,11 @@ public class FlowRunner extends EventHandler implements Runnable {
           interrupt();
           fireEventListeners(event);
         }
+      }
+      else if (event.getType() == Type.JOB_STARTED) {
+        // add job level checker
+        TriggerManager triggerManager = ServiceProvider.SERVICE_PROVIDER.getInstance(TriggerManager.class);
+        triggerManager.addTrigger(flow.getExecutionId(), SlaOption.getJobLevelSLAOptions(flow));
       }
     }
   }

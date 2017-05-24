@@ -55,7 +55,7 @@ public class AzkabanDatabaseSetup {
   private static final String UPDATE_SCRIPT_PREFIX = "update.";
   private static final String SQL_SCRIPT_SUFFIX = ".sql";
 
-  private static String FETCH_PROPERTY_BY_TYPE =
+  private static final String FETCH_PROPERTY_BY_TYPE =
       "SELECT name, value FROM properties WHERE type=?";
   private static final String INSERT_DB_PROPERTY =
       "INSERT INTO properties (name, type, value, modified_time) values (?,?,?,?)";
@@ -67,7 +67,6 @@ public class AzkabanDatabaseSetup {
   private Map<String, String> installedVersions;
   private Set<String> missingTables;
   private Map<String, List<String>> upgradeList;
-  private Props dbProps;
   private String version;
   private boolean needsUpdating;
 
@@ -86,13 +85,19 @@ public class AzkabanDatabaseSetup {
     }
   }
 
-  public void loadTableInfo() throws IOException, SQLException {
-    tables = new HashMap<String, String>();
-    installedVersions = new HashMap<String, String>();
-    missingTables = new HashSet<String>();
-    upgradeList = new HashMap<String, List<String>>();
+  // TODO kunkun-tang: Refactor this class. loadTableInfo method should sit inside constructor
+  public AzkabanDatabaseSetup(AzkabanDataSource ds, Props props) {
+    this.dataSource = ds;
+    this.scriptPath = props.getString(DATABASE_SQL_SCRIPT_DIR, DEFAULT_SCRIPT_PATH);
+  }
 
-    dbProps = loadDBProps();
+  public void loadTableInfo() throws IOException, SQLException {
+    tables = new HashMap<>();
+    installedVersions = new HashMap<>();
+    missingTables = new HashSet<>();
+    upgradeList = new HashMap<>();
+
+    Props dbProps = loadDBProps();
     version = dbProps.getString("version");
 
     loadInstalledTables();
@@ -167,12 +172,10 @@ public class AzkabanDatabaseSetup {
     File dbPropsFile = new File(this.scriptPath, "database.properties");
 
     if (!dbPropsFile.exists()) {
-      throw new IOException("Cannot find 'database.properties' file in "
-          + dbPropsFile.getPath());
+      throw new IOException("Cannot find 'database.properties' file in " + dbPropsFile.getAbsolutePath());
     }
 
-    Props props = new Props(null, dbPropsFile);
-    return props;
+    return new Props(null, dbPropsFile);
   }
 
   private void loadTableVersion() throws SQLException {
@@ -221,14 +224,15 @@ public class AzkabanDatabaseSetup {
     File[] createScripts =
         directory.listFiles(new FileIOUtils.PrefixSuffixFileFilter(
             CREATE_SCRIPT_PREFIX, SQL_SCRIPT_SUFFIX));
+    if(createScripts != null) {
+      for (File script : createScripts) {
+        String name = script.getName();
+        String[] nameSplit = name.split("\\.");
+        String tableName = nameSplit[1];
 
-    for (File script : createScripts) {
-      String name = script.getName();
-      String[] nameSplit = name.split("\\.");
-      String tableName = nameSplit[1];
-
-      if (!tables.containsKey(tableName)) {
-        missingTables.add(tableName);
+        if (!tables.containsKey(tableName)) {
+          missingTables.add(tableName);
+        }
       }
     }
   }
@@ -257,7 +261,7 @@ public class AzkabanDatabaseSetup {
     File[] createScripts =
         directory.listFiles(new FileIOUtils.PrefixSuffixFileFilter(
             UPDATE_SCRIPT_PREFIX + table, SQL_SCRIPT_SUFFIX));
-    if (createScripts.length == 0) {
+    if (createScripts == null || createScripts.length == 0) {
       return null;
     }
 
@@ -399,7 +403,7 @@ public class AzkabanDatabaseSetup {
       ResultSetHandler<Map<String, String>> {
     @Override
     public Map<String, String> handle(ResultSet rs) throws SQLException {
-      Map<String, String> results = new HashMap<String, String>();
+      Map<String, String> results = new HashMap<>();
       while (rs.next()) {
         String key = rs.getString(1);
         String value = rs.getString(2);

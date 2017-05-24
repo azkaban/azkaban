@@ -22,24 +22,34 @@ public class ProjectFileHandler {
   private final int projectId;
   private final int version;
   private final long uploadTime;
-  private String fileType;
-  private String fileName;
-  private String uploader;
-  private byte[] md5Hash;
-  private int numChunks;
+  private final String fileType;
+  private final String fileName;
+  private final String uploader;
+  private final byte[] md5Hash;
+  private final int numChunks;
+  private final String resourceId;
+
   private File localFile = null;
 
-  public ProjectFileHandler(int projectId, int version, long uploadTime,
-      String uploader, String fileType, String fileName, int numChunks,
-      byte[] md5Hash) {
+  public ProjectFileHandler(
+      int projectId,
+      int version,
+      long uploadTime,
+      String uploader,
+      String fileType,
+      String fileName,
+      int numChunks,
+      byte[] md5Hash,
+      String resourceId) {
     this.projectId = projectId;
     this.version = version;
     this.uploadTime = uploadTime;
-    this.setUploader(uploader);
-    this.setFileType(fileType);
-    this.setFileName(fileName);
-    this.setMd5Hash(md5Hash);
-    this.setNumChunks(numChunks);
+    this.uploader = uploader;
+    this.fileType = fileType;
+    this.fileName = fileName;
+    this.md5Hash = md5Hash;
+    this.numChunks = numChunks;
+    this.resourceId = resourceId;
   }
 
   public int getProjectId() {
@@ -58,24 +68,12 @@ public class ProjectFileHandler {
     return fileType;
   }
 
-  public void setFileType(String fileType) {
-    this.fileType = fileType;
-  }
-
   public String getFileName() {
     return fileName;
   }
 
-  public void setFileName(String fileName) {
-    this.fileName = fileName;
-  }
-
   public byte[] getMd5Hash() {
     return md5Hash;
-  }
-
-  public void setMd5Hash(byte[] md5Hash) {
-    this.md5Hash = md5Hash;
   }
 
   public File getLocalFile() {
@@ -87,9 +85,7 @@ public class ProjectFileHandler {
   }
 
   public synchronized void deleteLocalFile() {
-    if (localFile == null) {
-      return;
-    } else {
+    if (localFile != null) {
       localFile.delete();
       localFile = null;
     }
@@ -99,16 +95,11 @@ public class ProjectFileHandler {
     return uploader;
   }
 
-  public void setUploader(String uploader) {
-    this.uploader = uploader;
-  }
-
   public int getNumChunks() {
     return numChunks;
   }
 
-  public void setNumChunks(int numChunks) {
-    this.numChunks = numChunks;
+  public String getResourceId() {
+    return resourceId;
   }
-
 }

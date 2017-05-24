@@ -1,5 +1,5 @@
 /*
- * Copyright 2012 LinkedIn Corp.
+ * Copyright 2017 LinkedIn Corp.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -13,30 +13,22 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
+package azkaban.db;
 
-package azkaban.jobExecutor.utils;
+import java.nio.file.Path;
 
-import org.apache.log4j.Logger;
 
-import azkaban.jobExecutor.AbstractJob;
+public class H2FileDataSource extends AzkabanDataSource {
 
-/**
- * this job is used to throw out exception caught in initialization stage
- *
- * @author lguo
- */
-public class InitErrorJob extends AbstractJob {
-
-  private Exception exception;
-
-  public InitErrorJob(String id, Exception e) {
-    super(id, Logger.getLogger(AbstractJob.class));
-    exception = e;
+  public H2FileDataSource(Path filePath) {
+    super();
+    String url = "jdbc:h2:file:" + filePath;
+    setDriverClassName("org.h2.Driver");
+    setUrl(url);
   }
 
   @Override
-  public void run() throws Exception {
-    throw exception;
+  public String getDBType() {
+    return "h2";
   }
-
 }

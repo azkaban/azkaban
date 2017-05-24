@@ -16,13 +16,23 @@
  */
 package azkaban;
 
+import azkaban.db.AzkabanDataSource;
+import azkaban.db.DatabaseOperator;
+import azkaban.db.DatabaseOperatorImpl;
+import azkaban.db.H2FileDataSource;
+import azkaban.db.MySQLDataSource;
+import azkaban.executor.AlerterHolder;
+import azkaban.executor.ExecutorLoader;
+import azkaban.executor.ExecutorManager;
+import azkaban.executor.JdbcExecutorLoader;
 import azkaban.project.JdbcProjectLoader;
 import azkaban.project.ProjectLoader;
+import azkaban.spi.AzkabanException;
 import azkaban.spi.Storage;
 import azkaban.spi.StorageException;
-import azkaban.storage.LocalStorage;
-import azkaban.storage.StorageConfig;
 import azkaban.storage.StorageImplementationType;
+import azkaban.trigger.JdbcTriggerImpl;
+import azkaban.trigger.TriggerLoader;
 import azkaban.utils.Props;
 import com.google.inject.AbstractModule;
 import com.google.inject.Inject;
@@ -30,44 +40,60 @@ import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.Singleton;
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import javax.sql.DataSource;
+import org.apache.commons.dbutils.QueryRunner;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FileSystem;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import static azkaban.storage.StorageImplementationType.*;
+import static azkaban.Constants.ConfigurationKeys.*;
+import static com.google.common.base.Preconditions.*;
+import static java.util.Objects.*;
 
 
+/**
+ * This Guice module is currently a one place container for all bindings in the current module. This is intended to
+ * help during the migration process to Guice. Once this class starts growing we can move towards more modular
+ * structuring of Guice components.
+ */
 public class AzkabanCommonModule extends AbstractModule {
+  private static final Logger log = LoggerFactory.getLogger(AzkabanCommonModule.class);
+
   private final Props props;
-  /**
-   * Storage Implementation
-   * This can be any of the {@link StorageImplementationType} values in which case {@link StorageFactory} will create
-   * the appropriate storage instance. Or one can feed in a custom implementation class using the full qualified
-   * path required by a classloader.
-   *
-   * examples: LOCAL, DATABASE, azkaban.storage.MyFavStorage
-   *
-   */
-  private final String storageImplementation;
+  private final AzkabanCommonModuleConfig config;
 
   public AzkabanCommonModule(Props props) {
     this.props = props;
-    this.storageImplementation = props.getString(Constants.ConfigurationKeys.AZKABAN_STORAGE_TYPE, LOCAL.name());
+    this.config = new AzkabanCommonModuleConfig(props);
   }
 
   @Override
   protected void configure() {
+    bind(ExecutorLoader.class).to(JdbcExecutorLoader.class).in(Scopes.SINGLETON);
     bind(ProjectLoader.class).to(JdbcProjectLoader.class).in(Scopes.SINGLETON);
-    bind(Props.class).toInstance(props);
+    bind(Props.class).toInstance(config.getProps());
     bind(Storage.class).to(resolveStorageClassType()).in(Scopes.SINGLETON);
+    bind(DatabaseOperator.class).to(DatabaseOperatorImpl.class).in(Scopes.SINGLETON);
+    bind(TriggerLoader.class).to(JdbcTriggerImpl.class).in(Scopes.SINGLETON);
+    bind(DataSource.class).to(AzkabanDataSource.class);
+    bind(ExecutorManager.class).in(Scopes.SINGLETON);
+    bind(AlerterHolder.class).in(Scopes.SINGLETON);
   }
 
   public Class<? extends Storage> resolveStorageClassType() {
-    final StorageImplementationType type = StorageImplementationType.from(storageImplementation);
+    final StorageImplementationType type = StorageImplementationType.from(config.getStorageImplementation());
     if (type != null) {
       return type.getImplementationClass();
     } else {
-      return loadCustomStorageClass(storageImplementation);
+      return loadCustomStorageClass(config.getStorageImplementation());
     }
   }
 
+  @SuppressWarnings("unchecked")
   private Class<? extends Storage> loadCustomStorageClass(String storageImplementation) {
     try {
       return (Class<? extends Storage>) Class.forName(storageImplementation);
@@ -76,9 +102,59 @@ public class AzkabanCommonModule extends AbstractModule {
     }
   }
 
+  // todo kunkun-tang: the below method should moved out to azkaban-db module eventually.
   @Inject
-  public @Provides
-  LocalStorage createLocalStorage(StorageConfig config) {
-    return new LocalStorage(new File(config.getBaseDirectoryPath()));
+  @Provides
+  @Singleton
+  public AzkabanDataSource getDataSource(Props props) {
+    String databaseType = props.getString("database.type");
+
+    if(databaseType.equals("h2")) {
+      String path = props.getString("h2.path");
+      Path h2DbPath = Paths.get(path).toAbsolutePath();
+      log.info("h2 DB path: " + h2DbPath);
+      return new H2FileDataSource(h2DbPath);
+    }
+    int port = props.getInt("mysql.port");
+    String host = props.getString("mysql.host");
+    String database = props.getString("mysql.database");
+    String user = props.getString("mysql.user");
+    String password = props.getString("mysql.password");
+    int numConnections = props.getInt("mysql.numconnections");
+
+    return MySQLDataSource.getInstance(host, port, database, user, password, numConnections);
+  }
+
+  @Inject
+  @Provides
+  @Singleton
+  public Configuration createHadoopConfiguration() {
+    final String hadoopConfDirPath = requireNonNull(props.get(HADOOP_CONF_DIR_PATH));
+
+    final File hadoopConfDir = new File(requireNonNull(hadoopConfDirPath));
+    checkArgument(hadoopConfDir.exists() && hadoopConfDir.isDirectory());
+
+    final Configuration hadoopConf = new Configuration(false);
+    hadoopConf.addResource(new org.apache.hadoop.fs.Path(hadoopConfDirPath, "core-site.xml"));
+    hadoopConf.addResource(new org.apache.hadoop.fs.Path(hadoopConfDirPath, "hdfs-site.xml"));
+    hadoopConf.set("fs.hdfs.impl", org.apache.hadoop.hdfs.DistributedFileSystem.class.getName());
+    return hadoopConf;
+  }
+
+  @Inject
+  @Provides
+  @Singleton
+  public FileSystem createHadoopFileSystem(final Configuration hadoopConf) {
+    try {
+      return FileSystem.get(hadoopConf);
+    } catch (IOException e) {
+      log.error("Unable to initialize HDFS", e);
+      throw new AzkabanException(e);
+    }
+  }
+
+  @Provides
+  public QueryRunner createQueryRunner(AzkabanDataSource dataSource) {
+    return new QueryRunner(dataSource);
   }
 }

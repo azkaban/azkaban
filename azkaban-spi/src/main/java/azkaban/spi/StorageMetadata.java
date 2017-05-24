@@ -23,14 +23,16 @@ import static java.util.Objects.*;
 
 
 public class StorageMetadata {
-  private final String projectId;
-  private final String version;
-  private final String extension;
+  private final int projectId;
+  private final int version;
+  private final String uploader;
+  private byte[] hash;
 
-  public StorageMetadata(String projectId, String version, String extension) {
-    this.projectId = requireNonNull(projectId);
-    this.version = requireNonNull(version);
-    this.extension = requireNonNull(extension);
+  public StorageMetadata(int projectId, int version, String uploader, byte[] hash) {
+    this.projectId = projectId;
+    this.version = version;
+    this.uploader = requireNonNull(uploader);
+    this.hash = hash;
   }
 
   @Override
@@ -38,16 +40,20 @@ public class StorageMetadata {
     return "StorageMetadata{" + "projectId='" + projectId + '\'' + ", version='" + version + '\'' + '}';
   }
 
-  public String getProjectId() {
+  public int getProjectId() {
     return projectId;
   }
 
-  public String getVersion() {
+  public int getVersion() {
     return version;
   }
 
-  public String getExtension() {
-    return extension;
+  public String getUploader() {
+    return uploader;
+  }
+
+  public byte[] getHash() {
+    return hash;
   }
 
   @Override
@@ -61,11 +67,11 @@ public class StorageMetadata {
     StorageMetadata that = (StorageMetadata) o;
     return Objects.equals(projectId, that.projectId) &&
         Objects.equals(version, that.version) &&
-        Objects.equals(extension, that.extension);
+        Objects.equals(uploader, that.uploader);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(projectId, version, extension);
+    return Objects.hash(projectId, version, uploader);
   }
 }

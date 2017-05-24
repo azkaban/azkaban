@@ -14,23 +14,22 @@
  * the License.
  *
  */
+package azkaban.db;
 
-package azkaban.storage;
+class AzDBTestUtility {
 
-import azkaban.Constants;
-import azkaban.utils.Props;
-import com.google.inject.Inject;
+  public static class EmbeddedH2BasicDataSource extends AzkabanDataSource {
 
+    EmbeddedH2BasicDataSource() {
+      super();
+      String url = "jdbc:h2:mem:test";
+      setDriverClassName("org.h2.Driver");
+      setUrl(url);
+    }
 
-public class StorageConfig {
-  private String baseDirectoryPath = "AZKABAN_STORAGE";
-
-  @Inject
-  public StorageConfig(Props props) {
-    baseDirectoryPath = props.getString(Constants.ConfigurationKeys.AZKABAN_STORAGE_LOCAL_BASEDIRECTORY, baseDirectoryPath);
-  }
-
-  public String getBaseDirectoryPath() {
-    return baseDirectoryPath;
+    @Override
+    public String getDBType() {
+      return "h2-in-memory";
+    }
   }
 }

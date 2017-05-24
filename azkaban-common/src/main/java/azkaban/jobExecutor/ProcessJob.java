@@ -19,6 +19,7 @@ package azkaban.jobExecutor;
 import azkaban.Constants;
 import azkaban.metrics.CommonMetrics;
 import java.io.File;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -33,6 +34,9 @@ import azkaban.utils.Pair;
 import azkaban.utils.Props;
 import azkaban.utils.SystemMemoryInfo;
 
+import static azkaban.ServiceProvider.*;
+
+
 /**
  * A job that runs a simple unix command
  */
@@ -40,14 +44,11 @@ public class ProcessJob extends AbstractProcessJob {
 
   public static final String COMMAND = "command";
 
-  private static final long KILL_TIME_MS = 5000;
+  private static final Duration KILL_TIME = Duration.ofSeconds(30);
 
   private volatile AzkabanProcess process;
 
   private static final String MEMCHECK_ENABLED = "memCheck.enabled";
-
-  private static final String MEMCHECK_FREEMEMDECRAMT =
-      "memCheck.freeMemDecrAmt";
 
   public static final String AZKABAN_MEMORY_CHECK = "azkaban.memory.check";
 
@@ -74,17 +75,21 @@ public class ProcessJob extends AbstractProcessJob {
 
     if (sysProps.getBoolean(MEMCHECK_ENABLED, true)
         && jobProps.getBoolean(AZKABAN_MEMORY_CHECK, true)) {
-      long freeMemDecrAmt = sysProps.getLong(MEMCHECK_FREEMEMDECRAMT, 0);
       Pair<Long, Long> memPair = getProcMemoryRequirement();
+      long xms = memPair.getFirst();
+      long xmx = memPair.getSecond();
       // retry backoff in ms
       String oomMsg = String.format("Cannot request memory (Xms %d kb, Xmx %d kb) from system for job %s",
-          memPair.getFirst(), memPair.getSecond(), getId());
+          xms, xmx, getId());
       int attempt;
       boolean isMemGranted = true;
+
+      //todo HappyRay: move to proper Guice after this class is refactored.
+      SystemMemoryInfo memInfo = SERVICE_PROVIDER.getInstance(SystemMemoryInfo.class);
       for(attempt = 1; attempt <= Constants.MEMORY_CHECK_RETRY_LIMIT; attempt++) {
-        isMemGranted = SystemMemoryInfo.canSystemGrantMemory(memPair.getFirst(), memPair.getSecond(), freeMemDecrAmt);
+        isMemGranted = memInfo.canSystemGrantMemory(xmx);
         if (isMemGranted) {
-          info(String.format("Memory granted (Xms %d kb, Xmx %d kb) from system for job %s", memPair.getFirst(), memPair.getSecond(), getId()));
+          info(String.format("Memory granted for job %s", getId()));
           if(attempt > 1) {
             CommonMetrics.INSTANCE.decrementOOMJobWaitCount();
           }
@@ -300,7 +305,7 @@ public class ProcessJob extends AbstractProcessJob {
 
     if (process == null)
       throw new IllegalStateException("Not started.");
-    boolean processkilled = process.softKill(KILL_TIME_MS, TimeUnit.MILLISECONDS);
+    boolean processkilled = process.softKill(KILL_TIME.toMillis(), TimeUnit.MILLISECONDS);
     if (!processkilled) {
       warn("Kill with signal TERM failed. Killing with KILL signal.");
       process.hardKill();

@@ -8,7 +8,7 @@ import azkaban.executor.ExecutorInfo;
 
 @Ignore
 public class StatisticsServletTest {
-  private class MockStatisticsServlet extends ServerStatisticsServlet {
+  private static class MockStatisticsServlet extends ServerStatisticsServlet {
     /** */
     private static final long serialVersionUID = 1L;
 

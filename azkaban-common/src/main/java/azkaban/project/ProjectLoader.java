@@ -36,7 +36,7 @@ public interface ProjectLoader {
    * @return
    * @throws ProjectManagerException
    */
-  public List<Project> fetchAllActiveProjects() throws ProjectManagerException;
+  List<Project> fetchAllActiveProjects() throws ProjectManagerException;
 
   /**
    * Loads whole project, including permissions, by the project id.
@@ -45,7 +45,7 @@ public interface ProjectLoader {
    * @return
    * @throws ProjectManagerException
    */
-  public Project fetchProjectById(int id) throws ProjectManagerException;
+  Project fetchProjectById(int id) throws ProjectManagerException;
 
   /**
    * Loads whole project, including permissions, by the project name.
@@ -53,7 +53,7 @@ public interface ProjectLoader {
    * @return
    * @throws ProjectManagerException
    */
-  public Project fetchProjectByName(String name) throws ProjectManagerException;
+  Project fetchProjectByName(String name) throws ProjectManagerException;
 
   /**
    * Should create an empty project with the given name and user and adds it to
@@ -69,7 +69,7 @@ public interface ProjectLoader {
    * @throws ProjectManagerException if an active project of the same name
    *           exists.
    */
-  public Project createNewProject(String name, String description, User creator)
+  Project createNewProject(String name, String description, User creator)
       throws ProjectManagerException;
 
   /**
@@ -78,7 +78,7 @@ public interface ProjectLoader {
    * @param project
    * @throws ProjectManagerException
    */
-  public void removeProject(Project project, String user)
+  void removeProject(Project project, String user)
       throws ProjectManagerException;
 
   /**
@@ -92,10 +92,10 @@ public interface ProjectLoader {
    * @param isGroup
    * @throws ProjectManagerException
    */
-  public void updatePermission(Project project, String name, Permission perm,
+  void updatePermission(Project project, String name, Permission perm,
       boolean isGroup) throws ProjectManagerException;
 
-  public void removePermission(Project project, String name, boolean isGroup)
+  void removePermission(Project project, String name, boolean isGroup)
       throws ProjectManagerException;
 
   /**
@@ -105,7 +105,7 @@ public interface ProjectLoader {
    * @param description
    * @throws ProjectManagerException
    */
-  public void updateDescription(Project project, String description, String user)
+  void updateDescription(Project project, String description, String user)
       throws ProjectManagerException;
 
   /**
@@ -116,7 +116,7 @@ public interface ProjectLoader {
    * @param type
    * @param message return true if the posting was success.
    */
-  public boolean postEvent(Project project, EventType type, String user,
+  boolean postEvent(Project project, EventType type, String user,
       String message);
 
   /**
@@ -125,30 +125,45 @@ public interface ProjectLoader {
    * @param project
    * @return
    */
-  public List<ProjectLogEvent> getProjectEvents(Project project, int num,
+  List<ProjectLogEvent> getProjectEvents(Project project, int num,
       int skip) throws ProjectManagerException;
 
   /**
    * Will upload the files and return the version number of the file uploaded.
    */
-  public void uploadProjectFile(Project project, int version, String filetype,
-      String filename, File localFile, String user)
+  void uploadProjectFile(int projectId, int version, File localFile, String user)
       throws ProjectManagerException;
+
+  /**
+   * Add project and version info to the project_versions table. This current maintains the metadata for each uploaded
+   * version of the project
+   *
+   * @param projectId
+   * @param version
+   * @param localFile
+   * @param uploader
+   * @param md5
+   * @param resourceId
+   * @throws ProjectManagerException
+   */
+  void addProjectVersion(int projectId, int version, File localFile, String uploader, byte[] md5, String resourceId)
+      throws ProjectManagerException;
+
+  /**
+   * Fetch project metadata from project_versions table
+   *
+   * @param projectId project ID
+   * @param version version
+   * @return ProjectFileHandler object containing the metadata
+   */
+  ProjectFileHandler fetchProjectMetaData(int projectId, int version);
 
   /**
    * Get file that's uploaded.
    *
    * @return
    */
-  public ProjectFileHandler getUploadedFile(Project project, int version)
-      throws ProjectManagerException;
-
-  /**
-   * Get file that's uploaded.
-   *
-   * @return
-   */
-  public ProjectFileHandler getUploadedFile(int projectId, int version)
+  ProjectFileHandler getUploadedFile(int projectId, int version)
       throws ProjectManagerException;
 
   /**
@@ -158,10 +173,10 @@ public interface ProjectLoader {
    * @param version
    * @throws ProjectManagerException
    */
-  public void changeProjectVersion(Project project, int version, String user)
+  void changeProjectVersion(Project project, int version, String user)
       throws ProjectManagerException;
 
-  public void updateFlow(Project project, int version, Flow flow)
+  void updateFlow(Project project, int version, Flow flow)
       throws ProjectManagerException;
 
   /**
@@ -172,7 +187,7 @@ public interface ProjectLoader {
    * @param flows
    * @throws ProjectManagerException
    */
-  public void uploadFlows(Project project, int version, Collection<Flow> flows)
+  void uploadFlows(Project project, int version, Collection<Flow> flows)
       throws ProjectManagerException;
 
   /**
@@ -183,7 +198,7 @@ public interface ProjectLoader {
    * @param flow
    * @throws ProjectManagerException
    */
-  public void uploadFlow(Project project, int version, Flow flow)
+  void uploadFlow(Project project, int version, Flow flow)
       throws ProjectManagerException;
 
   /**
@@ -194,7 +209,7 @@ public interface ProjectLoader {
    * @param flowId
    * @throws ProjectManagerException
    */
-  public Flow fetchFlow(Project project, String flowId)
+  Flow fetchFlow(Project project, String flowId)
       throws ProjectManagerException;
 
   /**
@@ -205,13 +220,13 @@ public interface ProjectLoader {
    * @param flowId
    * @throws ProjectManagerException
    */
-  public List<Flow> fetchAllProjectFlows(Project project)
+  List<Flow> fetchAllProjectFlows(Project project)
       throws ProjectManagerException;
 
   /**
    * Gets the latest upload version.
    */
-  public int getLatestProjectVersion(Project project)
+  int getLatestProjectVersion(Project project)
       throws ProjectManagerException;
 
   /**
@@ -222,7 +237,7 @@ public interface ProjectLoader {
    * @param properties
    * @throws ProjectManagerException
    */
-  public void uploadProjectProperty(Project project, Props props)
+  void uploadProjectProperty(Project project, Props props)
       throws ProjectManagerException;
 
   /**
@@ -233,7 +248,7 @@ public interface ProjectLoader {
    * @param properties
    * @throws ProjectManagerException
    */
-  public void uploadProjectProperties(Project project, List<Props> properties)
+  void uploadProjectProperties(Project project, List<Props> properties)
       throws ProjectManagerException;
 
   /**
@@ -244,7 +259,7 @@ public interface ProjectLoader {
    * @return
    * @throws ProjectManagerException
    */
-  public Props fetchProjectProperty(Project project, String propsName)
+  Props fetchProjectProperty(Project project, String propsName)
       throws ProjectManagerException;
 
   /**
@@ -254,7 +269,7 @@ public interface ProjectLoader {
    * @return
    * @throws ProjectManagerException
    */
-  public Map<String, Props> fetchProjectProperties(int projectId, int version)
+  Map<String, Props> fetchProjectProperties(int projectId, int version)
       throws ProjectManagerException;
 
   /**
@@ -264,10 +279,10 @@ public interface ProjectLoader {
    * @param version
    * @throws ProjectManagerException
    */
-  public void cleanOlderProjectVersion(int projectId, int version)
+  void cleanOlderProjectVersion(int projectId, int version)
       throws ProjectManagerException;
 
-  public void updateProjectProperty(Project project, Props props)
+  void updateProjectProperty(Project project, Props props)
       throws ProjectManagerException;
 
   Props fetchProjectProperty(int projectId, int projectVer, String propsName)

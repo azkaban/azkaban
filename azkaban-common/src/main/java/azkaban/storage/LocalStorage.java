@@ -17,86 +17,89 @@
 
 package azkaban.storage;
 
+import static com.google.common.base.Preconditions.checkArgument;
+
+import azkaban.AzkabanCommonModuleConfig;
 import azkaban.spi.Storage;
 import azkaban.spi.StorageException;
 import azkaban.spi.StorageMetadata;
 import azkaban.utils.FileIOUtils;
+import com.google.common.io.Files;
+import com.google.inject.Inject;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.URI;
 import org.apache.commons.io.FileUtils;
 import org.apache.log4j.Logger;
 
-import static com.google.common.base.Preconditions.*;
-
 
 public class LocalStorage implements Storage {
+
   private static final Logger log = Logger.getLogger(LocalStorage.class);
 
-  final File baseDirectory;
+  final File rootDirectory;
 
-  public LocalStorage(File baseDirectory) {
-    this.baseDirectory = validateBaseDirectory(createIfDoesNotExist(baseDirectory));
+  @Inject
+  public LocalStorage(AzkabanCommonModuleConfig config) {
+    this.rootDirectory = validateRootDirectory(
+        createIfDoesNotExist(config.getLocalStorageBaseDirPath()));
+  }
+
+  /**
+   * @param key Relative path of the file from the baseDirectory
+   */
+  @Override
+  public InputStream get(String key) throws IOException {
+    return new FileInputStream(new File(rootDirectory, key));
   }
 
   @Override
-  public InputStream get(URI key) {
-    try {
-      return new FileInputStream(getFile(key));
-    } catch (FileNotFoundException e) {
-      return null;
-    }
-  }
-
-  private File getFile(URI key) {
-    return new File(baseDirectory, key.getPath());
-  }
-
-  @Override
-  public URI put(StorageMetadata metadata, InputStream is) {
-
-    final File projectDir = new File(baseDirectory, metadata.getProjectId());
+  public String put(StorageMetadata metadata, File localFile) {
+    final File projectDir = new File(rootDirectory, String.valueOf(metadata.getProjectId()));
     if (projectDir.mkdir()) {
       log.info("Created project dir: " + projectDir.getAbsolutePath());
     }
 
-    final File targetFile = new File(projectDir, metadata.getVersion() + "." + metadata.getExtension());
+    final File targetFile = new File(projectDir, String.format("%s-%s.zip",
+        String.valueOf(metadata.getProjectId()),
+        new String(metadata.getHash())));
 
     if (targetFile.exists()) {
-      throw new StorageException(String.format(
-          "Error in LocalStorage. Target file already exists. targetFile: %s, Metadata: %s",
-          targetFile, metadata));
+      log.info(String.format("Duplicate found: meta: %s, targetFile: %s, ", metadata,
+          targetFile.getAbsolutePath()));
+      return getRelativePath(targetFile);
     }
+
+    // Copy file to storage dir
     try {
-      FileUtils.copyInputStreamToFile(is, targetFile);
+      FileUtils.copyFile(localFile, targetFile);
     } catch (IOException e) {
-      log.error("LocalStorage error in put(): Metadata: " + metadata);
+      log.error("LocalStorage error in put(): meta: " + metadata);
       throw new StorageException(e);
     }
-    return createRelativeURI(targetFile);
+    return getRelativePath(targetFile);
   }
 
-  private URI createRelativeURI(File targetFile) {
-    return baseDirectory.toURI().relativize(targetFile.toURI());
+  private String getRelativePath(File targetFile) {
+    return rootDirectory.toURI().relativize(targetFile.toURI()).getPath();
   }
 
   @Override
-  public boolean delete(URI key) {
+  public boolean delete(String key) {
     throw new UnsupportedOperationException("delete has not been implemented.");
   }
 
-  private static File createIfDoesNotExist(File baseDirectory) {
-    if(!baseDirectory.exists()) {
+  private static File createIfDoesNotExist(String baseDirectoryPath) {
+    final File baseDirectory = new File(baseDirectoryPath);
+    if (!baseDirectory.exists()) {
       baseDirectory.mkdir();
       log.info("Creating dir: " + baseDirectory.getAbsolutePath());
     }
     return baseDirectory;
   }
 
-  private static File validateBaseDirectory(File baseDirectory) {
+  private static File validateRootDirectory(File baseDirectory) {
     checkArgument(baseDirectory.isDirectory());
     if (!FileIOUtils.isDirWritable(baseDirectory)) {
       throw new IllegalArgumentException("Directory not writable: " + baseDirectory);

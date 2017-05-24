@@ -1,5 +1,6 @@
 package azkaban.project;
 
+import azkaban.storage.StorageManager;
 import azkaban.user.User;
 import azkaban.utils.Props;
 import java.io.File;
@@ -15,6 +16,7 @@ import org.mockito.stubbing.Answer;
 public class ProjectManagerTest {
   private ProjectManager manager;
   private ProjectLoader loader;
+  private StorageManager storageManager;
   private User user;
   private static final String PROJECT_NAME = "myTest";
   private static final String PROJECT_NAME_2 = "myTest_2";
@@ -30,7 +32,8 @@ public class ProjectManagerTest {
   public void setUp() throws Exception {
     Props props = new Props();
     loader = mock(ProjectLoader.class);
-    manager = new ProjectManager(loader, props);
+    storageManager = mock(StorageManager.class);
+    manager = new ProjectManager(loader, storageManager, props);
     user = new User(TEST_USER);
     Project project1 = new Project(PROJECT_ID, PROJECT_NAME);
     project1.setDescription(PROJECT_DESCRIPTION);
@@ -44,6 +47,7 @@ public class ProjectManagerTest {
     when(loader.getLatestProjectVersion(project1)).thenReturn(PROJECT_VERSION);
 
     doAnswer(new Answer<Void>() {
+      @Override
       public Void answer(InvocationOnMock invocation) {
         project1.setActive(false);
         return null;
@@ -51,6 +55,7 @@ public class ProjectManagerTest {
     }).when(loader).removeProject(project1, user.getUserId());
 
     doAnswer(new Answer<Void>() {
+      @Override
       public Void answer(InvocationOnMock invocation) {
         project1.setVersion(PROJECT_VERSION + 1);
         return null;
@@ -116,18 +121,19 @@ public class ProjectManagerTest {
   public void testUploadProject() throws Exception {
     System.out.println("TestUploadProject");
     Project project = manager.createProject(PROJECT_NAME, PROJECT_DESCRIPTION, user);
-    File testDir = new File(this.getClass().getClassLoader().getResource("project/testjob/testjob.zip").getFile());
-    System.out.println("Uploading zip file: " + testDir.getAbsolutePath());
+    File testFile = new File(this.getClass().getClassLoader().getResource("project/testjob/testjob.zip").getFile());
+    System.out.println("Uploading zip file: " + testFile.getAbsolutePath());
     Props props = new Props();
-    manager.uploadProject(project, testDir, FILE_TYPE, user, props);
-    verify(loader).uploadProjectFile(project, PROJECT_VERSION + 1, FILE_TYPE, testDir.getName(),
-        testDir, user.getUserId());
+    manager.uploadProject(project, testFile, FILE_TYPE, user, props);
+
+    verify(storageManager).uploadProject(project, PROJECT_VERSION + 1, testFile, user);
+
     verify(loader).uploadFlows(eq(project), eq(PROJECT_VERSION + 1), anyCollection());
     verify(loader).changeProjectVersion(project, PROJECT_VERSION + 1, user.getUserId());
     //uploadProjectProperties should be called twice, one for jobProps, the other for propProps
     verify(loader, times(2)).uploadProjectProperties(eq(project), anyList());
     verify(loader).postEvent(project, ProjectLogEvent.EventType.UPLOADED, user.getUserId(),
-        "Uploaded project files zip " + testDir.getName());
+        "Uploaded project files zip " + testFile.getName());
     verify(loader).cleanOlderProjectVersion(project.getId(), PROJECT_VERSION + 1 - PROJECT_VERSION_RETENTIION);
   }
 

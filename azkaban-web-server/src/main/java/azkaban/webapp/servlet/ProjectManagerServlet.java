@@ -1806,7 +1806,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
     }
   }
 
-  public class PageSelection {
+  public static class PageSelection {
     private String page;
     private int size;
     private boolean disabled;

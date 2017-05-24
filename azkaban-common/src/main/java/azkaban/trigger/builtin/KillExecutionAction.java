@@ -16,6 +16,7 @@
 
 package azkaban.trigger.builtin;
 
+import azkaban.Constants;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -26,6 +27,14 @@ import azkaban.executor.ExecutorManagerAdapter;
 import azkaban.executor.Status;
 import azkaban.trigger.TriggerAction;
 
+/**
+ * @deprecated Create a new KillExecutionAction using FlowRunnerManager
+ * instead of ExecutorManager to kill flow. Still keep the old one here
+ * for being compatible with existing SLA trigger in the database.
+ * Will remove the old one when all existing triggers expire.
+ */
+
+@Deprecated
 public class KillExecutionAction implements TriggerAction {
 
   public static final String type = "KillExecutionAction";
@@ -37,6 +46,7 @@ public class KillExecutionAction implements TriggerAction {
   private int execId;
   private static ExecutorManagerAdapter executorManager;
 
+  //todo chengren311: delete this class to executor module when all existing triggers in db are expired
   public KillExecutionAction(String actionId, int execId) {
     this.execId = execId;
     this.actionId = actionId;
@@ -94,7 +104,7 @@ public class KillExecutionAction implements TriggerAction {
     logger.info("ready to kill execution " + execId);
     if (!Status.isStatusFinished(exFlow.getStatus())) {
       logger.info("Killing execution " + execId);
-      executorManager.cancelFlow(exFlow, "azkaban_sla");
+      executorManager.cancelFlow(exFlow, Constants.AZKABAN_SLA_CHECKER_USERNAME);
     }
   }
 

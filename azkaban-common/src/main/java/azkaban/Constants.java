@@ -37,12 +37,17 @@ public class Constants {
 
   public static final String AZKABAN_SERVLET_CONTEXT_KEY = "azkaban_app";
 
+  // Internal username used to perform SLA action
+  public static final String AZKABAN_SLA_CHECKER_USERNAME = "azkaban_sla";
 
   // Memory check retry interval when OOM in ms
   public static final long MEMORY_CHECK_INTERVAL_MS = 1000 * 60 * 1;
 
   // Max number of memory check retry
   public static final int MEMORY_CHECK_RETRY_LIMIT = 720;
+  public static final int DEFAULT_PORT_NUMBER = 8081;
+  public static final int DEFAULT_SSL_PORT_NUMBER = 8443;
+  public static final int DEFAULT_JETTY_MAX_THREAD_COUNT = 20;
 
   public static class ConfigurationKeys {
     // These properties are configurable through azkaban.properties
@@ -86,7 +91,11 @@ public class Constants {
     public static final String AZKABAN_MAX_FLOW_RUNNING_MINS = "azkaban.server.flow.max.running.minutes";
 
     public static final String AZKABAN_STORAGE_TYPE = "azkaban.storage.type";
-    public static final String AZKABAN_STORAGE_LOCAL_BASEDIRECTORY = "azkaban.storage.local.basedirectory";
+    public static final String AZKABAN_STORAGE_LOCAL_BASEDIR = "azkaban.storage.local.basedir";
+    public static final String HADOOP_CONF_DIR_PATH = "hadoop.conf.dir.path";
+    public static final String AZKABAN_STORAGE_HDFS_ROOT_URI = "azkaban.storage.hdfs.root.uri";
+    public static final String AZKABAN_KERBEROS_PRINCIPAL = "azkaban.kerberos.principal";
+    public static final String AZKABAN_KEYTAB_PATH = "azkaban.keytab.path";
   }
 
   public static class FlowProperties {

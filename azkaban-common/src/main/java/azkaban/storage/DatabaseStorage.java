@@ -17,11 +17,12 @@
 
 package azkaban.storage;
 
-import azkaban.project.JdbcProjectLoader;
+import azkaban.project.ProjectFileHandler;
+import azkaban.project.ProjectLoader;
 import azkaban.spi.Storage;
 import azkaban.spi.StorageMetadata;
+import java.io.File;
 import java.io.InputStream;
-import java.net.URI;
 import javax.inject.Inject;
 
 
@@ -32,24 +33,34 @@ import javax.inject.Inject;
  * behavior of Azkaban.
  */
 public class DatabaseStorage implements Storage {
+  private final ProjectLoader projectLoader;
 
   @Inject
-  public DatabaseStorage(JdbcProjectLoader jdbcProjectLoader) {
-
+  public DatabaseStorage(ProjectLoader projectLoader) {
+    this.projectLoader = projectLoader;
   }
 
   @Override
-  public InputStream get(URI key) {
+  public InputStream get(String key) {
+    throw new UnsupportedOperationException("Not implemented yet. Use get(projectId, version) instead");
+  }
+
+  public ProjectFileHandler get(int projectId, int version) {
+    return projectLoader.getUploadedFile(projectId, version);
+  }
+
+  @Override
+  public String put(StorageMetadata metadata, File localFile) {
+    projectLoader.uploadProjectFile(
+        metadata.getProjectId(),
+        metadata.getVersion(),
+        localFile, metadata.getUploader());
+
     return null;
   }
 
   @Override
-  public URI put(StorageMetadata metadata, InputStream is) {
-    return null;
-  }
-
-  @Override
-  public boolean delete(URI key) {
+  public boolean delete(String key) {
     throw new UnsupportedOperationException("Delete is not supported");
   }
 }
