@@ -54,7 +54,8 @@ public class MockExecutorLoader implements ExecutorLoader {
   @Override
   public void uploadExecutableFlow(ExecutableFlow flow)
       throws ExecutorManagerException {
-    flows.put(flow.getExecutionId(), flow);
+    ExecutableFlow exFlow = ExecutableFlow.createExecutableFlowFromObject(flow.toObject());
+    flows.put(flow.getExecutionId(), exFlow);
     flowUpdateCount++;
   }
 
