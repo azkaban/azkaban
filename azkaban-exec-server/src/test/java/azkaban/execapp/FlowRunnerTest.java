@@ -16,6 +16,8 @@
 
 package azkaban.execapp;
 
+import static org.junit.Assert.assertNotNull;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
@@ -37,7 +39,6 @@ import azkaban.executor.ExecutableNode;
 import azkaban.executor.ExecutionOptions.FailureAction;
 import azkaban.executor.ExecutorLoader;
 import azkaban.executor.InteractiveTestJob;
-import azkaban.executor.JavaJob;
 import azkaban.executor.MockExecutorLoader;
 import azkaban.executor.Status;
 import azkaban.flow.Flow;
@@ -50,7 +51,6 @@ import azkaban.project.MockProjectLoader;
 import azkaban.utils.JSONUtils;
 import azkaban.utils.Props;
 
-@Ignore
 public class FlowRunnerTest {
   private File workingDir;
   private JobTypeManager jobtypeManager;
@@ -107,8 +107,12 @@ public class FlowRunnerTest {
         Event.Type.JOB_STARTED, Event.Type.JOB_STATUS_CHANGED);
     FlowRunner runner = createFlowRunner(loader, eventCollector, "exec1");
 
-    Assert.assertTrue(!runner.isKilled());
-    runner.run();
+    startThread(runner);
+
+    succeedJobs(runner, "job3", "job4", "job6");
+
+    waitFlowFinished(runner);
+
     ExecutableFlow exFlow = runner.getExecutableFlow();
     Assert.assertTrue(exFlow.getStatus() == Status.SUCCEEDED);
     compareFinishedRuntime(runner);
@@ -133,6 +137,33 @@ public class FlowRunnerTest {
     }
   }
 
+  private void startThread(FlowRunner runner) {
+    Assert.assertTrue(!runner.isKilled());
+    Thread thread = new Thread(runner);
+    thread.start();
+  }
+
+  private void succeedJobs(FlowRunner runner, String... jobs) {
+    waitJobsStarted(runner, jobs);
+    for (String name : jobs) {
+      InteractiveTestJob job;
+      for (int i = 0; i < 100; i++) {
+        synchronized (InteractiveTestJob.testJobs) {
+          job = InteractiveTestJob.getTestJob(name);
+          if (job != null) {
+            job.succeedJob();
+            break;
+          }
+          try {
+            InteractiveTestJob.testJobs.wait(50L);
+          } catch (InterruptedException e) {
+          }
+        }
+      }
+
+    }
+  }
+
   @Test
   public void exec1Disabled() throws Exception {
     MockExecutorLoader loader = new MockExecutorLoader();
@@ -151,7 +182,11 @@ public class FlowRunnerTest {
 
     Assert.assertTrue(!runner.isKilled());
     Assert.assertTrue(exFlow.getStatus() == Status.READY);
-    runner.run();
+    startThread(runner);
+
+    succeedJobs(runner, "job3", "job4");
+
+    waitFlowFinished(runner);
 
     exFlow = runner.getExecutableFlow();
     compareFinishedRuntime(runner);
@@ -187,8 +222,12 @@ public class FlowRunnerTest {
     ExecutableFlow flow = prepareExecDir(TEST_DIR, "exec2", 1);
 
     FlowRunner runner = createFlowRunner(flow, loader, eventCollector);
+    startThread(runner);
 
-    runner.run();
+    succeedJobs(runner, "job6");
+
+    waitFlowFinished(runner);
+
     ExecutableFlow exFlow = runner.getExecutableFlow();
     Assert.assertTrue(!runner.isKilled());
     Assert.assertTrue("Flow status " + exFlow.getStatus(),
@@ -267,7 +306,12 @@ public class FlowRunnerTest {
         FailureAction.FINISH_ALL_POSSIBLE);
     FlowRunner runner = createFlowRunner(flow, loader, eventCollector);
 
-    runner.run();
+    startThread(runner);
+
+    succeedJobs(runner, "job3");
+
+    waitFlowFinished(runner);
+
     ExecutableFlow exFlow = runner.getExecutableFlow();
     Assert.assertTrue(
         "Expected flow " + Status.FAILED + " instead " + exFlow.getStatus(),
@@ -302,9 +346,7 @@ public class FlowRunnerTest {
         Event.Type.JOB_STARTED, Event.Type.JOB_STATUS_CHANGED);
     FlowRunner runner = createFlowRunner(loader, eventCollector, "exec1");
 
-    Assert.assertTrue(!runner.isKilled());
-    Thread thread = new Thread(runner);
-    thread.start();
+    startThread(runner);
 
     waitJobsStarted(runner, new String[] {"job1", "job2", "job3", "job4", "job6"});
 
@@ -399,6 +441,7 @@ public class FlowRunnerTest {
         return;
       }
       try {
+        // TODO use some kind of wait instead
         Thread.sleep(10);
       } catch (InterruptedException e) {
         // ignored

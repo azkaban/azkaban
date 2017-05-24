@@ -27,7 +27,7 @@ import azkaban.jobExecutor.AbstractProcessJob;
 import azkaban.utils.Props;
 
 public class InteractiveTestJob extends AbstractProcessJob {
-  private static ConcurrentHashMap<String, InteractiveTestJob> testJobs =
+  public static final ConcurrentHashMap<String, InteractiveTestJob> testJobs =
       new ConcurrentHashMap<String, InteractiveTestJob>();
   private Props generatedProperties = new Props();
   private boolean isWaiting = true;
@@ -56,6 +56,9 @@ public class InteractiveTestJob extends AbstractProcessJob {
       id = groupName + ":" + id;
     }
     testJobs.put(id, this);
+    synchronized (InteractiveTestJob.testJobs) {
+      testJobs.notifyAll();
+    }
 
     if (jobProps.getBoolean("fail", false)) {
       int passRetry = jobProps.getInt("passRetry", -1);
