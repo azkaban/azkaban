@@ -161,8 +161,8 @@ public class ExecutableNode {
     this.updateTime = updateTime;
   }
 
-  public void setKilledBySLA() {
-    this.killedBySLA = true;
+  public void setKilledBySLA(boolean killedBySLA) {
+    this.killedBySLA = killedBySLA;
   }
 
   public boolean isKilledBySLA() {
@@ -253,6 +253,7 @@ public class ExecutableNode {
     this.setEndTime(-1);
     this.setUpdateTime(System.currentTimeMillis());
     this.setStatus(Status.READY);
+    this.setKilledBySLA(false);
   }
 
   public List<Object> getAttemptObjects() {
@@ -456,7 +457,7 @@ public class ExecutableNode {
   }
 
   public int getRetries() {
-    return inputProps.getInt("retries", 2);
+    return inputProps.getInt("retries", 0);
   }
 
   public long getRetryBackoff() {

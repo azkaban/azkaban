@@ -92,7 +92,7 @@ public class KillJobAction implements TriggerAction {
   public void doAction() throws Exception {
     logger.info("ready to do action " + getDescription());
     FlowRunnerManager flowRunnerManager = ServiceProvider.SERVICE_PROVIDER.getInstance(FlowRunnerManager.class);
-    flowRunnerManager.cancelJob(execId, jobId, Constants.AZKABAN_SLA_CHECKER_USERNAME);
+    flowRunnerManager.cancelJobBySLA(execId, jobId);
   }
 
   @Override

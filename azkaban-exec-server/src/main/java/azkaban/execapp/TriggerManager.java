@@ -93,7 +93,6 @@ public class TriggerManager {
 
       ReadablePeriod duration = Utils.parsePeriodString((String) sla.getInfo().get(SlaOption.INFO_DURATION));
       long durationInMillis = duration.toPeriod().toStandardDuration().getMillis();
-
       logger.info("Adding sla trigger " + sla.toString() + " to execution " + execId + ", scheduled to trigger in " + durationInMillis/1000 + " seconds");
       scheduledService.schedule(trigger, durationInMillis, TimeUnit.MILLISECONDS);
     }

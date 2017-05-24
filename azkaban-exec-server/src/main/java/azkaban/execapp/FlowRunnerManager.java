@@ -17,6 +17,7 @@
 package azkaban.execapp;
 
 import azkaban.Constants;
+import azkaban.event.EventData;
 import azkaban.executor.Status;
 import azkaban.sla.SlaOption;
 import azkaban.storage.StorageManager;
@@ -577,15 +578,22 @@ public class FlowRunnerManager implements EventListener,
   }
 
 
-  public void cancelJob(int execId, String jobId, String user)
+  public void cancelJobBySLA(int execId, String jobId)
       throws ExecutorManagerException {
-    FlowRunner runner = runningFlows.get(execId);
+    FlowRunner flowRunner = runningFlows.get(execId);
 
-    if (runner == null) {
+    if (flowRunner == null) {
       throw new ExecutorManagerException("Execution " + execId
           + " is not running.");
     }
-    runner.killJob(jobId, user);
+
+    for (JobRunner jobRunner : flowRunner.getActiveJobRunners()) {
+      if (jobRunner.getJobId().equals(jobId)) {
+        logger.info("Killing job " + jobId + " in execution " + execId + " by SLA");
+        jobRunner.killBySLA();
+        break;
+      }
+    }
   }
 
   public void cancelFlow(int execId, String user)

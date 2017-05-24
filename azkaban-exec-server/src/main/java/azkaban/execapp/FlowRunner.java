@@ -16,6 +16,7 @@
 
 package azkaban.execapp;
 
+import com.google.common.collect.ImmutableSet;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -754,7 +755,6 @@ public class FlowRunner extends EventHandler implements Runnable {
     } catch (RejectedExecutionException e) {
       logger.error(e);
     }
-    ;
   }
 
   /**
@@ -945,20 +945,6 @@ public class FlowRunner extends EventHandler implements Runnable {
     interrupt();
   }
 
-  public void killJob(String jobId, String user) {
-    for (JobRunner runner : activeJobRunners) {
-      if (runner.getJobId().equals(jobId)) {
-        logger.info("Killing job " + jobId + " in execution " + execId + " by " + user);
-        runner.kill();
-        if (Constants.AZKABAN_SLA_CHECKER_USERNAME.equals(user)) {
-          runner.getNode().setKilledBySLA();
-        }
-        fireEventListeners(Event.create(this, Type.JOB_FINISHED, new EventData(runner.getStatus())));
-        break;
-      }
-    }
-  }
-
   public void retryFailures(String user) {
     synchronized (mainSyncObj) {
       logger.info("Retrying failures invoked by " + user);
@@ -1098,6 +1084,7 @@ public class FlowRunner extends EventHandler implements Runnable {
 
           finishedNodes.add(node);
           node.getParentFlow().setUpdateTime(System.currentTimeMillis());
+          activeJobRunners.remove(runner);
           interrupt();
           fireEventListeners(event);
         }
@@ -1180,5 +1167,9 @@ public class FlowRunner extends EventHandler implements Runnable {
 
   public int getExecutionId() {
     return execId;
+  }
+
+  public Set<JobRunner> getActiveJobRunners() {
+    return ImmutableSet.copyOf(this.activeJobRunners);
   }
 }

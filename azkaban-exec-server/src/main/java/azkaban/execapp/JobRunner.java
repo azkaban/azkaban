@@ -739,7 +739,12 @@ public class JobRunner extends EventHandler implements Runnable {
     this.fireEventListeners(event);
   }
 
-  public void kill() {
+  public void killBySLA() {
+    kill();
+    this.getNode().setKilledBySLA(true);
+  }
+
+  public void kill()  {
     synchronized (syncObject) {
       if (Status.isStatusFinished(node.getStatus())) {
         return;
