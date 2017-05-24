@@ -17,7 +17,6 @@
 package azkaban.execapp;
 
 import azkaban.Constants;
-import azkaban.event.EventData;
 import azkaban.executor.Status;
 import azkaban.sla.SlaOption;
 import azkaban.storage.StorageManager;

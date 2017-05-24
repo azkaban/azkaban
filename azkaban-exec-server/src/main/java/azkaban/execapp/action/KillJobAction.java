@@ -16,16 +16,15 @@
 
 package azkaban.execapp.action;
 
-import azkaban.Constants;
 import azkaban.ServiceProvider;
 import azkaban.execapp.FlowRunnerManager;
-import azkaban.trigger.builtin.SlaChecker;
+import azkaban.trigger.TriggerAction;
+
 import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.log4j.Logger;
 
-import azkaban.trigger.TriggerAction;
 
 public class KillJobAction implements TriggerAction {
 

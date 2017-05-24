@@ -52,7 +52,7 @@ public class ExecutableNode {
   private long startTime = -1;
   private long endTime = -1;
   private long updateTime = -1;
-  private boolean killedBySLA = false;
+  private volatile boolean killedBySLA = false;
 
   // Path to Job File
   private String jobSource;
