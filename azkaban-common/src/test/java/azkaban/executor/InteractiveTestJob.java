@@ -16,6 +16,8 @@
 
 package azkaban.executor;
 
+import static azkaban.flow.CommonJobProperties.JOB_ATTEMPT;
+
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.log4j.Logger;
@@ -25,7 +27,7 @@ import azkaban.jobExecutor.AbstractProcessJob;
 import azkaban.utils.Props;
 
 public class InteractiveTestJob extends AbstractProcessJob {
-  private static ConcurrentHashMap<String, InteractiveTestJob> testJobs =
+  public static final ConcurrentHashMap<String, InteractiveTestJob> testJobs =
       new ConcurrentHashMap<String, InteractiveTestJob>();
   private Props generatedProperties = new Props();
   private boolean isWaiting = true;
@@ -54,12 +56,33 @@ public class InteractiveTestJob extends AbstractProcessJob {
       id = groupName + ":" + id;
     }
     testJobs.put(id, this);
+    synchronized (InteractiveTestJob.testJobs) {
+      testJobs.notifyAll();
+    }
+
+    if (jobProps.getBoolean("fail", false)) {
+      int passRetry = jobProps.getInt("passRetry", -1);
+      if (passRetry > 0 && passRetry < jobProps.getInt(JOB_ATTEMPT)) {
+        succeedJob();
+      } else {
+        failJob();
+      }
+    }
+    if (!succeed) {
+      throw new RuntimeException("Forced failure of " + getId());
+    }
 
     while (isWaiting) {
       synchronized (this) {
-        try {
-          wait(30000);
-        } catch (InterruptedException e) {
+        int waitMillis = jobProps.getInt("seconds", 5) * 1000;
+        if (waitMillis > 0) {
+          try {
+            wait(waitMillis);
+          } catch (InterruptedException e) {
+          }
+        }
+        if (jobProps.containsKey("fail")) {
+          succeedJob();
         }
 
         if (!isWaiting) {

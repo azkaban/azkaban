@@ -161,6 +161,10 @@ public class PropsUtils {
     LinkedHashSet<String> visitedVariables = new LinkedHashSet<String>();
     for (String key : props.getKeySet()) {
       String value = props.get(key);
+      if (value == null) {
+        logger.warn("Null value in props for key '" + key + "'. Replacing with empty string.");
+        value = "";
+      }
 
       visitedVariables.add(key);
       String replacedValue =
