@@ -64,8 +64,8 @@
 		</tr>
 		<tr>
 			<td><code>azkaban.server.flow.max.running.minutes</code></td>
-			<td>The maximum time in minutes a flow will be living inside azkaban after being executed.  If a flow runs longer than this, it will be killed</td>
-			<td>14400</td>
+			<td>The maximum time in minutes a flow will be living inside azkaban after being executed.  If a flow runs longer than this, it will be killed. If smaller or equal to 0, there's no restriction on running time.</td>
+			<td>-1</td>
 		</tr>
 	</tbody>
 </table>
