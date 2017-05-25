@@ -16,7 +16,9 @@
 
 package azkaban.execapp;
 
-import static org.junit.Assert.assertNotNull;
+import static org.mockito.Matchers.anyInt;
+import static org.mockito.Matchers.anyLong;
+import static org.mockito.Mockito.when;
 
 import java.io.File;
 import java.io.IOException;
@@ -39,7 +41,6 @@ import azkaban.executor.ExecutableNode;
 import azkaban.executor.ExecutionOptions.FailureAction;
 import azkaban.executor.ExecutorLoader;
 import azkaban.executor.InteractiveTestJob;
-import azkaban.executor.MockExecutorLoader;
 import azkaban.executor.Status;
 import azkaban.flow.Flow;
 import azkaban.jobExecutor.AllJobExecutorTests;
@@ -50,11 +51,14 @@ import azkaban.project.ProjectLoader;
 import azkaban.project.MockProjectLoader;
 import azkaban.utils.JSONUtils;
 import azkaban.utils.Props;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
 
 public class FlowRunnerTest {
   private File workingDir;
   private JobTypeManager jobtypeManager;
   private ProjectLoader fakeProjectLoader;
+  @Mock private ExecutorLoader loader;
 
   private static final File TEST_DIR = new File("../azkaban-test/src/test/resources/azkaban/test/executions/exectest1");
 
@@ -64,6 +68,8 @@ public class FlowRunnerTest {
 
   @Before
   public void setUp() throws Exception {
+    MockitoAnnotations.initMocks(this);
+    when(loader.updateExecutableReference(anyInt(), anyLong())).thenReturn(true);
     System.out.println("Create temp dir");
     synchronized (this) {
       // clear interrupted status
@@ -99,9 +105,6 @@ public class FlowRunnerTest {
 
   @Test
   public void exec1Normal() throws Exception {
-    MockExecutorLoader loader = new MockExecutorLoader();
-    // just making compile. may not work at all.
-
     EventCollectorListener eventCollector = new EventCollectorListener();
     eventCollector.setEventFilterOut(Event.Type.JOB_FINISHED,
         Event.Type.JOB_STARTED, Event.Type.JOB_STATUS_CHANGED);
@@ -166,7 +169,6 @@ public class FlowRunnerTest {
 
   @Test
   public void exec1Disabled() throws Exception {
-    MockExecutorLoader loader = new MockExecutorLoader();
     EventCollectorListener eventCollector = new EventCollectorListener();
     eventCollector.setEventFilterOut(Event.Type.JOB_FINISHED,
         Event.Type.JOB_STARTED, Event.Type.JOB_STATUS_CHANGED);
@@ -215,7 +217,6 @@ public class FlowRunnerTest {
 
   @Test
   public void exec1Failed() throws Exception {
-    MockExecutorLoader loader = new MockExecutorLoader();
     EventCollectorListener eventCollector = new EventCollectorListener();
     eventCollector.setEventFilterOut(Event.Type.JOB_FINISHED,
         Event.Type.JOB_STARTED, Event.Type.JOB_STATUS_CHANGED);
@@ -256,7 +257,6 @@ public class FlowRunnerTest {
 
   @Test
   public void exec1FailedKillAll() throws Exception {
-    MockExecutorLoader loader = new MockExecutorLoader();
     EventCollectorListener eventCollector = new EventCollectorListener();
     eventCollector.setEventFilterOut(Event.Type.JOB_FINISHED,
         Event.Type.JOB_STARTED, Event.Type.JOB_STATUS_CHANGED);
@@ -297,7 +297,6 @@ public class FlowRunnerTest {
 
   @Test
   public void exec1FailedFinishRest() throws Exception {
-    MockExecutorLoader loader = new MockExecutorLoader();
     EventCollectorListener eventCollector = new EventCollectorListener();
     eventCollector.setEventFilterOut(Event.Type.JOB_FINISHED,
         Event.Type.JOB_STARTED, Event.Type.JOB_STATUS_CHANGED);
@@ -340,7 +339,6 @@ public class FlowRunnerTest {
 
   @Test
   public void execAndCancel() throws Exception {
-    MockExecutorLoader loader = new MockExecutorLoader();
     EventCollectorListener eventCollector = new EventCollectorListener();
     eventCollector.setEventFilterOut(Event.Type.JOB_FINISHED,
         Event.Type.JOB_STARTED, Event.Type.JOB_STATUS_CHANGED);
@@ -382,7 +380,6 @@ public class FlowRunnerTest {
 
   @Test
   public void execRetries() throws Exception {
-    MockExecutorLoader loader = new MockExecutorLoader();
     EventCollectorListener eventCollector = new EventCollectorListener();
     eventCollector.setEventFilterOut(Event.Type.JOB_FINISHED,
         Event.Type.JOB_STARTED, Event.Type.JOB_STATUS_CHANGED);
