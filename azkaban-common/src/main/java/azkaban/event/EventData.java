@@ -15,20 +15,19 @@ public class EventData {
    * Creates a new EventData instance.
    *
    * @param status node status.
-   */
-  public EventData(Status status) {
-    this(status, null);
-  }
-
-  /**
-   * Creates a new EventData instance.
-   *
-   * @param status node status.
    * @param nestedId node id, corresponds to {@link ExecutableNode#getNestedId()}.
    */
   public EventData(Status status, String nestedId) {
     this.status = status;
     this.nestedId = nestedId;
+  }
+
+  /**
+   * Creates a new EventData instance.
+   * @param node node.
+   */
+  public EventData(ExecutableNode node) {
+    this(node.getStatus(), node.getNestedId());
   }
 
   public Status getStatus() {
