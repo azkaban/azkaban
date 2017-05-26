@@ -101,7 +101,7 @@ public class TriggerBasedScheduleLoader implements ScheduleLoader {
   private Condition createExpireCondition(Schedule s) {
     Map<String, ConditionChecker> checkers = new HashMap<>();
     ConditionChecker checker = new BasicTimeChecker("EndTimeChecker_1", s.getFirstSchedTime(),
-        s.getTimezone(), s.getEndSchedTime(),false, false,
+        s.getTimezone(), s.getEndSchedTime(), false, false,
         null, null);
     checkers.put(checker.getId(), checker);
     String expr = checker.getId() + ".eval()";
@@ -129,28 +129,10 @@ public class TriggerBasedScheduleLoader implements ScheduleLoader {
     }
   }
 
-  @Override
-  public synchronized List<Schedule> loadSchedules()
-      throws ScheduleManagerException {
-    return null;
-  }
-
   private Schedule triggerToSchedule(Trigger t) throws ScheduleManagerException {
-    Map<String, ConditionChecker> checkers = t.getTriggerCondition().getCheckers();
-    BasicTimeChecker triggerTimeChecker = null;
-    for (ConditionChecker checker : checkers.values()) {
-      if (checker.getType().equals(BasicTimeChecker.type)) {
-        triggerTimeChecker = (BasicTimeChecker) checker;
-      }
-    }
 
-    Map<String, ConditionChecker> expireCheckers = t.getExpireCondition().getCheckers();
-    BasicTimeChecker endTimeChecker = null;
-    for (ConditionChecker checker : expireCheckers.values()) {
-      if (checker.getType().equals(BasicTimeChecker.type)) {
-        endTimeChecker = (BasicTimeChecker) checker;
-      }
-    }
+    BasicTimeChecker triggerTimeChecker = getBasicTimeChecker(t.getTriggerCondition().getCheckers());
+    BasicTimeChecker endTimeChecker = getBasicTimeChecker(t.getExpireCondition().getCheckers());
 
     List<TriggerAction> actions = t.getActions();
     ExecuteFlowAction act = null;
@@ -167,7 +149,6 @@ public class TriggerBasedScheduleLoader implements ScheduleLoader {
           act.getFlowName(),
           t.getStatus().toString(),
           triggerTimeChecker.getFirstCheckTime(),
-          // End Schedule Time
           endTimeChecker == null? Constants.DEFAULT_SCHEDULE_END_EPOCH_TIME: endTimeChecker.getNextCheckTime(),
           triggerTimeChecker.getTimeZone(),
           triggerTimeChecker.getPeriod(),
@@ -183,6 +164,16 @@ public class TriggerBasedScheduleLoader implements ScheduleLoader {
       throw new ScheduleManagerException(
           "Failed to parse schedule from trigger!");
     }
+  }
+
+  // expirecheckers or triggerCheckers only have BasicTimeChecker today. This should be refactored in future.
+  private BasicTimeChecker getBasicTimeChecker(Map<String, ConditionChecker> checkers) {
+    for (ConditionChecker checker : checkers.values()) {
+      if (checker.getType().equals(BasicTimeChecker.type)) {
+        return (BasicTimeChecker) checker;
+      }
+    }
+    return null;
   }
 
   @Override
