@@ -1337,7 +1337,7 @@ public class ExecutorManager extends EventHandler implements
                 ScheduleStatisticManager.invalidateCache(flow.getScheduleId(),
                     cacheDir);
               }
-              fireEventListeners(Event.create(flow, Type.FLOW_FINISHED, new EventData(flow.getStatus())));
+              fireEventListeners(Event.create(flow, Type.FLOW_FINISHED, new EventData(flow)));
               recentlyFinished.put(flow.getExecutionId(), flow);
             }
 
@@ -1403,7 +1403,7 @@ public class ExecutorManager extends EventHandler implements
 
       updaterStage = "finalizing flow " + execId + " cleaning from memory";
       runningFlows.remove(execId);
-      fireEventListeners(Event.create(dsFlow, Type.FLOW_FINISHED, new EventData(dsFlow.getStatus())));
+      fireEventListeners(Event.create(dsFlow, Type.FLOW_FINISHED, new EventData(dsFlow)));
       recentlyFinished.put(execId, dsFlow);
 
     } catch (ExecutorManagerException e) {

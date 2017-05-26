@@ -1,5 +1,8 @@
 package azkaban.execapp.event;
 
+import static azkaban.Constants.JobCallbackProperties.JOBCALLBACK_CONNECTION_REQUEST_TIMEOUT;
+import static azkaban.Constants.JobCallbackProperties.JOBCALLBACK_CONNECTION_TIMEOUT;
+import static azkaban.Constants.JobCallbackProperties.JOBCALLBACK_SOCKET_TIMEOUT;
 import static azkaban.jobcallback.JobCallbackConstants.CONTEXT_EXECUTION_ID_TOKEN;
 import static azkaban.jobcallback.JobCallbackConstants.CONTEXT_FLOW_TOKEN;
 import static azkaban.jobcallback.JobCallbackConstants.CONTEXT_JOB_STATUS_TOKEN;
@@ -57,29 +60,29 @@ public class JobCallbackRequestMakerTest {
 
   @BeforeClass
   public static void setup() throws Exception {
-    try {
-      JobCallbackRequestMaker.initialize(new Props());
-      jobCBMaker = JobCallbackRequestMaker.getInstance();
+    Props props = new Props();
+    int timeout = 50;
+    props.put(JOBCALLBACK_CONNECTION_REQUEST_TIMEOUT, timeout);
+    props.put(JOBCALLBACK_CONNECTION_TIMEOUT, timeout);
+    props.put(JOBCALLBACK_SOCKET_TIMEOUT, timeout);
+    JobCallbackRequestMaker.initialize(props);
+    jobCBMaker = JobCallbackRequestMaker.getInstance();
 
-      contextInfo = new HashMap<String, String>();
-      contextInfo.put(CONTEXT_SERVER_TOKEN, SERVER_NAME);
-      contextInfo.put(CONTEXT_PROJECT_TOKEN, PROJECT_NANE);
-      contextInfo.put(CONTEXT_FLOW_TOKEN, FLOW_NANE);
-      contextInfo.put(CONTEXT_EXECUTION_ID_TOKEN, EXECUTION_ID);
-      contextInfo.put(CONTEXT_JOB_TOKEN, JOB_NANE);
-      contextInfo.put(CONTEXT_JOB_STATUS_TOKEN, JobCallbackStatusEnum.STARTED.name());
+    contextInfo = new HashMap<String, String>();
+    contextInfo.put(CONTEXT_SERVER_TOKEN, SERVER_NAME);
+    contextInfo.put(CONTEXT_PROJECT_TOKEN, PROJECT_NANE);
+    contextInfo.put(CONTEXT_FLOW_TOKEN, FLOW_NANE);
+    contextInfo.put(CONTEXT_EXECUTION_ID_TOKEN, EXECUTION_ID);
+    contextInfo.put(CONTEXT_JOB_TOKEN, JOB_NANE);
+    contextInfo.put(CONTEXT_JOB_STATUS_TOKEN, JobCallbackStatusEnum.STARTED.name());
 
-      embeddedJettyServer = new Server(PORT_NUMBER);
+    embeddedJettyServer = new Server(PORT_NUMBER);
 
-      Context context = new Context(embeddedJettyServer, "/", Context.SESSIONS);
-      context.addServlet(new ServletHolder(new DelayServlet()), "/delay");
+    Context context = new Context(embeddedJettyServer, "/", Context.SESSIONS);
+    context.addServlet(new ServletHolder(new DelayServlet()), "/delay");
 
-      System.out.println("Start server");
-      embeddedJettyServer.start();
-    } catch (Exception e) {
-      e.printStackTrace();
-      throw e;
-    }
+    System.out.println("Start server");
+    embeddedJettyServer.start();
   }
 
   @AfterClass
