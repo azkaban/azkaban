@@ -1,5 +1,11 @@
 package azkaban.execapp.event;
 
+import static azkaban.Constants.JobCallbackProperties.JOBCALLBACK_CONNECTION_TIMEOUT;
+import static azkaban.Constants.JobCallbackProperties.JOBCALLBACK_CONNECTION_REQUEST_TIMEOUT;
+import static azkaban.Constants.JobCallbackProperties.JOBCALLBACK_RESPONSE_WAIT_TIMEOUT;
+import static azkaban.Constants.JobCallbackProperties.JOBCALLBACK_SOCKET_TIMEOUT;
+import static azkaban.Constants.JobCallbackProperties.JOBCALLBACK_THREAD_POOL_SIZE;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -84,18 +90,14 @@ public class JobCallbackRequestMaker {
   private JobCallbackRequestMaker(Props props) {
 
     int connectionRequestTimeout =
-        props.getInt("jobcallback.connection.request.timeout",
-            DEFAULT_TIME_OUT_MS);
+        props.getInt(JOBCALLBACK_CONNECTION_REQUEST_TIMEOUT, DEFAULT_TIME_OUT_MS);
 
-    int connectionTimeout =
-        props.getInt("jobcallback.connection.timeout", DEFAULT_TIME_OUT_MS);
+    int connectionTimeout = props.getInt(JOBCALLBACK_CONNECTION_TIMEOUT, DEFAULT_TIME_OUT_MS);
 
-    int socketTimeout =
-        props.getInt("jobcallback.socket.timeout", DEFAULT_TIME_OUT_MS);
+    int socketTimeout = props.getInt(JOBCALLBACK_SOCKET_TIMEOUT, DEFAULT_TIME_OUT_MS);
 
     responseWaitTimeoutMS =
-        props.getInt("jobcallback.response.wait.timeout",
-            DEFAULT_RESPONSE_WAIT_TIME_OUT_MS);
+        props.getInt(JOBCALLBACK_RESPONSE_WAIT_TIMEOUT, DEFAULT_RESPONSE_WAIT_TIME_OUT_MS);
 
     logger.info("responseWaitTimeoutMS: " + responseWaitTimeoutMS);
 
@@ -112,7 +114,7 @@ public class JobCallbackRequestMaker {
             .build();
 
     int jobCallbackThreadPoolSize =
-        props.getInt("jobcallback.thread.pool.size", DEFAULT_THREAD_POOL_SIZE);
+        props.getInt(JOBCALLBACK_THREAD_POOL_SIZE, DEFAULT_THREAD_POOL_SIZE);
     logger.info("Jobcall thread pool size: " + jobCallbackThreadPoolSize);
 
     ExecutorService executorService =
