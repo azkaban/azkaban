@@ -222,7 +222,7 @@ public class FlowRunner extends EventHandler implements Runnable {
       logger.info("Fetching job and shared properties.");
       loadAllProperties();
 
-      this.fireEventListeners(Event.create(this, Type.FLOW_STARTED, new EventData(this.getExecutableFlow().getStatus())));
+      this.fireEventListeners(Event.create(this, Type.FLOW_STARTED, new EventData(this.getExecutableFlow())));
       runFlow();
     } catch (Throwable t) {
       if (logger != null) {
@@ -246,7 +246,7 @@ public class FlowRunner extends EventHandler implements Runnable {
       closeLogger();
 
       updateFlow();
-      this.fireEventListeners(Event.create(this, Type.FLOW_FINISHED, new EventData(flow.getStatus())));
+      this.fireEventListeners(Event.create(this, Type.FLOW_FINISHED, new EventData(flow)));
     }
   }
 
@@ -1063,12 +1063,12 @@ public class FlowRunner extends EventHandler implements Runnable {
 
     @Override
     public synchronized void handleEvent(Event event) {
-      JobRunner runner = (JobRunner) event.getRunner();
 
       if (event.getType() == Type.JOB_STATUS_CHANGED) {
         updateFlow();
       }
       else if (event.getType() == Type.JOB_FINISHED) {
+        JobRunner runner = (JobRunner) event.getRunner();
         ExecutableNode node = runner.getNode();
         EventData eventData = event.getData();
         long seconds = (node.getEndTime() - node.getStartTime()) / 1000;
