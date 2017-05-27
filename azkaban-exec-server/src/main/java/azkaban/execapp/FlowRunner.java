@@ -1059,12 +1059,12 @@ public class FlowRunner extends EventHandler implements Runnable {
 
     @Override
     public synchronized void handleEvent(Event event) {
-      JobRunner runner = (JobRunner) event.getRunner();
 
       if (event.getType() == Type.JOB_STATUS_CHANGED) {
         updateFlow();
       }
       else if (event.getType() == Type.JOB_FINISHED) {
+        JobRunner runner = (JobRunner) event.getRunner();
         ExecutableNode node = runner.getNode();
         EventData eventData = event.getData();
         long seconds = (node.getEndTime() - node.getStartTime()) / 1000;
