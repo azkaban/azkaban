@@ -16,10 +16,6 @@
 
 package azkaban.utils;
 
-import azkaban.executor.ExecutableFlowBase;
-import azkaban.flow.CommonJobProperties;
-import com.google.common.collect.MapDifference;
-import com.google.common.collect.Maps;
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
@@ -31,20 +27,25 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
 import org.apache.commons.jexl2.Expression;
 import org.apache.commons.jexl2.JexlEngine;
 import org.apache.commons.jexl2.JexlException;
 import org.apache.commons.jexl2.MapContext;
 import org.apache.commons.lang.StringUtils;
+
 import org.apache.log4j.Logger;
 import org.joda.time.DateTime;
+
+import com.google.common.collect.Maps;
+import com.google.common.collect.MapDifference;
+
+import azkaban.executor.ExecutableFlowBase;
+import azkaban.flow.CommonJobProperties;
 
 public class PropsUtils {
 
   private static final Logger logger = Logger.getLogger(PropsUtils.class);
-  private static final Pattern VARIABLE_REPLACEMENT_PATTERN = Pattern
-      .compile("\\$\\{([a-zA-Z_.0-9]+)\\}");
-
   /**
    * Load job schedules from the given directories ] * @param dir The directory
    * to look in
@@ -52,7 +53,7 @@ public class PropsUtils {
    * @param suffixes File suffixes to load
    * @return The loaded set of schedules
    */
-  public static Props loadPropsInDir(final File dir, final String... suffixes) {
+  public static Props loadPropsInDir(File dir, String... suffixes) {
     return loadPropsInDir(null, dir, suffixes);
   }
 
@@ -64,35 +65,35 @@ public class PropsUtils {
    * @param suffixes File suffixes to load
    * @return The loaded set of schedules
    */
-  public static Props loadPropsInDir(final Props parent, final File dir, final String... suffixes) {
+  public static Props loadPropsInDir(Props parent, File dir, String... suffixes) {
     try {
-      final Props props = new Props(parent);
-      final File[] files = dir.listFiles();
+      Props props = new Props(parent);
+      File[] files = dir.listFiles();
       Arrays.sort(files);
       if (files != null) {
-        for (final File f : files) {
+        for (File f : files) {
           if (f.isFile() && endsWith(f, suffixes)) {
             props.putAll(new Props(null, f.getAbsolutePath()));
           }
         }
       }
       return props;
-    } catch (final IOException e) {
+    } catch (IOException e) {
       throw new RuntimeException("Error loading properties.", e);
     }
   }
 
-  public static Props loadProps(final Props parent, final File... propFiles) {
+  public static Props loadProps(Props parent, File... propFiles) {
     try {
       Props props = new Props(parent);
-      for (final File f : propFiles) {
+      for (File f : propFiles) {
         if (f.isFile()) {
           props = new Props(props, f);
         }
       }
 
       return props;
-    } catch (final IOException e) {
+    } catch (IOException e) {
       throw new RuntimeException("Error loading properties.", e);
     }
   }
@@ -104,9 +105,9 @@ public class PropsUtils {
    * @param suffixes The suffixes to load
    * @return The properties
    */
-  public static Props loadPropsInDirs(final List<File> dirs, final String... suffixes) {
-    final Props props = new Props();
-    for (final File dir : dirs) {
+  public static Props loadPropsInDirs(List<File> dirs, String... suffixes) {
+    Props props = new Props();
+    for (File dir : dirs) {
       props.putLocal(loadPropsInDir(dir, suffixes));
     }
     return props;
@@ -119,79 +120,82 @@ public class PropsUtils {
    * @param props The parent properties for loaded properties
    * @param suffixes The suffixes of files to load
    */
-  public static void loadPropsBySuffix(final File jobPath, final Props props,
-      final String... suffixes) {
+  public static void loadPropsBySuffix(File jobPath, Props props,
+      String... suffixes) {
     try {
       if (jobPath.isDirectory()) {
-        final File[] files = jobPath.listFiles();
+        File[] files = jobPath.listFiles();
         if (files != null) {
-          for (final File file : files) {
+          for (File file : files)
             loadPropsBySuffix(file, props, suffixes);
-          }
         }
       } else if (endsWith(jobPath, suffixes)) {
         props.putAll(new Props(null, jobPath.getAbsolutePath()));
       }
-    } catch (final IOException e) {
+    } catch (IOException e) {
       throw new RuntimeException("Error loading schedule properties.", e);
     }
   }
 
-  public static boolean endsWith(final File file, final String... suffixes) {
-    for (final String suffix : suffixes) {
-      if (file.getName().endsWith(suffix)) {
+  public static boolean endsWith(File file, String... suffixes) {
+    for (String suffix : suffixes)
+      if (file.getName().endsWith(suffix))
         return true;
-      }
-    }
     return false;
   }
 
-  public static boolean isVarialbeReplacementPattern(final String str) {
-    final Matcher matcher = VARIABLE_REPLACEMENT_PATTERN.matcher(str);
+  private static final Pattern VARIABLE_REPLACEMENT_PATTERN = Pattern
+      .compile("\\$\\{([a-zA-Z_.0-9]+)\\}");
+
+  public static boolean isVarialbeReplacementPattern(String str) {
+    Matcher matcher = VARIABLE_REPLACEMENT_PATTERN.matcher(str);
     return matcher.matches();
   }
 
-  public static Props resolveProps(final Props props) {
-    if (props == null) {
+  public static Props resolveProps(Props props) {
+    if (props == null)
       return null;
-    }
 
-    final Props resolvedProps = new Props();
+    Props resolvedProps = new Props();
 
-    final LinkedHashSet<String> visitedVariables = new LinkedHashSet<>();
-    for (final String key : props.getKeySet()) {
-      final String value = props.get(key);
+    LinkedHashSet<String> visitedVariables = new LinkedHashSet<String>();
+    for (String key : props.getKeySet()) {
+      String value = props.get(key);
+      if (value == null) {
+        logger.warn("Null value in props for key '" + key + "'. Replacing with empty string.");
+        value = "";
+      }
 
       visitedVariables.add(key);
-      final String replacedValue =
+      String replacedValue =
           resolveVariableReplacement(value, props, visitedVariables);
       visitedVariables.clear();
 
       resolvedProps.put(key, replacedValue);
     }
 
-    for (final String key : resolvedProps.getKeySet()) {
-      final String value = resolvedProps.get(key);
-      final String expressedValue = resolveVariableExpression(value);
+    for (String key : resolvedProps.getKeySet()) {
+      String value = resolvedProps.get(key);
+      String expressedValue = resolveVariableExpression(value);
       resolvedProps.put(key, expressedValue);
     }
 
     return resolvedProps;
-  }
+  };
 
-  private static String resolveVariableReplacement(final String value, final Props props,
-      final LinkedHashSet<String> visitedVariables) {
-    final StringBuffer buffer = new StringBuffer();
+  private static String resolveVariableReplacement(String value, Props props,
+      LinkedHashSet<String> visitedVariables) {
+    StringBuffer buffer = new StringBuffer();
     int startIndex = 0;
 
-    final Matcher matcher = VARIABLE_REPLACEMENT_PATTERN.matcher(value);
+    Matcher matcher = VARIABLE_REPLACEMENT_PATTERN.matcher(value);
     while (matcher.find(startIndex)) {
       if (startIndex < matcher.start()) {
         // Copy everything up front to the buffer
         buffer.append(value.substring(startIndex, matcher.start()));
       }
 
-      final String subVariable = matcher.group(1);
+      String subVariable = matcher.group(1);
       // Detected a cycle
       if (visitedVariables.contains(subVariable)) {
         throw new IllegalArgumentException(String.format(
@@ -199,7 +203,7 @@ public class PropsUtils {
             StringUtils.join(visitedVariables, "->"), subVariable));
       } else {
         // Add substitute variable and recurse.
-        final String replacement = props.get(subVariable);
+        String replacement = props.get(subVariable);
         visitedVariables.add(subVariable);
 
         if (replacement == null) {
@@ -223,18 +227,23 @@ public class PropsUtils {
     return buffer.toString();
   }
 
-  private static String resolveVariableExpression(final String value) {
-    final JexlEngine jexl = new JexlEngine();
+  private static String resolveVariableExpression(String value) {
+    JexlEngine jexl = new JexlEngine();
     return resolveVariableExpression(value, value.length(), jexl);
   }
 
   /**
    * Function that looks for expressions to parse. It parses backwards to
    * capture embedded expressions
+   *
+   * @param value
+   * @param last
+   * @param jexl
+   * @return
    */
-  private static String resolveVariableExpression(final String value, final int last,
-      final JexlEngine jexl) {
-    final int lastIndex = value.lastIndexOf("$(", last);
+  private static String resolveVariableExpression(String value, int last,
+      JexlEngine jexl) {
+    int lastIndex = value.lastIndexOf("$(", last);
     if (lastIndex == -1) {
       return value;
     }
@@ -259,12 +268,12 @@ public class PropsUtils {
           + " not well formed.");
     }
 
-    final String innerExpression = value.substring(lastIndex + 2, nextClosed);
+    String innerExpression = value.substring(lastIndex + 2, nextClosed);
     Object result = null;
     try {
-      final Expression e = jexl.createExpression(innerExpression);
+      Expression e = jexl.createExpression(innerExpression);
       result = e.evaluate(new MapContext());
-    } catch (final JexlException e) {
+    } catch (JexlException e) {
       throw new IllegalArgumentException("Expression " + value
           + " not well formed. " + e.getMessage(), e);
     }
@@ -274,15 +283,15 @@ public class PropsUtils {
       return value;
     }
 
-    final String newValue =
+    String newValue =
         value.substring(0, lastIndex) + result.toString()
             + value.substring(nextClosed + 1);
     return resolveVariableExpression(newValue, lastIndex, jexl);
   }
 
-  public static Props addCommonFlowProperties(final Props parentProps,
+  public static Props addCommonFlowProperties(Props parentProps,
       final ExecutableFlowBase flow) {
-    final Props props = new Props(parentProps);
+    Props props = new Props(parentProps);
 
     props.put(CommonJobProperties.FLOW_ID, flow.getFlowId());
     props.put(CommonJobProperties.EXEC_ID, flow.getExecutionId());
@@ -294,7 +303,7 @@ public class PropsUtils {
     props.put(CommonJobProperties.PROJECT_LAST_CHANGED_DATE, flow.getLastModifiedTimestamp());
     props.put(CommonJobProperties.SUBMIT_USER, flow.getExecutableFlow().getSubmitUser());
 
-    final DateTime loadTime = new DateTime();
+    DateTime loadTime = new DateTime();
 
     props.put(CommonJobProperties.FLOW_START_TIMESTAMP, loadTime.toString());
     props.put(CommonJobProperties.FLOW_START_YEAR, loadTime.toString("yyyy"));
@@ -311,48 +320,49 @@ public class PropsUtils {
     return props;
   }
 
-  public static String toJSONString(final Props props, final boolean localOnly) {
-    final Map<String, String> map = toStringMap(props, localOnly);
+  public static String toJSONString(Props props, boolean localOnly) {
+    Map<String, String> map = toStringMap(props, localOnly);
     return JSONUtils.toJSON(map);
   }
 
-  public static Map<String, String> toStringMap(final Props props, final boolean localOnly) {
-    final HashMap<String, String> map = new HashMap<>();
-    final Set<String> keyset = localOnly ? props.localKeySet() : props.getKeySet();
+  public static Map<String, String> toStringMap(Props props, boolean localOnly) {
+    HashMap<String, String> map = new HashMap<String, String>();
+    Set<String> keyset = localOnly ? props.localKeySet() : props.getKeySet();
 
-    for (final String key : keyset) {
-      final String value = props.get(key);
+    for (String key : keyset) {
+      String value = props.get(key);
       map.put(key, value);
     }
 
     return map;
   }
 
-  public static Props fromJSONString(final String json) throws IOException {
-    final Map<String, String> obj = (Map<String, String>) JSONUtils.parseJSONFromString(json);
-    final Props props = new Props(null, obj);
+  public static Props fromJSONString(String json) throws IOException {
+    Map<String, String> obj = (Map<String, String>) JSONUtils.parseJSONFromString(json);
+    Props props = new Props(null, obj);
     return props;
   }
 
-  public static Props fromHierarchicalMap(final Map<String, Object> propsMap) {
+  @SuppressWarnings("unchecked")
+  public static Props fromHierarchicalMap(Map<String, Object> propsMap) {
     if (propsMap == null) {
       return null;
     }
 
-    final String source = (String) propsMap.get("source");
-    final Map<String, String> propsParams =
+    String source = (String) propsMap.get("source");
+    Map<String, String> propsParams =
         (Map<String, String>) propsMap.get("props");
 
-    final Map<String, Object> parent = (Map<String, Object>) propsMap.get("parent");
-    final Props parentProps = fromHierarchicalMap(parent);
+    Map<String, Object> parent = (Map<String, Object>) propsMap.get("parent");
+    Props parentProps = fromHierarchicalMap(parent);
 
-    final Props props = new Props(parentProps, propsParams);
+    Props props = new Props(parentProps, propsParams);
     props.setSource(source);
     return props;
   }
 
-  public static Map<String, Object> toHierarchicalMap(final Props props) {
-    final Map<String, Object> propsMap = new HashMap<>();
+  public static Map<String, Object> toHierarchicalMap(Props props) {
+    Map<String, Object> propsMap = new HashMap<String, Object>();
     propsMap.put("source", props.getSource());
     propsMap.put("props", toStringMap(props, true));
 
@@ -364,11 +374,13 @@ public class PropsUtils {
   }
 
   /**
+   * @param oldProps
+   * @param newProps
    * @return the difference between oldProps and newProps.
    */
   public static String getPropertyDiff(Props oldProps, Props newProps) {
 
-    final StringBuilder builder = new StringBuilder("");
+    StringBuilder builder = new StringBuilder("");
 
     // oldProps can not be null during the below comparison process.
     if (oldProps == null) {
@@ -379,10 +391,10 @@ public class PropsUtils {
       newProps = new Props();
     }
 
-    final MapDifference<String, String> md =
+    MapDifference<String, String> md =
         Maps.difference(toStringMap(oldProps, false), toStringMap(newProps, false));
 
-    final Map<String, String> newlyCreatedProperty = md.entriesOnlyOnRight();
+    Map<String, String> newlyCreatedProperty = md.entriesOnlyOnRight();
     if (newlyCreatedProperty != null && newlyCreatedProperty.size() > 0) {
       builder.append("Newly created Properties: ");
       newlyCreatedProperty.forEach((k, v) -> {
@@ -391,7 +403,7 @@ public class PropsUtils {
       builder.append("\n");
     }
 
-    final Map<String, String> deletedProperty = md.entriesOnlyOnLeft();
+    Map<String, String> deletedProperty = md.entriesOnlyOnLeft();
     if (deletedProperty != null && deletedProperty.size() > 0) {
       builder.append("Deleted Properties: ");
       deletedProperty.forEach((k, v) -> {
@@ -400,7 +412,7 @@ public class PropsUtils {
       builder.append("\n");
     }
 
-    final Map<String, MapDifference.ValueDifference<String>> diffProperties = md.entriesDiffering();
+    Map<String, MapDifference.ValueDifference<String>> diffProperties = md.entriesDiffering();
     if (diffProperties != null && diffProperties.size() > 0) {
       builder.append("Modified Properties: ");
       diffProperties.forEach((k, v) -> {

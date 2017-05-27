@@ -19,9 +19,9 @@ package azkaban.jobExecutor;
 import azkaban.flow.CommonJobProperties;
 import azkaban.utils.Props;
 
-class AllJobExecutorTests {
+public class AllJobExecutorTests {
 
-  static Props setUpCommonProps() {
+  public static Props setUpCommonProps() {
 
     final Props props = new Props();
     props.put("fullPath", ".");

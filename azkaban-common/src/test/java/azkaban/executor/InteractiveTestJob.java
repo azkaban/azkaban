@@ -16,53 +16,88 @@
 
 package azkaban.executor;
 
+import static azkaban.flow.CommonJobProperties.JOB_ATTEMPT;
+
+import java.util.concurrent.ConcurrentHashMap;
+
+import org.apache.log4j.Logger;
+
 import azkaban.flow.CommonJobProperties;
 import azkaban.jobExecutor.AbstractProcessJob;
 import azkaban.utils.Props;
-import java.util.concurrent.ConcurrentHashMap;
-import org.apache.log4j.Logger;
 
 public class InteractiveTestJob extends AbstractProcessJob {
-
-  private static final ConcurrentHashMap<String, InteractiveTestJob> testJobs =
-      new ConcurrentHashMap<>();
+  public static final ConcurrentHashMap<String, InteractiveTestJob> testJobs =
+      new ConcurrentHashMap<String, InteractiveTestJob>();
   private Props generatedProperties = new Props();
   private boolean isWaiting = true;
   private boolean succeed = true;
 
-  public InteractiveTestJob(final String jobId, final Props sysProps, final Props jobProps,
-      final Logger log) {
-    super(jobId, sysProps, jobProps, log);
-  }
-
-  public static InteractiveTestJob getTestJob(final String name) {
-    return testJobs.get(name);
+  public static InteractiveTestJob getTestJob(String name) {
+    for (int i = 0; i < 100; i++) {
+      if (testJobs.containsKey(name)) {
+        return testJobs.get(name);
+      }
+      synchronized (testJobs) {
+        try {
+          InteractiveTestJob.testJobs.wait(10L);
+        } catch (InterruptedException e) {
+        }
+      }
+    }
+    throw new IllegalStateException(name + " wasn't added in testJobs map");
   }
 
   public static void clearTestJobs() {
     testJobs.clear();
   }
 
+  public InteractiveTestJob(String jobId, Props sysProps, Props jobProps,
+      Logger log) {
+    super(jobId, sysProps, jobProps, log);
+  }
+
   @Override
   public void run() throws Exception {
-    final String nestedFlowPath =
+    String nestedFlowPath =
         this.getJobProps().get(CommonJobProperties.NESTED_FLOW_PATH);
-    final String groupName = this.getJobProps().getString("group", null);
+    String groupName = this.getJobProps().getString("group", null);
     String id = nestedFlowPath == null ? this.getId() : nestedFlowPath;
     if (groupName != null) {
       id = groupName + ":" + id;
     }
     testJobs.put(id, this);
+    synchronized (testJobs) {
+      testJobs.notifyAll();
+    }
 
-    while (this.isWaiting) {
+    if (jobProps.getBoolean("fail", false)) {
+      int passRetry = jobProps.getInt("passRetry", -1);
+      if (passRetry > 0 && passRetry < jobProps.getInt(JOB_ATTEMPT)) {
+        succeedJob();
+      } else {
+        failJob();
+      }
+    }
+    if (!succeed) {
+      throw new RuntimeException("Forced failure of " + getId());
+    }
+
+    while (isWaiting) {
       synchronized (this) {
-        try {
-          wait(30000);
-        } catch (final InterruptedException e) {
+        int waitMillis = jobProps.getInt("seconds", 5) * 1000;
+        if (waitMillis > 0) {
+          try {
+            wait(waitMillis);
+          } catch (InterruptedException e) {
+          }
+        }
+        if (jobProps.containsKey("fail")) {
+          succeedJob();
         }
 
-        if (!this.isWaiting) {
-          if (!this.succeed) {
+        if (!isWaiting) {
+          if (!succeed) {
             throw new RuntimeException("Forced failure of " + getId());
           } else {
             info("Job " + getId() + " succeeded.");
@@ -74,32 +109,32 @@ public class InteractiveTestJob extends AbstractProcessJob {
 
   public void failJob() {
     synchronized (this) {
-      this.succeed = false;
-      this.isWaiting = false;
+      succeed = false;
+      isWaiting = false;
       this.notify();
     }
   }
 
   public void succeedJob() {
     synchronized (this) {
-      this.succeed = true;
-      this.isWaiting = false;
+      succeed = true;
+      isWaiting = false;
       this.notify();
     }
   }
 
-  public void succeedJob(final Props generatedProperties) {
+  public void succeedJob(Props generatedProperties) {
     synchronized (this) {
       this.generatedProperties = generatedProperties;
-      this.succeed = true;
-      this.isWaiting = false;
+      succeed = true;
+      isWaiting = false;
       this.notify();
     }
   }
 
   @Override
   public Props getJobGeneratedProperties() {
-    return this.generatedProperties;
+    return generatedProperties;
   }
 
   @Override
