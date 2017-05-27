@@ -636,18 +636,20 @@ public class FlowRunnerManager implements EventListener,
 
   @Override
   public void handleEvent(Event event) {
-    FlowRunner flowRunner = (FlowRunner) event.getRunner();
-    ExecutableFlow flow = flowRunner.getExecutableFlow();
+    if (event.getType() == Event.Type.FLOW_FINISHED || event.getType() == Event.Type.FLOW_STARTED) {
+      FlowRunner flowRunner = (FlowRunner) event.getRunner();
+      ExecutableFlow flow = flowRunner.getExecutableFlow();
 
-    if (event.getType() == Event.Type.FLOW_FINISHED) {
-      recentlyFinishedFlows.put(flow.getExecutionId(), flow);
-      logger.info("Flow " + flow.getExecutionId()
-          + " is finished. Adding it to recently finished flows list.");
-      runningFlows.remove(flow.getExecutionId());
-    }
-    else if (event.getType() == Event.Type.FLOW_STARTED) {
-      // add flow level checker
-      triggerManager.addTrigger(flow.getExecutionId(), SlaOption.getFlowLevelSLAOptions(flow));
+      if (event.getType() == Event.Type.FLOW_FINISHED) {
+        recentlyFinishedFlows.put(flow.getExecutionId(), flow);
+        logger.info("Flow " + flow.getExecutionId()
+            + " is finished. Adding it to recently finished flows list.");
+        runningFlows.remove(flow.getExecutionId());
+      }
+      else if (event.getType() == Event.Type.FLOW_STARTED) {
+        // add flow level SLA checker
+        triggerManager.addTrigger(flow.getExecutionId(), SlaOption.getFlowLevelSLAOptions(flow));
+      }
     }
   }
 
