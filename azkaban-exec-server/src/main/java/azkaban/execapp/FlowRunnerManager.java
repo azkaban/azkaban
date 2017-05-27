@@ -647,6 +647,7 @@ public class FlowRunnerManager implements EventListener,
         runningFlows.remove(flow.getExecutionId());
       }
       else if (event.getType() == Event.Type.FLOW_STARTED) {
+        // add flow level SLA checker
         triggerManager.addTrigger(flow.getExecutionId(), SlaOption.getFlowLevelSLAOptions(flow));
       }
     }
