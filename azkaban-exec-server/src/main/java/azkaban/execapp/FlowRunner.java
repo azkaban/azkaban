@@ -626,10 +626,9 @@ public class FlowRunner extends EventHandler implements Runnable {
     long durationSec = (flow.getEndTime() - flow.getStartTime()) / 1000;
     switch (flow.getStatus()) {
     case FAILED_FINISHING:
-      if (!isKilled()) {
-        logger.info("Setting flow '" + id + "' status to FAILED in " + durationSec + " seconds");
-        flow.setStatus(Status.FAILED);
-      }
+      logger.info("Setting flow '" + id + "' status to FAILED in "
+          + durationSec + " seconds");
+      flow.setStatus(Status.FAILED);
       break;
     case FAILED:
     case KILLED:
