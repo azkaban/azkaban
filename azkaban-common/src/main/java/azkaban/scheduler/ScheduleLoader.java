@@ -24,8 +24,6 @@ public interface ScheduleLoader {
 
   public void updateSchedule(Schedule s) throws ScheduleManagerException;
 
-  public List<Schedule> loadSchedules() throws ScheduleManagerException;
-
   public void removeSchedule(Schedule s) throws ScheduleManagerException;
 
   public void updateNextExecTime(Schedule s) throws ScheduleManagerException;

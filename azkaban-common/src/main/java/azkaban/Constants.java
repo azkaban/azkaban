@@ -44,6 +44,9 @@ public class Constants {
   // Max number of memory check retry
   public static final int MEMORY_CHECK_RETRY_LIMIT = 720;
 
+  // One Schedule's default End Time: 01/01/2050, 00:00:00, UTC
+  public static final long DEFAULT_SCHEDULE_END_EPOCH_TIME = 2524608000000L;
+
   public static class ConfigurationKeys {
     // These properties are configurable through azkaban.properties
 

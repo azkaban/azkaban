@@ -282,10 +282,17 @@ public class TriggerManager extends EventHandler implements
           }
 
           if (t.getStatus().equals(TriggerStatus.READY)) {
-            if (t.triggerConditionMet()) {
+
+            /**
+             * Prior to this change, expiration condition should never be called though
+             * we have some related code here. ExpireCondition used the same BasicTimeChecker
+             * as triggerCondition do. As a consequence, we need to figure out a way to distinguish
+             * the previous ExpireCondition and this commit's ExpireCondition.
+             */
+            if (t.getExpireCondition().getExpression().contains("EndTimeChecker") && t.expireConditionMet()) {
+              onTriggerPause(t);
+            } else if (t.triggerConditionMet()) {
               onTriggerTrigger(t);
-            } else if (t.expireConditionMet()) {
-              onTriggerExpire(t);
             }
           }
           if (t.getStatus().equals(TriggerStatus.EXPIRED) && t.getSource().equals("azkaban")) {
@@ -312,9 +319,9 @@ public class TriggerManager extends EventHandler implements
           logger.error("Failed to do action " + action.getDescription(), th);
         }
       }
+
       if (t.isResetOnTrigger()) {
         t.resetTriggerConditions();
-        t.resetExpireCondition();
       } else {
         t.setStatus(TriggerStatus.EXPIRED);
       }
@@ -325,7 +332,7 @@ public class TriggerManager extends EventHandler implements
       }
     }
 
-    private void onTriggerExpire(Trigger t) throws TriggerManagerException {
+    private void onTriggerPause(Trigger t) throws TriggerManagerException {
       List<TriggerAction> expireActions = t.getExpireActions();
       for (TriggerAction action : expireActions) {
         try {
@@ -339,12 +346,8 @@ public class TriggerManager extends EventHandler implements
               th);
         }
       }
-      if (t.isResetOnExpire()) {
-        t.resetTriggerConditions();
-        t.resetExpireCondition();
-      } else {
-        t.setStatus(TriggerStatus.EXPIRED);
-      }
+      logger.info("Pausing Trigger " + t.getDescription());
+      t.setStatus(TriggerStatus.PAUSED);
       try {
         triggerLoader.updateTrigger(t);
       } catch (TriggerLoaderException e) {
