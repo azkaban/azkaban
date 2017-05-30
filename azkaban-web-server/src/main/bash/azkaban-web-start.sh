@@ -44,7 +44,7 @@ echo $CLASSPATH;
 executorport=`cat $conf/azkaban.properties | grep executor.port | cut -d = -f 2`
 serverpath=`pwd`
 
-if [ -z $AZKABAN_OPTS ]; then
+if [[ -z "$AZKABAN_OPTS" ]]; then
   AZKABAN_OPTS="-Xmx4G"
 fi
 # Set the log4j configuration file
