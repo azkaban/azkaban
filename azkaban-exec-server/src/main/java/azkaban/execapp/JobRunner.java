@@ -375,9 +375,9 @@ public class JobRunner extends EventHandler implements Runnable {
 
     if (quickFinish) {
       node.setStartTime(time);
-      fireEvent(Event.create(this, Type.JOB_STARTED, new EventData(nodeStatus)));
+      fireEvent(Event.create(this, Type.JOB_STARTED, new EventData(nodeStatus, node.getNestedId())));
       node.setEndTime(time);
-      fireEvent(Event.create(this, Type.JOB_FINISHED, new EventData(nodeStatus)));
+      fireEvent(Event.create(this, Type.JOB_FINISHED, new EventData(nodeStatus, node.getNestedId())));
       return true;
     }
 
@@ -528,7 +528,7 @@ public class JobRunner extends EventHandler implements Runnable {
     node.setStartTime(System.currentTimeMillis());
     Status finalStatus = node.getStatus();
     if (!errorFound && !isKilled()) {
-      fireEvent(Event.create(this, Type.JOB_STARTED, new EventData(finalStatus)));
+      fireEvent(Event.create(this, Type.JOB_STARTED, new EventData(node)));
       try {
         loader.uploadExecutableNode(node, props);
       } catch (ExecutorManagerException e1) {
@@ -539,7 +539,8 @@ public class JobRunner extends EventHandler implements Runnable {
       if (prepareStatus != null) {
         // Writes status to the db
         writeStatus();
-        fireEvent(Event.create(this, Type.JOB_STATUS_CHANGED, new EventData(prepareStatus)));
+        fireEvent(Event.create(this, Type.JOB_STATUS_CHANGED,
+            new EventData(prepareStatus, node.getNestedId())));
         finalStatus = runJob();
       } else {
         finalStatus = changeStatus(Status.FAILED);
@@ -561,7 +562,8 @@ public class JobRunner extends EventHandler implements Runnable {
     logInfo("Finishing job " + this.jobId + " attempt: " + attemptNo + " at "
         + node.getEndTime() + " with status " + node.getStatus());
 
-    fireEvent(Event.create(this, Type.JOB_FINISHED, new EventData(finalStatus)), false);
+    fireEvent(Event.create(this, Type.JOB_FINISHED,
+        new EventData(finalStatus, node.getNestedId())), false);
     finalizeLogFile(attemptNo);
     finalizeAttachmentFile();
     writeStatus();
