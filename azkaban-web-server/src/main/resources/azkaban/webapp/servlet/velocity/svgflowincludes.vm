@@ -14,24 +14,24 @@
  * the License.
 *#
 
-  <script type="text/javascript" src="${context}/js/jquery.svg.min.js"></script>
-  <script type="text/javascript" src="${context}/js/jquery.svganim.min.js"></script>
-  <script type="text/javascript" src="${context}/js/jquery.svgfilter.min.js"></script>
+<script type="text/javascript" src="${context}/js/jquery.svg.min.js"></script>
+<script type="text/javascript" src="${context}/js/jquery.svganim.min.js"></script>
+<script type="text/javascript" src="${context}/js/jquery.svgfilter.min.js"></script>
 
-  <script type="text/javascript" src="${context}/js/azkaban/util/common.js"></script>
-  <script type="text/javascript" src="${context}/js/azkaban/util/date.js"></script>
-  <script type="text/javascript" src="${context}/js/azkaban/util/ajax.js"></script>
+<script type="text/javascript" src="${context}/js/azkaban/util/common.js"></script>
+<script type="text/javascript" src="${context}/js/azkaban/util/date.js"></script>
+<script type="text/javascript" src="${context}/js/azkaban/util/ajax.js"></script>
 
-  <script type="text/javascript" src="${context}/js/azkaban/util/svgutils.js"></script>
-  <script type="text/javascript" src="${context}/js/azkaban/util/svg-navigate.js"></script>
-  <script type="text/javascript" src="${context}/js/azkaban/util/layout.js"></script>
+<script type="text/javascript" src="${context}/js/azkaban/util/svgutils.js"></script>
+<script type="text/javascript" src="${context}/js/azkaban/util/svg-navigate.js"></script>
+<script type="text/javascript" src="${context}/js/azkaban/util/layout.js"></script>
 
-  <script type="text/javascript" src="${context}/js/azkaban/view/context-menu.js"></script>
-  <script type="text/javascript" src="${context}/js/azkaban/util/job-status.js"></script>
+<script type="text/javascript" src="${context}/js/azkaban/view/context-menu.js"></script>
+<script type="text/javascript" src="${context}/js/azkaban/util/job-status.js"></script>
 
-  <script type="text/javascript" src="${context}/js/azkaban/util/flow-loader.js"></script>
-  <script type="text/javascript" src="${context}/js/azkaban/view/job-list.js"></script>
-  <script type="text/javascript" src="${context}/js/azkaban/model/svg-graph.js"></script>
-  <script type="text/javascript" src="${context}/js/azkaban/view/svg-graph.js"></script>
+<script type="text/javascript" src="${context}/js/azkaban/util/flow-loader.js"></script>
+<script type="text/javascript" src="${context}/js/azkaban/view/job-list.js"></script>
+<script type="text/javascript" src="${context}/js/azkaban/model/svg-graph.js"></script>
+<script type="text/javascript" src="${context}/js/azkaban/view/svg-graph.js"></script>
 
-  <link rel="stylesheet" type="text/css" href="${context}/css/azkaban-graph.css" />
+<link rel="stylesheet" type="text/css" href="${context}/css/azkaban-graph.css"/>

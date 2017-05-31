@@ -16,24 +16,24 @@
 
 $.namespace('azkaban');
 function killFlow(execId) {
-	  var requestURL=document.location.href.replace("#currently-running","");	  
-	  var requestData = {"execid": execId, "ajax": "cancelFlow"};
-	  var successHandler = function(data) {
-		  console.log("cancel clicked");
-		  if (data.error) {
-			  showDialog("Error", data.error);
-		  }
-		  else {
-			  showDialog("Cancelled", "Flow has been cancelled.");
-			 
-		  }
-	  };
-	  ajaxCall(requestURL, requestData, successHandler);	 
+  var requestURL = document.location.href.replace("#currently-running", "");
+  var requestData = {"execid": execId, "ajax": "cancelFlow"};
+  var successHandler = function (data) {
+    console.log("cancel clicked");
+    if (data.error) {
+      showDialog("Error", data.error);
+    }
+    else {
+      showDialog("Cancelled", "Flow has been cancelled.");
+
+    }
+  };
+  ajaxCall(requestURL, requestData, successHandler);
 }
-var showDialog = function(title, message) {
-	$('#messageTitle').text(title);
-	$('#messageBox').text(message);
-	$('#messageDialog').modal();
+var showDialog = function (title, message) {
+  $('#messageTitle').text(title);
+  $('#messageBox').text(message);
+  $('#messageDialog').modal();
 }
 var executionsTabView;
 azkaban.ExecutionsTabView = Backbone.View.extend({
@@ -42,7 +42,7 @@ azkaban.ExecutionsTabView = Backbone.View.extend({
     'click #recently-finished-view-link': 'handleRecentlyFinishedViewLinkClick'
   },
 
-  initialize: function(settings) {
+  initialize: function (settings) {
     var selectedView = settings.selectedView;
     if (selectedView == 'recently-finished') {
       this.handleRecentlyFinishedViewLinkClick();
@@ -52,17 +52,17 @@ azkaban.ExecutionsTabView = Backbone.View.extend({
     }
   },
 
-  render: function() {
+  render: function () {
   },
 
-  handleCurrentlyRunningViewLinkClick: function() {
+  handleCurrentlyRunningViewLinkClick: function () {
     $('#recently-finished-view-link').removeClass('active');
     $('#recently-finished-view').hide();
     $('#currently-running-view-link').addClass('active');
     $('#currently-running-view').show();
   },
 
-  handleRecentlyFinishedViewLinkClick: function() {
+  handleRecentlyFinishedViewLinkClick: function () {
     $('#currently-running-view-link').removeClass('active');
     $('#currently-running-view').hide();
     $('#recently-finished-view-link').addClass('active');
@@ -70,7 +70,7 @@ azkaban.ExecutionsTabView = Backbone.View.extend({
   }
 });
 
-$(function() {
+$(function () {
   executionsTabView = new azkaban.ExecutionsTabView({el: $('#header-tabs')});
   if (window.location.hash) {
     var hash = window.location.hash;

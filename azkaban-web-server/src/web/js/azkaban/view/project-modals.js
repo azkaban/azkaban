@@ -23,20 +23,20 @@ azkaban.ProjectView = Backbone.View.extend({
     "click #project-delete-btn": "handleDeleteProject"
   },
 
-  initialize: function(settings) {
+  initialize: function (settings) {
   },
 
-  handleUploadProjectJob: function(evt) {
+  handleUploadProjectJob: function (evt) {
     console.log("click upload project");
     $('#upload-project-modal').modal();
   },
 
-  handleDeleteProject: function(evt) {
+  handleDeleteProject: function (evt) {
     console.log("click delete project");
     $('#delete-project-modal').modal();
   },
 
-  render: function() {
+  render: function () {
   }
 });
 
@@ -46,17 +46,17 @@ azkaban.UploadProjectView = Backbone.View.extend({
     "click #upload-project-btn": "handleCreateProject"
   },
 
-  initialize: function(settings) {
+  initialize: function (settings) {
     console.log("Hide upload project modal error msg");
     $("#upload-project-modal-error-msg").hide();
   },
 
-  handleCreateProject: function(evt) {
+  handleCreateProject: function (evt) {
     console.log("Upload project button.");
     $("#upload-project-form").submit();
   },
 
-  render: function() {
+  render: function () {
   }
 });
 
@@ -66,14 +66,14 @@ azkaban.DeleteProjectView = Backbone.View.extend({
     "click #delete-btn": "handleDeleteProject"
   },
 
-  initialize: function(settings) {
+  initialize: function (settings) {
   },
 
-  handleDeleteProject: function(evt) {
+  handleDeleteProject: function (evt) {
     $("#delete-form").submit();
   },
 
-  render: function() {
+  render: function () {
   }
 });
 
@@ -84,11 +84,11 @@ azkaban.ProjectDescriptionView = Backbone.View.extend({
     "click #project-description-btn": "handleDescriptionSave"
   },
 
-  initialize: function(settings) {
+  initialize: function (settings) {
     console.log("project description initialize");
   },
 
-  handleDescriptionEdit: function(evt) {
+  handleDescriptionEdit: function (evt) {
     console.log("Edit description");
     var description = null;
     if ($('#project-description').hasClass('editable-placeholder')) {
@@ -103,7 +103,7 @@ azkaban.ProjectDescriptionView = Backbone.View.extend({
     $('#project-description-form').show();
   },
 
-  handleDescriptionSave: function(evt) {
+  handleDescriptionSave: function (evt) {
     var newText = $('#project-description-edit').val();
     if ($('#project-description-edit').hasClass('has-error')) {
       $('#project-description-edit').removeClass('has-error');
@@ -111,10 +111,10 @@ azkaban.ProjectDescriptionView = Backbone.View.extend({
     var requestURL = contextURL + "/manager";
     var requestData = {
       "project": projectName,
-      "ajax":"changeDescription",
+      "ajax": "changeDescription",
       "description": newText
     };
-    var successHandler = function(data) {
+    var successHandler = function (data) {
       if (data.error) {
         $('#project-description-edit').addClass('has-error');
         alert(data.error);
@@ -133,11 +133,11 @@ azkaban.ProjectDescriptionView = Backbone.View.extend({
     $.get(requestURL, requestData, successHandler, "json");
   },
 
-  render: function() {
+  render: function () {
   }
 });
 
-$(function() {
+$(function () {
   projectView = new azkaban.ProjectView({
     el: $('#project-options')
   });

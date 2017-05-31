@@ -48,7 +48,8 @@ public class AzkabanWebServerTest {
   private static final Props props = new Props();
 
   private static String getUserManagerXmlFile() {
-    final URL resource = AzkabanWebServerTest.class.getClassLoader().getResource("azkaban-users.xml");
+    final URL resource = AzkabanWebServerTest.class.getClassLoader()
+        .getResource("azkaban-users.xml");
     return requireNonNull(resource).getPath();
   }
 

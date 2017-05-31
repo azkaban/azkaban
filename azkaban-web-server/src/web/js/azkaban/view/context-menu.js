@@ -17,18 +17,19 @@
 $.namespace('azkaban');
 
 azkaban.ContextMenuView = Backbone.View.extend({
-  events: {
-  },
+  events: {},
 
-  initialize: function(settings) {
+  initialize: function (settings) {
     var div = this.el;
-    $('body').click(function(e) {
+    $('body').click(function (e) {
       $(".contextMenu").remove();
     });
-    $('body').bind("contextmenu", function(e) {$(".contextMenu").remove()});
+    $('body').bind("contextmenu", function (e) {
+      $(".contextMenu").remove()
+    });
   },
 
-  show: function(evt, menu) {
+  show: function (evt, menu) {
     console.log("Show context menu");
     $(".contextMenu").remove();
     var x = evt.pageX;
@@ -39,16 +40,16 @@ azkaban.ContextMenuView = Backbone.View.extend({
     $(this.el).after(contextMenu);
   },
 
-  hide: function(evt) {
+  hide: function (evt) {
     console.log("Hide context menu");
     $(".contextMenu").remove();
   },
 
-  handleClick: function(evt) {
+  handleClick: function (evt) {
     console.log("handling click");
   },
 
-  setupMenu: function(menu) {
+  setupMenu: function (menu) {
     var contextMenu = document.createElement("div");
     $(contextMenu).addClass("contextMenu");
     var ul = document.createElement("ul");
@@ -66,7 +67,7 @@ azkaban.ContextMenuView = Backbone.View.extend({
       $(menuItem).addClass("menuitem");
       $(menuItem).text(title);
       menuItem.callback = callback;
-      $(menuItem).click(function() {
+      $(menuItem).click(function () {
         $(contextMenu).hide();
         this.callback.call();
       });
@@ -83,11 +84,11 @@ azkaban.ContextMenuView = Backbone.View.extend({
         $(subMenu).hide();
         $(this.el).after(subMenu);
 
-        $(menuItem).mouseenter(function() {
+        $(menuItem).mouseenter(function () {
           $(".subMenu").hide();
           var menuItem = this;
           menuItem.selected = true;
-          setTimeout(function() {
+          setTimeout(function () {
             if (menuItem.selected) {
               var offset = $(menuItem).offset();
               var left = offset.left;
@@ -101,7 +102,9 @@ azkaban.ContextMenuView = Backbone.View.extend({
             }
           }, 500);
         });
-        $(menuItem).mouseleave(function() {this.selected = false;});
+        $(menuItem).mouseleave(function () {
+          this.selected = false;
+        });
       }
       $(ul).append(menuItem);
     }
@@ -111,7 +114,7 @@ azkaban.ContextMenuView = Backbone.View.extend({
 });
 
 var contextMenuView;
-$(function() {
-  contextMenuView = new azkaban.ContextMenuView({el:$('#contextMenu')});
+$(function () {
+  contextMenuView = new azkaban.ContextMenuView({el: $('#contextMenu')});
   contextMenuView.hide();
 });
