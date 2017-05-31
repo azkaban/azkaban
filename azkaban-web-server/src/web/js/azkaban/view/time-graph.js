@@ -17,10 +17,9 @@
 $.namespace('azkaban');
 
 azkaban.TimeGraphView = Backbone.View.extend({
-  events: {
-  },
+  events: {},
 
-  initialize: function(settings) {
+  initialize: function (settings) {
     this.model.bind('render', this.render, this);
     this.model.bind('change:page', this.render, this);
     this.modelField = settings.modelField;
@@ -28,7 +27,7 @@ azkaban.TimeGraphView = Backbone.View.extend({
     this.render();
   },
 
-  render: function(self) {
+  render: function (self) {
     var series = this.model.get(this.modelField);
     if (series == null) {
       return;
@@ -48,7 +47,8 @@ azkaban.TimeGraphView = Backbone.View.extend({
       var startTime = series[i].startTime;
       var endTime = series[i].endTime;
       if (startTime == -1 && endTime == -1) {
-        console.log("Ignoring data point with both start and end time invalid.");
+        console.log(
+            "Ignoring data point with both start and end time invalid.");
         continue;
       }
 
@@ -75,7 +75,7 @@ azkaban.TimeGraphView = Backbone.View.extend({
     var graphDiv = document.createElement('div');
     $(this.graphContainer).html(graphDiv);
 
-    var lineColorsCallback = function(row, sidx, type) {
+    var lineColorsCallback = function (row, sidx, type) {
       if (type != 'point') {
         return "#000000";
       }
@@ -103,12 +103,12 @@ azkaban.TimeGraphView = Backbone.View.extend({
       }
     };
 
-    var yLabelFormatCallback = function(y) {
+    var yLabelFormatCallback = function (y) {
       var seconds = y / 1000.0;
       return seconds.toString() + " s";
     };
 
-    var hoverCallback = function(index, options, content) {
+    var hoverCallback = function (index, options, content) {
       // Note: series contains the data points in descending order and index
       // is the index into Morris's internal array of data sorted in ascending
       // x order.

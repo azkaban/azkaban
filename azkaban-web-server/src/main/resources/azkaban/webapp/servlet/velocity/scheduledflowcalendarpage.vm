@@ -16,63 +16,64 @@
 
 <!DOCTYPE html>
 <html lang="en">
-  <head>
+<head>
 
-#parse ("azkaban/webapp/servlet/velocity/style.vm")
-#parse ("azkaban/webapp/servlet/velocity/javascript.vm")
+  #parse ("azkaban/webapp/servlet/velocity/style.vm")
+  #parse ("azkaban/webapp/servlet/velocity/javascript.vm")
 
-    <link rel="stylesheet" type="text/css" href="${context}/css/jquery-ui-1.10.1.custom.css" />
-    <link rel="stylesheet" type="text/css" href="${context}/css/jquery-ui.css" />
+  <link rel="stylesheet" type="text/css" href="${context}/css/jquery-ui-1.10.1.custom.css"/>
+  <link rel="stylesheet" type="text/css" href="${context}/css/jquery-ui.css"/>
 
-    <script type="text/javascript" src="${context}/js/jqueryui/jquery-ui-1.10.1.custom.js"></script>
-    <script type="text/javascript" src="${context}/js/jquery/jquery.svg.min.js"></script>
-    <script type="text/javascript" src="${context}/js/jqueryui/jquery-ui-timepicker-addon.js"></script>
-    <script type="text/javascript" src="${context}/js/jqueryui/jquery-ui-sliderAccess.js"></script>
+  <script type="text/javascript" src="${context}/js/jqueryui/jquery-ui-1.10.1.custom.js"></script>
+  <script type="text/javascript" src="${context}/js/jquery/jquery.svg.min.js"></script>
+  <script type="text/javascript"
+          src="${context}/js/jqueryui/jquery-ui-timepicker-addon.js"></script>
+  <script type="text/javascript" src="${context}/js/jqueryui/jquery-ui-sliderAccess.js"></script>
 
-    <script type="text/javascript" src="${context}/js/azkaban/view/table-sort.js"></script>
-    <script type="text/javascript" src="${context}/js/azkaban/view/schedule-svg.js"></script>
-    <script type="text/javascript" src="${context}/js/azkaban/view/context-menu.js"></script>
-    <script type="text/javascript" src="${context}/js/azkaban/util/svg-navigate.js"></script>
-    <script type="text/javascript">
-      var contextURL = "${context}";
-      var currentTime = ${currentTime};
-      var timezone = "${timezone}";
-      var errorMessage = null;
-      var successMessage = null;
-    </script>
-    <link rel="stylesheet" type="text/css" href="${context}/css/jquery.svg.css" />
-  </head>
-  <body>
+  <script type="text/javascript" src="${context}/js/azkaban/view/table-sort.js"></script>
+  <script type="text/javascript" src="${context}/js/azkaban/view/schedule-svg.js"></script>
+  <script type="text/javascript" src="${context}/js/azkaban/view/context-menu.js"></script>
+  <script type="text/javascript" src="${context}/js/azkaban/util/svg-navigate.js"></script>
+  <script type="text/javascript">
+    var contextURL = "${context}";
+    var currentTime = ${currentTime};
+    var timezone = "${timezone}";
+    var errorMessage = null;
+    var successMessage = null;
+  </script>
+  <link rel="stylesheet" type="text/css" href="${context}/css/jquery.svg.css"/>
+</head>
+<body>
 
-#set ($current_page="schedule")
-#parse ("azkaban/webapp/servlet/velocity/nav.vm")
+  #set ($current_page="schedule")
+  #parse ("azkaban/webapp/servlet/velocity/nav.vm")
 
-#if ($errorMsg)
-  #parse ("azkaban/webapp/servlet/velocity/errormsg.vm")
-#else
+  #if ($errorMsg)
+    #parse ("azkaban/webapp/servlet/velocity/errormsg.vm")
+  #else
 
-    <div class="az-page-header">
-      <div class="container-full">
-        <h1>Scheduled Flows</h1>
-      </div>
-    </div>
-
-  #parse ("azkaban/webapp/servlet/velocity/alerts.vm")
-
+  <div class="az-page-header">
     <div class="container-full">
-      <div class="row">
-        <div class="col-xs-12">
-          <div class="pull-right">
-            <button type="button" class="nav-prev-week btn btn-default">Previous Week</button>
-            <button type="button" class="nav-this-week btn btn-default">Today</button>
-            <button type="button" class="nav-next-week btn btn-default">Next Week</button>
-          </div>
-          <div id="svgDivCustom"></div>
-        </div>
-      </div>
-
-      <div id="contextMenu"></div>
+      <h1>Scheduled Flows</h1>
     </div>
-#end
-  </body>
+  </div>
+
+    #parse ("azkaban/webapp/servlet/velocity/alerts.vm")
+
+  <div class="container-full">
+    <div class="row">
+      <div class="col-xs-12">
+        <div class="pull-right">
+          <button type="button" class="nav-prev-week btn btn-default">Previous Week</button>
+          <button type="button" class="nav-this-week btn btn-default">Today</button>
+          <button type="button" class="nav-next-week btn btn-default">Next Week</button>
+        </div>
+        <div id="svgDivCustom"></div>
+      </div>
+    </div>
+
+    <div id="contextMenu"></div>
+  </div>
+  #end
+</body>
 </html>

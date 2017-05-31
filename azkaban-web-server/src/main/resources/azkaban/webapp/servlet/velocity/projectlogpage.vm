@@ -16,80 +16,80 @@
 
 <!DOCTYPE html>
 <html lang="en">
-  <head>
+<head>
 
-#parse ("azkaban/webapp/servlet/velocity/style.vm")
-#parse ("azkaban/webapp/servlet/velocity/javascript.vm")
+  #parse ("azkaban/webapp/servlet/velocity/style.vm")
+  #parse ("azkaban/webapp/servlet/velocity/javascript.vm")
 
-    <script type="text/javascript" src="${context}/js/azkaban/util/date.js"></script>
-    <script type="text/javascript" src="${context}/js/azkaban/util/ajax.js"></script>
-    <script type="text/javascript" src="${context}/js/azkaban/view/project-logs.js"></script>
-    <script type="text/javascript" src="${context}/js/azkaban/view/project-modals.js"></script>
-    <script type="text/javascript">
-      var contextURL = "${context}";
-      var currentTime = ${currentTime};
-      var timezone = "${timezone}";
-      var errorMessage = null;
-      var successMessage = null;
+  <script type="text/javascript" src="${context}/js/azkaban/util/date.js"></script>
+  <script type="text/javascript" src="${context}/js/azkaban/util/ajax.js"></script>
+  <script type="text/javascript" src="${context}/js/azkaban/view/project-logs.js"></script>
+  <script type="text/javascript" src="${context}/js/azkaban/view/project-modals.js"></script>
+  <script type="text/javascript">
+    var contextURL = "${context}";
+    var currentTime = ${currentTime};
+    var timezone = "${timezone}";
+    var errorMessage = null;
+    var successMessage = null;
 
-      var projectId = ${project.id};
-      var projectName = "$project.name";
-    </script>
-  </head>
-  <body>
+    var projectId = ${project.id};
+    var projectName = "$project.name";
+  </script>
+</head>
+<body>
 
-#set ($current_page="all")
-#parse ("azkaban/webapp/servlet/velocity/nav.vm")
+  #set ($current_page="all")
+  #parse ("azkaban/webapp/servlet/velocity/nav.vm")
 
-#if ($errorMsg)
-  #parse ("azkaban/webapp/servlet/velocity/errormsg.vm")
-#else
+  #if ($errorMsg)
+    #parse ("azkaban/webapp/servlet/velocity/errormsg.vm")
+  #else
 
   ## Page header.
 
-  #parse ("azkaban/webapp/servlet/velocity/projectpageheader.vm")
+    #parse ("azkaban/webapp/servlet/velocity/projectpageheader.vm")
 
   ## Page content.
 
-    <div class="container-full">
+  <div class="container-full">
 
-  #parse ("azkaban/webapp/servlet/velocity/alerts.vm")
+    #parse ("azkaban/webapp/servlet/velocity/alerts.vm")
 
-      <div class="row row-offcanvas row-offcanvas-right">
-        <div class="col-xs-12 col-sm-9">
+    <div class="row row-offcanvas row-offcanvas-right">
+      <div class="col-xs-12 col-sm-9">
 
-  #set ($project_page = "logs")
-  #parse ("azkaban/webapp/servlet/velocity/projectnav.vm")
+        #set ($project_page = "logs")
+        #parse ("azkaban/webapp/servlet/velocity/projectnav.vm")
 
-          <div class="panel panel-default" id="flow-tabs">
-            <div class="panel-heading">
-              <div class="pull-right" id="project-options">
-                <button type="button" id="updateLogBtn" class="btn btn-xs btn-info">Refresh</button>
-              </div>
-              Audit Logs
+        <div class="panel panel-default" id="flow-tabs">
+          <div class="panel-heading">
+            <div class="pull-right" id="project-options">
+              <button type="button" id="updateLogBtn" class="btn btn-xs btn-info">Refresh</button>
             </div>
-            <table class="table table-striped" id="logTable">
-              <thead>
-                <tr>
-                  <th>Time</th>
-                  <th>User</th>
-                  <th>Type</th>
-                  <th>Message</th>
-                </tr>
-              </thead>
-              <tbody>
-              </tbody>
-            </table>
+            Audit Logs
           </div>
-        </div>
-        <div class="col-xs-6 col-sm-3 sidebar-offcanvas">
-  #parse ("azkaban/webapp/servlet/velocity/projectsidebar.vm")
+          <table class="table table-striped" id="logTable">
+            <thead>
+            <tr>
+              <th>Time</th>
+              <th>User</th>
+              <th>Type</th>
+              <th>Message</th>
+            </tr>
+            </thead>
+            <tbody>
+            </tbody>
+          </table>
         </div>
       </div>
+      <div class="col-xs-6 col-sm-3 sidebar-offcanvas">
+        #parse ("azkaban/webapp/servlet/velocity/projectsidebar.vm")
+      </div>
+    </div>
 
-  #parse ("azkaban/webapp/servlet/velocity/projectmodals.vm")
+    #parse ("azkaban/webapp/servlet/velocity/projectmodals.vm")
 
-    </div><!-- /container-full -->
-#end
-  </body>
+  </div><!-- /container-full -->
+  #end
+</body>
 </html>

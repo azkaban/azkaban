@@ -19,9 +19,9 @@ function removeSched(scheduleId) {
   var redirectURL = contextURL + "/schedule"
   var requestData = {
     "action": "removeSched",
-    "scheduleId":scheduleId
+    "scheduleId": scheduleId
   };
-  var successHandler = function(data) {
+  var successHandler = function (data) {
     if (data.error) {
       $('#errorMsg').text(data.error);
     }
@@ -39,7 +39,7 @@ function removeSla(scheduleId) {
     "action": "removeSla",
     "scheduleId": scheduleId
   };
-  var successHandler = function(data) {
+  var successHandler = function (data) {
     if (data.error) {
       $('#errorMsg').text(data.error)
     }

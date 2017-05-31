@@ -16,22 +16,21 @@
 
 package azkaban.webapp.servlet;
 
+import azkaban.server.session.Session;
 import java.io.IOException;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-
-import azkaban.server.session.Session;
 
 /**
  * The main page
  */
 public class IndexRedirectServlet extends LoginAbstractAzkabanServlet {
+
   private static final long serialVersionUID = -1;
   private String defaultServletPath;
 
-  public IndexRedirectServlet(String defaultServletPath) {
+  public IndexRedirectServlet(final String defaultServletPath) {
     this.defaultServletPath = defaultServletPath;
     if (this.defaultServletPath.isEmpty()
         || this.defaultServletPath.equals("/")) {
@@ -40,14 +39,14 @@ public class IndexRedirectServlet extends LoginAbstractAzkabanServlet {
   }
 
   @Override
-  protected void handleGet(HttpServletRequest req, HttpServletResponse resp,
-      Session session) throws ServletException, IOException {
-    resp.sendRedirect(defaultServletPath);
+  protected void handleGet(final HttpServletRequest req, final HttpServletResponse resp,
+      final Session session) throws ServletException, IOException {
+    resp.sendRedirect(this.defaultServletPath);
   }
 
   @Override
-  protected void handlePost(HttpServletRequest req, HttpServletResponse resp,
-      Session session) throws ServletException, IOException {
-    resp.sendRedirect(defaultServletPath);
+  protected void handlePost(final HttpServletRequest req, final HttpServletResponse resp,
+      final Session session) throws ServletException, IOException {
+    resp.sendRedirect(this.defaultServletPath);
   }
 }

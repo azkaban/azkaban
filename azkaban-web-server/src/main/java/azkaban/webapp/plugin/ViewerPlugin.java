@@ -21,25 +21,25 @@ import java.util.Comparator;
 import java.util.List;
 
 public class ViewerPlugin {
-  private final String pluginName;
-  private final String pluginPath;
-  private final int order;
-  private boolean hidden;
-  private final List<String> jobTypes;
 
   public static final Comparator<ViewerPlugin> COMPARATOR =
       new Comparator<ViewerPlugin>() {
         @Override
-        public int compare(ViewerPlugin o1, ViewerPlugin o2) {
+        public int compare(final ViewerPlugin o1, final ViewerPlugin o2) {
           if (o1.getOrder() != o2.getOrder()) {
             return o1.getOrder() - o2.getOrder();
           }
           return o1.getPluginName().compareTo(o2.getPluginName());
         }
       };
+  private final String pluginName;
+  private final String pluginPath;
+  private final int order;
+  private final List<String> jobTypes;
+  private boolean hidden;
 
-  public ViewerPlugin(String pluginName, String pluginPath, int order,
-      boolean hidden, String jobTypes) {
+  public ViewerPlugin(final String pluginName, final String pluginPath, final int order,
+      final boolean hidden, final String jobTypes) {
     this.pluginName = pluginName;
     this.pluginPath = pluginPath;
     this.order = order;
@@ -48,31 +48,31 @@ public class ViewerPlugin {
   }
 
   public String getPluginName() {
-    return pluginName;
+    return this.pluginName;
   }
 
   public String getPluginPath() {
-    return pluginPath;
+    return this.pluginPath;
   }
 
   public int getOrder() {
-    return order;
+    return this.order;
   }
 
   public boolean isHidden() {
-    return hidden;
+    return this.hidden;
   }
 
-  public void setHidden(boolean hidden) {
+  public void setHidden(final boolean hidden) {
     this.hidden = hidden;
   }
 
-  protected List<String> parseJobTypes(String jobTypesStr) {
+  protected List<String> parseJobTypes(final String jobTypesStr) {
     if (jobTypesStr == null) {
       return null;
     }
-    String[] parts = jobTypesStr.split(",");
-    List<String> jobTypes = new ArrayList<String>();
+    final String[] parts = jobTypesStr.split(",");
+    final List<String> jobTypes = new ArrayList<>();
     for (int i = 0; i < parts.length; ++i) {
       jobTypes.add(parts[i].trim());
     }
@@ -80,6 +80,6 @@ public class ViewerPlugin {
   }
 
   public List<String> getJobTypes() {
-    return jobTypes;
+    return this.jobTypes;
   }
 }
