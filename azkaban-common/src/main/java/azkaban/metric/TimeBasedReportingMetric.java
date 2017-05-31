@@ -21,12 +21,14 @@ import java.util.TimerTask;
 
 /**
  * Metrics tracked after every interval using timer
+ *
  * @param <T> Type of Value of a given metric
  */
 public abstract class TimeBasedReportingMetric<T> extends AbstractMetric<T> {
-  private Timer timer;
+
   protected long MAX_MILISEC_INTERVAL = 60 * 60 * 1000;
   protected long MIN_MILISEC_INTERVAL = 3 * 1000;
+  private Timer timer;
 
   /**
    * @param metricName Name of metric
@@ -34,25 +36,27 @@ public abstract class TimeBasedReportingMetric<T> extends AbstractMetric<T> {
    * @param initialValue Initial Value of a metric
    * @param manager Metric Manager whom a metric will report to
    * @param interval Time interval for metric tracking
-   * @throws MetricException
    */
-  public TimeBasedReportingMetric(String metricName, String metricType, T initialValue, MetricReportManager manager,
-      long interval) throws MetricException {
+  public TimeBasedReportingMetric(final String metricName, final String metricType,
+      final T initialValue,
+      final MetricReportManager manager,
+      final long interval) throws MetricException {
     super(metricName, metricType, initialValue, manager);
-    if(!isValidInterval(interval)) {
+    if (!isValidInterval(interval)) {
       throw new MetricException("Invalid interval: Cannot instantiate timer");
     }
-    timer = new Timer();
-    timer.schedule(getTimerTask(), interval, interval);
+    this.timer = new Timer();
+    this.timer.schedule(getTimerTask(), interval, interval);
   }
 
   /**
    * Get a TimerTask to reschedule Timer
+   *
    * @return An anonymous TimerTask class
    */
   private TimerTask getTimerTask() {
     final TimeBasedReportingMetric<T> lockObject = this;
-    TimerTask recurringReporting = new TimerTask() {
+    final TimerTask recurringReporting = new TimerTask() {
       @Override
       public void run() {
         synchronized (lockObject) {
@@ -67,21 +71,20 @@ public abstract class TimeBasedReportingMetric<T> extends AbstractMetric<T> {
 
   /**
    * Method to change tracking interval
-   * @param interval
-   * @throws MetricException
    */
   public void updateInterval(final long interval) throws MetricException {
-    if(!isValidInterval(interval)) {
+    if (!isValidInterval(interval)) {
       throw new MetricException("Invalid interval: Cannot update timer");
     }
-    logger.debug(String.format("Updating tracking interval to %d milisecond for %s metric", interval, getName()));
-    timer.cancel();
-    timer = new Timer();
-    timer.schedule(getTimerTask(), interval, interval);
+    logger.debug(String
+        .format("Updating tracking interval to %d milisecond for %s metric", interval, getName()));
+    this.timer.cancel();
+    this.timer = new Timer();
+    this.timer.schedule(getTimerTask(), interval, interval);
   }
 
   private boolean isValidInterval(final long interval) {
-    return interval >= MIN_MILISEC_INTERVAL && interval <= MAX_MILISEC_INTERVAL;
+    return interval >= this.MIN_MILISEC_INTERVAL && interval <= this.MAX_MILISEC_INTERVAL;
   }
 
   /**

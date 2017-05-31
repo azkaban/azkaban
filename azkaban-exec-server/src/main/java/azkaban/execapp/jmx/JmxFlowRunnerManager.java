@@ -19,64 +19,65 @@ package azkaban.execapp.jmx;
 import azkaban.execapp.FlowRunnerManager;
 
 public class JmxFlowRunnerManager implements JmxFlowRunnerManagerMBean {
-  private FlowRunnerManager manager;
 
-  public JmxFlowRunnerManager(FlowRunnerManager manager) {
+  private final FlowRunnerManager manager;
+
+  public JmxFlowRunnerManager(final FlowRunnerManager manager) {
     this.manager = manager;
   }
 
   @Override
   public long getLastCleanerThreadCheckTime() {
-    return manager.getLastCleanerThreadCheckTime();
+    return this.manager.getLastCleanerThreadCheckTime();
   }
 
   @Override
   public boolean isCleanerThreadActive() {
-    return manager.isCleanerThreadActive();
+    return this.manager.isCleanerThreadActive();
   }
 
   @Override
   public String getCleanerThreadState() {
-    return manager.getCleanerThreadState().toString();
+    return this.manager.getCleanerThreadState().toString();
   }
 
   @Override
   public boolean isExecutorThreadPoolShutdown() {
-    return manager.isExecutorThreadPoolShutdown();
+    return this.manager.isExecutorThreadPoolShutdown();
   }
 
   @Override
   public int getNumRunningFlows() {
-    return manager.getNumRunningFlows();
+    return this.manager.getNumRunningFlows();
   }
 
   @Override
   public int getNumQueuedFlows() {
-    return manager.getNumQueuedFlows();
+    return this.manager.getNumQueuedFlows();
   }
 
   @Override
   public String getRunningFlows() {
-    return manager.getRunningFlowIds();
+    return this.manager.getRunningFlowIds();
   }
 
   @Override
   public String getQueuedFlows() {
-    return manager.getQueuedFlowIds();
+    return this.manager.getQueuedFlowIds();
   }
 
   @Override
   public int getMaxNumRunningFlows() {
-    return manager.getMaxNumRunningFlows();
+    return this.manager.getMaxNumRunningFlows();
   }
 
   @Override
   public int getMaxQueuedFlows() {
-    return manager.getTheadPoolQueueSize();
+    return this.manager.getTheadPoolQueueSize();
   }
 
   @Override
   public int getTotalNumExecutedFlows() {
-    return manager.getTotalNumExecutedFlows();
+    return this.manager.getTotalNumExecutedFlows();
   }
 }

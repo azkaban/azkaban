@@ -32,9 +32,9 @@ class DatabaseTransOperatorImpl implements DatabaseTransOperator {
   private final Connection conn;
   private final QueryRunner queryRunner;
 
-  public DatabaseTransOperatorImpl(QueryRunner queryRunner, Connection conn) {
+  public DatabaseTransOperatorImpl(final QueryRunner queryRunner, final Connection conn) {
     this.conn = conn;
-    this.queryRunner= queryRunner;
+    this.queryRunner = queryRunner;
   }
 
   /**
@@ -44,16 +44,18 @@ class DatabaseTransOperatorImpl implements DatabaseTransOperator {
    *
    * This value cannot be affected by other callers, even if they generate
    * AUTO_INCREMENT values of their own.
-   * @return last insertion ID
    *
+   * @return last insertion ID
    */
   @Override
   public long getLastInsertId() throws SQLException {
     // A default connection: autocommit = true.
     long num = -1;
     try {
-      num = ((Number) queryRunner.query(conn,"SELECT LAST_INSERT_ID();", new ScalarHandler<>(1))).longValue();
-    } catch (SQLException ex) {
+      num = ((Number) this.queryRunner
+          .query(this.conn, "SELECT LAST_INSERT_ID();", new ScalarHandler<>(1)))
+          .longValue();
+    } catch (final SQLException ex) {
       logger.error("can not get last insertion ID");
       throw ex;
     }
@@ -62,10 +64,12 @@ class DatabaseTransOperatorImpl implements DatabaseTransOperator {
 
 
   @Override
-  public <T> T query(String querySql, ResultSetHandler<T> resultHandler, Object... params) throws SQLException {
-    try{
-      return queryRunner.query(conn, querySql, resultHandler, params);
-    } catch (SQLException ex){
+  public <T> T query(final String querySql, final ResultSetHandler<T> resultHandler,
+      final Object... params)
+      throws SQLException {
+    try {
+      return this.queryRunner.query(this.conn, querySql, resultHandler, params);
+    } catch (final SQLException ex) {
       //RETRY Logic should be implemented here if needed.
       throw ex;
     } finally {
@@ -74,10 +78,10 @@ class DatabaseTransOperatorImpl implements DatabaseTransOperator {
   }
 
   @Override
-  public int update(String updateClause, Object... params) throws SQLException {
-    try{
-      return queryRunner.update(conn, updateClause, params);
-    } catch (SQLException ex){
+  public int update(final String updateClause, final Object... params) throws SQLException {
+    try {
+      return this.queryRunner.update(this.conn, updateClause, params);
+    } catch (final SQLException ex) {
       //RETRY Logic should be implemented here if needed.
       throw ex;
     } finally {
@@ -87,6 +91,6 @@ class DatabaseTransOperatorImpl implements DatabaseTransOperator {
 
   @Override
   public Connection getConnection() {
-    return conn;
+    return this.conn;
   }
 }

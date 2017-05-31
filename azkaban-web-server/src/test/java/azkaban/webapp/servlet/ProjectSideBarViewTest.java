@@ -25,9 +25,9 @@ public class ProjectSideBarViewTest {
   @Test
   public void testProjectSideBarView()
       throws Exception {
-    VelocityContext context = VelocityContextTestUtil.getInstance();
+    final VelocityContext context = VelocityContextTestUtil.getInstance();
 
-    Project project = MockProject.getMockProject();
+    final Project project = MockProject.getMockProject();
 
     // Intentionally tries to inject a Javascript.
     project.setDescription("<script>window.alert(\"hacked\")</script>");
@@ -36,8 +36,8 @@ public class ProjectSideBarViewTest {
     context.put("admins", "admin_name");
     context.put("userpermission", "admin_permission");
 
-    String result = VelocityTemplateTestUtil.renderTemplate("projectsidebar", context);
-    String actual = FileAssertion.surroundWithHtmlTag(result);
+    final String result = VelocityTemplateTestUtil.renderTemplate("projectsidebar", context);
+    final String actual = FileAssertion.surroundWithHtmlTag(result);
     WebFileAssertion.assertStringEqualFileContent("project-side-bar.html", actual);
   }
 }

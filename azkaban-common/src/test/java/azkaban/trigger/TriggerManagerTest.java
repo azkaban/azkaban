@@ -16,19 +16,17 @@
 
 package azkaban.trigger;
 
+import static org.junit.Assert.assertTrue;
+
+import azkaban.utils.Props;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
-
-import static org.junit.Assert.*;
-
-import azkaban.utils.Props;
 
 public class TriggerManagerTest {
 
@@ -36,7 +34,7 @@ public class TriggerManagerTest {
 
   @Before
   public void setup() throws TriggerException, TriggerManagerException {
-    triggerLoader = new MockTriggerLoader();
+    this.triggerLoader = new MockTriggerLoader();
 
   }
 
@@ -45,12 +43,13 @@ public class TriggerManagerTest {
 
   }
 
-  @Ignore @Test
+  @Ignore
+  @Test
   public void triggerManagerSimpleTest() throws TriggerManagerException {
-    Props props = new Props();
+    final Props props = new Props();
     props.put("trigger.scan.interval", 4000);
-    TriggerManager triggerManager =
-        new TriggerManager(props, triggerLoader, null);
+    final TriggerManager triggerManager =
+        new TriggerManager(props, this.triggerLoader, null);
 
     triggerManager.registerCheckerType(ThresholdChecker.type,
         ThresholdChecker.class);
@@ -63,25 +62,25 @@ public class TriggerManagerTest {
         createDummyTrigger("test1", "triggerLoader", 10), "testUser");
     List<Trigger> triggers = triggerManager.getTriggers();
     assertTrue(triggers.size() == 1);
-    Trigger t1 = triggers.get(0);
+    final Trigger t1 = triggers.get(0);
     t1.setResetOnTrigger(false);
     triggerManager.updateTrigger(t1, "testUser");
-    ThresholdChecker checker1 =
+    final ThresholdChecker checker1 =
         (ThresholdChecker) t1.getTriggerCondition().getCheckers().values()
             .toArray()[0];
     assertTrue(t1.getSource().equals("triggerLoader"));
 
-    Trigger t2 =
+    final Trigger t2 =
         createDummyTrigger("test2: add new trigger", "addNewTriggerTest", 20);
     triggerManager.insertTrigger(t2, "testUser");
-    ThresholdChecker checker2 =
+    final ThresholdChecker checker2 =
         (ThresholdChecker) t2.getTriggerCondition().getCheckers().values()
             .toArray()[0];
 
     ThresholdChecker.setVal(15);
     try {
       Thread.sleep(2000);
-    } catch (InterruptedException e) {
+    } catch (final InterruptedException e) {
       // TODO Auto-generated catch block
       e.printStackTrace();
     }
@@ -93,7 +92,7 @@ public class TriggerManagerTest {
 
     try {
       Thread.sleep(2000);
-    } catch (InterruptedException e) {
+    } catch (final InterruptedException e) {
       // TODO Auto-generated catch block
       e.printStackTrace();
     }
@@ -106,7 +105,7 @@ public class TriggerManagerTest {
     ThresholdChecker.setVal(25);
     try {
       Thread.sleep(4000);
-    } catch (InterruptedException e) {
+    } catch (final InterruptedException e) {
       // TODO Auto-generated catch block
       e.printStackTrace();
     }
@@ -120,67 +119,25 @@ public class TriggerManagerTest {
 
   }
 
-  public static class MockTriggerLoader implements TriggerLoader {
+  private Trigger createDummyTrigger(final String message, final String source,
+      final int threshold) {
 
-    private Map<Integer, Trigger> triggers = new HashMap<Integer, Trigger>();
-    private int idIndex = 0;
-
-    @Override
-    public void addTrigger(Trigger t) throws TriggerLoaderException {
-      t.setTriggerId(idIndex++);
-      triggers.put(t.getTriggerId(), t);
-    }
-
-    @Override
-    public void removeTrigger(Trigger s) throws TriggerLoaderException {
-      triggers.remove(s.getTriggerId());
-
-    }
-
-    @Override
-    public void updateTrigger(Trigger t) throws TriggerLoaderException {
-      triggers.put(t.getTriggerId(), t);
-    }
-
-    @Override
-    public List<Trigger> loadTriggers() {
-      return new ArrayList<Trigger>(triggers.values());
-    }
-
-    @Override
-    public Trigger loadTrigger(int triggerId) throws TriggerLoaderException {
-      // TODO Auto-generated method stub
-      return null;
-    }
-
-    @Override
-    public List<Trigger> getUpdatedTriggers(long lastUpdateTime)
-        throws TriggerLoaderException {
-      // TODO Auto-generated method stub
-      return null;
-    }
-
-  }
-
-  private Trigger createDummyTrigger(String message, String source,
-      int threshold) {
-
-    Map<String, ConditionChecker> checkers =
-        new HashMap<String, ConditionChecker>();
-    ConditionChecker checker =
+    final Map<String, ConditionChecker> checkers =
+        new HashMap<>();
+    final ConditionChecker checker =
         new ThresholdChecker(ThresholdChecker.type, threshold);
     checkers.put(checker.getId(), checker);
 
-    List<TriggerAction> actions = new ArrayList<TriggerAction>();
-    TriggerAction act = new DummyTriggerAction(message);
+    final List<TriggerAction> actions = new ArrayList<>();
+    final TriggerAction act = new DummyTriggerAction(message);
     actions.add(act);
 
-    String expr = checker.getId() + ".eval()";
+    final String expr = checker.getId() + ".eval()";
 
-    Condition triggerCond = new Condition(checkers, expr);
-    Condition expireCond = new Condition(checkers, expr);
+    final Condition triggerCond = new Condition(checkers, expr);
+    final Condition expireCond = new Condition(checkers, expr);
 
-    Trigger fakeTrigger = new Trigger.TriggerBuilder("azkaban",
+    final Trigger fakeTrigger = new Trigger.TriggerBuilder("azkaban",
         source,
         triggerCond,
         expireCond,
@@ -190,6 +147,48 @@ public class TriggerManagerTest {
     fakeTrigger.setResetOnExpire(true);
 
     return fakeTrigger;
+  }
+
+  public static class MockTriggerLoader implements TriggerLoader {
+
+    private final Map<Integer, Trigger> triggers = new HashMap<>();
+    private int idIndex = 0;
+
+    @Override
+    public void addTrigger(final Trigger t) throws TriggerLoaderException {
+      t.setTriggerId(this.idIndex++);
+      this.triggers.put(t.getTriggerId(), t);
+    }
+
+    @Override
+    public void removeTrigger(final Trigger s) throws TriggerLoaderException {
+      this.triggers.remove(s.getTriggerId());
+
+    }
+
+    @Override
+    public void updateTrigger(final Trigger t) throws TriggerLoaderException {
+      this.triggers.put(t.getTriggerId(), t);
+    }
+
+    @Override
+    public List<Trigger> loadTriggers() {
+      return new ArrayList<>(this.triggers.values());
+    }
+
+    @Override
+    public Trigger loadTrigger(final int triggerId) throws TriggerLoaderException {
+      // TODO Auto-generated method stub
+      return null;
+    }
+
+    @Override
+    public List<Trigger> getUpdatedTriggers(final long lastUpdateTime)
+        throws TriggerLoaderException {
+      // TODO Auto-generated method stub
+      return null;
+    }
+
   }
 
   // public class MockCheckerLoader extends CheckerTypeLoader{

@@ -25,31 +25,34 @@ import azkaban.metric.TimeBasedReportingMetric;
  * Metric to keep track of number of running flows in Azkaban exec server
  */
 public class NumRunningFlowMetric extends TimeBasedReportingMetric<Integer> {
+
   public static final String NUM_RUNNING_FLOW_METRIC_NAME = "NumRunningFlowMetric";
   private static final String NUM_RUNNING_FLOW_METRIC_TYPE = "uint16";
 
-  private FlowRunnerManager flowManager;
+  private final FlowRunnerManager flowManager;
 
   /**
    * @param flowRunnerManager Flow runner manager
    * @param manager metric report manager
    * @param interval reporting interval
-   * @throws MetricException
    */
-  public NumRunningFlowMetric(FlowRunnerManager flowRunnerManager, MetricReportManager manager, long interval) throws MetricException {
+  public NumRunningFlowMetric(final FlowRunnerManager flowRunnerManager,
+      final MetricReportManager manager,
+      final long interval) throws MetricException {
     super(NUM_RUNNING_FLOW_METRIC_NAME, NUM_RUNNING_FLOW_METRIC_TYPE, 0, manager, interval);
     logger.debug("Instantiated NumRunningFlowMetric");
-    flowManager = flowRunnerManager;
+    this.flowManager = flowRunnerManager;
   }
 
   /**
    * Update value using flow manager
    * {@inheritDoc}
+   *
    * @see azkaban.metric.TimeBasedReportingMetric#preTrackingEventMethod()
    */
   @Override
   protected synchronized void preTrackingEventMethod() {
-    value = flowManager.getNumRunningFlows();
+    this.value = this.flowManager.getNumRunningFlows();
   }
 
   @Override

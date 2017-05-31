@@ -1,11 +1,5 @@
 package azkaban.execapp.jmx;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
-
-import org.apache.log4j.Logger;
-
 import azkaban.event.Event;
 import azkaban.event.EventData;
 import azkaban.event.EventListener;
@@ -13,31 +7,34 @@ import azkaban.execapp.JobRunner;
 import azkaban.executor.ExecutableNode;
 import azkaban.executor.Status;
 import azkaban.utils.Props;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
+import org.apache.log4j.Logger;
 
 /**
  * Responsible keeping track of job related MBean attributes through listening
  * to job related events.
- * 
- * @author hluu
  *
+ * @author hluu
  */
 public class JmxJobMBeanManager implements JmxJobMXBean, EventListener {
 
   private static final Logger logger = Logger
       .getLogger(JmxJobMBeanManager.class);
 
-  private static JmxJobMBeanManager INSTANCE = new JmxJobMBeanManager();
+  private static final JmxJobMBeanManager INSTANCE = new JmxJobMBeanManager();
 
-  private AtomicInteger runningJobCount = new AtomicInteger(0);
-  private AtomicInteger totalExecutedJobCount = new AtomicInteger(0);
-  private AtomicInteger totalFailedJobCount = new AtomicInteger(0);
-  private AtomicInteger totalSucceededJobCount = new AtomicInteger(0);
+  private final AtomicInteger runningJobCount = new AtomicInteger(0);
+  private final AtomicInteger totalExecutedJobCount = new AtomicInteger(0);
+  private final AtomicInteger totalFailedJobCount = new AtomicInteger(0);
+  private final AtomicInteger totalSucceededJobCount = new AtomicInteger(0);
 
-  private Map<String, AtomicInteger> jobTypeFailureMap =
-      new HashMap<String, AtomicInteger>();
+  private final Map<String, AtomicInteger> jobTypeFailureMap =
+      new HashMap<>();
 
-  private Map<String, AtomicInteger> jobTypeSucceededMap =
-      new HashMap<String, AtomicInteger>();
+  private final Map<String, AtomicInteger> jobTypeSucceededMap =
+      new HashMap<>();
 
   private boolean initialized;
 
@@ -48,46 +45,46 @@ public class JmxJobMBeanManager implements JmxJobMXBean, EventListener {
     return INSTANCE;
   }
 
-  public void initialize(Props props) {
+  public void initialize(final Props props) {
     logger.info("Initializing " + getClass().getName());
-    initialized = true;
+    this.initialized = true;
   }
 
   @Override
   public int getNumRunningJobs() {
-    return runningJobCount.get();
+    return this.runningJobCount.get();
   }
 
   @Override
   public int getTotalNumExecutedJobs() {
-    return totalExecutedJobCount.get();
+    return this.totalExecutedJobCount.get();
   }
 
   @Override
   public int getTotalFailedJobs() {
-    return totalFailedJobCount.get();
+    return this.totalFailedJobCount.get();
   }
 
   @Override
   public int getTotalSucceededJobs() {
-    return totalSucceededJobCount.get();
+    return this.totalSucceededJobCount.get();
   }
 
   @Override
   public Map<String, Integer> getTotalSucceededJobsByJobType() {
-    return convertMapValueToInteger(jobTypeSucceededMap);
+    return convertMapValueToInteger(this.jobTypeSucceededMap);
   }
 
   @Override
   public Map<String, Integer> getTotalFailedJobsByJobType() {
-    return convertMapValueToInteger(jobTypeFailureMap);
+    return convertMapValueToInteger(this.jobTypeFailureMap);
   }
 
   private Map<String, Integer> convertMapValueToInteger(
-      Map<String, AtomicInteger> map) {
-    Map<String, Integer> result = new HashMap<String, Integer>(map.size());
+      final Map<String, AtomicInteger> map) {
+    final Map<String, Integer> result = new HashMap<>(map.size());
 
-    for (Map.Entry<String, AtomicInteger> entry : map.entrySet()) {
+    for (final Map.Entry<String, AtomicInteger> entry : map.entrySet()) {
       result.put(entry.getKey(), entry.getValue().intValue());
     }
 
@@ -95,15 +92,15 @@ public class JmxJobMBeanManager implements JmxJobMXBean, EventListener {
   }
 
   @Override
-  public void handleEvent(Event event) {
-    if (!initialized) {
+  public void handleEvent(final Event event) {
+    if (!this.initialized) {
       throw new RuntimeException("JmxJobMBeanManager has not been initialized");
     }
 
     if (event.getRunner() instanceof JobRunner) {
-      JobRunner jobRunner = (JobRunner) event.getRunner();
-      EventData eventData = event.getData();
-      ExecutableNode node = jobRunner.getNode();
+      final JobRunner jobRunner = (JobRunner) event.getRunner();
+      final EventData eventData = event.getData();
+      final ExecutableNode node = jobRunner.getNode();
 
       if (logger.isDebugEnabled()) {
         logger.debug("*** got " + event.getType() + " " + node.getId() + " "
@@ -112,11 +109,11 @@ public class JmxJobMBeanManager implements JmxJobMXBean, EventListener {
       }
 
       if (event.getType() == Event.Type.JOB_STARTED) {
-        runningJobCount.incrementAndGet();
+        this.runningJobCount.incrementAndGet();
       } else if (event.getType() == Event.Type.JOB_FINISHED) {
-        totalExecutedJobCount.incrementAndGet();
-        if (runningJobCount.intValue() > 0) {
-          runningJobCount.decrementAndGet();
+        this.totalExecutedJobCount.incrementAndGet();
+        if (this.runningJobCount.intValue() > 0) {
+          this.runningJobCount.decrementAndGet();
         } else {
           logger.warn("runningJobCount not messed up, it is already zero "
               + "and we are trying to decrement on job event "
@@ -124,9 +121,9 @@ public class JmxJobMBeanManager implements JmxJobMXBean, EventListener {
         }
 
         if (eventData.getStatus() == Status.FAILED) {
-          totalFailedJobCount.incrementAndGet();
+          this.totalFailedJobCount.incrementAndGet();
         } else if (eventData.getStatus() == Status.SUCCEEDED) {
-          totalSucceededJobCount.incrementAndGet();
+          this.totalSucceededJobCount.incrementAndGet();
         }
 
         handleJobFinishedCount(eventData.getStatus(), node.getType());
@@ -138,20 +135,20 @@ public class JmxJobMBeanManager implements JmxJobMXBean, EventListener {
     }
   }
 
-  private void handleJobFinishedCount(Status status, String jobType) {
+  private void handleJobFinishedCount(final Status status, final String jobType) {
     switch (status) {
-    case FAILED:
-      handleJobFinishedByType(jobTypeFailureMap, jobType);
-      break;
-    case SUCCEEDED:
-      handleJobFinishedByType(jobTypeSucceededMap, jobType);
-      break;
-    default:
+      case FAILED:
+        handleJobFinishedByType(this.jobTypeFailureMap, jobType);
+        break;
+      case SUCCEEDED:
+        handleJobFinishedByType(this.jobTypeSucceededMap, jobType);
+        break;
+      default:
     }
   }
 
-  private void handleJobFinishedByType(Map<String, AtomicInteger> jobTypeMap,
-      String jobType) {
+  private void handleJobFinishedByType(final Map<String, AtomicInteger> jobTypeMap,
+      final String jobType) {
 
     synchronized (jobTypeMap) {
       AtomicInteger count = jobTypeMap.get(jobType);

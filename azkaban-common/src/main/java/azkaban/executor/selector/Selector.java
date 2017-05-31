@@ -19,25 +19,32 @@ package azkaban.executor.selector;
 import java.util.Collection;
 
 
-/**<pre>
+/**
+ * <pre>
  *  Definition of the selector interface.
  *  an implementation of the selector interface provides the functionality
  *  to return a candidate from the candidateList that suits best for the dispatchingObject.
  * </pre>
- *  @param K : type of the candidate.
- *  @param V : type of the dispatching object.
+ *
+ * @param K : type of the candidate.
+ * @param V : type of the dispatching object.
  */
-public interface Selector <K extends Comparable<K>,V> {
+public interface Selector<K extends Comparable<K>, V> {
 
-  /** Function returns the next best suit candidate from the candidateList for the dispatching object.
-   *  @param  candidateList : List of the candidates to select from .
-   *  @param  dispatchingObject : the object to be dispatched .
-   *  @return candidate from the candidate list that suits best for the dispatching object.
-   * */
+  /**
+   * Function returns the next best suit candidate from the candidateList for the dispatching
+   * object.
+   *
+   * @param candidateList : List of the candidates to select from .
+   * @param dispatchingObject : the object to be dispatched .
+   * @return candidate from the candidate list that suits best for the dispatching object.
+   */
   public K getBest(Collection<K> candidateList, V dispatchingObject);
 
-  /** Function returns the name of the current Dispatcher
-   *  @return name of the dispatcher.
-   * */
+  /**
+   * Function returns the name of the current Dispatcher
+   *
+   * @return name of the dispatcher.
+   */
   public String getName();
 }

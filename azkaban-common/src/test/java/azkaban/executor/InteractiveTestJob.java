@@ -16,22 +16,26 @@
 
 package azkaban.executor;
 
-import java.util.concurrent.ConcurrentHashMap;
-
-import org.apache.log4j.Logger;
-
 import azkaban.flow.CommonJobProperties;
 import azkaban.jobExecutor.AbstractProcessJob;
 import azkaban.utils.Props;
+import java.util.concurrent.ConcurrentHashMap;
+import org.apache.log4j.Logger;
 
 public class InteractiveTestJob extends AbstractProcessJob {
-  private static ConcurrentHashMap<String, InteractiveTestJob> testJobs =
-      new ConcurrentHashMap<String, InteractiveTestJob>();
+
+  private static final ConcurrentHashMap<String, InteractiveTestJob> testJobs =
+      new ConcurrentHashMap<>();
   private Props generatedProperties = new Props();
   private boolean isWaiting = true;
   private boolean succeed = true;
 
-  public static InteractiveTestJob getTestJob(String name) {
+  public InteractiveTestJob(final String jobId, final Props sysProps, final Props jobProps,
+      final Logger log) {
+    super(jobId, sysProps, jobProps, log);
+  }
+
+  public static InteractiveTestJob getTestJob(final String name) {
     return testJobs.get(name);
   }
 
@@ -39,31 +43,26 @@ public class InteractiveTestJob extends AbstractProcessJob {
     testJobs.clear();
   }
 
-  public InteractiveTestJob(String jobId, Props sysProps, Props jobProps,
-      Logger log) {
-    super(jobId, sysProps, jobProps, log);
-  }
-
   @Override
   public void run() throws Exception {
-    String nestedFlowPath =
+    final String nestedFlowPath =
         this.getJobProps().get(CommonJobProperties.NESTED_FLOW_PATH);
-    String groupName = this.getJobProps().getString("group", null);
+    final String groupName = this.getJobProps().getString("group", null);
     String id = nestedFlowPath == null ? this.getId() : nestedFlowPath;
     if (groupName != null) {
       id = groupName + ":" + id;
     }
     testJobs.put(id, this);
 
-    while (isWaiting) {
+    while (this.isWaiting) {
       synchronized (this) {
         try {
           wait(30000);
-        } catch (InterruptedException e) {
+        } catch (final InterruptedException e) {
         }
 
-        if (!isWaiting) {
-          if (!succeed) {
+        if (!this.isWaiting) {
+          if (!this.succeed) {
             throw new RuntimeException("Forced failure of " + getId());
           } else {
             info("Job " + getId() + " succeeded.");
@@ -75,32 +74,32 @@ public class InteractiveTestJob extends AbstractProcessJob {
 
   public void failJob() {
     synchronized (this) {
-      succeed = false;
-      isWaiting = false;
+      this.succeed = false;
+      this.isWaiting = false;
       this.notify();
     }
   }
 
   public void succeedJob() {
     synchronized (this) {
-      succeed = true;
-      isWaiting = false;
+      this.succeed = true;
+      this.isWaiting = false;
       this.notify();
     }
   }
 
-  public void succeedJob(Props generatedProperties) {
+  public void succeedJob(final Props generatedProperties) {
     synchronized (this) {
       this.generatedProperties = generatedProperties;
-      succeed = true;
-      isWaiting = false;
+      this.succeed = true;
+      this.isWaiting = false;
       this.notify();
     }
   }
 
   @Override
   public Props getJobGeneratedProperties() {
-    return generatedProperties;
+    return this.generatedProperties;
   }
 
   @Override

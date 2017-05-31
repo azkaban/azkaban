@@ -17,17 +17,18 @@
 package azkaban.scheduler;
 
 public class ScheduleManagerException extends Exception {
+
   private static final long serialVersionUID = 1L;
 
-  public ScheduleManagerException(String message) {
+  public ScheduleManagerException(final String message) {
     super(message);
   }
 
-  public ScheduleManagerException(String message, Throwable cause) {
+  public ScheduleManagerException(final String message, final Throwable cause) {
     super(message, cause);
   }
 
-  public ScheduleManagerException(Exception e) {
+  public ScheduleManagerException(final Exception e) {
     super(e);
   }
 }

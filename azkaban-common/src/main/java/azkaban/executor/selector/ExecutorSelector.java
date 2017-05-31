@@ -16,30 +16,33 @@
 
 package azkaban.executor.selector;
 
+import azkaban.executor.ExecutableFlow;
+import azkaban.executor.Executor;
 import java.util.Collection;
 import java.util.Map;
 
-import azkaban.executor.ExecutableFlow;
-import azkaban.executor.Executor;
-
-/**<pre>
+/**
+ * <pre>
  * Executor selector class implementation.
  * NOTE: This class is a de-generalized version of the CandidateSelector, which provides a
  *       clean and convenient constructor to take in filter and comparator name list and build
  *       the instance from that.
- *</pre>
- * */
+ * </pre>
+ */
 public class ExecutorSelector extends CandidateSelector<Executor, ExecutableFlow> {
 
   /**
    * Contractor of the class.
-   * @param filterList      name list of the filters to be registered,
-   *                        filter feature will be disabled if a null value is passed.
-   * @param comparatorList  name/weight pair list of the comparators to be registered ,
-   *                        again comparator feature is disabled if a null value is passed.
-   * */
-  public ExecutorSelector(Collection<String> filterList, Map<String,Integer> comparatorList) {
-    super(null == filterList || filterList.isEmpty() ?         null : new ExecutorFilter(filterList),
-          null == comparatorList || comparatorList.isEmpty() ? null : new ExecutorComparator(comparatorList));
+   *
+   * @param filterList name list of the filters to be registered, filter feature will be disabled if
+   * a null value is passed.
+   * @param comparatorList name/weight pair list of the comparators to be registered , again
+   * comparator feature is disabled if a null value is passed.
+   */
+  public ExecutorSelector(final Collection<String> filterList,
+      final Map<String, Integer> comparatorList) {
+    super(null == filterList || filterList.isEmpty() ? null : new ExecutorFilter(filterList),
+        null == comparatorList || comparatorList.isEmpty() ? null
+            : new ExecutorComparator(comparatorList));
   }
 }

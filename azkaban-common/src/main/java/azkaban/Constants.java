@@ -22,13 +22,13 @@ package azkaban;
  *
  * Global place for storing constants.
  * Conventions:
- *  - All internal constants to be put in the root level ie. {@link Constants} class
- *  - All Configuration keys to be put in {@link ConfigurationKeys} class
- *  - Flow level Properties keys go to {@link FlowProperties}
- *  - Job  level Properties keys go to {@link JobProperties}
- *
+ * - All internal constants to be put in the root level ie. {@link Constants} class
+ * - All Configuration keys to be put in {@link ConfigurationKeys} class
+ * - Flow level Properties keys go to {@link FlowProperties}
+ * - Job  level Properties keys go to {@link JobProperties}
  */
 public class Constants {
+
   // Names and paths of various file names to configure Azkaban
   public static final String AZKABAN_PROPERTIES_FILE = "azkaban.properties";
   public static final String AZKABAN_PRIVATE_PROPERTIES_FILE = "azkaban.private.properties";
@@ -99,6 +99,7 @@ public class Constants {
   }
 
   public static class FlowProperties {
+
     // Basic properties of flows as set by the executor server
     public static final String AZKABAN_FLOW_PROJECT_NAME = "azkaban.flow.projectname";
     public static final String AZKABAN_FLOW_FLOW_ID = "azkaban.flow.flowid";
@@ -108,11 +109,13 @@ public class Constants {
   }
 
   public static class JobProperties {
+
     // Job property that enables/disables using Kafka logging of user job logs
     public static final String AZKABAN_JOB_LOGGING_KAFKA_ENABLE = "azkaban.job.logging.kafka.enable";
   }
 
   public static class JobCallbackProperties {
+
     public static final String JOBCALLBACK_CONNECTION_REQUEST_TIMEOUT = "jobcallback.connection.request.timeout";
     public static final String JOBCALLBACK_CONNECTION_TIMEOUT = "jobcallback.connection.timeout";
     public static final String JOBCALLBACK_SOCKET_TIMEOUT = "jobcallback.socket.timeout";

@@ -16,47 +16,43 @@
 
 package azkaban.trigger;
 
-import java.util.HashMap;
-import java.util.Map;
-
-import org.apache.log4j.Logger;
-
 import azkaban.utils.Props;
 import azkaban.utils.Utils;
+import java.util.HashMap;
+import java.util.Map;
+import org.apache.log4j.Logger;
 
 public class CheckerTypeLoader {
 
-  private static Logger logger = Logger.getLogger(CheckerTypeLoader.class);
-
   public static final String DEFAULT_CONDITION_CHECKER_PLUGIN_DIR =
       "plugins/conditioncheckers";
-
+  private static final Logger logger = Logger.getLogger(CheckerTypeLoader.class);
   protected static Map<String, Class<? extends ConditionChecker>> checkerToClass =
-      new HashMap<String, Class<? extends ConditionChecker>>();
+      new HashMap<>();
 
-  public void init(Props props) throws TriggerException {
+  public static void registerBuiltinCheckers(
+      final Map<String, Class<? extends ConditionChecker>> builtinCheckers) {
+    checkerToClass.putAll(checkerToClass);
+    for (final String type : builtinCheckers.keySet()) {
+      logger.info("Loaded " + type + " checker.");
+    }
   }
 
-  public synchronized void registerCheckerType(String type,
-      Class<? extends ConditionChecker> checkerClass) {
+  public void init(final Props props) throws TriggerException {
+  }
+
+  public synchronized void registerCheckerType(final String type,
+      final Class<? extends ConditionChecker> checkerClass) {
     logger.info("Registering checker " + type);
     if (!checkerToClass.containsKey(type)) {
       checkerToClass.put(type, checkerClass);
     }
   }
 
-  public static void registerBuiltinCheckers(
-      Map<String, Class<? extends ConditionChecker>> builtinCheckers) {
-    checkerToClass.putAll(checkerToClass);
-    for (String type : builtinCheckers.keySet()) {
-      logger.info("Loaded " + type + " checker.");
-    }
-  }
-
-  public ConditionChecker createCheckerFromJson(String type, Object obj)
+  public ConditionChecker createCheckerFromJson(final String type, final Object obj)
       throws Exception {
     ConditionChecker checker = null;
-    Class<? extends ConditionChecker> checkerClass = checkerToClass.get(type);
+    final Class<? extends ConditionChecker> checkerClass = checkerToClass.get(type);
     if (checkerClass == null) {
       throw new Exception("Checker type " + type + " not supported!");
     }
@@ -68,9 +64,9 @@ public class CheckerTypeLoader {
     return checker;
   }
 
-  public ConditionChecker createChecker(String type, Object... args) {
+  public ConditionChecker createChecker(final String type, final Object... args) {
     ConditionChecker checker = null;
-    Class<? extends ConditionChecker> checkerClass = checkerToClass.get(type);
+    final Class<? extends ConditionChecker> checkerClass = checkerToClass.get(type);
     checker = (ConditionChecker) Utils.callConstructor(checkerClass, args);
 
     return checker;

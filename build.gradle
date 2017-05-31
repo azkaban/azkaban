@@ -1,105 +1,105 @@
 buildscript {
-  repositories {
-    mavenCentral()
-    maven {
-      url 'https://plugins.gradle.org/m2/'
+    repositories {
+        mavenCentral()
+        maven {
+            url 'https://plugins.gradle.org/m2/'
+        }
     }
-  }
-  dependencies {
-    classpath 'com.cinnober.gradle:semver-git:2.2.3'
-    classpath 'net.ltgt.gradle:gradle-errorprone-plugin:0.0.10'
-  }
+    dependencies {
+        classpath 'com.cinnober.gradle:semver-git:2.2.3'
+        classpath 'net.ltgt.gradle:gradle-errorprone-plugin:0.0.10'
+    }
 }
 
 apply plugin: 'com.cinnober.gradle.semver-git'
 apply plugin: 'idea'
 
 allprojects {
-  repositories {
-    mavenCentral()
-    mavenLocal()
-  }
+    repositories {
+        mavenCentral()
+        mavenLocal()
+    }
 }
 
 subprojects {
-  apply plugin: 'java'
-  apply plugin: 'idea'
-  apply plugin: 'eclipse'
-  apply plugin: 'net.ltgt.errorprone'
+    apply plugin: 'java'
+    apply plugin: 'idea'
+    apply plugin: 'eclipse'
+    apply plugin: 'net.ltgt.errorprone'
 
-  // Set the same version for all sub-projects to root project version
-  version = rootProject.version
+    // Set the same version for all sub-projects to root project version
+    version = rootProject.version
 
-  plugins.withType(JavaPlugin) {
-    sourceCompatibility = JavaVersion.VERSION_1_8
+    plugins.withType(JavaPlugin) {
+        sourceCompatibility = JavaVersion.VERSION_1_8
 
-    /*
-     TODO remove afterEvaluate block
-     After Evaluate block was added to do a lazy evaluation. This piece of code gets executed by gradle in the
-     configuration phase. However, for some reason the version field was not updated by the LinkedIn build
-     infrastructure. Thus, using afterEvaluate to do a lazy evaluation of this code block.
-     More specifically afterEvaluate kicks in after the rest of the project is configured
+        /*
+         TODO remove afterEvaluate block
+         After Evaluate block was added to do a lazy evaluation. This piece of code gets executed by gradle in the
+         configuration phase. However, for some reason the version field was not updated by the LinkedIn build
+         infrastructure. Thus, using afterEvaluate to do a lazy evaluation of this code block.
+         More specifically afterEvaluate kicks in after the rest of the project is configured
 
-     See: http://stackoverflow.com/questions/16218888/can-gradle-extensions-handle-lazy-evaluation-of-a-property
-     See: http://stackoverflow.com/questions/16070567/difference-between-gradles-terms-evaluation-and-execution
+         See: http://stackoverflow.com/questions/16218888/can-gradle-extensions-handle-lazy-evaluation-of-a-property
+         See: http://stackoverflow.com/questions/16070567/difference-between-gradles-terms-evaluation-and-execution
+         */
+        project.afterEvaluate {
+            // Set the Title and Version fields in the jar
+            jar {
+                manifest {
+                    attributes(
+                            'Implementation-Title': project.name,
+                            'Implementation-Version': project.version)
+                }
+            }
+        }
+
+        dependencies {
+            testCompile('junit:junit:4.12')
+        }
+    }
+
+    // Common distribution plugin settings for sub-modules
+    plugins.withType(DistributionPlugin) {
+        distTar {
+            compression = Compression.GZIP
+            extension = 'tar.gz'
+        }
+    }
+
+    /**
+     * Print test execution summary when informational logging is enabled.
      */
-    project.afterEvaluate {
-      // Set the Title and Version fields in the jar
-      jar {
-        manifest {
-          attributes(
-              'Implementation-Title': project.name,
-              'Implementation-Version': project.version)
+    test {
+        testLogging {
+            exceptionFormat = 'full'
+            afterSuite { desc, result ->
+                if (desc.getParent()) {
+                    logger.info desc.getName()
+                } else {
+                    logger.info "Overall"
+                }
+                logger.info "  ${result.resultType} (" +
+                        "${result.testCount} tests, " +
+                        "${result.successfulTestCount} passed, " +
+                        "${result.failedTestCount} failed, " +
+                        "${result.skippedTestCount} skipped)"
+            }
         }
-      }
     }
-
-    dependencies {
-      testCompile('junit:junit:4.12')
-    }
-  }
-
-  // Common distribution plugin settings for sub-modules
-  plugins.withType(DistributionPlugin) {
-    distTar {
-      compression = Compression.GZIP
-      extension = 'tar.gz'
-    }
-  }
-
-  /**
-   * Print test execution summary when informational logging is enabled.
-   */
-  test {
-    testLogging {
-      exceptionFormat = 'full'
-      afterSuite { desc, result ->
-        if (desc.getParent()) {
-          logger.info desc.getName()
-        } else {
-          logger.info "Overall"
-        }
-        logger.info "  ${result.resultType} (" +
-              "${result.testCount} tests, " +
-              "${result.successfulTestCount} passed, " +
-              "${result.failedTestCount} failed, " +
-              "${result.skippedTestCount} skipped)"
-      }
-    }
-  }
 }
 
 /**
  * Gradle wrapper task.
  */
 task wrapper(type: Wrapper) {
-  gradleVersion = '3.5'
-  distributionType('ALL')
+    gradleVersion = '3.5'
+    distributionType('ALL')
 }
 
 idea {
-  project {
-    languageLevel = '1.8'
-    vcs = 'Git'
-  }
+    project {
+        languageLevel = '1.8'
+        vcs = 'Git'
+    }
 }

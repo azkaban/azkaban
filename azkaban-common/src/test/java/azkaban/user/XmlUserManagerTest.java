@@ -16,20 +16,19 @@
 
 package azkaban.user;
 
-import java.util.HashSet;
+import static org.junit.Assert.fail;
 
+import azkaban.utils.Props;
+import azkaban.utils.UndefinedPropertyException;
+import java.util.HashSet;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import static org.junit.Assert.fail;
-
-import azkaban.utils.Props;
-import azkaban.utils.UndefinedPropertyException;
-
 public class XmlUserManagerTest {
-  private Props baseProps = new Props();
+
+  private final Props baseProps = new Props();
 
   @Before
   public void setUp() throws Exception {
@@ -41,18 +40,15 @@ public class XmlUserManagerTest {
 
   /**
    * Testing for when the xml path isn't set in properties.
-   *
-   * @throws Exception
    */
   @Test
   public void testFilePropNotSet() throws Exception {
-    Props props = new Props(baseProps);
+    final Props props = new Props(this.baseProps);
 
     // Should throw
     try {
-      @SuppressWarnings("unused")
-      XmlUserManager manager = new XmlUserManager(props);
-    } catch (UndefinedPropertyException e) {
+      final XmlUserManager manager = new XmlUserManager(props);
+    } catch (final UndefinedPropertyException e) {
       return;
     }
 
@@ -61,101 +57,100 @@ public class XmlUserManagerTest {
 
   /**
    * Testing for when the xml path doesn't exist.
-   *
-   * @throws Exception
    */
-  @Ignore @Test
+  @Ignore
+  @Test
   public void testDoNotExist() throws Exception {
-    Props props = new Props(baseProps);
+    final Props props = new Props(this.baseProps);
     props.put(XmlUserManager.XML_FILE_PARAM, "unit/test-conf/doNotExist.xml");
 
     try {
-      @SuppressWarnings("unused")
-      UserManager manager = new XmlUserManager(props);
-    } catch (RuntimeException e) {
+      final UserManager manager = new XmlUserManager(props);
+    } catch (final RuntimeException e) {
       return;
     }
 
     fail("XmlUserManager should throw an exception when the file doesn't exist");
   }
 
-  @Ignore @Test
+  @Ignore
+  @Test
   public void testBasicLoad() throws Exception {
-    Props props = new Props(baseProps);
+    final Props props = new Props(this.baseProps);
     props.put(XmlUserManager.XML_FILE_PARAM,
         "unit/test-conf/azkaban-users-test1.xml");
 
     UserManager manager = null;
     try {
       manager = new XmlUserManager(props);
-    } catch (RuntimeException e) {
+    } catch (final RuntimeException e) {
       e.printStackTrace();
       fail("XmlUserManager should've found file azkaban-users.xml");
     }
 
     try {
       manager.getUser("user0", null);
-    } catch (UserManagerException e) {
+    } catch (final UserManagerException e) {
       System.out.println("Exception handled correctly: " + e.getMessage());
     }
 
     try {
       manager.getUser(null, "etw");
-    } catch (UserManagerException e) {
+    } catch (final UserManagerException e) {
       System.out.println("Exception handled correctly: " + e.getMessage());
     }
 
     try {
       manager.getUser("user0", "user0");
-    } catch (UserManagerException e) {
+    } catch (final UserManagerException e) {
       System.out.println("Exception handled correctly: " + e.getMessage());
     }
 
     try {
       manager.getUser("user0", "password0");
-    } catch (UserManagerException e) {
+    } catch (final UserManagerException e) {
       e.printStackTrace();
       fail("XmlUserManager should've returned a user.");
     }
 
-    User user0 = manager.getUser("user0", "password0");
+    final User user0 = manager.getUser("user0", "password0");
     checkUser(user0, "role0", "group0");
 
-    User user1 = manager.getUser("user1", "password1");
+    final User user1 = manager.getUser("user1", "password1");
     checkUser(user1, "role0,role1", "group1,group2");
 
-    User user2 = manager.getUser("user2", "password2");
+    final User user2 = manager.getUser("user2", "password2");
     checkUser(user2, "role0,role1,role2", "group1,group2,group3");
 
-    User user3 = manager.getUser("user3", "password3");
+    final User user3 = manager.getUser("user3", "password3");
     checkUser(user3, "role1,role2", "group1,group2");
 
-    User user4 = manager.getUser("user4", "password4");
+    final User user4 = manager.getUser("user4", "password4");
     checkUser(user4, "role1,role2", "group1,group2");
 
-    User user5 = manager.getUser("user5", "password5");
+    final User user5 = manager.getUser("user5", "password5");
     checkUser(user5, "role1,role2", "group1,group2");
 
-    User user6 = manager.getUser("user6", "password6");
+    final User user6 = manager.getUser("user6", "password6");
     checkUser(user6, "role3,role2", "group1,group2");
 
-    User user7 = manager.getUser("user7", "password7");
+    final User user7 = manager.getUser("user7", "password7");
     checkUser(user7, "", "group1");
 
-    User user8 = manager.getUser("user8", "password8");
+    final User user8 = manager.getUser("user8", "password8");
     checkUser(user8, "role3", "");
 
-    User user9 = manager.getUser("user9", "password9");
+    final User user9 = manager.getUser("user9", "password9");
     checkUser(user9, "", "");
   }
 
-  private void checkUser(User user, String rolesStr, String groupsStr) {
+  private void checkUser(final User user, final String rolesStr, final String groupsStr) {
     // Validating roles
-    HashSet<String> roleSet = new HashSet<String>(user.getRoles());
+    final HashSet<String> roleSet = new HashSet<>(user.getRoles());
     if (rolesStr.isEmpty()) {
       if (!roleSet.isEmpty()) {
         String outputRoleStr = "";
-        for (String role : roleSet) {
+        for (final String role : roleSet) {
           outputRoleStr += role + ",";
         }
         throw new RuntimeException("Roles mismatch for " + user.getUserId()
@@ -163,13 +158,13 @@ public class XmlUserManagerTest {
       }
     } else {
       String outputRoleStr = "";
-      for (String role : roleSet) {
+      for (final String role : roleSet) {
         outputRoleStr += role + ",";
       }
 
-      String[] splitRoles = rolesStr.split(",");
-      HashSet<String> expectedRoles = new HashSet<String>();
-      for (String role : splitRoles) {
+      final String[] splitRoles = rolesStr.split(",");
+      final HashSet<String> expectedRoles = new HashSet<>();
+      for (final String role : splitRoles) {
         if (!roleSet.contains(role)) {
           throw new RuntimeException("Roles mismatch for user "
               + user.getUserId() + " role " + role + ". Expected roles to "
@@ -178,7 +173,7 @@ public class XmlUserManagerTest {
         expectedRoles.add(role);
       }
 
-      for (String role : roleSet) {
+      for (final String role : roleSet) {
         if (!expectedRoles.contains(role)) {
           throw new RuntimeException("Roles mismatch for user "
               + user.getUserId() + " role " + role + ". Expected roles to "
@@ -187,11 +182,11 @@ public class XmlUserManagerTest {
       }
     }
 
-    HashSet<String> groupSet = new HashSet<String>(user.getGroups());
+    final HashSet<String> groupSet = new HashSet<>(user.getGroups());
     if (groupsStr.isEmpty()) {
       if (!groupSet.isEmpty()) {
         String outputGroupStr = "";
-        for (String role : roleSet) {
+        for (final String role : roleSet) {
           outputGroupStr += role + ",";
         }
         throw new RuntimeException("Roles mismatch for " + user.getUserId()
@@ -199,13 +194,13 @@ public class XmlUserManagerTest {
       }
     } else {
       String outputGroupStr = "";
-      for (String group : groupSet) {
+      for (final String group : groupSet) {
         outputGroupStr += group + ",";
       }
 
-      String[] splitGroups = groupsStr.split(",");
-      HashSet<String> expectedGroups = new HashSet<String>();
-      for (String group : splitGroups) {
+      final String[] splitGroups = groupsStr.split(",");
+      final HashSet<String> expectedGroups = new HashSet<>();
+      for (final String group : splitGroups) {
         if (!groupSet.contains(group)) {
           throw new RuntimeException("Groups mismatch for user "
               + user.getUserId() + " group " + group + ". Expected groups to "
@@ -214,7 +209,7 @@ public class XmlUserManagerTest {
         expectedGroups.add(group);
       }
 
-      for (String group : groupSet) {
+      for (final String group : groupSet) {
         if (!expectedGroups.contains(group)) {
           throw new RuntimeException("Groups mismatch for user "
               + user.getUserId() + " group " + group + ". Expected groups to "

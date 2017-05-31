@@ -16,6 +16,7 @@
 
 package azkaban.execapp;
 
+import azkaban.execapp.action.KillExecutionAction;
 import azkaban.sla.SlaOption;
 import azkaban.trigger.Condition;
 import azkaban.trigger.ConditionChecker;
@@ -23,7 +24,6 @@ import azkaban.trigger.TriggerAction;
 import azkaban.trigger.builtin.SlaAlertAction;
 import azkaban.trigger.builtin.SlaChecker;
 import azkaban.utils.Utils;
-import azkaban.execapp.action.KillExecutionAction;
 import com.google.inject.Inject;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -37,8 +37,9 @@ import org.joda.time.ReadablePeriod;
 
 
 public class TriggerManager {
-  private static Logger logger = Logger.getLogger(TriggerManager.class);
+
   private static final int SCHEDULED_THREAD_POOL_SIZE = 4;
+  private static final Logger logger = Logger.getLogger(TriggerManager.class);
   private final ScheduledExecutorService scheduledService;
 
   @Inject
@@ -46,17 +47,18 @@ public class TriggerManager {
     this.scheduledService = Executors.newScheduledThreadPool(SCHEDULED_THREAD_POOL_SIZE);
   }
 
-  private Condition createCondition(SlaOption sla, int execId, String checkerName, String checkerMethod) {
-    SlaChecker slaFailChecker = new SlaChecker(checkerName, sla, execId);
-    Map<String, ConditionChecker> slaCheckers = new HashMap<>();
+  private Condition createCondition(final SlaOption sla, final int execId, final String checkerName,
+      final String checkerMethod) {
+    final SlaChecker slaFailChecker = new SlaChecker(checkerName, sla, execId);
+    final Map<String, ConditionChecker> slaCheckers = new HashMap<>();
     slaCheckers.put(slaFailChecker.getId(), slaFailChecker);
     return new Condition(slaCheckers, slaFailChecker.getId() + "." + checkerMethod);
   }
 
-  private List<TriggerAction> createActions(SlaOption sla, int execId) {
-    List<TriggerAction> actions = new ArrayList<>();
-    List<String> slaActions = sla.getActions();
-    for (String act : slaActions) {
+  private List<TriggerAction> createActions(final SlaOption sla, final int execId) {
+    final List<TriggerAction> actions = new ArrayList<>();
+    final List<String> slaActions = sla.getActions();
+    for (final String act : slaActions) {
       TriggerAction action = null;
       switch (act) {
         case SlaOption.ACTION_ALERT:
@@ -76,25 +78,27 @@ public class TriggerManager {
     return actions;
   }
 
-  public void addTrigger(int execId, List<SlaOption> slaOptions) {
-    for (SlaOption sla : slaOptions) {
-      Condition triggerCond = createCondition(sla, execId, "slaFailChecker", "isSlaFailed()");
+  public void addTrigger(final int execId, final List<SlaOption> slaOptions) {
+    for (final SlaOption sla : slaOptions) {
+      final Condition triggerCond = createCondition(sla, execId, "slaFailChecker", "isSlaFailed()");
 
       // if whole flow finish before violating sla, just expire the checker
-      Condition expireCond = createCondition(sla, execId, "slaPassChecker", "isSlaPassed()");
+      final Condition expireCond = createCondition(sla, execId, "slaPassChecker", "isSlaPassed()");
 
-      List<TriggerAction> actions = createActions(sla, execId);
-      Trigger trigger = new Trigger(execId, triggerCond, expireCond, actions);
+      final List<TriggerAction> actions = createActions(sla, execId);
+      final Trigger trigger = new Trigger(execId, triggerCond, expireCond, actions);
 
-      ReadablePeriod duration = Utils.parsePeriodString((String) sla.getInfo().get(SlaOption.INFO_DURATION));
-      long durationInMillis = duration.toPeriod().toStandardDuration().getMillis();
+      final ReadablePeriod duration = Utils
+          .parsePeriodString((String) sla.getInfo().get(SlaOption.INFO_DURATION));
+      final long durationInMillis = duration.toPeriod().toStandardDuration().getMillis();
 
-      logger.info("Adding sla trigger " + sla.toString() + " to execution " + execId + ", scheduled to trigger in " + durationInMillis/1000 + " seconds");
-      scheduledService.schedule(trigger, durationInMillis, TimeUnit.MILLISECONDS);
+      logger.info("Adding sla trigger " + sla.toString() + " to execution " + execId
+          + ", scheduled to trigger in " + durationInMillis / 1000 + " seconds");
+      this.scheduledService.schedule(trigger, durationInMillis, TimeUnit.MILLISECONDS);
     }
   }
 
   public void shutdown() {
-    scheduledService.shutdownNow();
+    this.scheduledService.shutdownNow();
   }
 }

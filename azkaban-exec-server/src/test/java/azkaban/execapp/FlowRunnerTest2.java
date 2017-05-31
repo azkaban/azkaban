@@ -16,20 +16,6 @@
 
 package azkaban.execapp;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
-
-import org.apache.commons.io.FileUtils;
-import org.apache.log4j.Logger;
-
-import org.junit.Assert;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Test;
-
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutableFlowBase;
 import azkaban.executor.ExecutableNode;
@@ -43,11 +29,22 @@ import azkaban.flow.Flow;
 import azkaban.jobtype.JobTypeManager;
 import azkaban.jobtype.JobTypePluginSet;
 import azkaban.project.DirectoryFlowLoader;
+import azkaban.project.MockProjectLoader;
 import azkaban.project.Project;
 import azkaban.project.ProjectLoader;
 import azkaban.project.ProjectManagerException;
-import azkaban.project.MockProjectLoader;
 import azkaban.utils.Props;
+import java.io.File;
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
+import org.apache.commons.io.FileUtils;
+import org.apache.log4j.Logger;
+import org.junit.After;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Ignore;
+import org.junit.Test;
 
 /**
  * Test the flow run, especially with embedded flows.
@@ -59,48 +56,49 @@ import azkaban.utils.Props;
  * Flow jobf looks like the following:
  *
  *
- *       joba       joba1
- *      /  |  \      |
- *     /   |   \     |
- *  jobb  jobd jobc  |
- *     \   |   /    /
- *      \  |  /    /
- *        jobe    /
- *         |     /
- *         |    /
- *        jobf
+ * joba       joba1
+ * /  |  \      |
+ * /   |   \     |
+ * jobb  jobd jobc  |
+ * \   |   /    /
+ * \  |  /    /
+ * jobe    /
+ * |     /
+ * |    /
+ * jobf
  *
- *  The job 'jobb' is an embedded flow:
+ * The job 'jobb' is an embedded flow:
  *
- *  jobb:innerFlow
+ * jobb:innerFlow
  *
- *        innerJobA
- *        /       \
- *   innerJobB   innerJobC
- *        \       /
- *        innerFlow
+ * innerJobA
+ * /       \
+ * innerJobB   innerJobC
+ * \       /
+ * innerFlow
  *
  *
- *  The job 'jobd' is a simple embedded flow:
+ * The job 'jobd' is a simple embedded flow:
  *
- *  jobd:innerFlow2
+ * jobd:innerFlow2
  *
- *       innerJobA
- *           |
- *       innerFlow2
+ * innerJobA
+ * |
+ * innerFlow2
  *
- *  The following tests checks each stage of the flow run by forcing jobs to
- *  succeed or fail.
+ * The following tests checks each stage of the flow run by forcing jobs to
+ * succeed or fail.
  */
 public class FlowRunnerTest2 {
+
+  private static int id = 101;
+  private final Logger logger = Logger.getLogger(FlowRunnerTest2.class);
   private File workingDir;
   private JobTypeManager jobtypeManager;
   private ProjectLoader fakeProjectLoader;
   private ExecutorLoader fakeExecutorLoader;
-  private Logger logger = Logger.getLogger(FlowRunnerTest2.class);
   private Project project;
   private Map<String, Flow> flowMap;
-  private static int id=101;
 
   public FlowRunnerTest2() {
   }
@@ -108,23 +106,23 @@ public class FlowRunnerTest2 {
   @Before
   public void setUp() throws Exception {
     System.out.println("Create temp dir");
-    workingDir = new File("_AzkabanTestDir_" + System.currentTimeMillis());
-    if (workingDir.exists()) {
-      FileUtils.deleteDirectory(workingDir);
+    this.workingDir = new File("_AzkabanTestDir_" + System.currentTimeMillis());
+    if (this.workingDir.exists()) {
+      FileUtils.deleteDirectory(this.workingDir);
     }
-    workingDir.mkdirs();
-    jobtypeManager = new JobTypeManager(null, null,
+    this.workingDir.mkdirs();
+    this.jobtypeManager = new JobTypeManager(null, null,
         this.getClass().getClassLoader());
-    JobTypePluginSet pluginSet = jobtypeManager.getJobTypePluginSet();
+    final JobTypePluginSet pluginSet = this.jobtypeManager.getJobTypePluginSet();
 
     pluginSet.addPluginClass("java", JavaJob.class);
     pluginSet.addPluginClass("test", InteractiveTestJob.class);
-    fakeProjectLoader = new MockProjectLoader(workingDir);
-    fakeExecutorLoader = new MockExecutorLoader();
-    project = new Project(1, "testProject");
+    this.fakeProjectLoader = new MockProjectLoader(this.workingDir);
+    this.fakeExecutorLoader = new MockExecutorLoader();
+    this.project = new Project(1, "testProject");
 
-    File dir = new File("unit/executions/embedded2");
-    prepareProject(project, dir);
+    final File dir = new File("unit/executions/embedded2");
+    prepareProject(this.project, dir);
 
     InteractiveTestJob.clearTestJobs();
   }
@@ -132,30 +130,29 @@ public class FlowRunnerTest2 {
   @After
   public void tearDown() throws IOException {
     System.out.println("Teardown temp dir");
-    if (workingDir != null) {
-      FileUtils.deleteDirectory(workingDir);
-      workingDir = null;
+    if (this.workingDir != null) {
+      FileUtils.deleteDirectory(this.workingDir);
+      this.workingDir = null;
     }
   }
 
   /**
    * Tests the basic successful flow run, and also tests all output variables
    * from each job.
-   *
-   * @throws Exception
    */
-  @Ignore @Test
+  @Ignore
+  @Test
   public void testBasicRun() throws Exception {
-    EventCollectorListener eventCollector = new EventCollectorListener();
-    FlowRunner runner = createFlowRunner(eventCollector, "jobf");
+    final EventCollectorListener eventCollector = new EventCollectorListener();
+    final FlowRunner runner = createFlowRunner(eventCollector, "jobf");
 
-    Map<String, Status> expectedStateMap = new HashMap<String, Status>();
-    Map<String, ExecutableNode> nodeMap = new HashMap<String, ExecutableNode>();
+    final Map<String, Status> expectedStateMap = new HashMap<>();
+    final Map<String, ExecutableNode> nodeMap = new HashMap<>();
 
     // 1. START FLOW
-    ExecutableFlow flow = runner.getExecutableFlow();
+    final ExecutableFlow flow = runner.getExecutableFlow();
     createExpectedStateMap(flow, expectedStateMap, nodeMap);
-    Thread thread = runFlowRunnerInThread(runner);
+    final Thread thread = runFlowRunnerInThread(runner);
     pause(250);
 
     // After it starts up, only joba should be running
@@ -163,7 +160,7 @@ public class FlowRunnerTest2 {
     expectedStateMap.put("joba1", Status.RUNNING);
 
     compareStates(expectedStateMap, nodeMap);
-    Props joba = nodeMap.get("joba").getInputProps();
+    final Props joba = nodeMap.get("joba").getInputProps();
     Assert.assertEquals("joba.1", joba.get("param1"));
     Assert.assertEquals("test1.2", joba.get("param2"));
     Assert.assertEquals("test1.3", joba.get("param3"));
@@ -173,7 +170,7 @@ public class FlowRunnerTest2 {
     Assert.assertEquals("test2.7", joba.get("param7"));
     Assert.assertEquals("test2.8", joba.get("param8"));
 
-    Props joba1 = nodeMap.get("joba1").getInputProps();
+    final Props joba1 = nodeMap.get("joba1").getInputProps();
     Assert.assertEquals("test1.1", joba1.get("param1"));
     Assert.assertEquals("test1.2", joba1.get("param2"));
     Assert.assertEquals("test1.3", joba1.get("param3"));
@@ -196,16 +193,16 @@ public class FlowRunnerTest2 {
     expectedStateMap.put("jobb:innerJobA", Status.RUNNING);
     compareStates(expectedStateMap, nodeMap);
 
-    ExecutableNode node = nodeMap.get("jobb");
+    final ExecutableNode node = nodeMap.get("jobb");
     Assert.assertEquals(Status.RUNNING, node.getStatus());
-    Props jobb = node.getInputProps();
+    final Props jobb = node.getInputProps();
     Assert.assertEquals("override.4", jobb.get("param4"));
     // Test that jobb properties overwrites the output properties
     Assert.assertEquals("moo", jobb.get("testprops"));
     Assert.assertEquals("jobb", jobb.get("output.override"));
     Assert.assertEquals("joba", jobb.get("output.joba"));
 
-    Props jobbInnerJobA = nodeMap.get("jobb:innerJobA").getInputProps();
+    final Props jobbInnerJobA = nodeMap.get("jobb:innerJobA").getInputProps();
     Assert.assertEquals("test1.1", jobbInnerJobA.get("param1"));
     Assert.assertEquals("test1.2", jobbInnerJobA.get("param2"));
     Assert.assertEquals("test1.3", jobbInnerJobA.get("param3"));
@@ -225,7 +222,7 @@ public class FlowRunnerTest2 {
     expectedStateMap.put("jobb:innerJobB", Status.RUNNING);
     expectedStateMap.put("jobb:innerJobC", Status.RUNNING);
     compareStates(expectedStateMap, nodeMap);
-    Props jobbInnerJobB = nodeMap.get("jobb:innerJobB").getInputProps();
+    final Props jobbInnerJobB = nodeMap.get("jobb:innerJobB").getInputProps();
     Assert.assertEquals("test1.1", jobbInnerJobB.get("param1"));
     Assert.assertEquals("override.4", jobbInnerJobB.get("param4"));
     Assert.assertEquals("jobb.innerJobA",
@@ -242,7 +239,7 @@ public class FlowRunnerTest2 {
     expectedStateMap.put("jobb:innerFlow", Status.RUNNING);
     compareStates(expectedStateMap, nodeMap);
 
-    Props jobbInnerJobD = nodeMap.get("jobb:innerFlow").getInputProps();
+    final Props jobbInnerJobD = nodeMap.get("jobb:innerFlow").getInputProps();
     Assert.assertEquals("test1.1", jobbInnerJobD.get("param1"));
     Assert.assertEquals("override.4", jobbInnerJobD.get("param4"));
     Assert.assertEquals("jobb.innerJobB",
@@ -257,7 +254,7 @@ public class FlowRunnerTest2 {
     expectedStateMap.put("jobb:innerFlow", Status.SUCCEEDED);
     expectedStateMap.put("jobb", Status.SUCCEEDED);
     compareStates(expectedStateMap, nodeMap);
-    Props jobbOutput = nodeMap.get("jobb").getOutputProps();
+    final Props jobbOutput = nodeMap.get("jobb").getOutputProps();
     Assert.assertEquals("test1", jobbOutput.get("output1.jobb"));
     Assert.assertEquals("test2", jobbOutput.get("output2.jobb"));
 
@@ -277,7 +274,7 @@ public class FlowRunnerTest2 {
     expectedStateMap.put("jobe", Status.RUNNING);
     compareStates(expectedStateMap, nodeMap);
 
-    Props jobd = nodeMap.get("jobe").getInputProps();
+    final Props jobd = nodeMap.get("jobe").getInputProps();
     Assert.assertEquals("test1", jobd.get("output1.jobb"));
     Assert.assertEquals("jobc", jobd.get("output.jobc"));
 
@@ -303,23 +300,22 @@ public class FlowRunnerTest2 {
   /**
    * Tests a flow with Disabled jobs and flows. They should properly SKIP
    * executions
-   *
-   * @throws Exception
    */
-  @Ignore @Test
+  @Ignore
+  @Test
   public void testDisabledNormal() throws Exception {
-    EventCollectorListener eventCollector = new EventCollectorListener();
-    FlowRunner runner = createFlowRunner(eventCollector, "jobf");
-    ExecutableFlow flow = runner.getExecutableFlow();
-    Map<String, Status> expectedStateMap = new HashMap<String, Status>();
-    Map<String, ExecutableNode> nodeMap = new HashMap<String, ExecutableNode>();
+    final EventCollectorListener eventCollector = new EventCollectorListener();
+    final FlowRunner runner = createFlowRunner(eventCollector, "jobf");
+    final ExecutableFlow flow = runner.getExecutableFlow();
+    final Map<String, Status> expectedStateMap = new HashMap<>();
+    final Map<String, ExecutableNode> nodeMap = new HashMap<>();
     flow.getExecutableNode("jobb").setStatus(Status.DISABLED);
-    ((ExecutableFlowBase)flow.getExecutableNode("jobd")).getExecutableNode(
+    ((ExecutableFlowBase) flow.getExecutableNode("jobd")).getExecutableNode(
         "innerJobA").setStatus(Status.DISABLED);
 
     // 1. START FLOW
     createExpectedStateMap(flow, expectedStateMap, nodeMap);
-    Thread thread = runFlowRunnerInThread(runner);
+    final Thread thread = runFlowRunnerInThread(runner);
     pause(250);
 
     // After it starts up, only joba should be running
@@ -376,21 +372,20 @@ public class FlowRunnerTest2 {
    * Tests a failure with the default FINISH_CURRENTLY_RUNNING.
    * After the first failure, every job that started should complete, and the
    * rest of the jobs should be skipped.
-   *
-   * @throws Exception
    */
-  @Ignore @Test
+  @Ignore
+  @Test
   public void testNormalFailure1() throws Exception {
     // Test propagation of KILLED status to embedded flows.
-    EventCollectorListener eventCollector = new EventCollectorListener();
-    FlowRunner runner = createFlowRunner(eventCollector, "jobf");
-    ExecutableFlow flow = runner.getExecutableFlow();
-    Map<String, Status> expectedStateMap = new HashMap<String, Status>();
-    Map<String, ExecutableNode> nodeMap = new HashMap<String, ExecutableNode>();
+    final EventCollectorListener eventCollector = new EventCollectorListener();
+    final FlowRunner runner = createFlowRunner(eventCollector, "jobf");
+    final ExecutableFlow flow = runner.getExecutableFlow();
+    final Map<String, Status> expectedStateMap = new HashMap<>();
+    final Map<String, ExecutableNode> nodeMap = new HashMap<>();
 
     // 1. START FLOW
     createExpectedStateMap(flow, expectedStateMap, nodeMap);
-    Thread thread = runFlowRunnerInThread(runner);
+    final Thread thread = runFlowRunnerInThread(runner);
     pause(250);
 
     // After it starts up, only joba should be running
@@ -425,20 +420,20 @@ public class FlowRunnerTest2 {
 
   /**
    * Test #2 on the default failure case.
-   * @throws Exception
    */
-  @Ignore @Test
+  @Ignore
+  @Test
   public void testNormalFailure2() throws Exception {
     // Test propagation of KILLED status to embedded flows different branch
-    EventCollectorListener eventCollector = new EventCollectorListener();
-    FlowRunner runner = createFlowRunner(eventCollector, "jobf");
-    ExecutableFlow flow = runner.getExecutableFlow();
-    Map<String, Status> expectedStateMap = new HashMap<String, Status>();
-    Map<String, ExecutableNode> nodeMap = new HashMap<String, ExecutableNode>();
+    final EventCollectorListener eventCollector = new EventCollectorListener();
+    final FlowRunner runner = createFlowRunner(eventCollector, "jobf");
+    final ExecutableFlow flow = runner.getExecutableFlow();
+    final Map<String, Status> expectedStateMap = new HashMap<>();
+    final Map<String, ExecutableNode> nodeMap = new HashMap<>();
 
     // 1. START FLOW
     createExpectedStateMap(flow, expectedStateMap, nodeMap);
-    Thread thread = runFlowRunnerInThread(runner);
+    final Thread thread = runFlowRunnerInThread(runner);
     pause(250);
 
     // After it starts up, only joba should be running
@@ -488,18 +483,19 @@ public class FlowRunnerTest2 {
     Assert.assertFalse(thread.isAlive());
   }
 
-  @Ignore @Test
+  @Ignore
+  @Test
   public void testNormalFailure3() throws Exception {
     // Test propagation of CANCELLED status to embedded flows different branch
-    EventCollectorListener eventCollector = new EventCollectorListener();
-    FlowRunner runner = createFlowRunner(eventCollector, "jobf");
-    ExecutableFlow flow = runner.getExecutableFlow();
-    Map<String, Status> expectedStateMap = new HashMap<String, Status>();
-    Map<String, ExecutableNode> nodeMap = new HashMap<String, ExecutableNode>();
+    final EventCollectorListener eventCollector = new EventCollectorListener();
+    final FlowRunner runner = createFlowRunner(eventCollector, "jobf");
+    final ExecutableFlow flow = runner.getExecutableFlow();
+    final Map<String, Status> expectedStateMap = new HashMap<>();
+    final Map<String, ExecutableNode> nodeMap = new HashMap<>();
 
     // 1. START FLOW
     createExpectedStateMap(flow, expectedStateMap, nodeMap);
-    Thread thread = runFlowRunnerInThread(runner);
+    final Thread thread = runFlowRunnerInThread(runner);
     pause(250);
 
     // After it starts up, only joba should be running
@@ -562,22 +558,21 @@ public class FlowRunnerTest2 {
    * In this case, all jobs which have had its pre-requisite met can continue
    * to run. Finishes when the failure is propagated to the last node of the
    * flow.
-   *
-   * @throws Exception
    */
-  @Ignore @Test
+  @Ignore
+  @Test
   public void testFailedFinishingFailure3() throws Exception {
     // Test propagation of KILLED status to embedded flows different branch
-    EventCollectorListener eventCollector = new EventCollectorListener();
-    FlowRunner runner = createFlowRunner(eventCollector, "jobf",
+    final EventCollectorListener eventCollector = new EventCollectorListener();
+    final FlowRunner runner = createFlowRunner(eventCollector, "jobf",
         FailureAction.FINISH_ALL_POSSIBLE);
-    ExecutableFlow flow = runner.getExecutableFlow();
-    Map<String, Status> expectedStateMap = new HashMap<String, Status>();
-    Map<String, ExecutableNode> nodeMap = new HashMap<String, ExecutableNode>();
+    final ExecutableFlow flow = runner.getExecutableFlow();
+    final Map<String, Status> expectedStateMap = new HashMap<>();
+    final Map<String, ExecutableNode> nodeMap = new HashMap<>();
 
     // 1. START FLOW
     createExpectedStateMap(flow, expectedStateMap, nodeMap);
-    Thread thread = runFlowRunnerInThread(runner);
+    final Thread thread = runFlowRunnerInThread(runner);
     pause(250);
 
     // After it starts up, only joba should be running
@@ -644,22 +639,21 @@ public class FlowRunnerTest2 {
    *
    * Any jobs that are running will be assigned a KILLED state, and any nodes
    * which were skipped due to prior errors will be given a CANCELLED state.
-   *
-   * @throws Exception
    */
-  @Ignore @Test
+  @Ignore
+  @Test
   public void testCancelOnFailure() throws Exception {
     // Test propagation of KILLED status to embedded flows different branch
-    EventCollectorListener eventCollector = new EventCollectorListener();
-    FlowRunner runner = createFlowRunner(eventCollector, "jobf",
+    final EventCollectorListener eventCollector = new EventCollectorListener();
+    final FlowRunner runner = createFlowRunner(eventCollector, "jobf",
         FailureAction.CANCEL_ALL);
-    ExecutableFlow flow = runner.getExecutableFlow();
-    Map<String, Status> expectedStateMap = new HashMap<String, Status>();
-    Map<String, ExecutableNode> nodeMap = new HashMap<String, ExecutableNode>();
+    final ExecutableFlow flow = runner.getExecutableFlow();
+    final Map<String, Status> expectedStateMap = new HashMap<>();
+    final Map<String, ExecutableNode> nodeMap = new HashMap<>();
 
     // 1. START FLOW
     createExpectedStateMap(flow, expectedStateMap, nodeMap);
-    Thread thread = runFlowRunnerInThread(runner);
+    final Thread thread = runFlowRunnerInThread(runner);
     pause(250);
 
     // After it starts up, only joba should be running
@@ -708,23 +702,23 @@ public class FlowRunnerTest2 {
 
   /**
    * Tests retries after a failure
-   * @throws Exception
    */
-  @Ignore @Test
+  @Ignore
+  @Test
   public void testRetryOnFailure() throws Exception {
     // Test propagation of KILLED status to embedded flows different branch
-    EventCollectorListener eventCollector = new EventCollectorListener();
-    FlowRunner runner = createFlowRunner(eventCollector, "jobf");
-    ExecutableFlow flow = runner.getExecutableFlow();
-    Map<String, Status> expectedStateMap = new HashMap<String, Status>();
-    Map<String, ExecutableNode> nodeMap = new HashMap<String, ExecutableNode>();
+    final EventCollectorListener eventCollector = new EventCollectorListener();
+    final FlowRunner runner = createFlowRunner(eventCollector, "jobf");
+    final ExecutableFlow flow = runner.getExecutableFlow();
+    final Map<String, Status> expectedStateMap = new HashMap<>();
+    final Map<String, ExecutableNode> nodeMap = new HashMap<>();
     flow.getExecutableNode("joba").setStatus(Status.DISABLED);
-    ((ExecutableFlowBase)flow.getExecutableNode("jobb")).getExecutableNode(
+    ((ExecutableFlowBase) flow.getExecutableNode("jobb")).getExecutableNode(
         "innerFlow").setStatus(Status.DISABLED);
 
     // 1. START FLOW
     createExpectedStateMap(flow, expectedStateMap, nodeMap);
-    Thread thread = runFlowRunnerInThread(runner);
+    final Thread thread = runFlowRunnerInThread(runner);
     pause(250);
 
     // After it starts up, only joba should be running
@@ -759,10 +753,10 @@ public class FlowRunnerTest2 {
     Assert.assertEquals(Status.FAILED_FINISHING, flow.getStatus());
     compareStates(expectedStateMap, nodeMap);
 
-    ExecutableNode node = nodeMap.get("jobd:innerFlow2");
-    ExecutableFlowBase base = node.getParentFlow();
-    for (String nodeId : node.getInNodes()) {
-      ExecutableNode inNode = base.getExecutableNode(nodeId);
+    final ExecutableNode node = nodeMap.get("jobd:innerFlow2");
+    final ExecutableFlowBase base = node.getParentFlow();
+    for (final String nodeId : node.getInNodes()) {
+      final ExecutableNode inNode = base.getExecutableNode(nodeId);
       System.out.println(inNode.getId() + " > " + inNode.getStatus());
     }
 
@@ -777,7 +771,6 @@ public class FlowRunnerTest2 {
     Assert.assertEquals(Status.RUNNING, flow.getStatus());
     compareStates(expectedStateMap, nodeMap);
     Assert.assertTrue(thread.isAlive());
-
 
     InteractiveTestJob.getTestJob("jobb:innerJobB").succeedJob();
     InteractiveTestJob.getTestJob("jobb:innerJobC").succeedJob();
@@ -817,22 +810,21 @@ public class FlowRunnerTest2 {
    * Tests the manual Killing of a flow. In this case, the flow is just fine
    * before the cancel
    * is called.
-   *
-   * @throws Exception
    */
-  @Ignore @Test
+  @Ignore
+  @Test
   public void testCancel() throws Exception {
     // Test propagation of KILLED status to embedded flows different branch
-    EventCollectorListener eventCollector = new EventCollectorListener();
-    FlowRunner runner = createFlowRunner(eventCollector, "jobf",
+    final EventCollectorListener eventCollector = new EventCollectorListener();
+    final FlowRunner runner = createFlowRunner(eventCollector, "jobf",
         FailureAction.CANCEL_ALL);
-    ExecutableFlow flow = runner.getExecutableFlow();
-    Map<String, Status> expectedStateMap = new HashMap<String, Status>();
-    Map<String, ExecutableNode> nodeMap = new HashMap<String, ExecutableNode>();
+    final ExecutableFlow flow = runner.getExecutableFlow();
+    final Map<String, Status> expectedStateMap = new HashMap<>();
+    final Map<String, ExecutableNode> nodeMap = new HashMap<>();
 
     // 1. START FLOW
     createExpectedStateMap(flow, expectedStateMap, nodeMap);
-    Thread thread = runFlowRunnerInThread(runner);
+    final Thread thread = runFlowRunnerInThread(runner);
     pause(1000);
 
     // After it starts up, only joba should be running
@@ -881,21 +873,20 @@ public class FlowRunnerTest2 {
 
   /**
    * Tests the manual invocation of cancel on a flow that is FAILED_FINISHING
-   *
-   * @throws Exception
    */
-  @Ignore @Test
+  @Ignore
+  @Test
   public void testManualCancelOnFailure() throws Exception {
     // Test propagation of KILLED status to embedded flows different branch
-    EventCollectorListener eventCollector = new EventCollectorListener();
-    FlowRunner runner = createFlowRunner(eventCollector, "jobf");
-    ExecutableFlow flow = runner.getExecutableFlow();
-    Map<String, Status> expectedStateMap = new HashMap<String, Status>();
-    Map<String, ExecutableNode> nodeMap = new HashMap<String, ExecutableNode>();
+    final EventCollectorListener eventCollector = new EventCollectorListener();
+    final FlowRunner runner = createFlowRunner(eventCollector, "jobf");
+    final ExecutableFlow flow = runner.getExecutableFlow();
+    final Map<String, Status> expectedStateMap = new HashMap<>();
+    final Map<String, ExecutableNode> nodeMap = new HashMap<>();
 
     // 1. START FLOW
     createExpectedStateMap(flow, expectedStateMap, nodeMap);
-    Thread thread = runFlowRunnerInThread(runner);
+    final Thread thread = runFlowRunnerInThread(runner);
     pause(250);
 
     // After it starts up, only joba should be running
@@ -950,21 +941,20 @@ public class FlowRunnerTest2 {
 
   /**
    * Tests that pause and resume work
-   *
-   * @throws Exception
    */
-  @Ignore @Test
+  @Ignore
+  @Test
   public void testPause() throws Exception {
-    EventCollectorListener eventCollector = new EventCollectorListener();
-    FlowRunner runner = createFlowRunner(eventCollector, "jobf");
+    final EventCollectorListener eventCollector = new EventCollectorListener();
+    final FlowRunner runner = createFlowRunner(eventCollector, "jobf");
 
-    Map<String, Status> expectedStateMap = new HashMap<String, Status>();
-    Map<String, ExecutableNode> nodeMap = new HashMap<String, ExecutableNode>();
+    final Map<String, Status> expectedStateMap = new HashMap<>();
+    final Map<String, ExecutableNode> nodeMap = new HashMap<>();
 
     // 1. START FLOW
-    ExecutableFlow flow = runner.getExecutableFlow();
+    final ExecutableFlow flow = runner.getExecutableFlow();
     createExpectedStateMap(flow, expectedStateMap, nodeMap);
-    Thread thread = runFlowRunnerInThread(runner);
+    final Thread thread = runFlowRunnerInThread(runner);
     pause(250);
 
     // After it starts up, only joba should be running
@@ -1066,21 +1056,20 @@ public class FlowRunnerTest2 {
   /**
    * Test the condition for a manual invocation of a KILL (cancel) on a flow
    * that has been paused. The flow should unpause and be killed immediately.
-   *
-   * @throws Exception
    */
-  @Ignore @Test
+  @Ignore
+  @Test
   public void testPauseKill() throws Exception {
-    EventCollectorListener eventCollector = new EventCollectorListener();
-    FlowRunner runner = createFlowRunner(eventCollector, "jobf");
+    final EventCollectorListener eventCollector = new EventCollectorListener();
+    final FlowRunner runner = createFlowRunner(eventCollector, "jobf");
 
-    Map<String, Status> expectedStateMap = new HashMap<String, Status>();
-    Map<String, ExecutableNode> nodeMap = new HashMap<String, ExecutableNode>();
+    final Map<String, Status> expectedStateMap = new HashMap<>();
+    final Map<String, ExecutableNode> nodeMap = new HashMap<>();
 
     // 1. START FLOW
-    ExecutableFlow flow = runner.getExecutableFlow();
+    final ExecutableFlow flow = runner.getExecutableFlow();
     createExpectedStateMap(flow, expectedStateMap, nodeMap);
-    Thread thread = runFlowRunnerInThread(runner);
+    final Thread thread = runFlowRunnerInThread(runner);
     pause(250);
 
     // After it starts up, only joba should be running
@@ -1131,22 +1120,21 @@ public class FlowRunnerTest2 {
   /**
    * Tests the case where a failure occurs on a Paused flow. In this case, the
    * flow should stay paused.
-   *
-   * @throws Exception
    */
-  @Ignore @Test
+  @Ignore
+  @Test
   public void testPauseFail() throws Exception {
-    EventCollectorListener eventCollector = new EventCollectorListener();
-    FlowRunner runner = createFlowRunner(eventCollector, "jobf",
+    final EventCollectorListener eventCollector = new EventCollectorListener();
+    final FlowRunner runner = createFlowRunner(eventCollector, "jobf",
         FailureAction.FINISH_CURRENTLY_RUNNING);
 
-    Map<String, Status> expectedStateMap = new HashMap<String, Status>();
-    Map<String, ExecutableNode> nodeMap = new HashMap<String, ExecutableNode>();
+    final Map<String, Status> expectedStateMap = new HashMap<>();
+    final Map<String, ExecutableNode> nodeMap = new HashMap<>();
 
     // 1. START FLOW
-    ExecutableFlow flow = runner.getExecutableFlow();
+    final ExecutableFlow flow = runner.getExecutableFlow();
     createExpectedStateMap(flow, expectedStateMap, nodeMap);
-    Thread thread = runFlowRunnerInThread(runner);
+    final Thread thread = runFlowRunnerInThread(runner);
     pause(250);
 
     // After it starts up, only joba should be running
@@ -1202,22 +1190,21 @@ public class FlowRunnerTest2 {
   /**
    * Test the condition when a Finish all possible is called during a pause.
    * The Failure is not acted upon until the flow is resumed.
-   *
-   * @throws Exception
    */
-  @Ignore @Test
+  @Ignore
+  @Test
   public void testPauseFailFinishAll() throws Exception {
-    EventCollectorListener eventCollector = new EventCollectorListener();
-    FlowRunner runner = createFlowRunner(eventCollector, "jobf",
+    final EventCollectorListener eventCollector = new EventCollectorListener();
+    final FlowRunner runner = createFlowRunner(eventCollector, "jobf",
         FailureAction.FINISH_ALL_POSSIBLE);
 
-    Map<String, Status> expectedStateMap = new HashMap<String, Status>();
-    Map<String, ExecutableNode> nodeMap = new HashMap<String, ExecutableNode>();
+    final Map<String, Status> expectedStateMap = new HashMap<>();
+    final Map<String, ExecutableNode> nodeMap = new HashMap<>();
 
     // 1. START FLOW
-    ExecutableFlow flow = runner.getExecutableFlow();
+    final ExecutableFlow flow = runner.getExecutableFlow();
     createExpectedStateMap(flow, expectedStateMap, nodeMap);
-    Thread thread = runFlowRunnerInThread(runner);
+    final Thread thread = runFlowRunnerInThread(runner);
     pause(250);
 
     // After it starts up, only joba should be running
@@ -1278,21 +1265,21 @@ public class FlowRunnerTest2 {
   /**
    * Tests the case when a flow is paused and a failure causes a kill. The
    * flow should die immediately regardless of the 'paused' status.
-   * @throws Exception
    */
-  @Ignore @Test
+  @Ignore
+  @Test
   public void testPauseFailKill() throws Exception {
-    EventCollectorListener eventCollector = new EventCollectorListener();
-    FlowRunner runner = createFlowRunner(eventCollector, "jobf",
+    final EventCollectorListener eventCollector = new EventCollectorListener();
+    final FlowRunner runner = createFlowRunner(eventCollector, "jobf",
         FailureAction.CANCEL_ALL);
 
-    Map<String, Status> expectedStateMap = new HashMap<String, Status>();
-    Map<String, ExecutableNode> nodeMap = new HashMap<String, ExecutableNode>();
+    final Map<String, Status> expectedStateMap = new HashMap<>();
+    final Map<String, ExecutableNode> nodeMap = new HashMap<>();
 
     // 1. START FLOW
-    ExecutableFlow flow = runner.getExecutableFlow();
+    final ExecutableFlow flow = runner.getExecutableFlow();
     createExpectedStateMap(flow, expectedStateMap, nodeMap);
-    Thread thread = runFlowRunnerInThread(runner);
+    final Thread thread = runFlowRunnerInThread(runner);
     pause(250);
     // After it starts up, only joba should be running
     expectedStateMap.put("joba", Status.RUNNING);
@@ -1335,38 +1322,37 @@ public class FlowRunnerTest2 {
   }
 
 
-  private Thread runFlowRunnerInThread(FlowRunner runner) {
-    Thread thread = new Thread(runner);
+  private Thread runFlowRunnerInThread(final FlowRunner runner) {
+    final Thread thread = new Thread(runner);
     thread.start();
     return thread;
   }
 
-  private void pause(long millisec) {
+  private void pause(final long millisec) {
     try {
       Thread.sleep(millisec);
-    }
-    catch (InterruptedException e) {
+    } catch (final InterruptedException e) {
     }
   }
 
-  private void createExpectedStateMap(ExecutableFlowBase flow,
-      Map<String, Status> expectedStateMap,
-      Map<String, ExecutableNode> nodeMap) {
-    for (ExecutableNode node: flow.getExecutableNodes()) {
+  private void createExpectedStateMap(final ExecutableFlowBase flow,
+      final Map<String, Status> expectedStateMap,
+      final Map<String, ExecutableNode> nodeMap) {
+    for (final ExecutableNode node : flow.getExecutableNodes()) {
       expectedStateMap.put(node.getNestedId(), node.getStatus());
       nodeMap.put(node.getNestedId(), node);
       if (node instanceof ExecutableFlowBase) {
-        createExpectedStateMap((ExecutableFlowBase)node, expectedStateMap,
+        createExpectedStateMap((ExecutableFlowBase) node, expectedStateMap,
             nodeMap);
       }
     }
   }
 
-  private void compareStates(Map<String, Status> expectedStateMap,
-      Map<String, ExecutableNode> nodeMap) {
-    for (String printedId: expectedStateMap.keySet()) {
-      Status expectedStatus = expectedStateMap.get(printedId);
-      ExecutableNode node = nodeMap.get(printedId);
+  private void compareStates(final Map<String, Status> expectedStateMap,
+      final Map<String, ExecutableNode> nodeMap) {
+    for (final String printedId : expectedStateMap.keySet()) {
+      final Status expectedStatus = expectedStateMap.get(printedId);
+      final ExecutableNode node = nodeMap.get(printedId);
 
       if (expectedStatus != node.getStatus()) {
         Assert.fail("Expected values do not match for " + printedId
@@ -1376,54 +1362,55 @@ public class FlowRunnerTest2 {
     }
   }
 
-  private void prepareProject(Project project, File directory)
+  private void prepareProject(final Project project, final File directory)
       throws ProjectManagerException, IOException {
-    DirectoryFlowLoader loader = new DirectoryFlowLoader(new Props(), logger);
+    final DirectoryFlowLoader loader = new DirectoryFlowLoader(new Props(), this.logger);
     loader.loadProjectFlow(project, directory);
     if (!loader.getErrors().isEmpty()) {
-      for (String error: loader.getErrors()) {
+      for (final String error : loader.getErrors()) {
         System.out.println(error);
       }
 
       throw new RuntimeException("Errors found in setup");
     }
 
-    flowMap = loader.getFlowMap();
-    project.setFlows(flowMap);
-    FileUtils.copyDirectory(directory, workingDir);
+    this.flowMap = loader.getFlowMap();
+    project.setFlows(this.flowMap);
+    FileUtils.copyDirectory(directory, this.workingDir);
   }
 
-  private FlowRunner createFlowRunner(EventCollectorListener eventCollector,
-      String flowName) throws Exception {
+  private FlowRunner createFlowRunner(final EventCollectorListener eventCollector,
+      final String flowName) throws Exception {
     return createFlowRunner(eventCollector, flowName,
         FailureAction.FINISH_CURRENTLY_RUNNING);
   }
 
-  private FlowRunner createFlowRunner(EventCollectorListener eventCollector,
-      String flowName, FailureAction action) throws Exception {
+  private FlowRunner createFlowRunner(final EventCollectorListener eventCollector,
+      final String flowName, final FailureAction action) throws Exception {
     return createFlowRunner(eventCollector, flowName, action, new Props());
   }
 
-  private FlowRunner createFlowRunner(EventCollectorListener eventCollector,
-      String flowName, FailureAction action, Props azkabanProps) throws Exception {
-    Flow flow = flowMap.get(flowName);
+  private FlowRunner createFlowRunner(final EventCollectorListener eventCollector,
+      final String flowName, final FailureAction action, final Props azkabanProps)
+      throws Exception {
+    final Flow flow = this.flowMap.get(flowName);
 
-    int exId = id++;
-    ExecutableFlow exFlow = new ExecutableFlow(project, flow);
-    exFlow.setExecutionPath(workingDir.getPath());
+    final int exId = id++;
+    final ExecutableFlow exFlow = new ExecutableFlow(this.project, flow);
+    exFlow.setExecutionPath(this.workingDir.getPath());
     exFlow.setExecutionId(exId);
 
-    Map<String, String> flowParam = new HashMap<String, String>();
+    final Map<String, String> flowParam = new HashMap<>();
     flowParam.put("param4", "override.4");
     flowParam.put("param10", "override.10");
     flowParam.put("param11", "override.11");
     exFlow.getExecutionOptions().addAllFlowParameters(flowParam);
     exFlow.getExecutionOptions().setFailureAction(action);
-    fakeExecutorLoader.uploadExecutableFlow(exFlow);
+    this.fakeExecutorLoader.uploadExecutableFlow(exFlow);
 
-    FlowRunner runner = new FlowRunner(
-        fakeExecutorLoader.fetchExecutableFlow(exId), fakeExecutorLoader,
-        fakeProjectLoader, jobtypeManager, azkabanProps);
+    final FlowRunner runner = new FlowRunner(
+        this.fakeExecutorLoader.fetchExecutableFlow(exId), this.fakeExecutorLoader,
+        this.fakeProjectLoader, this.jobtypeManager, azkabanProps);
 
     runner.addListener(eventCollector);
 

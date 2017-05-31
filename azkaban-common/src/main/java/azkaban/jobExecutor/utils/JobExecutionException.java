@@ -20,15 +20,15 @@ public class JobExecutionException extends RuntimeException {
 
   private final static long serialVersionUID = 1;
 
-  public JobExecutionException(String message) {
+  public JobExecutionException(final String message) {
     super(message);
   }
 
-  public JobExecutionException(Throwable cause) {
+  public JobExecutionException(final Throwable cause) {
     super(cause);
   }
 
-  public JobExecutionException(String message, Throwable cause) {
+  public JobExecutionException(final String message, final Throwable cause) {
     super(message, cause);
   }
 

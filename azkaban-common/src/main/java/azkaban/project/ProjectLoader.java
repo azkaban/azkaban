@@ -16,42 +16,31 @@
 
 package azkaban.project;
 
-import java.io.File;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-
 import azkaban.flow.Flow;
 import azkaban.project.ProjectLogEvent.EventType;
 import azkaban.user.Permission;
 import azkaban.user.User;
 import azkaban.utils.Props;
 import azkaban.utils.Triple;
+import java.io.File;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
 
 public interface ProjectLoader {
 
   /**
    * Returns all projects which are active
-   *
-   * @return
-   * @throws ProjectManagerException
    */
   List<Project> fetchAllActiveProjects() throws ProjectManagerException;
 
   /**
    * Loads whole project, including permissions, by the project id.
-   *
-   * @param id
-   * @return
-   * @throws ProjectManagerException
    */
   Project fetchProjectById(int id) throws ProjectManagerException;
 
   /**
    * Loads whole project, including permissions, by the project name.
-   * @param name
-   * @return
-   * @throws ProjectManagerException
    */
   Project fetchProjectByName(String name) throws ProjectManagerException;
 
@@ -64,19 +53,13 @@ public interface ProjectLoader {
    * If the name and description of the project exceeds the store's constraints,
    * it will throw an exception.
    *
-   * @param name
-   * @return
-   * @throws ProjectManagerException if an active project of the same name
-   *           exists.
+   * @throws ProjectManagerException if an active project of the same name exists.
    */
   Project createNewProject(String name, String description, User creator)
       throws ProjectManagerException;
 
   /**
    * Removes the project by marking it inactive.
-   *
-   * @param project
-   * @throws ProjectManagerException
    */
   void removeProject(Project project, String user)
       throws ProjectManagerException;
@@ -85,12 +68,6 @@ public interface ProjectLoader {
    * Adds and updates the user permissions. Does not check if the user is valid.
    * If the permission doesn't exist, it adds. If the permission exists, it
    * updates.
-   *
-   * @param project
-   * @param name
-   * @param perm
-   * @param isGroup
-   * @throws ProjectManagerException
    */
   void updatePermission(Project project, String name, Permission perm,
       boolean isGroup) throws ProjectManagerException;
@@ -100,10 +77,6 @@ public interface ProjectLoader {
 
   /**
    * Modifies and commits the project description.
-   *
-   * @param project
-   * @param description
-   * @throws ProjectManagerException
    */
   void updateDescription(Project project, String description, String user)
       throws ProjectManagerException;
@@ -112,8 +85,6 @@ public interface ProjectLoader {
    * Stores logs for a particular project. Will soft fail rather than throw
    * exception.
    *
-   * @param project
-   * @param type
    * @param message return true if the posting was success.
    */
   boolean postEvent(Project project, EventType type, String user,
@@ -121,9 +92,6 @@ public interface ProjectLoader {
 
   /**
    * Returns all the events for a project sorted
-   *
-   * @param project
-   * @return
    */
   List<ProjectLogEvent> getProjectEvents(Project project, int num,
       int skip) throws ProjectManagerException;
@@ -135,18 +103,11 @@ public interface ProjectLoader {
       throws ProjectManagerException;
 
   /**
-   * Add project and version info to the project_versions table. This current maintains the metadata for each uploaded
-   * version of the project
-   *
-   * @param projectId
-   * @param version
-   * @param localFile
-   * @param uploader
-   * @param md5
-   * @param resourceId
-   * @throws ProjectManagerException
+   * Add project and version info to the project_versions table. This current maintains the metadata
+   * for each uploaded version of the project
    */
-  void addProjectVersion(int projectId, int version, File localFile, String uploader, byte[] md5, String resourceId)
+  void addProjectVersion(int projectId, int version, File localFile, String uploader, byte[] md5,
+      String resourceId)
       throws ProjectManagerException;
 
   /**
@@ -160,18 +121,12 @@ public interface ProjectLoader {
 
   /**
    * Get file that's uploaded.
-   *
-   * @return
    */
   ProjectFileHandler getUploadedFile(int projectId, int version)
       throws ProjectManagerException;
 
   /**
    * Changes and commits different project version.
-   *
-   * @param project
-   * @param version
-   * @throws ProjectManagerException
    */
   void changeProjectVersion(Project project, int version, String user)
       throws ProjectManagerException;
@@ -181,44 +136,24 @@ public interface ProjectLoader {
 
   /**
    * Uploads all computed flows
-   *
-   * @param project
-   * @param version
-   * @param flows
-   * @throws ProjectManagerException
    */
   void uploadFlows(Project project, int version, Collection<Flow> flows)
       throws ProjectManagerException;
 
   /**
    * Upload just one flow.
-   *
-   * @param project
-   * @param version
-   * @param flow
-   * @throws ProjectManagerException
    */
   void uploadFlow(Project project, int version, Flow flow)
       throws ProjectManagerException;
 
   /**
    * Fetches one particular flow.
-   *
-   * @param project
-   * @param version
-   * @param flowId
-   * @throws ProjectManagerException
    */
   Flow fetchFlow(Project project, String flowId)
       throws ProjectManagerException;
 
   /**
    * Fetches all flows.
-   *
-   * @param project
-   * @param version
-   * @param flowId
-   * @throws ProjectManagerException
    */
   List<Flow> fetchAllProjectFlows(Project project)
       throws ProjectManagerException;
@@ -231,53 +166,30 @@ public interface ProjectLoader {
 
   /**
    * Upload Project properties
-   *
-   * @param project
-   * @param path
-   * @param properties
-   * @throws ProjectManagerException
    */
   void uploadProjectProperty(Project project, Props props)
       throws ProjectManagerException;
 
   /**
    * Upload Project properties. Map contains key value of path and properties
-   *
-   * @param project
-   * @param path
-   * @param properties
-   * @throws ProjectManagerException
    */
   void uploadProjectProperties(Project project, List<Props> properties)
       throws ProjectManagerException;
 
   /**
    * Fetch project properties
-   *
-   * @param project
-   * @param propsName
-   * @return
-   * @throws ProjectManagerException
    */
   Props fetchProjectProperty(Project project, String propsName)
       throws ProjectManagerException;
 
   /**
    * Fetch all project properties
-   *
-   * @param project
-   * @return
-   * @throws ProjectManagerException
    */
   Map<String, Props> fetchProjectProperties(int projectId, int version)
       throws ProjectManagerException;
 
   /**
    * Cleans all project versions less tha
-   *
-   * @param projectId
-   * @param version
-   * @throws ProjectManagerException
    */
   void cleanOlderProjectVersion(int projectId, int version)
       throws ProjectManagerException;

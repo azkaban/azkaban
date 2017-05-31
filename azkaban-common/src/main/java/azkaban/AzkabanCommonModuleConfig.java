@@ -17,60 +17,58 @@
 
 package azkaban;
 
-import azkaban.db.AzkabanDataSource;
-import azkaban.db.H2FileDataSource;
-import azkaban.db.MySQLDataSource;
+import static azkaban.Constants.ConfigurationKeys.AZKABAN_STORAGE_HDFS_ROOT_URI;
+import static azkaban.Constants.ConfigurationKeys.AZKABAN_STORAGE_LOCAL_BASEDIR;
+import static azkaban.Constants.ConfigurationKeys.AZKABAN_STORAGE_TYPE;
+import static azkaban.storage.StorageImplementationType.DATABASE;
+
 import azkaban.storage.StorageImplementationType;
 import azkaban.utils.Props;
 import com.google.inject.Inject;
 import java.net.URI;
-import org.apache.commons.dbutils.QueryRunner;
 import org.apache.log4j.Logger;
-
-import static azkaban.Constants.ConfigurationKeys.*;
-import static azkaban.storage.StorageImplementationType.*;
 
 
 public class AzkabanCommonModuleConfig {
+
   private static final Logger log = Logger.getLogger(AzkabanCommonModuleConfig.class);
 
   private final Props props;
-
+  private final URI hdfsRootUri;
   /**
-   * Storage Implementation
-   * This can be any of the {@link StorageImplementationType} values in which case {@link StorageFactory} will create
-   * the appropriate storage instance. Or one can feed in a custom implementation class using the full qualified
-   * path required by a classloader.
+   * Storage Implementation This can be any of the {@link StorageImplementationType} values in which
+   * case {@link StorageFactory} will create the appropriate storage instance. Or one can feed in a
+   * custom implementation class using the full qualified path required by a classloader.
    *
    * examples: LOCAL, DATABASE, azkaban.storage.MyFavStorage
-   *
    */
   private String storageImplementation = DATABASE.name();
   private String localStorageBaseDirPath = "LOCAL_STORAGE";
-  private URI hdfsRootUri;
 
   @Inject
-  public AzkabanCommonModuleConfig(Props props) {
+  public AzkabanCommonModuleConfig(final Props props) {
     this.props = props;
 
-    storageImplementation = props.getString(AZKABAN_STORAGE_TYPE, storageImplementation);
-    localStorageBaseDirPath = props.getString(AZKABAN_STORAGE_LOCAL_BASEDIR, localStorageBaseDirPath);
-    hdfsRootUri = props.get(AZKABAN_STORAGE_HDFS_ROOT_URI) != null ? props.getUri(AZKABAN_STORAGE_HDFS_ROOT_URI) : null;
+    this.storageImplementation = props.getString(AZKABAN_STORAGE_TYPE, this.storageImplementation);
+    this.localStorageBaseDirPath = props
+        .getString(AZKABAN_STORAGE_LOCAL_BASEDIR, this.localStorageBaseDirPath);
+    this.hdfsRootUri = props.get(AZKABAN_STORAGE_HDFS_ROOT_URI) != null ? props
+        .getUri(AZKABAN_STORAGE_HDFS_ROOT_URI) : null;
   }
 
   public Props getProps() {
-    return props;
+    return this.props;
   }
 
   public String getStorageImplementation() {
-    return storageImplementation;
+    return this.storageImplementation;
   }
 
   public String getLocalStorageBaseDirPath() {
-    return localStorageBaseDirPath;
+    return this.localStorageBaseDirPath;
   }
 
   public URI getHdfsRootUri() {
-    return hdfsRootUri;
+    return this.hdfsRootUri;
   }
 }

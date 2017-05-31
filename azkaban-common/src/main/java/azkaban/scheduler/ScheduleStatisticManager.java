@@ -16,71 +16,70 @@
 
 package azkaban.scheduler;
 
+import azkaban.utils.JSONUtils;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.OutputStream;
 import java.util.HashMap;
 import java.util.Map;
 
-import azkaban.utils.JSONUtils;
-
 /**
  * TODO: This needs to be fleshed out and made into a proper singleton.
  */
 public class ScheduleStatisticManager {
+
   public static final int STAT_NUMBERS = 10;
 
-  private static HashMap<Integer, Object> cacheLock =
-      new HashMap<Integer, Object>();
+  private static final HashMap<Integer, Object> cacheLock =
+      new HashMap<>();
   private static File cacheDirectory;
 
-  public static void invalidateCache(int scheduleId, File cacheDir) {
+  public static void invalidateCache(final int scheduleId, final File cacheDir) {
     setCacheFolder(cacheDir);
     // This should be silent and not fail
     try {
-      Object lock = getLock(scheduleId);
+      final Object lock = getLock(scheduleId);
       synchronized (lock) {
         getCacheFile(scheduleId).delete();
       }
       unLock(scheduleId);
-    } catch (Exception e) {
+    } catch (final Exception e) {
     }
   }
 
-  public static void saveCache(int scheduleId, Map<String, Object> data) {
-    Object lock = getLock(scheduleId);
+  public static void saveCache(final int scheduleId, final Map<String, Object> data) {
+    final Object lock = getLock(scheduleId);
     try {
       synchronized (lock) {
-        File cache = getCacheFile(scheduleId);
+        final File cache = getCacheFile(scheduleId);
         cache.createNewFile();
-        OutputStream output = new FileOutputStream(cache);
+        final OutputStream output = new FileOutputStream(cache);
         try {
           JSONUtils.toJSON(data, output, false);
         } finally {
           output.close();
         }
       }
-    } catch (Exception e) {
+    } catch (final Exception e) {
       e.printStackTrace();
     }
     unLock(scheduleId);
   }
 
-  public static Map<String, Object> loadCache(int scheduleId) {
-    Object lock = getLock(scheduleId);
+  public static Map<String, Object> loadCache(final int scheduleId) {
+    final Object lock = getLock(scheduleId);
     try {
       synchronized (lock) {
-        File cache = getCacheFile(scheduleId);
+        final File cache = getCacheFile(scheduleId);
         if (cache.exists() && cache.isFile()) {
-          Object dataObj = JSONUtils.parseJSONFromFile(cache);
+          final Object dataObj = JSONUtils.parseJSONFromFile(cache);
           if (dataObj instanceof Map<?, ?>) {
-            @SuppressWarnings("unchecked")
-            Map<String, Object> data = (Map<String, Object>) dataObj;
+            final Map<String, Object> data = (Map<String, Object>) dataObj;
             return data;
           }
         }
       }
-    } catch (Exception e) {
+    } catch (final Exception e) {
       e.printStackTrace();
     }
     unLock(scheduleId);
@@ -91,13 +90,13 @@ public class ScheduleStatisticManager {
     return cacheDirectory;
   }
 
-  private static File getCacheFile(int scheduleId) {
+  private static File getCacheFile(final int scheduleId) {
     cacheDirectory.mkdirs();
-    File file = new File(cacheDirectory, scheduleId + ".cache");
+    final File file = new File(cacheDirectory, scheduleId + ".cache");
     return file;
   }
 
-  private static Object getLock(int scheduleId) {
+  private static Object getLock(final int scheduleId) {
     Object lock = null;
     synchronized (cacheLock) {
       lock = cacheLock.get(scheduleId);
@@ -110,13 +109,13 @@ public class ScheduleStatisticManager {
     return lock;
   }
 
-  private static void unLock(int scheduleId) {
+  private static void unLock(final int scheduleId) {
     synchronized (cacheLock) {
       cacheLock.remove(scheduleId);
     }
   }
 
-  public static void setCacheFolder(File cacheDir) {
+  public static void setCacheFolder(final File cacheDir) {
     if (cacheDirectory == null) {
       cacheDirectory = new File(cacheDir, "schedule-statistics");
     }

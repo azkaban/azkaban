@@ -34,17 +34,6 @@ import org.junit.rules.TemporaryFolder;
 
 
 public class JavaProcessJobTest {
-  @ClassRule
-  public static TemporaryFolder classTemp = new TemporaryFolder();
-
-  @Rule
-  public TemporaryFolder temp = new TemporaryFolder();
-
-  private JavaProcessJob job = null;
-  private Props props = null;
-  private Logger log = Logger.getLogger(JavaProcessJob.class);
-
-  private static String classPaths;
 
   private static final String inputContent =
       "Quick Change in Strategy for a Bookseller \n"
@@ -54,7 +43,6 @@ public class JavaProcessJobTest {
           + "Twelve years later, it may be Joe Fox's turn to worry. Readers have gone from skipping small \n"
           + "bookstores to wondering if they need bookstores at all. More people are ordering books online  \n"
           + "or plucking them from the best-seller bin at Wal-Mart";
-
   private static final String errorInputContent =
       inputContent
           + "\n stop_here "
@@ -64,20 +52,27 @@ public class JavaProcessJobTest {
           + "to the Association of American Publishers, spurred by sales of the Amazon Kindle and the new Apple iPad. \n"
           + "For Barnes & Noble, long the largest and most powerful bookstore chain in the country, the new competition \n"
           + "has led to declining profits and store traffic.";
-
+  @ClassRule
+  public static TemporaryFolder classTemp = new TemporaryFolder();
+  private static String classPaths;
   private static String inputFile;
   private static String errorInputFile;
   private static String outputFile;
+  private final Logger log = Logger.getLogger(JavaProcessJob.class);
+  @Rule
+  public TemporaryFolder temp = new TemporaryFolder();
+  private JavaProcessJob job = null;
+  private Props props = null;
 
   @BeforeClass
   public static void init() throws IOException {
     azkaban.test.Utils.initServiceProvider();
     // Get the classpath
-    Properties prop = System.getProperties();
+    final Properties prop = System.getProperties();
     classPaths =
         String.format("'%s'", prop.getProperty("java.class.path", null));
 
-    long time = (new Date()).getTime();
+    final long time = (new Date()).getTime();
     inputFile = classTemp.newFile("azkaban_input_" + time).getCanonicalPath();
     errorInputFile =
         classTemp.newFile("azkaban_input_error_" + time).getCanonicalPath();
@@ -87,7 +82,7 @@ public class JavaProcessJobTest {
     try {
       Utils.dumpFile(inputFile, inputContent);
       Utils.dumpFile(errorInputFile, errorInputContent);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       e.printStackTrace(System.err);
       Assert.fail("error in creating input file:" + e.getLocalizedMessage());
     }
@@ -100,55 +95,55 @@ public class JavaProcessJobTest {
 
   @Before
   public void setUp() throws IOException {
-    File workingDir = temp.newFolder("testJavaProcess");
+    final File workingDir = this.temp.newFolder("testJavaProcess");
 
     // Initialize job
-    props = AllJobExecutorTests.setUpCommonProps();
-    props.put(AbstractProcessJob.WORKING_DIR, workingDir.getCanonicalPath());
-    props.put("type", "java");
+    this.props = AllJobExecutorTests.setUpCommonProps();
+    this.props.put(AbstractProcessJob.WORKING_DIR, workingDir.getCanonicalPath());
+    this.props.put("type", "java");
 
-    job = new JavaProcessJob("testJavaProcess", props, props, log);
+    this.job = new JavaProcessJob("testJavaProcess", this.props, this.props, this.log);
   }
 
   @After
   public void tearDown() {
-    temp.delete();
+    this.temp.delete();
   }
 
   @Test
   public void testJavaJob() throws Exception {
     // initialize the Props
-    props.put(JavaProcessJob.JAVA_CLASS,
+    this.props.put(JavaProcessJob.JAVA_CLASS,
         "azkaban.jobExecutor.WordCountLocal");
-    props.put("input", inputFile);
-    props.put("output", outputFile);
-    props.put("classpath", classPaths);
-    job.run();
+    this.props.put("input", inputFile);
+    this.props.put("output", outputFile);
+    this.props.put("classpath", classPaths);
+    this.job.run();
   }
 
   @Test
   public void testJavaJobHashmap() throws Exception {
     // initialize the Props
-    props.put(JavaProcessJob.JAVA_CLASS,
+    this.props.put(JavaProcessJob.JAVA_CLASS,
         "azkaban.executor.SleepJavaJob");
-    props.put("seconds", 1);
-    props.put("input", inputFile);
-    props.put("output", outputFile);
-    props.put("classpath", classPaths);
-    job.run();
+    this.props.put("seconds", 1);
+    this.props.put("input", inputFile);
+    this.props.put("output", outputFile);
+    this.props.put("classpath", classPaths);
+    this.job.run();
   }
 
   @Test
   public void testFailedJavaJob() throws Exception {
-    props.put(JavaProcessJob.JAVA_CLASS,
+    this.props.put(JavaProcessJob.JAVA_CLASS,
         "azkaban.jobExecutor.WordCountLocal");
-    props.put("input", errorInputFile);
-    props.put("output", outputFile);
-    props.put("classpath", classPaths);
+    this.props.put("input", errorInputFile);
+    this.props.put("output", outputFile);
+    this.props.put("classpath", classPaths);
 
     try {
-      job.run();
-    } catch (RuntimeException e) {
+      this.job.run();
+    } catch (final RuntimeException e) {
       Assert.assertTrue(true);
     }
   }

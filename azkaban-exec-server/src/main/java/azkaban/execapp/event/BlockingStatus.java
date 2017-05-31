@@ -19,32 +19,33 @@ package azkaban.execapp.event;
 import azkaban.executor.Status;
 
 public class BlockingStatus {
+
   private static final long WAIT_TIME = 5 * 60 * 1000;
   private final int execId;
   private final String jobId;
   private Status status;
 
-  public BlockingStatus(int execId, String jobId, Status initialStatus) {
+  public BlockingStatus(final int execId, final String jobId, final Status initialStatus) {
     this.execId = execId;
     this.jobId = jobId;
     this.status = initialStatus;
   }
 
   public Status blockOnFinishedStatus() {
-    if (status == null) {
+    if (this.status == null) {
       return null;
     }
 
-    while (!Status.isStatusFinished(status)) {
+    while (!Status.isStatusFinished(this.status)) {
       synchronized (this) {
         try {
           this.wait(WAIT_TIME);
-        } catch (InterruptedException e) {
+        } catch (final InterruptedException e) {
         }
       }
     }
 
-    return status;
+    return this.status;
   }
 
   public Status viewStatus() {
@@ -57,7 +58,7 @@ public class BlockingStatus {
     }
   }
 
-  public void changeStatus(Status status) {
+  public void changeStatus(final Status status) {
     synchronized (this) {
       this.status = status;
       if (Status.isStatusFinished(status)) {
@@ -67,10 +68,10 @@ public class BlockingStatus {
   }
 
   public int getExecId() {
-    return execId;
+    return this.execId;
   }
 
   public String getJobId() {
-    return jobId;
+    return this.jobId;
   }
 }

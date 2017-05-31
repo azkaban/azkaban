@@ -17,17 +17,18 @@
 package azkaban.jobtype;
 
 public class JobTypeManagerException extends RuntimeException {
+
   private static final long serialVersionUID = 1L;
 
-  public JobTypeManagerException(String message) {
+  public JobTypeManagerException(final String message) {
     super(message);
   }
 
-  public JobTypeManagerException(Throwable cause) {
+  public JobTypeManagerException(final Throwable cause) {
     super(cause);
   }
 
-  public JobTypeManagerException(String message, Throwable cause) {
+  public JobTypeManagerException(final String message, final Throwable cause) {
     super(message, cause);
   }
 

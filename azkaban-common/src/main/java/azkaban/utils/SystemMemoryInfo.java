@@ -15,13 +15,13 @@ import org.slf4j.LoggerFactory;
  * All the memory size used in this function is in KB.
  */
 public class SystemMemoryInfo {
-  private final OsMemoryUtil util;
 
   private static final org.slf4j.Logger logger = LoggerFactory.getLogger(SystemMemoryInfo.class);
   private static final long LOW_MEM_THRESHOLD = 3L * 1024L * 1024L; //3 GB
+  private final OsMemoryUtil util;
 
   @Inject
-  public SystemMemoryInfo(OsMemoryUtil util) {
+  public SystemMemoryInfo(final OsMemoryUtil util) {
     this.util = util;
   }
 
@@ -29,11 +29,11 @@ public class SystemMemoryInfo {
    * @param xmx Xmx for the process
    * @return true if the system can satisfy the memory request
    *
-   * Given Xmx value (in kb) used by java process, determine if system can
-   * satisfy the memory request
+   * Given Xmx value (in kb) used by java process, determine if system can satisfy the memory
+   * request
    */
-  public boolean canSystemGrantMemory(long xmx) {
-    long  freeMemSize = util.getOsTotalFreeMemorySize();
+  public boolean canSystemGrantMemory(final long xmx) {
+    final long freeMemSize = this.util.getOsTotalFreeMemorySize();
     if (freeMemSize == 0) {
       // Fail open.
       // On the platforms that don't support the mem info file, the returned size will be 0.

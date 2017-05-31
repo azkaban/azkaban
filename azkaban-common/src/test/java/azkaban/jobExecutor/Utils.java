@@ -24,16 +24,17 @@ import java.nio.file.Paths;
 
 
 public class Utils {
+
   private Utils() {
   }
 
-  static void dumpFile(String filename, String fileContent) throws IOException {
+  static void dumpFile(final String filename, final String fileContent) throws IOException {
     try (PrintWriter writer = new PrintWriter(filename, StandardCharsets.UTF_8.toString())) {
       writer.print(fileContent);
     }
   }
 
-  static void removeFile(String filename) throws IOException {
+  static void removeFile(final String filename) throws IOException {
     Files.delete(Paths.get(filename));
   }
 }

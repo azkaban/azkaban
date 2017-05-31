@@ -17,7 +17,13 @@
 package azkaban.trigger;
 
 import azkaban.ServiceProvider;
-import com.google.inject.Inject;
+import azkaban.event.Event;
+import azkaban.event.Event.Type;
+import azkaban.event.EventHandler;
+import azkaban.event.EventListener;
+import azkaban.executor.ExecutableFlow;
+import azkaban.executor.ExecutorManager;
+import azkaban.utils.Props;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -28,67 +34,53 @@ import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.PriorityBlockingQueue;
-
 import org.apache.log4j.Logger;
-
-import azkaban.event.Event;
-import azkaban.event.EventHandler;
-import azkaban.event.EventListener;
-import azkaban.event.Event.Type;
-import azkaban.executor.ExecutableFlow;
-import azkaban.executor.ExecutorManager;
-import azkaban.utils.Props;
 
 public class TriggerManager extends EventHandler implements
     TriggerManagerAdapter {
-  private static Logger logger = Logger.getLogger(TriggerManager.class);
+
   public static final long DEFAULT_SCANNER_INTERVAL_MS = 60000;
-
-  private static Map<Integer, Trigger> triggerIdMap =
-      new ConcurrentHashMap<Integer, Trigger>();
-
-  private CheckerTypeLoader checkerTypeLoader;
-  private ActionTypeLoader actionTypeLoader;
-  private TriggerLoader triggerLoader;
-
+  private static final Logger logger = Logger.getLogger(TriggerManager.class);
+  private static final Map<Integer, Trigger> triggerIdMap =
+      new ConcurrentHashMap<>();
   private final TriggerScannerThread runnerThread;
+  private final Object syncObj = new Object();
+  private final CheckerTypeLoader checkerTypeLoader;
+  private final ActionTypeLoader actionTypeLoader;
+  private final TriggerLoader triggerLoader;
+  private final LocalTriggerJMX jmxStats = new LocalTriggerJMX();
+  private final ExecutorManagerEventListener listener =
+      new ExecutorManagerEventListener();
   private long lastRunnerThreadCheckTime = -1;
   private long runnerThreadIdleTime = -1;
-  private LocalTriggerJMX jmxStats = new LocalTriggerJMX();
-
-  private ExecutorManagerEventListener listener =
-      new ExecutorManagerEventListener();
-
-  private final Object syncObj = new Object();
-
   private String scannerStage = "";
 
   // TODO kunkun-tang: Before apply guice to this class, we should make
   // ExecutorManager guiceable.
-  public TriggerManager(Props props, TriggerLoader triggerLoader,
-      ExecutorManager executorManager) throws TriggerManagerException {
+  public TriggerManager(final Props props, final TriggerLoader triggerLoader,
+      final ExecutorManager executorManager) throws TriggerManagerException {
 
     // TODO kunkun-tang: Doing hack here to allow calling new azkaban-db code. Should fix in future.
     this.triggerLoader = ServiceProvider.SERVICE_PROVIDER.getInstance(TriggerLoader.class);
 
-    long scannerInterval =
+    final long scannerInterval =
         props.getLong("trigger.scan.interval", DEFAULT_SCANNER_INTERVAL_MS);
-    runnerThread = new TriggerScannerThread(scannerInterval);
+    this.runnerThread = new TriggerScannerThread(scannerInterval);
 
-    checkerTypeLoader = new CheckerTypeLoader();
-    actionTypeLoader = new ActionTypeLoader();
+    this.checkerTypeLoader = new CheckerTypeLoader();
+    this.actionTypeLoader = new ActionTypeLoader();
 
     try {
-      checkerTypeLoader.init(props);
-      actionTypeLoader.init(props);
-    } catch (Exception e) {
+      this.checkerTypeLoader.init(props);
+      this.actionTypeLoader.init(props);
+    } catch (final Exception e) {
       throw new TriggerManagerException(e);
     }
 
-    Condition.setCheckerLoader(checkerTypeLoader);
-    Trigger.setActionTypeLoader(actionTypeLoader);
+    Condition.setCheckerLoader(this.checkerTypeLoader);
+    Trigger.setActionTypeLoader(this.actionTypeLoader);
 
-    executorManager.addListener(listener);
+    executorManager.addListener(this.listener);
 
     logger.info("TriggerManager loaded.");
   }
@@ -98,152 +90,239 @@ public class TriggerManager extends EventHandler implements
 
     try {
       // expect loader to return valid triggers
-      List<Trigger> triggers = triggerLoader.loadTriggers();
-      for (Trigger t : triggers) {
-        runnerThread.addTrigger(t);
+      final List<Trigger> triggers = this.triggerLoader.loadTriggers();
+      for (final Trigger t : triggers) {
+        this.runnerThread.addTrigger(t);
         triggerIdMap.put(t.getTriggerId(), t);
       }
-    } catch (Exception e) {
+    } catch (final Exception e) {
       logger.error(e);
       throw new TriggerManagerException(e);
     }
 
-    runnerThread.start();
+    this.runnerThread.start();
   }
 
   protected CheckerTypeLoader getCheckerLoader() {
-    return checkerTypeLoader;
+    return this.checkerTypeLoader;
   }
 
   protected ActionTypeLoader getActionLoader() {
-    return actionTypeLoader;
+    return this.actionTypeLoader;
   }
 
-  public void insertTrigger(Trigger t) throws TriggerManagerException {
+  public void insertTrigger(final Trigger t) throws TriggerManagerException {
     logger.info("Inserting trigger " + t + " in TriggerManager");
-    synchronized (syncObj) {
+    synchronized (this.syncObj) {
       try {
-        triggerLoader.addTrigger(t);
-      } catch (TriggerLoaderException e) {
+        this.triggerLoader.addTrigger(t);
+      } catch (final TriggerLoaderException e) {
         throw new TriggerManagerException(e);
       }
-      runnerThread.addTrigger(t);
+      this.runnerThread.addTrigger(t);
       triggerIdMap.put(t.getTriggerId(), t);
     }
   }
 
-  public void removeTrigger(int id) throws TriggerManagerException {
+  public void removeTrigger(final int id) throws TriggerManagerException {
     logger.info("Removing trigger with id: " + id + " from TriggerManager");
-    synchronized (syncObj) {
-      Trigger t = triggerIdMap.get(id);
+    synchronized (this.syncObj) {
+      final Trigger t = triggerIdMap.get(id);
       if (t != null) {
         removeTrigger(triggerIdMap.get(id));
       }
     }
   }
 
-  public void updateTrigger(Trigger t) throws TriggerManagerException {
+  public void updateTrigger(final Trigger t) throws TriggerManagerException {
     logger.info("Updating trigger " + t + " in TriggerManager");
-    synchronized (syncObj) {
-      runnerThread.deleteTrigger(triggerIdMap.get(t.getTriggerId()));
-      runnerThread.addTrigger(t);
+    synchronized (this.syncObj) {
+      this.runnerThread.deleteTrigger(triggerIdMap.get(t.getTriggerId()));
+      this.runnerThread.addTrigger(t);
       triggerIdMap.put(t.getTriggerId(), t);
     }
   }
 
-  public void removeTrigger(Trigger t) throws TriggerManagerException {
+  public void removeTrigger(final Trigger t) throws TriggerManagerException {
     logger.info("Removing trigger " + t + " from TriggerManager");
-    synchronized (syncObj) {
-      runnerThread.deleteTrigger(t);
+    synchronized (this.syncObj) {
+      this.runnerThread.deleteTrigger(t);
       triggerIdMap.remove(t.getTriggerId());
       try {
         t.stopCheckers();
-        triggerLoader.removeTrigger(t);
-      } catch (TriggerLoaderException e) {
+        this.triggerLoader.removeTrigger(t);
+      } catch (final TriggerLoaderException e) {
         throw new TriggerManagerException(e);
       }
     }
   }
 
   public List<Trigger> getTriggers() {
-    return new ArrayList<Trigger>(triggerIdMap.values());
+    return new ArrayList<>(triggerIdMap.values());
   }
 
   public Map<String, Class<? extends ConditionChecker>> getSupportedCheckers() {
-    return checkerTypeLoader.getSupportedCheckers();
+    return this.checkerTypeLoader.getSupportedCheckers();
+  }
+
+  public Trigger getTrigger(final int triggerId) {
+    synchronized (this.syncObj) {
+      return triggerIdMap.get(triggerId);
+    }
+  }
+
+  public void expireTrigger(final int triggerId) {
+    final Trigger t = getTrigger(triggerId);
+    t.setStatus(TriggerStatus.EXPIRED);
+  }
+
+  @Override
+  public List<Trigger> getTriggers(final String triggerSource) {
+    final List<Trigger> triggers = new ArrayList<>();
+    for (final Trigger t : triggerIdMap.values()) {
+      if (t.getSource().equals(triggerSource)) {
+        triggers.add(t);
+      }
+    }
+    return triggers;
+  }
+
+  @Override
+  public List<Trigger> getTriggerUpdates(final String triggerSource,
+      final long lastUpdateTime) throws TriggerManagerException {
+    final List<Trigger> triggers = new ArrayList<>();
+    for (final Trigger t : triggerIdMap.values()) {
+      if (t.getSource().equals(triggerSource)
+          && t.getLastModifyTime() > lastUpdateTime) {
+        triggers.add(t);
+      }
+    }
+    return triggers;
+  }
+
+  @Override
+  public List<Trigger> getAllTriggerUpdates(final long lastUpdateTime)
+      throws TriggerManagerException {
+    final List<Trigger> triggers = new ArrayList<>();
+    for (final Trigger t : triggerIdMap.values()) {
+      if (t.getLastModifyTime() > lastUpdateTime) {
+        triggers.add(t);
+      }
+    }
+    return triggers;
+  }
+
+  @Override
+  public void insertTrigger(final Trigger t, final String user)
+      throws TriggerManagerException {
+    insertTrigger(t);
+  }
+
+  @Override
+  public void removeTrigger(final int id, final String user) throws TriggerManagerException {
+    removeTrigger(id);
+  }
+
+  @Override
+  public void updateTrigger(final Trigger t, final String user)
+      throws TriggerManagerException {
+    updateTrigger(t);
+  }
+
+  @Override
+  public void shutdown() {
+    this.runnerThread.shutdown();
+  }
+
+  @Override
+  public TriggerJMX getJMX() {
+    return this.jmxStats;
+  }
+
+  @Override
+  public void registerCheckerType(final String name,
+      final Class<? extends ConditionChecker> checker) {
+    this.checkerTypeLoader.registerCheckerType(name, checker);
+  }
+
+  @Override
+  public void registerActionType(final String name,
+      final Class<? extends TriggerAction> action) {
+    this.actionTypeLoader.registerActionType(name, action);
   }
 
   private class TriggerScannerThread extends Thread {
-    private BlockingQueue<Trigger> triggers;
-    private Map<Integer, ExecutableFlow> justFinishedFlows;
-    private boolean shutdown = false;
-    private final long scannerInterval;
 
-    public TriggerScannerThread(long scannerInterval) {
-      triggers = new PriorityBlockingQueue<Trigger>(1, new TriggerComparator());
-      justFinishedFlows = new ConcurrentHashMap<Integer, ExecutableFlow>();
+    private final long scannerInterval;
+    private final BlockingQueue<Trigger> triggers;
+    private final Map<Integer, ExecutableFlow> justFinishedFlows;
+    private boolean shutdown = false;
+
+    public TriggerScannerThread(final long scannerInterval) {
+      this.triggers = new PriorityBlockingQueue<>(1, new TriggerComparator());
+      this.justFinishedFlows = new ConcurrentHashMap<>();
       this.setName("TriggerRunnerManager-Trigger-Scanner-Thread");
       this.scannerInterval = scannerInterval;
     }
 
     public void shutdown() {
       logger.error("Shutting down trigger manager thread " + this.getName());
-      shutdown = true;
+      this.shutdown = true;
       this.interrupt();
     }
 
-    public void addJustFinishedFlow(ExecutableFlow flow) {
-      synchronized (syncObj) {
-        justFinishedFlows.put(flow.getExecutionId(), flow);
+    public void addJustFinishedFlow(final ExecutableFlow flow) {
+      synchronized (TriggerManager.this.syncObj) {
+        this.justFinishedFlows.put(flow.getExecutionId(), flow);
       }
     }
 
-    public void addTrigger(Trigger t) {
-      synchronized (syncObj) {
+    public void addTrigger(final Trigger t) {
+      synchronized (TriggerManager.this.syncObj) {
         t.updateNextCheckTime();
-        triggers.add(t);
+        this.triggers.add(t);
       }
     }
 
-    public void deleteTrigger(Trigger t) {
-      triggers.remove(t);
+    public void deleteTrigger(final Trigger t) {
+      this.triggers.remove(t);
     }
 
     @Override
     public void run() {
-      while (!shutdown) {
-        synchronized (syncObj) {
+      while (!this.shutdown) {
+        synchronized (TriggerManager.this.syncObj) {
           try {
-            lastRunnerThreadCheckTime = System.currentTimeMillis();
+            TriggerManager.this.lastRunnerThreadCheckTime = System.currentTimeMillis();
 
-            scannerStage =
+            TriggerManager.this.scannerStage =
                 "Ready to start a new scan cycle at "
-                    + lastRunnerThreadCheckTime;
+                    + TriggerManager.this.lastRunnerThreadCheckTime;
 
             try {
               checkAllTriggers();
-              justFinishedFlows.clear();
-            } catch (Exception e) {
+              this.justFinishedFlows.clear();
+            } catch (final Exception e) {
               e.printStackTrace();
               logger.error(e.getMessage());
-            } catch (Throwable t) {
+            } catch (final Throwable t) {
               t.printStackTrace();
               logger.error(t.getMessage());
             }
 
-            scannerStage = "Done flipping all triggers.";
+            TriggerManager.this.scannerStage = "Done flipping all triggers.";
 
-            runnerThreadIdleTime =
-                scannerInterval
-                    - (System.currentTimeMillis() - lastRunnerThreadCheckTime);
+            TriggerManager.this.runnerThreadIdleTime =
+                this.scannerInterval
+                    - (System.currentTimeMillis() - TriggerManager.this.lastRunnerThreadCheckTime);
 
-            if (runnerThreadIdleTime < 0) {
+            if (TriggerManager.this.runnerThreadIdleTime < 0) {
               logger.error("Trigger manager thread " + this.getName()
                   + " is too busy!");
             } else {
-              syncObj.wait(runnerThreadIdleTime);
+              TriggerManager.this.syncObj.wait(TriggerManager.this.runnerThreadIdleTime);
             }
-          } catch (InterruptedException e) {
+          } catch (final InterruptedException e) {
             logger.info("Interrupted. Probably to shut down.");
           }
         }
@@ -252,9 +331,9 @@ public class TriggerManager extends EventHandler implements
 
     private void checkAllTriggers() throws TriggerManagerException {
       // sweep through the rest of them
-      for (Trigger t : triggers) {
+      for (final Trigger t : this.triggers) {
         try {
-          scannerStage = "Checking for trigger " + t.getTriggerId();
+          TriggerManager.this.scannerStage = "Checking for trigger " + t.getTriggerId();
 
           if (t.getStatus().equals(TriggerStatus.READY)) {
             if (t.triggerConditionMet()) {
@@ -268,22 +347,22 @@ public class TriggerManager extends EventHandler implements
           } else {
             t.updateNextCheckTime();
           }
-        } catch (Throwable th) {
+        } catch (final Throwable th) {
           //skip this trigger, moving on to the next one
           logger.error("Failed to process trigger with id : " + t, th);
         }
       }
     }
 
-    private void onTriggerTrigger(Trigger t) throws TriggerManagerException {
-      List<TriggerAction> actions = t.getTriggerActions();
-      for (TriggerAction action : actions) {
+    private void onTriggerTrigger(final Trigger t) throws TriggerManagerException {
+      final List<TriggerAction> actions = t.getTriggerActions();
+      for (final TriggerAction action : actions) {
         try {
           logger.info("Doing trigger actions " + action.getDescription() + " for " + t);
           action.doAction();
-        } catch (Exception e) {
+        } catch (final Exception e) {
           logger.error("Failed to do action " + action.getDescription() + " for " + t, e);
-        } catch (Throwable th) {
+        } catch (final Throwable th) {
           logger.error("Failed to do action " + action.getDescription() + " for " + t, th);
         }
       }
@@ -294,21 +373,21 @@ public class TriggerManager extends EventHandler implements
         t.setStatus(TriggerStatus.EXPIRED);
       }
       try {
-        triggerLoader.updateTrigger(t);
-      } catch (TriggerLoaderException e) {
+        TriggerManager.this.triggerLoader.updateTrigger(t);
+      } catch (final TriggerLoaderException e) {
         throw new TriggerManagerException(e);
       }
     }
 
-    private void onTriggerExpire(Trigger t) throws TriggerManagerException {
-      List<TriggerAction> expireActions = t.getExpireActions();
-      for (TriggerAction action : expireActions) {
+    private void onTriggerExpire(final Trigger t) throws TriggerManagerException {
+      final List<TriggerAction> expireActions = t.getExpireActions();
+      for (final TriggerAction action : expireActions) {
         try {
-          logger.info("Doing expire actions for "+ action.getDescription() + " for " + t);
+          logger.info("Doing expire actions for " + action.getDescription() + " for " + t);
           action.doAction();
-        } catch (Exception e) {
+        } catch (final Exception e) {
           logger.error("Failed to do expire action " + action.getDescription() + " for " + t, e);
-        } catch (Throwable th) {
+        } catch (final Throwable th) {
           logger.error("Failed to do expire action " + action.getDescription() + " for " + t, th);
         }
       }
@@ -319,17 +398,18 @@ public class TriggerManager extends EventHandler implements
         t.setStatus(TriggerStatus.EXPIRED);
       }
       try {
-        triggerLoader.updateTrigger(t);
-      } catch (TriggerLoaderException e) {
+        TriggerManager.this.triggerLoader.updateTrigger(t);
+      } catch (final TriggerLoaderException e) {
         throw new TriggerManagerException(e);
       }
     }
 
     private class TriggerComparator implements Comparator<Trigger> {
+
       @Override
-      public int compare(Trigger arg0, Trigger arg1) {
-        long first = arg1.getNextCheckTime();
-        long second = arg0.getNextCheckTime();
+      public int compare(final Trigger arg0, final Trigger arg1) {
+        final long first = arg1.getNextCheckTime();
+        final long second = arg0.getNextCheckTime();
 
         if (first == second) {
           return 0;
@@ -341,90 +421,16 @@ public class TriggerManager extends EventHandler implements
     }
   }
 
-  public Trigger getTrigger(int triggerId) {
-    synchronized (syncObj) {
-      return triggerIdMap.get(triggerId);
-    }
-  }
-
-  public void expireTrigger(int triggerId) {
-    Trigger t = getTrigger(triggerId);
-    t.setStatus(TriggerStatus.EXPIRED);
-  }
-
-  @Override
-  public List<Trigger> getTriggers(String triggerSource) {
-    List<Trigger> triggers = new ArrayList<Trigger>();
-    for (Trigger t : triggerIdMap.values()) {
-      if (t.getSource().equals(triggerSource)) {
-        triggers.add(t);
-      }
-    }
-    return triggers;
-  }
-
-  @Override
-  public List<Trigger> getTriggerUpdates(String triggerSource,
-      long lastUpdateTime) throws TriggerManagerException {
-    List<Trigger> triggers = new ArrayList<Trigger>();
-    for (Trigger t : triggerIdMap.values()) {
-      if (t.getSource().equals(triggerSource)
-          && t.getLastModifyTime() > lastUpdateTime) {
-        triggers.add(t);
-      }
-    }
-    return triggers;
-  }
-
-  @Override
-  public List<Trigger> getAllTriggerUpdates(long lastUpdateTime)
-      throws TriggerManagerException {
-    List<Trigger> triggers = new ArrayList<Trigger>();
-    for (Trigger t : triggerIdMap.values()) {
-      if (t.getLastModifyTime() > lastUpdateTime) {
-        triggers.add(t);
-      }
-    }
-    return triggers;
-  }
-
-  @Override
-  public void insertTrigger(Trigger t, String user)
-      throws TriggerManagerException {
-    insertTrigger(t);
-  }
-
-  @Override
-  public void removeTrigger(int id, String user) throws TriggerManagerException {
-    removeTrigger(id);
-  }
-
-  @Override
-  public void updateTrigger(Trigger t, String user)
-      throws TriggerManagerException {
-    updateTrigger(t);
-  }
-
-  @Override
-  public void shutdown() {
-    runnerThread.shutdown();
-  }
-
-  @Override
-  public TriggerJMX getJMX() {
-    return this.jmxStats;
-  }
-
   private class LocalTriggerJMX implements TriggerJMX {
 
     @Override
     public long getLastRunnerThreadCheckTime() {
-      return lastRunnerThreadCheckTime;
+      return TriggerManager.this.lastRunnerThreadCheckTime;
     }
 
     @Override
     public boolean isRunnerThreadActive() {
-      return runnerThread.isAlive();
+      return TriggerManager.this.runnerThread.isAlive();
     }
 
     @Override
@@ -439,8 +445,8 @@ public class TriggerManager extends EventHandler implements
 
     @Override
     public String getTriggerSources() {
-      Set<String> sources = new HashSet<String>();
-      for (Trigger t : triggerIdMap.values()) {
+      final Set<String> sources = new HashSet<>();
+      for (final Trigger t : triggerIdMap.values()) {
         sources.add(t.getSource());
       }
       return sources.toString();
@@ -453,45 +459,34 @@ public class TriggerManager extends EventHandler implements
 
     @Override
     public long getScannerIdleTime() {
-      return runnerThreadIdleTime;
+      return TriggerManager.this.runnerThreadIdleTime;
     }
 
     @Override
     public Map<String, Object> getAllJMXMbeans() {
-      return new HashMap<String, Object>();
+      return new HashMap<>();
     }
 
     @Override
     public String getScannerThreadStage() {
-      return scannerStage;
+      return TriggerManager.this.scannerStage;
     }
 
   }
 
-  @Override
-  public void registerCheckerType(String name,
-      Class<? extends ConditionChecker> checker) {
-    checkerTypeLoader.registerCheckerType(name, checker);
-  }
-
-  @Override
-  public void registerActionType(String name,
-      Class<? extends TriggerAction> action) {
-    actionTypeLoader.registerActionType(name, action);
-  }
-
   private class ExecutorManagerEventListener implements EventListener {
+
     public ExecutorManagerEventListener() {
     }
 
     @Override
-    public void handleEvent(Event event) {
+    public void handleEvent(final Event event) {
       // this needs to be fixed for perf
-      synchronized (syncObj) {
-        ExecutableFlow flow = (ExecutableFlow) event.getRunner();
+      synchronized (TriggerManager.this.syncObj) {
+        final ExecutableFlow flow = (ExecutableFlow) event.getRunner();
         if (event.getType() == Type.FLOW_FINISHED) {
           logger.info("Flow finish event received. " + flow.getExecutionId());
-          runnerThread.addJustFinishedFlow(flow);
+          TriggerManager.this.runnerThread.addJustFinishedFlow(flow);
         }
       }
     }

@@ -16,24 +16,7 @@
 
 package azkaban.execapp;
 
-import com.google.common.base.Preconditions;
-
-import java.io.IOException;
-import java.io.OutputStream;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import javax.servlet.ServletConfig;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
-import org.apache.log4j.Logger;
-
-import org.codehaus.jackson.map.ObjectMapper;
+import static java.util.Objects.requireNonNull;
 
 import azkaban.Constants;
 import azkaban.executor.ConnectorParams;
@@ -44,16 +27,28 @@ import azkaban.executor.ExecutorManagerException;
 import azkaban.utils.FileIOUtils.JobMetaData;
 import azkaban.utils.FileIOUtils.LogData;
 import azkaban.utils.JSONUtils;
-
-import static java.util.Objects.requireNonNull;
+import com.google.common.base.Preconditions;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import javax.servlet.ServletConfig;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import org.apache.log4j.Logger;
+import org.codehaus.jackson.map.ObjectMapper;
 
 
 public class ExecutorServlet extends HttpServlet implements ConnectorParams {
+
+  public static final String JSON_MIME_TYPE = "application/json";
   private static final long serialVersionUID = 1L;
   private static final Logger logger = Logger.getLogger(ExecutorServlet.class
       .getName());
-  public static final String JSON_MIME_TYPE = "application/json";
-
   private AzkabanExecutorServer application;
   private FlowRunnerManager flowRunnerManager;
 
@@ -62,38 +57,38 @@ public class ExecutorServlet extends HttpServlet implements ConnectorParams {
   }
 
   @Override
-  public void init(ServletConfig config) throws ServletException {
-    application =
+  public void init(final ServletConfig config) throws ServletException {
+    this.application =
         (AzkabanExecutorServer) config.getServletContext().getAttribute(
             Constants.AZKABAN_SERVLET_CONTEXT_KEY);
 
-    if (application == null) {
+    if (this.application == null) {
       throw new IllegalStateException(
           "No batch application is defined in the servlet context!");
     }
 
-    flowRunnerManager = application.getFlowRunnerManager();
+    this.flowRunnerManager = this.application.getFlowRunnerManager();
   }
 
-  protected void writeJSON(HttpServletResponse resp, Object obj)
+  protected void writeJSON(final HttpServletResponse resp, final Object obj)
       throws IOException {
     resp.setContentType(JSON_MIME_TYPE);
-    ObjectMapper mapper = new ObjectMapper();
-    OutputStream stream = resp.getOutputStream();
+    final ObjectMapper mapper = new ObjectMapper();
+    final OutputStream stream = resp.getOutputStream();
     mapper.writeValue(stream, obj);
   }
 
   @Override
-  public void doGet(HttpServletRequest req, HttpServletResponse resp)
+  public void doGet(final HttpServletRequest req, final HttpServletResponse resp)
       throws ServletException, IOException {
-    HashMap<String, Object> respMap = new HashMap<String, Object>();
+    final HashMap<String, Object> respMap = new HashMap<>();
     // logger.info("ExecutorServer called by " + req.getRemoteAddr());
     try {
       if (!hasParam(req, ACTION_PARAM)) {
         logger.error("Parameter action not set");
         respMap.put("error", "Parameter action not set");
       } else {
-        String action = getParam(req, ACTION_PARAM);
+        final String action = getParam(req, ACTION_PARAM);
         if (action.equals(UPDATE_ACTION)) {
           // logger.info("Updated called");
           handleAjaxUpdateRequest(req, respMap);
@@ -114,8 +109,8 @@ public class ExecutorServlet extends HttpServlet implements ConnectorParams {
         } else if (action.equals(SHUTDOWN)) {
           shutdown(respMap);
         } else {
-          int execid = Integer.parseInt(getParam(req, EXECID_PARAM));
-          String user = getParam(req, USER_PARAM, null);
+          final int execid = Integer.parseInt(getParam(req, EXECID_PARAM));
+          final String user = getParam(req, USER_PARAM, null);
 
           logger.info("User " + user + " has called action " + action + " on "
               + execid);
@@ -147,7 +142,7 @@ public class ExecutorServlet extends HttpServlet implements ConnectorParams {
           }
         }
       }
-    } catch (Exception e) {
+    } catch (final Exception e) {
       logger.error(e.getMessage(), e);
       respMap.put(RESPONSE_ERROR, e.getMessage());
     }
@@ -155,113 +150,112 @@ public class ExecutorServlet extends HttpServlet implements ConnectorParams {
     resp.flushBuffer();
   }
 
-  private void handleModifyExecutionRequest(Map<String, Object> respMap,
-      int execId, String user, HttpServletRequest req) throws ServletException {
+  private void handleModifyExecutionRequest(final Map<String, Object> respMap,
+      final int execId, final String user, final HttpServletRequest req) throws ServletException {
     if (!hasParam(req, MODIFY_EXECUTION_ACTION_TYPE)) {
       respMap.put(RESPONSE_ERROR, "Modification type not set.");
     }
-    String modificationType = getParam(req, MODIFY_EXECUTION_ACTION_TYPE);
+    final String modificationType = getParam(req, MODIFY_EXECUTION_ACTION_TYPE);
 
     try {
       if (MODIFY_RETRY_FAILURES.equals(modificationType)) {
-        flowRunnerManager.retryFailures(execId, user);
+        this.flowRunnerManager.retryFailures(execId, user);
       }
-    } catch (ExecutorManagerException e) {
+    } catch (final ExecutorManagerException e) {
       logger.error(e.getMessage(), e);
       respMap.put("error", e.getMessage());
     }
   }
 
-  private void handleFetchLogEvent(int execId, HttpServletRequest req,
-      HttpServletResponse resp, Map<String, Object> respMap)
+  private void handleFetchLogEvent(final int execId, final HttpServletRequest req,
+      final HttpServletResponse resp, final Map<String, Object> respMap)
       throws ServletException {
-    String type = getParam(req, "type");
-    int startByte = getIntParam(req, "offset");
-    int length = getIntParam(req, "length");
+    final String type = getParam(req, "type");
+    final int startByte = getIntParam(req, "offset");
+    final int length = getIntParam(req, "length");
 
     resp.setContentType("text/plain");
     resp.setCharacterEncoding("utf-8");
 
     if (type.equals("flow")) {
-      LogData result;
+      final LogData result;
       try {
-        result = flowRunnerManager.readFlowLogs(execId, startByte, length);
+        result = this.flowRunnerManager.readFlowLogs(execId, startByte, length);
         respMap.putAll(result.toObject());
-      } catch (Exception e) {
+      } catch (final Exception e) {
         logger.error(e.getMessage(), e);
         respMap.put(RESPONSE_ERROR, e.getMessage());
       }
     } else {
-      int attempt = getIntParam(req, "attempt", 0);
-      String jobId = getParam(req, "jobId");
+      final int attempt = getIntParam(req, "attempt", 0);
+      final String jobId = getParam(req, "jobId");
       try {
-        LogData result =
-            flowRunnerManager.readJobLogs(execId, jobId, attempt, startByte,
+        final LogData result =
+            this.flowRunnerManager.readJobLogs(execId, jobId, attempt, startByte,
                 length);
         respMap.putAll(result.toObject());
-      } catch (Exception e) {
+      } catch (final Exception e) {
         logger.error(e.getMessage(), e);
         respMap.put("error", e.getMessage());
       }
     }
   }
 
-  private void handleFetchAttachmentsEvent(int execId, HttpServletRequest req,
-      HttpServletResponse resp, Map<String, Object> respMap)
+  private void handleFetchAttachmentsEvent(final int execId, final HttpServletRequest req,
+      final HttpServletResponse resp, final Map<String, Object> respMap)
       throws ServletException {
 
-    String jobId = getParam(req, "jobId");
-    int attempt = getIntParam(req, "attempt", 0);
+    final String jobId = getParam(req, "jobId");
+    final int attempt = getIntParam(req, "attempt", 0);
     try {
-      List<Object> result =
-          flowRunnerManager.readJobAttachments(execId, jobId, attempt);
+      final List<Object> result =
+          this.flowRunnerManager.readJobAttachments(execId, jobId, attempt);
       respMap.put("attachments", result);
-    } catch (Exception e) {
+    } catch (final Exception e) {
       logger.error(e.getMessage(), e);
       respMap.put("error", e.getMessage());
     }
   }
 
-  private void handleFetchMetaDataEvent(int execId, HttpServletRequest req,
-      HttpServletResponse resp, Map<String, Object> respMap)
+  private void handleFetchMetaDataEvent(final int execId, final HttpServletRequest req,
+      final HttpServletResponse resp, final Map<String, Object> respMap)
       throws ServletException {
-    int startByte = getIntParam(req, "offset");
-    int length = getIntParam(req, "length");
+    final int startByte = getIntParam(req, "offset");
+    final int length = getIntParam(req, "length");
 
     resp.setContentType("text/plain");
     resp.setCharacterEncoding("utf-8");
 
-    int attempt = getIntParam(req, "attempt", 0);
-    String jobId = getParam(req, "jobId");
+    final int attempt = getIntParam(req, "attempt", 0);
+    final String jobId = getParam(req, "jobId");
     try {
-      JobMetaData result =
-          flowRunnerManager.readJobMetaData(execId, jobId, attempt, startByte,
+      final JobMetaData result =
+          this.flowRunnerManager.readJobMetaData(execId, jobId, attempt, startByte,
               length);
       respMap.putAll(result.toObject());
-    } catch (Exception e) {
+    } catch (final Exception e) {
       logger.error(e.getMessage(), e);
       respMap.put("error", e.getMessage());
     }
   }
 
-  @SuppressWarnings("unchecked")
-  private void handleAjaxUpdateRequest(HttpServletRequest req,
-      Map<String, Object> respMap) throws ServletException, IOException {
-    ArrayList<Object> updateTimesList =
+  private void handleAjaxUpdateRequest(final HttpServletRequest req,
+      final Map<String, Object> respMap) throws ServletException, IOException {
+    final ArrayList<Object> updateTimesList =
         (ArrayList<Object>) JSONUtils.parseJSONFromString(getParam(req,
             UPDATE_TIME_LIST_PARAM));
-    ArrayList<Object> execIDList =
+    final ArrayList<Object> execIDList =
         (ArrayList<Object>) JSONUtils.parseJSONFromString(getParam(req,
             EXEC_ID_LIST_PARAM));
 
-    ArrayList<Object> updateList = new ArrayList<Object>();
+    final ArrayList<Object> updateList = new ArrayList<>();
     for (int i = 0; i < execIDList.size(); ++i) {
-      long updateTime = JSONUtils.getLongFromObject(updateTimesList.get(i));
-      int execId = (Integer) execIDList.get(i);
+      final long updateTime = JSONUtils.getLongFromObject(updateTimesList.get(i));
+      final int execId = (Integer) execIDList.get(i);
 
-      ExecutableFlowBase flow = flowRunnerManager.getExecutableFlow(execId);
+      final ExecutableFlowBase flow = this.flowRunnerManager.getExecutableFlow(execId);
       if (flow == null) {
-        Map<String, Object> errorResponse = new HashMap<String, Object>();
+        final Map<String, Object> errorResponse = new HashMap<>();
         errorResponse.put(RESPONSE_ERROR, "Flow does not exist");
         errorResponse.put(UPDATE_MAP_EXEC_ID, execId);
         updateList.add(errorResponse);
@@ -276,19 +270,19 @@ public class ExecutorServlet extends HttpServlet implements ConnectorParams {
     respMap.put(RESPONSE_UPDATED_FLOWS, updateList);
   }
 
-  private void handleAjaxExecute(HttpServletRequest req,
-      Map<String, Object> respMap, int execId) throws ServletException {
+  private void handleAjaxExecute(final HttpServletRequest req,
+      final Map<String, Object> respMap, final int execId) throws ServletException {
     try {
-      flowRunnerManager.submitFlow(execId);
-    } catch (ExecutorManagerException e) {
+      this.flowRunnerManager.submitFlow(execId);
+    } catch (final ExecutorManagerException e) {
       e.printStackTrace();
       logger.error(e.getMessage(), e);
       respMap.put(RESPONSE_ERROR, e.getMessage());
     }
   }
 
-  private void handleAjaxFlowStatus(Map<String, Object> respMap, int execid) {
-    ExecutableFlowBase flow = flowRunnerManager.getExecutableFlow(execid);
+  private void handleAjaxFlowStatus(final Map<String, Object> respMap, final int execid) {
+    final ExecutableFlowBase flow = this.flowRunnerManager.getExecutableFlow(execid);
     if (flow == null) {
       respMap.put(STATUS_PARAM, RESPONSE_NOTFOUND);
     } else {
@@ -297,87 +291,89 @@ public class ExecutorServlet extends HttpServlet implements ConnectorParams {
     }
   }
 
-  private void handleAjaxPause(Map<String, Object> respMap, int execid,
-      String user) throws ServletException {
+  private void handleAjaxPause(final Map<String, Object> respMap, final int execid,
+      final String user) throws ServletException {
     if (user == null) {
       respMap.put(RESPONSE_ERROR, "user has not been set");
       return;
     }
 
     try {
-      flowRunnerManager.pauseFlow(execid, user);
+      this.flowRunnerManager.pauseFlow(execid, user);
       respMap.put(STATUS_PARAM, RESPONSE_SUCCESS);
-    } catch (ExecutorManagerException e) {
+    } catch (final ExecutorManagerException e) {
       logger.error(e.getMessage(), e);
       respMap.put(RESPONSE_ERROR, e.getMessage());
     }
   }
 
-  private void handleAjaxResume(Map<String, Object> respMap, int execid,
-      String user) throws ServletException {
+  private void handleAjaxResume(final Map<String, Object> respMap, final int execid,
+      final String user) throws ServletException {
     if (user == null) {
       respMap.put(RESPONSE_ERROR, "user has not been set");
       return;
     }
 
     try {
-      flowRunnerManager.resumeFlow(execid, user);
+      this.flowRunnerManager.resumeFlow(execid, user);
       respMap.put(STATUS_PARAM, RESPONSE_SUCCESS);
-    } catch (ExecutorManagerException e) {
+    } catch (final ExecutorManagerException e) {
       e.printStackTrace();
       respMap.put(RESPONSE_ERROR, e.getMessage());
     }
   }
 
-  private void handleAjaxCancel(Map<String, Object> respMap, int execid,
-      String user) throws ServletException {
+  private void handleAjaxCancel(final Map<String, Object> respMap, final int execid,
+      final String user) throws ServletException {
     if (user == null) {
       respMap.put(RESPONSE_ERROR, "user has not been set");
       return;
     }
 
     try {
-      flowRunnerManager.cancelFlow(execid, user);
+      this.flowRunnerManager.cancelFlow(execid, user);
       respMap.put(STATUS_PARAM, RESPONSE_SUCCESS);
-    } catch (ExecutorManagerException e) {
+    } catch (final ExecutorManagerException e) {
       logger.error(e.getMessage(), e);
       respMap.put(RESPONSE_ERROR, e.getMessage());
     }
   }
 
-  private void handleReloadJobTypePlugins(Map<String, Object> respMap)
+  private void handleReloadJobTypePlugins(final Map<String, Object> respMap)
       throws ServletException {
     try {
-      flowRunnerManager.reloadJobTypePlugins();
+      this.flowRunnerManager.reloadJobTypePlugins();
       respMap.put(STATUS_PARAM, RESPONSE_SUCCESS);
-    } catch (Exception e) {
+    } catch (final Exception e) {
       logger.error(e.getMessage(), e);
       respMap.put(RESPONSE_ERROR, e.getMessage());
     }
   }
 
-  private void setActive(boolean value, Map<String, Object> respMap)
+  private void setActive(final boolean value, final Map<String, Object> respMap)
       throws ServletException {
     try {
       setActiveInternal(value);
       respMap.put(STATUS_PARAM, RESPONSE_SUCCESS);
-    } catch (Exception e) {
+    } catch (final Exception e) {
       logger.error(e.getMessage(), e);
       respMap.put(RESPONSE_ERROR, e.getMessage());
     }
   }
 
-  private void setActiveInternal(boolean value)
+  private void setActiveInternal(final boolean value)
       throws ExecutorManagerException {
-    ExecutorLoader executorLoader = application.getExecutorLoader();
-    Executor executor = executorLoader.fetchExecutor(application.getHost(), application.getPort());
+    final ExecutorLoader executorLoader = this.application.getExecutorLoader();
+    final Executor executor = executorLoader.fetchExecutor(this.application.getHost(),
+        this.application.getPort());
     Preconditions.checkState(executor != null, "Unable to obtain self entry in DB");
     if (executor.isActive() != value) {
       executor.setActive(value);
       executorLoader.updateExecutor(executor);
-      flowRunnerManager.setExecutorActive(value);
+      this.flowRunnerManager.setExecutorActive(value);
     } else {
-      logger.warn("Set active action ignored. Executor is already " + (value? "active" : "inactive"));
+      logger.warn(
+          "Set active action ignored. Executor is already " + (value ? "active" : "inactive"));
     }
   }
 
@@ -385,41 +381,41 @@ public class ExecutorServlet extends HttpServlet implements ConnectorParams {
    * Prepare the executor for shutdown.
    *
    * @param respMap json response object
-   * @throws ServletException
    */
-  private void shutdown(Map<String, Object> respMap)
+  private void shutdown(final Map<String, Object> respMap)
       throws ServletException {
     try {
       logger.warn("Shutting down executor...");
 
       // Set the executor to inactive. Will receive no new flows.
       setActiveInternal(false);
-      application.shutdown();
+      this.application.shutdown();
       respMap.put(STATUS_PARAM, RESPONSE_SUCCESS);
-    } catch (Exception e) {
+    } catch (final Exception e) {
       logger.error(e.getMessage(), e);
       respMap.put(RESPONSE_ERROR, e.getMessage());
     }
   }
 
-  private void getStatus(Map<String, Object> respMap)
+  private void getStatus(final Map<String, Object> respMap)
       throws ServletException {
     try {
-      ExecutorLoader executorLoader = application.getExecutorLoader();
-      final Executor executor = requireNonNull(executorLoader.fetchExecutor(application.getHost(), application.getPort()),
+      final ExecutorLoader executorLoader = this.application.getExecutorLoader();
+      final Executor executor = requireNonNull(
+          executorLoader.fetchExecutor(this.application.getHost(), this.application.getPort()),
           "The executor can not be null");
 
       respMap.put("executor_id", Integer.toString(executor.getId()));
       respMap.put("isActive", String.valueOf(executor.isActive()));
       respMap.put(STATUS_PARAM, RESPONSE_SUCCESS);
-    } catch (Exception e) {
+    } catch (final Exception e) {
       logger.error(e.getMessage(), e);
       respMap.put(RESPONSE_ERROR, e.getMessage());
     }
   }
 
   @Override
-  public void doPost(HttpServletRequest req, HttpServletResponse resp)
+  public void doPost(final HttpServletRequest req, final HttpServletResponse resp)
       throws ServletException, IOException {
 
   }
@@ -427,22 +423,23 @@ public class ExecutorServlet extends HttpServlet implements ConnectorParams {
   /**
    * Duplicated code with AbstractAzkabanServlet, but ne
    */
-  public boolean hasParam(HttpServletRequest request, String param) {
+  public boolean hasParam(final HttpServletRequest request, final String param) {
     return request.getParameter(param) != null;
   }
 
-  public String getParam(HttpServletRequest request, String name)
+  public String getParam(final HttpServletRequest request, final String name)
       throws ServletException {
-    String p = request.getParameter(name);
-    if (p == null)
+    final String p = request.getParameter(name);
+    if (p == null) {
       throw new ServletException("Missing required parameter '" + name + "'.");
-    else
+    } else {
       return p;
+    }
   }
 
-  public String getParam(HttpServletRequest request, String name,
-      String defaultVal) {
-    String p = request.getParameter(name);
+  public String getParam(final HttpServletRequest request, final String name,
+      final String defaultVal) {
+    final String p = request.getParameter(name);
     if (p == null) {
       return defaultVal;
     }
@@ -450,17 +447,18 @@ public class ExecutorServlet extends HttpServlet implements ConnectorParams {
     return p;
   }
 
-  public int getIntParam(HttpServletRequest request, String name)
+  public int getIntParam(final HttpServletRequest request, final String name)
       throws ServletException {
-    String p = getParam(request, name);
+    final String p = getParam(request, name);
     return Integer.parseInt(p);
   }
 
-  public int getIntParam(HttpServletRequest request, String name, int defaultVal) {
+  public int getIntParam(final HttpServletRequest request, final String name,
+      final int defaultVal) {
     if (hasParam(request, name)) {
       try {
         return getIntParam(request, name);
-      } catch (Exception e) {
+      } catch (final Exception e) {
         return defaultVal;
       }
     }

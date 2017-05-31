@@ -18,7 +18,6 @@ package azkaban.metrics;
 
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.MetricRegistry;
-
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -29,22 +28,22 @@ import java.util.concurrent.atomic.AtomicLong;
 public enum CommonMetrics {
   INSTANCE;
 
+  private final AtomicLong dbConnectionTime = new AtomicLong(0L);
+  private final AtomicLong OOMWaitingJobCount = new AtomicLong(0L);
+  private final MetricRegistry registry;
   private Meter dbConnectionMeter;
   private Meter flowFailMeter;
-  private AtomicLong dbConnectionTime = new AtomicLong(0L);
-  private AtomicLong OOMWaitingJobCount = new AtomicLong(0L);
-  private MetricRegistry registry;
 
   CommonMetrics() {
-    registry = MetricsManager.INSTANCE.getRegistry();
+    this.registry = MetricsManager.INSTANCE.getRegistry();
     setupAllMetrics();
   }
 
   private void setupAllMetrics() {
-    dbConnectionMeter = MetricsUtility.addMeter("DB-Connection-meter", registry);
-    flowFailMeter = MetricsUtility.addMeter("flow-fail-meter", registry);
-    MetricsUtility.addGauge("OOM-waiting-job-count", registry, OOMWaitingJobCount::get);
-    MetricsUtility.addGauge("dbConnectionTime", registry, dbConnectionTime::get);
+    this.dbConnectionMeter = MetricsUtility.addMeter("DB-Connection-meter", this.registry);
+    this.flowFailMeter = MetricsUtility.addMeter("flow-fail-meter", this.registry);
+    MetricsUtility.addGauge("OOM-waiting-job-count", this.registry, this.OOMWaitingJobCount::get);
+    MetricsUtility.addGauge("dbConnectionTime", this.registry, this.dbConnectionTime::get);
   }
 
   /**
@@ -58,7 +57,7 @@ public enum CommonMetrics {
      * 1). drop wizard metrics deals with concurrency internally;
      * 2). mark is basically a math addition operation, which should not cause race condition issue.
      */
-    dbConnectionMeter.mark();
+    this.dbConnectionMeter.mark();
   }
 
   /**
@@ -66,26 +65,25 @@ public enum CommonMetrics {
    * This method could be called by Web Server or Executor, as they both detect flow failure.
    */
   public void markFlowFail() {
-    flowFailMeter.mark();
+    this.flowFailMeter.mark();
   }
 
-  public void setDBConnectionTime(long milliseconds) {
-    dbConnectionTime.set(milliseconds);
+  public void setDBConnectionTime(final long milliseconds) {
+    this.dbConnectionTime.set(milliseconds);
   }
 
   /**
    * Mark the occurrence of an job waiting event due to OOM
    */
   public void incrementOOMJobWaitCount() {
-    OOMWaitingJobCount.incrementAndGet();
+    this.OOMWaitingJobCount.incrementAndGet();
   }
 
   /**
    * Unmark the occurrence of an job waiting event due to OOM
    */
   public void decrementOOMJobWaitCount() {
-    OOMWaitingJobCount.decrementAndGet();
+    this.OOMWaitingJobCount.decrementAndGet();
   }
-
 
 }

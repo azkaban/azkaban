@@ -18,20 +18,21 @@
 package azkaban.spi;
 
 public class AzkabanException extends RuntimeException {
-  public AzkabanException(String message) {
+
+  public AzkabanException(final String message) {
     this(message, null);
   }
 
-  public AzkabanException(Throwable throwable) {
+  public AzkabanException(final Throwable throwable) {
     this(null, throwable);
   }
 
-  public AzkabanException(String message, Throwable cause) {
+  public AzkabanException(final String message, final Throwable cause) {
     super(message, cause);
   }
 
-  public AzkabanException(String message, Throwable cause,
-      boolean enableSuppression, boolean writableStackTrace) {
+  public AzkabanException(final String message, final Throwable cause,
+      final boolean enableSuppression, final boolean writableStackTrace) {
     super(message, cause, enableSuppression, writableStackTrace);
   }
 

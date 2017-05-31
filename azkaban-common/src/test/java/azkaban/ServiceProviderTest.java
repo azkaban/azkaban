@@ -17,6 +17,9 @@
 
 package azkaban;
 
+import static azkaban.ServiceProvider.SERVICE_PROVIDER;
+import static org.junit.Assert.assertNotNull;
+
 import azkaban.db.DatabaseOperator;
 import azkaban.project.JdbcProjectLoader;
 import azkaban.spi.Storage;
@@ -31,9 +34,6 @@ import org.apache.commons.io.FileUtils;
 import org.junit.After;
 import org.junit.Test;
 
-import static azkaban.ServiceProvider.*;
-import static org.junit.Assert.*;
-
 
 public class ServiceProviderTest {
 
@@ -46,13 +46,13 @@ public class ServiceProviderTest {
 
   @Test
   public void testInjections() throws Exception {
-    Props props = new Props();
+    final Props props = new Props();
     props.put("database.type", "h2");
     props.put("h2.path", "h2");
-    props.put(Constants.ConfigurationKeys.AZKABAN_STORAGE_LOCAL_BASEDIR, AZKABAN_LOCAL_TEST_STORAGE);
+    props
+        .put(Constants.ConfigurationKeys.AZKABAN_STORAGE_LOCAL_BASEDIR, AZKABAN_LOCAL_TEST_STORAGE);
 
-
-    Injector injector = Guice.createInjector(
+    final Injector injector = Guice.createInjector(
         new AzkabanCommonModule(props)
     );
     SERVICE_PROVIDER.unsetInjector();
