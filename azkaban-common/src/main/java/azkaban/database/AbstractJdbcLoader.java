@@ -18,57 +18,28 @@ package azkaban.database;
 
 import azkaban.metrics.CommonMetrics;
 import azkaban.utils.Props;
-
 import java.io.IOException;
 import java.sql.Connection;
-
 import org.apache.commons.dbutils.DbUtils;
 import org.apache.commons.dbutils.QueryRunner;
 
 
 public abstract class AbstractJdbcLoader {
-  /**
-   * Used for when we store text data. Plain uses UTF8 encoding.
-   */
-  public enum EncodingType {
-    PLAIN(1), GZIP(2);
 
-    private final int numVal;
+  private final AzkabanDataSource dataSource;
 
-    EncodingType(int numVal) {
-      this.numVal = numVal;
-    }
-
-    public int getNumVal() {
-      return numVal;
-    }
-
-    public static EncodingType fromInteger(int x) {
-      switch (x) {
-      case 1:
-        return PLAIN;
-      case 2:
-        return GZIP;
-      default:
-        return PLAIN;
-      }
-    }
+  public AbstractJdbcLoader(final Props props) {
+    this.dataSource = DataSourceUtils.getDataSource(props);
   }
 
-  private AzkabanDataSource dataSource;
-
-  public AbstractJdbcLoader(Props props) {
-    dataSource = DataSourceUtils.getDataSource(props);
-  }
-
-  protected Connection getDBConnection(boolean autoCommit) throws IOException {
+  protected Connection getDBConnection(final boolean autoCommit) throws IOException {
     Connection connection = null;
     CommonMetrics.INSTANCE.markDBConnection();
-    long startMs = System.currentTimeMillis();
+    final long startMs = System.currentTimeMillis();
     try {
-      connection = dataSource.getConnection();
+      connection = this.dataSource.getConnection();
       connection.setAutoCommit(autoCommit);
-    } catch (Exception e) {
+    } catch (final Exception e) {
       DbUtils.closeQuietly(connection);
       throw new IOException("Error getting DB connection.", e);
     }
@@ -77,10 +48,38 @@ public abstract class AbstractJdbcLoader {
   }
 
   protected QueryRunner createQueryRunner() {
-    return new QueryRunner(dataSource);
+    return new QueryRunner(this.dataSource);
   }
 
   protected boolean allowsOnDuplicateKey() {
-    return dataSource.allowsOnDuplicateKey();
+    return this.dataSource.allowsOnDuplicateKey();
+  }
+
+  /**
+   * Used for when we store text data. Plain uses UTF8 encoding.
+   */
+  public enum EncodingType {
+    PLAIN(1), GZIP(2);
+
+    private final int numVal;
+
+    EncodingType(final int numVal) {
+      this.numVal = numVal;
+    }
+
+    public static EncodingType fromInteger(final int x) {
+      switch (x) {
+        case 1:
+          return PLAIN;
+        case 2:
+          return GZIP;
+        default:
+          return PLAIN;
+      }
+    }
+
+    public int getNumVal() {
+      return this.numVal;
+    }
   }
 }

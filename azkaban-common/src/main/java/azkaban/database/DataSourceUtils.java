@@ -23,32 +23,12 @@ import org.apache.log4j.Logger;
 
 public class DataSourceUtils {
 
-  private static Logger logger = Logger.getLogger(DataSourceUtils.class);
+  private static final Logger logger = Logger.getLogger(DataSourceUtils.class);
 
   /**
-   * Property types
+   * Hidden datasource
    */
-  public static enum PropertyType {
-    DB(1);
-
-    private final int numVal;
-
-    PropertyType(int numVal) {
-      this.numVal = numVal;
-    }
-
-    public int getNumVal() {
-      return numVal;
-    }
-
-    public static PropertyType fromInteger(int x) {
-      switch (x) {
-      case 1:
-        return DB;
-      default:
-        return DB;
-      }
-    }
+  private DataSourceUtils() {
   }
 
   /**
@@ -57,24 +37,24 @@ public class DataSourceUtils {
    * @param props
    * @return
    */
-  public static AzkabanDataSource getDataSource(Props props) {
-    String databaseType = props.getString("database.type");
+  public static AzkabanDataSource getDataSource(final Props props) {
+    final String databaseType = props.getString("database.type");
 
     AzkabanDataSource dataSource = null;
     if (databaseType.equals("mysql")) {
-      int port = props.getInt("mysql.port");
-      String host = props.getString("mysql.host");
-      String database = props.getString("mysql.database");
-      String user = props.getString("mysql.user");
-      String password = props.getString("mysql.password");
-      int numConnections = props.getInt("mysql.numconnections");
+      final int port = props.getInt("mysql.port");
+      final String host = props.getString("mysql.host");
+      final String database = props.getString("mysql.database");
+      final String user = props.getString("mysql.user");
+      final String password = props.getString("mysql.password");
+      final int numConnections = props.getInt("mysql.numconnections");
 
       dataSource =
           getMySQLDataSource(host, port, database, user, password,
               numConnections);
     } else if (databaseType.equals("h2")) {
-      String path = props.getString("h2.path");
-      Path h2DbPath = Paths.get(path).toAbsolutePath();
+      final String path = props.getString("h2.path");
+      final Path h2DbPath = Paths.get(path).toAbsolutePath();
       logger.info("h2 DB path: " + h2DbPath);
       dataSource = getH2DataSource(h2DbPath);
     }
@@ -93,8 +73,8 @@ public class DataSourceUtils {
    * @param numConnections
    * @return
    */
-  public static AzkabanDataSource getMySQLDataSource(String host, Integer port,
-      String dbName, String user, String password, Integer numConnections) {
+  public static AzkabanDataSource getMySQLDataSource(final String host, final Integer port,
+      final String dbName, final String user, final String password, final Integer numConnections) {
     return new MySQLBasicDataSource(host, port, dbName, user, password,
         numConnections);
   }
@@ -105,14 +85,34 @@ public class DataSourceUtils {
    * @param file
    * @return
    */
-  public static AzkabanDataSource getH2DataSource(Path file) {
+  public static AzkabanDataSource getH2DataSource(final Path file) {
     return new EmbeddedH2BasicDataSource(file);
   }
 
   /**
-   * Hidden datasource
+   * Property types
    */
-  private DataSourceUtils() {
+  public static enum PropertyType {
+    DB(1);
+
+    private final int numVal;
+
+    PropertyType(final int numVal) {
+      this.numVal = numVal;
+    }
+
+    public static PropertyType fromInteger(final int x) {
+      switch (x) {
+        case 1:
+          return DB;
+        default:
+          return DB;
+      }
+    }
+
+    public int getNumVal() {
+      return this.numVal;
+    }
   }
 
   /**
@@ -123,17 +123,17 @@ public class DataSourceUtils {
 
     private final String url;
 
-    private MySQLBasicDataSource(String host, int port, String dbName,
-        String user, String password, int numConnections) {
+    private MySQLBasicDataSource(final String host, final int port, final String dbName,
+        final String user, final String password, final int numConnections) {
       super();
 
-      url = "jdbc:mysql://" + (host + ":" + port + "/" + dbName);
+      this.url = "jdbc:mysql://" + (host + ":" + port + "/" + dbName);
       addConnectionProperty("useUnicode", "yes");
       addConnectionProperty("characterEncoding", "UTF-8");
       setDriverClassName("com.mysql.jdbc.Driver");
       setUsername(user);
       setPassword(password);
-      setUrl(url);
+      setUrl(this.url);
       setMaxTotal(numConnections);
       setValidationQuery("/* ping */ select 1");
       setTestOnBorrow(true);
@@ -155,9 +155,10 @@ public class DataSourceUtils {
    *
    */
   public static class EmbeddedH2BasicDataSource extends AzkabanDataSource {
-    private EmbeddedH2BasicDataSource(Path filePath) {
+
+    private EmbeddedH2BasicDataSource(final Path filePath) {
       super();
-      String url = "jdbc:h2:file:" + filePath;
+      final String url = "jdbc:h2:file:" + filePath;
       setDriverClassName("org.h2.Driver");
       setUrl(url);
     }
