@@ -16,15 +16,15 @@
 
 package azkaban.user;
 
+import static org.junit.Assert.assertTrue;
+
+import azkaban.user.Permission.Type;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import static org.junit.Assert.assertTrue;
-
-import azkaban.user.Permission.Type;
-
 public class PermissionTest {
+
   @Before
   public void setUp() throws Exception {
   }
@@ -36,7 +36,7 @@ public class PermissionTest {
   @Test
   public void testEmptyPermissionCreation() throws Exception {
     Permission permission = new Permission();
-    permission.addPermissionsByName(new String[] {});
+    permission.addPermissionsByName(new String[]{});
   }
 
   @Test
@@ -53,10 +53,10 @@ public class PermissionTest {
   @Test
   public void testListPermissionCreation() throws Exception {
     Permission perm1 = new Permission();
-    perm1.addPermissionsByName(new String[] { "READ", "EXECUTE" });
+    perm1.addPermissionsByName(new String[]{"READ", "EXECUTE"});
 
     Permission perm2 = new Permission();
-    perm2.addPermission(new Type[] { Type.EXECUTE, Type.READ });
+    perm2.addPermission(new Type[]{Type.EXECUTE, Type.READ});
     info("Compare " + perm1.toString() + " and " + perm2.toString());
     assertTrue(perm1.equals(perm2));
   }
@@ -64,11 +64,11 @@ public class PermissionTest {
   @Test
   public void testRemovePermission() throws Exception {
     Permission perm1 = new Permission();
-    perm1.addPermissionsByName(new String[] { "READ", "EXECUTE", "WRITE" });
+    perm1.addPermissionsByName(new String[]{"READ", "EXECUTE", "WRITE"});
     perm1.removePermissions(Type.EXECUTE);
 
     Permission perm2 = new Permission();
-    perm2.addPermission(new Type[] { Type.READ, Type.WRITE });
+    perm2.addPermission(new Type[]{Type.READ, Type.WRITE});
     info("Compare " + perm1.toString() + " and " + perm2.toString());
     assertTrue(perm1.equals(perm2));
   }
@@ -76,11 +76,11 @@ public class PermissionTest {
   @Test
   public void testRemovePermissionByName() throws Exception {
     Permission perm1 = new Permission();
-    perm1.addPermissionsByName(new String[] { "READ", "EXECUTE", "WRITE" });
+    perm1.addPermissionsByName(new String[]{"READ", "EXECUTE", "WRITE"});
     perm1.removePermissionsByName("EXECUTE");
 
     Permission perm2 = new Permission();
-    perm2.addPermission(new Type[] { Type.READ, Type.WRITE });
+    perm2.addPermission(new Type[]{Type.READ, Type.WRITE});
     info("Compare " + perm1.toString() + " and " + perm2.toString());
     assertTrue(perm1.equals(perm2));
   }
@@ -89,7 +89,7 @@ public class PermissionTest {
   public void testToAndFromObject() throws Exception {
     Permission permission = new Permission();
     permission
-        .addPermissionsByName(new String[] { "READ", "EXECUTE", "WRITE" });
+        .addPermissionsByName(new String[]{"READ", "EXECUTE", "WRITE"});
 
     String[] array = permission.toStringArray();
     Permission permission2 = new Permission();
@@ -100,7 +100,7 @@ public class PermissionTest {
   @Test
   public void testFlags() throws Exception {
     Permission permission = new Permission();
-    permission.addPermission(new Type[] { Type.READ, Type.WRITE });
+    permission.addPermission(new Type[]{Type.READ, Type.WRITE});
 
     int flags = permission.toFlags();
     Permission permission2 = new Permission(flags);

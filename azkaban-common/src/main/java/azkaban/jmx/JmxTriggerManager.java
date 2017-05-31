@@ -20,6 +20,7 @@ import azkaban.trigger.TriggerManagerAdapter;
 import azkaban.trigger.TriggerManagerAdapter.TriggerJMX;
 
 public class JmxTriggerManager implements JmxTriggerManagerMBean {
+
   private TriggerJMX jmxStats;
 
   public JmxTriggerManager(TriggerManagerAdapter manager) {

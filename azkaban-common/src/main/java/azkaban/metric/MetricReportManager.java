@@ -21,7 +21,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-
 import org.apache.log4j.Logger;
 
 
@@ -35,18 +34,20 @@ import org.apache.log4j.Logger;
  * </ul></p>
  */
 public class MetricReportManager {
+
   /**
    * Maximum number of metrics reporting threads
    */
   private static final int MAX_EMITTER_THREADS = 4;
   private static final Logger logger = Logger.getLogger(MetricReportManager.class);
-
+  // Singleton variable
+  private static volatile MetricReportManager instance = null;
+  private static volatile boolean isManagerEnabled;
   /**
    * List of all the metrics that Azkaban is tracking
    * Manager is not concerned with type of metric as long as it honors IMetric contracts
    */
   private List<IMetric<?>> metrics;
-
   /**
    * List of all the emitter listening all the metrics
    * Manager is not concerned with how emitter is reporting value.
@@ -54,9 +55,6 @@ public class MetricReportManager {
    */
   private List<IMetricEmitter> metricEmitters;
   private ExecutorService executorService;
-  // Singleton variable
-  private static volatile MetricReportManager instance = null;
-  private static volatile boolean isManagerEnabled;
 
   private MetricReportManager() {
     logger.debug("Instantiating Metric Manager");
@@ -107,19 +105,24 @@ public class MetricReportManager {
         synchronized (metric) {
           metricSnapshot = metric.getSnapshot();
         }
-        logger.debug(String.format("Submitting %s metric for metric emission pool", metricSnapshot.getName()));
+        logger.debug(String
+            .format("Submitting %s metric for metric emission pool", metricSnapshot.getName()));
         // report to all emitters
         for (final IMetricEmitter metricEmitter : metricEmitters) {
           executorService.submit(() -> {
             try {
               metricEmitter.reportMetric(metricSnapshot);
             } catch (Exception ex) {
-              logger.error(String.format("Failed to report %s metric due to ", metricSnapshot.getName()), ex);
+              logger.error(
+                  String.format("Failed to report %s metric due to ", metricSnapshot.getName()),
+                  ex);
             }
           });
         }
       } catch (CloneNotSupportedException ex) {
-        logger.error(String.format("Failed to take snapshot for %s metric", metric.getClass().getName()), ex);
+        logger.error(
+            String.format("Failed to take snapshot for %s metric", metric.getClass().getName()),
+            ex);
       }
     }
   }
@@ -154,8 +157,9 @@ public class MetricReportManager {
    */
   public void addMetric(final IMetric<?> metric) {
     // metric null or already present
-    if(metric == null)
+    if (metric == null) {
       throw new IllegalArgumentException("Cannot add a null metric");
+    }
 
     if (getMetricFromName(metric.getName()) == null) {
       logger.debug(String.format("Adding %s metric in Metric Manager", metric.getName()));

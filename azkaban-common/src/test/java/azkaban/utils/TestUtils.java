@@ -16,21 +16,21 @@
 
 package azkaban.utils;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.HashMap;
-
 import azkaban.executor.ExecutableFlow;
 import azkaban.flow.Flow;
 import azkaban.project.Project;
 import azkaban.user.User;
 import azkaban.user.UserManager;
 import azkaban.user.XmlUserManager;
+import java.io.File;
+import java.io.IOException;
+import java.util.HashMap;
 
 /**
  * Commonly used utils method for unit/integration tests
  */
 public class TestUtils {
+
   /* Base  resource direcotyr for unit tests */
   private static final String UNIT_RESOURCE_DIR =
       "../azkaban-test/src/test/resources/azkaban/test";
@@ -40,7 +40,7 @@ public class TestUtils {
 
   public static File getFlowDir(String projectName, String flow) {
     return new File(String.format("%s/%s/%s.flow", UNIT_EXECUTION_DIR, projectName,
-      flow));
+        flow));
   }
 
   public static User getTestUser() {
@@ -49,11 +49,11 @@ public class TestUtils {
 
   /* Helper method to create an ExecutableFlow from serialized description */
   public static ExecutableFlow createExecutableFlow(String projectName,
-    String flowName) throws IOException {
+      String flowName) throws IOException {
     File jsonFlowFile = getFlowDir(projectName, flowName);
     @SuppressWarnings("unchecked")
     HashMap<String, Object> flowObj =
-      (HashMap<String, Object>) JSONUtils.parseJSONFromFile(jsonFlowFile);
+        (HashMap<String, Object>) JSONUtils.parseJSONFromFile(jsonFlowFile);
 
     Flow flow = Flow.flowFromObject(flowObj);
     Project project = new Project(1, "flow");
@@ -69,7 +69,7 @@ public class TestUtils {
   public static UserManager createTestXmlUserManager() {
     Props props = new Props();
     props.put(XmlUserManager.XML_FILE_PARAM, UNIT_RESOURCE_DIR
-      + "/azkaban-users.xml");
+        + "/azkaban-users.xml");
     UserManager manager = new XmlUserManager(props);
     return manager;
   }

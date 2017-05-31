@@ -16,13 +16,13 @@
 
 package azkaban.flow;
 
+import azkaban.utils.Utils;
 import java.awt.geom.Point2D;
 import java.util.HashMap;
 import java.util.Map;
 
-import azkaban.utils.Utils;
-
 public class Node {
+
   private final String id;
   private String jobSource;
   private String propsSource;
@@ -47,6 +47,53 @@ public class Node {
     this.id = clone.id;
     this.propsSource = clone.propsSource;
     this.jobSource = clone.jobSource;
+  }
+
+  @SuppressWarnings("unchecked")
+  public static Node fromObject(Object obj) {
+    Map<String, Object> mapObj = (Map<String, Object>) obj;
+    String id = (String) mapObj.get("id");
+
+    Node node = new Node(id);
+    String jobSource = (String) mapObj.get("jobSource");
+    String propSource = (String) mapObj.get("propSource");
+    String jobType = (String) mapObj.get("jobType");
+
+    String embeddedFlowId = (String) mapObj.get("embeddedFlowId");
+
+    node.setJobSource(jobSource);
+    node.setPropsSource(propSource);
+    node.setType(jobType);
+    node.setEmbeddedFlowId(embeddedFlowId);
+
+    Integer expectedRuntime = (Integer) mapObj.get("expectedRuntime");
+    if (expectedRuntime != null) {
+      node.setExpectedRuntimeSec(expectedRuntime);
+    }
+
+    Map<String, Object> layoutInfo = (Map<String, Object>) mapObj.get("layout");
+    if (layoutInfo != null) {
+      Double x = null;
+      Double y = null;
+      Integer level = null;
+
+      try {
+        x = Utils.convertToDouble(layoutInfo.get("x"));
+        y = Utils.convertToDouble(layoutInfo.get("y"));
+        level = (Integer) layoutInfo.get("level");
+      } catch (ClassCastException e) {
+        throw new RuntimeException("Error creating node " + id, e);
+      }
+
+      if (x != null && y != null) {
+        node.setPosition(new Point2D.Double(x, y));
+      }
+      if (level != null) {
+        node.setLevel(level);
+      }
+    }
+
+    return node;
   }
 
   public String getId() {
@@ -97,67 +144,20 @@ public class Node {
     this.propsSource = propsSource;
   }
 
-  public void setExpectedRuntimeSec(int runtimeSec) {
-    expectedRunTimeSec = runtimeSec;
-  }
-
   public int getExpectedRuntimeSec() {
     return expectedRunTimeSec;
   }
 
-  public void setEmbeddedFlowId(String flowId) {
-    embeddedFlowId = flowId;
+  public void setExpectedRuntimeSec(int runtimeSec) {
+    expectedRunTimeSec = runtimeSec;
   }
 
   public String getEmbeddedFlowId() {
     return embeddedFlowId;
   }
 
-  @SuppressWarnings("unchecked")
-  public static Node fromObject(Object obj) {
-    Map<String, Object> mapObj = (Map<String, Object>) obj;
-    String id = (String) mapObj.get("id");
-
-    Node node = new Node(id);
-    String jobSource = (String) mapObj.get("jobSource");
-    String propSource = (String) mapObj.get("propSource");
-    String jobType = (String) mapObj.get("jobType");
-
-    String embeddedFlowId = (String) mapObj.get("embeddedFlowId");
-
-    node.setJobSource(jobSource);
-    node.setPropsSource(propSource);
-    node.setType(jobType);
-    node.setEmbeddedFlowId(embeddedFlowId);
-
-    Integer expectedRuntime = (Integer) mapObj.get("expectedRuntime");
-    if (expectedRuntime != null) {
-      node.setExpectedRuntimeSec(expectedRuntime);
-    }
-
-    Map<String, Object> layoutInfo = (Map<String, Object>) mapObj.get("layout");
-    if (layoutInfo != null) {
-      Double x = null;
-      Double y = null;
-      Integer level = null;
-
-      try {
-        x = Utils.convertToDouble(layoutInfo.get("x"));
-        y = Utils.convertToDouble(layoutInfo.get("y"));
-        level = (Integer) layoutInfo.get("level");
-      } catch (ClassCastException e) {
-        throw new RuntimeException("Error creating node " + id, e);
-      }
-
-      if (x != null && y != null) {
-        node.setPosition(new Point2D.Double(x, y));
-      }
-      if (level != null) {
-        node.setLevel(level);
-      }
-    }
-
-    return node;
+  public void setEmbeddedFlowId(String flowId) {
+    embeddedFlowId = flowId;
   }
 
   public Object toObject() {

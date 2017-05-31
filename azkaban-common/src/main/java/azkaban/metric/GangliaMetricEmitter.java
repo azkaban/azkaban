@@ -16,8 +16,6 @@
 
 package azkaban.metric;
 
-import org.apache.commons.collections.bag.SynchronizedBag;
-
 import azkaban.utils.Props;
 
 
@@ -25,6 +23,7 @@ import azkaban.utils.Props;
  * MetricEmitter implementation to report metric to a ganglia gmetric process
  */
 public class GangliaMetricEmitter implements IMetricEmitter {
+
   private static final String GANGLIA_METRIC_REPORTER_PATH = "azkaban.metric.ganglia.path";
   private String gmetricPath;
 
@@ -40,8 +39,10 @@ public class GangliaMetricEmitter implements IMetricEmitter {
 
     synchronized (metric) {
       cmd =
-          String.format("%s -t %s -n %s -v %s", gmetricPath, metric.getValueType(), metric.getName(), metric.getValue()
-              .toString());
+          String
+              .format("%s -t %s -n %s -v %s", gmetricPath, metric.getValueType(), metric.getName(),
+                  metric.getValue()
+                      .toString());
     }
 
     return cmd;

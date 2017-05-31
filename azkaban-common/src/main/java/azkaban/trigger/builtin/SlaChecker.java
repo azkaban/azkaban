@@ -17,32 +17,29 @@
 package azkaban.trigger.builtin;
 
 import azkaban.ServiceProvider;
-import azkaban.executor.ExecutorLoader;
-import java.util.HashMap;
-import java.util.Map;
-
-import org.apache.log4j.Logger;
-import org.joda.time.DateTime;
-import org.joda.time.ReadablePeriod;
-
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutableNode;
+import azkaban.executor.ExecutorLoader;
 import azkaban.executor.ExecutorManagerException;
 import azkaban.executor.Status;
 import azkaban.sla.SlaOption;
 import azkaban.trigger.ConditionChecker;
 import azkaban.utils.Utils;
+import java.util.HashMap;
+import java.util.Map;
+import org.apache.log4j.Logger;
+import org.joda.time.DateTime;
+import org.joda.time.ReadablePeriod;
 
 public class SlaChecker implements ConditionChecker {
 
-  private static final Logger logger = Logger.getLogger(SlaChecker.class);
   public static final String type = "SlaChecker";
-
+  private static final Logger logger = Logger.getLogger(SlaChecker.class);
   private final String id;
   private final SlaOption slaOption;
   private final int execId;
-  private long checkTime = -1;
   private final ExecutorLoader executorLoader;
+  private long checkTime = -1;
 
   //todo chengren311: move this class to executor module when all existing triggers in db are expired
   public SlaChecker(String id, SlaOption slaOption, int execId) {
@@ -50,6 +47,24 @@ public class SlaChecker implements ConditionChecker {
     this.slaOption = slaOption;
     this.execId = execId;
     this.executorLoader = ServiceProvider.SERVICE_PROVIDER.getInstance(ExecutorLoader.class);
+  }
+
+  @SuppressWarnings("unchecked")
+  public static SlaChecker createFromJson(Object obj) throws Exception {
+    return createFromJson((HashMap<String, Object>) obj);
+  }
+
+  public static SlaChecker createFromJson(HashMap<String, Object> obj)
+      throws Exception {
+    Map<String, Object> jsonObj = (HashMap<String, Object>) obj;
+    if (!jsonObj.get("type").equals(type)) {
+      throw new Exception("Cannot create checker of " + type + " from "
+          + jsonObj.get("type"));
+    }
+    String id = (String) jsonObj.get("id");
+    SlaOption slaOption = SlaOption.fromObject(jsonObj.get("slaOption"));
+    int execId = Integer.valueOf((String) jsonObj.get("execId"));
+    return new SlaChecker(id, slaOption, execId);
   }
 
   private Boolean isSlaMissed(ExecutableFlow flow) {
@@ -258,24 +273,6 @@ public class SlaChecker implements ConditionChecker {
   @Override
   public ConditionChecker fromJson(Object obj) throws Exception {
     return createFromJson(obj);
-  }
-
-  @SuppressWarnings("unchecked")
-  public static SlaChecker createFromJson(Object obj) throws Exception {
-    return createFromJson((HashMap<String, Object>) obj);
-  }
-
-  public static SlaChecker createFromJson(HashMap<String, Object> obj)
-      throws Exception {
-    Map<String, Object> jsonObj = (HashMap<String, Object>) obj;
-    if (!jsonObj.get("type").equals(type)) {
-      throw new Exception("Cannot create checker of " + type + " from "
-          + jsonObj.get("type"));
-    }
-    String id = (String) jsonObj.get("id");
-    SlaOption slaOption = SlaOption.fromObject(jsonObj.get("slaOption"));
-    int execId = Integer.valueOf((String) jsonObj.get("execId"));
-    return new SlaChecker(id, slaOption, execId);
   }
 
   @Override

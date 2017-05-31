@@ -16,13 +16,6 @@
 
 package azkaban.trigger.builtin;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import org.apache.log4j.Logger;
-
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutionOptions;
 import azkaban.executor.ExecutorManagerAdapter;
@@ -31,11 +24,13 @@ import azkaban.flow.Flow;
 import azkaban.project.Project;
 import azkaban.project.ProjectManager;
 import azkaban.sla.SlaOption;
-import azkaban.trigger.Condition;
-import azkaban.trigger.ConditionChecker;
-import azkaban.trigger.Trigger;
 import azkaban.trigger.TriggerAction;
 import azkaban.trigger.TriggerManager;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import org.apache.log4j.Logger;
 
 public class ExecuteFlowAction implements TriggerAction {
 
@@ -45,16 +40,15 @@ public class ExecuteFlowAction implements TriggerAction {
 
   private static ExecutorManagerAdapter executorManager;
   private static TriggerManager triggerManager;
+  private static ProjectManager projectManager;
+  private static Logger logger = Logger.getLogger(ExecuteFlowAction.class);
   private String actionId;
   private int projectId;
   private String projectName;
   private String flowName;
   private String submitUser;
-  private static ProjectManager projectManager;
   private ExecutionOptions executionOptions = new ExecutionOptions();
   private List<SlaOption> slaOptions;
-
-  private static Logger logger = Logger.getLogger(ExecuteFlowAction.class);
 
   public ExecuteFlowAction(String actionId, int projectId, String projectName,
       String flowName, String submitUser, ExecutionOptions executionOptions,
@@ -70,6 +64,60 @@ public class ExecuteFlowAction implements TriggerAction {
 
   public static void setLogger(Logger logger) {
     ExecuteFlowAction.logger = logger;
+  }
+
+  public static ExecutorManagerAdapter getExecutorManager() {
+    return executorManager;
+  }
+
+  public static void setExecutorManager(ExecutorManagerAdapter executorManager) {
+    ExecuteFlowAction.executorManager = executorManager;
+  }
+
+  public static TriggerManager getTriggerManager() {
+    return triggerManager;
+  }
+
+  public static void setTriggerManager(TriggerManager triggerManager) {
+    ExecuteFlowAction.triggerManager = triggerManager;
+  }
+
+  public static ProjectManager getProjectManager() {
+    return projectManager;
+  }
+
+  public static void setProjectManager(ProjectManager projectManager) {
+    ExecuteFlowAction.projectManager = projectManager;
+  }
+
+  @SuppressWarnings("unchecked")
+  public static TriggerAction createFromJson(HashMap<String, Object> obj) {
+    Map<String, Object> jsonObj = (HashMap<String, Object>) obj;
+    String objType = (String) jsonObj.get("type");
+    if (!objType.equals(type)) {
+      throw new RuntimeException("Cannot create action of " + type + " from "
+          + objType);
+    }
+    String actionId = (String) jsonObj.get("actionId");
+    int projectId = Integer.valueOf((String) jsonObj.get("projectId"));
+    String projectName = (String) jsonObj.get("projectName");
+    String flowName = (String) jsonObj.get("flowName");
+    String submitUser = (String) jsonObj.get("submitUser");
+    ExecutionOptions executionOptions = null;
+    if (jsonObj.containsKey("executionOptions")) {
+      executionOptions =
+          ExecutionOptions.createFromObject(jsonObj.get("executionOptions"));
+    }
+    List<SlaOption> slaOptions = null;
+    if (jsonObj.containsKey("slaOptions")) {
+      slaOptions = new ArrayList<SlaOption>();
+      List<Object> slaOptionsObj = (List<Object>) jsonObj.get("slaOptions");
+      for (Object slaObj : slaOptionsObj) {
+        slaOptions.add(SlaOption.fromObject(slaObj));
+      }
+    }
+    return new ExecuteFlowAction(actionId, projectId, projectName, flowName,
+        submitUser, executionOptions, slaOptions);
   }
 
   public String getProjectName() {
@@ -116,30 +164,6 @@ public class ExecuteFlowAction implements TriggerAction {
     this.slaOptions = slaOptions;
   }
 
-  public static ExecutorManagerAdapter getExecutorManager() {
-    return executorManager;
-  }
-
-  public static void setExecutorManager(ExecutorManagerAdapter executorManager) {
-    ExecuteFlowAction.executorManager = executorManager;
-  }
-
-  public static TriggerManager getTriggerManager() {
-    return triggerManager;
-  }
-
-  public static void setTriggerManager(TriggerManager triggerManager) {
-    ExecuteFlowAction.triggerManager = triggerManager;
-  }
-
-  public static ProjectManager getProjectManager() {
-    return projectManager;
-  }
-
-  public static void setProjectManager(ProjectManager projectManager) {
-    ExecuteFlowAction.projectManager = projectManager;
-  }
-
   @Override
   public String getType() {
     return type;
@@ -149,36 +173,6 @@ public class ExecuteFlowAction implements TriggerAction {
   @Override
   public TriggerAction fromJson(Object obj) {
     return createFromJson((HashMap<String, Object>) obj);
-  }
-
-  @SuppressWarnings("unchecked")
-  public static TriggerAction createFromJson(HashMap<String, Object> obj) {
-    Map<String, Object> jsonObj = (HashMap<String, Object>) obj;
-    String objType = (String) jsonObj.get("type");
-    if (!objType.equals(type)) {
-      throw new RuntimeException("Cannot create action of " + type + " from "
-          + objType);
-    }
-    String actionId = (String) jsonObj.get("actionId");
-    int projectId = Integer.valueOf((String) jsonObj.get("projectId"));
-    String projectName = (String) jsonObj.get("projectName");
-    String flowName = (String) jsonObj.get("flowName");
-    String submitUser = (String) jsonObj.get("submitUser");
-    ExecutionOptions executionOptions = null;
-    if (jsonObj.containsKey("executionOptions")) {
-      executionOptions =
-          ExecutionOptions.createFromObject(jsonObj.get("executionOptions"));
-    }
-    List<SlaOption> slaOptions = null;
-    if (jsonObj.containsKey("slaOptions")) {
-      slaOptions = new ArrayList<SlaOption>();
-      List<Object> slaOptionsObj = (List<Object>) jsonObj.get("slaOptions");
-      for (Object slaObj : slaOptionsObj) {
-        slaOptions.add(SlaOption.fromObject(slaObj));
-      }
-    }
-    return new ExecuteFlowAction(actionId, projectId, projectName, flowName,
-        submitUser, executionOptions, slaOptions);
   }
 
   @Override

@@ -16,14 +16,11 @@
 
 package azkaban.utils;
 
-import org.junit.Assert;
-import org.junit.Test;
+import static org.junit.Assert.assertEquals;
 
 import java.util.HashMap;
 import java.util.Map;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import org.junit.Test;
 
 /**
  * Test class for azkaban.utils.WebUtils
@@ -31,7 +28,7 @@ import static org.junit.Assert.assertNotNull;
 public class WebUtilsTest {
 
   @Test
-  public void testWhenNoXForwardedForHeaderUseClientIp(){
+  public void testWhenNoXForwardedForHeaderUseClientIp() {
 
     String clientIp = "127.0.0.1:10000";
     Map<String, String> headers = new HashMap<>();
@@ -44,7 +41,7 @@ public class WebUtilsTest {
   }
 
   @Test
-  public void testWhenClientIpNoPort(){
+  public void testWhenClientIpNoPort() {
 
     String clientIp = "192.168.1.1";
     Map<String, String> headers = new HashMap<>();
@@ -57,7 +54,7 @@ public class WebUtilsTest {
   }
 
   @Test
-  public void testWhenXForwardedForHeaderUseHeader(){
+  public void testWhenXForwardedForHeaderUseHeader() {
 
     String clientIp = "127.0.0.1:10000";
     String upstreamIp = "192.168.1.1:10000";
@@ -73,7 +70,7 @@ public class WebUtilsTest {
   }
 
   @Test
-  public void testWhenXForwardedForHeaderMultipleUpstreamsUseHeader(){
+  public void testWhenXForwardedForHeaderMultipleUpstreamsUseHeader() {
 
     String clientIp = "127.0.0.1:10000";
     String upstreamIp = "192.168.1.1:10000";

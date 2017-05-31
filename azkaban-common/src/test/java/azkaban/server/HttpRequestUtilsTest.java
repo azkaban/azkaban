@@ -16,13 +16,6 @@
 
 package azkaban.server;
 
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
-
-import org.junit.Assert;
-import org.junit.Test;
-
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutionOptions;
 import azkaban.executor.ExecutorManagerException;
@@ -31,53 +24,59 @@ import azkaban.user.User;
 import azkaban.user.UserManager;
 import azkaban.user.UserManagerException;
 import azkaban.utils.TestUtils;
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
+import org.junit.Assert;
+import org.junit.Test;
 
 /**
  * Test class for HttpRequestUtils
  */
 public final class HttpRequestUtilsTest {
+
   /* Helper method to get a test flow and add required properties */
   public static ExecutableFlow createExecutableFlow() throws IOException {
     ExecutableFlow flow = TestUtils.createExecutableFlow("exectest1", "exec1");
     flow.getExecutionOptions().getFlowParameters()
-      .put(ExecutionOptions.FLOW_PRIORITY, "1");
+        .put(ExecutionOptions.FLOW_PRIORITY, "1");
     flow.getExecutionOptions().getFlowParameters()
-      .put(ExecutionOptions.USE_EXECUTOR, "2");
+        .put(ExecutionOptions.USE_EXECUTOR, "2");
     return flow;
   }
 
   /* Test that flow properties are removed for non-admin user */
   @Test
   public void TestFilterNonAdminOnlyFlowParams() throws IOException,
-    ExecutorManagerException, UserManagerException {
+      ExecutorManagerException, UserManagerException {
     ExecutableFlow flow = createExecutableFlow();
     UserManager manager = TestUtils.createTestXmlUserManager();
     User user = manager.getUser("testUser", "testUser");
 
     HttpRequestUtils.filterAdminOnlyFlowParams(manager,
-      flow.getExecutionOptions(), user);
+        flow.getExecutionOptions(), user);
 
     Assert.assertFalse(flow.getExecutionOptions().getFlowParameters()
-      .containsKey(ExecutionOptions.FLOW_PRIORITY));
+        .containsKey(ExecutionOptions.FLOW_PRIORITY));
     Assert.assertFalse(flow.getExecutionOptions().getFlowParameters()
-      .containsKey(ExecutionOptions.USE_EXECUTOR));
+        .containsKey(ExecutionOptions.USE_EXECUTOR));
   }
 
   /* Test that flow properties are retained for admin user */
   @Test
   public void TestFilterAdminOnlyFlowParams() throws IOException,
-    ExecutorManagerException, UserManagerException {
+      ExecutorManagerException, UserManagerException {
     ExecutableFlow flow = createExecutableFlow();
     UserManager manager = TestUtils.createTestXmlUserManager();
     User user = manager.getUser("testAdmin", "testAdmin");
 
     HttpRequestUtils.filterAdminOnlyFlowParams(manager,
-      flow.getExecutionOptions(), user);
+        flow.getExecutionOptions(), user);
 
     Assert.assertTrue(flow.getExecutionOptions().getFlowParameters()
-      .containsKey(ExecutionOptions.FLOW_PRIORITY));
+        .containsKey(ExecutionOptions.FLOW_PRIORITY));
     Assert.assertTrue(flow.getExecutionOptions().getFlowParameters()
-      .containsKey(ExecutionOptions.USE_EXECUTOR));
+        .containsKey(ExecutionOptions.USE_EXECUTOR));
   }
 
   /* Test exception, if param is a valid integer */
@@ -102,7 +101,7 @@ public final class HttpRequestUtilsTest {
     UserManager manager = TestUtils.createTestXmlUserManager();
     User adminUser = manager.getUser("testAdmin", "testAdmin");
     Assert.assertTrue(HttpRequestUtils.hasPermission(manager, adminUser,
-      Type.ADMIN));
+        Type.ADMIN));
   }
 
   /* verify permission for non-admin user */
@@ -111,6 +110,6 @@ public final class HttpRequestUtilsTest {
     UserManager manager = TestUtils.createTestXmlUserManager();
     User testUser = manager.getUser("testUser", "testUser");
     Assert.assertFalse(HttpRequestUtils.hasPermission(manager, testUser,
-      Type.ADMIN));
+        Type.ADMIN));
   }
 }

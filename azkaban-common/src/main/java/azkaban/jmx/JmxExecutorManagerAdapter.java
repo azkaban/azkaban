@@ -16,14 +16,14 @@
 
 package azkaban.jmx;
 
+import azkaban.executor.ExecutorManagerAdapter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import azkaban.executor.ExecutorManagerAdapter;
-
 public class JmxExecutorManagerAdapter implements
     JmxExecutorManagerAdapterMBean {
+
   private ExecutorManagerAdapter manager;
 
   public JmxExecutorManagerAdapter(ExecutorManagerAdapter manager) {

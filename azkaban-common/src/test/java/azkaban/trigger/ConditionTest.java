@@ -16,22 +16,19 @@
 
 package azkaban.trigger;
 
-import java.io.File;
-import java.util.HashMap;
-import java.util.Map;
-
-import org.joda.time.DateTime;
-
-import org.junit.Test;
-import org.junit.Ignore;
-
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 import azkaban.trigger.builtin.BasicTimeChecker;
 import azkaban.utils.JSONUtils;
 import azkaban.utils.Props;
 import azkaban.utils.Utils;
+import java.io.File;
+import java.util.HashMap;
+import java.util.Map;
+import org.joda.time.DateTime;
+import org.junit.Ignore;
+import org.junit.Test;
 
 public class ConditionTest {
 
@@ -66,7 +63,8 @@ public class ConditionTest {
 
   }
 
-  @Ignore @Test
+  @Ignore
+  @Test
   public void jsonConversionTest() throws Exception {
 
     CheckerTypeLoader checkerTypeLoader = new CheckerTypeLoader();

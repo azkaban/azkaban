@@ -16,12 +16,12 @@
 
 package azkaban.jobtype;
 
-import org.apache.log4j.Logger;
-
 import azkaban.jobExecutor.JavaProcessJob;
 import azkaban.utils.Props;
+import org.apache.log4j.Logger;
 
 public class FakeJavaJob2 extends JavaProcessJob {
+
   public FakeJavaJob2(String jobid, Props sysProps, Props jobProps, Logger log) {
     super(jobid, sysProps, jobProps, log);
   }

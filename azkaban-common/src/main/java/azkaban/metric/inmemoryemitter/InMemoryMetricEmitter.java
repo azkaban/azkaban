@@ -16,6 +16,10 @@
 
 package azkaban.metric.inmemoryemitter;
 
+import azkaban.metric.IMetric;
+import azkaban.metric.IMetricEmitter;
+import azkaban.metric.MetricException;
+import azkaban.utils.Props;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -23,15 +27,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-
-import org.apache.log4j.Logger;
-
-import azkaban.metric.IMetric;
-import azkaban.metric.IMetricEmitter;
-import azkaban.metric.MetricException;
-import azkaban.utils.Props;
-
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
+import org.apache.log4j.Logger;
 
 
 /**
@@ -39,17 +36,16 @@ import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
  * This is also the default metric emitter and used by /stats servlet
  */
 public class InMemoryMetricEmitter implements IMetricEmitter {
-  protected static final Logger logger = Logger.getLogger(InMemoryMetricEmitter.class);
 
-  /**
-   * Data structure to keep track of snapshots
-   */
-  protected Map<String, LinkedList<InMemoryHistoryNode>> historyListMapping;
+  protected static final Logger logger = Logger.getLogger(InMemoryMetricEmitter.class);
   private static final String INMEMORY_METRIC_REPORTER_WINDOW = "azkaban.metric.inmemory.interval";
   private static final String INMEMORY_METRIC_NUM_INSTANCES = "azkaban.metric.inmemory.maxinstances";
   private static final String INMEMORY_METRIC_STANDARDDEVIATION_FACTOR =
       "azkaban.metric.inmemory.standardDeviationFactor";
-
+  /**
+   * Data structure to keep track of snapshots
+   */
+  protected Map<String, LinkedList<InMemoryHistoryNode>> historyListMapping;
   private double standardDeviationFactor;
   /**
    * Interval (in millisecond) from today for which we should maintain the in memory snapshots
@@ -113,7 +109,8 @@ public class InMemoryMetricEmitter implements IMetricEmitter {
    * @param useStats get statistically significant points only
    * @return List of snapshots
    */
-  public List<InMemoryHistoryNode> getMetrics(final String metricName, final Date from, final Date to,
+  public List<InMemoryHistoryNode> getMetrics(final String metricName, final Date from,
+      final Date to,
       final Boolean useStats) throws ClassCastException {
     LinkedList<InMemoryHistoryNode> selectedLists = new LinkedList<InMemoryHistoryNode>();
     if (historyListMapping.containsKey(metricName)) {
@@ -157,13 +154,15 @@ public class InMemoryMetricEmitter implements IMetricEmitter {
       InMemoryHistoryNode currentNode = ite.next();
       double value = ((Number) currentNode.getValue()).doubleValue();
       // remove all elements which lies in 95% value band
-      if (value < mean + standardDeviationFactor * std && value > mean - standardDeviationFactor * std) {
+      if (value < mean + standardDeviationFactor * std
+          && value > mean - standardDeviationFactor * std) {
         ite.remove();
       }
     }
   }
 
-  private DescriptiveStatistics getDescriptiveStatistics(final LinkedList<InMemoryHistoryNode> selectedLists)
+  private DescriptiveStatistics getDescriptiveStatistics(
+      final LinkedList<InMemoryHistoryNode> selectedLists)
       throws ClassCastException {
     DescriptiveStatistics descStats = new DescriptiveStatistics();
     for (InMemoryHistoryNode node : selectedLists) {
@@ -215,7 +214,9 @@ public class InMemoryMetricEmitter implements IMetricEmitter {
 
         // removing objects older than Interval time from firstAllowedDate
         while (firstNode != null
-            && TimeUnit.MILLISECONDS.toMillis(firstAllowedDate.getTime() - firstNode.getTimestamp().getTime()) > localCopyOfTimeWindow) {
+            && TimeUnit.MILLISECONDS
+            .toMillis(firstAllowedDate.getTime() - firstNode.getTimestamp().getTime())
+            > localCopyOfTimeWindow) {
           historyListMapping.get(metricName).removeFirst();
           firstNode = historyListMapping.get(metricName).peekFirst();
         }

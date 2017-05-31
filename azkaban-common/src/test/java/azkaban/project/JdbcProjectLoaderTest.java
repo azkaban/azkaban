@@ -16,23 +16,6 @@
 
 package azkaban.project;
 
-import java.io.File;
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.util.HashMap;
-import java.util.List;
-
-import javax.sql.DataSource;
-
-import org.apache.commons.dbutils.DbUtils;
-import org.apache.commons.dbutils.QueryRunner;
-import org.apache.commons.dbutils.ResultSetHandler;
-import org.junit.Assert;
-import org.junit.BeforeClass;
-import org.junit.Ignore;
-import org.junit.Test;
-
 import azkaban.database.DataSourceUtils;
 import azkaban.flow.Edge;
 import azkaban.flow.Flow;
@@ -43,15 +26,30 @@ import azkaban.user.User;
 import azkaban.utils.Pair;
 import azkaban.utils.Props;
 import azkaban.utils.PropsUtils;
+import java.io.File;
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.HashMap;
+import java.util.List;
+import javax.sql.DataSource;
+import org.apache.commons.dbutils.DbUtils;
+import org.apache.commons.dbutils.QueryRunner;
+import org.apache.commons.dbutils.ResultSetHandler;
+import org.junit.Assert;
+import org.junit.BeforeClass;
+import org.junit.Ignore;
+import org.junit.Test;
 
 public class JdbcProjectLoaderTest {
-  private static boolean testDBExists;
+
   private static final String host = "localhost";
   private static final int port = 3306;
   private static final String database = "test";
   private static final String user = "azkaban";
   private static final String password = "azkaban";
   private static final int numConnections = 10;
+  private static boolean testDBExists;
 
   @BeforeClass
   public static void setupDB() {
@@ -213,95 +211,95 @@ public class JdbcProjectLoaderTest {
     DbUtils.closeQuietly(connection);
   }
 
-    /** Test case to validated permissions for fetchProjectByName **/
-    @Test
-    public void testPermissionRetrivalByFetchProjectByName()
-        throws ProjectManagerException {
-        if (!isTestSetup()) {
-            return;
-        }
-
-        ProjectLoader loader = createLoader();
-        String projectName = "mytestProject";
-        String projectDescription = "This is my new project";
-        User user = new User("testUser");
-
-        Project project =
-            loader.createNewProject(projectName, projectDescription, user);
-
-        Permission perm = new Permission(0x2);
-        loader.updatePermission(project, user.getUserId(), perm, false);
-        loader.updatePermission(project, "group", perm, true);
-
-        Permission permOverride = new Permission(0x6);
-        loader.updatePermission(project, user.getUserId(), permOverride, false);
-
-        Project fetchedProject = loader.fetchProjectByName(project.getName());
-        assertProjectMemberEquals(project, fetchedProject);
-        Assert.assertEquals(permOverride,
-            fetchedProject.getUserPermission(user.getUserId()));
+  /** Test case to validated permissions for fetchProjectByName **/
+  @Test
+  public void testPermissionRetrivalByFetchProjectByName()
+      throws ProjectManagerException {
+    if (!isTestSetup()) {
+      return;
     }
 
-    /** Default Test case for fetchProjectByName **/
-    @Test
-    public void testProjectRetrievalByFetchProjectByName()
-        throws ProjectManagerException {
-        if (!isTestSetup()) {
-            return;
-        }
+    ProjectLoader loader = createLoader();
+    String projectName = "mytestProject";
+    String projectDescription = "This is my new project";
+    User user = new User("testUser");
 
-        ProjectLoader loader = createLoader();
-        String projectName = "mytestProject";
-        String projectDescription = "This is my new project";
-        User user = new User("testUser");
+    Project project =
+        loader.createNewProject(projectName, projectDescription, user);
 
-        Project project =
-            loader.createNewProject(projectName, projectDescription, user);
+    Permission perm = new Permission(0x2);
+    loader.updatePermission(project, user.getUserId(), perm, false);
+    loader.updatePermission(project, "group", perm, true);
 
-        Project fetchedProject = loader.fetchProjectByName(project.getName());
-        assertProjectMemberEquals(project, fetchedProject);
+    Permission permOverride = new Permission(0x6);
+    loader.updatePermission(project, user.getUserId(), permOverride, false);
+
+    Project fetchedProject = loader.fetchProjectByName(project.getName());
+    assertProjectMemberEquals(project, fetchedProject);
+    Assert.assertEquals(permOverride,
+        fetchedProject.getUserPermission(user.getUserId()));
+  }
+
+  /** Default Test case for fetchProjectByName **/
+  @Test
+  public void testProjectRetrievalByFetchProjectByName()
+      throws ProjectManagerException {
+    if (!isTestSetup()) {
+      return;
     }
 
-    /** Default Test case for fetchProjectByName **/
-    @Test
-    public void testDuplicateRetrivalByFetchProjectByName()
-        throws ProjectManagerException {
-        if (!isTestSetup()) {
-            return;
-        }
+    ProjectLoader loader = createLoader();
+    String projectName = "mytestProject";
+    String projectDescription = "This is my new project";
+    User user = new User("testUser");
 
-        ProjectLoader loader = createLoader();
-        String projectName = "mytestProject";
-        String projectDescription = "This is my new project";
-        User user = new User("testUser");
+    Project project =
+        loader.createNewProject(projectName, projectDescription, user);
 
-        Project project =
-            loader.createNewProject(projectName, projectDescription, user);
+    Project fetchedProject = loader.fetchProjectByName(project.getName());
+    assertProjectMemberEquals(project, fetchedProject);
+  }
 
-        loader.removeProject(project, user.getUserId());
-
-        Project newProject =
-            loader.createNewProject(projectName, projectDescription, user);
-
-        Project fetchedProject = loader.fetchProjectByName(project.getName());
-        Assert.assertEquals(newProject.getId(), fetchedProject.getId());
-
+  /** Default Test case for fetchProjectByName **/
+  @Test
+  public void testDuplicateRetrivalByFetchProjectByName()
+      throws ProjectManagerException {
+    if (!isTestSetup()) {
+      return;
     }
 
-    /** Test case for NonExistantProject project fetch **/
-    @Test
-    public void testInvalidProjectByFetchProjectByName() {
-        if (!isTestSetup()) {
-            return;
-        }
-        ProjectLoader loader = createLoader();
-        try {
-            loader.fetchProjectByName("NonExistantProject");
-        } catch (ProjectManagerException ex) {
-            System.out.println("Test true");
-        }
-        Assert.fail("Expecting exception, but didn't get one");
+    ProjectLoader loader = createLoader();
+    String projectName = "mytestProject";
+    String projectDescription = "This is my new project";
+    User user = new User("testUser");
+
+    Project project =
+        loader.createNewProject(projectName, projectDescription, user);
+
+    loader.removeProject(project, user.getUserId());
+
+    Project newProject =
+        loader.createNewProject(projectName, projectDescription, user);
+
+    Project fetchedProject = loader.fetchProjectByName(project.getName());
+    Assert.assertEquals(newProject.getId(), fetchedProject.getId());
+
+  }
+
+  /** Test case for NonExistantProject project fetch **/
+  @Test
+  public void testInvalidProjectByFetchProjectByName() {
+    if (!isTestSetup()) {
+      return;
     }
+    ProjectLoader loader = createLoader();
+    try {
+      loader.fetchProjectByName("NonExistantProject");
+    } catch (ProjectManagerException ex) {
+      System.out.println("Test true");
+    }
+    Assert.fail("Expecting exception, but didn't get one");
+  }
 
   @Test
   public void testCreateProject() throws ProjectManagerException {
@@ -419,7 +417,8 @@ public class JdbcProjectLoaderTest {
     Assert.assertEquals(event.getType(), type);
   }
 
-  @Ignore @Test
+  @Ignore
+  @Test
   public void testFlowUpload() throws ProjectManagerException {
     ProjectLoader loader = createLoader();
     ((JdbcProjectLoader) loader)
@@ -454,7 +453,8 @@ public class JdbcProjectLoaderTest {
     Assert.assertEquals(flow.getNodes().size(), newFlow.getNodes().size());
   }
 
-  @Ignore @Test
+  @Ignore
+  @Test
   public void testFlowUploadPlain() throws ProjectManagerException {
     ProjectLoader loader = createLoader();
     ((JdbcProjectLoader) loader)
@@ -492,7 +492,8 @@ public class JdbcProjectLoaderTest {
     Assert.assertTrue(flows.size() == 1);
   }
 
-  @Ignore @Test
+  @Ignore
+  @Test
   public void testProjectProperties() throws ProjectManagerException {
     ProjectLoader loader = createLoader();
     ((JdbcProjectLoader) loader)
@@ -658,6 +659,7 @@ public class JdbcProjectLoaderTest {
   }
 
   public static class CountHandler implements ResultSetHandler<Integer> {
+
     @Override
     public Integer handle(ResultSet rs) throws SQLException {
       int val = 0;

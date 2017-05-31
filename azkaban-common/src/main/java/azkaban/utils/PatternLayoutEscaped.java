@@ -10,6 +10,7 @@ import org.apache.log4j.spi.LoggingEvent;
  * can be found one in place.
  */
 public class PatternLayoutEscaped extends PatternLayout {
+
   public PatternLayoutEscaped(String s) {
     super(s);
   }
@@ -36,7 +37,7 @@ public class PatternLayoutEscaped extends PatternLayout {
     // If there is a stack trace available, print it out
     if (event.getThrowableInformation() != null) {
       String[] s = event.getThrowableStrRep();
-      for (String line: s) {
+      for (String line : s) {
         message += "\n" + line;
       }
     }

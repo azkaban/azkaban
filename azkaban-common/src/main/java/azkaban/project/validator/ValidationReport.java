@@ -26,6 +26,38 @@ public class ValidationReport {
   }
 
   /**
+   * Return the severity level this information message is associated with.
+   *
+   * @param msg
+   * @return
+   */
+  public static ValidationStatus getInfoMsgLevel(String msg) {
+    if (msg.startsWith("ERROR")) {
+      return ValidationStatus.ERROR;
+    }
+    if (msg.startsWith("WARN")) {
+      return ValidationStatus.WARN;
+    }
+    return ValidationStatus.PASS;
+  }
+
+  /**
+   * Get the raw information message.
+   *
+   * @param msg
+   * @return
+   */
+  public static String getInfoMsg(String msg) {
+    if (msg.startsWith("ERROR")) {
+      return msg.replaceFirst("ERROR", "");
+    }
+    if (msg.startsWith("WARN")) {
+      return msg.replaceFirst("WARN", "");
+    }
+    return msg;
+  }
+
+  /**
    * Add an information message associated with warning messages
    *
    * @param msgs
@@ -109,37 +141,5 @@ public class ValidationReport {
    */
   public Set<String> getErrorMsgs() {
     return _errorMsgs;
-  }
-
-  /**
-   * Return the severity level this information message is associated with.
-   *
-   * @param msg
-   * @return
-   */
-  public static ValidationStatus getInfoMsgLevel(String msg) {
-    if (msg.startsWith("ERROR")) {
-      return ValidationStatus.ERROR;
-    }
-    if (msg.startsWith("WARN")) {
-      return ValidationStatus.WARN;
-    }
-    return ValidationStatus.PASS;
-  }
-
-  /**
-   * Get the raw information message.
-   *
-   * @param msg
-   * @return
-   */
-  public static String getInfoMsg(String msg) {
-    if (msg.startsWith("ERROR")) {
-      return msg.replaceFirst("ERROR", "");
-    }
-    if (msg.startsWith("WARN")) {
-      return msg.replaceFirst("WARN", "");
-    }
-    return msg;
   }
 }

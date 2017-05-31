@@ -18,8 +18,6 @@ package azkaban.trigger;
 
 import java.util.Map;
 
-import azkaban.trigger.TriggerAction;
-
 public class DummyTriggerAction implements TriggerAction {
 
   public static final String type = "DummyAction";

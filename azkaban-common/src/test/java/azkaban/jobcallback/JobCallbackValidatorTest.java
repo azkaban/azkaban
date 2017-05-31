@@ -4,16 +4,15 @@ import static azkaban.jobcallback.JobCallbackConstants.DEFAULT_MAX_CALLBACK_COUN
 import static azkaban.jobcallback.JobCallbackConstants.MAX_CALLBACK_COUNT_PROPERTY_KEY;
 import static azkaban.jobcallback.JobCallbackConstants.MAX_POST_BODY_LENGTH_PROPERTY_KEY;
 
+import azkaban.utils.Props;
 import java.util.HashSet;
 import java.util.Set;
-
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-import azkaban.utils.Props;
-
 public class JobCallbackValidatorTest {
+
   private Props serverProps;
 
   @Before
@@ -40,11 +39,11 @@ public class JobCallbackValidatorTest {
     Set<String> errors = new HashSet<String>();
 
     jobProps.put("job.notification."
-        + JobCallbackStatusEnum.FAILURE.name().toLowerCase() + ".0.url",
+            + JobCallbackStatusEnum.FAILURE.name().toLowerCase() + ".0.url",
         "http://www.linkedin.com");
 
     jobProps.put("job.notification."
-        + JobCallbackStatusEnum.COMPLETED.name().toLowerCase() + ".1.url",
+            + JobCallbackStatusEnum.COMPLETED.name().toLowerCase() + ".1.url",
         "http://www.linkedin.com");
 
     Assert.assertEquals(1, JobCallbackValidator.validate("bogusJob",
@@ -57,7 +56,7 @@ public class JobCallbackValidatorTest {
   public void oneGetJobCallback() {
     Props jobProps = new Props();
     jobProps.put("job.notification."
-        + JobCallbackStatusEnum.FAILURE.name().toLowerCase() + ".1.url",
+            + JobCallbackStatusEnum.FAILURE.name().toLowerCase() + ".1.url",
         "http://www.linkedin.com");
 
     Set<String> errors = new HashSet<String>();
@@ -72,15 +71,15 @@ public class JobCallbackValidatorTest {
   public void onePostJobCallback() {
     Props jobProps = new Props();
     jobProps.put("job.notification."
-        + JobCallbackStatusEnum.FAILURE.name().toLowerCase() + ".1.url",
+            + JobCallbackStatusEnum.FAILURE.name().toLowerCase() + ".1.url",
         "http://www.linkedin.com");
 
     jobProps.put("job.notification."
-        + JobCallbackStatusEnum.FAILURE.name().toLowerCase() + ".1.method",
+            + JobCallbackStatusEnum.FAILURE.name().toLowerCase() + ".1.method",
         JobCallbackConstants.HTTP_POST);
 
     jobProps.put("job.notification."
-        + JobCallbackStatusEnum.FAILURE.name().toLowerCase() + ".1.body",
+            + JobCallbackStatusEnum.FAILURE.name().toLowerCase() + ".1.body",
         "doc:id");
 
     Set<String> errors = new HashSet<String>();
@@ -95,27 +94,27 @@ public class JobCallbackValidatorTest {
   public void multiplePostJobCallbacks() {
     Props jobProps = new Props();
     jobProps.put("job.notification."
-        + JobCallbackStatusEnum.FAILURE.name().toLowerCase() + ".1.url",
+            + JobCallbackStatusEnum.FAILURE.name().toLowerCase() + ".1.url",
         "http://www.linkedin.com");
 
     jobProps.put("job.notification."
-        + JobCallbackStatusEnum.FAILURE.name().toLowerCase() + ".1.method",
+            + JobCallbackStatusEnum.FAILURE.name().toLowerCase() + ".1.method",
         JobCallbackConstants.HTTP_POST);
 
     jobProps.put("job.notification."
-        + JobCallbackStatusEnum.FAILURE.name().toLowerCase() + ".1.body",
+            + JobCallbackStatusEnum.FAILURE.name().toLowerCase() + ".1.body",
         "doc:id");
 
     jobProps.put("job.notification."
-        + JobCallbackStatusEnum.FAILURE.name().toLowerCase() + ".2.url",
+            + JobCallbackStatusEnum.FAILURE.name().toLowerCase() + ".2.url",
         "http://www.linkedin2.com");
 
     jobProps.put("job.notification."
-        + JobCallbackStatusEnum.FAILURE.name().toLowerCase() + ".2.method",
+            + JobCallbackStatusEnum.FAILURE.name().toLowerCase() + ".2.method",
         JobCallbackConstants.HTTP_POST);
 
     jobProps.put("job.notification."
-        + JobCallbackStatusEnum.FAILURE.name().toLowerCase() + ".2.body",
+            + JobCallbackStatusEnum.FAILURE.name().toLowerCase() + ".2.body",
         "doc2:id");
 
     Set<String> errors = new HashSet<String>();
@@ -130,11 +129,11 @@ public class JobCallbackValidatorTest {
   public void noPostBodyJobCallback() {
     Props jobProps = new Props();
     jobProps.put("job.notification."
-        + JobCallbackStatusEnum.FAILURE.name().toLowerCase() + ".1.url",
+            + JobCallbackStatusEnum.FAILURE.name().toLowerCase() + ".1.url",
         "http://www.linkedin.com");
 
     jobProps.put("job.notification."
-        + JobCallbackStatusEnum.FAILURE.name().toLowerCase() + ".1.method",
+            + JobCallbackStatusEnum.FAILURE.name().toLowerCase() + ".1.method",
         JobCallbackConstants.HTTP_POST);
 
     Set<String> errors = new HashSet<String>();
@@ -150,11 +149,11 @@ public class JobCallbackValidatorTest {
   public void multipleGetJobCallbacks() {
     Props jobProps = new Props();
     jobProps.put("job.notification."
-        + JobCallbackStatusEnum.FAILURE.name().toLowerCase() + ".1.url",
+            + JobCallbackStatusEnum.FAILURE.name().toLowerCase() + ".1.url",
         "http://www.linkedin.com");
 
     jobProps.put("job.notification."
-        + JobCallbackStatusEnum.STARTED.name().toLowerCase() + ".1.url",
+            + JobCallbackStatusEnum.STARTED.name().toLowerCase() + ".1.url",
         "http://www.linkedin.com");
 
     Set<String> errors = new HashSet<String>();
@@ -169,15 +168,15 @@ public class JobCallbackValidatorTest {
   public void multipleGetJobCallbackWithGap() {
     Props jobProps = new Props();
     jobProps.put("job.notification."
-        + JobCallbackStatusEnum.FAILURE.name().toLowerCase() + ".1.url",
+            + JobCallbackStatusEnum.FAILURE.name().toLowerCase() + ".1.url",
         "http://www.linkedin.com");
 
     jobProps.put("job.notification."
-        + JobCallbackStatusEnum.FAILURE.name().toLowerCase() + ".2.url",
+            + JobCallbackStatusEnum.FAILURE.name().toLowerCase() + ".2.url",
         "http://www.linkedin.com");
 
     jobProps.put("job.notification."
-        + JobCallbackStatusEnum.STARTED.name().toLowerCase() + ".2.url",
+            + JobCallbackStatusEnum.STARTED.name().toLowerCase() + ".2.url",
         "http://www.linkedin.com");
 
     Set<String> errors = new HashSet<String>();
@@ -193,11 +192,11 @@ public class JobCallbackValidatorTest {
 
     Props jobProps = new Props();
     jobProps.put("job.notification."
-        + JobCallbackStatusEnum.FAILURE.name().toLowerCase() + ".1.url",
+            + JobCallbackStatusEnum.FAILURE.name().toLowerCase() + ".1.url",
         "http://www.linkedin.com");
 
     jobProps.put("job.notification."
-        + JobCallbackStatusEnum.FAILURE.name().toLowerCase() + ".1.method",
+            + JobCallbackStatusEnum.FAILURE.name().toLowerCase() + ".1.method",
         JobCallbackConstants.HTTP_POST);
 
     String postBodyValue = "abcdefghijklmnopqrstuvwxyz";
@@ -205,7 +204,7 @@ public class JobCallbackValidatorTest {
     int postBodyLength = 20;
     Assert.assertTrue(postBodyValue.length() > postBodyLength);
     jobProps.put("job.notification."
-        + JobCallbackStatusEnum.FAILURE.name().toLowerCase() + ".1.body",
+            + JobCallbackStatusEnum.FAILURE.name().toLowerCase() + ".1.body",
         postBodyValue);
 
     Props localServerProps = new Props();

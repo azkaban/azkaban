@@ -50,6 +50,7 @@ public interface TriggerManagerAdapter {
   public TriggerJMX getJMX();
 
   public interface TriggerJMX {
+
     public long getLastRunnerThreadCheckTime();
 
     public boolean isRunnerThreadActive();

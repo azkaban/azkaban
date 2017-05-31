@@ -17,14 +17,12 @@
 
 package azkaban.project;
 
+import static org.junit.Assert.assertEquals;
+
 import java.io.File;
-import java.io.FileInputStream;
 import java.net.URI;
 import java.util.Map;
 import org.junit.Test;
-import org.yaml.snakeyaml.Yaml;
-
-import static org.junit.Assert.*;
 
 
 public class ProjectSpecTest {

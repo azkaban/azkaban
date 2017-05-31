@@ -24,7 +24,6 @@ import azkaban.spi.Storage;
 import azkaban.spi.StorageException;
 import azkaban.spi.StorageMetadata;
 import azkaban.utils.FileIOUtils;
-import com.google.common.io.Files;
 import com.google.inject.Inject;
 import java.io.File;
 import java.io.FileInputStream;
@@ -44,6 +43,23 @@ public class LocalStorage implements Storage {
   public LocalStorage(AzkabanCommonModuleConfig config) {
     this.rootDirectory = validateRootDirectory(
         createIfDoesNotExist(config.getLocalStorageBaseDirPath()));
+  }
+
+  private static File createIfDoesNotExist(String baseDirectoryPath) {
+    final File baseDirectory = new File(baseDirectoryPath);
+    if (!baseDirectory.exists()) {
+      baseDirectory.mkdir();
+      log.info("Creating dir: " + baseDirectory.getAbsolutePath());
+    }
+    return baseDirectory;
+  }
+
+  private static File validateRootDirectory(File baseDirectory) {
+    checkArgument(baseDirectory.isDirectory());
+    if (!FileIOUtils.isDirWritable(baseDirectory)) {
+      throw new IllegalArgumentException("Directory not writable: " + baseDirectory);
+    }
+    return baseDirectory;
   }
 
   /**
@@ -88,22 +104,5 @@ public class LocalStorage implements Storage {
   @Override
   public boolean delete(String key) {
     throw new UnsupportedOperationException("delete has not been implemented.");
-  }
-
-  private static File createIfDoesNotExist(String baseDirectoryPath) {
-    final File baseDirectory = new File(baseDirectoryPath);
-    if (!baseDirectory.exists()) {
-      baseDirectory.mkdir();
-      log.info("Creating dir: " + baseDirectory.getAbsolutePath());
-    }
-    return baseDirectory;
-  }
-
-  private static File validateRootDirectory(File baseDirectory) {
-    checkArgument(baseDirectory.isDirectory());
-    if (!FileIOUtils.isDirWritable(baseDirectory)) {
-      throw new IllegalArgumentException("Directory not writable: " + baseDirectory);
-    }
-    return baseDirectory;
   }
 }

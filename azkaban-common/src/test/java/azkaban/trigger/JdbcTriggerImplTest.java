@@ -16,6 +16,8 @@
 
 package azkaban.trigger;
 
+import static org.junit.Assert.assertTrue;
+
 import azkaban.database.AzkabanConnectionPoolTest;
 import azkaban.database.AzkabanDataSource;
 import azkaban.database.AzkabanDatabaseSetup;
@@ -39,14 +41,12 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import static org.junit.Assert.*;
-
 
 public class JdbcTriggerImplTest {
 
+  public static AzkabanDataSource dataSource = new AzkabanConnectionPoolTest.EmbeddedH2BasicDataSource();
   TriggerLoader loader;
   DatabaseOperator dbOperator;
-  public static AzkabanDataSource dataSource = new AzkabanConnectionPoolTest.EmbeddedH2BasicDataSource();
 
   @BeforeClass
   public static void prepare() throws Exception {

@@ -1,13 +1,11 @@
 package azkaban.project.validator;
 
+import azkaban.project.Project;
+import azkaban.utils.Props;
 import java.io.File;
 import java.util.List;
 import java.util.Map;
-
 import org.apache.log4j.Logger;
-
-import azkaban.project.Project;
-import azkaban.utils.Props;
 
 /**
  * ValidatorManager is responsible for loading the list of validators specified in the
@@ -15,6 +13,7 @@ import azkaban.utils.Props;
  * will use the registered validators to verify each uploaded project before persisting it.
  */
 public interface ValidatorManager {
+
   /**
    * Load the validators using the given properties. Each validator is also given the specified
    * logger to record any necessary message in the Azkaban log file.

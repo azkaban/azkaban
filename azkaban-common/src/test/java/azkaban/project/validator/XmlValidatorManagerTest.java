@@ -1,16 +1,14 @@
 package azkaban.project.validator;
 
-import static org.junit.Assert.*;
-
-import java.net.URL;
-
-import org.junit.Test;
-
-import com.google.common.io.Resources;
+import static org.junit.Assert.assertEquals;
 
 import azkaban.utils.Props;
+import com.google.common.io.Resources;
+import java.net.URL;
+import org.junit.Test;
 
 public class XmlValidatorManagerTest {
+
   private Props baseProps = new Props();
 
   /**
@@ -22,10 +20,13 @@ public class XmlValidatorManagerTest {
     Props props = new Props(baseProps);
 
     XmlValidatorManager manager = new XmlValidatorManager(props);
-    assertEquals("XmlValidatorManager should contain only the default validator when no xml configuration "
-        + "file is present.", manager.getValidatorsInfo().size(), 1);
-    assertEquals("XmlValidatorManager should contain only the default validator when no xml configuration "
-        + "file is present.", manager.getValidatorsInfo().get(0), XmlValidatorManager.DEFAULT_VALIDATOR_KEY);
+    assertEquals(
+        "XmlValidatorManager should contain only the default validator when no xml configuration "
+            + "file is present.", manager.getValidatorsInfo().size(), 1);
+    assertEquals(
+        "XmlValidatorManager should contain only the default validator when no xml configuration "
+            + "file is present.", manager.getValidatorsInfo().get(0),
+        XmlValidatorManager.DEFAULT_VALIDATOR_KEY);
   }
 
   /**
@@ -39,17 +40,20 @@ public class XmlValidatorManagerTest {
     props.put(ValidatorConfigs.VALIDATOR_PLUGIN_DIR, validatorUrl.getPath());
 
     XmlValidatorManager manager = new XmlValidatorManager(props);
-    assertEquals("XmlValidatorManager should contain only the default validator when no xml configuration "
-        + "file is present.", manager.getValidatorsInfo().size(), 1);
-    assertEquals("XmlValidatorManager should contain only the default validator when no xml configuration "
-        + "file is present.", manager.getValidatorsInfo().get(0), XmlValidatorManager.DEFAULT_VALIDATOR_KEY);
+    assertEquals(
+        "XmlValidatorManager should contain only the default validator when no xml configuration "
+            + "file is present.", manager.getValidatorsInfo().size(), 1);
+    assertEquals(
+        "XmlValidatorManager should contain only the default validator when no xml configuration "
+            + "file is present.", manager.getValidatorsInfo().get(0),
+        XmlValidatorManager.DEFAULT_VALIDATOR_KEY);
   }
 
   /**
    * Test that if the xml config file specifies a validator classname that does not exist,
    * XmlValidatorManager should throw an exception.
    */
-  @Test(expected=ValidatorManagerException.class)
+  @Test(expected = ValidatorManagerException.class)
   public void testValidatorDoesNotExist() {
     Props props = new Props(baseProps);
     URL validatorUrl = Resources.getResource("project/testValidators");
@@ -75,8 +79,10 @@ public class XmlValidatorManagerTest {
     props.put(ValidatorConfigs.XML_FILE_PARAM, configUrl.getPath());
 
     XmlValidatorManager manager = new XmlValidatorManager(props);
-    assertEquals("XmlValidatorManager should contain 2 validators.", manager.getValidatorsInfo().size(), 2);
-    assertEquals("XmlValidatorManager should contain the validator specified in the xml configuration file.",
+    assertEquals("XmlValidatorManager should contain 2 validators.",
+        manager.getValidatorsInfo().size(), 2);
+    assertEquals(
+        "XmlValidatorManager should contain the validator specified in the xml configuration file.",
         manager.getValidatorsInfo().get(1), "Test");
   }
 

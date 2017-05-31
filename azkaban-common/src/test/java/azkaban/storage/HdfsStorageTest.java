@@ -17,6 +17,11 @@
 
 package azkaban.storage;
 
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import azkaban.AzkabanCommonModuleConfig;
 import azkaban.spi.StorageMetadata;
 import azkaban.utils.Md5Hasher;
@@ -29,10 +34,9 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-import static org.mockito.Mockito.*;
-
 
 public class HdfsStorageTest {
+
   private HdfsAuth hdfsAuth;
   private HdfsStorage hdfsStorage;
   private FileSystem hdfs;

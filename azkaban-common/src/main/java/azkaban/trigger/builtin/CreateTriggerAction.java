@@ -16,12 +16,11 @@
 
 package azkaban.trigger.builtin;
 
-import java.util.HashMap;
-import java.util.Map;
-
 import azkaban.trigger.Trigger;
 import azkaban.trigger.TriggerAction;
 import azkaban.trigger.TriggerManager;
+import java.util.HashMap;
+import java.util.Map;
 
 public class CreateTriggerAction implements TriggerAction {
 
@@ -35,11 +34,6 @@ public class CreateTriggerAction implements TriggerAction {
   public CreateTriggerAction(String actionId, Trigger trigger) {
     this.actionId = actionId;
     this.trigger = trigger;
-  }
-
-  @Override
-  public String getType() {
-    return type;
   }
 
   public static void setTriggerManager(TriggerManager trm) {
@@ -56,6 +50,11 @@ public class CreateTriggerAction implements TriggerAction {
     String actionId = (String) jsonObj.get("actionId");
     Trigger trigger = Trigger.fromJson(jsonObj.get("trigger"));
     return new CreateTriggerAction(actionId, trigger);
+  }
+
+  @Override
+  public String getType() {
+    return type;
   }
 
   @Override

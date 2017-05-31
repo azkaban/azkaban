@@ -16,35 +16,29 @@
 
 package azkaban.trigger.builtin;
 
+import azkaban.trigger.ConditionChecker;
+import azkaban.utils.Utils;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Date;
-
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.joda.time.ReadablePeriod;
-import org.apache.log4j.Logger;
-
 import org.quartz.CronExpression;
-
-import azkaban.trigger.ConditionChecker;
-import azkaban.utils.Utils;
 
 public class BasicTimeChecker implements ConditionChecker {
 
 
   public static final String type = "BasicTimeChecker";
-
+  private final String id;
   private long firstCheckTime;
   private long nextCheckTime;
   private DateTimeZone timezone;
   private boolean isRecurring = true;
   private boolean skipPastChecks = true;
   private ReadablePeriod period;
-
   private String cronExpression;
   private CronExpression cronExecutionTime;
-  private final String id;
 
   public BasicTimeChecker(String id, long firstCheckTime,
       DateTimeZone timezone, boolean isRecurring, boolean skipPastChecks,
@@ -61,35 +55,6 @@ public class BasicTimeChecker implements ConditionChecker {
     this.nextCheckTime = calculateNextCheckTime();
   }
 
-  public long getFirstCheckTime() {
-    return firstCheckTime;
-  }
-
-  public DateTimeZone getTimeZone() {
-    return timezone;
-  }
-
-  public boolean isRecurring() {
-    return isRecurring;
-  }
-
-  public boolean isSkipPastChecks() {
-    return skipPastChecks;
-  }
-
-  public ReadablePeriod getPeriod() {
-    return period;
-  }
-
-  @Override
-  public long getNextCheckTime() {
-    return nextCheckTime;
-  }
-
-  public String getCronExpression() {
-    return cronExpression;
-  }
-
   public BasicTimeChecker(String id, long firstCheckTime,
       DateTimeZone timezone, long nextCheckTime, boolean isRecurring,
       boolean skipPastChecks, ReadablePeriod period, String cronExpression) {
@@ -102,26 +67,6 @@ public class BasicTimeChecker implements ConditionChecker {
     this.period = period;
     this.cronExpression = cronExpression;
     cronExecutionTime = Utils.parseCronExpression(cronExpression, timezone);
-  }
-
-  @Override
-  public Boolean eval() {
-    return nextCheckTime < System.currentTimeMillis();
-  }
-
-  @Override
-  public void reset() {
-    this.nextCheckTime = calculateNextCheckTime();
-  }
-
-  @Override
-  public String getId() {
-    return id;
-  }
-
-  @Override
-  public String getType() {
-    return type;
   }
 
   @SuppressWarnings("unchecked")
@@ -155,6 +100,55 @@ public class BasicTimeChecker implements ConditionChecker {
       checker.updateNextCheckTime();
     }
     return checker;
+  }
+
+  public long getFirstCheckTime() {
+    return firstCheckTime;
+  }
+
+  public DateTimeZone getTimeZone() {
+    return timezone;
+  }
+
+  public boolean isRecurring() {
+    return isRecurring;
+  }
+
+  public boolean isSkipPastChecks() {
+    return skipPastChecks;
+  }
+
+  public ReadablePeriod getPeriod() {
+    return period;
+  }
+
+  @Override
+  public long getNextCheckTime() {
+    return nextCheckTime;
+  }
+
+  public String getCronExpression() {
+    return cronExpression;
+  }
+
+  @Override
+  public Boolean eval() {
+    return nextCheckTime < System.currentTimeMillis();
+  }
+
+  @Override
+  public void reset() {
+    this.nextCheckTime = calculateNextCheckTime();
+  }
+
+  @Override
+  public String getId() {
+    return id;
+  }
+
+  @Override
+  public String getType() {
+    return type;
   }
 
   @Override

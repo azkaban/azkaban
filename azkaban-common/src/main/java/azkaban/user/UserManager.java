@@ -25,6 +25,7 @@ package azkaban.user;
  * instantiation may fail.
  */
 public interface UserManager {
+
   /**
    * Retrieves the user given the username and password to authenticate against.
    *

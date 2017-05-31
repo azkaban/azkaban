@@ -16,6 +16,9 @@
 
 package azkaban.utils;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -25,37 +28,33 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.comparator.NameFileComparator;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Test;
 import org.junit.Rule;
+import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.assertNotNull;
-
 public class FileIOUtilsTest {
-  private File sourceDir, destDir, baseDir;
+
   @Rule
   public TemporaryFolder temp = new TemporaryFolder();
+  private File sourceDir, destDir, baseDir;
 
   @Before
   public void setUp() throws Exception {
     // setup base dir
     baseDir = temp.newFolder("base");
-    File file1 = new File(baseDir.getAbsolutePath()+"/a.out");
-    File file2 = new File(baseDir.getAbsolutePath()+"/testdir");
-    File file3 = new File(file2.getAbsolutePath()+"/b.out");
+    File file1 = new File(baseDir.getAbsolutePath() + "/a.out");
+    File file2 = new File(baseDir.getAbsolutePath() + "/testdir");
+    File file3 = new File(file2.getAbsolutePath() + "/b.out");
     file1.createNewFile();
     file2.mkdir();
     file3.createNewFile();
 
-
-    byte[] fileData = new byte[]{1,2,3};
+    byte[] fileData = new byte[]{1, 2, 3};
     FileOutputStream out = new FileOutputStream(file1);
     out.write(fileData);
     out.close();
 
-    fileData = new byte[]{2,3,4};
+    fileData = new byte[]{2, 3, 4};
     out = new FileOutputStream(file3);
     out.write(fileData);
     out.close();
@@ -97,29 +96,32 @@ public class FileIOUtilsTest {
     assertTrue(exception);
   }
 
-  private boolean areDirsEqualUtil(File file1, File file2, boolean isRoot, boolean ignoreRoot) throws IOException {
-    if(!file1.getName().equals(file2.getName())) {
-      if(!isRoot && ignoreRoot) return false;
+  private boolean areDirsEqualUtil(File file1, File file2, boolean isRoot, boolean ignoreRoot)
+      throws IOException {
+    if (!file1.getName().equals(file2.getName())) {
+      if (!isRoot && ignoreRoot) {
+        return false;
+      }
     }
-    if(file1.isDirectory() && file2.isDirectory()) {
-      if(file1.listFiles().length != file2.listFiles().length) {
+    if (file1.isDirectory() && file2.isDirectory()) {
+      if (file1.listFiles().length != file2.listFiles().length) {
         return false;
       }
       File[] fileList1 = file1.listFiles(), fileList2 = file2.listFiles();
       Arrays.sort(fileList1, NameFileComparator.NAME_COMPARATOR);
       Arrays.sort(fileList2, NameFileComparator.NAME_COMPARATOR);
 
-      for(int i = 0; i < fileList1.length; i++) {
-        if(!areDirsEqualUtil(fileList1[i], fileList2[i], false, ignoreRoot)) {
+      for (int i = 0; i < fileList1.length; i++) {
+        if (!areDirsEqualUtil(fileList1[i], fileList2[i], false, ignoreRoot)) {
           return false;
         }
       }
       return true;
-    }
-    else if(file1.isFile() && file2.isFile()) {
+    } else if (file1.isFile() && file2.isFile()) {
       return file1.getName().equals(file2.getName()) && FileUtils.contentEquals(file1, file2);
+    } else {
+      return false;
     }
-    else return false;
   }
 
 
@@ -137,7 +139,7 @@ public class FileIOUtilsTest {
     System.out.println("char length:" + foreignText.length() +
         " utf8BytesLength:" + utf8ByteArray.length + " for:" + foreignText);
 
-    Pair<Integer,Integer> pair = FileIOUtils.getUtf8Range(utf8ByteArray, 1,
+    Pair<Integer, Integer> pair = FileIOUtils.getUtf8Range(utf8ByteArray, 1,
         length - 6);
     System.out.println("Pair :" + pair.toString());
 
@@ -148,7 +150,7 @@ public class FileIOUtilsTest {
         pair.getSecond(), "UTF-8");
     System.out.println("correctString:" + correctString);
 
-    assertEquals(pair, new Pair<Integer,Integer>(1, 20));
+    assertEquals(pair, new Pair<Integer, Integer>(1, 20));
     // Two characters stripped from this.
     assertEquals(correctString.length(), foreignText.length() - 6);
 
@@ -163,7 +165,7 @@ public class FileIOUtilsTest {
     System.out.println("char length:" + foreignText.length()
         + " utf8BytesLength:" + utf8ByteArray.length + " for:" + foreignText);
 
-    Pair<Integer,Integer> pair = FileIOUtils.getUtf8Range(utf8ByteArray, 1,
+    Pair<Integer, Integer> pair = FileIOUtils.getUtf8Range(utf8ByteArray, 1,
         length - 6);
     System.out.println("Pair :" + pair.toString());
 
@@ -174,26 +176,25 @@ public class FileIOUtilsTest {
         pair.getSecond(), "UTF-8");
     System.out.println("correctString:" + correctString);
 
-    assertEquals(pair, new Pair<Integer,Integer>(3, 40));
+    assertEquals(pair, new Pair<Integer, Integer>(3, 40));
     // Two characters stripped from this.
     assertEquals(correctString.length(), foreignText.length() - 3);
-
 
     // Testing mixed bytes
     String mixedText = "abc안녕하세요, 제 이름은 박병호입니다";
     byte[] mixedBytes = createUTF8ByteArray(mixedText);
-    Pair<Integer,Integer> pair2 = FileIOUtils.getUtf8Range(mixedBytes, 1,
+    Pair<Integer, Integer> pair2 = FileIOUtils.getUtf8Range(mixedBytes, 1,
         length - 4);
     correctString = new String(mixedBytes, pair2.getFirst(), pair2.getSecond(),
         "UTF-8");
     System.out.println("correctString:" + correctString);
-    assertEquals(pair2, new Pair<Integer,Integer>(1, 45));
+    assertEquals(pair2, new Pair<Integer, Integer>(1, 45));
     // Two characters stripped from this.
     assertEquals(correctString.length(), mixedText.length() - 3);
   }
 
   private byte[] createUTF8ByteArray(String text) {
-    byte[] textBytes= null;
+    byte[] textBytes = null;
     try {
       textBytes = text.getBytes("UTF-8");
     } catch (UnsupportedEncodingException e) {

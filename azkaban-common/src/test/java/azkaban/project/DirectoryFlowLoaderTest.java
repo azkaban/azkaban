@@ -16,19 +16,16 @@
 
 package azkaban.project;
 
-import java.io.File;
-import java.net.URL;
-import java.net.URISyntaxException;
-
 import azkaban.test.executions.TestExecutions;
 import azkaban.utils.Props;
-
+import java.net.URISyntaxException;
 import org.apache.log4j.Logger;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
 public class DirectoryFlowLoaderTest {
+
   private Project project;
 
   @Before

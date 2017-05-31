@@ -27,7 +27,7 @@ import java.util.Collection;
  *  @param K : type of the candidate.
  *  @param V : type of the dispatching object.
  */
-public interface Selector <K extends Comparable<K>,V> {
+public interface Selector<K extends Comparable<K>, V> {
 
   /** Function returns the next best suit candidate from the candidateList for the dispatching object.
    *  @param  candidateList : List of the candidates to select from .

@@ -16,33 +16,13 @@
 
 package azkaban.user;
 
+import azkaban.utils.Utils;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 
-import azkaban.utils.Utils;
-
 public class Permission {
-  public enum Type {
-    READ(0x0000001),
-    WRITE(0x0000002),
-    EXECUTE(0x0000004),
-    SCHEDULE(0x0000008),
-    METRICS(0x0000010),
-    CREATEPROJECTS(0x40000000), // Only used for roles
-    ADMIN(0x8000000);
-
-    private final int numVal;
-
-    Type(int numVal) {
-      this.numVal = numVal;
-    }
-
-    public int getFlag() {
-      return numVal;
-    }
-  }
 
   private Set<Type> permissions = new HashSet<Type>();
 
@@ -178,18 +158,23 @@ public class Permission {
 
   @Override
   public boolean equals(Object obj) {
-    if (this == obj)
+    if (this == obj) {
       return true;
-    if (obj == null)
+    }
+    if (obj == null) {
       return false;
-    if (getClass() != obj.getClass())
+    }
+    if (getClass() != obj.getClass()) {
       return false;
+    }
     Permission other = (Permission) obj;
     if (permissions == null) {
-      if (other.permissions != null)
+      if (other.permissions != null) {
         return false;
-    } else if (!permissions.equals(other.permissions))
+      }
+    } else if (!permissions.equals(other.permissions)) {
       return false;
+    }
     return true;
   }
 
@@ -200,5 +185,25 @@ public class Permission {
     }
 
     return flag;
+  }
+
+  public enum Type {
+    READ(0x0000001),
+    WRITE(0x0000002),
+    EXECUTE(0x0000004),
+    SCHEDULE(0x0000008),
+    METRICS(0x0000010),
+    CREATEPROJECTS(0x40000000), // Only used for roles
+    ADMIN(0x8000000);
+
+    private final int numVal;
+
+    Type(int numVal) {
+      this.numVal = numVal;
+    }
+
+    public int getFlag() {
+      return numVal;
+    }
   }
 }

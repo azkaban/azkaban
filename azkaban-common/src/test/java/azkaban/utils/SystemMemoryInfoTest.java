@@ -1,12 +1,15 @@
 package azkaban.utils;
 
-import org.junit.Test;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
-import static org.junit.Assert.*;
-import static org.mockito.Mockito.*;
+import org.junit.Test;
 
 
 public class SystemMemoryInfoTest {
+
   private static final long GB_UNIT = 1024L * 1024L;
 
   @Test

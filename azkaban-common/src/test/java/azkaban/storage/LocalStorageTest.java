@@ -17,6 +17,11 @@
 
 package azkaban.storage;
 
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
 import azkaban.AzkabanCommonModuleConfig;
 import azkaban.spi.StorageMetadata;
 import azkaban.utils.Md5Hasher;
@@ -28,17 +33,13 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import static org.junit.Assert.*;
-import static org.mockito.Mockito.*;
-
 
 public class LocalStorageTest {
-  private static final Logger log = Logger.getLogger(LocalStorageTest.class);
 
   static final String SAMPLE_FILE = "sample_flow_01.zip";
   static final String LOCAL_STORAGE = "LOCAL_STORAGE";
   static final File BASE_DIRECTORY = new File(LOCAL_STORAGE);
-
+  private static final Logger log = Logger.getLogger(LocalStorageTest.class);
   private LocalStorage localStorage;
 
   @Before

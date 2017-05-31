@@ -17,6 +17,7 @@
 package azkaban.user;
 
 public class Role {
+
   private final String name;
   private final Permission globalPermission;
 

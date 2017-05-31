@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Set;
 
 public class User {
+
   private final String userid;
   private String email = "";
   private Set<String> roles = new HashSet<String>();
@@ -39,20 +40,20 @@ public class User {
     return userid;
   }
 
-  public void setEmail(String email) {
-    this.email = email;
-  }
-
   public String getEmail() {
     return email;
   }
 
-  public void setPermissions(UserPermissions checker) {
-    this.userPermissions = checker;
+  public void setEmail(String email) {
+    this.email = email;
   }
 
   public UserPermissions getPermissions() {
     return userPermissions;
+  }
+
+  public void setPermissions(UserPermissions checker) {
+    this.userPermissions = checker;
   }
 
   public boolean hasPermission(String permission) {
@@ -114,28 +115,35 @@ public class User {
 
   @Override
   public boolean equals(Object obj) {
-    if (this == obj)
+    if (this == obj) {
       return true;
-    if (obj == null)
+    }
+    if (obj == null) {
       return false;
-    if (getClass() != obj.getClass())
+    }
+    if (getClass() != obj.getClass()) {
       return false;
+    }
     User other = (User) obj;
     if (userid == null) {
-      if (other.userid != null)
+      if (other.userid != null) {
         return false;
-    } else if (!userid.equals(other.userid))
+      }
+    } else if (!userid.equals(other.userid)) {
       return false;
+    }
     return true;
   }
 
   public static interface UserPermissions {
+
     public boolean hasPermission(String permission);
 
     public void addPermission(String permission);
   }
 
   public static class DefaultUserPermission implements UserPermissions {
+
     Set<String> permissions;
 
     public DefaultUserPermission() {

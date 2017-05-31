@@ -3,8 +3,6 @@ package azkaban.metrics;
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.MetricRegistry;
-import com.codahale.metrics.Timer;
-
 import java.util.function.Supplier;
 
 /**

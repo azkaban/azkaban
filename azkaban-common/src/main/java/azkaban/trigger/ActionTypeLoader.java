@@ -16,24 +16,28 @@
 
 package azkaban.trigger;
 
+import azkaban.utils.Props;
+import azkaban.utils.Utils;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
-
 import org.apache.log4j.Logger;
-
-import azkaban.utils.Props;
-import azkaban.utils.Utils;
 
 public class ActionTypeLoader {
 
-  private static Logger logger = Logger.getLogger(ActionTypeLoader.class);
-
   public static final String DEFAULT_TRIGGER_ACTION_PLUGIN_DIR =
       "plugins/triggeractions";
-
   protected static Map<String, Class<? extends TriggerAction>> actionToClass =
       new HashMap<String, Class<? extends TriggerAction>>();
+  private static Logger logger = Logger.getLogger(ActionTypeLoader.class);
+
+  public static void registerBuiltinActions(
+      Map<String, Class<? extends TriggerAction>> builtinActions) {
+    actionToClass.putAll(builtinActions);
+    for (String type : builtinActions.keySet()) {
+      logger.info("Loaded " + type + " action.");
+    }
+  }
 
   public void init(Props props) throws TriggerException {
   }
@@ -43,14 +47,6 @@ public class ActionTypeLoader {
     logger.info("Registering action " + type);
     if (!actionToClass.containsKey(type)) {
       actionToClass.put(type, actionClass);
-    }
-  }
-
-  public static void registerBuiltinActions(
-      Map<String, Class<? extends TriggerAction>> builtinActions) {
-    actionToClass.putAll(builtinActions);
-    for (String type : builtinActions.keySet()) {
-      logger.info("Loaded " + type + " action.");
     }
   }
 

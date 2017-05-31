@@ -16,16 +16,14 @@
 
 package azkaban.jobExecutor;
 
+import azkaban.jobExecutor.utils.process.AzkabanProcess;
+import azkaban.jobExecutor.utils.process.AzkabanProcessBuilder;
+import azkaban.utils.Props;
 import java.io.File;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
-
 import org.apache.log4j.Logger;
-
-import azkaban.utils.Props;
-import azkaban.jobExecutor.utils.process.AzkabanProcess;
-import azkaban.jobExecutor.utils.process.AzkabanProcessBuilder;
 
 /**
  * A job that passes all the job properties as command line arguments in "long"
@@ -37,13 +35,13 @@ public abstract class LongArgJob extends AbstractProcessJob {
   private final AzkabanProcessBuilder builder;
   private volatile AzkabanProcess process;
 
-  public LongArgJob(String jobid, String[] command, Props sysProps,
-      Props jobProps, Logger log) {
-    this(jobid, command, sysProps, jobProps, log, new HashSet<String>(0));
+  public LongArgJob(final String jobid, final String[] command, final Props sysProps,
+      final Props jobProps, final Logger log) {
+    this(jobid, command, sysProps, jobProps, log, new HashSet<>(0));
   }
 
-  public LongArgJob(String jobid, String[] command, Props sysProps,
-      Props jobProp, Logger log, Set<String> suppressedKeys) {
+  public LongArgJob(final String jobid, final String[] command, final Props sysProps,
+      final Props jobProp, final Logger log, final Set<String> suppressedKeys) {
     super(jobid, sysProps, jobProp, log);
 
     this.builder =
@@ -57,29 +55,29 @@ public abstract class LongArgJob extends AbstractProcessJob {
   public void run() throws Exception {
     try {
       resolveProps();
-    } catch (Exception e) {
+    } catch (final Exception e) {
       error("Bad property definition! " + e.getMessage());
     }
 
-    long startMs = System.currentTimeMillis();
-    info("Command: " + builder.getCommandString());
-    if (builder.getEnv().size() > 0) {
-      info("Environment variables: " + builder.getEnv());
+    final long startMs = System.currentTimeMillis();
+    info("Command: " + this.builder.getCommandString());
+    if (this.builder.getEnv().size() > 0) {
+      info("Environment variables: " + this.builder.getEnv());
     }
-    info("Working directory: " + builder.getWorkingDir());
+    info("Working directory: " + this.builder.getWorkingDir());
 
-    File[] propFiles = initPropsFiles();
+    final File[] propFiles = initPropsFiles();
 
     // print out the Job properties to the job log.
     this.logJobProperties();
 
     boolean success = false;
-    this.process = builder.build();
+    this.process = this.builder.build();
     try {
       this.process.run();
       success = true;
-    } catch (Exception e) {
-      for (File file : propFiles) {
+    } catch (final Exception e) {
+      for (final File file : propFiles) {
         if (file != null && file.exists()) {
           file.delete();
         }
@@ -95,7 +93,7 @@ public abstract class LongArgJob extends AbstractProcessJob {
     // Get the output properties from this job.
     generateProperties(propFiles[1]);
 
-    for (File file : propFiles) {
+    for (final File file : propFiles) {
       if (file != null && file.exists()) {
         file.delete();
       }
@@ -112,26 +110,26 @@ public abstract class LongArgJob extends AbstractProcessJob {
 
   @Override
   public void cancel() throws InterruptedException {
-    if (process == null) {
+    if (this.process == null) {
       throw new IllegalStateException("Not started.");
     }
 
-    boolean killed = process.softKill(KILL_TIME_MS, TimeUnit.MILLISECONDS);
+    final boolean killed = this.process.softKill(KILL_TIME_MS, TimeUnit.MILLISECONDS);
     if (!killed) {
       warn("Kill with signal TERM failed. Killing with KILL signal.");
-      process.hardKill();
+      this.process.hardKill();
     }
   }
 
   @Override
   public double getProgress() {
-    return process != null && process.isComplete() ? 1.0 : 0.0;
+    return this.process != null && this.process.isComplete() ? 1.0 : 0.0;
   }
 
-  private void appendProps(Set<String> suppressed) {
-    AzkabanProcessBuilder builder = this.getBuilder();
-    Props props = getJobProps();
-    for (String key : props.getKeySet()) {
+  private void appendProps(final Set<String> suppressed) {
+    final AzkabanProcessBuilder builder = this.getBuilder();
+    final Props props = getJobProps();
+    for (final String key : props.getKeySet()) {
       if (!suppressed.contains(key)) {
         builder.addArg("--" + key, props.get(key));
       }

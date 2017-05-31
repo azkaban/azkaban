@@ -16,6 +16,7 @@
 
 package azkaban.flow;
 
+import azkaban.executor.mail.DefaultMailCreator;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -24,9 +25,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import azkaban.executor.mail.DefaultMailCreator;
-
 public class Flow {
+
   private final String id;
   private int projectId;
   private ArrayList<Node> startNodes = null;
@@ -55,12 +55,94 @@ public class Flow {
     this.id = id;
   }
 
-  public void setVersion(int version) {
-    this.version = version;
+  @SuppressWarnings("unchecked")
+  public static Flow flowFromObject(Object object) {
+    Map<String, Object> flowObject = (Map<String, Object>) object;
+
+    String id = (String) flowObject.get("id");
+    Boolean layedout = (Boolean) flowObject.get("layedout");
+    Flow flow = new Flow(id);
+    if (layedout != null) {
+      flow.setLayedOut(layedout);
+    }
+    int projId = (Integer) flowObject.get("project.id");
+    flow.setProjectId(projId);
+
+    int version = (Integer) flowObject.get("version");
+    flow.setVersion(version);
+
+    // Loading projects
+    List<Object> propertiesList = (List<Object>) flowObject.get("props");
+    Map<String, FlowProps> properties =
+        loadPropertiesFromObject(propertiesList);
+    flow.addAllFlowProperties(properties.values());
+
+    // Loading nodes
+    List<Object> nodeList = (List<Object>) flowObject.get("nodes");
+    Map<String, Node> nodes = loadNodesFromObjects(nodeList);
+    flow.addAllNodes(nodes.values());
+
+    // Loading edges
+    List<Object> edgeList = (List<Object>) flowObject.get("edges");
+    List<Edge> edges = loadEdgeFromObjects(edgeList, nodes);
+    flow.addAllEdges(edges);
+
+    Map<String, Object> metadata =
+        (Map<String, Object>) flowObject.get("metadata");
+
+    if (metadata != null) {
+      flow.setMetadata(metadata);
+    }
+
+    flow.failureEmail = (List<String>) flowObject.get("failure.email");
+    flow.successEmail = (List<String>) flowObject.get("success.email");
+    if (flowObject.containsKey("mailCreator")) {
+      flow.mailCreator = flowObject.get("mailCreator").toString();
+    }
+    return flow;
+  }
+
+  private static Map<String, Node> loadNodesFromObjects(List<Object> nodeList) {
+    Map<String, Node> nodeMap = new HashMap<String, Node>();
+
+    for (Object obj : nodeList) {
+      Node node = Node.fromObject(obj);
+      nodeMap.put(node.getId(), node);
+    }
+
+    return nodeMap;
+  }
+
+  private static List<Edge> loadEdgeFromObjects(List<Object> edgeList,
+      Map<String, Node> nodes) {
+    List<Edge> edgeResult = new ArrayList<Edge>();
+
+    for (Object obj : edgeList) {
+      Edge edge = Edge.fromObject(obj);
+      edgeResult.add(edge);
+    }
+
+    return edgeResult;
+  }
+
+  private static Map<String, FlowProps> loadPropertiesFromObject(
+      List<Object> propertyObjectList) {
+    Map<String, FlowProps> properties = new HashMap<String, FlowProps>();
+
+    for (Object propObj : propertyObjectList) {
+      FlowProps prop = FlowProps.fromObject(propObj);
+      properties.put(prop.getSource(), prop);
+    }
+
+    return properties;
   }
 
   public int getVersion() {
     return version;
+  }
+
+  public void setVersion(int version) {
+    this.version = version;
   }
 
   public void initialize() {
@@ -116,12 +198,12 @@ public class Flow {
     return mailCreator;
   }
 
-  public List<String> getFailureEmails() {
-    return failureEmail;
-  }
-
   public void setMailCreator(String mailCreator) {
     this.mailCreator = mailCreator;
+  }
+
+  public List<String> getFailureEmails() {
+    return failureEmail;
   }
 
   public void addSuccessEmails(Collection<String> emails) {
@@ -283,90 +365,12 @@ public class Flow {
     return result;
   }
 
-  @SuppressWarnings("unchecked")
-  public static Flow flowFromObject(Object object) {
-    Map<String, Object> flowObject = (Map<String, Object>) object;
-
-    String id = (String) flowObject.get("id");
-    Boolean layedout = (Boolean) flowObject.get("layedout");
-    Flow flow = new Flow(id);
-    if (layedout != null) {
-      flow.setLayedOut(layedout);
-    }
-    int projId = (Integer) flowObject.get("project.id");
-    flow.setProjectId(projId);
-
-    int version = (Integer) flowObject.get("version");
-    flow.setVersion(version);
-
-    // Loading projects
-    List<Object> propertiesList = (List<Object>) flowObject.get("props");
-    Map<String, FlowProps> properties =
-        loadPropertiesFromObject(propertiesList);
-    flow.addAllFlowProperties(properties.values());
-
-    // Loading nodes
-    List<Object> nodeList = (List<Object>) flowObject.get("nodes");
-    Map<String, Node> nodes = loadNodesFromObjects(nodeList);
-    flow.addAllNodes(nodes.values());
-
-    // Loading edges
-    List<Object> edgeList = (List<Object>) flowObject.get("edges");
-    List<Edge> edges = loadEdgeFromObjects(edgeList, nodes);
-    flow.addAllEdges(edges);
-
-    Map<String, Object> metadata =
-        (Map<String, Object>) flowObject.get("metadata");
-
-    if (metadata != null) {
-      flow.setMetadata(metadata);
-    }
-
-    flow.failureEmail = (List<String>) flowObject.get("failure.email");
-    flow.successEmail = (List<String>) flowObject.get("success.email");
-    if (flowObject.containsKey("mailCreator")) {
-      flow.mailCreator = flowObject.get("mailCreator").toString();
-    }
-    return flow;
-  }
-
-  private static Map<String, Node> loadNodesFromObjects(List<Object> nodeList) {
-    Map<String, Node> nodeMap = new HashMap<String, Node>();
-
-    for (Object obj : nodeList) {
-      Node node = Node.fromObject(obj);
-      nodeMap.put(node.getId(), node);
-    }
-
-    return nodeMap;
-  }
-
-  private static List<Edge> loadEdgeFromObjects(List<Object> edgeList,
-      Map<String, Node> nodes) {
-    List<Edge> edgeResult = new ArrayList<Edge>();
-
-    for (Object obj : edgeList) {
-      Edge edge = Edge.fromObject(obj);
-      edgeResult.add(edge);
-    }
-
-    return edgeResult;
-  }
-
-  private static Map<String, FlowProps> loadPropertiesFromObject(
-      List<Object> propertyObjectList) {
-    Map<String, FlowProps> properties = new HashMap<String, FlowProps>();
-
-    for (Object propObj : propertyObjectList) {
-      FlowProps prop = FlowProps.fromObject(propObj);
-      properties.put(prop.getSource(), prop);
-    }
-
-    return properties;
-  }
-
   public boolean isLayedOut() {
     return isLayedOut;
+  }
+
+  public void setLayedOut(boolean layedOut) {
+    this.isLayedOut = layedOut;
   }
 
   public Map<String, Object> getMetadata() {
@@ -378,10 +382,6 @@ public class Flow {
 
   public void setMetadata(Map<String, Object> metadata) {
     this.metadata = metadata;
-  }
-
-  public void setLayedOut(boolean layedOut) {
-    this.isLayedOut = layedOut;
   }
 
   public Map<String, Node> getNodeMap() {

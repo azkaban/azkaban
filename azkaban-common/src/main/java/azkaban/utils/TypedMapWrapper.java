@@ -21,18 +21,19 @@ import java.util.List;
 import java.util.Map;
 
 public class TypedMapWrapper<K, V> {
-  private Map<K, V> map;
 
-  public TypedMapWrapper(Map<K, V> map) {
+  private final Map<K, V> map;
+
+  public TypedMapWrapper(final Map<K, V> map) {
     this.map = map;
   }
 
-  public String getString(K key) {
+  public String getString(final K key) {
     return getString(key, null);
   }
 
-  public String getString(K key, String defaultVal) {
-    Object obj = map.get(key);
+  public String getString(final K key, final String defaultVal) {
+    final Object obj = this.map.get(key);
     if (obj == null) {
       return defaultVal;
     }
@@ -43,8 +44,8 @@ public class TypedMapWrapper<K, V> {
     return obj.toString();
   }
 
-  public Boolean getBool(K key, Boolean defaultVal) {
-    Object obj = map.get(key);
+  public Boolean getBool(final K key, final Boolean defaultVal) {
+    final Object obj = this.map.get(key);
     if (obj == null) {
       return defaultVal;
     }
@@ -52,12 +53,12 @@ public class TypedMapWrapper<K, V> {
     return (Boolean) obj;
   }
 
-  public Integer getInt(K key) {
+  public Integer getInt(final K key) {
     return getInt(key, -1);
   }
 
-  public Integer getInt(K key, Integer defaultVal) {
-    Object obj = map.get(key);
+  public Integer getInt(final K key, final Integer defaultVal) {
+    final Object obj = this.map.get(key);
     if (obj == null) {
       return defaultVal;
     }
@@ -70,12 +71,12 @@ public class TypedMapWrapper<K, V> {
     }
   }
 
-  public Long getLong(K key) {
+  public Long getLong(final K key) {
     return getLong(key, -1L);
   }
 
-  public Long getLong(K key, Long defaultVal) {
-    Object obj = map.get(key);
+  public Long getLong(final K key, final Long defaultVal) {
+    final Object obj = this.map.get(key);
     if (obj == null) {
       return defaultVal;
     }
@@ -90,16 +91,14 @@ public class TypedMapWrapper<K, V> {
     }
   }
 
-  @SuppressWarnings("unchecked")
-  public Collection<String> getStringCollection(K key) {
-    Object obj = map.get(key);
+  public Collection<String> getStringCollection(final K key) {
+    final Object obj = this.map.get(key);
     return (Collection<String>) obj;
   }
 
-  @SuppressWarnings("unchecked")
-  public Collection<String> getStringCollection(K key,
-      Collection<String> defaultVal) {
-    Object obj = map.get(key);
+  public Collection<String> getStringCollection(final K key,
+      final Collection<String> defaultVal) {
+    final Object obj = this.map.get(key);
     if (obj == null) {
       return defaultVal;
     }
@@ -107,47 +106,43 @@ public class TypedMapWrapper<K, V> {
     return (Collection<String>) obj;
   }
 
-  @SuppressWarnings("unchecked")
-  public <C> Collection<C> getCollection(K key) {
-    Object obj = map.get(key);
+  public <C> Collection<C> getCollection(final K key) {
+    final Object obj = this.map.get(key);
     if (obj instanceof Collection) {
       return (Collection<C>) obj;
     }
     return null;
   }
 
-  @SuppressWarnings("unchecked")
-  public <L> List<L> getList(K key) {
-    Object obj = map.get(key);
+  public <L> List<L> getList(final K key) {
+    final Object obj = this.map.get(key);
     if (obj instanceof List) {
       return (List<L>) obj;
     }
     return null;
   }
 
-  @SuppressWarnings("unchecked")
-  public <L> List<L> getList(K key, List<L> defaultVal) {
-    Object obj = map.get(key);
+  public <L> List<L> getList(final K key, final List<L> defaultVal) {
+    final Object obj = this.map.get(key);
     if (obj instanceof List) {
       return (List<L>) obj;
     }
     return defaultVal;
   }
 
-  public Object getObject(K key) {
-    return map.get(key);
+  public Object getObject(final K key) {
+    return this.map.get(key);
   }
 
   public Map<K, V> getMap() {
-    return map;
+    return this.map;
   }
 
-  @SuppressWarnings("unchecked")
-  public <S, T> Map<S, T> getMap(K key) {
-    return (Map<S, T>) map.get(key);
+  public <S, T> Map<S, T> getMap(final K key) {
+    return (Map<S, T>) this.map.get(key);
   }
 
-  public boolean containsKey(K key) {
-    return map.containsKey(key);
+  public boolean containsKey(final K key) {
+    return this.map.containsKey(key);
   }
 }

@@ -16,17 +16,16 @@
 
 package azkaban.project;
 
-import java.io.File;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-
 import azkaban.flow.Flow;
 import azkaban.project.ProjectLogEvent.EventType;
 import azkaban.user.Permission;
 import azkaban.user.User;
 import azkaban.utils.Props;
 import azkaban.utils.Triple;
+import java.io.File;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
 
 public interface ProjectLoader {
 
@@ -146,7 +145,8 @@ public interface ProjectLoader {
    * @param resourceId
    * @throws ProjectManagerException
    */
-  void addProjectVersion(int projectId, int version, File localFile, String uploader, byte[] md5, String resourceId)
+  void addProjectVersion(int projectId, int version, File localFile, String uploader, byte[] md5,
+      String resourceId)
       throws ProjectManagerException;
 
   /**

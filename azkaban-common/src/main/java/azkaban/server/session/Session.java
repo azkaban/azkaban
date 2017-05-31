@@ -15,15 +15,15 @@
  */
 package azkaban.server.session;
 
+import azkaban.user.User;
 import java.util.HashMap;
 import java.util.Map;
-
-import azkaban.user.User;
 
 /**
  * Container for the session, mapping session id to user in map
  */
 public class Session {
+
   private final User user;
   private final String sessionId;
   private final String ip;

@@ -16,18 +16,16 @@
 
 package azkaban.trigger.builtin;
 
-import java.util.HashMap;
-import java.util.Map;
-
-import org.apache.log4j.Logger;
-
+import azkaban.ServiceProvider;
 import azkaban.alert.Alerter;
+import azkaban.executor.AlerterHolder;
 import azkaban.executor.ExecutableFlow;
+import azkaban.executor.ExecutorLoader;
 import azkaban.sla.SlaOption;
 import azkaban.trigger.TriggerAction;
-import azkaban.ServiceProvider;
-import azkaban.executor.AlerterHolder;
-import azkaban.executor.ExecutorLoader;
+import java.util.HashMap;
+import java.util.Map;
+import org.apache.log4j.Logger;
 
 public class SlaAlertAction implements TriggerAction {
 
@@ -50,16 +48,6 @@ public class SlaAlertAction implements TriggerAction {
     this.executorLoader = ServiceProvider.SERVICE_PROVIDER.getInstance(ExecutorLoader.class);
   }
 
-  @Override
-  public String getId() {
-    return actionId;
-  }
-
-  @Override
-  public String getType() {
-    return type;
-  }
-
   @SuppressWarnings("unchecked")
   public static SlaAlertAction createFromJson(Object obj) throws Exception {
     return createFromJson((HashMap<String, Object>) obj);
@@ -76,6 +64,16 @@ public class SlaAlertAction implements TriggerAction {
     SlaOption slaOption = SlaOption.fromObject(jsonObj.get("slaOption"));
     int execId = Integer.valueOf((String) jsonObj.get("execId"));
     return new SlaAlertAction(actionId, slaOption, execId);
+  }
+
+  @Override
+  public String getId() {
+    return actionId;
+  }
+
+  @Override
+  public String getType() {
+    return type;
   }
 
   @Override

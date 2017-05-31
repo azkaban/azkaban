@@ -16,21 +16,20 @@
 
 package azkaban.trigger;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import org.junit.Ignore;
-import org.junit.Test;
-
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertTrue;
 
 import azkaban.executor.ExecutionOptions;
 import azkaban.trigger.builtin.ExecuteFlowAction;
 import azkaban.utils.Props;
+import java.util.ArrayList;
+import java.util.List;
+import org.junit.Ignore;
+import org.junit.Test;
 
 public class ExecuteFlowActionTest {
 
-  @Ignore @Test
+  @Ignore
+  @Test
   public void jsonConversionTest() throws Exception {
     ActionTypeLoader loader = new ActionTypeLoader();
     loader.init(new Props());

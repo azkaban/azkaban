@@ -18,16 +18,11 @@ package azkaban.trigger;
 
 import java.util.Map;
 
-import azkaban.trigger.ConditionChecker;
-
 public class ThresholdChecker implements ConditionChecker {
 
-  private int threshold = -1;
-
-  private static int curVal = -1;
-
   public static final String type = "ThresholdChecker";
-
+  private static int curVal = -1;
+  private int threshold = -1;
   private String id;
 
   private boolean checkerMet = false;

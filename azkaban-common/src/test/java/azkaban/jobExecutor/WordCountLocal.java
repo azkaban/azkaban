@@ -34,18 +34,18 @@ public class WordCountLocal extends AbstractJob {
   private String output = null;
   private Map<String, Integer> dict = new HashMap<>();
 
+  private WordCountLocal(String id, Props prop) {
+    super(id, Logger.getLogger(WordCountLocal.class));
+    input = prop.getString("input");
+    output = prop.getString("output");
+  }
+
   public static void main(String[] args) throws Exception {
     String propsFile = System.getenv(ProcessJob.JOB_PROP_ENV);
     System.out.println("propsFile: " + propsFile);
     Props prop = new Props(null, propsFile);
     WordCountLocal instance = new WordCountLocal("", prop);
     instance.run();
-  }
-
-  private WordCountLocal(String id, Props prop) {
-    super(id, Logger.getLogger(WordCountLocal.class));
-    input = prop.getString("input");
-    output = prop.getString("output");
   }
 
   @Override

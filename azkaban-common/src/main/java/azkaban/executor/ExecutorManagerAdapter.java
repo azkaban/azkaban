@@ -16,17 +16,16 @@
 
 package azkaban.executor;
 
+import azkaban.project.Project;
+import azkaban.utils.FileIOUtils.JobMetaData;
+import azkaban.utils.FileIOUtils.LogData;
+import azkaban.utils.Pair;
 import java.io.IOException;
 import java.lang.Thread.State;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
-import azkaban.project.Project;
-import azkaban.utils.FileIOUtils.JobMetaData;
-import azkaban.utils.FileIOUtils.LogData;
-import azkaban.utils.Pair;
 
 public interface ExecutorManagerAdapter {
 
@@ -99,7 +98,7 @@ public interface ExecutorManagerAdapter {
    * @throws IOException
    */
   public List<Pair<ExecutableFlow, Executor>> getActiveFlowsWithExecutor()
-    throws IOException;
+      throws IOException;
 
   public List<ExecutableFlow> getRecentlyFinishedFlows();
 
@@ -193,7 +192,7 @@ public interface ExecutorManagerAdapter {
    * @throws ExecutorManagerException
    */
   public Map<String, Object> callExecutorStats(int executorId, String action,
-    Pair<String, String>... param) throws IOException, ExecutorManagerException;
+      Pair<String, String>... param) throws IOException, ExecutorManagerException;
 
   public Map<String, Object> callExecutorJMX(String hostPort, String action,
       String mBean) throws IOException;
@@ -245,19 +244,19 @@ public interface ExecutorManagerAdapter {
    *
    * @throws ExecutorManagerException
    */
-   public void setupExecutors() throws ExecutorManagerException;
+  public void setupExecutors() throws ExecutorManagerException;
 
-   /**
-    * Enable flow dispatching in QueueProcessor
-    *
-    * @throws ExecutorManagerException
-    */
-   public void enableQueueProcessorThread() throws ExecutorManagerException;
+  /**
+   * Enable flow dispatching in QueueProcessor
+   *
+   * @throws ExecutorManagerException
+   */
+  public void enableQueueProcessorThread() throws ExecutorManagerException;
 
-   /**
-    * Disable flow dispatching in QueueProcessor
-    *
-    * @throws ExecutorManagerException
-    */
-   public void disableQueueProcessorThread() throws ExecutorManagerException;
+  /**
+   * Disable flow dispatching in QueueProcessor
+   *
+   * @throws ExecutorManagerException
+   */
+  public void disableQueueProcessorThread() throws ExecutorManagerException;
 }

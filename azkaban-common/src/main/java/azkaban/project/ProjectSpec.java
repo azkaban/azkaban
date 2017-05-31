@@ -23,6 +23,7 @@ import java.util.Map;
 
 
 public class ProjectSpec implements Serializable {
+
   private String version;
   private PreExecutionSpec preExec;
 
@@ -48,6 +49,7 @@ public class ProjectSpec implements Serializable {
   }
 
   public static class PreExecutionSpec implements Serializable {
+
     private Map<String, URI> fetch;
 
     public Map<String, URI> getFetch() {

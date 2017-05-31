@@ -1,5 +1,9 @@
 package azkaban.executor.mail;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutionOptions;
 import azkaban.executor.Status;
@@ -9,18 +13,13 @@ import azkaban.project.Project;
 import azkaban.utils.EmailMessage;
 import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableList;
+import java.io.InputStream;
+import java.util.TimeZone;
 import org.apache.commons.io.IOUtils;
 import org.joda.time.DateTimeUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-
-import java.io.InputStream;
-import java.util.TimeZone;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
 
 public class DefaultMailCreatorTest {
 
@@ -105,7 +104,8 @@ public class DefaultMailCreatorTest {
     executableFlow.setStatus(Status.FAILED_FINISHING);
     assertTrue(mailCreator.createFirstErrorMessage(
         executableFlow, message, azkabanName, scheme, clientHostname, clientPortNumber));
-    assertEquals("Flow 'mail-creator-test' has encountered a failure on unit-tests", message.getSubject());
+    assertEquals("Flow 'mail-creator-test' has encountered a failure on unit-tests",
+        message.getSubject());
     assertEquals(read("firstErrorMessage.html"), message.getBody());
   }
 

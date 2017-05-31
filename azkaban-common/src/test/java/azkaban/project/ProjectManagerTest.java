@@ -1,5 +1,15 @@
 package azkaban.project;
 
+import static org.mockito.Mockito.anyCollection;
+import static org.mockito.Mockito.anyList;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import azkaban.storage.StorageManager;
 import azkaban.user.User;
 import azkaban.utils.Props;
@@ -9,15 +19,11 @@ import java.util.List;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-import static org.mockito.Mockito.*;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
 public class ProjectManagerTest {
-  private ProjectManager manager;
-  private ProjectLoader loader;
-  private StorageManager storageManager;
-  private User user;
+
   private static final String PROJECT_NAME = "myTest";
   private static final String PROJECT_NAME_2 = "myTest_2";
   private static final String PROJECT_DESCRIPTION = "This is to test project manager";
@@ -27,6 +33,10 @@ public class ProjectManagerTest {
   private static final int PROJECT_ID_2 = 2;
   private static final int PROJECT_VERSION = 5;
   private static final int PROJECT_VERSION_RETENTIION = 3;
+  private ProjectManager manager;
+  private ProjectLoader loader;
+  private StorageManager storageManager;
+  private User user;
 
   @Before
   public void setUp() throws Exception {
@@ -121,7 +131,8 @@ public class ProjectManagerTest {
   public void testUploadProject() throws Exception {
     System.out.println("TestUploadProject");
     Project project = manager.createProject(PROJECT_NAME, PROJECT_DESCRIPTION, user);
-    File testFile = new File(this.getClass().getClassLoader().getResource("project/testjob/testjob.zip").getFile());
+    File testFile = new File(
+        this.getClass().getClassLoader().getResource("project/testjob/testjob.zip").getFile());
     System.out.println("Uploading zip file: " + testFile.getAbsolutePath());
     Props props = new Props();
     manager.uploadProject(project, testFile, FILE_TYPE, user, props);
@@ -134,7 +145,8 @@ public class ProjectManagerTest {
     verify(loader, times(2)).uploadProjectProperties(eq(project), anyList());
     verify(loader).postEvent(project, ProjectLogEvent.EventType.UPLOADED, user.getUserId(),
         "Uploaded project files zip " + testFile.getName());
-    verify(loader).cleanOlderProjectVersion(project.getId(), PROJECT_VERSION + 1 - PROJECT_VERSION_RETENTIION);
+    verify(loader).cleanOlderProjectVersion(project.getId(),
+        PROJECT_VERSION + 1 - PROJECT_VERSION_RETENTIION);
   }
 
   @Test

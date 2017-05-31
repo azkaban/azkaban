@@ -27,7 +27,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
-
 import org.codehaus.jackson.JsonFactory;
 import org.codehaus.jackson.JsonNode;
 import org.codehaus.jackson.JsonParser;
@@ -42,49 +41,50 @@ public class JSONUtils {
   private JSONUtils() {
   }
 
-  public static String toJSON(Object obj) {
+  public static String toJSON(final Object obj) {
     return toJSON(obj, false);
   }
 
-  public static String toJSON(Object obj, boolean prettyPrint) {
-    ObjectMapper mapper = new ObjectMapper();
+  public static String toJSON(final Object obj, final boolean prettyPrint) {
+    final ObjectMapper mapper = new ObjectMapper();
 
     try {
       if (prettyPrint) {
-        ObjectWriter writer = mapper.writerWithDefaultPrettyPrinter();
+        final ObjectWriter writer = mapper.writerWithDefaultPrettyPrinter();
         return writer.writeValueAsString(obj);
       }
       return mapper.writeValueAsString(obj);
-    } catch (Exception e) {
+    } catch (final Exception e) {
       throw new RuntimeException(e);
     }
   }
 
-  public static void toJSON(Object obj, OutputStream stream) {
+  public static void toJSON(final Object obj, final OutputStream stream) {
     toJSON(obj, stream, false);
   }
 
-  public static void toJSON(Object obj, OutputStream stream, boolean prettyPrint) {
-    ObjectMapper mapper = new ObjectMapper();
+  public static void toJSON(final Object obj, final OutputStream stream,
+      final boolean prettyPrint) {
+    final ObjectMapper mapper = new ObjectMapper();
     try {
       if (prettyPrint) {
-        ObjectWriter writer = mapper.writerWithDefaultPrettyPrinter();
+        final ObjectWriter writer = mapper.writerWithDefaultPrettyPrinter();
         writer.writeValue(stream, obj);
         return;
       }
       mapper.writeValue(stream, obj);
-    } catch (Exception e) {
+    } catch (final Exception e) {
       throw new RuntimeException(e);
     }
   }
 
-  public static void toJSON(Object obj, File file) throws IOException {
+  public static void toJSON(final Object obj, final File file) throws IOException {
     toJSON(obj, file, false);
   }
 
-  public static void toJSON(Object obj, File file, boolean prettyPrint)
+  public static void toJSON(final Object obj, final File file, final boolean prettyPrint)
       throws IOException {
-    BufferedOutputStream stream =
+    final BufferedOutputStream stream =
         new BufferedOutputStream(new FileOutputStream(file));
     try {
       toJSON(obj, stream, prettyPrint);
@@ -93,60 +93,60 @@ public class JSONUtils {
     }
   }
 
-  public static Object parseJSONFromStringQuiet(String json) {
+  public static Object parseJSONFromStringQuiet(final String json) {
     try {
       return parseJSONFromString(json);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       e.printStackTrace();
       return null;
     }
   }
 
-  public static Object parseJSONFromString(String json) throws IOException {
-    ObjectMapper mapper = new ObjectMapper();
-    JsonFactory factory = new JsonFactory();
-    JsonParser parser = factory.createJsonParser(json);
-    JsonNode node = mapper.readTree(parser);
+  public static Object parseJSONFromString(final String json) throws IOException {
+    final ObjectMapper mapper = new ObjectMapper();
+    final JsonFactory factory = new JsonFactory();
+    final JsonParser parser = factory.createJsonParser(json);
+    final JsonNode node = mapper.readTree(parser);
 
     return toObjectFromJSONNode(node);
   }
 
-  public static Object parseJSONFromFile(File file) throws IOException {
-    ObjectMapper mapper = new ObjectMapper();
-    JsonFactory factory = new JsonFactory();
-    JsonParser parser = factory.createJsonParser(file);
-    JsonNode node = mapper.readTree(parser);
+  public static Object parseJSONFromFile(final File file) throws IOException {
+    final ObjectMapper mapper = new ObjectMapper();
+    final JsonFactory factory = new JsonFactory();
+    final JsonParser parser = factory.createJsonParser(file);
+    final JsonNode node = mapper.readTree(parser);
 
     return toObjectFromJSONNode(node);
   }
 
-  public static Object parseJSONFromReader(Reader reader) throws IOException {
-    ObjectMapper mapper = new ObjectMapper();
-    JsonFactory factory = new JsonFactory();
-    JsonParser parser = factory.createJsonParser(reader);
-    JsonNode node = mapper.readTree(parser);
+  public static Object parseJSONFromReader(final Reader reader) throws IOException {
+    final ObjectMapper mapper = new ObjectMapper();
+    final JsonFactory factory = new JsonFactory();
+    final JsonParser parser = factory.createJsonParser(reader);
+    final JsonNode node = mapper.readTree(parser);
 
     return toObjectFromJSONNode(node);
   }
 
-  private static Object toObjectFromJSONNode(JsonNode node) {
+  private static Object toObjectFromJSONNode(final JsonNode node) {
     if (node.isObject()) {
-      HashMap<String, Object> obj = new HashMap<String, Object>();
-      Iterator<String> iter = node.getFieldNames();
+      final HashMap<String, Object> obj = new HashMap<>();
+      final Iterator<String> iter = node.getFieldNames();
       while (iter.hasNext()) {
-        String fieldName = iter.next();
-        JsonNode subNode = node.get(fieldName);
-        Object subObj = toObjectFromJSONNode(subNode);
+        final String fieldName = iter.next();
+        final JsonNode subNode = node.get(fieldName);
+        final Object subObj = toObjectFromJSONNode(subNode);
         obj.put(fieldName, subObj);
       }
 
       return obj;
     } else if (node.isArray()) {
-      ArrayList<Object> array = new ArrayList<Object>();
-      Iterator<JsonNode> iter = node.getElements();
+      final ArrayList<Object> array = new ArrayList<>();
+      final Iterator<JsonNode> iter = node.getElements();
       while (iter.hasNext()) {
-        JsonNode element = iter.next();
-        Object subObject = toObjectFromJSONNode(element);
+        final JsonNode element = iter.next();
+        final Object subObject = toObjectFromJSONNode(element);
         array.add(subObject);
       }
       return array;
@@ -170,7 +170,7 @@ public class JSONUtils {
     }
   }
 
-  public static long getLongFromObject(Object obj) {
+  public static long getLongFromObject(final Object obj) {
     if (obj instanceof Integer) {
       return Long.valueOf((Integer) obj);
     }
@@ -187,12 +187,12 @@ public class JSONUtils {
    *
    * The other json writing methods are more robust and will handle more cases.
    */
-  public static void writePropsNoJarDependency(Map<String, String> properties,
-      Writer writer) throws IOException {
+  public static void writePropsNoJarDependency(final Map<String, String> properties,
+      final Writer writer) throws IOException {
     writer.write("{\n");
     int size = properties.size();
 
-    for (Map.Entry<String, String> entry : properties.entrySet()) {
+    for (final Map.Entry<String, String> entry : properties.entrySet()) {
       // tab the space
       writer.write('\t');
       // Write key
@@ -210,57 +210,57 @@ public class JSONUtils {
     writer.write("}");
   }
 
-  private static String quoteAndClean(String str) {
+  private static String quoteAndClean(final String str) {
     if (str == null || str.isEmpty()) {
       return "\"\"";
     }
 
-    StringBuffer buffer = new StringBuffer(str.length());
+    final StringBuffer buffer = new StringBuffer(str.length());
     buffer.append('"');
     for (int i = 0; i < str.length(); ++i) {
-      char ch = str.charAt(i);
+      final char ch = str.charAt(i);
 
       switch (ch) {
-      case '\b':
-        buffer.append("\\b");
-        break;
-      case '\t':
-        buffer.append("\\t");
-        break;
-      case '\n':
-        buffer.append("\\n");
-        break;
-      case '\f':
-        buffer.append("\\f");
-        break;
-      case '\r':
-        buffer.append("\\r");
-        break;
-      case '"':
-      case '\\':
-      case '/':
-        buffer.append('\\');
-        buffer.append(ch);
-        break;
-      default:
-        if (isCharSpecialUnicode(ch)) {
-          buffer.append("\\u");
-          String hexCode = Integer.toHexString(ch);
-          int lengthHexCode = hexCode.length();
-          if (lengthHexCode < 4) {
-            buffer.append("0000".substring(0, 4 - lengthHexCode));
-          }
-          buffer.append(hexCode);
-        } else {
+        case '\b':
+          buffer.append("\\b");
+          break;
+        case '\t':
+          buffer.append("\\t");
+          break;
+        case '\n':
+          buffer.append("\\n");
+          break;
+        case '\f':
+          buffer.append("\\f");
+          break;
+        case '\r':
+          buffer.append("\\r");
+          break;
+        case '"':
+        case '\\':
+        case '/':
+          buffer.append('\\');
           buffer.append(ch);
-        }
+          break;
+        default:
+          if (isCharSpecialUnicode(ch)) {
+            buffer.append("\\u");
+            final String hexCode = Integer.toHexString(ch);
+            final int lengthHexCode = hexCode.length();
+            if (lengthHexCode < 4) {
+              buffer.append("0000".substring(0, 4 - lengthHexCode));
+            }
+            buffer.append(hexCode);
+          } else {
+            buffer.append(ch);
+          }
       }
     }
     buffer.append('"');
     return buffer.toString();
   }
 
-  private static boolean isCharSpecialUnicode(char ch) {
+  private static boolean isCharSpecialUnicode(final char ch) {
     if (ch < ' ') {
       return true;
     } else if (ch >= '\u0080' && ch < '\u00a0') {

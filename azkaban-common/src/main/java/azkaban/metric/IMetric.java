@@ -21,10 +21,16 @@ package azkaban.metric;
  * @param <T> Type of Value of a given metric
  */
 public interface IMetric<T> {
+
   String getName();
+
   String getValueType();
+
   void updateMetricManager(final MetricReportManager manager);
+
   void notifyManager();
+
   T getValue();
+
   IMetric<T> getSnapshot() throws CloneNotSupportedException;
 }

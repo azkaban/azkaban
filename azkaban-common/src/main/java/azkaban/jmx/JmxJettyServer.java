@@ -20,6 +20,7 @@ import org.mortbay.jetty.Connector;
 import org.mortbay.jetty.Server;
 
 public class JmxJettyServer implements JmxJettyServerMBean {
+
   private Server server;
   private Connector connector;
 

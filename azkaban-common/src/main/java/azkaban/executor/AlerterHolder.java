@@ -37,55 +37,54 @@ import org.apache.log4j.Logger;
 
 
 public class AlerterHolder {
+
+  private static final Logger logger = Logger.getLogger(AlerterHolder.class);
   private Map<String, Alerter> alerters;
 
-  private static Logger logger = Logger.getLogger(AlerterHolder.class);
-
   @Inject
-  public AlerterHolder(Props props) {
+  public AlerterHolder(final Props props) {
     try {
-      alerters = loadAlerters(props);
-    }
-    catch (Exception ex) {
+      this.alerters = loadAlerters(props);
+    } catch (final Exception ex) {
       logger.error(ex);
-      alerters = new HashMap<>();
+      this.alerters = new HashMap<>();
     }
   }
 
-  private Map<String, Alerter> loadAlerters(Props props) {
-    Map<String, Alerter> allAlerters = new HashMap<String, Alerter>();
+  private Map<String, Alerter> loadAlerters(final Props props) {
+    final Map<String, Alerter> allAlerters = new HashMap<>();
     // load built-in alerters
-    Emailer mailAlerter = new Emailer(props);
+    final Emailer mailAlerter = new Emailer(props);
     allAlerters.put("email", mailAlerter);
     // load all plugin alerters
-    String pluginDir = props.getString("alerter.plugin.dir", "plugins/alerter");
+    final String pluginDir = props.getString("alerter.plugin.dir", "plugins/alerter");
     allAlerters.putAll(loadPluginAlerters(pluginDir));
     return allAlerters;
   }
 
-  private Map<String, Alerter> loadPluginAlerters(String pluginPath) {
-    File alerterPluginPath = new File(pluginPath);
+  private Map<String, Alerter> loadPluginAlerters(final String pluginPath) {
+    final File alerterPluginPath = new File(pluginPath);
     if (!alerterPluginPath.exists()) {
-      return Collections.<String, Alerter> emptyMap();
+      return Collections.<String, Alerter>emptyMap();
     }
 
-    Map<String, Alerter> installedAlerterPlugins =
-        new HashMap<String, Alerter>();
-    ClassLoader parentLoader = getClass().getClassLoader();
-    File[] pluginDirs = alerterPluginPath.listFiles();
-    ArrayList<String> jarPaths = new ArrayList<String>();
-    for (File pluginDir : pluginDirs) {
+    final Map<String, Alerter> installedAlerterPlugins =
+        new HashMap<>();
+    final ClassLoader parentLoader = getClass().getClassLoader();
+    final File[] pluginDirs = alerterPluginPath.listFiles();
+    final ArrayList<String> jarPaths = new ArrayList<>();
+    for (final File pluginDir : pluginDirs) {
       if (!pluginDir.isDirectory()) {
         logger.error("The plugin path " + pluginDir + " is not a directory.");
         continue;
       }
 
       // Load the conf directory
-      File propertiesDir = new File(pluginDir, "conf");
+      final File propertiesDir = new File(pluginDir, "conf");
       Props pluginProps = null;
       if (propertiesDir.exists() && propertiesDir.isDirectory()) {
-        File propertiesFile = new File(propertiesDir, "plugin.properties");
-        File propertiesOverrideFile =
+        final File propertiesFile = new File(propertiesDir, "plugin.properties");
+        final File propertiesOverrideFile =
             new File(propertiesDir, "override.properties");
 
         if (propertiesFile.exists()) {
@@ -105,12 +104,12 @@ public class AlerterHolder {
         continue;
       }
 
-      String pluginName = pluginProps.getString("alerter.name");
-      List<String> extLibClasspath =
+      final String pluginName = pluginProps.getString("alerter.name");
+      final List<String> extLibClasspath =
           pluginProps.getStringList("alerter.external.classpaths",
               (List<String>) null);
 
-      String pluginClass = pluginProps.getString("alerter.class");
+      final String pluginClass = pluginProps.getString("alerter.class");
       if (pluginClass == null) {
         logger.error("Alerter class is not set.");
       } else {
@@ -118,26 +117,26 @@ public class AlerterHolder {
       }
 
       URLClassLoader urlClassLoader = null;
-      File libDir = new File(pluginDir, "lib");
+      final File libDir = new File(pluginDir, "lib");
       if (libDir.exists() && libDir.isDirectory()) {
-        File[] files = libDir.listFiles();
+        final File[] files = libDir.listFiles();
 
-        ArrayList<URL> urls = new ArrayList<URL>();
+        final ArrayList<URL> urls = new ArrayList<>();
         for (int i = 0; i < files.length; ++i) {
           try {
-            URL url = files[i].toURI().toURL();
+            final URL url = files[i].toURI().toURL();
             urls.add(url);
-          } catch (MalformedURLException e) {
+          } catch (final MalformedURLException e) {
             logger.error(e);
           }
         }
         if (extLibClasspath != null) {
-          for (String extLib : extLibClasspath) {
+          for (final String extLib : extLibClasspath) {
             try {
-              File file = new File(pluginDir, extLib);
-              URL url = file.toURI().toURL();
+              final File file = new File(pluginDir, extLib);
+              final URL url = file.toURI().toURL();
               urls.add(url);
-            } catch (MalformedURLException e) {
+            } catch (final MalformedURLException e) {
               logger.error(e);
             }
           }
@@ -153,19 +152,19 @@ public class AlerterHolder {
       Class<?> alerterClass = null;
       try {
         alerterClass = urlClassLoader.loadClass(pluginClass);
-      } catch (ClassNotFoundException e) {
+      } catch (final ClassNotFoundException e) {
         logger.error("Class " + pluginClass + " not found.");
         continue;
       }
 
-      String source = FileIOUtils.getSourcePathFromClass(alerterClass);
+      final String source = FileIOUtils.getSourcePathFromClass(alerterClass);
       logger.info("Source jar " + source);
       jarPaths.add("jar:file:" + source);
 
       Constructor<?> constructor = null;
       try {
         constructor = alerterClass.getConstructor(Props.class);
-      } catch (NoSuchMethodException e) {
+      } catch (final NoSuchMethodException e) {
         logger.error("Constructor not found in " + pluginClass);
         continue;
       }
@@ -173,7 +172,7 @@ public class AlerterHolder {
       Object obj = null;
       try {
         obj = constructor.newInstance(pluginProps);
-      } catch (Exception e) {
+      } catch (final Exception e) {
         logger.error(e);
       }
 
@@ -182,14 +181,14 @@ public class AlerterHolder {
         continue;
       }
 
-      Alerter plugin = (Alerter) obj;
+      final Alerter plugin = (Alerter) obj;
       installedAlerterPlugins.put(pluginName, plugin);
     }
 
     return installedAlerterPlugins;
   }
 
-  public Alerter get(String alerterType) {
+  public Alerter get(final String alerterType) {
     return this.alerters.get(alerterType);
   }
 }

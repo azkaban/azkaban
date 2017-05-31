@@ -22,6 +22,7 @@ import java.util.Date;
  * A snapshot of metric's value
  */
 public class InMemoryHistoryNode {
+
   private Object value;
   private Date date;
 

@@ -17,15 +17,13 @@
 package azkaban.trigger.builtin;
 
 import azkaban.Constants;
-import java.util.HashMap;
-import java.util.Map;
-
-import org.apache.log4j.Logger;
-
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutorManagerAdapter;
 import azkaban.executor.Status;
 import azkaban.trigger.TriggerAction;
+import java.util.HashMap;
+import java.util.Map;
+import org.apache.log4j.Logger;
 
 /**
  * @deprecated Create a new KillExecutionAction using FlowRunnerManager
@@ -41,10 +39,9 @@ public class KillExecutionAction implements TriggerAction {
 
   private static final Logger logger = Logger
       .getLogger(KillExecutionAction.class);
-
+  private static ExecutorManagerAdapter executorManager;
   private String actionId;
   private int execId;
-  private static ExecutorManagerAdapter executorManager;
 
   //todo chengren311: delete this class to executor module when all existing triggers in db are expired
   public KillExecutionAction(String actionId, int execId) {
@@ -54,16 +51,6 @@ public class KillExecutionAction implements TriggerAction {
 
   public static void setExecutorManager(ExecutorManagerAdapter em) {
     executorManager = em;
-  }
-
-  @Override
-  public String getId() {
-    return actionId;
-  }
-
-  @Override
-  public String getType() {
-    return type;
   }
 
   @SuppressWarnings("unchecked")
@@ -81,6 +68,16 @@ public class KillExecutionAction implements TriggerAction {
     String actionId = (String) jsonObj.get("actionId");
     int execId = Integer.valueOf((String) jsonObj.get("execId"));
     return new KillExecutionAction(actionId, execId);
+  }
+
+  @Override
+  public String getId() {
+    return actionId;
+  }
+
+  @Override
+  public String getType() {
+    return type;
   }
 
   @SuppressWarnings("unchecked")

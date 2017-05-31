@@ -19,9 +19,9 @@ package azkaban.utils;
 import java.util.Collection;
 
 public class AbstractMailer {
-  private static int MB_IN_BYTES = 1048576;
-  public static final int DEFAULT_SMTP_PORT = 25;
 
+  public static final int DEFAULT_SMTP_PORT = 25;
+  private static int MB_IN_BYTES = 1048576;
   private String clientHostname;
   private int clientPort;
   private boolean usesSSL;
@@ -117,7 +117,7 @@ public class AbstractMailer {
 
   /**
    * Attachment maximum size in bytes
-   * 
+   *
    * @return
    */
   public long getAttachmentMaxSize() {

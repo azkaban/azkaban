@@ -18,12 +18,14 @@ import org.slf4j.LoggerFactory;
  * This check is designed for Linux only.
  */
 class OsMemoryUtil {
+
   private static final Logger logger = LoggerFactory.getLogger(OsMemoryUtil.class);
 
   // This file is used by Linux. It doesn't exist on Mac for example.
   private static final String MEM_INFO_FILE = "/proc/meminfo";
 
-  private static final Set<String> MEM_KEYS = ImmutableSet.of("MemFree", "Buffers", "Cached", "SwapFree");
+  private static final Set<String> MEM_KEYS = ImmutableSet
+      .of("MemFree", "Buffers", "Cached", "SwapFree");
 
   /**
    * Includes OS cache and free swap.
@@ -72,7 +74,8 @@ class OsMemoryUtil {
 
     int length = MEM_KEYS.size();
     if (count != length) {
-      String errMsg = String.format("Expect %d keys in the meminfo file. Got %d. content: %s", length, count, lines);
+      String errMsg = String
+          .format("Expect %d keys in the meminfo file. Got %d. content: %s", length, count, lines);
       logger.error(errMsg);
       totalFree = 0;
     }
