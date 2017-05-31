@@ -38,7 +38,8 @@ public class MockLoginAzkabanServlet extends LoginAbstractAzkabanServlet {
 
   private static final String SESSION_ID_NAME = "azkaban.browser.session.id";
 
-  public static HttpServletRequest getRequestWithNoUpstream(final String clientIp, final String sessionId,
+  public static HttpServletRequest getRequestWithNoUpstream(final String clientIp,
+      final String sessionId,
       final String requestMethod) {
 
     final HttpServletRequest req = mock(HttpServletRequest.class);
@@ -54,7 +55,8 @@ public class MockLoginAzkabanServlet extends LoginAbstractAzkabanServlet {
     return req;
   }
 
-  public static HttpServletRequest getRequestWithUpstream(final String clientIp, final String upstreamIp,
+  public static HttpServletRequest getRequestWithUpstream(final String clientIp,
+      final String upstreamIp,
       final String sessionId, final String requestMethod) {
 
     final HttpServletRequest req = mock(HttpServletRequest.class);
@@ -124,14 +126,16 @@ public class MockLoginAzkabanServlet extends LoginAbstractAzkabanServlet {
   }
 
   @Override
-  protected void handleGet(final HttpServletRequest req, final HttpServletResponse resp, final Session session)
+  protected void handleGet(final HttpServletRequest req, final HttpServletResponse resp,
+      final Session session)
       throws ServletException, IOException {
 
     resp.getWriter().write("SUCCESS_MOCK_LOGIN_SERVLET");
   }
 
   @Override
-  protected void handlePost(final HttpServletRequest req, final HttpServletResponse resp, final Session session)
+  protected void handlePost(final HttpServletRequest req, final HttpServletResponse resp,
+      final Session session)
       throws ServletException, IOException {
 
     resp.getWriter().write("SUCCESS_MOCK_LOGIN_SERVLET");

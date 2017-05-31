@@ -17,7 +17,8 @@ public class WebFileAssertion {
    * @param actual the actual
    * @throws IOException the io exception
    */
-  public static void assertStringEqualFileContent(final String expectedFileName, final String actual)
+  public static void assertStringEqualFileContent(final String expectedFileName,
+      final String actual)
       throws IOException {
     final String expectedFilePath = EXPECTED_FILE_DIR + expectedFileName;
     FileAssertion.assertStringEqualFileContent(expectedFilePath, actual);

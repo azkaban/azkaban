@@ -19,7 +19,8 @@ public class FileAssertion {
    * @param actual the actual string
    * @throws IOException the io exception
    */
-  public static void assertStringEqualFileContent(final String expectedFilePath, final String actual)
+  public static void assertStringEqualFileContent(final String expectedFilePath,
+      final String actual)
       throws IOException {
     final String expected = new String(Files.readAllBytes(Paths.get(expectedFilePath)),
         StandardCharsets.UTF_8);

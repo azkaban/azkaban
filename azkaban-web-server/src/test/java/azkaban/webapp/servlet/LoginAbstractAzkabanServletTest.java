@@ -136,8 +136,9 @@ public class LoginAbstractAzkabanServletTest {
     final String upstreamIp = "192.168.1.1:11111";
     final String sessionId = "111";
 
-    final HttpServletRequest req = MockLoginAzkabanServlet.getRequestWithUpstream(clientIp, upstreamIp,
-        sessionId, "POST");
+    final HttpServletRequest req = MockLoginAzkabanServlet
+        .getRequestWithUpstream(clientIp, upstreamIp,
+            sessionId, "POST");
 
     final StringWriter writer = new StringWriter();
     final HttpServletResponse resp = getResponse(writer);
@@ -158,8 +159,9 @@ public class LoginAbstractAzkabanServletTest {
     final String upstreamIp = "192.168.1.1:11111,888.8.8.8:2222,5.5.5.5:5555";
     final String sessionId = "111";
 
-    final HttpServletRequest req = MockLoginAzkabanServlet.getRequestWithUpstream(clientIp, upstreamIp,
-        sessionId, "POST");
+    final HttpServletRequest req = MockLoginAzkabanServlet
+        .getRequestWithUpstream(clientIp, upstreamIp,
+            sessionId, "POST");
 
     final StringWriter writer = new StringWriter();
     final HttpServletResponse resp = getResponse(writer);
