@@ -16,27 +16,22 @@
 
 package azkaban.user;
 
+import azkaban.user.User.UserPermissions;
+import azkaban.utils.Props;
 import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
-
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
-
 import org.apache.log4j.Logger;
-
 import org.w3c.dom.Document;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
-
 import org.xml.sax.SAXException;
-
-import azkaban.user.User.UserPermissions;
-import azkaban.utils.Props;
 
 /**
  * Xml implementation of the UserManager. Looks for the property
@@ -47,8 +42,6 @@ import azkaban.utils.Props;
  * </azkaban-users>
  */
 public class XmlUserManager implements UserManager {
-  private static final Logger logger = Logger.getLogger(XmlUserManager.class
-      .getName());
 
   public static final String XML_FILE_PARAM = "user.manager.xml.file";
   public static final String AZKABAN_USERS_TAG = "azkaban-users";
@@ -64,7 +57,8 @@ public class XmlUserManager implements UserManager {
   public static final String PROXY_ATTR = "proxy";
   public static final String GROUPS_ATTR = "groups";
   public static final String GROUPNAME_ATTR = "name";
-
+  private static final Logger logger = Logger.getLogger(XmlUserManager.class
+      .getName());
   private String xmlPath;
 
   private HashMap<String, User> users;

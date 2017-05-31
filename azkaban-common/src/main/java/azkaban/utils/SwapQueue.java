@@ -25,6 +25,7 @@ import java.util.Iterator;
  * should be called before every read.
  */
 public class SwapQueue<T> implements Iterable<T> {
+
   ArrayList<T> primaryQueue;
   ArrayList<T> secondaryQueue;
 

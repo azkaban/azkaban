@@ -4,6 +4,7 @@ import org.junit.Assert;
 import org.junit.Test;
 
 public class MemUtilsTest {
+
   @Test
   public void testConversion() {
     Assert.assertEquals(Utils.parseMemString("1024"), 1L);
@@ -26,7 +27,7 @@ public class MemUtilsTest {
     badFormatHelper("1KB");
     badFormatHelper("1MB");
     badFormatHelper("1GB");
-    
+
     badFormatHelper("1kb");
     badFormatHelper("1mb");
     badFormatHelper("1gb");
@@ -39,7 +40,7 @@ public class MemUtilsTest {
     badFormatHelper("100f");
     badFormatHelper("100abcdc");
   }
-  
+
   private void badFormatHelper(String str) {
     try {
       Utils.parseMemString(str);

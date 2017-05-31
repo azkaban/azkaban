@@ -133,7 +133,7 @@ public class CommonJobProperties {
    * hotspot occurs.
    */
   public static final String PROJECT_VERSION = "azkaban.flow.projectversion";
-  
+
   /**
    * Find out who is the submit user, in addition to the user.to.proxy (they may be different)
    */

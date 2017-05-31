@@ -27,6 +27,7 @@ import java.io.OutputStream;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.text.ParseException;
 import java.util.Collection;
 import java.util.Date;
 import java.util.Enumeration;
@@ -35,14 +36,10 @@ import java.util.TimeZone;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipOutputStream;
-import java.text.ParseException;
-
 import org.apache.commons.io.IOUtils;
-
 import org.apache.log4j.Logger;
-
-import org.joda.time.DateTimeZone;
 import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
 import org.joda.time.Days;
 import org.joda.time.DurationFieldType;
 import org.joda.time.Hours;
@@ -52,7 +49,6 @@ import org.joda.time.ReadablePeriod;
 import org.joda.time.Seconds;
 import org.joda.time.Weeks;
 import org.joda.time.Years;
-
 import org.quartz.CronExpression;
 
 /**
@@ -60,9 +56,9 @@ import org.quartz.CronExpression;
  */
 public class Utils {
 
+  public static final Random RANDOM = new Random();
   private static Logger logger = Logger
       .getLogger(Utils.class);
-  public static final Random RANDOM = new Random();
 
   /**
    * Private constructor.
@@ -258,10 +254,11 @@ public class Utils {
    */
   private static RuntimeException getCause(InvocationTargetException e) {
     Throwable cause = e.getCause();
-    if (cause instanceof RuntimeException)
+    if (cause instanceof RuntimeException) {
       throw (RuntimeException) cause;
-    else
+    } else {
       throw new IllegalStateException(e.getCause());
+    }
   }
 
   /**
@@ -272,8 +269,9 @@ public class Utils {
    */
   public static Class<?>[] getTypes(Object... args) {
     Class<?>[] argTypes = new Class<?>[args.length];
-    for (int i = 0; i < argTypes.length; i++)
+    for (int i = 0; i < argTypes.length; i++) {
       argTypes[i] = args[i].getClass();
+    }
     return argTypes;
   }
 
@@ -373,30 +371,30 @@ public class Utils {
     int periodInt =
         Integer.parseInt(periodStr.substring(0, periodStr.length() - 1));
     switch (periodUnit) {
-    case 'y':
-      period = Years.years(periodInt);
-      break;
-    case 'M':
-      period = Months.months(periodInt);
-      break;
-    case 'w':
-      period = Weeks.weeks(periodInt);
-      break;
-    case 'd':
-      period = Days.days(periodInt);
-      break;
-    case 'h':
-      period = Hours.hours(periodInt);
-      break;
-    case 'm':
-      period = Minutes.minutes(periodInt);
-      break;
-    case 's':
-      period = Seconds.seconds(periodInt);
-      break;
-    default:
-      throw new IllegalArgumentException("Invalid schedule period unit '"
-          + periodUnit);
+      case 'y':
+        period = Years.years(periodInt);
+        break;
+      case 'M':
+        period = Months.months(periodInt);
+        break;
+      case 'w':
+        period = Weeks.weeks(periodInt);
+        break;
+      case 'd':
+        period = Days.days(periodInt);
+        break;
+      case 'h':
+        period = Hours.hours(periodInt);
+        break;
+      case 'm':
+        period = Minutes.minutes(periodInt);
+        break;
+      case 's':
+        period = Seconds.seconds(periodInt);
+        break;
+      default:
+        throw new IllegalArgumentException("Invalid schedule period unit '"
+            + periodUnit);
     }
 
     return period;
@@ -479,7 +477,7 @@ public class Utils {
   public static CronExpression parseCronExpression(String cronExpression, DateTimeZone timezone) {
     if (cronExpression != null) {
       try {
-        CronExpression ce =  new CronExpression(cronExpression);
+        CronExpression ce = new CronExpression(cronExpression);
         ce.setTimeZone(TimeZone.getTimeZone(timezone.getID()));
         return ce;
       } catch (ParseException pe) {
@@ -487,7 +485,9 @@ public class Utils {
             + "Please Check Quartz Cron Syntax.");
       }
       return null;
-    } else return null;
+    } else {
+      return null;
+    }
   }
 
   /**

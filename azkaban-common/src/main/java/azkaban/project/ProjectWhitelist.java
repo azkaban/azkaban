@@ -1,5 +1,6 @@
 package azkaban.project;
 
+import azkaban.utils.Props;
 import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
@@ -7,18 +8,14 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
-
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
-
 import org.w3c.dom.Document;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
-
-import azkaban.utils.Props;
 
 /**
  * @author wkang
@@ -39,13 +36,14 @@ import azkaban.utils.Props;
  *
  */
 public class ProjectWhitelist {
+
   public static final String XML_FILE_PARAM = "project.whitelist.xml.file";
   private static final String PROJECT_WHITELIST_TAG = "ProjectWhitelist";
   private static final String PROJECT_TAG = "project";
   private static final String PROJECTID_ATTR = "projectid";
 
   private static AtomicReference<Map<WhitelistType, Set<Integer>>> projectsWhitelisted =
-          new AtomicReference<Map<WhitelistType, Set<Integer>>>();
+      new AtomicReference<Map<WhitelistType, Set<Integer>>>();
 
   static void load(Props props) {
     String xmlFile = props.getString(XML_FILE_PARAM);
@@ -84,7 +82,7 @@ public class ProjectWhitelist {
     Map<WhitelistType, Set<Integer>> projsWhitelisted = new HashMap<WhitelistType, Set<Integer>>();
     NodeList tagList = doc.getChildNodes();
     if (!tagList.item(0).getNodeName().equals(PROJECT_WHITELIST_TAG)) {
-      throw new RuntimeException("Cannot find tag '" +  PROJECT_WHITELIST_TAG + "' in " + xmlFile);
+      throw new RuntimeException("Cannot find tag '" + PROJECT_WHITELIST_TAG + "' in " + xmlFile);
     }
 
     NodeList whitelist = tagList.item(0).getChildNodes();
@@ -115,7 +113,7 @@ public class ProjectWhitelist {
     Node projectIdAttr = projectAttrMap.getNamedItem(PROJECTID_ATTR);
     if (projectIdAttr == null) {
       throw new RuntimeException("Error loading project. The '" + PROJECTID_ATTR
-              + "' attribute doesn't exist");
+          + "' attribute doesn't exist");
     }
 
     String projectId = projectIdAttr.getNodeValue();

@@ -24,9 +24,10 @@ import java.util.TimerTask;
  * @param <T> Type of Value of a given metric
  */
 public abstract class TimeBasedReportingMetric<T> extends AbstractMetric<T> {
-  private Timer timer;
+
   protected long MAX_MILISEC_INTERVAL = 60 * 60 * 1000;
   protected long MIN_MILISEC_INTERVAL = 3 * 1000;
+  private Timer timer;
 
   /**
    * @param metricName Name of metric
@@ -36,10 +37,11 @@ public abstract class TimeBasedReportingMetric<T> extends AbstractMetric<T> {
    * @param interval Time interval for metric tracking
    * @throws MetricException
    */
-  public TimeBasedReportingMetric(String metricName, String metricType, T initialValue, MetricReportManager manager,
+  public TimeBasedReportingMetric(String metricName, String metricType, T initialValue,
+      MetricReportManager manager,
       long interval) throws MetricException {
     super(metricName, metricType, initialValue, manager);
-    if(!isValidInterval(interval)) {
+    if (!isValidInterval(interval)) {
       throw new MetricException("Invalid interval: Cannot instantiate timer");
     }
     timer = new Timer();
@@ -71,10 +73,11 @@ public abstract class TimeBasedReportingMetric<T> extends AbstractMetric<T> {
    * @throws MetricException
    */
   public void updateInterval(final long interval) throws MetricException {
-    if(!isValidInterval(interval)) {
+    if (!isValidInterval(interval)) {
       throw new MetricException("Invalid interval: Cannot update timer");
     }
-    logger.debug(String.format("Updating tracking interval to %d milisecond for %s metric", interval, getName()));
+    logger.debug(String
+        .format("Updating tracking interval to %d milisecond for %s metric", interval, getName()));
     timer.cancel();
     timer = new Timer();
     timer.schedule(getTimerTask(), interval, interval);

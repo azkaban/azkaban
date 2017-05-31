@@ -16,15 +16,14 @@
 
 package azkaban.trigger.builtin;
 
-import java.util.HashMap;
-import java.util.Map;
-
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutableNode;
 import azkaban.executor.ExecutorManagerAdapter;
 import azkaban.executor.ExecutorManagerException;
 import azkaban.executor.Status;
 import azkaban.trigger.ConditionChecker;
+import java.util.HashMap;
+import java.util.Map;
 
 public class ExecutionChecker implements ConditionChecker {
 
@@ -46,6 +45,23 @@ public class ExecutionChecker implements ConditionChecker {
 
   public static void setExecutorManager(ExecutorManagerAdapter em) {
     executorManager = em;
+  }
+
+  public static ExecutionChecker createFromJson(HashMap<String, Object> jsonObj)
+      throws Exception {
+    if (!jsonObj.get("type").equals(type)) {
+      throw new Exception("Cannot create checker of " + type + " from "
+          + jsonObj.get("type"));
+    }
+    int execId = Integer.valueOf((String) jsonObj.get("execId"));
+    String jobName = null;
+    if (jsonObj.containsKey("jobName")) {
+      jobName = (String) jsonObj.get("jobName");
+    }
+    String checkerId = (String) jsonObj.get("checkerId");
+    Status wantedStatus = Status.valueOf((String) jsonObj.get("wantedStatus"));
+
+    return new ExecutionChecker(checkerId, execId, jobName, wantedStatus);
   }
 
   @Override
@@ -87,23 +103,6 @@ public class ExecutionChecker implements ConditionChecker {
   @Override
   public String getType() {
     return type;
-  }
-
-  public static ExecutionChecker createFromJson(HashMap<String, Object> jsonObj)
-      throws Exception {
-    if (!jsonObj.get("type").equals(type)) {
-      throw new Exception("Cannot create checker of " + type + " from "
-          + jsonObj.get("type"));
-    }
-    int execId = Integer.valueOf((String) jsonObj.get("execId"));
-    String jobName = null;
-    if (jsonObj.containsKey("jobName")) {
-      jobName = (String) jsonObj.get("jobName");
-    }
-    String checkerId = (String) jsonObj.get("checkerId");
-    Status wantedStatus = Status.valueOf((String) jsonObj.get("wantedStatus"));
-
-    return new ExecutionChecker(checkerId, execId, jobName, wantedStatus);
   }
 
   @SuppressWarnings("unchecked")

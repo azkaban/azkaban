@@ -21,6 +21,7 @@ package azkaban.user;
  *
  */
 public class UserManagerException extends Exception {
+
   private static final long serialVersionUID = 1L;
 
   public UserManagerException(String message) {

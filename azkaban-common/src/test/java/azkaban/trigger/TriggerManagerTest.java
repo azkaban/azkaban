@@ -16,19 +16,17 @@
 
 package azkaban.trigger;
 
+import static org.junit.Assert.assertTrue;
+
+import azkaban.utils.Props;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
-
-import static org.junit.Assert.*;
-
-import azkaban.utils.Props;
 
 public class TriggerManagerTest {
 
@@ -45,7 +43,8 @@ public class TriggerManagerTest {
 
   }
 
-  @Ignore @Test
+  @Ignore
+  @Test
   public void triggerManagerSimpleTest() throws TriggerManagerException {
     Props props = new Props();
     props.put("trigger.scan.interval", 4000);
@@ -120,6 +119,36 @@ public class TriggerManagerTest {
 
   }
 
+  private Trigger createDummyTrigger(String message, String source,
+      int threshold) {
+
+    Map<String, ConditionChecker> checkers =
+        new HashMap<String, ConditionChecker>();
+    ConditionChecker checker =
+        new ThresholdChecker(ThresholdChecker.type, threshold);
+    checkers.put(checker.getId(), checker);
+
+    List<TriggerAction> actions = new ArrayList<TriggerAction>();
+    TriggerAction act = new DummyTriggerAction(message);
+    actions.add(act);
+
+    String expr = checker.getId() + ".eval()";
+
+    Condition triggerCond = new Condition(checkers, expr);
+    Condition expireCond = new Condition(checkers, expr);
+
+    Trigger fakeTrigger = new Trigger.TriggerBuilder("azkaban",
+        source,
+        triggerCond,
+        expireCond,
+        actions).build();
+
+    fakeTrigger.setResetOnTrigger(true);
+    fakeTrigger.setResetOnExpire(true);
+
+    return fakeTrigger;
+  }
+
   public static class MockTriggerLoader implements TriggerLoader {
 
     private Map<Integer, Trigger> triggers = new HashMap<Integer, Trigger>();
@@ -160,36 +189,6 @@ public class TriggerManagerTest {
       return null;
     }
 
-  }
-
-  private Trigger createDummyTrigger(String message, String source,
-      int threshold) {
-
-    Map<String, ConditionChecker> checkers =
-        new HashMap<String, ConditionChecker>();
-    ConditionChecker checker =
-        new ThresholdChecker(ThresholdChecker.type, threshold);
-    checkers.put(checker.getId(), checker);
-
-    List<TriggerAction> actions = new ArrayList<TriggerAction>();
-    TriggerAction act = new DummyTriggerAction(message);
-    actions.add(act);
-
-    String expr = checker.getId() + ".eval()";
-
-    Condition triggerCond = new Condition(checkers, expr);
-    Condition expireCond = new Condition(checkers, expr);
-
-    Trigger fakeTrigger = new Trigger.TriggerBuilder("azkaban",
-        source,
-        triggerCond,
-        expireCond,
-        actions).build();
-
-    fakeTrigger.setResetOnTrigger(true);
-    fakeTrigger.setResetOnExpire(true);
-
-    return fakeTrigger;
   }
 
   // public class MockCheckerLoader extends CheckerTypeLoader{

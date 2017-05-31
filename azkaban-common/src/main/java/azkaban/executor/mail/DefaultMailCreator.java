@@ -16,26 +16,30 @@
 
 package azkaban.executor.mail;
 
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutionOptions;
 import azkaban.executor.ExecutionOptions.FailureAction;
 import azkaban.utils.EmailMessage;
 import azkaban.utils.Emailer;
 import azkaban.utils.Utils;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
 
 public class DefaultMailCreator implements MailCreator {
+
   public static final String DEFAULT_MAIL_CREATOR = "default";
+  private static final DateFormat DATE_FORMATTER = new SimpleDateFormat(
+      "yyyy/MM/dd HH:mm:ss z");
   private static HashMap<String, MailCreator> registeredCreators = new HashMap<>();
   private static MailCreator defaultCreator;
 
-  private static final DateFormat DATE_FORMATTER = new SimpleDateFormat(
-      "yyyy/MM/dd HH:mm:ss z");
+  static {
+    defaultCreator = new DefaultMailCreator();
+    registerCreator(DEFAULT_MAIL_CREATOR, defaultCreator);
+  }
 
   public static void registerCreator(String name, MailCreator creator) {
     registeredCreators.put(name, creator);
@@ -49,9 +53,12 @@ public class DefaultMailCreator implements MailCreator {
     return creator;
   }
 
-  static {
-    defaultCreator = new DefaultMailCreator();
-    registerCreator(DEFAULT_MAIL_CREATOR, defaultCreator);
+  private static String convertMSToString(long timeInMS) {
+    if (timeInMS < 0) {
+      return "N/A";
+    } else {
+      return DATE_FORMATTER.format(new Date(timeInMS));
+    }
   }
 
   @Override
@@ -209,13 +216,5 @@ public class DefaultMailCreator implements MailCreator {
       return true;
     }
     return false;
-  }
-
-  private static String convertMSToString(long timeInMS) {
-    if (timeInMS < 0) {
-      return "N/A";
-    } else {
-      return DATE_FORMATTER.format(new Date(timeInMS));
-    }
   }
 }

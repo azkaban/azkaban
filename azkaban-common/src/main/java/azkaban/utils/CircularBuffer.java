@@ -16,12 +16,11 @@
 
 package azkaban.utils;
 
+import com.google.common.base.Joiner;
+import com.google.common.collect.Iterators;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-
-import com.google.common.base.Joiner;
-import com.google.common.collect.Iterators;
 
 /**
  * A circular buffer of items of a given length. It will grow up to the give
@@ -57,11 +56,12 @@ public class CircularBuffer<T> implements Iterable<T> {
 
   @Override
   public Iterator<T> iterator() {
-    if (start == 0)
+    if (start == 0) {
       return lines.iterator();
-    else
+    } else {
       return Iterators.concat(lines.subList(start, lines.size()).iterator(),
           lines.subList(0, start).iterator());
+    }
   }
 
   public int getMaxSize() {

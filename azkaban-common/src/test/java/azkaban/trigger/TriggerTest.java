@@ -16,19 +16,7 @@
 
 package azkaban.trigger;
 
-import java.io.File;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import org.joda.time.DateTime;
-
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Test;
-
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertTrue;
 
 import azkaban.executor.ExecutionOptions;
 import azkaban.trigger.builtin.BasicTimeChecker;
@@ -36,6 +24,15 @@ import azkaban.trigger.builtin.ExecuteFlowAction;
 import azkaban.utils.JSONUtils;
 import azkaban.utils.Props;
 import azkaban.utils.Utils;
+import java.io.File;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import org.joda.time.DateTime;
+import org.junit.Before;
+import org.junit.Ignore;
+import org.junit.Test;
 
 public class TriggerTest {
 
@@ -52,7 +49,8 @@ public class TriggerTest {
     Trigger.setActionTypeLoader(actionLoader);
   }
 
-  @Ignore @Test
+  @Ignore
+  @Test
   public void jsonConversionTest() throws Exception {
     DateTime now = DateTime.now();
     ConditionChecker checker1 =

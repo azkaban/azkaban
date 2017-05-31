@@ -16,11 +16,11 @@ public class StringUtilsTest {
   private static final String fireFoxOnLinux =
       "Mozilla/5.0 (X11; Linux x86_64; rv:39.0) Gecko/20100101 Firefox/39.0";
 
-  private static final String[] browserVariants = { chromeOnMac, fireFoxOnMac,
-      safariOnMac, chromeOnLinux, fireFoxOnLinux };
+  private static final String[] browserVariants = {chromeOnMac, fireFoxOnMac,
+      safariOnMac, chromeOnLinux, fireFoxOnLinux};
 
-  private static final String[] BROWSER_NAMES = { "AppleWebKit", "Gecko",
-      "Chrome" };
+  private static final String[] BROWSER_NAMES = {"AppleWebKit", "Gecko",
+      "Chrome"};
 
   @Test
   public void isBrowser() throws Exception {

@@ -21,33 +21,36 @@ import azkaban.db.DatabaseOperator;
 import azkaban.db.SQLTransaction;
 import azkaban.utils.GZIPUtils;
 import azkaban.utils.JSONUtils;
-
 import com.google.inject.Inject;
-
 import java.io.IOException;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-
 import org.apache.commons.dbutils.ResultSetHandler;
 import org.apache.log4j.Logger;
 import org.joda.time.DateTime;
 
 
 public class JdbcTriggerImpl implements TriggerLoader {
+
   private static final String TRIGGER_TABLE_NAME = "triggers";
   private static final String GET_UPDATED_TRIGGERS =
-      "SELECT trigger_id, trigger_source, modify_time, enc_type, data FROM " + TRIGGER_TABLE_NAME + " WHERE modify_time>=?";
+      "SELECT trigger_id, trigger_source, modify_time, enc_type, data FROM " + TRIGGER_TABLE_NAME
+          + " WHERE modify_time>=?";
   private static final String GET_ALL_TRIGGERS =
       "SELECT trigger_id, trigger_source, modify_time, enc_type, data FROM " + TRIGGER_TABLE_NAME;
   private static final String GET_TRIGGER =
-      "SELECT trigger_id, trigger_source, modify_time, enc_type, data FROM " + TRIGGER_TABLE_NAME + " WHERE trigger_id=?";
-  private static final String ADD_TRIGGER = "INSERT INTO " + TRIGGER_TABLE_NAME + " ( modify_time) values (?)";
-  private static final String REMOVE_TRIGGER = "DELETE FROM " + TRIGGER_TABLE_NAME + " WHERE trigger_id=?";
+      "SELECT trigger_id, trigger_source, modify_time, enc_type, data FROM " + TRIGGER_TABLE_NAME
+          + " WHERE trigger_id=?";
+  private static final String ADD_TRIGGER =
+      "INSERT INTO " + TRIGGER_TABLE_NAME + " ( modify_time) values (?)";
+  private static final String REMOVE_TRIGGER =
+      "DELETE FROM " + TRIGGER_TABLE_NAME + " WHERE trigger_id=?";
   private static final String UPDATE_TRIGGER =
-      "UPDATE " + TRIGGER_TABLE_NAME + " SET trigger_source=?, modify_time=?, enc_type=?, data=? WHERE trigger_id=?";
+      "UPDATE " + TRIGGER_TABLE_NAME
+          + " SET trigger_source=?, modify_time=?, enc_type=?, data=? WHERE trigger_id=?";
   private static Logger logger = Logger.getLogger(JdbcTriggerImpl.class);
   private final DatabaseOperator dbOperator;
   private EncodingType defaultEncodingType = EncodingType.GZIP;
@@ -97,7 +100,8 @@ public class JdbcTriggerImpl implements TriggerLoader {
         throw new TriggerLoaderException("No trigger has been removed.");
       }
     } catch (SQLException ex) {
-      throw new TriggerLoaderException("Remove trigger " + t.getTriggerId() + " from db failed. ", ex);
+      throw new TriggerLoaderException("Remove trigger " + t.getTriggerId() + " from db failed. ",
+          ex);
     }
   }
 
@@ -120,8 +124,8 @@ public class JdbcTriggerImpl implements TriggerLoader {
       updateTrigger(t);
       logger.info("uploaded trigger " + t.getDescription());
     } catch (SQLException ex) {
-      logger.error("Adding Trigger " + t.getTriggerId() + " failed." );
-      throw new TriggerLoaderException("trigger id is not properly created.",ex);
+      logger.error("Adding Trigger " + t.getTriggerId() + " failed.");
+      throw new TriggerLoaderException("trigger id is not properly created.", ex);
     }
   }
 
@@ -143,20 +147,22 @@ public class JdbcTriggerImpl implements TriggerLoader {
       if (encType == EncodingType.GZIP) {
         data = GZIPUtils.gzipBytes(stringData);
       }
-      logger.debug("NumChars: " + json.length() + " UTF-8:" + stringData.length + " Gzip:" + data.length);
+      logger.debug(
+          "NumChars: " + json.length() + " UTF-8:" + stringData.length + " Gzip:" + data.length);
     } catch (IOException e) {
       logger.error("Trigger encoding fails", e);
       throw new TriggerLoaderException("Error encoding the trigger " + t.toString(), e);
     }
 
     try {
-      int updates = dbOperator.update(UPDATE_TRIGGER, t.getSource(), t.getLastModifyTime(), encType.getNumVal(), data,
-          t.getTriggerId());
+      int updates = dbOperator
+          .update(UPDATE_TRIGGER, t.getSource(), t.getLastModifyTime(), encType.getNumVal(), data,
+              t.getTriggerId());
       if (updates == 0) {
         throw new TriggerLoaderException("No trigger has been updated.");
       }
     } catch (SQLException ex) {
-      logger.error("Updating Trigger " + t.getTriggerId() + " failed." );
+      logger.error("Updating Trigger " + t.getTriggerId() + " failed.");
       throw new TriggerLoaderException("DB Trigger update failed. ", ex);
     }
   }

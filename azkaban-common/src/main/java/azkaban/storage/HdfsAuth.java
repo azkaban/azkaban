@@ -17,6 +17,10 @@
 
 package azkaban.storage;
 
+import static azkaban.Constants.ConfigurationKeys.AZKABAN_KERBEROS_PRINCIPAL;
+import static azkaban.Constants.ConfigurationKeys.AZKABAN_KEYTAB_PATH;
+import static java.util.Objects.requireNonNull;
+
 import azkaban.spi.AzkabanException;
 import azkaban.utils.Props;
 import com.google.inject.Inject;
@@ -25,14 +29,12 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.log4j.Logger;
 
-import static azkaban.Constants.ConfigurationKeys.*;
-import static java.util.Objects.*;
-
 
 /**
  * This class helps in HDFS authorization and is a wrapper over Hadoop's {@link UserGroupInformation} class.
  */
 public class HdfsAuth {
+
   private static final Logger log = Logger.getLogger(HdfsAuth.class);
 
   private final boolean isSecurityEnabled;
@@ -64,14 +66,16 @@ public class HdfsAuth {
       } catch (IOException e) {
         log.error(e);
         throw new AzkabanException(String.format(
-            "Error: Unable to authorize to Hadoop. Principal: %s Keytab: %s", keytabPrincipal, keytabPath));
+            "Error: Unable to authorize to Hadoop. Principal: %s Keytab: %s", keytabPrincipal,
+            keytabPath));
       }
     }
   }
 
   private void login(String keytabPrincipal, String keytabPath) throws IOException {
     if (loggedInUser == null) {
-      log.info(String.format("Logging in using Principal: %s Keytab: %s", keytabPrincipal, keytabPath));
+      log.info(
+          String.format("Logging in using Principal: %s Keytab: %s", keytabPrincipal, keytabPath));
 
       UserGroupInformation.loginUserFromKeytab(keytabPrincipal, keytabPath);
       loggedInUser = UserGroupInformation.getLoginUser();

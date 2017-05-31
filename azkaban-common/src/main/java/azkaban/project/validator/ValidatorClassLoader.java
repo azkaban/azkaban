@@ -40,7 +40,7 @@ public class ValidatorClassLoader extends URLClassLoader {
   /**
    * cleanup jar file factory cache
    */
-  @SuppressWarnings({ "nls", "rawtypes" })
+  @SuppressWarnings({"nls", "rawtypes"})
   public boolean cleanupJarFileFactory() throws ValidatorManagerException {
     boolean res = false;
     final Class classJarURLConnection = JarURLConnection.class;
@@ -139,7 +139,7 @@ public class ValidatorClassLoader extends URLClassLoader {
    * @param cl
    * @return
    */
-  @SuppressWarnings({ "nls", "rawtypes" })
+  @SuppressWarnings({"nls", "rawtypes"})
   public boolean closeClassLoader(ClassLoader cl) throws ValidatorManagerException {
     boolean res = false;
     if (cl == null) {
@@ -214,7 +214,7 @@ public class ValidatorClassLoader extends URLClassLoader {
    * @param cl
    * @return
    */
-  @SuppressWarnings({ "nls", "rawtypes" })
+  @SuppressWarnings({"nls", "rawtypes"})
   public boolean finalizeNativeLibs(ClassLoader cl) throws ValidatorManagerException {
     boolean res = false;
     Class classClassLoader = ClassLoader.class;

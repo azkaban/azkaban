@@ -16,23 +16,23 @@
 
 package azkaban.project;
 
-import org.junit.Test;
-
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertTrue;
 
 import azkaban.user.Permission;
 import azkaban.user.Permission.Type;
 import azkaban.utils.JSONUtils;
+import org.junit.Test;
 
 public class ProjectTest {
+
   @Test
   public void testToAndFromObject() throws Exception {
     Project project = new Project(1, "tesTing");
     project.setCreateTimestamp(1L);
     project.setLastModifiedTimestamp(2L);
     project.setDescription("I am a test");
-    project.setUserPermission("user1", new Permission(new Type[] { Type.ADMIN,
-        Type.EXECUTE }));
+    project.setUserPermission("user1", new Permission(new Type[]{Type.ADMIN,
+        Type.EXECUTE}));
 
     Object obj = project.toObject();
     String json = JSONUtils.toJSON(obj);

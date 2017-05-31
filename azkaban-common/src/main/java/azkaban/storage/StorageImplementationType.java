@@ -31,15 +31,15 @@ public enum StorageImplementationType {
     this.implementationClass = implementationClass;
   }
 
-  public Class<? extends Storage> getImplementationClass() {
-    return implementationClass;
-  }
-
   public static StorageImplementationType from(String name) {
     try {
       return valueOf(name);
     } catch (NullPointerException e) {
       return null;
     }
+  }
+
+  public Class<? extends Storage> getImplementationClass() {
+    return implementationClass;
   }
 }

@@ -17,8 +17,14 @@
 package azkaban.utils;
 
 import com.sun.mail.smtp.SMTPTransport;
-import org.apache.log4j.Logger;
-
+import java.io.File;
+import java.io.InputStream;
+import java.net.SocketTimeoutException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Date;
+import java.util.List;
+import java.util.Properties;
 import javax.activation.DataHandler;
 import javax.activation.DataSource;
 import javax.activation.FileDataSource;
@@ -30,15 +36,15 @@ import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeBodyPart;
 import javax.mail.internet.MimeMessage;
 import javax.mail.internet.MimeMultipart;
-import java.io.File;
-import java.io.InputStream;
-import java.net.SocketTimeoutException;
-import java.util.*;
+import org.apache.log4j.Logger;
 
 public class EmailMessage {
-  private final Logger logger = Logger.getLogger(EmailMessage.class);
 
   private static String protocol = "smtp";
+  private static int _mailTimeout = 10000;
+  private static int _connectionTimeout = 10000;
+  private static long _totalAttachmentMaxSizeInByte = 1024 * 1024 * 1024; // 1
+  private final Logger logger = Logger.getLogger(EmailMessage.class);
   private List<String> _toAddress = new ArrayList<String>();
   private String _mailHost;
   private int _mailPort;
@@ -52,11 +58,7 @@ public class EmailMessage {
   private boolean _usesAuth = true;
   private boolean _enableAttachementEmbedment = true;
   private StringBuffer _body = new StringBuffer();
-  private static int _mailTimeout = 10000;
-  private static int _connectionTimeout = 10000;
-  private static long _totalAttachmentMaxSizeInByte = 1024 * 1024 * 1024; // 1
-                                                                          // GB
-
+  // GB
   private ArrayList<BodyPart> _attachments = new ArrayList<BodyPart>();
 
   public EmailMessage() {
@@ -113,11 +115,6 @@ public class EmailMessage {
 
   public EmailMessage addToAddress(String address) {
     _toAddress.add(address);
-    return this;
-  }
-
-  public EmailMessage setSubject(String subject) {
-    _subject = subject;
     return this;
   }
 
@@ -207,9 +204,10 @@ public class EmailMessage {
     Message message = new MimeMessage(session);
     InternetAddress from = new InternetAddress(_fromAddress, false);
     message.setFrom(from);
-    for (String toAddr : _toAddress)
+    for (String toAddr : _toAddress) {
       message.addRecipient(Message.RecipientType.TO, new InternetAddress(
           toAddr, false));
+    }
     message.setSubject(_subject);
     message.setSentDate(new Date());
 
@@ -265,10 +263,6 @@ public class EmailMessage {
     }
   }
 
-  public void setBody(String body) {
-    setBody(body, _mimeType);
-  }
-
   public void setBody(String body, String mimeType) {
     _body = new StringBuffer(body);
     _mimeType = mimeType;
@@ -289,11 +283,20 @@ public class EmailMessage {
     return _body.toString();
   }
 
+  public void setBody(String body) {
+    setBody(body, _mimeType);
+  }
+
   public String getSubject() {
     return _subject;
   }
 
-  public int getMailPort(){
+  public EmailMessage setSubject(String subject) {
+    _subject = subject;
+    return this;
+  }
+
+  public int getMailPort() {
     return _mailPort;
   }
 

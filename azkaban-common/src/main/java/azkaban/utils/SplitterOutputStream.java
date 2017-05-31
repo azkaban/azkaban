@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class SplitterOutputStream extends OutputStream {
+
   List<OutputStream> outputs;
 
   public SplitterOutputStream(OutputStream... outputs) {

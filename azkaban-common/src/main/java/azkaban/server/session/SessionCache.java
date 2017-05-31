@@ -16,12 +16,10 @@
 
 package azkaban.server.session;
 
-import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.Cache;
-
-import java.util.concurrent.TimeUnit;
-
 import azkaban.utils.Props;
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Cache for web session.
@@ -32,6 +30,7 @@ import azkaban.utils.Props;
  * set to 1 days.
  */
 public class SessionCache {
+
   private static final int MAX_NUM_SESSIONS = 10000;
   private static final long SESSION_TIME_TO_LIVE = 24 * 60 * 60 * 1000L;
 

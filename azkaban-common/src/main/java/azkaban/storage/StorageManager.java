@@ -17,6 +17,10 @@
 
 package azkaban.storage;
 
+import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkState;
+import static java.util.Objects.requireNonNull;
+
 import azkaban.project.Project;
 import azkaban.project.ProjectFileHandler;
 import azkaban.project.ProjectLoader;
@@ -35,15 +39,13 @@ import java.util.Arrays;
 import org.apache.commons.io.IOUtils;
 import org.apache.log4j.Logger;
 
-import static com.google.common.base.Preconditions.*;
-import static java.util.Objects.*;
-
 
 /**
  * StorageManager manages and coordinates all interactions with the Storage layer. This also includes bookkeeping
  * like updating DB with the new versionm, etc
  */
 public class StorageManager {
+
   private static final Logger log = Logger.getLogger(StorageManager.class);
 
   private final Storage storage;
@@ -130,7 +132,8 @@ public class StorageManager {
    * @return Handler object containing hooks to fetched project file
    */
   public ProjectFileHandler getProjectFile(final int projectId, final int version) {
-    log.info(String.format("Fetching project file. project ID: %d version: %d", projectId, version));
+    log.info(
+        String.format("Fetching project file. project ID: %d version: %d", projectId, version));
     // TODO spyne: remove huge hack ! There should not be any special handling for Database Storage.
     if (storage instanceof DatabaseStorage) {
       return ((DatabaseStorage) storage).get(projectId, version);
@@ -140,9 +143,10 @@ public class StorageManager {
     final ProjectFileHandler pfh = projectLoader.fetchProjectMetaData(projectId, version);
 
     /* Fetch project file from storage and copy to local file */
-    final String resourceId = requireNonNull(pfh.getResourceId(), String.format("URI is null. project ID: %d version: %d",
-        pfh.getProjectId(), pfh.getVersion()));
-    try (InputStream is = storage.get(resourceId)){
+    final String resourceId = requireNonNull(pfh.getResourceId(),
+        String.format("URI is null. project ID: %d version: %d",
+            pfh.getProjectId(), pfh.getVersion()));
+    try (InputStream is = storage.get(resourceId)) {
       final File file = createTempOutputFile(pfh);
 
       /* Copy from storage to output stream */

@@ -31,6 +31,7 @@ import org.junit.rules.TemporaryFolder;
 
 
 public class ProcessJobTest {
+
   @Rule
   public TemporaryFolder temp = new TemporaryFolder();
 
@@ -89,7 +90,7 @@ public class ProcessJobTest {
    * this job should fail because there is no user.to.proxy and no CommonJobProperties.SUBMIT_USER
    * @throws Exception
    */
-  @Test (expected=RuntimeException.class)
+  @Test(expected = RuntimeException.class)
   public void testOneUnixCommandWithNoUser() throws Exception {
 
     // Initialize the Props
@@ -127,15 +128,15 @@ public class ProcessJobTest {
   public void testPartitionCommand() throws Exception {
     String test1 = "a b c";
 
-    Assert.assertArrayEquals(new String[] { "a", "b", "c" },
+    Assert.assertArrayEquals(new String[]{"a", "b", "c"},
         ProcessJob.partitionCommandLine(test1));
 
     String test2 = "a 'b c'";
-    Assert.assertArrayEquals(new String[] { "a", "b c" },
+    Assert.assertArrayEquals(new String[]{"a", "b c"},
         ProcessJob.partitionCommandLine(test2));
 
     String test3 = "a e='b c'";
-    Assert.assertArrayEquals(new String[] { "a", "e=b c" },
+    Assert.assertArrayEquals(new String[]{"a", "e=b c"},
         ProcessJob.partitionCommandLine(test3));
   }
 }

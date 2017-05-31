@@ -16,25 +16,22 @@
 
 package azkaban.trigger;
 
-import java.util.HashMap;
-import java.util.Map;
-
-import org.joda.time.DateTime;
-import org.joda.time.DateTimeZone;
-import org.joda.time.ReadablePeriod;
-
-import org.junit.Test;
-
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-import azkaban.utils.Utils;
 import azkaban.trigger.builtin.BasicTimeChecker;
+import azkaban.utils.Utils;
+import java.util.HashMap;
+import java.util.Map;
+import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
+import org.joda.time.ReadablePeriod;
+import org.junit.Test;
 
 public class BasicTimeCheckerTest {
 
 
-  private Condition getCondition(BasicTimeChecker timeChecker){
+  private Condition getCondition(BasicTimeChecker timeChecker) {
     Map<String, ConditionChecker> checkers =
         new HashMap<String, ConditionChecker>();
     checkers.put(timeChecker.getId(), timeChecker);
@@ -99,7 +96,7 @@ public class BasicTimeCheckerTest {
     Condition cond = getCondition(timeChecker);
     // 2556086400000L represent for "2050-12-31T00:00:00.000-08:00"
 
-    DateTime year2050 = new DateTime(2050, 12, 31, 0 ,0 ,0 ,now.getZone());
+    DateTime year2050 = new DateTime(2050, 12, 31, 0, 0, 0, now.getZone());
     assertTrue(cond.getNextCheckTime() == year2050.getMillis());
   }
 
@@ -126,7 +123,8 @@ public class BasicTimeCheckerTest {
     Condition cond = getCondition(timeChecker);
 
     DateTime spring2020UTC = new DateTime(2020, 3, 8, 10, 30, 0, DateTimeZone.UTC);
-    DateTime spring2020PDT = new DateTime(2020, 3, 8, 3, 30, 0, DateTimeZone.forID("America/Los_Angeles"));
+    DateTime spring2020PDT = new DateTime(2020, 3, 8, 3, 30, 0,
+        DateTimeZone.forID("America/Los_Angeles"));
     assertTrue(cond.getNextCheckTime() == spring2020UTC.getMillis());
     assertTrue(cond.getNextCheckTime() == spring2020PDT.getMillis());
   }
@@ -183,10 +181,11 @@ public class BasicTimeCheckerTest {
 
     DateTime winter2020 = new DateTime(2020, 11, 1, 9, 0, 0, DateTimeZone.UTC);
 
-    DateTime winter2020_2 = new DateTime(2020, 11, 1, 1, 0, 0, DateTimeZone.forID("America/Los_Angeles"));
-    DateTime winter2020_3 = new DateTime(2020, 11, 1, 2, 0, 0, DateTimeZone.forID("America/Los_Angeles"));
+    DateTime winter2020_2 = new DateTime(2020, 11, 1, 1, 0, 0,
+        DateTimeZone.forID("America/Los_Angeles"));
+    DateTime winter2020_3 = new DateTime(2020, 11, 1, 2, 0, 0,
+        DateTimeZone.forID("America/Los_Angeles"));
     assertTrue(cond.getNextCheckTime() == winter2020.getMillis());
-
 
     // Both 1 and 2 o'clock can not pass the test. Based on milliseconds we got,
     // winter2020_2.getMillis() == 11/1/2020, 1:00:00 AM GMT-7:00 DST
@@ -223,13 +222,13 @@ public class BasicTimeCheckerTest {
 
     // 7:59 UTC == 0:59 PDT (difference is 7 hours)
     DateTime winter2020 = new DateTime(2020, 11, 1, 7, 59, 0, DateTimeZone.UTC);
-    DateTime winter2020_2 = new DateTime(2020, 11, 1, 0, 59, 0, DateTimeZone.forID("America/Los_Angeles"));
+    DateTime winter2020_2 = new DateTime(2020, 11, 1, 0, 59, 0,
+        DateTimeZone.forID("America/Los_Angeles"));
 
     // Local time remains the same.
     assertTrue(cond.getNextCheckTime() == winter2020.getMillis());
     assertTrue(cond.getNextCheckTime() == winter2020_2.getMillis());
   }
-
 
 
   /**
@@ -243,7 +242,7 @@ public class BasicTimeCheckerTest {
    */
   @Test
   public void testPDTtoPSTdst3() {
-    
+
     DateTime now = DateTime.now();
 
     // 9:30 UTC == 1:30 PST (difference is 8 hours)
@@ -259,8 +258,10 @@ public class BasicTimeCheckerTest {
     // 9:30 UTC == 1:30 PST (difference is 8 hours)
     DateTime winter2020 = new DateTime(2020, 11, 1, 9, 30, 0, DateTimeZone.UTC);
 
-    DateTime winter2020_2 = new DateTime(2020, 11, 1, 1, 30, 0, DateTimeZone.forID("America/Los_Angeles"));
-    DateTime winter2020_3 = new DateTime(2020, 11, 1, 2, 30, 0, DateTimeZone.forID("America/Los_Angeles"));
+    DateTime winter2020_2 = new DateTime(2020, 11, 1, 1, 30, 0,
+        DateTimeZone.forID("America/Los_Angeles"));
+    DateTime winter2020_3 = new DateTime(2020, 11, 1, 2, 30, 0,
+        DateTimeZone.forID("America/Los_Angeles"));
     assertTrue(cond.getNextCheckTime() == winter2020.getMillis());
 
     // Both 1:30 and 2:30 can not pass the test.

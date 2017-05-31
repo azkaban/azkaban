@@ -17,15 +17,17 @@
 
 package azkaban.storage;
 
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+
 import azkaban.project.ProjectLoader;
 import azkaban.spi.StorageMetadata;
 import java.io.File;
 import org.junit.Test;
 
-import static org.mockito.Mockito.*;
-
 
 public class DatabaseStorageTest {
+
   private final ProjectLoader projectLoader = mock(ProjectLoader.class);
   private final DatabaseStorage databaseStorage = new DatabaseStorage(projectLoader);
 

@@ -16,21 +16,18 @@
 
 package azkaban.sla;
 
-import com.google.common.collect.ImmutableSet;
+import azkaban.executor.ExecutableFlow;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.joda.time.DateTime;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
-
-import azkaban.executor.ExecutableFlow;
 
 public class SlaOption {
 
@@ -49,13 +46,11 @@ public class SlaOption {
   public static final String ALERT_TYPE = "SlaAlertType";
   public static final String ACTION_CANCEL_FLOW = "SlaCancelFlow";
   public static final String ACTION_ALERT = "SlaAlert";
-
+  private static DateTimeFormatter fmt = DateTimeFormat
+      .forPattern("MM/dd, YYYY HH:mm");
   private String type;
   private Map<String, Object> info;
   private List<String> actions;
-
-  private static DateTimeFormatter fmt = DateTimeFormat
-      .forPattern("MM/dd, YYYY HH:mm");
 
   public SlaOption(String type, List<String> actions, Map<String, Object> info) {
     this.type = type;
@@ -64,49 +59,19 @@ public class SlaOption {
   }
 
   public static List<SlaOption> getJobLevelSLAOptions(ExecutableFlow flow) {
-    Set<String> jobLevelSLAs = new HashSet<>(Arrays.asList(SlaOption.TYPE_JOB_FINISH, SlaOption.TYPE_JOB_SUCCEED));
-    return flow.getSlaOptions().stream().filter(slaOption -> jobLevelSLAs.contains(slaOption.getType()))
+    Set<String> jobLevelSLAs = new HashSet<>(
+        Arrays.asList(SlaOption.TYPE_JOB_FINISH, SlaOption.TYPE_JOB_SUCCEED));
+    return flow.getSlaOptions().stream()
+        .filter(slaOption -> jobLevelSLAs.contains(slaOption.getType()))
         .collect(Collectors.toList());
   }
 
   public static List<SlaOption> getFlowLevelSLAOptions(ExecutableFlow flow) {
-    Set<String> flowLevelSLAs = new HashSet<>(Arrays.asList(SlaOption.TYPE_FLOW_FINISH, SlaOption.TYPE_FLOW_SUCCEED));
-    return flow.getSlaOptions().stream().filter(slaOption -> flowLevelSLAs.contains(slaOption.getType()))
+    Set<String> flowLevelSLAs = new HashSet<>(
+        Arrays.asList(SlaOption.TYPE_FLOW_FINISH, SlaOption.TYPE_FLOW_SUCCEED));
+    return flow.getSlaOptions().stream()
+        .filter(slaOption -> flowLevelSLAs.contains(slaOption.getType()))
         .collect(Collectors.toList());
-  }
-
-  public String getType() {
-    return type;
-  }
-
-  public void setType(String type) {
-    this.type = type;
-  }
-
-  public Map<String, Object> getInfo() {
-    return info;
-  }
-
-  public void setInfo(Map<String, Object> info) {
-    this.info = info;
-  }
-
-  public List<String> getActions() {
-    return actions;
-  }
-
-  public void setActions(List<String> actions) {
-    this.actions = actions;
-  }
-
-  public Map<String, Object> toObject() {
-    HashMap<String, Object> slaObj = new HashMap<String, Object>();
-
-    slaObj.put("type", type);
-    slaObj.put("info", info);
-    slaObj.put("actions", actions);
-
-    return slaObj;
   }
 
   @SuppressWarnings("unchecked")
@@ -119,38 +84,6 @@ public class SlaOption {
     Map<String, Object> info = (Map<String, Object>) slaObj.get("info");
 
     return new SlaOption(type, actions, info);
-  }
-
-  public Object toWebObject() {
-    HashMap<String, Object> slaObj = new HashMap<String, Object>();
-
-    if (type.equals(TYPE_FLOW_FINISH) || type.equals(TYPE_FLOW_SUCCEED)) {
-      slaObj.put("id", "");
-    } else {
-      slaObj.put("id", info.get(INFO_JOB_NAME));
-    }
-    slaObj.put("duration", info.get(INFO_DURATION));
-    if (type.equals(TYPE_FLOW_FINISH) || type.equals(TYPE_JOB_FINISH)) {
-      slaObj.put("rule", "FINISH");
-    } else {
-      slaObj.put("rule", "SUCCESS");
-    }
-    List<String> actionsObj = new ArrayList<String>();
-    for (String act : actions) {
-      if (act.equals(ACTION_ALERT)) {
-        actionsObj.add("EMAIL");
-      } else {
-        actionsObj.add("KILL");
-      }
-    }
-    slaObj.put("actions", actionsObj);
-
-    return slaObj;
-  }
-
-  @Override
-  public String toString() {
-    return "Sla of " + getType() + getInfo() + getActions();
   }
 
   public static String createSlaMessage(SlaOption slaOption, ExecutableFlow flow) {
@@ -201,6 +134,72 @@ public class SlaOption {
     } else {
       return "Unrecognized SLA type " + type;
     }
+  }
+
+  public String getType() {
+    return type;
+  }
+
+  public void setType(String type) {
+    this.type = type;
+  }
+
+  public Map<String, Object> getInfo() {
+    return info;
+  }
+
+  public void setInfo(Map<String, Object> info) {
+    this.info = info;
+  }
+
+  public List<String> getActions() {
+    return actions;
+  }
+
+  public void setActions(List<String> actions) {
+    this.actions = actions;
+  }
+
+  public Map<String, Object> toObject() {
+    HashMap<String, Object> slaObj = new HashMap<String, Object>();
+
+    slaObj.put("type", type);
+    slaObj.put("info", info);
+    slaObj.put("actions", actions);
+
+    return slaObj;
+  }
+
+  public Object toWebObject() {
+    HashMap<String, Object> slaObj = new HashMap<String, Object>();
+
+    if (type.equals(TYPE_FLOW_FINISH) || type.equals(TYPE_FLOW_SUCCEED)) {
+      slaObj.put("id", "");
+    } else {
+      slaObj.put("id", info.get(INFO_JOB_NAME));
+    }
+    slaObj.put("duration", info.get(INFO_DURATION));
+    if (type.equals(TYPE_FLOW_FINISH) || type.equals(TYPE_JOB_FINISH)) {
+      slaObj.put("rule", "FINISH");
+    } else {
+      slaObj.put("rule", "SUCCESS");
+    }
+    List<String> actionsObj = new ArrayList<String>();
+    for (String act : actions) {
+      if (act.equals(ACTION_ALERT)) {
+        actionsObj.add("EMAIL");
+      } else {
+        actionsObj.add("KILL");
+      }
+    }
+    slaObj.put("actions", actionsObj);
+
+    return slaObj;
+  }
+
+  @Override
+  public String toString() {
+    return "Sla of " + getType() + getInfo() + getActions();
   }
 
 }

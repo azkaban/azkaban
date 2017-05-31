@@ -17,6 +17,41 @@
 package azkaban.project;
 
 public class ProjectLogEvent {
+
+  private final int projectId;
+  private final String user;
+  private final long time;
+  private final EventType type;
+  private final String message;
+  public ProjectLogEvent(int projectId, EventType type, long time, String user,
+      String message) {
+    this.projectId = projectId;
+    this.user = user;
+    this.time = time;
+    this.type = type;
+    this.message = message;
+  }
+
+  public int getProjectId() {
+    return projectId;
+  }
+
+  public String getUser() {
+    return user;
+  }
+
+  public long getTime() {
+    return time;
+  }
+
+  public EventType getType() {
+    return type;
+  }
+
+  public String getMessage() {
+    return message;
+  }
+
   /**
    * Log event type messages. Do not change the numeric representation of each enum.
    *
@@ -40,10 +75,6 @@ public class ProjectLogEvent {
 
     EventType(int numVal) {
       this.numVal = numVal;
-    }
-
-    public int getNumVal() {
-      return numVal;
     }
 
     public static EventType fromInteger(int x) {
@@ -76,41 +107,10 @@ public class ProjectLogEvent {
           return ERROR;
       }
     }
-  }
 
-  private final int projectId;
-  private final String user;
-  private final long time;
-  private final EventType type;
-  private final String message;
-
-  public ProjectLogEvent(int projectId, EventType type, long time, String user,
-      String message) {
-    this.projectId = projectId;
-    this.user = user;
-    this.time = time;
-    this.type = type;
-    this.message = message;
-  }
-
-  public int getProjectId() {
-    return projectId;
-  }
-
-  public String getUser() {
-    return user;
-  }
-
-  public long getTime() {
-    return time;
-  }
-
-  public EventType getType() {
-    return type;
-  }
-
-  public String getMessage() {
-    return message;
+    public int getNumVal() {
+      return numVal;
+    }
   }
 
 }

@@ -16,25 +16,24 @@
 
 package azkaban.jobtype;
 
-import com.google.common.io.Resources;
-
-import java.io.File;
-import java.io.IOException;
-import java.net.URL;
-
-import org.apache.commons.io.FileUtils;
-import org.apache.log4j.Logger;
-
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.Rule;
-import org.junit.rules.TemporaryFolder;
-
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
 import azkaban.jobExecutor.Job;
 import azkaban.utils.Props;
+import com.google.common.io.Resources;
+import java.io.File;
+import java.io.IOException;
+import java.net.URL;
+import org.apache.commons.io.FileUtils;
+import org.apache.log4j.Logger;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 
 /**
  * Test the flow run, especially with embedded flows. Files are in
@@ -42,11 +41,10 @@ import azkaban.utils.Props;
  *
  */
 public class JobTypeManagerTest {
-  @Rule
-  public TemporaryFolder temp = new TemporaryFolder();
 
   public final static String TEST_PLUGIN_DIR = "jobtypes_test";
-
+  @Rule
+  public TemporaryFolder temp = new TemporaryFolder();
   private Logger logger = Logger.getLogger(JobTypeManagerTest.class);
   private String testPluginDirPath;
   private JobTypeManager manager;

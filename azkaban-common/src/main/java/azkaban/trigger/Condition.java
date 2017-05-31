@@ -20,7 +20,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 import org.apache.commons.jexl2.Expression;
 import org.apache.commons.jexl2.JexlEngine;
 import org.apache.commons.jexl2.MapContext;
@@ -56,12 +55,48 @@ public class Condition {
     Condition.jexl = jexl;
   }
 
+  protected static CheckerTypeLoader getCheckerLoader() {
+    return checkerLoader;
+  }
+
   public synchronized static void setCheckerLoader(CheckerTypeLoader loader) {
     Condition.checkerLoader = loader;
   }
 
-  protected static CheckerTypeLoader getCheckerLoader() {
-    return checkerLoader;
+  @SuppressWarnings("unchecked")
+  public static Condition fromJson(Object obj) throws Exception {
+    if (checkerLoader == null) {
+      throw new Exception("Condition Checker loader not initialized!");
+    }
+
+    Map<String, Object> jsonObj = (HashMap<String, Object>) obj;
+    Condition cond = null;
+
+    try {
+      Map<String, ConditionChecker> checkers =
+          new HashMap<String, ConditionChecker>();
+      List<Object> checkersJson = (List<Object>) jsonObj.get("checkers");
+      for (Object oneCheckerJson : checkersJson) {
+        Map<String, Object> oneChecker =
+            (HashMap<String, Object>) oneCheckerJson;
+        String type = (String) oneChecker.get("type");
+        ConditionChecker ck =
+            checkerLoader.createCheckerFromJson(type,
+                oneChecker.get("checkerJson"));
+        checkers.put(ck.getId(), ck);
+      }
+      String expr = (String) jsonObj.get("expression");
+      Long nextCheckTime = Long.valueOf((String) jsonObj.get("nextCheckTime"));
+
+      cond = new Condition(checkers, expr, nextCheckTime);
+
+    } catch (Exception e) {
+      e.printStackTrace();
+      logger.error("Failed to recreate condition from json.", e);
+      throw new Exception("Failed to recreate condition from json.", e);
+    }
+
+    return cond;
   }
 
   protected void registerChecker(ConditionChecker checker) {
@@ -139,42 +174,6 @@ public class Condition {
     jsonObj.put("nextCheckTime", String.valueOf(nextCheckTime));
 
     return jsonObj;
-  }
-
-  @SuppressWarnings("unchecked")
-  public static Condition fromJson(Object obj) throws Exception {
-    if (checkerLoader == null) {
-      throw new Exception("Condition Checker loader not initialized!");
-    }
-
-    Map<String, Object> jsonObj = (HashMap<String, Object>) obj;
-    Condition cond = null;
-
-    try {
-      Map<String, ConditionChecker> checkers =
-          new HashMap<String, ConditionChecker>();
-      List<Object> checkersJson = (List<Object>) jsonObj.get("checkers");
-      for (Object oneCheckerJson : checkersJson) {
-        Map<String, Object> oneChecker =
-            (HashMap<String, Object>) oneCheckerJson;
-        String type = (String) oneChecker.get("type");
-        ConditionChecker ck =
-            checkerLoader.createCheckerFromJson(type,
-                oneChecker.get("checkerJson"));
-        checkers.put(ck.getId(), ck);
-      }
-      String expr = (String) jsonObj.get("expression");
-      Long nextCheckTime = Long.valueOf((String) jsonObj.get("nextCheckTime"));
-
-      cond = new Condition(checkers, expr, nextCheckTime);
-
-    } catch (Exception e) {
-      e.printStackTrace();
-      logger.error("Failed to recreate condition from json.", e);
-      throw new Exception("Failed to recreate condition from json.", e);
-    }
-
-    return cond;
   }
 
 }

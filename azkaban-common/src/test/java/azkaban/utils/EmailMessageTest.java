@@ -16,13 +16,12 @@
 
 package azkaban.utils;
 
+import java.io.IOException;
+import javax.mail.MessagingException;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
-
-import javax.mail.MessagingException;
-import java.io.IOException;
 
 public class EmailMessageTest {
 

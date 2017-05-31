@@ -16,19 +16,18 @@
 
 package azkaban.user;
 
-import java.util.HashSet;
+import static org.junit.Assert.fail;
 
+import azkaban.utils.Props;
+import azkaban.utils.UndefinedPropertyException;
+import java.util.HashSet;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import static org.junit.Assert.fail;
-
-import azkaban.utils.Props;
-import azkaban.utils.UndefinedPropertyException;
-
 public class XmlUserManagerTest {
+
   private Props baseProps = new Props();
 
   @Before
@@ -64,7 +63,8 @@ public class XmlUserManagerTest {
    *
    * @throws Exception
    */
-  @Ignore @Test
+  @Ignore
+  @Test
   public void testDoNotExist() throws Exception {
     Props props = new Props(baseProps);
     props.put(XmlUserManager.XML_FILE_PARAM, "unit/test-conf/doNotExist.xml");
@@ -79,7 +79,8 @@ public class XmlUserManagerTest {
     fail("XmlUserManager should throw an exception when the file doesn't exist");
   }
 
-  @Ignore @Test
+  @Ignore
+  @Test
   public void testBasicLoad() throws Exception {
     Props props = new Props(baseProps);
     props.put(XmlUserManager.XML_FILE_PARAM,

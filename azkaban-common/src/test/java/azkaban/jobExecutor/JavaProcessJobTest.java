@@ -34,17 +34,6 @@ import org.junit.rules.TemporaryFolder;
 
 
 public class JavaProcessJobTest {
-  @ClassRule
-  public static TemporaryFolder classTemp = new TemporaryFolder();
-
-  @Rule
-  public TemporaryFolder temp = new TemporaryFolder();
-
-  private JavaProcessJob job = null;
-  private Props props = null;
-  private Logger log = Logger.getLogger(JavaProcessJob.class);
-
-  private static String classPaths;
 
   private static final String inputContent =
       "Quick Change in Strategy for a Bookseller \n"
@@ -54,7 +43,6 @@ public class JavaProcessJobTest {
           + "Twelve years later, it may be Joe Fox's turn to worry. Readers have gone from skipping small \n"
           + "bookstores to wondering if they need bookstores at all. More people are ordering books online  \n"
           + "or plucking them from the best-seller bin at Wal-Mart";
-
   private static final String errorInputContent =
       inputContent
           + "\n stop_here "
@@ -64,10 +52,17 @@ public class JavaProcessJobTest {
           + "to the Association of American Publishers, spurred by sales of the Amazon Kindle and the new Apple iPad. \n"
           + "For Barnes & Noble, long the largest and most powerful bookstore chain in the country, the new competition \n"
           + "has led to declining profits and store traffic.";
-
+  @ClassRule
+  public static TemporaryFolder classTemp = new TemporaryFolder();
+  private static String classPaths;
   private static String inputFile;
   private static String errorInputFile;
   private static String outputFile;
+  @Rule
+  public TemporaryFolder temp = new TemporaryFolder();
+  private JavaProcessJob job = null;
+  private Props props = null;
+  private Logger log = Logger.getLogger(JavaProcessJob.class);
 
   @BeforeClass
   public static void init() throws IOException {

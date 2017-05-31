@@ -1,20 +1,23 @@
 package azkaban.metric;
 
-import java.util.Date;
-import java.util.List;
-
-import org.junit.Before;
-import org.junit.Test;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 import azkaban.metric.inmemoryemitter.InMemoryHistoryNode;
 import azkaban.metric.inmemoryemitter.InMemoryMetricEmitter;
 import azkaban.utils.Props;
-import static org.junit.Assert.*;
+import java.util.Date;
+import java.util.List;
+import org.junit.Before;
+import org.junit.Test;
 
 /**
  * Azkaban Metric Manager Tests
  */
 public class MetricManagerTest {
+
   MetricReportManager manager;
   FakeMetric metric;
   InMemoryMetricEmitter emitter;

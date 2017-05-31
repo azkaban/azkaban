@@ -16,15 +16,14 @@
 
 package azkaban.utils;
 
-import org.apache.log4j.PatternLayout;
+import static org.junit.Assert.assertTrue;
+
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
+import org.apache.log4j.PatternLayout;
 import org.apache.log4j.spi.LoggingEvent;
-
 import org.junit.Before;
 import org.junit.Test;
-
-import static org.junit.Assert.assertTrue;
 
 /**
  * Test output of PatternLayoutEscapedTest
@@ -32,6 +31,7 @@ import static org.junit.Assert.assertTrue;
  * This is necessary when we are logging these messages out as JSON objects
  */
 public class PatternLayoutEscapedTest {
+
   private Logger logger = Logger.getLogger(this.getClass());
   private PatternLayout layout = new PatternLayoutEscaped();
 
@@ -47,7 +47,8 @@ public class PatternLayoutEscapedTest {
     } catch (Exception e) {
       LoggingEvent event = createEventWithException("There was an exception", e);
       // Stack trace might change if the codebase changes, but this prefix should always remain the same
-      assertTrue(layout.format(event).startsWith("There was an exception\\njava.lang.Exception: This is an exception"));
+      assertTrue(layout.format(event)
+          .startsWith("There was an exception\\njava.lang.Exception: This is an exception"));
     }
   }
 

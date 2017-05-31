@@ -16,20 +16,6 @@
 
 package azkaban.project;
 
-import java.io.File;
-import java.io.FileFilter;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
-import org.apache.log4j.Logger;
-
 import azkaban.flow.CommonJobProperties;
 import azkaban.flow.Edge;
 import azkaban.flow.Flow;
@@ -43,15 +29,28 @@ import azkaban.project.validator.XmlValidatorManager;
 import azkaban.utils.Props;
 import azkaban.utils.PropsUtils;
 import azkaban.utils.Utils;
+import java.io.File;
+import java.io.FileFilter;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import org.apache.log4j.Logger;
 
 public class DirectoryFlowLoader implements ProjectValidator {
-  private static final DirFilter DIR_FILTER = new DirFilter();
-  private static final String PROPERTY_SUFFIX = ".properties";
-  private static final String JOB_SUFFIX = ".job";
+
   public static final String JOB_MAX_XMS = "job.max.Xms";
   public static final String MAX_XMS_DEFAULT = "1G";
   public static final String JOB_MAX_XMX = "job.max.Xmx";
   public static final String MAX_XMX_DEFAULT = "2G";
+  private static final DirFilter DIR_FILTER = new DirFilter();
+  private static final String PROPERTY_SUFFIX = ".properties";
+  private static final String JOB_SUFFIX = ".job";
   private static final String XMS = "Xms";
   private static final String XMX = "Xmx";
 
@@ -460,29 +459,6 @@ public class DirectoryFlowLoader implements ProjectValidator {
     return filePath.substring(basePath.length() + 1);
   }
 
-  private static class DirFilter implements FileFilter {
-    @Override
-    public boolean accept(File pathname) {
-      return pathname.isDirectory();
-    }
-  }
-
-  private static class SuffixFilter implements FileFilter {
-    private String suffix;
-
-    public SuffixFilter(String suffix) {
-      this.suffix = suffix;
-    }
-
-    @Override
-    public boolean accept(File pathname) {
-      String name = pathname.getName();
-
-      return pathname.isFile() && !pathname.isHidden()
-          && name.length() > suffix.length() && name.endsWith(suffix);
-    }
-  }
-
   @Override
   public boolean initialize(Props configuration) {
     return true;
@@ -499,5 +475,30 @@ public class DirectoryFlowLoader implements ProjectValidator {
     ValidationReport report = new ValidationReport();
     report.addErrorMsgs(errors);
     return report;
+  }
+
+  private static class DirFilter implements FileFilter {
+
+    @Override
+    public boolean accept(File pathname) {
+      return pathname.isDirectory();
+    }
+  }
+
+  private static class SuffixFilter implements FileFilter {
+
+    private String suffix;
+
+    public SuffixFilter(String suffix) {
+      this.suffix = suffix;
+    }
+
+    @Override
+    public boolean accept(File pathname) {
+      String name = pathname.getName();
+
+      return pathname.isFile() && !pathname.isHidden()
+          && name.length() > suffix.length() && name.endsWith(suffix);
+    }
   }
 }

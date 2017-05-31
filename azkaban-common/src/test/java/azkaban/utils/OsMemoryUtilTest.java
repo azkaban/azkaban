@@ -1,5 +1,8 @@
 package azkaban.utils;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -8,10 +11,9 @@ import java.util.Collections;
 import java.util.List;
 import org.junit.Test;
 
-import static org.junit.Assert.*;
-
 
 public class OsMemoryUtilTest {
+
   private OsMemoryUtil util = new OsMemoryUtil();
 
   @Test
@@ -28,7 +30,8 @@ public class OsMemoryUtilTest {
   @Test
   public void getOsTotalFreeMemorySize() {
     List<String> lines =
-        Arrays.asList("MemFree:        1 kB", "Buffers:          2 kB", "Cached:          3 kB", "SwapFree:    4 kB",
+        Arrays.asList("MemFree:        1 kB", "Buffers:          2 kB", "Cached:          3 kB",
+            "SwapFree:    4 kB",
             "Foo: 10 kB");
 
     long size = util.getOsTotalFreeMemorySizeFromStrings(lines);

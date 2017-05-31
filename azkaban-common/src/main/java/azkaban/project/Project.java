@@ -16,6 +16,11 @@
 
 package azkaban.project;
 
+import azkaban.flow.Flow;
+import azkaban.user.Permission;
+import azkaban.user.Permission.Type;
+import azkaban.user.User;
+import azkaban.utils.Pair;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -25,13 +30,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import azkaban.flow.Flow;
-import azkaban.user.Permission;
-import azkaban.user.Permission.Type;
-import azkaban.user.User;
-import azkaban.utils.Pair;
-
 public class Project {
+
   private final int id;
   private final String name;
   private boolean active = true;
@@ -54,12 +54,56 @@ public class Project {
     this.name = name;
   }
 
-  public String getName() {
-    return name;
+  @SuppressWarnings("unchecked")
+  public static Project projectFromObject(Object object) {
+    Map<String, Object> projectObject = (Map<String, Object>) object;
+    int id = (Integer) projectObject.get("id");
+    String name = (String) projectObject.get("name");
+    String description = (String) projectObject.get("description");
+    String lastModifiedUser = (String) projectObject.get("lastModifiedUser");
+    long createTimestamp = coerceToLong(projectObject.get("createTimestamp"));
+    long lastModifiedTimestamp =
+        coerceToLong(projectObject.get("lastModifiedTimestamp"));
+    String source = (String) projectObject.get("source");
+    Boolean active = (Boolean) projectObject.get("active");
+    active = active == null ? true : active;
+    int version = (Integer) projectObject.get("version");
+    Map<String, Object> metadata =
+        (Map<String, Object>) projectObject.get("metadata");
+
+    Project project = new Project(id, name);
+    project.setVersion(version);
+    project.setDescription(description);
+    project.setCreateTimestamp(createTimestamp);
+    project.setLastModifiedTimestamp(lastModifiedTimestamp);
+    project.setLastModifiedUser(lastModifiedUser);
+    project.setActive(active);
+
+    if (source != null) {
+      project.setSource(source);
+    }
+    if (metadata != null) {
+      project.setMetadata(metadata);
+    }
+
+    List<String> proxyUserList = (List<String>) projectObject.get("proxyUsers");
+    project.addAllProxyUsers(proxyUserList);
+
+    return project;
   }
 
-  public void setFlows(Map<String, Flow> flows) {
-    this.flows = flows;
+  private static long coerceToLong(Object obj) {
+    if (obj == null) {
+      return 0;
+    } else if (obj instanceof Integer) {
+      return (Integer) obj;
+    }
+
+    return (Long) obj;
+  }
+
+  public String getName() {
+    return name;
   }
 
   public Flow getFlow(String flowId) {
@@ -82,6 +126,10 @@ public class Project {
       retFlow = new ArrayList<Flow>();
     }
     return retFlow;
+  }
+
+  public void setFlows(Map<String, Flow> flows) {
+    this.flows = flows;
   }
 
   public Permission getCollectivePermission(User user) {
@@ -193,12 +241,12 @@ public class Project {
     return permissions;
   }
 
-  public void setDescription(String description) {
-    this.description = description;
-  }
-
   public String getDescription() {
     return description;
+  }
+
+  public void setDescription(String description) {
+    this.description = description;
   }
 
   public void setUserPermission(String userid, Permission perm) {
@@ -277,54 +325,6 @@ public class Project {
     return projectObject;
   }
 
-  @SuppressWarnings("unchecked")
-  public static Project projectFromObject(Object object) {
-    Map<String, Object> projectObject = (Map<String, Object>) object;
-    int id = (Integer) projectObject.get("id");
-    String name = (String) projectObject.get("name");
-    String description = (String) projectObject.get("description");
-    String lastModifiedUser = (String) projectObject.get("lastModifiedUser");
-    long createTimestamp = coerceToLong(projectObject.get("createTimestamp"));
-    long lastModifiedTimestamp =
-        coerceToLong(projectObject.get("lastModifiedTimestamp"));
-    String source = (String) projectObject.get("source");
-    Boolean active = (Boolean) projectObject.get("active");
-    active = active == null ? true : active;
-    int version = (Integer) projectObject.get("version");
-    Map<String, Object> metadata =
-        (Map<String, Object>) projectObject.get("metadata");
-
-    Project project = new Project(id, name);
-    project.setVersion(version);
-    project.setDescription(description);
-    project.setCreateTimestamp(createTimestamp);
-    project.setLastModifiedTimestamp(lastModifiedTimestamp);
-    project.setLastModifiedUser(lastModifiedUser);
-    project.setActive(active);
-
-    if (source != null) {
-      project.setSource(source);
-    }
-    if (metadata != null) {
-      project.setMetadata(metadata);
-    }
-
-    List<String> proxyUserList = (List<String>) projectObject.get("proxyUsers");
-    project.addAllProxyUsers(proxyUserList);
-
-    return project;
-  }
-
-  private static long coerceToLong(Object obj) {
-    if (obj == null) {
-      return 0;
-    } else if (obj instanceof Integer) {
-      return (Integer) obj;
-    }
-
-    return (Long) obj;
-  }
-
   public String getLastModifiedUser() {
     return lastModifiedUser;
   }
@@ -357,43 +357,59 @@ public class Project {
 
   @Override
   public boolean equals(Object obj) {
-    if (this == obj)
+    if (this == obj) {
       return true;
-    if (obj == null)
+    }
+    if (obj == null) {
       return false;
-    if (getClass() != obj.getClass())
+    }
+    if (getClass() != obj.getClass()) {
       return false;
+    }
     Project other = (Project) obj;
-    if (active != other.active)
+    if (active != other.active) {
       return false;
-    if (createTimestamp != other.createTimestamp)
+    }
+    if (createTimestamp != other.createTimestamp) {
       return false;
+    }
     if (description == null) {
-      if (other.description != null)
+      if (other.description != null) {
         return false;
-    } else if (!description.equals(other.description))
+      }
+    } else if (!description.equals(other.description)) {
       return false;
-    if (id != other.id)
+    }
+    if (id != other.id) {
       return false;
-    if (lastModifiedTimestamp != other.lastModifiedTimestamp)
+    }
+    if (lastModifiedTimestamp != other.lastModifiedTimestamp) {
       return false;
+    }
     if (lastModifiedUser == null) {
-      if (other.lastModifiedUser != null)
+      if (other.lastModifiedUser != null) {
         return false;
-    } else if (!lastModifiedUser.equals(other.lastModifiedUser))
+      }
+    } else if (!lastModifiedUser.equals(other.lastModifiedUser)) {
       return false;
+    }
     if (name == null) {
-      if (other.name != null)
+      if (other.name != null) {
         return false;
-    } else if (!name.equals(other.name))
+      }
+    } else if (!name.equals(other.name)) {
       return false;
+    }
     if (source == null) {
-      if (other.source != null)
+      if (other.source != null) {
         return false;
-    } else if (!source.equals(other.source))
+      }
+    } else if (!source.equals(other.source)) {
       return false;
-    if (version != other.version)
+    }
+    if (version != other.version) {
       return false;
+    }
     return true;
   }
 

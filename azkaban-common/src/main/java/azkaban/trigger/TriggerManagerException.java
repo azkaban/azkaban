@@ -17,6 +17,7 @@
 package azkaban.trigger;
 
 public class TriggerManagerException extends Exception {
+
   private static final long serialVersionUID = 1L;
 
   public TriggerManagerException(String message) {

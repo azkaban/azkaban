@@ -33,6 +33,7 @@ import javax.inject.Inject;
  * behavior of Azkaban.
  */
 public class DatabaseStorage implements Storage {
+
   private final ProjectLoader projectLoader;
 
   @Inject
@@ -42,7 +43,8 @@ public class DatabaseStorage implements Storage {
 
   @Override
   public InputStream get(String key) {
-    throw new UnsupportedOperationException("Not implemented yet. Use get(projectId, version) instead");
+    throw new UnsupportedOperationException(
+        "Not implemented yet. Use get(projectId, version) instead");
   }
 
   public ProjectFileHandler get(int projectId, int version) {

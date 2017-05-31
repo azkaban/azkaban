@@ -16,7 +16,22 @@
 
 package azkaban.project;
 
+import static java.util.Objects.requireNonNull;
+
+import azkaban.flow.Flow;
+import azkaban.project.ProjectLogEvent.EventType;
+import azkaban.project.validator.ValidationReport;
+import azkaban.project.validator.ValidationStatus;
+import azkaban.project.validator.ValidatorConfigs;
+import azkaban.project.validator.ValidatorManager;
+import azkaban.project.validator.XmlValidatorManager;
 import azkaban.storage.StorageManager;
+import azkaban.user.Permission;
+import azkaban.user.Permission.Type;
+import azkaban.user.User;
+import azkaban.utils.Props;
+import azkaban.utils.PropsUtils;
+import azkaban.utils.Utils;
 import com.google.inject.Inject;
 import java.io.File;
 import java.io.IOException;
@@ -28,28 +43,12 @@ import java.util.Map.Entry;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 import java.util.zip.ZipFile;
-
 import org.apache.commons.io.FileUtils;
 import org.apache.log4j.Logger;
 
-import azkaban.flow.Flow;
-import azkaban.project.ProjectLogEvent.EventType;
-import azkaban.project.validator.ValidationReport;
-import azkaban.project.validator.ValidationStatus;
-import azkaban.project.validator.ValidatorConfigs;
-import azkaban.project.validator.ValidatorManager;
-import azkaban.project.validator.XmlValidatorManager;
-import azkaban.user.Permission;
-import azkaban.user.Permission.Type;
-import azkaban.user.User;
-import azkaban.utils.Props;
-import azkaban.utils.PropsUtils;
-import azkaban.utils.Utils;
-
-import static java.util.Objects.*;
-
 
 public class ProjectManager {
+
   private static final Logger logger = Logger.getLogger(ProjectManager.class);
   private final ProjectLoader projectLoader;
   private final StorageManager storageManager;
@@ -114,7 +113,7 @@ public class ProjectManager {
 
       if (perm != null
           && (perm.isPermissionSet(Type.ADMIN) || perm
-              .isPermissionSet(Type.READ))) {
+          .isPermissionSet(Type.READ))) {
         userProjects.add(project);
       }
     }
@@ -145,7 +144,7 @@ public class ProjectManager {
 
       if (perm != null
           && (perm.isPermissionSet(Type.ADMIN) || perm
-              .isPermissionSet(Type.READ))) {
+          .isPermissionSet(Type.READ))) {
         if (pattern.matcher(project.getName()).find()) {
           userProjects.add(project);
         }
@@ -181,48 +180,48 @@ public class ProjectManager {
     return allProjects;
   }
 
-    /**
-     * Checks if a project is active using project_id
-     *
-     * @param id
-     */
-    public Boolean isActiveProject(int id) {
-      return getProject(id) != null;
-    }
+  /**
+   * Checks if a project is active using project_id
+   *
+   * @param id
+   */
+  public Boolean isActiveProject(int id) {
+    return getProject(id) != null;
+  }
 
-    /**
-     * fetch active project (boolean active = true) from DB by project_name
-     *
-     * @param name
-     * @return
-     */
-    public Project getProject(String name) {
-        Project fetchedProject = null;
-        try {
-            fetchedProject = projectLoader.fetchProjectByName(name);
-            loadAllProjectFlows(fetchedProject);
-        } catch (ProjectManagerException e) {
-            logger.error("Could not load project" + name + " from store.", e);
-        }
-        return fetchedProject;
+  /**
+   * fetch active project (boolean active = true) from DB by project_name
+   *
+   * @param name
+   * @return
+   */
+  public Project getProject(String name) {
+    Project fetchedProject = null;
+    try {
+      fetchedProject = projectLoader.fetchProjectByName(name);
+      loadAllProjectFlows(fetchedProject);
+    } catch (ProjectManagerException e) {
+      logger.error("Could not load project" + name + " from store.", e);
     }
+    return fetchedProject;
+  }
 
-    /**
-     * fetch active project (boolean active = true) from DB by project_id
-     *
-     * @param id
-     * @return
-     */
-    public Project getProject(int id) {
-        Project fetchedProject = null;
-        try {
-            fetchedProject = projectLoader.fetchProjectById(id);
-            loadAllProjectFlows(fetchedProject);
-        } catch (ProjectManagerException e) {
-            logger.error("Could not load project" + id + " from store.", e);
-        }
-        return fetchedProject;
+  /**
+   * fetch active project (boolean active = true) from DB by project_id
+   *
+   * @param id
+   * @return
+   */
+  public Project getProject(int id) {
+    Project fetchedProject = null;
+    try {
+      fetchedProject = projectLoader.fetchProjectById(id);
+      loadAllProjectFlows(fetchedProject);
+    } catch (ProjectManagerException e) {
+      logger.error("Could not load project" + id + " from store.", e);
     }
+    return fetchedProject;
+  }
 
   public Project createProject(String projectName, String description,
       User creator) throws ProjectManagerException {
@@ -263,24 +262,24 @@ public class ProjectManager {
     return newProject;
   }
 
-    /**
-     * Permanently delete all project files and properties data for all versions
-     * of a project and log event in project_events table
-     *
-     * @param project
-     * @param deleter
-     * @return
-     * @throws ProjectManagerException
-     */
-    public synchronized Project purgeProject(Project project, User deleter)
-        throws ProjectManagerException {
-        projectLoader.cleanOlderProjectVersion(project.getId(),
-            project.getVersion() + 1);
-        projectLoader
-            .postEvent(project, EventType.PURGE, deleter.getUserId(), String
-                .format("Purged versions before %d", project.getVersion() + 1));
-        return project;
-    }
+  /**
+   * Permanently delete all project files and properties data for all versions
+   * of a project and log event in project_events table
+   *
+   * @param project
+   * @param deleter
+   * @return
+   * @throws ProjectManagerException
+   */
+  public synchronized Project purgeProject(Project project, User deleter)
+      throws ProjectManagerException {
+    projectLoader.cleanOlderProjectVersion(project.getId(),
+        project.getVersion() + 1);
+    projectLoader
+        .postEvent(project, EventType.PURGE, deleter.getUserId(), String
+            .format("Purged versions before %d", project.getVersion() + 1));
+    return project;
+  }
 
   public synchronized Project removeProject(Project project, User deleter)
       throws ProjectManagerException {

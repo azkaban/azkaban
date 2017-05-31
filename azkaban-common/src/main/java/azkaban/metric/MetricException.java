@@ -20,6 +20,7 @@ package azkaban.metric;
  * Exception for Azkaban's Metric Component
  */
 public class MetricException extends Exception {
+
   private static final long serialVersionUID = 1L;
 
   public MetricException(String message) {

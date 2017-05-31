@@ -21,41 +21,29 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import azkaban.Constants;
-
 import javax.servlet.http.HttpServletRequest;
-
 import org.junit.Before;
 import org.junit.Test;
 
 public class ExternalLinkUtilsTest {
-  private Props azkProps;
-
-  private Props jobProps;
-
-  private String jobId;
-
-  private HttpServletRequest mockRequest;
 
   private static final String EXEC_URL = "http://localhost:8081/executor";
-
   private static final String EXEC_QUERY_STRING = "execid=1";
-
   private static final String EXTERNAL_ANALYZER_TOPIC = "elephant";
-
   private static final String EXTERNAL_ANALYZER_URL_VALID_FORMAT =
       "http://elephant.linkedin.com/search?q=${url}";
-
   private static final String EXTERNAL_ANALYZER_EXPECTED_URL =
       "http://elephant.linkedin.com/search?q="
           + "http%3A%2F%2Flocalhost%3A8081%2Fexecutor%3Fexecid%3D1";
-
   private static final String EXTERNAL_LOGVIEWER_TOPIC = "kibana";
-
   private static final String EXTERNAL_LOGVIEWER_URL_VALID_FORMAT =
       "http://kibana.linkedin.com/search?jobid=${jobid}&&execid=${execid}";
-
   private static final String EXTERNAL_LOGVIEWER_EXPECTED_URL =
       "http://kibana.linkedin.com/search?jobid=Some%20%2B%20job&&execid=1";
+  private Props azkProps;
+  private Props jobProps;
+  private String jobId;
+  private HttpServletRequest mockRequest;
 
   @Before
   public void setUp() {
@@ -76,9 +64,11 @@ public class ExternalLinkUtilsTest {
    */
   @Test
   public void testGetExternalAnalyzerValidFormat() {
-    azkProps.put(Constants.ConfigurationKeys.AZKABAN_SERVER_EXTERNAL_ANALYZER_TOPIC, EXTERNAL_ANALYZER_TOPIC);
+    azkProps.put(Constants.ConfigurationKeys.AZKABAN_SERVER_EXTERNAL_ANALYZER_TOPIC,
+        EXTERNAL_ANALYZER_TOPIC);
     azkProps.put(
-        Constants.ConfigurationKeys.AZKABAN_SERVER_EXTERNAL_TOPIC_URL.replace("${topic}", EXTERNAL_ANALYZER_TOPIC),
+        Constants.ConfigurationKeys.AZKABAN_SERVER_EXTERNAL_TOPIC_URL
+            .replace("${topic}", EXTERNAL_ANALYZER_TOPIC),
         EXTERNAL_ANALYZER_URL_VALID_FORMAT);
 
     when(mockRequest.getRequestURL()).thenReturn(new StringBuffer(EXEC_URL));
@@ -95,9 +85,11 @@ public class ExternalLinkUtilsTest {
    */
   @Test
   public void testGetExternalLogViewerValidFormat() {
-    azkProps.put(Constants.ConfigurationKeys.AZKABAN_SERVER_EXTERNAL_LOGVIEWER_TOPIC, EXTERNAL_LOGVIEWER_TOPIC);
+    azkProps.put(Constants.ConfigurationKeys.AZKABAN_SERVER_EXTERNAL_LOGVIEWER_TOPIC,
+        EXTERNAL_LOGVIEWER_TOPIC);
     azkProps.put(
-        Constants.ConfigurationKeys.AZKABAN_SERVER_EXTERNAL_TOPIC_URL.replace("${topic}", EXTERNAL_LOGVIEWER_TOPIC),
+        Constants.ConfigurationKeys.AZKABAN_SERVER_EXTERNAL_TOPIC_URL
+            .replace("${topic}", EXTERNAL_LOGVIEWER_TOPIC),
         EXTERNAL_LOGVIEWER_URL_VALID_FORMAT);
 
     String externalURL =
@@ -145,7 +137,8 @@ public class ExternalLinkUtilsTest {
    */
   @Test
   public void testFetchURL() {
-    azkProps.put(Constants.ConfigurationKeys.AZKABAN_SERVER_EXTERNAL_TOPIC_URL.replace("${topic}", "someTopic"), "This is a link");
+    azkProps.put(Constants.ConfigurationKeys.AZKABAN_SERVER_EXTERNAL_TOPIC_URL
+        .replace("${topic}", "someTopic"), "This is a link");
     assertTrue(ExternalLinkUtils.getURLForTopic("someTopic", azkProps).equals("This is a link"));
   }
 }

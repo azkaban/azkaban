@@ -16,21 +16,19 @@
 
 package azkaban.metrics;
 
-import azkaban.utils.Props;
-import static azkaban.Constants.ConfigurationKeys.METRICS_SERVER_URL;
 import static azkaban.Constants.ConfigurationKeys.CUSTOM_METRICS_REPORTER_CLASS_NAME;
+import static azkaban.Constants.ConfigurationKeys.METRICS_SERVER_URL;
 
-import com.codahale.metrics.MetricRegistry;
+import azkaban.utils.Props;
 import com.codahale.metrics.ConsoleReporter;
-import com.codahale.metrics.jvm.MemoryUsageGaugeSet;
+import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.jvm.GarbageCollectorMetricSet;
+import com.codahale.metrics.jvm.MemoryUsageGaugeSet;
 import com.codahale.metrics.jvm.ThreadStatesGaugeSet;
-
-import org.apache.log4j.Logger;
-
 import java.lang.reflect.Constructor;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
+import org.apache.log4j.Logger;
 
 /**
  * The singleton class, MetricsManager, is the place to have MetricRegistry and
@@ -40,9 +38,9 @@ import java.util.concurrent.TimeUnit;
 public enum MetricsManager {
   INSTANCE;
 
-  private final MetricRegistry registry        = new MetricRegistry();
-  private ConsoleReporter consoleReporter      = null;
   private static final Logger logger = Logger.getLogger(MetricsManager.class);
+  private final MetricRegistry registry = new MetricRegistry();
+  private ConsoleReporter consoleReporter = null;
 
   /**
    * Constructor is eaagerly called when this class is loaded.
@@ -52,6 +50,7 @@ public enum MetricsManager {
     registry.register("GC_Gauge", new GarbageCollectorMetricSet());
     registry.register("Thread_State_Gauge", new ThreadStatesGaugeSet());
   }
+
   /**
    * Return the Metrics registry.
    *
@@ -113,8 +112,9 @@ public enum MetricsManager {
    * {@link #addConsoleReporter(Duration)} and release it for GC.
    */
   public synchronized void removeConsoleReporter() {
-    if (null != consoleReporter)
+    if (null != consoleReporter) {
       consoleReporter.stop();
+    }
 
     consoleReporter = null;
   }

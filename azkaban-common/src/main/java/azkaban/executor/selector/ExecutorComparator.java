@@ -16,35 +16,26 @@
 
 package azkaban.executor.selector;
 
+import azkaban.executor.Executor;
+import azkaban.executor.ExecutorInfo;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
-import azkaban.executor.Executor;
-import azkaban.executor.ExecutorInfo;
-
 
 /**
  * De-normalized version of the CandidateComparator, which also contains the implementation of the factor comparators.
  * */
 public class ExecutorComparator extends CandidateComparator<Executor> {
-  private static Map<String, ComparatorCreator> comparatorCreatorRepository = null;
-
-  /**
-   * Gets the name list of all available comparators.
-   * @return the list of the names.
-   * */
-  public static Set<String> getAvailableComparatorNames(){
-    return comparatorCreatorRepository.keySet();
-  }
 
   // factor comparator names
   private static final String NUMOFASSIGNEDFLOW_COMPARATOR_NAME = "NumberOfAssignedFlowComparator";
   private static final String MEMORY_COMPARATOR_NAME = "Memory";
   private static final String LSTDISPATCHED_COMPARATOR_NAME = "LastDispatched";
   private static final String CPUUSAGE_COMPARATOR_NAME = "CpuUsage";
+  private static Map<String, ComparatorCreator> comparatorCreatorRepository = null;
 
   /**
    * static initializer of the class.
@@ -59,48 +50,50 @@ public class ExecutorComparator extends CandidateComparator<Executor> {
         ExecutorComparator::getNumberOfAssignedFlowComparator);
 
     // register the creator for memory comparator.
-    comparatorCreatorRepository.put(MEMORY_COMPARATOR_NAME, ExecutorComparator::getMemoryComparator);
+    comparatorCreatorRepository
+        .put(MEMORY_COMPARATOR_NAME, ExecutorComparator::getMemoryComparator);
 
     // register the creator for last dispatched time comparator.
-    comparatorCreatorRepository.put(LSTDISPATCHED_COMPARATOR_NAME, ExecutorComparator::getLstDispatchedTimeComparator);
+    comparatorCreatorRepository
+        .put(LSTDISPATCHED_COMPARATOR_NAME, ExecutorComparator::getLstDispatchedTimeComparator);
 
     // register the creator for CPU Usage comparator.
-    comparatorCreatorRepository.put(CPUUSAGE_COMPARATOR_NAME, ExecutorComparator::getCpuUsageComparator);
+    comparatorCreatorRepository
+        .put(CPUUSAGE_COMPARATOR_NAME, ExecutorComparator::getCpuUsageComparator);
   }
-
 
   /**
    * constructor of the ExecutorComparator.
    * @param comparatorList   the list of comparator, plus its weight information to be registered,
    *  the parameter must be a not-empty and valid list object.
    * */
-  public ExecutorComparator(Map<String,Integer> comparatorList) {
-    if (null == comparatorList|| comparatorList.size() == 0){
+  public ExecutorComparator(Map<String, Integer> comparatorList) {
+    if (null == comparatorList || comparatorList.size() == 0) {
       throw new IllegalArgumentException("failed to initialize executor comparator" +
-                                         "as the passed comparator list is invalid or empty.");
+          "as the passed comparator list is invalid or empty.");
     }
 
     // register the comparators, we will now throw here if the weight is invalid, it is handled in the super.
-    for (Entry<String,Integer> entry : comparatorList.entrySet()){
-      if (comparatorCreatorRepository.containsKey(entry.getKey())){
+    for (Entry<String, Integer> entry : comparatorList.entrySet()) {
+      if (comparatorCreatorRepository.containsKey(entry.getKey())) {
         this.registerFactorComparator(comparatorCreatorRepository.
             get(entry.getKey()).
             create(entry.getValue()));
       } else {
-        throw new IllegalArgumentException(String.format("failed to initialize executor comparator " +
-                                        "as the comparator implementation for requested factor '%s' doesn't exist.",
-                                        entry.getKey()));
+        throw new IllegalArgumentException(
+            String.format("failed to initialize executor comparator " +
+                    "as the comparator implementation for requested factor '%s' doesn't exist.",
+                entry.getKey()));
       }
     }
   }
 
-  @Override
-  public String getName() {
-    return "ExecutorComparator";
-  }
-
-  private interface ComparatorCreator{
-    FactorComparator<Executor> create(int weight);
+  /**
+   * Gets the name list of all available comparators.
+   * @return the list of the names.
+   * */
+  public static Set<String> getAvailableComparatorNames() {
+    return comparatorCreatorRepository.keySet();
   }
 
   /**<pre>
@@ -113,27 +106,30 @@ public class ExecutorComparator extends CandidateComparator<Executor> {
    * @return true if the passed statistics are NOT both valid, a shortcut can be made (caller can consume the result),
    *         false otherwise.
    * */
-  private static boolean statisticsObjectCheck(ExecutorInfo statisticsObj1, ExecutorInfo statisticsObj2, String caller){
+  private static boolean statisticsObjectCheck(ExecutorInfo statisticsObj1,
+      ExecutorInfo statisticsObj2, String caller) {
     // both doesn't expose the info
-    if (null == statisticsObj1 && null == statisticsObj2){
+    if (null == statisticsObj1 && null == statisticsObj2) {
       logger.debug(String.format("%s : neither of the executors exposed statistics info.",
           caller));
       return true;
     }
 
     //right side doesn't expose the info.
-    if (null == statisticsObj2 ){
-        logger.debug(String.format("%s : choosing left side and the right side executor doesn't expose statistics info",
-            caller));
+    if (null == statisticsObj2) {
+      logger.debug(String.format(
+          "%s : choosing left side and the right side executor doesn't expose statistics info",
+          caller));
       return true;
     }
 
     //left side doesn't expose the info.
-    if (null == statisticsObj1 ){
-      logger.debug(String.format("%s : choosing right side and the left side executor doesn't expose statistics info",
+    if (null == statisticsObj1) {
+      logger.debug(String.format(
+          "%s : choosing right side and the left side executor doesn't expose statistics info",
           caller));
       return true;
-      }
+    }
 
     // both not null
     return false;
@@ -143,20 +139,23 @@ public class ExecutorComparator extends CandidateComparator<Executor> {
    * function defines the number of assigned flow comparator.
    * @param weight weight of the comparator.
    * */
-  private static FactorComparator<Executor> getNumberOfAssignedFlowComparator(int weight){
-    return FactorComparator.create(NUMOFASSIGNEDFLOW_COMPARATOR_NAME, weight, new Comparator<Executor>(){
+  private static FactorComparator<Executor> getNumberOfAssignedFlowComparator(int weight) {
+    return FactorComparator
+        .create(NUMOFASSIGNEDFLOW_COMPARATOR_NAME, weight, new Comparator<Executor>() {
 
-      @Override
-      public int compare(Executor o1, Executor o2) {
-        ExecutorInfo stat1 = o1.getExecutorInfo();
-        ExecutorInfo stat2 = o2.getExecutorInfo();
+          @Override
+          public int compare(Executor o1, Executor o2) {
+            ExecutorInfo stat1 = o1.getExecutorInfo();
+            ExecutorInfo stat2 = o2.getExecutorInfo();
 
-        Integer result = 0;
-        if (statisticsObjectCheck(stat1,stat2,NUMOFASSIGNEDFLOW_COMPARATOR_NAME)){
-          return result;
-        }
-        return ((Integer)stat1.getRemainingFlowCapacity()).compareTo(stat2.getRemainingFlowCapacity());
-      }});
+            Integer result = 0;
+            if (statisticsObjectCheck(stat1, stat2, NUMOFASSIGNEDFLOW_COMPARATOR_NAME)) {
+              return result;
+            }
+            return ((Integer) stat1.getRemainingFlowCapacity())
+                .compareTo(stat2.getRemainingFlowCapacity());
+          }
+        });
   }
 
   /**
@@ -164,8 +163,8 @@ public class ExecutorComparator extends CandidateComparator<Executor> {
    * @param weight weight of the comparator.
    * @return
    * */
-  private static FactorComparator<Executor> getCpuUsageComparator(int weight){
-    return FactorComparator.create(CPUUSAGE_COMPARATOR_NAME, weight, new Comparator<Executor>(){
+  private static FactorComparator<Executor> getCpuUsageComparator(int weight) {
+    return FactorComparator.create(CPUUSAGE_COMPARATOR_NAME, weight, new Comparator<Executor>() {
 
       @Override
       public int compare(Executor o1, Executor o2) {
@@ -173,38 +172,39 @@ public class ExecutorComparator extends CandidateComparator<Executor> {
         ExecutorInfo stat2 = o2.getExecutorInfo();
 
         int result = 0;
-        if (statisticsObjectCheck(stat1,stat2,CPUUSAGE_COMPARATOR_NAME)){
+        if (statisticsObjectCheck(stat1, stat2, CPUUSAGE_COMPARATOR_NAME)) {
           return result;
         }
 
         // CPU usage , the lesser the value is, the better.
-        return ((Double)stat2.getCpuUsage()).compareTo(stat1.getCpuUsage());
-      }});
+        return ((Double) stat2.getCpuUsage()).compareTo(stat1.getCpuUsage());
+      }
+    });
   }
-
 
   /**
    * function defines the last dispatched time comparator.
    * @param weight weight of the comparator.
    * @return
    * */
-  private static FactorComparator<Executor> getLstDispatchedTimeComparator(int weight){
-    return FactorComparator.create(LSTDISPATCHED_COMPARATOR_NAME, weight, new Comparator<Executor>(){
+  private static FactorComparator<Executor> getLstDispatchedTimeComparator(int weight) {
+    return FactorComparator
+        .create(LSTDISPATCHED_COMPARATOR_NAME, weight, new Comparator<Executor>() {
 
-      @Override
-      public int compare(Executor o1, Executor o2) {
-        ExecutorInfo stat1 = o1.getExecutorInfo();
-        ExecutorInfo stat2 = o2.getExecutorInfo();
+          @Override
+          public int compare(Executor o1, Executor o2) {
+            ExecutorInfo stat1 = o1.getExecutorInfo();
+            ExecutorInfo stat2 = o2.getExecutorInfo();
 
-        int result = 0;
-        if (statisticsObjectCheck(stat1,stat2,LSTDISPATCHED_COMPARATOR_NAME)){
-          return result;
-        }
-        // Note: an earlier date time indicates higher weight.
-        return ((Long)stat2.getLastDispatchedTime()).compareTo(stat1.getLastDispatchedTime());
-      }});
+            int result = 0;
+            if (statisticsObjectCheck(stat1, stat2, LSTDISPATCHED_COMPARATOR_NAME)) {
+              return result;
+            }
+            // Note: an earlier date time indicates higher weight.
+            return ((Long) stat2.getLastDispatchedTime()).compareTo(stat1.getLastDispatchedTime());
+          }
+        });
   }
-
 
   /**<pre>
    * function defines the Memory comparator.
@@ -215,24 +215,36 @@ public class ExecutorComparator extends CandidateComparator<Executor> {
 
    * @return
    * */
-  private static FactorComparator<Executor> getMemoryComparator(int weight){
-    return FactorComparator.create(MEMORY_COMPARATOR_NAME, weight, new Comparator<Executor>(){
+  private static FactorComparator<Executor> getMemoryComparator(int weight) {
+    return FactorComparator.create(MEMORY_COMPARATOR_NAME, weight, new Comparator<Executor>() {
 
       @Override
       public int compare(Executor o1, Executor o2) {
-       ExecutorInfo stat1 = o1.getExecutorInfo();
-       ExecutorInfo stat2 = o2.getExecutorInfo();
+        ExecutorInfo stat1 = o1.getExecutorInfo();
+        ExecutorInfo stat2 = o2.getExecutorInfo();
 
-       int result = 0;
-       if (statisticsObjectCheck(stat1,stat2,MEMORY_COMPARATOR_NAME)){
-         return result;
-       }
+        int result = 0;
+        if (statisticsObjectCheck(stat1, stat2, MEMORY_COMPARATOR_NAME)) {
+          return result;
+        }
 
-       if (stat1.getRemainingMemoryInMB() != stat2.getRemainingMemoryInMB()){
-         return stat1.getRemainingMemoryInMB() > stat2.getRemainingMemoryInMB() ? 1:-1;
-       }
+        if (stat1.getRemainingMemoryInMB() != stat2.getRemainingMemoryInMB()) {
+          return stat1.getRemainingMemoryInMB() > stat2.getRemainingMemoryInMB() ? 1 : -1;
+        }
 
-       return Double.compare(stat1.getRemainingMemoryPercent(), stat2.getRemainingMemoryPercent());
-      }});
+        return Double.compare(stat1.getRemainingMemoryPercent(), stat2.getRemainingMemoryPercent());
+      }
+    });
+  }
+
+  @Override
+  public String getName() {
+    return "ExecutorComparator";
+  }
+
+
+  private interface ComparatorCreator {
+
+    FactorComparator<Executor> create(int weight);
   }
 }

@@ -17,29 +17,26 @@
 package azkaban.server;
 
 import azkaban.Constants;
-
 import java.io.IOException;
 import java.io.OutputStream;
-
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-
 import org.codehaus.jackson.map.ObjectMapper;
 
 public class AbstractServiceServlet extends HttpServlet {
 
-  private static final long serialVersionUID = 1L;
   public static final String JSON_MIME_TYPE = "application/json";
-
+  private static final long serialVersionUID = 1L;
   private AzkabanServer application;
 
   @Override
   public void init(ServletConfig config) throws ServletException {
     application =
-        (AzkabanServer) config.getServletContext().getAttribute(Constants.AZKABAN_SERVLET_CONTEXT_KEY);
+        (AzkabanServer) config.getServletContext()
+            .getAttribute(Constants.AZKABAN_SERVLET_CONTEXT_KEY);
 
     if (application == null) {
       throw new IllegalStateException(
@@ -62,10 +59,11 @@ public class AbstractServiceServlet extends HttpServlet {
   public String getParam(HttpServletRequest request, String name)
       throws ServletException {
     String p = request.getParameter(name);
-    if (p == null)
+    if (p == null) {
       throw new ServletException("Missing required parameter '" + name + "'.");
-    else
+    } else {
       return p;
+    }
   }
 
   public String getParam(HttpServletRequest request, String name,

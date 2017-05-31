@@ -16,17 +16,6 @@
 
 package azkaban.server;
 
-import java.util.Arrays;
-import java.util.Enumeration;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-
-import org.apache.commons.lang.StringUtils;
-
 import azkaban.executor.ExecutionOptions;
 import azkaban.executor.ExecutionOptions.FailureAction;
 import azkaban.executor.ExecutorManagerException;
@@ -37,8 +26,17 @@ import azkaban.user.Role;
 import azkaban.user.User;
 import azkaban.user.UserManager;
 import azkaban.utils.JSONUtils;
+import java.util.Arrays;
+import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import org.apache.commons.lang.StringUtils;
 
 public class HttpRequestUtils {
+
   public static ExecutionOptions parseFlowOptions(HttpServletRequest req)
       throws ServletException {
     ExecutionOptions execOptions = new ExecutionOptions();
@@ -131,9 +129,10 @@ public class HttpRequestUtils {
    * </pre>
    */
   public static void filterAdminOnlyFlowParams(UserManager userManager,
-    ExecutionOptions options, User user)  throws ExecutorManagerException {
-    if (options == null || options.getFlowParameters() == null)
+      ExecutionOptions options, User user) throws ExecutorManagerException {
+    if (options == null || options.getFlowParameters() == null) {
       return;
+    }
 
     Map<String, String> params = options.getFlowParameters();
     // is azkaban Admin
@@ -154,9 +153,9 @@ public class HttpRequestUtils {
    * @throws ExecutorManagerException if paramName is not a valid integer
    */
   public static boolean validateIntegerParam(Map<String, String> params,
-    String paramName) throws ExecutorManagerException {
+      String paramName) throws ExecutorManagerException {
     if (params != null && params.containsKey(paramName)
-      && !StringUtils.isNumeric(params.get(paramName))) {
+        && !StringUtils.isNumeric(params.get(paramName))) {
       throw new ExecutorManagerException(paramName + " should be an integer");
     }
     return true;
@@ -171,11 +170,11 @@ public class HttpRequestUtils {
    * @return
    */
   public static boolean hasPermission(UserManager userManager, User user,
-    Permission.Type type) {
+      Permission.Type type) {
     for (String roleName : user.getRoles()) {
       Role role = userManager.getRole(roleName);
       if (role.getPermission().isPermissionSet(type)
-        || role.getPermission().isPermissionSet(Permission.Type.ADMIN)) {
+          || role.getPermission().isPermissionSet(Permission.Type.ADMIN)) {
         return true;
       }
     }

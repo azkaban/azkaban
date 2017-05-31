@@ -16,6 +16,12 @@
 
 package azkaban.project;
 
+import azkaban.flow.Flow;
+import azkaban.project.ProjectLogEvent.EventType;
+import azkaban.user.Permission;
+import azkaban.user.User;
+import azkaban.utils.Props;
+import azkaban.utils.Triple;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -23,34 +29,26 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import azkaban.project.ProjectLogEvent.EventType;
-import azkaban.flow.Flow;
-import azkaban.user.Permission;
-import azkaban.user.User;
-import azkaban.utils.Props;
-import azkaban.utils.Triple;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class MockProjectLoader implements ProjectLoader {
+
+  private static int projectId = 0;
   public File dir;
-
-  public MockProjectLoader(File dir) {
-    this.dir = dir;
-  }
-
   private ConcurrentHashMap<Integer, Project> projectsById =
       new ConcurrentHashMap<>();
   private ConcurrentHashMap<String, Project> projectsByName =
       new ConcurrentHashMap<>();
 
-  private static int projectId = 0;
+  public MockProjectLoader(File dir) {
+    this.dir = dir;
+  }
 
   @Override
   public List<Project> fetchAllActiveProjects() throws ProjectManagerException {
     ArrayList<Project> activeProjects = new ArrayList<>();
-    for(Project project : projectsById.values()){
-      if(project.isActive()){
+    for (Project project : projectsById.values()) {
+      if (project.isActive()) {
         activeProjects.add(project);
       }
     }
@@ -60,7 +58,7 @@ public class MockProjectLoader implements ProjectLoader {
   @Override
   public Project fetchProjectById(int id) throws ProjectManagerException {
     System.out.println("MockProjectLoader: fetch project by id " + id);
-    if(!projectsById.containsKey(id)){
+    if (!projectsById.containsKey(id)) {
       throw new ProjectManagerException("Could not get project by id.");
     }
     return projectsById.get(id);
@@ -123,7 +121,8 @@ public class MockProjectLoader implements ProjectLoader {
   }
 
   @Override
-  public void addProjectVersion(int projectId, int version, File localFile, String uploader, byte[] md5, String resourceId)
+  public void addProjectVersion(int projectId, int version, File localFile, String uploader,
+      byte[] md5, String resourceId)
       throws ProjectManagerException {
 
   }
@@ -273,7 +272,7 @@ public class MockProjectLoader implements ProjectLoader {
   @Override
   public Project fetchProjectByName(String name) throws ProjectManagerException {
     System.out.println("MockProjectLoader: fetch project by name " + name);
-    if(!projectsByName.containsKey(name)){
+    if (!projectsByName.containsKey(name)) {
       throw new ProjectManagerException("Could not get project by name.");
     }
     return projectsByName.get(name);

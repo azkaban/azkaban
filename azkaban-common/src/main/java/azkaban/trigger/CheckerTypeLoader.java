@@ -16,23 +16,27 @@
 
 package azkaban.trigger;
 
-import java.util.HashMap;
-import java.util.Map;
-
-import org.apache.log4j.Logger;
-
 import azkaban.utils.Props;
 import azkaban.utils.Utils;
+import java.util.HashMap;
+import java.util.Map;
+import org.apache.log4j.Logger;
 
 public class CheckerTypeLoader {
 
-  private static Logger logger = Logger.getLogger(CheckerTypeLoader.class);
-
   public static final String DEFAULT_CONDITION_CHECKER_PLUGIN_DIR =
       "plugins/conditioncheckers";
-
   protected static Map<String, Class<? extends ConditionChecker>> checkerToClass =
       new HashMap<String, Class<? extends ConditionChecker>>();
+  private static Logger logger = Logger.getLogger(CheckerTypeLoader.class);
+
+  public static void registerBuiltinCheckers(
+      Map<String, Class<? extends ConditionChecker>> builtinCheckers) {
+    checkerToClass.putAll(checkerToClass);
+    for (String type : builtinCheckers.keySet()) {
+      logger.info("Loaded " + type + " checker.");
+    }
+  }
 
   public void init(Props props) throws TriggerException {
   }
@@ -42,14 +46,6 @@ public class CheckerTypeLoader {
     logger.info("Registering checker " + type);
     if (!checkerToClass.containsKey(type)) {
       checkerToClass.put(type, checkerClass);
-    }
-  }
-
-  public static void registerBuiltinCheckers(
-      Map<String, Class<? extends ConditionChecker>> builtinCheckers) {
-    checkerToClass.putAll(checkerToClass);
-    for (String type : builtinCheckers.keySet()) {
-      logger.info("Loaded " + type + " checker.");
     }
   }
 

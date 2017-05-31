@@ -16,16 +16,6 @@
 
 package azkaban.jobtype;
 
-import java.io.File;
-import java.io.IOException;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.net.URLClassLoader;
-import java.util.ArrayList;
-import java.util.List;
-
-import org.apache.log4j.Logger;
-
 import azkaban.jobExecutor.JavaProcessJob;
 import azkaban.jobExecutor.Job;
 import azkaban.jobExecutor.NoopJob;
@@ -37,10 +27,16 @@ import azkaban.jobExecutor.utils.JobExecutionException;
 import azkaban.utils.Props;
 import azkaban.utils.PropsUtils;
 import azkaban.utils.Utils;
+import java.io.File;
+import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.URLClassLoader;
+import java.util.ArrayList;
+import java.util.List;
+import org.apache.log4j.Logger;
 
 public class JobTypeManager {
-  private final String jobTypePluginDir; // the dir for jobtype plugins
-  private final ClassLoader parentLoader;
 
   public static final String DEFAULT_JOBTYPEPLUGINDIR = "plugins/jobtypes";
   // need jars.to.include property, will be loaded with user property
@@ -52,7 +48,8 @@ public class JobTypeManager {
   // common private properties for multiple plugins
   private static final String COMMONSYSCONFFILE = "commonprivate.properties";
   private static final Logger logger = Logger.getLogger(JobTypeManager.class);
-
+  private final String jobTypePluginDir; // the dir for jobtype plugins
+  private final ClassLoader parentLoader;
   private JobTypePluginSet pluginSet;
   private Props globalProperties;
 
@@ -309,7 +306,9 @@ public class JobTypeManager {
     }
 
     // each job type can have a different class loader
-    logger.info(String.format("Classpath for plugin[dir: %s, JobType: %s]: %s", pluginDir, jobTypeName, resources));
+    logger.info(String
+        .format("Classpath for plugin[dir: %s, JobType: %s]: %s", pluginDir, jobTypeName,
+            resources));
     ClassLoader jobTypeLoader =
         new URLClassLoader(resources.toArray(new URL[resources.size()]),
             parentLoader);
@@ -336,7 +335,7 @@ public class JobTypeManager {
       Class<? extends Object> executorClass = pluginSet.getPluginClass(jobType);
       if (executorClass == null) {
         throw new JobExecutionException(String.format("Job type '" + jobType
-            + "' is unrecognized. Could not construct job[%s] of type[%s].",
+                + "' is unrecognized. Could not construct job[%s] of type[%s].",
             jobProps, jobType));
       }
 
@@ -344,7 +343,7 @@ public class JobTypeManager {
       // For default jobtypes, even though they don't have pluginJobProps configured,
       // they still need to load properties from common.properties file if it's present
       // because common.properties file is global to all jobtypes.
-      if(pluginJobProps == null) {
+      if (pluginJobProps == null) {
         pluginJobProps = pluginSet.getCommonPluginJobProps();
       }
       if (pluginJobProps != null) {
@@ -363,8 +362,9 @@ public class JobTypeManager {
         // pluginSet.getCommonPluginLoadProps() will return null if there is no plugins directory.
         // hence assigning default Props() if that's the case
         pluginLoadProps = pluginSet.getCommonPluginLoadProps();
-        if(pluginLoadProps == null)
-        	pluginLoadProps = new Props();
+        if (pluginLoadProps == null) {
+          pluginLoadProps = new Props();
+        }
       }
 
       job =

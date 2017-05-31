@@ -17,52 +17,59 @@
 package azkaban.utils;
 
 import azkaban.Constants;
-
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
-
 import javax.servlet.http.HttpServletRequest;
-
 import org.apache.log4j.Logger;
 
 public class ExternalLinkUtils {
+
   private static final Logger logger = Logger.getLogger(ExternalLinkUtils.class);
 
-  public static String getExternalAnalyzerOnReq(Props azkProps, HttpServletRequest req) {
+  public static String getExternalAnalyzerOnReq(final Props azkProps,
+      final HttpServletRequest req) {
     // If no topic was configured to be an external analyzer, return empty
     if (!azkProps.containsKey(Constants.ConfigurationKeys.AZKABAN_SERVER_EXTERNAL_ANALYZER_TOPIC)) {
       return "";
     }
     // Find out which external link we should use to lead to our analyzer
-    String topic = azkProps.getString(Constants.ConfigurationKeys.AZKABAN_SERVER_EXTERNAL_ANALYZER_TOPIC);
+    final String topic = azkProps
+        .getString(Constants.ConfigurationKeys.AZKABAN_SERVER_EXTERNAL_ANALYZER_TOPIC);
     return getLinkFromRequest(topic, azkProps, req);
   }
 
-  public static String getExternalLogViewer(Props azkProps, String jobId, Props jobProps) {
+  public static String getExternalLogViewer(final Props azkProps, final String jobId,
+      final Props jobProps) {
     // If no topic was configured to be an external analyzer, return empty
-    if (!azkProps.containsKey(Constants.ConfigurationKeys.AZKABAN_SERVER_EXTERNAL_LOGVIEWER_TOPIC)) {
+    if (!azkProps
+        .containsKey(Constants.ConfigurationKeys.AZKABAN_SERVER_EXTERNAL_LOGVIEWER_TOPIC)) {
       return "";
     }
     // Find out which external link we should use to lead to our log viewer
-    String topic = azkProps.getString(Constants.ConfigurationKeys.AZKABAN_SERVER_EXTERNAL_LOGVIEWER_TOPIC);
+    final String topic = azkProps
+        .getString(Constants.ConfigurationKeys.AZKABAN_SERVER_EXTERNAL_LOGVIEWER_TOPIC);
     return getLinkFromJobAndExecId(topic, azkProps, jobId, jobProps);
   }
 
-  private static String getLinkFromJobAndExecId(String topic, Props azkProps, String jobId, Props jobProps) {
+  private static String getLinkFromJobAndExecId(final String topic, final Props azkProps,
+      final String jobId,
+      final Props jobProps) {
     String urlTemplate = getURLForTopic(topic, azkProps);
     if (urlTemplate.isEmpty()) {
       logger.error("No URL specified for topic " + topic);
       return "";
     }
-    String job = encodeToUTF8(jobId);
-    String execid = encodeToUTF8(jobProps.getString(Constants.FlowProperties.AZKABAN_FLOW_EXEC_ID));
+    final String job = encodeToUTF8(jobId);
+    final String execid = encodeToUTF8(
+        jobProps.getString(Constants.FlowProperties.AZKABAN_FLOW_EXEC_ID));
 
     urlTemplate = urlTemplate.replace("${jobid}", job).replace("${execid}", execid);
     logger.info("Creating link: " + urlTemplate);
     return urlTemplate;
   }
 
-  private static String getLinkFromRequest(String topic, Props azkProps, HttpServletRequest req) {
+  private static String getLinkFromRequest(final String topic, final Props azkProps,
+      final HttpServletRequest req) {
     String urlTemplate = getURLForTopic(topic, azkProps);
     if (urlTemplate.isEmpty()) {
       logger.error("No URL specified for topic " + topic);
@@ -79,14 +86,16 @@ public class ExternalLinkUtils {
     return urlTemplate;
   }
 
-  static String getURLForTopic(String topic, Props azkProps) {
-    return azkProps.getString(Constants.ConfigurationKeys.AZKABAN_SERVER_EXTERNAL_TOPIC_URL.replace("${topic}", topic), "");
+  static String getURLForTopic(final String topic, final Props azkProps) {
+    return azkProps.getString(
+        Constants.ConfigurationKeys.AZKABAN_SERVER_EXTERNAL_TOPIC_URL.replace("${topic}", topic),
+        "");
   }
 
-  static String encodeToUTF8(String url) {
+  static String encodeToUTF8(final String url) {
     try {
       return URLEncoder.encode(url, "UTF-8").replaceAll("\\+", "%20");
-    } catch (UnsupportedEncodingException e) {
+    } catch (final UnsupportedEncodingException e) {
       logger.error("Specified encoding is not supported", e);
     }
     return "";

@@ -1,5 +1,8 @@
 package azkaban.project.validator;
 
+import azkaban.project.DirectoryFlowLoader;
+import azkaban.project.Project;
+import azkaban.utils.Props;
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
@@ -11,21 +14,15 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
-
 import org.apache.log4j.Logger;
 import org.w3c.dom.Document;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
-
-import azkaban.project.Project;
-import azkaban.project.DirectoryFlowLoader;
-import azkaban.utils.Props;
 
 /**
  * Xml implementation of the ValidatorManager. Looks for the property
@@ -41,14 +38,13 @@ import azkaban.utils.Props;
  * </azkaban-validators>
  */
 public class XmlValidatorManager implements ValidatorManager {
-  private static final Logger logger = Logger.getLogger(XmlValidatorManager.class);
 
   public static final String AZKABAN_VALIDATOR_TAG = "azkaban-validators";
   public static final String VALIDATOR_TAG = "validator";
   public static final String CLASSNAME_ATTR = "classname";
   public static final String ITEM_TAG = "property";
   public static final String DEFAULT_VALIDATOR_KEY = "Directory Flow";
-
+  private static final Logger logger = Logger.getLogger(XmlValidatorManager.class);
   private static Map<String, Long> resourceTimestamps = new HashMap<String, Long>();
   private static ValidatorClassLoader validatorLoader;
 
@@ -63,7 +59,8 @@ public class XmlValidatorManager implements ValidatorManager {
    * @param props
    */
   public XmlValidatorManager(Props props) {
-    validatorDirPath = props.getString(ValidatorConfigs.VALIDATOR_PLUGIN_DIR, ValidatorConfigs.DEFAULT_VALIDATOR_DIR);
+    validatorDirPath = props
+        .getString(ValidatorConfigs.VALIDATOR_PLUGIN_DIR, ValidatorConfigs.DEFAULT_VALIDATOR_DIR);
     File validatorDir = new File(validatorDirPath);
     if (!validatorDir.canRead() || !validatorDir.isDirectory()) {
       logger.warn("Validator directory " + validatorDirPath
@@ -107,8 +104,8 @@ public class XmlValidatorManager implements ValidatorManager {
     if (reloadResources) {
       if (validatorLoader != null) {
         try {
-        // Since we cannot use Java 7 feature inside Azkaban (....), we need a customized class loader
-        // that does the close for us.
+          // Since we cannot use Java 7 feature inside Azkaban (....), we need a customized class loader
+          // that does the close for us.
           validatorLoader.close();
         } catch (ValidatorManagerException e) {
           logger.error("Cannot reload validator classloader because failure "
@@ -137,7 +134,8 @@ public class XmlValidatorManager implements ValidatorManager {
     validators.put(flowLoader.getValidatorName(), flowLoader);
 
     if (!props.containsKey(ValidatorConfigs.XML_FILE_PARAM)) {
-      logger.warn("Azkaban properties file does not contain the key " + ValidatorConfigs.XML_FILE_PARAM);
+      logger.warn(
+          "Azkaban properties file does not contain the key " + ValidatorConfigs.XML_FILE_PARAM);
       return;
     }
     String xmlPath = props.get(ValidatorConfigs.XML_FILE_PARAM);
@@ -202,7 +200,7 @@ public class XmlValidatorManager implements ValidatorManager {
     String className = classNameAttr.getNodeValue();
     try {
       Class<? extends ProjectValidator> validatorClass =
-          (Class<? extends ProjectValidator>)validatorLoader.loadClass(className);
+          (Class<? extends ProjectValidator>) validatorLoader.loadClass(className);
       Constructor<?> validatorConstructor =
           validatorClass.getConstructor(Logger.class);
       ProjectValidator validator = (ProjectValidator) validatorConstructor.newInstance(log);

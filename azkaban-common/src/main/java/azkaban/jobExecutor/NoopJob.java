@@ -16,14 +16,14 @@
 
 package azkaban.jobExecutor;
 
-import org.apache.log4j.Logger;
-
 import azkaban.utils.Props;
+import org.apache.log4j.Logger;
 
 /**
  * A no-op job.
  */
 public class NoopJob implements Job {
+
   private String jobId;
 
   public NoopJob(String jobid, Props props, Props jobProps, Logger log) {
