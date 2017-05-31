@@ -22,17 +22,13 @@ package azkaban.database;
 public enum EncodingType {
   PLAIN(1), GZIP(2);
 
-  private int numVal;
+  private final int numVal;
 
-  EncodingType(int numVal) {
+  EncodingType(final int numVal) {
     this.numVal = numVal;
   }
 
-  public int getNumVal() {
-    return numVal;
-  }
-
-  public static EncodingType fromInteger(int x) {
+  public static EncodingType fromInteger(final int x) {
     switch (x) {
       case 1:
         return PLAIN;
@@ -41,5 +37,9 @@ public enum EncodingType {
       default:
         return PLAIN;
     }
+  }
+
+  public int getNumVal() {
+    return this.numVal;
   }
 }
