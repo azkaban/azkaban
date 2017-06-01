@@ -96,7 +96,7 @@ public class DefaultMailCreatorTest {
     assertTrue(mailCreator.createErrorEmail(
         executableFlow, message, azkabanName, scheme, clientHostname, clientPortNumber));
     assertEquals("Flow 'mail-creator-test' has failed on unit-tests", message.getSubject());
-    assertEquals(read("errorEmail.html"), message.getBody());
+    assertEquals(read("errorEmail.html").replaceAll("\\s+", ""), message.getBody().replaceAll("\\s+", ""));
   }
 
   @Test
@@ -106,7 +106,7 @@ public class DefaultMailCreatorTest {
     assertTrue(mailCreator.createFirstErrorMessage(
         executableFlow, message, azkabanName, scheme, clientHostname, clientPortNumber));
     assertEquals("Flow 'mail-creator-test' has encountered a failure on unit-tests", message.getSubject());
-    assertEquals(read("firstErrorMessage.html"), message.getBody());
+    assertEquals(read("firstErrorMessage.html").replaceAll("\\s+", ""), message.getBody().replaceAll("\\s+", ""));
   }
 
   @Test
@@ -117,7 +117,7 @@ public class DefaultMailCreatorTest {
     assertTrue(mailCreator.createSuccessEmail(
         executableFlow, message, azkabanName, scheme, clientHostname, clientPortNumber));
     assertEquals("Flow 'mail-creator-test' has succeeded on unit-tests", message.getSubject());
-    assertEquals(read("successEmail.html"), message.getBody());
+    assertEquals(read("successEmail.html").replaceAll("\\s+", ""), message.getBody().replaceAll("\\s+", ""));
   }
 
   private String read(String file) throws Exception {
