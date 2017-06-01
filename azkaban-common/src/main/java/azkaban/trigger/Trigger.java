@@ -36,8 +36,10 @@ public class Trigger {
   private final String source;
   private final List<TriggerAction> actions;
   private final List<TriggerAction> expireActions;
+  
   private Condition expireCondition;
   private Condition triggerCondition;
+  
   private int triggerId = -1;
   private long lastModifyTime;
   private TriggerStatus status = TriggerStatus.READY;
