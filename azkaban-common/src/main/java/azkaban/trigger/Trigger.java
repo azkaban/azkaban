@@ -34,10 +34,12 @@ public class Trigger {
   private final long submitTime;
   private final String submitUser;
   private final String source;
-  private final Condition triggerCondition;
-  private final Condition expireCondition;
   private final List<TriggerAction> actions;
   private final List<TriggerAction> expireActions;
+  
+  private Condition expireCondition;
+  private Condition triggerCondition;
+  
   private int triggerId = -1;
   private long lastModifyTime;
   private TriggerStatus status = TriggerStatus.READY;
@@ -213,8 +215,16 @@ public class Trigger {
     return triggerCondition;
   }
 
+  public void setTriggerCondition(Condition triggerCondition) {
+    this.triggerCondition = triggerCondition;
+  }
+
   public Condition getExpireCondition() {
     return expireCondition;
+  }
+
+  public void setExpireCondition(Condition expireCondition) {
+    this.expireCondition = expireCondition;
   }
 
   public List<TriggerAction> getActions() {
