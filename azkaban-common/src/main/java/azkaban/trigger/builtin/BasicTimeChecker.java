@@ -16,39 +16,33 @@
 
 package azkaban.trigger.builtin;
 
+import azkaban.trigger.ConditionChecker;
+import azkaban.utils.Utils;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Date;
-
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.joda.time.ReadablePeriod;
-import org.apache.log4j.Logger;
-
 import org.quartz.CronExpression;
-
-import azkaban.trigger.ConditionChecker;
-import azkaban.utils.Utils;
 
 public class BasicTimeChecker implements ConditionChecker {
 
 
   public static final String type = "BasicTimeChecker";
-
-  private long firstCheckTime;
+  private final String id;
+  private final long firstCheckTime;
+  private final DateTimeZone timezone;
+  private final ReadablePeriod period;
+  private final String cronExpression;
+  private final CronExpression cronExecutionTime;
   private long nextCheckTime;
-  private DateTimeZone timezone;
   private boolean isRecurring = true;
   private boolean skipPastChecks = true;
-  private ReadablePeriod period;
 
-  private String cronExpression;
-  private CronExpression cronExecutionTime;
-  private final String id;
-
-  public BasicTimeChecker(String id, long firstCheckTime,
-      DateTimeZone timezone, boolean isRecurring, boolean skipPastChecks,
-      ReadablePeriod period, String cronExpression) {
+  public BasicTimeChecker(final String id, final long firstCheckTime,
+      final DateTimeZone timezone, final boolean isRecurring, final boolean skipPastChecks,
+      final ReadablePeriod period, final String cronExpression) {
     this.id = id;
     this.firstCheckTime = firstCheckTime;
     this.timezone = timezone;
@@ -57,42 +51,13 @@ public class BasicTimeChecker implements ConditionChecker {
     this.period = period;
     this.nextCheckTime = firstCheckTime;
     this.cronExpression = cronExpression;
-    cronExecutionTime = Utils.parseCronExpression(cronExpression, timezone);
+    this.cronExecutionTime = Utils.parseCronExpression(cronExpression, timezone);
     this.nextCheckTime = calculateNextCheckTime();
   }
 
-  public long getFirstCheckTime() {
-    return firstCheckTime;
-  }
-
-  public DateTimeZone getTimeZone() {
-    return timezone;
-  }
-
-  public boolean isRecurring() {
-    return isRecurring;
-  }
-
-  public boolean isSkipPastChecks() {
-    return skipPastChecks;
-  }
-
-  public ReadablePeriod getPeriod() {
-    return period;
-  }
-
-  @Override
-  public long getNextCheckTime() {
-    return nextCheckTime;
-  }
-
-  public String getCronExpression() {
-    return cronExpression;
-  }
-
-  public BasicTimeChecker(String id, long firstCheckTime,
-      DateTimeZone timezone, long nextCheckTime, boolean isRecurring,
-      boolean skipPastChecks, ReadablePeriod period, String cronExpression) {
+  public BasicTimeChecker(final String id, final long firstCheckTime,
+      final DateTimeZone timezone, final long nextCheckTime, final boolean isRecurring,
+      final boolean skipPastChecks, final ReadablePeriod period, final String cronExpression) {
     this.id = id;
     this.firstCheckTime = firstCheckTime;
     this.timezone = timezone;
@@ -101,12 +66,73 @@ public class BasicTimeChecker implements ConditionChecker {
     this.skipPastChecks = skipPastChecks;
     this.period = period;
     this.cronExpression = cronExpression;
-    cronExecutionTime = Utils.parseCronExpression(cronExpression, timezone);
+    this.cronExecutionTime = Utils.parseCronExpression(cronExpression, timezone);
+  }
+
+  public static BasicTimeChecker createFromJson(final Object obj) throws Exception {
+    return createFromJson((HashMap<String, Object>) obj);
+  }
+
+  public static BasicTimeChecker createFromJson(final HashMap<String, Object> obj)
+      throws Exception {
+    final Map<String, Object> jsonObj = (HashMap<String, Object>) obj;
+    if (!jsonObj.get("type").equals(type)) {
+      throw new Exception("Cannot create checker of " + type + " from "
+          + jsonObj.get("type"));
+    }
+    final Long firstCheckTime = Long.valueOf((String) jsonObj.get("firstCheckTime"));
+    final String timezoneId = (String) jsonObj.get("timezone");
+    final long nextCheckTime = Long.valueOf((String) jsonObj.get("nextCheckTime"));
+    final DateTimeZone timezone = DateTimeZone.forID(timezoneId);
+    final boolean isRecurring = Boolean.valueOf((String) jsonObj.get("isRecurring"));
+    final boolean skipPastChecks =
+        Boolean.valueOf((String) jsonObj.get("skipPastChecks"));
+    final ReadablePeriod period =
+        Utils.parsePeriodString((String) jsonObj.get("period"));
+    final String id = (String) jsonObj.get("id");
+    final String cronExpression = (String) jsonObj.get("cronExpression");
+
+    final BasicTimeChecker checker =
+        new BasicTimeChecker(id, firstCheckTime, timezone, nextCheckTime,
+            isRecurring, skipPastChecks, period, cronExpression);
+    if (skipPastChecks) {
+      checker.updateNextCheckTime();
+    }
+    return checker;
+  }
+
+  public long getFirstCheckTime() {
+    return this.firstCheckTime;
+  }
+
+  public DateTimeZone getTimeZone() {
+    return this.timezone;
+  }
+
+  public boolean isRecurring() {
+    return this.isRecurring;
+  }
+
+  public boolean isSkipPastChecks() {
+    return this.skipPastChecks;
+  }
+
+  public ReadablePeriod getPeriod() {
+    return this.period;
+  }
+
+  @Override
+  public long getNextCheckTime() {
+    return this.nextCheckTime;
+  }
+
+  public String getCronExpression() {
+    return this.cronExpression;
   }
 
   @Override
   public Boolean eval() {
-    return nextCheckTime < System.currentTimeMillis();
+    return this.nextCheckTime < System.currentTimeMillis();
   }
 
   @Override
@@ -116,7 +142,7 @@ public class BasicTimeChecker implements ConditionChecker {
 
   @Override
   public String getId() {
-    return id;
+    return this.id;
   }
 
   @Override
@@ -124,66 +150,33 @@ public class BasicTimeChecker implements ConditionChecker {
     return type;
   }
 
-  @SuppressWarnings("unchecked")
-  public static BasicTimeChecker createFromJson(Object obj) throws Exception {
-    return createFromJson((HashMap<String, Object>) obj);
-  }
-
-  public static BasicTimeChecker createFromJson(HashMap<String, Object> obj)
-      throws Exception {
-    Map<String, Object> jsonObj = (HashMap<String, Object>) obj;
-    if (!jsonObj.get("type").equals(type)) {
-      throw new Exception("Cannot create checker of " + type + " from "
-          + jsonObj.get("type"));
-    }
-    Long firstCheckTime = Long.valueOf((String) jsonObj.get("firstCheckTime"));
-    String timezoneId = (String) jsonObj.get("timezone");
-    long nextCheckTime = Long.valueOf((String) jsonObj.get("nextCheckTime"));
-    DateTimeZone timezone = DateTimeZone.forID(timezoneId);
-    boolean isRecurring = Boolean.valueOf((String) jsonObj.get("isRecurring"));
-    boolean skipPastChecks =
-        Boolean.valueOf((String) jsonObj.get("skipPastChecks"));
-    ReadablePeriod period =
-        Utils.parsePeriodString((String) jsonObj.get("period"));
-    String id = (String) jsonObj.get("id");
-    String cronExpression = (String) jsonObj.get("cronExpression");
-
-    BasicTimeChecker checker =
-        new BasicTimeChecker(id, firstCheckTime, timezone, nextCheckTime,
-            isRecurring, skipPastChecks, period, cronExpression);
-    if (skipPastChecks) {
-      checker.updateNextCheckTime();
-    }
-    return checker;
-  }
-
   @Override
-  public BasicTimeChecker fromJson(Object obj) throws Exception {
+  public BasicTimeChecker fromJson(final Object obj) throws Exception {
     return createFromJson(obj);
   }
 
   private void updateNextCheckTime() {
-    nextCheckTime = calculateNextCheckTime();
+    this.nextCheckTime = calculateNextCheckTime();
   }
 
   private long calculateNextCheckTime() {
-    DateTime date = new DateTime(nextCheckTime).withZone(timezone);
+    DateTime date = new DateTime(this.nextCheckTime).withZone(this.timezone);
     int count = 0;
     while (!date.isAfterNow()) {
       if (count > 100000) {
         throw new IllegalStateException(
             "100000 increments of period did not get to present time.");
       }
-      if (period == null && cronExpression == null) {
+      if (this.period == null && this.cronExpression == null) {
         break;
-      } else if (cronExecutionTime != null) {
-        Date nextDate = cronExecutionTime.getNextValidTimeAfter(date.toDate());
+      } else if (this.cronExecutionTime != null) {
+        final Date nextDate = this.cronExecutionTime.getNextValidTimeAfter(date.toDate());
         date = new DateTime(nextDate);
       } else {
-        date = date.plus(period);
+        date = date.plus(this.period);
       }
       count += 1;
-      if (!skipPastChecks) {
+      if (!this.skipPastChecks) {
         continue;
       }
     }
@@ -197,16 +190,16 @@ public class BasicTimeChecker implements ConditionChecker {
 
   @Override
   public Object toJson() {
-    Map<String, Object> jsonObj = new HashMap<String, Object>();
+    final Map<String, Object> jsonObj = new HashMap<>();
     jsonObj.put("type", type);
-    jsonObj.put("firstCheckTime", String.valueOf(firstCheckTime));
-    jsonObj.put("timezone", timezone.getID());
-    jsonObj.put("nextCheckTime", String.valueOf(nextCheckTime));
-    jsonObj.put("isRecurring", String.valueOf(isRecurring));
-    jsonObj.put("skipPastChecks", String.valueOf(skipPastChecks));
-    jsonObj.put("period", Utils.createPeriodString(period));
-    jsonObj.put("id", id);
-    jsonObj.put("cronExpression", cronExpression);
+    jsonObj.put("firstCheckTime", String.valueOf(this.firstCheckTime));
+    jsonObj.put("timezone", this.timezone.getID());
+    jsonObj.put("nextCheckTime", String.valueOf(this.nextCheckTime));
+    jsonObj.put("isRecurring", String.valueOf(this.isRecurring));
+    jsonObj.put("skipPastChecks", String.valueOf(this.skipPastChecks));
+    jsonObj.put("period", Utils.createPeriodString(this.period));
+    jsonObj.put("id", this.id);
+    jsonObj.put("cronExpression", this.cronExpression);
 
     return jsonObj;
   }
@@ -217,7 +210,7 @@ public class BasicTimeChecker implements ConditionChecker {
   }
 
   @Override
-  public void setContext(Map<String, Object> context) {
+  public void setContext(final Map<String, Object> context) {
   }
 
 }

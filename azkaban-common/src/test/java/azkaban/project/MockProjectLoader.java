@@ -16,6 +16,12 @@
 
 package azkaban.project;
 
+import azkaban.flow.Flow;
+import azkaban.project.ProjectLogEvent.EventType;
+import azkaban.user.Permission;
+import azkaban.user.User;
+import azkaban.utils.Props;
+import azkaban.utils.Triple;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -23,34 +29,26 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import azkaban.project.ProjectLogEvent.EventType;
-import azkaban.flow.Flow;
-import azkaban.user.Permission;
-import azkaban.user.User;
-import azkaban.utils.Props;
-import azkaban.utils.Triple;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class MockProjectLoader implements ProjectLoader {
+
+  private static int projectId = 0;
+  private final ConcurrentHashMap<Integer, Project> projectsById =
+      new ConcurrentHashMap<>();
+  private final ConcurrentHashMap<String, Project> projectsByName =
+      new ConcurrentHashMap<>();
   public File dir;
 
-  public MockProjectLoader(File dir) {
+  public MockProjectLoader(final File dir) {
     this.dir = dir;
   }
 
-  private ConcurrentHashMap<Integer, Project> projectsById =
-      new ConcurrentHashMap<>();
-  private ConcurrentHashMap<String, Project> projectsByName =
-      new ConcurrentHashMap<>();
-
-  private static int projectId = 0;
-
   @Override
   public List<Project> fetchAllActiveProjects() throws ProjectManagerException {
-    ArrayList<Project> activeProjects = new ArrayList<>();
-    for(Project project : projectsById.values()){
-      if(project.isActive()){
+    final ArrayList<Project> activeProjects = new ArrayList<>();
+    for (final Project project : this.projectsById.values()) {
+      if (project.isActive()) {
         activeProjects.add(project);
       }
     }
@@ -58,22 +56,22 @@ public class MockProjectLoader implements ProjectLoader {
   }
 
   @Override
-  public Project fetchProjectById(int id) throws ProjectManagerException {
+  public Project fetchProjectById(final int id) throws ProjectManagerException {
     System.out.println("MockProjectLoader: fetch project by id " + id);
-    if(!projectsById.containsKey(id)){
+    if (!this.projectsById.containsKey(id)) {
       throw new ProjectManagerException("Could not get project by id.");
     }
-    return projectsById.get(id);
+    return this.projectsById.get(id);
   }
 
   @Override
-  public Project createNewProject(String name, String description, User creator)
+  public Project createNewProject(final String name, final String description, final User creator)
       throws ProjectManagerException {
-    Project project = new Project(++projectId, name);
+    final Project project = new Project(++projectId, name);
     project.setDescription(description);
     project.setActive(true);
-    projectsById.put(project.getId(), project);
-    projectsByName.put(project.getName(), project);
+    this.projectsById.put(project.getId(), project);
+    this.projectsByName.put(project.getName(), project);
     System.out.println("MockProjectLoader: Created project " + project.getName() +
         ", id: " + project.getId() + ", description: " + description +
         ", user: " + creator.getUserId());
@@ -81,138 +79,141 @@ public class MockProjectLoader implements ProjectLoader {
   }
 
   @Override
-  public void removeProject(Project project, String user)
+  public void removeProject(final Project project, final String user)
       throws ProjectManagerException {
     project.setActive(false);
     System.out.println("MockProjectLoader: removed project " + project.getName());
   }
 
   @Override
-  public void updatePermission(Project project, String name, Permission perm,
-      boolean isGroup) throws ProjectManagerException {
+  public void updatePermission(final Project project, final String name, final Permission perm,
+      final boolean isGroup) throws ProjectManagerException {
     // TODO Auto-generated method stub
 
   }
 
   @Override
-  public void updateDescription(Project project, String description, String user)
+  public void updateDescription(final Project project, final String description, final String user)
       throws ProjectManagerException {
     // TODO Auto-generated method stub
 
   }
 
   @Override
-  public boolean postEvent(Project project, EventType type, String user,
-      String message) {
+  public boolean postEvent(final Project project, final EventType type, final String user,
+      final String message) {
     // TODO Auto-generated method stub
     return false;
   }
 
   @Override
-  public List<ProjectLogEvent> getProjectEvents(Project project, int num,
-      int skip) throws ProjectManagerException {
+  public List<ProjectLogEvent> getProjectEvents(final Project project, final int num,
+      final int skip) throws ProjectManagerException {
     // TODO Auto-generated method stub
     return null;
   }
 
   @Override
-  public void uploadProjectFile(int projectId, int version, File localFile, String user)
+  public void uploadProjectFile(final int projectId, final int version, final File localFile,
+      final String user)
       throws ProjectManagerException {
     // TODO Auto-generated method stub
 
   }
 
   @Override
-  public void addProjectVersion(int projectId, int version, File localFile, String uploader, byte[] md5, String resourceId)
+  public void addProjectVersion(final int projectId, final int version, final File localFile,
+      final String uploader,
+      final byte[] md5, final String resourceId)
       throws ProjectManagerException {
 
   }
 
   @Override
-  public ProjectFileHandler fetchProjectMetaData(int projectId, int version) {
+  public ProjectFileHandler fetchProjectMetaData(final int projectId, final int version) {
     return null;
   }
 
   @Override
-  public ProjectFileHandler getUploadedFile(int projectId, int version)
-      throws ProjectManagerException {
-    // TODO Auto-generated method stub
-    return null;
-  }
-
-  @Override
-  public void changeProjectVersion(Project project, int version, String user)
-      throws ProjectManagerException {
-    // TODO Auto-generated method stub
-
-  }
-
-  @Override
-  public void uploadFlows(Project project, int version, Collection<Flow> flows)
-      throws ProjectManagerException {
-    // TODO Auto-generated method stub
-
-  }
-
-  @Override
-  public void uploadFlow(Project project, int version, Flow flow)
-      throws ProjectManagerException {
-    // TODO Auto-generated method stub
-
-  }
-
-  @Override
-  public Flow fetchFlow(Project project, String flowId)
+  public ProjectFileHandler getUploadedFile(final int projectId, final int version)
       throws ProjectManagerException {
     // TODO Auto-generated method stub
     return null;
   }
 
   @Override
-  public List<Flow> fetchAllProjectFlows(Project project)
+  public void changeProjectVersion(final Project project, final int version, final String user)
+      throws ProjectManagerException {
+    // TODO Auto-generated method stub
+
+  }
+
+  @Override
+  public void uploadFlows(final Project project, final int version, final Collection<Flow> flows)
+      throws ProjectManagerException {
+    // TODO Auto-generated method stub
+
+  }
+
+  @Override
+  public void uploadFlow(final Project project, final int version, final Flow flow)
+      throws ProjectManagerException {
+    // TODO Auto-generated method stub
+
+  }
+
+  @Override
+  public Flow fetchFlow(final Project project, final String flowId)
+      throws ProjectManagerException {
+    // TODO Auto-generated method stub
+    return null;
+  }
+
+  @Override
+  public List<Flow> fetchAllProjectFlows(final Project project)
       throws ProjectManagerException {
     return new ArrayList<>();
   }
 
   @Override
-  public int getLatestProjectVersion(Project project)
+  public int getLatestProjectVersion(final Project project)
       throws ProjectManagerException {
     // TODO Auto-generated method stub
     return 0;
   }
 
   @Override
-  public void uploadProjectProperty(Project project, Props props)
+  public void uploadProjectProperty(final Project project, final Props props)
       throws ProjectManagerException {
     // TODO Auto-generated method stub
 
   }
 
   @Override
-  public void uploadProjectProperties(Project project, List<Props> properties)
+  public void uploadProjectProperties(final Project project, final List<Props> properties)
       throws ProjectManagerException {
     // TODO Auto-generated method stub
 
   }
 
   @Override
-  public Props fetchProjectProperty(Project project, String propsName)
+  public Props fetchProjectProperty(final Project project, final String propsName)
       throws ProjectManagerException {
     // TODO Auto-generated method stub
     return null;
   }
 
   @Override
-  public Map<String, Props> fetchProjectProperties(int projectId, int version)
+  public Map<String, Props> fetchProjectProperties(final int projectId, final int version)
       throws ProjectManagerException {
-    Map<String, Props> propertyMap = new HashMap<String, Props>();
-    for (File file : dir.listFiles()) {
-      String name = file.getName();
+    final Map<String, Props> propertyMap = new HashMap<>();
+    for (final File file : this.dir.listFiles()) {
+      final String name = file.getName();
       if (name.endsWith(".job") || name.endsWith(".properties")) {
         try {
-          Props props = new Props(null, file);
+          final Props props = new Props(null, file);
           propertyMap.put(name, props);
-        } catch (IOException e) {
+        } catch (final IOException e) {
           throw new ProjectManagerException(e.getMessage());
         }
       }
@@ -222,60 +223,60 @@ public class MockProjectLoader implements ProjectLoader {
   }
 
   @Override
-  public void cleanOlderProjectVersion(int projectId, int version)
+  public void cleanOlderProjectVersion(final int projectId, final int version)
       throws ProjectManagerException {
     // TODO Auto-generated method stub
 
   }
 
   @Override
-  public void removePermission(Project project, String name, boolean isGroup)
+  public void removePermission(final Project project, final String name, final boolean isGroup)
       throws ProjectManagerException {
     // TODO Auto-generated method stub
 
   }
 
   @Override
-  public void updateProjectProperty(Project project, Props props)
+  public void updateProjectProperty(final Project project, final Props props)
       throws ProjectManagerException {
     // TODO Auto-generated method stub
 
   }
 
   @Override
-  public Props fetchProjectProperty(int projectId, int projectVer,
-      String propsName) throws ProjectManagerException {
+  public Props fetchProjectProperty(final int projectId, final int projectVer,
+      final String propsName) throws ProjectManagerException {
     // TODO Auto-generated method stub
     return null;
   }
 
   @Override
   public List<Triple<String, Boolean, Permission>> getProjectPermissions(
-      int projectId) throws ProjectManagerException {
+      final int projectId) throws ProjectManagerException {
     // TODO Auto-generated method stub
     return null;
   }
 
   @Override
-  public void updateProjectSettings(Project project)
+  public void updateProjectSettings(final Project project)
       throws ProjectManagerException {
     // TODO Auto-generated method stub
 
   }
 
   @Override
-  public void updateFlow(Project project, int version, Flow flow)
+  public void updateFlow(final Project project, final int version, final Flow flow)
       throws ProjectManagerException {
     // TODO Auto-generated method stub
 
   }
 
   @Override
-  public Project fetchProjectByName(String name) throws ProjectManagerException {
+  public Project fetchProjectByName(final String name) throws ProjectManagerException {
     System.out.println("MockProjectLoader: fetch project by name " + name);
-    if(!projectsByName.containsKey(name)){
+    if (!this.projectsByName.containsKey(name)) {
       throw new ProjectManagerException("Could not get project by name.");
     }
-    return projectsByName.get(name);
+    return this.projectsByName.get(name);
   }
 }

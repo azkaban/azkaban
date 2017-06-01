@@ -16,16 +16,16 @@
 
 package azkaban.execapp.event;
 
-import java.util.ArrayList;
-import java.util.Map;
-
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutableNode;
 import azkaban.executor.ExecutorLoader;
 import azkaban.executor.ExecutorManagerException;
 import azkaban.executor.Status;
+import java.util.ArrayList;
+import java.util.Map;
 
 public class RemoteFlowWatcher extends FlowWatcher {
+
   private final static long CHECK_INTERVAL_MS = 60 * 1000;
 
   private int execId;
@@ -37,89 +37,91 @@ public class RemoteFlowWatcher extends FlowWatcher {
   // Every minute
   private long checkIntervalMs = CHECK_INTERVAL_MS;
 
-  public RemoteFlowWatcher(int execId, ExecutorLoader loader) {
+  public RemoteFlowWatcher(final int execId, final ExecutorLoader loader) {
     this(execId, loader, CHECK_INTERVAL_MS);
   }
 
-  public RemoteFlowWatcher(int execId, ExecutorLoader loader, long interval) {
+  public RemoteFlowWatcher(final int execId, final ExecutorLoader loader, final long interval) {
     super(execId);
-    checkIntervalMs = interval;
+    this.checkIntervalMs = interval;
 
     try {
-      flow = loader.fetchExecutableFlow(execId);
-    } catch (ExecutorManagerException e) {
+      this.flow = loader.fetchExecutableFlow(execId);
+    } catch (final ExecutorManagerException e) {
       return;
     }
 
-    super.setFlow(flow);
+    super.setFlow(this.flow);
     this.loader = loader;
     this.execId = execId;
-    if (flow != null) {
+    if (this.flow != null) {
       this.thread = new RemoteUpdaterThread();
       this.thread.setName("Remote-watcher-flow-" + execId);
       this.thread.start();
     }
   }
 
+  @Override
+  public synchronized void stopWatcher() {
+    if (this.isShutdown) {
+      return;
+    }
+    this.isShutdown = true;
+    if (this.thread != null) {
+      this.thread.interrupt();
+    }
+    super.unblockAllWatches();
+    this.loader = null;
+    this.flow = null;
+  }
+
   private class RemoteUpdaterThread extends Thread {
+
     @Override
     public void run() {
       do {
         ExecutableFlow updateFlow = null;
         try {
-          updateFlow = loader.fetchExecutableFlow(execId);
-        } catch (ExecutorManagerException e) {
+          updateFlow = RemoteFlowWatcher.this.loader.fetchExecutableFlow(
+              RemoteFlowWatcher.this.execId);
+        } catch (final ExecutorManagerException e) {
           e.printStackTrace();
-          isShutdown = true;
+          RemoteFlowWatcher.this.isShutdown = true;
         }
 
         long updateTime = 0;
-        if (flow == null) {
-          flow = updateFlow;
+        if (RemoteFlowWatcher.this.flow == null) {
+          RemoteFlowWatcher.this.flow = updateFlow;
         } else {
-          Map<String, Object> updateData =
+          final Map<String, Object> updateData =
               updateFlow.toUpdateObject(updateTime);
-          ArrayList<ExecutableNode> updatedNodes =
-              new ArrayList<ExecutableNode>();
-          flow.applyUpdateObject(updateData, updatedNodes);
+          final ArrayList<ExecutableNode> updatedNodes =
+              new ArrayList<>();
+          RemoteFlowWatcher.this.flow.applyUpdateObject(updateData, updatedNodes);
 
-          flow.setStatus(updateFlow.getStatus());
-          flow.setEndTime(updateFlow.getEndTime());
-          flow.setUpdateTime(updateFlow.getUpdateTime());
+          RemoteFlowWatcher.this.flow.setStatus(updateFlow.getStatus());
+          RemoteFlowWatcher.this.flow.setEndTime(updateFlow.getEndTime());
+          RemoteFlowWatcher.this.flow.setUpdateTime(updateFlow.getUpdateTime());
 
-          for (ExecutableNode node : updatedNodes) {
+          for (final ExecutableNode node : updatedNodes) {
             handleJobStatusChange(node.getNestedId(), node.getStatus());
           }
 
-          updateTime = flow.getUpdateTime();
+          updateTime = RemoteFlowWatcher.this.flow.getUpdateTime();
         }
 
-        if (Status.isStatusFinished(flow.getStatus())) {
-          isShutdown = true;
+        if (Status.isStatusFinished(RemoteFlowWatcher.this.flow.getStatus())) {
+          RemoteFlowWatcher.this.isShutdown = true;
         } else {
           synchronized (this) {
             try {
-              wait(checkIntervalMs);
-            } catch (InterruptedException e) {
+              wait(RemoteFlowWatcher.this.checkIntervalMs);
+            } catch (final InterruptedException e) {
             }
           }
         }
-      } while (!isShutdown);
+      } while (!RemoteFlowWatcher.this.isShutdown);
     }
 
-  }
-
-  @Override
-  public synchronized void stopWatcher() {
-    if (isShutdown) {
-      return;
-    }
-    isShutdown = true;
-    if (thread != null) {
-      thread.interrupt();
-    }
-    super.unblockAllWatches();
-    loader = null;
-    flow = null;
   }
 }

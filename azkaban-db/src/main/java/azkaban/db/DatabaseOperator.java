@@ -36,9 +36,9 @@ public interface DatabaseOperator {
    * @param params Initialize the PreparedStatement's IN parameters
    * @param <T> The type of object that the qeury handler returns
    * @return The object returned by the handler.
-   * @throws SQLException
    */
-  <T> T query(String sqlQuery, ResultSetHandler<T> resultHandler, Object...params) throws SQLException;
+  <T> T query(String sqlQuery, ResultSetHandler<T> resultHandler, Object... params)
+      throws SQLException;
 
   /**
    * Provide a way to allow users define custom SQL operations without relying on fixed
@@ -48,7 +48,6 @@ public interface DatabaseOperator {
    * @param operations A sequence of DB operations
    * @param <T> The type of object that the operations returns. Note that T could be null
    * @return T The object returned by the SQL statement, expected by the caller
-   * @throws SQLException
    */
   <T> T transaction(SQLTransaction<T> operations) throws SQLException;
 
@@ -58,7 +57,6 @@ public interface DatabaseOperator {
    * @param updateClause sql statements to execute
    * @param params Initialize the PreparedStatement's IN parameters
    * @return The number of rows updated.
-   * @throws SQLException
    */
-  int update(String updateClause, Object...params) throws SQLException;
+  int update(String updateClause, Object... params) throws SQLException;
 }

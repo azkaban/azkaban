@@ -17,26 +17,28 @@
 
 package azkaban.storage;
 
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+
 import azkaban.project.ProjectLoader;
 import azkaban.spi.StorageMetadata;
 import java.io.File;
 import org.junit.Test;
 
-import static org.mockito.Mockito.*;
-
 
 public class DatabaseStorageTest {
+
   private final ProjectLoader projectLoader = mock(ProjectLoader.class);
-  private final DatabaseStorage databaseStorage = new DatabaseStorage(projectLoader);
+  private final DatabaseStorage databaseStorage = new DatabaseStorage(this.projectLoader);
 
   @Test
   public void testPut() throws Exception {
     final File file = mock(File.class);
-    int projectId = 1234;
-    int version = 1;
-    String uploader = "testuser";
+    final int projectId = 1234;
+    final int version = 1;
+    final String uploader = "testuser";
     final StorageMetadata metadata = new StorageMetadata(projectId, version, uploader, null);
-    databaseStorage.put(metadata, file);
-    verify(projectLoader).uploadProjectFile(projectId, version, file, uploader);
+    this.databaseStorage.put(metadata, file);
+    verify(this.projectLoader).uploadProjectFile(projectId, version, file, uploader);
   }
 }

@@ -1,17 +1,18 @@
 package azkaban.project.validator;
 
 public class ValidatorManagerException extends RuntimeException {
+
   private static final long serialVersionUID = 1L;
 
-  public ValidatorManagerException(String message) {
+  public ValidatorManagerException(final String message) {
     super(message);
   }
 
-  public ValidatorManagerException(Throwable cause) {
+  public ValidatorManagerException(final Throwable cause) {
     super(cause);
   }
 
-  public ValidatorManagerException(String message, Throwable cause) {
+  public ValidatorManagerException(final String message, final Throwable cause) {
     super(message, cause);
   }
 

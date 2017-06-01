@@ -16,7 +16,22 @@
 
 package azkaban.project;
 
+import static java.util.Objects.requireNonNull;
+
+import azkaban.flow.Flow;
+import azkaban.project.ProjectLogEvent.EventType;
+import azkaban.project.validator.ValidationReport;
+import azkaban.project.validator.ValidationStatus;
+import azkaban.project.validator.ValidatorConfigs;
+import azkaban.project.validator.ValidatorManager;
+import azkaban.project.validator.XmlValidatorManager;
 import azkaban.storage.StorageManager;
+import azkaban.user.Permission;
+import azkaban.user.Permission.Type;
+import azkaban.user.User;
+import azkaban.utils.Props;
+import azkaban.utils.PropsUtils;
+import azkaban.utils.Utils;
 import com.google.inject.Inject;
 import java.io.File;
 import java.io.IOException;
@@ -28,28 +43,12 @@ import java.util.Map.Entry;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 import java.util.zip.ZipFile;
-
 import org.apache.commons.io.FileUtils;
 import org.apache.log4j.Logger;
 
-import azkaban.flow.Flow;
-import azkaban.project.ProjectLogEvent.EventType;
-import azkaban.project.validator.ValidationReport;
-import azkaban.project.validator.ValidationStatus;
-import azkaban.project.validator.ValidatorConfigs;
-import azkaban.project.validator.ValidatorManager;
-import azkaban.project.validator.XmlValidatorManager;
-import azkaban.user.Permission;
-import azkaban.user.Permission.Type;
-import azkaban.user.User;
-import azkaban.utils.Props;
-import azkaban.utils.PropsUtils;
-import azkaban.utils.Utils;
-
-import static java.util.Objects.*;
-
 
 public class ProjectManager {
+
   private static final Logger logger = Logger.getLogger(ProjectManager.class);
   private final ProjectLoader projectLoader;
   private final StorageManager storageManager;
@@ -59,7 +58,8 @@ public class ProjectManager {
   private final boolean creatorDefaultPermissions;
 
   @Inject
-  public ProjectManager(ProjectLoader loader, StorageManager storageManager, Props props) {
+  public ProjectManager(final ProjectLoader loader, final StorageManager storageManager,
+      final Props props) {
     this.projectLoader = requireNonNull(loader);
     this.storageManager = requireNonNull(storageManager);
     this.props = requireNonNull(props);
@@ -68,20 +68,20 @@ public class ProjectManager {
     this.projectVersionRetention =
         (props.getInt("project.version.retention", 3));
     logger.info("Project version retention is set to "
-        + projectVersionRetention);
+        + this.projectVersionRetention);
 
     this.creatorDefaultPermissions =
         props.getBoolean("creator.default.proxy", true);
 
-    if (!tempDir.exists()) {
-      tempDir.mkdirs();
+    if (!this.tempDir.exists()) {
+      this.tempDir.mkdirs();
     }
 
     // The prop passed to XmlValidatorManager is used to initialize all the
     // validators
     // Each validator will take certain key/value pairs from the prop to
     // initialize itself.
-    Props prop = new Props(props);
+    final Props prop = new Props(props);
     prop.put(ValidatorConfigs.PROJECT_ARCHIVE_FILE_PATH, "initialize");
     // By instantiating an object of XmlValidatorManager, this will verify the
     // config files for the validators.
@@ -89,41 +89,41 @@ public class ProjectManager {
     loadProjectWhiteList();
   }
 
-  public void loadAllProjectFlows(Project project) {
+  public void loadAllProjectFlows(final Project project) {
     try {
-      List<Flow> flows = projectLoader.fetchAllProjectFlows(project);
-      Map<String, Flow> flowMap = new HashMap<String, Flow>();
-      for (Flow flow : flows) {
+      final List<Flow> flows = this.projectLoader.fetchAllProjectFlows(project);
+      final Map<String, Flow> flowMap = new HashMap<>();
+      for (final Flow flow : flows) {
         flowMap.put(flow.getId(), flow);
       }
 
       project.setFlows(flowMap);
-    } catch (ProjectManagerException e) {
+    } catch (final ProjectManagerException e) {
       throw new RuntimeException("Could not load projects flows from store.", e);
     }
   }
 
   public Props getProps() {
-    return props;
+    return this.props;
   }
 
-  public List<Project> getUserProjects(User user) {
-    ArrayList<Project> userProjects = new ArrayList<>();
-    for (Project project : getProjects()) {
-      Permission perm = project.getUserPermission(user);
+  public List<Project> getUserProjects(final User user) {
+    final ArrayList<Project> userProjects = new ArrayList<>();
+    for (final Project project : getProjects()) {
+      final Permission perm = project.getUserPermission(user);
 
       if (perm != null
           && (perm.isPermissionSet(Type.ADMIN) || perm
-              .isPermissionSet(Type.READ))) {
+          .isPermissionSet(Type.READ))) {
         userProjects.add(project);
       }
     }
     return userProjects;
   }
 
-  public List<Project> getGroupProjects(User user) {
-    List<Project> groupProjects = new ArrayList<>();
-    for (Project project : getProjects()) {
+  public List<Project> getGroupProjects(final User user) {
+    final List<Project> groupProjects = new ArrayList<>();
+    for (final Project project : getProjects()) {
       if (project.hasGroupPermission(user, Type.READ)) {
         groupProjects.add(project);
       }
@@ -131,21 +131,21 @@ public class ProjectManager {
     return groupProjects;
   }
 
-  public List<Project> getUserProjectsByRegex(User user, String regexPattern) {
-    List<Project> userProjects = new ArrayList<>();
-    Pattern pattern;
+  public List<Project> getUserProjectsByRegex(final User user, final String regexPattern) {
+    final List<Project> userProjects = new ArrayList<>();
+    final Pattern pattern;
     try {
       pattern = Pattern.compile(regexPattern, Pattern.CASE_INSENSITIVE);
-    } catch (PatternSyntaxException e) {
+    } catch (final PatternSyntaxException e) {
       logger.error("Bad regex pattern " + regexPattern);
       return userProjects;
     }
-    for (Project project : getProjects()) {
-      Permission perm = project.getUserPermission(user);
+    for (final Project project : getProjects()) {
+      final Permission perm = project.getUserPermission(user);
 
       if (perm != null
           && (perm.isPermissionSet(Type.ADMIN) || perm
-              .isPermissionSet(Type.READ))) {
+          .isPermissionSet(Type.READ))) {
         if (pattern.matcher(project.getName()).find()) {
           userProjects.add(project);
         }
@@ -155,25 +155,25 @@ public class ProjectManager {
   }
 
   public List<Project> getProjects() {
-    List<Project> projects;
+    final List<Project> projects;
     try {
-      projects = projectLoader.fetchAllActiveProjects();
-    } catch (ProjectManagerException e) {
+      projects = this.projectLoader.fetchAllActiveProjects();
+    } catch (final ProjectManagerException e) {
       throw new RuntimeException("Could not load projects from store.", e);
     }
     return projects;
   }
 
-  public List<Project> getProjectsByRegex(String regexPattern) {
-    List<Project> allProjects = new ArrayList<Project>();
-    Pattern pattern;
+  public List<Project> getProjectsByRegex(final String regexPattern) {
+    final List<Project> allProjects = new ArrayList<>();
+    final Pattern pattern;
     try {
       pattern = Pattern.compile(regexPattern, Pattern.CASE_INSENSITIVE);
-    } catch (PatternSyntaxException e) {
+    } catch (final PatternSyntaxException e) {
       logger.error("Bad regex pattern " + regexPattern);
       return allProjects;
     }
-    for (Project project : getProjects()) {
+    for (final Project project : getProjects()) {
       if (pattern.matcher(project.getName()).find()) {
         allProjects.add(project);
       }
@@ -181,51 +181,43 @@ public class ProjectManager {
     return allProjects;
   }
 
-    /**
-     * Checks if a project is active using project_id
-     *
-     * @param id
-     */
-    public Boolean isActiveProject(int id) {
-      return getProject(id) != null;
-    }
+  /**
+   * Checks if a project is active using project_id
+   */
+  public Boolean isActiveProject(final int id) {
+    return getProject(id) != null;
+  }
 
-    /**
-     * fetch active project (boolean active = true) from DB by project_name
-     *
-     * @param name
-     * @return
-     */
-    public Project getProject(String name) {
-        Project fetchedProject = null;
-        try {
-            fetchedProject = projectLoader.fetchProjectByName(name);
-            loadAllProjectFlows(fetchedProject);
-        } catch (ProjectManagerException e) {
-            logger.error("Could not load project" + name + " from store.", e);
-        }
-        return fetchedProject;
+  /**
+   * fetch active project (boolean active = true) from DB by project_name
+   */
+  public Project getProject(final String name) {
+    Project fetchedProject = null;
+    try {
+      fetchedProject = this.projectLoader.fetchProjectByName(name);
+      loadAllProjectFlows(fetchedProject);
+    } catch (final ProjectManagerException e) {
+      logger.error("Could not load project" + name + " from store.", e);
     }
+    return fetchedProject;
+  }
 
-    /**
-     * fetch active project (boolean active = true) from DB by project_id
-     *
-     * @param id
-     * @return
-     */
-    public Project getProject(int id) {
-        Project fetchedProject = null;
-        try {
-            fetchedProject = projectLoader.fetchProjectById(id);
-            loadAllProjectFlows(fetchedProject);
-        } catch (ProjectManagerException e) {
-            logger.error("Could not load project" + id + " from store.", e);
-        }
-        return fetchedProject;
+  /**
+   * fetch active project (boolean active = true) from DB by project_id
+   */
+  public Project getProject(final int id) {
+    Project fetchedProject = null;
+    try {
+      fetchedProject = this.projectLoader.fetchProjectById(id);
+      loadAllProjectFlows(fetchedProject);
+    } catch (final ProjectManagerException e) {
+      logger.error("Could not load project" + id + " from store.", e);
     }
+    return fetchedProject;
+  }
 
-  public Project createProject(String projectName, String description,
-      User creator) throws ProjectManagerException {
+  public Project createProject(final String projectName, final String description,
+      final User creator) throws ProjectManagerException {
     if (projectName == null || projectName.trim().isEmpty()) {
       throw new ProjectManagerException("Project name cannot be empty.");
     } else if (description == null || description.trim().isEmpty()) {
@@ -239,156 +231,152 @@ public class ProjectManager {
 
     logger.info("Trying to create " + projectName + " by user "
         + creator.getUserId());
-    Project newProject =
-        projectLoader.createNewProject(projectName, description, creator);
+    final Project newProject =
+        this.projectLoader.createNewProject(projectName, description, creator);
 
-    if (creatorDefaultPermissions) {
+    if (this.creatorDefaultPermissions) {
       // Add permission to project
-      projectLoader.updatePermission(newProject, creator.getUserId(),
+      this.projectLoader.updatePermission(newProject, creator.getUserId(),
           new Permission(Permission.Type.ADMIN), false);
 
       // Add proxy user
       newProject.addProxyUser(creator.getUserId());
       try {
         updateProjectSetting(newProject);
-      } catch (ProjectManagerException e) {
+      } catch (final ProjectManagerException e) {
         e.printStackTrace();
         throw e;
       }
     }
 
-    projectLoader.postEvent(newProject, EventType.CREATED, creator.getUserId(),
+    this.projectLoader.postEvent(newProject, EventType.CREATED, creator.getUserId(),
         null);
 
     return newProject;
   }
 
-    /**
-     * Permanently delete all project files and properties data for all versions
-     * of a project and log event in project_events table
-     *
-     * @param project
-     * @param deleter
-     * @return
-     * @throws ProjectManagerException
-     */
-    public synchronized Project purgeProject(Project project, User deleter)
-        throws ProjectManagerException {
-        projectLoader.cleanOlderProjectVersion(project.getId(),
-            project.getVersion() + 1);
-        projectLoader
-            .postEvent(project, EventType.PURGE, deleter.getUserId(), String
-                .format("Purged versions before %d", project.getVersion() + 1));
-        return project;
-    }
-
-  public synchronized Project removeProject(Project project, User deleter)
+  /**
+   * Permanently delete all project files and properties data for all versions
+   * of a project and log event in project_events table
+   */
+  public synchronized Project purgeProject(final Project project, final User deleter)
       throws ProjectManagerException {
-    projectLoader.removeProject(project, deleter.getUserId());
-    projectLoader.postEvent(project, EventType.DELETED, deleter.getUserId(),
+    this.projectLoader.cleanOlderProjectVersion(project.getId(),
+        project.getVersion() + 1);
+    this.projectLoader
+        .postEvent(project, EventType.PURGE, deleter.getUserId(), String
+            .format("Purged versions before %d", project.getVersion() + 1));
+    return project;
+  }
+
+  public synchronized Project removeProject(final Project project, final User deleter)
+      throws ProjectManagerException {
+    this.projectLoader.removeProject(project, deleter.getUserId());
+    this.projectLoader.postEvent(project, EventType.DELETED, deleter.getUserId(),
         null);
     return project;
   }
 
-  public void updateProjectDescription(Project project, String description,
-      User modifier) throws ProjectManagerException {
-    projectLoader.updateDescription(project, description, modifier.getUserId());
-    projectLoader.postEvent(project, EventType.DESCRIPTION,
+  public void updateProjectDescription(final Project project, final String description,
+      final User modifier) throws ProjectManagerException {
+    this.projectLoader.updateDescription(project, description, modifier.getUserId());
+    this.projectLoader.postEvent(project, EventType.DESCRIPTION,
         modifier.getUserId(), "Description changed to " + description);
   }
 
-  public List<ProjectLogEvent> getProjectEventLogs(Project project,
-      int results, int skip) throws ProjectManagerException {
-    return projectLoader.getProjectEvents(project, results, skip);
+  public List<ProjectLogEvent> getProjectEventLogs(final Project project,
+      final int results, final int skip) throws ProjectManagerException {
+    return this.projectLoader.getProjectEvents(project, results, skip);
   }
 
-  public Props getProperties(Project project, String source)
+  public Props getProperties(final Project project, final String source)
       throws ProjectManagerException {
-    return projectLoader.fetchProjectProperty(project, source);
+    return this.projectLoader.fetchProjectProperty(project, source);
   }
 
-  public Props getJobOverrideProperty(Project project, String jobName)
+  public Props getJobOverrideProperty(final Project project, final String jobName)
       throws ProjectManagerException {
-    return projectLoader.fetchProjectProperty(project, jobName + ".jor");
+    return this.projectLoader.fetchProjectProperty(project, jobName + ".jor");
   }
 
-  public void setJobOverrideProperty(Project project, Props prop, String jobName, User modifier)
+  public void setJobOverrideProperty(final Project project, final Props prop, final String jobName,
+      final User modifier)
       throws ProjectManagerException {
     prop.setSource(jobName + ".jor");
-    Props oldProps =
-        projectLoader.fetchProjectProperty(project, prop.getSource());
+    final Props oldProps =
+        this.projectLoader.fetchProjectProperty(project, prop.getSource());
 
     if (oldProps == null) {
-      projectLoader.uploadProjectProperty(project, prop);
+      this.projectLoader.uploadProjectProperty(project, prop);
     } else {
-      projectLoader.updateProjectProperty(project, prop);
+      this.projectLoader.updateProjectProperty(project, prop);
     }
 
-    String diffMessage = PropsUtils.getPropertyDiff(oldProps, prop);
+    final String diffMessage = PropsUtils.getPropertyDiff(oldProps, prop);
 
-    projectLoader.postEvent(project, EventType.PROPERTY_OVERRIDE,
+    this.projectLoader.postEvent(project, EventType.PROPERTY_OVERRIDE,
         modifier.getUserId(), diffMessage);
     return;
   }
 
-  public void updateProjectSetting(Project project)
+  public void updateProjectSetting(final Project project)
       throws ProjectManagerException {
-    projectLoader.updateProjectSettings(project);
+    this.projectLoader.updateProjectSettings(project);
   }
 
-  public void addProjectProxyUser(Project project, String proxyName,
-      User modifier) throws ProjectManagerException {
+  public void addProjectProxyUser(final Project project, final String proxyName,
+      final User modifier) throws ProjectManagerException {
     logger.info("User " + modifier.getUserId() + " adding proxy user "
         + proxyName + " to project " + project.getName());
     project.addProxyUser(proxyName);
 
-    projectLoader.postEvent(project, EventType.PROXY_USER,
+    this.projectLoader.postEvent(project, EventType.PROXY_USER,
         modifier.getUserId(), "Proxy user " + proxyName
             + " is added to project.");
     updateProjectSetting(project);
   }
 
-  public void removeProjectProxyUser(Project project, String proxyName,
-      User modifier) throws ProjectManagerException {
+  public void removeProjectProxyUser(final Project project, final String proxyName,
+      final User modifier) throws ProjectManagerException {
     logger.info("User " + modifier.getUserId() + " removing proxy user "
         + proxyName + " from project " + project.getName());
     project.removeProxyUser(proxyName);
 
-    projectLoader.postEvent(project, EventType.PROXY_USER,
+    this.projectLoader.postEvent(project, EventType.PROXY_USER,
         modifier.getUserId(), "Proxy user " + proxyName
             + " has been removed form the project.");
     updateProjectSetting(project);
   }
 
-  public void updateProjectPermission(Project project, String name,
-      Permission perm, boolean group, User modifier)
+  public void updateProjectPermission(final Project project, final String name,
+      final Permission perm, final boolean group, final User modifier)
       throws ProjectManagerException {
     logger.info("User " + modifier.getUserId()
         + " updating permissions for project " + project.getName() + " for "
         + name + " " + perm.toString());
-    projectLoader.updatePermission(project, name, perm, group);
+    this.projectLoader.updatePermission(project, name, perm, group);
     if (group) {
-      projectLoader.postEvent(project, EventType.GROUP_PERMISSION,
+      this.projectLoader.postEvent(project, EventType.GROUP_PERMISSION,
           modifier.getUserId(), "Permission for group " + name + " set to "
               + perm.toString());
     } else {
-      projectLoader.postEvent(project, EventType.USER_PERMISSION,
+      this.projectLoader.postEvent(project, EventType.USER_PERMISSION,
           modifier.getUserId(), "Permission for user " + name + " set to "
               + perm.toString());
     }
   }
 
-  public void removeProjectPermission(Project project, String name,
-      boolean group, User modifier) throws ProjectManagerException {
+  public void removeProjectPermission(final Project project, final String name,
+      final boolean group, final User modifier) throws ProjectManagerException {
     logger.info("User " + modifier.getUserId()
         + " removing permissions for project " + project.getName() + " for "
         + name);
-    projectLoader.removePermission(project, name, group);
+    this.projectLoader.removePermission(project, name, group);
     if (group) {
-      projectLoader.postEvent(project, EventType.GROUP_PERMISSION,
+      this.projectLoader.postEvent(project, EventType.GROUP_PERMISSION,
           modifier.getUserId(), "Permission for group " + name + " removed.");
     } else {
-      projectLoader.postEvent(project, EventType.USER_PERMISSION,
+      this.projectLoader.postEvent(project, EventType.USER_PERMISSION,
           modifier.getUserId(), "Permission for user " + name + " removed.");
     }
   }
@@ -401,23 +389,21 @@ public class ProjectManager {
    * {@ProjectFileHandler.deleteLocalFile}
    * to delete the temporary file.
    *
-   * @param project
    * @param version - latest version is used if value is -1
-   * @return ProjectFileHandler - null if can't find project zip file based on
-   *         project name and version
-   * @throws ProjectManagerException
+   * @return ProjectFileHandler - null if can't find project zip file based on project name and
+   * version
    */
-  public ProjectFileHandler getProjectFileHandler(Project project, int version)
+  public ProjectFileHandler getProjectFileHandler(final Project project, int version)
       throws ProjectManagerException {
 
     if (version == -1) {
-      version = projectLoader.getLatestProjectVersion(project);
+      version = this.projectLoader.getLatestProjectVersion(project);
     }
-    return storageManager.getProjectFile(project.getId(), version);
+    return this.storageManager.getProjectFile(project.getId(), version);
   }
 
-  public Map<String, ValidationReport> uploadProject(Project project,
-      File archive, String fileType, User uploader, Props additionalProps)
+  public Map<String, ValidationReport> uploadProject(final Project project,
+      final File archive, final String fileType, final User uploader, final Props additionalProps)
       throws ProjectManagerException {
     logger.info("Uploading files to " + project.getName());
 
@@ -433,7 +419,7 @@ public class ProjectManager {
         throw new ProjectManagerException("Unsupported archive type for file "
             + archive.getName());
       }
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new ProjectManagerException("Error unzipping file.", e);
     }
 
@@ -442,7 +428,7 @@ public class ProjectManager {
     // value for the PROJECT_ARCHIVE_FILE_PATH key, it is necessary to
     // create a new instance of Props to make sure these different values
     // are isolated from each other.
-    Props prop = new Props(props);
+    final Props prop = new Props(this.props);
     prop.putAll(additionalProps);
     prop.put(ValidatorConfigs.PROJECT_ARCHIVE_FILE_PATH,
         archive.getAbsolutePath());
@@ -462,13 +448,13 @@ public class ProjectManager {
     // synchronization between uploads. Since we're already reloading the XML
     // config file and creating validator objects for each upload, this does
     // not add too much additional overhead.
-    ValidatorManager validatorManager = new XmlValidatorManager(prop);
+    final ValidatorManager validatorManager = new XmlValidatorManager(prop);
     logger.info("Validating project " + archive.getName()
         + " using the registered validators "
         + validatorManager.getValidatorsInfo().toString());
-    Map<String, ValidationReport> reports = validatorManager.validate(project, file);
+    final Map<String, ValidationReport> reports = validatorManager.validate(project, file);
     ValidationStatus status = ValidationStatus.PASS;
-    for (Entry<String, ValidationReport> report : reports.entrySet()) {
+    for (final Entry<String, ValidationReport> report : reports.entrySet()) {
       if (report.getValue().getStatus().compareTo(status) > 0) {
         status = report.getValue().getStatus();
       }
@@ -479,7 +465,7 @@ public class ProjectManager {
 
       try {
         FileUtils.deleteDirectory(file);
-      } catch (IOException e) {
+      } catch (final IOException e) {
         file.deleteOnExit();
         e.printStackTrace();
       }
@@ -487,74 +473,74 @@ public class ProjectManager {
       return reports;
     }
 
-    DirectoryFlowLoader loader =
+    final DirectoryFlowLoader loader =
         (DirectoryFlowLoader) validatorManager.getDefaultValidator();
-    Map<String, Props> jobProps = loader.getJobProps();
-    List<Props> propProps = loader.getProps();
+    final Map<String, Props> jobProps = loader.getJobProps();
+    final List<Props> propProps = loader.getProps();
 
     synchronized (project) {
-      int newVersion = projectLoader.getLatestProjectVersion(project) + 1;
-      Map<String, Flow> flows = loader.getFlowMap();
-      for (Flow flow : flows.values()) {
+      final int newVersion = this.projectLoader.getLatestProjectVersion(project) + 1;
+      final Map<String, Flow> flows = loader.getFlowMap();
+      for (final Flow flow : flows.values()) {
         flow.setProjectId(project.getId());
         flow.setVersion(newVersion);
       }
 
-      storageManager.uploadProject(project, newVersion, archive, uploader);
+      this.storageManager.uploadProject(project, newVersion, archive, uploader);
 
       logger.info("Uploading flow to db " + archive.getName());
-      projectLoader.uploadFlows(project, newVersion, flows.values());
+      this.projectLoader.uploadFlows(project, newVersion, flows.values());
       logger.info("Changing project versions " + archive.getName());
-      projectLoader.changeProjectVersion(project, newVersion,
+      this.projectLoader.changeProjectVersion(project, newVersion,
           uploader.getUserId());
       project.setFlows(flows);
       logger.info("Uploading Job properties");
-      projectLoader.uploadProjectProperties(project, new ArrayList<Props>(
+      this.projectLoader.uploadProjectProperties(project, new ArrayList<>(
           jobProps.values()));
       logger.info("Uploading Props properties");
-      projectLoader.uploadProjectProperties(project, propProps);
+      this.projectLoader.uploadProjectProperties(project, propProps);
     }
 
     logger.info("Uploaded project files. Cleaning up temp files.");
-    projectLoader.postEvent(project, EventType.UPLOADED, uploader.getUserId(),
+    this.projectLoader.postEvent(project, EventType.UPLOADED, uploader.getUserId(),
         "Uploaded project files zip " + archive.getName());
     try {
       FileUtils.deleteDirectory(file);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       file.deleteOnExit();
       e.printStackTrace();
     }
 
     logger.info("Cleaning up old install files older than "
-        + (project.getVersion() - projectVersionRetention));
-    projectLoader.cleanOlderProjectVersion(project.getId(),
-        project.getVersion() - projectVersionRetention);
+        + (project.getVersion() - this.projectVersionRetention));
+    this.projectLoader.cleanOlderProjectVersion(project.getId(),
+        project.getVersion() - this.projectVersionRetention);
 
     return reports;
   }
 
-  public void updateFlow(Project project, Flow flow)
+  public void updateFlow(final Project project, final Flow flow)
       throws ProjectManagerException {
-    projectLoader.updateFlow(project, flow.getVersion(), flow);
+    this.projectLoader.updateFlow(project, flow.getVersion(), flow);
   }
 
-  private File unzipFile(File archiveFile) throws IOException {
-    ZipFile zipfile = new ZipFile(archiveFile);
-    File unzipped = Utils.createTempDir(tempDir);
+  private File unzipFile(final File archiveFile) throws IOException {
+    final ZipFile zipfile = new ZipFile(archiveFile);
+    final File unzipped = Utils.createTempDir(this.tempDir);
     Utils.unzip(zipfile, unzipped);
     zipfile.close();
 
     return unzipped;
   }
 
-  public void postProjectEvent(Project project, EventType type, String user,
-      String message) {
-    projectLoader.postEvent(project, type, user, message);
+  public void postProjectEvent(final Project project, final EventType type, final String user,
+      final String message) {
+    this.projectLoader.postEvent(project, type, user, message);
   }
 
   public boolean loadProjectWhiteList() {
-    if (props.containsKey(ProjectWhitelist.XML_FILE_PARAM)) {
-      ProjectWhitelist.load(props);
+    if (this.props.containsKey(ProjectWhitelist.XML_FILE_PARAM)) {
+      ProjectWhitelist.load(this.props);
       return true;
     }
     return false;

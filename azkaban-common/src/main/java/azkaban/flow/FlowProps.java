@@ -16,30 +16,39 @@
 
 package azkaban.flow;
 
+import azkaban.utils.Props;
 import java.util.HashMap;
 import java.util.Map;
 
-import azkaban.utils.Props;
-
 public class FlowProps {
+
   private String parentSource;
   private String propSource;
   private Props props = null;
 
-  public FlowProps(String parentSource, String propSource) {
+  public FlowProps(final String parentSource, final String propSource) {
     this.parentSource = parentSource;
     this.propSource = propSource;
   }
 
-  public FlowProps(Props props) {
+  public FlowProps(final Props props) {
     this.setProps(props);
   }
 
-  public Props getProps() {
-    return props;
+  public static FlowProps fromObject(final Object obj) {
+    final Map<String, Object> flowMap = (Map<String, Object>) obj;
+    final String source = (String) flowMap.get("source");
+    final String parentSource = (String) flowMap.get("inherits");
+
+    final FlowProps flowProps = new FlowProps(parentSource, source);
+    return flowProps;
   }
 
-  public void setProps(Props props) {
+  public Props getProps() {
+    return this.props;
+  }
+
+  public void setProps(final Props props) {
     this.props = props;
     this.parentSource =
         props.getParent() == null ? null : props.getParent().getSource();
@@ -47,29 +56,19 @@ public class FlowProps {
   }
 
   public String getSource() {
-    return propSource;
+    return this.propSource;
   }
 
   public String getInheritedSource() {
-    return parentSource;
+    return this.parentSource;
   }
 
   public Object toObject() {
-    HashMap<String, Object> obj = new HashMap<String, Object>();
-    obj.put("source", propSource);
-    if (parentSource != null) {
-      obj.put("inherits", parentSource);
+    final HashMap<String, Object> obj = new HashMap<>();
+    obj.put("source", this.propSource);
+    if (this.parentSource != null) {
+      obj.put("inherits", this.parentSource);
     }
     return obj;
-  }
-
-  @SuppressWarnings("unchecked")
-  public static FlowProps fromObject(Object obj) {
-    Map<String, Object> flowMap = (Map<String, Object>) obj;
-    String source = (String) flowMap.get("source");
-    String parentSource = (String) flowMap.get("inherits");
-
-    FlowProps flowProps = new FlowProps(parentSource, source);
-    return flowProps;
   }
 }

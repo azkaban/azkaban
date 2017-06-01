@@ -25,31 +25,34 @@ import azkaban.metric.TimeBasedReportingMetric;
  * Metric to keep track of number of queued flows in Azkaban exec server
  */
 public class NumQueuedFlowMetric extends TimeBasedReportingMetric<Integer> {
+
   public static final String NUM_QUEUED_FLOW_METRIC_NAME = "NumQueuedFlowMetric";
   private static final String NUM_QUEUED_FLOW_METRIC_TYPE = "uint16";
 
-  private FlowRunnerManager flowManager;
+  private final FlowRunnerManager flowManager;
 
   /**
    * @param flowRunnerManager Flow runner manager
    * @param manager metric report manager
    * @param interval reporting interval
-   * @throws MetricException
    */
-  public NumQueuedFlowMetric(FlowRunnerManager flowRunnerManager, MetricReportManager manager, long interval) throws MetricException {
+  public NumQueuedFlowMetric(final FlowRunnerManager flowRunnerManager,
+      final MetricReportManager manager,
+      final long interval) throws MetricException {
     super(NUM_QUEUED_FLOW_METRIC_NAME, NUM_QUEUED_FLOW_METRIC_TYPE, 0, manager, interval);
     logger.debug("Instantiated NumQueuedFlowMetric");
-    flowManager = flowRunnerManager;
+    this.flowManager = flowRunnerManager;
   }
 
   /**
    * Update value using flow manager
    * {@inheritDoc}
+   *
    * @see azkaban.metric.TimeBasedReportingMetric#preTrackingEventMethod()
    */
   @Override
   protected synchronized void preTrackingEventMethod() {
-    value = flowManager.getNumQueuedFlows();
+    this.value = this.flowManager.getNumQueuedFlows();
   }
 
   @Override

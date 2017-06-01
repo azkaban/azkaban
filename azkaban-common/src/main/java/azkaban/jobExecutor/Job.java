@@ -33,8 +33,6 @@ public interface Job {
 
   /**
    * Returns a unique(should be checked in xml) string name/id for the Job.
-   *
-   * @return
    */
   public String getId();
 
@@ -61,15 +59,11 @@ public interface Job {
 
   /**
    * Get the generated properties from this job.
-   *
-   * @return
    */
   public Props getJobGeneratedProperties();
 
   /**
    * Determine if the job was cancelled.
-   *
-   * @return
    */
   public boolean isCanceled();
 }

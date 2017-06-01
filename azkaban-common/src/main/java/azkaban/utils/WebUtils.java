@@ -16,27 +16,24 @@
 
 package azkaban.utils;
 
+import azkaban.executor.Status;
 import java.text.NumberFormat;
 import java.util.Map;
-
 import org.joda.time.DateTime;
 import org.joda.time.DurationFieldType;
 import org.joda.time.ReadablePeriod;
 import org.joda.time.format.DateTimeFormat;
 
-import azkaban.executor.Status;
-
 public class WebUtils {
-  public static final String DATE_TIME_STRING = "YYYY-MM-dd HH:mm:ss";
 
+  public static final String DATE_TIME_STRING = "YYYY-MM-dd HH:mm:ss";
+  public static final String X_FORWARDED_FOR_HEADER = "X-Forwarded-For";
   private static final long ONE_KB = 1024;
   private static final long ONE_MB = 1024 * ONE_KB;
   private static final long ONE_GB = 1024 * ONE_MB;
   private static final long ONE_TB = 1024 * ONE_GB;
 
-  public static final String X_FORWARDED_FOR_HEADER = "X-Forwarded-For";
-
-  public String formatDate(long timeMS) {
+  public String formatDate(final long timeMS) {
     if (timeMS == -1) {
       return "-";
     }
@@ -44,12 +41,12 @@ public class WebUtils {
     return DateTimeFormat.forPattern(DATE_TIME_STRING).print(timeMS);
   }
 
-  public String formatDuration(long startTime, long endTime) {
+  public String formatDuration(final long startTime, final long endTime) {
     if (startTime == -1) {
       return "-";
     }
 
-    long durationMS;
+    final long durationMS;
     if (endTime == -1) {
       durationMS = System.currentTimeMillis() - startTime;
     } else {
@@ -73,47 +70,47 @@ public class WebUtils {
       return hours + "h " + minutes + "m " + seconds + "s";
     }
 
-    long days = hours / 24;
+    final long days = hours / 24;
     hours %= 24;
     return days + "d " + hours + "h " + minutes + "m";
   }
 
-  public String formatStatus(Status status) {
+  public String formatStatus(final Status status) {
     switch (status) {
-    case SUCCEEDED:
-      return "Success";
-    case FAILED:
-      return "Failed";
-    case RUNNING:
-      return "Running";
-    case DISABLED:
-      return "Disabled";
-    case KILLED:
-      return "Killed";
-    case FAILED_FINISHING:
-      return "Running w/Failure";
-    case PREPARING:
-      return "Preparing";
-    case READY:
-      return "Ready";
-    case PAUSED:
-      return "Paused";
-    case SKIPPED:
-      return "Skipped";
-    default:
+      case SUCCEEDED:
+        return "Success";
+      case FAILED:
+        return "Failed";
+      case RUNNING:
+        return "Running";
+      case DISABLED:
+        return "Disabled";
+      case KILLED:
+        return "Killed";
+      case FAILED_FINISHING:
+        return "Running w/Failure";
+      case PREPARING:
+        return "Preparing";
+      case READY:
+        return "Ready";
+      case PAUSED:
+        return "Paused";
+      case SKIPPED:
+        return "Skipped";
+      default:
     }
     return "Unknown";
   }
 
-  public String formatDateTime(DateTime dt) {
+  public String formatDateTime(final DateTime dt) {
     return DateTimeFormat.forPattern(DATE_TIME_STRING).print(dt);
   }
 
-  public String formatDateTime(long timestamp) {
+  public String formatDateTime(final long timestamp) {
     return formatDateTime(new DateTime(timestamp));
   }
 
-  public String formatPeriod(ReadablePeriod period) {
+  public String formatPeriod(final ReadablePeriod period) {
     String periodStr = "null";
 
     if (period == null) {
@@ -121,51 +118,52 @@ public class WebUtils {
     }
 
     if (period.get(DurationFieldType.years()) > 0) {
-      int years = period.get(DurationFieldType.years());
+      final int years = period.get(DurationFieldType.years());
       periodStr = years + " year(s)";
     } else if (period.get(DurationFieldType.months()) > 0) {
-      int months = period.get(DurationFieldType.months());
+      final int months = period.get(DurationFieldType.months());
       periodStr = months + " month(s)";
     } else if (period.get(DurationFieldType.weeks()) > 0) {
-      int weeks = period.get(DurationFieldType.weeks());
+      final int weeks = period.get(DurationFieldType.weeks());
       periodStr = weeks + " week(s)";
     } else if (period.get(DurationFieldType.days()) > 0) {
-      int days = period.get(DurationFieldType.days());
+      final int days = period.get(DurationFieldType.days());
       periodStr = days + " day(s)";
     } else if (period.get(DurationFieldType.hours()) > 0) {
-      int hours = period.get(DurationFieldType.hours());
+      final int hours = period.get(DurationFieldType.hours());
       periodStr = hours + " hour(s)";
     } else if (period.get(DurationFieldType.minutes()) > 0) {
-      int minutes = period.get(DurationFieldType.minutes());
+      final int minutes = period.get(DurationFieldType.minutes());
       periodStr = minutes + " minute(s)";
     } else if (period.get(DurationFieldType.seconds()) > 0) {
-      int seconds = period.get(DurationFieldType.seconds());
+      final int seconds = period.get(DurationFieldType.seconds());
       periodStr = seconds + " second(s)";
     }
 
     return periodStr;
   }
 
-  public String extractNumericalId(String execId) {
-    int index = execId.indexOf('.');
-    int index2 = execId.indexOf('.', index + 1);
+  public String extractNumericalId(final String execId) {
+    final int index = execId.indexOf('.');
+    final int index2 = execId.indexOf('.', index + 1);
 
     return execId.substring(0, index2);
   }
 
-  public String displayBytes(long sizeBytes) {
-    NumberFormat nf = NumberFormat.getInstance();
+  public String displayBytes(final long sizeBytes) {
+    final NumberFormat nf = NumberFormat.getInstance();
     nf.setMaximumFractionDigits(2);
-    if (sizeBytes >= ONE_TB)
+    if (sizeBytes >= ONE_TB) {
       return nf.format(sizeBytes / (double) ONE_TB) + " tb";
-    else if (sizeBytes >= ONE_GB)
+    } else if (sizeBytes >= ONE_GB) {
       return nf.format(sizeBytes / (double) ONE_GB) + " gb";
-    else if (sizeBytes >= ONE_MB)
+    } else if (sizeBytes >= ONE_MB) {
       return nf.format(sizeBytes / (double) ONE_MB) + " mb";
-    else if (sizeBytes >= ONE_KB)
+    } else if (sizeBytes >= ONE_KB) {
       return nf.format(sizeBytes / (double) ONE_KB) + " kb";
-    else
+    } else {
       return sizeBytes + " B";
+    }
   }
 
   /**
@@ -180,7 +178,8 @@ public class WebUtils {
    * @param remoteAddr The client IP address and port from the current request's TCP connection
    * @return The actual client IP address
    */
-  public String getRealClientIpAddr(Map<String, String> httpHeaders, String remoteAddr){
+  public String getRealClientIpAddr(final Map<String, String> httpHeaders,
+      final String remoteAddr) {
 
     // If some upstream device added an X-Forwarded-For header
     // use it for the client ip
@@ -189,17 +188,16 @@ public class WebUtils {
     // the session
 
     String clientIp = httpHeaders.getOrDefault(X_FORWARDED_FOR_HEADER, null);
-    if(clientIp == null){
+    if (clientIp == null) {
       clientIp = remoteAddr;
-    }
-    else{
+    } else {
       // header can contain comma separated list of upstream servers - get the first one
-      String ips[] = clientIp.split(",");
+      final String[] ips = clientIp.split(",");
       clientIp = ips[0];
     }
 
     // Strip off port and only get IP address
-    String parts[] = clientIp.split(":");
+    final String[] parts = clientIp.split(":");
     clientIp = parts[0];
 
     return clientIp;

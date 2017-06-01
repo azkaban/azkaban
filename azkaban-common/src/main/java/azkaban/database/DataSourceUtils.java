@@ -33,9 +33,6 @@ public class DataSourceUtils {
 
   /**
    * Create Datasource from parameters in the properties
-   *
-   * @param props
-   * @return
    */
   public static AzkabanDataSource getDataSource(final Props props) {
     final String databaseType = props.getString("database.type");
@@ -64,14 +61,6 @@ public class DataSourceUtils {
 
   /**
    * Create a MySQL DataSource
-   *
-   * @param host
-   * @param port
-   * @param dbName
-   * @param user
-   * @param password
-   * @param numConnections
-   * @return
    */
   public static AzkabanDataSource getMySQLDataSource(final String host, final Integer port,
       final String dbName, final String user, final String password, final Integer numConnections) {
@@ -81,9 +70,6 @@ public class DataSourceUtils {
 
   /**
    * Create H2 DataSource
-   *
-   * @param file
-   * @return
    */
   public static AzkabanDataSource getH2DataSource(final Path file) {
     return new EmbeddedH2BasicDataSource(file);
@@ -117,7 +103,6 @@ public class DataSourceUtils {
 
   /**
    * MySQL data source based on AzkabanDataSource
-   *
    */
   public static class MySQLBasicDataSource extends AzkabanDataSource {
 
@@ -152,7 +137,6 @@ public class DataSourceUtils {
 
   /**
    * H2 Datasource
-   *
    */
   public static class EmbeddedH2BasicDataSource extends AzkabanDataSource {
 

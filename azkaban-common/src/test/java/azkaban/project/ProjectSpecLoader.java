@@ -25,7 +25,7 @@ import org.yaml.snakeyaml.Yaml;
 
 public class ProjectSpecLoader {
 
-  public ProjectSpec load(File projectSpecFile) throws FileNotFoundException {
+  public ProjectSpec load(final File projectSpecFile) throws FileNotFoundException {
     return new Yaml().loadAs(new FileInputStream(projectSpecFile), ProjectSpec.class);
   }
 }

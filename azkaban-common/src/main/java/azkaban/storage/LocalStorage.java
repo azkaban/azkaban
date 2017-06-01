@@ -24,7 +24,6 @@ import azkaban.spi.Storage;
 import azkaban.spi.StorageException;
 import azkaban.spi.StorageMetadata;
 import azkaban.utils.FileIOUtils;
-import com.google.common.io.Files;
 import com.google.inject.Inject;
 import java.io.File;
 import java.io.FileInputStream;
@@ -41,22 +40,39 @@ public class LocalStorage implements Storage {
   final File rootDirectory;
 
   @Inject
-  public LocalStorage(AzkabanCommonModuleConfig config) {
+  public LocalStorage(final AzkabanCommonModuleConfig config) {
     this.rootDirectory = validateRootDirectory(
         createIfDoesNotExist(config.getLocalStorageBaseDirPath()));
+  }
+
+  private static File createIfDoesNotExist(final String baseDirectoryPath) {
+    final File baseDirectory = new File(baseDirectoryPath);
+    if (!baseDirectory.exists()) {
+      baseDirectory.mkdir();
+      log.info("Creating dir: " + baseDirectory.getAbsolutePath());
+    }
+    return baseDirectory;
+  }
+
+  private static File validateRootDirectory(final File baseDirectory) {
+    checkArgument(baseDirectory.isDirectory());
+    if (!FileIOUtils.isDirWritable(baseDirectory)) {
+      throw new IllegalArgumentException("Directory not writable: " + baseDirectory);
+    }
+    return baseDirectory;
   }
 
   /**
    * @param key Relative path of the file from the baseDirectory
    */
   @Override
-  public InputStream get(String key) throws IOException {
-    return new FileInputStream(new File(rootDirectory, key));
+  public InputStream get(final String key) throws IOException {
+    return new FileInputStream(new File(this.rootDirectory, key));
   }
 
   @Override
-  public String put(StorageMetadata metadata, File localFile) {
-    final File projectDir = new File(rootDirectory, String.valueOf(metadata.getProjectId()));
+  public String put(final StorageMetadata metadata, final File localFile) {
+    final File projectDir = new File(this.rootDirectory, String.valueOf(metadata.getProjectId()));
     if (projectDir.mkdir()) {
       log.info("Created project dir: " + projectDir.getAbsolutePath());
     }
@@ -74,36 +90,19 @@ public class LocalStorage implements Storage {
     // Copy file to storage dir
     try {
       FileUtils.copyFile(localFile, targetFile);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       log.error("LocalStorage error in put(): meta: " + metadata);
       throw new StorageException(e);
     }
     return getRelativePath(targetFile);
   }
 
-  private String getRelativePath(File targetFile) {
-    return rootDirectory.toURI().relativize(targetFile.toURI()).getPath();
+  private String getRelativePath(final File targetFile) {
+    return this.rootDirectory.toURI().relativize(targetFile.toURI()).getPath();
   }
 
   @Override
-  public boolean delete(String key) {
+  public boolean delete(final String key) {
     throw new UnsupportedOperationException("delete has not been implemented.");
-  }
-
-  private static File createIfDoesNotExist(String baseDirectoryPath) {
-    final File baseDirectory = new File(baseDirectoryPath);
-    if (!baseDirectory.exists()) {
-      baseDirectory.mkdir();
-      log.info("Creating dir: " + baseDirectory.getAbsolutePath());
-    }
-    return baseDirectory;
-  }
-
-  private static File validateRootDirectory(File baseDirectory) {
-    checkArgument(baseDirectory.isDirectory());
-    if (!FileIOUtils.isDirWritable(baseDirectory)) {
-      throw new IllegalArgumentException("Directory not writable: " + baseDirectory);
-    }
-    return baseDirectory;
   }
 }

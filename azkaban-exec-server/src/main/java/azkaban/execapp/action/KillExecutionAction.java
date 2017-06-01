@@ -16,14 +16,12 @@
 
 package azkaban.execapp.action;
 
-import java.util.HashMap;
-import java.util.Map;
-
 import azkaban.Constants;
 import azkaban.ServiceProvider;
 import azkaban.execapp.FlowRunnerManager;
 import azkaban.trigger.TriggerAction;
-
+import java.util.HashMap;
+import java.util.Map;
 import org.apache.log4j.Logger;
 
 
@@ -34,17 +32,33 @@ public class KillExecutionAction implements TriggerAction {
   private static final Logger logger = Logger
       .getLogger(KillExecutionAction.class);
 
-  private String actionId;
-  private int execId;
+  private final String actionId;
+  private final int execId;
 
-  public KillExecutionAction(String actionId, int execId) {
+  public KillExecutionAction(final String actionId, final int execId) {
     this.execId = execId;
     this.actionId = actionId;
   }
 
+  public static KillExecutionAction createFromJson(final Object obj) {
+    return createFromJson((HashMap<String, Object>) obj);
+  }
+
+  public static KillExecutionAction createFromJson(final HashMap<String, Object> obj) {
+    final Map<String, Object> jsonObj = (HashMap<String, Object>) obj;
+    final String objType = (String) jsonObj.get("type");
+    if (!objType.equals(type)) {
+      throw new RuntimeException("Cannot create action of " + type + " from "
+          + objType);
+    }
+    final String actionId = (String) jsonObj.get("actionId");
+    final int execId = Integer.valueOf((String) jsonObj.get("execId"));
+    return new KillExecutionAction(actionId, execId);
+  }
+
   @Override
   public String getId() {
-    return actionId;
+    return this.actionId;
   }
 
   @Override
@@ -52,51 +66,34 @@ public class KillExecutionAction implements TriggerAction {
     return type;
   }
 
-  @SuppressWarnings("unchecked")
-  public static KillExecutionAction createFromJson(Object obj) {
-    return createFromJson((HashMap<String, Object>) obj);
-  }
-
-  public static KillExecutionAction createFromJson(HashMap<String, Object> obj) {
-    Map<String, Object> jsonObj = (HashMap<String, Object>) obj;
-    String objType = (String) jsonObj.get("type");
-    if (!objType.equals(type)) {
-      throw new RuntimeException("Cannot create action of " + type + " from "
-          + objType);
-    }
-    String actionId = (String) jsonObj.get("actionId");
-    int execId = Integer.valueOf((String) jsonObj.get("execId"));
-    return new KillExecutionAction(actionId, execId);
-  }
-
-  @SuppressWarnings("unchecked")
   @Override
-  public KillExecutionAction fromJson(Object obj) throws Exception {
+  public KillExecutionAction fromJson(final Object obj) throws Exception {
     return createFromJson((HashMap<String, Object>) obj);
   }
 
   @Override
   public Object toJson() {
-    Map<String, Object> jsonObj = new HashMap<String, Object>();
-    jsonObj.put("actionId", actionId);
+    final Map<String, Object> jsonObj = new HashMap<>();
+    jsonObj.put("actionId", this.actionId);
     jsonObj.put("type", type);
-    jsonObj.put("execId", String.valueOf(execId));
+    jsonObj.put("execId", String.valueOf(this.execId));
     return jsonObj;
   }
 
   @Override
   public void doAction() throws Exception {
-    logger.info("ready to kill execution " + execId);
-    ServiceProvider.SERVICE_PROVIDER.getInstance(FlowRunnerManager.class).cancelFlow(execId, Constants.AZKABAN_SLA_CHECKER_USERNAME);
+    logger.info("ready to kill execution " + this.execId);
+    ServiceProvider.SERVICE_PROVIDER.getInstance(FlowRunnerManager.class)
+        .cancelFlow(this.execId, Constants.AZKABAN_SLA_CHECKER_USERNAME);
   }
 
   @Override
-  public void setContext(Map<String, Object> context) {
+  public void setContext(final Map<String, Object> context) {
   }
 
   @Override
   public String getDescription() {
-    return type + " for " + execId;
+    return type + " for " + this.execId;
   }
 
 }

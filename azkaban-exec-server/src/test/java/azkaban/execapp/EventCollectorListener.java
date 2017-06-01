@@ -16,43 +16,43 @@
 
 package azkaban.execapp;
 
+import azkaban.event.Event;
+import azkaban.event.Event.Type;
+import azkaban.event.EventListener;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 
-import azkaban.event.EventListener;
-import azkaban.event.Event;
-import azkaban.event.Event.Type;
-
 public class EventCollectorListener implements EventListener {
-  private ArrayList<Event> eventList = new ArrayList<Event>();
-  private HashSet<Event.Type> filterOutTypes = new HashSet<Event.Type>();
 
-  public void setEventFilterOut(Event.Type... types) {
-    filterOutTypes.addAll(Arrays.asList(types));
+  private final ArrayList<Event> eventList = new ArrayList<>();
+  private final HashSet<Event.Type> filterOutTypes = new HashSet<>();
+
+  public void setEventFilterOut(final Event.Type... types) {
+    this.filterOutTypes.addAll(Arrays.asList(types));
   }
 
   @Override
-  public void handleEvent(Event event) {
-    if (!filterOutTypes.contains(event.getType())) {
-      eventList.add(event);
+  public void handleEvent(final Event event) {
+    if (!this.filterOutTypes.contains(event.getType())) {
+      this.eventList.add(event);
     }
   }
 
   public ArrayList<Event> getEventList() {
-    return eventList;
+    return this.eventList;
   }
 
   public void writeAllEvents() {
-    for (Event event : eventList) {
+    for (final Event event : this.eventList) {
       System.out.print(event.getType());
       System.out.print(",");
     }
   }
 
   public boolean checkOrdering() {
-    long time = 0;
-    for (Event event : eventList) {
+    final long time = 0;
+    for (final Event event : this.eventList) {
       if (time > event.getTime()) {
         return false;
       }
@@ -61,9 +61,9 @@ public class EventCollectorListener implements EventListener {
     return true;
   }
 
-  public void checkEventExists(Type[] types) {
+  public void checkEventExists(final Type[] types) {
     int index = 0;
-    for (Event event : eventList) {
+    for (final Event event : this.eventList) {
       if (event.getRunner() == null) {
         continue;
       }
@@ -72,7 +72,7 @@ public class EventCollectorListener implements EventListener {
         throw new RuntimeException("More events than expected. Got "
             + event.getType());
       }
-      Type type = types[index++];
+      final Type type = types[index++];
 
       if (type != event.getType()) {
         throw new RuntimeException("Got " + event.getType() + ", expected "

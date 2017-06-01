@@ -17,15 +17,15 @@
 
 package azkaban.execapp;
 
-import java.util.List;
-
 import azkaban.trigger.Condition;
 import azkaban.trigger.TriggerAction;
+import java.util.List;
 import org.apache.log4j.Logger;
 
 
 public class Trigger implements Runnable {
-  private static Logger logger = Logger.getLogger(azkaban.execapp.Trigger.class);
+
+  private static final Logger logger = Logger.getLogger(azkaban.execapp.Trigger.class);
   private final int execId;
 
   // condition to trigger actions(ex. flow running longer than X mins)
@@ -34,11 +34,10 @@ public class Trigger implements Runnable {
   private final Condition expireCondition;
   private final List<TriggerAction> actions;
 
-  public Trigger(int execId,
-                 Condition triggerCondition,
-                 Condition expireCondition,
-                 List<TriggerAction> actions)
-  {
+  public Trigger(final int execId,
+      final Condition triggerCondition,
+      final Condition expireCondition,
+      final List<TriggerAction> actions) {
     this.execId = execId;
     this.triggerCondition = triggerCondition;
     this.expireCondition = expireCondition;
@@ -51,19 +50,19 @@ public class Trigger implements Runnable {
    */
   @Override
   public void run() {
-    if(isTriggerExpired()) {
+    if (isTriggerExpired()) {
       logger.info(this + " expired");
-      return ;
+      return;
     }
 
-    boolean isTriggerConditionMet = triggerCondition.isMet();
+    final boolean isTriggerConditionMet = this.triggerCondition.isMet();
 
     if (isTriggerConditionMet) {
-      logger.info("Condition " + triggerCondition.getExpression() + " met");
-      for (TriggerAction action : actions) {
+      logger.info("Condition " + this.triggerCondition.getExpression() + " met");
+      for (final TriggerAction action : this.actions) {
         try {
           action.doAction();
-        } catch (Exception e) {
+        } catch (final Exception e) {
           logger.error("Failed to do action " + action.getDescription()
               + " for execution " + azkaban.execapp.Trigger.this.execId, e);
         }
@@ -73,21 +72,22 @@ public class Trigger implements Runnable {
 
   /**
    * Check if the trigger is expired and reset isExpired
+   *
    * @return true if trigger is expired
    */
   public boolean isTriggerExpired() {
-    return expireCondition.isMet();
+    return this.expireCondition.isMet();
   }
 
   public String toString() {
-    StringBuilder actionsString = new StringBuilder();
-    for (TriggerAction act : actions) {
+    final StringBuilder actionsString = new StringBuilder();
+    for (final TriggerAction act : this.actions) {
       actionsString.append(", ");
       actionsString.append(act.getDescription());
     }
 
-    return "Trigger for execution " + execId + " with trigger condition of "
-        + triggerCondition.getExpression() + " and expire condition of "
-        + expireCondition.getExpression() + actionsString;
+    return "Trigger for execution " + this.execId + " with trigger condition of "
+        + this.triggerCondition.getExpression() + " and expire condition of "
+        + this.expireCondition.getExpression() + actionsString;
   }
 }

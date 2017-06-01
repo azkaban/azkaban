@@ -20,13 +20,11 @@ import azkaban.executor.ExecutionOptions;
 import azkaban.sla.SlaOption;
 import azkaban.utils.Pair;
 import azkaban.utils.Utils;
-
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.joda.time.Days;
@@ -41,51 +39,52 @@ import org.quartz.CronExpression;
 
 public class Schedule {
 
+  private final int projectId;
+  private final String projectName;
+  private final String flowName;
+  private final long firstSchedTime;
+  private final DateTimeZone timezone;
+  private final long lastModifyTime;
+  private final ReadablePeriod period;
+  private final String submitUser;
+  private final String status;
+  private final long submitTime;
+  private final String cronExpression;
+  private final boolean skipPastOccurrences = true;
   private int scheduleId;
-  private int projectId;
-  private String projectName;
-  private String flowName;
-  private long firstSchedTime;
-  private DateTimeZone timezone;
-  private long lastModifyTime;
-  private ReadablePeriod period;
   private long nextExecTime;
-  private String submitUser;
-  private String status;
-  private long submitTime;
-  private String cronExpression;
-
-  private boolean skipPastOccurrences = true;
-
   private ExecutionOptions executionOptions;
   private List<SlaOption> slaOptions;
 
-  public Schedule(int scheduleId, int projectId, String projectName,
-      String flowName, String status, long firstSchedTime,
-      DateTimeZone timezone, ReadablePeriod period, long lastModifyTime,
-      long nextExecTime, long submitTime, String submitUser) {
+  public Schedule(final int scheduleId, final int projectId, final String projectName,
+      final String flowName, final String status, final long firstSchedTime,
+      final DateTimeZone timezone, final ReadablePeriod period, final long lastModifyTime,
+      final long nextExecTime, final long submitTime, final String submitUser) {
 
     this(scheduleId, projectId, projectName, flowName, status, firstSchedTime,
         timezone, period, lastModifyTime, nextExecTime, submitTime, submitUser,
         null, null, null);
   }
 
-  public Schedule(int scheduleId, int projectId, String projectName,
-      String flowName, String status, long firstSchedTime, String timezoneId,
-      String period, long lastModifyTime, long nextExecTime, long submitTime,
-      String submitUser, ExecutionOptions executionOptions,
-      List<SlaOption> slaOptions) {
+  public Schedule(final int scheduleId, final int projectId, final String projectName,
+      final String flowName, final String status, final long firstSchedTime,
+      final String timezoneId,
+      final String period, final long lastModifyTime, final long nextExecTime,
+      final long submitTime,
+      final String submitUser, final ExecutionOptions executionOptions,
+      final List<SlaOption> slaOptions) {
     this(scheduleId, projectId, projectName, flowName, status, firstSchedTime,
         DateTimeZone.forID(timezoneId), parsePeriodString(period),
         lastModifyTime, nextExecTime, submitTime, submitUser, executionOptions,
         slaOptions, null);
   }
 
-  public Schedule(int scheduleId, int projectId, String projectName,
-      String flowName, String status, long firstSchedTime,
-      DateTimeZone timezone, ReadablePeriod period, long lastModifyTime,
-      long nextExecTime, long submitTime, String submitUser,
-      ExecutionOptions executionOptions, List<SlaOption> slaOptions, String cronExpression) {
+  public Schedule(final int scheduleId, final int projectId, final String projectName,
+      final String flowName, final String status, final long firstSchedTime,
+      final DateTimeZone timezone, final ReadablePeriod period, final long lastModifyTime,
+      final long nextExecTime, final long submitTime, final String submitUser,
+      final ExecutionOptions executionOptions, final List<SlaOption> slaOptions,
+      final String cronExpression) {
     this.scheduleId = scheduleId;
     this.projectId = projectId;
     this.projectName = projectName;
@@ -103,113 +102,187 @@ public class Schedule {
     this.cronExpression = cronExpression;
   }
 
+  public static ReadablePeriod parsePeriodString(final String periodStr) {
+    final ReadablePeriod period;
+    final char periodUnit = periodStr.charAt(periodStr.length() - 1);
+    if (periodUnit == 'n') {
+      return null;
+    }
+
+    final int periodInt =
+        Integer.parseInt(periodStr.substring(0, periodStr.length() - 1));
+    switch (periodUnit) {
+      case 'M':
+        period = Months.months(periodInt);
+        break;
+      case 'w':
+        period = Weeks.weeks(periodInt);
+        break;
+      case 'd':
+        period = Days.days(periodInt);
+        break;
+      case 'h':
+        period = Hours.hours(periodInt);
+        break;
+      case 'm':
+        period = Minutes.minutes(periodInt);
+        break;
+      case 's':
+        period = Seconds.seconds(periodInt);
+        break;
+      default:
+        throw new IllegalArgumentException("Invalid schedule period unit '"
+            + periodUnit);
+    }
+
+    return period;
+  }
+
+  public static String createPeriodString(final ReadablePeriod period) {
+    String periodStr = "n";
+
+    if (period == null) {
+      return "n";
+    }
+
+    if (period.get(DurationFieldType.months()) > 0) {
+      final int months = period.get(DurationFieldType.months());
+      periodStr = months + "M";
+    } else if (period.get(DurationFieldType.weeks()) > 0) {
+      final int weeks = period.get(DurationFieldType.weeks());
+      periodStr = weeks + "w";
+    } else if (period.get(DurationFieldType.days()) > 0) {
+      final int days = period.get(DurationFieldType.days());
+      periodStr = days + "d";
+    } else if (period.get(DurationFieldType.hours()) > 0) {
+      final int hours = period.get(DurationFieldType.hours());
+      periodStr = hours + "h";
+    } else if (period.get(DurationFieldType.minutes()) > 0) {
+      final int minutes = period.get(DurationFieldType.minutes());
+      periodStr = minutes + "m";
+    } else if (period.get(DurationFieldType.seconds()) > 0) {
+      final int seconds = period.get(DurationFieldType.seconds());
+      periodStr = seconds + "s";
+    }
+
+    return periodStr;
+  }
+
   public ExecutionOptions getExecutionOptions() {
-    return executionOptions;
+    return this.executionOptions;
   }
 
   public List<SlaOption> getSlaOptions() {
-    return slaOptions;
+    return this.slaOptions;
   }
 
-  public void setFlowOptions(ExecutionOptions executionOptions) {
-    this.executionOptions = executionOptions;
-  }
-
-  public void setSlaOptions(List<SlaOption> slaOptions) {
+  public void setSlaOptions(final List<SlaOption> slaOptions) {
     this.slaOptions = slaOptions;
   }
 
+  public void setFlowOptions(final ExecutionOptions executionOptions) {
+    this.executionOptions = executionOptions;
+  }
+
   public String getScheduleName() {
-    return projectName + "." + flowName + " (" + projectId + ")";
+    return this.projectName + "." + this.flowName + " (" + this.projectId + ")";
   }
 
   @Override
   public String toString() {
 
-    String underlying = projectName + "." + flowName + " (" + projectId + ")" + " to be run at (starting) " + new DateTime(
-        firstSchedTime).toDateTimeISO();
-    if (period == null && cronExpression == null) {
+    final String underlying =
+        this.projectName + "." + this.flowName + " (" + this.projectId + ")"
+            + " to be run at (starting) "
+            + new DateTime(
+            this.firstSchedTime).toDateTimeISO();
+    if (this.period == null && this.cronExpression == null) {
       return underlying + " non-recurring";
-    } else if (cronExpression != null) {
-      return underlying + " with CronExpression {" + cronExpression + "}";
+    } else if (this.cronExpression != null) {
+      return underlying + " with CronExpression {" + this.cronExpression + "}";
     } else {
-      return underlying + " with precurring period of " + createPeriodString(period);
+      return underlying + " with precurring period of " + createPeriodString(this.period);
     }
   }
 
   public Pair<Integer, String> getScheduleIdentityPair() {
-    return new Pair<Integer, String>(getProjectId(), getFlowName());
-  }
-
-  public void setScheduleId(int scheduleId) {
-    this.scheduleId = scheduleId;
+    return new Pair<>(getProjectId(), getFlowName());
   }
 
   public int getScheduleId() {
-    return scheduleId;
+    return this.scheduleId;
+  }
+
+  public void setScheduleId(final int scheduleId) {
+    this.scheduleId = scheduleId;
   }
 
   public int getProjectId() {
-    return projectId;
+    return this.projectId;
   }
 
   public String getProjectName() {
-    return projectName;
+    return this.projectName;
   }
 
   public String getFlowName() {
-    return flowName;
+    return this.flowName;
   }
 
   public long getFirstSchedTime() {
-    return firstSchedTime;
+    return this.firstSchedTime;
   }
 
   public DateTimeZone getTimezone() {
-    return timezone;
+    return this.timezone;
   }
 
   public long getLastModifyTime() {
-    return lastModifyTime;
+    return this.lastModifyTime;
   }
 
   public ReadablePeriod getPeriod() {
-    return period;
+    return this.period;
   }
 
   public long getNextExecTime() {
-    return nextExecTime;
+    return this.nextExecTime;
+  }
+
+  public void setNextExecTime(final long nextExecTime) {
+    this.nextExecTime = nextExecTime;
   }
 
   public String getSubmitUser() {
-    return submitUser;
+    return this.submitUser;
   }
 
   public String getStatus() {
-    return status;
+    return this.status;
   }
 
   public long getSubmitTime() {
-    return submitTime;
+    return this.submitTime;
   }
 
   public String getCronExpression() {
-    return cronExpression;
+    return this.cronExpression;
   }
 
   public boolean updateTime() {
-    if (new DateTime(nextExecTime).isAfterNow()) {
+    if (new DateTime(this.nextExecTime).isAfterNow()) {
       return true;
     }
 
-    if (cronExpression != null) {
-      DateTime nextTime = getNextCronRuntime(nextExecTime, timezone, Utils.parseCronExpression(cronExpression, timezone));
+    if (this.cronExpression != null) {
+      final DateTime nextTime = getNextCronRuntime(this.nextExecTime, this.timezone,
+          Utils.parseCronExpression(this.cronExpression, this.timezone));
       this.nextExecTime = nextTime.getMillis();
       return true;
     }
 
-    if (period != null) {
-      DateTime nextTime = getNextRuntime(nextExecTime, timezone, period);
+    if (this.period != null) {
+      final DateTime nextTime = getNextRuntime(this.nextExecTime, this.timezone, this.period);
 
       this.nextExecTime = nextTime.getMillis();
       return true;
@@ -218,13 +291,9 @@ public class Schedule {
     return false;
   }
 
-  public void setNextExecTime(long nextExecTime) {
-    this.nextExecTime = nextExecTime;
-  }
-
-  private DateTime getNextRuntime(long scheduleTime, DateTimeZone timezone,
-      ReadablePeriod period) {
-    DateTime now = new DateTime();
+  private DateTime getNextRuntime(final long scheduleTime, final DateTimeZone timezone,
+      final ReadablePeriod period) {
+    final DateTime now = new DateTime();
     DateTime date = new DateTime(scheduleTime).withZone(timezone);
     int count = 0;
     while (!now.isBefore(date)) {
@@ -246,14 +315,13 @@ public class Schedule {
   }
 
   /**
-   *
-   * @param scheduleTime represents the time when Schedule Servlet receives the Cron Schedule API call.
+   * @param scheduleTime represents the time when Schedule Servlet receives the Cron Schedule API
+   * call.
    * @param timezone is always UTC (after 3.1.0)
-   * @param ce
    * @return the First Scheduled DateTime to run this flow.
    */
-  private DateTime getNextCronRuntime(long scheduleTime, DateTimeZone timezone,
-      CronExpression ce) {
+  private DateTime getNextCronRuntime(final long scheduleTime, final DateTimeZone timezone,
+      final CronExpression ce) {
 
     Date date = new DateTime(scheduleTime).withZone(timezone).toDate();
     if (ce != null) {
@@ -262,83 +330,17 @@ public class Schedule {
     return new DateTime(date);
   }
 
-  public static ReadablePeriod parsePeriodString(String periodStr) {
-    ReadablePeriod period;
-    char periodUnit = periodStr.charAt(periodStr.length() - 1);
-    if (periodUnit == 'n') {
-      return null;
-    }
-
-    int periodInt =
-        Integer.parseInt(periodStr.substring(0, periodStr.length() - 1));
-    switch (periodUnit) {
-    case 'M':
-      period = Months.months(periodInt);
-      break;
-    case 'w':
-      period = Weeks.weeks(periodInt);
-      break;
-    case 'd':
-      period = Days.days(periodInt);
-      break;
-    case 'h':
-      period = Hours.hours(periodInt);
-      break;
-    case 'm':
-      period = Minutes.minutes(periodInt);
-      break;
-    case 's':
-      period = Seconds.seconds(periodInt);
-      break;
-    default:
-      throw new IllegalArgumentException("Invalid schedule period unit '"
-          + periodUnit);
-    }
-
-    return period;
-  }
-
-  public static String createPeriodString(ReadablePeriod period) {
-    String periodStr = "n";
-
-    if (period == null) {
-      return "n";
-    }
-
-    if (period.get(DurationFieldType.months()) > 0) {
-      int months = period.get(DurationFieldType.months());
-      periodStr = months + "M";
-    } else if (period.get(DurationFieldType.weeks()) > 0) {
-      int weeks = period.get(DurationFieldType.weeks());
-      periodStr = weeks + "w";
-    } else if (period.get(DurationFieldType.days()) > 0) {
-      int days = period.get(DurationFieldType.days());
-      periodStr = days + "d";
-    } else if (period.get(DurationFieldType.hours()) > 0) {
-      int hours = period.get(DurationFieldType.hours());
-      periodStr = hours + "h";
-    } else if (period.get(DurationFieldType.minutes()) > 0) {
-      int minutes = period.get(DurationFieldType.minutes());
-      periodStr = minutes + "m";
-    } else if (period.get(DurationFieldType.seconds()) > 0) {
-      int seconds = period.get(DurationFieldType.seconds());
-      periodStr = seconds + "s";
-    }
-
-    return periodStr;
-  }
-
   public Map<String, Object> optionsToObject() {
-    if (executionOptions != null) {
-      HashMap<String, Object> schedObj = new HashMap<String, Object>();
+    if (this.executionOptions != null) {
+      final HashMap<String, Object> schedObj = new HashMap<>();
 
-      if (executionOptions != null) {
-        schedObj.put("executionOptions", executionOptions.toObject());
+      if (this.executionOptions != null) {
+        schedObj.put("executionOptions", this.executionOptions.toObject());
       }
 
-      if (slaOptions != null) {
-        List<Object> slaOptionsObject = new ArrayList<Object>();
-        for (SlaOption sla : slaOptions) {
+      if (this.slaOptions != null) {
+        final List<Object> slaOptionsObject = new ArrayList<>();
+        for (final SlaOption sla : this.slaOptions) {
           slaOptionsObject.add(sla.toObject());
         }
         schedObj.put("slaOptions", slaOptionsObject);
@@ -349,15 +351,14 @@ public class Schedule {
     return null;
   }
 
-  @SuppressWarnings("unchecked")
-  public void createAndSetScheduleOptions(Object obj) {
-    HashMap<String, Object> schedObj = (HashMap<String, Object>) obj;
+  public void createAndSetScheduleOptions(final Object obj) {
+    final HashMap<String, Object> schedObj = (HashMap<String, Object>) obj;
     if (schedObj.containsKey("executionOptions")) {
-      ExecutionOptions execOptions =
+      final ExecutionOptions execOptions =
           ExecutionOptions.createFromObject(schedObj.get("executionOptions"));
       this.executionOptions = execOptions;
     } else if (schedObj.containsKey("flowOptions")) {
-      ExecutionOptions execOptions =
+      final ExecutionOptions execOptions =
           ExecutionOptions.createFromObject(schedObj.get("flowOptions"));
       this.executionOptions = execOptions;
       execOptions.setConcurrentOption(ExecutionOptions.CONCURRENT_OPTION_SKIP);
@@ -368,9 +369,9 @@ public class Schedule {
     }
 
     if (schedObj.containsKey("slaOptions")) {
-      List<Object> slaOptionsObject = (List<Object>) schedObj.get("slaOptions");
-      List<SlaOption> slaOptions = new ArrayList<SlaOption>();
-      for (Object slaObj : slaOptionsObject) {
+      final List<Object> slaOptionsObject = (List<Object>) schedObj.get("slaOptions");
+      final List<SlaOption> slaOptions = new ArrayList<>();
+      for (final Object slaObj : slaOptionsObject) {
         slaOptions.add(SlaOption.fromObject(slaObj));
       }
       this.slaOptions = slaOptions;
@@ -379,11 +380,11 @@ public class Schedule {
   }
 
   public boolean isRecurring() {
-    return period != null || cronExpression != null;
+    return this.period != null || this.cronExpression != null;
   }
 
   public boolean skipPastOccurrences() {
-    return skipPastOccurrences;
+    return this.skipPastOccurrences;
   }
 
 }

@@ -1,11 +1,12 @@
 package azkaban.execapp.event;
 
-import static azkaban.Constants.JobCallbackProperties.JOBCALLBACK_CONNECTION_TIMEOUT;
 import static azkaban.Constants.JobCallbackProperties.JOBCALLBACK_CONNECTION_REQUEST_TIMEOUT;
+import static azkaban.Constants.JobCallbackProperties.JOBCALLBACK_CONNECTION_TIMEOUT;
 import static azkaban.Constants.JobCallbackProperties.JOBCALLBACK_RESPONSE_WAIT_TIMEOUT;
 import static azkaban.Constants.JobCallbackProperties.JOBCALLBACK_SOCKET_TIMEOUT;
 import static azkaban.Constants.JobCallbackProperties.JOBCALLBACK_THREAD_POOL_SIZE;
 
+import azkaban.utils.Props;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -16,7 +17,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
@@ -32,8 +32,6 @@ import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.client.HttpRequestFutureTask;
 import org.apache.log4j.Logger;
 
-import azkaban.utils.Props;
-
 /**
  * Responsible for making the job callback HTTP requests.
  *
@@ -41,7 +39,6 @@ import azkaban.utils.Props;
  * using the given logger, which should be the job logger.
  *
  * @author hluu
- *
  */
 public class JobCallbackRequestMaker {
 
@@ -57,10 +54,46 @@ public class JobCallbackRequestMaker {
   private static JobCallbackRequestMaker instance;
   private static boolean isInitialized = false;
 
-  private FutureRequestExecutionService futureRequestExecutionService;
+  private final FutureRequestExecutionService futureRequestExecutionService;
   private int responseWaitTimeoutMS = -1;
 
-  public static void initialize(Props props) {
+  private JobCallbackRequestMaker(final Props props) {
+
+    final int connectionRequestTimeout =
+        props.getInt(JOBCALLBACK_CONNECTION_REQUEST_TIMEOUT, DEFAULT_TIME_OUT_MS);
+
+    final int connectionTimeout = props.getInt(JOBCALLBACK_CONNECTION_TIMEOUT, DEFAULT_TIME_OUT_MS);
+
+    final int socketTimeout = props.getInt(JOBCALLBACK_SOCKET_TIMEOUT, DEFAULT_TIME_OUT_MS);
+
+    this.responseWaitTimeoutMS =
+        props.getInt(JOBCALLBACK_RESPONSE_WAIT_TIMEOUT, DEFAULT_RESPONSE_WAIT_TIME_OUT_MS);
+
+    logger.info("responseWaitTimeoutMS: " + this.responseWaitTimeoutMS);
+
+    final RequestConfig requestConfig =
+        RequestConfig.custom()
+            .setConnectionRequestTimeout(connectionRequestTimeout)
+            .setConnectTimeout(connectionTimeout)
+            .setSocketTimeout(socketTimeout).build();
+
+    logger.info("Global request configuration " + requestConfig.toString());
+
+    final HttpClient httpClient =
+        HttpClientBuilder.create().setDefaultRequestConfig(requestConfig)
+            .build();
+
+    final int jobCallbackThreadPoolSize =
+        props.getInt(JOBCALLBACK_THREAD_POOL_SIZE, DEFAULT_THREAD_POOL_SIZE);
+    logger.info("Jobcall thread pool size: " + jobCallbackThreadPoolSize);
+
+    final ExecutorService executorService =
+        Executors.newFixedThreadPool(jobCallbackThreadPoolSize);
+    this.futureRequestExecutionService =
+        new FutureRequestExecutionService(httpClient, executorService);
+  }
+
+  public static void initialize(final Props props) {
     if (props == null) {
       throw new NullPointerException("props argument can't be null");
     }
@@ -87,89 +120,53 @@ public class JobCallbackRequestMaker {
     return instance;
   }
 
-  private JobCallbackRequestMaker(Props props) {
-
-    int connectionRequestTimeout =
-        props.getInt(JOBCALLBACK_CONNECTION_REQUEST_TIMEOUT, DEFAULT_TIME_OUT_MS);
-
-    int connectionTimeout = props.getInt(JOBCALLBACK_CONNECTION_TIMEOUT, DEFAULT_TIME_OUT_MS);
-
-    int socketTimeout = props.getInt(JOBCALLBACK_SOCKET_TIMEOUT, DEFAULT_TIME_OUT_MS);
-
-    responseWaitTimeoutMS =
-        props.getInt(JOBCALLBACK_RESPONSE_WAIT_TIMEOUT, DEFAULT_RESPONSE_WAIT_TIME_OUT_MS);
-
-    logger.info("responseWaitTimeoutMS: " + responseWaitTimeoutMS);
-
-    RequestConfig requestConfig =
-        RequestConfig.custom()
-            .setConnectionRequestTimeout(connectionRequestTimeout)
-            .setConnectTimeout(connectionTimeout)
-            .setSocketTimeout(socketTimeout).build();
-
-    logger.info("Global request configuration " + requestConfig.toString());
-
-    HttpClient httpClient =
-        HttpClientBuilder.create().setDefaultRequestConfig(requestConfig)
-            .build();
-
-    int jobCallbackThreadPoolSize =
-        props.getInt(JOBCALLBACK_THREAD_POOL_SIZE, DEFAULT_THREAD_POOL_SIZE);
-    logger.info("Jobcall thread pool size: " + jobCallbackThreadPoolSize);
-
-    ExecutorService executorService =
-        Executors.newFixedThreadPool(jobCallbackThreadPoolSize);
-    futureRequestExecutionService =
-        new FutureRequestExecutionService(httpClient, executorService);
-  }
-
   public FutureRequestExecutionMetrics getJobcallbackMetrics() {
-    return futureRequestExecutionService.metrics();
+    return this.futureRequestExecutionService.metrics();
   }
 
-  public void makeHttpRequest(String jobId, Logger logger,
-      List<HttpRequestBase> httpRequestList) {
+  public void makeHttpRequest(final String jobId, final Logger logger,
+      final List<HttpRequestBase> httpRequestList) {
 
     if (httpRequestList == null || httpRequestList.isEmpty()) {
       logger.info("No HTTP requests to make");
       return;
     }
 
-    for (HttpRequestBase httpRequest : httpRequestList) {
+    for (final HttpRequestBase httpRequest : httpRequestList) {
 
       logger.info("Job callback http request: " + httpRequest.toString());
       logger.info("headers [");
-      for (Header header : httpRequest.getAllHeaders()) {
+      for (final Header header : httpRequest.getAllHeaders()) {
         logger.info(String.format("  %s : %s", header.getName(),
             header.getValue()));
       }
       logger.info("]");
 
-      HttpRequestFutureTask<Integer> task =
-          futureRequestExecutionService.execute(httpRequest,
+      final HttpRequestFutureTask<Integer> task =
+          this.futureRequestExecutionService.execute(httpRequest,
               HttpClientContext.create(), new LoggingResponseHandler(logger));
 
       try {
         // get with timeout
-        Integer statusCode =
-            task.get(responseWaitTimeoutMS, TimeUnit.MILLISECONDS);
+        final Integer statusCode =
+            task.get(this.responseWaitTimeoutMS, TimeUnit.MILLISECONDS);
 
         logger.info("http callback status code: " + statusCode);
-      } catch (TimeoutException timeOutEx) {
+      } catch (final TimeoutException timeOutEx) {
         logger
             .warn("Job callback target took longer "
-                + (responseWaitTimeoutMS / 1000) + " seconds to respond",
+                    + (this.responseWaitTimeoutMS / 1000) + " seconds to respond",
                 timeOutEx);
-      } catch (ExecutionException ee) {
+      } catch (final ExecutionException ee) {
         if (ee.getCause() instanceof SocketTimeoutException) {
           logger.warn("Job callback target took longer "
-              + (responseWaitTimeoutMS / 1000) + " seconds to respond", ee);
+              + (this.responseWaitTimeoutMS / 1000) + " seconds to respond", ee);
         } else {
           logger.warn(
               "Encountered error while waiting for job callback to complete",
               ee);
         }
-      } catch (Throwable e) {
+      } catch (final Throwable e) {
         logger.warn(
             "Encountered error while waiting for job callback to complete", e);
       }
@@ -181,14 +178,13 @@ public class JobCallbackRequestMaker {
    * instance
    *
    * @author hluu
-   *
    */
   private static final class LoggingResponseHandler implements
       ResponseHandler<Integer> {
 
-    private Logger logger;
+    private final Logger logger;
 
-    public LoggingResponseHandler(Logger logger) {
+    public LoggingResponseHandler(final Logger logger) {
       if (logger == null) {
         throw new NullPointerException("Argument logger can't be null");
       }
@@ -199,11 +195,11 @@ public class JobCallbackRequestMaker {
     public Integer handleResponse(final HttpResponse response)
         throws ClientProtocolException, IOException {
 
-      int statusCode = response.getStatusLine().getStatusCode();
+      final int statusCode = response.getStatusLine().getStatusCode();
       BufferedReader bufferedReader = null;
 
       try {
-        HttpEntity responseEntity = response.getEntity();
+        final HttpEntity responseEntity = response.getEntity();
         if (responseEntity != null) {
           bufferedReader =
               new BufferedReader(new InputStreamReader(
@@ -211,27 +207,27 @@ public class JobCallbackRequestMaker {
 
           String line = "";
           int lineCount = 0;
-          logger.info("HTTP response [");
+          this.logger.info("HTTP response [");
           while ((line = bufferedReader.readLine()) != null) {
-            logger.info(line);
+            this.logger.info(line);
             lineCount++;
             if (lineCount > MAX_RESPONSE_LINE_TO_PRINT) {
               break;
             }
           }
-          logger.info("]");
+          this.logger.info("]");
         } else {
-          logger.info("No response");
+          this.logger.info("No response");
         }
 
-      } catch (Throwable t) {
-        logger.warn(
+      } catch (final Throwable t) {
+        this.logger.warn(
             "Encountered error while logging out job callback response", t);
       } finally {
         if (bufferedReader != null) {
           try {
             bufferedReader.close();
-          } catch (IOException ex) {
+          } catch (final IOException ex) {
             // don't care
           }
         }

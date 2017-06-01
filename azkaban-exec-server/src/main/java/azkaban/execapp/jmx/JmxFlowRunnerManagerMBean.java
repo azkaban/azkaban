@@ -19,6 +19,7 @@ package azkaban.execapp.jmx;
 import azkaban.jmx.DisplayName;
 
 public interface JmxFlowRunnerManagerMBean {
+
   @DisplayName("OPERATION: getLastCleanerThreadCheckTime")
   public long getLastCleanerThreadCheckTime();
 

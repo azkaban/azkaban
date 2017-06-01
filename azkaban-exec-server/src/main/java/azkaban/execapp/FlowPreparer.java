@@ -17,6 +17,9 @@
 
 package azkaban.execapp;
 
+import static com.google.common.base.Preconditions.checkState;
+import static java.util.Objects.requireNonNull;
+
 import azkaban.executor.ExecutableFlow;
 import azkaban.project.ProjectFileHandler;
 import azkaban.project.ProjectManagerException;
@@ -34,11 +37,9 @@ import java.util.zip.ZipFile;
 import org.apache.commons.io.FileUtils;
 import org.apache.log4j.Logger;
 
-import static com.google.common.base.Preconditions.*;
-import static java.util.Objects.*;
-
 
 public class FlowPreparer {
+
   private static final Logger log = Logger.getLogger(FlowPreparer.class);
 
   // TODO spyne: move to config class
@@ -49,8 +50,9 @@ public class FlowPreparer {
   private final Map<Pair<Integer, Integer>, ProjectVersion> installedProjects;
   private final StorageManager storageManager;
 
-  public FlowPreparer(StorageManager storageManager, File executionsDir, File projectsDir,
-      Map<Pair<Integer, Integer>, ProjectVersion> installedProjects) {
+  public FlowPreparer(final StorageManager storageManager, final File executionsDir,
+      final File projectsDir,
+      final Map<Pair<Integer, Integer>, ProjectVersion> installedProjects) {
     this.storageManager = storageManager;
     this.executionsDir = executionsDir;
     this.projectsDir = projectsDir;
@@ -62,7 +64,7 @@ public class FlowPreparer {
    *
    * @param flow Executable Flow instance.
    */
-  void setup(ExecutableFlow flow) {
+  void setup(final ExecutableFlow flow) {
     File execDir = null;
     try {
       // First get the ProjectVersion
@@ -79,8 +81,8 @@ public class FlowPreparer {
 
       log.info(String.format("Flow Preparation complete. [execid: %d, path: %s]",
           flow.getExecutionId(), execDir.getPath()));
-    } catch (Exception e) {
-      log.error("Error in setting up project directory: " + projectsDir + ", Exception: " + e);
+    } catch (final Exception e) {
+      log.error("Error in setting up project directory: " + this.projectsDir + ", Exception: " + e);
       cleanup(execDir);
       throw new RuntimeException(e);
     }
@@ -90,8 +92,6 @@ public class FlowPreparer {
    * Prepare the project directory.
    *
    * @param pv ProjectVersion object
-   * @throws ProjectManagerException
-   * @throws IOException
    */
   @VisibleForTesting
   void setupProject(final ProjectVersion pv)
@@ -101,7 +101,7 @@ public class FlowPreparer {
 
     final String projectDir = String.valueOf(projectId) + "." + String.valueOf(version);
     if (pv.getInstalledDir() == null) {
-      pv.setInstalledDir(new File(projectsDir, projectDir));
+      pv.setInstalledDir(new File(this.projectsDir, projectDir));
     }
 
     // If directory exists. Assume its prepared and skip.
@@ -112,14 +112,15 @@ public class FlowPreparer {
 
     log.info("Preparing Project: " + pv);
 
-    File tempDir = new File(projectsDir, "_temp." + projectDir + "." + System.currentTimeMillis());
+    final File tempDir = new File(this.projectsDir,
+        "_temp." + projectDir + "." + System.currentTimeMillis());
 
     // TODO spyne: Why mkdirs? This path should be already set up.
     tempDir.mkdirs();
 
     ProjectFileHandler projectFileHandler = null;
     try {
-      projectFileHandler = requireNonNull(storageManager.getProjectFile(projectId, version));
+      projectFileHandler = requireNonNull(this.storageManager.getProjectFile(projectId, version));
       checkState("zip".equals(projectFileHandler.getFileType()));
 
       log.info("Downloading zip file.");
@@ -141,13 +142,14 @@ public class FlowPreparer {
     }
   }
 
-  private void copyCreateHardlinkDirectory(File projectDir, File execDir) throws IOException {
+  private void copyCreateHardlinkDirectory(final File projectDir, final File execDir)
+      throws IOException {
     FileIOUtils.createDeepHardlink(projectDir, execDir);
   }
 
-  private File createExecDir(ExecutableFlow flow) {
+  private File createExecDir(final ExecutableFlow flow) {
     final int execId = flow.getExecutionId();
-    File execDir = new File(executionsDir, String.valueOf(execId));
+    final File execDir = new File(this.executionsDir, String.valueOf(execId));
     flow.setExecutionPath(execDir.getPath());
 
     // TODO spyne: Why mkdirs? This path should be already set up.
@@ -155,22 +157,23 @@ public class FlowPreparer {
     return execDir;
   }
 
-  private ProjectVersion getProjectVersion(ExecutableFlow flow) {
+  private ProjectVersion getProjectVersion(final ExecutableFlow flow) {
     // We're setting up the installed projects. First time, it may take a while
     // to set up.
     final ProjectVersion projectVersion;
-    synchronized (installedProjects) {
-      projectVersion = installedProjects.computeIfAbsent(new Pair<>(flow.getProjectId(), flow.getVersion()),
-          k -> new ProjectVersion(flow.getProjectId(), flow.getVersion()));
+    synchronized (this.installedProjects) {
+      projectVersion = this.installedProjects
+          .computeIfAbsent(new Pair<>(flow.getProjectId(), flow.getVersion()),
+              k -> new ProjectVersion(flow.getProjectId(), flow.getVersion()));
     }
     return projectVersion;
   }
 
-  private void cleanup(File execDir) {
+  private void cleanup(final File execDir) {
     if (execDir != null) {
       try {
         FileUtils.deleteDirectory(execDir);
-      } catch (IOException e) {
+      } catch (final IOException e) {
         throw new RuntimeException(e);
       }
     }

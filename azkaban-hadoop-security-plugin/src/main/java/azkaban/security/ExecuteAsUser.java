@@ -15,19 +15,18 @@
  */
 package azkaban.security;
 
-import org.apache.log4j.Logger;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import org.apache.log4j.Logger;
 
 /**
- * This is a wrapper over the binary executable execute-as-user. It provides a simple API to run commands as
- * another user while abstracting away the process logic, commandline handling, etc.
- *
+ * This is a wrapper over the binary executable execute-as-user. It provides a simple API to run
+ * commands as another user while abstracting away the process logic, commandline handling, etc.
  */
 public class ExecuteAsUser {
+
   private final static Logger log = Logger.getLogger(ExecuteAsUser.class);
   private final static String EXECUTE_AS_USER = "execute-as-user";
 
@@ -44,9 +43,9 @@ public class ExecuteAsUser {
   }
 
   private void validate() {
-    if (!binaryExecutable.canExecute()) {
+    if (!this.binaryExecutable.canExecute()) {
       throw new RuntimeException("Unable to execute execute-as-user binary. Invalid Path: "
-          + binaryExecutable.getAbsolutePath());
+          + this.binaryExecutable.getAbsolutePath());
     }
   }
 
@@ -56,11 +55,10 @@ public class ExecuteAsUser {
    * @param user The proxy user
    * @param command the list containing the program and its arguments
    * @return The return value of the shell command
-   * @throws IOException
    */
   public int execute(final String user, final List<String> command) throws IOException {
     log.info("Command: " + command);
-    Process process = new ProcessBuilder()
+    final Process process = new ProcessBuilder()
         .command(constructExecuteAsCommand(user, command))
         .inheritIO()
         .start();
@@ -68,16 +66,16 @@ public class ExecuteAsUser {
     int exitCode;
     try {
       exitCode = process.waitFor();
-    } catch (InterruptedException e) {
+    } catch (final InterruptedException e) {
       log.error(e.getMessage(), e);
       exitCode = 1;
     }
     return exitCode;
   }
 
-  private List<String> constructExecuteAsCommand(String user, List<String> command) {
-    List<String> commandList = new ArrayList<>();
-    commandList.add(binaryExecutable.getAbsolutePath());
+  private List<String> constructExecuteAsCommand(final String user, final List<String> command) {
+    final List<String> commandList = new ArrayList<>();
+    commandList.add(this.binaryExecutable.getAbsolutePath());
     commandList.add(user);
     commandList.addAll(command);
     return commandList;

@@ -17,21 +17,18 @@
 package azkaban.trigger.builtin;
 
 import azkaban.Constants;
-import java.util.HashMap;
-import java.util.Map;
-
-import org.apache.log4j.Logger;
-
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutorManagerAdapter;
 import azkaban.executor.Status;
 import azkaban.trigger.TriggerAction;
+import java.util.HashMap;
+import java.util.Map;
+import org.apache.log4j.Logger;
 
 /**
- * @deprecated Create a new KillExecutionAction using FlowRunnerManager
- * instead of ExecutorManager to kill flow. Still keep the old one here
- * for being compatible with existing SLA trigger in the database.
- * Will remove the old one when all existing triggers expire.
+ * @deprecated Create a new KillExecutionAction using FlowRunnerManager instead of ExecutorManager
+ * to kill flow. Still keep the old one here for being compatible with existing SLA trigger in the
+ * database. Will remove the old one when all existing triggers expire.
  */
 
 @Deprecated
@@ -41,24 +38,39 @@ public class KillExecutionAction implements TriggerAction {
 
   private static final Logger logger = Logger
       .getLogger(KillExecutionAction.class);
-
-  private String actionId;
-  private int execId;
   private static ExecutorManagerAdapter executorManager;
+  private final String actionId;
+  private final int execId;
 
   //todo chengren311: delete this class to executor module when all existing triggers in db are expired
-  public KillExecutionAction(String actionId, int execId) {
+  public KillExecutionAction(final String actionId, final int execId) {
     this.execId = execId;
     this.actionId = actionId;
   }
 
-  public static void setExecutorManager(ExecutorManagerAdapter em) {
+  public static void setExecutorManager(final ExecutorManagerAdapter em) {
     executorManager = em;
+  }
+
+  public static KillExecutionAction createFromJson(final Object obj) {
+    return createFromJson((HashMap<String, Object>) obj);
+  }
+
+  public static KillExecutionAction createFromJson(final HashMap<String, Object> obj) {
+    final Map<String, Object> jsonObj = (HashMap<String, Object>) obj;
+    final String objType = (String) jsonObj.get("type");
+    if (!objType.equals(type)) {
+      throw new RuntimeException("Cannot create action of " + type + " from "
+          + objType);
+    }
+    final String actionId = (String) jsonObj.get("actionId");
+    final int execId = Integer.valueOf((String) jsonObj.get("execId"));
+    return new KillExecutionAction(actionId, execId);
   }
 
   @Override
   public String getId() {
-    return actionId;
+    return this.actionId;
   }
 
   @Override
@@ -66,55 +78,37 @@ public class KillExecutionAction implements TriggerAction {
     return type;
   }
 
-  @SuppressWarnings("unchecked")
-  public static KillExecutionAction createFromJson(Object obj) {
-    return createFromJson((HashMap<String, Object>) obj);
-  }
-
-  public static KillExecutionAction createFromJson(HashMap<String, Object> obj) {
-    Map<String, Object> jsonObj = (HashMap<String, Object>) obj;
-    String objType = (String) jsonObj.get("type");
-    if (!objType.equals(type)) {
-      throw new RuntimeException("Cannot create action of " + type + " from "
-          + objType);
-    }
-    String actionId = (String) jsonObj.get("actionId");
-    int execId = Integer.valueOf((String) jsonObj.get("execId"));
-    return new KillExecutionAction(actionId, execId);
-  }
-
-  @SuppressWarnings("unchecked")
   @Override
-  public KillExecutionAction fromJson(Object obj) throws Exception {
+  public KillExecutionAction fromJson(final Object obj) throws Exception {
     return createFromJson((HashMap<String, Object>) obj);
   }
 
   @Override
   public Object toJson() {
-    Map<String, Object> jsonObj = new HashMap<String, Object>();
-    jsonObj.put("actionId", actionId);
+    final Map<String, Object> jsonObj = new HashMap<>();
+    jsonObj.put("actionId", this.actionId);
     jsonObj.put("type", type);
-    jsonObj.put("execId", String.valueOf(execId));
+    jsonObj.put("execId", String.valueOf(this.execId));
     return jsonObj;
   }
 
   @Override
   public void doAction() throws Exception {
-    ExecutableFlow exFlow = executorManager.getExecutableFlow(execId);
-    logger.info("ready to kill execution " + execId);
+    final ExecutableFlow exFlow = executorManager.getExecutableFlow(this.execId);
+    logger.info("ready to kill execution " + this.execId);
     if (!Status.isStatusFinished(exFlow.getStatus())) {
-      logger.info("Killing execution " + execId);
+      logger.info("Killing execution " + this.execId);
       executorManager.cancelFlow(exFlow, Constants.AZKABAN_SLA_CHECKER_USERNAME);
     }
   }
 
   @Override
-  public void setContext(Map<String, Object> context) {
+  public void setContext(final Map<String, Object> context) {
   }
 
   @Override
   public String getDescription() {
-    return type + " for " + execId;
+    return type + " for " + this.execId;
   }
 
 }

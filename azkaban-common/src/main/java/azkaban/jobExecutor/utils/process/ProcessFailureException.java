@@ -23,13 +23,13 @@ public class ProcessFailureException extends RuntimeException {
   private final int exitCode;
   private final String logSnippet;
 
-  public ProcessFailureException(int exitCode, String logSnippet) {
+  public ProcessFailureException(final int exitCode, final String logSnippet) {
     this.exitCode = exitCode;
     this.logSnippet = logSnippet;
   }
 
   public int getExitCode() {
-    return exitCode;
+    return this.exitCode;
   }
 
   public String getLogSnippet() {
