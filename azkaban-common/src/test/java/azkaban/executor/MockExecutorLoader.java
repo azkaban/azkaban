@@ -16,10 +16,6 @@
 
 package azkaban.executor;
 
-import azkaban.executor.ExecutorLogEvent.EventType;
-import azkaban.utils.FileIOUtils.LogData;
-import azkaban.utils.Pair;
-import azkaban.utils.Props;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Date;
@@ -27,119 +23,123 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import azkaban.executor.ExecutorLogEvent.EventType;
+import azkaban.utils.FileIOUtils.LogData;
+import azkaban.utils.Pair;
+import azkaban.utils.Props;
+
 public class MockExecutorLoader implements ExecutorLoader {
 
   HashMap<Integer, Integer> executionExecutorMapping =
-      new HashMap<>();
+      new HashMap<Integer, Integer>();
   HashMap<Integer, ExecutableFlow> flows =
-      new HashMap<>();
-  HashMap<String, ExecutableNode> nodes = new HashMap<>();
+      new HashMap<Integer, ExecutableFlow>();
+  HashMap<String, ExecutableNode> nodes = new HashMap<String, ExecutableNode>();
   HashMap<Integer, ExecutionReference> refs =
-      new HashMap<>();
+      new HashMap<Integer, ExecutionReference>();
   int flowUpdateCount = 0;
-  HashMap<String, Integer> jobUpdateCount = new HashMap<>();
+  HashMap<String, Integer> jobUpdateCount = new HashMap<String, Integer>();
   Map<Integer, Pair<ExecutionReference, ExecutableFlow>> activeFlows =
-      new HashMap<>();
-  List<Executor> executors = new ArrayList<>();
+      new HashMap<Integer, Pair<ExecutionReference, ExecutableFlow>>();
+  List<Executor> executors = new ArrayList<Executor>();
   int executorIdCounter = 0;
   Map<Integer, ArrayList<ExecutorLogEvent>> executorEvents =
-      new HashMap<>();
+    new HashMap<Integer, ArrayList<ExecutorLogEvent>>();
 
   @Override
-  public void uploadExecutableFlow(final ExecutableFlow flow)
+  public void uploadExecutableFlow(ExecutableFlow flow)
       throws ExecutorManagerException {
-    this.flows.put(flow.getExecutionId(), flow);
-    this.flowUpdateCount++;
+    flows.put(flow.getExecutionId(), flow);
+    flowUpdateCount++;
   }
 
   @Override
-  public ExecutableFlow fetchExecutableFlow(final int execId)
+  public ExecutableFlow fetchExecutableFlow(int execId)
       throws ExecutorManagerException {
-    final ExecutableFlow flow = this.flows.get(execId);
+    ExecutableFlow flow = flows.get(execId);
     return ExecutableFlow.createExecutableFlowFromObject(flow.toObject());
   }
 
   @Override
   public Map<Integer, Pair<ExecutionReference, ExecutableFlow>> fetchActiveFlows()
       throws ExecutorManagerException {
-    return this.activeFlows;
+    return activeFlows;
   }
 
   @Override
-  public Pair<ExecutionReference, ExecutableFlow> fetchActiveFlowByExecId(final int execId)
+  public Pair<ExecutionReference, ExecutableFlow> fetchActiveFlowByExecId(int execId)
       throws ExecutorManagerException {
-    return this.activeFlows.get(execId);
+    return activeFlows.get(execId);
   }
 
   @Override
-  public List<ExecutableFlow> fetchFlowHistory(final int projectId, final String flowId,
-      final int skip, final int num) throws ExecutorManagerException {
+  public List<ExecutableFlow> fetchFlowHistory(int projectId, String flowId,
+      int skip, int num) throws ExecutorManagerException {
     return null;
   }
 
   @Override
-  public void addActiveExecutableReference(final ExecutionReference ref)
+  public void addActiveExecutableReference(ExecutionReference ref)
       throws ExecutorManagerException {
-    this.refs.put(ref.getExecId(), ref);
+    refs.put(ref.getExecId(), ref);
   }
 
   @Override
-  public void removeActiveExecutableReference(final int execId)
+  public void removeActiveExecutableReference(int execId)
       throws ExecutorManagerException {
-    this.refs.remove(execId);
+    refs.remove(execId);
   }
 
-  public boolean hasActiveExecutableReference(final int execId) {
-    return this.refs.containsKey(execId);
-  }
-
-  @Override
-  public void uploadLogFile(final int execId, final String name, final int attempt,
-      final File... files)
-      throws ExecutorManagerException {
-
+  public boolean hasActiveExecutableReference(int execId) {
+    return refs.containsKey(execId);
   }
 
   @Override
-  public void updateExecutableFlow(final ExecutableFlow flow)
+  public void uploadLogFile(int execId, String name, int attempt, File... files)
       throws ExecutorManagerException {
-    final ExecutableFlow toUpdate = this.flows.get(flow.getExecutionId());
+
+  }
+
+  @Override
+  public void updateExecutableFlow(ExecutableFlow flow)
+      throws ExecutorManagerException {
+    ExecutableFlow toUpdate = flows.get(flow.getExecutionId());
 
     toUpdate.applyUpdateObject((Map<String, Object>) flow.toUpdateObject(0));
-    this.flowUpdateCount++;
+    flowUpdateCount++;
   }
 
   @Override
-  public void uploadExecutableNode(final ExecutableNode node, final Props inputParams)
+  public void uploadExecutableNode(ExecutableNode node, Props inputParams)
       throws ExecutorManagerException {
-    final ExecutableNode exNode = new ExecutableNode();
+    ExecutableNode exNode = new ExecutableNode();
     exNode.fillExecutableFromMapObject(node.toObject());
 
-    this.nodes.put(node.getId(), exNode);
-    this.jobUpdateCount.put(node.getId(), 1);
+    nodes.put(node.getId(), exNode);
+    jobUpdateCount.put(node.getId(), 1);
   }
 
   @Override
-  public void updateExecutableNode(final ExecutableNode node)
+  public void updateExecutableNode(ExecutableNode node)
       throws ExecutorManagerException {
-    final ExecutableNode foundNode = this.nodes.get(node.getId());
+    ExecutableNode foundNode = nodes.get(node.getId());
     foundNode.setEndTime(node.getEndTime());
     foundNode.setStartTime(node.getStartTime());
     foundNode.setStatus(node.getStatus());
     foundNode.setUpdateTime(node.getUpdateTime());
 
-    Integer value = this.jobUpdateCount.get(node.getId());
+    Integer value = jobUpdateCount.get(node.getId());
     if (value == null) {
       throw new ExecutorManagerException("The node has not been uploaded");
     } else {
-      this.jobUpdateCount.put(node.getId(), ++value);
+      jobUpdateCount.put(node.getId(), ++value);
     }
 
-    this.flowUpdateCount++;
+    flowUpdateCount++;
   }
 
   @Override
-  public int fetchNumExecutableFlows(final int projectId, final String flowId)
+  public int fetchNumExecutableFlows(int projectId, String flowId)
       throws ExecutorManagerException {
     return 0;
   }
@@ -151,116 +151,114 @@ public class MockExecutorLoader implements ExecutorLoader {
   }
 
   public int getFlowUpdateCount() {
-    return this.flowUpdateCount;
+    return flowUpdateCount;
   }
 
-  public Integer getNodeUpdateCount(final String jobId) {
-    return this.jobUpdateCount.get(jobId);
+  public Integer getNodeUpdateCount(String jobId) {
+    return jobUpdateCount.get(jobId);
   }
 
   @Override
-  public ExecutableJobInfo fetchJobInfo(final int execId, final String jobId, final int attempt)
+  public ExecutableJobInfo fetchJobInfo(int execId, String jobId, int attempt)
       throws ExecutorManagerException {
     // TODO Auto-generated method stub
     return null;
   }
 
   @Override
-  public boolean updateExecutableReference(final int execId, final long updateTime)
+  public boolean updateExecutableReference(int execId, long updateTime)
       throws ExecutorManagerException {
     // TODO Auto-generated method stub
     return true;
   }
 
   @Override
-  public LogData fetchLogs(final int execId, final String name, final int attempt,
-      final int startByte,
-      final int endByte) throws ExecutorManagerException {
+  public LogData fetchLogs(int execId, String name, int attempt, int startByte,
+      int endByte) throws ExecutorManagerException {
     // TODO Auto-generated method stub
     return null;
   }
 
   @Override
-  public List<ExecutableFlow> fetchFlowHistory(final int skip, final int num)
+  public List<ExecutableFlow> fetchFlowHistory(int skip, int num)
       throws ExecutorManagerException {
     // TODO Auto-generated method stub
     return null;
   }
 
   @Override
-  public List<ExecutableFlow> fetchFlowHistory(final String projectContains,
-      final String flowContains, final String userNameContains, final int status,
-      final long startData,
-      final long endData, final int skip, final int num) throws ExecutorManagerException {
+  public List<ExecutableFlow> fetchFlowHistory(String projectContains,
+      String flowContains, String userNameContains, int status, long startData,
+      long endData, int skip, int num) throws ExecutorManagerException {
     // TODO Auto-generated method stub
     return null;
   }
 
   @Override
-  public List<ExecutableJobInfo> fetchJobHistory(final int projectId, final String jobId,
-      final int skip, final int size) throws ExecutorManagerException {
+  public List<ExecutableJobInfo> fetchJobHistory(int projectId, String jobId,
+      int skip, int size) throws ExecutorManagerException {
     // TODO Auto-generated method stub
     return null;
   }
 
   @Override
-  public int fetchNumExecutableNodes(final int projectId, final String jobId)
-      throws ExecutorManagerException {
-    // TODO Auto-generated method stub
-    return 0;
-  }
-
-  @Override
-  public Props fetchExecutionJobInputProps(final int execId, final String jobId)
-      throws ExecutorManagerException {
-    // TODO Auto-generated method stub
-    return null;
-  }
-
-  @Override
-  public Props fetchExecutionJobOutputProps(final int execId, final String jobId)
-      throws ExecutorManagerException {
-    // TODO Auto-generated method stub
-    return null;
-  }
-
-  @Override
-  public Pair<Props, Props> fetchExecutionJobProps(final int execId, final String jobId)
-      throws ExecutorManagerException {
-    // TODO Auto-generated method stub
-    return null;
-  }
-
-  @Override
-  public List<ExecutableJobInfo> fetchJobInfoAttempts(final int execId, final String jobId)
-      throws ExecutorManagerException {
-    // TODO Auto-generated method stub
-    return null;
-  }
-
-  @Override
-  public int removeExecutionLogsByTime(final long millis)
+  public int fetchNumExecutableNodes(int projectId, String jobId)
       throws ExecutorManagerException {
     // TODO Auto-generated method stub
     return 0;
   }
 
   @Override
-  public List<ExecutableFlow> fetchFlowHistory(final int projectId, final String flowId,
-      final int skip, final int num, final Status status) throws ExecutorManagerException {
-    // TODO Auto-generated method stub
-    return null;
-  }
-
-  @Override
-  public List<Object> fetchAttachments(final int execId, final String name, final int attempt)
+  public Props fetchExecutionJobInputProps(int execId, String jobId)
       throws ExecutorManagerException {
     // TODO Auto-generated method stub
     return null;
   }
 
   @Override
-  public void uploadAttachmentFile(final ExecutableNode node, final File file)
+  public Props fetchExecutionJobOutputProps(int execId, String jobId)
+      throws ExecutorManagerException {
+    // TODO Auto-generated method stub
+    return null;
+  }
+
+  @Override
+  public Pair<Props, Props> fetchExecutionJobProps(int execId, String jobId)
+      throws ExecutorManagerException {
+    // TODO Auto-generated method stub
+    return null;
+  }
+
+  @Override
+  public List<ExecutableJobInfo> fetchJobInfoAttempts(int execId, String jobId)
+      throws ExecutorManagerException {
+    // TODO Auto-generated method stub
+    return null;
+  }
+
+  @Override
+  public int removeExecutionLogsByTime(long millis)
+      throws ExecutorManagerException {
+    // TODO Auto-generated method stub
+    return 0;
+  }
+
+  @Override
+  public List<ExecutableFlow> fetchFlowHistory(int projectId, String flowId,
+      int skip, int num, Status status) throws ExecutorManagerException {
+    // TODO Auto-generated method stub
+    return null;
+  }
+
+  @Override
+  public List<Object> fetchAttachments(int execId, String name, int attempt)
+      throws ExecutorManagerException {
+    // TODO Auto-generated method stub
+    return null;
+  }
+
+  @Override
+  public void uploadAttachmentFile(ExecutableNode node, File file)
       throws ExecutorManagerException {
     // TODO Auto-generated method stub
 
@@ -268,8 +266,8 @@ public class MockExecutorLoader implements ExecutorLoader {
 
   @Override
   public List<Executor> fetchActiveExecutors() throws ExecutorManagerException {
-    final List<Executor> activeExecutors = new ArrayList<>();
-    for (final Executor executor : this.executors) {
+    List<Executor> activeExecutors = new ArrayList<Executor>();
+    for (Executor executor : executors) {
       if (executor.isActive()) {
         activeExecutors.add(executor);
       }
@@ -278,9 +276,9 @@ public class MockExecutorLoader implements ExecutorLoader {
   }
 
   @Override
-  public Executor fetchExecutor(final String host, final int port)
-      throws ExecutorManagerException {
-    for (final Executor executor : this.executors) {
+  public Executor fetchExecutor(String host, int port)
+    throws ExecutorManagerException {
+    for (Executor executor : executors) {
       if (executor.getHost().equals(host) && executor.getPort() == port) {
         return executor;
       }
@@ -289,8 +287,8 @@ public class MockExecutorLoader implements ExecutorLoader {
   }
 
   @Override
-  public Executor fetchExecutor(final int executorId) throws ExecutorManagerException {
-    for (final Executor executor : this.executors) {
+  public Executor fetchExecutor(int executorId) throws ExecutorManagerException {
+    for (Executor executor : executors) {
       if (executor.getId() == executorId) {
         return executor;
       }
@@ -299,95 +297,95 @@ public class MockExecutorLoader implements ExecutorLoader {
   }
 
   @Override
-  public Executor addExecutor(final String host, final int port)
-      throws ExecutorManagerException {
+  public Executor addExecutor(String host, int port)
+    throws ExecutorManagerException {
     Executor executor = null;
     if (fetchExecutor(host, port) == null) {
-      this.executorIdCounter++;
-      executor = new Executor(this.executorIdCounter, host, port, true);
-      this.executors.add(executor);
+      executorIdCounter++;
+      executor = new Executor(executorIdCounter, host, port, true);
+      executors.add(executor);
     }
     return executor;
   }
 
   @Override
-  public void removeExecutor(final String host, final int port) throws ExecutorManagerException {
-    final Executor executor = fetchExecutor(host, port);
+  public void removeExecutor(String host, int port) throws ExecutorManagerException {
+    Executor executor = fetchExecutor(host, port);
     if (executor != null) {
-      this.executorIdCounter--;
-      this.executors.remove(executor);
+        executorIdCounter--;
+        executors.remove(executor);
     }
   }
 
   @Override
-  public void postExecutorEvent(final Executor executor, final EventType type, final String user,
-      final String message) throws ExecutorManagerException {
-    final ExecutorLogEvent event =
-        new ExecutorLogEvent(executor.getId(), user, new Date(), type, message);
+  public void postExecutorEvent(Executor executor, EventType type, String user,
+    String message) throws ExecutorManagerException {
+    ExecutorLogEvent event =
+      new ExecutorLogEvent(executor.getId(), user, new Date(), type, message);
 
-    if (!this.executorEvents.containsKey(executor.getId())) {
-      this.executorEvents.put(executor.getId(), new ArrayList<>());
+    if (!executorEvents.containsKey(executor.getId())) {
+      executorEvents.put(executor.getId(), new ArrayList<ExecutorLogEvent>());
     }
 
-    this.executorEvents.get(executor.getId()).add(event);
+    executorEvents.get(executor.getId()).add(event);
   }
 
   @Override
-  public List<ExecutorLogEvent> getExecutorEvents(final Executor executor, final int num,
-      final int skip) throws ExecutorManagerException {
-    if (!this.executorEvents.containsKey(executor.getId())) {
-      final List<ExecutorLogEvent> events = this.executorEvents.get(executor.getId());
+  public List<ExecutorLogEvent> getExecutorEvents(Executor executor, int num,
+    int skip) throws ExecutorManagerException {
+    if (!executorEvents.containsKey(executor.getId())) {
+      List<ExecutorLogEvent> events = executorEvents.get(executor.getId());
       return events.subList(skip, Math.min(num + skip - 1, events.size() - 1));
     }
     return null;
   }
 
   @Override
-  public void updateExecutor(final Executor executor) throws ExecutorManagerException {
-    final Executor oldExecutor = fetchExecutor(executor.getId());
-    this.executors.remove(oldExecutor);
-    this.executors.add(executor);
+  public void updateExecutor(Executor executor) throws ExecutorManagerException {
+    Executor oldExecutor = fetchExecutor(executor.getId());
+    executors.remove(oldExecutor);
+    executors.add(executor);
   }
 
   @Override
   public List<Executor> fetchAllExecutors() throws ExecutorManagerException {
-    return this.executors;
+    return executors;
   }
 
   @Override
-  public void assignExecutor(final int executorId, final int execId)
-      throws ExecutorManagerException {
-    final ExecutionReference ref = this.refs.get(execId);
+  public void assignExecutor(int executorId, int execId)
+    throws ExecutorManagerException {
+    ExecutionReference ref = refs.get(execId);
     ref.setExecutor(fetchExecutor(executorId));
-    this.executionExecutorMapping.put(execId, executorId);
+    executionExecutorMapping.put(execId, executorId);
   }
 
   @Override
-  public Executor fetchExecutorByExecutionId(final int execId) throws ExecutorManagerException {
-    if (this.executionExecutorMapping.containsKey(execId)) {
-      return fetchExecutor(this.executionExecutorMapping.get(execId));
+  public Executor fetchExecutorByExecutionId(int execId) throws ExecutorManagerException {
+    if (executionExecutorMapping.containsKey(execId)) {
+      return fetchExecutor(executionExecutorMapping.get(execId));
     } else {
       throw new ExecutorManagerException(
-          "Failed to find executor with execution : " + execId);
+        "Failed to find executor with execution : " + execId);
     }
   }
 
   @Override
   public List<Pair<ExecutionReference, ExecutableFlow>> fetchQueuedFlows()
-      throws ExecutorManagerException {
-    final List<Pair<ExecutionReference, ExecutableFlow>> queuedFlows =
-        new ArrayList<>();
-    for (final int execId : this.refs.keySet()) {
-      if (!this.executionExecutorMapping.containsKey(execId)) {
-        queuedFlows.add(new Pair<>(this.refs
-            .get(execId), this.flows.get(execId)));
+    throws ExecutorManagerException {
+    List<Pair<ExecutionReference, ExecutableFlow>> queuedFlows =
+      new ArrayList<Pair<ExecutionReference, ExecutableFlow>>();
+    for (int execId : refs.keySet()) {
+      if (!executionExecutorMapping.containsKey(execId)) {
+        queuedFlows.add(new Pair<ExecutionReference, ExecutableFlow>(refs
+          .get(execId), flows.get(execId)));
       }
     }
     return queuedFlows;
   }
 
   @Override
-  public void unassignExecutor(final int executionId) throws ExecutorManagerException {
-    this.executionExecutorMapping.remove(executionId);
+  public void unassignExecutor(int executionId) throws ExecutorManagerException {
+    executionExecutorMapping.remove(executionId);
   }
 }
