@@ -35,7 +35,7 @@ public class Condition {
   private static CheckerTypeLoader checkerLoader = null;
   private Expression expression;
   private Map<String, ConditionChecker> checkers =
-      new HashMap<String, ConditionChecker>();
+      new HashMap<>();
   private MapContext context = new MapContext();
   private Long nextCheckTime = -1L;
 
@@ -52,22 +52,8 @@ public class Condition {
     this.expression = jexl.createExpression(expr);
   }
 
-  public synchronized static void setJexlEngine(JexlEngine jexl) {
-    Condition.jexl = jexl;
-  }
-
   public synchronized static void setCheckerLoader(CheckerTypeLoader loader) {
     Condition.checkerLoader = loader;
-  }
-
-  protected static CheckerTypeLoader getCheckerLoader() {
-    return checkerLoader;
-  }
-
-  protected void registerChecker(ConditionChecker checker) {
-    checkers.put(checker.getId(), checker);
-    context.set(checker.getId(), checker);
-    updateNextCheckTime();
   }
 
   public long getNextCheckTime() {
@@ -78,18 +64,12 @@ public class Condition {
     return this.checkers;
   }
 
-  public void setCheckers(Map<String, ConditionChecker> checkers) {
+  private void setCheckers(Map<String, ConditionChecker> checkers) {
     this.checkers = checkers;
     for (ConditionChecker checker : checkers.values()) {
       this.context.set(checker.getId(), checker);
     }
     updateNextCheckTime();
-  }
-
-  public void updateCheckTime(Long ct) {
-    if (nextCheckTime < ct) {
-      nextCheckTime = ct;
-    }
   }
 
   private void updateNextCheckTime() {
@@ -125,12 +105,12 @@ public class Condition {
   }
 
   public Object toJson() {
-    Map<String, Object> jsonObj = new HashMap<String, Object>();
+    Map<String, Object> jsonObj = new HashMap<>();
     jsonObj.put("expression", expression.getExpression());
 
-    List<Object> checkersJson = new ArrayList<Object>();
+    List<Object> checkersJson = new ArrayList<>();
     for (ConditionChecker checker : checkers.values()) {
-      Map<String, Object> oneChecker = new HashMap<String, Object>();
+      Map<String, Object> oneChecker = new HashMap<>();
       oneChecker.put("type", checker.getType());
       oneChecker.put("checkerJson", checker.toJson());
       checkersJson.add(oneChecker);
@@ -152,7 +132,7 @@ public class Condition {
 
     try {
       Map<String, ConditionChecker> checkers =
-          new HashMap<String, ConditionChecker>();
+          new HashMap<>();
       List<Object> checkersJson = (List<Object>) jsonObj.get("checkers");
       for (Object oneCheckerJson : checkersJson) {
         Map<String, Object> oneChecker =

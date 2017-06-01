@@ -63,13 +63,11 @@ public class TriggerManager extends EventHandler implements
 
   private String scannerStage = "";
 
-  // TODO kunkun-tang: Before apply guice to this class, we should make
-  // ExecutorManager guiceable.
+  @Inject
   public TriggerManager(Props props, TriggerLoader triggerLoader,
       ExecutorManager executorManager) throws TriggerManagerException {
 
-    // TODO kunkun-tang: Doing hack here to allow calling new azkaban-db code. Should fix in future.
-    this.triggerLoader = ServiceProvider.SERVICE_PROVIDER.getInstance(TriggerLoader.class);
+    this.triggerLoader = triggerLoader;
 
     long scannerInterval =
         props.getLong("trigger.scan.interval", DEFAULT_SCANNER_INTERVAL_MS);
@@ -259,8 +257,20 @@ public class TriggerManager extends EventHandler implements
           if (t.getStatus().equals(TriggerStatus.READY)) {
             if (t.triggerConditionMet()) {
               onTriggerTrigger(t);
-            } else if (t.expireConditionMet()) {
-              onTriggerExpire(t);
+            }
+            /**
+             * TODO kunkun-tang: rewrite checking expiration logics here.
+             *
+             * Prior to this change, expiration condition should never be called though
+             * we have some related code here. ExpireCondition used the same BasicTimeChecker
+             * as triggerCondition do. As a consequence, we need to figure out a way to distinguish
+             * the previous ExpireCondition and this commit's ExpireCondition.
+             * The workaround here is to check if we expire a trigger only when the ExpireCondition
+             * has {@link azkaban.trigger.builtin.EndTimeChecker}.
+             */
+            if (t.getExpireCondition().getExpression().contains("EndTimeChecker")
+                  && t.expireConditionMet()) {
+              onTriggerPause(t);
             }
           }
           if (t.getStatus().equals(TriggerStatus.EXPIRED) && t.getSource().equals("azkaban")) {
@@ -287,6 +297,8 @@ public class TriggerManager extends EventHandler implements
           logger.error("Failed to do action " + action.getDescription() + " for " + t, th);
         }
       }
+      // Todo kunkun-tang: Today, when one trigger is triggered, we reset expireCondition. This
+      // should be not right. Need to do evaluations and adjust the logics here.
       if (t.isResetOnTrigger()) {
         t.resetTriggerConditions();
         t.resetExpireCondition();
@@ -300,7 +312,7 @@ public class TriggerManager extends EventHandler implements
       }
     }
 
-    private void onTriggerExpire(Trigger t) throws TriggerManagerException {
+    private void onTriggerPause(Trigger t) throws TriggerManagerException {
       List<TriggerAction> expireActions = t.getExpireActions();
       for (TriggerAction action : expireActions) {
         try {
@@ -312,12 +324,8 @@ public class TriggerManager extends EventHandler implements
           logger.error("Failed to do expire action " + action.getDescription() + " for " + t, th);
         }
       }
-      if (t.isResetOnExpire()) {
-        t.resetTriggerConditions();
-        t.resetExpireCondition();
-      } else {
-        t.setStatus(TriggerStatus.EXPIRED);
-      }
+      logger.info("Pausing Trigger " + t.getDescription());
+      t.setStatus(TriggerStatus.PAUSED);
       try {
         triggerLoader.updateTrigger(t);
       } catch (TriggerLoaderException e) {

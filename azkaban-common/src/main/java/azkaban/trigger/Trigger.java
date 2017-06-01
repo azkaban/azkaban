@@ -62,8 +62,7 @@ public class Trigger {
   }
 
   public void updateNextCheckTime() {
-    this.nextCheckTime =
-        Math.min(triggerCondition.getNextCheckTime(),
+    this.nextCheckTime = Math.min(triggerCondition.getNextCheckTime(),
             expireCondition.getNextCheckTime());
   }
 
@@ -337,8 +336,7 @@ public class Trigger {
     Trigger trigger = null;
     try {
       logger.info("Decoding for " + JSONUtils.toJSON(obj));
-      Condition triggerCond =
-          Condition.fromJson(jsonObj.get("triggerCondition"));
+      Condition triggerCond = Condition.fromJson(jsonObj.get("triggerCondition"));
       Condition expireCond = Condition.fromJson(jsonObj.get("expireCondition"));
       List<TriggerAction> actions = new ArrayList<TriggerAction>();
       List<Object> actionsJson = (List<Object>) jsonObj.get("actions");

@@ -157,6 +157,7 @@ public class ScheduleManager implements TriggerAgent {
                                final String flowName,
                                final String status,
                                final long firstSchedTime,
+                               final long endSchedTime,
                                final DateTimeZone timezone,
                                final ReadablePeriod period,
                                final long lastModifyTime,
@@ -165,10 +166,9 @@ public class ScheduleManager implements TriggerAgent {
                                final String submitUser,
                                ExecutionOptions execOptions,
                                List<SlaOption> slaOptions) {
-    Schedule sched =
-        new Schedule(scheduleId, projectId, projectName, flowName, status,
-            firstSchedTime, timezone, period, lastModifyTime, nextExecTime,
-            submitTime, submitUser, execOptions, slaOptions, null);
+    Schedule sched = new Schedule(scheduleId, projectId, projectName, flowName, status,
+        firstSchedTime, endSchedTime, timezone, period, lastModifyTime, nextExecTime,
+        submitTime, submitUser, execOptions, slaOptions, null);
     logger
         .info("Scheduling flow '" + sched.getScheduleName() + "' for "
             + _dateFormat.print(firstSchedTime) + " with a period of " + (period == null ? "(non-recurring)"
@@ -178,15 +178,24 @@ public class ScheduleManager implements TriggerAgent {
     return sched;
   }
 
-  public Schedule cronScheduleFlow(final int scheduleId, final int projectId,
-      final String projectName, final String flowName, final String status,
-      final long firstSchedTime, final DateTimeZone timezone,
-      final long lastModifyTime,
-      final long nextExecTime, final long submitTime, final String submitUser,
-      ExecutionOptions execOptions, List<SlaOption> slaOptions, String cronExpression) {
+  public Schedule cronScheduleFlow(final int scheduleId,
+                                   final int projectId,
+                                   final String projectName,
+                                   final String flowName,
+                                   final String status,
+                                   final long firstSchedTime,
+                                   final long endSchedTime,
+                                   final DateTimeZone timezone,
+                                   final long lastModifyTime,
+                                   final long nextExecTime,
+                                   final long submitTime,
+                                   final String submitUser,
+                                   ExecutionOptions execOptions,
+                                   List<SlaOption> slaOptions,
+                                   String cronExpression) {
     Schedule sched =
         new Schedule(scheduleId, projectId, projectName, flowName, status,
-            firstSchedTime, timezone, null, lastModifyTime, nextExecTime,
+            firstSchedTime, endSchedTime, timezone, null, lastModifyTime, nextExecTime,
             submitTime, submitUser, execOptions, slaOptions, cronExpression);
     logger
         .info("Scheduling flow '" + sched.getScheduleName() + "' for "

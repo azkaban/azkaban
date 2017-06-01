@@ -669,6 +669,14 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
       return;
     }
 
+    long endSchedTime = getLongParam(req, "endSchedTime", -1L);
+    try {
+      // Todo kunkun-tang: Need to verify if passed end time is valid.
+    } catch (Exception e) {
+      ret.put("error", "Invalid date and time: " + endSchedTime);
+      return;
+    }
+
     ReadablePeriod thePeriod = null;
     try {
       if (hasParam(req, "is_recurring")
@@ -691,7 +699,7 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
 
     Schedule schedule =
         scheduleManager.scheduleFlow(-1, projectId, projectName, flowName,
-            "ready", firstSchedTime.getMillis(), firstSchedTime.getZone(),
+            "ready", firstSchedTime.getMillis(), endSchedTime, firstSchedTime.getZone(),
             thePeriod, DateTime.now().getMillis(), firstSchedTime.getMillis(),
             firstSchedTime.getMillis(), user.getUserId(), flowOptions,
             slaOptions);
@@ -759,6 +767,14 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
       ret.put("error", e.getMessage());
     }
 
+    long endSchedTime = getLongParam(req, "endSchedTime", -1L);
+    try {
+      // Todo kunkun-tang: Need to verify if passed end time is valid.
+    } catch (Exception e) {
+      ret.put("error", "Invalid date and time: " + endSchedTime);
+      return;
+    }
+
     ExecutionOptions flowOptions = null;
     try {
       flowOptions = HttpRequestUtils.parseFlowOptions(req);
@@ -771,7 +787,7 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
 
     // Because either cronExpression or recurrence exists, we build schedule in the below way.
     Schedule schedule = scheduleManager.cronScheduleFlow(-1, projectId, projectName, flowName,
-            "ready", firstSchedTime.getMillis(), firstSchedTime.getZone(),
+            "ready", firstSchedTime.getMillis(), endSchedTime, firstSchedTime.getZone(),
             DateTime.now().getMillis(), firstSchedTime.getMillis(),
             firstSchedTime.getMillis(), user.getUserId(), flowOptions,
             slaOptions, cronExpression);
