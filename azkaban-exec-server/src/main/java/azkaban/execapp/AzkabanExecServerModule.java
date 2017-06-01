@@ -20,7 +20,12 @@ package azkaban.execapp;
 import azkaban.executor.ExecutorLoader;
 import azkaban.executor.JdbcExecutorLoader;
 import com.google.inject.AbstractModule;
+import com.google.inject.Key;
 import com.google.inject.Scopes;
+import com.google.inject.name.Names;
+import org.apache.log4j.Logger;
+import org.mortbay.jetty.Server;
+import org.mortbay.jetty.servlet.Context;
 
 
 /**
@@ -29,12 +34,19 @@ import com.google.inject.Scopes;
  * structuring of Guice components.
  */
 public class AzkabanExecServerModule extends AbstractModule {
+
+  private static final Logger logger = Logger.getLogger(AzkabanExecServerModule.class);
+
   @Override
   protected void configure() {
+    bind(Key.get(Server.class, Names.named("ExecServer"))).toProvider(ExecServerProvider.class)
+        .in(Scopes.SINGLETON);
+    bind(Key.get(Context.class, Names.named("root"))).toProvider(RootContextProvider.class)
+        .in(Scopes.SINGLETON);
     bind(ExecutorLoader.class).to(JdbcExecutorLoader.class).in(Scopes.SINGLETON);
     bind(AzkabanExecutorServer.class).in(Scopes.SINGLETON);
     bind(TriggerManager.class).in(Scopes.SINGLETON);
     bind(FlowRunnerManager.class).in(Scopes.SINGLETON);
-
   }
+
 }
