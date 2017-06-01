@@ -122,6 +122,9 @@ public class MockExecutorLoader implements ExecutorLoader {
   @Override
   public void updateExecutableNode(ExecutableNode node)
       throws ExecutorManagerException {
+    if (!nodes.containsKey(node.getId())) {
+      uploadExecutableNode(node, new Props());
+    }
     ExecutableNode foundNode = nodes.get(node.getId());
     foundNode.setEndTime(node.getEndTime());
     foundNode.setStartTime(node.getStartTime());

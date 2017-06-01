@@ -397,7 +397,6 @@ public class FlowRunnerTest2 extends FlowRunnerTestBase {
 
     // After it starts up, only joba should be running
     assertStatus("joba", Status.RUNNING);
-    assertStatus("joba", Status.RUNNING);
     assertStatus("joba1", Status.RUNNING);
 
     // 2. JOB A COMPLETES SUCCESSFULLY, others should be skipped
