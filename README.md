@@ -49,14 +49,14 @@ After that, you should be able to set up the code style from `Preferences > Edit
 
 We also leverage intellij save actions plugin(https://github.com/dubreuia/intellij-plugin-save-actions) to reformat/refactor code automatically:
 It allows us to do following when saving a file:
-Organize imports
-Reformat code based on the code style
-Rearrange code (reorder methods, fields, etc.)
-Add final to local variable
-Add final to field
-Remove explicit generic type for diamond
-Qualify field access with this
-Remove unused suppress warning annotation
-Remove final from private method
-Remove unnecessary semicolon
-Add missing @Override annotations
+* Organize imports
+* Reformat code based on the code style
+* Rearrange code (reorder methods, fields, etc.)
+* Add final to local variable
+* Add final to field
+* Remove explicit generic type for diamond
+* Qualify field access with this
+* Remove unused suppress warning annotation
+* Remove final from private method
+* Remove unnecessary semicolon
+* Add missing @Override annotations
