@@ -39,6 +39,7 @@ import azkaban.server.AzkabanServer;
 import azkaban.utils.Props;
 import azkaban.utils.StdOutErrRedirect;
 import azkaban.utils.Utils;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Throwables;
 import com.google.inject.Guice;
 import com.google.inject.Inject;
@@ -55,6 +56,7 @@ import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.TimeZone;
+import javax.inject.Named;
 import javax.management.MBeanInfo;
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
@@ -64,8 +66,6 @@ import org.joda.time.DateTimeZone;
 import org.mortbay.jetty.Connector;
 import org.mortbay.jetty.Server;
 import org.mortbay.jetty.servlet.Context;
-import org.mortbay.jetty.servlet.ServletHolder;
-import org.mortbay.thread.QueuedThreadPool;
 
 import static azkaban.Constants.*;
 import static azkaban.ServiceProvider.*;
@@ -75,14 +75,11 @@ import static java.util.Objects.*;
 public class AzkabanExecutorServer {
   private static final String CUSTOM_JMX_ATTRIBUTE_PROCESSOR_PROPERTY = "jmx.attribute.processor.class";
   private static final Logger logger = Logger.getLogger(AzkabanExecutorServer.class);
-  private static final int MAX_FORM_CONTENT_SIZE = 10 * 1024 * 1024;
 
   public static final String JOBTYPE_PLUGIN_DIR = "azkaban.jobtype.plugin.dir";
   public static final String METRIC_INTERVAL = "executor.metric.milisecinterval.";
-  public static final int DEFAULT_HEADER_BUFFER_SIZE = 4096;
 
   private static final String DEFAULT_TIMEZONE_ID = "default.timezone.id";
-  private static final int DEFAULT_THREAD_NUMBER = 50;
 
   private static AzkabanExecutorServer app;
 
@@ -90,6 +87,7 @@ public class AzkabanExecutorServer {
   private final FlowRunnerManager runnerManager;
   private final Props props;
   private final Server server;
+  private final Context root;
 
   private final ArrayList<ObjectName> registeredMBeans = new ArrayList<ObjectName>();
   private MBeanServer mbeanServer;
@@ -97,12 +95,18 @@ public class AzkabanExecutorServer {
   @Inject
   public AzkabanExecutorServer(Props props,
       ExecutorLoader executionLoader,
-      FlowRunnerManager runnerManager) throws Exception {
+      FlowRunnerManager runnerManager,
+      @Named("ExecServer") Server server,
+      @Named("root") Context root) throws Exception {
     this.props = props;
     this.executionLoader = executionLoader;
     this.runnerManager = runnerManager;
+    this.server = server;
+    this.root = root;
+  }
 
-    server = createJettyServer(props);
+  private void start() throws Exception {
+    root.setAttribute(Constants.AZKABAN_SERVLET_CONTEXT_KEY, this);
 
     JmxJobMBeanManager.getInstance().initialize(props);
 
@@ -126,48 +130,9 @@ public class AzkabanExecutorServer {
 
     logger.info("Started Executor Server on " + getExecutorHostPort());
 
-    if (props.getBoolean(Constants.ConfigurationKeys.IS_METRICS_ENABLED, false)) {
+    if (props.getBoolean(ConfigurationKeys.IS_METRICS_ENABLED, false)) {
       startExecMetrics();
     }
-  }
-
-  private Server createJettyServer(Props props) {
-    int maxThreads = props.getInt("executor.maxThreads", DEFAULT_THREAD_NUMBER);
-
-    /*
-     * Default to a port number 0 (zero)
-     * The Jetty server automatically finds an unused port when the port number is set to zero
-     * TODO: This is using a highly outdated version of jetty [year 2010]. needs to be updated.
-     */
-    Server server = new Server(props.getInt("executor.port", 0));
-    QueuedThreadPool httpThreadPool = new QueuedThreadPool(maxThreads);
-    server.setThreadPool(httpThreadPool);
-
-    boolean isStatsOn = props.getBoolean("executor.connector.stats", true);
-    logger.info("Setting up connector with stats on: " + isStatsOn);
-
-    for (Connector connector : server.getConnectors()) {
-      connector.setStatsOn(isStatsOn);
-      logger.info(String.format(
-          "Jetty connector name: %s, default header buffer size: %d",
-          connector.getName(), connector.getHeaderBufferSize()));
-      connector.setHeaderBufferSize(props.getInt("jetty.headerBufferSize",
-          DEFAULT_HEADER_BUFFER_SIZE));
-      logger.info(String.format(
-          "Jetty connector name: %s, (if) new header buffer size: %d",
-          connector.getName(), connector.getHeaderBufferSize()));
-    }
-
-    Context root = new Context(server, "/", Context.SESSIONS);
-    root.setMaxFormContentSize(MAX_FORM_CONTENT_SIZE);
-
-    root.addServlet(new ServletHolder(new ExecutorServlet()), "/executor");
-    root.addServlet(new ServletHolder(new JMXHttpServlet()), "/jmx");
-    root.addServlet(new ServletHolder(new StatsServlet()), "/stats");
-    root.addServlet(new ServletHolder(new ServerStatisticsServlet()), "/serverStatistics");
-
-    root.setAttribute(Constants.AZKABAN_SERVLET_CONTEXT_KEY, this);
-    return server;
   }
 
   private void startExecMetrics() throws Exception {
@@ -321,6 +286,11 @@ public class AzkabanExecutorServer {
     return app;
   }
 
+  @VisibleForTesting
+  public static void setApp(AzkabanExecutorServer app) {
+    AzkabanExecutorServer.app = app;
+  }
+
   /**
    * Azkaban using Jetty
    *
@@ -348,8 +318,9 @@ public class AzkabanExecutorServer {
   }
 
   public static void launch(AzkabanExecutorServer azkabanExecutorServer) throws Exception {
+    azkabanExecutorServer.start();
     setupTimeZone(azkabanExecutorServer.getAzkabanProps());
-    app = azkabanExecutorServer;
+    setApp(azkabanExecutorServer);
 
     Runtime.getRuntime().addShutdownHook(new Thread() {
 
