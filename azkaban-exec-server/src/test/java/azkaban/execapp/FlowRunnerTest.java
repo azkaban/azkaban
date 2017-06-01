@@ -23,6 +23,7 @@ import static org.mockito.Mockito.when;
 import azkaban.execapp.jmx.JmxJobMBeanManager;
 import java.io.File;
 import java.io.IOException;
+import java.nio.channels.ClosedByInterruptException;
 import java.util.HashMap;
 
 import azkaban.test.Utils;
@@ -361,10 +362,20 @@ public class FlowRunnerTest extends FlowRunnerTestBase {
   
   private ExecutableFlow prepareExecDir(File execDir, String flowName,
       int execId) throws IOException {
-    synchronized (this) {
-      // clean interrupted status
-      Thread.interrupted();
-      FileUtils.copyDirectory(execDir, workingDir);
+    // copyDirectory has been failing randomly with ClosedByInterruptException. have some retries.
+    for (int i = 0; i < 10; i++) {
+      try {
+        // clean interrupted status
+        Thread.interrupted();
+        synchronized (this) {
+          FileUtils.copyDirectory(execDir, workingDir);
+        }
+        break;
+      } catch (ClosedByInterruptException e) {
+        if (i == 9) {
+          throw e;
+        }
+      }
     }
 
     File jsonFlowFile = new File(workingDir, flowName + ".flow");
