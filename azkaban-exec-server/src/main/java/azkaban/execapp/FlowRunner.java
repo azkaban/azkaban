@@ -278,7 +278,10 @@ public class FlowRunner extends EventHandler implements Runnable {
       this.watcher.setLogger(logger);
     }
 
-    logger.info("Assigned executor : " + AzkabanExecutorServer.getApp().getExecutorHostPort());
+    // Avoid NPE in unit tests when the static app instance is not set
+    if (AzkabanExecutorServer.getApp() != null) {
+      logger.info("Assigned executor : " + AzkabanExecutorServer.getApp().getExecutorHostPort());
+    }
     logger.info("Running execid:" + execId + " flow:" + flowId + " project:"
         + projectId + " version:" + version);
     if (pipelineExecId != null) {

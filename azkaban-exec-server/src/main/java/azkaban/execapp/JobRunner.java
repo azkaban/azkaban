@@ -64,6 +64,8 @@ import azkaban.utils.PatternLayoutEscaped;
 public class JobRunner extends EventHandler implements Runnable {
   public static final String AZKABAN_WEBSERVER_URL = "azkaban.webserver.url";
 
+  private static final Logger serverLogger = Logger.getLogger(JobRunner.class);
+
   private final Layout DEFAULT_LAYOUT = new EnhancedPatternLayout(
       "%d{dd-MM-yyyy HH:mm:ss z} %c{1} %p - %m\n");
 
@@ -506,6 +508,15 @@ public class JobRunner extends EventHandler implements Runnable {
    */
   @Override
   public void run() {
+    try {
+      doRun();
+    } catch (Exception e) {
+      serverLogger.error("Unexpected exception", e);
+      throw e;
+    }
+  }
+
+  private void doRun() {
     Thread.currentThread().setName(
         "JobRunner-" + this.jobId + "-" + executionId);
 
@@ -698,8 +709,13 @@ public class JobRunner extends EventHandler implements Runnable {
         logError("Job run failed, but will treat it like success.");
         logError(e.getMessage() + " cause: " + e.getCause(), e);
       } else {
-        finalStatus = changeStatus(Status.FAILED);
-        logError("Job run failed!", e);
+        if (isKilled() || node.getStatus() == Status.KILLED) {
+          finalStatus = Status.KILLED;
+          logError("Job run killed!", e);
+        } else {
+          finalStatus = changeStatus(Status.FAILED);
+          logError("Job run failed!", e);
+        }
         logError(e.getMessage() + " cause: " + e.getCause());
       }
     }
