@@ -120,7 +120,7 @@ public class ExecutableNode {
     this.id = id;
   }
 
-  public Status getStatus() {
+  public synchronized Status getStatus() {
     return status;
   }
 
@@ -132,7 +132,7 @@ public class ExecutableNode {
     this.type = type;
   }
 
-  public void setStatus(Status status) {
+  public synchronized void setStatus(Status status) {
     this.status = status;
   }
 
