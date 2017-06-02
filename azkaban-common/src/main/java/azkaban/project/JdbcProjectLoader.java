@@ -171,6 +171,11 @@ public class JdbcProjectLoader extends AbstractJdbcLoader implements
     return project;
   }
 
+  /**
+   * Fetch first project with a given name {@inheritDoc}
+   *
+   * @see azkaban.project.ProjectLoader#fetchProjectByName(java.lang.String)
+   */
   @Override
   public Project fetchProjectByName(final String name)
       throws ProjectManagerException {
@@ -190,23 +195,17 @@ public class JdbcProjectLoader extends AbstractJdbcLoader implements
       throws ProjectManagerException {
     final QueryRunner runner = new QueryRunner();
     // Fetch the project
-    final Project project;
+    Project project = null;
     final ProjectResultHandler handler = new ProjectResultHandler();
-    // select active project from db first, if not exist, select inactive one.
-    // At most one active project with the same name exists in db.
     try {
-      List<Project> projects =
+      final List<Project> projects =
           runner.query(connection,
-              ProjectResultHandler.SELECT_ACTIVE_PROJECT_BY_NAME, handler, name);
+              ProjectResultHandler.SELECT_PROJECT_BY_NAME, handler, name);
       if (projects.isEmpty()) {
-        projects =
-            runner.query(connection,
-                ProjectResultHandler.SELECT_PROJECT_BY_NAME, handler, name);
-        if (projects.isEmpty()) {
-          throw new ProjectManagerException(
-              "No project with name " + name + " exists in db.");
-        }
+        throw new ProjectManagerException(
+            "No project with name " + name + " exists in db.");
       }
+
       project = projects.get(0);
     } catch (final SQLException e) {
       logger.error(ProjectResultHandler.SELECT_PROJECT_BY_NAME
@@ -410,20 +409,21 @@ public class JdbcProjectLoader extends AbstractJdbcLoader implements
   /**
    * Insert a new version record to TABLE project_versions before uploading files.
    *
-   * The reason for this operation: When error chunking happens in remote mysql server, incomplete
-   * file data remains in DB, and an SQL exception is thrown. If we don't have this operation before
-   * uploading file, the SQL exception prevents AZ from creating the new version record in Table
-   * project_versions. However, the Table project_files still reserve the incomplete files, which
-   * causes troubles when uploading a new file: Since the version in TABLE project_versions is still
-   * old, mysql will stop inserting new files to db.
+   * The reason for this operation:
+   * When error chunking happens in remote mysql server, incomplete file data remains
+   * in DB, and an SQL exception is thrown. If we don't have this operation before uploading file,
+   * the SQL exception prevents AZ from creating the new version record in Table project_versions.
+   * However, the Table project_files still reserve the incomplete files, which causes troubles
+   * when uploading a new file: Since the version in TABLE project_versions is still old, mysql will stop
+   * inserting new files to db.
    *
-   * Why this operation is safe: When AZ uploads a new zip file, it always fetches the latest
-   * version proj_v from TABLE project_version, proj_v+1 will be used as the new version for the
-   * uploading files.
+   * Why this operation is safe:
+   * When AZ uploads a new zip file, it always fetches the latest version proj_v from TABLE project_version,
+   * proj_v+1 will be used as the new version for the uploading files.
    *
-   * Assume error chunking happens on day 1. proj_v is created for this bad file (old file version +
-   * 1). When we upload a new project zip in day2, new file in day 2 will use the new version
-   * (proj_v + 1). When file uploading completes, AZ will clean all old chunks in DB afterward.
+   * Assume error chunking happens on day 1. proj_v is created for this bad file (old file version + 1).
+   * When we upload a new project zip in day2, new file in day 2 will use the new version (proj_v + 1).
+   * When file uploading completes, AZ will clean all old chunks in DB afterward.
    */
   private void addProjectToProjectVersions(final Connection connection,
       final int projectId,
@@ -840,6 +840,10 @@ public class JdbcProjectLoader extends AbstractJdbcLoader implements
 
   /**
    * Get all the logs for a given project
+   *
+   * @param project
+   * @return
+   * @throws ProjectManagerException
    */
   @Override
   public List<ProjectLogEvent> getProjectEvents(final Project project, final int num,

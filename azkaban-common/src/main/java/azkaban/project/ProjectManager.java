@@ -40,6 +40,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 import java.util.zip.ZipFile;
@@ -56,6 +57,10 @@ public class ProjectManager {
   private final File tempDir;
   private final int projectVersionRetention;
   private final boolean creatorDefaultPermissions;
+  private final ConcurrentHashMap<Integer, Project> projectsById =
+      new ConcurrentHashMap<>();
+  private final ConcurrentHashMap<String, Project> projectsByName =
+      new ConcurrentHashMap<>();
 
   @Inject
   public ProjectManager(final ProjectLoader loader, final StorageManager storageManager,
@@ -86,10 +91,28 @@ public class ProjectManager {
     // By instantiating an object of XmlValidatorManager, this will verify the
     // config files for the validators.
     new XmlValidatorManager(prop);
+    loadAllProjects();
     loadProjectWhiteList();
   }
 
-  public void loadAllProjectFlows(final Project project) {
+  private void loadAllProjects() {
+    final List<Project> projects;
+    try {
+      projects = this.projectLoader.fetchAllActiveProjects();
+    } catch (final ProjectManagerException e) {
+      throw new RuntimeException("Could not load projects from store.", e);
+    }
+    for (final Project proj : projects) {
+      this.projectsByName.put(proj.getName(), proj);
+      this.projectsById.put(proj.getId(), proj);
+    }
+
+    for (final Project proj : projects) {
+      loadAllProjectFlows(proj);
+    }
+  }
+
+  private void loadAllProjectFlows(final Project project) {
     try {
       final List<Flow> flows = this.projectLoader.fetchAllProjectFlows(project);
       final Map<String, Flow> flowMap = new HashMap<>();
@@ -103,65 +126,64 @@ public class ProjectManager {
     }
   }
 
+  public List<String> getProjectNames() {
+    return new ArrayList<>(this.projectsByName.keySet());
+  }
+
   public Props getProps() {
     return this.props;
   }
 
   public List<Project> getUserProjects(final User user) {
-    final ArrayList<Project> userProjects = new ArrayList<>();
-    for (final Project project : getProjects()) {
+    final ArrayList<Project> array = new ArrayList<>();
+    for (final Project project : this.projectsById.values()) {
       final Permission perm = project.getUserPermission(user);
 
       if (perm != null
           && (perm.isPermissionSet(Type.ADMIN) || perm
           .isPermissionSet(Type.READ))) {
-        userProjects.add(project);
+        array.add(project);
       }
     }
-    return userProjects;
+    return array;
   }
 
   public List<Project> getGroupProjects(final User user) {
-    final List<Project> groupProjects = new ArrayList<>();
-    for (final Project project : getProjects()) {
+    final List<Project> array = new ArrayList<>();
+    for (final Project project : this.projectsById.values()) {
       if (project.hasGroupPermission(user, Type.READ)) {
-        groupProjects.add(project);
+        array.add(project);
       }
     }
-    return groupProjects;
+    return array;
   }
 
   public List<Project> getUserProjectsByRegex(final User user, final String regexPattern) {
-    final List<Project> userProjects = new ArrayList<>();
+    final List<Project> array = new ArrayList<>();
     final Pattern pattern;
     try {
       pattern = Pattern.compile(regexPattern, Pattern.CASE_INSENSITIVE);
     } catch (final PatternSyntaxException e) {
       logger.error("Bad regex pattern " + regexPattern);
-      return userProjects;
+      return array;
     }
-    for (final Project project : getProjects()) {
+
+    for (final Project project : this.projectsById.values()) {
       final Permission perm = project.getUserPermission(user);
 
       if (perm != null
           && (perm.isPermissionSet(Type.ADMIN) || perm
           .isPermissionSet(Type.READ))) {
         if (pattern.matcher(project.getName()).find()) {
-          userProjects.add(project);
+          array.add(project);
         }
       }
     }
-    return userProjects;
+    return array;
   }
 
   public List<Project> getProjects() {
-    final List<Project> projects;
-    try {
-      projects = this.projectLoader.fetchAllActiveProjects();
-    } catch (final ProjectManagerException e) {
-      throw new RuntimeException("Could not load projects from store.", e);
-    }
-    return projects;
+    return new ArrayList<>(this.projectsById.values());
   }
 
   public List<Project> getProjectsByRegex(final String regexPattern) {
@@ -182,36 +204,61 @@ public class ProjectManager {
   }
 
   /**
-   * Checks if a project is active using project_id
+   * Checks if a project is active using project_name
+   *
+   * @param name
    */
-  public Boolean isActiveProject(final int id) {
-    return getProject(id) != null;
+  public Boolean isActiveProject(final String name) {
+    return this.projectsByName.containsKey(name);
   }
 
   /**
-   * fetch active project (boolean active = true) from DB by project_name
+   * Checks if a project is active using project_id
+   *
+   * @param name
+   */
+  public Boolean isActiveProject(final int id) {
+    return this.projectsById.containsKey(id);
+  }
+
+  /**
+   * fetch active project from cache and inactive projects from db by
+   * project_name
+   *
+   * @param name
+   * @return
    */
   public Project getProject(final String name) {
     Project fetchedProject = null;
-    try {
-      fetchedProject = this.projectLoader.fetchProjectByName(name);
-      loadAllProjectFlows(fetchedProject);
-    } catch (final ProjectManagerException e) {
-      logger.error("Could not load project" + name + " from store.", e);
+    if (isActiveProject(name)) {
+      fetchedProject = this.projectsByName.get(name);
+    } else {
+      try {
+        fetchedProject = this.projectLoader.fetchProjectByName(name);
+      } catch (final ProjectManagerException e) {
+        logger.error("Could not load project from store.", e);
+      }
     }
     return fetchedProject;
   }
 
   /**
-   * fetch active project (boolean active = true) from DB by project_id
+   * fetch active project from cache and inactive projects from db by
+   * project_id
+   *
+   * @param id
+   * @return
    */
   public Project getProject(final int id) {
     Project fetchedProject = null;
-    try {
-      fetchedProject = this.projectLoader.fetchProjectById(id);
-      loadAllProjectFlows(fetchedProject);
-    } catch (final ProjectManagerException e) {
-      logger.error("Could not load project" + id + " from store.", e);
+    if (isActiveProject(id)) {
+      fetchedProject = this.projectsById.get(id);
+    } else {
+      try {
+        fetchedProject = this.projectLoader.fetchProjectById(id);
+      } catch (final ProjectManagerException e) {
+        logger.error("Could not load project from store.", e);
+      }
     }
     return fetchedProject;
   }
@@ -229,10 +276,16 @@ public class ProjectManager {
           "Project names must start with a letter, followed by any number of letters, digits, '-' or '_'.");
     }
 
+    if (this.projectsByName.containsKey(projectName)) {
+      throw new ProjectManagerException("Project already exists.");
+    }
+
     logger.info("Trying to create " + projectName + " by user "
         + creator.getUserId());
     final Project newProject =
         this.projectLoader.createNewProject(projectName, description, creator);
+    this.projectsByName.put(newProject.getName(), newProject);
+    this.projectsById.put(newProject.getId(), newProject);
 
     if (this.creatorDefaultPermissions) {
       // Add permission to project
@@ -258,6 +311,11 @@ public class ProjectManager {
   /**
    * Permanently delete all project files and properties data for all versions
    * of a project and log event in project_events table
+   *
+   * @param project
+   * @param deleter
+   * @return
+   * @throws ProjectManagerException
    */
   public synchronized Project purgeProject(final Project project, final User deleter)
       throws ProjectManagerException {
@@ -274,6 +332,10 @@ public class ProjectManager {
     this.projectLoader.removeProject(project, deleter.getUserId());
     this.projectLoader.postEvent(project, EventType.DELETED, deleter.getUserId(),
         null);
+
+    this.projectsByName.remove(project.getName());
+    this.projectsById.remove(project.getId());
+
     return project;
   }
 
@@ -389,9 +451,11 @@ public class ProjectManager {
    * {@ProjectFileHandler.deleteLocalFile}
    * to delete the temporary file.
    *
+   * @param project
    * @param version - latest version is used if value is -1
-   * @return ProjectFileHandler - null if can't find project zip file based on project name and
-   * version
+   * @return ProjectFileHandler - null if can't find project zip file based on
+   *         project name and version
+   * @throws ProjectManagerException
    */
   public ProjectFileHandler getProjectFileHandler(final Project project, int version)
       throws ProjectManagerException {
