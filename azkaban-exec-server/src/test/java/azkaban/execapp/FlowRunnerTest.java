@@ -65,13 +65,11 @@ public class FlowRunnerTest extends FlowRunnerTestBase {
     MockitoAnnotations.initMocks(this);
     when(this.loader.updateExecutableReference(anyInt(), anyLong())).thenReturn(true);
     System.out.println("Create temp dir");
-    synchronized (this) {
-      this.workingDir = new File("build/tmp/_AzkabanTestDir_" + System.currentTimeMillis());
-      if (this.workingDir.exists()) {
-        FileUtils.deleteDirectory(this.workingDir);
-      }
-      this.workingDir.mkdirs();
+    this.workingDir = new File("build/tmp/_AzkabanTestDir_" + System.currentTimeMillis());
+    if (this.workingDir.exists()) {
+      FileUtils.deleteDirectory(this.workingDir);
     }
+    this.workingDir.mkdirs();
     this.jobtypeManager =
         new JobTypeManager(null, null, this.getClass().getClassLoader());
     final JobTypePluginSet pluginSet = this.jobtypeManager.getJobTypePluginSet();
