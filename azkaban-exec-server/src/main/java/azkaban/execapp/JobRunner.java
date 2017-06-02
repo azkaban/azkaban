@@ -60,6 +60,8 @@ import org.json.simple.JSONObject;
 public class JobRunner extends EventHandler implements Runnable {
 
   public static final String AZKABAN_WEBSERVER_URL = "azkaban.webserver.url";
+
+  private static final Logger serverLogger = Logger.getLogger(JobRunner.class);
   private static final Object logCreatorLock = new Object();
   private final Layout DEFAULT_LAYOUT = new EnhancedPatternLayout(
       "%d{dd-MM-yyyy HH:mm:ss z} %c{1} %p - %m\n");
@@ -226,8 +228,8 @@ public class JobRunner extends EventHandler implements Runnable {
   }
 
   /**
-   * Returns a list of jobs that this JobRunner will wait upon to finish before
-   * starting. It is only relevant if pipeline is turned on.
+   * Returns a list of jobs that this JobRunner will wait upon to finish before starting. It is only
+   * relevant if pipeline is turned on.
    */
   public Set<String> getPipelineWatchedJobs() {
     return this.pipelineJobs;
@@ -398,8 +400,8 @@ public class JobRunner extends EventHandler implements Runnable {
   }
 
   /**
-   * Used to handle non-ready and special status's (i.e. KILLED). Returns true
-   * if they handled anything.
+   * Used to handle non-ready and special status's (i.e. KILLED). Returns true if they handled
+   * anything.
    */
   private boolean handleNonReadyStatus() {
     Status nodeStatus = this.node.getStatus();
@@ -552,6 +554,15 @@ public class JobRunner extends EventHandler implements Runnable {
    */
   @Override
   public void run() {
+    try {
+      doRun();
+    } catch (final Exception e) {
+      serverLogger.error("Unexpected exception", e);
+      throw e;
+    }
+  }
+
+  private void doRun() {
     Thread.currentThread().setName(
         "JobRunner-" + this.jobId + "-" + this.executionId);
 
@@ -678,8 +689,8 @@ public class JobRunner extends EventHandler implements Runnable {
   }
 
   /**
-   * Add useful JVM arguments so it is easier to map a running Java process to a
-   * flow, execution id and job
+   * Add useful JVM arguments so it is easier to map a running Java process to a flow, execution id
+   * and job
    */
   private void insertJVMAargs() {
     final String flowName = this.node.getParentFlow().getFlowId();
@@ -698,8 +709,8 @@ public class JobRunner extends EventHandler implements Runnable {
   }
 
   /**
-   * Add relevant links to the job properties so that downstream consumers may
-   * know what executions initiated their execution.
+   * Add relevant links to the job properties so that downstream consumers may know what executions
+   * initiated their execution.
    */
   private void insertJobMetadata() {
     final String baseURL = this.azkabanProps.get(AZKABAN_WEBSERVER_URL);
@@ -744,8 +755,13 @@ public class JobRunner extends EventHandler implements Runnable {
         logError("Job run failed, but will treat it like success.");
         logError(e.getMessage() + " cause: " + e.getCause(), e);
       } else {
-        finalStatus = changeStatus(Status.FAILED);
-        logError("Job run failed!", e);
+        if (isKilled() || this.node.getStatus() == Status.KILLED) {
+          finalStatus = Status.KILLED;
+          logError("Job run killed!", e);
+        } else {
+          finalStatus = changeStatus(Status.FAILED);
+          logError("Job run failed!", e);
+        }
         logError(e.getMessage() + " cause: " + e.getCause());
       }
     }
